@@ -1,23 +1,61 @@
 ---
 title: "Python Agent SDK से संरचित JSON निकालें"
+sidebarTitle: "Python में संरचित JSON निकालें"
 icon: "file-code"
-description: "Phaseo Gateway के ज़रिए सख्त JSON लौटाने वाले, सीमित स्थानीय टूल लूप के लिए Python Agent SDK उपयोग करें।"
+description: "Phaseo Gateway के ज़रिए सख्त JSON लौटाने वाले सीमित स्थानीय-टूल लूप के लिए Python Agent SDK इस्तेमाल करें।"
 ---
 
-जब किसी Python वर्कफ़्लो को इनकी ज़रूरत हो, तो यह रेसिपी उपयोग करें:
+एक Python एजेंट चलाएँ जो एक स्थानीय टूल से कुछ खोजे और अपना जवाब सख्त JSON के रूप में लौटाए। अंत में आपके पास एक स्क्रिप्ट होगी जिसका `result.output` खुला टेक्स्ट नहीं, बल्कि `summary` और `recommendation` वाला सत्यापित `PolicySummary` ऑब्जेक्ट होता है।
 
-- एक स्थानीय लुकअप टूल
-- एक सीमित एजेंट लूप
-- एक सख्त JSON आउटपुट संरचना
+टूल तय नमूना डेटा लौटाता है, इसलिए यह स्क्रिप्ट उदाहरण के लिए है; इसे अपने lookup से बदलें। यह ऐसे Python worker के लिए सही है जो अपना ऑर्केस्ट्रेशन खुद संभालता है और जिसके पास छोटा, निर्धारक टूल सेट है।
 
-## 1. SDK तैयार करें
+## इसे बनाएँ
 
-<Note type="warning">Python Agent SDK पैकेज अभी PyPI पर उपलब्ध नहीं है। [सोर्स से इंस्टॉल करने के निर्देश](../sdk-reference/python/agent-sdk-installation.mdx) देखें।</Note>
+<Steps>
+<Step title="इंस्टॉल करें">
 
-## 2. स्थानीय टूल तय करें
+<CodeGroup>
+```bash pip
+pip install phaseo-agent-sdk
+```
 
-```python
-from phaseo_agent import AgentTool, define_tool
+```bash uv
+uv add phaseo-agent-sdk
+```
+</CodeGroup>
+
+`phaseo-agent-sdk` अपने साथ `phaseo` क्लाइंट और Pydantic इंस्टॉल करता है।
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+</Step>
+<Step title="एजेंट लिखें">
+
+```python extract.py
+import json
+import os
+
+from pydantic import BaseModel, ConfigDict
+
+from phaseo_agent import AgentTool, create_agent, create_gateway_agent_client, define_tool
+
+POLICY_SLUGS = {"presets", "routing", "guardrails"}
+
+
+class PolicySummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    summary: str
+    recommendation: str
+
+
+def check_lookup_input(value):
+    # मॉडल के बनाए आर्ग्युमेंट: जो ज्ञात slug नहीं है, उसे अस्वीकार करें।
+    if not isinstance(value, dict) or set(value) != {"slug"} or value["slug"] not in POLICY_SLUGS:
+        raise ValueError(f"slug must be one of {sorted(POLICY_SLUGS)}")
+    return value
+
 
 lookup_policy = define_tool(
     AgentTool(
@@ -25,56 +63,76 @@ lookup_policy = define_tool(
         description="Look up one internal policy by slug.",
         parameters={
             "type": "object",
-            "properties": {
-                "slug": {"type": "string"},
-            },
+            "properties": {"slug": {"type": "string", "enum": sorted(POLICY_SLUGS)}},
             "required": ["slug"],
             "additionalProperties": False,
         },
+        input_schema=check_lookup_input,
         execute=lambda input, ctx: {
             "slug": input["slug"],
             "summary": "Presets centralize routing, prompts, and caching defaults.",
         },
     )
 )
-```
-
-## 3. एजेंट बनाएँ
-
-```python
-from phaseo_agent import create_agent
 
 agent = create_agent(
     {
         "id": "policy-extractor",
-        "model": "openai/gpt-5.4-nano",
-        "instructions": "Use tools when needed and return concise JSON.",
+        "model": "openai/gpt-6-astra",
+        "instructions": "Use tools when needed and return JSON with summary and recommendation.",
         "tools": [lookup_policy],
-        "parse_output": lambda text: text,
+        "max_steps": 4,
+        "parse_output": json.loads,
+        "output_schema": PolicySummary,
     }
 )
-```
 
-## 4. Gateway-आधारित क्लाइंट के ज़रिए एजेंट चलाएँ
-
-```python
-from phaseo_agent import create_gateway_agent_client
-
-result = agent.run(
-    input="Look up presets and return JSON with keys summary and recommendation.",
-    client=create_gateway_agent_client(),
+# Python क्लाइंट PHASEO_API_KEY खुद नहीं पढ़ता: इसे पास करें।
+client = create_gateway_agent_client(
+    client_options={"api_key": os.environ["PHASEO_API_KEY"]},
+    response_format={
+        "type": "json_schema",
+        "name": "policy_summary",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "summary": {"type": "string"},
+                "recommendation": {"type": "string"},
+            },
+            "required": ["summary", "recommendation"],
+            "additionalProperties": False,
+        },
+    },
+    plugins=[{"id": "response-healing"}],
 )
 
+result = agent.run(input="Look up our presets policy and recommend when to use it.", client=client)
+
+print(result.run.status)
 print(result.output)
 ```
 
-## 5. यह रेसिपी कब उपयुक्त है
+| हिस्सा | क्या करता है |
+| --- | --- |
+| `parameters` | टूल के आर्ग्युमेंट के लिए वह JSON Schema जो मॉडल देखता है |
+| `input_schema` | `execute` चलने से पहले आर्ग्युमेंट जाँचता है; गलत कॉल रन को विफल कर देती है |
+| `response_format` | हर टर्न पर Gateway से यही JSON Schema माँगता है |
+| `parse_output` और `output_schema` | अंतिम टेक्स्ट को पार्स करके `PolicySummary` में सत्यापित करते हैं |
 
-- ऑर्केस्ट्रेशन की ज़िम्मेदारी एक Python वर्कर के पास हो
-- टूल स्थानीय और नियतात्मक हों
-- पहले कोई बड़ी ऑर्केस्ट्रेशन परत बनाए बिना आपको सख्त आउटपुट चाहिए
+</Step>
+<Step title="इसे चलाएँ">
 
-## संबंधित विषय
+```bash
+python extract.py
+```
 
-- [Python Agent SDK](../sdk-reference/python/agent-sdk.mdx)
-- [Python से संरचित JSON भेजें](./sdk-python-presets-and-json.mdx)
+</Step>
+</Steps>
+
+## जाँचें कि यह काम किया
+
+- स्क्रिप्ट `completed` प्रिंट करती है, फिर दोनों फ़ील्ड भरा हुआ `PolicySummary`।
+- **सेटिंग → उपयोग → लॉग्स** में पहले मॉडल टर्न में `{"slug": "presets"}` के साथ `lookup-policy` कॉल दिखती है।
+- (Pydantic) मॉडल से मेल न खाने वाला आउटपुट आधा भरा ऑब्जेक्ट लौटाने के बजाय `Invalid agent output` के साथ विफल होता है।
+
+टूल के बिना एक बार के संरचित आउटपुट के लिए [Python SDK को सीधे](./sdk-python-presets-and-json) कॉल करें। [Python Agent SDK संदर्भ](../sdk-reference/agent/usage) में स्थिति, अनुमोदन और स्ट्रीमिंग की जानकारी है।

@@ -14,7 +14,10 @@
     "icon": "./assets/phaseo-icon.png",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.phaseo.client"
+      "bundleIdentifier": "app.phaseo.client",
+      "infoPlist": {
+        "CADisableMinimumFrameDurationOnPhone": true
+      }
     },
     "android": {
       "package": "app.phaseo.client",
@@ -40,6 +43,13 @@
         }
       ],
       "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Phaseo uses the camera to scan the code that pairs it with Phaseo on your computer.",
+          "recordAudioAndroid": false
+        }
+      ],
       "expo-sqlite",
       [
         "expo-font",

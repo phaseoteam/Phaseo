@@ -21,8 +21,10 @@ CREATE OR REPLACE FUNCTION public.get_public_fastest_models (
     greatest(1, least(coalesce(p_days, 30), 365)) * 24,
     0
   ) performance
-  where performance.median_throughput is not null
-     or performance.median_latency_ms is not null
+  where (performance.median_throughput is not null
+     or performance.median_latency_ms is not null)
+    -- Decision-only models are ranked on the Decisions page.
+    and performance.model_id not in (select decision.model_slug from public.public_decision_only_models() decision)
   order by performance.requests desc
   limit greatest(1, least(coalesce(p_limit, 20), 100));
 $function$;

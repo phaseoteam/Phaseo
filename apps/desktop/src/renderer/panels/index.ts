@@ -1,4 +1,4 @@
-/** The right pane's surfaces, after T3 Code. Each is self-contained and fills the box it is mounted in. */
+/** The right pane's surfaces. Each is self-contained and fills the box it is mounted in. */
 export { DiffSurface } from "./DiffSurface";
 export { GitActions } from "./GitActions";
 export { FileBrowserSurface } from "./FileBrowserSurface";

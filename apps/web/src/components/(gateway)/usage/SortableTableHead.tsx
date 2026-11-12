@@ -1,5 +1,3 @@
-"use client";
-
 import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { TableHead } from "@/components/ui/table";
 import { cn } from "@/lib/utils";

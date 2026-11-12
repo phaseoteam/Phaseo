@@ -46,6 +46,16 @@ export function sanitizeErrorMessage(value: string): string {
 	return looksLikeStackTrace(value) ? "Internal error" : value;
 }
 
+/**
+ * The text before the first JavaScript stack frame (a line starting "at fn (file:1:2)"),
+ * so an error's stack never reaches a client, a webhook or the database. Messages
+ * without stack frames are returned unchanged.
+ */
+export function withoutStackFrames(value: string): string {
+	const frame = value.search(/\n\s*at\s+\S/);
+	return frame === -1 ? value : value.slice(0, frame).trimEnd();
+}
+
 export function safeJsonStringify(value: unknown): string {
 	return JSON.stringify(sanitizeJsonValue(value), null, 2);
 }

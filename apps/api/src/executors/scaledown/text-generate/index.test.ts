@@ -47,8 +47,22 @@ describe("ScaleDown Summarize and Extract", () => {
 		expect(body.max_tokens ?? body.max_completion_tokens).toBe(150);
 		expect(body.temperature).toBeUndefined();
 	});
+	it("replays the one complete result as a stream when the pipeline streams", async () => {
+		const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(completion({ summary: "Acme billed $500." }));
+		const result = await executor(argsFor("summarize-1", { stream: true }));
+		const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+		expect(body.stream).toBe(false);
+		expect(body.stream_options).toBeUndefined();
+		expect(result.kind).toBe("stream");
+		if (result.kind !== "stream") return;
+		const text = await new Response(result.stream).text();
+		expect(text).toContain("data: ");
+		expect(text).toContain("Acme billed $500.");
+		expect(text.trim().endsWith("data: [DONE]")).toBe(true);
+		const finalized = await result.usageFinalizer();
+		expect(finalized?.usage).toBeTruthy();
+	});
 	it.each([
-		["summarize-1", { stream: true }],
 		["summarize-1", { tools: [{ type: "function", function: { name: "f", parameters: {} } }] }],
 		["extract-1", {}],
 		["extract-1", { responseFormat: { type: "json_object" } }],

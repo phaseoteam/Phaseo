@@ -1,10 +1,10 @@
 ---
 title: "PydanticAI"
 icon: "braces"
-description: "使用 PydanticAI 和 Phaseo 构建类型化 Python Agent。"
+description: "使用 PydanticAI 和 Phaseo 构建类型化的 Python 智能体。"
 ---
 
-如果需要类型化输出、验证和简洁的 OpenAI 兼容模型配置，可使用 PydanticAI 构建 Python Agent。
+创建一个 `OpenAIChatModel`，并让其 `OpenAIProvider` 指向 `https://api.phaseo.app/v1`，PydanticAI 智能体就会在 Phaseo 模型上运行。
 
 ## 安装
 
@@ -12,7 +12,7 @@ description: "使用 PydanticAI 和 Phaseo 构建类型化 Python Agent。"
 pip install "pydantic-ai-slim[openai]"
 ```
 
-## 配置模型
+## 将 PydanticAI 指向 Phaseo
 
 ```python
 import os
@@ -21,7 +21,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 model = OpenAIChatModel(
-    "openai/gpt-5-nano",
+    "openai/gpt-6-astra",
     provider=OpenAIProvider(
         api_key=os.environ["PHASEO_API_KEY"],
         base_url="https://api.phaseo.app/v1",
@@ -33,14 +33,9 @@ result = agent.run_sync("Reply with only: ok")
 print(result.output)
 ```
 
-## 说明
+输出 `ok` 即说明设置成功。
 
-- PydanticAI 的 OpenAI 兼容路径使用 OpenAI 风格的聊天行为。
-- 对于 `phaseo:apply_patch` 等 Responses 专属功能，请直接调用 Phaseo Responses。
-- 结构化输出模式应足够小，以适应所选模型的上下文窗口。
+## 已知限制
 
-## 相关内容
-
-- [结构化输出](../structured-outputs.mdx)
-- [OpenAI SDK](./openai-sdk.mdx)
-- [模型](../../api-reference/endpoint/models.mdx)
+- 这种方式使用 OpenAI 风格的 Chat Completions。对于 `phaseo:apply_patch` 这类仅在 Responses 上可用的功能，请直接调用 Phaseo 的 Responses 端点。
+- 让[结构化输出](../structured-outputs.mdx)的 schema 足够小，以适应模型的上下文窗口。限制请在 [Models](../../api-reference/endpoint/models.mdx) 中查看。

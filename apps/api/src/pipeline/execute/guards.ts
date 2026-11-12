@@ -11,6 +11,7 @@ import type { ProviderCandidate } from "../before/types";
 import { err, json } from "./http";
 import { everyAttemptRateLimited, sharedRequestRejectionStatus } from "./attempt-outcomes";
 import { captureTimingSnapshot } from "./utils";
+import { withoutStackFrames } from "@/lib/safe-json";
 
 export type ExecuteGuardOk<T> = { ok: true; value: T };
 export type ExecuteGuardErr = { ok: false; response: Response };
@@ -28,6 +29,22 @@ export type ProviderFailureDiagnostics = {
     hint: string;
     provider: string | null;
 };
+
+const ATTEMPT_TEXT_FIELDS = ["upstream_error_message", "upstream_error_description", "message"] as const;
+
+function withoutAttemptStackFrames(entry: Record<string, unknown>): Record<string, unknown> {
+    if (!entry || typeof entry !== "object") return entry;
+    let cleaned: Record<string, unknown> | null = null;
+    for (const field of ATTEMPT_TEXT_FIELDS) {
+        const value = entry[field];
+        if (typeof value !== "string") continue;
+        const kept = withoutStackFrames(value);
+        if (kept === value) continue;
+        cleaned ??= { ...entry };
+        cleaned[field] = kept || null;
+    }
+    return cleaned ?? entry;
+}
 
 function normalizeText(value: unknown, max = 180): string | null {
     if (typeof value !== "string") return null;
@@ -425,8 +442,10 @@ export async function guardAllFailed(
         timing.timer.between("adapter_roundtrip_ms", "adapter_start");
     }
 
+    // Everything below reaches the client (description, failure_sample) and async job
+    // webhooks, so error text loses any JavaScript stack frames first.
     const attemptErrors: Array<Record<string, unknown>> = Array.isArray((ctx as any)?.attemptErrors)
-        ? ((ctx as any).attemptErrors as Array<Record<string, unknown>>)
+        ? ((ctx as any).attemptErrors as Array<Record<string, unknown>>).map(withoutAttemptStackFrames)
         : [];
     const failedProviders = Array.from(
         new Set(

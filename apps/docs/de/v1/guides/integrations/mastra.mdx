@@ -1,10 +1,10 @@
 ---
 title: "Mastra"
 icon: "workflow"
-description: "Verwende Phaseo-Modelle in Mastra-Agents und -Abläufen."
+description: "Nutze Phaseo-Modelle in Mastra-Agents und -Workflows."
 ---
 
-Mastra arbeitet mit AI-SDK-Providern. Am einfachsten erstellst du daher einen OpenAI-kompatiblen Provider, der auf Phaseo verweist.
+Erstelle einen OpenAI-Provider des AI SDK mit deinem Phaseo-Schlüssel und `baseURL: "https://api.phaseo.app/v1"` und übergib seine Modelle an Mastra-Agents und -Workflows.
 
 ## Installieren
 
@@ -12,7 +12,7 @@ Mastra arbeitet mit AI-SDK-Providern. Am einfachsten erstellst du daher einen Op
 npm install @mastra/core @ai-sdk/openai ai
 ```
 
-## Einen Agenten konfigurieren
+## Einen Mastra-Agent auf Phaseo richten
 
 ```ts
 import { Agent } from "@mastra/core/agent";
@@ -27,18 +27,13 @@ const phaseo = createOpenAI({
 export const agent = new Agent({
 	name: "support-agent",
 	instructions: "Answer in two short paragraphs.",
-	model: phaseo("openai/gpt-5-nano"),
+	model: phaseo("openai/gpt-6-astra"),
 });
 ```
 
-## Hinweise
+Verwende nur die Base URL, ohne `/chat/completions` oder `/responses`. Führe den Agent einmal mit einem kurzen Prompt aus und prüfe, ob die Anfrage unter **Einstellungen → Nutzung → Protokolle** erscheint.
 
-- Verwende nur die Basis-URL, nicht `/chat/completions` oder `/responses`.
-- Das Verhalten von Mastra-Agents hängt vom AI-SDK-Providerpfad ab. Teste Tools und Streaming vor dem Produktivstart.
-- Verwende Phaseo-Routing-Steuerungen pro Anfrage oder über Presets, wenn du Provider-Präferenzen festlegen möchtest.
+## Bekannte Einschränkungen
 
-## Weiterführende Themen
-
-- [AI SDK](./ai-sdk.mdx)
-- [Presets](../presets.mdx)
-- [Tool-Aufrufe](../tool-calling.mdx)
+- Wie sich Mastra-Agents verhalten, hängt vom AI-SDK-Provider ab. Teste [Tool-Aufrufe](../tool-calling.mdx) und Streaming vor dem Produktionseinsatz.
+- Um bestimmte Anbieter zu bevorzugen, setze die Routing-Steuerungen von Phaseo in der Anfrage oder in einem [Preset](../presets.mdx).

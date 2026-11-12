@@ -1,31 +1,38 @@
 ---
 icon: "braces"
 title: "المخرجات المنظّمة (AI SDK)"
-description: "أنشئ كائنات JSON تم التحقق منها وفق مخطط باستخدام Phaseo وVercel AI SDK."
+sidebarTitle: "المخرجات المنظّمة"
+description: "أنشئ كائنات JSON يُتحقَّق منها وفق مخطط باستخدام Phaseo وVercel AI SDK."
 ---
 
-استخدم `generateObject` للحصول على مخرجات محددة الأنواع.
+مرّر `output: Output.object({ schema })` إلى `generateText` لتحصل على كائن محدد النوع يطابق مخططك. يرسل AI SDK المخطط بوصفه صيغة استجابة JSON Schema ويتحقق من النتيجة.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 
-const { object } = await generateObject({
-  model: phaseo("openai/gpt-5-nano"),
-  schema: z.object({
-    title: z.string(),
-    priority: z.enum(["low", "medium", "high"]),
-    actions: z.array(z.string()),
+const { output } = await generateText({
+  model: phaseo("openai/gpt-6-astra"),
+  output: Output.object({
+    schema: z.object({
+      title: z.string(),
+      priority: z.enum(["low", "medium", "high"]),
+      actions: z.array(z.string()),
+    }),
   }),
   prompt: "Create a short incident follow-up plan.",
 });
 
-console.log(object);
+console.log(output);
 ```
 
-## ملاحظات
+لا تزال `generateObject` تعمل في AI SDK 7 مع `schema` نفسه وتعيد `object`، لكنها مُهمَلة لصالح `generateText` مع `output`.
 
-- فضّل التعدادات الصريحة والحقول المطلوبة في المخططات.
-- اجعل المطالبات متوافقة مع بنية المخطط.
-- عالج أخطاء التحليل والتحقق في الشيفرة المستدعية.
+## التعامل مع المخرجات غير الصالحة
+
+ترمي قراءة `output` الخطأ `NoOutputGeneratedError` عندما لا يعيد النموذج كائنًا صالحًا للاستخدام، مثلًا عندما تنتهي الخطوة الأخيرة باستدعاء أداة. التقطه في الموضع الذي تستدعي فيه النموذج.
+
+- استخدم قيم enum صريحة وحقولًا مطلوبة في المخطط.
+- أبقِ الموجّه متسقًا مع بنية المخطط.
+- يختلف دعم النماذج لمخرجات JSON Schema؛ تحقّق من المعاملات المدعومة للنموذج في `/v1/models`.

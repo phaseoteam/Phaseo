@@ -1,93 +1,29 @@
 ---
-title: "Mettre en cache les réponses avec des préréglages"
-sidebarTitle: "Mise en cache avec préréglages"
+title: "Utiliser la mise en cache des réponses avec des préréglages"
+noindex: true
 icon: "database"
-description: "Associez les paramètres par défaut d’un préréglage à un cache déterministe pour accélérer les requêtes répétées de manière prévisible."
+description: "Ce que fait aujourd’hui le réglage response_caching d’un préréglage, et comment réduire le coût des prompts répétés en attendant la mise en cache des réponses."
 ---
 
-Utilisez cette recette si vous envoyez souvent les mêmes requêtes avec des prompts stables et souhaitez réduire la latence et le coût des inférences répétées.
+<Warning>
+La mise en cache des réponses n’est pas encore disponible. Un préréglage accepte `response_caching.enabled` et `response_caching.ttl_seconds`, mais le Gateway ne stocke ni ne rejoue aucune réponse aujourd’hui : chaque requête est donc envoyée à un fournisseur et facturée normalement.
+</Warning>
 
-## 1. Commencer par un préréglage plutôt que par des requêtes ponctuelles
+Pour réduire dès maintenant le coût et la latence des requêtes répétées, utilisez la [mise en cache des prompts](../guides/prompt-caching) : les fournisseurs réutilisent un préfixe de prompt long et stable et facturent la partie en cache à un tarif réduit. Phaseo garde une conversation sur le fournisseur qui détient son cache ; voir [Affinité de fournisseur](../guides/prompt-caching#provider-affinity).
 
-Créez un préréglage pour stabiliser les éléments suivants :
+## Préparer un préréglage pour la mise en cache
 
-- modèle cible
-- préférences de fournisseur
-- température et autres paramètres de génération
-- paramètres de raisonnement
-- prompt système
+Ces habitudes aident la mise en cache des prompts aujourd’hui et compteront pour la mise en cache des réponses quand elle sera disponible, car les deux dépendent de requêtes qui restent identiques :
 
-La requête reste ainsi stable et la clé de cache aussi.
+| À garder stable | Pourquoi |
+| --- | --- |
+| La formulation du prompt système | Tout changement crée une nouvelle entrée de cache |
+| Le modèle, les options de fournisseur et les réglages de raisonnement | Ils déterminent si deux requêtes sont identiques |
+| `temperature` et les autres paramètres | Idem |
+| Le format de réponse, les outils et le choix d’outil | Idem |
 
-## 2. Activer le cache de réponses au niveau du préréglage
+Placez-les dans un seul [préréglage](../guides/presets) pour que chaque appelant envoie la même requête, et donnez aux appelants exploratoires ou à température élevée leur propre préréglage pour qu’ils ne se mélangent pas au trafic qui peut être mis en cache.
 
-Configurez :
+## Quand ne pas mettre en cache
 
-- `response_caching.enabled = true`
-- une valeur raisonnable de `ttl_seconds`
-
-Valeurs par défaut conseillées :
-
-- TTL court pour les prompts factuels qui changent rapidement
-- TTL plus long pour les sorties structurées stables
-
-## 3. Garder la requête déterministe
-
-Le cache de réponses est plus efficace lorsque les requêtes ne changent pas inutilement.
-
-Évitez de modifier :
-
-- la formulation du prompt système
-- la température
-- les remplacements de fournisseur
-- la configuration du raisonnement
-- les listes d’outils
-
-Si un appelant modifie constamment ces valeurs, attribuez-lui un autre préréglage au lieu d’empêcher les autres de réutiliser le cache.
-
-## 4. Vérifier le comportement du cache dans les détails de la requête
-
-Les détails des requêtes qui passent par le cache doivent afficher des informations à ce sujet.
-
-Vérifiez :
-
-- les succès ou échecs du cache
-- le comportement du TTL
-- le contexte du fournisseur lorsqu’une réponse en cache est renvoyée
-
-## 5. Associer le cache et le routage de manière réfléchie
-
-Modèles conseillés :
-
-1. utilisez un préréglage avec cache activé pour les sorties structurées déterministes
-2. utilisez un second préréglage sans cache pour les requêtes exploratoires ou à température plus élevée
-
-Vous éviterez ainsi de mélanger des flux incompatibles et garderez un cache pertinent.
-
-## 6. Rechercher la cause des échecs avant d’allonger le TTL
-
-Si vous vous attendez à des succès mais obtenez toujours des échecs, comparez :
-
-- le texte du prompt
-- l’ID du modèle
-- les options du fournisseur
-- le format de réponse
-- les outils et leur sélection
-- le slug et la configuration du préréglage
-
-Un TTL plus long ne corrigera pas une différence d’empreinte.
-
-## 7. Quand éviter le cache
-
-Ne l’activez pas par défaut pour :
-
-- les prompts qui dépendent d’informations externes en temps réel
-- les réponses propres à un utilisateur dont le contexte change rapidement
-- les requêtes avec des sorties d’outils variables
-- les générations très stochastiques pour lesquelles une reproduction exacte n’est pas souhaitable
-
-## Articles associés
-
-- [Déployer des préréglages et diagnostiquer le routage](./preset-rollout-and-routing-debug.mdx)
-- [Exemples](../guides/examples.mdx)
-- [SDK TypeScript](../sdk-reference/typescript/overview.mdx)
+Ne prévoyez pas de mettre en cache des prompts qui dépendent d’un état externe en direct, des réponses propres à un utilisateur dont le contexte change vite, des requêtes avec une sortie d’outil volatile, ou des générations pour lesquelles vous voulez une réponse nouvelle à chaque fois.

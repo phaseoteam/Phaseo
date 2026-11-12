@@ -70,6 +70,8 @@ export function classifyRealtimeEnd(internalReason: string): RealtimeEnd {
 	return { reason: "gateway_error", initiatedBy: "gateway" };
 }
 
+// Every meter a realtime call can be billed on, so session.ended accounts for the whole
+// cost. Per-minute meters are reported as their audio_seconds equivalent.
 const USAGE_METERS = [
 	"input_text_tokens",
 	"input_audio_tokens",
@@ -80,7 +82,16 @@ const USAGE_METERS = [
 	"input_image_tokens",
 	"cached_read_image_tokens",
 	"input_video_tokens",
+	"cached_read_video_tokens",
+	"cached_write_text_tokens",
+	"cached_write_text_tokens_5m",
+	"cached_write_text_tokens_1h",
+	"cached_write_text_tokens_30m",
+	"cached_write_text_tokens_12h",
+	"cached_write_audio_tokens",
+	"cached_write_image_tokens",
 	"audio_seconds",
+	"native_web_search_requests",
 ] as const;
 
 /** The billed meters from normalized realtime usage, without relay bookkeeping fields. */

@@ -6,6 +6,8 @@ import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { encryptNotificationTarget, isNotificationEventKind, isSpendReportCadence, isSignedNotificationDestinationType, issueNotificationSigningSecret, NOTIFICATION_DESTINATION_TYPES, parseIanaTimeZone, targetPreview, validateNotificationTarget, type NotificationDestinationType } from "@/lib/notification-destinations";
 
 const EMPTY_TIER_SUMMARY = { lastMonthCents: 0, mtdCents: 0, teamTier: "basic" as const };
+const AUTO_TOP_UP_MIN_NANOS = 5_000_000_000;
+const AUTO_TOP_UP_MAX_NANOS = 1_000_000_000_000_000;
 
 export function parseLowBalanceThresholdNanos(value: unknown): number | null {
 	const thresholdUsd = Number(value);
@@ -214,7 +216,9 @@ creditsRouter.put("/auto-top-up", async (c) => {
 	const mfaEnabled = context.user.factors.some((factor) => factor.factor_type === "totp" && factor.status === "verified");
 	const topUpAmount = Number(body.topUpAmount ?? 0);
 	const balanceThreshold = Number(body.balanceThreshold ?? 0);
-	if (enabled && (!Number.isSafeInteger(topUpAmount) || topUpAmount < 1_000_000_000)) return c.json({ error: "minimum_top_up" }, 400, PRIVATE_NO_STORE_HEADERS);
+	// Same range the Stripe webhook credits ($5 to $1,000,000); wallets_auto_top_up_amount_check enforces it too.
+	if (enabled && (!Number.isSafeInteger(topUpAmount) || topUpAmount < AUTO_TOP_UP_MIN_NANOS)) return c.json({ error: "minimum_top_up" }, 400, PRIVATE_NO_STORE_HEADERS);
+	if (enabled && topUpAmount > AUTO_TOP_UP_MAX_NANOS) return c.json({ error: "maximum_top_up" }, 400, PRIVATE_NO_STORE_HEADERS);
 	if (enabled && (!Number.isSafeInteger(balanceThreshold) || balanceThreshold < 0)) return c.json({ error: "invalid_threshold" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const result = await context.client.rpc("update_workspace_auto_top_up", {
 		p_workspace_id: workspaceId,

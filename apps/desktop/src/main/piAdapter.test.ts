@@ -17,7 +17,7 @@ function fixture(handle: (packet: PiRecord, send: (value: PiRecord) => void) => 
 }
 const task: Task = { id: "task", title: "Task", harness: "pi", model: "default", mode: "chat", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
 describe("Pi native harness", () => {
-	it("maps extension dialogs like T3 Code: choices, empty text and editor prefill", () => {
+	it("maps extension dialogs to questions: choices, empty text and editor prefill", () => {
 		expect(piQuestion("s", "select", "Pick", { options: ["A", "", 3] })).toEqual({ id: "s", header: "Pick", question: "Pick", options: [{ label: "A", value: "A" }, { label: "Empty value", value: "" }] });
 		expect(piQuestion("i", "input", "Name", { placeholder: "Your name" })).toEqual({ id: "i", header: "Name", question: "Your name", options: [{ label: "Submit empty value", description: "Send empty text to the extension.", value: "" }], isOther: true, required: false });
 		expect(piQuestion("e", "editor", "Edit", { message: "Edit the commit message", prefill: "feat: x\n" })).toEqual({ id: "e", header: "Edit", question: "Edit the commit message", options: [], isOther: true, required: false, initialAnswer: "feat: x\n", input: { kind: "multiline" } });
@@ -50,6 +50,11 @@ describe("Pi native harness", () => {
 		expect(packets.map(packet => packet.type).filter((type, index, all) => all.indexOf(type) === index)).toEqual(expected);
 		expect(packets.find(packet => packet.type === "set_model")).toMatchObject({ provider: "native", modelId: "model" });
 		expect(packets.find(packet => packet.type === "set_thinking_level")?.level).toBe(level);
+	});
+	it.each([[true, true], [undefined, false]] as const)("ignores the checkout's project-local files only for someone else's checkout (%s)", async (untrustedCheckout, ignored) => {
+		fixture((packet, output) => { output({ type: "response", id: packet.id, success: true, data: packet.type === "get_state" ? { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } : packet.type === "prompt" ? { disposition: "handled" } : undefined }); });
+		await new PiAdapter().run({ ...task, ...(untrustedCheckout ? { untrustedCheckout } : {}) }, "/project", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		expect((native.spawn.mock.lastCall?.[1] as string[]).includes("--no-approve")).toBe(ignored);
 	});
 	it("does not set a thinking level for Pi's default model", async () => {
 		const packets: PiRecord[] = [];

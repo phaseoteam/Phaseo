@@ -5,7 +5,7 @@ import { normalizeGatewayStatusValue, type CanonicalGatewayStatus } from "./prov
 export function getProviderListingCategory(provider: ProviderInfo, status: CanonicalGatewayStatus): "routable" | "preview" | "inactive" | "external" {
     // Catalogue identity remains external even when an offer has a preview lifecycle.
     if (normalizeGatewayStatusValue(provider.status) === "external" || status === "external") return "external";
-    if (["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"].includes(status)) return "routable";
+    if (["active", "deranked"].includes(status)) return "routable";
     if (["coming_soon", "internal_testing"].includes(status)) return "preview";
     return "inactive";
 }

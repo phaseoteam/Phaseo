@@ -71,7 +71,7 @@ export class CodexAdapter implements AgentAdapter {
 				const request = params as { threadId: string; serverName: string; message: string; mode: string; requestedSchema?: unknown; url?: string; _meta?: unknown };
 				if (request.threadId !== this.threadId) throw new Error("MCP request belongs to another task.");
 				const declined = task.mode === "chat" && request.serverName !== (orchestration && nativeMcpName(orchestration));
-				// Tool-call approvals sent as elicitations go on the approval card, as in T3 Code.
+				// Tool-call approvals sent as elicitations go on the approval card.
 				const approval = declined ? undefined : mcpApprovalRequest(request);
 				if (approval) {
 					const decision = await callbacks.onApproval(approval.title, approval.description, approval.always ? { always: approval.always } : undefined);
@@ -92,7 +92,8 @@ export class CodexAdapter implements AgentAdapter {
 			if (method === "item/commandExecution/requestApproval" || method === "item/fileChange/requestApproval") {
 				const input = params as { threadId?: string; command?: string; reason?: string };
 				if (input.threadId !== this.threadId) throw new Error("Approval belongs to another task.");
-				return { decision: await callbacks.onApproval(method, input.command ?? input.reason ?? "Allow this agent action?") };
+				// The title reads "Allow <title>?" in the chat, so it names the action rather than the protocol method.
+				return { decision: await callbacks.onApproval(method === "item/fileChange/requestApproval" ? "file changes" : "command", input.command ?? input.reason ?? "Allow this agent action?") };
 			}
 			throw new Error(`Unsupported Codex request: ${method}`);
 		};

@@ -3,7 +3,7 @@
 // Why: Keeps pre-execution logic centralized and consistent.
 // How: Implements guard functions that return ok/response tuples.
 
-import { z } from "zod";
+import * as z from "zod";
 import type { Endpoint, RequestBetaOptions, RequestLabel, RequestMeta } from "@core/types";
 import { getEdgeMeta } from "@core/edge";
 import { getBindings } from "@/runtime/env";
@@ -29,12 +29,12 @@ import { detectClientAttribution } from "./clientAttribution";
 import { noteSpendLimitReached } from "../notifications/spend-limit-alerts";
 import { hasConfiguredKeyLimits } from "./context.shared";
 import { parsePresetReference } from "./presetReference";
-import { enforcedSpendLimit, shadowSpendLimitOnce, type SpendLimitSlot } from "@core/spend-limits";
+import { enforcedSpendLimit, shadowSpendLimitOnce, startSpendLimitFootprint, type SpendLimitSlot } from "@core/spend-limits";
 export { parseW3cTraceContext } from "@observability/trace-context";
 
 const MIN_CREDIT_AMOUNT = 1.0;
 const TRUTHY_VALUES = new Set(["1", "true", "yes"]);
-const FORM_JSON_FIELDS = new Set(["provider", "debug", "include", "timestamp_granularities", "chunking_strategy", "languages", "keywords", "context_bias", "input_reference", "models"]);
+const FORM_JSON_FIELDS = new Set(["provider", "config", "debug", "include", "timestamp_granularities", "chunking_strategy", "languages", "keywords", "context_bias", "input_reference", "models"]);
 const FORM_FORCE_ARRAY_FIELDS = new Set(["include", "timestamp_granularities", "languages", "keywords", "context_bias", "known_speaker_names", "known_speaker_references", "models"]);
 const DEFAULT_REQUEST_BODY_LIMIT_BYTES = 16 * 1024 * 1024;
 const MULTIPART_REQUEST_BODY_LIMIT_BYTES = 32 * 1024 * 1024;
@@ -57,6 +57,30 @@ function allowsNoCreditForFreeRequest(args: { model: string; context: any; provi
     if (!pricedCards.length) return false;
 
     return pricedCards.every((card) => isFreePriceCard(card));
+}
+
+/**
+ * The wallet credit check every paid request passes: internal callers and invoice-billed
+ * workspaces skip it, a request whose every route is free needs no credit, and anything else
+ * needs the context's credit gate to pass. Server tools apply it to each model they call, so
+ * a free main model cannot unlock paid model calls from an empty wallet.
+ */
+export function passesWalletCreditCheck(args: { model: string; context: any; providers: any[]; internal?: boolean }): boolean {
+    return walletCanPay(args) || allowsNoCreditForFreeRequest(args);
+}
+
+/**
+ * Whether the workspace can pay for paid work at all: internal callers, invoice billing, or a
+ * passing credit gate. Paid managed tools (web search and fetch on Phaseo's keys) need this
+ * even when the model is free.
+ */
+export function walletCanPay(args: { context: { credit?: { ok?: boolean } | null; teamSettings?: { billingMode?: unknown } | null } | null | undefined; internal?: boolean }): boolean {
+    if (args.internal) return true;
+    if (args.context?.credit?.ok) return true;
+    const billingMode = String(args.context?.teamSettings?.billingMode ?? "wallet")
+        .trim()
+        .toLowerCase();
+    return billingMode === "invoice";
 }
 
 function classifyProviderCandidateFailure(diagnostics: ProviderCandidateBuildDiagnostics): {
@@ -122,6 +146,8 @@ function describeKeyLimitExceeded(args: {
 	currentValue?: number | null;
 	limitValue?: number | null;
 	departmentName?: string | null;
+	guardrailName?: string | null;
+	guardrailCounting?: "shared" | "each_key" | null;
 }): string {
 	if (args.limitMetric === "soft_blocked") {
 		return "This API key is currently soft-blocked and cannot send requests.";
@@ -139,6 +165,18 @@ function describeKeyLimitExceeded(args: {
 					: "configured";
 	const department = args.reason?.startsWith("department_");
 	const departmentName = args.departmentName?.trim();
+	if (args.reason?.startsWith("guardrail_")) {
+		// "The Contractors guardrail's daily spend limit has been reached ($11.00 of $10.00)."
+		const name = args.guardrailName?.trim();
+		const owner = name ? `the ${name} guardrail` : "a spend guardrail";
+		const usage = typeof args.currentValue === "number" && Number.isFinite(args.currentValue) &&
+			typeof args.limitValue === "number" && Number.isFinite(args.limitValue) && args.limitValue > 0
+			? ` (${formatUsdFromNanos(args.currentValue)} of ${formatUsdFromNanos(args.limitValue)})`
+			: "";
+		return args.guardrailCounting === "each_key"
+			? `This API key has reached its ${windowLabel} spend limit from ${owner}${usage}.`
+			: `${owner.charAt(0).toUpperCase()}${owner.slice(1)}'s ${windowLabel} spend limit has been reached${usage}.`;
+	}
 	// "The Engineering department has reached its daily budget ($11.00 of $10.00)."
 	const subject = department
 		? departmentName ? `The ${departmentName} department` : "This API key's department"
@@ -183,6 +221,7 @@ function keyLimitExceededResponse(gate: GateCheck, args: { workspaceId: string; 
 		current_value: gate.currentValue ?? null,
 		limit_value: gate.limitValue ?? null,
 		...(gate.departmentId ? { department_id: gate.departmentId, department_name: gate.departmentName ?? null } : {}),
+		...(gate.guardrailId ? { guardrail_id: gate.guardrailId, guardrail_name: gate.guardrailName ?? null } : {}),
 		buckets: gate.buckets ?? null,
 		budgets: gate.budgets ?? null,
 		description: describeKeyLimitExceeded({
@@ -192,6 +231,8 @@ function keyLimitExceededResponse(gate: GateCheck, args: { workspaceId: string; 
 			currentValue: gate.currentValue ?? null,
 			limitValue: gate.limitValue ?? null,
 			departmentName: gate.departmentName ?? null,
+			guardrailName: gate.guardrailName ?? null,
+			guardrailCounting: gate.guardrailCounting ?? null,
 		}),
 		request_id: args.requestId,
 		workspace_id: args.workspaceId,
@@ -377,6 +418,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
     internal?: boolean;
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
+    oauthAccessToken?: boolean;
     oauthScopes?: string[];
     oauthResource?: string | null;
     scopes?: string[];
@@ -387,8 +429,8 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
         allowOAuthJwt: options.allowOAuthJwt,
     });
     if (!auth.ok) {
-        const reason = (auth as AuthFailure).reason;
-        return { ok: false, response: err("unauthorised", { reason, request_id: requestId }) };
+        const { reason, message } = auth as AuthFailure;
+        return { ok: false, response: err("unauthorised", { reason, ...(message ? { message } : {}), request_id: requestId }) };
     }
     return {
         ok: true,
@@ -402,6 +444,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
             internal: auth.internal,
             authMethod: auth.authMethod ?? "api_key",
             oauthClientId: auth.oauthClientId ?? null,
+            oauthAccessToken: auth.oauthAccessToken === true,
             oauthScopes: auth.oauthScopes ?? [],
             oauthResource: auth.oauthResource ?? null,
             scopes: auth.scopes ?? [],
@@ -426,8 +469,8 @@ export async function guardManagementAuth(req: Request, options: GuardAuthOption
     const requestId = requestIdFor(req);
     const auth = await authenticateManagement(req, { useKvCache: options.useKvCache });
     if (!auth.ok) {
-        const reason = (auth as AuthFailure).reason;
-        return { ok: false, response: err("unauthorised", { reason, request_id: requestId }) };
+        const { reason, message } = auth as AuthFailure;
+        return { ok: false, response: err("unauthorised", { reason, ...(message ? { message } : {}), request_id: requestId }) };
     }
     return {
         ok: true,
@@ -537,6 +580,13 @@ export async function guardContext(args: {
     onCreditCacheWrite?: (write: Promise<void>) => void;
 }): Promise<GuardResult<{ context: any; providers: any[]; resolvedModel?: string | null; candidateDiagnostics: ProviderCandidateBuildDiagnostics }>> {
     try {
+        // Enforce mode: read whether any spend limit can apply to this key while the context loads.
+        const spendLimitFootprint = startSpendLimitFootprint({
+            workspaceId: args.workspaceId,
+            keyId: args.apiKeyId,
+            internal: args.internal,
+            slot: args.spendLimit,
+        });
         const context = await fetchGatewayContext({
             workspaceId: args.workspaceId,
             model: args.model,
@@ -565,15 +615,22 @@ export async function guardContext(args: {
         }
 
         // Enforce mode only: the spend-limit coordinator (key caps, department and workspace
-        // budgets), decided once per request however many candidate models are checked.
+        // budgets), decided once per request however many candidate models are checked. Skipped
+        // when this context and the footprint both show nothing it could enforce.
         const enforced = enforcedSpendLimit({
             workspaceId: args.workspaceId,
             keyId: args.apiKeyId,
             requestId: args.requestId,
             internal: args.internal,
             slot: args.spendLimit,
+            footprint: spendLimitFootprint,
+            keyLimit: context.keyLimit,
         });
+        const spendLimitStartedAt = performance.now();
         const decision = enforced ? await enforced : null;
+        if (enforced && context.contextTelemetry) {
+            context.contextTelemetry.spendLimitMs = Math.round((performance.now() - spendLimitStartedAt) * 1000) / 1000;
+        }
         if (decision?.outcome === "denied") {
             return { ok: false, response: keyLimitExceededResponse(decision.keyLimit, args) };
         }
@@ -624,22 +681,7 @@ export async function guardContext(args: {
             };
         }
 
-        const billingMode = String(context.teamSettings?.billingMode ?? "wallet")
-            .trim()
-            .toLowerCase();
-        const bypassWalletCreditCheck = billingMode === "invoice";
-        const allowFreeWithoutCredits = allowsNoCreditForFreeRequest({
-            model: args.model,
-            context,
-            providers,
-        });
-
-        if (
-            !args.internal &&
-            !context.credit.ok &&
-            !bypassWalletCreditCheck &&
-            !allowFreeWithoutCredits
-        ) {
+        if (!passesWalletCreditCheck({ model: args.model, context, providers, internal: args.internal })) {
             return {
                 ok: false,
                 response: err("insufficient_funds", {
@@ -671,6 +713,17 @@ export async function guardContext(args: {
                 response: err("not_found", {
                     reason: "preset_version_not_found",
                     description: `Preset "${presetReference.base}" has no published version or label "${presetReference.ref}", or this key cannot use it`,
+                    request_id: args.requestId,
+                    workspace_id: args.workspaceId,
+                }),
+            };
+        }
+        if (presetReference && message.includes("preset_ambiguous")) {
+            return {
+                ok: false,
+                response: err("validation_error", {
+                    reason: "preset_ambiguous",
+                    description: `Preset "${args.model}" matches more than one preset whose slugs differ only in case. Rename one of them in the dashboard so their slugs differ.`,
                     request_id: args.requestId,
                     workspace_id: args.workspaceId,
                 }),
@@ -720,7 +773,7 @@ export function makeMeta(input: {
     providerCapabilitiesBeta?: boolean;
     beta?: RequestBetaOptions;
     beforeContextMs?: number | null;
-    beforeContextCacheStatus?: "hit" | "miss" | "bypass" | "credit_refresh" | null;
+    beforeContextCacheStatus?: "hit" | "miss" | "bypass" | "credit_refresh" | "model_miss" | null;
     beforeContextKeyVersionMs?: number | null;
     beforeContextCacheReadMs?: number | null;
     beforeContextCreditRefreshMs?: number | null;

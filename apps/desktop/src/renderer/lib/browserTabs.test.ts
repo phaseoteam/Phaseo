@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrowserState } from "../../shared/browser";
-import { adoptBrowserTab, browserTabLabel, browserTabLimit, browserTabs, browserViewportToRestore, openBrowserTab, updateBrowserTab } from "./browserTabs";
+import { adoptBrowserTab, browserTabLabel, browserTabLimit, browserTabProfile, browserTabs, browserViewportToRestore, openBrowserTab, updateBrowserTab } from "./browserTabs";
 
 const fill = { mode: "fill" } as const;
 const phone = { mode: "device", width: 390, height: 844, preset: "iphone-12-pro" } as const;
@@ -72,5 +72,19 @@ describe("tabs an agent opens", () => {
 		expect(() => adoptBrowserTab(empty, { context: "chat", id: "chat:1", url: "file:///C:/x" })).toThrow();
 		const full = { active: "chat", tabs: Array.from({ length: browserTabLimit }, (_, index) => ({ id: index ? `chat:${index}` : "chat", title: "", url: "", viewport: fill })) };
 		expect(() => adoptBrowserTab(full, { context: "chat", id: "chat:new", url: "https://a.test/" })).toThrow("Close a browser tab");
+	});
+});
+
+describe("browser tab profiles", () => {
+	it("keeps a saved profile; tabs saved before profiles, and invalid ones, use the built-in Default", () => {
+		const group = browserTabs({ tabs: [{ id: "chat", url: "", profile: "work" }, { id: "chat:old", url: "" }, { id: "chat:bad", url: "", profile: "Not ok" }, { id: "chat:default", url: "", profile: "default" }] }, "chat");
+		expect(group.tabs.map(tab => tab.profile)).toEqual(["work", undefined, undefined, undefined]);
+		expect(group.tabs.map(browserTabProfile)).toEqual(["work", "default", "default", "default"]);
+	});
+	it("opens a page's new tab in the page's profile, and an agent's tab in the profile it reports", () => {
+		const group = { active: "chat", tabs: [{ id: "chat", title: "", url: "https://a.test/", viewport: fill, profile: "work" }] };
+		expect(openBrowserTab(group, { sourceId: "chat", url: "https://b.test/", background: false }, "chat:2").tabs[1].profile).toBe("work");
+		expect(adoptBrowserTab(group, { context: "chat", id: "chat:3", url: "https://c.test/", profile: "home" }).tabs[1].profile).toBe("home");
+		expect(adoptBrowserTab(group, { context: "chat", id: "chat:4", url: "https://c.test/", profile: "default" }).tabs[1]).not.toHaveProperty("profile");
 	});
 });

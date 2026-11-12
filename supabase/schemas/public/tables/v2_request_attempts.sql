@@ -14,7 +14,16 @@ CREATE TABLE "public"."v2_request_attempts" (
   "safe_metadata"        jsonb                    NOT NULL DEFAULT '{}'::jsonb,
   "created_at"           timestamp with time zone NOT NULL DEFAULT now(),
   "cloudflare_colo"      text,
+  "health_class"         text,
+  "health_reason"        text,
+  "status_text"          text,
+  "upstream_error_code"  text,
+  "upstream_error_message" text,
+  "upstream_error_description" text,
+  "upstream_error_type"  text,
   CONSTRAINT "v2_request_attempts_cloudflare_colo_check" CHECK (((cloudflare_colo IS NULL) OR (cloudflare_colo ~ '^[A-Z0-9]{3}$'::text))),
+  CONSTRAINT "v2_request_attempts_health_class_check" CHECK (((health_class IS NULL) OR (health_class = ANY (ARRAY['success'::text, 'reachability'::text, 'capacity'::text, 'call_error'::text, 'customer'::text, 'phaseo'::text])))),
+  CONSTRAINT "v2_request_attempts_health_reason_check" CHECK (((health_reason IS NULL) OR (health_reason ~ '^[a-z][a-z0-9_]{0,63}$'::text))),
   CONSTRAINT "v2_request_attempts_key" UNIQUE (request_event_id, attempt_number),
   CONSTRAINT "v2_request_attempts_latency_check" CHECK (((latency_ms IS NULL) OR (latency_ms >= 0))),
   CONSTRAINT "v2_request_attempts_number_check" CHECK ((attempt_number > 0)),
@@ -46,6 +55,13 @@ CREATE TRIGGER v2_request_attempts_health_refresh
   FOR EACH ROW
   EXECUTE FUNCTION public.refresh_v2_provider_health_for_attempt();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_request_attempts"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "v2_request_attempts_workspace_select" ON "public"."v2_request_attempts"
   FOR SELECT
   TO "authenticated"
@@ -56,3 +72,17 @@ CREATE POLICY "v2_request_attempts_workspace_select" ON "public"."v2_request_att
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."v2_request_attempts" TO "anon", "authenticated", "service_role";
 
 COMMENT ON COLUMN "public"."v2_request_attempts"."cloudflare_colo" IS 'Cloudflare execution colo associated with the gateway request attempt.';
+
+COMMENT ON COLUMN "public"."v2_request_attempts"."health_class" IS 'What the attempt says about its provider: success, reachability, capacity or call_error (provider failures), or customer / phaseo (excluded from provider metrics). Null on rows recorded before the gateway classified attempts.';
+
+COMMENT ON COLUMN "public"."v2_request_attempts"."health_reason" IS 'Why the attempt got its health_class, for example route_model_not_found, provider_rejected_request_accepted_elsewhere, rate_limited or client_cancelled (apps/api/src/pipeline/execute/attempt-health.ts). Null for a plain success and on rows recorded before the gateway sent reasons.';
+
+COMMENT ON COLUMN "public"."v2_request_attempts"."status_text" IS 'HTTP reason phrase the provider returned for this attempt, for example Too Many Requests. Null when the provider sent none and on rows recorded before the gateway sent it.';
+
+COMMENT ON COLUMN "public"."v2_request_attempts"."upstream_error_code" IS 'Error code from the provider response body for this attempt, for example rate_limit_exceeded. error_code holds the gateway failure type instead.';
+
+COMMENT ON COLUMN "public"."v2_request_attempts"."upstream_error_message" IS 'Provider error message for this attempt as summarised by the gateway (at most 320 characters from the executor, capped at 1024 here). Never the raw provider payload.';
+
+COMMENT ON COLUMN "public"."v2_request_attempts"."upstream_error_description" IS 'Provider error description or offending parameter for this attempt as summarised by the gateway, capped at 1024 characters.';
+
+COMMENT ON COLUMN "public"."v2_request_attempts"."upstream_error_type" IS 'Error type from the provider response body for this attempt, for example invalid_request_error or rate_limit, capped at 120 characters. Null when the provider sent none and on rows recorded before the gateway sent it.';

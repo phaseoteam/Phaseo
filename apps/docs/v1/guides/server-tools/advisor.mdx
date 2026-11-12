@@ -5,22 +5,14 @@ description: "Let one model consult another model mid-generation."
 "og:image": "https://phaseo.app/og/dynamic?title=Advisor%20Server%20Tool&description=Let%20one%20model%20consult%20another%20model%20mid-generation.&pathname=/docs/v1/guides/server-tools/advisor"
 ---
 
-Use `phaseo:advisor` when the main model should be able to ask another model for a review, plan, sanity check, or specialist opinion before it finishes.
-
-The main model calls Advisor like any other tool. Phaseo runs the Advisor model server-side and returns the advice as the tool result. The main model then writes the final response.
-
-<Note>
-Advisor is gateway-managed across supported text models. It is not converted into Anthropic's native Advisor tool unless the client explicitly sends Anthropic's native tool shape.
-</Note>
-
-## Quick start
+Add `phaseo:advisor` so the main model can ask a second model for a review, plan, sanity check, or specialist opinion before it answers. The main model calls the Advisor like any tool; Phaseo runs the Advisor model and returns its advice as the tool result.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "Design a rate limiter for a distributed API gateway." }
     ],
@@ -37,20 +29,7 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Choosing the Advisor model
-
-You can pin the Advisor model in the tool definition:
-
-```json
-{
-  "type": "phaseo:advisor",
-  "parameters": {
-    "model": "anthropic/claude-opus-5"
-  }
-}
-```
-
-If `parameters.model` is omitted, the tool call may provide `model`. If neither is set, Phaseo falls back to the outer request model.
+Advisor works with any supported text model. Phaseo runs it itself; it is converted to Anthropic's native Advisor tool only if you send Anthropic's native tool shape.
 
 ## Parameters
 
@@ -72,27 +51,20 @@ If `parameters.model` is omitted, the tool call may provide `model`. If neither 
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `name` | string | none | Optional Advisor name. Names must be unique after trimming and may contain letters, numbers, spaces, underscores, and dashes. |
-| `model` | string | outer model | Advisor model to call. If omitted, the tool call can provide `model`. |
-| `instructions` | string | default Advisor behavior | Extra instructions for the Advisor model. |
-| `forward_transcript` | boolean | `false` | Include the current conversation transcript in the Advisor request. |
-| `max_uses` | integer | `1` | Maximum calls for this Advisor during the server-tool loop. |
-| `max_completion_tokens` | integer | `1400` | Max output tokens for the Advisor response. |
-| `max_tokens` | integer | `1400` | Legacy alias for `max_completion_tokens`. |
-| `reasoning` | object | provider default | Reasoning config forwarded to the Advisor call when supported by the selected model/provider. |
-| `temperature` | number | provider default | Sampling temperature for the Advisor call. |
+| `name` | string | None | 1 to 64 letters, numbers, spaces, underscores, or dashes. Needed when you add more than one Advisor. |
+| `model` | string | See below | The Advisor model. |
+| `instructions` | string | Built-in advisor instructions | Extra instructions for the Advisor. |
+| `forward_transcript` | boolean | `false` | Send the current conversation to the Advisor. |
+| `max_uses` | integer | `1` | Calls to this Advisor per request. |
+| `max_completion_tokens` | integer | `1400` | Output tokens for each Advisor reply. Values below `1024` are raised to `1024`. `max_tokens` is accepted as an older alias. |
+| `reasoning` | object | Provider default | Reasoning settings, passed on where the Advisor model supports them. |
+| `temperature` | number | Provider default | Sampling temperature for the Advisor call. |
 
-## Tool-call arguments
+The Advisor model is `parameters.model` if set; otherwise the `model` the main model sends in its call; otherwise the request's own model.
 
-The model normally calls Advisor with a `prompt`:
+## What the model sends
 
-```json
-{
-  "prompt": "Review this migration plan and identify the riskiest assumptions."
-}
-```
-
-If the Advisor definition does not pin a model, the tool call may also include `model`:
+Usually a `prompt`. If the tool doesn't pin a model, the call can also choose one:
 
 ```json
 {
@@ -101,11 +73,11 @@ If the Advisor definition does not pin a model, the tool call may also include `
 }
 ```
 
-When `forward_transcript` is `true`, Phaseo can execute a transcript-only Advisor call if the model does not supply a prompt.
+With `forward_transcript: true`, the model can call the Advisor without a prompt, and the Advisor reviews the forwarded conversation.
 
-## Multiple advisors
+## Add several advisors
 
-Add one `phaseo:advisor` entry per advisor. Each named advisor becomes a distinct internal tool, such as `phaseo_advisor_security_reviewer` or `phaseo_advisor_architect`.
+Add one `phaseo:advisor` entry per advisor. Each named Advisor becomes its own tool for the model, such as `phaseo_advisor_security_reviewer`.
 
 ```json
 {
@@ -130,11 +102,9 @@ Add one `phaseo:advisor` entry per advisor. Each named advisor becomes a distinc
 }
 ```
 
-At most one Advisor entry may omit `name`. If you force `tool_choice: "phaseo:advisor"` with multiple advisors, Phaseo maps that alias to the first configured Advisor.
+Names must be unique after trimming, ignoring case, and at most one entry can leave `name` out; otherwise the request is rejected. `tool_choice: "phaseo:advisor"` with several Advisors forces the first one.
 
 ## What the tool returns
-
-Advisor returns JSON as the tool result:
 
 ```json
 {
@@ -145,35 +115,10 @@ Advisor returns JSON as the tool result:
 }
 ```
 
-If the Advisor request cannot run, Phaseo returns a tool error such as `advisor_invalid_request`, `advisor_max_uses_exceeded`, or `advisor_request_failed`.
+If the call can't run, the model gets an error result instead: `advisor_invalid_request` (no prompt or no model), `advisor_max_uses_exceeded`, or `advisor_request_failed`.
 
-## Conversation memory
-
-Advisor does not keep hidden cross-request state. If you replay prior messages and tool results in the next request, the main model can see the prior consultation. If `forward_transcript` is enabled, the Advisor can also see the forwarded conversation transcript for that request.
+The Advisor keeps no state between requests. If you replay earlier messages and tool results, the main model sees the earlier advice; the Advisor sees the conversation only when `forward_transcript` is on. Advice isn't streamed, and the Advisor can't call tools itself.
 
 ## Usage and pricing
 
-Advisor calls increment:
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "advisor_requests": 1
-    }
-  }
-}
-```
-
-The Advisor model's tokens are included in total usage and can be priced at the selected Advisor model's rates. Server-tool pricing can also use `server_tool_advisor_requests`.
-
-## Current limits
-
-- Advisor advice streaming is not enabled yet.
-- Advisor calls do not expose additional tools to the consulted model.
-
-## Related
-
-- [Server Tools](./index)
-- [Subagent](./subagent)
-- [Tool Calling](../tool-calling)
+Each call adds 1 to `usage.server_tool_use.advisor_requests` and can be billed with `server_tool_advisor_requests`. The Advisor's tokens are billed at the Advisor model's own rates, as a separate line on the request's bill; they are not added to the calling model's token counts. A paid Advisor model needs credits even when the calling model is free.

@@ -4,7 +4,7 @@ icon: "box"
 description: "Appelez Phaseo depuis des applications et déploiements Replit."
 ---
 
-Utilisez Phaseo depuis Replit avec le SDK officiel OpenAI ou le fournisseur Phaseo officiel pour AI SDK. Conservez la clé API dans Replit Secrets, et non dans le code source.
+Ajoutez `PHASEO_API_KEY` aux Replit Secrets, puis appelez Phaseo avec le [SDK OpenAI](./openai-sdk.mdx) ou le [fournisseur AI SDK de Phaseo](./ai-sdk.mdx). Gardez la clé hors de votre code source.
 
 ## Ajouter le secret
 
@@ -14,15 +14,14 @@ Dans votre espace de travail Replit, ouvrez **Tools → Secrets** et ajoutez :
 PHASEO_API_KEY=phaseo_v1_sk_...
 ```
 
-Le secret sera disponible pour votre application sous forme de variable d’environnement.
+Replit expose le secret à votre application sous forme de variable d’environnement. Consultez [Authentification](../../developers/authentication.mdx) pour les types de clés.
 
-## TypeScript avec le SDK OpenAI
+## Appeler Phaseo
 
-```bash
-npm install openai
-```
+<CodeGroup>
 
-```ts
+```ts OpenAI SDK
+// npm install openai
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -31,37 +30,30 @@ const client = new OpenAI({
 });
 
 const response = await client.responses.create({
-	model: "openai/gpt-5-nano",
+	model: "openai/gpt-6-astra",
 	input: "Reply with only: ok",
 });
 
 console.log(response.output_text);
 ```
 
-## TypeScript avec AI SDK
-
-```bash
-npm install @phaseo/ai-sdk-provider
-```
-
-```ts
+```ts AI SDK
+// npm install @phaseo/ai-sdk-provider
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const { text } = await generateText({
-	model: phaseo("openai/gpt-5-nano"),
+	model: phaseo("openai/gpt-6-astra"),
 	prompt: "Reply with only: ok",
 });
 
 console.log(text);
 ```
 
-## Déploiements
+</CodeGroup>
 
-Ajoutez également `PHASEO_API_KEY` aux secrets du déploiement, en plus de l’espace de développement. Vérifiez que le déploiement n’écrit pas les variables d’environnement ni les en-têtes de requête dans les journaux.
+Si `ok` s’affiche, le secret et la Base URL fonctionnent.
 
-## À lire aussi
+## Déployer
 
-- [SDK OpenAI](./openai-sdk.mdx)
-- [AI SDK](./ai-sdk.mdx)
-- [Authentification](../../developers/authentication.mdx)
+Ajoutez `PHASEO_API_KEY` aux secrets du déploiement en plus de ceux de l’espace de travail. Assurez-vous que le déploiement n’écrit ni les variables d’environnement ni les en-têtes de requête dans ses journaux.

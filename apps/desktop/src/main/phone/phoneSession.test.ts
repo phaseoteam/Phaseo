@@ -1,0 +1,145 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { RequestRate, type DesktopFrame, type PhoneEntry } from "@phaseo/phone-protocol";
+import { fakePhoneHost } from "./fakePhoneHost";
+import { attentionOf, chatListPage, readingOrder } from "./phoneChats";
+import { entryFrames, PhoneHub } from "./phoneSession";
+
+describe("phone session", () => {
+	afterEach(() => { vi.useRealTimers(); });
+	const connected = () => {
+		const app = fakePhoneHost();
+		app.addTask({ id: "chat-1", title: "Streaming", status: "running", messages: [{ id: "a1", role: "assistant", text: "", createdAt: "2026-11-01T09:00:00.000Z" }] });
+		const hub = new PhoneHub(app.host), frames: DesktopFrame[] = [];
+		app.onChange(overview => hub.overviewChanged(overview));
+		const session = hub.open({ id: "dev", name: "Pixel" }, frame => frames.push(frame));
+		return { app, hub, session, frames };
+	};
+
+	it("sends a streaming reply's changes at most every 250 ms, with the latest text", async () => {
+		vi.useFakeTimers();
+		const { app, session, frames } = connected();
+		await session.receive(JSON.stringify({ id: "1", type: "subscribe", chatIds: ["chat-1"] }));
+		frames.length = 0;
+		const reply = app.get("chat-1").messages[0]!;
+		for (const text of ["Hel", "Hello", "Hello, wor", "Hello, world"]) { reply.text = text; app.touch(app.get("chat-1")); app.changed(); }
+		expect(frames).toEqual([]);
+		vi.advanceTimersByTime(250);
+		expect(frames.filter(frame => frame.type === "entries")).toEqual([{ type: "entries", chatId: "chat-1", entries: [expect.objectContaining({ id: "a1", text: "Hello, world" })] }]);
+		frames.length = 0;
+		app.changed();
+		vi.advanceTimersByTime(250);
+		expect(frames.filter(frame => frame.type === "entries")).toEqual([]);
+	});
+	it("tells a phone from before protocol 2 that it speaks 1, and a newer phone 2 with its capabilities", async () => {
+		const { session, frames } = connected();
+		await session.receive(JSON.stringify({ id: "old", type: "hello", deviceId: "dev", appVersion: "0.1.0" }));
+		expect(frames.at(-1)).toMatchObject({ id: "old", ok: true, result: { protocol: 1 } });
+		expect((frames.at(-1) as { result: object }).result).not.toHaveProperty("capabilities");
+		await session.receive(JSON.stringify({ id: "new", type: "hello", deviceId: "dev", appVersion: "0.2.0", protocol: 2 }));
+		expect(frames.at(-1)).toMatchObject({ id: "new", ok: true, result: { protocol: 2, capabilities: [] } });
+	});
+	it("lists projects pinned first, empty ones too, with worktrees under their source and removed or Factory ones left out", async () => {
+		const { app, session, frames } = connected();
+		const at = "2026-11-01T00:00:00.000Z";
+		app.projects.push(
+			{ id: "p2", name: "Blog", directory: "/work/blog", createdAt: at, pinned: true },
+			{ id: "p3", name: "Notes", directory: "/scratch/notes", createdAt: at, archived: true },
+			{ id: "w1", name: "Phaseo (fix)", directory: "/work/phaseo-fix", createdAt: at, worktree: { sourceProjectId: "p1", branch: "fix/login", baseCommit: "abc" } },
+			{ id: "w2", name: "Old", directory: "/work/old", createdAt: at, worktree: { sourceProjectId: "p1", branch: "old", baseCommit: "abc", removedAt: at } },
+			{ id: "w3", name: "Item", directory: "/ws/factory/worktrees/item", createdAt: at, worktree: { sourceProjectId: "p1", branch: "factory/item", baseCommit: "abc" } },
+		);
+		await session.receive(JSON.stringify({ id: "p", type: "list_projects" }));
+		expect(frames.at(-1)).toMatchObject({ id: "p", ok: true, result: { projects: [
+			{ id: "p2", name: "Blog", pinned: true, repository: true },
+			{ id: "p1", name: "Phaseo", repository: true },
+			{ id: "p3", name: "Notes", archived: true, repository: false },
+			{ id: "w1", worktreeOf: "p1", branch: "fix/login", repository: true },
+		] } });
+		expect((frames.at(-1) as { result: { projects: unknown[] } }).result.projects).toHaveLength(4);
+	});
+	it("sends projects_changed only to a phone that read the projects, and only when they change", async () => {
+		const { app, hub, session, frames } = connected();
+		const other: DesktopFrame[] = [];
+		hub.open({ id: "old-phone", name: "Old" }, frame => other.push(frame));
+		await session.receive(JSON.stringify({ id: "p", type: "list_projects" }));
+		frames.length = 0; app.repositoryChecks.length = 0;
+		// A streamed token changes the overview but not the projects: nothing is sent and the disk isn't asked.
+		app.touch(app.get("chat-1")); app.changed();
+		expect(frames.filter(frame => frame.type === "projects_changed")).toEqual([]);
+		expect(app.repositoryChecks).toEqual([]);
+		app.projects.push({ id: "p2", name: "Blog", directory: "/work/blog", createdAt: "2026-11-01T00:00:00.000Z" });
+		app.changed();
+		expect(frames.filter(frame => frame.type === "projects_changed")).toEqual([{ type: "projects_changed", projects: [expect.objectContaining({ id: "p1" }), expect.objectContaining({ id: "p2", name: "Blog" })] }]);
+		expect(other.filter(frame => frame.type === "projects_changed")).toEqual([]);
+	});
+	it("answers rate_limited past 50 requests a second for one device", async () => {
+		const app = fakePhoneHost(), hub = new PhoneHub(app.host, () => 0), frames: DesktopFrame[] = [];
+		const first = hub.open({ id: "dev", name: "Pixel" }, frame => frames.push(frame)), second = hub.open({ id: "dev", name: "Pixel" }, frame => frames.push(frame));
+		for (let index = 0; index < 50; index++) await (index % 2 ? first : second).receive(JSON.stringify({ id: String(index), type: "list_chats" }));
+		await first.receive(JSON.stringify({ id: "over", type: "list_chats" }));
+		expect(frames.at(-1)).toMatchObject({ id: "over", ok: false, error: { code: "rate_limited" } });
+		expect(new RequestRate(() => 0).take()).toBe(true);
+	});
+	it("lists models for a new chat and starts one on the model and effort the phone picked", async () => {
+		const { app, session, frames } = connected();
+		app.overview().projects[0]!.settings = { defaultModel: { harness: "codex", model: "gpt-6.1" } };
+		await session.receive(JSON.stringify({ id: "m", type: "list_models", projectId: "p1" }));
+		expect(frames.at(-1)).toMatchObject({ id: "m", ok: true, result: { selected: { model: "gpt-6.1" }, models: [{ id: "gpt-6.1", defaultEffort: "medium" }, { id: "gpt-6.1-mini" }, { id: "gpt-5", legacy: true }] } });
+		expect((frames.at(-1) as { result: { agents: { harness: string }[] } }).result.agents.map(agent => agent.harness)).toEqual(["phaseo", "codex", "claude"]);
+
+		// A Plan chat on a Phaseo model, named with its agent.
+		await session.receive(JSON.stringify({ id: "p", type: "new_chat", text: "Plan it", mode: "plan", projectId: "p1", harness: "phaseo", accountId: "phaseo-account", model: "anthropic/claude-sonnet-5" }));
+		const planned = (frames.at(-1) as { result: { chat: { id: string } } }).result.chat.id;
+		expect(app.get(planned)).toMatchObject({ harness: "phaseo", accountId: "phaseo-account", model: "anthropic/claude-sonnet-5", mode: "plan", projectId: "p1" });
+
+		await session.receive(JSON.stringify({ id: "n", type: "new_chat", text: "Ship it", mode: "code", projectId: "p1", model: "gpt-6.1", reasoningEffort: "xhigh" }));
+		const created = frames.at(-1) as Extract<DesktopFrame, { ok: true }>;
+		expect(created).toMatchObject({ id: "n", ok: true, result: { chat: { model: "gpt-6.1", project: "Phaseo" } } });
+		const chatId = (created.result as { chat: { id: string } }).chat.id;
+		expect(app.get(chatId)).toMatchObject({ harness: "codex", model: "gpt-6.1", reasoningEffort: "xhigh" });
+		await session.receive(JSON.stringify({ id: "r", type: "read_chat", chatId }));
+		expect(frames.at(-1)).toMatchObject({ id: "r", ok: true, result: { chat: { model: "gpt-6.1", reasoningEffort: "xhigh" } } });
+
+		await session.receive(JSON.stringify({ id: "x", type: "new_chat", text: "Ship it", mode: "code", projectId: "p1", model: "gpt-6.1-mini", reasoningEffort: "xhigh" }));
+		expect(frames.at(-1)).toMatchObject({ id: "x", ok: false, error: { code: "rejected", message: "GPT-6.1 mini doesn't offer that effort." } });
+		await session.receive(JSON.stringify({ id: "y", type: "list_models", projectId: "gone" }));
+		expect(frames.at(-1)).toMatchObject({ id: "y", ok: false, error: { code: "not_found" } });
+	});
+	it("tells every connected phone when a chat needs the person", () => {
+		const { app, frames } = connected();
+		const task = app.get("chat-1");
+		task.approvals = [{ id: "ap1", method: "Run command", description: "pnpm test" }]; task.status = "waiting"; app.touch(task); app.changed();
+		expect(frames).toContainEqual({ type: "attention", chatId: "chat-1", kind: "approval", summary: "Streaming: approval needed" });
+	});
+});
+
+describe("phone chat shapes", () => {
+	it("pages the list newest first with a cursor that survives changes", () => {
+		const app = fakePhoneHost();
+		for (const id of ["a", "b", "c"]) app.addTask({ id, title: id });
+		const first = chatListPage(app.overview(), undefined, 2);
+		expect(first.chats.map(chat => chat.id)).toEqual(["c", "b"]);
+		expect(chatListPage(app.overview(), first.cursor, 2)).toEqual({ chats: [expect.objectContaining({ id: "a" })] });
+	});
+	it("places activities after the message that started their turn and trims long text", () => {
+		const entries = readingOrder([{ id: "u1", role: "user", text: "Go", createdAt: "t" }, { id: "a1", role: "assistant", text: "x".repeat(30_000), createdAt: "t" }], [{ id: "u1:1", type: "tool", title: "Read file", text: "y".repeat(5_000) }, { id: "loose", type: "reasoning", title: "Thinking", text: "" }]);
+		expect(entries.map(entry => entry.id)).toEqual(["u1", "u1:1", "a1", "loose"]);
+		expect(entries[1]).toMatchObject({ kind: "activity", truncated: true });
+		expect((entries[2] as Extract<PhoneEntry, { kind: "message" }>).text.length).toBe(20_001);
+	});
+	it("splits entries so no frame passes 1 MiB", () => {
+		const big = Array.from({ length: 60 }, (_, index) => ({ kind: "message" as const, id: String(index), role: "assistant" as const, text: "z".repeat(20_000), createdAt: "t" }));
+		const frames = entryFrames(big);
+		expect(frames.length).toBe(2);
+		expect(frames.every(frame => Buffer.byteLength(JSON.stringify(frame)) < 1024 * 1024)).toBe(true);
+		expect(frames.flat()).toHaveLength(60);
+	});
+	it("raises attention only on a change, never for a chat seen for the first time", () => {
+		const base = { id: "c", title: "Chat", archived: false, status: "running", approvalsCount: 0, answersCount: 0 } as Parameters<typeof attentionOf>[1];
+		expect(attentionOf(undefined, { ...base, status: "completed" })).toBeUndefined();
+		expect(attentionOf(base, { ...base, status: "completed" })).toEqual({ kind: "done", summary: "Chat: finished" });
+		expect(attentionOf(base, { ...base, status: "failed" })?.kind).toBe("failed");
+		expect(attentionOf(base, { ...base, answersCount: 1 })?.kind).toBe("question");
+		expect(attentionOf({ ...base, status: "completed" }, { ...base, status: "completed" })).toBeUndefined();
+	});
+});

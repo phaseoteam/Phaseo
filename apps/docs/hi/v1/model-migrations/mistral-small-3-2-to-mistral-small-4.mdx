@@ -1,67 +1,43 @@
 ---
 title: "Mistral Small 4"
-description: "Mistral Small 4 अपनाते समय रीज़निंग नियंत्रण और मानकीकृत प्रतिक्रिया फ़ील्ड के बारे में जानें।"
+description: "Mistral Small 4 अपनाते समय क्या जानना ज़रूरी है, जिसमें रीज़निंग नियंत्रण और सामान्यीकृत प्रतिक्रिया फ़ील्ड शामिल हैं।"
 icon: "/icons/brands/mistral.svg"
 ---
 
-# Mistral Small 4
-
-Phaseo Gateway के ज़रिए Mistral Small 4 को सुरक्षित रूप से अपनाने के लिए यह गाइड इस्तेमाल करें:
-
-- `mistral/mistral-small-4-2026-03-16`
-
-## नया क्या है
-
-- Mistral Small 4 में `reasoning_effort` के ज़रिए रीज़निंग मोड नियंत्रित किया जाता है।
-- Gateway इस मॉडल रूट के लिए अपस्ट्रीम को केवल दो मान भेजता है:
-  - `none` (रीज़निंग बंद)
-  - `high` (रीज़निंग चालू)
-- Gateway, Mistral के थिंकिंग ब्लॉक को वापस मानक प्रतिक्रिया फ़ील्ड में मानकीकृत करता है:
-  - `message.content` में असिस्टेंट का दिखाई देने वाला टेक्स्ट
-  - `message.reasoning_content` और `message.reasoning_details` में रीज़निंग टेक्स्ट
-
-## माइग्रेशन क्विकस्टार्ट
-
-इस रूट पर रीज़निंग डिफ़ॉल्ट रूप से बंद है।
-
-Gateway के मैपिंग नियम:
-
-- रीज़निंग नियंत्रण न देने पर Gateway `reasoning_effort: "none"` भेजता है।
-- `reasoning.enabled: true` देने पर Gateway `reasoning_effort: "high"` भेजता है।
-- `reasoning.effort: "none"` देने पर Gateway `reasoning_effort: "none"` भेजता है।
-- `reasoning.effort` का कोई दूसरा मान देने पर Gateway `reasoning_effort: "high"` भेजता है।
-
-अनुशंसित उपयोग:
-
-- हल्के काम के लिए `reasoning.effort: "none"`।
-- गहन रीज़निंग के लिए `reasoning.effort: "high"`।
-
-उदाहरण:
+मॉडल को `mistral/mistral-small-4` में बदलें और हर रूट के लिए तय करें कि रीज़निंग चालू रहे या नहीं। Mistral Small 4 में दो रीज़निंग मोड हैं, बंद और high, और Phaseo हर effort मान को इनमें से एक पर मैप करता है।
 
 ```json
 {
-  "model": "mistral/mistral-small-4-2026-03-16",
+  "model": "mistral/mistral-small-4",
   "messages": [
     { "role": "user", "content": "Why is fast inference important?" }
   ],
-  "reasoning": {
-    "effort": "high"
-  }
+  "reasoning": { "effort": "high" }
 }
 ```
 
-## जवाब संभालने संबंधी नोट
+## रीज़निंग चालू या बंद करें
 
-Mistral असिस्टेंट सामग्री के मिश्रित ब्लॉक लौटा सकता है (जैसे `thinking` और `text`)। Gateway उन्हें एक स्थिर संरचना में बदलता है, ताकि आप इन्हें उपयोग कर सकें:
+जब तक अनुरोध न मांगे, रीज़निंग बंद रहती है। Mistral के अपने API पर, Phaseo `reasoning_effort` इस तरह भेजता है:
 
-- उपयोगकर्ता को दिखने वाला अंतिम उत्तर: `choices[0].message.content`।
-- रीज़निंग टेक्स्ट: `choices[0].message.reasoning_content`।
+| अनुरोध | Mistral को भेजा जाता है |
+| --- | --- |
+| कोई रीज़निंग सेटिंग नहीं | `reasoning_effort: "none"` |
+| `reasoning.effort: "none"` या `reasoning.enabled: false` | `reasoning_effort: "none"` |
+| कोई भी दूसरा `reasoning.effort`, या `reasoning.enabled: true` | `reasoning_effort: "high"` |
 
-इससे OpenAI-शैली के चैट कंप्लीशन फ़ील्ड की अपेक्षा रखने वाला डाउनस्ट्रीम व्यवहार बना रहता है।
+अनुरोध में फ़्लैट `reasoning_effort` को `reasoning.effort` पर प्राथमिकता मिलती है। हल्के रूट के लिए `none` और गहरी रीज़निंग के लिए `high` उपयोग करें; `low` और `medium` बिल्कुल `high` की तरह व्यवहार करते हैं।
 
-## रिलीज़ जाँच-सूची
+## उत्तर और रीज़निंग पढ़ें
 
-1. मॉडल ID को `mistral/mistral-small-4-2026-03-16` पर अपडेट करें।
-2. रीज़निंग नियंत्रणों को केवल `none` और `high` के साथ सत्यापित करें।
-3. उच्च प्रयास वाले रूट पर आउटपुट गुणवत्ता और स्कीमा परीक्षण फिर से चलाएँ।
-4. पूरी तरह बदलने से पहले `none` और `high` की लेटेंसी और लागत की तुलना करें।
+Mistral मिश्रित कंटेंट ब्लॉक लौटा सकता है, जैसे `thinking` के बाद `text`। Phaseo उन्हें OpenAI-शैली के फ़ील्ड में बांट देता है, ताकि Chat Completions पढ़ने वाला डाउनस्ट्रीम कोड काम करता रहे:
+
+- उत्तर `choices[0].message.content` में होता है;
+- रीज़निंग टेक्स्ट `choices[0].message.reasoning_content` और `reasoning_details` में होता है।
+
+## रोलआउट करें
+
+1. मॉडल ID को Mistral Small 3.2 से `mistral/mistral-small-4` में बदलें।
+2. रीज़निंग को सिर्फ़ `none` और `high` के साथ टेस्ट करें।
+3. `high` उपयोग करने वाले रूट पर आउटपुट गुणवत्ता और स्कीमा टेस्ट दोबारा चलाएं।
+4. पूरे कटओवर से पहले `none` और `high` के लिए लेटेंसी और लागत की तुलना करें।

@@ -1,21 +1,10 @@
 ---
 icon: "shield-check"
 title: "Sécurité et validation des appels d’outils"
-sidebarTitle: "Sécurité des appels d’outils"
 description: "Validez les arguments des outils, sécurisez leur exécution et évitez les actions non sûres du modèle."
 ---
 
-Traitez les arguments d’outils générés par le modèle comme des entrées non fiables.
-
-## Liste de contrôle de sécurité
-
-- Gardez les schémas d’outils minimaux et explicites.
-- Validez les arguments analysés avant d’exécuter l’outil.
-- Autorisez uniquement les noms d’outils approuvés et rejetez les inconnus.
-- Ajoutez des délais d’attente et des tentatives répétées aux appels externes.
-- Consignez l’ID d’appel, le nom de l’outil et les échecs de validation.
-
-## Exemple de validation de requête (TypeScript + Zod)
+Traitez chaque appel d’outil comme une entrée non fiable : vérifiez le nom de l’outil par rapport à une liste d’autorisation et validez les arguments avant toute exécution.
 
 ```typescript
 import { z } from "zod";
@@ -34,14 +23,18 @@ function executeToolCall(name: string, rawArgs: string) {
 }
 ```
 
-## Stratégie en cas d’échec
+## Liste de contrôle
 
-Si la validation échoue :
+- **Gardez des schémas petits et explicites.** Des champs moins nombreux et typés laissent au modèle moins de marge pour envoyer quelque chose d’inattendu.
+- **Validez les arguments analysés** avant l’exécution, comme ci-dessus.
+- **Rejetez les noms d’outils inconnus** au lieu de deviner ce que le modèle voulait dire.
+- **Ajoutez des délais d’attente et des nouvelles tentatives** aux appels qui atteignent des systèmes externes.
+- **Journalisez** l’ID d’appel, le nom de l’outil et tout échec de validation.
 
-1. N’exécutez pas l’outil.
-2. Renvoyez une erreur contrôlée au tour suivant du modèle.
-3. Demandez au modèle de réessayer avec des arguments corrigés.
+## Quand la validation échoue
 
-## Remarque sur le streaming
+N’exécutez pas l’outil. Envoyez une erreur courte et maîtrisée comme résultat de l’outil au tour suivant, et demandez au modèle de réessayer avec des arguments corrigés.
 
-Les appels d’outils en streaming dépendent du modèle et du fournisseur. Accumulez tous les fragments d’arguments avant d’analyser, de valider ou d’exécuter un appel. Consultez [Streaming](./streaming.mdx).
+## Streaming
+
+Avec `stream: true`, les arguments arrivent par morceaux. Rassemblez tous les fragments d’arguments d’un appel avant de l’analyser, de le valider ou de l’exécuter. Le fait que les appels d’outils soient diffusés ou non dépend du modèle et du fournisseur. Consultez [Diffusion en continu](./streaming.mdx).

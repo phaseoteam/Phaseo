@@ -1,3 +1,4 @@
+import { test, expect } from "vitest";
 import { readLogReplay } from "@/lib/chat/logReplay";
 
 const IMAGE = "data:image/png;base64,iVBORw0KGgo=";
@@ -169,4 +170,30 @@ test("keeps the logged response in its own turn after an assistant prefill", () 
 	expect(replay?.requestTurnCount).toBe(2);
 	expect(replay?.turns.map((turn) => turn.role === "assistant" ? turn.text : turn.role)).toEqual(["user", "The colour is", " blue."]);
 	expect(replay?.warnings).not.toContain("no_response");
+});
+
+test("leaves out media the I/O log didn't store, and says so", () => {
+	const replay = readLogReplay({
+		endpoint: "messages",
+		requestPayload: {
+			model: "anthropic/claude-sonnet-5-5",
+			messages: [{
+				role: "user",
+				content: [
+					{ type: "text", text: "What's this?" },
+					{ type: "image", source: { type: "base64", media_type: "image/png", data: "[REDACTED_BASE64]" } },
+					{ type: "image_url", image_url: { url: "[REDACTED_DATA_URL]" } },
+					{ type: "input_audio", input_audio: { data: "[REDACTED_BASE64]", format: "wav" } },
+					{ type: "image_url", image_url: { url: "https://example.com/cat.png" } },
+				],
+			}],
+		},
+		gatewayResponse: { type: "message", role: "assistant", content: [{ type: "text", text: "A cat." }] },
+	});
+
+	expect(replay?.turns[0]).toEqual({
+		role: "user",
+		parts: [{ type: "text", text: "What's this?" }, { type: "image", url: "https://example.com/cat.png" }],
+	});
+	expect(replay?.warnings).toEqual(["media_not_stored"]);
 });

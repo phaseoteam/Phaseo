@@ -1,12 +1,13 @@
 ---
 icon: "search-check"
 title: "Modellentdeckung (AI SDK)"
+sidebarTitle: "Modellentdeckung"
 description: "So rufst du aktuelle Modell-IDs für den AI-SDK-Provider ab."
 ---
 
-Der Vercel-AI-SDK-Provider stellt keine integrierte `listModels()`-Methode bereit. Mit einem dieser Muster bleiben Modell-IDs aktuell.
+Der AI-SDK-Provider hat keinen `listModels()`-Helfer. Lies aktuelle Modell-IDs aus `GET /v1/models`, entweder direkt oder mit dem TypeScript-SDK, und übergib sie an `phaseo(modelId)`.
 
-## Option 1: über die Gateway API abrufen
+## Über die Gateway-API abrufen
 
 ```ts
 const response = await fetch("https://api.phaseo.app/v1/models", {
@@ -34,7 +35,9 @@ const filteredModels = await filteredResponse.json();
 console.log(models, filteredModels);
 ```
 
-## Option 2: das offizielle TypeScript SDK verwenden
+`/v1/models` akzeptiert Filter wie `provider`, `status`, `organisation`, `endpoints` und `availability`. Der [Models-Endpunkt](/de/v1/api-reference/endpoint/models) listet sie alle auf.
+
+## Mit dem TypeScript-SDK abrufen
 
 ```ts
 import Phaseo from "@phaseo/sdk";
@@ -49,23 +52,18 @@ const models = await client.getModels({
 console.log(models);
 ```
 
-## Entdeckte IDs mit dem AI SDK verwenden
+## Eine gefundene ID verwenden
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "Hello from a discovered model ID.",
 });
 
 console.log(result.text);
 ```
 
-## Hinweise
-
-- Modell-IDs haben das Format `provider/model`.
-- `/v1/models` unterstützt Filter wie `provider`, `status`, `organisation`, `endpoints` und `availability`.
-- Prüfe die Modellverfügbarkeit regelmäßig auf Änderungen beim Routing und auf Abkündigungen.
-- Wähle IDs möglichst aus `/v1/models`, statt sie langfristig fest im Code zu hinterlegen.
+Modell-IDs haben die Form `provider/model`. Prüfe die Liste regelmäßig, um Routing-Änderungen und Abkündigungen mitzubekommen, statt IDs dauerhaft fest einzutragen.

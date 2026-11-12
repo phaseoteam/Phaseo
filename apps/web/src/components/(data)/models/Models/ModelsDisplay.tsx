@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import Link from "@/components/link";
 import {
 	useCallback,
 	useDeferredValue,
@@ -9,12 +7,10 @@ import {
 	useState,
 	type ReactNode,
 } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { usePathname, useSearchParams } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import { debounce, useQueryState } from "nuqs";
-import { ModelsList } from "./ModelsList";
 import { ModelsGrid } from "./ModelsGrid";
-import { ModelsLayoutTrackingContext, useModelsLayoutExperiment } from "./useModelsLayoutExperiment";
 import {
 	OUTPUT_MODALITY_DISPLAY_ORDER,
 	normalizeModalityFilterValue,
@@ -27,7 +23,6 @@ import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import {
 	Search,
-	List as ListIcon,
 	Grid as GridIcon,
 	Table2 as TableIcon,
 	Layers3,
@@ -79,7 +74,7 @@ import {
 	qParser,
 	sortParser,
 	type ModelsSortOption,
-} from "@/app/(dashboard)/models/search-params";
+} from "@/features/models/search-params";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Accordion,
@@ -998,9 +993,7 @@ function ModelsDisplayContent({
 			coming_soon: "comingSoon",
 			not_active: "notActive",
 			inactive: "notActive",
-			deranked_lvl1: "statusDeranked1",
-			deranked_lvl2: "statusDeranked2",
-			deranked_lvl3: "statusDeranked3",
+			deranked: "statusDeranked",
 			disabled: "statusDisabled",
 		};
 		const key = keys[String(value ?? "").trim().toLowerCase()];
@@ -1210,11 +1203,6 @@ function ModelsDisplayContent({
 	const pathname = usePathname();
 	const searchParams = useSearchParams();
 	const isTable = pathname?.includes("/models/table");
-	const { variant: layoutVariant, ready: layoutReady, track: trackLayout, rowsRef } = useModelsLayoutExperiment(!isTable);
-	const DefaultModelsView = layoutVariant === "list" ? ModelsList : ModelsGrid;
-	const DefaultViewIcon = layoutVariant === "list" ? ListIcon : GridIcon;
-	// Literal keys so the client message scope stays narrow.
-	const defaultViewLabel = layoutVariant === "list" ? t("listView") : t("cardView");
 	const {
 		endpointOptions: baseEndpointOptions,
 		inputModalityOptions: baseInputModalityOptions,
@@ -1888,14 +1876,14 @@ function ModelsDisplayContent({
 					<Link
 						href={buildHref("/models")}
 						prefetch={false}
-						aria-label={defaultViewLabel}
+						aria-label={t("cardView")}
 						aria-current={!isTable ? "page" : undefined}
-						className={cn(viewSwitcherItemClass(!isTable, true), !layoutReady && "invisible")}
+						className={viewSwitcherItemClass(!isTable, true)}
 					>
-						<DefaultViewIcon className="h-4 w-4" />
+						<GridIcon className="h-4 w-4" />
 					</Link>
 				</TooltipTrigger>
-				<TooltipContent side="top">{defaultViewLabel}</TooltipContent>
+				<TooltipContent side="top">{t("cardView")}</TooltipContent>
 			</Tooltip>
 
 			<Tooltip>
@@ -2130,7 +2118,6 @@ function ModelsDisplayContent({
 						options={providerOptions}
 						selected={selectedProviders}
 						onToggle={(value) => {
-							trackLayout("models_layout_filter_changed", { control: "provider" });
 							void setSelectedProviders(toggleInList(selectedProviders, value));
 						}}
 						labelForValue={(value) => value}
@@ -2393,7 +2380,6 @@ function ModelsDisplayContent({
 							options={sortOutputModalityOptions(outputModalityOptions)}
 							selected={selectedOutputModalities}
 							onChange={(values) => {
-								trackLayout("models_layout_filter_changed", { control: "output_modality" });
 								void setSelectedOutputModalities(values);
 							}}
 							labelForValue={translateModality}
@@ -2404,10 +2390,9 @@ function ModelsDisplayContent({
 					<ActiveModelFilters filters={activeFilters} onClear={resetFilters} />
 				</div>
 
-				<ModelsLayoutTrackingContext.Provider value={trackLayout}>
-				<div ref={rowsRef} className="w-full px-4 pt-1 pb-5 lg:px-8 lg:pt-1 lg:pb-6" aria-busy={!layoutReady}>
-					{!layoutReady ? <div className="min-h-[60vh]" /> : filteredModels.length > 0 ? (
-						<DefaultModelsView
+				<div className="w-full px-4 pt-1 pb-5 lg:px-8 lg:pt-1 lg:pb-6">
+					{filteredModels.length > 0 ? (
+						<ModelsGrid
 							filteredModels={filteredModels}
 							showOrganisationPrefix
 						/>
@@ -2418,7 +2403,6 @@ function ModelsDisplayContent({
 						/>
 					)}
 				</div>
-				</ModelsLayoutTrackingContext.Provider>
 			</section>
 
 			{isMobileViewport ? (

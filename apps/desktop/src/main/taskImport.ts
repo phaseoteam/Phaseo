@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { open } from "node:fs/promises";
 import { harnesses, type Harness, type Message } from "../shared/workspace";
 
-export type ImportedConversation = { title: string; harness: Harness; createdAt: string; messages: (Omit<Message, "attachments"> & { attachments?: string[] })[]; attachments: { id: string; name: string; bytes: Buffer }[] };
+export type ImportedConversation = { /** A Claude Code session or Codex thread the chat resumes, instead of reading the history as a handoff. */ nativeSessionId?: string; title: string; harness: Harness; createdAt: string; messages: (Omit<Message, "attachments"> & { attachments?: string[] })[]; attachments: { id: string; name: string; bytes: Buffer }[] };
 const object = (value: unknown): Record<string, unknown> => { if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid conversation export."); return value as Record<string, unknown>; };
 const text = (value: unknown, maximum: number) => { if (typeof value !== "string" || value.length > maximum) throw new Error("Invalid conversation text."); return value; };
 const date = (value: unknown) => { const result = text(value, 100); if (!Number.isFinite(Date.parse(result))) throw new Error("Invalid conversation date."); return result; };

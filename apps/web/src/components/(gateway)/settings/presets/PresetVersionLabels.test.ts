@@ -1,6 +1,7 @@
+import { describe, it, expect, vi } from "vitest";
 import { labelMoveFor, labelReference, labelsSummary, normalizeLabelInput, versionName, versionRunInput } from "./PresetVersionLabels";
 
-jest.mock("@/app/(dashboard)/settings/presets/actions", () => ({}));
+vi.mock("@/features/settings/presets/actions", () => ({}));
 
 const versions = [
 	{ id: "v3", version_number: 3, version_label: "v3", release_notes: null, visibility: "team", created_at: null, labels: ["staging"] },

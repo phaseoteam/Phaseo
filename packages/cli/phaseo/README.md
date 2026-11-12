@@ -135,7 +135,7 @@ Every `/v1` management area has its own command group, so agents can run a whole
 | `presets` | Versions, labels, fork, upstream sync, publisher handle (plus the basic CRUD above) |
 | `workspaces` | Member roles, invites, join requests (plus the basic CRUD above) |
 | `identity` | SSO, SCIM and SCIM tokens, directory, departments, group mappings |
-| `workload-identity policies` | Trusted workload policies |
+| `workload-identity policies` | Trusted workload policies for Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS or your own OIDC issuer (`--provider custom --owner-claim <claim>`) |
 | `keys`, `webhooks`, `analytics` | Key rotation and cache invalidation, webhook test events, CSV analytics export (plus the commands above) |
 | `events` | Custom observability events (list, create) |
 | `audit-events`, `apps` | Audit log and app attribution (list, update, merge) |

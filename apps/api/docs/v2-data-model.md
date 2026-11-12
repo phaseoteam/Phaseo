@@ -61,9 +61,8 @@ backfill and consumer cutover are verified.
 - `v2_pricing_sku_meters` stores flexible meter definitions, display labels,
   units, and prices. Adding a character, image, audio, video, embedding, or
   reranking meter does not require a new column.
-- `v2_credit_ledger` is append-only and contains balance-affecting entries.
-- `v2_credit_reservations` contains temporary holds for asynchronous work;
-  capture and release operations write corresponding ledger entries.
+- Credit balances and balance-affecting entries are kept in `wallets` and
+  `credit_ledger`.
 
 ## Observability and analytics
 
@@ -74,8 +73,7 @@ backfill and consumer cutover are verified.
   authoritative `gateway_requests` row. It stores model resolution, route,
   timing, status, user-agent/SDK metadata, and the tool-call stop-reason
   count. It never stores prompt, completion, provider body, or tool I/O data.
-- `v2_request_attempts` records failover attempts. `v2_request_artifacts`
-  stores R2 object keys, hashes, sizes, and retention metadata only.
+- `v2_request_attempts` records failover attempts.
 - `v2_request_usage` stores meter facts and `v2_request_pricing_lines` stores
   the immutable SKU/rate snapshot used for billing.
 - `v2_private_usage_daily` is workspace-scoped. `v2_public_usage_daily` is

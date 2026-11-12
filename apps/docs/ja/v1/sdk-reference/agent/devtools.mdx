@@ -1,0 +1,100 @@
+---
+icon: "chart-spline"
+title: "DevTools"
+description: "開発中に、エージェントの各実行と続行をローカルファイルに記録します。"
+---
+
+開発中に実行または続行に DevTools の設定を渡すと、ローカルディレクトリの `generations.jsonl` に、実行ごとに1行の JSON が追記されます。各行には、実行の入力、ステップ、ツールの動き、出力、使用量、Gateway のリクエスト ID が入っています。有効にしない限り、何も記録されません。
+
+<CodeGroup>
+
+```typescript TypeScript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+```python Python
+from phaseo_agent import create_agent_devtools
+
+result = agent.run(input="Summarise this ticket", client=client, devtools=create_agent_devtools())
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input:    prompt,
+  Client:   client,
+  Devtools: phaseoagent.CreateAgentDevtools(".phaseo-devtools"),
+})
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions
+{
+    Input = prompt,
+    Client = client,
+    Devtools = AgentSdk.CreateAgentDevtools(".phaseo-devtools"),
+});
+```
+
+```php PHP
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    devtools: AgentSdk::createAgentDevtools(".phaseo-devtools")
+);
+```
+
+```ruby Ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  devtools: PhaseoAgentSdk.create_agent_devtools(directory: ".phaseo-devtools")
+)
+```
+
+```java Java
+var result = agent.run(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null, null,
+    AgentSdk.createAgentDevtools(".phaseo-devtools")));
+```
+
+</CodeGroup>
+
+<Note>
+Rust `0.2` には DevTools への記録機能がありません。`run_with_events` で[ライフサイクルフック](./lifecycle-hooks)を使い、イベントを自分で書き出してください。
+</Note>
+
+| 言語 | 設定の作成 | 渡し方 | ディレクトリの指定 |
+| --- | --- | --- | --- |
+| TypeScript | `createAgentDevtools()` | run と continue のオプションの `devtools` | `createAgentDevtools({ directory: ".local/agent-runs" })` |
+| Python | `create_agent_devtools()` | `run()`、`stream()`、または続行の `devtools=` | `create_agent_devtools(directory=".local/agent-runs")` |
+| Go | `CreateAgentDevtools(directory)` | `RunOptions` または `ContinueOptions` の `Devtools` | 引数 `directory` |
+| C# | `AgentSdk.CreateAgentDevtools(directory)` | `RunOptions` または `ContinueOptions` の `Devtools` | 引数 `directory`（デフォルトは `.phaseo-devtools`） |
+| PHP | `AgentSdk::createAgentDevtools($directory)` | `run()` または `continueRun()` の `devtools:` | 引数 `$directory`（デフォルトは `.phaseo-devtools`） |
+| Ruby | `PhaseoAgentSdk.create_agent_devtools(directory:, enabled:)` | `run` または `continue_run` の `devtools:` | `directory:`（デフォルトは `.phaseo-devtools`） |
+| Java | `AgentSdk.createAgentDevtools(directory)` | `RunOptions` または `ContinueOptions` の `devtools` 引数 | 引数 `directory` |
+
+## 環境変数で記録を有効にする
+
+DevTools の設定がない場合、`PHASEO_DEVTOOLS=true` のときに記録が有効になります。ファイルは `PHASEO_DEVTOOLS_DIR` に、未設定の場合は作業ディレクトリの `.phaseo-devtools` に書き出されます。これは DevTools があるすべての言語で同じように動作します。
+
+## 書き出される内容
+
+| ファイル | 内容 |
+| --- | --- |
+| `generations.jsonl` | 実行ごとに1件、続行ごとに1件のエントリー |
+| `metadata.json` | セッション ID、開始時刻、SDK 名（`"sdk": "typescript"`、`"python"`、`"go"`、`"csharp"`、`"php"`、`"ruby"`、`"java"` のいずれか）。1回だけ書き出されます |
+| `assets/images`、`assets/audio`、`assets/video` | DevTools のビューア用に空のまま作成されます |
+
+各エントリーの `type` は、実行では `agent.run`、続行では `agent.continue` です。`agent.continue` はメソッド名ではなくエントリーの種類で、`continueRun()`（TypeScript、PHP、Java）、`continue_run()`（Python、Ruby）、`Continue`（Go）、`ContinueRun`（C#）の呼び出しが書き出すものです。
+
+エントリーには、実行 ID とエージェント ID、ツールの数、そして実行結果全体（ステータス、メッセージ、モデル・プロバイダー・Gateway のリクエスト ID を含むステップ、ツールの動き、使用量、出力）が入っています。失敗した実行には、エラーを含むエントリーが書き出されます（Go と Java では `error.message`、TypeScript では構造化された失敗の詳細）。Java では書き込みエラーは無視されるため、記録が原因で実行が失敗することはありません。
+
+<Warning>
+エントリーには、プロンプト、メッセージ、アプリケーションのコンテキスト、ツールの入力と出力がプレーンテキストで入っています。このディレクトリはソース管理や本番のイメージに含めず、監査用のストアとしても使わないでください。本番環境のテレメトリーには[ライフサイクルフック](./lifecycle-hooks)を使ってください。
+</Warning>

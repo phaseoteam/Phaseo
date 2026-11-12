@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import { resolveGatewayPath } from "./endpoint-paths";
 import { buildEndpointRoutes, ENDPOINT_OPTIONS } from "./endpointRoutes";
 import { buildExamplePayload, jsonToPythonLiteral } from "./quickstartPayloads";
@@ -87,5 +88,19 @@ describe("Decisions quickstart", () => {
 
 		expect(python).toContain('"true": "The customer is blocked');
 		expect(python).toContain('"false": "The request can follow');
+	});
+});
+
+describe("Video quickstart", () => {
+	test.each([
+		// No stored options here: the generic default, which Omni accepts as 720p 16:9.
+		["google/gemini-omni-flash", 5, "1280x720"],
+		["google/veo-3.1", 4, "720p"],
+		["openai/sora-2", 4, "720x1280"],
+		["minimax/hailuo-2.3", 6, "768P"],
+	])("sends %s a duration and size it accepts, never duration_seconds", (model, duration, size) => {
+		const payload = buildExamplePayload("video.generation", model);
+		expect(payload).toMatchObject({ model, duration, size });
+		expect(payload).not.toHaveProperty("duration_seconds");
 	});
 });

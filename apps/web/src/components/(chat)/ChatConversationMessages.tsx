@@ -1,5 +1,3 @@
-"use client";
-
 import {
 	Fragment,
 	useCallback,
@@ -9,8 +7,8 @@ import {
 	useState,
 	type RefObject,
 } from "react";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import {
 	MessageScroller,
 	useMessageScroller,
@@ -107,7 +105,9 @@ import {
 	buildModelLink,
 	ensureVariants,
 	extractGeneratedAudioUrl,
-	extractGeneratedImageUrl,
+	extractGeneratedImageUrls,
+	isGeneratedDataImage,
+	sanitizeGeneratedImageSrc,
 	extractGeneratedVideoUrl,
 	formatModelLabel,
 	getInlineAttachmentPreviewsFromMeta,
@@ -744,14 +744,17 @@ export function ChatConversationMessages({
 			const contentWithoutAudioLink = audioUrl
 				? stripMarkdownLink(contentWithoutVideoLink, audioUrl)
 				: contentWithoutVideoLink;
-			const imageUrl = isUser
-				? null
-				: sanitizeHttpMediaUrl(
-						extractGeneratedImageUrl(contentWithoutAudioLink),
-					);
-			const contentWithoutMediaLinks = imageUrl
-				? stripMarkdownLink(contentWithoutAudioLink, imageUrl)
-				: contentWithoutAudioLink;
+			const imageUrls = isUser
+				? []
+				: [...new Set(
+						extractGeneratedImageUrls(contentWithoutAudioLink)
+							.map((url) => sanitizeGeneratedImageSrc(url))
+							.filter((url): url is string => Boolean(url)),
+					)];
+			const contentWithoutMediaLinks = imageUrls.reduce(
+				(content, url) => stripMarkdownLink(content, url),
+				contentWithoutAudioLink,
+			);
 			const reasoningText = isUser
 				? null
 				: (activeVariant?.meta as any)?.reasoning_text ??
@@ -796,7 +799,7 @@ export function ChatConversationMessages({
 				let next = value;
 				if (videoUrl) next = stripMarkdownLink(next, videoUrl);
 				if (audioUrl) next = stripMarkdownLink(next, audioUrl);
-				if (imageUrl) next = stripMarkdownLink(next, imageUrl);
+				for (const url of imageUrls) next = stripMarkdownLink(next, url);
 				return next;
 			};
 			const displayModelId = (message.modelId ?? activeThread.modelId ?? "").trim();
@@ -1232,23 +1235,25 @@ export function ChatConversationMessages({
 										<GeneratingResponseIndicator />
 									</div>
 								) : null}
-								{imageUrl ? (
-									<div className="not-prose mt-3 grid gap-2">
+								{imageUrls.map((url) => (
+									<div key={url.slice(0, 96)} className="not-prose mt-3 grid gap-2">
 										<img
-											src={imageUrl}
+											src={url}
 											alt={tMessage("generatedImage")}
 											className="max-h-[420px] w-auto max-w-full rounded-lg border border-border object-contain"
 										/>
-										<Link
-											href={imageUrl}
-											target="_blank"
-											rel="noreferrer"
-											className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-										>
-											{tMessage("openImage")}
-										</Link>
+										{isGeneratedDataImage(url) ? null : (
+											<Link
+												href={url}
+												target="_blank"
+												rel="noreferrer"
+												className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+											>
+												{tMessage("openImage")}
+											</Link>
+										)}
 									</div>
-								) : null}
+								))}
 								{audioUrl ? (
 									<div className="not-prose mt-3 grid gap-2">
 										<MediaPlayer className="w-full">

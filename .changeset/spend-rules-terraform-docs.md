@@ -7,7 +7,7 @@
 "@phaseo/php-sdk": major
 "@phaseo/py-sdk": major
 "@phaseo/ruby-sdk": major
-"@phaseo/rust-sdk": major
+"@phaseo/rust-sdk": minor
 "@phaseo/sdk": major
 ---
 

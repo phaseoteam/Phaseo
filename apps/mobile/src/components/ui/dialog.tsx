@@ -1,10 +1,15 @@
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
-import { Modal, Pressable, useWindowDimensions, View } from "react-native";
+import { type LayoutChangeEvent, Modal, Pressable, useWindowDimensions, View } from "react-native";
+import { GestureDetector, GestureHandlerRootView, usePanGesture } from "react-native-gesture-handler";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import Animated, { cancelAnimation, Extrapolation, interpolate, ReduceMotion, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { scheduleOnRN } from "react-native-worklets";
 import { useLayout } from "@/hooks/useLayout";
 import { cn } from "@/lib/cn";
+import { project, rubberband, SHEET_SPRING, SNAP_BACK_SPRING, useReleaseVelocity } from "@/lib/motion";
+import { OutsideDrawer } from "./horizontal-scroll";
 import { dialogFrame, type DialogSize } from "./overlay";
 import { Screen } from "./screen";
 
@@ -32,21 +37,128 @@ export function DialogFrame({ children, onClose, size = "fit" }: { children: Rea
  * Content that isn't a short list of options (filters, forms): a bottom drawer on phones, a centred
  * dialog on tablets, where a full-width drawer would stretch across both panes.
  */
-export function Sheet({ open, onClose, children, size = "fit", className }: { open: boolean; onClose: () => void; children: ReactNode; size?: DialogSize; className?: string }) {
+export function Sheet({ open, onClose, children, size = "fit", phoneHeight, className }: {
+  open: boolean;
+  onClose: () => void;
+  children: ReactNode;
+  size?: DialogSize;
+  /** A fixed height for the phone drawer, of the screen (for content that fills it, like a long list). */
+  phoneHeight?: `${number}%`;
+  className?: string;
+}) {
   const { split } = useLayout();
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={open} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
-      {split ? (
-        <DialogFrame onClose={onClose} size={size}>{children}</DialogFrame>
-      ) : (
-        <Pressable accessibilityLabel="Close" className="flex-1 justify-end bg-black/40" onPress={onClose}>
-          <Pressable className={cn("max-h-[85%] rounded-t-md border-t border-border bg-popover", className)} style={{ paddingBottom: insets.bottom + 12 }} onPress={() => undefined}>
-            {children}
-          </Pressable>
-        </Pressable>
-      )}
+      <OutsideDrawer>
+        {split ? (
+          <DialogFrame onClose={onClose} size={size}>{children}</DialogFrame>
+        ) : (
+          // A sheet with a text box rides up with the keyboard, as the tablet dialog does.
+          <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+            <BottomDrawer onClose={onClose} maxHeight="85%" height={phoneHeight} className={className} paddingBottom={insets.bottom + 12}>
+              {children}
+            </BottomDrawer>
+          </KeyboardAvoidingView>
+        )}
+      </OutsideDrawer>
     </Modal>
+  );
+}
+
+/**
+ * A phone's bottom drawer, drawn inside a transparent Modal: it rises from its own height as it opens, and the
+ * grabber on top drags it, so a flick down (or a drag most of the way) closes it and anything less springs it back.
+ * Closing otherwise (the backdrop, Back, an action) is the Modal's fade, so a drawer's Modal is gone as quickly as
+ * before and an action can open the next one straight away. The backdrop dims with the drawer's position.
+ */
+export function BottomDrawer({ onClose, maxHeight, height: fixedHeight, paddingBottom, className, children }: {
+  onClose: () => void;
+  maxHeight: `${number}%`;
+  /**
+   * A fixed height, of the screen, in place of fitting the content. It goes on the drawer's own frame: a percentage
+   * height in `className` would be taken of that frame rather than the screen.
+   */
+  height?: `${number}%`;
+  paddingBottom: number;
+  className?: string;
+  children: ReactNode;
+}) {
+  const window = useWindowDimensions();
+  // Below the screen until it has been measured, then up from its own height.
+  const offset = useSharedValue(window.height);
+  const height = useSharedValue(0);
+  const dragFrom = useSharedValue(0);
+
+  const onLayout = (event: LayoutChangeEvent) => {
+    const measured = event.nativeEvent.layout.height;
+    const first = height.get() === 0;
+    height.set(measured);
+    if (!first) return;
+    offset.set(measured);
+    offset.set(withSpring(0, { ...SHEET_SPRING, reduceMotion: ReduceMotion.System }));
+  };
+
+  const speed = useReleaseVelocity();
+  const drag = usePanGesture({
+    // A fail offset counts as a custom activation rule, which turns off the pan's default minimum distance, so the
+    // pan needs its own activation offset or it never starts.
+    activeOffsetY: [-6, 6],
+    failOffsetX: [-20, 20],
+    onActivate: (event) => {
+      "worklet";
+      // From where it is now, even mid-animation, so catching it never makes it jump.
+      cancelAnimation(offset);
+      dragFrom.set(offset.get());
+      speed.start(event.translationY);
+    },
+    onUpdate: (event) => {
+      "worklet";
+      speed.track(event.translationY);
+      const next = dragFrom.get() + event.translationY;
+      offset.set(next >= 0 ? next : rubberband(next, height.get()));
+    },
+    onDeactivate: (event) => {
+      "worklet";
+      const full = height.get();
+      const velocity = speed.release(event.velocityY);
+      if (!event.canceled && (offset.get() + project(velocity) > full * 0.4 || offset.get() > full / 2)) {
+        offset.set(withSpring(full, { ...SHEET_SPRING, velocity, overshootClamping: true }, (finished) => {
+          if (finished) scheduleOnRN(onClose);
+        }));
+        return;
+      }
+      offset.set(withSpring(0, { ...SNAP_BACK_SPRING, velocity }));
+    },
+  });
+
+  const drawerStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.get() }] }));
+  const backdropStyle = useAnimatedStyle(() => {
+    const full = height.get();
+    return { opacity: full > 0 ? interpolate(offset.get(), [0, full], [1, 0], Extrapolation.CLAMP) : 0 };
+  });
+
+  // A Modal is its own native window on Android, so gestures inside it need their own root.
+  return (
+    <GestureHandlerRootView style={{ flex: 1, justifyContent: "flex-end" }}>
+      <Animated.View pointerEvents="box-none" style={[{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }, backdropStyle]}>
+        <Pressable accessibilityLabel="Close" className="flex-1 bg-black/40" onPress={onClose} />
+      </Animated.View>
+      {/* Reanimated views take styles only; the themed drawer is a core View inside. */}
+      <Animated.View accessibilityViewIsModal style={[fixedHeight ? { height: fixedHeight, maxHeight: fixedHeight } : { maxHeight }, drawerStyle]} onLayout={onLayout}>
+        <View className={cn("shrink rounded-t-md border-t border-border bg-popover", fixedHeight && "flex-1", className)} style={{ paddingBottom }}>
+          {/* The detector checks a touch against its one child's bounds, so the strip must be a real native view
+              (collapsable={false}: a layout-only view is flattened away, leaving the 4 dp bar as the target) and
+              tall enough for a finger by itself. */}
+          <GestureDetector gesture={drag}>
+            <View collapsable={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" className="h-7 items-center justify-center">
+              <View className="h-1 w-9 rounded-sm bg-muted-foreground/30" />
+            </View>
+          </GestureDetector>
+          {children}
+        </View>
+      </Animated.View>
+    </GestureHandlerRootView>
   );
 }
 

@@ -1,10 +1,10 @@
 ---
 title: "TanStack AI"
 icon: "layers"
-description: "将 Phaseo 与 TanStack AI 的 OpenAI 兼容适配器配合使用。"
+description: "通过 TanStack AI 的 OpenAI 兼容适配器使用 Phaseo。"
 ---
 
-如果你想在 React、Solid、Preact、Vue、Svelte 或服务端 TypeScript 中构建类型安全的聊天流，可使用 TanStack AI。
+用你的 Phaseo 密钥、`baseURL: "https://api.phaseo.app/v1"` 和你要使用的 Phaseo 模型 ID 创建 TanStack AI 的 `openaiCompatible` 适配器。它可用于 React、Solid、Preact、Vue、Svelte 或服务端 TypeScript 中的类型安全聊天。
 
 ## 安装
 
@@ -12,7 +12,7 @@ description: "将 Phaseo 与 TanStack AI 的 OpenAI 兼容适配器配合使用�
 npm install @tanstack/ai @tanstack/ai-openai
 ```
 
-## 配置适配器
+## 将适配器指向 Phaseo
 
 ```ts
 import { chat } from "@tanstack/ai";
@@ -22,23 +22,18 @@ const phaseo = openaiCompatible({
 	name: "phaseo",
 	baseURL: "https://api.phaseo.app/v1",
 	apiKey: process.env.PHASEO_API_KEY!,
-	models: ["openai/gpt-5-nano", "anthropic/claude-sonnet-4.5"],
+	models: ["openai/gpt-6-astra", "anthropic/claude-sonnet-5.5"],
 });
 
 const stream = chat({
-	adapter: phaseo("openai/gpt-5-nano"),
+	adapter: phaseo("openai/gpt-6-astra"),
 	messages: [{ role: "user", content: "Reply with only: ok" }],
 });
 ```
 
-## 说明
+在 `models` 中声明你打算使用的每个 Phaseo 模型 ID。ID 请在 [Models](../../api-reference/endpoint/models.mdx) 中核对。
 
-- 在 `models` 数组中声明计划使用的 Phaseo 模型 ID。
-- OpenAI 兼容适配器默认使用 Chat Completions。Responses 专属功能请直接调用 API。
-- 如果模型在工作流中不支持工具或图像，请在 TanStack AI 中声明更窄的能力，以便 TypeScript 更早发现不支持的调用。
+## 已知限制
 
-## 相关内容
-
-- [OpenAI SDK](./openai-sdk.mdx)
-- [工具调用](../tool-calling.mdx)
-- [模型](../../api-reference/endpoint/models.mdx)
+- 该适配器使用 Chat Completions。对于仅在 Responses 上可用的功能，请直接调用 Phaseo 或使用 [OpenAI SDK](./openai-sdk.mdx)。
+- 如果某个模型不支持[工具](../tool-calling.mdx)或图像，请在 TanStack AI 中声明更窄的能力，让 TypeScript 捕获不受支持的调用。

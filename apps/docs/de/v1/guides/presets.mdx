@@ -4,31 +4,43 @@ description: "Speichere wiederverwendbare Gateway-Konfigurationen für dein Team
 icon: "sliders-horizontal"
 ---
 
-Voreinstellungen sind wiederverwendbare Konfigurationen, mit denen Teams Prompts, Modellpräferenzen und Routing-Standards vereinheitlichen können. Sie werden im Phaseo-Dashboard verwaltet und können teamweit geteilt werden. Du kannst sie auch mit den CLI-Befehlen `phaseo presets` oder der API `/v1/presets` verwalten.
+import { PresetMergeExplorer } from "/snippets/preset-merge.jsx";
 
-## Schnellstart
+Eine Voreinstellung speichert Modell, System-Prompt, Parameter und Anbieterregeln für eine Aufgabe unter einem Namen wie `@support-triage`. Aufrufer senden diesen Namen als `model` und nur die Eingabe; das Gateway ergänzt den Rest, bevor es einen Anbieter auswählt.
+
+Schalte die Anfragefelder um, um zu sehen, welcher Wert gewinnt:
+
+<PresetMergeExplorer locale="de" />
+
+Es gelten diese Regeln:
+
+- **Parameter füllen Lücken.** Die Standardparameter einer Voreinstellung gelten nur für Felder, die in der Anfrage fehlen. Ein Wert in der Anfrage gewinnt immer.
+- **System-Prompts werden gestapelt.** Der Prompt der Voreinstellung steht zuerst. Hat die Anfrage einen eigenen System-Prompt oder `instructions`, folgt dieser nach einer Leerzeile.
+- **Anbietereinstellungen in der Anfrage gewinnen.** Felder wie `provider.order` oder `provider.max_price` in der Anfrage ersetzen den Wert der Voreinstellung für dieses Feld.
+- **Zulassungslisten schränken ein, erweitern aber nie.** Die Zulassungs- und Ignorierlisten der Voreinstellung für Anbieter werden vor der Anbieterauswahl angewendet und begrenzen daher auch, welche Anbieter ein Fallback nutzen kann. Ein Modell außerhalb der erlaubten Modelle der Voreinstellung schlägt mit einem `validation_error` fehl, dessen Detail-Schlüsselwort `preset_model_not_allowed` lautet; es wird nicht umgeleitet.
+
+## Eine Voreinstellung erstellen und nutzen
 
 <Steps>
-<Step title="Voreinstellung erstellen">
+<Step title="Die Voreinstellung erstellen">
 
-Öffne **Dashboard -> Einstellungen -> Voreinstellungen** und erstelle eine Voreinstellung mit einem eindeutigen Slug, z. B. `release-summary`. Füge nur Standards hinzu, die von allen Aufrufern verwendet werden sollen. Über die CLI: `phaseo presets create --name @release-summary --model <model-id>`.
+Öffne **Dashboard -> Einstellungen -> Voreinstellungen** und erstelle eine Voreinstellung mit einem Slug wie `support-triage`. Füge nur die Standards hinzu, die alle Aufrufer teilen sollen.
+
+Für Skripte rufst du `POST /v1/presets` mit einem Management-Schlüssel auf.
 
 </Step>
 
-<Step title="Voreinstellung in einer Anfrage referenzieren">
-
-Der Aufrufer konzentriert sich auf die Nutzereingabe, während die Voreinstellung stabile Standardwerte für Prompt, Parameter und Routing liefert.
+<Step title="Über ihren Namen aufrufen">
 
 <CodeGroup>
-
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
-	  -d '{
-	    "model": "@release-summary",
-	    "input": "Generate a release summary for the last 24 hours."
-	  }'
+  -d '{
+    "model": "@support-triage",
+    "input": "Customer says the invoice total is wrong."
+  }'
 ```
 
 ```typescript TypeScript
@@ -37,8 +49,8 @@ import Phaseo from "@phaseo/sdk";
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-	  model: "@release-summary",
-	  input: "Generate a release summary for the last 24 hours.",
+  model: "@support-triage",
+  input: "Customer says the invoice total is wrong.",
 });
 ```
 
@@ -48,98 +60,68 @@ from phaseo import Phaseo
 client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response({
-	    "model": "@release-summary",
-	    "input": "Generate a release summary for the last 24 hours.",
+    "model": "@support-triage",
+    "input": "Customer says the invoice total is wrong.",
 })
 ```
-
 </CodeGroup>
 
 </Step>
 
-<Step title="Routing-Ergebnis prüfen">
+<Step title="Prüfen, was angewendet wurde">
 
-Öffne die Anfrage unter **Gateway -> Nutzung**, um zu prüfen, welche Standards angewendet wurden und welcher Anbieter sie ausgeführt hat.
+Öffne die Anfrage unter **Gateway -> Nutzung**, um zu sehen, welche Standards der Voreinstellung angewendet wurden und welcher Anbieter sie bedient hat.
 
 </Step>
 </Steps>
 
-## Mögliche Inhalte einer Voreinstellung
+## Was eine Voreinstellung enthalten kann
 
-- Ein System-Prompt, der jeder Anfrage vorangestellt wird.
-- Eine [Prompt-Vorlage](./prompt-templates.mdx): Nachrichten mit `{{variables}}`, die jede Anfrage ausfüllt.
-- Erlaubte Modelle oder Modellfamilien.
-- Zulassungs- und Ignorierlisten für Anbieterpräferenzen beim Routing.
-- Standardparameter wie temperature, top_p, max_tokens und ähnliche Einstellungen.
-- Optionale Reasoning-Standards für unterstützte Modelle.
+| Einstellung | Wirkung |
+| --- | --- |
+| Modell | Wird verwendet, wenn die Anfrage mit dem Namen der Voreinstellung gesendet wird. |
+| Erlaubte Modelle | Modell-IDs oder Muster wie `anthropic/*`. Andere Modelle werden abgelehnt. |
+| System-Prompt | Wird jeder Anfrage vorangestellt. |
+| [Prompt-Vorlage](./prompt-templates) | Nachrichten mit `{{variables}}`, die jede Anfrage ausfüllt. |
+| Standardparameter | `temperature`, `top_p`, `max_tokens`, Reasoning-Einstellungen und Ähnliches. |
+| Anbieterregeln | Zulassungs- und Ignorierlisten, Anbieterreihenfolge, Regionen, Preisobergrenzen. |
 
-Voreinstellungsnamen beginnen mit `@`, damit sie leicht erkennbar sind.
+Halte aufruferspezifische Logik in deiner Anwendung und nutze getrennte Voreinstellungen, wenn Workflows unterschiedliche Prompts, Routing oder Caching brauchen.
 
-Rufe eine Voreinstellung über das Feld `model` der Anfrage auf oder, wenn die Voreinstellung eine [Prompt-Vorlage](./prompt-templates.mdx) hat, über `prompt.id`. Phaseo stellt kein separates `preset`-Anfragefeld bereit.
+## Eine Voreinstellung benennen
 
-- Private Voreinstellungen und Workspace-Voreinstellungen verwenden `@{slug}` und werden im Workspace des API-Schlüssels aufgelöst.
-- Öffentliche Voreinstellungen verwenden `@{username}/{slug}` und können aus jedem Workspace aufgelöst werden. Beispiel: `@octavia/release-summary`.
+Sende eine Voreinstellung über das Feld `model` oder, wenn sie eine [Prompt-Vorlage](./prompt-templates) hat, über `prompt.id`. Ein separates Feld `preset` gibt es nicht.
 
-Für eine öffentliche Veröffentlichung sind ein aktiviertes öffentliches Profil und ein Benutzername erforderlich. Konflikte bei öffentlichen Slugs gelten nur für den jeweiligen Herausgeber. Zwei Herausgeber können daher denselben Slug ohne Mehrdeutigkeit verwenden. Benutzernamen sind global eindeutig. Slugs werden in Kleinbuchstaben normalisiert und unterstützen Buchstaben, Ziffern, Bindestriche, Unterstriche, Punkte und Doppelpunkte.
+| Form | Wird aufgelöst in |
+| --- | --- |
+| `@support-triage` | Dem Arbeitsbereich des API-Schlüssels (private und Arbeitsbereichs-Voreinstellungen). |
+| `@octavia/support-triage` | Jedem Arbeitsbereich (öffentliche Voreinstellungen, veröffentlicht vom Benutzer `octavia`). |
+| `@support-triage@v3` | Dieser veröffentlichten Version. |
+| `@support-triage@production` | Der Version, auf die das Label `production` gerade zeigt. |
 
-## Versionen und Marketplace-Forks
+Zum Veröffentlichen einer öffentlichen Voreinstellung brauchst du ein aktiviertes öffentliches Profil und einen Benutzernamen. Benutzernamen sind in ganz Phaseo eindeutig; Slugs müssen nur pro Herausgeber eindeutig sein. Slugs werden in Kleinbuchstaben umgewandelt und dürfen Buchstaben, Ziffern, `-`, `_`, `.` und `:` enthalten.
 
-Beim Speichern werden Änderungen in einem privaten Entwurf übernommen. Sobald sie bereit sind, verwende **Neue Version veröffentlichen**. Phaseo erstellt eine unveränderliche Version mit Nummer und behält frühere Versionen zur Prüfung bei.
+<span id="version-and-roll-back"></span>
+## Versionieren und zurückrollen
 
-Eigentümer können festlegen, wie Versionsbezeichnungen angezeigt werden:
+Speichern ändert einen privaten Entwurf. **Neue Version veröffentlichen** macht aus dem Entwurf eine unveränderliche, nummerierte Version und behält alle früheren.
 
-- **Fortlaufend:** `v1`, `v2`, `v3`.
-- **Semantische Versionierung:** explizite SemVer-Bezeichnungen wie `1.2.0`, `2.0.0-beta.1` oder `1.4.2+build.7`.
-- **Datumsbasiert:** `YYYY.MM.DD`, mit numerischem Zusatz, wenn am selben Datum mehrere Versionen veröffentlicht werden, z. B. `2026.08.02.2`.
+Lege fest, wie Versionsbezeichnungen aussehen:
 
-Intern verwaltet Phaseo eine eigene fortlaufende Versionsnummer. So bleiben Chronologie, Vergleiche mit der Quelle und die Abstammung unabhängig vom gewählten öffentlichen Bezeichnungsformat deterministisch.
+| Format | Beispiel |
+| --- | --- |
+| Fortlaufend | `v1`, `v2`, `v3` |
+| Semantische Versionierung | `1.2.0`, `2.0.0-beta.1`, `1.4.2+build.7` |
+| Datum | `2026.08.02`, dann `2026.08.02.2` für eine zweite Version am selben Tag |
 
-Marketplace-Kopien bleiben an die genaue Upstream-Version gebunden, von der sie erstellt wurden. Bei einer neuen Veröffentlichung des Herausgebers zeigt die Kopie einen Aktualisierungshinweis an. Das Anwenden der Aktualisierung ändert nur den Entwurf der Kopie. Der Workspace-Eigentümer kann sie prüfen und ausdrücklich veröffentlichen, ohne dass ein Upstream-Autor das Produktionsverhalten ändert.
+Richte ein benanntes Label wie `production` auf eine Version, und schiebe es auf eine frühere Version zurück, um zurückzurollen. Siehe [Versionen und Labels](/de/v1/guides/prompt-templates#versions-and-labels).
 
-Phaseo speichert sowohl die direkte Quelle als auch die vollständige Abstammung jedes Forks. Marketplace-Seiten können daher direkte Forks von allen Nachkommen unterscheiden, auch wenn eine Voreinstellung mehrfach kopiert und erneut veröffentlicht wurde.
+In Skripten veröffentlichst du mit `POST /v1/presets/{id}/versions` und verschiebst Labels mit `PUT /v1/presets/{id}/labels/{label}`, jeweils mit einem Management-Schlüssel. Eine CLI-Anmeldung oder eine App, die Mit Phaseo anmelden nutzt, kann Voreinstellungen lesen, aber nicht ändern.
 
-Anfragen können eine veröffentlichte Version über ihr Label pinnen, etwa `@support-triage@v3`, oder über ein benanntes Label wie `production`, das du auf eine Version richtest. Ein Label auf eine frühere Version zurückzuschieben ist ein Rollback. Siehe [Prompt-Vorlagen](./prompt-templates.mdx).
+## Eine Marketplace-Voreinstellung forken
 
-## So werden Voreinstellungen zusammengeführt
+Eine Kopie einer Marketplace-Voreinstellung bleibt an die Version gebunden, die du kopiert hast. Veröffentlicht der Herausgeber ein Update, zeigt deine Kopie einen Hinweis. Das Anwenden ändert nur deinen Entwurf, sodass nichts in die Produktion gelangt, bevor du selbst veröffentlichst.
 
-Wird im Gateway-Kontext eine Anfrage mit einer Voreinstellung aufgelöst, wird die Voreinstellung vor dem Provider-Routing angewendet:
+Phaseo speichert die Quelle und die vollständige Abstammung jedes Forks, sodass eine Marketplace-Seite direkte Forks getrennt von allen Nachkommen anzeigen kann.
 
-- Standardparameter füllen nur Felder aus, die im Anfrage-Body fehlen. Bereits vom Aufrufer übergebene Werte werden nicht überschrieben.
-- Enthält die Anfrage bereits eine Systemnachricht, wird der Prompt der Voreinstellung davor eingefügt. Bei einem Anthropic-artigen `system`-Feld wird der Prompt dort vorangestellt.
-- Zulassungs- und Ignorierlisten für Anbieter werden vor der Anbieterauswahl angewendet. Sie verkleinern den Fallback-Pool und dienen nicht nur als dekorative Markierung.
-- Anfragen außerhalb der Modell-Zulassungsliste der Voreinstellung werden früh abgelehnt, statt unbemerkt umgeleitet zu werden.
-
-Voreinstellungen sind damit die zentrale öffentliche Schnittstelle für wiederverwendbare Anfrage-Standards und einfache Kompatibilitätstransformationen. Aufrufer müssen dieselbe Prompt- oder Parameterlogik nicht mehrfach implementieren.
-
-## Aktueller öffentlicher Funktionsumfang
-
-Der Ablauf für Voreinstellungen im Dashboard ist bewusst auf eine stabile, klar definierte Teilmenge der Anfrageanpassungen beschränkt:
-
-- System-Prompt-Injektion
-- Prompt-Vorlagen mit typisierten Variablen
-- Modell-Zulassungslisten
-- Routing-Einschränkungen mit Zulassungs- oder Ignorierlisten für Anbieter
-- Standardwerte für Decoding und Generierung
-- Reasoning-Standards
-
-Wenn du komplexere Transformationen pro Aufrufer benötigst, bündle sie in einer Anwendungsschicht und verwende Voreinstellungen für teamweit wiederverwendbare Standards.
-
-## Voreinstellungen verwalten
-
-Erstelle und verwalte Voreinstellungen unter **Dashboard -> Einstellungen -> Voreinstellungen**. Nutze verschiedene Slugs, wenn Workflows deutlich unterschiedliche Prompts, Routing- oder Cache-Einstellungen benötigen. Über die CLI verwendest du `phaseo presets create|update`, `phaseo presets versions create` und `phaseo presets labels set` (die API `/v1/presets`).
-
-## Wann Voreinstellungen sinnvoll sind
-
-- System-Prompts über mehrere Dienste hinweg vereinheitlichen.
-- Routing aus Compliance-Gründen auf zugelassene Anbieter beschränken.
-- Standardparameter in verschiedenen Umgebungen konsistent halten.
-- Migrationsprojekten einen dauerhaften Ort für Prompt-, Routing- und Parameterstandards geben, während der Anwendungscode weitgehend unverändert bleibt.
-
-## Zugehörige Anleitungen
-
-- [Prompt-Vorlagen](./prompt-templates.mdx)
-- [Feedback zu Voreinstellungen sammeln](./preset-feedback.mdx)
-- [Routing und Fallbacks](./routing-and-fallbacks.mdx)
-- [Inferenzparameter](./inference-parameters.mdx)
-- [Funktionsvergleichsmatrix](../migration-guides/feature-parity-matrix.mdx)
-
+Wie du Bewertungen zu den Antworten einer Voreinstellung sammelst, steht unter [Feedback zu Voreinstellungen erfassen](./preset-feedback).

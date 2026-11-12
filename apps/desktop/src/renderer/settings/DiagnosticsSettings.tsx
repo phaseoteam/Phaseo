@@ -197,7 +197,7 @@ function PeriodSelector({ value, onChange }: { value: number; onChange: (windowM
 const ago = (iso: string, now: number) => <span className="whitespace-nowrap">{formatAgo(iso, now)}</span>;
 
 /**
- * Settings → Diagnostics, after T3 Code's page: the app's live process tree, its resource use while the page is open,
+ * Settings → Diagnostics: the app's live process tree, its resource use while the page is open,
  * and what the main process's trace file says about recent work. Processes are sampled only while this page is open.
  */
 export function DiagnosticsSettings() {

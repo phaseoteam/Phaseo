@@ -21,7 +21,7 @@ CREATE OR REPLACE FUNCTION public.v2_model_has_routable_route (
       and (p.status <> 'external' or coalesce(r.metadata->>'external_routing_override', 'false') = 'true')
       and (r.effective_from is null or r.effective_from<=p_at)
       and (r.effective_to is null or p_at<r.effective_to)
-      and c.status in ('active','deranked','deranked_lvl1','deranked_lvl2','deranked_lvl3')
+      and c.status in ('active','degraded','deranked','deranked_lvl1','deranked_lvl2','deranked_lvl3')
       and (c.effective_from is null or c.effective_from<=p_at)
       and (c.effective_to is null or p_at<c.effective_to)
   )

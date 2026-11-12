@@ -1,0 +1,307 @@
+---
+icon: "braces"
+title: "API संदर्भ"
+description: "हर Agent SDK function, method, विकल्प और नतीजा टाइप देखें, हर भाषा में उसके नाम के साथ।"
+---
+
+किसी Agent SDK function या टाइप को उसके काम से खोजें, फिर अपनी भाषा में उसका नाम देखें। [उपयोग](./usage) दिखाता है कि ये हिस्से आपस में कैसे जुड़ते हैं। TypeScript संदर्भ डिज़ाइन है; जहाँ किसी भाषा में कुछ नहीं है, वहाँ उसका सेल यह बताता है।
+
+| भाषा | पैकेज | कहाँ से import करें | सोर्स |
+| --- | --- | --- | --- |
+| TypeScript | `@phaseo/agent-sdk` | `@phaseo/agent-sdk` | `packages/sdk/agent-sdk-ts` |
+| Python | `phaseo-agent-sdk` | `phaseo_agent` | `packages/sdk/agent-sdk-py` |
+| Go | `github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go` | पैकेज `phaseoagent` | `packages/sdk/agent-sdk-go/agent.go` |
+| C# | `Phaseo.AgentSdk` (NuGet) | namespace `PhaseoAgentSdk`, static class `AgentSdk` | `packages/sdk/agent-sdk-csharp/AgentSdk.cs` |
+| PHP | `phaseo/agent-sdk` (Composer) | namespace `Phaseo\AgentSdk`, class `AgentSdk` | `packages/sdk/agent-sdk-php/src/AgentSdk.php` |
+| Ruby | `phaseo_agent_sdk` (gem) | module `PhaseoAgentSdk` | `packages/sdk/agent-sdk-ruby/lib/phaseo_agent_sdk.rb` |
+| Java | `app.phaseo:phaseo-agent-sdk` (Maven) | `app.phaseo.agent.AgentSdk` में nested records | `packages/sdk/agent-sdk-java/src/main/java/app/phaseo/agent/AgentSdk.java` |
+| Rust | `phaseo-agent` `0.2` (crates.io, [docs.rs](https://docs.rs/phaseo-agent/0.2.0/phaseo_agent/)) | `phaseo_agent` | `packages/sdk/agent-sdk-rust` |
+
+## एजेंट बनाएँ
+
+एक definition से एजेंट बनाता है। Definition की स्टेप सीमा हर run या continue कॉल पर लागू होती है।
+
+| भाषा | नाम | डिफ़ॉल्ट स्टेप सीमा |
+| --- | --- | --- |
+| TypeScript | `createAgent(definition)` | 12 |
+| Python | `create_agent(definition)`, किसी dict या `AgentDefinition` से | 12 |
+| Go | `CreateAgent(AgentDefinition) *Agent` | 8 |
+| C# | `AgentSdk.CreateAgent(AgentDefinition)` | 12 |
+| PHP | `AgentSdk::createAgent(AgentDefinition)` | 12 |
+| Ruby | `PhaseoAgentSdk.create_agent(definition)`, किसी `AgentDefinition` या keyword फ़ील्ड से | 12 |
+| Java | `AgentSdk.createAgent(AgentDefinition)` | 12 (1 से कम `maxSteps` 12 हो जाता है) |
+| Rust | `create_agent(AgentDefinition::new(id, model))` | 8 (मान कम से कम 1 तक सीमित किए जाते हैं) |
+
+### Definition फ़ील्ड
+
+Rust definition को फ़ील्ड के बजाय methods से बनाता है: `AgentDefinition::new(id, model)`, फिर `.instructions(text)`, `.tool(tool)` (हर टूल के लिए एक बार), `.max_steps(limit)`, `.model_retries(count, backoff)` और `.human_review(callback)`। Java का `AgentDefinition` 10-, 13- और 19-argument constructors वाला एक record है।
+
+| फ़ील्ड | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby) | PascalCase (Go, C#) | इनमें नहीं |
+| --- | --- | --- | --- | --- |
+| एजेंट ID (ज़रूरी) | `id` | `id` | `ID` (Go), `Id` (C#) | |
+| मॉडल या प्रीसेट | `model`, `preset` | `model`, `preset` | `Model`, `Preset` | Rust में `preset` नहीं है |
+| मॉडल सूची (`model` सेट न होने पर सिर्फ़ पहला उपयोग होता है; कोई fallback नहीं) | `models` | | | TypeScript को छोड़कर सभी |
+| निर्देश | `instructions` | `instructions` | `Instructions` | |
+| टूल | `tools` | `tools` | `Tools` | |
+| किसी स्टेप पर दिए गए टूल | `activeTools` | | | TypeScript को छोड़कर सभी |
+| हर मॉडल अनुरोध से पहले इतिहास फिर से लिखें | `prepareMessages` | | | TypeScript को छोड़कर सभी |
+| स्टेप सीमा और रोकने की शर्तें | `maxSteps`, `stopWhen` | `max_steps`, `stop_when` | `MaxSteps`, `StopWhen` | Rust में `stop_when` नहीं है |
+| मॉडल retry और टूल concurrency | `modelRetry`, `toolExecution` | `model_retry`, `tool_execution` | `ModelRetry`, `ToolExecution` | Rust में टूल concurrency नहीं है |
+| Sampling और लंबाई | `temperature`, `maxOutputTokens`, `topP` | `temperature`, `max_output_tokens`, `top_p` | | Go, C#, Java, Rust |
+| अंतिम आउटपुट पार्स करें और जाँचें | `parseOutput`, `outputSchema` | `parse_output`, `output_schema` | `ParseOutput`, `OutputSchema` | Rust |
+| हर टूल कॉल के लिए अनुमोदन | `requireApproval` | `require_approval` | `RequireApproval` | Rust (अनुमोदन प्रति टूल होता है) |
+| हर मॉडल प्रतिक्रिया के बाद समीक्षा | `humanReview` | `human_review` | `HumanReview` | |
+| टर्न के बीच टूल या सेटिंग बदलें | `dynamicTools` (PHP) और [गतिशील टर्न](./dynamic-turns) callbacks | `dynamic_tools` (Ruby) | गतिशील टर्न callbacks | Rust |
+
+TypeScript में, `model`, `instructions` और sampling मान तय या गतिशील हो सकते हैं।
+
+## टूल परिभाषित करें
+
+| भाषा | नाम | नोट्स |
+| --- | --- | --- |
+| TypeScript | `defineTool(definition)`, उपनाम `tool(definition)` | स्थानीय, मैन्युअल (`execute: false`), अनुमोदन से नियंत्रित या प्रगति देने वाला |
+| Python | `define_tool(AgentTool)`, उपनाम `tool(AgentTool)` | मैन्युअल टूल के लिए `execute` छोड़ दें |
+| Go | `DefineTool(Tool) Tool` | वही `Tool` लौटाता है |
+| C# | `AgentSdk.DefineTool(Tool)` | वही `Tool` लौटाता है |
+| PHP | `AgentSdk::defineTool(Tool)` | वही `Tool` लौटाता है |
+| Ruby | `PhaseoAgentSdk.define_tool(Tool)` | वही `Tool` लौटाता है |
+| Java | `AgentSdk.defineTool(Tool)` | वही `Tool` लौटाता है |
+| Rust | `Tool::new(id, description, parameters, executor)`, `Tool::external(id, description, parameters)`, `.require_approval()`; `define_tool(tool)` टूल लौटाता है | Executor `Fn(serde_json::Value, &RuntimeContext) -> Result<serde_json::Value, AgentError> + Send + Sync + 'static` है |
+
+[टूल](./tools) में हर टूल फ़ील्ड की सूची है।
+
+## Phaseo Gateway से कनेक्ट करें
+
+| भाषा | नाम | क्या लौटाता है |
+| --- | --- | --- |
+| TypeScript | `createGatewayAgentClient(options)` | एक gateway एजेंट क्लाइंट |
+| Python | `create_gateway_agent_client(**options)` | एक gateway एजेंट क्लाइंट |
+| Go | `CreateGatewayAgentClient(GatewayAgentClientOptions)` | `(*GatewayAgentClient, error)` |
+| C# | `AgentSdk.CreateGatewayAgentClient(GatewayAgentClientOptions? options = null)` | `GatewayAgentClient`; API कुंजी न होने पर exception फेंकता है |
+| PHP | `AgentSdk::createGatewayAgentClient(?GatewayAgentClientOptions)` | `GatewayAgentClient`; API कुंजी न होने पर exception फेंकता है |
+| Ruby | `PhaseoAgentSdk.create_gateway_agent_client(**options)` | `GatewayAgentClient`; API कुंजी न होने पर raise करता है |
+| Java | `AgentSdk.createGatewayAgentClient()`, `createGatewayAgentClient(GatewayOptions)` | `ModelClient` / `StreamingModelClient`; API कुंजी न होने पर exception फेंकता है |
+| Rust | `create_gateway_agent_client(model)` (`GatewayAgentClient::from_env(model)` जैसा ही), `GatewayAgentClient::new(phaseo_client, model)` | `GatewayAgentClient`, जो `POST /responses` भेजता है और आउटपुट टेक्स्ट, function कॉल, अनुरोध metadata और उपयोग को normalize करता है |
+
+[आउटपुट और retries](./run-controls#set-gateway-defaults-on-the-client) में हर भाषा के क्लाइंट विकल्पों की सूची है।
+
+## रन को स्थानीय रूप से कैप्चर करें
+
+| भाषा | नाम | क्या लौटाता है |
+| --- | --- | --- |
+| TypeScript | `createAgentDevtools(options)` | एक DevTools config |
+| Python | `create_agent_devtools(**options)` | एक DevTools config |
+| Go | `CreateAgentDevtools(directory)` | `*DevtoolsConfig` |
+| C# | `AgentSdk.CreateAgentDevtools(string directory = ".phaseo-devtools")` | `AgentDevtoolsConfig` |
+| PHP | `AgentSdk::createAgentDevtools(string $directory = ".phaseo-devtools")` | `DevtoolsConfig` |
+| Ruby | `PhaseoAgentSdk.create_agent_devtools(directory: ".phaseo-devtools", enabled: true)` | `DevtoolsConfig` |
+| Java | `AgentSdk.createAgentDevtools(String directory)` | `DevtoolsConfig` |
+| Rust | कोई नहीं | |
+
+[DevTools](./devtools) देखें।
+
+## रोकने की शर्तें
+
+| शर्त | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby) | PascalCase (Go, C#) |
+| --- | --- | --- | --- |
+| स्टेप संख्या | `stepCountIs` | `step_count_is` | `StepCountIs` |
+| उपयोग किए गए टोकन | `maxTokensUsed` | `max_tokens_used` | `MaxTokensUsed` |
+| लागत | `maxCost` | `max_cost` | `MaxCost` |
+| बीता हुआ समय | `maxDuration` (TypeScript और PHP में मिलीसेकंड; Java में `Duration`) | `max_duration` (मिलीसेकंड) | `MaxDuration` (Go में `time.Duration`; C# में `TimeSpan`) |
+| कोई टूल कॉल हुआ | `hasToolCall` | `has_tool_call` | `HasToolCall` |
+| समाप्ति का कारण | `finishReasonIs` | `finish_reason_is` | `FinishReasonIs` |
+
+Go और Java एक `StopCondition` लौटाते हैं; C# एक `Func<StopState, (bool Stop, string Reason)>` लौटाता है; PHP एक `callable` लौटाता है; Ruby एक lambda लौटाता है। Rust में रोकने की शर्तें नहीं हैं, सिर्फ़ स्टेप सीमा है। [रोकने की शर्तें](./stop-conditions) देखें।
+
+## चलाएँ और जारी रखें
+
+| उद्देश्य | TypeScript | Python | Go | C# | PHP | Ruby | Java | Rust |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| चलाएँ | `run(options)` | `run(...)` | `Run(ctx, RunOptions)` | `Run(RunOptions)` | `run(...)` | `run(...)` | `run(RunOptions)` | `run(&mut client, options)`, `run_with_events(&mut client, options, callback)` |
+| चलाएँ और स्ट्रीम करें | `stream(options)` | `stream(...)` | `Stream(ctx, RunOptions)` | `Stream(RunOptions)` | `stream(...)` | `stream(...)` | `stream(RunOptions)` | कोई नहीं |
+| जारी रखें | `continueRun(options)` | `continue_run(...)` | `Continue(ctx, ContinueOptions)` | `ContinueRun(ContinueOptions)` | `continueRun(...)`, `continueRunById(...)` | `continue_run(...)` | `continueRun(ContinueOptions)` | `continue_run(&mut client, options)`, `continue_with_events(...)` |
+| जारी रखें और स्ट्रीम करें | `continueStream(options)` | `continue_stream(...)` | `ContinueStream(ctx, ContinueOptions)` | `ContinueStream(ContinueOptions)` | `continueStream(...)` | `continue_stream(...)` | `continueStream(ContinueOptions)` | कोई नहीं |
+
+Run और continue एक रन नतीजा लौटाते हैं: TypeScript में `Promise<AgentRunResult>`, Go में `(RunResult, error)`, C# में `Task<RunResult>`, Rust में `Result<RunResult, AgentError>`, और बाकी जगह सीधे रन नतीजा। Stream methods तुरंत एक stream result लौटाते हैं।
+
+### Run विकल्प
+
+PHP और Ruby इन्हें named या keyword arguments के रूप में लेते हैं; Java का `RunOptions` एक positional record है, इस क्रम में: `input, client, context, model, preset, maxSteps, modelRetry, toolExecution, onEvent, devtools`, फिर एक वैकल्पिक `state`।
+
+| विकल्प | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) | इनमें नहीं |
+| --- | --- | --- | --- | --- |
+| इनपुट | `input` | `input` | `Input` | |
+| इनपुट की जगह पूरी बातचीत | `messages` | | | TypeScript को छोड़कर सभी |
+| मॉडल क्लाइंट | `client` | `client` | `Client` | Rust इसे अलग argument के रूप में देता है |
+| ऐप्लिकेशन संदर्भ | `context` | `context` | `Context` | |
+| मॉडल, प्रीसेट और स्टेप सीमा overrides | `model`, `preset`, `maxSteps` | `model`, `preset`, `max_steps` | `Model`, `Preset`, `MaxSteps` | Rust में सिर्फ़ `model` और `max_steps` हैं |
+| Retry और टूल concurrency overrides | `modelRetry`, `toolExecution` | `model_retry`, `tool_execution` | `ModelRetry`, `ToolExecution` | Rust |
+| Sampling overrides | `temperature`, `maxOutputTokens`, `topP` (TypeScript) | | | TypeScript को छोड़कर सभी |
+| रद्द करना | `signal` (TypeScript) | | `CancellationToken` (C#) | Go `ctx` का उपयोग करता है; बाकी स्ट्रीम के ज़रिए रद्द करते हैं |
+| इवेंट handler | `onEvent` | `on_event` | `OnEvent` | Rust `run_with_events` का उपयोग करता है |
+| स्थानीय कैप्चर | `devtools` | `devtools` | `Devtools` | Rust |
+| State accessor | `state` | `state` | `State` | Rust |
+| अगले मॉडल अनुरोध से पहले मैसेज जोड़ें | `takeMessages` (TypeScript) | | | TypeScript को छोड़कर सभी |
+
+Python का `run()` `stop_when` भी स्वीकार करता है लेकिन उसे अनदेखा करता है; रोकने की शर्तें definition पर सेट करें। PHP का `stream()` और Ruby का `stream` सिर्फ़ `input`, `client`, `context` और `state` लेते हैं। Rust `RunOptions::new(input)` से डिफ़ॉल्ट बनाता है।
+
+### Continue विकल्प
+
+Continue विकल्प ऊपर दिए run overrides लेते हैं, साथ में:
+
+| विकल्प | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) | इनमें नहीं |
+| --- | --- | --- | --- | --- |
+| सहेजा हुआ रन | `run` | `run` (Rust: `result`) | `Run` | |
+| `state` के ज़रिए ID से रन लोड करें | `runId` | `run_id` | `RunID` (Go), `RunId` (C#) | Rust; PHP `continueRunById($runId, $state, $client, ...)` का उपयोग करता है |
+| मानवीय इनपुट | `humanInput` | `human_input` | `HumanInput` | |
+| संरचित मानवीय मैसेज | `humanMessages` (TypeScript) | | | TypeScript को छोड़कर सभी |
+| अनुमोदन | `approvals` (TypeScript उपनाम `approveToolCalls`) | `approvals` | `Approvals` | |
+| अस्वीकृतियाँ | `rejections` (TypeScript उपनाम `rejectToolCalls`) | `rejections` | `Rejections` | Rust |
+| टूल आउटपुट | `toolOutputs` | `tool_outputs` | `ToolOutputs` | |
+
+Java के `ContinueOptions` का क्रम `run, client, context, model, preset, maxSteps, humanInput, modelRetry, toolExecution, onEvent, devtools` है, फिर `approvals, rejections, toolOutputs`, फिर `runId, state`। 16 आर्ग्युमेंट वाले इस रूप के अलावा, ऐसे कंस्ट्रक्टर भी हैं जो सिर्फ़ पहले 11 या पहले 14 आर्ग्युमेंट लेते हैं; बाकी डिफ़ॉल्ट रूप से खाली लिस्ट या `null` होते हैं। Rust `ContinueOptions::new(result)` से डिफ़ॉल्ट बनाता है।
+
+## Stream result
+
+| उद्देश्य | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| पूरा हुआ नतीजा | `getResult()`, या स्ट्रीम को `await` करें | `result()` | `Result()` | `GetResult()` | `getResult()` | `result` | `getResult()` |
+| पूरा अंतिम टेक्स्ट | `getText()` | | | | | | |
+| टेक्स्ट deltas | `getTextStream()` | `text_stream()` | `Text()` | `TextStream()` | `textStream()` | `text_stream` | `textStream()` |
+| Reasoning deltas | `getReasoningStream()` | `reasoning_stream()` | | | `reasoningStream()` | `reasoning_stream` | |
+| आइटम | `getItemsStream()` | `item_stream()` | | | `itemStream()` | `item_stream` | |
+| टूल इवेंट | `getToolStream()` | `tool_stream()` | | | | | |
+| हर इवेंट | `getFullStream()` | `full_stream()` | `Events()` | `FullStream()` | `fullStream()` | `full_stream` | `fullStream()` |
+| रद्द करें | `cancel(reason?)` | `cancel()` | `Cancel()` | `Cancel()` | `cancel()` | `cancel` | `cancel()` |
+
+Consumers शुरुआत से replay करते हैं, इसलिए कई consumers एक ही रन पढ़ सकते हैं। उनका व्यवहार अलग-अलग है:
+
+| भाषा | Stream result टाइप | व्यवहार |
+| --- | --- | --- |
+| TypeScript | `AgentStreamResult` | `getFullStream()` एक `result` इवेंट के साथ ख़त्म होता है |
+| Python | `AgentStreamResult` | बैकग्राउंड थ्रेड में चलता है; `result()` पूरा होने तक ब्लॉक करता है |
+| Go | `*StreamResult` | `Text()` और `Events()` channels हैं; `Cancel()` रन का context रद्द करता है |
+| C# | `AgentStreamResult` | `IAsyncEnumerable` consumers; `Cancel()` रन का linked token रद्द करता है |
+| PHP | `AgentStreamResult` | एक Fiber में चलता है; स्ट्रीम ख़ाली होने के बाद `$result` में `RunResult` होता है, वरना `null` |
+| Ruby | `StreamResult` | वर्कर थ्रेड में चलता है; `result` उससे join करता है और `cancel` उसे ख़त्म करता है |
+| Java | `StreamResult` | `textStream()` और `fullStream()` रन ख़त्म होने के बाद एक `List` लौटाते हैं; `cancel()` वर्कर थ्रेड को बाधित करता है |
+| Rust | कोई नहीं | `0.2` में स्ट्रीमिंग नहीं है |
+
+## रन नतीजा
+
+| फ़ील्ड | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) |
+| --- | --- | --- | --- |
+| रन रिकॉर्ड | `run` | `run` | `Run` |
+| स्टेप रिकॉर्ड | `steps` | `steps` | `Steps` |
+| अंतिम आउटपुट | `output` | `output` | `Output` |
+| पूरी बातचीत | `messages` | `messages` | `Messages` |
+| कुल उपयोग | `usage` | `usage` | `Usage` |
+
+TypeScript और Python में टाइप `AgentRunResult` है और बाकी जगह `RunResult`। TypeScript में `stepResults` (normalized स्टेप नतीजे) और `items` (क्रमबद्ध मैसेज, reasoning, टूल गतिविधि, त्रुटियाँ और अंतिम आउटपुट; [आइटम](./items) देखें) भी हैं। Rust में, `output` एक `serde_json::Value` है, और `RunResult`, `RunRecord`, `RunStep`, `Message`, `ToolCall`, `HumanPause`, `PendingToolCall`, `ToolDecision`, `ToolOutput` और `UsageSummary` Serde से serialize होते हैं।
+
+### रन रिकॉर्ड
+
+| फ़ील्ड | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) |
+| --- | --- | --- | --- |
+| IDs | `id`, `agentId` | `id`, `agent_id` | `ID`/`Id`, `AgentID`/`AgentId` |
+| स्टेटस | `status` | `status` | `Status` |
+| इनपुट, संदर्भ और मैसेज | `input`, `context`, `messages` | `input`, `context`, `messages` | `Input`, `Context`, `Messages` |
+| लिए गए स्टेप | `stepCount` | `step_count` | `StepCount` |
+| नतीजा और त्रुटि | `result`, `error` | `result`, `error` | `Result`, `Error` |
+| Pause | `pause` | `pause` | `Pause` |
+| रोकने का कारण | `stopReason` | `stop_reason` | `StopReason` |
+| उपयोग | `usage` | `usage` | `Usage` |
+| Next-turn overrides | `nextTurn` (Java), `nextTurnParams` (PHP) | `next_turn_params` (Ruby) | `NextTurn` |
+| Timestamps | `createdAt`, `updatedAt` | `created_at`, `updated_at` | `CreatedAt`, `UpdatedAt` |
+
+Rust का `RunRecord` प्रभावी मॉडल और स्टेप सीमा भी संग्रहीत करता है। TypeScript gateway त्रुटि विवरण के साथ `errorDetails` जोड़ता है।
+
+रन स्टेटस `queued`, `running`, `waiting_for_tools`, `waiting_for_human`, `completed`, `stopped` और `failed` हैं। TypeScript में `cancelled` भी है।
+
+### स्टेप रिकॉर्ड
+
+| फ़ील्ड | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) |
+| --- | --- | --- | --- |
+| इंडेक्स और स्टेटस | `index`, `status` | `index`, `status` | `Index`, `Status` |
+| टूल कॉल | `toolCalls` | `tool_calls` | `ToolCalls` |
+| Gateway अनुरोध ID | `requestId` | `request_id` | `RequestID`/`RequestId` |
+| Upstream प्रतिक्रिया ID | `nativeResponseId` | `native_response_id` (Rust में नहीं) | `NativeResponseID`/`NativeResponseId` |
+| प्रदाता और मॉडल | `provider`, `model` | `provider`, `model` | `Provider`, `Model` |
+| मॉडल प्रयास | `modelAttempts` | `model_attempts` | `ModelAttempts` |
+| उपयोग | `usage` | `usage` | `Usage` |
+| Gateway meta ब्लॉक | `responseMeta` | `response_meta` (Rust में नहीं) | `ResponseMeta` |
+| त्रुटि | `error` | `error` | `Error` |
+| समाप्ति का कारण | `finishReason` | `finish_reason` | `FinishReason` |
+| चेतावनियाँ | `warnings` | `warnings` (Rust में नहीं) | `Warnings` |
+
+TypeScript और Python (`AgentStepRecord`) को छोड़कर हर जगह टाइप `RunStep` है।
+
+### उपयोग सारांश
+
+`inputTokens`, `outputTokens`, `cachedTokens`, `totalTokens`, `cost` (TypeScript, Java); `input_tokens`, `output_tokens`, `cached_tokens`, `total_tokens`, `cost` (Python, PHP और Ruby keys, Rust); `InputTokens`, `OutputTokens`, `CachedTokens`, `TotalTokens`, `Cost` (Go, C#)। TypeScript और Python में टाइप `AgentUsageSummary` है और Go, C#, Java और Rust में `UsageSummary`। PHP और Ruby एक array या Hash का उपयोग करते हैं। `cost` से जुड़ी सावधानियों के लिए [ऑब्ज़र्वेबिलिटी](./observability) देखें।
+
+## Pauses और फ़ैसले
+
+| टाइप | TypeScript | Python | Go, C#, PHP, Ruby, Java, Rust | फ़ील्ड |
+| --- | --- | --- | --- | --- |
+| किसी कॉल को अनुमोदित या अस्वीकार करें | `{ toolCallId, reason? }` | `AgentToolDecision` | `ToolDecision` | टूल-कॉल ID और वैकल्पिक कारण |
+| टूल नतीजा दें | `{ toolCallId, output }` | `AgentToolOutput` | `ToolOutput` | टूल-कॉल ID और आउटपुट |
+| समीक्षा माँगें | `{ reason, payload }` | `AgentHumanReviewRequest` | `HumanReviewRequest` | `reason`, वैकल्पिक `payload` |
+| समीक्षा callback का इनपुट | | `AgentHumanReviewContext` | `HumanReviewContext` | रन और एजेंट ID, स्टेप इंडेक्स, मैसेज, मॉडल प्रतिक्रिया, पार्स किया गया आउटपुट (Rust: पार्स किए गए आउटपुट की जगह ऐप्लिकेशन संदर्भ) |
+| Pause | `run.pause` | `AgentHumanPause` | `HumanPause` | `reason`, `payload`, `kind`, लंबित टूल कॉल |
+| लंबित कॉल | | | `PendingToolCall` | `call` और `kind` (`approval`, `manual` या `hitl`); Rust एक पढ़ने योग्य `reason` जोड़ता है |
+
+फ़ील्ड के नाम हर भाषा की शैली का पालन करते हैं: `toolCallId` (TypeScript, PHP, Java), `tool_call_id` (Python, Ruby, Rust), `ToolCallID` (Go) और `ToolCallId` (C#)। Rust का `ToolDecision` सिर्फ़ अनुमोदन के लिए है। [स्टेट और अनुमोदन](./state-and-approval) देखें।
+
+## टूल को दिया जाने वाला रनटाइम संदर्भ
+
+| फ़ील्ड | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) | इनमें नहीं |
+| --- | --- | --- | --- | --- |
+| IDs और स्टेप | `runId`, `agentId`, `stepIndex` | `run_id`, `agent_id`, `step_index` | `RunID`/`RunId`, `AgentID`/`AgentId`, `StepIndex` | |
+| ऐप्लिकेशन संदर्भ | `context` | `context` | `Context` | |
+| चलाई जा रही कॉल | `toolCall` | `tool_call` | `ToolCall` | |
+| प्रगति बताएँ | `emitProgress` | `emit_progress` | `EmitProgress` | Rust |
+| ऐप्लिकेशन संदर्भ अपडेट करें | `setContext` | `set_context` | `SetContext` | Rust |
+| रद्द करना | `signal` (TypeScript) | | `CancellationToken` (C#) | बाकी सभी |
+
+## State accessor
+
+| भाषा | नाम | Methods |
+| --- | --- | --- |
+| TypeScript | `AgentStateAccessor` | `load(runId)` और `save(result)`, दोनों async |
+| Python | `AgentStateAccessor` (protocol) | `load(run_id)` और `save(result)` |
+| Go | `StateAccessor` (interface) | `Load(ctx, runID)` और `Save(ctx, result)` |
+| C# | `IStateAccessor` | `Load(runId, ct)` और `Save(result, ct)` |
+| PHP | `StateAccessor` (interface) | `load(string $runId): ?RunResult` और `save(RunResult $result): void` |
+| Ruby | कोई भी object | `load(run_id)` और `save(result)` |
+| Java | `StateAccessor` | `load(runId)` और `save(result)` |
+| Rust | कोई नहीं | `RunResult` ख़ुद serialize करें |
+
+## मॉडल क्लाइंट
+
+मॉडल टर्न किसी दूसरे ट्रांसपोर्ट से भेजने के लिए, या gateway क्लाइंट को लपेटने के लिए, एक मॉडल क्लाइंट लागू करें।
+
+| भाषा | Interface | Methods |
+| --- | --- | --- |
+| Go | `ModelClient`, `StreamingModelClient` | `Generate(ctx, ModelRequest)`; `Stream(ctx, ModelRequest)` |
+| C# | `IModelClient`, `IStreamingModelClient` | `Generate(ModelRequest)`; `Stream(ModelRequest)` |
+| PHP | `ModelClient`, `StreamingModelClient` (interfaces) | `generate(ModelRequest)`; `stream(ModelRequest)` |
+| Java | `ModelClient`, `StreamingModelClient` | `generate(ModelRequest)`; `stream(ModelRequest)` |
+| Rust | `ModelClient` (trait) | `fn generate(&mut self, request: &ModelRequest) -> Result<ModelResponse, AgentError>` |
+
+Rust में, `ModelRequest` में एजेंट ID, प्रभावी मॉडल, निर्देश, मौजूदा मैसेज, टूल विनिर्देश (`ToolSpec`: `id`, `description`, JSON Schema `parameters`) और ऐप्लिकेशन संदर्भ होते हैं। `ModelResponse` में `message`, `usage`, `request_id`, `provider`, `model` और `finish_reason` होते हैं। `Message` में `role`, `content`, `tool_calls`, `tool_call_id`, `name` और `is_error` होते हैं, साथ में `Message::user(content)` और `Message::assistant(content)` constructors; `ToolCall` में `id`, `name` और JSON `input` होते हैं।
+
+## इवेंट और त्रुटियाँ
+
+| भाषा | इवेंट टाइप | त्रुटि टाइप |
+| --- | --- | --- |
+| TypeScript | `type` वाले इवेंट objects | `AgentGatewayError` (`isAgentGatewayError()`), `AgentStreamError`, `AgentSchemaValidationError` |
+| Python | `"type"` वाली dicts | अंतर्निहित exceptions और `phaseo.PhaseoHTTPError` |
+| Go | `AgentEvent` | `error` मान |
+| C# | `AgentEvent` | Exceptions |
+| PHP | `"type"` वाले arrays | `RuntimeException` |
+| Ruby | `:type` वाले Hashes | Exceptions |
+| Java | `AgentEvent` | Exceptions |
+| Rust | `AgentEvent` (`event_type`, `run_id`, `agent_id`, `timestamp_ms`, `details`) | `AgentError` (`AgentError::new(...)`, `message()`; `std::error::Error` और `Display` लागू करता है) |
+
+TypeScript त्रुटियों को वर्गीकृत करने के लिए `agentErrorIsRetryable()`, `agentRetryAfterMs()` और `agentErrorIsContextOverflow()`, बिना नतीजे वाली टूल कॉल का जवाब देने और किसी कॉल का जवाब न देने वाले नतीजे हटाने के लिए `repairToolHistory(messages)`, और लंबे टेक्स्ट की शुरुआत और अंत रखते हुए कटे हिस्से की सूचना जोड़ने के लिए `truncateToolOutput(text, limit)` भी export करता है। [लाइफ़साइकल हुक](./lifecycle-hooks) और [इवेंट और त्रुटियाँ](./events-and-errors) देखें।

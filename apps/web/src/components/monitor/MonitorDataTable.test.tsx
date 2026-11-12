@@ -1,12 +1,13 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import { DisplayPreferencesProvider } from "@/components/providers/DisplayPreferencesProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { englishCatalogueMessages } from "@/i18n/default-messages";
 import { MonitorDataTable, type ModelData } from "./MonitorDataTable";
 
 // URL state starts empty, as on a fresh /models/table visit.
-jest.mock("nuqs", () => ({
+vi.mock("nuqs", () => ({
 	useQueryState: (_key: string, options: { defaultValue: unknown }) => [options.defaultValue, () => undefined],
 }));
 
@@ -39,13 +40,13 @@ function route(providerId: string, overrides: Partial<ModelData> = {}): ModelDat
 
 function render(data: ModelData[]) {
 	return renderToStaticMarkup(
-		<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Catalogue: englishCatalogueMessages }}>
+		<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Catalogue: englishCatalogueMessages }}>
 			<DisplayPreferencesProvider locale="en-GB">
 				<TooltipProvider>
 					<MonitorDataTable data={data} effectiveStatuses={["active"]} />
 				</TooltipProvider>
 			</DisplayPreferencesProvider>
-		</NextIntlClientProvider>,
+		</AppIntlProvider>,
 	);
 }
 

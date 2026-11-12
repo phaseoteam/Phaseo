@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { lazySchema } from "./lazy-schema";
 
 export type DecisionValue = string | boolean;
@@ -21,27 +21,40 @@ export type NativeDecisionRequest = {
 	provider_options?: DecisionProviderOptions;
 };
 
+/**
+ * Most questions any request may carry: the highest limit a provider documents
+ * (Google's Gemini Decision takes 1,000). The request schema enforces only this
+ * ceiling; each route's own limit is applied after routing.
+ */
+export const DECISION_QUESTION_CEILING = 1000;
+/**
+ * Limit for a route whose capability does not declare `params.max_questions`.
+ * It is what every route allowed before the limit became per route.
+ */
+export const DEFAULT_ROUTE_QUESTION_LIMIT = 128;
+
 export type DecisionProviderOptions = { typesafe?: { long_context?: boolean } };
 export const DecisionProviderOptionsSchema = lazySchema(() => z.object({
 	typesafe: z.object({ long_context: z.boolean().optional() }).strict().optional(),
 }).passthrough());
 
 const instructions = lazySchema(() => z.string().max(1048576));
-const commonQuestion = { name: instructions.optional(), instructions };
+// A function: calling .optional() at module load would build `instructions` eagerly.
+const commonQuestion = () => ({ name: instructions.optional(), instructions });
 const value = lazySchema(() => z.union([z.string(), z.boolean()]));
 const mediaUrl = (kind: "audio" | "video" | "image", maxLength = 24 * 1024 * 1024) => z.string().max(maxLength).refine(value => {
 	if (new RegExp(`^data:${kind}/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$`, "i").test(value)) return true;
 	try { return new URL(value).protocol === "https:"; } catch { return false; }
 }, "Use an inline base64 data URL or a public HTTPS URL.");
 export const NativeDecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
-	z.object({ ...commonQuestion, type: z.literal("predicate") }).strict(),
-	z.object({ ...commonQuestion, type: z.literal("box") }).strict(),
+	z.object({ ...commonQuestion(), type: z.literal("predicate") }).strict(),
+	z.object({ ...commonQuestion(), type: z.literal("box") }).strict(),
 	z.object({
-		...commonQuestion, type: z.literal("choice"),
+		...commonQuestion(), type: z.literal("choice"),
 		choices: z.array(z.object({ value, description: instructions.optional() }).strict()).min(1),
 	}).strict(),
 	z.object({
-		...commonQuestion, type: z.literal("score"),
+		...commonQuestion(), type: z.literal("score"),
 		levels: z.array(z.object({ label: instructions, description: instructions.optional() }).strict()).min(1),
 	}).strict(),
 ]));
@@ -76,7 +89,7 @@ export const NativeDecisionsBodySchema = lazySchema(() => z.object({
 			content: z.union([z.string().max(10485760), z.array(inputPart)]),
 		}).strict()),
 	]),
-	questions: z.array(NativeDecisionQuestionSchema).min(1).superRefine((questions, ctx) => {
+	questions: z.array(NativeDecisionQuestionSchema).min(1).max(DECISION_QUESTION_CEILING).superRefine((questions, ctx) => {
 		questions.forEach((question, index) => {
 			if (question.type !== "choice") return;
 			const values = question.choices.map(choice => JSON.stringify(choice.value));

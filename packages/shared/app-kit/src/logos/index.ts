@@ -43,6 +43,7 @@ export const logoLabels: Partial<Record<KnownLogoId, string>> = {
 	continue: "Continue",
 	"deepseek-harness": "DeepSeek Harness",
 	dealignai: "dealign.ai",
+	ricursive: "Ricursive Intelligence",
 	digitalocean: "DigitalOcean",
 	empiriolabs: "EmpirioLabs AI",
 	github: "GitHub",
@@ -66,9 +67,11 @@ export const logoLabels: Partial<Record<KnownLogoId, string>> = {
 	openwebui: "Open WebUI",
 	"perplexity-agent": "Perplexity Agent",
 	poe: "Poe",
+	primalabs: "PrimaLabs",
 	"qiniu-ai": "Qiniu AI",
 	runinfra: "RunInfra",
 	sakana: "Sakana AI",
+	"sail-research": "Sail Research",
 	stepfun: "StepFun",
 	submodel: "SubModel",
 	togetherai: "Together AI",
@@ -108,6 +111,7 @@ export const logoLabels: Partial<Record<KnownLogoId, string>> = {
 /** Provider and catalogue IDs that use another ID's logo, so callers can pass provider IDs directly. */
 export const logoAliases: Record<string, KnownLogoId> = {
 	"novitaai": "novita",
+	"ricursiveai": "ricursive",
 	"EmpirioLabs AI": "empiriolabs",
 	"cogito-ai": "cogito",
 	"inference-net": "inference",

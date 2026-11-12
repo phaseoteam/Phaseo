@@ -16,7 +16,7 @@ async function defaultBranch(root: string) {
 }
 
 /**
- * The native GitHub stack a pull request is in (T3's getPullRequestStack), or null. The stacks API is a public
+ * The native GitHub stack a pull request is in, or null. The stacks API is a public
  * preview: a host or repository without it answers 404, which means "no stack" rather than a failure. Reads are
  * cached for a minute because rows and the header ask for the same stack.
  */
@@ -61,7 +61,7 @@ function gitIn(cwd: string, env: NodeJS.ProcessEnv): GitRunner {
 export class StackRebaseError extends Error {}
 
 /**
- * GitHub's own "Rebase stack" (T3's cascadeRebaseStack): every open layer, bottom to top, onto the new head of the
+ * GitHub's own "Rebase stack": every open layer, bottom to top, onto the new head of the
  * layer below it, moving only that layer's own commits (`git rebase --onto <new parent> <old parent>`). It works in a
  * throwaway repository that borrows the checkout's objects, so the person's checkout never moves, and pushes each
  * layer with a lease on the head that was reviewed so a push that landed meanwhile is refused, not overwritten.
@@ -100,7 +100,7 @@ export async function cascadeRebaseStack(input: { root: string; remote: string; 
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 /**
- * Merge stack or Rebase stack (T3's runGitHubStackAction). Re-reads the stack first and refuses when it moved since the
+ * Merge stack or Rebase stack. Re-reads the stack first and refuses when it moved since the
  * person looked: a different stack, a layer that is no longer where it was, or any head other than the one reviewed.
  */
 export async function runPullRequestStackAction(root: string, repository: string, value: unknown) {

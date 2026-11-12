@@ -69,6 +69,23 @@ function executeProviderWire(args: ExecutorExecuteArgs) {
 }
 
 describe("executeOpenAIWire", () => {
+	it("sends a workspace-scoped default cache key to Mistral", async () => {
+		const args = buildArgs();
+		args.providerId = "mistral";
+		args.ir = { ...args.ir, model: "mistral-small-latest", stream: false };
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.mistral.example/v1/chat/completions",
+			response: jsonResponse({ id: "msg_1", choices: [{ index: 0, message: { role: "assistant", content: "ok" }, finish_reason: "stop" }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } }),
+		}]);
+		try {
+			await executeOpenAIWire(args, { forceChat: true });
+			expect(mock.calls[0].bodyJson.prompt_cache_key).toMatch(/^ph_[a-f0-9]{60}$/);
+		} finally {
+			mock.restore();
+		}
+	});
+
+
 	const ALIBABA_CHAT_URL = "https://api.alibaba.example/compatible-mode/v1/chat/completions";
 
 	it("keeps upstream stream=true when tools are present", async () => {

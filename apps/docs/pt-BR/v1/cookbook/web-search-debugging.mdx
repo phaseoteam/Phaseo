@@ -1,81 +1,57 @@
 ---
-title: "Depurar solicitações de busca na Web"
+title: "Depure solicitações de busca na web"
 icon: "bug"
-description: "Verifique solicitações de busca na Web, confirme o suporte do provedor e analise os resultados e as citações retornados."
+description: "Verifique solicitações de busca na web, confirme o suporte do provedor e inspecione os resultados de busca e as citações retornados."
 ---
 
-Use esta receita quando uma solicitação de busca na Web não se comportar como esperado e você quiser confirmar se a Phaseo a aceitou, roteou corretamente e retornou resultados adequados.
+Descubra, pela resposta e pelo registro da solicitação, se uma busca na web realmente foi executada, qual mecanismo a executou e o que ela retornou. No fim, você consegue distinguir uma busca que nunca aconteceu de uma que foi executada e encontrou pouco.
 
-## 1. Deixe explícita a intenção de busca
+```mermaid
+flowchart TD
+  req["Solicitação com busca na web"] --> tool{{"Busca declarada em tools ou web_search_options?"}}
+  tool -->|"Não"| none["Sem busca: o prompt sozinho não dispara uma"]
+  tool -->|"Sim"| ran{{"usage.server_tool_use mostra uma busca?"}}
+  ran -->|"Não"| skipped["O modelo não a chamou: defina tool_choice"]
+  ran -->|"Sim"| results{{"Resultados e citações no registro?"}}
+  results -->|"Poucos ou nenhum"| quality["Confira o mecanismo, os domínios e a consulta"]
+  results -->|"Sim"| ok["A busca funcionou"]
+```
 
-Não dependa apenas do texto do prompt. Inclua as configurações de busca diretamente na solicitação para que a Phaseo saiba que você quer usar a busca na Web.
+## Declare a busca na solicitação
 
-Confira se há:
+Pedir "as últimas notícias" no prompt não executa uma busca. Adicione-a explicitamente:
 
-- ferramentas nativas de busca em `tools`
-- `web_search_options` quando o endpoint oferecer suporte
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "input": "What changed in the Phaseo changelog this week?",
+  "tools": [{ "type": "phaseo:web_search", "parameters": { "max_results": 5 } }],
+  "tool_choice": "phaseo:web_search"
+}
+```
 
-## 2. Confirme se havia um provedor compatível
+`phaseo:web_search` funciona em Chat Completions, Responses e Messages. `web_search_options` funciona onde o endpoint o suporta. `tool_choice` força a chamada; sem ele, o modelo pode responder de memória. O [guia de busca na web](../guides/server-tools/web-search) lista todos os parâmetros.
 
-Se a solicitação for bloqueada ou roteada de forma diferente do esperado, examine os detalhes da solicitação:
+## Confira se foi executada
 
-- detalhes dos provedores candidatos
-- detalhes de habilitação do provedor
-- explicação do roteamento
+| Onde olhar | Mostra |
+| --- | --- |
+| `usage.server_tool_use.web_search_requests` na resposta | Quantas buscas gerenciadas foram executadas |
+| **Monitoramento da pesquisa na web** na solicitação em **Configurações → Uso → Registros** | Buscas gerenciadas, buscas nativas, a contagem de resultados e a de citações, com os registros extraídos de resultados e citações |
+| **Observabilidade do roteamento** na mesma solicitação | Quais provedores foram considerados e quais foram removidos por não suportarem a solicitação |
 
-Isso mostra se a lista de provedores foi reduzida por falta de suporte à busca.
+## Distinga os casos de falha
 
-## 3. Inspecione os contadores de uso
+| O que você vê | Causa | Correção |
+| --- | --- | --- |
+| Nenhum contador de busca | A busca não foi declarada ou o modelo decidiu não chamá-la | Adicione a ferramenta e defina `tool_choice` |
+| A ferramenta retorna `search_not_configured` ao modelo | O mecanismo gerenciado que você escolheu não está ativado | Use o mecanismo padrão ou outro |
+| A ferramenta retorna `unsupported_search_engine` | O modelo pediu `engine: "native"` dentro de uma chamada | Defina `native` apenas na definição da ferramenta |
+| `400 not_supported`, motivo `regional_hosted_tool_not_supported` | Enviada para `eu.api.phaseo.app` ou `us.api.phaseo.app`, que rejeitam ferramentas de servidor | Use `api.phaseo.app` |
+| As buscas foram executadas, mas há poucas citações | A consulta ou as fontes eram fracas | Ajuste `max_results`, `allowed_domains` ou `engine` |
 
-Solicitações bem-sucedidas que usam busca devem exibir indicadores de uso relacionados, como:
+Com `engine: "native"`, a solicitação vai só para provedores que executam a busca na web por conta própria. Se nenhum deles atender o modelo, o Phaseo executa o mecanismo padrão no lugar e cobra como busca gerenciada, então uma solicitação nativa pode mostrar contadores de busca gerenciada.
 
-- ferramentas nativas de busca na Web solicitadas
-- resultados de busca na Web
-- citações
+## Compare solicitações
 
-Esse é o sinal mais rápido de que a solicitação realmente fez uma busca.
-
-## 4. Inspecione a seção de resultados
-
-Para solicitações bem-sucedidas, abra o diálogo de detalhes e procure a seção de observabilidade da busca na Web.
-
-Ela mostra:
-
-- se a busca nativa foi usada
-- quantidade de resultados normalizados
-- quantidade de citações normalizadas
-- registros de resultados extraídos
-- registros de citações extraídas
-
-Use essas informações para comparar o comportamento dos provedores sem ler payloads brutos.
-
-## 5. Analise estes casos separadamente
-
-A busca nativa e a verificação dos recursos do provedor estão disponíveis. O planejamento de fallback da busca é separado.
-
-Durante a depuração, diferencie estes casos:
-
-1. A solicitação de busca nativa foi aceita e roteada.
-2. A solicitação foi aceita, mas nenhum provedor compatível permaneceu disponível.
-3. A solicitação foi bem-sucedida, mas retornou citações fracas ou escassas.
-
-São problemas diferentes e devem ser investigados de maneiras distintas.
-
-## 6. O que comparar quando os resultados parecem incorretos
-
-Compare entre as solicitações:
-
-- ID do modelo
-- provedor efetivamente selecionado
-- opções de busca da solicitação
-- quantidade de resultados
-- quantidade de citações
-- detalhes do roteamento
-
-Se a qualidade dos resultados variar por provedor, os registros normalizados ainda devem deixar isso visível.
-
-## Conteúdo relacionado
-
-- [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx)
-- [Exemplos](../guides/examples.mdx)
-- [SDK TypeScript](../sdk-reference/typescript/overview.mdx)
+Quando os resultados variam entre execuções, compare o ID do modelo, o provedor selecionado, os parâmetros de busca e as contagens de resultados e de citações. As contagens são normalizadas entre provedores, então as diferenças de qualidade da busca aparecem sem que você precise ler os payloads brutos. Para um fluxo completo e fundamentado, veja [Busca na web gerenciada em TypeScript](./sdk-typescript-managed-search); para uma URL conhecida, use [web fetch](./tool-grounding-with-web-fetch).

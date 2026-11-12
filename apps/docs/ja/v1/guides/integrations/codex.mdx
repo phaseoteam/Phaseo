@@ -1,56 +1,27 @@
 ---
 title: "Codex"
 icon: "/icons/brands/codex.svg"
-description: "Codex CLI、Codex App、Codex IDE 拡張機能で Phaseo Gateway をカスタムプロバイダーとして使用します。"
+description: "Phaseo Gateway を Codex CLI、Codex App、Codex IDE 拡張機能のカスタムプロバイダーとして使います。"
 ---
 
-Codex は `config.toml` でカスタムモデルプロバイダーを設定できます。CLI、アプリ、IDE の使い方を変えずに、リクエストを Phaseo 経由でルーティングできます。
-
-作業中に Codex から最新の Phaseo ドキュメントも参照したい場合は、[Docs MCP](./docs-mcp.mdx) サーバーも追加してください。
-
-<Visibility for="humans">
-<Note>
-プロバイダー設定だけでなく、再利用可能なエージェントの設定も必要ですか？[`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) から Phaseo の公開スキルをインストールしてください。
-
-```bash
-npx skills add https://phaseo.app/docs --agent codex --skill '*'
-```
-</Note>
-</Visibility>
-
-<Visibility for="agents">
-<Note>
-再利用可能な Phaseo スキルは [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) から入手できます。Codex にインストールする場合は、次のコマンドを使います。
-
-```bash
-npx skills add https://phaseo.app/docs --agent codex --skill '*'
-```
-</Note>
-</Visibility>
+`phaseo codex` を実行して Codex に Phaseo のプロファイルを追加するか、`config.toml` に `phaseo` プロバイダーを自分で追加します。同じ設定が Codex CLI、Codex App、Codex IDE 拡張機能で使えます。
 
 ## Phaseo CLI で設定する
 
 ```bash
 phaseo login
 phaseo codex --model openai/gpt-5.6-terra
-```
-
-まず Codex の公式リリースをインストールします。セットアップでは 90 日後に失効し、月額 100 ドルの利用上限がある `Phaseo CLI: Codex API Key` を作成し、OS の資格情報ストアに保存して、Phaseo 専用プロファイルを書き込みます。Codex は CLI ヘルパー経由でキーを取得し、失効時にはヘルパーが新しいキーを作成します。そのため、`config.toml` に平文のキーは書き込まれません。
-
-次のコマンドで Codex を起動します。
-
-```bash
 codex --profile phaseo
 ```
 
-同じPhaseo CLIの手順で、分離された一時的なプロバイダー設定を使って[Cline](./cline)、[Kilo Code](./kilo-code)、[oh-my-pi](./oh-my-pi)、[Muse Code](./muse-code)、[MiniMax Code](./minimax-code)も起動できます。
+Codex がインストールされていない場合、CLI は公式のインストールコマンドを表示し、実行する前に確認します。その後セットアップはダッシュボードのページを開き、有効期限が 90 日で月額 $100 の利用上限が付いた `Phaseo CLI: Codex API Key` を承認するよう求めます。CLI はキーを OS の資格情報ストアに保存し、プロファイルを `~/.codex/phaseo.config.toml`（または `CODEX_HOME` の下）に書き込みます。Codex はキーを CLI から取得するため、設定ファイルに平文のキーは書き込まれません。キーの期限が切れたら、`phaseo codex` を再実行して新しいキーを承認してください。`--model` を指定しない場合、プロファイルは `openai/gpt-5.6-terra` を使います。
 
-## 手動設定
+## Codex を手動で設定する
 
-ユーザー設定ファイル `~/.codex/config.toml` を作成または更新します。信頼できるプロジェクトでは、同じ設定をリポジトリ内の `.codex/config.toml` に置くこともできます。
+次の内容を `~/.codex/config.toml`、または信頼済みプロジェクトの `.codex/config.toml` に追加します。
 
 ```toml
-model = "openai/gpt-5.5"
+model = "openai/gpt-6-astra"
 model_provider = "phaseo"
 
 [model_providers.phaseo]
@@ -60,17 +31,34 @@ env_key = "PHASEO_API_KEY"
 wire_api = "responses"
 ```
 
-Codex のカスタムプロバイダーは現在 Responses ワイヤープロトコルを使用します。`wire_api = "responses"` を維持するか、省略して既定値を使用してください。
+次に `PHASEO_API_KEY` をエクスポートして Codex を起動します。Codex のカスタムプロバイダーはデフォルトで Responses のワイヤープロトコルを使うため、`wire_api` は省略しても構いません。IDE 拡張機能では、**Codex Settings → Open config.toml** からファイルを開きます。
 
-Codex App と IDE 拡張機能は同じ設定レイヤーを共有します。IDE 拡張機能では `Codex Settings > Open config.toml` から設定ファイルを開きます。
+## 動作を確認する
 
-## 確認
+短いプロンプトを送信し、**設定 → 利用状況 → ログ**にリクエストが表示されることを確認します。Codex は [Responses](../../api-reference/endpoint/responses.mdx) を呼び出すため、モデルがこのエンドポイントに対応している必要があります。
 
-- 起動前に [モデル](../../api-reference/endpoint/models.mdx) でモデル ID が存在することを確認します。
-- Codex の既定のフローには [Responses](../../api-reference/endpoint/responses.mdx) を使用します。
+## Phaseo を削除する
 
-## トラブルシューティング
+```bash
+phaseo integrations remove codex
+```
 
-- `401 Unauthorized`: `phaseo whoami` を実行し、その後 `phaseo codex` を再実行します。
-- `model_not_found`: [モデル](../../api-reference/endpoint/models.mdx) から最新の ID を取得し、`model` を更新します。
-- プロバイダー固有の問題: フェイルオーバー動作については[ルーティングとフォールバック](../routing-and-fallbacks.mdx)を確認してください。
+これにより、Phaseo が作成した場合は `phaseo.config.toml` が削除され、キーが失効します。手動で設定した場合は、`config.toml` から `phaseo` プロバイダーを削除します。
+
+## よくある問題を解決する
+
+| エラー | 対処 |
+| --- | --- |
+| `401 Unauthorized` | `phaseo whoami` を実行してから、`phaseo codex` を再実行します。 |
+| `model_not_found` | [モデル](../../api-reference/endpoint/models.mdx)から現在の ID を取得し、`model` を更新します。 |
+| プロバイダーが失敗する | フェイルオーバーについては[ルーティングとフォールバック](../routing-and-fallbacks.mdx)を参照してください。 |
+
+## Phaseo のスキルとドキュメントを追加する
+
+作業中に Codex が最新の Phaseo ドキュメントを読めるようにするには、[Docs MCP](./docs-mcp.mdx) サーバーを追加します。Codex 用に公開の [Phaseo スキル](https://phaseo.app/docs/.well-known/agent-skills/index.json)をインストールするには、次を実行します。
+
+```bash
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
+```
+
+同じ CLI のワークフローで、[Cline](./cline.mdx)、[Kilo Code](./kilo-code.mdx)、[oh-my-pi](./oh-my-pi.mdx)、[Muse Code](./muse-code.mdx)、[MiniMax Code](./minimax-code.mdx) を一時的な設定で起動できます。

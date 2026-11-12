@@ -20,6 +20,7 @@ const runtime = vi.hoisted(() => {
     const backgroundTasks: Promise<unknown>[] = [];
     const dbRow = { value: null as KeyRow | null };
     const updatePayloads: Array<Record<string, unknown>> = [];
+    const updateFilters: Array<Array<[string, unknown]>> = [];
 
     const maybeSingle = vi.fn(async () => ({
         data: dbRow.value,
@@ -72,9 +73,17 @@ const runtime = vi.hoisted(() => {
                 }),
                 update: (payload: Record<string, unknown>) => {
                     updatePayloads.push(payload);
-                    return {
-                    eq: updateEq,
+                    const filters: Array<[string, unknown]> = [];
+                    updateFilters.push(filters);
+                    const chain = {
+                        eq: (column: string, value: unknown) => {
+                            filters.push([column, value]);
+                            void updateEq();
+                            return chain;
+                        },
+                        then: (resolve: (value: { error: null }) => unknown) => resolve({ error: null }),
                     };
+                    return chain;
                 },
             };
         }),
@@ -91,6 +100,7 @@ const runtime = vi.hoisted(() => {
         cache,
         supabase,
         updatePayloads,
+        updateFilters,
         bindings: {
 			PHASEO_MCP_RESOURCE_SERVER_SECRET: "s".repeat(64),
             SUPABASE_URL: "https://example.supabase.co",
@@ -102,6 +112,18 @@ const runtime = vi.hoisted(() => {
     };
 });
 
+// This location's Workers Cache. It outlives an isolate, which vi.resetModules simulates.
+const location = vi.hoisted(() => ({ store: new Map<string, string>(), reads: [] as string[] }));
+vi.mock("@core/tiered-cache", () => ({
+    readLocationCache: async (key: string) => {
+        location.reads.push(key);
+        return location.store.get(key) ?? null;
+    },
+    writeLocationCache: async (key: string, raw: string) => {
+        location.store.set(key, raw);
+    },
+}));
+
 vi.mock("@/runtime/env", () => ({
     getBindings: () => runtime.bindings,
     getCache: () => runtime.cache as unknown as KVNamespace,
@@ -111,6 +133,7 @@ vi.mock("@/runtime/env", () => ({
     },
     configureRuntime: () => undefined,
     clearRuntime: () => undefined,
+    ensureRuntimeForBackground: () => () => undefined,
 }));
 
 function buildRequest(token: string): Request {
@@ -161,7 +184,7 @@ describe("authenticate hot-path caching", () => {
             await expect(Promise.race([first, new Promise((resolve) => setTimeout(() => resolve("blocked"), 500))])).resolves.toMatchObject({ ok: true });
             expect(runtime.cache.put).toHaveBeenCalledWith(`gateway:key:ip-policy-v1:${kid}:v0`, expect.any(String), expect.any(Object));
             await expect(authenticate(request, { useKvCache: true })).resolves.toMatchObject({ ok: true });
-            expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+            expect(runtime.maybeSingle).toHaveBeenCalledTimes(2); // request lookup + the cache fill's re-read
         } finally {
             finishWrite?.();
             await flushBackground();
@@ -170,9 +193,12 @@ describe("authenticate hot-path caching", () => {
 
     beforeEach(() => {
         runtime.store.clear();
+        location.store.clear();
+        location.reads.length = 0;
         runtime.backgroundTasks.length = 0;
         runtime.dbRow.value = null;
         runtime.updatePayloads.length = 0;
+        runtime.updateFilters.length = 0;
 		runtime.bindings.KEY_PEPPER_ACTIVE = "pepper_test_value";
         runtime.bindings.KEY_PEPPER_PREVIOUS = undefined;
         runtime.cache.get.mockClear();
@@ -203,7 +229,7 @@ describe("authenticate hot-path caching", () => {
         expect((await authenticate(sanitized)).ok).toBe(true);
         expect((await authenticate(sanitized)).ok).toBe(true);
         await flushBackground();
-        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(2); // request lookup + the cache fill's re-read
         expect(runtime.updatePayloads).toHaveLength(1);
         const invalid = buildRequest("phaseo_v1_sk_ADMISSION_wrong");
         inheritPreparedAuthentication(request, invalid);
@@ -218,7 +244,7 @@ describe("authenticate hot-path caching", () => {
         expect((await prepareAuthentication(request)).ok).toBe(true);
         runtime.dbRow.value = { ...runtime.dbRow.value, status: "revoked" };
         expect(await authenticate(request, { useKvCache: false })).toEqual({ ok: false, reason: "key_not_found_or_revoked" });
-        expect(runtime.maybeSingle).toHaveBeenCalledTimes(2);
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(3); // two request lookups + one cache fill's re-read
     });
 
     it("enforces IP restrictions on every request, including a cached key", async () => {
@@ -238,7 +264,7 @@ describe("authenticate hot-path caching", () => {
         denied.headers.set("x-forwarded-for", "203.0.113.10");
         expect(await authenticate(denied, { useKvCache: true })).toEqual({ ok: false, reason: "key_ip_not_allowed" });
         expect(await authenticate(buildRequest(token), { useKvCache: true })).toEqual({ ok: false, reason: "key_ip_not_allowed" });
-        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(2); // request lookup + the cache fill's re-read
     });
 
 	it("requires the opaque delegated access token for inference instead of a session JWT", async () => {
@@ -280,7 +306,7 @@ describe("authenticate hot-path caching", () => {
         };
 
         await runtime.cache.put(`gateway:keyver:kid:${kid}`, "7");
-        await runtime.cache.put(`gateway:key:ip-policy-v1:${kid}:v7`, JSON.stringify(row));
+        await runtime.cache.put(`gateway:key:ip-policy-v1:${kid}:v7`, JSON.stringify({ ...row, workspace_cache_version: "v0" }));
 
         const { authenticate } = await import("./auth");
         const first = await authenticate(buildRequest(token), { useKvCache: true });
@@ -290,7 +316,115 @@ describe("authenticate hot-path caching", () => {
         expect(first.ok).toBe(true);
         expect(second.ok).toBe(true);
         expect(runtime.maybeSingle).not.toHaveBeenCalled();
-        expect(runtime.cache.get).toHaveBeenCalledTimes(2);
+        // Key version, cached row and workspace version once; the repeat is served from L1.
+        expect(runtime.cache.get).toHaveBeenCalledTimes(3);
+    });
+
+    it("refreshes a cached key row once its workspace cache version moves", async () => {
+        const kid = "KIDWSBUMP1";
+        const secret = "secret_ws_bump";
+        const row: KeyRow = { id: "key_ws", workspace_id: "team_ws", status: "active", hash: hashSecret(secret) };
+        await runtime.cache.put(`gateway:keyver:kid:${kid}`, "3");
+        // Cached before a workspace bump (version 0), e.g. before a revocation made by SCIM.
+        await runtime.cache.put(`gateway:key:ip-policy-v1:${kid}:v3`, JSON.stringify({ ...row, workspace_cache_version: "v0" }));
+        await runtime.cache.put("gateway:workspace-policy-version:team_ws", "5");
+        runtime.dbRow.value = { ...row, status: "revoked" };
+
+        const { authenticate } = await import("./auth");
+        const result = await authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: true });
+        await flushBackground();
+
+        expect(result).toMatchObject({ ok: false, reason: "key_not_found_or_revoked" });
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(2); // request lookup + the cache fill's re-read
+    });
+
+    it("never caches a row that predates the workspace version it is tagged with", async () => {
+        const kid = "KIDRACE001";
+        const secret = "secret_race";
+        const row: KeyRow = { id: "key_race", workspace_id: "team_race", status: "active", hash: hashSecret(secret) };
+        runtime.dbRow.value = row;
+        // Hold the cache fill's workspace version read until the key has been changed and the
+        // workspace bumped, as a control route or the publication drain would.
+        const versionKey = "gateway:workspace-policy-version:team_race";
+        let release!: () => void;
+        const gate = new Promise<void>((resolve) => { release = resolve; });
+        const realGet = runtime.cache.get.getMockImplementation()!;
+        runtime.cache.get.mockImplementation(async (key: string, type?: any) => {
+            if (key === versionKey) await gate;
+            return realGet(key, type);
+        });
+        try {
+            const { authenticate } = await import("./auth");
+            const first = authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: true });
+            await expect(first).resolves.toMatchObject({ ok: true });
+            runtime.dbRow.value = { ...row, ip_allowlist: [{ label: "office", address: "203.0.113.7" }] };
+            runtime.store.set(versionKey, "9");
+            release();
+            await flushBackground();
+        } finally {
+            runtime.cache.get.mockImplementation(realGet);
+        }
+        const cached = JSON.parse(runtime.store.get(`gateway:key:ip-policy-v1:${kid}:v0`) ?? "null");
+        expect(cached).toMatchObject({ workspace_cache_version: "v9", ip_allowlist: [{ address: "203.0.113.7" }] });
+    });
+
+    it("serves a new isolate's key lookup from this location's cache, without KV or the database", async () => {
+        const kid = "KIDLOCAL01";
+        const secret = "secret_location";
+        runtime.dbRow.value = { id: "key_local", workspace_id: "team_local", status: "active", hash: hashSecret(secret) };
+        const token = `phaseo_v1_sk_${kid}_${secret}`;
+
+        const first = await import("./auth");
+        expect((await first.authenticate(buildRequest(token), { useKvCache: true })).ok).toBe(true);
+        await flushBackground();
+        expect(location.store.has(`gateway:key:ip-policy-v1:${kid}:v0`)).toBe(true);
+        expect(location.store.get(`gateway:key-workspace:v1:${kid}`)).toBe("team_local");
+
+        // A new isolate after a quiet spell: KV's edge copy has gone, this location's has not.
+        vi.resetModules();
+        runtime.maybeSingle.mockClear();
+        runtime.cache.get.mockClear();
+        const second = await import("./auth");
+        expect((await second.authenticate(buildRequest(token), { useKvCache: true })).ok).toBe(true);
+        await flushBackground();
+
+        expect(runtime.maybeSingle).not.toHaveBeenCalled();
+        expect(runtime.cache.get).not.toHaveBeenCalledWith(`gateway:key:ip-policy-v1:${kid}:v0`, expect.anything());
+        // The workspace version was read with the key version, from the remembered workspace.
+        expect(location.reads).toContain(`gateway:key-workspace:v1:${kid}`);
+    });
+
+    it("still refreshes a location copy once its workspace version moves", async () => {
+        const kid = "KIDLOCAL02";
+        const secret = "secret_location_bump";
+        const row: KeyRow = { id: "key_lb", workspace_id: "team_lb", status: "active", hash: hashSecret(secret) };
+        location.store.set(`gateway:key:ip-policy-v1:${kid}:v0`, JSON.stringify({ ...row, workspace_cache_version: "v0" }));
+        location.store.set(`gateway:key-workspace:v1:${kid}`, "team_lb");
+        await runtime.cache.put("gateway:workspace-policy-version:team_lb", "8");
+        runtime.dbRow.value = { ...row, status: "revoked" };
+
+        const { authenticate } = await import("./auth");
+        const result = await authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: true });
+        await flushBackground();
+
+        expect(result).toMatchObject({ ok: false, reason: "key_not_found_or_revoked" });
+    });
+
+    it("skips the key cache when the key version cannot be read", async () => {
+        const kid = "KIDKVDOWN1";
+        const secret = "secret_kv_down";
+        const row: KeyRow = { id: "key_down", workspace_id: "team_down", status: "active", hash: hashSecret(secret) };
+        // An entry under version 0 that predates a revocation must not be served while KV fails.
+        await runtime.cache.put(`gateway:key:ip-policy-v1:${kid}:v0`, JSON.stringify({ ...row, workspace_cache_version: "v0" }));
+        runtime.dbRow.value = { ...row, status: "revoked" };
+        runtime.cache.get.mockImplementationOnce(async () => { throw new Error("kv unavailable"); });
+
+        const { authenticate } = await import("./auth");
+        const result = await authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: true });
+        await flushBackground();
+
+        expect(result).toMatchObject({ ok: false, reason: "key_not_found_or_revoked" });
+        expect(runtime.cache.put).not.toHaveBeenCalledWith(expect.stringContaining(`${kid}:`), expect.any(String), expect.any(Object));
     });
 
     it("warms auth L1 from DB path and avoids duplicate DB lookups on immediate repeat", async () => {
@@ -314,8 +448,9 @@ describe("authenticate hot-path caching", () => {
 
         expect(first.ok).toBe(true);
         expect(second.ok).toBe(true);
-        expect(runtime.maybeSingle).toHaveBeenCalledTimes(1);
-        expect(runtime.cache.get).toHaveBeenCalledTimes(2);
+        expect(runtime.maybeSingle).toHaveBeenCalledTimes(2); // request lookup + the cache fill's re-read
+        // Key version, cached row (miss) and the workspace version the new entry records.
+        expect(runtime.cache.get).toHaveBeenCalledTimes(3);
     });
 
     it("accepts KEY_PEPPER_PREVIOUS and migrates hash to KEY_PEPPER_ACTIVE", async () => {
@@ -343,6 +478,34 @@ describe("authenticate hot-path caching", () => {
             expect.objectContaining({ hash: migratedHash }),
         );
     });
+
+	it("migrates a delegated key's hash only if a refresh hasn't replaced its secret meanwhile", async () => {
+		runtime.bindings.KEY_PEPPER_ACTIVE = "pepper_active";
+		runtime.bindings.KEY_PEPPER_PREVIOUS = "pepper_previous";
+		const kid = "KIDOAUTHPEPPER";
+		const secret = "secret_oauth_previous_pepper";
+		const hash = createHmac("sha256", runtime.bindings.KEY_PEPPER_PREVIOUS).update(secret).digest("hex");
+		runtime.dbRow.value = {
+			id: "key_oauth_pepper",
+			workspace_id: "team_oauth",
+			status: "active",
+			hash,
+			key_kind: "oauth_delegated",
+			oauth_user_id: "user_oauth",
+			oauth_client_id: "client_oauth",
+			oauth_scopes: ["gateway:access", "models:read"],
+		};
+
+		const { authenticate } = await import("./auth");
+		const result = await authenticate(buildRequest(`phaseo_v1_sk_${kid}_${secret}`), { useKvCache: false });
+		await flushBackground();
+
+		expect(result).toMatchObject({ ok: true, authMethod: "oauth" });
+		const migratedHash = createHmac("sha256", runtime.bindings.KEY_PEPPER_ACTIVE).update(secret).digest("hex");
+		const index = runtime.updatePayloads.findIndex((payload) => payload.hash === migratedHash);
+		expect(index).toBeGreaterThanOrEqual(0);
+		expect(runtime.updateFilters[index]).toEqual([["id", "key_oauth_pepper"], ["hash", hash]]);
+	});
 
 	it("does not accept a cached OAuth-managed key after it is revoked", async () => {
 		const kid = "KIDOAUTHREVOKE";

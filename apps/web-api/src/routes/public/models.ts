@@ -12,34 +12,50 @@ import { publicProviderDisplayName, publicProviderPayload, STEALTH_PROVIDER_DISP
 import { buildFreeRouterCatalogueRow, fetchFreeRouterOverview } from "@/models/free-router";
 import { normalizeModelLicense } from "@/models/license";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
+import {
+	attemptHealthByHour,
+	attemptHealthOverHours,
+	attemptHealthRatesOnly,
+	attemptHealthToWire,
+	combineAttemptHealth,
+	isMissingAttemptHealthRpcError,
+	parseAttemptHealthRows,
+	type ProviderAttemptHealth,
+} from "./providerAttemptHealth";
 
 // Public performance and usage telemetry is aggregated, cached, and excludes
-// raw request timestamps, request content, and request identifiers. App
-// attribution remains opt-in and requires ten requests.
-const PUBLIC_PERFORMANCE_MIN_REQUESTS = 20;
-const PUBLIC_CACHE_TELEMETRY_MIN_REQUESTS = 20;
+// raw request timestamps, request content, and request identifiers. A view of
+// all of a model's traffic publishes at any volume. A location, stream-mode or
+// context filter can narrow a chart to one customer's requests, so filtered
+// views, and the location menu that offers those filters, need 20 requests.
+// App attribution remains opt-in and requires ten requests.
+const PUBLIC_UNFILTERED_MIN_REQUESTS = 1;
+const PUBLIC_FILTERED_MIN_REQUESTS = 20;
 const PUBLIC_APP_ATTRIBUTION_MIN_REQUESTS = 10;
 
-function hasPublicPerformanceSample(value: unknown) {
-	return Number(value ?? 0) >= PUBLIC_PERFORMANCE_MIN_REQUESTS;
+function publicPerformanceMinRequests(filters: { cloudflareColo: string | null; streamMode: string | undefined; contextBucket: string | undefined }) {
+	const filtered = Boolean(filters.cloudflareColo)
+		|| (filters.streamMode ?? "all") !== "all"
+		|| (filters.contextBucket ?? "all") !== "all";
+	return filtered ? PUBLIC_FILTERED_MIN_REQUESTS : PUBLIC_UNFILTERED_MIN_REQUESTS;
 }
 
-function hasPublicCacheTelemetrySample(value: unknown) {
-	return Number(value ?? 0) >= PUBLIC_CACHE_TELEMETRY_MIN_REQUESTS;
+function hasPublicSample(value: unknown, minimumRequests: number) {
+	return Number(value ?? 0) >= minimumRequests;
 }
 
-function suppressSmallPublicPerformanceCohorts(value: Record<string, any>): Record<string, any> {
+function suppressSmallPublicPerformanceCohorts(value: Record<string, any>, minimumRequests: number): Record<string, any> {
 	const keep = (entry: unknown, field = "requests") => {
 		if (!entry || typeof entry !== "object") return false;
 		const row = entry as Record<string, unknown>;
-		return hasPublicPerformanceSample(row[field] ?? row.health_requests ?? row.sample_count);
+		return hasPublicSample(row[field] ?? row.health_requests ?? row.sample_count, minimumRequests);
 	};
 	const last24h = value.last_24h && typeof value.last_24h === "object"
-		&& hasPublicPerformanceSample(value.last_24h.total_requests)
+		&& hasPublicSample(value.last_24h.total_requests, minimumRequests)
 		? value.last_24h
 		: {};
 	const prev24h = value.prev_24h && typeof value.prev_24h === "object"
-		&& hasPublicPerformanceSample(value.prev_24h.total_requests)
+		&& hasPublicSample(value.prev_24h.total_requests, minimumRequests)
 		? value.prev_24h
 		: {};
 	return {
@@ -140,6 +156,29 @@ function parseBoundedInt(value: string | null, fallback: number, maximum: number
 	return Math.max(0, Math.min(maximum, Math.floor(parsed)));
 }
 
+/** Cloudflare colos are three-letter IATA codes. */
+const CLOUDFLARE_COLO = /^[A-Z]{3}$/;
+
+/**
+ * Public query values passed to database RPCs are validated first: every distinct URL
+ * misses the edge cache, so free text would let anyone run uncached aggregates at will.
+ * Returns undefined when absent and null when invalid.
+ */
+function parseColo(value: string | undefined): string | null | undefined {
+	const colo = value?.trim().toUpperCase();
+	if (!colo) return undefined;
+	return CLOUDFLARE_COLO.test(colo) ? colo : null;
+}
+
+/** A YYYY-MM-DD day (a longer ISO timestamp is cut to its day); undefined when absent, null when invalid. */
+function parseDay(value: string | undefined): string | null | undefined {
+	const day = value?.trim().slice(0, 10);
+	if (!day) return undefined;
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+	const parsed = new Date(`${day}T00:00:00Z`);
+	return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === day ? day : null;
+}
+
 function parsePercentile(value: string | null, fallback = 50) {
 	const parsed = Number(value);
 	if (!Number.isFinite(parsed)) return fallback;
@@ -175,7 +214,9 @@ function toStringList(value: unknown): string[] {
 
 function normaliseGatewayStatus(value: unknown, isActive: unknown): string {
 	const status = String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
-	if (status === "disabled" || status === "inactive" || status.startsWith("deranked")) return status;
+	if (status === "disabled" || status === "inactive") return status;
+	// A deranked (last-resort) route is stored as `degraded`; it counts only while routing is on.
+	if (status === "degraded" || status === "de_ranked" || /^deranked(_lvl_?[123])?$/.test(status)) return isActive ? "deranked" : "inactive";
 	if (status && status !== "active") return status;
 	return isActive ? "active" : "inactive";
 }
@@ -1031,6 +1072,8 @@ publicModelsRouter.get("/weekly-metrics", async (c) => {
 	}
 });
 
+const PROVIDER_ROUTING_HEALTH_MAX_ROWS = 1_000;
+
 /** Volatile provider circuit-breaker state shared by model provider lists. */
 publicModelsRouter.get("/provider-routing-health", async (c) => {
 	const providerIds = [...new Set(
@@ -1043,29 +1086,36 @@ publicModelsRouter.get("/provider-routing-health", async (c) => {
 		return withPublicCache(c.json({ providers: {} }), sectionPolicy("routingHealth"));
 	}
 	if (providerIds.length > 100) return c.json({ error: "too_many_provider_ids" }, 400);
+	// A model page asks about its own model: another model's outage does not limit this one.
+	const modelId = (c.req.query("model_id") ?? "").trim();
+	if (!modelId || modelId.length > 500) return c.json({ error: "model_id_required" }, 400);
 	const windowHours = Math.max(1, parseBoundedInt(c.req.query("window_hours"), 24, 168));
 	const nowMs = Date.now();
 	const sinceIso = new Date(nowMs - windowHours * 60 * 60 * 1000).toISOString();
 	try {
-		const rows: Array<Record<string, unknown>> = [];
-		for (let offset = 0; offset < 20_000; offset += 1_000) {
-			const { data, error } = await getDataClient(c.env)
-				.from("gateway_provider_health_states")
-				.select("provider_id,breaker_state,is_deranked,open_until_ms,updated_at")
-				.in("provider_id", providerIds)
-				.gte("updated_at", sinceIso)
-				.order("updated_at", { ascending: false })
-				.range(offset, offset + 999);
-			if (error) throw error;
-			rows.push(...((data ?? []) as Array<Record<string, unknown>>));
-			if ((data?.length ?? 0) < 1_000) break;
-		}
+		// The primary key is (provider, model, endpoint), so one model has a row per provider and
+		// endpoint: a few hundred at most. A full page means that bound broke; fail rather than
+		// report a partial set as healthy.
+		const { data, error } = await getDataClient(c.env)
+			.from("gateway_provider_health_states")
+			.select("provider_id,breaker_state,is_deranked,open_until_ms,updated_at")
+			.in("provider_id", providerIds)
+			.eq("model_id", modelId)
+			.gte("updated_at", sinceIso)
+			.limit(PROVIDER_ROUTING_HEALTH_MAX_ROWS);
+		if (error) throw error;
+		const rows = (data ?? []) as Array<Record<string, unknown>>;
+		if (rows.length >= PROVIDER_ROUTING_HEALTH_MAX_ROWS) throw new Error("provider routing health exceeds one page");
 		const providers = Object.fromEntries(providerIds.map((providerId) => {
 			const matches = rows.filter((row) => row.provider_id === providerId);
-			const openCount = matches.filter((row) => row.breaker_state === "open").length;
-			const halfOpenCount = matches.filter((row) => row.breaker_state === "half_open").length;
-			const deranked = matches.some((row) => Boolean(row.is_deranked)
-				|| (row.breaker_state === "open" && Number(row.open_until_ms ?? 0) > nowMs));
+			// Rows change only on breaker transitions, so a stored is_deranked outlives the cooldown.
+			// An open breaker past its cooldown admits recovery probes: it is recovering, not limited.
+			const openNow = (row: Record<string, unknown>) =>
+				row.breaker_state === "open" && Number(row.open_until_ms ?? 0) > nowMs;
+			const openCount = matches.filter(openNow).length;
+			const halfOpenCount = matches.filter((row) => row.breaker_state === "half_open"
+				|| (row.breaker_state === "open" && !openNow(row))).length;
+			const deranked = openCount > 0;
 			return [providerId, {
 				providerId,
 				deranked,
@@ -1078,7 +1128,8 @@ publicModelsRouter.get("/provider-routing-health", async (c) => {
 		return withPublicCache(c.json({ providers }), sectionPolicy("routingHealth"));
 	} catch (error) {
 		console.error("[web-api/models] provider routing health failed", { providerIds, error });
-		return withPublicCache(c.json({ providers: {} }), sectionPolicy("routingHealth"));
+		// Unknown is not healthy: do not cache an empty status for every visitor.
+		return c.json({ error: "provider_routing_health_unavailable" }, 503);
 	}
 });
 
@@ -1375,9 +1426,11 @@ publicModelsRouter.get("/:modelId/usage-daily", async (c) => {
 	try {
 		const days = Math.max(1, Math.min(365, parseBoundedInt(c.req.query("days"), 30, 365))); const now = new Date(); const defaultSince = new Date(now); defaultSince.setUTCDate(defaultSince.getUTCDate() - days);
 		const requestedProviderIds = [...new Set((c.req.query("provider_ids") ?? "").split(",").map((id) => id.trim()).filter(Boolean))]; const client = getDataClient(c.env);
+		const since = parseDay(c.req.query("since")); const until = parseDay(c.req.query("until"));
+		if (since === null || until === null) return c.json({ error: "invalid_date", message: "since and until must be YYYY-MM-DD dates" }, 400);
 		const stealthProviderIds = await stealthProviderIdsForModel(c.env, modelId);
 		const providerIds = internalProviderFilters(requestedProviderIds, stealthProviderIds);
-		const v2 = await client.rpc("get_v2_model_usage_daily", { p_model_slug: modelId, p_provider_ids: requestedProviderIds.length ? providerIds : null, p_since: c.req.query("since")?.slice(0, 10) || defaultSince.toISOString().slice(0, 10), p_until: c.req.query("until")?.slice(0, 10) || now.toISOString().slice(0, 10) });
+		const v2 = await client.rpc("get_v2_model_usage_daily", { p_model_slug: modelId, p_provider_ids: requestedProviderIds.length ? providerIds : null, p_since: since ?? defaultSince.toISOString().slice(0, 10), p_until: until ?? now.toISOString().slice(0, 10) });
 		if (v2.error) throw v2.error;
 		if (!Array.isArray(v2.data)) throw new Error("V2 usage query returned an invalid payload");
 		return withPublicCache(c.json({ rows: (v2.data as Array<Record<string, unknown>>).map((row) => mapUsageDailyRow(row, stealthProviderIds)), source: "v2" }), sectionPolicy("usageDaily", modelId));
@@ -1393,13 +1446,16 @@ publicModelsRouter.get("/:modelId/effective-pricing-daily", async (c) => {
 		defaultSince.setUTCDate(defaultSince.getUTCDate() - days);
 		const requestedProviderIds = [...new Set((c.req.query("provider_ids") ?? "").split(",").map((id) => id.trim()).filter(Boolean))].sort();
 		if (requestedProviderIds.length > 100) return c.json({ error: "too_many_provider_ids" }, 400);
+		const since = parseDay(c.req.query("since"));
+		const until = parseDay(c.req.query("until"));
+		if (since === null || until === null) return c.json({ error: "invalid_date", message: "since and until must be YYYY-MM-DD dates" }, 400);
 		const stealthProviderIds = await stealthProviderIdsForModel(c.env, modelId);
 		const providerIds = internalProviderFilters(requestedProviderIds, stealthProviderIds);
 		const result = await getDataClient(c.env).rpc("get_v2_model_effective_pricing_daily", {
 			p_model_slug: modelId,
 			p_provider_ids: requestedProviderIds.length ? providerIds : null,
-			p_since: c.req.query("since")?.slice(0, 10) || defaultSince.toISOString().slice(0, 10),
-			p_until: c.req.query("until")?.slice(0, 10) || now.toISOString().slice(0, 10),
+			p_since: since ?? defaultSince.toISOString().slice(0, 10),
+			p_until: until ?? now.toISOString().slice(0, 10),
 		});
 		if (result.error) throw result.error;
 		if (!Array.isArray(result.data)) throw new Error("Effective pricing query returned an invalid payload");
@@ -1409,6 +1465,30 @@ publicModelsRouter.get("/:modelId/effective-pricing-daily", async (c) => {
 		return withPublicCache(c.json({ rows: [] }), sectionPolicy("effectivePricing", modelId));
 	}
 });
+
+/**
+ * Per-attempt reachability, capacity and call-error health. Optional: when the
+ * RPC is not deployed yet or fails, the model page keeps its request-level uptime.
+ */
+async function loadProviderAttemptHealth(
+	client: ReturnType<typeof getDataClient>,
+	modelId: string,
+	windowDays: number,
+): Promise<ProviderAttemptHealth[]> {
+	try {
+		const result = await client.rpc("get_v2_model_provider_attempt_health", { p_model_slug: modelId, p_window_days: windowDays });
+		if (result.error) {
+			if (!isMissingAttemptHealthRpcError(result.error)) {
+				console.error("[web-api/models] provider attempt health failed", { modelId, error: result.error });
+			}
+			return [];
+		}
+		return parseAttemptHealthRows(result.data);
+	} catch (error) {
+		console.error("[web-api/models] provider attempt health failed", { modelId, error });
+		return [];
+	}
+}
 
 export function isMissingTierHealthRpcError(error: { code?: string | null; message?: string | null }): boolean {
 	return error.code === "PGRST202" &&
@@ -1425,7 +1505,10 @@ publicModelsRouter.get("/:modelId/provider-health", async (c) => {
 		const providerIds = internalProviderFilters(requestedProviderIds, stealthProviderIds);
 		const windowDays = Math.max(1, Math.min(90, parseBoundedInt(c.req.query("window_days"), 3, 90)));
 		const client = getDataClient(c.env);
-		const v2 = await client.rpc("get_v2_model_provider_tier_health_metrics", { p_model_slug: modelId, p_window_days: windowDays, p_percentile: percentile / 100 });
+		const [v2, attemptHealthRows] = await Promise.all([
+			client.rpc("get_v2_model_provider_tier_health_metrics", { p_model_slug: modelId, p_window_days: windowDays, p_percentile: percentile / 100 }),
+			loadProviderAttemptHealth(client, modelId, windowDays),
+		]);
 		let healthError = v2.error;
 		let healthData = v2.data;
 		if (healthError && isMissingTierHealthRpcError(healthError)) {
@@ -1440,7 +1523,7 @@ publicModelsRouter.get("/:modelId/provider-health", async (c) => {
 		}
 		if (!healthError && Array.isArray(healthData)) {
 			const rows = (healthData as Array<Record<string, unknown>>)
-				.filter((row) => providerIds.includes(String(row.provider_id ?? "")) && hasPublicPerformanceSample(row.health_requests ?? row.requests))
+				.filter((row) => providerIds.includes(String(row.provider_id ?? "")) && hasPublicSample(row.health_requests ?? row.requests, PUBLIC_UNFILTERED_MIN_REQUESTS))
 				.map(({ last_request_at: _lastRequestAt, error_code_counts: rawErrorCounts, ...row }) => {
 					const providerId = publicProviderId(row.provider_id, stealthProviderIds);
 					const allowedErrorCategories = new Set(["authentication", "payment", "model_unavailable", "server", "stream", "other_provider"]);
@@ -1454,7 +1537,15 @@ publicModelsRouter.get("/:modelId/provider-health", async (c) => {
 						error_category_counts: errorCategoryCounts,
 					};
 				});
-			return withPublicCache(c.json({ rows, source: "v2" }), sectionPolicy("providerHealth", modelId));
+			// Per attempt, so a provider that only ever failed over still appears here.
+			// Kept beside `rows` rather than inside them so existing consumers are unchanged.
+			const attemptHealth = attemptHealthRows
+				.filter((row) => providerIds.includes(row.providerId) && hasPublicSample(row.attempts, PUBLIC_UNFILTERED_MIN_REQUESTS))
+				.map((row) => {
+					const providerId = publicProviderId(row.providerId, stealthProviderIds);
+					return attemptHealthToWire({ ...row, providerId, providerName: publicProviderDisplayName(providerId, row.providerName) });
+				});
+			return withPublicCache(c.json({ rows, source: "v2", attempt_health: attemptHealth }), sectionPolicy("providerHealth", modelId));
 		}
 		throw healthError ?? new Error("V2 provider health query returned an invalid payload");
 	} catch (error) {
@@ -1663,7 +1754,7 @@ publicModelsRouter.get("/:modelId/performance/colos", async (c) => {
 			? (result.data as Array<Record<string, unknown>>).map((row) => ({
 				colo: String(row.cloudflare_colo ?? "").trim().toUpperCase(),
 				requests: Number(row.request_count ?? 0),
-			})).filter((row) => /^[A-Z0-9]{3}$/.test(row.colo) && hasPublicPerformanceSample(row.requests))
+			})).filter((row) => CLOUDFLARE_COLO.test(row.colo) && hasPublicSample(row.requests, PUBLIC_FILTERED_MIN_REQUESTS))
 			: [];
 		return withPublicCache(c.json({ modelId, colos }), sectionPolicy("performance", modelId));
 	} catch (error) {
@@ -1675,7 +1766,9 @@ publicModelsRouter.get("/:modelId/performance/colos", async (c) => {
 /** 15-minute cache for the live-ish performance rollup and seven-day hourly provider series. */
 publicModelsRouter.get("/:modelId/performance", async (c) => {
 	const modelId = c.req.param("modelId");
-	const cloudflareColo = c.req.query("colo")?.trim().toUpperCase() || null;
+	const requestedColo = parseColo(c.req.query("colo"));
+	if (requestedColo === null) return c.json({ error: "invalid_colo", message: "colo must be a three-letter Cloudflare colo code" }, 400);
+	const cloudflareColo = requestedColo ?? null;
 	const percentile = parsePercentile(c.req.query("percentile"));
 	const rangeDays = [1, 3, 7].includes(Number(c.req.query("range")))
 		? Number(c.req.query("range"))
@@ -1686,10 +1779,12 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 	const contextBucket = ["lte_4k", "4k_16k", "16k_64k", "gt_64k"].includes(c.req.query("context") ?? "")
 		? c.req.query("context")
 		: "all";
+	const minimumRequests = publicPerformanceMinRequests({ cloudflareColo, streamMode, contextBucket });
+	const hasSample = (value: unknown) => hasPublicSample(value, minimumRequests);
 	try {
 		const client = getDataClient(c.env);
 		const includeHealth = !cloudflareColo && streamMode === "all" && contextBucket === "all";
-		const [v2, health, cachedInput, providerHourly, qualityHourly, stealthProviderIds] = await Promise.all([
+		const [v2, health, cachedInput, providerHourly, qualityHourly, stealthProviderIds, attemptHealthRows] = await Promise.all([
 			client.rpc("get_v2_model_performance_metrics", {
 				p_model_slug: modelId,
 				p_cloudflare_colo: cloudflareColo,
@@ -1723,13 +1818,15 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 				p_context_bucket: contextBucket,
 			}),
 			stealthProviderIdsForModel(c.env, modelId),
+			includeHealth ? loadProviderAttemptHealth(client, modelId, 3) : Promise.resolve([] as ProviderAttemptHealth[]),
 		]);
 		let performance: Record<string, any> | null = null;
 		if (!v2.error && v2.data && !Array.isArray(v2.data) && typeof v2.data === "object") {
-			performance = suppressSmallPublicPerformanceCohorts(v2.data as Record<string, any>);
+			performance = suppressSmallPublicPerformanceCohorts(v2.data as Record<string, any>, minimumRequests);
 		} else if (v2.error && !/could not find|does not exist|PGRST202/i.test(v2.error.message ?? "")) {
 			throw v2.error;
 		} else throw v2.error ?? new Error("V2 performance query returned an invalid payload");
+		let providerHealthLoaded = false;
 		if (
 			!cloudflareColo &&
 			streamMode === "all" &&
@@ -1739,14 +1836,15 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			health.data.length > 0 &&
 			performance
 		) {
+			providerHealthLoaded = true;
 			performance = {
 				...performance,
-				provider_uptime_24h: (health.data as Array<Record<string, unknown>>).filter((row) => hasPublicPerformanceSample(row.health_requests ?? row.requests)).map((row) => {
+				provider_uptime_24h: (health.data as Array<Record<string, unknown>>).filter((row) => hasSample(row.health_requests ?? row.requests)).map((row) => {
 					const provider = publicProviderId(row.provider_id, stealthProviderIds);
 					return {
 					provider, provider_name: provider === "stealth" ? "stealth" : row.provider_name ?? row.provider_id, requests: row.health_requests ?? row.requests,
 					uptime_pct: row.uptime_pct, avg_latency_ms: row.percentile_latency_ms ?? row.avg_latency_ms, avg_generation_ms: null, avg_throughput: row.percentile_throughput ?? row.avg_throughput,
-					uptime_buckets: Array.isArray(row.buckets) ? row.buckets.filter((bucket) => hasPublicPerformanceSample((bucket as Record<string, unknown>).requests ?? (bucket as Record<string, unknown>).health_requests)) : [],
+					uptime_buckets: Array.isArray(row.buckets) ? row.buckets.filter((bucket) => hasSample((bucket as Record<string, unknown>).requests ?? (bucket as Record<string, unknown>).health_requests)) : [],
 					};
 				}),
 			};
@@ -1754,16 +1852,16 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		if (!performance) return withPublicCache(c.json({ modelId, performance: null, metrics: null, activity: null }), sectionPolicy("performance", modelId));
 		performance = {
 			...performance,
-			prev_24h: hasPublicPerformanceSample(performance.prev_24h?.total_requests)
+			prev_24h: hasSample(performance.prev_24h?.total_requests)
 				? performance.prev_24h
 				: {},
-			last_24h: hasPublicPerformanceSample(performance.last_24h?.total_requests)
+			last_24h: hasSample(performance.last_24h?.total_requests)
 				? performance.last_24h
 				: {},
 			hourly_24h: (performance.hourly_24h ?? []).filter((value: Record<string, unknown>) =>
-				hasPublicPerformanceSample(value.requests)),
+				hasSample(value.requests)),
 			provider_daily_7d: (performance.provider_daily_7d ?? []).filter((value: Record<string, unknown>) =>
-				hasPublicPerformanceSample(value.requests)),
+				hasSample(value.requests)),
 		};
 		const isKnownProvider = (value: Record<string, unknown>) => {
 			const provider = String(value.provider ?? "").trim().toLowerCase();
@@ -1793,7 +1891,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		const providerHourlyRowsUnbounded = !providerHourly.error && Array.isArray(providerHourly.data)
 			? (providerHourly.data as Array<Record<string, unknown>>).filter((value) => {
 				const provider = String(value.provider_id ?? "").trim().toLowerCase();
-				return provider.length > 0 && provider !== "unknown" && hasPublicPerformanceSample(value.requests);
+				return provider.length > 0 && provider !== "unknown" && hasSample(value.requests);
 			})
 			: [];
 		const latestProviderBucket = Math.max(
@@ -1811,7 +1909,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			throw qualityHourly.error;
 		}
 		const qualityHourlyRows = !qualityHourly.error && Array.isArray(qualityHourly.data)
-			? (qualityHourly.data as Array<Record<string, unknown>>).filter((value) => hasPublicPerformanceSample(value.requests))
+			? (qualityHourly.data as Array<Record<string, unknown>>).filter((value) => hasSample(value.requests))
 			: [];
 		const providerSlugs = [...new Set([
 			...(performance.provider_uptime_24h ?? []).map((value: Record<string, unknown>) => String(value.provider ?? "")),
@@ -1834,7 +1932,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		const providerColor = (provider: unknown) => providerColors.get(String(provider ?? "").trim().toLowerCase()) ?? null;
 		const number = (value: unknown) => { const parsed = Number(value); return value == null || !Number.isFinite(parsed) ? null : parsed; };
 		const cacheRate = (requests: unknown, value: unknown) =>
-			hasPublicCacheTelemetrySample(requests) ? number(value) : null;
+			hasSample(requests) ? number(value) : null;
 		const summary = (value: Record<string, unknown> | null | undefined) => ({ avgThroughput: number(value?.avg_throughput), avgOutputSpeed: number(value?.output_speed_tps), avgLatencyMs: number(value?.avg_latency_ms), avgGenerationMs: number(value?.avg_generation_ms), avgPhaseoOverheadMs: number(value?.phaseo_overhead_ms), avgTpotMs: number(value?.tpot_ms), avgItlMs: number(value?.itl_ms), uptimePct: number(value?.uptime_pct), totalRequests: Number(value?.total_requests ?? 0), successfulRequests: Number(value?.successful_requests ?? 0) });
 		const cachedInputMetrics = (cachedInput.data ?? {}) as Record<string, any>;
 		const cachedInputHourly = new Map((cachedInputMetrics.hourly_24h ?? []).map((value: Record<string, unknown>) => [String(value.bucket ?? ""), value]));
@@ -1842,20 +1940,28 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 		const hourly = (performance.hourly_24h ?? []).map((value: Record<string, unknown>) => {
 			const cache = cachedInputHourly.get(String(value.bucket ?? "")) as Record<string, unknown> | undefined;
 			const cacheRequests = Number(cache?.telemetry_requests ?? 0);
-			return { bucket: value.bucket ?? "", avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgEndToEndMs: number(value.gateway_e2e_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(cacheRequests, cache?.cached_input_pct), cacheTelemetryRequests: hasPublicCacheTelemetrySample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0), successPct: number(value.success_pct) };
+			return { bucket: value.bucket ?? "", avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgEndToEndMs: number(value.gateway_e2e_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(cacheRequests, cache?.cached_input_pct), cacheTelemetryRequests: hasSample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0), successPct: number(value.success_pct) };
 		});
+		// Per-attempt health, combined across service tiers for each public provider id.
+		// Only the rates are published; attempt and failure counts reveal traffic volume.
+		const publicAttemptHealthRows = attemptHealthRows.filter((row) => hasSample(row.attempts));
+		const providerAttemptHealth = (provider: string) => {
+			const combined = combineAttemptHealth(publicAttemptHealthRows.filter((row) => publicProviderId(row.providerId, stealthProviderIds) === provider));
+			return combined ? attemptHealthRatesOnly(combined) : null;
+		};
+		const attemptHealthHours = attemptHealthByHour(publicAttemptHealthRows);
 		const providerPerformance = (performance.provider_uptime_24h ?? []).map((value: Record<string, any>) => { const provider = publicProviderId(value.provider, stealthProviderIds); return { provider, providerName: provider === "stealth" ? "Stealth" : value.provider_name ?? value.provider ?? "", providerColor: providerColor(provider), avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), requests: Number(value.requests ?? 0), uptimePct: number(value.uptime_pct), uptimeBuckets: (value.uptime_buckets ?? []).map((bucket: Record<string, unknown>) => {
 			const requests = Number(bucket.health_requests ?? bucket.requests ?? 0);
 			const successPct = number(bucket.uptime_pct ?? bucket.success_pct);
 			const reportedSuccessfulRequests = number(bucket.health_success_requests ?? bucket.success_requests);
 			const successfulRequests = reportedSuccessfulRequests ?? (successPct == null ? 0 : Math.round(requests * successPct / 100));
 			return { start: bucket.start ?? "", end: bucket.end ?? "", successPct, errorPct: successPct == null ? null : Math.max(0, 100 - successPct), requests, successfulRequests, failedRequests: Math.max(0, requests - successfulRequests) };
-		}) }; });
+		}), attemptHealth: providerAttemptHealth(provider) }; });
 		const providerDaily7d = (performance.provider_daily_7d ?? []).map((value: Record<string, unknown>) => {
 			const publicProvider = publicProviderId(value.provider, stealthProviderIds);
 			const cache = cachedInputProviderDaily.get(`${String(value.day ?? "")}:${publicProvider}`) as Record<string, unknown> | undefined;
 			const cacheRequests = Number(cache?.telemetry_requests ?? 0);
-			return { day: value.day ?? "", provider: value.provider ?? "", providerName: value.provider_name ?? value.provider ?? "", providerColor: providerColor(value.provider), avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgEndToEndMs: number(value.gateway_e2e_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(cacheRequests, cache?.cached_input_pct), cachedInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(cache?.cached_input_tokens) : null, effectiveInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(cache?.effective_input_tokens) : null, cacheTelemetryRequests: hasPublicCacheTelemetrySample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0) };
+			return { day: value.day ?? "", provider: value.provider ?? "", providerName: value.provider_name ?? value.provider ?? "", providerColor: providerColor(value.provider), avgThroughput: number(value.avg_throughput), avgOutputSpeed: number(value.output_speed_tps), avgLatencyMs: number(value.avg_latency_ms), avgEndToEndMs: number(value.gateway_e2e_ms), avgGenerationMs: number(value.avg_generation_ms), avgPhaseoOverheadMs: number(value.phaseo_overhead_ms), avgTpotMs: number(value.tpot_ms), avgItlMs: number(value.itl_ms), cachedInputPct: cacheRate(cacheRequests, cache?.cached_input_pct), cachedInputTokens: hasSample(cacheRequests) ? number(cache?.cached_input_tokens) : null, effectiveInputTokens: hasSample(cacheRequests) ? number(cache?.effective_input_tokens) : null, cacheTelemetryRequests: hasSample(cacheRequests) ? cacheRequests : 0, requests: Number(value.requests ?? 0) };
 		});
 		const providerHourly7d = providerHourlyRows.map((value) => {
 			const cacheRequests = Number(value.cache_telemetry_requests ?? 0);
@@ -1874,9 +1980,9 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 				avgTpotMs: number(value.tpot_ms),
 				avgItlMs: number(value.itl_ms),
 				cachedInputPct: cacheRate(cacheRequests, value.cached_input_pct),
-				cachedInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(value.cached_input_tokens) : null,
-				effectiveInputTokens: hasPublicCacheTelemetrySample(cacheRequests) ? number(value.effective_input_tokens) : null,
-				cacheTelemetryRequests: hasPublicCacheTelemetrySample(cacheRequests) ? cacheRequests : 0,
+				cachedInputTokens: hasSample(cacheRequests) ? number(value.cached_input_tokens) : null,
+				effectiveInputTokens: hasSample(cacheRequests) ? number(value.effective_input_tokens) : null,
+				cacheTelemetryRequests: hasSample(cacheRequests) ? cacheRequests : 0,
 				requests: Number(value.requests ?? 0),
 			};
 		}).filter((value) => String(value.provider).trim().length > 0);
@@ -1916,8 +2022,36 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			const leastReliable = providers.reduce<{ successPct: number; requests: number; successfulRequests: number } | null>((worst, candidate) => !worst || candidate.successPct < worst.successPct ? candidate : worst, null);
 			const eligibleRequests = providers.reduce((sum, provider) => sum + provider.requests, 0);
 			const eligibleSuccesses = providers.reduce((sum, provider) => sum + provider.successfulRequests, 0);
-			return { bucket: value.bucket ?? "", overallSuccessPct: eligibleRequests > 0 ? eligibleSuccesses / eligibleRequests * 100 : number(value.success_pct), worstProviderSuccessPct: leastReliable?.successPct ?? null, worstProviderRequests: leastReliable?.requests ?? 0, providerCount: providers.length, requests: eligibleRequests || Number(value.requests ?? 0) };
+			// Reachability, capacity and call errors across every provider's attempts this
+			// hour, as rates only. An hour with no eligible attempts has null rates.
+			const attempts = Number.isFinite(timestamp) ? attemptHealthHours.get(hour.toISOString()) : undefined;
+			const attemptFields = attemptHealthRows.length > 0 ? {
+				reachabilityPct: attempts?.reachabilityPct ?? null,
+				capacityPct: attempts?.capacityPct ?? null,
+				callErrorPct: attempts?.callErrorPct ?? null,
+			} : {};
+			const point = { bucket: value.bucket ?? "", worstProviderSuccessPct: leastReliable?.successPct ?? null, worstProviderRequests: leastReliable?.requests ?? 0, providerCount: providers.length, ...attemptFields };
+			// Provider health leaves out requests the customer caused: bad requests,
+			// policy rejections, rate limits and cancellations. The hourly success_pct
+			// counts them as failures, so once health is loaded an hour with only those
+			// has no requests to rate rather than falling back to that rate.
+			if (providerHealthLoaded || eligibleRequests > 0) {
+				return { ...point, overallSuccessPct: eligibleRequests > 0 ? eligibleSuccesses / eligibleRequests * 100 : null, requests: eligibleRequests };
+			}
+			return { ...point, overallSuccessPct: number(value.success_pct), requests: Number(value.requests ?? 0) };
 		});
+		// The 24 hours the uptime chart shows, as shares of all attempts in them. The
+		// chart's tooltips use these: an average of hourly rates would understate
+		// failures whenever traffic is uneven.
+		const attemptHealth24h = attemptHealthRows.length > 0
+			? attemptHealthOverHours(attemptHealthHours, successSeries.flatMap((point: { bucket: unknown }) => {
+				const timestamp = Date.parse(String(point.bucket ?? ""));
+				if (!Number.isFinite(timestamp)) return [];
+				const hour = new Date(timestamp);
+				hour.setUTCMinutes(0, 0, 0);
+				return [hour.toISOString()];
+			}))
+			: null;
 		const timeOfDay = (performance.time_of_day_5d ?? []).map((value: Record<string, unknown>) => ({ hour: Number(value.hour ?? 0), avgThroughput: number(value.avg_throughput), avgLatencyMs: number(value.avg_latency_ms), avgGenerationMs: number(value.avg_generation_ms), sampleCount: Number(value.sample_count ?? 0) }));
 		const providerPercentileDaily7d = (Array.isArray(percentileSeries.data) ? percentileSeries.data : []).map((value: Record<string, unknown>) => {
 			const seriesPercentile = Number(value.percentile);
@@ -1949,7 +2083,7 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 				toolCallErrorPct: toolCallSuccessPct == null ? null : 100 - toolCallSuccessPct,
 				structuredOutputSuccessPct,
 				structuredOutputErrorPct: structuredOutputSuccessPct == null ? null : 100 - structuredOutputSuccessPct,
-				cacheHitRatePct: hasPublicCacheTelemetrySample(value.requests) ? number(value.cache_hit_rate_pct) : null,
+				cacheHitRatePct: hasSample(value.requests) ? number(value.cache_hit_rate_pct) : null,
 				requests: Number(value.requests ?? 0),
 			};
 		});
@@ -1959,12 +2093,14 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			const toolCallErrors = Number(value.tool_call_errors ?? 0);
 			const structuredOutputResponses = Number(value.structured_output_responses ?? 0);
 			const structuredOutputErrors = Number(value.structured_output_errors ?? 0);
+			// An hour with no checked tool calls or JSON replies has no rate. Plotting it as
+			// 0% errors would show quiet hours as perfect.
 			const toolCallErrorPct = toolCallResponses > 0
 				? toolCallErrors * 100 / toolCallResponses
-				: requests > 0 ? 0 : null;
+				: null;
 			const structuredOutputErrorPct = structuredOutputResponses > 0
 				? structuredOutputErrors * 100 / structuredOutputResponses
-				: requests > 0 ? 0 : null;
+				: null;
 			return {
 				bucket: value.bucket ?? "",
 				toolCallSuccessPct: toolCallErrorPct == null ? null : 100 - toolCallErrorPct,
@@ -1982,14 +2118,14 @@ publicModelsRouter.get("/:modelId/performance", async (c) => {
 			value.cacheHitRatePct != null
 		);
 		const qualitySeries = hourlyQualitySeries.length > 0 ? hourlyQualitySeries : legacyQualitySeries;
-		const metrics = { cloudflareColo: performance.cloudflare_colo ?? cloudflareColo, percentile, rangeDays, streamMode, contextBucket, summary: summary(performance.last_24h), prevSummary: performance.prev_24h ? summary(performance.prev_24h) : null, hourly, successSeries, timeOfDay, providerPerformance, providerDaily7d, providerHourly7d, providerPercentileDaily7d, qualitySeries, dataRange: providerHourly7d.length ? { start: providerHourly7d[0]?.bucket ?? "", end: providerHourly7d[providerHourly7d.length - 1]?.bucket ?? "" } : hourly.length ? { start: hourly[0]?.bucket ?? "", end: hourly[hourly.length - 1]?.bucket ?? "" } : { start: "", end: "" }, cumulativeTokens: number(performance.cumulative_tokens?.total_tokens), releaseDate: performance.cumulative_tokens?.release_date ?? null };
+		const metrics = { cloudflareColo: performance.cloudflare_colo ?? cloudflareColo, percentile, rangeDays, streamMode, contextBucket, summary: summary(performance.last_24h), prevSummary: performance.prev_24h ? summary(performance.prev_24h) : null, hourly, successSeries, ...(attemptHealth24h ? { attemptHealth24h } : {}), timeOfDay, providerPerformance, providerDaily7d, providerHourly7d, providerPercentileDaily7d, qualitySeries, dataRange: providerHourly7d.length ? { start: providerHourly7d[0]?.bucket ?? "", end: providerHourly7d[providerHourly7d.length - 1]?.bucket ?? "" } : hourly.length ? { start: hourly[0]?.bucket ?? "", end: hourly[hourly.length - 1]?.bucket ?? "" } : { start: "", end: "" }, cumulativeTokens: number(performance.cumulative_tokens?.total_tokens), releaseDate: performance.cumulative_tokens?.release_date ?? null };
 		const activity = { summary: metrics.summary, providerPerformance, cumulativeTokens: metrics.cumulativeTokens };
 		return withPublicCache(c.json({
 			modelId,
 			performance,
 			metrics,
 			activity,
-			minimumSampleSize: PUBLIC_PERFORMANCE_MIN_REQUESTS,
+			minimumSampleSize: minimumRequests,
 		}), sectionPolicy("performance", modelId));
 	} catch (error) {
 		console.error("[web-api/models] performance failed", { modelId, error });

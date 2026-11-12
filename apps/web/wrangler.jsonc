@@ -1,0 +1,33 @@
+{
+  // The Phaseo website (TanStack Start) as a Cloudflare Worker. CI deploys it
+  // from main (.github/workflows/ci.yml, "Deploy Web").
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "phaseo-web",
+  "main": "./src/server.ts",
+  "compatibility_date": "2026-10-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "upload_source_maps": false,
+  "observability": { "enabled": true },
+  "vars": {
+    "WEB_API_ORIGIN": "https://phaseo.app",
+    "PHASEO_ENV": "production",
+    // Onboarding emails through Resend (same as the previous site).
+    "RESEND_ONBOARDING_AUTOMATIONS_ENABLED": "true",
+    // Rollout canary (src/lib/start/canary.ts): on these hosts, CANARY_PERCENT
+    // of visitors are served here and the rest pass through to the previous
+    // site. 0 = everyone on the previous site (fast rollback); 100 = all here.
+    "CANARY_HOSTS": "phaseo.app,www.phaseo.app",
+    "CANARY_PERCENT": "100"
+  },
+  // src/content (blog, help) is read through this binding (phaseo:content-fs).
+  "assets": { "binding": "ASSETS" },
+  // Production route. With the canary at 0 the Worker only passes requests
+  // through to the previous site; removing this route rolls back completely.
+  // The more specific phaseo.app/api/_web|account|chat|internal/* and
+  // /scim/v2/* routes stay with the web API Worker (apps/web-api).
+  "routes": [
+    { "pattern": "phaseo.app/*", "zone_name": "phaseo.app" }
+  ]
+}

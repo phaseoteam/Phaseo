@@ -1,4 +1,4 @@
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
 import { DisplayDateTime } from "@/components/display/DisplayValue";
 import { KeyUsageSummary } from "./KeyUsageSummary";
 import { Link } from "@/i18n/navigation";
@@ -14,20 +14,20 @@ import { KeyPageActions } from "@/components/(gateway)/settings/keys/KeyPageActi
 import { type KeyDetailData } from "@/lib/fetchers/internal/fetchSettingsKeyDetail";
 
 
-export async function KeyDetailView({ data }: { data: KeyDetailData }) {
+export function KeyDetailView({ data }: { data: KeyDetailData }) {
 	const { key, usage } = data;
-	const t = await getTranslations("SettingsUI");
+	const t = useTranslations("SettingsUI");
 	const date = (value: string | null | undefined, empty: string) => value ? <DisplayDateTime value={value} /> : empty;
 	const expired = key.expires_at && Date.parse(key.expires_at) <= data.observedAt;
-	return <div className="mx-auto w-full max-w-6xl space-y-8 pb-10">
-		<header className="flex items-center justify-between gap-4 border-b pb-6">
+	return <div className="min-w-0 space-y-8">
+		<header className="flex flex-wrap items-center justify-between gap-4">
 			<div className="flex min-w-0 items-center gap-4">
 				<Button variant="ghost" size="icon" asChild><Link href="/settings/keys" aria-label={t("keyDetail.back")}><ArrowLeft className="size-4" /></Link></Button>
 				<div className="min-w-0"><div className="flex flex-wrap items-center gap-3"><KeyNameHeading key={key.name} k={key} canManage={data.canManage} /><Badge variant="outline">{key.status === "revoked" || key.status === "compromised" ? t("labels.revoked") : expired ? t("labels.expired") : key.status === "active" ? t("labels.enabled") : t("labels.disabled")}</Badge></div><p className="mt-1 text-sm text-muted-foreground">{data.workspaceName ?? t("labels.workspace")} · {t("usageViewFilters.apiKey")}</p></div>
 			</div>
 			{data.canManage && <KeyPageActions k={key} />}
 		</header>
-		<section className="rounded-xl border bg-card p-6">
+		<section className="border-y border-border/60 py-5">
 			<h2 className="mb-5 text-base font-semibold">{t("keyDetail.information")}</h2>
 			<dl className="grid gap-6 text-sm sm:grid-cols-2 lg:grid-cols-3">
 				{[
@@ -38,7 +38,7 @@ export async function KeyDetailView({ data }: { data: KeyDetailData }) {
 			</dl>
 		</section>
 		<section className="space-y-4">
-			<div className="flex items-center justify-between"><h2 className="text-base font-semibold">{t("teams.usage")}</h2><Button variant="outline" size="sm" asChild><Link href={`/settings/usage/logs?key=${encodeURIComponent(key.id)}&workspaceId=${encodeURIComponent(key.workspace_id)}`}>{t("keyDetail.viewLogs")}</Link></Button></div>
+			<div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-base font-semibold">{t("teams.usage")}</h2><Button variant="outline" size="sm" asChild><Link href={`/settings/usage/logs?key=${encodeURIComponent(key.id)}&workspaceId=${encodeURIComponent(key.workspace_id)}`}>{t("keyDetail.viewLogs")}</Link></Button></div>
 			<KeyUsageSummary usage={usage} limits={key} observedAt={data.observedAt} limitAlert={data.canManage ? { keyId: key.id, keyName: key.name } : undefined} />
 			<p className="text-xs text-muted-foreground">{t("keyDetail.usagePeriod")} {t("keyDetail.projectionNote")}</p>
 			<KeyUsageCharts chart={data.chart} />

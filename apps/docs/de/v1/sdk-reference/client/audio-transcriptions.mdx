@@ -1,0 +1,256 @@
+---
+icon: "mic"
+title: "STT (Sprache zu Text)"
+description: "Transkribiere Audio mit POST /v1/audio/transcriptions aus jedem Phaseo-SDK."
+---
+
+Lade Audio als Multipart-Formular mit einem Feld `file` an `POST /v1/audio/transcriptions` hoch. Ein JSON-Body mit einem Base64-String besteht die Validierung nicht. Nur das TypeScript-SDK kann dieses Formular senden; in allen anderen Sprachen sendest du es wie unten mit dem Standard-HTTP-Client oder schickst stattdessen eine URL (siehe [Audio von einer URL transkribieren](#transcribe-audio-from-a-url)).
+
+<span id="upload-an-audio-file"></span>
+## Audiodatei hochladen
+
+<CodeGroup>
+
+```typescript TypeScript
+import { readFile } from "node:fs/promises";
+
+const form = new FormData();
+form.append("model", "openai/gpt-4o-transcribe");
+form.append("language", "en");
+form.append("file", new Blob([await readFile("call.mp3")], { type: "audio/mpeg" }), "call.mp3");
+
+const transcript = await client.generateTranscription(form as unknown as Record<string, unknown>);
+console.log(transcript.text);
+```
+
+```python Python
+# generate_transcription() kann noch kein Multipart senden, daher das Formular mit HTTPX senden.
+import os
+import httpx
+
+with open("call.mp3", "rb") as audio:
+    response = httpx.post(
+        "https://api.phaseo.app/v1/audio/transcriptions",
+        headers={"Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}"},
+        data={"model": "openai/gpt-4o-transcribe", "language": "en"},
+        files={"file": ("call.mp3", audio, "audio/mpeg")},
+        timeout=120,
+    )
+response.raise_for_status()
+print(response.json()["text"])
+```
+
+```go Go
+// CreateTranscription() sendet JSON, daher das Formular mit net/http und mime/multipart senden.
+var body bytes.Buffer
+form := multipart.NewWriter(&body)
+_ = form.WriteField("model", "openai/gpt-4o-transcribe")
+_ = form.WriteField("language", "en")
+part, _ := form.CreateFormFile("file", "call.mp3")
+audio, _ := os.ReadFile("call.mp3")
+_, _ = part.Write(audio)
+_ = form.Close()
+
+req, _ := http.NewRequest("POST", "https://api.phaseo.app/v1/audio/transcriptions", &body)
+req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
+req.Header.Set("Content-Type", form.FormDataContentType())
+
+resp, err := http.DefaultClient.Do(req)
+```
+
+```csharp C#
+// CreateTranscription() sendet JSON, daher das Formular mit HttpClient senden.
+using var http = new HttpClient();
+http.DefaultRequestHeaders.Authorization =
+    new("Bearer", Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
+
+using var form = new MultipartFormDataContent
+{
+    { new StringContent("openai/gpt-4o-transcribe"), "model" },
+    { new StringContent("en"), "language" },
+    { new ByteArrayContent(await File.ReadAllBytesAsync("call.mp3")), "file", "call.mp3" },
+};
+
+var response = await http.PostAsync("https://api.phaseo.app/v1/audio/transcriptions", form);
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+```
+
+```php PHP
+<?php
+// generateTranscription() sendet JSON, daher das Formular mit Guzzle senden, das Composer mit dem SDK installiert hat.
+require 'vendor/autoload.php';
+
+$http = new GuzzleHttp\Client();
+
+$response = $http->post('https://api.phaseo.app/v1/audio/transcriptions', [
+    'headers' => ['Authorization' => 'Bearer ' . getenv('PHASEO_API_KEY')],
+    'multipart' => [
+        ['name' => 'model', 'contents' => 'openai/gpt-4o-transcribe'],
+        ['name' => 'language', 'contents' => 'en'],
+        ['name' => 'file', 'contents' => fopen('call.mp3', 'r'), 'filename' => 'call.mp3'],
+    ],
+]);
+
+echo $response->getBody();
+```
+
+```ruby Ruby
+# generate_transcription sendet JSON, daher das Formular mit Net::HTTP senden.
+require 'net/http'
+
+uri = URI('https://api.phaseo.app/v1/audio/transcriptions')
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV.fetch('PHASEO_API_KEY')}"
+request.set_form(
+  [['model', 'openai/gpt-4o-transcribe'], ['language', 'en'], ['file', File.open('call.mp3')]],
+  'multipart/form-data'
+)
+
+response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
+puts response.body
+```
+
+```java Java
+// Die JSON-Helfer des SDK kodieren kein Multipart, daher das Formular mit java.net.http senden.
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nopenai/gpt-4o-transcribe\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"language\"\r\n\r\nen\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"call.mp3\"\r\nContent-Type: audio/mpeg\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("call.mp3")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/audio/transcriptions"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body());
+```
+
+</CodeGroup>
+
+| Sprache | SDK-Methode | Kann sie eine Datei hochladen? |
+| --- | --- | --- |
+| TypeScript | `client.generateTranscription(form)` | Ja. Übergib einen `FormData`-Body; das SDK sendet ihn unverändert als Multipart. Der Cast ist nötig, weil der Typ der Methode einen JSON-Body beschreibt. |
+| Python | `client.generate_transcription(request)` | Nein. Die Methode sendet immer JSON, daher sendest du das Formular wie oben mit HTTPX. |
+| Go | `client.CreateTranscription(ctx, req)` | Nein. Die Methode sendet JSON; verwende `net/http` und `mime/multipart`. |
+| C# | `client.CreateTranscription(request)` | Nein. Die Methode sendet JSON; verwende `HttpClient` und `MultipartFormDataContent`. |
+| PHP | `$client->generateTranscription($request)`, Alias `createTranscription()` | Nein. Die Methode sendet JSON; verwende die Guzzle-Option `multipart`. |
+| Ruby | `client.generate_transcription(...)`, Alias `create_transcription` | Nein. Die Methode sendet JSON; verwende `Net::HTTP` und `set_form`. |
+| Java | Keine | Nein. Verwende `java.net.http.HttpClient` mit einem Multipart-Body. |
+| Rust | Keine | Nein. `client.post()` sendet nur JSON und funktioniert daher nur für [URL-Quellen](#transcribe-audio-from-a-url). |
+
+<span id="transcribe-audio-from-a-url"></span>
+## Audio von einer URL transkribieren
+
+Modelle von Mistral, ElevenLabs und Morpheus können das Audio statt aus einem Upload von einer URL lesen. Weil diese Anfrage JSON ist, kommen auch die SDK-Methoden damit zurecht, die keine Datei hochladen können:
+
+<CodeGroup>
+
+```python Python
+result = client.generate_transcription({
+    "model": "mistral/voxtral-mini-transcribe-2",
+    "file_url": "https://example.com/call.mp3",
+    "language": "en",
+})
+
+print(result["text"])
+```
+
+```go Go
+resp, err := client.CreateTranscription(context.Background(), map[string]interface{}{
+  "model":    "mistral/voxtral-mini-transcribe-2",
+  "file_url": "https://example.com/call.mp3",
+  "language": "en",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["text"])
+```
+
+```csharp C#
+var response = await client.CreateTranscription(new Dictionary<string, object>
+{
+    ["model"] = "mistral/voxtral-mini-transcribe-2",
+    ["file_url"] = "https://example.com/call.mp3",
+    ["language"] = "en",
+});
+```
+
+```php PHP
+$response = $client->generateTranscription([
+    'model' => 'mistral/voxtral-mini-transcribe-2',
+    'file_url' => 'https://example.com/call.mp3',
+    'language' => 'en',
+]);
+
+echo $response['text'];
+```
+
+```ruby Ruby
+response = client.generate_transcription(
+  model: 'mistral/voxtral-mini-transcribe-2',
+  file_url: 'https://example.com/call.mp3',
+  language: 'en'
+)
+```
+
+```rust Rust
+let response = client.post("/audio/transcriptions", &json!({
+    "model": "mistral/voxtral-mini-transcribe-2",
+    "file_url": "https://example.com/call.mp3",
+    "language": "en"
+}))?;
+
+println!("{}", response.body["text"]);
+```
+
+</CodeGroup>
+
+## Parameter
+
+Die Feldnamen sind in jeder Sprache die Formularfelder (bzw. bei einer URL-Quelle die JSON-Felder).
+
+| Feld | Hinweise |
+| --- | --- |
+| `model` | Erforderlich. Eine Transkriptionsmodell-ID. |
+| `file` | Der Audio-Upload: `aac`, `flac`, `mp3`, `mp4`, `mpeg`, `mpga`, `m4a`, `ogg`, `opus`, `wav` oder `webm`. Erforderlich, außer bei den URL-Optionen unten. Bei den meisten Modellen bis zu 25 MB. |
+| `file_url`, `file_id`, `s3_presigned_url` | Modelle von Mistral, ElevenLabs und Morpheus nehmen genau eine Audioquelle entgegen und können daher statt `file` eine URL nutzen. |
+| `language` | Sprachhinweis, etwa `en`. |
+| `prompt` | Kontext zur Verbesserung der Genauigkeit. |
+| `temperature` | `0` bis `1` (`0` bis `2` bei ElevenLabs). |
+| `response_format` | `json`, `text`, `srt`, `verbose_json`, `vtt` oder `diarized_json`. |
+| `timestamp_granularities` | `word` und/oder `segment`. |
+| `stream` | Streamt das Transkript, während es entsteht, sofern das Modell das unterstützt. |
+
+Das vollständige Schema steht in der [Transcriptions-API-Referenz](/de/v1/api-reference/endpoint/audio-transcriptions).
+
+## Antwort
+
+`AudioTranscriptionResponse`, zurückgegeben als Map-Typ des jeweiligen SDK (`map[string]interface{}` in Go, `Dictionary<string, object>?` in C#, ein Array in PHP, ein Hash in Ruby):
+
+```json
+{
+  "text": "Hello world"
+}
+```

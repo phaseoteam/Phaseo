@@ -21,10 +21,22 @@ CREATE INDEX workspace_budgets_created_by_idx ON public.workspace_budgets USING 
 
 CREATE INDEX workspace_budgets_workspace_id_idx ON public.workspace_budgets USING btree (workspace_id);
 
+CREATE TRIGGER gateway_workspace_publication
+  AFTER INSERT OR DELETE OR UPDATE ON public.workspace_budgets
+  FOR EACH ROW
+  EXECUTE FUNCTION private.capture_gateway_workspace_publication();
+
 CREATE TRIGGER workspace_budgets_lock_change
   BEFORE INSERT OR DELETE OR UPDATE ON public.workspace_budgets
   FOR EACH ROW
   EXECUTE FUNCTION public.lock_workspace_budget_change();
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_budgets"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 CREATE POLICY "workspace_budgets_select_member" ON "public"."workspace_budgets"
   FOR SELECT

@@ -7,24 +7,28 @@ icon: "life-buoy"
 
 ## Where do I get an API key?
 
-Create keys with `phaseo keys create` in the [Phaseo CLI](../guides/integrations/phaseo-cli), with `POST /v1/keys`, or in the Phaseo dashboard. See [Authentication](../developers/authentication).
+Open **Settings -> API Keys** in the [dashboard](https://phaseo.app/settings/keys), or call `POST /v1/keys` with a management key. See [Authentication](../developers/authentication).
 
 ## What base URL should I use?
 
-Use `https://api.phaseo.app/v1` as the base URL for the Gateway.
+`https://api.phaseo.app/v1`, with the key sent as `Authorization: Bearer $PHASEO_API_KEY`.
 
 ## Which endpoint should I start with?
 
-Use `/responses` for most text workflows. `/chat/completions` and `/messages` are available for compatibility.
+`POST /v1/responses` for most text work. `/v1/chat/completions` and `/v1/messages` accept the formats of existing integrations. The [quickstart](../quickstart) makes a first request.
+
+## Can I try Phaseo without paying?
+
+Yes. Send `"model": "phaseo/free"` to use an available free model with no credits. Free models allow 1,500 requests per user per UTC day; see [Plans](../exploring/subscription-plans).
 
 ## How do I see supported models?
 
-Use the [Models endpoint](../api-reference/endpoint/models.mdx) for the latest list.
+Call [`GET /v1/models`](../api-reference/endpoint/models.mdx). It returns models you can call now; add `availability=all` to include catalog-only models.
 
 ## How does BYOK work?
 
-Bring-your-own-key lets you use Phaseo routing and observability while your provider bills model usage directly. The first 250,000 completed requests each UTC month have no Phaseo service fee; after that, Phaseo charges 2.5% of provider-equivalent cost. See [Routing and fallbacks](../guides/routing-and-fallbacks#byok-considerations).
+With bring-your-own-key, Phaseo routes and logs the request while your provider bills the model usage. The first 250,000 completed BYOK requests per workspace each UTC month have no Phaseo service fee; after that, Phaseo charges 2.5% of the provider-equivalent cost. See [BYOK considerations](../guides/routing-and-fallbacks#byok-considerations).
 
 ## Where can I ask for help?
 
-See [Contact and support](./contact-and-support) for help channels.
+See [Contact and support](./contact-and-support).

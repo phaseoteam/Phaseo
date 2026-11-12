@@ -8,10 +8,10 @@ import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import { bufferStreamToIR, resolveStreamForProtocol } from "@executors/_shared/text-generate/openai-compat";
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
-import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, anthropicUnsupportedMediaResult, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
+import { irToAnthropicMessages, anthropicMessagesToIR, anthropicEffortRecordForClient, attachEffortRecord, usesAnthropicPerMessageEffort, anthropicUsageForPricing, anthropicUnsupportedMediaResult, bufferAnthropicStreamToMessage, mapAnthropicStopReason } from "@executors/anthropic/text-generate";
 import { ANTHROPIC_CACHE_USAGE_SEMANTICS, createAnthropicToResponsesStreamTransformer, createAnthropicStreamAccounting, createAnthropicPassthroughStreamTransformer } from "@executors/anthropic/text-generate/stream-transformer";
 import { inlineClaudeMediaForBase64OnlyPlatform } from "@executors/anthropic/text-generate/inline-media";
-import { isClaudeOpus55 } from "@core/claudeModelCapabilities";
+import { ANTHROPIC_PER_MESSAGE_EFFORT_BETA, isClaudeOpus55 } from "@core/claudeModelCapabilities";
 import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import {
@@ -42,6 +42,7 @@ import {
 	modelSupportsGoogleThinkingLevels,
 	resolveGoogleThinkingLevelForEffort,
 } from "@executors/google/shared/thinking";
+import { supportsGeminiArgumentStreaming } from "@executors/google/shared/function-call-stream";
 import { sanitizeGeminiSchema } from "@executors/google/shared/schema";
 import type { ProviderExecutor } from "../../types";
 import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
@@ -112,7 +113,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		// Claude on Vertex AI reads base64 sources only.
 		const inlined = await inlineClaudeMediaForBase64OnlyPlatform(irRequest, args);
 		if (inlined.ok === false) return inlined.result;
-		payload = irToAnthropicMessages(inlined.ir, args.maxOutputTokens, route.modelForPath, { providerId: args.providerId || "google-vertex" });
+		payload = irToAnthropicMessages(inlined.ir, args.maxOutputTokens, route.modelForPath, {
+			providerId: args.providerId || "google-vertex",
+			eagerInputStreaming: irRequest.stream === true,
+		});
 		delete payload.model;
 		payload.anthropic_version = "vertex-2023-10-16";
 		payload.stream = true;
@@ -145,10 +149,15 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				"X-Vertex-AI-LLM-Request-Type": "shared",
 				"X-Vertex-AI-LLM-Shared-Request-Type": geminiTier,
 			} : {}),
+			// Vertex takes Claude betas as the anthropic-beta header.
+			...(route.family === "anthropic" && usesAnthropicPerMessageEffort(payload)
+				? { "anthropic-beta": ANTHROPIC_PER_MESSAGE_EFFORT_BETA }
+				: {}),
 			...upstreamTestHeaders(args.meta),
 		},
 		body: requestBody,
 	});
+	const effortRecord = route.family === "anthropic" ? anthropicEffortRecordForClient(payload, args.protocol) : undefined;
 	const selectedDispatchAtMs = args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now();
 
 	const bill: Bill = {
@@ -203,7 +212,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 					return res.body!.pipeThrough(createAnthropicPassthroughStreamTransformer(accounting));
 				}
 				const responsesStream = res.body!.pipeThrough(
-					createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting, providerId: args.providerId }),
+					createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting, providerId: args.providerId, effortRecord }),
 				);
 				return resolveStreamForProtocol(
 					new Response(responsesStream, {
@@ -245,6 +254,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		if (route.family === "anthropic" && isClaudeOpus55(model)) {
 			const { message, firstFrameMs, totalMs } = await bufferAnthropicStreamToMessage(res, selectedDispatchAtMs);
 			const ir = anthropicMessagesToIR(message, args.requestId, model, args.providerId);
+			attachEffortRecord(ir, effortRecord);
 			bill.usage = normalizeTextUsageForPricing(message.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS) ?? undefined;
 			bill.finish_reason = ir.choices[0]?.finishReason ?? null;
 			return { kind: "completed", ir, bill, upstream: res, keySource: keyInfo.source, byokKeyId: keyInfo.byokId,
@@ -264,7 +274,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				return res.body!;
 			}
 			return res.body!.pipeThrough(
-				createAnthropicToResponsesStreamTransformer(args.requestId, model, { providerId: args.providerId }),
+				createAnthropicToResponsesStreamTransformer(args.requestId, model, { providerId: args.providerId, effortRecord }),
 			);
 		})();
 		const routeForBuffer = route.family === "anthropic" ? "responses" : "chat";
@@ -316,6 +326,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let ir: IRChatResponse;
 	if (route.family === "anthropic") {
 		ir = anthropicMessagesToIR(json, args.requestId, model, args.providerId);
+		attachEffortRecord(ir, effortRecord);
 	} else if (route.family === "gemini") {
 		ir = geminiToIR(json, args.requestId, model, args.providerId);
 		applyGoogleOutputTokenFallback(ir);
@@ -440,7 +451,7 @@ export function vertexRequiredLocation(providerId?: string, family?: VertexModel
 		: providerId === "google-vertex" && family === "anthropic" ? "global"
 		// Gemini Transcribe is served on global only
 		// (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-5-transcribe).
-		: providerId === "google-vertex" && family === "gemini" && /^(?:google\/)?(?:gemini-4-argon|gemini-3\.1-flash-lite|gemini-3\.5-transcribe(?:-preview)?)$/.test(model ?? "") ? "global"
+		: providerId === "google-vertex" && family === "gemini" && /^(?:google\/)?(?:gemini-4-argon|gemini-4-carbon|gemini-3\.1-flash-lite|gemini-3\.5-transcribe(?:-preview)?)$/.test(model ?? "") ? "global"
 		: providerId === "google-vertex" && family === "openapi_chat" && model?.endsWith("-maas")
 			? model === "openai/gpt-oss-20b-maas" ? "us-central1" : "global" : undefined;
 }
@@ -766,6 +777,12 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 		}
 	}
 
+	if (ir.stream && ir.tools?.length && ir.toolChoice !== "none" && supportsGeminiArgumentStreaming(modelOverride ?? ir.model)) {
+		request.toolConfig = {
+			...request.toolConfig,
+			functionCallingConfig: { ...request.toolConfig?.functionCallingConfig, streamFunctionCallArguments: true },
+		};
+	}
 	return request;
 }
 

@@ -1,24 +1,13 @@
-"use client";
-
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
+import Link from "@/components/link";
+import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Badge } from "@/components/ui/badge";
-import {
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "@/components/ui/hover-card";
+import { joinMeta } from "@/components/ui/hover-card";
+import { useRelativeNow } from "@/hooks/useRelativeNow";
+import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
 import { cn } from "@/lib/utils";
-
-function formatUtcShortDate(date: Date) {
-	return date.toLocaleDateString(undefined, {
-		year: "numeric",
-		month: "short",
-		day: "numeric",
-		timeZone: "UTC",
-	});
-}
 
 function daysUntilRetirement(date: Date) {
 	const dayMs = 24 * 60 * 60 * 1000;
@@ -44,15 +33,22 @@ function retirementToneClassName(daysUntil: number) {
 	return "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-300";
 }
 
+function modelHref(modelId: string): string | null {
+	const [organisationId, ...rest] = modelId.split("/");
+	if (!organisationId || rest.length === 0) return null;
+	return `/models/${encodeURIComponent(organisationId)}/${encodeURIComponent(rest.join("/"))}`;
+}
+
 export default function RetiresBadge(props: {
 	label: string;
-	retirementDate: string | null;
+	row: DeprecationWarning;
 	className?: string;
 }) {
+	const { label, row, className } = props;
+	const t = useTranslations("Common.ui.hoverCards");
 	const format = useDisplayFormatters();
-	const { label, retirementDate, className } = props;
-	const t = useTranslations("SettingsUI");
-	const parsed = retirementDate ? new Date(retirementDate) : null;
+	const nowMs = useRelativeNow();
+	const parsed = row.retirementDate ? new Date(row.retirementDate) : null;
 	const valid = parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
 
 	if (!valid) {
@@ -64,31 +60,49 @@ export default function RetiresBadge(props: {
 	}
 
 	const daysUntil = daysUntilRetirement(valid);
-	const content = (
-		<Badge
-			variant="outline"
-			className={cn("cursor-help", className, retirementToneClassName(daysUntil))}
-			render={<button type="button" />}
-		>
-			<span className="font-semibold">{label}</span>
-		</Badge>
-	);
+	const replacementHref = row.replacementModelId ? modelHref(row.replacementModelId) : null;
 
 	return (
-		<HoverCard openDelay={150} closeDelay={100}>
-			<HoverCardTrigger asChild>{content}</HoverCardTrigger>
-			<HoverCardContent align="start" side="bottom" sideOffset={8} className="w-auto">
-				<div className="grid gap-2 text-xs">
-					<div className="grid grid-cols-[120px_1fr] gap-2">
-						<div className="text-muted-foreground">{t("strings.Your timezone" as never)}</div>
-						<div className="font-mono">{format.date(valid)}</div>
-					</div>
-					<div className="grid grid-cols-[120px_1fr] gap-2">
-						<div className="text-muted-foreground">UTC</div>
-						<div className="font-mono">{formatUtcShortDate(valid)}</div>
-					</div>
-				</div>
-			</HoverCardContent>
-		</HoverCard>
+		<TimestampHoverCard
+			variant="date"
+			value={valid}
+			asChild
+			title={t("retires", { date: format.date(valid) })}
+			meta={joinMeta([
+				nowMs === null ? null : format.relative(valid, new Date(nowMs), "day"),
+				row.deprecationDate
+					? t("deprecatedOn", { date: format.date(row.deprecationDate) })
+					: null,
+			])}
+			extraRows={[
+				row.lastUsedAt
+					? { key: "last-used", label: t("lastUsed"), value: format.dateTime(row.lastUsedAt) }
+					: null,
+				row.replacementModelId
+					? {
+							key: "replacement",
+							label: t("replacement"),
+							value: replacementHref ? (
+								<Link
+									href={replacementHref}
+									className="break-all font-mono text-[11px] text-foreground underline underline-offset-2 hover:decoration-foreground"
+								>
+									{row.replacementModelId}
+								</Link>
+							) : (
+								<code className="break-all font-mono text-[11px]">{row.replacementModelId}</code>
+							),
+						}
+					: null,
+			]}
+		>
+			<Badge
+				variant="outline"
+				className={cn("cursor-help", className, retirementToneClassName(daysUntil))}
+				render={<button type="button" />}
+			>
+				<span className="font-semibold">{label}</span>
+			</Badge>
+		</TimestampHoverCard>
 	);
 }

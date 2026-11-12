@@ -9,9 +9,9 @@
    --panel-padding, --radius-card) are still used by the selectors below. The shared values live in
    packages/shared/app-kit/src/theme/tokens.ts; drop the overridden ones when these views move to
    Tailwind. */
-@font-face { font-family: Montserrat; font-style: normal; font-weight: 400; font-display: swap; src: url("../../../web/src/app/og/profile-share/assets/Montserrat-Regular.ttf") format("truetype"); }
-@font-face { font-family: Montserrat; font-style: normal; font-weight: 600; font-display: swap; src: url("../../../web/src/app/og/profile-share/assets/Montserrat-SemiBold.ttf") format("truetype"); }
-@font-face { font-family: Montserrat; font-style: normal; font-weight: 700; font-display: swap; src: url("../../../web/src/app/og/profile-share/assets/Montserrat-Bold.ttf") format("truetype"); }
+@font-face { font-family: Montserrat; font-style: normal; font-weight: 400; font-display: swap; src: url("../../../web/src/lib/og/assets/Montserrat-Regular.ttf") format("truetype"); }
+@font-face { font-family: Montserrat; font-style: normal; font-weight: 600; font-display: swap; src: url("../../../web/src/lib/og/assets/Montserrat-SemiBold.ttf") format("truetype"); }
+@font-face { font-family: Montserrat; font-style: normal; font-weight: 700; font-display: swap; src: url("../../../web/src/lib/og/assets/Montserrat-Bold.ttf") format("truetype"); }
 
 :root {
 	color-scheme: light;
@@ -788,7 +788,7 @@ button { color: inherit; }
 .chat-setup-options > .task-setup { padding-top: 8px; }
 .model-select-popup .desktop-select-item > span { overflow: hidden; text-overflow: ellipsis; }
 
-/* T3 layout structure, with the website's semantic palette and typography. */
+/* App layout structure, with the website's semantic palette and typography. */
 .chat-sidebar-controls { display: flex; align-items: center; gap: 2px; margin-bottom: 4px; }
 .chat-sidebar-controls .task-search { flex: 1; min-width: 0; margin: 0; gap: 6px; padding-left: 6px; }
 .chat-sidebar-controls .task-search input, .settings-navigation .task-search input { border: 0; background: transparent; padding: 4px 0; font-size: 12px; }

@@ -3,6 +3,7 @@
 import { getBindings } from "@/runtime/env";
 import { findVideoJobRecordByNativeId } from "@core/video-jobs";
 import { finalizeVideoJob } from "@core/video-finalization";
+import { resolveDashscopeAutoDurationSeconds } from "@core/video-reconciliation";
 import { markProviderEventProcessed } from "@core/provider-events";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 import { dispatchVideoWebhookEventInBackground } from "@core/video-user-webhooks";
@@ -438,7 +439,8 @@ export async function processAlibabaVideoWebhook(args: {
 		providerId: ALIBABA_PROVIDER_ID,
 		status: terminal,
 		model: extractAlibabaModel(payload) ?? job.model,
-		seconds: extractAlibabaSeconds(payload),
+		// Smart-duration (Wan 3.0) jobs bill the length DashScope reports, as the poller does.
+		seconds: resolveDashscopeAutoDurationSeconds(payload?.data ?? payload?.detail ?? payload, job.meta) ?? extractAlibabaSeconds(payload),
 		requestOptions: buildVideoPricingRequestOptions({
 			resolution: requestOptions.resolution ?? job.meta?.resolution,
 			quality: requestOptions.quality ?? job.meta?.quality,

@@ -133,11 +133,22 @@ function isPrivateIpv6(hostnameRaw: string): boolean {
 	if ((words[0] & 0xfe00) === 0xfc00) return true;
 	if ((words[0] & 0xffc0) === 0xfe80) return true;
 	if ((words[0] & 0xff00) === 0xff00) return true;
+	// Deprecated site-local fec0::/10.
+	if ((words[0] & 0xffc0) === 0xfec0) return true;
+	// Teredo 2001:0000::/32 tunnels to an obfuscated IPv4 address we cannot vet.
+	if (words[0] === 0x2001 && words[1] === 0) return true;
+	// NAT64 local-use 64:ff9b:1::/48 is operator-defined.
+	if (words[0] === 0x64 && words[1] === 0xff9b && words[2] === 1) return true;
+	// 6to4 2002::/16 carries its IPv4 address in bytes 2-5.
+	if (words[0] === 0x2002) {
+		return isPrivateIpv4(`${words[1] >> 8}.${words[1] & 0xff}.${words[2] >> 8}.${words[2] & 0xff}`);
+	}
 
 	const mapped = words.slice(0, 5).every((word) => word === 0) && words[5] === 0xffff;
+	const translated = words.slice(0, 4).every((word) => word === 0) && words[4] === 0xffff && words[5] === 0;
 	const compatible = words.slice(0, 6).every((word) => word === 0);
 	const nat64 = words[0] === 0x64 && words[1] === 0xff9b && words.slice(2, 6).every((word) => word === 0);
-	return (mapped || compatible || nat64) && isPrivateIpv4(embeddedIpv4(words));
+	return (mapped || translated || compatible || nat64) && isPrivateIpv4(embeddedIpv4(words));
 }
 
 function isPrivateOrLocalhostLiteral(hostnameRaw: string): boolean {

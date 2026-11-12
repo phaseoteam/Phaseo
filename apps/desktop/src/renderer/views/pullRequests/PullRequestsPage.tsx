@@ -37,7 +37,7 @@ function useDebounced<T>(value: T, delay: number) {
 	return debounced;
 }
 
-/** Shift held on its own turns on the rows' quick actions (T3's speed mode); this tracks a modifier, it binds no command. */
+/** Shift held on its own turns on the rows' quick actions (speed mode); this tracks a modifier, it binds no command. */
 function useShiftHeld() {
 	const [held, setHeld] = useState(false);
 	useEffect(() => {
@@ -83,7 +83,7 @@ function RowLabels({ labels }: { labels: PullRequestDirectoryEntry["labels"] }) 
 }
 
 type RowProps = { entry: PullRequestDirectoryEntry; selected: boolean; matchedElsewhere: boolean; speedMode: boolean; busy: boolean; sweeping: boolean; onSelect: (entry: PullRequestDirectoryEntry) => void; onAction: (entry: PullRequestDirectoryEntry, action: PullRequestQuickAction) => void; onSweepStart: (entry: PullRequestDirectoryEntry, event: React.PointerEvent) => void; onNotice: (message: string, failed?: boolean) => void };
-/** T3's page row (PullRequestRow): status column, number and title over author, repository and labels, quick actions outside the button. */
+/** A page row: status column, number and title over author, repository and labels, quick actions outside the button. */
 const PageRow = memo(function PageRow({ entry, selected, matchedElsewhere, speedMode, busy, sweeping, onSelect, onAction, onSweepStart, onNotice }: RowProps) {
 	const rollup = entry.state === "open" ? summaryChecksRollup(entry.checks) : null, actions = pullRequestQuickActions(entry), key = pullRequestEntryKey(entry);
 	return <div data-pull-request-key={key} className={cn("flex items-center rounded-md [contain-intrinsic-block-size:56px] [content-visibility:auto]", selected ? "bg-accent" : "hover:bg-accent/60", sweeping && "bg-destructive/10")}>
@@ -120,7 +120,7 @@ function GroupHeader({ groupKey, label, count }: { groupKey: PullRequestGroupKey
 	return <div className="flex items-center gap-2 px-3 pb-1 text-xs font-medium text-muted-foreground/70"><Icon aria-hidden className="size-3.5 shrink-0" /><h2 className="shrink-0">{label}</h2><span className="shrink-0 text-muted-foreground/50 tabular-nums">{count}</span><span aria-hidden className="h-px min-w-2 flex-1 bg-border/60" /></div>;
 }
 
-/** The empty page's own drawing: a branch leaving the base line and stopping short of rejoining it (T3's BranchMark). */
+/** The empty page's own drawing: a branch leaving the base line and stopping short of rejoining it. */
 function BranchMark() {
 	return <svg aria-hidden viewBox="0 0 120 72" className="h-20 w-32 text-muted-foreground/60" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
 		<path d="M10 58h100" className="text-muted-foreground/30" stroke="currentColor" />
@@ -225,7 +225,7 @@ function SearchInput({ value, busy, onChange, inputRef, className }: { value: st
 }
 
 /**
- * The Pull requests page (T3 Code's `/pull-requests`): every project's pull requests in one list, grouped into
+ * The Pull requests page: every project's pull requests in one list, grouped into
  * Authored, Review requested and Others, with search, filters and sorts that are remembered. A row opens its pull
  * request in a column beside the list; Shift shows quick actions, and dragging Close across rows closes several.
  */

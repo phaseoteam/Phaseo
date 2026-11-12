@@ -4,31 +4,50 @@ title: "Strukturierte Ausgaben"
 description: "Gib vorhersehbares JSON mit den Ausgabeformaten json_object oder json_schema zurück."
 ---
 
-Mit strukturierten Ausgaben kannst du maschinenlesbares Format statt Freitext vorgeben.
+Schick ein JSON-Schema mit der Anfrage, und das Modell gibt statt Freitext JSON in dieser Form zurück. Dein Code parst und validiert es trotzdem, bevor er es verwendet.
 
-## Unterstützte Endpunkte
+```mermaid
+flowchart LR
+  schema["Anfrage mit einem JSON-Schema"] --> model["Modell antwortet"]
+  model --> parse{{"Lässt es sich parsen und besteht es deinen Validator?"}}
+  parse -->|"Ja"| use["Ergebnis verwenden"]
+  parse -->|"Nein, beim ersten Mal"| retry["Ein korrigierender erneuter Versuch"]
+  retry --> parse
+  parse -->|"Nein, wieder nicht"| fail["Einen sicheren Fehler zurückgeben"]
+```
 
-Verwende strukturierte Ausgaben mit:
+## Ein Format wählen
 
-- `/v1/chat/completions` mit `response_format`
-- `/v1/responses` mit `text.format`
-- `/v1/messages` kann weiterhin JSON-Text zurückgeben, verwendet aber nicht denselben `response_format`-Vertrag.
+| `type` | Was du bekommst |
+| --- | --- |
+| `json_schema` | JSON, das dem gesendeten Schema folgt. Verwende das standardmäßig. |
+| `json_object` | Irgendein gültiges JSON-Objekt, ohne vorgegebene Form. |
+| `text` | Reiner Text (der Standard). |
 
-## Anfrage
+Wo das Format steht, hängt vom Endpunkt ab:
 
-```bash
+| Endpunkt | Feld |
+| --- | --- |
+| `/v1/chat/completions` | `response_format` |
+| `/v1/responses` | `text.format` |
+| `/v1/messages` | `output_config.format` (nur `json_schema`) |
+
+## Ein Schema senden
+
+<CodeGroup>
+```bash Chat Completions
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
-      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+      { "role": "user", "content": "Return the city and weather for London." }
     ],
     "response_format": {
       "type": "json_schema",
       "json_schema": {
-        "name": "weather_schema",
+        "name": "weather",
         "strict": true,
         "schema": {
           "type": "object",
@@ -44,14 +63,39 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Antwort
+```bash Responses
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-astra",
+    "input": "Return the city and weather for London.",
+    "text": {
+      "format": {
+        "type": "json_schema",
+        "name": "weather",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+</CodeGroup>
+
+Das JSON kommt als String im Inhalt der Nachricht zurück:
 
 ```json
 {
-  "id": "chatcmpl_...",
   "choices": [
     {
-      "index": 0,
       "finish_reason": "stop",
       "message": {
         "role": "assistant",
@@ -62,19 +106,14 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-## Hinweise zum Vertrag
+## Das Schema entwerfen
 
-- `response_format.type` muss `text`, `json_object` oder `json_schema` sein.
-- Füge bei `json_schema` ein Schemaobjekt ein (`response_format.json_schema.schema` bei Chat-ähnlichen Payloads oder `text.format.schema` bei Responses-ähnlichen Payloads).
-- Validiere das JSON auf deinem Server, bevor du es weiterverwendest.
+Beginne mit einem kleinen Objekt. Führe jedes Feld unter `required` auf, nutze `enum` für bekannte Kategorien und setze `additionalProperties: false`, wenn zusätzliche Schlüssel abgelehnt werden müssen. Versioniere das Schema zusammen mit deinem serverseitigen Validator, damit die beiden nie auseinanderlaufen.
 
-## Schema entwerfen
+<span id="validate-the-result"></span>
+## Das Ergebnis validieren
 
-Beginne mit einem kleinen Objekt, kennzeichne Pflichtfelder ausdrücklich und nutze Aufzählungen für bekannte Kategorien. Setze `additionalProperties: false`, um zusätzliche Schlüssel abzulehnen. Halte das angeforderte Schema und die Servervalidierung synchron und versioniere sie gemeinsam.
-
-## Ergebnis validieren
-
-Parse und validiere das vollständige Ergebnis vor der weiteren Nutzung. Dieses TypeScript-Beispiel verwendet Zod und entspricht dem Wetterschema oben:
+Prüfe vor dem Parsen auf eine Ablehnung, fehlenden Inhalt oder eine abgeschnittene Antwort (`finish_reason` ungleich `stop`). Validiere dann das geparste Objekt. Dieser Zod-Validator entspricht dem Schema oben:
 
 ```typescript
 import { z } from "zod";
@@ -89,6 +128,6 @@ function parseWeather(content: string) {
 }
 ```
 
-Behandle Ablehnungen, fehlende Inhalte und abgeschnittene Antworten vor dem Parsen. Bei fehlgeschlagener Validierung sind nur begrenzte Korrekturversuche zulässig; gib danach einen sicheren Fehler zurück. Erneute Generierungen können zusätzliche Kosten verursachen. Gültiges JSON belegt weder sachliche Richtigkeit noch die Erlaubnis zu einer Aktion.
+Schlägt die Validierung fehl, versuche es einmal mit dem Fehler im Prompt erneut und gib danach einen sicheren Fehler zurück. Jeder erneute Versuch wird berechnet. Gültiges JSON beweist trotzdem nicht, dass die Werte stimmen oder dass eine Aktion erlaubt ist.
 
-Erfasse Validierungsfehler nach Modell und Schemaversion. Prüfe deine Bewertungsfälle erneut, wenn sich eines davon ändert. Zur Wiederherstellung fehlerhaften JSONs siehe [Antwortreparatur](../cookbook/response-healing-for-structured-json.mdx).
+Erfasse Validierungsfehler nach Modell und Schemaversion, und führe deine Bewertungsfälle erneut aus, wenn sich eines davon ändert. Um fehlerhaftes JSON automatisch zu reparieren, siehe [Antwortreparatur](../cookbook/response-healing-for-structured-json.mdx).

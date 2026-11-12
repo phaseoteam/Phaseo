@@ -1,0 +1,200 @@
+---
+icon: "triangle-alert"
+title: "इवेंट और त्रुटियाँ"
+description: "जानें कि विफल एजेंट रन कैसे सामने आता है, कौन-से इवेंट भेजे जाते हैं, और मॉडल, टूल और continuation त्रुटियों से कैसे उबरें।"
+---
+
+विफल रन, run या continue कॉल से त्रुटि फेंकता या लौटाता है। रुकना (`waiting_for_human`) या रोकने की शर्त (`stopped`) त्रुटि नहीं है: दोनों सामान्य नतीजा लौटाते हैं। कौन-सी विफलताएँ `run.failed` इवेंट भी भेजती हैं, यह भाषा के अनुसार अलग है, इसलिए विफलता पहचानने के लिए सिर्फ़ इवेंट पर निर्भर न रहें।
+
+## विफल रन कैसे सामने आता है
+
+| भाषा | विफलता पर | सहेजी गई स्टेट |
+| --- | --- | --- |
+| TypeScript | फेंकता है। Gateway विफलताएँ `AgentGatewayError` होती हैं। `signal` के ज़रिए रद्द करने पर कुछ नहीं फेंका जाता: रन `cancelled` स्टेटस के साथ लौटता है। | त्रुटि फेंकने से पहले विफल रन (स्टेटस `failed`, `error` और `errorDetails` के साथ) `state` के ज़रिए सहेजा जाता है |
+| Python | `run()`, `continue_run()` या `stream.result()` से raise करता है | कोई `AgentRunResult` नहीं, और `state` accessor कॉल नहीं होता |
+| Go | non-nil `error` और ख़ाली `RunResult` लौटाता है | कोई नहीं |
+| C# | `Run` या `ContinueRun` से फेंकता है; कोई `RunResult` नहीं | कोई नहीं |
+| PHP | `run()` या `continueRun()` से `RuntimeException` फेंकता है; कोई `RunResult` नहीं | कोई नहीं |
+| Ruby | `run` या `continue_run` से raise करता है; कोई `RunResult` नहीं | कोई नहीं |
+| Java | `run` या `continueRun` से फेंकता है; कोई `RunResult` नहीं | कोई नहीं |
+| Rust | `Err(AgentError)` लौटाता है | कोई नहीं |
+
+<CodeGroup>
+
+```typescript TypeScript
+import { AgentGatewayError, AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  } else if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+```python Python
+import phaseo
+
+try:
+    result = agent.run(input="Summarise this ticket", client=client)
+except phaseo.PhaseoHTTPError as error:
+    print(error.status, error.code, error.request_id)
+    raise
+```
+
+```go Go
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+result, err := agent.Run(ctx, options)
+if errors.Is(err, context.DeadlineExceeded) {
+  // फिर से कोशिश करने या timeout की रिपोर्ट करने लायक ऐप्लिकेशन स्टेट सहेजें।
+}
+```
+
+```csharp C#
+using Phaseo.Gen;
+
+try
+{
+    var result = await agent.Run(options);
+}
+catch (ApiErrorException error)
+{
+    Console.Error.WriteLine($"{error.StatusCode} {error.Code} {error.RequestId}");
+    throw;
+}
+```
+
+```php PHP
+use Phaseo\Gen\RequestException;
+
+try {
+    $result = $agent->run(input: "Summarise this ticket", client: $client);
+} catch (RequestException $error) {
+    error_log($error->getStatusCode() . " " . $error->getErrorCode() . " " . $error->getRequestId());
+    throw $error;
+}
+```
+
+```ruby Ruby
+begin
+  result = agent.run(input: "Summarise this ticket", client: client)
+rescue Phaseo::Gen::RequestError => error
+  warn [error.status_code, error.code, error.request_id].join(" ")
+  raise
+end
+```
+
+```java Java
+import app.phaseo.gen.Client.ApiException;
+
+try {
+    var result = agent.run(options);
+} catch (ApiException error) {
+    System.err.println(error.getStatusCode() + " " + error.getCode() + " " + error.getRequestId());
+    throw error;
+}
+```
+
+```rust Rust
+match agent.run(&mut client, options) {
+    Ok(result) => println!("{}", result.output),
+    Err(error) => eprintln!("Agent failed: {}", error.message()),
+}
+```
+
+</CodeGroup>
+
+<span id="which-events-fire-when-something-fails"></span>
+## कुछ विफल होने पर कौन-से इवेंट भेजे जाते हैं
+
+| भाषा | `run.failed` कब भेजा जाता है | `tool.failed` कब भेजा जाता है | स्टेप सीमा पूरी होने पर |
+| --- | --- | --- | --- |
+| TypeScript | रद्द करने को छोड़कर हर विफलता पर, `step.failed` के बाद। रद्द करने पर इसकी जगह `step.cancelled` और `run.cancelled` भेजे जाते हैं। | कोई टूल विफल होता है | `Max steps exceeded (N)` फेंकता है और `run.failed` भेजता है |
+| Python | सिर्फ़ तब जब `max_steps` ख़त्म हो जाएँ। रद्द करने सहित दूसरी त्रुटियाँ बिना इवेंट के raise होती हैं। | कोई टूल विफल होता है | `RuntimeError("Max steps exceeded (N)")` raise करता है |
+| Go | किसी मॉडल त्रुटि (retries के बाद) या स्टेप सीमा ने रन ख़त्म किया | किसी टूल में त्रुटि हुई या उसका timeout हुआ | `Max steps exceeded (N)` लौटाता है और `run.failed` भेजता है |
+| C# | सिर्फ़ तब जब रन `MaxSteps` तक पहुँचे। मॉडल त्रुटियाँ, टूल exceptions, validation और रद्द करना इसके बिना फेंके जाते हैं। | किसी टूल ने exception फेंका और उसका `OnError` `return-to-model` है | `Max steps exceeded (N)` फेंकता है |
+| PHP | सिर्फ़ तब जब रन `maxSteps` तक पहुँचे। मॉडल त्रुटियाँ, टूल exceptions और validation इसके बिना फेंके जाते हैं। | किसी टूल ने exception फेंका या उसका timeout हुआ | `Max steps exceeded (N)` फेंकता है |
+| Ruby | सिर्फ़ तब जब रन `max_steps` तक पहुँचे। मॉडल त्रुटियाँ, टूल exceptions और validation इसके बिना raise होते हैं। | किसी टूल ने raise किया और उसका `on_error` `return-to-model` है। `continue_run` द्वारा चलाई गई अनुमोदित कॉल जब भी raise करती है, यह इवेंट भेजती है। | `Max steps exceeded (N)` raise करता है |
+| Java | सिर्फ़ तब जब रन `maxSteps` तक पहुँचे। मॉडल त्रुटियाँ, टूल exceptions, validation और रद्द करना इसके बिना फेंके जाते हैं। | किसी टूल ने exception फेंका और उसका `onError` `return-to-model` है | `Max steps exceeded (N)` फेंकता है |
+| Rust | कभी नहीं; Rust में विफलता इवेंट नहीं हैं | कभी नहीं; टूल त्रुटि `is_error: true` के साथ `tool.completed` के रूप में भेजी जाती है | त्रुटि नहीं: रन `stopped` स्टेटस, `stop_reason` `max_steps:<limit>` और `run.stopped` इवेंट के साथ लौटता है |
+
+[लाइफ़साइकल हुक](./lifecycle-hooks) में हर इवेंट की सूची है।
+
+## त्रुटि का कारण खोजें
+
+| कारण | त्रुटि | भाषा के अनुसार अंतर |
+| --- | --- | --- |
+| कोई API कुंजी नहीं | `PHASEO_API_KEY is required` | Python: `ValueError`। Ruby: `ArgumentError: Missing API key. Pass api_key or set PHASEO_API_KEY.` |
+| Gateway ने मॉडल अनुरोध अस्वीकार किया | Gateway की त्रुटि, retry नीति ख़त्म होने के बाद फिर से फेंकी जाती है | TypeScript: `AgentGatewayError`। Python: `status`, `code` और `request_id` के साथ `phaseo.PhaseoHTTPError`। Rust: gateway स्टेटस और body के बिना `AgentError` में बदल दी जाती है। |
+| मॉडल टूल कॉल करता रहा | `Max steps exceeded (N)` | Rust इसकी जगह रन रोक देता है (ऊपर देखें) |
+| मॉडल ने ऐसा टूल कॉल किया जो एजेंट के पास नहीं है | `Unknown tool '<name>'` | Go: `unknown tool "name"`। `return-to-model` के साथ TypeScript: इसकी जगह मॉडल को जवाब दिया जाता है। |
+| किसी validator ने टूल इनपुट, टूल आउटपुट, प्रगति इवेंट या अंतिम आउटपुट अस्वीकार किया | `Invalid tool input: ...`, `Invalid tool output: ...`, `Invalid agent output: ...` | TypeScript: `AgentSchemaValidationError`। Python और Ruby: `ValueError` / `ArgumentError`। Go: lowercase `invalid ...`। Rust में validators नहीं हैं। |
+| कोई टूल अपने timeout से ज़्यादा चला | timeout त्रुटि | Python: `TimeoutError`। Go: `tool <id> timed out: ...`। C# और Java: `TimeoutException`। PHP: `Tool <name> timed out after <n>ms`। Ruby: `Timeout::Error`। Rust में टूल timeouts नहीं हैं। |
+| किसी continuation ने हर लंबित कॉल का जवाब नहीं दिया | `Missing approval decision for tool call <id>`, `Missing output for tool call <id>` | Go: lowercase `missing ...`। Python: `ValueError`। [स्टेट और अनुमोदन](./state-and-approval) देखें। |
+| समीक्षा के लिए रुके रन को मानवीय इनपुट के बिना जारी रखा गया | `Run <id> is waiting for human input` | Go: `run <id> ...`। Java: `Run is waiting for human input`। |
+| रन किसी दूसरे एजेंट ID का है | `Run <id> belongs to agent <agent>` | Go: `run <id> ...`। Java: `Run belongs to <agent>`। |
+| किसी continuation के पास जारी रखने के लिए कोई रन नहीं था | `A run or state accessor with runId is required` | C# और Java। Ruby: `... with run_id is required`। PHP `continueRunById()`: `Run <id> not found`। |
+| स्ट्रीम रद्द की गई | रद्द करने की त्रुटि | Python: `InterruptedError`। PHP: `Agent stream cancelled`। C#: `OperationCanceledException`। Go: context की त्रुटि। TypeScript: कोई त्रुटि नहीं; स्टेटस `cancelled`। |
+
+### TypeScript त्रुटि टाइप
+
+`AgentGatewayError` में `status`, `statusText`, `headers`, `body`, `requestId`, `generationId`, `reason`, `errorType`, `errorOrigin`, `failedProviders`, `failedStatuses` और रूटिंग diagnostics होते हैं। विफल रन और स्टेप वही विवरण `errorDetails` में रखते हैं। स्ट्रीम की गई प्रतिक्रिया के बीच में होने वाली विफलता `AgentStreamError` होती है, जो `code` और `retryable` वाली एक subclass है।
+
+`AgentSchemaValidationError` में `tool_input`, `tool_output`, `tool_event` या `agent_output` में से एक `target` होता है, और validator की त्रुटि के साथ `details`। इन्हें अस्थायी मॉडल विफलताएँ नहीं, बल्कि कॉन्ट्रैक्ट विफलताएँ मानें।
+
+किसी भी त्रुटि को वर्गीकृत करने के लिए, उदाहरण के लिए `modelRetry.retryOn` में, `agentErrorIsRetryable(error)`, `agentRetryAfterMs(error)` और `agentErrorIsContextOverflow(error)` का उपयोग करें।
+
+### Rust त्रुटि टाइप
+
+हर रनटाइम विफलता एक `AgentError` है; इसे `message()` से पढ़ें। Gateway के `PhaseoError` मान `AgentError` में बदल दिए जाते हैं, इसलिए अगर आपको मूल gateway स्टेटस और body चाहिए, तो `phaseo` क्लाइंट को सीधे कॉल करें या एक कस्टम `ModelClient` लागू करें जो उन्हें रखे।
+
+## टूल त्रुटियों से उबरें
+
+डिफ़ॉल्ट रूप से टूल त्रुटि रन को विफल कर देती है। जब मॉडल समझदारी से कुछ और आज़मा सकता हो, तब टूल की त्रुटि नीति `return-to-model` सेट करें: त्रुटि टूल नतीजा `{"error": "..."}` बन जाती है और रन जारी रहता है। असुरक्षित या न सुधारी जा सकने वाली विफलताओं के लिए डिफ़ॉल्ट `fail-run` रखें।
+
+| भाषा | सेटिंग | `return-to-model` के साथ timeouts |
+| --- | --- | --- |
+| TypeScript | टूल पर `onError`, या हर टूल के लिए `toolExecution.onError` | टूल त्रुटि माने जाते हैं और मॉडल को लौटाए जाते हैं |
+| Python | `on_error` | हमेशा रन विफल करते हैं |
+| Go | `OnError` | मॉडल को लौटाए जाते हैं |
+| C# | `OnError` | मॉडल को लौटाए जाते हैं (exception मैसेज) |
+| PHP | `onError` | मॉडल को लौटाए जाते हैं |
+| Ruby | `on_error` | मॉडल को लौटाए जाते हैं |
+| Java | `onError` | मॉडल को लौटाए जाते हैं (exception मैसेज) |
+| Rust | कोई नहीं | Rust में timeouts नहीं हैं। किसी स्थानीय executor का `AgentError` हमेशा टूल त्रुटि मैसेज के रूप में मॉडल को लौटाया जाता है। |
+
+## रद्द करना और timeouts संभालें
+
+टूल timeout या रद्द करना हमेशा टूल का अपना काम नहीं रोकता। टूल के अंदर HTTP, डेटाबेस और प्रोसेस कॉल को उनकी अपनी समय-सीमाएँ दें, और रद्द किए गए या timeout हुए रन को ख़त्म मानें, जब तक आपका ऐप्लिकेशन नया रन शुरू न करे।
+
+| भाषा | रन रद्द करें | चल रहे टूल का क्या होता है |
+| --- | --- | --- |
+| TypeScript | `signal` दें, या किसी स्ट्रीम पर `cancel()` कॉल करें | टूल timeout `context.signal` को abort करता है; इसे अपनी कॉल में दें |
+| Python | किसी स्ट्रीम पर `cancel()`; रन `InterruptedError` raise करता है | Timeouts या रद्द करने से टूल थ्रेड नहीं रुकते |
+| Go | `Run`, `Continue` या `Stream` को दिया गया `ctx` रद्द करें, या किसी स्ट्रीम पर `Cancel()` कॉल करें | चल रहे टूल timeout त्रुटि के साथ विफल होते हैं, लेकिन `Execute` को context नहीं मिलता, इसलिए उनका काम चलता रहता है |
+| C# | `RunOptions` या `ContinueOptions` में `CancellationToken` दें, या किसी स्ट्रीम पर `Cancel()` कॉल करें; रन `OperationCanceledException` फेंकता है | टूल को `runtime.CancellationToken` मिलता है; इसे अपनी कॉल में दें |
+| PHP | किसी स्ट्रीम पर `cancel()` | टूल synchronous रूप से चलते हैं और रोके नहीं जा सकते: `timeoutMs` कॉल के लौटने के बाद ही उसे विफल करता है। वेब अनुरोधों में PHP के `max_execution_time` का ध्यान रखें। |
+| Ruby | किसी स्ट्रीम पर `cancel` वर्कर थ्रेड को ख़त्म कर देता है | `timeout_ms` `Timeout.timeout` का उपयोग करता है, जो टूल के थ्रेड को किसी भी बिंदु पर बाधित करता है और फ़ाइलें, सॉकेट या ट्रांज़ैक्शन अधूरे छोड़ सकता है |
+| Java | किसी स्ट्रीम पर `cancel()` वर्कर थ्रेड को बाधित करता है | टूल `timeout` executor को उसके अपने थ्रेड पर चलाता है और उसे बाधित करता है; सिर्फ़ वही कोड रुकता है जो interruption पर प्रतिक्रिया देता है |
+| Rust | समर्थित नहीं; रन synchronous होते हैं | अगर एजेंट को अनुरोध handler को ब्लॉक नहीं करना चाहिए, तो उसे वर्कर थ्रेड पर चलाएँ |
+
+## बाधित TypeScript रन से उबरें
+
+अगर कोई रन स्टेप के बीच में क्रैश हुआ या रद्द हुआ, तो उसके इतिहास में बिना नतीजों वाली टूल कॉल हो सकती हैं, जिन्हें प्रदाता अस्वीकार करते हैं। TypeScript का `continueRun()` उन्हें 'नहीं चलाई गई' के रूप में जवाब देता है और `history.repaired` भेजता है। अगर आप मैसेज कहीं और दोबारा उपयोग करते हैं, तो `repairToolHistory(messages)` ख़ुद कॉल करें।
+
+## पहले ये जाँचें
+
+- `PHASEO_API_KEY` प्रोसेस तक पहुँचती है और gateway क्लाइंट को दी जाती है।
+- हर टूल का एक अनोखा, स्थिर ID है।
+- अनुमोदन, अस्वीकृति और टूल आउटपुट सटीक टूल-कॉल ID का उपयोग करते हैं, और मानवीय इनपुट मैसेज कभी टूल आउटपुट की जगह नहीं लेता।
+- अनुमोदन UI दिखाने या नियंत्रण किसी दूसरे अनुरोध या वर्कर को सौंपने से पहले पूरा रन नतीजा सहेजा जाता है।
+- Validators नियत (deterministic) हैं और उनके साइड इफ़ेक्ट नहीं हैं, ताकि विफल जाँच सुरक्षित रूप से दोबारा की जा सके।
+- मॉडल retries सीमित हैं; validation और अनुमोदन विफलताओं को बिना सोचे-समझे दोबारा नहीं आज़माना चाहिए।
+
+कौन-सा स्टेप विफल हुआ यह देखने के लिए, [लाइफ़साइकल हुक](./lifecycle-hooks) के साथ `step.started`, `model.requested` और `tool.failed` रिकॉर्ड करें, और स्टेप को gateway लॉग से जोड़ने वाले IDs के लिए [ऑब्ज़र्वेबिलिटी](./observability) देखें।

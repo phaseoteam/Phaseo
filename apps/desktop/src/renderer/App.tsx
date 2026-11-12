@@ -1,4 +1,6 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import { projectScopeKey } from "./shell/codeThreads";
+import { projectScopes } from "../shared/projectShelf";
 import { setDynamicCommands, useCommand, useKeybindingDispatcher, useKeybindings } from "./lib/keybindings";
 import { projectActionCommands } from "../shared/projectSettings";
 import { sidebarOrder } from "./lib/sidebarOrder";
@@ -9,49 +11,63 @@ import { isSettled } from "../shared/threadLifecycle";
 import { useAppTheme } from "./lib/appTheme";
 import { useWorkspace, WorkspaceProvider } from "./app/workspace";
 import { Titlebar } from "./shell/Titlebar";
+import { typeIntoComposer } from "./chat/composerFocusRedirect";
+import { HistoryNavigation } from "./shell/HistoryNavigation";
+import { moveRegionFocus } from "./shell/focusRegions";
+import { showToast } from "./components/ui/toast";
 import { Sidebar } from "./shell/Sidebar";
 import { RightPanel } from "./shell/RightPanel";
 import { BrowserMiniPlayerHost } from "./components/browser/BrowserMiniPlayer";
 import { CommandPalette } from "./shell/CommandPalette";
 import { Toaster } from "./components/ui/toast";
+import { QuitHoldNotice } from "./shell/QuitHoldNotice";
 import { QuitRecoveryOffer } from "./chat/UsageLimitNotice";
-import { SettingsPage } from "./settings/SettingsPage";
-import { ScheduledTasks } from "./views/ScheduledTasks";
 import { Inbox } from "./views/Inbox";
-import { Usage } from "./views/Usage";
-import { PullRequestsPage } from "./views/pullRequests/PullRequestsPage";
 import { ChatNotifications } from "./app/ChatNotifications";
 import { NewChat } from "./chat/NewChat";
 import { ChatView } from "./chat/ChatView";
 import { CompareView } from "./chat/CompareView";
 import { GuideRunNotices } from "./views/pullRequests/GuideRunNotices";
-import { FactoryPage } from "./factory/FactoryPage";
+import { useDiffColours } from "./lib/workspacePreferences";
+import { AppAnalytics } from "./lib/AppAnalytics";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
-	const { setCommandsOpen, select, openSettings, setMode, setSidebarOpen, setRightPanel, rightPanel, overview, selectedId, mode, settings } = useWorkspace();
+	const { setCommandsOpen, select, openSettings, openUsage, setMode, setSidebarOpen, setRightPanel, rightPanel, overview, selectedId, mode, settings } = useWorkspace();
 	const threadActions = useThreadActions();
 	useKeybindings();
 	// Project actions with shortcuts become commands of their own (Settings → Keyboard shortcuts → Project actions).
 	useEffect(() => setDynamicCommands(projectActionCommands(overview.projects)), [overview.projects]);
-	useKeybindingDispatcher(() => ({ chatMode: mode === "chat", codeMode: mode === "code", chatOpen: Boolean(selectedId) && !settings, paneOpen: Boolean(rightPanel) && !settings, settingsOpen: Boolean(settings) }));
+	useKeybindingDispatcher(() => ({ chatMode: mode === "chat", codeMode: mode === "code", chatOpen: Boolean(selectedId) && !settings, paneOpen: Boolean(rightPanel) && !settings, settingsOpen: Boolean(settings) }), typeIntoComposer);
 	useCommand("commandPalette.toggle", () => setCommandsOpen(open => !open));
 	useCommand("chat.new", () => select(undefined));
 	useCommand("settings.open", () => openSettings());
 	useCommand("mode.chat", () => setMode("chat"));
 	useCommand("mode.code", () => setMode("code"));
 	useCommand("sidebar.toggle", () => setSidebarOpen(open => !open));
+	// Code chats always work in a project, so a chat without one is a Chat-mode chat.
+	useCommand("chat.newWithoutProject", () => { setMode("chat"); select(undefined); });
+	useCommand("usage.open", () => openUsage());
+	useCommand("theme.select", () => openSettings("appearance"));
+	useCommand("workspace.focusNext", () => moveRegionFocus(1));
+	useCommand("workspace.focusPrevious", () => moveRegionFocus(-1));
+	const openChat = () => overview.tasks.find(value => value.id === selectedId);
+	useCommand("thread.pin", () => { const task = openChat(); if (!task) return false; void threadActions.pin(task); });
+	useCommand("thread.copyReference", () => {
+		const task = openChat(); if (!task) return false;
+		void navigator.clipboard.writeText(task.id).then(() => showToast("success", "Chat ID copied"), () => showToast("error", "Could not copy the chat ID"));
+	});
 	useCommand("terminal.toggle", () => setRightPanel(rightPanel === "terminal" ? undefined : "terminal"));
 	useCommand("rightPanel.toggle", () => setRightPanel(rightPanel ? undefined : "restore"));
-	// T3: undo the last settle, snooze, unpin or archive; settle the open Code chat and move to the next, or un-settle it.
+	// Undo the last settle, snooze, unpin or archive; settle the open Code chat and move to the next, or un-settle it.
 	useCommand("thread.undo", () => runUndo());
 	useCommand("thread.settle", () => {
 		const task = overview.tasks.find(value => value.id === selectedId);
 		if (!task?.projectId) return false;
-		let scope = ""; try { scope = JSON.parse(localStorage.getItem("phaseo.desktop.codeProjectScope") ?? "\"\"") as string; } catch { /* All projects. */ }
+		let scope: string[] = []; try { scope = projectScopes(JSON.parse(localStorage.getItem(projectScopeKey) ?? "[]")); } catch { /* All projects. */ }
 		void (isSettled(task) ? threadActions.unsettle(task) : threadActions.settle(task, scope));
 	});
-	// T3: Ctrl+1–9 open the chats shown in the sidebar; Ctrl+Shift+[ and ] step through them.
+	// Ctrl+1–9 open the chats shown in the sidebar; Ctrl+Shift+[ and ] step through them.
 	const jump = (index: number) => { const id = sidebarOrder()[index]; if (!id) return false; select(id); };
 	const step = (direction: number) => { const order = sidebarOrder(); if (!order.length) return false; const index = selectedId ? order.indexOf(selectedId) : -1; select(order[index < 0 ? (direction > 0 ? 0 : order.length - 1) : (index + direction + order.length) % order.length]); };
 	useCommand("thread.jump.1", () => jump(0)); useCommand("thread.jump.2", () => jump(1)); useCommand("thread.jump.3", () => jump(2));
@@ -64,7 +80,30 @@ function useShortcuts() {
 	useCommand("view.zoomReset", () => void window.phaseoDesktop?.performAppAction("zoom-reset"));
 }
 
+// Pages other than the chat load when first opened, so the window parses about a megabyte less before it can paint.
+// Once the window is idle they load in the background, so opening one later doesn't wait.
+const pages = {
+	settings: () => import("./settings/SettingsPage").then(module => ({ default: module.SettingsPage })),
+	usage: () => import("./views/Usage").then(module => ({ default: module.Usage })),
+	scheduled: () => import("./views/ScheduledTasks").then(module => ({ default: module.ScheduledTasks })),
+	pullRequests: () => import("./views/pullRequests/PullRequestsPage").then(module => ({ default: module.PullRequestsPage })),
+	factory: () => import("./factory/FactoryPage").then(module => ({ default: module.FactoryPage })),
+};
+const SettingsPage = lazy(pages.settings), Usage = lazy(pages.usage), ScheduledTasks = lazy(pages.scheduled), PullRequestsPage = lazy(pages.pullRequests), FactoryPage = lazy(pages.factory);
+function usePreloadedPages() {
+	useEffect(() => {
+		const load = () => { for (const page of Object.values(pages)) void page().catch(() => undefined); };
+		const idle = window.requestIdleCallback?.(load, { timeout: 4000 }), timer = idle === undefined ? setTimeout(load, 2000) : undefined;
+		return () => { if (idle !== undefined) window.cancelIdleCallback(idle); clearTimeout(timer); };
+	}, []);
+}
+
 function Main() {
+	usePreloadedPages();
+	return <Suspense fallback={null}><Page /></Suspense>;
+}
+
+function Page() {
 	const { selectedId, compareId, compareGroups, settings, scheduled, pullRequestsPage, inboxPage, usagePage, mode, codeView } = useWorkspace();
 	if (settings) return <SettingsPage />;
 	if (inboxPage) return <Inbox />;
@@ -93,6 +132,7 @@ function Shell() {
 	useShortcuts();
 	return <div className="flex h-full flex-col">
 		<Titlebar />
+		<AppAnalytics />
 		<div className="relative flex min-h-0 flex-1">
 			{(sidebarOpen || settings) && <Sidebar />}
 			{/* A maximised pane takes the chat column's place. */}
@@ -101,7 +141,9 @@ function Shell() {
 			<ErrorBanner />
 		</div>
 		<CommandPalette />
+		<HistoryNavigation />
 		<Toaster />
+		<QuitHoldNotice />
 		<ChatNotifications />
 		<GuideRunNotices />
 		<QuitRecoveryOffer />
@@ -110,5 +152,6 @@ function Shell() {
 
 export function App() {
 	useAppTheme();
+	useDiffColours();
 	return <WorkspaceProvider><Shell /></WorkspaceProvider>;
 }

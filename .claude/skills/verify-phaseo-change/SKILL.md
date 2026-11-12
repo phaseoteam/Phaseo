@@ -62,26 +62,27 @@ last two sections:
 
 ## Web app
 
-1. Run the affected Jest suites:
-   `pnpm --filter @phaseo/web test --runTestsByPath <file>...`. CI runs only three
-   web Jest files, so this run is often the only one.
-2. Type-check with `pnpm --filter @phaseo/web typecheck` (it runs `next typegen`
-   first; CI runs it too). CI has no web ESLint step, so lint the changed files
+1. Run the affected Vitest files:
+   `pnpm --filter @phaseo/web test <file>...`. CI runs only three
+   web test files, so this run is often the only one.
+2. Type-check with `pnpm --filter @phaseo/web typecheck` (it needs
+   `src/routeTree.gen.ts`, so run `pnpm --filter @phaseo/web build` or `dev`
+   first in a fresh worktree; CI runs both). CI has no web ESLint step, so lint the changed files
    with `pnpm --filter @phaseo/web exec eslint <file>...`, and run
    `pnpm --filter @phaseo/web validate:i18n` when copy or messages change.
-3. Run `pnpm --filter @phaseo/web dev` (port 3100). It reads public data from
+3. Run `pnpm --filter @phaseo/web dev` (Vite in the Workers runtime, port 3100). It reads public data from
    production unless `WEB_API_ORIGIN` points at a local Web API Worker. Never sign
    in to a production account to test.
 4. Take screenshots of the same route, data and theme before and after, at a
    desktop width (1280 or 1440 px) and a phone width (390 px). Use the browser
    tool available to you, or a Playwright run such as
    `pnpm --filter @phaseo/web exec playwright test tests/e2e/<spec> --project=chromium --project="Mobile Chrome"`.
-5. Vercel previews need a Vercel login and read the production Web API, so they
-   do not show Web API changes from the same pull request. For signed-in screens,
+5. There are no pull request previews of the web app, and the workers.dev
+   deploy of `main` reads the production Web API. For signed-in screens,
    render the real components with fixture data on a temporary local route, and
    delete it before committing.
 6. Attach screenshots to the pull request in two columns. Do not commit them.
-   Stop the dev server by PID; `next dev` leaves a child process on the port.
+   Stop the dev server by PID; `vite dev` leaves a `workerd` child process on the port.
 
 ## Database
 

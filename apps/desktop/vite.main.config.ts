@@ -18,17 +18,22 @@ function buildStamp() {
 }
 
 export default defineConfig({
-	define: { __PHASEO_BUILD__: JSON.stringify(buildStamp()) },
+	// The update feed is fixed at build time; packaged apps ignore the runtime variable (src/main/updateFeed.ts).
+	define: { __PHASEO_BUILD__: JSON.stringify(buildStamp()), __PHASEO_DESKTOP_UPDATE_URL__: JSON.stringify(process.env.PHASEO_DESKTOP_UPDATE_URL?.trim() ?? ""), __PHASEO_ANALYTICS__: JSON.stringify({ key: process.env.PUBLIC_POSTHOG_KEY || process.env.NEXT_PUBLIC_POSTHOG_KEY || "", host: process.env.PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com" }) },
+	// The main process is Node: without this, packages with a browser build (ws) bundle their browser stub.
+	resolve: { conditions: ["node"], mainFields: ["module", "main"] },
 	build: {
 		outDir: "dist/main",
 		emptyOutDir: true,
 		lib: {
 			// The store is also its own entry, so smoke fixtures seed chats through it (scripts/fixtures/workspaceFixture.mjs).
-			entry: { index: "src/main/index.ts", pdfWorker: "src/main/pdfWorker.mjs", usageWorker: "src/main/usageWorker.ts", workspaceStore: "src/main/workspaceStore.ts" },
+			// boot turns on the compile cache, then loads index (src/main/boot.ts).
+			entry: { boot: "src/main/boot.ts", index: "src/main/index.ts", pdfWorker: "src/main/pdfWorker.mjs", usageWorker: "src/main/usageWorker.ts", workspaceStore: "src/main/workspaceStore.ts" },
 			formats: ["es"],
 			fileName: (_format, name) => `${name}.mjs`,
 		},
 		rollupOptions: {
+			platform: "node",
 			external: ["electron", "node-pty", "@cursor/sdk", /^@modelcontextprotocol\/sdk(?:\/|$)/, ...builtinModules, ...builtinModules.map(name => `node:${name}`)],
 		},
 	},

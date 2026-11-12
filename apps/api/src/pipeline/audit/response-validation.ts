@@ -1,5 +1,9 @@
 import { validateJsonSchemaValue } from "@/plugins/response-healing";
 
+// The audit measures the model, not our regex engine: a pattern too risky to run is
+// skipped, not counted as the output breaking it.
+const AUDIT_SCHEMA_OPTIONS = { skipUnsafePatterns: true };
+
 export type ToolCallValidation = {
 	totalCalls: number;
 	invalidCalls: number;
@@ -75,7 +79,10 @@ function responseToolCalls(gatewayResponse: unknown): ToolCall[] {
 
 function parseToolArguments(value: unknown): { ok: true; value: unknown } | { ok: false } {
 	if (value != null && typeof value === "object") return { ok: true, value };
-	if (typeof value !== "string" || value.trim().length === 0) return { ok: false };
+	// Several providers send no arguments as an empty string; that is an empty object,
+	// and a tool that requires arguments still fails its schema check below.
+	if (value == null || (typeof value === "string" && value.trim().length === 0)) return { ok: true, value: {} };
+	if (typeof value !== "string") return { ok: false };
 	try {
 		return { ok: true, value: JSON.parse(value) };
 	} catch {
@@ -107,7 +114,7 @@ export function validateToolCallResponses(
 		if (!parsed.ok) {
 			result.invalidJson += 1;
 			invalid = true;
-		} else if (definition?.schema && !validateJsonSchemaValue(parsed.value, definition.schema).ok) {
+		} else if (definition?.schema && !validateJsonSchemaValue(parsed.value, definition.schema, "$", 8, AUDIT_SCHEMA_OPTIONS).ok) {
 			result.schemaMismatch += 1;
 			invalid = true;
 		}
@@ -116,9 +123,14 @@ export function validateToolCallResponses(
 	return result;
 }
 
-function structuredFormat(requestPayload: unknown): Record<string, any> | null {
+/** The JSON output format a request asks for: Chat `response_format`, Responses `text.format`, Messages `output_config.format`. */
+export function structuredFormat(requestPayload: unknown): Record<string, any> | null {
 	const request = asRecord(requestPayload);
-	return asRecord(request?.response_format ?? request?.text?.format);
+	for (const candidate of [request?.response_format, request?.text?.format, request?.output_config?.format]) {
+		const format = asRecord(candidate);
+		if (format?.type === "json_schema" || format?.type === "json_object") return format;
+	}
+	return null;
 }
 
 function structuredSchema(format: Record<string, any>): Record<string, any> | null {
@@ -126,20 +138,44 @@ function structuredSchema(format: Record<string, any>): Record<string, any> | nu
 	return asRecord(format.schema ?? format.json_schema?.schema ?? format.json_schema?.schema_);
 }
 
+function joinTextParts(parts: unknown, types: string[]): string | null {
+	if (!Array.isArray(parts)) return null;
+	const texts = parts
+		.map((part) => asRecord(part))
+		.filter((part) => part && types.includes(String(part.type)) && typeof part.text === "string")
+		.map((part) => part!.text as string);
+	return texts.length > 0 ? texts.join("") : null;
+}
+
+/**
+ * The reply's answer text. Undefined when the response has no reply shape the
+ * gateway can read, so its output was never observed.
+ */
 function extractStructuredOutput(value: unknown): unknown {
 	const response = asRecord(value);
-	if (!response) return null;
+	if (!response) return undefined;
 	if (asRecord(response.output_parsed)) return response.output_parsed;
 	if (asRecord(response.parsed)) return response.parsed;
 	if (typeof response.output_text === "string") return response.output_text;
+	if (Array.isArray(response.choices)) {
+		const content = asRecord(response.choices[0])?.message?.content;
+		if (typeof content === "string") return content;
+		return joinTextParts(content, ["text", "output_text"]);
+	}
+	// Responses: answer text lives in message items. Reasoning items carry
+	// reasoning text that is not the answer.
+	if (Array.isArray(response.output)) {
+		const texts = response.output
+			.map((item: unknown) => asRecord(item))
+			.filter((item: Record<string, any> | null) => item?.type === "message" || item?.type == null)
+			.map((item: Record<string, any> | null) => joinTextParts(item?.content, ["output_text", "text"]))
+			.filter((text: string | null): text is string => text != null);
+		return texts.length > 0 ? texts.join("") : null;
+	}
+	// Messages: text blocks, not thinking blocks.
+	if (Array.isArray(response.content)) return joinTextParts(response.content, ["text"]);
 	if (typeof response.text === "string") return response.text;
-	const choiceContent = response.choices?.[0]?.message?.content;
-	if (typeof choiceContent === "string") return choiceContent;
-	const outputText = response.output?.flatMap?.((item: any) => item?.content ?? [])
-		?.find?.((item: any) => typeof item?.text === "string")?.text;
-	if (typeof outputText === "string") return outputText;
-	const anthropicText = response.content?.find?.((item: any) => typeof item?.text === "string")?.text;
-	return typeof anthropicText === "string" ? anthropicText : null;
+	return undefined;
 }
 
 export function validateStructuredOutputResponse(
@@ -147,13 +183,18 @@ export function validateStructuredOutputResponse(
 	gatewayResponse: unknown,
 ): StructuredOutputValidation {
 	const format = structuredFormat(requestPayload);
-	const attempted = format?.type === "json_schema" || format?.type === "json_object";
-	if (!attempted) {
+	if (!format) {
 		return { attempted: false, succeeded: false, basis: null, errorReason: null };
 	}
 	const output = extractStructuredOutput(gatewayResponse);
-	if (output == null || (typeof output === "string" && output.trim().length === 0)) {
-		return { attempted: true, succeeded: false, basis: "unobserved", errorReason: "missing_output" };
+	// No readable reply, or a turn that called tools instead of answering: there is
+	// no final answer to check, which is not a structured-output failure.
+	const blank = output == null || (typeof output === "string" && output.trim().length === 0);
+	if (output === undefined || (blank && responseToolCalls(gatewayResponse).length > 0)) {
+		return { attempted: true, succeeded: false, basis: "unobserved", errorReason: null };
+	}
+	if (blank) {
+		return { attempted: true, succeeded: false, basis: "json_parse", errorReason: "missing_output" };
 	}
 	let parsed = output;
 	if (typeof output === "string") {
@@ -164,7 +205,7 @@ export function validateStructuredOutputResponse(
 		}
 	}
 	const schema = structuredSchema(format);
-	if (schema && !validateJsonSchemaValue(parsed, schema).ok) {
+	if (schema && !validateJsonSchemaValue(parsed, schema, "$", 8, AUDIT_SCHEMA_OPTIONS).ok) {
 		return { attempted: true, succeeded: false, basis: "schema_validation", errorReason: "schema_mismatch" };
 	}
 	return {

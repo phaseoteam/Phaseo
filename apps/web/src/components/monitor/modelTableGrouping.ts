@@ -162,6 +162,13 @@ export type ProviderRoute = {
 	id: string;
 	name: string;
 	regions: string[];
+	// The route's standard per-1M token rates and cheapest non-token charge,
+	// as listed in the table row; null when the route lists none.
+	inputPrice: number | null;
+	outputPrice: number | null;
+	usagePrice?: number;
+	usageUnit?: string;
+	features: string[];
 	// Only set when name and regions alone do not tell two routes apart.
 	routeId?: string;
 };
@@ -182,6 +189,12 @@ export function describeProviderRoutes(providers: readonly ModelProvider[]): Pro
 		name: resolveProviderDisplayName({ providerId: provider.id, providerName: provider.name }),
 		regions: unique((provider.executionRegions ?? []).map((region) => String(region).trim().toLowerCase()))
 			.sort(compareRegions),
+		inputPrice: isPrice(provider.inputPrice) ? provider.inputPrice : null,
+		outputPrice: isPrice(provider.outputPrice) ? provider.outputPrice : null,
+		...(isPrice(provider.usagePrice) && provider.usageUnit
+			? { usagePrice: provider.usagePrice, usageUnit: provider.usageUnit }
+			: {}),
+		features: unique(provider.features ?? []),
 	}));
 	const signature = ({ name, regions }: ProviderRoute) => `${name}|${regions.join()}`;
 	const routesBySignature = new Map<string, number>();
@@ -230,16 +243,28 @@ export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 		for (const variant of variants) {
 			const providerKey = variant.provider.id || variant.provider.name;
 			const current = providerMap.get(providerKey);
+			// A batch placeholder's 0/0 is not a price, so it must not reach the
+			// provider card or block a later row's real rates.
+			const variantProvider = isBatchPlaceholder(variant)
+				? { ...variant.provider, inputPrice: null, outputPrice: null }
+				: variant.provider;
 			if (!current) {
-				providerMap.set(providerKey, { ...variant.provider });
+				providerMap.set(providerKey, { ...variantProvider });
 				continue;
 			}
+			// The first row's rates stay; a later row fills in rates the first lacks
+			// (a batch row lists none) and offers a cheaper per-unit charge.
+			const usageCheaper = isPrice(variantProvider.usagePrice)
+				&& (!isPrice(current.usagePrice) || variantProvider.usagePrice < current.usagePrice);
 			providerMap.set(providerKey, {
 				...current,
-				features: unique([...current.features, ...variant.provider.features]),
+				inputPrice: isPrice(current.inputPrice) ? current.inputPrice : variantProvider.inputPrice,
+				outputPrice: isPrice(current.outputPrice) ? current.outputPrice : variantProvider.outputPrice,
+				...(usageCheaper ? { usagePrice: variantProvider.usagePrice, usageUnit: variantProvider.usageUnit } : {}),
+				features: unique([...current.features, ...variantProvider.features]),
 				executionRegions: unique([
 					...(current.executionRegions ?? []),
-					...(variant.provider.executionRegions ?? []),
+					...(variantProvider.executionRegions ?? []),
 				]),
 			});
 		}

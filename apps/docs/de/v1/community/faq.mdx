@@ -6,24 +6,28 @@ icon: "life-buoy"
 
 ## Wo erhalte ich einen API-Schlüssel?
 
-Erstelle Schlüssel mit `phaseo keys create` in der [Phaseo CLI](../guides/integrations/phaseo-cli), mit `POST /v1/keys` oder im Phaseo-Dashboard. Weitere Informationen findest du unter [Authentifizierung](../developers/authentication.mdx).
+Öffne **Einstellungen -> API-Schlüssel** im [Dashboard](https://phaseo.app/settings/keys) oder rufe `POST /v1/keys` mit einem Management-Schlüssel auf. Siehe [Authentifizierung](../developers/authentication).
 
 ## Welche Basis-URL soll ich verwenden?
 
-Verwende `https://api.phaseo.app/v1` als Basis-URL für das Gateway.
+`https://api.phaseo.app/v1`, mit dem Schlüssel im Header `Authorization: Bearer $PHASEO_API_KEY`.
 
 ## Mit welchem Endpoint sollte ich beginnen?
 
-Verwende `/responses` für die meisten Textabläufe. `/chat/completions` und `/messages` sind aus Kompatibilitätsgründen ebenfalls verfügbar.
+`POST /v1/responses` für die meisten Textaufgaben. `/v1/chat/completions` und `/v1/messages` akzeptieren die Formate bestehender Integrationen. Mit dem [Schnellstart](../quickstart) sendest du eine erste Anfrage.
+
+## Kann ich Phaseo kostenlos ausprobieren?
+
+Ja. Sende `"model": "phaseo/free"`, um ohne Guthaben ein verfügbares kostenloses Modell zu nutzen. Kostenlose Modelle erlauben 1.500 Anfragen pro Nutzer und UTC-Tag; siehe [Tarife](../exploring/subscription-plans).
 
 ## Wie sehe ich unterstützte Modelle?
 
-Nutze den [Models-Endpoint](../api-reference/endpoint/models.mdx), um die aktuelle Liste abzurufen.
+Rufe [`GET /v1/models`](../api-reference/endpoint/models.mdx) auf. Der Endpoint liefert die Modelle, die du jetzt aufrufen kannst; füge `availability=all` hinzu, um auch Modelle einzuschließen, die nur im Katalog stehen.
 
 ## Wie funktioniert BYOK?
 
-Bring Your Own Key (BYOK) ermöglicht dir das Routing und die Beobachtbarkeit von Phaseo, während dein Anbieter die Modellnutzung direkt abrechnet. Für die ersten 250.000 abgeschlossenen Anfragen pro UTC-Monat fällt keine Phaseo-Servicegebühr an; danach berechnet Phaseo 2,5 % der entsprechenden Anbieter-Kosten. Weitere Informationen findest du unter [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx#byok-considerations).
+Mit Bring Your Own Key routet und protokolliert Phaseo die Anfrage, während dein Anbieter die Modellnutzung abrechnet. Für die ersten 250.000 abgeschlossenen BYOK-Anfragen pro Workspace und UTC-Monat fällt keine Phaseo-Servicegebühr an; danach berechnet Phaseo 2,5 % der entsprechenden Anbieterkosten. Siehe [BYOK-Hinweise](../guides/routing-and-fallbacks#byok-considerations).
 
 ## Wo bekomme ich Hilfe?
 
-Unter [Kontakt und Support](./contact-and-support.mdx) findest du die verfügbaren Hilfekanäle.
+Siehe [Kontakt und Support](./contact-and-support).

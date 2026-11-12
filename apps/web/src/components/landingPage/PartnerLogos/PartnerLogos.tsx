@@ -1,9 +1,10 @@
 import PartnerLogosClient from "./PartnerLogosClient";
 import { getProviderLogos } from "./providerLogos";
-import { fetchFrontendAPIProviders } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { landingApiProvidersQuery } from "@/components/landingPage/landing.queries";
 
-export default async function PartnerLogos() {
-	const providers = await fetchFrontendAPIProviders().catch(() => []);
+export default function PartnerLogos() {
+	const { data: providers } = useSuspenseQuery(landingApiProvidersQuery());
 	const providerLogos = getProviderLogos(
 		providers.map((provider) => provider.api_provider_id)
 	);

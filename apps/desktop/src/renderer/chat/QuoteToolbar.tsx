@@ -5,7 +5,7 @@ import { showToast } from "../components/ui/toast";
 import { quoteInComposer, quoteLimit } from "./quote";
 
 /**
- * T3's selection toolbar: selecting text in a reply offers Quote, which puts the passage in the message box as a
+ * The selection toolbar: selecting text in a reply offers Quote, which puts the passage in the message box as a
  * Markdown quote to reply under. Only replies (elements marked data-quote) offer it.
  */
 export function QuoteToolbar({ root }: { root: RefObject<HTMLElement | null> }) {

@@ -1,9 +1,11 @@
-const sendEvent = jest.fn();
+import { describe, it, expect, beforeEach, afterAll, vi } from "vitest";
+const sendEvent = vi.fn();
 
-jest.mock("resend", () => ({
-	Resend: jest.fn(() => ({
-		events: { send: sendEvent },
-	})),
+vi.mock("resend", () => ({
+	// A function, not an arrow: the client is constructed with `new`.
+	Resend: vi.fn(function () {
+		return { events: { send: sendEvent } };
+	}),
 }));
 
 import {

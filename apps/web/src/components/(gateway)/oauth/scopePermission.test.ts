@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { scopePermissionFor } from "./scopePermission";
 
 describe("scopePermissionFor", () => {

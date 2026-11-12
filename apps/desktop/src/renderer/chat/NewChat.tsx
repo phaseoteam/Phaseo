@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Box, Bug, Check, ChevronDown, Code2, FilePen, LoaderCircle, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
+import { pickerProjects } from "../../shared/projectShelf";
+import { BookOpen, Box, Bug, Check, ChevronDown, Code2, Columns3, LoaderCircle, FolderOpen, FolderPlus, Gauge, GitFork, Lightbulb, ListChecks, PenLine, Plug, PowerOff, Search, ShieldCheck, UserRound } from "lucide-react";
 import { isFactoryWorktree } from "../../shared/factory/projects";
+import { settingsProject } from "../../shared/projectSettings";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
 import type { Task } from "../../shared/workspace";
@@ -8,11 +10,13 @@ import { errorText, usablePhaseoAccounts, useWorkspace } from "../app/workspace"
 import { useModelPreferences, type ModelSelection } from "../lib/modelPreferences";
 import { useModels } from "../lib/useModels";
 import { usePersistedState } from "../lib/persistedState";
-import { useConnectedHarnesses } from "../lib/useConnectedHarnesses";
+import { useConnectedHarnessesState } from "../lib/useConnectedHarnesses";
 import { cn } from "../lib/utils";
 import { ModelLogo } from "../components/ModelLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
-import { Composer, ComposerChip, ToolButton } from "./Composer";
+import { Composer, ComposerChip } from "./Composer";
+import { ComposerNotice } from "./ComposerBanner";
+import { ComposerOverflowMenu, ModeBlock, PermissionMenu, PermissionsFooterMenu, PlanIndicator, type PermissionMode } from "./ComposerControls";
 import { useComposerMenu } from "./ComposerMenu";
 import { openModelPickerEvent, useModelSettingActions, type ComposerAction } from "./composerActions";
 import { useComposerEditor } from "./composerEditor";
@@ -21,14 +25,15 @@ import { endTriage, startTriage, useTriage } from "../shell/Triage";
 import { triageTitle, withoutPlaybookLink, type TriagePreparation } from "../../shared/triage";
 import { Switch } from "../components/ui/switch";
 import { Button } from "../components/ui/button";
-import { MAX_COMPARE, ModelPicker, knownModel, modelLabel, sameSelection } from "./ModelPicker";
-import { ModelSettings } from "./ModelSettings";
+import { MAX_COMPARE, harnessNames, knownModel, modelLabel, sameSelection } from "./ModelPicker";
+import { ModelControl } from "./ModelSettings";
 import { SignInCard } from "./SignInCard";
 import { startChat } from "./startChat";
 import { AutopilotControl, type AutopilotSetting } from "./Autopilot";
 import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { newChatDraftEvent, newChatDraftKey } from "../lib/newChatDraft";
 import { useWorktreeTarget, WorktreeTargetControls } from "./WorktreeTarget";
+import { OutOfUsageOffer } from "./OutOfUsageOffer";
 
 const suggestions = [
 	{ icon: PenLine, label: "Write", prompt: "Help me write " },
@@ -43,31 +48,13 @@ function greeting() {
 	return hour < 5 ? "Working late?" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 }
 
-export function PermissionMenu({ value, onChange }: { value: Task["permissionMode"]; onChange: (value: NonNullable<Task["permissionMode"]>) => void }) {
-	const full = value === "full-access", edits = value === "accept-edits";
-	return <DropdownMenu>
-		<DropdownMenuTrigger render={<button type="button" className={cn("flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12.5px] font-medium hover:bg-muted [&_svg]:size-4", full ? "text-warning" : "text-muted-foreground hover:text-foreground")} />}>
-			{full ? <ShieldAlert /> : <ShieldCheck />}{full ? "Full access" : edits ? "Accept edits" : "Ask first"}<ChevronDown className="size-3!" />
-		</DropdownMenuTrigger>
-		<DropdownMenuContent align="start" side="top" className="w-72">
-			<DropdownMenuItem onClick={() => onChange("supervised")} className="items-start"><ShieldCheck className="mt-0.5" /><span><span className="block font-semibold">Ask first</span><span className="text-xs text-muted-foreground">Approve commands and file changes before they run.</span></span>{!full && !edits && <Check className="ml-auto" />}</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => onChange("accept-edits")} className="items-start"><FilePen className="mt-0.5" /><span><span className="block font-semibold">Accept edits</span><span className="text-xs text-muted-foreground">File changes apply without asking; commands still ask first.</span></span>{edits && <Check className="ml-auto" />}</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => onChange("full-access")} className="items-start"><ShieldAlert className="mt-0.5 text-warning" /><span><span className="block font-semibold">Full access</span><span className="text-xs text-muted-foreground">The agent runs commands and edits files without asking.</span></span>{full && <Check className="ml-auto" />}</DropdownMenuItem>
-		</DropdownMenuContent>
-	</DropdownMenu>;
-}
-
-/** Shown only while plan mode is on (it is turned on from /); clicking it turns plan mode off. */
-export function PlanIndicator({ onClear }: { onClear?: () => void }) {
-	return <ToolButton label="Plan mode is on: the agent proposes a plan before changing anything. Click to turn it off." active disabled={!onClear} onClick={onClear}><ListChecks />Plan</ToolButton>;
-}
-
 export function NewChat() {
-	const { api, overview, command, setOverview, setError, mode, select, openCompare, saveCompareGroup, newChatProjectId, setNewChatProjectId, openSettings, openUsage } = useWorkspace();
+	const { api, overview, ready, command, setOverview, setError, mode, select, openCompare, saveCompareGroup, newChatProjectId, setNewChatProjectId, openSettings, openUsage } = useWorkspace();
 	const [draft, setDraft] = usePersistedState(newChatDraftKey, "");
 	// Images wait here until the chat exists; the draft holds a chip for each, keyed by a local id.
 	const [images, setImages] = useState<Record<string, File>>({});
 	const [busy, setBusy] = useState(false);
+	const fileInput = useRef<HTMLInputElement>(null);
 
 	const [planMode, setPlanMode] = usePersistedState<Task["mode"]>("phaseo.desktop.draftMode", "code");
 	const [permissionMode, setPermissionMode] = usePersistedState<NonNullable<Task["permissionMode"]>>("phaseo.desktop.draftPermissions", "supervised");
@@ -76,15 +63,33 @@ export function NewChat() {
 	const workspacePreferences = useWorkspacePreferences();
 	const preferences = useModelPreferences();
 	const phaseoAccount = usablePhaseoAccounts(overview)[0];
-	const connected = useConnectedHarnesses();
+	const { harnesses: connected, loaded: connectedLoaded } = useConnectedHarnessesState();
+	const hasAgent = !!phaseoAccount || [...connected].some(harness => harness !== "phaseo");
+	// Checking the local agents takes seconds at startup, so the last answer stands in until this one arrives.
+	const [hadAgent, setHadAgent] = usePersistedState("phaseo.desktop.hadConnectedAgent", false);
+	const known = ready && connectedLoaded;
+	useEffect(() => { if (known || hasAgent) setHadAgent(hasAgent); }, [known, hasAgent, setHadAgent]);
 	const { models: phaseoModels } = useModels("phaseo", phaseoAccount?.id, undefined, undefined, !!phaseoAccount);
 	const remembered = preferences.defaultSelection ?? preferences.recentSelection;
 	const [selections, setSelections] = useState<ModelSelection[]>(remembered ? [remembered] : []);
 	const code = mode === "code";
 	// Factory's per-item worktrees stay out of the picker; their threads still list.
-	const projects = overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project));
+	const projects = pickerProjects(overview.projects.filter(project => !project.worktree?.removedAt && !isFactoryWorktree(project)), newChatProjectId);
 	const project = projects.find(value => value.id === newChatProjectId);
 	const worktree = useWorktreeTarget(api, code ? project?.id : undefined, setOverview);
+	// Project defaults apply when a project is chosen; the person can still change each one before sending.
+	const projectDefaults = code ? settingsProject(overview.projects, project?.id)?.settings : undefined;
+	const hidden = projectDefaults?.disabledHarnesses;
+	const turnedOff = selections.find(value => hidden?.includes(value.harness));
+	const defaultsFor = useRef<string>(undefined);
+	useEffect(() => {
+		if (!code || !project || defaultsFor.current === project.id) return;
+		defaultsFor.current = project.id;
+		const settings = settingsProject(overview.projects, project.id)?.settings;
+		if (settings?.defaultModel) setSelections([settings.defaultModel]);
+		if (settings?.defaultPermissionMode) setPermissionMode(settings.defaultPermissionMode);
+		if (settings?.defaultWorkspace) worktree.setMode(settings.defaultWorkspace);
+	}, [code, project, overview.projects, setPermissionMode, worktree]);
 	// Triage (from the command palette) runs in the build's own source, which the main process fetches first.
 	const triage = useTriage(), triaging = code && triage.status !== "idle";
 	const preparation = triage.status === "ready" ? triage.preparation : undefined;
@@ -97,8 +102,10 @@ export function NewChat() {
 		setSelections([{ harness: "phaseo", accountId: phaseoAccount.id, model: model.id }]);
 	}, [selections.length, phaseoAccount, phaseoModels]);
 	const compare = !code && selections.length > 1;
+	// Code fans one prompt out to several models, each in its own worktree from the chosen base, and compares them.
+	const fanOut = code && selections.length > 1;
 	const editor = useComposerEditor({ value: draft, onChange: setDraft, disabled: busy, onFiles: files => addImages(files),
-		placeholder: compare ? "Ask every model the same question…" : triaging ? "Describe what went wrong (optional)…" : code ? (project ? `Describe a change to ${project.name}…` : "Choose a project, then describe what to build…") : "Message Phaseo…" });
+		placeholder: compare ? "Ask every model the same question…" : fanOut ? "Describe a change for every model to make…" : triaging ? "Describe what went wrong (optional)…" : code ? (project ? `Describe a change to ${project.name}…` : "Choose a project, then describe what to build…") : "Message Phaseo…" });
 	// Native commands depend on one agent, so comparing models offers saved prompts, chats and files only.
 	const plan = planMode === "plan", full = permissionMode === "full-access", edits = permissionMode === "accept-edits";
 	const settingActions = useModelSettingActions(selections.length === 1 ? selections[0] : undefined, next => setSelections([next]));
@@ -117,7 +124,7 @@ export function NewChat() {
 		{ id: "usage", label: "Usage", description: "Open usage and limits", icon: <Gauge />, run: () => openUsage() },
 		...settingActions,
 	];
-	const menu = useComposerMenu({ editor, harness: compare ? undefined : selections[0]?.harness, accountId: selections[0]?.accountId, projectId: code ? project?.id : undefined, actions });
+	const menu = useComposerMenu({ editor, harness: compare || fanOut ? undefined : selections[0]?.harness, accountId: selections[0]?.accountId, projectId: code ? project?.id : undefined, actions });
 	const message = composeMessage(draft);
 	useEffect(() => { editor.focus(); }, [mode, editor.editor]); // Focus follows the mode switch and the editor's first mount.
 	// A pull request hand-off (Ask, Explain, Fix findings) puts its task here for the person to read over and send.
@@ -136,6 +143,9 @@ export function NewChat() {
 		requestAnimationFrame(() => editor.focus("end"));
 	}, [preparation, editor, setDraft, setOverview, setNewChatProjectId]);
 	const leaveTriage = () => { endTriage(); setDraft(withoutPlaybookLink); };
+	// Autopilot runs with full access, so choosing anything less turns it off.
+	const changePermission = (value: PermissionMode) => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); };
+	const shownPermission = autopilot ? "full-access" : permissionMode;
 	const attached = message.images.flatMap(id => images[id] ? [images[id]] : []);
 	useEffect(() => { if (code) setSelections(current => current.length > 1 ? current.slice(0, 1) : current); }, [code]);
 
@@ -145,8 +155,11 @@ export function NewChat() {
 		return seen.slice(0, 3);
 	}, [preferences]);
 
-	const needsSignIn = !phaseoAccount && ![...connected].some(harness => harness !== "phaseo");
-	const canSend = !busy && (!!message.text || attached.length > 0) && selections.length > 0 && (!code || !!project) && (!triaging || (!!preparation && project?.id === preparation.projectId));
+	// Until the accounts and local agents have been read, "none connected" isn't known: the composer shows if there was an
+	// agent last time, and otherwise nothing, rather than a sign-in card that may vanish a moment later.
+	const signInUnknown = !known && !hasAgent && !hadAgent;
+	const needsSignIn = known && !hasAgent;
+	const canSend = !busy && (!!message.text || attached.length > 0) && selections.length > 0 && !turnedOff && (!code || !!project) && (!fanOut || (!!worktree.createInWorktree && !triaging)) && (!triaging || (!!preparation && project?.id === preparation.projectId));
 
 	async function submit() {
 		if (!api || !canSend) return;
@@ -154,12 +167,12 @@ export function NewChat() {
 		const known = new Set(overview.tasks.map(task => task.id));
 		try {
 			const prepared = await menu.prepare(message.text), shared = { text: prepared.text, images: attached, threadReferences: message.threadReferences, githubReferences: message.githubReferences, nativeAction: prepared.nativeAction };
-			if (compare) {
+			if (compare || fanOut) {
 				const ids: string[] = [];
-				for (const selection of selections) { const id = await startChat(api, command, known, { selection, mode: "chat", ...shared }); if (id) ids.push(id); }
+				for (const selection of selections) { const id = await startChat(api, command, known, fanOut ? { selection, mode: planMode, projectId: project?.id, permissionMode, create: worktree.createInWorktree, ...shared } : { selection, mode: "chat", ...shared }); if (id) ids.push(id); }
 				if (ids.length) {
-					const group = { id: crypto.randomUUID(), title: draft.trim().split("\n")[0].slice(0, 80) || "Model comparison", taskIds: ids, createdAt: new Date().toISOString() };
-					saveCompareGroup(group); setDraft(""); setImages({}); openCompare(group.id);
+					const group = { id: crypto.randomUUID(), title: draft.trim().split("\n")[0].slice(0, 80) || (fanOut ? "Code comparison" : "Model comparison"), taskIds: ids, createdAt: new Date().toISOString() };
+					saveCompareGroup(group); setDraft(""); setImages({}); openCompare(group.id, fanOut ? "code" : "chat");
 				}
 			} else {
 				// The playbook is written now, so its diagnostics are as fresh as the message; triage works in the checkout itself, never a new worktree.
@@ -187,10 +200,11 @@ export function NewChat() {
 
 	const addProject = () => { if (api) void api.chooseProject().then(state => { setOverview(state); const added = state.projects.find(value => !overview.projects.some(existing => existing.id === value.id)); if (added) setNewChatProjectId(added.id); }, reason => setError(errorText(reason))); };
 
+	if (signInUnknown) return <div className="h-full" />;
 	if (needsSignIn) return <div className="flex h-full items-center justify-center p-8"><SignInCard onOpenSettings={() => openSettings("accounts")} /></div>;
 
 	const projectMenu = <DropdownMenu>
-		<DropdownMenuTrigger render={<button type="button" className={cn("flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-[13px] font-semibold shadow-xs hover:bg-muted", !project && "text-muted-foreground")} />}>
+		<DropdownMenuTrigger render={<button type="button" className={cn("flex h-8 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-[13px] font-semibold shadow-xs hover:bg-muted", !project && "text-muted-foreground")} />}>
 			{project ? <ProjectIcon project={project} className="size-4" /> : <FolderOpen className="size-4" />}{project?.name ?? "Choose a project"}<ChevronDown className="size-3.5 text-muted-foreground" />
 		</DropdownMenuTrigger>
 		<DropdownMenuContent align="center" className="w-60">
@@ -206,25 +220,34 @@ export function NewChat() {
 				<h1 className="text-[28px] font-bold tracking-tight">{triaging ? "What went wrong?" : code ? "What should we build?" : greeting()}</h1>
 				{triaging ? <TriageStatus onRetry={() => { if (api) { endTriage(); startTriage(api); } }} /> : code && <div className="mt-4 flex justify-center">{projectMenu}</div>}
 			</div>
-			<Composer size="large" editor={editor} onSubmit={() => void submit()} disabled={busy} canSend={canSend}
+			<input ref={fileInput} type="file" multiple hidden onChange={event => { const files = Array.from(event.currentTarget.files ?? []); event.currentTarget.value = ""; addImages(files); editor.focus("end"); }} />
+			<Composer size="large" editor={editor} onSubmit={() => void submit()} disabled={busy} canSend={canSend} collapsible={false} files={images}
 				menu={menu}
-				chips={compare ? <>
-					{compare && selections.map(value => <ComposerChip key={value.harness + value.model} onRemove={() => setSelections(current => current.filter(item => !sameSelection(item, value)))}>
+				attach={{ onClick: () => fileInput.current?.click(), disabled: busy }}
+				chips={compare || fanOut ? <>
+					{selections.map(value => <ComposerChip key={value.harness + value.model} onRemove={() => setSelections(current => current.filter(item => !sameSelection(item, value)))}>
 						<span className="mr-1 inline-flex size-3.5 align-[-2px] [&_img]:size-3.5 [&_.harness-logo]:size-3.5"><ModelLogo model={knownModel(value.model) ?? { id: value.model, name: value.model }} harness={value.harness} /></span>{knownModel(value.model)?.name ?? modelLabel(value.model)}
 					</ComposerChip>)}
 				</> : undefined}
-				tools={<>
-					<ModelPicker selections={selections} onChange={setSelections} multiple={!code} agents={code} disabled={busy} openEvent={openModelPickerEvent} />
-					{selections.length === 1 && <ModelSettings selection={selections[0]} onChange={next => setSelections([next])} disabled={busy} />}
-					{code && <PermissionMenu value={autopilot ? "full-access" : permissionMode} onChange={value => { setPermissionMode(value); if (value !== "full-access") setAutopilot(undefined); }} />}
-					{code && workspacePreferences.autopilot && <AutopilotControl value={autopilot} onChange={value => setAutopilot(value ?? undefined)} />}
-					{code && project && !triaging && <WorktreeTargetControls target={worktree} disabled={busy} />}
-					{code && plan && <PlanIndicator onClear={() => setPlanMode("code")} />}
+				banners={<>
+					{compare && <ComposerNotice icon={<Columns3 />} title={`Sends to ${selections.length} models side by side`} description="Each answer is billed separately." />}
+					{fanOut && <ComposerNotice icon={<GitFork />} title={`Starts ${selections.length} chats, each in its own new worktree from ${worktree.base}`} description="Then compares them. Each is billed separately." />}
+					{turnedOff && <ComposerNotice variant="warning" role="status" icon={<PowerOff />} title={`${harnessNames[turnedOff.harness]} is turned off for ${project?.name ?? "this project"}`} description="Choose another model, or turn it back on in Project settings." />}
+					{!compare && !fanOut && !turnedOff && selections.length === 1 && <OutOfUsageOffer selection={selections[0]} hidden={hidden} onChoose={next => setSelections([next])} />}
 				</>}
-				footer={compare && <p className="mt-2 px-2 text-xs text-muted-foreground">Sends to {selections.length} models side by side. Each answer is billed separately.</p>} />
+				controls={<>
+					<ModelControl selections={selections} onChange={setSelections} onSettings={next => setSelections([next])} multiple={!code || (!!worktree.createInWorktree && !triaging)} agents={code} disabled={busy} openEvent={openModelPickerEvent} hidden={hidden}
+						footer={code ? <PermissionsFooterMenu value={shownPermission} onChange={changePermission} /> : undefined} />
+					{code && <ModeBlock menu={<ComposerOverflowMenu plan={plan} onPlan={on => setPlanMode(on ? "plan" : "code")} permission={shownPermission} onPermission={changePermission} />}>
+						<PermissionMenu always={false} value={shownPermission} onChange={changePermission} />
+						{plan && <PlanIndicator onClear={() => setPlanMode("code")} />}
+						{workspacePreferences.autopilot && <AutopilotControl value={autopilot} onChange={value => setAutopilot(value ?? undefined)} />}
+					</ModeBlock>}
+				</>}
+				context={code && project && !triaging && !fanOut ? <WorktreeTargetControls target={worktree} disabled={busy} /> : undefined} />
 			{!code && <div className="flex flex-wrap justify-center gap-2">
 				{suggestions.map(({ icon: Icon, label, prompt }) => <button key={label} type="button" onClick={() => { setDraft(prompt); requestAnimationFrame(() => editor.focus("end")); }}
-					className="flex h-8 items-center gap-2 rounded-full border border-border px-3.5 text-[13px] text-foreground/85 transition-colors hover:bg-muted"><Icon className="size-3.5 text-muted-foreground" />{label}</button>)}
+					className="flex h-8 items-center gap-2 rounded-md border border-border px-3.5 text-[13px] text-foreground/85 transition-colors hover:bg-muted"><Icon className="size-3.5 text-muted-foreground" />{label}</button>)}
 			</div>}
 			{!code && recent.length > 0 && <div className="flex flex-wrap items-center justify-center gap-1">
 				<span className="mr-1 text-xs font-semibold text-muted-foreground">Recent</span>

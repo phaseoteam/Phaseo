@@ -6,7 +6,7 @@
 // Chat/Responses, then protocol shaping is handled by the pipeline.
 
 import type { IRChatRequest } from "@core/ir";
-import { isClaudeOpus55, normalizeClaudeModelId } from "@core/claudeModelCapabilities";
+import { ANTHROPIC_PER_MESSAGE_EFFORT_BETA, isClaudeOpus55, normalizeClaudeModelId } from "@core/claudeModelCapabilities";
 import { assertClaudeRequestSupported } from "@core/claudeRequestValidation";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
@@ -14,7 +14,7 @@ import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-g
 import { resolveStreamForProtocol, bufferStreamToIR } from "@executors/_shared/text-generate/openai-compat";
 import { irToOpenAIChat, openAIChatToIR } from "@executors/_shared/text-generate/openai-compat/transform-chat";
 import { irToOpenAIResponses, openAIResponsesToIR } from "@executors/_shared/text-generate/openai-compat/transform";
-import { irToAnthropicMessages, anthropicMessagesToIR, anthropicUsageForPricing, anthropicUnsupportedMediaResult, mapAnthropicStopReason, resolveAnthropicInferenceGeo } from "@executors/anthropic/text-generate";
+import { irToAnthropicMessages, anthropicMessagesToIR, anthropicEffortRecordForClient, attachEffortRecord, usesAnthropicPerMessageEffort, anthropicUsageForPricing, anthropicUnsupportedMediaResult, mapAnthropicStopReason, resolveAnthropicInferenceGeo } from "@executors/anthropic/text-generate";
 import {
 	ANTHROPIC_CACHE_USAGE_SEMANTICS,
 	createAnthropicStreamAccounting,
@@ -95,11 +95,19 @@ async function executeBedrockMessages(
 	// Claude on Bedrock reads base64 sources only.
 	const inlined = await inlineClaudeMediaForBase64OnlyPlatform(irRequest, args);
 	if (inlined.ok === false) return inlined.result;
-	const anthropicRequest = irToAnthropicMessages(inlined.ir, args.maxOutputTokens, model, { providerId: args.providerId || "amazon-bedrock" });
+	const runtime = isBedrockInferenceProfileId(model);
+	// InvokeModel cannot forward top-level cache_control. Keep the historical
+	// explicit placement on this route, before breakpoint/TTL normalisation.
+	const mappedIr = runtime && inlined.ir.anthropicCacheControl?.scope === "automatic"
+		? { ...inlined.ir, anthropicCacheControl: { ...inlined.ir.anthropicCacheControl, scope: "all_text" } }
+		: inlined.ir;
+	const anthropicRequest = irToAnthropicMessages(mappedIr, args.maxOutputTokens, model, {
+		providerId: args.providerId || "amazon-bedrock",
+		eagerInputStreaming: irRequest.stream === true && supportsBedrockEagerInputStreaming(model),
+	});
 	const stream = Boolean(irRequest.stream);
 	// bedrock-runtime: InvokeModel takes the model in the path and the version in
 	// the body; older Claude models there do not offer the /anthropic Messages route.
-	const runtime = isBedrockInferenceProfileId(model);
 	const geoRejection = bedrockInferenceGeoRejection(irRequest, args, auth, model, runtime);
 	if (geoRejection) return geoRejection;
 	if (runtime && anthropicRequest.speed === "fast") {
@@ -127,6 +135,7 @@ async function executeBedrockMessages(
 				"Content-Type": "application/json",
 				Accept: stream ? "text/event-stream" : "application/json",
 				"anthropic-version": "2023-06-01",
+				...(usesAnthropicPerMessageEffort(anthropicRequest) ? { "anthropic-beta": ANTHROPIC_PER_MESSAGE_EFFORT_BETA } : {}),
 				...upstreamTestHeaders(args.meta),
 			},
 			apiKeyHeader: "x-api-key",
@@ -167,7 +176,11 @@ async function executeBedrockMessages(
 		const sseBody = runtime ? res.body.pipeThrough(createBedrockInvokeStreamToSseTransformer()) : res.body;
 		const nativeMessages = isClaudeOpus55(model) && args.protocol === "anthropic.messages";
 		const responsesStream = nativeMessages ? null : sseBody.pipeThrough(
-			createAnthropicToResponsesStreamTransformer(args.requestId, model, { accounting, providerId: args.providerId }),
+			createAnthropicToResponsesStreamTransformer(args.requestId, model, {
+				accounting,
+				providerId: args.providerId,
+				effortRecord: anthropicEffortRecordForClient(anthropicRequest, args.protocol),
+			}),
 		);
 		const clientStream = nativeMessages ? sseBody.pipeThrough(createAnthropicPassthroughStreamTransformer(accounting)) : resolveStreamForProtocol(
 			new Response(responsesStream!, {
@@ -206,6 +219,7 @@ async function executeBedrockMessages(
 	const json: any = await res.json().catch(() => null);
 	const providerId = args.providerId || "amazon-bedrock";
 	const ir = anthropicMessagesToIR(json ?? {}, args.requestId, model, providerId);
+	attachEffortRecord(ir, anthropicEffortRecordForClient(anthropicRequest, args.protocol));
 	const usageMeters = normalizeTextUsageForPricing(json?.usage ?? ir.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS);
 	if (usageMeters) {
 		bill.usage = usageMeters;
@@ -407,6 +421,13 @@ export function isBedrockClaudeModel(model: string | null | undefined): boolean 
 	return isClaudeOpus55(normalized) || /(?:^|[./:])(?:anthropic[./])?claude-/.test(normalized);
 }
 
+function supportsBedrockEagerInputStreaming(model: string): boolean {
+	// Only the newer serving stack accepts the per-tool flag; older deployments
+	// return 400. Unknown releases stay buffered until their support is verified.
+	// https://github.com/anthropics/skills/blob/main/skills/claude-api/shared/platform-availability.md
+	return /(?:^|[./:])claude-(?:opus-4[.-][78]|sonnet-4[.-]6|(?:opus|sonnet|fable)-5)(?:$|-v\d|:\d)/.test(normalizeClaudeModelId(model));
+}
+
 /**
  * Top-level fields the InvokeModel body for Claude documents: the request page
  * (model-parameters-anthropic-claude-messages-request-response.html) plus the
@@ -453,6 +474,8 @@ function bedrockInvokeBetas(request: Record<string, any>, model: string): string
 			betas.add("context-management-2025-06-27");
 		}
 	}
+	// Effort-only system messages (per-message effort).
+	if (usesAnthropicPerMessageEffort(request)) betas.add(ANTHROPIC_PER_MESSAGE_EFFORT_BETA);
 	// Opus 4.5 takes output_config.effort only with the effort beta (request page).
 	if (request.output_config?.effort !== undefined && /claude-opus-4-5/.test(bareBedrockModelId(model))) {
 		betas.add("effort-2025-11-24");

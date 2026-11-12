@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { loadDocumentationPages } from "./Search.documentation";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import type { PublicLocale } from "@/i18n/routing";

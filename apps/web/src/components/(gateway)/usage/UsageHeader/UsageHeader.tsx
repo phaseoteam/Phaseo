@@ -1,7 +1,5 @@
-"use client";
-
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useQueryState } from "nuqs";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,8 +29,8 @@ import {
 	TooltipContent,
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import { revalidateUsage } from "@/app/(dashboard)/gateway/usage/actions";
+import { useRouter } from "@/lib/navigation";
+import { revalidateUsage } from "@/features/gateway/usage/actions";
 
 type RangeKey = "1h" | "1d" | "1w" | "1m" | "1y";
 type GroupBy = "model" | "key";
@@ -139,7 +137,7 @@ export default function UsageHeader({
 	async function onRefresh() {
                 try {
                         setRefreshing(true);
-                        const res = await revalidateUsage("dashboard");
+                        const res = await revalidateUsage({ data: "dashboard" });
                         router.refresh();
 						if (res?.ok) toast.success(t("strings.Refresh Successful" as never));
 						else toast.error(t("strings.Refresh Failed" as never));

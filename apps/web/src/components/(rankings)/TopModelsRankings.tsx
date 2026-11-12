@@ -3,10 +3,9 @@
 // Why: Shows top models by various metrics with trend indicators
 // How: Client component with state for filtering, server data fetching
 
-"use client";
 
 import { useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { TrendingUp, TrendingDown, Minus, Sparkles } from "lucide-react";

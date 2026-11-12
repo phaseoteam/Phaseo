@@ -1,5 +1,5 @@
 import { formatLatency } from "@phaseo/app-kit/format";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations, useLocale } from "@/i18n/react";
 import { ChevronDown } from "lucide-react";
 
 type RecordValue = Record<string, unknown>;

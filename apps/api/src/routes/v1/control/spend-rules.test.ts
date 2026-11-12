@@ -87,13 +87,16 @@ function saveResponse(args: any) {
 	return { data: { rule: { ...base, ...args.p_rule }, destination_ids: args.p_destination_ids ?? [DEST] }, error: null };
 }
 
+const KEY_CREATOR = "00000000-0000-4000-8000-000000000077";
+
 describe("spend rules management API", () => {
 	beforeEach(() => {
 		state.bindings = {};
-		state.auth = { ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", scopes: [...ALL_SCOPES], userId: null } };
+		state.auth = { ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", scopes: [...ALL_SCOPES], userId: KEY_CREATOR } };
 		state.tables = {
 			workspace_spend_rules: [row(RULE, WORKSPACE), row(ELSEWHERE, OTHER_WORKSPACE), row("00000000-0000-4000-8000-000000000007", WORKSPACE, { deleted_at: "2026-10-20T00:00:00Z" })],
-			workspace_members: [{ workspace_id: WORKSPACE, user_id: USER, role: "member" }],
+			// The management key acts as its creator, an admin of the workspace.
+			workspace_members: [{ workspace_id: WORKSPACE, user_id: USER, role: "member" }, { workspace_id: WORKSPACE, user_id: KEY_CREATOR, role: "admin" }],
 		};
 		state.rpc = vi.fn(async (name: string, args: any) => (name === "save_workspace_spend_rule" ? saveResponse(args) : { data: null, error: null }));
 		state.audit = vi.fn(async () => true);
@@ -118,7 +121,7 @@ describe("spend rules management API", () => {
 		});
 
 		it("lets OAuth members read but not write", async () => {
-			state.auth.value = { workspaceId: WORKSPACE, authMethod: "oauth", scopes: [...ALL_SCOPES], oauthScopes: [], userId: USER };
+			state.auth.value = { workspaceId: WORKSPACE, authMethod: "oauth", oauthClientId: null, apiKeyRef: "dashboard", scopes: [...ALL_SCOPES], oauthScopes: [], userId: USER };
 			expect((await call("/")).status).toBe(200);
 			expect((await call(`/${RULE}/preview`)).status).toBe(200);
 			const write = await call(`/${RULE}`, "PATCH", { enabled: false });
@@ -208,7 +211,7 @@ describe("spend rules management API", () => {
 					block_at_amount_nanos: null, block_free_models: false, cooldown_minutes: 360,
 				}),
 				p_destination_ids: [DEST],
-				p_actor_user_id: null,
+				p_actor_user_id: KEY_CREATOR,
 			});
 			const body = await response.json() as any;
 			expect(body.data).toMatchObject({ name: "Prod key", threshold_percents: [50, 80, 100], destination_ids: [DEST], evaluated: true });

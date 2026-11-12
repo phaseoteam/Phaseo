@@ -3,7 +3,6 @@ import type {
 	AppUsageRow,
 	RangeKey,
 } from "@/lib/fetchers/apps/types";
-import { connection } from "next/server";
 import { fetchAdminModelBenchmarks } from "@/lib/fetchers/internal/fetchAdminModelBenchmarks";
 import getModelSubscriptionPlans from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
@@ -12,7 +11,7 @@ import type {
 	OgEntity,
 	OgPayload,
 } from "@/lib/fetchers/frontend/getOgPayload";
-import { buildModelOgStats } from "@/lib/fetchers/frontend/getOgPayload";
+import { buildModelOgPromotion, buildModelOgStats } from "@/lib/fetchers/frontend/getOgPayload";
 import type {
 	SignInModel,
 	SupportedModelsStats,
@@ -325,7 +324,6 @@ export async function fetchFrontendModelPendingApiReleaseState(
 			fetchFrontendModelHeader(modelId, false),
 			fetchFrontendModelPricing(modelId).catch(() => null),
 		]);
-		await connection();
 		const now = Date.now();
 		const hasActiveProvider = providers?.some((provider) => provider.provider_models.some((model) => {
 			if (!model.is_active_gateway || model.capability_status === "disabled" || !model.endpoint || model.endpoint === "unmapped") return false;
@@ -512,7 +510,7 @@ export async function fetchFrontendModelProviderRoutingHealth(args: {
 }): Promise<ProviderRoutingStatusMap> {
 	if (args.providerIds.length === 0) return {};
 	const providerIds = [...new Set(args.providerIds)].sort((a, b) => a.localeCompare(b));
-	const query = new URLSearchParams({ provider_ids: providerIds.join(",") });
+	const query = new URLSearchParams({ provider_ids: providerIds.join(","), model_id: args.modelId });
 	if (args.windowHours != null) query.set("window_hours", String(args.windowHours));
 	return (await fetchPublicWebApi<{ providers: ProviderRoutingStatusMap }>(
 		`/api/_web/models/provider-routing-health?${query.toString()}`,
@@ -875,9 +873,11 @@ export async function fetchFrontendOgPayload(
 			fetchFrontendModelOverview(resolvedModelId, controller.signal).catch(() => null),
 			fetchFrontendModelPricing(resolvedModelId, controller.signal).catch(() => []),
 		]);
+		const promotion = buildModelOgPromotion(pricing);
 		return {
 			...response.payload,
 			stats: buildModelOgStats(model, pricing),
+			...(promotion ? { promotion } : {}),
 		};
 	} finally {
 		clearTimeout(timeout);

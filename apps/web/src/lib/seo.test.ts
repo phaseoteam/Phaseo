@@ -1,4 +1,5 @@
-import { resolveTitle } from "next/dist/lib/metadata/resolvers/resolve-title";
+import { describe, it, expect } from "vitest";
+import { metadataToHead } from "@/lib/start/metadataToHead";
 import { buildMetadata, resolveSiteUrl } from "./seo";
 
 describe("page title branding", () => {
@@ -26,7 +27,8 @@ describe("page title branding", () => {
 		["Phaseo: AI Gateway and Open Model Catalog", "Phaseo: AI Gateway and Open Model Catalog"],
 	])("resolves %s with exactly one brand", (title, expected) => {
 		const metadata = buildMetadata({ title, description: "Description", path: "/example" });
-		expect(resolveTitle(metadata.title, "%s | Phaseo").absolute).toBe(expected);
+		// The <title> the page head renders, after the site title template.
+		expect(metadataToHead(metadata).meta.find((entry) => entry.title)?.title).toBe(expected);
 		expect(metadata.openGraph?.title).toBe(title);
 		expect(metadata.twitter?.title).toBe(title);
 	});

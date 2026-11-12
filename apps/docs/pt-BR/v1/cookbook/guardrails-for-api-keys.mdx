@@ -1,102 +1,83 @@
 ---
-title: "Implemente guardrails em chaves de API"
-sidebarTitle: "Guardrails em chaves de API"
+title: "Implante guardrails em chaves de API"
 icon: "shield-check"
-description: "Aplique guardrails a chaves de API, teste a aplicação antes do rollout e verifique bloqueios, redações e sinalizações na atividade."
+description: "Aplique guardrails a chaves de API, teste a aplicação antes da implantação e confira bloqueios, ocultações e sinalizações nas telas de atividade."
 ---
 
-Use esta receita quando precisar proteger uma ou mais chaves de API com restrições de roteamento, verificações de injeção de prompt ou tratamento de informações sensíveis.
+Crie um guardrail em **Configurações → Guardrails**, anexe-o a uma chave de API de baixo risco e amplie o uso só depois que os registros mostrarem que ele se comporta como esperado. No fim, essa chave só alcança os provedores e modelos que você permitir, e os prompts dela são verificados quanto a injeção de prompt e dados sensíveis antes de chegarem a um modelo.
 
-## 1. Crie o guardrail no espaço de trabalho
+Este é um procedimento no painel; a mesma política pode ser automatizada com a [API de guardrails](../api-reference/endpoint/guardrails-create).
 
-Crie os guardrails primeiro no nível do espaço de trabalho para poder reutilizar a mesma política em várias chaves.
+```mermaid
+flowchart LR
+  ws["Regras de privacidade do espaço de trabalho"] --> gr["Guardrail: tratamento de dados"]
+  gr --> prov["Lista de provedores permitidos ou bloqueados"]
+  prov --> mdl["Lista de modelos permitidos"]
+  mdl --> scan["Verificação de injeção de prompt e informações sensíveis"]
+  scan -->|"sinalizar, ocultar ou bloquear"| route["Rotear a solicitação"]
+```
 
-Para começar:
+As regras de privacidade do espaço de trabalho são aplicadas primeiro; um guardrail só pode restringi-las. Guardrails não limitam gastos: para isso, defina um limite na chave ou um [orçamento do espaço de trabalho](../api-reference/limits#key-limits-and-budgets).
 
-- adicione restrições de modelos e provedores antes das verificações de conteúdo
-- limite o primeiro rollout a uma chave ou a um ambiente
-- dê ao guardrail um nome que descreva o resultado da política, não o nome da equipe
+## Implante
 
-## 2. Associe o guardrail a uma chave de API
+<Steps>
+<Step title="Crie o guardrail">
 
-Na página de configurações da chave de API, associe o guardrail à chave que deve aplicar a política.
+Abra **Configurações → Guardrails → Novo Guardrail**. Dê a ele um nome que descreva o que ele aplica, como `eu-models-pii-redact`, e não o nome de uma equipe, para poder reutilizá-lo em várias chaves.
 
-Siga esta sequência:
+Defina o acesso às rotas antes das verificações de conteúdo:
 
-1. comece com uma chave de staging ou de baixo risco
-2. sempre que possível, associe um guardrail por vez
-3. confirme se o diálogo de detalhes da chave mostra o guardrail aplicado
+| Configuração | Opções |
+| --- | --- |
+| **Modo de provedores** | Permitir todos os provedores, Permitir somente os provedores selecionados ou Permitir todos, exceto os provedores selecionados |
+| **Modo de modelos** | Permitir todos os modelos ou Permitir somente os modelos selecionados (aplicado depois do filtro de provedores) |
+| **Tratamento de dados** | Somente ZDR e se os endpoints gratuitos ou pagos que podem treinar com as entradas continuam elegíveis |
 
-## 3. Defina as restrições de roteamento
+Uma primeira política comum bloqueia provedores de baixa confiança e permite apenas os modelos de produção exatos que a chave deve alcançar. Use a prévia para conferir quais provedores e modelos continuam roteáveis e se **Permitir somente** ficou mais restrito do que você pretendia.
 
-Combinação comum:
+</Step>
+<Step title="Adicione verificações de conteúdo">
 
-- lista de bloqueio de provedores com baixo nível de confiança
-- lista de modelos permitidos com os modelos exatos de produção que devem continuar disponíveis para roteamento
+**Injeção de prompt** verifica o conteúdo enviado pelo usuário em busca de padrões comuns de injeção. **Informações sensíveis** detecta dados antes de a solicitação sair do Phaseo:
 
-As proteções não aplicam limites de gastos. Para limitar gastos, defina um limite na própria chave de API ou crie um [orçamento do espaço de trabalho](../api-reference/endpoint/budgets-list.mdx).
+| Detector | Substituído por | Adiciona latência |
+| --- | --- | --- |
+| Endereço de e-mail | `[EMAIL]` | Não |
+| Número de telefone | `[PHONE]` | Não |
+| Número do Seguro Social dos EUA | `[SSN]` | Não |
+| Número de cartão de crédito | `[CREDIT_CARD]` | Não |
+| Endereço IP (IPv4) | `[IP_ADDRESS]` | Não |
+| Nome de pessoa | `[PERSON_NAME]` | Sim |
+| Endereço físico | `[ADDRESS]` | Sim |
 
-Use a prévia ao vivo do editor de guardrails para verificar:
+Cada verificação tem uma ação: **Sinalizar**, **Ocultar** ou **Bloquear**. Comece a injeção de prompt em **Sinalizar** ou **Ocultar** e passe para **Bloquear** só depois de revisar os falsos positivos. Use primeiro os detectores rápidos. Adicione padrões personalizados como regras de regex explícitas.
 
-- quais provedores continuam permitidos
-- quais modelos são bloqueados
-- se `Only allow` é mais restritivo do que o esperado
+</Step>
+<Step title="Teste na prévia">
 
-## 4. Adicione regras contra injeção de prompt e para informações confidenciais
+Antes de salvar, passe três entradas pela prévia: uma inofensiva, uma que claramente deve ser barrada e um prompt realista de produção. Confira o texto de ocultação, o resultado de bloqueio ou permissão e se nada sem relação é detectado.
 
-Para um rollout prático:
+</Step>
+<Step title="Anexe a uma chave">
 
-- comece com `flag` ou `redact` para injeção de prompt
-- use `block` somente depois de revisar os falsos positivos
-- primeiro, use regras determinísticas para informações confidenciais:
-  - e-mail
-  - telefone
-  - SSN
-  - cartão de crédito
-  - endereço IP
+Em **Aplicar para chaves**, escolha uma chave de staging ou de baixo risco. Você pode anexar o guardrail enquanto o cria. **Aplicar para membros** o aplica às chaves de API que esses membros criarem. Os membros não podem editar nem remover um guardrail atribuído por um proprietário ou administrador do espaço de trabalho.
 
-Se precisar de padrões personalizados, adicione-os como regras regex explícitas e teste-os no campo de prévia antes de salvar.
+</Step>
+<Step title="Confira a aplicação">
 
-## 5. Teste a política antes de ampliar o rollout
+Envie solicitações reais pela chave e confira:
 
-Use a prévia do guardrail com:
+- **Configurações → Uso → Guardrails**, para as contagens de bloqueios, ocultações e sinalizações.
+- A seção **Aplicação de guardrails** de uma solicitação em **Configurações → Uso → Registros**, para ver o guardrail e o detector que foram acionados.
+- A coluna **Guardrails** em **Configurações → Chaves de API**, para confirmar a quais chaves ele está anexado.
 
-- uma entrada inofensiva
-- uma entrada claramente proibida
-- um prompt realista, semelhante aos usados em produção
+</Step>
+<Step title="Amplie a implantação">
 
-Confira se há:
+Anexe o mesmo guardrail a mais chaves, endureça as ações de **Sinalizar** para **Ocultar** ou **Bloquear** e adicione os detectores de nome de pessoa e de endereço só onde a latência deles for aceitável.
 
-- texto de redação correto
-- comportamento correto de bloqueio e permissão
-- ausência de correspondências acidentais em conteúdo não relacionado
+</Step>
+</Steps>
 
-## 6. Verifique a aplicação na atividade e nos logs
-
-Depois de enviar solicitações reais pela chave protegida, verifique:
-
-- o painel **Aplicação de guardrails** na página de atividade
-- os diálogos de detalhes das solicitações bloqueadas ou redigidas
-- a atividade de guardrail por chave no diálogo de detalhes da chave de API
-
-Você deverá ver:
-
-- a contagem de solicitações bloqueadas
-- a contagem de solicitações redigidas
-- a contagem de solicitações sinalizadas
-- os detalhes do guardrail e do detector específicos quando a aplicação ocorrer
-
-## 7. Amplie o rollout com segurança
-
-Quando a primeira chave funcionar corretamente:
-
-1. associe o mesmo guardrail a mais chaves
-2. aumente a ação de `flag` para `redact` ou `block`
-3. adicione detecção de nomes e endereços, que tem maior latência, somente onde essa troca for aceitável
-
-## Guias relacionados
-
-- [Predefinições](../guides/presets.mdx)
-- [Início rápido](../quickstart.mdx)
-- [Agentes de programação com `SKILL.md`](./coding-agents-skill-md.mdx)
-
+Um guardrail desativado mantém a configuração, mas não é aplicado. Para compartilhar regras de roteamento entre chamadores em vez de aplicá-las a chaves, use uma [predefinição](../guides/presets).

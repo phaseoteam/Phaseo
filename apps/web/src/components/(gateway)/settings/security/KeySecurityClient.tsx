@@ -1,7 +1,5 @@
-"use client";
-
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { CircleCheck, CircleDashed, ClipboardCopy, Clock, Hourglass, Network, PauseCircle, ShieldAlert, ShieldOff, Trash2, Wallet, MapPin } from "lucide-react";
 import { Link } from "@/i18n/navigation";
@@ -18,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { DisplayDate } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
-import { bulkUpdateKeysAction, type BulkKeyActionInput, type BulkKeySelection } from "@/app/(dashboard)/settings/security/actions";
+import { bulkUpdateKeysAction, type BulkKeyActionInput, type BulkKeySelection } from "@/features/settings/security/actions";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import { keyDetailHref } from "../keys/keyDetailHref";
 import {
@@ -203,7 +201,7 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 		if (!pending || !request) return;
 		setBusy(true);
 		try {
-			const result = await bulkUpdateKeysAction(data.workspaceId, pending.selection, request);
+			const result = await bulkUpdateKeysAction({ data: { workspaceId: data.workspaceId, selection: pending.selection, input: request } });
 			if (result.ok === false) { toast.error(result.message ?? t("keySecurity.actionFailed")); return; }
 			toast.success(t("keySecurity.changed", { count: result.changed.length }));
 			setPending(null);

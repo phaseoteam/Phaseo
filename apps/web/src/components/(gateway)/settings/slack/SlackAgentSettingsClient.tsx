@@ -1,8 +1,6 @@
-"use client";
-
 import { useEffect, useState, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useSearchParams } from "@/lib/navigation";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import {
@@ -18,13 +16,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { Callout } from "@/components/ui/callout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { INCLUDED_ANSWERS_PER_PERSON } from "@/lib/slack-agent/pricing";
-import { startSlackInstall, startSlackPermissionsUpdate, uninstallSlackAgent, updateSlackAgent } from "@/app/(dashboard)/settings/slack/actions";
+import { startSlackInstall, startSlackPermissionsUpdate, uninstallSlackAgent, updateSlackAgent } from "@/features/settings/slack/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { AccessField, Choice, FieldProblem, LimitsFields, ModelChoiceFields, ModelField, Notice, Section, SlackError } from "./SlackAgentFields";
 import { SlackCustomAppSection } from "./SlackCustomAppSection";
@@ -123,7 +122,7 @@ function InstallView({ view }: { view: SlackAgentManagerView }) {
 			return;
 		}
 		startInstall(async () => {
-			const result = await startSlackInstall(built.value);
+			const result = await startSlackInstall({ data: built.value });
 			if (!result.ok) {
 				setError({ key: slackErrorKey(result.code, result.status), message: result.message });
 				return;
@@ -251,7 +250,7 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 			return;
 		}
 		startSaving(async () => {
-			const result = await write(updateSlackAgent(built.value));
+			const result = await write(updateSlackAgent({ data: built.value }));
 			if (!result.ok) return failed(result);
 			const next = settingsDraftFrom(result.installation.settings);
 			setSaved(next);
@@ -263,7 +262,7 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 
 	function changeStatus(next: "active" | "paused") {
 		startStatusChange(async () => {
-			const result = await write(updateSlackAgent({ status: next }));
+			const result = await write(updateSlackAgent({ data: { status: next } }));
 			if (!result.ok) return failed(result);
 			setStatus(result.installation.status);
 			toast.success(next === "paused" ? t("installed.pausedToast") : t("installed.resumedToast"));
@@ -364,13 +363,13 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 				<LimitsFields draft={draft} disabled={busy} problem={problem} set={set} />
 			</Section>
 
-			<div className="space-y-3 border-t pt-6">
+			<div className="space-y-3">
 				{problem ? <p className="text-sm text-destructive">{t("fixFirst")}</p> : null}
 				{error ? <SlackError error={error} /> : null}
-				<div className="flex flex-wrap items-center gap-2">
+				<SettingsFormActions>
+					{dirty ? <Button type="button" variant="outline" disabled={busy} onClick={() => { setDraft(saved); setProblem(null); setError(null); }}>{t("installed.discard")}</Button> : null}
 					<Button type="button" onClick={save} disabled={busy || !dirty}>{saving ? t("saving") : t("installed.save")}</Button>
-					{dirty ? <Button type="button" variant="ghost" disabled={busy} onClick={() => { setDraft(saved); setProblem(null); setError(null); }}>{t("installed.discard")}</Button> : null}
-				</div>
+				</SettingsFormActions>
 			</div>
 
 			<Section title={t("sections.charges")}>

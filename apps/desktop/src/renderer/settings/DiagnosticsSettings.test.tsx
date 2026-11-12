@@ -39,7 +39,7 @@ describe("diagnostics page", () => {
 	const global = globalThis as { window?: unknown };
 	afterEach(() => { delete global.window; });
 
-	it("shows T3's sections in order with their loading states and no capitals-only labels", () => {
+	it("shows its sections in order with their loading states and no capitals-only labels", () => {
 		const pending = () => new Promise<never>(() => {});
 		global.window = { phaseoDesktop: { diagnostics: { processes: pending, resources: pending, traces: pending, stopProcess: pending, openLogs: pending, subscribe: pending, unsubscribe: pending, onSample: () => () => {} } } };
 		const markup = renderToStaticMarkup(<DiagnosticsSettings />);

@@ -1,72 +1,47 @@
 ---
 title: "Google Nano Banana 2"
-description: "À connaître pour adopter Nano Banana 2 dans les flux de génération et de retouche d’images en production."
+description: "À connaître pour adopter Nano Banana 2 dans la génération et la retouche d’images en production."
 icon: "/icons/brands/google.svg"
 ---
 
-# Google Nano Banana 2
+Passez vos requêtes d’images à `google/gemini-3.1-flash-image` (Nano Banana 2) et choisissez le format d’image et la taille de sortie avec `image_config`. C’est le code en aval qui suppose une taille d’image unique qui casse en premier.
 
-Suivez ce guide pour adopter Nano Banana 2 en toute sécurité dans vos flux d’images de production.
+| | Nano Banana | Nano Banana 2 |
+| --- | --- | --- |
+| Identifiant de modèle Phaseo | `google/gemini-2.5-flash-image` | `google/gemini-3.1-flash-image` |
+| Statut | Déprécié ; retiré le 15 mars 2027 | Disponible |
 
-Nano Banana 2 ne se limite pas à une amélioration de qualité. Google le présente comme un modèle d’image prêt pour la production, offrant davantage de contrôle sur le format, la résolution et la fidélité des sorties.
+Nano Banana 2 ajoute un contrôle explicite du format d’image (`image_config.aspect_ratio`, par exemple `16:9` ou `9:16`) et de la taille de sortie de 512px à 4K (`image_config.image_size` : `0.5K`, `1K`, `2K` ou `4K`). Google indique aussi une meilleure cohérence des sujets entre générations et retouches, un meilleur respect des instructions, un meilleur rendu et une meilleure traduction du texte dans les images, et une fidélité accrue à vitesse similaire. Son successeur, `google/gemini-nano-banana-2.1`, est également disponible.
 
-## Nouveautés
+```json
+{
+  "model": "google/gemini-3.1-flash-image",
+  "messages": [{ "role": "user", "content": "A product photo of a ceramic mug on a walnut desk." }],
+  "modalities": ["image", "text"],
+  "image_config": { "aspect_ratio": "16:9", "image_size": "2K" }
+}
+```
 
-- Nano Banana 2 permet de régler explicitement le format d’image.
-- Les résolutions de sortie vont de `512px` à `4K`.
-- La cohérence des sujets est meilleure entre les générations et les retouches.
-- Le suivi des instructions est amélioré.
-- Le rendu et la traduction du texte dans les images progressent.
-- La fidélité visuelle augmente tout en conservant une génération rapide.
+Les fournisseurs qui ne peuvent pas accepter `image_config` le suppriment et le listent dans l’en-tête de réponse `X-Phaseo-Dropped-Params` ; consultez [Paramètres](../api-reference/parameters).
 
-## Démarrage rapide de la migration
+## Mettre à jour votre produit
 
-### 1. Revérifiez les hypothèses sur les sorties
+1. **Vérifiez les hypothèses sur la sortie.** Si le code en aval attend une taille, un format d’image ou un recadrage fixe, mettez-le à jour en premier.
+2. **Revoyez les préréglages :** formats d’image pour les réseaux sociaux, tailles par défaut, workflows de retouche et d’inpainting, et libellés d’interface qui décrivent les tailles d’image.
+3. **Raccourcissez les prompts de retouche.** Les prompts qui surspécifient la composition, le texte ou le style pour compenser l’ancien modèle peuvent désormais être trop rigides. Retestez des versions plus courtes.
 
-Si le code en aval suppose une taille, un format d’image ou un recadrage fixe, mettez-le à jour avant le déploiement. La flexibilité de Nano Banana 2 peut invalider plus facilement ces anciennes hypothèses.
+## Ce qu’il faut tester
 
-### 2. Mettez à jour les préréglages du produit
+- **Qualité des sorties :** formats vertical, carré et panoramique ; petites tailles par rapport aux grandes ; cohérence des sujets entre les retouches ; texte, signalétique, légendes et texte traduit dans les images.
+- **Workflow :** gestion des fichiers aux grandes tailles, délais d’expiration sur les générations haute fidélité, taux de validation par la modération ou la revue humaine, et redimensionnement en aval.
+- **Métriques produit :** latence de bout en bout, taux de sorties utilisables, taux de nouvelles tentatives et coût par ressource approuvée.
 
-Revoyez :
+## Déployer
 
-- les préréglages de format d’image pour les réseaux sociaux
-- les résolutions par défaut
-- les flux de retouche et d’inpainting
-- les libellés d’interface indiquant les tailles d’image disponibles
-
-### 3. Réglez les prompts de retouche d’image
-
-Le modèle suit mieux les instructions ; les prompts qui décrivaient trop précisément la composition, le texte ou le style peuvent donc être inutilement rigides. Retestez avec des prompts plus courts et comparez les résultats.
-
-## Points à tester
-
-### Qualité des sorties
-
-- formats portrait, carré et panoramique
-- sorties en basse et haute résolution
-- cohérence du sujet sur plusieurs retouches
-- texte, panneaux, légendes et traductions dans les images
-
-### Compatibilité des flux de travail
-
-- traitement des fichiers aux résolutions supérieures
-- délais d’attente pour les générations plus fidèles
-- taux de réussite de la modération ou de la revue humaine
-- hypothèses de redimensionnement et de traitement ultérieur des ressources
-
-### Métriques produit
-
-- latence complète de génération
-- taux de sorties exploitables
-- taux de nouvelle tentative
-- coût par ressource approuvée
-
-## Conseils de déploiement
-
-1. Testez chaque format d’image et résolution séparément plutôt que de traiter cela comme une migration unique.
-2. Validez le pipeline de ressources avec la plus grande taille de sortie prévue.
-3. Échantillonnez des prompts réels de production, notamment les retouches et les demandes de texte dans l’image.
-4. Si l’interface expose des options d’image, déployez les préréglages par défaut séparément du changement de modèle.
+1. Testez par format d’image et par taille plutôt qu’en une seule migration.
+2. Validez votre pipeline de ressources à la plus grande taille que vous prendrez en charge.
+3. Échantillonnez de vrais prompts de production, en particulier les retouches et les requêtes de texte dans l’image.
+4. Si votre interface expose des options d’image, publiez les changements de préréglages par défaut séparément du changement de modèle.
 
 ## Sources
 

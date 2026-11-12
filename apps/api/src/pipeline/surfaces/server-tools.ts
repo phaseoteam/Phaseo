@@ -3,6 +3,7 @@
 // How: Rewrites request tools into callable function tools and executes supported calls.
 
 import type { IRChatResponse, IRContentPart, IRMessage, IRToolCall, IRToolResult, IRUsage } from "@core/ir";
+import type { ServerToolPricing } from "@core/types";
 import type { Protocol } from "@protocols/detect";
 import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream/encode";
 import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
@@ -40,6 +41,10 @@ const DEFAULT_WEB_FETCH_MAX_CHARS = 12000;
 const MAX_WEB_FETCH_MAX_CHARS = 100000;
 const SERVER_TOOL_FETCH_TIMEOUT_MS = 15000;
 const SERVER_TOOL_DIRECT_FETCH_MAX_REDIRECTS = 5;
+// Direct web fetch reads at most this much of a page; the rest is dropped and
+// the result is marked truncated, since the tool only returns maxChars anyway.
+const SERVER_TOOL_DIRECT_FETCH_MAX_BODY_BYTES = 2 * 1024 * 1024;
+const SERVER_TOOL_DIRECT_FETCH_MAX_ERROR_BYTES = 4096;
 const DEFAULT_EXA_BASE_URL = "https://api.exa.ai";
 const DEFAULT_PARALLEL_BASE_URL = "https://api.parallel.ai";
 const DEFAULT_FIRECRAWL_BASE_URL = "https://api.firecrawl.dev";
@@ -209,7 +214,24 @@ const IMAGE_GENERATION_TOOL_PARAMETERS = {
 		},
 		output_format: {
 			type: "string",
-			description: "Requested output format such as png, jpeg, or webp.",
+			description: "Requested output format such as png, jpeg, or webp. GPT Image 2.6 models also take gif (animated) and svg.",
+		},
+		complexity: {
+			type: "string",
+			enum: ["low", "medium", "high"],
+			description: "GPT Image 2.6 only: how much the model plans before rendering, separate from quality.",
+		},
+		frame_count: {
+			type: "number",
+			description: "GIF output only: number of animation frames (2 to 64).",
+		},
+		frame_duration_ms: {
+			type: "number",
+			description: "GIF output only: milliseconds per frame (20 to 2000).",
+		},
+		svg_model: {
+			type: "string",
+			description: "SVG output only: the OpenAI text model that writes the SVG, such as openai/gpt-5-nano.",
 		},
 		output_compression: {
 			type: "number",
@@ -298,6 +320,10 @@ export type ImageGenerationServerToolConfig = {
 	outputFormat?: string;
 	outputCompression?: number;
 	moderation?: string;
+	complexity?: string;
+	frameCount?: number;
+	frameDurationMs?: number;
+	svgModel?: string;
 };
 
 const ADVISOR_MIN_MAX_TOKENS = 1024;
@@ -430,6 +456,8 @@ export type ServerToolExecutionMetrics = {
 	webSearchResults: number;
 	webSearchExtraResults: number;
 	webFetchRequests: number;
+	/** Fetches that cost Phaseo money; direct fetches are free. Defaults to webFetchRequests. */
+	billableWebFetchRequests?: number;
 	advisorRequests: number;
 	imageGenerationRequests: number;
 	applyPatchRequests: number;
@@ -445,7 +473,8 @@ export type ServerToolContinuation = {
 	limitExceeded?: boolean;
 	usage: ServerToolExecutionMetrics;
 	advisorUsage?: IRUsage;
-	imageGenerationUsage?: IRUsage;
+	/** Each tool image priced on its own model's card, added to the request total by the after stage. */
+	imageGenerationPricing?: ServerToolPricing[];
 };
 
 export type AdvisorExecutionResult = {
@@ -475,7 +504,7 @@ export type ImageGenerationExecutionResult = {
 	b64Json?: string;
 	mimeType?: string;
 	model: string;
-	usage?: IRUsage;
+	pricing?: ServerToolPricing;
 } | {
 	ok: false;
 	message: string;
@@ -491,6 +520,10 @@ export type ImageGenerationExecutor = (args: {
 	outputFormat?: string;
 	outputCompression?: number;
 	moderation?: string;
+	complexity?: string;
+	frameCount?: number;
+	frameDurationMs?: number;
+	svgModel?: string;
 }) => Promise<ImageGenerationExecutionResult>;
 
 function cloneBody(body: any): any {
@@ -779,6 +812,15 @@ function parseAdvisorToolDefaults(tool: any): AdvisorServerToolConfig | { error:
 	};
 }
 
+function positiveInteger(value: unknown): number | null {
+	return typeof value === "number" && Number.isFinite(value) && value > 0 ? Math.floor(value) : null;
+}
+
+/** The SVG author, as svg.model (Images API shape) or svg_model (tool argument). */
+function svgAuthorModel(source: any): string | null {
+	return toNonEmptyString(source?.svg?.model) ?? toNonEmptyString(source?.svg_model);
+}
+
 function parseImageGenerationToolDefaults(tool: any): ImageGenerationServerToolConfig {
 	const parameters = tool?.parameters && typeof tool.parameters === "object" ? tool.parameters : {};
 	const outputCompression = parameters?.output_compression ?? tool?.output_compression;
@@ -793,6 +835,10 @@ function parseImageGenerationToolDefaults(tool: any): ImageGenerationServerToolC
 			? { outputCompression: Math.max(0, Math.min(100, outputCompression)) }
 			: {}),
 		...(toNonEmptyString(parameters?.moderation ?? tool?.moderation) ? { moderation: toNonEmptyString(parameters?.moderation ?? tool?.moderation)! } : {}),
+		...(toNonEmptyString(parameters?.complexity ?? tool?.complexity) ? { complexity: toNonEmptyString(parameters?.complexity ?? tool?.complexity)! } : {}),
+		...(positiveInteger(parameters?.frame_count ?? tool?.frame_count) != null ? { frameCount: positiveInteger(parameters?.frame_count ?? tool?.frame_count)! } : {}),
+		...(positiveInteger(parameters?.frame_duration_ms ?? tool?.frame_duration_ms) != null ? { frameDurationMs: positiveInteger(parameters?.frame_duration_ms ?? tool?.frame_duration_ms)! } : {}),
+		...(svgAuthorModel(parameters) ?? svgAuthorModel(tool) ? { svgModel: (svgAuthorModel(parameters) ?? svgAuthorModel(tool))! } : {}),
 	};
 }
 
@@ -1912,16 +1958,44 @@ function isUrlAllowedByDomainPolicy(
 	return true;
 }
 
+// The timeout signal stays armed after the headers arrive, so it also bounds
+// the time spent reading the body.
 async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
-	const controller = new AbortController();
-	const timeout = setTimeout(() => controller.abort(), SERVER_TOOL_FETCH_TIMEOUT_MS);
+	return fetch(input, {
+		...init,
+		signal: AbortSignal.timeout(SERVER_TOOL_FETCH_TIMEOUT_MS),
+	});
+}
+
+// Reads up to maxBytes of the body as text, then cancels the rest.
+async function readResponseTextPrefix(
+	response: Response,
+	maxBytes: number,
+): Promise<{ text: string; truncated: boolean }> {
+	if (!response.body) return { text: "", truncated: false };
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let remaining = maxBytes;
+	let text = "";
+	let truncated = false;
 	try {
-		return await fetch(input, {
-			...init,
-			signal: controller.signal,
-		});
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			if (!value?.byteLength) continue;
+			if (value.byteLength > remaining) {
+				text += decoder.decode(value.subarray(0, remaining), { stream: true });
+				truncated = true;
+				await reader.cancel("response_body_limit_reached").catch(() => undefined);
+				break;
+			}
+			text += decoder.decode(value, { stream: true });
+			remaining -= value.byteLength;
+		}
+		text += decoder.decode();
+		return { text, truncated };
 	} finally {
-		clearTimeout(timeout);
+		reader.releaseLock();
 	}
 }
 
@@ -2547,10 +2621,28 @@ async function executeFirecrawlFetchToolCall(args: {
 	}
 }
 
+/**
+ * A managed search or fetch on a paid engine runs on Phaseo's key and is billed to the
+ * workspace, so it needs the same wallet credit as a paid model; a free main model does not
+ * cover it.
+ */
+function insufficientCreditsToolResult(callId: string, tool: "web search" | "web fetch", engine: string): IRToolResult {
+	return {
+		toolCallId: callId,
+		isError: true,
+		content: JSON.stringify({
+			error: "insufficient_credits",
+			engine,
+			message: `Add credits to use gateway ${tool} with engine "${engine}".`,
+		}),
+	};
+}
+
 async function executeWebFetchToolCall(
 	call: { id: string; arguments: string },
 	config: ServerToolConfig,
-): Promise<{ toolResult: IRToolResult; webFetchRequests: number }> {
+	paidToolsAllowed = true,
+): Promise<{ toolResult: IRToolResult; webFetchRequests: number; billableWebFetchRequests?: number }> {
 	const args = parseJsonObject(call.arguments);
 	const url = parseWebFetchUrl(args);
 	if (!url) {
@@ -2597,6 +2689,9 @@ async function executeWebFetchToolCall(
 			},
 			webFetchRequests: 0,
 		};
+	}
+	if (!paidToolsAllowed && (engine === "exa" || engine === "parallel" || engine === "firecrawl")) {
+		return { toolResult: insufficientCreditsToolResult(call.id, "web fetch", engine), webFetchRequests: 0 };
 	}
 	if (engine === "exa") {
 		const searchConfig = resolveExaSearchConfig();
@@ -2682,6 +2777,7 @@ async function executeWebFetchToolCall(
 			if (response.status < 300 || response.status >= 400) break;
 			const location = response.headers.get("location");
 			if (!location) break;
+			await response.body?.cancel().catch(() => undefined);
 			const nextUrl = new URL(location, currentUrl).toString();
 			if (!isUrlAllowedByDomainPolicy(nextUrl, allowedDomains, blockedDomains)) {
 				return {
@@ -2716,7 +2812,7 @@ async function executeWebFetchToolCall(
 		}
 
 		if (!response.ok) {
-			const failureText = await response.text();
+			const { text: failureText } = await readResponseTextPrefix(response, SERVER_TOOL_DIRECT_FETCH_MAX_ERROR_BYTES);
 			return {
 				toolResult: {
 					toolCallId: call.id,
@@ -2747,7 +2843,10 @@ async function executeWebFetchToolCall(
 			};
 		}
 
-		const rawText = await response.text();
+		const { text: rawText, truncated: bodyTruncated } = await readResponseTextPrefix(
+			response,
+			SERVER_TOOL_DIRECT_FETCH_MAX_BODY_BYTES,
+		);
 		const normalizedText =
 			contentType?.toLowerCase().includes("html")
 				? htmlToText(rawText)
@@ -2757,7 +2856,7 @@ async function executeWebFetchToolCall(
 				? extractHtmlTitle(rawText)
 				: null;
 		const text = normalizedText.slice(0, maxChars);
-		const truncated = normalizedText.length > text.length;
+		const truncated = bodyTruncated || normalizedText.length > text.length;
 
 		return {
 			toolResult: {
@@ -2776,6 +2875,8 @@ async function executeWebFetchToolCall(
 				}),
 			},
 			webFetchRequests: 1,
+			// A direct fetch runs on the Worker and costs Phaseo nothing.
+			billableWebFetchRequests: 0,
 		};
 	} catch (error) {
 		return {
@@ -2796,6 +2897,7 @@ async function executeWebSearchToolCall(
 	call: { id: string; arguments: string },
 	config: ServerToolConfig,
 	remainingResults: number,
+	paidToolsAllowed = true,
 ): Promise<{
 	toolResult: IRToolResult;
 	webFetchRequests: number;
@@ -2853,6 +2955,16 @@ async function executeWebSearchToolCall(
 			webFetchRequests: 0,
 			webSearchResults: 0,
 			webSearchExtraResults: 0,
+		};
+	}
+	// TinyFish Search is free on its published plans; every other engine is paid.
+	if (!paidToolsAllowed && engine !== "tinyfish") {
+		return {
+			toolResult: insufficientCreditsToolResult(call.id, "web search", engine),
+			webFetchRequests: 0,
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
+			billableWebSearchRequests: 0,
 		};
 	}
 
@@ -3182,6 +3294,8 @@ export async function buildServerToolContinuation(
 		executeImageGeneration?: ImageGenerationExecutor;
 		searchModels?: ModelSearchExecutor;
 		remainingToolCalls?: number;
+		/** False when the wallet cannot pay for paid managed tools (Exa, Parallel, Firecrawl, Perplexity). */
+		paidToolsAllowed?: boolean;
 		signal?: AbortSignal;
 		onToolStart?: (call: IRToolCall) => void;
 		onToolEnd?: (call: IRToolCall, result: IRToolResult | undefined) => void;
@@ -3235,7 +3349,7 @@ export async function buildServerToolContinuation(
 
 	const toolResults: IRToolResult[] = [];
 	let advisorUsage: IRUsage | undefined;
-	let imageGenerationUsage: IRUsage | undefined;
+	const imageGenerationPricing: ServerToolPricing[] = [];
 	const usage: ServerToolExecutionMetrics = {
 		datetimeRequests: 0,
 		webSearchRequests: 0,
@@ -3293,13 +3407,16 @@ export async function buildServerToolContinuation(
 				{ id: call.id, arguments: call.arguments },
 				config,
 				remainingSearchResults,
+				options?.paidToolsAllowed !== false,
 			);
 			toolResults.push(executed.toolResult);
 			const webSearchRequestsBefore = usage.webSearchRequests;
 			usage.webSearchRequests += 1;
-			if (typeof executed.billableWebSearchRequests === "number") {
+			// A search that failed or never reached a provider costs Phaseo nothing.
+			const billableSearches = executed.toolResult.isError ? 0 : executed.billableWebSearchRequests;
+			if (typeof billableSearches === "number") {
 				usage.billableWebSearchRequests =
-					(usage.billableWebSearchRequests ?? webSearchRequestsBefore) + Math.max(0, executed.billableWebSearchRequests);
+					(usage.billableWebSearchRequests ?? webSearchRequestsBefore) + Math.max(0, billableSearches);
 			} else if (usage.billableWebSearchRequests !== undefined) {
 				usage.billableWebSearchRequests += 1;
 			}
@@ -3320,9 +3437,17 @@ export async function buildServerToolContinuation(
 			const executed = await executeWebFetchToolCall(
 				{ id: call.id, arguments: call.arguments },
 				config,
+				options?.paidToolsAllowed !== false,
 			);
 			toolResults.push(executed.toolResult);
+			const webFetchRequestsBefore = usage.webFetchRequests;
 			usage.webFetchRequests += Math.max(0, executed.webFetchRequests);
+			if (typeof executed.billableWebFetchRequests === "number") {
+				usage.billableWebFetchRequests =
+					(usage.billableWebFetchRequests ?? webFetchRequestsBefore) + Math.max(0, executed.billableWebFetchRequests);
+			} else if (usage.billableWebFetchRequests !== undefined) {
+				usage.billableWebFetchRequests += Math.max(0, executed.webFetchRequests);
+			}
 			continue;
 		}
 
@@ -3362,12 +3487,18 @@ export async function buildServerToolContinuation(
 				size: toNonEmptyString(args.size) ?? config.imageGeneration?.size,
 				aspectRatio: toNonEmptyString(args.aspect_ratio) ?? config.imageGeneration?.aspectRatio,
 				background: toNonEmptyString(args.background) ?? config.imageGeneration?.background,
-				outputFormat: toNonEmptyString(args.output_format) ?? config.imageGeneration?.outputFormat,
+				// Settings chosen in Chat (the tool definition) win over the model's guesses for the
+				// options that change what comes back; the model fills in only what is unset.
+				outputFormat: config.imageGeneration?.outputFormat ?? toNonEmptyString(args.output_format) ?? undefined,
 				outputCompression:
 					typeof args.output_compression === "number" && Number.isFinite(args.output_compression)
 						? Math.max(0, Math.min(100, args.output_compression))
 						: config.imageGeneration?.outputCompression,
 				moderation: toNonEmptyString(args.moderation) ?? config.imageGeneration?.moderation,
+				complexity: config.imageGeneration?.complexity ?? toNonEmptyString(args.complexity) ?? undefined,
+				frameCount: config.imageGeneration?.frameCount ?? positiveInteger(args.frame_count) ?? undefined,
+				frameDurationMs: config.imageGeneration?.frameDurationMs ?? positiveInteger(args.frame_duration_ms) ?? undefined,
+				svgModel: config.imageGeneration?.svgModel ?? svgAuthorModel(args) ?? undefined,
 			});
 			if (imageResult.ok === false) {
 				toolResults.push({
@@ -3382,9 +3513,18 @@ export async function buildServerToolContinuation(
 				continue;
 			}
 			usage.imageGenerationRequests += 1;
+			// The model only needs to know the image exists; the image itself (often megabytes of
+			// base64) would fill its context and bill it as input. The client gets the full output.
 			toolResults.push({
 				toolCallId: call.id,
 				content: JSON.stringify({
+					status: "ok",
+					model: imageResult.model,
+					...(imageResult.mimeType ? { mime_type: imageResult.mimeType } : {}),
+					...(imageResult.imageUrl ? { imageUrl: imageResult.imageUrl } : {}),
+					note: "The image was generated and is shown to the user. Do not repeat or describe its data.",
+				}),
+				clientOutput: JSON.stringify({
 					status: "ok",
 					model: imageResult.model,
 					...(imageResult.imageUrl ? { imageUrl: imageResult.imageUrl } : {}),
@@ -3392,9 +3532,7 @@ export async function buildServerToolContinuation(
 					...(imageResult.mimeType ? { mime_type: imageResult.mimeType } : {}),
 				}),
 			});
-			if (imageResult.usage) {
-				imageGenerationUsage = mergeIRUsageTotals(imageGenerationUsage, imageResult.usage);
-			}
+			if (imageResult.pricing) imageGenerationPricing.push(imageResult.pricing);
 			continue;
 		}
 
@@ -3601,12 +3739,14 @@ export async function buildServerToolContinuation(
 			...(firstChoice.message.phase !== undefined
 				? { phase: firstChoice.message.phase }
 				: {}),
+			// Keeps the next round on the same effort plan, so its cached prefix holds.
+			...(firstChoice.message.effortRecord ? { effortRecord: firstChoice.message.effortRecord } : {}),
 		},
 		toolResults,
 		serverToolCallCount: serverToolCalls.length,
 		usage,
 		advisorUsage,
-		imageGenerationUsage,
+		...(imageGenerationPricing.length > 0 ? { imageGenerationPricing } : {}),
 	};
 }
 
@@ -3810,7 +3950,7 @@ export function attachServerToolUsageToRawUsage(
 	base.server_tool_web_search_extra_results =
 		(Number(base.server_tool_web_search_extra_results ?? 0) || 0) + Math.max(0, args.webSearchExtraResults);
 	base.server_tool_web_fetch_requests =
-		(Number(base.server_tool_web_fetch_requests ?? 0) || 0) + Math.max(0, args.webFetchRequests);
+		(Number(base.server_tool_web_fetch_requests ?? 0) || 0) + Math.max(0, args.billableWebFetchRequests ?? args.webFetchRequests);
 	base.server_tool_advisor_requests =
 		(Number(base.server_tool_advisor_requests ?? 0) || 0) + Math.max(0, args.advisorRequests);
 	base.server_tool_image_generation_requests =

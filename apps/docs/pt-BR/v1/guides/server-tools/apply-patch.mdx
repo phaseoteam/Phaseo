@@ -1,23 +1,17 @@
 ---
 title: "Aplicar patch"
-description: "Permita que modelos Responses retornem operações de patch validadas."
+description: "Deixe modelos do Responses retornarem operações de patch validadas."
 icon: "file-pen-line"
 ---
 
-Use `phaseo:apply_patch` quando um fluxo de Responses precisar retornar alterações de arquivos como operações de patch estruturadas. O Phaseo valida a operação e a retorna ao seu cliente; ele não altera seu sistema de arquivos nem seu repositório.
-
-<Note>
-`phaseo:apply_patch` is available on `/v1/responses`.
-</Note>
-
-## Solicitação
+Adicione `phaseo:apply_patch` em `/v1/responses` para receber alterações de arquivos como operações de patch estruturadas. O Phaseo confere o formato de cada operação e a devolve; ele nunca mexe nos seus arquivos. Seu app decide se aplica o patch, se o mostra a um usuário, se o rejeita ou se pede uma revisão.
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Create a small README patch for this project.",
     "tools": [
       { "type": "phaseo:apply_patch" }
@@ -25,9 +19,15 @@ curl https://api.phaseo.app/v1/responses \
   }'
 ```
 
-## Estrutura da operação
+Em `/v1/chat/completions` ou `/v1/messages`, a solicitação é rejeitada.
 
-Quando o modelo chama a ferramenta, ele envia um objeto de operação:
+## Parâmetros
+
+Nenhum. Adicione `{ "type": "phaseo:apply_patch" }` como está.
+
+## O que o modelo envia
+
+Um objeto `operation`:
 
 ```json
 {
@@ -39,17 +39,15 @@ Quando o modelo chama a ferramenta, ele envia um objeto de operação:
 }
 ```
 
-Tipos de operação compatíveis:
+| `type` | Campos obrigatórios | Regras do diff |
+| --- | --- | --- |
+| `create_file` | `path`, `diff` | Toda linha não vazia começa com `+` |
+| `update_file` | `path`, `diff` | Toda linha não vazia começa com `@@`, um espaço, `+` ou `-` |
+| `delete_file` | `path` | Nenhuma |
 
-| Tipo | Campos obrigatórios |
-| --- | --- |
-| `create_file` | `path`, `diff` |
-| `update_file` | `path`, `diff` |
-| `delete_file` | `path` |
+`path` não pode conter bytes nulos.
 
-## Resultado da ferramenta
-
-O Phaseo retorna a operação validada ao ciclo do modelo:
+## O que a ferramenta retorna
 
 ```json
 {
@@ -63,25 +61,8 @@ O Phaseo retorna a operação validada ao ciclo do modelo:
 }
 ```
 
-Sua aplicação continua responsável por aplicar o patch, mostrá-lo a uma pessoa, rejeitá-lo ou pedir ao modelo uma operação revisada.
+Uma operação que viola as regras acima retorna `apply_patch_invalid_operation` com o motivo, para que o modelo possa tentar de novo.
 
 ## Uso e preços
 
-O Phaseo registra:
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "apply_patch_requests": 1
-    }
-  }
-}
-```
-
-As tabelas de preços podem cobrar isso pelo medidor `server_tool_apply_patch_requests`.
-
-## Relacionados
-
-- [Ferramentas do servidor](./index.mdx)
-- [API Responses](../../api-reference/endpoint/responses.mdx)
+Cada chamada soma 1 a `usage.server_tool_use.apply_patch_requests` e pode ser cobrada com `server_tool_apply_patch_requests`.

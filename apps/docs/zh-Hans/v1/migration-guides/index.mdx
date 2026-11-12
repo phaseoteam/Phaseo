@@ -1,57 +1,32 @@
 ---
 title: "迁移指南"
-description: "介绍如何更换平台或采用特定模型版本。"
+description: "在平台之间迁移或采用特定模型版本的指南。"
 icon: "compass"
 ---
 
-Phaseo 迁移指南涵盖两类升级：
+根据你要更换的内容选择指南：应用调用的平台（见下文），或应用使用的模型（[模型迁移](../model-migrations)）。如果两者都要更换，先迁移平台，并在新路径验证完成之前保持模型不变。
 
-- 从其他平台或 Gateway 迁移到 Phaseo
-- 在同一平台采用新版本模型
+如需定制的检查清单，请使用[迁移助手](https://phaseo.app/migrate)。
 
-<Columns cols={2}>
-	<Card title="模型迁移" icon="brain-circuit" href="../model-migrations/index.mdx">
-		升级模型，同时尽量保持现有集成不变。
-	</Card>
-	<Card title="平台迁移" icon="arrow-right-left" href="./gateway-parity-review.mdx">
-		更换 SDK、提供商或 Gateway，并将现有集成接入 Phaseo。
-	</Card>
-</Columns>
-
-## 模型迁移
-
-如需定制的初始检查清单，请使用[迁移助手](https://phaseo.app/migrate)。
-
-如果集成方式基本不变，只是底层模型发生变化，请使用这些指南。
-
-指南涵盖：
-
-- 请求参数变更
-- 提示词和推理行为变化
-- 结构化输出与工具调用差异
-- 灰度发布、回退和回滚策略
-
-当前模型迁移指南：
-
-- [Anthropic Claude Opus 5](../model-migrations/anthropic-claude-opus-5.mdx)
-- [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx)
-- [Anthropic Claude Opus 4.8](../model-migrations/anthropic-claude-opus-4-1-to-4-8.mdx)
-- [Anthropic Claude Opus 4.7](../model-migrations/anthropic-claude-opus-4-6-to-4-7.mdx)
-- [Mistral Small 4](../model-migrations/mistral-small-3-2-to-mistral-small-4.mdx)
-- [OpenAI GPT-5.4](../model-migrations/openai-migrating-to-gpt-5-4.mdx)
-- [Google Nano Banana 2](../model-migrations/google-nano-banana-1-to-nano-banana-2.mdx)
-- [Google Gemini 3.1](../model-migrations/google-migrating-to-gemini-3-and-3-1.mdx)
-- [Anthropic Claude Sonnet 4.6](../model-migrations/anthropic-claude-sonnet-4-5-to-4-6.mdx)
-- [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx)
-- [Anthropic Claude Opus 4.6](../model-migrations/anthropic-claude-opus-4-5-to-4-6.mdx)
-
+<span id="platform-migrations"></span>
 ## 平台迁移
 
-如果你要更换 SDK、提供商或 Gateway，并需要将现有集成映射到 Phaseo，请使用这些指南。
+每篇平台指南都遵循相同的顺序：更换 base URL 和密钥，映射模型 ID，映射平台的功能，然后测试并上线，并让回退只需更改 base URL 和密钥。
 
-<Card title="创建迁移检查清单" icon="list-checks" href="https://phaseo.app/migrate">
-	选择当前集成并打开交互式迁移助手。
-</Card>
+| 你调用的是 | 代码特征 | 指南 |
+| --- | --- | --- |
+| 直接调用 OpenAI | `api.openai.com`、`OPENAI_API_KEY`、`AzureOpenAI` | [OpenAI SDK](./from-openai) |
+| 直接调用 Anthropic | `api.anthropic.com`、`ANTHROPIC_API_KEY`、`@anthropic-ai/sdk` | [Anthropic SDK](./from-anthropic) |
+| OpenRouter | `openrouter.ai`、`OPENROUTER_API_KEY`、`sk-or-v1` 密钥 | [OpenRouter](./from-openrouter) |
+| Vercel AI Gateway | `ai-gateway.vercel.sh`、`@ai-sdk/gateway`、AI SDK 调用中的裸字符串模型 | [Vercel AI Gateway](./from-vercel) |
+| LLM Gateway | `api.llmgateway.io`、`LLM_GATEWAY_API_KEY` | [LLM Gateway](./from-llmgateway) |
+| LiteLLM 代理 | 带 `model_list` 的 `config.yaml`、`LITELLM_*` 变量、端口 4000 | [LiteLLM](./from-litellm) |
+| Cloudflare AI Gateway | `gateway.ai.cloudflare.com`、`cf-aig-*` 请求头 | [Cloudflare AI Gateway](./from-cloudflare) |
+| Helicone | `*.helicone.ai`、`Helicone-Auth` | [Helicone](./from-helicone) |
+
+要规划和检查上线过程，请使用[迁移功能检查清单](./feature-parity-matrix)。
+
+## 借助编程智能体迁移
 
 <Prompt description="让编程智能体与你一起规划并完成迁移。" icon="arrow-right-left" actions={["copy", "cursor"]}>
 {`Migrate this project's AI requests to Phaseo Gateway.
@@ -59,31 +34,14 @@ Phaseo 迁移指南涵盖两类升级：
 1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
    Use phaseo-migration, which has a guide for each source platform (and openrouter-to-phaseo-migration for a detailed OpenRouter move).
 2. Find every place the project calls its current provider or gateway (OpenAI, Anthropic, OpenRouter, Vercel AI Gateway, LiteLLM or another), including environment variables, SDK clients, base URLs and model IDs.
-3. Read the matching guide at https://phaseo.app/docs/v1/migration-guides and map each call to its Phaseo equivalent at https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
-4. Check every model ID with GET /v1/models. Do not assume IDs carry over unchanged.
+3. Read the matching guide at https://phaseo.app/docs/zh-Hans/v1/migration-guides and map each call to its Phaseo equivalent at https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
+4. Check every model ID against data[].id from GET /v1/models?format=openai. Do not assume IDs carry over unchanged.
 5. List the changes and a rollback plan before editing. After editing, verify one normal request and one streaming request if the project streams.
 6. Never print or commit API keys, and do not switch production traffic without my approval.`}
 </Prompt>
 
-当前平台迁移指南：
+## 模型迁移
 
-- [从 OpenAI SDK 迁移](./from-openai.mdx)
-- [从 Anthropic SDK 迁移](./from-anthropic.mdx)
-- [从 OpenRouter 迁移](./from-openrouter.mdx)：更换端点和密钥、验证模型，并测试流式请求和回滚。
-- [从 Vercel AI Gateway 迁移](./from-vercel.mdx)
-- [从 LLMGateway 迁移](./from-llmgateway.mdx)
-- [从 LiteLLM 迁移](./from-litellm.mdx)
-- [从 Cloudflare AI Gateway 迁移](./from-cloudflare.mdx)
-- [从 Helicone AI Gateway 迁移](./from-helicone.mdx)
+当集成方式不变、只更换模型时，请使用[模型迁移指南](../model-migrations)。每篇指南都涵盖请求参数的变化、提示词和推理行为的变化、结构化输出和工具调用的差异，以及如何带着回退方案上线。
 
-规划并验证发布：
-
-- [迁移准备情况审查](./gateway-parity-review.mdx)
-- [迁移功能清单](./feature-parity-matrix.mdx)
-
-## 如何使用这些指南
-
-1. 确认你要更换的是平台、模型，还是两者。
-2. 从迁移中风险最高的部分对应的指南开始。
-3. 比较输出质量之前，先验证请求参数和端点行为。
-4. 切换线上流量前，先运行接近生产环境的评估。
+无论哪种迁移，都要先检查请求参数和接口行为，再比较输出质量，并在迁移线上流量之前运行类似生产环境的评估。

@@ -251,9 +251,7 @@ type CatalogueProvider = {
         | "project_limited"
         | "paused"
         | "soft_blocked"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "internal_testing"
         | "scheduled"
         | "coming_soon"
@@ -276,14 +274,12 @@ type CatalogueProvider = {
         | "project_limited"
         | "paused"
         | "soft_blocked";
-    provider_routing_status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
-    model_routing_status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    provider_routing_status: "active" | "deranked" | "disabled";
+    model_routing_status: "active" | "deranked" | "disabled";
     capability_status:
         | "active"
         | "coming_soon"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "disabled"
         | "internal_testing";
     input_modalities: string[];
@@ -293,6 +289,8 @@ type CatalogueProvider = {
     params: string[];
     params_detail: SupportedParamDetails;
     service_tiers: OfferServiceTier[];
+    /** The route (v2 provider_model_id) this entry comes from; internal, for /models/me. */
+    route_id: string | null;
 };
 
 export type SupportedParamDetail = Record<string, unknown>;
@@ -315,9 +313,7 @@ export type ProviderInfo = {
         | "project_limited"
         | "paused"
         | "soft_blocked"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "internal_testing"
         | "scheduled"
         | "coming_soon"
@@ -340,14 +336,12 @@ export type ProviderInfo = {
         | "project_limited"
         | "paused"
         | "soft_blocked";
-    provider_routing_status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
-    model_routing_status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    provider_routing_status: "active" | "deranked" | "disabled";
+    model_routing_status: "active" | "deranked" | "disabled";
     capability_status:
         | "active"
         | "coming_soon"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "disabled"
         | "internal_testing";
     effective_from: string | null;
@@ -359,6 +353,11 @@ export type ProviderInfo = {
     params_detail: SupportedParamDetails;
     /** Absent on catalogue objects cached before the field existed; read it as ["standard"]. */
     service_tiers?: OfferServiceTier[];
+    /**
+     * The route (v2 provider_model_id) behind each endpoint. Internal: /models/me reads each route's effective data
+     * policy by it, as the request pipeline does; the listing never serialises it.
+     */
+    route_id_by_endpoint?: Record<string, string | null>;
 };
 
 export type PricingMeterSummary = {
@@ -782,9 +781,7 @@ function normalizeCapabilityStatusForPublicCatalogue(
 ):
     | "active"
     | "coming_soon"
-    | "deranked_lvl1"
-    | "deranked_lvl2"
-    | "deranked_lvl3"
+    | "deranked"
     | "disabled"
     | "internal_testing" {
     const normalized = normalizeCapabilityStatus(rawStatus);
@@ -921,8 +918,16 @@ function initPricingSummary(): PricingSummary {
     return { pricing_plan: "standard", meters };
 }
 
+/** Lower-cased filter values; the former deranked levels still match the single `deranked` status. */
+function statusFilter(values: string[] | undefined): string[] | undefined {
+    return normalizeStringSet(values)?.map((value) => {
+        const status = value.toLowerCase();
+        return /^deranked_lvl[123]$/.test(status) ? "deranked" : status;
+    });
+}
+
 function isPublicRoutingStatus(
-    status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled"
+    status: "active" | "deranked" | "disabled"
 ): boolean {
     return status !== "disabled";
 }
@@ -931,9 +936,7 @@ function isPublicCapabilityStatus(
     status:
         | "active"
         | "coming_soon"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "disabled"
         | "internal_testing"
 ): boolean {
@@ -955,14 +958,12 @@ function resolveProviderAvailabilityStatus(args: {
         | "project_limited"
         | "paused"
         | "soft_blocked";
-    providerRoutingStatus: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
-    modelRoutingStatus: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    providerRoutingStatus: "active" | "deranked" | "disabled";
+    modelRoutingStatus: "active" | "deranked" | "disabled";
     capabilityStatus:
         | "active"
         | "coming_soon"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "disabled"
         | "internal_testing";
     effectiveFrom: string | null;
@@ -1013,14 +1014,12 @@ function resolveProviderAvailabilityReason(args: {
         | "project_limited"
         | "paused"
         | "soft_blocked";
-    providerRoutingStatus: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
-    modelRoutingStatus: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    providerRoutingStatus: "active" | "deranked" | "disabled";
+    modelRoutingStatus: "active" | "deranked" | "disabled";
     capabilityStatus:
         | "active"
         | "coming_soon"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "disabled"
         | "internal_testing";
     effectiveFrom: string | null;
@@ -1035,9 +1034,7 @@ function resolveProviderAvailabilityReason(args: {
     | "project_limited"
     | "paused"
     | "soft_blocked"
-    | "deranked_lvl1"
-    | "deranked_lvl2"
-    | "deranked_lvl3"
+    | "deranked"
     | "internal_testing"
     | "scheduled"
     | "coming_soon"
@@ -1094,18 +1091,11 @@ function resolveProviderAvailabilityReason(args: {
         return "capability_disabled";
     }
     if (
-        args.providerRoutingStatus === "deranked_lvl1" ||
-        args.providerRoutingStatus === "deranked_lvl2" ||
-        args.providerRoutingStatus === "deranked_lvl3"
+        args.providerRoutingStatus === "deranked" ||
+        args.modelRoutingStatus === "deranked" ||
+        args.capabilityStatus === "deranked"
     ) {
-        return args.providerRoutingStatus;
-    }
-    if (
-        args.modelRoutingStatus === "deranked_lvl1" ||
-        args.modelRoutingStatus === "deranked_lvl2" ||
-        args.modelRoutingStatus === "deranked_lvl3"
-    ) {
-        return args.modelRoutingStatus;
+        return "deranked";
     }
     if (args.capabilityStatus === "internal_testing") {
         return "internal_testing";
@@ -1136,9 +1126,7 @@ function availabilityPriority(value: "active" | "coming_soon" | "inactive"): num
 }
 
 const AVAILABILITY_REASON_PRIORITY: Record<ProviderInfo["availability_reason"], number> = {
-    deranked_lvl3: 0,
-    deranked_lvl2: 1,
-    deranked_lvl1: 2,
+    deranked: 2,
     active: 3,
     internal_testing: 4,
     scheduled: 5,
@@ -1160,17 +1148,13 @@ const AVAILABILITY_REASON_PRIORITY: Record<ProviderInfo["availability_reason"], 
 };
 
 const ROUTING_STATUS_PRIORITY: Record<ProviderInfo["provider_routing_status"], number> = {
-    deranked_lvl3: 0,
-    deranked_lvl2: 1,
-    deranked_lvl1: 2,
+    deranked: 2,
     active: 3,
     disabled: 4,
 };
 
 const CAPABILITY_STATUS_PRIORITY: Record<ProviderInfo["capability_status"], number> = {
-    deranked_lvl3: 0,
-    deranked_lvl2: 1,
-    deranked_lvl1: 2,
+    deranked: 2,
     active: 3,
     internal_testing: 4,
     coming_soon: 5,
@@ -1315,7 +1299,8 @@ async function sha256Hex(text: string): Promise<string> {
 
 /** Public catalogue for `filter`, served from cache. Returns a copy callers may mutate. */
 export async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]> {
-    const key = `catalogue-list:v1:${await sha256Hex(catalogueFilterKey(filter))}`;
+    // v2: provider entries carry route_id_by_endpoint (for /models/me), so v1 entries without it are not reused.
+    const key = `catalogue-list:v2:${await sha256Hex(catalogueFilterKey(filter))}`;
     const models = await tieredRead<CatalogueModel[]>({
         key,
         loader: () => loadCatalogue(filter),
@@ -1735,16 +1720,16 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
     const endpointsFilter = expandEndpointFilters(filter.endpoints);
     const providerIdsFilter = normalizeStringSet(filter.providerIds)?.map((value) => value.toLowerCase());
     const providerStatusesFilter = normalizeStringSet(filter.providerStatuses)?.map((value) => value.toLowerCase());
-    const providerRoutingStatusesFilter = normalizeStringSet(filter.providerRoutingStatuses)?.map((value) => value.toLowerCase());
-    const modelRoutingStatusesFilter = normalizeStringSet(filter.modelRoutingStatuses)?.map((value) => value.toLowerCase());
-    const capabilityStatusesFilter = normalizeStringSet(filter.capabilityStatuses)?.map((value) => value.toLowerCase());
+    const providerRoutingStatusesFilter = statusFilter(filter.providerRoutingStatuses);
+    const modelRoutingStatusesFilter = statusFilter(filter.modelRoutingStatuses);
+    const capabilityStatusesFilter = statusFilter(filter.capabilityStatuses);
     const organisationIds = normalizeStringSet(filter.organisationIds);
     const inputTypesFilter = normalizeStringSet(filter.inputTypes)?.map((value) => value.toLowerCase());
     const outputTypesFilter = normalizeStringSet(filter.outputTypes)?.map((value) => value.toLowerCase());
     const paramsFilter = normalizeStringSet(filter.params);
     const statusesFilter = normalizeStringSet(filter.statuses)?.map((value) => value.toLowerCase());
     const providerAvailabilityStatusesFilter = normalizeStringSet(filter.providerAvailabilityStatuses)?.map((value) => value.toLowerCase());
-    const providerAvailabilityReasonsFilter = normalizeStringSet(filter.providerAvailabilityReasons)?.map((value) => value.toLowerCase());
+    const providerAvailabilityReasonsFilter = statusFilter(filter.providerAvailabilityReasons);
 
     const models: CatalogueModel[] = [];
     for (const [modelId, info] of baseModels) {
@@ -1825,6 +1810,7 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
                     effective_to: effectiveTo,
                     params: toParamsList(cap.params),
                     params_detail: toParamsDetail(cap.params),
+                    route_id: typeof cap.provider_api_model_id === "string" ? cap.provider_api_model_id : null,
                     service_tiers: deriveOfferServiceTiers({
                         providerId: row.source_provider_id ?? row.provider_id,
                         skuTiers: skuTiersByRouteOperation.get(
@@ -2007,9 +1993,14 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
                     params: [...entry.params].sort((a, b) => a.localeCompare(b)),
                     params_detail: { ...entry.params_detail },
                     service_tiers: [...entry.service_tiers],
+                    route_id_by_endpoint: Object.fromEntries(entry.endpoints.map((endpoint) => [endpoint, entry.route_id])),
                 });
                 continue;
             }
+            existing.route_id_by_endpoint = {
+                ...existing.route_id_by_endpoint,
+                ...Object.fromEntries(entry.endpoints.map((endpoint) => [endpoint, entry.route_id])),
+            };
 
             existing.endpoints = Array.from(new Set([...existing.endpoints, ...entry.endpoints])).sort();
             existing.input_modalities = Array.from(

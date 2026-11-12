@@ -1,11 +1,14 @@
-"use client";
-
-import Link from "next/link";
-import { useTranslations } from "next-intl";
-import { AudioLines, Binary, CircleCheck, FileText, Image as ImageIcon, Minus, Type, Video, type LucideIcon } from "lucide-react";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
+import { AudioLines, CircleCheck, FileText, Image as ImageIcon, Minus, Type, Video, type LucideIcon } from "lucide-react";
+import { getModalityIcon } from "@/components/(data)/models/Models/modalityIcons";
+import { useModalityLabel } from "@/components/(data)/models/Models/useModalityLabel";
+import { getModalityTone } from "@/lib/models/modalityStyles";
+import { Tip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { ProviderLogo } from "../ProviderLogo";
 import { CompareGrid, CompareNoteRow, CompareRow, CompareSection, MODEL_COLOURS, useCompareGrid, type CompareCell } from "./CompareGrid";
-import { bestIndices, priceRow, timeValue, visibleOnPhone, type Direction, type VerdictReason, type Verdicts } from "./compareViewMath";
+import { bestIndices, distinctDigits, priceRow, timeValue, visibleOnPhone, type Direction, type VerdictReason, type Verdicts } from "./compareViewMath";
 import type { CompareViewModel, CompareViewUsageByModel } from "./types";
 import { useCompareFormat, type CompareFormat } from "./useCompareFormat";
 
@@ -32,48 +35,90 @@ function WithUnit({ value, unit }: { value: React.ReactNode; unit: string }) {
 }
 
 const MODALITY_ICONS: Array<[string, LucideIcon]> = [["text", Type], ["image", ImageIcon], ["audio", AudioLines], ["video", Video], ["file", FileText]];
-const AUDIO_TYPES = new Set(["audio", "speech", "music", "transcription"]);
-const EMBEDDING_TYPES = new Set(["embedding", "embeddings"]);
 
-function hasModality(types: string[], key: string): boolean {
-	const lower = types.map((type) => type.toLowerCase());
-	if (key === "audio") return lower.some((type) => AUDIO_TYPES.has(type));
-	if (key === "file") return lower.some((type) => type === "file" || type === "pdf" || type === "document");
-	if (key === "embeddings") return lower.some((type) => EMBEDDING_TYPES.has(type));
-	return lower.includes(key);
+/** Which of the five standard icons a type lights. Speech, music and transcription are audio. */
+function baseKey(type: string): string | null {
+	const lower = type.toLowerCase();
+	if (/audio|speech|music|transcri|tts|stt/.test(lower)) return "audio";
+	if (lower === "file" || lower === "pdf" || lower === "document") return "file";
+	if (lower.startsWith("image")) return "image";
+	if (lower.startsWith("video")) return "video";
+	if (lower === "text") return "text";
+	return null;
 }
 
-/** One icon per modality, lit when the model supports it, like a row of indicator lights. */
-function ModalityIcons({ types, format }: { types: string[]; format: CompareFormat }) {
-	// Embedding vectors only get an icon when a model outputs them, so ordinary rows stay at five.
-	const icons = hasModality(types, "embeddings") ? [...MODALITY_ICONS, ["embeddings", Binary] as [string, LucideIcon]] : MODALITY_ICONS;
-	// A type none of the icons covers would leave the whole row dimmed, so name it instead.
-	if (!icons.some(([key]) => hasModality(types, key))) return <>{format.modalities(types)}</>;
+/** Types the five icons don't cover (decisions, embeddings, rerank, …), in the row's order. */
+function extraTypes(models: CompareViewModel[], field: "inputTypes" | "outputTypes"): string[] {
+	return [...new Set(models.flatMap((model) => model[field].map((type) => type.toLowerCase())).filter((type) => !baseKey(type)))];
+}
+
+/**
+ * One icon per modality, lit in the models-page filter colours when the model
+ * supports it. Types outside the five (such as decisions) get the models-page
+ * icon too, added to every column of the row so the icons stay aligned.
+ */
+function ModalityIcons({ types, extras }: { types: string[]; extras: string[] }) {
+	const modalityLabel = useModalityLabel();
+	const lower = new Set(types.map((type) => type.toLowerCase()));
+	const lit = new Set([...lower].map(baseKey));
+	const icons = [
+		...MODALITY_ICONS.map(([key, Icon]) => ({ key, Icon, on: lit.has(key), label: modalityLabel(key) })),
+		...extras.map((type) => ({ key: type, Icon: getModalityIcon(type), on: lower.has(type), label: modalityLabel(type) })),
+	];
 	return (
-		<span className="inline-flex items-center gap-1.5" title={format.modalities(types)}>
-			{icons.map(([key, Icon]) => {
-				const on = hasModality(types, key);
-				return (
-					<span
-						key={key}
-						className={cn("inline-flex size-6 items-center justify-center rounded-md", on ? "bg-sky-500/10 text-sky-600 dark:text-sky-400" : "text-muted-foreground/30")}
-						aria-hidden
-					>
-						<Icon className="size-3.5" />
-					</span>
-				);
-			})}
-			<span className="sr-only">{format.modalities(types)}</span>
+		<span className="inline-flex flex-wrap items-center gap-1.5">
+			{icons.map(({ key, Icon, on, label }) => (
+				<span
+					key={key}
+					title={on ? label : undefined}
+					className={cn("inline-flex size-6 items-center justify-center rounded-md", on ? getModalityTone(key).sidebarIconSelectedClassName : "text-muted-foreground/30")}
+					aria-hidden
+				>
+					<Icon className="size-3.5" />
+				</span>
+			))}
+			<span className="sr-only">{types.map(modalityLabel).join(", ")}</span>
 		</span>
 	);
 }
 
-function modalityCells(models: CompareViewModel[], field: "inputTypes" | "outputTypes", format: CompareFormat, empty: string): CompareCell[] {
+function modalityCells(models: CompareViewModel[], field: "inputTypes" | "outputTypes", empty: string): CompareCell[] {
+	const extras = extraTypes(models, field);
 	return models.map((model) => {
 		const types = model[field];
 		if (!types.length) return { content: empty, text: "", muted: true };
-		return { content: <ModalityIcons types={types} format={format} />, text: [...types].sort().join(",") };
+		return { content: <ModalityIcons types={types} extras={extras} />, text: [...types].sort().join(",") };
 	});
+}
+
+/** The route count, then each provider's logo with its name on hover. */
+/** Popular open models have up to 30 routes; past this the rest fold into "+N", which opens the Providers table. */
+const SHOWN_ROUTES = 8;
+
+function RouteList({ count, providers }: { count: string; providers: CompareViewModel["providers"] }) {
+	const t = useTranslations("Catalogue.compareView");
+	const hidden = providers.slice(SHOWN_ROUTES);
+	return (
+		<span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+			{count}
+			<span className="inline-flex flex-wrap items-center gap-1">
+				{providers.slice(0, SHOWN_ROUTES).map((provider) => (
+					<Tip key={provider.id} label={provider.name}>
+						<Link href={`/api-providers/${provider.id}`} aria-label={provider.name} className="rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+							<ProviderLogo id={provider.logoId ?? provider.id} alt="" size="xxs" />
+						</Link>
+					</Tip>
+				))}
+				{hidden.length ? (
+					<Tip label={hidden.map((provider) => provider.name).join(", ")}>
+						<a href="#providers" className="rounded-md px-1 text-xs text-muted-foreground tabular-nums hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+							{t("moreCount", { count: hidden.length })}
+						</a>
+					</Tip>
+				) : null}
+			</span>
+		</span>
+	);
 }
 
 function Supported({ label }: { label: string }) {
@@ -140,6 +185,12 @@ export function CompareOverviewTable({ models }: { models: CompareViewModel[] })
 	const t = useTranslations("Catalogue.compareView");
 	const format = useCompareFormat();
 	const tokens = t("tokens");
+	const tokenCells = (field: "contextWindow" | "maxOutput") => {
+		const values = models.map((model) => model[field]?.tokens);
+		const digits = distinctDigits(values, format.compactTokens);
+		return numericCells(values, "higher", (value) => <WithUnit value={format.compactTokens(value, digits)} unit={tokens} />, t("notPublished"),
+			(index) => (models[index]![field]?.source === "providers" ? t("fromProviders") : undefined));
+	};
 	return (
 		<CompareSection id="overview" title={t("overview")}>
 			<CompareGrid label={t("overview")}>
@@ -150,21 +201,13 @@ export function CompareOverviewTable({ models }: { models: CompareViewModel[] })
 						text: model.lab.id,
 					}))}
 				/>
-				<CompareRow
-					label={t("contextWindow")}
-					cells={numericCells(models.map((model) => model.contextWindow?.tokens), "higher", (value) => <WithUnit value={format.compactTokens(value)} unit={tokens} />, t("notPublished"),
-						(index) => (models[index]!.contextWindow?.source === "providers" ? t("fromProviders") : undefined))}
-				/>
-				<CompareRow
-					label={t("maxOutput")}
-					cells={numericCells(models.map((model) => model.maxOutput?.tokens), "higher", (value) => <WithUnit value={format.compactTokens(value)} unit={tokens} />, t("notPublished"),
-						(index) => (models[index]!.maxOutput?.source === "providers" ? t("fromProviders") : undefined))}
-				/>
-				<CompareRow label={t("takes")} cells={modalityCells(models, "inputTypes", format, t("notPublished"))} />
-				<CompareRow label={t("returns")} cells={modalityCells(models, "outputTypes", format, t("notPublished"))} />
+				<CompareRow label={t("contextWindow")} cells={tokenCells("contextWindow")} />
+				<CompareRow label={t("maxOutput")} cells={tokenCells("maxOutput")} />
+				<CompareRow label={t("takes")} cells={modalityCells(models, "inputTypes", t("notPublished"))} />
+				<CompareRow label={t("returns")} cells={modalityCells(models, "outputTypes", t("notPublished"))} />
 				<CompareRow
 					label={t("routes")}
-					cells={numericCells(models.map((model) => model.providers.length || null), "higher", (value) => t("routeCount", { count: value }), t("noRoutes"))}
+					cells={numericCells(models.map((model) => model.providers.length || null), "higher", (value, index) => <RouteList count={t("routeCount", { count: value })} providers={models[index]!.providers} />, t("noRoutes"))}
 				/>
 				<CompareRow
 					label={t("released")}
@@ -191,16 +234,16 @@ export function ComparePerformance({ models, usage }: { models: CompareViewModel
 				<CompareRow
 					label={t("latency")}
 					labelSub={windowNote("latencyWindow")}
-					cells={numericCells(models.map((model) => usage[model.id]?.latencyP50Ms30m), "lower", (value) => format.latency(value), t("noTraffic"))}
+					cells={numericCells(models.map((model) => usage[model.id]?.latencyP50Ms30m), "lower", (value) => format.latency(value), t("noRecentTraffic"))}
 				/>
 				<CompareRow
 					label={t("throughput")}
 					labelSub={windowNote("throughputWindow")}
-					cells={numericCells(models.map((model) => usage[model.id]?.throughputP50TokPerSec30m), "higher", (value) => format.throughput(value), t("noTraffic"))}
+					cells={numericCells(models.map((model) => usage[model.id]?.throughputP50TokPerSec30m), "higher", (value) => format.throughput(value), t("noRecentTraffic"))}
 				/>
 				<CompareRow
 					label={t("requests24h")}
-					cells={numericCells(models.map((model) => usage[model.id]?.totalRequests || null), null, (value) => format.tokens(value), t("noTraffic"))}
+					cells={numericCells(models.map((model) => usage[model.id]?.totalRequests || null), null, (value) => format.tokens(value), t("noRequests24h"))}
 				/>
 			</CompareGrid>
 		</CompareSection>
@@ -215,31 +258,38 @@ export function CompareFeatures({ models, priced, tiers }: { models: CompareView
 			if (value == null) return { content: t("noRouteData"), text: "", muted: true };
 			return value ? { content: <Supported label={t("yes")} />, text: "yes" } : { content: <NotListed label={t("notListed")} />, text: "no", muted: true };
 		});
+	// Tools, structured outputs, reasoning, search and prompt caching are text-generation features:
+	// for video, speech, embedding or decision models every one of those rows would read "Not listed".
+	const textModels = models.some((model) => model.outputTypes.some((type) => type.toLowerCase() === "text"));
+	const quantisations = priced.map((model, index) => models[index]!.providers.find((route) => route.id === model.pricing?.provider.id)?.quantisation ?? null);
+	if (!textModels && quantisations.every((value) => !value)) return null;
 	return (
 		<CompareSection id="features" title={t("features")} description={t("featuresGroupSource")}>
 			<CompareGrid label={t("features")}>
-				<CompareRow label={t("tools")} cells={flag("tools")} />
-				<CompareRow label={t("structuredOutputs")} cells={flag("structuredOutputs")} />
-				<CompareRow label={t("reasoning")} cells={flag("reasoning")} />
-				<CompareRow label={t("webSearch")} cells={flag("webSearch")} />
-				<CompareRow
-					label={t("promptCaching")}
-					labelSub={t("onChosenRoute")}
-					cells={priced.map((model, index): CompareCell => {
-						if (!model.pricing) return { content: t("notPriced"), text: "", muted: true };
-						return priceRow(model, "cacheRead", tiers[index])
-							? { content: <Supported label={t("yes")} />, text: "yes" }
-							: { content: <NotListed label={t("notListed")} />, text: "no", muted: true };
-					})}
-				/>
+				{textModels ? (
+					<>
+						<CompareRow label={t("tools")} cells={flag("tools")} />
+						<CompareRow label={t("structuredOutputs")} cells={flag("structuredOutputs")} />
+						<CompareRow label={t("reasoning")} cells={flag("reasoning")} />
+						<CompareRow label={t("webSearch")} cells={flag("webSearch")} />
+						<CompareRow
+							label={t("promptCaching")}
+							labelSub={t("onChosenRoute")}
+							cells={priced.map((model, index): CompareCell => {
+								if (!model.pricing) return { content: t("notPriced"), text: "", muted: true };
+								return priceRow(model, "cacheRead", tiers[index])
+									? { content: <Supported label={t("yes")} />, text: "yes" }
+									: { content: <NotListed label={t("notListed")} />, text: "no", muted: true };
+							})}
+						/>
+					</>
+				) : null}
 				<CompareRow
 					label={t("quantisation")}
 					labelSub={t("onChosenRoute")}
-					cells={priced.map((model, index): CompareCell => {
-						const routeId = model.pricing?.provider.id;
-						const quantisation = models[index]!.providers.find((route) => route.id === routeId)?.quantisation;
-						return quantisation ? { content: quantisation, text: quantisation } : { content: t("notStated"), text: "", muted: true };
-					})}
+					cells={quantisations.map((quantisation): CompareCell => (quantisation
+						? { content: quantisation, text: quantisation }
+						: { content: t("notStated"), text: "", muted: true }))}
 				/>
 			</CompareGrid>
 		</CompareSection>

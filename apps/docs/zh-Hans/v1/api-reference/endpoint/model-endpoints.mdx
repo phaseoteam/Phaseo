@@ -2,62 +2,49 @@
 title: "列出模型端点能力"
 badge: "Beta"
 openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /models/{author}/{slug}/endpoints"
-description: "查看某个模型可用的供应商路由、模态、参数、可用性和价格。"
+description: "查看某个模型可用的提供商路由、模态、参数、可用性和价格。"
 ---
 
-如果应用需要确认某个模型、供应商、端点和参数组合是否可用，请在发送请求前使用此端点。
-
-对于 `openai/gpt-5.4-mini`，请使用：
+在发送请求之前调用此端点，确认某个模型、提供商、端点和参数组合是否可用。以 `openai/gpt-6-astra` 为例：
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-每一行代表一项供应商和端点能力，包括：
+`endpoints` 中的每个条目是一个端点的一条提供商路由：
 
-- 规范能力 ID 和公共 API 路径
-- 供应商 ID、名称及供应商模型 slug
-- 输入和输出模态
-- 受支持的参数名称及结构化参数详情
-- 供应商、模型、能力、路由和可用性状态
-- 路由已计划或有时间限制时的生效日期
-- 端点定价摘要
+| 字段 | 内容 |
+| --- | --- |
+| `endpoint`、`capability_id`、`public_path`、`collection` | 规范的端点 ID 和能力 ID，以及公共 API 路径 |
+| `provider`、`model` | 提供商 ID 和名称，以及提供商的模型 slug |
+| `routable`、`status`、`status_reason` | 该路由当前是否接收流量、它的可用性，以及它仅为预览或处于非活动状态的原因 |
+| `modalities` | 输入和输出模态 |
+| `capabilities` | 支持的参数名称和结构化参数详情 |
+| `routing` | 提供商、模型和能力的路由状态 |
+| `effective` | 路由已排期或有时间限制时的 `from` 和 `to` 日期 |
+| `pricing` | 端点定价摘要 |
 
-## 包含计划中和未启用的路由
+如需先比较模型，请使用[列出模型](./models.mdx)；如需查看 API 公开的所有端点，请使用[列出端点](./endpoints.mdx)。
 
-默认值 `availability=active` 仅返回可公开路由的条目。使用 `availability=all` 可查看即将推出和未启用的路由：
+## 包含计划中和非活动的路由
+
+默认的 `availability=active` 只返回可公开路由的行。使用 `availability=all` 可查看即将推出和非活动的路由：
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?availability=all" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints?availability=all" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-除非 `availability_status` 为 `active` 且 `is_active_gateway` 为 `true`，否则不要将生产流量路由到该条目。
+只能将生产流量路由到 `routable` 为 `true` 且 `status` 为 `active` 的行。
 
 ## 筛选路由
 
-以下筛选条件可重复指定，也可使用逗号分隔：
+以下筛选条件接受重复的参数或逗号分隔的列表：`provider`、`provider_status`、`provider_routing_status`、`model_routing_status`、`capability_status`、`provider_availability_status`、`provider_availability_reason`、`status`，以及 `supported_parameters`（别名 `params`）。[列出模型](./models.mdx#filter-the-list)说明了它们的取值。
 
-- `provider`
-- `provider_status`
-- `provider_routing_status`
-- `model_routing_status`
-- `capability_status`
-- `provider_availability_status`
-- `provider_availability_reason`
-- `status`
-- `supported_parameters`
-
-例如，以下请求会返回支持 `temperature` 的 OpenAI 路由：
+以下请求返回支持 `reasoning_effort` 的 OpenAI 路由：
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?provider=openai&supported_parameters=temperature" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints?provider=openai&supported_parameters=reasoning_effort" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
-
-## 相关端点
-
-- [列出模型](./models.mdx)
-- [列出端点](./endpoints.mdx)
-

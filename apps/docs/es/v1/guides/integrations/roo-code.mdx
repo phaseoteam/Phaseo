@@ -1,65 +1,60 @@
 ---
 title: "Roo Code"
 icon: "/icons/brands/roo-code.svg"
-description: "Conecta Roo Code a Phaseo mediante un perfil OpenAI compatible."
+description: "Conecta Roo Code a Phaseo mediante un perfil compatible con OpenAI."
 ---
 
-Usa Phaseo CLI para crear una clave dedicada y configura manualmente el perfil del proveedor en Roo Code. Roo Code guarda las credenciales en el almacenamiento de secretos de VS Code, por lo que la introducción final se realiza en la interfaz de la extensión.
+Ejecuta `phaseo roo-code` para crear una clave y después añade un perfil **OpenAI Compatible** en Roo Code. Roo Code guarda las claves en el almacenamiento de secretos de VS Code, así que ese último paso se hace en su interfaz.
 
-## Configura con Phaseo CLI
+## Configura con la CLI de Phaseo
 
 ```bash
 phaseo login
-phaseo roo-code --model anthropic/claude-sonnet-4.6
+phaseo roo-code --model anthropic/claude-sonnet-5.5
 ```
 
-## Configura Roo Code manualmente
+La CLI crea una `Phaseo CLI: Roo Code API Key` que caduca a los 90 días y tiene un límite de gasto mensual de $100, y después muestra los valores para el siguiente paso.
 
-1. Abre Roo Code en VS Code.
-2. Abre **Settings** y luego **Providers**.
-3. Crea un perfil de configuración del proveedor y elige **OpenAI Compatible**.
-4. Introduce estos valores:
+## Configura Roo Code
+
+1. Abre Roo Code en VS Code y después **Settings → Providers**.
+2. Crea un perfil de configuración de proveedor y elige **OpenAI Compatible**.
+3. Introduce:
 
 | Campo de Roo Code | Valor |
 | --- | --- |
 | Base URL | `https://api.phaseo.app/v1` |
-| API Key | Salida de `phaseo integrations credential roo-code` |
-| Model | `anthropic/claude-sonnet-4.6` o el modelo que indique la configuración |
+| API Key | Salida de `phaseo integrations credential roo-code`, o cualquier clave de API de Phaseo |
+| Model | `anthropic/claude-sonnet-5.5`, o el modelo que muestra la configuración |
 
-5. Guarda el perfil y actívalo.
+4. Guarda el perfil y actívalo.
 
-Las etiquetas de los campos pueden variar ligeramente entre versiones, pero el perfil necesita el endpoint, la clave y el ID de modelo exacto.
+Los nombres de los campos cambian un poco entre versiones; consulta la documentación de [proveedores de modelos](https://docs.roocode.com/providers/) de Roo Code si los tuyos son distintos.
 
-## Verificar
+## Comprueba que funciona
 
-Pide a Roo Code que responda `PHASEO_ROO_OK` y confirma que la solicitud aparezca en la actividad de Phaseo.
+Pide a Roo Code que responda con `PHASEO_ROO_OK` y confirma que la solicitud aparece en **Ajustes → Uso → Registros**.
 
-## Eliminar
+## Quita Phaseo
 
-Elimina el perfil de Phaseo o cambia de perfil y luego ejecuta:
+Elimina el perfil de Phaseo o cambia de perfil, y después ejecuta:
 
 ```bash
 phaseo integrations remove roo-code
 ```
 
-La CLI no puede eliminar valores del almacenamiento privado de extensiones de VS Code, pero al quitarla se revoca la clave.
+Esto revoca la clave. La CLI no puede borrar el almacenamiento de la extensión de VS Code.
 
-## Solución de problemas
+## Soluciona problemas habituales
 
-### Falla la autenticación
+### La autenticación falla
 
-Vuelve a obtener la clave con `phaseo integrations credential roo-code`. Asegúrate de que la URL base termine en `/v1`.
+Vuelve a copiar la clave con `phaseo integrations credential roo-code` y comprueba que la Base URL termina en `/v1`.
 
 ### Roo Code no encuentra el modelo
 
-Introduce manualmente el ID exacto del modelo Phaseo, incluido el prefijo del proveedor.
+Escribe el ID exacto del modelo de Phaseo, incluido su prefijo de proveedor.
 
 ### El chat funciona, pero las herramientas fallan
 
 Cambia a un modelo compatible con llamadas a herramientas.
-
-## Contenido relacionado
-
-- [Proveedores de modelos de Roo Code](https://docs.roocode.com/providers/)
-- [Agentes de programación](./coding-assistants.mdx)
-- [Modelos](../../api-reference/endpoint/models.mdx)

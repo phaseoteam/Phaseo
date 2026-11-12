@@ -1,10 +1,11 @@
 ---
 icon: "binary"
 title: "التضمينات (AI SDK)"
+sidebarTitle: "التضمينات"
 description: "أنشئ تضمينات باستخدام نماذج مزوّد Phaseo في Vercel AI SDK."
 ---
 
-استخدم `phaseo.textEmbeddingModel(...)` (أو `embeddingModel`) مع `embed` و`embedMany`.
+مرّر `phaseo.embeddingModel(modelId)` (أو اسمه البديل `textEmbeddingModel`) إلى `embed` لقيمة واحدة أو إلى `embedMany` لقائمة. تذهب الطلبات إلى نقطة النهاية `/v1/embeddings` في Gateway.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -25,8 +26,8 @@ const batch = await embedMany({
 console.log(batch.embeddings.length);
 ```
 
-## ملاحظات
+## إبقاء المتجهات قابلة للمقارنة
 
-- استخدم إصدار النموذج نفسه لتضمينات الاستعلامات والمتن.
-- طبّع المتجهات بطريقة متسقة قبل حساب التشابه.
-- خزّن التضمينات الثابتة للمحتوى المتكرر مؤقتًا.
+- أنشئ تضمينات الاستعلامات والمجموعة النصية بإصدار النموذج نفسه.
+- طبّع المتجهات بطريقة متسقة قبل حساب درجات التشابه.
+- خزّن مؤقتًا التضمينات الثابتة للمحتوى المتكرر.

@@ -18,6 +18,8 @@ begin
   delete from public.scim_group_members where workspace_id=p_workspace_id and group_id=p_group_id;
   insert into public.scim_group_members(workspace_id,group_id,user_id) select p_workspace_id,p_group_id,user_id from (select distinct unnest(coalesce(p_user_ids,'{}'::uuid[])) user_id) users;
   perform public.reconcile_scim_entitlements(p_workspace_id);
+  -- The per-row triggers are off for this bulk write, so owner role overrides are reapplied here.
+  perform public.apply_workspace_role_overrides(p_workspace_id);
   perform set_config('phaseo.scim_group_replace','off',true);
   perform public.refresh_workspace_effective_entitlements(p_workspace_id,null,'scim_group_replace');
   return replaced;

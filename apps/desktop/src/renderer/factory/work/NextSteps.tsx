@@ -10,6 +10,7 @@ import { factory, openExternal, useFactoryNav } from "../lib/useFactory";
 import { InlineMarkdown } from "../components/Markdown";
 import { cn } from "../../lib/utils";
 import { errorText } from "../components/AddRepo";
+import { MarkdownTextarea } from "../../components/MarkdownTextarea";
 
 
 /** Runs one of an item's contextual actions. Navigation stays in the window; the rest goes to the store. */
@@ -122,7 +123,7 @@ export function Composer({ item, snapshot }: { item: WorkItem; snapshot: Factory
 	};
 	return <div>
 		<div className="flex items-end gap-2 rounded-md border bg-background py-1.5 pr-1.5 pl-3 focus-within:border-ring">
-			<textarea value={text} rows={Math.min(6, Math.max(1, text.split("\n").length))} onChange={(event) => setText(event.target.value)} onKeyDown={onKey} placeholder={placeholder} className="min-w-0 flex-1 resize-none bg-transparent py-1 text-sm leading-relaxed outline-none placeholder:text-muted-foreground" />
+			<MarkdownTextarea containerClassName="min-w-0 flex-1" value={text} rows={Math.min(6, Math.max(1, text.split("\n").length))} onChange={(event) => setText(event.target.value)} onKeyDown={onKey} placeholder={placeholder} className="min-w-0 flex-1 resize-none bg-transparent py-1 text-sm leading-relaxed outline-none placeholder:text-muted-foreground" />
 			<Button size="icon-sm" aria-label="Send" disabled={!text.trim()} onClick={send}><ArrowUp className="size-4" /></Button>
 		</div>
 		{error && <p className="mt-1.5 text-xs text-destructive">{error}</p>}

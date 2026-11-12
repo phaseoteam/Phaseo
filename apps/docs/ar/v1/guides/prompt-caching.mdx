@@ -1,179 +1,249 @@
 ---
-title: "تخزين المطالبات مؤقتًا"
-description: "أعِد استخدام سياق المطالبة الثابت عبر طلبات Chat Completions وResponses وAnthropic Messages."
+title: "التخزين المؤقت للموجّهات"
+description: "أعد استخدام سياق الموجّه الثابت عبر طلبات Chat Completions وResponses وAnthropic Messages."
 icon: "database-zap"
 ---
 
-استخدم تخزين المطالبات مؤقتًا عندما يتكرر السياق الكبير نفسه في طلبات عديدة. حدّد التعليمات والمستندات والأمثلة ونتائج الأدوات وتعريفاتها الثابتة كمحتوى قابل للتخزين، ليتمكن المزوّدون المدعومون من إعادة استخدامه في الاستدعاءات اللاحقة.
+أبقِ بداية موجّهك كما هي عبر الطلبات، فيقرؤها المزوّد من ذاكرته المؤقتة بدل معالجتها من جديد: تُحتسب هذه الـ tokens بسعر القراءة من الذاكرة المؤقتة، ويصل أول token أسرع. يخزّن معظم المزوّدين البادئات المتكررة تلقائيًا. أما Claude فلا يخزّن إلا ما تضع عليه علامة `cache_control`.
 
-يختلف تخزين المطالبات مؤقتًا عن [تخزين الردود مؤقتًا](../cookbook/response-caching-with-presets.mdx). يظل الاستدلال يعمل، لكن تخزين المطالبات قد يقلّل تكلفة معالجة الإدخال المتكرر وزمن الاستجابة. أما تخزين الردود فيعيد إجابة سبق إنشاؤها لطلب مطابق.
+```mermaid
+flowchart LR
+  first["الطلب 1: بادئة ثابتة + سؤال"] -->|"يكتب المزوّد البادئة في ذاكرته المؤقتة"| pin["يثبّت Phaseo المحادثة على ذلك المزوّد"]
+  pin --> second["الطلب 2: البادئة نفسها + سؤال جديد"]
+  second -->|"المزوّد نفسه"| hit["تُحتسب البادئة بسعر القراءة من الذاكرة المؤقتة"]
+```
+
+لا يزال التخزين المؤقت للموجّهات يشغّل الاستدلال في كل طلب. فهو لا يعيد إجابة سابقة لطلب مطابق.
+
+## خزّن موجّهًا مؤقتًا
+
+ضع علامة على آخر كتلة في الجزء الثابت. يُخزَّن كل شيء حتى تلك الكتلة، بما فيها.
+
+<CodeGroup>
+```bash Chat Completions
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-5.5",
+    "messages": [
+      {
+        "role": "system",
+        "content": [
+          {
+            "type": "text",
+            "text": "You are a support assistant. Follow the company policy exactly.",
+            "cache_control": { "type": "ephemeral", "ttl": "1h" }
+          }
+        ]
+      },
+      { "role": "user", "content": "Summarise the latest ticket." }
+    ]
+  }'
+```
+
+```bash Responses
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-5.5",
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "Reference document: Refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "input_text",
+            "text": "Answer this customer: Can I return an item after 20 days?"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+```bash Anthropic Messages
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-5.5",
+    "max_tokens": 512,
+    "system": [
+      {
+        "type": "text",
+        "text": "You are a careful support assistant. Use the policy below.",
+        "cache_control": { "type": "ephemeral", "ttl": "1h" }
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Policy: refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          { "type": "text", "text": "Can this customer return an item after 20 days?" }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "lookup_order",
+        "description": "Look up order status.",
+        "input_schema": {
+          "type": "object",
+          "properties": { "order_id": { "type": "string" } },
+          "required": ["order_id"]
+        },
+        "cache_control": { "type": "ephemeral", "ttl": "5m" }
+      }
+    ]
+  }'
+```
+</CodeGroup>
+
+ثم تحقّق من أنه نجح:
+
+1. أرسل الطلب مرة واحدة لكتابة الذاكرة المؤقتة.
+2. أرسله مرة أخرى بالمحتوى القابل للتخزين نفسه.
+3. تحقّق من `cached_tokens` و`cache_write_tokens` في بيانات الاستخدام في الاستجابة (راجع [حقول الاستخدام والتسعير](#usage-and-pricing-fields))، ومن عدّادات الذاكرة المؤقتة في تفاصيل الطلب.
+4. قارن زمن الاستجابة والتكلفة عبر عدة استدعاءات، لا الاستدعاء الأول فقط.
+
+خزّن مؤقتًا المحتوى الذي يبقى كما هو عبر الطلبات: تعليمات النظام الطويلة، والمستندات المعاد استخدامها، وأمثلة few-shot، وتعريفات الأدوات، ونتائج الأدوات الكبيرة التي يعيد الدور التالي إرسالها. لا تضع علامة على محتوى يتغير في كل طلب، أو مدخلات قصيرة لمرة واحدة، أو بيانات لا تسمح سياستك للمزوّد بتخزينها.
 
 <Note>
-يعتمد دعم تخزين المطالبات مؤقتًا على المزوّد والنموذج. ترسل Phaseo إلى كل مزوّد عناصر التحكم في التخزين المؤقت الموثّقة لديه فقط وتحذف الباقي، ولا تستبعد عناصر التحكم هذه أي مزوّد من التوجيه أبدًا. إذا أبلغ مزوّد عن رموز مخزّنة مؤقتًا على مسار لم يُحدَّد له سعر تخزين مؤقت بعد، تحتسب Phaseo القراءات من التخزين المؤقت بسعر الإدخال العادي للمسار، والكتابات بسعر الإدخال مضروبًا في معامل الكتابة الذي يوثّقه المزوّد. راجع جدول الأسعار في صفحة النموذج لمعرفة أسعار القراءة والكتابة.
+يرسل Phaseo إلى كل مزوّد عناصر التحكم في الذاكرة المؤقتة التي يوثّقها فقط، ويزيل الباقي. لا تستبعد عناصر التحكم في الذاكرة المؤقتة أي مزوّد من التوجيه أبدًا. تسرد كل صفحة نموذج أسعار القراءة من الذاكرة المؤقتة والكتابة فيها.
 </Note>
 
-## ما الذي ينبغي تخزينه مؤقتًا
+<span id="which-providers-cache-automatically"></span>
+## أي المزوّدين يخزّنون مؤقتًا تلقائيًا
 
-خزّن المحتوى الذي يظل ثابتًا بين الطلبات:
-
-- تعليمات النظام الطويلة
-- مستندات RAG المعاد استخدامها
-- أمثلة few-shot
-- تعريفات الأدوات
-- نتائج الأدوات الكبيرة التي يعاد استخدامها في الدور التالي
-
-تجنب تخزين المحتوى الذي يتغير في كل طلب أو مدخلات المستخدم القصيرة لمرة واحدة أو البيانات الحساسة التي تمنع سياستك تخزينها لدى المزوّد المحدد.
-
-## التخزين المؤقت التلقائي والاختياري
-
-يخزّن معظم المزوّدين بادئات المطالبات المتكررة تلقائيًا. أما Claude فيحتاج إلى تفعيل صريح.
-
-| المزوّد | التخزين المؤقت | ما ترسله Phaseo |
+| المزوّد | التخزين المؤقت | ما يرسله Phaseo |
 | --- | --- | --- |
-| [OpenAI](https://developers.openai.com/api/docs/guides/prompt-caching)، [Azure OpenAI](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/prompt-caching) | تلقائي للمطالبات التي تبلغ 1,024 رمزًا أو أكثر | `prompt_cache_key`؛ ونقاط التوقف و`prompt_cache_options` بدءًا من GPT-5.6؛ و`prompt_cache_retention` في النماذج الأقدم |
-| [Anthropic Claude](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) على Anthropic وClaude on AWS وAmazon Bedrock وGoogle Vertex AI | بالتفعيل | نقاط توقف `cache_control`، أربع كحد أقصى في كل طلب |
-| [Google Gemini](https://ai.google.dev/gemini-api/docs/caching) على Google AI Studio و[Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview) | تلقائي بدءًا من Gemini 2.5 | `cached_content` لذاكرة تخزين مؤقت صريحة أنشأتها |
+| [OpenAI](https://developers.openai.com/api/docs/guides/prompt-caching)، [Azure OpenAI](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/prompt-caching) | تلقائي للموجّهات التي تبلغ 1,024 token أو أكثر | `prompt_cache_key`؛ ونقاط التوقف و`prompt_cache_options` على GPT-5.6 وما بعده؛ و`prompt_cache_retention` على النماذج الأقدم |
+| [Anthropic Claude](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) على Anthropic، وClaude على AWS، وAmazon Bedrock، وGoogle Vertex AI | بالاشتراك الاختياري | نقاط توقف `cache_control`، أربع على الأكثر لكل طلب |
+| [Google Gemini](https://ai.google.dev/gemini-api/docs/caching) على Google AI Studio و[Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview) | تلقائي على Gemini 2.5 وما بعده | `cached_content` لذاكرة مؤقتة صريحة أنشأتها |
 | [xAI](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits) | تلقائي | `prompt_cache_key` والترويسة `x-grok-conv-id` |
 | [DeepSeek](https://api-docs.deepseek.com/guides/kv_cache) | تلقائي | لا شيء إضافي |
-| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | تلقائي، بمدة صلاحية 5 دقائق؛ ومدة الساعة الواحدة بالتفعيل على Kimi K3 | `prompt_cache_key` و`prompt_cache_options` |
-| [Groq](https://console.groq.com/docs/prompt-caching) | تلقائي على النماذج التي تذكرها Groq | لا شيء إضافي |
+| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | تلقائي، بمدة صلاحية 5 دقائق؛ ومدة الساعة الواحدة اختيارية على Kimi K3 | `prompt_cache_key` و`prompt_cache_options` |
+| [Groq](https://console.groq.com/docs/prompt-caching) | تلقائي على النماذج التي يسردها Groq | لا شيء إضافي |
 | [Fireworks](https://docs.fireworks.ai/guides/prompt-caching) | تلقائي | `prompt_cache_key`، إضافة إلى الترويسة `x-session-affinity` و`user` |
 | [Cerebras](https://inference-docs.cerebras.ai/capabilities/prompt-caching) | تلقائي | `prompt_cache_key` |
 | [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/features/prompt-caching) | تلقائي على نماذج مختارة | الترويسة `x-session-affinity` |
-| [Together AI](https://docs.together.ai/docs/inference/chat/prompt-caching)، [Mistral](https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching) | تلقائي؛ ويرفع `prompt_cache_key` نسبة الإصابة | `prompt_cache_key` |
-| [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | تلقائي (ضمني)؛ والتخزين المؤقت الصريح بالتفعيل | `cache_control` على مستوى الكتل |
-| [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | تلقائي؛ وتضيف Venice نقاط توقف Claude بنفسها | `cache_control` على مستوى الكتل |
-| [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | تلقائي؛ ونافذة الاحتفاظ بالتفعيل | `prompt_cache_key` و`prompt_cache_breakpoint` و`prompt_cache_options` |
-| [Inference.net](https://inference.net/models/claude-opus-5/) | تلقائي؛ وتخزين مؤقت صريح على نماذج Claude وGemini 2.5 | `cache_control` على مستوى الكتلة في نماذج Claude وGemini 2.5، بدون `ttl` |
+| [Together AI](https://docs.together.ai/docs/inference/chat/prompt-caching)، [Mistral](https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching) | تلقائي؛ ويحسّن `prompt_cache_key` معدل الإصابة | `prompt_cache_key` |
+| [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | تلقائي (ضمني)؛ والذاكرة المؤقتة الصريحة اختيارية | `cache_control` على الكتل |
+| [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | تلقائي؛ يضيف Venice نقاط توقف Claude بنفسه | `cache_control` على الكتل |
+| [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | تلقائي؛ ونافذة الاحتفاظ اختيارية | `prompt_cache_key` و`prompt_cache_breakpoint` و`prompt_cache_options` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | تلقائي؛ وتخزين صريح على نماذج Claude وGemini 2.5 | `cache_control` على الكتل في نماذج Claude وGemini 2.5، دون `ttl` |
 | [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | تلقائي | `prompt_cache_key` والترويسة `x-session-affinity` |
 | [Morph](https://docs.morphllm.com/sdk/components/caching) | تلقائي | `prompt_cache_key` والترويسة `x-session-id` |
 
-يتلقى المزوّدون الآخرون المتوافقون مع OpenAI الحقل `prompt_cache_key` عندما تقبله واجهتهم البرمجية، ولا يتلقون أي عناصر تحكم أخرى في التخزين المؤقت. ترسل Phaseo دائمًا تجزئة لمساحة العمل والمفتاح بدلًا من المفتاح نفسه. راجع [ارتباط بالمزوّد](#provider-affinity).
+يتلقى المزوّدون الآخرون المتوافقون مع OpenAI الحقل `prompt_cache_key` عندما تقبله واجهتهم، ولا يتلقون أي عناصر تحكم أخرى في الذاكرة المؤقتة. يرسل Phaseo دائمًا تجزئة لمساحة عملك والمفتاح بدل المفتاح نفسه؛ راجع [الارتباط بالمزوّد](#provider-affinity).
 
 <span id="cache-controls"></span>
-## عناصر التحكم في التخزين المؤقت
+## عناصر التحكم في الذاكرة المؤقتة
 
-### السياسة الافتراضية لـ Claude
+### دع Phaseo يضع نقاط توقف Claude
 
-تقبل Phaseo الحقل `cache_control` على المستوى الأعلى في طلبات Chat Completions وResponses وAnthropic Messages:
+يفعّل الحقل `cache_control` في المستوى الأعلى على Chat Completions أو Responses أو Anthropic Messages التخزين المؤقت لمسارات Claude، ويضع Phaseo نقاط التوقف نيابةً عنك. يتجاهله المزوّدون الآخرون.
 
 ```json
 {
-  "cache_control": {
-    "type": "ephemeral",
-    "ttl": "5m"
-  }
+  "cache_control": { "type": "ephemeral", "ttl": "5m" }
 }
 ```
 
-يحدد هذا الحقل سياسة تخزين افتراضية لمسارات Claude، فتضع Phaseo نقاط توقف التخزين المؤقت نيابةً عنك. استخدم `ttl: "5m"` (القيمة الافتراضية) للسياق المشترك قصير الأجل، و`ttl: "1h"` عندما يدعم النموذج إدخالات تخزين أطول. يتجاهله المزوّدون الآخرون. ويُبقي `cache_control` على المستوى الأعلى المحادثة أيضًا لدى مزوّد واحد؛ راجع [ارتباط بالمزوّد](#provider-affinity).
+استخدم `ttl: "5m"` (الافتراضي) للسياق المشترك قصير العمر، و`ttl: "1h"` عندما يدعم النموذج إدخالات ذاكرة مؤقتة أطول عمرًا. يبقي `cache_control` في المستوى الأعلى المحادثة أيضًا على مزوّد واحد؛ راجع [الارتباط بالمزوّد](#provider-affinity).
 
-`provider_options.anthropic.cache_control` هو الإعداد نفسه. عندما يرسل الطلب كليهما، تُعتمد قيمة `provider_options`:
+الحقل `provider_options.anthropic.cache_control` هو الإعداد نفسه، ويقبل أيضًا `scope`. عندما يرسل الطلب الاثنين، تفوز قيمة `provider_options`:
 
 ```json
 {
   "provider_options": {
     "anthropic": {
-      "cache_control": {
-        "type": "ephemeral",
-        "ttl": "5m",
-        "scope": "last_user_message"
-      }
+      "cache_control": { "type": "ephemeral", "ttl": "5m", "scope": "agent" }
     }
   }
 }
 ```
 
-قيم `scope` المدعومة:
-
-| النطاق | السلوك |
+| `scope` | أين يضع Phaseo نقاط التوقف |
 | --- | --- |
-| `all_text` | الافتراضي. أضف التحكم بالتخزين المؤقت إلى نص النظام وإلى أحدث ثلاث رسائل للمستخدم تحتوي على نص أو صور. |
-| `last_user_message` | أضف التحكم بالتخزين المؤقت إلى أحدث رسالة للمستخدم فقط. |
-| `agent` | لحلقات الأدوات. أضف التحكم بالتخزين المؤقت إلى آخر تعريف أداة، ونص النظام، والرسالة الأخيرة (بما فيها نتائج الأدوات)، ورسالة الخطوة السابقة. `conversation` اسم بديل له. |
-| `none` | لا تطبّق سياسة تخزين افتراضية. |
+| `all_text` (افتراضي) | نص النظام وأحدث ثلاث رسائل مستخدم تحتوي على نص أو صور. |
+| `last_user_message` | أحدث رسالة مستخدم فقط. |
+| `agent` | لحلقات الأدوات: آخر تعريف أداة، ونص النظام، والرسالة الأخيرة (بما فيها نتائج الأدوات)، والرسالة من الخطوة السابقة. `conversation` اسم بديل له. |
+| `none` | لا مكان. |
 
-يتقدّم `cache_control` المحدد لكل كتلة على السياسة الافتراضية.
+استخدم `agent` لحلقات الأدوات متعددة الخطوات. لا يضع `all_text` و`last_user_message` علامات على الرسائل التي تحتوي على نتائج أدوات فقط، فتتوقف البادئة المخزّنة عن النمو. تُعامَل قيم `scope` غير المعروفة على أنها `agent`.
 
-يقبل Anthropic أربع نقاط توقف للتخزين المؤقت كحد أقصى في كل طلب. تحتسب السياسات الافتراضية كتل `cache_control` التي تضعها بنفسك وتتوقف عند أربع. تُعامَل قيم `scope` غير المعروفة على أنها `agent`. استخدم `agent` في حلقات الأدوات متعددة الخطوات: لا يضع `all_text` و`last_user_message` علامات على الرسائل التي تحتوي على نتائج أدوات فقط، فيتوقف نمو البادئة المخزنة مؤقتًا.
+نقاط التوقف التي تضعها بنفسك على الكتل تفوز على السياسة الافتراضية، وتُحتسب ضمن حد Anthropic البالغ أربع نقاط لكل طلب: تتوقف السياسة الافتراضية عن إضافة العلامات عند أربع. إذا حملت كتلك أكثر من أربع علامات، يحتفظ Phaseo بالأولى وبأحدث ثلاث ويزيل البقية، حتى لا يُرفض الطلب.
 
-إذا حملت كتلك أكثر من أربع علامات، تحتفظ Phaseo بالعلامة الأولى وبأحدث ثلاث علامات وتحذف الباقي، حتى لا يُرفض الطلب.
+### نقاط توقف الذاكرة المؤقتة على الكتل
 
-### نقاط توقف التخزين المؤقت على الكتل
+تخزّن علامة الذاكرة المؤقتة على كتلة محتوى كل شيء حتى تلك الكتلة، بما فيها. يقبل Phaseo صيغتين:
 
-ضع علامة تخزين مؤقت على كتلة محتوى لتخزين كل ما يسبقها مؤقتًا، بما فيها الكتلة نفسها. تقبل Phaseo صيغتين:
+- `cache_control`: `{"type": "ephemeral"}`، مع `ttl` اختياري بقيمة `5m` أو `1h`.
+- `prompt_cache_breakpoint`: صيغة OpenAI `{"mode": "explicit"}`، مع `ttl` اختياري بقيمة `30m` أو `12h` (راجع [ذاكرة مؤقتة لمدة 12 ساعة على OpenAI](#12-hour-cache-on-openai)). عندما تحمل الكتلة الاثنين، يفوز `prompt_cache_breakpoint`.
 
-- `cache_control`: `{"type": "ephemeral"}`، مع `ttl` اختياري قيمته `5m` أو `1h`.
-- `prompt_cache_breakpoint`: صيغة OpenAI `{"mode": "explicit"}`، مع `ttl` اختياري قيمته `30m` أو `12h` (راجع [ذاكرة التخزين المؤقت لمدة 12 ساعة في OpenAI](#12-hour-cache-on-openai)). عندما تحمل الكتلة الصيغتين، تُعتمد `prompt_cache_breakpoint`.
-
-```json
-{
-  "type": "text",
-  "text": "Large stable reference text...",
-  "cache_control": {
-    "type": "ephemeral",
-    "ttl": "1h"
-  }
-}
-```
-
-في Chat Completions وResponses، تُقبل العلامات على أجزاء النص والصور، وعلى تعريفات أدوات الدوال، وعلى نتائج الأدوات التي يكون محتواها مصفوفة من أجزاء النص. ويقبل Anthropic Messages الحقل `cache_control` في كل موضع يقبله فيه Anthropic.
+على Chat Completions وResponses، تُقبل العلامات على أجزاء النص والصور، وعلى تعريفات أدوات الدوال، وعلى نتائج الأدوات التي يكون محتواها مصفوفة من أجزاء النص. وتقبل Anthropic Messages الحقل `cache_control` حيثما تقبله Anthropic: كتل نص `system`، وكتل النص والصور في الرسائل، وكتل نتائج الأدوات، وتعريفات الأدوات. عندما يحتوي طلب واحد على عدة قيم TTL، تشترط Anthropic أن تأتي نقاط توقف `1h` قبل نقاط `5m`.
 
 يتلقى كل مزوّد العلامة بصيغته الخاصة:
 
-| المزوّد | `cache_control` على الكتل | `prompt_cache_breakpoint` |
+| المزوّد | `cache_control` على الكتلة | `prompt_cache_breakpoint` |
 | --- | --- | --- |
-| Claude على Anthropic وClaude on AWS وAmazon Bedrock وGoogle Vertex AI | تُرسل بصيغة `{"type": "ephemeral"}` مع `ttl` الذي حددته | تُرسل بصيغة `cache_control: {"type": "ephemeral"}` |
-| OpenAI، بدءًا من GPT-5.6 | تُرسل بصيغة `prompt_cache_breakpoint: {"mode": "explicit"}`؛ ويُحذف `ttl` | تُرسل مع `ttl` الخاص بها |
-| Azure OpenAI، بدءًا من GPT-5.6 | تُرسل بصيغة `prompt_cache_breakpoint: {"mode": "explicit"}`؛ ويُحذف `ttl` | تُرسل دون `ttl` |
-| OpenAI وAzure OpenAI، النماذج الأقدم | تُحذف | تُحذف |
-| DeepInfra | تُحذف | تُرسل |
-| Alibaba Model Studio وVenice | تُرسل | تُحذف |
-| Inference.net، نماذج Claude وGemini 2.5 | تُرسل بدون `ttl` | تُحذف |
-| المزوّدون الآخرون | تُحذف | تُحذف |
+| Claude على Anthropic، وClaude على AWS، وAmazon Bedrock، وGoogle Vertex AI | يُرسَل بصيغة `{"type": "ephemeral"}` مع `ttl` الخاص بك | يُرسَل بصيغة `cache_control: {"type": "ephemeral"}` |
+| OpenAI، GPT-5.6 وما بعده | يُرسَل بصيغة `prompt_cache_breakpoint: {"mode": "explicit"}`؛ ويُحذف `ttl` | يُرسَل مع `ttl` الخاص به |
+| Azure OpenAI، GPT-5.6 وما بعده | يُرسَل بصيغة `prompt_cache_breakpoint: {"mode": "explicit"}`؛ ويُحذف `ttl` | يُرسَل دون `ttl` |
+| OpenAI وAzure OpenAI، النماذج الأقدم | يُزال | يُزال |
+| DeepInfra | يُزال | يُرسَل دون `ttl` |
+| Alibaba Model Studio وVenice | يُرسَل | يُزال |
+| Inference.net، نماذج Claude وGemini 2.5 | يُرسَل دون `ttl` | يُزال |
+| المزوّدون الآخرون | يُزال | يُزال |
 
-لا تصل العلامات الموضوعة على تعريفات الأدوات إلا إلى مسارات Claude وAlibaba Model Studio وVenice ونماذج Claude وGemini 2.5 على Inference.net؛ إذ لا يقبل OpenAI نقاط توقف على الأدوات. ولا يغيّر حذف العلامة بقية المطالبة، فتطابق البادئة المخزنة مؤقتًا بادئة طلب بلا علامات.
+لا تصل العلامات على تعريفات الأدوات إلا إلى مسارات Claude وAlibaba Model Studio وVenice ونماذج Claude وGemini 2.5 على Inference.net؛ لا تقبل OpenAI نقاط التوقف على الأدوات. إزالة العلامة تترك بقية الموجّه دون تغيير، لذا تطابق البادئة المخزّنة طلبًا بلا علامات.
 
-لا تخزّن Amazon Bedrock وGoogle Vertex AI نماذج Claude 3.7 Sonnet و3.5 Sonnet و3 Opus مؤقتًا إلا لمدة 5 دقائق، وقد يرفض Bedrock قيمة `ttl` في هذه النماذج. على هذه المسارات، ترسل Phaseo نقاط التوقف بدون `ttl`، فتُخزَّن مؤقتًا لمدة 5 دقائق، وتُبلغ عن قيمة `1h` المحذوفة باسم `cache_control.ttl` في ترويسة `X-Phaseo-Dropped-Params` وفي `meta.routing.dropped_params`. ويوثّق Inference.net نقاط التوقف بدون `ttl`، لذا تحذف Phaseo قيمة `ttl` هناك وتُبلغ عنها بالطريقة نفسها، وتُحتسب عمليات الكتابة على أنها كتابة لمدة 5 دقائق.
+يخزّن Amazon Bedrock وGoogle Vertex AI نماذج Claude 3.7 Sonnet و3.5 Sonnet و3 Opus لمدة 5 دقائق فقط، وقد يرفض Bedrock وجود `ttl` على تلك النماذج. على تلك المسارات، يرسل Phaseo نقاط توقفك دون `ttl` فتُخزَّن لمدة 5 دقائق، ويبلغ عن قيمة `1h` المُزالة باسم `cache_control.ttl` في الترويسة `X-Phaseo-Dropped-Params` وفي `meta.routing.dropped_params`. يوثّق Inference.net نقاط التوقف دون `ttl`، لذا يزيل Phaseo أي `ttl` هناك ويبلغ عنه بالطريقة نفسها، وتُحتسب الكتابات ككتابات لمدة 5 دقائق.
 
 <span id="openai-retention-and-options"></span>
 ### الاحتفاظ والخيارات في OpenAI
 
-تعتمد عناصر التحكم في التخزين المؤقت لدى OpenAI على جيل النموذج. ترسل Phaseo كل عنصر فقط حيث يقبله OpenAI:
+تعتمد عناصر التحكم في الذاكرة المؤقتة لدى OpenAI على جيل النموذج. يرسل Phaseo كل عنصر حيث يُقبل فقط:
 
-| الحقل | القيم | يُرسل إلى |
+| الحقل | القيم | يُرسَل إلى |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit` أو `explicit`؛ `ttl`: `30m` أو `12h` | OpenAI بدءًا من GPT-5.6 |
-| `prompt_cache_options` | `mode`: `implicit` أو `explicit`؛ `ttl`: `30m` | Azure OpenAI بدءًا من GPT-5.6 |
+| `prompt_cache_options` | `mode`: `implicit` أو `explicit`؛ `ttl`: `30m` (افتراضي) أو `12h` | OpenAI GPT-5.6 وما بعده |
+| `prompt_cache_options` | `mode`: `implicit` أو `explicit`؛ `ttl`: `30m` | Azure OpenAI GPT-5.6 وما بعده |
 | `prompt_cache_options` | `mode`: `explicit`؛ `ttl`: `5m` أو `1h` | DeepInfra |
-| `prompt_cache_options` | `mode`: `implicit`؛ `ttl`: `5m`، أو `1h` في Kimi K3 | Moonshot AI |
+| `prompt_cache_options` | `mode`: `implicit`؛ `ttl`: `5m` (افتراضي)، أو `1h` على Kimi K3 | Moonshot AI |
 | `prompt_cache_retention` | `in_memory` أو `24h` | نماذج OpenAI وAzure OpenAI السابقة لـ GPT-5.6 |
 
-بدءًا من GPT-5.6، يقبل OpenAI قيمة `ttl` هي `30m` (الافتراضية) أو `12h`، بينما لا يقبل Azure OpenAI سوى `30m`. ولا يخزّن الوضع `explicit` إلا نقاط التوقف التي تضعها. ويستخدم DeepInfra الكائن نفسه مع `ttl` قيمته `5m` أو `1h`، ويتطلب `prompt_cache_key` في كل طلب ضمن الجلسة. ويقبل Moonshot AI القيمة `mode: "implicit"` وقيمة `ttl` هي `5m` (الافتراضية) أو `1h`. ولا ترسل Phaseo القيمة `1h` إلا إلى مسارات Kimi K3 التي لها سعر لكتابة الساعة الواحدة، فتُحتسب تلك الكتابات بذلك السعر؛ وفي غيرها تحذف `ttl` وتُبلغ عنها باسم `prompt_cache_options.ttl` في ترويسة `X-Phaseo-Dropped-Params`. ولا يتلقى المزوّدون الآخرون أيًّا من الحقلين.
+لا يخزّن الوضع `explicit` إلا نقاط التوقف التي تضعها. ويحتاج DeepInfra أيضًا إلى `prompt_cache_key` في كل طلب ضمن الجلسة. يرسل Phaseo قيمة `1h` الخاصة بـ Moonshot AI فقط إلى مسارات Kimi K3 التي لها سعر كتابة لمدة ساعة، فتُحتسب تلك الكتابات بذلك السعر؛ وفي غيرها يزيل `ttl` ويبلغ عنه باسم `prompt_cache_options.ttl` في الترويسة `X-Phaseo-Dropped-Params`. لا يتلقى المزوّدون الآخرون أيًا من الحقلين.
 
-أرسل أيًّا من الحقلين على المستوى الأعلى أو ضمن `provider_options.openai`. عند وجود الاثنين، تُعتمد قيمة المستوى الأعلى:
-
-```json
-{
-  "prompt_cache_retention": "24h"
-}
-```
+أرسل أيًا من الحقلين في المستوى الأعلى أو تحت `provider_options.openai`. عندما يوجد الاثنان، تفوز قيمة المستوى الأعلى:
 
 ```json
 {
+  "prompt_cache_retention": "24h",
   "provider_options": {
-    "openai": {
-      "prompt_cache_retention": "24h"
-    }
+    "openai": { "prompt_cache_retention": "in_memory" }
   }
 }
 ```
 
+هنا يستخدم الطلب `24h`.
+
 <span id="12-hour-cache-on-openai"></span>
+### ذاكرة مؤقتة لمدة 12 ساعة على OpenAI
 
-### التخزين المؤقت لمدة 12 ساعة في OpenAI
-
-بدءًا من GPT-5.6، يحتفظ OpenAI بإدخال التخزين المؤقت لمدة 12 ساعة على الأقل عندما تضبط `ttl: "12h"`، إما للطلب كله في `prompt_cache_options` أو لنقطة توقف واحدة في `prompt_cache_breakpoint`. وتأخذ نقطة التوقف التي ليس لها `ttl` خاص بها قيمة الطلب. ويحتسب OpenAI الكتابة لمدة 12 ساعة بـ 2.5× سعر الإدخال، والكتابة لمدة 30 دقيقة بـ 1.25×، أما القراءات من التخزين المؤقت فسعرها واحد في الحالتين.
+على GPT-5.6 وما بعده، تحتفظ OpenAI بإدخال الذاكرة المؤقتة 12 ساعة على الأقل عندما تضبط `ttl: "12h"`، إما للطلب كله في `prompt_cache_options` أو لنقطة توقف واحدة في `prompt_cache_breakpoint`. تستخدم نقطة التوقف التي ليس لها `ttl` خاص بها قيمة الطلب. تحتسب OpenAI الكتابة لمدة 12 ساعة بـ 2.5× سعر الإدخال، والكتابة لمدة 30 دقيقة بـ 1.25×؛ وتكلفة القراءة من الذاكرة المؤقتة واحدة في الحالتين.
 
 ```json
 {
@@ -195,255 +265,124 @@ icon: "database-zap"
 }
 ```
 
-- يوثّق OpenAI مدة الـ 12 ساعة في Responses API فقط. لذلك يُنفَّذ طلب Chat Completions الذي يطلبها عبر Responses API من OpenAI، ويبقى الرد بتنسيق Chat Completions.
-- تُجرَّب أولًا المسارات التي تقبل تخزينًا مؤقتًا لمدة 12 ساعة (واجهة OpenAI العامة). أما أي مسار آخر، مثل Azure OpenAI أو مزوّد آخر أو نموذج أقدم من GPT-5.6، فيتلقى الطلب بدونها، فتُطبَّق المدة الافتراضية البالغة 30 دقيقة. ويُنفَّذ الطلب مع ذلك، ويُبلَّغ عن الحقل المحذوف باسم `prompt_cache_options.ttl` أو `prompt_cache_breakpoint.ttl` في ترويسة `X-Phaseo-Dropped-Params` وفي `meta.routing.dropped_params`.
+- توثّق OpenAI مدة الـ 12 ساعة على Responses API فقط. يُنفَّذ طلب Chat Completions الذي يطلبها على Responses API لدى OpenAI، وتحافظ الاستجابة على صيغة Chat Completions.
+- تُجرَّب أولًا المسارات التي تقبل ذاكرة مؤقتة لمدة 12 ساعة: واجهة OpenAI نفسها (`openai` و`openai-eu`)، على نموذج GPT-5.6 أو أحدث تحتوي بطاقة أسعاره على سعر كتابة لمدة 12 ساعة. أي مسار آخر، مثل Azure OpenAI أو مزوّد آخر أو نموذج سابق لـ GPT-5.6، يتلقى الطلب بدونها، فتنطبق مدة الـ 30 دقيقة الافتراضية. يظل الطلب يُنفَّذ، ويُبلَّغ عن الحقل المُزال باسم `prompt_cache_options.ttl` أو `prompt_cache_breakpoint.ttl` في الترويسة `X-Phaseo-Dropped-Params` وفي `meta.routing.dropped_params`.
 
-### Google Gemini
+### استخدم ذاكرة Gemini مؤقتة صريحة
 
-يخزّن Gemini مؤقتًا بشكل ضمني بدءًا من Gemini 2.5، دون أن ترسل أي شيء. لاستخدام ذاكرة تخزين مؤقت صريحة أنشأتها بواجهة التخزين المؤقت في Google، مرّر اسمها في `provider_options.google.cached_content`:
+يخزّن Gemini 2.5 وما بعده ضمنيًا، دون الحاجة لإرسال أي شيء. لاستخدام ذاكرة مؤقتة صريحة أنشأتها عبر واجهة التخزين المؤقت من Google، مرّر اسمها في `provider_options.google.cached_content`:
 
 ```json
 {
   "provider_options": {
-    "google": {
-      "cached_content": "cachedContents/abc123"
-    }
+    "google": { "cached_content": "cachedContents/abc123" }
   }
 }
 ```
 
-- على Google AI Studio، لا يعمل `cached_content` إلا بمفتاح Google API الخاص بك (BYOK). عند استخدام مفتاح Phaseo يعيد الطلب 400، لأن ذاكرة التخزين المؤقت تخص الحساب الذي أنشأها.
-- على Vertex AI، لا يعمل `cached_content` إلا ببيانات اعتماد Vertex AI الخاصة بك؛ ومع بيانات اعتماد Phaseo يعيد الطلب الخطأ 400. أرسل الاسم الكامل لذاكرة التخزين المؤقت، `projects/{project}/locations/{location}/cachedContents/{id}`، وسترسل Phaseo الطلب إلى ذلك المشروع وذلك الموقع. أما الاسم المختصر مثل `cachedContents/abc123` فيستخدم `project_id` و`region` الموجودين في ملف JSON لحساب الخدمة، ويعيد الخطأ 400 إذا غاب أيٌّ منهما.
-- لا تدعم Google ذاكرات التخزين المؤقت الصريحة بدءًا من Gemini 4 Argon.
+- على Google AI Studio، لا يعمل `cached_content` إلا مع مفتاح Google API الخاص بك (BYOK). مع مفتاح Phaseo يعيد الطلب `400`، لأن الذاكرة المؤقتة تخص الحساب الذي أنشأها.
+- على Vertex AI، لا يعمل `cached_content` إلا مع بيانات اعتماد Vertex AI الخاصة بك؛ مع بيانات اعتماد Phaseo يعيد الطلب `400`. أرسل الاسم الكامل للذاكرة المؤقتة، `projects/{project}/locations/{location}/cachedContents/{id}`، فيرسل Phaseo الطلب إلى ذلك المشروع والموقع. يستخدم الاسم المختصر مثل `cachedContents/abc123` القيمتين `project_id` و`region` من ملف JSON لحساب الخدمة، ويعيد `400` إذا غابت أي منهما.
+- لا تدعم Google الذاكرة المؤقتة الصريحة على Gemini 4 Argon وما بعده.
 
-يُقبل `provider_options.google.cache_control` و`provider_options.google.cache_ttl`، لكنهما لا يُرسلان إلى Google.
+يُقبل الحقلان `provider_options.google.cache_control` و`provider_options.google.cache_ttl` لكنهما لا يُرسلان إلى Google.
 
-## Chat Completions
+### Responses: أرسل المحادثة كاملة
 
-استخدم `/v1/chat/completions` مع عملاء الدردشة المتوافقين مع OpenAI.
+لا يخزّن Phaseo الاستجابات. تعيد الطلبات التي تضبط `previous_response_id` أو `conversation` الخطأ `400` `unsupported_param`، لذا أرسل المحادثة كاملة في `input` في كل خطوة. بدايتها الثابتة هي البادئة التي تُخزَّن. في حلقات الأدوات، أعد إرسال عناصر مخرجات `reasoning` أيضًا؛ راجع [الاستدلال في حلقات الأدوات](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops).
 
-```bash
-curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "anthropic/claude-sonnet-4",
-    "messages": [
-      {
-        "role": "system",
-        "content": [
-          {
-            "type": "text",
-            "text": "You are a support assistant. Follow the company policy exactly.",
-            "cache_control": { "type": "ephemeral", "ttl": "1h" }
-          }
-        ]
-      },
-      {
-        "role": "user",
-        "content": "Summarise the latest ticket."
-      }
-    ]
-  }'
-```
+<span id="change-reasoning-effort-mid-conversation"></span>
+### غيّر جهد الاستدلال في منتصف المحادثة
 
-## Responses
-
-استخدم `/v1/responses` للتكاملات النصية الجديدة المتوافقة مع OpenAI وتدفقات الوكلاء.
-
-```bash
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "anthropic/claude-sonnet-4",
-    "input": [
-      {
-        "role": "user",
-        "content": [
-          {
-            "type": "input_text",
-            "text": "Reference document: Refunds are available for 30 days when...",
-            "cache_control": { "type": "ephemeral", "ttl": "5m" }
-          },
-          {
-            "type": "input_text",
-            "text": "Answer this customer: Can I return an item after 20 days?"
-          }
-        ]
-      }
-    ]
-  }'
-```
-
-لا تخزّن Phaseo الردود. الطلبات التي تحدد `previous_response_id` أو `conversation` تعيد 400 `unsupported_param`، لذا أرسل المحادثة كاملة في `input` في كل خطوة. فبدايتها الثابتة هي البادئة التي تُخزَّن مؤقتًا. وفي حلقات الأدوات، أعِد أيضًا عناصر الإخراج `reasoning`؛ راجع [الاستدلال في حلقات الأدوات](../api-reference/endpoint/responses.mdx).
-
-## Anthropic Messages
-
-استخدم `/v1/messages` عندما يكون العميل متوافقًا مع Anthropic.
-
-```bash
-curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "anthropic/claude-sonnet-4",
-    "max_tokens": 512,
-    "system": [
-      {
-        "type": "text",
-        "text": "You are a careful support assistant. Use the policy below.",
-        "cache_control": { "type": "ephemeral", "ttl": "1h" }
-      }
-    ],
-    "messages": [
-      {
-        "role": "user",
-        "content": [
-          {
-            "type": "text",
-            "text": "Policy: refunds are available for 30 days when...",
-            "cache_control": { "type": "ephemeral", "ttl": "5m" }
-          },
-          {
-            "type": "text",
-            "text": "Can this customer return an item after 20 days?"
-          }
-        ]
-      }
-    ],
-    "tools": [
-      {
-        "name": "lookup_order",
-        "description": "Look up order status.",
-        "input_schema": {
-          "type": "object",
-          "properties": {
-            "order_id": { "type": "string" }
-          },
-          "required": ["order_id"]
-        },
-        "cache_control": { "type": "ephemeral", "ttl": "5m" }
-      }
-    ]
-  }'
-```
-
-يدعم Anthropic Messages التحكم بالتخزين المؤقت في:
-
-- كتل النص `system`
-- كتل نصوص الرسائل والصور
-- كتل نتائج الأدوات
-- تعريفات الأدوات
-
-عندما يتضمن الطلب أكثر من مدة صلاحية، يشترط Anthropic أن تسبق نقاط التوقف ذات `1h` نقاط التوقف ذات `5m`.
+غيّر `reasoning_effort` (Chat Completions) أو `reasoning.effort` (Responses) بين الطلبات، فيحافظ Phaseo على ذاكرة Claude المؤقتة للموجّهات: إذ يرسل التغيير كعلامة جهد داخل `messages` بدلًا من جهد جديد في المستوى الأعلى. ينجح هذا ما دمت تعيد إرسال استدلال Claude دون تغيير. على Anthropic Messages، ترسل العلامة بنفسك. راجع [غيّر جهد الاستدلال في منتصف المحادثة](./reasoning-effort.mdx).
 
 <span id="usage-and-pricing-fields"></span>
 ## حقول الاستخدام والتسعير
 
-تُبلّغ بيانات الاستخدام عن القراءات من التخزين المؤقت والكتابات إليه في كل نقاط نهاية النصوص. يتبع Chat Completions وResponses دلالات OpenAI: يشمل عدد الإدخال القراءات والكتابات. ويتبع Anthropic Messages دلالات Anthropic: لا يشملها `input_tokens`.
+تبلغ كل نقطة نهاية نصية عن القراءات من الذاكرة المؤقتة والكتابات فيها. تتبع Chat Completions وResponses دلالات OpenAI: يشمل عدد الإدخال القراءات والكتابات. وتتبع Anthropic Messages دلالات Anthropic: يستبعدها `input_tokens`.
 
-| نقطة النهاية | إجمالي الإدخال | القراءات من التخزين المؤقت | الكتابات إلى التخزين المؤقت |
+| نقطة النهاية | إجمالي الإدخال | القراءات من الذاكرة المؤقتة | الكتابات في الذاكرة المؤقتة |
 | --- | --- | --- | --- |
-| Chat Completions | `prompt_tokens`، بما فيه القراءات والكتابات | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cache_write_tokens` |
-| Responses | `input_tokens`، بما فيه القراءات والكتابات | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens`، مقسّمة حسب المدة في OpenAI بدءًا من GPT-5.6 إلى `input_tokens_details.cache_write_tokens_details.ttl_30m_tokens` و`ttl_12h_tokens` |
-| Anthropic Messages | `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` | `cache_read_input_tokens` | `cache_creation_input_tokens`، مقسّمًا حسب مدة الصلاحية في `cache_creation.ephemeral_5m_input_tokens` و`cache_creation.ephemeral_1h_input_tokens` |
+| Chat Completions | `prompt_tokens`، بما في ذلك القراءات والكتابات | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cache_write_tokens` |
+| Responses | `input_tokens`، بما في ذلك القراءات والكتابات | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens`، مقسّمة حسب المدة على OpenAI GPT-5.6 وما بعده في `input_tokens_details.cache_write_tokens_details.ttl_30m_tokens` و`ttl_12h_tokens` |
+| Anthropic Messages | `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` | `cache_read_input_tokens` | `cache_creation_input_tokens`، مقسّمة حسب TTL في `cache_creation.ephemeral_5m_input_tokens` و`cache_creation.ephemeral_1h_input_tokens` |
 
-في Chat Completions وResponses، يساوي الإدخال غير المخزّن إجمالي الإدخال مطروحًا منه القراءات والكتابات. وتحمل ردود Anthropic Messages المتدفقة حقول التخزين المؤقت في `message_delta`. ولا يقسّم استخدام Chat Completions الكتابات حسب المدة، لأن OpenAI لا يوثّق حقلًا لذلك هناك، لكن تفاصيل الطلب تسجّل هذا التقسيم.
+على Chat Completions وResponses، الإدخال غير المخزّن هو إجمالي الإدخال مطروحًا منه القراءات من الذاكرة المؤقتة والكتابات فيها. تحمل استجابات Anthropic Messages المتدفقة حقول الذاكرة المؤقتة في `message_delta`. لا يحتوي استخدام Chat Completions على تقسيم حسب المدة، لأن OpenAI لا توثّق أي تقسيم هناك؛ لكن تفاصيل الطلب تظل تسجّله.
 
 <Note>
-كانت الردود السابقة تُبلّغ عن الكتابات إلى التخزين المؤقت في `output_tokens_details.cached_tokens` (و`completion_tokens_details.cached_tokens` في Chat Completions)، وكانت مسارات Claude تستبعد القراءات والكتابات من `input_tokens` في Chat Completions وResponses. لم يعد أي من ذلك قائمًا: اقرأ الكتابات من `cache_write_tokens`. وكانت ردود Anthropic Messages غير المتدفقة تعيد `cache_creation_input_tokens: null`؛ أما الآن فتعيد القيم الفعلية.
+كانت الاستجابات السابقة تبلغ عن الكتابات في الذاكرة المؤقتة في `output_tokens_details.cached_tokens` (و`completion_tokens_details.cached_tokens` على Chat Completions)، وكانت مسارات Claude تستبعد القراءات والكتابات من `input_tokens` على Chat Completions وResponses. لم يعد أي من ذلك ساريًا: اقرأ الكتابات من `cache_write_tokens`. كانت استجابات Anthropic Messages غير المتدفقة تعيد `cache_creation_input_tokens: null`؛ وهي الآن تعيد الأعداد الفعلية.
 </Note>
 
-تستخدم تفاصيل الطلب وتفصيلات الأسعار هذه العدادات:
+تستخدم تفاصيل الطلب وتفصيلات التسعير هذه العدّادات:
 
-| الحقل | المعنى |
+| العدّاد | ما يعدّه |
 | --- | --- |
-| `cached_read_text_tokens` | عداد تسعير لقراءات التخزين المؤقت. وهو نص إدخال مخزّن أعيد استخدامه من ذاكرة المزوّد. |
-| `cached_write_text_tokens` | عداد تسعير لكتابات التخزين المؤقت عندما يفرض المزوّد سعرًا واحدًا لها. |
-| `cached_write_text_tokens_5m` | رموز كتابة التخزين المؤقت لمدة 5 دقائق عندما يبلّغ المزوّد عن الكتابات حسب مدة الصلاحية. |
-| `cached_write_text_tokens_1h` | رموز كتابة التخزين المؤقت لمدة ساعة عندما يبلّغ المزوّد عن الكتابات حسب مدة الصلاحية. |
-| `cached_write_text_tokens_30m` | رموز الكتابة إلى التخزين المؤقت في OpenAI لمدة 30 دقيقة. |
-| `cached_write_text_tokens_12h` | رموز الكتابة إلى التخزين المؤقت في OpenAI لمدة 12 ساعة. |
+| `cached_read_text_tokens` | القراءات من الذاكرة المؤقتة. |
+| `cached_write_text_tokens` | الكتابات في الذاكرة المؤقتة، عندما يكون للمزوّد سعر كتابة واحد. |
+| `cached_write_text_tokens_5m`، `cached_write_text_tokens_1h` | كتابات Claude في الذاكرة المؤقتة بمدة TTL تبلغ 5 دقائق أو ساعة، عندما يبلغ عنها المزوّد بشكل منفصل. |
+| `cached_write_text_tokens_30m`، `cached_write_text_tokens_12h` | كتابات OpenAI في الذاكرة المؤقتة بمدة 30 دقيقة أو 12 ساعة. |
 
-### كيفية تسعير الرموز المخزّنة مؤقتًا
+### كيف تُسعَّر الـ tokens المخزّنة
 
-تحتسب Phaseo كل رمز إدخال مرة واحدة فقط وبسعر واحد فقط:
+يحتسب Phaseo كل token إدخال مرة واحدة بسعر واحد: الإدخال غير المخزّن بسعر الإدخال، والقراءات من الذاكرة المؤقتة بسعر القراءة، والكتابات بسعر الكتابة، أو بسعري 5 دقائق وساعة (Claude) أو بسعري 30 دقيقة و12 ساعة (OpenAI) عندما يسعّرها المزوّد بشكل منفصل. يحتسب بعض المزوّدين الكتابات ضمن إجمالي الإدخال ويبلغ عنها آخرون فوقه؛ وفي الحالتين، لا يُحتسب token مكتوب أبدًا كإدخال عادي أيضًا.
 
-- الإدخال غير المخزّن بسعر الإدخال
-- القراءات من التخزين المؤقت بسعر القراءة
-- الكتابات إلى التخزين المؤقت بسعر الكتابة، أو بسعري 5 دقائق وساعة واحدة (Claude) أو 30 دقيقة و12 ساعة (OpenAI) عندما يسعّرها المزوّد بشكل منفصل
+على سبيل المثال، بأسعار توضيحية تبلغ $5.00 لكل مليون token إدخال، و$0.50 للقراءات من الذاكرة المؤقتة، و$6.25 للكتابات لمدة 30 دقيقة، و$30.00 للمخرجات، فإن طلبًا يحتوي على 53,100 token إدخال، منها 48,000 قراءة من الذاكرة المؤقتة و3,000 كتابة فيها، إضافة إلى 850 token مخرجات، يكلّف:
 
-يحتسب بعض المزوّدين الكتابات ضمن إجمالي الإدخال، ويُبلّغ عنها آخرون بشكل منفصل. تحتسب Phaseo الحالتين بالطريقة نفسها، فلا يُحتسب الرمز المكتوب مرة أخرى كإدخال عادي.
-
-على سبيل المثال، تبلغ تكلفة طلب إلى GPT-5.6 Sol يتضمن 53,100 رمز إدخال، منها 48,000 قراءة من التخزين المؤقت و3,000 كتابة إليه، إضافة إلى 850 رمز إخراج:
-
-| الرموز | السعر لكل مليون | التكلفة |
+| الـ Tokens | السعر لكل مليون | التكلفة |
 | --- | ---: | ---: |
 | 2,100 إدخال غير مخزّن | $5.00 | $0.01050 |
-| 48,000 قراءة من التخزين المؤقت | $0.50 | $0.02400 |
-| 3,000 كتابة إلى التخزين المؤقت | $6.25 | $0.01875 |
-| 850 إخراج | $30.00 | $0.02550 |
+| 48,000 قراءة من الذاكرة المؤقتة | $0.50 | $0.02400 |
+| 3,000 كتابة في الذاكرة المؤقتة | $6.25 | $0.01875 |
+| 850 مخرجات | $30.00 | $0.02550 |
 | الإجمالي | | $0.07875 |
 
-ولو كانت مدة 2,000 من هذه الكتابات 12 ساعة، لكلّفت $12.50 لكل مليون بدلًا من $6.25، ولكلّف الطلب $0.09125.
+لو كانت 2,000 من تلك الكتابات بمدة 12 ساعة، لكلّفت $12.50 لكل مليون بدل $6.25، ولكلّف الطلب $0.09125.
 
-إذا أبلغ مزوّد عن رموز مخزّنة مؤقتًا على مسار ليس له سعر تخزين مؤقت في الكتالوج بعد، فلا تُفشل Phaseo الطلب:
+لا يخفّض بعض المزوّدين سعر الـ tokens المخزّنة على بعض النماذج. تعرض صفحات نماذجهم السعر نفسه للإدخال وللقراءات من الذاكرة المؤقتة.
 
-- تُحتسب القراءات من التخزين المؤقت بسعر الإدخال للمسار.
-- تُحتسب الكتابات بسعر الإدخال مضروبًا في معامل الكتابة الذي يوثّقه المزوّد: 1.25× لكتابات Claude لمدة 5 دقائق و2× لكتابات الساعة؛ و1.25× لـ OpenAI وAzure OpenAI وAlibaba؛ و1× لكتابات Kimi K3 لمدة 5 دقائق و2× لكتابات الساعة؛ و2.5× لكتابات OpenAI لمدة 12 ساعة على أي مسار؛ و1× للمزوّدين الآخرين.
-- يحمل سطر السعر العلامة `pricing_fallback: "input_rate"`.
+### عندما لا يكون للمسار سعر ذاكرة مؤقتة بعد
 
-على مسار Claude الذي لا يحتوي كتالوجه إلا على سعر واحد لكتابات التخزين المؤقت، يكون هذا السعر هو سعر كتابات الدقائق الخمس. وتُحتسب الكتابات التي يُبلغ عنها المزوّد على أنها كتابات لمدة ساعة بضعف سعر الإدخال، في سطر `cached_write_text_tokens_1h` يحمل العلامة `pricing_fallback: "input_rate"`.
+إذا أبلغ مزوّد عن tokens مخزّنة على مسار ليس له سعر ذاكرة مؤقتة في الكتالوج بعد، فلا يفشل الطلب:
 
-يُبلغ آخر حدث `message_delta` في استجابة Claude المتدفقة عن الإجمالي التراكمي لكتابات التخزين المؤقت دون تقسيمه حسب مدة الصلاحية. وتُحتسب الكتابات التي تتجاوز هذا التقسيم على أنها كتابات لمدة 5 دقائق، لأن كتابات أدوات الخادم قد تستخدم مدة 5 دقائق حتى عندما يطلب الطلب مدة ساعة.
+- تُحتسب القراءات من الذاكرة المؤقتة بسعر الإدخال للمسار.
+- تُحتسب الكتابات بسعر الإدخال مضروبًا في مضاعف الكتابة الذي يوثّقه المزوّد.
+- يُوسم سطر التسعير بـ `pricing_fallback: "input_rate"`.
 
-لا يمنح بعض المزوّدين خصمًا على الرموز المخزّنة مؤقتًا في بعض النماذج. وتعرض صفحات هذه النماذج السعر نفسه للإدخال وللقراءات من التخزين المؤقت.
+| الكتابات | مضاعف سعر الإدخال |
+| --- | --- |
+| Claude، على أي منصة | 1.25× للكتابات لمدة 5 دقائق، و2× للكتابات لمدة ساعة |
+| كتابات OpenAI لمدة 30 دقيقة، على أي مسار | 1.25× |
+| كتابات OpenAI لمدة 12 ساعة، على أي مسار | 2.5× |
+| OpenAI وAzure OpenAI وAlibaba، الكتابات الأخرى | 1.25× |
+| Moonshot AI وKimi K3 | 1× للكتابات لمدة 5 دقائق، و2× للكتابات لمدة ساعة |
+| المزوّدون الآخرون | 1× |
 
-## فحوصات عملية
+على مسار Claude الذي يحتوي كتالوجه على سعر كتابة واحد، يكون ذلك السعر هو سعر الـ 5 دقائق. تُحتسب الكتابات التي يبلغ عنها المزوّد ككتابات لمدة ساعة بـ 2× سعر الإدخال، في سطر `cached_write_text_tokens_1h` موسوم بـ `pricing_fallback: "input_rate"`.
 
-بعد إضافة تخزين المطالبات مؤقتًا:
-
-1. أرسل طلبًا لإنشاء التخزين المؤقت أو تهيئته.
-2. أرسل طلبًا ثانيًا يتضمن المحتوى نفسه القابل للتخزين المؤقت.
-3. تحقق من `cached_tokens` و`cache_write_tokens` في بيانات استخدام الرد، ومن عدادات التخزين المؤقت في تفاصيل الطلب.
-4. قارن زمن الاستجابة والتكلفة عبر استدعاءات متكررة، لا الاستدعاء الأول فقط.
+يبلغ آخر `message_delta` في استجابة Claude المتدفقة عن إجمالي الكتابات في الذاكرة المؤقتة دون تقسيم TTL. تُحتسب الكتابات التي تتجاوز التقسيم ككتابات لمدة 5 دقائق، لأن كتابات أدوات الخادم قد تستخدم 5 دقائق حتى عندما يطلب الطلب ساعة.
 
 <span id="provider-affinity"></span>
-## ارتباط بالمزوّد
+## الارتباط بالمزوّد
 
-توجد ذاكرة المطالبات المؤقتة لدى مزوّد واحد، وغالبًا في منطقة أو نشر واحد لدى ذلك المزوّد. تُبقي Phaseo الطلبات المترابطة لدى المزوّد والمسار اللذين خدماها، حتى لا تدفع حلقة الوكيل تكلفة إعادة بناء ذاكرتها المؤقتة لدى مزوّد آخر.
+تعيش الذاكرة المؤقتة للموجّه لدى مزوّد واحد، وغالبًا لدى منطقة واحدة أو عملية نشر واحدة لذلك المزوّد. يبقي Phaseo الطلبات المترابطة على المزوّد والمسار اللذين خدماها، حتى لا تدفع حلقة الوكيل ثمن إعادة بناء ذاكرتها المؤقتة في مكان آخر.
 
-أرسل `prompt_cache_key` أو `session_id`، أو فعّل التخزين المؤقت باستخدام `cache_control` (على المستوى الأعلى، أو عبر `provider_options.anthropic.cache_control`، أو كعلامة `cache_control` أو `prompt_cache_breakpoint` على كتلة رسالة أو أداة)، لتثبيت المحادثة. تثبّتها Phaseo على المزوّد والمسار اللذين خدما أول طلب ناجح، وتتجه الطلبات اللاحقة التي تحمل المفتاح نفسه إليهما أيضًا. وتُحفظ التثبيتات لكل مساحة عمل على حدة.
+أرسل `prompt_cache_key` أو `session_id`، أو اشترك في التخزين المؤقت باستخدام `cache_control` (في المستوى الأعلى، أو `provider_options.anthropic.cache_control`، أو علامة `cache_control` أو `prompt_cache_breakpoint` على كتلة رسالة أو أداة)، لتثبيت محادثة. يثبّتها Phaseo على المزوّد والمسار اللذين خدما أول طلب ناجح، وتذهب الطلبات اللاحقة بالمفتاح نفسه إلى هناك أيضًا. تُحفظ التثبيتات لكل مساحة عمل ونقطة نهاية ونموذج.
 
-تعتمد مدة التثبيت على مدة احتفاظ المزوّد بالتخزين المؤقت:
+تعتمد مدة التثبيت على مدة احتفاظ المزوّد بالذاكرة المؤقتة:
 
 | الطلب | مدة التثبيت |
 | --- | --- |
 | `session_id` | 24 ساعة، تتجدد ما دامت الجلسة نشطة |
-| `cache_control` من Anthropic مع `ttl: "1h"` | 90 دقيقة |
+| Anthropic `cache_control` مع `ttl: "1h"` | 90 دقيقة |
 | OpenAI أو Azure OpenAI مع `prompt_cache_retention: "24h"` | 24 ساعة |
 | OpenAI أو Azure OpenAI مع الاحتفاظ في الذاكرة (الافتراضي) | 90 دقيقة |
-| OpenAI مع `ttl: "12h"` في `prompt_cache_options` أو على نقطة توقف، أو عند الإبلاغ عن كتابة لمدة 12 ساعة | 18 ساعة |
+| OpenAI مع `ttl: "12h"` في `prompt_cache_options` أو على نقطة توقف، أو كتابة لمدة 12 ساعة مُبلَّغ عنها | 18 ساعة |
 | OpenAI أو Azure OpenAI مع `prompt_cache_options.ttl: "30m"` | 45 دقيقة |
-| أي حالة أخرى | 15 دقيقة |
+| أي شيء آخر | 15 دقيقة |
 
-لا ينتقل التثبيت إلا عندما يتعطل مزوّده (قاطع دائرة مفتوح أو معدل أخطاء حديث مرتفع)، أو تنفد الحصة المُدارة من Phaseo لدى ذلك المزوّد، أو لا يعود المسار أو الإعداد المسبق أو الحاجز أو سياسة الطلب النشطة تسمح به. عندها ينتقل الطلب إلى مزوّد بديل، وينتقل التثبيت إلى المزوّد الذي خدمه. وتسجّل تفاصيل الطلب ذلك بوصفه `sticky_routing.demotionReason` في تشخيصات التوجيه. ولا تُستخدم الطلبات المثبّتة لاختبار المزوّدين الذين يتعافون.
+لا ينتقل التثبيت إلا عندما يفشل مزوّده (قاطع دائرة مفتوح أو معدل أخطاء حديث مرتفع)، أو عندما تُستنفد حصة Phaseo المُدارة لدى ذلك المزوّد، أو عندما لم يعد المسار النشط أو الإعداد المسبق أو ضابط الحماية أو سياسة الطلب يسمح به. عندئذٍ ينتقل الطلب إلى بديل، وينتقل التثبيت إلى المزوّد الذي خدمه. تسجّل تفاصيل الطلب ذلك باسم `sticky_routing.demotionReason` في تشخيصات التوجيه. لا تُستخدم الطلبات المثبّتة لاختبار المزوّدين قيد الاستعادة.
 
-من دون مفتاح أو `session_id` أو علامة تخزين مؤقت، تظل Phaseo تثبّت السياق الافتتاحي لمدة 15 دقيقة على المزوّد الذي أبلغ عن قراءة من ذاكرة التخزين المؤقت أو كتابة إليها لهذا السياق، بشرط أن تكون المدخلات المخزنة مؤقتًا لدى هذا المزوّد أرخص من مدخلاته العادية.
+دون مفتاح أو `session_id` أو علامة ذاكرة مؤقتة، يظل Phaseo يثبّت السياق الافتتاحي لمدة 15 دقيقة على مزوّد أبلغ عن قراءة من الذاكرة المؤقتة أو كتابة فيها لذلك السياق، ما دام الإدخال المخزّن لدى ذلك المزوّد أرخص من إدخاله العادي.
 
-ترسل Phaseo إلى المزوّدين تجزئة لمساحة العمل و`prompt_cache_key`، وليس المفتاح الخام أبدًا، لذا لا يتشارك المفتاح نفسه في مساحتي عمل ذاكرة مزوّد مؤقتة أبدًا. عند وجود `session_id` فقط، تشتق Phaseo هذه التجزئة من الجلسة لـ OpenAI وxAI وFireworks وCerebras. ويتلقاها Fireworks وCloudflare Workers AI وBaseten أيضًا في الترويسة `x-session-affinity`، ويتلقاها Morph في الترويسة `x-session-id`، ويتلقاها xAI بوصفها `x-grok-conv-id` ما لم تحدد `provider_options.xai.conversation_id`. وتظل الردود تعيد `prompt_cache_key` الخاص بك.
+يرسل Phaseo إلى المزوّدين تجزئة لمساحة عملك و`prompt_cache_key`، وليس المفتاح الخام أبدًا، لذا لا يتشارك المفتاح نفسه في مساحتي عمل ذاكرة مؤقتة لدى المزوّد أبدًا. مع `session_id` فقط، يشتق Phaseo تلك التجزئة من الجلسة لـ OpenAI وxAI وFireworks وCerebras. ويتلقاها أيضًا Fireworks وCloudflare Workers AI وBaseten في الترويسة `x-session-affinity`، وMorph في الترويسة `x-session-id`، وxAI بصيغة `x-grok-conv-id` ما لم تضبط `provider_options.xai.conversation_id`. تظل الاستجابات تعيد `prompt_cache_key` الخاص بك كما هو.
 
-لإيقافه في طلب واحد، اضبط `provider.cache_aware_routing` على `false`. واضبط
-`routing.session_affinity` على `false` عندما يتضمن الطلب `session_id`
-مع استخدام التوجيه المعتاد المستند إلى السياق فقط. وعندها تتوقف Phaseo أيضًا عن اشتقاق مفتاح تخزين مؤقت للمزوّد من الجلسة.
-
-## صفحات ذات صلة
-
-- [Chat Completions](../api-reference/endpoint/chat-completions.mdx)
-- [Responses](../api-reference/endpoint/responses.mdx)
-- [Anthropic Messages](../api-reference/endpoint/anthropic-messages.mdx)
-- [المعلمات](../api-reference/parameters.mdx)
-- [التوجيه والبدائل الاحتياطية](./routing-and-fallbacks.mdx)
-- [السياق وتخصيص الرموز](./context-and-token-budgeting.mdx)
-- [استخدام التخزين المؤقت للردود مع الإعدادات المسبقة](../cookbook/response-caching-with-presets.mdx)
+اضبط `provider.cache_aware_routing` على `false` لإلغاء الاشتراك في طلب واحد. واضبط `routing.session_affinity` على `false` عندما يحمل الطلب `session_id` لكن يجب أن يستخدم التوجيه العادي القائم على السياق فقط؛ عندئذٍ يتوقف Phaseo أيضًا عن اشتقاق مفتاح ذاكرة مؤقتة للمزوّد من الجلسة. لمعرفة كيف يتلاءم الارتباط مع ترتيب المزوّدين والبدائل، راجع [التوجيه والبدائل](./routing-and-fallbacks.mdx). كما أن كل حقل من حقول الذاكرة المؤقتة مدرج في [مرجع المعاملات](../api-reference/parameters.mdx).

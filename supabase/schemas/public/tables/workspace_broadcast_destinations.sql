@@ -38,6 +38,32 @@ CREATE TRIGGER enforce_broadcast_destination_limit
   FOR EACH ROW
   EXECUTE FUNCTION public.enforce_broadcast_destination_limit();
 
+CREATE POLICY "workspace_broadcast_destinations_no_oauth_client_insert" ON "public"."workspace_broadcast_destinations"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_broadcast_destinations_no_oauth_client_update" ON "public"."workspace_broadcast_destinations"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_broadcast_destinations_no_oauth_client_delete" ON "public"."workspace_broadcast_destinations"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_broadcast_destinations"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "team_broadcast_destinations_delete_own_team" ON "public"."workspace_broadcast_destinations"
   FOR DELETE
   TO "authenticated"

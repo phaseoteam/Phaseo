@@ -85,6 +85,13 @@ signals and creates deduplicated issues in Linear Triage. The Worker stores the
 source fingerprint-to-issue mapping in `GATEWAY_CACHE`, suppresses repeat
 comments for 15 minutes, and comments when an Axiom signal resolves.
 
+KV has no compare-and-set and its reads can be up to a minute stale, so the
+mapping alone cannot stop two deliveries of the same signal from both creating
+an issue. Each issue and comment is therefore created with a UUID derived from
+the fingerprint (comments also from the 15-minute window). Linear refuses a
+second entity with the same ID; the losing delivery looks the entity up and
+reuses it. Mappings written before this change keep pointing at their issues.
+
 The Linear team, project, Triage status, assignee, and observability label IDs
 are non-secret deployment variables in `wrangler.toml`. Configure these Worker
 secrets before enabling either webhook destination:
@@ -94,9 +101,53 @@ secrets before enabling either webhook destination:
 - `LINEAR_API_KEY`: a Linear API key allowed to create issues and comments.
 
 The endpoint accepts only a bounded, privacy-safe incident envelope. Do not send
-request bodies, authorization headers, query values, cookies, or customer
-content. Keep source payload templates and the rollout checklist in the private
-deployment issue rather than the public documentation tree.
+request bodies, authorization headers, query values, cookies, person properties
+or customer content. The bridge also strips query strings from routes and URLs,
+and replaces emails and long key-like tokens in titles and exception summaries.
+Keep the webhook URL's secret and the rollout checklist in the private
+deployment issue; the PostHog payload template is below because it holds
+neither.
+
+### PostHog producer
+
+The producer is the PostHog workflow "Production exceptions → Linear Triage"
+(Workflows, not Data pipelines): a trigger on production `$exception` events
+and one Webhook step. The step's JSON body is
+[`observability-incidents.posthog-body.json`](src/routes/internal/observability-incidents.posthog-body.json);
+paste it as the body and keep the existing `Authorization: Bearer …` header and
+trigger filter. A contract test fails if the template sends a field the bridge
+does not read.
+
+- PostHog links use the literal `https://eu.posthog.com/project/81404` base.
+  `project.url` renders empty in workflow steps, and the bridge rejects the
+  resulting relative `source_url`.
+
+- `fingerprint` is `$exception_fingerprint`, the same key earlier incidents
+  used, so existing mappings keep deduplicating. It is not the error group: the
+  group ID (`$exception_issue_id`) appears only in the `source_url` link. If
+  PostHog merges two fingerprints into one group, Linear keeps two issues.
+- `title` and the exception summary come from the first entry of
+  `$exception_list` (type and message). Stack frames are not sent; open the
+  error group for them.
+- `route` and `release` come from the `path` and `release` properties set by
+  `apps/web` (`errorReproductionContext.ts` in the browser,
+  `instrumentation.ts` on the server).
+- `replay_url` is sent only when the event has a `$session_id`. A session ID
+  does not mean a recording exists: recording starts only after analytics
+  consent, PostHog project settings (sampling, minimum duration, triggers) can
+  skip a session, and recordings expire. Inputs and Chat (`.ph-mask`) are
+  masked by design. The issue text says the replay may be missing.
+
+To check the mapping without creating an issue, test the Webhook step in
+PostHog against a recent `$exception` event with async functions mocked, so
+nothing is sent. The logged request body should have a
+128-character `fingerprint`, a `source_url` ending in
+`/error_tracking/<group id>`, and `null` for fields the event lacks. A real
+end-to-end check creates a Linear issue, so do it only with maintainer
+approval: accept analytics cookies on a page, trigger a synthetic error with no
+customer data, confirm the Linear issue and replay, then repeat the error more than 15
+seconds later (the browser drops identical errors within 15 seconds) and
+confirm that it adds no second issue.
 
 ## Useful Links
 

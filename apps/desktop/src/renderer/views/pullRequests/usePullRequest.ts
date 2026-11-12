@@ -5,10 +5,11 @@ import { useBackgroundRefresh } from "../../lib/useBackgroundRefresh";
 import { errorMessage } from "./presentation";
 import { actionFailureLabel, actionSuccessLabel, readableFailure } from "./pullRequestFeedback";
 import { seedPullRequestTabStatus } from "./tabStatus";
+import { openWebLink } from "../../lib/openLink";
 
 /**
- * One pull request: the latest view, a refresh that never overlaps itself, and writes that report as toasts the way
- * T3 Code's do ("Could not …" with GitHub's reason or a hint at what to check).
+ * One pull request: the latest view, a refresh that never overlaps itself, and writes that report as toasts
+ * ("Could not …" with GitHub's reason or a hint at what to check).
  */
 export function usePullRequest(projectId: string, number: number) {
 	const api = window.phaseoDesktop?.workspace;
@@ -33,7 +34,7 @@ export function usePullRequest(projectId: string, number: number) {
 			const value = await api.pullRequestAction(projectId, { number, headOid: view.headOid, action });
 			if (current === generation.current) setView(value);
 			const success = actionSuccessLabel(action);
-			if (success) showToast("success", success, undefined, value.revertUrl ? { label: "Open on GitHub", onClick: () => void api.openLink(value.revertUrl!) } : undefined);
+			if (success) showToast("success", success, undefined, value.revertUrl ? { label: "Open on GitHub", onClick: () => void openWebLink(value.revertUrl!).catch(() => undefined) } : undefined);
 			return true;
 		}
 		catch (reason) { showToast("error", actionFailureLabel(action), readableFailure(errorMessage(reason), action)); void refresh(); return false; }

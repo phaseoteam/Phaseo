@@ -39,6 +39,8 @@ function buildCreditsSupabaseMock() {
 			throw new Error(`Unexpected rpc: ${name}`);
 		},
 		from(table: string) {
+			// The management key acts as its creator, an admin of the workspace.
+			if (table === "workspace_members") { const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) }; return membership; }
 			if (table === "wallets") {
 				return {
 					select: () => ({
@@ -100,7 +102,7 @@ describe("management credits and activity routes", () => {
 	beforeEach(() => {
 		state.guardManagementAuthResult = {
 			ok: true,
-			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false },
+			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", userId: "user_1", internal: false },
 		};
 		state.walletRow = { balance_nanos: 2_000_000_000, reserved_nanos: 500_000_000 };
 		state.ledgerNet = 1_000_000_000;

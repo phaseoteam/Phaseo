@@ -1,0 +1,232 @@
+---
+icon: "rotate-cw"
+title: "المخرجات وإعادة المحاولة"
+description: "أعد محاولة طلبات النموذج الفاشلة، وتحقّق من المخرجات النهائية، واضبط إعدادات Gateway الافتراضية لكل دور للنموذج."
+---
+
+اضبط سياسة إعادة المحاولة للنموذج لإعادة محاولة طلبات النموذج الفاشلة داخل التشغيل، ومحلّلًا أو مخططًا لتحويل الإجابة النهائية إلى قيمة مُتحقَّق منها قبل أن تصل إلى بقية تطبيقك. أما إعدادات Gateway الافتراضية، مثل مزوّد أو تنسيق استجابة صارم، فتوضع على عميل وكيل Gateway.
+
+## أعد محاولة طلبات النموذج الفاشلة
+
+<CodeGroup>
+
+```typescript TypeScript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+```python Python
+from phaseo_agent import AgentModelRetryConfig
+
+retry = AgentModelRetryConfig(max_retries=2, backoff_ms=250)
+# Pass it as model_retry on the definition or on run()
+```
+
+```go Go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:    "research-agent",
+  Model: "openai/gpt-6-astra",
+  ModelRetry: phaseoagent.ModelRetryConfig{
+    MaxRetries: 3,
+    Backoff:    500 * time.Millisecond,
+  },
+})
+```
+
+```csharp C#
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "research-agent",
+    Model = "openai/gpt-6-astra",
+    ModelRetry = new ModelRetryConfig(MaxRetries: 3, Backoff: TimeSpan.FromMilliseconds(500)),
+});
+```
+
+```php PHP
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "research-agent",
+    model: "openai/gpt-6-astra",
+    modelRetry: ["max_retries" => 3, "backoff_ms" => 500],
+));
+```
+
+```ruby Ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "research-agent",
+  model: "openai/gpt-6-astra",
+  model_retry: { max_retries: 3, backoff_ms: 500 }
+)
+```
+
+```java Java
+// Pass as the agent's modelRetry argument, or in RunOptions for one run
+var retry = new AgentSdk.ModelRetryConfig(3, Duration.ofMillis(500)); // maxRetries, backoff
+```
+
+```rust Rust
+use std::time::Duration;
+
+let definition = AgentDefinition::new("resilient-agent", "openai/gpt-6-astra")
+    .model_retries(2, Duration::from_millis(250));
+```
+
+</CodeGroup>
+
+عدد إعادة المحاولات هو عدد المحاولات الإضافية بعد الطلب الأول، وقيمته الافتراضية `0`. تسجّل كل خطوة عدد المحاولات التي استغرقتها في حقل محاولات النموذج (`modelAttempts` أو `model_attempts` أو `ModelAttempts`). لا تُعاد محاولة إلا طلبات النموذج: تتبع أخطاء الأدوات سياسة الخطأ الخاصة بكل أداة، لذا ضع إعادة المحاولات للأدوات ذات الآثار الجانبية داخل الأداة نفسها واجعلها متساوية القوة (idempotent).
+
+يختلف الانتظار بين المحاولات وأي الأخطاء تُعاد محاولتها حسب اللغة:
+
+| اللغة | الانتظار قبل إعادة المحاولة `n` | الأخطاء التي تُعاد محاولتها | التجاوز لتشغيل واحد |
+| --- | --- | --- | --- |
+| TypeScript | أُسّي انطلاقًا من `backoffMs` مع تشويش كامل، حتى `maxBackoffMs`؛ وتتقدّم ترويسة `Retry-After` من Gateway | `retryOn(error)`، والافتراضي `agentErrorIsRetryable`. لا تُكرَّر المحاولة أبدًا بعد بدء بث المخرجات. | خيارات التشغيل |
+| Python | `backoff_ms × n` | أي استثناء من طلب النموذج | `model_retry` في `run()` |
+| Go | `Backoff × n` (الافتراضي 250 ms) | أي خطأ في طلب النموذج | `RunOptions.ModelRetry` |
+| C# | `Backoff × n` (الافتراضي 250 ms) | أي خطأ في طلب النموذج | `RunOptions.ModelRetry` |
+| PHP | `backoff_ms × n` (الافتراضي 250) | أي خطأ في طلب النموذج | `modelRetry:` في `run()` |
+| Ruby | `backoff_ms × n` (الافتراضي 250) | أي خطأ في طلب النموذج | `model_retry:` في `run` |
+| Java | `backoff × n` (القيمة `null` تعني 250 ms) | أي خطأ في طلب النموذج | `RunOptions` |
+| Rust | `Duration` ثابتة | أي خطأ في طلب النموذج | لا يوجد |
+
+مع انتظار خطي وفاصل 500 ms، تنتظر ثلاث إعادات محاولة 0.5 s ثم 1 s ثم 1.5 s.
+
+<span id="validate-the-final-output"></span>
+## تحقّق من المخرجات النهائية
+
+عندما يجيب النموذج دون استدعاء أداة، يحوّل المحلّل النص النهائي إلى قيمتك ويتحقق منها المخطط. إذا فشل أيٌّ منهما، يفشل التشغيل بالخطأ `Invalid agent output: ...`، لذا تتوقف المخرجات السيئة عند حدود الوكيل. أبقِ المدقّقات حتمية وخالية من الآثار الجانبية.
+
+<CodeGroup>
+
+```typescript TypeScript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+```python Python
+import json
+from pydantic import BaseModel
+
+class Ticket(BaseModel):
+    ticket_id: str
+
+agent = create_agent({
+    "id": "ticket-agent",
+    "parse_output": json.loads,
+    "output_schema": Ticket,
+})
+```
+
+```go Go
+ParseOutput: func(text string) (any, error) {
+  var ticket Ticket
+  return ticket, json.Unmarshal([]byte(text), &ticket)
+},
+OutputSchema: validateTicket, // func(any) (any, error)
+```
+
+```csharp C#
+ParseOutput = text => JsonSerializer.Deserialize<Ticket>(text),
+OutputSchema = value => value is Ticket { Id.Length: > 0 } ? value : throw new ArgumentException("Ticket ID is required"),
+```
+
+```php PHP
+parseOutput: fn (string $text) => json_decode($text, true, flags: JSON_THROW_ON_ERROR),
+outputSchema: fn ($value) => isset($value["ticket_id"]) ? $value : throw new InvalidArgumentException("ticket_id is required"),
+```
+
+```ruby Ruby
+parse_output: ->(text) { JSON.parse(text) },
+output_schema: ->(value) { value.key?("ticket_id") ? value : raise("ticket_id is required") }
+```
+
+</CodeGroup>
+
+| اللغة | المحلّل | المخطط | عند الفشل |
+| --- | --- | --- | --- |
+| TypeScript | `parseOutput(text)` | `outputSchema` | يرمي `AgentSchemaValidationError` مع `target: "agent_output"` |
+| Python | `parse_output(text)` | `output_schema`: دالة قابلة للاستدعاء، أو نموذج Pydantic، أو كائن يتضمن `parse` أو `safe_parse` | يرفع `ValueError` |
+| Go | `ParseOutput(text) (any, error)` | `OutputSchema func(any) (any, error)` | تعيد `Run` الخطأ (`invalid agent output: ...`) |
+| C# | `ParseOutput` | `OutputSchema` | ينتشر الاستثناء خارج `Run` |
+| PHP | دالة `parseOutput` قابلة للاستدعاء | دالة `outputSchema` قابلة للاستدعاء | ينتشر الاستثناء خارج `run()` |
+| Ruby | دالة `parse_output:` قابلة للاستدعاء | دالة `output_schema:` قابلة للاستدعاء | ينتشر الاستثناء خارج `run` |
+| Java | `parseOutput`، وهي `Function<String, Object>` | `outputSchema`، وهو `Validator` (مُنشئ `AgentDefinition` ذو 13 وسيطًا) | ينتشر الاستثناء خارج `run` |
+| Rust | لا يوجد | لا يوجد | المخرجات من النوع `serde_json::Value`؛ تحقّق منها في تطبيقك |
+
+لسلوك أكثر صرامة من النموذج، اطلب أيضًا من Gateway مخرجات منظَّمة. اضبط تنسيق استجابة JSON Schema (واختياريًا إضافة response-healing) على عميل وكيل Gateway:
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+تأخذ Python وPHP وRuby الخيارين نفسيهما `response_format`/`responseFormat` و`plugins`. لا يوجد في Go وC# وJava خيار لتنسيق الاستجابة؛ اضبط الحقل عبر منفذ العميل للحقول الأخرى في الطلب (القسم التالي).
+
+## احتفظ بإعدادات التوجيه الافتراضية في إعداد مسبق
+
+اضبط `preset` على الوكيل (`Preset` في Go وC#) عندما ينبغي أن تبقى الإعدادات الافتراضية للتوجيه أو المطالبة أو المعاملات في لوحة التحكم:
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+لا يوجد خيار `preset` في Rust.
+
+<span id="set-gateway-defaults-on-the-client"></span>
+## اضبط إعدادات Gateway الافتراضية على العميل
+
+يحمل عميل وكيل Gateway (`createGatewayAgentClient()` و`create_gateway_agent_client()` و`CreateGatewayAgentClient`) القيم الافتراضية للطلبات لكل دور للنموذج، لذا لا تعيد بناءها في كل تشغيل. يظل الوكيل هو من يحدد `model` و`input` و`instructions` وأدوات الدوال الخاصة به؛ ولا يُطبَّق النموذج الافتراضي إلا عندما لا يحدد الوكيل نموذجًا.
+
+| الإعداد | camelCase (TypeScript، PHP) | snake_case (Python، Ruby) | PascalCase (Go، C#) |
+| --- | --- | --- | --- |
+| إعادة استخدام عميل أساسي | `client` | `client` | `Client` |
+| ضبط عميل أساسي جديد | `clientOptions` | `client_options` (Python)؛ `api_key`، `base_url` (Ruby) | `APIKey`، `BaseURL`، `HTTPClient`، `Headers` (Go)؛ `ClientOptions` (C#) |
+| النموذج أو الإعداد المسبق الافتراضي | `model`، `preset` | `model`، `preset` | `Model`، `Preset` |
+| توجيه المزوّدين | `provider` | `provider` | `Provider` |
+| الاستدلال | `reasoning` | `reasoning` | `Reasoning` |
+| أخذ العينات والطول | `temperature`، `maxOutputTokens` | `temperature`، `max_output_tokens` | `Temperature`، `MaxOutputTokens` |
+| استدعاءات الأدوات المتوازية | `parallelToolCalls` | `parallel_tool_calls` | `ParallelToolCall` (Go)، `ParallelToolCalls` (C#) |
+| البيانات الوصفية والمستخدم النهائي | `metadata`، `user` | `metadata`، `user` | `Metadata`، `User` |
+| المخرجات المنظَّمة | `responseFormat` | `response_format` | لا يوجد |
+| الإضافات | `plugins` | `plugins` | لا يوجد |
+| بحث الويب | `webSearchOptions` | `web_search_options` | لا يوجد |
+| الأدوات المُدارة واختيار الأداة | `gatewayTools`، `toolChoice` | `gateway_tools`، `tool_choice` | `GatewayTools`، `ToolChoice` |
+| خيارات المزوّد والتخزين المؤقت | `providerOptions`، `promptCacheKey` | `provider_options`، `prompt_cache_key` | `ProviderOptions`، `PromptCacheKey` |
+| إعادة كتلة meta من Gateway | `includeMeta` | `include_meta` | `IncludeMeta` |
+| أي حقل آخر في Responses API | `requestOptions` | `request_options` | `ConfigureRequest`، وهي `func(*gen.ResponsesRequest)` (Go)؛ `RequestOptions` (C#) |
+| التخلي عن بث صامت | `streamIdleTimeoutMs` (TypeScript فقط؛ معطّل افتراضيًا، ويفشل كخطأ قابل لإعادة المحاولة) | لا يوجد | لا يوجد |
+
+تأخذ Java وRust خيارات أقل:
+
+| اللغة | خيارات عميل Gateway |
+| --- | --- |
+| Java | `new AgentSdk.GatewayOptions(client, apiKey, baseUrl, model, preset, requestOptions)`. ضع كل حقل آخر من Responses API في `requestOptions`. |
+| Rust | `GatewayAgentClient::new(phaseo_client, model)` أو `GatewayAgentClient::from_env(model)` أو `create_gateway_agent_client(model)`. لا توجد قيم افتراضية للطلبات سوى النموذج. |
+
+تشرح صفحة [معاملات Responses](/ar/v1/api-reference/parameters) كل حقل. لقراءة الاستخدام والتكلفة والحالة من النتيجة، راجع [المراقبة](./observability).

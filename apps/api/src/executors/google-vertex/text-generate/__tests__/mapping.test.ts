@@ -3,6 +3,7 @@ import { geminiToIR, irToGemini, resolveVertexModelRoute, resolveVertexApiBase }
 import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { execute } from "../index";
+import { consumeTextProtocolStreamToIR } from "@pipeline/surfaces/server-tools.stream";
 import { installFetchMock } from "../../../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, setupTestRuntime, teardownTestRuntime } from "../../../../../tests/helpers/runtime";
 
@@ -36,6 +37,61 @@ function buildExecuteArgs(): ExecutorExecuteArgs {
 }
 
 describe("google-vertex route resolution", () => {
+	it.each(["openai.chat.completions", "openai.responses", "anthropic.messages"] as const)("preserves typed tool calls and authoritative usage on %s", async (protocol) => {
+		const functionCalls = [
+			{ id: "vertex-call", name: "lookup", willContinue: true },
+			{ partialArgs: [{ jsonPath: "$.city", stringValue: "Lon", willContinue: true }], willContinue: true },
+			{ partialArgs: [{ jsonPath: "$.city", stringValue: "don" }], willContinue: false },
+		];
+		const frames = functionCalls.map((functionCall) => ({ candidates: [{ index: 0, content: { parts: [{ functionCall }] } }] }));
+		const body = frames.map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join("") +
+			`data: ${JSON.stringify({ candidates: [{ index: 0, finishReason: "STOP", content: { parts: [] } }], usageMetadata: { promptTokenCount: 12, cachedContentTokenCount: 4, candidatesTokenCount: 3, totalTokenCount: 15 } })}\n\n`;
+		const mock = installFetchMock([{
+			match: (url) => url.includes(":streamGenerateContent"),
+			response: new Response(body, { headers: { "Content-Type": "text/event-stream" } }),
+		}]);
+		try {
+			const args = buildExecuteArgs();
+			const result = await execute({ ...args, protocol, ir: { ...args.ir, stream: true, tools: [{ name: "lookup", parameters: { type: "object" } }] } });
+			expect(mock.calls[0].bodyJson.toolConfig.functionCallingConfig.streamFunctionCallArguments).toBe(true);
+			if (result.kind !== "stream") throw new Error("Expected a stream");
+			const consumed = await consumeTextProtocolStreamToIR({ protocol, stream: result.stream, requestId: args.requestId, model: args.ir.model, provider: args.providerId });
+			expect(consumed.ir.choices[0].message.toolCalls).toEqual([expect.objectContaining({ id: "vertex-call", name: "lookup", arguments: '{"city":"London"}' })]);
+			expect(consumed.ir.choices[0].finishReason).toBe("tool_calls");
+			expect(result.usageFinalizerAuthoritative).toBe(true);
+			expect((await result.usageFinalizer?.())?.usage).toMatchObject({ input_tokens: 12, input_text_tokens: 8, cached_read_text_tokens: 4, output_tokens: 3 });
+		} finally { mock.restore(); }
+	});
+
+	it.each([true, false])("enables Claude eager tool streaming only for client streaming: %s", async (stream) => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/publishers/anthropic/models/"),
+			response: Response.json({ id: "msg_1", content: [{ type: "text", text: "hi" }], stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 } }),
+		}]);
+		try {
+			const args = buildExecuteArgs();
+			await execute({ ...args, providerModelSlug: "claude-opus-4-8", ir: { ...args.ir, stream, tools: [{ name: "lookup", parameters: { type: "object" } }] } });
+			expect(mock.calls[0].bodyJson.tools[0].eager_input_streaming).toBe(stream ? true : undefined);
+		} finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
+	});
+
+	it.each([
+		{ model: "gemini-3.5-flash", stream: true, expected: true },
+		{ model: "gemini-3.5-flash", stream: false, expected: undefined },
+		{ model: "gemini-2.5-flash", stream: true, expected: undefined },
+		{ model: "gemini-3.1-flash-lite", stream: true, expected: undefined },
+	])("gates argument streaming for $model with stream=$stream", async ({ model, stream, expected }) => {
+		const payload = await irToGemini({
+			model, stream, messages: [], toolChoice: { name: "write_file" },
+			tools: [{ name: "write_file", parameters: { type: "object", properties: { body: { type: "string" } } } }],
+		});
+		expect(payload.toolConfig.functionCallingConfig.streamFunctionCallArguments).toBe(expected);
+		expect(payload.toolConfig.functionCallingConfig.allowedFunctionNames).toEqual(["write_file"]);
+	});
+
+
 	it.each([
 		["flex", "ON_DEMAND_FLEX"],
 		["priority", "ON_DEMAND_PRIORITY"],
@@ -120,7 +176,7 @@ describe("google-vertex route resolution", () => {
 		try { expect((await execute(buildExecuteArgs())).kind).toBe("completed"); }
 		finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
 	});
-	it.each(["gemini-4-argon", "google/gemini-4-argon", "gemini-3.1-flash-lite", "google/gemini-3.1-flash-lite"])("routes %s to global when the configured region is us-central1", async model => {
+	it.each(["gemini-4-argon", "google/gemini-4-argon", "gemini-4-carbon", "google/gemini-4-carbon", "gemini-3.1-flash-lite", "google/gemini-3.1-flash-lite"])("routes %s to global when the configured region is us-central1", async model => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-central1", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
 		const mock = installFetchMock([{
@@ -402,6 +458,15 @@ describe("google-vertex Gemini thinking levels", () => {
 		"never sends Argon a thinkingBudget (%j)",
 		async (reasoning, level) => {
 			const config = await thinkingConfigFor("gemini-4-argon", { ...reasoning });
+			expect(config.thinkingLevel).toBe(level);
+			expect(config).not.toHaveProperty("thinkingBudget");
+		},
+	);
+
+	it.each([[{ effort: "low" }, "LOW"], [{ effort: "medium" }, "MEDIUM"], [{ maxTokens: 4096 }, "HIGH"]] as const)(
+		"never sends Carbon a thinkingBudget (%j)",
+		async (reasoning, level) => {
+			const config = await thinkingConfigFor("gemini-4-carbon", { ...reasoning } as any);
 			expect(config.thinkingLevel).toBe(level);
 			expect(config).not.toHaveProperty("thinkingBudget");
 		},

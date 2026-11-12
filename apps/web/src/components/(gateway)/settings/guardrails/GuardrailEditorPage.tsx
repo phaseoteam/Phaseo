@@ -1,6 +1,5 @@
-"use client";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { SettingsGuardrailEditorData } from "@/lib/fetchers/internal/settingsTypes";
 import { PrivateSettingsQuery } from "../PrivateSettingsQuery";
 import GuardrailEditorPageClient from "./GuardrailEditorPageClient";
@@ -32,6 +31,19 @@ function GuardrailEditorContent(props: { mode: "create" | "edit"; guardrailId?: 
 				{t("notFound")}{" "}
 				<Link className="underline underline-offset-4" href="/settings/guardrails">
 					{t("back")}
+				</Link>
+				.
+			</div>
+		);
+	}
+
+	// The workspace baseline is edited on the Privacy page; it cannot be deleted or reassigned here.
+	if (data.guardrail?.is_workspace_baseline) {
+		return (
+			<div className="rounded-xl border bg-muted/10 p-6 text-sm text-muted-foreground">
+				{t("workspaceBaseline")}{" "}
+				<Link className="underline underline-offset-4" href="/settings/privacy">
+					{t("openPrivacy")}
 				</Link>
 				.
 			</div>

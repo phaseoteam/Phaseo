@@ -5,26 +5,14 @@ description: "Let models fetch and read specific URLs during a request."
 "og:image": "https://phaseo.app/og/dynamic?title=Web%20Fetch%20Server%20Tool&description=Let%20models%20fetch%20and%20read%20specific%20URLs%20during%20a%20request.&pathname=/docs/v1/guides/server-tools/web-fetch"
 ---
 
-Use `phaseo:web_fetch` when the model needs to read a known URL, such as a documentation page, article, changelog, or PDF-like text source.
-
-The model decides when to fetch, provides the URL, and receives bounded page text back as tool context.
-
-## How it works
-
-1. Add `{ "type": "phaseo:web_fetch" }` to `tools`.
-2. The model decides whether it needs to fetch a URL.
-3. Phaseo fetches and extracts the content using the configured engine.
-4. The extracted text, title, URL, and truncation metadata are returned to the model.
-5. The model writes the final response and may fetch more URLs if needed.
-
-## Quick start
+Add `phaseo:web_fetch` so the model can read a known URL, such as a documentation page, article, or changelog. The model supplies the `url`; Phaseo fetches the page and returns its text, trimmed to a size limit, and the model can fetch more pages before it answers.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "Summarize https://phaseo.app/docs/v1/guides/tool-calling" }
     ],
@@ -34,7 +22,7 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Configuration
+## Parameters
 
 ```json
 {
@@ -50,31 +38,37 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `engine` | string | surface-dependent | Fetch engine: `auto`, `native`, `direct`, `exa`, `parallel`, or `firecrawl`. |
-| `max_chars` | integer | `12000` | Maximum extracted characters returned to the model. |
-| `max_content_tokens` | integer | none | Token-style alias used when `max_chars` is omitted. |
-| `max_uses` | integer | `10` | Maximum fetch calls across the server-tool loop. |
-| `allowed_domains` | string[] | none | Only allow fetches from these domains. |
-| `blocked_domains` | string[] | none | Reject fetches from these domains. Alias: `excluded_domains`. |
+| `engine` | string | `direct` | `auto`, `native`, `direct`, `exa`, `parallel`, or `firecrawl`. See [Choose an engine](#choose-an-engine). |
+| `max_chars` | integer | `12000` | Characters of page text returned to the model, up to `100000`. |
+| `max_content_tokens` | integer | None | Used instead of `max_chars` when `max_chars` is omitted. Also the size limit for `native`. |
+| `max_uses` | integer | `10` | Fetch calls per request, up to `100`. |
+| `allowed_domains` | string[] | None | Fetch only from these domains. The model can narrow this list in a call but not widen it. |
+| `blocked_domains` | string[] | None | Never fetch from these domains. Alias: `excluded_domains`. |
 
-## Engine selection
+## What the model sends
 
-| Engine | Behavior |
+Each call has a `url`. The model can also send `engine`, `max_chars`, `max_content_tokens`, and the domain lists.
+
+## Choose an engine
+
+| Engine | What runs |
 | --- | --- |
-| `auto` | Uses Anthropic native fetch on `/v1/messages`; otherwise Exa if configured; otherwise direct gateway fetch. |
-| `direct` | Fetches directly from the gateway runtime and extracts bounded text. |
-| `exa` | Uses Exa content extraction when configured. |
-| `parallel` | Uses Parallel Extract when configured. |
-| `firecrawl` | Uses Firecrawl Scrape when configured. |
-| `native` | Converts to Anthropic native `web_fetch_20260209` on `/v1/messages`. Other surfaces should use `direct` or a managed engine. |
+| `auto` | Anthropic's native fetch on `/v1/messages`. On other endpoints, Exa when it's enabled, otherwise `direct`. |
+| `direct` | Phaseo fetches the page itself and reduces HTML to plain text. |
+| `exa` | Exa content extraction. |
+| `parallel` | Parallel Extract. |
+| `firecrawl` | Firecrawl Scrape. |
+| `native` | Anthropic's `web_fetch_20260209` tool, on `/v1/messages` only. On other endpoints the request is rejected; use `direct` or a managed engine. |
 
-Only HTTP(S) URLs are supported. Direct gateway fetch accepts text-like content types and reduces HTML to plain text before returning it to the model.
+If a managed engine isn't enabled, the call returns `fetch_not_configured` to the model.
 
-## Native Anthropic fetch
+Only HTTP(S) URLs work. `direct` accepts only text-like content types, such as HTML, plain text, and JSON, and returns `unsupported_content_type` for anything else. It follows up to 5 redirects and checks each one against your domain lists.
+
+### Native Anthropic fetch
 
 ```json
 {
-  "model": "claude-sonnet-4.6",
+  "model": "anthropic/claude-sonnet-4.6",
   "max_tokens": 1024,
   "messages": [
     { "role": "user", "content": "Read the docs page and summarize the limits." }
@@ -93,9 +87,7 @@ Only HTTP(S) URLs are supported. Direct gateway fetch accepts text-like content 
 }
 ```
 
-## Tool result
-
-Managed fetch returns a JSON tool result with fields such as:
+## What the tool returns
 
 ```json
 {
@@ -112,26 +104,8 @@ Managed fetch returns a JSON tool result with fields such as:
 }
 ```
 
-Check `truncated` before assuming the model received the full page.
+Check `truncated` before assuming the model saw the whole page. For a worked example, see [Tool grounding with web fetch](../../cookbook/tool-grounding-with-web-fetch).
 
 ## Usage and pricing
 
-Web fetch calls increment:
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "web_fetch_requests": 1
-    }
-  }
-}
-```
-
-Managed fetch pricing can use `server_tool_web_fetch_requests`. Provider-native fetch usage can use `native_web_fetch_requests` where a model price card defines that meter.
-
-## Related
-
-- [Web Search](./web-search)
-- [Server Tools](./index)
-- [Tool grounding with web fetch](../../cookbook/tool-grounding-with-web-fetch)
+Each fetch adds 1 to `usage.server_tool_use.web_fetch_requests`. Phaseo bills each managed fetch through Exa, Parallel or Firecrawl at $0.001, unless the model's price card sets its own `server_tool_web_fetch_requests` price; direct fetches are free. Fetches through paid engines need credits even when the model is free. Native fetch is billed with `native_web_fetch_requests` where the model's price card defines it.

@@ -53,6 +53,11 @@ export type GatewayGenAiTelemetry = {
 	 * trace_name, span_name and generation_name also rename spans.
 	 */
 	metadata?: Record<string, string> | null;
+	/**
+	 * Zero data retention applies (workspace, key guardrail, or the request's own or its
+	 * preset's flag): prompts and outputs are never forwarded. Not exported.
+	 */
+	zeroDataRetention?: boolean;
 	/** Set when a workspace rate limit policy rejected the request. */
 	rateLimitPolicyId?: string | null;
 	rateLimitScope?: string | null;

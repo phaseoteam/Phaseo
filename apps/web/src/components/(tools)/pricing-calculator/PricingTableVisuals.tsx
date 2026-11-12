@@ -1,10 +1,10 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/Logo";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import type { PricingMeter } from "@/components/(data)/model/pricing/pricingHelpers";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	Activity,
 	AudioLines,

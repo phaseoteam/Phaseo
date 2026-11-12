@@ -44,7 +44,7 @@ If the request's model isn't available in Chat, the chat uses your current model
 ## How the chat continues
 
 - The request opens as a new chat with its own session ID, saved in your browser like any other chat. Continued turns don't join the original session in Logs.
-- Messages you haven't edited are sent in their original form, so tool calls, tool results, images, audio and files are kept on the next turn. Edited and new messages are sent as text, as in any chat.
+- Messages you haven't edited are sent in their original form, so tool calls, tool results and image URLs are kept on the next turn. Edited and new messages are sent as text, as in any chat.
 - You can switch models, compare several models side by side, branch or edit, as in any chat.
 - Continued turns run in your active workspace and are billed like any other Chat request.
 
@@ -53,6 +53,7 @@ If the request's model isn't available in Chat, the chat uses your current model
 Chat lists anything it couldn't carry over before you continue:
 
 - Turns kept by the provider through `previous_response_id` or a conversation ID. Only the turns in the request itself are stored.
+- Images, audio and files sent inline. I/O logs never store their bytes. Images sent by URL are kept.
 - Attachments sent by file ID or remote reference rather than inline.
 - Responses that failed, were cut short, or offered several choices (only the first is kept).
 - Tool calls that never received a result. These are sent as text.

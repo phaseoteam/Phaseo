@@ -1,13 +1,11 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
-import { deleteAccount } from "@/app/(dashboard)/settings/account/actions";
+import { deleteAccount } from "@/features/settings/account/actions";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { Button } from "@/components/ui/button";
@@ -35,7 +33,7 @@ export default function AccountDangerZoneClient() {
 	async function handleDeleteAccount(confirmation: string, currentPassword: string) {
 		setDeleting(true);
 		try {
-			await toast.promise(deleteAccount(confirmation, currentPassword || undefined), {
+			await toast.promise(deleteAccount({ data: { confirmation, currentPassword: currentPassword || undefined } }), {
 				loading: s("phraseStartingAccountDeletion"),
 				success: s("phraseAccountAccessRemovedDeletionIsInProgress"),
 				error: (error: unknown) =>
@@ -51,7 +49,7 @@ export default function AccountDangerZoneClient() {
 	}
 
 	return (
-		<div className="rounded-lg border border-destructive/30 bg-destructive/[0.02] p-4 sm:p-5 space-y-4">
+		<div className="grid gap-5 border-y border-border/60 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-8">
 			<div className="min-w-0">
 				<h3 className="text-sm font-medium flex items-center gap-2 text-destructive">
 					<ShieldAlert className="h-4 w-4" />
@@ -62,7 +60,7 @@ export default function AccountDangerZoneClient() {
 				</p>
 			</div>
 
-			<div className="flex items-center justify-end">
+			<div className="flex items-center sm:justify-end">
 				<AlertDialog>
 					<AlertDialogTrigger asChild>
 						<Button variant="destructive">

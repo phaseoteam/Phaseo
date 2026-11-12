@@ -38,9 +38,11 @@ async function main() {
 	const baseUrl = normalizeBaseUrl(
 		options.baseUrl ??
 			process.env.PHASEO_GATEWAY_URL ??
+			process.env.PUBLIC_API_URL ??
 			process.env.NEXT_PUBLIC_API_URL ??
 			fileEnv.PHASEO_BASE_URL ??
 			fileEnv.PHASEO_GATEWAY_URL ??
+			fileEnv.PUBLIC_API_URL ??
 			fileEnv.NEXT_PUBLIC_API_URL ??
 			DEFAULT_BASE_URL,
 	);

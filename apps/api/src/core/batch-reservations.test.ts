@@ -65,6 +65,41 @@ describe("batch credit reservations", () => {
 		});
 	});
 
+	it.each([
+		["chat n", "openai", "/v1/chat/completions", { model: "gpt-4.1-mini", messages: [{ role: "user", content: "hi" }], max_tokens: 100, n: 128 }],
+		["Gemini candidateCount", "google-vertex", "/v1/generateContent", { model: "google/gemini-3.1-flash-lite",
+			contents: [{ role: "user", parts: [{ text: "hi" }] }], generationConfig: { maxOutputTokens: 100, candidateCount: 8 } }],
+	])("holds the output bound for every requested choice (%s)", async (_label, providerId, endpoint, body) => {
+		const count = "n" in body ? body.n : body.generationConfig.candidateCount;
+		const result = await reserveBatchCredits({ workspaceId: "ws_1", apiKeyId: "key_1", requestId: "req_n", providerId, requests: [{ endpoint, body }] });
+		expect(result.estimate.outputTokenUpperBound).toBe(100 * count);
+		expect(computeBillMock).toHaveBeenCalledWith(expect.objectContaining({ output_tokens: 100 * count }), expect.anything(), expect.anything(), "batch");
+		expect(result.reservedNanos).toBe(Math.ceil((100 * count * 1000 + estimateInputTokenUpperBound(body)) * 1.1));
+	});
+
+	it.each([
+		["generationConfig.candidate_count", { maxOutputTokens: 100, candidate_count: 4 }],
+		["generation_config.candidateCount", { max_output_tokens: 100, candidateCount: 4 }],
+	])("reads the Gemini choice count from %s", async (_label, generationConfig) => {
+		const key = _label.startsWith("generationConfig") ? "generationConfig" : "generation_config";
+		const result = await reserveBatchCredits({ workspaceId: "ws_1", apiKeyId: "key_1", requestId: "req_cc", providerId: "google-vertex",
+			requests: [{ endpoint: "/v1/generateContent", body: { model: "google/gemini-3.1-flash-lite", contents: [{ role: "user", parts: [{ text: "hi" }] }], [key]: generationConfig } }] });
+		expect(result.estimate.outputTokenUpperBound).toBe(400);
+	});
+
+	it("accepts an integer string choice count", async () => {
+		const result = await reserveBatchCredits({ workspaceId: "ws_1", apiKeyId: "key_1", requestId: "req_str_n", providerId: "openai",
+			requests: [{ endpoint: "/v1/chat/completions", body: { model: "gpt-4.1-mini", messages: [], max_tokens: 10, n: "3" } }] });
+		expect(result.estimate.outputTokenUpperBound).toBe(30);
+	});
+
+	it.each([0, -1, 1.5, 129, "lots", true, [2], { n: 2 }, "2.5", ""])("rejects a batch row with an invalid choice count (%j)", async (n) => {
+		await expect(reserveBatchCredits({ workspaceId: "ws_1", apiKeyId: "key_1", requestId: "req_bad_n", providerId: "openai",
+			requests: [{ endpoint: "/v1/chat/completions", body: { model: "gpt-4.1-mini", messages: [], max_tokens: 10, n } }] }))
+			.rejects.toThrow("batch_output_count_invalid");
+		expect(reserveWalletCreditsMock).not.toHaveBeenCalled();
+	});
+
 	it("treats an idempotent existing hold as successfully reserved", async () => {
 		reserveWalletCreditsMock.mockResolvedValueOnce({
 			status: "held",

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { obfuscatedPlaceholder } from "./obfuscation";
 
 describe("obfuscatedPlaceholder", () => {

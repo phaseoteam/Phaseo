@@ -4,21 +4,24 @@ description: "Publiez des flux de modèles V1, V1.1 ou V1.2 avec des offres par 
 icon: "list"
 ---
 
-Les fournisseurs approuvés peuvent mettre à jour les offres des modèles canoniques publics existants via leur flux de catalogue ou les paramètres du fournisseur. Les nouveaux modèles canoniques nécessitent une approbation. Chaque catalogue est un instantané complet : la suppression d’une offre retire cette offre gérée par le flux et conserve son historique tarifaire.
+Publiez vos modèles, niveaux de service, prix et limites sous forme de flux de catalogue : Phaseo importe chaque modification dans vos offres. En tant que fournisseur approuvé, vous pouvez mettre à jour les offres des modèles canoniques publics existants via le flux ou les paramètres du fournisseur ; les nouveaux modèles canoniques nécessitent une approbation. Chaque catalogue est un instantané complet : retirer une offre met fin à cette offre gérée par le flux et conserve son historique de prix.
 
-## Choisir le format
+## Choisir un format
 
-Les flux V1 existants continuent de fonctionner sans modification. Un document `{"data": [...]}` sans version, ou un document qui déclare `"schema_version": "1.0"`, utilise le format existant du niveau standard.
+| Version | Déclaration | Ajoute | Schéma |
+| --- | --- | --- | --- |
+| V1 | Pas de `schema_version`, ou `"1.0"` | Offres du niveau standard dans `{"data": [...]}` | [V1](https://phaseo.app/api/internal/provider-catalog/schema) |
+| V1.1 | `"schema_version": "1.1"` | `service_tiers` dans chaque modèle | [V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) |
+| V1.2 | `"schema_version": "1.2"` | `data_policy` par niveau et `declarations` facultatives ; consultez [Déclarer des politiques de données](#declare-data-policies) | [V1.2](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2) |
 
-V1.1 déclare `"schema_version": "1.1"` et publie `service_tiers` dans chaque modèle. L’importateur détermine le format à partir du document. Les paramètres de requête d’URL tels que `?format=phaseo-v1.1` sont des conventions facultatives propres à votre endpoint ; Phaseo ne déduit pas la version à partir de l’URL.
+Les trois versions sont prises en charge ; les flux V1 existants continuent de fonctionner sans modification. L’importateur lit la version dans le document, jamais dans l’URL : un paramètre de requête tel que `?format=phaseo-v1.1` n’est qu’une convention pour votre propre endpoint. Les versions non prises en charge sont refusées.
 
-Téléchargez le [schéma V1](https://phaseo.app/api/internal/provider-catalog/schema), le [schéma V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) ou le [schéma V1.2](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2). Les versions non prises en charge sont explicitement rejetées.
+<span id="declare-data-policies"></span>
+## Déclarer des politiques de données
 
-### Politiques de données V1.2
+V1.2 ajoute à chaque niveau de service des déclarations d’entraînement et de conservation propres à chaque capacité. Vous pouvez publier en V1.2 à tout moment. Phaseo valide les déclarations à l’import, mais elles n’accordent aucune garantie tant que Phaseo n’a pas approuvé la source de votre politique.
 
-V1.2 ajoute à chaque niveau de service des déclarations d’entraînement et de conservation propres à chaque capacité. Vous pouvez publier V1.2 à tout moment. Phaseo valide les déclarations à l’importation, mais elles n’accordent aucune garantie tant que Phaseo n’a pas approuvé votre source de politique. Les flux V1 et V1.1 restent pris en charge.
-
-V1.2 accepte aussi des `declarations` facultatives au niveau du modèle ou du niveau de service pour l’identité du modèle, les limites typées d’entrée/sortie, les descriptions de paramètres, les prix et capacités par périmètre, les remises et les détails de déploiement. Elles sont validées et conservées pour examen. Elles n’activent pas automatiquement les paramètres et ne modifient ni les prix facturables, ni l’application des limites de capacité, ni les garanties de résidence. Les résultats de validation identifient les déclarations stockées ; continuez à publier les prix et capacités effectifs dans leurs champs existants.
+V1.2 accepte aussi des `declarations` facultatives au niveau du modèle ou du niveau de service pour l’identité du modèle, les limites typées d’entrée/sortie, les descriptions de paramètres, la tarification et la capacité par périmètre, les remises et les détails de déploiement. Elles sont validées et conservées pour examen. Elles n’activent pas automatiquement de paramètres et ne modifient ni les prix facturables, ni l’application de la capacité, ni les garanties de résidence. Le retour de validation identifie les déclarations enregistrées ; continuez à publier les prix et capacités effectifs via leurs champs existants.
 
 Définissez `schema_version` sur `"1.2"` et ajoutez un objet `data_policy` à chaque niveau concerné :
 
@@ -38,31 +41,31 @@ Définissez `schema_version` sur `"1.2"` et ajoutez un objet `data_policy` à ch
 }
 ```
 
-Cet exemple représente la valeur `data_policy` du niveau, pas un flux complet. Les identifiants de capacité sont canoniques : utilisez `text.generate` même si le modèle déclare `responses` ou `chat.completions`.
+Cet exemple est la valeur `data_policy` du niveau, pas un flux complet. Les identifiants de capacité sont canoniques : utilisez `text.generate` même lorsque le modèle déclare `responses` ou `chat.completions`.
 
-La déclaration couvre les requêtes et les sorties sur toute la chaîne de traitement en amont. Elle ne décrit pas les métadonnées de facturation. Les valeurs d’entraînement sont `unknown`, `may_train`, `no_train`, `opt_out_available` et `enterprise_no_train`. Les modes de conservation sont `unknown`, `none`, `transient`, `fixed` et `until_deleted`. Utilisez zéro jour pour none, une durée maximale positive pour transient/fixed et null pour unknown/until-deleted.
+La déclaration couvre à la fois les prompts et les sorties sur toute la chaîne de traitement amont. Elle ne décrit pas les métadonnées de facturation. Les valeurs d’entraînement sont `unknown`, `may_train`, `no_train`, `opt_out_available` et `enterprise_no_train`. Les modes de conservation sont `unknown`, `none`, `transient`, `fixed` et `until_deleted`. Utilisez zéro jour pour none, une durée maximale positive pour transient/fixed, et null pour unknown/until-deleted.
 
-Déclarez les accords requis avec `contract_mode` : `none`, `customer_agreement` ou `enterprise_agreement`. Les paramètres de compte requis sont des objets contenant `id`, `description` et une `documentation_url` HTTPS dans le tableau `account_settings`. Les programmes conditionnels utilisent `zdr_eligibility: "conditional"` et ne peuvent pas déclarer une garantie active à true. Ils restent informatifs tant que Phaseo ne peut pas vérifier que les conditions sont remplies.
+Déclarez les accords requis avec `contract_mode` : `none`, `customer_agreement` ou `enterprise_agreement`. Les paramètres de compte requis sont des objets avec `id`, `description` et une `documentation_url` HTTPS dans le tableau `account_settings`. Les programmes conditionnels utilisent `zdr_eligibility: "conditional"` et ne peuvent pas déclarer de garantie active. Ils restent informatifs jusqu’à ce que Phaseo puisse vérifier leur respect.
 
-Phaseo approuve indépendamment la source de la politique. Le flux ne peut pas marquer une déclaration comme vérifiée. Cette version n’accorde le ZDR actif qu’à la génération de texte inconditionnelle sur des offres hors batch, sans entraînement ni conservation du contenu. Héberger soi-même un modèle ne constitue pas en soi une déclaration de ZDR.
+Phaseo approuve la source de la politique de façon indépendante. Le flux ne peut pas marquer une déclaration comme vérifiée. Cette version n’accorde la ZDR active que pour la génération de texte inconditionnelle sur des offres hors lots, sans entraînement ni conservation de contenu. Héberger vous-même un modèle ne constitue pas en soi une déclaration de ZDR.
 
-Après l’adoption d’une politique gérée par le flux, définir false, envoyer null, omettre la déclaration ou revenir à une version antérieure du flux retire cette garantie. Les dérogations manuelles de Phaseo sont gérées séparément. Les déclarations positives expirent après 24 heures sans validation réussie du catalogue ; la révocation de l’approbation ne nécessite pas de nouvelle récupération auprès du fournisseur.
+Une fois qu’une offre adopte une politique gérée par le flux, définir false, envoyer null, omettre sa déclaration ou revenir à une version antérieure du flux retire cette garantie. Les remplacements manuels de Phaseo sont gérés séparément. Les déclarations positives expirent après 24 heures sans validation réussie du catalogue ; la révocation de l’approbation ne nécessite pas de nouvelle récupération auprès du fournisseur.
 
 ## Publier des niveaux normalisés
 
 | Niveau | Signification |
 | --- | --- |
 | `standard` | Exécution synchrone normale ; obligatoire pour chaque modèle. |
-| `fast` | Une offre plus rapide ou prioritaire. Les noms propres au fournisseur, comme HighSpeed, restent dans l’identifiant de modèle en amont. |
-| `ultrafast` | Une offre distincte encore plus rapide, lorsqu’elle est prise en charge. |
-| `flex` | Une offre synchrone flexible, de priorité inférieure. |
-| `batch` | Exécution asynchrone via l’API Batch. Nécessite une capacité de traitement par lots. |
+| `fast` | Une offre plus rapide ou prioritaire. Les noms propres au fournisseur, tels que HighSpeed, restent dans l’identifiant de modèle amont. |
+| `ultrafast` | Une offre distincte, encore plus rapide, lorsqu’elle est prise en charge. |
+| `flex` | Une offre synchrone flexible et moins prioritaire. |
+| `batch` | Exécution asynchrone via l’API Batch. Nécessite une capacité batch. |
 
-N’utilisez pas de noms de niveaux propres à un fournisseur comme identifiants normalisés. `priority` reste un alias pris en charge côté appelant pour Fast ; les catalogues publient `fast`.
+N’utilisez pas de noms de niveau propres au fournisseur comme identifiants normalisés. `priority` reste un alias accepté côté appelant pour Fast ; les catalogues publient `fast`.
 
-La sélection de Fast, Ultrafast et Flex est prise en charge pour les requêtes de génération de texte. Batch passe par l’API Batch distincte et nécessite toujours qu’une intégration Batch du fournisseur soit installée ; publier un niveau n’installe pas cette intégration. Pour les fichiers au format natif du fournisseur que vous téléversez, utilisez l’identifiant de modèle Batch déclaré, ou soumettez les requêtes en ligne pour que Phaseo puisse le traduire.
+La sélection Fast, Ultrafast et Flex est prise en charge sur les requêtes de génération de texte. Batch passe par l’API Batch distincte et nécessite toujours une intégration Batch du fournisseur installée ; publier un niveau n’installe pas cette intégration. Pour les fichiers natifs du fournisseur téléversés, utilisez l’identifiant de modèle Batch déclaré ou envoyez les requêtes en ligne afin que Phaseo puisse le traduire.
 
-Utilisez le même identifiant de modèle canonique pour tous les niveaux de service d’un modèle. Des modèles différents nécessitent des identités canoniques distinctes. Les niveaux héritent des capacités, des limites et du calendrier de publication du modèle. Chaque niveau déclare son propre identifiant de modèle en amont, sa disponibilité et sa tarification effective.
+Utilisez le même identifiant de modèle canonique pour tous ses niveaux de service. Des modèles différents nécessitent des identités canoniques distinctes. Les niveaux héritent des capacités, limites et calendrier de publication du modèle. Chaque niveau déclare son propre identifiant de modèle amont, sa disponibilité et sa tarification effective.
 
 ```json
 {
@@ -99,13 +102,13 @@ Utilisez le même identifiant de modèle canonique pour tous les niveaux de serv
 }
 ```
 
-Pour ajouter Fast, ajoutez un autre objet de niveau avec `"service_tier": "fast"`, ses prix effectifs et un identifiant de modèle en amont distinct pour cette offre. Si le fournisseur sélectionne plutôt sa voie de traitement au moyen d’un paramètre natif, utilisez le même identifiant de modèle en amont et déclarez `"upstream_service_tier": "priority"` ou `"fast"`. Omettez ce champ lorsque c’est l’identifiant de modèle qui sélectionne la voie. Standard accepte `default` ou `standard` ; Flex et Ultrafast acceptent leurs valeurs correspondantes. Phaseo rejette les niveaux synchrones non standard qui n’ont ni identifiant de modèle distinct ni sélecteur natif.
+Pour ajouter Fast, ajoutez un autre objet de niveau avec `"service_tier": "fast"`, ses prix effectifs et un identifiant de modèle amont distinct pour cette offre. Si le fournisseur sélectionne sa voie via un paramètre natif, utilisez plutôt le même identifiant de modèle amont et déclarez `"upstream_service_tier": "priority"` ou `"fast"`. Omettez ce champ lorsque l’identifiant de modèle sélectionne la voie. Standard accepte `default` ou `standard` ; Flex et Ultrafast acceptent leurs valeurs correspondantes. Phaseo refuse les niveaux synchrones non standard qui n’ont ni identifiant de modèle distinct ni sélecteur natif.
 
-Chaque niveau nécessite une tarification explicite, y compris pour la sortie et pour tous les compteurs de cache ou de médias que vous facturez. Les prix nuls sont valides ; les prix négatifs, les compteurs inconnus, les niveaux en double et les tarifs conditionnels sont rejetés. `price_nanos` reste le prix effectif après promotions. Publiez un nouvel instantané lorsque les tarifs changent ; Phaseo conserve les prix effectifs précédents.
+Chaque niveau nécessite une tarification explicite, y compris la sortie et tous les compteurs de cache ou de médias que vous facturez. Les prix nuls sont valides ; les prix négatifs, les compteurs inconnus, les niveaux en double et les tarifs conditionnels sont refusés. `price_nanos` reste le prix effectif après promotions. Publiez un nouvel instantané lorsque les tarifs changent ; Phaseo conserve les prix effectifs précédents.
 
-## Déclarer les limites de débit
+## Déclarer des limites de débit
 
-Déclarez les limites de requêtes et de jetons que votre plateforme applique au compte de Phaseo dans un tableau `rate_limits` facultatif de premier niveau. Il fonctionne de la même manière dans les documents V1 et V1.1. Omettez `model` pour une limite portant sur l’ensemble de vos modèles, ou définissez-le sur le `provider_model_slug` en amont de n’importe quel modèle ou niveau du même document.
+Déclarez les limites de requêtes et de tokens que votre plateforme applique au compte de Phaseo dans un tableau `rate_limits` facultatif de premier niveau. Il fonctionne de la même façon dans les documents V1 et V1.1. Omettez `model` pour une limite couvrant tous vos modèles, ou définissez-le sur le `provider_model_slug` amont de n’importe quel modèle ou niveau du même document.
 
 ```json
 {
@@ -118,20 +121,20 @@ Déclarez les limites de requêtes et de jetons que votre plateforme applique au
 }
 ```
 
-Chaque entrée accepte `requests_per_minute`, `requests_per_day`, `tokens_per_minute` et `tokens_per_day`. Chaque valeur est un entier positif ou `null`, et chaque entrée nécessite au moins une valeur. Phaseo comptabilise chaque limite globalement, sur l’ensemble du trafic qu’il vous envoie. La limite d’un modèle s’applique en plus de la limite portant sur tous les modèles.
+Chaque entrée accepte `requests_per_minute`, `requests_per_day`, `tokens_per_minute` et `tokens_per_day`. Chaque valeur est un entier positif ou `null`, et chaque entrée nécessite au moins une valeur. Phaseo comptabilise chaque limite globalement sur l’ensemble de son trafic vers vous. Une limite par modèle s’applique en plus de la limite couvrant tous les modèles.
 
-Les limites ne bloquent jamais les requêtes. À mesure que le trafic d’une offre approche d’une limite, Phaseo lui en envoie une part progressivement plus faible. Une fois la limite atteinte, Phaseo classe l’offre après les autres fournisseurs jusqu’à la réinitialisation de la limite. Une valeur trop basse ne réduit que votre propre part du trafic. C’est pourquoi les limites s’appliquent sans vérification une fois votre demande de fournisseur approuvée, généralement en moins d’une minute.
+Les limites ne bloquent jamais les requêtes. À mesure que le trafic d’une offre approche d’une limite, Phaseo lui envoie une part progressivement plus faible. Une fois la limite atteinte, Phaseo classe l’offre derrière les autres fournisseurs jusqu’à la réinitialisation de la limite. Une valeur trop basse ne réduit que votre propre part du trafic. C’est pourquoi les limites s’appliquent sans examen une fois votre candidature de fournisseur approuvée, généralement en moins d’une minute.
 
-Lorsque le tableau est présent, il remplace vos limites déclarées à chaque import réussi d’un flux modifié. Un tableau vide les supprime. Omettez `rate_limits` pour conserver les limites que vous gérez dans les paramètres du fournisseur. Phaseo rejette l’instantané entier, et conserve votre catalogue et vos limites actuels, si une entrée cite un modèle absent du document, répète une portée ou utilise une valeur qui n’est pas un entier positif. Le rejet apparaît sous le statut **Modifications demandées**.
+Lorsque le tableau est présent, il remplace vos limites déclarées à chaque import réussi d’un flux modifié. Un tableau vide les supprime. Omettez `rate_limits` pour conserver les limites que vous gérez dans les paramètres du fournisseur. Phaseo refuse l’instantané entier, et conserve votre catalogue et vos limites actuels, si une entrée nomme un modèle absent du document, répète un périmètre ou utilise une valeur qui n’est pas un entier positif. Le refus apparaît comme **Modifications demandées**.
 
-Vous pouvez aussi modifier les limites dans **Paramètres du fournisseur → Vos modèles → Limites de débit**. Ces modifications sont enregistrées séparément des changements du catalogue. L’éditeur de catalogue n’accepte pas `rate_limits`.
+Vous pouvez aussi modifier les limites dans **Paramètres du fournisseur → Vos modèles → Limites de débit**. Ces modifications sont enregistrées séparément des modifications du catalogue. L’éditeur de catalogue n’accepte pas `rate_limits`.
 
 ## Mettre à jour et vérifier
 
-Le polling et les webhooks signés de modification du catalogue acceptent les deux versions via le même processus d’intégration et d’actualisation. Dans les paramètres du fournisseur, sélectionnez un niveau avant de modifier son identifiant en amont, sa disponibilité ou ses prix. L’ajout d’un autre niveau fait passer le catalogue enregistré en V1.1.
+Le polling et les webhooks signés de modification du catalogue acceptent les trois versions via le même flux d’intégration et d’actualisation. Dans les paramètres du fournisseur, sélectionnez un niveau avant de modifier son identifiant amont, sa disponibilité ou ses prix. Ajouter un autre niveau fait passer le catalogue enregistré en V1.1.
 
-Le catalogue n’ajoute ni adaptateur d’inférence ni identifiants d’accès. Un fournisseur et les capacités qu’il annonce doivent être intégrés avant que le routage ne soit activé. Une tarification Batch ne rend pas Batch disponible sur les endpoints de chat synchrones.
+Le catalogue n’ajoute ni adaptateur d’inférence ni identifiants. Un fournisseur et ses capacités annoncées doivent être intégrés avant que le routage soit activé. La tarification Batch ne rend pas Batch disponible sur les endpoints de chat synchrones.
 
-Un modèle canonique indisponible ou une correspondance d’éditeur inconnue apparaît sous le statut **Modifications demandées**, sans empêcher l’import des modèles valides. Consultez le tableau de bord du fournisseur pour connaître les raisons propres à chaque modèle.
+Un modèle canonique indisponible ou une correspondance d’éditeur inconnue s’affiche comme **Modifications demandées** sans empêcher l’import des modèles valides. Consultez le tableau de bord du fournisseur pour les motifs propres à chaque modèle.
 
-Pour les catalogues alimentés par API, les modifications effectuées dans le tableau de bord sont des remplacements persistants. Les imports mettent à jour les champs qui n’ont pas de remplacement. Sélectionnez **Utiliser la valeur du flux** pour supprimer un remplacement et recommencer à suivre ce champ. Le tableau de bord affiche la dernière valeur du flux, la valeur effective, l’auteur de la modification et sa date ; l’activité du catalogue enregistre les modifications et les rétablissements. Les modèles ajoutés manuellement restent des offres locales. La suppression d’un modèle du flux retire cette offre du flux, même si certains de ses champs ont été modifiés. Les catalogues existants gérés uniquement à la main restent pris en charge.
+Pour les catalogues alimentés par API, les modifications faites dans le tableau de bord sont des remplacements persistants. Les imports mettent à jour les champs sans remplacement. Sélectionnez **Utiliser la valeur du flux** pour supprimer un remplacement et recommencer à suivre ce champ. Le tableau de bord affiche la dernière valeur du flux, la valeur effective, l’auteur de la modification et l’heure ; l’activité du catalogue enregistre les modifications et les retours en arrière. Les modèles ajoutés manuellement restent des offres locales. Retirer un modèle du flux met fin à cette offre du flux, même si certains de ses champs ont été modifiés. Les catalogues existants entièrement manuels restent pris en charge.

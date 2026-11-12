@@ -10,10 +10,11 @@ const guardrailRule = await read('../migrations/20261026223103_slack_agent_guard
 const uninstallFromSlack = await read('../migrations/20261022113514_slack_agent_uninstall_from_slack.sql');
 const migrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_slack_agent_memory_and_skills.sql'));
 const migration = await read(`../migrations/${migrationName}`);
+// functions/save_slack_agent_skill.sql has changed since: slack-agent-skill-replace-saver.test.mjs checks it against its migration.
 const declarative = [
   'tables/slack_agent_notes.sql', 'tables/slack_agent_skills.sql', 'functions/save_slack_agent_note.sql', 'functions/search_slack_agent_notes.sql',
   'functions/set_slack_agent_todo_done.sql', 'functions/forget_slack_agent_note.sql', 'functions/load_slack_agent_turn_memory.sql',
-  'functions/save_slack_agent_skill.sql', 'functions/get_slack_agent_skill.sql', 'functions/delete_slack_agent_memory.sql',
+  'functions/get_slack_agent_skill.sql', 'functions/delete_slack_agent_memory.sql',
 ];
 const installationsFile = await read('../schemas/public/tables/slack_installations.sql');
 const WORKSPACE = '10000000-0000-4000-8000-000000000001';
@@ -112,6 +113,11 @@ try {
   assert.equal((await save('note', OTHER_CHANNEL, 'Deploys freeze on Fridays after 3pm.')).status, 'saved', 'another conversation keeps its own copy');
   const pin = await save('pin', null, 'Our fiscal year starts on 1 April.');
   const channelPin = await save('pin', CHANNEL, 'Release notes go out every Tuesday.');
+  // Saved in the same clock tick, the two pins would share created_at and come back in id order, which is
+  // random. One second apart, the newer one is always first.
+  await db.exec('reset role');
+  await rows(`update public.slack_agent_notes set created_at = created_at + interval '1 second' where id = $1`, [channelPin.note.id]);
+  await db.exec('set role service_role');
   const todo = await save('todo', CHANNEL, 'Send the Q4 budget to finance.');
   await save('todo', OTHER_CHANNEL, 'Book the offsite venue.');
   await assert.rejects(save('reminder', CHANNEL, 'x'), /invalid_kind/);

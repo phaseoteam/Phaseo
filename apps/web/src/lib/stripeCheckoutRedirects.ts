@@ -19,7 +19,7 @@ export function resolveConfiguredStripeCheckoutBaseUrl(
 	env: Record<string, string | undefined>,
 ): string | null {
 	return (
-		normalizeHttpOrigin(env.NEXT_PUBLIC_WEBSITE_URL) ??
+		normalizeHttpOrigin(env.PUBLIC_WEBSITE_URL) ??
 		normalizeHttpOrigin(env.WEBSITE_URL)
 	);
 }

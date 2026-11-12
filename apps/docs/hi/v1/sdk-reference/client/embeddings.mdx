@@ -1,0 +1,123 @@
+---
+icon: "binary"
+title: "एम्बेडिंग"
+description: "किसी भी Phaseo SDK से POST /v1/embeddings के ज़रिए टेक्स्ट और दूसरे इनपुट को वेक्टर में बदलें।"
+---
+
+हर इनपुट के लिए एक वेक्टर पाने के लिए टेक्स्ट को `POST /v1/embeddings` पर भेजें। उदाहरण एक `client` इस्तेमाल करते हैं, जो [इंस्टॉलेशन](./installation) में बताए तरीक़े से बनाया गया है।
+
+<CodeGroup>
+
+```typescript TypeScript
+const embedding = await client.generateEmbedding({
+  model: "openai/text-embedding-3-large",
+  input: "Sample text",
+});
+```
+
+```python Python
+embedding = client.generate_embedding({
+    "model": "openai/text-embedding-3-large",
+    "input": "Sample text",
+})
+```
+
+```go Go
+resp, err := client.GenerateEmbedding(context.Background(), map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["data"])
+```
+
+```csharp C#
+var response = await client.CreateEmbedding(new Dictionary<string, object>
+{
+    ["model"] = "openai/text-embedding-3-large",
+    ["input"] = "Sample text",
+});
+```
+
+```php PHP
+$response = $client->generateEmbedding([
+    'model' => 'openai/text-embedding-3-large',
+    'input' => 'Sample text',
+]);
+```
+
+```ruby Ruby
+response = client.generate_embedding(
+  model: 'openai/text-embedding-3-large',
+  input: 'Sample text'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text"
+}
+""";
+
+Object response = client.createEmbedding(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
+System.out.println(String.valueOf(response));
+```
+
+```rust Rust
+// अभी कोई embeddings मेथड नहीं है: post() किसी भी Phaseo पाथ पर JSON भेजता है।
+let response = client.post("/embeddings", &json!({
+    "model": "openai/text-embedding-3-large",
+    "input": "Sample text"
+}))?;
+```
+
+</CodeGroup>
+
+| भाषा | मेथड | क्या लौटाता है |
+| --- | --- | --- |
+| TypeScript | `client.generateEmbedding(request)` | टाइप की हुई प्रतिक्रिया |
+| Python | `client.generate_embedding(request)` या `client.embeddings.create(request)` | एक dict |
+| Go | `client.GenerateEmbedding(ctx, req)`, उपनाम `CreateEmbedding` | `map[string]interface{}` |
+| C# | `client.CreateEmbedding(request)` | `Dictionary<string, object>?` |
+| PHP | `$client->generateEmbedding($request)`, उपनाम `createEmbedding()` | एक array |
+| Ruby | `client.generate_embedding(...)`, उपनाम `create_embedding` | एक Hash |
+| Java | `client.createEmbedding(jsonNode)` | `Object` |
+| Rust | `client.post("/embeddings", &request)` | `PhaseoResponse`, जिसके `body` में JSON होता है |
+
+## पैरामीटर
+
+हर SDK में फ़ील्ड के नाम JSON बॉडी के फ़ील्ड ही हैं।
+
+| फ़ील्ड | नोट |
+| --- | --- |
+| `model` | ज़रूरी। एक एम्बेडिंग मॉडल ID। |
+| `input` | ज़रूरी। एक स्ट्रिंग, स्ट्रिंग्स का array, या उन मॉडलों के लिए मल्टीमोडल कंटेंट पार्ट (टेक्स्ट, इमेज, ऑडियो, वीडियो) जो इन्हें स्वीकार करते हैं। |
+| `encoding_format` | `float` (डिफ़ॉल्ट), `base64`, `base64_int8` या `base64_binary`। |
+| `dimensions` | एक धनात्मक पूर्णांक जो हर वेक्टर को छोटा करता है, उन मॉडलों पर जो इसे सपोर्ट करते हैं। |
+| `provider_options` | प्रदाता की सेटिंग, जैसे Google के `task_type` और `title` या Mistral का `output_dtype`। |
+| `user` | एंड-यूज़र टैग। |
+
+पूरा स्कीमा [Embeddings API संदर्भ](/hi/v1/api-reference/endpoint/embeddings) में है।
+
+## प्रतिक्रिया
+
+```json
+{
+  "data": [
+    {
+      "embedding": [0.1, 0.2, 0.3],
+      "index": 0
+    }
+  ],
+  "usage": {
+    "input_tokens": 5,
+    "output_tokens": 0,
+    "total_tokens": 5,
+    "embedding_tokens": 5
+  }
+}
+```

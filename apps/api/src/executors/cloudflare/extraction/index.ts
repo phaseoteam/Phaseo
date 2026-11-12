@@ -1,17 +1,18 @@
-import { z } from "zod";
+import * as z from "zod";
+import { lazySchema } from "@core/lazy-schema";
 import { ExtractionsSchema, validateExtractionAnswers } from "@core/extraction";
 import type { IRExtractionRequest, IRExtractionResponse } from "@core/ir";
 import type { Bill, ProviderExecutor } from "@executors/types";
 import { readStreamTextWithLimit } from "@core/bounded-stream";
 import { runCloudflareModel, unwrapCloudflareResult } from "../shared";
 
-const tokenCount = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
-const payloadSchema = z.object({
+const tokenCount = lazySchema(() => z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER));
+const payloadSchema = lazySchema(() => z.object({
   model: z.enum(["clairic", "@cf/cloudflare/clairic"]),
   answers: z.unknown(), truncated: z.boolean(),
   usage: z.object({ input_tokens: tokenCount, output_tokens: z.literal(0),
     state_tokens: tokenCount.optional(), image_tokens: tokenCount.optional(), schema_tokens: tokenCount.optional(), passes: tokenCount.optional() }),
-});
+}));
 
 export const executor: ProviderExecutor = async args => {
   const ir = args.ir as IRExtractionRequest;

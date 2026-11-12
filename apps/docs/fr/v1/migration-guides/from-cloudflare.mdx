@@ -5,39 +5,35 @@ description: "Remplacez une route Cloudflare AI Gateway par Phaseo tout en conse
 icon: "/icons/brands/cloudflare.svg"
 ---
 
-Utilisez ce guide si votre application envoie déjà des requêtes compatibles avec OpenAI via Cloudflare AI Gateway. Commencez par remplacer la passerelle, puis recréez uniquement le routage, la mise en cache et l’observabilité réellement nécessaires à votre trafic de production.
+Remplacez l’URL de la passerelle Cloudflare et la clé du fournisseur par `https://api.phaseo.app/v1` et une clé Phaseo, puis supprimez les en-têtes `cf-aig-*`. La charge utile de la requête reste la même.
 
-## Ce qui change
-
-| Paramètre | Avant | Après |
+| Paramètre | Cloudflare AI Gateway | Phaseo |
 | --- | --- | --- |
-| URL Gateway | URL Cloudflare propre au compte et à la passerelle | `https://api.phaseo.app/v1` |
-| Authentification | Identifiants Cloudflare et fournisseur | `PHASEO_API_KEY` |
-| Politique de routage | Configuration Cloudflare Gateway | Paramètres de routage et préréglages Phaseo |
-| Visibilité des requêtes | Analyses Cloudflare | Activité et détails des requêtes Phaseo |
+| URL de base | `gateway.ai.cloudflare.com/v1/<account_id>/<gateway_id>/<provider>`, ou `api.cloudflare.com/client/v4/accounts/<account_id>/ai/v1` | `https://api.phaseo.app/v1` |
+| Authentification | Clé du fournisseur, plus `cf-aig-authorization` ou un jeton d’API Cloudflare | `PHASEO_API_KEY` comme `Authorization: Bearer` |
+| Choix du fournisseur | Une route par fournisseur | Une seule URL de base ; l’identifiant de modèle choisit le modèle et le routage choisit le fournisseur |
+| En-têtes de la passerelle | `cf-aig-*` | Supprimés, ou mis en correspondance comme dans le tableau ci-dessous |
+| Visibilité des requêtes | Analytics Cloudflare | Journaux des requêtes et détails des requêtes Phaseo |
 
-<Steps>
-<Step title="Inventoriez la configuration actuelle de la passerelle">
-
-Notez l’URL Cloudflare Gateway, les routes des fournisseurs, les en-têtes personnalisés, les règles de cache, les nouvelles tentatives et les analyses dont dépend votre application. Vous pourrez ainsi distinguer les comportements nécessaires des paramètres qu’il n’est plus utile de transférer.
-
-</Step>
-
-<Step title="Remplacez le point de terminaison et les identifiants">
-
-Dans la mesure du possible, conservez le contenu des requêtes et mettez à jour le client compatible avec OpenAI pour utiliser la nouvelle passerelle.
+## Changer de client
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// Avant :
+// new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+//   baseURL: `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/openai`,
+//   defaultHeaders: { "cf-aig-authorization": `Bearer ${process.env.CF_AIG_TOKEN}` },
+// });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -57,39 +53,40 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+Une route `/anthropic` passe à la configuration du SDK Anthropic décrite dans [Migrer depuis le SDK Anthropic](./from-anthropic). Les appels de binding Workers AI (`env.AI.run(model, input, { gateway })`) ne sont pas des clients HTTP : remplacez-les par `fetch` ou par le SDK OpenAI pointé vers Phaseo, et uniquement pour les modèles listés par `GET /v1/models?format=openai`. Stockez `PHASEO_API_KEY` comme secret de Worker, pas dans la configuration `wrangler`.
 
-<Step title="Recréez le routage et les valeurs par défaut partagées">
+## Faire correspondre les fonctionnalités de la passerelle
 
-Déplacez les restrictions stables de fournisseur, les valeurs par défaut des prompts et les paramètres de génération vers les [préréglages](../guides/presets.mdx). Configurez le classement des fournisseurs et les solutions de repli avec le [routage et les solutions de repli](../guides/routing-and-fallbacks.mdx).
+Les paramètres Cloudflare ne sont pas transférés automatiquement. Décidez pour chacun s’il relève de Phaseo, de l’application ou de la couche edge.
 
-Les paramètres de cache et d’analyse Cloudflare ne sont pas transférés automatiquement. Décidez explicitement si chaque comportement doit être géré par Phaseo, votre application ou votre couche edge.
+| Cloudflare AI Gateway | Sur Phaseo |
+| --- | --- |
+| Chaînes de secours | Tableau `models`, secours entre fournisseurs ou [routes dynamiques](../guides/routing-and-fallbacks). Les secours de modèle se déclenchent sur `429`, `500`, `502`, `503` et `504`, jamais sur les erreurs de requête. |
+| Chaînes de modèle `dynamic/<route>` | Routes dynamiques associées aux clés API ; envoyez un véritable identifiant de modèle. |
+| `cloudflare/auto` | `phaseo/auto` ([Routage automatique](../guides/auto-routing), alpha) ; ne peut pas être combiné avec `models`. |
+| Mise en cache (`cf-aig-cache-ttl`, `cf-aig-skip-cache`, `cf-aig-cache-key`) | Pas de cache de réponses. Mettez en cache dans l’application si nécessaire ; la [mise en cache des prompts](../guides/prompt-caching) réduit tout de même le coût des entrées. |
+| `cf-aig-metadata` | [Étiquettes](../guides/request-labels) `X-Phaseo-Metadata` : jusqu’à 32, les clés respectent `[A-Za-z0-9_.:-]` (64 caractères), les valeurs sont des chaînes de 256 caractères au maximum. Convertissez les nombres et les booléens. |
+| `cf-aig-collect-log` | Règle de journalisation de l’espace de travail, ou `provider.require_zero_data_retention`, qui limite aussi le routage aux fournisseurs ZDR. |
+| `cf-aig-request-timeout`, `cf-aig-max-attempts` | Pas de contrôle par requête. Secours intégré entre fournisseurs, plus une temporisation progressive côté client. |
+| `cf-aig-session-id` | Champ de corps `session_id`. |
+| `cf-aig-custom-cost` | Pas d’équivalent. |
+| Limitation de débit, limites de dépenses | Règles de limite de débit, limites de clé et budgets d’espace de travail, de clé et de département. Consultez [Limites](../api-reference/limits). |
+| Garde-fous et DLP | Les garde-fous de clé et de membre analysent les requêtes pour détecter l’injection de prompt et les données personnelles. Les réponses ne sont pas analysées ; appelez `/v1/moderations` pour la sécurité du contenu. |
+| Journaux et analytics | Journaux des requêtes, détails des requêtes avec les tentatives de fournisseur et la tarification, et [destinations d’observabilité](../guides/integrations/observability). |
+| Modèles Workers AI `@cf/...` | Uniquement si `GET /v1/models?format=openai` les liste ; sinon, gardez ces appels sur Workers AI. |
 
-</Step>
+## Tester et déployer
 
-<Step title="Validez avant le basculement">
+Testez les requêtes sans streaming, avec streaming, les erreurs, les outils et les sorties structurées tels que l’application les utilise, et comparez la latence, la sortie, l’utilisation des jetons et le coût avant de déplacer le trafic progressivement. Avant la bascule, vérifiez que :
 
-Selon votre cas, testez les réponses sans streaming, le streaming, les erreurs, les outils et les sorties structurées. Comparez la latence, les réponses, l’utilisation des jetons et le coût avant de transférer progressivement le trafic.
-
-</Step>
-</Steps>
-
-## Liste de contrôle de la migration
-
-- Les URL et en-têtes propres à Cloudflare Gateway ont été supprimés.
-- Les identifiants des modèles de production ont été vérifiés avec `GET /v1/models`.
-- Le comportement de cache nécessaire a été recréé ou abandonné volontairement.
-- L’activité et les détails des requêtes fournissent la visibilité dont votre équipe a besoin.
-- Le retour arrière se limite toujours à modifier le point de terminaison et la clé.
-
-## Étapes suivantes
-
-- [Préréglages](../guides/presets.mdx)
-- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
-- [Observabilité](../guides/integrations/observability.mdx)
+- chaque URL `gateway.ai.cloudflare.com` et `api.cloudflare.com/.../ai/v1` et chaque en-tête `cf-aig-*` a disparu ; une route oubliée maintient le trafic sur l’ancien chemin ;
+- les identifiants de modèle de production figurent dans `GET /v1/models?format=openai` ;
+- chaque comportement de cache a été recréé dans l’application ou abandonné délibérément ;
+- les journaux des requêtes donnent à l’équipe la visibilité dont elle a besoin ;
+- le retour arrière se limite toujours à un changement d’URL de base et de clé.

@@ -1,0 +1,174 @@
+---
+icon: "music"
+title: "TTS (टेक्स्ट से स्पीच)"
+description: "किसी भी Phaseo SDK से POST /v1/audio/speech के ज़रिए टेक्स्ट को ऑडियो में बदलें।"
+---
+
+टेक्स्ट को `POST /v1/audio/speech` पर भेजें और बोला गया ऑडियो उस फ़ॉर्मेट में वापस पाएँ जो आप माँगते हैं। उदाहरण एक `client` इस्तेमाल करते हैं, जो [इंस्टॉलेशन](./installation) में बताए तरीक़े से बनाया गया है।
+
+<CodeGroup>
+
+```typescript TypeScript
+import { writeFile } from "node:fs/promises";
+
+const audio = await client.generateSpeech({
+  model: "openai/gpt-4o-mini-tts",
+  input: "Hello world",
+  voice: "alloy",
+  format: "mp3",
+});
+
+await writeFile("hello.mp3", Buffer.from(await audio.arrayBuffer()));
+```
+
+```python Python
+audio = client.generate_speech({
+    "model": "openai/gpt-4o-mini-tts",
+    "input": "Hello world",
+    "voice": "alloy",
+    "format": "mp3",
+})
+
+with open("hello.mp3", "wb") as file:
+    file.write(audio)
+```
+
+```go Go
+audio, err := client.CreateSpeech(context.Background(), map[string]interface{}{
+  "model":  "openai/gpt-4o-mini-tts",
+  "input":  "Hello world",
+  "voice":  "alloy",
+  "format": "mp3",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Printf("%T\n", audio) // फ़ाइल में लिखने से पहले असली टाइप जाँचें
+```
+
+```csharp C#
+var audio = await client.CreateSpeech(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-mini-tts",
+    ["input"] = "Hello world",
+    ["voice"] = "alloy",
+    ["format"] = "mp3",
+});
+```
+
+```php PHP
+$audio = $client->createSpeech([
+    'model' => 'openai/gpt-4o-mini-tts',
+    'input' => 'Hello world',
+    'voice' => 'alloy',
+    'format' => 'mp3',
+]);
+```
+
+```ruby Ruby
+audio = client.generate_speech(
+  model: 'openai/gpt-4o-mini-tts',
+  input: 'Hello world',
+  voice: 'alloy',
+  format: 'mp3'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello world",
+  "voice": "alloy",
+  "format": "mp3"
+}
+""";
+
+byte[] audio = client.rawClient().requestBytes("POST", "/audio/speech", null, null, body);
+java.nio.file.Files.write(java.nio.file.Path.of("hello.mp3"), audio);
+```
+
+</CodeGroup>
+
+## हर भाषा का मेथड
+
+| भाषा | मेथड | क्या लौटाता है |
+| --- | --- | --- |
+| TypeScript | `client.generateSpeech(request)` | एक `Blob` |
+| Python | `client.generate_speech(request)` या `client.audio.speech.create(request)` | `bytes` |
+| Go | `client.CreateSpeech(ctx, req)` | `interface{}`; फ़ाइल में लिखने से पहले असली टाइप जाँचें |
+| C# | `client.CreateSpeech(request)` | `object?`; फ़ाइल में लिखने से पहले असली टाइप जाँचें |
+| PHP | `$client->createSpeech($request)` | ऑडियो; फ़ाइल में लिखने से पहले वैल्यू का टाइप जाँचें |
+| Ruby | `client.generate_speech(...)`, उपनाम `create_speech` | ऑडियो; फ़ाइल में लिखने से पहले वैल्यू की क्लास जाँचें |
+| Java | कोई speech मेथड नहीं। `client.rawClient().requestBytes("POST", "/audio/speech", ...)` JSON बॉडी पोस्ट करता है | `byte[]` |
+
+Rust में कोई speech मेथड नहीं है, और उसका `post()` हेल्पर प्रतिक्रियाओं को JSON के रूप में पार्स करता है, इसलिए वह ऑडियो नहीं लौटा सकता।
+
+## पैरामीटर
+
+हर SDK में फ़ील्ड के नाम JSON बॉडी के फ़ील्ड ही हैं। `format` इस्तेमाल करें: API `response_format` भी स्वीकार करता है, लेकिन TypeScript का अनुरोध टाइप उसे अस्वीकार करता है।
+
+| फ़ील्ड | नोट |
+| --- | --- |
+| `model` | ज़रूरी। एक speech मॉडल ID। |
+| `input` | ज़रूरी। बोला जाने वाला टेक्स्ट। ज़्यादातर प्रदाता 4,096 अक्षरों तक स्वीकार करते हैं; ElevenLabs मॉडल, मॉडल के हिसाब से 5,000 से 40,000 तक की अनुमति देते हैं। |
+| `voice` | प्रदाता के हिसाब से सामान्य किया गया वॉइस उपनाम (सुझाया गया), प्रदाता की अपनी वॉइस वैल्यू, या `id` या `name` वाला एक ऑब्जेक्ट। अगर वॉइस रूट किए गए प्रदाता के लिए मान्य नहीं है, तो API `param: "voice"` के साथ `400` लौटाता है। |
+| `format` | `mp3`, `wav`, `ogg`, `aac`, `flac`, `opus` या `pcm`। |
+| `speed` | प्लेबैक स्पीड, `0.25` से `4`। |
+| `instructions` | शैली के निर्देश, जहाँ मॉडल इन्हें सपोर्ट करता है। |
+| `config` | प्रदाता-विशिष्ट सेटिंग; नीचे देखें। |
+| `provider` | प्रदाता रूटिंग की प्राथमिकताएँ। |
+
+पूरा स्कीमा [Speech API संदर्भ](/hi/v1/api-reference/endpoint/audio-speech) में है।
+
+## प्रदाता की अपनी वॉइस सेट करें
+
+प्रदाता की सटीक वॉइस `config` के अंदर दें। वही नेस्टेड ऑब्जेक्ट हर SDK के अनुरोध मैप में काम करता है।
+
+<CodeGroup>
+
+```typescript TypeScript
+// ElevenLabs: सटीक वॉइस ID चुनें
+await client.generateSpeech({
+  model: "eleven-labs/eleven-v3",
+  input: "Hello from ElevenLabs",
+  voice: "rachel",
+  config: {
+    elevenlabs: {
+      voice_id: "21m00Tcm4TlvDq8ikWAM",
+    },
+  },
+});
+
+// Google: सटीक वॉइस नाम चुनें
+await client.generateSpeech({
+  model: "google/gemini-3.1-flash-tts-preview",
+  input: "Hello from Gemini",
+  voice: "kore",
+  config: {
+    google: {
+      voice_name: "Kore",
+    },
+  },
+});
+```
+
+```python Python
+# ElevenLabs: सटीक वॉइस ID चुनें
+client.generate_speech({
+    "model": "eleven-labs/eleven-v3",
+    "input": "Hello from ElevenLabs",
+    "voice": "rachel",
+    "config": {"elevenlabs": {"voice_id": "21m00Tcm4TlvDq8ikWAM"}},
+})
+
+# Google: सटीक वॉइस नाम चुनें
+client.generate_speech({
+    "model": "google/gemini-3.1-flash-tts-preview",
+    "input": "Hello from Gemini",
+    "voice": "kore",
+    "config": {"google": {"voice_name": "Kore"}},
+})
+```
+
+</CodeGroup>

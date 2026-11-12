@@ -4,19 +4,22 @@ description: "Veröffentliche V1-, V1.1- oder V1.2-Modellfeeds mit normalisierte
 icon: "list"
 ---
 
-Genehmigte Anbieter können Angebote für bestehende öffentliche kanonische Modelle über ihren Katalog-Feed oder die Anbietereinstellungen aktualisieren. Neue kanonische Modelle benötigen eine Freigabe. Jeder Katalog ist ein vollständiger Snapshot: Wird ein Angebot entfernt, wird dieses über den Feed verwaltete Angebot deaktiviert und sein Preisverlauf bleibt erhalten.
+Veröffentliche deine Modelle, Service-Stufen, Preise und Limits als Katalog-Feed, und Phaseo übernimmt jede Änderung in deine Angebote. Als genehmigter Anbieter kannst du Angebote für bestehende öffentliche kanonische Modelle über den Feed oder die Anbietereinstellungen aktualisieren; neue kanonische Modelle benötigen eine Freigabe. Jeder Katalog ist ein vollständiger Snapshot: Wird ein Angebot entfernt, wird dieses über den Feed verwaltete Angebot deaktiviert und sein Preisverlauf bleibt erhalten.
 
-## Format wählen
+## Ein Format wählen
 
-Bestehende V1-Feeds funktionieren ohne Änderungen weiter. Ein unversioniertes `{"data": [...]}`-Dokument oder ein Dokument, das `"schema_version": "1.0"` angibt, verwendet das bestehende Format mit der Standardstufe.
+| Version | Angabe | Ergänzt | Schema |
+| --- | --- | --- | --- |
+| V1 | Kein `schema_version` oder `"1.0"` | Angebote der Standardstufe in `{"data": [...]}` | [V1](https://phaseo.app/api/internal/provider-catalog/schema) |
+| V1.1 | `"schema_version": "1.1"` | `service_tiers` innerhalb jedes Modells | [V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) |
+| V1.2 | `"schema_version": "1.2"` | `data_policy` pro Stufe und optionale `declarations`; siehe [Datenrichtlinien angeben](#declare-data-policies) | [V1.2](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2) |
 
-V1.1 gibt `"schema_version": "1.1"` an und veröffentlicht `service_tiers` innerhalb jedes Modells. Beim Import wird das Format anhand des Dokuments bestimmt. URL-Abfrageparameter wie `?format=phaseo-v1.1` sind optionale Konventionen für deinen Endpunkt; Phaseo leitet keine Version aus der URL ab.
+Alle drei Versionen werden unterstützt; bestehende V1-Feeds funktionieren ohne Änderungen weiter. Der Import liest die Version aus dem Dokument, nie aus der URL, sodass ein Abfrageparameter wie `?format=phaseo-v1.1` nur eine Konvention für deinen eigenen Endpunkt ist. Nicht unterstützte Versionen werden abgelehnt.
 
-Lade das [V1-Schema](https://phaseo.app/api/internal/provider-catalog/schema), das [V1.1-Schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) oder das [V1.2-Schema](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2) herunter. Nicht unterstützte Versionen werden ausdrücklich abgelehnt.
+<span id="declare-data-policies"></span>
+## Datenrichtlinien angeben
 
-### V1.2-Datenrichtlinien
-
-V1.2 ergänzt jede Servicestufe um fähigkeitsspezifische Angaben zu Training und Aufbewahrung. Du kannst V1.2 jederzeit veröffentlichen. Phaseo validiert die Angaben beim Import, sie begründen aber erst dann eine Garantie, wenn Phaseo deine Richtlinienquelle genehmigt hat. V1- und V1.1-Feeds werden weiterhin unterstützt.
+V1.2 ergänzt jede Service-Stufe um fähigkeitsspezifische Angaben zu Training und Aufbewahrung. Du kannst V1.2 jederzeit veröffentlichen. Phaseo validiert die Angaben beim Import, sie begründen aber erst dann eine Garantie, wenn Phaseo deine Richtlinienquelle genehmigt hat.
 
 V1.2 akzeptiert außerdem optionale `declarations` auf Modell- oder Stufenebene für Modellidentität, typisierte Ein-/Ausgabegrenzen, Parameterbeschreibungen, bereichsspezifische Preise und Kapazitäten, Rabatte und Bereitstellungsdetails. Diese Angaben werden validiert und zur Prüfung gespeichert. Sie aktivieren keine Parameter und ändern weder abrechenbare Preise noch die Durchsetzung von Kapazitätsgrenzen oder Datenresidenzgarantien automatisch. Die Validierung kennzeichnet gespeicherte Angaben; veröffentliche wirksame Preise und Fähigkeiten weiterhin über die bestehenden Felder.
 
@@ -128,7 +131,7 @@ Du kannst Limits auch unter **Anbietereinstellungen → Deine Modelle → Ratenl
 
 ## Aktualisieren und prüfen
 
-Polling und signierte Webhooks für Katalogänderungen akzeptieren beide Versionen über denselben Onboarding- und Aktualisierungsablauf. Wähle in den Anbietereinstellungen eine Stufe aus, bevor du ihre Upstream-ID, Verfügbarkeit oder Preise bearbeitest. Wenn du eine weitere Stufe hinzufügst, wird der gespeicherte Katalog auf V1.1 umgestellt.
+Polling und signierte Webhooks für Katalogänderungen akzeptieren alle drei Versionen über denselben Onboarding- und Aktualisierungsablauf. Wähle in den Anbietereinstellungen eine Stufe aus, bevor du ihre Upstream-ID, Verfügbarkeit oder Preise bearbeitest. Wenn du eine weitere Stufe hinzufügst, wird der gespeicherte Katalog auf V1.1 umgestellt.
 
 Der Katalog fügt weder einen Inferenzadapter noch Zugangsdaten hinzu. Ein Anbieter und seine angegebenen Fähigkeiten müssen integriert sein, bevor das Routing aktiviert wird. Batch-Preise machen Batch nicht auf synchronen Chat-Endpunkten verfügbar.
 

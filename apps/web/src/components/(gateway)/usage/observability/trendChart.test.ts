@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import {
 	prepareTrendChartData,
 	shouldOpenTrendExplore,
@@ -7,7 +8,7 @@ import type { ObservabilityTimeSeriesChart } from "./types";
 
 describe("trend chart interactions", () => {
 	it("keeps Base UI popover interactions in the current Usage view", () => {
-		const closest = jest.fn((selector: string) =>
+		const closest = vi.fn((selector: string) =>
 			selector.includes("[data-slot='popover-content']")
 				? ({} as Element)
 				: null,
@@ -18,7 +19,7 @@ describe("trend chart interactions", () => {
 	});
 
 	it("stops a portaled control click before it reaches the chart card", () => {
-		const stopPropagation = jest.fn();
+		const stopPropagation = vi.fn();
 
 		stopTrendControlClick({ stopPropagation });
 

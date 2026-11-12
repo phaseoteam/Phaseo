@@ -1,43 +1,39 @@
 ---
 title: "Cloudflare AI Gateway からの移行"
 sidebarTitle: "Cloudflare AI Gateway"
-description: "アプリケーションのリクエストフローを維持したまま、Cloudflare AI Gateway のルートを Phaseo に置き換えます。"
+description: "アプリケーションのリクエストフローを保ったまま、Cloudflare AI Gateway のルートを Phaseo に置き換えます。"
 icon: "/icons/brands/cloudflare.svg"
 ---
 
-アプリケーションから Cloudflare AI Gateway 経由で OpenAI 互換リクエストを送信している場合は、このガイドを使ってください。まず Gateway の境界を切り替え、本番トラフィックに必要なルーティング、キャッシュ、可観測性だけを再構成します。
+Cloudflare Gateway の URL とプロバイダーキーを `https://api.phaseo.app/v1` と Phaseo キーに置き換え、`cf-aig-*` ヘッダーを削除します。リクエストのペイロードは変わりません。
 
-## 変更点
-
-| 設定 | 変更前 | 変更後 |
+| 設定 | Cloudflare AI Gateway | Phaseo |
 | --- | --- | --- |
-| Gateway URL | アカウントと Gateway 固有の Cloudflare URL | `https://api.phaseo.app/v1` |
-| 認証 | Cloudflare とプロバイダーの認証情報 | `PHASEO_API_KEY` |
-| ルーティングポリシー | Cloudflare Gateway の設定 | Phaseo のルーティング設定とプリセット |
-| リクエストの可視性 | Cloudflare Analytics | Phaseo のアクティビティとリクエスト詳細 |
+| ベース URL | `gateway.ai.cloudflare.com/v1/<account_id>/<gateway_id>/<provider>`、または `api.cloudflare.com/client/v4/accounts/<account_id>/ai/v1` | `https://api.phaseo.app/v1` |
+| 認証 | プロバイダーキーに加えて、`cf-aig-authorization` または Cloudflare API トークン | `PHASEO_API_KEY` を `Authorization: Bearer` として送信 |
+| プロバイダーの選択 | プロバイダーごとに 1 つのルート | ベース URL は 1 つ。モデル ID がモデルを決め、ルーティングがプロバイダーを決めます |
+| Gateway ヘッダー | `cf-aig-*` | 削除するか、下の表のとおり対応付けます |
+| リクエストの可視化 | Cloudflare のアナリティクス | Phaseo のリクエストログとリクエストの詳細 |
 
-<Steps>
-<Step title="現在の Gateway 設定を洗い出す">
-
-Cloudflare Gateway の URL、プロバイダールート、カスタムヘッダー、キャッシュルール、再試行動作、アプリケーションが依存する分析機能を記録します。これにより、必要な動作と移行不要な設定を分けられます。
-
-</Step>
-
-<Step title="エンドポイントと認証情報を置き換える">
-
-可能な限りリクエストペイロードは変更せず、OpenAI 互換クライアントの接続先を更新します。
+## クライアントを切り替える
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// Before:
+// new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+//   baseURL: `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/openai`,
+//   defaultHeaders: { "cf-aig-authorization": `Bearer ${process.env.CF_AIG_TOKEN}` },
+// });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -57,39 +53,40 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+`/anthropic` ルートは、[Anthropic SDK からの移行](./from-anthropic)の Anthropic SDK の設定に移します。Workers AI のバインディング呼び出し(`env.AI.run(model, input, { gateway })`)は HTTP クライアントではありません。Phaseo に向けた `fetch` または OpenAI SDK に置き換えてください。対象は `GET /v1/models?format=openai` に載っているモデルのみです。`PHASEO_API_KEY` は `wrangler` の設定ではなく、Worker のシークレットとして保存します。
 
-<Step title="ルーティングと共有デフォルトを再構成する">
+## Gateway の機能を対応付ける
 
-安定したプロバイダー制限、プロンプトの既定値、生成パラメーターを[プリセット](../guides/presets.mdx)に移します。プロバイダーの優先順位とフォールバックは[ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)で設定します。
+Cloudflare の設定は自動では引き継がれません。それぞれについて、Phaseo、アプリケーション、エッジ層のどこに置くかを決めてください。
 
-Cloudflare のキャッシュや分析設定は自動的には移行されません。それぞれの動作を Phaseo、アプリケーション、エッジレイヤーのどこに置くか明示的に決めてください。
+| Cloudflare AI Gateway | Phaseo での扱い |
+| --- | --- |
+| フォールバックチェーン | `models` 配列、プロバイダーのフォールバック、または[動的ルート](../guides/routing-and-fallbacks)。モデルのフォールバックは `429`、`500`、`502`、`503`、`504` で発動し、リクエストエラーでは発動しません。 |
+| `dynamic/<route>` のモデル文字列 | API キーに紐づけた動的ルート。実際のモデル ID を送ってください。 |
+| `cloudflare/auto` | `phaseo/auto`([自動ルーティング](../guides/auto-routing)、アルファ版)。`models` とは併用できません。 |
+| キャッシュ(`cf-aig-cache-ttl`、`cf-aig-skip-cache`、`cf-aig-cache-key`) | レスポンスキャッシュはありません。必要ならアプリでキャッシュしてください。[プロンプトキャッシュ](../guides/prompt-caching)では引き続き入力コストを削減できます。 |
+| `cf-aig-metadata` | `X-Phaseo-Metadata` の[ラベル](../guides/request-labels)。最大 32 個で、キーは `[A-Za-z0-9_.:-]`(64 文字)に一致し、値は最大 256 文字の文字列です。数値と真偽値は変換してください。 |
+| `cf-aig-collect-log` | ワークスペースのログポリシー、または `provider.require_zero_data_retention`。後者はルーティングを ZDR プロバイダーにも限定します。 |
+| `cf-aig-request-timeout`、`cf-aig-max-attempts` | リクエスト単位の制御はありません。組み込みのプロバイダーフォールバックとクライアント側のバックオフを使います。 |
+| `cf-aig-session-id` | ボディの `session_id` フィールド。 |
+| `cf-aig-custom-cost` | 代替はありません。 |
+| レート制限、支出上限 | レート制限ポリシー、キーの制限、ワークスペース・キー・部門の予算。[制限](../api-reference/limits)を参照してください。 |
+| ガードレールと DLP | キーとメンバーのガードレールが、リクエストのプロンプトインジェクションと個人情報をスキャンします。レスポンスはスキャンされないため、コンテンツの安全性には `/v1/moderations` を呼び出してください。 |
+| ログとアナリティクス | リクエストログ、プロバイダーの試行と料金を含むリクエストの詳細、[オブザーバビリティの送信先](../guides/integrations/observability)。 |
+| Workers AI の `@cf/...` モデル | `GET /v1/models?format=openai` に載っている場合のみ。載っていなければ、それらの呼び出しは Workers AI に残してください。 |
 
-</Step>
+## テストして展開する
 
-<Step title="切り替え前に検証する">
+非ストリーミング、ストリーミング、エラー、ツール、構造化出力をアプリでの使い方どおりにテストし、レイテンシー、出力、トークン使用量、コストを比較してから、段階的にトラフィックを移します。切り替え前に、次を確認してください。
 
-必要に応じて、非ストリーミング、ストリーミング、エラー、ツール、構造化出力をテストします。トラフィックを段階的に移行する前に、レイテンシ、出力、トークン使用量、コストを比較してください。
-
-</Step>
-</Steps>
-
-## 移行チェックリスト
-
-- Cloudflare 固有の Gateway URL とヘッダーを削除した。
-- 本番モデルIDを `GET /v1/models` で確認した。
-- 必要なキャッシュ動作を意図的に再構成するか、廃止した。
-- チームに必要な可視性を Phaseo のアクティビティとリクエスト詳細で確認できる。
-- ロールバックは引き続きエンドポイントとキーの設定変更だけで行える。
-
-## 次のステップ
-
-- [プリセット](../guides/presets.mdx)
-- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
-- [可観測性](../guides/integrations/observability.mdx)
+- `gateway.ai.cloudflare.com` と `api.cloudflare.com/.../ai/v1` の URL、および `cf-aig-*` ヘッダーがすべてなくなっている。ルートが残っていると、トラフィックが旧経路に留まります
+- 本番のモデル ID が `GET /v1/models?format=openai` にある
+- 各キャッシュの動作をアプリで再現したか、意図的に廃止した
+- チームが必要とする可視性をリクエストログで得られる
+- 切り戻しが引き続きベース URL とキーの変更だけで済む

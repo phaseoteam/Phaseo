@@ -1,8 +1,6 @@
-"use client";
-
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { parseAsString, useQueryState } from "nuqs";
 import { LoaderCircle, TriangleAlert } from "lucide-react";
 

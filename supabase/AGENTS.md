@@ -13,7 +13,9 @@ deployment boundary, and CLI requirements.
 - Do not use raw `db diff`, declarative `sync`, or root `db reset` for this
   repository: the original migration history lacks its initial schema.
 - Keep existing migrations and `baseline/schema.sql` / `baseline/history.sha256`
-  unchanged. The baseline is for empty disposable databases, never production.
+  unchanged. The only exception is a merged migration that never applied in any
+  environment, rewritten with the `phaseo:rewrite-unapplied-migration` marker
+  (see `.github/PRODUCTION_DATABASE_MIGRATIONS.md`). The baseline is for empty disposable databases, never production.
   Preserve historical files and remote migration records.
 - Deployment applies reviewed migrations, not schema files. Do not apply live
   schema changes through Studio, SQL tools, or MCP without explicit deployment

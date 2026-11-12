@@ -1,17 +1,18 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../../messages/en-GB/settings-ui.json";
 import commonMessages from "../../../../../messages/en-GB/common.json";
 import { PagesList, SharingFields, SlackPagesSection } from "./SlackPagesSection";
 import type { SlackAgentSettings } from "./slackAgentForm";
 import { linkAccessPatch, pageSettings, pageSharing, slackPagesError, type SlackAgentPages } from "./slackAgentPages";
 
-jest.mock("@/app/(dashboard)/settings/slack/actions", () => ({
-	updateSlackAgent: jest.fn(),
-	loadSlackAgentPages: jest.fn(),
-	deleteSlackAgentPage: jest.fn(),
+vi.mock("@/features/settings/slack/actions", () => ({
+	updateSlackAgent: vi.fn(),
+	loadSlackAgentPages: vi.fn(),
+	deleteSlackAgentPage: vi.fn(),
 }));
-jest.mock("../PrivateSettingsQuery", () => ({
+vi.mock("../PrivateSettingsQuery", () => ({
 	useSettingsWrite: () => (operation: Promise<unknown>) => operation,
 }));
 
@@ -35,9 +36,9 @@ const SETTINGS = pageSettings({ pages_enabled: true, page_expiry_days: 30, page_
 
 function render(children: React.ReactNode) {
 	return renderToStaticMarkup(
-		<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
+		<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
 			{children}
-		</NextIntlClientProvider>,
+		</AppIntlProvider>,
 	);
 }
 

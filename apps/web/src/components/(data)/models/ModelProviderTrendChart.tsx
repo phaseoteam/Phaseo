@@ -1,7 +1,5 @@
-"use client";
-
 import { useRef, useState, type ReactNode } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import {
 	CartesianGrid,
 	Line,
@@ -48,6 +46,8 @@ type ModelProviderTrendChartProps = {
 	detailed?: boolean;
 	showHeader?: boolean;
 	headerAction?: ReactNode;
+	/** Renders only the chart and a legend row, at exactly this size, for a share image. */
+	exportSize?: { width: number; height: number };
 };
 
 type TableSortKey = "provider" | "minimum" | "maximum" | "average";
@@ -315,6 +315,9 @@ function getPercentile(providerId: string): number | null {
 	return Number.isFinite(percentile) ? percentile : null;
 }
 
+/** Space under the chart for the series legend row in a share render. */
+const EXPORT_LEGEND_HEIGHT = 40;
+
 export default function ModelProviderTrendChart({
 	title,
 	data,
@@ -325,10 +328,14 @@ export default function ModelProviderTrendChart({
 	metricAxisLabel,
 	timeResolution = "day",
 	maxSeries = 3,
-	detailed = false,
+	detailed: detailedProp = false,
 	showHeader = true,
 	headerAction,
+	exportSize,
 }: ModelProviderTrendChartProps) {
+	// A share render uses the detailed axes, without the header or the table.
+	const detailed = detailedProp || Boolean(exportSize);
+	const chartExportSize = exportSize ? { width: exportSize.width, height: exportSize.height - EXPORT_LEGEND_HEIGHT } : undefined;
 	const locale = useLocale();
 	const t = useTranslations("Catalogue.modelDetail.performance");
 	const tx = useTranslations();
@@ -575,7 +582,7 @@ export default function ModelProviderTrendChart({
 
 	return (
 		<div className={detailed ? "flex h-full min-h-0 flex-col gap-3" : "space-y-3"}>
-			{showHeader ? <div className="flex items-start justify-between gap-3">
+			{showHeader && !exportSize ? <div className="flex items-start justify-between gap-3">
 				<div className="flex items-center gap-1.5">
 					<p className={detailed ? "text-lg font-medium leading-none text-foreground" : "text-sm font-medium leading-none text-foreground"}>{title}</p>
 					<ModelMetricInfo label={metricInfoLabel ?? metricConfig.label} description={metricDescription ?? metricConfig.description} />
@@ -592,12 +599,15 @@ export default function ModelProviderTrendChart({
 			{chartData.length > 0 ? (
 				<div
 					className={
-						detailed
-							? "h-[300px] w-full shrink-0 pt-1"
-							: "h-[148px] w-full pt-1"
+						chartExportSize
+							? "shrink-0"
+							: detailed
+								? "h-[300px] w-full shrink-0 pt-1"
+								: "h-[148px] w-full pt-1"
 					}
+					style={chartExportSize}
 				>
-				<ResponsiveContainer width="100%" height="100%">
+				<ResponsiveContainer width="100%" height="100%" initialDimension={chartExportSize}>
 					<LineChart
 						data={chartData}
 						margin={detailed
@@ -747,7 +757,16 @@ export default function ModelProviderTrendChart({
 					{t("noMetricSamples", { metric: title } as never)}
 				</div>
 			)}
-			{detailed ? (
+			{exportSize ? (
+				<div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 px-1 text-sm text-foreground">
+					{providers.map((provider) => (
+						<span key={provider.seriesKey} className="inline-flex items-center gap-2">
+							<span className="size-2.5 rounded-[2px]" style={{ backgroundColor: provider.color }} />
+							{provider.name}
+						</span>
+					))}
+				</div>
+			) : detailed ? (
 				<ScrollArea
 					className="min-h-0 flex-1 rounded-md border border-border/70"
 					viewportClassName="min-h-0"

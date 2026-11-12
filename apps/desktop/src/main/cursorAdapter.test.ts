@@ -33,6 +33,10 @@ describe("Cursor SDK harness", () => {
 		const options = cursorOptions(task, "/project", "secret", {} as never, []); expect(options.tools).toEqual([]); expect(options.local?.settingSources).toEqual([]); expect(options.mcpServers).toEqual({});
 		const plan = cursorOptions({ ...task, mode: "plan" }, "/project", "secret", {} as never, []); expect(plan.tools).toContain("read"); expect(plan.tools).not.toContain("shell"); expect(plan.tools).not.toContain("task"); expect(plan.local?.settingSources).toEqual([]);
 	});
+	it("loads the repository's own settings only for a checkout the person opened", () => {
+		expect(cursorOptions({ ...task, mode: "code" }, "/project", "secret", {} as never, []).local?.settingSources).toContain("project");
+		expect(cursorOptions({ ...task, mode: "code", untrustedCheckout: true }, "/project", "secret", {} as never, []).local?.settingSources).toEqual(["user", "team", "mdm", "plugins"]);
+	});
 	it("admits only the orchestration server in Chat and Plan and guides a new session", async () => {
 		const orchestration = { id: "00000000-0000-4000-8000-000000000002", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http" as const, url: "http://127.0.0.1:1/mcp", headers: { Authorization: "Bearer owned" } };
 		const user = { id: "00000000-0000-4000-8000-000000000003", name: "User", enabled: true, transport: "http" as const, url: "https://example.invalid/mcp" };

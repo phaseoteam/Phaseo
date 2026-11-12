@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Task } from "../shared/workspace";
 const sdk = vi.hoisted(() => ({ query: vi.fn() }));
+import { BackgroundWork } from "./backgroundWork";
 vi.mock("@anthropic-ai/claude-agent-sdk", () => ({ query: sdk.query }));
 vi.mock("./nativeProcess", () => ({ resolveNativeCommand: async () => ({ executable: "claude", prefix: [] }) }));
 import { ClaudeAdapter, claudeQuestions } from "./claudeAdapter";
@@ -32,6 +33,12 @@ describe("Claude SDK integration", () => {
   const inputs: unknown[] = []; const close = vi.fn(); let admitted!: Promise<IteratorResult<unknown>>; sdk.query.mockImplementation(({ prompt }) => { admitted = prompt[Symbol.asyncIterator]().next(); void admitted.then(value => { if (!value.done) inputs.push(value.value); }); return { supportedCommands: async () => [{ name: "review" }], reinitialize: async () => ({ commands: [] }), close }; }); const adapter = new ClaudeAdapter();
   await expect(adapter.run(task, "/project", "/review target", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => { if (condition === "cancelled") await adapter.cancel(); return condition === "declined" ? "decline" : "accept"; } }, undefined, [], { kind: "command", id: "review", name: "review", arguments: "target" })).rejects.toBeInstanceOf(AgentInputRejectedError); await admitted; expect(inputs).toEqual([]); expect(close).toHaveBeenCalledOnce();
  });
+
+	it.each([[true, ["user"]], [undefined, ["user", "project", "local"]]] as const)("loads the repository's own settings, hooks and MCP servers only for a checkout the person opened (untrusted: %s)", async (untrustedCheckout, sources) => {
+		sdk.query.mockReturnValue(Object.assign((async function* () { yield { type: "result", subtype: "success", is_error: false, result: "Done" }; })(), { close: vi.fn() }));
+		await new ClaudeAdapter().run({ ...task, mode: "code", permissionMode: "full-access", ...(untrustedCheckout ? { untrustedCheckout } : {}) }, "/project", "Review", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "accept" });
+		expect(sdk.query.mock.lastCall?.[0].options).toMatchObject({ settingSources: sources, permissionMode: "bypassPermissions" });
+	});
 
 	it("publishes todo progress only after successful foreground tool results", async () => {
 		sdk.query.mockReturnValue(Object.assign((async function* () {
@@ -69,7 +76,7 @@ describe("Claude SDK integration", () => {
 		sdk.query.mockImplementation(({ prompt, options }) => Object.assign((async function* () {
 			if (typeof prompt !== "string") for await (const message of prompt) void message;
 			expect(Object.keys(options.mcpServers)).toEqual(mode === "chat" ? [nativeMcpName(orchestration)] : [nativeMcpName(user), nativeMcpName(orchestration)]);
-			expect(options.systemPrompt).toBe(orchestrationInstructions);
+			expect(options.systemPrompt).toContain(orchestrationInstructions);
 			if (mode === "chat") expect(options).toMatchObject({ tools: ["AskUserQuestion"], strictMcpConfig: true });
 			expect((await options.canUseTool(`mcp__${nativeMcpName(orchestration)}__delegate_task`, { prompt: "Inspect" })).behavior).toBe("allow");
 			expect((await options.canUseTool("Bash", { command: "ls" })).behavior).toBe("deny");
@@ -145,5 +152,27 @@ describe("Claude SDK integration", () => {
 		expect(calls[1].options).toMatchObject({ model: "claude-fable-5-1" });
 		expect(calls[1].options.effort).toBeUndefined();
 		expect(calls[1].prompt).toBe("Ultrathink:\nPlan it");
+	});
+	it("keeps its input open while a background task it waits on runs, and takes the answer it gives when the task ends", async () => {
+		const orchestration: McpConnection = { id: "00000000-0000-4000-8000-000000000002", name: "Phaseo orchestration", enabled: true, orchestration: true, transport: "http", url: "http://127.0.0.1:1/mcp" };
+		const background = new BackgroundWork(), events: string[] = [];
+		sdk.query.mockImplementation(({ prompt }) => Object.assign((async function* () {
+			const input = prompt[Symbol.asyncIterator]();
+			await input.next();
+			const closed = input.next().then(() => events.push("input closed"));
+			yield { type: "system", subtype: "task_started", task_id: "build", task_type: "local_bash", description: "Build" };
+			expect(background.wait(["build", "other"])).toEqual({ matched: ["build"], unmatched: ["other"] });
+			yield { type: "result", subtype: "success", is_error: false, result: "Started the build" };
+			await new Promise(resolve => setTimeout(resolve, 0));
+			events.push("after first result");
+			yield { type: "system", subtype: "task_notification", task_id: "build", status: "completed", summary: "Built" };
+			yield { type: "assistant", parent_tool_use_id: null, session_id: "native", message: { id: "late", content: [{ type: "text", text: "The build passed." }] } };
+			yield { type: "result", subtype: "success", is_error: false, result: "The build passed." };
+			await closed;
+		})(), { close: vi.fn(), mcpServerStatus: async () => [{ name: nativeMcpName(orchestration), status: "connected" }] }));
+		const onDelta = vi.fn();
+		await new ClaudeAdapter([orchestration]).run({ ...task, mode: "code" }, ".", "Build it", { onDelta, onSession: vi.fn(), onApproval: async () => "accept", background });
+		expect(events).toEqual(["after first result", "input closed"]);
+		expect(onDelta).toHaveBeenCalledWith("late", "The build passed.");
 	});
 });

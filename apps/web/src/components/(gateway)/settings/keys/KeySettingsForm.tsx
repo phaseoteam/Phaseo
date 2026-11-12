@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import React, { useMemo, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
@@ -9,8 +7,9 @@ import { toast } from "sonner";
 import {
 	updateApiKeyAction,
 	type KeyLimitPayload,
-} from "@/app/(dashboard)/settings/keys/actions";
+} from "@/features/settings/keys/actions";
 import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "../SettingsFormActions";
 
 import {
 	InputGroup,
@@ -109,7 +108,7 @@ function LimitInput({
 }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="min-w-0 space-y-2">
+		<div className="grid min-w-0 gap-3 border-t border-border/60 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 			<Label htmlFor={id}>{label}</Label>
 			<InputGroup>
 				{kind === "spend" ? (
@@ -138,19 +137,25 @@ export default function KeySettingsForm({ k }: { k: any }) {
 	const t = useTranslations("SettingsUI");
 	const router = useRouter();
 	const invalidateSettings = useInvalidatePrivateSettings();
-	const [enabled, setEnabled] = useState(() => isKeyEnabled(k));
-	const [limits, setLimits] = useState<LimitsForm>(() => initialLimits(k));
-	const [ipAllowlist, setIpAllowlist] = useState<KeyIpEntry[]>(() => k.ip_allowlist ?? []);
-	const [storageLocations, setStorageLocations] = useState<string[]>(() => k.storage_locations ?? []);
+	const [saved, setSaved] = useState(() => ({
+		enabled: isKeyEnabled(k),
+		limits: initialLimits(k),
+		ipAllowlist: (k.ip_allowlist ?? []) as KeyIpEntry[],
+		storageLocations: (k.storage_locations ?? []) as string[],
+	}));
+	const [enabled, setEnabled] = useState(saved.enabled);
+	const [limits, setLimits] = useState(saved.limits);
+	const [ipAllowlist, setIpAllowlist] = useState(saved.ipAllowlist);
+	const [storageLocations, setStorageLocations] = useState(saved.storageLocations);
 	const [saving, setSaving] = useState(false);
 	const revoked = ["revoked", "compromised"].includes(String(k?.status ?? "").toLowerCase());
 	const dirty = useMemo(
 		() =>
-			enabled !== isKeyEnabled(k) ||
-			JSON.stringify(limits) !== JSON.stringify(initialLimits(k)) ||
-			JSON.stringify(ipAllowlist) !== JSON.stringify(k.ip_allowlist ?? []) ||
-			JSON.stringify(storageLocations) !== JSON.stringify(k.storage_locations ?? []),
-		[k, enabled, limits, ipAllowlist, storageLocations],
+			enabled !== saved.enabled ||
+			JSON.stringify(limits) !== JSON.stringify(saved.limits) ||
+			JSON.stringify(ipAllowlist) !== JSON.stringify(saved.ipAllowlist) ||
+			JSON.stringify(storageLocations) !== JSON.stringify(saved.storageLocations),
+		[saved, enabled, limits, ipAllowlist, storageLocations],
 	);
 
 	const updateLimit = (field: keyof LimitsForm, value: string) => {
@@ -164,7 +169,7 @@ export default function KeySettingsForm({ k }: { k: any }) {
 
 		setSaving(true);
 		try {
-			const promise = updateApiKeyAction(k.id, { ...(enabled !== isKeyEnabled(k) ? { paused: !enabled } : {}), ...(JSON.stringify(ipAllowlist) !== JSON.stringify(k.ip_allowlist ?? []) ? { ipAllowlist } : {}), ...(JSON.stringify(storageLocations) !== JSON.stringify(k.storage_locations ?? []) ? { storageLocations } : {}), limits: limitPayload });
+			const promise = updateApiKeyAction({ data: { id: k.id, updates: { ...(enabled !== saved.enabled ? { paused: !enabled } : {}), ...(JSON.stringify(ipAllowlist) !== JSON.stringify(saved.ipAllowlist) ? { ipAllowlist } : {}), ...(JSON.stringify(storageLocations) !== JSON.stringify(saved.storageLocations) ? { storageLocations } : {}), limits: limitPayload } } });
 			toast.promise(promise, {
 					loading: t("strings.phraseSavingKey"),
 					success: t("strings.Key updated"),
@@ -172,6 +177,7 @@ export default function KeySettingsForm({ k }: { k: any }) {
 				},
 			);
 			await promise;
+			setSaved({ enabled, limits, ipAllowlist, storageLocations });
 			void invalidateSettings();
 			router.refresh();
 		} catch {
@@ -182,8 +188,8 @@ export default function KeySettingsForm({ k }: { k: any }) {
 	}
 
 	return (
-		<form id="settings" onSubmit={onSave} className="space-y-6 rounded-xl border bg-card p-6">
-			<fieldset disabled={saving} className="space-y-6">
+		<form id="settings" onSubmit={onSave} className="min-w-0 w-full max-w-4xl space-y-8">
+			<fieldset disabled={saving} className="space-y-8">
 			<section className="space-y-4">
 				<div className="text-sm font-medium">{t("strings.General")}</div>
 				<div className="flex items-center justify-between gap-4">
@@ -202,12 +208,12 @@ export default function KeySettingsForm({ k }: { k: any }) {
 					<div className="text-sm font-medium">{t("strings.Limits")}</div>
 					<div className="text-xs text-muted-foreground">{t("strings.phraseLeaveAFieldBlankForUnlimited")}</div>
 				</div>
-				<div className="grid gap-4 md:grid-cols-3">
+				<div>
 					<LimitInput id="edit-key-daily-requests" label={t("keys.dailyRequests")} value={limits.dailyRequests} onChange={(value) => updateLimit("dailyRequests", value)} kind="requests" />
 					<LimitInput id="edit-key-weekly-requests" label={t("keys.weeklyRequests")} value={limits.weeklyRequests} onChange={(value) => updateLimit("weeklyRequests", value)} kind="requests" />
 					<LimitInput id="edit-key-monthly-requests" label={t("keys.monthlyRequests")} value={limits.monthlyRequests} onChange={(value) => updateLimit("monthlyRequests", value)} kind="requests" />
 				</div>
-				<div className="grid gap-4 md:grid-cols-3">
+				<div>
 					<LimitInput id="edit-key-daily-spend" label={t("keys.dailySpend")} value={limits.dailyCostUsd} onChange={(value) => updateLimit("dailyCostUsd", value)} kind="spend" />
 					<LimitInput id="edit-key-weekly-spend" label={t("keys.weeklySpend")} value={limits.weeklyCostUsd} onChange={(value) => updateLimit("weeklyCostUsd", value)} kind="spend" />
 					<LimitInput id="edit-key-monthly-spend" label={t("keys.monthlySpend")} value={limits.monthlyCostUsd} onChange={(value) => updateLimit("monthlyCostUsd", value)} kind="spend" />
@@ -223,12 +229,18 @@ export default function KeySettingsForm({ k }: { k: any }) {
 					<label htmlFor="edit-key-storage" className="text-sm font-medium">{t("keyStorage.title")}</label>
 					<p className="text-xs text-muted-foreground">{t("keyStorage.help")}</p>
 				</div>
-				<KeyStorageLocationPicker id="edit-key-storage" value={storageLocations} onChange={setStorageLocations} disabled={saving} />
+				<div className="max-w-sm"><KeyStorageLocationPicker id="edit-key-storage" value={storageLocations} onChange={setStorageLocations} disabled={saving} /></div>
 			</section>
 
-			<div className="flex justify-end">
+			<SettingsFormActions active={dirty || saving}>
+				<Button type="button" variant="outline" disabled={saving || !dirty} onClick={() => {
+					setEnabled(saved.enabled);
+					setLimits(saved.limits);
+					setIpAllowlist(saved.ipAllowlist);
+					setStorageLocations(saved.storageLocations);
+				}}>{t("strings.Cancel")}</Button>
 				<Button type="submit" disabled={saving || !dirty}>{saving ? t("strings.phraseSaving") : t("strings.Save Changes")}</Button>
-			</div>
+			</SettingsFormActions>
 			</fieldset>
 		</form>
 	);

@@ -5,7 +5,7 @@ description: "Make your first request, connect an application, or find the refer
 icon: "house"
 ---
 
-Use Phaseo to call models from multiple providers through one API, control routing, and track usage and costs.
+Call models from many providers through one API at `https://api.phaseo.app/v1`, choose how each request is routed, and track usage and cost per request. This request uses `phaseo/free`, so it works before you add credits:
 
 <CodeGroup>
 
@@ -41,7 +41,7 @@ print(response.output_text)
 
 </CodeGroup>
 
-No API key yet? Run `phaseo keys create` with the [Phaseo CLI](./guides/integrations/phaseo-cli) or [create one in the dashboard](https://phaseo.app/settings/keys), then follow the [quickstart](./quickstart.mdx).
+No API key yet? [Create one in the dashboard](https://phaseo.app/settings/keys), then follow the [quickstart](./quickstart.mdx).
 
 ## Start from where you are
 
@@ -53,7 +53,7 @@ No API key yet? Run `phaseo keys create` with the [Phaseo CLI](./guides/integrat
 
 [**<Icon icon="terminal" /> Connect a coding assistant** Configure Codex, Claude Code, Cursor, or another assistant.](./guides/integrations/coding-assistants.mdx)
 
-[**<Icon icon="bot" /> Build an agent** Give a model tools, stream its steps, and approve its actions with the Agent SDK.](./sdk-reference/agent-sdk/overview.mdx)
+[**<Icon icon="bot" /> Build an agent** Give a model tools, stream its steps, and approve its actions with the Agent SDK.](./sdk-reference/agent/overview.mdx)
 
 </div>
 
@@ -61,13 +61,12 @@ No API key yet? Run `phaseo keys create` with the [Phaseo CLI](./guides/integrat
 
 <div className="ph-sdks not-prose">
 
-[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> <Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> TypeScript and Python](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/client/overview.mdx)
 
 </div>
 
@@ -84,7 +83,7 @@ No API key yet? Run `phaseo keys create` with the [Phaseo CLI](./guides/integrat
 
 ## Choose a model
 
-[Browse models](https://phaseo.app/models) or [compare them](https://phaseo.app/compare). Catalog entries can include models that are not routable; check Gateway availability before integrating. See [How Phaseo Works](./developers/introduction.mdx) for models, providers, and billing.
+[Browse models](https://phaseo.app/models) or [compare them](https://phaseo.app/compare). The catalog also lists models you can't call yet, so check that a model is **Active on Gateway** before you integrate it, or list callable models with `GET /v1/models`. See [How Phaseo Works](./developers/introduction.mdx) for models, providers, and billing.
 
 ## Build with an AI agent
 

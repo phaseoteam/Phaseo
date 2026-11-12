@@ -1,7 +1,5 @@
-"use client";
-
 import { createContext, useContext, useId, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
   createLibrary,
   defineComponent,

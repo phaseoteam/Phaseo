@@ -90,6 +90,28 @@ describe("OpenAI image edit schema", () => {
 		}).success).toBe(true);
 	});
 
+	it("accepts input_fidelity low on gpt-image-1-mini and rejects high", () => {
+		const edit = (input_fidelity: string) => ImagesEditSchema.safeParse({
+			model: "openai/gpt-image-1-mini",
+			image: "image",
+			prompt: "edit",
+			input_fidelity,
+		});
+		expect(edit("low").success).toBe(true);
+		const high = edit("high");
+		expect(high.success).toBe(false);
+		if (!high.success) expect(high.error.issues[0]?.message).toBe("gpt-image-1-mini supports only input_fidelity low");
+	});
+
+	it("accepts complexity on GPT Image 2.6 edits only", () => {
+		const edit = (model: string, complexity: string) => ImagesEditSchema.safeParse({ model, image: "image", prompt: "edit", complexity });
+		expect(edit("openai/gpt-image-2.6-flare", "low").success).toBe(true);
+		expect(edit("openai/gpt-image-2.6-sunburst", "medium").success).toBe(true);
+		expect(edit("openai/gpt-image-2.6-flare", "xhigh").success).toBe(false);
+		expect(edit("openai/gpt-image-2.5-sunburst", "high").success).toBe(false);
+		expect(edit("openai/gpt-image-1.5", "high").success).toBe(false);
+	});
+
 	it("rejects GPT Image 2.5-only edit quality for earlier GPT Image models", () => {
 		expect(ImagesEditSchema.safeParse({
 			model: "openai/gpt-image-2",
@@ -187,5 +209,20 @@ describe("OpenAI image edit schema", () => {
 		expect(ImagesEditSchema.safeParse({ ...base, size: "2K", resolution: "2k" }).success).toBe(true);
 		expect(ImagesEditSchema.safeParse({ ...base, size: "1k" }).success).toBe(true);
 		expect(ImagesEditSchema.safeParse({ ...base, resolution: "2k" }).success).toBe(true);
+	});
+});
+
+describe("GPT Image 2.6 edit options", () => {
+	const base = { model: "openai/gpt-image-2.6-flare", prompt: "Add a sun", image: "https://example.com/a.png" };
+
+	it("accepts markup and complexity", () => {
+		expect(ImagesEditSchema.safeParse({ ...base, markup: "https://example.com/markup.png", complexity: "medium" }).success).toBe(true);
+		expect(ImagesEditSchema.safeParse({ ...base, model: "openai/gpt-image-2.5-sunburst", markup: "https://example.com/markup.png" }).success).toBe(true);
+	});
+
+	it("rejects markup with a mask, markup before 2.5 and complexity before 2.6", () => {
+		expect(ImagesEditSchema.safeParse({ ...base, markup: "https://example.com/m.png", mask: "https://example.com/k.png" }).success).toBe(false);
+		expect(ImagesEditSchema.safeParse({ ...base, model: "openai/gpt-image-1.5", markup: "https://example.com/m.png" }).success).toBe(false);
+		expect(ImagesEditSchema.safeParse({ ...base, model: "openai/gpt-image-2.5-flare", complexity: "low" }).success).toBe(false);
 	});
 });

@@ -7,12 +7,15 @@ const state = vi.hoisted(() => ({
 	shadow: vi.fn(),
 	mode: "off" as string,
 	decide: vi.fn(),
+	footprint: vi.fn(),
 }));
 
 // Mirrors enforcedSpendLimit's contract (spend-limits.test.ts covers the real one): a decision
 // only in enforce mode for non-internal requests with a slot, computed once per slot.
 vi.mock("@core/spend-limits", () => ({
 	shadowSpendLimitOnce: state.shadow,
+	startSpendLimitFootprint: (args: { internal?: boolean; slot?: { decision: Promise<unknown> | null } | null }) =>
+		!args.slot || args.slot.decision || args.internal || state.mode !== "enforce" ? null : state.footprint(args),
 	enforcedSpendLimit: (args: { internal?: boolean; slot?: { decision: Promise<unknown> | null } | null }) => {
 		if (!args.slot || args.internal || state.mode !== "enforce") return null;
 		args.slot.decision ??= Promise.resolve(state.decide(args));
@@ -76,6 +79,7 @@ describe("budget alerts from rejected requests", () => {
 		state.shadow.mockReset();
 		state.mode = "off";
 		state.decide.mockReset();
+		state.footprint.mockReset();
 		resetRememberedSpendLimits();
 	});
 
@@ -164,6 +168,36 @@ describe("budget alerts from rejected requests", () => {
 
 		beforeEach(() => { state.mode = "enforce"; });
 
+		it("records how long the request waited for the coordinator's decision", async () => {
+			// A controlled clock: it moves 42 ms only when the decision resolves, so no real time passes.
+			let now = 1_000;
+			const clock = vi.spyOn(performance, "now").mockImplementation(() => now);
+			state.decide.mockImplementation(() => Promise.resolve().then(() => {
+				now += 42;
+				return { outcome: "allowed", admission: null, source: "coordinator", contended: false };
+			}));
+			const context = { ...allowedContext(), contextTelemetry: { cacheStatus: "hit", totalMs: 3 } };
+			vi.mocked(fetchGatewayContext).mockResolvedValue(context);
+
+			try {
+				await request({ spendLimit: slot() });
+			} finally {
+				clock.mockRestore();
+			}
+
+			expect((context.contextTelemetry as { spendLimitMs?: number }).spendLimitMs).toBe(42);
+		});
+
+		it("records no coordinator wait when enforce mode is off", async () => {
+			state.mode = "off";
+			const context = { ...allowedContext(), contextTelemetry: { cacheStatus: "hit", totalMs: 3 } };
+			vi.mocked(fetchGatewayContext).mockResolvedValue(context);
+
+			await request({ spendLimit: slot() });
+
+			expect(context.contextTelemetry).not.toHaveProperty("spendLimitMs");
+		});
+
 		it("rejects a request the coordinator denies, naming the department", async () => {
 			state.decide.mockReturnValue(departmentDenial);
 			vi.mocked(fetchGatewayContext).mockResolvedValue(allowedContext());
@@ -214,6 +248,33 @@ describe("budget alerts from rejected requests", () => {
 			state.mode = "shadow";
 			await request({ spendLimit: slot() });
 			expect(state.decide).toHaveBeenCalledTimes(1);
+		});
+
+		it("starts the footprint read before loading the context and hands it over with the context's key-limit check", async () => {
+			const order: string[] = [];
+			const footprint = Promise.resolve({ keyLimited: false, softBlocked: false, workspaceBudgets: false, departmentBudgets: false, spendGuardrails: false });
+			state.footprint.mockImplementation(() => { order.push("footprint"); return footprint; });
+			state.decide.mockReturnValue({ outcome: "allowed", keyLimit: { ok: true, reason: null, resetAt: null }, admission: {}, source: "footprint" });
+			const context = allowedContext();
+			vi.mocked(fetchGatewayContext).mockImplementation(async () => { order.push("context"); return context; });
+
+			await request({ spendLimit: slot() });
+
+			expect(order).toEqual(["footprint", "context"]);
+			expect(state.footprint).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "ws_1", keyId: "key_1" }));
+			expect(state.decide).toHaveBeenCalledWith(expect.objectContaining({ footprint, keyLimit: context.keyLimit }));
+		});
+
+		it("reads no footprint once the request's slot is decided, or outside enforce mode", async () => {
+			state.decide.mockReturnValue(departmentDenial);
+			vi.mocked(fetchGatewayContext).mockResolvedValue(allowedContext());
+			const shared = slot();
+			await request({ spendLimit: shared });
+			await request({ spendLimit: shared, model: "anthropic/claude-5" });
+			expect(state.footprint).toHaveBeenCalledTimes(1);
+			state.mode = "shadow";
+			await request({ spendLimit: slot() });
+			expect(state.footprint).toHaveBeenCalledTimes(1);
 		});
 
 		it("decides once per request however many candidate models are checked", async () => {

@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
+import { validPageCursor } from "@/lib/pageCursor";
 
 const AUDIT_COLUMNS = "id,workspace_id,actor_user_id,action,target_type,target_id,target_name,metadata,request_id,created_at";
 
@@ -9,9 +10,7 @@ function parseCursor(value: string | undefined): { createdAt: string; id: string
 	if (!value) return null;
 	const separator = value.lastIndexOf("|");
 	if (separator <= 0) return null;
-	const createdAt = value.slice(0, separator);
-	const id = value.slice(separator + 1);
-	return Number.isFinite(Date.parse(createdAt)) && /^[0-9a-f-]{36}$/i.test(id) ? { createdAt, id } : null;
+	return validPageCursor({ createdAt: value.slice(0, separator), id: value.slice(separator + 1) });
 }
 
 export const accountSettingsAuditRouter = new Hono<{ Bindings: Env }>();

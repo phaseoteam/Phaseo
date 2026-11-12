@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { recordingBitrate, revealLabel } from "./browserRecording";
 
 describe("browser recording", () => {
-	it("scales the bitrate with the captured pixels, within T3 Code's bounds", () => {
+	it("scales the bitrate with the captured pixels, within fixed bounds", () => {
 		expect(recordingBitrate(320, 200, 30)).toBe(2_500_000);
 		expect(recordingBitrate(1280, 800, 30)).toBe(2_500_000);
 		expect(recordingBitrate(7680, 4320, 60)).toBe(50_000_000);

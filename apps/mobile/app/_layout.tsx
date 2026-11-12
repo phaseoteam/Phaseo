@@ -2,7 +2,7 @@ import "../global.css";
 // Applies the stored theme as soon as it loads, after global.css has registered its variables.
 import "@/lib/theme/store";
 import { NavigationBar } from "expo-navigation-bar";
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
+import { DarkTheme, DefaultTheme, ErrorBoundary as RouterErrorBoundary, Stack, ThemeProvider, type ErrorBoundaryProps } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import * as SystemUI from "expo-system-ui";
@@ -12,9 +12,12 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useCSSVariable } from "uniwind";
 import { OverlayHost, routeSheetOptions } from "@/components/ui";
+import { AppAnalytics } from "@/components/AppAnalytics";
 import { ThemeSync } from "@/features/account/ThemeSync";
+import { DesktopConnections } from "@/features/desktops/DesktopConnections";
 import { NotificationObserver } from "@/features/notifications/NotificationObserver";
 import { LogoDataLoader } from "@/lib/logos";
+import { trackAppError } from "@/lib/appAnalytics";
 import { useLayout } from "@/hooks/useLayout";
 import { AppearanceProvider, useAppearance } from "@/providers/AppearanceProvider";
 import { AuthProvider, useAuth } from "@/providers/AuthProvider";
@@ -23,9 +26,15 @@ import { WorkspaceProvider } from "@/providers/WorkspaceProvider";
 
 void SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  useEffect(() => { trackAppError(props.error); }, [props.error]);
+  return <RouterErrorBoundary {...props} />;
+}
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppAnalytics />
       <SafeAreaProvider>
         <KeyboardProvider>
           <AppearanceProvider>
@@ -77,6 +86,7 @@ function RootNavigator() {
       <NavigationBar style={resolved === "dark" ? "dark" : "light"} />
       <ThemeSync />
       <NotificationObserver />
+      <DesktopConnections />
       <LogoDataLoader />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(app)" />

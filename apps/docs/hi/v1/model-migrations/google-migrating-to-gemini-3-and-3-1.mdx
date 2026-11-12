@@ -1,80 +1,67 @@
 ---
 title: "Google Gemini 3.1"
-description: "Gemini 3.1 अपनाने के लिए तर्क नियंत्रण, बहु-माध्यम प्रसंस्करण और Thought Signatures की जानकारी।"
+description: "Gemini 3.1 अपनाते समय क्या जानना ज़रूरी है, जिसमें रीज़निंग नियंत्रण, मल्टीमॉडल हैंडलिंग और थॉट सिग्नेचर शामिल हैं।"
 icon: "/icons/brands/google.svg"
 ---
 
-# Google Gemini 3.1
+रीज़निंग की गहराई `reasoning.effort` से सेट करें, जिसे Phaseo Gemini 3 को `thinking_level` के रूप में भेजता है, और असिस्टेंट के टूल-कॉल टर्न ठीक वैसे वापस भेजें जैसे Phaseo ने लौटाए थे, ताकि थॉट सिग्नेचर बने रहें। Gemini 3 और Gemini 3.1 Pro को दो अलग माइग्रेशन मानें।
 
-Production में Gemini 3.1 family को सुरक्षित रूप से अपनाने के लिए यह गाइड इस्तेमाल करें:
+| Phaseo मॉडल ID | स्थिति |
+| --- | --- |
+| `google/gemini-3.1-pro-preview` | उपलब्ध |
+| `google/gemini-3-flash-preview` | उपलब्ध |
+| `google/gemini-3.1-flash-lite` | डेप्रिकेटेड; 7 मई, 2027 को रिटायर होगा |
+| `google/gemini-3-pro-preview` | 9 मार्च, 2026 को रिटायर; अनुरोध `google/gemini-3.1-pro-preview` पर रूट होते हैं |
+| `google/gemini-3.1-flash-lite-preview` | 25 मई, 2026 को रिटायर; अनुरोध `google/gemini-3.1-flash-lite` पर रूट होते हैं |
 
-- `google/gemini-3-pro-preview`
-- `google/gemini-3-flash-preview`
-- `google/gemini-3.1-pro-preview`
-- `google/gemini-3.1-flash-lite-preview`
+रिटायर हो चुकी ID सिर्फ़ स्वचालित प्रतिस्थापन के ज़रिए काम करती रहती हैं; देखें [मॉडल डेप्रिकेशन और रिटायरमेंट](../guides/model-retirement)। मौजूदा ID को सीधे कॉल करें।
 
-Gemini 3 ने तर्क नियंत्रण और बहु-माध्यम प्रसंस्करण से जुड़े API स्तर के बदलाव किए। Gemini 3.1 ने विशेष रूप से जटिल, गहन तर्क वाले कार्यों के लिए आधार स्तर को और बेहतर बनाया।
+## रीज़निंग की गहराई सेट करें
 
-## नया क्या है
+Gemini 3 ने थिंकिंग बजट की जगह `thinking_level` लाया। Phaseo `reasoning.effort` (या फ़्लैट `reasoning_effort`) को इससे मैप करता है:
 
-- Gemini 3 ने तर्क की गहराई के मुख्य नियंत्रण के रूप में `thinking_level` जोड़ा।
-- Multimodal vision handling के लिए `media_resolution` जोड़ा गया।
-- Gemini 3 API कॉल के बीच तर्क संदर्भ बनाए रखने के लिए Thought Signatures का उपयोग करता है।
-- सख्त workflows में Thought Signatures न होने से quality घट सकती है या `400` errors आ सकते हैं।
-- Gemini 3.1 Pro जटिल कार्यों और एजेंट आधारित कार्यप्रवाहों के लिए तर्क क्षमता में एक बड़ा सुधार है।
+| `reasoning.effort` | Gemini 3 Flash | Gemini 3.1 Pro |
+| --- | --- | --- |
+| `minimal` | `MINIMAL` | `LOW` (3.1 Pro में `MINIMAL` नहीं है) |
+| `low` | `LOW` | `LOW` |
+| `medium` | `MEDIUM` | `MEDIUM` |
+| `high`, `xhigh`, `max` | `HIGH` | `HIGH` |
 
-## माइग्रेशन quickstart
+```json
+{
+  "model": "google/gemini-3.1-pro-preview",
+  "messages": [{ "role": "user", "content": "Compare these three architecture options." }],
+  "reasoning": { "effort": "medium" }
+}
+```
 
-### 1. तर्क नियंत्रणों को फिर से मैप करें
+ये लेवल दूसरे प्रदाताओं की effort सेटिंग जैसे एक-एक करके व्यवहार नहीं करते, इसलिए आप जो भी लेवल उपलब्ध कराते हैं, हर एक पर लेटेंसी और गुणवत्ता दोबारा टेस्ट करें।
 
-यदि आपका ऐप सामान्य तर्क नियंत्रण देता है, तो उसे Gemini 3 के रूटों के लिए सावधानी से मैप करें। OpenAI-संगत प्रवाह में `reasoning_effort` संकल्पनात्मक रूप से Gemini `thinking_level` से मेल खाता है, लेकिन दोनों का व्यवहार पूरी तरह समान नहीं है; इसलिए दोबारा परीक्षण करें।
+## थॉट सिग्नेचर बनाए रखें
 
-### 2. Thought Signatures सही तरह संभालें
+Gemini 3 थॉट सिग्नेचर लौटाता है जो कॉल के बीच रीज़निंग कॉन्टेक्स्ट ले जाते हैं, और फ़ंक्शन कॉलिंग में सिग्नेचर गायब होने से गुणवत्ता घट सकती है या `400` लौट सकता है। हर असिस्टेंट टर्न, उसके टूल कॉल सहित, ठीक वैसे वापस भेजें जैसे Phaseo ने लौटाया था। Phaseo सिग्नेचर को उसी मॉडल को दोबारा भेजता है जिसने उसे जारी किया था; जब कोई सिग्नेचर गायब हो या किसी दूसरे मॉडल से आया हो, तो वह Google का स्किप प्लेसहोल्डर भेजता है ताकि अनुरोध विफल न हो।
 
-आधिकारिक Gemini SDK और सामान्य चैट इतिहास में signatures आमतौर पर अपने-आप संभलते हैं। यदि आप निम्न-स्तरीय अनुरोध प्रवाह बनाते हैं, खासकर function calling या छवि जनरेशन और संपादन के लिए, तो लौटे हुए signatures को यथावत सुरक्षित रखें और वापस भेजें।
+## प्रॉम्प्ट और मीडिया पर दोबारा विचार करें
 
-### 3. Prompt style पर फिर विचार करें
+Google का Gemini 3 मार्गदर्शन लंबे प्रॉम्प्ट ढांचे के बजाय सीधे प्रॉम्प्ट और पैरामीटर-आधारित नियंत्रण को प्राथमिकता देता है। अगर आपके प्रॉम्प्ट पुराने मॉडल व्यवहार की भरपाई करते हैं, तो उन्हें सरल बनाएं और दोबारा मूल्यांकन करें।
 
-Gemini 3 guidance लंबे prompt scaffolding के बजाय सीधे prompts और parameter-based controls को प्राथमिकता देती है। पुराने model behavior की भरपाई के लिए prompts बहुत जटिल हों तो उन्हें सरल करके दोबारा evaluate करें।
+Gemini 3 ने इमेज और दस्तावेज़ों के लिए `media_resolution` भी जोड़ा। Phaseo इसे उपलब्ध नहीं कराता, इसलिए Google का डिफ़ॉल्ट लागू होता है; यह मानने के बजाय कि पुराने नतीजे बने रहेंगे, इमेज, दस्तावेज़ और मिश्रित-मीडिया रूट दोबारा टेस्ट करें।
 
-### 4. Multimodal settings tune करें
+## क्या टेस्ट करें
 
-Images, documents या mixed media वाली routes पर `media_resolution` फिर test करें; पुराने defaults को सही न मानें।
+- **रीज़निंग:** संक्षिप्त बनाम ढांचे वाले प्रॉम्प्ट, चरण-दर-चरण कार्य, लंबे कॉन्टेक्स्ट का संश्लेषण, और रीज़निंग निरंतरता पर निर्भर एजेंट वर्कफ़्लो।
+- **प्रतिक्रियाएं:** टर्न के बीच सिग्नेचर, फ़ंक्शन-कॉलिंग सफलता दर, स्कीमा पास दर, और effort बदलने के बाद खाली, आंशिक या गलत आउटपुट।
+- **प्रोडक्शन मेट्रिक्स:** हर लेवल पर लेटेंसी, टोकन उपयोग और लागत, मल्टीमॉडल रूट, और Gemini 3 बनाम Gemini 3.1 Pro पर कार्य सफलता।
 
-## क्या जाँचें
+## रोलआउट करें
 
-### प्रॉम्प्ट और तर्क व्यवहार
-
-- संक्षिप्त और बहुत संरचित prompts की तुलना
-- चरण-दर-चरण तर्क वाले कार्य
-- लंबे संदर्भ का संश्लेषण
-- ऐसे एजेंट कार्यप्रवाह जिन्हें तर्क की निरंतरता चाहिए
-
-### जवाब संभालना
-
-- चरणों के बीच signatures सुरक्षित रहना
-- फ़ंक्शन कॉलिंग की सफलता दर
-- स्कीमा की सफलता दर
-- thinking controls बदलने के बाद खाली, अधूरे या अमान्य आउटपुट
-
-### प्रोडक्शन मेट्रिक्स
-
-- हर `thinking_level` पर प्रतिक्रिया समय
-- token usage और लागत
-- अलग `media_resolution` settings पर multimodal route performance
-- Gemini 3 बनाम Gemini 3.1 Pro में task success
-
-## रिलीज़ संबंधी सुझाव
-
-Gemini 3 और Gemini 3.1 को अलग migrations मानें।
-
-1. पहले request format और signature handling माइग्रेट करें।
-2. फिर Gemini 3 पर prompt और schema evaluations दोबारा चलाएँ।
-3. गहन तर्क की आवश्यकता वाले रूटों के लिए Gemini 3.1 Pro को अलग से जारी करें।
-4. high-volume workloads के लिए सरल या कम खर्चीला fallback रखें।
+1. पहले अनुरोध आकार और सिग्नेचर हैंडलिंग माइग्रेट करें।
+2. Gemini 3 पर प्रॉम्प्ट और स्कीमा मूल्यांकन दोबारा चलाएं।
+3. जिन रूट को गहरी रीज़निंग चाहिए, उनके लिए Gemini 3.1 Pro को अलग से प्रमोट करें।
+4. ज़्यादा मात्रा वाले वर्कलोड के लिए एक सस्ता फ़ॉलबैक रखें।
 
 ## स्रोत
 
 - [Gemini 3 डेवलपर गाइड](https://ai.google.dev/gemini-api/docs/gemini-3)
-- [Gemini 3 के लिए Gemini API के नए अपडेट](https://developers.googleblog.com/en/new-gemini-api-updates-for-gemini-3/)
+- [Gemini 3 के लिए नए Gemini API अपडेट](https://developers.googleblog.com/en/new-gemini-api-updates-for-gemini-3/)
 - [Gemini 3.1 Pro की घोषणा](https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-pro/)

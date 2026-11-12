@@ -5,68 +5,67 @@ description: "URL base, autenticação e famílias de endpoints do Phaseo Gatewa
 icon: "map"
 ---
 
-Use esta página para encontrar o caminho de API correto antes de abrir a referência de um endpoint. Todos os endpoints do Phaseo Gateway compartilham uma URL base e usam autenticação Bearer.
+Envie todas as solicitações para `https://api.phaseo.app/v1` com sua chave em um cabeçalho `Authorization: Bearer`. Encontre abaixo o endpoint para a sua tarefa e abra a página de referência dele.
 
-## Escolha o caminho
+## Encontrar o endpoint certo
 
 | Se você quer | Comece por |
 | --- | --- |
-| Enviar sua primeira solicitação | [Início rápido](../quickstart.mdx) |
+| Enviar sua primeira solicitação | [Início rápido](../quickstart) |
 | Gerar texto ou usar ferramentas | [`POST /responses`](./endpoint/responses) |
 | Tomar decisões tipadas | [`POST /decisions`](./endpoint/decisions) |
-| Manter uma integração existente compatível com OpenAI | [`POST /chat/completions`](./endpoint/chat-completions) |
+| Manter uma integração existente compatível com a OpenAI | [`POST /chat/completions`](./endpoint/chat-completions) |
 | Consultar modelos e provedores | [`GET /models`](./endpoint/models) e [`GET /providers`](./endpoint/providers) |
-| Criar música ou gerenciar arquivos | [`POST /music/generations`](./endpoint/music-generate) e [`POST /files`](./endpoint/files) |
+| Criar música ou gerenciar arquivos | [`POST /music/generate`](./endpoint/music-generate) e [`POST /files`](./endpoint/files) |
 | Gerar vídeo (Beta) | [`POST /videos`](./endpoint/video-create) |
 | Enviar um lote ou baixar resultados (Beta) | [`POST /batches`](./endpoint/batches-create) e [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## URL base
 
-URL base de produção:
-
 ```http
 https://api.phaseo.app/v1
 ```
 
-Todos os caminhos de endpoints desta referência são relativos à URL base `/v1`.
+Todos os caminhos de endpoints desta referência são relativos a esta URL base.
 
 ## OpenAPI
 
-Use o arquivo OpenAPI para importar a API no Postman, Hoppscotch ou em um gerador de SDK.
+Importe o arquivo OpenAPI no Postman, no Hoppscotch ou em um gerador de SDK.
 
 <Card
-  title="OpenAPI do Phaseo Gateway"
-  icon="list-bullet"
+	title="OpenAPI do Phaseo Gateway"
+	icon="list-bullet"
 	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
 >
-  Ver o arquivo de especificação
+	Ver o arquivo de especificação
 </Card>
 
-A documentação e os SDKs usam a mesma especificação. Os endpoints Video, Batch e Decisions são marcados como **Beta**; pode ser necessário acesso de prévia no espaço de trabalho.
+A documentação e os SDKs usam esta mesma especificação. Os endpoints Video, Batch e Decisions são marcados como **Beta**; pode ser necessário acesso de prévia no espaço de trabalho.
 
 ## Autenticação
 
-Use uma chave de API padrão do Gateway para inferência e uma chave de API de gerenciamento com permissões adequadas para administração. Veja [Autenticação](../developers/authentication.mdx) e [Chaves de API de gerenciamento](../developers/management-api-keys.mdx).
+| Credencial | Formato | Chamadas |
+| --- | --- | --- |
+| [Chave de API do Gateway](../developers/authentication.mdx) | `phaseo_v1_sk_<kid>_<secret>` | Endpoints de inferência |
+| [Chave de API de gerenciamento](../developers/management-api-keys.mdx) | `phaseo_v1_mk_<kid>_<secret>` | Endpoints de administração, limitados às permissões da chave |
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
 
-Se a autenticação falhar, a API retornará `401`.
+Se a autenticação falhar, a API retorna `401`.
 
 ## Recursos da API
 
-| Recurso | Função |
+| Recurso | O que faz |
 | --- | --- |
-| Inferência | Gere texto, imagens, áudio e embeddings; tome decisões, reordene, modere ou analise conteúdo. Comece com [Responses](./endpoint/responses.mdx) ou [Decisions](./endpoint/decisions.mdx). |
-| Tarefas assíncronas e arquivos | Envie tarefas de [vídeo](./endpoint/video-create.mdx) ou [lotes](./endpoint/batches-create.mdx), transfira arquivos e configure webhooks. |
+| Inferência | Gere texto, imagens, áudio e embeddings; tome decisões, reordene, modere ou analise conteúdo. Comece com [Responses](./endpoint/responses.mdx) ou [Decisões](./endpoint/decisions.mdx). |
+| Tarefas assíncronas e arquivos | Envie tarefas de [vídeo](./endpoint/video-create.mdx) ou de [lote](./endpoint/batches-create.mdx), transfira arquivos e configure webhooks. |
 | Modelos e preços | Descubra [modelos](./endpoint/models.mdx), ofertas de provedores e [custos estimados](./endpoint/pricing-calculate.mdx). |
 | Roteamento e políticas | Configure predefinições, credenciais de provedores, modelos privados e [proteções](./endpoint/guardrails.mdx). |
 | Uso e monitoramento | Examine [logs](./endpoint/logs-list.mdx), atividade, análises, avaliações e saúde do serviço. |
-| Gerenciamento de espaços de trabalho | Gerencie [espaços de trabalho](./endpoint/workspaces-list.mdx), chaves, orçamentos, identidades e integrações. |
+| Gerenciamento do espaço de trabalho | Gerencie [espaços de trabalho](./endpoint/workspaces-list.mdx), chaves, orçamentos, identidades e integrações. |
 
 ## Cobrança e limites de taxa
 
-- Trate a limitação do provedor e as políticas de acesso aplicáveis com o [guia de limites](./limits.mdx).
-- Solicitações pagas exigem saldo suficiente na carteira para passar pela verificação prévia de créditos.
-- Modelos gratuitos com `:free` não exigem créditos depositados.
+Solicitações pagas precisam de saldo suficiente na carteira para passar por uma verificação de créditos antes de serem executadas. Modelos cujo ID termina em `:free` não precisam de créditos depositados. As solicitações podem ser limitadas por um provedor ou pelos limites do espaço de trabalho e da chave; consulte [Limites de taxa](./limits.mdx).

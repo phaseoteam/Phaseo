@@ -1,9 +1,7 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateAccountQueries } from "@/lib/query/invalidation";
 import {
@@ -21,7 +19,7 @@ import {
 	ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { localizedProviderCatalogMessage, localizedProviderEvent } from "@/i18n/provider-catalog-messages";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { Button } from "@/components/ui/button";
@@ -30,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { activateProviderAccountAction, rotateProviderCatalogWebhookAction, startProviderClaimAction, type ProviderCatalogPreview } from "@/app/(dashboard)/settings/account/providers/actions";
+import { activateProviderAccountAction, rotateProviderCatalogWebhookAction, startProviderClaimAction, type ProviderCatalogPreview } from "@/features/settings/account/providers/actions";
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import type { SettingsProviderOnboardingInitialData } from "@/lib/fetchers/internal/settingsTypes";
@@ -292,7 +290,7 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 	async function startClaim() {
 		if (!providerSlug.trim() || !websiteUrl.trim()) return toast.error(s("phraseEnterTheProviderSlugAndWebsiteFirst"));
 		setStartingClaim(true);
-		try { const result = await startProviderClaimAction(providerSlug, websiteUrl); setClaim(result); toast.success(s("Ownership proof created")); }
+		try { const result = await startProviderClaimAction({ data: { providerSlug, websiteUrl } }); setClaim(result); toast.success(s("Ownership proof created")); }
 		catch (error) { toast.error(localizedSettingsError(error, t, "Action failed", s("Could not create ownership proof"))); }
 		finally { setStartingClaim(false); }
 	}
@@ -300,7 +298,7 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 	async function rotateWebhook() {
 		if (!submitted) return;
 		try {
-			const result = await rotateProviderCatalogWebhookAction(submitted.providerSlug);
+			const result = await rotateProviderCatalogWebhookAction({ data: submitted.providerSlug });
 			setSubmitted({ ...submitted, webhookUrl: result.webhookUrl, webhookSecret: result.webhookSecret });
 			void invalidateAccountQueries(queryClient);
 			toast.success(tx("SettingsUI.strings.Webhook signing secret rotated" as never));

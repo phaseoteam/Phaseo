@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { assignPerceptualSeriesColours, getPricingTierDasharray } from "@/components/(rankings)/chart-colors";
 
 describe("pricing chart visual encoding", () => {

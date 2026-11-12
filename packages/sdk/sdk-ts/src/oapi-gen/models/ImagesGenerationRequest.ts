@@ -1,11 +1,14 @@
 export interface ImagesGenerationRequest {
   background?: "transparent" | "opaque" | "auto";
+  complexity?: "low" | "medium" | "high";
+  frame_count?: number;
+  frame_duration_ms?: number;
   model: string;
   models?: string[];
   moderation?: "auto" | "low";
   n?: number;
   output_compression?: number;
-  output_format?: "png" | "jpeg" | "webp";
+  output_format?: "png" | "jpeg" | "webp" | "gif" | "svg";
   partial_images?: number;
   prompt: string;
   provider?: {
@@ -51,5 +54,11 @@ export interface ImagesGenerationRequest {
   size?: string;
   stream?: boolean;
   style?: string;
+  svg?: {
+    model: string;
+    reasoning?: {
+      effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+    };
+  };
   user?: string;
 }

@@ -5,69 +5,44 @@ description: "What to know when adopting Nano Banana 2 for production image gene
 icon: "/icons/brands/google.svg"
 ---
 
-# Google Nano Banana 2
+Switch image requests to `google/gemini-3.1-flash-image` (Nano Banana 2) and choose the aspect ratio and output size with `image_config`. Downstream code that assumes one image size is what breaks first.
 
-Use this guide to adopt Nano Banana 2 safely in production image workflows.
+| | Nano Banana | Nano Banana 2 |
+| --- | --- | --- |
+| Phaseo model ID | `google/gemini-2.5-flash-image` | `google/gemini-3.1-flash-image` |
+| Status | Deprecated; retires March 15, 2027 | Available |
 
-Nano Banana 2 is not only a quality upgrade. Google positions it as a production-ready image model with broader control over output format, resolution, and fidelity.
+Nano Banana 2 adds explicit control over aspect ratio (`image_config.aspect_ratio`, such as `16:9` or `9:16`) and output size from 512px to 4K (`image_config.image_size`: `0.5K`, `1K`, `2K`, or `4K`). Google also reports better subject consistency across generations and edits, stronger instruction following, better text rendering and translation inside images, and higher fidelity at similar speed. Its successor, `google/gemini-nano-banana-2.1`, is also available.
 
-## What's new
+```json
+{
+  "model": "google/gemini-3.1-flash-image",
+  "messages": [{ "role": "user", "content": "A product photo of a ceramic mug on a walnut desk." }],
+  "modalities": ["image", "text"],
+  "image_config": { "aspect_ratio": "16:9", "image_size": "2K" }
+}
+```
 
-- Nano Banana 2 adds explicit control over aspect ratios
-- output resolutions now range from `512px` to `4K`
-- subject consistency is improved across generations and edits
-- instruction following is stronger
-- text rendering and translation inside images are better
-- visual fidelity is higher while generation remains fast
+Providers that can't take `image_config` drop it and list it in the `X-Phaseo-Dropped-Params` response header; see [Parameters](../api-reference/parameters).
 
-## Migration quickstart
+## Update your product
 
-### 1. Re-check output assumptions
-
-If downstream code assumes a fixed image size, aspect ratio, or crop behavior, update it before rollout. Nano Banana 2 is more flexible, which means older assumptions become easier to violate.
-
-### 2. Update product presets
-
-Revisit:
-
-- social aspect-ratio presets
-- default resolution choices
-- edit and inpaint workflows
-- UI labels that describe available image sizes
-
-### 3. Re-tune prompts for image editing
-
-Because instruction following is stronger, prompts that used to over-specify composition, text, or style may now be unnecessarily rigid. Re-test with shorter prompts and compare results.
+1. **Check output assumptions.** If downstream code expects a fixed size, aspect ratio, or crop, update it first.
+2. **Revisit presets:** social aspect ratios, default sizes, edit and inpaint workflows, and UI labels that describe image sizes.
+3. **Shorten editing prompts.** Prompts that over-specify composition, text, or style to compensate for the older model may now be too rigid. Re-test shorter versions.
 
 ## What to test
 
-### Output quality
+- **Output quality:** vertical, square, and widescreen ratios; small versus large sizes; subject consistency across edits; text, signage, captions, and translated text in images.
+- **Workflow:** file handling at larger sizes, timeouts on high-fidelity generations, moderation or human-review pass rate, and downstream resizing.
+- **Product metrics:** end-to-end latency, usable-output rate, retry rate, and cost per approved asset.
 
-- vertical, square, and widescreen aspect ratios
-- low versus high resolution outputs
-- subject consistency across iterative edits
-- text rendering, signage, captions, and translated text inside images
+## Roll out
 
-### Workflow compatibility
-
-- file handling for larger resolutions
-- timeout behavior on higher-fidelity generations
-- moderation or human-review pass rate
-- downstream resizing and asset-processing assumptions
-
-### Product metrics
-
-- end-to-end generation latency
-- usable-output rate
-- retry rate
-- cost per approved asset
-
-## Rollout advice
-
-1. Split testing by aspect ratio and resolution rather than treating this as a single migration.
-2. Validate your asset pipeline on the largest output size you plan to support.
+1. Test by aspect ratio and size rather than as one migration.
+2. Validate your asset pipeline at the largest size you'll support.
 3. Sample real production prompts, especially edits and text-in-image requests.
-4. Roll out default preset changes separately from the model swap if your UI exposes image options to users.
+4. If your UI exposes image options, ship default preset changes separately from the model swap.
 
 ## Sources
 

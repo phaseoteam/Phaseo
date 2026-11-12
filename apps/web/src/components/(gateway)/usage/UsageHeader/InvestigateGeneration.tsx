@@ -1,7 +1,5 @@
-"use client";
-
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import {
 	ProviderInspectorSheet,
@@ -13,13 +11,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Search } from "lucide-react";
-import { investigateGeneration } from "@/app/(dashboard)/gateway/usage/server-actions";
+import { investigateGeneration } from "@/features/gateway/usage/server-actions";
 import RequestDetailDialog from "../RequestDetailDialog";
 import type {
 	InvestigateGenerationResult,
 	ProviderMetadataEntry,
 	RequestRow,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import type { ModelMetadataMap } from "../model-display";
 
 export default function InvestigateGeneration() {
@@ -71,7 +69,7 @@ export default function InvestigateGeneration() {
 			setProviderNames(new Map());
 			setProviderMetadata(new Map());
 
-			const response = await investigateGeneration(trimmedId);
+			const response = await investigateGeneration({ data: trimmedId });
 
 			if (!response.success) {
 				toast.error(response.error || t("strings.Failed to fetch request" as never));

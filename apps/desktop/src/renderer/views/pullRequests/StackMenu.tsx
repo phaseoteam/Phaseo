@@ -13,10 +13,10 @@ import { errorMessage, PullRequestGlyph, pullRequestStatePresentation, Tip } fro
 import { mergeMethodLabels } from "./pullRequestLogic";
 import { forgetPullRequestStacks, usePullRequestStack } from "./usePullRequestStack";
 
-/** T3's PullRequestGlyph.stack. */
+/** The stack glyph. */
 export const StackGlyph = Layers;
 
-/** A layer as T3's PullRequestStackLayerContent draws it: state glyph, title over number, branch and state. */
+/** A layer: state glyph, title over number, branch and state. */
 export function StackLayerContent({ layer, compact = false }: { layer: PullRequestStackLayer; compact?: boolean }) {
 	const state = pullRequestStatePresentation(layer.state, layer.draft ?? false);
 	return <>
@@ -30,7 +30,7 @@ export function StackLayerContent({ layer, compact = false }: { layer: PullReque
 function StackHeader({ number, notice, stale = false }: { number: number; notice?: string | null; stale?: boolean }) {
 	return <DropdownMenuLabel className="flex items-center justify-between gap-2"><span>Stack #{number}</span>{notice && <Tip label={notice}><span role="status" className="text-xs font-normal">{stale ? "May be stale" : "Refreshing…"}</span></Tip>}</DropdownMenuLabel>;
 }
-/** The layers top first, the current one ticked, then the base the stack stands on (T3's PullRequestStackLayers). */
+/** The layers top first, the current one ticked, then the base the stack stands on. */
 function StackLayers({ stack, current, onSelect, pending = false }: { stack: PullRequestStack; current: number; onSelect?: (number: number) => void; pending?: boolean }) {
 	return <div className="max-h-80 overflow-y-auto">
 		{[...stack.layers].reverse().map(layer => <DropdownMenuItem key={layer.number} disabled={!onSelect || pending} aria-current={layer.number === current ? "true" : undefined} onClick={() => onSelect?.(layer.number)}>
@@ -51,7 +51,7 @@ function StackBody({ projectId, number, stackNumber, onSelect }: { projectId: st
 	return <><StackHeader number={stackNumber} /><DropdownMenuLabel className="font-normal">{query.error ?? (query.pending || !query.loaded ? "Loading stack…" : "This pull request is no longer in a stack.")}</DropdownMenuLabel></>;
 }
 
-/** A list row's "n/m" layer marker, opening the stack's layers (T3's PullRequestStackPopover). */
+/** A list row's "n/m" layer marker, opening the stack's layers. */
 export function StackPopover({ projectId, number, membership, onSelect = layer => openPullRequest({ number: layer }) }: { projectId: string; number: number; membership: PullRequestStackMembership; onSelect?: (number: number) => void }) {
 	const [open, setOpen] = useState(false);
 	const label = `Stack ${membership.number}, layer ${membership.position} of ${membership.size}`;
@@ -75,7 +75,7 @@ export function StackedBaseGlyph({ projectId, view }: { projectId: string; view:
 }
 
 /**
- * The detail header's stack control (T3's PullRequestStackMenu): "n/m" opens the layers, with Merge stack and Rebase
+ * The detail header's stack control: "n/m" opens the layers, with Merge stack and Rebase
  * stack beneath; a primary Merge stack button sits beside it while this layer is open. Both act only after a confirm
  * dialog that lists the layers they touch.
  */

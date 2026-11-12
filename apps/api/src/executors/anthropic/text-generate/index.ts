@@ -8,7 +8,8 @@
 
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
-import type { IRChatRequest, IRChatResponse, IRChoice, IRContentPart, IRToolCall } from "@core/ir";
+import type { IRChatRequest, IRChatResponse, IRChoice, IRClaudeEffort, IRContentPart, IREffortRecord, IRToolCall } from "@core/ir";
+import { hasExplicitEffortMarkers, planClaudePerMessageEffort, type ClaudeEffortPlan } from "@core/claudePerMessageEffort";
 import { routeOutputTokenLimit } from "@core/route-token-limits";
 import { getBindings } from "@/runtime/env";
 import { resolveProviderKey } from "@providers/keys";
@@ -30,7 +31,9 @@ import { isIRNativeToolDefinition } from "@core/nativeTools";
 import { ANTHROPIC_REASONING_FORMAT, canReplayReasoning } from "@core/reasoning-state";
 import { applyAnthropicCacheControlDefaults, normalizeAnthropicCacheControlValue } from "./cache-control";
 import {
+	ANTHROPIC_PER_MESSAGE_EFFORT_BETA,
 	supportsAnthropicMidConversationSystemMessages,
+	supportsAnthropicPerMessageEffort,
 	isAnthropicSystemMessagePlacementValid,
 	anthropicThinkingOffType,
 	clampClaudeEffort,
@@ -245,6 +248,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 			{
 				inferenceGeo: resolveAnthropicInferenceGeo(args.providerId, args.ir),
 				providerId: args.providerId,
+				eagerInputStreaming: args.ir.stream === true && !azureConfig,
 			},
 		);
 
@@ -265,6 +269,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 		usesAnthropicNativeAdvisor(requestBody) ? ANTHROPIC_ADVISOR_BETA : null,
 		usesAnthropicFileReference(requestBody) ? "files-api-2025-04-14" : null,
 		...anthropicContextManagementBetas(requestBody),
+		usesAnthropicPerMessageEffort(requestBody) ? ANTHROPIC_PER_MESSAGE_EFFORT_BETA : null,
 	].filter((entry): entry is string => Boolean(entry));
 
 		// Execute upstream call
@@ -327,6 +332,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 									accounting,
 									providerId: args.providerId,
 									keepContextManagement: args.protocol === "anthropic.messages",
+									effortRecord: anthropicEffortRecordForClient(requestPayload, args.protocol),
 								}),
                         );
                         const normalized = resolveStreamForProtocol(
@@ -372,6 +378,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 
                         // CRITICAL: Convert to IR with proper tool_use extraction
                         const ir = anthropicMessagesToIR(message, args.requestId, args.ir.model, args.providerId);
+						attachEffortRecord(ir, anthropicEffortRecordForClient(requestPayload, args.protocol));
 
 			// Calculate pricing
 			const usageMeters = normalizeTextUsageForPricing(ir.usage, ANTHROPIC_CACHE_USAGE_SEMANTICS);
@@ -632,6 +639,7 @@ export function irToAnthropicMessages(
 	modelHint?: string | null,
 	options?: {
 		inferenceGeo?: "global" | "us" | null;
+		eagerInputStreaming?: boolean;
 		/** Gateway provider the request goes to; decides which signatures are replayed. */
 		providerId?: string | null;
 	},
@@ -642,8 +650,30 @@ export function irToAnthropicMessages(
 	const resolvedModel = modelHint || ir.model;
 	const usesAdaptiveThinkingControls = usesClaudeAdaptiveThinkingControls(resolvedModel);
 	const replayTarget = { providerId: options?.providerId ?? "anthropic", model: resolvedModel };
+	const perMessageEffortRoute = supportsAnthropicPerMessageEffort(resolvedModel, options?.providerId);
+	// A client's effort change goes in as a per-message marker rather than a new
+	// top-level value, so the cached prefix survives (core/claudePerMessageEffort.ts).
+	// Clients that send their own markers (Messages) keep them as sent.
+	const effortPlan = perMessageEffortRoute
+		&& usesAdaptiveThinkingControls
+		&& ir.reasoning
+		&& ir.reasoning.enabled !== false
+		&& ir.reasoning.effort !== "none"
+		&& !hasExplicitEffortMarkers(ir.messages)
+		? planClaudePerMessageEffort(ir.messages, mapIrEffortToAnthropic(ir.reasoning.effort, { preferXHigh: true }), resolvedModel)
+		: null;
+	// Where each IR message's output ends in `messages`, for placing planned markers.
+	const endOfIRMessage: number[] = [];
 
-	for (const msg of ir.messages) {
+	for (const [irIndex, msg] of ir.messages.entries()) {
+		if (irIndex > 0) endOfIRMessage[irIndex - 1] = messages.length;
+		if (msg.role === "system" && msg.effort) {
+			// An explicit effort-only message. Routes without per-message effort have
+			// it folded into the top-level effort before they get here
+			// (pipeline/execute/normalize.ts); drop any that remain.
+			if (perMessageEffortRoute) messages.push(anthropicEffortMarker(msg.effort));
+			continue;
+		}
 		if (msg.role === "system" || msg.role === "developer") {
 			const mapped = mapSystemContentToAnthropic(msg.content);
 			if (!mapped) continue;
@@ -727,6 +757,15 @@ export function irToAnthropicMessages(
 		}
 	}
 
+	if (ir.messages.length > 0) endOfIRMessage[ir.messages.length - 1] = messages.length;
+	if (effortPlan && effortPlan.markersAfter.size > 0) {
+		// Insert from the end so earlier positions stay valid.
+		const planned = [...effortPlan.markersAfter.entries()]
+			.map(([irIndex, effort]) => ({ at: endOfIRMessage[irIndex] ?? messages.length, effort }))
+			.sort((a, b) => b.at - a.at);
+		for (const { at, effort } of planned) messages.splice(at, 0, anthropicEffortMarker(effort));
+	}
+
 	// Microsoft Foundry (`azure`) is not among the platforms Anthropic lists for
 	// mid-conversation system messages, so those requests always hoist.
 	placeLateSystemMessages(
@@ -778,6 +817,7 @@ export function irToAnthropicMessages(
 				name: t.name,
 				description: t.description,
 				input_schema: t.parameters,
+				...(ir.stream && options?.eagerInputStreaming ? { eager_input_streaming: true } : {}),
 				...(typeof t.strict === "boolean" ? { strict: t.strict } : {}),
 				...(cacheControl ? { cache_control: cacheControl } : {}),
 			};
@@ -826,7 +866,11 @@ export function irToAnthropicMessages(
 				display: "summarized",
 			};
 			if (!reasoningDisabled) {
-				const anthropicEffort = mapIrEffortToAnthropic(ir.reasoning?.effort, { preferXHigh: true });
+				// With a plan, the top level keeps the conversation's base effort and
+				// changes travel as markers.
+				const anthropicEffort = effortPlan
+					? effortPlan.topLevel
+					: mapIrEffortToAnthropic(ir.reasoning?.effort, { preferXHigh: true });
 				if (anthropicEffort) {
 					request.output_config = {
 						...(request.output_config ?? {}),
@@ -903,8 +947,52 @@ export function irToAnthropicMessages(
 		serviceTier: ir.serviceTier,
 	});
 	normaliseAnthropicCacheBreakpoints(request);
+	// Not enumerable: the executor reads it, and it never reaches the upstream body.
+	if (effortPlan) Object.defineProperty(request, ANTHROPIC_EFFORT_PLAN, { value: effortPlan, enumerable: false });
 
 	return request;
+}
+
+const ANTHROPIC_EFFORT_PLAN = Symbol("anthropicEffortPlan");
+
+/** Put a reply's effort record on its first choice, for the Chat and Responses encoders. */
+export function attachEffortRecord(ir: IRChatResponse | undefined, record: IREffortRecord | undefined): void {
+	const choice = ir?.choices?.[0];
+	if (!record || !choice?.message) return;
+	choice.message.effortRecord = record;
+}
+
+/** The per-message effort plan irToAnthropicMessages used for this request, if any. */
+export function anthropicEffortPlanOf(request: unknown): ClaudeEffortPlan | null {
+	if (!request || typeof request !== "object") return null;
+	return ((request as any)[ANTHROPIC_EFFORT_PLAN] as ClaudeEffortPlan | undefined) ?? null;
+}
+
+/**
+ * The effort record a Chat or Responses client should get back for this request.
+ * Messages clients use per-message effort themselves, and their thinking blocks go
+ * out exactly as Claude returned them, so they get none.
+ */
+export function anthropicEffortRecordForClient(request: unknown, protocol: string | null | undefined): IREffortRecord | undefined {
+	if (protocol === "anthropic.messages") return undefined;
+	return anthropicEffortPlanOf(request)?.record;
+}
+
+/** An effort-only system message (https://platform.claude.com/docs/en/build-with-claude/effort-per-message). */
+function anthropicEffortMarker(effort: IRClaudeEffort): Record<string, any> {
+	return { role: "system", content: [], output_config: { effort } };
+}
+
+function isAnthropicEffortMarker(message: any): boolean {
+	return message?.role === "system"
+		&& Array.isArray(message.content)
+		&& message.content.length === 0
+		&& message.output_config !== undefined;
+}
+
+/** True when the request body holds an effort-only system message, which needs its beta. */
+export function usesAnthropicPerMessageEffort(requestBody: any): boolean {
+	return Array.isArray(requestBody?.messages) && requestBody.messages.some(isAnthropicEffortMarker);
 }
 
 /**
@@ -1000,7 +1088,13 @@ function placeLateSystemMessages(
 			parts.push(messages[index + 1].content);
 			messages.splice(index + 1, 1);
 		}
-		if (supportsMidConversation && isAnthropicSystemMessagePlacementValid(messages[index - 1], messages[index + 1])) {
+		// Effort-only markers next to it are part of the same run of system messages,
+		// so the placement rule looks past them.
+		let previous = index - 1;
+		while (previous >= 0 && isAnthropicEffortMarker(messages[previous])) previous -= 1;
+		let next = index + 1;
+		while (next < messages.length && isAnthropicEffortMarker(messages[next])) next += 1;
+		if (supportsMidConversation && isAnthropicSystemMessagePlacementValid(messages[previous], messages[next])) {
 			messages[index] = { role: "system", content: joinAnthropicSystemSegments(parts) };
 			continue;
 		}

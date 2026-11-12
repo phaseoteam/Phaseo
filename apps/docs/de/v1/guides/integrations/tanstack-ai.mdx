@@ -1,10 +1,10 @@
 ---
 title: "TanStack AI"
 icon: "layers"
-description: "Verwende Phaseo mit dem OpenAI-kompatiblen Adapter von TanStack AI."
+description: "Nutze Phaseo mit dem OpenAI-kompatiblen Adapter von TanStack AI."
 ---
 
-Verwende TanStack AI für typsichere Chat-Abläufe mit React, Solid, Preact, Vue, Svelte oder serverseitigem TypeScript.
+Erstelle den `openaiCompatible`-Adapter von TanStack AI mit deinem Phaseo-Schlüssel, `baseURL: "https://api.phaseo.app/v1"` und den Phaseo-Modell-IDs, die du nutzt. Er funktioniert für typsicheren Chat in React, Solid, Preact, Vue, Svelte oder serverseitigem TypeScript.
 
 ## Installieren
 
@@ -12,7 +12,7 @@ Verwende TanStack AI für typsichere Chat-Abläufe mit React, Solid, Preact, Vue
 npm install @tanstack/ai @tanstack/ai-openai
 ```
 
-## Den Adapter konfigurieren
+## Den Adapter auf Phaseo richten
 
 ```ts
 import { chat } from "@tanstack/ai";
@@ -22,23 +22,18 @@ const phaseo = openaiCompatible({
 	name: "phaseo",
 	baseURL: "https://api.phaseo.app/v1",
 	apiKey: process.env.PHASEO_API_KEY!,
-	models: ["openai/gpt-5-nano", "anthropic/claude-sonnet-4.5"],
+	models: ["openai/gpt-6-astra", "anthropic/claude-sonnet-5.5"],
 });
 
 const stream = chat({
-	adapter: phaseo("openai/gpt-5-nano"),
+	adapter: phaseo("openai/gpt-6-astra"),
 	messages: [{ role: "user", content: "Reply with only: ok" }],
 });
 ```
 
-## Hinweise
+Gib in `models` jede Phaseo-Modell-ID an, die du nutzen willst. Prüfe die IDs unter [Modelle](../../api-reference/endpoint/models.mdx).
 
-- Trage die Phaseo-Modell-IDs, die du verwenden möchtest, im Array `models` ein.
-- Der OpenAI-kompatible Adapter verwendet standardmäßig Chat Completions. Nutze für Responses-spezifische Funktionen direkte API-Aufrufe.
-- Wenn ein Modell in deinem Ablauf keine Tools oder Bilder unterstützt, gib in TanStack AI eingeschränktere Fähigkeiten an, damit TypeScript nicht unterstützte Aufrufe früher erkennt.
+## Bekannte Einschränkungen
 
-## Weiterführende Themen
-
-- [OpenAI SDK](./openai-sdk.mdx)
-- [Tool-Aufrufe](../tool-calling.mdx)
-- [Modelle](../../api-reference/endpoint/models.mdx)
+- Der Adapter nutzt Chat Completions. Für Funktionen, die es nur bei Responses gibt, rufe Phaseo direkt auf oder nutze das [OpenAI SDK](./openai-sdk.mdx).
+- Unterstützt ein Modell keine [Tools](../tool-calling.mdx) oder Bilder, gib in TanStack AI engere Fähigkeiten an, damit TypeScript nicht unterstützte Aufrufe erkennt.

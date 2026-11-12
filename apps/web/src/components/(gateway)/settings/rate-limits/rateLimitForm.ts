@@ -12,7 +12,8 @@ export const MAX_NAME_LENGTH = 100;
 export const MAX_DESCRIPTION_LENGTH = 500;
 const MAX_INT4 = 2_147_483_647;
 
-export const TARGET_TYPES: SettingsRateLimitTargetType[] = ["key", "member", "department", "guardrail", "end_user_default"];
+// Rate limits can no longer be assigned to a guardrail.
+export const TARGET_TYPES: SettingsRateLimitTargetType[] = ["key", "member", "department", "end_user_default"];
 
 export type PolicyDraft = {
 	name: string;
@@ -98,7 +99,6 @@ export function targetOptions(
 			case "key": return data.targets.keys.map((key) => ({ value: key.id, label: key.name || key.prefix, description: key.prefix }));
 			case "member": return data.targets.members.map((member) => ({ value: member.id, label: member.name || unnamedMember, description: member.role }));
 			case "department": return data.targets.departments.map((department) => ({ value: department.id, label: department.name }));
-			case "guardrail": return data.targets.guardrails.map((guardrail) => ({ value: guardrail.id, label: guardrail.name }));
 		}
 	})();
 	return options.filter((option) => !taken.has(option.value));
@@ -121,7 +121,6 @@ export function targetName(
 			return member ? member.name || unnamedMember : null;
 		}
 		case "department": return targets.departments.find((entry) => entry.id === id)?.name ?? null;
-		case "guardrail": return targets.guardrails.find((entry) => entry.id === id)?.name ?? null;
 		case "end_user_default": return null;
 	}
 }

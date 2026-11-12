@@ -1,8 +1,9 @@
-import type { ProviderHealthRow, ProviderModel, ProviderPricing } from "@/lib/api/models";
+import type { ProviderAttemptHealthRow, ProviderHealthRow, ProviderModel, ProviderPricing } from "@/lib/api/models";
 // Pure web modules, shared so statuses and names match phaseo.app exactly.
 import { chooseGatewayStatus, getGatewayStatusSortRank, normalizeGatewayStatusValue, resolveGatewayStatus, type CanonicalGatewayStatus } from "@phaseo/app-kit/gateway-status";
 import { formatProviderOfferDisplayName, resolveProviderDisplayName, resolveProviderLogoId } from "@phaseo/app-kit/provider-offers";
 import { serviceTierLabel } from "./tiers";
+import { utcDayOffset } from "./uptime";
 
 export type { CanonicalGatewayStatus };
 
@@ -57,7 +58,7 @@ export type ListingCategory = "routable" | "preview" | "inactive" | "external";
 
 export function listingCategory(provider: ProviderPricing, status: CanonicalGatewayStatus): ListingCategory {
   if (normalizeGatewayStatusValue(provider.provider.status) === "external" || status === "external") return "external";
-  if (["active", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"].includes(status)) return "routable";
+  if (["active", "deranked"].includes(status)) return "routable";
   if (["coming_soon", "internal_testing"].includes(status)) return "preview";
   return "inactive";
 }
@@ -105,15 +106,28 @@ export function isRouteVariant(provider: ProviderPricing, plan: string) {
   return provider.provider.offer_scope === "regional" || provider.provider.offer_scope === "specialized" || id.endsWith("-eu") || id.endsWith("-us") || SELECTABLE_TIERS.includes(plan);
 }
 
-/** Live routing numbers per provider and tier, from `/provider-health` (3 days, hourly buckets). */
+/** Reachable, accepted and completed per provider attempt over the window, as rates only (never counts). */
+export type AttemptHealth = { reachabilityPct: number | null; capacityPct: number | null; callErrorPct: number | null; uptimePct: number | null };
+
+/**
+ * Live routing numbers per provider and tier, from `/provider-health` (3 days, hourly buckets). The request counts
+ * only weigh the routing order; they are never shown.
+ */
 export type RuntimeStats = {
   latencyMs: number | null;
   throughput: number | null;
+  /**
+   * Per attempt (failovers count against the provider that failed). 100% for a provider with traffic but no rated
+   * attempts; null for one with no traffic in the window.
+   */
   uptimePct: number | null;
   requestSuccessPct: number | null;
   requests3d: number;
   requests30m: number;
   lastRequestAt: string | null;
+  attemptHealth: AttemptHealth | null;
+  /** Attempt uptime for each of the last three UTC days, oldest first (a day without a rate reads 100%); null without traffic. */
+  uptimeDays: { offset: number; uptimePct: number | null }[] | null;
 };
 
 const tierKey = (tier: string | null | undefined) => {
@@ -126,20 +140,51 @@ export const statsKey = (providerId: string, tier = "standard") => `${providerId
 
 const firstFinite = (...values: (number | null | undefined)[]) => values.find((value): value is number => value != null && Number.isFinite(value)) ?? null;
 
-export function runtimeStatsFromHealth(rows: ProviderHealthRow[]): Map<string, RuntimeStats> {
-  const stats = new Map<string, RuntimeStats>();
-  for (const row of rows) {
-    stats.set(statsKey(row.provider_id, row.service_tier ?? "standard"), {
-      latencyMs: firstFinite(row.percentile_latency_ms_30m, row.p50_latency_ms_30m, row.median_latency_ms_30m, row.avg_latency_ms_30m, row.percentile_latency_ms, row.avg_latency_ms),
-      throughput: firstFinite(row.percentile_throughput_30m, row.p50_throughput_30m, row.median_throughput_30m, row.avg_throughput_30m, row.percentile_throughput, row.avg_throughput),
-      // Uptime only counts once health requests were observed (the website hides it otherwise).
-      uptimePct: row.health_requests > 0 ? row.uptime_pct ?? null : null,
-      requestSuccessPct: row.request_success_pct ?? null,
-      requests3d: row.requests,
-      requests30m: row.requests_30m,
-      lastRequestAt: row.last_request_at ?? null,
-    });
+/**
+ * The last three UTC days' attempt uptime, oldest first (getModelProviderRuntimeStats' uptimeDaily3d). A day without
+ * a rate (no eligible attempts, or no daily rates sent) reads 100%.
+ */
+function attemptUptimeDays(row: ProviderAttemptHealthRow | undefined, now: Date) {
+  const byOffset = new Map<number, number | null>();
+  for (const day of row?.days ?? []) {
+    const offset = utcDayOffset(day.start, now);
+    if (offset != null && offset >= 0 && offset <= 2) byOffset.set(offset, firstFinite(day.uptime_pct));
   }
+  return [2, 1, 0].map((offset) => ({ offset, uptimePct: byOffset.get(offset) ?? 100 }));
+}
+
+/**
+ * Routing numbers per provider and tier. Uptime is per attempt only, as on the website's provider table and card: a
+ * provider with traffic but no rated attempts (or no `attempt_health` at all) reads 100%, never the request-level
+ * rate; a provider with no traffic has no uptime.
+ */
+export function runtimeStatsFromHealth(rows: ProviderHealthRow[], attemptRows: ProviderAttemptHealthRow[] = [], now = new Date()): Map<string, RuntimeStats> {
+  const attempts = new Map(attemptRows.map((row) => [statsKey(row.provider_id, row.service_tier ?? "standard"), row]));
+  const stats = new Map<string, RuntimeStats>();
+  const build = (key: string, row: ProviderHealthRow | null): RuntimeStats => {
+    const attemptRow = attempts.get(key);
+    const attemptHealth: AttemptHealth | null = attemptRow
+      ? { reachabilityPct: firstFinite(attemptRow.reachability_pct), capacityPct: firstFinite(attemptRow.capacity_pct), callErrorPct: firstFinite(attemptRow.call_error_pct), uptimePct: firstFinite(attemptRow.uptime_pct) }
+      : null;
+    const hasTraffic = attemptHealth?.uptimePct != null || (row != null && (row.health_requests > 0 || row.requests > 0));
+    return {
+      latencyMs: row ? firstFinite(row.percentile_latency_ms_30m, row.p50_latency_ms_30m, row.median_latency_ms_30m, row.avg_latency_ms_30m, row.percentile_latency_ms, row.avg_latency_ms) : null,
+      throughput: row ? firstFinite(row.percentile_throughput_30m, row.p50_throughput_30m, row.median_throughput_30m, row.avg_throughput_30m, row.percentile_throughput, row.avg_throughput) : null,
+      uptimePct: hasTraffic ? attemptHealth?.uptimePct ?? 100 : null,
+      requestSuccessPct: row?.request_success_pct ?? null,
+      requests3d: row?.requests ?? 0,
+      requests30m: row?.requests_30m ?? 0,
+      lastRequestAt: row?.last_request_at ?? null,
+      attemptHealth,
+      uptimeDays: hasTraffic ? attemptUptimeDays(attemptRow, now) : null,
+    };
+  };
+  for (const row of rows) {
+    const key = statsKey(row.provider_id, row.service_tier ?? "standard");
+    stats.set(key, build(key, row));
+  }
+  // A provider that only ever failed over has attempts but no served requests.
+  for (const key of attempts.keys()) if (!stats.has(key)) stats.set(key, build(key, null));
   return stats;
 }
 
@@ -150,9 +195,8 @@ const positive = (value: number | null | undefined) => (value != null && Number.
 
 function statusMultiplier(status: CanonicalGatewayStatus) {
   if (status === "active") return 1;
-  if (status === "deranked_lvl1") return 1e-3;
-  if (status === "deranked_lvl2") return 1e-6;
-  if (status === "deranked_lvl3") return 1e-9;
+  // The gateway tries a deranked route only after every other healthy provider.
+  if (status === "deranked") return 1e-6;
   return 0;
 }
 

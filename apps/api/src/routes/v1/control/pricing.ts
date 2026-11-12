@@ -11,6 +11,7 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime, cacheHeaders } from "@/routes/utils";
 import type { PriceCard } from "@pipeline/pricing/types";
 import { requireCapability } from "./route-helpers";
+import { selectAllRows } from "./models.catalogue";
 
 type PricingModel = {
     provider: string;
@@ -29,12 +30,19 @@ type PricingModel = {
     }>;
 };
 
-const PRICING_METER_QUERY_BATCH_SIZE = 200;
+type PriceMetadata = { match?: unknown[]; billing_timestamp_basis?: string; time_windows?: unknown[] };
+type RouteRow = { provider_model_id: string; provider_slug: string; model_slug: string };
+type ModelRow = { model_slug: string; name: string; hidden: boolean | null; status: string | null };
+type SkuRow = {
+    sku_id: string; provider_model_id: string; operation: string; service_tier_slug: string | null;
+    currency: string | null; metadata: PriceMetadata | null;
+};
+type MeterRow = {
+    sku_meter_id: string; sku_id: string; meter_key: string; unit: string; unit_quantity: number | null;
+    price_nanos: number | string; metadata: PriceMetadata | null; meter_order: number | null;
+};
 
-function requireQueryResult<T>(table: string, result: { data: T[] | null; error: { message?: string } | null }): T[] {
-    if (result.error) throw new Error(`${table}: ${result.error.message || "query failed"}`);
-    return result.data ?? [];
-}
+const PRICING_METER_QUERY_BATCH_SIZE = 200;
 
 async function handlePricingModels(req: Request) {
     const auth = await guardAuth(req, { allowOAuthJwt: true });
@@ -47,36 +55,36 @@ async function handlePricingModels(req: Request) {
     try {
         const supabase = getSupabaseAdmin();
         const nowIso = new Date().toISOString();
-        const [routesResult, modelsResult, skusResult] = await Promise.all([
-            supabase.from("v2_model_provider_routes")
+        // Each table is larger than one PostgREST page, so every read pages to the end.
+        const [routeRows, modelRows, skuRows] = await Promise.all([
+            selectAllRows<RouteRow>("v2_model_provider_routes", [{ column: "provider_model_id" }], () => supabase.from("v2_model_provider_routes")
                 .select("provider_model_id,provider_slug,model_slug")
-                .eq("routing_enabled", true).in("status", ["active", "degraded"]),
-            supabase.from("v2_models").select("model_slug,name,hidden,status"),
-            supabase.from("v2_pricing_skus")
+                .eq("routing_enabled", true).in("status", ["active", "degraded"])),
+            selectAllRows<ModelRow>("v2_models", [{ column: "model_slug" }], () => supabase.from("v2_models")
+                .select("model_slug,name,hidden,status")),
+            selectAllRows<SkuRow>("v2_pricing_skus", [{ column: "sku_id" }], () => supabase.from("v2_pricing_skus")
                 .select("sku_id,provider_model_id,operation,service_tier_slug,currency,metadata")
                 .eq("status", "active").lte("effective_from", nowIso)
-                .or(`effective_to.is.null,effective_to.gt.\"${nowIso}\"`),
+                .or(`effective_to.is.null,effective_to.gt.\"${nowIso}\"`)),
         ]);
-        const routeRows = requireQueryResult("v2_model_provider_routes", routesResult);
-        const modelRows = requireQueryResult("v2_models", modelsResult);
-        const skuRows = requireQueryResult("v2_pricing_skus", skusResult);
-        const skuIds = skuRows.map((sku) => sku.sku_id);
-        const meterRows = [];
-        for (let index = 0; index < skuIds.length; index += PRICING_METER_QUERY_BATCH_SIZE) {
-            const metersResult = await supabase.from("v2_pricing_sku_meters")
-                .select("sku_id,meter_key,unit,unit_quantity,price_nanos,metadata,meter_order")
-                .in("sku_id", skuIds.slice(index, index + PRICING_METER_QUERY_BATCH_SIZE))
-                .eq("billable", true)
-                .order("meter_order");
-            meterRows.push(...requireQueryResult("v2_pricing_sku_meters", metersResult));
-        }
-        meterRows.sort((a, b) => Number(a.meter_order ?? 0) - Number(b.meter_order ?? 0));
-
         const routes = new Map(routeRows.map((route) => [route.provider_model_id, route]));
         const models = new Map(modelRows
             .filter((model) => !model.hidden && model.status !== "disabled" && model.status !== "retired")
             .map((model) => [model.model_slug, model]));
-        const skuById = new Map(skuRows.map((sku) => [sku.sku_id, sku]));
+        // Most active SKUs belong to routes that are not served or to hidden models; skip their meters.
+        const listedSkus = skuRows.filter((sku) => models.has(routes.get(sku.provider_model_id)?.model_slug ?? ""));
+        const skuIds = listedSkus.map((sku) => sku.sku_id);
+        const meterRows: MeterRow[] = [];
+        for (let index = 0; index < skuIds.length; index += PRICING_METER_QUERY_BATCH_SIZE) {
+            const batch = skuIds.slice(index, index + PRICING_METER_QUERY_BATCH_SIZE);
+            meterRows.push(...await selectAllRows<MeterRow>("v2_pricing_sku_meters", [{ column: "sku_meter_id" }], () => supabase.from("v2_pricing_sku_meters")
+                .select("sku_meter_id,sku_id,meter_key,unit,unit_quantity,price_nanos,metadata,meter_order")
+                .in("sku_id", batch)
+                .eq("billable", true)));
+        }
+        meterRows.sort((a, b) => Number(a.meter_order ?? 0) - Number(b.meter_order ?? 0));
+
+        const skuById = new Map(listedSkus.map((sku) => [sku.sku_id, sku]));
         const modelMap = new Map<string, PricingModel>();
         for (const meter of meterRows) {
             const sku = skuById.get(meter.sku_id);
@@ -96,8 +104,8 @@ async function handlePricingModels(req: Request) {
                 });
             }
 
-            const metadata = meter.metadata && typeof meter.metadata === "object" ? meter.metadata : {};
-            const skuMetadata = sku.metadata && typeof sku.metadata === "object" ? sku.metadata : {};
+            const metadata: PriceMetadata = meter.metadata && typeof meter.metadata === "object" ? meter.metadata : {};
+            const skuMetadata: PriceMetadata = sku.metadata && typeof sku.metadata === "object" ? sku.metadata : {};
             modelMap.get(key)!.meters.push({
                 meter: meter.meter_key,
                 unit: meter.unit,

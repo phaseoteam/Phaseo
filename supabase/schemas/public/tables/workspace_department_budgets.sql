@@ -29,6 +29,13 @@ CREATE TRIGGER workspace_department_budgets_lock_change
   FOR EACH ROW
   EXECUTE FUNCTION public.lock_workspace_budget_change();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_department_budgets"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "workspace_department_budgets_select_member" ON "public"."workspace_department_budgets"
   FOR SELECT
   TO "authenticated"
@@ -38,7 +45,7 @@ REVOKE ALL ON TABLE "public"."workspace_department_budgets" FROM "service_role";
 
 GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."workspace_department_budgets" TO "service_role";
 
-COMMENT ON TABLE "public"."workspace_department_budgets" IS 'Department spend budgets. A department''s spend is what its linked API keys cost, plus the keys and OAuth requests of its members when the key is not linked to a department. Budgets block the department''s API-key requests once its spend reaches 100% (batch, realtime and OAuth requests excepted) and send alerts at about 80% and 100% (sweep_department_budget_alerts).';
+COMMENT ON TABLE "public"."workspace_department_budgets" IS 'Department spend budgets. A department''s spend is what its linked API keys cost, plus the keys and OAuth requests of its members when the key is not linked to a department. Budgets block the department''s requests, batch and video holds and realtime sessions once its spend reaches 100% (gateway_department_budget_status) and send alerts at about 80% and 100% (sweep_department_budget_alerts).';
 
 REVOKE ALL ON TABLE "public"."workspace_department_budgets" FROM "authenticated";
 

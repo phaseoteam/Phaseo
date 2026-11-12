@@ -2,21 +2,20 @@
 title: "创建消息"
 sidebarTitle: "创建消息（Anthropic）"
 openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /messages"
-description: "`/v1/messages` 上兼容 Anthropic 的 Messages 端点。"
+description: "位于 /v1/messages 的 Anthropic 兼容 Messages 端点。"
 ---
-`/v1/messages` 接受 Anthropic Messages API 请求正文，并返回 Anthropic 格式的响应。
 
-## 流式传输
+将 Anthropic Messages API 请求体发送到 `/v1/messages`，即可为 Phaseo 路由的任何模型获得 Anthropic 格式的响应。支持 Anthropic 的工具调用字段，`X-Phaseo-Strictness` 标头控制如何处理不支持的参数。
 
-设置 `stream: true` 即可接收 Anthropic 格式的服务器发送事件（`message_start`、`content_block_*`、`message_delta`、`message_stop`）。
+设置 `stream: true` 可接收 Anthropic 格式的服务器发送事件（`message_start`、`content_block_*`、`message_delta`、`message_stop`）。流式传输在工具循环中同样可用。
 
 ## 对话中途的系统消息
 
-如果某条指令从对话的某个位置开始生效，请在 `messages` 中添加一条 `role: "system"` 消息。顶层 `system` 字段保持不变，因此缓存的前缀仍能命中。
+在 `messages` 中添加一条 `role: "system"` 消息，作为从对话中该位置开始生效的指令。顶层 `system` 字段保持不变，因此缓存的前缀仍能命中。
 
 ```bash
 curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "anthropic/claude-opus-5.5",
@@ -31,39 +30,47 @@ curl https://api.phaseo.app/v1/messages \
   }'
 ```
 
-- 系统消息接受字符串或文本块。它必须紧跟在用户轮次（或以服务器工具结果结尾的助手轮次）之后，并且必须是最后一条消息，或者后面紧跟助手轮次。放在其他位置会返回 400。
-- Claude Fable 5 和 5.1、Mythos 5 和 5.1、Opus 4.8、Opus 5 和 5.5、Sonnet 5.5 以及 Haiku 5.5 会在原位置收到它。包括 Sonnet 5 在内的其他 Claude 模型，以及 Microsoft Foundry 上的所有 Claude 模型，都会将它作为顶层系统提示的一部分接收。其他提供商会将它作为系统消息接收，与发送到 Chat Completions 的系统消息相同。
-- 不支持 `clear_at`、`output_config` 以及 `tool_addition` 或 `tool_removal` 块。
+系统消息可以是字符串或文本块。它必须紧跟在用户轮次之后（或紧跟在以服务器工具结果结尾的助手轮次之后），并且必须是最后一条消息，或者后面紧跟一个助手轮次。放在其他位置会返回 `400`。不支持 `clear_at`、`output_config` 以及 `tool_addition` 或 `tool_removal` 块。
 
-## 说明
+| 模型 | 如何接收系统消息 |
+| --- | --- |
+| Claude Fable 5 和 5.1、Mythos 5 和 5.1、Opus 4.8、Opus 5 和 5.5、Sonnet 5.5、Haiku 5.5 | 保留在原位置 |
+| 其他 Claude 模型（包括 Sonnet 5），以及 Microsoft Foundry 上的所有 Claude 模型 | 合并到顶层系统提示中 |
+| 其他提供商的模型 | 作为系统消息，与发送到 Chat Completions 的系统消息相同 |
 
-- 支持 Anthropic 工具调用字段。
-- `stream: true` 也适用于工具调用循环。对于 Gateway 管理的服务器工具，Phaseo 可能会处理上游工具调用轮次、继续循环，再重新发出合成流。
-- 也可以直接在 `tools` 中使用 Anthropic 原生网页搜索工具格式，例如 `type: "web_search_20250305"`。
-- `X-Phaseo-Strictness` 标头用于控制如何处理不支持的参数。
+## 使用服务器工具
 
-## 服务器工具
-
-`/v1/messages` 还支持以下由 Gateway 管理的服务器工具：
-
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-
-Phaseo 会将这些工具转换为上游兼容 Anthropic 的格式，在服务器端执行，然后继续工具调用循环。
-
-## 提供商原生网页搜索
-
-如果兼容的 Anthropic 模型和提供商组合支持原生网页搜索，也可以直接传入原生工具定义：
+在 `tools` 中添加一个 `phaseo:` 工具，模型调用它时由 Phaseo 运行：Phaseo 会在上游将其改写为 Anthropic 的工具格式，并在服务器端继续工具循环。`/v1/messages` 接受除 `phaseo:apply_patch` 以外的所有服务器工具；[服务器工具](../../guides/server-tools)指南列出了这些工具。
 
 ```bash
 curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4",
+    "model": "anthropic/claude-sonnet-5.5",
+    "max_tokens": 512,
+    "messages": [
+      { "role": "user", "content": "What time is it in America/New_York right now?" }
+    ],
+    "tools": [
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["America/New_York"] } }
+    ],
+    "tool_choice": { "type": "auto" }
+  }'
+```
+
+服务器工具调用会计入 `usage.server_tool_use`。旧的 `gateway:datetime` 类型仍然可用。设置 `stream: true` 时，Phaseo 会自行运行工具轮次，然后将后续回答作为单个流发送给你。
+
+## 使用 Anthropic 原生网页搜索
+
+当路由到的 Anthropic 模型和提供商支持原生网页搜索时，可直接传入 Anthropic 的工具定义，例如 `type: "web_search_20250305"`。执行前，提供商路由仍会筛选支持 `web_search_options` 的提供商。
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-5.5",
     "max_tokens": 512,
     "messages": [
       { "role": "user", "content": "Find the latest Anthropic web search guidance." }
@@ -76,33 +83,6 @@ curl https://api.phaseo.app/v1/messages \
         "allowed_domains": ["docs.anthropic.com"]
       }
     ],
-    "tool_choice": { "type": "tool", "name": "web_search" }
-  }'
-```
-
-执行前，提供商路由仍会检查是否支持 `web_search_options`。
-
-### 日期和时间示例
-
-```bash
-curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "anthropic/claude-sonnet-4",
-    "max_tokens": 512,
-    "stream": false,
-    "messages": [
-      { "role": "user", "content": "What time is it in America/New_York right now?" }
-    ],
-    "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "America/New_York" }
-      }
-    ],
     "tool_choice": { "type": "auto" }
   }'
 ```
-
-使用服务器工具时，`usage.server_tool_use.*` 计数器会记录对应的调用。

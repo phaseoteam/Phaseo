@@ -4,49 +4,36 @@ title: "Contexto y presupuesto de tokens"
 description: "Cómo distribuir los tokens de entrada y salida para equilibrar calidad, velocidad y coste."
 ---
 
-La gestión del presupuesto de tokens es una habilidad esencial para producción. Afecta directamente a la latencia, el gasto y la fiabilidad.
+Asigna a cada tipo de solicitud un objetivo de entrada y un límite de salida, y después compara el uso real con ellos. Cada token que envías o recibes añade latencia y coste, y un límite de salida demasiado bajo corta las respuestas.
 
-## Componentes del presupuesto de tokens
+## Qué cuenta en una solicitud
 
-La carga total de una solicitud suele incluir:
+| Parte | Cuenta como | Vigila |
+| --- | --- | --- |
+| Instrucciones del sistema y del desarrollador | Entrada | Instrucciones largas repetidas en cada solicitud. Guárdalas en caché con [prompt caching](./prompt-caching.mdx). |
+| Entrada del usuario | Entrada | Textos pegados y archivos subidos sin límite. |
+| Contexto recuperado (documentos, resultados de búsqueda, salida de herramientas) | Entrada | Fragmentos poco relevantes que añaden tokens y diluyen la respuesta. |
+| Esquemas de herramientas y definiciones de funciones | Entrada | Las herramientas declaradas cuentan como entrada tanto si el modelo las llama como si no. |
+| Razonamiento | Salida | Los modelos de razonamiento gastan parte del límite de salida antes de responder. |
+| La respuesta | Salida | Límites que truncan las respuestas o la salida estructurada. |
 
-- Instrucciones del sistema o del desarrollador
-- Prompt o entrada del usuario
-- Contexto recuperado (RAG, documentación y herramientas)
-- Esquemas de herramientas o definiciones de funciones
-- Tokens de salida del modelo
+## Cuando el razonamiento agota el límite de salida
 
-## Por qué importan los presupuestos
+Un modelo de razonamiento puede gastar todo el límite de salida antes de producir una respuesta. La respuesta sigue siendo HTTP `200` y contiene el razonamiento producido, sin una respuesta inventada:
 
-- Los prompts más largos aumentan la latencia y el coste.
-- Los prompts demasiado largos pueden reducir la relevancia cuando la calidad del contexto es baja.
-- Un presupuesto de salida demasiado pequeño puede truncar la respuesta y generar salidas estructuradas no válidas.
+| Endpoint | Lo que recibes |
+| --- | --- |
+| Chat Completions | `reasoning_content`, con `finish_reason: "length"` |
+| Responses | El elemento de salida de razonamiento, con `status: "incomplete"` |
 
-El razonamiento puede consumir el presupuesto de salida antes de que el modelo genere una respuesta. Estas
-respuestas devuelven HTTP 200 con el razonamiento generado, sin inventar
-una respuesta. Chat Completions conserva `reasoning_content` y `finish_reason: "length"`
-al alcanzar el límite de salida. Responses conserva el elemento de salida de razonamiento e
-informa de `status: "incomplete"`. Una finalización normal del proveedor sigue siendo `stop` o `completed`.
-## Estrategia de presupuestación
+Una parada normal sigue siendo `stop` (Chat Completions) o `completed` (Responses). Si ves estos casos a menudo, aumenta el límite de salida o reduce el esfuerzo de razonamiento.
 
-1. Define un objetivo máximo de tokens de entrada para cada ruta.
-2. Reserva margen de salida para las respuestas más largas previstas.
-3. Elimina de forma agresiva el contexto de poco valor.
-4. Supervisa a lo largo del tiempo la distribución real del uso de tokens.
+## Define un presupuesto por ruta
 
-## Medidas de protección prácticas
+1. Define un tamaño máximo de entrada para cada tipo de solicitud, como una respuesta de búsqueda o un borrador largo. No copies el mismo límite en todos los endpoints.
+2. Deja espacio de salida para la respuesta más larga que deba producir ese tipo de solicitud.
+3. Recorta o resume el contexto grande antes de enviarlo, empezando por los fragmentos que menos probablemente importen.
+4. Comprueba si las salidas están truncadas, por ejemplo con `finish_reason: "length"` o JSON incompleto, y vuelve a intentarlo con más espacio cuando ocurra.
+5. Sigue los recuentos de tokens del campo `usage` de cada respuesta a lo largo del tiempo y ajusta los límites a medida que cambien tus prompts.
 
-- Aplica límites estrictos a los tokens de entrada y salida.
-- Añade reglas previas para truncar o resumir contextos extensos.
-- Usa límites específicos para cada ruta (respuesta de búsqueda frente a generación extensa).
-- Valida que las salidas no tengan marcadores de truncamiento ni JSON parcial.
-
-## Errores habituales
-
-- Copiar el mismo límite de tokens en todos los endpoints.
-- Mantener prompts de sistema extensos para todos los tipos de solicitud.
-- No tener en cuenta los tokens adicionales de los esquemas de herramientas.
-
-## Recomendación
-
-Trata los presupuestos de tokens como una configuración que requiere supervisión continua, no como una tarea que se hace una sola vez.
+Para ver cómo interactúan los límites de salida y el muestreo, consulta [Parámetros de inferencia](./inference-parameters.mdx).

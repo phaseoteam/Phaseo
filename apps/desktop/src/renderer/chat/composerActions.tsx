@@ -7,7 +7,8 @@ import { useModels } from "../lib/useModels";
 import { current, isFast, settingDescriptors, speedIds, withSetting } from "./ModelSettings";
 
 /** Something `/` can do in this chat: run straight away, or open a short list of choices. */
-export type ComposerAction = { id: string; label: string; description?: string; icon: ReactNode; hint?: string; checked?: boolean; run?: () => void | Promise<void>; options?: ComposerAction[] };
+/** `insert` puts text in the message box in place of the typed `/name` instead of running anything (`/side ` for a question to follow). */
+export type ComposerAction = { id: string; label: string; description?: string; icon: ReactNode; hint?: string; checked?: boolean; run?: () => void | Promise<void>; insert?: string; options?: ComposerAction[] };
 
 /** Window events the menu sends to controls that live elsewhere on screen. */
 export const openModelPickerEvent = "phaseo:open-model-picker";

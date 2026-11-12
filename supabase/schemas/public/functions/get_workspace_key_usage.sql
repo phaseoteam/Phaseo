@@ -23,6 +23,7 @@ CREATE OR REPLACE FUNCTION public.get_workspace_key_usage (
     and gr.key_id is not null
     and gr.success is true
     and public.is_workspace_member(p_workspace_id)
+    and public.mfa_satisfied()
   group by gr.key_id;
 $function$;
 

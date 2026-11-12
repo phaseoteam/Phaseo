@@ -23,7 +23,7 @@ vi.mock("@providers/openai-compatible/config", () => ({
 	isOpenAICompatProvider: (...args: unknown[]) => isOpenAICompatProviderMock(...args),
 }));
 
-import { fetchVideoProviderStatus } from "./video-reconciliation";
+import { fetchVideoProviderStatus, resolveDashscopeAutoDurationSeconds } from "./video-reconciliation";
 
 function encodePrefixedId(prefix: string, value: string): string {
 	const b64 = Buffer.from(value, "utf8")
@@ -271,6 +271,34 @@ describe("video-reconciliation provider polling", () => {
 				requestOptions: expect.objectContaining({ input_video_seconds: 8 }),
 			}),
 		);
+	});
+
+	it("bills a Wan 3.0 smart-duration job from DashScope's reported output length", async () => {
+		const job = makeBaseJob({
+			videoId: "req_video_wan30_auto",
+			nativeId: null,
+			provider: "alibaba-cloud",
+			model: "qwen/wan3.0-video",
+			meta: { provider: "alibaba-cloud", providerTaskId: "wan30-auto", keySource: "gateway", resolution: "720P", seconds: 30, autoDuration: true, inputVideoSeconds: 15 },
+		});
+		const respond = (body: unknown) => vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => body }));
+
+		// usage.duration counts the reference video too, so only output_video_duration is billed.
+		respond({ output: { task_status: "SUCCEEDED" }, usage: { duration: 19, input_video_duration: 7, output_video_duration: 12 } });
+		expect((await fetchVideoProviderStatus(job))?.seconds).toBe(12);
+
+		// Capped at the reserved maximum.
+		respond({ output: { task_status: "SUCCEEDED" }, usage: { output_video_duration: 31 } });
+		expect((await fetchVideoProviderStatus(job))?.seconds).toBe(30);
+
+		// Not reported yet: the reserved maximum stands, never zero.
+		respond({ output: { task_status: "RUNNING" } });
+		expect((await fetchVideoProviderStatus(job))?.seconds).toBe(30);
+	});
+
+	it("keeps fixed-duration Alibaba jobs on their existing seconds", () => {
+		expect(resolveDashscopeAutoDurationSeconds({ usage: { output_video_duration: 4.9 } }, { seconds: 5 })).toBeUndefined();
+		expect(resolveDashscopeAutoDurationSeconds({ usage: { output_video_duration: 0 } }, { seconds: 30, autoDuration: true })).toBeUndefined();
 	});
 
 	it("uses BytePlus completion tokens and persisted aspect ratio for settlement", async () => {

@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/client";
 import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import type { AccountQueryScope } from "./queryKeys";
-import type { InvestigateGenerationResult } from "@/app/(dashboard)/gateway/usage/server-actions";
+import type { InvestigateGenerationResult } from "@/features/gateway/usage/server-actions";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 
 /** Tokens are read at request time and never become query keys or cached data. */

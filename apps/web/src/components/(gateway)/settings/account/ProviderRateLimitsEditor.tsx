@@ -1,7 +1,5 @@
-"use client";
-
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,7 +11,7 @@ import {
 	type ProviderManagedCatalogModel,
 	type ProviderRateLimit,
 	type ProviderRateLimits,
-} from "@/app/(dashboard)/settings/account/providers/actions";
+} from "@/features/settings/account/providers/actions";
 
 const FIELDS = [
 	["requests_per_minute", "requestsPerMinute"],
@@ -123,7 +121,7 @@ export default function ProviderRateLimitsEditor({ providerSlug, rateLimits, mod
 		if ("error" in prepared) return void toast.error(prepared.error === "emptyModel" ? t("emptyModel", { model: prepared.model }) : t("invalidNumber"));
 		setSaving(true);
 		try {
-			const result = await updateProviderRateLimitsAction(providerSlug, prepared.limits, base.version);
+			const result = await updateProviderRateLimitsAction({ data: { providerSlug, limits: prepared.limits, expectedVersion: base.version } });
 			if (!result.ok) {
 				setIssues(result.issues);
 				if (result.conflict) { setConflict(true); toast.error(t("stale")); }

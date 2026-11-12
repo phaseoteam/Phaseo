@@ -3,6 +3,8 @@
 // How: Adjusts IR params that are not provider-specific.
 
 import type { IRChatRequest } from "@core/ir";
+import { effectiveEffortFromMarkers, hasExplicitEffortMarkers } from "@core/claudePerMessageEffort";
+import { supportsAnthropicPerMessageEffort } from "@core/claudeModelCapabilities";
 import { routeOutputTokenLimit } from "@core/route-token-limits";
 import type { Protocol } from "@protocols/detect";
 import { forwardsOpenAIAllowedTools } from "@protocols/shared/text-normalizers";
@@ -204,6 +206,23 @@ function normalizeMaxTokens(
 }
 
 /**
+ * Replace effort-only system messages with the effort they put in force for this
+ * reply, on routes without per-message effort. The reply runs at the same level
+ * it would on Claude; only the cached prefix is lost.
+ */
+export function foldEffortMarkersForProvider(ir: IRChatRequest, providerId: string, model: string | null | undefined): IRChatRequest {
+    if (!hasExplicitEffortMarkers(ir.messages)) return ir;
+    if (supportsAnthropicPerMessageEffort(model, providerId)) return ir;
+    const effective = effectiveEffortFromMarkers(ir.messages);
+    const messages = ir.messages.filter((message) => !(message.role === "system" && message.effort !== undefined));
+    return {
+        ...ir,
+        messages,
+        ...(effective ? { reasoning: { ...(ir.reasoning ?? {}), effort: effective } } : {}),
+    };
+}
+
+/**
  * An `allowed_tools` choice limits the model to some of the defined tools.
  * OpenAI is sent the original choice and every tool, which keeps the tool list
  * (and its prompt cache) the same across turns; every other provider has no
@@ -236,6 +255,9 @@ export function normalizeIRForProvider(
     }
 ): IRChatRequest {
     const capabilityParams = options?.capabilityParams ?? null;
+    // Effort-only system messages (Messages per-message effort) reach only the
+    // Claude routes that take them; elsewhere they become the top-level effort.
+    ir = foldEffortMarkersForProvider(ir, providerId, options?.modelForReasoning ?? ir.model);
     // Parameters the provider does not support are dropped (and reported), not
     // forwarded: see ./unsupportedParams.ts.
     const supported = dropUnsupportedParams(ir, providerId, capabilityParams);

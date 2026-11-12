@@ -25,10 +25,13 @@ function readLocalWebEnvironment() {
 }
 
 const localWebEnvironment = readLocalWebEnvironment();
+// The website's .env.local uses PUBLIC_*; older copies may still use NEXT_PUBLIC_*.
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
+  ?? localWebEnvironment.PUBLIC_SUPABASE_URL
   ?? localWebEnvironment.NEXT_PUBLIC_SUPABASE_URL;
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY
   ?? process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY
+  ?? localWebEnvironment.PUBLIC_SUPABASE_ANON_KEY
   ?? localWebEnvironment.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 // Firebase's Android config, needed for push. It holds public identifiers only, so it is
@@ -47,7 +50,13 @@ if (perf !== (process.env.EXPO_PUBLIC_PERF_TOOLS === "1")) {
   throw new Error("Set APP_VARIANT=perf and EXPO_PUBLIC_PERF_TOOLS=1 together for the perf build, and neither for a normal build.");
 }
 
-/** The perf build talks plain HTTP to the chat stand-in on the development machine. */
+/**
+ * Plain HTTP is needed by Phaseo on a computer reached directly (its phone server at a Wi-Fi or Tailscale IP has no
+ * certificate) and by the perf build's chat stand-in. Phaseo's own origins stay https. Nothing secret or private
+ * crosses that plain HTTP: pairing and every frame to the computer are sealed end to end with the paired keys
+ * (@phaseo/phone-protocol's direct.ts), and no token is sent; only the health check and the key handshake's random
+ * challenge are readable.
+ */
 const withCleartextTraffic: ConfigPlugin = (config) => withAndroidManifest(config, (manifest) => {
   const application = manifest.modResults.manifest.application?.[0];
   if (application) application.$["android:usesCleartextTraffic"] = "true";
@@ -95,6 +104,8 @@ const base: ExpoConfig = {
     ...expo.extra,
     supabaseUrl,
     supabasePublishableKey,
+    posthogKey: process.env.EXPO_PUBLIC_POSTHOG_KEY || process.env.PUBLIC_POSTHOG_KEY || process.env.NEXT_PUBLIC_POSTHOG_KEY || localWebEnvironment.PUBLIC_POSTHOG_KEY || localWebEnvironment.NEXT_PUBLIC_POSTHOG_KEY,
+    posthogHost: process.env.EXPO_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
     ...build,
     buildNumber,
   },
@@ -108,4 +119,4 @@ export default perf
     ios: { ...base.ios, bundleIdentifier: "app.phaseo.client.perf" },
     android: { ...base.android, package: "app.phaseo.client.perf" },
   })
-  : base;
+  : withCleartextTraffic(base);

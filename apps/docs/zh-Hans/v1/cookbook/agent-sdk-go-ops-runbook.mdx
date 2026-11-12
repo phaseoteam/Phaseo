@@ -1,64 +1,99 @@
 ---
-title: "使用 Go 构建运维手册 Agent"
+title: "使用 Go 构建运维手册智能体"
 icon: "clipboard-check"
 description: "使用 Go Agent SDK 将少量确定性的本地工具组合成范围明确的故障排查循环。"
 ---
 
-当 Go 服务需要结合本地上下文回答运维问题时，可使用此示例。
+在单个服务中运行一个 Go 智能体，通过调用本地状态工具回答运维问题，无需任务系统。完成后，你会得到一个 `main.go`，它会打印一段关于当前提供商延迟的简短回答。
 
-## 1. 准备 SDK
+该工具返回固定的示例数据，因此该程序仅作演示；请将它替换为你自己的状态或指标调用。它适合上下文已经以本地或内部调用形式存在的 Go 服务。
 
-<Note type="warning">Go Agent SDK 尚无公开的模块版本。请参阅[从源代码安装说明](../sdk-reference/go/agent-sdk-installation.mdx)。</Note>
+## 构建
 
-## 2. 定义小型运行时工具
+<Steps>
+<Step title="安装">
 
-```go
-statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
-  ID:          "read-status",
-  Description: "Read the current service status page summary.",
-  Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
-    return map[string]any{
-      "status": "degraded",
-      "summary": "Latency is elevated on one provider route.",
-    }, nil
-  },
-})
+```bash
+go mod init ops-runbook
+go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 3. 创建 Agent
+核心 `sdk-go/v3` 模块会一并安装。有关要求，请参阅 [Go Agent SDK 安装](../sdk-reference/agent/installation)。
 
-```go
-agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
-  ID:           "ops-runbook-agent",
-  Model:        "openai/gpt-5.4-nano",
-  Instructions: "Use tools when helpful and answer briefly.",
-  Tools:        []phaseoagent.Tool{statusTool},
-})
-```
+</Step>
+<Step title="编写智能体">
 
-## 4. 执行一次范围明确的故障排查轮次
+```go main.go
+package main
 
-```go
-client, _ := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+import (
+  "context"
+  "fmt"
 
-result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
-  Input:  "What is happening with provider latency right now?",
-  Client: client,
-})
-if err != nil {
-  panic(err)
+  phaseoagent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"
+)
+
+func main() {
+  statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
+    ID:          "read-status",
+    Description: "Read the current service status page summary.",
+    Parameters: map[string]any{
+      "type":                 "object",
+      "properties":           map[string]any{},
+      "additionalProperties": false,
+    },
+    Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
+      return map[string]any{
+        "status":  "degraded",
+        "summary": "Latency is elevated on one provider route.",
+      }, nil
+    },
+  })
+
+  agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+    ID:           "ops-runbook-agent",
+    Model:        "openai/gpt-6-astra",
+    Instructions: "Use tools when helpful and answer briefly.",
+    Tools:        []phaseoagent.Tool{statusTool},
+    MaxSteps:     4,
+  })
+
+  // 读取 PHASEO_API_KEY（如果设置了，还会读取 PHASEO_BASE_URL）。
+  client, err := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+  if err != nil {
+    panic(err)
+  }
+
+  result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
+    Input:  "What is happening with provider latency right now?",
+    Client: client,
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(result.Run.Status)
+  fmt.Println(result.Output)
 }
-
-fmt.Println(result.Output)
 ```
 
-## 适用场景
+</Step>
+<Step title="运行">
 
-- 工作流属于单个 Go 服务
-- 支持上下文已可通过本地或内部调用获取
-- 你想先使用 Agent 循环，而暂不引入更大的任务系统
+```bash
+go run .
+```
 
-## 相关内容
+</Step>
+</Steps>
 
-- [Go Agent SDK](../sdk-reference/go/agent-sdk.mdx)
-- [使用 web fetch 为提取结果提供依据](./tool-grounding-with-web-fetch.mdx)
+## 检查是否成功
+
+- 程序先打印 `completed`，然后打印一段提到某条提供商路由延迟升高的回答。
+- 在 **设置 → 使用情况 → 日志** 中，第一个模型轮次会显示一次 `read-status` 工具调用。
+- 如果没有设置 `PHASEO_API_KEY`，`CreateGatewayAgentClient` 会返回 `PHASEO_API_KEY is required`。
+
+## 投入生产之前
+
+在 Go SDK 中，`MaxSteps` 默认为 `8`；请将它设为能完成任务的最小值。当工具接受参数时，请为它提供 `Parameters` schema 和 `InputSchema` 验证器，并让验证器对任何意外内容返回错误，因为参数来自模型。除非有人批准调用（`RequireApproval: true`），否则让工具保持只读。[Go Agent SDK 参考](../sdk-reference/agent/usage)介绍了审批、状态和流式传输，[使用网页抓取提供依据](./tool-grounding-with-web-fetch)展示了如何读取已知页面而不是调用本地工具。

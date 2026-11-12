@@ -1,102 +1,71 @@
 ---
 title: "OpenAI GPT-5.6"
-description: "प्रोडक्शन वर्कलोड में GPT-5.6 Sol, Terra या Luna अपनाने के बारे में जानने योग्य बातें"
+description: "प्रोडक्शन वर्कलोड के लिए GPT-5.6 Sol, Terra या Luna अपनाते समय क्या जानना ज़रूरी है।"
 icon: "/icons/brands/openai.svg"
 ---
 
-# OpenAI GPT-5.6
+वर्कलोड के अनुकूल GPT-5.6 टियर चुनें, सिर्फ़ मॉडल ID बदलें, और रीज़निंग effort, टूल, लेटेंसी और लागत दोबारा टेस्ट करें। आपके मूल्यांकन पास होने तक अपने पिछले GPT-5 मॉडल को फ़ॉलबैक के रूप में रखें।
 
-प्रोडक्शन में GPT-5.6 परिवार को सुरक्षित रूप से अपनाने के लिए यह गाइड देखें।
+## टियर चुनें
 
-GPT-5.6 जटिल प्रोडक्शन वर्कफ़्लो के लिए OpenAI का मौजूदा GPT परिवार है। Phaseo में तय tier ID, OpenAI मॉडल ID `gpt-5.6-sol`, `gpt-5.6-terra` और `gpt-5.6-luna` से मैप होते हैं।
-
-## माइग्रेशन क्विकस्टार्ट
-
-1. वर्कलोड से मेल खाने वाला तय Sol, Terra या Luna मॉडल चुनें।
-2. केवल मॉडल ID बदलें और अनुरोध का बाकी हिस्सा स्थिर रखें।
-3. रीज़निंग प्रयास, संरचित आउटपुट, टूल, लेटेंसी और प्रति-कार्य लागत को फिर से जाँचें।
-4. पुराने GPT-5 मॉडल को फ़ॉलबैक के रूप में उपलब्ध रखते हुए नई रूट को कैनरी करें।
-
-## मॉडल चुनें
-
-| मॉडल | उपयोग | तर्क का स्तर |
+| मॉडल | किसके लिए उपयोग करें | रीज़निंग effort |
 | --- | --- | --- |
-| `openai/gpt-5.6-sol` | सर्वोच्च क्षमता वाला तर्क, एजेंटिक कोडिंग, वैज्ञानिक विश्लेषण और जटिल पेशेवर कार्य | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
-| `openai/gpt-5.6-terra` | तर्क, कोडिंग और असिस्टेंट वर्कफ़्लो में संतुलित रोज़मर्रा का काम | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
-| `openai/gpt-5.6-luna` | कम लेटेंसी और लागत-संवेदनशील GPT-5.6 वर्कलोड | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-sol` | सबसे ज़्यादा क्षमता वाली रीज़निंग, एजेंटिक कोडिंग, वैज्ञानिक विश्लेषण और जटिल पेशेवर काम | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-terra` | संतुलित रोज़मर्रा की रीज़निंग, कोडिंग और असिस्टेंट का काम | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-luna` | कम लेटेंसी वाला, लागत-संवेदनशील काम | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 
-OpenAI का `gpt-5.6` alias `gpt-5.6-sol` पर रूट करता है। Phaseo में Sol-स्तर को डिफ़ॉल्ट बनाने के लिए `openai/gpt-5.6` या `openai/gpt-sol-latest` उपयोग करें और नियंत्रित रूटिंग के लिए तय tier ID चुनें।
+तीनों की कॉन्टेक्स्ट विंडो 1,050,000 टोकन और आउटपुट 128K टोकन है। हर एक की एक Pro ID भी है (`openai/gpt-5.6-sol-pro`, `-terra-pro`, `-luna-pro`), जो आपके लिए `reasoning.mode: "pro"` भेजती है।
 
-Phaseo हर tier के नवीनतम मॉडल के लिए tier alias भी ट्रैक करता है: `openai/gpt-sol-latest`, `openai/gpt-terra-latest` और `openai/gpt-luna-latest`। नियंत्रित माइग्रेशन के लिए तय GPT-5.6 ID उपयोग करें; tier alias तभी चुनें जब आप जानबूझकर चाहते हों कि भविष्य के Sol, Terra या Luna रिलीज़ उसी रूट से आगे बढ़ें।
-
-## नया क्या है
-
-- GPT-5.6 एक डिफ़ॉल्ट GPT रूट के बजाय नया Sol/Terra/Luna विभाजन जोड़ता है।
-- तीनों GPT-5.6 tier सबसे अधिक reasoning budget के लिए `reasoning.effort: "max"` सपोर्ट करते हैं।
-- GPT-5.6 अलग Pro मॉडल slug पर स्विच किए बिना `reasoning.mode: "pro"` सपोर्ट करता है।
-- GPT-5.6 `reasoning.context` के ज़रिए स्थायी reasoning नियंत्रण जोड़ता है।
-- GPT-5.6 योग्य tool-heavy वर्कफ़्लो के लिए multi-agent सपोर्ट और Programmatic Tool Calling बीटा जोड़ता है।
-- प्रॉम्प्ट कैशिंग में बिना कैश वाला इनपुट, कैश रीड, कैश राइट और आउटपुट अलग-अलग मीटर से गिने जाते हैं।
-- कैश ब्रेकपॉइंट और `prompt_cache_options` से स्पष्ट प्रॉम्प्ट कैशिंग सपोर्ट होती है। GPT-5.6 पर `prompt_cache_options.ttl`, `prompt_cache_retention` की जगह लेता है, और Phaseo `prompt_cache_retention` को GPT-5.6 मॉडलों को नहीं भेजता।
+OpenAI का अपना `gpt-5.6` उपनाम `gpt-5.6-sol` की ओर इशारा करता है; Phaseo पर टियर ID सीधे कॉल करें। टियर उपनाम `openai/gpt-sol-latest`, `openai/gpt-terra-latest` और `openai/gpt-luna-latest` हर टियर के सबसे नए मॉडल का अनुसरण करते हैं, और `openai/gpt-sol-latest` पहले ही GPT-5.6 से आगे के मॉडल की ओर इशारा करता है। इन्हें सिर्फ़ तब उपयोग करें जब आप चाहते हों कि भविष्य की रिलीज़ अपने आप लागू हों।
 
 ## अपना अनुरोध अपडेट करें
 
-पहले केवल मॉडल ID बदलें और अनुरोध का बाकी हिस्सा वैसा ही रखें।
+GPT-5.6 हर टियर पर `max` जोड़ता है, जो सबसे बड़ा रीज़निंग बजट है। इसे सिर्फ़ वहां उपयोग करें जहां अतिरिक्त लेटेंसी और लागत का फ़ायदा मिले।
 
-पहले उदाहरण Responses API शैली के `input` आकार का उपयोग करते हैं। Chat Completions ट्रैफ़िक माइग्रेट कर रहे हों, तो रूट सपोर्ट मिलने पर `messages` और सीधे `reasoning_effort` फ़ील्ड का उपयोग जारी रखें।
-
-```json
-{
-  "model": "openai/gpt-5.6-terra",
-  "input": "Summarize the rollout risks in this migration plan.",
-  "reasoning": {
-    "effort": "medium"
-  }
-}
-```
-
-`max` प्रयास केवल उन रूट पर उपयोग करें जहाँ अतिरिक्त reasoning budget, latency और लागत के लायक हो।
-
-```json
+<CodeGroup>
+```json Responses
 {
   "model": "openai/gpt-5.6-sol",
   "input": "Review this multi-service incident report and propose a rollback plan.",
-  "reasoning": {
-    "effort": "max"
-  }
+  "reasoning": { "effort": "max" }
 }
 ```
 
-आपका integration अब भी flat OpenAI-compatible field भेजता हो, तो route के समर्थन पर Phaseo `reasoning_effort` भी स्वीकार करता है:
-
-```json
+```json Chat Completions
 {
-  "model": "openai/gpt-5.6-sol",
+  "model": "openai/gpt-5.6-terra",
   "messages": [
-    {
-      "role": "user",
-      "content": "Design a test plan for this agent workflow."
-    }
+    { "role": "user", "content": "Design a test plan for this agent workflow." }
   ],
-  "reasoning_effort": "max"
+  "reasoning_effort": "medium"
 }
 ```
+</CodeGroup>
 
-## कीमतों की समीक्षा करें
+GPT-5.6 ये भी जोड़ता है:
 
-कैटलॉग में GPT-5.6 की कीमत प्रति दस लाख टोकन दर्ज होती है।
+- **`reasoning.mode: "pro"`** कठिन कार्यों के लिए, मॉडल बदले बिना;
+- **`reasoning.context`** (`auto`, `current_turn` या `all_turns`), यह नियंत्रित करने के लिए कि कौन-सी रीज़निंग बनी रहे;
+- टूल-भारी वर्कफ़्लो के लिए बीटा मल्टी-एजेंट सपोर्ट और Programmatic Tool Calling;
+- `prompt_cache_options` और कैश ब्रेकपॉइंट के साथ स्पष्ट प्रॉम्प्ट कैशिंग। GPT-5.6 पर `prompt_cache_options.ttl` `prompt_cache_retention` की जगह लेता है, जिसे Phaseo GPT-5.6 मॉडल को नहीं भेजता।
 
-| मॉडल | इनपुट | कैश रीड | कैश राइट | आउटपुट |
-| --- | ---: | ---: | ---: | ---: |
-| Sol | $5.00 | $0.50 | $6.25 | $30.00 |
-| Terra | $2.50 | $0.25 | $3.125 | $15.00 |
-| Luna | $1.00 | $0.10 | $1.25 | $6.00 |
+## मूल्य की समीक्षा करें
 
-Cache reads और writes की कीमत अलग-अलग होती है। मौजूदा catalog में cache read पर बिना cache वाले input से 90% छूट मिलती है, जबकि cache write की कीमत बिना cache वाले input की 1.25 गुना है। हर इनपुट टोकन का शुल्क इन तीन में से केवल एक दर पर लगता है। उपयोग आँकड़े कैश रीड और राइट को `input_tokens` (Chat Completions पर `prompt_tokens`) में गिनते हैं और राइट को `cache_write_tokens` में बताते हैं; [उपयोग और मूल्य निर्धारण के फ़ील्ड](../guides/prompt-caching.mdx#usage-and-pricing-fields) देखें।
+272K इनपुट टोकन तक के अनुरोधों के लिए, OpenAI के स्टैंडर्ड टियर पर प्रति 1M टोकन मूल्य:
 
-## प्रॉम्प्ट कैशिंग का सोच-समझकर उपयोग करें
+| मॉडल | इनपुट | कैश रीड | कैश राइट (30 मिनट) | कैश राइट (12 घंटे) | आउटपुट |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Sol | $5.00 | $0.50 | $6.25 | $12.50 | $30.00 |
+| Terra | $2.00 | $0.20 | $2.50 | $5.00 | $12.00 |
+| Luna | $0.20 | $0.02 | $0.25 | $0.50 | $1.20 |
 
-बार-बार उपयोग होने वाले संदर्भ में, प्रॉम्प्ट का स्थिर हिस्सा कैश किए जा सकने वाले ब्लॉक में रखें और अनुरोध-विशिष्ट टेक्स्ट को कैश न करें।
+272K से ज़्यादा इनपुट टोकन वाले अनुरोध महंगे हैं: Sol $10.00 इनपुट और $45.00 आउटपुट, Terra $4.00 और $18.00, Luna $0.40 और $1.80, और कैश मूल्य भी इसी अनुपात में बढ़ते हैं। 30 नवंबर, 2026 तक OpenAI का प्रचारात्मक Sol मूल्य लागू है: 272K टोकन तक $4.00 इनपुट और $20.00 आउटपुट। दूसरे टियर और प्रदाताओं के मौजूदा मूल्य के लिए मॉडल पेज देखें।
+
+कैश रीड की लागत इनपुट दर का 10% है, 30 मिनट का राइट 1.25×, और 12 घंटे का राइट 2.5×। हर इनपुट टोकन का बिल इनमें से ठीक एक दर पर बनता है। उपयोग में कैश रीड और राइट `input_tokens` (Chat Completions पर `prompt_tokens`) के अंदर गिने जाते हैं और राइट `cache_write_tokens` में बताए जाते हैं; देखें [उपयोग और मूल्य फ़ील्ड](../guides/prompt-caching.mdx#usage-and-pricing-fields)।
+
+## दोहराया जाने वाला कॉन्टेक्स्ट कैश करें
+
+प्रॉम्प्ट का स्थिर हिस्सा कैश-योग्य ब्लॉक में रखें और अनुरोध-विशिष्ट टेक्स्ट उसके बाद रखें:
 
 ```json
 {
@@ -108,9 +77,7 @@ Cache reads और writes की कीमत अलग-अलग होती �
         {
           "type": "input_text",
           "text": "Stable policy document...",
-          "prompt_cache_breakpoint": {
-            "mode": "explicit"
-          }
+          "prompt_cache_breakpoint": { "mode": "explicit" }
         },
         {
           "type": "input_text",
@@ -119,42 +86,29 @@ Cache reads और writes की कीमत अलग-अलग होती �
       ]
     }
   ],
-  "prompt_cache_options": {
-    "mode": "explicit",
-    "ttl": "30m"
-  }
+  "prompt_cache_options": { "mode": "explicit", "ttl": "30m" }
 }
 ```
 
-`prompt_cache_breakpoint` अपने ब्लॉक तक (उसे मिलाकर) सब कुछ कैश करता है। ब्लॉक पर `{"type": "ephemeral"}` जैसा `cache_control` भी काम करता है, और Phaseo उसे GPT-5.6 को `prompt_cache_breakpoint` के रूप में भेजता है। दोनों में से कोई भी चिह्न Claude तक कैश ब्रेकपॉइंट के रूप में पहुँचता है, इसलिए Claude पर फ़ॉलबैक होने पर भी कैशिंग होती है। `explicit` मोड में OpenAI केवल आपके लगाए ब्रेकपॉइंट कैश करता है। `ttl` का मान `30m` (डिफ़ॉल्ट) या `12h` होता है; OpenAI `12h` केवल अपने Responses API पर स्वीकार करता है, [OpenAI पर 12 घंटे का कैश](../guides/prompt-caching.mdx#12-hour-cache-on-openai) देखें। Phaseo, GPT-5.6 को `prompt_cache_retention` नहीं भेजता। [प्रॉम्प्ट कैशिंग](../guides/prompt-caching.mdx#openai-retention-and-options) देखें।
+- `prompt_cache_breakpoint` अपने ब्लॉक तक और उसे मिलाकर सब कुछ कैश करता है। `explicit` मोड में OpenAI सिर्फ़ वही ब्रेकपॉइंट कैश करता है जो आप लगाते हैं।
+- `{"type": "ephemeral"}` जैसा ब्लॉक `cache_control` भी काम करता है; Phaseo इसे GPT-5.6 को `prompt_cache_breakpoint` के रूप में भेजता है। दोनों में से कोई भी निशान Claude तक कैश ब्रेकपॉइंट के रूप में पहुंचता है, इसलिए Claude पर फ़ॉलबैक होने पर भी कैशिंग होती है।
+- `ttl` `30m` (डिफ़ॉल्ट) या `12h` होता है। कौन-से रूट इसे लेते हैं, यह जानने के लिए [OpenAI पर 12 घंटे का कैश](../guides/prompt-caching.mdx#12-hour-cache-on-openai) देखें, और दूसरे फ़ील्ड के लिए [OpenAI प्रतिधारण और विकल्प](../guides/prompt-caching.mdx#openai-retention-and-options)।
 
-## किन चीज़ों का परीक्षण करें
+## क्या टेस्ट करें
 
-### तर्क और आउटपुट गुणवत्ता
+- **रीज़निंग और आउटपुट गुणवत्ता:** आप जो effort लेवल उपलब्ध कराएंगे, उन पर हर टियर, और जहां गुणवत्ता सबसे पहले हो वहां `max` भी; कठिन कार्यों पर स्टैंडर्ड बनाम `reasoning.mode: "pro"`; हर लेवल पर स्कीमा पास दर और टूल-कॉल गुणवत्ता।
+- **लागत और लेटेंसी:** हर effort पर लेटेंसी, आपकी मौजूदा बेसलाइन के मुकाबले आउटपुट-टोकन वृद्धि, दोहराए गए प्रॉम्प्ट पर कैश रीड और राइट का मिश्रण, और प्रति टोकन मूल्य के बजाय प्रति सफल कार्य लागत।
 
-- Sol, Terra और Luna को उन effort levels पर जाँचें जिन्हें users को देना है; गुणवत्ता-प्रथम workflows में `max` भी शामिल करें
-- कठिन tasks में standard mode और `reasoning.mode: "pro"` की तुलना करें, जहाँ latency से अधिक गुणवत्ता महत्वपूर्ण हो
-- हर effort level पर structured outputs और schema pass rate
-- tool-call selection और arguments की गुणवत्ता
+## रोलआउट करें
 
-### लागत और विलंबता
-
-- हर reasoning effort पर latency
-- मौजूदा production baseline की तुलना में output tokens की वृद्धि
-- दोहराए गए prompts पर cache read/write का अनुपात
-- केवल प्रति token कीमत नहीं, सफल task की लागत
-
-### पिछले संस्करण पर लौटना
-
-- पुराना GPT-5.x route fallback के रूप में उपलब्ध रखें
-- production-जैसे prompts पर प्रमाणित होने तक `max` को config flag या preset के पीछे रखें
-- cache write volume और cache read volume को अलग-अलग monitor करें
-- अपने evals से task success, cost और latency की पुष्टि होने के बाद ही GPT-5.6 को default routing में लाएँ
+1. अपने पिछले GPT-5 मॉडल को `models` में फ़ॉलबैक के रूप में रखें।
+2. प्रोडक्शन जैसे प्रॉम्प्ट पर साबित होने तक `max` को कॉन्फ़िग फ़्लैग या [प्रीसेट](../guides/presets) के पीछे रखें।
+3. कैश राइट की मात्रा पर कैश रीड से अलग नज़र रखें।
+4. आपके मूल्यांकन कार्य सफलता, लागत और लेटेंसी की पुष्टि करने के बाद ही GPT-5.6 को डिफ़ॉल्ट बनाएं।
 
 ## स्रोत
 
 - [OpenAI GPT-5.6 प्रीव्यू की घोषणा](https://openai.com/index/previewing-gpt-5-6-sol/)
-- [OpenAI GPT-5.6 मॉडल मार्गदर्शिका](https://developers.openai.com/api/docs/guides/latest-model)
-- [OpenAI model catalog](https://developers.openai.com/api/docs/models)
+- [OpenAI GPT-5.6 मॉडल मार्गदर्शन](https://developers.openai.com/api/docs/guides/latest-model)
+- [OpenAI मॉडल कैटलॉग](https://developers.openai.com/api/docs/models)
 - [GPT-5.6 प्रीव्यू सिस्टम कार्ड](https://deploymentsafety.openai.com/gpt-5-6-preview)
-- [Phaseo प्रॉम्प्ट कैशिंग गाइड](../guides/prompt-caching.mdx)

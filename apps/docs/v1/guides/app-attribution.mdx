@@ -5,13 +5,10 @@ description: "Group Gateway usage by application with stable IDs, names, URLs, a
 icon: "badge-check"
 ---
 
-Use app attribution to separate usage from different products, environments, or customer-facing experiences. Attribution appears in app analytics and request audits without changing the inference response.
+Send an `X-App-Id` header on every request to group its usage under one application in app analytics and request audits. Use a different ID for each product, environment, or customer-facing experience you want to report on separately. Attribution never changes the inference response.
 
-## Add attribution headers
-
-Send a stable app ID on every request. Add a name, URL, and up to three categories when you want richer dashboard grouping.
-
-```bash
+<CodeGroup>
+```bash cURL
 curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
@@ -20,16 +17,12 @@ curl https://api.phaseo.app/v1/responses \
   -H "HTTP-Referer: https://acme.example/support" \
   -H "X-App-Categories: chat,productivity" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Summarize this ticket."
   }'
 ```
 
-Use the same `X-App-Id` for every request from the same application. Phaseo uses it as the stable identity when a URL is unavailable.
-
-## Use the TypeScript SDK
-
-```typescript
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const phaseo = new Phaseo({
@@ -43,44 +36,37 @@ const phaseo = new Phaseo({
 });
 
 const response = await phaseo.generateResponse({
-  model: "openai/gpt-5-nano",
+  model: "openai/gpt-6-astra",
   input: "Summarize this ticket.",
 });
 ```
+</CodeGroup>
 
-## Supported headers
+The TypeScript SDK's `app` option sends the same headers on every request. Phaseo never sets attribution for you.
+
+## Headers
 
 | Header | Purpose |
 | --- | --- |
 | `X-App-Id` | Stable identifier chosen by your application. |
 | `X-App-Name` | Human-readable name shown in app and usage views. |
 | `HTTP-Referer` | Public page or deployment URL associated with the app. |
-| `X-App-Categories` | Comma-separated list of up to three supported categories. |
+| `X-App-Categories` | Comma-separated list of up to three categories. |
 | `X-Title` | Compatibility alias for a human-readable app name. |
 
-`HTTP-Referer` is attribution metadata; it does not need to match the browser's automatic `Referer` header. Set it explicitly in server-side integrations when you want one canonical app URL.
+Phaseo identifies the app by its `HTTP-Referer` URL when you send one, and by `X-App-Id` otherwise. Keep both stable: a new URL or ID starts a new app in analytics.
+
+`HTTP-Referer` doesn't need to match the browser's automatic `Referer` header. Set it explicitly in server-side integrations when you want one canonical app URL.
 
 ## Categories
 
-Choose up to three values:
+Choose up to three of `chat`, `developer-tools`, `research`, `productivity`, `education`, `commerce`, `media`, `finance`, and `other`.
 
-- `chat`
-- `developer-tools`
-- `research`
-- `productivity`
-- `education`
-- `commerce`
-- `media`
-- `finance`
-- `other`
+Values are case-insensitive. Phaseo ignores unknown values, removes duplicates, and keeps the first three valid categories. Categories sent on later requests are added to the ones already saved for the app; they never remove categories chosen in the dashboard.
 
-Values are case-insensitive. Phaseo ignores unknown values, removes duplicates, and keeps the first three valid categories. Categories received on later requests are merged with categories already saved for the app; they do not remove dashboard selections.
+To manage categories centrally instead of in application code, edit them in **Settings → Apps**.
 
-You can also edit categories in **Gateway → Settings → Apps**. Use the dashboard when classification is managed centrally rather than by application code.
+## Keep attribution safe to share
 
-## Attribution guidelines
-
-- Keep IDs stable across deployments so usage remains grouped.
-- Use separate IDs for applications that need separate cost or usage reporting.
-- Do not put customer IDs, email addresses, or other personal data in attribution headers.
-- Treat the URL as public metadata when the app may appear in shared or public app views.
+- Don't put customer IDs, email addresses, or other personal data in attribution headers.
+- Treat the URL and name as public: they can appear in shared or public app views.

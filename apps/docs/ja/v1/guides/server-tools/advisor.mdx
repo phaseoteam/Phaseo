@@ -1,25 +1,17 @@
 ---
 icon: "compass"
-title: "Advisorサーバーツール"
-description: "生成中にモデルが別のモデルへ相談できるようにします。"
+title: "Advisor サーバーツール"
+description: "生成の途中で、あるモデルが別のモデルに相談できるようにします。"
 ---
 
-メインモデルが回答を終える前に、別のモデルへレビュー、計画、妥当性チェック、専門的な意見を求められるようにする場合は`phaseo:advisor`を使います。
-
-メインモデルは他のツールと同じようにAdvisorを呼び出します。Phaseoがサーバー側でAdvisorモデルを実行し、その助言をツール結果として返します。その後、メインモデルが最終回答を作成します。
-
-<Note>
-Advisorは対応するテキストモデルでゲートウェイが管理します。クライアントがAnthropicネイティブのツール形式を明示的に送信しない限り、AnthropicのネイティブAdvisorツールには変換されません。
-</Note>
-
-## クイックスタート
+`phaseo:advisor` を追加すると、メインのモデルは回答する前に、2 つ目のモデルにレビュー、計画、妥当性の確認、専門的な意見を求められます。メインのモデルは他のツールと同じように Advisor を呼び出し、Phaseo が Advisor のモデルを実行して、その助言をツールの結果として返します。
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "Design a rate limiter for a distributed API gateway." }
     ],
@@ -36,20 +28,7 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Advisorモデルの選択
-
-ツール定義でAdvisorモデルを固定できます。
-
-```json
-{
-  "type": "phaseo:advisor",
-  "parameters": {
-    "model": "anthropic/claude-opus-5"
-  }
-}
-```
-
-`parameters.model`を省略すると、ツール呼び出しで`model`を指定できます。どちらも設定されていない場合、Phaseoは外側のリクエストのモデルを使います。
+Advisor は、サポートされている任意のテキストモデルで動作します。Phaseo が自分で実行し、Anthropic のネイティブなツールの形式で送信した場合にのみ、Anthropic のネイティブな Advisor ツールに変換されます。
 
 ## パラメーター
 
@@ -69,29 +48,22 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-| パラメーター | 型 | 既定値 | 説明 |
+| パラメーター | 型 | デフォルト | 説明 |
 | --- | --- | --- | --- |
-| `name` | string | none | Advisorの任意の名前。前後の空白を除去した後に一意である必要があり、英字、数字、空白、アンダースコア、ハイフンを使用できます。 |
-| `model` | string | outer model | 呼び出すAdvisorモデル。省略すると、ツール呼び出しで`model`を指定できます。 |
-| `instructions` | string | default Advisor behavior | Advisorモデルへの追加指示。 |
-| `forward_transcript` | boolean | `false` | 現在の会話の文字起こしをAdvisorリクエストに含めます。 |
-| `max_uses` | integer | `1` | サーバーツールループ中にこのAdvisorを呼び出せる最大回数。 |
-| `max_completion_tokens` | integer | `1400` | Advisorの回答に使える出力トークンの最大数。 |
-| `max_tokens` | integer | `1400` | `max_completion_tokens`の旧エイリアス。 |
-| `reasoning` | object | provider default | 選択したモデルまたはプロバイダーが対応している場合にAdvisor呼び出しへ転送される推論設定。 |
-| `temperature` | number | provider default | Advisor呼び出しのサンプリング温度。 |
+| `name` | string | なし | 英字、数字、空白、アンダースコア、ダッシュで 1〜64 文字。複数の Advisor を追加する場合に必要です。 |
+| `model` | string | 下記を参照 | Advisor のモデル。 |
+| `instructions` | string | 組み込みの Advisor の指示 | Advisor への追加の指示。 |
+| `forward_transcript` | boolean | `false` | 現在の会話を Advisor に送信します。 |
+| `max_uses` | integer | `1` | リクエストあたりのこの Advisor の呼び出し回数。 |
+| `max_completion_tokens` | integer | `1400` | Advisor の各返答の出力トークン数。`1024` 未満の値は `1024` に引き上げられます。古いエイリアスとして `max_tokens` も受け付けます。 |
+| `reasoning` | object | プロバイダーのデフォルト | 推論の設定。Advisor のモデルが対応している場合に渡されます。 |
+| `temperature` | number | プロバイダーのデフォルト | Advisor の呼び出しのサンプリング温度。 |
 
-## ツール呼び出しの引数
+Advisor のモデルは、`parameters.model` が設定されていればそれを、設定されていなければメインのモデルが呼び出し時に送る `model` を、それもなければリクエスト自体のモデルを使います。
 
-通常、モデルは`prompt`を指定してAdvisorを呼び出します。
+## モデルが送信する内容
 
-```json
-{
-  "prompt": "Review this migration plan and identify the riskiest assumptions."
-}
-```
-
-Advisorの定義でモデルを固定していない場合、ツール呼び出しに`model`を含めることもできます。
+通常は `prompt` です。ツールでモデルが固定されていない場合は、呼び出し時にモデルを選ぶこともできます。
 
 ```json
 {
@@ -100,11 +72,11 @@ Advisorの定義でモデルを固定していない場合、ツール呼び出�
 }
 ```
 
-`forward_transcript`が`true`の場合、モデルがプロンプトを指定しなければ、Phaseoは会話履歴のみを含むAdvisor呼び出しを実行できます。
+`forward_transcript: true` の場合、モデルはプロンプトなしで Advisor を呼び出すことができ、Advisor は転送された会話をレビューします。
 
-## 複数のAdvisor
+## 複数の Advisor を追加する
 
-Advisorごとに`phaseo:advisor`エントリーを追加します。名前付きAdvisorはそれぞれ独立した内部ツールとなり、`phaseo_advisor_security_reviewer`や`phaseo_advisor_architect`のように呼び出せます。
+Advisor ごとに `phaseo:advisor` のエントリを 1 つ追加します。名前を付けた各 Advisor は、`phaseo_advisor_security_reviewer` のように、モデルにとって個別のツールになります。
 
 ```json
 {
@@ -129,11 +101,9 @@ Advisorごとに`phaseo:advisor`エントリーを追加します。名前付き
 }
 ```
 
-`name`を省略できるAdvisorエントリーは最大1つです。複数のAdvisorがある状態で`tool_choice: "phaseo:advisor"`を強制すると、Phaseoはそのエイリアスを最初に設定されたAdvisorに割り当てます。
+名前は、前後の空白を除き大文字と小文字を区別しない状態で一意である必要があり、`name` を省略できるのは 1 つのエントリだけです。そうでない場合、リクエストは拒否されます。複数の Advisor があるときに `tool_choice: "phaseo:advisor"` を指定すると、最初の Advisor が強制的に使われます。
 
-## ツールの戻り値
-
-AdvisorはJSONをツール結果として返します。
+## ツールが返す内容
 
 ```json
 {
@@ -144,35 +114,10 @@ AdvisorはJSONをツール結果として返します。
 }
 ```
 
-Advisorリクエストを実行できない場合、Phaseoは`advisor_invalid_request`、`advisor_max_uses_exceeded`、`advisor_request_failed`などのツールエラーを返します。
+呼び出しを実行できない場合、モデルには代わりにエラー結果が返ります: `advisor_invalid_request`（プロンプトまたはモデルがない）、`advisor_max_uses_exceeded`、`advisor_request_failed`。
 
-## 会話メモリ
+Advisor はリクエスト間で状態を保持しません。以前のメッセージとツールの結果を再送すると、メインのモデルは以前の助言を参照できますが、Advisor が会話を参照できるのは `forward_transcript` がオンの場合だけです。助言はストリーミングされず、Advisor 自身はツールを呼び出せません。
 
-Advisorはリクエストをまたぐ隠れた状態を保持しません。次のリクエストで以前のメッセージやツール結果を再送すると、メインモデルは前回の相談内容を確認できます。`forward_transcript`を有効にすると、そのリクエストで転送された会話履歴をAdvisorも確認できます。
+## 利用量と料金
 
-## 使用量と料金
-
-Advisor呼び出しでは次の値が増加します。
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "advisor_requests": 1
-    }
-  }
-}
-```
-
-Advisorモデルのトークンは合計使用量に含まれ、選択したAdvisorモデルの料金で課金できます。サーバーツールの料金には`server_tool_advisor_requests`も使用できます。
-
-## 現在の制限
-
-- Advisorの助言のストリーミングにはまだ対応していません。
-- Advisor呼び出しでは、相談先モデルに追加のツールは公開されません。
-
-## 関連ページ
-
-- [サーバーツール](./index.mdx)
-- [サブエージェント](./subagent.mdx)
-- [ツール呼び出し](../tool-calling.mdx)
+呼び出しごとに `usage.server_tool_use.advisor_requests` に 1 が加算され、`server_tool_advisor_requests` で課金されることがあります。Advisor のトークンは Advisor モデル自身の料金で、リクエストの請求の別項目として課金され、呼び出し元モデルのトークン数には加算されません。有料の Advisor モデルを使うには、呼び出し元モデルが無料でもクレジットが必要です。

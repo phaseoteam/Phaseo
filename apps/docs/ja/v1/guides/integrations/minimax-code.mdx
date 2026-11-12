@@ -1,33 +1,34 @@
 ---
 title: "MiniMax Code"
 icon: "/icons/brands/minimax.svg"
-description: "Phaseo CLI を使って Phaseo Gateway 経由で MiniMax Code を実行します。"
+description: "Phaseo CLI を使って、Phaseo Gateway 経由で MiniMax Code を実行します。"
 ---
 
-Phaseo CLI は、専用のゲートウェイキーと一時的なプロバイダー設定を使って MiniMax Code を起動できます。
+`phaseo minimax` を実行すると、Phaseo 経由で MiniMax Code（`mcode`）のセッションを開始できます。すべてのセッションで Phaseo を使い続けるには、`mcode provider add` で Phaseo を追加します。
 
-## Phaseo CLI でセットアップ
+## Phaseo CLI で MiniMax Code を実行する
 
 ```bash
 phaseo login
-phaseo minimax --model openai/gpt-5.6-terra --
+phaseo minimax --model openai/gpt-5.6-terra
 ```
 
-ランチャーは MiniMax Code の `mcode provider add` コマンドで Phaseo の OpenAI 互換エンドポイントを設定し、選択したプロバイダーで `mcode` を起動します。`--catalog all` を使うと、Chat Completions に対応する Phaseo のすべての有効なテキスト・チャットモデルを登録できます。キーを作成せずにインストールと起動の計画を確認することもできます。
+ランナーは専用のキーを作成し、`MINIMAX_DATA_DIR` を一時ディレクトリに設定し、`mcode provider add` でそこに Phaseo プロバイダーを追加してから `mcode` を起動し、`mcode` の終了時にそのディレクトリを削除します。通常の `~/.minimax` の設定は変更されず、キーはプロバイダーの設定プロセスにのみ渡されます。MiniMax Code 自体のフラグは `--` の後に指定します。
 
-```bash
-phaseo minimax --catalog all --dry-run --json
-```
+| フラグ | 効果 |
+| --- | --- |
+| `--model <id>` | 使用するモデル。デフォルトは `openai/gpt-5.6-terra` です。 |
+| `--catalog all` | Chat Completions で動作する Phaseo の有効なテキストモデルをすべて登録します。 |
+| `--dry-run --json` | キーを作成せずに、インストールと起動の計画を表示します。 |
+| `--skip-install` | インストールの確認をスキップします。 |
 
-明示的なコマンド形式は `phaseo run minimax ...` です。Phaseo が自身のオプションを先に処理できるよう、MiniMax Code のオプションは `--` の後に指定してください。
+`phaseo run minimax ...` は同じコマンドの完全な形式です。
 
-Unix 系システムでは、初回の対話実行時に MiniMax の公式インストーラーで MiniMax Code をインストールすることを提案します。Windows では Phaseo が公式の PowerShell インストーラーを使用します。MiniMax Code を別途管理している場合は、自分でインストールして `mcode --version` を確認し、`--skip-install` を指定して再実行してください。
+`mcode` がインストールされていない場合、初回の対話型の実行では MiniMax の公式インストーラー（Windows では PowerShell のインストーラー）によるインストールを提案します。MiniMax Code を自分で管理している場合は、インストールして `mcode --version` を確認し、`--skip-install` を付けて再実行します。
 
-ランチャーは `MINIMAX_DATA_DIR` を一時ディレクトリに設定し、`mcode` の終了時に削除します。通常の `~/.minimax` 設定は変更されず、専用の Phaseo キーは一時的なプロバイダー設定プロセスにのみ渡されます。
+## MiniMax Code を手動で設定する
 
-## 手動設定
-
-MiniMax Code の永続的なプロバイダー設定には、MiniMax Code のプロバイダーコマンドを直接使用します。
+Phaseo プロバイダーを保持するには、MiniMax Code 自体のコマンドで追加します。
 
 ```bash
 export MCODE_PROVIDER_API_KEY="your_phaseo_api_key"
@@ -39,29 +40,22 @@ mcode provider add \
   --use
 ```
 
-MiniMax Code は、設定されたデータディレクトリに永続的なプロバイダー設定を保存します。設定を 1 つのセッションに限定したい場合は、Phaseo CLI ランナーを使用してください。
+MiniMax Code はプロバイダーをデータディレクトリに保存します。
 
-## 確認
+## 動作を確認する
 
-MiniMax Code から短いプロンプトを送信し、Phaseo のアクティビティにリクエストが表示されることを確認します。利用可能なモデル ID を確認するには、`--catalog all` を使うか、`--model` で特定の Phaseo モデルを指定してください。
+短いプロンプトを送信し、**設定 → 利用状況 → ログ**にリクエストが表示されることを確認します。
 
-## トラブルシューティング
+## よくある問題を解決する
 
 ### MiniMax Code がインストールされていない
 
-対話型ターミナルでコマンドを実行して公式インストーラーを承認するか、MiniMax Code を別途インストールし、`--skip-install` を指定して再実行してください。
+対話型ターミナルでコマンドを実行して公式インストーラーを承認するか、MiniMax Code を自分でインストールして `--skip-install` を付けて再実行します。
 
-### プロバイダーまたはモデルが表示されない
+### プロバイダーまたはモデルが一覧に表示されない
 
-`phaseo minimax --catalog all` を使うか、`--model` で目的のモデル ID を指定してください。CLI は `mcode` を起動する前に、一時的な MiniMax データディレクトリ内にプロバイダーを作成します。
+`phaseo minimax --catalog all` を使うか、`--model` でモデル ID を渡します。
 
-### 対話型 CLI の代わりに ACP が必要
+### 対話型 CLI ではなく ACP が必要な場合
 
-MiniMax Code は、エディターやホストとの連携用に `mcode acp` を通じて ACP プロセスも提供します。`phaseo minimax` は対話型 CLI のランナーです。ホストが ACP で直接通信する場合は、MiniMax Code の ACP 設定を使用してください。
-
-## 関連情報
-
-- [Phaseo CLI](./phaseo-cli)
-- [コーディングエージェント](./coding-assistants)
-- [モデル](../../api-reference/endpoint/models.mdx)
-- [アクティビティ](../../api-reference/endpoint/activity.mdx)
+`phaseo minimax` は対話型 CLI を実行します。MiniMax Code は `mcode acp` で ACP プロセスとしても動作します。エディターやホストが ACP を直接扱う場合は、MiniMax Code の ACP の設定を使ってください。

@@ -1,18 +1,30 @@
 ---
 title: "SDK OpenAI"
 icon: "code"
-description: "Utilisez les SDK officiels OpenAI avec Phaseo."
+description: "Utilisez les SDK OpenAI officiels avec Phaseo."
 ---
 
-Utilisez ce guide si votre application appelle déjà OpenAI depuis TypeScript, JavaScript ou Python. Modifiez uniquement la clé API, l’URL de base et l’identifiant du modèle.
+Dirigez le SDK OpenAI officiel vers Phaseo en changeant trois choses : la clé API, la Base URL (`https://api.phaseo.app/v1`) et l’ID du modèle.
 
-## TypeScript
+## Installer
 
-```bash
+<CodeGroup>
+
+```bash TypeScript
 npm install openai
 ```
 
-```ts
+```bash Python
+pip install openai
+```
+
+</CodeGroup>
+
+## Diriger le client vers Phaseo
+
+<CodeGroup>
+
+```ts TypeScript
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -21,20 +33,14 @@ const client = new OpenAI({
 });
 
 const response = await client.responses.create({
-	model: "openai/gpt-5-nano",
+	model: "openai/gpt-6-astra",
 	input: "Write one sentence about reliable model routing.",
 });
 
 console.log(response.output_text);
 ```
 
-## Python
-
-```bash
-pip install openai
-```
-
-```python
+```python Python
 import os
 from openai import OpenAI
 
@@ -44,32 +50,30 @@ client = OpenAI(
 )
 
 response = client.responses.create(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     input="Write one sentence about reliable model routing.",
 )
 
 print(response.output_text)
 ```
 
-## Chat Completions
+</CodeGroup>
 
-Les bibliothèques plus anciennes peuvent encore utiliser Chat Completions :
+Si une phrase s’affiche, la clé et la Base URL fonctionnent. La requête apparaît aussi dans **Paramètres → Utilisation → Journaux**.
+
+## Utiliser Chat Completions
+
+Le code qui appelle Chat Completions fonctionne avec le même client :
 
 ```ts
 const completion = await client.chat.completions.create({
-	model: "openai/gpt-5-nano",
+	model: "openai/gpt-6-astra",
 	messages: [{ role: "user", content: "Reply with only: ok" }],
 });
 ```
 
-## Remarques
+## Limites connues
 
-- Utilisez les identifiants de modèle Phaseo, y compris les préfixes de fournisseur tels que `openai/`, `anthropic/` ou `google/`.
-- Les outils serveur utilisent des noms Phaseo, par exemple `phaseo:web_search`.
-- Pour les clients natifs Anthropic, consultez le guide du [SDK Anthropic](./anthropic-sdk.mdx).
-
-## Pages associées
-
-- [API Responses](../../api-reference/endpoint/responses.mdx)
-- [Chat Completions](../../api-reference/endpoint/chat-completions.mdx)
-- [Outils serveur](../server-tools/index.mdx)
+- Utilisez les ID de modèle Phaseo, avec le préfixe du fournisseur : `openai/`, `anthropic/`, `google/`, etc. Consultez [Responses](../../api-reference/endpoint/responses.mdx) et [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) pour la forme complète des requêtes.
+- Les [outils serveur](../server-tools/index.mdx) utilisent les noms d’outils Phaseo, comme `phaseo:web_search`.
+- Pour les clients `/v1/messages` de style Anthropic, consultez le guide du [SDK Anthropic](./anthropic-sdk.mdx).

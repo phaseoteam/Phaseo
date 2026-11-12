@@ -1,0 +1,167 @@
+---
+icon: "radio-tower"
+title: "Lifecycle hooks"
+description: "Receive an event at each point of an agent run to update an interface, write audit records, or feed telemetry."
+"og:image": "https://phaseo.app/og/dynamic?title=Lifecycle%20hooks&description=Receive%20an%20event%20at%20each%20point%20of%20an%20agent%20run%20to%20update%20an%20interface%2C%20write%20audit%20records%2C%20or%20feed%20telemetry.&pathname=/docs/v1/sdk-reference/agent/lifecycle-hooks"
+---
+
+Pass an event handler to a run or continuation to receive an event when the run starts, each model turn begins and ends, each tool runs, the run pauses, and the run ends. Use it to update your interface, write audit records, or feed your existing telemetry.
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await agent.run({
+  input,
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+```
+
+```python Python
+def on_event(event):
+    logger.info("%s %s", event["type"], event["run_id"])
+
+result = agent.run(input="Summarise this ticket", client=client, on_event=on_event)
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input:  prompt,
+  Client: client,
+  OnEvent: func(event phaseoagent.AgentEvent) {
+    logger.Info("agent event",
+      "type", event.Type,
+      "run_id", event.RunID,
+      "details", event.Details,
+    )
+  },
+})
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions
+{
+    Input = prompt,
+    Client = client,
+    OnEvent = value => logger.LogInformation(
+        "{EventType} {RunId} {Details}", value.Type, value.RunId, value.Details),
+});
+```
+
+```php PHP
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    onEvent: function (array $event) use ($logger): void {
+        $logger->info("agent event", $event);
+    }
+);
+```
+
+```ruby Ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  on_event: ->(event) { logger.info("agent event #{event.inspect}") }
+)
+```
+
+```java Java
+var result = agent.run(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null,
+    event -> logger.info("{} {} {}", event.type(), event.runId(), event.details()),
+    null));
+```
+
+```rust Rust
+use phaseo_agent::{AgentEvent, RunOptions};
+
+let mut on_event = |event: &AgentEvent| {
+    println!("{} run={} details={}", event.event_type, event.run_id, event.details);
+};
+
+let result = agent.run_with_events(
+    &mut client,
+    RunOptions::new("Check project health"),
+    Some(&mut on_event),
+)?;
+```
+
+</CodeGroup>
+
+## Where the handler goes and what it receives
+
+| Language | Handler | Event shape |
+| --- | --- | --- |
+| TypeScript | `onEvent` on run and continue options | Object with `type`, `runId`, `agentId`, `timestamp`, plus event fields in camelCase (`stepIndex`, `toolCallId`) |
+| Python | `on_event` on `run()`, `stream()` or a continuation | Dict with `type`, `run_id`, `agent_id`, `timestamp`, `status`, plus event keys |
+| Go | `OnEvent` on `RunOptions` or `ContinueOptions` | `AgentEvent` with `Type`, `RunID`, `AgentID`, `Timestamp`, `Status`, `Details` |
+| C# | `OnEvent` on `RunOptions` or `ContinueOptions` | `AgentEvent` with `Type`, `RunId`, `AgentId`, `Timestamp`, `Status`, `Details` |
+| PHP | `onEvent` callable on `run()` or `continueRun()` | Array with `type`, `run_id`, `agent_id`, `timestamp`, `status`, event keys merged in at the top level |
+| Ruby | `on_event:` on `run` or `continue_run` | Hash with `:type`, `:run_id`, `:agent_id`, `:timestamp`, `:status`, event keys merged in as symbols |
+| Java | `Consumer<AgentEvent>` as the `onEvent` argument of `RunOptions` or `ContinueOptions` | `AgentEvent` with `type()`, `runId()`, `agentId()`, `timestamp()`, `status()`, `details()` |
+| Rust | Callback passed to `run_with_events` or `continue_with_events` | `&AgentEvent` with `event_type`, `run_id`, `agent_id`, `timestamp_ms`, `details` (JSON) |
+
+## Events the runtime emits
+
+Detail keys are listed in snake_case below; TypeScript uses the camelCase form.
+
+| Event | When | Details | Languages |
+| --- | --- | --- | --- |
+| `run.started` | A run begins | None | All |
+| `run.resumed` | A continuation begins | `previous_status` | All |
+| `step.started` | A model turn begins | `step_index` | All but Rust |
+| `model.requested` | Each model attempt, including retries | `step_index`, `attempt`, `model` | All but Rust |
+| `model.retrying` | Before a retry | | TypeScript |
+| `model.completed` | The model responded | `step_index`, `attempt`, `request_id`, `model` | All but Rust |
+| `model.failed` | A model request failed | | TypeScript |
+| `tool.started` | A tool begins | `tool_call_id`, `tool_name` | All |
+| `tool.preliminary_result` | The tool reported progress | `tool_call_id`, `tool_name`, `result` | All but Rust |
+| `tool.completed` | A tool returned | `tool_call_id`, `tool_name`, `output` | All |
+| `tool.failed` | A tool failed (the trigger differs; see [Events and errors](./events-and-errors#which-events-fire-when-something-fails)) | `tool_call_id`, `tool_name`, `error` | All but Rust |
+| `step.completed`, `step.failed`, `step.cancelled` | A step ends | `step_index` | TypeScript |
+| `checkpoint.saved` | A step finished | `step_index` | All but Rust |
+| `history.repaired` | A continuation answered tool calls left without a result | | TypeScript |
+| `run.waiting_for_human` | The run paused | `step_index`, `pause` | All but Rust |
+| `run.completed` | The model gave a final answer | `output` | All |
+| `run.stopped` | A stop condition ended the run (TypeScript) or the step limit was reached (Rust) | `stop_reason` (TypeScript), `reason` (Rust) | TypeScript, Rust |
+| `run.cancelled` | The run was cancelled | | TypeScript |
+| `run.failed` | The run failed (the trigger differs; see [Events and errors](./events-and-errors#which-events-fire-when-something-fails)) | `error` | All but Rust |
+| `response.output_text.delta`, `response.reasoning.delta`, `response.item` and other `response.*` events | Streaming runs only | | All but Rust |
+
+Rust `0.2` uses its own names for some events:
+
+| Rust event | Equivalent | Details |
+| --- | --- | --- |
+| `model.request.started` | `step.started` and `model.requested`, sent once per step, not per attempt | `step_index` |
+| `model.response.completed` | `model.completed` | `step_index`, `attempts` |
+| `tool.started`, `tool.completed` | The same events | `tool_call_id`, `name`; `tool.completed` adds `is_error` |
+| `run.paused` | `run.waiting_for_human` | None |
+| `run.stopped` | Sent when the step limit is reached | `reason` |
+
+A run that ends on a [stop condition](./stop-conditions) sends `run.stopped` in TypeScript and no terminal event in Python, Go, C#, PHP, Ruby or Java; read the run's status instead. In TypeScript, `step.completed` is sent after the step has been checkpointed, so persistence and telemetry consumers can treat it as a stable boundary.
+
+## Stream events
+
+With streaming, the same lifecycle events arrive alongside the model's `response.*` events. In TypeScript, Python, Go, C# and Java the handler receives them; in PHP and Ruby they also appear in `fullStream()` / `full_stream`. Rust has no streaming. [Streaming](./streaming) covers the stream consumers.
+
+## Keep handlers fast
+
+The runtime waits for the handler before it continues, so return quickly and move slow storage or network work onto a queue. Redact sensitive tool inputs and outputs before events leave your process.
+
+| Language | How the handler runs |
+| --- | --- |
+| TypeScript | Awaited before the run continues |
+| Python | Called synchronously |
+| Go | Inline; concurrent tools call it from several goroutines, so make it safe for concurrent use |
+| C# | Inline; concurrent tools call it from several tasks, so make it thread-safe |
+| PHP | Inline |
+| Ruby | Inline; concurrent tools call it from their threads, so make it thread-safe |
+| Java | Inline; concurrent tools call it from pool threads, so make it thread-safe |
+| Rust | On the run's thread |
+
+## Pick events for a product interface
+
+Use `response.output_text.delta` for live answer text, tool events for tool-call cards and progress indicators, `run.waiting_for_human` (Rust: `run.paused`) to show approval or input controls, and terminal run events to close loading states. For a local record of whole runs during development, use [DevTools](./devtools).

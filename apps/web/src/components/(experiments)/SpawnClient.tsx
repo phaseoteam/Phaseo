@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import {
 	AlertTriangle,
@@ -37,7 +35,7 @@ import {
 	type SpawnCloudId,
 } from "@/lib/experiments/spawnManifest";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 type CopyTarget = "spawn-command" | "bootstrap-command";
 

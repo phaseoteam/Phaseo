@@ -1,21 +1,10 @@
 ---
 icon: "shield-check"
 title: "Seguridad y validación de llamadas a herramientas"
-sidebarTitle: "Llamadas seguras a herramientas"
 description: "Valida los argumentos de las herramientas, protege su ejecución y evita acciones inseguras del modelo."
 ---
 
-Trata los argumentos de herramientas generados por el modelo como datos no confiables.
-
-## Lista de comprobación de seguridad
-
-- Mantén los esquemas de herramientas mínimos y explícitos.
-- Valida los argumentos analizados antes de ejecutar la herramienta.
-- Permite solo los nombres de herramientas autorizados y rechaza los desconocidos.
-- Añade tiempos de espera y reintentos a las llamadas externas.
-- Registra el ID de llamada, el nombre de la herramienta y los fallos de validación.
-
-## Ejemplo de validación de solicitudes (TypeScript + Zod)
+Trata cada llamada a herramienta como una entrada no confiable: comprueba el nombre de la herramienta con una lista de permitidas y valida los argumentos antes de ejecutar nada.
 
 ```typescript
 import { z } from "zod";
@@ -34,14 +23,18 @@ function executeToolCall(name: string, rawArgs: string) {
 }
 ```
 
-## Estrategia ante fallos
+## Lista de comprobación
 
-Si falla la validación:
+- **Mantén los esquemas pequeños y explícitos.** Menos campos, y con tipo, dejan al modelo menos margen para enviar algo inesperado.
+- **Valida los argumentos analizados** antes de ejecutar, como arriba.
+- **Rechaza los nombres de herramientas desconocidos** en lugar de adivinar qué quería decir el modelo.
+- **Añade tiempos de espera y reintentos** a las llamadas que acceden a sistemas externos.
+- **Registra** el ID de la llamada, el nombre de la herramienta y cualquier fallo de validación.
 
-1. No ejecutes la herramienta.
-2. Devuelve un mensaje de error controlado en el siguiente turno del modelo.
-3. Pide al modelo que lo intente de nuevo con argumentos corregidos.
+## Cuando la validación falla
 
-## Nota sobre streaming
+No ejecutes la herramienta. Envía un error breve y controlado como resultado de la herramienta en el siguiente turno, y pide al modelo que vuelva a intentarlo con los argumentos corregidos.
 
-Las llamadas a herramientas en streaming dependen de la compatibilidad del modelo y del proveedor. Acumula todos los fragmentos de argumentos antes de analizarlos, validarlos o ejecutar una llamada. Consulta [Streaming](./streaming.mdx).
+## Streaming
+
+Con `stream: true`, los argumentos llegan por partes. Acumula todos los deltas de argumentos de una llamada antes de analizarla, validarla o ejecutarla. Que las llamadas a herramientas se transmitan depende del modelo y del proveedor. Consulta [Transmisión](./streaming.mdx).

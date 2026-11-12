@@ -1,214 +1,129 @@
 ---
-title: "تثبيت مزودي الخدمة أو تجاهلهم لكل طلب"
+title: "ثبّت المزوّدين أو تجاهلهم لكل طلب"
 icon: "pin"
-description: "استخدم إعدادات مزودي الخدمة على مستوى الطلب لتحديد ترتيب مفضل أو تقييد المجموعة أو استبعاد مزود خدمة."
+description: "استخدم عناصر التحكم في المزوّدين على مستوى الطلب لتفضيل ترتيب معيّن، أو تقييد المجموعة، أو استبعاد مزوّد من الاعتبار."
 ---
 
-استخدم هذه الوصفة عندما تريد أن يفضّل طلب واحد مسار مزود خدمة محددًا دون تغيير إعدادات التوجيه الافتراضية لمساحة العمل.
+أضف كائن `provider` إلى طلب واحد لتغيير المزوّدين الذين يخدمونه، دون المساس بالإعدادات الافتراضية لمساحة العمل أو الإعدادات المسبقة. في النهاية يمكنك تفضيل ترتيب معيّن، أو إبقاء الطلب ضمن قائمة سماح، أو تخطي مزوّد واحد، ورؤية المزوّد الذي أجاب في الرد.
 
-## الهدف
+أشكال الطلبات هذه جاهزة للإنتاج. معرّفات المزوّدين أمثلة حقيقية؛ راجع صفحة النموذج لمعرفة المزوّدين الذين يخدمون نموذجك.
 
-- جرّب مزودي الخدمة بالترتيب المفضل.
-- قيّد الطلب بمجموعة فرعية معتمدة من مزودي الخدمة.
-- تجاهل مزود خدمة مؤقتًا دون تعديل الإعدادات المسبقة.
+| الحقل | ما يفعله | مثال |
+| --- | --- | --- |
+| `order` | يجرّب هؤلاء المزوّدين أولًا، ثم بقية المجموعة المؤهلة | `["anthropic-us", "anthropic"]` |
+| `only` | يُبقي الطلب ضمن هذه القائمة | `["openai", "openai-eu"]` |
+| `ignore` | يستبعد هؤلاء المزوّدين لهذا الطلب | `["novita"]` |
+| `sort` | يرتّب المتبقي بحسب `price` أو `latency` أو `throughput` | `"price"` |
 
-## 1. جرّب مزودي الخدمة بترتيب محدد
+لاستخدام مزوّد واحد بالضبط وإيقاف الرجوع إلى مزوّدين آخرين، ضعه قبل معرّف النموذج بدلًا من ذلك: راجع [ثبّت مزوّدًا واحدًا](../guides/routing-and-fallbacks#pin-one-provider).
 
-استخدم `provider.order` عندما تعرف ترتيب المسارات المفضل مسبقًا.
+## جرّب المزوّدين بترتيب محدد
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-opus-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "input": "Write a concise launch summary.",
     "provider": {
       "order": ["anthropic-us", "anthropic"]
-    }
+    },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "anthropic/claude-opus-4.6",
+  model: "anthropic/claude-sonnet-5.5",
   input: "Write a concise launch summary.",
   provider: {
     order: ["anthropic-us", "anthropic"],
   },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing); // { selected_provider: "anthropic-us", ... }
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "anthropic/claude-opus-4.6",
+        "model": "anthropic/claude-sonnet-5.5",
         "input": "Write a concise launch summary.",
         "provider": {
             "order": ["anthropic-us", "anthropic"],
         },
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-يضع مزودي الخدمة المذكورين في مقدمة ترتيب المرشحين قبل بقية الخيارات المؤهلة.
+يضيف `meta: true` الحقل `meta.routing.selected_provider` إلى الرد، لتتمكن من التحقق من النتيجة دون فتح السجلات.
 
-## 2. قيّد الطلب بمجموعة ثابتة من مزودي الخدمة
+## أبقِ الطلب ضمن قائمة سماح
 
-استخدم `provider.only` عندما يجب أن يبقى الطلب ضمن قائمة سماح صغيرة.
+أرسل `only`، واختياريًا `sort` للترتيب داخل تلك القائمة:
 
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-5.4-nano",
-    "input": "Extract the action items.",
-    "provider": {
-      "only": ["openai", "openai-eu"],
-      "sort": "price"
-    }
-  }'
+```json
+{
+  "model": "openai/gpt-5.6-luna",
+  "input": "Extract the action items.",
+  "provider": {
+    "only": ["openai", "openai-eu"],
+    "sort": "price"
+  }
+}
 ```
 
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
+إذا لم يخدم أي من المزوّدين المدرجين النموذج، يفشل الطلب بدلًا من الخروج عن القائمة.
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+## تخطَّ مزوّدًا واحدًا
 
-const response = await client.generateResponse({
-  model: "openai/gpt-5.4-nano",
-  input: "Extract the action items.",
-  provider: {
-    only: ["openai", "openai-eu"],
-    sort: "price",
-  },
-});
+أرسل `ignore` عندما يكون أداء مزوّد متراجعًا، أو أثناء اختبارك لمسار آخر:
 
-console.log(response.output_text);
+```json
+{
+  "model": "meta/llama-4-maverick",
+  "input": "Summarize the transcript.",
+  "provider": {
+    "ignore": ["novita"]
+  }
+}
 ```
 
-```python Python SDK
-from phaseo import Phaseo
+## اجمع بينها
 
-client = Phaseo(api_key="YOUR_API_KEY")
+استخدم `only` لتحديد المجموعة، و`order` للتفضيل داخلها، و`sort` لترتيب البقية. هذا المثال يُبقي الطلب على Google Vertex، ويجرّب منطقة الاتحاد الأوروبي أولًا، ثم يرتّب بحسب زمن الاستجابة:
 
-response = client.generate_response(
-    {
-        "model": "openai/gpt-5.4-nano",
-        "input": "Extract the action items.",
-        "provider": {
-            "only": ["openai", "openai-eu"],
-            "sort": "price",
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-يبقي ذلك الطلب ضمن مزودي الخدمة هؤلاء، ثم يطبق نمط الترتيب المحدد داخل المجموعة الفرعية.
-
-## 3. استبعد مزود خدمة من الخيارات
-
-استخدم `provider.ignore` لتخطي مزود خدمة في طلب أو خلال طرح قصير الأمد.
-
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "meta/llama-4-maverick",
-    "input": "Summarize the transcript.",
-    "provider": {
-      "ignore": ["deepinfra"]
-    }
-  }'
+```json
+{
+  "model": "anthropic/claude-sonnet-5.5",
+  "input": "Summarize the incident in one sentence.",
+  "provider": {
+    "only": ["google-vertex", "google-vertex-eu"],
+    "order": ["google-vertex-eu"],
+    "sort": "latency"
+  }
+}
 ```
 
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
+## تحقّق من وجهة الطلب
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+افتح الطلب في **الإعدادات → الاستخدام → السجلات** ووسّع **قابلية رصد التوجيه**. يسرد هذا القسم المزوّدين الذين استُبعدوا قبل الترتيب وسبب ذلك، والمرشحين المرتّبين مع درجاتهم؛ ويشرح [فسّر قرار توجيه](../guides/routing-and-fallbacks#explain-a-routing-decision) كل حقل.
 
-const response = await client.generateResponse({
-  model: "meta/llama-4-maverick",
-  input: "Summarize the transcript.",
-  provider: {
-    ignore: ["deepinfra"],
-  },
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "meta/llama-4-maverick",
-        "input": "Summarize the transcript.",
-        "provider": {
-            "ignore": ["deepinfra"],
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-يكون ذلك مفيدًا عندما:
-
-- يتدهور أداء أحد مزودي الخدمة
-- تتحقق من مسار مزود خدمة آخر
-- تريد مقارنة نتائج التوجيه دون تعديل إعداد مسبق
-
-## 4. اجمع عناصر التحكم بحذر
-
-يمكنك الجمع بين عناصر التحكم هذه، لكن أبقِ الهدف واضحًا:
-
-- استخدم `order` لتحديد التفضيل
-- استخدم `only` لفرض مجموعة المرشحين
-- استخدم `ignore` لاستبعاد مزود خدمة
-
-يجمع نمط عملي بين:
-
-- `only` لإبقاء الطلب ضمن `google-vertex` و`google-vertex-eu`
-- `order` لتفضيل `google-vertex-eu` أولًا
-- `sort: "latency"` لترتيب الخيارات ضمن المجموعة المسموح بها
-
-## 5. متى تنقل ذلك إلى إعداد مسبق
-
-إذا تكررت قواعد مزودي الخدمة نفسها في عدة خدمات، فتوقف عن نسخها لكل طلب وانقلها إلى إعداد مسبق.
-
-استخدم التوجيه على مستوى الطلب عندما يكون التجاوز:
-
-- مؤقتًا
-- خاصًا بالمتصل
-- مرتبطًا بتدفق مستخدم واحد
-
-## أدلة ذات صلة
-
-- [التوجيه والبدائل الاحتياطية](../guides/routing-and-fallbacks.mdx)
-- [طرح الإعدادات المسبقة وتصحيح أخطاء التوجيه](./preset-rollout-and-routing-debug.mdx)
+استخدم القواعد على مستوى الطلب للتجاوزات المؤقتة، أو الخاصة بمستدعٍ واحد، أو المرتبطة بتدفق مستخدم واحد. وبمجرد أن تظهر القواعد نفسها في عدة خدمات، انقلها إلى [إعداد مسبق](../guides/presets)، حيث تحدّ أيضًا من المزوّدين الذين يمكن للاحتياط استخدامهم. لمقارنة الترتيبات، راجع [رتّب المزوّدين](./sort-providers-by-price-latency-or-throughput).

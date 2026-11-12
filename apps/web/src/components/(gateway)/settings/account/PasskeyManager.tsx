@@ -1,19 +1,17 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { Loader2, LogIn, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	deletePasskeyAction,
 	startPasskeyRegistrationAction,
 	verifyPasskeyRegistrationAction,
-} from "@/app/(dashboard)/settings/account/actions";
+} from "@/features/settings/account/actions";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -88,7 +86,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 		password?: string,
 	) {
 		if (action.type === "register") {
-			const startResult = await startPasskeyRegistrationAction(password);
+			const startResult = await startPasskeyRegistrationAction({ data: password });
 			if (!startResult.ok) return startResult;
 
 			const publicKey = parsePasskeyCreationOptions(startResult.data.options);
@@ -98,9 +96,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 			}
 
 			const verifyResult = await verifyPasskeyRegistrationAction(
-				startResult.data.challengeId,
-				serializePasskeyRegistrationCredential(credential),
-				password,
+				{ data: { challengeId: startResult.data.challengeId, credential: serializePasskeyRegistrationCredential(credential), currentPassword: password } },
 			);
 			if (!verifyResult.ok) return verifyResult;
 
@@ -110,8 +106,7 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 		}
 
 		const deleteResult = await deletePasskeyAction(
-			action.passkeyId,
-			password,
+			{ data: { passkeyId: action.passkeyId, currentPassword: password } },
 		);
 		if (!deleteResult.ok) return deleteResult;
 		setPasskeys((items) =>

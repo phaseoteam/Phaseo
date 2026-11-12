@@ -1,0 +1,232 @@
+---
+icon: "files"
+title: "ファイル"
+description: "どの Phaseo SDK からでもバッチの入力ファイルをアップロードし、ID で読み取ります。"
+---
+
+バッチの入力ファイルをマルチパートフォームとしてアップロードし、返される `id` を保存して、その ID でファイルのメタデータとバイト列を読み取ります。例では、[インストール](./installation)のとおりに作成した `client` を使います。
+
+## ファイルをアップロードする
+
+TypeScript と Python は SDK のメソッドでアップロードし、`POST /v1/batches/files` を送信します。その他の SDK はマルチパートを送れないため、標準の HTTP クライアントでフォームを `POST /v1/files` に送信します。
+
+<CodeGroup>
+
+```typescript TypeScript
+const uploaded = await client.uploadFile({
+  purpose: "batch",
+  file: new Blob(["{}"], { type: "application/json" }),
+  filename: "batch.jsonl",
+});
+```
+
+```python Python
+from pathlib import Path
+
+uploaded = client.upload_file(
+    purpose="batch",
+    file=Path("batch.jsonl"),
+    content_type="application/json",
+)
+```
+
+```go Go
+// The Go wrapper has no upload method, so post the form with net/http and mime/multipart.
+var body bytes.Buffer
+form := multipart.NewWriter(&body)
+_ = form.WriteField("purpose", "batch")
+part, _ := form.CreateFormFile("file", "batch.jsonl")
+data, _ := os.ReadFile("batch.jsonl")
+_, _ = part.Write(data)
+_ = form.Close()
+
+req, _ := http.NewRequest("POST", "https://api.phaseo.app/v1/files", &body)
+req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
+req.Header.Set("Content-Type", form.FormDataContentType())
+
+resp, err := http.DefaultClient.Do(req) // keep the returned id
+```
+
+```csharp C#
+// UploadFile() sends JSON, so post the form with HttpClient.
+using var http = new HttpClient();
+http.DefaultRequestHeaders.Authorization =
+    new("Bearer", Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
+
+using var form = new MultipartFormDataContent
+{
+    { new StringContent("batch"), "purpose" },
+    { new ByteArrayContent(await File.ReadAllBytesAsync("batch.jsonl")), "file", "batch.jsonl" },
+};
+
+var uploaded = await http.PostAsync("https://api.phaseo.app/v1/files", form);
+Console.WriteLine(await uploaded.Content.ReadAsStringAsync()); // keep the returned id
+```
+
+```php PHP
+// uploadFile() sends JSON, so post the form with Guzzle.
+$http = new GuzzleHttp\Client();
+
+$uploaded = $http->post('https://api.phaseo.app/v1/files', [
+    'headers' => ['Authorization' => 'Bearer ' . getenv('PHASEO_API_KEY')],
+    'multipart' => [
+        ['name' => 'purpose', 'contents' => 'batch'],
+        ['name' => 'file', 'contents' => fopen('batch.jsonl', 'r'), 'filename' => 'batch.jsonl'],
+    ],
+]);
+
+$fileId = json_decode((string) $uploaded->getBody(), true)['id'];
+```
+
+```ruby Ruby
+# upload_file sends JSON, so post the form with Net::HTTP.
+require 'net/http'
+require 'json'
+
+uri = URI('https://api.phaseo.app/v1/files')
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV.fetch('PHASEO_API_KEY')}"
+request.set_form([['purpose', 'batch'], ['file', File.open('batch.jsonl')]], 'multipart/form-data')
+
+response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
+file_id = JSON.parse(response.body)['id']
+```
+
+```java Java
+// The SDK's JSON helpers don't encode multipart, so post the form with java.net.http.
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"purpose\"\r\n\r\nbatch\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"batch.jsonl\"\r\nContent-Type: application/jsonl\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("batch.jsonl")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/files"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body()); // keep the returned id
+```
+
+</CodeGroup>
+
+### アップロードのオプション
+
+これらは TypeScript と Python のアップロードメソッドに適用されます。生のマルチパートリクエストでは、`purpose` と `file` をフォームのフィールドとして送ります。
+
+| TypeScript | Python | 注記 |
+| --- | --- | --- |
+| `file` | `file` | 必須。TypeScript：`Blob`、`File`、`BufferSource`、または文字列。Python：`bytes`、`Path`、ファイルオブジェクト、または HTTPX のファイルタプル。単なる文字列は `TypeError` を送出します。 |
+| `purpose` | `purpose` | たとえば `batch`。 |
+| `filename`、`contentType` | `filename`、`content_type` | アップロードの名前とメディアタイプ。Python では、`Path` はそれ自身のファイル名を使います。 |
+| `model`、`provider` | なし | TypeScript のみ。ファイルを保存するバッチのプロバイダーを選びます。どちらも指定しない場合、ファイルは OpenAI に送られます。Python のアップロードは常にデフォルトの OpenAI バッチプロバイダーに送られます。 |
+
+## ファイルを読み取る
+
+<CodeGroup>
+
+```typescript TypeScript
+const file = await client.getFile(uploaded.id);
+const content = await client.getFileContent(uploaded.id); // Uint8Array
+```
+
+```python Python
+file_obj = client.get_file(uploaded["id"])
+file_bytes = client.get_file_content(uploaded["id"])  # bytes
+```
+
+```go Go
+file, err := client.RetrieveFile(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+content, err := client.RetrieveFileContent(context.Background(), "file_123") // []byte
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(file)
+fmt.Println(string(content))
+```
+
+```csharp C#
+var file = await client.RetrieveFile("file_123");
+byte[] content = await client.RetrieveFileContent("file_123");
+```
+
+```php PHP
+$file = $client->retrieveFile('file_123');
+$content = $client->retrieveFileContent('file_123');
+```
+
+```ruby Ruby
+file = client.retrieve_file('file_123')
+content = client.retrieve_file_content('file_123')
+```
+
+```java Java
+import java.nio.charset.StandardCharsets;
+
+var file = client.retrieveFile("file_123");
+byte[] content = client.retrieveFileContent("file_123");
+System.out.println(file);
+System.out.println(new String(content, StandardCharsets.UTF_8));
+```
+
+</CodeGroup>
+
+`file_123` は、アップロードで返された ID に置き換えてください。
+
+| 言語 | メタデータ | 内容 | アップロードのメソッド | 一覧 |
+| --- | --- | --- | --- | --- |
+| TypeScript | `getFile(id)` | `getFileContent(id)`（`Uint8Array`） | `uploadFile(...)`（マルチパート） | `listFiles()` |
+| Python | `get_file(id)` | `get_file_content(id)`（`bytes`） | `upload_file(...)`（マルチパート） | `list_files()` |
+| Go | `RetrieveFile(ctx, id)` | `RetrieveFileContent(ctx, id)`（`[]byte`） | なし | `ListFiles(ctx, query)` |
+| C# | `RetrieveFile(id)` | `RetrieveFileContent(id)`（`byte[]`） | `UploadFile(request)` は JSON を送信するため、アップロードできません | `ListFiles(query)` |
+| PHP | `retrieveFile($id)` | `retrieveFileContent($id)` | `uploadFile($payload)` は JSON を送信するため、アップロードできません | `listFiles($params)` |
+| Ruby | `retrieve_file(id)` | `retrieve_file_content(id)` | `upload_file(payload)` は JSON を送信するため、アップロードできません | `list_files(...)` |
+| Java | `retrieveFile(id)` | `retrieveFileContent(id)`（`byte[]`） | `uploadFile(request)` は JSON を送信するため、アップロードできません | `listFiles(query)` |
+
+Python では `client.files` からも同じ操作を呼び出せます。`create(params)` は `upload_file` と同じようにアップロードし、`list()` は一覧を返し、`retrieve(id)` はメタデータを、`content(id)` はバイト列を読み取ります。Rust にはファイルのメソッドがありません。
+
+<Note>ファイルのエンドポイントはベータ版で、有効なバッチプロバイダーが必要です。</Note>
+
+## ファイル ID を保存する：ファイルは一覧表示できません
+
+アップロードした各ファイルの `id` を保存してください。一覧表示のメソッドは `GET /v1/files` を呼び出しますが、これはコード `not_supported`、理由 `file_list_not_supported_with_shared_gateway_key` で `400` を返します。完全な仕様は [Files API リファレンス](/ja/v1/api-reference/endpoint/files)にあります。
+
+## レスポンス
+
+アップロードとメタデータのメソッドが返す `FileObject`：
+
+```json
+{
+  "id": "file-123",
+  "object": "file",
+  "filename": "data.json",
+  "purpose": "batch",
+  "status": "processed",
+  "created_at": 1677610602,
+  "bytes": 123
+}
+```
