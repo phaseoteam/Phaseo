@@ -141,6 +141,13 @@ export function ModelDetails({
             </div>
           ))}
         </dl>
+        {(input !== null || output !== null) && (
+          <p className="note">
+            Prices are the lowest listed per 1M tokens for input and for output, found
+            separately, so they can come from different providers. A provider is named
+            when Phaseo knows which one lists the price.
+          </p>
+        )}
       </section>
       <IntegrationExamples model={model} />
     </article>
