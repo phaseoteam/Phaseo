@@ -1,0 +1,38 @@
+name: Grafana deployment markers
+
+on:
+    workflow_run:
+        workflows: [CI, Realtime relay deploy]
+        types: [completed]
+        branches: [main]
+
+permissions:
+    contents: read
+    actions: read
+
+concurrency:
+    group: grafana-deployments-${{ github.event.workflow_run.id }}
+    cancel-in-progress: false
+
+jobs:
+    annotate:
+        if: >-
+            github.event.workflow_run.head_repository.full_name == github.repository &&
+            (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch')
+        runs-on: ubuntu-latest
+        steps:
+            # Use trusted default-branch code, never code from the triggering run.
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+              with:
+                  ref: main
+                  persist-credentials: false
+            - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+              with:
+                  node-version: 22
+                  package-manager-cache: false
+            - name: Record successful deployments
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  GRAFANA_URL: https://honestcushion71.grafana.net
+                  GRAFANA_ANNOTATIONS_TOKEN: ${{ secrets.GRAFANA_ANNOTATIONS_TOKEN }}
+              run: node observability/grafana/deployments.mjs --send

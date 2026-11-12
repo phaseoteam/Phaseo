@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { displayName } from "./ModelListItem";
 import {
   cheapestProviderName,
   contextSize,
@@ -54,7 +55,7 @@ export function ModelRow({
   ].filter((item): item is string => Boolean(item));
   const title = (
     <>
-      <span className="row-name">{model.name}</span>
+      <span className="row-name">{displayName(model)}</span>
       <span className="row-id">{model.id}</span>
     </>
   );

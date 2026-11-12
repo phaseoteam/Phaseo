@@ -1,22 +1,23 @@
 // Native Grafana tables over existing, redacted Loki events. No new collection.
 const datasource = { type: 'loki', uid: '${loki}' };
 const field = (name, properties) => ({ matcher: { id: 'byName', options: name }, properties: Object.entries(properties).map(([id, value]) => ({ id, value })) });
-const columnNames = { service_name: 'Service', event_name: 'Event', route: 'Route', method: 'Method', provider: 'Provider', model: 'Model', job: 'Job', service_version: 'Release', error_origin: 'Origin', error_kind: 'Category', error_code: 'Code', error_name: 'Error', error_digest: 'Fingerprint', status_code: 'HTTP', timestamp: 'Time (UTC)', request_id: 'Request ID', trace_id: 'Trace ID', outcome: 'Outcome', duration_ms: 'Duration', attempt_count: 'Attempts', error_stack: 'Source frames', signal: 'Source', failed_count: 'Failed items', processed_count: 'Processed items', scheduled_at: 'Scheduled at' };
+const columnNames = { service_name: 'Service', event_name: 'Event', route: 'Route', method: 'Method', provider: 'Provider', model: 'Model', job: 'Job', service_version: 'Release', error_origin: 'Origin', error_kind: 'Category', error_code: 'Code', error_name: 'Error', error_digest: 'Fingerprint', status_code: 'HTTP', timestamp: 'Time (UTC)', request_id: 'Request ID', trace_id: 'Trace ID', outcome: 'Outcome', duration_ms: 'Duration', ttft_ms: 'First token', provider_ttft_ms: 'Provider first token', attempt_count: 'Attempts', attempt_number: 'Attempt', error_stack: 'Source frames', signal: 'Source', reason: 'Reason', failed_count: 'Failed items', processed_count: 'Processed items', scheduled_at: 'Scheduled at' };
 const incidentTime = 'var-environment=$environment&from=$__from&to=$__to';
 const drilldown = (dashboard, variable, column) => ({ title: 'Investigate', url: `/d/phaseo-${dashboard}?${incidentTime}&var-${variable}=\${__data.fields["${column}"]}` });
 
 function table(title, metrics, dimensions, description, { sort = Object.keys(metrics)[0], overrides = [] } = {}) {
-  const columns = [...dimensions, ...Object.keys(metrics)];
-  // Each instant vector becomes one named column. Merge aligns rows on the
-  // complete dimension tuple, never on a request's trace/span metadata.
+  const metricColumns = Object.keys(metrics).map((name, index) => [`Value #${String.fromCharCode(65 + index)}`, name]);
+  const columns = [...dimensions, ...metricColumns.map(([source]) => source)];
+  // Loki's browser adapter converts each instant query into a table with a
+  // Value #refId column before panel transformations. Rename those columns and
+  // merge on dimensions; labelsToFields cannot pivot these adapted frames.
   return {
     title, type: 'table', datasource, description,
-    targets: [{ refId: 'A', datasource, queryType: 'instant', instant: true, range: false,
-      expr: Object.entries(metrics).map(([name, expr]) => `label_replace((${expr}), "measure", "${name}", "", "")`).join(' or ') }],
+    targets: Object.entries(metrics).map(([name, expr], index) => ({ refId: String.fromCharCode(65 + index), datasource, queryType: 'instant', instant: true, range: false, expr, legendFormat: name })),
     transformations: [
-      { id: 'labelsToFields', options: { mode: 'columns', valueLabel: 'measure' } },
+      { id: 'filterFieldsByName', options: { exclude: { names: ['Time'] } } },
       { id: 'merge', options: {} },
-      { id: 'organize', options: { excludeByName: { Time: true }, indexByName: Object.fromEntries(columns.map((name, index) => [name, index])) } },
+      { id: 'organize', options: { indexByName: Object.fromEntries(columns.map((name, index) => [name, index])), renameByName: Object.fromEntries(metricColumns) } },
       { id: 'sortBy', options: { sort: [{ field: sort, desc: true }] } },
     ],
     fieldConfig: { defaults: { unit: 'short', decimals: 0, noValue: '—', custom: { filterable: true, cellOptions: { type: 'auto' } } }, overrides: [
@@ -29,14 +30,22 @@ function table(title, metrics, dimensions, description, { sort = Object.keys(met
   };
 }
 
-function records(title, expression, columns, description) {
-  const tracePane = encodeURIComponent(JSON.stringify({ trace: { datasource: '${tempo}', queries: [{ refId: 'A', queryType: 'traceId', query: '${__value.raw}' }], range: { from: '${__from}', to: '${__to}' } } }))
-    .replaceAll('%24%7Btempo%7D', '${tempo}').replaceAll('%24%7B__value.raw%7D', '${__value.raw}').replaceAll('%24%7B__from%7D', '${__from}').replaceAll('%24%7B__to%7D', '${__to}');
+function exploreUrl(source, queries) {
+  const panes = encodeURIComponent(JSON.stringify({ investigate: { datasource: source, queries, range: { from: '${__from}', to: '${__to}' } } }))
+    .replace(/%24%7B(.*?)%7D/g, (_match, variable) => `\${${decodeURIComponent(variable)}}`)
+    .replaceAll('%24environment', '$environment');
+  return `/explore?schemaVersion=1&panes=${panes}`;
+}
+
+export function records(title, expression, columns, description) {
+  const traceUrl = exploreUrl('${tempo}', [{ refId: 'A', queryType: 'traceId', query: '${__value.raw}' }]);
   return {
     title, type: 'table', datasource, description,
     targets: [{ refId: 'A', datasource, expr: expression, queryType: 'range', instant: false, range: true, maxLines: 100, direction: 'backward' }],
     transformations: [
-      { id: 'extractFields', options: { source: 'Line', format: 'json', replace: true } },
+      { id: 'extractFields', options: { source: 'labels', format: 'json', replace: false } },
+      { id: 'filterFieldsByName', options: { include: { names: ['Line', 'service_name', 'service_version'] } } },
+      { id: 'extractFields', options: { source: 'Line', format: 'json', replace: false } },
       { id: 'filterFieldsByName', options: { include: { names: columns } } },
       { id: 'organize', options: { indexByName: Object.fromEntries(columns.map((name, index) => [name, index])) } },
       { id: 'sortBy', options: { sort: [{ field: 'timestamp', desc: true }] } },
@@ -44,10 +53,13 @@ function records(title, expression, columns, description) {
     fieldConfig: { defaults: { noValue: '—', custom: { filterable: true, cellOptions: { type: 'auto' } } }, overrides: [
       ...columns.map(name => field(name, { displayName: columnNames[name] ?? name })),
       field('duration_ms', { unit: 'ms', decimals: 1 }),
+      field('ttft_ms', { unit: 'ms', decimals: 1 }),
+      field('provider_ttft_ms', { unit: 'ms', decimals: 1 }),
+      field('outcome', { mappings: [{ type: 'value', options: { success: { text: 'Succeeded' }, error: { text: 'Failed' }, completed: { text: 'Completed' }, skipped: { text: 'Skipped' }, cancelled: { text: 'Cancelled' } } }] }),
       field('scheduled_at', { unit: 'dateTimeAsIso' }),
       field('error_stack', { 'custom.width': 480, 'custom.inspect': true }),
       field('request_id', { links: [drilldown('gateway', 'request', 'request_id')] }),
-      field('trace_id', { links: [{ title: 'Open sampled trace', url: `/explore?schemaVersion=1&panes=${tracePane}` }] }),
+      field('trace_id', { links: [{ title: 'Open trace', url: traceUrl }] }),
     ] },
     options: { showHeader: true, cellHeight: 'sm', footer: { show: false } },
   };
@@ -89,18 +101,10 @@ export function addDiagnostics(dashboards, logs) {
     profile('Service request health', 'phaseo-gateway|phaseo-web-api', '', ['service_name'], ' | actionable="true"', ['actionable', 'event_name'], ' | event_name=~"gateway.request|web.request"'),
     issues('phaseo-gateway|phaseo-web-api|phaseo-web|phaseo-jobs'),
   ]);
-  // Put actionable tables ahead of trends; retain stable existing panel IDs.
-  overview.panels[0].options.content = 'Check **Service request health** for failures and slow responses, then **Grouped failures** for the affected route, error or job. Click a failure card to investigate its service. Counts cover received events; scheduler freshness does not establish external uptime.';
-  overview.panels[0].gridPos.h = 2;
-  for (const item of overview.panels.slice(1, 7)) item.gridPos.y = 2;
-  for (const item of overview.panels.slice(7, -2)) item.gridPos.y += 15;
-  overview.panels.at(-2).gridPos = { x: 0, y: 6, w: 24, h: 8 };
-  overview.panels.at(-1).gridPos = { x: 0, y: 14, w: 24, h: 10 };
-
   extend(gateway, [
     profile('Provider and model attempts', 'phaseo-gateway', 'provider.attempt', ['provider', 'model'], ' | outcome="error"', ['outcome'], provider, drilldown('gateway', 'model', 'model')),
     table('Gateway failure reasons', { Events: `topk(20, ${by('phaseo-gateway', 'gateway.request', ['error_origin', 'error_kind', 'error_code', 'provider', 'model'], `${provider} | outcome="error"`, ['outcome'])})` }, ['error_origin', 'error_kind', 'error_code', 'provider', 'model'], 'Logical request failures grouped by classification, including non-actionable client rejections. Cancellations are excluded. Attempt failures can recover through fallback.'),
-    records('Request records', `${logs('phaseo-gateway', 'gateway.request', ['request_id', 'provider', 'model'])}${provider} | request_id=~"\${request:regex}.*"`, ['timestamp', 'request_id', 'route', 'provider', 'model', 'outcome', 'status_code', 'error_kind', 'error_code', 'duration_ms', 'attempt_count', 'trace_id'], 'Newest 100 matching terminal requests. Search provider, model or request ID above. Click a trace ID to open it; 5% trace retention means most IDs have no stored trace.'),
+    records('Request records', `${logs('phaseo-gateway', 'gateway.request', ['request_id', 'provider', 'model'])}${provider} | request_id=~"\${request:regex}.*"`, ['timestamp', 'request_id', 'route', 'provider', 'model', 'outcome', 'status_code', 'error_kind', 'error_code', 'duration_ms', 'attempt_count', 'trace_id'], 'Newest 100 matching terminal requests. Search provider, model or request ID above. Click a trace ID to open it. Privacy exclusions, sampling settings and delivery failures can leave a trace unavailable.'),
   ], ['provider', 'model']);
   extend(web, [
     profile('Web API route health', 'phaseo-web-api', 'web.request', ['method', 'route'], ' | status_code >= 500', ['status_code'], route, drilldown('web', 'route', 'route')),
@@ -118,13 +122,9 @@ export function addDiagnostics(dashboards, logs) {
   extend(telemetry, [
     table('Collected event types', { Events: `topk(20, ${by('phaseo-.*', '', ['service_name', 'event_name'])})` }, ['service_name', 'event_name'], 'Received events in the selected range. Use this to see which services and event types are actually represented. Counts do not estimate billable bytes or prove uptime.'),
   ]);
-  // Specialist diagnostics should be encountered before the existing trend/log
-  // panels. Move their original panels down without replacing their stable IDs.
+  // Apply specialist filters to both original trends and investigative records.
   for (const dashboard of [gateway, web, jobs]) {
     const originalCount = originalCounts.get(dashboard);
-    const added = dashboard.panels.slice(originalCount);
-    for (const [index, item] of added.entries()) item.gridPos.y = index * 9;
-    for (const item of dashboard.panels.slice(0, originalCount)) item.gridPos.y += added.length * 9;
     dashboard.templating.list.find(variable => variable.name === 'request').hide = dashboard === gateway ? 0 : 2;
     // Apply search controls at the existing JSON extraction stage so charts and
     // records use the same population. Grafana regex formatting supports literal
