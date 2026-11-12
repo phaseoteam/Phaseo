@@ -55,7 +55,7 @@ import {
     resolveCacheAwareRoutingPreference,
 } from "../execute/sticky-routing";
 import { applyResponsePlugins } from "@/plugins/registry";
-import { applySuccessfulResponseBillingPolicy, suppressFailedResponseBilling } from "./billing-policy";
+import { applySuccessfulResponseBillingPolicy, pricingLinesForCharge, pricingLinesTotalNanos, suppressFailedResponseBilling } from "./billing-policy";
 import { calculateOutputPerformanceMetrics, getUsageReasoningTokens } from "./performance-metrics";
 import { resolveFailoverMs, resolveOutputSpeedWindow } from "./timing";
 import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
@@ -473,14 +473,15 @@ export async function handleStreamResponse(
             tier,
             ctx.meta
         );
-        const { totalNanos } = applyDataContributionDiscount({
+        const { totalNanos, pricedUsage } = applyDataContributionDiscount({
             pricedUsage: priced.pricedUsage,
             totalNanos: priced.totalNanos,
             enabled: ctx.teamSettings?.dataContributionEnabled === true,
             isByok: false,
             discountBps: ctx.teamSettings?.dataContributionDiscountBps,
         });
-        return { totalNanos, inputReported: estimated.inputReported };
+        const lines: unknown[] = Array.isArray(pricedUsage?.pricing?.lines) ? pricedUsage.pricing.lines : [];
+        return { totalNanos, inputReported: estimated.inputReported, lines };
     };
 
     const resp = await passthroughWithPricing({
@@ -685,6 +686,13 @@ export async function handleStreamResponse(
             if (streamIsByok) return;
             const priced = priceDrainProgress(progress);
             if (!priced) return;
+            // The lines of the highest estimate: a charge kept from the checkpoints is recorded
+            // against these SKU meters (see pricingLinesForCharge).
+            const checkpointMeta = ctx.meta as Record<string, unknown>;
+            if (priced.totalNanos >= (Number(checkpointMeta.__checkpointPricedNanos) || 0)) {
+                checkpointMeta.__checkpointPricedNanos = priced.totalNanos;
+                checkpointMeta.__checkpointPricingLines = priced.lines;
+            }
             dispatchBackground(recordProvisionalStreamCharge({ ctx, costNanos: priced.totalNanos, endpoint: ctx.endpoint }));
         },
         onFinalSnapshot: (snapshot: any) => {
@@ -838,12 +846,15 @@ export async function handleStreamResponse(
 				// the intended total for reconciliation; the checkpoint debit is not left silently.
 				const stepMeta = ctx.meta as Record<string, unknown>;
 				let billedNanos = 0;
+				// The lines the retained charge was priced from (the final estimate, else the checkpoints').
+				let billedLines: unknown = stepMeta.__checkpointPricingLines;
 				if (stepMeta.__chargedInSteps === true) {
 					let finalNanos = 0;
 					if (clientCancelled) {
 						const priced = priceFinal(() => priceDrainProgress({ usage: effectiveUsageRaw, outputChars: streamedOutputChars }));
 						const estimatedNanos = Number(stepMeta.__checkpointTotalNanos) || 0;
 						finalNanos = priced?.inputReported ? priced.totalNanos : Math.min(priced?.totalNanos ?? estimatedNanos, estimatedNanos);
+						if (priced && pricingLinesTotalNanos(priced.lines) > 0) billedLines = priced.lines;
 					}
 					await recordUsageAndChargeOnce({ ctx, costNanos: finalNanos, endpoint: ctx.endpoint, throwOnFailure: true });
 					billedNanos = finalNanos;
@@ -860,6 +871,8 @@ export async function handleStreamResponse(
 							total_nanos: billedNanos,
 							total_cents: billedNanos / 1e7,
 							total_usd_str: (billedNanos / 1e9).toFixed(9),
+							// Per SKU meter, adding up to the charge: per-SKU totals (promotion budgets) count it.
+							lines: pricingLinesForCharge(billedLines, billedNanos),
 							billing_suppressed: false,
 							billing_basis: "drain_checkpoint",
 						},
