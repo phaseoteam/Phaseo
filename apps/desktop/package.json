@@ -65,7 +65,7 @@
 	},
 	"dependencies": {
 		"@agentclientprotocol/sdk": "1.5.0",
-		"@anthropic-ai/claude-agent-sdk": "0.3.276",
+		"@anthropic-ai/claude-agent-sdk": "0.3.312",
 		"@base-ui/react": "1.6.0",
 		"@cursor/sdk": "1.0.31",
 		"@modelcontextprotocol/sdk": "1.32.1",
