@@ -37,30 +37,31 @@ Read only the reference for the platform you found.
    | Vercel AI SDK | `@phaseo/ai-sdk-provider` (defaults to `https://api.phaseo.app/v1`) | reads `PHASEO_API_KEY` |
 
    Keep the key server-side. Do not add a secret value to source control, logs or client bundles. If there is no Phaseo key yet, ask the person to create one in the dashboard under **Settings -> API Keys**, or create it with `POST /v1/keys` and a management key; a CLI sign-in can't create keys, and never guess a key. BYOK, budgets and routing rules are also changed in the dashboard or with a management key; credits and reads have CLI commands: see [Manage Phaseo from an agent](https://phaseo.app/docs/v1/developers/manage-from-an-agent).
-3. **Map model IDs.** Call `GET /v1/models` and check every production model ID against `data[].id`. Phaseo IDs are `<org>/<model>` (for example `openai/gpt-4.1-mini`). Do not assume an ID carries over or guess a replacement; if callers use old names, translate them in one mapping function at the client boundary. The default list contains only models routable now; `?availability=all` also shows inactive or coming-soon ones.
+3. **Map model IDs.** Call `GET /v1/models?format=openai` and check every production model ID against `data[].id`. Without `format=openai` the response is Phaseo's paged `models` list with no `data` array, so a `data[].id` check silently finds nothing. Phaseo IDs are `<org>/<model>` (for example `openai/gpt-4.1-mini`). Do not assume an ID carries over or guess a replacement; if callers use old names, translate them in one mapping function at the client boundary. The default list contains only models routable now; add `availability=all` to include inactive or coming-soon ones.
 4. **Map platform features.** Use the reference file's mapping table. Shared Phaseo equivalents:
 
    | Need | Phaseo equivalent |
    | --- | --- |
-   | Model fallbacks | Request `models` array (1 to 25, tried after `model` on 429/5xx) or dynamic routes |
+   | Model fallbacks | Request `models` array (1 to 25, tried after `model` on 429, 500, 502, 503 and 504, never on request errors) or dynamic routes |
+   | Automatic model choice | `phaseo/auto` (alpha for selected workspaces; not combined with `models`) |
    | Provider order, allow and deny lists | `provider.order`, `provider.only`, `provider.ignore`, `provider.sort` |
    | Zero data retention, regions | `provider.require_zero_data_retention`, `provider.required_execution_region`, `provider.required_data_region` |
-   | Shared prompts, parameters, routing defaults | Presets, invoked as `"model": "@slug"` |
-   | Response caching | Preset-level response caching (`response_caching.enabled`, `ttl_seconds`) |
-   | Prompt caching | `cache_control` (top level or per block), `prompt_cache_retention` |
+   | Shared prompts, parameters, routing defaults | Presets, invoked as `"model": "@slug"`; versioned prompt templates via `"prompt": {"id": "@slug", "variables": {...}}` |
+   | Response caching | No gateway response cache yet; keep any client-side cache |
+   | Prompt caching | `cache_control` (top level or per block); `prompt_cache_retention` on Chat Completions and Responses |
    | App attribution | `X-App-Id`, `X-App-Name`, `HTTP-Referer`, `X-App-Categories`, `X-Title` |
    | Custom properties, cost tags | `X-Phaseo-Metadata: {"labels":[{"key":"team","value":"support"}]}` |
    | End-user ID | `user` body field or `X-Phaseo-User-Id` header |
    | Session grouping and cache affinity | `session_id` body field |
    | Rate limits, budgets, key restrictions | Rate limit policies, key limits and budgets (see `phaseo-guardrails`) |
-   | Request logs, telemetry export | `phaseo logs list` or `GET /v1/logs`, `GET /v1/generations?id=<request_id>`, observability destinations (webhook or OpenTelemetry), or keep client-side tracing |
+   | Request logs, telemetry export | `phaseo logs list` or `GET /v1/logs`, `GET /v1/generations?id=<request_id>`, observability destinations (Langfuse, LangSmith, Datadog, PostHog, Sentry, any OTLP collector, a webhook, or row exports to S3, BigQuery and similar), or keep client-side tracing |
 
    If something has no equivalent, say so in the report and keep it in one adapter rather than at every call site. Remove headers that only the old platform understood.
 5. **Smoke test with `phaseo/free`** (it works without a wallet balance), then repeat the non-streaming call with each mapped production model ID:
 
    ```bash
    curl -s https://api.phaseo.app/v1/health
-   curl -s https://api.phaseo.app/v1/models -H "Authorization: Bearer $PHASEO_API_KEY" | jq -r '.data[].id'
+   curl -s "https://api.phaseo.app/v1/models?format=openai" -H "Authorization: Bearer $PHASEO_API_KEY" | jq -r '.data[].id'
    curl -s https://api.phaseo.app/v1/chat/completions \
      -H "Authorization: Bearer $PHASEO_API_KEY" -H "Content-Type: application/json" \
      -d '{"model":"phaseo/free","messages":[{"role":"user","content":"Reply with: ok"}]}'
@@ -99,11 +100,12 @@ Finish with: changed files; env var changes (old name to `PHASEO_API_KEY`, no va
 - Never print, log or commit API keys. Use `process.env.PHASEO_API_KEY` or `os.environ["PHASEO_API_KEY"]`.
 - Do not switch production traffic without the user's approval.
 - Add exponential backoff for 429 and 5xx; respect `Retry-After`.
+- Each user in a workspace has a requests-per-minute allowance shared by their keys: 10 for a new workspace, rising to 25, 60 and 120 as it becomes established. A proxy carrying a whole team's traffic can hit it at cutover, so check the limits page and arrange a higher limit first.
 
 ## Related skills
 
 - `phaseo-gateway`: new integrations and general REST or SDK usage.
 - `openrouter-to-phaseo-migration`: detailed OpenRouter playbook.
-- `phaseo-routing-presets`: presets, routing policy and response caching.
+- `phaseo-routing-presets`: presets and routing policy.
 - `phaseo-guardrails`: key restrictions, rate limits and budgets.
 - `phaseo-async-webhooks`: batches, async jobs and webhooks.
