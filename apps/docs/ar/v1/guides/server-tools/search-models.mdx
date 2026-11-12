@@ -1,18 +1,62 @@
 ---
 icon: "list-filter"
 title: "أداة الخادم للبحث عن النماذج"
-description: "دع النموذج يعثر على النماذج المناسبة في فهرس Phaseo المحدّث."
+description: "دع النموذج يعثر على النماذج المناسبة في كتالوج Phaseo المحدّث."
 ---
 
-استخدم`phaseo:search_models` عندما يحتاج النموذج المستدعي إلى اختيار نموذج أو التوصية به استنادًا إلى بيانات الفهرس الحالية.
+أضف `phaseo:search_models` ليتمكن النموذج من اختيار نموذج أو التوصية به باستخدام كتالوج Phaseo المحدّث: الوسائط الحالية والمزوّدون والمعاملات المدعومة والأسعار.
 
 ```json
 {
+  "model": "openai/gpt-6-astra",
+  "messages": [
+    { "role": "user", "content": "Which models can transcribe audio and return JSON?" }
+  ],
   "tools": [{ "type": "phaseo:search_models", "parameters": { "max_results": 5 } }],
   "max_tool_calls": 10
 }
 ```
 
-يمكن لاستدعاء الأداة التصفية حسب `query`, `input_modalities`, `output_modalities`, `series`, `provider`, و`required_params`. تتضمن النتائج معرّفات النماذج والوسائط والمزوّدين والمعلمات المدعومة وبيانات التسعير.
+## المعاملات
 
-يُبلّغ عن الاستخدام في `usage.server_tool_use.search_models_requests`.
+| المعامل | النوع | الافتراضي | الوصف |
+| --- | --- | --- | --- |
+| `max_results` | integer | `5` | عدد النماذج المُعادة في كل بحث، حتى `20`. |
+
+## ما يرسله النموذج
+
+أيًا من عوامل التصفية هذه. لا يُبحث إلا في النماذج النشطة، ويجب أن يطابق النموذج كل عامل تصفية مُرسل.
+
+| الوسيط | يطابق |
+| --- | --- |
+| `query` | نصًا في معرّف النموذج أو اسمه أو وصفه |
+| `series` | نصًا في معرّف النموذج أو اسمه أو وصفه |
+| `input_modalities` | النماذج التي تقبل كل هذه المدخلات |
+| `output_modalities` | النماذج التي تنتج كل هذه المخرجات |
+| `provider` | معرّف مزوّد أو اسمه |
+| `required_params` | النماذج التي تدعم كل معاملات الطلب هذه |
+
+## ما تعيده الأداة
+
+```json
+{
+  "models": [
+    {
+      "id": "openai/gpt-4o-mini-transcribe",
+      "name": "...",
+      "description": "...",
+      "input_modalities": ["audio"],
+      "output_modalities": ["text"],
+      "providers": ["openai"],
+      "supported_params": ["..."],
+      "pricing": {}
+    }
+  ],
+  "total_results": 4,
+  "showing": 4
+}
+```
+
+## الاستخدام والتسعير
+
+يضيف كل بحث 1 إلى `usage.server_tool_use.search_models_requests` ويمكن احتسابه باستخدام `server_tool_search_models_requests`.

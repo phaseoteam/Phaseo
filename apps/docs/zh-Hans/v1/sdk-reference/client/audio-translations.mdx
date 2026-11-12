@@ -1,0 +1,177 @@
+---
+icon: "arrow-right-left"
+title: "翻译"
+description: "在任意 Phaseo SDK 中使用 POST /v1/audio/translations 把语音翻译成英文文本。"
+---
+
+把语音上传到 `POST /v1/audio/translations`，即可获得英文文本。该端点只从 multipart 的 `file` 字段读取音频，没有 URL 选项，因此只有 TypeScript SDK 能直接调用它；其他语言都用各自的标准 HTTP 客户端提交表单。
+
+<CodeGroup>
+
+```typescript TypeScript
+import { readFile } from "node:fs/promises";
+
+const form = new FormData();
+form.append("model", "openai/whisper-1");
+form.append("file", new Blob([await readFile("interview.mp3")], { type: "audio/mpeg" }), "interview.mp3");
+
+const translated = await client.generateTranslation(form as unknown as Record<string, unknown>);
+console.log(translated.text);
+```
+
+```python Python
+# generate_translation() 目前还不能上传音频，所以用 HTTPX 提交表单。
+import os
+import httpx
+
+with open("interview.mp3", "rb") as audio:
+    response = httpx.post(
+        "https://api.phaseo.app/v1/audio/translations",
+        headers={"Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}"},
+        data={"model": "openai/whisper-1"},
+        files={"file": ("interview.mp3", audio, "audio/mpeg")},
+        timeout=120,
+    )
+response.raise_for_status()
+print(response.json()["text"])
+```
+
+```go Go
+// CreateTranslation() 发送的是 JSON，所以用 net/http 和 mime/multipart 提交表单。
+var body bytes.Buffer
+form := multipart.NewWriter(&body)
+_ = form.WriteField("model", "openai/whisper-1")
+part, _ := form.CreateFormFile("file", "interview.mp3")
+audio, _ := os.ReadFile("interview.mp3")
+_, _ = part.Write(audio)
+_ = form.Close()
+
+req, _ := http.NewRequest("POST", "https://api.phaseo.app/v1/audio/translations", &body)
+req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
+req.Header.Set("Content-Type", form.FormDataContentType())
+
+resp, err := http.DefaultClient.Do(req)
+```
+
+```csharp C#
+// CreateTranslation() 发送的是 JSON，所以用 HttpClient 提交表单。
+using var http = new HttpClient();
+http.DefaultRequestHeaders.Authorization =
+    new("Bearer", Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
+
+using var form = new MultipartFormDataContent
+{
+    { new StringContent("openai/whisper-1"), "model" },
+    { new ByteArrayContent(await File.ReadAllBytesAsync("interview.mp3")), "file", "interview.mp3" },
+};
+
+var response = await http.PostAsync("https://api.phaseo.app/v1/audio/translations", form);
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+```
+
+```php PHP
+<?php
+// generateTranslation() 发送的是 JSON，所以用 Guzzle 提交表单；Composer 安装 SDK 时已一并安装 Guzzle。
+require 'vendor/autoload.php';
+
+$http = new GuzzleHttp\Client();
+
+$response = $http->post('https://api.phaseo.app/v1/audio/translations', [
+    'headers' => ['Authorization' => 'Bearer ' . getenv('PHASEO_API_KEY')],
+    'multipart' => [
+        ['name' => 'model', 'contents' => 'openai/whisper-1'],
+        ['name' => 'file', 'contents' => fopen('interview.mp3', 'r'), 'filename' => 'interview.mp3'],
+    ],
+]);
+
+echo $response->getBody();
+```
+
+```ruby Ruby
+# generate_translation 发送的是 JSON，所以用 Net::HTTP 提交表单。
+require 'net/http'
+
+uri = URI('https://api.phaseo.app/v1/audio/translations')
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV.fetch('PHASEO_API_KEY')}"
+request.set_form(
+  [['model', 'openai/whisper-1'], ['file', File.open('interview.mp3')]],
+  'multipart/form-data'
+)
+
+response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
+puts response.body
+```
+
+```java Java
+// SDK 的 JSON 辅助方法不编码 multipart，所以用 java.net.http 提交表单。
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nopenai/whisper-1\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"interview.mp3\"\r\nContent-Type: audio/mpeg\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("interview.mp3")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/audio/translations"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body());
+```
+
+</CodeGroup>
+
+| 语言 | SDK 方法 | 能上传文件吗？ |
+| --- | --- | --- |
+| TypeScript | `client.generateTranslation(form)` | 能。传入 `FormData` 正文，SDK 会原样以 multipart 发送；需要类型转换，是因为该方法的类型描述的是 JSON 正文。 |
+| Python | `client.generate_translation(request)` | 不能。它发送 JSON，所以请像上面那样用 HTTPX 提交表单。 |
+| Go | `client.CreateTranslation(ctx, req)` | 不能。它发送 JSON，网关会以 `file is required` 拒绝。 |
+| C# | `client.CreateTranslation(request)` | 不能。它发送 JSON，网关会以 `file is required` 拒绝。 |
+| PHP | `$client->generateTranslation($request)` | 不能。它发送 JSON，网关会以 `file is required` 拒绝。 |
+| Ruby | `client.generate_translation(...)` | 不能。它发送 JSON，网关会以 `file is required` 拒绝。 |
+| Java | 无 | 不能。请使用 `java.net.http.HttpClient` 发送 multipart 正文。 |
+
+Rust 没有翻译方法，而且它的 `post()` 辅助方法只发送 JSON。
+
+## 参数
+
+在每种语言中，字段名都是表单字段。
+
+| 字段 | 说明 |
+| --- | --- |
+| `model` | 必填。翻译模型 ID。 |
+| `file` | 必填。最大 25 MB，格式为 `flac`、`mp3`、`mp4`、`mpeg`、`mpga`、`m4a`、`ogg`、`wav` 或 `webm`。 |
+| `prompt` | 用于引导翻译的上下文。 |
+| `temperature` | `0` 到 `1`。 |
+| `response_format` | `json`、`text`、`srt`、`verbose_json` 或 `vtt`。 |
+
+完整的 schema 见 [Translations API 参考](/zh-Hans/v1/api-reference/endpoint/audio-translations)。
+
+## 响应
+
+`AudioTranslationResponse`：
+
+```json
+{
+  "text": "Hello world"
+}
+```

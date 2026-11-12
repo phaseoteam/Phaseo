@@ -1,14 +1,10 @@
 ---
 title: "エラーとデバッグ"
-description: "Phaseo のエラーの意味を理解し、リクエスト、プロバイダー、ルーティングの一般的な問題をすばやく解決します。"
+description: "Phaseo のエラーレスポンスを理解し、リクエスト、プロバイダー、ルーティングのよくある問題をすばやく解決します。"
 icon: "bug"
 ---
 
-このページでは、Phaseo のエラーの意味と、次に取るべき対応を確認できます。
-
-すべてのエラーレスポンスは共通の JSON 形式です。モデルやプロバイダーにかかわらず、アプリケーションで一貫して失敗を処理できます。 `error` フィールドは `code`、`message`、`type` を持つオブジェクトで、OpenAI 互換の SDK が読み取る形式です。そのため SDK の例外にゲートウェイのメッセージが含まれます。
-
-## エラーレスポンスの例
+メッセージのテキストではなく、`error.code` と HTTP ステータスで処理を分岐してください。Phaseo のエラーはどのエンドポイントでも同じ JSON 本文を返します。その `error` オブジェクト（`code`、`message`、`type`、`param`）は OpenAI 互換 SDK が読み取る形式なので、SDK の例外には Phaseo のメッセージが入ります。
 
 ```json
 {
@@ -68,129 +64,128 @@ icon: "bug"
 }
 ```
 
-## 常に含まれるフィールド
+## すべてのエラーに含まれるフィールド
 
-- `generation_id`: サポートに共有できる安定したリクエスト ID。
-- `status_code`: HTTP ステータスコードと同じ値。
-- `error`: 失敗内容を表すオブジェクト。
-  - `error.code`: `validation_error` などの機械可読なエラーコード。
-  - `error.message`: 何が起きたかのわかりやすい説明。
-  - `error.type`: エラーの種類（下の「エラーの種類」を参照）。
-  - `error.param`: エラーの原因となったリクエストパラメーター。ゲートウェイが特定できない場合は `null`。
-  - `error.metadata`（任意）: 失敗したプロバイダー、詳細な理由、失敗したステータス、`retry_after_seconds` などの構造化された詳細。同じ値はトップレベルにも返されます。
-- `code`: `error.code` と同じコード。以前のレスポンスはこのコードを文字列として `error` に返していました。クライアントがそこに文字列を想定していた場合は `code` を読んでください。
-- `message`: `error.message` と同じテキスト。
-- `error_type`: 通常 `user` または `system` の大分類。
-- `error_origin`: 主な原因が呼び出し元、Phaseo、上流プロバイダーのいずれかを示します。
-- `description`: 発生した内容を平易に説明します。
-- `details`（任意）: リクエスト検証エラーの構造化された詳細。
+| フィールド | 内容 |
+| --- | --- |
+| `error.code` | 機械で読み取れるコード（例: `validation_error`）。[エラーコード](#error-codes)を参照してください。 |
+| `error.message` | わかりやすい説明文。 |
+| `error.type` | HTTP ステータスから決まるエラーの分類。[エラーの種類](#error-types)を参照してください。 |
+| `error.param` | エラーの原因となったリクエストフィールド。Phaseo が特定できない場合は `null`。 |
+| `error.metadata` | 任意。`reason`、`failed_providers`、`failed_statuses`、`retry_after_seconds` などの構造化された詳細。同じ値はトップレベルにも含まれます。 |
+| `code` | `error.code` と同じ。以前のレスポンスではこの文字列を `error` として返していました。クライアントがそこに文字列を期待している場合は `code` を読んでください。 |
+| `message`、`description` | `error.message` と同じテキスト。 |
+| `generation_id` | ログに記録し、サポートに伝えるためのリクエスト ID。 |
+| `status_code` | HTTP ステータス。 |
+| `error_type` | `user` または `system`。 |
+| `error_origin` | 問題の発生元。呼び出し側（`user`）、Phaseo（`gateway`）、プロバイダー（`upstream`）のいずれか。 |
+| `details` | 任意。リクエスト本文が無効な場合の検証の詳細。 |
 
-## 追加で表示されるフィールド
+一部のエラーには、さらに情報が追加されます。
 
-問題を早く解決できるよう、エラーによっては次の情報も含まれます。
+| フィールド | 表示される条件 |
+| --- | --- |
+| `reason` | `all_candidates_failed` や `no_provider_pricing` などの具体的な理由。 |
+| `provider_failure_diagnostics` | プロバイダーに到達したものの失敗した場合。[プロバイダーが失敗した場合](#when-a-provider-fails)を参照してください。 |
+| `upstream_error`、`failure_sample` | 最初のプロバイダー障害をできる限り要約したもの。 |
+| `failed_providers`、`failed_statuses`、`attempt_count` | 試したプロバイダーと、それぞれが返した結果。 |
+| `provider_candidate_diagnostics`、`provider_enablement`、`routing_diagnostics` | このエンドポイントでモデルを処理できるプロバイダーがなかった場合。[モデルまたはエンドポイントが利用できない場合](#when-a-model-or-endpoint-is-not-available)を参照してください。 |
 
-- `reason`: `all_candidates_failed` や `pricing_not_configured` など、より具体的な理由。
-- `provider_candidate_diagnostics` と `provider_enablement`: 指定されたエンドポイントでモデルを使用できなかった理由。
-- `routing_diagnostics`: ルーティングや可用性チェックで候補が絞り込まれた詳細。
-- `provider_failure_diagnostics`: 認証情報やアクセスの不足、地域制限、レート制限など、プロバイダー側の失敗に関するヒント。
-- `upstream_error` と `failure_sample`: リクエストがプロバイダーまで届いた場合に、最初のプロバイダーエラーを可能な範囲で要約します。
-- `failed_providers`、`failed_statuses`、`attempt_count`: 再試行とフェイルオーバーに関する追加情報。
-
+<span id="error-types"></span>
 ## エラーの種類
 
-`error.type` は OpenAI の[文書化されたエラータイプ](https://platform.openai.com/docs/guides/error-codes)に従い、HTTP ステータスから決まります。
+`error.type` は OpenAI の[公開されているエラーの種類](https://platform.openai.com/docs/guides/error-codes)に従い、HTTP ステータスから決まります。
 
 | ステータス | `error.type` |
 | --- | --- |
-| `400`, `409`, `410`, `413`, `422` およびその他の 4xx | `invalid_request_error` |
 | `401` | `authentication_error` |
 | `402` | `insufficient_quota` |
 | `403` | `permission_error` |
 | `404` | `not_found_error` |
 | `429` | `rate_limit_error` |
+| `408`、`500`、`502`、その他の 5xx | `server_error` |
 | `503` | `service_unavailable` |
 | `529` | `overloaded` |
-| `500`, `502` およびその他の 5xx | `server_error` |
+| `400`、`409`、`410`、`413`、`422`、その他の 4xx | `invalid_request_error` |
 
-`/v1/messages` のエラーも同じボディを使うため、Anthropic の SDK も `error.type` と `error.message` を読み取れます。
+`/v1/messages` のエラーも同じ本文を使うため、Anthropic SDK でも `error.type` と `error.message` を読み取れます。
 
-## ステータスクラスの見方
+<span id="error-codes"></span>
+## エラーコード
 
-| ステータス | 意味 | 推奨する対応 |
-| --- | --- | --- |
-| `400-499` | リクエスト、認証、権限の問題 | 再試行する前にリクエストまたは認証情報を修正します。 |
-| `429` | プロバイダーまたはルート単位のスロットリング | バックオフして再試行し、`Retry-After` に従います。 |
-| `500-599` | Phaseo または上流プロバイダーの障害 | ジッター付きバックオフで再試行し、リクエスト ID をログに記録します。 |
-
-## よくあるエラーコード
-
-| `error.code` | HTTP ステータス | `error.type` | 説明 |
+| `error.code` | ステータス | 意味 | 対処方法 |
 | --- | --- | --- | --- |
-| `unauthorised` | `401` | `authentication_error` | API キーがないか、無効です。 |
-| `guardrail_blocked` | `403` | `permission_error` | ワークスペースのガードレールまたはアクセスポリシーがリクエストをブロックしました。 |
-| `not_found` | `404` | `not_found_error` | エンドポイントまたはリソースが見つかりません。 |
-| `model_retired` | `410` | `invalid_request_error` | モデルは提供終了しており、どのプロバイダーも提供していません。`replacement_model` に切り替えてください。 |
-| `insufficient_funds` | `402` | `insufficient_quota` | ワークスペースのクレジットがリクエストに対して不足しています。 |
-| `key_limit_exceeded` | `429` | `rate_limit_error` | API キーが上限のいずれかに達しました。 |
-| `phaseo_free_model_limit_exceeded` | `429` | `rate_limit_error` | Phaseoの無料モデル共通の日次上限に達しました（既定で1,500リクエスト）。`Retry-After`に従い、00:00 UTCのリセットを待つか、有料モデルを選択してください。 |
-| `rate_limit_exceeded` | `429` | `rate_limit_error` | ワークスペースの[レート制限ポリシー](./limits.mdx)の上限に達しました。`policy_id`と`limit_scope`で対象を特定できます。`Retry-After`に従うか、ワークスペース管理者にポリシーの変更を依頼してください。 |
-| `validation_error` | `400` | `invalid_request_error` | パラメーターまたはリクエスト本文が無効です。 `error.param` は最初の無効なフィールドを示します。 |
-| `upstream_error` | `429` | `rate_limit_error` | リクエストで試行したすべてのプロバイダーがレート制限を適用しました。`Retry-After` に従ってください。BYOK リクエストには `X-Phaseo-Upstream-RateLimit-*` ヘッダーも含まれます。 |
-| `upstream_error` | `502` | `server_error` | 上流のモデルプロバイダーが正しく応答しませんでした。 |
-| `upstream_stream_failure` | `502` | `server_error` | ストリーミングしないリクエストで、生成開始後にプロバイダーが失敗しました。部分的な出力は返されず、リクエストは課金されません。 |
-| `gateway_error` | `500` | `server_error` | Phaseo 内部で予期しない問題が発生しました。 |
+| `validation_error` | `400` | パラメーターまたはリクエスト本文が無効です。`error.param` に最初の無効なフィールドが入ります。 | リクエストを修正します。 |
+| `invalid_json` | `400` | 本文が有効な JSON ではありません。 | リクエストを修正します。 |
+| `model_required` | `400` | リクエストに `model` がありません。 | `model` を追加します。 |
+| `unsupported_model_or_endpoint` | `400` | このエンドポイントでこのモデルを処理できるプロバイダーがありません。 | [下記](#when-a-model-or-endpoint-is-not-available)を参照してください。 |
+| `unsupported_modalities` | `400` | リクエストの入力または出力の種類を受け付けるルートがありません。 | モデルまたは入力を変更します。 |
+| `byok_credentials_required` | `400` | このルートは自分のプロバイダーキーでのみ実行できます。 | 対象となる[プロバイダーキー](./endpoint/provider-credentials-create.mdx)を追加します。 |
+| `upstream_error` | `400`、`413`、`422` | すべてのプロバイダーが同じステータスでリクエストを拒否しました（理由 `upstream_rejected_request`）。 | リクエストを修正します。再試行しても解決しません。 |
+| `unauthorised` | `401` | キーがないか無効です。`reason` に理由が入ります。 | `Authorization` ヘッダーを確認します。 |
+| `insufficient_funds` | `402` | ワークスペースのクレジットが不足しています。 | クレジットを追加します。 |
+| `pricing_not_configured` | `402` | このモデルのどのプロバイダーにも料金が設定されていません（理由 `no_provider_pricing`）。 | 別のモデルを選びます。 |
+| `guardrail_blocked` | `403` | ガードレールまたはアクセスポリシーがリクエストをブロックしました。 | リクエストまたはガードレールを変更します。 |
+| `model_region_unavailable` | `403` | 必要なリージョン、または呼び出し元の場所からモデルを提供するプロバイダーがありません。 | リージョンの要件を緩めるか、別のモデルを選びます。 |
+| `not_found` | `404` | エンドポイントまたはリソースが存在しません。 | パスと ID を確認します。 |
+| `not_ready` | `409` | ジョブの結果がまだ準備できていません。 | ジョブのステータスをポーリングします。 |
+| `model_retired` | `410` | モデルは提供終了となり、提供するプロバイダーがありません。 | `replacement_model` に切り替えます。[下記](#when-a-model-is-retired)を参照してください。 |
+| `payload_too_large` | `413` | 本文がエンドポイントの上限を超えています。`max_bytes` に上限が入ります。 | 本文を小さくするか、ファイルをアップロードします。 |
+| `key_limit_exceeded` | `429` | キーの上限、予算、または 1 分あたりの Gateway 上限に達しました。 | [レート制限](./limits.mdx#key-limits-and-budgets)を参照してください。 |
+| `phaseo_free_model_limit_exceeded` | `429` | 無料モデルの 1 日あたりの利用枠（デフォルトで 1,500 リクエスト）を使い切りました。 | `Retry-After` に従うか、00:00 UTC のリセットを待つか、有料モデルを使います。 |
+| `rate_limit_exceeded` | `429` | ワークスペースの[レート制限ポリシー](./limits.mdx#rate-limit-policies)の上限に達しました。`policy_id` と `limit_scope` で特定できます。 | `Retry-After` に従うか、管理者にポリシーの変更を依頼します。 |
+| `spend_rule_blocked` | `429` | ブロックに設定された[支出ルール](../guides/spend-alerts.mdx)が有効です。 | `Retry-After` に従うか、オーナーまたは管理者にブロックの解除を依頼します。 |
+| `upstream_error` | `429` | 試したすべてのプロバイダーがリクエストをレート制限しました。 | `Retry-After` に従います。BYOK リクエストには `X-Phaseo-Upstream-RateLimit-*` ヘッダーも付きます。 |
+| `provider_capacity_exhausted` | `429` | 対象となるすべてのプロバイダーが容量の上限に達しています（理由 `all_candidates_rate_limited`）。 | `Retry-After` があれば従い、なければ間隔を空けて再試行します。 |
+| `gateway_error` | `500` | Phaseo の内部で何かが失敗しました。 | バックオフを使って再試行します。 |
+| `not_implemented_yet` | `501` | この操作はまだ利用できません。 | 再試行しないでください。 |
+| `upstream_error` | `502` | プロバイダーが正しく応答しませんでした。 | バックオフを使って再試行します。 |
+| `upstream_stream_failure` | `502` | ストリーミングしないリクエストで、プロバイダーが生成開始後に失敗しました。部分的な出力は返されず、リクエストは課金されません。 | 再試行します。 |
+| `provider_payment_required` | `502` | Phaseo のプロバイダーアカウントに対応が必要です。 | 後で再試行するか、報告してください。 |
 
-## プロバイダーのエラー
+## 再試行すべきエラーを見分ける
 
-Phaseo がプロバイダーに到達したものの、リクエストが失敗した場合は、次の情報が表示されることがあります。
+| ステータス | 再試行するか |
+| --- | --- |
+| `429` を除く `400`–`499` | いいえ。まずリクエスト、キー、またはアクセス権を修正します。 |
+| `429` | はい。`Retry-After`（秒数または HTTP 日付）の分だけ待ち、ない場合はジッター付きの指数バックオフを使います。`Retry-After` のない `key_limit_exceeded` エラーは自動ではリセットされないため、再試行しないでください。 |
+| `500`–`599` | 操作を繰り返しても安全な場合のみ。結果が不明な送信では、すでにジョブや課金が作成されている可能性があります。再送信せず、受け付けられたジョブを確認してください。 |
 
-- `provider_failure_diagnostics.category`
-- `provider_failure_diagnostics.hint`
-- `provider_failure_diagnostics.provider`
+試行回数の上限と全体の期限を設定してください。レート制限ヘッダーについては[レート制限](./limits.mdx)を参照してください。
 
-現在のカテゴリは次のとおりです。
+<span id="when-a-provider-fails"></span>
+## プロバイダーが失敗した場合
 
-- `credentials_not_configured`
-- `credentials_invalid_or_forbidden`
-- `provider_access_missing`
-- `region_or_project_restriction`
-- `model_unavailable_for_endpoint`
-- `rate_limited`
-- `server_error`
+Phaseo がプロバイダーに到達したもののリクエストが失敗した場合、`provider_failure_diagnostics` に `category`、`hint`、`provider` が入ります。カテゴリーは次のとおりです。
 
-これらのフィールドを使うと、完全なデバッグモードを有効にせずに問題を解決できます。
+| `category` | 意味 |
+| --- | --- |
+| `credentials_not_configured` | このルートに認証情報が設定されていません。 |
+| `credentials_invalid_or_forbidden` | 認証情報が拒否されました。 |
+| `provider_access_missing` | プロバイダーアカウントにモデルまたは機能へのアクセス権がありません。 |
+| `region_or_project_restriction` | リージョンまたはプロジェクトが原因でプロバイダーが拒否しました。 |
+| `model_unavailable_for_endpoint` | プロバイダーはこのエンドポイントでモデルを公開していません。 |
+| `rate_limited` | プロバイダーがリクエストをレート制限しました。 |
+| `server_error` | プロバイダーが失敗したか、タイムアウトしました。 |
 
+<span id="when-a-model-or-endpoint-is-not-available"></span>
 ## モデルまたはエンドポイントが利用できない場合
 
-`unsupported_model_or_endpoint` のレスポンスには、次の情報が含まれる場合があります。
+`unsupported_model_or_endpoint` エラーには、`provider_candidate_diagnostics`、`provider_enablement`、`missing_pricing_providers`、`routing_diagnostics` が含まれることがあります。これらを合わせると、モデルがまだ有効でないのか、モデルがエンドポイントに対応していないのか、料金が設定されていないのか、ロールアウトの制限なのかを区別できます。
 
-- `provider_candidate_diagnostics`
-- `provider_enablement`
-- `missing_pricing_providers`
-- `routing_diagnostics`
-
-これらの情報を使って、次の状態を見分けます。
-
-- 既知だが、まだ有効になっていないモデル
-- 要求されたエンドポイントに対応していないモデル
-- 料金データの不足
-- ロールアウトまたは内部可用性の制限
-
-よく使われるフィールド：
-
-- `provider_candidate_diagnostics.totalProviders`: エンドポイントのフィルタリング前に、そのモデルで認識されていたプロバイダーの数。
-- `provider_candidate_diagnostics.supportsEndpointCount`: 要求されたエンドポイントに対応するプロバイダーの数。
-- `provider_candidate_diagnostics.candidateCount`: アダプターの確認後に残ったプロバイダーの数。
-- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`: そのエンドポイントに対応していないため除外されたプロバイダー。
-- `provider_candidate_diagnostics.droppedMissingAdapter`: そのエンドポイント用の Gateway アダプターがまだ存在せず、除外されたプロバイダーとエンドポイントの組み合わせ。
-- `provider_enablement.capability`: `video_generation` など、適用される機能ゲート。
-- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`: 機能または有効化フィルター適用前後のプロバイダー。
-- `provider_enablement.dropped[].reason`: `pricing_missing` などの機械可読な理由。
-- `routing_diagnostics.filterStages[].stage`: 機能、ロールアウト、ルーティング状態などのルーティング段階。
-- `routing_diagnostics.filterStages[].beforeCount` / `routing_diagnostics.filterStages[].afterCount`: 各段階の前後に残ったプロバイダー数。
-- `routing_diagnostics.filterStages[].droppedProviders[].reason`: ロールアウトやルーティングの制限などの機械可読な理由。
-
-### 例
+| フィールド | 意味 |
+| --- | --- |
+| `provider_candidate_diagnostics.totalProviders` | エンドポイントで絞り込む前に、このモデルについて把握しているプロバイダー数。 |
+| `provider_candidate_diagnostics.supportsEndpointCount` | リクエストされたエンドポイントに対応するプロバイダー数。 |
+| `provider_candidate_diagnostics.candidateCount` | アダプターの確認後に残ったプロバイダー数。 |
+| `provider_candidate_diagnostics.droppedUnsupportedEndpoint` | エンドポイントに対応していないため除外されたプロバイダー。 |
+| `provider_candidate_diagnostics.droppedMissingAdapter` | Phaseo にそのエンドポイント用のアダプターがまだないため除外された、プロバイダーとエンドポイントの組み合わせ。 |
+| `provider_enablement.capability` | 適用されている機能（例: `video_generation`）。 |
+| `provider_enablement.providersBefore`、`providersAfter` | 機能で絞り込む前と後のプロバイダー。 |
+| `provider_enablement.dropped[].reason` | プロバイダーが除外された理由（例: `pricing_missing`）。 |
+| `routing_diagnostics.filterStages[].stage` | 機能、ロールアウト、ルーティングステータスによる絞り込みなどのルーティング段階。 |
+| `routing_diagnostics.filterStages[].beforeCount`、`afterCount` | その段階の前と後のプロバイダー数。 |
+| `routing_diagnostics.filterStages[].droppedProviders[].reason` | その段階でプロバイダーが除外された理由。 |
 
 ```json
 {
@@ -248,7 +243,7 @@ Phaseo がプロバイダーに到達したものの、リクエストが失敗�
 <span id="when-a-model-is-retired"></span>
 ## モデルが提供終了になった場合
 
-提供終了したモデルも、いずれかのプロバイダーが提供している間は引き続き利用できます。どのプロバイダーも提供しなくなると、そのモデルへのリクエストは `410` と `model_retired` エラーで失敗します。
+提供終了となったモデルも、いずれかのプロバイダーが提供している間は引き続き利用できます。提供するプロバイダーがなくなると、リクエストは `410` と `model_retired` で失敗します。
 
 ```json
 {
@@ -273,15 +268,42 @@ Phaseo がプロバイダーに到達したものの、リクエストが失敗�
 }
 ```
 
-- `model`: リクエストしたモデル。
-- `retired_at`: モデルが提供終了になった日時。日付が記録されていない場合は `null`。
-- `replacement_model`: 推奨される代替モデル。ない場合は `null`。
+`model` はリクエストしたモデル、`retired_at` は提供終了日時（または `null`）、`replacement_model` は推奨される代替モデル（または `null`）です。
 
-再試行しても解決しません。リクエストのモデル ID を更新してください。移行中もこれらのリクエストを処理し続けるには、リクエストの `models` リストに代替モデルを追加するか、ワークスペースで提供終了モデルのルーティングを有効にしてください。[モデルの非推奨化と提供終了](../guides/model-retirement.mdx)を参照してください。
+再試行しても解決しないため、モデル ID を変更してください。移行中もこれらのリクエストを動かし続けるには、リクエストの `models` リストに代替モデルを追加するか、ワークスペースで提供終了モデルのルーティングを有効にします。[モデルの非推奨化と提供終了](../guides/model-retirement.mdx)を参照してください。
 
-## 任意のデバッグモード
+## ストリーム中のエラー
 
-ほとんどのリクエストスキーマは、制御されたトラブルシューティング用の `debug` オブジェクトに対応しています。
+ストリーミング開始前にリクエストが失敗した場合は、上記の JSON エラー本文が返されます。ストリーム途中で失敗した場合、ストリームは通常の終了ではなく、エンドポイントの失敗イベントで終わります。
+
+| エンドポイント | 失敗イベント |
+| --- | --- |
+| Chat Completions | `error` フレーム |
+| Responses | `response.failed`（または `error`） |
+| Messages | `error` イベント |
+
+部分的な出力は不完全なものとして扱い、再試行を提示してください。Chat Completions の `error` フレームには同じエラーオブジェクトが含まれ、`error.type` はコードから決まります。
+
+```json
+{
+  "object": "error",
+  "message": "The upstream stream ended before the response completed.",
+  "code": "upstream_stream_failure",
+  "error": {
+    "code": "upstream_stream_failure",
+    "message": "The upstream stream ended before the response completed.",
+    "type": "server_error",
+    "param": null
+  }
+}
+```
+
+ストリーミングしないリクエストでプロバイダーが途中で失敗した場合は、部分的なレスポンスではなく、`502` と `upstream_stream_failure` が返されます。[ストリーミング](../guides/streaming.mdx)を参照してください。
+
+<span id="debug-a-request"></span>
+## リクエストをデバッグする
+
+`debug` オブジェクトを送信すると、ルーティングのトレースと上流のペイロードを取得できます。
 
 ```json
 {
@@ -295,86 +317,18 @@ Phaseo がプロバイダーに到達したものの、リクエストが失敗�
 }
 ```
 
-利用可能なフィールド：
+`trace_level` は `summary` または `full` です。デバッグペイロードにはリクエストの内容が含まれることがあるため、開発環境か、厳密に管理された環境でのみ使ってください。[`debug`](./parameters.mdx#parameter-debug) を参照してください。
 
-- `enabled`
-- `return_upstream_request`
-- `return_upstream_response`
-- `trace`
-- `trace_level`（`summary` または `full`）
-
-デバッグモードは、開発時または厳格に管理された環境でのみ使用してください。
-
-## 再試行の方針
-
-- **429 以外の 400 番台のエラー：**再試行する前に、リクエスト、認証情報、またはアクセスポリシーを修正してください。
-- **429:** 指数バックオフを実装し、`Retry-After` ヘッダーに従います。
-- **500 番台のエラー：**操作を安全に繰り返せる場合に限り、上限を設けて再試行してください。結果が不明な送信でも、すでにジョブが作成されたり料金が発生したりしている可能性があります。受け付け済みのジョブは、再送信せずに取得してください。
-
-試行回数の上限と全体の期限を設定し、バックオフの待機時間にランダムな揺らぎを加えてください。レスポンスヘッダーと再試行の処理については、[レート制限](./limits.mdx)を参照してください。
-
-## ストリーミング固有の注意点
-
-- ストリーミング開始前に失敗すると、通常の JSON エラーペイロードが返されます。
-- ストリームの途中で失敗した場合、ストリームは通常の終了ではなくエンドポイントの失敗イベントで終わります。Chat Completions では `error` フレーム、Responses では `response.failed`（または `error`）、Messages では `error` イベントです。部分的なストリームを未完了として扱い、再試行を提案します。
-- Chat Completions の `error` フレームにも同じエラーオブジェクトが含まれ、`error.type` はコードから決まります。
-
-  ```json
-  {
-    "object": "error",
-    "message": "The upstream stream ended before the response completed.",
-    "code": "upstream_stream_failure",
-    "error": {
-      "code": "upstream_stream_failure",
-      "message": "The upstream stream ended before the response completed.",
-      "type": "server_error",
-      "param": null
-    }
-  }
-  ```
-- ストリーミングしないリクエストでプロバイダーが途中で失敗すると、部分的な応答ではなく `upstream_stream_failure` を伴う `502` が返されます。
-- 必ず `generation_id` とエンドポイント、モデルのメタデータをログに記録します。
-
-## トラブルシューティングのヒント
-
-- [Gateway のステータスページ](https://status.phaseo.app)で進行中のインシデントを確認します。
-- リクエスト本文をエンドポイントのドキュメントと照合します。
-- サポートに連絡する際は `generation_id` を共有してください。
-
-## 関連リソース
-
-<Columns cols={2}>
-	<Card
-		title="認証"
-		icon="key"
-		href="../developers/authentication.mdx"
-	>
-		Bearer API キーで認証します。
-	</Card>
-	<Card
-		title="制限"
-		icon="gauge"
-		href="./limits.mdx"
-	>
-		プロバイダーが適用するスロットリングと再試行を処理します。
-	</Card>
-	<Card
-		title="ストリーミング"
-		icon="radio"
-		href="../guides/streaming.mdx"
-	>
-		本番ワークフローで SSE を安全に使用します。
-	</Card>
-</Columns>
+リクエストが失敗した場合は、[ステータスページ](https://status.phaseo.app)で障害を確認し、ペイロードをエンドポイントのリファレンスページと比較し、`generation_id` をエンドポイントとモデルと一緒にログに記録してください。[サポート](https://phaseo.app/help)に問い合わせる際は `generation_id` を伝えてください。
 
 <Visibility for="agents">
-エージェント向けのエラー処理ルール（このページの要約）:
+このページをまとめた、エージェント向けのエラー処理ルール:
 
-- メッセージの文面ではなく、`error.code`（トップレベルの `code` にも返されます）、`error.type`、`status_code` で分岐します。失敗ごとに `generation_id` を記録します。
-- `400`、`401`、`403`、`404`: まずリクエスト、キー、アクセス権を修正します。同じリクエストをそのまま再試行しないでください。
-- `410` と `model_retired`: `replacement_model` が `null` でなければ切り替えます。`null` の場合は `GET /v1/models` で新しいモデルを選びます。
-- `429`: `Retry-After`（秒数または HTTP 日付）がある場合は、その時間だけ待ってから再試行します。ない場合はジッター付き指数バックオフを使います。`Retry-After` のない `key_limit_exceeded` エラーは自動ではリセットされないため、再試行しないでください。
-- `500`〜`599`: 呼び出しを繰り返しても安全な場合に限り、試行回数の上限、全体の期限、ジッター付き指数バックオフを設定して再試行します。非同期ジョブでは再送信せず、受け付け済みのジョブを取得します。
-- デバッグペイロードは機密情報として扱い、永続ログに書き込む前にマスキングします。
-- 実績のある再試行とエラー解析のパターンには、`phaseo-gateway` スキルをインストールします: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`
+- メッセージのテキストではなく、`error.code`（トップレベルの `code` としても返されます）、`error.type`、`status_code` で分岐します。すべての失敗で `generation_id` をログに記録します。
+- `400`、`401`、`403`、`404`: まずリクエスト、キー、またはアクセス権を修正します。同じリクエストを変更せずに再試行しないでください。
+- `model_retired` を伴う `410`: `replacement_model` が `null` でなければそれに切り替えます。`null` の場合は `GET /v1/models` から新しいモデルを選びます。
+- `429`: `Retry-After`（秒数または HTTP 日付）がある場合は、その時間だけ待ってから再試行します。ない場合はジッター付きの指数バックオフを使います。`Retry-After` のない `key_limit_exceeded` エラーは自動ではリセットされないため、再試行しないでください。
+- `500` から `599`: 呼び出しを繰り返しても安全な場合のみ、試行回数の上限、全体の期限、ジッター付きの指数バックオフを設定して再試行します。非同期ジョブでは、再送信せずに受け付けられたジョブを確認します。
+- デバッグペイロードは機密情報として扱い、永続的なログに書き込む前に秘匿化します。
+- 検証済みの再試行とエラー解析のパターンを使うには、`phaseo-gateway` スキルをインストールします: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`。
 </Visibility>

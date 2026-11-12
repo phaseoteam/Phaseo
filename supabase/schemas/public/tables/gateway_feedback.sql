@@ -70,6 +70,13 @@ CREATE POLICY "gateway_feedback_select_workspace" ON "public"."gateway_feedback"
   TO "authenticated"
   USING (public.is_workspace_member(workspace_id));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_feedback"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_feedback" TO "authenticated", "service_role";
 
 COMMENT ON COLUMN "public"."gateway_feedback"."metadata" IS 'Arbitrary developer-supplied feedback metadata. Use metadata_dimensions for bounded indexed cohort filters.';

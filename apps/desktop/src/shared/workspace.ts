@@ -1,8 +1,10 @@
+import type { RememberedModels } from "./rememberedModels";
 import type { HtmlRenderActivity } from "./htmlRender";
 import type { Delegation, Launch } from "./orchestration";
 import type { CodeHostKind, CustomCodeHost } from "./codeHosts";
 import type { CodeHostSettings, CodeHostTokenRequest } from "./codeHostSettings";
 import type { CreatedOutsideAgentToken, OutsideAgentAccess, OutsideAgentSettings } from "./outsideAgents";
+import type { PhoneAccess, PhonePairingView, PhoneSettingsUpdate, PhoneState } from "./phone";
 import type { IssueDraft, TriagePreparation, TriageProject } from "./triage";
 import type { AutopilotDecision } from "./inbox";
 import type { UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
@@ -48,7 +50,7 @@ export type Harness = typeof harnesses[number];
 /** Harnesses a chat can run on. Antigravity stays a harness so usage history keeps its name, but it has no adapter yet, so it is offered nowhere. */
 export const runnableHarnesses: readonly Harness[] = harnesses.filter(harness => harness !== "antigravity");
 export type TaskStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
-export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings; /** A checkout of the app's own source made by Triage (shared/triage.ts). */ triage?: TriageProject; /** Pinned projects lead the project picker; archived ones, and their chats, leave the sidebar and pickers until unarchived. */ pinned?: boolean; archived?: boolean };
+export type Project = { id: string; name: string; directory: string; createdAt: string; worktree?: { sourceProjectId: string; branch: string; baseCommit: string; removedAt?: string; /** The folder it was made in, so it can be removed after the worktree location changes; absent for older worktrees, made in the default folder. */ root?: string; /** Why Settings → Worktrees → Submodules could not check them out when the worktree was made; shown in the chat's Git section. */ submoduleError?: string }; /** Auto-settle overrides and scripts (Project settings). Worktrees use their source project's. */ settings?: ProjectSettings; /** A checkout of the app's own source made by Triage (shared/triage.ts). */ triage?: TriageProject; /** Pinned projects lead the project picker; archived ones, and their chats, leave the sidebar and pickers until unarchived. */ pinned?: boolean; archived?: boolean };
 export type PhaseoSignInMethod = { provider: "github" | "google" | "gitlab" } | { email: string; password: string };
 export type PhaseoSignInResult = { workspace: WorkspaceOverview; accountId: string } | { secondFactor: true };
 export type Account = { id: string; name: string; harness: Harness; kind: "native" | "api"; endpoint?: string; configDirectory?: string; configured: boolean; archived?: boolean; secretId?: string; oauthExpiresAt?: string; /** For a Phaseo login (not an older OAuth sign-in): the vault entry holding the login, and the Phaseo workspace its key is for. */ sessionSecretId?: string; phaseoWorkspaceId?: string; /** For a Phaseo sign-in, who it belongs to, from its Phaseo profile. */ profile?: { name?: string; givenName?: string; email?: string; picture?: string; checkedAt: string } };
@@ -103,6 +105,17 @@ export type Task = {
 	authInputId?: string;
 	/** accept-edits applies file changes without asking but still asks before commands (Phaseo harness; others treat it as supervised). */
 	permissionMode?: "supervised" | "accept-edits" | "full-access";
+	/**
+	 * The checkout holds code the person didn't open themselves (Factory's worktree of an issue or a pull request, maybe a fork's),
+	 * so the harness loads only the person's own settings: never the repository's hooks, settings, plugins or MCP configs.
+	 * Delegated threads and handoffs keep it; nothing turns it off.
+	 */
+	untrustedCheckout?: true;
+	/**
+	 * The checkout is a pull request from a fork (Factory's thread for one, or one delegated, launched, forked or handed off
+	 * from it), so it runs only on harnesses that honour untrustedCheckout (forkSafeHarnesses). Kept like untrustedCheckout.
+	 */
+	forkCheckout?: true;
 	model: string; mode: "chat" | "code" | "plan"; status: TaskStatus; pinned: boolean;
 	/** Labels for grouping and filtering chats, set by the person or the chat's agent. */
 	tags?: string[];
@@ -148,7 +161,7 @@ export type Task = {
 	secretRequests?: SecretRequest[];
 };
 export type Workspace = { version: 1; projects: Project[]; accounts: Account[]; agents: AgentConnection[]; tasks: Task[]; mcpConnections: McpConnection[] };
-export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string; maintenance?: { method: "npm" | "native" | "manual"; canUpdate: boolean } };
+export type HarnessInstallation = { harness: Harness; installed: boolean; version?: string; error?: string; /** A newer published version, when Provider update checks is on. */ latestVersion?: string; maintenance?: { method: "npm" | "native" | "manual"; canUpdate: boolean } };
 /** One per-model setting a harness accepts, shown in the composer's settings menu. */
 export type ModelOptionDescriptor =
 	| { id: string; label: string; type: "select"; options: { id: string; label: string; description?: string; isDefault?: boolean }[] }
@@ -156,6 +169,8 @@ export type ModelOptionDescriptor =
 export type ModelOptionValues = Record<string, string | boolean>;
 /** What Phaseo's catalog says about a model, for its info card. Prices are USD per million tokens from the cheapest routable offer. */
 export type ModelFacts = { contextTokens?: number; outputTokens?: number; input?: string[]; inputPrice?: number; outputPrice?: number; /** USD per million cached input tokens read, and written. */ cacheReadPrice?: number; cacheWritePrice?: number; providers?: string[] };
+/** What the account's workspace rules (guardrails, Settings → Privacy on phaseo.app) leave out of its Phaseo model list. */
+export type ModelAccess = { restricted: boolean; hiddenModelCount: number; hiddenModels: { id: string; name: string }[]; limitedModelCount: number };
 export type ModelOption = { id: string; name: string; description?: string; facts?: ModelFacts;/** An older model, listed only when searching. */ legacy?: boolean; options?: ModelOptionDescriptor[]; organisationId?: string; organisationName?: string; releaseDate?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string; serviceTiers?: { id: string; name: string; description: string }[]; defaultServiceTier?: string };
 export type ModelsChange = { harness: Harness; accountId?: string };
 export type UsageWindow = { usedPercent: number; windowDurationMins: number | null; resetsAt: number | null };
@@ -167,7 +182,8 @@ export type GitDiffContentsRequest = { filename: string; staged: boolean; hash: 
 export type GitDiffContents = { oldFile: { name: string; contents: string }; newFile: { name: string; contents: string } };
 export type GitHunkReview = { filename: string; staged: boolean; hash: string; hunks: { index: number; heading: string; text: string; patch: string }[] };
 export type GitCommand = { type: "stage" | "unstage"; filename: string } | { type: "stage-hunk" | "unstage-hunk"; filename: string; index: number; hash: string } | { type: "create-branch" | "switch-branch"; name: string } | { type: "commit"; message: string; /** Stages every change first when nothing is staged. */ all?: boolean; /** Pushes after committing (Commit & push). */ push?: boolean } | { type: "push" | "pull" };
-export type TerminalSession = { id: string; projectId?: string; /** The project action it runs, if any. */ scriptId?: string; title: string; cwd: string; output: string; ephemeral?: boolean; taskId?: string; status: "running" | "exited" | "interrupted"; exitCode?: number; createdAt: string; updatedAt: string };
+export type TerminalSession = { id: string; projectId?: string; /** The project action it runs, if any. */ scriptId?: string; title: string; cwd: string; output: string; ephemeral?: boolean; taskId?: string; status: "running" | "exited" | "interrupted"; exitCode?: number; createdAt: string; updatedAt: string;
+	/** The paired phones watching it now, by name; never saved with the transcript. */ phones?: string[] };
 export type TerminalCommand = { type: "open"; projectId?: string; /** The chat the terminal belongs to, for its drawer and tab titles. */ taskId?: string; /** Runs this project script in the new terminal, named after it. */ scriptId?: string } | { type: "write"; id: string; data: string } | { type: "resize"; id: string; columns: number; rows: number } | { type: "close" | "delete"; id: string };
 export type TerminalEvent = { sessionId: string; data?: string; session?: TerminalSession };
 export type WorkspaceCommand =
@@ -201,7 +217,7 @@ export type WorkspaceCommand =
 	| { type: "update-account"; id: string; name?: string; endpoint?: string; apiKey?: string; archived?: boolean }
 	| { type: "add-agent"; name: string; executable: string; arguments: string[] }
 	| { type: "update-agent"; id: string; name?: string; executable?: string; arguments?: string[]; archived?: boolean }
-	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues; autopilot?: { capNanos: number | null } }
+	| { type: "create-task"; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues; autopilot?: { capNanos: number | null }; untrustedCheckout?: true; forkCheckout?: true }
 	| { type: "handoff"; id: string; projectId?: string; harness: Harness; accountId?: string; agentId?: string; model: string; mode: Task["mode"]; permissionMode?: Task["permissionMode"]; reasoningEffort?: string; serviceTier?: string; modelOptions?: ModelOptionValues }
 	| { type: "update-task"; id: string; title?: string; pinned?: boolean; archived?: boolean; tags?: string[]; model?: string; mode?: Task["mode"]; permissionMode?: Task["permissionMode"]; serviceTier?: string; reasoningEffort?: string; nativeMode?: string; modelOptions?: ModelOptionValues; /** Turns Autopilot on with a spend cap, or off with null. */ autopilot?: { capNanos: number | null } | null }
 	| { type: "send"; id: string; text: string; threadReferences?: string[]; /** Issue and pull request URLs from `#` chips. */ githubReferences?: string[]; attachments?: string[]; nativeAction?: NativeAction }
@@ -260,6 +276,8 @@ export type WorkspaceApi = {
 	get: () => Promise<Workspace>;
 	command: (command: WorkspaceCommand) => Promise<WorkspaceOverview>;
 	chooseProject: () => Promise<WorkspaceOverview>;
+	/** Asks for the folder new worktrees go in, or the one Add project opens in (Settings → Worktrees and Source control); undefined if cancelled. Saving it is up to the page. */
+	chooseSettingsFolder: (purpose: "worktrees" | "add-project") => Promise<string | undefined>;
 	/** Asks for a folder, clones the repository into it and adds the checkout as a project; undefined if cancelled. */
 	cloneProject: (url: string) => Promise<{ workspace: WorkspaceOverview; projectId: string } | undefined>;
 	/** Triage: fetches the running build's source (or reuses it) and adds the checkout as a project. */
@@ -309,12 +327,18 @@ export type WorkspaceApi = {
 	/** Saves a copy of an attachment where the person chooses; false when they cancel. */
 	saveAttachment: (taskId: string, id: string) => Promise<boolean>;
 	installations: () => Promise<HarnessInstallation[]>;
+	/** Local agents installed and signed in (or listing models), as main checks them for the window and phones; at most a minute old unless forced. */
+	connectedHarnesses: (force?: boolean) => Promise<Harness[]>;
+	/** Mirrors the model a new chat starts with, and the favourites, from the window's storage to main, for phones. */
+	rememberModels: (value: RememberedModels) => Promise<void>;
 	updateHarness: (harness: "codex" | "claude" | "pi") => Promise<void>;
 	cancelHarnessUpdate: () => Promise<void>;
 	harnessUpdateStatus: () => Promise<"codex" | "claude" | "pi" | undefined>;
 	checkAgent: (agentId: string) => Promise<AgentStatus>;
 	mcp: (command: McpCommand) => Promise<WorkspaceOverview>;
 	models: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
+	/** What workspace rules hide from a Phaseo account's model list, from its last download; undefined before one, or from a server that doesn't say. */
+	modelAccess: (accountId: string) => Promise<ModelAccess | undefined>;
 	/** Refetches a harness catalog now, ignoring the Phaseo disk cache freshness. */
 	refreshModels: (harness: Harness, accountId?: string) => Promise<ModelOption[]>;
 	/** Fires when a background refresh changes a cached catalog; call models() again for the new list. */
@@ -380,6 +404,20 @@ export type WorkspaceApi = {
 	createOutsideAgentToken: (request: { name: string; access: OutsideAgentAccess }) => Promise<CreatedOutsideAgentToken>;
 	revokeOutsideAgentToken: (id: string) => Promise<OutsideAgentSettings>;
 	onOutsideAgentsChanged: (listener: (settings: OutsideAgentSettings) => void) => () => void;
+	/** Settings → Phone: phone access, its addresses, paired phones and Phaseo Connect. */
+	phone: () => Promise<PhoneState>;
+	updatePhone: (update: PhoneSettingsUpdate) => Promise<PhoneState>;
+	pairPhone: () => Promise<PhonePairingView>;
+	removePhone: (id: string) => Promise<PhoneState>;
+	/** Switches what one paired phone may do beyond its threads. */
+	setPhoneAccess: (id: string, access: Partial<PhoneAccess>) => Promise<PhoneState>;
+	setupPhoneHttps: () => Promise<PhoneState>;
+	/** Starts or stops Phaseo Connect's monthly charge, then connects or disconnects. */
+	setPhaseoConnect: (enabled: boolean) => Promise<PhoneState>;
+	refreshPhaseoConnect: () => Promise<PhoneState>;
+	onPhoneChanged: (listener: (state: PhoneState) => void) => () => void;
+	/** A paired phone changed code on this computer (committed, pushed, merged…), so the window says so. */
+	onPhoneNote: (listener: (note: { device: string; summary: string; projectId?: string; project?: string }) => void) => () => void;
 	saveCodeHostToken: (request: CodeHostTokenRequest) => Promise<CodeHostSettings>;
 	removeCodeHostToken: (kind: CodeHostKind, host: string) => Promise<CodeHostSettings>;
 	saveCodeHostServers: (servers: CustomCodeHost[]) => Promise<CodeHostSettings>;
@@ -471,6 +509,8 @@ export function validateCommand(value: unknown): WorkspaceCommand {
 		if (command.reasoningEffort !== undefined && (typeof command.reasoningEffort !== "string" || command.reasoningEffort.length > 100 || [...command.reasoningEffort].some(character => character.charCodeAt(0) < 32))) throw new Error("Invalid reasoning effort.");
 		validateModelOptions(command.modelOptions);
 		if (command.autopilot !== undefined && (command.type !== "create-task" || !validAutopilot(command.autopilot))) throw new Error("Invalid Autopilot setting.");
+		if (command.untrustedCheckout !== undefined && (command.type !== "create-task" || command.untrustedCheckout !== true)) throw new Error("Invalid checkout setting.");
+		if (command.forkCheckout !== undefined && (command.type !== "create-task" || command.forkCheckout !== true)) throw new Error("Invalid checkout setting.");
 	} else {
 		string("id");
 		switch (command.type) {

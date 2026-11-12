@@ -1,13 +1,18 @@
 ---
 title: "C++ SDK（開発中）"
-description: "開発中のC++ヘッダーを確認します。"
+description: "開発中の C++ ヘッダーを確認します。"
 ---
 
 <Note type="warning">
-  C++ SDKは開発中で、パッケージマネージャーではまだ提供されていません。評価目的でのみソースヘッダーを使用してください。
+  C++ SDK は開発中で、まだパッケージマネージャーからは入手できません。ソースのヘッダーは評価目的でのみ使ってください。
 </Note>
 
-- 状態：開発中（未公開）。
-- ソースは次の場所にあります： `packages/sdk/sdk-cpp`.
-- 生成されたヘッダーは次の場所にあります： `packages/sdk/sdk-cpp/src/gen`.
-- `src/phaseo.hpp` はモデルの現在の機能情報の取得とパラメーターの対応状況レポートを追加します。プレビュー版のトランスポートは生の JSON を返すため、確認する前にレスポンスを `ModelEndpointCapabilities` にデシリアライズしてください。
+C++ SDK は `packages/sdk/sdk-cpp` にあるヘッダーのみの C++17 ソース一式です。公開されておらず、エンドツーエンドで動作するまでは SDK のリリースから除外されています。
+
+| ファイル | 内容 |
+| --- | --- |
+| `src/gen/client.hpp`、`src/gen/operations.hpp`、`src/gen/models.hpp`、`src/gen/model_ids.hpp` | 生成されたクライアント |
+| `src/phaseo.hpp` | ライブのモデル機能を取得する `GetModelEndpointCapabilities(...)` と、パラメーター対応状況のレポートを返す `CheckParameterSupport(...)` |
+| `src/workflows.hpp` | ページングとジョブのポーリング用のヘルパー |
+
+プレビュー版の通信層は生の JSON を返すため、確認する前にレスポンスを `ModelEndpointCapabilities` にデシリアライズしてください。試すには[インストール](./installation)を参照してください。C++ の Agent SDK はありません。

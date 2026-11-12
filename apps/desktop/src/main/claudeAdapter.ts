@@ -80,7 +80,9 @@ ${claudeBackgroundGuide}` } : {}),
 			// Options may carry a Markdown preview, which the answer panel shows under the chosen option.
 			toolConfig: { askUserQuestion: { previewFormat: "markdown" } },
 			onElicitation: (request, options) => task.mode === "chat" ? Promise.resolve({ action: "decline" as const }) : respondMcpElicitation(request, callbacks, options.signal),
-			settingSources: ["user", "project", "local"],
+			// Someone else's checkout (Factory's) loads only the person's own settings: a repository's .claude settings
+			// and hooks, and its .mcp.json servers, would otherwise run with the person's credentials before any tool is asked for.
+			settingSources: task.untrustedCheckout ? ["user"] : ["user", "project", "local"],
 			canUseTool: async (toolName, input) => {
 				// The orchestration server asks for approval itself where a thread action needs it.
 				if (orchestrationTool && toolName.startsWith(orchestrationTool)) return { behavior: "allow", updatedInput: input };

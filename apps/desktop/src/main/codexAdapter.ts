@@ -92,7 +92,8 @@ export class CodexAdapter implements AgentAdapter {
 			if (method === "item/commandExecution/requestApproval" || method === "item/fileChange/requestApproval") {
 				const input = params as { threadId?: string; command?: string; reason?: string };
 				if (input.threadId !== this.threadId) throw new Error("Approval belongs to another task.");
-				return { decision: await callbacks.onApproval(method, input.command ?? input.reason ?? "Allow this agent action?") };
+				// The title reads "Allow <title>?" in the chat, so it names the action rather than the protocol method.
+				return { decision: await callbacks.onApproval(method === "item/fileChange/requestApproval" ? "file changes" : "command", input.command ?? input.reason ?? "Allow this agent action?") };
 			}
 			throw new Error(`Unsupported Codex request: ${method}`);
 		};

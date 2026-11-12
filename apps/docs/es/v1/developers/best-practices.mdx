@@ -1,58 +1,40 @@
 ---
 title: "Buenas prácticas"
-description: "Publica funciones de IA fiables con estas pautas de arquitectura, seguridad y observabilidad."
+description: "Lanza funciones de IA fiables siguiendo estas pautas de arquitectura, seguridad y observabilidad."
 icon: "clipboard-check"
 ---
 
-Integrar Gateway en cargas de producción es sencillo si estableces una buena base. Sigue estas recomendaciones para mejorar la resiliencia, la seguridad y el mantenimiento.
+Pon las llamadas al Gateway detrás de un único servicio en tu backend, mantén las claves fuera de los clientes y de los registros, reintenta solo lo que sea seguro reintentar y vigila la latencia, el coste y los errores por modelo. Cada sección enlaza a la página con los detalles.
 
----
+## Estructura la integración
 
-## Arquitectura
+- **Envuelve las llamadas al Gateway en un único servicio o cliente del SDK**, para que un cambio de modelo o de proveedor quede en un solo lugar. Consulta [Integración con el Gateway](./integrating-with-the-gateway.mdx).
+- **Transmite las respuestas en streaming a las interfaces de chat**, para que los usuarios vean los tokens a medida que llegan. Consulta [Streaming](../guides/streaming.mdx).
+- **Pon en cola el trabajo que no es urgente**, como las generaciones en segundo plano y las evaluaciones, para suavizar los picos de tráfico. La [API de lotes](../guides/async-video-and-batch.mdx) ejecuta trabajos grandes de forma asíncrona.
 
--   **Aísla la lógica de los proveedores.** Encapsula las llamadas a Gateway en un servicio o SDK específico para limitar los cambios.
--   **Transmite las respuestas cuando sea posible.** Reduce la latencia de los asistentes enviando tokens a la interfaz a medida que llegan.
--   **Agrupa los trabajos no críticos.** Pon en cola las generaciones o evaluaciones en segundo plano para suavizar los picos de tráfico.
+## Mantén las claves en secreto
 
----
+- Guarda las claves de API en un gestor de secretos (AWS Secrets Manager, Doppler, 1Password) en lugar de en archivos `.env` en producción.
+- Llama al Gateway desde tu backend y autentica tus propias aplicaciones cliente contra él, para que los clientes nunca tengan una clave del Gateway.
+- Registra solo el prefijo de una clave, como `phaseo_v1_sk_<kid>`, nunca el secreto.
 
-## Seguridad
+Consulta [Autenticación](./authentication.mdx).
 
--   En producción, guarda las claves de API en gestores de secretos (AWS Secrets Manager, Doppler o 1Password), no en archivos `.env`.
--   Firma las solicitudes a tus propias API para que las aplicaciones cliente nunca expongan las claves de Gateway.
--   Registra las claves solo de forma truncada (por ejemplo, `sk_prod_abcd...`) para evitar revelar credenciales.
+## Reintenta de forma segura
 
----
+- Reintenta las respuestas `429` y `5xx` con espera exponencial y jitter.
+- Espera lo que indique [`Retry-After`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After) antes de reintentar una solicitud limitada por frecuencia.
+- Comprueba en los registros de solicitudes qué proveedor atendió cada solicitud, para darte cuenta de cuándo el tráfico pasa a otro proveedor.
 
-## Fiabilidad
+Consulta [Errores y depuración](../api-reference/errors.mdx) y [Límites de solicitudes](../api-reference/limits.mdx).
 
--   Implementa retroceso exponencial con variación aleatoria para todos los errores reintentables (HTTP 429 o 5xx).
--   Antes de volver a intentar solicitudes limitadas, respeta el encabezado [`Retry-After`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After).
--   Supervisa los metadatos de los proveedores para detectar cambios automáticos de un proveedor a otro.
+## Vigila las señales adecuadas
 
----
+| Señal | Qué hacer |
+| --- | --- |
+| Latencia | Sigue p95 y p99 para detectar regresiones. |
+| Uso de tokens | Compara el coste con la métrica de negocio a la que da soporte. |
+| Tasa de errores | Crea una alerta cuando los fallos se mantengan por encima del 1%. |
+| Reparto entre proveedores | Comprueba que el tráfico se reparte entre proveedores como esperas. |
 
-## Observabilidad
-
-| Señal        | Acción recomendada                                                |
-| ------------- | ----------------------------------------------------------------- |
-| Latencia       | Supervisa los tiempos p95 y p99 para detectar regresiones cuanto antes.             |
-| Uso de tokens   | Relaciona los costes con las métricas de negocio para evaluar el retorno de la inversión.            |
-| Tasa de errores   | Activa una alerta si los fallos superan el 1 % durante un periodo sostenido.             |
-| Distribución de proveedores  | Comprueba que el tráfico se distribuya entre proveedores como esperas.         |
-
----
-
-## Colaboración
-
--   Documenta las plantillas de instrucciones, los parámetros de entrada y el tratamiento de resultados en la wiki interna.
--   Comparte paneles que destaquen los cambios en las evaluaciones comparativas y su impacto en el producto.
--   Fomenta revisiones periódicas con los equipos de producto, investigación y soporte para mantener el comportamiento alineado.
-
----
-
-## Lecturas adicionales
-
--   Aprende a [gestionar errores](../api-reference/errors.mdx) correctamente.
--   Consulta los [límites de frecuencia](../api-reference/limits.mdx) para planificar la escala.
--   Revisa los [ejemplos](../guides/examples.mdx) de referencia.
+Consulta [Registros de solicitudes y observabilidad](../guides/integrations/observability.mdx). Mantén documentadas tus plantillas de prompt, tus parámetros y el manejo de la salida donde tu equipo pueda revisarlos; los [preajustes](../guides/presets.mdx) mantienen los prompts y valores predeterminados compartidos en un solo lugar.

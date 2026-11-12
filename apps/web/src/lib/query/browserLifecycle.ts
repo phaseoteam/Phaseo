@@ -26,7 +26,7 @@ export function listenForQueryFocus(handleFocus: () => void) {
 	};
 }
 
-/** A new identity must also discard Next's retained page props, not just query data. */
+/** A new identity must also discard the router's cached route data, not just query data. */
 export function listenForQuerySession(
 	queryClient: QueryClient,
 	auth: Pick<SupabaseClient["auth"], "onAuthStateChange">,
@@ -37,8 +37,10 @@ export function listenForQuerySession(
 	const { data: { subscription } } = auth.onAuthStateChange((event, session) => {
 		const nextUserId = session?.user.id ?? null;
 		observeChatStorageIdentity(nextUserId, event === "SIGNED_OUT");
+		// Only scoped keys carry a user id. Account queries the server resolves
+		// from the session cookie have no scope; an identity change clears them.
 		const hasStaleScope = queryClient.getQueryCache()
-			.findAll({ queryKey: webQueryKeys.account.all() })
+			.findAll({ queryKey: [...webQueryKeys.account.all(), "scope"] })
 			.some((query) => query.queryKey[3] !== (nextUserId ?? "anonymous"));
 		const previousUserId = userId;
 		if (event === "SIGNED_OUT" || (previousUserId && previousUserId !== nextUserId)) clearChatAuthDraft();

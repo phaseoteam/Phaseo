@@ -5,211 +5,126 @@ description: "Use request-level provider controls to prefer one provider order, 
 "og:image": "https://phaseo.app/og/dynamic?title=Pin%20or%20ignore%20providers%20per%20request&description=Use%20request-level%20provider%20controls%20to%20prefer%20one%20provider%20order%2C%20constrain%20the%20pool%2C%20or%20remove%20a%20provider%20from%20consideration.&pathname=/docs/v1/cookbook/pin-or-ignore-providers-per-request"
 ---
 
-Use this recipe when one request should prefer a specific provider path without changing your workspace-wide routing defaults.
+Add a `provider` object to one request to change which providers serve it, without touching workspace defaults or presets. When you're done you can prefer an order, keep a request inside an allow list, or skip one provider, and see in the response which provider answered.
 
-## Goal
+These request shapes are production-ready. The provider slugs are real examples; check the model's page for the providers that serve your model.
 
-- Try providers in a preferred order.
-- Restrict a request to an approved provider subset.
-- Ignore one provider temporarily without editing presets.
+| Field | Does | Example |
+| --- | --- | --- |
+| `order` | Tries these providers first, then the rest of the eligible pool | `["anthropic-us", "anthropic"]` |
+| `only` | Keeps the request inside this list | `["openai", "openai-eu"]` |
+| `ignore` | Removes these providers for this request | `["novita"]` |
+| `sort` | Ranks what's left by `price`, `latency` or `throughput` | `"price"` |
 
-## 1. Try providers in a specific order
+To use exactly one provider and turn off cross-provider fallback, put it in front of the model ID instead: see [Pin one provider](../guides/routing-and-fallbacks#pin-one-provider).
 
-Use `provider.order` when you already know the preferred route sequence.
+## Try providers in a set order
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-opus-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "input": "Write a concise launch summary.",
     "provider": {
       "order": ["anthropic-us", "anthropic"]
-    }
+    },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "anthropic/claude-opus-4.6",
+  model: "anthropic/claude-sonnet-5.5",
   input: "Write a concise launch summary.",
   provider: {
     order: ["anthropic-us", "anthropic"],
   },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing); // { selected_provider: "anthropic-us", ... }
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "anthropic/claude-opus-4.6",
+        "model": "anthropic/claude-sonnet-5.5",
         "input": "Write a concise launch summary.",
         "provider": {
             "order": ["anthropic-us", "anthropic"],
         },
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-This puts the listed providers first in the candidate order before the rest of the eligible pool.
+`meta: true` adds `meta.routing.selected_provider` to the response, so you can check the result without opening the logs.
 
-## 2. Restrict the request to a fixed provider subset
+## Keep a request inside an allow list
 
-Use `provider.only` when the request must stay inside one small allow list.
+Send `only`, and optionally `sort` to rank inside that list:
 
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-5.4-nano",
-    "input": "Extract the action items.",
-    "provider": {
-      "only": ["openai", "openai-eu"],
-      "sort": "price"
-    }
-  }'
+```json
+{
+  "model": "openai/gpt-5.6-luna",
+  "input": "Extract the action items.",
+  "provider": {
+    "only": ["openai", "openai-eu"],
+    "sort": "price"
+  }
+}
 ```
 
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
+If none of the listed providers serves the model, the request fails instead of leaving the list.
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+## Skip one provider
 
-const response = await client.generateResponse({
-  model: "openai/gpt-5.4-nano",
-  input: "Extract the action items.",
-  provider: {
-    only: ["openai", "openai-eu"],
-    sort: "price",
-  },
-});
+Send `ignore` when a provider is degraded, or while you test another path:
 
-console.log(response.output_text);
+```json
+{
+  "model": "meta/llama-4-maverick",
+  "input": "Summarize the transcript.",
+  "provider": {
+    "ignore": ["novita"]
+  }
+}
 ```
 
-```python Python SDK
-from phaseo import Phaseo
+## Combine them
 
-client = Phaseo(api_key="YOUR_API_KEY")
+Use `only` for the pool, `order` for the preference inside it, and `sort` for the rest. This keeps a request on Google Vertex, tries the EU region first, then ranks by latency:
 
-response = client.generate_response(
-    {
-        "model": "openai/gpt-5.4-nano",
-        "input": "Extract the action items.",
-        "provider": {
-            "only": ["openai", "openai-eu"],
-            "sort": "price",
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-This keeps the request inside those providers and then applies the chosen ranking mode inside that subset.
-
-## 3. Remove one provider from consideration
-
-Use `provider.ignore` when one provider should be skipped for a request or short-lived rollout.
-
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "meta/llama-4-maverick",
-    "input": "Summarize the transcript.",
-    "provider": {
-      "ignore": ["deepinfra"]
-    }
-  }'
+```json
+{
+  "model": "anthropic/claude-sonnet-5.5",
+  "input": "Summarize the incident in one sentence.",
+  "provider": {
+    "only": ["google-vertex", "google-vertex-eu"],
+    "order": ["google-vertex-eu"],
+    "sort": "latency"
+  }
+}
 ```
 
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
+## Check where it went
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+Open the request in **Settings → Usage → Logs** and expand **Routing observability**. It lists the providers that were excluded before ranking and why, and the ranked candidates with their scores; [Explain a routing decision](../guides/routing-and-fallbacks#explain-a-routing-decision) describes each field.
 
-const response = await client.generateResponse({
-  model: "meta/llama-4-maverick",
-  input: "Summarize the transcript.",
-  provider: {
-    ignore: ["deepinfra"],
-  },
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "meta/llama-4-maverick",
-        "input": "Summarize the transcript.",
-        "provider": {
-            "ignore": ["deepinfra"],
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-This is useful when:
-
-- one provider is degraded
-- you are validating another provider path
-- you want to compare routing outcomes without editing a preset
-
-## 4. Combine the controls carefully
-
-You can combine these controls, but keep the intent simple:
-
-- use `order` to express preference
-- use `only` to enforce the candidate pool
-- use `ignore` to carve one provider out
-
-One practical pattern combines:
-
-- `only` to keep the request inside `google-vertex` and `google-vertex-eu`
-- `order` to prefer `google-vertex-eu` first
-- `sort: "latency"` to rank inside that allowed set
-
-## 5. When to move this into a preset
-
-If the same provider rules appear in multiple services, stop copying them per request and move them into a preset instead.
-
-Use request-level routing when the override is:
-
-- temporary
-- caller-specific
-- tied to one user flow
-
-## Related guides
-
-- [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx)
-- [Roll out presets and debug routing](./preset-rollout-and-routing-debug.mdx)
+Use request-level rules for overrides that are temporary, specific to one caller, or tied to one user flow. Once the same rules appear in several services, move them into a [preset](../guides/presets), where they also limit which providers a fallback can use. To compare rankings, see [Sort providers](./sort-providers-by-price-latency-or-throughput).

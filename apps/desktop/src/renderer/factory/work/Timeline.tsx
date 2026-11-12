@@ -10,6 +10,7 @@ import { since } from "../lib/format";
 import { factory, openExternal } from "../lib/useFactory";
 import { FactoryLink } from "../components/FactoryLink";
 import { cn } from "../../lib/utils";
+import { MarkdownTextarea } from "../../components/MarkdownTextarea";
 
 /** While an item is open and the window can be seen, its activity is read again this often, so new comments show without waiting for the next check. */
 const ACTIVITY_EVERY = 20_000;
@@ -86,7 +87,7 @@ export function CommentEntry({ comment, item, inline, compact }: { comment: Time
 		{editing === null
 			? <Markdown source={comment.body.trim() || "_Empty comment._"} repo={item.repo} />
 			: <div className="rounded-md border focus-within:border-ring">
-				<textarea value={editing} autoFocus rows={Math.min(14, Math.max(3, editing.split("\n").length))} onChange={(event) => setEditing(event.target.value)} className="block w-full resize-none bg-transparent px-3 py-2.5 text-sm leading-relaxed outline-none" />
+				<MarkdownTextarea value={editing} autoFocus rows={Math.min(14, Math.max(3, editing.split("\n").length))} onChange={(event) => setEditing(event.target.value)} className="block w-full resize-none bg-transparent px-3 py-2.5 text-sm leading-relaxed outline-none" />
 				<div className="flex justify-end gap-2 border-t px-2 py-2">
 					<Button variant="ghost" size="sm" onClick={() => setEditing(null)}>Cancel</Button>
 					<Button size="sm" disabled={busy || !editing.trim() || editing === comment.body || !id} onClick={() => id && void run({ kind: "edit-comment", commentId: id, inline, body: editing })}>{busy ? "Saving…" : "Save"}</Button>

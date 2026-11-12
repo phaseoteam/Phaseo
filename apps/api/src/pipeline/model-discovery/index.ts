@@ -10,6 +10,7 @@ import {
 	buildProviderApiModelSnapshotDiff,
 	canonicalProviderId,
 	confirmModelRemovals,
+	removalConfirmAfterMs,
 	createSharedProviderModelsFetcher,
 	computeConfiguredModelCoverageFingerprint,
 	diffModelIds,
@@ -578,6 +579,8 @@ async function processProvider(
 	fetchPayload: ProviderModelsPayloadFetcher,
 	/** Fingerprint of the response last processed and persisted for this provider, if any. */
 	processedPayloadFingerprint: string | null,
+	/** How long a model must stay missing before its removal is confirmed. */
+	removalConfirmMs: number,
 ): Promise<ProviderProcessingResult> {
 	const requiresApiKey = !["none", "optional_bearer"].includes(provider.authStyle ?? "bearer");
 	const apiKey = resolveDiscoveryApiKey(provider);
@@ -633,9 +636,17 @@ async function processProvider(
 		const currentModelIds = discoveredModels.map((model) => model.id);
 		assertSafeDiscoverySnapshot(provider.providerId, previousModelIds, currentModelIds);
 		const modelIdDiff = diffModelIds(previousModelIds, currentModelIds);
+		// A pending row's last_seen_at is when it first went missing, so it dates the unbroken absence.
+		const pendingSinceMs = new Map<string, number | null>();
+		for (const modelId of previousProviderState?.pendingRemovalIds ?? []) {
+			const lastSeenAt = previousProviderState?.storedByModelId.get(modelId)?.lastSeenAt;
+			const parsed = lastSeenAt ? Date.parse(lastSeenAt) : Number.NaN;
+			pendingSinceMs.set(modelId, Number.isFinite(parsed) ? parsed : null);
+		}
 		const { confirmed: removed, provisional: provisionalRemovals } = confirmModelRemovals(
 			modelIdDiff.removed,
-			previousProviderState?.pendingRemovalIds ?? new Set<string>(),
+			pendingSinceMs,
+			{ nowMs: writePolicy.nowMs, confirmAfterMs: removalConfirmMs },
 		);
 		// A provider's first successful check records a baseline rather than announcing every model it
 		// lists as new, as the pricing and public-announcement monitors already do. Without this, a
@@ -1078,6 +1089,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		nowMs: startedAt.getTime(),
 		refreshIntervalMs: seenModelRefreshIntervalMs(retentionDays),
 	};
+	const removalConfirmMs = removalConfirmAfterMs(readBindingEnv(["MODEL_DISCOVERY_REMOVAL_CONFIRM_MINUTES"]));
 
 	await insertRunStart(runId, args, startedAt.toISOString());
 	await closeAbandonedRuns(startedAt, runId);
@@ -1125,6 +1137,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				seenModelWritePolicy,
 				fetchPayload,
 				processedPayloadFingerprint(provider.providerId),
+				removalConfirmMs,
 			),
 		);
 

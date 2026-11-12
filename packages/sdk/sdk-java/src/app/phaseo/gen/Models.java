@@ -101,6 +101,7 @@ public final class Models {
 
 	public static class AnthropicSystemMessage {
 		public Object content;
+		public Object output_config;
 		public Object role;
 	}
 
@@ -134,7 +135,6 @@ public final class Models {
 		public String department_id;
 		public Boolean disabled;
 		public String expires_at;
-		public String hash;
 		public String id;
 		public Boolean include_byok_in_limit;
 		public java.util.List<Object> ip_allowlist;
@@ -258,7 +258,6 @@ public final class Models {
 		public String department_id;
 		public Boolean disabled;
 		public String expires_at;
-		public String hash;
 		public String id;
 		public Boolean include_byok_in_limit;
 		public java.util.List<Object> ip_allowlist;
@@ -1537,6 +1536,7 @@ public final class Models {
 	public static class GatewayCapabilities {
 		public java.util.List<String> endpoints;
 		public Object parameter_details;
+		public Object parameter_specs;
 		public java.util.List<String> parameters;
 	}
 
@@ -1617,6 +1617,13 @@ public final class Models {
 		public java.util.List<String> output;
 	}
 
+	public static class GatewayModelAccess {
+		public Integer hidden_model_count;
+		public java.util.List<Object> hidden_models;
+		public Integer limited_model_count;
+		public Boolean restricted;
+	}
+
 	public static class GatewayModelLifecycle {
 		public String deprecated_at;
 		public String message;
@@ -1650,6 +1657,7 @@ public final class Models {
 	}
 
 	public static class GatewayModelsResponse {
+		public Object access;
 		public Object availability_mode;
 		public Integer limit;
 		public java.util.List<Object> models;
@@ -1994,8 +2002,10 @@ public final class Models {
 
 	public static class ImagesEditRequest {
 		public Object background;
+		public Object complexity;
 		public Object image;
 		public Object input_fidelity;
+		public String markup;
 		public String mask;
 		public Boolean meta;
 		public String model;
@@ -2022,6 +2032,9 @@ public final class Models {
 
 	public static class ImagesGenerationRequest {
 		public Object background;
+		public Object complexity;
+		public Integer frame_count;
+		public Integer frame_duration_ms;
 		public String model;
 		public java.util.List<String> models;
 		public Object moderation;
@@ -2037,12 +2050,14 @@ public final class Models {
 		public String size;
 		public Boolean stream;
 		public String style;
+		public Object svg;
 		public String user;
 	}
 
 	public static class ImagesGenerationResponse {
 		public Integer created;
 		public java.util.List<Object> data;
+		public Object svg_usage;
 	}
 
 	public static class InputTokensDetails {
@@ -2732,6 +2747,82 @@ public final class Models {
 	}
 
 	public static class OrganisationIdList {
+	}
+
+	public static class ParameterDimensions {
+		public java.util.List<String> aspect_ratios;
+		public Double max;
+		public String max_aspect_ratio;
+		public Double max_height;
+		public Double max_pixels;
+		public Double max_width;
+		public Double min;
+		public Double min_pixels;
+		public Double multiple_of;
+	}
+
+	public static class ParameterOption {
+		public String description;
+		public String label;
+		public Object value;
+	}
+
+	public static class ParameterRule {
+		public Object default_;
+		public Object if_;
+		public Double max;
+		public String message;
+		public Double min;
+		public Double step;
+		public Boolean supported;
+		public java.util.List<Object> values;
+	}
+
+	public static class ParameterSpec {
+		public String alias_of;
+		public java.util.List<String> aliases;
+		public Boolean always_on;
+		public Object default_;
+		public Object dimensions;
+		public Object extra;
+		public String format;
+		public java.util.List<String> formats;
+		public java.util.List<String> item_types;
+		public Double max;
+		public Double max_file_size_bytes;
+		public Double max_items;
+		public Double max_length;
+		public Double max_tokens;
+		public Object media;
+		public Double min;
+		public Double min_items;
+		public Double min_length;
+		public Double multiple_of;
+		public String notes;
+		public Boolean open;
+		public java.util.List<Object> options;
+		public Object properties;
+		public Object provider_default;
+		public Boolean required;
+		public java.util.List<String> requires;
+		public Object source;
+		public Double step;
+		public String support_level;
+		public Boolean supported;
+		public Object type;
+		public String upstream_name;
+		public java.util.List<Object> upstream_values;
+		public java.util.List<Object> values;
+		public java.util.List<Object> when;
+	}
+
+	public static class ParameterSpecs {
+	}
+
+	public static class ParameterType {
+	}
+
+	public static class ParameterValue {
 	}
 
 	public static class ParseBlock {
@@ -3878,7 +3969,7 @@ public final class Models {
 
 	public static class VideoGenerationRequest {
 		public String aspect_ratio;
-		public Integer compression_quality;
+		public Object compression_quality;
 		public Integer duration;
 		public Boolean enhance_prompt;
 		public java.util.List<Object> frame_images;
@@ -3969,6 +4060,7 @@ public final class Models {
 
 	public static class VideoModelProviderCapability {
 		public String id;
+		public Object parameter_specs;
 		public java.util.List<String> supported_parameters;
 		public Object supported_parameters_detail;
 		public java.util.List<String> supported_params;
@@ -4521,9 +4613,20 @@ public final class Models {
 		public String workspace_id;
 	}
 
+	public static class WorkspaceMemberAddFailure {
+		public Object code;
+		public String message;
+		public String user_id;
+	}
+
 	public static class WorkspaceMemberAddResponse {
 		public Integer added_count;
+		public java.util.List<String> approved;
 		public java.util.List<Object> data;
+		public String error;
+		public java.util.List<Object> failed;
+		public String message;
+		public java.util.List<String> not_attempted;
 	}
 
 	public static class WorkspaceMemberBulkRequest {

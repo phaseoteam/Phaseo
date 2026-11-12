@@ -62,6 +62,13 @@ CREATE POLICY "gateway_observability_events_select_workspace" ON "public"."gatew
   TO "authenticated"
   USING (public.is_workspace_member(workspace_id));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_observability_events"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_observability_events" TO "authenticated", "service_role";
 
 COMMENT ON COLUMN "public"."gateway_observability_events"."metadata_dimensions" IS 'Bounded flat string map for indexed cohort and segment filters. Full arbitrary metadata remains in metadata.';

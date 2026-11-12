@@ -65,6 +65,18 @@ describe("OpenCode service lifecycle", () => {
 			expect(existsSync(state)).toBe(false);
 		} finally { await service.close(); rmSync(root, { recursive: true, force: true }); }
 	});
+	it("starts a turn's service that never reads the checkout's own config only when asked", async () => {
+		const root = mkdtempSync(path.join(tmpdir(), "phaseo-service-untrusted-")); fixture();
+		mocks.discover.mockImplementation(async (options?: { file?: string }) => options?.file?.includes(path.join("opencode", "turns")) ? { url: "http://localhost:5000" } : null);
+		const service = new OpenCodeService(root, async () => ({ executable: "fixture", prefix: [], version: "2.0.22" }));
+		const env = () => (mocks.spawn.mock.lastCall?.[2] as { env: Record<string, string | undefined> }).env;
+		try {
+			await (await service.isolated(new AbortController().signal, { ignoreProjectConfig: true })).close();
+			expect(env().OPENCODE_DISABLE_PROJECT_CONFIG).toBe("1");
+			await (await service.isolated(new AbortController().signal)).close();
+			expect(env().OPENCODE_DISABLE_PROJECT_CONFIG).toBeUndefined();
+		} finally { await service.close(); rmSync(root, { recursive: true, force: true }); }
+	});
 	it("cancels one startup caller while another can finish", async () => {
 		const root = mkdtempSync(path.join(tmpdir(), "phaseo-service-cancel-")); fixture(); mocks.discover.mockResolvedValue(undefined);
 		const service = new OpenCodeService(root, async () => ({ executable: "fixture", prefix: [], version: "2.0.22" })); const controller = new AbortController();

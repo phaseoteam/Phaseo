@@ -1,58 +1,40 @@
 ---
 title: "Bonnes pratiques"
-description: "Créez des fonctionnalités d’IA fiables grâce à ces recommandations d’architecture, de sécurité et d’observabilité."
+description: "Livrez des fonctionnalités d’IA fiables en suivant ces recommandations d’architecture, de sécurité et d’observabilité."
 icon: "clipboard-check"
 ---
 
-Déployer Gateway en production est simple si vous posez de bonnes bases. Suivez ces recommandations pour améliorer la résilience, la sécurité et la maintenabilité.
+Placez les appels au Gateway derrière un seul service de votre backend, gardez les clés hors des clients et des journaux, ne réessayez que ce qui peut l’être sans risque, et surveillez la latence, le coût et les erreurs par modèle. Chaque section ci-dessous renvoie à la page qui donne les détails.
 
----
+## Structurer l’intégration
 
-## Architecture
+- **Regroupez les appels au Gateway dans un seul service ou client SDK**, pour qu’un changement de modèle ou de fournisseur reste localisé. Voir [Intégrer le Gateway](./integrating-with-the-gateway.mdx).
+- **Diffusez les réponses en streaming vers les interfaces de chat**, pour que les utilisateurs voient les tokens au fur et à mesure. Voir [Streaming](../guides/streaming.mdx).
+- **Mettez en file d’attente le travail non urgent**, comme les générations en arrière-plan et les évaluations, pour lisser les pics de trafic. L’[API Batch](../guides/async-video-and-batch.mdx) exécute les gros travaux de façon asynchrone.
 
--   **Isolez la logique des fournisseurs.** Regroupez les appels Gateway dans un service dédié ou un SDK afin de circonscrire les changements.
--   **Diffusez les réponses en streaming lorsque c’est possible.** Réduisez la latence des assistants en transmettant les tokens à l’interface au fur et à mesure.
--   **Regroupez les tâches non critiques.** Mettez en file d’attente les générations ou évaluations en arrière-plan pour lisser les pics de trafic.
+## Garder les clés secrètes
 
----
+- Stockez les clés API dans un gestionnaire de secrets (AWS Secrets Manager, Doppler, 1Password) plutôt que dans des fichiers `.env` en production.
+- Appelez le Gateway depuis votre backend et authentifiez vos propres applications clientes auprès de celui-ci, pour que les clients ne détiennent jamais de clé Gateway.
+- Ne journalisez que le préfixe d’une clé, comme `phaseo_v1_sk_<kid>`, jamais le secret.
 
-## Sécurité
+Voir [Authentification](./authentication.mdx).
 
--   En production, stockez les clés API dans des gestionnaires de secrets (AWS Secrets Manager, Doppler, 1Password) plutôt que dans des fichiers `.env`.
--   Activez la signature des requêtes sur vos propres API afin que les applications clientes n’exposent jamais les clés Gateway.
--   Ne journalisez que des clés tronquées (par exemple `sk_prod_abcd...`) pour éviter de divulguer des identifiants.
+## Réessayer sans risque
 
----
+- Réessayez les réponses `429` et `5xx` avec un backoff exponentiel et une variation aléatoire (jitter).
+- Attendez la durée de [`Retry-After`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After) avant de réessayer une requête limitée en débit.
+- Vérifiez dans les journaux de requêtes quel fournisseur a servi chaque requête, pour remarquer quand le trafic bascule vers un autre fournisseur.
 
-## Fiabilité
+Voir [Erreurs et débogage](../api-reference/errors.mdx) et [Limites de débit](../api-reference/limits.mdx).
 
--   Appliquez un délai exponentiel avec jitter à toutes les erreurs pouvant être réessayées (HTTP 429 ou 5xx).
--   Avant de réessayer une requête limitée, respectez l’en-tête [`Retry-After`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After).
--   Surveillez les métadonnées des fournisseurs pour repérer les basculements automatiques d’un prestataire à un autre.
+## Surveiller les bons signaux
 
----
+| Signal | Que faire |
+| --- | --- |
+| Latence | Suivez le p95 et le p99 pour détecter les régressions. |
+| Utilisation de tokens | Comparez le coût à l’indicateur métier qu’il sert. |
+| Taux d’erreur | Déclenchez une alerte quand les échecs restent au-dessus de 1%. |
+| Répartition des fournisseurs | Vérifiez que le trafic se répartit entre fournisseurs comme prévu. |
 
-## Observabilité
-
-| Indicateur        | Action recommandée                                                |
-| ------------- | ----------------------------------------------------------------- |
-| Latence       | Suivez les temps p95 et p99 pour détecter rapidement les régressions.             |
-| Utilisation des tokens   | Comparez les coûts aux indicateurs métier pour évaluer le retour sur investissement.            |
-| Taux d’erreur   | Déclenchez une alerte si les échecs dépassent 1 % pendant une période prolongée.             |
-| Répartition des fournisseurs  | Vérifiez que le trafic est réparti entre les fournisseurs comme prévu.         |
-
----
-
-## Collaboration
-
--   Documentez les modèles de prompts, les paramètres d’entrée et le traitement des sorties dans votre wiki interne.
--   Partagez des tableaux de bord qui mettent en évidence l’évolution des benchmarks et leur impact sur le produit.
--   Organisez régulièrement des revues avec les équipes produit, recherche et assistance pour maintenir la cohérence.
-
----
-
-## Pour aller plus loin
-
--   Apprenez à [gérer les erreurs](../api-reference/errors.mdx) correctement.
--   Consultez les [limites de débit](../api-reference/limits.mdx) pour anticiper la montée en charge.
--   Découvrez les [exemples](../guides/examples.mdx) de référence.
+Voir [Journaux de requêtes et observabilité](../guides/integrations/observability.mdx). Documentez vos modèles de prompt, vos paramètres et le traitement des sorties là où votre équipe peut les relire ; les [préréglages](../guides/presets.mdx) regroupent les prompts et valeurs par défaut partagés en un seul endroit.

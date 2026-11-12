@@ -4,62 +4,57 @@ icon: "/icons/brands/roo-code.svg"
 description: "اربط Roo Code بـ Phaseo عبر ملف تعريف متوافق مع OpenAI."
 ---
 
-استخدم Phaseo CLI لإنشاء مفتاح مخصص، ثم اضبط ملف تعريف مزوّد Roo Code يدويًا. يحتفظ Roo Code ببيانات الاعتماد في مخزن أسرار VS Code، لذا يكون الإدخال النهائي في واجهة الإضافة.
+شغّل `phaseo roo-code` لإنشاء مفتاح، ثم أضف ملف تعريف من نوع **OpenAI Compatible** في Roo Code. يحتفظ Roo Code بالمفاتيح في مخزن الأسرار الخاص بـ VS Code، لذا تتم هذه الخطوة الأخيرة في واجهته.
 
 ## الإعداد باستخدام Phaseo CLI
 
 ```bash
 phaseo login
-phaseo roo-code --model anthropic/claude-sonnet-4.6
+phaseo roo-code --model anthropic/claude-sonnet-5.5
 ```
 
-## إعداد Roo Code يدويًا
+تنشئ CLI مفتاحًا باسم `Phaseo CLI: Roo Code API Key` تنتهي صلاحيته بعد 90 يومًا وله حد إنفاق شهري قدره $100، ثم تطبع القيم اللازمة للخطوة التالية.
 
-1. افتح Roo Code في VS Code.
-2. افتح **Settings** ثم **Providers**.
-3. أنشئ ملف إعداد للمزوّد واختر **OpenAI Compatible**.
-4. أدخل القيم التالية:
+## إعداد Roo Code
+
+1. افتح Roo Code في VS Code، ثم **Settings → Providers**.
+2. أنشئ ملف تعريف لإعداد المزوّد واختر **OpenAI Compatible**.
+3. أدخل:
 
 | حقل Roo Code | القيمة |
 | --- | --- |
 | Base URL | `https://api.phaseo.app/v1` |
-| API Key | ناتج الأمر `phaseo integrations credential roo-code` |
-| Model | `anthropic/claude-sonnet-4.6` أو النموذج الذي يعرضه الإعداد |
+| API Key | ناتج الأمر `phaseo integrations credential roo-code`، أو أي مفتاح API من Phaseo |
+| Model | `anthropic/claude-sonnet-5.5`، أو النموذج الذي يطبعه الإعداد |
 
-5. احفظ الملف التعريفي واجعله نشطًا.
+4. احفظ ملف التعريف واجعله نشطًا.
 
-قد تختلف تسميات الحقول قليلًا بين الإصدارات، لكن الملف التعريفي يحتاج إلى نقطة النهاية والمفتاح ومعرّف النموذج الدقيق.
+تتغير تسميات الحقول قليلًا بين الإصدارات؛ راجع وثائق [مزوّدي النماذج](https://docs.roocode.com/providers/) في Roo Code إذا كانت تسمياتك مختلفة.
 
-## التحقق
+## التحقق من أنه يعمل
 
-اطلب من Roo Code الرد بـ `PHASEO_ROO_OK`، ثم تحقق من ظهور الطلب في نشاط Phaseo.
+اطلب من Roo Code الرد بـ `PHASEO_ROO_OK`، ثم تأكد من ظهور الطلب في **الإعدادات → الاستخدام → السجلات**.
 
-## الإزالة
+## إزالة Phaseo
 
-احذف ملف Phaseo التعريفي أو بدّل إلى ملف آخر، ثم شغّل:
+احذف ملف تعريف Phaseo أو انتقل إلى ملف تعريف آخر، ثم شغّل:
 
 ```bash
 phaseo integrations remove roo-code
 ```
 
-لا تستطيع CLI حذف القيم من التخزين الخاص بإضافة VS Code، لكن الإزالة تلغي المفتاح.
+يلغي هذا الأمر المفتاح. لا تستطيع CLI مسح مخزن إضافات VS Code.
 
-## استكشاف الأخطاء وإصلاحها
+## إصلاح المشكلات الشائعة
 
-### فشل المصادقة
+### تفشل المصادقة
 
-استرجع المفتاح مجددًا باستخدام `phaseo integrations credential roo-code`. وتأكد من أن عنوان URL الأساسي ينتهي بـ `/v1`.
+انسخ المفتاح مرة أخرى باستخدام `phaseo integrations credential roo-code`، وتأكد من أن Base URL ينتهي بـ `/v1`.
 
 ### لا يعثر Roo Code على النموذج
 
-أدخل يدويًا معرّف نموذج Phaseo الدقيق، بما في ذلك بادئة المزوّد.
+اكتب معرّف نموذج Phaseo الدقيق، بما في ذلك بادئة المزوّد.
 
-### تعمل المحادثة لكن الأدوات تفشل
+### تعمل الدردشة لكن الأدوات تفشل
 
 انتقل إلى نموذج يدعم استدعاء الأدوات.
-
-## مواضيع ذات صلة
-
-- [موفّرو نماذج Roo Code](https://docs.roocode.com/providers/)
-- [وكلاء البرمجة](./coding-assistants.mdx)
-- [النماذج](../../api-reference/endpoint/models.mdx)

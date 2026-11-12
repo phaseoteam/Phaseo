@@ -13,6 +13,8 @@ import { chatDragType, mentionToken, parseMentions, type Mention } from "../lib/
 import { showToast } from "../components/ui/toast";
 import { isMac } from "../lib/shortcuts";
 import { isLargePaste } from "./largePaste";
+import { ComposerMarkdown, refreshComposerMarkdown } from "./composerMarkdown";
+import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { registerComposer } from "./composerFocusRedirect";
 
 /** The chat a sidebar row carries when dragged, if this drag is one. */
@@ -84,6 +86,10 @@ export type ComposerEditor = {
 	focus: (position?: "start" | "end") => void;
 	/** Inserts chips at the caret, or at the end when the composer is not focused. */
 	insert: (mentions: Mention[]) => void;
+	/** Removes every chip for this attachment or image, as removing its thumbnail does. */
+	remove: (ref: string) => void;
+	/** Attaches files dropped on the box outside the text, as a drop on the text does; false when this box takes none. */
+	addFiles: (files: File[]) => boolean;
 };
 
 export function useComposerEditor({ value, onChange, placeholder, disabled, onFiles, label = "Message" }: {
@@ -98,10 +104,11 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 	const keys = useRef<(event: KeyboardEvent) => boolean>(undefined);
 	const pasteInline = useRef(false);
 	const last = useRef(value);
-	const latest = useRef({ onChange, onFiles, placeholder });
-	latest.current = { onChange, onFiles, placeholder };
+	const richText = useWorkspacePreferences().chat.richTextComposer;
+	const latest = useRef({ onChange, onFiles, placeholder, richText });
+	latest.current = { onChange, onFiles, placeholder, richText };
 	const editor = useEditor({
-		extensions: [Document, Paragraph, Text, HardBreak, UndoRedo, MentionNode, Placeholder.configure({ placeholder: () => latest.current.placeholder })],
+		extensions: [Document, Paragraph, Text, HardBreak, UndoRedo, MentionNode, Placeholder.configure({ placeholder: () => latest.current.placeholder }), ComposerMarkdown.configure({ enabled: () => latest.current.richText })],
 		content: draftContent(value),
 		editable: !disabled,
 		editorProps: {
@@ -159,6 +166,8 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 	useEffect(() => editor ? registerComposer(editor) : undefined, [editor]);
 	// Placeholder text is read when the editor redraws; nudge it when the text changes.
 	useEffect(() => { if (editor && !editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta("placeholder", placeholder)); }, [editor, placeholder]);
+	// Turning rich text on or off in Settings restyles open drafts straight away.
+	useEffect(() => { if (editor && !editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta(refreshComposerMarkdown, true)); }, [editor, richText]);
 
 	// Scripts drive the composer like a text field: `value` reads and replaces the draft text.
 	useEffect(() => {
@@ -200,5 +209,14 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 		chain.insertContent([...before && !/\s/.test(before) ? [{ type: "text", text: " " }] : [], ...mentions.flatMap(mentionContent)]).run();
 	};
 	insertRef.current = insert;
-	return { editor, keys, focus: position => { editor?.commands.focus(position ?? "end"); }, insert };
+	const remove = (ref: string) => {
+		if (!editor || editor.isDestroyed) return;
+		const ranges: { from: number; to: number }[] = [];
+		editor.state.doc.descendants((node, pos) => { if (node.type.name === "mention" && node.attrs.ref === ref) ranges.push({ from: pos, to: pos + node.nodeSize }); });
+		if (!ranges.length) return;
+		const transaction = editor.state.tr;
+		for (const range of ranges.reverse()) transaction.delete(range.from, range.to);
+		editor.view.dispatch(transaction);
+	};
+	return { editor, keys, focus: position => { editor?.commands.focus(position ?? "end"); }, insert, remove, addFiles: files => { if (!latest.current.onFiles || !files.length) return false; latest.current.onFiles(files); return true; } };
 }

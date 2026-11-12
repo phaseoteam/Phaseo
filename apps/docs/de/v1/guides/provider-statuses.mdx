@@ -4,13 +4,39 @@ description: "Unterschiede zwischen der Verfügbarkeit beim Anbieter, dem Integr
 icon: "activity"
 ---
 
-Ein Anbieter-Modell-Angebot hat getrennte Statuswerte für den Anbieter und für Phaseo. Das ist wichtig, wenn ein Anbieter ein Modell veröffentlicht hat, Phaseo den zugehörigen Endpunkt aber noch nicht implementiert oder aktiviert hat.
+import { ProviderStatusExplorer } from "/snippets/provider-status.jsx";
 
-Diese Felder findest du auf Modellseiten, Preiskarten von Anbietern und zugehörigen Verfügbarkeitsansichten.
+Auf einer Modellseite stehen hinter jedem Anbieternamen bis zu zwei Symbole: ein **Statussymbol**, das Phaseo festlegt, und ein **Live-Routing-Symbol**, das nur erscheint, solange das Gateway Traffic von einem fehlerhaften Anbieter wegleitet.
 
-## Verfügbarkeit beim Anbieter
+<ProviderStatusExplorer locale="de" />
 
-Die Verfügbarkeit beim Anbieter beschreibt das Angebot beim ursprünglichen Anbieter.
+## Statussymbol
+
+Phaseo legt diesen Status manuell fest, und er bleibt bestehen, bis Phaseo ihn ändert. Eine Route mit niedrigerer Priorität ist eine letzte Reserve: Das Gateway versucht sie erst nach allen anderen gesunden Anbietern.
+
+| Symbol | Status | Routing |
+| --- | --- | --- |
+| <Icon icon="circle-check" color="#16a34a" /> | `Active` | Wird normal geroutet. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Niedrigere Priorität` | Nur als Reserve, nach allen anderen gesunden Anbietern. |
+| <Icon icon="ban" color="#dc2626" /> | `Disabled` | Wird nicht geroutet. |
+
+## Live-Routing
+
+Das Gateway legt dies automatisch für jeden Anbieter, jedes Modell und jeden Endpunkt fest, anhand der Anfragen, die es gerade verarbeitet. Eine eingeschränkte oder sich erholende Route bleibt routbar, aber andere Anbieter werden zuerst versucht.
+
+```mermaid
+flowchart TD
+  ok["Normal"] -->|"Mehrere Fehler hintereinander oder die Hälfte der letzten Anfragen schlägt fehl"| lim["Vorübergehend eingeschränkt"]
+  lim -->|"Wartezeit endet"| rec["Erholt sich"]
+  rec -->|"Alle Anfragen eines Durchgangs erfolgreich"| ok
+  rec -->|"Hälfte oder mehr schlägt fehl: längere Wartezeit"| lim
+```
+
+## Verfügbarkeit und Integration
+
+Die Status-Hoverkarte zeigt außerdem, ob der Anbieter das Modell anbietet und ob Phaseo es aktiviert hat. Eine Route ist nur öffentlich, wenn beides zutrifft. Ein Anbieter kann zum Beispiel ein neues Modell anbieten (`Available`), während Phaseo die Unterstützung noch entwickelt (`Implementing`).
+
+### Verfügbarkeit beim Anbieter
 
 | Status | Bedeutung |
 | --- | --- |
@@ -22,11 +48,7 @@ Die Verfügbarkeit beim Anbieter beschreibt das Angebot beim ursprünglichen Anb
 | `Removed` | Der Anbieter stellt das Angebot nicht mehr bereit. |
 | `Unknown` | Phaseo hat die Verfügbarkeit beim ursprünglichen Anbieter noch nicht überprüft. |
 
-Die Verfügbarkeit beim Anbieter bedeutet nicht, dass Phaseo die Anfrage routen kann.
-
-## Phaseo-Integrationsstatus
-
-Der Phaseo-Status beschreibt unsere Implementierung und deren Rollout.
+### Phaseo-Integration
 
 | Status | Bedeutung | Phaseo-Routing |
 | --- | --- | --- |
@@ -38,56 +60,11 @@ Der Phaseo-Status beschreibt unsere Implementierung und deren Rollout.
 | `Disabled` | Phaseo hat die Integration bewusst deaktiviert. | Nicht routbar. |
 | `Blocked` | Eine externe oder noch offene Abhängigkeit verhindert den Rollout. | Nicht routbar. |
 
-Nur bei Integrationen mit Status `Enabled` kann öffentliches Routing aktiviert werden.
-
-## Interner Zugriff
-
-Der Zugriffsumfang ist unabhängig vom Phaseo-Integrationsstatus:
-
-| Umfang | Bedeutung |
-| --- | --- |
-| `Public` | Normale Kundenanfragen können die Route verwenden, wenn alle Routing-Prüfungen erfolgreich sind. |
-| `Internal` | Nur authentifizierter Phaseo-Testverkehr kann die Route verwenden. |
-
-Für eine interne Route sind das interne Token mit hoher Entropie und eine Anfrage im ausdrücklich gesetzten Testmodus erforderlich. Ein Kunde kann sie nicht nur mit dem Test-Header aktivieren. Normale Anfragen suchen nicht in der Datenbank nach internen Routen, sondern nutzen den vorhandenen Standard-Kontextcache. Interne Tests verwenden ein separates Cache-Segment und berücksichtigen nur ausdrücklich interne Routen, deren Anbieterangebot nutzbar ist und deren Phaseo-Status `Testing` oder `Enabled` lautet.
-
-## Routing-Zustand
-
-Der Routing-Zustand ist ein drittes Betriebssignal. Er gibt an, wie eine aktivierte Route jetzt ausgewählt werden sollte.
-
-| Status | Bedeutung | Routing-Verhalten |
-| --- | --- | --- |
-| `Active` | Die Route ist gesund genug für die normale Auswahl. | Jetzt routbar. |
-| `Deranked L1` | Die aktuelle Gesundheit stuft die Route leicht zurück. | Jetzt routbar. |
-| `Deranked L2` | Die aktuelle Gesundheit stuft die Route deutlich zurück. | Jetzt routbar, hinter gesünderen Routen. |
-| `Deranked L3` | Die aktuelle Gesundheit stuft die Route stark zurück. | Jetzt routbar, mit deutlich geringerer Priorität. |
-| `Disabled` | Der Routing-Schalter ist ausgeschaltet. | Wird nicht geroutet. |
-
-Eine Zurückstufung verändert weder die Verfügbarkeit des Anbieters noch den Lebenszyklus der Phaseo-Integration. Aktuelle Gesundheitsdaten ändern diese Lebenszyklusfelder ebenfalls nicht.
-
-## Beispiele
-
-Ein neu veröffentlichtes Anbieterangebot kann diese Werte haben:
-
-- Verfügbarkeit beim Anbieter: `Available`
-- Phaseo-Status: `Implementing`
-- Routing-Zustand: nicht anwendbar, weil Routing deaktiviert ist
-
-Eine etablierte, vorübergehend beeinträchtigte Route kann diese Werte haben:
-
-- Verfügbarkeit beim Anbieter: `Available`
-- Phaseo-Status: `Enabled`
-- Routing-Zustand: `Deranked L2`
-
-Eine Ankündigung des Anbieters kann diese Werte haben:
-
-- Verfügbarkeit beim Anbieter: `Coming Soon`
-- Phaseo-Status: `Planned`
-- Routing-Zustand: nicht anwendbar
+Nur `Enabled`-Routen können öffentlich sein. `Internal`-Routen bedienen nur den eigenen Test-Traffic von Phaseo.
 
 ## Kompatibilität
 
-Vorhandene API-Felder wie `availability_status`, `routing_status`, `is_active_gateway` und `routable` bleiben während des schrittweisen Rollouts verfügbar. Neue Integrationen sollten die expliziten Anbieter- und Phaseo-Felder verwenden.
+`availability_status`, `routing_status`, `is_active_gateway` und `routable` bleiben für bestehende Integrationen in der API. Neue Integrationen sollten die getrennten Anbieter- und Phaseo-Felder lesen.
 
 ## Verwandte Seiten
 

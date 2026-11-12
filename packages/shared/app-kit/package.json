@@ -6,6 +6,7 @@
 	"private": true,
 	"sideEffects": false,
 	"exports": {
+		"./app-analytics": "./src/appAnalytics.ts",
 		"./logos": "./src/logos/index.ts",
 		"./provider-offers": "./src/providerOffers.ts",
 		"./gateway-status": "./src/providerGatewayStatus.ts",

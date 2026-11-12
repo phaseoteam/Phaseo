@@ -77,6 +77,32 @@ CREATE TRIGGER protect_users_global_role
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_users_global_role();
 
+CREATE POLICY "users_no_oauth_client_insert" ON "public"."users"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "users_no_oauth_client_update" ON "public"."users"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "users_no_oauth_client_delete" ON "public"."users"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."users"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "users: delete self" ON "public"."users"
   FOR DELETE
   TO "authenticated"
@@ -143,7 +169,7 @@ COMMENT ON COLUMN "public"."users"."display_time_zone" IS 'Preferred IANA time z
 
 REVOKE ALL ON TABLE "public"."users" FROM "anon";
 
-GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."users" TO "anon";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."users" TO "anon";
 
 REVOKE ALL ON TABLE "public"."users" FROM "authenticated";
 
@@ -203,4 +229,4 @@ REVOKE ALL ("user_id") ON TABLE "public"."users" FROM "authenticated";
 
 GRANT INSERT ("user_id") ON TABLE "public"."users" TO "authenticated";
 
-GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."users" TO "authenticated";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."users" TO "authenticated";

@@ -1,0 +1,280 @@
+---
+icon: "messages-square"
+title: "チャット補完"
+description: "どの Phaseo SDK からでも /chat/completions を呼び出します。"
+---
+
+SDK のチャットメソッドを呼び出すと `POST /v1/chat/completions` が送信され、完了したレスポンスを 1 つ受け取ります。新しく連携を作る場合は、[Responses API](./responses) を使うと、テキスト、マルチモーダル入力、ツール、より豊富な出力アイテムを 1 つのリクエスト形式で扱えます。
+
+<CodeGroup>
+
+```typescript TypeScript
+const chat = await client.generateText({
+  model: "openai/gpt-6-astra",
+  messages: [
+    { role: "system", content: "You are helpful." },
+    { role: "user", content: "Write a limerick about lighthouses." },
+  ],
+});
+
+console.log(chat.choices[0].message.content);
+```
+
+```python Python
+chat = client.generate_text({
+    "model": "openai/gpt-6-astra",
+    "messages": [
+        {"role": "system", "content": "You are helpful."},
+        {"role": "user", "content": "Write a limerick about lighthouses."},
+    ],
+})
+
+print(chat["choices"][0]["message"]["content"])
+```
+
+```go Go
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.GenerateText(context.Background(), phaseo.ChatCompletionsRequest{
+  Model: "openai/gpt-6-astra",
+  Messages: []map[string]interface{}{
+    {"role": "user", "content": "Write a one-line haiku."},
+  },
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["choices"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var response = await client.GenerateText(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["messages"] = new[]
+    {
+        new Dictionary<string, object>
+        {
+            ["role"] = "user",
+            ["content"] = "Write a limerick about lighthouses.",
+        },
+    },
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$response = $client->createChatCompletion([
+    'model' => 'openai/gpt-6-astra',
+    'messages' => [[
+        'role' => 'user',
+        'content' => 'Write a limerick about lighthouses.',
+    ]],
+]);
+
+echo $response['choices'][0]['message']['content'];
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+response = client.create_chat_completion(
+  model: 'openai/gpt-6-astra',
+  messages: [{ role: 'user', content: 'Write a limerick about lighthouses.' }]
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.List;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var response = client.createChatCompletion(Map.of(
+    "model", "openai/gpt-6-astra",
+    "messages", List.of(
+        Map.of("role", "user", "content", "Write a one-line haiku.")
+    )
+));
+System.out.println(response.path("choices").path(0).path("message").path("content").asText());
+```
+
+```rust Rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.chat_completions(&json!({
+        "model": "openai/gpt-6-astra",
+        "messages": [
+            {
+                "role": "system",
+                "content": "Answer concisely."
+            },
+            {
+                "role": "user",
+                "content": "What is provider fallback?"
+            }
+        ]
+    }))?;
+
+    let text = response
+        .body
+        .pointer("/choices/0/message/content")
+        .and_then(|value| value.as_str())
+        .unwrap_or("");
+
+    println!("{text}");
+    Ok(())
+}
+```
+
+</CodeGroup>
+
+| 言語 | メソッド | 戻り値 |
+| --- | --- | --- |
+| TypeScript | `client.generateText(request)`。`client.chat.completions.create(request)` も同じ処理を行い、`stream` が true の場合はストリーミングに切り替わります | `ChatCompletionsResponse` |
+| Python | `client.generate_text(request)`。`client.chat.completions.create(request)` も使えます | `APIResponse` の dict |
+| Go | `client.GenerateText(ctx, req)`、別名 `CreateChatCompletion`。`phaseo.ChatCompletionsRequest` を受け取ります | `map[string]interface{}` |
+| C# | `client.GenerateText(request)`、別名 `CreateChatCompletion` | `Dictionary<string, object>?` |
+| PHP | `$client->generateText($request)`、別名 `createChatCompletion()` | 配列 |
+| Ruby | `client.generate_text(...)`、別名 `create_chat_completion` | Hash |
+| Java | `client.createChatCompletion(request)`。`Map` または Jackson の `JsonNode` を受け取ります | Jackson の `JsonNode` |
+| Rust | `client.chat_completions(&request)` | `PhaseoResponse`。JSON は `body` にあります |
+
+どの戻り値も Chat Completions の形式です。返答は `choices[0].message.content` にあり、`finish_reason` と `usage` も含まれます。
+
+<span id="stream-the-response"></span>
+## レスポンスをストリーミングする
+
+<CodeGroup>
+
+```typescript TypeScript
+for await (const chunk of client.streamChat({
+  model: "openai/gpt-6-astra",
+  messages: [{ role: "user", content: "Stream a story" }],
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python
+for chunk in client.stream_chat({
+    "model": "openai/gpt-6-astra",
+    "messages": [{"role": "user", "content": "Stream a story"}],
+}):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+var payload = Map.of(
+    "model", "openai/gpt-6-astra",
+    "messages", List.of(Map.of("role", "user", "content", "Hello")),
+    "stream", true
+);
+try (var lines = client.rawClient().requestLines(
+    "POST", "/chat/completions", null, null,
+    new ObjectMapper().writeValueAsString(payload)
+)) {
+    lines.forEach(System.out::println);
+}
+```
+
+</CodeGroup>
+
+| 言語 | ストリーミングの方法 |
+| --- | --- |
+| TypeScript | `client.streamChat(request)` は解析済みのチャンクを返し、`client.streamText()` は生の SSE 行を返します。 |
+| Python | `client.stream_chat(request)` は解析済みのチャンクを返し、`client.stream_text()` は生の SSE 行を返します。 |
+| Java | `createChatCompletion` は 1 つの JSON 本文を返します。`stream: true` を設定し、`rawClient().requestLines` でリクエストを送信すると、届いた SSE 行が順に返されます。try-with-resources で閉じてください。 |
+| Go、C#、PHP、Ruby、Rust | Chat Completions のストリーミング用ヘルパーはありません。`stream` は設定しないでください。C#、PHP、Ruby では、[Responses](./responses#stream-the-response) にストリーミングのメソッドがあります。 |
+
+解析済みの各チャンク（TypeScript と Python）は元のフィールド（`choices`、`id` など）を保持し、`text`（このチャンクで追加された内容）、`usage`、推論トークン（`reasoningTokens` / `reasoning_tokens`）を追加します。
+
+## パラメーター
+
+どの SDK でも、フィールド名は JSON 本文のフィールドです。Go の型付き `phaseo.ChatCompletionsRequest` は、パスカルケースの構造体フィールド（`Model`、`Messages`）を使います。
+
+| グループ | フィールド |
+| --- | --- |
+| 必須 | `model`、`messages`（ロールは `system`、`developer`、`user`、`assistant`、`tool` のいずれか、内容は文字列またはパーツ） |
+| サンプリング | `temperature`（0〜2）、`top_p`（0〜1）、`top_k`（-1 以上）、`min_p`（0〜1）、`seed`（モデルが対応している場合） |
+| 長さとペナルティ | `max_tokens` または `max_completion_tokens`、`presence_penalty` と `frequency_penalty`（-2〜2）、`repetition_penalty`（0 より大きい値）、`stop`（文字列または配列） |
+| ツール | `tools`、`tool_choice`、`max_tool_calls`、`parallel_tool_calls` |
+| 推論 | `reasoning` オブジェクトまたは `reasoning_effort` |
+| 対数確率 | `logprobs`、`top_logprobs`（0〜20） |
+| 出力 | `response_format`、`n`（1〜16）、`stream`、`service_tier`、`metadata`（文字列の値） |
+| Gateway | `provider` のルーティング、`usage`（使用量を含める）、`meta`（Gateway のメタブロックを含める） |
+
+各フィールドの説明は[パラメーター](/ja/v1/api-reference/parameters)に、完全なスキーマは [Chat Completions API リファレンス](../../api-reference/endpoint/chat-completions)にあります。
+
+## レスポンス
+
+`ChatCompletionsResponse`：
+
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "openai/gpt-6-astra",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Hello there, how may I assist you today?"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+`stream: true` の場合、エンドポイントは `data: [DONE]` で終わる SSE フレームを送信します。
+
+```
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"openai/gpt-6-astra","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"openai/gpt-6-astra","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}
+
+data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1677652288,"model":"openai/gpt-6-astra","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":9,"completion_tokens":12,"total_tokens":21}}
+
+data: [DONE]
+```

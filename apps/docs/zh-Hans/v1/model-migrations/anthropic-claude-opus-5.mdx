@@ -1,25 +1,15 @@
 ---
 title: "Anthropic Claude Opus 5"
-description: "介绍如何将 Claude Opus 5 用于长上下文推理、编程和代理工作负载。"
+description: "为长上下文推理、编码和智能体工作负载采用 Claude Opus 5 时需要了解的内容。"
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 5
-
-使用本指南，在生产环境中安全采用 `anthropic/claude-opus-5`。
-
-Claude Opus 5 是面向复杂推理、长周期代理编程和高自主性工作流的当前 Opus 模型。它与 Opus 4.8 价格相同，支持 100 万 token 的上下文窗口，最多可输出 128K token。
-
-## 迁移快速入门
-
-1. 将模型 ID 改为 `anthropic/claude-opus-5`，其余请求保持不变。
-2. 重新运行生产环境中的提示词、工具和结构化输出评估。
-3. 针对长上下文和高强度工作负载，重新测量延迟、token 用量和任务成本。
-4. 在更改默认路由前，先逐步试用，并保留 Claude Opus 4.8 作为回退模型。
+把模型改为 `anthropic/claude-opus-5`，并在评估期间保留 Claude Opus 4.8 作为回退。它的价格与 Opus 4.8 相同，因此成本差异来自 token 用量。
 
 ```json
 {
   "model": "anthropic/claude-opus-5",
+  "models": ["anthropic/claude-opus-4.8"],
   "messages": [
     {
       "role": "user",
@@ -29,43 +19,36 @@ Claude Opus 5 是面向复杂推理、长周期代理编程和高自主性工作
 }
 ```
 
-## 新功能
+| | Claude Opus 4.8 | Claude Opus 5 |
+| --- | --- | --- |
+| Phaseo 模型 ID | `anthropic/claude-opus-4.8` | `anthropic/claude-opus-5` |
+| 上下文窗口 | 1M token | 1M token |
+| 最大输出 | 128K token | 128K token |
+| 每 1M token 价格（输入 / 输出） | $5.00 / $25.00 | $5.00 / $25.00 |
+| 请求未设置推理时的思考 | 关闭 | 自适应 |
 
-- Phaseo 模型 ID 为 `anthropic/claude-opus-5`。
-- 上下文窗口为 100 万 token。
-- 最大输出为 128K token。
-- 适用于长周期推理、编程和自主工具工作流。
-- 价格仍与 Claude Opus 4.8 保持一致。
+价格为目录中 Anthropic 的标准层级；其他层级和提供商请查看模型页面。
 
-## 测试内容
+## Phaseo 如何发送请求
 
-### 提示词和输出
+Opus 5 使用与 Opus 4.7 和 4.8 相同的请求结构：
 
-- 检查模型对最长系统提示词的遵循情况。
-- 检查结构化输出和 Schema 的通过率。
-- 检查回复长度和停止行为。
-- 检查专为 Claude Opus 4.8 调整的提示词是否出现回归。
+- **省略采样参数。** `temperature`、`top_p` 和 `top_k` 不会发送给模型。
+- **任何推理设置都会开启自适应思考。** Phaseo 发送 `thinking: {"type": "adaptive", "display": "summarized"}`，`reasoning.effort` 会转为 `output_config.effort`。思考预算不会被转发。
+- **`reasoning.effort: "none"` 或 `reasoning.enabled: false` 会关闭思考**（`thinking: {"type": "disabled"}`）。
+- **没有推理设置时，Phaseo 不发送 `thinking` 字段，** 因此适用 Opus 5 的默认行为，即自适应思考。Opus 4.8 只在被要求时才思考，所以同一个请求在 Opus 5 上可能会使用更多输出 token。
 
-### 工具和代理
+## 要测试的内容
 
-- 检查工具选择和参数质量。
-- 检查工具错误或部分结果后的恢复情况。
-- 检查长周期任务完成率。
-- 检查高自主性工作流中的权限和审批边界。
+- **提示词和输出：** 最长系统提示词上的指令遵循、schema 通过率、回复长度和停止行为，以及针对 Opus 4.8 调优过的提示词。
+- **工具和智能体：** 工具选择和参数、工具出错或返回部分结果后的恢复、长周期任务完成率，以及高自主性工作流中的权限边界。
+- **运营：** 你开放的每个 effort 级别下的延迟和 token 用量、长文档和智能体轨迹的上下文用量、每个成功任务的成本，以及主路由超时或失败时的回退。
 
-### 运维
+## 上线
 
-- 检查各推理强度下的延迟和 token 用量。
-- 检查长文档和代理轨迹的上下文窗口用量。
-- 计算每个成功任务的成本。
-- 检查主路由超时或失败时的回退行为。
-
-## 安全发布
-
-1. 评估期间保留 Claude Opus 4.8 作为回退选项。
-2. 在处理用户请求前，先对有代表性的生产流量进行影子测试。
-3. 按工作负载逐步试运行，不要一次性切换所有 Opus 路由。
-4. 只有质量、延迟、成本和工具安全检查均达到目标后再扩大流量。
+1. 在为用户提供服务之前，先影子运行有代表性的生产流量。
+2. 按工作负载进行金丝雀发布，而不是一次性迁移所有 Opus 路由。
+3. 只有在质量、延迟、成本和工具安全检查都达到目标后再全面推广。
 
 ## 来源
 

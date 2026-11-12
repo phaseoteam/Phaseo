@@ -12,13 +12,8 @@ const result = await build({
   loader: { ".svg": "text" },
   define: { "process.env.NODE_ENV": '"production"' },
 });
-const font = await readFile("ui/assets/montserrat-latin-wght-normal.woff2");
-const fontLicense = (await readFile("ui/assets/LICENSE", "utf8"))
-  .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-const css = (await readFile("ui/style.css", "utf8")).replace(
-  "./assets/montserrat-latin-wght-normal.woff2",
-  `data:font/woff2;base64,${font.toString("base64")}`,
-);
+// No bundled font: the cards use the host's font stack, as OpenAI's app guidelines ask.
+const css = await readFile("ui/style.css", "utf8");
 const icon = (await readFile("plugin/phaseo/assets/logo_light.svg", "utf8"))
   .replace(
     'width="64" height="64" viewBox="0 0 64 64"',
@@ -26,7 +21,7 @@ const icon = (await readFile("plugin/phaseo/assets/logo_light.svg", "utf8"))
   )
   .replace("<path ", '<path transform="scale(0.3125)" ')
   .replace('fill="black"', 'fill="currentColor"');
-const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phaseo models</title><style>${css}</style></head><body><div id="root"></div><details class="font-license"><summary>Font license</summary><pre>${fontLicense}</pre></details><script>${result.outputFiles[0].text.replaceAll("</script", "<\\/script")}</script></body></html>`;
+const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phaseo models</title><style>${css}</style></head><body><div id="root"></div><script>${result.outputFiles[0].text.replaceAll("</script", "<\\/script")}</script></body></html>`;
 await mkdir("src/generated", { recursive: true });
 await writeFile(
   "src/generated/modelExplorerHtml.ts",

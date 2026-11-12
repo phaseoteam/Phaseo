@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { isAnalyticsBlockedPath, readAnalyticsConsentFromCookieHeader } from "./cookieConsent";
 
 describe("isAnalyticsBlockedPath", () => {

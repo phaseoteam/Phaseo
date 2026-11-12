@@ -1,0 +1,157 @@
+---
+icon: "image"
+title: "توليد الصور"
+description: "ولّد صورًا باستخدام /images/generations من أي حزمة Phaseo SDK."
+---
+
+استدعِ دالة الصور في حزمة SDK مع نموذج وموجّه لإرسال `POST /v1/images/generations`. تعود كل صورة مولَّدة بوصفها إدخال `url` أو `b64_json` في `data`.
+
+<CodeGroup>
+
+```typescript TypeScript
+const image = await client.generateImage({
+  model: "openai/gpt-image-1",
+  prompt: "A lighthouse at golden hour",
+  size: "1024x1024",
+  n: 1,
+});
+```
+
+```python Python
+image = client.generate_image({
+    "model": "openai/gpt-image-1",
+    "prompt": "A lighthouse at golden hour",
+    "size": "1024x1024",
+    "n": 1,
+})
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.CreateImage(context.Background(), map[string]interface{}{
+  "model":  "openai/gpt-image-1",
+  "prompt": "A lighthouse at golden hour",
+  "size":   "1024x1024",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["data"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var response = await client.GenerateImage(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-image-1",
+    ["prompt"] = "A lighthouse at golden hour",
+    ["size"] = "1024x1024",
+    ["n"] = 1,
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$response = $client->generateImage([
+    'model' => 'openai/gpt-image-1',
+    'prompt' => 'A lighthouse at golden hour',
+    'size' => '1024x1024',
+    'n' => 1,
+]);
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+response = client.generate_image(
+  model: 'openai/gpt-image-1',
+  prompt: 'A lighthouse at golden hour',
+  size: '1024x1024',
+  n: 1
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var response = client.createImage(Map.of(
+    "model", "openai/gpt-image-1",
+    "prompt", "A lighthouse at golden hour"
+));
+System.out.println(response);
+```
+
+```rust Rust
+let response = client.post("/images/generations", &json!({
+    "model": "openai/gpt-image-1",
+    "prompt": "A lighthouse at golden hour",
+    "size": "1024x1024"
+}))?;
+```
+
+</CodeGroup>
+
+| اللغة | الدالة | ملاحظات |
+| --- | --- | --- |
+| TypeScript | `client.generateImage(request)` | ترسل `client.streamImage()` الطلب نفسه مع `stream: true` وتُنتج أحداث الصور الجزئية. |
+| Python | `client.generate_image(request)` | تؤدي `client.images.generate(request)` الوظيفة نفسها. لا توجد دالة مساعدة لبث الصور. |
+| Go | `client.CreateImage(ctx, req)` | تعيد `map[string]interface{}`. |
+| C# | `client.GenerateImage(request)`، والاسم البديل `CreateImage` | تعيد `Dictionary<string, object>?`. |
+| PHP | `$client->generateImage($request)`، والاسم البديل `createImage()` | تعيد مصفوفة. |
+| Ruby | `client.generate_image(...)`، والاسم البديل `create_image` | تعيد Hash. |
+| Java | `client.createImage(request)` | تقبل `Map` أو `JsonNode` من Jackson؛ وتعيد `JsonNode`. |
+| Rust | لا توجد دالة مساعدة للصور | ترسل `client.post("/images/generations", &request)` جسم JSON وتعيد `PhaseoResponse`. |
+
+## المعاملات
+
+أسماء الحقول في كل حزمة SDK هي حقول جسم JSON.
+
+| الحقل | ملاحظات |
+| --- | --- |
+| `model`، `prompt` | مطلوبة. يمكن أن يصل طول موجّهات GPT Image إلى 32,000 حرف. |
+| `n` | عدد الصور، من `1` إلى `10`. |
+| `size` | مثل `1024x1024` أو `1024x1792` أو `1792x1024`؛ وتعتمد الأحجام المدعومة على النموذج. |
+| `aspect_ratio`، `width`، `height` | بدائل لـ `size` تعتمد على النموذج. |
+| `quality` | تعتمد على النموذج: `standard` أو `hd` في `dall-e-3`؛ و`auto` أو `low` أو `medium` أو `high` في نماذج GPT Image. |
+| `output_format`، `output_compression` | `png` أو `jpeg` أو `webp`؛ ويتطلب الضغط (من `0` إلى `100`) التنسيق `jpeg` أو `webp`. |
+| `background` | `transparent` أو `opaque` أو `auto`. تتطلب الخلفية الشفافة `png` أو `webp`. |
+| `response_format` | `url` أو `b64_json`. ترفض نماذج GPT Image هذا الحقل. |
+| `style` | يعتمد على النموذج، مثل `vivid` أو `natural` في `dall-e-3`. ترفض نماذج GPT Image هذا الحقل. |
+| `stream`، `partial_images` | بثّ ما يصل إلى `3` صور جزئية، باستخدام `streamImage()` في TypeScript. |
+| `user` | وسم المستخدم النهائي لتتبّع إساءة الاستخدام. |
+
+المخطط الكامل موجود في [مرجع Image generations API](../../api-reference/endpoint/images-generations).
+
+## الاستجابة
+
+`ImagesGenerationResponse`:
+
+```json
+{
+  "data": [
+    {
+      "url": "https://example.com/generated_image.png"
+    }
+  ]
+}
+```
+
+تضع النماذج التي تعيد بايتات الصورة هذه البايتات في `b64_json` بدلًا من `url`.

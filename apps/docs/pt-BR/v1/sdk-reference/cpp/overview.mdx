@@ -1,13 +1,18 @@
 ---
-title: "SDK de C++ (em andamento)"
-description: "Consulte os cabeçalhos C++ em desenvolvimento."
+title: "SDK de C++ (em desenvolvimento)"
+description: "Conheça os headers de C++ em desenvolvimento."
 ---
 
 <Note type="warning">
-  O SDK de C++ está em desenvolvimento e ainda não está disponível por um gerenciador de pacotes. Use os cabeçalhos do código-fonte somente para avaliação.
+  O SDK de C++ está em desenvolvimento e ainda não está disponível por um gerenciador de pacotes. Use os headers do código-fonte apenas para avaliação.
 </Note>
 
-- Status: em andamento (ainda não publicado).
-- O código-fonte está em `packages/sdk/sdk-cpp`.
-- Os cabeçalhos gerados estão em `packages/sdk/sdk-cpp/src/gen`.
-- `src/phaseo.hpp` adiciona a consulta de capacidades de modelos em tempo real e relatórios de suporte de parâmetros. O transporte de prévia retorna JSON bruto; portanto, desserialize a resposta em `ModelEndpointCapabilities` antes de verificá-la.
+O SDK de C++ é um conjunto de fontes C++17 compostas apenas de headers em `packages/sdk/sdk-cpp`; ele não é publicado e fica fora dos lançamentos de SDK até funcionar de ponta a ponta.
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| `src/gen/client.hpp`, `src/gen/operations.hpp`, `src/gen/models.hpp`, `src/gen/model_ids.hpp` | O cliente gerado |
+| `src/phaseo.hpp` | `GetModelEndpointCapabilities(...)` para os recursos atuais dos modelos e `CheckParameterSupport(...)` para relatórios de suporte a parâmetros |
+| `src/workflows.hpp` | Helpers de paginação e de consulta de status de tarefas |
+
+O transporte de prévia retorna JSON bruto, então desserialize a resposta em `ModelEndpointCapabilities` antes de verificá-la. Para experimentar, veja [Instalação](./installation). Não existe Agent SDK de C++.

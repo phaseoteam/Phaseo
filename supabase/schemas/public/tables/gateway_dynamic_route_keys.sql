@@ -20,6 +20,25 @@ CREATE TRIGGER gateway_workspace_publication
   FOR EACH ROW
   EXECUTE FUNCTION private.capture_gateway_workspace_publication();
 
+CREATE POLICY "gateway_dynamic_route_keys_no_oauth_client_insert" ON "public"."gateway_dynamic_route_keys"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "gateway_dynamic_route_keys_no_oauth_client_update" ON "public"."gateway_dynamic_route_keys"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "gateway_dynamic_route_keys_no_oauth_client_delete" ON "public"."gateway_dynamic_route_keys"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "gateway_dynamic_route_keys_workspace_delete" ON "public"."gateway_dynamic_route_keys"
   FOR DELETE
   TO "authenticated"
@@ -56,6 +75,13 @@ CREATE POLICY "gateway_dynamic_route_keys_workspace_update" ON "public"."gateway
   WHERE
     ((route.id = gateway_dynamic_route_keys.route_id) AND (gateway_key.workspace_id = route.workspace_id) AND ( SELECT public.is_workspace_admin(route.workspace_id) AS
     is_workspace_admin)))));
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_dynamic_route_keys"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_dynamic_route_keys" TO "anon", "authenticated", "service_role";
 

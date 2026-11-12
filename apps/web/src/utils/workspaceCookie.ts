@@ -1,32 +1,16 @@
-"use server";
-
-import { cookies } from "next/headers";
+// Server only: reads the request cookies and sets response cookies.
+import { currentRequestCookie, deleteResponseCookie, setResponseCookie } from "@/lib/server/currentRequest";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
 const ACTIVE_WORKSPACE_COOKIE_NAME = "activeWorkspaceId";
 
 async function writeActiveWorkspaceCookieValue(workspaceId?: string): Promise<void> {
-	const cookieStore: any = await cookies();
 	if (!workspaceId) {
-		if (typeof cookieStore.delete === "function") {
-			cookieStore.delete(ACTIVE_WORKSPACE_COOKIE_NAME);
-			return;
-		}
-		cookieStore.set({
-			name: ACTIVE_WORKSPACE_COOKIE_NAME,
-			value: "",
-			httpOnly: true,
-			path: "/",
-			secure: process.env.NODE_ENV === "production",
-			sameSite: "lax",
-			maxAge: 0,
-		});
+		deleteResponseCookie(ACTIVE_WORKSPACE_COOKIE_NAME, { path: "/" });
 		return;
 	}
-	cookieStore.set({
-		name: ACTIVE_WORKSPACE_COOKIE_NAME,
-		value: workspaceId,
+	setResponseCookie(ACTIVE_WORKSPACE_COOKIE_NAME, workspaceId, {
 		httpOnly: true,
 		path: "/",
 		secure: process.env.NODE_ENV === "production",
@@ -66,9 +50,8 @@ export async function clearActiveWorkspaceCookie(): Promise<void> {
 
 async function getActiveWorkspaceIdFromCookieRaw(): Promise<string | undefined> {
 	try {
-		const cookieStore = await cookies();
 		const rawCookieWorkspaceId = String(
-			cookieStore.get(ACTIVE_WORKSPACE_COOKIE_NAME)?.value ?? "",
+			currentRequestCookie(ACTIVE_WORKSPACE_COOKIE_NAME) ?? "",
 		).trim();
 		return rawCookieWorkspaceId || undefined;
 	} catch {

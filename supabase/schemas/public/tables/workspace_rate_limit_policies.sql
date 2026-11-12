@@ -43,7 +43,7 @@ CREATE POLICY "deny_direct_client_access" ON "public"."workspace_rate_limit_poli
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."workspace_rate_limit_policies" IS 'Named gateway rate limits (requests and tokens per minute, concurrent requests). A NULL limit column means that dimension is not limited. Applied through workspace_rate_limit_policy_assignments; the most restrictive applicable policy wins.';
+COMMENT ON TABLE "public"."workspace_rate_limit_policies" IS 'Superseded by rate guardrails (workspace_guardrails kind rate), which were copied from this table with the same ids. Nothing reads or writes it; kept until it is dropped.';
 
 REVOKE ALL ON TABLE "public"."workspace_rate_limit_policies" FROM "service_role";
 

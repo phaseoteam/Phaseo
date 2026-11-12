@@ -42,7 +42,7 @@ jobs:
                   persist-credentials: false
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
@@ -155,7 +155,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
@@ -199,8 +199,12 @@ jobs:
               run: pnpm run validate:spend-rules
             - name: Validate shared workspace routing settings
               run: pnpm run validate:workspace-routing-settings
+            - name: Validate shared guardrail modules
+              run: pnpm run validate:guardrail-shared
             - name: Validate shared key IP allowlist validation
               run: pnpm run validate:key-ip-allowlist
+            - name: Validate shared model parameter specs
+              run: pnpm run validate:model-parameters
             - name: Validate shared theme tokens
               run: pnpm run validate:theme-tokens
 
@@ -232,8 +236,10 @@ jobs:
                   node supabase/tests/realtime-billing-hardening.test.mjs
                   node supabase/tests/rankings-rolling-periods.test.mjs
                   node supabase/tests/rankings-distributions.test.mjs
+                  node supabase/tests/decisions-rankings.test.mjs
                   node --test supabase/tests/models-page-cheapest-provider-pricing.test.mjs
                   node supabase/tests/benchmark-direction-default.test.mjs
+                  node supabase/tests/pricing-promotion-budgets.test.mjs
                   node scripts/tests/workspace-provisioning.mjs
                   pnpm exec tsx apps/web/scripts/catalogue/enumSnapshot.test.ts
                   pnpm exec tsx --test scripts/model-status-rules.test.ts
@@ -410,7 +416,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
@@ -444,7 +450,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
@@ -478,9 +484,12 @@ jobs:
                   pnpm run validate:i18n
                   pnpm --filter @phaseo/web audit:i18n:ui
                   pnpm --filter @phaseo/web test:i18n:ui-audit
-                  pnpm --filter @phaseo/web test --runTestsByPath 'src/app/(dashboard)/rankings/RankingsPageContent.test.tsx' 'src/components/(rankings)/UsageStackedBar.test.tsx' 'src/components/(rankings)/time-buckets.test.ts'
+                  # The build generates src/routeTree.gen.ts, which the typecheck needs.
+                  pnpm --filter @phaseo/web build
                   pnpm --filter @phaseo/web typecheck
-                  pnpm --filter @phaseo/web exec next build --experimental-build-mode compile
+                  pnpm --filter @phaseo/web lint
+                  # The whole web unit suite (about a minute).
+                  pnpm --filter @phaseo/web test
 
             - name: Web API lint, test & build
               if: matrix.app == 'web-api'
@@ -511,7 +520,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
@@ -539,7 +548,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
@@ -592,7 +601,7 @@ jobs:
                   fetch-depth: 0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
@@ -667,7 +676,7 @@ jobs:
                   python -m pip install -e packages/sdk/sdk-py
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
@@ -702,7 +711,7 @@ jobs:
                   persist-credentials: false
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
@@ -734,7 +743,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
@@ -759,13 +768,13 @@ jobs:
 
             - name: Setup .NET
               if: matrix.sdk == 'csharp'
-              uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+              uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73
               with:
                   dotnet-version: "8.0.x"
 
             - name: Setup Java
               if: matrix.sdk == 'java'
-              uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+              uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78
               with:
                   distribution: "temurin"
                   java-version: "17"
@@ -779,7 +788,7 @@ jobs:
 
             - name: Setup Ruby
               if: matrix.sdk == 'ruby'
-              uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
+              uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
               with:
                   ruby-version: "4.0"
 
@@ -843,7 +852,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
@@ -853,50 +862,51 @@ jobs:
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
-            # ---------- WEB (Vercel) ----------
+            # ---------- WEB (Cloudflare Workers) ----------
+            # The website is the phaseo-web Worker (apps/web/wrangler.jsonc), which
+            # serves phaseo.app through the route in that file.
 
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
 
-            # Each production deploy starts the web app with an empty runtime cache,
-            # so skip it when nothing the web build reads has changed since the commit
-            # production serves. Comparing with production rather than the previous
-            # push means a web change whose deploy failed or was skipped still ships
-            # with the next green run. Manual runs, or a failed lookup, always deploy.
-            - name: Check web changes since the production deployment
+            # Each deploy starts the web Worker with an empty runtime cache, so skip it
+            # when nothing the web build reads has changed since the commit the Worker
+            # serves. Every deploy records its commit as the deployment message, and the
+            # latest deployment is the one serving traffic. Comparing with that commit
+            # rather than the previous push means a web change whose deploy failed or was
+            # skipped still ships with the next green run. Manual runs, or a failed
+            # lookup, always deploy.
+            - name: Check web changes since the deployed Worker
               id: web-changes
               if: matrix.target == 'web'
               env:
-                  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-                  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-                  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   FORCE_DEPLOY: ${{ github.event_name == 'workflow_dispatch' }}
               run: |
                   deploy=true
-                  if [ "$FORCE_DEPLOY" != "true" ] && [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
-                      # targets.production is the latest production deployment, which can
-                      # still be building or have failed. Only trust it once it is ready and
-                      # holds the production alias; otherwise deploy. aliasAssigned is
-                      # boolean, timestamp or null, so require true or a positive time.
-                      production_sha=$(curl -fsS --max-time 30 -H "Authorization: Bearer $VERCEL_TOKEN" \
-                          "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID?teamId=$VERCEL_ORG_ID" \
-                          | jq -r '.targets.production | select(.readyState == "READY" and (.aliasAssigned == true or ((.aliasAssigned | type) == "number" and .aliasAssigned > 0))) | .meta.githubCommitSha // empty') || production_sha=""
+                  if [ "$FORCE_DEPLOY" != "true" ] && [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+                      deployed_sha=$(curl -fsS --max-time 30 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                          "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/phaseo-web/deployments" \
+                          | jq -r '.result.deployments[0].annotations["workers/message"] // empty | select(test("^[0-9a-f]{40}$"))') || deployed_sha=""
                       # Everything outside apps/web that the web build reads:
                       # - apps/docs, read by the prebuild for the docs search index;
+                      # - apps/api/openapi.*, read by the API reference pages;
                       # - packages/shared/app-kit and packages/shared/ui, workspace packages
-                      #   the website compiles from source (transpilePackages);
-                      # - the two model-discovery modules imported by the internal
+                      #   the website bundles from source;
+                      # - the model-discovery modules imported by the internal
                       #   model-discovery-notifier server action.
                       # Add any new import that reaches outside apps/web here too.
-                      if [ -n "$production_sha" ] \
-                          && git fetch --quiet --depth=1 origin "$production_sha" \
-                          && git diff --quiet "$production_sha" "$GITHUB_SHA" -- \
-                              apps/web apps/docs packages/shared/app-kit packages/shared/ui \
+                      if [ -n "$deployed_sha" ] \
+                          && git fetch --quiet --depth=1 origin "$deployed_sha" \
+                          && git diff --quiet "$deployed_sha" "$GITHUB_SHA" -- \
+                              apps/web apps/docs packages/shared/app-kit packages/shared/ui packages/shared/observability \
+                              apps/api/openapi.openai.yml apps/api/openapi.anthropic.json \
                               apps/api/src/pipeline/model-discovery/public-model-announcement-discord.ts \
                               apps/api/src/pipeline/model-discovery/discord-webhook.ts \
                               package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json; then
                           deploy=false
-                          echo "Production already serves $production_sha with the same web inputs; skipping the web deploy."
+                          echo "The phaseo-web Worker already serves $deployed_sha with the same web inputs; skipping the web deploy."
                       fi
                   fi
                   echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
@@ -905,19 +915,127 @@ jobs:
               if: steps.web-changes.outputs.deploy == 'true'
               run: corepack pnpm install --frozen-lockfile
 
-            - name: Install Vercel CLI
+            - name: Configure private web source maps
+              id: web-source-maps
               if: steps.web-changes.outputs.deploy == 'true'
-              run: npm install --global vercel@latest
-
-            - name: Deploy web to Vercel (production)
+              shell: bash
               env:
-                  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-                  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-                  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-              if: ${{ steps.web-changes.outputs.deploy == 'true' && env.VERCEL_PROJECT_ID != '' }}
+                  POSTHOG_CLI_API_KEY: ${{ secrets.POSTHOG_CLI_API_KEY }}
               run: |
-                  vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-                  vercel deploy --yes --archive=tgz --prod --logs --token=$VERCEL_TOKEN
+                  if [ -n "$POSTHOG_CLI_API_KEY" ]; then
+                    echo "enabled=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "enabled=false" >> "$GITHUB_OUTPUT"
+                    echo "::notice::Private PostHog source-map uploads are disabled: POSTHOG_CLI_API_KEY is not configured."
+                  fi
+
+            # PUBLIC_* settings are inlined into the bundle at build time. The GitHub
+            # secrets and variables keep their original NEXT_PUBLIC_* names; each one
+            # may be stored as either a secret or a variable. Server-only settings
+            # (service role key, Stripe secret, ...) are Worker secrets on Cloudflare,
+            # which deploys leave untouched.
+            - name: Build web
+              if: steps.web-changes.outputs.deploy == 'true'
+              env:
+                  PHASEO_BUILD_ID: ${{ github.sha }}
+                  PHASEO_PRIVATE_SOURCEMAPS: ${{ steps.web-source-maps.outputs.enabled }}
+                  PUBLIC_RELEASE: ${{ github.sha }}
+                  PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
+                  PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+                  PUBLIC_WEBSITE_URL: ${{ secrets.NEXT_PUBLIC_WEBSITE_URL || vars.NEXT_PUBLIC_WEBSITE_URL }}
+                  PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL || vars.NEXT_PUBLIC_BASE_URL }}
+                  PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || vars.NEXT_PUBLIC_APP_URL }}
+                  PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || vars.NEXT_PUBLIC_API_URL }}
+                  PUBLIC_DOCS_URL: ${{ secrets.NEXT_PUBLIC_DOCS_URL || vars.NEXT_PUBLIC_DOCS_URL }}
+                  PUBLIC_GATEWAY_API_URL: ${{ secrets.NEXT_PUBLIC_GATEWAY_API_URL || vars.NEXT_PUBLIC_GATEWAY_API_URL }}
+                  PUBLIC_GATEWAY_BASE_URL: ${{ secrets.NEXT_PUBLIC_GATEWAY_BASE_URL || vars.NEXT_PUBLIC_GATEWAY_BASE_URL }}
+                  PUBLIC_GATEWAY_COMING_SOON: ${{ secrets.NEXT_PUBLIC_GATEWAY_COMING_SOON || vars.NEXT_PUBLIC_GATEWAY_COMING_SOON }}
+                  PUBLIC_STAGING_GATEWAY_BASE_URL: ${{ secrets.NEXT_PUBLIC_STAGING_GATEWAY_BASE_URL || vars.NEXT_PUBLIC_STAGING_GATEWAY_BASE_URL }}
+                  PUBLIC_FEATURED_ENABLED: ${{ secrets.NEXT_PUBLIC_FEATURED_ENABLED || vars.NEXT_PUBLIC_FEATURED_ENABLED }}
+                  PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || vars.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+                  PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY || vars.NEXT_PUBLIC_POSTHOG_KEY }}
+                  PUBLIC_POSTHOG_API_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_API_HOST || vars.NEXT_PUBLIC_POSTHOG_API_HOST }}
+                  PUBLIC_POSTHOG_UI_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_UI_HOST || vars.NEXT_PUBLIC_POSTHOG_UI_HOST }}
+                  PUBLIC_GA_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID || vars.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
+                  PUBLIC_TAWK_PROPERTY_ID: ${{ secrets.NEXT_PUBLIC_TAWK_PROPERTY_ID || vars.NEXT_PUBLIC_TAWK_PROPERTY_ID }}
+                  PUBLIC_TAWK_WIDGET_ID: ${{ secrets.NEXT_PUBLIC_TAWK_WIDGET_ID || vars.NEXT_PUBLIC_TAWK_WIDGET_ID }}
+                  PUBLIC_STATSIG_CLIENT_KEY: ${{ secrets.NEXT_PUBLIC_STATSIG_CLIENT_KEY || vars.NEXT_PUBLIC_STATSIG_CLIENT_KEY }}
+                  PUBLIC_STATSIG_AUTO_ROUTING_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_AUTO_ROUTING_GATE }}
+                  PUBLIC_STATSIG_BATCH_API_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_BATCH_API_GATE }}
+                  PUBLIC_STATSIG_GATEWAY_HERO_EXPERIMENT: ${{ vars.NEXT_PUBLIC_STATSIG_GATEWAY_HERO_EXPERIMENT }}
+                  PUBLIC_STATSIG_GATEWAY_HERO_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_GATEWAY_HERO_GATE }}
+                  PUBLIC_STATSIG_GATEWAY_IO_LOGGING_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_GATEWAY_IO_LOGGING_GATE }}
+                  PUBLIC_STATSIG_LANDING_PAGE_EXPERIMENT: ${{ vars.NEXT_PUBLIC_STATSIG_LANDING_PAGE_EXPERIMENT }}
+                  PUBLIC_STATSIG_LANDING_PAGE_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_LANDING_PAGE_GATE }}
+                  PUBLIC_STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE }}
+                  PUBLIC_STATSIG_PRESET_EXPERIMENTS_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_PRESET_EXPERIMENTS_GATE }}
+                  PUBLIC_STATSIG_REALTIME_VOICE_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_REALTIME_VOICE_GATE }}
+                  PUBLIC_STATSIG_REQUEST_CLASSIFIERS_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_REQUEST_CLASSIFIERS_GATE }}
+                  PUBLIC_STATSIG_SAML_SSO_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_SAML_SSO_GATE }}
+                  PUBLIC_STATSIG_SLACK_AGENT_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_SLACK_AGENT_GATE }}
+                  PUBLIC_STATSIG_VIDEO_API_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_VIDEO_API_GATE }}
+                  PUBLIC_STATSIG_WORKLOAD_IDENTITY_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_WORKLOAD_IDENTITY_GATE }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  missing=()
+                  [ -z "${PUBLIC_SUPABASE_URL:-}" ] && missing+=("NEXT_PUBLIC_SUPABASE_URL")
+                  [ -z "${PUBLIC_SUPABASE_ANON_KEY:-}" ] && missing+=("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+                  if [ "${#missing[@]}" -gt 0 ]; then
+                    echo "::error::Missing web build setting(s) (GitHub secret or variable): ${missing[*]}"
+                    exit 1
+                  fi
+                  # Empty values would override the app's fallbacks; drop them.
+                  for name in $(compgen -e | grep '^PUBLIC_'); do
+                    if [ -z "${!name}" ]; then unset "$name"; fi
+                  done
+                  PUBLIC_DEPLOY_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  export PUBLIC_DEPLOY_TIME
+                  pnpm --filter @phaseo/web build
+
+            - name: Upload private web source maps
+              if: steps.web-changes.outputs.deploy == 'true' && steps.web-source-maps.outputs.enabled == 'true'
+              uses: PostHog/upload-source-maps@991172e085213c222c61d2ba6a0b9e57c81e5066 # v2
+              with:
+                  directory: apps/web/dist
+                  project-id: '81404'
+                  api-key: ${{ secrets.POSTHOG_CLI_API_KEY }}
+                  host: https://eu.posthog.com
+                  release-name: phaseo-web
+                  release-version: ${{ github.sha }}
+                  delete-after-upload: 'true'
+                  cli-version: '0.19.3'
+
+            - name: Remove public source maps
+              if: always() && steps.web-changes.outputs.deploy == 'true'
+              run: node --input-type=module -e "import { removeSourceMaps } from './observability/grafana/build-web.mjs'; await removeSourceMaps('apps/web/dist/client');"
+
+            # "run deploy": a bare "pnpm deploy" is pnpm's own deploy command, not the script.
+            - name: Deploy web Worker to Cloudflare
+              if: steps.web-changes.outputs.deploy == 'true'
+              shell: bash
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+              run: |
+                  set -euo pipefail
+                  missing=()
+                  [ -z "${CLOUDFLARE_API_TOKEN:-}" ] && missing+=("CLOUDFLARE_API_TOKEN")
+                  [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ] && missing+=("CLOUDFLARE_ACCOUNT_ID")
+                  if [ "${#missing[@]}" -gt 0 ]; then
+                    echo "::error::Missing required Cloudflare deploy secret(s): ${missing[*]}"
+                    exit 1
+                  fi
+                  # The commit in the deployment message lets the next run skip unchanged deploys.
+                  # Runtime vars for code that reads an env object (auth redirect origin,
+                  # Stripe checkout URLs), which build-time inlining of process.env.X does
+                  # not reach. Without them auth assumed development and sent OAuth and
+                  # email links to localhost. Set here, not in wrangler.jsonc, so local
+                  # `vite dev` keeps its localhost defaults.
+                  pnpm --filter @phaseo/web run deploy --message "$GITHUB_SHA" \
+                      --var NODE_ENV:production \
+                      --var PUBLIC_WEBSITE_URL:https://phaseo.app \
+                      --var WEBSITE_URL:https://phaseo.app
             # ---------- API (Cloudflare Workers) ----------
             # Install deps so wrangler can resolve imports
 
@@ -1196,7 +1314,7 @@ jobs:
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
@@ -1226,7 +1344,7 @@ jobs:
                   go-version: "1.24"
             - name: Setup .NET
               if: matrix.sdk == 'csharp'
-              uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+              uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73
               with:
                   dotnet-version: "8.0.x"
             - name: Setup PHP
@@ -1236,13 +1354,13 @@ jobs:
                   php-version: "8.2"
             - name: Setup Java
               if: matrix.sdk == 'java'
-              uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+              uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78
               with:
                   distribution: temurin
                   java-version: "17"
             - name: Setup Ruby
               if: matrix.sdk == 'ruby'
-              uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
+              uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
               with:
                   ruby-version: "4.0"
             - name: Setup Rust
@@ -1282,7 +1400,7 @@ jobs:
                   private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false

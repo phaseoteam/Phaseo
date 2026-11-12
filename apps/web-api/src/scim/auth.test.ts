@@ -9,7 +9,7 @@ const env = { SCIM_TOKEN_PEPPER: "p".repeat(32) } as never;
 
 function clientFor(subscription: { data: { status: string; grace_until: string | null } | null; error: unknown }) {
 	const tokenResult = {
-		data: { id: "token-1", token_hash: "", expires_at: null, revoked_at: null, endpoint: { id: "endpoint-1", workspace_id: "workspace-1", enabled: true } },
+		data: { id: "token-1", token_hash: "", expires_at: null, revoked_at: null, created_by: "owner-1", endpoint: { id: "endpoint-1", workspace_id: "workspace-1", enabled: true } },
 		error: null,
 	};
 	const usageUpdate = vi.fn(async () => ({ error: null }));
@@ -18,6 +18,9 @@ function clientFor(subscription: { data: { status: string; grace_until: string |
 			if (table === "scim_tokens") return {
 				select: () => { const query = { eq: () => query, maybeSingle: async () => tokenResult }; return query; },
 				update: () => ({ eq: usageUpdate }),
+			};
+			if (table === "workspaces") return {
+				select: () => { const query = { eq: () => query, maybeSingle: async () => ({ data: { owner_user_id: "owner-1" }, error: null }) }; return query; },
 			};
 			if (table === "workspace_addon_subscriptions") return {
 				select: () => { const query = { eq: () => query, maybeSingle: async () => subscription }; return query; },

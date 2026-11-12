@@ -4,62 +4,57 @@ icon: "/icons/brands/roo-code.svg"
 description: "OpenAI-संगत प्रोफ़ाइल के ज़रिए Roo Code को Phaseo से जोड़ें।"
 ---
 
-Phaseo CLI से समर्पित कुंजी बनाएँ और Roo Code की प्रदाता प्रोफ़ाइल हाथ से सेट करें। Roo Code क्रेडेंशियल VS Code के सीक्रेट स्टोरेज में रखता है, इसलिए अंतिम प्रविष्टि एक्सटेंशन के इंटरफ़ेस में होती है।
+कुंजी बनाने के लिए `phaseo roo-code` चलाएँ, फिर Roo Code में **OpenAI Compatible** प्रोफ़ाइल जोड़ें। Roo Code कुंजियाँ VS Code के सीक्रेट स्टोरेज में रखता है, इसलिए यह आख़िरी चरण उसी के UI में होता है।
 
-## Phaseo CLI से सेटअप करें
+## Phaseo CLI से सेट अप करें
 
 ```bash
 phaseo login
-phaseo roo-code --model anthropic/claude-sonnet-4.6
+phaseo roo-code --model anthropic/claude-sonnet-5.5
 ```
 
-## Roo Code को हाथ से सेट करें
+CLI एक `Phaseo CLI: Roo Code API Key` बनाता है जो 90 दिनों में समाप्त होती है और जिसकी मासिक खर्च सीमा $100 है, फिर अगले चरण के मान प्रिंट करता है।
 
-1. VS Code में Roo Code खोलें।
-2. **Settings** खोलें, फिर **Providers** पर जाएँ।
-3. प्रदाता कॉन्फ़िगरेशन प्रोफ़ाइल बनाएँ और **OpenAI Compatible** चुनें।
-4. ये मान दर्ज करें:
+## Roo Code कॉन्फ़िगर करें
+
+1. VS Code में Roo Code खोलें, फिर **Settings → Providers**।
+2. एक प्रदाता कॉन्फ़िगरेशन प्रोफ़ाइल बनाएँ और **OpenAI Compatible** चुनें।
+3. ये मान दर्ज करें:
 
 | Roo Code फ़ील्ड | मान |
 | --- | --- |
 | Base URL | `https://api.phaseo.app/v1` |
-| API Key | `phaseo integrations credential roo-code` का आउटपुट |
-| Model | `anthropic/claude-sonnet-4.6` या सेटअप में दिखाया गया मॉडल |
+| API Key | `phaseo integrations credential roo-code` का आउटपुट, या कोई भी Phaseo API कुंजी |
+| Model | `anthropic/claude-sonnet-5.5`, या सेटअप द्वारा दिखाया गया मॉडल |
 
-5. प्रोफ़ाइल सहेजें और उसे सक्रिय करें।
+4. प्रोफ़ाइल सेव करें और उसे सक्रिय करें।
 
-अलग-अलग रिलीज़ में फ़ील्ड लेबल थोड़े बदल सकते हैं, लेकिन प्रोफ़ाइल में एंडपॉइंट, कुंजी और सटीक मॉडल ID होना ज़रूरी है।
+फ़ील्ड के लेबल रिलीज़ के बीच थोड़े बदलते हैं; अगर आपके अलग हैं तो Roo Code के [मॉडल प्रदाता](https://docs.roocode.com/providers/) दस्तावेज़ देखें।
 
-## जाँचें
+## जाँचें कि यह काम करता है
 
-Roo Code से `PHASEO_ROO_OK` जवाब देने को कहें, फिर पुष्टि करें कि अनुरोध Phaseo गतिविधि में दिखता है।
+Roo Code से `PHASEO_ROO_OK` के साथ जवाब देने को कहें, फिर पुष्टि करें कि अनुरोध **सेटिंग्स → उपयोग → लॉग्स** में दिखता है।
 
-## हटाएँ
+## Phaseo हटाएँ
 
-Phaseo प्रोफ़ाइल हटाएँ या दूसरी प्रोफ़ाइल चुनें, फिर यह चलाएँ:
+Phaseo प्रोफ़ाइल मिटाएँ या प्रोफ़ाइल बदलें, फिर यह चलाएँ:
 
 ```bash
 phaseo integrations remove roo-code
 ```
 
-CLI, VS Code के निजी एक्सटेंशन स्टोरेज से मान नहीं हटा सकता, लेकिन हटाने की प्रक्रिया कुंजी को रद्द कर देती है।
+इससे कुंजी रद्द हो जाती है। CLI VS Code का एक्सटेंशन स्टोरेज साफ़ नहीं कर सकता।
 
-## समस्या निवारण
+## आम समस्याएँ ठीक करें
 
-### प्रमाणीकरण विफल
+### ऑथेंटिकेशन विफल होता है
 
-`phaseo integrations credential roo-code` से कुंजी फिर से प्राप्त करें। सुनिश्चित करें कि Base URL के अंत में `/v1` हो।
+`phaseo integrations credential roo-code` से कुंजी फिर से कॉपी करें, और जाँचें कि Base URL `/v1` पर ख़त्म होता है।
 
-### Roo Code को मॉडल नहीं मिलता
+### Roo Code मॉडल नहीं ढूँढ पाता
 
-प्रदाता प्रीफ़िक्स सहित सटीक Phaseo मॉडल ID हाथ से दर्ज करें।
+प्रदाता प्रीफ़िक्स सहित सटीक Phaseo मॉडल ID टाइप करें।
 
-### चैट काम करता है, लेकिन टूल विफल होते हैं
+### चैट काम करती है, लेकिन टूल विफल होते हैं
 
-टूल कॉलिंग का समर्थन करने वाले मॉडल पर स्विच करें।
-
-## संबंधित विषय
-
-- [Roo Code के मॉडल प्रदाता](https://docs.roocode.com/providers/)
-- [कोडिंग एजेंट](./coding-assistants.mdx)
-- [मॉडल](../../api-reference/endpoint/models.mdx)
+टूल-कॉलिंग सपोर्ट वाले मॉडल पर स्विच करें।

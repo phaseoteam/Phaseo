@@ -1,119 +1,162 @@
 ---
-title: "構造化 JSON の応答を修復する"
+title: "構造化 JSON に応答の修復を使う"
+sidebarTitle: "JSON の応答の修復"
 icon: "file-check"
-description: "スキーマを広げたり不正な応答を手動で再試行したりせず、ほぼ有効な構造化 JSON 出力を復元します。"
+description: "スキーマを広げたり不正な応答を手動で再試行したりせずに、ほぼ有効な構造化 JSON 出力を復元します。"
 ---
 
-厳密な JSON が必要なアプリケーションで、モデルがほぼ正しいもののパーサーでエラーになる出力を返す場合は、このレシピを使います。
+構造化出力のリクエストに `response-healing` プラグインを追加すると、Markdown のコードフェンスに囲まれた JSON や末尾にカンマが付いた JSON など、ほぼ有効な JSON を、パーサーに届く前に Phaseo が修復します。完成すると、JSON Schema を要求し、必要に応じて回答を修復し、修復したかどうかをレスポンスで知らせるリクエストが 1 つできます。
 
-## 1. 構造化レスポンスの契約から始める
+このリクエストは本番環境で使えます。修復は構文だけを直すため、[結果を検証する](../guides/structured-outputs#validate-the-result)のように、コード側での結果の検証は引き続き必要です。
 
-応答の修復が役立つのは、リクエストがすでに構造化出力を要求している場合だけです。
+```mermaid
+flowchart TD
+  ans["json_object または json_schema リクエストのバッファされた回答"] --> valid{{"すでに有効な JSON か"}}
+  valid -->|"はい"| schema{{"スキーマに一致するか"}}
+  valid -->|"いいえ"| fix["モードの変換を順に適用"]
+  fix --> parsed{{"解析できるようになったか"}}
+  parsed -->|"はい"| schema
+  parsed -->|"いいえ"| unfixed["skipped: 修復不能または途中で切れている"]
+  schema -->|"はい"| out["正規化された JSON を使う: 変更があれば applied"]
+  schema -->|"いいえ"| mismatch["skipped: schema_mismatch"]
+```
 
-適した条件:
+## 修復付きのリクエストを送る
 
-- `response_format.type = "json_object"`
-- JSON Schema 形式の出力
-- 複数の呼び出し元で共有する安定したオブジェクト形式
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-astra",
+    "input": "Summarize this release in one sentence: dark mode and faster search.",
+    "text": {
+      "format": {
+        "type": "json_schema",
+        "name": "answer",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": { "summary": { "type": "string" } },
+          "required": ["summary"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "plugins": [{ "id": "response-healing", "mode": "safe" }],
+    "meta": true
+  }'
+```
 
-自由形式の文章を求めるリクエストでは修復を有効にしないでください。
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
 
-## 2. 適切なレイヤーでプラグインを有効にする
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
-`response-healing` は次の3か所で有効にできます。
+const response = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input: "Summarize this release in one sentence: dark mode and faster search.",
+  text: {
+    format: {
+      type: "json_schema",
+      name: "answer",
+      strict: true,
+      schema: {
+        type: "object",
+        properties: { summary: { type: "string" } },
+        required: ["summary"],
+        additionalProperties: false,
+      },
+    },
+  },
+  plugins: [{ id: "response-healing", mode: "safe" }],
+  meta: true,
+});
 
-1. ワークスペースの既定プラグインポリシー
-2. プリセットのプラグイン設定
-3. リクエストの `plugins`
+console.log(response.meta?.plugin_executions);
+```
 
-優先順位:
+```python Python
+import os
 
-1. ワークスペース
-2. プリセット
-3. リクエスト
+from phaseo import Phaseo
 
-ワークフローで常に構造化 JSON が必要な場合は、プリセットの既定値を使ってください。
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
-## 3. モデル出力の範囲を絞る
+response = client.generate_response(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Summarize this release in one sentence: dark mode and faster search.",
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "answer",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {"summary": {"type": "string"}},
+                    "required": ["summary"],
+                    "additionalProperties": False,
+                },
+            }
+        },
+        "plugins": [{"id": "response-healing", "mode": "safe"}],
+        "meta": True,
+    }
+)
 
-要求する出力形式がすでに制限されているほど、修復の効果が高まります。
+print(response["meta"].get("plugin_executions"))
+```
+</CodeGroup>
 
-推奨事項:
+Chat Completions では、同じスキーマを `text.format` ではなく `response_format` で送ります。修復はリクエストが `json_object` または `json_schema` を要求している場合にだけ実行され、ストリームでは実行されません。ストリーミングのリクエストは `streaming_unsupported` でスキップされます。
 
-- 無関係なブロックを複数作るのではなく、オブジェクトを1つにする
-- 必須キーを明示する
-- 可能であれば温度を決定的にする
-- JSON ペイロードの外側に説明文を求めない
+## 実行されたことを確認する
 
-## 4. 応答の修復でできること、できないことを把握する
+`meta: true` を指定すると、プラグインが実行された場合に `meta.plugin_executions` に一覧表示されます。
 
-現在の修復処理は決定的で、ストリーミングなしの場合に限り動作します。ストリーミングリクエストでは応答修復が完全にスキップされます。
+```json
+{
+  "id": "response-healing",
+  "stage": "response.post_provider",
+  "status": "applied",
+  "changed": true,
+  "metadata": {
+    "attempted": true,
+    "healed": true,
+    "mode": "safe",
+    "transforms_applied": ["strip_markdown_fence"]
+  }
+}
+```
 
-修復できる形式:
+| `status` | 意味 |
+| --- | --- |
+| `applied` | 回答が有効な JSON に書き換えられました。 |
+| `skipped` | 回答はそのまま残されました。`attempted: false` の場合、リクエストは対象外でした。それ以外の場合は、JSON がすでに有効だったか、修復できませんでした。理由は `metadata.failure_reason` に示されます。`streaming_unsupported`、`not_json`（構造化出力が要求されていない、またはテキストがない）、`unrepairable`、`truncated`（回答がトークン上限で止まった）、または `validation_errors` 付きの `schema_mismatch` です。 |
+| `failed` | プラグイン自体がエラーになりました（`reason: plugin_error`）。回答は変更されていません。 |
 
-- JSON を囲む Markdown コードフェンス
-- 末尾の余分なカンマ
-- 安全に補完できる閉じ記号の不足
-- それ以外は復元可能なオブジェクトにある引用符のないキー
+同じ記録は **設定 → 使用量 → ログ** のリクエストにも表示されます。プラグインがまったく表示されない場合は、リクエスト、そのプリセット、またはワークスペースで実際に有効になっているかを確認してください。設定場所は[プラグインの既定値を設定する](./plugin-defaults-and-response-healing)で説明しています。
 
-より限定的なポリシーには `strict` モードを使います。このモードはコードフェンスや周囲のテキストから、すでに有効な JSON だけを取り出し、より広範な構文修復は行いません。
+## モードを選ぶ
 
-リクエストが JSON Schema 形式の出力を使う場合、修復後に書き直す前にペイロードを検証します。現在のバリデーターは次のような一般的な制約に対応しています。
+| モード | 変換（適用順） |
+| --- | --- |
+| `safe`（既定） | Markdown のコードフェンスを取り除き、最も外側の `{…}` または `[…]` までに切り詰め、末尾のカンマを削除し、引用符のないキーを引用符で囲み、足りない閉じかっこを追加します（回答がトークン上限に達した場合は追加しません） |
+| `strict` | Markdown のコードフェンスを取り除き、最も外側の `{…}` または `[…]` までに切り詰めるだけです。そのため、囲みの内側ですでに有効だった JSON だけを受け付けます |
 
-- 必須キー
-- 基本的なスカラー型とコンテナー型
-- enum と const の値
-- 配列の境界と `uniqueItems`
-- 文字列の長さ、正規表現、`email`、`uri`、`uuid`、`date-time` などの一般的な形式
-- 数値の境界と `multipleOf`
-- オブジェクトのプロパティ数の上限と `additionalProperties: false`
+JSON Schema がある場合、修復した結果は回答を置き換える前に次の点が確認されます。必須キー、型、`enum` と `const`、配列の範囲と `uniqueItems`、文字列の長さ、`pattern` と `email`・`uri`・`uuid`・`date-time` の形式、数値の範囲と `multipleOf`、プロパティ数、`additionalProperties: false` です。
 
-次の処理はできません。
+## 役に立たない場合を知る
 
-- 意味上必要な不足フィールドを作り出す
-- 業務上の値を推測する
-- 任意の文章を有効なデータに変換する
+修復は、足りないフィールドを作り出したり、値を推測したり、文章をデータに変換したりすることはありません。使う前に、次の失敗を見分けてください。
 
-## 5. プラグインが実際に実行されたことを確認する
+| 失敗 | 対処 |
+| --- | --- |
+| 構造的には正しい形に近い JSON | 応答の修復 |
+| フィールドが誤っている有効な JSON | スキーマとプロンプトを厳しくする |
+| JSON ではなく文章 | プロンプトでの指示だけでなく `json_schema` を要求する |
+| トークン上限で途切れた | `max_output_tokens` を引き上げる |
 
-修復が実行されると、リクエストの詳細にプラグイン実行情報が表示されます。
-
-次の点を確認してください。
-
-- プラグイン ID
-- 変換を試みたか
-- ペイロードが変化したか
-- 応答を復元できなかった場合の失敗理由
-- 修復を期待していたリクエストがストリーミングなしだったか
-
-プラグインが表示されない場合は、リクエスト、プリセット、またはワークスペースのポリシーで有効になっていることを確認してください。
-
-## 6. パーサーの問題と内容の問題を区別する
-
-修復で解決しない場合は、次のどの問題かを確認します。
-
-1. 形式は壊れているが、構造は期待する形に近い JSON
-2. スキーマ上は有効だが、フィールドが誤っている JSON
-3. JSON ではなく文章が返っている
-4. トークン上限が低すぎて出力が途中で切れている
-
-応答修復が適しているのはケース1だけです。
-
-## 7. 段階的に展開する
-
-1. 構造化出力が安定している1つのプリセットで修復を有効にする
-2. ログでプラグインの実行メタデータを確認する
-3. 復元されたペイロードが想定スキーマに合うことを確認する
-4. ログに問題がなければ、似たプリセットにも設定を広げる
-
-## 8. 適切なモードを選ぶ
-
-- 末尾のカンマ削除やキーへの引用符の追加など、範囲を限定した構文整理を行うには `safe` を使います。
-- 外側のラッパーを取り除いた後、すでに有効な JSON だけを受け入れるには `strict` を使います。
-- リクエストの詳細を確認して、実行されたモードを確かめてください。
-
-## 関連ガイド
-
-- [プリセットで応答キャッシュを使う](./response-caching-with-presets.mdx)
-- [プリセットを展開してルーティングをデバッグする](./preset-rollout-and-routing-debug.mdx)
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+修復は、必須キーが明示された 1 つのオブジェクト、低い temperature、JSON 以外のテキストを要求しない場合に最も効果を発揮します。まず 1 つのプリセットで有効にし、ログで `plugin_executions` を確認して、修復されたペイロードがスキーマに一致するようになったら適用範囲を広げてください。

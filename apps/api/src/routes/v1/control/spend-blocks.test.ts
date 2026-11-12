@@ -4,6 +4,7 @@ const WORKSPACE = "00000000-0000-4000-8000-000000000001";
 const BLOCK = "00000000-0000-4000-8000-000000000002";
 const RULE = "00000000-0000-4000-8000-000000000003";
 const USER = "00000000-0000-4000-8000-000000000005";
+const KEY_CREATOR = "00000000-0000-4000-8000-000000000077";
 
 const state = vi.hoisted(() => ({
 	auth: null as any,
@@ -54,8 +55,9 @@ function blockRow(extra: Record<string, unknown> = {}) {
 
 describe("spend blocks management API", () => {
 	beforeEach(() => {
-		state.auth = { ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", scopes: ["spend_rules:read", "spend_rules:write"], userId: null, requestId: "req-1" } };
-		state.members = [{ workspace_id: WORKSPACE, user_id: USER, role: "member" }];
+		state.auth = { ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", scopes: ["spend_rules:read", "spend_rules:write"], userId: KEY_CREATOR, requestId: "req-1" } };
+		// The management key acts as its creator, an admin of the workspace.
+		state.members = [{ workspace_id: WORKSPACE, user_id: USER, role: "member" }, { workspace_id: WORKSPACE, user_id: KEY_CREATOR, role: "admin" }];
 		state.rpc = vi.fn(async (name: string) => {
 			if (name === "list_workspace_spend_blocks") return { data: [blockRow()], error: null };
 			if (name === "lift_workspace_spend_block") return { data: blockRow({ lifted_at: "2026-10-21T13:00:00+00:00", lift_reason: "manual", lifted_by: USER, active: false }), error: null };
@@ -87,7 +89,7 @@ describe("spend blocks management API", () => {
 		const response = await call(`/${BLOCK.toUpperCase()}/lift`, "POST");
 		expect(response.status).toBe(200);
 		expect(await response.json()).toMatchObject({ data: { id: BLOCK, lift_reason: "manual", active: false } });
-		expect(state.rpc).toHaveBeenCalledWith("lift_workspace_spend_block", { p_workspace_id: WORKSPACE, p_block_id: BLOCK, p_actor_user_id: null });
+		expect(state.rpc).toHaveBeenCalledWith("lift_workspace_spend_block", { p_workspace_id: WORKSPACE, p_block_id: BLOCK, p_actor_user_id: KEY_CREATOR });
 		expect(state.audit).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
 			workspaceId: WORKSPACE, action: "spend_block.lifted", targetType: "spend_block", targetId: BLOCK, targetName: "Hard cap", requestId: "req-1",
 		}));
@@ -115,7 +117,7 @@ describe("spend blocks management API", () => {
 	});
 
 	it("allows only owners and admins over OAuth", async () => {
-		state.auth.value = { workspaceId: WORKSPACE, authMethod: "oauth", oauthClientId: "phaseo_cli", scopes: ["spend_rules:read", "spend_rules:write"], oauthScopes: [], userId: USER };
+		state.auth.value = { workspaceId: WORKSPACE, authMethod: "oauth", oauthClientId: null, apiKeyRef: "dashboard", scopes: ["spend_rules:read", "spend_rules:write"], oauthScopes: [], userId: USER };
 		expect((await call("/")).status).toBe(403);
 		expect((await call(`/${BLOCK}/lift`, "POST")).status).toBe(403);
 		state.members = [{ workspace_id: WORKSPACE, user_id: USER, role: "admin" }];

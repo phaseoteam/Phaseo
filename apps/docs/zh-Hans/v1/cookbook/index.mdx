@@ -4,60 +4,65 @@ icon: "chef-hat"
 description: "使用 Phaseo 构建应用的实用场景指南。"
 ---
 
-明确要构建什么，并需要从设置到验证的可用流程时，可使用本指南。
+按你想构建的东西挑选一个指南。每个指南都先展示完成后的结果，然后给出步骤、完整代码、运行方法，以及如何检查是否成功。每个指南都会说明其代码是可直接用于生产，还是需要你继续完善的起点。
 
-## 从一个可用请求开始
+所有示例都使用 `https://api.phaseo.app/v1`，并从 `PHASEO_API_KEY` 读取你的密钥。
+
+## 发送第一个请求
 
 <Columns cols={2}>
-	<Card title="使用免费路由器上线" icon="route" href="./free-router-first-deploy.mdx">
-		无需先选择或充值某个特定模型，即可发送真实请求。
+	<Card title="在免费路由上起步" icon="route" href="./free-router-first-deploy">
+		在选定模型或为模型付费之前，先向 `phaseo/free` 发送一个真实请求。
 	</Card>
-	<Card title="构建 Next.js 网页聊天应用" icon="message-square" href="./build-a-nextjs-web-chat-app.mdx">
-		构建浏览器聊天界面，同时将 Phaseo API 密钥保留在服务器端。
-	</Card>
-	<Card title="构建 Node REST 冒烟测试应用" icon="terminal" href="./build-a-node-rest-smoke-app.mdx">
-		通过最精简的实用示例使用原始 HTTP 验证后端集成。
-	</Card>
-	<Card title="使用 Python 构建网关 CLI" icon="terminal-square" href="./build-a-python-gateway-cli.mdx">
-		使用 Python SDK 构建命令行工作流。
+	<Card title="迷你应用入门提示" icon="square-terminal" href="./mini-app-starter-prompts">
+		把一个提示粘贴到编程智能体中，得到一个可运行的小应用。
 	</Card>
 </Columns>
 
-<Tip>
-  想让编程 Agent 搭建项目框架？请从[迷你应用入门提示词](./mini-app-starter-prompts.mdx)开始。
-</Tip>
+## 构建应用
 
-## 按目标选择指南
+| 指南 | 你会得到 | 调用 Phaseo 的方式 |
+| --- | --- | --- |
+| [Next.js 网页聊天应用](./build-a-nextjs-web-chat-app) | 带模型选择器的浏览器聊天界面 | 服务器端 `fetch` |
+| [OAuth Next.js 工作台](./build-an-oauth-nextjs-workbench) | 登录、自动刷新令牌的代理、聊天和端点测试工具 | 带 OAuth 令牌的服务器端 `fetch` |
+| [Node REST 冒烟测试应用](./build-a-node-rest-smoke-app) | 零依赖的冒烟测试脚本 | 原始 `fetch` |
+| [Python 网关 CLI](./build-a-python-gateway-cli) | 覆盖多个端点的标准库 CLI | `urllib` |
 
-<Columns cols={2}>
-	<Card title="构建应用" icon="layout-template" href="./build-a-nextjs-web-chat-app.mdx">
-		查看浏览器应用、经过身份验证的工作台、后端脚本和 CLI 的完整教程。
-	</Card>
-	<Card title="控制路由和策略" icon="route" href="./preset-rollout-and-routing-debug.mdx">
-		逐步推出预设、选择供应商、落实数据驻留要求并控制 API 密钥。
-	</Card>
-	<Card title="搜索并返回结构化数据" icon="search-check" href="./sdk-typescript-managed-search.mdx">
-		通过网页搜索或抓取为请求提供依据，然后验证并修复结构化输出。
-	</Card>
-	<Card title="从 Agent SDK 入手" icon="bot" href="./agent-sdk-durable-loop.mdx">
-		使用 TypeScript、Python、Go、C#、Java、PHP 或 Ruby 构建受限的工具循环。
-	</Card>
-	<Card title="构建高级 Agent 工作流" icon="workflow" href="./agent-sdk-research-brief.mdx">
-		添加研究、人工审核、并行工具、结构化输出和编程工作流。
-	</Card>
-</Columns>
+## 控制路由和策略
 
-## 热门指南
+| 指南 | 用途 |
+| --- | --- |
+| [推行预设](./preset-rollout-and-routing-debug) | 把调用方迁移到预设，并解释每个请求去了哪里 |
+| [对提供商排序](./sort-providers-by-price-latency-or-throughput) | 按价格、延迟或吞吐量对一个模型的提供商排序 |
+| [固定或忽略提供商](./pin-or-ignore-providers-per-request) | 为单个请求优先、允许或跳过提供商 |
+| [仅路由到欧盟或 ZDR 提供商](./route-only-to-eu-or-zdr-providers) | 为单个请求添加数据驻留和零数据保留规则 |
+| [API 密钥护栏](./guardrails-for-api-keys) | 为某个密钥限制模型和提供商，并扫描提示 |
 
-- [按价格、延迟或吞吐量对供应商排序](./sort-providers-by-price-latency-or-throughput.mdx)
-- [仅路由到欧盟或 ZDR 供应商](./route-only-to-eu-or-zdr-providers.mdx)
-- [修复格式错误的结构化 JSON](./response-healing-for-structured-json.mdx)
-- [使用 Agent 驱动的网页搜索进行研究](./agent-sdk-research-brief.mdx)
-- [并行运行本地 Agent 工具](./agent-sdk-parallel-tools.mdx)
+## 搜索、抓取并返回结构化数据
 
-## 相关指南
+| 指南 | 用途 |
+| --- | --- |
+| [用 Python 获取结构化 JSON](./sdk-python-presets-and-json) | 使用 JSON Schema 调用预设，并记录路由详情 |
+| [用 TypeScript 进行托管网页搜索](./sdk-typescript-managed-search) | 用 `phaseo:web_search` 为一个回答提供依据并返回 JSON |
+| [调试网页搜索](./web-search-debugging) | 弄清搜索是否运行以及返回了什么 |
+| [用网页抓取为提取提供依据](./tool-grounding-with-web-fetch) | 在提取之前用 `phaseo:web_fetch` 读取一个已知 URL |
+| [修复格式错误的 JSON](./response-healing-for-structured-json) | 用 `response-healing` 插件修复接近有效的 JSON |
+| [设置插件默认值](./plugin-defaults-and-response-healing) | 为工作区或预设开启响应修复并锁定它 |
 
-- [快速入门](../quickstart.mdx)
-- [示例](../guides/examples.mdx)
-- [路由与回退](../guides/routing-and-fallbacks.mdx)
-- [Agent SDK 概览](../sdk-reference/agent-sdk/overview.mdx)
+## 构建智能体
+
+Agent SDK 在你的进程中运行工具循环，并通过 Phaseo 发送每一轮模型调用。各语言的安装方法见 [Agent SDK 概览](../sdk-reference/agent/overview)。
+
+| 指南 | 语言 | 展示内容 |
+| --- | --- | --- |
+| [可持久的智能体循环](./agent-sdk-durable-loop) | TypeScript | 每一步之后保存运行状态，崩溃后恢复 |
+| [并行工具](./agent-sdk-parallel-tools) | TypeScript | 同时运行彼此独立的只读工具 |
+| [研究简报](./agent-sdk-research-brief) | TypeScript | 网页搜索加严格的 JSON 简报 |
+| [支持工单分诊](./agent-sdk-support-triage) | TypeScript | 预设、人工审核，以及可调试的网关错误 |
+| [代码审查](./agent-sdk-coding-review) | TypeScript | 严格 JSON 和审批暂停 |
+| [结构化提取](./agent-sdk-python-structured-extraction) | Python | 一个工具和一个 JSON Schema |
+| [运维手册](./agent-sdk-go-ops-runbook) | Go | 在有上限的循环中使用一个状态工具 |
+| [工单分诊](./agent-sdk-csharp-ticket-triage) | C# | 在 .NET 服务中使用一个查询工具 |
+| [内容审核](./agent-sdk-php-content-review) | PHP | 一个 CMS 查询工具 |
+| [内部笔记](./agent-sdk-ruby-rag-notes) | Ruby | 一个笔记查询工具 |
+| [使用 SKILL.md 的编程智能体](./coding-agents-skill-md) | 任意 | 教编程智能体你的仓库如何调用 Phaseo |

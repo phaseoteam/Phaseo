@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react-native";
 import { useCSSVariable } from "uniwind";
 
-export type IconTone = "foreground" | "background" | "muted" | "primary" | "primary-foreground" | "destructive" | "destructive-foreground" | "success" | "warning" | "link" | "border";
+export type IconTone = "foreground" | "background" | "muted" | "primary" | "primary-foreground" | "destructive" | "destructive-foreground" | "success" | "warning" | "info" | "link" | "border";
 
 const variable: Record<IconTone, string> = {
   foreground: "--color-foreground",
@@ -15,6 +15,7 @@ const variable: Record<IconTone, string> = {
   "destructive-foreground": "--color-destructive-foreground",
   success: "--color-success",
   warning: "--color-warning",
+  info: "--color-info",
   link: "--color-link",
   border: "--color-border",
 };

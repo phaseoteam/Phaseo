@@ -1,0 +1,174 @@
+---
+icon: "music"
+title: "TTS (تحويل النص إلى كلام)"
+description: "حوّل النص إلى صوت باستخدام POST /v1/audio/speech من أي حزمة Phaseo SDK."
+---
+
+أرسل نصًا إلى `POST /v1/audio/speech` لتحصل على الصوت المنطوق بالتنسيق الذي تطلبه. تستخدم الأمثلة `client` مُنشأً كما في [التثبيت](./installation).
+
+<CodeGroup>
+
+```typescript TypeScript
+import { writeFile } from "node:fs/promises";
+
+const audio = await client.generateSpeech({
+  model: "openai/gpt-4o-mini-tts",
+  input: "Hello world",
+  voice: "alloy",
+  format: "mp3",
+});
+
+await writeFile("hello.mp3", Buffer.from(await audio.arrayBuffer()));
+```
+
+```python Python
+audio = client.generate_speech({
+    "model": "openai/gpt-4o-mini-tts",
+    "input": "Hello world",
+    "voice": "alloy",
+    "format": "mp3",
+})
+
+with open("hello.mp3", "wb") as file:
+    file.write(audio)
+```
+
+```go Go
+audio, err := client.CreateSpeech(context.Background(), map[string]interface{}{
+  "model":  "openai/gpt-4o-mini-tts",
+  "input":  "Hello world",
+  "voice":  "alloy",
+  "format": "mp3",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Printf("%T\n", audio) // تحقّق من النوع الفعلي قبل كتابته في ملف
+```
+
+```csharp C#
+var audio = await client.CreateSpeech(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-mini-tts",
+    ["input"] = "Hello world",
+    ["voice"] = "alloy",
+    ["format"] = "mp3",
+});
+```
+
+```php PHP
+$audio = $client->createSpeech([
+    'model' => 'openai/gpt-4o-mini-tts',
+    'input' => 'Hello world',
+    'voice' => 'alloy',
+    'format' => 'mp3',
+]);
+```
+
+```ruby Ruby
+audio = client.generate_speech(
+  model: 'openai/gpt-4o-mini-tts',
+  input: 'Hello world',
+  voice: 'alloy',
+  format: 'mp3'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello world",
+  "voice": "alloy",
+  "format": "mp3"
+}
+""";
+
+byte[] audio = client.rawClient().requestBytes("POST", "/audio/speech", null, null, body);
+java.nio.file.Files.write(java.nio.file.Path.of("hello.mp3"), audio);
+```
+
+</CodeGroup>
+
+## الدالة في كل لغة
+
+| اللغة | الدالة | القيمة المُعادة |
+| --- | --- | --- |
+| TypeScript | `client.generateSpeech(request)` | كائن `Blob` |
+| Python | `client.generate_speech(request)` أو `client.audio.speech.create(request)` | `bytes` |
+| Go | `client.CreateSpeech(ctx, req)` | `interface{}`؛ تحقّق من النوع الفعلي قبل كتابته في ملف |
+| C# | `client.CreateSpeech(request)` | `object?`؛ تحقّق من النوع الفعلي قبل كتابته في ملف |
+| PHP | `$client->createSpeech($request)` | الصوت؛ تحقّق من نوع القيمة قبل كتابتها في ملف |
+| Ruby | `client.generate_speech(...)`، والاسم البديل `create_speech` | الصوت؛ تحقّق من صنف القيمة قبل كتابتها في ملف |
+| Java | لا توجد دالة للكلام. ترسل `client.rawClient().requestBytes("POST", "/audio/speech", ...)` جسم JSON | `byte[]` |
+
+لا تتضمن Rust دالة للكلام، ودالتها المساعدة `post()` تحلّل الاستجابات بوصفها JSON، لذا لا يمكنها إعادة الصوت.
+
+## المعاملات
+
+أسماء الحقول في كل حزمة SDK هي حقول جسم JSON. استخدم `format`: تقبل الواجهة البرمجية أيضًا `response_format`، لكن نوع الطلب في TypeScript يرفضه.
+
+| الحقل | ملاحظات |
+| --- | --- |
+| `model` | مطلوب. معرّف نموذج كلام. |
+| `input` | مطلوب. النص المراد نطقه. يقبل معظم المزوّدين ما يصل إلى 4,096 حرفًا؛ وتسمح نماذج ElevenLabs بما بين 5,000 و40,000 حسب النموذج. |
+| `voice` | اسم صوت بديل موحّد عبر المزوّدين (موصى به)، أو قيمة الصوت الخاصة بالمزوّد، أو كائن يحتوي على `id` أو `name`. إذا لم يكن الصوت صالحًا للمزوّد الذي وُجّه إليه الطلب، تعيد الواجهة البرمجية `400` مع `param: "voice"`. |
+| `format` | `mp3` أو `wav` أو `ogg` أو `aac` أو `flac` أو `opus` أو `pcm`. |
+| `speed` | سرعة التشغيل، من `0.25` إلى `4`. |
+| `instructions` | إرشادات الأسلوب، حيث يدعمها النموذج. |
+| `config` | إعدادات خاصة بالمزوّد؛ انظر أدناه. |
+| `provider` | تفضيلات توجيه المزوّد. |
+
+المخطط الكامل موجود في [مرجع Speech API](/ar/v1/api-reference/endpoint/audio-speech).
+
+## تعيين صوت خاص بالمزوّد
+
+مرّر الصوت الدقيق الخاص بالمزوّد ضمن `config`. يعمل الكائن المتداخل نفسه في خريطة الطلب لكل حزمة SDK.
+
+<CodeGroup>
+
+```typescript TypeScript
+// ElevenLabs: اختر معرّف صوت دقيقًا
+await client.generateSpeech({
+  model: "eleven-labs/eleven-v3",
+  input: "Hello from ElevenLabs",
+  voice: "rachel",
+  config: {
+    elevenlabs: {
+      voice_id: "21m00Tcm4TlvDq8ikWAM",
+    },
+  },
+});
+
+// Google: اختر اسم صوت دقيقًا
+await client.generateSpeech({
+  model: "google/gemini-3.1-flash-tts-preview",
+  input: "Hello from Gemini",
+  voice: "kore",
+  config: {
+    google: {
+      voice_name: "Kore",
+    },
+  },
+});
+```
+
+```python Python
+# ElevenLabs: اختر معرّف صوت دقيقًا
+client.generate_speech({
+    "model": "eleven-labs/eleven-v3",
+    "input": "Hello from ElevenLabs",
+    "voice": "rachel",
+    "config": {"elevenlabs": {"voice_id": "21m00Tcm4TlvDq8ikWAM"}},
+})
+
+# Google: اختر اسم صوت دقيقًا
+client.generate_speech({
+    "model": "google/gemini-3.1-flash-tts-preview",
+    "input": "Hello from Gemini",
+    "voice": "kore",
+    "config": {"google": {"voice_name": "Kore"}},
+})
+```
+
+</CodeGroup>

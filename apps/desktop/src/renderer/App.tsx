@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { projectScopeKey } from "./shell/codeThreads";
 import { projectScopes } from "../shared/projectShelf";
 import { setDynamicCommands, useCommand, useKeybindingDispatcher, useKeybindings } from "./lib/keybindings";
@@ -20,18 +20,16 @@ import { RightPanel } from "./shell/RightPanel";
 import { BrowserMiniPlayerHost } from "./components/browser/BrowserMiniPlayer";
 import { CommandPalette } from "./shell/CommandPalette";
 import { Toaster } from "./components/ui/toast";
+import { QuitHoldNotice } from "./shell/QuitHoldNotice";
 import { QuitRecoveryOffer } from "./chat/UsageLimitNotice";
-import { SettingsPage } from "./settings/SettingsPage";
-import { ScheduledTasks } from "./views/ScheduledTasks";
 import { Inbox } from "./views/Inbox";
-import { Usage } from "./views/Usage";
-import { PullRequestsPage } from "./views/pullRequests/PullRequestsPage";
 import { ChatNotifications } from "./app/ChatNotifications";
 import { NewChat } from "./chat/NewChat";
 import { ChatView } from "./chat/ChatView";
 import { CompareView } from "./chat/CompareView";
 import { GuideRunNotices } from "./views/pullRequests/GuideRunNotices";
-import { FactoryPage } from "./factory/FactoryPage";
+import { useDiffColours } from "./lib/workspacePreferences";
+import { AppAnalytics } from "./lib/AppAnalytics";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
@@ -82,7 +80,30 @@ function useShortcuts() {
 	useCommand("view.zoomReset", () => void window.phaseoDesktop?.performAppAction("zoom-reset"));
 }
 
+// Pages other than the chat load when first opened, so the window parses about a megabyte less before it can paint.
+// Once the window is idle they load in the background, so opening one later doesn't wait.
+const pages = {
+	settings: () => import("./settings/SettingsPage").then(module => ({ default: module.SettingsPage })),
+	usage: () => import("./views/Usage").then(module => ({ default: module.Usage })),
+	scheduled: () => import("./views/ScheduledTasks").then(module => ({ default: module.ScheduledTasks })),
+	pullRequests: () => import("./views/pullRequests/PullRequestsPage").then(module => ({ default: module.PullRequestsPage })),
+	factory: () => import("./factory/FactoryPage").then(module => ({ default: module.FactoryPage })),
+};
+const SettingsPage = lazy(pages.settings), Usage = lazy(pages.usage), ScheduledTasks = lazy(pages.scheduled), PullRequestsPage = lazy(pages.pullRequests), FactoryPage = lazy(pages.factory);
+function usePreloadedPages() {
+	useEffect(() => {
+		const load = () => { for (const page of Object.values(pages)) void page().catch(() => undefined); };
+		const idle = window.requestIdleCallback?.(load, { timeout: 4000 }), timer = idle === undefined ? setTimeout(load, 2000) : undefined;
+		return () => { if (idle !== undefined) window.cancelIdleCallback(idle); clearTimeout(timer); };
+	}, []);
+}
+
 function Main() {
+	usePreloadedPages();
+	return <Suspense fallback={null}><Page /></Suspense>;
+}
+
+function Page() {
 	const { selectedId, compareId, compareGroups, settings, scheduled, pullRequestsPage, inboxPage, usagePage, mode, codeView } = useWorkspace();
 	if (settings) return <SettingsPage />;
 	if (inboxPage) return <Inbox />;
@@ -111,6 +132,7 @@ function Shell() {
 	useShortcuts();
 	return <div className="flex h-full flex-col">
 		<Titlebar />
+		<AppAnalytics />
 		<div className="relative flex min-h-0 flex-1">
 			{(sidebarOpen || settings) && <Sidebar />}
 			{/* A maximised pane takes the chat column's place. */}
@@ -121,6 +143,7 @@ function Shell() {
 		<CommandPalette />
 		<HistoryNavigation />
 		<Toaster />
+		<QuitHoldNotice />
 		<ChatNotifications />
 		<GuideRunNotices />
 		<QuitRecoveryOffer />
@@ -129,5 +152,6 @@ function Shell() {
 
 export function App() {
 	useAppTheme();
+	useDiffColours();
 	return <WorkspaceProvider><Shell /></WorkspaceProvider>;
 }

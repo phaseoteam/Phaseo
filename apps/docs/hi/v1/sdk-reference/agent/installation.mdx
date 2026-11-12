@@ -1,0 +1,287 @@
+---
+icon: "package"
+title: "Agent SDK इंस्टॉलेशन"
+sidebarTitle: "इंस्टॉलेशन"
+description: "Phaseo Agent SDK इंस्टॉल करें और वह API कुंजी सेट करें जिसका उपयोग उसका gateway क्लाइंट करता है।"
+---
+
+अपनी भाषा का Agent SDK पैकेज इंस्टॉल करें, `PHASEO_API_KEY` सेट करें, और [उपयोग](./usage) में पहला एजेंट बनाएँ। हर पैकेज अपनी भाषा का कोर Phaseo क्लाइंट dependency के रूप में साथ लाता है।
+
+<Steps>
+<Step title="पैकेज इंस्टॉल करें">
+
+<Tabs>
+<Tab title="TypeScript">
+
+[`@phaseo/agent-sdk`](https://www.npmjs.com/package/@phaseo/agent-sdk) 0.3.0 को किसी TypeScript या JavaScript प्रोजेक्ट में इंस्टॉल करें। `@phaseo/sdk` इसके साथ आता है।
+
+<CodeGroup>
+
+```bash npm
+npm install @phaseo/agent-sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/agent-sdk
+```
+
+```bash yarn
+yarn add @phaseo/agent-sdk
+```
+
+```bash bun
+bun add @phaseo/agent-sdk
+```
+
+</CodeGroup>
+
+</Tab>
+<Tab title="Python">
+
+[`phaseo-agent-sdk`](https://pypi.org/project/phaseo-agent-sdk/) 0.3.0 को Python 3.10 या नए एनवायरनमेंट में इंस्टॉल करें। कोर `phaseo` क्लाइंट (3.x) इसके साथ आता है, और पैकेज `phaseo_agent` मॉड्यूल के रूप में इंस्टॉल होता है।
+
+<CodeGroup>
+
+```bash pip
+pip install phaseo-agent-sdk
+```
+
+```bash uv
+uv add phaseo-agent-sdk
+```
+
+</CodeGroup>
+
+</Tab>
+<Tab title="Go">
+
+Go 1.24 या नए के साथ [`agent-sdk-go`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go) `v0.3.0` जोड़ें। Go कोर क्लाइंट, `github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3`, को dependency के रूप में जोड़ता है।
+
+```bash
+go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest
+```
+
+एजेंट पैकेज को `phaseoagent` के रूप में import करें:
+
+```go
+import phaseoagent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"
+```
+
+</Tab>
+<Tab title="C#">
+
+NuGet से [`Phaseo.AgentSdk`](https://www.nuget.org/packages/Phaseo.AgentSdk) 0.3.0 जोड़ें। आपको .NET 8 या नया चाहिए। NuGet `Phaseo.Sdk` को dependency के रूप में जोड़ता है।
+
+```bash
+dotnet add package Phaseo.AgentSdk
+```
+
+एजेंट टाइप `PhaseoAgentSdk` namespace में हैं:
+
+```csharp
+using PhaseoAgentSdk;
+```
+
+</Tab>
+<Tab title="PHP">
+
+Composer के साथ [`phaseo/agent-sdk`](https://packagist.org/packages/phaseo/agent-sdk) `v0.3.0` जोड़ें। आपको PHP 8.1 या नया चाहिए। Composer `phaseo/sdk` (`^3.0.0`) को dependency के रूप में जोड़ता है।
+
+```bash
+composer require phaseo/agent-sdk
+```
+
+एजेंट classes `Phaseo\AgentSdk` namespace में हैं:
+
+```php
+use Phaseo\AgentSdk\AgentDefinition;
+use Phaseo\AgentSdk\AgentSdk;
+use Phaseo\AgentSdk\Tool;
+```
+
+</Tab>
+<Tab title="Ruby">
+
+RubyGems या Bundler के साथ [`phaseo_agent_sdk`](https://rubygems.org/gems/phaseo_agent_sdk) 0.3.0 जोड़ें। आपको Ruby 3.2 या नया चाहिए। RubyGems `phaseo_sdk` (`>= 3.0.0, < 4.0.0`) को dependency के रूप में जोड़ता है।
+
+<CodeGroup>
+
+```bash gem
+gem install phaseo_agent_sdk
+```
+
+```ruby Gemfile
+gem "phaseo_agent_sdk"
+```
+
+</CodeGroup>
+
+एजेंट मॉड्यूल इस तरह लोड करें:
+
+```ruby
+require "phaseo_agent_sdk"
+```
+
+</Tab>
+<Tab title="Java">
+
+Maven Central से `app.phaseo:phaseo-agent-sdk` 0.3.0 जोड़ें। आपको Java 17 या नया चाहिए। बिल्ड `app.phaseo:phaseo-sdk` 3.0.0 और Jackson को dependencies के रूप में जोड़ता है। सभी टाइप `app.phaseo.agent.AgentSdk` में nested records हैं।
+
+<CodeGroup>
+
+```xml Maven
+<dependency>
+  <groupId>app.phaseo</groupId>
+  <artifactId>phaseo-agent-sdk</artifactId>
+  <version>0.3.0</version>
+</dependency>
+```
+
+```kotlin Gradle
+implementation("app.phaseo:phaseo-agent-sdk:0.3.0")
+```
+
+</CodeGroup>
+
+इसके बजाय सोर्स से बिल्ड करने के लिए:
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+mvn -f packages/sdk/agent-sdk-java/pom.xml package
+```
+
+</Tab>
+<Tab title="Rust">
+
+Rust 1.86 या नए के साथ [`phaseo-agent`](https://crates.io/crates/phaseo-agent) और `phaseo` क्लाइंट जोड़ें, दोनों crates.io पर 0.2.0 पर। दूसरी भाषाओं के विपरीत, कोर क्लाइंट ख़ुद जोड़ें।
+
+<CodeGroup>
+
+```toml Cargo.toml
+[dependencies]
+phaseo = "0.2"
+phaseo-agent = "0.2"
+serde_json = "1"
+```
+
+```bash cargo
+cargo add phaseo@0.2 phaseo-agent@0.2 serde_json
+```
+
+</CodeGroup>
+
+</Tab>
+</Tabs>
+
+</Step>
+<Step title="अपनी API कुंजी सेट करें">
+
+[API कुंजियाँ](https://phaseo.app/settings/keys) में एक कुंजी बनाएँ, फिर उसे export करें:
+
+<CodeGroup>
+
+```bash macOS and Linux
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+```powershell Windows
+$env:PHASEO_API_KEY = "phaseo_v1_sk_..."
+```
+
+</CodeGroup>
+
+ज़्यादातर gateway क्लाइंट कुंजी एनवायरनमेंट से पढ़ते हैं; Python का नहीं पढ़ता। TypeScript, Python और Java `PHASEO_BASE_URL` को अनदेखा करते हैं:
+
+| भाषा | Gateway क्लाइंट | `PHASEO_API_KEY` पढ़ता है | `PHASEO_BASE_URL` पढ़ता है | कोड में इनके साथ दें |
+| --- | --- | --- | --- | --- |
+| TypeScript | `createGatewayAgentClient()` | हाँ | नहीं | `clientOptions.apiKey`, `clientOptions.baseUrl` |
+| Python | `create_gateway_agent_client()` | नहीं; कुंजी के बिना `ValueError` raise करता है | नहीं | `client_options={"api_key": ...}` या `client=Phaseo()` |
+| Go | `CreateGatewayAgentClient(...)` | हाँ, जब `APIKey` ख़ाली हो | हाँ, जब `BaseURL` ख़ाली हो | `GatewayAgentClientOptions.APIKey`, `.BaseURL` |
+| C# | `AgentSdk.CreateGatewayAgentClient()` | हाँ | हाँ | `GatewayAgentClientOptions.ClientOptions` में `apiKey`, `baseUrl` |
+| PHP | `AgentSdk::createGatewayAgentClient()` | हाँ | हाँ | `GatewayAgentClientOptions::$clientOptions` में `api_key`, `base_url` |
+| Ruby | `PhaseoAgentSdk.create_gateway_agent_client` | हाँ | हाँ | `api_key:`, `base_url:` |
+| Java | `AgentSdk.createGatewayAgentClient()` | हाँ | नहीं | `new AgentSdk.GatewayOptions(null, apiKey, baseUrl, null, null, null)` |
+| Rust | `create_gateway_agent_client(model)`, `GatewayAgentClient::from_env(model)` | हाँ | हाँ, `phaseo` क्लाइंट के ज़रिए | `GatewayAgentClient::new(client, model)` |
+
+डिफ़ॉल्ट base URL `https://api.phaseo.app/v1` है।
+
+</Step>
+<Step title="इंस्टॉल की जाँच करें">
+
+मॉडल को कॉल किए बिना एक एजेंट बनाएँ। अगर यह compile होकर चलता है, तो पैकेज इंस्टॉल है:
+
+<CodeGroup>
+
+```typescript TypeScript
+import { createAgent } from "@phaseo/agent-sdk";
+
+createAgent({ id: "verification-agent", model: "openai/gpt-6-astra" });
+console.log("Phaseo Agent SDK installed");
+```
+
+```python Python
+from phaseo_agent import create_agent
+
+create_agent({"id": "verification-agent", "model": "openai/gpt-6-astra"})
+print("Phaseo Agent SDK installed")
+```
+
+```go Go
+package main
+
+import (
+  "fmt"
+
+  phaseoagent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"
+)
+
+func main() {
+  phaseoagent.CreateAgent(phaseoagent.AgentDefinition{ID: "verification-agent", Model: "openai/gpt-6-astra"})
+  fmt.Println("Phaseo Agent SDK installed")
+}
+```
+
+```csharp C#
+using PhaseoAgentSdk;
+
+AgentSdk.CreateAgent(new AgentDefinition { Id = "verification-agent", Model = "openai/gpt-6-astra" });
+Console.WriteLine("Phaseo Agent SDK installed");
+```
+
+```php PHP
+<?php
+require "vendor/autoload.php";
+
+use Phaseo\AgentSdk\AgentDefinition;
+use Phaseo\AgentSdk\AgentSdk;
+
+AgentSdk::createAgent(new AgentDefinition(id: "verification-agent", model: "openai/gpt-6-astra"));
+echo "Phaseo Agent SDK installed" . PHP_EOL;
+```
+
+```ruby Ruby
+require "phaseo_agent_sdk"
+
+PhaseoAgentSdk.create_agent(id: "verification-agent", model: "openai/gpt-6-astra")
+puts "Phaseo Agent SDK installed"
+```
+
+```rust Rust
+use phaseo_agent::{create_agent, AgentDefinition};
+
+fn main() {
+    let _agent = create_agent(AgentDefinition::new(
+        "verification-agent",
+        "openai/gpt-6-astra",
+    ));
+    println!("Phaseo Rust Agent SDK installed");
+}
+```
+
+</CodeGroup>
+
+Java का कोई छोटा रूप नहीं है: `AgentDefinition` एक positional record है, जिसे [उपयोग](./usage) में पूरा दिखाया गया है।
+
+</Step>
+</Steps>

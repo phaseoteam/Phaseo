@@ -1,8 +1,6 @@
-"use client";
-
 import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { Gauge, Plus } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import {
 	assignRateLimitPolicy,
@@ -12,7 +10,7 @@ import {
 	removeRateLimitAssignment,
 	updateRateLimitPolicy,
 	type RateLimitActionError,
-} from "@/app/(dashboard)/settings/rate-limits/actions";
+} from "@/features/settings/rate-limits/actions";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -122,7 +120,7 @@ function PolicyRow({ policy, data, onEdit }: { policy: SettingsRateLimitPolicy; 
 
 	function remove() {
 		startDeleting(async () => {
-			const result = await write(deleteRateLimitPolicy(policy.id));
+			const result = await write(deleteRateLimitPolicy({ data: policy.id }));
 			if (!result.ok) {
 				toast.error(actionError(result, t("errors.deleteFailed")));
 				return;
@@ -201,8 +199,8 @@ function PolicyDialog({ state, onClose }: { state: Exclude<EditorState, null>; o
 		}
 		startSaving(async () => {
 			const result = existing
-				? await write(updateRateLimitPolicy(existing.id, built.payload))
-				: await write(createRateLimitPolicy(built.payload));
+				? await write(updateRateLimitPolicy({ data: { id: existing.id, payload: built.payload } }))
+				: await write(createRateLimitPolicy({ data: built.payload }));
 			if (!result.ok) {
 				toast.error(actionError(result, t("errors.saveFailed")));
 				return;
@@ -336,7 +334,7 @@ function AssignmentsSection({ data }: { data: Data }) {
 						className="rounded-md"
 						disabled={pending || !canAssign}
 						onClick={() => run(
-							() => write(assignRateLimitPolicy({ policyId, targetType, targetId: needsTarget ? targetId : null })),
+							() => write(assignRateLimitPolicy({ data: { policyId, targetType, targetId: needsTarget ? targetId : null } })),
 							t("toasts.assigned"),
 							() => setTargetId(""),
 						)}
@@ -354,14 +352,14 @@ function AssignmentsSection({ data }: { data: Data }) {
 								<Select
 									value={assignment.policyId}
 									disabled={pending}
-									onValueChange={(value) => run(() => write(changeRateLimitAssignment(assignment.id, value)), t("toasts.changed"))}
+									onValueChange={(value) => run(() => write(changeRateLimitAssignment({ data: { id: assignment.id, policyId: value } })), t("toasts.changed"))}
 								>
 									<SelectTrigger className="w-48 rounded-md" aria-label={t("assignPolicy")}><SelectValue>{data.policies.find((policy) => policy.id === assignment.policyId)?.name ?? t("choosePolicy")}</SelectValue></SelectTrigger>
 									<SelectContent>
 										{data.policies.map((policy) => <SelectItem key={policy.id} value={policy.id}>{policy.name}</SelectItem>)}
 									</SelectContent>
 								</Select>
-								<Button type="button" variant="outline" size="sm" className="rounded-md" disabled={pending} onClick={() => run(() => write(removeRateLimitAssignment(assignment.id)), t("toasts.removed"))}>
+								<Button type="button" variant="outline" size="sm" className="rounded-md" disabled={pending} onClick={() => run(() => write(removeRateLimitAssignment({ data: assignment.id })), t("toasts.removed"))}>
 									{t("remove")}
 								</Button>
 							</div>

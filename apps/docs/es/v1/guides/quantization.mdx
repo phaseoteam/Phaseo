@@ -1,0 +1,129 @@
+---
+icon: "binary"
+title: "Cuantización"
+description: "Elige un formato de precisión y un método de cuantización, y enruta solo a los proveedores que sirven el que probaste."
+---
+
+Envía `provider.quantizations` para enrutar una solicitud solo a los proveedores que sirven el modelo con la precisión que probaste:
+
+```json
+{
+  "model": "meta/llama-3.3-70b-instruct",
+  "messages": [{ "role": "user", "content": "Hello" }],
+  "provider": {
+    "quantizations": ["FP8"]
+  }
+}
+```
+
+## Qué cambia la cuantización
+
+La cuantización guarda los pesos de un modelo en un tipo numérico más pequeño. Así, el mismo modelo necesita menos memoria y responde más rápido, a costa de algo de calidad en la salida. Dos cosas describen un modelo cuantizado: el **formato** (el tipo numérico, como `FP8` o `INT4`) y el **método** (cómo se convirtieron los pesos a ese tipo, como `AWQ` o `GPTQ`).
+
+Cada vez que se reducen los bits a la mitad, se reduce a la mitad la memoria que necesitan los pesos. Para un modelo de 70B parámetros, solo los pesos ocupan aproximadamente:
+
+| Formato | Bits por peso | Pesos de un modelo de 70B |
+| --- | --- | --- |
+| `FP32` | 32 | ~280 GB |
+| `BF16`, `FP16` | 16 | ~140 GB |
+| `FP8`, `INT8` | 8 | ~70 GB |
+| `FP4`, `INT4` | 4 | ~35 GB |
+
+Estas cifras son aritméticas (parámetros × bytes por peso) y no incluyen las activaciones ni la caché KV, para las que los proveedores también necesitan memoria.
+
+## Compara formatos de precisión
+
+Un formato de precisión es el tipo numérico que usa un proveedor para guardar los pesos de un modelo. Una precisión más baja usa menos memoria y responde más rápido, con más riesgo para la calidad de la salida.
+
+| Formato | Uso habitual | Ventaja principal | Riesgo principal |
+| --- | --- | --- | --- |
+| `FP32` | Precisión de referencia/completa | Máxima estabilidad numérica | El mayor coste de memoria y cómputo |
+| `BF16` | Entrenamiento + inferencia de alta calidad | Buena calidad con más eficiencia que FP32 | Sigue siendo más pesado que 8 bits/4 bits |
+| `FP16` | Flujos habituales de inferencia/entrenamiento | Buena velocidad y menor uso de memoria | Menor rango dinámico que BF16 |
+| `FP8` | Inferencia/entrenamiento orientados al rendimiento | Grandes mejoras de velocidad/memoria | Regresiones de calidad apreciables en prompts difíciles |
+| `FP4` | Modos de eficiencia agresivos | Densidad muy alta y bajo coste | Mayor riesgo de degradación de la salida |
+| `INT8` | Cuantización de inferencia ampliamente compatible | Gran eficiencia con un impacto moderado en la calidad | Problemas de calibración/sensibilidad en algunos modelos |
+| `INT4` | Despliegues sensibles al coste | Memoria muy baja y alto rendimiento | Mayores concesiones en calidad y robustez |
+
+### BF16 o FP16
+
+Ambos son de 16 bits. `BF16` conserva un rango de exponente mayor, así que es más estable; `FP16` es habitual y rápido, pero menos estable en algunas cargas de trabajo. Cuando un proveedor ofrece `BF16`, es la opción más segura para el tráfico en el que la calidad es crítica.
+
+### FP8 y FP4
+
+`FP8` aporta una gran mejora de eficiencia y mantiene una calidad aprovechable en la mayoría de las tareas. `FP4` va más allá, pero la calidad cae con más frecuencia, sobre todo en razonamientos con matices, contextos largos y salidas estructuradas estrictas.
+
+### INT8 e INT4
+
+Los formatos enteros están pensados para el rendimiento de la inferencia y la memoria. Lo bien que conservan la calidad depende del [método de cuantización](#compare-quantization-methods), los datos de calibración y la arquitectura del modelo. `INT8` es más fácil de desplegar de forma segura que `INT4`.
+
+### Lee la etiqueta de un modelo
+
+Los proveedores etiquetan las variantes como `bf16`, `fp16`, `fp8`, `int8`, `q4`, `4bit`, `8bit`, etc. La nomenclatura no es estándar: `4bit` puede significar `FP4` o `INT4`. Consulta la documentación del proveedor para conocer la variante exacta.
+
+<span id="compare-quantization-methods"></span>
+## Compara métodos de cuantización
+
+Un formato como `INT4` es el objetivo de precisión; un método como `AWQ` o `GPTQ` es la forma en que se convirtieron los pesos a ese formato. `AWQ INT4` y `GPTQ INT4` alcanzan el mismo objetivo de formas distintas, así que pueden comportarse de manera muy diferente. El método influye en cuánta precisión se conserva, qué entornos de ejecución pueden servir el modelo, la disposición en memoria y la velocidad de servicio, y si hicieron falta datos de calibración.
+
+| Familia de métodos | Propósito habitual | Notas |
+| --- | --- | --- |
+| `AWQ` | Conservar los pesos clave sensibles a las activaciones | Habitual para equilibrar en la práctica calidad y eficiencia de la inferencia |
+| `GPTQ` | Cuantización posterior al entrenamiento con minimización del error | Popular para variantes compactas de inferencia local |
+| `GGUF` | Formato de empaquetado usado en los ecosistemas de llama.cpp | Suele combinarse con distintos niveles de cuantización (`Q4`, `Q5`, etc.) |
+| `EXL2` | Variantes agresivas de pocos bits en los ecosistemas de ExLlama | Orientado al alto rendimiento, con restricciones de arquitectura/entorno de ejecución |
+
+Para comparar métodos con tu propia carga de trabajo:
+
+1. Elige primero el entorno de ejecución: el que puedas desplegar de forma fiable.
+2. Quédate solo con las familias de métodos que admita ese entorno.
+3. Compara varios métodos con el mismo objetivo de precisión.
+4. Sigue los modos de fallo, no solo las puntuaciones medias de los benchmarks: corrección de la salida estructurada, fidelidad en contextos largos, fiabilidad de las llamadas a herramientas, comportamiento de seguridad y moderación, y latencia de cola bajo carga.
+
+## Enruta a una sola precisión
+
+El filtro `provider.quantizations` comprueba la oferta del modelo de cada proveedor, no solo el nombre del proveedor:
+
+- **La coincidencia ignora mayúsculas y minúsculas, espacios, `-` y `_`.** También coinciden los alias inequívocos: `bfloat16` para `BF16`, `float16` para `FP16`, `float8` para `FP8`. Una etiqueta como `4bit` no se trata como `FP4` ni como `INT4`.
+- **Las ofertas sin metadatos de cuantización nunca coinciden.**
+- **No hay alternativa con otra precisión.** Si ninguna oferta coincide, la solicitud falla con `400 unsupported_model_or_endpoint`, motivo `quantization_not_available`. El error enumera las precisiones disponibles y, en `routing_diagnostics.quantization`, qué proveedores se descartaron y por qué.
+- `routing.quantizations` se acepta como alternativa a `provider.quantizations`.
+
+<span id="pick-a-precision"></span>
+## Elige una precisión
+
+| Carga de trabajo | Empieza con |
+| --- | --- |
+| Razonamiento en el que la calidad es crítica | `BF16` / `FP16` |
+| Equilibrio entre coste y calidad | `FP8` / `INT8` |
+| Alto rendimiento, sensible al coste | `INT4` / `FP4`, tras validarlo |
+
+No necesitas una sola precisión para todo. Mantén una precisión más alta para la atención al cliente y las decisiones críticas, y acepta una precisión más baja para la clasificación o el resumen de gran volumen.
+
+<Steps>
+<Step title="Define criterios de éxito">
+
+Define umbrales de calidad (precisión en la tarea, tasas de aprobación, validez de la salida estructurada), objetivos de latencia y coste, y los modos de fallo que no vas a aceptar.
+
+</Step>
+<Step title="Mide una referencia de alta precisión">
+
+Empieza con `BF16` o `FP16`. Registra la calidad de la salida, la latencia mediana y de cola, y el coste en tokens. Cada precisión más baja se compara con esta.
+
+</Step>
+<Step title="Baja de nivel de uno en uno">
+
+Prueba después `FP8` o `INT8`. Pasa a `FP4` o `INT4` solo si necesitas el ahorro adicional de coste o rendimiento. No saltes directamente a la variante más pequeña salvo que ya tengas pruebas de que funciona con tu carga de trabajo.
+
+</Step>
+<Step title="Prueba con prompts parecidos a los de producción">
+
+Incluye prompts largos, razonamiento de varios pasos, llamadas a herramientas y casos límite sacados de tickets de soporte.
+
+</Step>
+<Step title="Despliega y sigue vigilando">
+
+Mantén en tu propio cliente un modelo o una precisión alternativos para cuando ninguna oferta coincida, supervisa la calidad tras el despliegue y vuelve a probar cuando cambie el entorno de ejecución del proveedor o la revisión del modelo. Una vez elegida una precisión, ajusta los [parámetros de inferencia](./inference-parameters.mdx) sobre ella.
+
+</Step>
+</Steps>

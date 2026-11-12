@@ -4,44 +4,41 @@ icon: "/icons/brands/pi.svg"
 description: "Verbinde einen installierten Pi-Modellkatalog mit dem Phaseo Gateway."
 ---
 
-## Mit der Phaseo-CLI einrichten
+Führe `phaseo pi` aus, um Pi eine Phaseo-Anbietererweiterung mit jedem kompatiblen Phaseo-Modell hinzuzufügen.
 
-Diese produktionsbereiten Befehle setzen ein Phaseo-Konto voraus. Die CLI erstellt beim Anmelden und Einrichten die eigene Gateway-Zugangsdaten.
+## Mit der Phaseo CLI einrichten
 
 ```bash
 phaseo login
 phaseo pi
 ```
 
-Installiere Pi zuerst aus der offiziellen Version. Beim Einrichten wird eine verwaltete Provider-Erweiterung unter `~/.pi/agent/extensions/phaseo.ts` abgelegt. Sie stellt alle aktiven Phaseo-Textmodelle bereit, die mit Chat Completions kompatibel sind, und ruft bei jeder Anfrage den eigenen API-Schlüssel über die Phaseo-CLI ab.
+Fehlt Pi, zeigt die CLI den offiziellen Installationsbefehl an und fragt nach, bevor sie ihn ausführt. Danach erstellt die Einrichtung einen `Phaseo CLI: Pi API Key` (Ablauf nach 90 Tagen, monatliches Ausgabenlimit von $100) und schreibt eine Anbietererweiterung nach `~/.pi/agent/extensions/phaseo.ts`. Die Erweiterung listet jedes aktive Phaseo-Textmodell auf, das mit Chat Completions funktioniert.
 
-Wähle ein Startmodell oder richte bei Bedarf nur ein Modell ein:
+| Flag | Wirkung |
+| --- | --- |
+| `--model <id>` | Legt das Anfangsmodell fest. Standard ist `anthropic/claude-sonnet-4.6`. |
+| `--catalog default` | Fügt nur das ausgewählte Modell hinzu. |
+| `--dry-run` | Zeigt die Dateiänderungen an, ohne sie vorzunehmen. |
 
-```bash
-phaseo pi --model anthropic/claude-sonnet-4.6
-phaseo pi --catalog default
-```
-
-Verwende `--dry-run`, um Dateiänderungen vorab anzuzeigen.
-
-## Starten und überprüfen
-
-```bash
-pi
-```
-
-Öffne `/model`, wähle den Provider `phaseo` und sende eine einfache Anfrage. Entferne nur die verwaltete Erweiterung und widerrufe ihren eigenen Schlüssel mit:
-
-```bash
-phaseo integrations remove pi
-```
-
-## Manueller Zugriff auf Zugangsdaten
-
-Die erstellte Erweiterung verwendet Pis befehlsbasierte Schlüssel-Syntax:
+Die Erweiterung holt ihren Schlüssel zum Zeitpunkt der Anfrage mit der befehlsgestützten Schlüsselsyntax von Pi, sodass kein Klartextschlüssel in die Datei geschrieben wird:
 
 ```text
 !phaseo integrations credential pi
 ```
 
-In der Erweiterung wird kein Schlüssel im Klartext gespeichert.
+## Prüfen, ob es funktioniert
+
+```bash
+pi
+```
+
+Öffne `/model`, wähle den Anbieter `phaseo` und sende einen kurzen Prompt. Prüfe, ob die Anfrage unter **Einstellungen → Nutzung → Protokolle** erscheint.
+
+## Phaseo entfernen
+
+```bash
+phaseo integrations remove pi
+```
+
+Damit wird nur die Phaseo-Erweiterung entfernt und der Schlüssel widerrufen.

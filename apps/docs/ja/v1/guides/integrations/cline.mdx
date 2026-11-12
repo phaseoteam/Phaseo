@@ -1,75 +1,78 @@
 ---
 title: "Cline"
 icon: "/icons/brands/cline.svg"
-description: "OpenAI互換プロバイダー経由でClineをPhaseoに接続します。"
+description: "OpenAI 互換プロバイダー経由で Cline を Phaseo に接続します。"
 ---
 
-分離されたセッションにはPhaseo CLIのランナーを使うか、CLIで専用キーを作成して既存のClineを手動で設定してください。Clineは認証情報をVS Codeの安全なシークレットストレージに保存するため、最後の入力は拡張機能の画面で行います。
+`phaseo cline` を実行すると、Phaseo 経由で Cline CLI のセッションを開始できます。または `phaseo setup cline` でキーを作成し、Cline 拡張機能に **OpenAI Compatible** プロバイダーを追加します。拡張機能はキーを VS Code のシークレットストレージに保存するため、最後の手順は拡張機能の画面で行います。
 
-## Phaseo CLIでClineを実行する
-
-Cline CLIでは、1セッション用のプロバイダー設定をPhaseoに準備させます。
+## Phaseo 経由で Cline CLI を実行する
 
 ```bash
 phaseo login
 phaseo cline --model openai/gpt-5.6-terra -- --tui
 ```
 
-`--catalog all`でPhaseoのすべての有効なテキスト/チャットモデルを公開し、`--dry-run --json`でインストールと起動計画を確認できます。明示的なコマンド形式は`phaseo run cline ...`です。ランナーは一時的なCline設定とデータディレクトリを使うため、既存のClineやVS Codeの設定を上書きしません。
+ランナーは Cline の設定を一時ディレクトリに書き込んで `cline` を起動し、Cline の終了時にそのディレクトリを削除します。そのため、既存の Cline や VS Code の設定には影響しません。Cline がインストールされていない場合、対話型の実行ではインストールを提案します。Cline 自体のフラグは `--` の後に指定します。
 
-## Phaseo CLIで認証情報を作成する
+| フラグ | 効果 |
+| --- | --- |
+| `--model <id>` | 使用するモデル。デフォルトは `openai/gpt-5.6-terra` です。 |
+| `--catalog all` | 選択したモデルだけでなく、Phaseo の有効なテキストモデルをすべて Cline に表示します。 |
+| `--dry-run --json` | キーの作成や Cline の起動を行わずに、インストールと起動の計画を表示します。 |
+| `--skip-install` | インストールの確認をスキップします。 |
+
+`phaseo run cline ...` は同じコマンドの完全な形式です。
+
+## Cline 拡張機能を設定する
+
+拡張機能用のキーを作成します。
 
 ```bash
 phaseo login
-phaseo setup cline --model anthropic/claude-sonnet-4.6
+phaseo setup cline --model anthropic/claude-sonnet-5.5
 ```
 
-## Clineを手動で設定する
+次に、VS Code で以下を行います。
 
-1. VS CodeでClineパネルを開きます。
-2. 設定アイコンを選択するか、チャットボックスの下にあるプロバイダーを選びます。
-3. **OpenAI Compatible**を選択します。
-4. 次の値を入力します。
+1. Cline パネルを開き、設定アイコン、またはチャットボックスの下にあるプロバイダーを選択します。
+2. **OpenAI Compatible** を選び、次の値を入力します。
 
-| Clineの項目 | 値 |
+| Cline の項目 | 値 |
 | --- | --- |
 | Base URL | `https://api.phaseo.app/v1` |
-| API Key | 次のコマンドの出力 `phaseo integrations credential cline` |
-| Model ID | `anthropic/claude-sonnet-4.6` またはセットアップ時に表示されたモデル |
+| API Key | `phaseo integrations credential cline` の出力 |
+| Model ID | `anthropic/claude-sonnet-5.5`、またはセットアップ時に表示されたモデル |
 
-5. プロバイダーを保存します。使用中のバージョンに**Verify**が表示されたら選択します。
-6. 次のタスクで設定したモデルを選択します。
+3. プロバイダーを保存します。お使いのバージョンに **Verify** が表示される場合は選択します。
+4. 次のタスクで設定したモデルを選択します。
 
-## 確認する
+CLI を使わない場合は、任意の Phaseo API キーを使えます。チームで管理する構成については、Cline の [OpenAI 互換の設定](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration)のドキュメントを参照してください。
 
-Clineに`PHASEO_CLINE_OK`と返答するよう依頼し、Phaseoのアクティビティにリクエストが表示されることを確認します。
+## 動作を確認する
 
-## 削除する
+Cline に `PHASEO_CLINE_OK` と返答するよう依頼し、**設定 → 利用状況 → ログ**にリクエストが表示されることを確認します。
 
-ClineでPhaseoプロバイダーを削除するか切り替えた後、次を実行します。
+## Phaseo を削除する
+
+Cline で Phaseo プロバイダーを削除するか別のプロバイダーに切り替えてから、次を実行します。
 
 ```bash
 phaseo integrations remove cline
 ```
 
-CLIからVS Codeの拡張機能専用ストレージは消去できませんが、削除操作により保存済みのキーは失効します。
+これによりキーが失効します。CLI は VS Code の拡張機能ストレージを消去できないため、削除したキーは Cline 側で削除するまで表示されたままになる場合があります。
 
-## トラブルシューティング
+## よくある問題を解決する
 
 ### 確認に失敗する
 
-URLベースは`/v1`を含めて表示どおりに保ち、新たに取得したキーを引用符や空白なしで貼り付けます。
+Base URL は `/v1` を含めて表示どおりに入力し、新しく取得したキーを引用符や空白なしで貼り付けます。
 
-### モデル一覧が空
+### モデル一覧が空になる
 
-PhaseoのモデルIDを手動で入力します。モデルの自動検出は不要です。
+Phaseo のモデル ID を手動で入力します。Cline はモデルの自動検出を必要としません。
 
 ### チャットは動くがツールが失敗する
 
-ツール呼び出しに対応したPhaseoモデルを選択します。接続性とモデルのツール対応は別々に確認してください。
-
-## 関連項目
-
-- [ClineのOpenAI互換設定](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration)
-- [コーディングエージェント](./coding-assistants.mdx)
-- [モデル](../../api-reference/endpoint/models.mdx)
+ツール呼び出しに対応した Phaseo モデルを選びます。接続が機能していても、モデルがツールに対応しているとは限りません。

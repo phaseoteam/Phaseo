@@ -8,7 +8,7 @@ import { hostedApp, ORIGINAL_BOT_SCOPES, type Installation } from "../src/instal
 import { handleInteraction } from "../src/interactions";
 import { answerValue } from "../src/questions";
 import type { TurnRef } from "../src/turns";
-import { MEMORY_TOOL_IDS, SKILL_TOOL_IDS } from "../src/memory";
+import { MEMORY_TOOL_IDS, SAVED_MEMORY_NOTICE, SKILL_TOOL_IDS } from "../src/memory";
 import { SCHEDULE_TOOL_IDS } from "../src/schedules";
 import { footerModels, runTurn, type StepConfig, type StepRunner, type TurnDeps } from "../src/workflow";
 import {
@@ -242,11 +242,17 @@ describe("AgentTurnWorkflow", () => {
 		await runTurn(deps(agent), await startTurn(), step);
 		expect(world.db.rpcs.find((call) => call.fn === "load_slack_agent_turn_memory")?.args).toEqual({ p_installation_id: INSTALLATION_ID, p_channel_id: "C0CHANNEL1", p_workspace_notes: true });
 		expect(agent.requests[0].prompt).toBe([
+			SAVED_MEMORY_NOTICE,
+			"",
 			"Pinned for the whole Slack workspace, newest first:",
+			'<saved_memory source="pins for the workspace">',
 			"- Our fiscal year starts on 1 April. (id 00000000-0000-4000-8000-0000000000e1)",
+			"</saved_memory>",
 			"",
 			"Saved skills (call use_skill to load one):",
+			'<saved_memory source="saved skills">',
 			"- Weekly report: Summarise the week.",
+			"</saved_memory>",
 			"",
 			"New message from <@U0PERSON01>:",
 			"what did we spend this week?",
@@ -302,8 +308,12 @@ describe("AgentTurnWorkflow", () => {
 		const [request] = agent.requests;
 		expect(request.tools.map((tool) => tool.id)).toEqual([...SKILL_TOOL_IDS, ...SCHEDULE_TOOL_IDS, "ask_question"]);
 		expect(request.prompt).toBe([
+			SAVED_MEMORY_NOTICE,
+			"",
 			"Saved skills (call use_skill to load one):",
+			'<saved_memory source="saved skills">',
 			"- Weekly report: Summarise the week.",
+			"</saved_memory>",
 			"",
 			"New message from <@U0PERSON01>:",
 			"what did we spend this week?",
@@ -319,6 +329,9 @@ describe("AgentTurnWorkflow", () => {
 		// A DM from someone who hasn't linked their account: only the Connect button.
 		await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
 		expect(toolIds()).toEqual(["connect_phaseo_account"]);
+		// Without the usage tools, the answer can search the web and read pages.
+		expect(agent.requests.at(-1)!.webTools).toBe(true);
+		expect(agent.requests.at(-1)!.instructions).toContain("You can search the web and read web pages");
 		// Linked, but no longer a member of the workspace.
 		world.db.tables.slack_user_links.push({ installation_id: INSTALLATION_ID, slack_user_id: "U0PERSON01", user_id: USER });
 		await runTurn(deps(agent), await startTurn({ channel: "D0DIRECT01" }), step);
@@ -329,6 +342,10 @@ describe("AgentTurnWorkflow", () => {
 		expect(toolIds()).toEqual(["get_spend", "get_credit_balance", "get_key_usage", "find_models"]);
 		expect(agent.requests.at(-1)!.tools.slice(4).map((tool) => tool.id)).toEqual([...MEMORY_TOOL_IDS, ...SCHEDULE_TOOL_IDS, "ask_question"]);
 		expect(agent.requests.at(-1)!.instructions).toContain("You can look up this Phaseo workspace's spend");
+		// With them, no web search or web fetch: a page it read could otherwise send the numbers away in a URL.
+		expect(agent.requests.at(-1)!.webTools).toBe(false);
+		expect(agent.requests.at(-1)!.instructions).toContain("You can't search the web or read web pages in this conversation");
+		expect(agent.requests.at(-1)!.instructions).not.toContain("You can search the web and read web pages");
 		// The same member in a channel: only with dm_and_channels and the channel listed.
 		await runTurn(deps(agent), await startTurn({ channel: "C0FINANCE1" }), step);
 		expect(toolIds()).toEqual([]);
@@ -710,7 +727,7 @@ describe("AgentTurnWorkflow", () => {
 		await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
 		expect(agent.requests).toHaveLength(1);
 		expect(world.slack.of("chat.postMessage").map((call) => call.args)).toEqual([
-			{ channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: `Hello\n\n${markdownFooter(turn, "$0.0123")}` },
+			{ channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: `Hello\n\n${markdownFooter(turn, "$0.0123")}`, unfurl_links: false, unfurl_media: false },
 		]);
 		expect(world.slack.of("agents.sessions.setStatus").map((call) => call.args.status)).toEqual(["processing", "active"]);
 		expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
@@ -1561,6 +1578,78 @@ describe("Files in the thread", () => {
 		await runTurn(deps(agent), await startTurn(), step);
 		expect(String(failure)).toContain("pie slices can't be negative");
 		expect(world.slack.of("files.getUploadURLExternal")).toHaveLength(0);
+	});
+
+	describe("when the model ends without text", () => {
+		const CHART = { type: "bar", title: "Weekly spend", labels: ["Oct 5", "Oct 12"], series: [{ name: "Spend", values: [12.5, 40] }] };
+		/** The gateway's refusal of an empty model response: the same code for every provider. */
+		const emptyResponse = () => new AgentGatewayError({
+			status: 502, statusText: "Bad Gateway", message: "The provider returned an empty response.",
+			body: { error: "google_empty_response", message: "The provider returned an empty response.", provider: "openai", upstream_status: 200 },
+		});
+		const written = () => [
+			...world.slack.of("chat.startStream").map((call) => String(call.args.markdown_text ?? "")),
+			...world.slack.of("chat.appendStream").map((call) => String(call.args.markdown_text ?? "")),
+			...world.slack.of("chat.postMessage").map((call) => String(call.args.markdown_text ?? call.args.text ?? "")),
+			...world.slack.ephemerals().map((call) => String(call.args.text ?? "")),
+		].join("\n");
+
+		it("after posting a chart, ends the answer with its footer, counted and billed, without an error", async () => {
+			await install({ bot_scopes: ALL_SCOPES });
+			const agent = new ToolAgent(async (request, hooks) => {
+				await callTool(request, "make_chart", CHART);
+				hooks.onCost?.(0.0006);
+				await hooks.onStep({ costUsd: 0.0006 });
+				// "No other commentary": the final step has nothing in it, and the gateway refuses it.
+				throw emptyResponse();
+			});
+			const turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+			expect(world.slack.of("files.completeUploadExternal")).toHaveLength(1);
+			expect(written()).not.toContain("something went wrong");
+			// The footer alone, under the chart.
+			expect(world.slack.of("chat.postMessage").map((call) => call.args)).toEqual([
+				{ channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: markdownFooter(turn, "$0.0006", "Auto"), unfurl_links: false, unfurl_media: false },
+			]);
+			expect(step.outputs.find((output) => output.name === "run")?.output).toMatchObject({ status: "answered", error: null, costNanos: 600_000, posted: true });
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		});
+
+		it("after posting a chart, a plain empty completion also ends with the footer", async () => {
+			await install({ bot_scopes: ALL_SCOPES });
+			const agent = new ToolAgent(async (request) => {
+				await callTool(request, "make_chart", CHART);
+				return answer();
+			});
+			const turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+			expect(world.slack.of("chat.postMessage").map((call) => call.args.markdown_text)).toEqual([markdownFooter(turn, "$0.0123")]);
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		});
+
+		it("with nothing posted, still says something went wrong and isn't counted", async () => {
+			await install({ bot_scopes: ALL_SCOPES });
+			const agent = new ToolAgent(async () => { throw emptyResponse(); });
+			const turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "failed" });
+			expect(world.slack.of("files.completeUploadExternal")).toHaveLength(0);
+			expect(written()).toContain("Sorry, something went wrong while I was answering. Please try again.");
+			expect(step.outputs.find((output) => output.name === "run")?.output).toMatchObject({ status: "failed", error: "failed" });
+			expect(step.outputs.find((output) => output.name === "run")?.output).not.toHaveProperty("posted");
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
+
+		it("when the chart couldn't be posted, still says something went wrong", async () => {
+			await install({ bot_scopes: ALL_SCOPES });
+			world.slack.failures.set("files.completeUploadExternal", ["channel_not_found"]);
+			const agent = new ToolAgent(async (request) => {
+				await callTool(request, "make_chart", CHART);
+				throw emptyResponse();
+			});
+			await expect(runTurn(deps(agent), await startTurn(), step)).resolves.toEqual({ status: "failed" });
+			expect(written()).toContain("Sorry, something went wrong while I was answering. Please try again.");
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
 	});
 
 	it("makes an image with the installation's key, posts it, and counts its cost in the answer", async () => {

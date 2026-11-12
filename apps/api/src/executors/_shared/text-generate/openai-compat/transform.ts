@@ -16,6 +16,7 @@ import { normalizeTextProviderServiceTier } from "@providers/textProfiles";
 import { imageDetailForProvider } from "./media-parts";
 import {
 	canReplayReasoning,
+	effortRecordFromState,
 	openReasoningState,
 	reasoningFormatForRoute,
 } from "@core/reasoning-state";
@@ -947,6 +948,13 @@ export function openAIResponsesToIR(
 				choice.message.content.push(...extractInlineAudios(item.content));
 			}
 		} else if (item.type === "reasoning" || item.type === "reasoning_details") {
+			// The gateway's own Claude effort record (see sealEffortRecord) is not
+			// reasoning: it belongs on the message, never in its content.
+			const effortRecord = effortRecordFromState(openReasoningState(item?.encrypted_content));
+			if (effortRecord) {
+				choice.message.effortRecord = effortRecord;
+				continue;
+			}
 			const reasoningText = extractReasoningText(item);
 			const reasoningPart = readResponsesReasoningState(item, reasoningText, provider, model);
 			if (reasoningPart) {

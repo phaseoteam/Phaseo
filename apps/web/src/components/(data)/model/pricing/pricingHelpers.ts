@@ -1,4 +1,5 @@
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
+import { audienceLabel, withoutAudienceConditions } from "@/lib/pricing/promotionAudience";
 import {
     formatProviderOfferDisplayName,
     resolveProviderLogoId,
@@ -421,6 +422,9 @@ function classifyMeterWithEndpoint(
 			? declaredDirection : parsed.dir;
 	const declared = { ...parsed, mod, dir };
 	const endpointModality = endpointToModality(endpoint);
+	// Decisions prices apply only to the Decisions API. Their token meters are
+	// declared as text, but they must not stand in for the model's text prices.
+	if (endpointModality === "decisions") return { ...declared, mod: "decisions" };
 	if (declaredModality) return declared;
 	if (endpointModality === "embeddings") return { ...declared, mod: endpointModality };
 	if (declared.mod !== "other" || !["token", "character"].includes(declared.unit)) return declared;
@@ -429,8 +433,22 @@ function classifyMeterWithEndpoint(
 
 export type ConditionLabelPref = { prefer?: string[] }; // e.g. ['cache_ttl','quality','resolution']
 
-export function conciseConditionLabel(conds?: Condition[] | null, pref: ConditionLabelPref = {}) {
+export function conciseConditionLabel(conds?: Condition[] | null, pref: ConditionLabelPref = {}): string {
+    const audience = audienceLabel(conds);
+    if (audience) {
+        const rest = withoutAudienceConditions(conds);
+        return rest.length ? `${conciseConditionLabel(rest, pref)} · In ${audience}` : `In ${audience}`;
+    }
     if (!conds?.length) return "All usage";
+    // Requests that ask the provider to keep inference in one region (Anthropic's
+    // inference_geo) can cost more; name the region instead of the raw condition.
+    const geoIndex = conds.findIndex((x) => String(x.path ?? "").toLowerCase() === "inference_geo" && x.op === "eq");
+    if (geoIndex !== -1) {
+        const region = String(conds[geoIndex].value ?? "").trim();
+        const geoLabel = region.toLowerCase() === "us" ? "US-only inference" : `${region.toUpperCase()}-only inference`;
+        const rest = conds.filter((_, index) => index !== geoIndex);
+        return rest.length ? `${conciseConditionLabel(rest, pref)} · ${geoLabel}` : geoLabel;
+    }
     const picks = pref.prefer ?? ["cache_ttl", "quality", "resolution", "size"];
     for (const key of picks) {
         const c = conds.find(x => x.path?.toLowerCase().includes(key));
@@ -940,6 +958,34 @@ export function ruleComparisonMatchSignature(rule: any): string {
 }
 
 /* ---------- section builder (uses fixes) ---------- */
+function hasInferenceGeoCondition(rule: any): boolean {
+    return ruleConditions(rule).some((condition) => condition.path === "inference_geo");
+}
+
+/**
+ * Drops prices that only apply when a request asks to run in one region (Anthropic's
+ * `inference_geo`) when the same meter also has a price without that condition. Those
+ * region prices still bill; they are shown on the region's own provider row (for
+ * example "Anthropic (US)") rather than repeated under the global provider.
+ */
+export function withoutRegionSurchargeRules<T>(rules: T[], nowMs: number = Date.now()): T[] {
+    // Only a global price in effect now replaces the regional one; an expired or
+    // scheduled global price would otherwise hide the only current price.
+    const isCurrent = (rule: any): boolean => {
+        const from = rule?.effective_from ? Date.parse(rule.effective_from) : Number.NaN;
+        const to = rule?.effective_to ? Date.parse(rule.effective_to) : Number.NaN;
+        return !(Number.isFinite(from) && from > nowMs) && !(Number.isFinite(to) && to <= nowMs);
+    };
+    const metersWithGlobalPrice = new Set(
+        rules
+            .filter((rule) => !hasInferenceGeoCondition(rule) && isCurrent(rule))
+            .map((rule: any) => String(rule?.meter ?? "")),
+    );
+    return rules.filter(
+        (rule: any) => !hasInferenceGeoCondition(rule) || !metersWithGlobalPrice.has(String(rule?.meter ?? "")),
+    );
+}
+
 export function buildProviderSections(
     p: ProviderPricing,
     plan: string,
@@ -949,7 +995,7 @@ export function buildProviderSections(
     const nowMs = now.getTime();
     const pricingTimeUtc = formatUtcPricingMinute(now);
     const normalizedPlan = normalizePricingPlan(plan);
-    const rules = getProviderPricingRulesForPlan(p, normalizedPlan);
+    const rules = withoutRegionSurchargeRules(getProviderPricingRulesForPlan(p, normalizedPlan), nowMs);
     const endpointByKey = new Map<string, string>();
     for (const pm of p.provider_models) {
         if (!pm.endpoint) continue;
@@ -961,6 +1007,12 @@ export function buildProviderSections(
             );
         }
     }
+
+    // The rule's own capability when its route entry is missing, so a Decisions
+    // price is never read as an unknown (and then text) price.
+    const endpointForRule = (rule: any): string | null =>
+        endpointByKey.get(rule?.model_key) ??
+        (typeof rule?.capability_id === "string" && rule.capability_id ? rule.capability_id : null);
 
     const out: ProviderSections = {
         providerName: formatProviderOfferDisplayName({
@@ -1004,7 +1056,7 @@ export function buildProviderSections(
         return (bFrom ?? -Infinity) - (aFrom ?? -Infinity);
     };
     const ruleSignature = (r: any) => {
-        const endpoint = endpointByKey.get(r.model_key) ?? "unknown";
+        const endpoint = endpointForRule(r) ?? "unknown";
         return `${endpoint}|${r.meter}|${r.unit}|${r.unit_size}`;
     };
     const currentRulesBySignature = new Map<string, any[]>();
@@ -1016,8 +1068,10 @@ export function buildProviderSections(
         currentRulesBySignature.set(sig, list);
     }
     for (const r of rules as any[]) {
-        const endpoint = endpointByKey.get(r.model_key) ?? null;
-        const matchKey = JSON.stringify(r.match ?? []);
+        const endpoint = endpointForRule(r);
+        // A price limited to one calling app (`client_id`) is a promotion of the list
+        // price with the same billing conditions, so it is grouped with that price.
+        const matchKey = JSON.stringify(withoutAudienceConditions(r.match));
         const groupKey = `${endpoint ?? "unknown"}|${r.meter}|${r.unit}|${r.unit_size}|${matchKey}`;
         if (!grouped.has(groupKey)) grouped.set(groupKey, []);
         grouped.get(groupKey)!.push(r);
@@ -1043,7 +1097,7 @@ export function buildProviderSections(
         if (nextUpcoming?.effective_from) {
             const { sectionKey, title, subtitle } = buildUpcomingChangeLabels(
                 nextUpcoming,
-                endpointByKey.get(nextUpcoming.model_key) ?? null,
+                endpointForRule(nextUpcoming),
             );
             const nextPriceRaw = resolvePricingMeterPrice(
                 nextUpcoming,
@@ -1079,12 +1133,12 @@ export function buildProviderSections(
                         classifyMeterWithEndpoint(
                             nextUpcoming.meter || "",
                             nextUpcoming.unit || "",
-                            endpointByKey.get(nextUpcoming.model_key) ?? null,
+                            endpointForRule(nextUpcoming),
                         ).unit,
                         nextUpcoming.unit_size ?? 1,
                     ),
                     effectiveFrom: nextUpcoming.effective_from,
-                    endpoint: endpointByKey.get(nextUpcoming.model_key) ?? null,
+                    endpoint: endpointForRule(nextUpcoming),
                     trend,
                 });
             }
@@ -1142,7 +1196,7 @@ export function buildProviderSections(
                       return nextPrice > currentPrice ? nextUpcoming : null;
                   })()
                 : null;
-        const endpoint = endpointByKey.get(current.model_key) ?? null;
+        const endpoint = endpointForRule(current);
         const matchKey = JSON.stringify(current.match ?? []);
         const dedupeKey = `${current.meter}|${current.unit}|${current.unit_size}|${matchKey}`;
         entries.push({
@@ -1233,11 +1287,16 @@ export function buildProviderSections(
             const range = tokenRangeFromConditions(conds);
 			const embeddingSourceLabel =
 				mod === "embeddings" ? modalityLabel(parsedMeter.mod) : null;
-            const label =
+            const baseLabel =
 				embeddingSourceLabel ??
                 cacheWriteScopeLabel(r.meter, conds) ??
                 range ??
                 conciseConditionLabel(conds);  // <-- FIX: show cache_ttl etc. instead of "All usage"
+            // A price limited to one app must say so, whichever label describes the rest.
+            const audience = audienceLabel(conds);
+            const label = audience && !baseLabel.includes(`In ${audience}`)
+                ? `${baseLabel} · In ${audience}`
+                : baseLabel;
             const tier: TokenTier = {
                 conditions: conds,
                 meter: r.meter,

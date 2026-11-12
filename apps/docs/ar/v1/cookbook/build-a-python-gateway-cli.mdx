@@ -1,117 +1,127 @@
 ---
-title: "إنشاء واجهة سطر أوامر لبوابة Python"
+title: "أنشئ واجهة سطر أوامر للـ Gateway باستخدام Python"
 icon: "terminal"
-description: "استخدم مثال البدء السريع لـ Python كشرح عملي متكامل لإنشاء واجهة سطر أوامر أو تكامل خلفي يعتمد على Python."
+description: "استخدم عينة البدء السريع لـ Python كشرح عملي كامل لواجهة سطر أوامر أو تكامل خلفي يعتمد على Python."
 ---
 
-استخدم هذه الصفحة إذا كان أول تكامل فعلي لك مع Phaseo مبنيًا بـ Python وتحتاج إلى نقطة انطلاق عملية لواجهة سطر أوامر أو عامل أو خدمة خلفية.
+شغّل واجهة سطر أوامر بلغة Python تعتمد على المكتبة القياسية فقط وتستدعي نقاط نهاية Phaseo أمرًا تلو الآخر. في النهاية يعمل لديك `python quickstart.py <command>` لكلٍّ من الصحة والنماذج وResponses وChat Completions، إضافةً إلى أوامر للتضمينات والإشراف والصور وOCR والفيديو والموسيقى يمكنك نسخها إلى عامل أو خدمة خلفية.
 
-**الهدف:** تشغيل مسارات التحكم والتوليد في Phaseo من تطبيق صغير لسطر الأوامر مكتوب بـ Python.
+واجهة سطر الأوامر توضيحية: هي مرجع لأشكال الطلبات، وليست أداة مُحزَّمة. عدد من معرّفات النماذج الافتراضية لأوامر الوسائط لم يعد متاحًا، لذا مرّر `--model` لهذه الأوامر (راجع [اختر نماذج لأوامر الوسائط](#pick-models-for-the-media-commands)).
 
-**النتيجة:** واجهة سطر أوامر قليلة الاعتماديات يمكنك تكييفها لتصبح عاملًا أو نصًا برمجيًا أو تكاملًا خلفيًا.
+لتجعل وكيل برمجة ينشئ واجهة سطر أوامر مشابهة من الصفر، الصق هذه المطالبة:
 
 <Prompt
-  description="أنشئ **واجهة سطر أوامر لبوابة Python** لتشغيل مسارات Phaseo."
+  description="أنشئ **واجهة سطر أوامر للـ Gateway باستخدام Python** حول مسارات Phaseo."
   icon="terminal-square"
   actions={["copy", "cursor"]}
 >
-{`أنت تطوّر أداة سطر أوامر بلغة Python أو تكاملًا على جانب الخادم لـ Phaseo Gateway.
+{`You are building a Python-first CLI or backend integration for Phaseo Gateway.
 
-أنشئ تطبيقًا صغيرًا بلغة Python يقوم بما يلي:
-- قراءة PHASEO_API_KEY من متغيرات البيئة
-- توفير وضع اختبار سريع لمسار التحكم
-- توفير أمر واحد لتوليد النص
-- تقليل التبعيات إلى الحد الأدنى
+Create a small Python app that:
+- reads PHASEO_API_KEY from the environment and sends it as Authorization: Bearer
+- uses https://api.phaseo.app/v1 as the base URL
+- supports one control-route smoke mode (GET /health, GET /models)
+- supports one text-generation command (POST /responses)
+- keeps the implementation dependency-light
 
-المتطلبات:
-- فضّل مكتبة Python القياسية ما لم يوجد سبب وجيه لعدم استخدامها.
-- اجعل محتوى الطلبات واضحًا.
-- اعرض رسائل واضحة للنجاح والإخفاق.
-- أضف أمرًا أو أمرين مفيدين بدلًا من أداة سطر أوامر عامة ضخمة.
-- أضف ملف README موجزًا يتضمن أمثلة.
+Requirements:
+- Prefer the Python standard library unless there is a strong reason not to.
+- Keep the request payloads explicit.
+- Print clear success and failure output, and exit non-zero on a failed call.
+- Include one or two useful commands instead of a huge general CLI.
+- Add a short README with examples.
 
-المخرجات المطلوبة:
-- شيفرة تطبيق Python
-- أوامر استخدام بسيطة
-- ملف .env.example أو توثيق مكافئ لمتغيرات البيئة
+Deliverables:
+- Python app code
+- simple usage commands
+- .env.example or equivalent env documentation
 
-التحقق:
-- شغّل اختبارًا سريعًا للمسار إن أمكن.
-- نفّذ عملية ناجحة واحدة لتوليد النص إن أمكن.
-- اذكر بدقة ما تحققت منه وما لم يتم التحقق منه بعد.`}
+Verification:
+- run the smoke path if possible
+- run one successful generation path if possible
+- report exactly what you verified and what remains unverified.`}
 </Prompt>
 
-## مشروع نموذجي
+## ما الذي تفعله واجهة سطر الأوامر
 
-- GitHub: [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart)
-- المسار المحلي في المستودع: `examples/gateway-python-quickstart`
+العينة هي [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart): ملف واحد هو `quickstart.py`، يستخدم فقط `urllib` و`json` و`argparse`.
 
-## وظائف هذا التطبيق
+| الأمر | الاستدعاءات |
+| --- | --- |
+| `smoke` | `GET /v1/health` و`GET /v1/models` و`GET /v1/providers` وطلب `POST /v1/responses` واحد |
+| `health`، `models`، `providers` | مسار `GET` المطابق |
+| `responses --prompt` | `POST /v1/responses` |
+| `chat --prompt` | `POST /v1/chat/completions` |
+| `embeddings --text` | `POST /v1/embeddings` |
+| `moderations --text` | `POST /v1/moderations` |
+| `image --prompt` | `POST /v1/images/generations` |
+| `ocr --image-url` | `POST /v1/ocr` |
+| `video-create`، `video-status`، `video-cancel`، `video-download-url` | `POST /v1/videos`، `GET /v1/videos/{video_id}`، `POST /v1/videos/{video_id}/cancel`، `POST /v1/videos/{video_id}/download_url` |
+| `music-create`، `music-status` | `POST /v1/music/generate`، `GET /v1/music/generate/{music_id}` |
 
-- يدعم مسارات التحكم مثل:
-  - `GET /v1/health`
-  - `GET /v1/models`
-  - `GET /v1/providers`
-- يدعم مسارات التوليد مثل:
-  - `POST /v1/responses`
-  - `POST /v1/chat/completions`
-  - `POST /v1/embeddings`
-  - وعدة نقاط نهاية إضافية
+يُعاد كل طلب مرتين عند `429` و`5xx` وأخطاء الشبكة، بانتظار ثانية واحدة ثم ثانيتين، وتنتهي مهلته بعد 45 ثانية. يخرج كل أمر بالرمز `1` عندما لا يكون الاستدعاء `2xx`، لذا يمكنك استخدامه في السكربتات.
 
-## فائدة هذا المثال
+## شغّلها
 
-يوفر لك:
+تحتاج إلى Python 3 ومفتاح Phaseo API.
 
-- مرجعًا يعتمد على Python دون اعتماديات خارجية
-- حمولات طلبات ومعالجة استجابات واضحة
-- نمطًا عمليًا للعوامل والنصوص البرمجية والأدوات الداخلية
+<Steps>
+<Step title="أنشئ .env.local">
 
-## المتطلبات الأساسية
+يقرأ السكربت `.env.local` من المجلد الذي تشغّله منه. لا تحتوي العينة على `.env.example`، لذا أنشئ الملف:
 
-- Python 3
-- مفتاح API من Phaseo
+```bash .env.local
+PHASEO_API_KEY=phaseo_v1_sk_...
+# Optional
+PHASEO_MODEL=openai/gpt-6-astra
+PHASEO_BASE_URL=https://api.phaseo.app/v1
+PHASEO_APP_TITLE=My Python CLI
+PHASEO_HTTP_REFERER=https://myapp.example
+```
 
-## تشغيل المثال
+المتغيرات المعيّنة مسبقًا في الطرفية لها الأولوية على الملف. بدون `PHASEO_MODEL` تستخدم الأوامر النصية `openai/gpt-5.6-sol`.
+
+</Step>
+<Step title="شغّل الفحص الأولي">
 
 ```bash
 cd examples/gateway-python-quickstart
-cp .env.example .env.local
+python quickstart.py smoke
 ```
 
-عيّن:
+يرسل `smoke` أيضًا طلب Responses قصيرًا واحدًا، لذا يستهلك بعض الأرصدة.
 
-- `PHASEO_API_KEY`
-
-ثم جرّب:
+</Step>
+<Step title="أرسل طلبًا واحدًا">
 
 ```bash
-python quickstart.py smoke
 python quickstart.py responses --prompt "Return exactly: integration_ok"
 python quickstart.py --help
 ```
 
-## التحقق من عملك
+</Step>
+</Steps>
 
-- يؤكد وضع الاختبار السريع إمكانية الوصول إلى API.
-- يطبع أمر Responses القيمة `integration_ok`.
-- يعرض `--help` الأوامر المتاحة دون إرسال طلب.
-- تظهر أخطاء المصادقة وAPI بوضوح في الطرفية.
+## تحقّق من نجاحها
 
-## ما ينبغي مراجعته في الشيفرة
+- يطبع `smoke` القيمة `HTTP 200` لكل كتلة ويخرج بالرمز `0`.
+- يحتوي ناتج الأمر `responses` على `integration_ok`.
+- يعرض `--help` الأوامر دون إرسال أي طلب.
+- بدون مفتاح، يطبع السكربت `Missing PHASEO_API_KEY` ويخرج بالرمز `1`.
+- تظهر الطلبات في **الإعدادات → الاستخدام → السجلات**.
 
-- طريقة تحميل متغيرات البيئة
-- كيفية توزيع الأوامر في واجهة سطر الأوامر
-- طريقة إنشاء حمولات الطلبات المختلفة
-- كيفية معالجة مسارات الفيديو والموسيقى غير المتزامنة بصورة منفصلة عن مسارات النص ذات الاستجابة الواحدة
+<span id="pick-models-for-the-media-commands"></span>
+## اختر نماذج لأوامر الوسائط
 
-## تكييف المثال لاحتياجاتك
+هذه القيم الافتراضية في `quickstart.py` متقاعدة أو ليس لها مزوّد نشط. مرّر نموذجًا حاليًا باستخدام `--model`، واختره من [صفحة النماذج](https://phaseo.app/models) أو من `python quickstart.py models`:
 
-- احذف نقاط النهاية التي لا تحتاج إليها خدمتك
-- استخدم دالة مساعدة مشتركة للطلبات بدل تكرار الترويسات في كل موضع
-- انتقل لاحقًا إلى Python SDK إذا احتجت إلى عميل بمستوى تجريد أعلى
+| الأمر | القيمة الافتراضية في العينة | الحالة |
+| --- | --- | --- |
+| `moderations` | `openai/omni-moderation-latest` | ليس معرّفًا في الكتالوج؛ استخدم `openai/omni-moderation` |
+| `ocr` | `mistral/mistral-ocr` | متقاعد؛ جرّب `mistral/ocr-4.1` |
+| `video-create` | `openai/sora-2` | متقاعد |
+| `music-create` | `suno/suno-v4` | لا يوجد مزوّد نشط |
 
-## أدلة ذات صلة
+القيمتان الافتراضيتان لـ `embeddings` (`google/gemini-embedding-2`) و`image` (`openai/gpt-image-2`) متاحتان. مهام الفيديو والموسيقى غير متزامنة: احفظ المعرّف المُعاد واستعلم بأمر الحالة؛ يشرح [الفيديو غير المتزامن والدفعات](../guides/async-video-and-batch) دورة حياة المهمة.
 
-- [مطالبات بدء التطبيقات المصغّرة](./mini-app-starter-prompts.mdx)
-- [إخراج JSON منظّم من Python](./sdk-python-presets-and-json.mdx)
-- [أمثلة](../guides/examples.mdx)
+اختصر الملف ليقتصر على الأوامر التي تحتاجها خدمتك، واحتفظ بالدالة المساعدة المشتركة الوحيدة `gateway_request()`، وانتقل إلى [Python SDK](../sdk-reference/client/overview) عندما تريد طلبات ذات أنواع محددة.

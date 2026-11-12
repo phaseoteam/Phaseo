@@ -58,7 +58,7 @@ export async function createLiveConfig(backendModel: string, requestedSettings?:
 	// Include default prices for a provider's documented tier fallback, but never
 	// substitute standard prices for a requested tier that has no price card.
 	for (const plan of new Set(["standard", settings.service_tier === "default" ? "standard" : settings.service_tier])) {
-		if (!backendCard || !["input_text_tokens", "output_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens"].every(
+		if (!backendCard || !["input_text_tokens", "output_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m"].every(
 			(meter) => backendCard.rules.some((rule) => rule.meter === meter && rule.pricing_plan === plan),
 		)) throw new Error("live_backend_price_card_missing");
 	}
@@ -157,7 +157,8 @@ export function ingestLiveUsage(current: LiveUsage, event: Record<string, any>):
 		const previous = responses.find((item) => item.id === id);
 		if (previous && (response?.usage?.input_tokens !== previous.usage.input_tokens || response?.usage?.output_tokens !== previous.usage.output_tokens
 			|| response?.usage?.input_tokens_details?.cached_tokens !== previous.usage.cached_read_text_tokens
-			|| (response?.usage?.input_tokens_details?.cache_write_tokens ?? 0) !== previous.usage.cached_write_text_tokens
+			|| JSON.stringify(cacheWritesByLifetime(response?.usage?.input_tokens_details))
+				!== JSON.stringify([Number(previous.usage.cached_write_text_tokens_30m ?? 0), Number(previous.usage.cached_write_text_tokens_12h ?? 0)])
 			|| response?.service_tier !== previous.service_tier || response?.model !== previous.model)) throw new Error("live_response_usage_conflict");
 		if (!responses.some((item) => item.id === id)) {
 			const raw = response?.usage;
@@ -169,10 +170,14 @@ export function ingestLiveUsage(current: LiveUsage, event: Record<string, any>):
 				|| !finite(reasoning) || reasoning > raw.output_tokens) throw new Error("live_response_authoritative_usage_invalid");
 			if (raw.total_tokens != null && raw.total_tokens !== raw.input_tokens + raw.output_tokens) throw new Error("live_response_authoritative_usage_invalid");
 			if (JSON.stringify(raw).length > 16384) throw new Error("live_response_usage_limit_exceeded");
+			const [write30m, write12h] = cacheWritesByLifetime(raw.input_tokens_details);
+			if (![write30m, write12h].every((value) => Number.isSafeInteger(value) && value >= 0) || write30m + write12h !== cacheWrite) {
+				throw new Error("live_response_authoritative_usage_invalid");
+			}
 			// Reasoning tokens are included in output_tokens, and cache reads in input_tokens.
 			const usage = { input_text_tokens: raw.input_tokens - raw.input_tokens_details.cached_tokens - cacheWrite,
 				cached_read_text_tokens: raw.input_tokens_details.cached_tokens, output_text_tokens: raw.output_tokens,
-				cached_write_text_tokens: cacheWrite,
+				cached_write_text_tokens_30m: write30m, ...(write12h ? { cached_write_text_tokens_12h: write12h } : {}),
 				input_tokens: raw.input_tokens, output_tokens: raw.output_tokens, output_reasoning_tokens: reasoning };
 			if (responses.length >= 1024) throw new Error("live_response_limit_exceeded");
 			next.live_responses = [...responses, { id, status: nested.type, usage,
@@ -185,6 +190,13 @@ export function ingestLiveUsage(current: LiveUsage, event: Record<string, any>):
 	return next;
 }
 
+// OpenAI prices cache writes by lifetime. Live can't ask for the 12-hour cache, so writes
+// without a breakdown are the default 30-minute writes.
+function cacheWritesByLifetime(details: { cache_write_tokens?: number; cache_write_tokens_details?: { ttl_30m_tokens?: number; ttl_12h_tokens?: number } } | undefined): [number, number] {
+	const write12h = details?.cache_write_tokens_details?.ttl_12h_tokens ?? 0;
+	return [details?.cache_write_tokens_details?.ttl_30m_tokens ?? (details?.cache_write_tokens ?? 0) - write12h, write12h];
+}
+
 export function assertLiveFinalUsage(usage: LiveUsage) {
 	if (usage.live_billing_error) throw new Error("live_authoritative_usage_invalid");
 	if (usage.live_started && (!usage.live_final || !finite(usage.live_seconds))) throw new Error("live_authoritative_usage_pending");
@@ -195,7 +207,7 @@ export function assertLiveFinalUsage(usage: LiveUsage) {
 export function liveUsageMeters(usage: LiveUsage): Record<string, number> {
 	const totals: Record<string, number> = { audio_seconds: usage.live_seconds ?? 0 };
 	for (const response of usage.live_responses ?? []) {
-		for (const meter of ["input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens", "output_text_tokens", "input_tokens", "output_tokens", "output_reasoning_tokens"]) {
+		for (const meter of ["input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m", "cached_write_text_tokens_12h", "output_text_tokens", "input_tokens", "output_tokens", "output_reasoning_tokens"]) {
 			totals[meter] = (totals[meter] ?? 0) + Number(response.usage[meter] ?? 0);
 		}
 	}
@@ -214,7 +226,7 @@ export function priceLiveUsage(usage: LiveUsage, config: LiveConfig): Record<str
 			&& matchesConditions(rule.match, { ...meters, endpoint: card.endpoint, service_tier: tier }))) throw new Error("live_search_price_snapshot_missing");
 		const result = computeBill(meters, tierCard, { endpoint: card.endpoint, service_tier: tier }, "standard");
 		const pricing = result.pricing as { total_nanos: number; lines: Record<string, unknown>[] };
-		for (const meter of ["audio_seconds", "input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens", "output_text_tokens", "native_web_search_requests"]) {
+		for (const meter of ["audio_seconds", "input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m", "cached_write_text_tokens_12h", "output_text_tokens", "native_web_search_requests"]) {
 			if (Number(meters[meter] ?? 0) > 0 && !pricing.lines.some((line) => line.dimension === meter)) {
 				throw new Error(`live_pricing_rule_missing:${meter}`);
 			}

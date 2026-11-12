@@ -5,11 +5,11 @@ description: "Use the full OAuth Next.js example as a walkthrough for a signed-i
 "og:image": "https://phaseo.app/og/dynamic?title=Build%20an%20OAuth%20Next.js%20Workbench&description=Use%20the%20full%20OAuth%20Next.js%20example%20as%20a%20walkthrough%20for%20a%20signed-in%20gateway%20app%20with%20a%20unified%20proxy.&pathname=/docs/v1/cookbook/build-an-oauth-nextjs-workbench"
 ---
 
-Use this page when your product needs sign-in, session-backed gateway access, and more than a single chat route.
+Let people sign in with Phaseo and spend their own credits in your app: OAuth 2.1 with PKCE gives your server an access token, and one server-side proxy attaches it to every gateway call. When you're done you have a local app with sign-in, session-backed tokens that refresh, model discovery, a chat flow over `/responses`, and a tester for other endpoints.
 
-**Goal:** Run the signed-in workbench and send Phaseo requests through one protected server-side proxy.
+The sample is illustrative. Its `lib/oauth.ts` still calls an older sign-in endpoint, which step 3 of [Run it](#run-it) fixes, and its proxy allowlist is wider than a product needs.
 
-**Outcome:** A local application with OAuth sign-in, session-backed tokens, model discovery, chat, and an endpoint tester.
+To have a coding agent build the same app from scratch, paste this prompt:
 
 <Prompt
   description="Build a **signed-in Next.js workbench** with OAuth and a unified Phaseo proxy."
@@ -19,17 +19,18 @@ Use this page when your product needs sign-in, session-backed gateway access, an
 {`You are building a signed-in Next.js app on top of Phaseo Gateway.
 
 Create a workbench-style app with:
-- OAuth 2.1 + PKCE sign-in
-- session-backed token storage
-- one unified gateway proxy route on the server
+- OAuth 2.1 + PKCE sign-in against https://api.phaseo.app/oauth/authorize and https://api.phaseo.app/oauth/token (discover them from https://api.phaseo.app/.well-known/oauth-authorization-server), requesting the gateway:access scope
+- session-backed token storage in an encrypted, httpOnly cookie
+- one unified gateway proxy route on the server that calls https://api.phaseo.app/v1
 - model discovery
-- one chat flow using the Responses API
+- one chat flow using the Responses API, sending the whole conversation in input on every turn
 - one generic endpoint tester for additional Phaseo endpoints
 
 Requirements:
 - Keep gateway credentials and access tokens server-side.
-- Use a proxy allowlist for safety.
-- Support token refresh.
+- Use a proxy allowlist of exact paths for safety.
+- Support token refresh. Store the new refresh token from every refresh and drop the old one.
+- Sign out by sending the refresh token to https://api.phaseo.app/oauth/revoke.
 - Keep the workbench understandable rather than over-engineered.
 - Add a short README with setup, env vars, and run steps.
 
@@ -40,183 +41,120 @@ Verification:
 - report exactly what you verified and what remains dependent on external OAuth configuration.`}
 </Prompt>
 
-## Sample project
+## How the sample is built
 
-- GitHub: [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs)
-- Local repo path: `examples/oauth-client-nextjs`
+```mermaid
+flowchart LR
+  browser["Browser"] -->|"Sign in"| start["app/api/auth/start"]
+  start -->|"Redirect with PKCE challenge"| authz["Phaseo sign-in and consent"]
+  authz -->|"Code"| cb["app/auth callback"]
+  cb -->|"Exchange code"| sess["lib/session.ts: encrypted session"]
+  browser -->|"/api/gateway/..."| proxy["app/api/gateway/[...surface]/route.ts"]
+  proxy -->|"Allowlist, Bearer token, refresh if expired"| gw["api.phaseo.app/v1"]
+```
 
-## What this app covers
+The sample lives in [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs):
 
-- OAuth 2.1 + PKCE login
-- session-backed token storage and refresh
-- a unified proxy for control and generation routes
-- model discovery
-- a chat flow over `/responses`
-- a generic endpoint tester for other gateway routes
+| File | Does |
+| --- | --- |
+| `app/page.tsx` | Sign-in entry page |
+| `app/dashboard/page.tsx` | Protected shell |
+| `app/dashboard/GatewayWorkbench.tsx` | Loads control routes, lists model IDs, runs chat over `POST /responses`, and tests other endpoints |
+| `app/api/gateway/[...surface]/route.ts` | Catch-all proxy: checks the allowlist, adds the Bearer token, refreshes it when it has expired, forwards the body and status |
+| `lib/oauth.ts` | PKCE, code exchange and refresh |
+| `lib/session.ts` | Encrypted session storage |
 
-## When to start with this example
+Keeping sign-in separate from gateway calls means a sign-in problem never looks like a model problem, and every endpoint shares one place that handles tokens.
 
-Use this when:
+## Run it
 
-- end users should sign in with delegated access
-- you need more than a simple chat page
-- you want one secure server route for several Phaseo endpoints
+You need Node.js, an OAuth app with `http://localhost:3000/auth/callback` (or your own callback) as a redirect URI, and a long random session secret. Create the OAuth app in **Settings → OAuth Apps** or with the [OAuth clients API](../api-reference/endpoint/oauth-clients-create).
 
-Do not start here if:
+<Steps>
+<Step title="Install">
 
-- you only need a simple API-key chat UI
-- you want a script or CLI first
+```bash
+cd examples/oauth-client-nextjs
+npm install
+```
 
-## Key files
+</Step>
+<Step title="Create .env.local">
 
-<Tree>
+The sample has no `.env.example`. Create `.env.local` with the names the code reads:
 
-- app/
-  - page.tsx
-  - dashboard/
-    - page.tsx
-    - GatewayWorkbench.tsx
-  - api/
-    - gateway/
-      - [...surface]/
-        - route.ts
-- lib/
-  - oauth.ts
-  - session.ts
+```bash .env.local
+NEXT_PUBLIC_OAUTH_CLIENT_ID=your_client_id
+OAUTH_CLIENT_SECRET=your_client_secret
+# The sample reads this name for the OAuth server's base URL.
+NEXT_PUBLIC_AISTATS_URL=https://api.phaseo.app
+NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/callback
+SESSION_SECRET=a-long-random-string
+NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
+```
 
-</Tree>
+Never put `OAUTH_CLIENT_SECRET` or `SESSION_SECRET` in a `NEXT_PUBLIC_` variable.
 
-## Why the sample is structured this way
+</Step>
+<Step title="Point the sample at the current OAuth endpoints">
 
-### 1. OAuth stays separate from gateway logic
+`lib/oauth.ts` builds `${NEXT_PUBLIC_AISTATS_URL}/auth/v1/oauth/authorize` and `/auth/v1/token` and asks for `openid email profile`. Phaseo's OAuth server publishes its endpoints at `https://api.phaseo.app/.well-known/oauth-authorization-server`:
 
-The app isolates:
+| Use | URL |
+| --- | --- |
+| Authorize | `https://api.phaseo.app/oauth/authorize` |
+| Token | `https://api.phaseo.app/oauth/token` |
+| Revoke | `https://api.phaseo.app/oauth/revoke` |
 
-- auth start and callback logic
-- encrypted session handling
-- token refresh
+Change the three URLs in `lib/oauth.ts` to these, and add `gateway:access` to `scope` so the token can call the Gateway.
 
-That keeps the AI integration code simpler and makes sign-in issues easier to debug.
+</Step>
+<Step title="Start the dev server">
 
-### 2. One proxy route handles the gateway calls
+```bash
+npm run dev
+```
 
-The catch-all proxy route:
+Open `http://localhost:3000`, sign in, and open the dashboard.
 
-- checks the endpoint allowlist
-- injects the current bearer token
-- refreshes tokens when needed
-- forwards request and response bodies
+</Step>
+</Steps>
 
-This is a good pattern when you want several Phaseo endpoints without copying auth logic into every route.
+## Check it worked
 
-### 3. The dashboard doubles as an internal workbench
-
-The workbench page is not only chat:
-
-- it discovers models
-- it exercises `/responses`
-- it can test non-chat endpoints too
-
-That makes it useful for onboarding, QA, and internal debugging before you build a more polished end-user UI.
+- Sign-in returns to your callback URL and creates a session.
+- The dashboard lists models through `/api/gateway/models`.
+- A chat turn through `/api/gateway/responses` gets an answer, and no browser request carries the access token.
+- A path outside the proxy allowlist is rejected.
 
 ## Token lifetimes
 
-When someone signs in, the token endpoint (`https://api.phaseo.app/oauth/token`) returns two tokens:
+The token endpoint returns two tokens:
 
 | Token | Lasts | Use |
 | --- | --- | --- |
 | `access_token` | 7 days (`expires_in`) | Send it as `Authorization: Bearer` on gateway requests. It spends credits in the workspace the person chose. |
 | `refresh_token` | 90 days from its last use | Send it with `grant_type=refresh_token` to get a new pair. |
 
-- Each refresh returns a new access token and a new refresh token. Store both and drop the old ones: the old access token stops working at once, and the old refresh token can't be used again.
-- You can refresh after the access token has expired, as long as the refresh token hasn't.
-- Using a refresh token a second time ends the sign-in. Phaseo treats it as a leaked token and revokes the access token and every refresh token from that sign-in, so the person has to sign in again.
-- A refresh never adds scopes. It keeps the scopes the person approved, minus any they have since removed.
-- Refreshing fails once the person revokes your app, revokes or turns off its key, removes a scope the key needs (such as `gateway:access`), or leaves the workspace. Removing `gateway:access` also revokes the key, so its access token stops working at once. Granting the scope again doesn't bring the refresh token back. Send them through sign-in again.
-- Signing in again renews the same key instead of adding one, whether or not you send `resource=https://api.phaseo.app/v1`. You get a new access token and refresh token, the previous ones stop working, and the key keeps this month's spending. Its monthly spending limit becomes the one the person just approved. An earlier sign-in's refresh token is just refused, and sending it to the token or revoke endpoint doesn't end the new sign-in. If any of your app's keys for that person and workspace is paused, whatever its resource, the token endpoint returns `invalid_grant` instead, until someone turns the key back on in **Settings → API Keys**. Renewal only works while the key isn't revoked: after a sign-out or any other revocation, signing in issues a new key, and its limits and spending start fresh.
-- To sign out, send the refresh token to `https://api.phaseo.app/oauth/revoke`. That revokes the key and every refresh token from the sign-in, including one a refresh issued a moment earlier.
-- On the consent screen the person sets a monthly spending limit for your app: $20.00 by default, another amount, or no limit. Once the key has spent it in a calendar month, gateway requests return `429` with `key_limit_exceeded` until the next month or until the person raises the limit in **Settings → API Keys**. Whatever scopes it holds, your app can't lift that limit or get around it through the API: it can only rename or delete API keys, and can't create or rotate keys, change a key's limits, status or expiry, create management keys or trusted workloads, add members, change budgets, guardrails, rate limits or spend rules, or change the workspace's price limits for routing or its BYOK fallback to credits.
+- **Rotate on every refresh.** Each refresh returns a new access token and a new refresh token. Store both and drop the old ones: the old access token stops working at once, and the old refresh token can't be used again.
+- **Refresh after expiry.** You can refresh after the access token has expired, as long as the refresh token hasn't.
+- **Never reuse a refresh token.** Using one a second time ends the sign-in. Phaseo treats it as a leaked token and revokes the access token and every refresh token from that sign-in, so the person has to sign in again.
+- **Scopes only shrink.** A refresh never adds scopes. It keeps the scopes the person approved, minus any they have since removed.
+- **When refresh fails.** Refreshing fails once the person revokes your app, revokes or turns off its key, removes a scope the key needs (such as `gateway:access`), or leaves the workspace. Removing `gateway:access` also revokes the key, so its access token stops working at once. Granting the scope again doesn't bring the refresh token back. Send them through sign-in again.
+- **Signing in again renews the key.** It renews the same key instead of adding one, whether or not you send `resource=https://api.phaseo.app/v1`. You get a new access token and refresh token, the previous ones stop working, and the key keeps this month's spending. Its monthly spending limit becomes the one the person just approved. An earlier sign-in's refresh token is just refused, and sending it to the token or revoke endpoint doesn't end the new sign-in.
+- **A paused key blocks sign-in.** If any of your app's keys for that person and workspace is paused, whatever its resource, the token endpoint returns `invalid_grant` until someone turns the key back on in **Settings → API Keys**. Renewal only works while the key isn't revoked: after a sign-out or any other revocation, signing in issues a new key, and its limits and spending start fresh.
+- **Sign out with revoke.** Send the refresh token to `https://api.phaseo.app/oauth/revoke`. That revokes the key and every refresh token from the sign-in, including one a refresh issued a moment earlier.
 
-## Prerequisites
+## Spending limits
 
-- Node.js and one supported package manager
-- an OAuth client configured with the local callback URL
-- a strong session secret
+On the consent screen the person sets a monthly spending limit for your app: $20.00 by default, another amount, or no limit. Once the key has spent it in a calendar month, gateway requests return `429` with `key_limit_exceeded` until the next month or until the person raises the limit in **Settings → API Keys**.
 
-## Run the sample
+Whatever scopes it holds, your app can't lift that limit or get around it through the API. It can only rename or delete API keys. It can't create or rotate keys, change a key's limits, status or expiry, create management keys or trusted workloads, add members, change budgets, guardrails, rate limits or spend rules, or change the workspace's price limits for routing or its BYOK fallback to credits.
 
-<CodeGroup>
-```bash npm
-cd examples/oauth-client-nextjs
-npm install
-cp .env.example .env.local
-```
+## Before you ship it
 
-```bash pnpm
-cd examples/oauth-client-nextjs
-pnpm install
-cp .env.example .env.local
-```
+- **Trim the allowlist.** `lib/gateway.ts` allows exact paths plus every path under `videos/`, `music/generate/`, `control/` and `internal/`. Keep only the exact paths your product calls.
+- **Send the whole conversation.** The Gateway doesn't store responses and rejects `previous_response_id`, so resend earlier turns in `input`.
+- **Replace the tester.** Keep the workbench for internal QA and build purpose-made flows for end users.
 
-```bash yarn
-cd examples/oauth-client-nextjs
-yarn install
-cp .env.example .env.local
-```
-
-```bash bun
-cd examples/oauth-client-nextjs
-bun install
-cp .env.example .env.local
-```
-</CodeGroup>
-
-Set:
-
-- `NEXT_PUBLIC_OAUTH_CLIENT_ID`
-- `OAUTH_CLIENT_SECRET`
-- `NEXT_PUBLIC_PHASEO_URL`
-- `NEXT_PUBLIC_REDIRECT_URI`
-- `SESSION_SECRET`
-- `NEXT_PUBLIC_GATEWAY_URL`
-
-Then run:
-
-<CodeGroup>
-```bash npm
-npm run dev
-```
-
-```bash pnpm
-pnpm dev
-```
-
-```bash yarn
-yarn dev
-```
-
-```bash bun
-bun run dev
-```
-</CodeGroup>
-
-Open `http://localhost:3000`.
-
-## Check your work
-
-- Sign-in returns to the configured callback and creates a session.
-- The dashboard can discover models through the proxy.
-- One Responses API request completes without exposing an access token to the browser.
-- An endpoint outside the proxy allowlist is rejected.
-
-## How to make it your own
-
-- trim the proxy allowlist to the endpoints your product really needs
-- keep the workbench internally while building a cleaner user-facing UI on top
-- swap the generic tester for purpose-built product flows once the integration stabilizes
-
-## Related guides
-
-- [Build a Next.js web chat app](./build-a-nextjs-web-chat-app)
-- [Mini app starter prompts](./mini-app-starter-prompts)
-- [Examples](../guides/examples)
+For an API-key app without sign-in, start from the [Next.js web chat app](./build-a-nextjs-web-chat-app).

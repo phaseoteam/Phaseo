@@ -5,25 +5,15 @@ description: "Record response ratings and compare preset quality in the Phaseo d
 icon: "message-square-more"
 ---
 
-Preset Feedback lets you connect ratings from your application to the preset that produced a response. Use it to compare prompt and routing changes with real user signals instead of relying only on latency and cost.
+Send each user rating to `POST /v1/feedback` with the request ID and the [preset](./presets.mdx) that answered, then compare presets by how often their answers were rated well, not only by latency and cost.
 
 <Note>
-Preset Feedback is in Alpha. We are actively refining the API and dashboard based on how teams evaluate production AI responses. Use the **Feedback** button on the [Preset Feedback page](https://phaseo.app/settings/presets/experiments) to tell us what would make it more useful.
+Preset Feedback is in Alpha, and the API and dashboard may still change. Use the **Feedback** button on the [Preset Feedback page](https://phaseo.app/settings/presets/experiments) to tell us what would make it more useful.
 </Note>
-
-## Before you begin
-
-You need:
-
-- a Phaseo API key with the `feedback:write` capability
-- the request ID returned by Phaseo
-- the UUID of the preset you want to analyze
-
-Include the preset ID when recording feedback. This is what makes the event appear in preset comparisons and cohort analysis.
 
 ## Record a rating
 
-Send feedback after a user rates a response or your application determines an outcome.
+You need an API key with the `feedback:write` capability, the request ID Phaseo returned, and the UUID of the preset. The preset ID is what puts the event into preset comparisons and cohort analysis.
 
 ```bash cURL
 curl https://api.phaseo.app/v1/feedback \
@@ -43,19 +33,21 @@ curl https://api.phaseo.app/v1/feedback \
   }'
 ```
 
-A feedback event must target at least one request, session, preset, or test run. Scores are optional and must be between `0` and `1`.
+A feedback event must target at least one request, session, preset, or test run. `score` is optional and must be between `0` and `1`.
+
+Put low-cardinality values such as plan, deployment, locale, or application surface in `metadataDimensions`, so you can filter by them. Put arbitrary or high-cardinality context in `metadata` instead.
 
 ## Choose a rating
 
-Use a rating that describes the signal you actually collected:
+| Signal | `rating` |
+| --- | --- |
+| A simple user reaction | `thumbs_up`, `thumbs_down` |
+| An evaluated answer | `correct`, `partly_correct`, `incorrect` |
+| An operational problem | `bad_format`, `too_slow`, `too_expensive` |
+| A safety outcome | `unsafe`, `refused_incorrectly` |
+| Anything else | `not_helpful`, `other` |
 
-- `thumbs_up` or `thumbs_down` for simple user reactions
-- `correct`, `partly_correct`, or `incorrect` for evaluated answers
-- `bad_format`, `too_slow`, or `too_expensive` for operational problems
-- `unsafe` or `refused_incorrectly` for safety outcomes
-- `not_helpful` or `other` when the other values do not fit
-
-Avoid translating every signal into a numeric score. Explicit ratings make dashboard comparisons easier to explain.
+Prefer an explicit rating to a numeric score alone: preset comparisons are built on ratings, and scores are shown as supporting detail.
 
 ## Compare presets
 
@@ -66,9 +58,11 @@ Open [Settings → Presets → Feedback](https://phaseo.app/settings/presets/exp
 - filter by date, rating, and metadata dimensions
 - inspect the request, session, comments, and tags behind an event
 
-Add low-cardinality values such as plan, deployment, locale, or application surface to `metadataDimensions`. Keep arbitrary or high-cardinality context in `metadata` instead.
+The dashboard analyzes at most the 10,000 most recent matching feedback rows in the selected window.
 
 ## Read feedback through the API
+
+Reading needs `feedback:read`. Results are limited to the authenticated workspace and the presets the caller can see.
 
 List recent events:
 
@@ -77,23 +71,11 @@ curl "https://api.phaseo.app/v1/feedback?preset_id=PRESET_UUID&limit=100" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Request a server-side summary:
+Get a summary computed on the server:
 
 ```bash
 curl "https://api.phaseo.app/v1/feedback/summary?group_by=preset&since=2026-08-01T00:00:00Z" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Read operations require `feedback:read`. Results are limited to the authenticated workspace and presets visible to the caller.
-
-## Current Alpha limits
-
-- The dashboard analyzes at most the 10,000 most recent matching feedback rows in a selected window.
-- Preset comparisons use explicit ratings; numeric scores are shown as supporting detail.
-- Test-run and custom outcome event APIs are available, but their dashboard workflows are still evolving.
-
-## Related guides
-
-- [Presets](./presets)
-- [Roll out presets and debug routing](../cookbook/preset-rollout-and-routing-debug)
-- [App attribution](./app-attribution)
+APIs for test runs and custom outcome events are available, but their dashboard views are still changing. To roll a preset change out gradually, see [Roll out presets and debug routing](../cookbook/preset-rollout-and-routing-debug).

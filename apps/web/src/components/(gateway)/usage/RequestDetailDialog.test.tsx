@@ -1,26 +1,27 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
 import { DisplayPreferencesProvider } from "@/components/providers/DisplayPreferencesProvider";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../messages/en-GB/settings-ui.json";
 import productMessages from "../../../../messages/en-GB/product.json";
-const renderToStaticMarkup = (node: React.ReactNode) => renderMarkup(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Product: productMessages }}><DisplayPreferencesProvider locale="en-GB">{node}</DisplayPreferencesProvider></NextIntlClientProvider>);
+const renderToStaticMarkup = (node: React.ReactNode) => renderMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Product: productMessages }}><DisplayPreferencesProvider locale="en-GB">{node}</DisplayPreferencesProvider></AppIntlProvider>);
 import React from "react";
 
-import type { RequestRow } from "@/app/(dashboard)/gateway/usage/server-actions";
-import RequestDetailDialog from "./RequestDetailDialog";
+import type { RequestRow } from "@/features/gateway/usage/server-actions";
+import RequestDetailDialog, { formatRequestPricingLine } from "./RequestDetailDialog";
 import { RouteRequestDetailErrorDialog } from "./RouteRequestDetailDialog";
 
 const router = {
-	push: jest.fn(),
-	refresh: jest.fn(),
+	push: vi.fn(),
+	refresh: vi.fn(),
 };
 
-jest.mock("next/navigation", () => ({
+vi.mock("@/lib/navigation", () => ({
 	useRouter: () => router,
 	useSearchParams: () => new URLSearchParams(),
 }));
 
-jest.mock("@/components/ui/dialog", () => ({
+vi.mock("@/components/ui/dialog", () => ({
 	Dialog: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 	DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 	DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
@@ -29,7 +30,7 @@ jest.mock("@/components/ui/dialog", () => ({
 	DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
 }));
 
-jest.mock("@/components/(data)/model/pricing/ProviderInspectorSheet", () => ({
+vi.mock("@/components/(data)/model/pricing/ProviderInspectorSheet", () => ({
 	ProviderInspectorSheet: ({ children, ...props }: { children: React.ReactNode; disablePointerDismissal?: boolean }) => (
 		<div data-disable-pointer-dismissal={String(props.disablePointerDismissal)}>{children}</div>
 	),
@@ -142,5 +143,46 @@ describe("RequestDetailDialog", () => {
 		expect(markup).toContain("Request details unavailable");
 		expect(markup).toContain("Try again");
 		expect(markup).toContain("Back to request logs");
+	});
+});
+
+describe("formatRequestPricingLine", () => {
+	const formatNumber = (value: number) => value.toLocaleString("en-US");
+
+	it("shows the quantity and cost stored on gateway request lines", () => {
+		expect(formatRequestPricingLine({
+			dimension: "output_image_tokens",
+			quantity: 824,
+			line_cost_usd: "0.024720000",
+			line_nanos: 24720000,
+		}, formatNumber)).toBe("output_image_tokens=824 | $0.024720000 | 24,720,000 nanos");
+	});
+
+	it("names the SVG author model on its lines", () => {
+		expect(formatRequestPricingLine({
+			model: "openai/gpt-5-nano",
+			component: "svg_author",
+			dimension: "output_text_tokens",
+			quantity: 8199,
+			line_cost_usd: "0.003279600",
+			line_nanos: 3279600,
+		}, formatNumber)).toBe("SVG author (openai/gpt-5-nano) | output_text_tokens=8,199 | $0.003279600 | 3,279,600 nanos");
+	});
+
+	it("uses the translated SVG author label", () => {
+		expect(formatRequestPricingLine({ model: "openai/gpt-5-nano", component: "svg_author", dimension: "input_text_tokens", quantity: 1860 }, formatNumber, { svgAuthor: "SVG-Autor", imageTool: "Bild-Tool" }))
+			.toBe("SVG-Autor (openai/gpt-5-nano) | input_text_tokens=1,860");
+	});
+
+	it("names Chat's image tool and the SVG author inside it", () => {
+		expect(formatRequestPricingLine({ model: "openai/gpt-image-2.6-flare", component: "image_generation", dimension: "output_image_tokens", quantity: 824 }, formatNumber))
+			.toBe("Image tool (openai/gpt-image-2.6-flare) | output_image_tokens=824");
+		expect(formatRequestPricingLine({ model: "openai/gpt-5-nano", component: "image_generation.svg_author", dimension: "output_text_tokens", quantity: 4563 }, formatNumber))
+			.toBe("Image tool · SVG author (openai/gpt-5-nano) | output_text_tokens=4,563");
+	});
+
+	it("keeps the older units and cost_usd shape", () => {
+		expect(formatRequestPricingLine({ provider: "openai", dimension: "requests", units: 1, cost_usd: 0.01 }, formatNumber))
+			.toBe("openai | requests=1 | $0.010000");
 	});
 });

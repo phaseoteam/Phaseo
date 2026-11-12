@@ -1,53 +1,52 @@
 ---
 title: "أحمال العمل الموثوقة"
-description: "اسمح لعمليات النشر ومهام CI وأحمال العمل السحابية على Vercel وGitHub Actions وGitLab وGoogle Cloud وBuildkite وCircleCI وAWS أو على مُصدِر OIDC خاص بك باستدعاء Phaseo دون مفتاح API."
+description: "اسمح لعمليات النشر ومهام CI وأحمال العمل السحابية على Vercel وGitHub Actions وGitLab وGoogle Cloud وBuildkite وCircleCI وAWS أو على جهة إصدار OIDC خاصة بك باستدعاء Phaseo دون مفتاح API."
 icon: "fingerprint-pattern"
 ---
 
 <Note>
-ميزة أحمال العمل الموثوقة في المرحلة التجريبية، ويجري إتاحتها لمساحات العمل تدريجيًا. إذا لم يظهر **الإعدادات ← مفاتيح API ← أحمال العمل الموثوقة** في لوحة التحكم لديك، فهذا يعني أن مساحة عملك لم تحصل عليها بعد.
+ميزة أحمال العمل الموثوقة في المرحلة التجريبية، ويجري إتاحتها لمساحات العمل تدريجيًا. إذا لم يظهر **الإعدادات → مفاتيح API → أحمال العمل الموثوقة** في لوحة التحكم لديك، فهذا يعني أن مساحة عملك لم تحصل عليها بعد.
 </Note>
 
-تمنح منصات كثيرة كل عملية نشر أو مهمة أو حمل عمل رمزًا موقّعًا يحدد هويته، مثل "هذه عملية النشر الإنتاجية لمشروع `website`" أو "هذه مهمة في مشروع GitLab رقم `4815162`". تنتهي صلاحية الرمز خلال ساعات. باستخدام أحمال العمل الموثوقة، تحدد لـ Phaseo أحمال العمل التي يثق بها، فترسل هذا الرمز بدلًا من مفتاح API. لا تحتاج إلى تخزين أي بيانات اعتماد طويلة الأجل في إعدادات مشروعك أو في أسرار CI.
+أرسل رمز OIDC قصير الأجل الذي تصدره منصتك كرمز bearer بدلًا من مفتاح API لـ Phaseo، فلا يلزم تخزين أي شيء طويل الأجل في إعدادات مشروعك أو في أسرار CI. تمنح المنصات كل عملية نشر أو مهمة أو حمل عمل رمزًا موقّعًا يحدد هويته، مثل "عملية النشر الإنتاجية لمشروع `website`" أو "مهمة في مشروع GitLab رقم `4815162`"، وتنتهي صلاحية الرمز خلال ساعات. وأنت تحدد لـ Phaseo أحمال العمل التي يثق بها.
 
-يثق Phaseo بالرموز الصادرة من Vercel وGitHub Actions وGitLab وGoogle Cloud وBuildkite وCircleCI وAWS، ومن مُصدِر OIDC تشغّله بنفسك، مثل عنقود Kubernetes أو Bitbucket Pipelines أو GitLab مُدار ذاتيًا.
-
-تظل مفاتيح API تعمل كما هي. استخدم أحمال العمل الموثوقة للتعليمات البرمجية التي تعمل على هذه المنصات، واحتفظ بمفاتيح API لكل ما عدا ذلك، مثل البرامج النصية المحلية وتطبيقات الجوال.
-
----
+يثق Phaseo بالرموز الصادرة من Vercel وGitHub Actions وGitLab وGoogle Cloud وBuildkite وCircleCI وAWS، ومن جهة إصدار OIDC تشغّلها بنفسك، مثل عنقود Kubernetes أو Bitbucket Pipelines أو GitLab مُدار ذاتيًا. واصل استخدام مفاتيح API لكل ما عدا ذلك، مثل البرامج النصية المحلية وتطبيقات الجوال.
 
 ## طريقة العمل
 
-1. ينشئ مالك مساحة العمل أو أحد مسؤوليها **سياسة ثقة** في **الإعدادات ← مفاتيح API ← أحمال العمل الموثوقة**. تحدد السياسة المنصة، والمالك الذي تثق به، مثل مالك على GitHub أو مشروع على GitLab أو دور في AWS، وشروطًا اختيارية مثل مشروع أو مستودع أو فرع أو بيئة.
-2. تطلب تعليماتك البرمجية من المنصة رمزًا للجمهور `https://api.phaseo.app` وترسله بالشكل `Authorization: Bearer <token>`.
-3. يتحقق Phaseo من توقيع الرمز وصلاحيته، ثم يبحث عن سياسة نشطة واحدة فقط تطابقه.
-4. يُنفَّذ الطلب باستخدام مفتاح تلك السياسة، ويخضع لحدود المعدل والميزانيات والسجلات والفوترة نفسها التي يخضع لها الطلب المرسل بمفتاح API.
+```mermaid
+flowchart LR
+  job["حمل العمل لديك"] -->|"1. اطلب رمزًا لـ https://api.phaseo.app"| platform["المنصة"]
+  platform -->|"2. رمز موقّع"| job
+  job -->|"3. Authorization: Bearer token"| phaseo["Phaseo"]
+  phaseo --> check{{"هل التوقيع وتاريخ الانتهاء والجمهور صالحة، وتطابق سياسة نشطة واحدة فقط؟"}}
+  check -->|"نعم"| run["يُنفَّذ بمفتاح السياسة"]
+  check -->|"لا"| refuse["401"]
+```
 
-### لماذا يهم الجمهور
+ينشئ مالك مساحة العمل أو أحد مسؤوليها **سياسة ثقة** تحدد المنصة، والمالك الذي تثق به (مثل مالك على GitHub أو مشروع على GitLab أو دور في AWS)، وشروطًا اختيارية مثل مشروع أو مستودع أو فرع أو بيئة. يُنفَّذ الطلب المطابق بمفتاح السياسة، ويخضع لحدود المعدل والميزانيات والسجلات والفوترة نفسها التي يخضع لها الطلب المرسل بمفتاح API.
 
-يجب أن تكون الرموز صادرة للجمهور `https://api.phaseo.app`. افتراضيًا، تصدر معظم المنصات رموزًا لجمهور تشترك فيه كل الخدمات التي يستدعيها حمل العمل. لو قبلها Phaseo، لأمكن إعادة استخدام رمز أرسلته إلى خدمة أخرى لاستدعاء Phaseo. لذلك يرفض Phaseo الرموز ذات أي جمهور آخر.
-
----
+يجب أن تكون الرموز صادرة للجمهور `https://api.phaseo.app`؛ ويرفض Phaseo أي جمهور آخر. تستخدم معظم المنصات افتراضيًا جمهورًا تشترك فيه كل الخدمات التي يستدعيها حمل العمل، وقبول تلك الرموز سيسمح بإعادة استخدام رمز أرسلته إلى خدمة أخرى ضد Phaseo.
 
 ## إنشاء سياسة ثقة
 
 <Steps>
 <Step title="افتح أحمال العمل الموثوقة">
-انتقل إلى **الإعدادات ← مفاتيح API ← أحمال العمل الموثوقة** واختر **سياسة جديدة**. يمكن لمالكي مساحة العمل ومسؤوليها فقط إدارة السياسات.
+انتقل إلى **الإعدادات → مفاتيح API → أحمال العمل الموثوقة** واختر **سياسة جديدة**. يمكن لمالكي مساحة العمل ومسؤوليها فقط إدارة السياسات.
 </Step>
 <Step title="اختر المنصة وأدخل المعرّفات">
 تربط كل منصة السياسة بمعرّف واحد لا يمكن تغيير اسمه أو أن يستحوذ عليه شخص آخر. قد تنتقل الأسماء إلى أيدٍ أخرى، لذلك لا يثق Phaseo أبدًا باسم وحده.
 
 <Tabs>
 <Tab title="Vercel">
-- **الاسم المختصر للفريق**: الاسم المختصر (slug) للفريق كما في `vercel.com/<team-slug>`. اتركه فارغًا إذا كان مشروعك يستخدم وضع المُصدِر العام في Vercel (المُصدِر `https://oidc.vercel.com` بدلًا من `https://oidc.vercel.com/<team-slug>`).
-- **معرّف الفريق**: يبدأ بـ `team_`. تجده في إعدادات الفريق على Vercel.
-- **معرّف المشروع** (موصى به): يبدأ بـ `prj_`. تجده في إعدادات المشروع على Vercel. بدونه، يُوثق بكل مشاريع الفريق.
-- **البيئة**: الإنتاج أو المعاينة أو التطوير. اترك كل الخيارات غير محددة لقبول أي بيئة.
+- **الاسم المختصر للفريق**: الاسم المختصر (slug) للفريق، كما في `vercel.com/<team-slug>`. اتركه فارغًا إذا كان مشروعك يستخدم وضع جهة الإصدار العامة في Vercel (جهة الإصدار `https://oidc.vercel.com` بدلًا من `https://oidc.vercel.com/<team-slug>`).
+- **معرّف الفريق**: يبدأ بـ `team_`. تجده في إعدادات فريقك على Vercel.
+- **معرّف المشروع** (موصى به): يبدأ بـ `prj_`. تجده في إعدادات مشروعك على Vercel. بدونه، يُوثق بكل مشروع في الفريق.
+- **البيئة**: الإنتاج أو المعاينة أو التطوير. اترك الكل دون تحديد لقبول أي بيئة.
 </Tab>
 <Tab title="GitHub Actions">
 - **معرّف المالك**: المعرّف الرقمي للمستخدم أو المؤسسة التي تملك المستودع.
-- **معرّف المستودع** (موصى به): المعرّف الرقمي للمستودع. بدونه، يُوثق بكل مستودعات المالك.
+- **معرّف المستودع** (موصى به): المعرّف الرقمي للمستودع. بدونه، يُوثق بكل مستودع يملكه المالك.
 - **الفرع أو الوسم** و**البيئة** (اختياريان): مثل `refs/heads/main` أو `production`.
 
 احصل على المعرّفين باستخدام GitHub CLI:
@@ -55,59 +54,57 @@ icon: "fingerprint-pattern"
 ```bash
 gh api repos/OWNER/REPO --jq '.id, .owner.id'
 ```
-
-يستخدم Phaseo المعرّفات الرقمية لأن الأسماء يمكن تغييرها أو أن يستحوذ عليها شخص آخر.
 </Tab>
 <Tab title="GitLab">
-للمشاريع على GitLab.com. أما GitLab المُدار ذاتيًا، فاختر له **جهة إصدار OIDC مخصصة**.
+للمشاريع على GitLab.com. أما GitLab المُدار ذاتيًا، فاستخدم **جهة إصدار OIDC مخصصة**.
 
-- **معرّف المشروع**: المعرّف الرقمي الظاهر في صفحة نظرة عامة على المشروع. لا يتغير عند إعادة تسمية المشروع أو نقله إلى مجموعة أخرى، ولهذا يربط Phaseo السياسة به لا بالمجموعة.
+- **معرّف المشروع**: المعرّف الرقمي الظاهر في صفحة نظرة عامة على المشروع. يبقى كما هو عند إعادة تسمية المشروع أو نقله إلى مجموعة أخرى، ولهذا يربط Phaseo السياسة به لا بالمجموعة.
 - **الفرع أو الوسم** (اختياري): اسم الفرع أو الوسم، مثل `main`.
 - **البيئة** (اختياري): بيئة المهمة، مثل `production`.
 
-اترك الشرطين فارغين لقبول كل مهام المشروع.
+اترك الشرطين فارغين لقبول كل مهمة في المشروع.
 </Tab>
 <Tab title="Google Cloud">
 للرموز الصادرة من خادم البيانات الوصفية على Cloud Run وCompute Engine وGKE وCloud Run functions وApp Engine وCloud Build.
 
-- **المعرّف الفريد لحساب الخدمة**: المعرّف الفريد الرقمي في صفحة تفاصيل حساب الخدمة في وحدة تحكم Google Cloud. تشترك كل حسابات Google في المُصدِر نفسه، لذا فهذا المعرّف هو ما يميّز حمل عملك. لا تستخدم البريد الإلكتروني بدلًا منه: إذا حُذف حساب الخدمة، يمكن لأي شخص إنشاء حساب جديد بالبريد نفسه.
-- **بريد حساب الخدمة** (اختياري): تحقق إضافي. لا تتضمن الرموز البريد الإلكتروني إلا إذا طلبها حمل العمل مع `format=full`.
+- **المعرّف الفريد لحساب الخدمة**: المعرّف الفريد الرقمي الظاهر في صفحة تفاصيل حساب الخدمة في وحدة تحكم Google Cloud. تشترك جميع حسابات Google في جهة الإصدار نفسها، لذا فهذا المعرّف هو ما يميّز حمل العمل لديك. لا تستخدم البريد الإلكتروني بدلًا منه: إذا حُذف حساب الخدمة، يمكن لأي شخص إنشاء حساب جديد بالبريد نفسه.
+- **بريد حساب الخدمة** (اختياري): تحقق إضافي. لا تتضمن الرموز البريد إلا عندما يطلبها حمل العمل باستخدام `format=full`.
 </Tab>
 <Tab title="Buildkite">
-- **معرّف المؤسسة**: المعرّف UUID للمؤسسة. يحمله كل رمز من Buildkite في المطالبة `organization_id`، لذا يمكنك قراءته من رمز يطلبه أحد مسارات العمل لديك. وعلى خلاف الاسم المختصر للمؤسسة، لا يتغير أبدًا.
+- **معرّف المؤسسة**: معرّف UUID للمؤسسة. يحمله كل رمز من Buildkite في المطالبة `organization_id`، لذا يمكنك قراءته من رمز يطلبه أحد مسارات العمل لديك. وعلى عكس الاسم المختصر للمؤسسة، لا يتغير أبدًا.
 - **الاسم المختصر لمسار العمل** (اختياري): بدونه، يُوثق بكل مسارات العمل في المؤسسة.
 </Tab>
 <Tab title="CircleCI">
-- **معرّف المؤسسة**: تجده في **Organization Settings → Overview**. لكل مؤسسة في CircleCI مُصدِر خاص بها، `https://oidc.circleci.com/org/<organisation ID>`، ويبنيه Phaseo من هذا المعرّف.
-- **معرّف المشروع** (اختياري): تجده في **Project Settings → Overview**. بدونه، يُوثق بكل مشاريع المؤسسة.
+- **معرّف المؤسسة**: تجده ضمن **Organization Settings → Overview**. لكل مؤسسة في CircleCI جهة إصدار خاصة بها، `https://oidc.circleci.com/org/<organisation ID>`، ويبنيها Phaseo من هذا المعرّف.
+- **معرّف المشروع** (اختياري): تجده ضمن **Project Settings → Overview**. بدونه، يُوثق بكل مشروع في المؤسسة.
 </Tab>
 <Tab title="AWS">
-للرموز الصادرة من اتحاد الهوية الصادر في IAM (outbound identity federation)، الذي يمنح دور IAM رمزًا موقّعًا لخدمة خارجية.
+للرموز الصادرة عبر اتحاد الهوية الصادر في IAM، الذي يمنح دور IAM رمزًا موقّعًا لخدمة خارجية.
 
-- **عنوان URL لجهة الإصدار**: لكل حساب AWS مُصدِر خاص به ينتهي بـ `.tokens.sts.global.api.aws`. شغّل `aws iam get-outbound-web-identity-federation-info` وانسخ `IssuerIdentifier`. إذا فشل الأمر، فعّل الميزة أولًا باستخدام `aws iam enable-outbound-web-identity-federation`.
-- **ARN دور IAM**: لا تُقبل إلا رموز هذا الدور، مثل `arn:aws:iam::123456789012:role/evals`. يحدد المُصدِر حسابك بالفعل، لذا يحدد ARN الدور حمل العمل.
+- **عنوان URL لجهة الإصدار**: لكل حساب AWS جهة إصدار خاصة به، تنتهي بـ `.tokens.sts.global.api.aws`. شغّل `aws iam get-outbound-web-identity-federation-info` وانسخ `IssuerIdentifier`. إذا فشل الأمر، ففعّل الميزة أولًا باستخدام `aws iam enable-outbound-web-identity-federation`.
+- **ARN دور IAM**: لا تُقبل إلا رموز هذا الدور، مثل `arn:aws:iam::123456789012:role/evals`. تحدد جهة الإصدار حسابك مسبقًا، لذا يحدد ARN الدور حمل العمل.
 </Tab>
 <Tab title="جهة إصدار OIDC مخصصة">
-استخدم هذا الخيار لأي مُصدِر OIDC آخر يستوفي كل ما يلي:
+استخدم هذا الخيار لأي جهة إصدار OIDC أخرى تستوفي جميع ما يلي:
 
-- عنوان URL للمُصدِر عنوان `https://` عام، بلا منفذ أو استعلام أو جزء (fragment)، وليس على مضيف يتبع إحدى المنصات أعلاه.
-- يوفّر مستند اكتشاف على `<issuer>/.well-known/openid-configuration`.
-- مفاتيح التوقيع الخاصة به (`jwks_uri`) على المضيف نفسه الذي عليه المُصدِر.
-- يوقّع الرموز باستخدام RS256 أو ES256 أو ES384، ويمكنه إصدارها للجمهور `https://api.phaseo.app`.
+- عنوان URL لجهة الإصدار عنوان `https://` عام، بلا منفذ أو استعلام أو جزء، وليس على مضيف يتبع إحدى المنصات المذكورة أعلاه.
+- تقدّم مستند اكتشاف على `<issuer>/.well-known/openid-configuration`.
+- مفاتيح التوقيع (`jwks_uri`) على المضيف نفسه الذي عليه جهة الإصدار.
+- توقّع الرموز باستخدام RS256 أو ES256 أو ES384، ويمكنها إصدارها للجمهور `https://api.phaseo.app`.
 
 املأ ما يلي:
 
 - **عنوان URL لجهة الإصدار**: انسخه تمامًا كما يظهر في المطالبة `iss` في الرمز، بما في ذلك أي شرطة مائلة في نهايته.
-- **مطالبة المالك** و**قيمة المالك**: المطالبة التي يجب أن يحملها كل رمز، والقيمة الدقيقة التي يجب أن تكون لها. اختر مطالبة لا يمكن لأي شخص آخر إعادة استخدامها، مثل معرّف رقمي، بدلًا من اسم يمكن تغييره أو تسجيله من جديد.
-- **مطالبة إضافية** و**القيمة المطلوبة** (اختياريتان): مطالبة أخرى يجب أن يطابقها الرمز.
+- **مطالبة المالك** و**قيمة المالك**: المطالبة التي يجب أن يحملها كل رمز، والقيمة الدقيقة التي يجب أن تكون لها. اختر مطالبة لا يمكن لأحد غيرك إعادة استخدامها، مثل معرّف رقمي، بدلًا من اسم يمكن تغييره أو تسجيله من جديد.
+- **مطالبة إضافية** و**القيمة المطلوبة** (اختياري): مطالبة أخرى يجب أن يطابقها الرمز.
 
-تنطبق الشروط على المطالبات في المستوى الأعلى فقط. لا يمكن استخدام المطالبات المتداخلة، مثل الكائن `kubernetes.io` في Kubernetes.
+لا تطابق الشروط إلا المطالبات في المستوى الأعلى. لا يمكن استخدام المطالبات المتداخلة، مثل الكائن `kubernetes.io` في Kubernetes.
 
-**Kubernetes (EKS وGKE وAKS)**: لكل عنقود مُصدِر خاص به. على EKS، شغّل `aws eks describe-cluster --name <cluster> --query cluster.identity.oidc.issuer`. على AKS، فعّل مُصدِر OIDC وشغّل `az aks show -n <cluster> -g <resource-group> --query oidcIssuerProfile.issuerUrl`. على GKE، المُصدِر هو `https://container.googleapis.com/v1/projects/<project>/locations/<location>/clusters/<cluster>`. استخدم `sub` مطالبةً للمالك، بالقيمة `system:serviceaccount:<namespace>:<service-account>`.
+**Kubernetes (EKS وGKE وAKS)**: لكل عنقود جهة إصدار خاصة به. على EKS، شغّل `aws eks describe-cluster --name <cluster> --query cluster.identity.oidc.issuer`. على AKS، فعّل جهة إصدار OIDC وشغّل `az aks show -n <cluster> -g <resource-group> --query oidcIssuerProfile.issuerUrl`. على GKE، جهة الإصدار هي `https://container.googleapis.com/v1/projects/<project>/locations/<location>/clusters/<cluster>`. استخدم `sub` كمطالبة المالك، بالقيمة `system:serviceaccount:<namespace>:<service-account>`.
 
-لن تعمل عناقيد Kubernetes المُدارة ذاتيًا إذا لم تكن نقطة نهاية الاكتشاف الخاصة بها عامة. يحتاج Phaseo إلى جلب مستند الاكتشاف والمفاتيح من الإنترنت دون بيانات اعتماد، ومعظم العناقيد لا تسمح بذلك افتراضيًا.
+لن تعمل عناقيد Kubernetes المُدارة ذاتيًا التي لا تكون نقطة الاكتشاف فيها عامة. يجب أن يتمكن Phaseo من جلب مستند الاكتشاف والمفاتيح من الإنترنت دون بيانات اعتماد، ومعظم العناقيد لا تسمح بذلك افتراضيًا.
 
-**Bitbucket Pipelines**: المُصدِر هو `https://api.bitbucket.org/2.0/workspaces/<workspace>/pipelines-config/identity/oidc`. استخدم `workspaceUuid` مطالبةً للمالك، وأدخل القيمة مع الأقواس المعقوفة، مثل `{a1b2c3d4-...}`. اطلب جمهور Phaseo في الخطوة:
+**Bitbucket Pipelines**: جهة الإصدار هي `https://api.bitbucket.org/2.0/workspaces/<workspace>/pipelines-config/identity/oidc`. استخدم `workspaceUuid` كمطالبة المالك، مع القيمة شاملةً الأقواس المعقوفة، مثل `{a1b2c3d4-...}`. اطلب جمهور Phaseo في الخطوة:
 
 ```yaml
 - step:
@@ -116,24 +113,22 @@ gh api repos/OWNER/REPO --jq '.id, .owner.id'
         - https://api.phaseo.app
 ```
 
-**GitLab المُدار ذاتيًا**: المُصدِر هو عنوان URL الخاص بـ GitLab لديك، مثل `https://gitlab.example.com`. استخدم `project_id` مطالبةً للمالك، بالمعرّف الرقمي للمشروع. يجب أن يكون الوصول إلى نسختك ممكنًا من الإنترنت.
+**GitLab المُدار ذاتيًا**: جهة الإصدار هي عنوان GitLab الخاص بك، مثل `https://gitlab.example.com`. استخدم `project_id` كمطالبة المالك، مع المعرّف الرقمي للمشروع. يجب أن يكون الخادم لديك قابلًا للوصول من الإنترنت.
 </Tab>
 </Tabs>
 </Step>
 <Step title="حدّد أطول رمز مقبول">
-في **أطول رمز مقبول (بالساعات)**، حدّد أطول مدة صلاحية تقبلها. تُرفض الرموز الصادرة بصلاحية أطول. الحد الأقصى 12 ساعة، وهو ما يغطي رموز التطوير في Vercel.
+في **أطول رمز مقبول (بالساعات)**، حدّد أطول مدة صلاحية تقبلها. تُرفض الرموز الصادرة لمدة أطول. الحد الأقصى، وهو أيضًا القيمة الافتراضية، 12 ساعة، وهو ما يغطي رموز التطوير في Vercel.
 </Step>
 </Steps>
 
-تسري السياسات خلال دقيقة تقريبًا. وعند إيقاف سياسة أو حذفها، تتوقف رموزها عن العمل خلال المدة نفسها.
-
----
+تسري السياسات خلال دقيقة تقريبًا. ويؤدي إيقاف السياسة أو حذفها إلى توقف رموزها عن العمل خلال المدة نفسها.
 
 ## إدارة السياسات باستخدام Terraform أو الواجهة البرمجية
 
-يمكنك أيضًا إدارة السياسات على هيئة شيفرة باستخدام [مفتاح إدارة](./management-api-keys.mdx) يملك الصلاحيات `keys:read` و`keys:write` و`keys:delete`. يتاح ذلك فقط لمساحات العمل التي تتوفر فيها أحمال العمل الموثوقة.
+أدِر السياسات كشيفرة باستخدام [مفتاح إدارة](./management-api-keys.mdx) يملك الصلاحيات `keys:read` و`keys:write` و`keys:delete`. لا تستطيع استخدام هذه المسارات إلا مساحات العمل التي تتوفر فيها أحمال العمل الموثوقة.
 
-في Terraform، استخدم المورد `phaseo_trusted_workload`:
+مع Terraform، استخدم المورد `phaseo_trusted_workload`:
 
 ```hcl
 resource "phaseo_trusted_workload" "deploy" {
@@ -148,20 +143,20 @@ resource "phaseo_trusted_workload" "deploy" {
 }
 ```
 
-`owner_id` هو قيمة مطالبة المالك الخاصة بالمنصة. اضبط `issuer` حين تحتاج إليه المنصة:
+`owner_id` هو قيمة مطالبة المالك في المنصة. اضبط `issuer` حيث تحتاج المنصة إليه:
 
 | `platform` | `issuer` | مطالبة المالك |
 | --- | --- | --- |
-| `vercel` | مطلوب: `https://oidc.vercel.com/<team-slug>`، أو `https://oidc.vercel.com` في وضع المُصدِر العام | `owner_id` (معرّف الفريق) |
-| `github_actions` | الافتراضي: `https://token.actions.githubusercontent.com` | `repository_owner_id` |
-| `gitlab` | الافتراضي: `https://gitlab.com` | `project_id` |
-| `google_cloud` | الافتراضي: `https://accounts.google.com` | `sub` (المعرّف الفريد لحساب الخدمة) |
-| `buildkite` | الافتراضي: `https://agent.buildkite.com` | `organization_id` |
+| `vercel` | مطلوب: `https://oidc.vercel.com/<team-slug>`، أو `https://oidc.vercel.com` لوضع جهة الإصدار العامة | `owner_id` (معرّف الفريق) |
+| `github_actions` | القيمة الافتراضية `https://token.actions.githubusercontent.com` | `repository_owner_id` |
+| `gitlab` | القيمة الافتراضية `https://gitlab.com` | `project_id` |
+| `google_cloud` | القيمة الافتراضية `https://accounts.google.com` | `sub` (المعرّف الفريد لحساب الخدمة) |
+| `buildkite` | القيمة الافتراضية `https://agent.buildkite.com` | `organization_id` |
 | `circleci` | مطلوب: `https://oidc.circleci.com/org/<organisation ID>` | `oidc.circleci.com/org-id` |
-| `aws` | مطلوب: مُصدِر حسابك | `sub` (ARN دور IAM) |
-| `custom` | مطلوب: عنوان URL لمُصدِرك | المطالبة التي تضبطها في `owner_claim` |
+| `aws` | مطلوب: جهة الإصدار الخاصة بحسابك | `sub` (ARN دور IAM) |
+| `custom` | مطلوب: عنوان URL لجهة الإصدار لديك | المطالبة التي تضبطها في `owner_claim` |
 
-للمُصدِر المخصص، اضبط أيضًا `owner_claim`:
+لجهة إصدار مخصصة، اضبط `owner_claim` أيضًا:
 
 ```hcl
 resource "phaseo_trusted_workload" "cluster" {
@@ -173,9 +168,17 @@ resource "phaseo_trusted_workload" "cluster" {
 }
 ```
 
-يؤدي تغيير المنصة أو المُصدر أو مطالبة المالك أو المالك إلى استبدال السياسة. لا تحتوي السياسة على أي سر، لذلك لا يُحفظ شيء حساس في حالة Terraform.
+حقول أخرى:
 
-عبر الواجهة البرمجية، أرسل الحقول نفسها إلى `/v1/workload-identity/policies`. تسمّي الواجهة البرمجية المنصة `provider`:
+| الحقل | القيم |
+| --- | --- |
+| `claim_conditions` | اسم المطالبة مقابل القيم المسموح بها؛ يجب أن تطابق كل مطالبة إحدى قيمها. حتى 15 مطالبة إلى جانب مطالبة المالك، و20 قيمة لكل مطالبة. لا يمكن استخدام `iss` و`aud` و`exp` و`iat` و`nbf` و`jti` ومطالبة المالك. |
+| `max_token_lifetime_seconds` | أطول مدة صلاحية مقبولة للرمز، من `60` إلى `43200` (12 ساعة). القيمة الافتراضية `43200`. |
+| `enabled` (Terraform) أو `status` (الواجهة البرمجية: `active` أو `disabled`) | ما إذا كانت الرموز المطابقة مقبولة. |
+
+يؤدي تغيير المنصة أو جهة الإصدار أو مطالبة المالك أو المالك إلى استبدال السياسة. لا تحتوي السياسة على سر، لذا لا يُخزَّن أي شيء حساس في حالة Terraform.
+
+مع الواجهة البرمجية، أرسل الحقول نفسها إلى `/v1/workload-identity/policies`. تسمّي الواجهة البرمجية المنصة `provider`:
 
 ```bash
 curl https://api.phaseo.app/v1/workload-identity/policies \
@@ -184,7 +187,7 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
   -d '{"name":"GitHub deploy (main)","provider":"github_actions","owner_id":"123456","claim_conditions":{"repository_id":["987654321"],"ref":["refs/heads/main"]}}'
 ```
 
-للمُصدِر المخصص:
+لجهة إصدار مخصصة:
 
 ```bash
 curl https://api.phaseo.app/v1/workload-identity/policies \
@@ -193,13 +196,11 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
   -d '{"name":"Production cluster","provider":"custom","issuer":"https://oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE","owner_claim":"sub","owner_id":"system:serviceaccount:prod:api"}'
 ```
 
-يسرد [مرجع API](../api-reference/endpoint/trusted-workloads-create.mdx) كل الحقول والاستجابات.
-
----
+يسرد [مرجع الواجهة البرمجية](../api-reference/endpoint/trusted-workloads-create.mdx) كل حقل واستجابة.
 
 ## استدعاء Phaseo برمز
 
-تقبل كل حزم SDK من Phaseo دالة بدلًا من مفتاح API وتستدعيها قبل كل طلب وكل إعادة محاولة، فيستخدم كل طلب رمزًا حاليًا. تتضمن كل حزمة SDK باستثناء C++ دالة مساعدة لـ GitHub Actions وأخرى لـ Vercel، تجلب رمزًا صادرًا للجمهور `https://api.phaseo.app` وتعيد استخدامه حتى قبل دقيقة من انتهاء صلاحيته:
+تقبل كل حزم SDK الخاصة بـ Phaseo دالة بدلًا من مفتاح API وتستدعيها قبل كل طلب وكل إعادة محاولة، لذا يستخدم كل طلب رمزًا حاليًا. تتضمن كل حزمة SDK باستثناء C++ دالة مساعدة لـ GitHub Actions وVercel. تجلب الدالة رمزًا صادرًا لـ `https://api.phaseo.app` وتعيد استخدامه حتى ما قبل انتهاء صلاحيته بدقيقة:
 
 | SDK | GitHub Actions | Vercel |
 | --- | --- | --- |
@@ -213,9 +214,9 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
 | Rust | `phaseo::auth::github_actions_token()` | `phaseo::auth::vercel_token()` |
 | C++ | مرّر دالتك الخاصة إلى `set_api_key_provider` | مرّر دالتك الخاصة إلى `set_api_key_provider` |
 
-تتطلب الدوال المساعدة الإصدار التالي من كل حزمة SDK. على Vercel، تستبدل الدالة المساعدة رمز عملية النشر المأخوذ من `VERCEL_OIDC_TOKEN_FILE` أو `VERCEL_OIDC_TOKEN`. في Vercel Functions يصل الرمز مع كل طلب في الترويسة `x-vercel-oidc-token`؛ مرّره إلى الدالة المساعدة بوصفه مصدر الرمز.
+تحتاج الدوال المساعدة إلى الإصدار القادم من كل حزمة SDK. على Vercel، تستبدل الدالة المساعدة رمز عملية النشر المأخوذ من `VERCEL_OIDC_TOKEN_FILE` أو `VERCEL_OIDC_TOKEN`. في Vercel Functions يصل الرمز مع كل طلب في الترويسة `x-vercel-oidc-token`؛ مرّره إلى الدالة المساعدة كمصدر للرمز.
 
-على المنصات الأخرى، مرّر دالتك الخاصة التي تُرجع الرمز، مثل دالة تقرأ متغير مهمة GitLab أو تستدعي خادم البيانات الوصفية في Google Cloud:
+على المنصات الأخرى، مرّر دالتك الخاصة التي تعيد الرمز، مثل دالة تقرأ متغير مهمة GitLab أو تستدعي خادم البيانات الوصفية في Google Cloud:
 
 ```ts
 import Phaseo from "@phaseo/sdk";
@@ -233,9 +234,9 @@ const client = new Phaseo({
 
 <Tabs>
 <Tab title="Vercel">
-استخدم `getVercelOidcToken` من مدخل الخادم في `@vercel/oidc` 4.x. عند تمرير `audience`، يُستبدل رمز عملية النشر برمز صادر لـ Phaseo.
+استخدم `getVercelOidcToken` من مدخل الخادم في `@vercel/oidc` 4.x. يؤدي تمرير `audience` إلى استبدال رمز عملية النشر برمز صادر لـ Phaseo.
 
-مع [حزمة TypeScript SDK](../sdk-reference/typescript/overview.mdx)، مرّر دالة بوصفها `apiKey`. تستدعيها حزمة SDK قبل كل طلب، لذلك يستخدم كل طلب رمزًا حاليًا:
+مع [حزمة TypeScript SDK](../sdk-reference/client/overview.mdx)، مرّرها كدالة `apiKey`:
 
 ```ts
 import Phaseo from "@phaseo/sdk";
@@ -246,14 +247,14 @@ const client = new Phaseo({
 });
 
 const response = await client.responses.create({
-	model: "openai/gpt-5-mini",
+	model: "openai/gpt-6-astra",
 	input: "Hello from a trusted workload",
 });
 ```
 
-يتطلب تمرير دالة كقيمة `apiKey` إصدارًا من `@phaseo/sdk` أحدث من 3.0.0.
+يتطلب تمرير دالة كـ `apiKey` إصدارًا من `@phaseo/sdk` أحدث من 3.0.0.
 
-مع أي عميل HTTP، اطلب رمزًا لكل طلب وأرسله بوصفه رمز bearer:
+مع أي عميل HTTP، اطلب رمزًا لكل طلب وأرسله كرمز bearer:
 
 ```ts
 import { getVercelOidcToken } from "@vercel/oidc";
@@ -267,16 +268,16 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 		"Content-Type": "application/json",
 	},
 	body: JSON.stringify({
-		model: "openai/gpt-5-mini",
+		model: "openai/gpt-6-astra",
 		messages: [{ role: "user", content: "Hello from a trusted workload" }],
 	}),
 });
 ```
 
-لا تخزّن الرمز في متغير على مستوى الوحدة: قد تغيّره Vercel بين الطلبات.
+لا تخزّن الرمز في متغير على مستوى الوحدة: قد يغيّره Vercel بين الطلبات.
 </Tab>
 <Tab title="GitHub Actions">
-تحتاج المهمة إلى الإذن `id-token: write` لطلب رمز.
+تحتاج المهمة إلى الصلاحية `id-token: write` لطلب رمز.
 
 ```yaml
 permissions:
@@ -298,7 +299,7 @@ jobs:
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                model: "openai/gpt-5-mini",
+                model: "openai/gpt-6-astra",
                 messages: [{ role: "user", content: "Hello from GitHub Actions" }],
               }),
             });
@@ -314,7 +315,7 @@ TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
 رموز GitHub Actions قصيرة الأجل، لذا اطلب رمزًا جديدًا في المهام الطويلة.
@@ -332,10 +333,10 @@ evals:
       curl https://api.phaseo.app/v1/chat/completions
       -H "Authorization: Bearer $PHASEO_TOKEN"
       -H "Content-Type: application/json"
-      -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from GitLab"}]}'
+      -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from GitLab"}]}'
 ```
 
-تستمر صلاحية الرمز طوال مهلة المهمة (timeout).
+تمتد صلاحية الرمز بقدر مهلة المهمة.
 </Tab>
 <Tab title="Google Cloud">
 اطلب الرمز من خادم البيانات الوصفية. يعمل ذلك على Cloud Run وCompute Engine وGKE وCloud Run functions وApp Engine وCloud Build:
@@ -347,10 +348,10 @@ TOKEN=$(curl -sS -H "Metadata-Flavor: Google" \
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Google Cloud"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from Google Cloud"}]}'
 ```
 
-أضف `&format=full` إلى عنوان URL إذا كانت سياستك تتحقق من بريد حساب الخدمة. صلاحية الرموز ساعة واحدة.
+أضف `&format=full` إلى عنوان URL إذا كانت سياستك تتحقق من بريد حساب الخدمة. تبقى الرموز صالحة لمدة ساعة واحدة.
 </Tab>
 <Tab title="Buildkite">
 اطلب الرمز باستخدام الوكيل في أمر إحدى الخطوات:
@@ -361,10 +362,10 @@ TOKEN=$(buildkite-agent oidc request-token --audience https://api.phaseo.app)
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Buildkite"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from Buildkite"}]}'
 ```
 
-صلاحية الرموز 5 دقائق افتراضيًا. في الخطوات الأطول، اطلب رمزًا جديدًا أو مرّر `--lifetime` بالثواني.
+تبقى الرموز صالحة 5 دقائق افتراضيًا. للخطوات الأطول، اطلب رمزًا جديدًا أو مرّر `--lifetime` بالثواني.
 </Tab>
 <Tab title="CircleCI">
 اطلب الرمز باستخدام CircleCI CLI في إحدى خطوات المهمة:
@@ -375,29 +376,29 @@ TOKEN=$(circleci run oidc get --claims '{"aud":"https://api.phaseo.app"}')
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from CircleCI"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from CircleCI"}]}'
 ```
 
-صلاحية الرموز ساعة واحدة.
+تبقى الرموز صالحة لمدة ساعة واحدة.
 </Tab>
 <Tab title="AWS">
-فعّل اتحاد الهوية الصادر مرة واحدة لكل حساب AWS، ثم اطلب رمزًا بصفتك دور IAM. يحتاج الدور إلى إذن `sts:GetWebIdentityToken`.
+فعّل اتحاد الهوية الصادر مرة واحدة لكل حساب AWS، ثم اطلب رمزًا بصفة دور IAM. يحتاج الدور إلى صلاحية `sts:GetWebIdentityToken`.
 
 ```bash
-# Once per account
+# مرة واحدة لكل حساب
 aws iam enable-outbound-web-identity-federation
 
-# In the workload
+# داخل حمل العمل
 TOKEN=$(aws sts get-web-identity-token --audience https://api.phaseo.app \
   --signing-algorithm ES384 --query WebIdentityToken --output text)
 
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from AWS"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from AWS"}]}'
 ```
 
-يقبل Phaseo `ES384` و`RS256`. صلاحية الرموز 5 دقائق افتراضيًا؛ مرّر `--duration-seconds` لتصل إلى ساعة واحدة.
+يقبل Phaseo `ES384` و`RS256`. تبقى الرموز صالحة 5 دقائق افتراضيًا؛ مرّر `--duration-seconds` لمدة تصل إلى ساعة واحدة.
 </Tab>
 <Tab title="جهة إصدار OIDC مخصصة">
 على Kubernetes، اربط رمز حساب خدمة مُسقَطًا (projected) صادرًا لجمهور Phaseo:
@@ -420,38 +421,39 @@ spec:
               path: token
 ```
 
-اقرأ `/var/run/secrets/phaseo/token` قبل كل طلب وأرسل محتواه بوصفه رمز bearer. يحدّث Kubernetes الملف قبل انتهاء صلاحية الرمز، لذا لا تحتفظ بالقيمة في الذاكرة.
+اقرأ `/var/run/secrets/phaseo/token` قبل كل طلب وأرسل محتواه كرمز bearer. يحدّث Kubernetes الملف قبل انتهاء صلاحية الرمز، لذا لا تحتفظ بالقيمة في الذاكرة.
 
 في Bitbucket Pipelines، تحصل الخطوة التي ضُبطت فيها جماهير `oidc` على الرمز في `BITBUCKET_STEP_OIDC_TOKEN`.
 </Tab>
 </Tabs>
 
----
-
 ## السلوك والحدود
 
-- **الضوابط نفسها التي تنطبق على المفتاح.** تُنفَّذ الطلبات باستخدام مفتاح السياسة، لذلك تنطبق حدود معدل المفتاح والميزانيات وروابط الأقسام وقوائم عناوين IP المسموح بها وإعدادات التسجيل والفوترة كالمعتاد.
-- **استدعاءات النماذج فقط.** تعمل رموز أحمال العمل حيث يعمل مفتاح API الخاص بالبوابة. وترفضها واجهات API الخاصة بالإدارة.
-- **سياسة مطابقة واحدة فقط.** إذا كانت مساحتا عمل تثقان بحمل العمل نفسه، فلن يتمكن Phaseo من معرفة أيهما تقصد وسيرفض الطلب. أرسل معرّف مساحة العمل في الترويسة `x-phaseo-workspace` لاختيار إحداهما.
-- **مدة صلاحية الرمز.** تُرفض الرموز الصادرة بصلاحية أطول من **أطول رمز مقبول** في السياسة، ولا يقبل Phaseo أبدًا الرموز الصادرة بصلاحية تزيد على 12 ساعة. صلاحية رموز Buildkite وAWS 5 دقائق افتراضيًا، ورموز Google Cloud وCircleCI ساعة واحدة. تستمر صلاحية رموز GitLab طوال مهلة المهمة، لذا تحصل المهمة التي تزيد مهلتها على 12 ساعة على رمز يرفضه Phaseo. يمكن لـ AKS إصدار رموز صالحة حتى 24 ساعة، لذا اضبط `expirationSeconds` أقصر.
-- **Azure غير مدعومة بعد.** لا تستطيع الهويات المُدارة في Azure طلب رموز لجمهور Phaseo. ومع ذلك يمكن لحاويات Pod على AKS استخدام رمز حساب خدمة Kubernetes عبر مُصدِر مخصص.
-- **لا تتأثر مفاتيح API.** تضيف أحمال العمل الموثوقة طريقة ثانية للمصادقة، ولا تغيّر مفاتيح API أو تعطّلها.
+- **الضوابط نفسها التي للمفتاح.** تُنفَّذ الطلبات بمفتاح السياسة، لذا تنطبق كالمعتاد حدود المعدل للمفتاح والميزانيات وروابط الأقسام وقوائم السماح لعناوين IP وإعدادات التسجيل والفوترة.
+- **استدعاءات النماذج فقط.** تعمل رموز أحمال العمل حيث يعمل مفتاح API للـ Gateway. وترفضها واجهات API الإدارية.
+- **سياسة مطابقة واحدة.** يُرفض الرمز الذي يطابق أكثر من سياسة نشطة. إذا كانت السياسات في مساحات عمل مختلفة، فأرسل معرّف مساحة العمل في الترويسة `x-phaseo-workspace` لاختيار واحدة. وإذا كانت في مساحة العمل نفسها، فضيّق شروطها بحيث لا تطابق إلا واحدة.
+- **مدة صلاحية الرمز.** تُرفض الرموز الصادرة لمدة أطول من **أطول رمز مقبول** في السياسة، ولا يقبل Phaseo أبدًا رموزًا صادرة لأكثر من 12 ساعة. تبقى رموز Buildkite وAWS صالحة 5 دقائق افتراضيًا؛ ورموز Google Cloud وCircleCI ساعة واحدة. تمتد صلاحية رموز GitLab بقدر مهلة المهمة، لذا تحصل المهمة التي تتجاوز مهلتها 12 ساعة على رمز يرفضه Phaseo. يمكن لـ AKS إصدار رموز تصل صلاحيتها إلى 24 ساعة، لذا اضبط قيمة أقصر لـ `expirationSeconds`.
+- **Azure غير مدعوم بعد.** لا تستطيع الهويات المُدارة في Azure طلب رموز لجمهور Phaseo. لكن لا يزال بإمكان الحاويات (pods) على AKS استخدام رمز حساب خدمة Kubernetes عبر جهة إصدار مخصصة.
+- **مفاتيح API لا تتأثر.** تضيف أحمال العمل الموثوقة طريقة ثانية للمصادقة؛ ولا تغيّر مفاتيح API ولا تعطّلها.
 
----
+## إصلاح رمز مرفوض
 
-## استكشاف الأخطاء وإصلاحها
+يعيد الرمز المرفوض `401` مع رمز الخطأ `unauthorised` وإحدى قيم `reason` التالية:
 
-يُرجع الرمز المرفوض الحالة `401` مع إحدى هذه الرسائل:
-
-| الرسالة | معناها | ما الذي تفعله |
+| `reason` | المعنى | ما يجب فعله |
 | --- | --- | --- |
-| `workload_token_wrong_audience` | لم يصدر الرمز للجمهور `https://api.phaseo.app`. | اطلب الرمز بهذا الجمهور. |
-| `workload_issuer_not_trusted` | لا توجد سياسة نشطة تستخدم مُصدِر هذا الرمز. | تحقق من أن السياسة مفعّلة ومن أن مُصدِرها يطابق المطالبة `iss` في الرمز تمامًا، بما في ذلك الاسم المختصر لفريق Vercel أو وضع المُصدِر، وأي شرطة مائلة في نهاية المُصدِر المخصص. |
+| `workload_token_wrong_audience` | لم يصدر الرمز لـ `https://api.phaseo.app`. | اطلب الرمز بهذا الجمهور. |
+| `workload_token_malformed` | الرمز ليس رمز OIDC سليم البنية: ليس له معرّف مفتاح أو جهة إصدار أو مطالبات زمنية صالحة. | أرسل الرمز دون تغيير، تمامًا كما أصدرته المنصة. |
+| `workload_issuer_not_trusted` | لا توجد سياسة نشطة تستخدم جهة إصدار هذا الرمز. | تأكد من أن السياسة مفعّلة، وأن جهة الإصدار فيها تطابق المطالبة `iss` في الرمز تمامًا، بما في ذلك الاسم المختصر لفريق Vercel أو وضع جهة الإصدار وأي شرطة مائلة في نهاية جهة إصدار مخصصة. |
 | `workload_identity_no_matching_policy` | الرمز صالح، لكن لا توجد سياسة نشطة تطابقه. | تحقق من معرّف المالك، ومن شروط المشروع أو المستودع أو مسار العمل أو الفرع أو الوسم أو البيئة، ومن أن صلاحية الرمز لا تتجاوز **أطول رمز مقبول** في السياسة. |
-| `workload_identity_ambiguous` | تثق أكثر من مساحة عمل بحمل العمل هذا. | أرسل `x-phaseo-workspace: <workspace id>`. |
+| `workload_identity_ambiguous` | تطابق أكثر من سياسة نشطة هذا الرمز. | عبر مساحات العمل، أرسل `x-phaseo-workspace: <workspace id>`. وفي مساحة عمل واحدة، ضيّق شروط السياسات. |
 | `workload_identity_not_enabled` | أحمال العمل الموثوقة غير متاحة لمساحة العمل هذه بعد. | استخدم مفتاح API في الوقت الحالي. |
-| `workload_token_expired` | انتهت صلاحية الرمز. | اطلب رمزًا جديدًا لكل طلب أو خطوة في المهمة. |
-| `workload_token_lifetime_too_long` | صدر الرمز بصلاحية تزيد على 12 ساعة، وهي أقصى مدة يقبلها Phaseo. | اطلب رمزًا أقصر أجلًا، مثل `expirationSeconds` أقصر على Kubernetes أو مهلة مهمة أقصر على GitLab. |
-| `workload_token_unsupported_alg` | الرمز غير موقّع باستخدام RS256 أو ES256 أو ES384. | اضبط المُصدِر على استخدام إحدى هذه الخوارزميات. |
-| `workload_token_invalid_signature` | لا يطابق توقيع الرمز مفاتيح المنصة. | أرسل الرمز دون تعديل، تمامًا كما أصدرته المنصة. |
-| `workload_jwks_unavailable` | تعذّر على Phaseo جلب مفاتيح التوقيع الخاصة بالمنصة. | أعد المحاولة بعد انتظار قصير. للمُصدِر المخصص، تحقق من أن `<issuer>/.well-known/openid-configuration` يُحمَّل من الإنترنت العام دون بيانات اعتماد ومن أن `jwks_uri` الخاص به على المضيف نفسه. |
+| `workload_token_expired` | انتهت صلاحية الرمز. | اطلب رمزًا جديدًا لكل طلب أو خطوة مهمة. |
+| `workload_token_not_yet_valid` | وقت `nbf` في الرمز يتجاوز الوقت الحالي بأكثر من دقيقة. | تحقق من ساعة الجهاز الذي يصدر الرموز. |
+| `workload_token_lifetime_too_long` | صدر الرمز لمدة أطول من 12 ساعة، وهي أقصى مدة يقبلها Phaseo. | اطلب رمزًا أقصر أجلًا، مثل قيمة أقصر لـ `expirationSeconds` على Kubernetes أو مهلة مهمة أقصر على GitLab. |
+| `workload_token_too_many_claims` | يحتوي رمز جهة إصدار مخصصة على أكثر من 100 قيمة مطالبة مميزة في المستوى الأعلى. | اضبط جهة الإصدار لترسل مطالبات أقل، أو انقل القيم الإضافية إلى كائن متداخل. |
+| `workload_token_unsupported_alg` | الرمز غير موقّع باستخدام RS256 أو ES256 أو ES384. | اضبط جهة الإصدار لتستخدم إحداها. |
+| `workload_token_invalid_signature` | توقيع الرمز لا يطابق مفاتيح المنصة. | أرسل الرمز دون تغيير، تمامًا كما أصدرته المنصة. |
+| `workload_token_key_not_found` | لا تتضمن المفاتيح المنشورة لجهة الإصدار المفتاح الذي وقّع الرمز. | أعد المحاولة بعد انتظار قصير. لجهة إصدار مخصصة، تحقق من أن `jwks_uri` يقدّم مفتاح التوقيع الحالي. |
+| `key_ip_not_allowed` | لمفتاح السياسة قائمة سماح لعناوين IP لا تتضمن المستدعي. | أضف عناوين IP الخاصة بحمل العمل إلى قائمة السماح للمفتاح. |
+| `workload_jwks_unavailable` | تعذّر على Phaseo جلب مفاتيح التوقيع للمنصة. | أعد المحاولة بعد انتظار قصير. لجهة إصدار مخصصة، تحقق من أن `<issuer>/.well-known/openid-configuration` يُحمَّل من الإنترنت العام دون بيانات اعتماد وأن `jwks_uri` على المضيف نفسه. |

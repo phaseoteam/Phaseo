@@ -5,18 +5,19 @@ sidebarTitle: "Contato e suporte"
 icon: "messages-square"
 ---
 
-## Relate um bug
+Comece pela [Central de Ajuda da Phaseo](https://phaseo.app/help) para dúvidas sobre conta, cobrança, API e feedback; a equipe encaminha cada solicitação ao lugar certo.
 
-Use a Central de Ajuda da Phaseo e inclua etapas claras para reproduzir o problema, IDs das solicitações e registros relevantes:
+| Você quer | Vá para |
+| --- | --- |
+| Obter ajuda com sua conta, a cobrança ou uma solicitação que falha | [Central de Ajuda](https://phaseo.app/help) |
+| Relatar um bug | [Central de Ajuda](https://phaseo.app/help) ou um [relatório de bug](https://github.com/phaseoteam/Phaseo/issues/new?template=bug.yml) no GitHub |
+| Corrigir dados do catálogo | [Contribuir](../contributing/overview) |
+| Relatar uma vulnerabilidade de segurança | Um relatório privado em **Security -> Report a vulnerability** no [repositório do GitHub](https://github.com/phaseoteam/Phaseo), ou `security@phaseo.app`. Não publique o problema abertamente. |
+| Perguntar à comunidade | [Discord](https://discord.gg/aQyywCvgZ5) |
 
-- https://phaseo.app/help
+## O que incluir em um relatório de bug
 
-## Peça ajuda
-
-Para dúvidas sobre conta, cobrança e solução de problemas da API, comece pela Central de Ajuda da Phaseo:
-
-- https://phaseo.app/help
-
-## Envie feedback
-
-Se não souber onde enviar seu feedback, use a Central de Ajuda da Phaseo. A equipe vai encaminhá-lo ao lugar certo.
+- O ID da solicitação: o `id` da resposta (`G-...`), o `generation_id` do erro ou o cabeçalho de resposta `x-request-id`.
+- O que você enviou, sem a chave de API, e o que você esperava.
+- O código e a mensagem de erro do corpo da resposta. A [referência de erros](../api-reference/errors) explica cada código.
+- Registros relevantes, sem credenciais e sem dados de clientes.

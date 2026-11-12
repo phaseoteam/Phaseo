@@ -7,8 +7,7 @@ How a change gets from a branch to users. The root `AGENTS.md` has the short ver
 - Branch from `origin/main` with a name that has never been merged. Never commit to `main`.
 - `main` accepts squash merges only. The squash commit takes the pull request title, and the branch is deleted after merging.
 - Merging needs every required check to pass and every review thread to be resolved. No approving review is required, so green CI with an open thread still blocks the merge. Fix the finding or confirm with the reviewer that it is outdated, then resolve the thread.
-- Required checks: OpenAPI lint; Apps api, docs and web; API AIMock matrix; Devtools build; Generate SDKs for ts, py, go, csharp, php and ruby; Build & test SDK packages; CLI package; SDK lifecycle tests for go, csharp, java, php and ruby; Socket Security; and a commit status named `Vercel` from the preview deployment.
-- The `Vercel` status can take a long time to appear. Wait for it rather than re-running checks.
+- Required checks: OpenAPI lint; Apps api, docs and web; API AIMock matrix; Devtools build; Generate SDKs for ts, py, go, csharp, php and ruby; Build & test SDK packages; CLI package; SDK lifecycle tests for go, csharp, java, php and ruby; and Socket Security. The web app no longer builds Vercel previews; check web changes locally with `pnpm --filter @phaseo/web preview`.
 - Never enable auto-merge unless the maintainer has approved it for that pull request. The repository allows it, so nothing else stops it.
 - If the pull request adds a migration, check before merging that its version is newer than every migration on the current `origin/main`. The policy check only sees `main` as it was when the check ran, and branches do not have to be up to date to merge.
 
@@ -20,7 +19,7 @@ Every push to `main` runs [CI](../../.github/workflows/ci.yml) again. Production
 2. **Deploy.** The `deploy` matrix starts once the Apps and `check-paths` jobs succeed and the migration job has either succeeded or, when production migrations are switched off (`ENABLE_PRODUCTION_DB_MIGRATIONS`) and no migration changed, been skipped:
    - `deploy (api, Deploy API)`, `(api-eu, …)` and `(api-us, …)` deploy the gateway Workers with `apps/api/scripts/deploy-global.ps1` and `deploy-regional.ps1`.
    - `deploy (web-api, …)`, `deploy (mcp, …)` and `deploy (slack, …)` deploy the Web API, MCP and Slack agent Workers.
-   - `deploy (web, Deploy Web)` runs `vercel deploy --prod`. It skips the deploy when nothing the web build reads has changed since the commit production serves.
+   - `deploy (web, Deploy Web)` builds the web app and deploys the `phaseo-web` Worker with `wrangler deploy`, recording the commit as the deployment message. It skips the deploy when nothing the web build reads has changed since the commit the Worker serves. Until the `phaseo.app` route in `apps/web/wrangler.jsonc` is enabled, this deploy reaches workers.dev only.
    - Mintlify's GitHub app deploys `apps/docs` on its own; the `deploy (docs, …)` job only logs.
 3. **Packages.** "Handle Versions" runs the changesets flow below.
 
@@ -29,7 +28,7 @@ A failed migration job blocks every CI deploy. To recover a missed or failed rel
 ## Confirm a change is live
 
 - **Workers:** wait for the matching `deploy (…)` job, then request the changed endpoint on the live host, for example `https://api.phaseo.app/v1/…`.
-- **Web:** wait for `deploy (web, Deploy Web)`. `main` gets no `Vercel` status, so do not wait for one. Then load the page on `https://phaseo.app`. Non-default locales have a prefix, such as `/de-DE/`.
+- **Web:** wait for `deploy (web, Deploy Web)`, then load the page on `https://phaseo.app`. Non-default locales have a prefix, such as `/de-DE/`.
 - **Docs:** wait for the `Mintlify Deployment` check on the merge commit, then load `https://phaseo.app/docs/v1/…` (translations under `/docs/<locale>/v1/…`). Add a cache-busting query such as `?cb=1`.
 - **Database:** the migration job log lists the versions it applied. Read the new objects back only if the maintainer approves a read-only query.
 

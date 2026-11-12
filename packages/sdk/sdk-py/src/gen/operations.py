@@ -356,7 +356,7 @@ def createImage(
 	query: Optional[Dict[str, Any]] = None,
 	headers: Optional[Dict[str, str]] = None,
 	body: Optional[Any] = None,
-) -> Dict[str, Any]:
+) -> ImagesGenerationResponse:
 	path = path or {}
 	resolved_path = "/images/generations"
 	return client.request("POST", resolved_path, query=query, headers=headers, body=body)

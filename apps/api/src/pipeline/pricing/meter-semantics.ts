@@ -103,6 +103,43 @@ function documentedNativeToolPrice(provider: string, meter: PricingDimensionKey)
     return null;
 }
 
+/**
+ * USD per unit for Phaseo's own web search and fetch (`phaseo:web_search`, `phaseo:web_fetch`),
+ * which run on Phaseo's search keys whatever model the request uses. The usage meters do not
+ * record which engine ran, so each meter carries the most expensive configured engine's public
+ * list price (read 2026-11-04):
+ * - Search request (10 results included): Exa auto/fast $7 per 1,000; Parallel $5 per 1,000;
+ *   Perplexity Search $5 per 1,000; Firecrawl 2 credits per 10 results (~$2 per 1,000 on
+ *   Standard). Exa: https://exa.ai/pricing, Parallel: https://parallel.ai/pricing, Perplexity:
+ *   https://docs.perplexity.ai/docs/getting-started/pricing, Firecrawl: https://www.firecrawl.dev/pricing.
+ * - Each result past 10: Exa and Parallel $1 per 1,000; Firecrawl 2 credits per 10.
+ * - Fetched page: Exa contents $1 per 1,000 pages; Parallel Extract $1 per 1,000 URLs;
+ *   Firecrawl scrape 1 credit (~$0.99 per 1,000). Direct fetches and TinyFish searches cost
+ *   Phaseo nothing and are left out of these meters by the server-tool executor.
+ */
+const MANAGED_SERVER_TOOL_PRICES: Partial<Record<PricingDimensionKey, string>> = {
+    server_tool_web_search_requests: "0.007",
+    server_tool_web_search_extra_results: "0.001",
+    server_tool_web_fetch_requests: "0.001",
+};
+
+/** Phaseo's own cost for its managed web search and fetch when a card has no row for them. */
+export function managedServerToolFallbackRule(meter: PricingDimensionKey): PriceRule | null {
+    const price = MANAGED_SERVER_TOOL_PRICES[meter];
+    if (price === undefined) return null;
+    return {
+        pricing_plan: "standard",
+        meter,
+        unit: "request",
+        unit_size: 1,
+        price_per_unit: price,
+        currency: "USD",
+        match: [],
+        priority: -1000,
+        id: `phaseo_${meter}_default`,
+    };
+}
+
 /** Documented per-call prices for provider-native server tools when a card has no row for them. */
 export function nativeToolFallbackRule(card: PriceCard, meter: PricingDimensionKey): PriceRule | null {
     const provider = String(card.provider ?? "").toLowerCase();

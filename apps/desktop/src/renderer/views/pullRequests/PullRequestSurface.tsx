@@ -31,6 +31,7 @@ import { usePullRequest } from "./usePullRequest";
 import { usePullRequestHandoff } from "./usePullRequestHandoff";
 import { PullRequestNumberMenu } from "./PullRequestNumberMenu";
 import { lastMergeMethodKey, resolvePullRequestMergeMethod, useDefaultMergeMethod } from "./mergeMethod";
+import { openWebLink } from "../../lib/openLink";
 
 type Tab = "summary" | "guide" | "timeline" | "code";
 const tabs: { value: Tab; label: string }[] = [{ value: "summary", label: "Summary" }, { value: "guide", label: "Guide" }, { value: "timeline", label: "Timeline" }, { value: "code", label: "Code" }];
@@ -83,7 +84,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	const chat = selectedId ? overview.tasks.find(task => task.id === selectedId) : undefined;
 	const seedLinks = (chat?.pullRequests ?? []).filter(link => link.number === number), seed = seedLinks.length === 1 ? seedLinks[0] : undefined;
 	useEffect(() => { setTab("summary"); setMounted(new Set(["summary"])); setCondensed(false); setTitleDraft(null); setCommit(null); setReveal(undefined); setChosenMethod(null); }, [projectId, number]);
-	const open = (url: string) => { void api?.openLink(url).catch(reason => showToast("error", "Could not open the link", errorMessage(reason))); };
+	const open = (url: string) => { void openWebLink(url).catch(reason => showToast("error", "Could not open the link", errorMessage(reason))); };
 	const root = useRef<HTMLDivElement>(null);
 	// Shortcuts act on the pull request on screen: a hidden pane tab, or a second surface while focus is in another, lets the key through.
 	const onScreen = () => { const element = root.current; if (!element?.isConnected || !element.checkVisibility({ checkVisibilityCSS: true })) return false; const focused = document.activeElement?.closest("[data-pull-request-surface]"); return !focused || focused === element; };

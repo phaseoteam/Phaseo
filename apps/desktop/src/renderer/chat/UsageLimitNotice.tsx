@@ -27,26 +27,35 @@ export function UsageLimitNotice({ task }: { task: Task }) {
 		<Gauge className="size-4 shrink-0 text-warning" />
 		<span className="text-foreground/85">{limit.resetsAt ? `Usage limit reached. It resets at ${resetLabel(limit.resetsAt)}.` : "Usage limit reached. The reset time is not known yet."}</span>
 		{limit.resumeAt
-			? <><span>Resumes at {resetLabel(limit.resumeAt)}.</span><span aria-hidden>·</span>{button("Cancel", () => void run(() => command({ type: "resume-at-reset", id: task.id, cancel: true })))}</>
+			? <><span>{limit.autoResume ? "Resumes automatically at" : "Resumes at"} {resetLabel(limit.resumeAt)}.</span><span aria-hidden>·</span>{button("Cancel", () => void run(() => command({ type: "resume-at-reset", id: task.id, cancel: true })))}</>
 			: <>{button("Resume when the limit resets", () => void run(() => command({ type: "resume-at-reset", id: task.id })))}</>}
 		<span aria-hidden>·</span>{button("Continue now", () => void run(() => command({ type: "resume", id: task.id })))}
 		<ContinueOfferLinks offers={offers} verb="Continue on" busy={busy} onChoose={offer => void moveTo(offer)} />
 	</section>;
 }
 
-/** After a restart, the app offers to continue the chats the app's quit interrupted; this asks once per start. */
+/**
+ * After a restart, the chats the app's quit (or a crash) interrupted: continued at once when Settings → Maintenance →
+ * Continue chats after restarts is on, otherwise offered. This runs once per start.
+ */
 export function QuitRecoveryOffer() {
 	const { api, command, select } = useWorkspace();
 	const asked = useRef(false);
 	useEffect(() => {
 		if (!api || asked.current) return;
 		asked.current = true;
-		void api.quitInterrupted().then(ids => {
+		void Promise.all([api.quitInterrupted(), api.preferences().then(value => value.preferences.threads.continueAfterRestart, () => false)]).then(([ids, automatic]) => {
 			if (!ids.length) return;
 			const one = ids.length === 1;
+			const resume = () => Promise.allSettled(ids.map(id => command({ type: "resume", id }))).then(results => { if (results.some(result => result.status === "rejected")) showToast("error", "Some chats could not continue", "Open them and press Resume."); });
+			if (automatic) {
+				void resume();
+				showToast("info", one ? "Continued a chat that stopped when Phaseo quit" : `Continued ${ids.length} chats that stopped when Phaseo quit`, "Turn this off in Settings → Maintenance.", one ? { label: "Open", onClick: () => select(ids[0]) } : undefined);
+				return;
+			}
 			showToast("info", one ? "A chat stopped when Phaseo quit" : `${ids.length} chats stopped when Phaseo quit`, one ? "Continue it where it left off?" : "Continue them where they left off?", {
 				label: one ? "Continue" : "Continue all",
-				onClick: () => { void Promise.allSettled(ids.map(id => command({ type: "resume", id }))).then(results => { if (results.some(result => result.status === "rejected")) showToast("error", "Some chats could not continue", "Open them and press Resume."); }); if (one) select(ids[0]); },
+				onClick: () => { void resume(); if (one) select(ids[0]); },
 			});
 		}, reason => showToast("error", "Could not check for interrupted chats", errorText(reason)));
 	}, [api, command, select]);

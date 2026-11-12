@@ -1,6 +1,6 @@
 ---
 title: "नवंबर"
-description: "नवंबर 2026 - Phaseo"
+description: "Phaseo में नवंबर 2026 के उत्पाद अपडेट और मॉडल रिलीज़।"
 rss: true
 ---
 
@@ -8,11 +8,139 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"उत्पाद","api":"API और SDK","models":"मॉडल"}} clearLabel="साफ़ करें" />
 
+<Update label="11 नवंबर 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- **बीटा:** रियलटाइम वॉइस अब [Chat → Realtime](https://phaseo.app/chat/realtime) में सभी उपयोगकर्ताओं के लिए उपलब्ध है, OpenAI, Google, xAI और ElevenLabs के वॉइस मॉडल के साथ; देखें [Chat में रियलटाइम वॉइस](https://phaseo.app/blog/realtime-voice-in-chat) ([#3675](https://github.com/phaseoteam/Phaseo/pull/3675))।
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- `POST /v1/decisions` `google/gemini-decision-1` पर 1,000 तक प्रश्न स्वीकार करता है; अन्य मॉडल में डिफ़ॉल्ट सीमा 128 है और कुछ इससे कम स्वीकार करते हैं, और मॉडल की सीमा से अधिक वाला अनुरोध `400` लौटाता है; देखें [निर्णय लें](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682))।
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
+
+- [Google: Gemini Decision 1](https://phaseo.app/models/google/gemini-decision-1)
+
+</div>
+
+</Update>
+
+<Update label="10 नवंबर 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
+
+![Gemini 4 Carbon](/images/model-releases/2026-11-10--google--gemini-4-carbon.png)
+
+- [Google: Gemini 4 Carbon](https://phaseo.app/models/google/gemini-4-carbon)
+- [MiniMax: MiniMax H3-Image](https://phaseo.app/models/minimax/minimax-h3-image)
+- [MiniMax: MiniMax H3-Image Highspeed](https://phaseo.app/models/minimax/minimax-h3-image-highspeed)
+
+</div>
+
+</Update>
+
+<Update label="9 नवंबर 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
+
+![Claude Fable 5.2](/images/model-releases/2026-11-09--anthropic--claude-fable-5.2.png)
+
+- [Anthropic: Claude Fable 5.2](https://phaseo.app/models/anthropic/claude-fable-5.2)
+- [Parallel: Decisions Fast](https://phaseo.app/models/parallel/decisions-fast)
+
+</div>
+
+</Update>
+
+<Update label="5 नवंबर 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- GPT Image 2.6 अनुरोध अब `complexity`, एनिमेटेड GIF आउटपुट, `svg.model` में दिए गए OpenAI मॉडल द्वारा लिखा गया SVG आउटपुट और `markup` से निर्देशित संपादन स्वीकार करते हैं; देखें [छवि जनरेट करें](./api-reference/endpoint/images-generations.mdx) ([#3571](https://github.com/phaseoteam/Phaseo/pull/3571)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
+
+![Inkling 2 Small](/images/model-releases/2026-11-05--thinking-machines--inkling-2-small.png)
+
+- [Thinking Machines: Inkling 2 Small](https://phaseo.app/models/thinking-machines/inkling-2-small)
+
+</div>
+
+</Update>
+
+<Update label="4 नवंबर 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- रैंकिंग में नया [निर्णय](https://phaseo.app/rankings/decisions) पेज है, जो निर्णय मॉडल को टोकन मात्रा के हिसाब से रैंक करता है; टेक्स्ट रैंकिंग अब निर्णय अनुरोधों को नहीं गिनती ([#3527](https://github.com/phaseoteam/Phaseo/pull/3527))।
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">मॉडल</p>
+
+![GPT Image 2.6](/images/model-releases/2026-11-04--openai--gpt-image-2.6.png)
+
+- [OpenAI: GPT Image 2.6 Flare](https://phaseo.app/models/openai/gpt-image-2.6-flare)
+- [OpenAI: GPT Image 2.6 Sunburst](https://phaseo.app/models/openai/gpt-image-2.6-sunburst)
+- [Ricursive Intelligence: Ripple 65B Preview](https://phaseo.app/models/ricursive/ripple-65b-preview)
+
+</div>
+
+</Update>
+
+<Update label="3 नवंबर 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">उत्पाद</p>
+
+- मॉडल पेज टूल कॉल और संरचित आउटपुट की सफलता अब सिर्फ़ उन जवाबों से गिनते हैं जिन्हें Phaseo ने जाँचा; पहले विफल अनुरोध मान्य JSON गिने जाते थे और बिना डेटा वाले घंटे 100% दिखाते थे ([#3475](https://github.com/phaseoteam/Phaseo/pull/3475))।
+- मॉडल पेज पर आउटपुट गति में जवाब से पहले की छिपी रीज़निंग शामिल नहीं होती, और जब जवाब एक ही टुकड़े में आता है तो कोई मान नहीं दिखता; देखें [कीमत और प्रदर्शन मापें](./exploring/pricing-performance.mdx) ([#3465](https://github.com/phaseoteam/Phaseo/pull/3465), [#3476](https://github.com/phaseoteam/Phaseo/pull/3476))।
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API और SDK</p>
+
+- Gemini 2.5, 3 और 3.1 टेक्स्ट मॉडल, Gemini 3.5 से 3.8 Flash और Gemma 4 के लिए Google AI Studio के स्ट्रीम किए गए अनुरोध अब एक साथ नहीं, बल्कि टोकन-दर-टोकन पहुँचते हैं ([#3483](https://github.com/phaseoteam/Phaseo/pull/3483))।
+
+</div>
+
+</Update>
+
 <Update label="2 नवंबर 2026">
 
 <div data-changelog-category="models">
 
 <p className="changelog-category">मॉडल</p>
+
+![GLM 5.3 FlashX Legal](/images/model-releases/2026-11-02--z-ai--glm-5.3-flashx-legal.png)
 
 - [z.AI: GLM 5.3 FlashX Legal](https://phaseo.app/models/z-ai/glm-5.3-flashx-legal)
 

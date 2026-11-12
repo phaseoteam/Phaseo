@@ -1,48 +1,48 @@
 ---
 icon: "server-cog"
-title: "Herramientas del servidor"
-description: "Permite que los modelos llamen a herramientas de Phaseo durante una solicitud."
+title: "Herramientas de servidor"
+description: "Permite que los modelos llamen a herramientas gestionadas por Phaseo durante una solicitud."
 ---
 
-Las herramientas del servidor son herramientas que Phaseo ejecuta durante una solicitud al modelo. El modelo decide cuándo llamarlas, Phaseo las ejecuta en el servidor y devuelve el resultado al ciclo del modelo.
+Añade una herramienta `phaseo:` a `tools` y Phaseo la ejecutará por ti cuando el modelo la llame: el modelo pide la hora actual, una búsqueda web o la opinión de un segundo modelo, Phaseo ejecuta la llamada, le devuelve el resultado y el modelo termina su respuesta. No tienes que escribir un ejecutor de herramientas.
 
-Usa herramientas del servidor cuando el modelo necesite la hora actual, contexto web, texto de una página o el consejo de otro modelo, sin tener que crear tu propio ejecutor de herramientas.
+```mermaid
+flowchart LR
+  req["Tu solicitud con herramientas phaseo:"] --> model["Modelo"]
+  model -->|"Llama a una herramienta phaseo:"| run["Phaseo ejecuta la herramienta"]
+  run -->|"Resultado de la herramienta"| model
+  model -->|"Llama a tu herramienta de función"| you["Se devuelve a tu aplicación"]
+  model -->|"Respuesta final"| out["Respuesta"]
+```
 
 <Note>
-Las herramientas del servidor están en fase beta. Los formatos de solicitud y los datos de respuesta pueden cambiar a medida que evolucione el soporte de los proveedores.
+Las herramientas de servidor están en beta. La forma de las solicitudes y el contenido de los resultados pueden cambiar a medida que cambie la compatibilidad de los proveedores.
 </Note>
 
 ## Herramientas disponibles
 
-| Herramienta | Tipo | Úsala para |
-| --- | --- | --- |
-| Fecha y hora | `phaseo:datetime` | Fecha y hora actuales en hasta 5 zonas horarias |
-| Búsqueda web | `phaseo:web_search` | Búsquedas web dirigidas por el modelo durante una solicitud |
-| Obtención de páginas web | `phaseo:web_fetch` | Obtención y extracción de texto de URL concretas |
-| Asesor | `phaseo:advisor` | Consulta a otro modelo durante la generación |
-| Subagente | `phaseo:subagent` | Delegación de una tarea concreta a un modelo auxiliar |
-| Fusión | `phaseo:fusion` | Análisis en paralelo seguido de una síntesis del modelo |
-| Buscar modelos | `phaseo:search_models` | Búsqueda de modelos adecuados en el catálogo actualizado |
-| Generación de imágenes | `phaseo:image_generation` | Creación de imágenes desde el ciclo de herramientas del modelo |
-| Aplicar parche | `phaseo:apply_patch` | Generación de parches de archivos validados en la API Responses |
+| Herramienta | Tipo | Úsala para | Endpoints |
+| --- | --- | --- | --- |
+| [Datetime](./datetime) | `phaseo:datetime` | Fecha y hora actuales en hasta 5 zonas horarias | Los tres |
+| [Web Search](./web-search) | `phaseo:web_search` | Buscar en la web información actual o con fuentes | Los tres |
+| [Web Fetch](./web-fetch) | `phaseo:web_fetch` | Leer el texto de una URL concreta | Los tres |
+| [Advisor](./advisor) | `phaseo:advisor` | Pedir a otro modelo una revisión o un plan | Los tres |
+| [Subagent](./subagent) | `phaseo:subagent` | Pasar una tarea autónoma a un modelo trabajador | Los tres |
+| [Fusion](./fusion) | `phaseo:fusion` | Obtener el análisis de varios modelos y después una síntesis | Los tres |
+| [Search Models](./search-models) | `phaseo:search_models` | Buscar un modelo en el catálogo actual de Phaseo | Los tres |
+| [Generación de imágenes](./image-generation) | `phaseo:image_generation` | Crear una imagen mientras se responde | Los tres |
+| [Aplicar parche](./apply-patch) | `phaseo:apply_patch` | Devolver parches de archivos validados | Solo `/v1/responses` |
 
-## Cómo funcionan las herramientas del servidor
+"Los tres" significa `/v1/chat/completions`, `/v1/responses` y `/v1/messages`.
 
-1. Añade una o varias herramientas del servidor al arreglo `tools`.
-2. El modelo decide si necesita una herramienta y emite una llamada.
-3. Phaseo intercepta la llamada a la herramienta del servidor, la ejecuta y devuelve el resultado al modelo.
-4. El modelo continúa y redacta la respuesta final.
-
-Puedes usar herramientas del servidor junto con tus propias herramientas de función. Phaseo solo ejecuta las herramientas del servidor; tu aplicación sigue gestionando las llamadas `function` habituales.
-
-## Inicio rápido
+## Envía una solicitud
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What are the latest AI policy updates this week?" }
     ],
@@ -53,11 +53,15 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Combinar con herramientas de función
+Cada herramienta acepta un objeto `parameters` opcional, que se describe en su página. `stream: true` también funciona: Phaseo ejecuta por su cuenta los turnos de las herramientas y te transmite la respuesta final en streaming.
+
+## Combina herramientas de servidor con tus propias funciones
+
+Phaseo solo ejecuta las herramientas `phaseo:`. Una herramienta `function` normal en la misma solicitud se devuelve a tu aplicación como siempre, y tú envías su resultado en una solicitud posterior, como en [Llamadas a herramientas](../tool-calling).
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "messages": [
     { "role": "user", "content": "Find recent funding news and save the best item." }
   ],
@@ -82,21 +86,17 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-Si el modelo llama a `phaseo:web_search`, Phaseo ejecuta esa llamada automáticamente. Si llama a `save_research_item`, tu aplicación recibe la llamada a la función y debe devolver su resultado en una solicitud posterior.
+## Límites del ciclo de herramientas
 
-## Endpoints compatibles
+| Límite | Valor | Qué ocurre al alcanzarlo |
+| --- | --- | --- |
+| Llamadas a herramientas de servidor por solicitud | `max_tool_calls` en la solicitud; `30` por defecto, `100` como máximo | `400 gateway_server_tool_limit` |
+| Turnos de seguimiento | `8` | `502 gateway_server_tool_error` |
+| Llamadas a una misma herramienta | El `max_uses` de esa herramienta | La herramienta devuelve al modelo un resultado de error, y el modelo puede continuar sin ella |
 
-Las herramientas del servidor son compatibles con:
+## Uso y precios
 
-- `/v1/chat/completions`
-- `/v1/responses`
-- `/v1/messages`
-
-También se admiten solicitudes en streaming. Para las herramientas del servidor gestionadas por el gateway, Phaseo puede materializar el turno de llamada a la herramienta del proveedor, ejecutarla, continuar el ciclo y generar un stream sintético con la respuesta final.
-
-## Seguimiento del uso
-
-El uso de herramientas del servidor se informa en `usage.server_tool_use`:
+Cada herramienta de servidor añade un contador a `usage.server_tool_use`, y la tarjeta de precios de un modelo puede facturar el medidor correspondiente. Los tokens que usa un segundo modelo (Advisor, Subagent, Fusion, Generación de imágenes) se suman al uso de la solicitud y se cobran a las tarifas de ese modelo.
 
 ```json
 {
@@ -106,48 +106,22 @@ El uso de herramientas del servidor se informa en `usage.server_tool_use`:
     "server_tool_use": {
       "datetime_requests": 1,
       "web_search_requests": 2,
-      "web_search_results": 8,
-      "web_fetch_requests": 1,
-      "advisor_requests": 1,
-      "subagent_requests": 1,
-      "fusion_requests": 1,
-      "search_models_requests": 1,
-      "image_generation_requests": 1
+      "web_search_results": 8
     }
   }
 }
 ```
 
-Los precios también pueden usar medidores de herramientas del servidor como `server_tool_web_search_requests`, `server_tool_web_search_extra_results`, `server_tool_web_fetch_requests`, `server_tool_advisor_requests`, `server_tool_image_generation_requests`, `native_web_search_requests` y `native_web_fetch_requests` si están configurados en las tarjetas de precios de los modelos.
+| Herramienta | Contador de uso | Medidor de precio |
+| --- | --- | --- |
+| Datetime | `datetime_requests` | Ninguno |
+| Web Search | `web_search_requests`, `web_search_results`, `web_search_extra_results` | `server_tool_web_search_requests`, `server_tool_web_search_extra_results` |
+| Web Fetch | `web_fetch_requests` | `server_tool_web_fetch_requests` |
+| Advisor | `advisor_requests` | `server_tool_advisor_requests` |
+| Subagent | `subagent_requests` | `server_tool_subagent_requests` |
+| Fusion | `fusion_requests` | `server_tool_fusion_requests` |
+| Search Models | `search_models_requests` | `server_tool_search_models_requests` |
+| Generación de imágenes | `image_generation_requests` | `server_tool_image_generation_requests` |
+| Aplicar parche | `apply_patch_requests` | `server_tool_apply_patch_requests` |
 
-## Páginas de herramientas
-
-<Columns cols={2}>
-  <Card title="Fecha y hora" icon="clock" href="./datetime.mdx">
-    Proporciona al modelo la fecha y la hora actuales.
-  </Card>
-  <Card title="Búsqueda web" icon="search" href="./web-search.mdx">
-    Permite que el modelo busque en la web cuando necesite información actualizada.
-  </Card>
-  <Card title="Obtención de páginas web" icon="file-search" href="./web-fetch.mdx">
-    Permite que el modelo obtenga y lea URL concretas.
-  </Card>
-  <Card title="Asesor" icon="message-square" href="./advisor.mdx">
-    Permite que un modelo consulte a otro durante la generación.
-  </Card>
-  <Card title="Subagente" icon="cpu" href="./subagent.mdx">
-    Permite que el modelo delegue tareas concretas a un modelo auxiliar.
-  </Card>
-  <Card title="Fusión" icon="combine" href="./fusion.mdx">
-	Ejecuta análisis en paralelo con varios modelos y sintetiza los resultados.
-  </Card>
-	<Card title="Buscar modelos" icon="list-filter" href="./search-models.mdx">
-		Permite que el modelo busque un modelo adecuado en el catálogo actualizado de Phaseo.
-	</Card>
-  <Card title="Generación de imágenes" icon="image" href="./image-generation.mdx">
-    Permite que el modelo cree imágenes mientras responde.
-  </Card>
-	<Card title="Aplicar parche" icon="file-diff" href="./apply-patch.mdx">
-		Genera un parche validado para crear, actualizar o eliminar archivos.
-	</Card>
-</Columns>
+Cuando Web Search o Web Fetch se ejecutan como herramienta propia del proveedor (`engine: "native"`), se facturan con `native_web_search_requests` o `native_web_fetch_requests`.

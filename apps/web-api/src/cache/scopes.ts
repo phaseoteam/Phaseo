@@ -66,6 +66,7 @@ const CATALOGUE_TAGS = [
 	"web-api-subscription-plans",
 	"web-api-countries",
 	"web-api-collections",
+	"web-api-entity-cards",
 	"web-api-search",
 ] as const;
 

@@ -1,8 +1,9 @@
-import { fetchFrontendModelSubscriptionPlans } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { modelSubscriptionPlansQuery } from "@/components/(data)/model/modelData.queries";
 import ModelSubscriptionsClient from "@/components/(data)/model/pricing/ModelSubscriptionsClient";
 import { toSubscriptionPlanSummaries } from "@/components/(data)/model/pricing/subscriptionPlanSummary";
 
-export default async function ModelSubscriptions({
+export default function ModelSubscriptions({
 	modelId,
 	ownerOrganisationId,
 	ownerOrganisationName,
@@ -15,9 +16,8 @@ export default async function ModelSubscriptions({
 	showHeader?: boolean;
 	includeHidden?: boolean;
 }) {
-	const subscriptionPlans = await fetchFrontendModelSubscriptionPlans(modelId, includeHidden).catch(
-		() => [],
-	);
+	const { data } = useSuspenseQuery(modelSubscriptionPlansQuery(modelId, includeHidden));
+	const subscriptionPlans = data ?? [];
 
 	return (
 		<ModelSubscriptionsClient

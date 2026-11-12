@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { currentCatalogDataPolicy } from "./catalogDataPolicy";
 
 describe("cached catalog privacy policy", () => {

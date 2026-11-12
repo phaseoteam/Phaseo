@@ -95,6 +95,23 @@ describe("video-finalization", () => {
 			expect.objectContaining({ billingReason: "pricing_error", billingError: "pricing_rule_missing:output_video_seconds" }));
 		expect(emitGatewayOperationalFailureMock).toHaveBeenCalledWith(expect.objectContaining({ reason: "pricing_error" }));
 	});
+	it.each([
+		[12, 12],
+		[45, 30],
+		[undefined, 30],
+	])("bills a smart-duration job by the reported length %s (held 30 s) as %s s", async (reported, billed) => {
+		getVideoJobMetaMock.mockResolvedValue({
+			model: "wan3.0-video", seconds: 30, autoDuration: true, keySource: "gateway",
+			reservationId: "video_hold:wan_auto", reservedNanos: 6_000_000_000,
+		});
+		loadPriceCardMock.mockResolvedValue({ rules: [] });
+		computeBillMock.mockImplementation(() => { throw new Error("pricing_rule_missing:output_video_seconds"); });
+		await finalizeVideoJob({
+			workspaceId: "ws_test", videoId: "wan_auto", providerId: "alibaba",
+			status: "completed", model: "wan3.0-video", ...(reported != null ? { seconds: reported } : {}),
+		});
+		expect(computeBillMock).toHaveBeenCalledWith(expect.objectContaining({ output_video_seconds: billed }), expect.anything(), expect.anything());
+	});
 	it("preserves completion time and duration on repeated terminal reads", async () => {
 		const finalizedAt = "2026-09-06T10:00:30.000Z";
 		getVideoJobRecordMock.mockResolvedValue({ status: "completed", meta: {

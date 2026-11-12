@@ -5,55 +5,37 @@ description: "Ship reliable AI features by following these architecture, securit
 icon: "clipboard-check"
 ---
 
-Adopting the Gateway across production workloads is straightforward when you establish strong foundations. Use the recommendations below to improve resilience, security, and maintainability.
+Put Gateway calls behind one service on your backend, keep keys out of clients and logs, retry only what is safe to retry, and watch latency, cost and errors per model. Each section below links to the page with the details.
 
----
+## Structure the integration
 
-## Architecture
+- **Wrap Gateway calls in one service or SDK client**, so a model or provider change stays in one place. See [Integrating with the Gateway](./integrating-with-the-gateway.mdx).
+- **Stream responses to chat UIs**, so users see tokens as they arrive. See [Streaming](../guides/streaming.mdx).
+- **Queue work that isn't urgent**, such as background generations and evaluations, to smooth out traffic spikes. The [Batch API](../guides/async-video-and-batch.mdx) runs large jobs asynchronously.
 
--   **Isolate provider logic.** Wrap Gateway calls in a dedicated service or SDK so changes stay confined.
--   **Stream responses when possible.** Reduce latency for assistants by streaming tokens to the UI as they arrive.
--   **Batch non-critical jobs.** Queue background generations or evaluations to smooth out traffic spikes.
+## Keep keys secret
 
----
+- Store API keys in a secrets manager (AWS Secrets Manager, Doppler, 1Password) rather than `.env` files in production.
+- Call the Gateway from your backend, and authenticate your own client apps to it, so clients never hold a Gateway key.
+- Log only a key's prefix, such as `phaseo_v1_sk_<kid>`, never the secret.
 
-## Security
+See [Authentication](./authentication.mdx).
 
--   Store API keys in secret managers (AWS Secrets Manager, Doppler, 1Password) instead of `.env` files in production.
--   Enable request signing on your own APIs so client applications never expose Gateway keys.
--   Log only truncated keys (for example `sk_prod_abcd...`) to avoid leaking credentials.
+## Retry safely
 
----
+- Retry `429` and `5xx` responses with exponential backoff and jitter.
+- Wait for [`Retry-After`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After) before retrying a rate-limited request.
+- Check which provider served each request in request logs, so you notice when traffic fails over to another provider.
 
-## Reliability
+See [Errors and Debugging](../api-reference/errors.mdx) and [Rate Limits](../api-reference/limits.mdx).
 
--   Implement exponential backoff with jitter for all retryable errors (HTTP 429 or 5xx).
--   Respect the [`Retry-After`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After) header before retrying rate-limited requests.
--   Monitor provider metadata to detect automatic failovers from one vendor to another.
+## Watch the right signals
 
----
+| Signal | What to do |
+| --- | --- |
+| Latency | Track p95 and p99 to catch regressions. |
+| Token usage | Compare cost with the business metric it supports. |
+| Error rate | Alert when failures stay above 1%. |
+| Provider mix | Check traffic is split across providers as you expect. |
 
-## Observability
-
-| Signal        | Recommended action                                                |
-| ------------- | ----------------------------------------------------------------- |
-| Latency       | Track p95 and p99 timings to catch regressions early.             |
-| Token usage   | Correlate costs with business metrics to evaluate ROI.            |
-| Error rates   | Alert when failures exceed 1% for a sustained period.             |
-| Provider mix  | Ensure traffic is distributed as expected across vendors.         |
-
----
-
-## Collaboration
-
--   Document prompt templates, input parameters, and output handling in your internal wiki.
--   Share dashboards that highlight benchmark movements and how they affect your product.
--   Encourage regular reviews with product, research, and support teams to keep behavior aligned.
-
----
-
-## Further reading
-
--   Learn how to [Handle errors](../api-reference/errors.mdx) gracefully.
--   Explore [Rate limits](../api-reference/limits.mdx) to plan for scaling.
--   See [Examples](../guides/examples.mdx) for reference implementations.
+See [Request logs and observability](../guides/integrations/observability.mdx). Keep your prompt templates, parameters and output handling documented where your team can review them; [presets](../guides/presets.mdx) keep shared prompts and defaults in one place.

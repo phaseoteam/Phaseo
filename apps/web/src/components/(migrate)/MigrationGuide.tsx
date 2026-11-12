@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
@@ -9,7 +7,7 @@ import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
 import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
 import { ANTHROPIC_SDK_BASE_URL, BASE_URL } from "@/components/(data)/model/quickstart/config";
 import { cn } from "@/lib/utils";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
 
 type SourceId =
@@ -157,7 +155,7 @@ const DOC_LINKS = [
         {
                 label: "Gateway Parity Review",
                 description: "Repo-grounded review of proven and still-open parity areas.",
-                href: "https://phaseo.app/docs/v1/migration-guides/gateway-parity-review",
+                href: "https://phaseo.app/docs/v1/migration-guides/feature-parity-matrix",
         },
 ] as const;
 

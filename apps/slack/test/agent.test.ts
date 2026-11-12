@@ -92,6 +92,18 @@ describe("the SDK agent runner", () => {
 		expect(JSON.stringify(sent.body.input)).not.toContain("You are the Phaseo agent.");
 	});
 
+	it("sends no web search or web fetch for an answer that may read the workspace's usage", async () => {
+		const seen: Array<Awaited<ReturnType<typeof capture>>> = [];
+		const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			seen.push(await capture(input, init));
+			return sse([{ type: "response.output_text.delta", delta: "$40.00" }, COMPLETED]);
+		});
+		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });
+		const tool = { id: "get_spend", description: "Spend", parameters: { type: "object", properties: {} }, execute: async () => ({}) };
+		await runner.run(request({ tools: [tool], webTools: false }), { onText: async () => undefined, onStep: async () => undefined });
+		expect(seen[0].body.tools).toEqual([{ type: "function", function: { name: "get_spend", description: "Spend", parameters: { type: "object", properties: {} } } }]);
+	});
+
 	it("stops at the cost a retried turn has left, not the whole turn's limit", async () => {
 		const fetchImpl = vi.fn(async () => sse([COMPLETED]));
 		const runner = createSdkAgentRunner({ fetchImpl: fetchImpl as unknown as typeof fetch, baseUrl: "https://gateway.test/v1" });

@@ -13,8 +13,9 @@ CREATE OR REPLACE FUNCTION public.save_slack_agent_skill (
   AS $function$
 -- The Slack agent's save_skill tool: saves instructions for a task people repeat,
 -- under a name unique in the installation whatever its case. A skill with that
--- name is only overwritten with p_replace (it keeps who first saved it). An
--- installation keeps at most 100. Locks the installation row like
+-- name is only overwritten with p_replace, which records p_created_by as its
+-- saver: the skill's instructions are then theirs. An installation keeps at
+-- most 100. Locks the installation row like
 -- save_slack_agent_note, so the cap holds and uninstalling can't miss one.
 -- Returns {status: saved | replaced | name_taken | full | not_installed, skill?,
 -- limit?}, without the instructions. Service role only.
@@ -37,7 +38,7 @@ begin
       return jsonb_build_object('status', 'name_taken', 'skill', jsonb_build_object('name', v_skill.name, 'description', v_skill.description));
     end if;
     update public.slack_agent_skills skill
-    set name = v_name, description = btrim(p_description), instructions = btrim(p_instructions)
+    set name = v_name, description = btrim(p_description), instructions = btrim(p_instructions), created_by = p_created_by
     where skill.id = v_skill.id
     returning * into v_skill;
     return jsonb_build_object('status', 'replaced', 'skill', to_jsonb(v_skill) - 'installation_id' - 'instructions');

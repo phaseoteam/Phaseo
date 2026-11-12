@@ -1,42 +1,31 @@
 ---
-title: "चैट कंप्लीशन बनाएँ"
-sidebarTitle: "चैट कंप्लीशन बनाएँ"
+title: "चैट कंप्लीशन बनाएं"
+sidebarTitle: "चैट कंप्लीशन बनाएं"
 openapi: "/hi/openapi/v1/openapi.localized.yaml POST /chat/completions"
-description: "OpenAI-संगत चैट एंडपॉइंट से चैट-आधारित कंप्लीशन जनरेट करें।"
+description: "OpenAI-संगत चैट एंडपॉइंट से चैट-आधारित कंप्लीशन बनाएं।"
 ---
-## सर्वर टूल
 
-`/v1/chat/completions` सामान्य फ़ंक्शन टूल और Gateway द्वारा प्रबंधित इन सर्वर टूल का समर्थन करता है:
+## सर्वर टूल का उपयोग करें
 
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-
-### दिनांक और समय का उदाहरण
+`tools` में अपने function टूल के साथ एक `phaseo:` टूल जोड़ें, और जब मॉडल उसे कॉल करता है तो Phaseo उसे चलाता है। `/v1/chat/completions` `phaseo:apply_patch` को छोड़कर हर सर्वर टूल स्वीकार करता है; [सर्वर टूल](../../guides/server-tools) गाइड में उनकी सूची है।
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
-    "stream": false,
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What is the current datetime in Europe/London?" }
     ],
     "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "Europe/London" }
-      }
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Europe/London"] } }
     ],
     "tool_choice": "auto"
   }'
 ```
 
-सर्वर टूल उपयोग होने पर उपयोग विवरण में ये शामिल होते हैं:
+हर सर्वर टूल कॉल `usage.server_tool_use` में गिनी जाती है:
 
 ```json
 {
@@ -51,25 +40,30 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-`phaseo:web_search` से `server_tool_use.web_search_requests`, `server_tool_use.web_search_results` और `server_tool_use.web_search_extra_results` जुड़ते हैं। `phaseo:web_fetch` से `server_tool_use.web_fetch_requests` जुड़ता है।
+`phaseo:web_search` `web_search_requests`, `web_search_results` और `web_search_extra_results` जोड़ता है; `phaseo:web_fetch` `web_fetch_requests` जोड़ता है। पुराना `gateway:datetime` टाइप अब भी काम करता है।
 
-## स्ट्रीमिंग नोट
-
-`stream: true` भी समर्थित है। Gateway द्वारा प्रबंधित सर्वर टूल के लिए Phaseo अपस्ट्रीम टूल कॉल वाला टर्न तैयार कर सकता है, और लूप जारी रखने के बाद सिंथेटिक स्ट्रीम दोबारा भेज सकता है।
+`stream: true` के साथ, Phaseo टूल टर्न खुद चलाता है, फिर आगे का उत्तर आपको एक ही स्ट्रीम में भेजता है।
 
 ## टूल लूप में रीज़निंग
 
-रीज़निंग मॉडल अपनी रीज़निंग असिस्टेंट संदेश के दो फ़ील्ड में लौटाते हैं:
+रीज़निंग मॉडल assistant संदेश पर अपनी रीज़निंग दो फ़ील्ड में लौटाते हैं:
 
-- `reasoning_content`: रीज़निंग टेक्स्ट, अगर प्रदाता उसे लौटाता है।
-- `reasoning_details`: रीज़निंग ब्लॉक की एक array, उसी फ़ॉर्मैट में जिसका उपयोग OpenRouter करता है। हर एंट्री में `type` (`reasoning.text`, `reasoning.summary` या `reasoning.encrypted`), `index` और प्रदाता परिवार बताने वाला `format` होता है, जैसे `anthropic-claude-v1` या `google-gemini-v1`।
+- `reasoning_content`: रीज़निंग टेक्स्ट, अगर प्रदाता कोई लौटाता है।
+- `reasoning_details`: रीज़निंग blocks की एक array। हर प्रविष्टि में `reasoning.text`, `reasoning.summary` या `reasoning.encrypted` में से एक `type`, एक `index`, और प्रदाता परिवार बताने वाला `format` होता है, जैसे `anthropic-claude-v1` या `google-gemini-v1`।
 
-एंट्री में वह प्रदाता स्थिति हो सकती है जिसकी मॉडल को टूल लूप के अगले चरण में ज़रूरत होती है:
+प्रविष्टियों में ऐसी प्रदाता स्थिति हो सकती है जिसकी मॉडल को टूल लूप के अगले चरण में ज़रूरत होती है:
 
-- Claude के thinking सिग्नेचर, `reasoning.text` एंट्री के `signature` में।
-- Claude की छिपाई गई thinking और OpenAI की एन्क्रिप्टेड रीज़निंग, `reasoning.encrypted` एंट्री के `data` में।
-- Gemini के थॉट सिग्नेचर, उन `reasoning.encrypted` एंट्री के `data` में जिनका `id` संबंधित टूल कॉल है।
+| प्रदाता स्थिति | यह कहां है |
+| --- | --- |
+| Claude thinking signatures | `reasoning.text` प्रविष्टियों पर `signature` |
+| Claude redacted thinking, OpenAI encrypted reasoning | `reasoning.encrypted` प्रविष्टियों पर `data` |
+| Gemini thought signatures | उन `reasoning.encrypted` प्रविष्टियों पर `data` जिनका `id` उस टूल कॉल का है जिससे वे जुड़ी हैं |
+| वह प्रयास लेवल जिस पर Claude का जवाब चला | आखिरी `reasoning.encrypted` प्रविष्टि पर `data`, जिसमें कोई टेक्स्ट नहीं होता |
 
-स्ट्रीमिंग में, हर रीज़निंग ब्लॉक पूरा होने पर एक `reasoning_details` डेल्टा आता है।
+स्ट्रीमिंग के दौरान, हर रीज़निंग block पूरा होने पर एक `reasoning_details` delta आता है।
 
-चरणों के बीच मॉडल की रीज़निंग बनाए रखने के लिए, असिस्टेंट संदेश को उसके `reasoning_details` के साथ बिना बदलाव वापस भेजें। `signature` और `data` के मान अपारदर्शी होते हैं और उन्हें बनाने वाले प्रदाता और मॉडल को दर्ज करते हैं। Phaseo उन्हें केवल उसी प्रदाता परिवार और मॉडल को भेजता है, इसलिए किसी दूसरे प्रदाता पर फ़ॉलबैक होने पर वे विफल होने के बजाय हटा दिए जाते हैं। मैनुअल thinking मोड वाले Claude मॉडल को टूल लूप के दौरान thinking जारी रखने के लिए अपनी thinking वापस चाहिए; अगर वह नहीं है, तो वह चरण बिना thinking के चलता है।
+<Warning>
+हर assistant संदेश को उसके `reasoning_details` के साथ बिना बदले हर अनुरोध पर वापस भेजें, सिर्फ़ टूल लूप में नहीं। प्रविष्टियों को कभी न हटाएं, न बदलें, न उनका क्रम बदलें, चाहे वे encrypted हों या नहीं, बिना टेक्स्ट वाली प्रविष्टियों समेत।
+</Warning>
+
+`signature` और `data` मान अपारदर्शी होते हैं और उन्हें बनाने वाले प्रदाता और मॉडल को दर्ज करते हैं। Phaseo उन्हें सिर्फ़ उसी प्रदाता परिवार और मॉडल को भेजता है, इसलिए किसी दूसरे प्रदाता पर फ़ॉलबैक होने पर वे विफल होने के बजाय हटा दिए जाते हैं। इनके बिना, मैनुअल thinking मोड में Claude मॉडल टूल लूप का अगला चरण बिना thinking के चलाते हैं, और `reasoning_effort` बदलने पर Claude का प्रॉम्प्ट कैश दोबारा शुरू हो जाता है; [बातचीत के बीच में रीज़निंग प्रयास बदलें](../../guides/reasoning-effort) देखें।

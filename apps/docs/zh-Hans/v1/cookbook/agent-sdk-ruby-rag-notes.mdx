@@ -1,64 +1,92 @@
 ---
 title: "使用 Ruby Agent SDK 总结内部笔记"
+sidebarTitle: "用 Ruby 总结内部笔记"
 icon: "notebook-tabs"
-description: "使用 Ruby Agent SDK 查询本地笔记，并通过 Phaseo Gateway 返回范围明确的摘要。"
+description: "使用 Ruby Agent SDK 查询本地笔记，并通过 Phaseo Gateway 返回一份范围明确的摘要。"
 ---
 
-当 Ruby 服务需要一个小型内部笔记助手、又不想把编排交给其他系统时，可使用此示例。
+运行一个 Ruby 智能体：它用本地工具查找一条内部笔记，并用一段简短的文字回答，无需将编排交给其他系统。完成后，你会得到一个脚本，它会总结你关于预设的笔记。
 
-## 1. 准备 SDK
+该工具返回固定的示例数据，因此该脚本仅作演示；请将它替换为对你自己的笔记存储的查询。它适合已经拥有数据、工具输入简单且确定的 Ruby 应用。
 
-<Note type="warning">Ruby Agent SDK 包尚未发布到 RubyGems。请参阅[从源代码安装说明](../sdk-reference/ruby/agent-sdk-installation.mdx)。</Note>
+## 构建
 
-## 2. 定义笔记查询工具
+<Steps>
+<Step title="安装">
 
-```ruby
+```bash
+gem install phaseo_agent_sdk
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+也可以将 `gem "phaseo_agent_sdk"` 添加到你的 `Gemfile`。它会一并安装 `phaseo_sdk`，需要 Ruby 3.2 或更高版本。请参阅 [Ruby Agent SDK 安装](../sdk-reference/agent/installation)。
+
+</Step>
+<Step title="编写智能体">
+
+```ruby notes.rb
+require "phaseo_agent_sdk"
+
+TOPICS = %w[presets routing guardrails].freeze
+
 lookup_note = PhaseoAgentSdk.define_tool(
   PhaseoAgentSdk::Tool.new(
     id: "lookup-note",
     description: "Look up one internal note by topic.",
     parameters: {
       type: "object",
-      properties: {
-        topic: { type: "string" },
-      },
+      properties: { topic: { type: "string", enum: TOPICS } },
       required: ["topic"],
+      additionalProperties: false
     },
+    # 参数来自模型：只有已知的主题才能到达 execute。
+    input_schema: lambda do |input|
+      raise ArgumentError, "topic must be one of #{TOPICS.join(', ')}" unless input.is_a?(Hash) && TOPICS.include?(input["topic"])
+
+      input
+    end,
     execute: lambda do |input, _context|
       {
         topic: input["topic"],
-        summary: "Presets centralize routing defaults so app code stays smaller.",
+        summary: "Presets centralize routing defaults so app code stays smaller."
       }
     end
   )
 )
-```
 
-## 3. 创建并运行 Agent
-
-```ruby
 agent = PhaseoAgentSdk.create_agent(
   id: "notes-agent",
-  model: "openai/gpt-5.4-nano",
+  model: "openai/gpt-6-astra",
   instructions: "Use tools when helpful and answer in one short paragraph.",
-  tools: [lookup_note]
+  tools: [lookup_note],
+  max_steps: 4
 )
 
+# 从环境变量读取 PHASEO_API_KEY。
 result = agent.run(
   input: "Summarize our note about presets.",
   client: PhaseoAgentSdk.create_gateway_agent_client
 )
 
+puts result.run.status
 puts result.output
 ```
 
-## 适用场景
+</Step>
+<Step title="运行">
 
-- 工具输入简单且行为确定
-- Ruby 应用已拥有数据源
-- 你想为范围明确的工作流采用易用的本地工具模式
+```bash
+ruby notes.rb
+```
 
-## 相关内容
+</Step>
+</Steps>
 
-- [Ruby Agent SDK](../sdk-reference/ruby/agent-sdk.mdx)
-- [构建持久化 Agent 循环](./agent-sdk-durable-loop.mdx)
+## 检查是否成功
+
+- 脚本先打印 `completed`，然后打印一段关于预设的文字。
+- 在 **设置 → 使用情况 → 日志** 中，第一个模型轮次会显示带有 `{"topic": "presets"}` 的 `lookup-note` 调用。
+
+## 投入生产之前
+
+让工具保持只读，并让 `max_steps` 在任务允许的范围内尽量低（默认值为 `12`）。如果你的笔记存储很大，请只返回匹配的段落，而不是整篇文档，让每个模型轮次保持精简。要保存运行并在之后恢复，请参阅[持久化循环](./agent-sdk-durable-loop)；Ruby SDK 的 `state:` 选项用法相同。[Ruby Agent SDK 参考](../sdk-reference/agent/usage)介绍了状态、审批和流式传输。

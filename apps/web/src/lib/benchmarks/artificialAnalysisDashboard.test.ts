@@ -1,3 +1,4 @@
+import { it, expect, vi } from "vitest";
 import { dashboardTickPrecision } from "./artificialAnalysisDashboard";
 import { dashboardLabelPositions, dashboardLinearTicks, dashboardModelGroups, dashboardRows, loadDashboardData, paretoPoints } from "./artificialAnalysisDashboard";
 import type { ArtificialAnalysisPublicConfiguration, ArtificialAnalysisPublicData } from "@/lib/fetchers/benchmarks/types";
@@ -59,7 +60,7 @@ it("keeps zero/negative grouped values, excludes nonfinite data, and sorts score
 });
 it("loads all configurations with bounded pages from a single publication", async () => {
 	const first = Array.from({ length: 200 }, (_, i) => model(String(i)));
-	const fetch = jest.fn(async (offset: number) => offset ? page([model("last")], 201) : page(first, 201));
+	const fetch = vi.fn(async (offset: number) => offset ? page([model("last")], 201) : page(first, 201));
 	expect((await loadDashboardData(fetch))?.models).toHaveLength(201);
 	expect(fetch.mock.calls.map(([offset]) => offset)).toEqual([0, 200]);
 });

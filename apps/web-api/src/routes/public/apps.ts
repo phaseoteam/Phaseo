@@ -83,7 +83,7 @@ async function getPublicAppGroups(env: Env, references: string[]): Promise<Publi
 	});
 }
 
-async function getPublicApp(env: Env, reference: string): Promise<PublicAppGroup | null> {
+export async function getPublicApp(env: Env, reference: string): Promise<PublicAppGroup | null> {
 	return (await getPublicAppGroups(env, [reference]))[0] ?? null;
 }
 

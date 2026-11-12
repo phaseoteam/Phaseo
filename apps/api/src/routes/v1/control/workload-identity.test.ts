@@ -32,6 +32,11 @@ vi.mock("@/runtime/env", () => {
 		return { ...row, keys: key ? { kid: key.kid, status: key.status, last_used_at: key.last_used_at ?? null } : null };
 	}
 	function builder(name: string) {
+		// The management key acts as its creator, an admin of the workspace.
+		if (name === "workspace_members") {
+			const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) };
+			return membership;
+		}
 		const filters: Array<[string, unknown]> = [];
 		let op: "select" | "update" | "delete" | "count" = "select";
 		let payload: Row = {};
@@ -97,7 +102,7 @@ import { workloadIdentityRoutes } from "./workload-identity";
 
 const WS = "00000000-0000-4000-8000-000000000001";
 const session = (role: string) => ({ role, auth: { workspaceId: WS, userId: "user-1" } });
-const managementKey = (scopes: string[]) => ({ ok: true, value: { workspaceId: WS, authMethod: "api_key", scopes } });
+const managementKey = (scopes: string[]) => ({ ok: true, value: { workspaceId: WS, authMethod: "api_key", userId: "user-1", scopes } });
 
 function call(method: string, path: string, body?: unknown) {
 	return workloadIdentityRoutes.request(`https://api.phaseo.test${path}`, {
@@ -280,8 +285,8 @@ describe("workload identity policy routes", () => {
 		mocks.management = managementKey(["keys:read", "keys:write", "keys:delete"]);
 		const created = await call("POST", "/policies", vercelPolicy);
 		expect(created.status).toBe(201);
-		expect(mocks.rpcCalls[0]).toMatchObject({ p_workspace_id: WS, p_created_by: null });
-		expect(mocks.audits.at(-1)).toMatchObject({ workspaceId: WS, actorUserId: null, action: "workload_identity_policy.created" });
+		expect(mocks.rpcCalls[0]).toMatchObject({ p_workspace_id: WS, p_created_by: "user-1" });
+		expect(mocks.audits.at(-1)).toMatchObject({ workspaceId: WS, actorUserId: "user-1", action: "workload_identity_policy.created" });
 		const id = mocks.policies[0].id;
 		expect((await call("PATCH", `/policies/${id}`, { name: "Renamed" })).status).toBe(200);
 		expect((await call("GET", `/policies/${id}`)).status).toBe(200);

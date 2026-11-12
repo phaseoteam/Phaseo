@@ -100,7 +100,7 @@ begin
       )
     ) then raise exception 'provider capability does not match a model route'; end if;
     insert into public.v2_route_capabilities(provider_model_id,capability_id,status,params,effective_from,effective_to,metadata,updated_at)
-    select route.provider_model_id,x->>'capability_id',case when x->>'status' like 'deranked_%' then 'degraded' else coalesce(nullif(x->>'status',''),'active') end,coalesce(x->'params','{}'::jsonb),nullif(x->>'effective_from','')::timestamptz,nullif(x->>'effective_to','')::timestamptz,jsonb_build_object('editor_status',x->>'status','source','admin'),now()
+    select route.provider_model_id,x->>'capability_id',case when x->>'status' like 'deranked%' then 'degraded' else coalesce(nullif(x->>'status',''),'active') end,coalesce(x->'params','{}'::jsonb),nullif(x->>'effective_from','')::timestamptz,nullif(x->>'effective_to','')::timestamptz,jsonb_build_object('editor_status',x->>'status','source','admin'),now()
     from jsonb_array_elements(p_payload->'provider_capabilities') x join public.v2_model_provider_routes route on route.model_slug=p_model_slug and route.provider_slug=x->>'provider_id' and route.provider_model_slug=coalesce(nullif(x->>'provider_model_slug',''),x->>'api_model_id') and (nullif(x->>'provider_model_id','') is null or route.provider_model_id=x->>'provider_model_id')
     on conflict(provider_model_id,capability_id) do update set status=excluded.status,params=excluded.params,
       effective_from=excluded.effective_from,effective_to=excluded.effective_to,

@@ -6,7 +6,8 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { publishRateLimitPlan } from "@core/rate-limit-policies";
 import { json, withRuntime } from "@/routes/utils";
-import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole, rejectThirdPartyOAuthSpendingChange } from "./route-helpers";
+import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole, requireWorkspaceOwner, rejectThirdPartyOAuthSpendingChange } from "./route-helpers";
+import { retryTransaction } from "@/lib/retry-transaction";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const ICONS = new Set(["users", "briefcase", "megaphone", "code", "palette", "headphones", "landmark", "scale", "heart-pulse", "globe", "flask", "graduation-cap", "shield-check", "shopping-bag", "wrench", "truck", "handshake", "chart"]);
@@ -32,6 +33,12 @@ async function authorize(req: Request, write: boolean, roleAuthority = false) {
 		roleAuthority ? ["owner"] : ["owner", "admin"],
 	);
 	if (role) return { response: role };
+	// A role override or group mapping can make someone an admin, which is the owner's call. The role
+	// check above only reads the membership row; this also covers management keys by their creator.
+	if (roleAuthority) {
+		const ownerError = await requireWorkspaceOwner(auth.value, { id: auth.value.workspaceId }, "Only the workspace owner can change directory roles or group mappings.");
+		if (ownerError) return { response: ownerError };
+	}
 	const { data, error } = await getSupabaseAdmin().from("workspace_addon_subscriptions")
 		.select("status,grace_until").eq("workspace_id", auth.value.workspaceId).eq("addon_key", "identity").maybeSingle();
 	const status = String(data?.status ?? "").toLowerCase();
@@ -95,7 +102,7 @@ async function updateMemberOverride(req: Request) {
 	const userId = pathParam(req, "members"); const role = body.access_role == null || body.access_role === "directory" ? null : String(body.access_role);
 	const mode = String(body.department_mode ?? "directory"); const departmentId = mode === "department" ? String(body.department_id ?? "").trim() : null;
 	if (!userId || (role !== null && !["member", "admin"].includes(role)) || !["directory", "department", "none"].includes(mode) || (mode === "department" && !departmentId)) return json({ error: "bad_request", message: "Invalid member override" }, 400, NO_STORE);
-	const { error } = await getSupabaseAdmin().rpc("apply_workspace_member_override", { p_workspace_id: access.auth.workspaceId, p_user_id: userId, p_access_role: role, p_department_override_enabled: mode !== "directory", p_department_id: departmentId, p_department_position: String(body.department_position ?? "member"), p_actor_user_id: access.auth.userId, p_request_id: access.auth.requestId });
+	const { error } = await retryTransaction(() => getSupabaseAdmin().rpc("apply_workspace_member_override", { p_workspace_id: access.auth.workspaceId, p_user_id: userId, p_access_role: role, p_department_override_enabled: mode !== "directory", p_department_id: departmentId, p_department_position: String(body.department_position ?? "member"), p_actor_user_id: access.auth.userId, p_request_id: access.auth.requestId }));
 	if (error) return json({ error: "directory_update_failed" }, 503, NO_STORE);
 	// Department membership decides which department rate limits apply.
 	await publishRateLimitPlan(access.auth.workspaceId);
@@ -114,7 +121,7 @@ async function createDepartment(req: Request) {
 	const body = await requireJsonBody(req); if (isResponse(body)) return body;
 	const normalized = normalizeDepartment(body); if ("error" in normalized) return json({ error: "bad_request", message: normalized.error }, 400, NO_STORE);
 	const value: any = normalized.value;
-	const { data, error } = await getSupabaseAdmin().rpc("management_create_workspace_department", { p_workspace_id: access.auth.workspaceId, p_name: value.name, p_description: value.description ?? null, p_icon: value.icon ?? "users", p_color: value.color ?? "blue", p_actor_user_id: access.auth.userId, p_request_id: access.auth.requestId });
+	const { data, error } = await retryTransaction(() => getSupabaseAdmin().rpc("management_create_workspace_department", { p_workspace_id: access.auth.workspaceId, p_name: value.name, p_description: value.description ?? null, p_icon: value.icon ?? "users", p_color: value.color ?? "blue", p_actor_user_id: access.auth.userId, p_request_id: access.auth.requestId }));
 	if (error) return json({ error: error.code === "23505" ? "department_exists" : "directory_update_failed" }, error.code === "23505" ? 409 : 503, NO_STORE);
 	await audit(access.auth, "identity.department.created", "workspace_department", String(data.id), { name: value.name });
 	return json({ data }, 201, NO_STORE);
@@ -128,7 +135,7 @@ async function updateDepartment(req: Request) {
 	const current = await client.from("workspace_departments").select("id,name,description,icon,color").eq("workspace_id", access.auth.workspaceId).eq("id", id).maybeSingle();
 	if (current.error) return json({ error: "directory_unavailable" }, 503, NO_STORE); if (!current.data) return json({ error: "not_found" }, 404, NO_STORE);
 	const value: any = normalized.value; const next = { ...current.data, ...value };
-	const result = await client.rpc("management_update_workspace_department", { p_workspace_id: access.auth.workspaceId, p_department_id: id, p_name: next.name, p_description: next.description ?? null, p_icon: next.icon, p_color: next.color, p_actor_user_id: access.auth.userId, p_request_id: access.auth.requestId });
+	const result = await retryTransaction(() => client.rpc("management_update_workspace_department", { p_workspace_id: access.auth.workspaceId, p_department_id: id, p_name: next.name, p_description: next.description ?? null, p_icon: next.icon, p_color: next.color, p_actor_user_id: access.auth.userId, p_request_id: access.auth.requestId }));
 	if (result.error) return json({ error: result.error.code === "23505" ? "department_exists" : "directory_update_failed" }, result.error.code === "23505" ? 409 : 503, NO_STORE);
 	await audit(access.auth, "identity.department.updated", "workspace_department", id, { fields: Object.keys(value) });
 	return json({ data: result.data }, 200, NO_STORE);
@@ -137,7 +144,9 @@ async function updateDepartment(req: Request) {
 async function deleteDepartment(req: Request) {
 	const access = await authorize(req, true); if ("response" in access) return access.response;
 	const id = pathParam(req, "departments");
-	const { data, error } = await getSupabaseAdmin().rpc("management_delete_workspace_department", { p_workspace_id: access.auth.workspaceId, p_department_id: id, p_actor_user_id: access.auth.userId, p_request_id: access.auth.requestId });
+	const { data, error } = await retryTransaction(() => getSupabaseAdmin().rpc("management_delete_workspace_department", { p_workspace_id: access.auth.workspaceId, p_department_id: id, p_actor_user_id: access.auth.userId, p_request_id: access.auth.requestId }));
+	// Refused unless the caller is the owner when directory group mappings use the department.
+	if (error?.code === "42501") return json({ error: "forbidden", message: "Only the workspace owner can delete a department that directory group mappings use." }, 403, NO_STORE);
 	if (error) return json({ error: String(error.message ?? "").includes("not found") ? "not_found" : "directory_update_failed" }, String(error.message ?? "").includes("not found") ? 404 : 503, NO_STORE);
 	await publishRateLimitPlan(access.auth.workspaceId);
 	await audit(access.auth, "identity.department.deleted", "workspace_department", id, { name: data.name }); return json({ deleted: true }, 200, NO_STORE);
@@ -149,7 +158,7 @@ async function setDepartmentMember(req: Request) {
 	const departmentId = pathParam(req, "departments"); const userId = pathParam(req, "members"); const position = String(body.position ?? "member");
 	if (!departmentId || !userId || !["member", "lead"].includes(position)) return json({ error: "bad_request" }, 400, NO_STORE);
 	const client = getSupabaseAdmin();
-	const { data, error } = await client.rpc("management_set_workspace_department_member", { p_workspace_id: access.auth.workspaceId, p_department_id: departmentId, p_user_id: userId, p_position: position, p_primary: body.primary === true, p_actor_user_id: access.auth.userId, p_request_id: access.auth.requestId });
+	const { data, error } = await retryTransaction(() => client.rpc("management_set_workspace_department_member", { p_workspace_id: access.auth.workspaceId, p_department_id: departmentId, p_user_id: userId, p_position: position, p_primary: body.primary === true, p_actor_user_id: access.auth.userId, p_request_id: access.auth.requestId }));
 	if (error) return json({ error: "invalid_membership" }, 400, NO_STORE);
 	await publishRateLimitPlan(access.auth.workspaceId);
 	await audit(access.auth, "identity.department_member.updated", "workspace_member", userId, { department_id: departmentId, position, primary: body.primary === true }); return json({ data }, 200, NO_STORE);
@@ -158,7 +167,7 @@ async function setDepartmentMember(req: Request) {
 async function deleteDepartmentMember(req: Request) {
 	const access = await authorize(req, true); if ("response" in access) return access.response;
 	const departmentId = pathParam(req, "departments"); const userId = pathParam(req, "members");
-	const { data, error } = await getSupabaseAdmin().rpc("management_delete_workspace_department_member", { p_workspace_id: access.auth.workspaceId, p_department_id: departmentId, p_user_id: userId, p_actor_user_id: access.auth.userId });
+	const { data, error } = await retryTransaction(() => getSupabaseAdmin().rpc("management_delete_workspace_department_member", { p_workspace_id: access.auth.workspaceId, p_department_id: departmentId, p_user_id: userId, p_actor_user_id: access.auth.userId }));
 	if (error) return json({ error: "directory_update_failed" }, 503, NO_STORE); if (data !== true) return json({ error: "not_found" }, 404, NO_STORE);
 	await publishRateLimitPlan(access.auth.workspaceId);
 	await audit(access.auth, "identity.department_member.deleted", "workspace_member", userId, { department_id: departmentId }); return json({ deleted: true }, 200, NO_STORE);
@@ -175,7 +184,7 @@ async function createMapping(req: Request) {
 	const body = await requireJsonBody(req); if (isResponse(body)) return body;
 	const groupId = String(body.scim_group_id ?? "").trim(); const departmentId = String(body.department_id ?? "").trim(); const role = String(body.access_role ?? "member"); const position = String(body.department_position ?? "member");
 	if (!groupId || !departmentId || !["member", "admin"].includes(role) || !["member", "lead"].includes(position)) return json({ error: "bad_request", message: "Invalid group mapping" }, 400, NO_STORE);
-	const { data, error } = await getSupabaseAdmin().from("scim_group_mappings").insert({ workspace_id: access.auth.workspaceId, scim_group_id: groupId, department_id: departmentId, access_role: role, department_position: position, created_by: access.auth.userId }).select("id,scim_group_id,department_id,access_role,department_position,created_at,updated_at").single();
+	const { data, error } = await retryTransaction(() => getSupabaseAdmin().from("scim_group_mappings").insert({ workspace_id: access.auth.workspaceId, scim_group_id: groupId, department_id: departmentId, access_role: role, department_position: position, created_by: access.auth.userId }).select("id,scim_group_id,department_id,access_role,department_position,created_at,updated_at").single());
 	if (error) return json({ error: error.code === "23505" ? "mapping_exists" : "invalid_mapping" }, error.code === "23505" ? 409 : 400, NO_STORE);
 	await audit(access.auth, "identity.group_mapping.created", "scim_group_mapping", String(data.id), { scim_group_id: groupId, department_id: departmentId }); return json({ data }, 201, NO_STORE);
 }
@@ -185,14 +194,14 @@ async function updateMapping(req: Request) {
 	const body = await requireJsonBody(req); if (isResponse(body)) return body;
 	const id = pathParam(req, "group-mappings"); const role = body.access_role === undefined ? undefined : String(body.access_role); const position = body.department_position === undefined ? undefined : String(body.department_position);
 	if ((role && !["member", "admin"].includes(role)) || (position && !["member", "lead"].includes(position)) || (!role && !position)) return json({ error: "bad_request", message: "Invalid group mapping" }, 400, NO_STORE);
-	const { data, error } = await getSupabaseAdmin().from("scim_group_mappings").update({ ...(role && { access_role: role }), ...(position && { department_position: position }), updated_at: new Date().toISOString() }).eq("workspace_id", access.auth.workspaceId).eq("id", id).select("id,scim_group_id,department_id,access_role,department_position,created_at,updated_at").maybeSingle();
+	const { data, error } = await retryTransaction(() => getSupabaseAdmin().from("scim_group_mappings").update({ ...(role && { access_role: role }), ...(position && { department_position: position }), updated_at: new Date().toISOString() }).eq("workspace_id", access.auth.workspaceId).eq("id", id).select("id,scim_group_id,department_id,access_role,department_position,created_at,updated_at").maybeSingle());
 	if (error) return json({ error: "directory_update_failed" }, 503, NO_STORE); if (!data) return json({ error: "not_found" }, 404, NO_STORE);
 	await audit(access.auth, "identity.group_mapping.updated", "scim_group_mapping", id, { access_role: role, department_position: position }); return json({ data }, 200, NO_STORE);
 }
 
 async function deleteMapping(req: Request) {
 	const access = await authorize(req, true, true); if ("response" in access) return access.response;
-	const id = pathParam(req, "group-mappings"); const { data, error } = await getSupabaseAdmin().from("scim_group_mappings").delete().eq("workspace_id", access.auth.workspaceId).eq("id", id).select("id").maybeSingle();
+	const id = pathParam(req, "group-mappings"); const { data, error } = await retryTransaction(() => getSupabaseAdmin().from("scim_group_mappings").delete().eq("workspace_id", access.auth.workspaceId).eq("id", id).select("id").maybeSingle());
 	if (error) return json({ error: "directory_update_failed" }, 503, NO_STORE); if (!data) return json({ error: "not_found" }, 404, NO_STORE);
 	await audit(access.auth, "identity.group_mapping.deleted", "scim_group_mapping", id); return json({ deleted: true }, 200, NO_STORE);
 }

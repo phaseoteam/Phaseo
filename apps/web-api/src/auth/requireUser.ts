@@ -54,6 +54,17 @@ export function isThirdPartyAppToken(token: string): boolean {
   return !FIRST_PARTY_OAUTH_CLIENT_IDS.has(String(clientId).trim());
 }
 
+/**
+ * Whether the request's bearer token was issued to an OAuth client at all, Phaseo's own CLI and desktop app
+ * included: their client IDs are public, so anyone can start their sign-in. The person's own session has no
+ * client_id. Read before requireUser verifies the token; a token can only use this to refuse itself.
+ */
+export function hasOAuthClientToken(request: Request): boolean {
+  const token = bearerToken(request);
+  const clientId = token ? tokenClaims(token)?.client_id : undefined;
+  return clientId !== undefined && clientId !== null;
+}
+
 export async function requireUser(request: Request, env: Env): Promise<AuthenticatedUser | null> {
   const token = bearerToken(request);
   const url = (env.SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL)?.trim();

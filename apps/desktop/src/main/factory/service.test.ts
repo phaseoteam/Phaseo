@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { threadTools } from "../threadTools";
 import { WorkspaceRuntime } from "../workspaceRuntime";
 import { WorkspaceStore } from "../workspaceStore";
@@ -61,5 +61,20 @@ describe("Factory in the desktop", () => {
 			await second.store.shutdown();
 			second.database.close();
 		} finally { rmSync(directory, { recursive: true, force: true }); }
+	});
+
+	it("waits activateAfterMs before reading GitHub, and never starts once shutdown has begun", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-factory-delay-"));
+		const runtime = new WorkspaceRuntime(path.join(directory, "workspace"), () => ({ run: async () => {}, cancel: async () => {} }));
+		const service = new FactoryService(runtime, { dataDir: path.join(directory, "factory"), legacyFolder: path.join(directory, "none"), demo: true, broadcast: () => undefined, activateAfterMs: 80 });
+		const started = vi.spyOn(service.store, "start");
+		try {
+			await service.start();
+			expect(started).not.toHaveBeenCalled();
+			await service.shutdown();
+			await new Promise(resolve => setTimeout(resolve, 160));
+			service.activate();
+			expect(started).not.toHaveBeenCalled();
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 });

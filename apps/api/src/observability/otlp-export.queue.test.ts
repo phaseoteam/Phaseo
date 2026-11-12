@@ -9,10 +9,12 @@ const state = vi.hoisted(() => ({
 	keyLookups: [] as Array<{ workspaceId?: string | null; keyId?: string | null }>,
 }));
 
-vi.mock("@pipeline/audit/io-logging", () => ({
-	keyNeverStoresContent: async (input: { workspaceId?: string | null; keyId?: string | null }) => {
+vi.mock("@pipeline/audit/io-logging", async (importOriginal) => ({
+	requestAsksForZeroDataRetention: (await importOriginal<typeof import("@pipeline/audit/io-logging")>()).requestAsksForZeroDataRetention,
+	// key_agent never stores content; key_zdr is under workspace (or guardrail) ZDR.
+	keyKeepsContentOutOfTelemetry: async (input: { workspaceId?: string | null; keyId?: string | null }) => {
 		state.keyLookups.push({ workspaceId: input.workspaceId, keyId: input.keyId });
-		return input.keyId === "key_agent";
+		return input.keyId === "key_agent" || input.keyId === "key_zdr";
 	},
 }));
 
@@ -109,6 +111,27 @@ describe("enqueueGatewayOtlpExport", () => {
 	it("never writes a never-store key's content to the outbox", async () => {
 		state.bindings = {};
 		expect(await enqueueGatewayOtlpExport({ ...request, keyId: "key_agent" })).toBe(2);
+		expect(JSON.stringify(state.upserts)).not.toContain("secret");
+	});
+
+	it.each([
+		["workspace or key-guardrail ZDR", { keyId: "key_zdr" }],
+		["the request's own ZDR", { requestPayload: { ...request.requestPayload as object, provider: { require_zero_data_retention: true } } }],
+		["the context's (preset) ZDR", { zeroDataRetention: true }],
+	] as Array<[string, Partial<GatewayGenAiTelemetry>]>)("never queues or spills content under %s", async (_source, override) => {
+		const zdrRequest: GatewayGenAiTelemetry = {
+			...request,
+			...override,
+			providerAttempts: [{ provider: "openai", status: 400, upstream_payload_preview: "secret echo" } as any],
+		};
+		await enqueueGatewayOtlpExport(zdrRequest);
+		const [message] = send.mock.calls[0];
+		expect(message.telemetry.args.responsePayload).toBeNull();
+		expect(message.telemetry.args.providerAttempts).toEqual([{ provider: "openai", status: 400 }]);
+		expect(JSON.stringify(message)).not.toContain("secret");
+
+		state.bindings = {};
+		await enqueueGatewayOtlpExport(zdrRequest);
 		expect(JSON.stringify(state.upserts)).not.toContain("secret");
 	});
 

@@ -4,15 +4,27 @@ icon: "message-square"
 description: "将兼容 Anthropic 的客户端与 Phaseo 配合使用。"
 ---
 
-当应用、Agent 或编程工具需要 Claude 风格的 `/v1/messages` 请求时，请使用 Anthropic 兼容 API。
+把 Anthropic SDK 指向 `https://api.phaseo.app`，并把你的 Phaseo 密钥作为认证令牌传入。这适用于发送 Claude 风格 `/v1/messages` 请求的应用、智能体和编程工具；Phaseo 以 [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) 的形式处理这些请求。
 
-## TypeScript
+## 安装
 
-```bash
+<CodeGroup>
+
+```bash TypeScript
 npm install @anthropic-ai/sdk
 ```
 
-```ts
+```bash Python
+pip install anthropic
+```
+
+</CodeGroup>
+
+## 把客户端指向 Phaseo
+
+<CodeGroup>
+
+```ts TypeScript
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
@@ -22,7 +34,7 @@ const client = new Anthropic({
 });
 
 const message = await client.messages.create({
-	model: "anthropic/claude-sonnet-4.5",
+	model: "anthropic/claude-sonnet-5.5",
 	max_tokens: 512,
 	messages: [{ role: "user", content: "Reply with only: ok" }],
 });
@@ -30,13 +42,7 @@ const message = await client.messages.create({
 console.log(message.content);
 ```
 
-## Python
-
-```bash
-pip install anthropic
-```
-
-```python
+```python Python
 import os
 from anthropic import Anthropic
 
@@ -46,7 +52,7 @@ client = Anthropic(
 )
 
 message = client.messages.create(
-    model="anthropic/claude-sonnet-4.5",
+    model="anthropic/claude-sonnet-5.5",
     max_tokens=512,
     messages=[{"role": "user", "content": "Reply with only: ok"}],
 )
@@ -54,17 +60,18 @@ message = client.messages.create(
 print(message.content)
 ```
 
-## 说明
+</CodeGroup>
 
-- 使用根主机 `https://api.phaseo.app`；Anthropic 客户端会追加 `/v1/messages`。
-- 通过 `authToken`（Python 中为 `auth_token`）传入密钥，所有 SDK 版本都会以 `Authorization: Bearer` 发送。Phaseo 不接受 `x-api-key`，而 `@anthropic-ai/sdk` 1.0 和 `anthropic` 2.0 之前的 `apiKey` 发送的正是这个请求头。
-- `apiKey: null` 可防止旧版 TypeScript SDK 同时发送你的 `ANTHROPIC_API_KEY`。0.98 之前的 Python SDK 只要设置了该变量就会发送它，因此请升级 SDK，或在调用 Phaseo 的环境中删除它。
-- 端点详情请参阅 [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx)。
-- Phaseo 支持时可以使用 Anthropic 原生工具结构；跨供应商的服务器工具应使用 Phaseo 工具名称。
-- 如果工作流依赖流式工具循环，请在上线前进行测试，因为 Anthropic 兼容客户端对工具事件顺序的要求更严格。
+返回一个包含 `ok` 的文本块，就说明设置可用。
 
-## 相关内容
+| 设置 | 原因 |
+| --- | --- |
+| `baseURL: "https://api.phaseo.app"` | 使用根主机。Anthropic 客户端会自行添加 `/v1/messages`。 |
+| `authToken`（Python 中为 `auth_token`） | 在每个 SDK 版本上都会发送 `Authorization: Bearer`。Phaseo 不接受 `x-api-key`，而在 `@anthropic-ai/sdk` 1.0 和 `anthropic` 2.0 之前，`apiKey` 发送的正是它。 |
+| `apiKey: null` | 防止较旧的 TypeScript SDK 同时发送你的 `ANTHROPIC_API_KEY`。0.98 之前的 Python SDK 只要设置了它就会发送，因此请升级，或在调用 Phaseo 的地方取消设置它。 |
 
-- [Claude Code](./claude-code.mdx)
-- [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx)
-- [工具调用](../tool-calling.mdx)
+## 已知限制
+
+- 原生 Anthropic 工具结构在 Phaseo 支持的地方可以使用。跨提供商可用的服务器工具使用 Phaseo 工具名称；请参阅[工具调用](../tool-calling.mdx)。
+- 兼容 Anthropic 的客户端对工具事件的顺序要求严格。投入生产之前，请先测试流式工具循环。
+- 对于 [Claude Code](./claude-code.mdx)，请使用它自己的指南。

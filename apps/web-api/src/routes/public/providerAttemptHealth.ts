@@ -1,0 +1,252 @@
+// Per-attempt provider health for model pages: reachability, capacity and call
+// errors. Rows come from get_v2_model_provider_attempt_health, one per provider
+// and service tier with hourly buckets. Customer- and Phaseo-caused attempts are
+// excluded from the denominators in SQL. Every count (attempts, failures) stays
+// internal: the counts here are only used to combine and rate buckets, and only
+// the rates are published, because counts reveal a model's traffic volume.
+
+export type AttemptHealthCounts = {
+	attempts: number;
+	eligibleAttempts: number;
+	successAttempts: number;
+	reachabilityFailures: number;
+	capacityFailures: number;
+	callErrorFailures: number;
+};
+
+export type AttemptHealthRates = {
+	reachabilityPct: number | null;
+	capacityPct: number | null;
+	callErrorPct: number | null;
+	uptimePct: number | null;
+};
+
+export type AttemptHealthBucket = AttemptHealthCounts & AttemptHealthRates & { start: string; end: string };
+
+export type ProviderAttemptHealth = AttemptHealthCounts & AttemptHealthRates & {
+	providerId: string;
+	serviceTier: string;
+	providerName: string;
+	buckets: AttemptHealthBucket[];
+};
+
+const count = (value: unknown) => {
+	const parsed = Number(value);
+	return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 0;
+};
+
+const round2 = (value: number) => Math.round(value * 100) / 100;
+
+/**
+ * A rate rounded to two decimals that never rounds a failure away: with at least
+ * one failure it is at most 99.99, so pages can still say a failure happened
+ * ("<0.1%") without the counts. Rates are all that is published.
+ */
+const publicRate = (succeeded: number, of: number) => {
+	if (of <= 0) return null;
+	const rate = round2((succeeded / of) * 100);
+	return succeeded < of ? Math.min(rate, 99.99) : rate;
+};
+
+/** 1 - failed / of, as a percentage; null when there was nothing to measure. */
+const funnelRate = (failed: number, of: number) => publicRate(of - failed, of);
+
+/**
+ * The three rates are a funnel, as on the model page ("Reachable", "Accepted",
+ * "Completed"):
+ * - reachabilityPct: of the eligible attempts, those that reached the provider;
+ * - capacityPct: of those that reached it, those it accepted (not turned away for load);
+ * - callErrorPct: of those it accepted, those that completed without a provider error.
+ * Each is null when its denominator is zero. Matches get_v2_model_provider_attempt_health.
+ */
+export function attemptHealthRates(counts: AttemptHealthCounts): AttemptHealthRates {
+	const eligible = counts.eligibleAttempts;
+	const reached = eligible - counts.reachabilityFailures;
+	const accepted = reached - counts.capacityFailures;
+	return {
+		reachabilityPct: funnelRate(counts.reachabilityFailures, eligible),
+		capacityPct: funnelRate(counts.capacityFailures, reached),
+		callErrorPct: funnelRate(counts.callErrorFailures, accepted),
+		uptimePct: publicRate(counts.successAttempts, eligible),
+	};
+}
+
+function readCounts(record: Record<string, unknown>): AttemptHealthCounts {
+	return {
+		attempts: count(record.attempts),
+		eligibleAttempts: count(record.eligible_attempts),
+		successAttempts: count(record.success_attempts),
+		reachabilityFailures: count(record.reachability_failures),
+		capacityFailures: count(record.capacity_failures),
+		callErrorFailures: count(record.call_error_failures),
+	};
+}
+
+function emptyCounts(): AttemptHealthCounts {
+	return { attempts: 0, eligibleAttempts: 0, successAttempts: 0, reachabilityFailures: 0, capacityFailures: 0, callErrorFailures: 0 };
+}
+
+function addCounts(target: AttemptHealthCounts, source: AttemptHealthCounts): void {
+	target.attempts += source.attempts;
+	target.eligibleAttempts += source.eligibleAttempts;
+	target.successAttempts += source.successAttempts;
+	target.reachabilityFailures += source.reachabilityFailures;
+	target.capacityFailures += source.capacityFailures;
+	target.callErrorFailures += source.callErrorFailures;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+function hourKey(value: unknown): string | null {
+	const timestamp = Date.parse(String(value ?? ""));
+	if (!Number.isFinite(timestamp)) return null;
+	const hour = new Date(timestamp);
+	hour.setUTCMinutes(0, 0, 0);
+	return hour.toISOString();
+}
+
+export function normalizeAttemptHealthTier(value: unknown): string {
+	const tier = String(value ?? "").trim().toLowerCase();
+	if (!tier || tier === "default") return "standard";
+	return tier === "fast" ? "priority" : tier;
+}
+
+export function parseAttemptHealthRows(data: unknown): ProviderAttemptHealth[] {
+	if (!Array.isArray(data)) return [];
+	return data.flatMap((value) => {
+		if (!isRecord(value)) return [];
+		const providerId = String(value.provider_id ?? "").trim();
+		if (!providerId) return [];
+		const counts = readCounts(value);
+		const buckets = (Array.isArray(value.buckets) ? value.buckets : []).flatMap((bucket) => {
+			if (!isRecord(bucket)) return [];
+			const start = hourKey(bucket.start);
+			if (!start) return [];
+			const bucketCounts = readCounts(bucket);
+			return [{
+				start,
+				end: new Date(Date.parse(start) + 3_600_000).toISOString(),
+				...bucketCounts,
+				...attemptHealthRates(bucketCounts),
+			}];
+		}).sort((a, b) => a.start.localeCompare(b.start));
+		return [{
+			providerId,
+			serviceTier: normalizeAttemptHealthTier(value.service_tier),
+			providerName: String(value.provider_name ?? providerId),
+			...counts,
+			...attemptHealthRates(counts),
+			buckets,
+		}];
+	});
+}
+
+/** One provider across service tiers (or several stealth routes under one public id). */
+export function combineAttemptHealth(rows: ProviderAttemptHealth[]): (AttemptHealthCounts & AttemptHealthRates & { buckets: AttemptHealthBucket[] }) | null {
+	if (!rows.length) return null;
+	const totals = emptyCounts();
+	const byHour = new Map<string, AttemptHealthCounts>();
+	for (const row of rows) {
+		addCounts(totals, row);
+		for (const bucket of row.buckets) {
+			const hour = byHour.get(bucket.start) ?? emptyCounts();
+			addCounts(hour, bucket);
+			byHour.set(bucket.start, hour);
+		}
+	}
+	const buckets = [...byHour.entries()]
+		.sort(([a], [b]) => a.localeCompare(b))
+		.map(([start, counts]) => ({
+			start,
+			end: new Date(Date.parse(start) + 3_600_000).toISOString(),
+			...counts,
+			...attemptHealthRates(counts),
+		}));
+	return { ...totals, ...attemptHealthRates(totals), buckets };
+}
+
+/**
+ * Rates over a set of hours, from the summed counts: the share of all attempts in
+ * those hours, not an average of hourly rates (idle hours would dilute that).
+ */
+export function attemptHealthOverHours(
+	byHour: Map<string, AttemptHealthCounts & AttemptHealthRates>,
+	hours: Iterable<string>,
+): AttemptHealthRates {
+	const totals = emptyCounts();
+	for (const hour of new Set(hours)) {
+		const counts = byHour.get(hour);
+		if (counts) addCounts(totals, counts);
+	}
+	return attemptHealthRatesOnly(attemptHealthRates(totals));
+}
+
+/** All providers' attempts per UTC hour: what the model page's uptime chart plots. */
+export function attemptHealthByHour(rows: ProviderAttemptHealth[]): Map<string, AttemptHealthCounts & AttemptHealthRates> {
+	const byHour = new Map<string, AttemptHealthCounts>();
+	for (const row of rows) {
+		for (const bucket of row.buckets) {
+			const hour = byHour.get(bucket.start) ?? emptyCounts();
+			addCounts(hour, bucket);
+			byHour.set(bucket.start, hour);
+		}
+	}
+	return new Map([...byHour.entries()].map(([hour, counts]) => [hour, { ...counts, ...attemptHealthRates(counts) }]));
+}
+
+/**
+ * Only the rates, never the counts behind them: attempt and failure counts
+ * reveal a model's traffic volume, so they stay internal.
+ */
+export function attemptHealthRatesOnly(value: AttemptHealthRates): AttemptHealthRates {
+	return {
+		reachabilityPct: value.reachabilityPct,
+		capacityPct: value.capacityPct,
+		callErrorPct: value.callErrorPct,
+		uptimePct: value.uptimePct,
+	};
+}
+
+/** Hourly buckets summed per UTC day, so pages can show daily uptime without the counts. */
+export function attemptHealthByDay(buckets: AttemptHealthBucket[]): Array<AttemptHealthRates & { start: string; end: string }> {
+	const byDay = new Map<string, AttemptHealthCounts>();
+	for (const bucket of buckets) {
+		const day = `${bucket.start.slice(0, 10)}T00:00:00.000Z`;
+		const totals = byDay.get(day) ?? emptyCounts();
+		addCounts(totals, bucket);
+		byDay.set(day, totals);
+	}
+	return [...byDay.entries()]
+		.sort(([a], [b]) => a.localeCompare(b))
+		.map(([start, counts]) => ({
+			start,
+			end: new Date(Date.parse(start) + 86_400_000).toISOString(),
+			...attemptHealthRates(counts),
+		}));
+}
+
+/** The /provider-health wire shape (snake_case, like the rows beside it). Rates only. */
+export function attemptHealthToWire(row: ProviderAttemptHealth & { providerId: string; providerName: string }) {
+	const wireRates = (value: AttemptHealthRates) => ({
+		reachability_pct: value.reachabilityPct,
+		capacity_pct: value.capacityPct,
+		call_error_pct: value.callErrorPct,
+		uptime_pct: value.uptimePct,
+	});
+	return {
+		provider_id: row.providerId,
+		service_tier: row.serviceTier,
+		provider_name: row.providerName,
+		...wireRates(row),
+		buckets: row.buckets.map((bucket) => ({ start: bucket.start, end: bucket.end, ...wireRates(bucket) })),
+		days: attemptHealthByDay(row.buckets).map((day) => ({ start: day.start, end: day.end, ...wireRates(day) })),
+	};
+}
+
+export function isMissingAttemptHealthRpcError(error: { code?: string | null; message?: string | null } | null | undefined): boolean {
+	if (!error) return false;
+	const message = String(error.message ?? "");
+	return error.code === "PGRST202" ||
+		(message.includes("get_v2_model_provider_attempt_health") && /could not find|does not exist/i.test(message));
+}

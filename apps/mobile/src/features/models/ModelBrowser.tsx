@@ -1,20 +1,20 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { usePathname, useRouter } from "expo-router";
-import { ArrowDownAZ, ArrowUpDown, Bot, Building2, CircleCheck, CircleDollarSign, Clock, Flame, Gift, Maximize2, Shapes, SlidersHorizontal, X, type LucideIcon } from "lucide-react-native";
-import { type ComponentRef, useCallback, useDeferredValue, useEffect, useMemo, useRef } from "react";
-import { type TextInput, View } from "react-native";
+import { ArrowDownAZ, ArrowUpDown, Bot, Building2, CircleCheck, CircleDollarSign, Clock, Columns3, Flame, Gift, Maximize2, SlidersHorizontal, X, type LucideIcon } from "lucide-react-native";
+import { useCallback, useDeferredValue, useMemo, useRef } from "react";
+import { View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
-import { Button, Chip, ChipRow, EmptyState, ErrorState, Header, IconButton, OptionSheet, Screen, SearchField, SkeletonRows, Text, useMenu, type ViewRef } from "@/components/ui";
+import { Button, Chip, ChipRow, EmptyState, ErrorState, Header, OptionSheet, Screen, SearchField, SkeletonRows, Text, useMenu, type ViewRef } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import type { ModelCard } from "@/lib/api/models";
 import { activeFilterCount, DEFAULT_FILTERS, filterModels, type CatalogueSort } from "@/lib/catalogue";
 import { haptic } from "@/lib/haptics";
-import { compareStore, filtersStore, searchFocusStore, toggleCompare, updateFilters, useCatalogue, useLabIds } from "./state";
+import { useAuth } from "@/providers/AuthProvider";
+import { ModelsSummary } from "./ModelsSummary";
+import { compareStore, filtersStore, toggleCompare, updateFilters, useCatalogue, useLabIds } from "./state";
 import { ModelRow } from "./ModelRow";
-
-// The last focus request this screen acted on, so remounting doesn't refocus the field.
-let handledFocusRequest = 0;
 
 export const SORT_LABELS: Record<CatalogueSort, string> = { newest: "Newest", popular: "Most used", price: "Lowest price", context: "Largest context", name: "Name" };
 export const SORT_ICONS: Record<CatalogueSort, LucideIcon> = { newest: Clock, popular: Flame, price: CircleDollarSign, context: Maximize2, name: ArrowDownAZ };
@@ -38,7 +38,7 @@ function SelectedLabLogos({ names }: { names: string[] }) {
   );
 }
 
-/** The searchable, filterable catalogue. Used as the Models tab on phones and as the list pane on tablets. */
+/** The searchable, filterable catalogue, below the summary on phones; the list pane on tablets. */
 export function ModelBrowser() {
   const router = useRouter();
   const pathname = usePathname();
@@ -54,20 +54,12 @@ export function ModelBrowser() {
   const models = useMemo(() => filterModels(catalogue.data?.models ?? [], { ...filters, query }), [catalogue.data, filters, query]);
   const selectedId = pathname.startsWith("/models/") ? decodeURIComponent(pathname.slice("/models/".length)) : null;
   const filterCount = activeFilterCount(filters);
-  const searchRef = useRef<ComponentRef<typeof TextInput>>(null);
-  const focusRequest = searchFocusStore.use();
-
-  useEffect(() => {
-    if (focusRequest === handledFocusRequest) return;
-    // Wait for the tab switch to settle before raising the keyboard. The request only counts as handled
-    // once the field has focus, so a remount that cancels the timer still gets the keyboard.
-    const timer = setTimeout(() => {
-      if (!searchRef.current) return;
-      searchRef.current.focus();
-      handledFocusRequest = focusRequest;
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [focusRequest]);
+  const signedIn = Boolean(useAuth().session);
+  const insets = useSafeAreaInsets();
+  // Phones show the summary above the whole catalogue; a search or filter goes straight to the matches.
+  const summary = !split && !query && !filterCount;
+  // What only the filters sheet sets (modalities, retired models); the other filters have chips of their own.
+  const sheetFilters = filters.inputModalities.length + filters.outputModalities.length + (filters.includeRetired ? 1 : 0);
 
   const renderItem = useCallback(({ item }: { item: ModelCard }) => (
     <ModelRow
@@ -88,16 +80,19 @@ export function ModelBrowser() {
 
   return (
     <Screen>
-      <Header large title="Models" subtitle={catalogue.data ? `${models.length.toLocaleString()} of ${catalogue.data.models.length.toLocaleString()}` : null} right={<IconButton icon={SlidersHorizontal} label="Filters" onPress={() => router.push("/filters/models")} />} />
-      <View className="px-4 pb-2">
-        <SearchField ref={searchRef} value={filters.query} onChangeText={(value) => updateFilters({ query: value })} placeholder="Search models, labs or IDs" />
+      {/* Signed out, Models is where the app opens, with nothing to go back to. */}
+      <Header large sidebar back={!split && signedIn} title="Models" subtitle={catalogue.data ? `${models.length.toLocaleString()} of ${catalogue.data.models.length.toLocaleString()} models` : null} />
+      <View className="px-4 pb-3 pt-2">
+        <SearchField value={filters.query} onChangeText={(value) => updateFilters({ query: value })} placeholder="Search models, labs or IDs" />
       </View>
-      <ChipRow className="pb-2">
+      {/* One row: Clear first while anything is on (a switch further along may be off screen), how the list is
+          ordered, the full filters sheet and labs, then the two quick switches. */}
+      <ChipRow className="pb-3">
+        {filterCount ? <Chip label="Clear" icon={X} onPress={() => filtersStore.set({ ...DEFAULT_FILTERS, query: filters.query, sort: filters.sort })} /> : null}
         <View ref={sortRef} collapsable={false}>
           <Chip label={SORT_LABELS[filters.sort]} icon={ArrowUpDown} dropdown onPress={() => (split ? void sortMenu.show(sortRef) : router.push("/filters/sort"))} />
         </View>
-        <Chip label="On Phaseo" icon={CircleCheck} selected={filters.availability === "phaseo"} onPress={() => updateFilters({ availability: filters.availability === "phaseo" ? "all" : "phaseo" })} />
-        <Chip label="Free" icon={Gift} selected={filters.availability === "free"} onPress={() => updateFilters({ availability: filters.availability === "free" ? "all" : "free" })} />
+        <Chip label={sheetFilters ? `Filters · ${sheetFilters}` : "Filters"} icon={SlidersHorizontal} selected={sheetFilters > 0} dropdown onPress={() => router.push("/filters/models")} />
         <Chip
           label={filters.organisations.length ? `Labs · ${filters.organisations.length}` : "Labs"}
           icon={filters.organisations.length ? undefined : Building2}
@@ -106,9 +101,10 @@ export function ModelBrowser() {
           dropdown
           onPress={() => router.push("/filters/organisations")}
         />
-        <Chip label={filters.inputModalities.length + filters.outputModalities.length ? `Modalities · ${filters.inputModalities.length + filters.outputModalities.length}` : "Modalities"} icon={Shapes} selected={filters.inputModalities.length + filters.outputModalities.length > 0} dropdown onPress={() => router.push("/filters/models")} />
-        {filterCount ? <Chip label="Clear" icon={X} onPress={() => filtersStore.set({ ...DEFAULT_FILTERS, query: filters.query, sort: filters.sort })} /> : null}
+        <Chip label="On Phaseo" icon={CircleCheck} selected={filters.availability === "phaseo"} onPress={() => updateFilters({ availability: filters.availability === "phaseo" ? "all" : "phaseo" })} />
+        <Chip label="Free" icon={Gift} selected={filters.availability === "free"} onPress={() => updateFilters({ availability: filters.availability === "free" ? "all" : "free" })} />
       </ChipRow>
+      <View className="h-px bg-border" />
       {catalogue.isLoading ? (
         <SkeletonRows />
       ) : catalogue.isError && !catalogue.data ? (
@@ -123,8 +119,9 @@ export function ModelBrowser() {
           recycleItems
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={summary ? <><ModelsSummary /><AllModelsHeading /></> : <View className="h-2" />}
           ListEmptyComponent={<EmptyState icon={Bot} title="No models match" body="Try fewer filters or a shorter search." action={filterCount ? "Clear filters" : undefined} onAction={() => filtersStore.set({ ...DEFAULT_FILTERS })} />}
-          contentContainerStyle={{ paddingBottom: comparing.length ? 96 : 24 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + (comparing.length ? 96 : 24) }}
         />
       )}
       {comparing.length ? <CompareTray count={comparing.length} /> : null}
@@ -141,10 +138,22 @@ export function ModelBrowser() {
   );
 }
 
-function CompareTray({ count }: { count: number }) {
+/** Where the catalogue starts under the summary, with Compare, which phones otherwise reach from a model. */
+function AllModelsHeading() {
   const router = useRouter();
   return (
-    <View className="absolute bottom-3 left-3 right-3 flex-row items-center gap-2 rounded-md border border-border bg-popover p-2 pl-4">
+    <View className="mt-8 flex-row items-center justify-between pb-1 pl-4 pr-2">
+      <Text accessibilityRole="header" variant="heading">All models</Text>
+      <Button label="Compare" icon={Columns3} variant="ghost" size="sm" onPress={() => router.push("/compare")} />
+    </View>
+  );
+}
+
+function CompareTray({ count }: { count: number }) {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ bottom: insets.bottom + 12 }} className="absolute left-3 right-3 flex-row items-center gap-2 rounded-md border border-border bg-popover p-2 pl-4">
       <Text variant="label" className="flex-1">{count === 1 ? "1 model selected" : `${count} models selected`}</Text>
       <Button label="Clear" variant="ghost" size="sm" onPress={() => compareStore.set([])} />
       <Button label="Compare" size="sm" disabled={count < 2} onPress={() => router.push("/compare")} />

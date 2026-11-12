@@ -1,41 +1,43 @@
 ---
 title: "eve"
 icon: "bot"
-description: "Execute agentes eve com modelos do Phaseo usando o provedor de AI SDK do Phaseo."
+description: "Execute agentes do eve com modelos do Phaseo usando o provedor Phaseo para AI SDK."
 ---
 
-Os agentes do [eve](https://eve.dev) aceitam qualquer modelo de linguagem do AI SDK. Passe um modelo do [provedor de AI SDK do Phaseo](./ai-sdk.mdx) e cada chamada ao modelo passa pelo Phaseo, com seu roteamento, suas chaves, orçamentos e logs.
+Passe um modelo do [provedor Phaseo para AI SDK](./ai-sdk.mdx) ao seu agente do [eve](https://eve.dev), e toda chamada de modelo passa pelo Phaseo com seu roteamento, suas chaves, seus orçamentos e seus registros. O eve aceita qualquer modelo de linguagem do AI SDK.
 
-## Instalar
+## Instale
 
-Instale o provedor no seu projeto eve. O eve usa o AI SDK 7, então use a versão 2.0.1 ou posterior:
+O eve usa o AI SDK 7, então instale o `@phaseo/ai-sdk-provider` 2.0.1 ou posterior:
 
 ```bash
 npm install @phaseo/ai-sdk-provider
 ```
 
-Defina `PHASEO_API_KEY` em `.env.local` para o `eve dev` e no ambiente do servidor de cada deploy.
+Defina `PHASEO_API_KEY` no `.env.local` para o `eve dev` e no ambiente do servidor de cada implantação. A conexão `/login` do eve só funciona na sua máquina.
 
-## Configurar o agente
+## Aponte um agente do eve para o Phaseo
 
-```ts title="agent/agent.ts"
+```ts agent/agent.ts
 import { defineAgent } from "eve";
 import { phaseo } from "@phaseo/ai-sdk-provider";
 
 export default defineAgent({
-	model: phaseo("openai/gpt-6-luna"),
-	modelContextWindowTokens: 1_050_000,
+	model: phaseo("openai/gpt-6-astra"),
+	modelContextWindowTokens: 922_000,
 	reasoning: "low",
 });
 ```
 
-Use IDs de modelo do [endpoint Models](../../api-reference/endpoint/models.mdx) e defina `modelContextWindowTokens` com o `limits.input_tokens` do modelo nesse mesmo endpoint. O eve não consegue consultar a janela de contexto de um objeto de modelo e usa esse número para decidir quando compactar a conversa.
+Passe um objeto de modelo como `phaseo("openai/gpt-6-astra")`; uma string simples com o ID do modelo não é enviada ao Phaseo. Defina `modelContextWindowTokens` com o `limits.input_tokens` do modelo, obtido no [endpoint Models](../../api-reference/endpoint/models.mdx). O eve não consegue consultar a janela de contexto de um objeto de modelo e usa esse número para decidir quando compactar a conversa.
 
-## Escolher um modelo a cada turno
+Execute o agente uma vez e confirme que a solicitação aparece em **Configurações → Uso → Registros**.
 
-`defineDynamic` roda antes de cada chamada ao modelo. Retorne um objeto de seleção para que cada modelo mantenha sua própria janela de contexto:
+## Escolha um modelo a cada turno
 
-```ts title="agent/agent.ts"
+`defineDynamic` é executado antes de cada chamada de modelo. Retorne um objeto de seleção para que cada modelo mantenha a própria janela de contexto:
+
+```ts agent/agent.ts
 import { defineAgent } from "eve";
 import { defineDynamic } from "eve/models";
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -49,15 +51,7 @@ export default defineAgent({
 });
 ```
 
-## Observações
+## Limitações conhecidas
 
-- Passe um objeto de modelo como `phaseo("openai/gpt-6-luna")`. Um ID de modelo em texto simples não é enviado ao Phaseo.
-- Ferramentas, streaming, raciocínio, compactação e cache de prompts funcionam pelo Phaseo. As leituras de cache aparecem nos eventos de uso do eve e nos logs do Phaseo.
-- O eve deixa vazio o custo de cada execução com objetos de modelo. Veja o custo na página Usage do Phaseo ou em Logs.
-- A conexão `/login` do eve só funciona na sua máquina. Deploys precisam de `PHASEO_API_KEY`.
-
-## Relacionados
-
-- [AI SDK](./ai-sdk.mdx)
-- [Presets](../presets.mdx)
-- [Chamada de ferramentas](../tool-calling.mdx)
+- Ferramentas, streaming, raciocínio, compactação e cache de prompts funcionam pelo Phaseo. As leituras do cache de prompts aparecem nos eventos de uso do eve e nos registros do Phaseo.
+- O eve deixa vazio o custo de cada execução quando se usam objetos de modelo. Veja o custo na página **Uso** do Phaseo ou em **Registros**.

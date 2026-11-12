@@ -8,4 +8,8 @@ description: "Add existing users to a workspace."
 ---
 <Note>This endpoint requires a management API key with `workspaces:write` and an owner or admin role.</Note>
 
-The role can be `admin` or `member`. Workspace ownership cannot be assigned through this endpoint.
+People join a workspace through an invite: they accept it, which creates a join request, and this endpoint approves it. Each user in `user_ids` must have a pending join request in the workspace. Other users are rejected, so send them an invite first. People who are already members keep their role.
+
+The role can be `admin` or `member`. Without a role, each person gets the role their invite was created with. Only the workspace owner can add admins, and workspace ownership cannot be assigned through this endpoint.
+
+Each person is approved separately. If one approval fails, the people approved before it stay in the workspace and the rest aren't tried. The response is then a `409` whose `approved`, `failed` and `not_attempted` lists show where it stopped, so you can fix the problem and send the remaining users again.

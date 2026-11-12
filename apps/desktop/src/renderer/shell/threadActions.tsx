@@ -12,6 +12,7 @@ import { SettingsButton, settingsInput } from "../settings/SettingsLayout";
 import { cn } from "../lib/utils";
 import { codeSections, nextAfterParking } from "./codeThreads";
 import { offerUndo } from "./threadUndo";
+import { useWorkspacePreferences } from "../lib/workspacePreferences";
 
 export const snoozeTime = (date: Date) => formatDateParts(date, { weekday: date.getDate() === new Date().getDate() ? undefined : "short", hour: "2-digit", minute: "2-digit" });
 
@@ -63,10 +64,11 @@ export function useThreadActions() {
 	};
 }
 
-/** The snooze choices as menu items, then Custom… */
+/** The snooze choices (Settings → Threads → Snooze options) as menu items, then Custom… */
 export function SnoozeItems({ onSnooze, onCustom }: { onSnooze: (until: Date) => void; onCustom: () => void }) {
+	const presets = useWorkspacePreferences().threads.snoozePresets;
 	return <>
-		{snoozePresets().map(preset => <DropdownMenuItem key={preset.label} onClick={() => onSnooze(preset.until)}>{preset.label}<span className="ml-auto pl-4 text-xs text-muted-foreground">{snoozeTime(preset.until)}</span></DropdownMenuItem>)}
+		{snoozePresets(new Date(), presets).map(preset => <DropdownMenuItem key={preset.id} onClick={() => onSnooze(preset.until)}>{preset.label}<span className="ml-auto pl-4 text-xs text-muted-foreground">{snoozeTime(preset.until)}</span></DropdownMenuItem>)}
 		<DropdownMenuSeparator />
 		<DropdownMenuItem onClick={onCustom}>Custom…</DropdownMenuItem>
 	</>;
@@ -166,6 +168,7 @@ export function RenameInput({ task, onDone, className }: { task: TaskOverview; o
 /** The menu for several picked chats: each action says how many chats it applies to. */
 export function BulkMenuItems({ tasks, scope, onDone }: { tasks: TaskOverview[]; scope?: Scope; onDone: () => void }) {
 	const actions = useThreadActions();
+	const presets = useWorkspacePreferences().threads.snoozePresets;
 	const [deleting, setDeleting] = useState(false);
 	const pinned = tasks.filter(task => task.pinned), settleable = tasks.filter(task => !settleBlocker(task) && !isSettled(task));
 	const snoozable = tasks.every(task => !snoozeBlocker(task, new Date(Date.now() + 60_000).toISOString()));
@@ -176,7 +179,7 @@ export function BulkMenuItems({ tasks, scope, onDone }: { tasks: TaskOverview[];
 		<DropdownMenuItem disabled={!settleable.length} onClick={() => each(settleable, task => actions.settle(task, scope))}><CircleCheck />Settle ({settleable.length})</DropdownMenuItem>
 		<DropdownMenuSub>
 			<DropdownMenuSubTrigger disabled={!snoozable}><Clock />Snooze ({tasks.length})</DropdownMenuSubTrigger>
-			<DropdownMenuSubContent className="w-56">{snoozePresets().map(preset => <DropdownMenuItem key={preset.label} onClick={() => each(tasks, task => actions.snooze(task, preset.until, scope))}>{preset.label}<span className="ml-auto pl-4 text-xs text-muted-foreground">{snoozeTime(preset.until)}</span></DropdownMenuItem>)}</DropdownMenuSubContent>
+			<DropdownMenuSubContent className="w-56">{snoozePresets(new Date(), presets).map(preset => <DropdownMenuItem key={preset.id} onClick={() => each(tasks, task => actions.snooze(task, preset.until, scope))}>{preset.label}<span className="ml-auto pl-4 text-xs text-muted-foreground">{snoozeTime(preset.until)}</span></DropdownMenuItem>)}</DropdownMenuSubContent>
 		</DropdownMenuSub>
 		<DropdownMenuItem disabled={!finished.length} onClick={() => each(finished, task => actions.markUnread(task))}><Mail />Mark unread ({finished.length})</DropdownMenuItem>
 		<DropdownMenuSeparator />

@@ -1,64 +1,99 @@
 ---
-title: "Goで運用手順書エージェントを作成する"
+title: "Go で運用ランブックエージェントを作る"
 icon: "clipboard-check"
-description: "Go Agent SDKを使い、少数の決定的なローカルツールを組み合わせて、範囲を絞ったトラブルシューティングループを作ります。"
+description: "Go Agent SDK を使い、少数の決定的なローカルツールを 1 つの範囲を限定したトラブルシューティングループにまとめます。"
 ---
 
-ローカルのコンテキストを使って運用上の質問に答える必要があるGoサービスで、このレシピを使います。
+ローカルのステータスツールを呼び出して運用に関する質問に答える Go エージェントを、ジョブシステムを使わずに 1 つのサービス内で実行します。完成すると、現在のプロバイダーのレイテンシーについて短い回答を出力する `main.go` が 1 つできます。
 
-## 1. SDKを準備する
+ツールは固定のサンプルデータを返すため、このプログラムは例示用です。実際には独自のステータスやメトリクスの呼び出しに置き換えてください。必要なコンテキストをすでにローカル呼び出しや内部呼び出しで取得できる Go サービスに適しています。
 
-<Note type="warning">Go Agent SDKにはまだ公開モジュールバージョンがありません。[ソースからのインストール手順](../sdk-reference/go/agent-sdk-installation.mdx)に従ってください。</Note>
+## 作成する
 
-## 2. 小さなランタイムツールを定義する
+<Steps>
+<Step title="インストールする">
 
-```go
-statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
-  ID:          "read-status",
-  Description: "Read the current service status page summary.",
-  Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
-    return map[string]any{
-      "status": "degraded",
-      "summary": "Latency is elevated on one provider route.",
-    }, nil
-  },
-})
+```bash
+go mod init ops-runbook
+go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 3. エージェントを作成する
+コアの `sdk-go/v3` モジュールも一緒に取得されます。要件については [Go Agent SDK のインストール](../sdk-reference/agent/installation)をご覧ください。
 
-```go
-agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
-  ID:           "ops-runbook-agent",
-  Model:        "openai/gpt-5.4-nano",
-  Instructions: "Use tools when helpful and answer briefly.",
-  Tools:        []phaseoagent.Tool{statusTool},
-})
-```
+</Step>
+<Step title="エージェントを書く">
 
-## 4. 範囲を絞ったトラブルシューティングのターンを実行する
+```go main.go
+package main
 
-```go
-client, _ := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+import (
+  "context"
+  "fmt"
 
-result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
-  Input:  "What is happening with provider latency right now?",
-  Client: client,
-})
-if err != nil {
-  panic(err)
+  phaseoagent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"
+)
+
+func main() {
+  statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
+    ID:          "read-status",
+    Description: "Read the current service status page summary.",
+    Parameters: map[string]any{
+      "type":                 "object",
+      "properties":           map[string]any{},
+      "additionalProperties": false,
+    },
+    Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
+      return map[string]any{
+        "status":  "degraded",
+        "summary": "Latency is elevated on one provider route.",
+      }, nil
+    },
+  })
+
+  agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+    ID:           "ops-runbook-agent",
+    Model:        "openai/gpt-6-astra",
+    Instructions: "Use tools when helpful and answer briefly.",
+    Tools:        []phaseoagent.Tool{statusTool},
+    MaxSteps:     4,
+  })
+
+  // PHASEO_API_KEY（設定されていれば PHASEO_BASE_URL も）を読み取ります。
+  client, err := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+  if err != nil {
+    panic(err)
+  }
+
+  result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
+    Input:  "What is happening with provider latency right now?",
+    Client: client,
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(result.Run.Status)
+  fmt.Println(result.Output)
 }
-
-fmt.Println(result.Output)
 ```
 
-## このレシピが適する場面
+</Step>
+<Step title="実行する">
 
-- ワークフローが1つのGoサービス内で完結する
-- 補足コンテキストをローカルまたは内部呼び出しで取得できる
-- 大規模なジョブシステムを導入せずにエージェントループを使いたい
+```bash
+go run .
+```
 
-## 関連項目
+</Step>
+</Steps>
 
-- [Go Agent SDK](../sdk-reference/go/agent-sdk.mdx)
-- [web fetchで抽出結果の根拠を示す](./tool-grounding-with-web-fetch.mdx)
+## 動作を確認する
+
+- プログラムは `completed` を出力し、続いて 1 つのプロバイダールートでレイテンシーが悪化していることに触れた回答を出力します。
+- **設定 → 利用状況 → ログ** では、最初のモデルターンに `read-status` のツール呼び出しが表示されます。
+- `PHASEO_API_KEY` がない場合、`CreateGatewayAgentClient` は `PHASEO_API_KEY is required` を返します。
+
+## 本番環境の前に
+
+Go SDK の `MaxSteps` のデフォルトは `8` です。ジョブを完了できる最小の値に設定してください。ツールが引数を受け取る場合は、引数がモデルから来るため、`Parameters` スキーマと、想定外の入力にエラーを返す `InputSchema` バリデーターを指定してください。人が呼び出しを承認する場合（`RequireApproval: true`）を除き、ツールは読み取り専用にしてください。承認、状態、ストリーミングについては [Go Agent SDK リファレンス](../sdk-reference/agent/usage)で説明しています。ローカルツールの代わりに既知のページを読む方法は [Web フェッチによるグラウンディング](./tool-grounding-with-web-fetch)で紹介しています。

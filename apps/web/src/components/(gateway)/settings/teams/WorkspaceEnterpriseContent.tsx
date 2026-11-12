@@ -1,8 +1,7 @@
-"use client";
 import { SettingsResourceQuery } from "../PrivateSettingsQuery";
 import type { TeamsSettingsData } from "@/lib/fetchers/internal/settingsTypes";
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ArrowUpRight } from "lucide-react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +27,7 @@ function EnterpriseContent({ mode, data }: { mode: Mode; data: TeamsSettingsData
 
 	if (!workspaceId || workspaceId === data.personalTeamId) {
 		return (
-			<div className="space-y-6">
+			<div className="w-full max-w-4xl space-y-8">
 				<SettingsPageHeader title={copy.title} description={copy.description} />
 				<section className="space-y-3 border-y border-border/60 py-5">
 					<div>
@@ -49,7 +48,7 @@ function EnterpriseContent({ mode, data }: { mode: Mode; data: TeamsSettingsData
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className={mode === "directory" || mode === "departments" ? "min-w-0 space-y-8" : "min-w-0 w-full max-w-4xl space-y-8"}>
 			<SettingsPageHeader title={copy.title} description={copy.description} meta={mode === "directory" ? <Badge variant="secondary">{t("headers.membersCount", { count: memberCount })}</Badge> : undefined} />
 			{mode === "directory" || mode === "departments" ? <WorkspaceEnterpriseDirectory
 				mode={mode}

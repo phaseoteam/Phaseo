@@ -4,58 +4,42 @@ description: "Découvrez comment Phaseo collecte, normalise et publie les résul
 icon: "clipboard-check"
 ---
 
-Les benchmarks servent de base aux comparaisons entre modèles et fournisseurs. Cette page explique comment les données arrivent sur la plateforme et comment nous assurons leur cohérence.
+Phaseo publie des scores de benchmark mesurés par d’autres, chacun avec un lien vers sa provenance. Phaseo n’exécute pas de benchmarks et ne les fusionne pas en un score unique.
 
----
+```mermaid
+flowchart LR
+  src["Score publié<br/>(article, fiche de modèle,<br/>page de résultats)"] --> review{{"Source et configuration<br/>vérifiées"}}
+  imp["Importations planifiées<br/>(Artificial Analysis, Epoch AI)"] --> db["Base de données Phaseo"]
+  review --> db
+  db --> page["Pages des modèles<br/>et des benchmarks"]
+```
 
-## Sources des données
+## D’où viennent les scores
 
-- **Sources officielles** — Annonces des fournisseurs, blogs techniques et dossiers de presse.
-- **Articles universitaires** — Publications évaluées par des pairs et prépublications arXiv avec des résultats reproductibles.
-- **Contributions de la communauté** — Contributions vérifiées de la communauté Phaseo et de ses partenaires.
-
-Chaque score doit être accompagné d’une référence publique ou d’une évaluation reproductible avant son acceptation.
-
----
-
-## Normalisation
-
-Nous harmonisons les noms, métriques et partitions des benchmarks afin de rendre les comparaisons entre modèles précises :
-
-1. Associer chaque contribution à un ID de benchmark interne.
-2. Convertir les métriques publiées sur une échelle canonique (par exemple, en pourcentages).
-3. Signaler les écarts, tels que les variantes few-shot ou les systèmes d’évaluation personnalisés.
-4. Exécuter une validation automatisée pour vérifier la cohérence des champs et des plages de valeurs.
-
----
-
-## Fréquence des mises à jour
-
-- Chaque semaine pour les suites populaires telles que MMLU, GSM8K et HumanEval.
-- Chaque mois pour les benchmarks spécialisés ou émergents.
-- À la demande, lorsque des fournisseurs ou membres de la communauté soumettent des évaluations de qualité.
-
-Les mises à jour importantes donnent lieu à des entrées du journal des modifications afin que vous puissiez suivre l’historique.
-
----
-
-## Transparence et reproductibilité
-
-| Pratique | Résultat |
+| Source | Comment ils arrivent |
 | --- | --- |
-| Lien vers les sources primaires | Les utilisateurs peuvent vérifier rapidement les scores. |
-| Suivi des dates `last_updated` | Indique quand un benchmark pourrait nécessiter une révision. |
-| Documentation de la configuration d’évaluation | Précise le format du prompt, les fenêtres de contexte et l’échantillonnage. |
-| Signalement des scores vérifiés par des humains | Distingue la validation manuelle des processus automatisés. |
+| Articles, fiches de modèle et annonces des développeurs de modèles | Ajoutés par les mainteneurs, marqués **autodéclarés** |
+| Pages de résultats des organisateurs de benchmarks | Ajoutés par les mainteneurs |
+| Index d’Artificial Analysis et d’Epoch AI | Importations planifiées, vérifiées toutes les heures |
+| Signalements de la communauté | Issues GitHub, publiées après vérification des preuves par un mainteneur |
 
----
+Chaque score doit avoir une source publique ou un journal d’évaluation reproductible avant d’être publié.
 
-## Boucle de retour
+## Ce que signifie la normalisation
 
-Si vous constatez des écarts ou des données manquantes :
+Phaseo conserve chaque benchmark sur sa propre échelle. Il normalise l’enregistrement autour du score, pas le score lui-même :
 
-1.  Ouvrez une issue avec les preuves décrites dans [Soumettre des scores de benchmark](./submitting-scores.mdx).
-2.  Répondez aux questions de révision dans l’issue. Les responsables publient les corrections vérifiées dans l’éditeur de base de données.
-3.  Contactez-nous sur Discord pour coordonner des soumissions de recherche plus importantes.
+1. Chaque résultat est associé à un identifiant de benchmark unique, si bien que le même benchmark sous différents noms est regroupé.
+2. La configuration est conservée comme variante lorsqu’elle diffère, par exemple le nombre d’exemples few-shot, le harnais d’évaluation ou l’effort de raisonnement, au lieu d’être fusionnée avec la configuration par défaut.
+3. Chaque benchmark a un sens de tri. Les benchmarks où une valeur plus basse est meilleure, comme les taux d’erreur, classent le score le plus bas en premier.
+4. Le lien vers la source et l’indicateur d’autodéclaration restent associés au score.
 
-Nous examinons chaque signalement et partageons des mises à jour pendant la vérification du benchmark.
+L’indicateur d’autodéclaration est une information, pas un rejet. Un score sans contexte suffisant peut être enregistré avec des notes sur la source ; ne le considérez pas comme équivalent à une ligne de classement entièrement vérifiée.
+
+## Signaler une incohérence
+
+1. Ouvrez une issue avec les preuves indiquées dans [Soumettre des scores de benchmark](./submitting-scores.mdx).
+2. Répondez aux questions de revue dans l’issue. Les mainteneurs publient les corrections vérifiées via l’éditeur de la base de données.
+3. Pour les contributions de recherche plus importantes, coordonnez-vous sur [Discord](https://discord.gg/aQyywCvgZ5).
+
+La page publique sur la [normalisation des benchmarks](https://phaseo.app/how-phaseo-normalises-ai-benchmarks) présente les mêmes règles aux lecteurs du catalogue.

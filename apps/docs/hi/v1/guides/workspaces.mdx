@@ -1,69 +1,40 @@
 ---
 title: "वर्कस्पेस"
-description: "अपना Phaseo pricing plan बदले बिना API keys, settings और admin access व्यवस्थित करें।"
+description: "अपना Phaseo प्राइसिंग प्लान बदले बिना API कुंजियाँ, सेटिंग और प्रशासनिक पहुँच व्यवस्थित करें।"
 icon: "building-2"
 ---
 
-वर्कस्पेस किसी टीम, उत्पाद या परिवेश की API कुंजियाँ, रूटिंग सेटिंग, प्रीसेट, सुरक्षा नियम और व्यवस्थापक पहुँच व्यवस्थित करते हैं।
+हर टीम, उत्पाद या एनवायरनमेंट के लिए एक वर्कस्पेस बनाएँ, ताकि उसकी API कुंजियाँ, रूटिंग सेटिंग, प्रीसेट, गार्डरेल और एडमिन पहुँच अलग रहें। हर खाता एक निजी वर्कस्पेस से शुरू होता है, जो एक छोटे इंटीग्रेशन के लिए काफ़ी है।
 
-वर्कस्पेस Phaseo की मानक उपयोग-अनुसार-भुगतान सेवा में शामिल हैं। इन्हें बनाने या इस्तेमाल करने के लिए अलग योजना की ज़रूरत नहीं है।
+अलग वर्कस्पेस तब मदद करते हैं जब आप चाहते हैं:
 
-## वर्कस्पेस कब बनाएँ
+- डेवलपमेंट, स्टेजिंग और प्रोडक्शन क्रेडेंशियल अलग रखना
+- उत्पादों या ग्राहक प्रोजेक्ट को अलग रखना
+- किसी एडमिन इंटीग्रेशन को सिर्फ़ उन्हीं संसाधनों तक पहुँच देना जिनकी उसे ज़रूरत है
+- अलग-अलग रूटिंग, प्रीसेट या गार्डरेल नीतियाँ लागू करना
 
-अलग-अलग workspaces बनाएँ, अगर आप चाहते हैं:
+वर्कस्पेस आपकी कीमतें नहीं बदलते: सारा उपयोग सामान्य पे-एज़-यू-गो बिलिंग पर रहता है, जिसका वर्णन [कीमत और बिलिंग](../pricing/tiers) में है। अतिरिक्त वर्कस्पेस आपके पहले क्रेडिट जमा के बाद खुलते हैं; तब तक, कोई वर्कस्पेस बनाने पर `403 workspace_upgrade_required` के साथ विफलता मिलती है।
 
-- development, staging और production credentials अलग रखना
-- अलग-अलग products या customer projects अलग रखना
-- admin integrations को केवल ज़रूरी resources तक access देना
-- अलग-अलग routing, preset या guardrail policies लागू करना
+## API से वर्कस्पेस प्रबंधित करें
 
-छोटे integration के लिए default workspace पर्याप्त हो सकता है।
+वर्कस्पेस को डैशबोर्ड में या प्रबंधन API से प्रबंधित करें। API के लिए एक [प्रबंधन कुंजी](../developers/management-api-keys) चाहिए; सामान्य Gateway API कुंजियाँ इनफ़रेंस के लिए हैं और इन एंडपॉइंट को कॉल नहीं कर सकतीं।
 
-## वर्कस्पेस प्रबंधित करें
+| काम | एंडपॉइंट | क्षमता |
+| --- | --- | --- |
+| वर्कस्पेस की सूची देखें | [`GET /workspaces`](../api-reference/endpoint/workspaces-list) | `workspaces:read` |
+| एक वर्कस्पेस पढ़ें | [`GET /workspaces/{id}`](../api-reference/endpoint/workspaces-get) | `workspaces:read` |
+| वर्कस्पेस बनाएँ | [`POST /workspaces`](../api-reference/endpoint/workspaces-create) | `workspaces:write` |
+| वर्कस्पेस अपडेट करें | [`PATCH /workspaces/{id}`](../api-reference/endpoint/workspaces-update) | `workspaces:write` |
+| वर्कस्पेस मिटाएँ | [`DELETE /workspaces/{id}`](../api-reference/endpoint/workspaces-delete) | `workspaces:delete` |
 
-Phaseo dashboard या management API से workspaces manage कर सकते हैं।
+कुंजी को सिर्फ़ वही क्षमताएँ दें जिनकी उसे ज़रूरत है। Phaseo वर्कस्पेस की सदस्यता और भूमिका भी जाँचता है, इसलिए सिर्फ़ कोई क्षमता किसी दूसरे वर्कस्पेस तक पहुँच कभी नहीं देती। नए वर्कस्पेस का `slug` 1 से 50 छोटे अक्षरों, अंकों या डैश का होना चाहिए।
 
-Workspace API में [प्रबंधन API कुंजियाँ](../developers/management-api-keys.mdx) उपयोग होती हैं। मानक Gateway API कुंजियाँ केवल इन्फ़रेंस अनुरोधों के लिए होती हैं; उनसे वर्कस्पेस प्रशासन के एंडपॉइंट नहीं बुलाए जा सकते।
-
-| Task | Endpoint |
-| --- | --- |
-| Workspaces की सूची | [`GET /workspaces`](../api-reference/endpoint/workspaces-list.mdx) |
-| Workspace बनाएँ | [`POST /workspaces`](../api-reference/endpoint/workspaces-create.mdx) |
-| Workspace पढ़ें | [`GET /workspaces/{id}`](../api-reference/endpoint/workspaces-get.mdx) |
-| Workspace update करें | [`PATCH /workspaces/{id}`](../api-reference/endpoint/workspaces-update.mdx) |
-| Workspace delete करें | [`DELETE /workspaces/{id}`](../api-reference/endpoint/workspaces-delete.mdx) |
+प्रबंधन कुंजियाँ सर्वर-साइड सीक्रेट स्टोरेज में रखें, ब्राउज़र कोड, डेस्कटॉप लॉग, सोर्स कंट्रोल या चैट में कभी नहीं।
 
 <Note>
-Workspace management endpoints अभी Beta हैं। Admin automation को आसानी से retry करें और आगे के changes लागू करने से पहले API responses review करें।
+वर्कस्पेस एंडपॉइंट बीटा में हैं। ऑटोमेशन को दोबारा चलाने के लिए सुरक्षित बनाएँ, और अगला बदलाव करने से पहले हर प्रतिक्रिया जाँचें।
 </Note>
 
-## सही access चुनें
+## वर्कस्पेस का नाम बदलें या उसे मिटाएँ
 
-Integration के लिए ज़रूरी workspace capabilities तक सीमित management key बनाएँ:
-
-- Workspaces की सूची और जानकारी के लिए `workspaces:read`
-- Workspaces बनाने या update करने के लिए `workspaces:write`
-- Workspaces हटाने के लिए `workspaces:delete`
-
-Phaseo workspace membership और roles भी check करता है। केवल capability से दूसरे workspace का access नहीं मिलता।
-
-प्रबंधन कुंजियों को सर्वर-पक्ष के गुप्त भंडारण में रखें। उन्हें ब्राउज़र कोड, डेस्कटॉप लॉग, स्रोत नियंत्रण या चैट में उजागर न करें।
-
-## वर्कस्पेस हटाएँ
-
-Default workspace delete नहीं किया जा सकता। किसी अन्य को delete करने से पहले उसकी active API keys हटाएँ या move करें, ताकि requests ऐसे workspace को target न करें जो अब मौजूद नहीं है।
-
-## बिलिंग
-
-वर्कस्पेस अलग मूल्य निर्धारण स्तर नहीं बनाते। उपयोग पर [मूल्य निर्धारण और बिलिंग](../pricing/tiers.mdx) में बताए गए मानक उपयोग-आधारित मॉडल के अनुसार शुल्क लगता है।
-
-## अगले कदम
-
-<CardGroup cols={2}>
-	<Card title="Management API keys" icon="key-round" href="../developers/management-api-keys.mdx">
-		वर्कस्पेस प्रबंधन के लिए सीमित दायरे वाला सर्वर-साइड क्रेडेंशियल बनाएँ।
-	</Card>
-	<Card title="प्रमाणीकरण" icon="key" href="../developers/authentication.mdx">
-		Model और generation requests के लिए Gateway API keys उपयोग करें।
-	</Card>
-</CardGroup>
+निजी (डिफ़ॉल्ट) वर्कस्पेस का नाम न बदला जा सकता है, न उसे मिटाया जा सकता है; दोनों `400 bad_request` लौटाते हैं। कोई दूसरा वर्कस्पेस मिटाने से पहले, उसकी सक्रिय API कुंजियाँ हटा दें या दूसरी जगह ले जाएँ, ताकि कोई भी अनुरोध ऐसे वर्कस्पेस की ओर न जाए जो अब मौजूद नहीं है।

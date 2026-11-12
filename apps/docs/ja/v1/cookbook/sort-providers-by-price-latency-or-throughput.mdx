@@ -2,332 +2,179 @@
 title: "価格、レイテンシ、スループットでプロバイダーを並べ替える"
 sidebarTitle: "価格や速度で並べ替える"
 icon: "arrow-down-up"
-description: "リクエスト単位のプロバイダー並べ替えを使って、1 つのモデルで最安、最速、または最高スループットのルートを優先します。"
+description: "リクエスト単位のプロバイダーの並べ替えを使って、1 つのモデルで最安、最速、または最高スループットのルートを優先します。"
 ---
 
-モデルは変えずに、1 回のリクエストでプロバイダーの候補順位を変えたい場合に使います。
+1 件のリクエストに `provider.sort` を設定すると、既定のバランス型の順位付けではなく、`price`、`latency`、`throughput` のいずれかで同じモデルのプロバイダーを順位付けします。完成すると、使う言語でのリクエストができ、並べ替えでどのプロバイダーが選ばれたかをレスポンスとログで確認できます。
 
-## 目的
+これらのリクエストの形は本番環境で使えます。ワークスペースの既定値、`routing.mode`、モデルのサフィックス `:cheap`・`:fast`・`:nitro` については、[プロバイダーの順位付け方法を選ぶ](../guides/routing-and-fallbacks#choose-how-providers-are-ranked)で説明しています。
 
-- 1 回のリクエストで最安のプロバイダーを優先する。
-- 対話型の処理では最も低レイテンシのプロバイダーを優先する。
-- 大量の生成では、スループットが最も高いプロバイダーを優先してください。
+| `sort` | 用途 |
+| --- | --- |
+| `price` | テールレイテンシよりコストが重要なバッチ処理やバックグラウンド処理 |
+| `latency` | チャット、コパイロット、人が介在するツール |
+| `throughput` | 出力の長い大量生成やバックフィル |
 
-## 1. リクエストに `provider.sort` を追加する
-
-テキストリクエストでは、`provider` オブジェクトに希望する並べ替え方法を直接指定します。
+## 並べ替え付きのリクエストを送る
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemini-3.1-flash-lite",
+    "model": "google/gemini-3.5-flash-lite",
     "input": "Give me one release-note bullet for the last deploy.",
-    "provider": {
-      "sort": "price"
-    }
+    "provider": { "sort": "price" },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "google/gemini-3.1-flash-lite",
+  model: "google/gemini-3.5-flash-lite",
   input: "Give me one release-note bullet for the last deploy.",
-  provider: {
-    sort: "price",
-  },
+  provider: { sort: "price" },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "google/gemini-3.1-flash-lite",
+        "model": "google/gemini-3.5-flash-lite",
         "input": "Give me one release-note bullet for the last deploy.",
-        "provider": {
-            "sort": "price",
-        },
+        "provider": {"sort": "price"},
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 
-```go Go SDK
+```go Go
 package main
 
 import (
   "context"
   "fmt"
+  "os"
 
   phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 func main() {
-  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+  client := phaseo.New(os.Getenv("PHASEO_API_KEY"), "https://api.phaseo.app/v1")
 
+  meta := true
   response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
-    Model: "google/gemini-3.1-flash-lite",
-    Input: "Give me one release-note bullet for the last deploy.",
-    Provider: map[string]interface{}{
-      "sort": "price",
-    },
+    Model:    "google/gemini-3.5-flash-lite",
+    Input:    "Give me one release-note bullet for the last deploy.",
+    Provider: &map[string]interface{}{"sort": "price"},
+    Meta:     &meta,
   })
   if err != nil {
     panic(err)
   }
 
-  fmt.Println(response)
+  fmt.Printf("%+v\n", response.Meta)
 }
 ```
 
-```csharp C# SDK
+```csharp C#
 using PhaseoSdk;
 using System.Collections.Generic;
 
-var client = new Phaseo("YOUR_API_KEY");
+var client = new Phaseo(Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
 
 var response = await client.GenerateResponse(new Dictionary<string, object>
 {
-    ["model"] = "google/gemini-3.1-flash-lite",
+    ["model"] = "google/gemini-3.5-flash-lite",
     ["input"] = "Give me one release-note bullet for the last deploy.",
-    ["provider"] = new Dictionary<string, object>
-    {
-        ["sort"] = "price"
-    }
+    ["provider"] = new Dictionary<string, object> { ["sort"] = "price" },
+    ["meta"] = true
 });
 
-Console.WriteLine(response);
+Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(response?["meta"]));
 ```
 
-```php PHP SDK
+```php PHP
 <?php
 require 'vendor/autoload.php';
 
 use Phaseo\Sdk\Phaseo;
 
-$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
 
 $response = $client->generateResponse([
-    'model' => 'google/gemini-3.1-flash-lite',
+    'model' => 'google/gemini-3.5-flash-lite',
     'input' => 'Give me one release-note bullet for the last deploy.',
-    'provider' => [
-        'sort' => 'price',
-    ],
+    'provider' => ['sort' => 'price'],
+    'meta' => true,
 ]);
 
-print_r($response);
+print_r($response['meta']['routing'] ?? $response);
 ```
 
-```ruby Ruby SDK
-require 'phaseo_sdk'
+```ruby Ruby
+require "phaseo_sdk"
 
-client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
 
 response = client.generate_response(
-  model: 'google/gemini-3.1-flash-lite',
-  input: 'Give me one release-note bullet for the last deploy.',
-  provider: {
-    sort: 'price'
-  }
+  model: "google/gemini-3.5-flash-lite",
+  input: "Give me one release-note bullet for the last deploy.",
+  provider: { sort: "price" },
+  meta: true
 )
 
 puts response
 ```
 </CodeGroup>
 
-このフローでサポートされるルーティングの並べ替え方法:
+`meta: true` を指定すると、並べ替えで選ばれたプロバイダーである `meta.routing.selected_provider` が追加されます。
 
-- `price`
-- `latency`
-- `throughput`
+## 各並べ替えの重み付け
 
-## 2. ワークロードに合った並べ替え方法を選ぶ
+並べ替えはプロバイダーのスコアの重みを変えるだけで、他の指標を外すわけではありません。そのため、安くても信頼性の低いプロバイダーが選ばれないこともあります。
 
-次のように使います。
+| 並べ替え | 価格 | 成功率 | レイテンシの中央値 | テールレイテンシ | スループット |
+| --- | --- | --- | --- | --- | --- |
+| `price` | 0.40 | 0.25 | 0.15 | 0.10 | 0.05 |
+| `latency` | 0 | 0.25 | 0.55 | 0.15 | 0.02 |
+| `throughput` | 0 | 0.20 | 0.20 | 0.10 | 0.40 |
 
-- コストをテールレイテンシより重視する場合は `price`
-- チャット、コパイロット、人が関与するツールでは `latency`
-- 大量生成やバックフィルには `throughput`
+レイテンシとスループットは、各プロバイダーについて Phaseo が最新に計測した値です。
 
-## 3. ゲートウェイが比較する内容を理解する
+## 承認済みの範囲内で並べ替える
 
-リクエスト単位で並べ替え方法を明示すると、ゲートウェイは通常の均衡型重み付きシャッフルではなく、決定的な方法で候補を順位付けします。
+並べ替えは、候補が受け入れられるプロバイダーだけになっているときに最も効果を発揮します。`only` を追加すると、その範囲内で並べ替えが行われます。
 
-テキストモデルの場合:
-
-- `price` は対象プロバイダー間で共通の価格基準を比較します
-- 共通のテキスト課金項目がある場合、ゲートウェイは `input_text_tokens` と `output_text_tokens` が一致するものを優先します
-- `latency` はプロバイダーの最新レイテンシデータを使います
-- `throughput` は最新のスループット測定値を使います
-
-## 4. 現実的なプロバイダー候補群を維持する
-
-必要に応じて候補を絞り込んでから並べ替えると、より効果的です。
-
-たとえば、承認済みプロバイダーの候補内だけで並べ替えます。
-
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "google/gemini-3.1-flash-lite",
-    "input": "Summarize the incident in one sentence.",
-    "provider": {
-      "only": ["google-vertex", "google-vertex-eu"],
-      "sort": "latency"
-    }
-  }'
-```
-
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
-
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
-
-const response = await client.generateResponse({
-  model: "google/gemini-3.1-flash-lite",
-  input: "Summarize the incident in one sentence.",
-  provider: {
-    only: ["google-vertex", "google-vertex-eu"],
-    sort: "latency",
-  },
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "google/gemini-3.1-flash-lite",
-        "input": "Summarize the incident in one sentence.",
-        "provider": {
-            "only": ["google-vertex", "google-vertex-eu"],
-            "sort": "latency",
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-
-```go Go SDK
-package main
-
-import (
-  "context"
-  "fmt"
-
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
-)
-
-func main() {
-  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
-
-  response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
-    Model: "google/gemini-3.1-flash-lite",
-    Input: "Summarize the incident in one sentence.",
-    Provider: map[string]interface{}{
-      "only": []string{"google-vertex", "google-vertex-eu"},
-      "sort": "latency",
-    },
-  })
-  if err != nil {
-    panic(err)
+```json
+{
+  "model": "anthropic/claude-sonnet-5.5",
+  "input": "Summarize the incident in one sentence.",
+  "provider": {
+    "only": ["anthropic", "google-vertex"],
+    "sort": "latency"
   }
-
-  fmt.Println(response)
 }
 ```
 
-```csharp C# SDK
-using PhaseoSdk;
-using System.Collections.Generic;
+`only`、`order`、`ignore` については[プロバイダーを固定または除外する](./pin-or-ignore-providers-per-request)で説明しています。
 
-var client = new Phaseo("YOUR_API_KEY");
+## 順位付けを確認する
 
-var response = await client.GenerateResponse(new Dictionary<string, object>
-{
-    ["model"] = "google/gemini-3.1-flash-lite",
-    ["input"] = "Summarize the incident in one sentence.",
-    ["provider"] = new Dictionary<string, object>
-    {
-        ["only"] = new[] { "google-vertex", "google-vertex-eu" },
-        ["sort"] = "latency"
-    }
-});
-
-Console.WriteLine(response);
-```
-
-```php PHP SDK
-<?php
-require 'vendor/autoload.php';
-
-use Phaseo\Sdk\Phaseo;
-
-$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
-
-$response = $client->generateResponse([
-    'model' => 'google/gemini-3.1-flash-lite',
-    'input' => 'Summarize the incident in one sentence.',
-    'provider' => [
-        'only' => ['google-vertex', 'google-vertex-eu'],
-        'sort' => 'latency',
-    ],
-]);
-
-print_r($response);
-```
-
-```ruby Ruby SDK
-require 'phaseo_sdk'
-
-client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
-
-response = client.generate_response(
-  model: 'google/gemini-3.1-flash-lite',
-  input: 'Summarize the incident in one sentence.',
-  provider: {
-    only: ['google-vertex', 'google-vertex-eu'],
-    sort: 'latency'
-  }
-)
-
-puts response
-```
-</CodeGroup>
-
-## 5. 順位付けの結果を確認する
-
-デバッグ時は**Gateway -> 使用状況**でリクエストを確認し、次を探します:
-
-- 検討されたプロバイダー
-- 順位付けされたプロバイダー
-- 価格、レイテンシ、スループットに関するルーティングスコア要因
-
-これにより、ゲートウェイが想定どおりに並べ替えたか簡単に確認できます。
-
-## 関連ガイド
-
-- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
-- [プリセットを展開してルーティングをデバッグする](./preset-rollout-and-routing-debug.mdx)
+**設定 → 使用量 → ログ** でリクエストを開き、**ルーティングの可観測性** を展開します。検討されたプロバイダー、その順位、各スコアの要素と重みが一覧表示されるため、並べ替えが想定どおりに動いたかを確認できます。同じ並べ替えを多くの呼び出し元に適用するには、[プリセット](./preset-rollout-and-routing-debug)にまとめてください。

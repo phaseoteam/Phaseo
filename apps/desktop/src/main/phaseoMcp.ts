@@ -1,11 +1,11 @@
 import { closeMcpClient } from "./closeMcpClient";
 import { McpCallBudget } from "./mcpCallBudget";
-import { ElicitRequestSchema, type Tool } from "@modelcontextprotocol/sdk/types.js";
+import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { respondMcpElicitation } from "./mcpElicitation";
 import type { AgentCallbacks } from "./agentAdapter";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport, getDefaultEnvironment } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import type { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { loadedMcpClientSdk, mcpClientSdk } from "./mcpSdk";
 import { createHash } from "node:crypto";
 import { defineTool, type AgentTool } from "@phaseo/agent-sdk";
 import { nativeMcpName, type McpConnection } from "../shared/mcp";
@@ -48,6 +48,8 @@ function disconnect(server: Server, callbacks?: AgentCallbacks) {
 
 async function startServer(connection: McpConnection, cwd: string, setupSignal: AbortSignal, turn: Server["turn"], track: (client: Client) => void): Promise<Server> {
  const elicit = Boolean(turn.callbacks?.onForm);
+ // Already loaded (the usual case): no await, so the client exists as soon as the connection starts.
+ const { Client, StdioClientTransport, getDefaultEnvironment, StreamableHTTPClientTransport, ElicitRequestSchema } = loadedMcpClientSdk() ?? await mcpClientSdk();
  const client = new Client({ name: "phaseo-desktop", version: "0.1.0" }, { capabilities: elicit ? { elicitation: { form: {}, url: {} } } : {} }); track(client);
  const server: Server = { connection, client, tools: [], prompts: false, resources: false, budgets: new Set(), waitingForms: 0, turn };
  if (elicit) {

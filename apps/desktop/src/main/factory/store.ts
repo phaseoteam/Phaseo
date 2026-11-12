@@ -15,6 +15,7 @@ import type { AgentProfile, CheckRun, FactorySettings, GithubChange, ImageUpload
 import { localClones } from "./clones";
 import { MAX_ATTACH, SEARCH_LIMIT, activitySince, allComments, canPush, changesSince, checkoutRepo, closeAsDuplicate, closeItem, comment, commentsSince, allChecks, lineComment, pullFiles, replyToThread, resolveThread, assignable, deleteComment, editComment, editItem, editPeopleOrLabels, repoLabels, rerunFailed, updateBranch, createIssue, createPullRequest, failedLog, ghVersion, githubLogin, importOpen, itemTimeline, mentionable, readItem, linkWork, markDraft, markReady, mergePull, mergeState, openCounts, pullChecks, reopenItem, reviewPull } from "./github";
 import { changedFiles, git, prepareProof, prepareWorktree, proofDir } from "./worktrees";
+import { assertForkSafe } from "./agents";
 import type { AgentProcess, StageRunner, StageWorkspace } from "./runner";
 
 /** What Factory adds on top of GitHub, saved per item. GitHub stays the source of truth for the rest. */
@@ -536,6 +537,7 @@ export class FactoryStore {
 	private async launch(input: StartRunInput, options: LaunchOptions): Promise<Run> {
 		const item = this.item(input.itemId);
 		const agent = withItemEffort(this.agent(input.agentId), item);
+		assertForkSafe(item, agent.harness);
 		const full = this.demo ? undefined : this.deps.capacity?.();
 		if (full) throw new Error(full);
 		const busy = this.worktreeBusy(item);
@@ -921,9 +923,11 @@ export class FactoryStore {
 				if (item.kind !== "pull" || !failed.length) throw new Error("No failed checks to fix");
 				const agentId = item.stages.fix.agentId ?? agentForStage(item, "fix", playbook);
 				if (!agentId) throw new Error("Assign an agent first");
-				const logs = this.demo ? [] : await Promise.all(failed.map((check) => failedLog(item.repo, check.link)));
+				// A fork's workflows run the fork's code, so its logs are held back unread, as they are while a stage runs.
+				const logs = this.demo || item.fork ? [] : await Promise.all(failed.map((check) => failedLog(item.repo, check.link)));
 				this.patchItem(itemId, (current) => ({ ...current, revisions: (current.revisions ?? 0) + 1 }));
-				await this.launch({ itemId, stage: "fix", agentId }, { brief: ciBrief(failed.map((check, index) => ({ ...check, log: logs[index] }))) });
+				const run = await this.launch({ itemId, stage: "fix", agentId }, { brief: ciBrief(failed.map((check, index) => ({ ...check, log: logs[index] }))) });
+				if (item.fork) this.log(run.id, { at: Date.now(), kind: "info", text: "Didn't pass on the failed checks' logs: this pull request comes from a fork, whose workflows run the fork's code, so their logs don't direct agents. The agent runs the checks itself." });
 				return;
 			}
 			case "fix-conflicts": {
@@ -1393,9 +1397,9 @@ export class FactoryStore {
 			return candidate.itemId === pullId || (!!item && linkedItem(item, this.snapshot.items)?.id === pullId);
 		});
 		if (!pull || !run) return;
-		// The logs of the first few: enough to see what broke without flooding the agent.
-		const read = await Promise.all(failed.slice(0, 3).map(async (check) => ({ ...check, log: await failedLog(pull.repo, check.link).catch(() => undefined) })));
-		this.passOn(run.id, [checksActivity(pull.head ?? String(pull.updatedAt), [...read, ...failed.slice(3)], Date.now(), pull.number)]);
+		// The logs of the first few: enough to see what broke without flooding the agent. A fork's are held back unread.
+		const read = pull.fork ? failed.slice(0, 3) : await Promise.all(failed.slice(0, 3).map(async (check) => ({ ...check, log: await failedLog(pull.repo, check.link).catch(() => undefined) })));
+		this.passOn(run.id, [checksActivity(pull.head ?? String(pull.updatedAt), [...read, ...failed.slice(3)], Date.now(), pull.number, Boolean(pull.fork))]);
 	}
 
 	/** Hands new activity to a running agent. Comments from people who can't direct agents are held back and noted. */

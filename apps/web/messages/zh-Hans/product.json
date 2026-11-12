@@ -1175,6 +1175,8 @@
 		"speechDefaults": "语音默认值",
 		"voice": "语音",
 		"selectVoice": "选择语音",
+		"customVoiceId": "自定义语音 ID",
+		"customVoiceIdPlaceholder": "粘贴语音库中的语音 ID",
 		"format": "格式",
 		"speed": "速度",
 		"transcriptionDefaults": "转写默认值",

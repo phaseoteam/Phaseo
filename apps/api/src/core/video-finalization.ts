@@ -117,6 +117,15 @@ function resolveBillingModel(
 
 function resolveVideoUsageSeconds(videoMeta: VideoJobMeta | null, ...candidates: unknown[]): number | undefined {
 	const preferred = toPositiveNumber(videoMeta?.seconds);
+	// The provider picked the length (Wan 3.0 smart duration): `seconds` is only the
+	// maximum we held, so bill the reported length, capped at that maximum.
+	if (videoMeta?.autoDuration) {
+		for (const candidate of candidates) {
+			const reported = toPositiveNumber(candidate);
+			if (reported != null) return preferred != null ? Math.min(reported, preferred) : reported;
+		}
+		return preferred ?? undefined;
+	}
 	if (preferred != null) return preferred;
 	for (const candidate of candidates) {
 		const parsed = toPositiveNumber(candidate);
@@ -457,6 +466,7 @@ async function computeVideoCompletionPricing(args: {
 	model: string;
 	seconds: number;
 	requestOptions?: Record<string, unknown>;
+	providerUsageMeters?: Record<string, number> | null;
 	isByok?: boolean;
 }): Promise<VideoCompletionPricing> {
 	const { workspaceId, videoId, providerId, model, seconds, requestOptions, isByok = false } = args;
@@ -493,6 +503,7 @@ async function computeVideoCompletionPricing(args: {
 		seconds,
 		card,
 		model: resolvedModel || model,
+		providerUsageMeters: args.providerUsageMeters,
 		requestOptions: {
 			...normalizedRequestOptions(requestOptions),
 			...buildVideoPricingRequestOptions({
@@ -533,6 +544,7 @@ async function chargeVideoCompletion(args: {
 	model: string;
 	seconds: number;
 	requestOptions?: Record<string, unknown>;
+	providerUsageMeters?: Record<string, number> | null;
 	isByok?: boolean;
 }): Promise<VideoCompletionPricing> {
 	const pricing = await computeVideoCompletionPricing(args);
@@ -802,6 +814,8 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 				model,
 				seconds: billableOutputSeconds,
 				requestOptions,
+				// Saved on the job from the provider's own response, never from the request.
+				providerUsageMeters: videoMeta?.googleUsageMeters ?? null,
 				isByok: args.isByok ?? (videoMeta?.keySource === "byok"),
 			})
 			: null;
@@ -1255,6 +1269,8 @@ export async function finalizeVideoJob(args: FinalizeVideoJobArgs): Promise<Fina
 		model,
 		seconds,
 		requestOptions,
+		// Saved on the job from the provider's own response, never from the request.
+		providerUsageMeters: videoMeta?.googleUsageMeters ?? null,
 		isByok: args.isByok ?? (videoMeta?.keySource === "byok"),
 	});
 	const fallbackCostNanos = extractPricedTotalNanos(charge.pricedUsage);

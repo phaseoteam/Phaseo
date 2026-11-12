@@ -1,0 +1,67 @@
+---
+title: "OpenClaw"
+icon: "/icons/brands/openclaw.svg"
+description: "Registre o Phaseo como provedor de modelos no OpenClaw, com a chave lida pela CLI do Phaseo."
+---
+
+Execute `phaseo openclaw` para registrar no OpenClaw um provedor de modelos `phaseo` com todos os modelos compatíveis do Phaseo, ou adicione você mesmo o provedor com `openclaw config set`.
+
+## Configure com a CLI do Phaseo
+
+```bash
+phaseo login
+phaseo openclaw --model openai/gpt-6-astra
+```
+
+Se o OpenClaw não estiver instalado, a CLI mostra o comando de instalação (`npm install -g openclaw@latest`, ou o mesmo pacote com pnpm, Yarn ou Bun) e pede confirmação antes de executá-lo. Em seguida, a configuração executa `openclaw config set` duas vezes:
+
+- **`secrets.providers.phaseo_cli`**: um provedor de segredos do tipo exec que executa `phaseo integrations credential openclaw` para ler a chave. A chave nunca é gravada na configuração do OpenClaw.
+- **`models.providers.phaseo`**: um provedor com URL base `https://api.phaseo.app/v1`, tipo de API `openai-completions` e a chave obtida de `phaseo_cli`. Ele lista todos os modelos de texto ativos do Phaseo que funcionam com Chat Completions, com o valor de `--model` primeiro (`anthropic/claude-sonnet-4.6` sem ele).
+
+A chave é uma `Phaseo CLI: OpenClaw API Key` que você aprova no navegador durante a configuração. Ela expira após 90 dias e tem um limite de gastos mensal de $100. Depois que expirar, execute `phaseo openclaw` de novo para aprovar uma nova.
+
+A configuração não muda o modelo padrão do OpenClaw. Selecione o modelo do Phaseo com `openclaw models set` quando quiser. Use `--catalog default` para registrar só o modelo selecionado.
+
+## Configure o OpenClaw manualmente
+
+Registre um provedor de segredos que mostra sua chave e depois o provedor de modelos do Phaseo:
+
+```bash
+openclaw config set secrets.providers.phaseo_cli \
+  '{"source":"exec","command":"phaseo","args":["integrations","credential","openclaw"],"jsonOnly":false}' \
+  --strict-json
+
+openclaw config set models.providers.phaseo '{
+  "baseUrl": "https://api.phaseo.app/v1",
+  "apiKey": { "source": "exec", "provider": "phaseo_cli", "id": "value" },
+  "api": "openai-completions",
+  "models": [
+    { "id": "openai/gpt-6-astra", "name": "openai/gpt-6-astra via Phaseo", "reasoning": false, "input": ["text"] }
+  ]
+}' --strict-json
+```
+
+Cada entrada em `models` recebe um `id` (o ID do modelo no Phaseo), um `name`, `reasoning`, `input` (`text`, `image`) e um `contextWindow` opcional. Adicione uma entrada para cada modelo do Phaseo que você quer que o OpenClaw liste.
+
+## Confira se funciona
+
+Execute `openclaw config get models.providers.phaseo --json` para confirmar que o provedor está registrado. Selecione um modelo do Phaseo com `openclaw models set` e envie um prompt curto. Confirme que a solicitação aparece em **Configurações → Uso → Registros**.
+
+## Remova o Phaseo
+
+```bash
+phaseo integrations remove openclaw
+```
+
+Isso remove `models.providers.phaseo` e `secrets.providers.phaseo_cli` e depois revoga a chave. Suas outras configurações do OpenClaw continuam. Reinicie o gateway do OpenClaw se ele estiver em execução.
+
+## Corrija problemas comuns
+
+| Problema | Correção |
+| --- | --- |
+| `OpenClaw already defines models.providers.phaseo` | A configuração não sobrescreve um provedor `phaseo` existente. Remova-o ou renomeie-o, ou execute `phaseo integrations remove openclaw`, e configure de novo. |
+| As solicitações falham depois que você move ou reinstala a CLI do Phaseo ou o Node.js | A configuração salva os caminhos exatos do Node.js e da CLI em `secrets.providers.phaseo_cli`. Execute `phaseo integrations remove openclaw` e depois `phaseo openclaw` de novo. |
+| `OpenClaw is not installed or is not on PATH` | Instale o OpenClaw ou adicione-o ao `PATH` e execute a configuração de novo. |
+| Um modelo é rejeitado | Confira o ID exato no [endpoint Models](../../api-reference/endpoint/models.mdx). |
+
+Para outros agentes e para os valores de provedor de que todo agente precisa, veja [Agentes de programação](./coding-assistants.mdx).

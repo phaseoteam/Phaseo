@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Activity, ArrowLeft, Bell, Bot, Cable, CircleDot, FlaskConical, FolderGit2, GitMerge, GitPullRequest, Keyboard, Gauge, NotebookPen, Palette, Plug, RefreshCw, Search, SlidersHorizontal, UserRound } from "lucide-react";
+import { Activity, ArrowLeft, FileDiff, FolderTree, GitBranch, Globe, ListTodo, MessageSquare, Wrench, Bell, Bot, Cable, CircleDot, FlaskConical, FolderGit2, GitMerge, GitPullRequest, Keyboard, Gauge, NotebookPen, Palette, Plug, RefreshCw, Search, SlidersHorizontal, Smartphone, UserRound } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -8,6 +8,7 @@ import { cn } from "../lib/utils";
 import { ExperimentalSettings, GeneralSettings, NotificationSettings } from "./GeneralSettings";
 import { CodeHostSettings } from "./CodeHostSettings";
 import { OutsideAgentSettings } from "./OutsideAgentSettings";
+import { PhoneSettings } from "./PhoneSettings";
 import { UsageSettings } from "./UsageSettings";
 import { DiagnosticsSettings } from "./DiagnosticsSettings";
 import { AppearanceSettings } from "./AppearanceSettings";
@@ -17,6 +18,10 @@ import { McpConnections } from "../views/McpConnections";
 import { ProjectSettingsPage } from "./ProjectSettings";
 import { settingsProject } from "../../shared/projectSettings";
 import { FactorySettingsPage } from "../factory/settings/FactorySettingsPage";
+import { ChatSettings, chatSettingsKeywords, DiffSettings, diffSettingsKeywords } from "./ChatSettings";
+import { BrowserSettings, browserSettingsKeywords } from "./BrowserSettings";
+import { SourceControlSettings, sourceControlSettingsKeywords, WorktreeSettings, worktreeSettingsKeywords } from "./SourceControlSettings";
+import { MaintenanceSettings, maintenanceSettingsKeywords, ThreadSettings, threadSettingsKeywords } from "./ThreadSettings";
 
 type Entry = { id: Page; label: string; icon: ReactNode; keywords: string };
 const groups: { label: string; pages: Entry[] }[] = [
@@ -26,13 +31,22 @@ const groups: { label: string; pages: Entry[] }[] = [
 		{ id: "notifications", label: "Notifications", icon: <Bell />, keywords: "alerts desktop titles" },
 		{ id: "keyboard", label: "Keyboard shortcuts", icon: <Keyboard />, keywords: "keybindings keys hotkeys shortcuts bind remap keybindings.json" },
 	] },
+	{ label: "Workspace", pages: [
+		{ id: "chat", label: "Chat", icon: <MessageSquare />, keywords: chatSettingsKeywords },
+		{ id: "diffs", label: "Diffs", icon: <FileDiff />, keywords: diffSettingsKeywords },
+		{ id: "threads", label: "Threads", icon: <ListTodo />, keywords: threadSettingsKeywords },
+		{ id: "browser", label: "Browser", icon: <Globe />, keywords: browserSettingsKeywords },
+		{ id: "source-control", label: "Source control", icon: <GitBranch />, keywords: sourceControlSettingsKeywords },
+		{ id: "worktrees", label: "Worktrees", icon: <FolderTree />, keywords: worktreeSettingsKeywords },
+	] },
 	{ label: "Accounts", pages: [
 		{ id: "accounts", label: "Accounts", icon: <UserRound />, keywords: "sign in login api key subscription codex claude cursor grok phaseo" },
 		{ id: "usage", label: "Usage sources", icon: <Gauge />, keywords: "usage limits hubs rate limits plan weekly 5-hour reset quota billing credits CLIProxyAPI" },
 	] },
 	{ label: "Integrations", pages: [
-		{ id: "agents", label: "Agents", icon: <Bot />, keywords: "codex claude code opencode pi cursor grok acp install update version" },
+		{ id: "agents", label: "Agents", icon: <Bot />, keywords: "codex claude code opencode pi cursor grok acp install update version health check check interval sign-in status models refresh how often" },
 		{ id: "mcp", label: "MCP servers", icon: <Plug />, keywords: "tools model context protocol connections" },
+		{ id: "phone", label: "Phone", icon: <Smartphone />, keywords: "mobile phone app pair qr code tailscale wi-fi lan remote access phaseo connect relay devices" },
 		{ id: "outside-agents", label: "Outside agents", icon: <Cable />, keywords: "mcp server claude code codex terminal token local loopback external agents drive chats" },
 		{ id: "code-hosts", label: "Code hosts", icon: <GitMerge />, keywords: "gitlab forgejo gitea codeberg bitbucket azure devops glab tea az token merge requests pull requests self-hosted server" },
 	] },
@@ -46,6 +60,7 @@ const groups: { label: string; pages: Entry[] }[] = [
 	] },
 	// Listed after the projects, at the bottom.
 	{ label: "Advanced", pages: [
+		{ id: "maintenance", label: "Maintenance", icon: <Wrench />, keywords: maintenanceSettingsKeywords },
 		{ id: "diagnostics", label: "Diagnostics", icon: <Activity />, keywords: "processes cpu memory performance slow traces spans logs failures errors debug kill stop" },
 		{ id: "experimental", label: "Experimental", icon: <FlaskConical />, keywords: "autopilot beta labs experimental preview yolo" },
 	] },
@@ -109,8 +124,16 @@ export function SettingsPage() {
 		{settings === "mcp" && <McpConnections />}
 		{settings === "code-hosts" && <CodeHostSettings />}
 		{settings === "outside-agents" && <OutsideAgentSettings />}
+		{settings === "phone" && <PhoneSettings />}
 		{settings === "diagnostics" && <DiagnosticsSettings />}
 		{settings === "experimental" && <ExperimentalSettings />}
+		{settings === "chat" && <ChatSettings />}
+		{settings === "diffs" && <DiffSettings />}
+		{settings === "threads" && <ThreadSettings />}
+		{settings === "browser" && <BrowserSettings />}
+		{settings === "source-control" && <SourceControlSettings />}
+		{settings === "worktrees" && <WorktreeSettings />}
+		{settings === "maintenance" && <MaintenanceSettings />}
 		{settings?.startsWith("factory-") && <FactorySettingsPage key={settings} page={settings as Parameters<typeof FactorySettingsPage>[0]["page"]} />}
 	</ScrollArea>;
 }

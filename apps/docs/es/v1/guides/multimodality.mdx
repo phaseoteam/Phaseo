@@ -1,27 +1,24 @@
 ---
 title: "Multimodalidad"
-description: "Usa texto, imágenes, audio, vídeo y otras modalidades a través del gateway."
+description: "Usa texto, imágenes, audio, vídeo y otras modalidades a través del Gateway."
 icon: "shapes"
 ---
 
-El gateway ofrece varias modalidades a través de una API unificada. Cada endpoint corresponde a una capacidad distinta y la compatibilidad de modelos varía según el proveedor.
+Elige el endpoint según la salida que quieras y después un modelo compatible con ese endpoint. El mismo nombre de modelo puede aparecer en varios endpoints, y la compatibilidad de los proveedores varía en cada uno.
 
-## Modalidades y endpoints
-
-| Modalidad | Endpoints principales | Notas |
+| Modalidad | Endpoints | Qué hacen |
 | --- | --- | --- |
-| Texto | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | Salidas estructuradas y conversacionales. |
-| Imágenes | `/v1/images/generations`, `/v1/images/edits` | Generación de imágenes a partir de texto y edición de imágenes. |
-| Audio (TTS/STT/traducciones) | `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/audio/translations` | Texto a voz, voz a texto y traducción de audio hablado. |
-| Vídeo | `/v1/videos`, `/v1/videos/{video_id}`, `/v1/videos/{video_id}/content`, `/v1/videos/{video_id}` (DELETE) | Crea trabajos de vídeo asíncronos, consulta su estado, recupera contenido y elimina trabajos. |
-| Música | `/v1/music/generate` | Generación musical mediante proveedores compatibles. |
-| OCR | `/v1/ocr` | Extrae texto de imágenes cuando sea compatible. |
+| Texto | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | Salida de texto conversacional y estructurada. |
+| Imágenes | [`/v1/images/generations`](../api-reference/endpoint/images-generations.mdx), [`/v1/images/edits`](../api-reference/endpoint/images-edits.mdx) | Generación de imágenes a partir de texto y edición de imágenes. |
+| Audio | [`/v1/audio/speech`](../api-reference/endpoint/audio-speech.mdx), [`/v1/audio/transcriptions`](../api-reference/endpoint/audio-transcriptions.mdx), [`/v1/audio/translations`](../api-reference/endpoint/audio-translations.mdx) | Texto a voz, voz a texto y traducción de audio hablado. |
+| Voz en tiempo real | `/v1/audio/realtime/sessions` | Llamadas de voz en directo. Consulta [Voz en tiempo real](./realtime-voice.mdx). |
+| Vídeo | [`POST /v1/videos`](../api-reference/endpoint/video-create.mdx), `GET /v1/videos/{video_id}`, `GET /v1/videos/{video_id}/content`, `DELETE /v1/videos/{video_id}` | Crea un trabajo de vídeo asíncrono, consulta su estado, descarga el contenido y elimina el trabajo. Consulta [Trabajos de vídeo y por lotes](./async-video-and-batch.mdx). |
+| Música | [`/v1/music/generate`](../api-reference/endpoint/music-generate.mdx) | Generación de música en los proveedores compatibles. |
+| OCR | [`/v1/ocr`](../api-reference/endpoint/ocr.mdx) | Extracción de texto de imágenes. |
+| Análisis de documentos | [`/v1/parse`](../api-reference/endpoint/parse.mdx) | Texto ordenado, tablas y maquetación a partir de imágenes de documentos. Consulta [Analizar imágenes de documentos](./document-parsing.mdx). |
 
-## Comprobar la compatibilidad de los modelos
+## Comprueba qué modelos admiten un endpoint
 
-Usa el [endpoint de modelos](../api-reference/endpoint/models.mdx) para consultar los modelos disponibles y los endpoints que admiten. La cobertura de proveedores está disponible en el [endpoint de proveedores](../api-reference/endpoint/providers.mdx).
+Llama al [endpoint de modelos](../api-reference/endpoint/models.mdx): cada modelo indica los `endpoints` que admite, y `GET /v1/models/{author}/{slug}/endpoints` muestra cada ruta de proveedor de un modelo, con sus modalidades y parámetros admitidos. El [endpoint de proveedores](../api-reference/endpoint/providers.mdx) muestra la cobertura de proveedores.
 
-## Buenas prácticas
-
-- Elige el endpoint según la modalidad que necesites, aunque el nombre del modelo se comparta entre modalidades.
-- Antes de publicar, valida las cargas con la [referencia de la API](../api-reference/introduction.mdx).
+Antes de lanzar, comprueba los cuerpos de las solicitudes con la [referencia de la API](../api-reference/introduction) del endpoint.

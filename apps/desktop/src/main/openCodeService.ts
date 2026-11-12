@@ -27,6 +27,9 @@ export async function resolveOpenCodeCommand(cwd: string, signal?: AbortSignal) 
 	throw new Error("Install OpenCode 2 to use this harness. OpenCode 1 is not compatible.");
 }
 
+/** `ignoreProjectConfig`: the service never reads a checkout's opencode.json or .opencode folder (someone else's checkout). */
+export type IsolatedOptions = { ignoreProjectConfig?: boolean };
+
 export class OpenCodeService {
 	readonly mcp = new OpenCodeMcp();
 	private readonly controller = new AbortController();
@@ -63,7 +66,7 @@ export class OpenCodeService {
 	 * orchestration credential) exist only in this process, so no other session can reach them. Sessions are kept in OpenCode's
 	 * shared data folder, so a chat resumes on any service.
 	 */
-	async isolated(signal: AbortSignal): Promise<{ endpoint: Endpoint; close: () => Promise<void> }> {
+	async isolated(signal: AbortSignal, options: IsolatedOptions = {}): Promise<{ endpoint: Endpoint; close: () => Promise<void> }> {
 		if (this.controller.signal.aborted || signal.aborted) throw new Error("OpenCode startup cancelled.");
 		const state = path.join(this.directory, "native", "opencode", "turns", randomUUID()), file = path.join(state, "opencode", "service.json");
 		let child: ChildProcessWithoutNullStreams | undefined;
@@ -78,13 +81,13 @@ export class OpenCodeService {
 		try {
 			await mkdir(path.dirname(file), { recursive: true });
 			// A service otherwise listens on its fixed default port, which the shared one may hold.
-			return { endpoint: await span("opencode.start-isolated", undefined, () => this.spawnService(state, file, AbortSignal.any([this.controller.signal, signal]), value => { child = value; }, ["--hostname", "127.0.0.1", "--port", "0"])), close };
+			return { endpoint: await span("opencode.start-isolated", undefined, () => this.spawnService(state, file, AbortSignal.any([this.controller.signal, signal]), value => { child = value; }, ["--hostname", "127.0.0.1", "--port", "0"], options.ignoreProjectConfig ? { OPENCODE_DISABLE_PROJECT_CONFIG: "1" } : {})), close };
 		} catch (error) { await close(); throw error; }
 	}
-	private async spawnService(state: string, file: string, signal: AbortSignal, onSpawn: (child: ChildProcessWithoutNullStreams) => void, flags: string[] = []): Promise<Endpoint> {
+	private async spawnService(state: string, file: string, signal: AbortSignal, onSpawn: (child: ChildProcessWithoutNullStreams) => void, flags: string[] = [], env: Record<string, string> = {}): Promise<Endpoint> {
 		const command = await this.resolveCommand(this.directory, signal);
 		if (signal.aborted) throw new Error("OpenCode startup cancelled.");
-		const child = spawn(command.executable, [...command.prefix, "serve", "--service", ...flags], { cwd: this.directory, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", XDG_STATE_HOME: state } });
+		const child = spawn(command.executable, [...command.prefix, "serve", "--service", ...flags], { cwd: this.directory, windowsHide: true, shell: false, stdio: ["pipe", "pipe", "pipe"], env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", XDG_STATE_HOME: state, ...env } });
 		onSpawn(child);
 		child.stdout.resume(); child.stderr.resume(); child.stdin.end();
 		let failure: Error | undefined; child.on("error", error => { failure = error; });

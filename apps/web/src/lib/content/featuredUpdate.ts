@@ -47,7 +47,7 @@ function parseUtc(value: string | undefined | null): Date {
 }
 
 const FEATURED_SECTION_ENABLED =
-    process.env.NEXT_PUBLIC_FEATURED_ENABLED !== "false";
+    process.env.PUBLIC_FEATURED_ENABLED !== "false";
 
 const FEATURED_SCHEDULE: FeaturedEntry[] = [
     {

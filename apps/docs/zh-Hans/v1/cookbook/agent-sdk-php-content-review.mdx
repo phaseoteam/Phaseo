@@ -1,67 +1,97 @@
 ---
 title: "使用 PHP Agent SDK 审查 CMS 内容"
+sidebarTitle: "用 PHP 审查 CMS 内容"
 icon: "file-check"
 description: "使用 PHP Agent SDK，将本地内容查询工具封装在范围明确的审核循环中。"
 ---
 
-当 PHP 应用或管理后台需要快速审核内容、又不想把编排交给其他系统时，可使用此示例。
+在已经管理内容的应用或管理后台中运行一个 PHP 智能体：它用本地工具加载 CMS 草稿，并提出一条编辑修改建议。完成后，你会得到一个脚本，它会为首页草稿打印一条标题建议。
 
-## 1. 准备 SDK
+该工具返回固定的示例数据，因此该脚本仅作演示；请将它替换为你的 CMS 查询。它适合只需一两个本地工具就够用的 PHP 应用。
 
-<Note type="warning">PHP Agent SDK 包尚未发布到 Packagist。请参阅[从源代码安装说明](../sdk-reference/php/agent-sdk-installation.mdx)。</Note>
+## 构建
 
-## 2. 定义内容查询工具
+<Steps>
+<Step title="安装">
 
-```php
+```bash
+composer require phaseo/agent-sdk
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+`phaseo/agent-sdk` 会一并安装 `phaseo/sdk`，需要 PHP 8.1 或更高版本。请参阅 [PHP Agent SDK 安装](../sdk-reference/agent/installation)。
+
+</Step>
+<Step title="编写智能体">
+
+```php review.php
 <?php
+require 'vendor/autoload.php';
+
+use Phaseo\AgentSdk\AgentDefinition;
 use Phaseo\AgentSdk\AgentSdk;
 use Phaseo\AgentSdk\Tool;
 
+const ALLOWED_SLUGS = ['homepage', 'pricing', 'about'];
+
 $loadDraft = AgentSdk::defineTool(new Tool(
-    id: "load-draft",
-    description: "Load one CMS draft by slug.",
+    id: 'load-draft',
+    description: 'Load one CMS draft by slug.',
     parameters: [
-        "type" => "object",
-        "properties" => [
-            "slug" => ["type" => "string"],
+        'type' => 'object',
+        'properties' => [
+            'slug' => ['type' => 'string', 'enum' => ALLOWED_SLUGS],
         ],
-        "required" => ["slug"],
+        'required' => ['slug'],
+        'additionalProperties' => false,
     ],
-    execute: static fn (mixed $input, $context) => [
-        "slug" => $input["slug"] ?? "homepage",
-        "headline" => "Phaseo makes gateway routing visible.",
-    ]
+    // 参数来自模型：只有已知的 slug 才能到达 execute。
+    inputSchema: static function (mixed $input): array {
+        if (!is_array($input) || !in_array($input['slug'] ?? null, ALLOWED_SLUGS, true)) {
+            throw new InvalidArgumentException('slug must be one of ' . implode(', ', ALLOWED_SLUGS));
+        }
+        return $input;
+    },
+    execute: static fn (array $input, $context) => [
+        'slug' => $input['slug'],
+        'headline' => 'Phaseo makes gateway routing visible.',
+    ],
 ));
-```
-
-## 3. 创建并运行 Agent
-
-```php
-<?php
-use Phaseo\AgentSdk\AgentDefinition;
 
 $agent = AgentSdk::createAgent(new AgentDefinition(
-    id: "content-review-agent",
-    model: "openai/gpt-5.4-nano",
-    instructions: "Use tools when helpful and return concise editorial feedback.",
-    tools: [$loadDraft]
+    id: 'content-review-agent',
+    model: 'openai/gpt-6-astra',
+    instructions: 'Use tools when helpful and return concise editorial feedback.',
+    tools: [$loadDraft],
+    maxSteps: 4,
 ));
 
+// 从环境变量读取 PHASEO_API_KEY。
 $result = $agent->run(
-    input: "Review the homepage draft and suggest one headline improvement.",
-    client: AgentSdk::createGatewayAgentClient()
+    input: 'Review the homepage draft and suggest one headline improvement.',
+    client: AgentSdk::createGatewayAgentClient(),
 );
 
+echo $result->run->status . PHP_EOL;
 echo $result->output . PHP_EOL;
 ```
 
-## 适用场景
+</Step>
+<Step title="运行">
 
-- PHP 应用已拥有内容数据源
-- 一两个本地工具就足够
-- 你想采用范围明确的循环，而不是更大的编排平台
+```bash
+php review.php
+```
 
-## 相关内容
+</Step>
+</Steps>
 
-- [PHP Agent SDK](../sdk-reference/php/agent-sdk.mdx)
-- [修复格式错误的结构化 JSON](./response-healing-for-structured-json.mdx)
+## 检查是否成功
+
+- 脚本先打印 `completed`，然后打印一条标题建议。
+- 在 **设置 → 使用情况 → 日志** 中，第一个模型轮次会显示带有 `{"slug": "homepage"}` 的 `load-draft` 调用。
+- 如果没有设置 `PHASEO_API_KEY`，`createGatewayAgentClient()` 会抛出 `PHASEO_API_KEY is required`。
+
+## 投入生产之前
+
+让工具保持只读。如果你添加会发布或编辑内容的工具，请在其上设置 `requireApproval: true`，让运行暂停等待编辑处理。如需让 CMS 能够存储 JSON 格式的反馈，请指定 schema，并用[响应修复](./response-healing-for-structured-json)修复接近有效的输出。[PHP Agent SDK 参考](../sdk-reference/agent/usage)介绍了状态、审批和流式传输。

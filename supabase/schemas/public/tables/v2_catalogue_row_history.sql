@@ -24,6 +24,11 @@ CREATE TRIGGER catalogue_history_immutable
   FOR EACH STATEMENT
   EXECUTE FUNCTION public.reject_catalogue_history_change();
 
+CREATE TRIGGER catalogue_history_prune_guard
+  BEFORE DELETE ON public.v2_catalogue_row_history
+  FOR EACH ROW
+  EXECUTE FUNCTION catalogue_private.guard_row_history_delete();
+
 CREATE POLICY "deny_direct_client_access" ON "public"."v2_catalogue_row_history"
   AS RESTRICTIVE
   FOR ALL

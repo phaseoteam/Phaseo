@@ -33,6 +33,8 @@ import { useOptionalWorkspace } from "../app/workspace";
 import { DiffView } from "../components/DiffView";
 import { openTurnDiff } from "../panels/events";
 import { toolCallEdits } from "./toolCallDiff";
+import { useWorkspacePreferences } from "../lib/workspacePreferences";
+import { revealStreamingText } from "../lib/responseStreaming";
 
 const planOutcomes = { implemented: "Implemented", revised: "Revision requested", declined: "Not implemented" } as const;
 
@@ -200,6 +202,9 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	const latest = entries.findLast(entry => !(entry.kind === "activity" && entry.value.type === "usage"));
 	const isAnswer = (entry?: TurnEntry) => entry?.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent";
 	const final = isAnswer(latest) ? latest : complete && !live ? entries.findLast(entry => entry.kind === "message" && entry.value.role === "assistant") : undefined;
+	// Settings → Threads → Response streaming: how much of the answer shows while the turn runs.
+	const streaming = useWorkspacePreferences().threads.responseStreaming;
+	const finalText = final?.kind === "message" ? (live ? revealStreamingText(final.value.text, streaming) : final.value.text) : "";
 	// Proposed plans stand on their own in the turn rather than inside the work log.
 	const plans = entries.flatMap(entry => entry.kind === "activity" && entry.value.proposed ? [entry.value] : []);
 	// Pages an agent showed with html_render stand above the reply, like plans.
@@ -222,9 +227,9 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 				{plan.proposed?.feedback && <p data-selectable className="mt-2 border-l-2 border-border pl-3 text-[13px] whitespace-pre-wrap text-muted-foreground">{plan.proposed.feedback}</p>}
 			</ProposedPlan>)}
 			{pages.map(page => <HtmlRenderFrame key={page.id} html={page.html} render={page.render} />)}
-			{live && !final && !work.some(entry => entry.kind === "message" || entry.value.type !== "usage") && <div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin text-primary" /><span className="animate-pulse font-medium">Working</span><Elapsed since={user?.startedAt} /></div>}
+			{live && !finalText && !work.some(entry => entry.kind === "message" || entry.value.type !== "usage") && <div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin text-primary" /><span className="animate-pulse font-medium">Working</span><Elapsed since={user?.startedAt} /></div>}
 			{delegated.map(entry => <details key={entry.value.id} className="rounded-xl border border-border px-3 py-2 text-[13px]"><summary className="cursor-pointer font-medium text-muted-foreground">Agent result</summary><MessageContent text={entry.value.text} projectId={task.projectId} /></details>)}
-			{final?.kind === "message" && <div data-selectable data-quote data-conversation-id={`message:${final.value.id}`} className="text-[14px] leading-relaxed"><MessageContent text={final.value.text} projectId={task.projectId} repairLocalLinks /></div>}
+			{final?.kind === "message" && finalText && <div data-selectable data-quote data-conversation-id={`message:${final.value.id}`} className="text-[14px] leading-relaxed"><MessageContent text={finalText} projectId={task.projectId} repairLocalLinks /></div>}
 			{final?.kind === "message" && !live && <div className="-ml-1.5 flex items-center gap-0.5 opacity-60 transition-opacity group-hover/turn:opacity-100">
 				<CopyButton text={final.value.text} />
 				{onRegenerate && user && <ActionButton label="Regenerate" disabled={!canBranch} onClick={() => onRegenerate(user)}><RotateCcw /></ActionButton>}

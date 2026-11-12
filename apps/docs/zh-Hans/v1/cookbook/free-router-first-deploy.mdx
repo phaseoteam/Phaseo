@@ -1,25 +1,29 @@
 ---
-title: "从免费路由器开始"
+title: "在免费路由上起步"
 icon: "rocket"
-description: "先使用 phaseo/free 运行首次集成，无需提前选定某一个免费模型。"
+description: "从 phaseo/free 开始，让你的第一个集成无需预先选定某个固定的免费模型就能运行。"
 ---
 
-按照本指南运行你的第一个 Phaseo 集成，无需现在就选择付费模型。
+发送 `"model": "phaseo/free"`，Phaseo 会在一个支持该请求的可用免费模型上运行它，不消耗额度。完成后，你会用自己选择的语言跑通一个请求，并知道是哪个模型回答的。
 
-你可以将请求发送到 `phaseo/free`，而不是自行选择一个免费模型。Phaseo 会从可用的免费模型中选择一个来处理当前请求。
+这种请求结构可以直接用于原型、演示和低风险流量的生产环境。免费模型不保证延迟、输出风格或固定的提供商。
 
-## 适用场景
+## 发送请求
 
-- 你希望在选择付费模型之前，先做出可运行的原型。
-- 你预计最佳的免费选项会随时间变化。
-- 你希望在应用代码中使用一个稳定的模型 ID，同时由 Phaseo 在后台处理免费提供商的变化。
+<Steps>
+<Step title="设置密钥">
 
-## 请求示例
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+</Step>
+<Step title="发送一个请求">
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "phaseo/free",
@@ -28,7 +32,7 @@ curl https://api.phaseo.app/v1/responses \
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
@@ -39,13 +43,16 @@ const response = await client.generateResponse({
   temperature: 0.2,
 });
 
-console.log(response.output_text);
+console.log(JSON.stringify(response.output, null, 2));
 ```
 
-```python Python SDK
+```python Python
+import json
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
@@ -55,47 +62,42 @@ response = client.generate_response(
     }
 )
 
-print(response.get("output_text"))
+print(json.dumps(response.get("output"), indent=2))
 ```
 
-```go Go SDK
+```go Go
 package main
 
 import (
   "context"
   "fmt"
+  "os"
 
   phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 func main() {
-  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
+  client := phaseo.New(os.Getenv("PHASEO_API_KEY"), "https://api.phaseo.app/v1")
 
+  temperature := 0.2
   response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
-    Model: "phaseo/free",
-    Input: map[string]interface{}{
-      "role": "user",
-      "content": []map[string]string{
-        {
-          "type": "input_text",
-          "text": "Summarize why provider-aware free routing helps prototypes.",
-        },
-      },
-    },
+    Model:       "phaseo/free",
+    Input:       "Summarize why provider-aware free routing helps prototypes.",
+    Temperature: &temperature,
   })
   if err != nil {
     panic(err)
   }
 
-  fmt.Println(response)
+  fmt.Printf("%+v\n", response)
 }
 ```
 
-```csharp C# SDK
+```csharp C#
 using PhaseoSdk;
 using System.Collections.Generic;
 
-var client = new Phaseo("YOUR_API_KEY");
+var client = new Phaseo(Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
 
 var response = await client.GenerateResponse(new Dictionary<string, object>
 {
@@ -104,16 +106,16 @@ var response = await client.GenerateResponse(new Dictionary<string, object>
     ["temperature"] = 0.2
 });
 
-Console.WriteLine(response);
+Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(response));
 ```
 
-```php PHP SDK
+```php PHP
 <?php
 require 'vendor/autoload.php';
 
 use Phaseo\Sdk\Phaseo;
 
-$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
 
 $response = $client->generateResponse([
     'model' => 'phaseo/free',
@@ -124,14 +126,14 @@ $response = $client->generateResponse([
 print_r($response);
 ```
 
-```ruby Ruby SDK
-require 'phaseo_sdk'
+```ruby Ruby
+require "phaseo_sdk"
 
-client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch("PHASEO_API_KEY"))
 
 response = client.generate_response(
-  model: 'phaseo/free',
-  input: 'Summarize why provider-aware free routing helps prototypes.',
+  model: "phaseo/free",
+  input: "Summarize why provider-aware free routing helps prototypes.",
   temperature: 0.2
 )
 
@@ -139,27 +141,24 @@ puts response
 ```
 </CodeGroup>
 
-## 后台处理流程
+回答位于 `output` 中的 `output_text` 部分。
 
-1. 请求会发送到共享别名 `phaseo/free`。
-2. Phaseo 会检查哪些免费模型可以处理该请求。
-3. 系统会选择一个可用的免费模型来生成响应。
-4. 请求详情仍会显示实际运行的确切模型，方便你之后检查或调试。
+</Step>
+<Step title="查看是哪个模型回答的">
 
-## 首次请求之后
+打开**设置 → 用量 → 日志**并选择该请求。详情中会显示实际运行它的模型和提供商；如果请求被工作区策略拦截，还会显示是哪项设置拦截了它。
 
-- 在 **Gateway -> 用量** 中打开请求详情，确认使用了哪个模型。
-- 如果工作区策略阻止了请求，请查看请求详情，了解是哪项设置导致拦截。
-- 如果没有免费模型支持所需功能，请从 `phaseo/free` 改用某个具体的付费模型，而不要反复重试同一请求。
+</Step>
+</Steps>
 
-## 生产环境说明
+## 如何挑选免费模型
 
-- 将 `phaseo/free` 用于原型、演示和低风险流量。
-- 如果需要可预测的延迟、输出风格或提供商选择，请在确定最合适的模型后切换到该模型。
-- 如果需要不同服务间保持稳定的提示词行为，请将本指南与[预设](../guides/presets.mdx)配合使用。
+1. 你的请求发送到共享的 `phaseo/free` 别名。
+2. Phaseo 保留能处理该请求的免费模型（端点、参数、工具）。
+3. 它把请求发送给其中一个。
 
-## 相关指南
+默认情况下，免费模型共享每位用户每个 UTC 日 1,500 次请求的额度。超过之后，请求会返回 `429` 和错误码 `phaseo_free_model_limit_exceeded`，直到 UTC 00:00；参见 [Gateway 限制](../api-reference/limits#gateway-limits)。
 
-- [快速入门](../quickstart.mdx)
-- [路由与回退](../guides/routing-and-fallbacks.mdx)
-- [API 错误](../api-reference/errors.mdx)
+## 离开免费路由
+
+如果没有免费模型支持你需要的功能（例如工具或 JSON Schema），请换成某个具体的付费模型，而不是重试同一个请求。当你需要可预测的延迟、输出风格或提供商选择时，改用固定模型，并把共享设置放进[预设](../guides/presets)，让每个服务都发送相同的请求。[路由与回退](../guides/routing-and-fallbacks)说明了付费请求如何选择提供商，[API 错误](../api-reference/errors)列出了错误码。

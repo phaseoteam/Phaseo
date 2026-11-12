@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import Image, { type ImageProps } from "next/image";
+import Image, { type ImageProps } from "@/components/image";
 import { Building2 } from "lucide-react";
 import { resolveLogo, type LogoVariant, type LogoTheme } from "@/lib/logos";
 

@@ -1,7 +1,6 @@
-"use client";
-
 import { Fragment, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CompareGrid, CompareGroup, CompareRow, CompareSection, MODEL_COLOURS, type CompareCell } from "./CompareGrid";
 import { ComparePeers } from "./ComparePeers";
@@ -203,8 +202,9 @@ export function CompareBenchmarks({ models, benchmarks, peers }: { models: Compa
 			) : null}
 			{single.length ? (
 				<div className="space-y-1">
-					<button type="button" onClick={() => setShowSingle((value) => !value)} aria-expanded={showSingle} className="text-sm text-muted-foreground hover:text-foreground">
-						{showSingle ? "▾" : "▸"} {t("singleBenchmarks", { count: single.length })}
+					<button type="button" onClick={() => setShowSingle((value) => !value)} aria-expanded={showSingle} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+						<ChevronRight aria-hidden className={cn("size-3.5 transition-transform", showSingle && "rotate-90")} />
+						{t("singleBenchmarks", { count: single.length })}
 					</button>
 					{showSingle ? (
 						<CompareGrid label={t("singleBenchmarksLabel")}>

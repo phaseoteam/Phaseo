@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { toAdminModelPreview } from "./adminModelPreview";
 import type { AdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSource";
 

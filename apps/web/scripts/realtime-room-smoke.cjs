@@ -13,7 +13,7 @@ async function bundleRoom() {
 		"@/components/ui/sidebar": "const toggleSidebar=()=>{};export const useSidebar=()=>({toggleSidebar,state:'expanded'});",
 		"@/lib/web-api/client": "export const fetchChatWebApi=(path,init)=>fetch(path,init);",
 		"@/components/Logo": "export const Logo=()=>null;",
-		"next/dynamic": "export default ()=>()=>null;",
+		"@/lib/dynamic": "export default ()=>()=>null;",
 	};
 	const result = await esbuild.build({
 		absWorkingDir: appRoot, bundle: true, write: false, platform: "browser", format: "iife", jsx: "automatic",
@@ -23,7 +23,7 @@ import {RealtimeRoom} from './src/components/(chat)/rooms/RealtimeRoom';
 import {TooltipProvider} from './src/components/ui/tooltip';
 createRoot(document.getElementById('root')).render(<TooltipProvider><RealtimeRoom models={[]}/></TooltipProvider>);` },
 		plugins: [{ name: "offline-boundaries", setup(build) {
-			build.onResolve({ filter: /^(next\/dynamic|@\/)/ }, args => stubs[args.path] ? { path: args.path, namespace: "offline" } : undefined);
+			build.onResolve({ filter: /^@\// }, args => stubs[args.path] ? { path: args.path, namespace: "offline" } : undefined);
 			build.onLoad({ filter: /.*/, namespace: "offline" }, args => ({ contents: stubs[args.path], loader: "js" }));
 		} }],
 	});
@@ -186,7 +186,7 @@ async function exercise(browser, bundle, css, mode) {
 
 (async () => {
 	const bundle = await bundleRoom();
-	const cssFile = path.join(appRoot, "src/app/globals.css");
+	const cssFile = path.join(appRoot, "src/styles/globals.css");
 	const { css } = await require("postcss")([require("@tailwindcss/postcss")()]).process(await fs.readFile(cssFile, "utf8"), { from: cssFile });
 	const browser = await chromium.launch({ channel: "msedge", headless: true });
 	try { for (const mode of ["working", "denied", "blocked", "stalled"]) await exercise(browser, bundle, css, mode); }

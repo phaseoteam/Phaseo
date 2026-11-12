@@ -5,22 +5,21 @@ description: "Copyable prompts for coding agents to build small Phaseo apps with
 "og:image": "https://phaseo.app/og/dynamic?title=Mini%20App%20Starter%20Prompts&description=Copyable%20prompts%20for%20coding%20agents%20to%20build%20small%20Phaseo%20apps%20with%20raw%20HTTP%2C%20SDKs%2C%20or%20agent%20runtimes.&pathname=/docs/v1/cookbook/mini-app-starter-prompts"
 ---
 
-Use this page when you want to hand a coding agent one concrete prompt that produces a small, working app shape instead of a vague integration plan.
+Paste one of these prompts into Cursor, Claude Code, Codex or a similar coding agent and it builds a small working Phaseo app, then reports what it ran and what it couldn't check. Each prompt names the integration surface, the safety rules and the verification you expect.
 
-<Tip>
-These prompts are written to be outcome-focused and implementation-specific so they work better in Cursor, Claude Code, Codex, and similar tools.
-</Tip>
+The apps they produce are starting points: review the code, especially secret handling and tool validation, before you deploy it.
 
-## How to use these prompts
+## Use a prompt
 
 <Steps>
   <Step title="Pick the integration surface">
-    Choose the prompt that matches how you want the app to call Phaseo:
-
-    - raw HTTP
-    - one official SDK
-    - Vercel AI SDK
-    - Agent SDK
+    | Prompt | Calls Phaseo with |
+    | --- | --- |
+    | Raw HTTP | `fetch` against `https://api.phaseo.app/v1` |
+    | TypeScript SDK | `@phaseo/sdk` |
+    | Python SDK | `phaseo` |
+    | Vercel AI SDK | `@phaseo/ai-sdk-provider` |
+    | Agent SDK | `@phaseo/agent-sdk`, `phaseo-agent-sdk`, or the Agent SDK for your language |
   </Step>
   <Step title="Replace the bracketed variables">
     Fill in values like `[APP IDEA]`, `[FRAMEWORK]`, `[MODEL]`, and `[LANGUAGE]` before you paste the prompt into your coding agent.
@@ -44,10 +43,10 @@ These prompts are written to be outcome-focused and implementation-specific so t
 Build a [FRAMEWORK] mini app for [APP IDEA].
 
 Requirements:
-- Use raw HTTP requests, not A Phaseo SDK.
-- Use the Phaseo endpoint [ENDPOINT].
+- Use raw HTTP requests, not a Phaseo SDK.
+- Use the base URL https://api.phaseo.app/v1 and the Phaseo endpoint [ENDPOINT].
 - Use model [MODEL].
-- Read the API key from an environment variable named PHASEO_API_KEY.
+- Read the API key from an environment variable named PHASEO_API_KEY and send it as Authorization: Bearer.
 - Keep the app intentionally small: one main page, one server route or handler, and minimal styling.
 - Show the user input, the request submission state, the model output, and any gateway error state.
 - Add one example request payload in comments or docs so the integration is easy to audit later.
@@ -154,8 +153,9 @@ Verification:
 Create a [FRAMEWORK] app for [APP IDEA].
 
 Requirements:
-- Use the Phaseo Vercel AI SDK provider.
+- Use the Phaseo Vercel AI SDK provider, @phaseo/ai-sdk-provider.
 - Use model [MODEL].
+- Call the provider only from server code; never ship PHASEO_API_KEY to the browser.
 - Read the Phaseo API key from PHASEO_API_KEY.
 - Keep the UX lightweight and oriented around one clear user task.
 - Support streamed output if the app is chat-like; otherwise explain why non-streaming is simpler here.
@@ -189,10 +189,12 @@ Verification:
 Create a [LANGUAGE] mini app for [APP IDEA] using the Phaseo Agent SDK.
 
 Requirements:
-- Use the Phaseo Agent SDK for [LANGUAGE].
+- Use the Phaseo Agent SDK for [LANGUAGE] (@phaseo/agent-sdk for TypeScript, phaseo-agent-sdk for Python).
 - Use model [MODEL].
 - Include one or two deterministic local tools only.
-- Keep the tool loop bounded and easy to debug.
+- Give every tool a JSON Schema for its parameters and validate the model's arguments before running it.
+- Require human approval for any tool that writes, deletes, sends or spends.
+- Keep the tool loop bounded with a step limit and easy to debug.
 - Read the API key from PHASEO_API_KEY.
 - Show the final output and, where appropriate, the tool activity or intermediate reasoning state.
 
@@ -223,10 +225,4 @@ Verification:
 - Mention the UI framework and deployment target when you know them.
 - Add one or two constraints that matter, such as `EU-only providers`, `use streaming`, or `keep all secrets server-side`.
 
-## Related guides
-
-- [Quickstart](../quickstart.mdx)
-- [Examples](../guides/examples.mdx)
-- [TypeScript SDK overview](../sdk-reference/typescript/overview.mdx)
-- [Python SDK overview](../sdk-reference/python/overview.mdx)
-- [Agent SDK overview](../sdk-reference/agent-sdk/overview.mdx)
+The [TypeScript and Python SDK](../sdk-reference/client/overview) and [Agent SDK](../sdk-reference/agent/overview) references list what each package provides, so you can check the agent's code against them.

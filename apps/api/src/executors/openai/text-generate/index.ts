@@ -4,6 +4,7 @@
 
 import type { IRChatRequest, IRReasoning } from "@core/ir";
 import { isOpenAIHostedToolType } from "@core/nativeTools";
+import { withScopedPromptCacheKey } from "@executors/_shared/text-generate/prompt-cache";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
@@ -81,6 +82,9 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	"gpt-6-sol-pro": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"gpt-6.1-sol": new Set(["low", "medium", "high", "xhigh", "max"]),
 	"gpt-6.1-sol-pro": new Set(["low", "medium", "high", "xhigh", "max"]),
+	// https://developers.openai.com/api/docs/models/gpt-6.1-terra
+	"gpt-6.1-terra": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
+	"gpt-6.1-terra-pro": new Set(["low", "medium", "high", "xhigh", "max"]),
 	"o1": new Set(["low", "medium", "high"]),
 	"o1-preview": new Set(["low", "medium", "high"]),
 	"o1-mini": new Set(["low", "medium", "high"]),
@@ -455,7 +459,7 @@ function normalizeOpenAIProModelSlug(model?: string | null): {
 } {
 	const normalized = normalizeModelName(model);
 	if (!normalized) return { model: model ?? null, proMode: false };
-	const match = normalized.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-(?:sol|luna|astra)|gpt-6\.1-sol)-pro$/i);
+	const match = normalized.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-(?:sol|luna|astra)|gpt-6\.1-(?:sol|terra))-pro$/i);
 	if (!match) return { model: model ?? null, proMode: false };
 	return { model: match[1].toLowerCase(), proMode: true };
 }
@@ -850,7 +854,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		!requestsTwelveHourCache &&
 		!historyCarriesReplayableReasoning(args.ir as IRChatRequest, args.providerId, modelForRouting);
 	const irWithRequestMetadata = withOpenAIRequestMetadata(
-		args.ir as IRChatRequest,
+		await withScopedPromptCacheKey(args.ir as IRChatRequest, args, keyInfo.source),
 		args.providerId,
 		args.requestId,
 		args.workspaceId,

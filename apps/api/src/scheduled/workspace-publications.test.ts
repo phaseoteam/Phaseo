@@ -6,6 +6,8 @@ const state = vi.hoisted(() => ({
 	bumped: [] as string[],
 	invalidated: [] as string[],
 	bumpError: null as Error | null,
+	ratePlans: [] as string[],
+	ratePlanOk: true,
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -31,6 +33,10 @@ vi.mock("@/pipeline/before/privateModelCache", () => ({
 	invalidatePrivateRoutes: async (workspaceId: string) => { state.invalidated.push(workspaceId); },
 }));
 
+vi.mock("@core/rate-limit-policies", () => ({
+	publishRateLimitPlan: async (workspaceId: string) => { state.ratePlans.push(workspaceId); return state.ratePlanOk; },
+}));
+
 import { drainWorkspacePublications } from "./workspace-publications";
 
 describe("drainWorkspacePublications", () => {
@@ -40,6 +46,8 @@ describe("drainWorkspacePublications", () => {
 		state.bumped = [];
 		state.invalidated = [];
 		state.bumpError = null;
+		state.ratePlans = [];
+		state.ratePlanOk = true;
 	});
 
 	it("bumps the workspace cache version and acknowledges the claimed revision", async () => {
@@ -47,12 +55,21 @@ describe("drainWorkspacePublications", () => {
 		expect(await drainWorkspacePublications()).toEqual({ claimed: 1, completed: 1, failed: 0 });
 		expect(state.bumped).toEqual(["ws_1"]);
 		expect(state.invalidated).toEqual(["ws_1"]);
+		// Rate guardrails, their assignments and department links all queue a publication.
+		expect(state.ratePlans).toEqual(["ws_1"]);
 		expect(state.finished).toEqual([{ p_workspace_id: "ws_1", p_revision: "rev_1", p_lease_id: "lease_1", p_success: true }]);
 	});
 
 	it("reports failures so the outbox retries with backoff", async () => {
 		state.bumpError = new Error("kv down");
 		state.claims = [[{ workspace_id: "ws_2", revision: "rev_2", lease_id: "lease_2" }]];
+		expect(await drainWorkspacePublications()).toEqual({ claimed: 1, completed: 0, failed: 1 });
+		expect(state.finished[0]).toMatchObject({ p_success: false });
+	});
+
+	it("retries when the rate plan could not be stored", async () => {
+		state.ratePlanOk = false;
+		state.claims = [[{ workspace_id: "ws_3", revision: "rev_3", lease_id: "lease_3" }]];
 		expect(await drainWorkspacePublications()).toEqual({ claimed: 1, completed: 0, failed: 1 });
 		expect(state.finished[0]).toMatchObject({ p_success: false });
 	});

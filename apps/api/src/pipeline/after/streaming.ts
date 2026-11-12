@@ -19,7 +19,7 @@ import { stripGatewayStop } from "@core/finish-reason";
 import { resolveFailoverMs } from "./timing";
 import { createChatStreamTerminal } from "./chat-stream-terminal";
 import { createStreamReencoder, encodeStreamInterruption, type StreamReencoder } from "./stream-reencode";
-import { createResponsesStreamNormaliser } from "./responses-stream-normaliser";
+import { createResponsesStreamNormaliser, responsesRequestBody } from "./responses-stream-normaliser";
 
 /** A bare Chat `{"error": {...}}` frame: how OpenAI-compatible providers fail mid-stream. */
 function isBareErrorFrame(frame: any): boolean {
@@ -65,6 +65,24 @@ type PassthroughWithPricingOpts = {
      */
     onStreamEvent?: (event: UnifiedStreamEvent) => void | Promise<void>;
     /**
+     * Called for each event in a frame actually written to the client, read in the client's
+     * protocol: what the client received after re-encoding (an encoder can drop a part), not what
+     * the provider sent. Billing decides "was there output" from these.
+     */
+    onClientEvent?: (event: UnifiedStreamEvent) => void;
+    /**
+     * Called with the client-protocol events of a frame about to be rewritten and written (its usage
+     * is priced in the rewrite, so the frame's own output must already count), then with null once
+     * that frame is written or dropped. Delivery itself is committed by onClientEvent.
+     */
+    onOutgoingFrame?: (events: UnifiedStreamEvent[] | null) => void;
+    /**
+     * Called at each DRAIN_CHECKPOINT_DELAYS_MS after the client disconnects while the
+     * upstream is still draining, with the usage reported so far and the output streamed so
+     * far, so what was generated can be charged before the runtime may stop the drain.
+     */
+    onDrainCheckpoint?: (progress: { usage: any; outputChars: number }) => void;
+    /**
      * Optional Server-Timing value; if present we'll include it.
      */
     timingHeader?: string;
@@ -90,13 +108,21 @@ function frameMayCarryAccountingState(frame: any): boolean {
     );
 }
 
+/**
+ * Cloudflare keeps waitUntil work alive for about 30 s after the client disconnects. A
+ * drain still running at these points after the disconnect charges its progress, so a
+ * drain cut off at 30 s loses at most the output after the last checkpoint. Drains that
+ * finish sooner are charged once, from their final usage.
+ */
+export const DRAIN_CHECKPOINT_DELAYS_MS = [15_000, 25_000] as const;
+
 /** Re-stream SSE while:
  *  - parsing each "data:" block as JSON
  *  - rewriting frames (e.g., inject gateway id/provider/nativeResponseId)
  *  - detecting the final snapshot frame with `usage` to trigger onFinalUsage
  */
 export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): Promise<Response> {
-    const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, onStreamEvent, timingHeader, ctx, provider } = opts;
+    const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, onStreamEvent, onClientEvent, onOutgoingFrame, onDrainCheckpoint, timingHeader, ctx, provider } = opts;
     const cancellationPolicy = getProviderStreamCancellationPolicy(provider);
     const providerMetadata = ctx.providers?.find((candidate) => candidate.providerId === provider);
     ctx.meta.streamCancellationSupport =
@@ -120,10 +146,34 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     let outputFrameIntervalTotalMs = 0;
     let outputFrameIntervalCount = 0;
     let downstreamClosed = false;
-    void writer.closed.catch(() => {
+    let finalUsageSettled = false;
+    // Progress for drain checkpoints: the usage reported so far and the output streamed so far.
+    let progressUsage: any = null;
+    let streamedOutputChars = 0;
+    const drainCheckpointTimers: Array<ReturnType<typeof setTimeout>> = [];
+    const clearDrainCheckpoints = () => {
+        for (const timer of drainCheckpointTimers.splice(0)) clearTimeout(timer);
+    };
+    const noteDownstreamClosed = () => {
+        if (downstreamClosed) return;
         downstreamClosed = true;
         ctx.meta.downstreamDisconnected = true;
-    });
+        if (!onDrainCheckpoint || finalUsageSettled) return;
+        for (const delayMs of DRAIN_CHECKPOINT_DELAYS_MS) {
+            drainCheckpointTimers.push(setTimeout(() => {
+                if (finalUsageSettled) return;
+                try {
+                    onDrainCheckpoint({ usage: progressUsage, outputChars: streamedOutputChars });
+                } catch (err) {
+                    console.error("passthroughWithPricing drain checkpoint error:", err, {
+                        requestId: ctx.requestId,
+                        workspaceId: ctx.workspaceId,
+                    });
+                }
+            }, delayMs));
+        }
+    };
+    void writer.closed.catch(noteDownstreamClosed);
 
     const resolveSelectedUpstreamStartMs = () => {
         if (typeof ctx.meta.selectedUpstreamFetchStartMs === "number") {
@@ -175,6 +225,10 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     };
 
     // Write one SSE JSON object as "event: X\ndata: {...}\n\n" (event optional)
+    const clientProtocol: StreamProtocol | null =
+        ctx.protocol === "openai.chat.completions" || ctx.protocol === "openai.responses" || ctx.protocol === "anthropic.messages"
+            ? ctx.protocol
+            : null;
     const writeJson = async (obj: unknown, eventName?: string | null) => {
         if (downstreamClosed) return;
         const prefix = eventName ? `event: ${eventName}\n` : "";
@@ -182,18 +236,27 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         try {
             await writer.write(enc.encode(line));
         } catch {
-            downstreamClosed = true;
-            ctx.meta.downstreamDisconnected = true;
+            noteDownstreamClosed();
+            return;
+        }
+        if (onClientEvent && clientProtocol) {
+            try {
+                for (const event of extractUnifiedStreamEvents({ protocol: clientProtocol, eventName: eventName ?? undefined, frame: obj })) {
+                    onClientEvent(event);
+                }
+            } catch {
+                // Never let event consumer errors break stream forwarding.
+            }
         }
     };
 
-    let finalUsageSettled = false;
     const finalizeUsage = (
         usage: any,
         info: { aborted: boolean; sawFinalUsage: boolean },
     ) => {
         if (finalUsageSettled) return;
         finalUsageSettled = true;
+        clearDrainCheckpoints();
 
         if (!onFinalUsage) return;
 
@@ -235,6 +298,13 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
 
         const parser = new SseParser();
         let sawTerminalSnapshot = false;
+        // Protocol-level completion, which a stop reason alone is not: Chat `[DONE]` (or a full
+        // chat.completion, or usage once every choice has finished), the final Responses snapshot,
+        // Messages message_stop. A transport error after it is teardown; before it, a failure.
+        let protocolCompleted = false;
+        let messageStopSeen = false;
+        const openChoices = new Set<number>();
+        const finishedChoices = new Set<number>();
         let lastSeenUsage: any = null;
         // After a Chat Completions terminal, usage settles at the stream's end: its
         // [DONE], or the upstream closing (see the terminal handling below).
@@ -249,7 +319,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         const chatTerminal = ctx.protocol === "openai.chat.completions" ? createChatStreamTerminal() : null;
         // Responses clients get one event name per event (SSE line and data.type),
         // sequence numbers and the lifecycle events a source left out.
-        const responsesNormaliser = ctx.protocol === "openai.responses" ? createResponsesStreamNormaliser() : null;
+        const responsesNormaliser = ctx.protocol === "openai.responses"
+            ? createResponsesStreamNormaliser({ request: responsesRequestBody(ctx), model: ctx.requestedModel ?? ctx.model })
+            : null;
         let reencoder: StreamReencoder | null = null;
         let sawStreamError = false;
         const targetProtocol: StreamProtocol | null =
@@ -259,6 +331,20 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                 ? ctx.protocol
                 : null;
         const writeOutbound = async (outbound: { eventName?: string | null; frame: any }) => {
+            if (onOutgoingFrame && clientProtocol) {
+                try {
+                    onOutgoingFrame(extractUnifiedStreamEvents({ protocol: clientProtocol, eventName: outbound.eventName ?? undefined, frame: outbound.frame }));
+                } catch { }
+            }
+            try {
+                await writeOutboundFrame(outbound);
+            } finally {
+                if (onOutgoingFrame) {
+                    try { onOutgoingFrame(null); } catch { }
+                }
+            }
+        };
+        const writeOutboundFrame = async (outbound: { eventName?: string | null; frame: any }) => {
             let frameOut: any = outbound.frame;
             if (rewriteFrame) {
                 try { frameOut = rewriteFrame(frameOut) ?? frameOut; } catch { }
@@ -298,7 +384,10 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     const dataStr = frame.data;
                     const eventName = frame.event;
                     if (!dataStr) continue;
-                    if (dataStr.trim() === "[DONE]") settleUsageAtEnd();
+                    if (dataStr.trim() === "[DONE]") {
+                        protocolCompleted = true;
+                        settleUsageAtEnd();
+                    }
                     // Chat streams end with exactly one data: [DONE], written after the
                     // last chunk below; an upstream one is not forwarded mid-stream.
                     if (chatTerminal && dataStr.trim() === "[DONE]") continue;
@@ -312,7 +401,7 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             try {
                                 await writer.write(enc.encode(frame.raw + "\n\n"));
                             } catch {
-                                downstreamClosed = true;
+                                noteDownstreamClosed();
                             }
                         }
                         continue;
@@ -351,6 +440,30 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         }
                     }
 
+                    for (const event of events) {
+                        if ((event.type === "delta_text" || event.type === "delta_tool" || event.type === "delta_content_part") &&
+                            typeof event.choiceIndex === "number") openChoices.add(event.choiceIndex);
+                        if (event.type === "stop" && typeof event.choiceIndex === "number") {
+                            openChoices.add(event.choiceIndex);
+                            finishedChoices.add(event.choiceIndex);
+                        }
+                    }
+                    const frameProtocol = detectedProtocol ?? ctx.protocol;
+                    if (frameProtocol === "openai.chat.completions") {
+                        const allChoicesFinished = finishedChoices.size > 0 &&
+                            [...openChoices].every((index) => finishedChoices.has(index));
+                        if (json?.object === "chat.completion" || (allChoicesFinished && (json?.usage || events.some((event) => event.type === "usage")))) {
+                            protocolCompleted = true;
+                        }
+                    } else if (frameProtocol === "anthropic.messages") {
+                        if (eventName === "message_stop" || json?.type === "message_stop") {
+                            protocolCompleted = true;
+                            messageStopSeen = true;
+                        }
+                    } else if (events.some((event) => event.type === "snapshot" && event.isFinal)) {
+                        protocolCompleted = true;
+                    }
+
                     const usageFromEvents =
                         events
                             .slice()
@@ -359,6 +472,11 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                     if (usageFromEvents) {
                         // Usage accumulates by the protocol of the frame that carried it.
                         lastSeenUsage = accumulateStreamUsage(detectedProtocol ?? ctx.protocol, lastSeenUsage, usageFromEvents);
+                        progressUsage = lastSeenUsage;
+                    }
+                    for (const event of events) {
+                        if (event.type === "delta_text") streamedOutputChars += event.text.length;
+                        else if (event.type === "delta_tool") streamedOutputChars += event.argumentsDelta?.length ?? 0;
                     }
 
                     const finalSnapshotFromEvents =
@@ -448,7 +566,11 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                         // even when content chunks carried usage too, and other choices can still
                         // be writing. Its usage is the last one reported, so it settles when the
                         // stream ends, not with whatever usage the finish chunk had seen.
-                        if ((detectedProtocol ?? ctx.protocol) === "openai.chat.completions") {
+                        // A Messages stream's stop reason (message_delta) comes before message_stop:
+                        // it settles at message_stop or the stream end, so a reset in between is
+                        // seen as a broken stream.
+                        if ((detectedProtocol ?? ctx.protocol) === "openai.chat.completions" ||
+                            (detectedProtocol ?? ctx.protocol) === "anthropic.messages") {
                             settleUsageAtStreamEnd = true;
                         } else {
                             finalUsageAfterWrite = usageCandidate ?? lastSeenUsage;
@@ -468,6 +590,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             }
                         }
                         lastOutputFrameAt = frameReceivedAt;
+                        // Separate network reads that carried output. One means the whole
+                        // answer arrived at once, so there is no streaming speed to measure.
+                        ctx.meta.outputArrivals = outputFrameIntervalCount + 1;
                     }
 
                     if (firstOutputAt === null && containsGeneratedOutput) {
@@ -522,11 +647,16 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                             sawFinalUsage: true,
                         });
                     }
+                    // message_stop is downstream: the Messages stream settles with its usage.
+                    if (messageStopSeen) settleUsageAtEnd();
 
                 }
             }
         } catch (err) {
             readError = err;
+            // Billing treats a broken upstream as a stream failure, even after the client left. A
+            // transport error after protocol completion is only teardown: the output was complete.
+            if (!protocolCompleted) ctx.meta.upstreamStreamBroken = true;
         } finally {
             // Only a real terminal event (a stop or the final snapshot) completes the
             // stream. Without one (a provider disconnect after partial output) the client

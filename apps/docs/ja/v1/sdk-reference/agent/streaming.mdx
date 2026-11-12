@@ -1,0 +1,179 @@
+---
+icon: "radio"
+title: "Agent SDK のストリーミング"
+sidebarTitle: "ストリーミング"
+description: "実行中に、エージェントのテキスト、推論、ツールの動きを表示します。"
+---
+
+実行中にテキストとツールの動きを表示するには、エージェントの run メソッドの代わりに stream メソッドを呼び出します。Gateway の Responses SSE ストリーム上で同じ再開可能なループを実行します。一時停止した実行に対しては、continue-stream メソッドが同じことを行います。Rust にはストリーミングがありません。
+
+## テキストをストリーミングする
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const completed = await result.getResult();
+console.log(completed.run.status);
+```
+
+```python Python
+stream = agent.stream(input="Research this topic", client=client)
+
+for delta in stream.text_stream():
+    print(delta, end="", flush=True)
+
+completed = stream.result()
+```
+
+```go Go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: input, Client: client})
+
+for delta := range stream.Text() {
+  fmt.Print(delta)
+}
+
+completed, err := stream.Result()
+```
+
+```csharp C#
+var stream = agent.Stream(new RunOptions { Input = input, Client = client });
+
+await foreach (var delta in stream.TextStream())
+{
+    Console.Write(delta);
+}
+
+var completed = await stream.GetResult();
+```
+
+```php PHP
+$stream = $agent->stream(input: $input, client: $client);
+
+foreach ($stream->textStream() as $delta) {
+    echo $delta;
+}
+
+$completed = $stream->getResult();
+```
+
+```ruby Ruby
+stream = agent.stream(input: "Research this topic", client: client)
+
+stream.text_stream.each { |delta| print delta }
+
+completed = stream.result
+```
+
+```java Java
+// textStream() は実行が終わるまでブロックします。ライブの差分は onEvent から出力してください。
+var options = new AgentSdk.RunOptions(
+    input, AgentSdk.createGatewayAgentClient(), null, null, null, null, null, null,
+    event -> {
+        if (event.type().equals("response.output_text.delta")) {
+            System.out.print(event.details().get("delta"));
+        }
+    },
+    null);
+var completed = agent.stream(options).getResult();
+```
+
+</CodeGroup>
+
+最終結果は、run が返すものと同じ実行結果です。ストリームの動作は言語によって異なります。
+
+<Tabs>
+<Tab title="TypeScript">
+
+`agent.stream()` と `agent.continueStream()` は、すぐにストリーム結果を返します。`getResult()` は実行が終わると解決されます。
+
+</Tab>
+<Tab title="Python">
+
+`agent.stream(...)` と `agent.continue_stream(...)` は、バックグラウンドスレッドでループを実行し、再生可能な `AgentStreamResult` を返します。`result()` は実行を待ちます。
+
+</Tab>
+<Tab title="Go">
+
+`agent.Stream` と `agent.ContinueStream` は goroutine で実行を開始し、すぐに `*StreamResult` を返します。`Result()` は実行が終わるまでブロックします。
+
+</Tab>
+<Tab title="C#">
+
+`agent.Stream` と `agent.ContinueStream` は実行を開始し、すぐに `AgentStreamResult` を返します。`GetResult()` は実行が終わると完了します。
+
+</Tab>
+<Tab title="PHP">
+
+`$agent->stream()` と `$agent->continueStream()` は `AgentStreamResult` を返します。PHP にはバックグラウンドスレッドがありません。実行は、コードが次のイベントを取り出している間だけ Fiber の中で進み、`getResult()` は残りのイベントをすべて消費します。これは CLI スクリプトやリクエストワーカーに向いています。ライブの UI には、レスポンスを返すリクエストの中で反復するか、ワーカーでエージェントを実行してイベントを自分でブラウザーに送ってください。
+
+`stream()` が受け取るのは `input`、`client`、`context`、`state` だけです。その他のオプションには `run()` を使います。
+
+</Tab>
+<Tab title="Ruby">
+
+`agent.stream` と `agent.continue_stream` はワーカースレッドで実行を開始し、すぐに `StreamResult` を返します。`result` はスレッドの終了を待ち、エラーがあれば再送出し、実行結果を返します。
+
+`stream` が受け取るのは `input:`、`client:`、`context:`、`state:` だけです。その他のオプションには `run` を使います。
+
+</Tab>
+<Tab title="Java">
+
+`agent.stream` と `agent.continueStream` は `phaseo-agent-stream` という名前のデーモンスレッドで実行を開始し、すぐに `StreamResult` を返します。`textStream()` と `fullStream()` はリストを返し、実行が終わるまでブロックするため、`textStream()` をループすると最後に回答全体が出力されます。実行中にイベントに対応するには、上の例のように `RunOptions` に `onEvent` コンシューマーを渡してください。
+
+</Tab>
+<Tab title="Rust">
+
+`phaseo-agent` 0.2 にはストリーミングがありません。`run_with_events` または `continue_with_events` を呼び出してコールバックでライフサイクルイベントを受け取り、テキストは完了した実行から読み取ります。
+
+</Tab>
+</Tabs>
+
+## ストリームを選ぶ
+
+どのコンシューマーも最初からイベントを再生するため、UI のレンダラー、ロガー、永続化のコードが、2回目のモデルリクエストなしで同じ実行を読み取れます。
+
+| 得られるもの | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 回答テキストの差分 | `getTextStream()` | `text_stream()` | `Text()` | `TextStream()` | `textStream()` | `text_stream` | `textStream()`（リスト） |
+| 推論の差分 | `getReasoningStream()` | `reasoning_stream()` | `Events()` を絞り込む | `FullStream()` を絞り込む | `reasoningStream()` | `reasoning_stream` | `fullStream()` を絞り込む |
+| タイムラインアイテム | `getItemsStream()`（型付き） | `item_stream()`（dict） | `Events()` を絞り込む | `FullStream()` を絞り込む | `itemStream()` | `item_stream` | `fullStream()` を絞り込む |
+| ツールのライフサイクルイベント | `getToolStream()` | `tool_stream()` | `Events()` を絞り込む | `FullStream()` を絞り込む | `fullStream()` を絞り込む | `full_stream` を絞り込む | `fullStream()` を絞り込む |
+| すべてのイベント | `getFullStream()`。最後に `result` イベント | `full_stream()` | `Events()`（チャネル） | `FullStream()`（`IAsyncEnumerable`） | `fullStream()` | `full_stream`（`Enumerator`） | `fullStream()`（実行後のリスト） |
+
+TypeScript には、回答全体を await する `getText()` もあるため、レンダリングと永続化を並行して実行できます。
+
+```typescript
+const result = agent.stream({ input, client });
+
+const [text, completed] = await Promise.all([
+  result.getText(),
+  result.getResult(),
+]);
+```
+
+モデルのイベントは `response.output_text.delta`、`response.reasoning.delta`、`response.item` です。各フィールドは[アイテム](./items)にあります。モデルのイベントは、クライアントがストリーミングに対応している場合にだけストリーミングされます。Gateway クライアントはすべて対応しています。別のモデルクライアント（`StreamingModelClient` や `IStreamingModelClient` を実装していない、または `stream` に応答しないもの）では、ストリームはライフサイクルイベントを出力しますが、テキストの差分は出力しません。
+
+## ツールの進捗をストリーミングする
+
+進捗を報告するツールは `tool.preliminary_result` イベントを公開します。このイベントはフルストリーム（TypeScript ではツールストリームにも）に現れ、完了したステップにも残ります。各言語での進捗の報告方法は[ツール](./tools#report-progress-and-update-context)にあります。
+
+## ストリームをキャンセルする
+
+| 言語 | 呼び出し | 動作 |
+| --- | --- | --- |
+| TypeScript | `cancel()` | 実行を中止します。ローカルツールは `context.signal` でキャンセルを受け取ります。 |
+| Python | `cancel()` | 進行中のモデルリクエストを閉じます。実行は `InterruptedError` を送出します |
+| Go | `stream.Cancel()` | 実行に渡した context をキャンセルし、モデルリクエストを停止します。`Result()` はエラーを返します |
+| C# | `stream.Cancel()`、または `RunOptions.CancellationToken` をキャンセル | モデルリクエストと各ツールの `runtime.CancellationToken` に届く、リンクされたトークンをキャンセルします。`GetResult()` はスローします |
+| PHP | `$stream->cancel()` | Fiber に `Agent stream cancelled` をスローし、次の中断ポイントで実行を止めます |
+| Ruby | `stream.cancel` | ワーカースレッドを終了させ、HTTP ストリームを閉じてすべての Enumerator を終わらせます |
+| Java | `stream.cancel()` | ワーカースレッドと HTTP の読み取りを中断し、結果の future をキャンセルします。`getResult()` はスローします |
+| Rust | 未対応 | 実行は同期的です |
+
+完了した各ステップには、リクエスト ID、プロバイダー、モデル、終了理由、警告、使用量が残ります。

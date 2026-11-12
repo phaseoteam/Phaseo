@@ -156,6 +156,28 @@ type PreviewTestBlockedReason =
 	| "provider_credentials_missing"
 	| "route_not_staged";
 
+/**
+ * A feed offer is already covered when Phaseo manages a current route for the
+ * same upstream ID under a different model (for example a hand-made route on
+ * the canonical model when the feed uses its own ID). Listing it again would
+ * show a duplicate "Coming soon" card.
+ */
+function providerCatalogPreviewCoveredByRoute(model: any, routes: any[], now: number): boolean {
+	const providerModelSlug = String(model?.provider_model_slug ?? "").trim();
+	if (!providerModelSlug) return false;
+	const ownSlugs = new Set([model?.model_slug, model?.canonical_model_slug]
+		.map((value) => String(value ?? "").trim())
+		.filter(Boolean));
+	return routes.some((route) => {
+		if (String(route?.provider_model_slug ?? "").trim() !== providerModelSlug) return false;
+		const routeModelSlug = String(route?.model_slug ?? "").trim();
+		if (!routeModelSlug || ownSlugs.has(routeModelSlug)) return false;
+		if (String(route?.status ?? "").trim().toLowerCase() === "retired") return false;
+		const effectiveTo = Date.parse(String(route?.effective_to ?? ""));
+		return !(Number.isFinite(effectiveTo) && effectiveTo <= now);
+	});
+}
+
 function providerCatalogPreviewRouteMatches(model: any, route: any): boolean {
 	if (String(route?.provider_slug ?? "").trim() !== String(model?.provider_slug ?? "").trim()) return false;
 	const modelCandidates = new Set([
@@ -221,7 +243,7 @@ async function providerCatalogPreviewPayload(client: any, providerSlugs: string[
 			.select("provider_slug,name,status,base_url,metadata")
 			.in("provider_slug", runs.map((run) => String(run.provider_slug))),
 		client.from("v2_model_provider_routes")
-			.select("provider_slug,model_slug,provider_model_slug,status,provider_availability_status,phaseo_status,access_scope")
+			.select("provider_slug,model_slug,provider_model_slug,status,provider_availability_status,phaseo_status,access_scope,effective_to")
 			.in("provider_slug", runs.map((run) => String(run.provider_slug))),
 	]);
 	if (modelsResult.error || capabilitiesResult.error || providersResult.error) throw new Error("provider_catalog_preview_unavailable");
@@ -242,6 +264,11 @@ async function providerCatalogPreviewPayload(client: any, providerSlugs: string[
 		.filter((model: any) => allowedProviderSlugs.has(String(model.provider_slug ?? "").trim().toLowerCase()))
 		.filter((model: any) => String(model.decision ?? "pending") !== "rejected")
 		.filter((model: any) => String(model.route_projection_status ?? "not_projected") !== "enabled")
+		.filter((model: any) => !providerCatalogPreviewCoveredByRoute(
+			model,
+			routesByProvider.get(String(model.provider_slug ?? "").trim()) ?? [],
+			now,
+		))
 		.map((model: any) => {
 			const providerSlug = String(model.provider_slug ?? "").trim();
 			const modelId = String(model.model_slug ?? "").trim();

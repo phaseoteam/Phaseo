@@ -1,61 +1,45 @@
 ---
 title: "Metodologia de benchmark"
-description: "Saiba como a Phaseo coleta, normaliza e publica resultados de benchmark."
+description: "Saiba como o Phaseo coleta, normaliza e publica resultados de benchmark."
 icon: "clipboard-check"
 ---
 
-Os benchmarks servem de base para comparar modelos e provedores. Esta página explica como os dados chegam à plataforma e como mantemos a consistência.
+O Phaseo publica pontuações de benchmark medidas por terceiros, cada uma com um link para a origem. Ele não executa benchmarks nem os combina em uma única pontuação.
 
----
+```mermaid
+flowchart LR
+  src["Pontuação publicada<br/>(artigo, model card,<br/>página de resultados)"] --> review{{"Fonte e configuração<br/>verificadas"}}
+  imp["Importações agendadas<br/>(Artificial Analysis, Epoch AI)"] --> db["Banco de dados do Phaseo"]
+  review --> db
+  db --> page["Páginas de modelos<br/>e de benchmarks"]
+```
 
-## Fontes de dados
+## De onde vêm as pontuações
 
-- **Lançamentos oficiais** — Anúncios de provedores, blogs técnicos e materiais de imprensa.
-- **Artigos acadêmicos** — Publicações revisadas por pares e preprints do arXiv com resultados reproduzíveis.
-- **Contribuições da comunidade** — Contribuições verificadas da comunidade Phaseo e de parceiros.
-
-Toda pontuação precisa incluir uma referência pública ou uma avaliação reproduzível antes de ser aceita.
-
----
-
-## Normalização
-
-Padronizamos nomes, métricas e divisões dos benchmarks para tornar precisas as comparações entre modelos:
-
-1. Associe cada envio a um ID interno de benchmark.
-2. Converta as métricas informadas para uma escala canônica (por exemplo, porcentagens).
-3. Registre desvios, como variantes few-shot ou sistemas de avaliação personalizados.
-4. Execute uma validação automatizada para verificar se os campos e intervalos são coerentes.
-
----
-
-## Frequência das atualizações
-
-- Semanalmente para conjuntos populares como MMLU, GSM8K e HumanEval.
-- Mensalmente para benchmarks de nicho ou emergentes.
-- Sob demanda, quando provedores ou membros da comunidade enviam avaliações de alta qualidade.
-
-Atualizações grandes geram entradas no changelog para que você possa acompanhar as mudanças históricas.
-
----
-
-## Transparência e reprodutibilidade
-
-| Prática | Resultado |
+| Fonte | Como chega |
 | --- | --- |
-| Link para fontes primárias | Os usuários podem verificar pontuações rapidamente. |
-| Acompanhar datas `last_updated` | Indica quando um benchmark pode precisar de revisão. |
-| Documentar a configuração da avaliação | Esclarece o formato do prompt, as janelas de contexto e a amostragem. |
-| Marcar pontuações revisadas por pessoas | Diferencia a validação manual dos processos automatizados. |
+| Artigos, model cards e anúncios dos desenvolvedores dos modelos | Adicionadas pelos mantenedores, marcadas como **autodeclaradas** |
+| Páginas de resultados dos organizadores dos benchmarks | Adicionadas pelos mantenedores |
+| Índices da Artificial Analysis e da Epoch AI | Importações agendadas, verificadas a cada hora |
+| Relatos da comunidade | Issues no GitHub, publicadas depois que um mantenedor verifica as evidências |
 
----
+Toda pontuação precisa de uma fonte pública ou de um log de avaliação reproduzível antes de ser publicada.
 
-## Ciclo de feedback
+## O que a normalização significa
 
-Se encontrar divergências ou dados ausentes:
+O Phaseo mantém cada benchmark na própria escala. Ele normaliza o registro em torno da pontuação, não a pontuação em si:
 
-1.  Abra uma issue com as evidências descritas em [Enviar resultados de benchmarks](./submitting-scores.mdx).
-2.  Responda às perguntas de revisão na issue. Os mantenedores publicam correções verificadas pelo editor do banco de dados.
-3.  Entre em contato pelo Discord para coordenar pesquisas maiores.
+1. Cada resultado é mapeado para um único ID de benchmark, para que o mesmo benchmark com nomes diferentes fique agrupado.
+2. A configuração é mantida como variante quando é diferente, por exemplo no número de exemplos few-shot, no harness ou no esforço de raciocínio, em vez de ser mesclada ao padrão.
+3. Cada benchmark tem uma direção de ordenação. Benchmarks em que menor é melhor, como taxas de erro, classificam a menor pontuação primeiro.
+4. O link da fonte e a marcação de autodeclarada ficam junto com a pontuação.
 
-Analisamos todos os relatos e fornecemos atualizações de status enquanto o benchmark é verificado.
+A marcação de autodeclarada é uma divulgação, não uma rejeição. Uma pontuação sem contexto suficiente pode ser armazenada com notas sobre a fonte; não a interprete como equivalente a uma linha de leaderboard totalmente verificada.
+
+## Informe uma divergência
+
+1. Abra uma issue com as evidências listadas em [Enviar pontuações de benchmark](./submitting-scores.mdx).
+2. Responda às perguntas da revisão na issue. Os mantenedores publicam as correções verificadas pelo editor do banco de dados.
+3. Para envios de pesquisa maiores, combine os detalhes no [Discord](https://discord.gg/aQyywCvgZ5).
+
+A página pública de [normalização de benchmarks](https://phaseo.app/how-phaseo-normalises-ai-benchmarks) aborda as mesmas regras para quem lê o catálogo.

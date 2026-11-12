@@ -56,8 +56,6 @@ vi.mock("@/pipeline/before/workspacePolicy", () => ({
 
 vi.mock("../after/apps", () => ({ ensureAppId: async () => "app_details" }));
 
-vi.mock("./upstream-requests", () => ({ persistGatewayUpstreamRequests: async () => undefined }));
-
 import { auditFailure, auditSuccess } from "./index";
 
 const PROMPT = "private prompt";

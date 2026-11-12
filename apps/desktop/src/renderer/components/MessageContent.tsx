@@ -19,6 +19,7 @@ import { remarkMathGuard, remarkRichBlocks, type AlertKind } from "./remarkRichB
 import { repairFileLinks } from "./repairFileLinks";
 import type { PluggableList } from "unified";
 import { tableCsv, tableMarkdown, tableRows } from "./markdownTable";
+import { extractLargeTables, remarkLargeTables } from "./largeTables";
 import { ImageViewer, type GalleryImage } from "./ImageViewer";
 
 const MathTypeset = lazy(() => import("./MathTypeset"));
@@ -219,10 +220,12 @@ const markdownPlugins: PluggableList = [mathPlugin, remarkMathGuard, remarkGfm, 
  * Memoised: a long chat re-renders on every streamed update, and parsing Markdown is most of the cost of each message.
  */
 export const MessageContent = memo(function MessageContent({ text, projectId, repairLocalLinks = false, repository, lineBreaks = false }: { text: string; projectId?: string; repairLocalLinks?: boolean; repository?: string; lineBreaks?: boolean }) {
-	const rendered = useMemo(() => repairLocalLinks ? repairFileLinks(text) : text, [text, repairLocalLinks]);
+	// Long tables are lifted out and parsed in pieces (largeTables.ts); remarkLargeTables puts them back before any other plugin.
+	const { text: rendered, tables } = useMemo(() => extractLargeTables(repairLocalLinks ? repairFileLinks(text) : text), [text, repairLocalLinks]);
 	const plugins = useMemo((): PluggableList => {
 		const base = repository ? [mathPlugin, remarkMathGuard, remarkGfm, remarkRichBlocks, remarkPullRequestLinks({ repository }), remarkMessageChips] : markdownPlugins;
-		return lineBreaks ? [...base, remarkLineBreaks] : base;
-	}, [repository, lineBreaks]);
+		const lifted: PluggableList = tables.length ? [[remarkLargeTables, { tables }], ...base] : base;
+		return lineBreaks ? [...lifted, remarkLineBreaks] : lifted;
+	}, [repository, lineBreaks, tables]);
 	return <ProjectContext value={projectId}><div className="message-markdown"><ReactMarkdown remarkPlugins={plugins} components={markdownComponents} urlTransform={messageUrl}>{rendered}</ReactMarkdown></div></ProjectContext>;
 });

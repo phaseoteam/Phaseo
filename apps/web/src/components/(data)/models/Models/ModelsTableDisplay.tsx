@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import Link from "@/components/link";
 import {
 	useMemo,
 	useRef,
@@ -8,8 +6,8 @@ import {
 	type ReactNode,
 } from "react";
 import { OutputModalityChipRow } from "./OutputModalityChipRow";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { usePathname, useSearchParams } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import { debounce, useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import {
@@ -163,9 +161,7 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 
 const STATUS_FILTER_DISPLAY_ORDER = [
 	"active",
-	"deranked_lvl1",
-	"deranked_lvl2",
-	"deranked_lvl3",
+	"deranked",
 	"coming_soon",
 	"inactive",
 	"disabled",
@@ -179,17 +175,9 @@ const STATUS_FILTER_META: Record<
 		icon: CheckCircle2,
 		iconClassName: "text-green-600 dark:text-green-400",
 	},
-	deranked_lvl1: {
-		icon: AlertTriangle,
-		iconClassName: "text-amber-500 dark:text-amber-400",
-	},
-	deranked_lvl2: {
+	deranked: {
 		icon: AlertTriangle,
 		iconClassName: "text-amber-600 dark:text-amber-400",
-	},
-	deranked_lvl3: {
-		icon: AlertTriangle,
-		iconClassName: "text-red-500 dark:text-red-400",
 	},
 	coming_soon: {
 		icon: Clock3,
@@ -297,12 +285,8 @@ function normalizeStatusFilterValue(value: string): string {
 		.replace(/[\s-]+/g, "_");
 	if (!normalized) return "";
 	if (normalized === "not_active") return "inactive";
-	if (normalized === "deranked" || normalized === "de_ranked") {
-		return "deranked_lvl1";
-	}
-	if (normalized === "deranked_lvl_1") return "deranked_lvl1";
-	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
-	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
+	// The catalogue stores a deranked route as `degraded`; the former levels are one level now.
+	if (normalized === "degraded" || normalized === "de_ranked" || /^deranked(_lvl_?[123])?$/.test(normalized)) return "deranked";
 	return normalized;
 }
 
@@ -635,9 +619,7 @@ export default function ModelsTableDisplay({
 			coming_soon: "comingSoon",
 			inactive: "notActive",
 			not_active: "notActive",
-			deranked_lvl1: "statusDeranked1",
-			deranked_lvl2: "statusDeranked2",
-			deranked_lvl3: "statusDeranked3",
+			deranked: "statusDeranked",
 			disabled: "statusDisabled",
 		};
 		const key = keys[String(value ?? "").trim().toLowerCase()];

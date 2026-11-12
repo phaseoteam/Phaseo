@@ -6,6 +6,7 @@ import {
 	gatewayBaseUrl,
 	gatewayFetch,
 	isAutoModel,
+	isEmptyModelResponse,
 	MAX_STEPS,
 	TURN_MAX_COST_USD,
 	turnErrorText,
@@ -170,6 +171,8 @@ export type RunResult = {
 	consulted?: string[];
 	/** The answer's consults with ask_model so far, failed ones too. */
 	consultCount?: number;
+	/** The answer put a chart or an image in the thread, or published a page: with no text, its reply is the footer alone. */
+	posted?: boolean;
 };
 
 /** What a run after a question takes over from the runs before it: the models they asked, and how many consults they made. */
@@ -242,6 +245,14 @@ export type PostAbilities = { charts: boolean; images: boolean };
 export type SearchOffer = { availability: SearchAvailability; asker: string; inChannel: boolean; zdr?: ZeroRetentionNote };
 
 /**
+ * Whether an answer gets the gateway's web search and web fetch. Not when it has the usage tools: what they read (spend,
+ * keys, models) could leave in a search query or a URL a fetched page asks for, the way a Slack search's results could.
+ */
+export function webToolsFor(offered: Pick<Offered, "usageTools">): boolean {
+	return !offered.usageTools;
+}
+
+/**
  * posts: what it can post in the thread; schedules: what the turn may do with recurring tasks (scheduleMode), and a
  * scheduled run can't ask questions; search: whether it can search Slack; pages: whether it can publish shared pages.
  */
@@ -250,7 +261,8 @@ export function buildInstructions(installation: Pick<Installation, "instructions
 		"You are the Phaseo agent, an assistant in Slack for a team that uses Phaseo, an AI gateway.",
 		`Today is ${new Date(now).toISOString().slice(0, 10)} (UTC).`,
 		"Write for Slack: be brief, use short paragraphs, and use Markdown lists or tables when they help. Show money in US dollars, like $12.50.",
-		"You can search the web and read web pages with your web search and web fetch tools.",
+		// Not with the usage tools: a page it reads could otherwise send the workspace's numbers away in a URL (webToolsFor).
+		...(webToolsFor(offered) ? ["You can search the web and read web pages with your web search and web fetch tools."] : ["You can't search the web or read web pages in this conversation, because you can see this workspace's Phaseo usage here."]),
 		...(schedules === "run" ? [] : ["When you can't sensibly go on without the person choosing between a few options or approving something, call ask_question: they answer with a button, and you continue from their answer. Don't use it for anything you can decide or answer yourself."]),
 		...memoryInstructions(access, external),
 		...(schedules ? scheduleInstructions(schedules) : []),
@@ -536,6 +548,10 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	// Each chart posted and image paid for is recorded with the turn, for the answer's later attempts and runs.
 	let responded = false;
 	let imagesMade = input.postedFiles.filter((file) => file.kind === "image").length;
+	// Whether the answer (this run, or an earlier attempt or run of it) has put a chart or an image in the thread.
+	let filesShown = input.postedFiles.some((file) => file.shown);
+	// The pages this run published, linked in the reply if the model ends without writing anything.
+	const pages: Array<{ title: string; url: string }> = [];
 	const record = async (file: PostedFile) => {
 		try {
 			await coordinator.recordPostedFile(turn.turnId, file);
@@ -547,7 +563,10 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 	const post = (file: { filename: string; title: string; altText: string; bytes: Uint8Array }) => uploadToThread(slack, { channel: turn.channel, threadTs: turn.threadTs }, file);
 	const postChart = async (file: { filename: string; title: string; altText: string; bytes: Uint8Array }) => {
 		const posted = await post(file);
-		if (posted.ok) await record({ kind: "chart", title: file.title, shown: true });
+		if (posted.ok) {
+			filesShown = true;
+			await record({ kind: "chart", title: file.title, shown: true });
+		}
 		return posted;
 	};
 	const fileTools: AgentTool<any, any>[] = [];
@@ -569,6 +588,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 				post,
 				onMade: async (image) => {
 					imagesMade += 1;
+					if (image.shown) filesShown = true;
 					await record({ kind: "image", ...image });
 				},
 				notes,
@@ -620,7 +640,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 
 	const schedules = scheduleMode(installation, turn);
 	// publish_page, where this person may publish shared pages; nothing once the answer has searched Slack.
-	const pageTools = await turnPageTools(deps, turn, installation, notes, searched);
+	const pageTools = await turnPageTools(deps, turn, installation, notes, searched, (page) => { pages.push(page); });
 	const request = (parts: Array<Record<string, unknown>>, files: FileOutcome[]): AgentTurnRequest => ({
 		...gateway,
 		model,
@@ -633,6 +653,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		otherCostUsd: () => consultedUsd() + toolUsd,
 		signal: controller.signal,
 		zeroDataRetention,
+		webTools: webToolsFor(load),
 		...(parts.length ? { attachments: parts } : {}),
 		...(paused ? { resume: resumeWith(answerLines(files)) } : {}),
 	});
@@ -667,7 +688,11 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		controller.abort();
 		// Spend since the last step (a consult, an image, or the step's own model response) still counts.
 		costUsd = Math.max(costUsd, modelSpentUsd + consultedUsd() + toolUsd);
-		if (!cancelled) {
+		if (!cancelled && isEmptyModelResponse(caught) && (filesShown || pages.length > 0)) {
+			// The model had nothing to add after what it posted ("just the chart, no commentary"), and the gateway
+			// refuses an empty response: the chart, image or page is the answer, so it ends as one.
+			console.log("[slack-agent] model ended without text after posting", { turnId: turn.turnId, installationId: turn.installationId, pages: pages.length });
+		} else if (!cancelled) {
 			// After a search, a refusal for want of a provider that keeps no data is said as such (search_needs_zdr).
 			error = classifyTurnError(caught, model, await zeroDataRetention().catch(() => false));
 			console.error("[slack-agent] agent run failed", { turnId: turn.turnId, installationId: turn.installationId, kind: error });
@@ -684,6 +709,11 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 			error = "failed";
 			console.error("[slack-agent] paused run not kept", { turnId: turn.turnId, question: leg + 1, afterSearch });
 		}
+	}
+	if (!cancelled && !error && !waiting && !reply.text && pages.length) {
+		// A page is seen only through its link: the model ended without writing one, so the reply gives it,
+		// also when a step or cost limit stopped the run (the limit notice follows the links).
+		await reply.push(pages.map((page) => `${page.title}: ${page.url}`).join("\n"));
 	}
 	const gap = reply.text ? "\n\n" : "";
 	if (cancelled) {
@@ -707,6 +737,7 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		error,
 		consulted: [...new Set([...before.consulted, ...consults.filter((consult) => consult.answered || consult.costUsd > 0).map((consult) => consult.model)])],
 		consultCount: before.consultCount + consults.length,
+		...(filesShown || pages.length > 0 ? { posted: true } : {}),
 	};
 }
 
@@ -769,8 +800,14 @@ async function deliverReply(deps: TurnDeps, turn: TurnRef, coordinator: DurableO
 		return { shown: true, stopped: await finishReply(slack, { channel: turn.channel, ts, text, footer, closingText: closing ? `\n\n${closing}` : null }) };
 	}
 	const whole = closing ? `${text}${text ? "\n\n" : ""}${closing}` : text;
-	if (ts) return { shown: Boolean(whole), stopped: await replaceReply(slack, { channel: turn.channel, ts, text: whole, footer }) };
-	if (text) {
+	// An answer that is only what it posted (a chart, an image) still gets its footer, under the files.
+	const footerOnly = !text && !closing && footer !== null && run.status === "answered" && run.posted === true;
+	if (ts) {
+		// A retry that ends footer-only replaces an earlier try's text with just the footer.
+		const stopped = await replaceReply(slack, { channel: turn.channel, ts, text: whole, footer, footerOnly });
+		return { shown: Boolean(whole) || footerOnly, stopped };
+	}
+	if (text || footerOnly) {
 		const posted = await postReply(slack, { channel: turn.channel, threadTs: turn.threadTs, text, footer });
 		await coordinator.setReplyTs(turn.turnId, posted);
 		return { shown: true, stopped: false };
@@ -812,7 +849,7 @@ async function postQuestion(deps: TurnDeps, turn: TurnRef, coordinator: DurableO
 		if (!(await updateQuestionMessage(slack, questionTarget(turn), drafted))) throw new SlackPostError("update", "question");
 	} else {
 		const message = questionMessage(drafted, turn.slackUserId, turn.threadTs, turn.turnId);
-		const posted = await slack.call<{ ts?: string }>("chat.postMessage", { channel: turn.channel, thread_ts: turn.threadTs, text: message.text, blocks: message.blocks });
+		const posted = await slack.call<{ ts?: string }>("chat.postMessage", { channel: turn.channel, thread_ts: turn.threadTs, text: message.text, blocks: message.blocks, unfurl_links: false, unfurl_media: false });
 		if (posted.ok === false || typeof posted.data.ts !== "string") throw new SlackPostError("postMessage", posted.ok === false ? posted.error : "ts_missing");
 		ts = posted.data.ts;
 	}

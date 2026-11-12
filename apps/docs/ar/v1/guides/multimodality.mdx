@@ -1,27 +1,24 @@
 ---
 title: "تعدد الوسائط"
-description: "استخدم النصوص والصور والصوت والفيديو ووسائط أخرى عبر البوابة."
+description: "استخدم النصوص والصور والصوت والفيديو ووسائط أخرى عبر الـ Gateway."
 icon: "shapes"
 ---
 
-توفّر البوابة وسائط متعددة عبر واجهة API موحدة. وترتبط كل نقطة نهاية بقدرة مختلفة، كما يختلف دعم النماذج حسب المزوّد.
+اختر نقطة النهاية المناسبة للمخرجات التي تريدها، ثم اختر نموذجًا يدعم نقطة النهاية هذه. قد يظهر اسم النموذج نفسه على عدة نقاط نهاية، ويختلف دعم المزوّدين على كل منها.
 
-## الوسائط ونقاط النهاية
-
-| الوسيط | نقاط النهاية الرئيسية | ملاحظات |
+| الوسيط | نقاط النهاية | ما تفعله |
 | --- | --- | --- |
-| النص | `/v1/responses` و`/v1/chat/completions` و`/v1/messages` | مخرجات منظّمة وحوارية. |
-| الصور | `/v1/images/generations` و`/v1/images/edits` | إنشاء الصور من النص وتحريرها. |
-| الصوت (TTS/STT/الترجمة) | `/v1/audio/speech` و`/v1/audio/transcriptions` و`/v1/audio/translations` | تحويل النص إلى كلام والكلام إلى نص وترجمة الصوت المنطوق. |
-| الفيديو | `/v1/videos` و`/v1/videos/{video_id}` و`/v1/videos/{video_id}/content` و`/v1/videos/{video_id}` (DELETE) | أنشئ مهام فيديو غير متزامنة، واستطلع حالتها، واسترجع المحتوى، واحذف المهام. |
-| الموسيقى | `/v1/music/generate` | إنشاء الموسيقى عبر المزوّدين المدعومين. |
-| OCR | `/v1/ocr` | استخرج النص من الصور عند توفر الدعم. |
+| النص | `/v1/responses`، `/v1/chat/completions`، `/v1/messages` | مخرجات نصية حوارية ومنظَّمة. |
+| الصور | [`/v1/images/generations`](../api-reference/endpoint/images-generations.mdx)، [`/v1/images/edits`](../api-reference/endpoint/images-edits.mdx) | توليد الصور من النص وتحرير الصور. |
+| الصوت | [`/v1/audio/speech`](../api-reference/endpoint/audio-speech.mdx)، [`/v1/audio/transcriptions`](../api-reference/endpoint/audio-transcriptions.mdx)، [`/v1/audio/translations`](../api-reference/endpoint/audio-translations.mdx) | تحويل النص إلى كلام، وتحويل الكلام إلى نص، وترجمة الصوت المنطوق. |
+| الصوت الفوري | `/v1/audio/realtime/sessions` | مكالمات صوتية مباشرة. راجع [الصوت الفوري](./realtime-voice.mdx). |
+| الفيديو | [`POST /v1/videos`](../api-reference/endpoint/video-create.mdx)، `GET /v1/videos/{video_id}`، `GET /v1/videos/{video_id}/content`، `DELETE /v1/videos/{video_id}` | أنشئ مهمة فيديو غير متزامنة، واستعلم عن حالتها، واجلب المحتوى، واحذف المهمة. راجع [مهام الفيديو والدُفعات](./async-video-and-batch.mdx). |
+| الموسيقى | [`/v1/music/generate`](../api-reference/endpoint/music-generate.mdx) | توليد الموسيقى لدى المزوّدين الداعمين. |
+| التعرّف الضوئي على الحروف (OCR) | [`/v1/ocr`](../api-reference/endpoint/ocr.mdx) | استخراج النص من الصور. |
+| تحليل المستندات | [`/v1/parse`](../api-reference/endpoint/parse.mdx) | نص مرتّب وجداول وتخطيط من صور المستندات. راجع [تحليل صور المستندات](./document-parsing.mdx). |
 
-## التحقق من دعم النماذج
+## تحقّق من النماذج التي تدعم نقطة نهاية
 
-استخدم [نقطة نهاية النماذج](../api-reference/endpoint/models.mdx) لمعرفة النماذج المتاحة ونقاط النهاية التي تدعمها. ويتوفر دعم المزوّدين عبر [نقطة نهاية المزوّدين](../api-reference/endpoint/providers.mdx).
+استدعِ [نقطة نهاية Models](../api-reference/endpoint/models.mdx): يسرد كل نموذج حقل `endpoints` بنقاط النهاية التي يدعمها، ويعرض `GET /v1/models/{author}/{slug}/endpoints` كل مسار مزوّد لنموذج واحد مع وسائطه والمعاملات التي يدعمها. وتسرد [نقطة نهاية Providers](../api-reference/endpoint/providers.mdx) تغطية المزوّدين.
 
-## أفضل الممارسات
-
-- اختر نقطة النهاية المناسبة للوسيط الذي تحتاجه، حتى إن كان اسم النموذج مشتركًا بين وسائط متعددة.
-- تحقّق من الحمولات باستخدام [مرجع API](../api-reference/introduction.mdx) قبل الإطلاق.
+تحقّق من أجسام الطلبات مقابل [مرجع API](../api-reference/introduction) لنقطة النهاية قبل النشر.

@@ -8,7 +8,6 @@ const ensureAppIdMock = vi.fn();
 const syncWorkspaceUsageRollupForRequestMock = vi.fn();
 const resolveGatewayIoLoggingPolicyMock = vi.fn();
 const persistGatewayIoLogMock = vi.fn();
-const persistGatewayUpstreamRequestsMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: (...args: any[]) => getBindingsMock(...args),
@@ -30,10 +29,7 @@ vi.mock("./io-logging", () => ({
 	resolveGatewayIoLoggingPolicy: (...args: any[]) => resolveGatewayIoLoggingPolicyMock(...args),
 	persistGatewayIoLog: (...args: any[]) => persistGatewayIoLogMock(...args),
 	requestZeroDataRetention: () => false,
-}));
-
-vi.mock("./upstream-requests", () => ({
-	persistGatewayUpstreamRequests: (...args: any[]) => persistGatewayUpstreamRequestsMock(...args),
+	keyKeepsContentOutOfTelemetry: async () => false,
 }));
 
 import { auditFailure, auditSuccess, resolveAuditServiceTiers } from "./index";
@@ -77,8 +73,6 @@ describe("audit request detail persistence", () => {
 		syncWorkspaceUsageRollupForRequestMock.mockReset();
 		resolveGatewayIoLoggingPolicyMock.mockReset();
 		persistGatewayIoLogMock.mockReset();
-		persistGatewayUpstreamRequestsMock.mockReset();
-		persistGatewayUpstreamRequestsMock.mockResolvedValue(undefined);
 		ensureRuntimeForBackgroundMock.mockReturnValue(() => {});
 		isLocalTestingModeEnabledMock.mockReturnValue(false);
 		ensureAppIdMock.mockResolvedValue("app_resolved");
@@ -142,6 +136,33 @@ describe("audit request detail persistence", () => {
 		expect(insert.mock.calls[0][0]).toMatchObject({ request_id: "req_public", billing_request_id: "bill_attempt" });
 	});
 
+	it("sends the SKU meter each pricing line was charged with", async () => {
+		const insert = vi.fn((_row: any) => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-04T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		const meterId = "2f1c9a4e-7b3d-4c8e-9a1f-0b2c3d4e5f60";
+		await auditSuccess({
+			requestId: "req", workspaceId: "ws", provider: "openai", model: "openai/gpt-6-luna", endpoint: "responses",
+			stream: false, byok: false, totalNanos: 500, currency: "USD",
+			usagePriced: {
+				output_text_tokens: 1000,
+				pricing: { lines: [
+					{ dimension: "output_text_tokens", quantity: 1000, unit_price_usd: 0.0000005, line_nanos: 500, rule_id: meterId },
+					// A static or fee rule id is not a SKU meter and is not sent.
+					{ dimension: "byok_fee", quantity: 1, unit_price_usd: 0, line_nanos: 0, rule_id: "byok-fee" },
+				] },
+			},
+		} as any);
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		expect(event.pricing_lines).toEqual([
+			expect.objectContaining({ meter_key: "output_text_tokens", sku_meter_id: meterId }),
+			expect.not.objectContaining({ sku_meter_id: expect.anything() }),
+		]);
+	});
+
 	it("keeps the request row when the database predates the charge key column", async () => {
 		vi.resetModules();
 		const { auditSuccess: freshAuditSuccess } = await import("./index");
@@ -184,6 +205,81 @@ describe("audit request detail persistence", () => {
 		});
 		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
 		expect(event.safe_metadata.rate_limit).toEqual(expected);
+	});
+
+	it("records what a failed request was charged on its row and request fact", async () => {
+		let row: any;
+		const insert = vi.fn((value: any) => { row = value; return { select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-05T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }; });
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		await auditFailure({
+			stage: "execute", requestId: "req", workspaceId: "ws", model: "model", endpoint: "chat.completions",
+			stream: false, statusCode: 400, errorCode: "upstream:gateway_server_tool_limit",
+			usage: { input_tokens: 3_000, output_tokens: 250 }, costNanos: 18_000_000, currency: "USD",
+			pricingLines: [{ dimension: "server_tool_web_search_requests", quantity: 2, unit_price_usd: "0.007", line_nanos: 14_000_000 }],
+		});
+		expect(row).toMatchObject({ success: false, cost_nanos: 18_000_000 });
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		expect(event).toMatchObject({ cost_nanos: 18_000_000, pricing_lines: [{ meter_key: "server_tool_web_search_requests", charged_nanos: 14_000_000 }] });
+	});
+
+	it("does not rate the JSON output or tool calls of a failed request", async () => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-03T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		await auditFailure({
+			stage: "execute", requestId: "req", workspaceId: "ws", model: "model", endpoint: "messages",
+			stream: true, statusCode: 502, errorCode: "upstream_error",
+			usage: { output_tool_call_count: 2 },
+			requestPayload: { output_config: { format: { type: "json_schema", schema: { type: "object" } } } },
+		});
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		// Before: the reason defaulted to "none", which the quality chart read as a valid reply,
+		// and the failure's tool calls counted as invalid.
+		expect(event).toMatchObject({ structured_output_attempted: true, structured_output_succeeded: false, tool_call_succeeded: null });
+		expect(event.safe_metadata).toMatchObject({ structured_output_success_basis: "unobserved", structured_output_error_reason: null });
+	});
+
+	it.each([
+		["complete", false, false],
+		["drained after a disconnect", true, false],
+		["cut at the rebuild size cap", false, true],
+	])("rates a streamed reply's JSON and tool calls only when it is whole (%s)", async (_label, disconnected, truncated) => {
+		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-03T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }));
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		await auditSuccess({
+			requestId: "req", workspaceId: "ws", provider: "anthropic", model: "model", endpoint: "messages",
+			stream: true, byok: false, usagePriced: { output_tokens: 5 }, totalNanos: 1, currency: "USD",
+			downstreamDisconnected: disconnected,
+			requestPayload: {
+				tools: [{ name: "get_weather", input_schema: { type: "object", properties: { city: { type: "string" } } } }],
+				output_config: { format: { type: "json_object" } },
+			},
+			// What a drained stream leaves behind: the tool input cut off mid-JSON.
+			gatewayResponse: {
+				type: "message",
+				content: [{ type: "tool_use", name: "get_weather", input: '{"city":' }],
+				...(truncated ? { gateway_log_truncated: true } : {}),
+			},
+		});
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		if (disconnected || truncated) {
+			expect(event.tool_call_succeeded).toBeNull();
+			expect(event.safe_metadata).toMatchObject({ tool_call_validation: null, structured_output_success_basis: "unobserved", structured_output_error_reason: null });
+		} else {
+			expect(event.tool_call_succeeded).toBe(false);
+			expect(event.safe_metadata.tool_call_validation).toMatchObject({ totalCalls: 1, invalidJson: 1 });
+		}
 	});
 
 	it("does not upload when the authoritative request insert fails", async () => {
@@ -446,12 +542,6 @@ describe("audit request detail persistence", () => {
 				upstream_url: null,
 			}],
 		});
-		expect(persistGatewayUpstreamRequestsMock).toHaveBeenCalledWith(expect.objectContaining({
-			modelId: "stealth/test-model-20260827",
-			provider: "stealth",
-			providerApiModelId: "stealth/test-model-20260827",
-			providerModelSlug: "stealth/test-model-20260827",
-		}));
 		expect(v2Events[0]).toMatchObject({
 			requested_model_input: "stealth/test-model-20260827",
 			routed_model_slug: "stealth/test-model-20260827",
@@ -459,7 +549,7 @@ describe("audit request detail persistence", () => {
 			provider_model_id: "stealth:stealth/test-model-20260827",
 			provider_api_model_id: "stealth/test-model-20260827",
 		});
-		expect(JSON.stringify({ gatewayRequestRows, v2Events, upstream: persistGatewayUpstreamRequestsMock.mock.calls }))
+		expect(JSON.stringify({ gatewayRequestRows, v2Events }))
 			.not.toMatch(/openai|pam_openai_secret|oai-stealth-test-model-internal|api\.openai\.com/i);
 	});
 
@@ -753,12 +843,6 @@ describe("audit request detail persistence", () => {
 
 		expect(fromMock).toHaveBeenCalledTimes(1);
 		expect(fromMock).toHaveBeenCalledWith("gateway_requests");
-		expect(persistGatewayUpstreamRequestsMock).toHaveBeenCalledWith(
-			expect.objectContaining({
-				requestId: "req_no_io",
-				provider: "openai",
-			}),
-		);
 		expect(rpcMock).toHaveBeenCalledOnce();
 		expect(rpcMock.mock.calls[0]?.[0]).toBe("ingest_v2_gateway_request_with_routing");
 		const event = rpcMock.mock.calls[0]?.[1]?.p_event;
@@ -769,7 +853,8 @@ describe("audit request detail persistence", () => {
 			cost_nanos: 10_000,
 			usage_meters: expect.any(Array),
 			tool_call_count: 1,
-			tool_call_succeeded: true,
+			// The call is known only from usage; with no reply to check, it is not rated.
+			tool_call_succeeded: null,
 			structured_output_attempted: true,
 			structured_output_succeeded: true,
 			service_tier_requested: "priority",

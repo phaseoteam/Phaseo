@@ -5,39 +5,35 @@ description: "Substitua uma rota do Cloudflare AI Gateway pelo Phaseo sem altera
 icon: "/icons/brands/cloudflare.svg"
 ---
 
-Use este guia se seu aplicativo já envia solicitações compatíveis com OpenAI pelo Cloudflare AI Gateway. Primeiro troque o limite do gateway e, em seguida, recrie somente o roteamento, o cache e a observabilidade realmente necessários para o tráfego de produção.
+Troque a URL do gateway da Cloudflare e a chave do provedor por `https://api.phaseo.app/v1` e uma chave do Phaseo, e remova os cabeçalhos `cf-aig-*`. O payload da solicitação continua o mesmo.
 
-## O que muda
-
-| Configuração | Antes | Depois |
+| Configuração | Cloudflare AI Gateway | Phaseo |
 | --- | --- | --- |
-| URL do Gateway | URL do Cloudflare específica da conta e do gateway | `https://api.phaseo.app/v1` |
-| Autenticação | Credenciais do Cloudflare e do provedor | `PHASEO_API_KEY` |
-| Política de roteamento | Configuração do Cloudflare Gateway | Configurações de roteamento e predefinições do Phaseo |
-| Visibilidade das solicitações | Análises do Cloudflare | Atividade e detalhes das solicitações no Phaseo |
+| URL base | `gateway.ai.cloudflare.com/v1/<account_id>/<gateway_id>/<provider>` ou `api.cloudflare.com/client/v4/accounts/<account_id>/ai/v1` | `https://api.phaseo.app/v1` |
+| Autenticação | Chave do provedor, mais `cf-aig-authorization` ou um token de API da Cloudflare | `PHASEO_API_KEY` como `Authorization: Bearer` |
+| Escolha do provedor | Uma rota por provedor | Uma única URL base; o ID do modelo escolhe o modelo e o roteamento escolhe o provedor |
+| Cabeçalhos do gateway | `cf-aig-*` | Removidos ou mapeados como na tabela abaixo |
+| Visibilidade das solicitações | Analytics da Cloudflare | Logs de solicitações e detalhes da solicitação do Phaseo |
 
-<Steps>
-<Step title="Faça o inventário da configuração atual do gateway">
-
-Registre a URL do Cloudflare Gateway, as rotas de provedores, os cabeçalhos personalizados, as regras de cache, o comportamento de repetição e as análises das quais o aplicativo depende. Isso ajuda a separar o que é necessário das configurações que não precisam ser migradas.
-
-</Step>
-
-<Step title="Substitua o endpoint e as credenciais">
-
-Mantenha o conteúdo das solicitações inalterado sempre que possível e atualize o cliente compatível com OpenAI para usar o novo gateway.
+## Troque o cliente
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// Antes:
+// new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+//   baseURL: `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/openai`,
+//   defaultHeaders: { "cf-aig-authorization": `Bearer ${process.env.CF_AIG_TOKEN}` },
+// });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -57,39 +53,40 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+Uma rota `/anthropic` passa para a configuração do SDK da Anthropic descrita em [Migração do SDK da Anthropic](./from-anthropic). Chamadas pelo binding do Workers AI (`env.AI.run(model, input, { gateway })`) não são clientes HTTP: substitua-as por `fetch` ou pelo SDK da OpenAI apontando para o Phaseo, e apenas para modelos que `GET /v1/models?format=openai` lista. Guarde `PHASEO_API_KEY` como secret do Worker, não na configuração do `wrangler`.
 
-<Step title="Recrie o roteamento e os padrões compartilhados">
+## Mapeie os recursos do gateway
 
-Mova restrições estáveis de provedores, padrões de prompts e parâmetros de geração para [Predefinições](../guides/presets.mdx). Configure a classificação de provedores e os fallbacks em [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx).
+As configurações da Cloudflare não são transferidas automaticamente. Decida, para cada uma, se ela pertence ao Phaseo, à aplicação ou à camada de borda.
 
-As configurações de cache e análise do Cloudflare não são transferidas automaticamente. Decida explicitamente se cada comportamento deve ficar no Phaseo, no aplicativo ou na camada de borda.
+| Cloudflare AI Gateway | No Phaseo |
+| --- | --- |
+| Cadeias de fallback | Array `models`, fallback de provedor ou [rotas dinâmicas](../guides/routing-and-fallbacks). Os fallbacks de modelo são acionados em `429`, `500`, `502`, `503` e `504`, nunca em erros da solicitação. |
+| Strings de modelo `dynamic/<route>` | Rotas dinâmicas vinculadas a chaves de API; envie um ID de modelo real. |
+| `cloudflare/auto` | `phaseo/auto` ([Roteamento automático](../guides/auto-routing), alfa); não pode ser combinado com `models`. |
+| Cache (`cf-aig-cache-ttl`, `cf-aig-skip-cache`, `cf-aig-cache-key`) | Sem cache de respostas. Faça cache no app se precisar; o [cache de prompts](../guides/prompt-caching) ainda reduz o custo de entrada. |
+| `cf-aig-metadata` | [Rótulos](../guides/request-labels) `X-Phaseo-Metadata`: até 32, chaves correspondentes a `[A-Za-z0-9_.:-]` (64 caracteres), valores do tipo string com até 256. Converta números e booleanos. |
+| `cf-aig-collect-log` | Política de logs do espaço de trabalho, ou `provider.require_zero_data_retention`, que também limita o roteamento a provedores com ZDR. |
+| `cf-aig-request-timeout`, `cf-aig-max-attempts` | Sem controle por solicitação. Fallback de provedor integrado mais backoff no cliente. |
+| `cf-aig-session-id` | Campo de corpo `session_id`. |
+| `cf-aig-custom-cost` | Sem equivalente. |
+| Limitação de taxa, limites de gasto | Políticas de limite de taxa, limites de chave e orçamentos de espaço de trabalho, chave e departamento. Veja [Limites](../api-reference/limits). |
+| Guardrails e DLP | Os guardrails de chave e de membro verificam as solicitações em busca de injeção de prompt e PII. As respostas não são verificadas; chame `/v1/moderations` para segurança de conteúdo. |
+| Logs e analytics | Logs de solicitações, detalhes da solicitação com tentativas de provedor e preços, e [destinos de observabilidade](../guides/integrations/observability). |
+| Modelos `@cf/...` do Workers AI | Só se `GET /v1/models?format=openai` os listar; caso contrário, mantenha essas chamadas no Workers AI. |
 
-</Step>
+## Teste e faça o rollout
 
-<Step title="Valide antes da troca">
+Teste solicitações sem streaming, com streaming, erros, ferramentas e saídas estruturadas do jeito que o app as usa, e compare latência, saída, uso de tokens e custo antes de mover o tráfego aos poucos. Antes da virada, confirme que:
 
-Quando aplicável, teste respostas sem streaming, streaming, erros, ferramentas e saídas estruturadas. Compare latência, saída, uso de tokens e custo antes de transferir o tráfego gradualmente.
-
-</Step>
-</Steps>
-
-## Lista de verificação da migração
-
-- URLs e cabeçalhos específicos do Cloudflare Gateway foram removidos.
-- Os IDs dos modelos de produção foram verificados com `GET /v1/models`.
-- O comportamento de cache necessário foi recriado ou descontinuado intencionalmente.
-- A atividade e os detalhes das solicitações oferecem a visibilidade necessária à equipe.
-- A reversão continua limitada à alteração do endpoint e da chave.
-
-## Próximas etapas
-
-- [Predefinições](../guides/presets.mdx)
-- [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx)
-- [Observabilidade](../guides/integrations/observability.mdx)
+- toda URL `gateway.ai.cloudflare.com` e `api.cloudflare.com/.../ai/v1` e todo cabeçalho `cf-aig-*` foram removidos; uma rota esquecida mantém o tráfego no caminho antigo;
+- os IDs de modelo de produção estão em `GET /v1/models?format=openai`;
+- cada comportamento de cache foi recriado no app ou abandonado de propósito;
+- os logs de solicitações dão à equipe a visibilidade de que ela precisa;
+- o rollback ainda é só uma troca de URL base e chave.

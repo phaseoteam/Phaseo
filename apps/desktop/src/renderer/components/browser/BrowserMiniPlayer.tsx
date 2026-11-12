@@ -4,7 +4,7 @@ import type { BrowserState } from "../../../shared/browser";
 import { useWorkspace } from "../../app/workspace";
 import { closeMiniPlayer, miniPlayerCornerRadius, miniPlayerSource, placeMiniPlayer, resizeMiniPlayer, resolveMiniPlayerFrame, clampMiniPlayerPosition, useBrowserSurfaceShown, useMiniPlayer, type MiniPlayerFrame, type MiniPlayerResizeDirection, type MiniPlayerSize, type MiniPlayerState } from "../../lib/browserMiniPlayer";
 import { useBrowserRecording } from "../../lib/browserRecording";
-import { recordBrowserState, revealBrowserTab, useBrowserTab } from "../../lib/browserTabs";
+import { recordBrowserState, revealBrowserTab, useBrowserTab, withBrowserProfile } from "../../lib/browserTabs";
 import { cn } from "../../lib/utils";
 import { overlayOpen } from "../../views/BrowserSurface";
 import { Button } from "../ui/button";
@@ -71,7 +71,7 @@ export function BrowserMiniPlayer({ context, player, covered }: { context: strin
 	apply.current = (value?: BrowserState) => {
 		if (value?.id !== tabId) return;
 		setState(value); recordBrowserState(value);
-		if (!restored.current) { restored.current = true; if (!value.configured && !value.url && tab?.url) void api?.browser({ id: tabId, type: "navigate", url: tab.url }).then(next => apply.current(next), () => undefined); }
+		if (!restored.current) { restored.current = true; if (!value.configured && !value.url && tab?.url) void api?.browser(withBrowserProfile({ id: tabId, type: "navigate", url: tab.url })).then(next => apply.current(next), () => undefined); }
 	};
 	useEffect(() => api?.onBrowserState(value => apply.current(value)), [api]);
 	useEffect(() => () => { void api?.browser({ type: "hide", id: tabId, slot: "float" }).catch(() => undefined); }, [api, tabId]);
@@ -86,7 +86,7 @@ export function BrowserMiniPlayer({ context, player, covered }: { context: strin
 			const rect = element.getBoundingClientRect(), signature = [rect.x, rect.y, rect.width, rect.height].join();
 			if (signature === last) return;
 			last = signature;
-			void api.browser({ type: "show", id: tabId, slot: "float", radius: miniPlayerCornerRadius, bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } }).then(value => apply.current(value), () => undefined);
+			void api.browser(withBrowserProfile({ type: "show", id: tabId, slot: "float", radius: miniPlayerCornerRadius, bounds: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } })).then(value => apply.current(value), () => undefined);
 		};
 		const overlays = new MutationObserver(() => { cancelAnimationFrame(pending); pending = requestAnimationFrame(place); });
 		overlays.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "data-open", "data-closed"] });

@@ -1,8 +1,8 @@
+import { useTranslations } from "@/i18n/react";
 import SubscriptionPlanAllowances from "./SubscriptionPlanAllowances";
 import SubscriptionPlanOffers from "./SubscriptionPlanOffers";
-import { getTranslations } from "next-intl/server";
 import type { SubscriptionPlanDetails } from "@/lib/fetchers/subscription-plans/types";
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SubscriptionPlanFeaturesTable from "./SubscriptionPlanFeaturesTable";
@@ -13,11 +13,11 @@ interface SubscriptionPlanOverviewProps {
 	messages: SubscriptionPlansMessages["detail"];
 }
 
-export default async function SubscriptionPlanOverview({
+export default function SubscriptionPlanOverview({
 	plan,
 	messages,
 }: SubscriptionPlanOverviewProps) {
-	const access = await getTranslations("Common.ui.subscriptionCatalog");
+	const access = useTranslations("Common.ui.subscriptionCatalog");
 	// Get top 5 features
 	const topFeatures = plan.features?.slice(0, 5) ?? [];
 

@@ -1,5 +1,3 @@
-"use client";
-
 type SendPayloadLike = {
 	content: string;
 	attachments: File[];

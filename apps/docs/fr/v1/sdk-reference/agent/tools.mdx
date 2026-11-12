@@ -1,0 +1,441 @@
+---
+icon: "wrench"
+title: "Outils du SDK Agent"
+sidebarTitle: "Outils"
+description: "Définissez des outils locaux, soumis à approbation, manuels et concurrents pour un agent Phaseo."
+---
+
+Définissez un outil quand un agent doit lire des données de l’application, appeler un service interne ou effectuer une action. Le modèle appelle l’outil par son ID ; le SDK vérifie les arguments, exécute votre code dans votre processus et renvoie le résultat au tour suivant.
+
+## Définir un outil
+
+<CodeGroup>
+
+```typescript TypeScript
+import { defineTool } from "@phaseo/agent-sdk";
+
+const fetchTicket = defineTool({
+  id: "fetch-ticket",
+  description: "Load one internal support ticket.",
+  parameters: {
+    type: "object",
+    properties: {
+      ticketId: { type: "string" },
+    },
+    required: ["ticketId"],
+    additionalProperties: false,
+  },
+  timeoutMs: 3_000,
+  async execute(input: { ticketId: string }, context) {
+    const response = await fetch(
+      `https://internal.example/tickets/${input.ticketId}`,
+      { signal: context.signal },
+    );
+
+    return response.json();
+  },
+});
+```
+
+```python Python
+import httpx
+from phaseo_agent import AgentTool, define_tool
+
+def fetch_ticket(tool_input, runtime):
+    response = httpx.get(f"https://internal.example/tickets/{tool_input['ticketId']}")
+    return response.json()
+
+fetch_ticket_tool = define_tool(AgentTool(
+    id="fetch-ticket",
+    description="Load one internal support ticket.",
+    parameters={
+        "type": "object",
+        "properties": {"ticketId": {"type": "string"}},
+        "required": ["ticketId"],
+        "additionalProperties": False,
+    },
+    timeout_ms=3_000,
+    execute=fetch_ticket,
+))
+```
+
+```go Go
+search := phaseoagent.DefineTool(phaseoagent.Tool{
+  ID:          "search_tickets",
+  Description: "Search support tickets by keyword",
+  Parameters: map[string]any{
+    "type":       "object",
+    "properties": map[string]any{"query": map[string]any{"type": "string"}},
+    "required":   []string{"query"},
+  },
+  Timeout:     10 * time.Second,
+  InputSchema: validateSearchInput, // func(any) (any, error)
+  Execute: func(input any, runtime phaseoagent.RuntimeContext) (any, error) {
+    return tickets.Search(input.(map[string]any)["query"].(string))
+  },
+})
+```
+
+```csharp C#
+// Le constructeur prend Id, Execute, Description, Parameters et Timeout ;
+// définissez les autres propriétés avec un initialiseur.
+var search = AgentSdk.DefineTool(new Tool(
+    "search_tickets",
+    async (input, runtime) => await tickets.SearchAsync(input, runtime.CancellationToken),
+    "Search support tickets by keyword",
+    new Dictionary<string, object?>
+    {
+        ["type"] = "object",
+        ["properties"] = new Dictionary<string, object?> { ["query"] = new { type = "string" } },
+        ["required"] = new[] { "query" },
+    },
+    TimeSpan.FromSeconds(10))
+{
+    InputSchema = ValidateSearchInput, // Func<object?, object?>
+});
+```
+
+```php PHP
+$search = AgentSdk::defineTool(new Tool(
+    id: "search_tickets",
+    execute: fn (array $input, $runtime) => $tickets->search($input["query"]),
+    description: "Search support tickets by keyword",
+    parameters: [
+        "type" => "object",
+        "properties" => ["query" => ["type" => "string"]],
+        "required" => ["query"],
+    ],
+    timeoutMs: 10000,
+    inputSchema: fn ($input) => is_string($input["query"] ?? null) ? $input : throw new InvalidArgumentException("query is required"),
+));
+```
+
+```ruby Ruby
+search = PhaseoAgentSdk.define_tool(
+  PhaseoAgentSdk::Tool.new(
+    id: "search_tickets",
+    description: "Search support tickets by keyword",
+    parameters: {
+      type: "object",
+      properties: { query: { type: "string" } },
+      required: ["query"]
+    },
+    timeout_ms: 10_000,
+    input_schema: ->(input) { input["query"].is_a?(String) ? input : raise("query is required") },
+    execute: ->(input, runtime) { tickets.search(input["query"]) }
+  )
+)
+```
+
+```java Java
+// Tool a trois constructeurs : (id, execute) ; (id, execute, description, parameters, timeout) ;
+// et la forme complète ci-dessous. Validators::requireQuery remplace votre propre validateur.
+var search = AgentSdk.defineTool(new AgentSdk.Tool(
+    "search_tickets",
+    (input, context) -> tickets.search((String) ((Map<?, ?>) input).get("query")),
+    "Search support tickets by keyword",
+    Map.of("type", "object", "properties", Map.of("query", Map.of("type", "string"))),
+    Duration.ofSeconds(10),
+    Validators::requireQuery, // inputSchema: AgentSdk.Validator
+    null, null,             // outputSchema, eventSchema
+    false, null,            // requireApproval, approval
+    null, null,             // onToolCalled, onResponseReceived
+    "fail-run"              // onError
+));
+```
+
+```rust Rust
+use phaseo_agent::Tool;
+use serde_json::json;
+
+let get_status = Tool::new(
+    "get_status",
+    "Get the current service status",
+    json!({
+        "type": "object",
+        "properties": {
+            "service": { "type": "string" }
+        },
+        "required": ["service"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "service": input["service"],
+            "status": "healthy"
+        }))
+    },
+);
+```
+
+</CodeGroup>
+
+## Champs d’un outil
+
+| Champ | `camelCase` (TS, PHP, Java) | `snake_case` (Python, Ruby, Rust) | `PascalCase` (Go, C#) | Rôle |
+| --- | --- | --- | --- | --- |
+| Paramètres | `parameters` | `parameters` | `Parameters` | JSON Schema envoyé au modèle |
+| Validateurs | `inputSchema`, `outputSchema`, `eventSchema` | `input_schema`, `output_schema`, `event_schema` | `InputSchema`, `OutputSchema`, `EventSchema` | Vérifient les arguments, les résultats et les valeurs de progression. Un échec met fin à l’exécution (`AgentSchemaValidationError` en TypeScript, `Invalid tool input: ...` ou `Invalid tool output: ...` ailleurs). Rust n’en a pas. |
+| Délai d’expiration | `timeoutMs` (TS, PHP), `timeout` (Java) | `timeout_ms` | `Timeout` | Fait échouer l’appel au bout de cette durée ; voir le tableau ci-dessous. Rust n’en a pas. |
+| Approbation | `requireApproval` | `require_approval` | `RequireApproval`, `Approval` | Met en pause pour une personne avant l’exécution de l’appel |
+| Hooks interactifs | `onToolCalled`, `onResponseReceived` | `on_tool_called`, `on_response_received` | `OnToolCalled`, `OnResponseReceived` | Mettent en pause pour la réponse d’une personne, puis la transforment. Rust n’en a pas. |
+| Surcharges du tour suivant | `nextTurnParams` | `next_turn_params` | `NextTurn` (Go), `NextTurnParams` (C#) | Modifient la requête suivante au modèle ; voir [Tours dynamiques](./dynamic-turns). Rust n’en a pas. |
+| Politique d’erreur | `onError` | `on_error` | `OnError` | `"fail-run"` (par défaut) ou `"return-to-model"`. Rust n’en a pas. |
+
+Les schémas acceptent le validateur natif de chaque langage : en TypeScript, une fonction ou un objet avec `parse()` ou `safeParse()` ; en Python, un callable, un modèle Pydantic ou un objet avec `parse` ou `safe_parse` ; ailleurs, une fonction ou un callable qui renvoie la valeur ou lève une exception.
+
+### Effet d’un délai d’expiration
+
+| Langage | Quand `timeout` expire |
+| --- | --- |
+| TypeScript | Interrompt `context.signal` et traite l’expiration comme une erreur d’outil |
+| Python | Lève `TimeoutError` et fait toujours échouer l’exécution, même avec `return-to-model`. Le thread n’est pas arrêté ; les outils de longue durée doivent donc vérifier leur propre échéance. |
+| Go | Fait échouer l’appel avec `tool <id> timed out`. `Execute` n’a pas de `context.Context`, donc la fonction continue de s’exécuter dans sa goroutine. |
+| C# | Annule `runtime.CancellationToken` et fait échouer l’appel avec une `TimeoutException`. Passez le jeton à vos propres appels asynchrones. |
+| PHP | Vérifié après le retour de `execute` : un appel plus lent échoue avec `Tool <name> timed out after <n>ms`. PHP ne peut pas interrompre le callback. |
+| Ruby | Encapsule `execute` dans `Timeout.timeout`, qui interrompt l’appel et lève `Timeout::Error` |
+| Java | Exécute l’exécuteur sur son propre thread, fait échouer l’appel avec une `TimeoutException` et interrompt ce thread |
+| Rust | Pas de délai d’expiration des outils |
+
+Un appel à un ID d’outil absent de la liste d’outils courante fait échouer l’exécution (`unknown tool` en Go, `Unknown tool '<name>'` en C#, PHP, Ruby et Java, `Unknown tool: <name>` sous forme d’`AgentError` en Rust). En TypeScript avec `return-to-model`, un outil inconnu ou des arguments illisibles reçoivent à la place la même réponse qu’une erreur d’outil.
+
+## Exiger une approbation
+
+Mettez l’indicateur d’approbation d’un outil à `true`, ou donnez-lui une fonction qui décide pour chaque appel. Une fonction d’approbation au niveau de l’agent, quand le langage en a une, s’applique à tous les outils et prime sur les deux. Un appel soumis à approbation met l’exécution en pause avec le statut `waiting_for_human` ; approuvez-le ou rejetez-le par ID d’appel dans [État et approbation](./state-and-approval).
+
+<CodeGroup>
+
+```typescript TypeScript
+const deploy = defineTool({
+  id: "deploy",
+  description: "Deploy the selected release",
+  requireApproval: (input: { environment: string }) => input.environment === "production",
+  execute: deployRelease,
+});
+```
+
+```python Python
+deploy = define_tool(AgentTool(
+    id="deploy",
+    description="Deploy the selected release",
+    require_approval=lambda tool_input, runtime: tool_input["environment"] == "production",
+    execute=deploy_release,
+))
+```
+
+```go Go
+deploy := phaseoagent.Tool{
+  ID:          "deploy",
+  Description: "Deploy the selected release",
+  Approval: func(input any, runtime phaseoagent.RuntimeContext) (bool, error) {
+    return input.(map[string]any)["environment"] == "production", nil
+  },
+  Execute: deployRelease,
+}
+```
+
+```csharp C#
+var deploy = new Tool("deploy", DeployRelease, "Deploy the selected release")
+{
+    Approval = async (input, runtime) =>
+        ((JsonElement)input!).GetProperty("environment").GetString() == "production",
+};
+```
+
+```php PHP
+$deploy = new Tool(
+    id: "deploy",
+    execute: fn (array $input, $runtime) => $deployments->deploy($input),
+    description: "Deploy the selected release",
+    requireApproval: fn (array $input, $runtime) => ($input["environment"] ?? null) === "production",
+);
+```
+
+```ruby Ruby
+deploy = PhaseoAgentSdk::Tool.new(
+  id: "deploy",
+  description: "Deploy the selected release",
+  require_approval: ->(input, runtime) { input["environment"] == "production" },
+  execute: ->(input, runtime) { deployments.deploy(input) }
+)
+```
+
+```rust Rust
+let deploy = Tool::new(
+    "deploy",
+    "Deploy an application environment",
+    json!({
+        "type": "object",
+        "properties": {
+            "environment": { "type": "string" }
+        },
+        "required": ["environment"]
+    }),
+    |input, _context| {
+        Ok(json!({
+            "environment": input["environment"],
+            "deployed": true
+        }))
+    },
+)
+.require_approval();
+```
+
+</CodeGroup>
+
+| Langage | Par outil | Pour tous les outils |
+| --- | --- | --- |
+| TypeScript | `requireApproval: true` ou `(input, context) => boolean` | `requireApproval: (call, context) => boolean` sur l’agent |
+| Python | `require_approval=True` ou `(input, runtime) -> bool` | `"require_approval": (call, runtime) -> bool` sur l’agent |
+| Go | `RequireApproval: true` ou une fonction `Approval` | `AgentDefinition.RequireApproval(call, runtime)` |
+| C# | `RequireApproval = true` ou une fonction `Approval` | `AgentDefinition.RequireApproval` |
+| PHP | `requireApproval: true` ou `fn ($input, $runtime): bool` | Le `requireApproval` d’`AgentDefinition` (`fn ($toolCall, $runtime): bool`) |
+| Ruby | `require_approval: true` ou `->(input, runtime)` | Le `require_approval:` de l’agent (`->(tool_call, runtime)`) |
+| Java | `requireApproval` à `true` ou une fonction `approval` dans le constructeur complet | `AgentDefinition.requireApproval` (un `CallApproval`) |
+| Rust | `.require_approval()` ; pas de fonction par appel | Aucun. Le type de pause est `tool_approval`, et il n’existe pas de type de rejet : laissez en pause un appel non approuvé ou appliquez votre propre politique de rejet avant de reprendre. |
+
+## Confier un appel à une personne ou à un autre système
+
+Un outil manuel n’a pas d’exécuteur : votre application, une file d’attente ou un autre service fait le travail. Un outil interactif exécute un hook qui peut se mettre en pause pour une personne. Dans les deux cas, l’exécution reste en pause jusqu’à ce que vous la repreniez avec une sortie d’outil pour l’ID d’appel ; voir [État et approbation](./state-and-approval).
+
+| Langage | Outil manuel | Outil interactif : mise en pause en |
+| --- | --- | --- |
+| TypeScript | `execute: false` | Renvoyant `null` depuis `onToolCalled` |
+| Python | Laissez `execute` non défini | Renvoyant `None` depuis `on_tool_called` |
+| Go | Laissez `Execute` à nil (`Kind` en attente `manual`) | Renvoyant `completed = false` depuis `OnToolCalled` (`Kind` en attente `hitl`) |
+| C# | Laissez `Execute` à null (`manual`) | Renvoyant `(Completed: false, Output: null)` depuis `OnToolCalled` (`hitl`) |
+| PHP | `execute: null` (`manual`) | Renvoyant `null` depuis `onToolCalled` (`hitl`) |
+| Ruby | Laissez `execute` non défini (`manual`) | Renvoyant `nil` depuis `on_tool_called` (`hitl`) |
+| Java | Passez `null` comme exécuteur (`manual`) | Renvoyant `new ToolCalledResult(false, null)` depuis `onToolCalled` (`hitl`) |
+| Rust | `Tool::external(...)` (type de pause `external_output`) | Non pris en charge ; utilisez le `human_review` de l’agent |
+
+Si le hook interactif renvoie plutôt une valeur, elle devient immédiatement le résultat de l’outil. Après la reprise, `onResponseReceived` (ou l’équivalent du langage) peut valider ou transformer la sortie fournie avant que le validateur de sortie la vérifie.
+
+L’outil externe Rust ne prend pas d’exécuteur :
+
+```rust
+let ticket_lookup = Tool::external(
+    "ticket_lookup",
+    "Load one support ticket",
+    json!({
+        "type": "object",
+        "properties": {
+            "ticket_id": { "type": "string" }
+        },
+        "required": ["ticket_id"]
+    }),
+);
+```
+
+Si un même tour du modèle mélange des outils automatiques et des outils en attente, le runtime exécute les outils automatiques avant de renvoyer la pause.
+
+<span id="report-progress-and-update-context"></span>
+## Signaler la progression et mettre à jour le contexte
+
+Un outil peut publier des résultats préliminaires pendant qu’il travaille et remplacer le contexte applicatif pour les tours suivants. La progression apparaît sous forme d’événements `tool.preliminary_result` (voir [Streaming](./streaming)), vérifiés par le validateur d’événements quand vous en définissez un.
+
+<CodeGroup>
+
+```typescript TypeScript
+const indexRepository = defineTool({
+  id: "index-repository",
+  async *execute(input: { path: string }, context) {
+    yield { phase: "scan" };
+    yield { phase: "embed" };
+    context.setContext({ indexed: true });
+    return { indexed: 248 };
+  },
+});
+```
+
+```python Python
+def index_repository(tool_input, runtime):
+    runtime.emit_progress({"stage": "indexing"})
+    runtime.set_context({"indexed": True})
+    return "done"
+```
+
+```go Go
+Execute: func(input any, runtime phaseoagent.RuntimeContext) (any, error) {
+  _ = runtime.EmitProgress(map[string]any{"stage": "indexing"})
+  runtime.SetContext(map[string]any{"indexed": true})
+  return "done", nil
+},
+```
+
+```csharp C#
+async (input, runtime) =>
+{
+    await runtime.EmitProgress!(new { stage = "indexing" });
+    runtime.SetContext!(new { indexed = true });
+    return "done";
+}
+```
+
+```php PHP
+execute: function (array $input, $runtime) {
+    ($runtime->emitProgress)(["stage" => "indexing"]); // événement tool.preliminary_result
+    ($runtime->setContext)(["indexed" => true]);       // contexte pour les tours suivants
+    return "done";
+},
+```
+
+```ruby Ruby
+execute: ->(input, runtime) {
+  runtime.emit_progress.call(stage: "indexing") # événement tool.preliminary_result
+  runtime.set_context.call(indexed: true)       # contexte pour les tours suivants
+  "done"
+}
+```
+
+```java Java
+(input, context) -> {
+    context.emitProgress().receive(Map.of("stage", "indexing"), context); // événement tool.preliminary_result
+    context.setContext().accept(Map.of("indexed", true));                 // contexte pour les tours suivants
+    return "done";
+}
+```
+
+</CodeGroup>
+
+| Langage | Progression | Contexte | Champs du contexte d’exécution |
+| --- | --- | --- | --- |
+| TypeScript | Générateur asynchrone : `yield` pour la progression, `return` pour le résultat ; ou `context.emitProgress(value)`. Également conservée dans les `preliminaryResults` de l’étape. | `context.setContext(value)` | `runId`, `agentId`, `stepIndex`, `context`, `signal`, `toolCall` |
+| Python | `runtime.emit_progress(value)`, ou un générateur qui produit la progression avec yield et renvoie le résultat | `runtime.set_context(value)` | `run_id`, `agent_id`, `step_index`, `context`, `tool_call` |
+| Go | `runtime.EmitProgress(value)` | `runtime.SetContext(value)` | `RunID`, `AgentID`, `StepIndex`, `Context`, `ToolCall` |
+| C# | `await runtime.EmitProgress(value)` | `runtime.SetContext(value)` | `RunId`, `AgentId`, `StepIndex`, `Context`, `CancellationToken`, `ToolCall` |
+| PHP | `($runtime->emitProgress)(value)` | `($runtime->setContext)(value)` | `$runId`, `$agentId`, `$stepIndex`, `$context`, `$toolCall` |
+| Ruby | `runtime.emit_progress.call(value)` | `runtime.set_context.call(value)` | `run_id`, `agent_id`, `step_index`, `context`, `tool_call` |
+| Java | `context.emitProgress().receive(value, context)` | `context.setContext().accept(value)` | `runId`, `agentId`, `stepIndex`, `context`, `toolCall` |
+| Rust | Non pris en charge | Non pris en charge ; le contexte est défini par exécution | `run_id`, ID de l’agent, index de l’étape, contexte applicatif, appel d’outil |
+
+## Se remettre des erreurs d’outil
+
+Par défaut, une erreur levée par un outil fait échouer l’exécution et est relancée. Définissez la politique d’erreur de l’outil sur `return-to-model` pour renvoyer l’erreur comme résultat de l’outil (`{"error": "..."}`) afin que le modèle puisse essayer autre chose. Gardez le comportement par défaut pour les échecs dangereux ou irrécupérables.
+
+| Langage | Par défaut | Activez `return-to-model` avec |
+| --- | --- | --- |
+| TypeScript | Faire échouer l’exécution | `onError` sur un outil, ou `toolExecution.onError` pour tous les outils |
+| Python | Faire échouer l’exécution | `on_error="return-to-model"`. Un dépassement de délai fait quand même échouer l’exécution. |
+| Go | Faire échouer l’exécution | `OnError: "return-to-model"` |
+| C# | Faire échouer l’exécution | `OnError = "return-to-model"` |
+| PHP | Faire échouer l’exécution | `onError: "return-to-model"` |
+| Ruby | Faire échouer l’exécution | `on_error: "return-to-model"` |
+| Java | Faire échouer l’exécution | `"return-to-model"` comme argument `onError` |
+| Rust | Renvoyer au modèle | Toujours actif : une `AgentError` levée par un exécuteur devient un message d’erreur d’outil structuré. Un outil inconnu, ou une approbation ou une sortie manquante, fait échouer la reprise avec `AgentError`. |
+
+En TypeScript, `toolExecution.maxOutputChars` limite la part de la sortie d’un outil que voit le modèle ; une sortie plus longue garde son début et sa fin autour d’un avis.
+
+## Exécuter les outils en parallèle
+
+Quand un tour du modèle appelle plusieurs outils indépendants, définissez une limite de concurrence pour les exécuter en même temps. Go, C#, Ruby et Java exécutent les outils un par un tant que vous ne le faites pas. Les résultats sont ajoutés dans l’ordre des appels du modèle, quel que soit leur ordre de fin. En Go et en C#, si plusieurs outils concurrents définissent le contexte, le dernier dans l’ordre des appels l’emporte.
+
+| Langage | Réglage | Remarques |
+| --- | --- | --- |
+| TypeScript | `toolExecution: { toolConcurrency: 3 }` | Voir la [recette sur les outils parallèles](../../cookbook/agent-sdk-parallel-tools) |
+| Python | `tool_execution=AgentToolExecutionConfig(tool_concurrency=3)` | Threads |
+| Go | `ToolExecution: phaseoagent.ToolExecutionConfig{Concurrency: 4}` | Sur l’agent, ou sur `RunOptions` pour une exécution |
+| C# | `ToolExecution = new ToolExecutionConfig(Concurrency: 4)` | Sur l’agent, ou sur `RunOptions` pour une exécution |
+| PHP | Non pris en charge | `toolExecution` est accepté mais sans effet. Lancez le travail parallèle depuis un seul outil avec les requêtes concurrentes de votre client HTTP, ou mettez-le en file d’attente et renvoyez l’ID de la tâche. |
+| Ruby | `tool_execution: { tool_concurrency: 4 }` | Threads ; sur `create_agent`, ou sur `run` pour une exécution |
+| Java | `new AgentSdk.ToolExecutionConfig(4)` | Pool de threads fixe ; les valeurs inférieures à 1 sont portées à 1. Sur l’agent, ou dans `RunOptions` pour une exécution. |
+| Rust | Non pris en charge | Les outils s’exécutent de façon synchrone dans l’ordre où le modèle les a appelés |

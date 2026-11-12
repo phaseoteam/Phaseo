@@ -1,8 +1,6 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { LocalizedRequestError, localizedRequestErrorMessage } from "@/i18n/localized-request-error";
 import { Streamdown } from "streamdown";
 import {
@@ -2253,10 +2251,17 @@ export default function ModelPlayground({
 		setVideoResponseText("");
 
 		try {
-			const videoDefaults = getDefaultVideoRoomParams(resolvedVideoModelId);
+			// The catalogue's stored video options (sizes, durations, defaults) for the model.
+			const videoRows = modelsByMode.video.filter((model) => model.modelId === resolvedVideoModelId);
+			const videoParams = (videoRows.find((model) => {
+				const video = (model.capabilityParamsById as Record<string, unknown> | null | undefined)?.["video.generate"];
+				return Boolean(video && typeof video === "object" && !Array.isArray(video));
+			}) ?? videoRows[0])?.capabilityParamsById;
+			const videoDefaults = getDefaultVideoRoomParams(resolvedVideoModelId, videoParams);
 			const videoOptions = buildVideoRequestOptions(
 				resolvedVideoModelId,
 				videoDefaults,
+				videoParams,
 			);
 			const response = await fetchChatWebApi("/api/chat/video", {
 				method: "POST",

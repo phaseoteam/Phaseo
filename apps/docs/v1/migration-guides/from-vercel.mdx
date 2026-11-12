@@ -6,71 +6,38 @@ description: "Replace Vercel AI Gateway routing with Phaseo Gateway while preser
 icon: "/icons/brands/vercel.svg"
 ---
 
-If you already use Vercel AI Gateway through the Vercel AI SDK or an OpenAI-compatible client, the safest migration path is to keep your app logic the same and swap only the provider boundary first.
+In AI SDK code, swap `@ai-sdk/gateway` for `@phaseo/ai-sdk-provider` and wrap each model ID with `phaseo(...)`. In OpenAI-compatible clients, change the base URL and key. Your generation logic stays the same.
 
-## What changes
-
-| Setting | Before | After |
+| Setting | Vercel AI Gateway | Phaseo |
 | --- | --- | --- |
-| Gateway URL | `https://ai-gateway.vercel.sh/v1` | `https://api.phaseo.app/v1` |
-| API key | Vercel AI Gateway key | `PHASEO_API_KEY` |
-| AI SDK provider | Existing provider setup | `@phaseo/ai-sdk-provider` when using the AI SDK directly |
-| Application flow | Existing generation logic | Keep unchanged for the first migration pass |
+| Base URL | `https://ai-gateway.vercel.sh/v1` | `https://api.phaseo.app/v1` |
+| API key | `AI_GATEWAY_API_KEY` or Vercel OIDC | `PHASEO_API_KEY`, as a server-side secret |
+| AI SDK provider | `@ai-sdk/gateway`, or bare string models | `@phaseo/ai-sdk-provider` |
+| Routing options | `providerOptions.gateway` | `providerOptions.phaseo` |
 
-## Before you start
-
-- Current Vercel AI Gateway base URL and key configuration.
-- `PHASEO_API_KEY` available in local, staging, and production environments.
-- A small prompt set or integration suite that covers non-streaming, streaming, and any tool-calling paths you rely on.
-
-## 1) Document your current gateway boundary
-
-Find the single place where your app creates model providers or API clients. That is the preferred migration point.
-
-- Locate the provider/client factory used by your app.
-- List the model IDs currently used in production.
-- Record retry, timeout, and fallback defaults.
-- Note whether both edge and server runtimes need the same config change.
-- Identify any shared prompt or parameter defaults that should become Gateway presets instead of remaining embedded in individual AI SDK call sites.
-
-## 2) Swap endpoint and key
-
-For most OpenAI-compatible client paths, this is a base URL and key replacement only.
+## Switch the provider
 
 <CodeGroup>
-```typescript TypeScript
-// OpenAI-compatible client before
-import OpenAI from "openai";
-
-const before = new OpenAI({
-  apiKey: process.env.VERCEL_AI_GATEWAY_API_KEY,
-  baseURL: "https://ai-gateway.vercel.sh/v1",
-});
-```
-
-```typescript TypeScript
-// OpenAI-compatible client after
-import OpenAI from "openai";
-
-const after = new OpenAI({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
-});
-```
-
-```typescript TypeScript
-// Official Phaseo provider for the Vercel AI SDK
+```typescript AI SDK
 import { generateText } from "ai";
-import { createPhaseo } from "@phaseo/ai-sdk-provider";
-
-const phaseo = createPhaseo({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
-});
+// Before: import { gateway } from "@ai-sdk/gateway";
+import { phaseo } from "@phaseo/ai-sdk-provider";
 
 const { text } = await generateText({
+  // Before: model: gateway("openai/gpt-4.1-mini"),
   model: phaseo("openai/gpt-4.1-mini"),
   prompt: "Generate a migration checklist.",
+});
+```
+
+```typescript OpenAI SDK
+import OpenAI from "openai";
+
+// Before:
+// new OpenAI({ apiKey: process.env.AI_GATEWAY_API_KEY, baseURL: "https://ai-gateway.vercel.sh/v1" });
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
 });
 ```
 
@@ -79,59 +46,50 @@ curl -s "https://api.phaseo.app/v1/chat/completions" \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role":"user","content":"Hello"}]
   }'
 ```
 </CodeGroup>
 
-## 3) Confirm behavior parity
+The default `phaseo` export reads `PHASEO_API_KEY` once, when the module is imported, and uses `https://api.phaseo.app/v1`. If the variable is set after imports, as in some serverless and test setups, every call throws a missing-key error; call `createPhaseo({ apiKey, baseURL, headers })` inside the handler instead.
 
-Run the same prompt set against old and new paths, then compare latency, output format, and token usage.
+Install the provider line that matches your `ai` major: `@phaseo/ai-sdk-provider` for AI SDK 7, `@phaseo/ai-sdk-provider@ai-sdk-v6` for AI SDK 6, and `@phaseo/ai-sdk-provider@ai-sdk-v5` for AI SDK 5.
 
-- Verify non-streaming text generation.
-- Verify streaming chunk handling through the same code path your app uses in production.
-- Verify tool-calling paths if your app depends on them.
-- Confirm application-level error mapping is unchanged.
-- Move durable routing defaults and provider restrictions into [Presets](../guides/presets) or [Routing and Fallbacks](../guides/routing-and-fallbacks) instead of rebuilding them ad hoc in every model factory.
+The AI SDK sends bare string models (`model: "openai/gpt-4.1-mini"`) through Vercel's gateway by default, so a bare string left behind keeps calling it. Change the shared model factory once, then search for `model: "` in AI SDK calls. Anthropic SDK clients pointed at `ai-gateway.vercel.sh` move to the setup in [Migrating from Anthropic SDK](./from-anthropic).
 
-## 4) Vercel AI SDK and gateway checklist
+## Map gateway options
 
-Use this checklist before promoting traffic:
+`providerOptions.phaseo` is merged into the request body. A leftover `providerOptions.gateway` is ignored without an error.
 
-- Base URL updated to `https://api.phaseo.app/v1`.
-- `PHASEO_API_KEY` configured in every runtime that previously used the Vercel gateway key.
-- Official `@phaseo/ai-sdk-provider` wired in if your app uses the Vercel AI SDK directly.
-- Primary AI SDK text generation path passes in staging.
-- One app-level streaming test passes unchanged.
-- Tool-calling and structured-output flows rechecked if used.
-- Old/new outputs compared for a small prompt suite.
-- Rollback remains possible through config or feature-flag change only.
-- Shared prompt/routing defaults moved into presets where appropriate.
-- Generation lookups rechecked through `GET /v1/generations?id=<request_id>` so failed requests can be replayed from the stored `replay_request` payload when `replay_supported=true`.
+| Vercel AI Gateway | On Phaseo |
+| --- | --- |
+| `providerOptions.gateway.order`, `.only` | `providerOptions: { phaseo: { provider: { order, only } } }`, or a [preset](../guides/presets) called as `phaseo("@slug")`. |
+| `providerOptions.gateway.models` | `providerOptions: { phaseo: { models: [...] } }`, or fallbacks in a dynamic route. |
+| `providerOptions.gateway.sort` (`cost`, `ttft`, `tps`) | `provider.sort` (`price`, `latency`, `throughput`). |
+| `providerOptions.gateway.zeroDataRetention` | `provider.require_zero_data_retention`, which limits routing to ZDR providers. |
+| `providerOptions.gateway.user`, `.tags` | `user` and `X-Phaseo-Metadata` [labels](../guides/request-labels). |
+| Request-scoped `byok` credentials | No equivalent. Add provider keys to the workspace with **Settings → BYOK**. |
+| Text, streaming, tools, structured output, embeddings, images, transcription, speech | Supported by the provider; capabilities still depend on the model. |
+| Reranking | `phaseo.rerankingModel(id)` on the AI SDK 6 and 7 lines. |
+| Managed file references, provider-executed tools | Not supported. Unsupported parts fail with an error instead of being dropped. |
+| Gateway usage dashboard | Phaseo request logs and `GET /v1/generations?id=<request_id>`. Provider metadata on results includes the request ID. |
 
-## 5) Release plan for low risk
+## Test and roll out
 
-1. Ship behind a feature flag or percentage rollout.
-2. Start with internal traffic or a very small production slice.
-3. Monitor latency, error rate, and token/cost drift.
-4. Keep both configs available for at least one release window.
+Run the same prompt set through both paths and compare latency, output format, and token usage. Before promoting traffic:
 
-## Validation commands
+- `PHASEO_API_KEY` is set in every runtime that had the gateway key, including edge, server, and preview deployments;
+- the main text-generation path and one streaming test pass unchanged in staging;
+- tool calls and structured outputs pass if the app uses them;
+- application-level error mapping still works;
+- a failed staging request can be found and, when `replay_supported` is `true`, replayed from `GET /v1/generations?id=<request_id>`.
+
+Ship behind a feature flag or a percentage rollout, starting with internal traffic. Watch latency, error rate, and token and cost drift, and keep the old provider available for at least one release so rollback needs no code change.
 
 ```bash
 curl -s "https://api.phaseo.app/v1/health"
-curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+curl -s "https://api.phaseo.app/v1/models?format=openai" -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Then:
-
-- Run your app's primary text-generation integration test.
-- Run one streaming test in staging.
-- Compare old/new outputs for your top prompts before full rollout.
-
-## Next steps
-
-- [Migration from OpenRouter](./from-openrouter)
-- [Quickstart](../quickstart)
-- [Examples](../guides/examples)
+For more on the provider, see [AI SDK](../guides/integrations/ai-sdk).

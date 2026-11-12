@@ -1,214 +1,129 @@
 ---
-title: "Fijar o excluir proveedores por solicitud"
+title: "Fija o ignora proveedores por solicitud"
 icon: "pin"
-description: "Usa controles de proveedor por solicitud para establecer un orden de preferencia, limitar el conjunto o excluir un proveedor."
+description: "Usa los controles de proveedor a nivel de solicitud para preferir un orden de proveedores, restringir el grupo o descartar un proveedor."
 ---
 
-Usa esta receta cuando quieras que una solicitud prefiera una ruta de proveedor específica sin cambiar los valores predeterminados de enrutamiento de todo el espacio de trabajo.
+Añade un objeto `provider` a una solicitud para cambiar qué proveedores la atienden, sin tocar los valores predeterminados del espacio de trabajo ni los preajustes. Al terminar podrás preferir un orden, mantener una solicitud dentro de una lista permitida u omitir un proveedor, y ver en la respuesta qué proveedor contestó.
 
-## Objetivo
+Estas formas de solicitud están listas para producción. Los slugs de proveedor son ejemplos reales; consulta la página del modelo para ver qué proveedores lo sirven.
 
-- Prueba los proveedores en el orden preferido.
-- Limita una solicitud a un subconjunto de proveedores aprobados.
-- Ignora temporalmente un proveedor sin editar los presets.
+| Campo | Qué hace | Ejemplo |
+| --- | --- | --- |
+| `order` | Prueba primero estos proveedores y después el resto del grupo elegible | `["anthropic-us", "anthropic"]` |
+| `only` | Mantiene la solicitud dentro de esta lista | `["openai", "openai-eu"]` |
+| `ignore` | Quita estos proveedores para esta solicitud | `["novita"]` |
+| `sort` | Clasifica lo que queda por `price`, `latency` o `throughput` | `"price"` |
 
-## 1. Prueba los proveedores en un orden específico
+Para usar exactamente un proveedor y desactivar la alternativa entre proveedores, ponlo delante del ID del modelo: consulta [Fija un proveedor](../guides/routing-and-fallbacks#pin-one-provider).
 
-Usa `provider.order` cuando ya conozcas el orden de rutas que prefieres.
+## Prueba los proveedores en un orden fijo
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-opus-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "input": "Write a concise launch summary.",
     "provider": {
       "order": ["anthropic-us", "anthropic"]
-    }
+    },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "anthropic/claude-opus-4.6",
+  model: "anthropic/claude-sonnet-5.5",
   input: "Write a concise launch summary.",
   provider: {
     order: ["anthropic-us", "anthropic"],
   },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing); // { selected_provider: "anthropic-us", ... }
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "anthropic/claude-opus-4.6",
+        "model": "anthropic/claude-sonnet-5.5",
         "input": "Write a concise launch summary.",
         "provider": {
             "order": ["anthropic-us", "anthropic"],
         },
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-Esto coloca a los proveedores indicados al principio del orden de candidatos, antes que el resto de los proveedores disponibles.
+`meta: true` añade `meta.routing.selected_provider` a la respuesta, así que puedes comprobar el resultado sin abrir los registros.
 
-## 2. Limita la solicitud a un subconjunto fijo de proveedores
+## Mantén una solicitud dentro de una lista permitida
 
-Usa `provider.only` cuando la solicitud deba limitarse a una lista de permitidos pequeña.
+Envía `only` y, si quieres, `sort` para clasificar dentro de esa lista:
 
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-5.4-nano",
-    "input": "Extract the action items.",
-    "provider": {
-      "only": ["openai", "openai-eu"],
-      "sort": "price"
-    }
-  }'
+```json
+{
+  "model": "openai/gpt-5.6-luna",
+  "input": "Extract the action items.",
+  "provider": {
+    "only": ["openai", "openai-eu"],
+    "sort": "price"
+  }
+}
 ```
 
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
+Si ninguno de los proveedores de la lista sirve el modelo, la solicitud falla en lugar de salir de la lista.
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+## Omite un proveedor
 
-const response = await client.generateResponse({
-  model: "openai/gpt-5.4-nano",
-  input: "Extract the action items.",
-  provider: {
-    only: ["openai", "openai-eu"],
-    sort: "price",
-  },
-});
+Envía `ignore` cuando un proveedor esté degradado o mientras pruebas otra ruta:
 
-console.log(response.output_text);
+```json
+{
+  "model": "meta/llama-4-maverick",
+  "input": "Summarize the transcript.",
+  "provider": {
+    "ignore": ["novita"]
+  }
+}
 ```
 
-```python Python SDK
-from phaseo import Phaseo
+## Combínalos
 
-client = Phaseo(api_key="YOUR_API_KEY")
+Usa `only` para el grupo, `order` para la preferencia dentro de él y `sort` para el resto. Esto mantiene una solicitud en Google Vertex, prueba primero la región de la UE y después clasifica por latencia:
 
-response = client.generate_response(
-    {
-        "model": "openai/gpt-5.4-nano",
-        "input": "Extract the action items.",
-        "provider": {
-            "only": ["openai", "openai-eu"],
-            "sort": "price",
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-Esto limita la solicitud a esos proveedores y después aplica el método de clasificación elegido dentro del subconjunto.
-
-## 3. Excluye un proveedor de la selección
-
-Usa `provider.ignore` para omitir un proveedor en una solicitud o durante un despliegue temporal.
-
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "meta/llama-4-maverick",
-    "input": "Summarize the transcript.",
-    "provider": {
-      "ignore": ["deepinfra"]
-    }
-  }'
+```json
+{
+  "model": "anthropic/claude-sonnet-5.5",
+  "input": "Summarize the incident in one sentence.",
+  "provider": {
+    "only": ["google-vertex", "google-vertex-eu"],
+    "order": ["google-vertex-eu"],
+    "sort": "latency"
+  }
+}
 ```
 
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
+## Comprueba adónde fue
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+Abre la solicitud en **Configuración → Uso → Registros** y despliega **Observabilidad de enrutamiento**. Muestra los proveedores que se excluyeron antes de la clasificación y por qué, y los candidatos clasificados con sus puntuaciones; [Explica una decisión de enrutamiento](../guides/routing-and-fallbacks#explain-a-routing-decision) describe cada campo.
 
-const response = await client.generateResponse({
-  model: "meta/llama-4-maverick",
-  input: "Summarize the transcript.",
-  provider: {
-    ignore: ["deepinfra"],
-  },
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "meta/llama-4-maverick",
-        "input": "Summarize the transcript.",
-        "provider": {
-            "ignore": ["deepinfra"],
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-Esto resulta útil cuando:
-
-- un proveedor tiene problemas
-- estás validando otra ruta de proveedor
-- quieres comparar los resultados del enrutamiento sin editar un preset
-
-## 4. Combina los controles con cuidado
-
-Puedes combinar estos controles, pero mantén clara la intención:
-
-- usa `order` para indicar una preferencia
-- usa `only` para limitar el conjunto de candidatos
-- usa `ignore` para excluir un proveedor
-
-Un patrón práctico combina:
-
-- `only` para limitar la solicitud a `google-vertex` y `google-vertex-eu`
-- `order` para priorizar `google-vertex-eu`
-- `sort: "latency"` para ordenar ese conjunto permitido
-
-## 5. Cuándo trasladarlo a un preset
-
-Si las mismas reglas de proveedor aparecen en varios servicios, deja de copiarlas en cada solicitud y pásalas a un preset.
-
-Usa el enrutamiento por solicitud cuando la excepción sea:
-
-- temporal
-- específica del solicitante
-- vinculada a un flujo de usuario
-
-## Guías relacionadas
-
-- [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx)
-- [Implementar presets y depurar el enrutamiento](./preset-rollout-and-routing-debug.mdx)
+Usa reglas a nivel de solicitud para cambios temporales, propios de un llamante o ligados a un flujo de usuario. Cuando las mismas reglas aparezcan en varios servicios, pásalas a un [preajuste](../guides/presets), donde además limitan qué proveedores puede usar una alternativa. Para comparar clasificaciones, consulta [Ordena proveedores](./sort-providers-by-price-latency-or-throughput).

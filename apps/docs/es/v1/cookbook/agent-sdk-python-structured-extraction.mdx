@@ -1,24 +1,61 @@
 ---
-title: "Extrae JSON estructurado con el Agent SDK de Python"
-sidebarTitle: "Extraer JSON en Python"
+title: "Extraer JSON estructurado con el Agent SDK de Python"
+sidebarTitle: "Extraer JSON estructurado en Python"
 icon: "file-code"
-description: "Usa el Agent SDK de Python en un ciclo acotado con herramientas locales que devuelve JSON estricto a través de Phaseo Gateway."
+description: "Usa el Agent SDK de Python para un bucle acotado con herramientas locales que devuelve JSON estricto a través de Phaseo Gateway."
 ---
 
-Usa esta receta cuando un flujo de trabajo de Python necesite:
+Ejecuta un agente de Python que consulta algo con una herramienta local y devuelve su respuesta como JSON estricto. Al terminar tendrás un script cuyo `result.output` es un objeto `PolicySummary` validado con `summary` y `recommendation`, no texto libre.
 
-- una herramienta de consulta local
-- un ciclo de agente acotado
-- una estructura de salida JSON estricta
+La herramienta devuelve datos de ejemplo fijos, así que el script es ilustrativo; sustitúyela por tu propia consulta. Encaja en un worker de Python que gestiona su propia orquestación y tiene un conjunto de herramientas pequeño y determinista.
 
-## 1. Prepara los SDK
+## Créalo
 
-<Note type="warning">El paquete Python Agent SDK aún no está disponible en PyPI. Sigue las [instrucciones de instalación desde el código fuente](../sdk-reference/python/agent-sdk-installation.mdx).</Note>
+<Steps>
+<Step title="Instala">
 
-## 2. Define una herramienta local
+<CodeGroup>
+```bash pip
+pip install phaseo-agent-sdk
+```
 
-```python
-from phaseo_agent import AgentTool, define_tool
+```bash uv
+uv add phaseo-agent-sdk
+```
+</CodeGroup>
+
+`phaseo-agent-sdk` instala el cliente `phaseo` y Pydantic junto con él.
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+</Step>
+<Step title="Escribe el agente">
+
+```python extract.py
+import json
+import os
+
+from pydantic import BaseModel, ConfigDict
+
+from phaseo_agent import AgentTool, create_agent, create_gateway_agent_client, define_tool
+
+POLICY_SLUGS = {"presets", "routing", "guardrails"}
+
+
+class PolicySummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    summary: str
+    recommendation: str
+
+
+def check_lookup_input(value):
+    # Argumentos generados por el modelo: rechaza todo lo que no sea un slug conocido.
+    if not isinstance(value, dict) or set(value) != {"slug"} or value["slug"] not in POLICY_SLUGS:
+        raise ValueError(f"slug must be one of {sorted(POLICY_SLUGS)}")
+    return value
+
 
 lookup_policy = define_tool(
     AgentTool(
@@ -26,56 +63,76 @@ lookup_policy = define_tool(
         description="Look up one internal policy by slug.",
         parameters={
             "type": "object",
-            "properties": {
-                "slug": {"type": "string"},
-            },
+            "properties": {"slug": {"type": "string", "enum": sorted(POLICY_SLUGS)}},
             "required": ["slug"],
             "additionalProperties": False,
         },
+        input_schema=check_lookup_input,
         execute=lambda input, ctx: {
             "slug": input["slug"],
             "summary": "Presets centralize routing, prompts, and caching defaults.",
         },
     )
 )
-```
-
-## 3. Crea el agente
-
-```python
-from phaseo_agent import create_agent
 
 agent = create_agent(
     {
         "id": "policy-extractor",
-        "model": "openai/gpt-5.4-nano",
-        "instructions": "Use tools when needed and return concise JSON.",
+        "model": "openai/gpt-6-astra",
+        "instructions": "Use tools when needed and return JSON with summary and recommendation.",
         "tools": [lookup_policy],
-        "parse_output": lambda text: text,
+        "max_steps": 4,
+        "parse_output": json.loads,
+        "output_schema": PolicySummary,
     }
 )
-```
 
-## 4. Ejecuta el agente con el cliente conectado a la puerta de enlace
-
-```python
-from phaseo_agent import create_gateway_agent_client
-
-result = agent.run(
-    input="Look up presets and return JSON with keys summary and recommendation.",
-    client=create_gateway_agent_client(),
+# El cliente de Python no lee PHASEO_API_KEY por sí solo: pásala.
+client = create_gateway_agent_client(
+    client_options={"api_key": os.environ["PHASEO_API_KEY"]},
+    response_format={
+        "type": "json_schema",
+        "name": "policy_summary",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "summary": {"type": "string"},
+                "recommendation": {"type": "string"},
+            },
+            "required": ["summary", "recommendation"],
+            "additionalProperties": False,
+        },
+    },
+    plugins=[{"id": "response-healing"}],
 )
 
+result = agent.run(input="Look up our presets policy and recommend when to use it.", client=client)
+
+print(result.run.status)
 print(result.output)
 ```
 
-## 5. Cuándo encaja esta receta
+| Pieza | Qué hace |
+| --- | --- |
+| `parameters` | El JSON Schema que el modelo ve para los argumentos de la herramienta |
+| `input_schema` | Comprueba los argumentos antes de que se ejecute `execute`; una llamada incorrecta hace fallar la ejecución |
+| `response_format` | Pide al Gateway este JSON Schema en cada turno |
+| `parse_output` y `output_schema` | Analizan el texto final y lo validan como `PolicySummary` |
 
-- un worker de Python controla la orquestación
-- la superficie de herramientas es local y determinista
-- quieres una salida estricta antes de crear una capa de orquestación más amplia
+</Step>
+<Step title="Ejecútalo">
 
-## Relacionados
+```bash
+python extract.py
+```
 
-- [Agent SDK de Python](../sdk-reference/python/agent-sdk.mdx)
-- [Genera JSON estructurado desde Python](./sdk-python-presets-and-json.mdx)
+</Step>
+</Steps>
+
+## Comprueba que funciona
+
+- El script imprime `completed` y después un `PolicySummary` con ambos campos rellenos.
+- En **Ajustes → Uso → Registros**, el primer turno del modelo muestra una llamada a `lookup-policy` con `{"slug": "presets"}`.
+- Una salida que no coincide con el modelo falla con `Invalid agent output` en lugar de devolver un objeto a medio rellenar.
+
+Para una salida estructurada de una sola llamada sin herramientas, usa el [SDK de Python directamente](./sdk-python-presets-and-json). La [referencia del Agent SDK de Python](../sdk-reference/agent/usage) explica el estado, la aprobación y el streaming.

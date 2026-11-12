@@ -7,11 +7,26 @@ icon: "list-filter"
 openapi: "/ja/openapi/v1/openapi.localized.yaml POST /extractions"
 ---
 
-<Warning>抽出機能はプレビュー版です。モデルの利用可否は設定済みのプロバイダールートによって異なります。</Warning>
+<Warning>抽出はプレビュー版です。モデルの提供状況は、設定されているプロバイダールートによって異なります。</Warning>
 
-抽出はDecisionsファミリーに属します。既知の選択肢から選ぶ場合は決定機能を、請求書番号、日付、合計金額などの値を返す場合は抽出機能を使います。
+取得したい `fields` を指定し、ソーステキストと一緒に `POST /v1/extractions` に送信すると、請求書番号、日付、合計などの型付きの値が返されます。既知の選択肢から選ぶ場合は、代わりに [Decisions](./decisions.mdx) を使ってください。
 
-```typescript
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/extractions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "cloudflare/clairic",
+    "input": "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+    "fields": {
+      "invoice_number": { "type": "text" },
+      "total": { "type": "number", "decimals": 2, "instructions": "Total including shipping" }
+    }
+  }'
+```
+
+```typescript TypeScript SDK
 import { Phaseo } from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
@@ -26,7 +41,7 @@ const result = await client.extractions.create({
 console.log(result.answers.total.value);
 ```
 
-```python
+```python Python SDK
 import os
 from phaseo import Phaseo
 
@@ -39,21 +54,22 @@ result = client.extractions.create({
 })
 print(result["answers"]["total"]["value"])
 ```
+</CodeGroup>
 
-例を実行するには、有効な抽出モデルのルートが必要です。リクエストを送信する前にモデルの利用可否を確認してください。Pythonの`AsyncPhaseo`でも`await client.extractions.create(...)`を利用できます。
+これらの例には有効な抽出モデルのルートが必要なため、リクエストを送信する前にモデルの提供状況を確認してください。Python の `AsyncPhaseo` でも `await client.extractions.create(...)` を使えます。
 
 ## フィールドの型
 
-対応する型は`text`、`number`、`date`、`time`、`datetime`、`duration`、`list`です。リストでは`items: "text"`、`"number"`、`"date"`のいずれかが必要です。フィールドは1〜64個、入力元は最大16,384文字です。フィールド名は英字またはアンダースコアで始まり、最大64文字の英字、数字、アンダースコア、ピリオド、ハイフンで構成します。
+対応している型は `text`、`number`、`date`、`time`、`datetime`、`duration`、`list` です。リストには `items: "text"`、`"number"`、`"date"` のいずれかが必要です。フィールドは 1〜64 個、ソースは最大 16,384 文字まで指定できます。フィールド名は英字またはアンダースコアで始まり、最大 64 文字の英字、数字、アンダースコア、ドット、ハイフンで構成します。
 
-数値と期間は`integer`と`decimals`（0〜6）に対応します。期間の単位には`seconds`、`minutes`、`hours`、`days`、`weeks`、`months`、`years`を指定できます。不完全な日付の解釈が特定の年に依存する場合は`reference_date`を設定してください。
+数値と期間は `integer` と `decimals`（0〜6）に対応しています。期間は `seconds`、`minutes`、`hours`、`days`、`weeks`、`months`、`years` を受け付けます。不完全な日付の解釈が特定の年に依存する場合は、`reference_date` を設定してください。
 
-画像入力は`{ content_type, base64 }`オブジェクトで指定します。PNG/JPEG/WebPを最大4枚、デコード後のサイズは1枚4 MiB、合計8 MiBまでです。リクエストの上限は16 MiBです。リモートURL、PDF、音声、動画、推定、予測、ストリーミングには対応していません。
+画像の入力には `{ content_type, base64 }` オブジェクトを使います。PNG/JPEG/WebP の画像を最大 4 枚まで、デコード後に 1 枚あたり 4 MiB、合計 8 MiB まで指定できます。リクエストの上限は 16 MiB です。リモート URL、PDF、音声、動画、推定、予測、ストリーミングには対応していません。
 
 ## 回答を読む
 
-`answers[field_name].value`を読み取ります。入力元から値を判定できない場合、スカラー値は`null`になります。`p_null`はモデルが示す「値を判定できない確率」で、`confidence`は別のモデル報告スコアです。リストには`p_null`を含めず信頼度を返します。これらのスコアは正確性を保証しないため、用途に応じて確認のしきい値を決めてください。有効な空リストとリクエストの失敗は異なります。
+`answers[field_name].value` を読みます。ソースから値が決まらない場合、スカラー値は `null` になることがあります。`p_null` は値が決まらないことのモデルによる確率で、`confidence` はモデルが報告する別のスコアです。リストには `confidence` がありますが、`p_null` はありません。これらのスコアは正しさを保証するものではないため、ワークロードに合わせてレビューのしきい値を決めてください。有効な空のリストは、失敗したリクエストとは異なります。
 
-`truncated: true`は、プロバイダーが入力元のすべてを処理していないことを示します。網羅性に依存する前に結果を確認するか、短い入力で再送信してください。テキストのオフセットや未確定の推測値は公開しません。複雑な計算はアプリケーション側のコードで行ってください。
+`truncated: true` は、プロバイダーがソース入力をすべて処理しなかったことを意味します。完全性に頼る前に、内容を確認するか、短くした入力を再送信してください。テキストのオフセットや生の推測値は公開されません。複雑な計算はアプリケーションのコードで行ってください。
 
-使用量には、プロバイダーの全パスを合計した`input_tokens`が含まれます。出力トークン数はゼロです。入力元の長さからコストを推測したり、使用量にフィールド数を掛けたりせず、gatewayが返す料金を使ってください。
+使用量のレポートでは、プロバイダーの各パスの `input_tokens` が合算されます。出力トークンは 0 です。ソースの長さからコストを見積もったり、使用量にフィールド数を掛けたりせず、Gateway が返す料金を使ってください。

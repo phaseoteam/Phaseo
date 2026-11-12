@@ -5,31 +5,50 @@ description: "Return predictable JSON with json_object or json_schema output for
 "og:image": "https://phaseo.app/og/dynamic?title=Structured%20Outputs&description=Return%20predictable%20JSON%20with%20json_object%20or%20json_schema%20output%20formats.&pathname=/docs/v1/guides/structured-outputs"
 ---
 
-Structured outputs let you enforce machine-readable output instead of free-form text.
+Send a JSON Schema with the request and the model returns JSON in that shape instead of free text. Your code still parses and validates it before using it.
 
-## Endpoint support
+```mermaid
+flowchart LR
+  schema["Request with a JSON Schema"] --> model["Model answers"]
+  model --> parse{{"Parses and matches your validator?"}}
+  parse -->|"Yes"| use["Use the result"]
+  parse -->|"No, first time"| retry["One corrective retry"]
+  retry --> parse
+  parse -->|"No, again"| fail["Return a safe failure"]
+```
 
-Use structured outputs on:
+## Choose a format
 
-- `/v1/chat/completions` with `response_format`
-- `/v1/responses` with `text.format`
-- `/v1/messages` can still return JSON text, but does not use the same `response_format` contract
+| `type` | What you get |
+| --- | --- |
+| `json_schema` | JSON that follows the schema you send. Use this by default. |
+| `json_object` | Some valid JSON object, with no shape enforced. |
+| `text` | Plain text (the default). |
 
-## Request
+Where the format goes depends on the endpoint:
 
-```bash
+| Endpoint | Field |
+| --- | --- |
+| `/v1/chat/completions` | `response_format` |
+| `/v1/responses` | `text.format` |
+| `/v1/messages` | `output_config.format` (`json_schema` only) |
+
+## Send a schema
+
+<CodeGroup>
+```bash Chat Completions
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
-      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+      { "role": "user", "content": "Return the city and weather for London." }
     ],
     "response_format": {
       "type": "json_schema",
       "json_schema": {
-        "name": "weather_schema",
+        "name": "weather",
         "strict": true,
         "schema": {
           "type": "object",
@@ -45,14 +64,39 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Response
+```bash Responses
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-astra",
+    "input": "Return the city and weather for London.",
+    "text": {
+      "format": {
+        "type": "json_schema",
+        "name": "weather",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+</CodeGroup>
+
+The JSON comes back as a string in the message content:
 
 ```json
 {
-  "id": "chatcmpl_...",
   "choices": [
     {
-      "index": 0,
       "finish_reason": "stop",
       "message": {
         "role": "assistant",
@@ -63,19 +107,13 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-## Contract notes
+## Design the schema
 
-- `response_format.type` should be `text`, `json_object`, or `json_schema`.
-- For `json_schema`, include a schema object (`response_format.json_schema.schema` on chat-style payloads, or `text.format.schema` on responses-style payloads).
-- Validate JSON on your server before downstream use.
-
-## Design your schema
-
-Start with a small object, mark required fields explicitly, and use enums for known categories. Set `additionalProperties: false` when extra keys must be rejected. Keep the requested schema and your server validator in sync; version them together.
+Start with a small object. List every field in `required`, use `enum` for known categories, and set `additionalProperties: false` when extra keys must be rejected. Version the schema together with your server-side validator so they never drift apart.
 
 ## Validate the result
 
-Parse and validate the complete result before using it downstream. This TypeScript example uses Zod and matches the weather schema above:
+Check for a refusal, missing content, or a truncated answer (`finish_reason` other than `stop`) before you parse. Then validate the parsed object. This Zod validator matches the schema above:
 
 ```typescript
 import { z } from "zod";
@@ -90,6 +128,6 @@ function parseWeather(content: string) {
 }
 ```
 
-Handle refusals, missing content, and truncated responses before parsing. If validation fails, allow at most a bounded corrective retry, then return a safe failure. Retried generations can incur additional charges. Valid JSON does not establish that the values are factually correct or authorise an action.
+If validation fails, retry once with the error in the prompt, then return a safe failure. Each retry is charged. Valid JSON still isn't proof that the values are correct or that an action is authorised.
 
-Track validation failures by model and schema version. Recheck your evaluation cases when either changes. For malformed JSON recovery, see [response healing](../cookbook/response-healing-for-structured-json.mdx).
+Track validation failures per model and schema version, and rerun your evaluation cases when either changes. To repair malformed JSON automatically, see [response healing](../cookbook/response-healing-for-structured-json.mdx).

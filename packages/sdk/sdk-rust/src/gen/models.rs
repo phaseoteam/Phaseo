@@ -105,6 +105,7 @@ pub struct AnthropicMessagesResponse {
 
 pub struct AnthropicSystemMessage {
 	pub content: String,
+	pub output_config: Option<HashMap<String, String>>,
 	pub role: String,
 }
 
@@ -138,7 +139,6 @@ pub struct ApiKey {
 	pub department_id: Option<Option<String>>,
 	pub disabled: bool,
 	pub expires_at: Option<String>,
-	pub hash: String,
 	pub id: String,
 	pub include_byok_in_limit: bool,
 	pub ip_allowlist: Option<Vec<HashMap<String, String>>>,
@@ -259,7 +259,6 @@ pub struct ApiKeyWithValue {
 	pub department_id: Option<Option<String>>,
 	pub disabled: bool,
 	pub expires_at: Option<String>,
-	pub hash: String,
 	pub id: String,
 	pub include_byok_in_limit: bool,
 	pub ip_allowlist: Option<Vec<HashMap<String, String>>>,
@@ -1528,6 +1527,7 @@ pub struct FusionToolDefinition {
 pub struct GatewayCapabilities {
 	pub endpoints: Option<Vec<String>>,
 	pub parameter_details: HashMap<String, String>,
+	pub parameter_specs: Option<HashMap<String, String>>,
 	pub parameters: Vec<String>,
 }
 
@@ -1607,6 +1607,13 @@ pub struct GatewayModalities {
 	pub output: Vec<String>,
 }
 
+pub struct GatewayModelAccess {
+	pub hidden_model_count: i64,
+	pub hidden_models: Vec<HashMap<String, String>>,
+	pub limited_model_count: i64,
+	pub restricted: bool,
+}
+
 pub struct GatewayModelLifecycle {
 	pub deprecated_at: Option<String>,
 	pub message: Option<String>,
@@ -1639,6 +1646,7 @@ pub struct GatewayModelOffer {
 pub type GatewayModelOrganization = JsonValue;
 
 pub struct GatewayModelsResponse {
+	pub access: Option<HashMap<String, String>>,
 	pub availability_mode: String,
 	pub limit: i64,
 	pub models: Vec<HashMap<String, String>>,
@@ -1979,8 +1987,10 @@ pub struct ImageModerationInput {
 
 pub struct ImagesEditRequest {
 	pub background: Option<String>,
+	pub complexity: Option<String>,
 	pub image: StringOrStringArray,
 	pub input_fidelity: Option<String>,
+	pub markup: Option<String>,
 	pub mask: Option<String>,
 	pub meta: Option<bool>,
 	pub model: String,
@@ -2007,6 +2017,9 @@ pub struct ImagesEditResponse {
 
 pub struct ImagesGenerationRequest {
 	pub background: Option<String>,
+	pub complexity: Option<String>,
+	pub frame_count: Option<i64>,
+	pub frame_duration_ms: Option<i64>,
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub moderation: Option<String>,
@@ -2022,12 +2035,14 @@ pub struct ImagesGenerationRequest {
 	pub size: Option<String>,
 	pub stream: Option<bool>,
 	pub style: Option<String>,
+	pub svg: Option<HashMap<String, String>>,
 	pub user: Option<String>,
 }
 
 pub struct ImagesGenerationResponse {
 	pub created: Option<i64>,
 	pub data: Option<Vec<HashMap<String, String>>>,
+	pub svg_usage: Option<HashMap<String, String>>,
 }
 
 pub struct InputTokensDetails {
@@ -2711,6 +2726,80 @@ pub struct OpenAIWebSearchToolDefinition {
 pub type OrganisationId = JsonValue;
 
 pub type OrganisationIdList = JsonValue;
+
+pub struct ParameterDimensions {
+	pub aspect_ratios: Option<Vec<String>>,
+	pub max: Option<f64>,
+	pub max_aspect_ratio: Option<String>,
+	pub max_height: Option<f64>,
+	pub max_pixels: Option<f64>,
+	pub max_width: Option<f64>,
+	pub min: Option<f64>,
+	pub min_pixels: Option<f64>,
+	pub multiple_of: Option<f64>,
+}
+
+pub struct ParameterOption {
+	pub description: Option<String>,
+	pub label: Option<String>,
+	pub value: String,
+}
+
+pub struct ParameterRule {
+	pub default: Option<String>,
+	pub r#if: HashMap<String, String>,
+	pub max: Option<f64>,
+	pub message: Option<String>,
+	pub min: Option<f64>,
+	pub step: Option<f64>,
+	pub supported: Option<bool>,
+	pub values: Option<Vec<String>>,
+}
+
+pub struct ParameterSpec {
+	pub alias_of: Option<String>,
+	pub aliases: Option<Vec<String>>,
+	pub always_on: Option<bool>,
+	pub default: Option<String>,
+	pub dimensions: Option<HashMap<String, String>>,
+	pub extra: Option<HashMap<String, String>>,
+	pub format: Option<String>,
+	pub formats: Option<Vec<String>>,
+	pub item_types: Option<Vec<String>>,
+	pub max: Option<f64>,
+	pub max_file_size_bytes: Option<f64>,
+	pub max_items: Option<f64>,
+	pub max_length: Option<f64>,
+	pub max_tokens: Option<f64>,
+	pub media: Option<String>,
+	pub min: Option<f64>,
+	pub min_items: Option<f64>,
+	pub min_length: Option<f64>,
+	pub multiple_of: Option<f64>,
+	pub notes: Option<String>,
+	pub open: Option<bool>,
+	pub options: Option<Vec<HashMap<String, String>>>,
+	pub properties: Option<HashMap<String, String>>,
+	pub provider_default: Option<String>,
+	pub required: Option<bool>,
+	pub requires: Option<Vec<String>>,
+	pub source: Option<HashMap<String, String>>,
+	pub step: Option<f64>,
+	pub support_level: Option<String>,
+	pub supported: bool,
+	pub r#type: Option<String>,
+	pub upstream_name: Option<String>,
+	pub upstream_values: Option<Vec<String>>,
+	pub values: Option<Vec<String>>,
+	pub when: Option<Vec<HashMap<String, String>>>,
+}
+
+pub struct ParameterSpecs {
+}
+
+pub type ParameterType = JsonValue;
+
+pub type ParameterValue = JsonValue;
 
 pub type ParseBlock = JsonValue;
 
@@ -3840,7 +3929,7 @@ pub struct VideoDeleteResponse {
 
 pub struct VideoGenerationRequest {
 	pub aspect_ratio: Option<String>,
-	pub compression_quality: Option<i64>,
+	pub compression_quality: Option<String>,
 	pub duration: Option<i64>,
 	pub enhance_prompt: Option<bool>,
 	pub frame_images: Option<Vec<HashMap<String, String>>>,
@@ -3930,6 +4019,7 @@ pub struct VideoModelCapability {
 
 pub struct VideoModelProviderCapability {
 	pub id: Option<String>,
+	pub parameter_specs: Option<HashMap<String, String>>,
 	pub supported_parameters: Option<Vec<String>>,
 	pub supported_parameters_detail: Option<HashMap<String, String>>,
 	pub supported_params: Option<Vec<String>>,
@@ -4476,9 +4566,20 @@ pub struct WorkspaceMember {
 	pub workspace_id: String,
 }
 
+pub struct WorkspaceMemberAddFailure {
+	pub code: String,
+	pub message: String,
+	pub user_id: String,
+}
+
 pub struct WorkspaceMemberAddResponse {
 	pub added_count: i64,
-	pub data: Vec<HashMap<String, String>>,
+	pub approved: Vec<String>,
+	pub data: Option<Vec<HashMap<String, String>>>,
+	pub error: Option<String>,
+	pub failed: Vec<HashMap<String, String>>,
+	pub message: Option<String>,
+	pub not_attempted: Vec<String>,
 }
 
 pub struct WorkspaceMemberBulkRequest {

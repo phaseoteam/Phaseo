@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	BarChart3,
 	TrendingUp,

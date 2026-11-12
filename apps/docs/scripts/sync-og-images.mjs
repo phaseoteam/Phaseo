@@ -34,9 +34,6 @@ const OVERRIDES = {
 		description:
 			"Pair the SDK with a skill file so local coding agents can use your Phaseo integration consistently.",
 	},
-	"sdk-reference/rust/installation.mdx": {
-		description: "Install the phaseo crate and configure Phaseo Gateway authentication.",
-	},
 };
 
 function listPages(dir, pages = []) {

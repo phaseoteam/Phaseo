@@ -1,12 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import type { OrganisationCard as OrganisationTypeCard } from "@/lib/fetchers/organisations/getAllOrganisations";
-import Image from "next/image";
+import Image from "@/components/image";
 import { Logo } from "@/components/Logo";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { formatLocation } from "@/lib/locations";
 
 export default function OrganisationCard({
@@ -28,6 +28,7 @@ export default function OrganisationCard({
 			<CardContent className="flex flex-row items-center gap-3 p-4">
 				<Link
 					href={`/organisations/${organisation.organisation_id}`}
+					data-no-entity-card
 					className="group"
 				>
 					<div className="w-10 h-10 relative flex items-center justify-center rounded-xl border">
@@ -47,6 +48,7 @@ export default function OrganisationCard({
 				<div className="flex flex-col min-w-0 flex-1">
 					<Link
 						href={`/organisations/${organisation.organisation_id}`}
+						data-no-entity-card
 						className="font-semibold truncate leading-tight"
 					>
 						<span className="relative underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200">
@@ -86,6 +88,7 @@ export default function OrganisationCard({
 					>
 						<Link
 							href={`/organisations/${organisation.organisation_id}`}
+							data-no-entity-card
 							aria-label={t("openLab", { name: organisation.organisation_name ?? t("title") })}
 							tabIndex={-1}
 						>

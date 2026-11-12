@@ -1,5 +1,3 @@
-"use client";
-
 import { useCallback, useState, type SetStateAction } from "react";
 
 // Null means a child editor has not loaded its rows yet. Its first report is

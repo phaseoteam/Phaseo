@@ -60,6 +60,85 @@ describe("stage threads", () => {
 		} finally { await close(); }
 	});
 
+	it("runs every stage and item thread without the repository's own settings, hooks or MCP configs", async () => {
+		const seen: Task[] = [];
+		const { runtime, threads, parents, finished, start, close } = setup(async task => { seen.push(task); });
+		try {
+			await start("run-untrusted");
+			await vi.waitFor(() => expect(finished).toHaveLength(1));
+			const parentId = parents.get(item.id)!;
+			expect(runtime.store.getTask(parentId).untrustedCheckout).toBe(true);
+			// The harness adapter is handed the flag, so it loads only the person's own settings.
+			expect(seen).toEqual([expect.objectContaining({ delegation: expect.objectContaining({ kind: "stage" }), untrustedCheckout: true })]);
+			// An item thread from before the flag existed gets it when the item next runs, and its old stage thread isn't carried on.
+			const parent = runtime.store.getTask(parentId); delete parent.untrustedCheckout; runtime.store.saveTask(parent);
+			const old = seen[0]!.id, oldStage = runtime.store.getTask(old); delete oldStage.untrustedCheckout; runtime.store.saveTask(oldStage);
+			expect(threads.canResume(old, agent)).toBe(false);
+			await start("run-untrusted-2");
+			await vi.waitFor(() => expect(finished).toHaveLength(2));
+			expect(runtime.store.getTask(parentId).untrustedCheckout).toBe(true);
+			expect(seen[1]).toMatchObject({ untrustedCheckout: true });
+			// Threads delegated or handed off from one keep it.
+			const delegated = runtime.store.createDelegatedTask({ type: "create-task", harness: "codex", model: "gpt-test", mode: "code", projectId: seen[1]!.projectId }, { parentTaskId: seen[1]!.id, requestId: "delegated" }, "Help", "Helper");
+			expect(delegated.untrustedCheckout).toBe(true);
+			const handoff = runtime.store.apply({ type: "handoff", id: seen[1]!.id, harness: "claude", model: "default", mode: "code", projectId: seen[1]!.projectId });
+			expect(handoff.untrustedCheckout).toBe(true);
+		} finally { await close(); }
+	});
+
+	it("makes no thread for an agent that would load a fork's own config, and one for an agent that won't", async () => {
+		const { runtime, threads, parents, close, clone, worktree } = setup(async () => {});
+		try {
+			const fork = { ...item, id: "acme/app#4", number: 4, fork: { repo: "someone/app", canPush: true } };
+			const workspace = { dir: worktree, branch: "factory/pr-4", clone };
+			await expect(threads.ensureParent(fork, agent, workspace)).rejects.toThrow("Factory can't run Codex on a pull request from a fork");
+			expect(parents.has(fork.id)).toBe(false); expect(runtime.store.getOverview().tasks).toEqual([]);
+			const parentId = await threads.ensureParent(fork, { ...agent, id: "claude:default:opus", harness: "claude", model: "opus", connectionId: "claude:default" }, workspace);
+			expect(runtime.store.getTask(parentId)).toMatchObject({ harness: "claude", untrustedCheckout: true });
+		} finally { await close(); }
+	});
+
+	it("keeps a fork's threads, and every thread made from them, off agents that would load the fork's own config", async () => {
+		const seen: Task[] = [];
+		const { runtime, threads, parents, finished, handlers, close, clone, worktree } = setup(async task => { seen.push(task); });
+		try {
+			const fork = { ...item, id: "acme/app#4", number: 4, fork: { repo: "someone/app", canPush: true } };
+			const claude: AgentProfile = { id: "claude:default:opus", harness: "claude", label: "Opus", model: "opus", billing: "subscription", connectionId: "claude:default" };
+			const workspace = { dir: worktree, branch: "factory/pr-4", clone };
+			const run = (runId: string, resume?: string) => threads.start({ item: fork, runId, agent: claude, stage: "review", workspace, proof: path.join(worktree, ".factory", "proof", runId), prompt: `Review the pull request (${runId}).`, changedBefore: [], handlers, resume });
+			await run("fork-1");
+			await vi.waitFor(() => expect(finished).toHaveLength(1));
+			const parentId = parents.get(fork.id)!, stage = seen[0]!, projectId = stage.projectId;
+			expect(runtime.store.getTask(parentId)).toMatchObject({ untrustedCheckout: true, forkCheckout: true });
+			expect(stage).toMatchObject({ untrustedCheckout: true, forkCheckout: true });
+			const refused = "This thread works on a pull request from a fork, so it can't run Codex: it loads the repository's own Codex settings, which can run code on this computer. Choose Claude, Cursor, Pi, OpenCode or Phaseo.";
+			const codex = { type: "create-task", harness: "codex", model: "gpt-test", mode: "code", projectId } as const;
+			const claudeTask = { type: "create-task", harness: "claude", model: "opus", mode: "code", projectId } as const;
+			// Delegating, launching, forking or handing off to Codex is refused; to Claude it goes ahead, and the flag goes with it.
+			expect(() => runtime.store.createDelegatedTask(codex, { parentTaskId: stage.id, requestId: "codex" }, "Help", "Helper")).toThrow(refused);
+			expect(runtime.store.createDelegatedTask(claudeTask, { parentTaskId: stage.id, requestId: "claude" }, "Help", "Helper")).toMatchObject({ untrustedCheckout: true, forkCheckout: true });
+			expect(() => runtime.store.createLaunchedTask(codex, { byTaskId: stage.id, requestId: "codex" }, "Go", "Launched")).toThrow(refused);
+			expect(runtime.store.createLaunchedTask(claudeTask, { byTaskId: stage.id, requestId: "claude" }, "Go", "Launched")).toMatchObject({ untrustedCheckout: true, forkCheckout: true });
+			expect(() => runtime.store.apply({ ...codex, type: "handoff", id: stage.id })).toThrow(refused);
+			expect(runtime.store.apply({ ...claudeTask, type: "handoff", id: stage.id })).toMatchObject({ untrustedCheckout: true, forkCheckout: true });
+			expect(() => runtime.store.handoffDelegatedTask(parentId, stage.id, "codex-handoff", { harness: "codex", model: "gpt-test" })).toThrow(refused);
+			expect(runtime.store.handoffDelegatedTask(parentId, stage.id, "claude-handoff", { harness: "claude", model: "opus" })).toMatchObject({ forkCheckout: true });
+			const own = runtime.store.apply(codex);
+			expect(() => runtime.store.forkDelegatedTask(parentId, own.id, "fork-codex")).toThrow(refused);
+			expect(runtime.store.forkDelegatedTask(parentId, stage.id, "fork-claude")).toMatchObject({ forkCheckout: true });
+			expect(runtime.store.getOverview().tasks.filter(task => task.harness === "codex").map(task => task.id)).toEqual([own.id]);
+			// A thread on someone else's checkout that isn't a fork's still delegates to Codex.
+			const trusted = runtime.store.apply({ ...claudeTask, untrustedCheckout: true });
+			expect(runtime.store.createDelegatedTask(codex, { parentTaskId: trusted.id, requestId: "codex" }, "Help", "Helper")).toMatchObject({ harness: "codex", untrustedCheckout: true });
+			// Item and stage threads from before the flag get it when Factory next uses them.
+			for (const id of [parentId, stage.id]) { const task = runtime.store.getTask(id); delete task.forkCheckout; runtime.store.saveTask(task); }
+			await run("fork-2", stage.id);
+			await vi.waitFor(() => expect(finished).toHaveLength(2));
+			expect(seen[1]).toMatchObject({ id: stage.id, forkCheckout: true });
+			expect(runtime.store.getTask(parentId).forkCheckout).toBe(true);
+		} finally { await close(); }
+	});
+
 	it("never delivers a stage's result to the parent when the parent's own turn ends first", async () => {
 		let release!: () => void;
 		const held = new Promise<void>(resolve => { release = resolve; });
@@ -129,10 +208,10 @@ describe("stage threads", () => {
 
 	it("tells a stop of the queued brief apart from the interruption before it", async () => {
 		// A thread interrupted earlier, whose new brief stays queued: the stand-in host never starts it.
-		const task = { id: "t", harness: agent.harness, model: agent.model, status: "interrupted", interruptedAt: new Date(Date.now() - 60_000).toISOString(), queue: [] as { id: string; text: string }[], messages: [], activities: [], revision: 1, archived: false } as unknown as Task;
+		const task = { id: "t", harness: agent.harness, model: agent.model, status: "interrupted", interruptedAt: new Date(Date.now() - 60_000).toISOString(), queue: [] as { id: string; text: string }[], messages: [], activities: [], revision: 1, archived: false, untrustedCheckout: true } as unknown as Task;
 		let changed = () => {};
 		const host = {
-			store: { getTask: () => task, getTaskTail: () => task, getOverview: () => ({ tasks: [{ id: "t", revision: task.revision }] }), getProjects: () => [], addProject: (directory: string) => ({ id: directory, name: "clone", directory }), saveProject: () => {} },
+			store: { getTask: () => task, getTaskTail: () => task, getOverview: () => ({ tasks: [{ id: "t", revision: task.revision }] }), getProjects: () => [], addProject: (directory: string) => ({ id: directory, name: "clone", directory }), saveProject: () => {}, saveTask: () => {} },
 			command: async (command: { type: string; text?: string }) => { if (command.type === "send") { task.queue.push({ id: "brief", text: command.text!, createdAt: new Date().toISOString() }); task.revision = (task.revision ?? 0) + 1; } return {}; },
 			createThread: () => { throw new Error("unused"); }, startStageThread: () => { throw new Error("unused"); },
 			onThreadsChange: (listener: () => void) => { changed = listener; return () => {}; },

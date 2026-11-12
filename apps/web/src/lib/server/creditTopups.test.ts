@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, type Mock } from "vitest";
 import { createHash } from "node:crypto";
 import {
 	chargeConfirmedCreditTopup,
@@ -95,14 +96,14 @@ describe("decideCreditTopup", () => {
 });
 
 describe("chargeConfirmedCreditTopup", () => {
-	function stripeWith(create: jest.Mock, retrieve: jest.Mock = jest.fn()) {
+	function stripeWith(create: Mock, retrieve: Mock = vi.fn()) {
 		return { paymentIntents: { create, retrieve } } as any;
 	}
 
 	it("charges the saved card customer-present, once per request", async () => {
 		const request = row();
 		const db = fakeDb({ wallets: [{ workspace_id: WORKSPACE, stripe_customer_id: "cus_1" }], credit_topup_requests: [request] });
-		const create = jest.fn(async () => ({ id: "pi_1", status: "succeeded", client_secret: "secret" }));
+		const create = vi.fn(async () => ({ id: "pi_1", status: "succeeded", client_secret: "secret" }));
 		const result = await chargeConfirmedCreditTopup({ db, stripe: stripeWith(create), row: request, countryCode: "GB" });
 		expect(result).toEqual({ state: "succeeded" });
 		const [params, options] = create.mock.calls[0] as unknown as [Record<string, any>, Record<string, any>];
@@ -119,13 +120,13 @@ describe("chargeConfirmedCreditTopup", () => {
 	it("returns the client secret when 3D Secure is needed", async () => {
 		const request = row();
 		const db = fakeDb({ wallets: [{ workspace_id: WORKSPACE, stripe_customer_id: "cus_1" }], credit_topup_requests: [request] });
-		const create = jest.fn(async () => ({ id: "pi_3ds", status: "requires_action", client_secret: "pi_3ds_secret" }));
+		const create = vi.fn(async () => ({ id: "pi_3ds", status: "requires_action", client_secret: "pi_3ds_secret" }));
 		expect(await chargeConfirmedCreditTopup({ db, stripe: stripeWith(create), row: request, countryCode: "GB" })).toEqual({ state: "requires_action", clientSecret: "pi_3ds_secret" });
 	});
 
 	it("resumes the existing PaymentIntent instead of creating another", async () => {
-		const create = jest.fn();
-		const retrieve = jest.fn(async () => ({ id: "pi_1", status: "requires_action", client_secret: "again" }));
+		const create = vi.fn();
+		const retrieve = vi.fn(async () => ({ id: "pi_1", status: "requires_action", client_secret: "again" }));
 		const result = await chargeConfirmedCreditTopup({ db: fakeDb({}), stripe: stripeWith(create, retrieve), row: row({ stripe_payment_intent_id: "pi_1" }), countryCode: "GB" });
 		expect(result).toEqual({ state: "requires_action", clientSecret: "again" });
 		expect(create).not.toHaveBeenCalled();
@@ -135,7 +136,7 @@ describe("chargeConfirmedCreditTopup", () => {
 	it("records a card decline as failed with a reason code", async () => {
 		const request = row();
 		const db = fakeDb({ wallets: [{ workspace_id: WORKSPACE, stripe_customer_id: "cus_1" }], credit_topup_requests: [request] }, () => ({ data: true, error: null }));
-		const create = jest.fn(async () => {
+		const create = vi.fn(async () => {
 			throw Object.assign(new Error("Your card was declined."), { type: "StripeCardError", code: "card_declined", decline_code: "insufficient_funds", payment_intent: { id: "pi_declined" } });
 		});
 		expect(await chargeConfirmedCreditTopup({ db, stripe: stripeWith(create), row: request, countryCode: "GB" })).toEqual({ state: "failed", reason: "insufficient_funds" });
@@ -146,12 +147,12 @@ describe("chargeConfirmedCreditTopup", () => {
 	});
 
 	it("refuses checkout requests", async () => {
-		await expect(chargeConfirmedCreditTopup({ db: fakeDb({}), stripe: stripeWith(jest.fn()), row: row({ flow: "checkout", payment_method_id: null }), countryCode: "GB" })).rejects.toThrow("credit_topup_not_saved_card");
+		await expect(chargeConfirmedCreditTopup({ db: fakeDb({}), stripe: stripeWith(vi.fn()), row: row({ flow: "checkout", payment_method_id: null }), countryCode: "GB" })).rejects.toThrow("credit_topup_not_saved_card");
 	});
 });
 
 describe("needsAuthenticationResume", () => {
-	const stripeWith = (status: string) => ({ paymentIntents: { retrieve: jest.fn(async () => ({ id: "pi_1", status })) } }) as any;
+	const stripeWith = (status: string) => ({ paymentIntents: { retrieve: vi.fn(async () => ({ id: "pi_1", status })) } }) as any;
 
 	it("offers Resume for a confirmed payment still waiting for 3D Secure", async () => {
 		const stripe = stripeWith("requires_action");
@@ -189,7 +190,7 @@ describe("recordCreditTopupPaymentFromWebhook", () => {
 	it("ignores other payments and reports a mismatched PaymentIntent", async () => {
 		const db = fakeDb({}, () => ({ data: false, error: null }));
 		expect(await recordCreditTopupPaymentFromWebhook({ db, paymentIntent: pi({ purpose: "top_up", workspace_id: WORKSPACE }), outcome: "paid" })).toBe("ignored");
-		const warn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 		expect(await recordCreditTopupPaymentFromWebhook({ db, paymentIntent: pi({ topup_request_id: REQUEST, workspace_id: WORKSPACE }), outcome: "paid" })).toBe("refused");
 		warn.mockRestore();
 	});

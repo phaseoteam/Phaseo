@@ -17,6 +17,7 @@ import {
 	internalServerError,
 	isResponse,
 	parsePathId,
+	rejectThirdPartyOAuthSpendingChange,
 	requireCapability,
 	requireJsonBody,
 	requireOAuthWorkspaceRole,
@@ -63,6 +64,10 @@ function actorUserId(auth: { userId?: string | null }): string | null {
 	return auth.userId?.trim() || null;
 }
 
+// Classifiers send sampled request content to a classifier model, so an app that signs in with Phaseo must not
+// add, change, test or remove one, whatever scopes the person consented to.
+const CLASSIFIER_APP_REFUSAL = "Apps that use Sign in with Phaseo can't add, change, test or remove request classifiers, because they read request content. The person can change them under Settings, Classifiers.";
+
 /** Classifiers see request content, so only owners and admins manage or read them. */
 export async function authorizeClassifiers(req: Request, capability: string) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
@@ -71,6 +76,8 @@ export async function authorizeClassifiers(req: Request, capability: string) {
 	if (scopeError) return { response: scopeError } as const;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return { response: roleError } as const;
+	const appError = capability === CAPABILITIES.CLASSIFIERS_READ ? null : rejectThirdPartyOAuthSpendingChange(auth.value, CLASSIFIER_APP_REFUSAL);
+	if (appError) return { response: appError } as const;
 	// Decided for the workspace (its owner), the same way the gateway decides whether to classify.
 	if (!(await isRequestClassifiersAccessEnabled({ workspaceId: auth.value.workspaceId }))) {
 		return { response: featureDisabled(auth.value.workspaceId) } as const;

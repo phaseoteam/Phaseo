@@ -16,6 +16,7 @@ import { openCodeForm } from "./openCodeForms";
 import { AgentInputRejectedError } from "./agentAdapter";
 import type { McpConnection } from "../shared/mcp";
 import { OpenCodeMcp } from "./openCodeMcp";
+import type { IsolatedOptions } from "./openCodeService";
 import { orchestrationInstructions } from "../shared/orchestration";
 
 export class OpenCodeAdapter implements AgentAdapter {
@@ -26,20 +27,23 @@ export class OpenCodeAdapter implements AgentAdapter {
 	private inputGeneration = 0;
 	private readonly inputs = new Set<Promise<unknown>>();
 	private isolatedRun = false;
-	constructor(private readonly connect?: (signal: AbortSignal) => Promise<Endpoint>, private readonly mcp: McpConnection[] = [], private readonly mcpManager = new OpenCodeMcp(), private readonly isolate?: (signal: AbortSignal) => Promise<{ endpoint: Endpoint; close: () => Promise<void> }>) {}
+	constructor(private readonly connect?: (signal: AbortSignal) => Promise<Endpoint>, private readonly mcp: McpConnection[] = [], private readonly mcpManager = new OpenCodeMcp(), private readonly isolate?: (signal: AbortSignal, options?: IsolatedOptions) => Promise<{ endpoint: Endpoint; close: () => Promise<void> }>) {}
 	async run(task: Task, cwd: string, text: string, callbacks: AgentCallbacks, _account?: Account, attachments: AttachmentContent[] = [], nativeAction?: NativeAction): Promise<void> {
 		// OpenCode keeps runtime MCP servers per folder for every session on a service, so the orchestration server (this turn's
 		// credential) goes only to a service started for this turn, and never to the shared or an external one.
 		const orchestration = task.mode !== "chat" && this.isolate ? this.mcp.find(connection => connection.orchestration) : undefined;
-		if (!orchestration) {
+		// Someone else's checkout (Factory's) also gets a service of its own, one that never reads the checkout's opencode.json
+		// or .opencode folder (its plugins, MCP servers and settings would otherwise run with the person's credentials).
+		if (task.untrustedCheckout && !this.isolate) throw new Error("OpenCode can't work on this checkout without a service of its own.");
+		if (!orchestration && !task.untrustedCheckout) {
 			const endpoint = this.connect ? await this.connect(this.controller.signal) : await Service.discover({ version: version => version.startsWith("2.") });
 			if (!endpoint) throw new Error("Start an OpenCode 2 service before using this harness. OpenCode 1 is not supported by this adapter.");
 			return this.turn(endpoint, this.mcp.filter(connection => !connection.orchestration), this.mcpManager, task, cwd, text, callbacks, attachments, nativeAction);
 		}
-		const isolated = await this.isolate!(this.controller.signal);
+		const isolated = await this.isolate!(this.controller.signal, task.untrustedCheckout ? { ignoreProjectConfig: true } : undefined);
 		this.isolatedRun = true;
 		// OpenCode sessions take no system prompt, so a new session gets the orchestration guidance ahead of its first prompt.
-		const guided = !task.nativeSessionId && !task.nativeForkFrom && !nativeAction && text.trim() !== "/compact" ? `${orchestrationInstructions}\n\n---\n\n${text}` : text;
+		const guided = orchestration && !task.nativeSessionId && !task.nativeForkFrom && !nativeAction && text.trim() !== "/compact" ? `${orchestrationInstructions}\n\n---\n\n${text}` : text;
 		try { await this.turn(isolated.endpoint, this.mcp, new OpenCodeMcp(), task, cwd, guided, callbacks, attachments, nativeAction); }
 		finally { await isolated.close(); }
 	}

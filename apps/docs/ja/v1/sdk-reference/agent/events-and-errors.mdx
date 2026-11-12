@@ -1,0 +1,200 @@
+---
+icon: "triangle-alert"
+title: "イベントとエラー"
+description: "失敗したエージェントの実行がどのように表に出るか、どのイベントが発生するか、モデル、ツール、続行のエラーからどう回復するかを確認します。"
+---
+
+失敗した実行は、run または continue の呼び出しからスローするか、エラーを返します。一時停止（`waiting_for_human`）や停止条件（`stopped`）はエラーではなく、どちらも通常の結果を返します。どの失敗で `run.failed` イベントも送られるかは言語によって異なるため、失敗の検出をイベントだけに頼らないでください。
+
+## 失敗した実行の表れ方
+
+| 言語 | 失敗したとき | 保存される状態 |
+| --- | --- | --- |
+| TypeScript | スローします。Gateway の失敗は `AgentGatewayError` です。`signal` によるキャンセルはスローせず、実行はステータス `cancelled` で戻ります。 | 失敗した実行（ステータス `failed`、`error` と `errorDetails` 付き）が、エラーのスロー前に `state` で保存されます |
+| Python | `run()`、`continue_run()`、`stream.result()` から例外を送出 | `AgentRunResult` はなく、`state` アクセサーも呼ばれません |
+| Go | nil でない `error` と空の `RunResult` を返す | なし |
+| C# | `Run` または `ContinueRun` からスロー。`RunResult` はなし | なし |
+| PHP | `run()` または `continueRun()` から `RuntimeException` をスロー。`RunResult` はなし | なし |
+| Ruby | `run` または `continue_run` から例外を送出。`RunResult` はなし | なし |
+| Java | `run` または `continueRun` からスロー。`RunResult` はなし | なし |
+| Rust | `Err(AgentError)` を返す | なし |
+
+<CodeGroup>
+
+```typescript TypeScript
+import { AgentGatewayError, AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  } else if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+```python Python
+import phaseo
+
+try:
+    result = agent.run(input="Summarise this ticket", client=client)
+except phaseo.PhaseoHTTPError as error:
+    print(error.status, error.code, error.request_id)
+    raise
+```
+
+```go Go
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+result, err := agent.Run(ctx, options)
+if errors.Is(err, context.DeadlineExceeded) {
+  // 再試行またはタイムアウトの報告に必要なアプリケーションの状態を保存します。
+}
+```
+
+```csharp C#
+using Phaseo.Gen;
+
+try
+{
+    var result = await agent.Run(options);
+}
+catch (ApiErrorException error)
+{
+    Console.Error.WriteLine($"{error.StatusCode} {error.Code} {error.RequestId}");
+    throw;
+}
+```
+
+```php PHP
+use Phaseo\Gen\RequestException;
+
+try {
+    $result = $agent->run(input: "Summarise this ticket", client: $client);
+} catch (RequestException $error) {
+    error_log($error->getStatusCode() . " " . $error->getErrorCode() . " " . $error->getRequestId());
+    throw $error;
+}
+```
+
+```ruby Ruby
+begin
+  result = agent.run(input: "Summarise this ticket", client: client)
+rescue Phaseo::Gen::RequestError => error
+  warn [error.status_code, error.code, error.request_id].join(" ")
+  raise
+end
+```
+
+```java Java
+import app.phaseo.gen.Client.ApiException;
+
+try {
+    var result = agent.run(options);
+} catch (ApiException error) {
+    System.err.println(error.getStatusCode() + " " + error.getCode() + " " + error.getRequestId());
+    throw error;
+}
+```
+
+```rust Rust
+match agent.run(&mut client, options) {
+    Ok(result) => println!("{}", result.output),
+    Err(error) => eprintln!("Agent failed: {}", error.message()),
+}
+```
+
+</CodeGroup>
+
+<span id="which-events-fire-when-something-fails"></span>
+## 失敗時に発生するイベント
+
+| 言語 | `run.failed` が送られるとき | `tool.failed` が送られるとき | ステップ上限に達したとき |
+| --- | --- | --- | --- |
+| TypeScript | キャンセル以外のすべての失敗で、`step.failed` の後に送られます。キャンセルでは代わりに `step.cancelled` と `run.cancelled` が送られます。 | ツールが失敗した | `Max steps exceeded (N)` をスローし、`run.failed` を送る |
+| Python | `max_steps` を使い切ったときだけ。キャンセルを含むその他のエラーは、イベントなしで例外を送出します。 | ツールが失敗した | `RuntimeError("Max steps exceeded (N)")` を送出 |
+| Go | モデルのエラー（再試行後）またはステップ上限が実行を終わらせた | ツールがエラーになった、またはタイムアウトした | `Max steps exceeded (N)` を返し、`run.failed` を送る |
+| C# | 実行が `MaxSteps` に達したときだけ。モデルのエラー、ツールの例外、検証、キャンセルは、イベントなしでスローします。 | ツールがスローし、その `OnError` が `return-to-model` | `Max steps exceeded (N)` をスロー |
+| PHP | 実行が `maxSteps` に達したときだけ。モデルのエラー、ツールの例外、検証は、イベントなしでスローします。 | ツールがスローした、またはタイムアウトした | `Max steps exceeded (N)` をスロー |
+| Ruby | 実行が `max_steps` に達したときだけ。モデルのエラー、ツールの例外、検証は、イベントなしで例外を送出します。 | ツールが例外を送出し、その `on_error` が `return-to-model`。`continue_run` が実行する承認済みの呼び出しは、例外を送出するたびに送信します。 | `Max steps exceeded (N)` を送出 |
+| Java | 実行が `maxSteps` に達したときだけ。モデルのエラー、ツールの例外、検証、キャンセルは、イベントなしでスローします。 | ツールがスローし、その `onError` が `return-to-model` | `Max steps exceeded (N)` をスロー |
+| Rust | 送られません。Rust には失敗のイベントがありません | 送られません。ツールのエラーは `is_error: true` を持つ `tool.completed` として送られます | エラーではありません。実行はステータス `stopped`、`stop_reason` `max_steps:<limit>` で戻り、`run.stopped` イベントが送られます |
+
+すべてのイベントは[ライフサイクルフック](./lifecycle-hooks)にあります。
+
+## エラーの原因を見つける
+
+| 原因 | エラー | 言語による違い |
+| --- | --- | --- |
+| API キーがない | `PHASEO_API_KEY is required` | Python：`ValueError`。Ruby：`ArgumentError: Missing API key. Pass api_key or set PHASEO_API_KEY.` |
+| Gateway がモデルリクエストを拒否した | 再試行ポリシーを使い切った後に再スローされる Gateway のエラー | TypeScript：`AgentGatewayError`。Python：`status`、`code`、`request_id` を持つ `phaseo.PhaseoHTTPError`。Rust：Gateway のステータスと本文を含まない `AgentError` に変換されます。 |
+| モデルがツールを呼び出し続けた | `Max steps exceeded (N)` | Rust は代わりに実行を停止します（上記参照） |
+| モデルがエージェントにないツールを呼び出した | `Unknown tool '<name>'` | Go：`unknown tool "name"`。TypeScript で `return-to-model` の場合：代わりにモデルに応答します。 |
+| バリデーターがツールの入力、ツールの出力、進捗イベント、または最終出力を拒否した | `Invalid tool input: ...`、`Invalid tool output: ...`、`Invalid agent output: ...` | TypeScript：`AgentSchemaValidationError`。Python と Ruby：`ValueError` / `ArgumentError`。Go：小文字の `invalid ...`。Rust にはバリデーターがありません。 |
+| ツールがタイムアウトを超えて動いた | タイムアウトのエラー | Python：`TimeoutError`。Go：`tool <id> timed out: ...`。C# と Java：`TimeoutException`。PHP：`Tool <name> timed out after <n>ms`。Ruby：`Timeout::Error`。Rust にはツールのタイムアウトがありません。 |
+| 続行が保留中のすべての呼び出しに応答しなかった | `Missing approval decision for tool call <id>`、`Missing output for tool call <id>` | Go：小文字の `missing ...`。Python：`ValueError`。[状態と承認](./state-and-approval)を参照してください。 |
+| レビューによる一時停止を人の入力なしで続行した | `Run <id> is waiting for human input` | Go：`run <id> ...`。Java：`Run is waiting for human input`。 |
+| 実行が別のエージェント ID のものだった | `Run <id> belongs to agent <agent>` | Go：`run <id> ...`。Java：`Run belongs to <agent>`。 |
+| 続行する実行がなかった | `A run or state accessor with runId is required` | C# と Java。Ruby：`... with run_id is required`。PHP の `continueRunById()`：`Run <id> not found`。 |
+| ストリームがキャンセルされた | キャンセルのエラー | Python：`InterruptedError`。PHP：`Agent stream cancelled`。C#：`OperationCanceledException`。Go：context のエラー。TypeScript：エラーなし。ステータスは `cancelled`。 |
+
+### TypeScript のエラーの型
+
+`AgentGatewayError` には、`status`、`statusText`、`headers`、`body`、`requestId`、`generationId`、`reason`、`errorType`、`errorOrigin`、`failedProviders`、`failedStatuses` と、ルーティングの診断情報があります。失敗した実行とステップは、同じ詳細を `errorDetails` に保持します。ストリーミング中のレスポンスの途中で起きた失敗は `AgentStreamError` で、これは `code` と `retryable` を持つサブクラスです。
+
+`AgentSchemaValidationError` は、`tool_input`、`tool_output`、`tool_event`、`agent_output` のいずれかの `target` と、バリデーターのエラーを含む `details` を持ちます。これらは一時的なモデルの失敗ではなく、契約違反として扱ってください。
+
+`modelRetry.retryOn` などでエラーを分類するには、`agentErrorIsRetryable(error)`、`agentRetryAfterMs(error)`、`agentErrorIsContextOverflow(error)` を使います。
+
+### Rust のエラーの型
+
+ランタイムのすべての失敗は `AgentError` で、`message()` で読み取ります。Gateway の `PhaseoError` の値は `AgentError` に変換されるため、元の Gateway のステータスと本文が必要な場合は、`phaseo` クライアントを直接呼び出すか、それらを保持する独自の `ModelClient` を実装してください。
+
+## ツールエラーから回復する
+
+デフォルトでは、ツールのエラーは実行を失敗させます。モデルが別の方法を試すのが妥当な場合は、ツールのエラー時の方針を `return-to-model` にします。エラーはツールの結果 `{"error": "..."}` になり、実行は続きます。安全でない失敗や回復できない失敗には、デフォルトの `fail-run` のままにしてください。
+
+| 言語 | 設定 | `return-to-model` でのタイムアウト |
+| --- | --- | --- |
+| TypeScript | ツールの `onError`、またはすべてのツールに対する `toolExecution.onError` | ツールエラーとして扱われ、モデルに返される |
+| Python | `on_error` | 常に実行を失敗させる |
+| Go | `OnError` | モデルに返される |
+| C# | `OnError` | モデルに返される（例外のメッセージ） |
+| PHP | `onError` | モデルに返される |
+| Ruby | `on_error` | モデルに返される |
+| Java | `onError` | モデルに返される（例外のメッセージ） |
+| Rust | なし | Rust にはタイムアウトがありません。ローカルの実行関数からの `AgentError` は、常にツールエラーメッセージとしてモデルに返されます。 |
+
+## キャンセルとタイムアウトを処理する
+
+ツールのタイムアウトやキャンセルが、ツール自身の処理を必ず止めるとは限りません。ツール内の HTTP、データベース、プロセスの呼び出しにはそれぞれ期限を設け、キャンセルまたはタイムアウトした実行は、アプリケーションが新しい実行を始めない限り終了したものとして扱ってください。
+
+| 言語 | 実行をキャンセルする方法 | 実行中のツールに起きること |
+| --- | --- | --- |
+| TypeScript | `signal` を渡すか、ストリームの `cancel()` を呼び出す | ツールのタイムアウトは `context.signal` を中止します。独自の呼び出しにこれを渡してください |
+| Python | ストリームの `cancel()`。実行は `InterruptedError` を送出します | ツールのスレッドはタイムアウトでもキャンセルでも停止されません |
+| Go | `Run`、`Continue`、`Stream` に渡した `ctx` をキャンセルするか、ストリームの `Cancel()` を呼び出す | 実行中のツールはタイムアウトのエラーで失敗しますが、`Execute` は context を受け取らないため、処理は動き続けます |
+| C# | `RunOptions` または `ContinueOptions` に `CancellationToken` を渡すか、ストリームの `Cancel()` を呼び出す。実行は `OperationCanceledException` をスローします | ツールは `runtime.CancellationToken` を受け取ります。独自の呼び出しにこれを渡してください |
+| PHP | ストリームの `cancel()` | ツールは同期的に実行され、止められません。`timeoutMs` は呼び出しが戻った後に失敗させるだけです。ウェブリクエストでは PHP の `max_execution_time` に注意してください。 |
+| Ruby | ストリームの `cancel` がワーカースレッドを終了させる | `timeout_ms` は `Timeout.timeout` を使い、ツールのスレッドを任意の地点で中断するため、ファイル、ソケット、トランザクションが中途半端な状態で残ることがあります |
+| Java | ストリームの `cancel()` がワーカースレッドを中断する | ツールの `timeout` は実行関数を専用のスレッドで実行して中断します。止まるのは中断に応答するコードだけです |
+| Rust | 未対応。実行は同期的です | リクエストハンドラーをブロックしてはならない場合は、ワーカースレッドでエージェントを実行してください |
+
+## 中断された TypeScript の実行から回復する
+
+実行がステップの途中でクラッシュまたはキャンセルされた場合、その履歴に結果のないツール呼び出しが残ることがあり、プロバイダーはこれを拒否します。TypeScript の `continueRun()` は、それらに未実行として応答し、`history.repaired` を送ります。メッセージを別の場所で再利用する場合は、自分で `repairToolHistory(messages)` を呼び出してください。
+
+## 最初に確認すること
+
+- `PHASEO_API_KEY` がプロセスに渡され、Gateway クライアントに渡されている。
+- すべてのツールに、一意で安定した ID がある。
+- 承認、拒否、ツール出力に正確なツール呼び出し ID を使っており、人の入力メッセージをツール出力の代わりにしていない。
+- 承認の UI を表示する前、または別のリクエストやワーカーに制御を渡す前に、実行結果全体を保存している。
+- バリデーターが決定的で副作用がなく、失敗した確認を安全に再試行できる。
+- モデルの再試行に上限があり、検証や承認の失敗をむやみに再試行していない。
+
+どのステップが失敗したかを確認するには、[ライフサイクルフック](./lifecycle-hooks)で `step.started`、`model.requested`、`tool.failed` を記録してください。ステップを Gateway のログに結び付ける ID については[オブザーバビリティ](./observability)を参照してください。

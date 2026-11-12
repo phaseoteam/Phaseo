@@ -4,29 +4,34 @@ description: "Verstehe Modelle, Anbieter, Routing und Abrechnung vor der Phaseo-
 icon: "terminal"
 ---
 
-Phaseo leitet Modellanfragen deiner Anwendung über eine API an Anbieter weiter. Deine Anwendung wählt Modell und Endpunkt; Workspace-Einstellungen und Anfragesteuerung bestimmen, welche Anbieter sie bearbeiten dürfen.
+Sende eine Modell-ID an einen Phaseo-Endpunkt, und Phaseo routet die Anfrage an einen Anbieter, der dieses Modell hostet. Deine Anwendung wählt Modell und Endpunkt; deine Workspace-Einstellungen und die Routing-Steuerungen der Anfrage entscheiden, welche Anbieter sie bedienen dürfen.
+
+```mermaid
+flowchart LR
+  app["Deine App"] -->|"Modell + Endpunkt"| gw["Phaseo Gateway"]
+  gw --> rules{{"Workspace-Einstellungen und Routing-Steuerungen der Anfrage"}}
+  rules --> p1["Anbieter A"]
+  rules -.->|"Fallback"| p2["Anbieter B"]
+```
 
 ## Modelle und Anbieter
 
-Ein Modell ist das System, das die Ausgabe erzeugt. Ein Anbieter hostet es und bestimmt Verfügbarkeit, unterstützte Parameter, Preise und Leistung. Dasselbe Modell kann mehrere Anbieterangebote haben.
+Ein Modell ist das System, das die Ausgabe erzeugt. Ein Anbieter hostet das Modell und bestimmt dessen Verfügbarkeit, unterstützte Parameter, Preise und Leistung. Ein Modell kann mehrere Anbieterangebote haben.
 
-Der öffentliche Katalog enthält auch Modelle, die derzeit nicht über das Gateway verfügbar sind. Prüfe die [Modellverfügbarkeit](../exploring/models.mdx), bevor du eine ID in einer Anfrage nutzt.
+Der öffentliche Katalog listet auch Modelle auf, die noch nicht über das Gateway verfügbar sind. Prüfe die [Modellverfügbarkeit](../exploring/models.mdx), bevor du eine ID in einer Anfrage verwendest.
 
 ## Anfragen und Routing
 
-Nutze [Responses, Chat Completions oder Messages](../api-reference/introduction.mdx) passend zum Anwendungsprotokoll. Anbieterspezifische Fähigkeiten unterscheiden sich weiterhin; ein gemeinsamer Endpunkt bedeutet nicht, dass jedes Modell jeden Parameter unterstützt.
+Verwende [Responses, Chat Completions oder Messages](../api-reference/introduction.mdx), je nachdem, welches zum Protokoll deiner Anwendung passt. Ein gemeinsamer Endpunkt bedeutet nicht, dass jedes Modell jeden Parameter unterstützt; die Fähigkeiten der Anbieter unterscheiden sich weiterhin.
 
-[Routing-Steuerung](../guides/routing-and-fallbacks.mdx) erlaubt Anbieterbeschränkungen und die Wahl ihrer Reihenfolge. Fallbacks unterliegen weiterhin deinen Einschränkungen und der verfügbaren Kapazität; sie garantieren keinen Erfolg.
+[Routing-Steuerungen](../guides/routing-and-fallbacks.mdx) schränken ein, welche Anbieter eine Anfrage bedienen dürfen und wie sie gereiht werden. Fallbacks bleiben innerhalb dieser Einschränkungen und hängen von verfügbarer Kapazität ab, garantieren also keinen Erfolg.
 
 ## Abrechnung und Zugriff
 
-Verwaltete Anfragen nutzen dein Phaseo-Workspace-Guthaben. `:free`-Modelle benötigen keine Einzahlung. Mit Anbieterzugangsdaten (BYOK) gelten Anbieterabrechnung und Kontolimits; prüfe [Preise und Abrechnung](../pricing/tiers.mdx) vor dem Rollout.
+Verwaltete Anfragen nutzen das Guthaben deines Phaseo-Workspace, und `:free`-Modelle laufen ohne eingezahlte Credits. Mit deinen eigenen Anbieter-Zugangsdaten (BYOK) gelten die Abrechnung und die Kontolimits des Anbieters. Prüfe [Preise und Abrechnung](../pricing/tiers.mdx) vor dem Rollout.
 
-[Video- und Batch-Jobs](../guides/async-video-and-batch.mdx) liefern einen Job vor Ende der Verarbeitung. Der Vorschauzugang wird pro Workspace verwaltet. Frage den Status ab oder empfange Webhook-Updates und lade dann das Ergebnis herunter.
+[Video- und Batch-Jobs](../guides/async-video-and-batch.mdx) geben einen Job zurück, bevor die Verarbeitung abgeschlossen ist; der Vorschauzugang dazu wird pro Workspace verwaltet. Frage den Status ab oder empfange einen Webhook und lade dann das Ergebnis herunter.
 
-## Integration erstellen
+## Nächste Schritte
 
-- [Schnellstart](../quickstart.mdx): Sende deine erste Anfrage.
-- [Gateway integrieren](./integrating-with-the-gateway.mdx): Bewahre Zugangsdaten im Backend auf und konfiguriere deine Anwendung.
-- [Zuverlässigkeit und Status](./reliability-and-status.mdx): Untersuche Verfügbarkeit und fehlgeschlagene Anfragen.
-- [Anfragelogs und Beobachtbarkeit](../guides/integrations/observability.mdx): Prüfe Nutzung, Latenz, Kosten und Fehler.
+Sende deine erste Anfrage mit dem [Schnellstart](../quickstart.mdx) und [integriere dann das Gateway](./integrating-with-the-gateway.mdx) in deine Anwendung, wobei der Schlüssel in deinem Backend bleibt. Wenn etwas fehlschlägt, zeigt [Zuverlässigkeit und Status](./reliability-and-status.mdx), wie du der Sache nachgehst, und die [Anfrageprotokolle](../guides/integrations/observability.mdx) zeigen Nutzung, Latenz, Kosten und Fehler jeder Anfrage.

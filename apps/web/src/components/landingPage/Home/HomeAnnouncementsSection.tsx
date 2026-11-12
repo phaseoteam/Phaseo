@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from "@/components/image";
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import { ChevronRight } from "lucide-react";
 import {
@@ -8,9 +8,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
-import { getAnnouncementPosts } from "@/lib/content/announcements";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "@/i18n/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { landingAnnouncementPostsQuery } from "@/components/landingPage/landing.functions";
 
 const ANNOUNCEMENT_LIMIT = 4;
 
@@ -32,10 +33,10 @@ export function HomeAnnouncementsSectionFallback() {
 	);
 }
 
-export default async function HomeAnnouncementsSection() {
-	const locale = await getLocale();
-	const t = await getTranslations({ locale, namespace: "Content.blog" });
-	const posts = await getAnnouncementPosts({ locale });
+export default function HomeAnnouncementsSection() {
+	const locale = useLocale();
+	const t = useTranslations("Content.blog");
+	const { data: posts } = useSuspenseQuery(landingAnnouncementPostsQuery(locale, ANNOUNCEMENT_LIMIT));
 	const latest = posts.slice(0, ANNOUNCEMENT_LIMIT);
 
 	return (
@@ -59,14 +60,16 @@ export default async function HomeAnnouncementsSection() {
 							<Link key={post.slug} href={`/blog/${post.slug}`} className="block">
 								<Card className="h-full gap-0 overflow-hidden rounded-[20px] py-0 sm:max-xl:h-auto sm:max-xl:flex-row sm:max-xl:rounded-2xl [--card-spacing:0px]">
 									<div className="relative aspect-[16/9] border-b border-zinc-200/80 bg-zinc-100 sm:max-xl:w-40 sm:max-xl:shrink-0 sm:max-xl:self-center sm:max-xl:border-b-0 sm:max-xl:border-r dark:border-zinc-800 dark:bg-zinc-900">
-										<Image
-											src={post.coverImage}
-											alt=""
-											fill
-											quality={90}
-											sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
-											className="object-cover"
-										/>
+										{post.coverImage ? (
+											<Image
+												src={post.coverImage}
+												alt=""
+												fill
+												quality={90}
+												sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
+												className="object-cover"
+											/>
+										) : null}
 									</div>
 									<CardHeader className="space-y-1.5 p-3 sm:max-xl:min-w-0 sm:max-xl:flex-1 sm:max-xl:space-y-1 sm:max-xl:p-2.5">
 										<div className="text-xs font-medium text-zinc-500 sm:max-xl:text-[11px] dark:text-zinc-400">

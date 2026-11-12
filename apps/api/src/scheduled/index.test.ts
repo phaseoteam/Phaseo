@@ -21,6 +21,7 @@ const runMobilePushDigestJobMock = vi.fn();
 const runSpendLimitWarningSweepMock = vi.fn();
 const runSpendRulesSweepMock = vi.fn();
 const runDepartmentBudgetAlertSweepMock = vi.fn();
+const runSpendGuardrailAlertSweepMock = vi.fn();
 const runSpendReportsQueueMock = vi.fn();
 const runLowBalanceEmailSweepMock = vi.fn();
 const publishSweepSpendBlockEntriesMock = vi.fn();
@@ -103,6 +104,7 @@ vi.mock("@/pipeline/notifications/mobile-push-digest", () => ({
 vi.mock("@/pipeline/notifications/spend-limit-alerts", () => ({
 	runSpendLimitWarningSweep: (...args: unknown[]) => runSpendLimitWarningSweepMock(...args),
 	runDepartmentBudgetAlertSweep: (...args: unknown[]) => runDepartmentBudgetAlertSweepMock(...args),
+	runSpendGuardrailAlertSweep: (...args: unknown[]) => runSpendGuardrailAlertSweepMock(...args),
 }));
 
 vi.mock("@/pipeline/notifications/spend-rules", () => ({
@@ -191,6 +193,7 @@ describe("handleScheduledEvent", () => {
 		runMobilePushDigestJobMock.mockReset().mockResolvedValue({ built: 0, sent: 0 });
 		runSpendLimitWarningSweepMock.mockReset().mockResolvedValue({ budgets: 0, limitedKeys: 0, warned: 0 });
 		runDepartmentBudgetAlertSweepMock.mockReset().mockResolvedValue({ budgets: 0, alerted: 0 });
+		runSpendGuardrailAlertSweepMock.mockReset().mockResolvedValue({ workspaces: 0, alerted: 0 });
 		runNotificationDeliveryJobMock.mockReset().mockResolvedValue({ queued: 0, sent: 0, failed: 0 });
 		runSpendRulesSweepMock.mockReset().mockResolvedValue({ dirty: 0, rollover: 0, periodic: 0, evaluated: 0, rules: 0, fired: 0, stateRows: 0, skippedLocked: false, events: [], blocks: [], publish: [] });
 		runSpendReportsQueueMock.mockReset().mockResolvedValue({ skippedLocked: false, due: 0, quiet: 0, zeroSpend: 0, queued: 0, emails: 0, reports: [] });
@@ -254,6 +257,8 @@ describe("handleScheduledEvent", () => {
 		expect(configureRuntimeMock).toHaveBeenCalledWith(env);
 		expect(clearRuntimeMock).toHaveBeenCalled();
 		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("cleanup_expired_oauth_artifacts");
+		// Uncollected key request secrets are wiped on every 5-minute tick, whether or not anyone polls.
+		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("wipe_expired_api_key_request_secrets");
 		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("process_v2_analytics_outbox", {
 			p_limit: 250,
 		});
@@ -470,6 +475,8 @@ describe("handleScheduledEvent", () => {
 			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
 			expect(runSpendLimitWarningSweepMock).toHaveBeenCalledTimes(1);
 			expect(runDepartmentBudgetAlertSweepMock).toHaveBeenCalledTimes(1);
+			expect(runSpendGuardrailAlertSweepMock).toHaveBeenCalledTimes(1);
+			expect(runSpendGuardrailAlertSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
 			expect(runSpendLimitWarningSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
 			expect(runDepartmentBudgetAlertSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
 			expect(log).not.toHaveBeenCalledWith("spend_limit_warnings_swept", expect.anything());
@@ -501,6 +508,38 @@ describe("handleScheduledEvent", () => {
 			error.mockRestore();
 		} finally {
 			log.mockRestore();
+		}
+	});
+
+	it("exports every spend sweep outcome even when several sweeps fail", async () => {
+		const sent: string[] = [];
+		const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
+			sent.push(String(init?.body));
+			return Response.json({});
+		});
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			runSpendLimitWarningSweepMock.mockRejectedValueOnce(new Error("private warning error", { cause: { code: "57014" } }));
+			runDepartmentBudgetAlertSweepMock.mockRejectedValueOnce(new Error("private department error", { cause: { code: "PGRST202" } }));
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:45:00.000Z"), {
+				MOBILE_PUSH_ENABLED: "true", ENV: "staging", CF_VERSION_METADATA: { id: "fixture-version" },
+				PLATFORM_TELEMETRY_ENABLED: "true", GRAFANA_OTLP_ENDPOINT: "https://otlp-gateway-prod-eu-west-0.grafana.net/otlp",
+				GRAFANA_OTLP_AUTHORIZATION: "Basic dGVzdA==",
+			});
+			const records = sent.flatMap(body => JSON.parse(body).resourceLogs[0].scopeLogs[0].logRecords)
+				.map((record: { body: { stringValue: string } }) => JSON.parse(record.body.stringValue));
+			expect(records).toEqual(expect.arrayContaining([
+				expect.objectContaining({ job: "spend_limit_warnings", outcome: "error", error_code: "57014", release: "fixture-version" }),
+				expect.objectContaining({ job: "department_budget_alerts", outcome: "error", error_code: "PGRST202" }),
+				expect.objectContaining({ job: "spend_guardrail_alerts", outcome: "completed" }),
+				expect.objectContaining({ job: "spend_limit_sweep", outcome: "error" }),
+			]));
+			expect(sent.join()).not.toContain("private warning error");
+			expect(sent.join()).not.toContain("private department error");
+			expect(runMobilePushJobMock).toHaveBeenCalledTimes(1);
+		} finally {
+			fetch.mockRestore();
+			error.mockRestore();
 		}
 	});
 

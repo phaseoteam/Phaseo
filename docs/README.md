@@ -47,5 +47,6 @@ Maintainer procedures.
 - [Working safely against production](./operations/production-access.md)
 - [Releases and deploys](./operations/release.md)
 - [Incidents and status updates](./operations/incident-response.md)
+- [Phaseo Connect relay](./operations/phaseo-connect.md)
 - [Production database migrations](../.github/PRODUCTION_DATABASE_MIGRATIONS.md)
 - [Verifying a change](../.agents/skills/verify-phaseo-change/SKILL.md): the evidence a pull request needs for each area, written as an agent skill

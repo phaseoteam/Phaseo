@@ -29,7 +29,7 @@ export const keybindingCommands = [
 	// The message box's own keys (composer.* and thread.*QueuedMessage). They run only while it has focus, before the editor acts on them; stash works anywhere in a chat.
 	{ command: "composer.steer", label: "Send into the running turn", group: "Composer", keys: ["mod+shift+enter"], when: "composerFocused" },
 	{ command: "composer.editQueued", label: "Edit the last queued message", group: "Composer", keys: ["alt+arrowup"], when: "composerFocused" },
-	{ command: "composer.sendAlternate", label: "Send into the running turn instead of queueing (when Enter sends)", group: "Composer", keys: ["mod+enter"], when: "composerFocused" },
+	{ command: "composer.sendAlternate", label: "While a turn runs, steer instead of queueing (or queue, when follow-ups steer)", group: "Composer", keys: ["mod+enter"], when: "composerFocused" },
 	{ command: "composer.sendAndNewChat", label: "Send and start a new chat", group: "Composer", keys: ["mod+alt+enter"], when: "composerFocused" },
 	{ command: "composer.historyPrevious", label: "Previous prompt (in an empty message box)", group: "Composer", keys: ["arrowup"], when: "composerFocused" },
 	{ command: "composer.historyNext", label: "Next prompt", group: "Composer", keys: ["arrowdown"], when: "composerFocused" },

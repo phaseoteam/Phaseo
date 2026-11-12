@@ -5,44 +5,41 @@ description: "Connect an installed Pi model catalog to the Phaseo Gateway."
 "og:image": "https://phaseo.app/og/dynamic?title=Pi&description=Connect%20an%20installed%20Pi%20model%20catalog%20to%20the%20Phaseo%20Gateway.&pathname=/docs/v1/guides/integrations/pi"
 ---
 
-## Set up with the Phaseo CLI
+Run `phaseo pi` to add a Phaseo provider extension to Pi with every compatible Phaseo model.
 
-These production-ready commands require a Phaseo account; the CLI creates the dedicated gateway credential during sign-in and setup.
+## Set up with the Phaseo CLI
 
 ```bash
 phaseo login
 phaseo pi
 ```
 
-Install Pi from its official release first. Setup writes a managed provider extension to `~/.pi/agent/extensions/phaseo.ts`. The extension exposes every active Phaseo text model compatible with Chat Completions and resolves its dedicated API key from the Phaseo CLI at request time.
+If Pi is missing, the CLI shows the official install command and asks before running it. Setup then creates a `Phaseo CLI: Pi API Key` (90-day expiry, $100 monthly spend limit) and writes a provider extension to `~/.pi/agent/extensions/phaseo.ts`. The extension lists every active Phaseo text model that works with Chat Completions.
 
-Choose an initial model or configure only one model when needed:
+| Flag | Effect |
+| --- | --- |
+| `--model <id>` | Sets the initial model. Defaults to `anthropic/claude-sonnet-4.6`. |
+| `--catalog default` | Adds only the selected model. |
+| `--dry-run` | Shows the file changes without making them. |
 
-```bash
-phaseo pi --model anthropic/claude-sonnet-4.6
-phaseo pi --catalog default
-```
-
-Use `--dry-run` to preview file changes.
-
-## Start and verify
-
-```bash
-pi
-```
-
-Open `/model`, choose the `phaseo` provider, and send a small prompt. Remove only the managed extension and revoke its dedicated key with:
-
-```bash
-phaseo integrations remove pi
-```
-
-## Manual credential access
-
-The generated extension uses Pi's command-backed key syntax:
+The extension gets its key at request time with Pi's command-backed key syntax, so no plaintext key is written to the file:
 
 ```text
 !phaseo integrations credential pi
 ```
 
-No plaintext key is written to the extension.
+## Check it works
+
+```bash
+pi
+```
+
+Open `/model`, choose the `phaseo` provider, and send a short prompt. Confirm the request appears in **Settings → Usage → Logs**.
+
+## Remove Phaseo
+
+```bash
+phaseo integrations remove pi
+```
+
+This removes only the Phaseo extension and revokes the key.

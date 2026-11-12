@@ -49,6 +49,9 @@ export class PiAdapter implements AgentAdapter {
 		const args = ["--mode", "rpc"];
 		if (task.nativeSessionId) args.push("--session", task.nativeSessionId);
 		else if (task.nativeForkFrom) args.push("--fork", task.nativeForkFrom);
+		// Someone else's checkout (Factory's): Pi ignores its project-local settings, extensions and MCP servers (Pi's project
+		// trust, which it otherwise reads from its own store; checked against Pi 1.5).
+		if (task.untrustedCheckout) args.push("--no-approve");
 		const orchestration = this.connections.find(connection => connection.transport === "http" && connection.headers?.Authorization && (connection.orchestration || connection.name === "Phaseo orchestration"));
 		// --tools is an allowlist over built-in and extension tools, so name the orchestration tools to keep them in Chat and Plan.
 		if (compact || (task.mode === "chat" && !orchestration)) args.push("--no-tools");

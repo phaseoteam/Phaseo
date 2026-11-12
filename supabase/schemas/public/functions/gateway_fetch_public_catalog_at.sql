@@ -53,7 +53,7 @@ begin
         -- Retirement is informational: a retired model is served while any
         -- provider route stays enabled. Disable routes to stop traffic.
         and (m.status is null or lower(m.status) in ('active','available','deprecated','retired'))
-        and c.capability_id=v_endpoint and c.status in ('active','deranked','deranked_lvl1','deranked_lvl2','deranked_lvl3')
+        and c.capability_id=v_endpoint and c.status in ('active','degraded','deranked','deranked_lvl1','deranked_lvl2','deranked_lvl3')
         and r.routing_enabled
         and (p.status <> 'external' or coalesce(r.metadata->>'external_routing_override', 'false') = 'true')
         and (r.effective_from is null or r.effective_from<=v_at)

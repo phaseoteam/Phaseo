@@ -15,8 +15,8 @@ CREATE OR REPLACE FUNCTION public.get_gateway_request_observability (
     'routing_decisions', coalesce((select jsonb_agg(to_jsonb(routing_decision) order by routing_decision.decision_order) from public.v2_request_routing_decisions routing_decision where routing_decision.request_event_id = fact.request_event_id), '[]'::jsonb),
     'usage_meters', coalesce((select jsonb_agg(to_jsonb(usage) order by usage.sequence, usage.meter_key) from public.v2_request_usage usage where usage.request_event_id = fact.request_event_id), '[]'::jsonb),
     'pricing_lines', coalesce((select jsonb_agg(to_jsonb(line) order by line.created_at, line.pricing_line_id) from public.v2_request_pricing_lines line where line.request_event_id = fact.request_event_id), '[]'::jsonb),
-    'artifacts', coalesce((select jsonb_agg(to_jsonb(artifact) order by artifact.created_at, artifact.artifact_id) from public.v2_request_artifacts artifact where artifact.request_event_id = fact.request_event_id), '[]'::jsonb),
-    'feedback', coalesce((select jsonb_agg(to_jsonb(feedback) order by feedback.created_at, feedback.feedback_id) from public.v2_request_feedback feedback where feedback.request_event_id = fact.request_event_id), '[]'::jsonb)
+    'artifacts', '[]'::jsonb,
+    'feedback', '[]'::jsonb
   )
   from public.gateway_requests gateway_request
   left join public.v2_request_facts fact

@@ -68,6 +68,13 @@ describe("Code chat lifecycle", () => {
 		expect(snoozePresets(new Date(2026, 9, 15, 17, 30)).map(preset => preset.label)).not.toContain("This evening");
 		// On a Sunday, tomorrow and next week are the same Monday morning.
 		expect(snoozePresets(new Date(2026, 9, 18, 9)).map(preset => preset.label)).not.toContain("Next week");
+		// Custom options: soonest first whatever their order, one per wake minute, weekday labels by the real gap.
+		const friday = new Date(2026, 9, 16, 10, 0, 0);
+		const custom = snoozePresets(friday, [{ kind: "at", day: "monday", time: "08:00" }, { kind: "after", minutes: 90 }, { kind: "at", day: "friday", time: "09:00" }, { kind: "at", day: "saturday", time: "10:00" }, { kind: "after", minutes: 1440 }, { kind: "at", day: "today", time: "10:30" }]);
+		expect(custom.map(preset => preset.label)).toEqual(["In 90 minutes", "Tomorrow", "Next week", "Next Friday"]);
+		expect(custom.map(preset => preset.until.getTime())).toEqual([friday.getTime() + 90 * 60_000, new Date(2026, 9, 17, 10).getTime(), new Date(2026, 9, 19, 8).getTime(), new Date(2026, 9, 23, 9).getTime()]);
+		expect(snoozePresets(friday, [{ kind: "at", day: "today", time: "14:00" }, { kind: "at", day: "today", time: "09:00" }]).map(preset => preset.label)).toEqual(["This afternoon"]);
+		expect(snoozePresets(friday, [{ kind: "after", minutes: 2880 }, { kind: "at", day: "sunday", time: "10:00" }]).map(preset => preset.label)).toEqual(["In 2 days"]);
 		expect([shortDuration(10_000), shortDuration(4 * 60_000), shortDuration(2 * 3_600_000), shortDuration(3 * day)]).toEqual(["now", "4m", "2h", "3d"]);
 	});
 

@@ -217,6 +217,19 @@ export class CustomerRateLimitDurableObject extends DurableObject<GatewayBinding
 			: this.admitFreeDay(now, admissionId, limits.freeRequestsPerDay);
 	}
 
+	/**
+	 * Takes back today's free-day admission for a request the gateway refused after all (its answer
+	 * arrived too late to be used). Unknown or earlier-day admissions are ignored.
+	 */
+	async releaseFreeDay(scopeKey: string, admissionId: string): Promise<void> {
+		if (this.scope !== null && this.scope !== scopeKey) throw new Error("customer_scope_mismatch");
+		this.rollFreeDay(Math.floor(Date.now() / DAY_MS));
+		const sql = this.ctx.storage.sql;
+		if (!sql.exec("SELECT admission_id FROM free_requests WHERE admission_id = ?", admissionId).toArray().length) return;
+		sql.exec("DELETE FROM free_requests WHERE admission_id = ?", admissionId);
+		this.freeUsed = Math.max(0, this.freeUsed - 1);
+	}
+
 	private admitMinute(now: number, admissionId: string, limit: number): CustomerAdmission {
 		for (const [id, startedAt] of this.minute) {
 			if (startedAt > now - MINUTE_MS) break;

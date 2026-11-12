@@ -1,8 +1,9 @@
+import { normalizeGoogleInteractionVideoPayload } from "@providers/google-video/interactions";
 import { dispatchVideoWebhookEventInBackground } from "@core/video-user-webhooks";
 import { setVideoJobStatus, type VideoJobMeta, type VideoJobRecord } from "@core/video-jobs";
 import { guardAuth } from "@pipeline/before/guards";
 import { err } from "@pipeline/before/http";
-import { fetchVideoProviderStatus } from "@core/video-reconciliation";
+import { fetchVideoProviderStatus, resolveDashscopeAutoDurationSeconds } from "@core/video-reconciliation";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 
 import * as videoHelpers from "./videos.helpers";
@@ -289,7 +290,8 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {
 		});
 		const res = await fetchGoogleOperation(authValue, videoMeta, operationName);
 		if (res instanceof Response && res.headers?.get("content-type")?.includes("application/json")) {
-			const json = await res.clone().json().catch(() => null);
+			// Gemini Omni jobs are Interactions; read them as operations.
+			const json: any = normalizeGoogleInteractionVideoPayload(await res.clone().json().catch(() => null));
 			if (!res.ok) {
 				if (isGoogleOperationsGetAuthFailure(res.status, json)) {
 					return err("upstream_error", { reason: "google_operation_auth_unsupported", request_id: authValue.requestId, video_id: id });
@@ -354,6 +356,7 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {
 						googleOperationName: operationName,
 						...(generatedVideo.uri ? { googleVideoUri: generatedVideo.uri } : {}),
 						...(generatedVideo.mimeType ? { googleVideoMimeType: generatedVideo.mimeType } : {}),
+						...(json?.usageMeters ? { googleUsageMeters: json.usageMeters } : {}),
 					},
 				});
 				if (isTerminalVideoStatus(status)) {
@@ -443,7 +446,9 @@ export async function getVideoByIdHandler(req: Request): Promise<Response> {
 				providerId,
 				status,
 				model: model || videoMeta?.model || null,
+				// Smart-duration jobs bill the length DashScope reports, same as the reconciler.
 				seconds:
+					resolveDashscopeAutoDurationSeconds(json, videoMeta) ??
 					toFiniteNumber(json?.output?.duration) ??
 					toFiniteNumber(json?.output?.video_duration) ??
 					toFiniteNumber(videoMeta?.seconds),

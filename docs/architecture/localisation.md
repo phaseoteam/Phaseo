@@ -8,7 +8,7 @@ Date: 2026-08-30
 
 Phaseo should use:
 
-- repository-owned ICU message catalogs and `next-intl` for the Next.js application;
+- repository-owned ICU message catalogs and `use-intl` (through `@/i18n/react` and `@/i18n/server`) for the web application;
 - self-hosted Weblate as the translation control plane;
 - Git pull requests and the existing Phaseo CI checks as the only production delivery path;
 - locale-prefixed non-default URLs, while preserving the current English URLs;
@@ -54,8 +54,8 @@ Primary references:
 - [Apple App Store Connect locale shortcodes](https://developer.apple.com/documentation/appstoreconnectapi/managing-metadata-in-your-app-by-using-locale-shortcodes)
 - [Apple agent-assisted localization guidance](https://developer.apple.com/documentation/Xcode/localizing-your-app-using-agents)
 - [Apple localization quality guidance](https://developer.apple.com/localization/)
-- [next-intl App Router setup](https://next-intl.dev/docs/getting-started/app-router)
-- [next-intl locale routing for Next.js 16](https://next-intl.dev/docs/routing/setup)
+- [use-intl](https://next-intl.dev/docs/environments/core-library)
+- [TanStack Router optional path parameters](https://tanstack.com/router/latest/docs/framework/react/guide/path-params)
 - [Weblate Docker deployment](https://docs.weblate.org/en/latest/admin/install/docker.html)
 - [Weblate VCS integration](https://docs.weblate.org/en/latest/vcs.html)
 - [Weblate translation memory](https://docs.weblate.org/en/latest/admin/memory.html)
@@ -69,7 +69,8 @@ Primary references:
 The application now launches in ten locales across the public route tree and
 authenticated product surfaces:
 
-- `next-intl` is configured with URL-authoritative, `as-needed` locale routing;
+- routing is URL-authoritative with `as-needed` locale prefixes (the optional
+  `{-$locale}` route segment);
 - all `en-GB` pages retain unprefixed canonical URLs, while the other nine
   locales use explicit prefixes such as `/de-DE/models`;
 - an unprefixed first visit negotiates `Accept-Language`; explicit language
@@ -100,13 +101,13 @@ authenticated product surfaces:
   remain unprefixed;
 - localized metadata emits canonical URLs, language alternates, `x-default`, and
   correct Open Graph locale identifiers; auth remains intentionally `noindex`;
-- the composed Next.js Proxy negotiates the public page tree while APIs, assets,
+- the global request middleware (`src/lib/start/requestMiddleware.ts`)
+  negotiates the public page tree while APIs, assets,
   OAuth callbacks, session refresh, Markdown, and existing technical routes
   retain their required unprefixed behavior;
-- `cacheComponents` remains enabled, with locale route parameters preserving
-  static generation across the public locale matrix; `partialPrefetching` is
-  set to `false`, because its runtime prefetch copy duplicated each page's
-  translations in the response.
+- pages render on the server per request; browsers load each locale's catalog
+  once from an immutable `/api/i18n-full/<locale>` response rather than
+  receiving translations inside the HTML.
 
 Translations are machine-assisted drafts and still require native-speaker QA.
 Legal and editorial exceptions must remain clearly identified until separately
@@ -162,7 +163,7 @@ Changing presentation locale must never silently change the billed currency, pri
 
 ### Routing
 
-Use `next-intl` with a top-level `[locale]` segment for human-facing pages:
+Human-facing pages live under an optional top-level `{-$locale}` route segment:
 
 ```text
 apps/web/messages/en-GB/common.json
@@ -170,24 +171,21 @@ apps/web/messages/en-GB/auth.json
 apps/web/messages/<locale>/common.json
 apps/web/messages/<locale>/auth.json
 apps/web/src/i18n/routing.ts
-apps/web/src/i18n/request.ts
-apps/web/src/i18n/navigation.ts
-apps/web/src/app/[locale]/...
+apps/web/src/i18n/server.ts
+apps/web/src/i18n/navigation.tsx
+apps/web/src/routes/{-$locale}/...
 ```
 
 `auth.json` exists today. Add `common.json` with the first shared-chrome slice;
 do not create an empty placeholder catalog for Weblate.
 
-Use `localePrefix: "as-needed"` so current English URLs such as `/models` remain canonical while another locale uses `/fr-FR/models`. Keep API routes, `_next`, assets, OG endpoints, well-known endpoints, docs proxy routes, ingest, robots, and sitemap outside locale negotiation.
+Use `localePrefix: "as-needed"` so current English URLs such as `/models` remain canonical while another locale uses `/fr-FR/models`. Keep API routes, assets, OG endpoints, well-known endpoints, docs proxy routes, ingest, robots, and sitemap outside locale negotiation.
 
-Compose locale handling into the existing `proxy.ts`. Before moving routes, add locale-aware wrappers for links, redirects, return URLs, blog path parsing, settings authentication, and MFA redirects. A second proxy is not possible and duplicating this logic would create security regressions.
+Locale handling lives in the single global request middleware, alongside links, redirects, return URLs, blog path parsing, settings authentication, and MFA redirects. Do not add a second negotiation layer: duplicating this logic would create security regressions.
 
-Use generated async route `params` and `generateStaticParams` for supported
-public locales. The partial rollout has a sibling unlocalized root normalized
-to `/`, for which Next.js 16.3 does not generate a universal
-`next/root-params` getter. The locale root therefore validates its own route
-param and passes locale explicitly into translated work; middleware supplies
-the same validated value to next-intl request configuration. Do not read locale
+The `{-$locale}` layout route validates its own param and passes the locale
+explicitly into translated work; the request middleware supplies the same
+validated value to server-side translation (`@/i18n/server`). Do not read locale
 cookies or browser headers from the root layout, and keep catalog/data fetches
 locale-neutral.
 

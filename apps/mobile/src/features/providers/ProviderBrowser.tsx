@@ -4,9 +4,11 @@ import { usePathname } from "expo-router";
 import { CircleCheck, KeyRound, Server, ShieldCheck } from "lucide-react-native";
 import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
 import { Pressable, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
 import { Badge, Chip, ChipRow, EmptyState, ErrorState, Header, Screen, SearchField, SkeletonRows, Text } from "@/components/ui";
+import { useLayout } from "@/hooks/useLayout";
 import { getProviders, type Provider } from "@/lib/api/providers";
 import { cn } from "@/lib/cn";
 import { formatCompact } from "@/lib/format";
@@ -29,6 +31,8 @@ export function ProviderBrowser() {
   const providers = useProviders();
   const pathname = usePathname();
   const openDetail = useOpenDetail("/providers");
+  const { split } = useLayout();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ProviderFilter>("phaseo");
   const deferredQuery = useDeferredValue(query);
@@ -41,7 +45,7 @@ export function ProviderBrowser() {
 
   return (
     <Screen>
-      <Header large title="Providers" subtitle={providers.data ? `${list.length} of ${providers.data.length}` : null} />
+      <Header large sidebar back={!split} title="Providers" subtitle={providers.data ? `${list.length} of ${providers.data.length}` : null} />
       <View className="px-4 pb-2"><SearchField value={query} onChangeText={setQuery} placeholder="Search providers" /></View>
       <ChipRow className="pb-2">
         <Chip label="On Phaseo" icon={CircleCheck} selected={filter === "phaseo"} onPress={() => setFilter(filter === "phaseo" ? "all" : "phaseo")} />
@@ -58,7 +62,7 @@ export function ProviderBrowser() {
           recycleItems
           keyboardDismissMode="on-drag"
           ListEmptyComponent={<EmptyState icon={Server} title="No providers match" body="Try another search or filter." />}
-          contentContainerStyle={{ paddingBottom: 24 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
         />
       )}
     </Screen>

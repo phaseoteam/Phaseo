@@ -1,0 +1,100 @@
+---
+icon: "chart-spline"
+title: "DevTools"
+description: "在开发期间把每次智能体运行和继续操作记录到本地文件。"
+---
+
+在开发期间向运行或继续操作传入 DevTools 配置，即可为每次运行向本地目录中的 `generations.jsonl` 追加一行 JSON。每一行包含该运行的输入、步骤、工具活动、输出、用量和网关请求 ID。除非你开启，否则不会捕获任何内容。
+
+<CodeGroup>
+
+```typescript TypeScript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+```python Python
+from phaseo_agent import create_agent_devtools
+
+result = agent.run(input="Summarise this ticket", client=client, devtools=create_agent_devtools())
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input:    prompt,
+  Client:   client,
+  Devtools: phaseoagent.CreateAgentDevtools(".phaseo-devtools"),
+})
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions
+{
+    Input = prompt,
+    Client = client,
+    Devtools = AgentSdk.CreateAgentDevtools(".phaseo-devtools"),
+});
+```
+
+```php PHP
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    devtools: AgentSdk::createAgentDevtools(".phaseo-devtools")
+);
+```
+
+```ruby Ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  devtools: PhaseoAgentSdk.create_agent_devtools(directory: ".phaseo-devtools")
+)
+```
+
+```java Java
+var result = agent.run(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null, null,
+    AgentSdk.createAgentDevtools(".phaseo-devtools")));
+```
+
+</CodeGroup>
+
+<Note>
+Rust `0.2` 没有 DevTools 捕获。请把[生命周期钩子](./lifecycle-hooks)与 `run_with_events` 一起使用，并自行写入事件。
+</Note>
+
+| 语言 | 创建配置 | 传入方式 | 选择目录 |
+| --- | --- | --- | --- |
+| TypeScript | `createAgentDevtools()` | 运行和继续选项上的 `devtools` | `createAgentDevtools({ directory: ".local/agent-runs" })` |
+| Python | `create_agent_devtools()` | `run()`、`stream()` 或继续操作上的 `devtools=` | `create_agent_devtools(directory=".local/agent-runs")` |
+| Go | `CreateAgentDevtools(directory)` | `RunOptions` 或 `ContinueOptions` 上的 `Devtools` | `directory` 参数 |
+| C# | `AgentSdk.CreateAgentDevtools(directory)` | `RunOptions` 或 `ContinueOptions` 上的 `Devtools` | `directory` 参数（默认 `.phaseo-devtools`） |
+| PHP | `AgentSdk::createAgentDevtools($directory)` | `run()` 或 `continueRun()` 上的 `devtools:` | `$directory` 参数（默认 `.phaseo-devtools`） |
+| Ruby | `PhaseoAgentSdk.create_agent_devtools(directory:, enabled:)` | `run` 或 `continue_run` 上的 `devtools:` | `directory:`（默认 `.phaseo-devtools`） |
+| Java | `AgentSdk.createAgentDevtools(directory)` | `RunOptions` 或 `ContinueOptions` 的 `devtools` 参数 | `directory` 参数 |
+
+## 通过环境变量开启捕获
+
+没有 DevTools 配置时，设置 `PHASEO_DEVTOOLS=true` 即可开启捕获。文件写入 `PHASEO_DEVTOOLS_DIR`；如果未设置该变量，则写入工作目录下的 `.phaseo-devtools`。在所有提供 DevTools 的语言中，这一行为都相同。
+
+## 会写入什么
+
+| 文件 | 内容 |
+| --- | --- |
+| `generations.jsonl` | 每次运行一条记录，每次继续操作一条记录 |
+| `metadata.json` | 会话 ID、开始时间和 SDK 名称（`"sdk": "typescript"`、`"python"`、`"go"`、`"csharp"`、`"php"`、`"ruby"` 或 `"java"`），只写入一次 |
+| `assets/images`、`assets/audio`、`assets/video` | 为 DevTools 查看器创建的空目录 |
+
+每条记录的 `type` 对运行为 `agent.run`，对继续操作为 `agent.continue`。`agent.continue` 是记录类型，而不是方法名：调用 `continueRun()`（TypeScript、PHP、Java）、`continue_run()`（Python、Ruby）、`Continue`（Go）或 `ContinueRun`（C#）时写入的就是它。
+
+一条记录包含运行 ID 和智能体 ID、工具数量以及完整的运行结果：状态、消息、带有模型、提供商和网关请求 ID 的步骤、工具活动、用量和输出。失败的运行会得到一条带有错误的记录（Go 和 Java 中为 `error.message`；TypeScript 中为结构化的失败详情）。在 Java 中，写入错误会被忽略，所以捕获永远不会让运行失败。
+
+<Warning>
+记录以明文保存提示词、消息、应用上下文、工具输入和工具输出。请让该目录远离源代码管理和生产镜像，也不要把它用作审计存储。生产环境的遥测请使用[生命周期钩子](./lifecycle-hooks)。
+</Warning>

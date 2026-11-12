@@ -1,25 +1,22 @@
 ---
 title: "CLI と MCP"
-description: "Phaseo CLI で端末作業を自動化するか、認証済み MCP サーバーを AI クライアントに接続して Phaseo の最新データを利用できます。許可すればアカウントの管理も行えます。"
+description: "Phaseo CLI でターミナルからの作業を自動化するか、認証済みの MCP サーバーを AI クライアントに接続して Phaseo の最新データを利用します。許可すればアカウントの管理も行えます。"
 icon: "square-terminal"
 ---
 
-# CLI と MCP
+ターミナルやスクリプトから Phaseo を変更するには CLI を使い、AI クライアントに Phaseo の最新データを渡すには Phaseo MCP サーバーに接続します。どちらも Phaseo OAuth でログインします。
 
-CLI を使ってターミナルから Phaseo を操作するか、MCP 経由で AI クライアントを接続します。どちらも Phaseo OAuth を使いますが、用途は異なります。
-
-| インターフェース | 主な用途 | アクセス |
+| インターフェース | 用途 | アクセス |
 | --- | --- | --- |
-| Phaseo CLI | ターミナルでの作業、CI、管理、自動化 | スコープとワークスペースのロールに応じた読み取り・書き込み |
-| Phaseo MCP | Codex、Claude、ChatGPT などの MCP クライアントから参照できる Phaseo の最新データと、任意のアカウント管理 | 認証済み。アカウント管理付きで接続しない限り読み取り専用 |
-| Docs MCP | 開発中に Phaseo の最新ドキュメントを検索する | ドキュメントのみ・読み取り専用 |
-| Phaseo プラグイン | Claude Code や Codex に Phaseo MCP、Docs MCP、Phaseo スキルをまとめてインストールする | 各 MCP サーバーと同じ |
+| [Phaseo CLI](#phaseo-cli) | シェルや CI から、キーの作成、設定の変更、ワークスペースの管理、管理作業の自動化を行う | 読み取りと書き込み。スコープとワークスペースのロールによって制限されます |
+| [Phaseo MCP](#phaseo-mcp) | Codex、Claude、ChatGPT などの MCP クライアントに Phaseo の最新データを渡し、必要に応じてアカウントの管理も任せる | アカウント管理付きで接続しない限り読み取り専用 |
+| [Docs MCP](#docs-mcp) | コーディングアシスタントに最新の Phaseo ドキュメントを渡す | ドキュメントのみ。アカウントへのアクセスなし |
+| [Phaseo プラグイン](#phaseo-plugin) | Claude Code や Codex に両方の MCP サーバーと Phaseo スキルをまとめてインストールする | 各 MCP サーバーと同じ |
 
+<span id="phaseo-cli"></span>
 ## Phaseo CLI
 
-Phaseo CLI は、Phaseo リソースの作成・変更、ワークフローのスクリプト化、シェルからのアカウント情報の確認に使用します。
-
-### インストールしてログイン
+### インストールしてログインする
 
 ```bash
 npm install -g @phaseo/cli
@@ -27,7 +24,7 @@ phaseo login
 phaseo whoami
 ```
 
-対話型ターミナルでは、デフォルトでブラウザー OAuth を使用します。SSH、CI、ヘッドレス環境ではデバイス認証を使用してください。
+対話型のターミナルでは、既定でブラウザーによる OAuth を使います。SSH、CI、ヘッドレス環境では、デバイス認可を使います。
 
 ```bash
 phaseo login --device-code
@@ -40,49 +37,98 @@ phaseo models list --limit 20
 phaseo pricing models
 phaseo credits get
 phaseo workspaces list
-phaseo keys create --name "Local development"
+phaseo keys list
 phaseo logs list --since 1h --status error --json
 ```
 
-別のツールやスクリプトで構造化出力が必要な場合は `--json` を使用します。シークレット値を表示するのは、明示的に作成または表示するコマンドだけです。
+別のツールやスクリプトで構造化された出力が必要な場合は `--json` を使います。シークレットの値は、明示的に作成または表示するコマンドでのみ表示されます。
 
-<Card title="Phaseo CLI ガイド" icon="terminal" href="../guides/integrations/phaseo-cli.mdx">
-	認証方法、キー管理、ワークスペース、ガードレール、コマンドの全手順を確認できます。
+<Card title="Phaseo CLI ガイド" icon="terminal" href="../guides/integrations/phaseo-cli">
+	認証の方法、キーの管理、ワークスペース、ガードレール、コマンドの一連の流れを確認できます。
 </Card>
 
+<span id="phaseo-mcp"></span>
 ## Phaseo MCP
 
-モデル、料金、プロバイダー、使用量、ワークスペースの最新データを使って AI クライアントに質問へ回答させるには、Phaseo MCP サーバーを接続します。
+サーバーの URL は `https://mcp.phaseo.app/mcp` です。これに接続した AI クライアントは、モデル、価格、プロバイダー、使用量、ワークスペースの最新データを使って質問に答えられます。
 
-### サーバー URL
+### クライアントを接続する
 
-`https://mcp.phaseo.app/mcp`
+ワンクリックでインストール：[Cursor に追加](cursor://anysphere.cursor-deeplink/mcp/install?name=phaseo&config=eyJ1cmwiOiJodHRwczovL21jcC5waGFzZW8uYXBwL21jcCJ9) · [VS Code に追加](vscode:mcp/install?%7B%22name%22%3A%22phaseo%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.phaseo.app%2Fmcp%22%7D)。クライアントからサインインを求められると、ブラウザで Phaseo OAuth が開きます。ワークスペースを選び、要求された読み取りスコープを承認してください。
 
-### Codex から接続する
+<Tabs>
+<Tab title="Claude Code">
+```bash
+claude mcp add --transport http phaseo https://mcp.phaseo.app/mcp
+```
 
+続けて `/mcp` を実行し、`phaseo` を選んで **Authenticate** を選択します。すべてのプロジェクトで使うには `--scope user` を付けます。
+</Tab>
+<Tab title="Codex">
 ```bash
 codex mcp add phaseo --url https://mcp.phaseo.app/mcp
 codex mcp login phaseo
-```
-
-ログインコマンドで Phaseo OAuth が開きます。ワークスペースを選択し、要求された読み取りスコープを承認して接続を確認します。
-
-```bash
 codex mcp list
 ```
 
-別の MCP クライアントには同じ URL をリモート Streamable HTTP サーバーとして追加します。OAuth Discovery、S256 PKCE を使った認可コード、MCP `resource` パラメーターに対応している必要があります。
+ログインコマンドで Phaseo OAuth が開きます。`codex mcp list` で接続を確認できます。
+</Tab>
+<Tab title="Cursor">
+```json ~/.cursor/mcp.json
+{
+  "mcpServers": {
+    "phaseo": {
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+上の **Cursor に追加** を使うか、`~/.cursor/mcp.json` にサーバーを追加し、Cursor の MCP 設定からサインインします。
+</Tab>
+<Tab title="VS Code">
+```json .vscode/mcp.json
+{
+  "servers": {
+    "phaseo": {
+      "type": "http",
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+上の **VS Code に追加** を使うか、`.vscode/mcp.json` にサーバーを追加します。MCP ビューからサーバーを起動し、VS Code に求められたらサインインします。
+</Tab>
+<Tab title="Claude">
+Claude で **Settings → Connectors** を開き、**Add custom connector** を選んで `Phaseo` とサーバー URL を入力し、**Connect** を選択します。このオプションが表示されない場合は、Claude 組織のオーナーがカスタムコネクタを許可する必要があります。
+</Tab>
+<Tab title="OpenCode">
+```json opencode.json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseo": {
+      "type": "remote",
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+`opencode.json` にサーバーを追加し、`opencode mcp auth phaseo` を実行してサインインします。
+</Tab>
+</Tabs>
+
+他の MCP クライアントでは、同じ URL をリモートの Streamable HTTP サーバーとして追加します。クライアントは、OAuth ディスカバリー、S256 PKCE を使う認可コード、MCP の `resource` パラメーターに対応している必要があります。
 
 ### MCP が読み取れるデータ
 
-- モデル、プロバイダー、ベンチマークランキング、料金、コスト見積もり
-- クレジット、アクティビティ、分析、リクエストログ、生成メタデータ
-
-これらのツールは読み取り専用です。プロンプト、レスポンス、シークレット値を返すことはありません。
+読み取り専用のツールは、モデル、プロバイダー、ベンチマークのランキング、価格とコストの見積もりに加えて、クレジット、アクティビティ、分析、リクエストのログ、生成のメタデータを扱います。プロンプト、レスポンス、シークレットの値は決して返しません。
 
 ### アカウントを管理する（任意）
 
-エージェントに Phaseo ワークスペースを変更させるには、代わりに管理用 URL で接続します。
+エージェントに Phaseo のワークスペースを変更させるには、代わりに管理用の URL で接続します。
 
 `https://mcp.phaseo.app/mcp?access=manage`
 
@@ -91,43 +137,43 @@ codex mcp add phaseo --url "https://mcp.phaseo.app/mcp?access=manage"
 codex mcp login phaseo
 ```
 
-サインイン時の同意画面には、API キーの管理や予算の削除など、接続が求める権限が 1 つずつ表示され、**読み取り**、**書き込み**、**削除** のいずれかが示されます。許可しない権限はチェックを外してください。エージェントが使えるのは許可した権限のツールだけです。また、Phaseo は変更のたびにワークスペースのロールも確認するため、オーナーでも管理者でもないメンバーが、この方法で管理者専用の設定を変更することはできません。
+ログインすると、同意画面に接続が要求する各権限（API キーの管理や予算の削除など）が一覧表示され、それぞれに **読み取り**、**書き込み**、**削除** のいずれかが表示されます。不要な権限はチェックを外してください。エージェントは許可した権限のツールだけを受け取り、Phaseo は変更のたびにワークスペースのロールも確認します。そのため、オーナーや管理者でないメンバーは、この方法で管理者専用の設定を変更することはできません。
 
-読み取り専用の URL ですでに接続している場合は、クライアントを管理用 URL に切り替えてもう一度サインインしてください。読み取り専用に戻すには、通常の URL で再接続するか、**設定 → 接続アプリ** でアプリのアクセスを取り消します。
+すでに読み取り専用の URL で接続している場合は、クライアントを管理用の URL に切り替えて、もう一度ログインします。読み取り専用のアクセスに戻すには、通常の URL で再接続するか、**設定 → 接続アプリ** でアプリを取り消します。
 
-| 対象 | ツール | 権限 |
+| 分野 | ツール | 権限 |
 | --- | --- | --- |
-| API キー | `api_keys_list`, `api_key_get`, `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete` | `keys:read`, `keys:write`, `keys:delete` |
-| 予算 | `budgets_list`, `budget_create`, `budget_update`, `budget_delete` | `budgets:read`, `budgets:write`, `budgets:delete` |
-| 支出ルール | `spend_rules_list`, `spend_rule_create`, `spend_rule_update`, `spend_rule_delete` | `spend_rules:read`, `spend_rules:write`, `spend_rules:delete` |
-| プロバイダーキー（BYOK） | `provider_keys_list`, `provider_key_create`, `provider_key_update`, `provider_key_delete` | `provider_credentials:read`, `provider_credentials:write`, `provider_credentials:delete` |
-| ガードレール | `guardrails_list`, `guardrail_get`, `guardrail_create`, `guardrail_update`, `guardrail_delete`, `guardrail_keys_set` | `guardrails:read`, `guardrails:write`, `guardrails:delete` |
-| プリセット | `presets_list`, `preset_get`, `preset_create`, `preset_update`, `preset_version_publish` | `presets:read`, `presets:write` |
-| 設定 | `settings_get`, `settings_update` (ルーティングモード、プライバシーと ZDR、ログ記録、プロバイダー制限) | `settings:read`, `settings:write` |
-| Webhook | `webhooks_list`, `webhook_create`, `webhook_delete` | `settings:read`, `settings:write` |
-| オブザーバビリティの宛先 | `observability_destinations_list`, `observability_destination_create`, `observability_destination_delete` | `settings:read`, `settings:write` |
+| API キー | `api_keys_list`、`api_key_get`、`api_key_create`、`api_key_update`、`api_key_rotate`、`api_key_delete` | `keys:read`、`keys:write`、`keys:delete` |
+| 予算 | `budgets_list`、`budget_create`、`budget_update`、`budget_delete` | `budgets:read`、`budgets:write`、`budgets:delete` |
+| 支出ルール | `spend_rules_list`、`spend_rule_create`、`spend_rule_update`、`spend_rule_delete` | `spend_rules:read`、`spend_rules:write`、`spend_rules:delete` |
+| プロバイダーキー（BYOK） | `provider_keys_list`、`provider_key_create`、`provider_key_update`、`provider_key_delete` | `provider_credentials:read`、`provider_credentials:write`、`provider_credentials:delete` |
+| ガードレール | `guardrails_list`、`guardrail_get`、`guardrail_create`、`guardrail_update`、`guardrail_delete`、`guardrail_keys_set` | `guardrails:read`、`guardrails:write`、`guardrails:delete` |
+| プリセット | `presets_list`、`preset_get`、`preset_create`、`preset_update`、`preset_version_publish` | `presets:read`、`presets:write` |
+| 設定 | `settings_get`、`settings_update`（ルーティングモード、プライバシーと ZDR、ログ記録、プロバイダーの制限） | `settings:read`、`settings:write` |
+| Webhook | `webhooks_list`、`webhook_create`、`webhook_delete` | `settings:read`、`settings:write` |
+| 可観測性の送信先 | `observability_destinations_list`、`observability_destination_create`、`observability_destination_delete` | `settings:read`、`settings:write` |
 
-何かを変更または削除するツールにはその旨が示されるため、対応する MCP クライアントは呼び出しのたびに確認を求めます。新しい API キーや Webhook の署名シークレットはツールの結果に 1 回だけ表示され、あとから再表示することはできません。保存済みのプロバイダーキーや宛先の認証情報が返されることはありません。
+何かを変更または削除するツールにはその旨の印が付いているため、対応している MCP クライアントは呼び出しのたびに確認を求めます。新しい API キーや Webhook の署名シークレットはツールの結果に一度だけ表示され、再表示はできません。保存されたプロバイダーキーや送信先の認証情報は決して返されません。
 
-MCP には、請求、支払い、ワークスペース、メンバー、管理キー、OAuth アプリのツールはありません。これらにはダッシュボード、CLI、または管理 API を使用してください。
+MCP には、請求、支払い、ワークスペース、メンバー、管理キー、OAuth アプリのツールはありません。これらにはダッシュボード、CLI、または Management API を使ってください。
 
+<span id="docs-mcp"></span>
 ## Docs MCP
 
-Docs MCP は Phaseo ドキュメントの検索・参照用の別エンドポイントです。アカウントやワークスペースにはアクセスしません。
+Docs MCP は、Phaseo のドキュメントを検索して読むための別のエンドポイントです。アカウントやワークスペースにはアクセスしません。
 
 ```bash
 codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
 ```
 
-コーディングアシスタントに最新の API 例、統合ガイド、機能ドキュメントを参照させる場合に使用します。
-
-<Card title="Docs MCP ガイド" icon="book-open" href="../guides/integrations/docs-mcp.mdx">
+<Card title="Docs MCP ガイド" icon="book-open" href="../guides/integrations/docs-mcp">
 	ドキュメントサーバーを Codex、Claude Code、Cursor、OpenCode、VS Code に接続します。
 </Card>
 
+<span id="phaseo-plugin"></span>
 ## Phaseo プラグイン
 
-Phaseo プラグインには、Phaseo MCP、Docs MCP、そして統合、移行、モデル選択、使用状況の監視、SDK、CLI のための Phaseo エージェントスキルがまとめて含まれています。それぞれを個別に接続する代わりに、一度インストールするだけで使えます。
+Phaseo プラグインには、Phaseo MCP、Docs MCP、そして連携、移行、モデル選択、使用量の監視、SDK、CLI のための Phaseo エージェントスキルがまとめられています。各要素を自分で接続する代わりに、一度インストールするだけで済みます。
 
 ### Claude Code
 
@@ -136,7 +182,7 @@ claude plugin marketplace add phaseoteam/skills
 claude plugin install phaseo@phaseo
 ```
 
-`/mcp` を実行して `plugin:phaseo:phaseo` にサインインし、Phaseo アカウントを接続します。スキルはリクエストに合致したときに読み込まれます。`/phaseo:phaseo-gateway` のように直接実行することもできます。
+`/mcp` を実行して `plugin:phaseo:phaseo` にログインし、Phaseo アカウントを接続します。スキルはリクエストが一致したときに読み込まれます。`/phaseo:phaseo-gateway` のように直接実行することもできます。
 
 ### Codex
 
@@ -146,12 +192,4 @@ codex plugin add phaseo@phaseo
 codex mcp login phaseo
 ```
 
-最後のコマンドで Phaseo MCP の Phaseo OAuth が開きます。スキルはリクエストに合致したときに読み込まれます。
-
-## 適切なインターフェースを選ぶ
-
-- キーの作成、設定変更、ワークスペース管理、管理タスクの自動化には **CLI** を使用します。
-- AI クライアントに Phaseo の最新データへの安全なアクセスを提供するには **Phaseo MCP** を使用します。
-- アカウントにアクセスさせず、コーディングアシスタントに Phaseo の最新ドキュメントを提供するには **Docs MCP** を使用します。
-- Claude Code や Codex に 2 つの MCP サーバーと Phaseo スキルをまとめて設定するには **Phaseo プラグイン** を使用します。
-
+最後のコマンドで、Phaseo MCP 用の Phaseo OAuth が開きます。スキルはリクエストが一致したときに読み込まれます。

@@ -237,6 +237,12 @@ const COHERE_DOCUMENTS_PER_SEARCH_UNIT = 100;
 function cohereRerankMeters(usage: IRRerankResponse["usage"], documentCount: number): Record<string, number> {
 	const meters = usageToMeters(usage);
 	const reported = usage?.searchUnits;
+	// Rerank v5 bills input tokens and reports no search units; its price rows meter
+	// input_text_tokens, so count one request rather than estimating search units.
+	if (reported === undefined && typeof usage?.inputTokens === "number" && usage.inputTokens > 0) {
+		meters.requests = 1;
+		return meters;
+	}
 	const searchUnits = typeof reported === "number" && Number.isFinite(reported) && reported > 0
 		? Math.ceil(reported)
 		: Math.max(1, Math.ceil(documentCount / COHERE_DOCUMENTS_PER_SEARCH_UNIT));

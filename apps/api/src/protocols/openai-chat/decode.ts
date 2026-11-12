@@ -82,7 +82,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 			const reasoningParts: IRContentPart[] = decodedDetails.parts.length > 0
 				? decodedDetails.parts
 				: reasoningContent ? [{ type: "reasoning_text", text: reasoningContent }] : [];
-			const content: IRContentPart[] = [...reasoningParts, ...assistantContent];
+			const content: IRContentPart[] = interleaveReasoning(reasoningParts, assistantContent, decodedDetails.textOffsets);
 			const audioId = typeof msgAny.audio?.id === "string" && msgAny.audio.id.length > 0 ? msgAny.audio.id : undefined;
 
 			messages.push({
@@ -91,6 +91,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 				toolCalls,
 				...(typeof msgAny.name === "string" && msgAny.name.length > 0 ? { name: msgAny.name } : {}),
 				...(audioId ? { audio: { id: audioId } } : {}),
+				...(decodedDetails.effortRecord ? { effortRecord: decodedDetails.effortRecord } : {}),
 			});
 		} else if (normalizedRole === "tool") {
 			const toolResult = normalizeToolResultContent(msgAny.content);
@@ -367,4 +368,27 @@ function decodeToolCall(tc: any): IRToolCall {
 		name: tc.function?.name || tc.name,
 		arguments: tc.function?.arguments || tc.arguments || "{}",
 	};
+}
+
+/**
+ * Chat joins a reply's text into one string. A Claude thinking block written after
+ * some of that text records how many characters came before it, and goes back at
+ * that point: each thinking signature records everything before it in the reply.
+ */
+function interleaveReasoning(reasoning: IRContentPart[], content: IRContentPart[], offsets: Map<IRContentPart, number>): IRContentPart[] {
+	const only = content.length === 1 && content[0].type === "text" ? content[0] : null;
+	if (offsets.size === 0 || !only || only.type !== "text") return [...reasoning, ...content];
+	const text = only.text;
+	const out: IRContentPart[] = [];
+	let cursor = 0;
+	for (const part of reasoning) {
+		const offset = Math.min(offsets.get(part) ?? 0, text.length);
+		if (offset > cursor) {
+			out.push({ type: "text", text: text.slice(cursor, offset) });
+			cursor = offset;
+		}
+		out.push(part);
+	}
+	if (cursor < text.length) out.push({ ...only, text: text.slice(cursor) });
+	return out;
 }

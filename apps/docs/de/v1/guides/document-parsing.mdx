@@ -4,15 +4,15 @@ title: "Dokumentbilder analysieren"
 description: "Extrahiere mit Cohere Parse v5.0 geordneten Text, Tabellen, Bilder und Layout-Metadaten aus Dokumentbildern."
 ---
 
-Verwende den Parse-Endpunkt, wenn du mehr als einfaches OCR brauchst. Er erhält die Seitenreihenfolge und kann Markdown oder strukturierte Text-, Bild- und Tabellenblöcke zurückgeben.
+Sende ein Dokumentbild an `POST /v1/parse`, um seinen Text in Lesereihenfolge zurückzubekommen, als Markdown oder als strukturierte Text-, Bild- und Tabellenblöcke. Nutze [OCR](../api-reference/endpoint/ocr.mdx), wenn du nur den reinen Text brauchst.
 
 <Warning>
-  Cohere unterstützt in seiner öffentlichen Parse-API derzeit nur Bild-URLs und Base64-Bilddaten-URIs. Wandle PDF-Seiten vor dem Senden in Bilder um. Jedes Bild darf höchstens 20 MB und 50 Megapixel groß sein und darf dekodiert 200 MB nicht überschreiten.
+  Parse akzeptiert ein Bild pro Anfrage, als `http(s)`-URL oder als Base64-URI `data:image/...`. PDFs werden nicht akzeptiert: Wandle jede Seite zuerst in ein Bild um. Cohere begrenzt jedes Bild auf 20 MB, 50 Megapixel und 200 MB im dekodierten Zustand.
 </Warning>
 
-## Analysieren und Markdown zurückgeben
+## In Markdown analysieren
 
-Markdown erhält die Lesereihenfolge, fügt Tabellen als HTML ein und verknüpft erkannte Bilder mit den Seitenmetadaten.
+Markdown ist das Standard-`output_format`. Es erhält die Lesereihenfolge, fügt Tabellen als HTML ein und verknüpft erkannte Bilder mit Metadaten auf der Seite.
 
 <CodeGroup>
 ```bash cURL
@@ -73,6 +73,8 @@ print(response.json()["pages"][0]["markdown"]["content"])
 
 ## Strukturierte Blöcke zurückgeben
 
-Setze `output_format` auf `blocks`, um geordnete Text-, Bild- und Tabellenbereiche zu erhalten. Bild- und Tabellenblöcke enthalten, sofern verfügbar, Begrenzungsrahmen in Pixeln und normalisierter Form.
+Setze `output_format` auf `blocks`, um geordnete Text-, Bild- und Tabellenbereiche zu erhalten. Bild- und Tabellenblöcke enthalten, sofern verfügbar, Begrenzungsrahmen in Pixeln und in normalisierter Form.
 
-Die Nutzung von Parse wird pro Seite berechnet. Die Antwort enthält Cohere-Metadaten und einen normalisierten Wert `usage.input_pages`, wenn der Anbieter die berechneten Seiten meldet. Cohere bietet derzeit einen kostenlosen, ratenbegrenzten API-Zugang zur Evaluierung an und hat noch keinen Produktionspreis für Parse veröffentlicht.
+## Wie Parse abgerechnet wird
+
+Die Nutzung von Parse wird pro Seite gemessen. Die Antwort enthält die Metadaten von Cohere und einen normalisierten Wert `usage.input_pages`, wenn der Anbieter abgerechnete Seiten meldet. Cohere bietet derzeit einen kostenlosen, ratenbegrenzten API-Zugang zur Evaluierung an und hat noch keinen Produktionspreis für die Parse-API veröffentlicht.

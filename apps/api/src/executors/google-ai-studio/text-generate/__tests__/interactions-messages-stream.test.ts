@@ -1,10 +1,11 @@
-// Gemini Interactions responses replayed to /v1/messages clients: the executor's synthetic
-// stream must be Messages events (message_start ... message_stop), not Responses events.
+// Gemini Interactions streams relayed to /v1/messages clients: the executor's stream
+// must be Messages events (message_start ... message_stop), not Responses events.
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { consumeTextProtocolStreamToIR } from "@pipeline/surfaces/server-tools.stream";
 import { executor } from "../index";
 import { installFetchMock } from "../../../../../tests/helpers/mock-fetch";
+import { interactionSseResponse } from "../../../../../tests/helpers/google-interactions-sse";
 import { setupTestRuntime, teardownTestRuntime } from "../../../../../tests/helpers/runtime";
 
 vi.mock("@supabase/supabase-js", () => ({
@@ -47,12 +48,12 @@ function messagesArgs(): ExecutorExecuteArgs {
 
 async function runExecutor(): Promise<ReadableStream<Uint8Array>> {
 	const mock = installFetchMock([{
-		match: (url) => url.endsWith("/v1beta/interactions"),
-		response: new Response(JSON.stringify(interaction), { headers: { "Content-Type": "application/json" } }),
+		match: (url) => url.endsWith("/v1beta/interactions?alt=sse"),
+		response: interactionSseResponse({ ...interaction, status: "requires_action" }),
 	}]);
 	try {
 		const result = await executor(messagesArgs());
-		if (result.kind !== "stream" || !result.stream) throw new Error("Expected a synthetic Interactions stream");
+		if (result.kind !== "stream" || !result.stream) throw new Error("Expected an Interactions stream");
 		return result.stream;
 	} finally {
 		mock.restore();

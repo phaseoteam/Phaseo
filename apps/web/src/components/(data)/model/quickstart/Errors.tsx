@@ -1,5 +1,5 @@
 // src/components/gateway/Errors.tsx
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
 import {
 	Card,
 	CardContent,
@@ -62,8 +62,8 @@ const InlineCode: React.FC<React.PropsWithChildren> = ({ children }) => (
 	</code>
 );
 
-export default async function Errors() {
-	const tUi = await getTranslations("Common.ui");
+export default function Errors() {
+	const tUi = useTranslations("Common.ui");
 	const clientErrorExample = `HTTP/1.1 402 Payment Required
 {
   "error": {

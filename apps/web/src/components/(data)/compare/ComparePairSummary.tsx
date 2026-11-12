@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
+import Link from "@/components/link";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { localizePublicPath } from "@/lib/auth/localized-paths";
 import type { PublicLocale } from "@/i18n/routing";
@@ -25,8 +25,8 @@ type Faq = { question: string; answer: string };
  * table and answers to the questions people search for, each built only from
  * values the page can show. The interactive comparison sits above it.
  */
-export async function ComparePairSummary({ locale, baseUrl, models, usage, peers, related }: Props) {
-	const t = await getTranslations({ locale, namespace: "Catalogue.comparePair" });
+export function ComparePairSummary({ locale, baseUrl, models, usage, peers, related }: Props) {
+	const t = useTranslations("Catalogue.comparePair");
 	const [a, b] = models;
 	const count = new Intl.NumberFormat(locale);
 	const notListed = t("notListed");

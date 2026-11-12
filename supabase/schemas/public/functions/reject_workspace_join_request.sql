@@ -13,6 +13,15 @@ declare
   v_user_id uuid := auth.uid();
   v_req public.workspace_join_requests%rowtype;
 begin
+  if not public.mfa_satisfied() then
+    raise exception using errcode = '42501', message = 'mfa_required';
+  end if;
+
+  -- A token issued to an OAuth client (the CLI and desktop app too) cannot change membership.
+  if public.request_is_oauth_client() then
+    raise exception using errcode = '42501', message = 'oauth_client_refused';
+  end if;
+
   if v_user_id is null then
     raise exception using errcode = '42501', message = 'Unauthorized';
   end if;

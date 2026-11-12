@@ -1015,7 +1015,6 @@ def test_get_api_key_uses_generated_operation(monkeypatch):
         return {
             "data": {
                 "id": "key_123",
-                "hash": "keyhash_123",
                 "status": "active",
             }
         }
@@ -1027,7 +1026,6 @@ def test_get_api_key_uses_generated_operation(monkeypatch):
 
     assert captured == [{"path": {"id": "key_123"}}]
     assert response["data"]["id"] == "key_123"
-    assert response["data"]["hash"] == "keyhash_123"
 
 
 def test_list_workspaces_uses_generated_operation(monkeypatch):

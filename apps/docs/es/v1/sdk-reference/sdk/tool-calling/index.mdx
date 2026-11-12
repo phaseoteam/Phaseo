@@ -1,23 +1,24 @@
 ---
 icon: "blocks"
-title: "Llamada a herramientas (AI SDK)"
-description: "Llamada a funciones y herramientas con Vercel AI SDK y el proveedor Phaseo."
+title: "Llamadas a herramientas (AI SDK)"
+sidebarTitle: "Llamadas a herramientas"
+description: "Llamadas a funciones y herramientas con Vercel AI SDK y el proveedor de Phaseo."
 ---
 
-Usa `tools` en `generateText` para ejecutar funciones con parámetros tipados.
+Define herramientas con el helper `tool()` de AI SDK, pásalas a `generateText` y define `stopWhen` para que el modelo pueda responder después de que se ejecute la herramienta.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateText } from "ai";
+import { generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "What is 17 + 25? Use the calculator tool.",
   tools: {
-    calculator: {
+    calculator: tool({
       description: "Perform basic arithmetic",
-      parameters: z.object({
+      inputSchema: z.object({
         operation: z.enum(["add", "subtract", "multiply", "divide"]),
         a: z.number(),
         b: z.number(),
@@ -28,15 +29,18 @@ const result = await generateText({
         if (operation === "multiply") return a * b;
         return a / b;
       },
-    },
+    }),
   },
+  stopWhen: stepCountIs(2),
 });
 
 console.log(result.text);
 ```
 
-## Notas
+De forma predeterminada, `generateText` se detiene después de un paso. Si ese paso es una llamada a herramienta, `result.text` está vacío y el resultado de la herramienta está en `result.toolResults`. `stepCountIs(2)` da al modelo un segundo paso para responder con el resultado.
 
-- Mantén precisas las descripciones de herramientas y estrictos sus parámetros.
-- Valida los efectos secundarios externos dentro de `execute`.
-- Añade reintentos y espera progresiva a las API de herramientas posteriores cuando sea necesario.
+## Escribir herramientas seguras
+
+- Mantén las descripciones precisas y los esquemas de entrada estrictos; el modelo rellena los argumentos.
+- Trata los argumentos como entrada no fiable. Valídalos dentro de `execute` antes de cualquier efecto secundario.
+- Añade reintentos y espera progresiva dentro de `execute` para las API externas que fallan de forma transitoria.

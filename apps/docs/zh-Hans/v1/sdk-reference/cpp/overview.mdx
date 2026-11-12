@@ -1,13 +1,18 @@
 ---
 title: "C++ SDK（开发中）"
-description: "查看开发中的 C++ 头文件。"
+description: "查看仍在开发中的 C++ 头文件。"
 ---
 
 <Note type="warning">
-  C++ SDK 仍在开发中，尚未通过包管理器提供。请仅使用源代码头文件进行评估。
+  C++ SDK 仍在开发中，尚不能通过包管理器获取。源代码头文件仅供评估使用。
 </Note>
 
-- 状态：开发中（尚未发布）。
-- 源代码位于 `packages/sdk/sdk-cpp`.
-- 生成的头文件位于 `packages/sdk/sdk-cpp/src/gen`.
-- `src/phaseo.hpp` 增加了实时模型能力获取和参数支持报告。预览版传输层返回原始 JSON，因此请先将响应反序列化为 `ModelEndpointCapabilities`，再进行检查。
+C++ SDK 是位于 `packages/sdk/sdk-cpp` 的一组仅头文件的 C++17 源文件；它尚未发布，在端到端可用之前不会包含在 SDK 发布中。
+
+| 文件 | 内容 |
+| --- | --- |
+| `src/gen/client.hpp`、`src/gen/operations.hpp`、`src/gen/models.hpp`、`src/gen/model_ids.hpp` | 生成的客户端 |
+| `src/phaseo.hpp` | 用于获取实时模型能力的 `GetModelEndpointCapabilities(...)`，以及用于生成参数支持报告的 `CheckParameterSupport(...)` |
+| `src/workflows.hpp` | 分页和任务轮询辅助函数 |
+
+预览版传输层返回原始 JSON，因此检查之前请先把响应反序列化为 `ModelEndpointCapabilities`。如需试用，请参阅[安装](./installation)。C++ 没有 Agent SDK。

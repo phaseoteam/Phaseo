@@ -11,7 +11,7 @@ import {
 	parse,
 	type MessageFormatElement,
 } from "@formatjs/icu-messageformat-parser";
-import { createTranslator } from "next-intl";
+import { createTranslator } from "@/i18n/react";
 import {
 	appleAppStoreLocales,
 	isAppleAppStoreLocale,

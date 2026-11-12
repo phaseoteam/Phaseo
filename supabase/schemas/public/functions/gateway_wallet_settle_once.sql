@@ -24,6 +24,7 @@ declare
   v_before_balance bigint;
   v_before_reserved bigint;
   v_available_for_settlement bigint;
+  v_overdraft bigint;
 begin
   if p_workspace_id is null or coalesce(trim(p_reservation_id), '') = '' then
     raise exception 'invalid_batch_reservation_identity';
@@ -73,17 +74,16 @@ begin
     return;
   end if;
 
-  -- The reservation itself is available to this settlement; all other holds
-  -- remain excluded from spendable balance.
-  v_available_for_settlement := coalesce(v_wallet.balance_nanos, 0)
-    - coalesce(v_wallet.reserved_nanos, 0)
-    + v_reservation.amount_nanos;
-  if p_actual_nanos > v_available_for_settlement then
-    return query select false, false, 'insufficient_balance'::text, p_actual_nanos,
-      coalesce(v_wallet.balance_nanos, 0), coalesce(v_wallet.balance_nanos, 0),
-      coalesce(v_wallet.reserved_nanos, 0), coalesce(v_wallet.reserved_nanos, 0);
-    return;
-  end if;
+  -- The work is done and the provider has billed it, so the actual cost is
+  -- always charged, like post-response request charges. The reservation and
+  -- the unreserved balance cover what they can; the rest takes the wallet into
+  -- overdraft and is recorded on the reservation. Admission blocks a wallet
+  -- under $0.10, so an overdrawn workspace cannot start new work.
+  v_available_for_settlement := greatest(
+    coalesce(v_wallet.balance_nanos, 0) - coalesce(v_wallet.reserved_nanos, 0) + v_reservation.amount_nanos,
+    v_reservation.amount_nanos
+  );
+  v_overdraft := greatest(0, p_actual_nanos - v_available_for_settlement);
 
   v_before_balance := coalesce(v_wallet.balance_nanos, 0);
   v_before_reserved := coalesce(v_wallet.reserved_nanos, 0);
@@ -99,6 +99,7 @@ begin
       settled_amount_nanos = p_actual_nanos,
       captured_nanos = least(p_actual_nanos, v_reservation.amount_nanos),
       released_nanos = greatest(0, v_reservation.amount_nanos - p_actual_nanos),
+      overdraft_nanos = v_overdraft,
       capture_ref_id = nullif(trim(coalesce(p_settle_ref_id, '')), ''),
       captured_at = now(),
       updated_at = now()

@@ -11,6 +11,8 @@ const inheritedContractByProvider: Record<string, string> = {
     scaledown: "openai", // OpenAI chat wire for Summarize/Extract; executor tests cover Decisions.
     baidu: "openai",
     doubleword: "openai",
+    primalabs: "openai",
+    lg: "openai",
     modelscope: "openai",
     reflection: "openai", // Chat wire contract; Reflection-specific controls have executor tests.
     "mistral-eu": "mistral",
@@ -18,17 +20,20 @@ const inheritedContractByProvider: Record<string, string> = {
     streamlake: "openai",
     switchpoint: "openai",
 	"tencent-cloud": "openai",
+	"particle-ai": "openai",
 	"ionrouter-kimi": "ionrouter",
 	"ionrouter-minimax": "ionrouter",
 	openrouter: "openai",
 	tensorx: "tensorix",
     wafer: "openai",
+    "wafer-us": "openai",
     "wafer-zdr": "openai",
 };
 
 const providersWithDedicatedNativeContractTests = new Set([
     "elevenlabs",
     "fal",
+    "parallel",
     "private-model",
     "respan",
     "typesafe",

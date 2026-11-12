@@ -1,78 +1,45 @@
 ---
 title: "API-Anbieter kennenlernen"
-description: "Erfahre, welche Aufgaben API-Anbieter übernehmen und wie du Zuverlässigkeit, Leistung und Kosten vergleichst."
+description: "Erfahre, was API-Anbieter tun und wie du sie nach Zuverlässigkeit, Leistung und Kosten bewertest."
 sidebarTitle: "API-Anbieter"
 icon: "server"
 ---
 
-API-Anbieter sind Plattformen, die Modell-APIs hosten und bereitstellen.
+Öffne einen Anbieter unter [API-Anbieter](https://phaseo.app/api-providers), um zu sehen, welche Modelle er über Phaseo bereitstellt und wie schnell er war, oder [vergleiche Anbieter](https://phaseo.app/api-providers/compare) direkt nebeneinander. Ein API-Anbieter hostet Modelle hinter einer API; die [Organisation](./organisations.mdx), die ein Modell entwickelt hat, ist oft ein anderes Unternehmen.
 
-Modellorganisationen trainieren Modelle. Anbieter machen diese Modelle über Produktionsendpunkte, Authentifizierung, Nutzungssteuerung und Betriebstools verfügbar.
-
-## Typische Aufgaben eines API-Anbieters
-
-- Authentifizierung und Schlüsselverwaltung
-- Request-Routing und Verfügbarkeitsverwaltung
-- Nutzungsabrechnung und Messung
-- Bedienbarkeit von API und SDK
-- Regionales Hosting und Compliance-Kontrollen
-
-## Anbieter und Organisation
-
-| Aspekt | Organisation | API-Anbieter |
+| | Organisation | API-Anbieter |
 | --- | --- | --- |
-| Hauptaufgabe | Entwickelt und trainiert Modelle | Hosten und Bereitstellen von Modell-APIs |
-| Schwerpunkt | Forschung und Modellqualität | Zuverlässigkeit, Zugriff und Betrieb |
-| Angebot | Meist die eigene Modellfamilie | Kann Modelle mehrerer Organisationen bereitstellen |
+| **Tut** | Entwickelt und trainiert Modelle | Hostet und betreibt Modell-APIs |
+| **Schwerpunkt** | Forschung und Modellqualität | Zuverlässigkeit, Zugang, Regionen und Preise |
+| **Modelle** | Meist die eigenen Familien | Oft Modelle vieler Organisationen |
 
-Je nach Produkt übernehmen viele Unternehmen beide Rollen.
+Viele Unternehmen sind beides.
 
-## Was du auf Phaseo-Anbieterseiten findest
+## Was eine Anbieterseite zeigt
 
-| Bereich | Inhalt |
+| Bereich | Was er dir zeigt |
 | --- | --- |
-| Übersicht | Anbieteridentität, Dokumentationslinks und unterstützte Funktionen |
-| Modelle | Verfügbare Modelle und Varianten |
-| Preise | Vereinheitlichte Anbieterpreise und Abrechnungseinheiten |
-| Limits | Anfrage- und Durchsatzlimits, sofern verfügbar |
-| Funktionen | Streaming, Tools, strukturierte Ausgaben und Modalitätsunterstützung |
+| **Leistung** | Stündliche Latenz und Durchsatz im Gateway-Traffic der letzten sieben Tage. |
+| **Token-Nutzung** | Tokens, die Phaseo im Zeitverlauf an den Anbieter gesendet hat. |
+| **Top-Modelle** und **Top-Apps** | Die Modelle und öffentlichen Apps mit dem meisten Traffic bei diesem Anbieter. |
+| **Modelle** | Jedes Modell, das der Anbieter bereitstellt, mit Tabs für Text-, Bild-, Audio-, Video-, Embedding- und Moderationsmodelle. |
 
-## Phaseo Gateway als Anbieterschicht
+Die Seite jedes Modells zeigt dann Preis, Kontextlänge, Status und Datenrichtlinie des Anbieters für dieses Modell; [Anbieterstatus](../guides/provider-statuses) erklärt die Statussymbole.
 
-Phaseo Gateway vereinheitlicht den Zugriff auf zahlreiche Backends.
+## Wie das Gateway Anbieter nutzt
 
-Vorteile:
+Hat ein Modell mehrere Anbieter, wählt das Gateway pro Anfrage einen aus und weicht auf einen anderen aus, wenn er fehlschlägt. Du sendest ein Anfrageformat und erhältst eine Rechnung und ein Nutzungsprotokoll, egal welcher Anbieter die Anfrage bedient. Um stattdessen über dein eigenes Anbieterkonto abzurechnen, füge einen Anbieterschlüssel hinzu ([BYOK](../guides/routing-and-fallbacks#byok-considerations)).
 
-- Einheitliches Anfrage- und Antwortformat über Anbieter hinweg
-- Anbietergesteuertes Routing und Fallback-Verhalten
-- Einheitliche SDK-Nutzung für Integrationen mit mehreren Anbietern
-- Zentrale Beobachtbarkeit von Nutzung und Kosten
-- Optionale BYOK-Unterstützung für anbietereigene Schlüssel
+[Routing und Fallbacks](../guides/routing-and-fallbacks) zeigt, wie du Anbieter priorisierst, festlegst oder ausschließt.
 
 ## Einen Anbieter auswählen
 
-Achte beim Vergleich auf:
+| Wenn dir das wichtig ist | Prüfe |
+| --- | --- |
+| Ein bestimmtes Modell | Den Bereich **Anbieter** auf der Modellseite oder `GET /v1/models/{author}/{slug}/endpoints` |
+| Latenz in deiner Region | Den Bereich **Leistung** des Anbieters und seine Regionen auf der Modellseite |
+| Kosten bei deinem Volumen | Den Bereich **Preise** des Modells und den [Preisrechner](https://phaseo.app/tools/pricing-calculator) |
+| Tools, Streaming oder strukturierte Ausgabe | Die unterstützten Parameter der Route auf der Modellseite oder in der Endpunkt-API |
+| Datenverarbeitung und Compliance | Die Datenrichtlinie und die Verarbeitungsorte der Route auf der Modellseite |
 
-- Verfügbarkeit der Modelle für deinen Anwendungsfall
-- Zuverlässigkeit und Latenz in deiner Zielregion
-- Kostenprofil bei deinem erwarteten Datenverkehr
-- Funktionsumfang für Tools, Streaming und strukturierte Ausgaben
-- Anforderungen an Compliance und Datenverarbeitung
-
-## Fragen für den Vergleich
-
-- Welche Anbieter stellen die benötigte Modellfamilie bereit?
-- Welcher Anbieter bietet in meiner Region eine bessere Latenz?
-- Welche Option ist bei meinem Tokenvolumen am günstigsten?
-- Welcher Anbieter unterstützt die benötigten Endpunktfunktionen?
-
-## Nächste Schritte
-
-<Card
-	title="Preise und Leistung vergleichen"
-	icon="scale"
-	href="./pricing-performance.mdx"
-	horizontal
->
-	Vergleiche Kosten, Geschwindigkeit und Effizienzkennzahlen verschiedener Anbieter.
-</Card>
+[Preise und Leistung](./pricing-performance.mdx) erklärt, wie du die Kosten- und Geschwindigkeitswerte liest.
