@@ -894,8 +894,9 @@ async function listModels(req: Request, scope: "shared" | "me") {
     if (scopeError) return scopeError;
     // An OAuth access token (a CLI or app sign-in) is not a key: its apiKeyId is the client id. It gets the rules of
     // the person who signed in (the workspace, their departments and their own), as a key they create would.
-    const oauthUserId = auth.value.authMethod === "oauth" ? String(auth.value.userId ?? "").trim() : "";
-    if (scope === "me" && auth.value.authMethod === "oauth" && !oauthUserId) {
+    // An OAuth-delegated key (Phaseo desktop's, a third-party app's) is a real key and keeps the key path.
+    const oauthUserId = auth.value.oauthAccessToken ? String(auth.value.userId ?? "").trim() : "";
+    if (scope === "me" && auth.value.oauthAccessToken && !oauthUserId) {
         return json({ ok: false, error: "unauthorized", message: "This sign-in has no user. Sign in again." }, 401, { "Cache-Control": "no-store" });
     }
 

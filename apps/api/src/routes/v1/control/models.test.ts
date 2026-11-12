@@ -1341,7 +1341,7 @@ describe("handleModels", () => {
         });
 
         it("lists an OAuth token's models under the signed-in person's rules, not a key looked up by the client id", async () => {
-            guardAuthMock.mockResolvedValue({ ok: true, value: { workspaceId: "ws_test", apiKeyId: "phaseo_cli", authMethod: "oauth", oauthClientId: "phaseo_cli", oauthScopes: ["openid", "models:read"], userId: "user_1" } });
+            guardAuthMock.mockResolvedValue({ ok: true, value: { workspaceId: "ws_test", apiKeyId: "phaseo_cli", authMethod: "oauth", oauthAccessToken: true, oauthClientId: "phaseo_cli", oauthScopes: ["openid", "models:read"], userId: "user_1" } });
             fetchCatalogueMock.mockResolvedValue([twoProviders()]);
             fetchMemberWorkspacePolicyMock.mockResolvedValue(blocked(["azure"]));
             const response = await handleMyModels(new Request("https://api.example.com/v1/models/me"));
@@ -1354,8 +1354,17 @@ describe("handleModels", () => {
             expect(response.headers.get("vary")).toBe("Authorization");
         });
 
+        it("keeps an OAuth-delegated key (such as Phaseo desktop's) on its key's own rules", async () => {
+            guardAuthMock.mockResolvedValue({ ok: true, value: { workspaceId: "ws_test", apiKeyId: "key_desktop", authMethod: "oauth", oauthClientId: "phaseo_desktop", oauthScopes: ["gateway:access", "models:read"], userId: "user_1" } });
+            fetchWorkspacePolicyMock.mockResolvedValue(buildWorkspacePolicy({}));
+            const response = await handleMyModels(new Request("https://api.example.com/v1/models/me"));
+            expect(response.status).toBe(200);
+            expect(fetchWorkspacePolicyMock).toHaveBeenCalledWith({ workspaceId: "ws_test", apiKeyId: "key_desktop" });
+            expect(fetchMemberWorkspacePolicyMock).not.toHaveBeenCalled();
+        });
+
         it("asks an OAuth token with no user to sign in again", async () => {
-            guardAuthMock.mockResolvedValue({ ok: true, value: { workspaceId: "ws_test", apiKeyId: "phaseo_cli", authMethod: "oauth", oauthClientId: "phaseo_cli", oauthScopes: ["openid", "models:read"] } });
+            guardAuthMock.mockResolvedValue({ ok: true, value: { workspaceId: "ws_test", apiKeyId: "phaseo_cli", authMethod: "oauth", oauthAccessToken: true, oauthClientId: "phaseo_cli", oauthScopes: ["openid", "models:read"] } });
             const response = await handleMyModels(new Request("https://api.example.com/v1/models/me"));
             expect(response.status).toBe(401);
             expect(fetchMemberWorkspacePolicyMock).not.toHaveBeenCalled();

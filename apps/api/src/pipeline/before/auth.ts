@@ -238,6 +238,8 @@ export type AuthSuccess = {
     internal?: boolean;
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
+    /** True for an OAuth access token (a sign-in). Its apiKeyId is the client id, not a key; an OAuth-delegated key is false. */
+    oauthAccessToken?: boolean;
     oauthScopes?: string[];
     oauthResource?: string | null;
     scopes?: string[];
@@ -1033,6 +1035,7 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
                 internal: isInternalRequestAuthorized(req, bindings),
                 authMethod: "oauth",
                 oauthClientId: claims.client_id,
+                oauthAccessToken: true,
 				oauthScopes: effectiveScopes,
 				scopes: effectiveScopes,
             } as AuthSuccess;
@@ -1140,6 +1143,7 @@ async function authenticateOAuth(req: Request, token: string, options: Authentic
             internal: isInternalRequestAuthorized(req, bindings),
             authMethod: "oauth",
             oauthClientId: claims.client_id,
+            oauthAccessToken: true,
 			oauthScopes: effectiveScopes,
 			scopes: effectiveScopes,
         } as AuthSuccess;
