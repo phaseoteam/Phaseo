@@ -12,9 +12,6 @@ import { Logo } from "@/components/Logo";
 import { useOpenDetail } from "@/components/shell/SplitStack";
 import { Button, confirm, Header, Icon, Row, Screen, Section, Text, toast } from "@/components/ui";
 import { readStorageReport } from "@/features/chat/deviceStorage";
-import { workspaceDesktop, workspaceStore } from "@/features/desktops/picked";
-import { desktopTriageHref } from "@/features/desktops/routes";
-import { useDesktops } from "@/features/desktops/store";
 import { useLayout } from "@/hooks/useLayout";
 import { FULL_VERSION_LABEL, VERSION_LABEL } from "@/lib/appInfo";
 import { formatBytes, formatNumber, formatUsd, nanosToUsd } from "@/lib/format";
@@ -42,6 +39,7 @@ const ITEMS = {
   status: { href: "/account/status", title: "Status", icon: Activity },
   whatsNew: { href: "/account/whats-new", title: "What's new", icon: Sparkles },
   feedback: { href: "/account/feedback", title: "Send feedback", icon: MessageSquareText },
+  triage: { href: "/account/triage", title: "Triage a bug", icon: Bug },
   licences: { href: "/account/licences", title: "Open source licences", icon: Scale },
   diagnostics: { href: "/account/diagnostics", title: "Diagnostics", icon: Gauge },
 } as const satisfies Record<string, { href: Href; title: string; icon: LucideIcon }>;
@@ -60,10 +58,6 @@ export function AccountMenu() {
   const { split } = useLayout();
   const { session, signOut } = useAuth();
   const { workspace, workspaceId, workspaces } = useWorkspace();
-  // Triage runs on a paired computer: the one the app works in, else the first.
-  const desktops = useDesktops();
-  const pickedDesktop = workspaceStore.use();
-  const triageDesktop = workspaceDesktop(desktops, pickedDesktop) ?? desktops?.[0] ?? null;
   const balance = useBalance(session ? workspaceId : null);
   const week = useWeekSpend(session ? workspaceId : null);
   const keys = useKeys(session ? workspaceId : null);
@@ -179,7 +173,7 @@ export function AccountMenu() {
           {item("status", { trailing: status.data ? <View className="max-w-[55%] flex-row items-center gap-1.5"><StatusDot state={status.data.state} /><Text variant="muted" numberOfLines={1}>{status.data.label}</Text></View> : null })}
           {item("whatsNew")}
           {item("feedback")}
-          {triageDesktop ? <Row icon={Bug} title="Triage a bug" subtitle={`An agent on ${triageDesktop.desktopName} finds the cause in this app's source`} onPress={() => router.push(desktopTriageHref(triageDesktop.desktopId))} /> : null}
+          {item("triage", { subtitle: "An agent finds the cause in this app's source" })}
           <WebRow title="Documentation" icon={BookOpen} path="/docs" last />
         </Section>
         <Section title="About and legal">
