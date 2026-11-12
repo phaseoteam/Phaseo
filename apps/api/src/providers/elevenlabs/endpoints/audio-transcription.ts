@@ -13,6 +13,19 @@ import { estimateAudioDurationSeconds } from "../../openai/endpoints/audio-trans
 const ELEVENLABS_TIMESTAMP_GRANULARITIES = new Set(["none", "word", "character"]);
 const ELEVENLABS_REPEATED_FORM_FIELDS = new Set(["secondary_language_codes"]);
 
+/**
+ * ElevenLabs: "When more than 100 keyterms are provided, a minimum billable duration of 20
+ * seconds applies per request." (https://elevenlabs.io/docs/api-reference/speech-to-text/convert)
+ */
+const KEYTERM_MINIMUM_THRESHOLD = 100;
+const KEYTERM_MINIMUM_BILLED_SECONDS = 20;
+
+/** The audio seconds ElevenLabs bills for a request: its length, raised to the keyterm minimum. */
+export function elevenLabsBilledAudioSeconds(seconds: number | undefined, keytermCount: number): number | undefined {
+	if (keytermCount <= KEYTERM_MINIMUM_THRESHOLD) return seconds;
+	return Math.max(seconds ?? 0, KEYTERM_MINIMUM_BILLED_SECONDS);
+}
+
 function isNonEmptyString(value: unknown): value is string {
 	return typeof value === "string" && value.trim().length > 0;
 }
@@ -171,7 +184,10 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	if (res.ok) {
 		const json = await res.clone().json().catch(() => undefined);
 		if (json && typeof json === "object") {
-			const inputAudioSeconds = responseAudioDurationSeconds(json) ?? estimatedAudioSeconds;
+			const inputAudioSeconds = elevenLabsBilledAudioSeconds(
+				responseAudioDurationSeconds(json) ?? estimatedAudioSeconds,
+				typedPayload.keywords?.length ?? 0,
+			);
 			const usageMeters = {
 				requests: 1,
 				...(json.usage && typeof json.usage === "object" ? json.usage : {}),
