@@ -111,7 +111,7 @@ import { branchPullRequest, forgetBranchPullRequest } from "./branchPullRequest"
 import { createPullRequest, parsePullRequestText, pullRequestPrompt, threadWorkLog, type PullRequestContext } from "./createPullRequest";
 import { OutsideAgentsMcp } from "./outsideAgentsMcp";
 import { PhoneService, type PhaseoSignIn } from "./phone/phoneService";
-import { phoneModels, phoneSetChat, startPhoneChat, type DiscoverModels, type PhoneModelSources } from "./phone/phoneHost";
+import { phoneModels, phoneSetChat, startPhoneChat, startPhoneTriage, type DiscoverModels, type PhoneModelSources } from "./phone/phoneHost";
 import { phoneFilePreview } from "./phone/phoneFiles";
 import { codeHostSettings, configureCodeHosts, removeCodeHostToken, saveCodeHostToken, saveCustomCodeHosts } from "./codeHosts";
 import { codeHostKinds, validHostName, type CodeHostKind } from "../shared/codeHosts";
@@ -1024,21 +1024,32 @@ ipcMain.handle("workspace:clone-project", async (event, url: unknown) => {
 const triageBuild = (): TriageBuild => ({ version: app.getVersion(), ...buildStamp, platform: process.platform, osRelease: release(), arch: process.arch, electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, packaged: app.isPackaged });
 /** Where filed issues and offered pull requests go; PHASEO_TRIAGE_REPOSITORY points them at a test repository. */
 const triageRepository = () => /^[\w.-]+\/[\w.-]+$/.test(process.env.PHASEO_TRIAGE_REPOSITORY ?? "") ? process.env.PHASEO_TRIAGE_REPOSITORY! : triageSourceRepository;
-let triagePreparing: Promise<{ projectId: string }> | undefined;
+const triagePreparing = new Map<string, Promise<{ projectId: string }>>();
+/**
+ * The source at `commit` (main without one) as a triage project. A second request for the same commit while the first
+ * is fetching waits for it rather than fetching again into the same folder. `name` names a new project; the window's
+ * own triage renames it every time, a phone's keeps the name of a checkout the window already made.
+ */
+function prepareTriageProject(commit: string | undefined, version: string, name: string, rename: boolean) {
+	const key = commit ?? "main";
+	const pending = triagePreparing.get(key) ?? span("triage.prepare", { exact: Boolean(commit) }, async () => {
+		const checkout = await prepareTriageCheckout(path.join(app.getPath("userData"), "triage"), commit);
+		const project = workspaceRuntime.store.addProject(checkout.directory);
+		if (rename || !project.triage) {
+			project.name = name;
+			project.triage = { version, commit: checkout.commit, exact: checkout.exact, repository: triageRepository() };
+		}
+		workspaceRuntime.store.saveProject(project);
+		return { projectId: project.id };
+	}).finally(() => { triagePreparing.delete(key); });
+	triagePreparing.set(key, pending);
+	return pending;
+}
 // Triage: the running build's source as a project, for a Code chat that debugs the app itself.
 ipcMain.handle("workspace:triage-prepare", async (event): Promise<TriagePreparation> => {
 	if (!senderWindow(event) || shutdownStarted) throw new Error("Untrusted workspace request.");
-	// A second request while the first is fetching waits for it rather than fetching again.
-	triagePreparing ??= span("triage.prepare", { exact: Boolean(buildStamp.commit) }, async () => {
-		const checkout = await prepareTriageCheckout(path.join(app.getPath("userData"), "triage"), buildStamp.commit);
-		const project = workspaceRuntime.store.addProject(checkout.directory);
-		const { version } = triageBuild();
-		project.name = `Phaseo ${version} source`;
-		project.triage = { version, commit: checkout.commit, exact: checkout.exact, repository: triageRepository() };
-		workspaceRuntime.store.saveProject(project);
-		return { projectId: project.id };
-	}).finally(() => { triagePreparing = undefined; });
-	const { projectId } = await triagePreparing;
+	const { version } = triageBuild();
+	const { projectId } = await prepareTriageProject(buildStamp.commit, version, `Phaseo ${version} source`, true);
 	const workspace = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(workspace);
 	const triage = workspaceRuntime.store.getProjects().find(project => project.id === projectId)!.triage!;
 	return { workspace, projectId, build: triageBuild(), triage, playbook: triagePlaybookName() };
@@ -1448,6 +1459,19 @@ app.whenReady().then(() => {
 				if (shutdownStarted) throw new Error("The workspace is shutting down.");
 				return (await workspaceRuntime.startWorktreeChat(validateWorktreeChatRequest(request), create)).taskId;
 			}),
+			// The window's Triage a Phaseo bug, at the phone build's commit rather than this app's.
+			triage: input => span("triage.phone", { exact: Boolean(input.build.commit) }, () => startPhoneTriage(() => workspaceRuntime.store.getOverview(), command => workspaceRuntime.command(command), phoneSources, input, {
+				prepare: async build => {
+					if (shutdownStarted) throw new Error("The workspace is shutting down.");
+					const { projectId } = await prepareTriageProject(build.commit, build.version, `Phaseo mobile ${build.version} source`, false);
+					const workspace = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(workspace);
+					const project = workspaceRuntime.store.getProjects().find(value => value.id === projectId);
+					if (!project?.triage) throw new Error("The source was fetched but its project could not be read.");
+					return { projectId, directory: project.directory, triage: project.triage };
+				},
+				writePlaybook: (directory, name, content) => writeTriagePlaybook(directory, name, content),
+			})),
+			issueDraft: (chatId, action) => span("triage.issue", { action, phone: true }, () => workspaceRuntime.issueDraftAction(chatId, action)),
 			models: input => phoneModels(workspaceRuntime.store.getOverview(), phoneSources, input),
 			// A worktree's .git is a file, which existsSync also finds.
 			isRepository: directory => existsSync(path.join(directory, ".git")),

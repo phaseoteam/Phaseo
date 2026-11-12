@@ -22,6 +22,31 @@ describe("phone frames", () => {
 		expect(refused("not json").code).toBe("invalid_frame");
 		expect(refused("[1]").code).toBe("invalid_frame");
 	});
+	it("takes a triage request with the phone's build, keeping only the fields it knows", () => {
+		const commit = "A".repeat(40);
+		expect(parsePhoneFrame(JSON.stringify({ id: "1", type: "triage", text: "Pairing hangs", diagnostics: "2026-11-12T10:00:00.000Z chat.open took 80 ms", model: "gpt-6.1", harness: "codex", extra: 1,
+			build: { version: "0.1.0", platform: "android", commit, dirty: true, buildNumber: 2600, builtAt: "2026-11-12T09:00:00.000Z", osVersion: "15", device: "Pixel 9", runtime: "React Native 0.88.0", secret: "x" } })))
+			.toEqual({ id: "1", type: "triage", text: "Pairing hangs", diagnostics: "2026-11-12T10:00:00.000Z chat.open took 80 ms", model: "gpt-6.1", harness: "codex",
+				build: { version: "0.1.0", platform: "android", commit: commit.toLowerCase(), dirty: true, buildNumber: 2600, builtAt: "2026-11-12T09:00:00.000Z", osVersion: "15", device: "Pixel 9", runtime: "React Native 0.88.0" } });
+		// A build without its commit is triaged against main; empty diagnostics are dropped.
+		expect(parsePhoneFrame(JSON.stringify({ id: "2", type: "triage", text: "x", diagnostics: " ", build: { version: "0.1.0", platform: "ios" } }))).toEqual({ id: "2", type: "triage", text: "x", build: { version: "0.1.0", platform: "ios" } });
+		// The computer fetches by commit, so a short one (as Account shows it) or a ref is refused rather than guessed at.
+		expect(refused(JSON.stringify({ id: "3", type: "triage", text: "x", build: { version: "0.1.0", platform: "android", commit: "56dc9386b8" } })).message).toContain("full commit");
+		expect(refused(JSON.stringify({ id: "3", type: "triage", text: "x", build: { version: "0.1.0", platform: "android", commit: "main" } })).message).toContain("full commit");
+		expect(refused(JSON.stringify({ id: "4", type: "triage", text: "x" })).message).toContain("build");
+		expect(refused(JSON.stringify({ id: "5", type: "triage", text: "x", build: { platform: "android" } })).message).toContain("build.version");
+		expect(refused(JSON.stringify({ id: "6", type: "triage", text: "x", build: { version: "1", platform: "android" }, diagnostics: "x".repeat(phoneLimits.triageDiagnosticsChars + 1) })).message).toContain("diagnostics");
+		expect(refused(JSON.stringify({ id: "7", type: "triage", text: "x", build: { version: "1", platform: "android" }, accountId: "a" })).message).toContain("harness");
+		// Starting triage hours later, when the computer comes back, is not what the person asked for.
+		expect(relayHolds({ type: "triage" })).toBe(false);
+	});
+	it("files or discards an issue draft, and nothing else", () => {
+		expect(parsePhoneFrame(JSON.stringify({ id: "1", type: "issue_draft", chatId: "c", action: "file", title: "edited" }))).toEqual({ id: "1", type: "issue_draft", chatId: "c", action: "file" });
+		expect(parsePhoneFrame(JSON.stringify({ id: "2", type: "issue_draft", chatId: "c", action: "discard" }))).toEqual({ id: "2", type: "issue_draft", chatId: "c", action: "discard" });
+		expect(refused(JSON.stringify({ id: "3", type: "issue_draft", chatId: "c", action: "close" })).message).toContain("action");
+		expect(refused(JSON.stringify({ id: "4", type: "issue_draft", action: "file" })).message).toContain("chatId");
+		expect(relayHolds({ type: "issue_draft" })).toBe(false);
+	});
 	it("lets a new chat name its model and effort, and lists the models to pick from", () => {
 		expect(parsePhoneFrame(JSON.stringify({ id: "1", type: "new_chat", text: "Fix it", mode: "code", projectId: "p1", model: "gpt-6.1", reasoningEffort: "high" })))
 			.toEqual({ id: "1", type: "new_chat", text: "Fix it", mode: "code", projectId: "p1", model: "gpt-6.1", reasoningEffort: "high" });

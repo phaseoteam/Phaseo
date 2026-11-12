@@ -8,10 +8,11 @@ import { utf8Length } from "./base64url";
  * 2 added list_projects, projects_changed and hello's capabilities; 3 added update_chat, set_chat, queue and the
  * archived list; 4 added git_status, read_diff, read_diff_file, the access event and forbidden; 5 added list_files and
  * read_file; 6 added list_branches, git_action, commit_message, the pull request frames, git_status's pullRequest and
- * new_chat's workspace; 7 added the terminal and server frames, terminal_output and terminal_updated. A phone gates each
- * newer frame on hello.protocol, since an older computer answers an unknown request with invalid_frame.
+ * new_chat's workspace; 7 added the terminal and server frames, terminal_output and terminal_updated; 8 added triage,
+ * issue_draft and the chat's issueDraft. A phone gates each newer frame on hello.protocol, since an older computer
+ * answers an unknown request with invalid_frame.
  */
-export const phoneProtocolVersion = 7;
+export const phoneProtocolVersion = 8;
 export const phoneLimits = {
 	/** Largest frame either side accepts, before or after decryption. */
 	frameBytes: 1024 * 1024,
@@ -37,6 +38,8 @@ export const phoneLimits = {
 	terminalFrameBytes: 256 * 1024,
 	/** Longest terminal_input; a longer paste goes in pieces. */
 	terminalInputChars: 16 * 1024,
+	/** Longest diagnostics a triage request carries. */
+	triageDiagnosticsChars: 20_000,
 } as const;
 
 export type PhoneChatStatus = "idle" | "running" | "waiting" | "limited" | "failed" | "interrupted" | "completed";
@@ -63,7 +66,16 @@ export type PhoneChatDetail = PhoneChat & {
 	approvals: PhoneApproval[]; questions: PhoneQuestionRequest[]; /** The effort the model runs at, when the chat set one. */ reasoningEffort?: string;
 	/** From protocol 3: messages waiting for the turn to end, in order; the agent the chat runs on (set_chat stays within it); its permissions, which a phone can't change; linked pull requests. A queued message cut for the phone is `truncated`, and the computer won't take an edit of it. */
 	queue?: { id: string; text: string; truncated?: true }[]; harness?: string; accountId?: string; permissionMode?: PhonePermissionMode; pullRequests?: PhoneLinkedPullRequest[];
+	/** From protocol 8: the issue a triage chat's agent drafted. Only the person files it, with issue_draft. */
+	issueDraft?: PhoneIssueDraft;
 };
+/** An issue a triage chat drafted for `repository`: waiting, filed (with its number and link) or discarded. */
+export type PhoneIssueDraft = { repository: string; title: string; body: string; status: "draft" | "filed" | "discarded"; number?: number; url?: string; /** The body was cut for the phone; the computer files all of it. */ truncated?: true };
+/**
+ * The phone app's own build, for triage: the computer fetches the app's source at `commit` (all 40 characters) and
+ * tells the agent the rest. A build without a commit is triaged against main.
+ */
+export type PhoneBuild = { version: string; commit?: string; /** Built from a working tree with uncommitted changes. */ dirty?: true; buildNumber?: number; builtAt?: string; platform: string; osVersion?: string; device?: string; runtime?: string };
 /** A model a phone may start a chat with: the efforts it offers, in order, and the one it uses unless asked. */
 export type PhoneModel = {
 	id: string; name: string; efforts?: { id: string; label: string }[]; defaultEffort?: string;
@@ -236,7 +248,16 @@ export type PhoneRequest =
 	| { id: string; type: "close_terminal"; terminalId: string }
 	/** From protocol 7, with the terminal capability: the local servers the chat started, and Stop for one by its port. */
 	| { id: string; type: "list_servers"; chatId: string }
-	| { id: string; type: "stop_server"; chatId: string; port: number };
+	| { id: string; type: "stop_server"; chatId: string; port: number }
+	/**
+	 * From protocol 8, with the code and changes capabilities: a Code chat that debugs the phone app from its own source.
+	 * The computer fetches the source at `build.commit` (minutes the first time), adds it as a project and starts the chat
+	 * with `text`, the person's description. `diagnostics` is the phone's own recent slow operations, as plain lines it
+	 * already stripped of anything personal. The model fields are new_chat's. Never held by Phaseo Connect.
+	 */
+	| { id: string; type: "triage"; text: string; build: PhoneBuild; diagnostics?: string; model?: string; reasoningEffort?: string; harness?: string; accountId?: string; agentId?: string }
+	/** From protocol 8, with the changes capability: files the chat's issue draft on GitHub, or discards it. */
+	| { id: string; type: "issue_draft"; chatId: string; action: "file" | "discard" };
 export type PhoneFrame = PhoneRequest | { id?: string; type: "ping" } | { id?: string; type: "pong" };
 
 export type PhoneResults = {
@@ -298,6 +319,10 @@ export type PhoneResults = {
 	list_servers: { servers: PhoneServer[] };
 	/** The chat's servers after the one asked for stopped. */
 	stop_server: { servers: PhoneServer[] };
+	/** The new chat; `exact` false when the build's commit couldn't be fetched and the source is main at `commit`. */
+	triage: { chat: PhoneChat; commit: string; exact: boolean };
+	/** The chat after the draft was filed or discarded. */
+	issue_draft: { chat: PhoneChatDetail };
 };
 /** forbidden (from protocol 4): the phone lacks the capability; the person allows it on the computer. */
 export type PhoneErrorCode = "invalid_frame" | "too_large" | "rate_limited" | "unauthorized" | "not_found" | "rejected" | "forbidden" | "internal";
@@ -326,7 +351,7 @@ export class PhoneProtocolError extends Error {
 	constructor(readonly code: PhoneErrorCode, message: string, readonly id?: string, readonly type?: string) { super(message); this.name = "PhoneProtocolError"; }
 }
 
-const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe", "list_projects", "update_chat", "set_chat", "queue", "git_status", "read_diff", "read_diff_file", "list_files", "read_file", "list_branches", "git_action", "commit_message", "create_pull_request", "list_pull_requests", "read_pull_request", "pull_request_files", "pr_action", "list_terminals", "open_terminal", "attach_terminal", "detach_terminal", "terminal_input", "close_terminal", "list_servers", "stop_server"]);
+const requestTypes = new Set(["hello", "list_chats", "read_chat", "send", "answer_approval", "answer_question", "stop", "new_chat", "list_models", "subscribe", "list_projects", "update_chat", "set_chat", "queue", "git_status", "read_diff", "read_diff_file", "list_files", "read_file", "list_branches", "git_action", "commit_message", "create_pull_request", "list_pull_requests", "read_pull_request", "pull_request_files", "pr_action", "list_terminals", "open_terminal", "attach_terminal", "detach_terminal", "terminal_input", "close_terminal", "list_servers", "stop_server", "triage", "issue_draft"]);
 /** A branch name as git takes one on the command line: no leading dash, spaces, control characters or ref syntax. */
 const refName = (value: unknown): value is string => typeof value === "string" && value.length > 0 && value.length <= 250 && !value.startsWith("-") && !/[\u0000-\u0020\u007f~^:?*[\\]|\.\.|@\{/.test(value);
 const pullNumber = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) >= 1 && (value as number) <= 2147483647;
@@ -584,6 +609,39 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 		case "stop_server": {
 			if (!Number.isSafeInteger(frame.port) || (frame.port as number) < 1 || (frame.port as number) > 65535) fail("port must be from 1 to 65535.");
 			return { id: request, type, chatId: chatId(), port: frame.port as number };
+		}
+		case "triage": {
+			if (!plain(frame.build)) fail("build is required.");
+			const build = frame.build as Record<string, unknown>;
+			const field = (key: string, max = 100) => {
+				if (build[key] === undefined) return {};
+				if (!validId(build[key], max)) fail(`Invalid build.${key}.`);
+				return { [key]: build[key] as string };
+			};
+			if (!validId(build.version, 64)) fail("build.version is required.");
+			if (!validId(build.platform, 40)) fail("build.platform is required.");
+			if (build.commit !== undefined && !commitId(build.commit)) fail("build.commit must be a full commit id.");
+			if (build.buildNumber !== undefined && (!Number.isSafeInteger(build.buildNumber) || (build.buildNumber as number) < 0)) fail("build.buildNumber must be a whole number.");
+			if (build.dirty !== undefined && typeof build.dirty !== "boolean") fail("build.dirty must be true or false.");
+			if (frame.diagnostics !== undefined && (typeof frame.diagnostics !== "string" || frame.diagnostics.length > phoneLimits.triageDiagnosticsChars)) fail(`diagnostics is limited to ${phoneLimits.triageDiagnosticsChars} characters.`);
+			if (frame.model !== undefined && !validId(frame.model)) fail("Invalid model.");
+			if (frame.reasoningEffort !== undefined && !validId(frame.reasoningEffort, 100)) fail("Invalid reasoningEffort.");
+			const agent = optional("harness", 40), accountId = optional("accountId"), agentId = optional("agentId");
+			if ((accountId || agentId) && !agent) fail("accountId and agentId need a harness.");
+			if (agent && frame.model === undefined) fail("A harness needs its model.");
+			return {
+				id: request, type, text: text_("text"), ...typeof frame.diagnostics === "string" && frame.diagnostics.trim() ? { diagnostics: frame.diagnostics } : {},
+				build: {
+					version: build.version as string, platform: build.platform as string, ...build.commit !== undefined ? { commit: (build.commit as string).toLowerCase() } : {}, ...build.dirty ? { dirty: true as const } : {},
+					...build.buildNumber !== undefined ? { buildNumber: build.buildNumber as number } : {}, ...field("builtAt", 40), ...field("osVersion"), ...field("device"), ...field("runtime"),
+				},
+				...frame.model !== undefined ? { model: frame.model as string } : {}, ...frame.reasoningEffort !== undefined ? { reasoningEffort: frame.reasoningEffort as string } : {},
+				...agent ? { harness: agent } : {}, ...accountId ? { accountId } : {}, ...agentId ? { agentId } : {},
+			};
+		}
+		case "issue_draft": {
+			if (frame.action !== "file" && frame.action !== "discard") fail("action must be file or discard.");
+			return { id: request, type, chatId: chatId(), action: frame.action as "file" | "discard" };
 		}
 		case "subscribe": {
 			const ids = frame.chatIds;

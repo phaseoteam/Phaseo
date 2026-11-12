@@ -1,5 +1,7 @@
-import { effortLabel, type PhoneAgent, type PhoneChatMode, type PhoneModel, type PhoneResults } from "@phaseo/phone-protocol";
+import { effortLabel, type PhoneAgent, type PhoneBuild, type PhoneChatMode, type PhoneModel, type PhoneResults } from "@phaseo/phone-protocol";
 import { harnessNames } from "../../shared/harnessNames";
+import { mentionToken } from "../../shared/mentions";
+import { phoneTriagePlaybook, triagePlaybookName, triageTitle, type TriageProject } from "../../shared/triage";
 import { settingsProject, type ProjectModelDefault } from "../../shared/projectSettings";
 import { connectedHarnesses, type RememberedModels } from "../../shared/rememberedModels";
 import { runnableHarnesses, validateCommand, type Harness, type ModelOption, type Task, type WorkspaceCommand } from "../../shared/workspace";
@@ -205,6 +207,30 @@ export async function startPhoneChat(overview: () => WorkspaceOverview, command:
 	if (!id) throw new Error("The chat could not be started.");
 	await command({ type: "send", id, text: input.text });
 	return id;
+}
+
+/** A phone's triage request, with the name the phone paired under. */
+export type PhoneTriage = { text: string; build: PhoneBuild; diagnostics?: string; model?: string; reasoningEffort?: string; harness?: string; accountId?: string; agentId?: string; device: string };
+export type PhoneTriageStarted = { chatId: string; commit: string; exact: boolean };
+/** The app's triage checkout (main/triage.ts) as a project, and where its playbook goes. */
+export type PhoneTriageSource = {
+	prepare: (build: PhoneBuild) => Promise<{ projectId: string; directory: string; triage: TriageProject }>;
+	writePlaybook: (directory: string, name: string, content: string) => Promise<unknown>;
+};
+
+/**
+ * Triage started from a phone, as the window's Triage a Phaseo bug starts it: the phone build's source as a project, a
+ * playbook in it, and a Code chat whose first message points at the playbook and carries the person's description.
+ */
+export async function startPhoneTriage(overview: () => WorkspaceOverview, command: (value: WorkspaceCommand) => Promise<WorkspaceOverview>, sources: PhoneModelSources, input: PhoneTriage, source: PhoneTriageSource): Promise<PhoneTriageStarted> {
+	const { projectId, directory, triage } = await source.prepare(input.build);
+	const playbook = triagePlaybookName();
+	await source.writePlaybook(directory, playbook, phoneTriagePlaybook({ build: input.build, triage, checkout: directory, device: input.device, ...input.diagnostics ? { diagnostics: input.diagnostics } : {} }));
+	const text = `Read ${mentionToken({ kind: "file", ref: playbook, label: "triage-playbook.md" })} and follow it.\n\n${input.text}`;
+	const { model, reasoningEffort, harness, accountId, agentId } = input;
+	const id = await startPhoneChat(overview, command, sources, { text, projectId, mode: "code", ...model ? { model } : {}, ...reasoningEffort ? { reasoningEffort } : {}, ...harness ? { harness } : {}, ...accountId ? { accountId } : {}, ...agentId ? { agentId } : {} });
+	await command({ type: "update-task", id, title: triageTitle(text) });
+	return { chatId: id, commit: triage.commit, exact: triage.exact };
 }
 
 export type PhoneSetChat = { chatId: string; mode?: PhoneChatMode; model?: string; reasoningEffort?: string; defaultEffort?: true };

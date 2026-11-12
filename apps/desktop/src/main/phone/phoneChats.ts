@@ -1,4 +1,5 @@
-import type { AttentionKind, PhoneActivity, PhoneChat, PhoneChatDetail, PhoneEntry, PhoneMessage, PhoneProject, PhoneTurnChanges } from "@phaseo/phone-protocol";
+import type { AttentionKind, PhoneActivity, PhoneChat, PhoneChatDetail, PhoneEntry, PhoneIssueDraft, PhoneMessage, PhoneProject, PhoneTurnChanges } from "@phaseo/phone-protocol";
+import type { IssueDraft } from "../../shared/triage";
 import { optionValue, questionOptions } from "../../shared/agentQuestions";
 import type { TurnFileChange } from "../../shared/gitDiff";
 import { isFactoryWorktree } from "../../shared/factory/projects";
@@ -66,6 +67,14 @@ export function chatListPage(overview: WorkspaceOverview, cursor: string | undef
 	return { chats: page.map(task => phoneChat(task, overview.projects)), ...last && start + limit < chats.length ? { cursor: `${last.updatedAt}|${last.id}` } : {} };
 }
 
+/** Most of an issue draft's body a phone gets with every update of its chat; the computer files the whole draft. */
+export const issueDraftChars = 20_000;
+/** A triage chat's issue draft as the phone shows it, with File and Discard while it waits. */
+export function phoneIssueDraft(draft: IssueDraft): PhoneIssueDraft {
+	const body = cut(draft.body, issueDraftChars);
+	return { repository: draft.repository, title: draft.title, body: body.text, status: draft.status, ...draft.number ? { number: draft.number } : {}, ...draft.url ? { url: draft.url } : {}, ...body.truncated ? { truncated: true as const } : {} };
+}
+
 /** A queued message longer than this reaches the phone cut, so the phone can't edit it without losing its end. */
 export const queuedChars = 2_000;
 
@@ -77,6 +86,7 @@ export function phoneDetail(task: Task, overview: TaskOverview, projects: readon
 		harness: task.harness, ...task.accountId ? { accountId: task.accountId } : {}, ...task.permissionMode ? { permissionMode: task.permissionMode } : {},
 		queue: (task.queue ?? []).map(message => { const text = cut(message.text, queuedChars); return { id: message.id, text: text.text, ...text.truncated ? { truncated: true as const } : {} }; }),
 		...pullRequests.length ? { pullRequests: pullRequests.map(link => ({ repository: link.repository, number: link.number, url: link.url, ...link.snapshot ? { title: link.snapshot.title, state: link.snapshot.state } : {} })) } : {},
+		...task.issueDraft ? { issueDraft: phoneIssueDraft(task.issueDraft) } : {},
 		approvals: (task.approvals ?? []).map(approval => ({ id: approval.id, title: approval.method, description: cut(approval.description, requestChars).text, ...approval.kind === "plan" ? { plan: true as const } : {} })),
 		questions: (task.questions ?? []).map(request => ({ id: request.id, questions: request.questions.map(question => ({
 			id: question.id, header: question.header, question: question.question, ...question.multiSelect ? { multiSelect: true as const } : {}, ...question.isOther ? { isOther: true as const } : {}, ...question.isSecret ? { isSecret: true as const } : {},

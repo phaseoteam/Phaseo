@@ -313,6 +313,10 @@ The new-chat screen then asks "What went wrong?" and shows the version and commi
 
 When it is Phaseo's bug, the agent drafts an issue with `draft_issue`, a tool only triage chats have. The draft appears above the message box. Review and file opens it to read and edit, and File issue creates it on GitHub with `gh` under your account and links it to the chat. Nothing else files it: the agent is told never to, and Full access and Autopilot only answer the agent's own approvals, not this button. Discard drops the draft. "Offer a pull request with the fix" is off by default; when on, the agent asks before opening one. `PHASEO_TRIAGE_REPOSITORY=owner/name` sends issues and pull requests to a test repository instead.
 
+### From a phone
+
+A paired phone can triage a bug in the phone app itself (protocol 8, with Read code and Make changes allowed for it). The phone sends its build (version, build number, full commit, phone and OS), what the person wrote and, if they leave it on, its recent slow operations by name and time. The app fetches that commit, not its own, the same way into `triage/phaseo-<commit>`, adds it as "Phaseo mobile ‹version› source" (a checkout the window's triage already made keeps its name), writes a playbook about `apps/mobile`, and starts a Code chat on the model a new phone thread would use. The first fetch of a version can take minutes; the phone waits up to six. The chat shows on the phone and in the window, and its issue draft shows on both: File issue and Discard on the phone go through the same command as the window's buttons, and need Make changes. The phone can't edit the draft first. A triage from a phone never offers a pull request.
+
 ## Replies
 
 Your messages and the agent's answers show when they were sent on hover: the time today, "Yesterday" and the time, or the date and time before that (with the year once it is a different year). Hovering the stamp gives the full date and time to the second.
