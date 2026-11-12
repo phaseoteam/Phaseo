@@ -73,9 +73,10 @@ export async function gitCommand(root: string, value: unknown) {
 		} else {
 			if (typeof command.name !== "string" || !command.name || command.name.length > 200 || command.name.startsWith("-") || command.name.includes("\0")) throw new Error("Invalid branch name.");
 			await git(root, ["check-ref-format", "--branch", command.name]);
-			if ((await git(root, ["status", "--porcelain"])).trim()) throw new Error("Commit or stash working changes before switching branches.");
+			// A new branch starts from HEAD, so the working changes simply come along: nothing can be overwritten.
 			if (command.type === "create-branch") await git(root, ["switch", "-c", command.name]);
 			else {
+				if ((await git(root, ["status", "--porcelain"])).trim()) throw new Error("Commit or stash working changes before switching branches.");
 				if (!(await gitBranches(root)).includes(command.name)) throw new Error("Choose an existing local branch.");
 				await git(root, ["switch", command.name]);
 			}
