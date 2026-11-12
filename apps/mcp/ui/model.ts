@@ -69,6 +69,38 @@ export function headlinePrice(value: number | null | undefined): string {
   }).format(value)}`;
 }
 
+// Full-precision rates for detail rows, where the chip's rounding would hide the
+// source rate: up to six decimals, and at least two.
+export function detailPrice(value: number | null): string {
+  if (value === null || !Number.isFinite(value) || value < 0) return "Not listed";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6,
+  }).format(value);
+}
+
+export function exactTokens(value: number | null | undefined): string {
+  return value === null || value === undefined
+    ? "Not listed"
+    : `${new Intl.NumberFormat("en-US").format(value)} tokens`;
+}
+
+// The provider that lists one side's lowest price, by name where the result has one.
+export function priceProviderName(model: CardModel, side: "input" | "output"): string | null {
+  const id = side === "input" ? model.inputPriceProviderId : model.outputPriceProviderId;
+  if (!id) return null;
+  return model.providerSupport?.find((item) => item.providerId === id)?.providerName ?? id;
+}
+
+export function lifecycleLabel(value: CardModel["lifecycleStatus"]): string {
+  if (value === "deprecated") return "Deprecated";
+  if (value === "retired") return "Retired";
+  if (value === "active") return "Active";
+  return "Not listed";
+}
+
 // Money totals: two decimals, with three significant digits below a cent.
 export function money(value: number): string {
   if (!Number.isFinite(value)) return "Not available";

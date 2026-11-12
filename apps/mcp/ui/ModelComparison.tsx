@@ -1,19 +1,33 @@
-import { contextSize, headlinePrice, perMillion, type CardModel } from "./model";
+import {
+  detailPrice,
+  exactTokens,
+  lifecycleLabel,
+  perMillion,
+  priceProviderName,
+  type CardModel,
+} from "./model";
 import { ModalityBadge, sortModalities } from "./modality";
 import { OrganisationLogo } from "./ModelRow";
 import { displayName, providerCounts, releaseDate } from "./ModelListItem";
 import type { ReactNode } from "react";
 
+function priced(model: CardModel, side: "input" | "output"): ReactNode {
+  const value = perMillion(model, side);
+  if (value === null) return "Not listed";
+  const provider = priceProviderName(model, side);
+  return (
+    <>
+      {detailPrice(value)} / 1M tokens
+      {provider && <small>{provider}</small>}
+    </>
+  );
+}
+
 const rows: Array<[string, (model: CardModel) => ReactNode]> = [
-  ["Input price", (model) => {
-    const value = perMillion(model, "input");
-    return value === null ? "Not listed" : `${headlinePrice(value)} / 1M tokens`;
-  }],
-  ["Output price", (model) => {
-    const value = perMillion(model, "output");
-    return value === null ? "Not listed" : `${headlinePrice(value)} / 1M tokens`;
-  }],
-  ["Context length", (model) => (model.contextTokens === null ? "Not listed" : `${contextSize(model.contextTokens)} tokens`)],
+  ["Input price", (model) => priced(model, "input")],
+  ["Output price", (model) => priced(model, "output")],
+  ["Context length", (model) => exactTokens(model.contextTokens)],
+  ["Status", (model) => lifecycleLabel(model.lifecycleStatus)],
   ["Input", (model) => <span className="badge-list">{sortModalities(model.inputModalities).map((value) => <ModalityBadge key={value} value={value} />)}</span>],
   ["Output", (model) => <span className="badge-list">{sortModalities(model.outputModalities).map((value) => <ModalityBadge key={value} value={value} />)}</span>],
   ["Tool calling", (model) => (model.supportsTools ? "Supported" : "Not supported")],

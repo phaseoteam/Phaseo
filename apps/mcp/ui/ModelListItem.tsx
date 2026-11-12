@@ -91,7 +91,7 @@ export function ModelListItem({
       <div className="model-head">
         <OrganisationLogo model={model} theme={theme} />
         <div className="model-title">
-          <button type="button" className="model-name" onClick={onOpen}>
+          <button type="button" className="model-name" data-model-id={model.id} onClick={onOpen}>
             {name}
           </button>
           <span className="model-id">{model.id}</span>

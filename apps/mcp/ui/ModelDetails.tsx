@@ -1,6 +1,13 @@
 import { useEffect, useRef } from "react";
 import { Check, Plus } from "lucide-react";
-import { contextSize, headlinePrice, perMillion, type CardModel } from "./model";
+import {
+  detailPrice,
+  exactTokens,
+  lifecycleLabel,
+  perMillion,
+  priceProviderName,
+  type CardModel,
+} from "./model";
 import { IntegrationExamples } from "./IntegrationExamples";
 import { ModalityBadge, sortModalities } from "./modality";
 import { OrganisationLogo } from "./ModelRow";
@@ -18,6 +25,7 @@ export function ModelDetails({
   onToggle,
   onUse,
   onLink,
+  copied,
   attaching,
 }: {
   model: CardModel;
@@ -28,6 +36,7 @@ export function ModelDetails({
   onToggle: () => void;
   onUse: () => void;
   onLink: () => void;
+  copied: boolean;
   attaching: boolean;
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
@@ -40,10 +49,17 @@ export function ModelDetails({
   const output = perMillion(model, "output");
   const providers = providerCounts(model);
   const released = releaseDate(model.releaseDate);
+  // Each side's lowest price can come from a different provider, so name both.
+  const priced = (value: number | null, side: "input" | "output") => {
+    if (value === null) return "Not listed";
+    const provider = priceProviderName(model, side);
+    return `${detailPrice(value)} / 1M tokens${provider ? ` · ${provider}` : ""}`;
+  };
   const fields: Array<[string, string]> = [
-    ["Context length", model.contextTokens === null ? "Not listed" : `${contextSize(model.contextTokens)} tokens`],
-    ["Input price", input === null ? "Not listed" : `${headlinePrice(input)} / 1M tokens`],
-    ["Output price", output === null ? "Not listed" : `${headlinePrice(output)} / 1M tokens`],
+    ["Status", lifecycleLabel(model.lifecycleStatus)],
+    ["Context length", exactTokens(model.contextTokens)],
+    ["Input price", priced(input, "input")],
+    ["Output price", priced(output, "output")],
     ["Free offer", model.hasFreeProvider ? "Available" : "None listed"],
     ["Tool calling", model.supportsTools ? "Supported" : "Not supported"],
     ["Providers", model.availableProviders.join(", ") || "None listed"],
@@ -112,7 +128,7 @@ export function ModelDetails({
           Add to chat
         </button>
         <button type="button" onClick={onLink}>
-          Copy link
+          {copied ? "Link copied" : "Copy link"}
         </button>
       </div>
       <section className="section">

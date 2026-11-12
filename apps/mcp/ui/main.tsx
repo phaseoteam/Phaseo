@@ -84,6 +84,9 @@ function Explorer({
   }
   const linkRequest = useRef(0);
   const request = useRef(0);
+  const textEdited = useRef(false);
+  // The model whose page was open, so closing it returns focus to its row.
+  const returnFocusTo = useRef<string | null>(null);
   const detailRequest = useRef(0);
 
   // The explorer stays mounted across display modes, so "Compare these" on a card
@@ -351,8 +354,40 @@ function Explorer({
 
   const closeDetail = () => {
     ++detailRequest.current;
-    setDetail(null);
+    setDetail((current) => {
+      if (current) returnFocusTo.current = current.id;
+      return null;
+    });
   };
+  useEffect(() => {
+    if (detail || !returnFocusTo.current) return;
+    const id = returnFocusTo.current;
+    returnFocusTo.current = null;
+    const target = [...document.querySelectorAll<HTMLButtonElement>(".model-name")].find(
+      (button) => button.dataset.modelId === id,
+    );
+    target?.focus();
+  }, [detail]);
+  // Typing in the search or provider field searches after a short pause.
+  useEffect(() => {
+    if (!textEdited.current) return;
+    const timer = setTimeout(() => void search(), 350);
+    return () => clearTimeout(timer);
+  }, [query, provider]);
+  // Copies a model link, or shows it to copy by hand when the host blocks the clipboard.
+  const [copied, setCopied] = useState(false);
+  async function copyLink(ids: string[]) {
+    const url = modelLink(ids);
+    try {
+      await navigator.clipboard.writeText(url);
+      setLink("");
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setLink(url);
+      setTimeout(() => document.getElementById("model-link")?.focus(), 0);
+    }
+  }
   const goTo = (next: string) => {
     closeDetail();
     if (next === "models") setCompare(false);
@@ -465,7 +500,8 @@ function Explorer({
           onClose={closeDetail}
           onToggle={() => toggle(detail)}
           onUse={() => void useInChat([detail])}
-          onLink={() => setLink(modelLink([detail.id]))}
+          onLink={() => void copyLink([detail.id])}
+          copied={copied}
           attaching={attaching}
         />
       ) : !compare ? (
@@ -477,7 +513,10 @@ function Explorer({
               <input
                 type="search"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  textEdited.current = true;
+                  setQuery(event.target.value);
+                }}
                 placeholder="Search models…"
                 maxLength={200}
                 enterKeyHint="search"
@@ -487,15 +526,15 @@ function Explorer({
               <span className="sr-only">Provider</span>
               <input
                 value={provider}
-                onChange={(event) => setProvider(event.target.value)}
+                onChange={(event) => {
+                  textEdited.current = true;
+                  setProvider(event.target.value);
+                }}
                 placeholder="Any provider"
                 maxLength={100}
                 enterKeyHint="search"
               />
             </label>
-            <button type="submit" className="sr-only">
-              Search
-            </button>
           </form>
           <div className="modality-tabs" role="group" aria-label="Input modality">
             {MODALITY_TABS.map((tab) => (
@@ -539,6 +578,12 @@ function Explorer({
             {busy
               ? "Loading models…"
               : `${models.length} ${models.length === 1 ? "model" : "models"}${models.length === 20 ? " · first 20 shown, refine to narrow" : ""}`}
+            {!busy && models.length > 0 && (
+              <span className="results-note">
+                Lowest listed prices per 1M tokens. Input and output can come from
+                different providers; open a model to see which.
+              </span>
+            )}
           </p>
           <section aria-label="Models" aria-busy={busy} className="model-grid">
             {busy && !models.length
@@ -616,9 +661,9 @@ function Explorer({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setLink(modelLink(selected.map((model) => model.id)))}
+                  onClick={() => void copyLink(selected.map((model) => model.id))}
                 >
-                  Copy link
+                  {copied ? "Link copied" : "Copy link"}
                 </button>
               </div>
             </footer>
@@ -637,11 +682,9 @@ function Explorer({
             </button>
             <button
               type="button"
-              onClick={() =>
-                setLink(modelLink(selected.map((model) => model.id)))
-              }
+              onClick={() => void copyLink(selected.map((model) => model.id))}
             >
-              Copy comparison link
+              {copied ? "Link copied" : "Copy comparison link"}
             </button>
           </div>
           <section className="section">

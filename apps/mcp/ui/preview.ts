@@ -388,10 +388,15 @@ if (previewPath)
     theme: "light",
     "openai/deepLink": { url: previewPath },
   });
-let dark = false;
+let dark = darkTheme;
 document.querySelector("#theme")!.addEventListener("click", () => {
   dark = !dark;
-  bridge.setHostContext({ theme: dark ? "dark" : "light" });
+  bridge.setHostContext({
+    theme: dark ? "dark" : "light",
+    ...(params.get("host") === "claude"
+      ? { styles: { variables: claudeVariables(dark) as never } }
+      : {}),
+  });
 });
 await bridge.connect(
   new PostMessageTransport(frame.contentWindow!, frame.contentWindow!),
