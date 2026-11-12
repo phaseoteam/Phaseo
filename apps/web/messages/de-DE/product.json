@@ -616,7 +616,7 @@
 			"outputTokens": "Ausgabetokens",
 			"serviceTier": "Servicestufe",
 			"requestId": "Anfrage-ID",
-			"openRequestLog": "Anfrageprotokoll {id} öffnen",
+			"viewRequestLog": "Anfrageprotokoll anzeigen",
 			"outputSpeed": "Ausgabegeschwindigkeit",
 			"serviceTiers": {
 				"standard": "Standard",

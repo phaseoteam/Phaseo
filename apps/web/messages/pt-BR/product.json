@@ -616,7 +616,7 @@
 			"outputTokens": "Tokens de saída",
 			"serviceTier": "Nível de serviço",
 			"requestId": "ID da solicitação",
-			"openRequestLog": "Abrir registro da solicitação {id}",
+			"viewRequestLog": "Ver registro da solicitação",
 			"outputSpeed": "Velocidade de saída",
 			"serviceTiers": {
 				"standard": "Padrão",

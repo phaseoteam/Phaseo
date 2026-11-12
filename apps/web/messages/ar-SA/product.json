@@ -616,7 +616,7 @@
 			"outputTokens": "رموز الإخراج",
 			"serviceTier": "مستوى الخدمة",
 			"requestId": "معرّف الطلب",
-			"openRequestLog": "فتح سجل الطلب {id}",
+			"viewRequestLog": "عرض سجل الطلب",
 			"outputSpeed": "سرعة الإخراج",
 			"serviceTiers": {
 				"standard": "قياسي",
