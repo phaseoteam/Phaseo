@@ -35,6 +35,13 @@ export function investigationAnnotations(uid, origin) {
   };
 }
 
+function ruleRouting(rule) {
+  const settings = rule.grafana_alert.notification_settings;
+  if (settings?.receiver) return { mode: 'direct', receiver: settings.receiver };
+  if (settings?.policy) return { mode: 'named-policy', policy: settings.policy };
+  return { mode: 'policy' };
+}
+
 export async function provisionNotifications({ args = process.argv.slice(2), env = process.env, fetcher = fetch, log = console.log } = {}) {
   if (!args.length || args.some(arg => !['--check', '--apply', '--enable-alerts'].includes(arg)) || args.includes('--check') === args.includes('--apply') || (args.includes('--enable-alerts') && !args.includes('--apply'))) throw new Error('Use --check or --apply [--enable-alerts]');
   const apply = args.includes('--apply');
@@ -50,11 +57,16 @@ export async function provisionNotifications({ args = process.argv.slice(2), env
   const tree = trees.items.find(item => item.metadata.name === 'user-defined');
   if (!tree) throw new Error('User notification policy was not found');
   const routing = notificationRoute(tree);
-  const groups = await api('/api/ruler/grafana/api/v1/rules/phaseo-observability');
-  const group = Object.values(groups).flat().find(item => item.name === 'phaseo-production');
-  if (!group?.rules?.length || group.rules.some(rule => rule.labels?.application !== 'phaseo' || rule.labels?.environment !== 'production')) throw new Error('Production alert group ownership mismatch');
+  const readGroup = async () => {
+    const groups = await api('/api/ruler/grafana/api/v1/rules/phaseo-observability');
+    const group = Object.values(groups).flat().find(item => item.name === 'phaseo-production');
+    if (!group?.rules?.length || group.rules.some(rule => !rule.grafana_alert || rule.labels?.application !== 'phaseo' || rule.labels?.environment !== 'production')) throw new Error('Production alert group ownership mismatch');
+    if (apply && group.rules.some(rule => ruleRouting(rule).mode !== 'policy')) throw new Error('Production rules use direct contact-point routing or a named policy; review --check and move them to the default notification policy before applying');
+    return group;
+  };
+  const group = await readGroup();
   if (!apply) {
-    log(JSON.stringify({ destination: receiverTitle, contactPointExists: Boolean(existing), productionRouteExists: tree.spec.routes.some(route => route.receiver === receiverTitle), rules: group.rules.map(rule => ({ title: rule.grafana_alert.title, paused: rule.grafana_alert.is_paused })) }));
+    log(JSON.stringify({ destination: receiverTitle, contactPointExists: Boolean(existing), productionRouteExists: tree.spec.routes.some(route => route.receiver === receiverTitle), rules: group.rules.map(rule => ({ title: rule.grafana_alert.title, paused: rule.grafana_alert.is_paused, routing: ruleRouting(rule) })) }));
     return;
   }
   const receiver = { apiVersion, kind: 'Receiver', metadata: existing?.metadata ?? { namespace: frontend.namespace },
@@ -68,7 +80,9 @@ export async function provisionNotifications({ args = process.argv.slice(2), env
   await api(`${path}/routingtrees/user-defined`, 'PUT', routing);
   const savedTree = await api(`${path}/routingtrees/user-defined`);
   if (!isDeepStrictEqual(savedTree.spec, routing.spec)) throw new Error('Notification policy readback mismatch; alerts remain unchanged');
-  const updated = structuredClone(group);
+  // Ruler's POST schema has no version precondition. Refresh immediately before
+  // writing to retain edits made while the contact point and route were saved.
+  const updated = structuredClone(await readGroup());
   for (const rule of updated.rules) {
     rule.annotations = { ...rule.annotations, ...investigationAnnotations(rule.grafana_alert.uid, new URL(env.GRAFANA_URL).origin) };
     if (args.includes('--enable-alerts')) rule.grafana_alert.is_paused = false;

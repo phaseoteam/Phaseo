@@ -77,6 +77,8 @@ The Grafana contact point and production notification policy were saved on 10 No
 
 This configures only the owned contact point and an `application=phaseo, environment=production` notification route, preserves other/default routes, stores the bearer token in Grafana's secure settings, and adds dashboard/runbook links to production rules. It preserves whether rules are paused. Matching notifications group by rule/environment, wait 30 seconds initially, group updates over five minutes, repeat after four hours, and send recovery messages.
 
+`--check` reports each rule's routing mode and any selected contact point or named policy. Apply refuses rules that bypass the default notification policy; review and migrate those rules in Grafana first. The rule group is refreshed and ownership/routing revalidated immediately before saving, preserving intervening query, membership and pause edits unless `--enable-alerts` explicitly unpauses the rules. Ruler's POST schema has no version precondition, so edits after that final read can still race with the save. Avoid editing the same group during apply. Contact-point and policy writes are sequential and may already be saved if final rule validation fails; such a failure does not enable rules.
+
 Test the contact point in Grafana and verify the alert reaches the intended incident.io route and Slack channel. Then enable the five production rules:
 
 ```powershell
