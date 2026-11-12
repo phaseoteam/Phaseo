@@ -710,6 +710,11 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 			console.error("[slack-agent] paused run not kept", { turnId: turn.turnId, question: leg + 1, afterSearch });
 		}
 	}
+	if (!cancelled && !error && !waiting && !reply.text && pages.length) {
+		// A page is seen only through its link: the model ended without writing one, so the reply gives it,
+		// also when a step or cost limit stopped the run (the limit notice follows the links).
+		await reply.push(pages.map((page) => `${page.title}: ${page.url}`).join("\n"));
+	}
 	const gap = reply.text ? "\n\n" : "";
 	if (cancelled) {
 		if (!reply.stoppedByUser) await reply.push(`${gap}_Stopped._`);
@@ -717,9 +722,6 @@ async function runAgent(deps: TurnDeps, turn: TurnRef, coordinator: DurableObjec
 		await reply.push(`${gap}${turnErrorText(error, model === turn.model)}`);
 	} else if (output?.stopReason) {
 		await reply.push(`${gap}${stopNote(output.stopReason)}`);
-	} else if (!waiting && !reply.text && pages.length) {
-		// A page is seen only through its link: the model ended without writing one, so the reply gives it.
-		await reply.push(pages.map((page) => `${page.title}: ${page.url}`).join("\n"));
 	}
 	await reply.close();
 	await stage();
