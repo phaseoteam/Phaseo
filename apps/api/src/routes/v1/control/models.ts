@@ -24,7 +24,7 @@ import { getEndpointMetadata } from "./endpoint-metadata";
 import { normalizeParameterSpecs } from "@core/model-parameters";
 import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { normalizeGatewayRoutingRegion } from "@pipeline/before/deployment-region";
-import { fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
+import { fetchMemberWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { modelAccessSummary, modelsForPolicy, type PolicyRouteFacts } from "./models.policy";
 
 type LifecycleStatus = "active" | "deprecated" | "retired" | null;
@@ -892,18 +892,11 @@ async function listModels(req: Request, scope: "shared" | "me") {
     }
     const scopeError = requireCapability(auth.value, CAPABILITIES.MODELS_READ);
     if (scopeError) return scopeError;
-    // A key's guardrails are what /models/me applies, and an OAuth access token (a CLI or app sign-in) is not a key:
-    // its apiKeyId is the client id. Say so, rather than list models the token's eventual key may not reach.
-    if (scope === "me" && auth.value.authMethod === "oauth") {
-        return json(
-            {
-                ok: false,
-                error: "api_key_required",
-                message: "/models/me lists the models an API key may use under its guardrails. Call it with an API key, or use /models for the shared catalogue.",
-            },
-            403,
-            { "Cache-Control": "no-store" },
-        );
+    // An OAuth access token (a CLI or app sign-in) is not a key: its apiKeyId is the client id. It gets the rules of
+    // the person who signed in (the workspace, their departments and their own), as a key they create would.
+    const oauthUserId = auth.value.authMethod === "oauth" ? String(auth.value.userId ?? "").trim() : "";
+    if (scope === "me" && auth.value.authMethod === "oauth" && !oauthUserId) {
+        return json({ ok: false, error: "unauthorized", message: "This sign-in has no user. Sign in again." }, 401, { "Cache-Control": "no-store" });
     }
 
     const requestedFormat = url.searchParams.get("format")?.trim().toLowerCase() === "openai"
@@ -1089,9 +1082,11 @@ async function listModels(req: Request, scope: "shared" | "me") {
         });
         const listed = [...privateByModelId.values(), ...mergedPublicModels] as PhaseoModel[];
         // Filtered before search and paging, so totals and pages count only what the key may use.
-        const policy = scope === "me"
-            ? await fetchWorkspacePolicy({ workspaceId: auth.value.workspaceId, apiKeyId: auth.value.apiKeyId })
-            : null;
+        const policy = scope !== "me"
+            ? null
+            : oauthUserId
+                ? await fetchMemberWorkspacePolicy({ workspaceId: auth.value.workspaceId, userId: oauthUserId })
+                : await fetchWorkspacePolicy({ workspaceId: auth.value.workspaceId, apiKeyId: auth.value.apiKeyId });
         // What the request pipeline checks per route, which the listing doesn't show: the Free router's concrete
         // models and data facts, and each text route's id (its effective data policy is read by it).
         const routeFacts = new Map<string, Map<string, PolicyRouteFacts>>();

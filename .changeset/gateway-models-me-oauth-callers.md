@@ -2,4 +2,4 @@
 "@phaseo/gateway-api": patch
 ---
 
-`GET /v1/models/me` called with an OAuth access token (a CLI or app sign-in) now returns 403 `api_key_required`, explaining that it lists the models an API key may use, instead of failing with a 500.
+`GET /v1/models/me` now works with an OAuth access token (a CLI or app sign-in). It lists the models allowed by the signed-in person's rules: the workspace's, their departments' and their own. Before, it failed with a 500.
