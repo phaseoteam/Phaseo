@@ -60,3 +60,5 @@ GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."credit_ledger" TO
 REVOKE ALL ON TABLE "public"."credit_ledger" FROM "authenticated";
 
 GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."credit_ledger" TO "authenticated";
+
+GRANT SELECT ("amount_nanos", "before_balance_nanos", "before_reserved_nanos", "created_at", "ref_id", "ref_type", "source_ref_id", "source_ref_type", "workspace_id") ON TABLE "public"."credit_ledger" TO "gateway_smoke_reader";

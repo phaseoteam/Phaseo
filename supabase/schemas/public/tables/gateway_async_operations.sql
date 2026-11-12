@@ -100,6 +100,8 @@ CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_async_operations
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_async_operations" TO "anon", "authenticated", "service_role";
 
+GRANT SELECT ("billed_at", "internal_id", "kind", "meta", "status", "workspace_id") ON TABLE "public"."gateway_async_operations" TO "gateway_smoke_reader";
+
 COMMENT ON COLUMN "public"."gateway_async_operations"."internal_id" IS 'Gateway-facing identifier used on retrieval routes (e.g. /videos/{id}, /batches/{id}).';
 
 COMMENT ON COLUMN "public"."gateway_async_operations"."last_reconcile_error" IS 'Last reconciliation error summary, cleared after a successful attempt.';

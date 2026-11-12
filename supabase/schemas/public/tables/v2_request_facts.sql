@@ -272,6 +272,8 @@ CREATE POLICY "v2_request_facts_workspace_select" ON "public"."v2_request_facts"
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."v2_request_facts" TO "anon", "authenticated", "service_role";
 
+GRANT SELECT ("cost_nanos", "request_id", "success", "workspace_id") ON TABLE "public"."v2_request_facts" TO "gateway_smoke_reader";
+
 COMMENT ON COLUMN "public"."v2_request_facts"."client_source_detection" IS 'Whether client identity was declared, inferred from user-agent, or unavailable.';
 
 COMMENT ON COLUMN "public"."v2_request_facts"."client_source_id" IS 'Gateway-normalized client identity such as codex, claude-code, or phaseo-typescript.';

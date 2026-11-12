@@ -62,3 +62,5 @@ GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON
 GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."gateway_wallet_reservations" TO "anon";
 
 GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."gateway_wallet_reservations" TO "authenticated";
+
+GRANT SELECT ("amount_nanos", "captured_nanos", "overdraft_nanos", "released_nanos", "reservation_id", "settled_amount_nanos", "status", "workspace_id") ON TABLE "public"."gateway_wallet_reservations" TO "gateway_smoke_reader";

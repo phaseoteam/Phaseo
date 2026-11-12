@@ -12,6 +12,10 @@ REVOKE ALL ON SCHEMA "public" FROM "authenticated";
 
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
 
+REVOKE ALL ON SCHEMA "public" FROM "gateway_smoke_reader";
+
+GRANT USAGE ON SCHEMA "public" TO "gateway_smoke_reader";
+
 REVOKE ALL ON SCHEMA "public" FROM "pg_database_owner";
 
 GRANT CREATE, USAGE ON SCHEMA "public" TO "pg_database_owner";
