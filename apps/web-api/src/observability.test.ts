@@ -32,11 +32,17 @@ describe("web API observability", () => {
     vi.stubGlobal("fetch", vi.fn(async (_url, init) => { sent.push(init.body); return new Response("secret remote body", { status: 503 }); }));
     const app = new Hono<{ Bindings: Env }>();
     app.use("*", platformObservability);
-    app.get("/error", () => { throw new Error("private error"); });
+    const failure = new TypeError("private error", { cause: Object.assign(new Error("private upstream"), { code: "ECONNRESET" }) });
+    failure.stack = "TypeError: private error\n    at handler (worker.js:12:3)";
+    app.get("/error", () => { throw failure; });
     app.onError((_error, c) => c.json({ error: "unavailable" }, 500));
     const response = await app.request("https://phaseo.app/error", {}, env, { waitUntil: promise => work.push(promise), passThroughOnException() {}, props: {} } as ExecutionContext);
     await Promise.all(work);
     expect(response.status).toBe(500);
-    expect(JSON.parse(JSON.parse(sent[0]).resourceLogs[0].scopeLogs[0].logRecords[0].body.stringValue).outcome).toBe("error");
+    expect(JSON.parse(JSON.parse(sent[0]).resourceLogs[0].scopeLogs[0].logRecords[0].body.stringValue)).toMatchObject({
+      outcome: "error", error_name: "TypeError", error_code: "ECONNRESET", error_stack: "at worker.js:12:3",
+    });
+    expect(sent.join()).not.toContain("private error");
+    expect(sent.join()).not.toContain("private upstream");
   });
 });

@@ -48,4 +48,15 @@ describe("desktop app analytics", () => {
     expect(desktopScreen("settings/general")).toBe("settings/general");
     for (const value of ["chat/private-id", "https://secret", "private chat", null]) expect(desktopScreen(value)).toBeUndefined();
   });
+  it("attaches the current safe screen to errors and clears it after unknown screens or withdrawal", () => {
+    const analytics = create(); analytics.configure(true); analytics.screen("settings/general");
+    const event = (type: string) => ({ event: "$exception", properties: { $exception_list: [{ type }] } });
+    expect(clients[0]!.options.before_send(event("TypeError"))).toMatchObject({ properties: { screen_name: "settings/general" } });
+    expect(clients[0]!.options.before_send(event("RangeError"))).toMatchObject({ properties: { screen_name: "settings/general" } });
+    expect(clients[0]!.options.before_send(event("TypeError"))).toBeNull();
+    analytics.screen("chat/private-id");
+    expect(clients[0]!.options.before_send(event("SyntaxError"))).not.toHaveProperty("properties.screen_name");
+    analytics.screen("settings/general"); analytics.configure(false); analytics.configure(true);
+    expect(clients[1]!.options.before_send(event("ReferenceError"))).not.toHaveProperty("properties.screen_name");
+  });
 });

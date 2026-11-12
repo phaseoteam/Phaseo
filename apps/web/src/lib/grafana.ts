@@ -99,8 +99,8 @@ export function startGrafanaMonitoring(config?: GrafanaBrowserConfig) {
     const payload = (event as CustomEvent<ClientErrorPayload>).detail;
     if (!payload || payload.source !== "manual" || readAnalyticsConsent() !== "accepted") return;
     // Faro already captures global errors. This event covers caught React errors.
-    const error = new Error("Client error");
-    if (payload.stack) error.stack = payload.stack;
+    const error = payload.error instanceof Error ? payload.error : new Error("Client error");
+    if (!(payload.error instanceof Error) && payload.stack) error.stack = payload.stack;
     instance?.api.pushError(error, { fatal: Boolean(payload.fatal) });
   });
 }

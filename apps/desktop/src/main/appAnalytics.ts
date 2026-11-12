@@ -10,6 +10,7 @@ declare const __PHASEO_ANALYTICS__: { key: string; host: string } | undefined;
 export function createDesktopAnalytics(directory: string, packaged: boolean) {
   const config = typeof __PHASEO_ANALYTICS__ === "undefined" ? undefined : __PHASEO_ANALYTICS__;
   let enabled = false;
+  let screenName: string | undefined;
   let client: PostHog | undefined;
   let revoke: (() => void) | undefined;
   let distinctId: string;
@@ -26,6 +27,7 @@ export function createDesktopAnalytics(directory: string, packaged: boolean) {
     configure(allowed: boolean) {
       enabled = allowed && packaged && !["true", "1"].includes(process.env.CI ?? "") && Boolean(config?.key) && /^https:\/\/(?:eu|us)\.i\.posthog\.com$/.test(config?.host ?? "");
       if (!enabled) {
+        screenName = undefined;
         revoke?.(); revoke = undefined;
         const previous = client; client = undefined;
         if (previous) { previous.optOut(); void previous.shutdown(1000).catch(() => {}); }
@@ -44,7 +46,8 @@ export function createDesktopAnalytics(directory: string, packaged: boolean) {
           before_send: event => {
             if (!sending) return null;
             const safe = filterAppEvent(event);
-            if (!safe || !budget.take(safe.event as AppAnalyticsEvent, String(safe.properties?.screen_name ?? JSON.stringify(safe.properties?.$exception_list)))) return null;
+            if (safe?.event === "$exception" && safe.properties && screenName) safe.properties.screen_name = screenName;
+            if (!safe || !budget.take(safe.event as AppAnalyticsEvent, String(safe.event === "$exception" ? JSON.stringify(safe.properties?.$exception_list) : safe.properties?.screen_name))) return null;
             return safe;
           },
         });
@@ -52,7 +55,7 @@ export function createDesktopAnalytics(directory: string, packaged: boolean) {
         capture("app_opened");
       } catch { enabled = false; revoke?.(); const previous = client; client = undefined; void previous?.shutdown(1000).catch(() => {}); }
     },
-    screen(value: unknown) { const screen = desktopScreen(value); if (screen) capture("screen_viewed", { screen_name: screen }); },
+    screen(value: unknown) { screenName = enabled ? desktopScreen(value) : undefined; if (screenName) capture("screen_viewed", { screen_name: screenName }); },
     error(error: unknown, source: AppErrorSource) { if (enabled) client?.captureException(privateException(error), distinctId, { ...meta, error_source: source }); },
     async close() { await client?.shutdown(1000).catch(() => {}); },
   };

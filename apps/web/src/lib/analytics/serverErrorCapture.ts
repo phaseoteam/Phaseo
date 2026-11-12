@@ -10,6 +10,7 @@ import { readPosthogCookieIdentity } from "@/lib/posthogCookie";
 import { waitUntil } from "@/lib/start/wait-until";
 import { getPhaseoEnv } from "@/lib/deployEnv";
 import { capturePlatformServerError } from "@/lib/grafana.server";
+import { safeError } from "../../../../../packages/shared/observability/index.mjs";
 
 export type ServerErrorContext = {
 	/** Where the error surfaced: an unhandled request failure or a route error boundary. */
@@ -43,6 +44,7 @@ async function capture(error: unknown, request: Request, context: ServerErrorCon
 
 	try {
 		await client.captureExceptionImmediate(error, visitor?.distinctId ?? "web-server", {
+			...safeError(error),
 			...(visitor?.sessionId ? { $session_id: visitor.sessionId } : {}),
 			// Matches the browser's identified_only mode: no profiles for anonymous visitors.
 			...(visitor?.identified ? {} : { $process_person_profile: false }),

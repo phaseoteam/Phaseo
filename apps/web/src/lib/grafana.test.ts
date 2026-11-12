@@ -91,6 +91,16 @@ it("does not initialize after consent is revoked during the lazy import", async 
   await flush();
   expect(mockInitialize).not.toHaveBeenCalled();
 });
+it("preserves the caught exception type for browser diagnostics after consent", async () => {
+  consent("accepted");
+  const { startGrafanaMonitoring } = await import("./grafana");
+  startGrafanaMonitoring({ enabled: true, url: "https://faro-collector-prod-eu-west-0.grafana.net/collect/test", environment: "staging", sampleRate: 0.1 });
+  await flush();
+  const error = new TypeError("private-render-content");
+  window.dispatchEvent(new CustomEvent("phaseo:client-error", { detail: { source: "manual", error, stack: error.stack, fatal: false } }));
+  expect(mockPushError).toHaveBeenCalledWith(error, { fatal: false });
+  expect(mockPushError.mock.calls[0]![0].name).toBe("TypeError");
+});
 it("drops signals after consent withdrawal and limits collection to 60 signals per minute", async () => {
   consent("accepted");
   const { startGrafanaMonitoring } = await import("./grafana");

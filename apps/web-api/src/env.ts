@@ -5,6 +5,7 @@ export type Env = {
 	GRAFANA_OTLP_ENDPOINT?: string;
 	GRAFANA_OTLP_AUTHORIZATION?: string;
 	PLATFORM_TRACE_SAMPLE_RATE?: string;
+	CF_VERSION_METADATA?: { id: string };
   ENV: "development" | "preview" | "staging" | "production";
 	SUPABASE_URL?: string;
 	SUPABASE_ANON_KEY?: string;

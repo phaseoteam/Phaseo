@@ -23,6 +23,20 @@ test("outbound events remove SDK enrichment and person fields, preserving ingest
   assert.equal(filterAppEvent({ event: "$exception", properties: { $exception_list: [null] } }), null);
 });
 
+test("native errors retain up to three sanitized causes without copying content or cyclic chains", () => {
+  const cause = new TypeError("private prompt");
+  cause.stack = "TypeError: private prompt\n at run (/private/chats/index.js:12:4)";
+  const error = new Error("private wrapper", { cause });
+  cause.cause = error;
+  const safe = privateException(error);
+  assert.equal(safe.cause.name, "TypeError");
+  assert.equal(safe.cause.cause, undefined);
+  assert.ok(safe.cause.stack.includes("app:///index.js:12:4"));
+  const event = filterAppEvent({ event: "$exception", properties: { $exception_list: Array.from({ length: 5 }, () => ({ type: "TypeError", value: "private", stacktrace: { frames: [] } })) } });
+  assert.equal(event.properties.$exception_list.length, 3);
+  assert.ok(!JSON.stringify(event).includes("private"));
+});
+
 test("persisted daily limits include errors and cannot be bypassed by restarting", () => {
   const data = new Map();
   const storage = { getItem: key => data.get(key) ?? null, setItem: (key, value) => data.set(key, value) };
