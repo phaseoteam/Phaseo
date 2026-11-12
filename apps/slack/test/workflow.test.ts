@@ -1580,6 +1580,78 @@ describe("Files in the thread", () => {
 		expect(world.slack.of("files.getUploadURLExternal")).toHaveLength(0);
 	});
 
+	describe("when the model ends without text", () => {
+		const CHART = { type: "bar", title: "Weekly spend", labels: ["Oct 5", "Oct 12"], series: [{ name: "Spend", values: [12.5, 40] }] };
+		/** The gateway's refusal of an empty model response: the same code for every provider. */
+		const emptyResponse = () => new AgentGatewayError({
+			status: 502, statusText: "Bad Gateway", message: "The provider returned an empty response.",
+			body: { error: "google_empty_response", message: "The provider returned an empty response.", provider: "openai", upstream_status: 200 },
+		});
+		const written = () => [
+			...world.slack.of("chat.startStream").map((call) => String(call.args.markdown_text ?? "")),
+			...world.slack.of("chat.appendStream").map((call) => String(call.args.markdown_text ?? "")),
+			...world.slack.of("chat.postMessage").map((call) => String(call.args.markdown_text ?? call.args.text ?? "")),
+			...world.slack.ephemerals().map((call) => String(call.args.text ?? "")),
+		].join("\n");
+
+		it("after posting a chart, ends the answer with its footer, counted and billed, without an error", async () => {
+			await install({ bot_scopes: ALL_SCOPES });
+			const agent = new ToolAgent(async (request, hooks) => {
+				await callTool(request, "make_chart", CHART);
+				hooks.onCost?.(0.0006);
+				await hooks.onStep({ costUsd: 0.0006 });
+				// "No other commentary": the final step has nothing in it, and the gateway refuses it.
+				throw emptyResponse();
+			});
+			const turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+			expect(world.slack.of("files.completeUploadExternal")).toHaveLength(1);
+			expect(written()).not.toContain("something went wrong");
+			// The footer alone, under the chart.
+			expect(world.slack.of("chat.postMessage").map((call) => call.args)).toEqual([
+				{ channel: "C0CHANNEL1", thread_ts: turn.threadTs, markdown_text: markdownFooter(turn, "$0.0006", "Auto"), unfurl_links: false, unfurl_media: false },
+			]);
+			expect(step.outputs.find((output) => output.name === "run")?.output).toMatchObject({ status: "answered", error: null, costNanos: 600_000, posted: true });
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		});
+
+		it("after posting a chart, a plain empty completion also ends with the footer", async () => {
+			await install({ bot_scopes: ALL_SCOPES });
+			const agent = new ToolAgent(async (request) => {
+				await callTool(request, "make_chart", CHART);
+				return answer();
+			});
+			const turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "answered" });
+			expect(world.slack.of("chat.postMessage").map((call) => call.args.markdown_text)).toEqual([markdownFooter(turn, "$0.0123")]);
+			expect(meter().usage(NOW)).toMatchObject({ answers: 1, pending: 0 });
+		});
+
+		it("with nothing posted, still says something went wrong and isn't counted", async () => {
+			await install({ bot_scopes: ALL_SCOPES });
+			const agent = new ToolAgent(async () => { throw emptyResponse(); });
+			const turn = await startTurn();
+			await expect(runTurn(deps(agent), turn, step)).resolves.toEqual({ status: "failed" });
+			expect(world.slack.of("files.completeUploadExternal")).toHaveLength(0);
+			expect(written()).toContain("Sorry, something went wrong while I was answering. Please try again.");
+			expect(step.outputs.find((output) => output.name === "run")?.output).toMatchObject({ status: "failed", error: "failed" });
+			expect(step.outputs.find((output) => output.name === "run")?.output).not.toHaveProperty("posted");
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
+
+		it("when the chart couldn't be posted, still says something went wrong", async () => {
+			await install({ bot_scopes: ALL_SCOPES });
+			world.slack.failures.set("files.completeUploadExternal", ["channel_not_found"]);
+			const agent = new ToolAgent(async (request) => {
+				await callTool(request, "make_chart", CHART);
+				throw emptyResponse();
+			});
+			await expect(runTurn(deps(agent), await startTurn(), step)).resolves.toEqual({ status: "failed" });
+			expect(written()).toContain("Sorry, something went wrong while I was answering. Please try again.");
+			expect(meter().usage(NOW)).toMatchObject({ answers: 0, pending: 0 });
+		});
+	});
+
 	it("makes an image with the installation's key, posts it, and counts its cost in the answer", async () => {
 		await install({ bot_scopes: ALL_SCOPES });
 		let result: unknown;

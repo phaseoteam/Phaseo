@@ -699,6 +699,18 @@ describe("in an answer", () => {
 		expect(coordinator.workingMemory().filter((entry) => entry.kind === "tool").map((entry) => entry.text)).toEqual(["publish_page"]);
 	});
 
+	it("links a page the model published but ended without writing about", async () => {
+		let url = "";
+		await answerWith(async (request) => {
+			const tool = request.tools.find((entry) => entry.id === "publish_page")!;
+			url = String((await execute(tool, { title: "Our October spend", html: HTML })).url);
+			return "";
+		});
+		expect(url).toMatch(URL_PATTERN);
+		expect(world.slack.of("chat.startStream")[0].args.markdown_text).toBe(`Our October spend: ${url}`);
+		expect(world.slack.of("chat.stopStream").at(-1)?.args.blocks).toBeDefined();
+	});
+
 	it("isn't offered to someone from another organisation", async () => {
 		const { requests } = await answerWith(async () => "No page.", true);
 		expect(requests[0].tools.map((tool) => tool.id)).not.toContain("publish_page");

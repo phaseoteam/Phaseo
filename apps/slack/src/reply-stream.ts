@@ -188,7 +188,8 @@ export function footerText(footer: Footer, format: "mrkdwn" | "markdown" = "mrkd
 
 /** The whole reply as one message: blocks aren't allowed with markdown_text, so the footer is italic text. */
 function wholeReply(text: string, footer: Footer | null): string {
-	const footerLine = footer ? `\n\n_${footerText(footer, "markdown")}_` : "";
+	// A reply that is only the footer (an answer that was a chart or an image) starts with it.
+	const footerLine = footer ? `${text ? "\n\n" : ""}_${footerText(footer, "markdown")}_` : "";
 	return `${truncateMarkdown(text, MAX_MARKDOWN_CHARS - footerLine.length)}${footerLine}`;
 }
 
