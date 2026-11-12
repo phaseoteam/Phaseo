@@ -87,10 +87,11 @@ describe("google thinking level support", () => {
 		expect(resolveGoogleThinkingLevelForEffort("gemini-4-carbon", "minimal")).toBe("LOW");
 	});
 
-	it("gives Gemini 4 Hydrogen low, medium and high with no minimal, and no thinking budget", () => {
+	it("gives Gemini 4 Hydrogen low, medium and high with no minimal, and does not rewrite a budget", () => {
 		for (const model of ["gemini-4-hydrogen", "google/gemini-4-hydrogen"]) {
 			expect(getSupportedGoogleThinkingLevels(model)).toEqual(["LOW", "MEDIUM", "HIGH"]);
-			expect(modelRejectsGoogleThinkingBudget(model)).toBe(true);
+			// Not rewritten to a level: the request is forwarded and Google's explicit 400 is the signal.
+			expect(modelRejectsGoogleThinkingBudget(model)).toBe(false);
 			expect(getLowestGoogleThinkingLevel(model)).toBe("LOW");
 		}
 		expect(resolveGoogleThinkingLevelForEffort("gemini-4-hydrogen", "minimal")).toBe("LOW");

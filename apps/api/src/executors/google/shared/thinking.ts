@@ -51,9 +51,12 @@ const GOOGLE_THINKING_LEVEL_SUPPORT: Record<string, GoogleThinkingLevel[]> = {
 	"gemini-4-hydrogen": GOOGLE_LOW_MEDIUM_HIGH_LEVELS,
 };
 
-// Models that refuse thinkingBudget and take thinkingLevel only. Hydrogen: a live Vertex probe on
-// 2026-11-12 returned HTTP 400 "Thinking budget is not supported for this model. Use thinking level instead."
-const GOOGLE_THINKING_BUDGET_UNSUPPORTED = ["gemini-4-argon", "gemini-4-carbon", "gemini-4-hydrogen"];
+// Models that refuse thinkingBudget and take thinkingLevel only. Gemini 4 Hydrogen is deliberately not
+// listed: Vertex answers a budget with HTTP 400 "Thinking budget is not supported for this model. Use
+// thinking level instead." (live probe 2026-11-12) while the Gemini API accepts one. Rewriting a token
+// budget as a level would change the requested reasoning without a visible signal, so a budget-only
+// request is forwarded and Google's explicit error reaches the caller. Effort requests use levels.
+const GOOGLE_THINKING_BUDGET_UNSUPPORTED = ["gemini-4-argon", "gemini-4-carbon"];
 
 function normalizeModelName(model: string): string {
 	return normalizeGoogleModelSlug(String(model ?? "").trim()).replace(/:free$/i, "");
