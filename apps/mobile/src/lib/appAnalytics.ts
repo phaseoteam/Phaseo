@@ -24,6 +24,7 @@ class ConsentClient extends PostHog {
   }
 }
 let client: ConsentClient | undefined;
+let screenName: string | undefined;
 const meta = { app_surface: "mobile", app_version: APP_VERSION, app_build: String(extra?.buildCommit ?? "unknown"), app_os: Platform.OS, $process_person_profile: false };
 
 export function startAppAnalytics() {
@@ -46,7 +47,8 @@ export function startAppAnalytics() {
         const safe = filterAppEvent(event);
         if (!safe) return null;
         safe.properties = { ...safe.properties, ...meta };
-        if (!budget.take(safe.event as AppAnalyticsEvent, String(safe.properties.screen_name ?? JSON.stringify(safe.properties.$exception_list)))) return null;
+        if (safe.event === "$exception" && screenName) safe.properties.screen_name = screenName;
+        if (!budget.take(safe.event as AppAnalyticsEvent, String(safe.event === "$exception" ? JSON.stringify(safe.properties.$exception_list) : safe.properties.screen_name))) return null;
         return safe;
       },
     });
@@ -57,6 +59,7 @@ export function startAppAnalytics() {
 }
 
 function stopClient() {
+  screenName = undefined;
   if (client) {
     const previous = client; client = undefined; previous.sending = false;
     void previous.optOut().catch(() => {});
@@ -82,8 +85,8 @@ export function mobileScreen(segments: readonly string[]) {
   return ["home", "compare", "sign-in", "notification-setup", "higher-or-lower", "version"].includes(first) ? first : undefined;
 }
 export function trackAppScreen(segments: readonly string[]) {
-  const screen = mobileScreen(segments);
-  if (screen && analyticsStore.get()) client?.capture("screen_viewed", { ...meta, screen_name: screen });
+  screenName = analyticsStore.get() ? mobileScreen(segments) : undefined;
+  if (screenName) client?.capture("screen_viewed", { ...meta, screen_name: screenName });
 }
 export function trackAppError(error: unknown, source: AppErrorSource = "render") {
   startAppAnalytics();

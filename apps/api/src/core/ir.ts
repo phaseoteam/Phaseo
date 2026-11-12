@@ -162,11 +162,31 @@ export type IRToolResult = {
 /**
  * Unified message format that can represent messages from all protocols
  */
+/** Claude `output_config.effort` levels. */
+export type IRClaudeEffort = "low" | "medium" | "high" | "xhigh" | "max";
+
+/**
+ * The effort a Claude assistant turn ran at, and the top-level effort the gateway
+ * sent for the conversation (`default` when it sent none). Clients carry it back
+ * in a sealed reasoning entry, so the gateway can rebuild per-message effort
+ * changes without storing anything (see core/claudePerMessageEffort.ts).
+ */
+export type IREffortRecord = {
+	effort: IRClaudeEffort;
+	base: IRClaudeEffort | "default";
+};
+
 export type IRMessage =
 	| {
 		role: "system";
 		content: IRContentPart[];
 		name?: string; // OpenAI Chat participant name
+		/**
+		 * Anthropic per-message effort: a Messages `system` message with empty
+		 * content and `output_config.effort` sets the effort for later turns.
+		 * https://platform.claude.com/docs/en/build-with-claude/effort-per-message
+		 */
+		effort?: IRClaudeEffort;
 	}
 	| {
 		role: "developer";
@@ -186,6 +206,8 @@ export type IRMessage =
 		phase?: "commentary" | "final_answer" | null; // OpenAI Responses assistant phase
 		// OpenAI Chat: an earlier audio response, sent back by id (`audio: { id }`).
 		audio?: { id: string };
+		// The effort a Claude turn ran at, from the sealed entry the client sent back.
+		effortRecord?: IREffortRecord;
 	}
 	| {
 		role: "tool";
@@ -952,6 +974,8 @@ export type IRChoice = {
 		toolCalls?: IRToolCall[];
 		refusal?: string; // Refusal to answer (content filter)
 		phase?: "commentary" | "final_answer" | null; // OpenAI Responses assistant phase
+		// The effort this Claude turn ran at; Chat and Responses clients get it as a sealed reasoning entry.
+		effortRecord?: IREffortRecord;
 	};
 	finishReason: "stop" | "length" | "tool_calls" | "content_filter" | "error" | null;
 

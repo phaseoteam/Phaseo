@@ -11,6 +11,7 @@ import {
 } from "@pipeline/execute/attempt-health";
 import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
+import { pricingLinesForCharge, pricingLinesTotalNanos } from "./billing-policy";
 import { claimFailureSpendSettlement, failureBudgetNanos, failureSpendSettled, recordsServerToolAccounting, serverToolReconciliation } from "./server-tool-charges";
 import { isStealthRequest } from "../stealth";
 import { applyRequestClassifiers } from "../classification/request-classifiers";
@@ -299,6 +300,19 @@ function uncollectedCharge(ctx: PipelineContext): { costNanos: number | null; ex
 	return { costNanos: nanosOrNull(ctx.confirmedChargeNanos), expectedCostNanos: expected };
 }
 
+/**
+ * The pricing lines a failure row records: the bill's own lines, or, for a charge kept without
+ * them (a stream charged at drain checkpoints whose final settlement failed), the lines of the
+ * highest checkpoint estimate, lowered to the charge. The row's lines become its
+ * v2_request_pricing_lines, so per-SKU totals such as promotion budgets count every charge.
+ */
+function chargedFailurePricingLines(ctx: PipelineContext, result: RequestResult, chargedNanos: number): unknown[] {
+	const billLines: unknown = (result.bill?.usage as any)?.pricing?.lines;
+	const lines = Array.isArray(billLines) ? billLines : [];
+	if (chargedNanos <= 0 || pricingLinesTotalNanos(lines) > 0) return lines;
+	return pricingLinesForCharge((ctx.meta as Record<string, unknown>).__checkpointPricingLines, chargedNanos);
+}
+
 /** An accounting error that does not change the request's record: logged and reported, never billed. */
 function reportAccountingError(ctx: PipelineContext, reason: string, error?: unknown): void {
 	console.error("[gateway] request accounting error", {
@@ -582,9 +596,7 @@ export async function handleFailureAudit(
                         ? result.bill.usage as Record<string, unknown>
                         : {},
                     currency: result.bill?.currency ?? null,
-                    pricingLines: Array.isArray((result.bill?.usage as any)?.pricing?.lines)
-                        ? (result.bill?.usage as any).pricing.lines
-                        : [],
+                    pricingLines: chargedFailurePricingLines(ctx, result, writeCost ? billedNanos : 0),
                 }),
             ...(writeCost ? { costNanos: billedNanos } : {}),
         }) : null,

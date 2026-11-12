@@ -58,7 +58,12 @@ Les entrées peuvent contenir un état du fournisseur dont le modèle a besoin �
 | Signatures de thinking de Claude | `signature` sur les entrées `reasoning.text` |
 | Thinking masqué de Claude, raisonnement chiffré d’OpenAI | `data` sur les entrées `reasoning.encrypted` |
 | Signatures de pensée de Gemini | `data` sur les entrées `reasoning.encrypted` dont l’`id` est l’appel d’outil auquel elles appartiennent |
+| Le niveau d’effort auquel une réponse de Claude s’est exécutée | `data` sur la dernière entrée `reasoning.encrypted`, qui n’a pas de texte |
 
 En streaming, un delta `reasoning_details` arrive dès qu’un bloc de raisonnement est terminé.
 
-Pour que le modèle conserve son raisonnement entre les étapes, renvoyez le message de l’assistant avec son `reasoning_details` inchangé. Les valeurs de `signature` et de `data` sont opaques et enregistrent le fournisseur et le modèle qui les ont produites. Phaseo ne les envoie qu’à cette famille de fournisseurs et à ce modèle : un fallback vers un autre fournisseur les abandonne au lieu d’échouer. Les modèles Claude en mode de thinking manuel doivent récupérer leur thinking pour continuer à réfléchir pendant une boucle d’outils ; s’il manque, cette étape s’exécute sans thinking.
+<Warning>
+Renvoyez chaque message de l’assistant avec son `reasoning_details` inchangé, dans chaque requête, et pas seulement dans les boucles d’outils. N’abandonnez, ne modifiez et ne réordonnez jamais les entrées, chiffrées ou non, y compris celles sans texte.
+</Warning>
+
+Les valeurs de `signature` et de `data` sont opaques et enregistrent le fournisseur et le modèle qui les ont produites. Phaseo ne les envoie qu’à cette famille de fournisseurs et à ce modèle : un fallback vers un autre fournisseur les abandonne au lieu d’échouer. Sans elles, les modèles Claude en mode de thinking manuel exécutent l’étape suivante de la boucle d’outils sans thinking, et un changement de `reasoning_effort` redémarre le cache de prompts de Claude ; consultez [Changer l’effort de raisonnement en cours de conversation](../../guides/reasoning-effort).

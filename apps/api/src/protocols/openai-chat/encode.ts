@@ -67,6 +67,7 @@ function encodeChoice(
 		choice.message.toolCalls,
 		`${requestId}-reasoning-${choice.index}`,
 		origin,
+		choice.message.effortRecord,
 	);
 	const images = imageParts.map((part) => ({
 		type: "image_url" as const,

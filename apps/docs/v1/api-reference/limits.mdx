@@ -74,7 +74,7 @@ When several policies apply, each is counted and the first one exhausted rejects
 
 ### Requests and tokens per minute
 
-Both are measured over a rolling minute. `tokens_per_minute` counts each request's input and output tokens once it completes, including streamed and failed requests that used tokens. A request is rejected once usage over the last minute reaches the limit, so requests already in progress can take usage past it. Provider fallbacks within one request count once, and response cache hits aren't counted.
+Both are measured over a rolling minute. `tokens_per_minute` counts each request's input and output tokens once it completes, including streamed and failed requests that used tokens. A request is rejected once usage over the last minute reaches the limit, so requests already in progress can take usage past it. Provider fallbacks within one request count once.
 
 A rejected request returns `429` with `rate_limit_exceeded`, reason `policy_requests_per_minute` or `policy_tokens_per_minute`, the `policy_id`, the `limit_scope` (`key`, `member`, `department`, `workspace` or `end_user`), and `Retry-After` in seconds.
 

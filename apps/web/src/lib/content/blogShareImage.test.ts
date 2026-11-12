@@ -18,8 +18,9 @@ describe("blogShareImage", () => {
 		expect(blogShareImage(post)).toEqual({ path: "/blog-images/recap-october-2026.png" });
 	});
 
-	it("uses a dynamic card for SVG covers", () => {
-		const image = blogShareImage({ ...post, coverImage: "/blog-images/blog-data.svg" });
+	it("uses a dynamic card for posts without a raster cover", () => {
+		expect(blogShareImage({ ...post, coverImage: "/blog-images/cover.svg" })?.path.startsWith("/og/dynamic?")).toBe(true);
+		const image = blogShareImage({ ...post, coverImage: null });
 		expect(image?.size).toEqual({ width: 1200, height: 630 });
 		expect(image?.path.startsWith("/og/dynamic?")).toBe(true);
 		const parsed = parseDynamicOgParams(dynamicParams(image!.path));
@@ -36,7 +37,7 @@ describe("blogShareImage", () => {
 	it("shortens long text to fit the card", () => {
 		const image = blogShareImage({
 			...post,
-			coverImage: "/blog-images/blog-data.svg",
+			coverImage: null,
 			title: "A very long title ".repeat(8).trim(),
 			description: "A long description that keeps going ".repeat(10).trim(),
 		});
@@ -47,7 +48,7 @@ describe("blogShareImage", () => {
 	it("keeps shortened titles within the limit after normalisation", () => {
 		const image = blogShareImage({
 			...post,
-			coverImage: "/blog-images/blog-data.svg",
+			coverImage: null,
 			title: `${"a".repeat(88)} bbbbbb`,
 		});
 		const params = dynamicParams(image!.path);
@@ -58,7 +59,7 @@ describe("blogShareImage", () => {
 	it("drops a description the card refuses", () => {
 		const image = blogShareImage({
 			...post,
-			coverImage: "/blog-images/blog-data.svg",
+			coverImage: null,
 			description: "Details at https://example.com",
 		});
 		expect(dynamicParams(image!.path).has("description")).toBe(false);
@@ -68,7 +69,7 @@ describe("blogShareImage", () => {
 		expect(
 			blogShareImage({
 				...post,
-				coverImage: "/blog-images/blog-data.svg",
+				coverImage: null,
 				title: "10月の新機能",
 			}),
 		).toBeNull();

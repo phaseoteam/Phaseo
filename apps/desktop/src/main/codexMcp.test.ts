@@ -17,19 +17,30 @@ describe("Codex managed MCP", () => {
 		expect(config[`mcp_servers.${nativeMcpName(connection)}`].enabled).toBe(false);
 		expect(config[`mcp_servers.${nativeMcpName(orchestration)}`]).toEqual({ url: orchestration.url, http_headers: { Authorization: "Bearer owned" }, tool_timeout_sec: 3660, enabled: true });
 	});
-	it("reads every status page and waits for the exact managed connection", async () => {
+	it("asks only for its own servers by name, giving each call the rest of the 30 s deadline", async () => {
+		// A server in the person's own Codex config that isn't signed in makes an unfiltered list take 9-21 s.
+		const request = vi.fn().mockResolvedValue({ data: [{ name: nativeMcpName(connection), runtimeStatus: "connected" }] });
+		await waitCodexMcp({ request }, "thread", [connection], new AbortController().signal);
+		expect(request).toHaveBeenCalledOnce();
+		expect(request).toHaveBeenCalledWith("mcpServerStatus/list", { threadId: "thread", serverName: nativeMcpName(connection), cursor: null, detail: "toolsAndAuthOnly" }, expect.any(Number));
+		expect(request.mock.calls[0]![2]).toBeGreaterThan(25000);
+	});
+	it("follows the cursor when an older Codex ignores serverName and returns the whole list", async () => {
 		const request = vi.fn().mockResolvedValueOnce({ data: [{ name: "foreign", runtimeStatus: "connected" }], nextCursor: "next" }).mockResolvedValueOnce({ data: [{ name: nativeMcpName(connection), runtimeStatus: "connected" }], nextCursor: null });
 		await waitCodexMcp({ request }, "thread", [connection], new AbortController().signal);
-		expect(request).toHaveBeenLastCalledWith("mcpServerStatus/list", { threadId: "thread", cursor: "next", detail: "toolsAndAuthOnly", limit: 100 }, expect.any(Number));
+		expect(request).toHaveBeenLastCalledWith("mcpServerStatus/list", { threadId: "thread", serverName: nativeMcpName(connection), cursor: "next", detail: "toolsAndAuthOnly" }, expect.any(Number));
 	});
-	it("rejects failed connections without exposing native diagnostics", async () => {
-		const request = vi.fn().mockResolvedValue({ data: [{ name: nativeMcpName(connection), runtimeStatus: "authenticationRequired", toolsError: "secret diagnostic" }], nextCursor: null });
-		await expect(waitCodexMcp({ request }, "thread", [connection], new AbortController().signal)).rejects.toThrow("MCP server “Fixture” needs native sign-in.");
-	});
-	it("rejects repeated pagination cursors and cancelled setup", async () => {
+	it("rejects a repeated pagination cursor", async () => {
 		const request = vi.fn().mockResolvedValue({ data: [], nextCursor: "same" });
 		await expect(waitCodexMcp({ request }, "thread", [connection], new AbortController().signal)).rejects.toThrow("pagination");
-		const controller = new AbortController(); controller.abort(); request.mockClear();
+	});
+	it("rejects failed connections without exposing native diagnostics", async () => {
+		const request = vi.fn().mockResolvedValue({ data: [{ name: nativeMcpName(connection), runtimeStatus: "authenticationRequired", toolsError: "secret diagnostic" }] });
+		await expect(waitCodexMcp({ request }, "thread", [connection], new AbortController().signal)).rejects.toThrow("MCP server “Fixture” needs native sign-in.");
+	});
+	it("stops before asking when setup is cancelled", async () => {
+		const request = vi.fn();
+		const controller = new AbortController(); controller.abort();
 		await expect(waitCodexMcp({ request }, "thread", [connection], controller.signal)).rejects.toThrow("cancelled"); expect(request).not.toHaveBeenCalled();
 	});
 });

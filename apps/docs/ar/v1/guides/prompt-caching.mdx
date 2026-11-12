@@ -123,6 +123,7 @@ curl https://api.phaseo.app/v1/messages \
 يرسل Phaseo إلى كل مزوّد عناصر التحكم في الذاكرة المؤقتة التي يوثّقها فقط، ويزيل الباقي. لا تستبعد عناصر التحكم في الذاكرة المؤقتة أي مزوّد من التوجيه أبدًا. تسرد كل صفحة نموذج أسعار القراءة من الذاكرة المؤقتة والكتابة فيها.
 </Note>
 
+<span id="which-providers-cache-automatically"></span>
 ## أي المزوّدين يخزّنون مؤقتًا تلقائيًا
 
 | المزوّد | التخزين المؤقت | ما يرسله Phaseo |
@@ -288,6 +289,11 @@ curl https://api.phaseo.app/v1/messages \
 ### Responses: أرسل المحادثة كاملة
 
 لا يخزّن Phaseo الاستجابات. تعيد الطلبات التي تضبط `previous_response_id` أو `conversation` الخطأ `400` `unsupported_param`، لذا أرسل المحادثة كاملة في `input` في كل خطوة. بدايتها الثابتة هي البادئة التي تُخزَّن. في حلقات الأدوات، أعد إرسال عناصر مخرجات `reasoning` أيضًا؛ راجع [الاستدلال في حلقات الأدوات](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops).
+
+<span id="change-reasoning-effort-mid-conversation"></span>
+### غيّر جهد الاستدلال في منتصف المحادثة
+
+غيّر `reasoning_effort` (Chat Completions) أو `reasoning.effort` (Responses) بين الطلبات، فيحافظ Phaseo على ذاكرة Claude المؤقتة للموجّهات: إذ يرسل التغيير كعلامة جهد داخل `messages` بدلًا من جهد جديد في المستوى الأعلى. ينجح هذا ما دمت تعيد إرسال استدلال Claude دون تغيير. على Anthropic Messages، ترسل العلامة بنفسك. راجع [غيّر جهد الاستدلال في منتصف المحادثة](./reasoning-effort.mdx).
 
 <span id="usage-and-pricing-fields"></span>
 ## حقول الاستخدام والتسعير

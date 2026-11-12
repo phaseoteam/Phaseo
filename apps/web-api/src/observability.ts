@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from "hono";
 import type { Env } from "@/env";
-import { emitLogs, randomHex, sampled, sendOtlp, telemetryConfig, telemetryEndpoint, traceContext } from "../../../packages/shared/observability/index.mjs";
+import { emitLogs, randomHex, safeError, sampled, sendOtlp, telemetryConfig, telemetryEndpoint, traceContext } from "../../../packages/shared/observability/index.mjs";
 
 // Measures response headers only. Gateway finalization owns streaming outcomes.
 export const platformObservability: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
@@ -27,6 +27,7 @@ export const platformObservability: MiddlewareHandler<{ Bindings: Env }> = async
   const status = c.res.status;
   const stream = c.res.headers.get("content-type")?.includes("text/event-stream") ?? false;
   const event = {
+    ...(status >= 500 && c.error ? safeError(c.error) : {}),
     event_name: "web.request", method: c.req.method, route, stream,
     status_code: status, duration_ms: completed - started, signal: "response_headers",
     outcome: status >= 500 ? "error" : status >= 400 ? "rejected" : stream ? "started" : "success",

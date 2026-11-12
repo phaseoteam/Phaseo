@@ -198,3 +198,44 @@ export function suppressFailedResponseBilling(args: {
 	args.result.bill.currency = args.result.bill.currency ?? "USD";
 	args.result.bill.usage = usageForAudit;
 }
+
+const lineNanos = (line: Record<string, unknown>): number => {
+	const nanos = Number(line.line_nanos ?? 0);
+	return Number.isFinite(nanos) && nanos > 0 ? nanos : 0;
+};
+
+/** The sum of a bill's pricing lines (line_nanos), 0 when there are none. */
+export function pricingLinesTotalNanos(lines: unknown): number {
+	if (!Array.isArray(lines)) return 0;
+	return lines.reduce((sum: number, line) => sum + (line && typeof line === "object" ? lineNanos(line as Record<string, unknown>) : 0), 0);
+}
+
+/**
+ * The pricing lines for a failed request that was still charged (a stream the client left, a
+ * checkpoint charge kept after a finalization error): the lines of the bill it was priced from,
+ * lowered in proportion when less was charged, so they add up to the charge. Their SKU meters
+ * become the request's v2_request_pricing_lines, which per-SKU totals such as promotion budgets
+ * (enforce_pricing_promotion_budgets) sum. Empty when nothing was charged or nothing was priced.
+ */
+export function pricingLinesForCharge(lines: unknown, chargedNanos: number): Record<string, unknown>[] {
+	if (!Array.isArray(lines) || !Number.isFinite(chargedNanos) || chargedNanos <= 0) return [];
+	const priced = lines.filter((line): line is Record<string, unknown> => !!line && typeof line === "object");
+	const total = pricingLinesTotalNanos(priced);
+	if (total <= 0) return [];
+	if (total <= chargedNanos) return priced.map((line) => ({ ...line }));
+	const charged = Math.round(chargedNanos);
+	const factor = charged / total;
+	const scaled = priced.map((line) => ({ ...line, line_nanos: Math.floor(lineNanos(line) * factor) }));
+	// Rounding down leaves a few nanos: they go on the largest line, so the lines sum to the charge.
+	const remainder = charged - scaled.reduce((sum, line) => sum + line.line_nanos, 0);
+	if (remainder > 0) {
+		let largest = 0;
+		for (let i = 1; i < scaled.length; i += 1) if (scaled[i].line_nanos > scaled[largest].line_nanos) largest = i;
+		scaled[largest].line_nanos += remainder;
+	}
+	return scaled.map((line, index) => ({
+		...line,
+		line_cost_usd: (line.line_nanos / 1_000_000_000).toFixed(9),
+		priced_line_nanos: lineNanos(priced[index]),
+	}));
+}

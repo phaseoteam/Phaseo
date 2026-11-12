@@ -13,6 +13,7 @@ test('collection is opt-in, environment gated and restricted to credential-safe 
   }
   assert.equal(calls, 0);
   assert.equal(telemetryConfig({ ENV: 'prod' }, 'gateway').environment, 'production');
+  assert.equal(telemetryConfig({ CF_VERSION_METADATA: { id: 'worker-release' } }, 'gateway').release, 'worker-release');
   assert.equal(telemetryEndpoint(config, 'traces'), `${config.endpoint}/v1/traces`);
 });
 
@@ -80,4 +81,28 @@ test('server diagnostics omit error messages and URL query strings', () => {
   const diagnostic = JSON.stringify(safeError(error));
   assert.ok(!diagnostic.includes('private customer prompt'));
   assert.ok(!diagnostic.includes('token='));
+});
+
+test('server diagnostics retain bounded causes and actionable codes without exception content', () => {
+  const cause = Object.assign(new Error('private SQL and customer content'), { code: '57014' });
+  cause.stack = 'Error: private SQL\n    at sweep (worker.js:45:6)';
+  const error = new Error('private wrapper', { cause });
+  error.stack = 'Error: private wrapper\n    at scheduled (worker.js:12:3)';
+  const diagnostic = safeError(error);
+  assert.equal(diagnostic.error_code, '57014');
+  assert.equal(diagnostic.error_summary, 'Database statement cancelled or timed out');
+  assert.equal(diagnostic.error_stack, 'at worker.js:12:3');
+  assert.equal(diagnostic.error_cause_name, 'Error');
+  assert.equal(diagnostic.error_cause_stack, 'at worker.js:45:6');
+  assert.ok(!JSON.stringify(diagnostic).includes('private'));
+  assert.equal(safeError({ code: 'PGRST202', message: 'private RPC' }).error_code, 'PGRST202');
+  assert.equal(safeError(Object.assign(new Error(), { code: 'customer-secret' })).error_code, undefined);
+});
+
+test('diagnostics handle circular causes and throwing accessors without replacing the application error', () => {
+  const error = new Error('private');
+  error.cause = error;
+  assert.equal(safeError(error).error_name, 'Error');
+  const hostile = new Proxy({}, { get() { throw new Error('private accessor'); } });
+  assert.doesNotThrow(() => safeError(hostile));
 });

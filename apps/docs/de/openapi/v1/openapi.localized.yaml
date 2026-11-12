@@ -13301,16 +13301,30 @@ components:
       properties:
         role:
           type: string
-          description: Verwende `system` für eine Anweisung, die ab dieser Stelle der Unterhaltung gilt. Eine Systemnachricht akzeptiert einen String oder Textblöcke, muss direkt auf einen Benutzerzug folgen (oder auf einen Assistentenzug, der mit einem Server-Tool-Ergebnis endet) und muss die letzte Nachricht sein oder von einem Assistentenzug gefolgt werden.
+          description: Verwende `system` für eine Anweisung, die ab dieser Stelle der Unterhaltung gilt. Eine Systemnachricht akzeptiert einen String oder Textblöcke, muss direkt auf einen Benutzerzug folgen (oder auf einen Assistentenzug, der mit einem Server-Tool-Ergebnis endet) und muss die letzte Nachricht sein oder von einem Assistentenzug gefolgt werden. Eine reine Aufwands-Systemnachricht mit leerem `content` und `output_config` kann überall stehen.
           enum:
             - system
         content:
           oneOf:
             - type: string
             - type: array
-              minItems: 1
               items:
                 $ref: '#/components/schemas/AnthropicSystemTextBlock'
+        output_config:
+          type: object
+          description: Ändert Claudes Aufwandsstufe für spätere Züge, ohne den Prompt-Cache neu zu starten. Sende es mit leerem `content` nach den bereits gesendeten Nachrichten und lass es bei späteren Anfragen an seiner Stelle; weiter vorne eingefügt ändert es das gecachte Präfix. Routen ohne Aufwand pro Nachricht erhalten stattdessen die geltende Stufe als Aufwand auf oberster Ebene, wodurch der Cache nicht erhalten bleibt.
+          required:
+            - effort
+          properties:
+            effort:
+              type: string
+              enum:
+                - low
+                - medium
+                - high
+                - xhigh
+                - max
+          additionalProperties: false
       additionalProperties: false
     AnthropicSystemTextBlock:
       type: object
@@ -14519,6 +14533,7 @@ components:
         questions:
           type: array
           minItems: 1
+          maxItems: 1000
           items:
             oneOf:
               - $ref: '#/components/schemas/DecisionPredicateQuestion'
@@ -14816,7 +14831,7 @@ components:
         questions:
           type: object
           minProperties: 1
-          maxProperties: 128
+          maxProperties: 1000
           additionalProperties:
             oneOf:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
@@ -15205,7 +15220,7 @@ components:
         questions:
           type: object
           minProperties: 1
-          maxProperties: 128
+          maxProperties: 1000
           additionalProperties:
             oneOf:
               - $ref: '#/components/schemas/SystemOneNoulQuestion'

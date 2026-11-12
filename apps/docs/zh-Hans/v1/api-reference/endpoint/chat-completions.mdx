@@ -58,7 +58,12 @@ curl https://api.phaseo.app/v1/chat/completions \
 | Claude 思考签名 | `reasoning.text` 条目上的 `signature` |
 | Claude 已编辑的思考、OpenAI 加密推理 | `reasoning.encrypted` 条目上的 `data` |
 | Gemini 思维签名 | `reasoning.encrypted` 条目上的 `data`，其 `id` 是它所属的工具调用 |
+| Claude 回复运行时的强度级别 | 最后一个 `reasoning.encrypted` 条目上的 `data`，该条目没有文本 |
 
 流式传输时，每个推理块完成后会收到一个 `reasoning_details` 增量。
 
-要在步骤之间保留模型的推理，请将助手消息连同未修改的 `reasoning_details` 一起发回。`signature` 和 `data` 的值是不透明的，并记录了生成它们的提供商和模型。Phaseo 只会把它们发送给该提供商系列和模型，因此回退到其他提供商时会丢弃它们，而不会导致请求失败。处于手动思考模式的 Claude 模型需要收到自己之前的思考内容，才能在工具循环中继续思考；如果缺失，该步骤将在不思考的情况下运行。
+<Warning>
+在每个请求中（而不仅是在工具循环中）都要将每条助手消息连同未修改的 `reasoning_details` 一起发回。切勿丢弃、编辑或重新排序任何条目，无论是否加密，也包括没有文本的条目。
+</Warning>
+
+`signature` 和 `data` 的值是不透明的，并记录了生成它们的提供商和模型。Phaseo 只会把它们发送给该提供商系列和模型，因此回退到其他提供商时会丢弃它们，而不会导致请求失败。缺少它们时，处于手动思考模式的 Claude 模型会在不思考的情况下运行工具循环的下一步，而更改 `reasoning_effort` 会重启 Claude 的提示词缓存；参见[在对话中途更改推理强度](../../guides/reasoning-effort)。

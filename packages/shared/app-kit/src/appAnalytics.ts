@@ -2,20 +2,31 @@ export type AppErrorSource = "renderer" | "main" | "renderer-crash" | "mobile" |
 export type AppAnalyticsEvent = "app_opened" | "screen_viewed" | "$exception";
 export type AnalyticsStorage = { getItem(key: string): string | null; setItem(key: string, value: string): void };
 
-const errorNames = new Set(["Error", "TypeError", "ReferenceError", "RangeError", "SyntaxError", "URIError", "EvalError", "AggregateError"]);
+const errorNames = new Set(["Error", "TypeError", "ReferenceError", "RangeError", "SyntaxError", "URIError", "EvalError", "AggregateError", "AbortError", "TimeoutError"]);
 
 // Error messages can contain prompts, credentials and local paths. Keep code locations, never the message or source context.
 export function privateException(value: unknown): Error {
+  try { return sanitizeException(value, new Set()); }
+  catch {
+    const error = new Error("Unhandled Error");
+    error.stack = "Error: Unhandled Error";
+    return error;
+  }
+}
+
+function sanitizeException(value: unknown, seen: Set<unknown>): Error {
+  seen.add(value);
   const source = value instanceof Error ? value : undefined;
   const name = source && errorNames.has(source.name) ? source.name : "Error";
   const error = new Error(`Unhandled ${name}`);
   error.name = name;
-  const frames = (source?.stack ?? "").split("\n").slice(1, 21).flatMap(line => {
+  const frames = (source?.stack ?? "").slice(0, 16000).split("\n").slice(1, 21).flatMap(line => {
     const location = /([^/\\\s():]+\.(?:[cm]?js|tsx?|bundle|jsbundle)):(\d+):(\d+)\)?$/.exec(line.trim());
     if (!location) return [];
     return [`    at app:///${location[1]}:${location[2]}:${location[3]}`];
   });
   error.stack = `${name}: ${error.message}\n${frames.join("\n")}`;
+  if (source?.cause && !seen.has(source.cause) && seen.size < 3) error.cause = sanitizeException(source.cause, seen);
   return error;
 }
 
@@ -29,7 +40,7 @@ export function filterAppEvent<T extends { event: string; properties?: Record<st
   if (event.event === "$exception") {
     const list = event.properties?.$exception_list;
     if (!Array.isArray(list)) return null;
-    safe.$exception_list = list.slice(0, 1).flatMap(value => {
+    safe.$exception_list = list.slice(0, 3).flatMap(value => {
       if (!value || typeof value !== "object") return [];
       const item = value as { type?: unknown; stacktrace?: { frames?: unknown } };
       const type = typeof item.type === "string" && errorNames.has(item.type) ? item.type : "Error";

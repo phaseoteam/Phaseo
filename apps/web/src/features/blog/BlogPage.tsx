@@ -90,6 +90,7 @@ function PostImage({
 	post: AnnouncementSummary;
 	className?: string;
 }) {
+	if (!post.coverImage) return null;
 	return (
 		<img
 			src={post.coverImage}

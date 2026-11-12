@@ -760,6 +760,55 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
 	});
 
+	it("rejects more questions than any route accepts and names the limit", async () => {
+		const questions = Object.fromEntries(Array.from({ length: 129 }, (_, index) => [`q${index}`, { type: "noul", instructions: "Safe?" }]));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [
+			{ providerId: "openai", inputModalities: ["text"], capabilityParams: {} },
+			{ providerId: "cloudflare", inputModalities: ["text"], capabilityParams: { max_questions: 64 } },
+		] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make", model: "openai/gpt-6-luna" }), {
+			model: "openai/gpt-6-luna", state: "Text", questions,
+		} as any, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(400);
+		expect(await (result as Response).json()).toMatchObject({
+			error: "unsupported_parameter",
+			message: "This request has 129 questions, and none of the routes available for this request accepts more than 128.",
+		});
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
+	});
+	it("reports the limit of the routes that support the request's other inputs", async () => {
+		const questions = Object.fromEntries(Array.from({ length: 65 }, (_, index) => [`q${index}`, { type: "box", instructions: "The mug" }]));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [
+			{ providerId: "text-only", inputModalities: ["text"], capabilityParams: { max_questions: 1000 } },
+			{ providerId: "typesafe", inputModalities: ["text", "image"], capabilityParams: { images: true, box: true, max_questions: 64 } },
+		] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make", model: "typesafe/jev-1.14.0" }), {
+			model: "typesafe/jev-1.14.0", state: "Photo", questions, images: ["data:image/png;base64,AQID"],
+		} as any, createTiming());
+		expect((result as Response).status).toBe(400);
+		expect(await (result as Response).json()).toMatchObject({
+			message: "This request has 65 questions, and none of the routes available for this request accepts more than 64.",
+		});
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+	});
+	it("reports the limit of the routes left after provider selection", async () => {
+		// The guard has already applied `provider.only`, which removed the route allowing 1,000.
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [
+			{ providerId: "cloudflare", inputModalities: ["text"], capabilityParams: { max_questions: 64 } },
+		] });
+		const questions = Object.fromEntries(Array.from({ length: 100 }, (_, index) => [`q${index}`, { type: "noul", instructions: "Safe?" }]));
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make", model: "google/gemini-decision-1" }), {
+			model: "google/gemini-decision-1", state: "Text", questions, providerOptions: undefined,
+		} as any, createTiming());
+		expect((result as Response).status).toBe(400);
+		expect(await (result as Response).json()).toMatchObject({
+			message: "This request has 100 questions, and none of the routes available for this request accepts more than 64.",
+		});
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+	});
+
 	it("still returns pricing guard failure on non-testing traffic when no pricing is preloaded", async () => {
 		const candidate = {
 			providerId: "openai",

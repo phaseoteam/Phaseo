@@ -1,4 +1,8 @@
 // Canonical dashboard/query definitions. Run build.mjs to refresh importable JSON.
+import { addDiagnostics, records } from './diagnostics.mjs';
+import { freeTierDashboard } from './free-tier.mjs';
+import { presentDashboards } from './presentation.mjs';
+import { deploymentQuery } from './deployments.mjs';
 const loki = { type: 'loki', uid: '${loki}' };
 const window = '$__auto';
 const env = '$environment';
@@ -20,7 +24,7 @@ function panel(title, expr, { type = 'timeseries', unit = 'short', description =
   return { title, type, datasource: loki, description,
     targets: series.map(([expression, legendFormat], index) => ({ refId: String.fromCharCode(65 + index), expr: expression, datasource: loki, queryType: instant ? 'instant' : 'range', instant, range: !instant, legendFormat })),
     fieldConfig: { defaults: { unit, noValue: 'No data', custom: { spanNulls: false } }, overrides: [] },
-    options: type === 'logs' ? { showTime: true, wrapLogMessage: true, enableLogDetails: true, sortOrder: 'Descending' } : { legend: { displayMode: 'list', placement: 'bottom' } }, ...extra };
+    options: { legend: { displayMode: 'list', placement: 'bottom' } }, ...extra };
 }
 function stat(title, expr, x, { description, failures = false, heartbeat = false } = {}) {
   return panel(title, expr, { type: 'stat', instant: true, description,
@@ -47,6 +51,7 @@ function dashboard(uid, title, description, panels) {
     tags: ['phaseo', 'observability'], timezone: 'browser', refresh: '1m', time: { from: 'now-6h', to: 'now' },
     links: [
       ...['overview', 'gateway', 'web', 'jobs', 'telemetry'].filter(name => `phaseo-${name}` !== uid).map(name => ({ title: name[0].toUpperCase() + name.slice(1), type: 'link', url: `/d/phaseo-${name}?var-environment=$environment`, keepTime: true, includeVars: true })),
+      { title: 'Free tier', type: 'link', url: '/d/phaseo-free-tier' },
       { title: 'Explore', type: 'link', url: '/explore' },
       { title: 'Frontend Observability', type: 'link', url: '/a/grafana-kowalski-app' },
       { title: 'Alerts', type: 'link', url: '/alerting/list' },
@@ -56,7 +61,7 @@ function dashboard(uid, title, description, panels) {
       { name: 'environment', label: 'Environment', type: 'custom', query: 'production,staging', current: { text: 'production', value: 'production' }, options: [{ text: 'production', value: 'production', selected: true }, { text: 'staging', value: 'staging', selected: false }] },
       { name: 'request', label: 'Request ID', type: 'textbox', query: '', current: { text: '', value: '' }, hide: 0 },
     ] },
-    annotations: { list: [{ name: 'Annotations & Alerts', type: 'dashboard', datasource: { type: 'grafana', uid: '-- Grafana --' }, enable: true, hide: true, iconColor: 'rgba(0, 211, 255, 1)' }] },
+    annotations: { list: [{ name: 'Annotations & Alerts', type: 'dashboard', datasource: { type: 'grafana', uid: '-- Grafana --' }, enable: true, hide: true, iconColor: 'rgba(0, 211, 255, 1)' }, deploymentQuery(({ 'phaseo-gateway': 'gateway', 'phaseo-web': 'web', 'phaseo-jobs': 'jobs' })[uid])] },
     panels: panels.map((item, index) => ({ id: index + 1, gridPos: { x: index % 2 * 12, y: Math.floor(index / 2) * 9, w: 12, h: 9 }, ...item })),
   };
 }
@@ -87,14 +92,14 @@ export function dashboards() {
     breakdown('Web API responses by status', groupedCount('phaseo-web-api', 'web.request', 'status_code'), 'HTTP {{status_code}}', { x: 12, y: 25, w: 12, h: 7 }, 'Counts by HTTP status in the selected time range. A 4xx response is a client rejection and is not automatically an outage.'),
     breakdown('Web API 5xx by route', `topk(10, ${groupedCount('phaseo-web-api', 'web.request', 'route', ' | status_code >= 500', ['status_code'])})`, '{{route}}', { x: 0, y: 32, w: 12, h: 7 }, 'Up to 10 route templates with received server-error responses in the selected time range. Empty means no matching events, not confirmed availability.'),
     breakdown('Provider attempt failures', `topk(10, ${groupedCount(gateway, 'provider.attempt', 'provider', ' | outcome="error"', ['outcome'])})`, '{{provider}}', { x: 12, y: 32, w: 12, h: 7 }, 'Up to 10 providers with failed attempts in the selected time range. Retries and fallbacks can recover, so these are not necessarily failed customer requests. Attempt detail is capped per request.'),
-    panel('Recent actionable events', `${logs('phaseo-gateway|phaseo-web-api|phaseo-web|phaseo-jobs', '', ['actionable'])} | actionable="true"`, { type: 'logs', gridPos: { x: 0, y: 39, w: 24, h: 9 }, description: 'Start with the newest event. Expand it for service, route, job, outcome and request/trace IDs. No matching events does not establish external uptime.' }),
-    note('Investigate and recover', '**API failures:** open [Gateway and providers](/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to) and look for shared providers, outcomes or request IDs. **Website problems:** open [Web experience](/d/phaseo-web?var-environment=$environment&from=$__from&to=$__to); browser errors and Web Vitals are in [Frontend Observability](/a/grafana-kowalski-app). **Job or settlement failures:** open [Jobs and settlement](/d/phaseo-jobs?var-environment=$environment&from=$__from&to=$__to).\n\nExpand a log, then search its `trace_id` in **Explore → Tempo**. Only 5% of backend traces are retained; a missing trace is expected for most requests. Compare the incident time with [recent deployments](https://github.com/phaseoteam/Phaseo/actions/workflows/ci.yml). After a fix or rollback, test the affected page or endpoint directly and confirm errors settle. [Alert rules](/alerting/list) show notification-rule state; this dashboard itself does not send notifications.', { x: 0, y: 48, w: 24, h: 7 }),
+    { ...records('Recent actionable events', `${logs('phaseo-gateway|phaseo-web-api|phaseo-web|phaseo-jobs', '', ['actionable'])} | actionable="true"`, ['timestamp', 'service_name', 'event_name', 'route', 'job', 'error_kind', 'error_code', 'duration_ms', 'request_id', 'trace_id'], 'Newest 100 actionable events. Read the service, route or job and error classification, then open its request or trace. Use Explore in the table menu for deeper detail. No matching events does not establish external uptime.'), gridPos: { x: 0, y: 39, w: 24, h: 9 } },
+    note('Investigate and recover', '**API failures:** open [Gateway and providers](/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to) and look for shared providers, outcomes or request IDs. **Website problems:** open [Web experience](/d/phaseo-web?var-environment=$environment&from=$__from&to=$__to); browser errors and Web Vitals are in [Frontend Observability](/a/grafana-kowalski-app). **Job or settlement failures:** open [Jobs and settlement](/d/phaseo-jobs?var-environment=$environment&from=$__from&to=$__to).\n\nRead event tables first. Click a trace ID for its timing details, or **Explore** in a table menu for the original records with the same filters and time range. Privacy exclusions, sampling settings and delivery failures can leave a trace unavailable. Compare the incident time with [recent deployments](https://github.com/phaseoteam/Phaseo/actions/workflows/ci.yml). After a fix or rollback, test the affected page or endpoint directly and confirm errors settle. [Alert rules](/alerting/list) show notification-rule state; this dashboard itself does not send notifications.', { x: 0, y: 48, w: 24, h: 7 }),
   ]);
   overview.time.from = 'now-1h';
   overview.templating.list[2].hide = 2;
   const destinations = ['telemetry', 'gateway', 'gateway', 'web', 'web', 'jobs'];
   for (const [index, item] of overview.panels.slice(1, 7).entries()) item.fieldConfig.defaults.links = [{ title: 'Investigate', url: `/d/phaseo-${destinations[index]}?var-environment=$environment&from=$__from&to=$__to` }];
-  return [
+  return presentDashboards(addDiagnostics([
     overview,
     dashboard('phaseo-gateway', 'Gateway and providers', 'Request summaries cover received terminal events. Trace retention is sampled. Delivery is best effort, so counts are operational rather than financial.', [
       panel('Requests by outcome', `sum by (outcome) (rate(${logs(gateway, 'gateway.request', ['outcome'])} [${window}]))`, { unit: 'reqps', legend: '{{outcome}}' }),
@@ -103,34 +108,34 @@ export function dashboards() {
       panel('Provider p95 first token', percentile(gateway, 'gateway.request', 'provider_ttft_ms', 0.95, ' | stream="true"', ['stream']), { unit: 'ms' }),
       panel('Requests requiring fallback / second', rate(gateway, 'gateway.request', ' | attempt_count > 1', ['attempt_count']), { unit: 'reqps' }),
       panel('Client cancellations / second', rate(gateway, 'gateway.request', ' | outcome="cancelled"', ['outcome']), { unit: 'reqps' }),
-      panel('Request lookup', `${logs(gateway, 'gateway.request', ['request_id'])}${requestFilter}`, { type: 'logs', description: 'Enter a request ID above. Expand the JSON line to find trace_id; paste it into Tempo in Explore. Only sampled traces exist.' }),
-      panel('Provider attempt lookup', `${logs(gateway, 'provider.attempt', ['request_id'])}${requestFilter}`, { type: 'logs' }),
+      records('Request lookup', `${logs(gateway, 'gateway.request', ['request_id'])}${requestFilter}`, ['timestamp', 'request_id', 'route', 'provider', 'model', 'outcome', 'status_code', 'error_code', 'duration_ms', 'trace_id'], 'Newest 100 matching requests. Enter a request ID above; click its trace ID to investigate. Privacy exclusions, sampling and delivery failures can leave a trace unavailable.'),
+      records('Provider attempt lookup', `${logs(gateway, 'provider.attempt', ['request_id'])}${requestFilter}`, ['timestamp', 'request_id', 'attempt_number', 'provider', 'model', 'outcome', 'error_code', 'duration_ms', 'provider_ttft_ms', 'trace_id'], 'Newest 100 matching provider attempts. A failed attempt can recover through fallback. Attempt detail is capped per request; use Explore in the table menu for the original event.'),
     ]),
     dashboard('phaseo-web', 'Web experience', 'Server-side errors and web API performance. Browser errors, sessions and Web Vitals live in the linked Frontend Observability app and require analytics consent.', [
       panel('Web API requests / second', rate('phaseo-web-api', 'web.request'), { unit: 'reqps' }),
       panel('Web API 5xx / second', rate('phaseo-web-api', 'web.request', ' | status_code >= 500', ['status_code']), { unit: 'reqps' }),
       panel('Web API p95 headers', percentile('phaseo-web-api', 'web.request', 'duration_ms'), { unit: 'ms' }),
       panel('Web server captured errors', count('phaseo-web', 'web.server_error'), { description: 'Captured server errors only. This hook does not provide a request denominator or server latency percentiles.' }),
-      panel('Web API failures', `${logs('phaseo-web-api', 'web.request', ['actionable'])} | actionable="true"`, { type: 'logs' }),
-      panel('Web server errors', logs('phaseo-web', 'web.server_error'), { type: 'logs', description: 'Error messages and request URLs are omitted. Use the route, release and source frames to investigate.' }),
+      records('Web API failures', `${logs('phaseo-web-api', 'web.request', ['actionable'])} | actionable="true"`, ['timestamp', 'method', 'route', 'status_code', 'duration_ms', 'trace_id'], 'Newest 100 actionable web API responses. Timing ends at response headers. Click a trace ID for deeper investigation.'),
+      records('Web server errors', logs('phaseo-web', 'web.server_error'), ['timestamp', 'route', 'error_name', 'error_digest', 'service_version', 'trace_id'], 'Newest 100 captured website errors. Compare route, fingerprint and release; source frames are available in Website error records and Explore in the table menu. Error messages and request URLs are omitted.'),
     ]),
     dashboard('phaseo-jobs', 'Jobs and settlement', 'Completion means the handler returned; inspect item failures separately. Skipped jobs are distinct. Financial truth remains in Supabase.', [
       panel('Completed job invocations', `sum by (job) (count_over_time(${logs('phaseo-jobs|phaseo-web-api', 'job.run', ['job', 'outcome'])} | outcome="completed" [${window}]))`, { legend: '{{job}}' }),
       panel('Failed job invocations', `sum by (job) (count_over_time(${logs('phaseo-jobs|phaseo-web-api', 'job.run', ['job', 'outcome'])} | outcome="error" [${window}]))`, { legend: '{{job}}' }),
       panel('Job p95 duration', percentile('phaseo-jobs|phaseo-web-api', 'job.run', 'duration_ms', 0.95, '', ['job'], 'job'), { unit: 'ms', legend: '{{job}}' }),
       panel('Disabled job invocations', `sum by (job) (count_over_time(${logs('phaseo-jobs', 'job.run', ['job', 'outcome'])} | outcome="skipped" [${window}]))`, { legend: '{{job}}' }),
-      panel('Operational failures', logs(gateway, 'ops.failure'), { type: 'logs', description: 'Includes existing settlement and usage persistence failure hooks. No balances, prompts or customer identities are exported.' }),
-      panel('Recent job runs', logs('phaseo-jobs|phaseo-web-api', 'job.run'), { type: 'logs' }),
+      records('Operational failures', logs(gateway, 'ops.failure'), ['timestamp', 'signal', 'outcome', 'error_kind', 'error_code', 'request_id', 'trace_id'], 'Newest 100 existing settlement and usage persistence failures. Inspect the source hook and request before taking action. No balances, prompts or customer identities are exported.'),
+      records('Recent job runs', logs('phaseo-jobs|phaseo-web-api', 'job.run'), ['timestamp', 'service_name', 'job', 'outcome', 'duration_ms', 'failed_count', 'processed_count'], 'Newest 100 job invocations. Completed means the handler returned; missing item counts stay unavailable, not zero. Skipped jobs are distinct from failed jobs.'),
     ]),
     dashboard('phaseo-telemetry', 'Telemetry health', 'Check Grafana Cloud Billing / Usage for authoritative ingest volume and quotas. These panels monitor the application pipeline and do not estimate billable bytes.', [
       panel('Received events / second', `sum by (service_name) (rate(${logs('phaseo-.*', '')} [${window}]))`, { unit: 'ops', legend: '{{service_name}}' }),
       panel('Scheduler ticks / 15 minutes', count('phaseo-jobs', 'job.heartbeat', '', [], '15m'), { description: 'Independent of request volume. If absent, check Cloudflare cron and Worker console delivery warnings.' }),
       panel('Persistence delivery failures', count(gateway, 'telemetry.delivery'), { description: 'Existing application persistence failures. An OTLP outage cannot reliably report itself through the same OTLP destination.' }),
       panel('Attempt batches truncated', count(gateway, 'gateway.request', ' | attempts_truncated > 0', ['attempts_truncated']), { description: 'Provider attempt detail is capped at 16 per request; the request total is still retained.' }),
-      panel('Recent heartbeats', logs('phaseo-jobs', 'job.heartbeat'), { type: 'logs' }),
-      panel('Persistence errors', logs(gateway, 'telemetry.delivery'), { type: 'logs' }),
+      records('Recent heartbeats', logs('phaseo-jobs', 'job.heartbeat'), ['timestamp', 'service_name', 'event_name', 'service_version'], 'Newest 100 scheduler heartbeats. Their arrival confirms scheduler telemetry, not external availability or successful completion of every job.'),
+      records('Persistence errors', logs(gateway, 'telemetry.delivery'), ['timestamp', 'signal', 'outcome', 'reason', 'error_kind', 'error_code', 'request_id', 'trace_id'], 'Newest 100 persistence delivery events. Inspect the source and classification. An OTLP outage cannot reliably report itself through the same OTLP destination.'),
     ]),
-  ];
+  ], logs).concat(freeTierDashboard()));
 }
 
 export function jobFailureExpression(environment) {

@@ -51,4 +51,16 @@ describe("Git workspace actions", () => {
 			await expect(gitCommand(root, { type: "switch-branch", name: "--detach" })).rejects.toThrow("branch name");
 		} finally { rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
 	}, 30000);
+	it("creates a new branch with working changes, which come along unchanged", async () => {
+		const root = mkdtempSync(path.join(tmpdir(), "phaseo-git-carry-"));
+		const git = (args: string[]) => execFileSync("git", args, { cwd: root, windowsHide: true, stdio: "pipe" }).toString();
+		try {
+			git(["init", "-b", "fixture"]); git(["config", "user.name", "Fixture"]); git(["config", "user.email", "fixture@example.invalid"]); git(["config", "commit.gpgsign", "false"]);
+			writeFileSync(path.join(root, "file.txt"), "Before\n"); git(["add", "file.txt"]); git(["commit", "-m", "Fixture initial commit"]);
+			writeFileSync(path.join(root, "file.txt"), "Working edit\n"); writeFileSync(path.join(root, "new.txt"), "Untracked\n");
+			expect((await gitCommand(root, { type: "create-branch", name: "feature/carry" })).branch).toBe("feature/carry");
+			expect(readFileSync(path.join(root, "file.txt"), "utf8")).toBe("Working edit\n");
+			expect(readFileSync(path.join(root, "new.txt"), "utf8")).toBe("Untracked\n");
+		} finally { rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); }
+	}, 30000);
 });

@@ -181,6 +181,8 @@ class AnthropicSystemMessage
 {
 	/** @var string|array */
 	public $content;
+	/** @var array<string, mixed>|null */
+	public $output_config;
 	/** @var string */
 	public $role;
 }

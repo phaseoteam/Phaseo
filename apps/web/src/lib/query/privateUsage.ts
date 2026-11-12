@@ -1,5 +1,6 @@
 import { WEB_QUERY_POLICIES } from "./policies";
 import { webQueryKeys, type AccountQueryScope } from "./queryKeys";
+import { WebApiError } from "@/lib/web-api/client";
 
 export type UsageSearchParams = Record<string, string | string[] | undefined>;
 export const LIVE_USAGE_INTERVAL_MS = 15_000;
@@ -24,6 +25,14 @@ export function usageSearchParams(params: UsageSearchParams): URLSearchParams {
 export function privateUsageOptions(scope: AccountQueryScope, resource: string, params: UsageSearchParams, live = false) {
 	return {
 		...WEB_QUERY_POLICIES.private,
+		// Final request auditing runs after the response, so a detail can briefly
+		// return 404. Keep retries scoped and bounded; authorization errors stay final.
+		...(resource === "request-detail" ? {
+			retry: (failureCount: number, error: unknown) => error instanceof WebApiError && error.status === 404
+				? failureCount < 5
+				: WEB_QUERY_POLICIES.private.retry(failureCount, error),
+			retryDelay: 2_000,
+		} : {}),
 		queryKey: [...webQueryKeys.account.scope(scope), "usage", resource, usageSearchParams(params).toString(), live ? "live" : "cached"] as const,
 		staleTime: live ? 0 : WEB_QUERY_POLICIES.private.staleTime,
 		gcTime: live ? 0 : WEB_QUERY_POLICIES.private.gcTime,

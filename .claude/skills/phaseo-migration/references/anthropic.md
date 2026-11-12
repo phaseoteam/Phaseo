@@ -49,7 +49,7 @@ message = client.messages.create(
 
 `authToken` / `auth_token` sends `Authorization: Bearer` on every SDK version, which is the only header the gateway authenticates. In TypeScript, `apiKey: null` stops older SDKs from also reading `ANTHROPIC_API_KEY` and forwarding the Anthropic key; Python SDKs before 0.98 fall back to that variable even when `auth_token` is passed, so upgrade them or remove `ANTHROPIC_API_KEY` from environments that now call Phaseo. Raw HTTP calls go to `https://api.phaseo.app/v1/messages` with `Authorization: Bearer $PHASEO_API_KEY`.
 
-Then map model names to Phaseo IDs, for example `claude-sonnet-4-6` to `anthropic/claude-sonnet-4.6`, after `GET /v1/models` confirms the exact ID.
+Then map model names to Phaseo IDs, for example `claude-sonnet-4-6` to `anthropic/claude-sonnet-4.6`, after `GET /v1/models?format=openai` confirms the exact ID.
 
 Tools that read environment variables (Claude Code and similar) use `ANTHROPIC_BASE_URL=https://api.phaseo.app`, `ANTHROPIC_AUTH_TOKEN` set to the Phaseo key, and an empty `ANTHROPIC_API_KEY`.
 
@@ -59,13 +59,15 @@ Tools that read environment variables (Claude Code and similar) use `ANTHROPIC_B
 | --- | --- | --- |
 | Messages, streaming SSE events | `/v1/messages` | Anthropic-formatted responses and events |
 | Tool use | Supported | Retest streamed tool loops before rollout |
-| Native web search tool (`web_search_20250305`) | Accepted in `tools` where the provider supports it | Or Phaseo server tools such as `phaseo:web_search`; see `phaseo-web-search-tools` |
+| Native web search and web fetch tools (`web_search_*`, `web_fetch_*` versions) | Accepted in `tools` where the provider supports them | Or Phaseo server tools such as `phaseo:web_search`; see `phaseo-web-search-tools` |
 | `cache_control` prompt caching | Supported, top level or per block | Check cache pricing on the model page |
 | `system` prompt | Supported | A preset's prompt is prepended to it |
-| `service_tier` | Supported | Provider- and model-specific |
-| `anthropic-beta` headers and beta-only fields | Review each one | Remove rather than carry forward blindly |
-| Message Batches (`/v1/messages/batches`) | No such path; Phaseo has `/v1/batches` | Different shape; see `phaseo-async-webhooks` |
+| `service_tier` | Supported | Provider- and model-specific; use `service_tier: "fast"` instead of `speed: "fast"`, which returns 400 |
+| `anthropic-beta` headers and beta-only fields | Not forwarded | Phaseo adds the betas its supported features need; beta-only body fields such as `mcp_servers` return 400 |
+| Files API (`client.beta.files`) | No equivalent | Send documents inline; Phaseo's `/v1/files` holds batch input only |
+| Message Batches (`/v1/messages/batches`) | No such path; Phaseo has `/v1/batches` | Accepts `/v1/messages` rows in a different shape; see `phaseo-async-webhooks` |
 | Token counting (`/v1/messages/count_tokens`) | No path in the Phaseo API reference | Keep on Anthropic or estimate client-side |
+| `metadata.user_id` | Not used as the end-user ID | Send `user` or `X-Phaseo-User-Id` for end-user rate limit policies |
 | `AnthropicBedrock` / `AnthropicVertex` clients | Replace with the plain `Anthropic` client | Cloud-specific auth and region settings do not apply |
 
 ## Gotchas
