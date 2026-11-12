@@ -69,7 +69,7 @@
 		"@base-ui/react": "1.6.0",
 		"@cursor/sdk": "1.0.31",
 		"@modelcontextprotocol/sdk": "1.32.1",
-		"@opencode/client": "2.0.22",
+		"@opencode/client": "2.2.1",
 		"@phaseo/agent-sdk": "workspace:*",
 		"@phaseo/app-kit": "workspace:*",
 		"@phaseo/phone-protocol": "workspace:*",
