@@ -5,6 +5,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Env } from "@/env";
 import type { AccountWorkspaceContext } from "@/routes/account/context";
 import { metadataForIds } from "@/routes/account/settings-usage";
+import { applyRequestLabelFilter, requestLabelFilterFromParams } from "@/usage/requestClassifiers";
+import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
+import { detailMetadataWithoutContent } from "@/usage/requestContentDetails";
+import { validPageCursor } from "@/lib/pageCursor";
+import { V2_ATTEMPT_DETAIL_COLUMNS, hasV2AttemptDetail, v2AttemptsToProviderAttempts } from "@/usage/requestAttempts";
 import {
 	LONG_RUNNING_REQUEST_ENDPOINTS,
 	buildNotInFilter,
@@ -87,6 +92,8 @@ export interface PaginatedRequestsParams {
 	sourceFilter?: string | null;
 	labelKey?: string | null;
 	labelValue?: string | null;
+	/** "is_not" excludes the label; without labelValue, the key with any value. */
+	labelOperator?: string | null;
 	filterOperators?: Record<string, string>;
 	inputTokensFilter?: string | null;
 	inputTokensMax?: string | null;
@@ -162,6 +169,8 @@ export interface NormalizedRequestUsageColumns {
 
 export interface RequestRow extends NormalizedRequestUsageColumns {
 	response_timeline?: RequestDetailMetadata["response_timeline"];
+	/** detail_metadata.labels, selected on its own for list rows. */
+	labels?: Array<{ key: string; value: string }> | null;
 	id?: string;
 	request_id: string;
 	created_at: string;
@@ -220,6 +229,7 @@ export interface RequestRow extends NormalizedRequestUsageColumns {
 		retryable?: boolean | null;
 		fallback_attempted?: boolean;
 		upstream_error_code: string | null;
+		upstream_error_type?: string | null;
 		upstream_error_message: string | null;
 		upstream_error_description: string | null;
 	}>;
@@ -270,8 +280,34 @@ export type GatewayIoLog = {
 	bytes: number | null;
 	retention_until: string | null;
 	error: string | null;
+	/** Why nothing was stored, as a stable code (`zero_data_retention`); `error` has the gateway's English text. */
+	reason?: "zero_data_retention" | null;
 	payload: Record<string, unknown> | null;
 };
+
+/**
+ * Provider attempts for the request detail. Requests created at or after the cut-over read
+ * v2_request_attempts through the request's v2_request_facts row; older ones read
+ * gateway_upstream_requests. An empty result keeps gateway_requests.provider_attempts.
+ */
+export async function fetchRequestProviderAttempts(
+	workspaceId: string,
+	requestId: string,
+	createdAt: string | null | undefined,
+): Promise<RequestRow["provider_attempts"]> {
+	if (!hasV2AttemptDetail(createdAt)) return fetchGatewayUpstreamRequests(workspaceId, requestId);
+	const { data, error } = await createAdminClient()
+		.from("v2_request_facts")
+		.select(`latency_ms,generation_ms,gateway_total_ms,cost_nanos,currency,stop_reason,v2_request_attempts(${V2_ATTEMPT_DETAIL_COLUMNS})`)
+		.eq("workspace_id", workspaceId)
+		.eq("request_id", requestId)
+		.maybeSingle();
+	if (error) {
+		console.error("Error fetching request attempts:", error);
+		return [];
+	}
+	return v2AttemptsToProviderAttempts(data);
+}
 
 async function fetchGatewayUpstreamRequests(
 	workspaceId: string,
@@ -301,6 +337,7 @@ async function fetchGatewayUpstreamRequests(
 			retryable,
 			fallback_attempted,
 			error_code,
+			error_type,
 			error_message,
 			error_description,
 			metadata
@@ -351,17 +388,36 @@ export function normalizeGatewayUpstreamRows(
 		retryable: typeof row.retryable === "boolean" ? row.retryable : null,
 		fallback_attempted: row.fallback_attempted === true,
 		upstream_error_code: stringOrNull(row.error_code),
+		upstream_error_type: stringOrNull(row.error_type),
 		upstream_error_message: stringOrNull(row.error_message),
 		upstream_error_description: stringOrNull(row.error_description),
 		};
 	});
 }
 
+// Shown instead of the stored log when the workspace limits contents to owners and admins.
+const RESTRICTED_IO_LOG: GatewayIoLog = {
+	status: "restricted",
+	storage_provider: null,
+	bytes: null,
+	retention_until: null,
+	error: null,
+	payload: null,
+};
+
+/** Whether the signed-in member may read this workspace's stored request contents. */
+async function memberMayReadContents(workspaceId: string): Promise<boolean> {
+	const { account } = current();
+	return canReadIoLogContents(await readIoLogContentsAccess(account.client, workspaceId), account.role);
+}
+
 async function fetchGatewayIoLog(
 	workspaceId: string,
 	requestId: string,
+	mayReadContents: boolean,
 ): Promise<GatewayIoLog | null> {
-	const env = current().env;
+	const { env } = current();
+	if (!mayReadContents) return RESTRICTED_IO_LOG;
 	const token = String(env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
 	if (!token) return null;
 
@@ -605,6 +661,7 @@ export async function fetchPaginatedRequests(
 ): Promise<PaginatedRequestsResult> {
 	const supabase = await createClient();
 	const { workspaceId } = await requireAuthedTeamContext(supabase);
+	const labelFilter = requestLabelFilterFromParams(params);
 
 	if (!workspaceId) {
 		return {
@@ -646,6 +703,7 @@ export async function fetchPaginatedRequests(
 			generation_ms,
 			latency_ms,
 			response_timeline:detail_metadata->response_timeline,
+			labels:detail_metadata->labels,
 			finish_reason,
                         success,
                         status_code,
@@ -703,9 +761,7 @@ export async function fetchPaginatedRequests(
 	if (params.sourceFilter) {
 		query = params.filterOperators?.source === "is_not" ? query.neq("client_source_id", params.sourceFilter) : query.eq("client_source_id", params.sourceFilter);
 	}
-	if (params.labelKey && params.labelValue) {
-		query = query.contains("detail_metadata", { labels: [{ key: params.labelKey, value: params.labelValue }] });
-	}
+	query = applyRequestLabelFilter(query, labelFilter);
 	if (params.statusFilter === "success") {
 		query = params.filterOperators?.status === "is_not" ? query.neq("success", true) : query.eq("success", true);
 	} else if (params.statusFilter === "error") {
@@ -724,8 +780,11 @@ export async function fetchPaginatedRequests(
 		else query = query.gte(column, value);
 	}
 
-	if (params.cursor?.createdAt && params.cursor.id) {
-		query = query.or(`created_at.lt.${params.cursor.createdAt},and(created_at.eq.${params.cursor.createdAt},id.lt.${params.cursor.id})`);
+	if (params.cursor) {
+		// The cursor comes from the browser and goes into a filter string, so only a timestamp and UUID pass.
+		const cursor = validPageCursor(params.cursor);
+		if (!cursor) throw new Error("Invalid requests cursor");
+		query = query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
 	}
 	query = query.order("created_at", { ascending: false }).order("id", { ascending: false }).limit(pageSize + 1);
 
@@ -758,6 +817,7 @@ export async function fetchPaginatedRequests(
 				generation_ms,
 				latency_ms,
 				response_timeline:detail_metadata->response_timeline,
+				labels:detail_metadata->labels,
 				finish_reason,
                                 success,
                                 status_code,
@@ -789,9 +849,7 @@ export async function fetchPaginatedRequests(
 		if (params.keyFilter) fallback = fallback.eq("key_id", params.keyFilter);
 		if (params.requestFilter) fallback = fallback.eq("request_id", params.requestFilter);
 		if (params.sessionFilter) fallback = fallback.eq("session_id", params.sessionFilter);
-		if (params.labelKey && params.labelValue) {
-			fallback = fallback.contains("detail_metadata", { labels: [{ key: params.labelKey, value: params.labelValue }] });
-		}
+		fallback = applyRequestLabelFilter(fallback, labelFilter);
 		if (params.statusFilter === "success") fallback = fallback.eq("success", true);
 		else if (params.statusFilter === "error") fallback = fallback.eq("success", false);
 
@@ -826,6 +884,7 @@ export async function fetchPaginatedRequests(
 					generation_ms,
 					latency_ms,
 					response_timeline:detail_metadata->response_timeline,
+					labels:detail_metadata->labels,
 					finish_reason,
                                         success,
                                         status_code,
@@ -861,9 +920,7 @@ export async function fetchPaginatedRequests(
 			if (params.keyFilter) legacyFallback = legacyFallback.eq("key_id", params.keyFilter);
 			if (params.requestFilter) legacyFallback = legacyFallback.eq("request_id", params.requestFilter);
 			if (params.sessionFilter) legacyFallback = legacyFallback.eq("session_id", params.sessionFilter);
-			if (params.labelKey && params.labelValue) {
-				legacyFallback = legacyFallback.contains("detail_metadata", { labels: [{ key: params.labelKey, value: params.labelValue }] });
-			}
+			legacyFallback = applyRequestLabelFilter(legacyFallback, labelFilter);
 			if (params.statusFilter === "success") legacyFallback = legacyFallback.eq("success", true);
 			else if (params.statusFilter === "error") legacyFallback = legacyFallback.eq("success", false);
 			const {
@@ -891,6 +948,7 @@ export async function fetchPaginatedRequests(
 						generation_ms,
 						latency_ms,
 						response_timeline:detail_metadata->response_timeline,
+						labels:detail_metadata->labels,
 						finish_reason,
 						success,
 						key_id
@@ -915,9 +973,7 @@ export async function fetchPaginatedRequests(
 				}
 				if (params.keyFilter) minimalFallback = minimalFallback.eq("key_id", params.keyFilter);
 				if (params.requestFilter) minimalFallback = minimalFallback.eq("request_id", params.requestFilter);
-				if (params.labelKey && params.labelValue) {
-					minimalFallback = minimalFallback.contains("detail_metadata", { labels: [{ key: params.labelKey, value: params.labelValue }] });
-				}
+				minimalFallback = applyRequestLabelFilter(minimalFallback, labelFilter);
 				if (params.statusFilter === "success") minimalFallback = minimalFallback.eq("success", true);
 				else if (params.statusFilter === "error") minimalFallback = minimalFallback.eq("success", false);
 
@@ -1785,9 +1841,10 @@ export async function investigateGeneration(
 		}
 
 		const request = toRequestRow(fallbackData);
-		const upstreamRequests = await fetchGatewayUpstreamRequests(
+		const upstreamRequests = await fetchRequestProviderAttempts(
 			workspaceId,
 			trimmedRequestId,
+			request.created_at,
 		);
 		if (upstreamRequests.length > 0) request.provider_attempts = upstreamRequests;
 		await attachRoutingObservability(supabase, workspaceId, trimmedRequestId, request);
@@ -1817,7 +1874,10 @@ export async function investigateGeneration(
 		const appName = request.app_id
 			? appMetadata.get(request.app_id)?.title ?? null
 			: null;
-		const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId);
+		// Search queries and fetched URLs follow the same contents setting as the I/O log.
+		const mayReadContents = await memberMayReadContents(workspaceId);
+		if (!mayReadContents) request.detail_metadata = detailMetadataWithoutContent(request.detail_metadata);
+		const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId, mayReadContents);
 
 		return {
 			success: true,
@@ -1840,9 +1900,10 @@ export async function investigateGeneration(
 	}
 
 	const request = toRequestRow(data);
-	const upstreamRequests = await fetchGatewayUpstreamRequests(
+	const upstreamRequests = await fetchRequestProviderAttempts(
 		workspaceId,
 		trimmedRequestId,
+		request.created_at,
 	);
 	if (upstreamRequests.length > 0) request.provider_attempts = upstreamRequests;
 	await attachRoutingObservability(supabase, workspaceId, trimmedRequestId, request);
@@ -1877,7 +1938,10 @@ export async function investigateGeneration(
 			: request.app_id
 			? appMetadata.get(request.app_id)?.title ?? null
 			: null;
-	const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId);
+	// Search queries and fetched URLs follow the same contents setting as the I/O log.
+	const mayReadContents = await memberMayReadContents(workspaceId);
+	if (!mayReadContents) request.detail_metadata = detailMetadataWithoutContent(request.detail_metadata);
+	const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId, mayReadContents);
 
 	return {
 		success: true,
@@ -2678,7 +2742,8 @@ export async function fetchSessionRequests(params: {
 		)
 		.eq("workspace_id", workspaceId)
 		.eq("session_id", sessionId)
-		.order("created_at", { ascending: true })
+		// The latest 500 turns, so long sessions can still be continued from their newest turn.
+		.order("created_at", { ascending: false })
 		.limit(500);
 
 	if (params.timeRange?.from) {
@@ -2738,7 +2803,7 @@ export async function fetchSessionRequests(params: {
 			)
 			.eq("workspace_id", workspaceId)
 			.eq("session_id", sessionId)
-			.order("created_at", { ascending: true })
+			.order("created_at", { ascending: false })
 			.limit(500);
 
 		if (params.timeRange?.from) {
@@ -2754,7 +2819,7 @@ export async function fetchSessionRequests(params: {
 			return [];
 		}
 		return (
-			(fallbackData as any[] | null)?.map((row) => {
+			(fallbackData as any[] | null)?.slice().reverse().map((row) => {
 				return {
 					...toRequestRow(row),
 				} as SessionRequestRow;
@@ -2763,7 +2828,7 @@ export async function fetchSessionRequests(params: {
 	}
 
 	return (
-		(data as any[] | null)?.map((row) => {
+		(data as any[] | null)?.slice().reverse().map((row) => {
 			return {
 				...toRequestRow(row),
 			} as SessionRequestRow;

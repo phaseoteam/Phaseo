@@ -4,13 +4,14 @@ const rpcMock = vi.fn();
 const invalidateGatewayCreditCacheMock = vi.fn();
 const releaseRuntimeMock = vi.fn();
 const enqueueAutoTopUpFailedEmailMock = vi.fn();
+const fromMock = vi.fn(() => makeTableQuery());
 
-vi.mock("stripe", () => ({
-	default: class StripeMock {
-		customers = { retrieve: vi.fn() };
-		paymentMethods = { list: vi.fn() };
-		paymentIntents = { create: vi.fn() };
-	},
+vi.mock("../../lib/stripe/rest", () => ({
+	createStripeRestClient: () => ({
+		customers: { retrieve: vi.fn() },
+		paymentMethods: { list: vi.fn() },
+		paymentIntents: { create: vi.fn() },
+	}),
 }));
 
 function makeTableQuery() {
@@ -25,17 +26,18 @@ vi.mock("../../runtime/env", () => ({
 	ensureRuntimeForBackground: vi.fn(() => releaseRuntimeMock),
 	getSupabaseAdmin: vi.fn(() => ({
 		rpc: rpcMock,
-		from: vi.fn(() => makeTableQuery()),
+		from: (...args: unknown[]) => fromMock(...(args as [])),
 	})),
 }));
 
+const writeBackGatewayCreditCacheMock = vi.fn();
+const creditWriteBack = { enabled: false };
 vi.mock("../../core/gateway-credit-cache", () => ({
 	invalidateGatewayCreditCache: (...args: unknown[]) =>
 		invalidateGatewayCreditCacheMock(...args),
-}));
-
-vi.mock("../notifications/low-balance", () => ({
-	enqueueLowBalanceEmail: vi.fn(),
+	writeBackGatewayCreditCache: (...args: unknown[]) =>
+		writeBackGatewayCreditCacheMock(...args),
+	creditWriteBackEnabled: () => creditWriteBack.enabled,
 }));
 
 vi.mock("../notifications/billing-alerts", () => ({
@@ -45,10 +47,94 @@ vi.mock("../notifications/billing-alerts", () => ({
 describe("recordUsageAndCharge", () => {
 	beforeEach(() => {
 		rpcMock.mockReset();
+		fromMock.mockClear();
 		invalidateGatewayCreditCacheMock.mockReset();
+		writeBackGatewayCreditCacheMock.mockReset();
+		creditWriteBack.enabled = false;
 		releaseRuntimeMock.mockReset();
 		enqueueAutoTopUpFailedEmailMock.mockReset().mockResolvedValue(true);
 		process.env.STRIPE_SECRET_KEY = "sk_test_example";
+	});
+
+	it("stores the key on a one-off charge row, and never sends something that is not a key id", async () => {
+		rpcMock.mockResolvedValue({ data: { status: "top_up_not_required", applied: true, already_applied: false }, error: null });
+		const { recordUsageAndCharge } = await import("./persist");
+		await recordUsageAndCharge({ requestId: "bill_k", workspaceId: "ws", cost_nanos: 5, keyId: "00000000-0000-4000-8000-000000000001" });
+		await recordUsageAndCharge({ requestId: "bill_o", workspaceId: "ws", cost_nanos: 5, keyId: "client_oauth_1" });
+		expect(rpcMock.mock.calls.map(([, params]) => params.p_key_id)).toEqual(["00000000-0000-4000-8000-000000000001", null]);
+	});
+
+	it("charges a stepped request's total through gateway_charge_request_total with the same cache handling", async () => {
+		rpcMock.mockResolvedValue({
+			data: { status: "credited", applied: true, already_applied: false, delta_nanos: -100, invalidate_credit_cache: true, available_nanos: 7 },
+			error: null,
+		});
+		const { recordRequestChargeTotal } = await import("./persist");
+
+		await recordRequestChargeTotal({ requestId: "bill_1", workspaceId: "workspace_123", total_nanos: 400, final: true, creditSnapshotBalanceNanos: 9, keyId: "00000000-0000-4000-8000-000000000001" });
+
+		expect(rpcMock).toHaveBeenCalledWith("gateway_charge_request_total", {
+			p_workspace_id: "workspace_123", p_request_id: "bill_1", p_total_nanos: 400, p_final: true, p_credit_snapshot_balance_nanos: 9,
+			p_key_id: "00000000-0000-4000-8000-000000000001",
+		});
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("workspace_123");
+		expect(releaseRuntimeMock).toHaveBeenCalledOnce();
+	});
+
+	it("invalidates and rethrows when the stored-total charge fails", async () => {
+		rpcMock.mockResolvedValue({ data: null, error: new Error("request_charge_amount_mismatch") });
+		const { recordRequestChargeTotal } = await import("./persist");
+
+		await expect(recordRequestChargeTotal({ requestId: "bill_1", workspaceId: "workspace_123", total_nanos: 401, final: true }))
+			.rejects.toThrow("request_charge_amount_mismatch");
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("workspace_123");
+	});
+
+	it("writes back the post-charge balance instead of invalidating when enabled", async () => {
+		creditWriteBack.enabled = true;
+		rpcMock.mockResolvedValue({
+			data: { status: "top_up_not_required", applied: true, already_applied: false, invalidate_credit_cache: true, available_nanos: 5_000_000_000 },
+			error: null,
+		});
+		const { recordUsageAndCharge } = await import("./persist");
+
+		await recordUsageAndCharge({ requestId: "req_wb", workspaceId: "workspace_123", cost_nanos: 123 });
+
+		expect(writeBackGatewayCreditCacheMock).toHaveBeenCalledWith("workspace_123", 5_000_000_000);
+		expect(invalidateGatewayCreditCacheMock).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		["the flag is off", false, { status: "top_up_not_required", available_nanos: 5_000_000_000 }],
+		["a top-up is required", true, { status: "top_up_required", available_nanos: 5_000_000_000 }],
+		["no balance is reported", true, { status: "top_up_not_required", available_nanos: null }],
+	])("invalidates instead of writing back when %s", async (_label, enabled, data) => {
+		creditWriteBack.enabled = enabled;
+		rpcMock.mockResolvedValue({
+			data: { applied: true, already_applied: false, invalidate_credit_cache: true, ...data },
+			error: null,
+		});
+		const { recordUsageAndCharge } = await import("./persist");
+
+		await recordUsageAndCharge({ requestId: "req_inv", workspaceId: "workspace_123", cost_nanos: 123 });
+
+		expect(writeBackGatewayCreditCacheMock).not.toHaveBeenCalled();
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("workspace_123");
+	});
+
+	it("reads nothing but the charge RPC for a charged request (the low-balance email is swept on a schedule)", async () => {
+		rpcMock.mockResolvedValue({
+			data: { status: "top_up_not_required", applied: true, already_applied: false, invalidate_credit_cache: true, available_nanos: 1 },
+			error: null,
+		});
+		const { recordUsageAndCharge } = await import("./persist");
+
+		await recordUsageAndCharge({ requestId: "req_low", workspaceId: "workspace_low", cost_nanos: 999 });
+		await recordUsageAndCharge({ requestId: "req_low_2", workspaceId: "workspace_low", cost_nanos: 999 });
+
+		expect(rpcMock).toHaveBeenCalledTimes(2);
+		expect(rpcMock.mock.calls.map(([name]) => name)).toEqual(["gateway_charge_with_credit_cache", "gateway_charge_with_credit_cache"]);
+		expect(fromMock).not.toHaveBeenCalled();
 	});
 
 	it("invalidates the workspace credit cache after a successful new charge", async () => {
@@ -90,7 +176,7 @@ describe("recordUsageAndCharge", () => {
 		const { recordUsageAndCharge } = await import("./persist");
 		await recordUsageAndCharge({ requestId: "r", workspaceId: "ws", cost_nanos: 100, creditSnapshotBalanceNanos: 100_000_000_000_000 });
 		expect(rpcMock).toHaveBeenCalledWith("gateway_charge_with_credit_cache", {
-			p_workspace_id: "ws", p_request_id: "r", p_cost_nanos: 100, p_credit_snapshot_balance_nanos: 100_000_000_000_000,
+			p_workspace_id: "ws", p_request_id: "r", p_cost_nanos: 100, p_credit_snapshot_balance_nanos: 100_000_000_000_000, p_key_id: null,
 		});
 		expect(invalidateGatewayCreditCacheMock).not.toHaveBeenCalled();
 	});
@@ -136,6 +222,40 @@ describe("recordUsageAndCharge", () => {
 			dedupeId: expect.stringMatching(/^no_payment_method:workspace_123:\d+$/),
 			reason: "No saved payment method is available for Auto Top-Up.",
 		});
+	});
+
+	it("does not start an auto top-up below the $5 the Stripe webhook credits", async () => {
+		rpcMock.mockResolvedValue({
+			data: {
+				status: "top_up_required",
+				applied: true,
+				already_applied: false,
+				auto_top_up_amount_nanos: 4_990_000_000,
+				auto_top_up_account_id: null,
+				stripe_customer_id: null,
+			},
+			error: null,
+		});
+		const { recordUsageAndCharge } = await import("./persist");
+
+		await recordUsageAndCharge({ requestId: "req_small", workspaceId: "workspace_123", cost_nanos: 123 });
+
+		// Skipped before looking for a payment method, so nothing is charged or reported.
+		expect(enqueueAutoTopUpFailedEmailMock).not.toHaveBeenCalled();
+	});
+
+	it("does not start an auto top-up while the database reports one in flight", async () => {
+		rpcMock.mockResolvedValue({
+			data: { status: "top_up_pending", applied: true, already_applied: false, auto_top_up_amount_nanos: 0 },
+			error: null,
+		});
+		const { recordUsageAndCharge } = await import("./persist");
+
+		const result = await recordUsageAndCharge({ requestId: "req_pending", workspaceId: "workspace_123", cost_nanos: 123 });
+
+		expect(result.status).toBe("top_up_pending");
+		expect(enqueueAutoTopUpFailedEmailMock).not.toHaveBeenCalled();
+		expect(invalidateGatewayCreditCacheMock).toHaveBeenCalledWith("workspace_123");
 	});
 
 	it("deduplicates missing payment-method notifications across requests in the cooldown window", async () => {

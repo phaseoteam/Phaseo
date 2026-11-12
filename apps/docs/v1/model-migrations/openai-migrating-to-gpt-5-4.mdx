@@ -1,76 +1,56 @@
 ---
 title: "OpenAI GPT-5.4"
 description: "What to know when adopting GPT-5.4, including reasoning controls, vision, and computer use."
+"og:image": "https://phaseo.app/og/dynamic?title=OpenAI%20GPT-5.4&description=What%20to%20know%20when%20adopting%20GPT-5.4%2C%20including%20reasoning%20controls%2C%20vision%2C%20and%20computer%20use.&pathname=/docs/v1/model-migrations/openai-migrating-to-gpt-5-4"
 icon: "/icons/brands/openai.svg"
 ---
 
-# OpenAI GPT-5.4
+Change the model to `openai/gpt-5.4`, keep the rest of the request, and choose a reasoning effort per route. The request shape is the same as earlier GPT-5 models; what changes is the effort range, image detail, and the computer tool. OpenAI's docs don't describe a GPT-5.4-specific `phase` parameter.
 
-Use this guide to adopt `openai/gpt-5.4` safely in production.
+| Change | What to do |
+| --- | --- |
+| `reasoning.effort` takes `none`, `low`, `medium`, `high`, and `xhigh` | Re-test each route at the effort that fits its latency budget. |
+| Image input `detail: "original"` for full-fidelity perception | Test it separately: it changes quality and cost. |
+| The updated `computer` tool is the path for computer use | Move browser and desktop automation to it and retest end to end. |
+| Better long-horizon tool use, large-context work, and document workflows | Re-run your agent and document evaluations. |
 
-GPT-5.4 is less about a brand-new request shape and more about updated reasoning controls, vision handling, and tool use. As of March 10, 2026, OpenAI's official GPT-5.4 docs emphasize `reasoning.effort`, improved computer use, and higher-fidelity image input. They do not document a GPT-5.4-specific `phase` parameter.
+```json
+{
+  "model": "openai/gpt-5.4",
+  "input": "Summarize the open risks in this design review.",
+  "reasoning": { "effort": "medium" }
+}
+```
 
-## Migration quickstart
+## Choose a reasoning effort
 
-1. Change the model ID to `openai/gpt-5.4` without changing the rest of the request.
-2. Choose and test the reasoning effort that matches the route's latency budget.
-3. Re-test vision, structured outputs, and computer-use workflows where applicable.
-4. Canary GPT-5.4 with the previous route available as a fallback.
+If you're coming from GPT-4.1 or an earlier GPT-5 model, don't assume your previous defaults still fit:
 
-## What's new
+| Route | Start with |
+| --- | --- |
+| Low latency | `none` or `low` |
+| Most structured tasks | `medium` or `high` |
+| Deep reasoning and agentic workflows | `xhigh` |
 
-- `reasoning.effort` supports `none`, `low`, `medium`, `high`, and `xhigh`
-- GPT-5.4 introduces `original` image input detail for full-fidelity visual perception
-- the updated `computer` tool is the official path for GPT-5.4 computer-use workflows
-- GPT-5.4 improves long-horizon tool use, large-context work, and professional document workflows
+## Send images at full detail
 
-## What to change in your integration
+For dense screenshots, documents, or UI localization, set `detail: "original"` on the image input. Phaseo passes it to providers that support it, including OpenAI and Azure, and sends `high`, the closest level, to providers that don't.
 
-### 1. Review reasoning settings
+## Move computer use to the `computer` tool
 
-If you are coming from GPT-4.1 or an earlier GPT-5 variant, do not assume your previous reasoning defaults are still the best choice. Re-test routes at the effort level that matches their latency budget:
-
-- `none` or `low` for low-latency routes
-- `medium` or `high` for most structured tasks
-- `xhigh` for deeply reasoned or agentic workflows
-
-### 2. Revisit vision pipelines
-
-If your workflow depends on dense screenshots, documents, or UI localization, test the new `original` image detail level. This changes both fidelity and cost characteristics.
-
-### 3. Re-check computer-use routes
-
-If you are migrating browser or desktop automation tasks, update them to the current `computer` tool path and retest step completion end to end.
+Update browser and desktop automation to the `computer` tool and retest step completion across whole tasks. Hosted tools are routed only to providers that run them.
 
 ## What to test
 
-### Prompt compatibility
+- **Prompts:** long system prompts, extraction and classification, format-sensitive outputs, and prompts that needed retries to stay on task.
+- **Tools and structured outputs:** schema adherence at each effort level, tool selection, argument completeness, and multi-step computer-use stability.
+- **Vision and operations:** screenshots and documents at `high` versus `original` detail, latency and token use under load, retry and timeout rate, and cost per successful task against the model you're replacing.
 
-- long system prompts
-- extraction and classification prompts
-- format-sensitive outputs
-- prompts that previously needed retries to stay on task
+## Roll out
 
-### Tools and structured outputs
-
-- schema adherence at each effort level
-- tool selection quality
-- argument completeness
-- stability of computer-use flows across multiple steps
-
-### Vision and operations
-
-- screenshot and document understanding with `high` versus `original` detail
-- latency and token usage under realistic load
-- retry and timeout rate
-- cost per successful task versus the model you are replacing
-
-## Safe rollout
-
-1. Benchmark GPT-5.4 with the exact effort levels you intend to use.
-2. If you use images, test `original` detail separately because it changes both quality and cost.
-3. Shadow production prompts before switching any default route.
-4. Promote gradually with an older OpenAI model or alternate provider still available as fallback.
+1. Benchmark GPT-5.4 at the exact effort levels you'll use.
+2. Shadow production prompts before switching a default route.
+3. Promote gradually, with an older OpenAI model or another provider as a fallback in `models`.
 
 ## Sources
 

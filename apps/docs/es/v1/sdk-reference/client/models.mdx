@@ -1,0 +1,199 @@
+---
+icon: "brain-circuit"
+title: "Modelos"
+description: "Lista y comprueba modelos desde cualquier SDK de Phaseo."
+---
+
+Llama al método de listado del SDK para leer el catálogo de modelos desde `GET /v1/models`, con filtros opcionales.
+
+<CodeGroup>
+
+```typescript TypeScript
+const models = await client.getModels({
+  provider: ["anthropic"],
+  provider_status: ["beta", "not_ready"],
+  provider_availability_reason: ["preview_only", "provider_not_ready"],
+  capability_status: ["coming_soon", "internal_testing"],
+  availability: "all",
+});
+```
+
+```python Python
+models = client.get_models({
+    "provider": ["anthropic"],
+    "provider_status": ["beta", "not_ready"],
+    "provider_availability_reason": ["preview_only", "provider_not_ready"],
+    "capability_status": ["coming_soon", "internal_testing"],
+    "availability": "all",
+})
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+models, err := client.GetModels(context.Background(), map[string]string{
+  "provider":                     "anthropic",
+  "provider_status":              "beta,not_ready",
+  "provider_availability_reason": "preview_only,provider_not_ready",
+  "capability_status":            "coming_soon,internal_testing",
+  "availability":                 "all",
+  "limit":                        "10",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(models["models"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var models = await client.ListModels(new Dictionary<string, string>
+{
+    ["provider"] = "anthropic",
+    ["provider_status"] = "beta,not_ready",
+    ["provider_availability_reason"] = "preview_only,provider_not_ready",
+    ["capability_status"] = "coming_soon,internal_testing",
+    ["availability"] = "all",
+    ["limit"] = "10",
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$models = $client->listModels([
+    'provider' => 'anthropic',
+    'provider_status' => 'beta,not_ready',
+    'provider_availability_reason' => 'preview_only,provider_not_ready',
+    'capability_status' => 'coming_soon,internal_testing',
+    'availability' => 'all',
+    'limit' => 5,
+]);
+
+echo "Found " . count($models['models'] ?? []) . " models\n";
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+models = client.list_models(
+  provider: 'anthropic',
+  provider_status: 'beta,not_ready',
+  provider_availability_reason: 'preview_only,provider_not_ready',
+  capability_status: 'coming_soon,internal_testing',
+  availability: 'all',
+  limit: 10
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.HashMap;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+Map<String, String> query = new HashMap<>();
+query.put("limit", "10");
+query.put("provider", "anthropic");
+query.put("provider_status", "beta,not_ready");
+query.put("provider_availability_reason", "preview_only,provider_not_ready");
+query.put("capability_status", "coming_soon,internal_testing");
+query.put("availability", "all");
+
+var models = client.listModels(query);
+System.out.println(models);
+```
+
+</CodeGroup>
+
+| Lenguaje | Método | Filtros con varios valores |
+| --- | --- | --- |
+| TypeScript | `client.getModels(filters)` o `client.models.list(filters)` | Arrays |
+| Python | `client.get_models(filters)` o `client.models.list(filters)` | Listas |
+| Go | `client.GetModels(ctx, query)` con un `map[string]string` | Cadenas separadas por comas |
+| C# | `client.ListModels(query)` con un `Dictionary<string, string>` | Cadenas separadas por comas |
+| PHP | `$client->listModels($params)` | Cadenas separadas por comas |
+| Ruby | `client.list_models(...)` | Cadenas separadas por comas |
+| Java | `client.listModels(query)` con un `Map<String, String>` | Cadenas separadas por comas |
+| Rust | No hay helper; llama a `client.request("GET", "/models?<filters>", None, &RequestOptions::default())` | Cadenas separadas por comas en la query string |
+
+## Filtra la lista
+
+Todos los filtros son opcionales y tienen los mismos nombres en todos los SDK: son los parámetros de consulta.
+
+| Filtro | Filtra por |
+| --- | --- |
+| `provider`, `organisation` | Proveedor u organización del modelo |
+| `endpoints`, `input_types`, `output_types`, `params` | Endpoints, modalidades y parámetros de solicitud admitidos |
+| `status`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason` | Estado del ciclo de vida y del enrutamiento |
+| `availability` | Defínelo como `all` para incluir modelos que no se pueden enrutar |
+| `limit`, `offset` | Paginación |
+
+Por defecto, la lista solo contiene modelos enrutables. Define `availability` como `all` para incluir el resto y, después, acota la lista:
+
+- `provider_availability_reason` selecciona estados de despliegue como `preview_only`, `provider_not_ready`, `gated`, `access_limited`, `region_limited`, `project_limited`, `paused` o `soft_blocked`.
+- `capability_status` selecciona asignaciones de endpoints que todavía no son enrutables, como `coming_soon` o `internal_testing`.
+
+<span id="check-one-model"></span>
+## Comprueba un modelo
+
+`checkParameters` y sus equivalentes leen los metadatos en directo de las rutas de proveedor, marcan cada parámetro como `supported`, `partial`, `unsupported` o `unknown`, comprueban los valores y rangos anunciados, y devuelven las rutas de proveedor que aceptan el conjunto completo. `preflight` hace lo mismo para el cuerpo completo de una solicitud y añade la comprobación del ciclo de vida del modelo, con un `ok` general.
+
+| Lenguaje | Capacidades | Comprobar parámetros | Preflight | Ciclo de vida |
+| --- | --- | --- | --- | --- |
+| TypeScript | `models.capabilities(modelId)` | `models.checkParameters(modelId, values, { endpoint, provider })` | `models.preflight(request, { endpoint, provider })` | `models.validate(modelId)` devuelve `{ ok, info, reason }`; `models.getDeprecationInfo(modelId)` |
+| Python | `models.capabilities(model_id)` | `models.check_parameters(model_id, values, endpoint=..., provider=...)` | `models.preflight(request, endpoint=..., provider=...)` | `models.validate(model_id)`, `models.get_deprecation_info(model_id)` |
+| Go (próxima versión) | `GetModelEndpointCapabilities` | `CheckModelParameters` | `PreflightRequest` | `ValidateModel`, `GetModelDeprecationInfo` (publicados) |
+| C# (próxima versión) | `GetModelEndpointCapabilities(modelId)` | `CheckModelParameters(modelId, values)` | `PreflightRequest` | `ValidateModel`, `GetModelDeprecationInfo` (publicados) |
+| PHP (próxima versión) | `getModelEndpointCapabilities` | `checkModelParameters(...)` | `preflightRequest` | `validateModel`, `getModelDeprecationInfo` (publicados) |
+| Ruby (próxima versión) | `model_endpoint_capabilities` | `check_model_parameters(model_id, values)` | `preflight_request` | `validate_model`, `get_model_deprecation_info` (publicados) |
+| Java (compilado desde el código fuente) | `getModelEndpointCapabilities(modelId, query)` | `checkModelParameters(modelId, values, options)` | `preflightRequest(request, options)` | `validateModel`, `getModelDeprecationInfo` |
+| Rust (no está en `0.2.0`) | `Phaseo::model_endpoint_capabilities(...)` | `Phaseo::check_model_parameters(...)` | Ninguno | Ninguno |
+
+«Próxima versión» significa que el método está en el código fuente del SDK, pero no en el paquete publicado; consulta [Comprueba qué incluye cada paquete](./overview#check-what-each-package-ships). Los métodos de información de obsolescencia devuelven el estado del modelo (`active`, `deprecated` o `retired`), las fechas de obsolescencia y retirada, y el ID del modelo de sustitución.
+
+## Respuesta
+
+`ModelListResponse`:
+
+```json
+{
+  "ok": true,
+  "limit": 50,
+  "offset": 0,
+  "total": 123,
+  "models": [
+    {
+      "model_id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "release_date": "2024-07-18",
+      "status": "active",
+      "organisation_id": "openai",
+      "aliases": ["gpt-4o-mini"],
+      "endpoints": ["chat/completions", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "providers": [
+        {
+          "api_provider_id": "openai",
+          "params": ["temperature", "max_tokens"]
+        }
+      ]
+    }
+  ]
+}
+```

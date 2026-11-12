@@ -47,7 +47,7 @@ CREATE TABLE "public"."v2_private_usage_daily" (
     (upstream_attempts >= 0) AND (failed_upstream_attempts >= 0) AND (failed_upstream_attempts <= upstream_attempts) AND (cost_nanos >= (0)::numeric))),
   CONSTRAINT "v2_private_usage_daily_pkey" PRIMARY KEY (rollup_id),
   CONSTRAINT "v2_private_usage_daily_provider_model_id_fkey" FOREIGN KEY (provider_model_id) REFERENCES public.v2_model_provider_routes(provider_model_id) ON DELETE SET NULL,
-  CONSTRAINT "v2_private_usage_daily_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "v2_private_usage_daily_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
 
 ALTER TABLE "public"."v2_private_usage_daily"
@@ -66,6 +66,13 @@ CREATE INDEX v2_private_usage_daily_provider_model_id_idx ON public.v2_private_u
   WHERE (provider_model_id IS NOT NULL);
 
 CREATE INDEX v2_private_usage_daily_workspace_date_idx ON public.v2_private_usage_daily USING btree (workspace_id, usage_date DESC);
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_private_usage_daily"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 CREATE POLICY "v2_private_usage_daily_workspace_select" ON "public"."v2_private_usage_daily"
   FOR SELECT

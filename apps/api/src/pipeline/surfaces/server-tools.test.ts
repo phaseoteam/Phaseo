@@ -20,6 +20,78 @@ describe("prepareServerToolsForTextRequest", () => {
 		});
 	});
 
+	it("does not deep-clone requests without server tools", () => {
+		const cloneSpy = vi.spyOn(globalThis, "structuredClone");
+		try {
+			for (const body of [
+				{ model: "openai/gpt-5-nano", messages: [{ role: "user", content: "hi" }] },
+				{
+					model: "openai/gpt-5-nano",
+					messages: [{ role: "user", content: [{ type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } }] }],
+					tools: [{ type: "function", function: { name: "lookup", parameters: { type: "object" } } }],
+					tool_choice: "auto",
+				},
+			]) {
+				const snapshot = JSON.parse(JSON.stringify(body));
+				const result = prepareServerToolsForTextRequest(body, "openai.chat.completions");
+				expect(result.ok).toBe(true);
+				if (!result.ok) throw new Error("expected ok");
+				expect(result.body).toBe(body);
+				expect(body).toEqual(snapshot);
+				expect(result.config).toEqual({
+					enabled: false,
+					datetimeDefaultTimezones: ["UTC"],
+					webSearchEnabled: false,
+					webSearchEngine: expect.any(String),
+					webSearchMaxResults: expect.any(Number),
+					webSearchMaxTotalResults: expect.any(Number),
+					webSearchContextSize: "medium",
+					webSearchMaxCharacters: undefined,
+					webSearchIncludeText: false,
+					webSearchIncludeHighlights: true,
+					webSearchAllowedDomains: [],
+					webSearchExcludedDomains: [],
+					webFetchEnabled: false,
+					webFetchEngine: expect.any(String),
+					webFetchMaxChars: expect.any(Number),
+					webFetchAllowedDomains: [],
+					webFetchBlockedDomains: [],
+					advisorEnabled: false,
+					advisors: {},
+					defaultAdvisorFunctionName: undefined,
+					defaultAdvisorModel: "openai/gpt-5-nano",
+					imageGenerationEnabled: false,
+					imageGeneration: {},
+					applyPatchEnabled: false,
+				});
+			}
+			expect(cloneSpy).not.toHaveBeenCalled();
+		} finally {
+			cloneSpy.mockRestore();
+		}
+	});
+
+	it("returns an empty body for non-object input, as before", () => {
+		const result = prepareServerToolsForTextRequest(null, "openai.responses");
+		expect(result).toMatchObject({ ok: true, body: {}, config: { enabled: false } });
+	});
+
+	it("still works on a copy when server tools are present", () => {
+		const body = {
+			model: "openai/gpt-5-nano",
+			messages: [{ role: "user", content: "time?" }],
+			tools: [{ type: "gateway:datetime" }, { type: "function", function: { name: "lookup" } }],
+		};
+		const snapshot = JSON.parse(JSON.stringify(body));
+		const result = prepareServerToolsForTextRequest(body, "openai.chat.completions");
+		expect(result.ok).toBe(true);
+		if (!result.ok) throw new Error("expected ok");
+		expect(result.config.enabled).toBe(true);
+		expect(result.body).not.toBe(body);
+		expect(result.body.messages).not.toBe(body.messages);
+		expect(body).toEqual(snapshot);
+	});
+
 	it("passes native web search tools through unchanged", () => {
 		const result = prepareServerToolsForTextRequest(
 			{
@@ -241,6 +313,26 @@ describe("prepareServerToolsForTextRequest", () => {
 			},
 		]);
 		expect(result.body.tool_choice).toBe("web_search_preview");
+	});
+
+	it("sends Claude a flat user_location when the client used OpenAI's nested shape", () => {
+		const result = prepareServerToolsForTextRequest(
+			{
+				model: "anthropic/claude-sonnet-5",
+				tools: [
+					{
+						type: "phaseo:web_search",
+						parameters: {
+							engine: "native",
+							user_location: { type: "approximate", approximate: { city: "London", country: "GB" } },
+						},
+					},
+				],
+			},
+			"anthropic.messages",
+		);
+		if (!result.ok) throw new Error("Expected prepareServerToolsForTextRequest to succeed");
+		expect(result.body.tools[0].user_location).toEqual({ type: "approximate", city: "London", country: "GB" });
 	});
 
 	it("rewrites Phaseo web fetch into a callable function tool", () => {
@@ -1227,11 +1319,12 @@ describe("buildServerToolContinuation", () => {
 			model: "openai/gpt-image-2",
 			imageUrl: "https://example.com/generated.png",
 			mimeType: "image/png",
-			usage: {
-				inputTokens: 12,
-				outputTokens: 0,
-				totalTokens: 12,
-				_ext: { outputImageTokens: 1 },
+			pricing: {
+				component: "image_generation",
+				model: "openai/gpt-image-2",
+				provider: "openai",
+				total_nanos: 24_720_000,
+				lines: [{ dimension: "output_image_tokens", quantity: 824, line_nanos: 24_720_000, component: "image_generation" }],
 			},
 		}));
 
@@ -1287,18 +1380,113 @@ describe("buildServerToolContinuation", () => {
 			moderation: undefined,
 		});
 		expect(continuation?.usage.imageGenerationRequests).toBe(1);
-		expect(continuation?.imageGenerationUsage).toEqual({
-			inputTokens: 12,
-			outputTokens: 0,
-			totalTokens: 12,
-			_ext: { outputImageTokens: 1 },
-		});
+		// The image is priced on its own card; the chat request adds the charge, not image tokens.
+		expect(continuation?.imageGenerationPricing).toEqual([
+			expect.objectContaining({ component: "image_generation", model: "openai/gpt-image-2", total_nanos: 24_720_000 }),
+		]);
+		expect(continuation).not.toHaveProperty("imageGenerationUsage");
 		expect(JSON.parse(String(continuation?.toolResults[0]?.content))).toEqual({
 			status: "ok",
 			model: "openai/gpt-image-2",
 			imageUrl: "https://example.com/generated.png",
 			mime_type: "image/png",
+			note: expect.stringContaining("shown to the user"),
 		});
+		expect(JSON.parse(String(continuation?.toolResults[0]?.clientOutput))).toEqual({
+			status: "ok",
+			model: "openai/gpt-image-2",
+			imageUrl: "https://example.com/generated.png",
+			mime_type: "image/png",
+		});
+	});
+
+	it("keeps base64 images out of the model's tool result and lets Chat settings win", async () => {
+		const executeImageGeneration = vi.fn(async () => ({
+			ok: true as const,
+			model: "openai/gpt-image-2.6-flare",
+			b64Json: "R0lGODlh",
+			mimeType: "image/gif",
+		}));
+		const continuation = await buildServerToolContinuation(
+			{
+				choices: [{
+					message: {
+						role: "assistant",
+						content: [],
+						toolCalls: [{ id: "call_gif", name: "phaseo_image_generation", arguments: JSON.stringify({ prompt: "A ball", output_format: "png", complexity: "high" }) }],
+					},
+					finishReason: "tool_calls",
+				}],
+			} as any,
+			{
+				enabled: true,
+				datetimeDefaultTimezones: ["UTC"],
+				webSearchEnabled: false,
+				webSearchMaxResults: 5,
+				webSearchIncludeText: false,
+				webSearchIncludeHighlights: true,
+				webFetchEnabled: false,
+				webFetchMaxChars: 12000,
+				imageGenerationEnabled: true,
+				imageGeneration: { model: "openai/gpt-image-2.6-flare", outputFormat: "gif", complexity: "low", frameCount: 2 },
+			},
+			{ executeImageGeneration },
+		);
+
+		expect(executeImageGeneration).toHaveBeenCalledWith(expect.objectContaining({ outputFormat: "gif", complexity: "low", frameCount: 2 }));
+		expect(continuation?.toolResults[0]?.content).not.toContain("R0lGODlh");
+		expect(JSON.parse(String(continuation?.toolResults[0]?.clientOutput))).toMatchObject({ b64_json: "R0lGODlh", mime_type: "image/gif" });
+	});
+
+	it("passes GPT Image 2.6 options from the tool definition and the call", async () => {
+		const executeImageGeneration = vi.fn(async () => ({
+			ok: true as const,
+			model: "openai/gpt-image-2.6-flare",
+			b64Json: "PHN2Zz48L3N2Zz4=",
+			mimeType: "image/svg+xml",
+		}));
+
+		await buildServerToolContinuation(
+			{
+				choices: [
+					{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [
+								{
+									id: "call_svg",
+									name: "phaseo_image_generation",
+									arguments: JSON.stringify({ prompt: "An apple icon", output_format: "svg", complexity: "low" }),
+								},
+							],
+						},
+						finishReason: "tool_calls",
+					},
+				],
+			} as any,
+			{
+				enabled: true,
+				datetimeDefaultTimezones: ["UTC"],
+				webSearchEnabled: false,
+				webSearchMaxResults: 5,
+				webSearchIncludeText: false,
+				webSearchIncludeHighlights: true,
+				webFetchEnabled: false,
+				webFetchMaxChars: 12000,
+				imageGenerationEnabled: true,
+				imageGeneration: { model: "openai/gpt-image-2.6-flare", svgModel: "openai/gpt-5-nano", frameCount: 4 },
+			},
+			{ executeImageGeneration },
+		);
+
+		expect(executeImageGeneration).toHaveBeenCalledWith(expect.objectContaining({
+			model: "openai/gpt-image-2.6-flare",
+			outputFormat: "svg",
+			complexity: "low",
+			svgModel: "openai/gpt-5-nano",
+			frameCount: 4,
+		}));
 	});
 
 	it("uses the default image model and accepts description as the image prompt", async () => {
@@ -1950,6 +2138,8 @@ describe("buildServerToolContinuation", () => {
 				webSearchResults: 0,
 				webSearchExtraResults: 0,
 				webFetchRequests: 1,
+				// A direct fetch costs Phaseo nothing, so it is not billed.
+				billableWebFetchRequests: 0,
 				advisorRequests: 0,
 				subagentRequests: 0,
 				fusionRequests: 0,
@@ -1966,6 +2156,61 @@ describe("buildServerToolContinuation", () => {
 				text: "Example Page Hello World",
 				truncated: false,
 			});
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("stops reading a direct web fetch body after the byte cap", async () => {
+		const chunk = new TextEncoder().encode("a".repeat(64 * 1024));
+		let bytesServed = 0;
+		let cancelled = false;
+		const endlessBody = new ReadableStream<Uint8Array>({
+			pull(controller) {
+				bytesServed += chunk.byteLength;
+				controller.enqueue(chunk);
+			},
+			cancel() {
+				cancelled = true;
+			},
+		});
+		const fetchMock = vi.fn(async () =>
+			new Response(endlessBody, { status: 200, headers: { "Content-Type": "text/plain" } }),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+
+		try {
+			const continuation = await buildServerToolContinuation(
+				{
+					choices: [{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [{
+								id: "call_huge_fetch",
+								name: "phaseo_web_fetch",
+								arguments: JSON.stringify({ url: "https://example.com/huge", max_chars: 100 }),
+							}],
+						},
+						finishReason: "tool_calls",
+					}],
+				} as any,
+				{
+					enabled: true,
+					datetimeDefaultTimezones: ["UTC"],
+					webSearchEnabled: false,
+					webSearchMaxResults: 5,
+					webSearchIncludeText: false,
+					webSearchIncludeHighlights: true,
+					webFetchEnabled: true,
+					webFetchMaxChars: 12000,
+				},
+			);
+
+			expect(cancelled).toBe(true);
+			expect(bytesServed).toBeLessThanOrEqual(2 * 1024 * 1024 + 4 * chunk.byteLength);
+			const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
+			expect(parsed).toMatchObject({ provider: "fetch", status: 200, truncated: true, returned_chars: 100 });
 		} finally {
 			vi.unstubAllGlobals();
 		}

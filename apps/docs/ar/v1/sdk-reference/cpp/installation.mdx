@@ -3,11 +3,15 @@ title: "تثبيت SDK للغة C++ (قيد التطوير)"
 description: "استخدم ترويسات C++ قيد التطوير من المصدر."
 ---
 
-<Note type="warning">لا تزال SDK للغة C++ قيد التطوير ولم تُنشر بعد في سجل للحزم.</Note>
+<Note type="warning">لا تزال SDK للغة C++ قيد التطوير، ولم تُنشر بعد في أي سجل حزم.</Note>
 
 ## الاستخدام المحلي
 
-- استخدم الترويسات المولّدة في `packages/sdk/sdk-cpp/src/gen`.
-- أضف هذا المجلد إلى مسار التضمين في نظام البناء لديك.
-- العميل يعتمد على الترويسات فقط حاليًا.
+حزمة SDK مكوّنة من ترويسات فقط بمعيار C++17. أضف `packages/sdk/sdk-cpp` إلى بناء CMake واربط الهدف الواجهي، أو ضع `packages/sdk/sdk-cpp/src` في مسار التضمين:
 
+```cmake
+add_subdirectory(path/to/Phaseo/packages/sdk/sdk-cpp)
+target_link_libraries(your_app PRIVATE phaseo::sdk)
+```
+
+ثم ضمّن `phaseo.hpp`، الذي يستورد العميل المولَّد في `src/gen`.

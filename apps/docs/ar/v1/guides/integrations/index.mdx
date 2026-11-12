@@ -1,122 +1,113 @@
 ---
 title: "التكاملات"
-description: "اربط Phaseo بأشهر حزم SDK والأطر والوكلاء وأدوات الملاحظة."
+description: "اربط Phaseo بأشهر حزم SDK والأطر والوكلاء وأدوات المراقبة."
 icon: "compass"
 ---
 
-تعمل معظم عمليات التكامل بتوجيه عميل متوافق مع OpenAI أو Anthropic إلى Phaseo واستخدام مفتاح API الخاص به. ابدأ بدليل الأداة التي تستخدمها بالفعل.
+وجّه عميلًا متوافقًا مع OpenAI أو Anthropic إلى Base URL الخاص بـ Phaseo، وزوّده بمفتاح API من Phaseo، واستخدم معرّفات نماذج Phaseo مثل `openai/gpt-6-astra` دون تغيير. يُعدّ كل دليل الأداة أولًا، ثم يوضح كيف تتحقق من أنها تعمل وما الذي لا يعمل.
 
-## عناوين URL الأساسية
+| نوع العميل | Base URL | مكان المفتاح |
+| --- | --- | --- |
+| متوافق مع OpenAI | `https://api.phaseo.app/v1` | حقل مفتاح API، ويُرسل كـ `Authorization: Bearer` |
+| متوافق مع Anthropic (يضيف `/v1/messages` بنفسه) | `https://api.phaseo.app` | حقل رمز المصادقة، ويُرسل كـ `Authorization: Bearer` |
 
-| نمط العميل | عنوان URL الأساسي |
-| --- | --- |
-| عملاء متوافقون مع OpenAI | `https://api.phaseo.app/v1` |
-| عملاء متوافقون مع Anthropic | `https://api.phaseo.app` |
+احصل على معرّفات النماذج من [نقطة نهاية النماذج](../../api-reference/endpoint/models.mdx). للتطبيقات الجديدة على نمط OpenAI، استخدم [Responses](../../api-reference/endpoint/responses.mdx)؛ والمكتبات الأقدم أكثر أمانًا على [Chat Completions](../../api-reference/endpoint/chat-completions.mdx). اضبط `PHASEO_API_KEY` مرة واحدة واربطه بالمتغير الذي تتوقعه الأداة، واختبر البث واستدعاء الأدوات قبل نقل حركة الوكلاء.
 
-استخدم معرّفات النماذج من [نقطة النهاية Models](../../api-reference/endpoint/models.mdx). للتطبيقات الجديدة بأسلوب OpenAI، يُفضّل [Responses](../../api-reference/endpoint/responses.mdx). أما المكتبات الأقدم، فعادةً ما تكون [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) الخيار الأكثر أمانًا.
+## وكلاء البرمجة
+
+يمكن إعداد معظم وكلاء البرمجة بأمر واحد من [Phaseo CLI](./phaseo-cli.mdx). تسرد صفحة [وكلاء البرمجة](./coding-assistants.mdx) الأمر الخاص بكل وكيل.
+
+<Columns cols={3}>
+	<Card title="Claude Code" icon="/icons/brands/claude-code.svg" href="./claude-code" />
+	<Card title="Codex" icon="/icons/brands/codex.svg" href="./codex" />
+	<Card title="Cursor" icon="/icons/brands/cursor.svg" href="./cursor" />
+	<Card title="OpenCode" icon="/icons/brands/opencode.svg" href="./opencode" />
+	<Card title="Cline" icon="/icons/brands/cline.svg" href="./cline" />
+	<Card title="Roo Code" icon="/icons/brands/roo-code.svg" href="./roo-code" />
+	<Card title="Kilo Code" icon="/icons/brands/kilo.svg" href="./kilo-code" />
+	<Card title="Continue" icon="/icons/brands/continue.svg" href="./continue" />
+	<Card title="Aider" icon="/icons/brands/aider.png" href="./aider" />
+	<Card title="Zed" icon="/icons/brands/zed.svg" href="./zed" />
+	<Card title="fx" icon="/icons/brands/vercel.svg" href="./fx" />
+	<Card title="DeepSeek Harness" icon="/icons/brands/deepseek.svg" href="./deepseek-harness" />
+	<Card title="Pi" icon="/icons/brands/pi.svg" href="./pi" />
+	<Card title="oh-my-pi" icon="/icons/brands/oh-my-pi.svg" href="./oh-my-pi" />
+	<Card title="Prime Agent" icon="/icons/brands/prime-agent.svg" href="./prime-agent" />
+	<Card title="MiniMax Code" icon="/icons/brands/minimax.svg" href="./minimax-code" />
+	<Card title="Muse Code" icon="/icons/brands/meta.svg" href="./muse-code" />
+	<Card title="كل وكلاء البرمجة" icon="bot" href="./coding-assistants" />
+</Columns>
 
 ## حزم SDK والعملاء المباشرون
 
 <Columns cols={2}>
-	<Card title="SDK الخاص بـ OpenAI" icon="code" href="./openai-sdk.mdx">
-		استخدم عملاء OpenAI الرسميين مع عنوان URL الأساسي لـ Phaseo.
+	<Card title="OpenAI SDK" icon="code" href="./openai-sdk">
+		عملاء OpenAI الرسميون مع Base URL الخاص بـ Phaseo.
 	</Card>
-	<Card title="SDK الخاص بـ Anthropic" icon="message-square" href="./anthropic-sdk.mdx">
-		استخدم عملاء متوافقين مع Anthropic عبر `/v1/messages`.
+	<Card title="Anthropic SDK" icon="message-square" href="./anthropic-sdk">
+		عملاء متوافقون مع Anthropic عبر `/v1/messages`.
 	</Card>
-	<Card title="AI SDK" icon="bolt" href="./ai-sdk.mdx">
-		استخدم مزوّد Phaseo الرسمي لـ Vercel AI SDK.
+	<Card title="AI SDK" icon="bolt" href="./ai-sdk">
+		مزوّد Phaseo الرسمي لـ Vercel AI SDK.
 	</Card>
-	<Card title="LiteLLM" icon="route" href="./litellm.mdx">
-		وجّه حركة LiteLLM عبر Phaseo أو أتح Phaseo خلف وكيل LiteLLM.
+	<Card title="LiteLLM" icon="route" href="./litellm">
+		استدعِ Phaseo من LiteLLM مباشرةً أو من خلف الوكيل الخاص به.
 	</Card>
 </Columns>
 
 ## أطر التطبيقات والوكلاء
 
 <Columns cols={2}>
-	<Card title="LangChain" icon="link" href="./langchain.mdx">
-		استخدم LangChain Python مع `ChatOpenAI` وعنوان URL الأساسي لـ Phaseo.
+	<Card title="LangChain" icon="link" href="./langchain">
+		LangChain للغة Python مع `ChatOpenAI` وBase URL الخاص بـ Phaseo.
 	</Card>
-	<Card title="LlamaIndex" icon="database" href="./llamaindex.mdx">
-		استخدم Phaseo في مهام RAG والفهرسة.
+	<Card title="LlamaIndex" icon="database" href="./llamaindex">
+		نماذج Phaseo في سير عمل RAG والفهرسة.
 	</Card>
-	<Card title="PydanticAI" icon="braces" href="./pydanticai.mdx">
-		أنشئ وكلاء Python محددي الأنواع باستخدام Phaseo.
+	<Card title="PydanticAI" icon="braces" href="./pydanticai">
+		وكلاء Python مُنمّطة على نماذج Phaseo.
 	</Card>
-	<Card title="Mastra" icon="workflow" href="./mastra.mdx">
-		استخدم Phaseo داخل وكلاء ومهام Mastra.
+	<Card title="Mastra" icon="workflow" href="./mastra">
+		نماذج Phaseo في وكلاء Mastra وسير عمله.
 	</Card>
-	<Card title="TanStack AI" icon="layers" href="./tanstack-ai.mdx">
-		اربط محوّل TanStack AI المتوافق مع OpenAI.
+	<Card title="eve" icon="bot" href="./eve">
+		وكلاء eve عبر مزوّد Phaseo لـ AI SDK.
 	</Card>
-	<Card title="Effect AI SDK" icon="function-square" href="./effect-ai.mdx">
-		استخدم Phaseo من تطبيقات TypeScript المبنية على Effect.
+	<Card title="TanStack AI" icon="layers" href="./tanstack-ai">
+		المحوّل المتوافق مع OpenAI في TanStack AI.
+	</Card>
+	<Card title="Effect AI SDK" icon="square-function" href="./effect-ai">
+		Phaseo من تطبيقات Effect المكتوبة بـ TypeScript.
 	</Card>
 </Columns>
 
 ## المنصات والعمليات
 
 <Columns cols={2}>
-	<Card title="LiveKit" icon="radio" href="./livekit.mdx">
-		استخدم نماذج Phaseo في LiveKit Agents وتطبيقات الصوت.
+	<Card title="LiveKit" icon="radio" href="./livekit">
+		نماذج Phaseo في LiveKit Agents وتطبيقات الصوت.
 	</Card>
-	<Card title="Replit" icon="box" href="./replit.mdx">
-		أنشئ تطبيقات Replit وانشرها باستخدام Phaseo.
+	<Card title="Replit" icon="box" href="./replit">
+		تطبيقات Replit وعمليات نشرها مع المفتاح في Replit Secrets.
 	</Card>
-	<Card title="أتمتة مهام سير العمل" icon="workflow" href="./automation.mdx">
-		استدعِ Phaseo من Zapier وn8n وPipedream والمنصات المشابهة.
+	<Card title="أتمتة سير العمل" icon="workflow" href="./automation">
+		خطوات HTTP في Zapier وn8n وPipedream والمنصات المشابهة.
 	</Card>
-	<Card title="Infisical" icon="key-round" href="./infisical.mdx">
-		هيّئ تدوير مفاتيح API الخاصة بـ Phaseo بنطاق محدد ودون توقف.
+	<Card title="Infisical" icon="key-round" href="./infisical">
+		تدوير مفاتيح API دون توقف باستخدام مفتاح إدارة محدود الصلاحيات.
+	</Card>
+	<Card title="المراقبة" icon="activity" href="./observability">
+		تتبّع الطلبات باستخدام Langfuse أو LangSmith أو OpenTelemetry.
 	</Card>
 </Columns>
 
-## وكلاء البرمجة وقابلية الرصد
+## أدوات Phaseo
 
 <Columns cols={2}>
-	<Card title="وكلاء البرمجة" icon="bot" href="./coding-assistants">
-		استخدم Phaseo CLI أو إعدادات المزوّد اليدوية مع Cursor وVS Code وContinue وAider وCline وRoo Code وKilo Code والأدوات المشابهة.
+	<Card title="Phaseo CLI" icon="terminal" href="./phaseo-cli">
+		أعدّ وكلاء البرمجة وأدِر Phaseo من الطرفية.
 	</Card>
-	<Card title="Claude Code" icon="/icons/brands/claude-code.svg" href="./claude-code">
-		وجّه مهام البرمجة المتوافقة مع Claude عبر Phaseo.
-	</Card>
-	<Card title="Codex" icon="/icons/brands/codex.svg" href="./codex">
-		استخدم Phaseo كمزوّد لـ Codex.
-	</Card>
-	<Card title="DeepSeek Harness" icon="/icons/brands/deepseek.svg" href="./deepseek-harness">
-		أضف Phaseo كمزوّد مخصص متوافق مع OpenAI في DeepSeek Harness.
-	</Card>
-	<Card title="OpenCode" icon="/icons/brands/opencode.svg" href="./opencode">
-		هيّئ OpenCode باستخدام مزوّد Phaseo مخصص.
-	</Card>
-	<Card title="Pi" icon="/icons/brands/pi.svg" href="./pi">
-		ثبّت Pi مع كتالوج نماذج Phaseo الكامل.
-	</Card>
-	<Card title="oh-my-pi" icon="/icons/brands/oh-my-pi.svg" href="./oh-my-pi">
-		شغّل oh-my-pi عبر Phaseo بكتالوج مزوّد معزول.
-	</Card>
-	<Card title="MiniMax Code" icon="/icons/brands/minimax.svg" href="./minimax-code">
-		شغّل MiniMax Code عبر Phaseo بإعداد مزوّد مؤقت.
-	</Card>
-	<Card title="Muse Code" icon="/icons/brands/meta.svg" href="./muse-code">
-		شغّل Muse Code عبر Phaseo بإعداد مزوّد مؤقت.
-	</Card>
-	<Card title="Prime Agent" icon="/icons/brands/prime-agent.svg" href="./prime-agent">
-		هيّئ Prime Agent لتنفيذ المهام الطويلة عبر Phaseo.
-	</Card>
-	<Card title="الملاحظة" icon="activity" href="./observability.mdx">
-		مرّر حركة Phaseo عبر Langfuse أو LangSmith أو OpenTelemetry أو أدوات مماثلة.
-	</Card>
-	<Card title="Docs MCP" icon="plug-zap" href="./docs-mcp.mdx">
-		أضف توثيق Phaseo الحالي إلى وكلاء البرمجة.
+	<Card title="Docs MCP" icon="plug-zap" href="./docs-mcp">
+		زوّد وكلاء البرمجة بوثائق Phaseo الحية.
 	</Card>
 </Columns>
-
-## الإعدادات الموصى بها
-
-- اضبط `PHASEO_API_KEY` مرة واحدة واربطها بمتغير البيئة الذي يتوقعه العميل.
-- أبقِ معرّف النموذج كما هو، مثل `openai/gpt-5-nano`.
-- استخدم `https://api.phaseo.app/v1` للمكتبات المتوافقة مع OpenAI، ما لم تطلب الأداة صراحةً المضيف الجذر.
-- استخدم `https://api.phaseo.app` لحزم SDK والأدوات المتوافقة مع Anthropic التي تضيف `/v1/messages`.
-- اختبر البث واستدعاء الأدوات في بيئة ما قبل الإنتاج قبل نقل حركة الوكلاء.

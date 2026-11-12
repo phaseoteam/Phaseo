@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import {
 	describeDetailedRelativeCalendarDate,
@@ -8,10 +6,13 @@ import {
 import {
 	HoverCard,
 	HoverCardContent,
+	HoverCardHeader,
+	HoverCardRows,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { cn } from "@/lib/utils";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const REFRESH_INTERVAL_MS = 60 * 60 * 1000;
@@ -35,6 +36,7 @@ export default function RelativeDateBadge({
 }: RelativeDateBadgeProps) {
 	const locale = useLocale();
 	const t = useTranslations("Catalogue.modelDetail.metadata");
+	const format = useDisplayFormatters();
 	const [now, setNow] = useState(() => new Date());
 
 	useEffect(() => {
@@ -74,7 +76,7 @@ export default function RelativeDateBadge({
 	);
 
 	return (
-		<HoverCard openDelay={140} closeDelay={80}>
+		<HoverCard>
 			<HoverCardTrigger asChild>
 				<span
 					suppressHydrationWarning
@@ -88,21 +90,23 @@ export default function RelativeDateBadge({
 					{relativeLabel}
 				</span>
 			</HoverCardTrigger>
-			<HoverCardContent align="end" className="w-72 p-3">
-				<div className="space-y-1">
-					<p className="text-xs font-medium text-muted-foreground">
-						{t("relativeTime")}
-					</p>
-					<p className="text-sm font-semibold">{detailedLabel}</p>
-					<p className="text-xs text-muted-foreground">
-						{t("totalDays", { count: relativeDate.totalDays })}{" "}
-						{relativeDate.dayDifference < 0
-							? t("elapsed")
-							: relativeDate.dayDifference > 0
-								? t("remaining")
-								: ""}
-					</p>
-				</div>
+			<HoverCardContent align="end" className="w-64 space-y-2.5">
+				<HoverCardHeader title={detailedLabel} meta={[format.calendarDate(date)]} />
+				<HoverCardRows
+					rows={[
+						{
+							key: "days",
+							label: t("relativeTime"),
+							value: `${t("totalDays", { count: relativeDate.totalDays })}${
+								relativeDate.dayDifference < 0
+									? ` ${t("elapsed")}`
+									: relativeDate.dayDifference > 0
+										? ` ${t("remaining")}`
+										: ""
+							}`,
+						},
+					]}
+				/>
 			</HoverCardContent>
 		</HoverCard>
 	);

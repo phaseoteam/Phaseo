@@ -1,0 +1,219 @@
+{
+	"group": "routing",
+	"description": "Presets (system prompt and default parameters on each text surface) and dynamic routes / request model fallbacks, and how they land upstream.",
+	"entries": [
+		{
+			"id": "preset-system-prompt",
+			"cases": "re:^preset\\.",
+			"checks": [
+				{
+					"path": "upstream.calls[0].body.messages[0].role",
+					"op": "equals",
+					"value": "system",
+					"kind": "dropped",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/presets.mdx",
+						"note": "Presets can include a system prompt to prepend to every request."
+					}
+				},
+				{
+					"path": "upstream.calls[0].body.messages[0].content",
+					"op": "matches",
+					"value": "^SIM-PRESET-SYSTEM-0001",
+					"kind": "dropped",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/presets.mdx",
+						"note": "A system prompt to prepend to every request; with an Anthropic-style system field the preset prompt is prepended there."
+					}
+				}
+			]
+		},
+		{
+			"id": "preset-default-params",
+			"cases": [
+				"preset.chat.system-and-defaults",
+				"preset.responses.system-and-defaults",
+				"preset.messages.system-and-defaults"
+			],
+			"checks": [
+				{
+					"path": "upstream.calls[0].body.temperature",
+					"op": "equals",
+					"value": 0.37,
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/presets.mdx",
+						"note": "Default parameters only fill fields that are missing in the request body."
+					}
+				}
+			]
+		},
+		{
+			"id": "preset-request-wins",
+			"cases": "preset.chat.request-overrides-default",
+			"checks": [
+				{
+					"path": "upstream.calls[0].body.temperature",
+					"op": "equals",
+					"value": 0.91,
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/presets.mdx",
+						"note": "Default parameters do not overwrite values already provided by the caller."
+					}
+				}
+			]
+		},
+		{
+			"id": "preset-max-tokens-default",
+			"cases": [
+				"preset.chat.system-and-defaults",
+				"preset.chat.request-overrides-default"
+			],
+			"checks": [
+				{
+					"path": "upstream.calls[0].body.max_tokens",
+					"op": "equals",
+					"value": 777,
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/presets.mdx",
+						"note": "Default parameters (temperature, top_p, max_tokens, and similar settings)."
+					}
+				}
+			]
+		},
+		{
+			"id": "dynamic-model-and-provider",
+			"cases": "dynamic.model-override-provider-only",
+			"checks": [
+				{
+					"path": "upstream.providers",
+					"op": "equals",
+					"value": [
+						"together"
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "A dynamic route can call a different model and choose its routing mode and provider preference."
+					}
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 100003,
+							"output_text_tokens": 5003
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/chat/object",
+						"note": "usage.prompt_tokens / completion_tokens priced with the serving route's catalogue card."
+					}
+				}
+			]
+		},
+		{
+			"id": "model-fallback-after-retryable",
+			"cases": [
+				"dynamic.model-fallback-after-503",
+				"request.models-fallback-after-503"
+			],
+			"checks": [
+				{
+					"path": "upstream.providers",
+					"op": "equals",
+					"value": [
+						"anthropic",
+						"deepinfra"
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "If the resulting response is retryable (429, 500, 502, 503, or 504), the Gateway reruns the pipeline for each fallback model in order."
+					}
+				},
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "Fallback models are tried in order after a retryable failure."
+					}
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "equals",
+					"value": 1,
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "Every attempt is billed exactly as it would be without fallbacks; the failed primary produced no usage."
+					}
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 100003,
+							"output_text_tokens": 5003
+						}
+					},
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "Logging and billing: each attempt has its own usage and billing record."
+					}
+				},
+				{
+					"path": "client.body.model",
+					"op": "equals",
+					"value": "openai/gpt-oss-120b",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "Which model served the request: the response model field shows the model that served the request."
+					}
+				}
+			]
+		},
+		{
+			"id": "model-fallback-not-after-client-error",
+			"cases": "request.models-no-fallback-after-400",
+			"checks": [
+				{
+					"path": "upstream.providers",
+					"op": "equals",
+					"value": [
+						"anthropic"
+					],
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "Client errors such as 400, 401, 402, 403, 404, 408, 413, and 422 are returned without switching models."
+					}
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "equals",
+					"value": 0,
+					"kind": "billing_over",
+					"source": {
+						"kind": "gateway-docs",
+						"page": "apps/docs/v1/guides/routing-and-fallbacks.mdx",
+						"note": "Client errors are returned without switching models, so no fallback model is billed."
+					}
+				}
+			]
+		}
+	]
+}

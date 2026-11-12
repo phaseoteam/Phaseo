@@ -2,9 +2,10 @@
 title: "Replit"
 icon: "box"
 description: "Call Phaseo from Replit applications and deployments."
+"og:image": "https://phaseo.app/og/dynamic?title=Replit&description=Call%20Phaseo%20from%20Replit%20applications%20and%20deployments.&pathname=/docs/v1/guides/integrations/replit"
 ---
 
-Use Phaseo from Replit with the official OpenAI SDK or the first-party Phaseo AI SDK provider. Keep the API key in Replit Secrets rather than source code.
+Add `PHASEO_API_KEY` to Replit Secrets, then call Phaseo with the [OpenAI SDK](./openai-sdk.mdx) or the [Phaseo AI SDK provider](./ai-sdk.mdx). Keep the key out of your source code.
 
 ## Add the secret
 
@@ -14,15 +15,14 @@ In your Replit workspace, open **Tools → Secrets** and add:
 PHASEO_API_KEY=phaseo_v1_sk_...
 ```
 
-The secret is exposed to your application as an environment variable.
+Replit exposes the secret to your app as an environment variable. See [Authentication](../../developers/authentication.mdx) for key types.
 
-## TypeScript with OpenAI SDK
+## Call Phaseo
 
-```bash
-npm install openai
-```
+<CodeGroup>
 
-```ts
+```ts OpenAI SDK
+// npm install openai
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -31,37 +31,30 @@ const client = new OpenAI({
 });
 
 const response = await client.responses.create({
-	model: "openai/gpt-5-nano",
+	model: "openai/gpt-6-astra",
 	input: "Reply with only: ok",
 });
 
 console.log(response.output_text);
 ```
 
-## TypeScript with AI SDK
-
-```bash
-npm install @phaseo/ai-sdk-provider
-```
-
-```ts
+```ts AI SDK
+// npm install @phaseo/ai-sdk-provider
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const { text } = await generateText({
-	model: phaseo("openai/gpt-5-nano"),
+	model: phaseo("openai/gpt-6-astra"),
 	prompt: "Reply with only: ok",
 });
 
 console.log(text);
 ```
 
-## Deployments
+</CodeGroup>
 
-Add `PHASEO_API_KEY` to the deployment's secrets as well as the development workspace. Confirm that the deployment does not print environment variables or request headers to logs.
+A printed `ok` means the secret and base URL work.
 
-## Related
+## Deploy
 
-- [OpenAI SDK](./openai-sdk.mdx)
-- [AI SDK](./ai-sdk.mdx)
-- [Authentication](../../developers/authentication.mdx)
+Add `PHASEO_API_KEY` to the deployment's secrets as well as the workspace. Make sure the deployment doesn't print environment variables or request headers to its logs.

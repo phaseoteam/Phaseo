@@ -19,6 +19,7 @@ try {
       ('d','input_tokens',131072),('d','tool_calls',99999),
       ('zero','cached_read_tokens',999),('unknown','input_tokens',32768),('old','input_tokens',50);
   `);
+  await db.exec('create view public.reporting_request_facts as select * from public.v2_request_facts');
   for (const name of ['get_public_context_length_distribution','get_public_geography_usage']) {
     await db.exec(await readFile(new URL(`../schemas/public/functions/${name}.sql`, import.meta.url),'utf8'));
     const baseline = await readFile(new URL('../baseline/schema.sql', import.meta.url),'utf8');

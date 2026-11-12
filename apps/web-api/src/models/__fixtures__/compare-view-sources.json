@@ -1,0 +1,3079 @@
+{
+	"models": [
+		{
+			"model_id": "openai/gpt-5",
+			"name": "GPT 5",
+			"organisation_id": "openai",
+			"status": "deprecated",
+			"release_date": "2025-08-07T00:00:00+00:00",
+			"license": "Proprietary",
+			"input_types": [
+				"text",
+				"image"
+			],
+			"output_types": [
+				"text"
+			],
+			"organisation": {
+				"organisation_id": "openai",
+				"name": "OpenAI"
+			},
+			"model_details": [
+				{
+					"detail_name": "input_context_length",
+					"detail_value": 400000
+				},
+				{
+					"detail_name": "knowledge_cutoff",
+					"detail_value": "2024-10-01T00:00:00"
+				},
+				{
+					"detail_name": "output_context_length",
+					"detail_value": 128000
+				}
+			],
+			"model_links": [],
+			"benchmark_results": [
+				{
+					"benchmark_id": "aa-intelligence-index-v4",
+					"score": "23",
+					"is_self_reported": false,
+					"other_info": "GPT-5 (High); Artificial Analysis ID 48e50f00-1fd1-4acc-b337-61078aa341e6; Intelligence Index v4.3.2; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/gpt-5",
+					"benchmark": {
+						"id": "aa-intelligence-index-v4",
+						"name": "Artificial Analysis Intelligence Index",
+						"category": "general",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-v4",
+					"score": "11.4",
+					"is_self_reported": false,
+					"other_info": "GPT-5 (Minimal); Artificial Analysis ID c3738fb0-3408-4430-a699-760ae4b70c93; Intelligence Index v4.3.2; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/gpt-5-minimal",
+					"benchmark": {
+						"id": "aa-intelligence-index-v4",
+						"name": "Artificial Analysis Intelligence Index",
+						"category": "general",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-v4",
+					"score": "22.9",
+					"is_self_reported": false,
+					"other_info": "GPT-5 (Medium); Artificial Analysis ID 5e965af0-ca5c-4f47-9ba9-06000508b84a; Intelligence Index v4.3.2; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/gpt-5-medium",
+					"benchmark": {
+						"id": "aa-intelligence-index-v4",
+						"name": "Artificial Analysis Intelligence Index",
+						"category": "general",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-v4",
+					"score": "20.8",
+					"is_self_reported": false,
+					"other_info": "GPT-5 (Low); Artificial Analysis ID 7f3c9423-3ee3-4369-a6d9-3f2a40aff00e; Intelligence Index v4.3.2; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/gpt-5-low",
+					"benchmark": {
+						"id": "aa-intelligence-index-v4",
+						"name": "Artificial Analysis Intelligence Index",
+						"category": "general",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "arc-agi-2",
+					"score": "7.5",
+					"is_self_reported": false,
+					"other_info": "Medium Reasoning Effort",
+					"source_link": "https://arcprize.org/leaderboard",
+					"benchmark": {
+						"id": "arc-agi-2",
+						"name": "ARC-AGI-2",
+						"category": null,
+						"link": "https://arcprize.org/leaderboard",
+						"ascending_order": false,
+						"type": "percentage"
+					}
+				},
+				{
+					"benchmark_id": "arc-agi-2",
+					"score": "9.9",
+					"is_self_reported": false,
+					"other_info": "High Reasoning Effort",
+					"source_link": "https://arcprize.org/leaderboard",
+					"benchmark": {
+						"id": "arc-agi-2",
+						"name": "ARC-AGI-2",
+						"category": null,
+						"link": "https://arcprize.org/leaderboard",
+						"ascending_order": false,
+						"type": "percentage"
+					}
+				},
+				{
+					"benchmark_id": "arc-agi-2",
+					"score": "1.9",
+					"is_self_reported": false,
+					"other_info": "Low Reasoning Effort",
+					"source_link": "https://arcprize.org/leaderboard",
+					"benchmark": {
+						"id": "arc-agi-2",
+						"name": "ARC-AGI-2",
+						"category": null,
+						"link": "https://arcprize.org/leaderboard",
+						"ascending_order": false,
+						"type": "percentage"
+					}
+				},
+				{
+					"benchmark_id": "arc-agi-2",
+					"score": "0",
+					"is_self_reported": false,
+					"other_info": "Minimal Reasoning Effort",
+					"source_link": "https://arcprize.org/leaderboard",
+					"benchmark": {
+						"id": "arc-agi-2",
+						"name": "ARC-AGI-2",
+						"category": null,
+						"link": "https://arcprize.org/leaderboard",
+						"ascending_order": false,
+						"type": "percentage"
+					}
+				},
+				{
+					"benchmark_id": "elimination-game",
+					"score": "5.968",
+					"is_self_reported": false,
+					"other_info": "Medium reasoning; sigma 0.212; games 556; avg points 0.611",
+					"source_link": "https://github.com/lechmazur/elimination_game",
+					"benchmark": {
+						"id": "elimination-game",
+						"name": "Elimination Game",
+						"category": null,
+						"link": "https://github.com/lechmazur/elimination_game",
+						"ascending_order": false,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "epoch-capabilities-index",
+					"score": "150",
+					"is_self_reported": false,
+					"other_info": "Epoch AI model GPT-5",
+					"source_link": "https://epoch.ai/eci",
+					"benchmark": {
+						"id": "epoch-capabilities-index",
+						"name": "Epoch Capabilities Index",
+						"category": "general",
+						"link": "https://epoch.ai/eci",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "gpqa-diamond",
+					"score": "85.7",
+					"is_self_reported": true,
+					"other_info": "With Thinking, Pass @ 1",
+					"source_link": "https://openai.com/index/introducing-gpt-5/",
+					"benchmark": {
+						"id": "gpqa-diamond",
+						"name": "GPQA Diamond",
+						"category": "general-knowledge",
+						"link": "https://github.com/idavidrein/gpqa",
+						"ascending_order": false,
+						"type": "percentage"
+					}
+				},
+				{
+					"benchmark_id": "gpqa-diamond",
+					"score": "77.8",
+					"is_self_reported": true,
+					"other_info": "Without Thinking, Pass @ 1",
+					"source_link": "https://openai.com/index/introducing-gpt-5/",
+					"benchmark": {
+						"id": "gpqa-diamond",
+						"name": "GPQA Diamond",
+						"category": "general-knowledge",
+						"link": "https://github.com/idavidrein/gpqa",
+						"ascending_order": false,
+						"type": "percentage"
+					}
+				},
+				{
+					"benchmark_id": "gpqa-diamond",
+					"score": "87.3",
+					"is_self_reported": true,
+					"other_info": "Pass @ 1",
+					"source_link": "https://openai.com/index/introducing-gpt-5/",
+					"benchmark": {
+						"id": "gpqa-diamond",
+						"name": "GPQA Diamond",
+						"category": "general-knowledge",
+						"link": "https://github.com/idavidrein/gpqa",
+						"ascending_order": false,
+						"type": "percentage"
+					}
+				},
+				{
+					"benchmark_id": "matharena-apex",
+					"score": "1.04",
+					"is_self_reported": false,
+					"other_info": "High Reasoning Effort",
+					"source_link": "https://matharena.ai/?comp=apex--apex_2025",
+					"benchmark": {
+						"id": "matharena-apex",
+						"name": "MathArena Apex",
+						"category": null,
+						"link": null,
+						"ascending_order": false,
+						"type": "percentage"
+					}
+				},
+				{
+					"benchmark_id": "matharena-apex",
+					"score": "2.08",
+					"is_self_reported": false,
+					"other_info": "High Reasoning Effort + Agent",
+					"source_link": "https://matharena.ai/?comp=apex--apex_2025",
+					"benchmark": {
+						"id": "matharena-apex",
+						"name": "MathArena Apex",
+						"category": null,
+						"link": null,
+						"ascending_order": false,
+						"type": "percentage"
+					}
+				},
+				{
+					"benchmark_id": "swe-bench",
+					"score": "74.9",
+					"is_self_reported": true,
+					"other_info": "With Thinking, Pass @ 1",
+					"source_link": "https://openai.com/index/introducing-gpt-5/",
+					"benchmark": {
+						"id": "swe-bench",
+						"name": "SWE-Bench",
+						"category": "code",
+						"link": "https://www.swebench.com/",
+						"ascending_order": false,
+						"type": "percentage"
+					}
+				},
+				{
+					"benchmark_id": "swe-bench",
+					"score": "52.8",
+					"is_self_reported": true,
+					"other_info": "Without Thinking, Pass @ 1",
+					"source_link": "https://openai.com/index/introducing-gpt-5/",
+					"benchmark": {
+						"id": "swe-bench",
+						"name": "SWE-Bench",
+						"category": "code",
+						"link": "https://www.swebench.com/",
+						"ascending_order": false,
+						"type": "percentage"
+					}
+				}
+			]
+		},
+		{
+			"model_id": "anthropic/claude-sonnet-4.5",
+			"name": "Claude Sonnet 4.5",
+			"organisation_id": "anthropic",
+			"status": "deprecated",
+			"release_date": "2025-09-29T00:00:00+00:00",
+			"license": "Proprietary",
+			"input_types": [
+				"text"
+			],
+			"output_types": [
+				"text"
+			],
+			"organisation": {
+				"organisation_id": "anthropic",
+				"name": "Anthropic"
+			},
+			"model_details": [
+				{
+					"detail_name": "input_context_length",
+					"detail_value": 200000
+				},
+				{
+					"detail_name": "knowledge_cutoff",
+					"detail_value": "2025-01-01T00:00:00"
+				},
+				{
+					"detail_name": "output_context_length",
+					"detail_value": 64000
+				}
+			],
+			"model_links": [],
+			"benchmark_results": [
+				{
+					"benchmark_id": "aa-intelligence-index-cost-v4",
+					"score": "1501.22",
+					"is_self_reported": false,
+					"other_info": "Claude 4.5 Sonnet (Reasoning); Artificial Analysis ID 90e078f2-051b-4c63-8919-76618971cb3f; Intelligence Index v4.3.2; USD 0.5566 per task; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/claude-4-5-sonnet-thinking",
+					"benchmark": {
+						"id": "aa-intelligence-index-cost-v4",
+						"name": "Artificial Analysis Evaluation Cost (USD)",
+						"category": "cost",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": false,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-v4",
+					"score": "19.3",
+					"is_self_reported": false,
+					"other_info": "Claude 4.5 Sonnet (Non-reasoning); Artificial Analysis ID 91cb6144-4937-4e4e-aeda-b4341d355c10; Intelligence Index v4.3.2; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/claude-4-5-sonnet",
+					"benchmark": {
+						"id": "aa-intelligence-index-v4",
+						"name": "Artificial Analysis Intelligence Index",
+						"category": "general",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-v4",
+					"score": "20.7",
+					"is_self_reported": false,
+					"other_info": "Claude 4.5 Sonnet (Reasoning); Artificial Analysis ID 90e078f2-051b-4c63-8919-76618971cb3f; Intelligence Index v4.3.2; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/claude-4-5-sonnet-thinking",
+					"benchmark": {
+						"id": "aa-intelligence-index-v4",
+						"name": "Artificial Analysis Intelligence Index",
+						"category": "general",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "elimination-game",
+					"score": "5.193",
+					"is_self_reported": false,
+					"other_info": "16K thinking; sigma 0.262; games 348; avg points 0.559",
+					"source_link": "https://github.com/lechmazur/elimination_game",
+					"benchmark": {
+						"id": "elimination-game",
+						"name": "Elimination Game",
+						"category": null,
+						"link": "https://github.com/lechmazur/elimination_game",
+						"ascending_order": false,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "epoch-capabilities-index",
+					"score": "146.83",
+					"is_self_reported": false,
+					"other_info": "Epoch AI model Claude Sonnet 4.5; 95% CI 145.20–148.40",
+					"source_link": "https://epoch.ai/eci",
+					"benchmark": {
+						"id": "epoch-capabilities-index",
+						"name": "Epoch Capabilities Index",
+						"category": "general",
+						"link": "https://epoch.ai/eci",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "matharena-apex",
+					"score": "1.56",
+					"is_self_reported": false,
+					"other_info": null,
+					"source_link": "https://matharena.ai/?comp=apex--apex_2025",
+					"benchmark": {
+						"id": "matharena-apex",
+						"name": "MathArena Apex",
+						"category": null,
+						"link": null,
+						"ascending_order": false,
+						"type": "percentage"
+					}
+				},
+				{
+					"benchmark_id": "nyt-connections",
+					"score": "49.4",
+					"is_self_reported": false,
+					"other_info": "16K thinking; 940 puzzles",
+					"source_link": "https://github.com/lechmazur/nyt-connections",
+					"benchmark": {
+						"id": "nyt-connections",
+						"name": "NYT Connections",
+						"category": null,
+						"link": "https://github.com/lechmazur/nyt-connections",
+						"ascending_order": false,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "nyt-connections",
+					"score": "47.4",
+					"is_self_reported": false,
+					"other_info": "No reasoning; 940 puzzles",
+					"source_link": "https://github.com/lechmazur/nyt-connections",
+					"benchmark": {
+						"id": "nyt-connections",
+						"name": "NYT Connections",
+						"category": null,
+						"link": "https://github.com/lechmazur/nyt-connections",
+						"ascending_order": false,
+						"type": "numerical"
+					}
+				}
+			]
+		},
+		{
+			"model_id": "anthropic/claude-opus-5.5",
+			"name": "Claude Opus 5.5",
+			"organisation_id": "anthropic",
+			"status": "active",
+			"release_date": "2026-09-22T16:52:52.059+00:00",
+			"license": "Proprietary",
+			"input_types": [
+				"text",
+				"image"
+			],
+			"output_types": [
+				"text"
+			],
+			"organisation": {
+				"organisation_id": "anthropic",
+				"name": "Anthropic"
+			},
+			"model_details": [],
+			"model_links": [],
+			"benchmark_results": [
+				{
+					"benchmark_id": "aa-intelligence-index-cost-v4",
+					"score": "4056.65",
+					"is_self_reported": false,
+					"other_info": "Claude Opus 5.5 (Xhigh, Default Fallback); Artificial Analysis ID df5bf99d-d228-4715-b41b-19ca86118777; Intelligence Index v4.3.2; USD 3.4591 per task; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/claude-opus-5-5-xhigh",
+					"benchmark": {
+						"id": "aa-intelligence-index-cost-v4",
+						"name": "Artificial Analysis Evaluation Cost (USD)",
+						"category": "cost",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": false,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-cost-v4",
+					"score": "1626.81",
+					"is_self_reported": false,
+					"other_info": "Claude Opus 5.5 (Medium, Default Fallback); Artificial Analysis ID ea9e0da6-169f-43c6-92f5-730a10d6ff8d; Intelligence Index v4.3.2; USD 1.336 per task; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/claude-opus-5-5-medium",
+					"benchmark": {
+						"id": "aa-intelligence-index-cost-v4",
+						"name": "Artificial Analysis Evaluation Cost (USD)",
+						"category": "cost",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": false,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-cost-v4",
+					"score": "860.33",
+					"is_self_reported": false,
+					"other_info": "Claude Opus 5.5 (Low, Default Fallback); Artificial Analysis ID 4416ca93-fde6-4b7b-abbc-3a6be109cc3d; Intelligence Index v4.3.2; USD 0.5512 per task; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/claude-opus-5-5-low",
+					"benchmark": {
+						"id": "aa-intelligence-index-cost-v4",
+						"name": "Artificial Analysis Evaluation Cost (USD)",
+						"category": "cost",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": false,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-cost-v4",
+					"score": "2172.43",
+					"is_self_reported": false,
+					"other_info": "Claude Opus 5.5 (High, Default Fallback); Artificial Analysis ID f314eade-2232-44bf-a3ab-9b326bc67de6; Intelligence Index v4.3.2; USD 1.8225 per task; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/claude-opus-5-5-high",
+					"benchmark": {
+						"id": "aa-intelligence-index-cost-v4",
+						"name": "Artificial Analysis Evaluation Cost (USD)",
+						"category": "cost",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": false,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-cost-v4",
+					"score": "8708.2",
+					"is_self_reported": false,
+					"other_info": "Claude Opus 5.5 (Max, Default Fallback); Artificial Analysis ID 2f3c4dc9-a450-4303-8697-0237257cf08f; Intelligence Index v4.3.2; USD 5.982 per task; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/claude-opus-5-5",
+					"benchmark": {
+						"id": "aa-intelligence-index-cost-v4",
+						"name": "Artificial Analysis Evaluation Cost (USD)",
+						"category": "cost",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": false,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-v4",
+					"score": "53.6",
+					"is_self_reported": false,
+					"other_info": "Claude Opus 5.5 (High, Default Fallback); Artificial Analysis ID f314eade-2232-44bf-a3ab-9b326bc67de6; Intelligence Index v4.3.2; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/claude-opus-5-5-high",
+					"benchmark": {
+						"id": "aa-intelligence-index-v4",
+						"name": "Artificial Analysis Intelligence Index",
+						"category": "general",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-v4",
+					"score": "56",
+					"is_self_reported": false,
+					"other_info": "Claude Opus 5.5 (Xhigh, Default Fallback); Artificial Analysis ID df5bf99d-d228-4715-b41b-19ca86118777; Intelligence Index v4.3.2; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/claude-opus-5-5-xhigh",
+					"benchmark": {
+						"id": "aa-intelligence-index-v4",
+						"name": "Artificial Analysis Intelligence Index",
+						"category": "general",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-v4",
+					"score": "42.3",
+					"is_self_reported": false,
+					"other_info": "Claude Opus 5.5 (Low, Default Fallback); Artificial Analysis ID 4416ca93-fde6-4b7b-abbc-3a6be109cc3d; Intelligence Index v4.3.2; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/claude-opus-5-5-low",
+					"benchmark": {
+						"id": "aa-intelligence-index-v4",
+						"name": "Artificial Analysis Intelligence Index",
+						"category": "general",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-v4",
+					"score": "57.6",
+					"is_self_reported": false,
+					"other_info": "Claude Opus 5.5 (Max, Default Fallback); Artificial Analysis ID 2f3c4dc9-a450-4303-8697-0237257cf08f; Intelligence Index v4.3.2; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/claude-opus-5-5",
+					"benchmark": {
+						"id": "aa-intelligence-index-v4",
+						"name": "Artificial Analysis Intelligence Index",
+						"category": "general",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "aa-intelligence-index-v4",
+					"score": "51.2",
+					"is_self_reported": false,
+					"other_info": "Claude Opus 5.5 (Medium, Default Fallback); Artificial Analysis ID ea9e0da6-169f-43c6-92f5-730a10d6ff8d; Intelligence Index v4.3.2; API Intelligence Index version 4.3",
+					"source_link": "https://artificialanalysis.ai/models/claude-opus-5-5-medium",
+					"benchmark": {
+						"id": "aa-intelligence-index-v4",
+						"name": "Artificial Analysis Intelligence Index",
+						"category": "general",
+						"link": "https://artificialanalysis.ai/data-api/docs",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				},
+				{
+					"benchmark_id": "epoch-capabilities-index",
+					"score": "166.82",
+					"is_self_reported": false,
+					"other_info": "Epoch AI model Claude Opus 5.5; 95% CI 163.54–170.99",
+					"source_link": "https://epoch.ai/eci",
+					"benchmark": {
+						"id": "epoch-capabilities-index",
+						"name": "Epoch Capabilities Index",
+						"category": "general",
+						"link": "https://epoch.ai/eci",
+						"ascending_order": true,
+						"type": "numerical"
+					}
+				}
+			]
+		}
+	],
+	"providerRows": [
+		{
+			"provider_api_model_id": "listing-only:gpt-5",
+			"provider_id": "listing-only",
+			"api_model_id": "openai/gpt-5",
+			"model_id": "openai/gpt-5",
+			"provider_model_slug": "gpt-5",
+			"is_active_gateway": false,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": null,
+			"effective_to": null,
+			"context_length": 400000,
+			"max_output_tokens": 128000,
+			"data_api_providers": {
+				"api_provider_name": "Listing Only",
+				"link": "https://listing.example/models",
+				"status": "external",
+				"routing_status": "disabled"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [],
+					"max_output_tokens": 128000
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "reseller-gateway:openai/gpt-5",
+			"provider_id": "reseller-gateway",
+			"api_model_id": "openai/gpt-5",
+			"model_id": "openai/gpt-5",
+			"provider_model_slug": "openai/gpt-5",
+			"is_active_gateway": false,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": null,
+			"effective_to": null,
+			"context_length": 400000,
+			"max_output_tokens": 128000,
+			"data_api_providers": {
+				"api_provider_name": "Reseller Gateway",
+				"link": "https://reseller.example/models",
+				"status": "external",
+				"routing_status": "disabled"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [],
+					"max_output_tokens": 128000
+				},
+				{
+					"capability_id": "tool.call",
+					"status": "disabled",
+					"params": {},
+					"max_output_tokens": 128000
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "openai:openai/gpt-5",
+			"provider_id": "openai",
+			"api_model_id": "openai/gpt-5",
+			"model_id": "openai/gpt-5",
+			"provider_model_slug": "gpt-5-2025-08-07",
+			"is_active_gateway": true,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null,
+			"context_length": 400000,
+			"max_output_tokens": 128000,
+			"data_api_providers": {
+				"api_provider_name": "OpenAI",
+				"link": "https://platform.openai.com/docs/overview",
+				"status": "active",
+				"routing_status": "active"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "batch",
+					"status": "active",
+					"params": {
+						"endpoint": {
+							"type": "enum",
+							"values": [
+								"/v1/responses",
+								"/v1/chat/completions"
+							],
+							"default": "/v1/responses"
+						},
+						"completion_window": {
+							"type": "enum",
+							"values": [
+								"24h"
+							],
+							"default": "24h"
+						}
+					},
+					"max_output_tokens": 128000
+				},
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [
+						{
+							"param_id": "include_reasoning"
+						},
+						{
+							"param_id": "max_tokens"
+						},
+						{
+							"param_id": "reasoning"
+						},
+						{
+							"param_id": "response_format"
+						},
+						{
+							"param_id": "seed"
+						},
+						{
+							"param_id": "structured_outputs"
+						},
+						{
+							"param_id": "tool_choice"
+						},
+						{
+							"param_id": "tools"
+						},
+						"reasoning_effort"
+					],
+					"max_output_tokens": 128000
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "openai:openai/gpt-5:alias:gpt-5",
+			"provider_id": "openai",
+			"api_model_id": "openai/gpt-5",
+			"model_id": "openai/gpt-5",
+			"provider_model_slug": "gpt-5",
+			"is_active_gateway": false,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": null,
+			"effective_to": null,
+			"context_length": null,
+			"max_output_tokens": null,
+			"data_api_providers": {
+				"api_provider_name": "OpenAI",
+				"link": "https://platform.openai.com/docs/overview",
+				"status": "active",
+				"routing_status": "active"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [],
+					"max_output_tokens": null
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "openai-eu:openai/gpt-5",
+			"provider_id": "openai-eu",
+			"api_model_id": "openai/gpt-5",
+			"model_id": "openai/gpt-5",
+			"provider_model_slug": "gpt-5",
+			"is_active_gateway": false,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": null,
+			"effective_to": null,
+			"context_length": null,
+			"max_output_tokens": null,
+			"data_api_providers": {
+				"api_provider_name": "OpenAI",
+				"link": "https://developers.openai.com/api/docs/guides/your-data",
+				"status": "active",
+				"routing_status": "active"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [],
+					"max_output_tokens": null
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "listing-only:claude-sonnet-4-5-20250929",
+			"provider_id": "listing-only",
+			"api_model_id": "anthropic/claude-sonnet-4.5",
+			"model_id": "anthropic/claude-sonnet-4.5",
+			"provider_model_slug": "claude-sonnet-4-5-20250929",
+			"is_active_gateway": false,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": null,
+			"effective_to": null,
+			"context_length": 200000,
+			"max_output_tokens": 64000,
+			"data_api_providers": {
+				"api_provider_name": "Listing Only",
+				"link": "https://listing.example/models",
+				"status": "external",
+				"routing_status": "disabled"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [],
+					"max_output_tokens": 64000
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "amazon-bedrock:anthropic/claude-sonnet-4.5",
+			"provider_id": "amazon-bedrock",
+			"api_model_id": "anthropic/claude-sonnet-4.5",
+			"model_id": "anthropic/claude-sonnet-4.5",
+			"provider_model_slug": "anthropic.claude-sonnet-4-5-20250929-v1:0",
+			"is_active_gateway": true,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null,
+			"context_length": 200000,
+			"max_output_tokens": null,
+			"data_api_providers": {
+				"api_provider_name": "Amazon Bedrock",
+				"link": "https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html",
+				"status": "active",
+				"routing_status": "active"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [],
+					"max_output_tokens": null
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "anthropic:anthropic/claude-sonnet-4.5",
+			"provider_id": "anthropic",
+			"api_model_id": "anthropic/claude-sonnet-4.5",
+			"model_id": "anthropic/claude-sonnet-4.5",
+			"provider_model_slug": "claude-sonnet-4-5-20250929",
+			"is_active_gateway": true,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null,
+			"context_length": 200000,
+			"max_output_tokens": 64000,
+			"data_api_providers": {
+				"api_provider_name": "Anthropic",
+				"link": "https://docs.anthropic.com/en/home",
+				"status": "active",
+				"routing_status": "active"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [
+						{
+							"param_id": "include_reasoning"
+						},
+						{
+							"param_id": "max_tokens"
+						},
+						{
+							"param_id": "reasoning"
+						},
+						{
+							"param_id": "response_format"
+						},
+						{
+							"param_id": "stop"
+						},
+						{
+							"param_id": "structured_outputs"
+						},
+						{
+							"param_id": "temperature"
+						},
+						{
+							"param_id": "tool_choice"
+						},
+						{
+							"param_id": "tools"
+						},
+						{
+							"param_id": "top_k"
+						},
+						{
+							"param_id": "top_p"
+						}
+					],
+					"max_output_tokens": 64000
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "anthropic-aws:anthropic/claude-sonnet-4.5",
+			"provider_id": "anthropic-aws",
+			"api_model_id": "anthropic/claude-sonnet-4.5",
+			"model_id": "anthropic/claude-sonnet-4.5",
+			"provider_model_slug": "claude-sonnet-4-5-20250929",
+			"is_active_gateway": false,
+			"routing_status": "degraded",
+			"access_scope": "public",
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null,
+			"context_length": 200000,
+			"max_output_tokens": 64000,
+			"data_api_providers": {
+				"api_provider_name": "Anthropic",
+				"link": "https://aws.amazon.com/claude-platform",
+				"status": "active",
+				"routing_status": "active"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [
+						{
+							"param_id": "include_reasoning"
+						},
+						{
+							"param_id": "max_tokens"
+						},
+						{
+							"param_id": "reasoning"
+						},
+						{
+							"param_id": "response_format"
+						},
+						{
+							"param_id": "stop"
+						},
+						{
+							"param_id": "structured_outputs"
+						},
+						{
+							"param_id": "temperature"
+						},
+						{
+							"param_id": "tool_choice"
+						},
+						{
+							"param_id": "tools"
+						},
+						{
+							"param_id": "top_k"
+						},
+						{
+							"param_id": "top_p"
+						}
+					],
+					"max_output_tokens": 64000
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "google-vertex:anthropic/claude-sonnet-4.5",
+			"provider_id": "google-vertex",
+			"api_model_id": "anthropic/claude-sonnet-4.5",
+			"model_id": "anthropic/claude-sonnet-4.5",
+			"provider_model_slug": "claude-sonnet-4-5",
+			"is_active_gateway": true,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null,
+			"context_length": 200000,
+			"max_output_tokens": 64000,
+			"data_api_providers": {
+				"api_provider_name": "Google Vertex",
+				"link": "https://cloud.google.com/vertex-ai?hl=en",
+				"status": "active",
+				"routing_status": "active"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [
+						{
+							"param_id": "include_reasoning"
+						},
+						{
+							"param_id": "max_tokens"
+						},
+						{
+							"param_id": "reasoning"
+						},
+						{
+							"param_id": "response_format"
+						},
+						{
+							"param_id": "stop"
+						},
+						{
+							"param_id": "structured_outputs"
+						},
+						{
+							"param_id": "temperature"
+						},
+						{
+							"param_id": "tool_choice"
+						},
+						{
+							"param_id": "tools"
+						},
+						{
+							"param_id": "top_k"
+						},
+						{
+							"param_id": "top_p"
+						}
+					],
+					"max_output_tokens": 64000
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "venice:anthropic/claude-sonnet-4.5",
+			"provider_id": "venice",
+			"api_model_id": "anthropic/claude-sonnet-4.5",
+			"model_id": "anthropic/claude-sonnet-4.5",
+			"provider_model_slug": "claude-sonnet-4-5",
+			"is_active_gateway": true,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": "2025-01-15T00:00:00+00:00",
+			"effective_to": null,
+			"context_length": 198000,
+			"max_output_tokens": 64000,
+			"data_api_providers": {
+				"api_provider_name": "Venice",
+				"link": "https://docs.venice.ai/",
+				"status": "active",
+				"routing_status": "active"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [],
+					"max_output_tokens": 64000
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "amazon-bedrock:anthropic/claude-opus-5.5",
+			"provider_id": "amazon-bedrock",
+			"api_model_id": "anthropic/claude-opus-5.5",
+			"model_id": "anthropic/claude-opus-5.5",
+			"provider_model_slug": "us.anthropic.claude-opus-5-5",
+			"is_active_gateway": false,
+			"routing_status": "disabled",
+			"access_scope": "public",
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null,
+			"context_length": 1000000,
+			"max_output_tokens": 128000,
+			"data_api_providers": {
+				"api_provider_name": "Amazon Bedrock",
+				"link": "https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html",
+				"status": "active",
+				"routing_status": "active"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "degraded",
+					"params": [
+						{
+							"param_id": "include_reasoning"
+						},
+						{
+							"param_id": "max_tokens"
+						},
+						{
+							"param_id": "reasoning"
+						},
+						{
+							"param_id": "reasoning_effort"
+						},
+						{
+							"param_id": "response_format"
+						},
+						{
+							"param_id": "stop"
+						},
+						{
+							"param_id": "structured_outputs"
+						},
+						{
+							"param_id": "tool_choice"
+						},
+						{
+							"param_id": "tools"
+						},
+						{
+							"param_id": "verbosity"
+						}
+					],
+					"max_output_tokens": 128000
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "anthropic:anthropic/claude-opus-5.5",
+			"provider_id": "anthropic",
+			"api_model_id": "anthropic/claude-opus-5.5",
+			"model_id": "anthropic/claude-opus-5.5",
+			"provider_model_slug": "claude-opus-5-5",
+			"is_active_gateway": true,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": null,
+			"effective_to": null,
+			"context_length": 1000000,
+			"max_output_tokens": 128000,
+			"data_api_providers": {
+				"api_provider_name": "Anthropic",
+				"link": "https://docs.anthropic.com/en/home",
+				"status": "active",
+				"routing_status": "active"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [
+						{
+							"param_id": "include_reasoning"
+						},
+						{
+							"param_id": "max_tokens"
+						},
+						{
+							"param_id": "reasoning"
+						},
+						{
+							"param_id": "reasoning_effort"
+						},
+						{
+							"param_id": "response_format"
+						},
+						{
+							"param_id": "stop"
+						},
+						{
+							"param_id": "structured_outputs"
+						},
+						{
+							"param_id": "tool_choice"
+						},
+						{
+							"param_id": "tools"
+						},
+						{
+							"param_id": "verbosity"
+						},
+						{
+							"param_id": "service_tier"
+						}
+					],
+					"max_output_tokens": 128000
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "anthropic-us:anthropic/claude-opus-5.5",
+			"provider_id": "anthropic-us",
+			"api_model_id": "anthropic/claude-opus-5.5",
+			"model_id": "anthropic/claude-opus-5.5",
+			"provider_model_slug": "claude-opus-5-5",
+			"is_active_gateway": true,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": null,
+			"effective_to": null,
+			"context_length": 1000000,
+			"max_output_tokens": 128000,
+			"data_api_providers": {
+				"api_provider_name": "Anthropic",
+				"link": "https://platform.claude.com/docs/en/manage-claude/data-residency",
+				"status": "active",
+				"routing_status": "active"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [
+						{
+							"param_id": "include_reasoning"
+						},
+						{
+							"param_id": "max_tokens"
+						},
+						{
+							"param_id": "reasoning"
+						},
+						{
+							"param_id": "reasoning_effort"
+						},
+						{
+							"param_id": "response_format"
+						},
+						{
+							"param_id": "stop"
+						},
+						{
+							"param_id": "structured_outputs"
+						},
+						{
+							"param_id": "tool_choice"
+						},
+						{
+							"param_id": "tools"
+						},
+						{
+							"param_id": "verbosity"
+						},
+						{
+							"param_id": "service_tier"
+						}
+					],
+					"max_output_tokens": 128000
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "azure:anthropic/claude-opus-5.5",
+			"provider_id": "azure",
+			"api_model_id": "anthropic/claude-opus-5.5",
+			"model_id": "anthropic/claude-opus-5.5",
+			"provider_model_slug": "claude-opus-5-5",
+			"is_active_gateway": true,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null,
+			"context_length": 1000000,
+			"max_output_tokens": 128000,
+			"data_api_providers": {
+				"api_provider_name": "Azure",
+				"link": "https://learn.microsoft.com/en-us/azure/ai-services/openai/",
+				"status": "active",
+				"routing_status": "active"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [
+						{
+							"param_id": "include_reasoning"
+						},
+						{
+							"param_id": "max_tokens"
+						},
+						{
+							"param_id": "reasoning"
+						},
+						{
+							"param_id": "reasoning_effort"
+						},
+						{
+							"param_id": "response_format"
+						},
+						{
+							"param_id": "stop"
+						},
+						{
+							"param_id": "structured_outputs"
+						},
+						{
+							"param_id": "tool_choice"
+						},
+						{
+							"param_id": "tools"
+						},
+						{
+							"param_id": "verbosity"
+						}
+					],
+					"max_output_tokens": 128000
+				}
+			]
+		},
+		{
+			"provider_api_model_id": "inference-net:claude-opus-5-5",
+			"provider_id": "inference-net",
+			"api_model_id": "anthropic/claude-opus-5.5",
+			"model_id": "anthropic/claude-opus-5.5",
+			"provider_model_slug": "claude-opus-5-5",
+			"is_active_gateway": true,
+			"routing_status": "active",
+			"access_scope": "public",
+			"effective_from": "2026-10-17T22:12:40.794209+00:00",
+			"effective_to": null,
+			"context_length": 1000000,
+			"max_output_tokens": 128000,
+			"data_api_providers": {
+				"api_provider_name": "Inference.net",
+				"link": "https://docs.inference.net/api/api-quickstart",
+				"status": "active",
+				"routing_status": "active"
+			},
+			"data_api_provider_model_capabilities": [
+				{
+					"capability_id": "text.generate",
+					"status": "active",
+					"params": [
+						{
+							"param_id": "max_tokens"
+						},
+						{
+							"param_id": "temperature"
+						},
+						{
+							"param_id": "top_p"
+						},
+						{
+							"param_id": "stop"
+						},
+						{
+							"param_id": "response_format"
+						},
+						{
+							"param_id": "tools"
+						},
+						{
+							"param_id": "reasoning_effort"
+						}
+					],
+					"max_output_tokens": 128000
+				}
+			]
+		}
+	],
+	"pricingRows": [
+		{
+			"rule_id": "ec72292f-182f-4eca-b33b-be35c29c5d0e",
+			"model_key": "listing-only:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "implicit_cached_input_text_tokens",
+			"display_label": "implicit_cached_input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.125,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "22e4844e-897a-44e7-97bb-96edab1986c5",
+			"model_key": "listing-only:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 1.25,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "605b9e6b-7a11-438d-aa6f-5a51934bd08c",
+			"model_key": "listing-only:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 10,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "ffd17f0f-8801-4fc1-994d-e8d049367a50",
+			"model_key": "reseller-gateway:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.125,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "4e0b502c-2a68-43ef-9d1d-d3c823181bd8",
+			"model_key": "reseller-gateway:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_image_tokens",
+			"display_label": "input_image_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "45396b5b-865d-4000-b7ce-77b01970bc09",
+			"model_key": "reseller-gateway:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 1.25,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "162e7633-0730-4448-958a-335f7d29aecf",
+			"model_key": "reseller-gateway:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_reasoning_tokens",
+			"display_label": "output_reasoning_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "946a7ba8-b3fb-43ff-be09-4783c034cdb1",
+			"model_key": "reseller-gateway:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 10,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "0f6bf647-81f3-4ffb-b9d4-6dab7860457c",
+			"model_key": "openai:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "native_web_search_requests",
+			"display_label": "native_web_search_requests",
+			"unit": "request",
+			"unit_size": 1,
+			"price_per_unit": 0.01,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-08-20T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "ba4b3577-8160-4bca-a285-1769806d2319",
+			"model_key": "openai:openai/gpt-5:text.generate",
+			"pricing_plan": "priority",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.25,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "2377e900-9b5c-460d-874a-79ac2d37b38c",
+			"model_key": "openai:openai/gpt-5:text.generate",
+			"pricing_plan": "priority",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 2.5,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "31086078-196a-4518-b40d-fb616e150a6f",
+			"model_key": "openai:openai/gpt-5:text.generate",
+			"pricing_plan": "priority",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 20,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "19e5aba0-fa42-4dcd-90a5-4288b18b6d7d",
+			"model_key": "openai:openai/gpt-5:batch",
+			"pricing_plan": "batch",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.0625,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "560ca8f0-70b3-4eea-b84b-1ab193f88221",
+			"model_key": "openai:openai/gpt-5:batch",
+			"pricing_plan": "batch",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.625,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "7d350817-145c-4e87-9e02-c21a95e4cd23",
+			"model_key": "openai:openai/gpt-5:batch",
+			"pricing_plan": "batch",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 5,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "c0a30715-507f-463b-b1c3-6d8194968558",
+			"model_key": "openai:openai/gpt-5:text.generate",
+			"pricing_plan": "flex",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.0625,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "894be992-2736-4e7d-8845-081de3ede0a3",
+			"model_key": "openai:openai/gpt-5:text.generate",
+			"pricing_plan": "flex",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.625,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "db213407-6169-48f0-a690-b457958a6f5c",
+			"model_key": "openai:openai/gpt-5:text.generate",
+			"pricing_plan": "flex",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 5,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "1ecbdf34-e894-439c-aea9-fd2cb582c11f",
+			"model_key": "openai:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.125,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-20T16:49:03.448084+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "e6c3ca80-7a4b-43ca-a999-12dc3982437d",
+			"model_key": "openai:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 1.25,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-20T16:49:03.448084+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "36d01ed8-d07e-4d0e-bf35-fc3732423649",
+			"model_key": "openai:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 10,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-20T16:49:03.448084+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "63285288-d4b3-4674-b985-9e0b470b62ef",
+			"model_key": "openai:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.125,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "3e1f1aa7-eed2-454e-936c-18035c04cd7b",
+			"model_key": "openai:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 1.25,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "9cb1b1e8-6138-42f4-9bdb-e9581c03573f",
+			"model_key": "openai:openai/gpt-5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 10,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-08-07T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "5b61bcbf-50d2-4c00-bf61-e1f9751067f3",
+			"model_key": "listing-only:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 3,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "4bfc4dbc-9194-49db-9431-b5f76f1b84bc",
+			"model_key": "listing-only:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 15,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "0e78b974-134d-47cd-b32a-e1be32095f06",
+			"model_key": "amazon-bedrock:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.3,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "lte",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "81c7c7c9-250f-4f0f-a286-d56c81652492",
+			"model_key": "amazon-bedrock:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_1h",
+			"display_label": "cached_write_text_tokens_1h",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 6,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "lte",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "9fccbc00-cf42-4613-bee3-aa164b3a61ae",
+			"model_key": "amazon-bedrock:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_5m",
+			"display_label": "cached_write_text_tokens_5m",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 3.75,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "lte",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "2c95947d-1692-4cf7-8fe0-e822a0db92ef",
+			"model_key": "amazon-bedrock:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 3,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "lte",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "480c93aa-38b9-40a6-97af-3038e953e98b",
+			"model_key": "amazon-bedrock:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 15,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "lte",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "909b3941-db85-408e-a381-13f15a490510",
+			"model_key": "amazon-bedrock:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 22.5,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "gt",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				},
+				{
+					"op": "eq",
+					"path": "cache_ttl",
+					"value": "1h",
+					"or_group": 1,
+					"and_index": 2
+				}
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "2f8b8b6f-22de-47ab-b78d-9d9b1a92503b",
+			"model_key": "amazon-bedrock:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.6,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "gt",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "26e2d190-0ddd-4cac-9a71-2a84bd117af9",
+			"model_key": "amazon-bedrock:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens",
+			"display_label": "cached_write_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 7.5,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "gt",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "924026e6-7e3c-4646-aebc-905a87f2f256",
+			"model_key": "amazon-bedrock:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_5m",
+			"display_label": "cached_write_text_tokens_5m",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 12,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "gt",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "41c4c3be-52e2-4988-beac-67a2f2a4047a",
+			"model_key": "amazon-bedrock:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 6,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "gt",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "4d652e6d-5071-471c-8dd0-bb3ef4a35955",
+			"model_key": "anthropic:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "native_web_search_requests",
+			"display_label": "native_web_search_requests",
+			"unit": "request",
+			"unit_size": 1,
+			"price_per_unit": 0.01,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-08-20T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "22135895-d054-4d97-86d4-7d6e5511373d",
+			"model_key": "anthropic:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "batch",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 1.5,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "184b5fbd-6172-4991-875a-009dc29c64b2",
+			"model_key": "anthropic:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "batch",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 7.5,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "f3c781c3-8d99-4771-93c2-8db6f41462fe",
+			"model_key": "anthropic:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.3,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "5561a890-394d-4a4a-8a9a-9421c7a9f37d",
+			"model_key": "anthropic:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_1h",
+			"display_label": "cached_write_text_tokens_1h",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 6,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "33b01d1e-281c-4a93-a403-7162b1b8bc2f",
+			"model_key": "anthropic:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_5m",
+			"display_label": "cached_write_text_tokens_5m",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 3.75,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "b29e8255-d3ac-4b24-8819-534fb241753a",
+			"model_key": "anthropic:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 3,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "5f65b29a-50e4-4a05-855a-3311a88eb7ae",
+			"model_key": "anthropic:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 15,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "09173a5d-67d5-44ce-87b2-520a872c5efd",
+			"model_key": "anthropic-aws:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.3,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "8e5b409e-957a-42e4-a438-11b02d894dc0",
+			"model_key": "anthropic-aws:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_1h",
+			"display_label": "cached_write_text_tokens_1h",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 6,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "d09a0599-30bf-46fb-9087-6252e062f045",
+			"model_key": "anthropic-aws:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_5m",
+			"display_label": "cached_write_text_tokens_5m",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 3.75,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "cf93b99d-b8ea-4792-af9d-c35616ab2f21",
+			"model_key": "anthropic-aws:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 3,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "c1ce42af-b199-4a67-b79e-39343926779d",
+			"model_key": "anthropic-aws:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 15,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "fad7f785-e2a8-491d-a5f9-bffb203ffd48",
+			"model_key": "anthropic-aws:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "batch",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 1.5,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "e3c6aa03-e351-4e4b-8ed2-0f1268e5a1b0",
+			"model_key": "anthropic-aws:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "batch",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 7.5,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "1970-01-01T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "cd9bc3e4-7a1f-4178-908b-71c9ddf60e9c",
+			"model_key": "google-vertex:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.6,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "gt",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "b201346c-af1a-4f40-8288-b7f8dc043f6e",
+			"model_key": "google-vertex:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_1h",
+			"display_label": "cached_write_text_tokens_1h",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 12,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "gt",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "02d38753-f849-42e1-8d6e-cd62fe306391",
+			"model_key": "google-vertex:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_5m",
+			"display_label": "cached_write_text_tokens_5m",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 7.5,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "gt",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "67c1395d-3144-4b03-bf34-2c012718501a",
+			"model_key": "google-vertex:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 6,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "gt",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "54792622-e50c-4f6f-9690-6d32e27270a8",
+			"model_key": "google-vertex:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 22.5,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "gt",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "2c264288-e614-443c-9272-87b467d20a30",
+			"model_key": "google-vertex:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.3,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "lte",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "83f239a4-1ddf-4db9-8599-5805a1060cbf",
+			"model_key": "google-vertex:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_1h",
+			"display_label": "cached_write_text_tokens_1h",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 6,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "lte",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "b9f19ca5-321a-40c2-857f-013589ea98a6",
+			"model_key": "google-vertex:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_5m",
+			"display_label": "cached_write_text_tokens_5m",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 3.75,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "lte",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "2995d652-e340-4670-8438-cddb4fd1efa9",
+			"model_key": "google-vertex:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 3,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "lte",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "f36f475e-d35e-4352-85e7-2ff44609f634",
+			"model_key": "google-vertex:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 15,
+			"currency": "USD",
+			"match": [
+				{
+					"op": "lte",
+					"path": "input_tokens",
+					"value": 200000,
+					"or_group": 1,
+					"and_index": 1
+				}
+			],
+			"effective_from": "2025-09-29T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "9767aed5-4190-4a3a-a32a-b7c2867d7464",
+			"model_key": "venice:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "Input",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 3,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-10-15T11:11:31.666303+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "91a25800-2b2d-438e-888d-fdc034b84227",
+			"model_key": "venice:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "Cached input",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.3,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-10-15T11:11:31.666303+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "3a105ff6-0a50-4ea9-83e8-0f858872ba09",
+			"model_key": "venice:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "Output",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 15,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-10-15T11:11:31.666303+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "d661a8d7-ebba-46d8-8987-62aea7b85c24",
+			"model_key": "venice:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "native_web_search_requests",
+			"display_label": "Web search",
+			"unit": "request",
+			"unit_size": 1,
+			"price_per_unit": 0.01,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-10-15T11:11:31.666303+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "62dbf1c1-0078-4013-b727-eb7a783bfb3d",
+			"model_key": "venice:anthropic/claude-sonnet-4.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens",
+			"display_label": "cached_write_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 3.75,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-10-15T11:11:31.666303+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "494eb33f-45f6-48b4-b7e3-c8777a638212",
+			"model_key": "amazon-bedrock:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 5,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "3ae9c722-d406-476f-a992-7d002e507dc3",
+			"model_key": "amazon-bedrock:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.5,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "42bbc5f1-7c57-4faa-b771-d36448911d99",
+			"model_key": "amazon-bedrock:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 25,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "0cdb0044-9020-479d-bf1a-3d4ebf1fff8d",
+			"model_key": "amazon-bedrock:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_5m",
+			"display_label": "cached_write_text_tokens_5m",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 6.25,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "9155d682-6d53-4506-879f-2920516ee149",
+			"model_key": "amazon-bedrock:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_1h",
+			"display_label": "cached_write_text_tokens_1h",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 10,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "4aa7719b-807b-4318-980f-5a0bcdb37de2",
+			"model_key": "anthropic:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "priority",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 8,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "db384f79-b117-49ea-a320-c81deaecb5ae",
+			"model_key": "anthropic:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "priority",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.4,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "3df8a683-e89a-491c-8465-937138de1293",
+			"model_key": "anthropic:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "priority",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 40,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "d6172380-9ddf-4869-b137-802ed2476359",
+			"model_key": "anthropic:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "priority",
+			"meter": "cached_write_text_tokens_5m",
+			"display_label": "cached_write_text_tokens_5m",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 10,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "4fe981fc-7d13-49e6-9f2f-b9872bb31c3f",
+			"model_key": "anthropic:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "priority",
+			"meter": "cached_write_text_tokens_1h",
+			"display_label": "cached_write_text_tokens_1h",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 16,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "994c7da2-4c77-41f6-82cb-f444165cf8e1",
+			"model_key": "anthropic:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "batch",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 2,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "d0b77dd8-bde4-47fa-bd5d-51b562b94614",
+			"model_key": "anthropic:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "batch",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 10,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "9aa12f0a-8091-4ec4-b67d-0ea21af6ef6e",
+			"model_key": "anthropic:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 4,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "18cd48f8-3812-4fe9-9f1d-6210b342b70f",
+			"model_key": "anthropic:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.2,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "97d5c6ff-700c-4762-a1b6-13f8e7064894",
+			"model_key": "anthropic:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 20,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "4963fc6d-4ddd-402f-aaeb-228d9783068c",
+			"model_key": "anthropic:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_5m",
+			"display_label": "cached_write_text_tokens_5m",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 5,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "2e93b7eb-dce0-4c78-86ff-d7ca731c5c6b",
+			"model_key": "anthropic:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_1h",
+			"display_label": "cached_write_text_tokens_1h",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 8,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "96f983ea-9d20-4c99-b306-e9dcdced3c3e",
+			"model_key": "anthropic-us:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "priority",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 8.8,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "39114d29-8b74-40bf-befb-a65ff09576df",
+			"model_key": "anthropic-us:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "priority",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.44,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "20ff97c2-20f8-452a-8608-5a277adda899",
+			"model_key": "anthropic-us:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "priority",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 44,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "c603884f-8aed-47d2-aca9-10079303fd5a",
+			"model_key": "anthropic-us:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "priority",
+			"meter": "cached_write_text_tokens_5m",
+			"display_label": "cached_write_text_tokens_5m",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 11,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "4bcbd59a-f8c3-42fd-aa3d-3ca6487c2bcf",
+			"model_key": "anthropic-us:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "priority",
+			"meter": "cached_write_text_tokens_1h",
+			"display_label": "cached_write_text_tokens_1h",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 17.6,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "8581b2b0-3d82-4655-853a-b7bb2ba0f4c6",
+			"model_key": "anthropic-us:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "batch",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 2.2,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "ca557ed6-f088-45a2-8295-e824b22ef2e0",
+			"model_key": "anthropic-us:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "batch",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 11,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "ac86befd-143e-435c-882b-d45304f56d9a",
+			"model_key": "anthropic-us:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 4.4,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "423bfbb2-eaf1-46ef-b04f-2ba3d258f200",
+			"model_key": "anthropic-us:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.22,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "42e8fad1-4616-408d-bc3b-5dc8db61c427",
+			"model_key": "anthropic-us:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 22,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "970238b1-7ad9-46ac-bb5d-c8705521e0af",
+			"model_key": "anthropic-us:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_5m",
+			"display_label": "cached_write_text_tokens_5m",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 5.5,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "04ed4346-1382-4c06-a07d-c5385d8c9aa6",
+			"model_key": "anthropic-us:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_1h",
+			"display_label": "cached_write_text_tokens_1h",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 8.8,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-20T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "1b1f3195-0a2d-4030-959d-cbca350ec022",
+			"model_key": "azure:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 4.4,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-10-11T23:56:42.061532+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "bed6b8a7-43f4-4619-96d3-459816f93ff2",
+			"model_key": "azure:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.22,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-10-11T23:56:42.061532+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "fa5021f8-0b05-46ee-853f-81a7fcf0a845",
+			"model_key": "azure:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 22,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-10-11T23:56:42.061532+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "9a022784-8d97-400e-afc8-4c37b56bb880",
+			"model_key": "azure:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_5m",
+			"display_label": "cached_write_text_tokens_5m",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 5.5,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-10-11T23:56:42.061532+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "12cc617a-2c4f-45b5-adac-c03bc3f3bc5d",
+			"model_key": "azure:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_1h",
+			"display_label": "cached_write_text_tokens_1h",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 8.8,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-10-11T23:56:42.061532+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "7247f70a-9581-4b3d-87a7-2cce63977c77",
+			"model_key": "azure:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "input_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 4,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "1c83e77c-e610-4663-9302-4df896967c26",
+			"model_key": "azure:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "cached_read_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.2,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "dc187510-2db1-480f-b4f7-e49c64c484dc",
+			"model_key": "azure:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "output_text_tokens",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 20,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "c31d8fe1-d15c-40dc-ae6a-df775bb3f6b3",
+			"model_key": "azure:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_5m",
+			"display_label": "cached_write_text_tokens_5m",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 5,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "1df25d5c-bc89-4886-96f2-15da50f765b4",
+			"model_key": "azure:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_write_text_tokens_1h",
+			"display_label": "cached_write_text_tokens_1h",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 8,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-09-22T00:00:00+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "71ebd8c8-325a-4dbf-885c-1a80118931fc",
+			"model_key": "inference-net:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "input_text_tokens",
+			"display_label": "Input",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 4,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-10-17T22:12:40.794209+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "90d3cb0f-2177-434b-880b-554978e1a665",
+			"model_key": "inference-net:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "cached_read_text_tokens",
+			"display_label": "Cached input",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 0.2,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-10-17T22:12:40.794209+00:00",
+			"effective_to": null
+		},
+		{
+			"rule_id": "2907ae59-3805-4a2b-bb56-1ef59ee4e1aa",
+			"model_key": "inference-net:anthropic/claude-opus-5.5:text.generate",
+			"pricing_plan": "standard",
+			"meter": "output_text_tokens",
+			"display_label": "Output",
+			"unit": "token",
+			"unit_size": 1000000,
+			"price_per_unit": 20,
+			"currency": "USD",
+			"match": [],
+			"effective_from": "2026-10-17T22:12:40.794209+00:00",
+			"effective_to": null
+		}
+	],
+	"modelPlans": [],
+	"plans": []
+}

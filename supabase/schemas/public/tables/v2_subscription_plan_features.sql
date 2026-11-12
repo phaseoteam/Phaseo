@@ -25,3 +25,15 @@ CREATE POLICY "v2_subscription_plan_features_public_select" ON "public"."v2_subs
   WHERE ((plan.plan_uuid = v2_subscription_plan_features.plan_uuid) AND ((plan.effective_to IS NULL) OR (plan.effective_to > now())))))));
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."v2_subscription_plan_features" TO "anon", "authenticated", "service_role";
+
+alter table public.v2_subscription_plan_features
+  add column feature_key text references public.v2_subscription_feature_definitions(feature_key),
+  add column availability text not null default 'unknown' check (availability in ('included','limited','excluded','conditional','unknown')),
+  add column value_number numeric,
+  add column value_text text,
+  add column conditions text,
+  add column source_url text,
+  add column verified_at timestamptz,
+  add column effective_from timestamptz not null default '-infinity';
+
+create index v2_subscription_features_key_idx on public.v2_subscription_plan_features(feature_key);

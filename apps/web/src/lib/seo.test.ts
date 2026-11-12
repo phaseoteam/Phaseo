@@ -1,7 +1,23 @@
-import { resolveTitle } from "next/dist/lib/metadata/resolvers/resolve-title";
+import { describe, it, expect } from "vitest";
+import { metadataToHead } from "@/lib/start/metadataToHead";
 import { buildMetadata, resolveSiteUrl } from "./seo";
 
 describe("page title branding", () => {
+	it("omits fallback social images when unavailable pages explicitly clear them", () => {
+		const metadata = buildMetadata({
+			title: "Model unavailable | Phaseo",
+			description: "Browse the catalogue to find available models.",
+			path: "/models/example/unavailable",
+			openGraph: { images: [] },
+			twitter: { card: "summary", images: [] },
+			robots: { index: false, follow: false },
+		});
+		expect(metadata.openGraph?.images).toEqual([]);
+		expect(metadata.twitter?.images).toEqual([]);
+		expect(metadata.twitter).toMatchObject({ card: "summary" });
+		expect(metadata.title).toEqual({ absolute: "Model unavailable | Phaseo" });
+		expect(metadata.robots).toEqual({ index: false, follow: false });
+	});
 	it.each([
 		["About", "About | Phaseo"],
 		["GPT 5.6 Luna API Pricing — Compare 22 Providers | Phaseo", "GPT 5.6 Luna API Pricing — Compare 22 Providers | Phaseo"],
@@ -11,7 +27,8 @@ describe("page title branding", () => {
 		["Phaseo: AI Gateway and Open Model Catalog", "Phaseo: AI Gateway and Open Model Catalog"],
 	])("resolves %s with exactly one brand", (title, expected) => {
 		const metadata = buildMetadata({ title, description: "Description", path: "/example" });
-		expect(resolveTitle(metadata.title, "%s | Phaseo").absolute).toBe(expected);
+		// The <title> the page head renders, after the site title template.
+		expect(metadataToHead(metadata).meta.find((entry) => entry.title)?.title).toBe(expected);
 		expect(metadata.openGraph?.title).toBe(title);
 		expect(metadata.twitter?.title).toBe(title);
 	});

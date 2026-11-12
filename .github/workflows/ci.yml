@@ -42,14 +42,14 @@ jobs:
                   persist-credentials: false
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
 
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   package-manager-cache: false
@@ -64,7 +64,7 @@ jobs:
               run: pnpm run validate:cli
 
             - name: Upload CLI package
-              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
               with:
                   name: phaseo-cli-package
                   path: .tmp/cli-pack/*.tgz
@@ -91,14 +91,14 @@ jobs:
                   persist-credentials: false
 
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: 24
                   registry-url: https://registry.npmjs.org
                   package-manager-cache: false
 
             - name: Download CLI package
-              uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+              uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
               with:
                   name: phaseo-cli-package
                   path: cli-package
@@ -155,13 +155,13 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   registry-url: https://registry.npmjs.org
@@ -174,6 +174,39 @@ jobs:
 
             - name: Validate canonical Phaseo domain
               run: pnpm run validate:domains
+
+            - name: Validate shared Broadcast destination registry
+              run: pnpm run validate:broadcast-destinations
+
+            - name: Validate shared request classifier rules
+              run: pnpm run validate:request-classifiers
+
+            - name: Validate shared workspace budget rules
+              run: pnpm run validate:workspace-budgets
+
+            - name: Validate shared prompt template rules
+              run: pnpm run validate:prompt-templates
+
+            - name: Validate shared Slack agent pricing
+              run: pnpm run validate:slack-agent-pricing
+
+            - name: Validate shared Slack agent secrets format
+              run: pnpm run validate:slack-secrets
+
+            - name: Validate shared key storage locations
+              run: pnpm run validate:key-storage-locations
+            - name: Validate shared spend rule validation
+              run: pnpm run validate:spend-rules
+            - name: Validate shared workspace routing settings
+              run: pnpm run validate:workspace-routing-settings
+            - name: Validate shared guardrail modules
+              run: pnpm run validate:guardrail-shared
+            - name: Validate shared key IP allowlist validation
+              run: pnpm run validate:key-ip-allowlist
+            - name: Validate shared model parameter specs
+              run: pnpm run validate:model-parameters
+            - name: Validate shared theme tokens
+              run: pnpm run validate:theme-tokens
 
             - name: Validate unique Supabase migration versions
               shell: bash
@@ -188,6 +221,11 @@ jobs:
             - name: Install dependencies
               run: corepack pnpm install --frozen-lockfile
 
+            - name: Validate agent skills, the Phaseo plugin and marketplaces
+              run: |
+                  pnpm run skills:validate
+                  pnpm run skills:check
+
             - name: Test model-discovery GitHub issue sync helpers
               run: pnpm exec tsx scripts/model-discovery/github-issues.test.ts
 
@@ -195,14 +233,27 @@ jobs:
               run: |
                   pnpm test:catalogue-history
                   pnpm test:realtime-billing-review
+                  node supabase/tests/realtime-billing-hardening.test.mjs
                   node supabase/tests/rankings-rolling-periods.test.mjs
                   node supabase/tests/rankings-distributions.test.mjs
+                  node supabase/tests/decisions-rankings.test.mjs
+                  node --test supabase/tests/models-page-cheapest-provider-pricing.test.mjs
+                  node supabase/tests/benchmark-direction-default.test.mjs
+                  node supabase/tests/pricing-promotion-budgets.test.mjs
                   node scripts/tests/workspace-provisioning.mjs
                   pnpm exec tsx apps/web/scripts/catalogue/enumSnapshot.test.ts
-                  pnpm exec tsx --test scripts/update-model-statuses.test.ts
+                  pnpm exec tsx --test scripts/model-status-rules.test.ts
 
-            - name: Enforce EUR routing restriction
-              run: pnpm --filter @phaseo/web test --runTestsByPath scripts/eur-routing.test.ts
+            # The desktop app imports the agent SDK's built types; desktop.yml runs the app's full checks on Windows.
+            - name: Build the agent SDK for the desktop typecheck
+              run: pnpm --filter "@phaseo/agent-sdk..." build
+
+            # These apps have no CI build job; TypeScript 7 checks each in seconds.
+            - name: Typecheck desktop, mobile, perf-upstream and the shared packages
+              run: pnpm --filter @phaseo/desktop --filter @phaseo/mobile --filter @phaseo/perf-upstream --filter @phaseo/ui --filter @phaseo/app-kit run typecheck
+
+            - name: Test the shared app-kit package
+              run: pnpm --filter @phaseo/app-kit test
 
     check-paths:
         name: Check changed paths
@@ -211,7 +262,6 @@ jobs:
             contents: read
             pull-requests: read
         outputs:
-            data-changed: ${{ steps.filter.outputs.data }}
             migrations-changed: ${{ steps.filter.outputs.migrations }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -220,7 +270,6 @@ jobs:
               id: filter
               with:
                   filters: |
-                      data: 'packages/data/catalog/src/data/**'
                       migrations:
                           - 'supabase/migrations/**'
                           - 'supabase/baseline/**'
@@ -250,7 +299,9 @@ jobs:
             - name: Validate migration history
               env:
                   MIGRATION_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha || github.event.before }}
-              run: node scripts/validate-supabase-migrations.mjs "${MIGRATION_BASE_SHA}"
+                  # pull_request.base.sha can predate migrations merged since; also check order against the tip.
+                  MIGRATION_TARGET_REF: ${{ github.base_ref && format('origin/{0}', github.base_ref) || '' }}
+              run: node scripts/validate-supabase-migrations.mjs "${MIGRATION_BASE_SHA}" "${MIGRATION_TARGET_REF}"
 
             - name: Test migration history reconciliation
               run: node --test scripts/declarative-replay-history.test.mjs scripts/prepare-production-migrations.test.mjs scripts/validate-supabase-migrations.test.mjs
@@ -365,13 +416,13 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: ${{ env.NODE_VERSION }}
                   registry-url: https://registry.npmjs.org
@@ -385,20 +436,8 @@ jobs:
             - name: Validate SDK version literals
               run: pnpm run sdk:check-version-literals
 
-            - name: Sync OpenAPI enums from database snapshot
-              run: pnpm run openapi:sync-enums
-
             - name: Lint OpenAPI spec
               run: pnpm run openapi:lint
-
-            - name: Ensure OpenAPI enum sync is committed
-              run: |
-                  if ! git diff --ignore-cr-at-eol --ignore-space-at-eol --quiet apps/docs/openapi/v1/openapi.yaml; then
-                    echo "::error::OpenAPI enums are out of sync with the database snapshot."
-                    echo "::error::Run 'pnpm run openapi:sync-enums' and commit apps/docs/openapi/v1/openapi.yaml."
-                    git diff apps/docs/openapi/v1/openapi.yaml
-                    exit 1
-                  fi
 
     apps:
         name: Apps ${{ matrix.app }}
@@ -406,18 +445,18 @@ jobs:
         needs: openapi-lint
         strategy:
             matrix:
-                app: [api, docs, web, web-api, mcp]
+                app: [api, docs, web, web-api, mcp, slack]
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -432,6 +471,7 @@ jobs:
               run: |
                   pnpm run validate:api
                   pnpm --filter @phaseo/gateway-api exec vitest run src/executors/_shared/text-generate/openai-compat/__tests__/execute.test.ts
+                  pnpm --filter @phaseo/gateway-api simulate:providers:test
                   cd apps/api && pnpm exec tsx scripts/pricing-simulator-cli.ts
 
             - name: Docs validation
@@ -444,8 +484,12 @@ jobs:
                   pnpm run validate:i18n
                   pnpm --filter @phaseo/web audit:i18n:ui
                   pnpm --filter @phaseo/web test:i18n:ui-audit
-                  pnpm --filter @phaseo/web test --runTestsByPath 'src/app/(dashboard)/rankings/RankingsPageContent.test.tsx' 'src/components/(rankings)/UsageStackedBar.test.tsx' 'src/components/(rankings)/time-buckets.test.ts'
-                  pnpm --filter @phaseo/web exec next build --experimental-build-mode compile
+                  # The build generates src/routeTree.gen.ts, which the typecheck needs.
+                  pnpm --filter @phaseo/web build
+                  pnpm --filter @phaseo/web typecheck
+                  pnpm --filter @phaseo/web lint
+                  # The whole web unit suite (about a minute).
+                  pnpm --filter @phaseo/web test
 
             - name: Web API lint, test & build
               if: matrix.app == 'web-api'
@@ -461,6 +505,13 @@ jobs:
                   pnpm --filter @phaseo/mcp test
                   pnpm --filter @phaseo/mcp build:production
 
+            - name: Slack agent typecheck, test & production build
+              if: matrix.app == 'slack'
+              run: |
+                  pnpm --filter @phaseo/slack-agent typecheck
+                  pnpm --filter @phaseo/slack-agent test
+                  pnpm --filter @phaseo/slack-agent build:production
+
     api-aimock:
         name: API AIMock matrix
         runs-on: ubuntu-latest
@@ -469,14 +520,14 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
 
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: 24
 
@@ -497,13 +548,13 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -550,13 +601,13 @@ jobs:
                   fetch-depth: 0
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -614,7 +665,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Set up Python for SDK builds
-              uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+              uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
               with:
                   python-version: "3.12"
 
@@ -625,13 +676,13 @@ jobs:
                   python -m pip install -e packages/sdk/sdk-py
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -660,14 +711,14 @@ jobs:
                   persist-credentials: false
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
 
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -692,14 +743,14 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
 
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
@@ -717,13 +768,13 @@ jobs:
 
             - name: Setup .NET
               if: matrix.sdk == 'csharp'
-              uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+              uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73
               with:
                   dotnet-version: "8.0.x"
 
             - name: Setup Java
               if: matrix.sdk == 'java'
-              uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+              uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78
               with:
                   distribution: "temurin"
                   java-version: "17"
@@ -731,15 +782,15 @@ jobs:
 
             - name: Setup PHP
               if: matrix.sdk == 'php'
-              uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+              uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962
               with:
                   php-version: "8.2"
 
             - name: Setup Ruby
               if: matrix.sdk == 'ruby'
-              uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8
+              uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
               with:
-                  ruby-version: "3.2"
+                  ruby-version: "4.0"
 
             - name: Setup Rust
               if: matrix.sdk == 'rust'
@@ -751,6 +802,10 @@ jobs:
                   # of the Agent SDK workspace, which requires Go 1.24.
                   GOWORK: "off"
               run: pnpm run test:sdk-${{ matrix.sdk }}
+
+            - name: Verify Java multipart documentation requests
+              if: matrix.sdk == 'java'
+              run: node scripts/sdk/check-java-doc-multipart.mjs
 
     deploy:
         runs-on: ubuntu-latest
@@ -789,44 +844,198 @@ jobs:
                       name: Deploy Web API
                     - target: mcp
                       name: Deploy MCP
+                    - target: slack
+                      name: Deploy Slack agent
                     - target: docs
                       name: Deploy Docs
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: ${{ env.NODE_VERSION }}
 
-            # ---------- WEB (Vercel) ----------
+            # ---------- WEB (Cloudflare Workers) ----------
+            # The website is the phaseo-web Worker (apps/web/wrangler.jsonc), which
+            # serves phaseo.app through the route in that file.
 
             - name: Restore lockfile (guard setup-node cache mutation)
               run: git checkout -- pnpm-lock.yaml
 
-            - name: Install dependencies
+            # Each deploy starts the web Worker with an empty runtime cache, so skip it
+            # when nothing the web build reads has changed since the commit the Worker
+            # serves. Every deploy records its commit as the deployment message, and the
+            # latest deployment is the one serving traffic. Comparing with that commit
+            # rather than the previous push means a web change whose deploy failed or was
+            # skipped still ships with the next green run. Manual runs, or a failed
+            # lookup, always deploy.
+            - name: Check web changes since the deployed Worker
+              id: web-changes
               if: matrix.target == 'web'
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  FORCE_DEPLOY: ${{ github.event_name == 'workflow_dispatch' }}
+              run: |
+                  deploy=true
+                  if [ "$FORCE_DEPLOY" != "true" ] && [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+                      deployed_sha=$(curl -fsS --max-time 30 -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                          "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/phaseo-web/deployments" \
+                          | jq -r '.result.deployments[0].annotations["workers/message"] // empty | select(test("^[0-9a-f]{40}$"))') || deployed_sha=""
+                      # Everything outside apps/web that the web build reads:
+                      # - apps/docs, read by the prebuild for the docs search index;
+                      # - apps/api/openapi.*, read by the API reference pages;
+                      # - packages/shared/app-kit and packages/shared/ui, workspace packages
+                      #   the website bundles from source;
+                      # - the model-discovery modules imported by the internal
+                      #   model-discovery-notifier server action.
+                      # Add any new import that reaches outside apps/web here too.
+                      if [ -n "$deployed_sha" ] \
+                          && git fetch --quiet --depth=1 origin "$deployed_sha" \
+                          && git diff --quiet "$deployed_sha" "$GITHUB_SHA" -- \
+                              apps/web apps/docs packages/shared/app-kit packages/shared/ui packages/shared/observability \
+                              apps/api/openapi.openai.yml apps/api/openapi.anthropic.json \
+                              apps/api/src/pipeline/model-discovery/public-model-announcement-discord.ts \
+                              apps/api/src/pipeline/model-discovery/discord-webhook.ts \
+                              package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json; then
+                          deploy=false
+                          echo "The phaseo-web Worker already serves $deployed_sha with the same web inputs; skipping the web deploy."
+                      fi
+                  fi
+                  echo "deploy=$deploy" >> "$GITHUB_OUTPUT"
+
+            - name: Install dependencies
+              if: steps.web-changes.outputs.deploy == 'true'
               run: corepack pnpm install --frozen-lockfile
 
-            - name: Install Vercel CLI
-              if: matrix.target == 'web'
-              run: npm install --global vercel@latest
-
-            - name: Deploy web to Vercel (production)
+            - name: Configure private web source maps
+              id: web-source-maps
+              if: steps.web-changes.outputs.deploy == 'true'
+              shell: bash
               env:
-                  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-                  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-                  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-              if: ${{ matrix.target == 'web' && env.VERCEL_PROJECT_ID != '' }}
+                  POSTHOG_CLI_API_KEY: ${{ secrets.POSTHOG_CLI_API_KEY }}
               run: |
-                  vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-                  vercel deploy --yes --archive=tgz --prod --logs --token=$VERCEL_TOKEN
+                  if [ -n "$POSTHOG_CLI_API_KEY" ]; then
+                    echo "enabled=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "enabled=false" >> "$GITHUB_OUTPUT"
+                    echo "::notice::Private PostHog source-map uploads are disabled: POSTHOG_CLI_API_KEY is not configured."
+                  fi
+
+            # PUBLIC_* settings are inlined into the bundle at build time. The GitHub
+            # secrets and variables keep their original NEXT_PUBLIC_* names; each one
+            # may be stored as either a secret or a variable. Server-only settings
+            # (service role key, Stripe secret, ...) are Worker secrets on Cloudflare,
+            # which deploys leave untouched.
+            - name: Build web
+              if: steps.web-changes.outputs.deploy == 'true'
+              env:
+                  PHASEO_BUILD_ID: ${{ github.sha }}
+                  PHASEO_PRIVATE_SOURCEMAPS: ${{ steps.web-source-maps.outputs.enabled }}
+                  PUBLIC_RELEASE: ${{ github.sha }}
+                  PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || vars.NEXT_PUBLIC_SUPABASE_URL }}
+                  PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+                  PUBLIC_WEBSITE_URL: ${{ secrets.NEXT_PUBLIC_WEBSITE_URL || vars.NEXT_PUBLIC_WEBSITE_URL }}
+                  PUBLIC_BASE_URL: ${{ secrets.NEXT_PUBLIC_BASE_URL || vars.NEXT_PUBLIC_BASE_URL }}
+                  PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || vars.NEXT_PUBLIC_APP_URL }}
+                  PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || vars.NEXT_PUBLIC_API_URL }}
+                  PUBLIC_DOCS_URL: ${{ secrets.NEXT_PUBLIC_DOCS_URL || vars.NEXT_PUBLIC_DOCS_URL }}
+                  PUBLIC_GATEWAY_API_URL: ${{ secrets.NEXT_PUBLIC_GATEWAY_API_URL || vars.NEXT_PUBLIC_GATEWAY_API_URL }}
+                  PUBLIC_GATEWAY_BASE_URL: ${{ secrets.NEXT_PUBLIC_GATEWAY_BASE_URL || vars.NEXT_PUBLIC_GATEWAY_BASE_URL }}
+                  PUBLIC_GATEWAY_COMING_SOON: ${{ secrets.NEXT_PUBLIC_GATEWAY_COMING_SOON || vars.NEXT_PUBLIC_GATEWAY_COMING_SOON }}
+                  PUBLIC_STAGING_GATEWAY_BASE_URL: ${{ secrets.NEXT_PUBLIC_STAGING_GATEWAY_BASE_URL || vars.NEXT_PUBLIC_STAGING_GATEWAY_BASE_URL }}
+                  PUBLIC_FEATURED_ENABLED: ${{ secrets.NEXT_PUBLIC_FEATURED_ENABLED || vars.NEXT_PUBLIC_FEATURED_ENABLED }}
+                  PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || vars.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+                  PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY || vars.NEXT_PUBLIC_POSTHOG_KEY }}
+                  PUBLIC_POSTHOG_API_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_API_HOST || vars.NEXT_PUBLIC_POSTHOG_API_HOST }}
+                  PUBLIC_POSTHOG_UI_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_UI_HOST || vars.NEXT_PUBLIC_POSTHOG_UI_HOST }}
+                  PUBLIC_GA_MEASUREMENT_ID: ${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID || vars.NEXT_PUBLIC_GA_MEASUREMENT_ID }}
+                  PUBLIC_TAWK_PROPERTY_ID: ${{ secrets.NEXT_PUBLIC_TAWK_PROPERTY_ID || vars.NEXT_PUBLIC_TAWK_PROPERTY_ID }}
+                  PUBLIC_TAWK_WIDGET_ID: ${{ secrets.NEXT_PUBLIC_TAWK_WIDGET_ID || vars.NEXT_PUBLIC_TAWK_WIDGET_ID }}
+                  PUBLIC_STATSIG_CLIENT_KEY: ${{ secrets.NEXT_PUBLIC_STATSIG_CLIENT_KEY || vars.NEXT_PUBLIC_STATSIG_CLIENT_KEY }}
+                  PUBLIC_STATSIG_AUTO_ROUTING_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_AUTO_ROUTING_GATE }}
+                  PUBLIC_STATSIG_BATCH_API_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_BATCH_API_GATE }}
+                  PUBLIC_STATSIG_GATEWAY_HERO_EXPERIMENT: ${{ vars.NEXT_PUBLIC_STATSIG_GATEWAY_HERO_EXPERIMENT }}
+                  PUBLIC_STATSIG_GATEWAY_HERO_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_GATEWAY_HERO_GATE }}
+                  PUBLIC_STATSIG_GATEWAY_IO_LOGGING_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_GATEWAY_IO_LOGGING_GATE }}
+                  PUBLIC_STATSIG_LANDING_PAGE_EXPERIMENT: ${{ vars.NEXT_PUBLIC_STATSIG_LANDING_PAGE_EXPERIMENT }}
+                  PUBLIC_STATSIG_LANDING_PAGE_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_LANDING_PAGE_GATE }}
+                  PUBLIC_STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE }}
+                  PUBLIC_STATSIG_PRESET_EXPERIMENTS_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_PRESET_EXPERIMENTS_GATE }}
+                  PUBLIC_STATSIG_REALTIME_VOICE_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_REALTIME_VOICE_GATE }}
+                  PUBLIC_STATSIG_REQUEST_CLASSIFIERS_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_REQUEST_CLASSIFIERS_GATE }}
+                  PUBLIC_STATSIG_SAML_SSO_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_SAML_SSO_GATE }}
+                  PUBLIC_STATSIG_SLACK_AGENT_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_SLACK_AGENT_GATE }}
+                  PUBLIC_STATSIG_VIDEO_API_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_VIDEO_API_GATE }}
+                  PUBLIC_STATSIG_WORKLOAD_IDENTITY_GATE: ${{ vars.NEXT_PUBLIC_STATSIG_WORKLOAD_IDENTITY_GATE }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  missing=()
+                  [ -z "${PUBLIC_SUPABASE_URL:-}" ] && missing+=("NEXT_PUBLIC_SUPABASE_URL")
+                  [ -z "${PUBLIC_SUPABASE_ANON_KEY:-}" ] && missing+=("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+                  if [ "${#missing[@]}" -gt 0 ]; then
+                    echo "::error::Missing web build setting(s) (GitHub secret or variable): ${missing[*]}"
+                    exit 1
+                  fi
+                  # Empty values would override the app's fallbacks; drop them.
+                  for name in $(compgen -e | grep '^PUBLIC_'); do
+                    if [ -z "${!name}" ]; then unset "$name"; fi
+                  done
+                  PUBLIC_DEPLOY_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+                  export PUBLIC_DEPLOY_TIME
+                  pnpm --filter @phaseo/web build
+
+            - name: Upload private web source maps
+              if: steps.web-changes.outputs.deploy == 'true' && steps.web-source-maps.outputs.enabled == 'true'
+              uses: PostHog/upload-source-maps@991172e085213c222c61d2ba6a0b9e57c81e5066 # v2
+              with:
+                  directory: apps/web/dist
+                  project-id: '81404'
+                  api-key: ${{ secrets.POSTHOG_CLI_API_KEY }}
+                  host: https://eu.posthog.com
+                  release-name: phaseo-web
+                  release-version: ${{ github.sha }}
+                  delete-after-upload: 'true'
+                  cli-version: '0.19.3'
+
+            - name: Remove public source maps
+              if: always() && steps.web-changes.outputs.deploy == 'true'
+              run: node --input-type=module -e "import { removeSourceMaps } from './observability/grafana/build-web.mjs'; await removeSourceMaps('apps/web/dist/client');"
+
+            # "run deploy": a bare "pnpm deploy" is pnpm's own deploy command, not the script.
+            - name: Deploy web Worker to Cloudflare
+              if: steps.web-changes.outputs.deploy == 'true'
+              shell: bash
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+              run: |
+                  set -euo pipefail
+                  missing=()
+                  [ -z "${CLOUDFLARE_API_TOKEN:-}" ] && missing+=("CLOUDFLARE_API_TOKEN")
+                  [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ] && missing+=("CLOUDFLARE_ACCOUNT_ID")
+                  if [ "${#missing[@]}" -gt 0 ]; then
+                    echo "::error::Missing required Cloudflare deploy secret(s): ${missing[*]}"
+                    exit 1
+                  fi
+                  # The commit in the deployment message lets the next run skip unchanged deploys.
+                  # Runtime vars for code that reads an env object (auth redirect origin,
+                  # Stripe checkout URLs), which build-time inlining of process.env.X does
+                  # not reach. Without them auth assumed development and sent OAuth and
+                  # email links to localhost. Set here, not in wrangler.jsonc, so local
+                  # `vite dev` keeps its localhost defaults.
+                  pnpm --filter @phaseo/web run deploy --message "$GITHUB_SHA" \
+                      --var NODE_ENV:production \
+                      --var PUBLIC_WEBSITE_URL:https://phaseo.app \
+                      --var WEBSITE_URL:https://phaseo.app
             # ---------- API (Cloudflare Workers) ----------
             # Install deps so wrangler can resolve imports
 
@@ -834,11 +1043,11 @@ jobs:
               run: git checkout -- pnpm-lock.yaml
 
             - name: Install dependencies (for Cloudflare Workers)
-              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp'
+              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp' || matrix.target == 'slack'
               run: corepack pnpm install --frozen-lockfile
 
             - name: Validate Cloudflare API deploy secrets
-              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp'
+              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us' || matrix.target == 'web-api' || matrix.target == 'mcp' || matrix.target == 'slack'
               shell: bash
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -914,6 +1123,17 @@ jobs:
                   secret-path: /provider-keys
                   secret-name: LIQUID_AI_API_KEY
 
+            - name: Load Reflection provider key from Infisical
+              if: matrix.target == 'api' || matrix.target == 'api-eu' || matrix.target == 'api-us'
+              uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
+              with:
+                  method: oidc
+                  identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+                  project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
+                  env-slug: prod
+                  secret-path: /provider-keys
+                  secret-name: REFLECTION_API_KEY
+
             - name: Load SiliconFlow provider key from Infisical
               if: matrix.target == 'api'
               uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
@@ -933,7 +1153,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: CLOUDFLARE_API_TOKEN
 
             - name: Load global Cloudflare account ID from Infisical
@@ -944,7 +1164,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: CLOUDFLARE_ACCOUNT_ID
 
             - name: Load global OpenRouter key from Infisical
@@ -955,7 +1175,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /provider-keys
                   secret-name: OPENROUTER_API_KEY
 
             - name: Load public model discovery webhook from Infisical
@@ -966,7 +1186,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: DISCORD_WEBHOOK_NEW_MODELS_PUBLIC
 
             - name: Load model update Discord role from Infisical
@@ -977,7 +1197,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /operations
                   secret-name: DISCORD_ROLE_ID
 
             - name: Deploy API app to Cloudflare
@@ -997,7 +1217,9 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /
+                  secret-path: /gateway
+                  include-imports: false
+                  recursive: false
 
             - name: Deploy regional API Worker to Cloudflare
               if: matrix.target == 'api-eu' || matrix.target == 'api-us'
@@ -1006,9 +1228,21 @@ jobs:
               env:
                   CLOUDFLARE_DEPLOY_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   CLOUDFLARE_DEPLOY_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+              # Regional Workers bind Durable Object classes exported by phaseo-gateway, which
+              # deploys in parallel. A new class is rejected ("not exported by script") until
+              # that deploy lands, so retry failed deploys while the global API catches up.
               run: |
                   $region = if ("${{ matrix.target }}" -eq "api-eu") { "eu" } else { "us" }
-                  ./scripts/deploy-regional.ps1 -Region $region -SecretsFromEnvironment -Deploy
+                  $attempts = 8
+                  for ($attempt = 1; $attempt -le $attempts; $attempt++) {
+                      ./scripts/deploy-regional.ps1 -Region $region -SecretsFromEnvironment -Deploy
+                      if ($LASTEXITCODE -eq 0) { exit 0 }
+                      if ($attempt -lt $attempts) {
+                          Write-Host "::warning::Regional deploy attempt $attempt failed (exit $LASTEXITCODE); retrying in 30 seconds."
+                          Start-Sleep -Seconds 30
+                      }
+                  }
+                  exit $LASTEXITCODE
 
             - name: Deploy Web API Worker to Cloudflare
               if: matrix.target == 'web-api'
@@ -1017,12 +1251,26 @@ jobs:
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+              # web-api binds the Slack agent Worker's SlackAgentAdmin entrypoint
+              # (SLACK_AGENT), and the Slack agent deploys in parallel. A new
+              # entrypoint can be rejected until that deploy lands, so retry failed
+              # deploys while it catches up, as the regional APIs do.
               run: |
                   set -euo pipefail
                   secrets_file=$(mktemp)
                   trap 'rm -f "$secrets_file"' EXIT
                   node -e 'require("node:fs").writeFileSync(process.argv[1], JSON.stringify({ DISCORD_WEBHOOK_NEW_MODELS_PUBLIC: process.env.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC, DISCORD_ROLE_ID: process.env.DISCORD_ROLE_ID }))' "$secrets_file"
-                  pnpm exec wrangler deploy --config wrangler.toml --secrets-file "$secrets_file"
+                  attempts=10
+                  for attempt in $(seq 1 "$attempts"); do
+                      if pnpm exec wrangler deploy --config wrangler.toml --secrets-file "$secrets_file"; then
+                          exit 0
+                      fi
+                      if [ "$attempt" -lt "$attempts" ]; then
+                          echo "::warning::Web API deploy attempt $attempt failed; retrying in 30 seconds."
+                          sleep 30
+                      fi
+                  done
+                  exit 1
 
             - name: Deploy MCP Worker to Cloudflare
               if: matrix.target == 'mcp'
@@ -1031,6 +1279,23 @@ jobs:
                   apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   workingDirectory: apps/mcp
+                  command: deploy --env production
+
+            # The Worker's secrets are set on Cloudflare (apps/slack/README.md);
+            # deploy fails if a required one is missing.
+            - name: Build Slack agent workspace dependencies
+              if: matrix.target == 'slack'
+              run: |
+                  corepack pnpm --filter @phaseo/sdk build
+                  corepack pnpm --filter @phaseo/agent-sdk build
+
+            - name: Deploy Slack agent Worker to Cloudflare
+              if: matrix.target == 'slack'
+              uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0
+              with:
+                  apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+                  workingDirectory: apps/slack
                   command: deploy --env production
 
             # ---------- DOCS ----------
@@ -1042,7 +1307,6 @@ jobs:
         name: Agent SDK tests (${{ matrix.sdk }})
         runs-on: ubuntu-latest
         needs: sdk-gen
-        if: github.event_name == 'push' || !startsWith(github.head_ref, 'chore/auto-model-statuses')
         strategy:
             fail-fast: false
             matrix:
@@ -1050,13 +1314,13 @@ jobs:
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: ${{ env.NODE_VERSION }}
             - name: Restore lockfile (guard setup-node cache mutation)
@@ -1065,7 +1329,7 @@ jobs:
               run: corepack pnpm install --frozen-lockfile
             - name: Setup Python
               if: matrix.sdk == 'py'
-              uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+              uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
               with:
                   python-version: "3.12"
             - name: Install Python test tooling
@@ -1080,46 +1344,29 @@ jobs:
                   go-version: "1.24"
             - name: Setup .NET
               if: matrix.sdk == 'csharp'
-              uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+              uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73
               with:
                   dotnet-version: "8.0.x"
             - name: Setup PHP
               if: matrix.sdk == 'php'
-              uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+              uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962
               with:
                   php-version: "8.2"
             - name: Setup Java
               if: matrix.sdk == 'java'
-              uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+              uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78
               with:
                   distribution: temurin
                   java-version: "17"
             - name: Setup Ruby
               if: matrix.sdk == 'ruby'
-              uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8
+              uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
               with:
-                  ruby-version: "3.2"
+                  ruby-version: "4.0"
             - name: Setup Rust
               if: matrix.sdk == 'rust'
               run: rustup component add clippy rustfmt
             - name: Run Agent SDK tests
-              run: pnpm run test:agent-sdk-${{ matrix.sdk }}
-            - name: Check live smoke credentials
-              id: live-smoke-credentials
-              if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-              env:
-                  PHASEO_API_KEY: ${{ secrets.PHASEO_API_KEY }}
-              run: |
-                  if [ -n "$PHASEO_API_KEY" ]; then
-                    echo "available=true" >> "$GITHUB_OUTPUT"
-                  else
-                    echo "available=false" >> "$GITHUB_OUTPUT"
-                  fi
-            - name: Run live GPT 5.6 Luna Agent SDK smoke
-              if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.live-smoke-credentials.outputs.available == 'true'
-              env:
-                  PHASEO_AGENT_LIVE_SMOKE: "true"
-                  PHASEO_API_KEY: ${{ secrets.PHASEO_API_KEY }}
               run: pnpm run test:agent-sdk-${{ matrix.sdk }}
 
     publish:
@@ -1147,19 +1394,19 @@ jobs:
 
             - name: Create GitHub App token (Phaseo Bot)
               id: app-token
-              uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+              uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510
               with:
                   client-id: ${{ secrets.PHASEO_APP_CLIENT_ID }}
                   private-key: ${{ secrets.PHASEO_APP_PRIVATE_KEY }}
 
             - name: Setup pnpm
-              uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
             - name: Setup Node.js
-              uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: 24
                   registry-url: https://registry.npmjs.org
@@ -1365,7 +1612,7 @@ jobs:
               run: pnpm --filter @phaseo/agent-sdk publish --access public --no-git-checks
 
             - name: Set up Python (for PyPI publish)
-              uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+              uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
               with:
                   python-version: 3.12
 
@@ -1419,7 +1666,7 @@ jobs:
 
             - name: Publish Python SDK to PyPI (Trusted Publishing)
               if: steps.pypi-release.outputs.should_publish == 'true'
-              uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33
+              uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086
               with:
                   packages-dir: packages/sdk/sdk-py/dist
                   skip-existing: true

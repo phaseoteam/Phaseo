@@ -90,6 +90,41 @@ describe("OAuth client ID metadata documents", () => {
 		});
 	});
 
+	it("accepts Claude's metadata document, which lists a grant Phaseo doesn't offer", async () => {
+		const clientId = "https://claude.ai/oauth/mcp-oauth-client-metadata";
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+			client_id: clientId,
+			client_name: "Claude",
+			client_uri: "https://claude.ai",
+			redirect_uris: ["https://claude.ai/api/mcp/auth_callback"],
+			grant_types: ["authorization_code", "refresh_token", "urn:ietf:params:oauth:grant-type:jwt-bearer"],
+			response_types: ["code"],
+			token_endpoint_auth_method: "none",
+		})));
+
+		const client = await loadOAuthClient(clientId);
+		expect(client).toMatchObject({
+			id: clientId,
+			name: "Claude",
+			redirect_uris: ["https://claude.ai/api/mcp/auth_callback"],
+			registration_source: "cimd",
+		});
+		expect(assertRedirectAllowed(client!, "https://claude.ai/api/mcp/auth_callback")).toBe(true);
+	});
+
+	it("rejects CIMD clients without the authorization code grant", async () => {
+		const clientId = "https://no-code.example/client.json";
+		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({
+			client_id: clientId,
+			client_name: "No Code Client",
+			redirect_uris: ["https://no-code.example/callback"],
+			grant_types: ["urn:ietf:params:oauth:grant-type:jwt-bearer"],
+			token_endpoint_auth_method: "none",
+		})));
+
+		await expect(loadOAuthClient(clientId)).resolves.toBeNull();
+	});
+
 	it("rejects CIMD clients that only support private_key_jwt", async () => {
 		const clientId = "https://private-client.example/client.json";
 		vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({

@@ -1,63 +1,50 @@
 ---
-title: "मॉडल एंडपॉइंट क्षमताएँ सूचीबद्ध करें"
-badge: "Beta"
+title: "मॉडल एंडपॉइंट क्षमताएं सूचीबद्ध करें"
+badge: "बीटा"
 openapi: "/hi/openapi/v1/openapi.localized.yaml GET /models/{author}/{slug}/endpoints"
-description: "किसी मॉडल के लिए उपलब्ध प्रदाता रूट, मोडैलिटी, पैरामीटर, उपलब्धता और कीमत देखें।"
+description: "किसी एक मॉडल के लिए उपलब्ध प्रदाता रूट, मोडैलिटी, पैरामीटर, उपलब्धता और कीमतें देखें।"
 ---
 
-यदि आपके ऐप को मॉडल, प्रदाता, एंडपॉइंट और पैरामीटर संयोजन की उपलब्धता की पुष्टि करनी है, तो अनुरोध भेजने से पहले इस एंडपॉइंट का उपयोग करें।
-
-`openai/gpt-5.4-mini` के लिए यह उपयोग करें:
+अनुरोध भेजने से पहले यह एंडपॉइंट कॉल करें, ताकि पुष्टि हो सके कि मॉडल, प्रदाता, एंडपॉइंट और पैरामीटर का संयोजन उपलब्ध है। `openai/gpt-6-astra` के लिए:
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-हर पंक्ति एक प्रदाता और एंडपॉइंट क्षमता दर्शाती है। इसमें शामिल हैं:
+`endpoints` की हर प्रविष्टि एक एंडपॉइंट के लिए एक प्रदाता रूट है:
 
-- मानक क्षमता ID और सार्वजनिक API पथ
-- प्रदाता ID, नाम और प्रदाता मॉडल स्लग
-- इनपुट और आउटपुट मोडैलिटी
-- समर्थित पैरामीटर नाम और संरचित पैरामीटर विवरण
-- प्रदाता, मॉडल, क्षमता, रूटिंग और उपलब्धता की स्थिति
-- रूट निर्धारित या समय-सीमित होने पर प्रभावी तारीखें
-- एंडपॉइंट मूल्य सारांश
+| फ़ील्ड | इसमें क्या है |
+| --- | --- |
+| `endpoint`, `capability_id`, `public_path`, `collection` | मानक एंडपॉइंट और क्षमता ID, और सार्वजनिक API पथ |
+| `provider`, `model` | प्रदाता का ID और नाम, और प्रदाता का मॉडल स्लग |
+| `routable`, `status`, `status_reason` | रूट अभी ट्रैफ़िक लेता है या नहीं, उसकी उपलब्धता, और वह सिर्फ़ पूर्वावलोकन या निष्क्रिय क्यों है |
+| `modalities` | इनपुट और आउटपुट मोडैलिटी |
+| `capabilities` | समर्थित पैरामीटर नाम और संरचित पैरामीटर विवरण |
+| `routing` | प्रदाता, मॉडल और क्षमता की रूटिंग स्थितियां |
+| `effective` | जब रूट शेड्यूल्ड या समय-सीमित हो, तब `from` और `to` तारीखें |
+| `pricing` | एंडपॉइंट की कीमतों का सारांश |
+
+पहले मॉडलों की तुलना करने के लिए [मॉडल सूचीबद्ध करें](./models.mdx) का उपयोग करें; API द्वारा उपलब्ध हर एंडपॉइंट देखने के लिए [एंडपॉइंट सूचीबद्ध करें](./endpoints.mdx) का उपयोग करें।
 
 ## नियोजित और निष्क्रिय रूट शामिल करें
 
-डिफ़ॉल्ट `availability=active` केवल सार्वजनिक रूप से रूट किए जा सकने वाले रिकॉर्ड लौटाता है। आने वाले और निष्क्रिय रूट देखने के लिए `availability=all` उपयोग करें:
+डिफ़ॉल्ट `availability=active` सिर्फ़ सार्वजनिक रूप से रूट होने योग्य पंक्तियां लौटाता है। जल्द आने वाले और निष्क्रिय रूट देखने के लिए `availability=all` का उपयोग करें:
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?availability=all" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints?availability=all" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-जब तक `availability_status` `active` और `is_active_gateway` `true` न हो, तब तक प्रोडक्शन ट्रैफ़िक उस रिकॉर्ड पर रूट न करें।
+प्रोडक्शन ट्रैफ़िक सिर्फ़ उसी पंक्ति पर रूट करें जिसका `routable` `true` और `status` `active` हो।
 
 ## रूट फ़िल्टर करें
 
-इनके लिए दोहराए जा सकने वाले या कॉमा से अलग किए गए फ़िल्टर उपयोग करें:
+ये फ़िल्टर दोहराए गए पैरामीटर या कॉमा से अलग की गई सूची स्वीकार करते हैं: `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, और `supported_parameters` (उपनाम `params`)। इनके मान [मॉडल सूचीबद्ध करें](./models.mdx#filter-the-list) में बताए गए हैं।
 
-- `provider`
-- `provider_status`
-- `provider_routing_status`
-- `model_routing_status`
-- `capability_status`
-- `provider_availability_status`
-- `provider_availability_reason`
-- `status`
-- `supported_parameters`
-
-उदाहरण के लिए, यह `temperature` समर्थित OpenAI रूट लौटाता है:
+यह उन OpenAI रूट को लौटाता है जो `reasoning_effort` का समर्थन करते हैं:
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?provider=openai&supported_parameters=temperature" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints?provider=openai&supported_parameters=reasoning_effort" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
-
-## संबंधित एंडपॉइंट
-
-- [मॉडल सूचीबद्ध करें](./models.mdx)
-- [एंडपॉइंट सूचीबद्ध करें](./endpoints.mdx)
-

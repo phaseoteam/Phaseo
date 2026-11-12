@@ -5,68 +5,41 @@ sidebarTitle: "Gateway 集成"
 icon: "plug-zap"
 ---
 
-完成快速入门后，如果你准备在实际应用功能中使用 Phaseo，请按照本指南操作。
+把 Phaseo 密钥保存在你的服务器上，选择与应用协议相匹配的端点，然后把你的 HTTP 客户端或 SDK 指向 `https://api.phaseo.app/v1`。如果你还没有发送过请求，请从[快速入门](../quickstart.mdx)开始。
 
-完成后，你将拥有：
-- 安全存储的 API 密钥
-- 明确选择的端点
-- 应用中可正常运行的请求
-- 关于路由、SDK 和运维的生产指南链接
+你需要一个具有 Gateway 访问权限的 Phaseo 账户，以及一个 HTTP 客户端、兼容 OpenAI 的 SDK 或 Phaseo SDK。示例使用 `google/gemma-3-27b:free`，它无需充值额度即可运行。
 
----
+<Steps>
+<Step title="创建并保存密钥">
 
-## 开始之前
-
-开始之前，请准备好以下内容：
-
-- 一个已开通 Gateway 访问权限的 Phaseo 账户。
-- 从[控制台](https://phaseo.app/gateway/keys)获取的 API 密钥。
-- 一个 HTTP 客户端、OpenAI 兼容 SDK 或 Phaseo SDK。
-- 一个受支持的模型 ID，例如 `google/gemma-3-27b:free`，可用于零积分起步。
-
----
-
-## 1. 存储 API 密钥
-
-1. 在 Phaseo 控制台中打开 **Gateway → API 密钥**。
-2. 创建密钥，并用名称标明应用和环境。
-3. 将密钥值存入密钥管理器或本地环境文件：
+在[仪表板](https://phaseo.app/settings/keys)中打开**设置 → API 密钥**，或使用管理密钥调用 `POST /v1/keys`。按应用和环境为密钥命名，然后把它存放在密钥管理器或环境变量文件中：
 
 ```bash
-# .env
+# .env.local
 PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+PHASEO_BASE_URL="https://api.phaseo.app/v1"
 ```
 
-<Tip>
-本地开发、预览部署和生产环境请使用不同的密钥，这样轮换密钥和检查用量会容易得多。
-</Tip>
+为本地开发、预览部署和生产环境分别使用不同的密钥，这样你就能单独轮换和审查每一个。
 
----
+</Step>
+<Step title="选择端点">
 
-## 2. 选择端点
+| 端点 | 用途 |
+| --- | --- |
+| `/v1/responses` | 新的文本应用、结构化输出和多步骤工作流。 |
+| `/v1/chat/completions` | 聊天界面和现有的 OpenAI 风格集成。 |
+| `/v1/messages` | 兼容 Anthropic 的集成。 |
+| `/v1/decisions` | 使用 Jev 1.13 针对应用状态做出类型化决策（测试版）。 |
+| `/v1/moderations` | 安全和内容政策检查。 |
+| `/v1/images/generations` | 根据文本提示生成图像。 |
 
-选择最适合当前任务的端点：
+[API 参考](../api-reference/introduction)列出了所有端点、参数和响应。
 
-| 端点                 | 适用场景                                     |
-| ------------------------ | -------------------------------------------------- |
-| `/v1/responses`          | 新的文本应用、结构化输出和多步骤工作流。 |
-| `/v1/chat/completions`   | 聊天界面、助手和 OpenAI 风格的集成。 |
-| `/v1/messages`           | 兼容 Anthropic 的集成。                         |
-| `/v1/decisions` | 使用 Jev 1.13 根据应用状态作出类型化决策。 |
-| `/v1/moderations`        | 安全与内容政策检查。                  |
-| `/v1/images/generations` | 根据文本提示生成图像。                |
+</Step>
+<Step title="从你的应用发送请求">
 
-完整的支持参数和响应列表请参阅 [API 参考](../api-reference/introduction.mdx)。
-
-<Note>
-免费模型 ID 以 `:free` 结尾，无需预存积分即可调用。付费模型调用需要钱包中有可用余额。
-</Note>
-
----
-
-## 3. 发送应用请求
-
-从应用最可能长期使用的请求格式开始。本例使用 Chat Completions，因为它适用于 OpenAI 兼容客户端。
+此示例使用 Chat Completions，兼容 OpenAI 的客户端本身就支持它。每个请求都以 `Authorization: Bearer $PHASEO_API_KEY` 的形式发送密钥。
 
 <CodeGroup>
 ```bash cURL
@@ -127,15 +100,15 @@ import (
   "context"
   "fmt"
 
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 func main() {
   client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
 
-  response, err := client.ChatCompletions(context.Background(), map[string]interface{}{
-    "model": "google/gemma-3-27b:free",
-    "messages": []map[string]string{
+  response, err := client.CreateChatCompletion(context.Background(), phaseo.ChatCompletionsRequest{
+    Model: "google/gemma-3-27b:free",
+    Messages: []map[string]interface{}{
       {"role": "system", "content": "You are a helpful assistant."},
       {"role": "user", "content": "Explain the benefits of AI."},
     },
@@ -154,7 +127,7 @@ using System.Collections.Generic;
 
 var client = new Phaseo("YOUR_API_KEY");
 
-var response = await client.ChatCompletions(new Dictionary<string, object>
+var response = await client.CreateChatCompletion(new Dictionary<string, object>
 {
     ["model"] = "google/gemma-3-27b:free",
     ["messages"] = new object[]
@@ -175,7 +148,7 @@ use Phaseo\Sdk\Phaseo;
 
 $client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
 
-$response = $client->chatCompletions([
+$response = $client->createChatCompletion([
     'model' => 'google/gemma-3-27b:free',
     'messages' => [
         ['role' => 'system', 'content' => 'You are a helpful assistant.'],
@@ -191,7 +164,7 @@ require 'phaseo_sdk'
 
 client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
 
-response = client.chat_completions(
+response = client.create_chat_completion(
   model: 'google/gemma-3-27b:free',
   messages: [
     { role: 'system', content: 'You are a helpful assistant.' },
@@ -203,29 +176,13 @@ puts response
 ```
 </CodeGroup>
 
----
+</Step>
+</Steps>
 
-## 4. 配置环境
+<Note>
+ID 以 `:free` 结尾的模型无需充值额度即可运行。付费模型需要钱包中有可用余额。
+</Note>
 
-将 API 密钥存储在各环境对应的环境变量中：
+## 发送生产流量之前
 
-```bash
-# .env.local
-PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
-PHASEO_BASE_URL="https://api.phaseo.app/v1"
-```
-
-发送请求时，请将密钥放在 `Authorization` 请求头中：
-
-```http
-Authorization: Bearer $PHASEO_API_KEY
-```
-
----
-
-## 5. 后续生产步骤
-
-- 查看[身份验证](./authentication.mdx)，了解密钥管理和常见身份验证问题。
-- 在发送重要流量前，了解[路由和回退](../guides/routing-and-fallbacks.mdx)。
-- 在[示例](../guides/examples.mdx)中浏览完整的应用和脚本模式。
-- 在 [SDK 参考](../sdk-reference/typescript/overview.mdx)中查找各语言客户端。
+阅读[路由与回退](../guides/routing-and-fallbacks)，了解如何控制由哪些提供商处理你的请求；阅读[身份验证](./authentication)，了解密钥处理和身份验证错误。[SDK 参考](../sdk-reference/client/overview)介绍了各语言的客户端，[示例](../guides/examples)提供了完整的应用和脚本模式。

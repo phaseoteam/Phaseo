@@ -1,28 +1,18 @@
 ---
-title: "Feedback zu Presets erfassen"
-description: "Erfasse Antwortbewertungen und vergleiche die Preset-Qualität im Phaseo-Dashboard."
+title: "Feedback zu Voreinstellungen erfassen"
+description: "Erfasse Antwortbewertungen und vergleiche die Qualität von Voreinstellungen im Phaseo-Dashboard."
 icon: "message-square-more"
 ---
 
-Mit Preset Feedback kannst du Bewertungen deiner Anwendung dem Preset zuordnen, das eine Antwort erzeugt hat. Vergleiche damit Prompt- und Routingänderungen anhand echter Nutzersignale, statt dich nur auf Latenz und Kosten zu verlassen.
+Sende jede Nutzerbewertung an `POST /v1/feedback`, zusammen mit der Anfrage-ID und der [Voreinstellung](./presets.mdx), die geantwortet hat. Vergleiche Voreinstellungen dann danach, wie oft ihre Antworten gut bewertet wurden, und nicht nur nach Latenz und Kosten.
 
 <Note>
-Preset Feedback befindet sich in der Alpha-Phase. Wir verbessern API und Dashboard laufend anhand der Art, wie Teams KI-Antworten in der Produktion bewerten. Über die Schaltfläche **Feedback** auf der [Preset-Feedback-Seite](https://phaseo.app/settings/presets/experiments) kannst du uns mitteilen, was die Funktion nützlicher machen würde.
+Voreinstellungsfeedback befindet sich in der Alpha-Phase, API und Dashboard können sich noch ändern. Über die Schaltfläche **Feedback** auf der [Seite für Voreinstellungsfeedback](https://phaseo.app/settings/presets/experiments) kannst du uns mitteilen, was die Funktion nützlicher machen würde.
 </Note>
 
-## Vor dem Start
+## Eine Bewertung erfassen
 
-Du benötigst:
-
-- Einen Phaseo-API-Schlüssel mit der Fähigkeit `feedback:write`
-- Die von Phaseo zurückgegebene Anfrage-ID
-- Die UUID des Presets, das du analysieren möchtest
-
-Gib beim Erfassen von Feedback die Preset-ID an. Nur so erscheint das Ereignis in Preset-Vergleichen und Kohortenanalysen.
-
-## Bewertung erfassen
-
-Sende Feedback, nachdem ein Benutzer eine Antwort bewertet hat oder deine Anwendung ein Ergebnis ermittelt hat.
+Du brauchst einen API-Schlüssel mit der Fähigkeit `feedback:write`, die von Phaseo zurückgegebene Anfrage-ID und die UUID der Voreinstellung. Erst die ID der Voreinstellung bringt das Ereignis in Vergleiche von Voreinstellungen und in Kohortenanalysen.
 
 ```bash cURL
 curl https://api.phaseo.app/v1/feedback \
@@ -42,32 +32,36 @@ curl https://api.phaseo.app/v1/feedback \
   }'
 ```
 
-Ein Feedback-Ereignis muss sich auf mindestens eine Anfrage, Sitzung, ein Preset oder einen Testlauf beziehen. Scores sind optional und müssen zwischen `0` und `1` liegen.
+Ein Feedback-Ereignis muss sich auf mindestens eine Anfrage, Sitzung, Voreinstellung oder einen Testlauf beziehen. `score` ist optional und muss zwischen `0` und `1` liegen.
 
-## Bewertung auswählen
+Lege Werte mit niedriger Kardinalität wie Tarif, Deployment, Sprache oder Anwendungsoberfläche in `metadataDimensions` ab, damit du danach filtern kannst. Beliebigen oder hochkardinalen Kontext legst du stattdessen in `metadata` ab.
 
-Wähle eine Bewertung, die das tatsächlich erfasste Signal beschreibt:
+## Eine Bewertung wählen
 
-- `thumbs_up` oder `thumbs_down` für einfache Nutzerreaktionen
-- `correct`, `partly_correct` oder `incorrect` für bewertete Antworten
-- `bad_format`, `too_slow` oder `too_expensive` bei Betriebsproblemen
-- `unsafe` oder `refused_incorrectly` bei Sicherheitsergebnissen
-- `not_helpful` oder `other`, wenn keine andere Option passt
+| Signal | `rating` |
+| --- | --- |
+| Eine einfache Nutzerreaktion | `thumbs_up`, `thumbs_down` |
+| Eine bewertete Antwort | `correct`, `partly_correct`, `incorrect` |
+| Ein Betriebsproblem | `bad_format`, `too_slow`, `too_expensive` |
+| Ein Sicherheitsergebnis | `unsafe`, `refused_incorrectly` |
+| Alles andere | `not_helpful`, `other` |
 
-Wandle nicht jedes Signal in einen numerischen Score um. Explizite Bewertungen lassen sich im Dashboard leichter vergleichen und erklären.
+Ziehe eine explizite Bewertung einem reinen numerischen Score vor: Vergleiche von Voreinstellungen beruhen auf Bewertungen, Scores werden als ergänzendes Detail angezeigt.
 
-## Presets vergleichen
+## Voreinstellungen vergleichen
 
-Öffne [Einstellungen → Presets → Feedback](https://phaseo.app/settings/presets/experiments), um:
+Öffne [Einstellungen → Voreinstellungen → Feedback](https://phaseo.app/settings/presets/experiments), um:
 
-- positive, teilweise und negative Bewertungen vergleichen
-- ein Baseline-Preset auswählen
-- nach Datum, Bewertung und Metadaten-Dimensionen filtern
-- die Anfrage, Sitzung, Kommentare und Tags eines Ereignisses untersuchen
+- positive, teilweise und negative Raten zu vergleichen
+- eine Baseline-Voreinstellung auszuwählen
+- nach Datum, Bewertung und Metadaten-Dimensionen zu filtern
+- die Anfrage, Sitzung, Kommentare und Tags hinter einem Ereignis zu untersuchen
 
-Füge Werte mit niedriger Kardinalität wie Tarif, Deployment, Sprache oder Anwendungsoberfläche zu `metadataDimensions` hinzu. Beliebigen oder hochkardinalen Kontext speicherst du stattdessen in `metadata`.
+Das Dashboard analysiert im ausgewählten Zeitraum höchstens die 10.000 neuesten passenden Feedback-Zeilen.
 
-## Feedback über die API abrufen
+## Feedback über die API lesen
+
+Zum Lesen brauchst du `feedback:read`. Die Ergebnisse sind auf den authentifizierten Arbeitsbereich und die für den Aufrufer sichtbaren Voreinstellungen beschränkt.
 
 Aktuelle Ereignisse auflisten:
 
@@ -76,23 +70,11 @@ curl "https://api.phaseo.app/v1/feedback?preset_id=PRESET_UUID&limit=100" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Eine serverseitige Zusammenfassung anfordern:
+Eine auf dem Server berechnete Zusammenfassung abrufen:
 
 ```bash
 curl "https://api.phaseo.app/v1/feedback/summary?group_by=preset&since=2026-08-01T00:00:00Z" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Lesezugriffe erfordern `feedback:read`. Die Ergebnisse sind auf den authentifizierten Workspace und die für den Aufrufer sichtbaren Presets beschränkt.
-
-## Aktuelle Alpha-Grenzen
-
-Das Dashboard analysiert im ausgewählten Zeitraum höchstens die 10.000 neuesten passenden Feedback-Zeilen.
-Preset-Vergleiche verwenden explizite Bewertungen; numerische Scores dienen als ergänzende Details.
-APIs für Testläufe und benutzerdefinierte Ergebnisereignisse sind verfügbar, die zugehörigen Dashboard-Workflows werden jedoch noch weiterentwickelt.
-
-## Zugehörige Anleitungen
-
-- [Presets](./presets.mdx)
-- [Presets ausrollen und Routing untersuchen](../cookbook/preset-rollout-and-routing-debug.mdx)
-- [App-Zuordnung](./app-attribution.mdx)
+APIs für Testläufe und benutzerdefinierte Ergebnisereignisse sind verfügbar, ihre Dashboard-Ansichten ändern sich aber noch. Wie du eine Änderung an einer Voreinstellung schrittweise ausrollst, steht unter [Voreinstellungen ausrollen und Routing untersuchen](../cookbook/preset-rollout-and-routing-debug).

@@ -7,8 +7,9 @@ import { validateCompatibility, type CompatibilityTarget } from "@/compatibility
 import { internalGatewayBenchmarkRouter } from "@/routes/internal-gateway-benchmark";
 import { providerCatalogWebhookRouter } from "@/routes/provider-catalog-webhook";
 import { internalProviderCatalogReviewRouter } from "@/routes/internal-provider-catalog-review";
-import { internalModelDiscoveryReviewRouter } from "@/routes/internal-model-discovery-review";
 import { internalRealtimeBillingRouter } from "@/routes/internal-realtime-billing";
+import { internalKeyIncidentsRouter } from "@/routes/internal-key-incidents";
+import { internalSlackAgentRouter } from "@/routes/internal-slack-agent";
 import {
 	LEGACY_ALLOWED_CACHE_TAGS,
 	isCacheScopeId,
@@ -49,9 +50,10 @@ export const internalRouter = new Hono<{ Bindings: Env }>();
 
 internalRouter.route("/", providerCatalogWebhookRouter);
 internalRouter.route("/", internalProviderCatalogReviewRouter);
-internalRouter.route("/", internalModelDiscoveryReviewRouter);
 internalRouter.route("/", internalGatewayBenchmarkRouter);
 internalRouter.route("/", internalRealtimeBillingRouter);
+internalRouter.route("/", internalKeyIncidentsRouter);
+internalRouter.route("/", internalSlackAgentRouter);
 
 internalRouter.get("/cache", async (c) => {
 	if (isCrossSiteBrowserRequest(c.req.raw)) {
@@ -164,6 +166,21 @@ internalRouter.post("/compatibility/validate", async (c) => {
 	catch (error) { return c.json({ error: "Failed to validate payload", details: error instanceof Error ? error.message : String(error) }, 500, PRIVATE_NO_STORE_HEADERS); }
 });
 
+// Compares SHA-256 digests byte by byte without an early exit, so the time
+// taken does not reveal how much of the secret a caller guessed.
+async function bearerMatchesSecret(authorization: string, secret: string): Promise<boolean> {
+	const encoder = new TextEncoder();
+	const [actual, expected] = await Promise.all([
+		crypto.subtle.digest("SHA-256", encoder.encode(authorization)),
+		crypto.subtle.digest("SHA-256", encoder.encode(`Bearer ${secret}`)),
+	]);
+	const left = new Uint8Array(actual);
+	const right = new Uint8Array(expected);
+	let difference = 0;
+	for (let index = 0; index < left.length; index += 1) difference |= left[index] ^ right[index];
+	return difference === 0;
+}
+
 /**
  * Operational-only cache invalidation. Call this after a model catalogue write
  * or import completes; public callers cannot choose arbitrary cache tags.
@@ -171,7 +188,7 @@ internalRouter.post("/compatibility/validate", async (c) => {
 internalRouter.post("/revalidate", async (c) => {
 	const secret = c.env.REVALIDATION_SECRET;
 	const authorization = c.req.header("authorization");
-	let authorized = Boolean(secret && authorization === `Bearer ${secret}`);
+	let authorized = Boolean(secret && authorization && await bearerMatchesSecret(authorization, secret));
 	if (!authorized) {
 		const user = await requireUser(c.req.raw, c.env);
 		if (user) {

@@ -5,18 +5,19 @@ sidebarTitle: "お問い合わせとサポート"
 icon: "messages-square"
 ---
 
-## バグを報告する
+アカウント、請求、API、フィードバックに関する質問は、まず [Phaseo ヘルプセンター](https://phaseo.app/help)から送ってください。チームが各リクエストを適切な窓口に振り分けます。
 
-Phaseo ヘルプセンターから、再現手順、リクエスト ID、関連するログを明記して報告してください。
+| 目的 | 窓口 |
+| --- | --- |
+| アカウント、請求、失敗したリクエストについてサポートを受ける | [ヘルプセンター](https://phaseo.app/help) |
+| バグを報告する | [ヘルプセンター](https://phaseo.app/help)、または GitHub の[バグレポート](https://github.com/phaseoteam/Phaseo/issues/new?template=bug.yml) |
+| カタログデータを修正する | [貢献](../contributing/overview) |
+| セキュリティの脆弱性を報告する | [GitHub リポジトリ](https://github.com/phaseoteam/Phaseo)の **Security -> Report a vulnerability** から非公開で報告するか、`security@phaseo.app` に送ってください。公開の場には投稿しないでください。 |
+| コミュニティに質問する | [Discord](https://discord.gg/aQyywCvgZ5) |
 
-- https://phaseo.app/help
+## バグレポートに含める情報
 
-## サポートを依頼する
-
-アカウント、請求、API のトラブルシューティングについては、Phaseo ヘルプセンターにお問い合わせください。
-
-- https://phaseo.app/help
-
-## フィードバックを送る
-
-フィードバックの送信先が分からない場合は Phaseo ヘルプセンターをご利用ください。担当チームが適切な窓口に転送します。
+- リクエスト ID：レスポンスの `id`（`G-...`）、エラーの `generation_id`、または `x-request-id` レスポンスヘッダー。
+- 送信した内容（API キーは削除してください）と、期待した結果。
+- レスポンス本文のエラーコードとメッセージ。各コードの意味は[エラーリファレンス](../api-reference/errors)で説明しています。
+- 関連するログ（認証情報と顧客データは削除してください）。

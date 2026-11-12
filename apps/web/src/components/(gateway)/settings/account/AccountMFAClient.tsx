@@ -1,16 +1,14 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import {
 	unenrollMFAAction,
 	cleanupUnverifiedMFAAction,
-} from "@/app/(dashboard)/settings/account/actions";
+} from "@/features/settings/account/actions";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { MFAEnrollmentFlow } from "./MFAEnrollmentFlow";
@@ -55,7 +53,7 @@ export default function AccountMFAClient({
 
 		setDisablingMFA(true);
 		try {
-			await toast.promise(unenrollMFAAction(mfaFactorId), {
+			await toast.promise(unenrollMFAAction({ data: mfaFactorId }), {
 				loading: s("phraseDisablingMFA"),
 				success: s("Two-factor authentication disabled"),
 				error: (error: unknown) =>
@@ -87,7 +85,7 @@ export default function AccountMFAClient({
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-8">
 			<section aria-labelledby="authenticator-app-title" className="space-y-3">
 				<h2
 					id="authenticator-app-title"
@@ -95,9 +93,9 @@ export default function AccountMFAClient({
 				>
 					{s("Authenticator App")}
 				</h2>
-				<div className="overflow-hidden rounded-xl border bg-background/40">
-					<div className="px-4 py-4">
-					<div className="flex items-start justify-between gap-4">
+				<div className="divide-y divide-border/60">
+					<div className="py-5">
+					<div className="flex flex-wrap items-start justify-between gap-4 sm:flex-nowrap">
 						<div className="min-w-0">
 							<h3 className="text-sm font-medium">{s("Two-Factor Authentication")}</h3>
 							<p className="mt-0.5 text-sm text-muted-foreground">
@@ -112,7 +110,7 @@ export default function AccountMFAClient({
 					</div>
 
 					{mfaEnabled ? (
-						<div className="flex flex-col gap-3 pt-3 pl-3 sm:flex-row sm:items-center sm:justify-between sm:pl-4">
+						<div className="mt-5 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
 							<div className="min-w-0">
 							<p className="text-xs font-medium">{s("Disable Two-Factor Authentication")}</p>
 								<p className="mt-0.5 text-xs text-muted-foreground">

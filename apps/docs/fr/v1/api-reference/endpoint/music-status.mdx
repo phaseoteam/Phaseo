@@ -3,12 +3,15 @@ title: "Récupérer une génération musicale"
 sidebarTitle: "Récupérer une génération musicale"
 badge: "Beta"
 openapi: "/fr/openapi/v1/openapi.localized.yaml GET /music/generate/{music_id}"
-description: "Récupérez une génération musicale à l’aide de son identifiant de requête Phaseo."
+description: "Récupérez une génération musicale à l’aide de son ID de requête Phaseo."
 ---
 
-Récupérez un résultat musical créé avec `POST /music/generate`. Ce point de terminaison renvoie le résultat normalisé stocké lorsque le fournisseur a terminé et interroge le fournisseur amont si la tâche est encore asynchrone.
+Transmettez l’`id` renvoyé par [`POST /v1/music/generate`](./music-generate.mdx), et non son `nativeResponseId`. Phaseo renvoie le résultat stocké lorsque la génération est terminée, et interroge le fournisseur à votre place tant qu’elle est en cours.
 
-## Structure de la réponse
+```bash
+curl https://api.phaseo.app/v1/music/generate/req_01JY6MUSIC123 \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
 
 ```json
 {
@@ -37,10 +40,4 @@ Récupérez un résultat musical créé avec `POST /music/generate`. Ce point de
 }
 ```
 
-## Remarques
-
-- `status` peut prendre les valeurs `queued`, `in_progress`, `completed` ou `failed`.
-- `usage` est inclus lorsque la génération est terminée.
-- Transmettez l’`id` Phaseo renvoyé par `POST /music/generate`, et non `nativeResponseId`.
-- Ce point de terminaison gère en interne les API d’état et de récupération propres aux fournisseurs.
-
+`status` vaut `queued`, `in_progress`, `completed` ou `failed`. `usage` est inclus une fois la génération terminée.

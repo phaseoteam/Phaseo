@@ -11,6 +11,7 @@ import { computeBill } from "@pipeline/pricing/engine";
 import type { ResolvedKey } from "../../keys";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
 import { upstreamTestHeaders } from "../../shared/testing";
+import { chatStreamErrorFrame } from "@core/error-object";
 
 
 type GatewayToolCall = {
@@ -798,10 +799,7 @@ function createOpenAIStreamResponse(
                 });
             }
             console.error("OpenAI streaming error:", err);
-            await emit({
-                object: "error",
-                message: err instanceof Error ? err.message : "stream_error",
-            });
+            await emit(chatStreamErrorFrame({ message: err instanceof Error ? err.message : "stream_error" }));
         } finally {
             try { await writer.close(); } catch { }
         }
@@ -944,9 +942,6 @@ async function execNonStreaming(
         headers: openAICompatHeaders(args.providerId, key, upstreamTestHeaders(args.meta)),
         body: JSON.stringify(requestPayload),
     });
-
-    const jsonTest = await res.clone().json().catch(() => null);
-    console.log("OpenAI non-streaming response:", jsonTest);
 
     const bill = createBill(res);
     const json = await res.clone().json().catch(() => null);

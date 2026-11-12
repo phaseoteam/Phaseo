@@ -65,7 +65,7 @@ describe("getVideoByIdHandler upstream error normalization", () => {
 		expect(response.status).toBe(502);
 		const payload = await response.json();
 		expect(payload).toMatchObject({
-			error: "upstream_error",
+			code: "upstream_error",
 			reason: "xai_video_status_fetch_failed",
 			request_id: "req_video_status_error",
 			workspace_id: "ws_video_status_error",

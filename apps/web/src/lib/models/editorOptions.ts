@@ -67,6 +67,7 @@ export const MODEL_CAPABILITY_OPTIONS = [
   "text.rerank",
   "text.moderate",
   "decisions.make",
+  "extraction.extract",
   "image.generate",
   "image.edit",
   "audio.transcribe",
@@ -81,9 +82,7 @@ export const MODEL_CAPABILITY_OPTIONS = [
 
 export const CAPABILITY_STATUS_OPTIONS = [
   "active",
-  "deranked_lvl1",
-  "deranked_lvl2",
-  "deranked_lvl3",
+  "deranked",
   "disabled",
 ] as const
 
@@ -95,13 +94,8 @@ export function normalizeCapabilityStatus(
   const normalized = (value ?? "").trim().toLowerCase()
 
   if (normalized === "disabled") return "disabled"
-  if (normalized === "deranked_lvl1" || normalized === "deranked_lvl_1")
-    return "deranked_lvl1"
-  if (normalized === "deranked_lvl2" || normalized === "deranked_lvl_2")
-    return "deranked_lvl2"
-  if (normalized === "deranked_lvl3" || normalized === "deranked_lvl_3")
-    return "deranked_lvl3"
-  if (normalized === "deranked") return "deranked_lvl1"
+  // Saved as `degraded`; loading it back as anything else would undo the derank on the next save.
+  if (normalized === "degraded" || /^deranked(_lvl_?[123])?$/.test(normalized)) return "deranked"
   return "active"
 }
 
@@ -110,7 +104,7 @@ export function editorOptionLabel(value: string): string {
     "text.generate": "Text generation", "text.embed": "Text embeddings", "text.rerank": "Text reranking", "text.moderate": "Text moderation", "decisions.make": "Decisions",
     "image.generate": "Image generation", "image.edit": "Image editing", "audio.transcribe": "Audio transcription", "audio.transcription": "Audio transcription (legacy)",
     "audio.translations": "Audio translation", "audio.realtime": "Realtime audio", realtime: "Realtime", ocr: "Optical character recognition",
-    "video.edit": "Video editing", "video.generate": "Video generation", deranked_lvl1: "Deprioritized · Level 1", deranked_lvl2: "Deprioritized · Level 2", deranked_lvl3: "Deprioritized · Level 3",
+    "video.edit": "Video editing", "video.generate": "Video generation", deranked: "Last resort",
   }
   return labels[value] ?? value.replace(/[_.-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
 }

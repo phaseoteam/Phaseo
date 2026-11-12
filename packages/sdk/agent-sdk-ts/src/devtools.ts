@@ -1,6 +1,3 @@
-import { randomUUID } from "node:crypto";
-import * as fs from "node:fs";
-import * as path from "node:path";
 import type { AgentDefinition, AgentRunResult, AgentStepRecord } from "./types.js";
 
 export type AgentDevtoolsConfig = {
@@ -53,7 +50,8 @@ export function createAgentDevtools(
 	};
 }
 
-export function captureAgentRunDevtools<TInput, TOutput, TContext>(args: {
+/** Writes one devtools entry. Does nothing, and loads no Node modules, unless devtools are enabled. */
+export async function captureAgentRunDevtools<TInput, TOutput, TContext>(args: {
 	type: "agent.run" | "agent.continue";
 	definition: AgentDefinition<TInput, TOutput, TContext>;
 	options: {
@@ -74,7 +72,7 @@ export function captureAgentRunDevtools<TInput, TOutput, TContext>(args: {
 
 	const latestStep = findLatestStep(args.result?.steps);
 	const entry: AgentDevtoolsEntry = {
-		id: args.result?.run.id ?? args.runId ?? randomUUID(),
+		id: args.result?.run.id ?? args.runId ?? globalThis.crypto.randomUUID(),
 		type: args.type,
 		timestamp: args.startedAt,
 		duration_ms: Date.now() - args.startedAt,
@@ -112,21 +110,28 @@ export function captureAgentRunDevtools<TInput, TOutput, TContext>(args: {
 		},
 	};
 
-	writeDevtoolsEntry(config.directory, entry);
+	await writeDevtoolsEntry(config.directory, entry);
+}
+
+// Workers and browsers may have no `process` global at all.
+function nodeProcess(): NodeJS.Process | undefined {
+	return typeof process === "undefined" ? undefined : process;
 }
 
 function resolveDevtoolsConfig(config?: Partial<AgentDevtoolsConfig>) {
 	const enabled =
 		typeof config?.enabled === "boolean"
 			? config.enabled
-			: process.env.PHASEO_DEVTOOLS === "true";
+			: nodeProcess()?.env?.PHASEO_DEVTOOLS === "true";
 	return {
 		enabled,
-		directory: config?.directory ?? process.env.PHASEO_DEVTOOLS_DIR ?? DEFAULT_DEVTOOLS_DIR,
+		directory: config?.directory ?? nodeProcess()?.env?.PHASEO_DEVTOOLS_DIR ?? DEFAULT_DEVTOOLS_DIR,
 	};
 }
 
-function writeDevtoolsEntry(directory: string, entry: AgentDevtoolsEntry) {
+async function writeDevtoolsEntry(directory: string, entry: AgentDevtoolsEntry) {
+	// Loaded only here, so importing the SDK never pulls in Node built-ins.
+	const [fs, path] = await Promise.all([import("node:fs"), import("node:path")]);
 	fs.mkdirSync(path.join(directory, "assets", "images"), { recursive: true });
 	fs.mkdirSync(path.join(directory, "assets", "audio"), { recursive: true });
 	fs.mkdirSync(path.join(directory, "assets", "video"), { recursive: true });
@@ -137,12 +142,12 @@ function writeDevtoolsEntry(directory: string, entry: AgentDevtoolsEntry) {
 			metadataPath,
 			JSON.stringify(
 				{
-					session_id: randomUUID(),
+					session_id: globalThis.crypto.randomUUID(),
 					started_at: Date.now(),
 					sdk: "typescript",
 					sdk_version: AGENT_SDK_VERSION,
-					platform: process.platform,
-					node_version: process.version,
+					platform: nodeProcess()?.platform,
+					node_version: nodeProcess()?.version,
 				},
 				null,
 				2,

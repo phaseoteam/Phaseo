@@ -50,7 +50,8 @@
 		"fromJournal": "From the journal",
 		"journalDescription": "Product news, guides, and release notes.",
 		"viewAllPosts": "View all posts",
-		"englishBodyNotice": "This editorial content is currently available in English. The surrounding interface is translated; the original article is shown to preserve its meaning."
+		"englishBodyNotice": "This editorial content is currently available in English. The surrounding interface is translated; the original article is shown to preserve its meaning.",
+		"faqTitle": "Frequently asked questions"
 	},
 	"roadmap": {
 		"title": "Phaseo Roadmap",
@@ -386,9 +387,9 @@
 				"description": "The declarative component and state model underlying Phaseo's interactive product surfaces.",
 				"usedFor": "Chat, model comparison, settings, observability, and every stateful interface are composed as React components."
 			},
-			"nextjs": {
-				"description": "The application framework that joins server rendering, routing, metadata, caching, and client interaction.",
-				"usedFor": "The public catalogue, authenticated workspace, API bridges, and this page all share one App Router application."
+			"tanstackStart": {
+				"description": "The full-stack React framework that joins server rendering, routing, data loading and server functions.",
+				"usedFor": "The public catalogue, authenticated workspace, API bridges, and this page all share one application running on Cloudflare Workers."
 			},
 			"tailwind": {
 				"description": "A utility-first styling system that keeps visual decisions close to the components they affect.",

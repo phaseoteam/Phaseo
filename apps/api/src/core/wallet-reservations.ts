@@ -5,6 +5,7 @@
 import { getSupabaseAdmin } from "@/runtime/env";
 import { invalidateGatewayCreditCache } from "@core/gateway-credit-cache";
 import { setKeyVersion } from "@core/kv";
+import { noteSpendLimitReached } from "@/pipeline/notifications/spend-limit-alerts";
 
 export type WalletReservationStatus =
 	| "held"
@@ -22,6 +23,9 @@ export type WalletReservationStatus =
 	| "workspace_weekly_cost_budget_reached"
 	| "workspace_monthly_cost_budget_reached"
 	| "workspace_lifetime_cost_budget_reached"
+	| "department_daily_cost_budget_reached"
+	| "department_weekly_cost_budget_reached"
+	| "department_monthly_cost_budget_reached"
 	| "key_limit_soft_blocked"
 	| "key_not_found"
 	| "key_not_active"
@@ -95,6 +99,9 @@ function normalizeStatus(value: unknown): WalletReservationStatus {
 		status === "workspace_weekly_cost_budget_reached" ||
 		status === "workspace_monthly_cost_budget_reached" ||
 		status === "workspace_lifetime_cost_budget_reached" ||
+		status === "department_daily_cost_budget_reached" ||
+		status === "department_weekly_cost_budget_reached" ||
+		status === "department_monthly_cost_budget_reached" ||
 		status === "key_limit_soft_blocked" ||
 		status === "key_not_found" ||
 		status === "key_not_active" ||
@@ -204,6 +211,8 @@ export async function reserveWalletCredits(args: {
 		afterReservedNanos: null,
 	};
 	if (normalized.applied || normalized.alreadyApplied) await invalidateReservationCaches(args.workspaceId, args.keyId);
+	// A hold refused for a used-up budget or key limit alerts the workspace in the background.
+	else noteSpendLimitReached({ workspaceId: args.workspaceId, keyId: args.keyId, reason: normalized.status });
 	return normalized;
 }
 

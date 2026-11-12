@@ -1,0 +1,9 @@
+---
+title: "Levantar un bloqueo de gasto"
+sidebarTitle: "Levantar bloqueo"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml POST /spend-blocks/{id}/lift"
+description: "Vuelve a dejar pasar las solicitudes del ámbito de un bloqueo de gasto."
+---
+
+Requiere `spend_rules:write`. Los llamadores OAuth deben ser propietarios o administradores del espacio de trabajo. El bloqueo no vuelve a empezar en el mismo periodo (en las reglas continuas, durante una ventana) y se envía una notificación de **Bloqueos por gasto**. Las solicitudes ven el cambio en aproximadamente un minuto.

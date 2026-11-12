@@ -1,22 +1,19 @@
 ---
 icon: "workflow"
 title: "Fusion सर्वर टूल"
-description: "कई analysis models चलाएँ और उनके निष्कर्षों का synthesis करें।"
+description: "कई विश्लेषण मॉडल चलाएँ और उनके निष्कर्षों को एक साथ जोड़ें।"
 ---
 
-जब जवाब को कई independent model perspectives से लाभ हो, तो `phaseo:fusion` उपयोग करें। Phaseo analysis models को parallel चलाता है, फिर चुने गए analyst model से निष्कर्षों का synthesis करवाकर calling model को देता है।
+जब किसी जवाब को कई स्वतंत्र रायों से फ़ायदा हो, जैसे कोई योजना का फ़ैसला, शोध का सार या डिज़ाइन समीक्षा, तो `phaseo:fusion` जोड़ें। जब मुख्य मॉडल इसे कॉल करता है, तो Phaseo सवाल हर विश्लेषण मॉडल को समानांतर में भेजता है, एक विश्लेषक मॉडल से उनके निष्कर्ष मिलाने को कहता है, और वह सार लौटाता है। इससे लेटेंसी बढ़ती है, इसलिए जब एक समीक्षा काफ़ी हो तो एक [Advisor](./advisor) इस्तेमाल करें।
 
-## प्लेग्राउंड सेटअप
-
-Playground के server-tools menu में Fusion से ये चुन सकते हैं:
-
-- ऐसे analysis models जो request को अलग-अलग जाँचते हैं
-- एक optional judge model जो analysis outputs की तुलना करता है
-- Fusion advisor tools के लिए अधिकतम tool-call limit
-
-Main model को इसी tool loop में नाम वाले advisors दिखते हैं और वह final response लिखने से पहले उनके outputs का उपयोग कर सकता है।
-
-## API संरचना
+```mermaid
+flowchart LR
+  main["मुख्य मॉडल phaseo:fusion कॉल करता है"] --> a1["विश्लेषण मॉडल 1"]
+  main --> a2["विश्लेषण मॉडल 2"]
+  a1 --> syn["विश्लेषक मॉडल सार बनाता है"]
+  a2 --> syn
+  syn -->|"टूल परिणाम"| main
+```
 
 ```json
 {
@@ -35,35 +32,34 @@ Main model को इसी tool loop में नाम वाले advisors 
 }
 ```
 
-## Fusion कब उपयोग करें
+Playground में सर्वर-टूल मेन्यू यही चीज़ें सेट करता है: विश्लेषण मॉडल, एक वैकल्पिक जज (विश्लेषक) मॉडल, और कॉल सीमा।
 
-इन कामों के लिए Fusion उपयोग करें:
+## पैरामीटर
 
-- planning decisions जहाँ दूसरा या तीसरा model छूटी हुई assumptions पकड़ सकता हो
-- research synthesis जहाँ models evidence को अलग-अलग तौल सकते हों
-- कोड या आर्किटेक्चर की समीक्षा, जहाँ स्वतंत्र आलोचना की आवश्यकता हो
-- high-value responses जहाँ थोड़ी अतिरिक्त latency स्वीकार्य हो
+| पैरामीटर | प्रकार | डिफ़ॉल्ट | विवरण |
+| --- | --- | --- | --- |
+| `analysis_models` | string[] | ज़रूरी | कम से कम 2 मॉडल। इससे कम होने पर अनुरोध अस्वीकार होता है। |
+| `model` | string | अनुरोध का मॉडल | सार लिखने वाला विश्लेषक मॉडल। |
+| `instructions` | string | कोई नहीं | विश्लेषण और विश्लेषक, दोनों कॉल के लिए निर्देश। |
+| `max_uses` | integer | `1` | हर अनुरोध में Fusion कॉल, अधिकतम `4`। |
+| `max_completion_tokens` | integer | `1400` | हर विश्लेषण और सार के आउटपुट टोकन, अधिकतम `32000`। |
 
-केवल एक review pass चाहिए, तो एक Advisor उपयोग करें।
+## मॉडल क्या भेजता है
 
-## उपयोग और मूल्य निर्धारण
+एक `prompt`: वह सवाल जिस पर कई नज़रिए चाहिए।
 
-हर Fusion invocation इस संख्या को बढ़ाता है:
+## टूल क्या लौटाता है
 
 ```json
 {
-  "usage": {
-    "server_tool_use": {
-      "fusion_requests": 1
-    }
-  }
+  "status": "ok",
+  "analyses": 2,
+  "analysis": "Both reviewers flag the cutover order..."
 }
 ```
 
-Advisor models के tokens total usage में जुड़ते हैं और चुने गए हर model की दर से bill हो सकते हैं। Server-tool pricing में `server_tool_advisor_requests` meter भी उपयोग किया जा सकता है।
+`analyses` उन विश्लेषण मॉडल की गिनती है जिन्होंने जवाब दिया। अगर कुछ विफल होते हैं, तो सार बाकी मॉडल से बनता है। त्रुटि परिणाम हैं `fusion_invalid_request` (कोई प्रॉम्प्ट नहीं), `fusion_max_uses_exceeded`, `fusion_panel_failed` (हर विश्लेषण मॉडल विफल हुआ) और `fusion_request_failed` (विश्लेषक विफल हुआ)।
 
-## संबंधित
+## उपयोग और कीमत
 
-- [Advisor](./advisor.mdx)
-- [Subagent](./subagent.mdx)
-- [Server tools](./index.mdx)
+हर कॉल `usage.server_tool_use.fusion_requests` में 1 जोड़ती है और `server_tool_fusion_requests` से बिल हो सकती है। हर विश्लेषण और विश्लेषक कॉल का शुल्क उसके मॉडल की दरों पर, अनुरोध के बिल में अलग पंक्ति के रूप में लगता है; उसके टोकन कॉल करने वाले मॉडल के टोकन में नहीं जोड़े जाते। सशुल्क मॉडलों के लिए क्रेडिट चाहिए, भले ही कॉल करने वाला मॉडल मुफ़्त हो।

@@ -2,12 +2,17 @@
 title: "List endpoints"
 sidebarTitle: "List endpoints"
 badge: "Beta"
-openapi: "GET /endpoints"
+openapi: "/openapi/v1/openapi.yaml GET /endpoints"
 description: "List capability-backed gateway endpoints with public paths and model/provider coverage."
+"og:image": "https://phaseo.app/og/dynamic?title=List%20endpoints&description=List%20capability-backed%20gateway%20endpoints%20with%20public%20paths%20and%20model/provider%20coverage.&pathname=/docs/v1/api-reference/endpoint/endpoints"
 ---
 
-- `endpoints`: the canonical endpoint IDs currently exposed by the API
-- `data`: endpoint records with `public_path`, `collection`, `model_count`, and `provider_count`
-- `sample_models`: up to 10 recent visible model IDs from the public catalogue
+The response has three fields:
+
+- `endpoints`: the canonical endpoint IDs currently exposed by the API.
+- `data`: one record per endpoint with `id`, `capability_id`, `public_path`, `collection`, `model_count` and `provider_count`, sorted by `public_path`.
+- `sample_models`: the first 10 visible model IDs from the public catalogue.
+
+The response is cached for 30 minutes.
 
 Use [List model endpoint capabilities](./model-endpoints) when you need provider- and parameter-level detail for one model.

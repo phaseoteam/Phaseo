@@ -40,11 +40,9 @@ describe("account mutation boundaries", () => {
 		["PUT", "/api/account/settings/guardrails/guardrail-1", { workspaceId: "workspace-1", name: "Updated" }],
 		["DELETE", "/api/account/settings/guardrails/guardrail-1", { workspaceId: "workspace-1" }],
 		["PUT", "/api/account/settings/guardrails/guardrail-1/keys", { workspaceId: "workspace-1", keyIds: [] }],
+		["PATCH", "/api/account/settings/guardrails/assignments", { workspaceId: "workspace-1", targetType: "key", targetIds: ["key-1"], addGuardrailIds: ["guardrail-1"] }],
 		["PUT", "/api/account/settings/account/profile", { display_name: "Test" }],
 		["DELETE", "/api/account/settings/account", undefined],
-		["POST", "/api/account/settings/account/recovery-codes", undefined],
-		["DELETE", "/api/account/settings/account/recovery-codes", undefined],
-		["POST", "/api/account/settings/account/recovery-codes/verify", { code: "TEST-CODE" }],
 		["POST", "/api/account/settings/broadcast", { destinationId: "webhook", name: "Test", config: { url: "https://example.com" }, workspaceId: "workspace-1" }],
 		["PUT", "/api/account/settings/broadcast/destination-1/disable", undefined],
 		["DELETE", "/api/account/settings/broadcast/destination-1", undefined],
@@ -93,6 +91,16 @@ describe("account mutation boundaries", () => {
 		expect([401, 403]).toContain(response.status);
 		expect(response.headers.get("cache-control")).toBe("private, no-store");
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBeNull();
+	});
+
+	it.each([
+		["GET", "/api/account/settings/account/recovery-codes"],
+		["POST", "/api/account/settings/account/recovery-codes"],
+		["DELETE", "/api/account/settings/account/recovery-codes"],
+		["POST", "/api/account/settings/account/recovery-codes/verify"],
+	] as const)("no longer serves the unbacked %s %s recovery code route", async (method, path) => {
+		const response = await app.request(`https://phaseo.app${path}`, { method }, { ENV: "development" });
+		expect(response.status).toBe(404);
 	});
 
 	it("does not expose a browser route that can mint a managed gateway key", async () => {

@@ -4,7 +4,7 @@ const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supaba
 afterEach(() => vi.unstubAllGlobals());
 
 describe("public rankings routes", () => {
-	it.each(["text_tokens", "image_outputs", "image_inputs", "embedding_tokens", "rerank_quad_tokens", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_seconds", "video_tokens", "cached_tokens"])("reads %s from modality rollups", async (metric) => {
+	it.each(["text_tokens", "image_outputs", "image_inputs", "embedding_tokens", "rerank_quad_tokens", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_seconds", "video_tokens", "cached_tokens", "decision_tokens"])("reads %s from modality rollups", async (metric) => {
 		const fetchMock = vi.fn(async () => new Response(JSON.stringify([{ model_id: "test", tokens: 2.75 }])));
 		vi.stubGlobal("fetch", fetchMock);
 		const response = await app.request(`https://phaseo.app/api/_web/rankings/modality-timeseries?metric=${metric}`, {}, env);
@@ -34,7 +34,7 @@ describe("public rankings routes", () => {
 		vi.stubGlobal("fetch", fetchMock);
 		const response = await app.request("https://phaseo.app/api/_web/rankings/timeseries?time_range=month&bucket_size=day&top_n=4", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
 		expect(String(fetchMock.mock.calls[0]?.[0])).toContain("get_public_usage_timeseries");
 		expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain('"p_time_range":"month"');
 		await expect(response.json()).resolves.toEqual({ data: [{ model_id: "openai/gpt-test", tokens: 10 }] });
@@ -72,7 +72,7 @@ describe("public rankings routes", () => {
 		const response = await app.request("https://phaseo.app/api/_web/rankings/benchmarks", {}, env);
 
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
 		await expect(response.json()).resolves.toMatchObject({
 			benchmarks: [{
 				benchmark_id: "aa-intelligence-index-v4",
@@ -82,6 +82,80 @@ describe("public rankings routes", () => {
 				],
 			}],
 		});
+	});
+
+	it("serves one model's place on the benchmark leaderboards", async () => {
+		const fetchMock = vi.fn(async (input: string | URL | Request) => {
+			const url = decodeURIComponent(String(input));
+			const epoch = url.includes("epoch-capabilities-index");
+			if (url.includes("/v2_benchmarks?")) {
+				return Response.json(epoch
+					? [{ benchmark_id: "epoch-capabilities-index", name: "Epoch Capabilities Index", category: "general", ascending_order: true, total_models: 3, benchmark_type: "numerical" }]
+					: [{ benchmark_id: "aa-intelligence-index-v4", name: "Artificial Analysis Intelligence Index", category: "general", ascending_order: true, benchmark_type: "numerical", total_models: 3 }]);
+			}
+			if (url.includes("/v2_benchmark_results?")) {
+				return Response.json(epoch
+					? [
+						{ model_slug: "anthropic/claude-test", score: "150.5", rank: 1, other_info: null },
+						{ model_slug: "hidden/model", score: "149", rank: 2, other_info: null },
+						{ model_slug: "openai/gpt-test", score: "140", rank: 3, other_info: "Benchmark: ECI" },
+						{ model_slug: "google/unscored", score: null, rank: null, other_info: null },
+					]
+					: [
+						{ benchmark_id: "aa-intelligence-index-v4", model_slug: "openai/gpt-test", score_numeric: 58, other_info: "Intelligence Index v4.1", variant: "high" },
+						{ benchmark_id: "aa-intelligence-index-v4", model_slug: "openai/gpt-test", score_numeric: 51, other_info: "Intelligence Index v4.1", variant: "low" },
+						{ benchmark_id: "aa-intelligence-index-v4", model_slug: "anthropic/claude-test", score_numeric: 61, other_info: "Intelligence Index v4.1", variant: null },
+						{ benchmark_id: "aa-intelligence-index-v4", model_slug: "google/gemini-test", score_numeric: 55, other_info: "Intelligence Index v4.1", variant: null },
+					]);
+			}
+			if (url.includes("/v2_models?")) {
+				return Response.json(url.includes("released_at,hidden")
+					? [
+						{ model_slug: "anthropic/claude-test", name: "Claude Test", released_at: "2026-05-01", hidden: false, lab: { lab_slug: "anthropic", name: "Anthropic", metadata: { colour: "#d97757" } } },
+						{ model_slug: "hidden/model", name: "Hidden", hidden: true, lab: null },
+						{ model_slug: "openai/gpt-test", name: "GPT Test", released_at: "2026-06-01", hidden: false, lab: { lab_slug: "openai", name: "OpenAI", metadata: {} } },
+						{ model_slug: "google/unscored", name: "Unscored", hidden: false, lab: null },
+					]
+					: [
+						{ model_slug: "openai/gpt-test", name: "GPT Test", lab_slug: "openai", lab: { name: "OpenAI" } },
+						{ model_slug: "anthropic/claude-test", name: "Claude Test", lab_slug: "anthropic", lab: { name: "Anthropic" } },
+						{ model_slug: "google/gemini-test", name: "Gemini Test", lab_slug: "google", lab: { name: "Google" } },
+					]);
+			}
+			return Response.json([]);
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const response = await app.request("https://phaseo.app/api/_web/rankings/benchmarks/openai%2Fgpt-test", {}, env);
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
+		expect(response.headers.get("cache-tag")).toBe("web-api-ranking-metadata,web-api-benchmarks,web-api-model-benchmarks");
+		await expect(response.json()).resolves.toEqual({
+			model_id: "openai/gpt-test",
+			artificial_analysis: {
+				"aa-intelligence-index-v4": {
+					lower_is_better: false,
+					entries: [
+						{ model_id: "openai/gpt-test", version: "4.1", scores: [58, 51] },
+						{ model_id: null, version: "4.1", scores: [55, 61] },
+					],
+				},
+			},
+			epoch: {
+				benchmark_id: "epoch-capabilities-index",
+				name: "Epoch Capabilities Index",
+				category: "general",
+				benchmark_type: "numerical",
+				lower_is_better: false,
+				total_models: 3,
+				entries: [
+					{ model_id: "anthropic/claude-test", model_name: "Claude Test", organisation_id: "anthropic", organisation_name: "Anthropic", organisation_colour: "#d97757", release_date: "2026-05-01", score: 150.5, rank: 1, other_info: null, source_link: null, updated_at: null },
+					{ model_id: "openai/gpt-test", model_name: "GPT Test", organisation_id: "openai", organisation_name: "OpenAI", organisation_colour: null, release_date: "2026-06-01", score: 140, rank: 3, other_info: "Benchmark: ECI", source_link: null, updated_at: null },
+				],
+			},
+		});
+		expect((await app.request("https://phaseo.app/api/_web/rankings/benchmarks/%20", {}, env)).status).toBe(400);
 	});
 
 	it("serves the observed context-length distribution through the cached web API", async () => {
@@ -104,7 +178,7 @@ describe("public rankings routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
-			"public, max-age=300, stale-while-revalidate=300",
+			"public, max-age=900, stale-while-revalidate=900, stale-if-error=3600",
 		);
 		expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
 			"get_public_context_length_distribution",
@@ -132,7 +206,7 @@ describe("public rankings routes", () => {
 		vi.stubGlobal("fetch", fetchMock);
 		const response = await app.request("https://phaseo.app/api/_web/rankings/model-retention?weeks=8&limit=10&min_workspace_weeks=40&min_workspaces=8&min_weeks=3", {}, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
 		const rpcCall = fetchMock.mock.calls.find(([input]) => String(input).includes("get_public_model_retention_rankings"));
 		expect(String(rpcCall?.[1]?.body)).toContain('"p_weeks":8');
 		expect(String(rpcCall?.[1]?.body)).toContain('"p_min_workspace_weeks":40');
@@ -175,7 +249,7 @@ describe("public rankings routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
-			"public, max-age=300, stale-while-revalidate=300",
+			"public, max-age=900, stale-while-revalidate=900, stale-if-error=3600",
 		);
 		expect(String(fetchMock.mock.calls[0]?.[0])).toContain("get_public_fastest_models");
 		expect(String(fetchMock.mock.calls[0]?.[1]?.body)).toContain('"p_days":30');
@@ -280,10 +354,61 @@ it("paginates AA results, excludes hidden and old-version scores, and ranks cost
 	expect(benchmarks[0].entries[0]).toMatchObject({ organisation_colour:'#123456', release_date:'2026-09-01', configurations:[{variant:'max',score:900},{variant:'high',score:850}] });
   expect(benchmarks[0].entries.some((entry:any)=>['test/old','test/hidden','test/malformed','test/manual'].includes(entry.model_id))).toBe(false);
   expect(benchmarks[0].total_models).toBe(benchmarks[0].entries.length);
-  expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300, stale-while-revalidate=300");
+  expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
   expect(benchmarks[0].entries).toEqual(expect.arrayContaining([expect.objectContaining({ model_id: 'test/preview', score: 43.6 })]));
   expect(benchmarks[3].lower_is_better).toBe(true);
   expect(benchmarks[3].entries.map((entry:any)=>[entry.score,entry.rank])).toEqual([[0,1],[0,1],[10.25,3]]);
   expect(fetchMock.mock.calls.filter(([url])=>String(url).includes('/v2_benchmark_results'))).toHaveLength(2);
   expect(fetchMock.mock.calls.filter(([url])=>String(url).includes('/v2_models'))).toHaveLength(3);
+});
+
+it("lists the AA Progress Index after the four index metrics with every configuration", async () => {
+  const ids = ["aa-intelligence-index-v5", "aa-coding-index-v4", "aa-agentic-index-v4", "aa-intelligence-index-cost-v5", "aa-progress-index-v1"];
+  const rows = [
+    { benchmark_id: ids[0], model_slug: "test/a", score_numeric: 58, other_info: "Artificial Analysis ID a; Intelligence Index v5.0", variant: "max" },
+    { benchmark_id: ids[4], model_slug: "test/a", score_numeric: 350, other_info: "A (Max); Artificial Analysis ID a; Progress Index v1", variant: "max" },
+    { benchmark_id: ids[4], model_slug: "test/a", score_numeric: 325, other_info: "A (Low); Artificial Analysis ID a-low; Progress Index v1", variant: "low" },
+    { benchmark_id: ids[4], model_slug: "test/old", score_numeric: 214.5, other_info: "Old; Artificial Analysis ID old; Progress Index v1", variant: null },
+  ];
+  vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request) => {
+    const url = new URL(String(input));
+    if (url.pathname.endsWith("/v2_benchmarks")) return Response.json(ids.map((id) => ({ benchmark_id: id, name: id, ascending_order: true, benchmark_type: "numerical" })));
+    if (url.pathname.endsWith("/v2_benchmark_results")) return Response.json(Number(url.searchParams.get("offset") ?? 0) ? [] : rows);
+    if (url.pathname.endsWith("/v2_models")) return Response.json(["test/a", "test/old"].map((id) => ({ model_slug: id, name: id, lab_slug: "test", lab: { name: "Test", colour: null } })));
+    return Response.json([]);
+  }));
+  const { benchmarks } = await (await app.request("https://phaseo.app/api/_web/rankings/benchmarks", {}, env)).json() as any;
+  expect(benchmarks.map((benchmark: any) => benchmark.benchmark_id).at(-1)).toBe("aa-progress-index-v1");
+  expect(benchmarks[0].benchmark_id).toBe("aa-intelligence-index-v5");
+  expect(benchmarks.at(-1).entries).toMatchObject([
+    { model_id: "test/a", score: 350, rank: 1, configurations: [{ variant: "max", score: 350 }, { variant: "low", score: 325 }] },
+    { model_id: "test/old", score: 214.5, rank: 2 },
+  ]);
+});
+
+describe("ranking query validation", () => {
+	// Every distinct URL misses the edge cache, so free-text values must never reach the database.
+	it.each([
+		"/rankings/timeseries?time_range=buster-1",
+		"/rankings/timeseries?bucket_size=buster-2",
+		"/rankings/market-share-timeseries?time_range=forever",
+		"/rankings/unique-users?bucket_size=minute",
+		"/rankings/tool-calls?time_range=x",
+		"/rankings/models?metric=random",
+		"/rankings/models?time_range=random",
+	])("rejects %s before any query", async (path) => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request(`https://phaseo.app/api/_web${path}`, {}, env);
+		expect(response.status).toBe(400);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it.each(["today", "24h", "week", "month", "year", "all"])("still accepts time_range=%s", async (range) => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request(`https://phaseo.app/api/_web/rankings/timeseries?time_range=${range}&bucket_size=day`, {}, env);
+		expect(response.status).toBe(200);
+		expect(fetchMock).toHaveBeenCalled();
+	});
 });

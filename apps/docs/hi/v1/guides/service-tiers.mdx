@@ -1,62 +1,10 @@
 ---
 title: "सेवा स्तर"
-description: "Phaseo Gateway में Standard, Fast, Ultrafast, Flex और Batch मूल्य मोड कैसे काम करते हैं।"
+description: "Phaseo Gateway में Standard, Fast, Ultrafast, Flex और Batch प्राइसिंग मोड कैसे काम करते हैं।"
 icon: "gauge"
 ---
 
-Provider support करे तो service tiers से अलग-अलग pricing और delivery modes चुने जा सकते हैं。
-
-उपलब्धता provider और model पर निर्भर करती है। अनुरोधित model किसी tier को support न करे, तो Gateway उसके ज़रिए route नहीं करेगा।
-
-<Note type="warning">
-अभी सेवा स्तर केवल उन प्रदाताओं के समर्थित टेक्स्ट मॉडल पर उपलब्ध हैं जो यह सुविधा देते हैं।
-</Note>
-
-`service_tier` तीनों टेक्स्ट अनुरोध endpoints पर उपलब्ध है:
-
-- `/v1/messages` पर Anthropic के साथ संगत Messages API
-- `/v1/chat/completions` पर OpenAI के साथ संगत Chat Completions API
-- `/v1/responses` पर OpenAI के साथ संगत Responses API
-
-## टियर का अवलोकन
-
-| स्तर | माँगने का तरीका | सामान्य उपयोग |
-| --- | --- | --- |
-| `Standard` | Default behavior। अतिरिक्त field की ज़रूरत नहीं। | सामान्य production traffic। |
-| `Fast` | Request में `service_tier: "fast"` सेट करें। | Support होने पर तेज़ या premium routing। OpenAI `priority` भी स्वीकार करता है। |
-| `Ultrafast` | अनुरोध में `service_tier: "ultrafast"` सेट करें। | समर्थन मिलने पर सबसे तेज़ रूटिंग। |
-| `Flex` | Request में `service_tier: "flex"` सेट करें। | Support होने पर कम लागत वाली routing। |
-| `Batch` | `service_tier` के बजाय Batch API उपयोग करें। | ऐसे बड़े deferred workloads जहाँ latency कम महत्वपूर्ण हो। |
-
-## API संगतता
-
-किसी भी supported synchronous text API को कॉल करते समय वही `service_tier` field उपयोग करें:
-
-- [Anthropic Messages API का संदर्भ](../api-reference/endpoint/anthropic-messages.mdx)
-- [Chat Completions API का संदर्भ](../api-reference/endpoint/chat-completions.mdx)
-- [Responses API का संदर्भ](../api-reference/endpoint/responses.mdx)
-- [साझा पैरामीटर का संदर्भ](../api-reference/parameters.mdx)
-
-`service_tier` की मान्य values हैं `standard`, `fast`, `ultrafast`, `priority`, `flex` और `batch`। `service_tier` छोड़ने पर default `Standard` होता है। Phaseo premium tier का canonical नाम `Fast` उपयोग करता है। OpenAI routes पर `priority` provider-compatible alias के रूप में स्वीकार होता है और वही routing तथा pricing लागू होती है। `Batch` को synchronous text requests के बजाय Batch API संभालता है।
-
-<Note>
-Phaseo normalized gateway values को internally provider-native controls से map करता है। उदाहरण के लिए, Anthropic route upstream में Anthropic-native tier fields पा सकता है, लेकिन client request में यहाँ दिए गए gateway values ही रहते हैं।
-</Note>
-
-## Standard
-
-`Standard` default routing mode है। इसे उपयोग करने के लिए `service_tier` सेट करना ज़रूरी नहीं है।
-
-```json
-{
-  "model": "openai/gpt-5.5",
-  "input": "Summarise this incident report."
-}
-```
-
-## Fast
-
-Provider का premium या high-priority offer चाहिए, तो `Fast` चुनें। Phaseo provider-neutral नाम `fast` उपयोग करता है। OpenAI इसे Fast mode कहता है और supported models पर `fast` तथा `priority` दोनों स्वीकार करता है।
+तेज़ डिलीवरी के लिए भुगतान करने (`fast`, `ultrafast`) या सस्ता, कम प्राथमिकता वाला मोड (`flex`) स्वीकार करने के लिए टेक्स्ट अनुरोध पर `service_tier` सेट करें। फिर Phaseo सिर्फ़ उन प्रदाताओं पर रूट करता है जो उस मॉडल के लिए वह स्तर देते हैं। यह फ़ील्ड `/v1/chat/completions`, `/v1/responses` और `/v1/messages` पर एक जैसा काम करता है।
 
 ```json
 {
@@ -66,11 +14,53 @@ Provider का premium या high-priority offer चाहिए, तो `Fast
 }
 ```
 
-### Anthropic Messages का उदाहरण
+| स्तर | अनुरोध कैसे करें | किसके लिए |
+| --- | --- | --- |
+| Standard | कुछ नहीं, या `"standard"` / `"default"` | सामान्य प्रोडक्शन ट्रैफ़िक |
+| Fast | `"fast"`, या इसका उपनाम `"priority"` | प्रदाता का प्रीमियम या ज़्यादा प्राथमिकता वाला ऑफ़र |
+| Ultrafast | `"ultrafast"` | सबसे तेज़ गति वाला ऑफ़र |
+| Flex | `"flex"` | कम लागत वाला ऑफ़र, जहाँ प्रदाता के पास हो |
+| Batch | [Batch API](../api-reference/endpoint/batches-create.mdx), `service_tier` नहीं | बड़े विलंबित वर्कलोड |
 
-```json
+स्तर सिर्फ़ टेक्स्ट मॉडल के लिए, और सिर्फ़ वहीं उपलब्ध हैं जहाँ मॉडल और प्रदाता उन्हें सपोर्ट करते हैं। जहाँ Phaseo के पास स्तर-विशेष कीमतें हैं, वहाँ मॉडल पेज उन्हें दिखाते हैं।
+
+## जब कोई स्तर उपलब्ध न हो तो क्या होता है
+
+Phaseo सिर्फ़ वे प्रदाता रूट रखता है जो अनुरोधित स्तर देते हैं; यह कभी किसी दूसरे स्तर पर फ़ॉलबैक नहीं करता। अगर कोई रूट उसे नहीं देता, तो अनुरोध `400 unsupported_model_or_endpoint`, कारण `service_tier_not_supported`, के साथ विफल होता है।
+
+अन्य मान `400 validation_error` के साथ विफल होते हैं:
+
+- सिंक्रोनस अनुरोध पर `service_tier: "batch"` (कीवर्ड `batch_service_tier_not_supported`)। इसके बजाय Batch API का उपयोग करें।
+- `standard`, `default`, `fast`, `ultrafast`, `priority`, `flex` या `batch` के अलावा कोई भी मान (कीवर्ड `unsupported_service_tier`)।
+
+आप हमेशा यही Gateway मान भेजते हैं। Phaseo इन्हें हर प्रदाता के अपने नियंत्रणों में बदल देता है, इसलिए उदाहरण के लिए Anthropic रूट को Anthropic के स्तर फ़ील्ड मिलते हैं।
+
+## हर एंडपॉइंट पर स्तर का अनुरोध करें
+
+<CodeGroup>
+```json Responses
 {
-  "model": "anthropic/claude-sonnet-4",
+  "model": "openai/gpt-5.5",
+  "input": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+```json Chat Completions
+{
+  "model": "openai/gpt-5.5",
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+```json Messages
+{
+  "model": "anthropic/claude-opus-5.5",
   "max_tokens": 512,
   "messages": [
     { "role": "user", "content": "Summarise this incident report." }
@@ -78,17 +68,17 @@ Provider का premium या high-priority offer चाहिए, तो `Fast
   "service_tier": "fast"
 }
 ```
+</CodeGroup>
 
-Anthropic पर route करते समय Phaseo इसे उचित provider-native control में map करता है।
+`ultrafast` के लिए ऐसा मॉडल उपयोग करें जिसके पेज पर Ultrafast कीमत दी गई हो।
 
-### Mistral Priority और EU रूटिंग
+## Mistral Priority और EU रूटिंग
 
-Mistral Priority Tier के लिए पात्र Mistral enterprise account आवश्यक है। Phaseo
-`priority` को Mistral के automatic priority mode से map करता है और Mistral द्वारा बताई tier पर charge करता है;
-Mistral Standard पर fallback करे, तो Standard pricing लागू होती है।
+Mistral Priority Tier के लिए योग्य Mistral एंटरप्राइज़ खाता चाहिए। Phaseo `priority` को Mistral के स्वचालित प्राथमिकता मोड से मैप करता है और Mistral जो स्तर रिपोर्ट करता है उसी का बिल बनाता है: अगर Mistral Standard पर फ़ॉलबैक करता है, तो आप Standard कीमत देते हैं।
 
-`mistral-eu` provider offer के साथ GLM 5.2 को Mistral के EU regional endpoint पर pin किया जा सकता है:
-प्रदाता ऑफ़र:
+कैटलॉग में कीमत होने से कोई स्तर रूट करने योग्य नहीं बनता। Priority तब तक बंद रहता है जब तक वह खास Mistral रूट Priority सपोर्ट का विज्ञापन न करे, और योग्यता फिर भी Mistral खाते और मॉडल पर निर्भर करती है।
+
+GLM 5.2 को `mistral-eu` प्रदाता ऑफ़र के साथ Mistral के EU क्षेत्रीय एंडपॉइंट पर पिन किया जा सकता है:
 
 ```json
 {
@@ -104,81 +94,6 @@ Mistral Standard पर fallback करे, तो Standard pricing लागू
 }
 ```
 
-Mistral regional inference पर 10% price uplift लागू होता है। Global Mistral offer पर Batch pricing उपलब्ध है, लेकिन
-Mistral regional endpoints पर Batch समर्थित नहीं है।
+Mistral क्षेत्रीय इन्फ़रेंस की लागत 10% ज़्यादा है। Batch कीमत सिर्फ़ ग्लोबल Mistral ऑफ़र पर Batch API के ज़रिए उपलब्ध है; Mistral क्षेत्रीय एंडपॉइंट पर Batch सपोर्ट नहीं करता।
 
-Phaseo Mistral के प्रकाशित Batch और Priority reference rates को runtime availability से अलग दर्ज करता है।
-Catalogue में price दिखने से वह tier routable नहीं हो जाता:
-जब तक खास Mistral route Priority support घोषित न करे, Priority बंद रहता है;
-Batch के लिए global Mistral Batch API उपयोग करनी होती है। Priority eligibility
-Mistral account और model पर निर्भर है।
-
-## Ultrafast
-
-मॉडल और प्रदाता समर्थन करें तो सबसे तेज़ सेवा स्तर के लिए `Ultrafast` इस्तेमाल करें। Phaseo केवल Ultrafast मूल्य वाली या Ultrafast-विशिष्ट रूट पर भेजता है; यह स्तर उपलब्ध न हो तो Fast या Standard पर नहीं लौटता।
-
-```json
-{
-  "model": "<model-id-with-ultrafast-pricing>",
-  "input": "Summarise this incident report.",
-  "service_tier": "ultrafast"
-}
-```
-## Flex
-
-Provider कम लागत वाला service tier दे और आप उस pricing mode के trade-offs स्वीकार करते हों, तब `Flex` चुनें।
-
-```json
-{
-  "model": "openai/gpt-5.5",
-  "input": "Summarise this incident report.",
-  "service_tier": "flex"
-}
-```
-
-### Chat Completions का उदाहरण
-
-```json
-{
-  "model": "openai/gpt-5.5",
-  "messages": [
-    { "role": "user", "content": "Summarise this incident report." }
-  ],
-  "service_tier": "flex"
-}
-```
-
-### Responses का उदाहरण
-
-```json
-{
-  "model": "openai/gpt-5.5",
-  "input": [
-    { "role": "user", "content": "Summarise this incident report." }
-  ],
-  "service_tier": "flex"
-}
-```
-
-## Batch
-
-`batch` batch execution के लिए मान्य tier value है, लेकिन synchronous text APIs `service_tier: "batch"` को अस्वीकार करके Batch API की ओर संकेत करने वाला validation error देती हैं।
-
-Batch pricing deferred batch execution पर लागू होती है, सामान्य synchronous requests पर नहीं; इसलिए Batch API या batch job workflow उपयोग करें।
-
-## ध्यान दें
-
-- Tier support provider और model के अनुसार बदलता है।
-- Model pages के pricing cards में data उपलब्ध होने पर tier-specific rates दिखते हैं।
-- कुछ providers specialized upstream offers देते हैं जिन्हें Phaseo catalogue में unified tier experience में map करता है।
-- समर्थित टेक्स्ट इंटरफ़ेस पर क्लाइंट को दिखने वाले `service_tier` मान सामान्यीकृत रहते हैं; प्रदाता के मूल नाम गेटवे के भीतर संभाले जाते हैं।
-
-## संबंधित पेज
-
-- [Anthropic Messages API का संदर्भ](../api-reference/endpoint/anthropic-messages.mdx)
-- [Chat Completions API का संदर्भ](../api-reference/endpoint/chat-completions.mdx)
-- [Responses API का संदर्भ](../api-reference/endpoint/responses.mdx)
-- [पैरामीटर](../api-reference/parameters.mdx)
-- [Routing और fallback](./routing-and-fallbacks.mdx)
-- [Chat completions (TypeScript SDK)](../sdk-reference/typescript/chat-completions.mdx)
-- [Responses (TypeScript SDK)](../sdk-reference/typescript/responses.mdx)
+पूरा फ़ील्ड संदर्भ [पैरामीटर](../api-reference/parameters.mdx) में है; स्तर प्रदाता क्रम और फ़ॉलबैक के साथ कैसे मिलते हैं, यह जानने के लिए [रूटिंग और फ़ॉलबैक](./routing-and-fallbacks.mdx) देखें।

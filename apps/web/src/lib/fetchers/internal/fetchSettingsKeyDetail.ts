@@ -10,6 +10,7 @@ export type KeyDetailData = {
 		id: string; workspace_id: string; name: string; prefix: string; status: string;
 		created_by: string | null; created_at: string; last_used_at: string | null; expires_at: string | null;
 		ip_allowlist: Array<{ label: string; address: string }>;
+		storage_locations?: string[];
 		daily_limit_requests: number; weekly_limit_requests: number; monthly_limit_requests: number;
 		daily_limit_cost_nanos: number; weekly_limit_cost_nanos: number; monthly_limit_cost_nanos: number;
 	};

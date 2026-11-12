@@ -4,9 +4,34 @@ import { sortUpstreamRequestsNewestFirst } from "./settings-usage";
 
 const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" };
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+	vi.unstubAllGlobals();
+	vi.useRealTimers();
+});
 
 describe("account usage settings routes", () => {
+	it("hides legacy upstream payloads from members when contents are limited to owners and admins", async () => {
+		// The legacy table is only read for ranges before the attempt-detail cut-over.
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
+		const upstreamFor = async (role: string) => {
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+				const url = new URL(input instanceof Request ? input.url : String(input));
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: "viewer" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role }]);
+				if (url.pathname.endsWith("workspaces")) return Response.json([{ owner_user_id: "owner" }]);
+				if (url.pathname.endsWith("workspace_settings")) return Response.json([{ io_logging_contents_access: "admins" }]);
+				if (url.pathname.endsWith("gateway_upstream_requests")) return Response.json([{ id: "upstream-1", request_id: "request-1", model_id: "openai/gpt-test", provider: "openai", request_payload: { messages: [{ role: "user", content: "secret" }] }, response_payload: { output_text: "secret" } }]);
+				return Response.json([]);
+			}));
+			const response = await app.request("https://phaseo.app/api/account/settings/usage/logs?workspaceId=workspace-1&view=upstream", { headers: { authorization: "Bearer token" } }, env);
+			expect(response.status).toBe(200);
+			const body = await response.json() as { data: { upstreamRequests: Array<Record<string, unknown>> } };
+			return body.data.upstreamRequests[0];
+		};
+		await expect(upstreamFor("member")).resolves.toMatchObject({ id: "upstream-1", request_payload: null, response_payload: null });
+		await expect(upstreamFor("admin")).resolves.toMatchObject({ request_payload: { messages: [{ role: "user", content: "secret" }] }, response_payload: { output_text: "secret" } });
+	});
 	it("denies a member's attempt to inspect another creator's activity", async () => {
 		const privateReads: string[] = [];
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
@@ -19,18 +44,18 @@ describe("account usage settings routes", () => {
 		const response = await app.request("https://phaseo.app/api/account/settings/usage/observability?workspaceId=workspace-1&user=other&from=2026-10-01&to=2026-10-02&previousFrom=2026-09-30&previousTo=2026-10-01", { headers: { authorization: "Bearer token" } }, env);
 		expect(response.status).toBe(403); expect(privateReads).toHaveLength(0);
 	});
-	it("filters creator activity by workspace-scoped keys before pagination", async () => {
-		const requestUrls: URL[] = [];
+	it("filters creator activity by workspace-scoped keys in the database", async () => {
+		const overviewArgs: Array<Record<string, unknown>> = [];
 		let creatorKeysUrl: URL | undefined;
-		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.endsWith("/rpc/get_private_usage_overview")) { overviewArgs.push(JSON.parse(String(init?.body ?? "{}"))); return new Response("[]"); }
 			if (url.pathname === "/auth/v1/user") return new Response(JSON.stringify({ id: "viewer", created_at: "2025-01-01" }));
 			if (url.pathname.includes("/auth/v1/admin/users/")) return new Response(JSON.stringify({ id: "11111111-1111-4111-8111-111111111111", email: "private@example.com", user_metadata: { avatar_url: "https://example.com/avatar.jpg", secret: "hidden" } }));
 			if (url.pathname.endsWith("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]));
 			if (url.pathname.endsWith("workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner" }]));
 			if (url.pathname.endsWith("keys") && url.searchParams.has("created_by")) { creatorKeysUrl = url; return new Response(JSON.stringify([{ id: "creator-key" }])); }
 			if (url.pathname.endsWith("users")) return new Response(JSON.stringify([{ display_name: "Alice" }]));
-			if (url.pathname.endsWith("v2_web_gateway_requests_by_creator")) { requestUrls.push(url); return new Response("[]"); }
 			return new Response("[]");
 		}));
 		const response = await app.request("https://phaseo.app/api/account/settings/usage/observability?workspaceId=workspace-1&user=11111111-1111-4111-8111-111111111111&from=2026-10-01&to=2026-10-02&previousFrom=2026-09-30&previousTo=2026-10-01", { headers: { authorization: "Bearer token" } }, env);
@@ -38,27 +63,28 @@ describe("account usage settings routes", () => {
 		expect(creatorKeysUrl?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
 		expect(creatorKeysUrl?.searchParams.get("created_by")).toBe("eq.11111111-1111-4111-8111-111111111111");
 		expect(creatorKeysUrl?.searchParams.get("limit")).toBe("1");
-		expect(requestUrls).toHaveLength(2);
-		for (const url of requestUrls) { expect(url.searchParams.get("key_created_by")).toBe("eq.11111111-1111-4111-8111-111111111111"); expect(url.searchParams.get("workspace_id")).toBe("eq.workspace-1"); }
+		// The selected period, the previous one, and the last 7 days.
+		expect(overviewArgs).toHaveLength(3);
+		for (const args of overviewArgs) expect(args).toMatchObject({ p_workspace_id: "workspace-1", p_creator_id: "11111111-1111-4111-8111-111111111111" });
 		const payload = await response.json() as any;
 		expect(payload.creatorFilter).toEqual({ id: "11111111-1111-4111-8111-111111111111", name: "Alice", avatarUrl: "https://example.com/avatar.jpg" });
 		expect(JSON.stringify(payload)).not.toContain("private@example.com");
 		expect(JSON.stringify(payload)).not.toContain("hidden");
 	});
 	it("does not broaden creator filters when the creator has no keys", async () => {
-		const requestUrls: URL[] = [];
-		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+		const overviewArgs: Array<Record<string, unknown>> = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = new URL(input instanceof Request ? input.url : String(input));
 			if (url.pathname === "/auth/v1/user") return new Response(JSON.stringify({ id: "viewer", created_at: "2025-01-01" }));
 			if (url.pathname.endsWith("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]));
 			if (url.pathname.endsWith("workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner" }]));
-			if (url.pathname.endsWith("v2_web_gateway_requests_by_creator")) requestUrls.push(url);
+			if (url.pathname.endsWith("/rpc/get_private_usage_overview")) overviewArgs.push(JSON.parse(String(init?.body ?? "{}")));
 			return new Response("[]");
 		}));
 		const response = await app.request("https://phaseo.app/api/account/settings/usage/observability?workspaceId=workspace-1&user=unrelated&from=2026-10-01&to=2026-10-02&previousFrom=2026-09-30&previousTo=2026-10-01", { headers: { authorization: "Bearer token" } }, env);
 		expect(response.status).toBe(200);
-		for (const url of requestUrls) expect(url.searchParams.get("key_created_by")).toBe("eq.unrelated");
-		expect(await response.json()).toMatchObject({ creatorFilter: { name: null }, current: { rows: [] } });
+		expect(overviewArgs.map((args) => args.p_creator_id)).toEqual(["unrelated", "unrelated", "unrelated"]);
+		expect(await response.json()).toMatchObject({ creatorFilter: { name: null }, current: { cells: [] } });
 	});
 
 	it("projects routing timing without full diagnostics on initial and paginated requests", async () => {
@@ -86,6 +112,7 @@ describe("account usage settings routes", () => {
 			expect(query.searchParams.get("workspace_id")).toBe("eq.workspace-1");
 			const fields = query.searchParams.get("select")!.replace(/\s/g, "").split(",");
 			expect(fields).toContain("response_timeline:detail_metadata->response_timeline");
+			expect(fields).toContain("labels:detail_metadata->labels");
 			expect(fields).not.toContain("detail_metadata");
 		}
 	});
@@ -129,6 +156,28 @@ describe("account usage settings routes", () => {
 				organisationId: "google",
 			})],
 		]));
+	});
+
+	it("names only this workspace's apps and public apps, and never sends non-UUID ids to the filter", async () => {
+		const appQueries: URL[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname === "/auth/v1/user") return Response.json({ id: "user-1" });
+			if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "member" }]);
+			if (url.pathname.endsWith("workspaces")) return Response.json([{ owner_user_id: "owner" }]);
+			if (url.pathname.endsWith("api_apps")) { appQueries.push(url); return Response.json([]); }
+			return Response.json([]);
+		}));
+		const appId = "b0000000-0000-4000-8000-000000000002";
+		const response = await app.request(
+			`https://phaseo.app/api/account/settings/usage/metadata?workspaceId=workspace-1&apps=${appId},x)%2Cis_public.eq.false`,
+			{ headers: { authorization: "Bearer session-token" } },
+			env,
+		);
+		expect(response.status).toBe(200);
+		expect(appQueries).toHaveLength(1);
+		expect(appQueries[0].searchParams.get("id")).toBe(`in.(${appId})`);
+		expect(appQueries[0].searchParams.get("or")).toBe("(workspace_id.eq.workspace-1,is_public.eq.true)");
 	});
 
 	it("scopes ambiguous provider aliases before selecting canonical metadata", async () => {
@@ -255,8 +304,7 @@ describe("account usage settings routes", () => {
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
-			if (url.includes("/rpc/get_workspace_model_last_used")) return new Response(JSON.stringify([{ model_id: "gpt-old-api", last_used_at: new Date().toISOString() }]), { status: 200 });
-			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([{ api_model_id: "gpt-old-api", provider_api_model_id: "provider-model-1", internal_model_id: "openai/gpt-old" }]), { status: 200 });
+			if (url.includes("/rpc/get_requested_model_last_used_by_workspace")) return new Response(JSON.stringify([{ workspace_id: "workspace-1", model_slug: "openai/gpt-old", last_used_at: new Date().toISOString() }]), { status: 200 });
 			if (url.includes("v2_models") && url.includes("previous_model_slug=in")) return new Response(JSON.stringify([{ model_id: "openai/gpt-new", previous_model_id: "openai/gpt-old" }]), { status: 200 });
 			if (url.includes("v2_models")) return new Response(JSON.stringify([{ model_id: "openai/gpt-old", name: "GPT Old", organisation_id: "openai", deprecation_date: null, retirement_date: retirementDate, previous_model_id: null, replacement_model_id: null, metadata: { replacement_model_id: "openai/gpt-legacy-successor" } }]), { status: 200 });
 			return new Response(JSON.stringify([]), { status: 200 });
@@ -276,12 +324,43 @@ describe("account usage settings routes", () => {
 		});
 	});
 
+	it("caps deprecation-only lifecycle warnings below critical", async () => {
+		const deprecationDate = new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10);
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
+			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
+			if (url.includes("/rpc/get_requested_model_last_used_by_workspace")) return new Response(JSON.stringify([{ workspace_id: "workspace-1", model_slug: "openai/gpt-old", last_used_at: new Date().toISOString() }]), { status: 200 });
+			if (url.includes("v2_models") && url.includes("previous_model_slug=in")) return new Response(JSON.stringify([]), { status: 200 });
+			if (url.includes("v2_models")) return new Response(JSON.stringify([{ model_id: "openai/gpt-old", name: "GPT Old", organisation_id: "openai", deprecation_date: deprecationDate, retirement_date: null, previous_model_id: null, replacement_model_id: null, metadata: null }]), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/usage/alerts?workspaceId=workspace-1",
+			{ headers: { authorization: "Bearer session-token" } },
+			env,
+		);
+		await expect(response.json()).resolves.toMatchObject({
+			warnings: [{ modelId: "openai/gpt-old", deprecationDaysUntil: 5, retirementDaysUntil: null, countAsAlert: true, severity: "warning" }],
+		});
+	});
+
 	it("returns private logs, upstream, jobs, and session views with metadata", async () => {
 		let requestedExactFacets = false;
 		let requestedLabelFilter = false;
-		let requestedUnfilteredLabelFacets = false;
-		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+		const labelFacetArgs: Array<Record<string, unknown>> = [];
+		const labelTotalsArgs: Array<Record<string, unknown>> = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/rpc/get_private_usage_label_facets")) {
+				labelFacetArgs.push(JSON.parse(String(init?.body ?? "{}")));
+				return Response.json([{ key: "team", value: "support", requests: 1 }]);
+			}
+			if (url.includes("/rpc/get_private_usage_overview")) {
+				labelTotalsArgs.push(JSON.parse(String(init?.body ?? "{}")));
+				return Response.json([{ bucket: null, modelId: "openai/gpt-test", requests: 1, successfulRequests: 1, costNanos: 1000 }]);
+			}
 			if (url.includes("/rpc/get_gateway_request_facets")) requestedExactFacets = true;
 			if (url.includes("detail_metadata=cs")) requestedLabelFilter = true;
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
@@ -289,10 +368,6 @@ describe("account usage settings routes", () => {
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
 			if (url.includes("gateway_async_operations")) return new Response(JSON.stringify([{ kind: "video", internal_id: "job-1", request_id: "request-1", app_id: "app-1", provider: "openai", model: "openai/gpt-test", status: "completed", created_at: "2026-07-17T00:00:00Z", updated_at: "2026-07-17T00:01:00Z", meta: { webhook: { status: "delivered" } } }]), { status: 200 });
 			if (url.includes("/rpc/get_private_usage_facets")) return new Response(JSON.stringify([{ canonical_model_id: "openai/gpt-test", provider: "openai" }]), { status: 200 });
-			if (url.includes("select=safe_metadata")) {
-				requestedUnfilteredLabelFacets = !url.includes("detail_metadata=cs");
-				return new Response(JSON.stringify([{ safe_metadata: { labels: [{ key: "team", value: "support" }] }, cost_nanos: 1000 }]), { status: 200, headers: { "content-range": "0-0/1" } });
-			}
 			if (url.includes("v2_request_facts")) return new Response(JSON.stringify([{ request_event_id: "gateway-1", occurred_at: "2026-07-17T00:00:00Z", request_id: "G-test", key_id: "key-1", endpoint: "chat/completions", requested_model_input: "openai/gpt-test", requested_model_slug: "openai/gpt-test", routed_model_slug: "openai/gpt-test", provider_model_id: "openai:gpt-test", status_code: 200, success: true, byok: false, stream: true, latency_ms: 60, gateway_ttft_ms: 360, generation_ms: 80, gateway_total_ms: 140, upstream_attempt_count: 2, throughput: 125, cost_nanos: 1000, currency: "USD", v2_request_attempts: [{ attempt_id: "upstream-1", attempt_number: 1, provider_model_id: "openai:gpt-test", started_at: "2026-07-17T00:00:01Z", status_code: 503, success: false, error_code: "unavailable", failure_class: "provider_error", latency_ms: 120, safe_metadata: { provider: "openai", key_source: "gateway" } }, { attempt_id: "upstream-2", attempt_number: 2, provider_model_id: "openai:gpt-test", started_at: "2026-07-17T00:00:02Z", status_code: 200, success: true, upstream_response_id: "resp-1", latency_ms: 120, safe_metadata: { provider: "openai", key_source: "gateway" } }] }]), { status: 200 });
 			if (url.includes("gateway_upstream_requests")) return new Response(JSON.stringify([{ id: "upstream-1", created_at: "2026-07-17T00:00:01Z", gateway_request_id: "gateway-1", request_id: "G-test", sequence: 1, round_number: 1, attempt_number: 1, stage: "upstream", endpoint: "chat/completions", model_id: "openai/gpt-test", provider: "openai", status_code: 200, success: true, outcome: "success", key_source: "gateway", latency_ms: 120, generation_ms: 80, usage: { output_tokens: 10 }, metadata: {} }]), { status: 200 });
 			if (url.includes("gateway_usage_rollup_15m")) return new Response(JSON.stringify([{ canonical_model_id: "openai/gpt-test", provider: "openai" }]), { status: 200 });
@@ -329,9 +404,12 @@ describe("account usage settings routes", () => {
 		await expect(logs.json()).resolves.toMatchObject({ view: "logs", data: { dedupedModels: ["openai/gpt-test"], labelFacets: [{ key: "team", value: "support" }], labelSummary: null, initialRequestsPage: { data: [{ request_id: "request-1" }], pageSize: 50, hasMore: false, nextCursor: null }, providerNameEntries: [["openai", "OpenAI"]] } });
 		expect(requestedExactFacets).toBe(true);
 		expect(requestedLabelFilter).toBe(true);
-		expect(requestedUnfilteredLabelFacets).toBe(true);
+		// The label list ignores the selected label; only the labelled view asks for its totals.
+		expect(labelFacetArgs).toHaveLength(2);
+		for (const args of labelFacetArgs) expect(args).toEqual({ p_workspace_id: "workspace-1", p_from: expect.any(String), p_to: expect.any(String) });
+		expect(labelTotalsArgs).toEqual([{ p_workspace_id: "workspace-1", p_from: expect.any(String), p_to: expect.any(String), p_label_key: "team", p_label_value: "support" }]);
 		await expect(labeledLogs.json()).resolves.toMatchObject({ view: "logs", data: { labelSummary: { key: "team", value: "support", requestCount: 1, totalCostNanos: 1000, isSampled: false } } });
-		await expect(upstream.json()).resolves.toMatchObject({ view: "upstream", data: { availableKeys: [{ id: "key-1", name: "Production" }], upstreamRequests: [{ id: "upstream-2", request_id: "G-test", attempt_number: 2, attempt_count: 2, request_latency_ms: 360 }, { id: "upstream-1", request_id: "G-test", attempt_number: 1 }], providerMetadataEntries: [["openai", { name: "OpenAI" }]], providerNameEntries: [["openai", "OpenAI"]] } });
+		await expect(upstream.json()).resolves.toMatchObject({ view: "upstream", data: { availableKeys: [{ id: "key-1", name: "Production" }], upstreamRequests: [{ id: "upstream-2", request_id: "G-test", attempt_number: 2, attempt_count: 2, request_latency_ms: 360 }, { id: "upstream-1", request_id: "G-test", attempt_number: 1, error_type: "provider_error" }], providerMetadataEntries: [["openai", { name: "OpenAI" }]], providerNameEntries: [["openai", "OpenAI"]] } });
 		await expect(jobs.json()).resolves.toMatchObject({ view: "jobs", data: { recentJobs: [{ internal_id: "job-1", request_cost_nanos: 0, request_created_at: "2026-07-17T00:00:00Z", webhook: { configured: true, attempt_count: 0 } }], jobProviders: ["openai"] } });
 		await expect(sessions.json()).resolves.toMatchObject({ view: "sessions", data: { sessions: [{ session_id: "session-1", request_count: 1, total_cost_nanos: 1000, model_counts: [{ model_id: "openai/gpt-test", request_count: 1 }], model_provider_counts: [{ model_id: "openai/gpt-test", provider: "openai", request_count: 1 }] }], sessionAppIds: ["app-1"] } });
 		await expect(detail.json()).resolves.toMatchObject({ data: { request: { request_id: "request-1" }, providerNames: [["openai", "OpenAI"]] } });
@@ -359,6 +437,8 @@ describe("account usage settings routes", () => {
 		expect(await response.json()).toMatchObject({ data: { upstreamRequests: [{ request_latency_ms: expected, latency_ms: 60 }] } });
 	});
 	it.each([0, 640, null])("keeps legacy gateway latency distinct from provider latency: %s", async (gatewayLatency) => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = new URL(input instanceof Request ? input.url : String(input));
 			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
@@ -376,18 +456,154 @@ describe("account usage settings routes", () => {
 		expect(response.status).toBe(200);
 		expect(await response.json()).toMatchObject({ data: { upstreamRequests: [{ request_latency_ms: gatewayLatency, latency_ms: 60 }] } });
 	});
+	it("maps the provider detail stored on v2 attempts after the cut-over", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.pathname.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+			if (url.pathname.endsWith("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.pathname.endsWith("/v2_request_facts")) {
+				expect(url.searchParams.get("select")).toContain("upstream_error_message");
+				expect(url.searchParams.get("select")).toContain("upstream_error_type");
+				return Response.json([{
+					request_event_id: "event-1", request_id: "G-new", occurred_at: "2026-11-09T15:00:00Z", provider_model_id: "openai:openai/gpt-6-luna",
+					stream: true, gateway_ttft_ms: 300, generation_ms: 800, gateway_total_ms: 900, upstream_attempt_count: 2, cost_nanos: 3800, currency: "USD", stop_reason: "stop", native_response_id: "resp_final", error_code: null,
+					v2_request_attempts: [
+						{ attempt_id: "a2", attempt_number: 2, provider_model_id: "openai:openai/gpt-6-luna", started_at: "2026-11-09T15:00:01.500Z", status_code: 200, status_text: "OK", success: true, latency_ms: 268, safe_metadata: { provider: "openai", provider_api_model_id: "gpt-6-luna", fallback_attempted: true } },
+						{ attempt_id: "a1", attempt_number: 1, provider_model_id: "openai:openai/gpt-6-luna", started_at: "2026-11-09T15:00:00.100Z", status_code: 400, status_text: "Bad Request", success: false, error_code: "upstream_non_2xx", failure_class: "upstream_non_2xx", latency_ms: 383, safe_metadata: { provider: "openai", provider_api_model_id: "gpt-6-luna" }, upstream_error_code: "invalid_value", upstream_error_type: "invalid_request_error", upstream_error_message: "Failed to download file.", upstream_error_description: "url" },
+					],
+				}]);
+			}
+			if (url.pathname.endsWith("/gateway_upstream_requests")) throw new Error("legacy table read for a post-cut-over request");
+			return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/account/settings/usage/logs?workspaceId=workspace-1&view=upstream&usage_from=2026-11-09T14:30:00Z&usage_to=2026-11-09T16:00:00Z", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		const body = await response.json() as { data: { upstreamRequests: Array<Record<string, unknown>> } };
+		expect(body.data.upstreamRequests).toMatchObject([
+			{ id: "a2", created_at: "2026-11-09T15:00:01.500Z", provider: "openai", api_model_id: "openai/gpt-6-luna", provider_model_slug: "gpt-6-luna", status_text: "OK", fallback_attempted: true, finish_reason: "stop", cost_nanos: 3800, generation_ms: 800, total_ms: 900, error_message: null },
+			{ id: "a1", status_code: 400, status_text: "Bad Request", outcome: "upstream_non_2xx", fallback_attempted: false, finish_reason: null, cost_nanos: 0, generation_ms: null, total_ms: 383, error_code: "invalid_value", error_type: "invalid_request_error", error_message: "Failed to download file.", error_description: "url" },
+		]);
+	});
+	it.each([
+		{ name: "skips the legacy table for a range after the cut-over", from: "2026-11-09T14:00:00Z", to: "2026-11-09T16:00:00Z", legacyFilter: null },
+		{ name: "stops the legacy read at the cut-over", from: "2026-11-09T12:00:00Z", to: "2026-11-09T16:00:00Z", legacyFilter: ["created_at=gte.2026-11-09T12:00:00.000Z", "created_at=lt.2026-11-09T14:00:00.000Z"] },
+		{ name: "reads the legacy table for a range before the cut-over", from: "2026-11-08T12:00:00Z", to: "2026-11-09T12:00:00Z", legacyFilter: ["created_at=gte.2026-11-08T12:00:00.000Z", "created_at=lte.2026-11-09T12:00:00.000Z"] },
+	])("$name", async ({ from, to, legacyFilter }) => {
+		const legacyReads: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.pathname.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+			if (url.pathname.endsWith("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.pathname.endsWith("/gateway_upstream_requests")) {
+				legacyReads.push(decodeURIComponent(url.search));
+				return Response.json([{ id: "legacy", request_id: "G-old", created_at: from, error_message: "Old error" }]);
+			}
+			return Response.json([]);
+		}));
+		const response = await app.request(`https://phaseo.app/api/account/settings/usage/logs?workspaceId=workspace-1&view=upstream&usage_from=${from}&usage_to=${to}`, { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		const body = await response.json() as { data: { upstreamRequests: Array<Record<string, unknown>> } };
+		if (!legacyFilter) {
+			expect(legacyReads).toEqual([]);
+			expect(body.data.upstreamRequests).toEqual([]);
+			return;
+		}
+		expect(legacyReads).toHaveLength(1);
+		for (const filter of legacyFilter) expect(legacyReads[0]).toContain(filter);
+		expect(body.data.upstreamRequests).toMatchObject([{ id: "legacy", error_message: "Old error" }]);
+	});
+	it("fails instead of returning only the legacy part when the v2 read fails for a range past the cut-over", async () => {
+		const legacyReads: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.pathname.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+			if (url.pathname.endsWith("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.pathname.endsWith("/v2_request_facts")) return Response.json({ code: "57014", message: "canceling statement due to statement timeout" }, { status: 500 });
+			if (url.pathname.endsWith("/gateway_upstream_requests")) {
+				legacyReads.push(url.pathname);
+				return Response.json([{ id: "legacy", request_id: "G-old" }]);
+			}
+			return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/account/settings/usage/logs?workspaceId=workspace-1&view=upstream&usage_from=2026-11-09T12:00:00Z&usage_to=2026-11-09T16:00:00Z", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(503);
+		expect(legacyReads).toEqual([]);
+	});
 	it("returns the private observability windows and lookup metadata", async () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-10-15T12:00:00Z"));
+		let monthUsageArgs: unknown = null;
+		const overviewArgs: Array<Record<string, unknown>> = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("/rpc/get_private_usage_overview")) {
+				overviewArgs.push(JSON.parse(String(init?.body ?? "{}")));
+				return new Response(JSON.stringify([{ bucket: "2026-07-17T00:00:00+00:00", modelId: "openai/gpt-test", provider: "openai", keyId: "key-1", appId: "a0000000-0000-4000-8000-000000000001", byok: false, requests: 3, successfulRequests: 3, guardrailBlocked: 0, costNanos: 1000, tokens: 12, inputTokens: 10, outputTokens: 2, reasoningTokens: 0, cachedTokens: 0 }]), { status: 200 });
+			}
+			if (url.includes("/rpc/get_private_usage_month_days")) {
+				monthUsageArgs = JSON.parse(String(init?.body ?? "{}"));
+				return new Response(JSON.stringify([
+					{ date: "2026-07-16", costNanos: 3000, requests: 2, successfulRequests: 2, tokens: 40, cachedTokens: 0 },
+					{ date: "2026-07-17", costNanos: 1500, requests: 2, successfulRequests: 1, tokens: 12, cachedTokens: 5 },
+				]), { status: 200 });
+			}
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
+			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
+			if (url.includes("/rpc/get_private_usage_label_facets")) return Response.json([{ key: "team", value: "support", requests: 4 }]);
+			if (url.includes("/keys")) return new Response(JSON.stringify([{ id: "key-1", name: "Production", prefix: "ph_" }]), { status: 200 });
+			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([]), { status: 200 });
+			if (url.includes("v2_models")) return new Response(JSON.stringify([{ model_id: "openai/gpt-test", name: "GPT Test", organisation_id: "openai", organisation: { name: "OpenAI" } }]), { status: 200 });
+			if (url.includes("api_apps")) return new Response(JSON.stringify([{ id: "a0000000-0000-4000-8000-000000000001", title: "Example App", app_key: "example", image_url: null }]), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+		const params = new URLSearchParams({
+			workspaceId: "workspace-1",
+			from: "2026-07-17T00:00:00Z",
+			to: "2026-07-18T00:00:00Z",
+			previousFrom: "2026-07-16T00:00:00Z",
+			previousTo: "2026-07-17T00:00:00Z",
+			timeZone: "Europe/London",
+		});
+		const response = await app.request(`https://phaseo.app/api/account/settings/usage/observability?${params}`, { headers: { authorization: "Bearer token" } }, env);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cache-control")).toBe("private, no-store");
+		await expect(response.json()).resolves.toMatchObject({
+			workspaceId: "workspace-1",
+			keys: [{ id: "key-1", name: "Production" }],
+			current: { from: "2026-07-17T00:00:00Z", cells: [{ bucket: "2026-07-17T00:00:00.000Z", modelId: "openai/gpt-test", requests: 3, costNanos: 1000 }] },
+			previous: { from: "2026-07-16T00:00:00Z", cells: [{ modelId: "openai/gpt-test" }] },
+			recent: { from: "2026-10-08T12:00:00.000Z", to: "2026-10-15T12:00:00.000Z" },
+			observedAt: Date.parse("2026-10-15T12:00:00Z"),
+			labelFacets: [{ key: "team", value: "support" }],
+			labelSummary: null,
+			modelMetadataEntries: [["openai/gpt-test", { modelName: "GPT Test" }]],
+			appMetadataEntries: [["a0000000-0000-4000-8000-000000000001", { title: "Example App", imageUrl: null }]],
+			appNameEntries: [["a0000000-0000-4000-8000-000000000001", "Example App"]],
+			monthUsage: { days: [
+				{ date: "2026-07-16", costNanos: 3000, requests: 2, successfulRequests: 2, tokens: 40, cachedTokens: 0 },
+				{ date: "2026-07-17", costNanos: 1500, requests: 2, successfulRequests: 1, tokens: 12, cachedTokens: 5 },
+			] },
+		});
+		expect(monthUsageArgs).toEqual({ p_workspace_id: "workspace-1", p_from: "2026-09-01" });
+		// A day is cut into hours in the reader's time zone; the comparison windows are totals.
+		const filters = { p_time_zone: "Europe/London", p_key_id: null, p_exclude_key: false, p_creator_id: null, p_label_key: null, p_label_value: null };
+		expect(overviewArgs).toEqual([
+			{ p_workspace_id: "workspace-1", p_from: "2026-07-17T00:00:00Z", p_to: "2026-07-18T00:00:00Z", p_bucket: "hour", ...filters },
+			{ p_workspace_id: "workspace-1", p_from: "2026-07-16T00:00:00Z", p_to: "2026-07-17T00:00:00Z", p_bucket: null, ...filters },
+			{ p_workspace_id: "workspace-1", p_from: "2026-10-08T12:00:00.000Z", p_to: "2026-10-15T12:00:00.000Z", p_bucket: null, ...filters },
+		]);
+	});
+	it("hides only the month figures when the month RPC fails", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
-			if (url.includes("v2_request_facts")) return new Response(JSON.stringify([{ safe_metadata: { labels: [{ key: "team", value: "support" }] }, cost_nanos: 1000 }]), { status: 200, headers: { "content-range": "0-0/1" } });
-			if (url.includes("gateway_requests")) return new Response(JSON.stringify([{ created_at: "2026-07-17T00:00:00Z", model_id: "openai/gpt-test", app_id: "app-1", key_id: "key-1", usage: { total_tokens: 12 }, cost_nanos: 1000, success: true }]), { status: 200 });
-			if (url.includes("/keys")) return new Response(JSON.stringify([{ id: "key-1", name: "Production", prefix: "ph_" }]), { status: 200 });
-			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([]), { status: 200 });
-			if (url.includes("v2_models")) return new Response(JSON.stringify([{ model_id: "openai/gpt-test", name: "GPT Test", organisation_id: "openai", organisation: { name: "OpenAI" } }]), { status: 200 });
-			if (url.includes("api_apps")) return new Response(JSON.stringify([{ id: "app-1", title: "Example App", app_key: "example", image_url: null }]), { status: 200 });
+			if (url.includes("/rpc/get_private_usage_month_days")) return new Response(JSON.stringify({ code: "57014", message: "canceling statement due to statement timeout" }), { status: 500 });
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
 		const params = new URLSearchParams({
@@ -399,17 +615,29 @@ describe("account usage settings routes", () => {
 		});
 		const response = await app.request(`https://phaseo.app/api/account/settings/usage/observability?${params}`, { headers: { authorization: "Bearer token" } }, env);
 		expect(response.status).toBe(200);
-		expect(response.headers.get("cache-control")).toBe("private, no-store");
-		await expect(response.json()).resolves.toMatchObject({
-			workspaceId: "workspace-1",
-			keys: [{ id: "key-1", name: "Production" }],
-			current: { rows: [{ model_id: "openai/gpt-test" }], isSampled: false, limit: 5000 },
-			previous: { rows: [{ model_id: "openai/gpt-test" }] },
-			labelFacets: [{ key: "team", value: "support" }],
-			labelSummary: null,
-			modelMetadataEntries: [["openai/gpt-test", { modelName: "GPT Test" }]],
-			appMetadataEntries: [["app-1", { title: "Example App", imageUrl: null }]],
-			appNameEntries: [["app-1", "Example App"]],
+		await expect(response.json()).resolves.toMatchObject({ workspaceId: "workspace-1", monthUsage: null });
+	});
+	it("leaves the month figures out of filtered views, where the workspace rollup would be wrong", async () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
+			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "admin" }]), { status: 200 });
+			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "user-1" }]), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
 		});
+		vi.stubGlobal("fetch", fetchMock);
+		const params = new URLSearchParams({
+			workspaceId: "workspace-1",
+			key: "key-1",
+			from: "2026-07-17T00:00:00Z",
+			to: "2026-07-18T00:00:00Z",
+			previousFrom: "2026-07-16T00:00:00Z",
+			previousTo: "2026-07-17T00:00:00Z",
+		});
+		const response = await app.request(`https://phaseo.app/api/account/settings/usage/observability?${params}`, { headers: { authorization: "Bearer token" } }, env);
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ monthUsage: null });
+		const urls = fetchMock.mock.calls.map(([input]) => input instanceof Request ? input.url : String(input));
+		expect(urls.some((url) => url.includes("/rpc/get_private_usage_month_days"))).toBe(false);
 	});
 });

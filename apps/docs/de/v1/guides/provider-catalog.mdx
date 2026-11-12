@@ -1,25 +1,140 @@
 ---
 title: "Anbieterkatalog veröffentlichen"
-description: "V1- und V1.1-Kataloge mit standardisierten Service-Stufen."
+description: "Veröffentliche V1-, V1.1- oder V1.2-Modellfeeds mit normalisierten Service-Stufen-Angeboten, Datenrichtlinien und Ratenlimits."
 icon: "list"
 ---
 
-Genehmigte Anbieter können Angebote für öffentliche kanonische Modelle selbst aktualisieren. Neue Modelle benötigen eine Freigabe. Ein Katalog ist ein vollständiger Snapshot: Entfernte Angebote werden deaktiviert; bisherige Preise bleiben erhalten.
+Veröffentliche deine Modelle, Service-Stufen, Preise und Limits als Katalog-Feed, und Phaseo übernimmt jede Änderung in deine Angebote. Als genehmigter Anbieter kannst du Angebote für bestehende öffentliche kanonische Modelle über den Feed oder die Anbietereinstellungen aktualisieren; neue kanonische Modelle benötigen eine Freigabe. Jeder Katalog ist ein vollständiger Snapshot: Wird ein Angebot entfernt, wird dieses über den Feed verwaltete Angebot deaktiviert und sein Preisverlauf bleibt erhalten.
 
-## Format wählen
+## Ein Format wählen
 
-Bestehende V1-Feeds ohne Versionsfeld bleiben gültig. `"schema_version": "1.0"` bezeichnet ebenfalls V1. V1.1 verwendet `"schema_version": "1.1"` und ein Array `service_tiers` pro Modell. Die Version wird aus dem Dokument gelesen, nicht aus URL-Parametern.
+| Version | Angabe | Ergänzt | Schema |
+| --- | --- | --- | --- |
+| V1 | Kein `schema_version` oder `"1.0"` | Angebote der Standardstufe in `{"data": [...]}` | [V1](https://phaseo.app/api/internal/provider-catalog/schema) |
+| V1.1 | `"schema_version": "1.1"` | `service_tiers` innerhalb jedes Modells | [V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) |
+| V1.2 | `"schema_version": "1.2"` | `data_policy` pro Stufe und optionale `declarations`; siehe [Datenrichtlinien angeben](#declare-data-policies) | [V1.2](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2) |
 
-Jedes Modell benötigt `standard`. Weitere zulässige Stufen sind `fast`, `ultrafast`, `flex` und `batch`. Jede Stufe enthält `service_tier`, `provider_model_slug`, `availability` und `pricing`. Fähigkeiten, Limits und Veröffentlichungsdaten gehören zum gemeinsamen Modell.
+Alle drei Versionen werden unterstützt; bestehende V1-Feeds funktionieren ohne Änderungen weiter. Der Import liest die Version aus dem Dokument, nie aus der URL, sodass ein Abfrageparameter wie `?format=phaseo-v1.1` nur eine Konvention für deinen eigenen Endpunkt ist. Nicht unterstützte Versionen werden abgelehnt.
 
-Fast, Ultrafast und Flex werden für Textgenerierung unterstützt. Eine eigene Modell-ID oder `upstream_service_tier` muss die gewünschte Stufe auswählen. Fast akzeptiert `fast` oder `priority`; Standard akzeptiert `default` oder `standard`. Batch verwendet die separate Batch-API und benötigt eine vorhandene Anbieterintegration sowie eine Batch-Fähigkeit.
+<span id="declare-data-policies"></span>
+## Datenrichtlinien angeben
 
-## Preise und Aktualisierungen
+V1.2 ergänzt jede Service-Stufe um fähigkeitsspezifische Angaben zu Training und Aufbewahrung. Du kannst V1.2 jederzeit veröffentlichen. Phaseo validiert die Angaben beim Import, sie begründen aber erst dann eine Garantie, wenn Phaseo deine Richtlinienquelle genehmigt hat.
 
-Jede Stufe benötigt ausdrückliche Preise für alle berechneten Einheiten. `price_nanos` ist der tatsächliche Preis nach Rabatten. Null ist gültig; negative Preise, unbekannte Einheiten, doppelte Stufen und bedingte Tarife werden abgelehnt. Preisänderungen werden als neue Snapshots veröffentlicht und historisiert.
+V1.2 akzeptiert außerdem optionale `declarations` auf Modell- oder Stufenebene für Modellidentität, typisierte Ein-/Ausgabegrenzen, Parameterbeschreibungen, bereichsspezifische Preise und Kapazitäten, Rabatte und Bereitstellungsdetails. Diese Angaben werden validiert und zur Prüfung gespeichert. Sie aktivieren keine Parameter und ändern weder abrechenbare Preise noch die Durchsetzung von Kapazitätsgrenzen oder Datenresidenzgarantien automatisch. Die Validierung kennzeichnet gespeicherte Angaben; veröffentliche wirksame Preise und Fähigkeiten weiterhin über die bestehenden Felder.
 
-Polling und signierte Webhooks unterstützen beide Versionen. In den Anbietereinstellungen wählen Sie vor einer Änderung die Stufe aus. Ungültige Modellzuordnungen werden einzeln angezeigt und verhindern nicht den Import gültiger Modelle.
+Setze `schema_version` auf `"1.2"` und ergänze jede betroffene Stufe um ein `data_policy`-Objekt:
 
-Das vollständige Beispiel und beide JSON-Schemata finden Sie im [englischen Vertragsleitfaden](/v1/guides/provider-catalog).
+```json
+{
+  "capabilities": [{
+    "id": "text.generate",
+    "training_policy": "no_train",
+    "retention_mode": "none",
+    "retention_days": 0,
+    "zero_data_retention": true,
+    "zdr_eligibility": "eligible",
+    "requirements": { "contract_mode": "none", "account_settings": [] },
+    "privacy_policy_url": "https://provider.example/privacy",
+    "terms_of_service_url": "https://provider.example/terms"
+  }]
+}
+```
 
-Bei API-Katalogen bleiben Änderungen im Dashboard als Anpassungen erhalten. Importe aktualisieren Felder ohne Anpassung. **Feed-Wert verwenden** entfernt eine Anpassung. Das Dashboard zeigt Feed-Wert, wirksamen Wert, Bearbeiter und Zeitpunkt; Änderungen und Rücksetzungen werden protokolliert. Manuell hinzugefügte Modelle bleiben lokale Angebote. Aus dem Feed entfernte Modelle werden deaktiviert, auch wenn einzelne Felder bearbeitet wurden. Rein manuelle Kataloge bleiben unterstützt.
+Dieses Beispiel zeigt den `data_policy`-Wert der Stufe, keinen vollständigen Feed. Fähigkeits-IDs sind kanonisch: Verwende `text.generate`, auch wenn das Modell `responses` oder `chat.completions` angibt.
+
+Die Angabe umfasst Prompts und Ausgaben entlang der gesamten vorgelagerten Verarbeitungskette. Sie beschreibt keine Abrechnungsmetadaten. Trainingswerte sind `unknown`, `may_train`, `no_train`, `opt_out_available` und `enterprise_no_train`. Aufbewahrungsmodi sind `unknown`, `none`, `transient`, `fixed` und `until_deleted`. Verwende null Tage für none, eine positive Höchstdauer für transient/fixed und null für unknown/until-deleted.
+
+Gib erforderliche Vereinbarungen mit `contract_mode` an: `none`, `customer_agreement` oder `enterprise_agreement`. Erforderliche Kontoeinstellungen sind Objekte mit `id`, `description` und einer HTTPS-`documentation_url` im Array `account_settings`. Bedingte Programme verwenden `zdr_eligibility: "conditional"` und dürfen keine aktive Garantie mit true angeben. Sie bleiben informativ, bis Phaseo die Erfüllung der Bedingungen prüfen kann.
+
+Phaseo genehmigt die Richtlinienquelle unabhängig. Der Feed kann eine Angabe nicht als verifiziert markieren. Diese Version gewährt aktives ZDR nur für bedingungslose Textgenerierung bei Nicht-Batch-Angeboten ohne Training und ohne Inhaltsaufbewahrung. Das eigene Hosting eines Modells stellt allein keine ZDR-Erklärung dar.
+
+Nachdem ein Angebot eine feedverwaltete Richtlinie übernommen hat, entziehen false, null, das Weglassen der Angabe oder eine ältere Feedversion diese Garantie. Manuelle Phaseo-Überschreibungen werden getrennt verwaltet. Positive Angaben verfallen nach 24 Stunden ohne erfolgreiche Katalogvalidierung; der Widerruf der Genehmigung erfordert keinen erneuten Abruf beim Anbieter.
+
+## Normalisierte Stufen veröffentlichen
+
+| Stufe | Bedeutung |
+| --- | --- |
+| `standard` | Normale synchrone Ausführung; für jedes Modell erforderlich. |
+| `fast` | Ein schnelleres oder priorisiertes Angebot. Anbieterbezeichnungen wie HighSpeed bleiben in der Upstream-Modell-ID. |
+| `ultrafast` | Ein separates Angebot mit höherer Geschwindigkeit, sofern unterstützt. |
+| `flex` | Ein flexibles synchrones Angebot mit niedrigerer Priorität. |
+| `batch` | Asynchrone Ausführung über die Batch-API. Erfordert eine Batch-Fähigkeit. |
+
+Verwende keine anbieterspezifischen Stufennamen als normalisierte IDs. `priority` bleibt für Aufrufer ein unterstützter Alias für Fast; Kataloge veröffentlichen `fast`.
+
+Die Auswahl von Fast, Ultrafast und Flex wird bei Anfragen zur Textgenerierung unterstützt. Batch läuft über die separate Batch-API und erfordert weiterhin eine installierte Batch-Integration des Anbieters; das Veröffentlichen einer Stufe installiert diese Integration nicht. Verwende für hochgeladene Dateien im nativen Anbieterformat die angegebene Batch-Modell-ID oder sende Anfragen inline, damit Phaseo sie übersetzen kann.
+
+Verwende für die Service-Stufen eines Modells dieselbe kanonische Modell-ID. Unterschiedliche Modelle benötigen getrennte kanonische Identitäten. Stufen übernehmen die Fähigkeiten, Limits und den Veröffentlichungsplan des Modells. Jede Stufe gibt ihre eigene Upstream-Modell-ID, Verfügbarkeit und effektiven Preise an.
+
+```json
+{
+  "schema_version": "1.1",
+  "data": [{
+    "id": "your-provider/example-model",
+    "name": "Example model",
+    "capabilities": ["chat.completions"],
+    "service_tiers": [{
+      "service_tier": "standard",
+      "provider_model_slug": "example-model",
+      "availability": "ready",
+      "pricing": [{
+        "meter_key": "input_text_tokens",
+        "modality": "text",
+        "direction": "input",
+        "unit": "token",
+        "unit_quantity": 1000000,
+        "price_nanos": 100000000,
+        "display_label": "Input",
+        "display_unit": "1M tokens"
+      }, {
+        "meter_key": "output_text_tokens",
+        "modality": "text",
+        "direction": "output",
+        "unit": "token",
+        "unit_quantity": 1000000,
+        "price_nanos": 200000000,
+        "display_label": "Output",
+        "display_unit": "1M tokens"
+      }]
+    }]
+  }]
+}
+```
+
+Um Fast hinzuzufügen, ergänze ein weiteres Stufenobjekt mit `"service_tier": "fast"`, den effektiven Preisen und einer eigenen Upstream-Modell-ID für dieses Angebot. Wählt der Anbieter die Ausführungsspur stattdessen über einen nativen Parameter aus, verwende dieselbe Upstream-Modell-ID und gib `"upstream_service_tier": "priority"` oder `"fast"` an. Lass dieses Feld weg, wenn die Modell-ID die Spur auswählt. Standard akzeptiert `default` oder `standard`; Flex und Ultrafast akzeptieren ihre entsprechenden Werte. Phaseo lehnt synchrone Nicht-Standard-Stufen ab, die weder eine eigene Modell-ID noch einen nativen Selektor haben.
+
+Jede Stufe benötigt ausdrückliche Preise, einschließlich der Ausgabe und aller Cache- oder Medienzähler, die du abrechnest. Nullpreise sind gültig; negative Preise, unbekannte Zähler, doppelte Stufen und bedingte Tarife werden abgelehnt. `price_nanos` bleibt der effektive Preis nach Rabatten. Veröffentliche einen neuen Snapshot, wenn sich Tarife ändern; Phaseo bewahrt frühere effektive Preise auf.
+
+## Ratenlimits angeben
+
+Gib die Anfrage- und Token-Limits, die deine Plattform auf das Konto von Phaseo anwendet, in einem optionalen `rate_limits`-Array auf oberster Ebene an. Es funktioniert in V1- und V1.1-Dokumenten gleich. Lass `model` weg, um ein Limit für alle deine Modelle festzulegen, oder setze es auf den Upstream-`provider_model_slug` eines beliebigen Modells oder einer Stufe im selben Dokument.
+
+```json
+{
+  "schema_version": "1.1",
+  "data": [{ "id": "your-provider/example-model", "...": "..." }],
+  "rate_limits": [
+    { "requests_per_minute": 600, "tokens_per_minute": 2000000 },
+    { "model": "example-model", "requests_per_day": 100000, "tokens_per_day": 500000000 }
+  ]
+}
+```
+
+Jeder Eintrag akzeptiert `requests_per_minute`, `requests_per_day`, `tokens_per_minute` und `tokens_per_day`. Jeder Wert ist eine positive Ganzzahl oder `null`, und jeder Eintrag benötigt mindestens einen Wert. Phaseo zählt jedes Limit global über den gesamten Traffic, den Phaseo an dich sendet. Ein Modell-Limit gilt zusätzlich zum Limit für alle Modelle.
+
+Limits blockieren nie Anfragen. Nähert sich der Traffic eines Angebots einem Limit, sendet Phaseo ihm schrittweise einen kleineren Anteil. Sobald das Limit erreicht ist, stuft Phaseo das Angebot bis zum Zurücksetzen des Limits hinter anderen Anbietern ein. Ein zu niedriger Wert verringert nur deinen eigenen Anteil am Traffic. Deshalb gelten Limits ohne Prüfung, sobald dein Anbieterantrag genehmigt ist, meist innerhalb einer Minute.
+
+Ist das Array vorhanden, ersetzt es deine angegebenen Limits bei jedem erfolgreichen Import eines geänderten Feeds. Ein leeres Array entfernt sie. Lass `rate_limits` weg, um die Limits beizubehalten, die du in den Anbietereinstellungen verwaltest. Phaseo lehnt den gesamten Snapshot ab und behält deinen aktuellen Katalog und deine Limits bei, wenn ein Eintrag ein Modell nennt, das nicht im Dokument enthalten ist, einen Geltungsbereich wiederholt oder einen Wert verwendet, der keine positive Ganzzahl ist. Die Ablehnung wird als **Änderungen angefordert** angezeigt.
+
+Du kannst Limits auch unter **Anbietereinstellungen → Deine Modelle → Ratenlimits** bearbeiten. Diese Änderungen werden getrennt von Katalogänderungen gespeichert. Der Katalog-Editor akzeptiert kein `rate_limits`.
+
+## Aktualisieren und prüfen
+
+Polling und signierte Webhooks für Katalogänderungen akzeptieren alle drei Versionen über denselben Onboarding- und Aktualisierungsablauf. Wähle in den Anbietereinstellungen eine Stufe aus, bevor du ihre Upstream-ID, Verfügbarkeit oder Preise bearbeitest. Wenn du eine weitere Stufe hinzufügst, wird der gespeicherte Katalog auf V1.1 umgestellt.
+
+Der Katalog fügt weder einen Inferenzadapter noch Zugangsdaten hinzu. Ein Anbieter und seine angegebenen Fähigkeiten müssen integriert sein, bevor das Routing aktiviert wird. Batch-Preise machen Batch nicht auf synchronen Chat-Endpunkten verfügbar.
+
+Ein nicht verfügbares kanonisches Modell oder eine unbekannte Herausgeberzuordnung wird als **Änderungen angefordert** angezeigt, ohne den Import gültiger Modelle zu verhindern. Die modellspezifischen Gründe findest du im Anbieter-Dashboard.
+
+Bei Katalogen, die über die API gespeist werden, sind Änderungen im Dashboard dauerhafte Anpassungen. Importe aktualisieren Felder ohne Anpassung. Wähle **Feed-Wert verwenden**, um eine Anpassung zu entfernen und für dieses Feld wieder dem Feed zu folgen. Das Dashboard zeigt den aktuellen Feed-Wert, den wirksamen Wert, den Bearbeiter und den Zeitpunkt; die Katalogaktivität protokolliert Änderungen und Rücksetzungen. Manuell hinzugefügte Modelle bleiben lokale Angebote. Wird ein Modell aus dem Feed entfernt, wird dieses Feed-Angebot deaktiviert, auch wenn einige seiner Felder bearbeitet wurden. Bestehende rein manuelle Kataloge werden weiterhin unterstützt.

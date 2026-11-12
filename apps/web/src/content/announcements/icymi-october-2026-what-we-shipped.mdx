@@ -1,0 +1,134 @@
+---
+title: "ICYMI: What We Shipped in October 2026"
+shortTitle: "ICYMI: October 2026"
+description: October brought rate limit policies and department budgets, Broadcast to 20+ destinations, prompt templates, smarter default routing, and 28 new models.
+publishedAt: 2026-11-02
+author: Phaseo Team
+category: data
+pinned: false
+coverImage: /blog-images/recap-october-2026.png
+tags:
+  - ICYMI
+  - Monthly Recap
+  - Product
+  - Models
+draft: false
+---
+
+October was about running Phaseo with a team. We added rate limit policies and department budgets, sent request traces to the observability tools you already use, gave presets versioned prompt templates, and changed how default routing chooses a provider. The API also became more predictable, with structured errors, cost in every response, and clearer `429`s.
+
+This recap covers the work that shipped from **1 October 2026** through **31 October 2026**, based on merged pull requests and the [October changelog](/docs/v1/changelog). Where something is in beta or still rolling out, we say so.
+
+## What shipped
+
+### Rate limits and budgets you can set yourself
+
+Owners and admins can now create named rate limit policies in **Settings → Rate limits**. A policy can cap requests per minute, tokens per minute and concurrent requests. You can assign it to an API key, a member, a department, a guardrail or the end-user default. **Strict mode** checks the per-minute limits before the request reaches a provider, for teams that would rather refuse a request than go over. Requests over a per-minute limit return `429` with OpenAI-style `x-ratelimit-*` headers, and the page shows how many requests each policy throttled in the last 24 hours. The `/v1/rate-limits` API is in beta.
+
+Departments gained daily, weekly and monthly budgets in **Settings → Budgets**. They alert owners and admins at 80% and 100%. Since 29 October, once a department has used its budget, API-key requests that count toward it are refused until the budget resets. A workspace setting can count each member's spend toward their primary department only. **Settings → Notifications** added rate limit alerts, and the Terraform provider can now manage rate limit policies, assignments and department budgets.
+
+Every workspace member also has a requests-per-minute allowance shared across their keys. It starts at 10 and rises to 120 as a workspace becomes established. Free models allow 1,500 requests per user per UTC day. See [Rate Limits](/docs/v1/api-reference/limits) for the details.
+
+### Broadcast reaches the tools you already use
+
+[Broadcast](/docs/v1/guides/broadcast) gained 16 observability destinations in October, including Langfuse, Datadog LLM Observability, LangSmith, PostHog and Sentry. It can also export to Amazon S3 and S3-compatible storage, Cloudflare R2, Google Cloud Storage, ClickHouse, BigQuery and Snowflake. Each destination has a test button and a delivery status, and **Settings → Notifications** can tell you when one keeps failing.
+
+A request's `metadata` is exported as `phaseo.metadata.*` span attributes. `trace_name`, `span_name`, `generation_name` and `trace_id` name and group the exported traces. Requests sent through the EU and US regional gateways now reach Broadcast too.
+
+### Presets became prompt templates
+
+A preset can now hold a prompt template with `{{variable}}` placeholders. Your application then sends only `prompt.id` and the variables. The preset editor previews the template as you type and runs it with one click. **Publish** sits beside **Save Draft**. **Versions and labels** points named labels such as `production` at a published version, so a rollback is one change in the editor.
+
+Requests can pin a version or label with `prompt.version` or `model: "@slug@label"`. The `/v1/presets/{id}/labels` endpoints move and remove labels from code. Read [Prompt Templates](/docs/v1/guides/prompt-templates) to get started.
+
+### Default routing weighs speed and reliability, not just price
+
+Default text routing used to favour the provider with the lowest list price, even when that provider was slow or rate limited. Since 30 October, default (`balanced`) text requests choose providers by expected cost per successful answer: the price of a typical request for that model, including cache reads, plus the time you wait, divided by how often the provider succeeds. Providers within about 30% of the best share most of the traffic.
+
+Explicit sorts and `provider.order` work as before. If you want price-only ranking, send `provider.sort: "price"`. Providers can see how the ranking shares traffic in [How providers earn traffic](/docs/v1/guides/how-providers-earn-traffic).
+
+Model retirement also got friendlier. Retired models keep serving while any provider route is still enabled. Owners and admins can turn on **Retired model routing** to send requests for a retired model to an approved replacement. Responses served by a replacement carry the `x-phaseo-model-substitution` header. Signed-in users also see a notice when a model their workspace used in the last 90 days is being deprecated. See [Model Deprecation and Retirement](/docs/v1/guides/model-retirement).
+
+### A more predictable API
+
+Two changes are worth checking against your code:
+
+- **Breaking:** error responses now return `error` as an object with `code`, `message`, `type`, `param` and `metadata`. If you read `error` as a string, read the new top-level `code` instead. See [Errors and Debugging](/docs/v1/api-reference/errors).
+- Chat Completions, Responses, Messages and embeddings responses include `usage.cost` in USD with a `usage.cost_details` breakdown.
+
+Elsewhere, the gateway is more honest about what happened. Unsupported optional parameters such as `top_k` are dropped and listed in `X-Phaseo-Dropped-Params`. When every provider rejects a request with the same `400`, `413`, `422` or `429`, you get that status and message instead of a `502`. A failure mid-stream ends with the endpoint's error event. Key limit and budget `429`s say which limit refused the request, show dollar amounts and include `Retry-After`. Streamed events always carry the Phaseo model ID, and every request gets one generation ID shared by headers, payloads and logs.
+
+The top-level `models` fallback list now works on every inference endpoint. The `web` and `web-fetch` plugins work on any model. `GET /v1/models` supports `ETag` and `?format=openai`, and lists the service tiers each offer accepts.
+
+### Privacy and key security
+
+**Require zero data retention** now keeps prompt and response content out of request logs, data samples and Phaseo's telemetry, whether it is set by the workspace, a key guardrail or the request. Request details tell you when content was skipped. Owners and admins can also limit who can view stored prompts and responses in **Settings → Privacy**.
+
+API keys each gained their own page with usage charts, limits and settings. Keys can be restricted to labelled IP addresses and CIDR ranges, and can record where they are stored, such as Vercel, GitHub Actions or 1Password. **Settings → API Keys → Key Security** flags keys with no spend limit, expiry, recent use, IP allowlist or recorded storage location, and suggests a fix.
+
+### Logs, usage and Chat work together
+
+You can open a logged Chat Completions, Responses or Messages request in Chat and carry on from where it stopped, from request details, the logs table or a session turn. See [Open Requests in Chat](/docs/v1/guides/open-requests-in-chat). The **Trace** tab, with routing, provider attempts, tool calls and the final response, is available to every workspace.
+
+The usage overview now uses exact totals instead of a sample of recent requests, and its cards show month-end forecasts for spend, requests and tokens. **Billing & Credits** estimates how long your balance will last, and API key limits show where each window is heading before it resets.
+
+### Comparing models got easier
+
+The compare page was rebuilt around one grouped table that highlights the best value in each row. It now has a route and service tier picker for each model, a 30-day activity chart, capability index rankings, and dedicated pages for two-model comparisons. On `/models`, you can filter by licence and open or closed weights, browse new OCR, document parsing and translation groups, and see coming-soon models next to active ones. Model pages show saved specifications such as parameter counts and training tokens.
+
+## Also shipped
+
+- The web app and docs are available in Spanish, French, German, Brazilian Portuguese, Japanese, Simplified Chinese, Hindi and Arabic.
+- The docs moved to phaseo.app's design. Every page's Markdown and `llms.txt` now include instructions for AI agents, and Phaseo's skills install with `npx skills add https://phaseo.app/docs`.
+- The Phaseo plugin for Claude Code bundles the Phaseo MCP server, the Docs MCP server and Phaseo's skills.
+- The Phaseo MCP app gained a model explorer with search, filters, three-way comparisons and cost estimates.
+- The changelog now covers product and API changes as well as models, with **Product**, **API & SDKs** and **Models** filters.
+- Claude requests accept an `agent` cache scope, agent turns stay on the provider that holds their prompt cache, and prompt cache writes bill at each provider's documented rates.
+- The Batch API runs Gemini models on Vertex AI with Phaseo-managed keys.
+- `/v1/decisions` accepts OpenAI-compatible input, and Base Labs decision models can read images from S3, Google Cloud Storage and Azure links.
+- `/v1/messages` accepts mid-conversation system messages where Claude allows them.
+- Custom webhook notifications are signed with HMAC-SHA256.
+- Chat added an opt-in **Interactive answers** experiment, which can answer with comparison cards, tables, charts and follow-up forms.
+- Owners and admins can open a member's profile with 30 days of requests, spend, top models and keys.
+- Prices show in US format, such as $12.50, whatever your interface language.
+- The Java SDK docs were added, and our terms now require users to be 18 or over.
+
+## Model highlights
+
+Mistral Large 4 arrived early in the month, followed by Anthropic's Claude Haiku 5.5, Meta's Muse Wonder 1.0 and Google's Gemini 4 Argon. OpenAI's GPT-6.1 Terra landed on 26 October. Moonshot's Kimi K3.1 Pro, MiniMax M3.1 Flash, Inception's Mercury 3 and DeepSeek V4.1 Flash 1017 rounded out the text releases. Mistral Large 4 was released again on 29 October as an open-weight model.
+
+Voice and speech coverage grew a lot: Microsoft's MAI-Voice-2.1 family and MAI-Transcribe-2-Streaming, SpaceXAI's Grok Voice 3.0, and Mistral's Voxtral 3 transcription and speech models. Cloudflare added Clef, Clef Flash, Clef Omni and Clairic. Base Labs brought three decision models, Elephant-1, Mammoth-1 and Joey-1, to `/v1/decisions`. Google's Nano Banana 2.1 and EmbeddingGemma 2, NVIDIA's Nemotron 3.5 Super VL and TypeSafe's Jev 1.14 completed the list.
+
+Availability can change after release, so check a model's providers before building around it. Browse the latest release data here:
+
+- [Explore recent updates here](/updates)
+
+## Shipping snapshot
+
+GitHub history shows **703 merged pull requests** between 1 and 31 October, up from 442 in September. The October changelog records **29 model release entries** covering 28 models, since Mistral Large 4 appears twice. Most of the product work went into workspace controls (rate limits, budgets and key security), observability (Broadcast and request traces), presets, routing, and making API responses more predictable.
+
+## Models released in October 2026
+
+The October changelog includes these model release entries:
+
+- 1 October: Clef (`cloudflare/clef`), Clef Flash (`cloudflare/clef-flash`), MAI-Voice-2.1 (`microsoft/mai-voice-2.1`), MAI-Voice-2.1-Flash (`microsoft/mai-voice-2.1-flash`), and MAI-Transcribe-2-Streaming (`microsoft/mai-transcribe-2-streaming`)
+- 6 October: Mistral Large 4 (`mistral/mistral-large-4.0`), Nano Banana 2.1 (`google/gemini-nano-banana-2.1`), and EmbeddingGemma 2 (`google/embeddinggemma-2`)
+- 7 October: Claude Haiku 5.5 (`anthropic/claude-haiku-5.5`)
+- 9 October: Clef Omni (`cloudflare/clef-omni`)
+- 12 October: Muse Wonder 1.0 (`meta/muse-wonder-1.0`)
+- 13 October: Gemini 4 Argon (`google/gemini-4-argon`)
+- 14 October: Jev 1.14 (`typesafe/jev-1.14.0`) and Grok Voice 3.0 (`spacex-ai/grok-voice-3.0`)
+- 15 October: Nemotron 3.5 Super VL 120B A12B (`nvidia/nemotron-3.5-super-vl-120b-a12b`)
+- 17 October: DeepSeek V4.1 Flash 1017 (`deepseek/deepseek-v4.1-flash-1017`)
+- 19 October: MiniMax M3.1 Flash (`minimax/minimax-m3.1-flash`), Clairic (`cloudflare/clairic`), and Mercury 3 (`inception/mercury-3`)
+- 20 October: Voxtral Mini Transcribe 3 (`mistral/voxtral-mini-transcribe-3`), Voxtral Small Transcribe 3 (`mistral/voxtral-small-transcribe-3`), and Voxtral TTS 3 (`mistral/voxtral-tts-3`)
+- 21 October: Elephant-1 (`baselabs/elephant-1`) and Mammoth-1 (`baselabs/mammoth-1`)
+- 23 October: Kimi K3.1 Pro (`moonshotai/kimi-k3.1-pro`) and Abliterated Large Flash (`abliteration-ai/abliterated-model-large-flash`)
+- 26 October: GPT-6.1 Terra (`openai/gpt-6.1-terra`)
+- 29 October: Joey-1 (`baselabs/joey-1`) and Mistral Large 4 open-weight release (`mistral/mistral-large-4.0`)
+
+## Next up
+
+October gave teams more ways to control spend, limits and data. Next, we want those controls to be easier to see in one place, and to keep making routing and errors more predictable as traffic grows.
+
+If you run Phaseo with a team, start in **Settings → Rate limits** and **Settings → Budgets**. Then connect a [Broadcast](/docs/v1/guides/broadcast) destination so you can see what each request did. And if your code reads `error` as a string, update it for the new error shape.

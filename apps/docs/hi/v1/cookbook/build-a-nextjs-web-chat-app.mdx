@@ -1,174 +1,136 @@
 ---
-title: "Next.js वेब चैट ऐप बनाएं"
+title: "Next.js वेब चैट ऐप बनाएँ"
 icon: "messages-square"
-description: "मौजूदा Next.js सैंपल चैट ऐप को पूरी गाइड के रूप में इस्तेमाल करें; शुरुआत में कॉपी करने योग्य बिल्ड प्रॉम्प्ट भी है।"
+description: "मौजूदा Next.js सैंपल चैट ऐप को पूरे वॉकथ्रू की तरह इस्तेमाल करें, जिसमें सबसे ऊपर कॉपी करने लायक बिल्ड प्रॉम्प्ट है।"
 ---
 
-अगर आप एक छोटा, वास्तविक उपयोग जैसा Next.js चैट ऐप चाहते हैं और अपनी Phaseo API key सर्वर पर रखना चाहते हैं, तो इस पेज का उपयोग करें।
+एक छोटा Next.js चैट ऐप चलाएँ जिसका ब्राउज़र कोड सिर्फ़ आपके अपने सर्वर रूट से बात करता है, ताकि आपकी Phaseo API कुंजी कभी ब्राउज़र तक न पहुँचे। अंत में आपके पास एक स्थानीय चैट पेज होगा, जिसमें `GET /v1/models` से भरा मॉडल पिकर और `POST /v1/responses` से आए जवाब होंगे।
 
-**लक्ष्य:** ऐसा ब्राउज़र चैट ऐप चलाएं जो मॉडल खोजे और सर्वर-साइड रूट के ज़रिए जवाब भेजे।
+यह सैंपल उदाहरण के लिए है: इसके रूट में न साइन-इन है, न रेट लिमिट, इसलिए जो भी उन तक पहुँच सकता है वह आपकी कुंजी खर्च कर सकता है। पहले [डिप्लॉय करने से पहले](#before-you-deploy-it) वाली जाँचें जोड़ें।
 
-**परिणाम:** एक काम करने वाला स्थानीय चैट इंटरफ़ेस, जो Phaseo क्रेडेंशियल ब्राउज़र में उजागर नहीं करता।
+किसी कोडिंग एजेंट से यही ऐप शुरू से बनवाने के लिए, यह प्रॉम्प्ट पेस्ट करें:
 
 <Prompt
-  description="Phaseo Gateway पर **Next.js वेब चैट ऐप** बनाएं।"
+  description="Phaseo Gateway पर **Next.js वेब चैट ऐप** बनाएँ।"
   icon="message-square"
   actions={["copy", "cursor"]}
 >
-{`आप Phaseo Gateway के साथ प्रोडक्शन-शैली का छोटा चैट ऐप बना रहे हैं।
+{`You are building a small production-style chat app with Phaseo Gateway.
 
-इन सुविधाओं वाला Next.js ऐप बनाएं:
-- चैट UI
-- GET /v1/models से जुड़ा मॉडल पिकर
-- POST /v1/responses को कॉल करने वाला सर्वर-साइड रूट
-- PHASEO_API_KEY का उपयोग करके सर्वर-साइड API key प्रबंधन
-- लोडिंग, सफलता और त्रुटि स्थितियां
+Create a Next.js app with:
+- a chat UI
+- a model picker backed by GET https://api.phaseo.app/v1/models
+- a server-side route that calls POST https://api.phaseo.app/v1/responses
+- server-side API key handling using PHASEO_API_KEY (Authorization: Bearer)
+- loading, success, and error states
 
-ऐप को जानबूझकर छोटा और जांचने में आसान रखें。
+Keep the app intentionally small and easy to inspect.
 
-कार्यान्वयन की आवश्यकताएं:
-- मॉडल खोजने के लिए एक स्थानीय API route इस्तेमाल करें।
-- जवाब जनरेट करने के लिए एक स्थानीय API route इस्तेमाल करें।
-- सीक्रेट केवल सर्वर पर रखें。
-- कोड में अनुरोध/जवाब का प्रवाह स्पष्ट दिखाएं।
-- सेटअप और चलाने के चरणों वाला छोटा README जोड़ें।
+Implementation requirements:
+- Use one local API route for model discovery.
+- Use one local API route for responses generation.
+- Keep secrets server-side only.
+- Send the whole conversation in input on every turn. The gateway rejects previous_response_id.
+- Only accept model IDs from an allowlist on the server, and cap the input length.
+- Show the request/response flow clearly in code.
+- Add a short README with setup and run steps.
 
-सत्यापन:
-- यदि संभव हो तो ऐप चलाएं।
-- चैट का एक सफल टर्न सत्यापित करें।
-- बदली गई फ़ाइलों, सत्यापित बातों और बाकी मान्यताओं की सटीक जानकारी दें。`}
+Verification:
+- Run the app if possible.
+- Verify two successful chat turns in a row.
+- Report the exact files changed, what you verified, and any remaining assumptions.`}
 </Prompt>
 
-## सैंपल प्रोजेक्ट
+## सैंपल कैसे बना है
 
-- GitHub: [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs)
-- रिपॉज़िटरी में स्थानीय पथ: `examples/web-chat-nextjs`
+```mermaid
+flowchart LR
+  ui["ब्राउज़र में ChatClient.tsx"] -->|"GET /api/models"| models["app/api/models/route.ts"]
+  ui -->|"POST /api/responses"| resp["app/api/responses/route.ts"]
+  models --> lib["lib/gateway.ts Bearer कुंजी जोड़ता है"]
+  resp --> lib
+  lib -->|"GET /v1/models, POST /v1/responses"| gw["Phaseo Gateway"]
+```
 
-## यह ऐप क्या करता है
+सैंपल [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs) में है:
 
-- - उपलब्ध मॉडल लाता है `GET /v1/models`
-- - चैट संदेश भेजता है `POST /v1/responses`
-- API key को सर्वर पर रखता है
-- OAuth की जटिलता के बिना वास्तविक उत्पाद शुरू करने के लिए सरल आधार देता है
+| फ़ाइल | क्या करती है |
+| --- | --- |
+| `app/components/ChatClient.tsx` | इनपुट, लोडिंग और त्रुटि की स्थिति, रेंडर किए गए संदेश, मॉडल पिकर |
+| `app/api/models/route.ts` | `GET /v1/models` से मॉडल ID लौटाती है |
+| `app/api/responses/route.ts` | जाँचती है कि `model` और `input` खाली न होने वाली स्ट्रिंग हैं (`400 missing_model`, `400 missing_input`), फिर `POST /v1/responses` कॉल करती है |
+| `lib/gateway.ts` | URL और हेडर बनाती है: `Authorization: Bearer $PHASEO_API_KEY`, `x-title`, और सेट होने पर `http-referer` |
 
-## मुख्य फ़ाइलें
+## इसे चलाएँ
 
-- `app/api/models/route.ts`
-- `app/api/responses/route.ts`
-- `app/components/ChatClient.tsx`
-- `lib/gateway.ts`
+आपको Node.js और एक Phaseo API कुंजी चाहिए।
 
-## सैंपल की संरचना ऐसी क्यों है
+<Steps>
+<Step title="इंस्टॉल करें">
 
-### 1. ब्राउज़र सीधे Phaseo को कॉल नहीं करता
-
-UI पहले आपके अपने Next.js रूट से बात करता है। वे रूट सर्वर पर Phaseo को कॉल करते हैं।
-
-इससे आपको मिलता है:
-
-- सर्वर-साइड सीक्रेट प्रबंधन
-- हेडर और अनुरोध बॉडी संभालने की एक जगह
-- बाद में auth, अनुरोध सीमाएं या लॉगिंग जोड़ने का आसान रास्ता
-
-### 2. मॉडल खोज को जनरेशन से अलग रखा गया है
-
-मॉडल सूची और चैट जनरेशन के लिए अलग रूट रखें, ताकि हर हिस्सा आसानी से समझ में आए:
-
-- मॉडल सूचीबद्ध करने के लिए एक रूट
-- चैट अनुरोध चलाने के लिए एक रूट
-
-### 3. UI केवल इंटरैक्शन की स्थिति संभालता है
-
-React क्लाइंट संभालता है:
-
-- इनपुट की स्थिति
-- लोडिंग की स्थिति
-- त्रुटि दिखाना
-- रेंडर किए गए संदेश
-
-सर्वर रूट AI कॉल संभालता है। ब्राउज़र केवल उपयोगकर्ता अनुभव संभालता है।
-
-## ज़रूरी चीज़ें
-
-- - Node.js और समर्थित पैकेज मैनेजर
-- Phaseo API key
-
-## सैंपल चलाएं
-
-<CodeGroup>
-```bash npm
+```bash
 cd examples/web-chat-nextjs
 npm install
-cp .env.example .env.local
 ```
 
-```bash pnpm
-cd examples/web-chat-nextjs
-pnpm install
-cp .env.example .env.local
+सैंपल के साथ `package-lock.json` आता है, इसलिए `npm` परखे हुए संस्करण इंस्टॉल करता है।
+
+</Step>
+<Step title=".env.local बनाएँ">
+
+सैंपल में `.env.example` नहीं है। `.env.local` खुद बनाएँ:
+
+```bash .env.local
+PHASEO_API_KEY=phaseo_v1_sk_...
+# वैकल्पिक। डिफ़ॉल्ट https://api.phaseo.app है; /v1 अपने आप जुड़ जाता है।
+NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
+# वैकल्पिक ऐप एट्रिब्यूशन हेडर।
+GATEWAY_APP_TITLE=My chat app
+GATEWAY_HTTP_REFERER=https://myapp.example
 ```
 
-```bash yarn
-cd examples/web-chat-nextjs
-yarn install
-cp .env.example .env.local
+यहाँ `NEXT_PUBLIC_GATEWAY_URL` सिर्फ़ सर्वर पर पढ़ा जाता है, लेकिन `NEXT_PUBLIC_` प्रीफ़िक्स इसे ब्राउज़र कोड के सामने खोल देगा, इसलिए इसमें कभी कुंजी न डालें। [ऐप एट्रिब्यूशन](../guides/app-attribution) दोनों वैकल्पिक हेडर समझाता है।
+
+</Step>
+<Step title="दूसरा चैट टर्न ठीक करें">
+
+`ChatClient.tsx` पिछले जवाब का `id` `previous_response_id` के रूप में भेजता है। Gateway प्रतिक्रियाएँ संग्रहीत नहीं करता, इसलिए वह इस फ़ील्ड को `400 validation_error` (कीवर्ड `unsupported_param`) के साथ अस्वीकार कर देता है और दूसरा संदेश विफल हो जाता है। `app/api/responses/route.ts` में वह ब्लॉक हटाएँ जो `previous_response_id` को payload में कॉपी करता है:
+
+```ts app/api/responses/route.ts
+  // ये लाइनें हटाएँ:
+  if (typeof body.previous_response_id === 'string' && body.previous_response_id.trim()) {
+    payload.previous_response_id = body.previous_response_id.trim();
+  }
 ```
 
-```bash bun
-cd examples/web-chat-nextjs
-bun install
-cp .env.example .env.local
-```
-</CodeGroup>
+इसके बाद हर टर्न का जवाब अलग से दिया जाता है। संदर्भ बनाए रखने के लिए, पिछले टर्न को `input` में संदेशों की array के रूप में भेजें।
 
-यह सेट करें:
+</Step>
+<Step title="डेव सर्वर शुरू करें">
 
-- `PHASEO_API_KEY`
-- `NEXT_PUBLIC_GATEWAY_URL`
-
-फिर चलाएं:
-
-<CodeGroup>
-```bash npm
+```bash
 npm run dev
 ```
 
-```bash pnpm
-pnpm dev
-```
+`http://localhost:3000` खोलें।
 
-```bash yarn
-yarn dev
-```
+</Step>
+</Steps>
 
-```bash bun
-bun run dev
-```
-</CodeGroup>
+## जाँचें कि यह काम किया
 
-खोलें `http://localhost:3000`.
+- मॉडल पिकर मॉडल ID से भर जाता है।
+- लगातार दो संदेशों में से हर एक को जवाब मिलता है।
+- ब्राउज़र के नेटवर्क पैनल में अनुरोध सिर्फ़ `/api/models` और `/api/responses` पर जाते हैं, और किसी अनुरोध में `PHASEO_API_KEY` नहीं होती।
+- गलत मॉडल ID खाली जवाब के बजाय Gateway का त्रुटि संदेश दिखाता है।
+- अनुरोध **सेटिंग → उपयोग → लॉग्स** में आपके सेट किए ऐप टाइटल के साथ दिखते हैं।
 
-## काम की जांच करें
+<span id="before-you-deploy-it"></span>
+## डिप्लॉय करने से पहले
 
-- मॉडल पिकर सर्वर रूट से मॉडल लोड करता है।
-- संदेश भेजने पर असिस्टेंट का एक जवाब मिलता है।
-- ब्राउज़र के नेटवर्क पैनल में `PHASEO_API_KEY`.
-- Gateway अनुरोध विफल होने पर UI में उपयोगी त्रुटि स्थिति दिखती है।
+- **रूट प्रमाणित करें।** `/api/responses` और `/api/models` पर साइन-इन किया हुआ उपयोगकर्ता ज़रूरी करें, या [OAuth workbench](./build-an-oauth-nextjs-workbench) इस्तेमाल करें ताकि हर उपयोगकर्ता अपने क्रेडिट खर्च करे।
+- **मॉडल की अनुमति-सूची बनाएँ।** रूट ब्राउज़र से आई कोई भी `model` स्ट्रिंग आगे भेज देता है। सर्वर पर उसे एक तय सूची से जाँचें।
+- **इनपुट और दर सीमित करें।** इनपुट की लंबाई और हर उपयोगकर्ता के अनुरोध सीमित करें, और [कुंजी पर खर्च सीमा](../api-reference/limits#key-limits-and-budgets) सेट करें।
+- **ज़रूरत हो तो स्ट्रीम करें।** `stream: true` सेट करें और इवेंट आगे भेजें; [स्ट्रीमिंग](../guides/streaming) बताता है कि कौन-सा इवेंट Responses स्ट्रीम खत्म करता है।
 
-## ऐप को अपने मुताबिक बनाएं
-
-- डिफ़ॉल्ट मॉडल को अपने चुने हुए प्रोडक्शन मॉडल से बदलें
-- अगर UX में token-by-token आउटपुट चाहिए तो streaming जोड़ें
-- ऐप में कई उपयोगकर्ता होने पर बाद में auth जोड़ें
-- उच्च-स्तरीय client चाहिए तो बाद में सर्वर रूट के अंदरूनी हिस्से को TypeScript SDK से बदलें
-
-## दूसरा शुरुआती बिंदु कब चुनें
-
-- UI के बजाय स्क्रिप्ट या backend smoke test चाहिए तो Node quickstart इस्तेमाल करें
-- पहला integration worker, CLI या backend service में हो तो Python quickstart इस्तेमाल करें
-
-## संबंधित गाइड
-
-- [मिनी ऐप के लिए शुरुआती prompts](./mini-app-starter-prompts.mdx)
-- [उदाहरण](../guides/examples.mdx)
-- [त्वरित शुरुआत](../quickstart.mdx)
+UI के बजाय बैकएंड स्क्रिप्ट के लिए, [Node REST smoke ऐप](./build-a-node-rest-smoke-app) या [Python gateway CLI](./build-a-python-gateway-cli) से शुरू करें।

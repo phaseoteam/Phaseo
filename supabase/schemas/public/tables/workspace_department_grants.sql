@@ -24,6 +24,11 @@ CREATE INDEX workspace_department_grants_department_idx ON public.workspace_depa
 
 CREATE INDEX workspace_department_grants_user_id_idx ON public.workspace_department_grants USING btree (user_id);
 
+CREATE TRIGGER gateway_workspace_publication
+  AFTER INSERT OR DELETE OR UPDATE ON public.workspace_department_grants
+  FOR EACH ROW
+  EXECUTE FUNCTION private.capture_gateway_workspace_publication();
+
 CREATE POLICY "deny_direct_client_access" ON "public"."workspace_department_grants"
   AS RESTRICTIVE
   FOR ALL

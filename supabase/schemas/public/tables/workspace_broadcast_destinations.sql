@@ -19,8 +19,9 @@ CREATE TABLE "public"."workspace_broadcast_destinations" (
   "include_request_context"             boolean                  NOT NULL DEFAULT true,
   CONSTRAINT "workspace_broadcast_destinations_destination_id_check"
     CHECK
-    ((destination_id = ANY (ARRAY['arize'::text, 'braintrust'::text, 'clickhouse'::text, 'comet_opik'::text, 'datadog'::text, 'grafana_cloud'::text, 'langfuse'::text,
-    'langsmith'::text, 'new_relic'::text, 'otel_collector'::text, 'posthog'::text, 's3'::text, 'sentry'::text, 'snowflake'::text, 'wandb_weave'::text, 'webhook'::text]))),
+    ((destination_id = ANY (ARRAY['arize'::text, 'axiom'::text, 'bigquery'::text, 'braintrust'::text, 'clickhouse'::text, 'comet_opik'::text, 'datadog'::text, 'dynatrace'::text, 'elastic'::text, 'gcs'::text,
+    'grafana_cloud'::text, 'honeycomb'::text, 'langfuse'::text, 'langsmith'::text, 'new_relic'::text, 'otel_collector'::text, 'posthog'::text, 'r2'::text, 'respan'::text, 's3'::text, 'sentry'::text,
+    'snowflake'::text, 'wandb_weave'::text, 'webhook'::text]))),
   CONSTRAINT "workspace_broadcast_destinations_group_join_operator_check" CHECK ((group_join_operator = ANY (ARRAY['and'::text, 'or'::text]))),
   CONSTRAINT "workspace_broadcast_destinations_pkey" PRIMARY KEY (id),
   CONSTRAINT "workspace_broadcast_destinations_sampling_rate_check" CHECK (((sampling_rate >= (0)::numeric) AND (sampling_rate <= (1)::numeric))),
@@ -31,6 +32,37 @@ ALTER TABLE "public"."workspace_broadcast_destinations"
   ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX workspace_broadcast_destinations_workspace_enabled_idx ON public.workspace_broadcast_destinations USING btree (workspace_id, enabled);
+
+CREATE TRIGGER enforce_broadcast_destination_limit
+  BEFORE INSERT OR UPDATE OF workspace_id, destination_id ON public.workspace_broadcast_destinations
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_broadcast_destination_limit();
+
+CREATE POLICY "workspace_broadcast_destinations_no_oauth_client_insert" ON "public"."workspace_broadcast_destinations"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_broadcast_destinations_no_oauth_client_update" ON "public"."workspace_broadcast_destinations"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_broadcast_destinations_no_oauth_client_delete" ON "public"."workspace_broadcast_destinations"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_broadcast_destinations"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 CREATE POLICY "team_broadcast_destinations_delete_own_team" ON "public"."workspace_broadcast_destinations"
   FOR DELETE

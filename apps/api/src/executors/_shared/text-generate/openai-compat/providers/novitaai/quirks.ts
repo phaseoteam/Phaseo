@@ -4,17 +4,6 @@
 
 import type { ProviderQuirks } from "../../quirks/types";
 
-const NOVITA_ENABLE_THINKING_MODELS = new Set<string>([
-	"zai-org/glm-4.5",
-	"deepseek/deepseek-v3.1",
-	"deepseek/deepseek-v3.1-terminus",
-	"deepseek/deepseek-v3.2-exp",
-	"deepseek/deepseek-v4-pro-0813",
-]);
-
-const NOVITA_SEPARATE_REASONING_MODELS = new Set<string>([
-	"deepseek/deepseek-r1-turbo",
-]);
 
 function isReasoningEnabled(ir: any): boolean | null {
 	if (!ir?.reasoning) return null;
@@ -25,24 +14,9 @@ function isReasoningEnabled(ir: any): boolean | null {
 	return null;
 }
 
-function normalizeNovitaModel(value: unknown): string {
-	if (typeof value !== "string") return "";
-	const trimmed = value.trim().toLowerCase();
-	if (!trimmed) return "";
-	// Gateway model IDs may include provider prefix (novitaai/<model-id>).
-	if (trimmed.startsWith("novitaai/")) return trimmed.slice("novitaai/".length);
-	if (trimmed.startsWith("novita-ai/")) return trimmed.slice("novita-ai/".length);
-	if (trimmed.startsWith("novita/")) return trimmed.slice("novita/".length);
-	return trimmed;
-}
-
-function modelInAllowlist(model: unknown, allowlist: Set<string>): boolean {
-	const normalized = normalizeNovitaModel(model);
-	return allowlist.has(normalized);
-}
 
 export const novitaQuirks: ProviderQuirks = {
-	transformRequest: ({ request, ir, model }) => {
+	transformRequest: ({ request, ir }) => {
 		if (!request || typeof request !== "object") return;
 
 		// Novita docs enumerate system/user/assistant roles for message authoring.
@@ -57,20 +31,15 @@ export const novitaQuirks: ProviderQuirks = {
 
 		const reasoningEnabled = isReasoningEnabled(ir);
 		if (reasoningEnabled === null) return;
-		const modelName = model ?? request.model;
 
-		if (
-			request.enable_thinking == null &&
-			modelInAllowlist(modelName, NOVITA_ENABLE_THINKING_MODELS)
-		) {
+		// enable_thinking and separate_reasoning are request fields for every model: hybrid
+		// models switch on enable_thinking, models that always reason ignore it, and
+		// separate_reasoning only affects reasoning models
+		// (https://docs.novita.ai/api-reference/model-apis-llm-create-chat-completion).
+		if (request.enable_thinking == null) {
 			request.enable_thinking = reasoningEnabled;
 		}
-
-		if (
-			reasoningEnabled &&
-			request.separate_reasoning == null &&
-			modelInAllowlist(modelName, NOVITA_SEPARATE_REASONING_MODELS)
-		) {
+		if (reasoningEnabled && request.separate_reasoning == null) {
 			request.separate_reasoning = true;
 		}
 	},

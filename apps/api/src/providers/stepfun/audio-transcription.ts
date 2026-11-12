@@ -1,15 +1,16 @@
-import { z } from "zod";
-import { parseBuffer } from "music-metadata";
+import * as z from "zod";
+import { lazySchema } from "@core/lazy-schema";
 import { AudioTranscriptionSchema } from "@core/schemas";
 import type { AdapterResult, ProviderExecuteArgs } from "../types";
 import { resolveOpenAITransport } from "../shared/openai-transport";
 import { exec as legacyTranscription } from "../openai/endpoints/audio-transcription";
 import { upstreamTestHeaders } from "../shared/testing";
+import { audioDurationSeconds } from "@/lib/audio/duration";
 
-const configSchema = z.object({
+const configSchema = lazySchema(() => z.object({
     enable_itn: z.boolean().optional(),
     format: z.object({ type: z.enum(["wav", "mp3", "ogg", "pcm"]), codec: z.string().optional(), rate: z.number().int().positive().optional(), bits: z.literal(16).optional(), channel: z.number().int().min(1).max(2).optional() }).optional(),
-}).strict();
+}).strict());
 
 async function finalTranscript(stream: ReadableStream<Uint8Array>): Promise<any> {
     const reader = stream.getReader();
@@ -69,7 +70,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         if (!format.rate || !format.bits || !format.channel) throw new Error("stepfun_pcm_format_requires_rate_bits_channel");
         duration = bytes.length / (format.rate * format.channel * format.bits / 8);
     } else {
-        duration = (await parseBuffer(bytes, { mimeType: file.type, size: bytes.length }, { duration: true, skipCovers: true })).format.duration;
+        duration = audioDurationSeconds(bytes);
     }
     if (duration == null || !Number.isFinite(duration) || duration <= 0) throw new Error("stepfun_audio_duration_unavailable");
     let binary = "";

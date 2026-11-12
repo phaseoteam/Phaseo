@@ -3,8 +3,8 @@
 // How: Reads bindings and exposes initialized clients.
 
 // apps/api/src/runtime/env.ts
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient } from "@supabase/supabase-js";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { createClient, type GatewaySupabaseClient } from "./supabase-client";
 import type { ResponseCacheStore } from "@/core/response-cache";
 
 import { BINDING_KEYS } from "./env.binding-keys";
@@ -15,13 +15,13 @@ export type { GatewayBindings, GatewayRuntime } from "./env.types";
 type RuntimeState = {
     bindings: GatewayBindings;
     cache: KVNamespace;
-    supabase: SupabaseClient;
+    supabase: GatewaySupabaseClient;
 };
 
 let runtimeState: RuntimeState | null = null;
 let runtimeActiveCount = 0;
 let lastBindingsSnapshot: GatewayBindings | null = null;
-let cachedSupabase: { url: string; key: string; client: SupabaseClient } | null = null;
+let cachedSupabase: { url: string; key: string; client: GatewaySupabaseClient } | null = null;
 type WaitUntilEntry = {
     id: number;
     handler: (promise: Promise<unknown>) => void;
@@ -29,6 +29,10 @@ type WaitUntilEntry = {
 const waitUntilEntries: WaitUntilEntry[] = [];
 let nextWaitUntilEntryId = 0;
 let waitUntilHandler: ((promise: Promise<unknown>) => void) | null = null;
+// Background work must extend the lifetime of the request that started it:
+// Workers cancel a request's pending I/O once its own context ends, so routing
+// one request's billing/audit through another request's waitUntil can drop it.
+const requestScope = new AsyncLocalStorage<{ waitUntil: (promise: Promise<unknown>) => void }>();
 const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
 function snapshotBindings(env: GatewayBindings): GatewayBindings {
@@ -99,6 +103,15 @@ export function ensureRuntimeForBackground(): () => void {
     return () => clearRuntime();
 }
 
+/** Runs `fn` with `waitUntil` bound as the background dispatcher for everything it starts. */
+export function runWithRequestScope<T>(
+    waitUntil: ((promise: Promise<unknown>) => void) | undefined,
+    fn: () => T,
+): T {
+    if (!waitUntil) return fn();
+    return requestScope.run({ waitUntil }, fn);
+}
+
 export function setWaitUntil(handler?: (promise: Promise<unknown>) => void): () => void {
     if (!handler) {
         return () => { };
@@ -139,7 +152,9 @@ export function isLocalTestingModeEnabled(bindings?: Partial<GatewayBindings> | 
 }
 
 export function dispatchBackground(promise: Promise<unknown>) {
-    const handler = waitUntilHandler;
+    // The process-wide stack is only a fallback for callers outside a request
+    // scope (Durable Objects, scheduled jobs, tests).
+    const handler = requestScope.getStore()?.waitUntil ?? waitUntilHandler;
     if (handler) {
         handler(promise.catch((err) => console.error(err)));
         return;
@@ -147,11 +162,24 @@ export function dispatchBackground(promise: Promise<unknown>) {
     promise.catch((err) => console.error(err));
 }
 
+/**
+ * The background dispatcher in effect now, for work that will be started after
+ * the request's runtime is cleared (for example when a response body finishes
+ * streaming). Falls back to running the promise unawaited.
+ */
+export function captureBackgroundDispatcher(): (promise: Promise<unknown>) => void {
+    const handler = requestScope.getStore()?.waitUntil ?? waitUntilHandler;
+    return (promise) => {
+        if (handler) handler(promise.catch((err) => console.error(err)));
+        else promise.catch((err) => console.error(err));
+    };
+}
+
 export function getCache(): KVNamespace {
     return ensureRuntime().cache;
 }
 
-export function getSupabaseAdmin(): SupabaseClient {
+export function getSupabaseAdmin(): GatewaySupabaseClient {
     return ensureRuntime().supabase;
 }
 

@@ -9,6 +9,7 @@ import { runEmbeddingsPipeline } from "./surfaces/embeddings";
 import { runModerationsPipeline } from "./surfaces/moderations";
 import { runRerankPipeline } from "./surfaces/rerank";
 import { runDecisionsPipeline } from "./surfaces/decisions";
+import { runExtractionsPipeline } from "./surfaces/extractions";
 import { runVideoGeneratePipeline } from "./surfaces/video-generate";
 import { runNotImplementedPipeline } from "./surfaces/not-implemented";
 import { runNonTextPipeline } from "./surfaces/non-text";
@@ -20,6 +21,7 @@ const PIPELINES: Record<Endpoint, PipelineRunner> = {
 	moderations: runModerationsPipeline,
 	rerank: runRerankPipeline,
 	decisions: runDecisionsPipeline,
+	extractions: runExtractionsPipeline,
 	"chat.completions": runTextGeneratePipeline,
 	responses: runTextGeneratePipeline,
 	messages: runTextGeneratePipeline,

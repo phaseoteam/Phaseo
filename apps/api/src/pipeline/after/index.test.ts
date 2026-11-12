@@ -127,6 +127,28 @@ describe("attachGatewaySuccessMeta", () => {
 			},
 		});
 		expect(payload.meta.plugin_executions).toEqual(ctx.pluginExecutions);
+		expect(payload.meta.routing.dropped_params).toEqual([]);
+	});
+
+	it("lists the parameters dropped for the serving provider", () => {
+		const payload: Record<string, any> = {};
+		const ctx = {
+			meta: { returnMeta: true },
+			requestedParams: ["top_k"],
+			routingDiagnostics: {
+				droppedParams: {
+					provider: "openai",
+					params: [
+						{ param: "top_k", reason: "unsupported_by_provider", source: "catalogue", client_sent: true },
+						{ param: "temperature", reason: "unsupported_by_provider", source: "catalogue", client_sent: false },
+					],
+				},
+			},
+		} as any;
+
+		attachGatewaySuccessMeta({ ctx, result: { provider: "openai" } as any, payload, includeMeta: true });
+
+		expect(payload.meta.routing.dropped_params).toEqual([{ param: "top_k", reason: "unsupported_by_provider" }]);
 	});
 
 	it("leaves payload metadata unchanged when meta is disabled", () => {

@@ -1,6 +1,6 @@
 export interface VideoGenerationRequest {
   aspect_ratio?: string;
-  compression_quality?: number;
+  compression_quality?: number | "optimized" | "lossless";
   duration?: number;
   enhance_prompt?: boolean;
   frame_images?: {
@@ -32,6 +32,7 @@ export interface VideoGenerationRequest {
   )[];
   input_video_duration?: number;
   model: string;
+  models?: string[];
   negative_prompt?: string;
   output?: {
     access?: "bytes" | "signed_url" | "both";

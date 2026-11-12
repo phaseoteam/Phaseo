@@ -4,7 +4,7 @@ import {
 	fetchFrontendModelOverview,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { resolveLocalizedModelDescription } from "@/i18n/localized-model-description";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "@/i18n/server";
 import {
 	FREE_ROUTER_MODEL_ID,
 	FREE_ROUTER_NAME,

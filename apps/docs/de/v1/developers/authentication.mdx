@@ -4,34 +4,13 @@ description: "Verwende API-Schlüssel, um jede Anfrage an Phaseo Gateway zu auth
 icon: "key-round"
 ---
 
-Erstelle einen Schlüssel im [Dashboard](https://phaseo.app/gateway/keys), speichere ihn auf deinem Server und sende ihn als Bearer-Token mit Gateway-Anfragen.
-
----
-
-## Schlüsseltypen
-
-- **Gateway-API-Schlüssel** rufen Modell-, Anbieter- und Generierungsendpunkte auf, die für deinen Workspace verfügbar sind.
-- **Management-API-Schlüssel** rufen Verwaltungs-APIs auf. Siehe [Management-API-Schlüssel](./management-api-keys.mdx).
-
-Rotiere einen Schlüssel, indem du deine Anwendung vor dem Ungültigmachen der alten Zugangsdaten auf den Ersatzschlüssel umstellst. Siehe den [Endpunkt zur Schlüsselrotation](../api-reference/endpoint/keys-rotate.mdx).
-
-Schlüssel haben das Format `phaseo_v1_sk_<kid>_<secret>`. Behandle sie wie Passwörter und speichere sie weder im clientseitigen Code noch in öffentlichen Repositories.
-
-<Note>
-Du kannst `:free`-Modelle ohne eingezahltes Guthaben aufrufen. Kostenpflichtige Modelle erfordern verfügbares Wallet-Guthaben.
-</Note>
-
----
-
-## Header-Format
-
-Füge den Schlüssel bei jeder Anfrage in den `Authorization`-Header ein:
+Erstelle einen Schlüssel im [Dashboard](https://phaseo.app/settings/keys) oder mit `POST /v1/keys` und einem Management-Schlüssel, speichere ihn auf deinem Server und sende ihn bei jeder Gateway-Anfrage als Bearer-Token. Agenten sollten die CLI verwenden; siehe [Phaseo mit einem Agenten verwalten](./manage-from-an-agent).
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
 
-Die meisten HTTP-Clients erlauben es, den Header einmalig festzulegen. Zum Beispiel mit `fetch`:
+Setze den Header einmal in deinem Client. Zum Beispiel mit `fetch`:
 
 ```ts
 const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
@@ -41,34 +20,45 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 		"Content-Type": "application/json",
 	},
 	body: JSON.stringify({
-		model: "openai/gpt-5-nano",
+		model: "openai/gpt-6-astra",
 		messages: [
 			{ role: "system", content: "You are a helpful assistant." },
-			{
-				role: "user",
-				content: "Summarize the drawbacks to AI.",
-			},
+			{ role: "user", content: "Summarize the drawbacks to AI." },
 		],
 	}),
 });
 ```
 
----
+<Note>
+Du kannst `:free`-Modelle aufrufen, ohne Credits einzuzahlen. Kostenpflichtige Modelle brauchen ein verfügbares Guthaben in der Wallet.
+</Note>
 
-## Checkliste für den Umgang mit Schlüsseln
+## Zugangsdaten wählen
 
-| Vorgehensweise            | Warum das wichtig ist                                                           |
-| ------------------- | ------------------------------------------------------------------------ |
-| Verwende einen Schlüssel pro App | So kannst du ihn rotieren, ohne andere Dienste zu beeinträchtigen.                |
-| Speichere Schlüssel sicher | Secrets-Manager verhindern, dass Schlüssel versehentlich in Logs oder Fehlertracking-Systemen offengelegt werden.  |
-| Überwache die Nutzung       | Das Dashboard zeigt Kennzahlen für jeden Schlüssel, damit du Anomalien schnell erkennst. |
-| Entferne ungenutzte Schlüssel  | Das Löschen veralteter Schlüssel verringert die Angriffsfläche für möglichen Missbrauch.        |
+| Zugangsdaten | Format | Verwendung |
+| --- | --- | --- |
+| Gateway-API-Schlüssel | `phaseo_v1_sk_<kid>_<secret>` | Modell-, Anbieter- und Generierungsendpunkte, die deinem Workspace zur Verfügung stehen. |
+| [Management-API-Schlüssel](./management-api-keys.mdx) | `phaseo_v1_mk_<kid>_<secret>` | Verwaltungs-APIs. |
+| [Vertrauenswürdiger Workload](./trusted-workloads.mdx) (Beta) | Ein kurzlebiges OIDC-Token der Plattform | Deployments und CI-Jobs auf Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS oder deinem eigenen OIDC-Aussteller, ohne gespeicherten Schlüssel. |
 
----
+Behandle Schlüssel wie Passwörter: Halte sie aus clientseitigem Code und öffentlichen Repositorys heraus.
 
-## Häufige Authentifizierungsfehler
+## Sicher mit Schlüsseln umgehen
 
-- **401 Nicht autorisiert**: Der Schlüssel fehlt, ist ungültig oder gehört zu einem deaktivierten Workspace.
-- **403 Verboten**: Der Schlüssel ist vorhanden, kann aber nicht auf den angeforderten Anbieter oder das Modell zugreifen.
-- **429 Too Many Requests**: Der Schlüssel oder Workspace hat ein Limit überschritten. Siehe [Anfragelimits](../api-reference/limits.mdx).
-- **5xx-Fehler**: Versuche es mit exponentiellem Backoff erneut und wende dich an den [Support](https://phaseo.app/help), falls das Problem weiterhin besteht.
+- **Ein Schlüssel pro App und Umgebung**, damit du einen rotieren kannst, ohne andere Dienste zu beeinträchtigen.
+- **Schlüssel in einem Secrets-Manager speichern**, der sie aus Logs und Fehlertracking heraushält.
+- **Die Nutzung pro Schlüssel** im Dashboard beobachten, um Auffälligkeiten zu erkennen.
+- **Schlüssel löschen, die du nicht mehr verwendest.**
+
+Um einen Schlüssel zu rotieren, stelle deine Anwendung auf den Ersatz um, bevor du den alten ungültig machst. Siehe den [Endpunkt zur Schlüsselrotation](../api-reference/endpoint/keys-rotate.mdx).
+
+## Authentifizierungsfehler beheben
+
+| Status | Ursache | Was zu tun ist |
+| --- | --- | --- |
+| `401` | Der Schlüssel fehlt, ist ungültig oder gehört zu einem deaktivierten Workspace. Das Feld `reason` im Body sagt, was zutrifft. | Header und Schlüssel prüfen. |
+| `403` | Der Schlüssel ist gültig, darf aber den angeforderten Anbieter oder das Modell nicht verwenden. | Die Guardrails des Schlüssels und die Anbietereinstellungen des Workspace prüfen. |
+| `429` | Der Schlüssel oder der Workspace hat ein Limit erreicht. | Siehe [Ratenlimits](../api-reference/limits.mdx). |
+| `5xx` | Phaseo oder der Anbieter ist fehlgeschlagen. | Mit exponentiellem Backoff wiederholen und den [Support](https://phaseo.app/help) kontaktieren, wenn es anhält. |
+
+Unter [Fehler und Debugging](../api-reference/errors.mdx) findest du alle Fehlercodes.

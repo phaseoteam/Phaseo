@@ -369,4 +369,83 @@ describe("google video executor", () => {
 		expect(state.releaseCalls).toEqual([]);
 		expect(mock.calls).toEqual([]);
 	});
+	it("submits Gemini Omni as a background interaction and saves it as an operation", async () => {
+		let capturedBody: any = null;
+		let capturedUrl = "";
+		const mock = installFetchMock([
+			{
+				match: (url) => url.endsWith("/v1beta/interactions"),
+				response: jsonResponse({ id: "v1_omni123", status: "in_progress", object: "interaction", model: "gemini-omni-1.1-flash" }),
+				onRequest: (call) => {
+					capturedBody = call.bodyJson;
+					capturedUrl = call.url;
+				},
+			},
+		]);
+
+		const result = await execute({
+			...buildArgs({
+				model: "google/gemini-omni-flash",
+				prompt: "The cat slowly blinks",
+				seconds: 4,
+				size: "360p",
+				inputImage: "data:image/jpeg;base64,QUJD",
+			} as any),
+			providerModelSlug: "gemini-omni-1.1-flash",
+		});
+
+		mock.restore();
+
+		expect(result.upstream?.status).toBe(200);
+		expect(capturedUrl).toBe("https://generativelanguage.googleapis.com/v1beta/interactions");
+		expect(capturedBody).toEqual({
+			model: "gemini-omni-1.1-flash",
+			input: [
+				{ type: "image", mime_type: "image/jpeg", data: "QUJD" },
+				{ type: "text", text: "The cat slowly blinks" },
+			],
+			background: true,
+			store: true,
+			response_format: { type: "video", delivery: "uri", duration: "4s", resolution: "360p", aspect_ratio: "16:9" },
+		});
+		expect(state.reservationCalls[0]).toMatchObject({
+			seconds: 4,
+			providerUsageMeters: { output_video_tokens: 7724, output_text_tokens: 1000 },
+		});
+		expect(saveVideoJobMetaMock).toHaveBeenCalledWith(
+			"team_test",
+			"req_google_video_test",
+			expect.objectContaining({
+				providerTaskId: "interactions/v1_omni123",
+				seconds: 4,
+				resolution: "360p",
+				inputImageCount: 1,
+				googleUsageMeters: { output_video_tokens: 7724, output_text_tokens: 1000 },
+			}),
+			"interactions/v1_omni123",
+			"queued",
+		);
+		expect((result.ir as any)?.status).toBe("queued");
+	});
+
+	it("rejects Omni options Google does not support before reserving", async () => {
+		const mock = installFetchMock([]);
+		try {
+			const result = await execute({ ...buildArgs({ model: "gemini-omni-1.1-flash", prompt: "x", seconds: 12 } as any), providerModelSlug: "gemini-omni-1.1-flash" });
+			expect(result.upstream?.status).toBe(400);
+			expect(await result.upstream?.clone().json()).toMatchObject({ error: { message: expect.stringContaining("3 to 10") } });
+			expect(state.reservationCalls).toEqual([]);
+			expect(mock.calls).toEqual([]);
+		} finally { mock.restore(); }
+	});
+
+	it("fails an Omni create response without an interaction id", async () => {
+		const mock = installFetchMock([
+			{ match: (url) => url.endsWith("/v1beta/interactions"), response: jsonResponse({ status: "in_progress" }) },
+		]);
+		const result = await execute({ ...buildArgs({ model: "gemini-omni-1.1-flash", prompt: "x" } as any), providerModelSlug: "gemini-omni-1.1-flash" });
+		mock.restore();
+		expect(result.upstream?.status).toBe(502);
+		expect(saveVideoJobMetaMock).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), expect.anything(), "queued");
+	});
 });

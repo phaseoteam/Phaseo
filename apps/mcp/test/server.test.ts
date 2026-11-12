@@ -61,6 +61,7 @@ describe("Phaseo MCP server metadata", () => {
 		const tools = Object.fromEntries(result.tools.map((tool) => [tool.name, tool]));
 
 		expect(Object.keys(tools)).toEqual([
+			"open_model_explorer",
 			"models_list",
 			"model_get",
 			"benchmark_rankings",
@@ -83,11 +84,11 @@ describe("Phaseo MCP server metadata", () => {
 					items: {
 						type: "object",
 						properties: {
-							releaseDate: { anyOf: [{ type: "string" }, { type: "null" }] },
+							releaseDate: { type: ["string", "null"] },
 							inputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
 							outputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
-							inputPriceProviderId: { anyOf: [{ type: "string" }, { type: "null" }] },
-							outputPriceProviderId: { anyOf: [{ type: "string" }, { type: "null" }] },
+							inputPriceProviderId: { type: ["string", "null"] },
+							outputPriceProviderId: { type: ["string", "null"] },
 							hasFreeProvider: { type: "boolean" },
 							providerSupport: {
 								type: "array",
@@ -97,11 +98,11 @@ describe("Phaseo MCP server metadata", () => {
 										pricing: {
 											type: "object",
 											properties: {
-												inputPricePerToken: { anyOf: [{ type: "string" }, { type: "null" }] },
-												outputPricePerToken: { anyOf: [{ type: "string" }, { type: "null" }] },
+												inputPricePerToken: { type: ["string", "null"] },
+												outputPricePerToken: { type: ["string", "null"] },
 												inputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
 												outputPricePerMillion: { anyOf: [{ type: "number", minimum: 0 }, { type: "null" }] },
-												currency: { anyOf: [{ type: "string" }, { type: "null" }] },
+												currency: { type: ["string", "null"] },
 												isFree: { type: "boolean" },
 											},
 											required: [
@@ -130,7 +131,7 @@ describe("Phaseo MCP server metadata", () => {
 				model: {
 					type: "object",
 					properties: {
-						releaseDate: { anyOf: [{ type: "string" }, { type: "null" }] },
+						releaseDate: { type: ["string", "null"] },
 						providerSupport: {
 							type: "array",
 							items: {
@@ -154,7 +155,21 @@ describe("Phaseo MCP server metadata", () => {
 		expect(tools.models_list?._meta?.ui).toMatchObject({
 			resourceUri: "ui://phaseo/model-explorer.html", visibility: ["model", "app"],
 		});
-		expect(tools.models_list?._meta?.["openai/ui"]).toEqual({ entrypoints: [{ type: "global" }, { type: "thread" }] });
+		// Entry points make hosts open the tool fullscreen, so models_list declares none.
+		expect(tools.models_list?._meta?.["openai/ui"]).toBeUndefined();
+		// The launcher carries them instead: ChatGPT's sidebar and thread panel, and
+		// Claude's Artifacts page. Claude also needs ui.resourceUri and model visibility.
+		const launcher = tools.open_model_explorer;
+		expect(launcher?._meta?.["openai/ui"]).toEqual({ entrypoints: [{ type: "global" }, { type: "thread" }] });
+		expect(launcher?._meta?.ui).toMatchObject({
+			resourceUri: "ui://phaseo/model-explorer.html", visibility: ["model", "app"],
+		});
+		expect(launcher?._meta?.securitySchemes).toEqual([
+			{ type: "oauth2", scopes: ["models:read", "pricing:read"] },
+		]);
+		expect(launcher?.title?.length).toBeLessThanOrEqual(60);
+		expect(launcher?.name).not.toMatch(/__|\.\.|\._|_\./);
+		expect(launcher?.inputSchema.required ?? []).toEqual([]);
 		const icon = tools.models_list?.icons?.[0];
 		expect(icon?.mimeType).toBe("image/svg+xml");
 		const svg = atob(icon!.src.split(",")[1]!);
@@ -165,9 +180,21 @@ describe("Phaseo MCP server metadata", () => {
 		const view = await client.readResource({ uri: "ui://phaseo/model-explorer.html" });
 		expect(view.contents[0]).toMatchObject({
 			mimeType: "text/html;profile=mcp-app",
-			_meta: { "openai/ui": { availableDisplayModes: ["fullscreen"], preferredDisplayMode: "fullscreen" } },
+			_meta: {
+				// ChatGPT defaults to fullscreen when both modes are available unless inline is preferred.
+				"openai/ui": { availableDisplayModes: ["inline", "fullscreen"], preferredDisplayMode: "inline" },
+				ui: { csp: { resourceDomains: ["https://phaseo.app"] } },
+				"openai/widgetCSP": { resource_domains: ["https://phaseo.app"] },
+			},
 		});
 		expect((view.contents[0] as { text: string }).text).toContain("<!doctype html>");
+		// Results render inline; the explorer never asks for fullscreen by itself.
+		expect((view.contents[0] as { text: string }).text).not.toContain("Montserrat");
+		for (const name of ["cost_estimate", "credits_get"]) {
+			expect(tools[name]?._meta?.ui).toMatchObject({ resourceUri: "ui://phaseo/model-explorer.html" });
+			expect(tools[name]?._meta?.["openai/ui"]).toBeUndefined();
+		}
+		expect(tools.activity_list?._meta?.ui).toBeUndefined();
 		expect(tools.generation_get?.outputSchema).toMatchObject({
 			type: "object",
 			properties: { generation: { type: "object" } },
@@ -297,7 +324,7 @@ describe("Phaseo MCP server metadata", () => {
 		});
 		const models = [
 			model("lab/cheap", "1", false, null),
-			model("lab/expensive", "5", true, "2026-08-25T00:00:00Z"),
+			{ ...model("lab/expensive", "5", true, "2026-08-25T00:00:00Z"), organization: { id: "openai", name: "OpenAI", color: null } },
 		];
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const request = input instanceof Request ? input : new Request(input);
@@ -317,6 +344,11 @@ describe("Phaseo MCP server metadata", () => {
 		await client.connect(clientTransport);
 
 		const result = await client.callTool({ name: "models_list", arguments: { sortBy: "input_price", limit: 2 } });
+		// Hosts that ignore structuredContent read the same data from the second text block.
+		const text = result.content as Array<{ type: string; text: string }>;
+		expect(text).toHaveLength(2);
+		expect(text[0]).toMatchObject({ type: "text", text: "Found 2 matching Phaseo models." });
+		expect(JSON.parse(text[1]!.text)).toEqual(result.structuredContent);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 		expect((fetchMock.mock.calls[0]?.[0] as Request).url).toBe(
 			"https://api.phaseo.app/v1/models?limit=250",
@@ -326,6 +358,8 @@ describe("Phaseo MCP server metadata", () => {
 				id: "lab/cheap",
 				releaseDate: null,
 				modelUrl: "https://preview.phaseo.test/models/lab/cheap",
+				// No website logo for this organisation, so the card falls back to its initial.
+				logo: null,
 				gatewayAvailable: false,
 				gatewayModelId: null,
 				providerSupport: [{
@@ -348,6 +382,10 @@ describe("Phaseo MCP server metadata", () => {
 				outputPriceProviderId: "provider",
 				hasFreeProvider: true,
 				modelUrl: "https://preview.phaseo.test/models/lab/expensive",
+				logo: {
+					light: "https://preview.phaseo.test/logos/openai_light.svg",
+					dark: "https://preview.phaseo.test/logos/openai_dark.svg",
+				},
 				gatewayAvailable: true,
 				gatewayModelId: "lab/expensive",
 				availableProviders: ["provider", "free-provider"],
@@ -384,6 +422,10 @@ describe("Phaseo MCP server metadata", () => {
 		});
 		expect((priceFiltered.structuredContent as { models: Array<{ id: string }> }).models.map((item) => item.id))
 			.toEqual(["lab/cheap"]);
+		// The launcher opens on the explorer's own first page of the catalogue.
+		const launched = await client.callTool({ name: "open_model_explorer", arguments: {} });
+		expect((launched.structuredContent as { models: Array<{ id: string }> }).models.map((item) => item.id))
+			.toEqual(["lab/cheap", "lab/expensive"]);
 		const detail = await client.callTool({ name: "model_get", arguments: { modelId: "lab/expensive" } });
 		expect(detail.structuredContent).toMatchObject({ model: {
 			id: "lab/expensive",
@@ -396,12 +438,135 @@ describe("Phaseo MCP server metadata", () => {
 		});
 		expect(estimate.structuredContent).toMatchObject({ estimate: {
 			modelId: "lab/expensive",
+			modelName: "lab/expensive",
 			providerId: "provider",
+			providerName: "Provider",
 			isFree: false,
 			inputCostUSD: 5,
 			outputCostUSD: 10,
 			totalCostUSD: 15,
 		} });
+	});
+
+	it("filters by output type, required parameters, release date and lifecycle without borrowing prices", async () => {
+		const meters = (providerId: string, input: string) => ({
+			input_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: input, currency: "USD", provider_id: providerId },
+			output_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: "10", currency: "USD", provider_id: providerId },
+		});
+		const offer = (providerId: string, input: string, parameters: string[], parameterDetails: Record<string, Record<string, unknown>> = {}) => ({
+			provider: { id: providerId, name: providerId }, model: providerId, status: "active", routable: true,
+			capabilities: { parameters, parameter_details: parameterDetails },
+			pricing: { pricing_plan: "standard", meters: meters(providerId, input) },
+		});
+		const model = (
+			id: string,
+			releasedAt: string | null,
+			status: "active" | "deprecated" | "retired",
+			offers: ReturnType<typeof offer>[],
+			aggregateProvider: string,
+		) => ({
+			id, name: id, description: null,
+			organization: { id: "lab", name: "Example Lab", color: null },
+			lifecycle: { status, released_at: releasedAt, deprecated_at: null, retires_at: null, replacement_id: null, message: null },
+			modalities: { input: ["text"], output: ["text"] },
+			limits: { input_tokens: 128_000, output_tokens: 16_000 },
+			capabilities: { endpoints: ["responses"], parameters: ["tools", "response_format"], parameter_details: {} },
+			availability: { status: "active", provider_count: offers.length, active_provider_count: offers.length, coming_soon_provider_count: 0, inactive_provider_count: 0 },
+			// The aggregate meter names the cheapest provider overall, which may not support the request.
+			pricing: { pricing_plan: "standard", meters: meters(aggregateProvider, "0.5") },
+			offers,
+		});
+		const models = [
+			// The cheap provider lacks response_format; only the dearer provider supports both parameters.
+			model("lab/both", "2026-09-01", "active", [
+				offer("cheap", "0.5", ["tools"]),
+				offer("full", "3", ["tools"], { response_format: { type: "json_schema" } }),
+			], "cheap"),
+			model("lab/tools-only", "2026-10-01", "active", [offer("cheap", "0.5", ["tools"])], "cheap"),
+			model("lab/undated", null, "active", [offer("full", "1", ["tools", "response_format"])], "full"),
+			model("lab/old", "2026-10-15", "deprecated", [offer("full", "1", ["tools", "response_format"])], "full"),
+		];
+		const fetchMock = vi.fn(async () => Response.json({ ok: true, models }));
+		vi.stubGlobal("fetch", fetchMock);
+		const server = createServer(env, { accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["models:read", "pricing:read"] });
+		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
+		connectedClients.push(client);
+		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+		await server.connect(serverTransport);
+		await client.connect(clientTransport);
+
+		const ids = (result: Awaited<ReturnType<typeof client.callTool>>) =>
+			(result.structuredContent as { models: Array<{ id: string }> }).models.map((item) => item.id);
+
+		const both = await client.callTool({
+			name: "models_list",
+			arguments: { outputModality: "embeddings", requiredParameters: ["tools", "response_format"], sortBy: "input_price" },
+		});
+		const url = new URL((fetchMock.mock.calls[0] as unknown as [Request])[0].url);
+		expect(url.searchParams.get("output_types")).toBe("embeddings,embedding");
+		expect(url.searchParams.get("supported_parameters")).toBe("tools,response_format");
+		expect(ids(both)).toEqual(["lab/old", "lab/undated", "lab/both"]);
+		const bothModel = (both.structuredContent as { models: Array<Record<string, unknown>> }).models[2];
+		// The price comes from the provider that supports both parameters, not the cheaper one that does not.
+		expect(bothModel).toMatchObject({
+			inputPricePerMillion: 3,
+			inputPriceProviderId: "full",
+			availableProviders: ["full"],
+			lifecycleStatus: "active",
+			maxOutputTokens: 16_000,
+		});
+
+		const recent = await client.callTool({
+			name: "models_list",
+			arguments: { releasedAfter: "2026-09-15", hideDeprecated: true, sortBy: "release_date" },
+		});
+		// The undated model is left out rather than assumed recent, and the deprecated one is hidden.
+		expect(ids(recent)).toEqual(["lab/tools-only"]);
+
+		const newestFirst = await client.callTool({ name: "models_list", arguments: { sortBy: "release_date" } });
+		expect(ids(newestFirst)).toEqual(["lab/old", "lab/tools-only", "lab/both", "lab/undated"]);
+	});
+
+	it("finds required-parameter matches by alias and beyond the first page of results", async () => {
+		const model = (id: string, parameters: string[], parameterDetails: Record<string, Record<string, unknown>>) => ({
+			id, name: id, description: null,
+			organization: { id: "lab", name: "Example Lab", color: null },
+			lifecycle: { status: "active", released_at: "2026-09-01", deprecated_at: null, retires_at: null, replacement_id: null, message: null },
+			modalities: { input: ["text"], output: ["video"] },
+			limits: { input_tokens: null, output_tokens: null },
+			capabilities: { endpoints: ["video.generations"], parameters, parameter_details: parameterDetails },
+			availability: { status: "active", provider_count: 1, active_provider_count: 1, coming_soon_provider_count: 0, inactive_provider_count: 0 },
+			pricing: { pricing_plan: "standard", meters: {} },
+			offers: [{
+				provider: { id: "provider", name: "Provider" }, model: id, status: "active", routable: true,
+				capabilities: { parameters, parameter_details: parameterDetails },
+				pricing: { pricing_plan: "standard", meters: {} },
+			}],
+		});
+		// 250 models on the first page support only one of the two parameters.
+		const firstPage = Array.from({ length: 250 }, (_, index) => model(`lab/partial-${index}`, ["prompt"], {}));
+		// The only full match is on the second page, and supports duration through its alias duration_seconds.
+		const secondPage = [model("lab/full", ["prompt"], { duration: { aliases: ["duration_seconds"] } })];
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL((input instanceof Request ? input : new Request(input)).url);
+			const models = url.searchParams.get("offset") === "250" ? secondPage : firstPage;
+			return Response.json({ ok: true, models, total: 251 });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const server = createServer(env, { accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["models:read", "pricing:read"] });
+		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
+		connectedClients.push(client);
+		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+		await server.connect(serverTransport);
+		await client.connect(clientTransport);
+
+		const result = await client.callTool({
+			name: "models_list",
+			arguments: { requiredParameters: ["prompt", "duration_seconds"] },
+		});
+		expect((result.structuredContent as { models: Array<{ id: string }> }).models.map((item) => item.id)).toEqual(["lab/full"]);
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		expect(new URL((fetchMock.mock.calls[1] as unknown as [Request])[0].url).searchParams.get("offset")).toBe("250");
 	});
 
 	it("keeps benchmark order neutral while reporting Gateway availability", async () => {
@@ -535,6 +700,45 @@ describe("Phaseo MCP OAuth discovery", () => {
 		);
 		expect(post.status).toBe(405);
 		expect(post.headers.get("allow")).toBe("GET, HEAD");
+	});
+
+	it("serves the configured Google Connected Apps verification file as JSON", async () => {
+		const path = "https://mcp.phaseo.app/.well-known/google-connected-apps";
+		const missing = await worker.fetch(new Request(path), env, {} as ExecutionContext);
+		expect(missing.status).toBe(404);
+
+		const file = '{"verification":"google-review-token-123"}';
+		const configured = await worker.fetch(
+			new Request(path),
+			{ ...env, GOOGLE_CONNECTED_APPS_VERIFICATION: `  ${file}\n` },
+			{} as ExecutionContext,
+		);
+		expect(configured.status).toBe(200);
+		expect(configured.headers.get("content-type")).toContain("application/json");
+		expect(configured.headers.get("cache-control")).toBe("no-store");
+		expect(await configured.text()).toBe(file);
+
+		const head = await worker.fetch(
+			new Request(path, { method: "HEAD" }),
+			{ ...env, GOOGLE_CONNECTED_APPS_VERIFICATION: file },
+			{} as ExecutionContext,
+		);
+		expect(head.status).toBe(200);
+		expect(await head.text()).toBe("");
+
+		const invalid = await worker.fetch(
+			new Request(path),
+			{ ...env, GOOGLE_CONNECTED_APPS_VERIFICATION: "not json" },
+			{} as ExecutionContext,
+		);
+		expect(invalid.status).toBe(503);
+
+		const post = await worker.fetch(
+			new Request(path, { method: "POST" }),
+			{ ...env, GOOGLE_CONNECTED_APPS_VERIFICATION: file },
+			{} as ExecutionContext,
+		);
+		expect(post.status).toBe(405);
 	});
 
 	it("enforces the body limit even when Content-Length is absent", async () => {

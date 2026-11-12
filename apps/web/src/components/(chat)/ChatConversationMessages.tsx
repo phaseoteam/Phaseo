@@ -1,5 +1,3 @@
-"use client";
-
 import {
 	Fragment,
 	useCallback,
@@ -9,14 +7,17 @@ import {
 	useState,
 	type RefObject,
 } from "react";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import {
 	MessageScroller,
 	useMessageScroller,
 } from "@shadcn/react/message-scroller";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { formatLatency, formatUsdCost } from "@phaseo/app-kit/format";
 import { Streamdown } from "streamdown";
+import { ChatAnswerContent } from "./openui/ChatAnswerContent";
+import { OPENUI_FORMAT } from "./openui/openuiHelpers";
 import { Logo } from "@/components/Logo";
 import {
 	Reasoning,
@@ -104,7 +105,9 @@ import {
 	buildModelLink,
 	ensureVariants,
 	extractGeneratedAudioUrl,
-	extractGeneratedImageUrl,
+	extractGeneratedImageUrls,
+	isGeneratedDataImage,
+	sanitizeGeneratedImageSrc,
 	extractGeneratedVideoUrl,
 	formatModelLabel,
 	getInlineAttachmentPreviewsFromMeta,
@@ -204,42 +207,8 @@ function GeneratingResponseIndicator() {
 }
 
 function formatGenerationDuration(value: unknown): string | null {
-	if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
-		return null;
-	}
-	if (value < 1000) {
-		return `${Math.round(value)} ms`;
-	}
-	const seconds = value / 1000;
-	if (seconds < 10) {
-		return `${seconds.toFixed(2).replace(/\.?0+$/, "")} s`;
-	}
-	if (seconds < 60) {
-		return `${seconds.toFixed(1).replace(/\.0$/, "")} s`;
-	}
-	const minutes = seconds / 60;
-	if (minutes < 10) {
-		return `${minutes.toFixed(2).replace(/\.?0+$/, "")} min`;
-	}
-	return `${minutes.toFixed(1).replace(/\.0$/, "")} min`;
-}
-
-function formatUsdCost(value: unknown): string | null {
-	const amount =
-		typeof value === "number"
-			? value
-			: typeof value === "string"
-				? Number.parseFloat(value)
-				: NaN;
-	if (!Number.isFinite(amount) || amount < 0) return null;
-	if (amount === 0) return "$0";
-	if (amount >= 0.01) {
-		return `$${amount.toFixed(4).replace(/\.?0+$/, "")}`;
-	}
-	if (amount >= 0.00001) {
-		return `$${amount.toFixed(6).replace(/0+$/, "").replace(/\.$/, "")}`;
-	}
-	return `$${amount.toFixed(9).replace(/0+$/, "").replace(/\.$/, "")}`;
+	if (typeof value !== "number" || value < 0) return null;
+	return formatLatency(value);
 }
 
 function formatMessageSentAt(value: string): string | null {
@@ -357,6 +326,9 @@ const getTraceEventsFromMeta = (
 };
 
 type ChatConversationMessagesProps = {
+	onOpenUIStateChange?: (messageId: string, variantId: string, state: Record<string, unknown>) => void;
+	onOpenUISubmit?: (prompt: string) => boolean | Promise<boolean>;
+	interactiveActionsDisabled?: boolean;
 	activeThread: ChatThread | null;
 	isSending: boolean;
 	lastMessageId: string | null;
@@ -390,6 +362,9 @@ type ChatConversationMessagesProps = {
 };
 
 export function ChatConversationMessages({
+	onOpenUIStateChange,
+	onOpenUISubmit,
+	interactiveActionsDisabled = true,
 	activeThread,
 	isSending,
 	lastMessageId,
@@ -769,14 +744,17 @@ export function ChatConversationMessages({
 			const contentWithoutAudioLink = audioUrl
 				? stripMarkdownLink(contentWithoutVideoLink, audioUrl)
 				: contentWithoutVideoLink;
-			const imageUrl = isUser
-				? null
-				: sanitizeHttpMediaUrl(
-						extractGeneratedImageUrl(contentWithoutAudioLink),
-					);
-			const contentWithoutMediaLinks = imageUrl
-				? stripMarkdownLink(contentWithoutAudioLink, imageUrl)
-				: contentWithoutAudioLink;
+			const imageUrls = isUser
+				? []
+				: [...new Set(
+						extractGeneratedImageUrls(contentWithoutAudioLink)
+							.map((url) => sanitizeGeneratedImageSrc(url))
+							.filter((url): url is string => Boolean(url)),
+					)];
+			const contentWithoutMediaLinks = imageUrls.reduce(
+				(content, url) => stripMarkdownLink(content, url),
+				contentWithoutAudioLink,
+			);
 			const reasoningText = isUser
 				? null
 				: (activeVariant?.meta as any)?.reasoning_text ??
@@ -787,6 +765,17 @@ export function ChatConversationMessages({
 			const traceEvents = isUser
 				? []
 				: getTraceEventsFromMeta(activeMeta);
+			const isInteractive = !isUser && activeMeta?.response_format === OPENUI_FORMAT;
+			const renderAnswer = (answer: string) => <ChatAnswerContent
+				key={`${activeVariant.id}:answer`}
+				content={answer}
+				interactive={isInteractive}
+				isStreaming={isPendingAssistant}
+				disabled={interactiveActionsDisabled}
+				initialState={activeVariant.openuiState}
+				onStateChange={(state) => onOpenUIStateChange?.(message.id, activeVariant.id, state)}
+				onSubmit={onOpenUISubmit}
+			/>;
 			const toolCallsById = new Map(
 				toolCalls.map((toolCall) => [toolCall.id, toolCall]),
 			);
@@ -810,7 +799,7 @@ export function ChatConversationMessages({
 				let next = value;
 				if (videoUrl) next = stripMarkdownLink(next, videoUrl);
 				if (audioUrl) next = stripMarkdownLink(next, audioUrl);
-				if (imageUrl) next = stripMarkdownLink(next, imageUrl);
+				for (const url of imageUrls) next = stripMarkdownLink(next, url);
 				return next;
 			};
 			const displayModelId = (message.modelId ?? activeThread.modelId ?? "").trim();
@@ -1163,6 +1152,7 @@ export function ChatConversationMessages({
 													/>
 												);
 											}
+											if (isInteractive) return null;
 											const eventText =
 												stripAssistantMediaLinks(event.text);
 											if (!eventText.trim()) return null;
@@ -1198,13 +1188,11 @@ export function ChatConversationMessages({
 												</ReasoningContent>
 											</Reasoning>
 										) : null}
-										{!traceHasResponse &&
+										{(!traceHasResponse || isInteractive) &&
 										!showRequestError &&
 										contentWithoutMediaLinks ? (
 											<div className="prose prose-sm max-w-none text-foreground dark:prose-invert prose-p:my-0">
-												<Streamdown plugins={chatMarkdownPlugins}>
-													{normalizeChatMarkdown(contentWithoutMediaLinks)}
-												</Streamdown>
+												{renderAnswer(isInteractive ? content : contentWithoutMediaLinks)}
 											</div>
 										) : null}
 									</div>
@@ -1230,9 +1218,7 @@ export function ChatConversationMessages({
 										) : null}
 										{!showRequestError &&
 										contentWithoutMediaLinks ? (
-											<Streamdown plugins={chatMarkdownPlugins}>
-												{normalizeChatMarkdown(contentWithoutMediaLinks)}
-											</Streamdown>
+											renderAnswer(isInteractive ? content : contentWithoutMediaLinks)
 										) : null}
 									</>
 								)}
@@ -1249,23 +1235,25 @@ export function ChatConversationMessages({
 										<GeneratingResponseIndicator />
 									</div>
 								) : null}
-								{imageUrl ? (
-									<div className="not-prose mt-3 grid gap-2">
+								{imageUrls.map((url) => (
+									<div key={url.slice(0, 96)} className="not-prose mt-3 grid gap-2">
 										<img
-											src={imageUrl}
+											src={url}
 											alt={tMessage("generatedImage")}
 											className="max-h-[420px] w-auto max-w-full rounded-lg border border-border object-contain"
 										/>
-										<Link
-											href={imageUrl}
-											target="_blank"
-											rel="noreferrer"
-											className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-										>
-											{tMessage("openImage")}
-										</Link>
+										{isGeneratedDataImage(url) ? null : (
+											<Link
+												href={url}
+												target="_blank"
+												rel="noreferrer"
+												className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+											>
+												{tMessage("openImage")}
+											</Link>
+										)}
 									</div>
-								) : null}
+								))}
 								{audioUrl ? (
 									<div className="not-prose mt-3 grid gap-2">
 										<MediaPlayer className="w-full">
@@ -1730,6 +1718,9 @@ export function ChatConversationMessages({
 	}, [
 		activeThread,
 		messages,
+		onOpenUIStateChange,
+		onOpenUISubmit,
+		interactiveActionsDisabled,
 		shouldVirtualizeMessages,
 		messageVirtualizer,
 		virtualItems,

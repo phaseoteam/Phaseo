@@ -13,6 +13,7 @@ CREATE TABLE "public"."preset_versions" (
   "created_by"        uuid,
   "created_at"        timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT "preset_versions_pkey" PRIMARY KEY (id),
+  CONSTRAINT "preset_versions_preset_id_id_key" UNIQUE (preset_id, id),
   CONSTRAINT "preset_versions_preset_id_version_label_key" UNIQUE (preset_id, version_label),
   CONSTRAINT "preset_versions_preset_id_version_number_key" UNIQUE (preset_id, version_number),
   CONSTRAINT "preset_versions_version_number_check" CHECK ((version_number > 0)),

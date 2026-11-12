@@ -4,52 +4,96 @@ description: "Créez une clé API et envoyez votre première requête Phaseo ave
 icon: "rocket"
 ---
 
-Utilisez ce tutoriel pour réussir une requête Phaseo, avec du texte généré ou une décision structurée, et vérifier où apparaît la réponse.
+Créez une clé API, envoyez une requête à `POST /v1/responses` et lisez la réponse dans `output_text`.
 
-<Note>
-**Vous utilisez un agent de programmation ?** Copiez et collez ce prompt avant de commencer :
-
-```text
-You are integrating this project with Phaseo Gateway. Read the Phaseo agent guidance at https://phaseo.app/docs/skill.md and the relevant API reference before editing anything. Inspect the existing provider configuration and identify the smallest safe change needed. Use https://api.phaseo.app with a server-side PHASEO_API_KEY, preserve the current provider/model behavior unless I explicitly ask for a migration, and never print or commit credentials. Explain the files you would change and the verification commands first. Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.
+```mermaid
+flowchart LR
+  key["Créer une clé<br/>phaseo.app/settings/keys"] --> req["POST /v1/responses<br/>model + input"]
+  req --> read["Lire output[].content[]<br/>type: output_text"]
+  req -->|"401, 402, 429"| fix["Dépanner"]
 ```
-</Note>
 
-Vous allez :
-- créer une clé API
-- envoyer une requête texte ou une décision structurée
-- lire le texte généré ou les réponses typées
-- savoir quoi vérifier en premier si la requête échoue
+<Prompt description="**Vous utilisez un agent de programmation ?** Collez ce prompt avant de commencer." icon="bot" actions={["copy", "cursor"]}>
+{`You are integrating this project with Phaseo Gateway.
 
----
+Before editing anything:
+- Install the Phaseo skills: npx skills add https://phaseo.app/docs
+- Read https://phaseo.app/docs/skill.md and the API reference for the endpoint you will use. If your tools support MCP, search the docs at https://phaseo.app/docs/mcp.
+- Inspect the existing provider configuration and identify the smallest safe change.
+
+Rules:
+- Call https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY. Never print or commit credentials.
+- Keep the current provider and model behaviour unless I ask for a migration. Check model IDs with GET /v1/models instead of guessing them.
+- Explain the files you would change and the verification commands first.
+- Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.`}
+</Prompt>
+
+<Visibility for="agents">
+Liste de contrôle du démarrage rapide pour les agents :
+
+- Créez la clé avec `phaseo keys create --name <name> --limit <usd> --show-secret --json` (la connexion via la CLI doit être celle d’un propriétaire ou d’un administrateur de l’espace de travail) ou avec `POST /v1/keys` et une clé de gestion, ou demandez à la personne de la créer dans le tableau de bord, sous **Paramètres -> Clés API**. Ne générez ni ne devinez jamais une clé. Envoyez-la sous la forme `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>`, uniquement depuis du code côté serveur.
+- Pour les modèles payants, lancez une fois `phaseo login --scopes billing:write` ; ensuite, `phaseo credits add --amount <usd> --json` démarre une recharge. Avec une carte enregistrée, un propriétaire ou un administrateur de l’espace de travail la confirme depuis un lien reçu par e-mail. Sans carte enregistrée, la réponse contient `next_action: "open_checkout_url"` et un lien de paiement qu’un propriétaire ou un administrateur ouvre pour payer ; la carte est ensuite enregistrée pour les recharges suivantes. N’envoyez pas l’utilisateur dans le tableau de bord pour les crédits ou les autres tâches que couvre la CLI ; voir https://phaseo.app/docs/fr/v1/developers/manage-from-an-agent.md.
+- Envoyez la première requête avec `POST https://api.phaseo.app/v1/responses`, en passant `model` et `input`. Les exemples utilisent `openai/gpt-6-astra`, un modèle payant qui nécessite des crédits. `phaseo/free` choisit un modèle gratuit disponible et fonctionne sans solde de portefeuille.
+- Lisez la réponse dans `output[].content[]`, là où `type` vaut `output_text`.
+- Si la requête échoue, traitez le code `error` du JSON comme décrit dans https://phaseo.app/docs/fr/v1/api-reference/errors.md.
+</Visibility>
 
 ## 1. Créer une clé API
 
-1. Ouvrez le [tableau de bord Phaseo](https://phaseo.app/gateway/keys).
-2. Créez une clé dans **Gateway -> Clés**.
-3. Copiez-la une seule fois et conservez-la en lieu sûr.
+Créez une clé dans le [tableau de bord](https://phaseo.app/settings/keys), sous **Paramètres -> Clés API**, puis exportez-la :
 
-Utilisez ce format :
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+La clé ne s’affiche qu’une seule fois. Chaque requête l’envoie comme jeton bearer :
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
 
 <Danger>
-Traitez votre clé API comme un mot de passe. Ne l’exposez pas dans du code côté client.
+Traitez votre clé API comme un mot de passe. Gardez-la dans du code côté serveur et ne l’intégrez jamais à un navigateur ou à une application mobile.
 </Danger>
 
----
+<span id="add-credits-for-paid-models"></span>
+### Ajouter des crédits pour les modèles payants
+
+`phaseo/free` fonctionne sans crédits. Les modèles payants comme `openai/gpt-6-astra` nécessitent un solde de portefeuille :
+
+```bash
+phaseo login --scopes billing:write   # une seule fois ; les recharges de crédits exigent ce scope
+phaseo credits add --amount 20
+```
+
+Avec une carte enregistrée, un propriétaire ou un administrateur de l’espace de travail confirme le paiement depuis un lien reçu par e-mail. Sans carte enregistrée, la commande renvoie un lien de paiement qu’un propriétaire ou un administrateur ouvre pour payer, et la carte est enregistrée pour les recharges suivantes.
 
 ## 2. Envoyer une requête textuelle
 
-Utilisez `POST /v1/responses` pour la première requête. C’est l’endpoint recommandé pour les nouveaux usages de génération de texte.
+`POST /v1/responses` est l’endpoint recommandé pour tout nouveau travail sur du texte. Les exemples utilisent `openai/gpt-6-astra`, un modèle payant. Pour tester sans crédits, remplacez-le par `phaseo/free`, qui choisit un modèle gratuit disponible ; voir [Lancer avec le routeur gratuit](./cookbook/free-router-first-deploy).
 
-### Requête
+cURL et `fetch` ne nécessitent aucune installation. Pour un SDK, installez-le d’abord :
+
+<CodeGroup>
+```bash npm
+npm install @phaseo/sdk
+```
+
+```bash pnpm
+pnpm add @phaseo/sdk
+```
+
+```bash pip
+pip install phaseo
+```
+</CodeGroup>
+
+Consultez la [page d’installation TypeScript et Python](./sdk-reference/client/installation) pour la configuration requise et les autres SDK.
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "openai/gpt-6-astra",
@@ -61,7 +105,7 @@ curl https://api.phaseo.app/v1/responses \
 const response = await fetch("https://api.phaseo.app/v1/responses", {
   method: "POST",
   headers: {
-    Authorization: "Bearer YOUR_API_KEY",
+    Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -80,47 +124,31 @@ console.log(assistantText);
 ```
 
 ```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
+import Phaseo, { outputText } from "@phaseo/sdk";
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+const client = new Phaseo(); // reads PHASEO_API_KEY
 
 const response = await client.generateResponse({
   model: "openai/gpt-6-astra",
   input: "Reply with: quickstart works",
 });
 
-const assistantText = response.output
-  ?.find((item: any) => item.type === "message")
-  ?.content?.find((part: any) => part.type === "output_text")
-  ?.text;
-
-console.log(assistantText);
+console.log(outputText(response));
 ```
 
 ```python Python SDK
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo()  # reads PHASEO_API_KEY
 
-response = client.generate_response(
+response = client.responses.create(
     {
         "model": "openai/gpt-6-astra",
         "input": "Reply with: quickstart works",
     }
 )
 
-assistant_text = next(
-    (
-        part.get("text")
-        for item in response.get("output", [])
-        if item.get("type") == "message"
-        for part in item.get("content", [])
-        if part.get("type") == "output_text"
-    ),
-    None,
-)
-
-print(assistant_text)
+print(response.output_text)
 ```
 
 ```go Go SDK
@@ -134,20 +162,11 @@ import (
 )
 
 func main() {
-  client := phaseo.New("YOUR_API_KEY", "https://api.phaseo.app/v1")
-  input := map[string]interface{}{
-    "role": "user",
-    "content": []map[string]interface{}{
-      {
-        "type": "input_text",
-        "text": "Reply with: quickstart works",
-      },
-    },
-  }
+  client := phaseo.MustNewFromEnv() // reads PHASEO_API_KEY
 
   response, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
     Model: "openai/gpt-6-astra",
-    Input: &input,
+    Input: "Reply with: quickstart works",
   })
   if err != nil {
     panic(err)
@@ -161,7 +180,7 @@ func main() {
 using PhaseoSdk;
 using System.Collections.Generic;
 
-var client = new Phaseo("YOUR_API_KEY");
+var client = new Phaseo(); // reads PHASEO_API_KEY
 
 var response = await client.GenerateResponse(new Dictionary<string, object>
 {
@@ -178,7 +197,7 @@ require 'vendor/autoload.php';
 
 use Phaseo\Sdk\Phaseo;
 
-$client = new Phaseo(getenv('PHASEO_API_KEY') ?: 'YOUR_API_KEY');
+$client = new Phaseo(getenv('PHASEO_API_KEY'));
 
 $response = $client->generateResponse([
     'model' => 'openai/gpt-6-astra',
@@ -191,7 +210,7 @@ print_r($response);
 ```ruby Ruby SDK
 require 'phaseo_sdk'
 
-client = PhaseoSdk::Phaseo.new(api_key: ENV.fetch('PHASEO_API_KEY', 'YOUR_API_KEY'))
+client = PhaseoSdk::Phaseo.new # reads PHASEO_API_KEY
 
 response = client.generate_response(
   model: 'openai/gpt-6-astra',
@@ -199,6 +218,29 @@ response = client.generate_response(
 )
 
 puts response
+```
+
+```java Java SDK
+// Compilez depuis les sources : https://phaseo.app/docs/fr/v1/sdk-reference/client/installation
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: quickstart works"
+        ));
+        for (var item : response.path("output")) {
+            for (var part : item.path("content")) {
+                if ("output_text".equals(part.path("type").asText())) {
+                    System.out.println(part.path("text").asText());
+                }
+            }
+        }
+    }
+}
 ```
 
 ```rust Rust SDK
@@ -249,11 +291,12 @@ console.log(result.text);
 ```
 </CodeGroup>
 
-### Réponse
+## 3. Lire la réponse
 
 ```json
 {
-  "id": "resp_...",
+  "id": "G-...",
+  "nativeResponseId": "resp_...",
   "object": "response",
   "created_at": 1730000000,
   "status": "completed",
@@ -278,50 +321,62 @@ console.log(result.text);
 }
 ```
 
-Pour les appels directs à l’API Responses, lisez la réponse de l’assistant dans `output[].content[]`, à l’élément dont `type` vaut `output_text`.
+| Champ | Contenu |
+| --- | --- |
+| `output[].content[]` avec `type: "output_text"` | Le texte de la réponse. L’assistant TypeScript `outputText()` et `response.output_text` en Python le lisent pour vous ; le Vercel AI SDK le renvoie dans `result.text`. |
+| `id` | L’identifiant de requête Phaseo. La requête apparaît sous **Paramètres -> Utilisation -> Journaux -> Requêtes**. |
+| `nativeResponseId` | L’identifiant de la même réponse chez le fournisseur. |
+| `usage` | Les tokens d’entrée, de sortie et totaux facturés pour la requête. |
 
-Avec le SDK Vercel AI, lisez la réponse dans `result.text`.
+### Diffuser la réponse en streaming
 
----
+Utilisez le streaming pour afficher la réponse au fur et à mesure de sa génération. Le champ `text` de chaque événement `response.output_text.delta` ne contient que le nouveau texte : cette boucle affiche donc la réponse une seule fois. Les événements de clôture comme `response.output_text.done` répètent du texte déjà diffusé. Consultez [Streaming](./guides/streaming) pour la liste complète des événements.
 
-## 3. Prendre une décision structurée
+<CodeGroup>
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
 
-Pour les nouveaux appels, utilisez le format compatible OpenAI : `input` contient du texte ou des messages utilisateur avec des éléments `input_image` intégrés, et `questions` est une liste ordonnée de questions `predicate`, `choice` ou `score`. Les réponses conservent cet ordre et les noms facultatifs. Les valeurs booléennes restent booléennes. Les URL d’images hébergées ne sont pas prises en charge ; Luna accepte jusqu’à 128 images intégrées, les autres fournisseurs ayant leurs propres limites. Le détail explicite des images et `safety_identifier` nécessitent une route OpenAI. Le format historique avec `state`, des questions nommées, `noul` et `criteria` reste disponible et renvoie un objet de réponses. Together Tev nécessite ce format car il renvoie des étiquettes sans probabilités. Les exemples historiques restent valides.
+const client = new Phaseo(); // reads PHASEO_API_KEY
 
-```json
-{
-  "model": "openai/gpt-6-luna",
-  "input": "I was charged twice for my order.",
-  "questions": [{
-    "type": "choice",
-    "name": "department",
-    "instructions": "Which department should handle this?",
-    "choices": [
-      { "value": "billing", "description": "Payments and refunds" },
-      { "value": "other", "description": "Everything else" }
-    ]
-  }]
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: "Reply with: quickstart works",
+})) {
+  if (chunk.type === "response.output_text.delta") process.stdout.write(chunk.text);
 }
 ```
 
+```python Python SDK
+from phaseo import Phaseo
 
-Utilisez `POST /v1/decisions` lorsque votre application nécessite des réponses typées plutôt que du texte généré. Phaseo propose Jev 1.13 de TypeSafe avec l’identifiant `typesafe/jev-1.13.0`. Envoyez une valeur `state` et une ou plusieurs questions nommées ; chaque réponse est renvoyée sous le même nom.
+client = Phaseo()  # reads PHASEO_API_KEY
 
-<Note>
-Decisions est une fonctionnalité bêta qui peut nécessiter une activation pour l’espace de travail. Jev 1.13 est facturé $0.042 par million de jetons d’entrée ; les jetons de sortie sont gratuits.
-</Note>
+for chunk in client.stream_responses(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: quickstart works",
+    }
+):
+    if chunk.get("type") == "response.output_text.delta":
+        print(chunk["text"], end="", flush=True)
+print()
+```
+</CodeGroup>
 
-Exécutez ces exemples sur votre serveur avec `PHASEO_API_KEY` défini. N’exposez jamais de clé API Gateway dans le code du navigateur.
+## 4. Dépanner la première requête
 
-Les trois types de question sont :
+| Statut | À vérifier |
+| --- | --- |
+| `401` | La clé API et l’en-tête `Authorization: Bearer`. |
+| `400` | Le corps de la requête et l’identifiant du modèle. Listez les identifiants valides avec `GET /v1/models`. |
+| `402` | Votre solde de crédits. Ajoutez des crédits ou passez à `phaseo/free`. |
+| `429` ou `5xx` | Réessayez avec un backoff exponentiel. |
 
-- `choice` sélectionne une option dans un dictionnaire de critères et renvoie les probabilités et la confiance.
-- `noul` renvoie une probabilité oui/non entre 0 et 1.
-- `score` évalue un tableau ordonné de critères et renvoie un score pondéré par les probabilités.
+La [référence des erreurs](./api-reference/errors) liste chaque code d’erreur et ce qu’il faut faire.
 
-Vous pouvez combiner plusieurs types de question dans une même requête.
+## Obtenir des réponses typées plutôt que du texte
 
-### Requête
+Quand votre code a besoin d’une valeur plutôt que de prose, envoyez vos questions à `POST /v1/decisions` (Bêta). Chaque réponse revient typée, avec des probabilités, dans le même ordre que les questions. Les types de questions sont `predicate` (oui/non), `choice` (l’une de vos options) et `score` (un niveau sur votre échelle).
 
 <CodeGroup>
 ```bash cURL
@@ -329,136 +384,51 @@ curl https://api.phaseo.app/v1/decisions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "typesafe/jev-1.13.0",
-    "state": {
-      "customer_message": "I was charged twice and need help with a refund.",
-      "account_tier": "pro",
-      "days_waiting": 3
-    },
-    "questions": {
-      "department": {
+    "model": "openai/gpt-6-luna",
+    "input": "I was charged twice and need a refund. I cannot log in to pay my team.",
+    "questions": [
+      {
         "type": "choice",
+        "name": "department",
         "instructions": "Which team should handle this request?",
-        "criteria": {
-          "billing": "Payments, invoices, refunds, and duplicate charges.",
-          "support": "Product usage questions and troubleshooting.",
-          "sales": "Upgrades and new accounts."
-        }
-      },
-      "is_urgent": {
-        "type": "noul",
-        "instructions": "Does this request require urgent handling?",
-        "criteria": {
-          "true": "The customer is blocked or the issue is time-sensitive.",
-          "false": "The request can follow the normal support queue."
-        }
-      },
-      "customer_impact": {
-        "type": "score",
-        "instructions": "How severe is the customer impact?",
-        "criteria": [
-          "No impact",
-          "Minor inconvenience",
-          "Significant impact",
-          "Service blocked"
+        "choices": [
+          { "value": "billing", "description": "Payments, invoices, refunds and duplicate charges" },
+          { "value": "support", "description": "Product usage and troubleshooting" }
         ]
+      },
+      {
+        "type": "predicate",
+        "name": "is_urgent",
+        "instructions": "Is the customer blocked from using the product?"
       }
-    }
+    ]
   }'
-```
-
-```javascript JavaScript
-const response = await fetch("https://api.phaseo.app/v1/decisions", {
-  method: "POST",
-  headers: {
-    Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    model: "typesafe/jev-1.13.0",
-    state: {
-      customer_message: "I was charged twice and need help with a refund.",
-      account_tier: "pro",
-      days_waiting: 3,
-    },
-    questions: {
-      department: {
-        type: "choice",
-        instructions: "Which team should handle this request?",
-        criteria: {
-          billing: "Payments, invoices, refunds, and duplicate charges.",
-          support: "Product usage questions and troubleshooting.",
-          sales: "Upgrades and new accounts.",
-        },
-      },
-      is_urgent: {
-        type: "noul",
-        instructions: "Does this request require urgent handling?",
-        criteria: {
-          true: "The customer is blocked or the issue is time-sensitive.",
-          false: "The request can follow the normal support queue.",
-        },
-      },
-      customer_impact: {
-        type: "score",
-        instructions: "How severe is the customer impact?",
-        criteria: [
-          "No impact",
-          "Minor inconvenience",
-          "Significant impact",
-          "Service blocked",
-        ],
-      },
-    },
-  }),
-});
-
-if (!response.ok) throw new Error(await response.text());
-const data = await response.json();
-console.log(data.answers);
 ```
 
 ```typescript TypeScript SDK
 import Phaseo from "@phaseo/sdk";
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+const client = new Phaseo(); // reads PHASEO_API_KEY
 
-const decision = await client.decisions.make({
-  model: "typesafe/jev-1.13.0",
-  state: {
-    customer_message: "I was charged twice and need help with a refund.",
-    account_tier: "pro",
-    days_waiting: 3,
-  },
-  questions: {
-    department: {
+const decision = await client.decisions.create({
+  model: "openai/gpt-6-luna",
+  input: "I was charged twice and need a refund. I cannot log in to pay my team.",
+  questions: [
+    {
       type: "choice",
+      name: "department",
       instructions: "Which team should handle this request?",
-      criteria: {
-        billing: "Payments, invoices, refunds, and duplicate charges.",
-        support: "Product usage questions and troubleshooting.",
-        sales: "Upgrades and new accounts.",
-      },
-    },
-    is_urgent: {
-      type: "noul",
-      instructions: "Does this request require urgent handling?",
-      criteria: {
-        true: "The customer is blocked or the issue is time-sensitive.",
-        false: "The request can follow the normal support queue.",
-      },
-    },
-    customer_impact: {
-      type: "score",
-      instructions: "How severe is the customer impact?",
-      criteria: [
-        "No impact",
-        "Minor inconvenience",
-        "Significant impact",
-        "Service blocked",
+      choices: [
+        { value: "billing", description: "Payments, invoices, refunds and duplicate charges" },
+        { value: "support", description: "Product usage and troubleshooting" },
       ],
     },
-  },
+    {
+      type: "predicate",
+      name: "is_urgent",
+      instructions: "Is the customer blocked from using the product?",
+    },
+  ],
 });
 
 console.log(decision.answers);
@@ -467,45 +437,28 @@ console.log(decision.answers);
 ```python Python SDK
 from phaseo import Phaseo
 
-client = Phaseo()  # Uses PHASEO_API_KEY from the environment
+client = Phaseo()  # reads PHASEO_API_KEY
 
-decision = client.decisions.make(
+decision = client.decisions.create(
     {
-        "model": "typesafe/jev-1.13.0",
-        "state": {
-            "customer_message": "I was charged twice and need help with a refund.",
-            "account_tier": "pro",
-            "days_waiting": 3,
-        },
-        "questions": {
-            "department": {
+        "model": "openai/gpt-6-luna",
+        "input": "I was charged twice and need a refund. I cannot log in to pay my team.",
+        "questions": [
+            {
                 "type": "choice",
+                "name": "department",
                 "instructions": "Which team should handle this request?",
-                "criteria": {
-                    "billing": "Payments, invoices, refunds, and duplicate charges.",
-                    "support": "Product usage questions and troubleshooting.",
-                    "sales": "Upgrades and new accounts.",
-                },
-            },
-            "is_urgent": {
-                "type": "noul",
-                "instructions": "Does this request require urgent handling?",
-                "criteria": {
-                    "true": "The customer is blocked or the issue is time-sensitive.",
-                    "false": "The request can follow the normal support queue.",
-                },
-            },
-            "customer_impact": {
-                "type": "score",
-                "instructions": "How severe is the customer impact?",
-                "criteria": [
-                    "No impact",
-                    "Minor inconvenience",
-                    "Significant impact",
-                    "Service blocked",
+                "choices": [
+                    {"value": "billing", "description": "Payments, invoices, refunds and duplicate charges"},
+                    {"value": "support", "description": "Product usage and troubleshooting"},
                 ],
             },
-        },
+            {
+                "type": "predicate",
+                "name": "is_urgent",
+                "instructions": "Is the customer blocked from using the product?",
+            },
+        ],
     }
 )
 
@@ -513,98 +466,69 @@ print(decision["answers"])
 ```
 </CodeGroup>
 
-### Réponse
+La réponse (valeurs indicatives) :
 
 ```json
 {
-  "model": "typesafe/jev-1.13.0",
-  "answers": {
-    "department": {
+  "model": "openai/gpt-6-luna",
+  "answers": [
+    {
       "type": "choice",
+      "name": "department",
       "choice": "billing",
-      "probabilities": { "billing": 0.91, "support": 0.06, "sales": 0.03 },
-      "confidence": 0.89
+      "confidence": 0.89,
+      "probabilities": [
+        { "value": "billing", "probability": 0.91 },
+        { "value": "support", "probability": 0.09 }
+      ]
     },
-    "is_urgent": {
-      "type": "noul",
-      "noul": 0.84
-    },
-    "customer_impact": {
-      "type": "score",
-      "score": 2.4,
-      "legend": {
-        "0": "No impact",
-        "1": "Minor inconvenience",
-        "2": "Significant impact",
-        "3": "Service blocked"
-      },
-      "probabilities": { "0": 0.02, "1": 0.12, "2": 0.61, "3": 0.25 },
-      "confidence": 0.76
-    }
-  },
-  "usage": {
-    "input_tokens": 42,
-    "output_tokens": 18,
-    "total_tokens": 60
-  }
+    { "type": "predicate", "name": "is_urgent", "probability": 0.84 }
+  ],
+  "usage": { "input_tokens": 42, "output_tokens": 18, "total_tokens": 60 }
 }
 ```
 
-Lisez la valeur typée de la réponse correspondant à l’identifiant de votre question, par exemple `answers.department.choice`, `answers.is_urgent.noul` ou `answers.customer_impact.score`. Utilisez `confidence` et `probabilities` pour définir un seuil dans l’application plutôt que de décider sur la seule valeur.
+Lisez `answers[0].choice` ou `answers[1].probability`, et utilisez `confidence` ou `probabilities` pour fixer votre propre seuil. La [référence Decisions](./api-reference/endpoint/decisions) liste chaque modèle de décision, ses limites et ses prix, l’entrée d’images, ainsi que l’ancien format `state` avec des tables de questions nommées (`noul`, `criteria`), qui fonctionne toujours et que certains modèles exigent.
 
-Consultez la [référence API Decisions](./api-reference/endpoint/decisions) pour le contrat complet des requêtes et réponses, et la [référence du modèle Jev](https://docs.typesafe.ai/models) de TypeSafe pour son comportement et ses limites amont.
+## Générer une vidéo
 
----
-
-## 4. Dépanner la première requête
-
-- `401` : vérifiez la clé API et l’en-tête `Authorization`.
-- `400` : vérifiez le corps de la requête et l’identifiant du modèle.
-- `402` : choisissez un modèle `:free` ou ajoutez des crédits avant d’utiliser un modèle payant.
-- `429` ou `5xx` : réessayez avec un délai exponentiel.
-
-Consultez la [référence de gestion des erreurs](./api-reference/errors.mdx) pour identifier rapidement le problème.
-
----
-
-## 5. Si vous développez une fonctionnalité vidéo
-
-La génération vidéo est asynchrone. Créez d’abord un job, puis interrogez son état ou abonnez-vous pour recevoir le résultat.
-
-1. Créez un job avec `POST /v1/videos`.
-2. Interrogez l’état avec `GET /v1/videos/{video_id}` jusqu’à la fin.
-3. Téléchargez le contenu avec `GET /v1/videos/{video_id}/content`.
+La génération de vidéo est asynchrone : créez une tâche, interrogez-la, puis téléchargez le fichier.
 
 ```bash
-# Create
+# 1. Créer la tâche
 curl https://api.phaseo.app/v1/videos \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "<video-model-id>",
+    "model": "google/veo-3.1-fast",
     "prompt": "A cinematic sunrise over a mountain lake"
   }'
 
-# Poll status
+# 2. Interroger jusqu’à ce que le statut soit completed
 curl https://api.phaseo.app/v1/videos/VIDEO_ID \
-  -H "Authorization: Bearer YOUR_API_KEY"
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+
+# 3. Télécharger la vidéo
+curl https://api.phaseo.app/v1/videos/VIDEO_ID/content \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -o video.mp4
 ```
 
----
+Pour recevoir un webhook plutôt que d’interroger l’API, consultez [Tâches asynchrones et webhooks](./guides/async-video-and-batch).
 
-## 6. Poursuivre le développement
+## Continuer à développer
 
 <Columns cols={2}>
-	<Card title="Intégrer le Gateway" icon="plug" href="./developers/integrating-with-the-gateway.mdx">
-		Modèles d’intégration en production et choix des endpoints.
+	<Card title="Intégrer le Gateway" icon="plug" href="./developers/integrating-with-the-gateway">
+		Choisissez un endpoint et mettez en place une intégration de production.
 	</Card>
-	<Card title="Référence API" icon="book" href="./api-reference/introduction.mdx">
-		Documentation complète des requêtes et réponses pour chaque endpoint.
+	<Card title="Référence API" icon="book" href="./api-reference/introduction">
+		Chaque champ de requête et de réponse, pour chaque endpoint.
 	</Card>
-	<Card title="Exemples" icon="code" href="./guides/examples.mdx">
-		Des exemples de requêtes plus complets pour les workflows courants.
+	<Card title="Exemples" icon="code" href="./guides/examples">
+		Des applications de démarrage pour les workflows courants.
 	</Card>
 	<Card title="Assistance" icon="message-circle" href="https://phaseo.app/help">
-		Obtenez de l’aide sur le débogage, le routage et le comportement des modèles.
+		Obtenez de l’aide pour le débogage, le routage et le comportement des modèles.
 	</Card>
 </Columns>

@@ -1,0 +1,132 @@
+---
+icon: "search-check"
+title: "Generation lookup"
+description: "Retrieve a past generation with /generations from any Phaseo SDK."
+"og:image": "https://phaseo.app/og/dynamic?title=Generation%20lookup&description=Retrieve%20a%20past%20generation%20with%20/generations%20from%20any%20Phaseo%20SDK.&pathname=/docs/v1/sdk-reference/client/generation"
+---
+
+Pass a request ID (such as `G-01ABC...`) to the SDK's generation method to fetch the stored record for that request from `GET /v1/generations?id=<id>`.
+
+<CodeGroup>
+
+```typescript TypeScript
+const record = await client.getGeneration("G-01ABC...");
+```
+
+```python Python
+record = client.get_generation("G-01ABC...")
+
+print(record["model_id"], record["cost_nanos"])
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+record, err := client.GetGeneration(context.Background(), "G-01ABC...")
+if err != nil {
+  panic(err)
+}
+fmt.Println(record["status_code"], record["cost_nanos"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+var record = await client.GetGeneration("G-01ABC...");
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+$record = $client->getGeneration('G-01ABC...');
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+record = client.get_generation('G-01ABC...')
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var record = client.getGeneration("G-01ABC...");
+System.out.println(record);
+```
+
+</CodeGroup>
+
+| Language | Method | Returns |
+| --- | --- | --- |
+| TypeScript | `client.getGeneration(id)` | The record object |
+| Python | `client.get_generation(id)` | `APIResponse` dict |
+| Go | `client.GetGeneration(ctx, id)` | `map[string]interface{}` |
+| C# | `client.GetGeneration(id)` | `Dictionary<string, object>?` |
+| PHP | `$client->getGeneration($id)` | Array |
+| Ruby | `client.get_generation(id)` | Hash |
+| Java | `client.getGeneration(id)` | Jackson `JsonNode` |
+| Rust | No helper; call `client.request("GET", "/generations?id=<id>", None, &RequestOptions::default())` | `PhaseoResponse`, with the record in `body` (a `serde_json::Value`) |
+
+The lookup is scoped to your workspace. A missing `id` returns `400` (`missing_id`), and an ID that isn't in your workspace returns `404` (`not_found`).
+
+## Replay a stored request
+
+If the gateway stored the full request, the record has `replay_supported` set to true and a `replay_request`, which you can send back to the original endpoint for a controlled rerun.
+
+## Read the timing fields
+
+- `latency_ms`: time to the first token, or the first output byte or frame, when tracked.
+- `generation_ms`: generation time after that point, when tracked.
+
+## Response
+
+```json
+{
+  "created_at": "2026-05-05T12:00:00.000Z",
+  "request_id": "G-01ABC123",
+  "team_id": "team-123",
+  "app_id": "app-123",
+  "endpoint": "chat/completions",
+  "model_id": "openai/gpt-6-astra",
+  "provider": "openai",
+  "native_response_id": "chatcmpl-123",
+  "stream": false,
+  "byok": false,
+  "status_code": 200,
+  "success": true,
+  "error_code": null,
+  "error_message": null,
+  "latency_ms": 1500,
+  "generation_ms": 1400,
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 9,
+    "total_tokens": 18
+  },
+  "cost_nanos": 1000000,
+  "currency": "USD",
+  "pricing_lines": [],
+  "key_id": "key-123",
+  "throughput": null,
+  "replay_supported": true,
+  "replay_request": {
+    "model": "openai/gpt-6-astra",
+    "messages": [
+      { "role": "user", "content": "Say hello" }
+    ]
+  }
+}
+```
+
+[Generation lookup](../../api-reference/endpoint/generation) lists every field.

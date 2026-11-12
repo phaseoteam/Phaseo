@@ -1,144 +1,60 @@
 ---
 title: "Exploring Benchmarks"
 description: "Understand how AI model benchmarks are collected, standardised, and visualised on Phaseo."
+"og:image": "https://phaseo.app/og/dynamic?title=Exploring%20Benchmarks&description=Understand%20how%20AI%20model%20benchmarks%20are%20collected%2C%20standardised%2C%20and%20visualised%20on%20Phaseo.&pathname=/docs/v1/exploring/benchmarks"
 sidebarTitle: "Benchmarks"
 icon: "chart-no-axes-column"
 ---
 
-Benchmarks are at the heart of how Phaseo measures model quality and progress.
-They provide **objective, repeatable metrics** that help you compare model performance across tasks, domains, and providers — from reasoning and coding to language understanding and image recognition.
+Open a benchmark on [Benchmarks](https://phaseo.app/benchmarks) to rank models by their score on it, or open a model page to see every score that model has. Phaseo doesn't run benchmarks; it collects published scores and links each one to its source.
 
----
+## What each score records
 
-## What are benchmarks?
+| Field | What it tells you |
+| --- | --- |
+| Score | The value as published, on the benchmark's own scale. |
+| Variant | The setup when it differs from the default, such as few-shot count or reasoning effort. |
+| Source | A link to the paper, model card or results page the score came from. |
+| Self-reported | Set when the model's own developer published the score. It's a disclosure, not a rejection. |
 
-A **benchmark** is a dataset or evaluation designed to test a model’s performance on a specific task.
-By running multiple models on the same dataset, we can measure relative strengths and weaknesses.
+Each benchmark also has a category and a sort direction. Phaseo ranks lower-is-better benchmarks, such as error rates, with the lowest score first.
 
-Common examples include:
+## How to compare scores
 
--   🧠 **MMLU (Massive Multitask Language Understanding)** — tests general knowledge and reasoning.
--   🔢 **GSM8K** — tests mathematical reasoning and problem-solving.
--   💬 **HellaSwag** — evaluates common sense and contextual understanding.
--   🧮 **ARC-Challenge** — measures scientific reasoning and logic.
--   💡 **HumanEval** — assesses programming and code generation skills.
+Phaseo doesn't convert benchmarks to one common score, so compare models on the same benchmark and variant, not across benchmarks. Check the variant and the self-reported flag before treating two numbers as equal: a provider-reported score and an independently measured one can differ for the same model.
 
----
+A benchmark score is one input. Cost, latency, reliability and how a model handles your own prompts matter as much; [Pricing and performance](./pricing-performance.mdx) covers those.
 
-## How Phaseo handles benchmarks
+## What a benchmark page shows
 
-Phaseo collects benchmark data from **multiple public sources** and **official reports**, then standardises them into a consistent format.
+| Section | What it tells you |
+| --- | --- |
+| **Summary** | What the benchmark measures, with a link to it. |
+| **Progress** | How scores on the benchmark have changed over time. |
+| **Model results** | Every model's score, ranked in the benchmark's sort direction. |
 
-Each model’s benchmark section includes:
-
--   **Score value** — typically expressed as a percentage or normalised scale.
--   **Dataset source** — e.g. MMLU, GSM8K, etc.
--   **Evaluation method** — indicates how the score was derived (official report, third-party eval, or community submission).
--   **Last updated** — shows when the benchmark data was last refreshed.
-
----
-
-## Example benchmark page
-
----
+Composite indexes, such as the Artificial Analysis Intelligence Index and the Epoch Capabilities Index, have their own pages with the publisher's rankings and versions.
 
 ## Benchmark categories
 
-Benchmarks are grouped into categories that represent the skill being tested:
+| Category | Examples |
+| --- | --- |
+| General | Artificial Analysis Intelligence Index, Epoch Capabilities Index |
+| Agents | BrowseComp, BFCL-v3, Toolathlon |
+| Code | SWE-Bench, Aider-Polyglot |
+| Math | AIME 2025, MathVision |
+| Reasoning | HellaSwag, Hallusion Bench |
+| Language | BIG-Bench Hard, Winogrande |
+| Multimodal | CharXiv-R, MMBench-V1.1 |
+| Long context | AA-LCR, OpenAI-MRCR |
 
-| Category                   | Examples               | Description                                                           |
-| -------------------------- | ---------------------- | --------------------------------------------------------------------- |
-| **Reasoning**              | MMLU, GSM8K, ARC       | Tests general logic, multi-step reasoning, and problem-solving.       |
-| **Language Understanding** | HellaSwag, BoolQ, PIQA | Measures reading comprehension, common sense, and linguistic ability. |
-| **Code Generation**        | HumanEval, MBPP        | Evaluates programming and code synthesis accuracy.                    |
-| **Math & Science**         | GSM8K, MATH, SciQ      | Focuses on numerical and scientific reasoning.                        |
-| **Multimodal**             | MathVista, MMMU        | Combines text and visual comprehension tasks.                         |
+Other categories include audio, embeddings, healthcare, planning and creativity.
 
----
+## Where scores come from
 
-## How to interpret scores
+- Model cards, technical reports and papers from the model's developer.
+- Benchmark organisers' own results pages.
+- Scheduled imports from Artificial Analysis and Epoch AI.
+- Community reports through GitHub issues, reviewed before publication.
 
-| Value Range | Interpretation                                                    |
-| ----------- | ----------------------------------------------------------------- |
-| **90-100%** | Exceptional — near state-of-the-art performance.                  |
-| **80-89%**  | Excellent — capable for most production use cases.                |
-| **60-79%**  | Good — reliable for general tasks but may struggle on edge cases. |
-| **< 60%**   | Developing — best for experimental or research scenarios.         |
-
-Keep in mind that some benchmarks have **different scoring systems**.
-Phaseo normalises these where possible to make comparisons more meaningful.
-
----
-
-## Visualising benchmarks on Phaseo
-
-Benchmark results are visualised using:
-
--   📊 **Bar charts** for comparing models within the same dataset.
--   📈 **Trend charts** showing model improvements over time.
--   🧮 **Aggregate scores** to summarise performance across multiple datasets.
-
-Each benchmark dataset on Phaseo includes filters for:
-
--   Model type (chat, code, embedding, etc.)
--   Provider
--   Release year
--   Dataset category
-
-This lets you quickly identify patterns — like which families dominate reasoning or coding tasks.
-
----
-
-## Data sources and methodology
-
-Phaseo aggregates benchmark data from:
-
--   Official research papers and model reports.
--   Provider evaluation pages (OpenAI Evals, Anthropic Reports, etc.).
--   Open community datasets (e.g. Hugging Face leaderboards).
--   Direct submissions from users via GitHub.
-
-All data is standardised and verified before being published.
-See [Research & Methodology → Benchmark Methodology](../research/benchmark-methodology.mdx) for full details.
-
----
-
-## Example use cases
-
-| Goal                                 | Example                                                              |
-| ------------------------------------ | -------------------------------------------------------------------- |
-| Compare reasoning models             | “Which model scores highest on GSM8K?”                               |
-| Evaluate cost-performance trade-offs | “Does GPT-4o justify its higher cost compared to Claude 3.5 Sonnet?” |
-| Track yearly progress                | “How much has MMLU accuracy improved since 2022?”                    |
-| Research benchmarks by category      | “Which models lead in multimodal reasoning?”                         |
-
----
-
-## Contributing benchmark data
-
-Open a GitHub issue with evidence for new or corrected benchmark scores.
-Each submission is reviewed before inclusion to ensure consistency and accuracy.
-
-<Card
-	title="Contribute Benchmark Data"
-	icon="github"
-	href="../research/submitting-scores.mdx"
-	horizontal
->
-	Learn what evidence to include in a benchmark issue.
-</Card>
-
----
-
-## Next steps
-
-Once you understand how benchmark data works, you can explore the **API providers** that make these models available programmatically.
-
-<Card
-	title="Explore API Providers"
-	icon="network"
-	href="./api-providers.mdx"
-	horizontal
->
-	See where and how models are hosted, priced, and accessed.
-</Card>
+[Benchmark methodology](../research/benchmark-methodology.mdx) has the full rules. To add or correct a score, see [Submit benchmark scores](../research/submitting-scores.mdx).

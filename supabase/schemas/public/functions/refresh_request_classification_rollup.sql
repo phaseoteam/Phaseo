@@ -1,12 +1,9 @@
-CREATE OR REPLACE FUNCTION public.refresh_request_classification_rollup (
-  p_contribution_id uuid,
-  p_classifier_id   uuid
-)
-  RETURNS void
-  LANGUAGE plpgsql
-  SECURITY DEFINER
-  SET search_path TO ''
-  AS $function$
+CREATE OR REPLACE FUNCTION public.refresh_request_classification_rollup(p_contribution_id uuid, p_classifier_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
 declare
   v_contribution public.data_contributions%rowtype;
   v_category text;
@@ -30,7 +27,7 @@ begin
 
   insert into public.request_classification_daily (
     usage_date, workspace_id, classifier_id, primary_category, model_slug,
-    provider_slug, request_count, input_tokens, output_tokens, updated_at
+    provider_slug, request_count, input_tokens, output_tokens, public_request_count, public_input_tokens, public_output_tokens, updated_at
   )
   select
     contribution.occurred_at::date,
@@ -42,6 +39,9 @@ begin
     count(*),
     coalesce(sum(contribution.input_tokens), 0),
     coalesce(sum(contribution.output_tokens), 0),
+    count(*) filter (where contribution.public_reporting_allowed),
+    coalesce(sum(contribution.input_tokens) filter (where contribution.public_reporting_allowed), 0),
+    coalesce(sum(contribution.output_tokens) filter (where contribution.public_reporting_allowed), 0),
     now()
   from public.request_classifications classification
   join public.data_contributions contribution on contribution.id = classification.contribution_id
@@ -59,9 +59,13 @@ begin
     request_count = excluded.request_count,
     input_tokens = excluded.input_tokens,
     output_tokens = excluded.output_tokens,
+    public_request_count = excluded.public_request_count,
+    public_input_tokens = excluded.public_input_tokens,
+    public_output_tokens = excluded.public_output_tokens,
     updated_at = excluded.updated_at;
 end;
-$function$;
+$function$
+;
 
 GRANT EXECUTE ON FUNCTION "public"."refresh_request_classification_rollup"(uuid, uuid) TO "service_role";
 

@@ -1,8 +1,6 @@
-"use client";
-
 import React, { useMemo, useState, useEffect, useRef } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "@/i18n/react";
+import { useRouter, useSearchParams } from "@/lib/navigation";
 import { ArrowLeft, Info } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
 import { Button } from "@/components/ui/button";
@@ -22,7 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { loadStripe } from "@stripe/stripe-js";
 import { Spinner } from "@/components/ui/spinner";
-import { ChargeSavedPayment, ReviewPurchaseLocation } from "@/app/(dashboard)/settings/credits/actions";
+import { ChargeSavedPayment, ReviewPurchaseLocation } from "@/features/settings/credits/actions";
 import { isAnalyticsCaptureAllowed } from "@/lib/clientErrorReporting";
 import { captureProductEvent } from "@/lib/productAnalytics";
 import { COUNTRY_OPTIONS } from "@/lib/countryCodes";
@@ -31,10 +29,11 @@ import { cn } from "@/lib/utils";
 import { formatCardBrand } from "./cardBrand";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { SensitiveValue } from "@/components/display/SensitiveValue";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 /* Helpers */
-const formatUSD = (v: number, locale: string) =>
-	new Intl.NumberFormat(locale, {
+const formatUSD = (v: number, _locale: string) =>
+	new Intl.NumberFormat(MONEY_LOCALE, {
 		style: "currency",
 		currency: "USD",
 	}).format(v);
@@ -292,10 +291,10 @@ export default function CreditsPurchaseDialog({
 		setIsLocationAcknowledged(false);
 		setLocationError(null);
 		try {
-			const data = await ReviewPurchaseLocation({
+			const data = await ReviewPurchaseLocation({ data: {
 				countryCode,
 				workspaceId: workspaceId || null,
-			});
+			} });
 			setLocationPreview(data as LocationPreview);
 			captureProductEvent("credits_purchase_location_reviewed", {
 				country_code: countryCode,
@@ -363,7 +362,7 @@ export default function CreditsPurchaseDialog({
 			const workspaceId = wallet?.workspace_id ?? null;
 
 			if (selectedPm && selectedPm !== "new") {
-				const response = await ChargeSavedPayment({
+				const response = await ChargeSavedPayment({ data: {
 					payment_method_id: selectedPm,
 					amount_pence: Math.round(total * 100),
 					kind: mode,
@@ -371,7 +370,7 @@ export default function CreditsPurchaseDialog({
 					event_type: "top_up",
 					workspace_id: workspaceId,
 					country_code: countryCode,
-				} as any);
+				} as any });
 
 				const { data, status, ok } = response;
 
@@ -382,7 +381,7 @@ export default function CreditsPurchaseDialog({
 						data?.payment_intent?.clientSecret;
 					if (piClientSecret) {
 						const stripe = await loadStripe(
-							process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
+							process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY!
 						);
 						if (!stripe) throw new Error("stripe_unavailable");
 						const { error } = await stripe.handleNextAction({
@@ -661,7 +660,7 @@ export default function CreditsPurchaseDialog({
 							<div className="inline-flex w-full items-center overflow-hidden rounded-lg border border-border bg-muted/20 transition-shadow focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30">
 								{/* Currency badge in place of left button */}
 								<div className="flex h-10 w-10 items-center justify-center border-r border-border text-sm font-medium text-muted-foreground">
-									{new Intl.NumberFormat(locale, {
+									{new Intl.NumberFormat(MONEY_LOCALE, {
 										style: "currency",
 										currency: "USD",
 									}).formatToParts(0).find((part) => part.type === "currency")?.value ?? "USD"}

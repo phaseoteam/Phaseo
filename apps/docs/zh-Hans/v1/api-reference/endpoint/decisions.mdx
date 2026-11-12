@@ -1,42 +1,316 @@
 ---
 title: "作出决策"
-sidebarTitle: "Decisions"
 badge: "Beta"
+tag: "测试版"
 openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "使用受支持的决策模型，针对应用状态评估带类型的问题。"
 ---
 
-新调用请使用兼容 OpenAI 的格式：`input` 包含文本或带有内联 `input_image` 的用户消息，`questions` 是按顺序排列的 `predicate`、`choice` 或 `score` 问题数组。回答保持相同顺序及可选名称。布尔选项仍为布尔值。不支持托管图片 URL；Luna 支持最多128张内联图片，其他提供商有各自的限制。显式图片细节和 `safety_identifier` 需要 OpenAI 路由。原有的 `state`、命名问题映射、`noul` 和 `criteria` 格式仍受支持，并返回回答映射。Together Tev 返回不含概率的标签，因此需要原有格式。原有示例仍然有效。
+将 `input` 和按顺序排列的 `questions` 数组发送到 `POST /v1/decisions`，即可按相同顺序为每个问题获得一个带类型的回答及其概率。
+
+## 作出决策
+
+此请求对每种类型各提一个问题。它需要一个 Phaseo API 密钥和一条可用的 `openai/gpt-6-luna` 路由。
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/decisions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-luna",
+    "input": "I was charged twice for my order and I cannot log in to download the invoice.",
+    "questions": [
+      {
+        "type": "choice",
+        "name": "department",
+        "instructions": "Which team should handle this request?",
+        "choices": [
+          { "value": "billing", "description": "Payments, invoices and refunds" },
+          { "value": "support", "description": "Product usage and troubleshooting" }
+        ]
+      },
+      {
+        "type": "predicate",
+        "name": "is_blocked",
+        "instructions": "Is the customer blocked from using the product?"
+      },
+      {
+        "type": "score",
+        "name": "urgency",
+        "instructions": "How urgent is this request?",
+        "levels": [{ "label": "low" }, { "label": "medium" }, { "label": "high" }]
+      }
+    ]
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo(); // 读取 PHASEO_API_KEY
+
+const decision = await client.decisions.create({
+  model: "openai/gpt-6-luna",
+  input: "I was charged twice for my order and I cannot log in to download the invoice.",
+  questions: [
+    {
+      type: "choice",
+      name: "department",
+      instructions: "Which team should handle this request?",
+      choices: [
+        { value: "billing", description: "Payments, invoices and refunds" },
+        { value: "support", description: "Product usage and troubleshooting" },
+      ],
+    },
+    { type: "predicate", name: "is_blocked", instructions: "Is the customer blocked from using the product?" },
+    {
+      type: "score",
+      name: "urgency",
+      instructions: "How urgent is this request?",
+      levels: [{ label: "low" }, { label: "medium" }, { label: "high" }],
+    },
+  ],
+});
+
+console.log(decision.answers);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # 读取 PHASEO_API_KEY
+
+decision = client.decisions.create(
+    {
+        "model": "openai/gpt-6-luna",
+        "input": "I was charged twice for my order and I cannot log in to download the invoice.",
+        "questions": [
+            {
+                "type": "choice",
+                "name": "department",
+                "instructions": "Which team should handle this request?",
+                "choices": [
+                    {"value": "billing", "description": "Payments, invoices and refunds"},
+                    {"value": "support", "description": "Product usage and troubleshooting"},
+                ],
+            },
+            {"type": "predicate", "name": "is_blocked", "instructions": "Is the customer blocked from using the product?"},
+            {
+                "type": "score",
+                "name": "urgency",
+                "instructions": "How urgent is this request?",
+                "levels": [{"label": "low"}, {"label": "medium"}, {"label": "high"}],
+            },
+        ],
+    }
+)
+
+print(decision["answers"])
+```
+</CodeGroup>
+
+响应（数值仅作示意）：
 
 ```json
 {
   "model": "openai/gpt-6-luna",
-  "input": "I was charged twice for my order.",
+  "answers": [
+    {
+      "type": "choice",
+      "name": "department",
+      "choice": "billing",
+      "confidence": 0.89,
+      "probabilities": [
+        { "value": "billing", "probability": 0.91 },
+        { "value": "support", "probability": 0.09 }
+      ]
+    },
+    { "type": "predicate", "name": "is_blocked", "probability": 0.84 },
+    {
+      "type": "score",
+      "name": "urgency",
+      "score": 1.6,
+      "confidence": 0.7,
+      "probabilities": [
+        { "value": 0, "label": "low", "probability": 0.05 },
+        { "value": 1, "label": "medium", "probability": 0.3 },
+        { "value": 2, "label": "high", "probability": 0.65 }
+      ]
+    }
+  ],
+  "usage": { "input_tokens": 64, "output_tokens": 0, "total_tokens": 64 }
+}
+```
+
+## 编写问题
+
+`input` 是一个字符串，或一个 `user` 消息数组，其中 `content` 是字符串，或由 `input_text`、`input_image`、`input_audio` 和 `input_video` 部分组成的列表。`name` 是可选的；回答保持请求中的顺序，包括未命名的问题和重复的名称。
+
+每个请求最多包含 128 个问题，但 `google/gemini-decision-1` 最多可接受 1,000 个，`parallel/decisions-fast` 最多可接受 100 个，Clef 最多可接受 64 个。超出模型上限的请求会返回 `400`。
+
+| `type` | 额外字段 | 回答字段 |
+| --- | --- | --- |
+| `predicate` | 无 | 答案为“是”的 `probability`（0–1） |
+| `choice` | `choices`：`value`（字符串或布尔值，互不相同）和可选的 `description` | `choice`、`confidence`，以及每个值的 `probabilities` |
+| `score` | `levels`：`label` 和可选的 `description` | `score`（按概率加权的级别索引）、`confidence`，以及每个级别的 `probabilities` |
+| `box` | 无；`input` 中需要一张图像 | `box`（`top`、`bottom`、`left`、`right`）、`confidence` |
+
+布尔类型的选项值会以布尔值返回。模型拒绝回答某个问题时，会为该问题返回 `type: "refusal"`。各模型支持哪些类型，见[选择模型](#choose-a-model)。
+
+图像以 data URL 的形式放在 `input_image` 部分中。托管的 HTTPS 图像 URL 仅适用于 Base Labs 模型（`baselabs/elephant-1`、`baselabs/mammoth-1` 和 `baselabs/joey-1`），并且必须位于 Amazon S3、Google Cloud Storage 或 Azure Blob Storage 上。一个请求最多携带 128 张图像，Luna 可以全部接受；其他提供商的上限更低。显式的图像 `detail` 和 `safety_identifier` 需要 OpenAI 路由。
+
+## 使用旧的 state 格式
+
+带有 `state` 和命名问题映射的请求仍然可用，并返回以相同名称为键的回答。Together Tev（`together/tev1-4b-experimental`）需要这种格式，因为它返回不带概率的标签，并且只回答 `choice` 问题。Respan Span-01 也使用这种格式。不要混用两种格式：`input` 与 `state` 或 `images` 同时出现会返回 `400`。
+
+- `state`：一个字符串、对象或数组，包含要评估的信息。
+- `questions`：最多 128 个命名问题，上限更高的模型可接受更多。每个问题将 `type` 设为 `noul`（是/否）、`choice` 或 `score`，并提供 `instructions`。选择题的 `criteria` 是选项到描述的映射；评分题的 `criteria` 是至少包含两个级别描述的数组。
+- `images`：最多四张 PNG、JPEG 或 WebP 图像，形式为 `data:` URL 或 `{ "content_type", "base64" }` 对象。
+- `model`：省略时默认为 `typesafe/jev-1.13.0`。
+
+回答使用与 `questions` 相同的键。`choice` 回答包含所选选项、概率和置信度；`noul` 回答包含一个 0–1 的概率；`score` 回答包含按概率加权的分数、图例、概率和置信度。
+
+<span id="choose-a-model"></span>
+## 选择模型
+
+调用以下任何模型之前，请先检查模型可用性。
+
+| 模型 | 问题类型 | 输入 | 每 1M token 输入价格 |
+| --- | --- | --- | --- |
+| `openai/gpt-6-luna` | predicate、choice、score | 文本，最多 128 张图像 | 见模型页面 |
+| `typesafe/jev-1.13.0`、`typesafe/jev-1.14.0` | 全部三种，可在一个请求中混用；1.14 支持 `box` | 文本、PNG/JPEG 图像 | $0.042（Jev 1.13） |
+| `cloudflare/clef`、`cloudflare/clef-flash` | 全部三种 | 文本，最多 4 张图像 | $0.24 / $0.038 |
+| `cloudflare/clef-omni` | 全部三种 | 文本、图像、音频、视频 | $0.15 |
+| `google/gemini-decision-1` | predicate、choice、score；每个请求最多 1,000 个 | 文本、图像、音频、视频 | $0.10 |
+| `liquid-ai/d1:free`、`liquid-ai/d1` | 全部三种 | 见模型页面 | 抢先体验期间免费 |
+| `perplexity/decider-27b` | 全部三种 | 文本、base64 图像 | $0.04，包含图像 token |
+| `inception/mercury-decide` | predicate、choice、score | 文本或 JSON | $0.02（促销价） |
+| `microsoft/microsoft-decision-1` | predicate、choice、score | 文本或 JSON | $0.042 |
+| `respan/span-01:free`、`respan/span-01` | 仅 `noul`（旧格式） | 对话片段 | 免费（Lite）/ $0.02 |
+| `together/tev1-4b-experimental` | 仅 `choice`（旧格式） | 文本 | 见模型页面 |
+
+所有列出价格的模型，输出 token 均免费。
+
+### TypeSafe Jev
+
+使用 `typesafe/jev-1.13.0` 调用 Jev 1.13，或使用 `typesafe/jev-latest` 跟随最新的 Jev 版本。上游问题语义请参阅 TypeSafe 的 [API 参考](https://docs.typesafe.ai/api)。
+
+在支持的 TypeSafe 路由上，Jev 1.13 和 1.14 可以通过 `input_image` 或旧的 `images` 字段接受内联 PNG 或 JPEG 图像。Phaseo 会构建 TypeSafe 的图像资源并自动启用图像支持。图像必须符合 TypeSafe 的[图像限制](https://docs.typesafe.ai/images)：每张最多 16 MiB，每条边 256 到 1568 像素，总像素至少 78,400。TypeSafe 会校验尺寸和编码，并且不会缩放被拒绝的图像。映射后的上游 JSON 正文上限为 32 MiB。图像 token 按正常输入价格计费。
+
+`box`（在 Jev 1.14 等支持的路由上）需要一张图像，不接受 criteria，并返回一个边界框和置信度。边界值范围为 0 到 1，从左上角开始测量。Box 总是返回一个矩形，因此当目标可能不存在时，请搭配一个 `predicate` 存在性问题。使用旧的 `images` 字段时，引用 `images[0]`；使用有序输入时，引用第一张图像或 `[Image 0]`。请参阅 [Box 契约](https://docs.typesafe.ai/primitives/box)。
+
+将 `provider_options.typesafe.long_context` 设为 `true`，可将每个请求和每个问题的上下文上限提高到 262k token，而默认值为每个请求 64k、每个问题 32k。长上下文每 token 的价格相同。图像、Box 和长上下文都是上游的实验性能力。
+
+```json
+{
+  "model": "typesafe/jev-1.14.0",
+  "input": [{
+    "role": "user",
+    "content": [{ "type": "input_image", "image_url": "data:image/png;base64,<base64 image bytes>" }]
+  }],
+  "questions": [
+    { "type": "predicate", "name": "visible", "instructions": "Is there a mug in the first image?" },
+    { "type": "box", "name": "mug", "instructions": "The mug in the first image" }
+  ],
+  "provider_options": { "typesafe": { "long_context": true } }
+}
+```
+
+### Cloudflare Clef 和 Clef Flash
+
+`cloudflare/clef` 和 `cloudflare/clef-flash` 运行在 Cloudflare Workers AI 上。Clef 的上下文窗口为 65,536 token，Clef Flash 为 24,576 token。
+
+```json
+{
+  "model": "cloudflare/clef-flash",
+  "state": "Inspect the attached product photo.",
+  "images": [{ "content_type": "image/png", "base64": "<base64 image bytes>" }],
+  "questions": {
+    "damaged": { "type": "noul", "instructions": "Is the product visibly damaged?" }
+  }
+}
+```
+
+`images` 也接受 `data:image/png;base64,...` 字符串。Clef 最多接受四张 PNG、JPEG 或 WebP 图像，每张最多 4 MiB、1600 万像素，解码后的图像数据合计最多 8 MiB，请求正文最多 13 MiB。不支持远程 URL，图像格式和尺寸由 Cloudflare 校验。不支持图像的模型会拒绝带图像的请求。
+
+Clef 最多接受 64 个问题，ID 最多 100 个字母、数字、下划线、点或连字符。选择题需要 2–255 个选项，评分题需要 2–10 个级别。请参阅 Cloudflare 的 [Clef 文档](https://developers.cloudflare.com/workers-ai/models/clef/)。
+
+### Cloudflare Clef Omni
+
+`cloudflare/clef-omni` 接受文本、图像、音频和视频。音频和视频部分是 Phaseo 对输入格式的扩展；OpenAI 路由只接受文本和图像。发送此示例前，请将占位的音频字节和视频 URL 替换为你自己的媒体。
+
+```json
+{
+  "model": "cloudflare/clef-omni",
+  "input": [{
+    "role": "user",
+    "content": [
+      { "type": "input_text", "text": "Review the recording and clip." },
+      { "type": "input_audio", "input_audio": { "data": "<base64 WAV bytes>", "format": "wav" } },
+      { "type": "input_video", "video_url": { "url": "https://media.example.com/clip.mp4" } }
+    ]
+  }],
+  "questions": [{ "type": "predicate", "name": "safe", "instructions": "Is the equipment operating safely?" }]
+}
+```
+
+音频可以作为 `input_audio.data` 发送，并设置 `format: "wav"` 或 `"mp3"`；也可以作为 `input_audio.url` 发送，值为公共 HTTPS URL 或内联音频 data URL。`input_video.video_url` 接受字符串或 `{ "url": "..." }`，其中包含公共 HTTPS URL 或内联 MP4/WebM data URL。远程服务器必须返回匹配的 Content-Type。Phaseo 抓取 URL 时会进行大小限制以及私有地址和重定向检查，然后将媒体嵌入后发送给 Cloudflare；提供商凭据绝不会发送给媒体服务器。
+
+| 限制 | 值 |
+| --- | --- |
+| 音频片段 | 4 个，每个最多 8 MiB、300 秒 |
+| 视频 | 2 个，每个最多 16 MiB、60 秒 |
+| 音频和视频合计 | 解码后 16 MiB |
+| 图像 | 单张和合计限制与 Clef 相同 |
+| 请求正文 | 37 MiB（取代 Clef 的 13 MiB） |
+| 上下文 | 64,000 token |
+
+Cloudflare 会校验媒体编码、图像尺寸和片段时长，并以每秒两帧的频率对视频采样。当请求中的每个视频都有音轨时，会使用视频的音轨。媒体 token 计入上下文和计费；Phaseo 按 Cloudflare 报告的输入用量结算，不额外收取音频或视频费用。请参阅 [Cloudflare 的 Omni 契约](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json)。
+
+### Liquid D1 和 Perplexity Decider
+
+Liquid D1（`liquid-ai/d1:free`，以及 `liquid-ai/d1`）在实验性抢先体验期间免费。Perplexity Decider 27B（`perplexity/decider-27b`）需要在 Phaseo 中配置 Perplexity 提供商凭据。它的图像 state 使用 PNG、JPEG 或 WebP 的 base64 data URL；不支持远程图像 URL。在这两个模型上，选择题最多接受 255 个选项，评分题最多接受 10 个级别。
+
+### Inception Mercury Decide
+
+`inception/mercury-decide` 接受文本或 JSON 证据。选择题最多接受 255 个选项，评分题最多接受 10 个级别。不支持图像、流式传输和工具调用。$0.02 的输入价格是 Inception 的五折促销价，目前没有公布结束日期；使用前请查看[当前的上游定价](https://docs.inceptionlabs.ai/get-started/models)。
+
+```json
+{
+  "model": "inception/mercury-decide",
+  "input": "Please refund the duplicate charge on my account.",
+  "questions": [{
+    "type": "predicate",
+    "name": "billing",
+    "instructions": "Is this request about billing?"
+  }]
+}
+```
+
+### Microsoft Decision
+
+`microsoft/microsoft-decision-1` 运行在 Azure Foundry 部署上，接受最多 32,768 token 的文本或 JSON 证据。不支持媒体、流式传输、工具、`safety_identifier` 和 `service_tier`。请参阅 [Microsoft 的指南](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision)。
+
+```json
+{
+  "model": "microsoft/microsoft-decision-1",
+  "input": "The API returns 500 on every call.",
   "questions": [{
     "type": "choice",
-    "name": "department",
-    "instructions": "Which department should handle this?",
+    "name": "team",
+    "instructions": "Which team should handle this ticket?",
     "choices": [
-      { "value": "billing", "description": "Payments and refunds" },
-      { "value": "other", "description": "Everything else" }
+      { "value": "engineering", "description": "Bugs, errors, and outages" },
+      { "value": "support", "description": "How-to and account questions" }
     ]
   }]
 }
 ```
 
+### Respan Span-01
 
-
-当应用需要代码可直接使用的结构化答案时，请使用 `POST /v1/decisions`。受支持的模型包括 TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`)、Together Tev1 4B Experimental (`together/tev1-4b-experimental`) 和 Respan Span-01（`respan/span-01:free` 和 `respan/span-01`）。
-
-请求包含：
-
-- `state`：包含待评估信息的字符串、对象或数组。
-- `questions`：具名问题的映射。每个问题将 `type` 设置为 `noul`、`choice` 或 `score`，并包含 `instructions`；支持的类型取决于所选模型。
-- `model`：Phaseo 模型 ID。使用 `typesafe/jev-1.13.0` 指定 Jev 1.13，或使用 `typesafe/jev-latest` 跟随最新 Jev 版本。
-
-Liquid D1（`liquid-ai/d1:free`，也可使用 `liquid-ai/d1`）和 Perplexity Decider 27B (`perplexity/decider-27b`) 支持全部三种问题类型。D1 在实验性早期访问期间免费。Decider 每百万输入 token 收费 0.04 美元，包括图像 token；输出 token 免费。使用 Decider 前，请在 Phaseo 中添加 Perplexity 提供商凭证。其图像状态使用 PNG、JPEG 或 WebP 的 base64 数据 URL；不支持远程图像 URL。每个选择问题最多接受 255 个选项，每个评分问题最多接受 10 个等级。调用任一模型前请检查其可用性。
-
-对于 Respan Span-01，`state` 必须是一个会话片段，包含先前消息的 `input` 数组和一条助手的 `output` 消息。Span-01 仅支持 `noul` 问题。`noul` 答案表示该行为存在的概率；`probabilities` 还包含不存在和不可观察的概率。
+Span-01 使用旧格式。`state` 必须是一个对话片段：由前面消息组成的 `input` 数组，以及一条 `output` 助手消息。它只回答 `noul` 问题：`noul` 值是该行为存在的概率，`probabilities` 还会给出不存在和无法观察到的概率。
 
 ```json
 {
@@ -54,11 +328,7 @@ Liquid D1（`liquid-ai/d1:free`，也可使用 `liquid-ai/d1`）和 Perplexity D
 }
 ```
 
-`respan/span-01:free` 是有每日限额的免费 Lite 模型；Phaseo 将其映射为 Respan 的 API 模型 ID `span-01-free`。`respan/span-01` 映射为 Respan 的 API 模型 ID `span-01-pro`，由 Respan 按每百万输入 token 0.02 美元计费；输出 token 免费。Span-01 处于早期访问阶段，因此 Respan 必须为您的组织启用访问权限。调用这些模型前，请将 Respan API 密钥添加为 Phaseo 中的 Respan 提供商凭证。
-
-答案使用与 `questions` 相同的键。`choice` 答案包含所选选项、概率和置信度；`noul` 答案包含 0–1 的概率；`score` 答案包含概率加权分数、图例、概率和置信度。
-
-对于 Respan 示例，响应如下：
+响应如下：
 
 ```json
 {
@@ -76,25 +346,4 @@ Liquid D1（`liquid-ai/d1:free`，也可使用 `liquid-ai/d1`）和 Perplexity D
 }
 ```
 
-Jev 支持在同一请求中混合全部三种问题类型；Span-01 仅支持 `noul` 问题。请参阅[快速开始](../../quickstart)，获取可直接复制的 cURL、JavaScript、TypeScript SDK 和 Python SDK 示例。Jev 1.13 按每百万输入 token 0.042 美元计费；输出 token 免费。
-
-有关上游问题语义，请参阅 TypeSafe 的 [API 参考](https://docs.typesafe.ai/api)。
-
-### 使用Clef进行图像决策
-
-`cloudflare/clef`和`cloudflare/clef-flash`通过Cloudflare Workers AI支持全部三种问题类型和嵌入图像。两者的上下文窗口均为65,536个令牌。输入价格为每百万令牌Clef 0.24美元、Clef Flash 0.09美元。
-
-```json
-{
-  "model": "cloudflare/clef-flash",
-  "state": "Inspect the attached product photo.",
-  "images": [{ "content_type": "image/png", "base64": "<base64 image bytes>" }],
-  "questions": {
-    "damaged": { "type": "noul", "instructions": "Is the product visibly damaged?" }
-  }
-}
-```
-
-也可以在`images`中提供`data:image/png;base64,...`字符串。Clef最多接受四张PNG、JPEG或WebP图像，每张最多4 MiB和1,600万像素，解码后图像数据总量最多8 MiB，请求体最多13 MiB。不支持远程URL。Cloudflare会验证图像格式和尺寸。不支持图像的模型会拒绝图像请求。
-
-Clef最多接受64个问题，ID最多100个字母、数字、下划线、点或连字符。选择题需要2–255个选项，评分题需要2–10个等级。请参阅Cloudflare的[Clef文档](https://developers.cloudflare.com/workers-ai/models/clef/)。
+`respan/span-01:free` 是有每日用量上限的免费 Lite 模型，对应 Respan 的 `span-01-free` 模型。`respan/span-01` 对应 `span-01-pro`，由 Respan 计费。Span-01 处于抢先体验阶段：Respan 必须为你的组织启用它，并且在调用任一模型之前，你需要在 Phaseo 中将你的 Respan API 密钥添加为 Respan 提供商凭据。

@@ -2,6 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "@/index";
 import { parseLowBalanceThresholdNanos } from "./credits";
 
+// The fixtures' users have a verified TOTP factor, so their session must have used it (aal2).
+const sessionToken = `header.${btoa(JSON.stringify({ sub: "user-1", aal: "aal2" })).replace(/=+$/, "")}.signature`;
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe("account credit routes", () => {
@@ -41,8 +44,8 @@ describe("account credit routes", () => {
 		const { rpcCalls } = autoTopUpRequest([]);
 		const response = await app.request("https://phaseo.app/api/account/credits/auto-top-up", {
 			method: "PUT",
-			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
-			body: JSON.stringify({ workspaceId: "workspace-1", enabled: true, topUpAmount: 2_000_000_000 }),
+			headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1", enabled: true, topUpAmount: 20_000_000_000 }),
 		}, { ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" });
 
 		expect(response.status).toBe(400);
@@ -55,8 +58,8 @@ describe("account credit routes", () => {
 		const { rpcCalls } = autoTopUpRequest([{ factor_type: "totp", status: "verified" }]);
 		const response = await app.request("https://phaseo.app/api/account/credits/auto-top-up", {
 			method: "PUT",
-			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
-			body: JSON.stringify({ workspaceId: "workspace-1", enabled: true, topUpAmount: 2_000_000_000 }),
+			headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1", enabled: true, topUpAmount: 20_000_000_000 }),
 		}, { ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" });
 
 		expect(response.status).toBe(200);
@@ -68,11 +71,11 @@ describe("account credit routes", () => {
 		const { rpcCalls } = autoTopUpRequest([]);
 		const response = await app.request("https://phaseo.app/api/account/credits/auto-top-up", {
 			method: "PUT",
-			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 			body: JSON.stringify({
 				workspaceId: "workspace-1",
 				enabled: true,
-				topUpAmount: 2_000_000_000,
+				topUpAmount: 20_000_000_000,
 				mfaBypassAcknowledged: true,
 				mfaBypassPhrase: "I ACCEPT THE RISK",
 			}),
@@ -87,8 +90,8 @@ describe("account credit routes", () => {
 		const { rpcCalls } = autoTopUpRequest([], true);
 		const response = await app.request("https://phaseo.app/api/account/credits/auto-top-up", {
 			method: "PUT",
-			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
-			body: JSON.stringify({ workspaceId: "workspace-1", enabled: true, topUpAmount: 3_000_000_000 }),
+			headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1", enabled: true, topUpAmount: 30_000_000_000 }),
 		}, { ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" });
 
 		expect(response.status).toBe(200);
@@ -96,15 +99,32 @@ describe("account credit routes", () => {
 		expect(rpcCalls[0].args).toMatchObject({ p_enabled: true, p_mfa_enabled: false, p_mfa_bypass_acknowledged: false });
 	});
 
+	it.each([
+		[1_000_000_000, "minimum_top_up"],
+		[4_999_999_999, "minimum_top_up"],
+		[1_000_000_001_000_000, "maximum_top_up"],
+	])("refuses an Auto Top-Up amount of %d nanos the Stripe webhook would not credit", async (topUpAmount, error) => {
+		const { rpcCalls } = autoTopUpRequest([{ factor_type: "totp", status: "verified" }]);
+		const response = await app.request("https://phaseo.app/api/account/credits/auto-top-up", {
+			method: "PUT",
+			headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1", enabled: true, topUpAmount }),
+		}, { ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" });
+
+		expect(response.status).toBe(400);
+		await expect(response.json()).resolves.toMatchObject({ error });
+		expect(rpcCalls).toHaveLength(0);
+	});
+
 	it("rejects the no-MFA bypass with an incorrect confirmation phrase", async () => {
 		const { rpcCalls } = autoTopUpRequest([]);
 		const response = await app.request("https://phaseo.app/api/account/credits/auto-top-up", {
 			method: "PUT",
-			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 			body: JSON.stringify({
 				workspaceId: "workspace-1",
 				enabled: true,
-				topUpAmount: 2_000_000_000,
+				topUpAmount: 20_000_000_000,
 				mfaBypassAcknowledged: true,
 				mfaBypassPhrase: "I ACCEPT THE CHARGE",
 			}),
@@ -128,7 +148,7 @@ describe("account credit routes", () => {
 		}));
 		const response = await app.request("https://phaseo.app/api/account/credits/notification-destinations/test", {
 			method: "POST",
-			headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+			headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 			body: JSON.stringify({ workspaceId: "workspace-1", type: "email", target: "owner@example.com", kind: "other" }),
 		}, { ENV: "development", SUPABASE_URL: "https://example.supabase.co", SUPABASE_ANON_KEY: "anon-key", SUPABASE_SERVICE_ROLE_KEY: "service-role-key" });
 		expect(response.status).toBe(400);
@@ -190,7 +210,7 @@ describe("account credit routes", () => {
 			"https://phaseo.app/api/account/credits/balance",
 			{
 				headers: {
-					authorization: "Bearer session-token",
+					authorization: `Bearer ${sessionToken}`,
 					cookie: "activeWorkspaceId=workspace-1",
 				},
 			},

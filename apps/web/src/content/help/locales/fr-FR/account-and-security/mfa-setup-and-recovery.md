@@ -5,7 +5,7 @@ order: 2
 updated: 2026-07-11
 ---
 
-Activez l’A2F depuis `Settings -> Account` pour protéger vos clés API et vos opérations de facturation.
+Activez l’A2F depuis `Paramètres -> Compte` pour protéger vos clés API et vos opérations de facturation.
 
 Configuration recommandée :
 

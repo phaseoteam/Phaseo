@@ -1,4 +1,5 @@
-"use client";
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
+import { currentCatalogDataPolicy } from "@/lib/providers/catalogDataPolicy";
 import { GroupedInputPrice } from "./GroupedInputPrice";
 
 import React, {
@@ -9,17 +10,18 @@ import React, {
     useRef,
     useState,
 } from "react";
-import { resolveEnforcedZdr } from "@/components/(data)/model/pricing/zdr";
+import { resolveScopedZdr } from "@/components/(data)/model/pricing/zdr";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { parseAsString, useQueryStates } from "nuqs";
 import {
     ArrowDown,
+    ArrowDownUp,
     ArrowUp,
     Ban,
     CheckCircle2,
@@ -31,7 +33,6 @@ import {
     Globe2,
     GraduationCap,
     ListFilter,
-	KeyRound,
     RotateCcw,
     Shield,
     Server,
@@ -45,6 +46,8 @@ import {
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
     DropdownMenuPortal,
     DropdownMenuSeparator,
     DropdownMenuSub,
@@ -55,8 +58,16 @@ import {
 import {
 	HoverCard,
 	HoverCardContent,
+	HoverCardHeader,
+	HoverCardNote,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import {
+	ProviderByokOnlyHoverCard,
+	ProviderStatusHoverCard,
+	getEarliestEffectiveTo,
+} from "./ProviderRowHoverCards";
 import {
     Table,
     TableBody,
@@ -76,13 +87,16 @@ import { type ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import {
 	getProviderRuntimeStats,
 	getModelProviderRuntimeStats,
-	type ProviderRuntimeStats,
-	type ProviderRuntimeStatsMap,
 } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
+import type {
+	PricingRuntimeStats as ProviderRuntimeStats,
+	PricingRuntimeStatsMap as ProviderRuntimeStatsMap,
+} from "./pricingRuntimeStats";
 import type { ProviderRoutingStatusMap } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import ProviderCard, {
+	getPricingPlanTranslationKey,
 	getProviderTableDiscountBadge,
-	PROVIDER_STATUS_META,
+	UptimeKey,
 } from "@/components/(data)/model/pricing/ProviderCard";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import { ProviderRouteName } from "./ProviderRouteName";
@@ -117,6 +131,17 @@ import ModelPercentileSelect, {
 	type ModelPercentile,
 } from "@/components/(data)/models/ModelPercentileSelect";
 import { publishProviderView } from "@/components/(data)/model/pricing/providerViewSync";
+import {
+	MOBILE_NAME_CELL,
+	MOBILE_ROW,
+	MOBILE_STAT_CELL,
+	MOBILE_TABLE_BLOCK,
+	getPriceColumnMobileLabel,
+	MOBILE_PERF_ORDER,
+	MOBILE_PERF_ROW_START,
+	getMobilePriceCellClass,
+	getMobilePriceColumnKeys,
+} from "@/components/(data)/model/pricing/providerTableMobile";
 import {
 	clearProviderInspector,
     dispatchProviderInspectorOpen,
@@ -241,11 +266,10 @@ function toggleProviderStatusFilter(
 
 const DEFAULT_ROUTING_ERROR_RATE = 0;
 
+// The gateway tries a deranked route only after every other healthy provider; this sinks it in the estimate.
 function routingStatusMultiplier(status: CanonicalGatewayStatus): number {
     if (status === "active") return 1;
-    if (status === "deranked_lvl1") return 1e-3;
-    if (status === "deranked_lvl2") return 1e-6;
-    if (status === "deranked_lvl3") return 1e-9;
+    if (status === "deranked") return 1e-6;
     return 0;
 }
 
@@ -262,6 +286,8 @@ function hasProviderUptimeObservation(
 	stats: ProviderRuntimeStatsMap[string] | undefined
 ): boolean {
 	if (!stats) return false;
+	// A provider that only ever failed over has attempt uptime but no served requests.
+	if (stats.attemptHealth3d?.uptimePct != null) return true;
 	if ((stats.healthRequests3d ?? 0) > 0) return true;
 	return stats.uptimeDaily3d.some((entry) => entry.requests > 0);
 }
@@ -405,13 +431,16 @@ function getProviderDefaultPlan(provider: ProviderPricing): string {
     return getPreferredPlan(getProviderAvailablePlans(provider));
 }
 
-function getProviderPromptTrainingPolicy(provider: ProviderPricing): string {
-    const override = provider.provider_models.find(
-        (model) => typeof model.prompt_training_policy_override === "string" && model.prompt_training_policy_override.trim()
-    )?.prompt_training_policy_override;
-    return normalizeProviderPromptTrainingPolicy(
-        override ?? provider.provider.prompt_training_policy ?? null
-    );
+export function getProviderPromptTrainingPolicy(provider: ProviderPricing, plan = getProviderDefaultPlan(provider)): string {
+    const scope = getProviderModelScopeForPlan(provider, plan);
+    const fallback = normalizeProviderPromptTrainingPolicy(provider.provider.prompt_training_policy);
+    const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]);
+    const policies = scope.map((model) => currentCatalogDataPolicy(model.data_policy)?.trainingPolicy
+        ?? normalizeProviderPromptTrainingPolicy(model.prompt_training_policy_override ?? fallback));
+    if (tierPolicy?.trainingPolicy != null) policies.push(tierPolicy.trainingPolicy);
+    if (policies.includes("may_train")) return "may_train";
+    if (policies.length) return policies.every((policy) => policy === "no_train") ? "no_train" : "unknown";
+    return fallback;
 }
 
 function resolveProviderGatewayStatus(provider: ProviderPricing): CanonicalGatewayStatus {
@@ -446,23 +475,11 @@ function getProviderOfferingSectionRank({ provider, plan }: ProviderOffering): n
 function UptimeHeaderHoverContent() {
 	const t = useTranslations("Catalogue.modelDetail.providerTable");
 	return (
-		<div className="space-y-2">
-			<p className="text-sm font-medium text-foreground">{t("threeDayUptime")}</p>
-			<div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-200 pt-2.5 text-xs text-muted-foreground dark:border-zinc-800">
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-emerald-500" />
-					<span>&gt;99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-amber-500" />
-					<span>95-99%</span>
-				</div>
-				<div className="flex items-center gap-1.5">
-					<span className="h-2 w-2 rounded-full bg-red-500" />
-					<span>&lt;95%</span>
-				</div>
-			</div>
-		</div>
+		<>
+			<HoverCardHeader title={t("threeDayUptime")} />
+			<HoverCardNote>{t("uptimeExplanation")}</HoverCardNote>
+			<UptimeKey />
+		</>
 	);
 }
 
@@ -496,12 +513,11 @@ function getIgnoredPrivacyReasons(
         }
     }
 
-    const trainingPolicy = getProviderPromptTrainingPolicy(provider);
+    const trainingPolicy = getProviderPromptTrainingPolicy(provider, plan);
     if (trainingPolicy === "may_train") {
-        const defaultPlan = getProviderDefaultPlan(provider);
-        if (defaultPlan === "free" && !settings.privacyEnableFreeMayTrain) {
+        if (plan === "free" && !settings.privacyEnableFreeMayTrain) {
             reasons.push("Free training-on-inputs endpoints are disabled in workspace privacy settings");
-        } else if (defaultPlan !== "free" && !settings.privacyEnablePaidMayTrain) {
+        } else if (plan !== "free" && !settings.privacyEnablePaidMayTrain) {
             reasons.push("Paid training-on-inputs endpoints are disabled in workspace privacy settings");
         }
     }
@@ -509,7 +525,7 @@ function getIgnoredPrivacyReasons(
     return reasons;
 }
 
-function matchesPrivacyFilter(
+export function matchesPrivacyFilter(
     provider: ProviderPricing,
     filter: PrivacyFilter,
     workspacePrivacySettings: WorkspacePrivacySettings | null,
@@ -520,7 +536,7 @@ function matchesPrivacyFilter(
         return getPlanZdrEligibility(provider, plan) === true;
     }
     if (filter === "no_training") {
-        return getProviderPromptTrainingPolicy(provider) !== "may_train";
+        return getProviderPromptTrainingPolicy(provider, plan) === "no_train";
     }
     if (!workspacePrivacySettings?.isAuthenticated) return true;
         return getIgnoredPrivacyReasons(provider, workspacePrivacySettings, plan)
@@ -528,36 +544,14 @@ function matchesPrivacyFilter(
 		.length === 0;
 }
 
-function getPlanZdrEligibility(
+export function getPlanZdrEligibility(
 	provider: ProviderPricing,
 	plan: string,
 ): boolean | null {
-	// Eligibility metadata describes a possible offer; it is not proof that
-	// this provider route enforces zero retention. A provider-level false must
-	// always win, and an eligible tier is usable only with a verified true flag.
 	const providerZdr = provider.provider.zero_data_retention;
-	if (providerZdr === false) return false;
-	const tierPolicy = provider.provider.service_tier_data_policies?.[plan] ?? null;
-	const tierEligibility = tierPolicy?.zdrEligibility;
-	if (tierEligibility === "eligible") return providerZdr === true ? true : null;
-	if (tierEligibility === "ineligible") return false;
-
-    const providerModels = getProviderModelScopeForPlan(provider, plan);
-    const capabilityPolicies = providerModels.map((providerModel) => providerModel.data_policy);
-    const policiesWithData = capabilityPolicies.filter(
-        (policy): policy is NonNullable<typeof policy> => Boolean(policy),
-    );
-    if (!policiesWithData.length) return provider.provider.zero_data_retention ?? null;
-    if (policiesWithData.length !== capabilityPolicies.length) return null;
-
-    const eligibilities = new Set(
-        policiesWithData.map((policy) => policy.zdrEligibility ?? null),
-    );
-    if (eligibilities.size !== 1) return null;
-    const eligibility = policiesWithData[0]?.zdrEligibility;
-	if (eligibility === "eligible") return providerZdr === true ? true : null;
-	if (eligibility === "ineligible") return false;
-	return providerZdr ?? null;
+	const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]);
+	const policies = getProviderModelScopeForPlan(provider, plan).map((model) => currentCatalogDataPolicy(model.data_policy));
+	return resolveScopedZdr(providerZdr, policies, tierPolicy);
 }
 
 function formatServiceTierLabel(plan: string): string {
@@ -569,14 +563,11 @@ function formatServiceTierLabel(plan: string): string {
 }
 
 function formatTierLatency(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "--";
-	const seconds = value / 1_000;
-	return `${seconds.toFixed(seconds >= 10 ? 1 : 2)}s`;
+	return formatLatency(value) ?? "--";
 }
 
 function formatTierThroughput(value: number | null | undefined): string {
-	if (value == null || !Number.isFinite(value)) return "--";
-	return `${value >= 100 ? value.toFixed(0) : value.toFixed(1)} tps`;
+	return formatTps(value) ?? "--";
 }
 
 function formatTierUptime(stats: ProviderRuntimeStats | null): string {
@@ -588,7 +579,7 @@ function renderTierTablePrice(
 	summary: ReturnType<typeof buildProviderTablePriceSummary>,
 ) {
 	return summary.primary ? (
-		<div className="text-right">
+		<div className="text-right max-sm:text-left">
 			<div className="font-medium tabular-nums text-foreground">
 				{summary.primary.modality === "multimodal" ? <GroupedInputPrice price={summary.primary.formattedPrice} modalities={summary.primary.label} /> : summary.secondary
 					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
@@ -609,13 +600,18 @@ function renderTierTablePrice(
 function ProviderServiceTierInfoIcons({
 	provider,
 	plan,
+	pricingTimeMs,
 }: {
 	provider: ProviderPricing;
 	plan: string;
+	pricingTimeMs: number;
 }) {
-	const tx = useTranslations();
-	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
+	const format = useDisplayFormatters();
 	const providerModels = getProviderModelScopeForPlan(provider, plan);
+	const planKey = getPricingPlanTranslationKey(plan);
+	const planLabel = planKey ? tQuickstart(planKey as never) : formatServiceTierLabel(plan);
+	const endsOn = getEarliestEffectiveTo(providerModels, pricingTimeMs);
 	const statusKey = chooseGatewayStatus(
 		providerModels.map((providerModel) =>
 			resolveGatewayStatus({
@@ -632,37 +628,9 @@ function ProviderServiceTierInfoIcons({
 			}),
 		),
 	);
-	const statusMeta = PROVIDER_STATUS_META[statusKey] ?? PROVIDER_STATUS_META.not_listed;
-	const statusLabelKey = statusKey === "active"
-		? "statuses.active"
-		: statusKey === "disabled"
-			? "statuses.disabled"
-			: statusKey === "coming_soon"
-				? "statuses.comingSoon"
-				: statusKey === "external"
-					? "statuses.external"
-				: statusKey === "internal_testing"
-					? "statuses.internalTesting"
-					: statusKey.startsWith("deranked_")
-						? "statuses.rateLimited"
-						: "statuses.inactive";
-	const statusLabel = tProvider(statusLabelKey as never);
-	const statusDescriptionKey = statusKey === "active"
-		? "statusDescriptions.active"
-		: statusKey === "disabled"
-			? "statusDescriptions.disabled"
-			: statusKey === "coming_soon"
-				? "statusDescriptions.comingSoon"
-				: statusKey === "external"
-					? "statusDescriptions.external"
-				: statusKey === "internal_testing"
-					? "statusDescriptions.internalTesting"
-					: statusKey.startsWith("deranked_")
-						? "statusDescriptions.rateLimited"
-						: "statusDescriptions.inactive";
-	const tierPolicy = provider.provider.service_tier_data_policies?.[plan] ?? null;
+	const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]) ?? null;
 	const capabilityPolicies = providerModels
-		.map((providerModel) => providerModel.data_policy)
+		.map((providerModel) => currentCatalogDataPolicy(providerModel.data_policy))
 		.filter((policy): policy is NonNullable<typeof policy> => Boolean(policy));
 	const policies = tierPolicy ? [tierPolicy] : capabilityPolicies;
 	const dataPolicy = (policies.length > 0 ? policies : [null]).map((policy) => ({
@@ -672,49 +640,19 @@ function ProviderServiceTierInfoIcons({
 		contractNotes: provider.provider.data_policy_contract_notes ?? null,
 		notes: policy?.reason ?? provider.provider.prompt_training_notes ?? null,
 		sourceUrl: policy?.evidenceUrl ?? provider.provider.prompt_training_source_url ?? null,
-		promptTrainingPolicy: provider.provider.prompt_training_policy ?? null,
-		zeroDataRetention: resolveEnforcedZdr(
-			provider.provider.zero_data_retention,
-			policy?.zdrEligibility,
-		),
+		promptTrainingPolicy: getProviderPromptTrainingPolicy(provider, plan),
+		zeroDataRetention: getPlanZdrEligibility(provider, plan),
 	}));
 
 	return (
 		<div className="flex shrink-0 items-center gap-1">
-			{provider.provider.credential_mode === "byok_only" ? (
-				<HoverCard openDelay={120} closeDelay={80}>
-					<HoverCardTrigger asChild>
-						<button
-							type="button"
-							aria-label={tx("Common.ui.providerCardCopy.bYOKOnlyRequiresYourProviderKey" as never)}
-							className="inline-flex h-6 w-6 items-center justify-center rounded-md text-amber-700 transition-colors hover:bg-muted/60 hover:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:text-amber-300 dark:hover:text-amber-200"
-						>
-							<KeyRound className="h-3.5 w-3.5" />
-						</button>
-					</HoverCardTrigger>
-					<HoverCardContent align="start" className="w-auto p-2 text-xs">
-						<p className="font-semibold">{tx("Common.ui.providerCardCopy.bYOKOnly" as never)}</p>
-						<p className="mt-1 text-muted-foreground">{tx("Common.ui.providerCardCopy.requiresYourProviderKey" as never)}</p>
-					</HoverCardContent>
-				</HoverCard>
-			) : null}
-			<HoverCard openDelay={120} closeDelay={80}>
-				<HoverCardTrigger asChild>
-					<button
-						type="button"
-						aria-label={tProvider("providerStatus", { status: statusLabel })}
-						className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-					>
-						{React.createElement(statusMeta.icon, {
-							className: cn("h-3 w-3", statusMeta.iconClass),
-						})}
-					</button>
-				</HoverCardTrigger>
-				<HoverCardContent align="start" className="w-auto p-2 text-xs">
-					<p className="font-semibold">{statusLabel}</p>
-					<p className="mt-1 text-muted-foreground">{tProvider(statusDescriptionKey as never)}</p>
-				</HoverCardContent>
-			</HoverCard>
+			{provider.provider.credential_mode === "byok_only" ? <ProviderByokOnlyHoverCard /> : null}
+			<ProviderStatusHoverCard
+				statusKey={statusKey}
+				providerModels={providerModels}
+				planLabel={planLabel}
+				endsOn={statusKey === "active" && endsOn ? format.calendarDate(endsOn) : null}
+			/>
 			<ProviderInfoHoverIcons
 				providerId={provider.provider.api_provider_id}
 				providerModelSlugs={providerModels.map((providerModel) => providerModel.provider_model_slug)}
@@ -725,7 +663,7 @@ function ProviderServiceTierInfoIcons({
 						residencyMode: provider.provider.residency_mode ?? null,
 						executionRegions: provider.provider.default_execution_regions ?? null,
 						dataRegions: provider.provider.default_data_regions ?? null,
-						zeroDataRetention: provider.provider.zero_data_retention ?? null,
+						zeroDataRetention: getPlanZdrEligibility(provider, plan),
 						notes: provider.provider.residency_notes ?? null,
 						sourceUrl: provider.provider.residency_source_url ?? null,
 					},
@@ -769,6 +707,8 @@ function ProviderServiceTierRow({
 	const providerName = getProviderServiceTierDisplayName(provider);
 	const logoProviderId = sections.logoProviderId;
 	const tSections = useTranslations("Catalogue.modelDetail.sections");
+	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const mobilePriceKeys = getMobilePriceColumnKeys(priceColumns);
 	const discountBadge = getProviderTableDiscountBadge(sections, {
 		discount: tSections("discount"),
 		off: tSections("off"),
@@ -798,13 +738,14 @@ function ProviderServiceTierRow({
 			className={cn(
 				"group cursor-pointer hover:bg-zinc-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring dark:hover:bg-zinc-900/30",
 				isActive && "bg-primary/[0.06]",
+				MOBILE_ROW,
 			)}
 		>
-			<TableCell className="relative min-w-[280px] py-1 pl-3 pr-2">
+			<TableCell className={cn("relative min-w-[280px] py-1 pl-3 pr-2", MOBILE_NAME_CELL)}>
 				{isActive ? <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-primary" /> : null}
 				<div className="flex items-center gap-1.5 whitespace-nowrap">
-					{showDisclosureGutter ? <span aria-hidden="true" className="size-5 shrink-0" /> : null}
-					<span className="inline-flex w-max shrink-0 items-center gap-2.5 font-semibold text-foreground">
+					{showDisclosureGutter ? <span aria-hidden="true" className="size-5 shrink-0 max-sm:hidden" /> : null}
+					<span className="inline-flex w-max shrink-0 items-center gap-2.5 font-semibold text-foreground max-sm:w-auto max-sm:shrink max-sm:flex-wrap">
 						<span className="relative flex size-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover:border-zinc-300 dark:border-zinc-800 dark:group-hover:border-zinc-700">
 							<span className="relative size-3.5">
 								<Logo
@@ -817,7 +758,7 @@ function ProviderServiceTierRow({
 							</span>
 						</span>
 						<ProviderRouteName provider={provider.provider} plan={plan} showTierHelp />
-						<ProviderServiceTierInfoIcons provider={provider} plan={plan} />
+						<ProviderServiceTierInfoIcons provider={provider} plan={plan} pricingTimeMs={pricingTimeMs} />
 						{discountBadge ? (
 							<span className="whitespace-nowrap text-xs font-medium text-emerald-600 dark:text-emerald-400">
 								{discountBadge}
@@ -827,19 +768,27 @@ function ProviderServiceTierRow({
 				</div>
 			</TableCell>
 			{priceColumns.map((column) => (
-				<TableCell key={column.key} className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+				<TableCell
+					key={column.key}
+					data-label={getPriceColumnMobileLabel(column)}
+					className={cn(
+						"py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap",
+						MOBILE_STAT_CELL,
+						getMobilePriceCellClass(mobilePriceKeys, column.key),
+					)}
+				>
 					{renderTierTablePrice(
 						priceSummaries[column.key] ?? buildProviderTablePriceSummaryForColumn(sections, column),
 					)}
 				</TableCell>
 			))}
-			<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+			<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ROW_START, MOBILE_PERF_ORDER)}>
 				{plan === "batch" ? "--" : formatTierLatency(runtimeStats?.latencyMs30m)}
 			</TableCell>
-			<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+			<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
 				{plan === "batch" ? "--" : formatTierThroughput(runtimeStats?.throughput30m)}
 			</TableCell>
-			<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+			<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
 				{plan === "batch" ? "--" : formatTierUptime(runtimeStats)}
 			</TableCell>
 		</TableRow>
@@ -861,6 +810,7 @@ export default function ModelPricingClient({
 	modelId,
 	providers: initialProviders,
 	refreshPricing = false,
+	internalOnly = false,
     creatorOrgId,
     initialPricingTimeMs,
     runtimeStats = EMPTY_RUNTIME_STATS,
@@ -873,6 +823,7 @@ export default function ModelPricingClient({
     modelId: string;
     providers: ProviderPricing[];
 	refreshPricing?: boolean;
+	internalOnly?: boolean;
     creatorOrgId?: string | null;
     initialPricingTimeMs: number;
     runtimeStats?: ProviderRuntimeStatsMap;
@@ -883,6 +834,7 @@ export default function ModelPricingClient({
     emptyState?: React.ReactNode;
 }) {
 	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const tSortState = useTranslations("Common.ui.finalSharedCopy");
 	const tPricingEmpty = useTranslations("Catalogue.modelDetail.emptyStates");
     const pricingTimeMs = usePricingClock(initialPricingTimeMs);
 	const pricingPath = `/api/_web/models/${encodeURIComponent(modelId)}/pricing` as const;
@@ -923,12 +875,12 @@ export default function ModelPricingClient({
 			}));
 		},
 		...WEB_QUERY_POLICIES.public,
-		enabled: refreshPricing,
-		initialData: initialProviders.length > 0 ? initialProviders : undefined,
+		enabled: refreshPricing && !internalOnly,
+		initialData: !internalOnly && initialProviders.length > 0 ? initialProviders : undefined,
 		refetchIntervalInBackground: false,
 		placeholderData: keepPreviousData,
 	});
-	const providers = pricingQuery.data ?? initialProviders;
+	const providers = internalOnly ? initialProviders : pricingQuery.data ?? initialProviders;
     const [queryState, updateUrlState] = useQueryStates(
         {
             [PROVIDER_QUERY_KEY]: parseAsString,
@@ -986,6 +938,7 @@ export default function ModelPricingClient({
 		DEFAULT_MODEL_PERCENTILE,
 	);
 	const runtimeStatsQuery = useQuery<ProviderRuntimeStatsMap>({
+		enabled: !internalOnly,
 		queryKey: webQueryKeys.public.modelRuntimeStats({
 			modelId,
 			providerIds,
@@ -1003,7 +956,7 @@ export default function ModelPricingClient({
 		...WEB_QUERY_POLICIES.public,
 		refetchIntervalInBackground: false,
 		initialData:
-			selectedPercentile === DEFAULT_MODEL_PERCENTILE
+			!internalOnly && selectedPercentile === DEFAULT_MODEL_PERCENTILE
 				? runtimeStats
 				: undefined,
 		initialDataUpdatedAt:
@@ -1713,8 +1666,8 @@ export default function ModelPricingClient({
 			if (option !== "uptime") return button;
 			return (
 				<HoverCard openDelay={120} closeDelay={80}>
-					<HoverCardTrigger asChild>{button}</HoverCardTrigger>
-					<HoverCardContent align="end" className="w-72 text-left">
+					<HoverCardTrigger asChild openOnTap={false}>{button}</HoverCardTrigger>
+					<HoverCardContent align="end" className="w-72 space-y-2.5 text-left font-normal">
 						<UptimeHeaderHoverContent />
 					</HoverCardContent>
 				</HoverCard>
@@ -1763,6 +1716,71 @@ export default function ModelPricingClient({
 		);
 	};
 
+	// Phones hide the column headers, so sorting moves to a Sort menu next to Filters.
+	// Picking a metric sorts by it; picking the active metric again flips the direction.
+	// The active metric shows an arrow for the current direction.
+	const mobileSortPriceKeys = getMobilePriceColumnKeys(visiblePriceColumns);
+	const mobileSortOptions: Array<{ option: Exclude<SortOption, "default">; label: string }> = [
+		...mobileSortPriceKeys
+			.map((key) => visiblePriceColumns.find((column) => column.key === key))
+			.filter((column): column is (typeof visiblePriceColumns)[number] => Boolean(column))
+			.map((column) => ({ option: column.sort, label: getPriceColumnMobileLabel(column) })),
+		{ option: "latency", label: tProvider("latency") },
+		{ option: "throughput", label: tProvider("throughput") },
+		{ option: "uptime", label: tProvider("uptime") },
+	];
+	const applySort = (nextSort: SortOption, nextDirection: SortDirection) => {
+		setSort(nextSort);
+		setSortDirection(nextDirection);
+		updateUrlState(
+			nextSort === "default"
+				? { [SORT_QUERY_KEY]: null, [SORT_DIRECTION_QUERY_KEY]: null }
+				: { [SORT_QUERY_KEY]: nextSort, [SORT_DIRECTION_QUERY_KEY]: nextDirection },
+		);
+	};
+	const handleMobileSortSelect = (option: Exclude<SortOption, "default">) => {
+		if (sort === option) {
+			applySort(option, sortDirection === "asc" ? "desc" : "asc");
+			return;
+		}
+		applySort(option, getDefaultSortDirection(option));
+	};
+	const SortDirectionIcon = sortDirection === "asc" ? ArrowUp : ArrowDown;
+	const renderMobileSortMenu = () => (
+		<DropdownMenu>
+			<DropdownMenuTrigger
+				render={
+					<Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs max-sm:h-10 sm:hidden" />
+				}
+			>
+				<ArrowDownUp className="size-3.5" />
+				{tProvider("sortButton")}
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end" className="w-56 rounded-md">
+				{/* Radio items expose the selected sort; the active metric also announces its direction. */}
+				<DropdownMenuRadioGroup value={sort} onValueChange={() => {}}>
+					<DropdownMenuRadioItem value="default" onClick={() => applySort("default", "desc")}>
+						{tProvider("sortDefault")}
+					</DropdownMenuRadioItem>
+					<DropdownMenuSeparator />
+					{mobileSortOptions.map(({ option, label }) => (
+						<DropdownMenuRadioItem key={option} value={option} onClick={() => handleMobileSortSelect(option)}>
+							<span className="flex-1">{label}</span>
+							{sort === option ? (
+								<>
+									<SortDirectionIcon className="size-4 text-foreground" aria-hidden="true" />
+									<span className="sr-only">
+										{tSortState(sortDirection === "asc" ? "sortedAscending" : "sortedDescending")}
+									</span>
+								</>
+							) : null}
+						</DropdownMenuRadioItem>
+					))}
+				</DropdownMenuRadioGroup>
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
+
     return (
         <div className="space-y-6">
             <div className={cn(
@@ -1784,7 +1802,7 @@ export default function ModelPricingClient({
                         <DropdownMenu>
                             <DropdownMenuTrigger
                                 render={
-                                    <Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs sm:flex-none" />
+                                    <Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs max-sm:h-10 sm:flex-none" />
                                 }
                             >
                                 <Filter className="size-3.5" />
@@ -1911,12 +1929,13 @@ export default function ModelPricingClient({
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
+                        {renderMobileSortMenu()}
                         <ModelPercentileSelect
                             value={selectedPercentile}
                             onChange={handlePercentileChange}
                             isLoading={isLoadingPercentile}
                             ariaLabel={tProvider("selectPercentile")}
-                            className="min-w-0 flex-1 justify-center sm:flex-none"
+                            className="min-w-0 flex-1 justify-center max-sm:h-10 sm:flex-none"
                         />
                     </div>
                 ) : null}
@@ -1945,11 +1964,14 @@ export default function ModelPricingClient({
                                 viewportRef={providerTableViewportRef}
                             >
 								<Table
-									className="table-auto lg:min-w-full"
-									style={{ minWidth: providerTableMinWidth }}
+									className={cn(
+										"table-auto sm:min-w-[var(--provider-table-min-width)] lg:min-w-full",
+										MOBILE_TABLE_BLOCK,
+									)}
+									style={{ "--provider-table-min-width": `${providerTableMinWidth}px` } as React.CSSProperties}
 									wrapInContainer={false}
 								>
-									<colgroup>
+									<colgroup className="max-sm:hidden">
 										<col className="w-72" />
 										{visiblePriceColumns.map((column) => (
 											<col key={column.key} className="w-28" />
@@ -1958,13 +1980,16 @@ export default function ModelPricingClient({
 										<col className="w-28" />
 										<col className="w-32" />
 									</colgroup>
-									<TableHeader>
+									<TableHeader className="max-sm:hidden">
 										<TableRow className="hover:bg-transparent">
 											<TableHead className="h-8 min-w-[280px] px-3 whitespace-nowrap">
 												{renderTableSortHead(tProvider("provider"), "provider", "left")}
 											</TableHead>
 											{visiblePriceColumns.map((column) => (
-												<TableHead key={column.key} className="h-8 min-w-28 pl-2 pr-4 text-right whitespace-nowrap">
+												<TableHead
+													key={column.key}
+													className="h-8 min-w-28 pl-2 pr-4 text-right whitespace-nowrap"
+												>
 													{renderTablePriceHead(column)}
 												</TableHead>
 											))}
@@ -1979,7 +2004,7 @@ export default function ModelPricingClient({
 											</TableHead>
                                         </TableRow>
                                     </TableHeader>
-                                    <TableBody>
+                                    <TableBody className={MOBILE_TABLE_BLOCK}>
                                         {displayedOfferings.map(({ provider: prov, plan, isPrimary }, index) => {
                                             const providerId = prov.provider.api_provider_id;
                                             const runtimeStatsForTier = getProviderRuntimeStats(

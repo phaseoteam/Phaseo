@@ -25,6 +25,45 @@ describe("parseW3cTraceContext", () => {
 });
 
 describe("guardJson", () => {
+	it("allows larger embedded decision media while bounding the decisions endpoint", async () => {
+		const request = (bytes: number) => new Request("https://gateway.local/v1/decisions", {
+			method: "POST", headers: { "content-type": "application/json", "content-length": String(bytes) },
+			body: "{}",
+		});
+		expect((await guardJson(request(24 * 1024 * 1024), "team_test", "req_test", { endpoint: "decisions" })).ok).toBe(true);
+		expect((await guardJson(request(24 * 1024 * 1024), "team_test", "req_test", { endpoint: "chat.completions" })).ok).toBe(false);
+		const result = await guardJson(request(37 * 1024 * 1024 + 1), "team_test", "req_test", { endpoint: "decisions" });
+		expect(result.ok).toBe(false);
+		if (!result.ok) expect(result.response.status).toBe(413);
+	});
+	it.each([
+		["repeated fields", (form: FormData) => { form.append("models", "a/one"); form.append("models", "b/two"); }],
+		["bracket fields", (form: FormData) => { form.append("models[]", "a/one"); form.append("models[]", "b/two"); }],
+		["a JSON array", (form: FormData) => { form.append("models", JSON.stringify(["a/one", "b/two"])); }],
+	])("parses multipart models fallbacks sent as %s", async (_label, appendModels) => {
+		const form = new FormData();
+		form.set("model", "openai/gpt-4o-transcribe");
+		appendModels(form);
+		const result = await guardJson(new Request("https://gateway.local/v1/audio/transcriptions", {
+			method: "POST",
+			body: form,
+		}), "team_test", "req_test");
+
+		expect(result.ok && result.value.models).toEqual(["a/one", "b/two"]);
+	});
+
+	it("parses a single multipart models field as a one-entry list", async () => {
+		const form = new FormData();
+		form.set("model", "openai/gpt-4o-transcribe");
+		form.set("models", "a/one");
+		const result = await guardJson(new Request("https://gateway.local/v1/audio/transcriptions", {
+			method: "POST",
+			body: form,
+		}), "team_test", "req_test");
+
+		expect(result.ok && result.value.models).toEqual(["a/one"]);
+	});
+
 	it("parses multipart form-data bodies including files and array fields", async () => {
 		const form = new FormData();
 		form.set("model", "openai/gpt-4o-transcribe");
@@ -60,6 +99,19 @@ describe("guardJson", () => {
 		expect(result.value.chunking_strategy).toEqual({ type: "server_vad", silence_duration_ms: 500 });
 		expect(result.value.provider).toEqual({ order: ["openai"] });
 		expect(typeof File !== "undefined" && result.value.file instanceof File).toBe(true);
+	});
+
+	it("parses a multipart config field sent as JSON into an object", async () => {
+		const form = new FormData();
+		form.set("model", "eleven-labs/scribe-v3");
+		form.append("file", new File([new Uint8Array([1, 2, 3])], "sample.mp3", { type: "audio/mpeg" }));
+		form.append("config", JSON.stringify({ elevenlabs: { numbers_format: "digits", secondary_language_codes: ["es", "fr"] } }));
+		const result = await guardJson(new Request("https://gateway.local/v1/audio/transcriptions", {
+			method: "POST",
+			body: form,
+		}), "team_test", "req_test");
+
+		expect(result.ok && result.value.config).toEqual({ elevenlabs: { numbers_format: "digits", secondary_language_codes: ["es", "fr"] } });
 	});
 
 	it("returns invalid_json for malformed JSON requests", async () => {
@@ -226,5 +278,29 @@ describe("makeMeta session_id handling", () => {
 		});
 
 		expect(meta.labels).toEqual([{ key: "team", value: "support" }]);
+	});
+
+	it("reads body metadata and uses its trace_id only without a traceparent header", () => {
+		const base = {
+			endpoint: "chat.completions" as const,
+			apiKeyId: "key_123",
+			apiKeyRef: "kid_123",
+			apiKeyKid: "kid_123",
+			requestId: "req_123",
+			stream: false,
+			rawBody: { metadata: { trace_id: "4bf92f35-77b3-4da6-a3ce-929d0e0e4736", trace_name: "checkout" } },
+		};
+		const fromMetadata = makeMeta({ ...base, req: new Request("https://gateway.local/v1/chat/completions", { method: "POST" }) });
+		expect(fromMetadata.requestMetadata).toEqual({ trace_id: "4bf92f35-77b3-4da6-a3ce-929d0e0e4736", trace_name: "checkout" });
+		expect(fromMetadata.otelTraceContext?.traceId).toBe("4bf92f3577b34da6a3ce929d0e0e4736");
+
+		const fromHeader = makeMeta({
+			...base,
+			req: new Request("https://gateway.local/v1/chat/completions", {
+				method: "POST",
+				headers: { traceparent: `00-${"1".repeat(32)}-${"2".repeat(16)}-01` },
+			}),
+		});
+		expect(fromHeader.otelTraceContext?.traceId).toBe("1".repeat(32));
 	});
 });

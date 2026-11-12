@@ -3,48 +3,59 @@ title: "إنشاء استجابة"
 sidebarTitle: "إنشاء استجابة"
 openapi: "/ar/openapi/v1/openapi.localized.yaml POST /responses"
 ---
-## أدوات الخادم
 
-تدعم `/v1/responses` أدوات الدوال العادية وأدوات الخادم التالية التي يديرها Gateway:
+## استخدم أدوات الخادم
 
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-- `phaseo:apply_patch`
-
-### مثال التاريخ والوقت
+أضف أداة `phaseo:` إلى `tools` بجانب أدوات الدوال الخاصة بك، وسيشغّلها Phaseo عندما يستدعيها النموذج. تقبل `/v1/responses` كل أدوات الخادم، بما فيها `phaseo:apply_patch` التي لا تدعمها إلا نقطة النهاية هذه؛ ويسردها دليل [أدوات الخادم](../../guides/server-tools).
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
-    "stream": false,
+    "model": "openai/gpt-6-astra",
     "input": [
       { "role": "user", "content": "Give me the current datetime in Asia/Tokyo." }
     ],
     "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "Asia/Tokyo" }
-      }
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Asia/Tokyo"] } }
     ],
     "tool_choice": "auto"
   }'
 ```
 
-عند استخدام أداة خادم، تتضمن بيانات الاستخدام العدادات المطابقة `usage.server_tool_use.*`.
+يُحتسب كل استدعاء لأداة خادم في `usage.server_tool_use`:
 
-- `gateway:datetime` -> `datetime_requests`
-- `phaseo:web_search` -> `web_search_requests`, `web_search_results`, `web_search_extra_results`
-- `phaseo:web_fetch` -> `web_fetch_requests`
-- `phaseo:advisor` -> `advisor_requests`
-- `phaseo:image_generation` -> `image_generation_requests`
-- `phaseo:apply_patch` -> `apply_patch_requests`
+| الأداة | العدّادات |
+| --- | --- |
+| `phaseo:datetime` | `datetime_requests` |
+| `phaseo:web_search` | `web_search_requests` و`web_search_results` و`web_search_extra_results` |
+| `phaseo:web_fetch` | `web_fetch_requests` |
+| `phaseo:advisor` | `advisor_requests` |
+| `phaseo:subagent` | `subagent_requests` |
+| `phaseo:fusion` | `fusion_requests` |
+| `phaseo:search_models` | `search_models_requests` |
+| `phaseo:image_generation` | `image_generation_requests` |
+| `phaseo:apply_patch` | `apply_patch_requests` |
 
-## ملاحظة حول البث
+لا يزال النوع الأقدم `gateway:datetime` يعمل. مع `stream: true`، يشغّل Phaseo أدوار الأدوات بنفسه، ثم يبث إليك الإجابة المستكملة في بث واحد.
 
-يدعم `stream: true` أيضًا. وبالنسبة إلى أدوات الخادم التي يديرها Gateway، قد يعالج Phaseo دور استدعاء الأداة لدى المزوّد، ثم يواصل الحلقة ويعيد إصدار تدفق اصطناعي.
+<span id="reasoning-in-tool-loops"></span>
+## الاستدلال في حلقات الأدوات
+
+على OpenAI وAzure OpenAI وxAI، يرسل Phaseo طلبات Responses إلى المزوّد مع `store: false`، لذا لا يستمر استدلال النموذج بين خطوات حلقة الأدوات إلا عبر عناصر الإخراج `reasoning`.
+
+لكل عنصر `reasoning` الحقول `id` و`summary` و`content`. عندما يُرجع المزوّد حالة استدلال، يتضمن العنصر أيضًا `encrypted_content`، الذي يحتوي واحدًا مما يلي:
+
+- الاستدلال المشفّر في OpenAI وAzure OpenAI وxAI. يطلبه Phaseo باستخدام `include: ["reasoning.encrypted_content"]` لنماذج الاستدلال.
+- تواقيع التفكير والتفكير المحجوب في Claude.
+- تواقيع الأفكار في Gemini، بما في ذلك عنصر `reasoning` منفصل يوضع مباشرة قبل استدعاء الدالة الذي ينتمي إليه التوقيع.
+- مستوى الجهد الذي عمل به رد Claude، في آخر عنصر `reasoning` من المخرجات، وهو عنصر لا يحتوي على نص.
+
+تحمل الاستجابات المتدفقة العناصر نفسها في `response.output_item.done` و`response.completed`.
+
+<Warning>
+أعد إرسال كل عناصر الإخراج في `input` دون تغيير في كل طلب، وليس في حلقات الأدوات فقط. لا تُسقط عناصر `reasoning` أو تعدّلها أو تغيّر ترتيبها أبدًا، سواء احتوت على `encrypted_content` أم لا، بما في ذلك العناصر التي لا تحتوي على نص.
+</Warning>
+
+`encrypted_content` معتم، ويسجّل المزوّد والنموذج اللذين أنتجاه. لا يرسله Phaseo إلا إلى عائلة المزوّد تلك والنموذج نفسه، لذا فإن الرجوع إلى مزوّد آخر يُسقطه بدلًا من أن يفشل. ومن دونه، يفقد Claude استدلاله بين خطوات حلقة الأدوات، ويؤدي تغيير `reasoning.effort` إلى إعادة تشغيل ذاكرة Claude المؤقتة للموجّهات؛ راجع [غيّر جهد الاستدلال في منتصف المحادثة](../../guides/reasoning-effort).

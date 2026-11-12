@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "codeforces",
-  "benchmark_name": "Codeforces",
-  "category": null,
-  "ascending_order": null,
-  "type": "numerical",
-  "link": null,
-  "total_models": 19
-}

@@ -22,6 +22,22 @@ export interface OpenAIDecisionsRequest {
                   image_url: string;
                   type: "input_image";
                 }
+              | {
+                  input_audio: {
+                    data?: string;
+                    format?: "wav" | "mp3";
+                    url?: string;
+                  };
+                  type: "input_audio";
+                }
+              | {
+                  type: "input_video";
+                  video_url:
+                    | string
+                    | {
+                        url: string;
+                      };
+                }
             )[];
         role: "user";
         type?: "message";
@@ -31,6 +47,7 @@ export interface OpenAIDecisionsRequest {
     [key: string]: unknown;
   };
   model: string;
+  models?: string[];
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;
@@ -68,6 +85,11 @@ export interface OpenAIDecisionsRequest {
         };
     zdr?: boolean | null;
   };
+  provider_options?: {
+    typesafe?: {
+      long_context?: boolean;
+    };
+  };
   questions: (
     | {
         instructions: string;
@@ -91,6 +113,11 @@ export interface OpenAIDecisionsRequest {
         }[];
         name?: string;
         type: "score";
+      }
+    | {
+        instructions: string;
+        name?: string;
+        type: "box";
       }
   )[];
   routing?: {

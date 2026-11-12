@@ -1,34 +1,42 @@
 ---
 title: "Kilo Code"
 icon: "/icons/brands/kilo.svg"
-description: "使用自定义 OpenAI 兼容供应商将 Kilo Code 连接到 Phaseo。"
+description: "通过自定义 OpenAI 兼容提供商将 Kilo Code 连接到 Phaseo。"
 ---
 
-选择 Phaseo CLI 启动器来运行隔离会话，或使用 CLI 创建专用密钥并手动配置现有的 Kilo Code 安装。
+运行 `phaseo kilo` 通过 Phaseo 启动 Kilo Code CLI 会话；或者用 `phaseo kilo-code` 创建密钥，再在 Kilo Code 扩展中添加自定义提供商。
 
-## 通过 Phaseo CLI 运行 Kilo Code
-
-对于 Kilo Code CLI，让 Phaseo 为单个会话准备提供商配置：
+## 通过 Phaseo 运行 Kilo Code CLI
 
 ```bash
 phaseo login
-phaseo kilo --model openai/gpt-5.6-terra --
+phaseo kilo --model openai/gpt-5.6-terra
 ```
 
-使用 `--catalog all` 提供所有活跃的 Phaseo 文本/聊天模型，或使用 `--dry-run --json` 预览安装和启动计划。显式命令形式为 `phaseo run kilo ...`。启动器使用临时 `KILO_CONFIG` 文件，因此不会覆盖现有 Kilo Code 或 VS Code 设置。
+运行器会写入一个临时的 `KILO_CONFIG` 文件，启动 `kilo`，并在 Kilo 退出时删除该文件，因此你现有的 Kilo Code 或 VS Code 设置不会被改动。如果没有安装 Kilo，交互式运行会提示你安装。Kilo 自己的参数放在 `--` 之后。
 
-## 使用 Phaseo CLI 创建凭据
+| 参数 | 作用 |
+| --- | --- |
+| `--model <id>` | 要使用的模型。默认为 `openai/gpt-5.6-terra`。 |
+| `--catalog all` | 在 Kilo 中列出所有活跃的 Phaseo 文本模型，而不只是所选模型。 |
+| `--dry-run --json` | 显示安装和启动计划，但不创建密钥，也不启动 Kilo。 |
+| `--skip-install` | 跳过安装检查。 |
+
+`phaseo run kilo ...` 是同一命令的完整形式。
+
+## 配置 Kilo Code 扩展
+
+为扩展创建一个密钥：
 
 ```bash
 phaseo login
-phaseo setup kilo-code --model anthropic/claude-sonnet-4.6
+phaseo kilo-code --model anthropic/claude-sonnet-5.5
 ```
 
-## 手动配置 Kilo Code
+然后在 VS Code 中：
 
-1. 在 VS Code 中打开 Kilo Code。
-2. 选择设置图标，打开 **Providers**，然后选择 **Add custom provider**。
-3. 输入以下值：
+1. 打开 Kilo Code，选择设置图标，打开 **Providers**，然后选择 **Add custom provider**。
+2. 填写：
 
 | Kilo Code 字段 | 值 |
 | --- | --- |
@@ -36,43 +44,37 @@ phaseo setup kilo-code --model anthropic/claude-sonnet-4.6
 | Display name | `Phaseo` |
 | Provider API | **OpenAI Compatible** |
 | Base URL | `https://api.phaseo.app/v1` |
-| API key | 以下命令的输出 `phaseo integrations credential kilo-code` |
+| API key | `phaseo integrations credential kilo-code` 的输出 |
 
-4. 如果未发现模型，请手动添加 ID `anthropic/claude-sonnet-4.6`。
-5. 选择 **Submit**，然后选择 Phaseo 模型。
+3. 如果没有发现任何模型，请自己添加 ID `anthropic/claude-sonnet-5.5`。
+4. 选择 **Submit**，然后选择 Phaseo 模型。
 
-Kilo 会将选择显示为 `phaseo/anthropic/claude-sonnet-4.6`：`phaseo` 是本地供应商 ID，其余部分会作为模型 ID 发送给 Phaseo。
+Kilo 会把所选模型显示为 `phaseo/anthropic/claude-sonnet-5.5`。`phaseo` 是本地提供商 ID，其余部分是发送给 Phaseo 的模型 ID。完整格式请参阅 Kilo 的[自定义模型](https://kilo.ai/docs/code-with-ai/agents/custom-models)文档。
 
-## 验证
+## 确认可以正常使用
 
-让 Kilo Code 回复 `PHASEO_KILO_OK`，并确认请求出现在 Phaseo 活动记录中。
+让 Kilo Code 回复 `PHASEO_KILO_OK`，然后确认该请求出现在 **设置 → 用量 → 日志** 中。
 
-## 移除
+## 移除 Phaseo
 
-在 Kilo Code 中删除自定义供应商，然后运行：
+在 Kilo Code 中删除该自定义提供商，然后运行：
 
 ```bash
 phaseo integrations remove kilo-code
 ```
 
-CLI 无法清除扩展的私有存储，但移除操作会撤销密钥。
+这会吊销该密钥。CLI 无法清除扩展的存储。
 
-## 故障排查
+## 解决常见问题
 
-### 未发现模型
+### 没有发现任何模型
 
-手动添加模型。无需通过 `/models` 发现。
+自己添加模型。Kilo 不需要通过 `/models` 发现模型。
 
-### 身份验证失败
+### 认证失败
 
-使用 `phaseo integrations credential kilo-code` 返回的值替换已保存的值，并确保 Base URL 与显示内容完全一致。
+用 `phaseo integrations credential kilo-code` 的输出替换已保存的密钥，并保持 Base URL 与上面完全一致。
 
-### 模型名称看起来不同
+### 模型名称看起来不一样
 
-在 Kilo 中选择 `phaseo/<Phaseo model ID>`，但不要在模型 ID 字段中添加 `phaseo/`。
-
-## 相关内容
-
-- [Kilo Code 自定义模型](https://kilo.ai/docs/code-with-ai/agents/custom-models)
-- [编程智能体](./coding-assistants.mdx)
-- [模型](../../api-reference/endpoint/models.mdx)
+在 Kilo 中选择 `phaseo/<Phaseo model ID>`，但不要在模型 ID 字段中加上 `phaseo/`。

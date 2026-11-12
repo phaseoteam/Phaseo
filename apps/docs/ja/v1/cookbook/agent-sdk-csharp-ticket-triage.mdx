@@ -1,18 +1,35 @@
 ---
-title: "C# Agent SDKでチケットをトリアージする"
+title: "C# Agent SDK でチケットをトリアージする"
 icon: "ticket-check"
-description: "C# Agent SDKを使い、1つの.NETサービス内でローカルツールによるチケットのトリアージを行います。"
+description: "C# Agent SDK を使い、1 つの .NET サービス内で完結するローカルツールのチケットトリアージループを作成します。"
 ---
 
-受信したサポートチケットを.NETサービスで分類または要約する場合に、このレシピを使います。
+1 つの ASP.NET サービスまたは worker サービス内で、ローカルツールでサポートチケットを読み込み、短いトリアージの要約を書く C# エージェントを実行します。完成すると、チケット `T-1042` の次のアクションを出力するコンソールアプリができます。
 
-## 1. SDKを準備する
+ツールは固定のサンプルデータを返すため、このプログラムは例示用です。実際にはチケットストアへの呼び出しに置き換えてください。内部のチケット状態をすでに取得できるサービスで、キューや承認を追加する前に範囲の狭いループを作りたい場合に適しています。
 
-<Note type="warning">C# Agent SDKパッケージはまだNuGetで公開されていません。[ソースからのインストール手順](../sdk-reference/csharp/agent-sdk-installation.mdx)に従ってください。</Note>
+## 作成する
 
-## 2. 内部検索ツールを定義する
+<Steps>
+<Step title="インストールする">
 
-```csharp
+```bash
+dotnet new console -n TicketTriage
+cd TicketTriage
+dotnet add package Phaseo.AgentSdk
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+`Phaseo.AgentSdk` をインストールすると `Phaseo.Sdk` も一緒にインストールされます。.NET 8 以降が必要です。[C# Agent SDK のインストール](../sdk-reference/agent/installation)をご覧ください。
+
+</Step>
+<Step title="エージェントを書く">
+
+```csharp Program.cs
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using PhaseoAgentSdk;
+
 var loadTicket = AgentSdk.DefineTool(new Tool(
     Id: "load-ticket",
     Description: "Load one support ticket by id.",
@@ -21,46 +38,69 @@ var loadTicket = AgentSdk.DefineTool(new Tool(
         ["type"] = "object",
         ["properties"] = new Dictionary<string, object?>
         {
-            ["ticketId"] = new Dictionary<string, object?> { ["type"] = "string" },
+            ["ticketId"] = new Dictionary<string, object?> { ["type"] = "string", ["pattern"] = "^T-\\d+$" },
         },
         ["required"] = new[] { "ticketId" },
+        ["additionalProperties"] = false,
     },
     Execute: (input, ctx) => Task.FromResult<object?>(new Dictionary<string, object?>
     {
-        ["ticketId"] = "T-1042",
+        ["ticketId"] = ((JsonElement)input!).GetProperty("ticketId").GetString(),
         ["severity"] = "medium",
         ["summary"] = "Customer cannot find preset routing settings.",
     })
-));
-```
+))
+{
+    // 引数はモデルから来ます。正しい形式のチケット ID 以外は拒否します。
+    InputSchema = input =>
+    {
+        if (input is JsonElement json
+            && json.TryGetProperty("ticketId", out var id)
+            && id.ValueKind == JsonValueKind.String
+            && Regex.IsMatch(id.GetString()!, @"^T-\d+$"))
+        {
+            return input;
+        }
+        throw new ArgumentException("ticketId must look like T-1042");
+    },
+};
 
-## 3. エージェントを作成して実行する
-
-```csharp
 var agent = AgentSdk.CreateAgent(new AgentDefinition
 {
     Id = "ticket-triage-agent",
-    Model = "openai/gpt-5.4-nano",
+    Model = "openai/gpt-6-astra",
     Instructions = "Use tools when helpful and answer with a short triage summary.",
     Tools = new[] { loadTicket },
+    MaxSteps = 4,
 });
 
+// PHASEO_API_KEY を環境変数から読み取ります。
 var result = await agent.Run(new RunOptions
 {
     Input = "Review ticket T-1042 and summarize the next action.",
     Client = AgentSdk.CreateGatewayAgentClient(),
 });
 
+Console.WriteLine(result.Run.Status);
 Console.WriteLine(result.Output);
 ```
 
-## このレシピが適する場面
+</Step>
+<Step title="実行する">
 
-- ワークフローが1つのASP.NETサービスまたはワーカー内で完結する
-- ローカルランタイムがすでに社内チケットの状態を取得できる
-- キューや承認を追加する前に、範囲を絞ったエージェントループを試したい
+```bash
+dotnet run
+```
 
-## 関連項目
+</Step>
+</Steps>
 
-- [C# Agent SDK](../sdk-reference/csharp/agent-sdk.mdx)
-- [presetベースのエージェントでサポート依頼をトリアージする](./agent-sdk-support-triage.mdx)
+## 動作を確認する
+
+- アプリは `completed` を出力し、続いてプリセットのルーティング設定に触れた要約を出力します。
+- **設定 → 利用状況 → ログ** では、最初のモデルターンに `{"ticketId": "T-1042"}` を指定した `load-ticket` の呼び出しが表示されます。
+- `PHASEO_API_KEY` がない場合、`CreateGatewayAgentClient` は `PHASEO_API_KEY is required.` をスローします。
+
+## 本番環境の前に
+
+`MaxSteps` は小さく保ち（デフォルトは `12`）、ツールは読み取り専用にし、チケットを変更するツールには `RequireApproval = true` を設定して、実行が人の判断を待って一時停止するようにしてください。プリセット、厳密な JSON、レビューのための一時停止を使うより大きなトリアージフローについては、[サポートトリアージ](./agent-sdk-support-triage)をご覧ください。状態、承認、ストリーミングについては [C# Agent SDK リファレンス](../sdk-reference/agent/usage)で説明しています。

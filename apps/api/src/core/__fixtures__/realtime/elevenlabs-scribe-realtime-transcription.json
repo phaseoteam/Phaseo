@@ -1,0 +1,1933 @@
+{
+	"recorded_at": "2026-11-11",
+	"model": "scribe_v3_live",
+	"notes": "Live session through wss://api.elevenlabs.io/v1/speech-to-text/realtime with commit_strategy=vad, diarize=true, include_timestamps=true, include_language_detection=true, audio_format=pcm_16000: 14.81 s of 16 kHz PCM16 sent as 100 ms input_audio_chunk messages in real time (previous_text on the first chunk), then an empty commit (committed the last segment), then a second empty commit 5 s later, which ElevenLabs answered with commit_throttled and closed the session (code 1000). ElevenLabs sent no usage or duration in-band. Trimmed: session_id replaced, words kept only on the first three partials, character timings dropped.",
+	"query": {
+		"model_id": "scribe_v3_live",
+		"audio_format": "pcm_16000",
+		"commit_strategy": "vad",
+		"diarize": "true",
+		"include_timestamps": "true",
+		"include_language_detection": "true"
+	},
+	"sent_audio_ms": 14811,
+	"events": [
+		{
+			"t_ms": 255,
+			"event": {
+				"message_type": "session_started",
+				"session_id": "00000000000000000000000000000000",
+				"config": {
+					"sample_rate": 16000,
+					"audio_format": "pcm_16000",
+					"language_code": null,
+					"secondary_languages": [],
+					"timestamps_granularity": "word",
+					"vad_commit_strategy": true,
+					"vad_silence_threshold_secs": 1.5,
+					"vad_threshold": 0.4,
+					"min_speech_duration_ms": 100,
+					"min_silence_duration_ms": 100,
+					"max_tokens_to_recompute": 5,
+					"model_id": "scribe_v3_live",
+					"disable_logging": false,
+					"include_timestamps": true,
+					"include_language_detection": true,
+					"filter_background_audio": false,
+					"keyterms": [],
+					"no_verbatim": false,
+					"entity_detection": null,
+					"entity_redaction": null,
+					"entity_redaction_mode": "enumerated_entity_type",
+					"keepalive_interval_ms": null
+				}
+			}
+		},
+		{
+			"t_ms": 1523,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a",
+				"turn_probability": 0.01,
+				"words": [
+					{
+						"text": "With",
+						"start": null,
+						"end": null,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": 0,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": null,
+						"end": null,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": 0,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "a",
+						"start": null,
+						"end": null,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": 0,
+						"characters": null,
+						"channel_index": null
+					}
+				]
+			}
+		},
+		{
+			"t_ms": 1541,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a",
+				"turn_probability": 0.01,
+				"words": [
+					{
+						"text": "With",
+						"start": 0.12,
+						"end": 0.24,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.5136690139770508,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 0.24,
+						"end": 0.28,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.8828983306884766,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "a",
+						"start": 0.28,
+						"end": 0.38,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -1.1628894805908203,
+						"characters": null,
+						"channel_index": null
+					}
+				]
+			}
+		},
+		{
+			"t_ms": 1563,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a",
+				"turn_probability": 0.01,
+				"words": [
+					{
+						"text": "With",
+						"start": 0.12,
+						"end": 0.24,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.5136690139770508,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 0.24,
+						"end": 0.28,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.8828983306884766,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "a",
+						"start": 0.28,
+						"end": 0.38,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -1.1628894805908203,
+						"characters": null,
+						"channel_index": null
+					}
+				]
+			}
+		},
+		{
+			"t_ms": 1763,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 1790,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 2144,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 2571,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 2588,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 2604,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 2944,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whisper",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 2965,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whisper",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 3340,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 3356,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 3574,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 3575,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 3940,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 4335,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American acc",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 4354,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American acc",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 4368,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American acc",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 4741,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent",
+				"turn_probability": 0.01
+			}
+		},
+		{
+			"t_ms": 4755,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent",
+				"turn_probability": 0.01
+			}
+		},
+		{
+			"t_ms": 5155,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent",
+				"turn_probability": 0.06
+			}
+		},
+		{
+			"t_ms": 5575,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent",
+				"turn_probability": 0.1
+			}
+		},
+		{
+			"t_ms": 5800,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 5800,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 5847,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 6164,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, \"I'm the",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 6187,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, \"I'm the",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 6203,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, \"I'm the",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 6567,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, \"I'm the ide",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 6567,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, \"I'm the ide",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 6950,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 6968,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 7347,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice",
+				"turn_probability": 0.1
+			}
+		},
+		{
+			"t_ms": 7357,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice",
+				"turn_probability": 0.1
+			}
+		},
+		{
+			"t_ms": 7736,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice",
+				"turn_probability": 0.43
+			}
+		},
+		{
+			"t_ms": 7948,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 7971,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 7980,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 8590,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creat",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 8609,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creat",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 8753,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating",
+				"turn_probability": 0.01
+			}
+		},
+		{
+			"t_ms": 8768,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating",
+				"turn_probability": 0.01
+			}
+		},
+		{
+			"t_ms": 9145,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating AI",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 9158,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating AI",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 9550,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR",
+				"turn_probability": 0.01
+			}
+		},
+		{
+			"t_ms": 9558,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR",
+				"turn_probability": 0.01
+			}
+		},
+		{
+			"t_ms": 9787,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content.",
+				"turn_probability": 0.45
+			}
+		},
+		{
+			"t_ms": 9810,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content.",
+				"turn_probability": 0.45
+			}
+		},
+		{
+			"t_ms": 9835,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content.",
+				"turn_probability": 0.45
+			}
+		},
+		{
+			"t_ms": 10386,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content",
+				"turn_probability": 0.29
+			}
+		},
+		{
+			"t_ms": 10397,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content",
+				"turn_probability": 0.29
+			}
+		},
+		{
+			"t_ms": 10549,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content.",
+				"turn_probability": 0.27
+			}
+		},
+		{
+			"t_ms": 10577,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content.",
+				"turn_probability": 0.27
+			}
+		},
+		{
+			"t_ms": 10960,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content.",
+				"turn_probability": 0.46
+			}
+		},
+		{
+			"t_ms": 11386,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content.",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 11764,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, medita",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 11773,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, medita",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 11819,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, medita",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 12177,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, meditative",
+				"turn_probability": 0.03
+			}
+		},
+		{
+			"t_ms": 12191,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, meditative",
+				"turn_probability": 0.03
+			}
+		},
+		{
+			"t_ms": 12599,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, meditative guides",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 12627,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, meditative guides",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 12752,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, meditative guides,",
+				"turn_probability": 0.01
+			}
+		},
+		{
+			"t_ms": 12767,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, meditative guides,",
+				"turn_probability": 0.01
+			}
+		},
+		{
+			"t_ms": 13217,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, meditative guides",
+				"turn_probability": 0.4
+			}
+		},
+		{
+			"t_ms": 13227,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, meditative guides",
+				"turn_probability": 0.4
+			}
+		},
+		{
+			"t_ms": 13609,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, meditative guides",
+				"turn_probability": 0.29
+			}
+		},
+		{
+			"t_ms": 13797,
+			"event": {
+				"message_type": "committed_transcript",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, meditative guides",
+				"segment_index": 0
+			}
+		},
+		{
+			"t_ms": 13801,
+			"event": {
+				"message_type": "diarized_transcript",
+				"segment_index": 0,
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, meditative guides",
+				"words": [
+					{
+						"text": "With",
+						"start": 0.12,
+						"end": 0.24,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.5410261154174805,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 0.24,
+						"end": 0.3,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.7839412689208984,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "a",
+						"start": 0.3,
+						"end": 0.42,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -1.8032169342041016,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 0.42,
+						"end": 0.5,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -1.3874397277832031,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "soft",
+						"start": 0.52,
+						"end": 1.02,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.9522185325622559,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 1.02,
+						"end": 1.22,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.8733119964599609,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "and",
+						"start": 1.22,
+						"end": 1.32,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.5904439290364584,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 1.32,
+						"end": 1.44,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.8630180358886719,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "whispery",
+						"start": 1.44,
+						"end": 1.9,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.7047133445739746,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 1.9,
+						"end": 2.2,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.9510784149169922,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "American",
+						"start": 2.2,
+						"end": 2.68,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.7919418811798096,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 2.68,
+						"end": 2.84,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.9269142150878906,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "accent,",
+						"start": 2.88,
+						"end": 3.32,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.880234854561942,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 3.32,
+						"end": 3.34,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -2.0814437866210938,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "I'm",
+						"start": 4.26,
+						"end": 4.46,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.9624017079671224,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 4.46,
+						"end": 4.54,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.5042362213134766,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "the",
+						"start": 4.54,
+						"end": 4.62,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.7323983510335287,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 4.62,
+						"end": 4.7,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.7542915344238281,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "ideal",
+						"start": 4.74,
+						"end": 5.06,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.9726245880126954,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 5.06,
+						"end": 5.22,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -1.0386104583740234,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "choice",
+						"start": 5.22,
+						"end": 5.68,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.8522389729817709,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 5.68,
+						"end": 6.1,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.7056159973144531,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "for",
+						"start": 6.1,
+						"end": 6.22,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.951202392578125,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 6.22,
+						"end": 6.26,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.7094535827636719,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "creating",
+						"start": 6.26,
+						"end": 6.76,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.9976108074188232,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 6.76,
+						"end": 6.98,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -1.3819580078125,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "ASMR",
+						"start": 7.18,
+						"end": 7.72,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -1.2048215866088867,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 7.72,
+						"end": 7.84,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -1.1377525329589844,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "content,",
+						"start": 7.84,
+						"end": 8.38,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.7683887481689453,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 8.38,
+						"end": 8.381,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -1.0186614990234375,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "meditative",
+						"start": 9.08,
+						"end": 9.64,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.7479171752929688,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 9.64,
+						"end": 9.7,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.8565578460693359,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "guides",
+						"start": 9.7,
+						"end": 10.18,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.9450588226318359,
+						"characters": null,
+						"channel_index": null
+					}
+				]
+			}
+		},
+		{
+			"t_ms": 13827,
+			"event": {
+				"message_type": "committed_transcript_with_timestamps",
+				"text": "With a soft and whispery American accent, I'm the ideal choice for creating ASMR content, meditative guides",
+				"language_code": "en",
+				"words": [
+					{
+						"text": "With",
+						"start": 0.12,
+						"end": 0.24,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.44519615173339844,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 0.24,
+						"end": 0.3,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.5132045745849609,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "a",
+						"start": 0.3,
+						"end": 0.4,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.7722892761230469,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 0.4,
+						"end": 0.5,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.6770725250244141,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "soft",
+						"start": 0.5,
+						"end": 1.02,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -1.030447006225586,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 1.02,
+						"end": 1.22,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.8493442535400391,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "and",
+						"start": 1.22,
+						"end": 1.32,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.48323631286621094,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 1.32,
+						"end": 1.44,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.7638645172119141,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "whispery",
+						"start": 1.44,
+						"end": 2.1,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.569249153137207,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 2.1,
+						"end": 2.2,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.5553245544433594,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "American",
+						"start": 2.2,
+						"end": 2.72,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.6557002067565918,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 2.72,
+						"end": 2.84,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.5999336242675781,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "accent,",
+						"start": 2.84,
+						"end": 3.34,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.625877925327846,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 3.34,
+						"end": 3.341,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.9582195281982422,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "I'm",
+						"start": 4.26,
+						"end": 4.46,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.8634770711263021,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 4.46,
+						"end": 4.54,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.4636421203613281,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "the",
+						"start": 4.54,
+						"end": 4.62,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.4781608581542969,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 4.62,
+						"end": 4.72,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.3466377258300781,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "ideal",
+						"start": 4.72,
+						"end": 5.06,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.60050048828125,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 5.06,
+						"end": 5.22,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.5781993865966797,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "choice",
+						"start": 5.22,
+						"end": 5.68,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.4808063507080078,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 5.68,
+						"end": 6.1,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.7099170684814453,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "for",
+						"start": 6.1,
+						"end": 6.22,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.5111344655354818,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 6.22,
+						"end": 6.26,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.4944133758544922,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "creating",
+						"start": 6.26,
+						"end": 6.88,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.5278449058532715,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 6.88,
+						"end": 7,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.8110980987548828,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "ASMR",
+						"start": 7,
+						"end": 7.78,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.8214335441589355,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 7.78,
+						"end": 7.86,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.6202774047851562,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "content,",
+						"start": 7.86,
+						"end": 8.38,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.7491836547851562,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 8.38,
+						"end": 8.381,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.7461967468261719,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "meditative",
+						"start": 9.08,
+						"end": 9.6,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.5185735702514649,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 9.6,
+						"end": 9.7,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.5455360412597656,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "guides",
+						"start": 9.7,
+						"end": 10.18,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.5436201095581055,
+						"characters": null,
+						"channel_index": null
+					}
+				]
+			}
+		},
+		{
+			"t_ms": 14383,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Mm-hmm",
+				"turn_probability": 0.24
+			}
+		},
+		{
+			"t_ms": 14396,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Mm-hmm",
+				"turn_probability": 0.24
+			}
+		},
+		{
+			"t_ms": 14414,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Mm-hmm",
+				"turn_probability": 0.24
+			}
+		},
+		{
+			"t_ms": 14585,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 14596,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 14984,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 14998,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 15373,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 15392,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 15786,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate feel",
+				"turn_probability": 0.02
+			}
+		},
+		{
+			"t_ms": 15807,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate feel",
+				"turn_probability": 0.02
+			}
+		},
+		{
+			"t_ms": 16216,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate feel",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 16406,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate feel to your nar",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 16439,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate feel to your nar",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 16446,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate feel to your nar",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 16787,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate feel to your narrative",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 16816,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate feel to your narrative",
+				"turn_probability": 0
+			}
+		},
+		{
+			"t_ms": 17183,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate feel to your narrative project",
+				"turn_probability": 0.34
+			}
+		},
+		{
+			"t_ms": 17201,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate feel to your narrative project",
+				"turn_probability": 0.34
+			}
+		},
+		{
+			"t_ms": 17541,
+			"sent": "final_commit"
+		},
+		{
+			"t_ms": 17594,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate feel to your narrative projects",
+				"turn_probability": 0.25
+			}
+		},
+		{
+			"t_ms": 17604,
+			"event": {
+				"message_type": "partial_transcript",
+				"text": "Or adding an intimate feel to your narrative projects",
+				"turn_probability": 0.25
+			}
+		},
+		{
+			"t_ms": 17812,
+			"event": {
+				"message_type": "committed_transcript",
+				"text": "Or adding an intimate feel to your narrative projects",
+				"segment_index": 1
+			}
+		},
+		{
+			"t_ms": 17827,
+			"event": {
+				"message_type": "committed_transcript_with_timestamps",
+				"text": "Or adding an intimate feel to your narrative projects",
+				"language_code": "en",
+				"words": [
+					{
+						"text": "Or",
+						"start": 11.34,
+						"end": 11.42,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -1.0036954879760742,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 11.42,
+						"end": 11.5,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -1.2923736572265625,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "adding",
+						"start": 11.5,
+						"end": 11.92,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.7283487319946289,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 11.92,
+						"end": 11.98,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.8680744171142578,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "an",
+						"start": 11.98,
+						"end": 12.12,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.7151651382446289,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 12.12,
+						"end": 12.2,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.9974594116210938,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "intimate",
+						"start": 12.2,
+						"end": 12.56,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.9128439426422119,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 12.56,
+						"end": 12.68,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -1.0539436340332031,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "feel",
+						"start": 12.68,
+						"end": 13.14,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.946129322052002,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 13.14,
+						"end": 13.2,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.7606735229492188,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "to",
+						"start": 13.2,
+						"end": 13.26,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.6206378936767578,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 13.26,
+						"end": 13.3,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.8936862945556641,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "your",
+						"start": 13.3,
+						"end": 13.42,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.9012613296508789,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 13.42,
+						"end": 13.48,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.7510509490966797,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "narrative",
+						"start": 13.48,
+						"end": 13.84,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.7524727715386285,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 13.84,
+						"end": 13.92,
+						"type": "spacing",
+						"speaker_id": null,
+						"logprob": -0.7489433288574219,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "projects",
+						"start": 13.92,
+						"end": 14.52,
+						"type": "word",
+						"speaker_id": null,
+						"logprob": -0.8170511722564697,
+						"characters": null,
+						"channel_index": null
+					}
+				]
+			}
+		},
+		{
+			"t_ms": 17856,
+			"event": {
+				"message_type": "diarized_transcript",
+				"segment_index": 1,
+				"text": "Or adding an intimate feel to your narrative projects",
+				"words": [
+					{
+						"text": "Or",
+						"start": 11.34,
+						"end": 11.48,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.8870124816894531,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 11.48,
+						"end": 11.58,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -1.0036563873291016,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "adding",
+						"start": 11.62,
+						"end": 11.84,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.6301336288452148,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 11.84,
+						"end": 11.98,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.9329853057861328,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "an",
+						"start": 12.14,
+						"end": 12.141,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -2.1491966247558594,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 12.141,
+						"end": 12.2,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -1.31951904296875,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "intimate",
+						"start": 12.2,
+						"end": 12.56,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.7782080173492432,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 12.56,
+						"end": 12.68,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.8678340911865234,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "feel",
+						"start": 12.68,
+						"end": 13.04,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -1.1029362678527832,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 13.04,
+						"end": 13.18,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -1.0788898468017578,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "to",
+						"start": 13.2,
+						"end": 13.26,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.6171636581420898,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 13.26,
+						"end": 13.3,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.6288661956787109,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "your",
+						"start": 13.32,
+						"end": 13.42,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.7344622611999512,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 13.42,
+						"end": 13.48,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.7863903045654297,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "narrative",
+						"start": 13.48,
+						"end": 13.82,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.8217767079671224,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": " ",
+						"start": 13.82,
+						"end": 13.92,
+						"type": "spacing",
+						"speaker_id": "speaker_0",
+						"logprob": -0.9417476654052734,
+						"characters": null,
+						"channel_index": null
+					},
+					{
+						"text": "projects",
+						"start": 13.92,
+						"end": 14.52,
+						"type": "word",
+						"speaker_id": "speaker_0",
+						"logprob": -0.8163244724273682,
+						"characters": null,
+						"channel_index": null
+					}
+				]
+			}
+		},
+		{
+			"t_ms": 22547,
+			"sent": "second_empty_commit"
+		},
+		{
+			"t_ms": 22665,
+			"event": {
+				"message_type": "commit_throttled",
+				"error": "Session closed: only 0.00s of uncommitted audio. You need at least 0.3s of uncommitted audio before committing."
+			}
+		},
+		{
+			"t_ms": 22679,
+			"closed": {
+				"code": 1000,
+				"reason": "commit_throttled"
+			}
+		}
+	]
+}

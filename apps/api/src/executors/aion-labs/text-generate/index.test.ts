@@ -15,7 +15,7 @@ describe("Aion Labs text transport contract", () => {
 		expect(openAICompatHeaders(providerId, "secret").Authorization).toBe("Bearer secret");
 	});
 
-	it("retains only fields documented by the current Aion chat contract", () => {
+	it("passes the IR through preprocessing unchanged; routing enforces param support", () => {
 		const ir: IRChatRequest = {
 			model: "aion-labs/aion-3.0",
 			stream: true,
@@ -32,13 +32,14 @@ describe("Aion Labs text transport contract", () => {
 			"max_tokens", "temperature", "stop", "stream", "tools", "reasoning_split", "metadata",
 		].map((key) => [key, {}]));
 
-		const result = preprocess(ir, { capabilityParams: { params: capabilityParams } } as any);
+		// Production routing hands executors the keyed record, not a wrapped list.
+		const result = preprocess(ir, { capabilityParams } as any);
+		expect(result).toBe(ir);
 		expect(result.maxTokens).toBe(1024);
 		expect(result.stop).toEqual(["END"]);
 		expect(result.tools).toHaveLength(1);
 		expect(result.metadata).toEqual({ trace: "aion-contract" });
-		expect(result.topP).toBeUndefined();
-		expect(result.responseFormat).toBeUndefined();
+		expect(result.topP).toBe(0.9);
 	});
 
 	it("decodes Aion's top-level Responses reasoning_effort extension", () => {

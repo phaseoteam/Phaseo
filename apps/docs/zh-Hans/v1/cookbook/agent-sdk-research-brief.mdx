@@ -1,87 +1,71 @@
 ---
-title: "使用结构化输出和网页搜索进行研究"
+title: "使用结构化输出和网络搜索进行研究"
+sidebarTitle: "使用网络搜索生成研究简报"
 icon: "telescope"
-description: "构建一个使用网页搜索并通过 Agent SDK 返回严格 JSON 的 TypeScript 智能体。"
+description: "通过 Agent SDK 构建一个由搜索支撑、返回严格 JSON 的 TypeScript 智能体。"
 ---
 
-如果智能体工作流需要具备以下能力，请使用此方案：
+构建一个 TypeScript 智能体：它在回答之前通过 Phaseo 搜索网络，并以带有来源的严格 JSON 返回研究简报。完成后，你会得到一个脚本，它会为你给出的任何主题打印一个经过验证的 `{ topic, summary, sources }` 对象。
 
-- 通过 TypeScript Agent SDK 运行
-- 使用托管网页搜索
-- 返回严格的结构化 JSON
-- 以确定性方式修复接近有效但格式错误的 JSON
+对于一次性研究，该脚本可直接用于生产环境。搜索结果是不可信的网页内容：下面的 schema 检查会拦截格式错误的输出，但在据此采取行动之前，请先审查来源。打包好的版本位于 `packages/sdk/agent-sdk-ts/examples/research-brief-agent.ts`。
 
-## 1. 安装 SDK
+## 构建
+
+<Steps>
+<Step title="安装">
 
 <CodeGroup>
 ```bash npm
-npm install @phaseo/sdk @phaseo/agent-sdk
+npm install @phaseo/agent-sdk zod
 ```
 
 ```bash pnpm
-pnpm add @phaseo/sdk @phaseo/agent-sdk
+pnpm add @phaseo/agent-sdk zod
 ```
 
 ```bash yarn
-yarn add @phaseo/sdk @phaseo/agent-sdk
+yarn add @phaseo/agent-sdk zod
 ```
 
 ```bash bun
-bun add @phaseo/sdk @phaseo/agent-sdk
+bun add @phaseo/agent-sdk zod
 ```
 </CodeGroup>
 
-## 2. 定义范围明确的输出契约
-
-首个研究结果应足够精简，方便操作人员在日志中检查。
-
-```ts
-type ResearchBrief = {
-  topic: string;
-  summary: string;
-  sources: Array<{
-    title: string;
-    url: string;
-  }>;
-};
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 3. 创建智能体
+</Step>
+<Step title="编写智能体">
 
-使用 `parseOutput`，让运行时返回带类型的数据，而不是原始文本。
+```ts research-agent.ts
+import { z } from "zod";
+import { createAgent, createGatewayAgentClient } from "@phaseo/agent-sdk";
 
-```ts
-import { createAgent } from "@phaseo/agent-sdk";
+// 足够小，可以在一行日志中读完。
+const ResearchBrief = z
+  .object({
+    topic: z.string(),
+    summary: z.string().min(1),
+    sources: z.array(z.object({ title: z.string(), url: z.string().url() }).strict()).min(1),
+  })
+  .strict();
+type ResearchBrief = z.infer<typeof ResearchBrief>;
 
-export const researchBriefAgent = createAgent<string, ResearchBrief>({
+const researchBriefAgent = createAgent<string, ResearchBrief>({
   id: "research-brief-agent",
-  model: "phaseo/free",
+  model: "openai/gpt-6-astra",
   instructions:
-    "Research the user's topic with web search when needed and return a concise JSON brief with cited sources.",
-  parseOutput(text) {
-    return JSON.parse(text) as ResearchBrief;
-  },
+    "Research the user's topic with web search and return a concise JSON brief with cited sources.",
+  maxSteps: 4,
+  parseOutput: (text) => JSON.parse(text),
+  outputSchema: ResearchBrief,
 });
-```
-
-## 4. 一次性配置 Gateway 适配器
-
-关键配置如下：
-
-- `responseFormat` 明确指定输出架构
-- `plugins` 启用对接近有效 JSON 的响应修复
-- `gatewayTools` 向模型提供托管网页搜索
-- 如果工作流必须始终基于来源，`toolChoice` 会强制使用搜索工具
-
-```ts
-import {
-  createGatewayAgentClient,
-} from "@phaseo/agent-sdk";
 
 const client = createGatewayAgentClient({
-  clientOptions: {
-    apiKey: process.env.PHASEO_API_KEY!,
-  },
+  clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+  // Gateway 要求模型遵循的 JSON Schema。
   responseFormat: {
     type: "json_schema",
     name: "research_brief",
@@ -94,10 +78,7 @@ const client = createGatewayAgentClient({
           type: "array",
           items: {
             type: "object",
-            properties: {
-              title: { type: "string" },
-              url: { type: "string" },
-            },
+            properties: { title: { type: "string" }, url: { type: "string" } },
             required: ["title", "url"],
             additionalProperties: false,
           },
@@ -108,18 +89,15 @@ const client = createGatewayAgentClient({
       additionalProperties: false,
     },
   },
+  // 修复接近有效的 JSON。
   plugins: [{ id: "response-healing" }],
-  gatewayTools: [
-    { type: "phaseo:web_search", parameters: { max_results: 5 } },
-  ],
+  // 搜索由 Phaseo 执行；查询由模型编写。
+  gatewayTools: [{ type: "phaseo:web_search", parameters: { max_results: 5 } }],
+  // 回答之前始终先搜索。
   toolChoice: "phaseo:web_search",
   webSearchOptions: { search_context_size: "high" },
 });
-```
 
-## 5. 运行工作流
-
-```ts
 const result = await researchBriefAgent.run({
   input: "Summarize the latest browser automation support patterns for coding agents.",
   client,
@@ -131,33 +109,34 @@ const result = await researchBriefAgent.run({
 console.log(result.output);
 ```
 
-## 6. 检查日志
+| 客户端选项 | 作用 |
+| --- | --- |
+| `responseFormat` | 明确指定输出 schema |
+| `plugins` | 针对接近有效的 JSON 的[响应修复](./response-healing-for-structured-json) |
+| `gatewayTools` | 添加 `phaseo:web_search`；[网络搜索指南](../guides/server-tools/web-search)列出了它的参数 |
+| `toolChoice` | 为必须始终有据可依的工作流强制执行搜索 |
+| `webSearchOptions` | 适用于会调整结果规模的搜索引擎的搜索设置 |
 
-成功运行一次后，打开请求详情并确认：
+</Step>
+<Step title="运行">
 
-- 请求的原生网页搜索工具或托管搜索活动已显示
-- 搜索结果和引用已保存
-- 只有在需要修复时，插件执行记录才显示 `response-healing`
-- 最终输出符合所请求的 JSON 架构
+```bash
+npx tsx research-agent.ts
+```
 
-## 7. 适用场景
+</Step>
+</Steps>
 
-以下情况适合使用此模式：
+## 检查是否成功
 
-- 工作流主要用于一次性研究，而不是复杂的本地工具循环
-- 模型需要先参考来源再回答
-- 下游调用方需要带类型的 JSON，而不是普通文本
+脚本会打印一份至少包含一个来源 URL 的简报。然后在 **设置 → 使用情况 → 日志** 中打开该请求并检查：
 
-以下情况不适合使用此模式：
+- **网络搜索可观测性** 显示托管搜索、结果和引用。
+- 只有当 JSON 需要修复时，插件记录才会显示 `response-healing` 为 `applied`。
+- 响应符合 schema；如果不符合，运行会以 `AgentSchemaValidationError` 失败。
 
-- 工作流已知确切 URL，使用 `phaseo:web_fetch` 就足够
-- 智能体更需要高级本地工具，而不是上游提供方原生工具
-- 输出契约较宽松，严格 JSON 带来的额外成本超过收益
+[调试网络搜索](./web-search-debugging)介绍了没有执行搜索的情况。
 
-## 相关指南
+## 何时改用其他方案
 
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
-- [结构化输出](../guides/structured-outputs.mdx)
-- [验证结构化输出](../guides/structured-outputs.mdx)
-- [调试网页搜索请求](./web-search-debugging.mdx)
-- [修复格式错误的结构化 JSON](./response-healing-for-structured-json.mdx)
+这种模式适合模型需要自行查找依据、调用方需要类型化 JSON 的一次性研究。如果你已经知道 URL，请使用 [`phaseo:web_fetch`](./tool-grounding-with-web-fetch)；如果任务更依赖你自己的数据而不是网络，请使用[本地工具智能体](./agent-sdk-durable-loop)；如果约定足够宽松，使用 schema 带来的工作量超过它节省的工作量，请使用纯文本输出。

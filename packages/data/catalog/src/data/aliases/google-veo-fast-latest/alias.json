@@ -1,8 +1,0 @@
-{
-  "alias_slug": "google/veo-fast-latest",
-  "resolved_api_model_id": "google/veo-3.1-fast",
-  "resolved_model_id": "google/veo-3.1-fast",
-  "channel": "stable",
-  "is_enabled": true,
-  "notes": null
-}

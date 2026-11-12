@@ -18,6 +18,7 @@ import {
 	claimAsyncOperationsForReconciliation,
 	claimAsyncWebhookDelivery,
 	listPendingAsyncWebhookDeliveries,
+	listTeamAsyncOperations,
 	recordAsyncWebhookDeliveryResult,
 	updateAsyncOperationReconciliation,
 } from "./async-operations";
@@ -28,6 +29,20 @@ describe("async operation reconciliation storage", () => {
 		rpcMock.mockReset();
 		updateMock.mockReset();
 		eqMock.mockReset();
+	});
+	it("excludes internal batch files before pagination while leaving ordinary listings intact", async () => {
+		const query: Record<string, any> = {};
+		for (const method of ["select", "eq", "order", "not"]) query[method] = vi.fn(() => query);
+		query.range = vi.fn(async () => ({ data: [], error: null }));
+		fromMock.mockReturnValue(query);
+		await listTeamAsyncOperations({ workspaceId: "ws", kind: "batch", excludeBatchFiles: true, offset: 5, limit: 10 });
+		expect(query.not).toHaveBeenCalledWith("internal_id", "like", "\\_\\_file\\_\\_:%");
+		expect(query.not.mock.invocationCallOrder[0]).toBeLessThan(query.range.mock.invocationCallOrder[0]);
+		expect(query.range).toHaveBeenCalledWith(5, 14);
+		query.not.mockClear();
+		await listTeamAsyncOperations({ workspaceId: "ws", kind: "batch", offset: 5 });
+		await listTeamAsyncOperations({ workspaceId: "ws", kind: "video", excludeBatchFiles: true, offset: 5 });
+		expect(query.not).not.toHaveBeenCalled();
 	});
 
 	it("discovers due pending deliveries and expired first-attempt claims", async () => {

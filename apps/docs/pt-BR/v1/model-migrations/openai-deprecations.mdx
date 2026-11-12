@@ -1,40 +1,40 @@
 ---
-title: "Modelos e serviços descontinuados da OpenAI"
-description: "Datas de descontinuação de modelos e plataformas da OpenAI acompanhadas no catálogo AI Stats."
+title: "Descontinuações da OpenAI"
+description: "Descontinuações de modelos e plataformas da OpenAI acompanhadas no catálogo do Phaseo."
 icon: "/icons/brands/openai.svg"
 ---
 
-# Modelos e serviços descontinuados da OpenAI
+Encontre o modelo ou produto da OpenAI que você usa, migre para o substituto antes da data de desligamento e valide-o com os seus prompts de produção, ferramentas, latência e custo. As datas vêm da [página de descontinuações da API](https://developers.openai.com/api/docs/deprecations) da OpenAI.
 
-A OpenAI publica datas de descontinuação e substitutos recomendados na [página de descontinuações da API](https://developers.openai.com/api/docs/deprecations). Use esta página como checklist de migração e valide o substituto com seus prompts, ferramentas, latência e orçamento de custos de produção.
+## Descontinuações de modelos
 
-## Modelos descontinuados
-
-| Família de modelos | Data de descontinuação | Data de encerramento | Substituto recomendado |
+| Família de modelos descontinuada | Data de descontinuação | Data de desligamento | Substituto recomendado |
 | --- | --- | --- | --- |
 | `whisper-1`, `gpt-4o-transcribe`, `gpt-4o-mini-transcribe`, `gpt-4o-transcribe-diarize` | 26 de agosto de 2026 | 26 de fevereiro de 2027 | `openai/gpt-transcribe` ou `openai/gpt-live-transcribe` |
-| `gpt-realtime`, `gpt-audio`, `gpt-4o-audio`, `gpt-4o-realtime`, `gpt-realtime-mini`, `gpt-audio-mini`, `gpt-4o-mini-realtime`, `gpt-4o-mini-audio` | 20 de julho de 2026 | 20 de janeiro de 2027 | `openai/gpt-realtime-2.1`, `openai/gpt-realtime-2.1-mini`, ou `openai/gpt-audio-1.5` |
+| `gpt-realtime`, `gpt-audio`, `gpt-4o-audio`, `gpt-4o-realtime`, `gpt-realtime-mini`, `gpt-audio-mini`, `gpt-4o-mini-realtime`, `gpt-4o-mini-audio` | 20 de julho de 2026 | 20 de janeiro de 2027 | `openai/gpt-realtime-2.1`, `openai/gpt-realtime-2.1-mini` ou `openai/gpt-audio-1.5` |
 | `gpt-4o-mini-transcribe-2025-03-20` | 20 de julho de 2026 | 20 de janeiro de 2027 | `openai/gpt-4o-mini-transcribe` |
-| Snapshots datados de GPT-5 e o3 | 11 de junho de 2026 | 11 de dezembro de 2026 | `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra` ou `openai/gpt-5.6-luna` |
+| Snapshots datados do GPT-5 e do o3 | 11 de junho de 2026 | 11 de dezembro de 2026 | `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra` ou `openai/gpt-5.6-luna` |
 | `gpt-image-1-mini`, `gpt-image-1.5`, `chatgpt-image-latest` | 2 de junho de 2026 | 1º de dezembro de 2026 | `openai/gpt-image-2` |
-| Snapshots antigos de GPT-3.5, GPT-4, GPT-4.1 nano, GPT-4o, o1, o3-mini e o4-mini | 22 de abril de 2026 | 23 de outubro de 2026 | Consulte as recomendações específicas na página de descontinuações da OpenAI |
+| Snapshots legados do GPT-3.5, GPT-4, GPT-4.1 nano, GPT-4o, o1, o3-mini e o4-mini | 22 de abril de 2026 | 23 de outubro de 2026 | Veja as recomendações por modelo na página de descontinuações da OpenAI |
 | Modelos Sora 2 | 24 de março de 2026 | 24 de setembro de 2026 | Nenhum substituto anunciado |
 
-O catálogo registra essas datas de ciclo de vida nas entradas dos modelos OpenAI afetados e inclui novos IDs quando a OpenAI informa um substituto. As datas se aplicam aos snapshots do provedor citados pela OpenAI; o catálogo pode expô-los por um ID de modelo canônico.
+O catálogo registra essas datas nas entradas dos modelos afetados, com o ID do modelo substituto quando existe um. As datas valem para os snapshots que a OpenAI nomeia; o Phaseo pode atender um snapshot sob um ID de modelo canônico. A página de um modelo mostra as datas e o substituto sugerido, e o Phaseo continua atendendo um modelo aposentado enquanto algum provedor o oferecer. Veja [Descontinuação e aposentadoria de modelos](../guides/model-retirement) para alertas e substituição automática.
 
 ## Descontinuações de plataforma
 
-A OpenAI também lista migrações de produtos que não são registros de modelos:
+A OpenAI também aposenta produtos que não são modelos:
 
-- Prompts reutilizáveis serão encerrados em 30 de novembro de 2026. Mova o conteúdo dos prompts para o código do aplicativo.
-- A plataforma Evals ficará somente para leitura em 31 de outubro de 2026 e será encerrada em 30 de novembro de 2026. A OpenAI recomenda migrar para o Promptfoo.
-- O Agent Builder será encerrado em 30 de novembro de 2026. Migre para o Agents SDK ou ChatGPT Workspace Agents.
+| Produto | Data | Migrar para |
+| --- | --- | --- |
+| Prompts reutilizáveis | Desligamento em 30 de novembro de 2026 | Código da aplicação ou uma predefinição do Phaseo com [templates de prompt](../guides/prompt-templates) |
+| Plataforma Evals | Somente leitura em 31 de outubro de 2026; desligamento em 30 de novembro de 2026 | A OpenAI recomenda o Promptfoo |
+| Agent Builder | Desligamento em 30 de novembro de 2026 | O Agents SDK ou os ChatGPT Workspace Agents |
 
-## Checklist de migração
+## Migre
 
-1. Substitua o modelo ou produto descontinuado em um ambiente de teste.
-2. Execute novamente avaliações representativas, sobretudo de saída estruturada, chamadas de ferramentas, qualidade de áudio e tarefas com contexto longo.
-3. Compare latência e gastos sob concorrência semelhante à produção.
-4. Faça canário do substituto com uma rota explícita de rollback antes da data de encerramento.
+1. Substitua o modelo ou produto descontinuado em staging.
+2. Execute de novo avaliações representativas, especialmente de saídas estruturadas, chamadas de ferramentas, qualidade de áudio e tarefas de contexto longo.
+3. Compare a latência e o gasto com concorrência parecida com a de produção.
+4. Faça um canário com o substituto e uma rota de rollback explícita antes da data de desligamento.
 
-Para consultar as datas oficiais, o mapeamento completo de snapshots e as orientações por endpoint, veja a [documentação de descontinuações da API da OpenAI](https://developers.openai.com/api/docs/deprecations).
+Para os mapeamentos completos de snapshots e orientações específicas por endpoint, veja a [documentação de descontinuações da API da OpenAI](https://developers.openai.com/api/docs/deprecations).

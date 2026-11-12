@@ -23,8 +23,10 @@ import {
 	Webhook,
 	Workflow,
 	ClipboardCheck,
-	Inbox,
+	MessagesSquare,
 	SlidersHorizontal,
+	Tags,
+	Wallet,
 } from "lucide-react";
 
 export type NavItem = {
@@ -55,6 +57,19 @@ export type NavGroup = {
     heading?: string;
     items: NavItem[];
 	scope: SettingsScope;
+};
+
+export type SettingsNavigationOptions = {
+	showBroadcast?: boolean;
+	showWebhooks?: boolean;
+	showEnterprise?: boolean;
+	showAutoRouting?: boolean;
+	showClassifiers?: boolean;
+	showWorkloadIdentity?: boolean;
+	showSlackAgent?: boolean;
+	showInternal?: boolean;
+	showOAuthApps?: boolean;
+	providerMode?: boolean;
 };
 
 export type SettingsScope = "personal" | "workspace" | "provider";
@@ -158,6 +173,13 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				match: ["/settings/guardrails"],
 			},
 			{
+				href: "/settings/classifiers",
+				label: "Classifiers",
+				icon: Tags,
+				badge: "Beta",
+				match: ["/settings/classifiers"],
+			},
+			{
 				href: "/settings/workspaces/enterprise",
 				label: "Enterprise",
 				icon: Building2,
@@ -228,7 +250,18 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				href: "/settings/keys",
 				label: "API Keys",
 				icon: KeyRound,
-				match: ["/settings/keys"],
+				match: ["/settings/keys", "/settings/security", "/settings/trusted-workloads"],
+				children: [
+					{ href: "/settings/keys", label: "Keys" },
+					{ href: "/settings/security", label: "Key Security" },
+					{ href: "/settings/trusted-workloads", label: "Trusted workloads", badge: "Beta" },
+				],
+			},
+			{
+				href: "/settings/budgets",
+				label: "Budgets",
+				icon: Wallet,
+				match: ["/settings/budgets"],
 			},
 			{
 				href: "/settings/management-api-keys",
@@ -249,12 +282,20 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				match: ["/settings/apps"],
 			},
 			{
+				href: "/settings/slack",
+				label: "Slack",
+				icon: MessagesSquare,
+				badge: "Beta",
+				match: ["/settings/slack"],
+			},
+			{
 				href: "/settings/routing",
 				label: "Routing",
 				icon: Waypoints,
 				match: ["/settings/routing"],
 				children: [
 					{ href: "/settings/routing", label: "Routing", exactOnly: true },
+					{ href: "/settings/routing/access", label: "Access" },
 					{ href: "/settings/routing/auto", label: "Auto routing", badge: "Alpha" },
 					{ href: "/settings/routing/dynamic", label: "Dynamic Routes", match: ["/settings/routing/demo"] },
 				],
@@ -307,7 +348,6 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 		heading: "Internal",
 		scope: "personal",
 		items: [
-			{ href: "/settings/internal/model-discovery", label: "Discovery queue", icon: Inbox, match: ["/settings/internal/model-discovery"] },
 			{ href: "/settings/internal/provider-review", label: "Provider review", icon: ClipboardCheck, match: ["/settings/internal/provider-review"] },
 		],
 	},
@@ -319,26 +359,7 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
     // },
 ];
 
-const WORKSPACE_NAV_ORDER = [
-"/settings/workspaces/settings",
-	"/settings/workspaces/enterprise",
-	"/settings/keys",
-	"/settings/usage",
-	"/settings/usage/logs",
-	"/settings/routing",
-	"/settings/guardrails",
-	"/settings/privacy",
-	"/settings/presets",
-	"/settings/workspaces/private-models",
-	"/settings/byok",
-	"/settings/apps",
-	"/settings/management-api-keys",
-	"/settings/broadcast",
-	"/settings/oauth-apps",
-	"/settings/webhooks",
-] as const;
-
-export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebhooks?: boolean; showEnterprise?: boolean; showAutoRouting?: boolean; showInternal?: boolean; providerMode?: boolean }): NavGroup[] {
+export function getSettingsSidebar(options?: SettingsNavigationOptions): NavGroup[] {
 	if (options?.providerMode) {
 		return [
 			{ scope: "personal", items: BASE_SETTINGS_SIDEBAR[0].items.filter((item) => ["/settings/profile", "/settings/account"].includes(item.href)) },
@@ -353,6 +374,9 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 	const showWebhooks = options?.showWebhooks ?? true;
 	const showEnterprise = options?.showEnterprise ?? true;
 	const showAutoRouting = options?.showAutoRouting ?? false;
+	const showClassifiers = options?.showClassifiers ?? false;
+	const showWorkloadIdentity = options?.showWorkloadIdentity ?? false;
+	const showSlackAgent = options?.showSlackAgent ?? false;
 	const showInternal = options?.showInternal ?? false;
 	const groups = BASE_SETTINGS_SIDEBAR.map((group) => ({
 		...group,
@@ -360,7 +384,10 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 			.filter((item) =>
 				(showBroadcast ? true : item.href !== "/settings/broadcast") &&
 				(showWebhooks ? true : item.href !== "/settings/webhooks") &&
+				(options?.showOAuthApps === true || item.href !== "/settings/oauth-apps") &&
 				(showEnterprise ? true : item.href !== "/settings/workspaces/enterprise") &&
+				(showClassifiers ? true : item.href !== "/settings/classifiers") &&
+				(showSlackAgent ? true : item.href !== "/settings/slack") &&
 				(showInternal ? true : !item.href.startsWith("/settings/internal/")),
 			)
 			.map((item) => ({
@@ -368,24 +395,12 @@ export function getSettingsSidebar(options?: { showBroadcast?: boolean; showWebh
 				children: item.children?.filter((child) =>
 					(showBroadcast ? true : !child.href.startsWith("/settings/broadcast")) &&
 					(showWebhooks ? true : !child.href.startsWith("/settings/webhooks")) &&
-					(showAutoRouting ? true : child.href !== "/settings/routing/auto"),
+					(showAutoRouting ? true : child.href !== "/settings/routing/auto") &&
+					(showWorkloadIdentity ? true : child.href !== "/settings/trusted-workloads"),
 				),
 			})),
 	})).filter((group) => group.items.length > 0);
-	const personalGroups = groups.filter((group) => group.scope === "personal");
-	const workspaceItems = groups
-		.filter((group) => group.scope === "workspace")
-		.flatMap((group) => group.items)
-		.sort((a, b) => {
-			const aIndex = WORKSPACE_NAV_ORDER.indexOf(a.href as typeof WORKSPACE_NAV_ORDER[number]);
-			const bIndex = WORKSPACE_NAV_ORDER.indexOf(b.href as typeof WORKSPACE_NAV_ORDER[number]);
-			return (aIndex < 0 ? Number.MAX_SAFE_INTEGER : aIndex) - (bIndex < 0 ? Number.MAX_SAFE_INTEGER : bIndex);
-		});
-
-	return [
-		...personalGroups,
-		...(workspaceItems.length ? [{ scope: "workspace" as const, items: workspaceItems }] : []),
-	];
+	return groups;
 }
 
 export function isSettingsNavChildActive(
@@ -402,7 +417,7 @@ export function isSettingsNavChildActive(
 
 export function getActiveSettingsNav(
 	pathname: string,
-	options?: { showBroadcast?: boolean; showWebhooks?: boolean; showAutoRouting?: boolean; providerMode?: boolean },
+	options?: SettingsNavigationOptions,
 ): ResolvedSettingsNav | null {
 	const navGroups = getSettingsSidebar(options);
 

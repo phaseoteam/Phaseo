@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import {
 	canRefreshSearchIndex,
 	SEARCH_REFRESH_INTERVAL_MS,

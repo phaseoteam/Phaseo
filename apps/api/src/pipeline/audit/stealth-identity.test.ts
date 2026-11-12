@@ -17,7 +17,6 @@ describe("stealth audit identity", () => {
             providerRequest: { model: "oai-stealth-test-model-internal" },
             providerResponse: { provider: "openai" },
             serverToolTrace: [{ round: 1, calls: [{ output: { provider: "openai" } }] }],
-            extraJson: "opaque provider telemetry",
 			lifecycleEvents: { events: [{ provider: "openai" }] },
         });
 
@@ -31,7 +30,6 @@ describe("stealth audit identity", () => {
             providerResponse: null,
             serverToolTrace: null,
 			lifecycleEvents: null,
-            extraJson: null,
         });
     });
 

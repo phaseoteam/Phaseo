@@ -1,0 +1,140 @@
+---
+title: "Phaseo mit einem Agenten verwalten"
+description: "Für jede Aufgabe im Phaseo-Konto der passende CLI-Befehl, die Route der Management-API und das MCP-Tool, und welche Änderungen das Dashboard oder einen Management-Schlüssel brauchen."
+icon: "bot"
+---
+
+Du kannst alltägliche Aufgaben im Phaseo-Konto mit der `phaseo` CLI, der `/v1` Management-API oder dem Phaseo-MCP-Server erledigen. Auf dieser Seite findest du den Befehl, die Route oder das Tool für jede Aufgabe. Änderungen, die Ausgaben, Zugriff oder den Weg von Workspace-Daten betreffen, machst du im Dashboard oder mit einem Management-Schlüssel.
+
+Diese Schritte muss weiterhin eine Person im Browser erledigen:
+
+| Schritt | Was die Person tut |
+| --- | --- |
+| Registrierung | Legt das Phaseo-Konto an. |
+| Eine Anmeldung freigeben | Gibt die Seite frei, die `phaseo login` öffnet, oder gibt den Code ein, den `phaseo login --device-code` anzeigt. |
+| Die erste Karte hinzufügen | Ohne gespeicherte Karte gibt `phaseo credits add` einen Checkout-Link zurück. Ein Owner oder Admin öffnet ihn und bezahlt, und die Karte wird gespeichert. |
+| Jede Aufladung bestätigen | Mit gespeicherter Karte bestätigt ein Owner oder Admin jedes `phaseo credits add` über einen per E-Mail gesendeten Link. |
+| Kontosicherheit | Verwaltet Passwort, Multi-Faktor-Authentifizierung und Passkeys. |
+
+<Visibility for="agents">
+Regeln für Agenten, die Phaseo verwalten:
+
+- Schicke Nutzer für eine Aufgabe aus der Aufgabenübersicht nicht ins Dashboard. Führe den CLI-Befehl aus, rufe die Route auf oder nutze das MCP-Tool. Für eine Änderung unter „Änderungen im Dashboard oder mit einem Management-Schlüssel“ rufst du die Route mit einem Management-Schlüssel auf, falls du einen hast; sonst bittest du die Person, die Änderung im Dashboard zu machen.
+- Erzeuge oder rate nie einen API-Schlüssel. Bitte die Person, einen im Dashboard zu erstellen, oder erstelle einen mit `POST /v1/keys` und einem Management-Schlüssel, und speichere das Geheimnis einmal, serverseitig.
+- Verwende `--json` bei jedem CLI-Befehl. Übergib `--yes` an destruktive Befehle nur, wenn der Nutzer genau diese Änderung verlangt hat.
+- Starte nur eine Credit-Aufladung, die der Nutzer verlangt hat. Schließe nie selbst einen Checkout-Link ab und wiederhole keine Aufladung, die als abgelehnt, abgelaufen oder fehlgeschlagen endete.
+</Visibility>
+
+## Einmal einrichten
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                 # öffnet einen Browser; eine Person gibt die Anmeldung frei
+phaseo login --device-code   # SSH, CI und Agenten-Sandboxes: eine Person gibt den Code ein
+phaseo whoami --json
+```
+
+Erstelle dann im Dashboard oder mit `POST /v1/keys` und einem Management-Schlüssel einen Inferenzschlüssel für die Anwendung und lade Guthaben auf, falls der Workspace keines hat:
+
+```bash
+phaseo credits get --json
+phaseo login --scopes billing:write   # vor der ersten Aufladung einmal zustimmen; eine Person gibt die Anmeldung frei
+phaseo credits add --amount 20 --json
+```
+
+`phaseo credits add` braucht den Scope `billing:write`, den keine Anmeldung standardmäßig hat, und belastet nie von sich aus:
+
+- **Mit gespeicherter Karte** schickt Phaseo jedem Owner und Admin des Workspace einen Link per E-Mail, um die Belastung zu bestätigen, und der Befehl wartet auf das Ergebnis.
+- **Ohne gespeicherte Karte** gibt er `next_action: "open_checkout_url"` und einen Checkout-Link zurück, über den ein Owner oder Admin bezahlt. Die Karte wird für spätere Aufladungen gespeichert, und es wird keine E-Mail gesendet.
+
+Die Route findest du unter [Credits](../api-reference/endpoint/credits).
+
+## Eine Schnittstelle wählen
+
+| Schnittstelle | Verwende sie, wenn | Anmeldung |
+| --- | --- | --- |
+| [`phaseo` CLI](../guides/integrations/phaseo-cli) | Der Agent Shell-Befehle ausführen kann | `phaseo login` oder `phaseo login --device-code` |
+| [Management-API](../api-reference/introduction) | Servercode, CI oder eine Sprache ohne CLI | Ein [Verwaltungsschlüssel](./management-api-keys) (`phaseo_v1_mk_...`) oder ein OAuth-Token |
+| [Phaseo MCP](./cli-and-mcp#phaseo-mcp) | Der Agent in einem MCP-Client läuft | `https://mcp.phaseo.app/mcp?access=manage` verbinden und den gewünschten Berechtigungen zustimmen |
+
+Führe `phaseo <group> --help` aus, um die Flags zu sehen, die deine installierte CLI akzeptiert. Hat eine Aufgabe keinen eigenen Befehl, ruft `phaseo api get|post|patch|put|delete /v1/<path>` die Route mit deiner Sitzung auf.
+
+## Aufgabenübersicht
+
+### Schlüssel und Zugriff
+
+| Aufgabe | CLI | API-Route | MCP-Tool |
+| --- | --- | --- | --- |
+| Schlüssel auflisten, umbenennen oder löschen | `phaseo keys list`, `phaseo keys update <id> --name <name>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| Einen API-Schlüssel erstellen | `phaseo keys create --name <name>` | `POST /v1/keys` | — |
+| Limits, Status oder Ablauf eines Schlüssels ändern | `phaseo keys update <id> --limit <usd>`, `phaseo keys update <id> --disabled true` | `PATCH /v1/keys/{id}` | — |
+| Einen Schlüssel rotieren | — | `POST /v1/keys/{id}/rotate` | — |
+| Einen Schlüssel auf IP-Adressen beschränken | — | `PATCH /v1/keys/{id}` | — |
+| Von dir autorisierte Apps prüfen, einschränken oder widerrufen | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
+| Dein Profil aktualisieren | `phaseo profile update` | `PATCH /v1/me/profile` | — |
+
+### Credits, Budgets und Limits
+
+| Aufgabe | CLI | API-Route | MCP-Tool |
+| --- | --- | --- | --- |
+| Das Guthaben prüfen | `phaseo credits get` | `GET /v1/credits` | Schreibgeschützte Tools |
+| Credits hinzufügen (eine Person bestätigt) | `phaseo login --scopes billing:write`, dann `phaseo credits add --amount <usd>` | `POST /v1/credits/topups` | — |
+| Rate-Limit-Stufe des Workspace prüfen | `phaseo rate-limits tier get` | `GET /v1/rate-limits/tier` | — |
+
+### Routing und Anbieter
+
+| Aufgabe | CLI | API-Route | MCP-Tool |
+| --- | --- | --- | --- |
+| Routing-Modus festlegen oder Datenschutz verschärfen (ZDR einschalten, Logging oder Training ausschalten) | `phaseo settings update` | `PATCH /v1/settings` | `settings_update` |
+| Auto Routing konfigurieren, außer Ausgabenprofil und Preisgrenzen | `phaseo routing auto update` | `PATCH /v1/routing/auto` | — |
+
+### Workspaces und Identität
+
+| Aufgabe | CLI | API-Route | MCP-Tool |
+| --- | --- | --- | --- |
+| Workspaces erstellen | `phaseo workspaces create` | `POST /v1/workspaces` | — |
+| Eine Einladung annehmen | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
+| Das Aktivitätsprotokoll lesen | `phaseo audit-events list` | `GET /v1/audit-events` | — |
+
+### Nutzung, Protokolle und Benachrichtigungen
+
+| Aufgabe | CLI | API-Route | MCP-Tool |
+| --- | --- | --- | --- |
+| Anfrageprotokolle lesen | `phaseo logs list --since 1h` | `GET /v1/logs` | Schreibgeschützte Tools |
+| Nutzung als CSV exportieren | `phaseo analytics export` | `GET /v1/analytics/export` | — |
+
+## Änderungen im Dashboard oder mit einem Management-Schlüssel
+
+Diese Änderungen betreffen Ausgaben, Zugriff oder den Weg von Workspace-Daten. Eine CLI-Anmeldung oder MCP-Verbindung kann sie unabhängig von ihren Scopes nicht vornehmen: Die API antwortet mit `403` und verweist auf das Dashboard oder einen Management-Schlüssel. Nimm sie im Phaseo-Dashboard vor oder rufe die Route mit einem [Management-Schlüssel](./management-api-keys) auf.
+
+| Aufgabe | API-Route |
+| --- | --- |
+| Einen Verwaltungsschlüssel erstellen | `POST /v1/management-keys` |
+| Automatische Aufladung oder E-Mails bei niedrigem Guthaben einschalten | `PATCH /v1/notifications/settings` |
+| Workspace-Budgets festlegen | `POST /v1/budgets`, `PATCH /v1/budgets/{id}` |
+| Abteilungsbudgets festlegen | `POST /v1/department-budgets` |
+| Bei Ausgaben warnen oder sie blockieren | `POST /v1/spend-rules`, `POST /v1/spend-blocks/{id}/lift` |
+| Richtlinien für Ratenlimits | `POST /v1/rate-limits/policies`, `POST /v1/rate-limits/assignments` |
+| Rate-Limit-Stufe des Workspace erhöhen | `POST /v1/rate-limits/tier/raise` |
+| Datenschutz oder ZDR lockern oder Anbieterbeschränkungen oder BYOK-Fallback ändern | `PATCH /v1/settings` |
+| Eigene Anbieterschlüssel hinzufügen (BYOK) | `POST /v1/byok` |
+| Ausgabenprofil oder Preisgrenzen von Auto Routing festlegen | `PATCH /v1/routing/auto` |
+| Dynamische Routen erstellen und bereitstellen | `POST /v1/routing/dynamic-routes`, `POST /v1/routing/dynamic-routes/{id}/versions/{version}/deploy` |
+| Ersatz für eingestellte Modelle wählen | `PUT /v1/routing/successor/replacements` |
+| Ein privates Modell hinzufügen | `POST /v1/private-models` |
+| Presets erstellen oder aktualisieren | `POST /v1/presets`, `PATCH /v1/presets/{id}` |
+| Eine Preset-Version veröffentlichen oder ein Label verschieben | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` |
+| Guardrails erstellen und Schlüssel zuordnen | `POST /v1/guardrails`, `PUT /v1/guardrails/{id}/keys` |
+| Anfrageklassifikatoren verwalten | `POST /v1/classifiers` |
+| Einen Klassifikator an einem Beispiel testen (braucht Zugangsdaten mit `gateway:access`; CLI-Anmeldungen und Verwaltungsschlüssel erhalten derzeit `403 gateway_access_required`) | `POST /v1/classifiers/test` |
+| Mitglieder zu einem Workspace hinzufügen | `POST /v1/workspaces/{id}/members/add` |
+| Personen einladen | `POST /v1/workspaces/{id}/invites` |
+| SSO, SCIM, Abteilungen und Verzeichnis | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` |
+| Vertrauenswürdige Workloads (OIDC) | `POST /v1/workload-identity/policies` |
+| Traces an ein Observability-Tool senden | `POST /v1/observability/destinations`, `POST /v1/observability/destinations/{id}/test` |
+| Ziele für Warnungen per E-Mail, Slack oder Webhook | `POST /v1/notifications/destinations`, `PUT /v1/notifications/routes/{eventKind}` |
+| Webhooks für asynchrone Jobs | `POST /v1/webhook-endpoints` |
+
+## Einen 403-Fehler beheben
+
+Eine CLI-Sitzung, ein Verwaltungsschlüssel oder eine MCP-Verbindung kann nur das tun, was ihre Scopes und deine Workspace-Rolle erlauben, und Änderungen, die Owners und Admins vorbehalten sind, brauchen weiterhin einen Owner oder Admin. Gibt ein Befehl `403` zurück, prüfe die erteilten Scopes mit `phaseo whoami --json` und melde dich mit `phaseo login --scopes <scope,...>` erneut an, wenn einer fehlt. `billing:write` wird nie standardmäßig erteilt. Änderungen unter „Änderungen im Dashboard oder mit einem Management-Schlüssel“ werden für CLI-Anmeldungen und MCP-Verbindungen unabhängig von ihren Scopes abgelehnt.

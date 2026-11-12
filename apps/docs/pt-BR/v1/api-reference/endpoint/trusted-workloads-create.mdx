@@ -1,0 +1,10 @@
+---
+title: "Criar política de workload confiável"
+sidebarTitle: "Criar política de workload confiável"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /workload-identity/policies"
+description: "Cria uma política de confiança para que uma implantação da Vercel ou um workflow do GitHub Actions chame a Phaseo com seu token OIDC em vez de uma chave de API."
+---
+<Note>Requer `keys:write` em uma chave de gerenciamento ou token OAuth, ou um proprietário ou administrador do espaço de trabalho. Os workloads confiáveis estão em beta; espaços de trabalho sem o recurso recebem `404`.</Note>
+
+Veja [Workloads confiáveis](../../developers/trusted-workloads.mdx) para saber como as políticas funcionam e como gerenciá-las com Terraform.

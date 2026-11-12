@@ -1,11 +1,10 @@
-"use client";
-
 import React, { useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { createPortal } from "react-dom";
 import { Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import UnifiedRequestsTable from "./UnifiedRequestsTable";
+import type { RequestClassifierSummary } from "./requestClassifierLabels";
 import ExportDropdown from "./ExportDropdown";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +16,7 @@ import { runUsageViewRefresh } from "@/lib/gateway/usage/refreshBus";
 import type {
 	ProviderMetadataEntry,
 	RequestRow,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import { type ModelMetadataMap } from "./model-display";
 import RequestColumnSettings, {
 	useRequestColumns,
@@ -40,6 +39,8 @@ interface RequestsSectionProps {
 	initialPageSize: number;
 	detailBasePath?: string;
 	columnSettingsTargetId?: string;
+	/** Names for classifier labels in the table and request sheet. */
+	requestClassifiers?: RequestClassifierSummary[];
 }
 
 export default function RequestsSection({
@@ -59,6 +60,7 @@ export default function RequestsSection({
 	initialPageSize,
 	detailBasePath,
 	columnSettingsTargetId,
+	requestClassifiers,
 }: RequestsSectionProps) {
 	const t = useTranslations("SettingsUI");
 	const { columns, updateColumns, density, updateDensity } =
@@ -155,6 +157,7 @@ export default function RequestsSection({
 				initialNextCursor={initialNextCursor}
 				initialPageSize={initialPageSize}
 				detailBasePath={detailBasePath}
+				requestClassifiers={requestClassifiers}
 				onExportRef={exportRef}
 			/>
 		</div>

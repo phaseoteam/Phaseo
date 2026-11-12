@@ -1,117 +1,127 @@
 ---
-title: "Python गेटवे CLI बनाएँ"
+title: "Python Gateway CLI बनाएँ"
 icon: "terminal"
-description: "Python केंद्रित CLI या बैकएंड इंटीग्रेशन बनाने के लिए Python क्विकस्टार्ट नमूने को चरण-दर-चरण देखें।"
+description: "Python-फ़र्स्ट CLI या बैकएंड इंटीग्रेशन के पूरे वॉकथ्रू के लिए Python क्विकस्टार्ट सैंपल का उपयोग करें।"
 ---
 
-अगर आपका पहला वास्तविक Phaseo इंटीग्रेशन Python में है और आप CLI, worker या बैकएंड सेवा के लिए व्यावहारिक शुरुआत चाहते हैं, तो यह पेज उपयोग करें।
+सिर्फ़ स्टैंडर्ड लाइब्रेरी वाली Python CLI चलाएँ जो एक बार में एक कमांड से Phaseo एंडपॉइंट कॉल करती है। अंत में आपके पास health, models, Responses और Chat Completions के लिए काम करता हुआ `python quickstart.py <command>` होगा, साथ ही एम्बेडिंग, मॉडरेशन, इमेज, OCR, वीडियो और म्यूज़िक की कमांड भी, जिन्हें आप किसी वर्कर या बैकएंड में कॉपी कर सकते हैं।
 
-**लक्ष्य:** छोटे Python कमांड-लाइन ऐप्लिकेशन से Phaseo के कंट्रोल और जनरेशन रूट चलाना।
+यह CLI उदाहरण के लिए है: यह अनुरोधों के ढाँचे का संदर्भ है, कोई पैकेज्ड टूल नहीं। मीडिया कमांड के कई डिफ़ॉल्ट मॉडल ID अब उपलब्ध नहीं हैं, इसलिए उनके लिए `--model` दें ([मीडिया कमांड के लिए मॉडल चुनें](#pick-models-for-the-media-commands) देखें)।
 
-**परिणाम:** कम निर्भरताओं वाला CLI, जिसे आप worker, स्क्रिप्ट या बैकएंड इंटीग्रेशन के रूप में अपना सकते हैं।
+किसी कोडिंग एजेंट से ऐसी ही CLI शुरू से बनवाने के लिए, यह प्रॉम्प्ट पेस्ट करें:
 
 <Prompt
-  description="Phaseo रूट के लिए **Python गेटवे CLI** बनाएँ।"
+  description="Phaseo रूट के इर्द-गिर्द **Python gateway CLI** बनाएँ।"
   icon="terminal-square"
   actions={["copy", "cursor"]}
 >
-{`आप Phaseo Gateway के लिए Python CLI या सर्वर-साइड इंटीग्रेशन बना रहे हैं।
+{`You are building a Python-first CLI or backend integration for Phaseo Gateway.
 
-एक छोटा Python ऐप बनाएँ जो:
-- वातावरण से PHASEO_API_KEY पढ़े
-- कंट्रोल रूट के त्वरित परीक्षण का मोड उपलब्ध कराए
-- टेक्स्ट जनरेशन के लिए एक कमांड उपलब्ध कराए
-- निर्भरताएँ न्यूनतम रखे
+Create a small Python app that:
+- reads PHASEO_API_KEY from the environment and sends it as Authorization: Bearer
+- uses https://api.phaseo.app/v1 as the base URL
+- supports one control-route smoke mode (GET /health, GET /models)
+- supports one text-generation command (POST /responses)
+- keeps the implementation dependency-light
 
-आवश्यकताएँ:
-- कोई ठोस कारण न हो तो Python की मानक लाइब्रेरी को प्राथमिकता दें।
-- अनुरोध की सामग्री स्पष्ट रखें।
-- सफलता और विफलता के स्पष्ट संदेश दिखाएँ।
-- बहुत बड़ी सामान्य CLI के बजाय एक या दो उपयोगी कमांड शामिल करें।
-- उदाहरणों के साथ एक संक्षिप्त README जोड़ें।
+Requirements:
+- Prefer the Python standard library unless there is a strong reason not to.
+- Keep the request payloads explicit.
+- Print clear success and failure output, and exit non-zero on a failed call.
+- Include one or two useful commands instead of a huge general CLI.
+- Add a short README with examples.
 
-डिलिवरेबल्स:
-- Python ऐप का कोड
-- उपयोग के सरल कमांड
-- .env.example फ़ाइल या वातावरण चर का समकक्ष दस्तावेज़
+Deliverables:
+- Python app code
+- simple usage commands
+- .env.example or equivalent env documentation
 
-सत्यापन:
-- संभव हो तो रूट का त्वरित परीक्षण चलाएँ।
-- संभव हो तो टेक्स्ट जनरेशन का एक सफल परीक्षण चलाएँ।
-- स्पष्ट रूप से बताएँ कि आपने क्या सत्यापित किया और क्या अभी सत्यापित नहीं हुआ है।`}
+Verification:
+- run the smoke path if possible
+- run one successful generation path if possible
+- report exactly what you verified and what remains unverified.`}
 </Prompt>
 
-## नमूना प्रोजेक्ट
+## CLI क्या करती है
 
-- GitHub: [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart)
-- रिपॉज़िटरी का स्थानीय पाथ: `examples/gateway-python-quickstart`
+सैंपल [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart) है: एक फ़ाइल, `quickstart.py`, जो सिर्फ़ `urllib`, `json` और `argparse` का उपयोग करती है।
 
-## यह ऐप क्या करता है
+| कमांड | कॉल |
+| --- | --- |
+| `smoke` | `GET /v1/health`, `GET /v1/models`, `GET /v1/providers`, और एक `POST /v1/responses` |
+| `health`, `models`, `providers` | संबंधित `GET` रूट |
+| `responses --prompt` | `POST /v1/responses` |
+| `chat --prompt` | `POST /v1/chat/completions` |
+| `embeddings --text` | `POST /v1/embeddings` |
+| `moderations --text` | `POST /v1/moderations` |
+| `image --prompt` | `POST /v1/images/generations` |
+| `ocr --image-url` | `POST /v1/ocr` |
+| `video-create`, `video-status`, `video-cancel`, `video-download-url` | `POST /v1/videos`, `GET /v1/videos/{video_id}`, `POST /v1/videos/{video_id}/cancel`, `POST /v1/videos/{video_id}/download_url` |
+| `music-create`, `music-status` | `POST /v1/music/generate`, `GET /v1/music/generate/{music_id}` |
 
-- इन जैसे कंट्रोल रूट का समर्थन करता है:
-  - `GET /v1/health`
-  - `GET /v1/models`
-  - `GET /v1/providers`
-- इन जैसे जनरेशन रूट का समर्थन करता है:
-  - `POST /v1/responses`
-  - `POST /v1/chat/completions`
-  - `POST /v1/embeddings`
-  - और कई अन्य एंडपॉइंट
+हर अनुरोध `429`, `5xx` और नेटवर्क त्रुटियों पर दो बार दोबारा कोशिश करता है, पहले 1 s और फिर 2 s रुककर, और 45 सेकंड बाद टाइम आउट हो जाता है। जब कॉल `2xx` नहीं होती, तो हर कमांड `1` के साथ बाहर निकलती है, इसलिए आप इसे स्क्रिप्ट में इस्तेमाल कर सकते हैं।
 
-## यह नमूना क्यों उपयोगी है
+## इसे चलाएँ
 
-इससे आपको मिलता है:
+आपको Python 3 और एक Phaseo API कुंजी चाहिए।
 
-- बिना थर्ड-पार्टी निर्भरताओं के Python-आधारित संदर्भ
-- स्पष्ट अनुरोध पेलोड और रिस्पॉन्स हैंडलिंग
-- workers, स्क्रिप्ट और आंतरिक टूल के लिए व्यावहारिक पैटर्न
+<Steps>
+<Step title=".env.local बनाएँ">
 
-## आवश्यकताएँ
+स्क्रिप्ट उसी फ़ोल्डर से `.env.local` पढ़ती है जिसमें आप उसे चलाते हैं। सैंपल में `.env.example` नहीं है, इसलिए फ़ाइल खुद बनाएँ:
 
-- Python 3
-- Phaseo API कुंजी
+```bash .env.local
+PHASEO_API_KEY=phaseo_v1_sk_...
+# Optional
+PHASEO_MODEL=openai/gpt-6-astra
+PHASEO_BASE_URL=https://api.phaseo.app/v1
+PHASEO_APP_TITLE=My Python CLI
+PHASEO_HTTP_REFERER=https://myapp.example
+```
 
-## नमूना चलाएँ
+आपके शेल में पहले से सेट वेरिएबल फ़ाइल के मानों पर भारी पड़ते हैं। `PHASEO_MODEL` के बिना, टेक्स्ट कमांड `openai/gpt-5.6-sol` का उपयोग करती हैं।
+
+</Step>
+<Step title="स्मोक जाँच चलाएँ">
 
 ```bash
 cd examples/gateway-python-quickstart
-cp .env.example .env.local
+python quickstart.py smoke
 ```
 
-यह सेट करें:
+`smoke` एक छोटा Responses अनुरोध भी भेजता है, इसलिए इसमें कुछ क्रेडिट खर्च होते हैं।
 
-- `PHASEO_API_KEY`
-
-फिर चलाएँ:
+</Step>
+<Step title="एक अनुरोध भेजें">
 
 ```bash
-python quickstart.py smoke
 python quickstart.py responses --prompt "Return exactly: integration_ok"
 python quickstart.py --help
 ```
 
-## अपना काम जाँचें
+</Step>
+</Steps>
 
-- स्मोक मोड पुष्टि करता है कि API तक पहुँचा जा सकता है।
-- Responses कमांड `integration_ok` प्रिंट करता है।
-- `--help` बिना अनुरोध भेजे उपलब्ध कमांड दिखाता है।
-- टर्मिनल में प्रमाणीकरण और API की त्रुटियाँ साफ़ दिखाई देती हैं।
+## जाँचें कि यह काम कर गया
 
-## कोड में क्या देखें
+- `smoke` हर ब्लॉक के लिए `HTTP 200` प्रिंट करता है और `0` के साथ बाहर निकलता है।
+- `responses` कमांड के आउटपुट में `integration_ok` होता है।
+- `--help` कोई अनुरोध किए बिना कमांड सूचीबद्ध करता है।
+- कुंजी के बिना, स्क्रिप्ट `Missing PHASEO_API_KEY` प्रिंट करती है और `1` के साथ बाहर निकलती है।
+- अनुरोध **सेटिंग्स → उपयोग → लॉग्स** में दिखते हैं।
 
-- वातावरण कैसे लोड किया जाता है
-- CLI कमांड कैसे भेजता है
-- अलग-अलग अनुरोध पेलोड कैसे बनाए जाते हैं
-- एसिंक्रोनस वीडियो और म्यूज़िक रूट को एकल-उत्तर वाले टेक्स्ट रूट से अलग कैसे संभाला जाता है
+<span id="pick-models-for-the-media-commands"></span>
+## मीडिया कमांड के लिए मॉडल चुनें
 
-## नमूने को अपने लिए ढालें
+`quickstart.py` के ये डिफ़ॉल्ट रिटायर हो चुके हैं या इनका कोई सक्रिय प्रदाता नहीं है। `--model` से कोई मौजूदा मॉडल दें, और उसे [मॉडल पेज](https://phaseo.app/models) या `python quickstart.py models` से चुनें:
 
-- अपने सेवा में काम न आने वाले एंडपॉइंट हटाएँ
-- हर जगह हेडर दोहराने के बजाय एक साझा अनुरोध हेल्पर रखें
-- आगे चलकर उच्च-स्तरीय क्लाइंट चाहिए तो Python SDK पर जाएँ
+| कमांड | सैंपल में डिफ़ॉल्ट | स्थिति |
+| --- | --- | --- |
+| `moderations` | `openai/omni-moderation-latest` | कैटलॉग ID नहीं है; `openai/omni-moderation` का उपयोग करें |
+| `ocr` | `mistral/mistral-ocr` | रिटायर; `mistral/ocr-4.1` आज़माएँ |
+| `video-create` | `openai/sora-2` | रिटायर |
+| `music-create` | `suno/suno-v4` | कोई सक्रिय प्रदाता नहीं |
 
-## संबंधित गाइड
+`embeddings` (`google/gemini-embedding-2`) और `image` (`openai/gpt-image-2`) के डिफ़ॉल्ट उपलब्ध हैं। वीडियो और म्यूज़िक जॉब एसिंक्रोनस होते हैं: लौटाया गया ID सहेजें और स्टेटस कमांड से पोल करें; जॉब का लाइफ़साइकल [एसिंक वीडियो और बैच](../guides/async-video-and-batch) में बताया गया है।
 
-- [मिनी ऐप के लिए शुरुआती प्रॉम्प्ट](./mini-app-starter-prompts.mdx)
-- [Python से स्ट्रक्चर्ड JSON भेजें](./sdk-python-presets-and-json.mdx)
-- [उदाहरण](../guides/examples.mdx)
+फ़ाइल को सिर्फ़ उन कमांड तक छोटा करें जिनकी आपकी सेवा को ज़रूरत है, एक साझा `gateway_request()` हेल्पर रखें, और टाइप किए गए अनुरोध चाहिए हों तो [Python SDK](../sdk-reference/client/overview) पर जाएँ।

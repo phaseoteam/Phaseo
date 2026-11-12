@@ -1,18 +1,62 @@
 ---
 icon: "list-filter"
-title: "Outil serveur de recherche de modèles"
-description: "Permettez à un modèle de trouver des modèles adaptés dans le catalogue à jour de Phaseo."
+title: "Outil serveur Search Models"
+description: "Laissez un modèle trouver des modèles adaptés dans le catalogue Phaseo en direct."
 ---
 
-Utilisez `phaseo:search_models` lorsque le modèle appelant doit sélectionner ou recommander un modèle à partir des métadonnées actuelles du catalogue.
+Ajoutez `phaseo:search_models` pour que le modèle puisse choisir ou recommander un modèle à partir du catalogue Phaseo en direct : modalités actuelles, fournisseurs, paramètres pris en charge et prix.
 
 ```json
 {
+  "model": "openai/gpt-6-astra",
+  "messages": [
+    { "role": "user", "content": "Which models can transcribe audio and return JSON?" }
+  ],
   "tools": [{ "type": "phaseo:search_models", "parameters": { "max_results": 5 } }],
   "max_tool_calls": 10
 }
 ```
 
-L’appel d’outil peut appliquer des filtres sur `query`, `input_modalities`, `output_modalities`, `series`, `provider`, et `required_params`. Les résultats comprennent les identifiants des modèles, les modalités, les fournisseurs, les paramètres pris en charge et les métadonnées tarifaires.
+## Paramètres
 
-L’utilisation est indiquée dans `usage.server_tool_use.search_models_requests`.
+| Paramètre | Type | Défaut | Description |
+| --- | --- | --- | --- |
+| `max_results` | integer | `5` | Nombre de modèles renvoyés par recherche, jusqu’à `20`. |
+
+## Ce que le modèle envoie
+
+N’importe lequel de ces filtres. Seuls les modèles actifs sont recherchés, et un modèle doit correspondre à tous les filtres envoyés.
+
+| Argument | Correspond à |
+| --- | --- |
+| `query` | Du texte dans l’ID, le nom ou la description du modèle |
+| `series` | Du texte dans l’ID, le nom ou la description du modèle |
+| `input_modalities` | Les modèles qui acceptent toutes ces entrées |
+| `output_modalities` | Les modèles qui produisent toutes ces sorties |
+| `provider` | Un ID ou un nom de fournisseur |
+| `required_params` | Les modèles qui prennent en charge tous ces paramètres de requête |
+
+## Ce que renvoie l’outil
+
+```json
+{
+  "models": [
+    {
+      "id": "openai/gpt-4o-mini-transcribe",
+      "name": "...",
+      "description": "...",
+      "input_modalities": ["audio"],
+      "output_modalities": ["text"],
+      "providers": ["openai"],
+      "supported_params": ["..."],
+      "pricing": {}
+    }
+  ],
+  "total_results": 4,
+  "showing": 4
+}
+```
+
+## Utilisation et tarification
+
+Chaque recherche ajoute 1 à `usage.server_tool_use.search_models_requests` et peut être facturée via `server_tool_search_models_requests`.

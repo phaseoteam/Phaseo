@@ -1,0 +1,14 @@
+interface:
+  display_name: "Phaseo Routing and Presets"
+  short_description: "Roll out presets, routing and response caching"
+  brand_color: "#0069A8"
+  default_prompt: "Use $phaseo-routing-presets to move these requests onto a preset and check routing and caching."
+policy:
+  allow_implicit_invocation: true
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "phaseo-docs"
+      description: "Phaseo documentation search"
+      transport: "streamable_http"
+      url: "https://phaseo.app/docs/mcp"

@@ -14,10 +14,13 @@ const services = [
 		env: process.env,
 	},
 	{
-		name: "Next.js web app",
+		name: "Web app",
 		args: ["--filter", "@phaseo/web", "dev"],
 		env: {
 			...process.env,
+			// The web Worker runs in workerd; this passes the shell environment
+			// (including WEB_API_ORIGIN) through to its env in local dev.
+			CLOUDFLARE_INCLUDE_PROCESS_ENV: "true",
 			WEB_API_ORIGIN: localWebApiOrigin,
 		},
 	},

@@ -5,7 +5,10 @@
 
 import { getSupabaseAdmin } from "@/runtime/env";
 import { mergeAppCategories, normalizeAppCategories } from "./app-categories";
-const ENSURE_APP_ID_L1_TTL_MS = 5_000;
+// Each miss costs a lookup plus an UPDATE of api_apps.last_seen, so keep known
+// apps for a few minutes; new categories still bypass the cache.
+const ENSURE_APP_ID_L1_TTL_MS = 5 * 60_000;
+const ENSURE_APP_ID_L1_MAX_ENTRIES = 5_000;
 
 type EnsureAppIdCacheEntry = {
 	id: string;
@@ -46,11 +49,17 @@ function writeEnsureAppIdL1(
 	ttlMs = ENSURE_APP_ID_L1_TTL_MS,
 ): void {
 	if (!Number.isFinite(ttlMs) || ttlMs <= 0) return;
+	ensureAppIdL1.delete(cacheKey);
 	ensureAppIdL1.set(cacheKey, {
 		id,
 		categories,
 		expiresAtMs: Date.now() + ttlMs,
 	});
+	while (ensureAppIdL1.size > ENSURE_APP_ID_L1_MAX_ENTRIES) {
+		const oldest = ensureAppIdL1.keys().next();
+		if (oldest.done) break;
+		ensureAppIdL1.delete(oldest.value);
+	}
 }
 
 export function __resetEnsureAppIdCacheForTests(): void {

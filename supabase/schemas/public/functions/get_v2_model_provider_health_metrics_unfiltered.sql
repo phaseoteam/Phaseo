@@ -60,7 +60,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_provider_health_metrics_unfiltere
       fact.latency_ms,
       fact.generation_ms,
       fact.throughput
-    from public.v2_request_facts fact
+    from public.reporting_request_facts fact
     left join public.v2_model_provider_routes route
       on route.provider_model_id = fact.provider_model_id
     cross join params

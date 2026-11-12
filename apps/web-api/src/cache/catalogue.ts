@@ -1,5 +1,11 @@
 import type { PublicCachePolicy } from "@/http/cache";
-import { PUBLIC_LIVE_DATA_CACHE } from "./publicLiveData";
+
+// Policy withdrawal must remain bounded even when a cache purge is unavailable.
+export const PUBLIC_DATA_POLICY_CACHE: PublicCachePolicy = {
+	edgeTtlSeconds: 5 * 60,
+	browserTtlSeconds: 0,
+	browserStaleWhileRevalidateSeconds: 0,
+};
 
 /**
  * The main public catalogue and the gateway selector are different payloads,
@@ -12,6 +18,6 @@ export const PUBLIC_MODEL_CATALOGUE_CACHE_TAGS = [
 ] as const;
 
 export const PUBLIC_MODEL_CATALOGUE_CACHE: PublicCachePolicy = {
-	...PUBLIC_LIVE_DATA_CACHE,
+	...PUBLIC_DATA_POLICY_CACHE,
 	cacheTags: PUBLIC_MODEL_CATALOGUE_CACHE_TAGS,
 };

@@ -1,44 +1,76 @@
 ---
 title: "メッセージを作成"
-sidebarTitle: "メッセージを作成"
+sidebarTitle: "メッセージを作成（Anthropic）"
 openapi: "/ja/openapi/v1/openapi.localized.yaml POST /messages"
 description: "`/v1/messages` の Anthropic 互換 Messages エンドポイントです。"
 ---
-`/v1/messages` は Anthropic Messages API のリクエスト形式を受け取り、Anthropic 形式の応答を返します。
 
-## ストリーミング
+Anthropic Messages API のペイロードを `/v1/messages` に送信すると、Phaseo がルーティングするどのモデルでも Anthropic 形式のレスポンスが返されます。Anthropic のツール使用フィールドに対応しており、`X-Phaseo-Strictness` ヘッダーでサポートされていないパラメーターの扱いを制御できます。
 
-`stream: true` を設定すると、Anthropic 形式の Server-Sent Events（`message_start`、`content_block_*`、`message_delta`、`message_stop`）を受信できます。
+`stream: true` を設定すると、Anthropic 形式の Server-Sent Events（`message_start`、`content_block_*`、`message_delta`、`message_stop`）を受け取れます。ストリーミングはツールループでも動作します。
 
-## 補足
+## 会話の途中でシステムメッセージを送る
 
-- Anthropic のツール使用フィールドに対応しています。
-- `stream: true` はツールループでも利用できます。Gateway 管理サーバーツールでは、Phaseo が上流のターンを処理してループを続行し、合成ストリームを再送する場合があります。
-- Anthropic ネイティブの Web 検索ツール形式も `tools` で直接指定できます。例: `type: "web_search_20250305"`。
-- `X-Phaseo-Strictness` ヘッダーで、未対応パラメーターの扱いを制御します。
-
-## サーバーツール
-
-`/v1/messages` は次の Gateway 管理サーバーツールにも対応しています。
-
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-
-Phaseo はこれらのツールを上流プロバイダー向けの Anthropic 互換形式に変換してサーバー側で実行し、ツールループを続行します。
-
-## プロバイダーのネイティブ Web 検索
-
-互換性のある Anthropic モデルとプロバイダーの組み合わせがネイティブ Web 検索に対応している場合は、ネイティブのツール定義を直接渡すこともできます。
+会話のその時点から適用する指示は、`messages` に `role: "system"` のメッセージとして追加します。トップレベルの `system` フィールドは変わらないため、キャッシュされたプレフィックスは引き続きヒットします。
 
 ```bash
 curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4",
+    "model": "anthropic/claude-opus-5.5",
+    "max_tokens": 512,
+    "system": "You are a code review assistant.",
+    "messages": [
+      { "role": "user", "content": "Review process() in utils.py." },
+      { "role": "assistant", "content": "The loop is fine; the regex is compiled on every call." },
+      { "role": "user", "content": "Now review the code that calls it." },
+      { "role": "system", "content": "From now on, include type annotations in every suggestion." }
+    ]
+  }'
+```
+
+システムメッセージには文字列またはテキストブロックを指定します。ユーザーのターン（またはサーバーツールの結果で終わるアシスタントのターン）の直後に置き、最後のメッセージにするか、その後にアシスタントのターンを続ける必要があります。それ以外の位置では `400` が返されます。`clear_at`、`output_config`、`tool_addition` や `tool_removal` のブロックには対応していません。
+
+| モデル | システムメッセージの受け取り方 |
+| --- | --- |
+| Claude Fable 5 と 5.1、Mythos 5 と 5.1、Opus 4.8、Opus 5 と 5.5、Sonnet 5.5、Haiku 5.5 | その位置のまま |
+| Sonnet 5 を含むその他の Claude モデルと、Microsoft Foundry 上のすべての Claude モデル | トップレベルのシステムプロンプトに統合 |
+| 他のプロバイダーのモデル | Chat Completions に送信した場合と同じく、システムメッセージとして |
+
+## サーバーツールを使う
+
+`tools` に `phaseo:` ツールを追加すると、モデルがそれを呼び出したときに Phaseo が実行します。上流では Anthropic のツール形式に書き換え、ツールループをサーバー側で続けます。`/v1/messages` は `phaseo:apply_patch` を除くすべてのサーバーツールを受け付けます。一覧は[サーバーツール](../../guides/server-tools)ガイドにあります。
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-5.5",
+    "max_tokens": 512,
+    "messages": [
+      { "role": "user", "content": "What time is it in America/New_York right now?" }
+    ],
+    "tools": [
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["America/New_York"] } }
+    ],
+    "tool_choice": { "type": "auto" }
+  }'
+```
+
+サーバーツールの呼び出しは `usage.server_tool_use` に計数されます。以前の `gateway:datetime` タイプも引き続き動作します。`stream: true` の場合、Phaseo がツールのターンを自分で実行し、続きの回答を 1 つのストリームとして送信します。
+
+## Anthropic のネイティブ Web 検索を使う
+
+ルーティング先の Anthropic モデルとプロバイダーがネイティブ Web 検索に対応している場合は、Anthropic のツール定義（例: `type: "web_search_20250305"`）をそのまま渡します。実行前に、プロバイダーのルーティングで `web_search_options` への対応が引き続き絞り込まれます。
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-5.5",
     "max_tokens": 512,
     "messages": [
       { "role": "user", "content": "Find the latest Anthropic web search guidance." }
@@ -51,33 +83,6 @@ curl https://api.phaseo.app/v1/messages \
         "allowed_domains": ["docs.anthropic.com"]
       }
     ],
-    "tool_choice": { "type": "tool", "name": "web_search" }
-  }'
-```
-
-実行前に、プロバイダーのルーティングで `web_search_options` の対応状況が引き続き確認されます。
-
-### 日時の例
-
-```bash
-curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "anthropic/claude-sonnet-4",
-    "max_tokens": 512,
-    "stream": false,
-    "messages": [
-      { "role": "user", "content": "What time is it in America/New_York right now?" }
-    ],
-    "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "America/New_York" }
-      }
-    ],
     "tool_choice": { "type": "auto" }
   }'
 ```
-
-使用すると、`usage.server_tool_use.*` カウンターにサーバーツールの呼び出し回数が記録されます。

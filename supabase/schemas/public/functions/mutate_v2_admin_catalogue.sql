@@ -39,8 +39,9 @@ begin
     if p_action='delete' then delete from public.v2_benchmarks where benchmark_id=p_resource_id;
     else
       insert into public.v2_benchmarks(benchmark_id,name,category,link,ascending_order,updated_at)
-      values(p_resource_id,p_payload->>'name',nullif(p_payload->>'category',''),nullif(p_payload->>'link',''),coalesce((p_payload->>'ascending_order')::boolean,false),now())
-      on conflict(benchmark_id) do update set name=excluded.name,category=excluded.category,link=excluded.link,ascending_order=excluded.ascending_order,updated_at=now();
+      -- Higher is better unless the payload says otherwise; an edit without a direction keeps the stored one.
+      values(p_resource_id,p_payload->>'name',nullif(p_payload->>'category',''),nullif(p_payload->>'link',''),coalesce((p_payload->>'ascending_order')::boolean,true),now())
+      on conflict(benchmark_id) do update set name=excluded.name,category=excluded.category,link=excluded.link,ascending_order=case when nullif(p_payload->>'ascending_order','') is null then public.v2_benchmarks.ascending_order else excluded.ascending_order end,updated_at=now();
     end if;
     select to_jsonb(t) into v_after from public.v2_benchmarks t where benchmark_id=p_resource_id;
   elsif p_resource_type = 'subscription-plans' then

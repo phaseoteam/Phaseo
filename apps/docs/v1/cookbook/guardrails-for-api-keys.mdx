@@ -2,98 +2,83 @@
 title: "Roll out guardrails on API keys"
 icon: "shield-check"
 description: "Apply guardrails to API keys, test enforcement before rollout, and verify blocks, redactions, and flags from activity views."
+"og:image": "https://phaseo.app/og/dynamic?title=Roll%20out%20guardrails%20on%20API%20keys&description=Apply%20guardrails%20to%20API%20keys%2C%20test%20enforcement%20before%20rollout%2C%20and%20verify%20blocks%2C%20redactions%2C%20and%20flags%20from%20activity%20views.&pathname=/docs/v1/cookbook/guardrails-for-api-keys"
 ---
 
-Use this recipe when you need to protect one or more API keys with budget limits, routing restrictions, prompt-injection checks, or sensitive-info handling.
+Create one guardrail in **Settings → Guardrails**, attach it to a low-risk API key, and widen it only after the logs show it behaving. When you're done that key can only reach the providers and models you allow, and its prompts are scanned for prompt injection and sensitive data before they reach a model.
 
-## 1. Create the guardrail under the workspace
+This is a dashboard procedure; the same policy can be scripted with the [guardrails API](../api-reference/endpoint/guardrails-create).
 
-Create guardrails at the workspace level first so the same policy can be reused across multiple keys.
+```mermaid
+flowchart LR
+  ws["Workspace privacy rules"] --> gr["Guardrail: data handling"]
+  gr --> prov["Provider allow or block list"]
+  prov --> mdl["Model allow list"]
+  mdl --> scan["Prompt injection and sensitive info scan"]
+  scan -->|"flag, redact or block"| route["Route the request"]
+```
 
-Recommended first pass:
+Workspace privacy rules apply first; a guardrail can only narrow them. Guardrails don't cap spend: set a limit on the key or a [workspace budget](../api-reference/limits#key-limits-and-budgets) instead.
 
-- add model and provider restrictions before content checks
-- keep the first rollout narrow to one key or one environment
-- name the guardrail after the policy outcome, not the team name
+## Roll it out
 
-## 2. Attach it to a target API key
+<Steps>
+<Step title="Create the guardrail">
 
-From the API key settings page, attach the guardrail to the key that should receive enforcement.
+Open **Settings → Guardrails → New Guardrail**. Name it after what it enforces, such as `eu-models-pii-redact`, not after a team, so it can be reused across keys.
 
-Use this sequence:
+Set route access before content checks:
 
-1. start with a staging or low-risk key
-2. attach one guardrail at a time when possible
-3. confirm the key detail dialog shows the applied guardrail
+| Setting | Choices |
+| --- | --- |
+| **Provider mode** | Allow all providers, Only allow selected providers, or Allow all except selected providers |
+| **Model mode** | Allow all models, or Only allow selected models (applied after provider filtering) |
+| **Data handling** | ZDR only, and whether free or paid endpoints that may train on inputs stay eligible |
 
-## 3. Set budget policy and routing restrictions
+A common first policy blocks low-trust providers and allows only the exact production models the key should reach. Use the preview to check which providers and models stay routable, and whether **Only allow** is narrower than you meant.
 
-Common combination:
+</Step>
+<Step title="Add content checks">
 
-- daily cost limit
-- provider blocklist for low-trust providers
-- model allowlist for the exact production models that should remain routable
+**Prompt injection** scans user-supplied content for common injection patterns. **Sensitive info** detects data before the request leaves Phaseo:
 
-Use the live preview in the guardrail editor to verify:
+| Detector | Redacted as | Adds latency |
+| --- | --- | --- |
+| Email address | `[EMAIL]` | No |
+| Phone number | `[PHONE]` | No |
+| US Social Security number | `[SSN]` | No |
+| Credit card number | `[CREDIT_CARD]` | No |
+| IP address (IPv4) | `[IP_ADDRESS]` | No |
+| Person name | `[PERSON_NAME]` | Yes |
+| Physical address | `[ADDRESS]` | Yes |
 
-- which providers stay allowed
-- which models become blocked
-- whether `Only allow` is narrower than intended
+Each check has an action: **Flag**, **Redact** or **Block**. Start prompt injection on **Flag** or **Redact**, and move to **Block** only after you've reviewed the false positives. Use the fast detectors first. Add custom patterns as explicit regex rules.
 
-## 4. Add prompt-injection and sensitive-info rules
+</Step>
+<Step title="Test it in the preview">
 
-For a practical rollout:
+Before saving, run three inputs through the preview: one harmless, one that should clearly be stopped, and one realistic production prompt. Check the redaction text, the block or allow result, and that nothing unrelated matches.
 
-- start prompt injection with `flag` or `redact`
-- move to `block` only after reviewing false positives
-- use deterministic sensitive-info rules first:
-  - email
-  - phone
-  - SSN
-  - credit card
-  - IP address
+</Step>
+<Step title="Attach it to one key">
 
-If you need custom patterns, add them as explicit regex rules and test them in the preview input before saving.
+Under **Apply to keys**, pick a staging or low-risk key. You can attach the guardrail while you create it. **Apply to members** enforces it on the API keys those members create instead. Members can't edit or remove a guardrail that a workspace owner or admin assigned.
 
-## 5. Test the policy before broad rollout
+</Step>
+<Step title="Check enforcement">
 
-Use the guardrail preview with:
+Send real requests through the key, then check:
 
-- one benign input
-- one clearly disallowed input
-- one realistic production-like prompt
+- **Settings → Usage → Guardrails** for blocked, redacted and flagged counts.
+- The **Guardrail enforcement** section of a request in **Settings → Usage → Logs**, for the guardrail and detector that fired.
+- The **Guardrails** column in **Settings → API Keys**, to confirm which keys it's attached to.
 
-Look for:
+</Step>
+<Step title="Widen the rollout">
 
-- correct redaction text
-- correct blocked/allowed behavior
-- no accidental matches on unrelated content
+Attach the same guardrail to more keys, tighten actions from **Flag** to **Redact** or **Block**, and add the person-name and address detectors only where their latency is acceptable.
 
-## 6. Verify enforcement in activity and logs
+</Step>
+</Steps>
 
-After sending real requests through the guarded key, verify:
-
-- the Guardrail Enforcement panel on the activity page
-- request detail dialogs for blocked or redacted requests
-- the API key detail dialog for per-key guardrail activity
-
-You should see:
-
-- blocked counts
-- redacted counts
-- flagged counts
-- the specific guardrail and detector details when enforcement happened
-
-## 7. Expand rollout safely
-
-When the first key behaves correctly:
-
-1. attach the same guardrail to more keys
-2. tighten actions from `flag` to `redact` or `block`
-3. add higher-latency name and address detection only where the latency tradeoff is acceptable
-
-## Related
-
-- [Presets](../guides/presets.mdx)
-- [Quickstart](../quickstart.mdx)
-- [Coding agents with `SKILL.md`](./coding-agents-skill-md.mdx)
+A turned-off guardrail keeps its configuration but isn't enforced. To share routing rules between callers rather than enforce them on keys, use a [preset](../guides/presets).

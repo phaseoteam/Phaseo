@@ -3,38 +3,78 @@ title: "2月"
 description: "Phaseo 2026年2月的产品更新、SDK 变更和模型发布。"
 ---
 
-<Update label="2026年2月26日" tags={["功能","模型发布","文档"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### 功能
+<ChangelogFilters labels={{"product":"产品","api":"API 与 SDK","models":"模型"}} clearLabel="清除" />
 
-- Gemini 3.1 Flash Image Preview 已在模型发现、网关兼容性和文档中得到支持。
+<Update label="2026年2月27日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 邮箱登录失败时，登录页面会直接显示原因（例如密码错误或邮箱未验证），而不是跳转到通用错误页面 ([#116](https://github.com/phaseoteam/Phaseo/pull/116))。
+- 邮箱注册会列出密码规则（小写字母、大写字母、数字和符号），并在提交表单前进行检查 ([#113](https://github.com/phaseoteam/Phaseo/pull/113))。
+- 模型表格现在能正确显示每百万单位的价格，并占满整个页面宽度；此前部分行会显示异常高的价格 ([#113](https://github.com/phaseoteam/Phaseo/pull/113), [#116](https://github.com/phaseoteam/Phaseo/pull/116))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- Gemini 3 请求会将 `reasoning.effort` 映射到各模型支持的思考级别，从 `minimal` 到 `high` ([#113](https://github.com/phaseoteam/Phaseo/pull/113))。
+
+</div>
+
+</Update>
+
+<Update label="2026年2月26日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- **破坏性变更：** `/v1/responses/ws` 现已标记为实验性功能，并拒绝不带前缀的模型 ID；请发送 `openai/<model>` 格式的 ID，生产环境请使用 `POST /v1/responses` ([#112](https://github.com/phaseoteam/Phaseo/pull/112))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Gemini 3.1 Flash Image Preview (Nano Banana 2) 模型发布图片](../../../images/model-releases/2026-02-26--google--gemini-3-1-flash-image-preview.png)
 
 - [Google: Gemini 3.1 Flash Image Preview (Nano Banana 2)](https://phaseo.app/models/google/gemini-3.1-flash-image-preview)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月24日" tags={["模型发布"]}>
+<Update label="2026年2月24日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Qwen 3.5 122B A10B 模型发布图片](../../../images/model-releases/2026-02-24--qwen--qwen3-5-122b-a10b.png)
 
+- [Qwen: Qwen 3.5 122B A10B](https://phaseo.app/models/qwen/qwen3.5-122b-a10b)
 - [Inception: Mercury 2](https://phaseo.app/models/inception/mercury-2)
 - [Inception: Mercury Edit 2](https://phaseo.app/models/inception/mercury-edit-2)
 - [Liquid AI: LFM 2 24B A2B](https://phaseo.app/models/liquid-ai/lfm-2-24b-a2b)
-- [Qwen: Qwen 3.5 122B A10B](https://phaseo.app/models/qwen/qwen3.5-122b-a10b)
 - [Qwen: Qwen 3.5 27B](https://phaseo.app/models/qwen/qwen3.5-27b)
 - [Qwen: Qwen 3.5 35B A3B](https://phaseo.app/models/qwen/qwen3.5-35b-a3b)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月23日" tags={["模型发布"]}>
+<Update label="2026年2月23日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![GPT Audio 1.5 模型发布图片](../../../images/model-releases/2026-02-23--openai--gpt-audio-1-5.png)
 
@@ -42,41 +82,61 @@ description: "Phaseo 2026年2月的产品更新、SDK 变更和模型发布。"
 - [OpenAI: GPT Realtime 1.5](https://phaseo.app/models/openai/gpt-realtime-1.5)
 - [Qwen: Qwen 3.5 Flash](https://phaseo.app/models/qwen/qwen3.5-flash)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月19日" tags={["功能","模型发布","定价","文档"]}>
+<Update label="2026年2月19日">
 
-### 功能
+<div data-changelog-category="models">
 
-- Gemini 3.1 Pro Preview 已在模型发现、定价、网关和文档中得到支持。
-
-### 模型发布
+<p className="changelog-category">模型</p>
 
 ![Gemini 3.1 Pro Preview 模型发布图片](../../../images/model-releases/2026-02-19--google--gemini-3-1-pro-preview.png)
 
 - [Google: Gemini 3.1 Pro Preview](https://phaseo.app/models/google/gemini-3.1-pro-preview)
 - [Google: Gemini 3.1 Pro Preview Customtools](https://phaseo.app/models/google/gemini-3.1-pro-preview-customtools)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月18日" tags={["功能","模型发布","文档"]}>
+<Update label="2026年2月18日">
 
-### 功能
+<div data-changelog-category="product">
 
-- Claude Sonnet 4.6 已在模型发现、网关兼容性和文档中得到支持。
+<p className="changelog-category">产品</p>
 
-### 模型发布
+- 模型页面在浅色模式下只显示一个提供商标志；此前浅色和深色版本可能同时出现 ([#81](https://github.com/phaseoteam/Phaseo/pull/81))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 发往 Baseten、Chutes、Cohere、Together 和 Cerebras 的请求会去掉提供商不支持的参数，而不再因提供商返回 `400` 而失败 ([#82](https://github.com/phaseoteam/Phaseo/pull/82))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Lyria 3 模型发布图片](../../../images/model-releases/2026-02-18--google--lyria-3.png)
 
 - [Google: Lyria 3](https://phaseo.app/models/google/lyria-3)
 - [Prime Intellect: Intellect 3.1](https://phaseo.app/models/prime-intellect/intellect-3.1)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月17日" tags={["模型发布"]}>
+<Update label="2026年2月17日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Claude Sonnet 4.6 模型发布图片](../../../images/model-releases/2026-02-17--anthropic--claude-sonnet-4-6.png)
 
@@ -88,11 +148,15 @@ description: "Phaseo 2026年2月的产品更新、SDK 变更和模型发布。"
 - [xAI: Grok 4.20](https://phaseo.app/models/x-ai/grok-4.20)
 - [xAI: Grok 4.20 Multi Agent Beta](https://phaseo.app/models/x-ai/grok-4.20-multi-agent-beta)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月16日" tags={["模型发布"]}>
+<Update label="2026年2月16日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Qwen 3.5 397B A17B 模型发布图片](../../../images/model-releases/2026-02-16--qwen--qwen3-5-397b-a17b.png)
 
@@ -100,78 +164,138 @@ description: "Phaseo 2026年2月的产品更新、SDK 变更和模型发布。"
 - [Qwen: Qwen 3.5 Plus](https://phaseo.app/models/qwen/qwen3.5-plus)
 - [Qwen: Qwen 3.5 Plus (2026-02-15)](https://phaseo.app/models/qwen/qwen3.5-plus-2026-02-15)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月15日" tags={["模型发布"]}>
+<Update label="2026年2月15日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 设置页面新增侧边栏，包含按标签页划分的 **Account**、**Billing**、**Usage** 和 **API** 部分，**Account** 下的详情、MFA 和危险区域各有独立页面 ([#54](https://github.com/phaseoteam/Phaseo/pull/54), [#55](https://github.com/phaseoteam/Phaseo/pull/55))。
+- **Settings -> Credits** 新增可选的低余额邮件提醒，当额度余额低于你设定的美元阈值时发送 ([#54](https://github.com/phaseoteam/Phaseo/pull/54))。
+- **Settings -> Keys** 会显示每个密钥的状态，以及其请求限额和支出限额的已用量 ([#55](https://github.com/phaseoteam/Phaseo/pull/55))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 - [ByteDance: Seed 2.0 Code Preview (2026-02-15)](https://phaseo.app/models/bytedance/seed-2.0-code-preview-2026-02-15)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月14日" tags={["模型发布"]}>
+<Update label="2026年2月14日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 - [ByteDance: Seed 2.0 Lite](https://phaseo.app/models/bytedance/seed-2.0-lite)
 - [ByteDance: Seed 2.0 Mini](https://phaseo.app/models/bytedance/seed-2.0-mini)
 - [ByteDance: Seed 2.0 Pro](https://phaseo.app/models/bytedance/seed-2.0-pro)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月12日" tags={["模型发布"]}>
+<Update label="2026年2月13日">
 
-### 模型发布
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 未登录的访客尝试发送消息时，Chat 会显示带有 **Create account** 和 **Sign in** 按钮的横幅 ([#52](https://github.com/phaseoteam/Phaseo/pull/52))。
+
+</div>
+
+</Update>
+
+<Update label="2026年2月12日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- AI SDK 提供商包已在 npm 上发布，首个版本为 `1.0.1`；请参阅 [AI SDK](../guides/integrations/ai-sdk.mdx) ([#48](https://github.com/phaseoteam/Phaseo/pull/48))。
+- TypeScript SDK `1.0.1` 内置 devtools 请求捕获功能，安装时不再需要单独的 devtools core 包 ([#47](https://github.com/phaseoteam/Phaseo/pull/47), [#48](https://github.com/phaseoteam/Phaseo/pull/48))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![MiniMax M2.5 模型发布图片](../../../images/model-releases/2026-02-12--minimax--minimax-m2-5.png)
 
+- [MiniMax: MiniMax M2.5](https://phaseo.app/models/minimax/minimax-m2.5)
 - [ByteDance: Seedance 2.0](https://phaseo.app/models/bytedance/seedance-2.0)
 - [ByteDance: Seedance 2.0 Fast](https://phaseo.app/models/bytedance/seedance-2.0-fast)
 - [Inclusion AI: Ring 1T 2.5](https://phaseo.app/models/inclusionai/ring-1t-2.5)
-- [MiniMax: MiniMax M2.5](https://phaseo.app/models/minimax/minimax-m2.5)
 - [OpenAI: GPT 5.3 Codex Spark](https://phaseo.app/models/openai/gpt-5.3-codex-spark)
+
+</div>
 
 </Update>
 
-<Update label="2026年2月11日" tags={["模型发布"]}>
+<Update label="2026年2月11日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![GLM 5 模型发布图片](../../../images/model-releases/2026-02-11--z-ai--glm-5.png)
 
 - [z.AI: GLM 5](https://phaseo.app/models/z-ai/glm-5)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月9日" tags={["模型发布"]}>
+<Update label="2026年2月9日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Composer 1.5 模型发布图片](../../../images/model-releases/2026-02-09--cursor--composer-1-5.png)
 
 - [Cursor: Composer 1.5](https://phaseo.app/models/cursor/composer-1.5)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月5日" tags={["模型发布"]}>
+<Update label="2026年2月5日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Claude Opus 4.6 模型发布图片](../../../images/model-releases/2026-02-05--anthropic--claude-opus-4-6.png)
 
 - [Anthropic: Claude Opus 4.6](https://phaseo.app/models/anthropic/claude-opus-4.6)
 - [OpenAI: GPT 5.3 Codex](https://phaseo.app/models/openai/gpt-5.3-codex)
 
+</div>
+
 </Update>
 
-<Update label="2026年2月4日" tags={["模型发布"]}>
+<Update label="2026年2月4日">
 
-### 模型发布
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
 
 ![Voxtral Mini Transcribe 2 模型发布图片](../../../images/model-releases/2026-02-04--mistral--voxtral-mini-transcribe-2.png)
 
 - [Mistral: Voxtral Mini Transcribe 2](https://phaseo.app/models/mistral/voxtral-mini-transcribe-2)
 
-</Update>
+</div>
 
+</Update>

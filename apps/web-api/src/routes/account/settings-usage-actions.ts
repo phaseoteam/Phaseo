@@ -20,6 +20,7 @@ import {
 	investigateGeneration,
 	runWithUsageContext,
 } from "@/usage/actions";
+import { classifierIdsInDetail, loadRequestClassifierSummaries } from "@/usage/requestClassifiers";
 
 export const accountSettingsUsageActionsRouter = new Hono<{ Bindings: Env }>();
 
@@ -57,7 +58,12 @@ accountSettingsUsageActionsRouter.get("/usage/logs/:requestId", async (c) => {
 				PRIVATE_NO_STORE_HEADERS,
 			);
 		}
-		return c.json({ data: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
+		// Names for the classifiers this request mentions; members can read these minimal summaries.
+		const classifierIds = classifierIdsInDetail(result.data.request?.detail_metadata);
+		const requestClassifiers = classifierIds.length
+			? (await loadRequestClassifierSummaries(account.client, account.workspaceId)).filter((classifier) => classifierIds.includes(classifier.id))
+			: [];
+		return c.json({ data: { ...result.data, requestClassifiers } }, 200, PRIVATE_NO_STORE_HEADERS);
 	} catch (error) {
 		console.error("usage_log_detail_failed", { requestId, error });
 		return c.json({ error: "usage_log_detail_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);

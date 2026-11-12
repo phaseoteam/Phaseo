@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from phaseo import Phaseo
+from phaseo import Phaseo, __version__
 from gen import models
 from gen import operations as ops
 
@@ -790,9 +790,9 @@ def test_get_file_content_downloads_bytes(monkeypatch):
             "https://example.test/files/file_123/content",
             {
                 "Authorization": "Bearer sk_test_123",
-                "User-Agent": "phaseo-python/2.0.7",
+                "User-Agent": f"phaseo-python/{__version__}",
                 "X-Phaseo-Client": "phaseo-python",
-                "X-Phaseo-Client-Version": "2.0.7",
+                "X-Phaseo-Client-Version": __version__,
             },
             12.5,
         )
@@ -1015,7 +1015,6 @@ def test_get_api_key_uses_generated_operation(monkeypatch):
         return {
             "data": {
                 "id": "key_123",
-                "hash": "keyhash_123",
                 "status": "active",
             }
         }
@@ -1027,7 +1026,6 @@ def test_get_api_key_uses_generated_operation(monkeypatch):
 
     assert captured == [{"path": {"id": "key_123"}}]
     assert response["data"]["id"] == "key_123"
-    assert response["data"]["hash"] == "keyhash_123"
 
 
 def test_list_workspaces_uses_generated_operation(monkeypatch):

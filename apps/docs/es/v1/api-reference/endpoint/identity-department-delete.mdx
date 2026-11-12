@@ -1,6 +1,9 @@
 ---
 title: "Eliminar un departamento del espacio de trabajo"
+sidebarTitle: "Eliminar un departamento"
 badge: "Beta"
 openapi: "/es/openapi/v1/openapi.localized.yaml DELETE /identity/departments/{id}"
 ---
 <Note>La administración de directorios empresariales requiere el complemento de identidad, una identidad de propietario o administrador y el ámbito de configuración correspondiente.</Note>
+
+Si alguna asignación de grupos del directorio usa el departamento, solo el propietario del espacio de trabajo puede eliminarlo, porque al hacerlo también se eliminan esas asignaciones y los roles que conceden.

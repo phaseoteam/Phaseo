@@ -2,58 +2,62 @@
 title: "LiveKit"
 icon: "radio"
 description: "Use Phaseo models in LiveKit Agents."
+"og:image": "https://phaseo.app/og/dynamic?title=LiveKit&description=Use%20Phaseo%20models%20in%20LiveKit%20Agents.&pathname=/docs/v1/guides/integrations/livekit"
 ---
 
-LiveKit Agents can call any OpenAI-compatible chat endpoint through its OpenAI plugin. Point that plugin at Phaseo to use Phaseo model ids and routing.
+Point the LiveKit Agents OpenAI plugin's LLM at `https://api.phaseo.app/v1` with your Phaseo key, and your voice agents use Phaseo model IDs and routing. The plugin calls Phaseo's Chat Completions endpoint.
 
-## Python
+## Install
 
-```bash
+<CodeGroup>
+
+```bash Python
 uv add "livekit-agents[openai]"
 ```
 
-```python
+```bash Node.js
+pnpm add @livekit/agents @livekit/agents-plugin-openai
+```
+
+</CodeGroup>
+
+## Point the agent's LLM at Phaseo
+
+<CodeGroup>
+
+```python Python
 import os
 from livekit.agents import AgentSession
 from livekit.plugins import openai
 
 session = AgentSession(
     llm=openai.LLM(
-        model="openai/gpt-5-nano",
+        model="openai/gpt-6-astra",
         api_key=os.environ["PHASEO_API_KEY"],
         base_url="https://api.phaseo.app/v1",
     ),
 )
 ```
 
-## Node.js
-
-```bash
-pnpm add @livekit/agents @livekit/agents-plugin-openai
-```
-
-```ts
+```ts Node.js
 import { voice } from "@livekit/agents";
 import * as openai from "@livekit/agents-plugin-openai";
 
 const session = new voice.AgentSession({
 	llm: new openai.LLM({
-		model: "openai/gpt-5-nano",
+		model: "openai/gpt-6-astra",
 		apiKey: process.env.PHASEO_API_KEY,
 		baseURL: "https://api.phaseo.app/v1",
 	}),
 });
 ```
 
-## Notes
+</CodeGroup>
 
-- Use the OpenAI-compatible Chat Completions mode for custom endpoints.
-- LiveKit's Responses-specific OpenAI tools do not automatically become Phaseo server tools.
-- Configure speech-to-text and text-to-speech separately unless the selected LiveKit interface supports an OpenAI-compatible custom URL for that modality.
-- Test interruption handling, tool calls, and streaming latency before production voice traffic.
+Start a session, say something, and confirm the request appears in **Settings → Usage → Logs**.
 
-## Related
+## Known limits
 
-- [OpenAI SDK](./openai-sdk.mdx)
-- [Streaming](../streaming.mdx)
-- [Tool Calling](../tool-calling.mdx)
+- Use the plugin's Chat Completions mode for custom endpoints. LiveKit's Responses-specific OpenAI tools don't become Phaseo server tools.
+- This only routes the LLM. Configure speech-to-text and text-to-speech separately, unless the LiveKit interface you use accepts a custom OpenAI-compatible URL for that modality.
+- Test interruption handling, [tool calls](../tool-calling.mdx), and [streaming](../streaming.mdx) latency before production voice traffic.

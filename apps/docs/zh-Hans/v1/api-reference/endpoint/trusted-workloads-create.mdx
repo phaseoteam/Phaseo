@@ -1,0 +1,10 @@
+---
+title: "创建受信任的工作负载策略"
+sidebarTitle: "创建受信任的工作负载策略"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /workload-identity/policies"
+description: "创建一条信任策略，让 Vercel 部署或 GitHub Actions 工作流使用其 OIDC 令牌而不是 API 密钥调用 Phaseo。"
+---
+<Note>需要管理密钥或 OAuth 令牌具有 `keys:write` 权限，或由工作区所有者或管理员操作。受信任的工作负载目前处于 Beta 阶段，未开通的工作区会收到 `404`。</Note>
+
+请参阅[受信任的工作负载](../../developers/trusted-workloads.mdx)，了解策略的工作方式以及如何使用 Terraform 管理策略。

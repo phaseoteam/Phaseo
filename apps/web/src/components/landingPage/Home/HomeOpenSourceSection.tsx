@@ -1,9 +1,7 @@
-"use client";
-
-import Link from "next/link";
-import Image from "next/image";
+import { IntentLink as Link } from "@/components/navigation/IntentLink";
+import Image from "@/components/image";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import {
 	ArrowRight,

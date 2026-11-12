@@ -1,0 +1,10 @@
+---
+title: "信頼済みワークロードのポリシーを作成"
+sidebarTitle: "信頼済みワークロードのポリシーを作成"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /workload-identity/policies"
+description: "Vercel のデプロイや GitHub Actions のワークフローが API キーの代わりに OIDC トークンで Phaseo を呼び出せるよう、信頼ポリシーを作成します。"
+---
+<Note>管理キーまたは OAuth トークンの `keys:write`、もしくはワークスペースのオーナーまたは管理者が必要です。信頼済みワークロードはベータ版で、利用できないワークスペースには `404` が返ります。</Note>
+
+ポリシーの仕組みと Terraform での管理方法は、[信頼済みワークロード](../../developers/trusted-workloads.mdx)を参照してください。

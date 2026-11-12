@@ -1,8 +1,13 @@
 import { getDataClient } from "@/data/supabase";
+import { normalizeCatalogueTier, normalizeCatalogueTiers } from "@/models/catalogue-tiers";
 import type { Env } from "@/env";
 import { fetchModelPricingSources } from "./pricing";
 import { withDecisionOperationPricing } from "./decision-pricing";
+import { normalizeModelsPagePricing } from "./card-pricing";
 import { publicProviderDisplayName, STEALTH_PROVIDER_ID } from "@/models/provider-identity";
+import { normalizeModelLicense } from "@/models/license";
+
+export { normalizeModelsPagePricing };
 
 type Row = Record<string, unknown>;
 
@@ -35,6 +40,7 @@ export type ModelsPageFacets = {
 	providerOptions: OptionCount[];
 	regionOptions: OptionCount[];
 	creatorOptions: OptionCount[];
+	licenseOptions: OptionCount[];
 	yearOptions: OptionCount[];
 };
 
@@ -46,103 +52,6 @@ function strings(value: unknown): string[] {
 	return Array.isArray(value)
 		? [...new Set(value.map((item) => String(item ?? "").trim()).filter(Boolean))].sort()
 		: [];
-}
-
-function pricingUnit(row: Row): string | null {
-	const displayUnit = String(row.display_unit ?? "").trim();
-	const unit = String(row.unit ?? "").trim().toLowerCase();
-	const quantity = Number(row.unit_quantity);
-	if (
-		/^1(?:000000|m)\s*tokens?$/i.test(displayUnit.replace(/,/g, ""))
-		|| (unit === "token" && quantity === 1_000_000)
-	) {
-		return "1M tokens";
-	}
-	if (displayUnit && displayUnit.toLowerCase() !== "billing unit") {
-		return displayUnit;
-	}
-	if (unit && Number.isFinite(quantity) && quantity > 0) {
-		return `${quantity} ${unit}${quantity === 1 ? "" : "s"}`;
-	}
-	return unit || null;
-}
-
-function pricingLabel(value: unknown): string {
-	return String(value ?? "")
-		.trim()
-		.replace(/[_-]+/g, " ")
-		.replace(/\b\w/g, (character) => character.toUpperCase());
-}
-
-function pricingValue(price: number, unit: string): string {
-	const formatted = price.toLocaleString("en-US", {
-		minimumFractionDigits: 0,
-		maximumFractionDigits: 6,
-	});
-	return `$${formatted} / ${unit}`;
-}
-
-function structuredPricingRows(value: unknown): Row[] {
-	return Array.isArray(value)
-		? value.filter((row): row is Row => Boolean(row && typeof row === "object"))
-		: [];
-}
-
-function directionPricingUnit(
-	rows: Row[],
-	direction: "input" | "output",
-	price: unknown,
-): string | null {
-	const expectedPrice = Number(price);
-	const candidates = rows.filter((row) => {
-		const meter = String(row.meter_key ?? row.label ?? "").trim().toLowerCase();
-		const tier = String(row.service_tier ?? "standard").trim().toLowerCase();
-		return tier === "standard" && (meter === direction || meter.startsWith(`${direction}_`));
-	});
-	const matching = Number.isFinite(expectedPrice)
-		? candidates.find((row) => Math.abs(Number(row.price) - expectedPrice) < 1e-9)
-		: undefined;
-	return pricingUnit(matching ?? candidates[0] ?? {});
-}
-
-export function normalizeModelsPagePricing(row: Row): Row {
-	const rows = structuredPricingRows(row.pricing_detail_rows);
-	if (rows.length === 0) return row;
-	const detailRows = rows.flatMap((pricingRow) => {
-		const existingLabel = String(pricingRow.label ?? "").trim();
-		const existingValue = String(pricingRow.value ?? "").trim();
-		if (existingLabel && existingValue) return [{ label: existingLabel, value: existingValue }];
-		const price = Number(pricingRow.price);
-		const unit = pricingUnit(pricingRow);
-		if (!Number.isFinite(price) || !unit) return [];
-		const tier = String(pricingRow.service_tier ?? "standard").trim().toLowerCase();
-		const baseLabel = pricingLabel(pricingRow.label ?? pricingRow.meter_key);
-		if (!baseLabel) return [];
-		return [{
-			label: tier && tier !== "standard" ? `${baseLabel} (${pricingLabel(tier)})` : baseLabel,
-			value: pricingValue(price, unit),
-		}];
-	});
-	const uniqueDetailRows = [...new Map(
-		detailRows.map((detail) => [`${detail.label}::${detail.value}`, detail] as const),
-	).values()].slice(0, 6);
-	const inputUnit = directionPricingUnit(rows, "input", row.lowest_standard_input_price ?? row.lowest_input_price);
-	const outputUnit = directionPricingUnit(rows, "output", row.lowest_standard_output_price ?? row.lowest_output_price);
-	const fromPrice = Number(row.lowest_from_price);
-	const fromRow = Number.isFinite(fromPrice)
-		? rows.find((pricingRow) => Math.abs(Number(pricingRow.price) - fromPrice) < 1e-9)
-		: undefined;
-	const fromUnit = pricingUnit(fromRow ?? {});
-
-	return {
-		...row,
-		lowest_standard_input_price_label: row.lowest_standard_input_price != null ? "Input" : row.lowest_standard_input_price_label,
-		lowest_standard_input_price_unit: inputUnit ?? row.lowest_standard_input_price_unit,
-		lowest_standard_output_price_label: row.lowest_standard_output_price != null ? "Output" : row.lowest_standard_output_price_label,
-		lowest_standard_output_price_unit: outputUnit ?? row.lowest_standard_output_price_unit,
-		lowest_from_price_unit: fromUnit ?? row.lowest_from_price_unit,
-		pricing_detail_rows: uniqueDetailRows,
-	};
 }
 
 function baseModelId(row: Row): string {
@@ -221,6 +130,7 @@ type ModelVariantLinks = Record<string, ModelVariantLink>;
  */
 export function attachModelsPageVariants(rows: Row[]): Row[] {
 	const variantsByBaseModel = new Map<string, ModelVariantLinks>();
+	const licenseByBaseModel = new Map<string, string>();
 
 	for (const row of rows) {
 		const modelId = String(row.model_id ?? "").trim();
@@ -233,12 +143,18 @@ export function attachModelsPageVariants(rows: Row[]): Row[] {
 			name: String(row.name ?? modelId).trim() || modelId,
 		};
 		variantsByBaseModel.set(baseId, variants);
+		const license = normalizeModelLicense(row.license);
+		if (license && (kind === "standard" || !licenseByBaseModel.has(baseId))) licenseByBaseModel.set(baseId, license);
 	}
 
 	return rows.map((row) => {
 		const baseId = baseModelId(row);
+		// Variants such as `:free` share the base model's weights and licence.
+		// Undefined drops the key from the JSON for models without a licence.
 		return withoutExternalProviders({
 			...row,
+			license: normalizeModelLicense(row.license) ?? licenseByBaseModel.get(baseId),
+			gateway_tiers: normalizeCatalogueTiers(row.gateway_tiers),
 			base_model_id: baseId,
 			variant_kind: variantKind(row),
 			variants: variantsByBaseModel.get(baseId) ?? {},
@@ -298,6 +214,7 @@ export function buildModelsPageFacets(rows: Row[]): ModelsPageFacets {
 		retired: 0,
 	};
 	const creatorCounts = new Map<string, number>();
+	const licenseCounts = new Map<string, number>();
 	const yearCounts = new Map<string, number>();
 	for (const row of rows) {
 		const status = row.gateway_status === "active"
@@ -312,12 +229,15 @@ export function buildModelsPageFacets(rows: Row[]): ModelsPageFacets {
 		statusCounts[status] += 1;
 		const creatorName = creator(row);
 		if (creatorName) creatorCounts.set(creatorName, (creatorCounts.get(creatorName) ?? 0) + 1);
+		const license = normalizeModelLicense(row.license);
+		if (license) licenseCounts.set(license, (licenseCounts.get(license) ?? 0) + 1);
 		const timestamp = Number(row.primary_timestamp);
 		const date = Number.isFinite(timestamp) ? new Date(timestamp) : row.primary_date ? new Date(String(row.primary_date)) : null;
 		const year = date && Number.isFinite(date.getTime()) ? String(date.getUTCFullYear()) : "";
 		if (year) yearCounts.set(year, (yearCounts.get(year) ?? 0) + 1);
 	}
 	const creatorOptions = [...creatorCounts].map(([value, count]) => ({ value, count })).sort((left, right) => right.count - left.count || left.value.localeCompare(right.value));
+	const licenseOptions = [...licenseCounts].map(([value, count]) => ({ value, count })).sort((left, right) => right.count - left.count || left.value.localeCompare(right.value));
 	const yearOptions = [...yearCounts].map(([value, count]) => ({ value, count })).sort((left, right) => Number(right.value) - Number(left.value));
 	return {
 		statusCounts,
@@ -327,11 +247,12 @@ export function buildModelsPageFacets(rows: Row[]): ModelsPageFacets {
 			gateway_output_modalities: strings([...strings(row.gateway_output_modalities).map(modality), ...(strings(row.gateway_endpoints).includes("decisions.make") ? ["decisions"] : [])]),
 		})), "gateway_output_modalities", modality), MODALITY_ORDER),
 		featureOptions: ordered(optionCounts(rows, "gateway_features"), FEATURE_ORDER),
-		tierOptions: optionCounts(rows, "gateway_tiers"),
+		tierOptions: optionCounts(rows.map((row) => ({ ...row, gateway_tiers: normalizeCatalogueTiers(row.gateway_tiers) })), "gateway_tiers"),
 		supportedParameterOptions: optionCounts(rows, "supported_parameters"),
 		providerOptions: optionCounts(rows, "gateway_provider_names"),
 		regionOptions: optionCounts(rows, "gateway_execution_regions"),
 		creatorOptions,
+		licenseOptions,
 		yearOptions,
 	};
 }
@@ -343,17 +264,71 @@ export type ModelsPageQuery = {
 	includeMetrics?: boolean;
 };
 
-async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[]> {
+async function loadPageRows(env: Env, region: string | null, organisationId: string | null): Promise<Row[]> {
 	const { data, error } = await getDataClient(env).rpc("get_public_models_page_payload", {
-		p_region: query.region || null,
-		p_service_tier: query.serviceTier || null,
-		p_organisation_id: query.organisationId || null,
+		p_region: region,
+		// Match normalized modes after loading every provider alias in the region.
+		p_service_tier: null,
+		p_organisation_id: organisationId,
 	});
 	if (error) throw error;
 	if (!Array.isArray(data)) throw new Error("Invalid models catalogue payload");
-	return query.organisationId
-		? data.filter((row: Row) => String(row.organisation_id ?? "") === query.organisationId)
-		: data;
+	return data;
+}
+
+// The payload costs ~1s of database time and ~6.6MB per build, yet edge
+// responses are keyed by URL, so every offset, search, projection, tier and
+// organisation page rebuilt it. Share one copy per catalogue revision and
+// region across those callers. Revision triggers cover every catalogue table
+// the payload reads except v2_labs, so the TTL bounds lab edits to the same
+// window as the edge cache.
+const SHARED_ROWS_TTL_SECONDS = 15 * 60;
+const sharedRowsInflight = new Map<string, Promise<Row[]>>();
+
+async function catalogueRevision(env: Env): Promise<string | null> {
+	const { data, error } = await getDataClient(env).rpc("gateway_catalogue_revision");
+	const revision = error ? null : String(data ?? "");
+	return revision && /^\d+$/.test(revision) ? revision : null;
+}
+
+async function sharedPageRows(env: Env, cache: Cache, region: string | null, organisationId: string | null): Promise<Row[]> {
+	const revision = await catalogueRevision(env);
+	// Without a revision nothing is cached, so keep the narrow organisation query.
+	if (!revision) return loadPageRows(env, region, organisationId);
+	const key = `https://web-api.internal/models-page-rows/v2/${revision}/${encodeURIComponent(region ?? "")}`;
+	const inflight = sharedRowsInflight.get(key);
+	if (inflight) return inflight;
+	const load = (async () => {
+		const cached = await cache.match(key).catch(() => undefined);
+		if (cached) {
+			const rows = await cached.json().catch(() => null);
+			if (Array.isArray(rows)) return rows as Row[];
+		}
+		const rows = await loadPageRows(env, region, null);
+		await cache.put(key, new Response(JSON.stringify(rows), {
+			headers: { "Content-Type": "application/json", "Cache-Control": `max-age=${SHARED_ROWS_TTL_SECONDS}` },
+		})).catch(() => {});
+		return rows;
+	})();
+	sharedRowsInflight.set(key, load);
+	try {
+		return await load;
+	} finally {
+		sharedRowsInflight.delete(key);
+	}
+}
+
+async function databasePageRows(env: Env, query: ModelsPageQuery = {}): Promise<Row[]> {
+	const region = query.region || null;
+	const organisationId = query.organisationId || null;
+	const cache = (globalThis as { caches?: { default?: Cache } }).caches?.default;
+	const data = cache
+		? await sharedPageRows(env, cache, region, organisationId)
+		: await loadPageRows(env, region, organisationId);
+	return data.filter((row: Row) =>
+		(!organisationId || String(row.organisation_id ?? "") === organisationId)
+		&& (!query.serviceTier || normalizeCatalogueTiers(row.gateway_tiers).includes(normalizeCatalogueTier(query.serviceTier))),
+	);
 }
 
 async function weeklyMetrics(env: Env, modelIds?: string[], throwOnError = false): Promise<WeeklyMetricRow[]> {

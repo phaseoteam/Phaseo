@@ -1,14 +1,19 @@
-"use client";
-
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Check, Loader2, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { toast } from "sonner";
+import {
+	PALETTE_SWATCHES,
+	THEME_PRESETS as SHARED_THEME_PRESETS,
+	type ThemePreset as SharedThemePreset,
+	type ThemePresetId,
+} from "@phaseo/app-kit/theme";
 
-import { updateDisplayPreferences } from "@/app/(dashboard)/settings/preferences/actions";
+import { updateDisplayPreferences } from "@/features/settings/preferences/actions";
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "@/components/(gateway)/settings/SettingsFormActions";
 import { ColorPicker } from "@/components/ui/color-picker";
 import {
 	Popover,
@@ -39,82 +44,19 @@ import {
 	normalizeDisplayPreferences,
 	readableForegroundForAccent,
 	type DisplayPreferences,
-	type DisplayDarkPalette,
-	type DisplayLightPalette,
 } from "@/lib/displayPreferences";
 
-const PALETTE_SWATCHES = {
-	light: {
-		phaseo: ["#ffffff", "#f5f5f5", "#171717"],
-		paper: ["#f8fafc", "#ffffff", "#29313d"],
-		warm: ["#fcfaf4", "#fffdf8", "#3b3025"],
-	},
-	dark: {
-		phaseo: ["#171717", "#262626", "#fafafa"],
-		slate: ["#17202b", "#202c39", "#e8edf3"],
-		midnight: ["#0b0d1b", "#15182b", "#eeeff8"],
-	},
-} as const;
+// The presets and swatches are shared with the mobile app (packages/shared/app-kit).
+type ThemePreset = Omit<SharedThemePreset, "name"> & { nameKey: ThemePresetId };
 
-type ThemePreset = {
-	id: string;
-	nameKey: "phaseo" | "carbon" | "midnight" | "forest" | "ember" | "orchid";
-	lightPalette: DisplayLightPalette;
-	darkPalette: DisplayDarkPalette;
-	lightAccent: string;
-	darkAccent: string;
-};
-
-const THEME_PRESETS: readonly ThemePreset[] = [
-	{
-		id: "phaseo",
-		nameKey: "phaseo",
-		lightPalette: "phaseo",
-		darkPalette: "phaseo",
-		lightAccent: "#0069a8",
-		darkAccent: "#0078b8",
-	},
-	{
-		id: "carbon",
-		nameKey: "carbon",
-		lightPalette: "paper",
-		darkPalette: "slate",
-		lightAccent: "#334155",
-		darkAccent: "#60a5fa",
-	},
-	{
-		id: "midnight",
-		nameKey: "midnight",
-		lightPalette: "paper",
-		darkPalette: "midnight",
-		lightAccent: "#4f46e5",
-		darkAccent: "#818cf8",
-	},
-	{
-		id: "forest",
-		nameKey: "forest",
-		lightPalette: "warm",
-		darkPalette: "slate",
-		lightAccent: "#15803d",
-		darkAccent: "#4ade80",
-	},
-	{
-		id: "ember",
-		nameKey: "ember",
-		lightPalette: "warm",
-		darkPalette: "midnight",
-		lightAccent: "#c2410c",
-		darkAccent: "#fb923c",
-	},
-	{
-		id: "orchid",
-		nameKey: "orchid",
-		lightPalette: "paper",
-		darkPalette: "midnight",
-		lightAccent: "#7c3aed",
-		darkAccent: "#c084fc",
-	},
-];
+const THEME_PRESETS: readonly ThemePreset[] = SHARED_THEME_PRESETS.map((preset) => ({
+	id: preset.id,
+	nameKey: preset.id,
+	lightPalette: preset.lightPalette,
+	darkPalette: preset.darkPalette,
+	lightAccent: preset.lightAccent,
+	darkAccent: preset.darkAccent,
+}));
 
 const PREVIEW_DATE = new Date("2026-09-19T16:35:00.000Z");
 const APPEARANCE_MODES = [
@@ -188,12 +130,12 @@ function PreferenceRow({
 }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div data-slot="preference-row" className="grid gap-3 border-t border-border/60 py-3.5 first:border-t-0 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
-			<div className="max-w-xl md:pt-1">
+		<div data-slot="preference-row" className="grid gap-3 border-t border-border/60 py-4 first:border-t-0 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
+			<div className="min-w-0 sm:pt-1">
 				<p className="text-sm font-medium">{title}</p>
 				<p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
 			</div>
-			<div className="w-full space-y-1.5 md:justify-self-end">
+			<div className="min-w-0 space-y-1.5">
 				{children}
 				{preview ? (
 					<div className="flex items-baseline justify-between gap-4 px-1 text-xs">
@@ -268,7 +210,7 @@ function PalettePicker<T extends string>({
 }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-3 gap-2 sm:w-80">
+		<div role="radiogroup" aria-label={ariaLabel} className="grid w-full grid-cols-3 gap-2">
 			{options.map((option) => {
 				const active = option === value;
 				const swatches = (
@@ -532,7 +474,7 @@ export default function DisplayPreferencesClient({
 	function save() {
 		startSaving(async () => {
 			try {
-				const result = await updateDisplayPreferences(preferences);
+				const result = await updateDisplayPreferences({ data: preferences });
 				setPreferences(result.preferences);
 				setSavedPreferences(result.preferences);
 				applyPreferences(result.preferences);
@@ -789,7 +731,7 @@ export default function DisplayPreferencesClient({
 				</PreferenceRow>
 			</SettingsSection>
 
-			<div className="flex flex-col-reverse gap-2 border-t border-border/70 pt-6 sm:flex-row sm:items-center sm:justify-end">
+			<SettingsFormActions active={dirty || isSaving}>
 				<Button
 					type="button"
 					variant="ghost"
@@ -797,10 +739,13 @@ export default function DisplayPreferencesClient({
 					disabled={isSaving || JSON.stringify(preferences) === JSON.stringify(DEFAULT_DISPLAY_PREFERENCES)}
 				>
 					<RotateCcw /> {t("preferencesCopy.resetDefaults")}</Button>
+				<Button type="button" variant="outline" onClick={() => setPreferences(savedPreferences)} disabled={!dirty || isSaving}>
+					{t("strings.Cancel")}
+				</Button>
 				<Button type="button" onClick={save} disabled={!dirty || isSaving}>
 					{isSaving ? <Loader2 className="animate-spin" /> : <Check />}
 					{t("preferencesCopy.savePreferences")}</Button>
-			</div>
+			</SettingsFormActions>
 		</div>
 	);
 }

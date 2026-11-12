@@ -1,0 +1,57 @@
+---
+title: "eve"
+icon: "bot"
+description: "使用 Phaseo AI SDK 提供商在 Phaseo 模型上运行 eve 智能体。"
+---
+
+把 [Phaseo AI SDK 提供商](./ai-sdk.mdx)中的模型传给你的 [eve](https://eve.dev) 智能体，每次模型调用都会经过 Phaseo，并应用你的路由、密钥、预算和日志。eve 接受任何 AI SDK 语言模型。
+
+## 安装
+
+eve 使用 AI SDK 7，因此请安装 `@phaseo/ai-sdk-provider` 2.0.1 或更高版本：
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+为 `eve dev` 在 `.env.local` 中设置 `PHASEO_API_KEY`，并在每个部署的服务器环境中也设置它。eve 的 `/login` 连接只在你自己的机器上有效。
+
+## 让 eve 智能体使用 Phaseo
+
+```ts agent/agent.ts
+import { defineAgent } from "eve";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: phaseo("openai/gpt-6-astra"),
+	modelContextWindowTokens: 922_000,
+	reasoning: "low",
+});
+```
+
+传入一个模型对象，例如 `phaseo("openai/gpt-6-astra")`；普通的模型 ID 字符串不会发送到 Phaseo。把 `modelContextWindowTokens` 设置为 [Models 端点](../../api-reference/endpoint/models.mdx)中该模型的 `limits.input_tokens`。eve 无法查询模型对象的上下文窗口，它根据这个数值决定何时压缩对话。
+
+运行一次智能体，并确认该请求出现在 **设置 → 用量 → 日志** 中。
+
+## 按轮次选择模型
+
+`defineDynamic` 会在每次模型调用前运行。返回一个选择对象，让每个模型保留自己的上下文窗口：
+
+```ts agent/agent.ts
+import { defineAgent } from "eve";
+import { defineDynamic } from "eve/models";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: defineDynamic((ctx) =>
+		ctx.session.auth.initiator?.attributes.plan === "enterprise"
+			? { model: phaseo("openai/gpt-6-sol"), modelContextWindowTokens: 1_050_000 }
+			: { model: phaseo("openai/gpt-6-luna"), modelContextWindowTokens: 1_050_000 },
+	),
+});
+```
+
+## 已知限制
+
+- 工具、流式传输、推理、压缩和提示词缓存都可以通过 Phaseo 使用。提示词缓存读取会出现在 eve 的用量事件和 Phaseo 日志中。
+- 对于模型对象，eve 不会填写每次运行的费用。请在 Phaseo 的 **用量** 页面或 **日志** 中查看费用。

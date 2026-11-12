@@ -1,6 +1,6 @@
 import englishProfileMessages from "../../messages/en-GB/profile.json";
 import { mergeCatalogMessages } from "./message-overlays";
-import type { PublicLocale } from "./routing";
+import type { PublicLocale, ShippedLocale } from "./routing";
 
 import zhHans from "../../messages/zh-Hans/profile.json";
 import hi from "../../messages/hi/profile.json";
@@ -13,7 +13,7 @@ import ar from "../../messages/ar-SA/profile.json";
 import enUsOverlay from "../../messages/en-US/profile.overrides.json";
 
 export type ProfileMessages = typeof englishProfileMessages;
-const profileCatalogs: Record<PublicLocale, ProfileMessages> = {
+const profileCatalogs: Record<ShippedLocale, ProfileMessages> = {
 	"en-GB": englishProfileMessages,
 	"en-US": mergeCatalogMessages(englishProfileMessages, enUsOverlay),
 	"zh-Hans": zhHans as ProfileMessages,

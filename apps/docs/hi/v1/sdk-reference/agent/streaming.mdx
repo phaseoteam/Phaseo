@@ -1,0 +1,179 @@
+---
+icon: "radio"
+title: "Agent SDK स्ट्रीमिंग"
+sidebarTitle: "स्ट्रीमिंग"
+description: "रन चलते समय एजेंट का टेक्स्ट, reasoning और टूल गतिविधि दिखाएँ।"
+---
+
+रन चलते समय टेक्स्ट और टूल गतिविधि दिखाने के लिए run की जगह एजेंट का stream method कॉल करें। यह gateway की Responses SSE स्ट्रीम पर वही फिर से शुरू किया जा सकने वाला लूप चलाता है, और continue-stream method रुके हुए रन के लिए यही करता है। Rust में स्ट्रीमिंग नहीं है।
+
+## टेक्स्ट स्ट्रीम करें
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const completed = await result.getResult();
+console.log(completed.run.status);
+```
+
+```python Python
+stream = agent.stream(input="Research this topic", client=client)
+
+for delta in stream.text_stream():
+    print(delta, end="", flush=True)
+
+completed = stream.result()
+```
+
+```go Go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: input, Client: client})
+
+for delta := range stream.Text() {
+  fmt.Print(delta)
+}
+
+completed, err := stream.Result()
+```
+
+```csharp C#
+var stream = agent.Stream(new RunOptions { Input = input, Client = client });
+
+await foreach (var delta in stream.TextStream())
+{
+    Console.Write(delta);
+}
+
+var completed = await stream.GetResult();
+```
+
+```php PHP
+$stream = $agent->stream(input: $input, client: $client);
+
+foreach ($stream->textStream() as $delta) {
+    echo $delta;
+}
+
+$completed = $stream->getResult();
+```
+
+```ruby Ruby
+stream = agent.stream(input: "Research this topic", client: client)
+
+stream.text_stream.each { |delta| print delta }
+
+completed = stream.result
+```
+
+```java Java
+// textStream() रन पूरा होने तक ब्लॉक करता है; इसकी जगह लाइव deltas onEvent से प्रिंट करें।
+var options = new AgentSdk.RunOptions(
+    input, AgentSdk.createGatewayAgentClient(), null, null, null, null, null, null,
+    event -> {
+        if (event.type().equals("response.output_text.delta")) {
+            System.out.print(event.details().get("delta"));
+        }
+    },
+    null);
+var completed = agent.stream(options).getResult();
+```
+
+</CodeGroup>
+
+अंतिम नतीजा वही रन नतीजा है जो run लौटाता है। स्ट्रीम कैसे चलती है, यह भाषा के अनुसार अलग है:
+
+<Tabs>
+<Tab title="TypeScript">
+
+`agent.stream()` और `agent.continueStream()` तुरंत एक stream result लौटाते हैं। `getResult()` रन पूरा होने पर resolve होता है।
+
+</Tab>
+<Tab title="Python">
+
+`agent.stream(...)` और `agent.continue_stream(...)` लूप को एक बैकग्राउंड थ्रेड में चलाते हैं और replay किया जा सकने वाला `AgentStreamResult` लौटाते हैं। `result()` रन का इंतज़ार करता है।
+
+</Tab>
+<Tab title="Go">
+
+`agent.Stream` और `agent.ContinueStream` रन को एक goroutine में शुरू करते हैं और तुरंत एक `*StreamResult` लौटाते हैं। `Result()` रन पूरा होने तक ब्लॉक करता है।
+
+</Tab>
+<Tab title="C#">
+
+`agent.Stream` और `agent.ContinueStream` रन शुरू करते हैं और तुरंत एक `AgentStreamResult` लौटाते हैं। `GetResult()` रन पूरा होने पर पूरा होता है।
+
+</Tab>
+<Tab title="PHP">
+
+`$agent->stream()` और `$agent->continueStream()` एक `AgentStreamResult` लौटाते हैं। PHP में बैकग्राउंड थ्रेड नहीं है: रन एक Fiber के अंदर सिर्फ़ तब आगे बढ़ता है जब आपका कोड अगला इवेंट खींचता है, और `getResult()` बचे हुए इवेंट निकाल लेता है। यह CLI scripts और request workers के लिए ठीक है; लाइव UI के लिए, प्रतिक्रिया देने वाले अनुरोध के अंदर iterate करें, या एजेंट को किसी वर्कर में चलाएँ और इवेंट ब्राउज़र तक ख़ुद पहुँचाएँ।
+
+`stream()` सिर्फ़ `input`, `client`, `context` और `state` लेता है; दूसरे विकल्पों के लिए `run()` का उपयोग करें।
+
+</Tab>
+<Tab title="Ruby">
+
+`agent.stream` और `agent.continue_stream` रन को एक वर्कर थ्रेड पर शुरू करते हैं और तुरंत एक `StreamResult` लौटाते हैं। `result` थ्रेड से join करता है, किसी भी त्रुटि को फिर से raise करता है, और रन नतीजा लौटाता है।
+
+`stream` सिर्फ़ `input:`, `client:`, `context:` और `state:` लेता है; दूसरे विकल्पों के लिए `run` का उपयोग करें।
+
+</Tab>
+<Tab title="Java">
+
+`agent.stream` और `agent.continueStream` रन को `phaseo-agent-stream` नाम के एक daemon थ्रेड पर शुरू करते हैं और तुरंत एक `StreamResult` लौटाते हैं। `textStream()` और `fullStream()` सूचियाँ लौटाते हैं और रन पूरा होने तक ब्लॉक करते हैं, इसलिए `textStream()` पर loop पूरा जवाब अंत में प्रिंट करता है। रन चलते समय इवेंट पर कार्रवाई करने के लिए, ऊपर दिखाए अनुसार `RunOptions` में एक `onEvent` consumer दें।
+
+</Tab>
+<Tab title="Rust">
+
+`phaseo-agent` 0.2 में स्ट्रीमिंग नहीं है। Callback के ज़रिए लाइफ़साइकल इवेंट पाने के लिए `run_with_events` या `continue_with_events` कॉल करें, और टेक्स्ट पूरे हुए रन से पढ़ें।
+
+</Tab>
+</Tabs>
+
+## स्ट्रीम चुनें
+
+हर consumer इवेंट को शुरुआत से replay करता है, इसलिए UI renderer, logger और persistence कोड दूसरे मॉडल अनुरोध के बिना एक ही रन पढ़ सकते हैं।
+
+| क्या देता है | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| जवाब टेक्स्ट के deltas | `getTextStream()` | `text_stream()` | `Text()` | `TextStream()` | `textStream()` | `text_stream` | `textStream()` (सूची) |
+| Reasoning deltas | `getReasoningStream()` | `reasoning_stream()` | `Events()`, filter | `FullStream()`, filter | `reasoningStream()` | `reasoning_stream` | `fullStream()`, filter |
+| टाइमलाइन आइटम | `getItemsStream()` (टाइप किए गए) | `item_stream()` (dicts) | `Events()`, filter | `FullStream()`, filter | `itemStream()` | `item_stream` | `fullStream()`, filter |
+| टूल लाइफ़साइकल इवेंट | `getToolStream()` | `tool_stream()` | `Events()`, filter | `FullStream()`, filter | `fullStream()`, filter | `full_stream`, filter | `fullStream()`, filter |
+| हर इवेंट | `getFullStream()`, फिर एक अंतिम `result` इवेंट | `full_stream()` | `Events()` (channel) | `FullStream()` (`IAsyncEnumerable`) | `fullStream()` | `full_stream` (`Enumerator`) | `fullStream()` (सूची, रन के बाद) |
+
+TypeScript में पूरे जवाब का इंतज़ार करने के लिए `getText()` भी है, ताकि रेंडरिंग और persistence साथ-साथ चल सकें:
+
+```typescript
+const result = agent.stream({ input, client });
+
+const [text, completed] = await Promise.all([
+  result.getText(),
+  result.getResult(),
+]);
+```
+
+मॉडल इवेंट `response.output_text.delta`, `response.reasoning.delta` और `response.item` हैं; [आइटम](./items) में उनके फ़ील्ड हैं। मॉडल इवेंट सिर्फ़ तब स्ट्रीम होते हैं जब क्लाइंट स्ट्रीमिंग का समर्थन करता है, जैसा हर gateway क्लाइंट करता है। किसी दूसरे मॉडल क्लाइंट के साथ (जो `StreamingModelClient`, `IStreamingModelClient` लागू नहीं करता, या `stream` पर प्रतिक्रिया नहीं देता), स्ट्रीम फिर भी लाइफ़साइकल इवेंट भेजती है, लेकिन टेक्स्ट deltas नहीं।
+
+## टूल प्रगति स्ट्रीम करें
+
+प्रगति बताने वाले टूल `tool.preliminary_result` इवेंट प्रकाशित करते हैं, जो full stream में (और TypeScript की tool stream में) दिखते हैं और पूरे हुए स्टेप से जुड़े रहते हैं। [टूल](./tools#report-progress-and-update-context) दिखाता है कि हर भाषा प्रगति कैसे बताती है।
+
+## स्ट्रीम रद्द करें
+
+| भाषा | कॉल | क्या होता है |
+| --- | --- | --- |
+| TypeScript | `cancel()` | रन को abort करता है। स्थानीय टूल को `context.signal` के ज़रिए रद्द करने की सूचना मिलती है। |
+| Python | `cancel()` | सक्रिय मॉडल अनुरोध बंद करता है; रन `InterruptedError` raise करता है |
+| Go | `stream.Cancel()` | रन को दिया गया context रद्द करता है, जिससे मॉडल अनुरोध रुक जाता है; `Result()` त्रुटि लौटाता है |
+| C# | `stream.Cancel()`, या `RunOptions.CancellationToken` रद्द करें | एक linked token रद्द करता है जो मॉडल अनुरोध और हर टूल के `runtime.CancellationToken` तक पहुँचता है; `GetResult()` फेंकता है |
+| PHP | `$stream->cancel()` | Fiber में `Agent stream cancelled` फेंकता है, जो रन को उसके अगले suspension point पर रोक देता है |
+| Ruby | `stream.cancel` | वर्कर थ्रेड को ख़त्म करता है, जिससे HTTP स्ट्रीम बंद हो जाती है और हर enumerator ख़त्म हो जाता है |
+| Java | `stream.cancel()` | वर्कर थ्रेड और HTTP read को बाधित करता है, और result future रद्द करता है; `getResult()` फेंकता है |
+| Rust | समर्थित नहीं | रन synchronous होते हैं |
+
+हर पूरा हुआ स्टेप अपना अनुरोध ID, प्रदाता, मॉडल, समाप्ति का कारण, चेतावनियाँ और उपयोग रखता है।

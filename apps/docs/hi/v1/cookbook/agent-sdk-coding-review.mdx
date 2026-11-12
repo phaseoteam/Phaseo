@@ -1,40 +1,68 @@
 ---
-title: "रनटाइम टूल से कोड-रिव्यू एजेंट चलाएँ"
+title: "रनटाइम टूल के साथ कोड-रिव्यू एजेंट चलाएँ"
+sidebarTitle: "कोड रिव्यू एजेंट चलाएँ"
 icon: "code-xml"
-description: "स्थानीय रनटाइम टूल, सख्त JSON और मानव अनुमोदन चेकपॉइंट की मदद से फिर से शुरू किया जा सकने वाला कोड-रिव्यू workflow बनाएँ।"
+description: "स्थानीय रनटाइम टूल, सख्त JSON और मानव अनुमोदन चेकपॉइंट के साथ फिर से शुरू किया जा सकने वाला कोड-रिव्यू वर्कफ़्लो बनाएँ।"
 ---
 
-जब किसी workflow को ये काम करने हों, तब यह तरीका अपनाएँ:
+एक TypeScript एजेंट बनाएँ जो स्थानीय टूल से pull request की जाँच करे, सख्त JSON रिव्यू प्लान लौटाए, और जब प्लान कहे कि अनुमोदन चाहिए, तब किसी व्यक्ति के लिए रुक जाए। अंत में आपके पास एक स्क्रिप्ट होगी जो सत्यापित `CodeReviewPlan` प्रिंट करती है और किसी के अनुमोदन तक `waiting_for_human` पर रुकी रहती है।
 
-- स्थानीय रनटाइम टूल से कोड-संबंधी संदर्भ की जाँच करना
-- खुली prosa के बजाय सख्त स्ट्रक्चर्ड आउटपुट लौटाना
-- अधिक जोखिम वाले निर्णय को मानव अनुमोदन के लिए रोकना
-- मॉडल टर्न और टूल कॉल के बीच प्रगति का checkpoint बनाना
+टूल तय नमूना डेटा लौटाते हैं, इसलिए यह स्क्रिप्ट उदाहरण के लिए है; इन्हें अपने कोड होस्ट और CI की कॉल से बदलें। पैकेज किया गया संस्करण `packages/sdk/agent-sdk-ts/examples/coding-review-agent.ts` में है।
 
-## 1. सीमित आउटपुट कॉन्ट्रैक्ट परिभाषित करें
-
-```ts
-type CodeReviewPlan = {
-  risk: "low" | "medium" | "high";
-  summary: string;
-  recommendedActions: string[];
-  needsApproval: boolean;
-};
+```mermaid
+flowchart LR
+  run["agent.run()"] --> tools["lookup-diff-summary, lookup-failing-checks"]
+  tools --> plan["JSON रिव्यू प्लान"]
+  plan --> check{{"needsApproval?"}}
+  check -->|"नहीं"| done["completed"]
+  check -->|"हाँ"| wait["waiting_for_human"]
+  wait -->|"humanInput के साथ continueRun"| done
 ```
 
-इससे पहला कोड-रिव्यू workflow लॉग में जाँचना और बाद के worker चरणों तक भेजना आसान रहता है।
+## इसे बनाएँ
 
-## 2. छोटे रनटाइम टूल परिभाषित करें
+<Steps>
+<Step title="इंस्टॉल करें">
 
-```ts
-import { defineTool } from "@phaseo/agent-sdk";
+```bash
+npm install @phaseo/agent-sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
 
+</Step>
+<Step title="एजेंट लिखें">
+
+```ts review-agent.ts
+import { z } from "zod";
+import { createAgent, createGatewayAgentClient, defineTool } from "@phaseo/agent-sdk";
+
+const CodeReviewPlan = z
+  .object({
+    risk: z.enum(["low", "medium", "high"]),
+    summary: z.string().min(1),
+    recommendedActions: z.array(z.string()).min(1),
+    needsApproval: z.boolean(),
+  })
+  .strict();
+type CodeReviewPlan = z.infer<typeof CodeReviewPlan>;
+
+const PullRequestInput = z.object({ pullRequestId: z.string().regex(/^pr_\d+$/) }).strict();
+const pullRequestParameters = {
+  type: "object",
+  properties: { pullRequestId: { type: "string", pattern: "^pr_\\d+$" } },
+  required: ["pullRequestId"],
+  additionalProperties: false,
+};
+
+// सिर्फ़ पढ़ने वाले, निर्धारक टूल: worker रन फिर से शुरू करे तो इन्हें दोबारा चलाना सुरक्षित है।
 const lookupDiffSummary = defineTool({
   id: "lookup-diff-summary",
   description: "Return a short summary of the changed files in one pull request.",
-  async execute(input: { pullRequestId: string }) {
+  parameters: pullRequestParameters,
+  inputSchema: PullRequestInput,
+  async execute({ pullRequestId }) {
     return {
-      pullRequestId: input.pullRequestId,
+      pullRequestId,
       files: ["apps/api/src/pipeline/before/index.ts"],
       summary: "Changes touch request validation.",
     };
@@ -44,68 +72,40 @@ const lookupDiffSummary = defineTool({
 const lookupFailingChecks = defineTool({
   id: "lookup-failing-checks",
   description: "Return the failing CI checks for one pull request.",
-  async execute(input: { pullRequestId: string }) {
-    return {
-      pullRequestId: input.pullRequestId,
-      failingChecks: ["web-typecheck"],
-    };
+  parameters: pullRequestParameters,
+  inputSchema: PullRequestInput,
+  async execute({ pullRequestId }) {
+    return { pullRequestId, failingChecks: ["web-typecheck"] };
   },
 });
-```
-
-इन टूल को नियतात्मक और idempotent रखें, ताकि बाद में worker के फिर शुरू होने पर checkpoint किए गए स्टेप डेटा का उपयोग किया जा सके।
-
-## 3. मानव समीक्षा के पड़ाव के साथ एजेंट बनाएँ
-
-```ts
-import { createAgent } from "@phaseo/agent-sdk";
 
 const codingReviewAgent = createAgent<string, CodeReviewPlan>({
   id: "coding-review-agent",
-  model: "phaseo/free",
+  model: "openai/gpt-6-astra",
   instructions:
     "Use the available tools to inspect the coding task, then return a strict JSON review plan.",
   tools: [lookupDiffSummary, lookupFailingChecks],
-  parseOutput(text) {
-    return JSON.parse(text) as CodeReviewPlan;
-  },
+  maxSteps: 6,
+  parseOutput: (text) => JSON.parse(text),
+  outputSchema: CodeReviewPlan,
   humanReview: ({ parsedOutput }) =>
     parsedOutput?.needsApproval
-      ? {
-          reason: "coding_review_approval_required",
-          payload: parsedOutput,
-        }
+      ? { reason: "coding_review_approval_required", payload: parsedOutput }
       : null,
 });
-```
 
-## 4. सख्त JSON के लिए gateway adapter इस्तेमाल करें
-
-```ts
-import {
-  createGatewayAgentClient,
-} from "@phaseo/agent-sdk";
-
+// Gateway से ठीक यही JSON आकार माँगें, और लगभग-सही JSON की मरम्मत करें।
 const client = createGatewayAgentClient({
-  clientOptions: {
-    apiKey: process.env.PHASEO_API_KEY!,
-  },
+  clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
   responseFormat: {
     type: "json_schema",
     name: "code_review_plan",
     schema: {
       type: "object",
       properties: {
-        risk: {
-          type: "string",
-          enum: ["low", "medium", "high"],
-        },
+        risk: { type: "string", enum: ["low", "medium", "high"] },
         summary: { type: "string" },
-        recommendedActions: {
-          type: "array",
-          items: { type: "string" },
-          minItems: 1,
-        },
+        recommendedActions: { type: "array", items: { type: "string" }, minItems: 1 },
         needsApproval: { type: "boolean" },
       },
       required: ["risk", "summary", "recommendedActions", "needsApproval"],
@@ -114,11 +114,7 @@ const client = createGatewayAgentClient({
   },
   plugins: [{ id: "response-healing", mode: "strict" }],
 });
-```
 
-## 5. Workflow चलाएँ और फिर शुरू करें
-
-```ts
 const result = await codingReviewAgent.run({
   input: "Review pull request pr_482 and produce a remediation plan.",
   client,
@@ -128,28 +124,42 @@ const result = await codingReviewAgent.run({
 });
 
 if (result.run.status === "waiting_for_human") {
-  const continued = await codingReviewAgent.continueRun({
-    run: result,
-    client,
-    humanInput: "Approved. Finalize the plan.",
-  });
+  console.log("Needs approval:", result.run.pause?.payload);
 
-  console.log(continued.output);
+  // असली ऐप में `result` सहेजें और रिव्यूअर के अनुमोदन पर आगे बढ़ें।
+  if (process.env.APPROVE === "yes") {
+    const continued = await codingReviewAgent.continueRun({
+      run: result,
+      client,
+      humanInput: "Approved. Finalize the plan.",
+    });
+    console.log(continued.output);
+  }
+} else {
+  console.log(result.output);
 }
 ```
 
-## 6. क्या सत्यापित करें
+`responseFormat` से Gateway यही स्कीमा माँगता है, और `outputSchema` आपकी प्रोसेस में पार्स किए गए नतीजे को फिर से जाँचता है। सख्त [response healing](./response-healing-for-structured-json) मोड सिर्फ़ उसी JSON को खोलता है जो पहले से वैध है।
 
-टूल के साथ एक रन और अनुमोदन के लिए रुका हुआ एक रन चलाने के बाद, पुष्टि करें:
+</Step>
+<Step title="इसे चलाएँ">
 
-- अनुरोध विवरण में रनटाइम टूल लूप साफ़ दिखता है
-- रुकी हुई रन की स्थिति `waiting_for_human` बन जाती है
-- टूल निष्पादन के बाद स्टेप रिकॉर्ड checkpoint सेव करते हैं
-- स्कीमा विफलताएँ या प्लगइन सुधार की गतिविधि लॉग में दिखती रहती है
+```bash
+npx tsx review-agent.ts
+APPROVE=yes npx tsx review-agent.ts
+```
 
-## संबंधित गाइड
+</Step>
+</Steps>
 
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
-- [टिकाऊ एजेंट लूप बनाएँ](./agent-sdk-durable-loop.mdx)
-- [स्ट्रक्चर्ड आउटपुट सत्यापित करें](../guides/structured-outputs.mdx)
-- [गलत फ़ॉर्मैट वाले स्ट्रक्चर्ड JSON को रिकवर करें](./response-healing-for-structured-json.mdx)
+## जाँचें कि यह काम किया
+
+- इवेंट लॉग में दोनों टूल के लिए `tool.started` और `tool.completed` दिखते हैं, फिर टूल चरण के बाद `checkpoint.saved`।
+- `needsApproval: true` वाला प्लान पहले रन को `waiting_for_human` पर रोकता है, और प्लान `result.run.pause.payload` में होता है; `APPROVE=yes` के साथ रन `completed` तक जारी रहता है।
+- **सेटिंग → उपयोग → लॉग्स** में हर मॉडल टर्न के टूल कॉल दिखते हैं, और अनुरोध का प्लगइन रिकॉर्ड बताता है कि healing चली या नहीं।
+- स्कीमा तोड़ने वाला प्लान गलत डेटा लौटाने के बजाय रन को `AgentSchemaValidationError` के साथ विफल कर देता है।
+
+## असली रिपॉज़िटरी के लिए इसे सुरक्षित बनाएँ
+
+रिव्यू टूल सिर्फ़ पढ़ने वाले रखें। अगर आप ऐसा टूल जोड़ते हैं जो टिप्पणी करे, push करे या merge करे, तो उस पर `requireApproval: true` सेट करें ताकि उसके चलने से पहले रन रुक जाए, और उसे `continueRun({ run, client, approvals: [toolCallId] })` से अनुमोदित करें। diff की सामग्री को अविश्वसनीय इनपुट मानें: कोड टिप्पणियों में मॉडल के लिए लिखे निर्देश हो सकते हैं। रिव्यू के इंतज़ार के दौरान रीस्टार्ट से बचे रहने के लिए, [टिकाऊ लूप](./agent-sdk-durable-loop) की तरह `state` एक्सेसर से रन सहेजें। [स्थिति और अनुमोदन](../sdk-reference/agent/state-and-approval) में अनुमोदन और अस्वीकृति की जानकारी है।

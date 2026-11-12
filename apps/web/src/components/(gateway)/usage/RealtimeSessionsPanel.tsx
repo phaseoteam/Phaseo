@@ -1,9 +1,7 @@
-"use client";
-
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 import { useState, useTransition } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from "@/lib/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { ChevronLeft, ChevronRight, ChevronsLeft, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +15,7 @@ import { ProviderInspectorSheet, ProviderInspectorSheetContent, ProviderInspecto
 import { DetailKeyValueGrid, DetailSection } from "./DetailDialogPrimitives";
 import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
 import { toast } from "sonner";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 export type RealtimeSession = {
 	session_id: string; provider: string; model_id: string; voice: string | null; status: string;
@@ -40,7 +39,7 @@ export default function RealtimeSessionsPanel({ sessions, page, pageSize, hasMor
 	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
 	const number = (value: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(value);
-	const money = (session: RealtimeSession, nanos: number) => new Intl.NumberFormat(locale, { style: "currency", currency: session.currency || "USD", minimumFractionDigits: 2, maximumFractionDigits: 8 }).format(Number(nanos) / 1e9);
+	const money = (session: RealtimeSession, nanos: number) => new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: session.currency || "USD", minimumFractionDigits: 2, maximumFractionDigits: 8 }).format(Number(nanos) / 1e9);
 	const date = (value: string | null) => value ? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "medium", timeZone: "UTC" }).format(new Date(value)) + " UTC" : "—";
 	const duration = (session: RealtimeSession) => {
 		if (!session.ended_at) return session.connected_at ? t("realtimeCopy.copyInProgress") : "—";

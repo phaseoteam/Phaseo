@@ -2,103 +2,135 @@
 title: "Fan out local agent tools concurrently"
 icon: "network"
 description: "Use bounded local tool concurrency in the TypeScript Agent SDK so one model turn can gather independent context without serializing every tool call."
+"og:image": "https://phaseo.app/og/dynamic?title=Fan%20out%20local%20agent%20tools%20concurrently&description=Use%20bounded%20local%20tool%20concurrency%20in%20the%20TypeScript%20Agent%20SDK%20so%20one%20model%20turn%20can%20gather%20independent%20context%20without%20serializing%20every%20tool%20call.&pathname=/docs/v1/cookbook/agent-sdk-parallel-tools"
 ---
 
-Use this recipe when one agent turn can safely call several independent local tools and you want the runtime to execute them concurrently while still preserving deterministic tool-result ordering.
+Set `toolExecution.toolConcurrency` so the TypeScript Agent SDK runs several independent tool calls from one model turn at the same time instead of one after another. When you're done you have an agent that gathers docs, status and incident context in parallel and still records the results in the order the model asked for them.
 
-## When to use this
+The tools return fixed sample data, so the script is illustrative; replace them with your own read-only lookups. A packaged version is in `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
 
-Use `toolExecution.toolConcurrency` when:
+## Build it
 
-- the model can emit multiple local tool calls in one turn
-- those tools do not depend on each other’s output
-- serial execution would waste worker time
-- you still want persisted tool-result messages to stay in the original tool-call order
+<Steps>
+<Step title="Install">
 
-Do not use high concurrency when one tool mutates shared state or when later tools depend on earlier results.
+```bash
+npm install @phaseo/agent-sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
 
-## Example
+</Step>
+<Step title="Write the agent">
 
-```ts
-import {
-  createAgent,
-  createGatewayAgentClient,
-  defineTool,
-} from "@phaseo/agent-sdk";
+```ts parallel-agent.ts
+import { z } from "zod";
+import { createAgent, createGatewayAgentClient, defineTool } from "@phaseo/agent-sdk";
 
 const fetchDocs = defineTool({
   id: "fetch-docs",
-  async execute(input: { slug: string }) {
-    return {
-      slug: input.slug,
-      summary: `Docs summary for ${input.slug}`,
-    };
+  description: "Return a short summary of one Phaseo docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: { slug: { type: "string" } },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ slug: z.string().regex(/^[a-z0-9/-]{1,80}$/) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ slug }) {
+    return { slug, summary: `Docs summary for ${slug}` };
   },
 });
 
 const fetchStatus = defineTool({
   id: "fetch-status",
-  async execute(input: { component: string }) {
-    return {
-      component: input.component,
-      status: "operational",
-    };
+  description: "Return the status of one Phaseo component.",
+  parameters: {
+    type: "object",
+    properties: { component: { type: "string", enum: ["gateway", "dashboard", "async-jobs"] } },
+    required: ["component"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ component: z.enum(["gateway", "dashboard", "async-jobs"]) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ component }) {
+    return { component, status: "operational" };
   },
 });
 
 const fetchIncidents = defineTool({
   id: "fetch-incidents",
-  async execute(input: { service: string }) {
-    return {
-      service: input.service,
-      openIncidents: 0,
-    };
+  description: "Return the open incident count for one service.",
+  parameters: {
+    type: "object",
+    properties: { service: { type: "string", enum: ["gateway", "dashboard", "async-jobs"] } },
+    required: ["service"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ service: z.enum(["gateway", "dashboard", "async-jobs"]) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ service }) {
+    return { service, openIncidents: 0 };
   },
 });
 
 const agent = createAgent({
   id: "parallel-tool-agent",
-  model: "phaseo/free",
+  model: "openai/gpt-6-astra",
   instructions:
     "Use the available tools to gather context, then return one concise operational summary.",
   tools: [fetchDocs, fetchStatus, fetchIncidents],
-  toolExecution: {
-    toolConcurrency: 3,
-  },
+  toolExecution: { toolConcurrency: 3 },
+  maxSteps: 4,
 });
 
 const result = await agent.run({
   input:
-    "Fetch the presets docs, the gateway status component, and the async-jobs incident digest, then summarize the current state.",
+    "Fetch the presets docs, the gateway status, and the async-jobs incident digest, then summarize the current state.",
   client: createGatewayAgentClient({
-    clientOptions: {
-      apiKey: process.env.PHASEO_API_KEY!,
-    },
+    clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+    parallelToolCalls: true,
   }),
+  onEvent(event) {
+    if (event.type === "tool.started" || event.type === "tool.completed") {
+      console.log(event.type, event.toolName, event.timestamp);
+    }
+  },
 });
+
+console.log(result.output);
 ```
 
-See the packaged version in `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
+</Step>
+<Step title="Run it">
 
-## What the runtime guarantees
+```bash
+npx tsx parallel-agent.ts
+```
 
-- local tools can execute concurrently up to the configured `toolConcurrency`
-- `tool.started` and `tool.completed` events still emit per tool
-- persisted tool-result messages stay in the original tool-call order
-- checkpointing still happens after the tool phase completes
-- tool timeouts still apply per tool through `timeoutMs`
+</Step>
+</Steps>
 
-## Operational guidance
+## Check it worked
 
-- start with a small concurrency value such as `2` or `3`
-- keep local tools idempotent and side-effect light
-- use `timeoutMs` so one stuck dependency does not waste all worker slots
-- only add `store` when your application actually needs resumability or remote coordination
+- The three `tool.started` lines print before the matching `tool.completed` lines, with close timestamps, when the model asks for all three in one turn.
+- `result.messages` lists the tool results in the order of the model's tool calls, whatever order they finished in.
+- The run ends with one summary in `result.output`.
 
-## Validation
+## What runs together
 
-After enabling this pattern:
+| Setting | Effect |
+| --- | --- |
+| `toolExecution.toolConcurrency` | Up to this many tool calls from one turn run at once. Default `1`. |
+| `parallelSafe: true` on every tool in the turn | Up to 8 run at once, or `toolConcurrency` if that's higher. Use it only for read-only tools. |
+| `timeoutMs` on a tool | That call fails after this long, so one stuck dependency can't hold every slot. |
+| `parallelToolCalls` on the gateway client | Lets the model ask for several tool calls in one turn; whether it does depends on the model. |
 
-- run the exact agent loop tests that cover multi-tool turns
-- confirm the workflow still produces ordered tool-result messages
-- confirm operator logs still show the expected `tool.started` and `tool.completed` events
+`tool.started` and `tool.completed` still fire for each call, and the run checkpoints once the tool phase finishes.
+
+## Keep it safe
+
+Use concurrency only for tools that don't depend on each other's output and don't change shared state. Start at `2` or `3`, keep tools idempotent with few side effects, and validate every argument with `inputSchema` as above. Add a `state` accessor, as in the [durable loop](./agent-sdk-durable-loop), only when you need to resume runs. Before relying on it, run your tests that cover multi-tool turns and check the result order.

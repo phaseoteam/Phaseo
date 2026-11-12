@@ -38,8 +38,10 @@ export const localeRegistry = {
 		font: "latin",
 	},
 	"en-US": {
+		// Staged on 2026-10-19: it differed from en-GB only in spelling, while
+		// crawlers rendered every English page twice. proxy.ts redirects its URLs.
 		role: "overlay",
-		release: "public",
+		release: "staged",
 		reviewState: "approved",
 		fallback: "en-GB",
 		nativeName: "English (US)",
@@ -156,6 +158,13 @@ export type PublicLocale = {
 		? Locale
 		: never;
 }[CatalogLocale];
+export type StagedLocale = {
+	[Locale in CatalogLocale]: LocaleRegistry[Locale]["release"] extends "staged"
+		? Locale
+		: never;
+}[CatalogLocale];
+/** Locales whose catalogs ship with the app: public ones, plus staged ones that are built but not routed. */
+export type ShippedLocale = PublicLocale | StagedLocale;
 export type TranslationLocale = {
 	[Locale in CatalogLocale]: LocaleRegistry[Locale]["role"] extends "full"
 		? Locale

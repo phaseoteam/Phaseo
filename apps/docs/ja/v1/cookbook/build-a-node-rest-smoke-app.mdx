@@ -1,117 +1,123 @@
 ---
-title: "Node RESTスモークアプリを作成する"
+title: "Node REST スモークアプリを作成する"
 icon: "server"
-description: "Nodeクイックスタートのサンプルを使って、HTTPを直接扱う統合とスモークテスト用スクリプトを説明します。"
+description: "Node クイックスタートのサンプルを使って、HTTP を直接扱う連携とスモークテスト用スクリプトを順に作成します。"
 ---
 
-最小構成のNode統合を作り、すべてのHTTPリクエストを確認したい場合にこのページを使います。
+依存関係のない Node.js スクリプトを実行し、素の `fetch` で Phaseo を呼び出して、すべてのリクエストとレスポンスを確認します。完成すると、デプロイ前に実行できるスモークテストが手元に残ります。このテストは API に到達できることを確認し、モデル一覧を取得し、Responses、Chat Completions、Embeddings にそれぞれ 1 件ずつリクエストを送ります。
 
-**目標:** HTTPを直接使い、Phaseoの稼働状況、モデル検出、生成リクエスト1件を確認します。
+このスクリプトは説明用です。各 HTTP ステータスを表示しますが、終了コードは常に `0` です。CI で使う前に、[デプロイチェックとして使う](#use-it-as-a-deploy-check)の終了コードのチェックを追加してください。
 
-**成果:** デプロイや統合のスモークテストとして使える、依存関係の少ないスクリプトを用意します。
+同じスクリプトをコーディングエージェントにゼロから作らせるには、次のプロンプトを貼り付けます。
 
 <Prompt
-  description="HTTPを直接使ってPhaseo向けの**Node RESTスモークアプリ**を作成します。"
+  description="HTTP を直接使って Phaseo 向けの **Node REST スモークアプリ**を作成します。"
   icon="terminal"
   actions={["copy", "cursor"]}
 >
-{`HTTPを直接使ってPhaseo Gatewayと連携する小規模なNode.jsアプリを作成します。
+{`You are building a small Node.js integration against Phaseo Gateway using raw HTTP.
 
-次の処理を行うスクリプト型アプリを作成します。
-- 環境変数からPHASEO_API_KEYを読み取る
-- healthとモデル検出のルートを呼び出す
-- テキスト生成リクエストを1回送信する
-- 必要に応じてembeddingsなど別のAPIも呼び出す
+Create a script-based app that:
+- reads PHASEO_API_KEY from the environment and sends it as Authorization: Bearer
+- uses https://api.phaseo.app/v1 as the base URL
+- calls GET /health and GET /models
+- makes one POST /responses request
+- optionally calls one additional surface such as POST /embeddings
 
-要件:
-- SDKではなくfetchを直接使います。
-- コードの依存関係を少なく保ちます。
-- リクエスト本文を明示的にし、監査しやすくします。
-- ターミナルに成功とエラーを明確に出力します。
-簡易スモークモードと、より包括的なエンドツーエンドモードに対応します。
+Requirements:
+- Use raw fetch, not an SDK.
+- Keep the code dependency-light.
+- Keep request payloads explicit and easy to audit.
+- Print clear success and error output in the terminal, and exit non-zero when any call fails.
+- Support a quick smoke mode and a fuller end-to-end mode.
 
-成果物:
-- スクリプト
-- package.jsonのコマンド
-- 短いREADME
-- .env.exampleのエントリ
+Deliverables:
+- the script
+- package.json commands
+- a short README
+- an .env.example entry
 
-確認項目:
-- 可能であればスモークモードを実行します
-- 可能であればリクエスト経路を一通り実行します
-- 検証した内容と残っている前提を報告します。`}
+Verification:
+- run the smoke mode if possible
+- run one full request path if possible
+- report what was verified and any remaining assumptions.`}
 </Prompt>
 
-## サンプルプロジェクト
+## スクリプトが呼び出すもの
 
-- GitHub: [examples/gateway-node-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-node-quickstart)
-- リポジトリ内のパス: `examples/gateway-node-quickstart`
+サンプルは [examples/gateway-node-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-node-quickstart) です。依存関係のない `index.mjs` 1 ファイルだけで構成されています。
 
-## このアプリの機能
+| モード | 呼び出し | クレジットの消費 |
+| --- | --- | --- |
+| `npm run smoke` | `GET /v1/health`、`GET /v1/models` | なし |
+| `npm run start` | 上の 2 つに続けて `POST /v1/responses`、`POST /v1/chat/completions`、`POST /v1/embeddings` | あり |
 
-- を呼び出す `GET /v1/health`
-- を呼び出す `GET /v1/models`
-- 次のような生成ルートを試す `POST /v1/responses`
-- スモークテスト、スクリプト、バックエンド確認に使えるHTTP直接呼び出しの例を示す
+テキストの呼び出しは `PHASEO_MODEL`（既定値は `openai/gpt-5.6-sol`）に `Return exactly: integration_ok` を送ります。Embeddings の呼び出しには `google/gemini-embedding-2` を使います。
 
-## このサンプルが適しているケース
+## 実行する
 
-次のような場合はここから始めます。
+組み込みの `fetch` を使うため Node.js 18 以降と、Phaseo の API キーが必要です。
 
-- API呼び出しを直接デバッグしたい
-- まだSDKの抽象化を使いたくない
-- Web UIではなく、スクリプト、worker、CLIを作成している
+<Steps>
+<Step title=".env.local を作成する">
 
-## 前提条件
+スクリプトは、実行したフォルダーにある `.env.local` をパッケージなしで読み込みます。サンプルには `.env.example` がないため、ファイルを作成します。
 
-- 組み込みの`fetch` support
-- Phaseo APIキー
+```bash .env.local
+PHASEO_API_KEY=phaseo_v1_sk_...
+# 任意
+PHASEO_MODEL=openai/gpt-6-astra
+PHASEO_BASE_URL=https://api.phaseo.app/v1
+PHASEO_APP_TITLE=My smoke test
+PHASEO_HTTP_REFERER=https://myapp.example
+```
 
-## サンプルを実行する
+シェルですでに設定されている変数は、ファイルの値より優先されます。
+
+</Step>
+<Step title="スモークモードを実行する">
 
 ```bash
 cd examples/gateway-node-quickstart
-cp .env.example .env.local
-```
-
-次を設定します。
-
-- `PHASEO_API_KEY`
-
-次のいずれかを実行します。
-
-```bash
 npm run smoke
 ```
 
-または:
+</Step>
+<Step title="フルモードを実行する">
 
 ```bash
 npm run start
 ```
 
+</Step>
+</Steps>
+
 ## 動作を確認する
 
-- スモークモードでAPIに接続できることを確認できます。
-- モデル検出で少なくとも1つのモデルが返されます。
-- 完全実行で生成成功のレスポンスが1件出力されます。
-- 認証エラーや200以外のレスポンスを、分かりやすいターミナルエラーとして表示します。
+各呼び出しは次のようなブロックを表示します。
 
-## コード内で確認すること
+```text
+=== Health ===
+HTTP 200
+{ ... }
+```
 
-- スクリプトによる読み込み方法 `.env.local`
-- Authorizationヘッダーの設定方法
-- 各リクエストを明示的に組み立てる方法
-- 200以外のレスポンスを無視せず表示する方法
+- `Health` と `Models` に `HTTP 200` が表示され、`Models` に少なくとも 1 つのモデルが一覧表示されます。
+- フル実行では、Responses と Chat Completions のブロックに `integration_ok` が含まれます。
+- キーが間違っている場合、生成のブロックには `HTTP 401` とエラー本文が表示され、エラーが握りつぶされることはありません。
+- リクエストは **設定 → 使用量 → ログ** に表示されます。
 
-## 独自の用途に合わせる方法
+<span id="use-it-as-a-deploy-check"></span>
+## デプロイチェックとして使う
 
-- サービスに必要なルートだけにスクリプトを絞る
-- 複数のスクリプトで使う共通リクエストコードをヘルパーに移す
-- HTTPを直接扱うコードが重複してきたらTypeScript SDKに移行する
+`request()` は `{ status, ok, payload }` を返しますが、`ok` を確認する処理はありません。`print()` の先頭に 1 行追加すると、いずれかの呼び出しが失敗したときにスクリプトが `1` で終了します。
 
-## 関連ガイド
+```js index.mjs
+function print(title, result) {
+  if (!result.ok) process.exitCode = 1;
+  console.log(`\n=== ${title} ===`);
+  // ...以降は変更なし
+}
+```
 
-- [ミニアプリ用の開始プロンプト](./mini-app-starter-prompts.mdx)
-- [無料ルーターで始める](./free-router-first-deploy.mdx)
-- [サンプル](../guides/examples.mdx)
+スクリプトはサービスで使うルートだけに絞り込みます。ペイロードを手で組み立てたくない場合は、[TypeScript SDK](../sdk-reference/client/overview) に切り替えてください。

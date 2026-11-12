@@ -1,4 +1,4 @@
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations, useLocale } from "@/i18n/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,7 +8,10 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-// Verified 2026-09-11: https://developers.openai.com/api/docs/guides/live-conversations#voice-options
+// Verified 2026-11-05: the 31 voices in the Live API reference's audio.output.voice
+// (https://developers.openai.com/api/reference/resources/live); profiles from
+// https://developers.openai.com/api/docs/guides/live-conversations#voice-options.
+// Keep in step with LIVE_VOICES in apps/api/src/core/live-settings.ts.
 // Regional influence describes style, not guaranteed accent fidelity. Leave
 // voices without documented Live profiles undescribed; do not infer from TTS.
 export const LIVE_VOICE_OPTIONS: Array<{ id: string; label: string; description?: string }> = [
@@ -17,18 +20,27 @@ export const LIVE_VOICE_OPTIONS: Array<{ id: string; label: string; description?
 	{ id: "ballad", label: "Ballad" },
 	{ id: "beacon", label: "Beacon", description: "English · Filipino-influenced · Masculine" },
 	{ id: "bossa", label: "Bossa", description: "Portuguese · Brazilian-influenced · Feminine" },
+	{ id: "brise", label: "Brise", description: "French · Feminine" },
 	{ id: "cedar", label: "Cedar" },
 	{ id: "cinder", label: "Cinder", description: "English · Southern U.S.-influenced · Masculine" },
 	{ id: "coral", label: "Coral" },
 	{ id: "delta", label: "Delta", description: "English · Southern U.S.-influenced · Feminine" },
 	{ id: "echo", label: "Echo" },
+	{ id: "flitz", label: "Flitz", description: "German · Masculine" },
 	{ id: "gleam", label: "Gleam", description: "English · North American-influenced · Feminine" },
+	{ id: "harema", label: "Harema", description: "Japanese · Feminine" },
+	{ id: "juni", label: "Juni", description: "German · Feminine" },
 	{ id: "marin", label: "Marin" },
 	{ id: "meridian", label: "Meridian", description: "English · North American-influenced · Masculine" },
+	{ id: "nira", label: "Nira", description: "Hindi · Feminine" },
+	{ id: "noeul", label: "Noeul", description: "Korean · Feminine" },
+	{ id: "nuri", label: "Nuri", description: "German · Feminine" },
 	{ id: "quartz", label: "Quartz", description: "English · Australian-influenced · Feminine" },
 	{ id: "ripple", label: "Ripple", description: "English · Australian-influenced · Masculine" },
 	{ id: "sage", label: "Sage" },
+	{ id: "shida", label: "Shida", description: "Japanese · Masculine" },
 	{ id: "shimmer", label: "Shimmer" },
+	{ id: "sillage", label: "Sillage", description: "French · Masculine" },
 	{ id: "stone", label: "Stone", description: "English · Irish-influenced · Masculine" },
 	{ id: "tempo", label: "Tempo", description: "Portuguese · Brazilian-influenced · Masculine" },
 	{ id: "verse", label: "Verse" },
@@ -85,7 +97,9 @@ export function LiveSettings({ value, onChange }: { value: LiveSettingsValue; on
 }
 
 export type LiveUsageView = {
-	input_tokens?: number; cached_read_text_tokens?: number; cached_write_text_tokens?: number;
+	input_tokens?: number; cached_read_text_tokens?: number;
+	// Cache writes are split by lifetime; calls before that split reported one total.
+	cached_write_text_tokens?: number; cached_write_text_tokens_30m?: number; cached_write_text_tokens_12h?: number;
 	output_tokens?: number; output_reasoning_tokens?: number; native_web_search_requests?: number;
 	live_responses?: Array<{ id: string; delegation_id?: string; status: string; model?: string; service_tier?: string;
 		usage: Record<string, number> }>;
@@ -107,7 +121,7 @@ export function LiveUsageDetails({ usage, pending }: { usage?: LiveUsageView; pe
 		<ScrollArea className="border-t" viewportClassName="max-h-64 overscroll-contain" viewportProps={{ role: "region", "aria-label": tCopy("delegationUsageDetails"), tabIndex: 0 }}>
 		<div className="px-4 py-3">
 		<dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
-			{[[tCopy("copyInputTokens"), usage.input_tokens], [tCopy("copyCacheReads"), usage.cached_read_text_tokens], [tCopy("copyCacheWrites"), usage.cached_write_text_tokens],
+			{[[tCopy("copyInputTokens"), usage.input_tokens], [tCopy("copyCacheReads"), usage.cached_read_text_tokens], [tCopy("copyCacheWrites"), (usage.cached_write_text_tokens ?? 0) + (usage.cached_write_text_tokens_30m ?? 0) + (usage.cached_write_text_tokens_12h ?? 0)],
 				[tCopy("copyOutputTokens"), usage.output_tokens], [tCopy("reasoningIncluded"), usage.output_reasoning_tokens], [tCopy("webSearches"), usage.native_web_search_requests]]
 				.map(([label, count]) => <div key={label}><dt className="text-muted-foreground">{label}</dt><dd className="mt-1 font-medium tabular-nums">{Number(count ?? 0).toLocaleString(locale)}</dd></div>)}
 		</dl>

@@ -1,0 +1,80 @@
+---
+title: "fx"
+icon: "/icons/brands/vercel.svg"
+description: "اربط وكيل البرمجة fx من Vercel Labs بـ Phaseo Gateway عبر اتصال نموذج مخصّص."
+---
+
+شغّل `phaseo fx` لإضافة Phaseo كاتصال مخصّص في [fx](https://fx.sh)، وكيل البرمجة مفتوح المصدر من Vercel Labs، أو أضف الاتصال إلى `~/.fx/settings.json` بنفسك. يستدعي fx نقطة النهاية Chat Completions في Phaseo ويعمل على macOS وLinux.
+
+## الإعداد باستخدام Phaseo CLI
+
+```bash
+phaseo login
+phaseo fx --model openai/gpt-5.6-terra
+```
+
+إذا لم يكن fx مثبتًا، تعرض CLI أمر المثبّت الرسمي وتطلب موافقتك قبل تشغيله. ثم يقوم الإعداد بما يلي:
+
+- يضيف اتصال `phaseo` إلى `~/.fx/settings.json`، مع الإبقاء على إعداداتك واتصالاتك الأخرى؛
+- يزامن حتى 256 نموذجًا متوافقًا من Phaseo، وهو الحد الأقصى الذي يقبله fx، مع حدود السياق والإخراج الخاصة بها؛
+- يجعل `phaseo` المزوّد النشط في fx ويسجّل المزوّد السابق حتى تتمكن الإزالة من استعادته؛
+- ينشئ مفتاحًا باسم `Phaseo CLI: fx API Key` تنتهي صلاحيته بعد 90 يومًا وله حد إنفاق شهري قدره $100، ويحفظه في الملف `~/.config/phaseo/integrations/fx.env` الذي لا يقرؤه إلا مالكه. شغّل `phaseo fx` مرة أخرى لاستبدال مفتاح منتهي الصلاحية.
+
+استخدم `--catalog default` لإضافة النموذج المحدد فقط، أو `--dry-run` لمعاينة التغييرات.
+
+يقرأ fx مفاتيح الاتصالات المخصّصة من متغيرات البيئة فقط، ولا يقرؤها أبدًا من ملف إعداداته. أضف هذا السطر إلى `~/.zshrc` أو `~/.bashrc` مرة واحدة، ثم افتح طرفية جديدة:
+
+```bash
+[ -f "$HOME/.config/phaseo/integrations/fx.env" ] && . "$HOME/.config/phaseo/integrations/fx.env"
+```
+
+يضبط السطر `PHASEO_FX_API_KEY` عندما يكون الملف موجودًا، ولا يفعل شيئًا بعد إزالة التكامل. ثم ابدأ fx:
+
+```bash
+fx
+```
+
+بدّل النماذج باستخدام `/model`، أو استخدم أي معرّف نموذج من Phaseo لتشغيل واحد باستخدام `FX_MODEL=<id> fx`. عُد إلى مزوّد آخر باستخدام `fx provider <name>`.
+
+## إعداد fx يدويًا
+
+أضف الاتصال إلى `~/.fx/settings.json`. لا يقبل fx الاتصالات المخصّصة في ملف `.fx.json` الخاص بالمشروع.
+
+```json ~/.fx/settings.json
+{
+  "provider": "phaseo",
+  "providers": {
+    "phaseo": {
+      "protocol": "openai-chat-completions",
+      "base_url": "https://api.phaseo.app/v1",
+      "auth": { "type": "bearer", "env": "PHASEO_API_KEY" },
+      "model_metadata": {
+        "openai/gpt-5.6-terra": { "context_window": 400000, "max_output_tokens": 128000 }
+      }
+    }
+  },
+  "models": { "phaseo": "openai/gpt-5.6-terra" }
+}
+```
+
+صدّر `PHASEO_API_KEY` وشغّل `fx`. صرّح بالحدود لكل نموذج تستخدمه: بدون `context_window`، لا يستطيع fx معرفة متى يضغط المحادثة. الحدود أعلاه أمثلة؛ خذ القيم الحقيقية من [نقطة نهاية النماذج](../../api-reference/endpoint/models.mdx).
+
+## التحقق من أنه يعمل
+
+1. شغّل `fx status --json` للتأكد من المزوّد النشط ونقطة النهاية والنموذج.
+2. شغّل موجّهًا قصيرًا، مثل `fx ask "Summarize README.md"`، قبل العمل على تعديل الملفات.
+3. تأكد من ظهور الطلب في **الإعدادات → الاستخدام → السجلات**.
+
+إذا أبلغ fx عن بيانات اعتماد مفقودة، فافتح طرفية جديدة أو تأكد من وجود السطر في ملف تعريف الصدفة.
+
+## إزالة Phaseo
+
+```bash
+phaseo integrations remove fx
+```
+
+يزيل هذا الأمر اتصال `phaseo` ونموذجه، ويستعيد مزوّد fx السابق إذا كان Phaseo لا يزال نشطًا، ويحذف ملف المفتاح، ويلغي المفتاح.
+
+## القيود المعروفة
+
+ميزات fx التي لا تعمل إلا مع مزوّده المستضاف المدمج، مثل البحث على الويب وفحوصات الرصيد، غير متاحة عبر الاتصالات المخصّصة.

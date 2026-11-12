@@ -1,7 +1,5 @@
-"use client";
-
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	parseAsArrayOf,
 	parseAsInteger,
@@ -33,7 +31,7 @@ import {
 } from "@/components/(tools)/pricing-calculator/calculatorState";
 import type { CalculatorModelSelection } from "@/components/(tools)/pricing-calculator/calculatorState";
 import type { CalculatorCatalogModel } from "@/components/(tools)/pricing-calculator/calculatorState";
-import { loadPricingCalculatorModels } from "@/app/(dashboard)/tools/pricing-calculator/actions";
+import { loadPricingCalculatorModels } from "@/features/tools/pricing-calculator/actions";
 import {
 	type PricingMeter,
 } from "@/components/(data)/model/pricing/pricingHelpers";
@@ -358,7 +356,7 @@ export default function PricingCalculator({
 		if (pricingRows.length === 0) {
 			setLoadingModelIds([modelId]);
 			try {
-				pricingRows = await loadPricingCalculatorModels([modelId]);
+				pricingRows = await loadPricingCalculatorModels({ data: [modelId] });
 				if (pricingRows.length > 0) {
 					setModels((current) => mergePricingModels(current, pricingRows));
 				}

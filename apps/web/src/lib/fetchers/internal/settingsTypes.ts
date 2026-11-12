@@ -1,7 +1,11 @@
 import type { StatsigProfile } from "@/lib/statsig/shared";
-import type { SensitiveInfoRulePayload } from "@/app/(dashboard)/settings/guardrails/actions";
+import type { SensitiveInfoRulePayload } from "@/features/settings/guardrails/actions";
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
+import type { BroadcastDestinationHealth } from "@/components/(gateway)/settings/observability/broadcastHealth";
 import type { DisplayPreferences } from "@/lib/displayPreferences";
+import type { BudgetInterval as WorkspaceBudgetInterval } from "@/components/(gateway)/settings/budgets/workspaceBudgets";
+import type { ClassifierDimension, ClassifierScope, InputScope, SampleBy } from "@/components/(gateway)/settings/classifiers/requestClassifiers";
+import type { SpendBlock, SpendRule, SpendRulePreview } from "@/components/(gateway)/settings/spend-rules/spendRules";
 
 export type SettingsLayoutInitialData = {
 	isEnterpriseInvoiceMode: boolean;
@@ -37,6 +41,7 @@ export type PrivacyGlobalSettings = {
 	io_logging_enabled?: boolean | null;
 	io_logging_retention_days?: number | null;
 	io_logging_include_provider_payloads?: boolean | null;
+	io_logging_contents_access?: "members" | "admins" | null;
 	provider_restriction_mode?: string | null;
 	provider_restriction_provider_ids?: string[] | null;
 	provider_restriction_enforce_allowed?: boolean | null;
@@ -45,6 +50,7 @@ export type PrivacyGlobalSettings = {
 };
 
 export type SettingsPrivacyInitialData = {
+	canManage: boolean;
 	accountPolicy: AccountPrivacyPolicy | null;
 	activeProviderModels: Array<{
 		apiModelId: string;
@@ -152,6 +158,7 @@ export type SettingsBroadcastInitialData = {
 		name: string;
 		samplingRate: number;
 		updatedAt: string | null;
+		health: BroadcastDestinationHealth | null;
 	}>;
 	teamName: string | null;
 	workspaceId: string | null;
@@ -188,6 +195,8 @@ export type SettingsOAuthAppsInitialData = {
 
 export type SettingsOAuthAppDetailInitialData = {
 	authorizations: Array<Record<string, unknown>>;
+	/** False for plain members: only owners and admins see who uses the app. */
+	canViewUsers?: boolean;
 	currentUserId: string | null;
 	oauthApp: Record<string, unknown> | null;
 	recentRequests: Array<{
@@ -246,6 +255,8 @@ export type SettingsByokInitialData = {
 export type SettingsKeysInitialData = {
 	currentUserId: string | undefined;
 	initialWorkspaceId: string | null;
+	/** When the key usage was read, so limit projections stay anchored to it. */
+	observedAt?: number;
 	teamsWithKeys: Array<{ id: string; name: string; keys: Array<Record<string, unknown>> }>;
 	workspaces: Array<{ id: string; name: string }>;
 };
@@ -310,9 +321,20 @@ export type SettingsCreditsInitialData = {
 	lowBalanceEmailThresholdUsd: number | null;
 	paymentMethodExpiringEmailEnabled: boolean;
 	modelDeprecationAlertsEnabled: boolean;
+	modelDeprecationAlertsIncludeAdmins: boolean;
+	/** Whether spend rules count a person toward all their departments or only the primary one. */
+	departmentSpendAttribution?: "all" | "primary";
+	/** IANA time zone for spend rule calendar periods (rules without their own zone) and spend reports. */
+	billingTimeZone?: string;
+	/** How often owners (and admins when included) get the spend report email. */
+	spendReportCadence?: SpendReportCadence;
+	/** Whether admins get the spend report email too. */
+	spendReportIncludeAdmins?: boolean;
 	notificationDestinations: NotificationDestination[];
 	notificationRoutes: Partial<Record<NotificationEventKind, string[]>>;
 	obfuscateInfo: boolean;
+	/** Average daily credits charged recently; null when it could not be measured. */
+	recentCreditSpend?: { dailyNanos: number; windowDays: number; observedAt: number } | null;
 	stripeInfo: {
 		customer: { email: string | null; id: string | null };
 		defaultPaymentMethodId: string | null;
@@ -435,9 +457,15 @@ export type NotificationDestination = {
 	targetPreview: string;
 	status: string;
 	createdAt: string | null;
+	/** Custom webhooks only: deliveries carry x-phaseo-signature. Older destinations stay unsigned until a secret is generated. */
+	hasSigningSecret?: boolean;
+	signingSecretRotatedAt?: string | null;
 };
 
-export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation";
+/** workspace_settings.spend_report_cadence: daily 09:00, weekly Monday 09:00, monthly on the 1st, in the billing time zone. */
+export type SpendReportCadence = "off" | "daily" | "weekly" | "monthly";
+
+export type NotificationEventKind = "low_balance" | "auto_top_up_failed" | "payment_method_expiring" | "model_deprecation" | "model_substitution" | "rate_limit_throttled" | "broadcast_destination_failing" | "spend_alert" | "spend_blocked" | "spend_report";
 
 export type SettingsPaymentMethodsInitialData = {
 	customerId: string | null;
@@ -462,6 +490,7 @@ export type SettingsObservabilityDestinationNewInitialData = {
 };
 
 export type SettingsRoutingInitialData = {
+	canManage: boolean;
 	responseHealingEnabled: boolean;
 	responseHealingLocked: boolean;
 	responseHealingMode: "safe" | "strict";
@@ -561,11 +590,217 @@ export type SettingsPresetsInitialData = {
 };
 
 export type SettingsGuardrailProviderModel = { providerId: string; apiModelId: string; internalModelId: string | null; internalModelName?: string | null; organisationId?: string | null; organisationName?: string | null; providerPolicy?: { zeroDataRetention: boolean; dataPolicyTier: string; dataPolicyConfidence: string }; capabilities?: Array<{ id: string; dataPolicy: Record<string, unknown> | null }> };
-export type SettingsGuardrailRow = { id: string; enabled?: boolean | null; name?: string | null; description?: string | null; privacy_enable_paid_may_train?: boolean | null; privacy_enable_free_may_train?: boolean | null; privacy_enable_free_may_publish_prompts?: boolean | null; privacy_enable_input_output_logging?: boolean | null; privacy_zdr_only?: boolean | null; provider_restriction_mode?: string | null; provider_restriction_provider_ids?: string[] | null; provider_restriction_enforce_allowed?: boolean | null; model_restriction_mode?: string | null; allowed_api_model_ids?: string[] | null; prompt_injection_enabled?: boolean | null; prompt_injection_action?: string | null; sensitive_info_enabled?: boolean | null; sensitive_info_default_action?: string | null; sensitive_info_rules?: SensitiveInfoRulePayload[] | null; daily_limit_requests?: number | null; weekly_limit_requests?: number | null; monthly_limit_requests?: number | null; daily_limit_cost_nanos?: number | null; weekly_limit_cost_nanos?: number | null; monthly_limit_cost_nanos?: number | null };
+export type SettingsGuardrailKind = "access" | "safety" | "spend" | "rate";
+export type SettingsGuardrailRow = { id: string; kind?: SettingsGuardrailKind | null; /** The workspace baseline: the Settings, Privacy rules, on the whole workspace. */ is_workspace_baseline?: boolean | null; enabled?: boolean | null; name?: string | null; description?: string | null; privacy_enable_paid_may_train?: boolean | null; privacy_enable_free_may_train?: boolean | null; privacy_enable_free_may_publish_prompts?: boolean | null; privacy_enable_input_output_logging?: boolean | null; privacy_zdr_only?: boolean | null; provider_restriction_mode?: string | null; provider_restriction_provider_ids?: string[] | null; provider_restriction_enforce_allowed?: boolean | null; model_restriction_mode?: string | null; allowed_api_model_ids?: string[] | null; prompt_injection_enabled?: boolean | null; prompt_injection_action?: string | null; sensitive_info_enabled?: boolean | null; sensitive_info_default_action?: string | null; sensitive_info_rules?: SensitiveInfoRulePayload[] | null; /** Rate guardrails: limits per minute, and how they count (null when made through the rate limits API). */ rate_requests_per_minute?: number | null; rate_tokens_per_minute?: number | null; rate_concurrent_requests?: number | null; rate_fail_closed?: boolean | null; rate_counting?: SettingsRateCounting | null; /** Spend guardrails: a cost limit per UTC period, notify or block, and how it counts. */ spend_limit_nanos?: number | null; spend_period?: SettingsSpendPeriod | null; spend_action?: SettingsSpendAction | null; spend_counting?: SettingsSpendCounting | null };
+export type SettingsRateCounting = "shared" | "each_key" | "each_end_user";
+export type SettingsSpendPeriod = "daily" | "weekly" | "monthly";
+export type SettingsSpendAction = "notify" | "block";
+export type SettingsSpendCounting = "shared" | "each_key";
 export type SettingsGuardrailMember = { id: string; name: string; role: string };
+/** principalUserId is the member whose guardrails the gateway also applies to the key (OAuth user, else creator). */
+export type SettingsGuardrailKey = { id: string; name: string; prefix: string; status: string; principalUserId?: string | null };
+export type SettingsGuardrailDepartment = { id: string; name: string };
 export type SettingsGuardrailProvider = { id: string; name: string; familyId: string; offerLabel: string | null; offerScope: "global" | "regional" | "specialized" | null };
-export type SettingsGuardrailsInitialData = { activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; guardrailKeyIdsByGuardrailId: Record<string, string[]>; guardrailMemberIdsByGuardrailId: Record<string, string[]>; guardrails: SettingsGuardrailRow[]; keys: Array<{ id: string; name: string; prefix: string; status: string }>; members: SettingsGuardrailMember[]; providers: SettingsGuardrailProvider[]; workspaceId: string | null };
-export type SettingsGuardrailEditorData = { accountPolicy: AccountPrivacyPolicy; activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; guardrail: SettingsGuardrailRow | null; initialKeyIds: string[]; initialMemberIds: string[]; keys: Array<{ id: string; name: string; prefix: string; status: string }>; members: SettingsGuardrailMember[]; mode: "create" | "edit"; providers: SettingsGuardrailProvider[]; teamName: string | null; workspaceId: string | null };
+export type SettingsGuardrailsInitialData = { activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; /** The workspace's departments. */ departments?: SettingsGuardrailDepartment[]; /** The departments whose guardrails reach each key and member, as the gateway counts them. */ keyDepartmentIds?: Record<string, string[]>; memberDepartmentIds?: Record<string, string[]>; guardrailDepartmentIdsByGuardrailId?: Record<string, string[]>; guardrailKeyIdsByGuardrailId: Record<string, string[]>; guardrailMemberIdsByGuardrailId: Record<string, string[]>; guardrails: SettingsGuardrailRow[]; keys: SettingsGuardrailKey[]; members: SettingsGuardrailMember[]; providers: SettingsGuardrailProvider[]; workspaceGuardrailIds?: string[]; workspaceId: string | null };
+export type SettingsGuardrailEditorData = { accountPolicy: AccountPrivacyPolicy; activeProviderModels: SettingsGuardrailProviderModel[]; canManageGuardrails: boolean; guardrail: SettingsGuardrailRow | null; initialDepartmentIds?: string[]; initialKeyIds: string[]; initialMemberIds: string[]; initialWorkspaceAssigned?: boolean; keys: Array<{ id: string; name: string; prefix: string; status: string }>; members: SettingsGuardrailMember[]; mode: "create" | "edit"; providers: SettingsGuardrailProvider[]; teamName: string | null; workspaceId: string | null };
+
+/** A request classifier in API units (sample_rate 0 to 1, budget in USD) with this month's spend. */
+export type SettingsClassifier = {
+	id: string;
+	workspace_id: string;
+	name: string;
+	description: string | null;
+	enabled: boolean;
+	model: string;
+	instructions: string;
+	dimensions: ClassifierDimension[];
+	sample_rate: number;
+	sample_by: SampleBy;
+	input_scope: InputScope;
+	scope: ClassifierScope;
+	monthly_budget_usd: number | null;
+	created_by: string | null;
+	created_at: string;
+	updated_at: string;
+	usage: { classifications: number; costUsd: number };
+};
+export type SettingsClassifiersInitialData = {
+	canManageClassifiers: boolean;
+	workspaceId: string | null;
+	/** First day of the current UTC month, which spend covers. */
+	month: string;
+	limit: number;
+	classifiers: SettingsClassifier[];
+	keys: Array<{ id: string; name: string; prefix: string; status: string }>;
+	apps: Array<{ id: string; title: string }>;
+};
+
+export type SettingsRateLimitTargetType = "key" | "member" | "department" | "end_user_default";
+
+export type SettingsRateLimitPolicy = {
+	id: string;
+	name: string;
+	description: string | null;
+	requestsPerMinute: number | null;
+	tokensPerMinute: number | null;
+	/** Requests in progress at once. */
+	concurrentRequests: number | null;
+	/** Strict mode: limits are checked before sending, and requests are rejected when they can't be. */
+	failClosed: boolean;
+	updatedAt: string;
+};
+
+export type SettingsRateLimitsInitialData = {
+	workspaceId: string | null;
+	canManageRateLimits: boolean;
+	policies: SettingsRateLimitPolicy[];
+	assignments: Array<{ id: string; policyId: string; targetType: SettingsRateLimitTargetType; targetId: string | null }>;
+	targets: {
+		keys: Array<{ id: string; name: string; prefix: string; status: string }>;
+		members: Array<{ id: string; name: string | null; role: string }>;
+		departments: Array<{ id: string; name: string }>;
+		guardrails: Array<{ id: string; name: string }>;
+	};
+	/** Requests each policy rejected in the last throttleWindowHours. */
+	throttles: Array<{ policyId: string; throttledRequests: number; lastThrottledAt: string | null }>;
+	throttleWindowHours: number;
+	/** The workspace's trust-ladder tier from the gateway; null when unavailable, absent from older responses. */
+	tier?: SettingsRateLimitTier | null;
+};
+
+export type SettingsWorkloadIdentityProvider =
+	| "vercel"
+	| "github_actions"
+	| "gitlab"
+	| "google_cloud"
+	| "buildkite"
+	| "circleci"
+	| "aws"
+	| "custom";
+
+/** A trust policy from the gateway's /v1/workload-identity/policies (web-api settings-workload-identity). */
+export type SettingsWorkloadIdentityPolicy = {
+	id: string;
+	name: string;
+	provider: SettingsWorkloadIdentityProvider;
+	issuer: string;
+	/** The claim ownerId is matched against: fixed per platform, chosen for custom issuers. Absent from older responses. */
+	ownerClaim?: string | null;
+	/** The pinned owner the token must carry, such as a Vercel team ID, GitHub owner ID or IAM role ARN. */
+	ownerId: string;
+	/** Exact-match conditions on other token claims, such as project_id or environment. */
+	claimConditions: Record<string, string[]>;
+	maxTokenLifetimeSeconds: number;
+	status: "active" | "disabled";
+	lastUsedAt: string | null;
+	createdAt: string | null;
+	updatedAt: string | null;
+};
+
+export type SettingsWorkloadIdentityInitialData = {
+	workspaceId: string | null;
+	/** False when the workspace is outside the rollout. */
+	available: boolean;
+	/** Owners and admins only. */
+	canManage: boolean;
+	/** The audience every token must be issued for. */
+	audience: string;
+	policies: SettingsWorkloadIdentityPolicy[];
+};
+
+export type SettingsRateLimitTierName = "new" | "standard" | "trusted" | "enterprise";
+/** GET /v1/rate-limits/tier: the workspace's tier and whether its owner can raise it one step. */
+export type SettingsRateLimitTier = {
+	tier: SettingsRateLimitTierName;
+	requestsPerMinute: number;
+	target: SettingsRateLimitTierName | null;
+	targetRequestsPerMinute: number | null;
+	eligible: boolean;
+	refusal: "disabled" | "override" | "raised" | "top_tier" | "no_paid_top_up" | "too_new" | "not_enough_spend" | "cooldown" | null;
+	/** Epoch ms. */
+	activeUntil: number | null;
+	availableAt: number | null;
+	durationDays: number;
+	thresholds: { minAgeDays: number; minLifetimePaidSpendUsd: number };
+	/** The signed-in user is the owner and the workspace is eligible. */
+	canRaise: boolean;
+};
+
+/** A workspace budget with usage from the gateway's enforcement function (web-api settings-budgets). */
+export type SettingsWorkspaceBudget = {
+	id: string;
+	interval: WorkspaceBudgetInterval;
+	limit_usd: number;
+	limit_nanos: number;
+	usage_usd: number;
+	usage_nanos: number;
+	remaining_nanos: number;
+	percent_used: number;
+	exceeded: boolean;
+	window_start: string | null;
+	/** Null for lifetime budgets, which never reset. */
+	reset_at: string | null;
+	created_by: string | null;
+	created_at: string;
+	updated_at: string;
+};
+/** A department budget: alerts at about 80% and 100%, and at 100% blocks the department's API-key requests (web-api settings-budgets). */
+export type SettingsDepartmentBudget = Omit<SettingsWorkspaceBudget, "interval"> & {
+	interval: Exclude<WorkspaceBudgetInterval, "lifetime">;
+	department_id: string;
+	department_name: string | null;
+};
+export type SettingsBudgetsInitialData = {
+	workspaceId: string | null;
+	canManageBudgets: boolean;
+	/** Database time the usage was read, so projections match between render and hydration. */
+	observedAt: string;
+	budgets: SettingsWorkspaceBudget[];
+	/** Null when department budgets couldn't be read; absent from older web-api responses. */
+	departmentBudgets?: SettingsDepartmentBudget[] | null;
+	departments?: Array<{ id: string; name: string }>;
+};
+
+/** GET /api/account/settings/spend-rules: rules in the control API shape (snake_case, nanos and *_usd). */
+export type SettingsSpendRulesInitialData = {
+	workspaceId: string;
+	canManageSpendRules: boolean;
+	maxRules: number;
+	testSendsPerMinute: number;
+	/** Whether block rules block requests yet (SPEND_RULE_BLOCKS_ENABLED); until then they only notify. */
+	blocksEnabled?: boolean;
+	/** Whether spend report emails go out yet (SPEND_REPORTS_ENABLED); the settings save either way. */
+	reportsEnabled?: boolean;
+	/** The zone a rule with time_zone null uses. */
+	billingTimeZone: string;
+	/** How often owners (and admins when included) get the spend report email. */
+	spendReportCadence?: SpendReportCadence;
+	/** Whether admins get the spend report email too. */
+	spendReportIncludeAdmins?: boolean;
+	rules: SpendRule[];
+};
+/** GET /api/account/settings/spend-rules/options: what the rule editor's scope and base pickers offer. */
+export type SettingsSpendRuleOptions = {
+	workspaceId: string;
+	/** Cost limits in USD by window; null when the key has none. */
+	keys: Array<{ id: string; name: string; prefix: string; status: string; limitsUsd: { daily: number | null; weekly: number | null; monthly: number | null } }>;
+	members: Array<{ id: string; name: string | null; role: string }>;
+	departments: Array<{ id: string; name: string }>;
+	providers: Array<{ id: string; name: string }>;
+	/** Workspace budget limits in USD by interval (daily, weekly, monthly, lifetime). */
+	budgetsUsd: Partial<Record<string, number | null>>;
+};
+
+/** GET /api/account/settings/spend-rules/blocks: the workspace's active spend blocks. */
+export type SettingsSpendBlocksData = { workspaceId: string; canLift: boolean; blocks: SpendBlock[] };
+
+/** The "spend-rules" settings resource: rules, editor options, active blocks and a preview per enabled, evaluated rule. */
+export type SettingsSpendAlertsData = SettingsSpendRulesInitialData & {
+	options: SettingsSpendRuleOptions;
+	previews: Record<string, SpendRulePreview>;
+	/** Active blocks, newest first. Empty when they could not be read. */
+	blocks: SpendBlock[];
+};
 
 export type SettingsUsageAlertsInitialData = { signedIn: boolean; warnings: DeprecationWarning[]; workspaceId: string | null };
 
@@ -595,7 +830,9 @@ export type TeamsSettingsData = {
 
 export type UsageLabelFacet = { key: string; value: string };
 export type UsageLabelSummary = UsageLabelFacet & { requestCount: number; totalCostNanos: number; isSampled: boolean };
-type UsageLogsPayload = { appNameEntries: Array<[string, string]>; availableKeys: Array<{ id: string; name: string | null; prefix: string | null }>; clientSources: Array<{ id: string; name: string }>; dedupedModels: string[]; dedupedProviders: string[]; labelFacets: UsageLabelFacet[]; labelSummary: UsageLabelSummary | null; logAppIds: string[]; logEndpoints: string[]; logFinishReasons: string[]; logErrorCodes: string[]; logStatusCodes: number[]; initialRequestsPage: any; modelMetadataEntries: Array<[string, any]>; modelProviderEntries: Array<[string, string[]]>; providerMetadataEntries: Array<[string, any]>; providerNameEntries: Array<[string, string]> };
+/** What any workspace member can read about a request classifier: names, label keys and allowed values. */
+export type RequestClassifierSummary = { id: string; name: string; enabled: boolean; dimensions: Array<{ key: string; name: string; multiple: boolean; values: string[] }> };
+type UsageLogsPayload = { appNameEntries: Array<[string, string]>; availableKeys: Array<{ id: string; name: string | null; prefix: string | null }>; clientSources: Array<{ id: string; name: string }>; dedupedModels: string[]; dedupedProviders: string[]; labelFacets: UsageLabelFacet[]; labelSummary: UsageLabelSummary | null; requestClassifiers?: RequestClassifierSummary[]; logAppIds: string[]; logEndpoints: string[]; logFinishReasons: string[]; logErrorCodes: string[]; logStatusCodes: number[]; initialRequestsPage: any; modelMetadataEntries: Array<[string, any]>; modelProviderEntries: Array<[string, string[]]>; providerMetadataEntries: Array<[string, any]>; providerNameEntries: Array<[string, string]> };
 type UsageJobsPayload = { appMetadataEntries: Array<[string, any]>; jobProviders: string[]; modelMetadataEntries: Array<[string, any]>; providerNameEntries: Array<[string, string]>; recentJobs: any[] };
 type UsageSessionsPayload = { appMetadataEntries: Array<[string, any]>; modelMetadataEntries: Array<[string, any]>; providerMetadataEntries: Array<[string, any]>; providerNameEntries: Array<[string, string]>; sessionAppIds: string[]; sessionModelIds: string[]; sessionProviderIds: string[]; sessions: any[] };
 export type UsageUpstreamRequestRow = {
@@ -655,3 +892,60 @@ export type UsageUpstreamRequestRow = {
 type UsageUpstreamPayload = { availableKeys: Array<{ id: string; name: string | null; prefix: string | null }>; modelMetadataEntries: Array<[string, any]>; providerMetadataEntries: Array<[string, any]>; providerNameEntries: Array<[string, string]>; upstreamRequests: UsageUpstreamRequestRow[] };
 export type SettingsUsageLogsLoadState = "ready" | "unauthorized" | "no_workspace" | "forbidden" | "failed";
 export type SettingsUsageLogsInitialData = { signedIn: boolean; workspaceId: string | null; loadState?: SettingsUsageLogsLoadState } & ({ view: "logs"; data: UsageLogsPayload | null } | { view: "upstream"; data: UsageUpstreamPayload | null } | { view: "jobs"; data: UsageJobsPayload | null } | { view: "sessions"; data: UsageSessionsPayload | null });
+
+export type KeySecurityKey = {
+	id: string;
+	name: string;
+	prefix: string;
+	status: "active" | "paused";
+	created_by: string | null;
+	owner_name: string | null;
+	/** Owners and admins only. */
+	owner_email: string | null;
+	created_at: string;
+	/** Null when the key has never been used for a request. */
+	last_used_at: string | null;
+	expires_at: string | null;
+	storage_locations: string[];
+	has_spend_limit: boolean;
+	has_ip_allowlist: boolean;
+	never_used: boolean;
+	idle: boolean;
+	safe_to_remove: boolean;
+	risk: number;
+};
+
+export type KeySecuritySummary = {
+	total: number;
+	paused: number;
+	no_spend_limit: number;
+	never_expires: number;
+	idle: number;
+	safe_to_remove: number;
+	no_ip_allowlist: number;
+	no_storage_location: number;
+	locations: Array<{ id: string; keys: number }>;
+};
+
+export type KeyStorageIncidentNotice = {
+	id: string;
+	location_id: string;
+	action: "revoke" | "pause";
+	title: string;
+	customer_message: string;
+	source_url: string | null;
+	applied_at: string;
+	keys: number;
+	key_ids: string[];
+};
+
+export type SettingsKeySecurityInitialData = {
+	workspaceId: string;
+	canManage: boolean;
+	maxBulkKeys: number;
+	observedAt: number;
+	summary: KeySecuritySummary;
+	keys: KeySecurityKey[];
+	/** Platform breaches in the last 90 days where Phaseo revoked or paused this workspace's keys. */
+	incidents: KeyStorageIncidentNotice[];
+};

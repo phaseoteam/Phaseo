@@ -1,0 +1,8 @@
+---
+title: "承認済みアプリを取り消す"
+sidebarTitle: "承認済みアプリを取り消す"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml DELETE /me/authorized-apps/{id}"
+description: "アプリのアクセスを取り消し、そのトークンを使用できなくします。"
+---
+<Note>このエンドポイントには `oauth_clients:delete` を持つ OAuth アクセストークンが必要です。呼び出し元アプリ自身の承認を取り消すと、そのアプリはサインアウトされます。</Note>

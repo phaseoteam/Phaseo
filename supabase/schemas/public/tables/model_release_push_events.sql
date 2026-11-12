@@ -31,7 +31,7 @@ CREATE POLICY "deny_direct_client_access" ON "public"."model_release_push_events
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."model_release_push_events" IS 'Deduplicated queue of models becoming publicly available after this feature was deployed.';
+COMMENT ON TABLE "public"."model_release_push_events" IS 'Legacy model release push queue from the August 2026 attempt. Superseded by catalogue_notification_events and mobile_push_deliveries; nothing writes or reads it.';
 
 REVOKE ALL ON TABLE "public"."model_release_push_events" FROM "service_role";
 

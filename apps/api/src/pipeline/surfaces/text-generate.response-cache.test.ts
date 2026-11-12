@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Timer } from "../telemetry/timer";
 import { runTextGeneratePipeline } from "./text-generate";
-import type { CachedResponseRecord } from "@/core/response-cache";
+import { buildCachedResponseRecord, type CachedResponseRecord } from "@/core/response-cache";
+import {
+	cachedDroppedParams,
+	droppedParamsForClient,
+	droppedParamsHeader,
+	recordDroppedParams,
+} from "../execute/unsupportedParams";
 
 const detectTextProtocolMock = vi.fn();
 const decodeProtocolMock = vi.fn();
@@ -275,6 +281,87 @@ describe("runTextGeneratePipeline response cache", () => {
 		});
 	});
 
+	it("reports the parameters a cached response was generated without", async () => {
+		// The request that filled the cache had top_k dropped for OpenAI.
+		const original = { endpoint: "responses", requestedParams: ["top_k"], routingDiagnostics: {} };
+		recordDroppedParams(original, "openai", [
+			{ param: "top_k", reason: "unsupported_by_provider", source: "catalogue" },
+		]);
+		const stored = buildCachedResponseRecord({
+			key: "gateway:response-cache:v1:ws_123:abc123",
+			fingerprint: "abc123",
+			endpoint: "responses",
+			model: "openai/gpt-5.4-nano",
+			statusCode: 200,
+			responseBody: { id: "resp_cached", object: "response" },
+			providerId: "openai",
+			droppedParams: cachedDroppedParams(original),
+			ttlSeconds: 300,
+		});
+		// The store serialises entries as JSON.
+		const cachedRecord = JSON.parse(JSON.stringify(stored)) as CachedResponseRecord;
+		getResponseCacheMock.mockReturnValue({
+			get: vi.fn().mockResolvedValue(cachedRecord),
+			set: vi.fn(),
+			delete: vi.fn(),
+		});
+
+		const args = createArgs();
+		args.pre.ctx.meta.returnMeta = true;
+		args.pre.ctx.requestedParams = ["top_k"];
+		const response = await runTextGeneratePipeline(args);
+		await Promise.all(pendingBackground);
+
+		expect(response.headers.get("X-Phaseo-Response-Cache")).toBe("hit");
+		// What the endpoint handler sends as X-Phaseo-Dropped-Params.
+		expect(droppedParamsHeader(droppedParamsForClient(args.pre.ctx))).toBe("top_k");
+		expect((await response.json()).meta.routing).toEqual({
+			dropped_params: [{ param: "top_k", reason: "unsupported_by_provider" }],
+		});
+		expect(handleSuccessAuditMock.mock.calls[0]?.[0]?.routingDiagnostics?.droppedParams).toMatchObject({
+			provider: "openai",
+			params: [{ param: "top_k", client_sent: true }],
+		});
+		expect(doRequestWithIRMock).not.toHaveBeenCalled();
+	});
+
+	it("serves cache entries written before dropped parameters were stored", async () => {
+		const cachedRecord = {
+			version: "v1",
+			key: "gateway:response-cache:v1:ws_123:abc123",
+			fingerprint: "abc123",
+			endpoint: "responses",
+			model: "openai/gpt-5.4-nano",
+			statusCode: 200,
+			responseBody: { id: "resp_cached", object: "response" },
+			providerId: "openai",
+			providerModelSlug: null,
+			usage: null,
+			currency: "USD",
+			finishReason: "stop",
+			nativeResponseId: null,
+			routingMode: "balanced",
+			preset: { id: null, slug: null },
+			createdAt: new Date(Date.now() - 500).toISOString(),
+			expiresAt: new Date(Date.now() + 60_000).toISOString(),
+			ttlSeconds: 300,
+		};
+		getResponseCacheMock.mockReturnValue({
+			get: vi.fn().mockResolvedValue(cachedRecord),
+			set: vi.fn(),
+			delete: vi.fn(),
+		});
+
+		const args = createArgs();
+		args.pre.ctx.meta.returnMeta = true;
+		const response = await runTextGeneratePipeline(args);
+
+		expect(response.status).toBe(200);
+		expect(droppedParamsForClient(args.pre.ctx)).toEqual([]);
+		expect(args.pre.ctx.routingDiagnostics?.droppedParams).toBeUndefined();
+		expect((await response.json()).meta.routing).toBeUndefined();
+	});
+
 	it("falls through to live execution on cache miss", async () => {
 		getResponseCacheMock.mockReturnValue({
 			get: vi.fn().mockResolvedValue(null),
@@ -314,6 +401,36 @@ describe("runTextGeneratePipeline response cache", () => {
 			enabled: true,
 			status: "miss",
 		});
+	});
+
+	it("never reads or fills the cache for a request under zero data retention", async () => {
+		const store = { get: vi.fn().mockResolvedValue({ responseBody: { id: "resp_cached" } }), set: vi.fn(), delete: vi.fn() };
+		getResponseCacheMock.mockReturnValue(store);
+		doRequestWithIRMock.mockResolvedValue({
+			result: {
+				kind: "completed",
+				ir: {
+					id: "ir_zdr",
+					model: "openai/gpt-5.4-nano",
+					choices: [{ index: 0, message: { role: "assistant", content: [{ type: "text", text: "hello" }] }, finishReason: "stop" }],
+				},
+				upstream: new Response(JSON.stringify({ ok: true }), { status: 200 }),
+				provider: "openai",
+				generationTimeMs: 4,
+				bill: { cost_cents: 0, currency: "USD" },
+			},
+		});
+		finalizeRequestMock.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+		const args = createArgs();
+		args.pre.ctx.zeroDataRetention = true;
+		const response = await runTextGeneratePipeline(args);
+
+		expect(response.status).toBe(200);
+		expect(store.get).not.toHaveBeenCalled();
+		expect(doRequestWithIRMock).toHaveBeenCalledTimes(1);
+		// Disabled, so the after stage writes nothing back either.
+		expect(args.pre.ctx.responseCache).toMatchObject({ enabled: false, status: "bypass", reason: "zero_data_retention", key: null });
 	});
 
 	it("materializes an internal provider stream for a buffered client", async () => {
@@ -359,5 +476,57 @@ describe("runTextGeneratePipeline response cache", () => {
 			stream: null,
 			ir: { id: "ir_streamed" },
 		});
+	});
+
+	const materializeWithFinalizer = async (finalizerUsage: Record<string, unknown>) => {
+		getResponseCacheMock.mockReturnValue(null);
+		doRequestWithIRMock.mockResolvedValue({
+			result: {
+				kind: "stream",
+				stream: new ReadableStream<Uint8Array>({ start(controller) { controller.close(); } }),
+				upstream: new Response(null, { status: 200 }),
+				provider: "google-vertex",
+				generationTimeMs: 4,
+				bill: { cost_cents: 0, currency: "USD" },
+				usageFinalizer: async () => ({ cost_cents: 0, currency: "USD", usage: finalizerUsage }),
+				usageFinalizerAuthoritative: true,
+			},
+		});
+		consumeTextProtocolStreamToIRMock.mockResolvedValue({
+			ir: {
+				id: "ir_streamed",
+				model: "google/gemini-2.5-flash",
+				choices: [{ index: 0, message: { role: "assistant", content: [{ type: "text", text: "hello" }] }, finishReason: "stop" }],
+			},
+			rawResponse: { id: "resp_streamed" },
+			usageRaw: { input_tokens: 100, output_tokens: 10 },
+		});
+		finalizeRequestMock.mockResolvedValue(new Response(JSON.stringify({ id: "resp_streamed" }), { status: 200 }));
+		await runTextGeneratePipeline(createArgs());
+		return finalizeRequestMock.mock.calls[0]?.[0]?.exec?.result?.bill?.usage;
+	};
+
+	it("bills a buffered client from the executor's authoritative upstream usage", async () => {
+		const meters = {
+			input_tokens: 100,
+			input_text_tokens: 60,
+			input_image_tokens: 30,
+			cached_read_text_tokens: 10,
+			cached_read_tokens_are_subset_of_input: true,
+			output_tokens: 10,
+		};
+
+		expect(await materializeWithFinalizer(meters)).toEqual(meters);
+	});
+
+	it("keeps the materialised usage when the authoritative meters use Anthropic cache semantics", async () => {
+		const usage = await materializeWithFinalizer({
+			input_tokens: 20,
+			cached_read_text_tokens: 80,
+			cached_read_tokens_are_subset_of_input: false,
+			output_tokens: 10,
+		});
+
+		expect(usage).toEqual({ input_tokens: 100, output_tokens: 10 });
 	});
 });

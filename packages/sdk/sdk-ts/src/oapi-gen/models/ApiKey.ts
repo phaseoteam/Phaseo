@@ -2,11 +2,15 @@ export interface ApiKey {
   created_at: string | null;
   created_by: string | null;
   creator_user_id: string | null;
+  department_id?: string | null;
   disabled: boolean;
   expires_at: string | null;
-  hash: string;
   id: string;
   include_byok_in_limit: boolean;
+  ip_allowlist?: {
+    address: string;
+    label: string;
+  }[];
   label: string | null;
   last_used_at: string | null;
   limit: number | null;
@@ -31,6 +35,7 @@ export interface ApiKey {
   scopes: string | string[];
   soft_blocked: boolean;
   status: string | null;
+  storage_locations?: string[];
   updated_at: string | null;
   usage: number;
   usage_daily: number;

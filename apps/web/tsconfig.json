@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    "target": "ES2022",
     "lib": [
       "dom",
       "dom.iterable",
@@ -18,43 +18,27 @@
     "isolatedModules": true,
     "noUncheckedSideEffectImports": false,
     "jsx": "react-jsx",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "types": [
-      "jest",
-      "node"
+      "node",
+      "vite/client"
     ],
     "paths": {
-      "@/app/(auth)/*": [
-        "./src/app/[locale]/(auth)/*"
-      ],
-      "@/app/(dashboard)/*": [
-        "./src/app/[locale]/(dashboard)/*",
-        "./src/app/(dashboard)/*"
-      ],
-      "@/app/(legal)/*": [
-        "./src/app/[locale]/(legal)/*"
-      ],
       "@/*": [
-        "./src/*",
-        "../../packages/data/catalog/src/*"
+        "./src/*"
       ]
     }
   },
   "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    "src/app/global-error.tsx",
-    ".next/dev/types/**/*.ts"
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "build/**/*.ts",
+    "vite.config.ts"
   ],
   "exclude": [
     "node_modules",
-    "playwright.config.ts"
+    "dist",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/__tests__/**"
   ]
 }

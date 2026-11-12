@@ -1,11 +1,9 @@
-"use client";
-
 import USvsChinaCard from "./USvsChina";
 import OpenVsClosedCard from "./OpenvsClosed";
 import OrgsOverTimeCard from "./OrgsOverTime";
 import FamilyForecastCard from "./FamilyForecast";
 import { Sparkles } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function TrendsStrip() {
 	const t = useTranslations("Site.home.trends");

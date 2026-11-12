@@ -19,4 +19,6 @@ CREATE UNIQUE INDEX v2_analytics_previous_grains_identity_idx ON private.v2_anal
 
 CREATE INDEX v2_analytics_previous_grains_oldest_idx ON private.v2_analytics_previous_grains USING btree (queued_at, grain_id);
 
+GRANT SELECT ON TABLE "private"."v2_analytics_previous_grains" TO "service_role";
+
 COMMENT ON TABLE "private"."v2_analytics_previous_grains" IS 'Former UTC-hour identities coalesced by nullable dimensions; share the configured V2 worker batch cap, with five reserved repair slots and exact-generation acknowledgment. Retention pruning queues no repairs.';

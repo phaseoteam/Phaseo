@@ -64,6 +64,10 @@ vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({
 		OPENAI_API_KEY: "test-openai-key",
 		OPENAI_BASE_URL: "https://api.openai.example/v1",
+		GOOGLE_VERTEX_PROJECT: "test-project",
+		GOOGLE_VERTEX_BATCH_LOCATION: "global",
+		GOOGLE_VERTEX_BATCH_BUCKET: "test-batch-bucket",
+		GOOGLE_VERTEX_ACCESS_TOKEN: "test-vertex-token",
 	}),
 	getSupabaseAdmin: () => ({
 		rpc: vi.fn(async (name: string, args: Record<string, unknown>) => {
@@ -205,6 +209,24 @@ vi.mock("@pipeline/pricing/loader", () => ({
 		if (provider === "anthropic" && model === "anthropic/claude-haiku-4-5-20251001") return null;
 		if (provider === "anthropic" && model === "anthropic/claude-sonnet-4-6") return null;
 		if (!model.includes("/")) return null;
+		if (model === "openai/gpt-5.6-sol") {
+			// Batch rates per 1M tokens: input $2.50, read 0.1x, 30-minute write 1.25x, 12-hour write 2.5x.
+			const perMillion = (meter: string, price: string) => ({
+				id: meter, pricing_plan: "batch", meter, unit: "token", unit_size: 1_000_000,
+				price_per_unit: price, currency: "USD", match: [], priority: 100,
+			});
+			return {
+				provider, model, endpoint, effective_from: null, effective_to: null, currency: "USD", version: "test",
+				rules: [
+					perMillion("input_text_tokens", "2.5"),
+					perMillion("output_text_tokens", "15"),
+					perMillion("cached_read_text_tokens", "0.25"),
+					perMillion("cached_write_text_tokens", "3.125"),
+					perMillion("cached_write_text_tokens_30m", "3.125"),
+					perMillion("cached_write_text_tokens_12h", "6.25"),
+				],
+			};
+		}
 		const rateByModel: Record<string, { input: string; output: string }> = {
 			"openai/gpt-4.1-mini": { input: "0.3", output: "0.7" },
 			"anthropic/claude-sonnet-4.6": { input: "0.5", output: "1.0" },
@@ -292,6 +314,38 @@ vi.mock("@core/wallet-reservations", () => ({
 }));
 
 describe("batch-finalization", () => {
+	it.each([false, true])("settles Vertex output only against submitted request IDs (unknown=%s)", async (unknown) => {
+		state.canonicalRows = [{ customId: "submitted", meta: { canonical_model: "google/gemini-3.1-flash-lite" } }];
+		state.record = {
+			workspaceId: "ws_batch_test", batchId: "batch_vertex", status: "completed",
+			meta: { provider: "google-vertex", model: "google/gemini-3.1-flash-lite", endpoint: "/v1/generateContent",
+				status: "completed", nativeBatchId: "projects/test-project/locations/global/batchPredictionJobs/123",
+				requestCounts: { total: 1, completed: 1, failed: 0 },
+				vertexStorage: { project: "test-project", location: "global", bucket: "test-batch-bucket",
+					inputObject: "inputs/ws_batch_test/batch_vertex.jsonl", outputPrefix: "outputs/ws_batch_test/batch_vertex/" },
+			},
+		};
+		vi.stubGlobal("fetch", vi.fn()
+			.mockResolvedValueOnce(Response.json({ items: [{ name: "outputs/ws_batch_test/batch_vertex/predictions.jsonl" }] }))
+			.mockResolvedValueOnce(new Response(JSON.stringify({ phaseo_custom_id: unknown ? "not-submitted" : "submitted", status: "", response: {
+				modelVersion: "gemini-3.1-flash-lite", usageMetadata: { promptTokenCount: 2, candidatesTokenCount: 1, totalTokenCount: 3, trafficType: "ON_DEMAND" },
+			} }) + "\n")));
+		const { finalizeBatchJob } = await import("./batch-finalization");
+		const result = await finalizeBatchJob({ workspaceId: "ws_batch_test", batchId: "batch_vertex", status: "completed" });
+		if (unknown) {
+			expect(result.billed).toBe(false);
+			expect(result.reason).toBe("unknown_output_custom_id");
+			expect(state.chargeCalls).toEqual([]);
+		} else {
+			expect(result).toMatchObject({ billed: true, charged: true, reason: "charged" });
+			expect(state.chargeCalls).toMatchObject([{ cost_nanos: 400_000_000 }]);
+			expect(state.requestRows[0]).toMatchObject({ customId: "submitted", costNanos: 400_000_000 });
+			state.alreadyBilled = true;
+			await finalizeBatchJob({ workspaceId: "ws_batch_test", batchId: "batch_vertex", status: "completed" });
+			expect(state.chargeCalls).toHaveLength(1);
+		}
+	});
+
 	it("preserves completion time and duration when an already billed batch is read again", async () => {
 		resetState();
 		state.alreadyBilled = true;
@@ -625,6 +679,63 @@ describe("batch-finalization", () => {
 				expect.objectContaining({ dimension: "output_text_tokens", quantity: 4, line_nanos: 2800000000 }),
 			]),
 		);
+	});
+
+	it("prices OpenAI 30-minute and 12-hour cache writes in batch rows on their own meters", async () => {
+		state.record = {
+			workspaceId: "ws_batch_test",
+			batchId: "batch_openai_cache_ttl",
+			status: "completed",
+			meta: {
+				provider: "openai",
+				status: "completed",
+				endpoint: "/v1/responses",
+				outputFileId: "file_out_openai_cache_ttl",
+				requestCounts: { total: 1, completed: 1, failed: 0 },
+			},
+		};
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+			custom_id: "cached",
+			response: {
+				status_code: 200,
+				body: {
+					model: "gpt-5.6-sol",
+					usage: {
+						input_tokens: 53_100,
+						output_tokens: 850,
+						total_tokens: 53_950,
+						input_tokens_details: {
+							cached_tokens: 48_000,
+							cache_write_tokens: 3_000,
+							cache_write_tokens_details: { ttl_30m_tokens: 1_000, ttl_12h_tokens: 2_000 },
+						},
+					},
+				},
+			},
+		}), { status: 200, headers: { "Content-Type": "application/jsonl" } })));
+
+		const { finalizeBatchJob } = await import("./batch-finalization");
+		const result = await finalizeBatchJob({ workspaceId: "ws_batch_test", batchId: "batch_openai_cache_ttl", status: "completed" });
+
+		expect(result).toMatchObject({ charged: true, billed: true, reason: "charged" });
+		// 2,100 x 2.50 + 48,000 x 0.25 + 1,000 x 3.125 + 2,000 x 6.25 + 850 x 15, per 1M tokens.
+		expect(state.chargeCalls).toEqual([{
+			requestId: "batch_capture:batch_openai_cache_ttl",
+			workspaceId: "ws_batch_test",
+			cost_nanos: 45_625_000,
+		}]);
+		const pricedUsage = state.statusCalls.at(-1)?.metaPatch.pricedUsage as any;
+		expect(pricedUsage).toMatchObject({
+			cached_read_text_tokens: 48_000,
+			cached_write_text_tokens: 3_000,
+			cached_write_text_tokens_30m: 1_000,
+			cached_write_text_tokens_12h: 2_000,
+		});
+		expect(pricedUsage.pricing.lines).toEqual(expect.arrayContaining([
+			expect.objectContaining({ dimension: "input_text_tokens", quantity: 2_100 }),
+			expect.objectContaining({ dimension: "cached_write_text_tokens_30m", quantity: 1_000, line_nanos: 3_125_000 }),
+			expect.objectContaining({ dimension: "cached_write_text_tokens_12h", quantity: 2_000, line_nanos: 12_500_000 }),
+		]));
 	});
 
 	it("prices Anthropic native batch results through the public model alias", async () => {

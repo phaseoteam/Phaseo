@@ -1,6 +1,12 @@
 export type TextGenerateTool =
   | {
       async?: boolean;
+      cache_control?: {
+        scope?: string;
+        ttl?: string;
+        type?: string;
+        [key: string]: unknown;
+      };
       function: {
         description?: string;
         name: string;
@@ -73,4 +79,19 @@ export type TextGenerateTool =
         max_results?: number;
       };
       type: "phaseo:search_models";
+    }
+  | {
+      filters?: {
+        allowed_domains?: string[];
+      };
+      search_context_size?: "low" | "medium" | "high";
+      type:
+        | "web_search"
+        | "web_search_2025_08_26"
+        | "web_search_preview"
+        | "web_search_preview_2025_03_11";
+      user_location?: {
+        [key: string]: unknown;
+      };
+      [key: string]: unknown;
     };

@@ -76,6 +76,8 @@ module PhaseoAgentSdk
                    temperature: nil, max_output_tokens: nil, parallel_tool_calls: nil, metadata: nil, user: nil,
                    response_format: nil, include_meta: nil, web_search_options: nil, plugins: nil, gateway_tools: nil,
                    tool_choice: nil, provider_options: nil, prompt_cache_key: nil, request_options: nil)
+      # api_key may be a string or a callable credential provider, for example
+      # PhaseoSdk::WorkloadTokens.github_actions; the core client calls it before every request.
       api_key ||= ENV["PHASEO_API_KEY"]
       @client = client || PhaseoSdk::Phaseo.new(
         api_key: api_key,

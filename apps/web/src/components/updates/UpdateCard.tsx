@@ -1,5 +1,5 @@
-import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { IntentLink as Link } from "@/components/navigation/IntentLink";
+import { useTranslations } from "@/i18n/react";
 import { localizedUpdateBadge } from "@/i18n/update-card-messages";
 import {
 	Card,

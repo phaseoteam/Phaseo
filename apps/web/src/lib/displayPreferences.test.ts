@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import {
 	DEFAULT_DISPLAY_PREFERENCES,
 	formatDisplayCalendarDate,
@@ -100,6 +101,34 @@ describe("display preferences", () => {
 		)).toBe("19 Sept, 17:35");
 	});
 
+	it("reuses formatters for repeated settings instead of rebuilding them per value", () => {
+		const preferences = { ...DEFAULT_DISPLAY_PREFERENCES, locale: "en-GB" as const, timeZone: "UTC" };
+		const options = { month: "long", year: "numeric", timeZone: "UTC" } as const;
+		// Count constructions but build real formatters (a bare spy's instances lack the prototype).
+		const { DateTimeFormat, NumberFormat } = Intl;
+		const dateFormat = vi.spyOn(Intl, "DateTimeFormat").mockImplementation(function (...args: ConstructorParameters<typeof DateTimeFormat>) {
+			return new DateTimeFormat(...args);
+		} as never);
+		const numberFormat = vi.spyOn(Intl, "NumberFormat").mockImplementation(function (...args: ConstructorParameters<typeof NumberFormat>) {
+			return new NumberFormat(...args);
+		} as never);
+		try {
+			const months = Array.from({ length: 200 }, (_, index) =>
+				formatDisplayDateParts(Date.UTC(2026, index % 12, 15), preferences, options));
+			const numbers = Array.from({ length: 200 }, (_, index) => formatDisplayNumber(index * 1_000, preferences));
+			expect(months[0]).toBe("January 2026");
+			expect(months[11]).toBe("December 2026");
+			expect(numbers[2]).toBe("2,000");
+			expect(dateFormat.mock.calls.length).toBeLessThanOrEqual(1);
+			expect(numberFormat.mock.calls.length).toBeLessThanOrEqual(1);
+			// Different settings still get their own formatter.
+			expect(formatDisplayDateParts(Date.UTC(2026, 0, 15), { ...preferences, locale: "fr-FR" as const }, options)).toBe("janvier 2026");
+		} finally {
+			dateFormat.mockRestore();
+			numberFormat.mockRestore();
+		}
+	});
+
 	it("allows exact values to override compact notation", () => {
 		const preferences = {
 			...DEFAULT_DISPLAY_PREFERENCES,
@@ -108,6 +137,21 @@ describe("display preferences", () => {
 		};
 		expect(formatDisplayNumber(1_250_000, preferences, { notation: "standard" }))
 			.toBe("1,250,000");
+	});
+
+	it.each(["en-GB", "de-DE", "fr-FR", "ja-JP"])("formats money in US format under %s", (locale) => {
+		const preferences = { ...DEFAULT_DISPLAY_PREFERENCES, locale };
+		const usd = { style: "currency", currency: "USD" } as const;
+		expect(formatDisplayNumber(12.5, preferences, usd)).toBe("$12.50");
+		expect(formatDisplayNumber(1_234.5, preferences, usd)).toBe("$1,234.50");
+		expect(formatDisplayNumber(-3, preferences, usd)).toBe("-$3.00");
+		expect(formatDisplayNumber(0.004, preferences, { ...usd, minimumFractionDigits: 4 })).toBe("$0.0040");
+	});
+
+	it("keeps plain numbers in the user's locale", () => {
+		const preferences = { ...DEFAULT_DISPLAY_PREFERENCES, locale: "de-DE" };
+		expect(formatDisplayNumber(1_234.5, preferences)).toBe("1.234,5");
+		expect(formatDisplayNumber(0.25, preferences, { style: "percent" })).toMatch(/^25\s%$/);
 	});
 
 	it("normalizes appearance preferences and chooses a readable accent foreground", () => {

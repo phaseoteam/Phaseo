@@ -1,16 +1,64 @@
-// Purpose: Enforce approximate limits for gateway-managed provider credentials.
-// Why: Prevents Phaseo from overrunning upstream request and token quotas while preserving failover.
-// How: Loads configuration from Supabase and coordinates fixed-window counters in a Durable Object.
+// Purpose: Track the request and token limits providers impose on gateway-managed credentials.
+// Why: Keeps Phaseo within upstream quotas, counted globally across all users, without delaying
+//      requests or excluding a provider outright.
+// How: Loads limits from Supabase (served stale-while-revalidate; a newer catalogue revision, which
+//      limit changes publish, refreshes them early). Each limit applies across a
+//      provider ("*") or to one upstream model, and is counted in fixed windows by its own Durable
+//      Object. Isolates hold leases (slices of the remaining allowance the object has already
+//      counted) and admit from them locally. Request-path charges are never awaited: a refusal
+//      marks the scope saturated in this isolate until its window resets, and routing deranks it.
 
+import { knownCatalogueRevision } from "@core/catalogue-revision";
+import { quotaHeadroomMultiplier } from "@core/provider-quota-headroom";
 import { resolveCanonicalTokenUsage } from "@core/usage-normalization";
-import { dispatchBackground, getBindings, getCache, getSupabaseAdmin } from "@/runtime/env";
+import {
+	LeasePool,
+	type LeaseAcquireResult,
+	type LeaseProgress,
+	type LeaseReturn,
+	type LeaseTransport,
+	type LeaseVector,
+} from "@core/lease-pool";
+import { __resetTieredCacheForTests, tieredRead } from "@core/tiered-cache";
+import { dispatchBackground, getBindings, getSupabaseAdmin } from "@/runtime/env";
 import type { PipelineContext } from "@pipeline/before/types";
 
 const CONFIG_CACHE_TTL_MS = 60_000;
 const PRE_INFERENCE_REJECTION_STATUSES = new Set([400, 401, 403, 404, 405, 413, 415, 422]);
 
+/** Lease parameters shared by the coordinator and the isolate cache. */
+export const PROVIDER_LEASE = {
+	/** Maximum lease lifetime; leases also end before the next limited window starts. */
+	ttlMs: 60_000,
+	/** Leases end this long before a window boundary to absorb clock skew between isolates and the object. */
+	windowSkewMs: 2_000,
+	/** Leases that would live shorter than this are not granted; the request is admitted alone. */
+	minLifetimeMs: 3_000,
+	/** A lease takes at most 1/shareDivisor of the allowance above the reserve floor. */
+	shareDivisor: 4,
+	/** The last `reserveFraction` of each limit (at least `minReserve`) is never leased in bulk. */
+	reserveFraction: 0.02,
+	minReserve: 2,
+	/** Unreturned leases are forgotten this long after expiry; their allowance stays consumed. */
+	returnGraceMs: 10 * 60_000,
+} as const;
+
+export type ProviderLeaseMeta = {
+	minuteWindow: number;
+	dayWindow: number;
+	/** Worst projected end-of-window use when granted (see `projectedQuotaUse`). */
+	projectedUse?: number;
+	/** Epoch ms after which isolates stop applying `projectedUse`. */
+	projectedUntil?: number;
+};
+
+/** Applies a limit across all of a provider's models. */
+export const ALL_PROVIDER_MODELS = "*";
+
 export type ProviderRateLimitConfig = {
 	providerId: string;
+	/** Upstream model id the limit applies to, or `ALL_PROVIDER_MODELS`. */
+	modelSlug?: string;
 	requestsPerMinute: number | null;
 	requestsPerDay: number | null;
 	tokensPerMinute: number | null;
@@ -23,14 +71,23 @@ export type ProviderRateLimitAdmission = {
 	reason: "requests_per_minute" | "requests_per_day" | "tokens_per_minute" | "tokens_per_day" | null;
 	retryAfterSeconds: number | null;
 	reservation: ProviderTokenReservation | null;
+	/** Denials only: usage over the provider's limit (1.2 = 20% over), worst exceeded limit. */
+	overage?: number;
+	/** How the decision was made (telemetry only). */
+	source?: "lease" | "coordinator" | "fail_open" | "unconfigured";
 };
 
 export type ProviderTokenReservation = {
 	id: string;
 	providerId: string;
+	/** Limit scope the tokens were reserved in (see `providerLimitScope`); the provider when absent. */
+	scope?: string;
+	/** Reserved tokens. Zero means usage is counted only once it is known. */
 	tokens: number;
 	minuteWindow: number;
 	dayWindow: number;
+	/** Lease the tokens were taken from; settled locally while this isolate still holds it. */
+	leaseId?: string;
 };
 
 export type ProviderRateLimitCounters = {
@@ -44,7 +101,7 @@ export type ProviderRateLimitCounters = {
 
 const DAY_MS = 86_400_000;
 
-function effectiveTokenLimit(limit: number | null, headroomBps: number): number | null {
+export function effectiveTokenLimit(limit: number | null, headroomBps: number): number | null {
 	if (limit == null) return null;
 	return Math.max(1, Math.floor(limit * (10_000 - headroomBps) / 10_000));
 }
@@ -54,23 +111,30 @@ export function resolveProviderRateLimitDenial(
 	counters: ProviderRateLimitCounters,
 	nowMs: number,
 	reservationTokens = 0,
+	reservationRequests = 1,
 ): ProviderRateLimitAdmission | null {
-	const violations: Array<{ reason: NonNullable<ProviderRateLimitAdmission["reason"]>; resetMs: number }> = [];
+	const violations: Array<{ reason: NonNullable<ProviderRateLimitAdmission["reason"]>; resetMs: number; overage: number }> = [];
 	const minuteResetMs = (counters.minuteWindow + 1) * 60_000;
 	const dayResetMs = (counters.dayWindow + 1) * DAY_MS;
-	if (config.requestsPerMinute != null && counters.minuteRequests >= config.requestsPerMinute) {
-		violations.push({ reason: "requests_per_minute", resetMs: minuteResetMs });
+	// An unbounded reservation says nothing about how far over the limit the scope is.
+	const knownTokens = reservationTokens === Number.MAX_SAFE_INTEGER ? 0 : reservationTokens;
+	if (config.requestsPerMinute != null && counters.minuteRequests + reservationRequests > config.requestsPerMinute) {
+		violations.push({ reason: "requests_per_minute", resetMs: minuteResetMs,
+			overage: (counters.minuteRequests + reservationRequests) / Math.max(1, config.requestsPerMinute) });
 	}
-	if (config.requestsPerDay != null && counters.dayRequests >= config.requestsPerDay) {
-		violations.push({ reason: "requests_per_day", resetMs: dayResetMs });
+	if (config.requestsPerDay != null && counters.dayRequests + reservationRequests > config.requestsPerDay) {
+		violations.push({ reason: "requests_per_day", resetMs: dayResetMs,
+			overage: (counters.dayRequests + reservationRequests) / Math.max(1, config.requestsPerDay) });
 	}
 	const tokensPerMinute = effectiveTokenLimit(config.tokensPerMinute, config.headroomBps);
 	if (tokensPerMinute != null && counters.minuteTokens + reservationTokens > tokensPerMinute) {
-		violations.push({ reason: "tokens_per_minute", resetMs: minuteResetMs });
+		violations.push({ reason: "tokens_per_minute", resetMs: minuteResetMs,
+			overage: (counters.minuteTokens + knownTokens) / Math.max(1, config.tokensPerMinute!) });
 	}
 	const tokensPerDay = effectiveTokenLimit(config.tokensPerDay, config.headroomBps);
 	if (tokensPerDay != null && counters.dayTokens + reservationTokens > tokensPerDay) {
-		violations.push({ reason: "tokens_per_day", resetMs: dayResetMs });
+		violations.push({ reason: "tokens_per_day", resetMs: dayResetMs,
+			overage: (counters.dayTokens + knownTokens) / Math.max(1, config.tokensPerDay!) });
 	}
 	if (!violations.length) return null;
 	const blocking = violations.sort((left, right) => right.resetMs - left.resetMs)[0];
@@ -79,6 +143,7 @@ export function resolveProviderRateLimitDenial(
 		reason: blocking.reason,
 		retryAfterSeconds: Math.max(1, Math.ceil((blocking.resetMs - nowMs) / 1000)),
 		reservation: null,
+		overage: Math.max(...violations.map((violation) => violation.overage)),
 	};
 }
 
@@ -118,6 +183,22 @@ function serializedInputTokenUpperBound(body: unknown): number | null {
 	} catch {
 		return null;
 	}
+}
+
+type BodyStats = { unbounded: boolean; inputUpperBound: number | null };
+// Failover attempts estimate the same request body repeatedly; measure it once.
+const bodyStatsCache = new WeakMap<object, BodyStats>();
+
+function requestBodyStats(body: unknown, bodyBytes: number | null | undefined): BodyStats {
+	const cacheable = body !== null && typeof body === "object";
+	const cached = cacheable ? bodyStatsCache.get(body as object) : undefined;
+	const unbounded = cached?.unbounded ?? containsUnboundedTokenInput(body);
+	const knownBytes = Number.isSafeInteger(bodyBytes) && Number(bodyBytes) >= 0 ? Number(bodyBytes) : null;
+	const inputUpperBound = knownBytes != null
+		? Math.max(1, knownBytes + REQUEST_TOKEN_OVERHEAD)
+		: cached ? cached.inputUpperBound : unbounded ? null : serializedInputTokenUpperBound(body);
+	if (cacheable && !cached && knownBytes == null) bodyStatsCache.set(body as object, { unbounded, inputUpperBound });
+	return { unbounded, inputUpperBound };
 }
 
 function decisionsTokenReservation(args: {
@@ -174,13 +255,25 @@ export function estimateProviderTokenReservation(args: {
 	providerId?: string;
 	capability: string;
 	body: unknown;
+	/**
+	 * UTF-8 byte length of the JSON request body as it will be sent, when already known.
+	 * Omit it to measure `body` (once per body object). Must not be smaller than the body.
+	 */
+	bodyBytes?: number | null;
 	requestedMaxOutputTokens?: number | null;
 	providerMaxInputTokens?: number | null;
 	providerMaxOutputTokens?: number | null;
 }): number | null {
-	const inputUpperBound = containsUnboundedTokenInput(args.body)
+	if (args.capability === "extraction.extract") {
+		const fields = (args.body as { fields?: Record<string, unknown> } | null)?.fields;
+		const count = fields && typeof fields === "object" ? Object.keys(fields).length : 0;
+		// One field per full model context is deliberately conservative across parallel passes.
+		return count >= 1 && count <= 64 ? count * 65536 : null;
+	}
+	const stats = requestBodyStats(args.body, args.bodyBytes);
+	const inputUpperBound = stats.unbounded
 		? positiveSafeInteger(args.providerMaxInputTokens)
-		: serializedInputTokenUpperBound(args.body);
+		: stats.inputUpperBound;
 	if (inputUpperBound == null) return null;
 
 	if (args.capability === "decisions.make" &&
@@ -200,25 +293,6 @@ export function estimateProviderTokenReservation(args: {
 	return inputUpperBound + outputUpperBound;
 }
 
-type CachedConfig = { expiresAt: number; value: ProviderRateLimitConfig | null };
-const configCache = new Map<string, CachedConfig>();
-const configInflight = new Map<string, Promise<ProviderRateLimitConfig | null>>();
-const configKey = (providerId: string) => `gateway:provider-rate-limit-config:v1:${providerId}`;
-
-function readConfigSnapshot(input: unknown, providerId: string, now: number): CachedConfig | null {
-	if (!input || typeof input !== "object") return null;
-	const snapshot = input as Record<string, unknown>;
-	if (snapshot.version !== 1 || snapshot.providerId !== providerId ||
-		typeof snapshot.checkedAt !== "number" || !Number.isFinite(snapshot.checkedAt) ||
-		snapshot.checkedAt > now || now - snapshot.checkedAt >= CONFIG_CACHE_TTL_MS) return null;
-	const row = snapshot.row;
-	if (row !== null && (!row || typeof row !== "object" ||
-		(row as Record<string, unknown>).provider_id !== providerId ||
-		typeof (row as Record<string, unknown>).enabled !== "boolean")) return null;
-	return { expiresAt: snapshot.checkedAt + CONFIG_CACHE_TTL_MS,
-		value: row === null ? null : parseProviderRateLimitConfig(row as Record<string, unknown>) };
-}
-
 function finitePositive(value: unknown): number | null {
 	const parsed = Number(value);
 	return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
@@ -226,8 +300,12 @@ function finitePositive(value: unknown): number | null {
 
 export function parseProviderRateLimitConfig(row: Record<string, unknown>): ProviderRateLimitConfig | null {
 	if (row.enabled !== true || typeof row.provider_id !== "string" || !row.provider_id.trim()) return null;
+	const modelSlug = typeof row.provider_model_slug === "string" && row.provider_model_slug.trim()
+		? row.provider_model_slug.trim()
+		: ALL_PROVIDER_MODELS;
 	const config = {
 		providerId: row.provider_id.trim(),
+		modelSlug,
 		requestsPerMinute: finitePositive(row.requests_per_minute),
 		requestsPerDay: finitePositive(row.requests_per_day),
 		tokensPerMinute: finitePositive(row.tokens_per_minute),
@@ -239,94 +317,426 @@ export function parseProviderRateLimitConfig(row: Record<string, unknown>): Prov
 		: null;
 }
 
-async function loadConfig(providerId: string): Promise<ProviderRateLimitConfig | null> {
-	const now = Date.now();
-	const cached = configCache.get(providerId);
-	if (cached && cached.expiresAt > now) return cached.value;
-	const inflight = configInflight.get(providerId);
-	if (inflight) return inflight;
+/**
+ * The model a candidate's limits are matched on: its upstream model id, which is what
+ * providers meter. Falls back to the public model id for routes without one.
+ */
+export function providerLimitModel(candidate: { providerModelSlug?: string | null; apiModelId?: string | null }): string | null {
+	return candidate.providerModelSlug?.trim() || candidate.apiModelId?.trim() || null;
+}
 
-	const loader = (async () => {
-		// Share only configuration, never admission counters or reservations.
-		// Absolute age preserves the existing 60-second configuration window
-		// even if a KV replica retains an expired snapshot.
-		try {
-			const snapshot = readConfigSnapshot(await getCache().get(configKey(providerId), "json"), providerId, Date.now());
-			if (snapshot) { configCache.set(providerId, snapshot); return snapshot.value; }
-		} catch { /* Cache failure falls back to authoritative configuration. */ }
-		const checkedAt = Date.now();
-		const { data, error } = await getSupabaseAdmin()
-			.from("provider_rate_limits")
-			.select("provider_id,requests_per_minute,requests_per_day,tokens_per_minute,tokens_per_day,headroom_bps,enabled")
-			.eq("provider_id", providerId)
-			.maybeSingle();
-		if (error) throw new Error(`provider_rate_limit_config_error:${error.message ?? "unknown"}`);
-		const value = data ? parseProviderRateLimitConfig(data as Record<string, unknown>) : null;
-		configCache.set(providerId, { expiresAt: checkedAt + CONFIG_CACHE_TTL_MS, value });
-		try {
-			dispatchBackground(getCache().put(configKey(providerId), JSON.stringify({
-				version: 1, providerId, checkedAt, row: data ?? null,
-			}), { expirationTtl: 60 }).catch(() => undefined));
-		} catch { /* The authoritative result remains usable without persistence. */ }
-		return value;
-	})();
-	configInflight.set(providerId, loader);
-	try {
-		return await loader;
-	} finally {
-		configInflight.delete(providerId);
-	}
+/** Counter scope of a limit: the provider, or `provider::model` for a model-specific limit. */
+export function providerLimitScope(config: Pick<ProviderRateLimitConfig, "providerId" | "modelSlug">): string {
+	const model = config.modelSlug ?? ALL_PROVIDER_MODELS;
+	return model === ALL_PROVIDER_MODELS ? config.providerId : `${config.providerId}::${model}`;
+}
+
+const CONFIG_SELECT = "provider_id,provider_model_slug,requests_per_minute,requests_per_day,tokens_per_minute,tokens_per_day,headroom_bps,enabled";
+const configKey = (providerId: string) => `gateway:provider-rate-limit-config:v4:${providerId}`;
+
+/** A provider's limits, stamped with the catalogue revision known when they were loaded. */
+type ConfigSnapshot = { revision: string | null; configs: ProviderRateLimitConfig[] };
+
+/**
+ * Whether limit changes were published after this snapshot was loaded. Unknown revisions fall
+ * back to age-based freshness, so a cold isolate or a stopped publisher never forces reloads.
+ */
+function predatesPublishedRevision(snapshot: ConfigSnapshot): boolean {
+	const revision = knownCatalogueRevision();
+	return revision !== null && snapshot.revision !== null && snapshot.revision !== revision;
+}
+
+function isConfigSnapshot(providerId: string) {
+	const limit = (field: unknown) => field === null || (Number.isSafeInteger(field) && Number(field) > 0);
+	const isConfig = (value: unknown): value is ProviderRateLimitConfig => {
+		if (!value || typeof value !== "object") return false;
+		const config = value as Record<string, unknown>;
+		return config.providerId === providerId &&
+			typeof config.modelSlug === "string" && config.modelSlug.length > 0 &&
+			limit(config.requestsPerMinute) && limit(config.requestsPerDay) &&
+			limit(config.tokensPerMinute) && limit(config.tokensPerDay) &&
+			typeof config.headroomBps === "number" && config.headroomBps >= 0 && config.headroomBps <= 5000;
+	};
+	return (value: unknown): value is ConfigSnapshot => {
+		if (!value || typeof value !== "object") return false;
+		const snapshot = value as Record<string, unknown>;
+		return (snapshot.revision === null || typeof snapshot.revision === "string") &&
+			Array.isArray(snapshot.configs) && snapshot.configs.every(isConfig);
+	};
+}
+
+/**
+ * A provider's limits (provider-wide and per model). Configuration is shared (never counters
+ * or reservations) and served stale while it is revalidated in the background, so a refresh
+ * never delays admission. A cold isolate awaits KV, then Supabase; a snapshot older than
+ * `maxStaleMs` is never used.
+ */
+async function loadConfigs(providerId: string): Promise<ProviderRateLimitConfig[] | null> {
+	const snapshot = await tieredRead<ConfigSnapshot>({
+		key: configKey(providerId),
+		l1FreshMs: CONFIG_CACHE_TTL_MS,
+		maxStaleMs: 15 * 60_000,
+		l2: false,
+		l3: { freshS: CONFIG_CACHE_TTL_MS / 1000, expirationS: 24 * 60 * 60 },
+		validate: isConfigSnapshot(providerId),
+		isStaleInL1: predatesPublishedRevision,
+		isFreshInL3: (value) => predatesPublishedRevision(value) ? false : undefined,
+		loader: async () => {
+			// Read before querying: a revision published during the query must not be attributed to older rows.
+			const revision = knownCatalogueRevision();
+			const { data, error } = await getSupabaseAdmin()
+				.from("provider_rate_limits")
+				.select(CONFIG_SELECT)
+				.eq("provider_id", providerId);
+			if (error) throw new Error(`provider_rate_limit_config_error:${error.message ?? "unknown"}`);
+			const configs = (Array.isArray(data) ? data : [])
+				.map((row) => parseProviderRateLimitConfig(row as Record<string, unknown>))
+				.filter((config): config is ProviderRateLimitConfig => config?.providerId === providerId);
+			return { revision, configs };
+		},
+	});
+	return snapshot?.configs.length ? snapshot.configs : null;
+}
+
+// Scopes a coordinator refused, until their blocking window resets. Isolate-local: each
+// isolate learns from its own (background) charges and deranks the scope in routing.
+const MAX_SATURATED_SCOPES = 2_000;
+const saturatedUntil = new Map<string, { until: number; overage: number }>();
+
+function markSaturated(scope: string, denial: ProviderRateLimitAdmission): void {
+	saturatedUntil.delete(scope);
+	if (saturatedUntil.size >= MAX_SATURATED_SCOPES) saturatedUntil.delete(saturatedUntil.keys().next().value!);
+	saturatedUntil.set(scope, {
+		until: Date.now() + Math.max(1, denial.retryAfterSeconds ?? 60) * 1000,
+		overage: Number.isFinite(denial.overage) && denial.overage! > 0 ? denial.overage! : 1,
+	});
+}
+
+function scopePressure(scope: string, now: number): number {
+	const entry = saturatedUntil.get(scope);
+	if (entry === undefined) return 0;
+	if (entry.until > now) return entry.overage;
+	saturatedUntil.delete(scope);
+	return 0;
+}
+
+/**
+ * How far this provider (across its models, or for this model) recently went over a limit on
+ * Phaseo's managed credentials: 0 when it did not, otherwise the worst overage (1.2 = 20%
+ * over). Synchronous: routing deranks such candidates, least over first, never drops them.
+ */
+export function providerQuotaPressure(providerId: string, model: string | null): number {
+	if (saturatedUntil.size === 0) return 0;
+	const now = Date.now();
+	return Math.max(scopePressure(providerId, now),
+		model != null ? scopePressure(providerLimitScope({ providerId, modelSlug: model }), now) : 0);
+}
+
+// Projected use the coordinator reported with this isolate's latest lease in each scope.
+const MAX_PROJECTED_SCOPES = 2_000;
+const projectedUse = new Map<string, { value: number; until: number }>();
+
+function rememberProjectedUse(scope: string, meta: ProviderLeaseMeta): void {
+	const value = meta.projectedUse;
+	const until = meta.projectedUntil;
+	if (typeof value !== "number" || !Number.isFinite(value) || typeof until !== "number") return;
+	const known = projectedUse.get(scope);
+	// Admissions from an older overlapping lease carry an older projection; never move backwards.
+	if (known && known.until >= until) return;
+	projectedUse.delete(scope);
+	if (projectedUse.size >= MAX_PROJECTED_SCOPES) projectedUse.delete(projectedUse.keys().next().value!);
+	projectedUse.set(scope, { value, until });
+}
+
+function scopeProjectedUse(scope: string, now: number): number {
+	const entry = projectedUse.get(scope);
+	if (entry === undefined) return 0;
+	if (entry.until > now) return entry.value;
+	projectedUse.delete(scope);
+	return 0;
+}
+
+/**
+ * Routing multiplier for a provider and model approaching a limit on Phaseo's managed
+ * credentials: 1 when neither scope is projected to come close, falling towards
+ * `QUOTA_HEADROOM.penaltyFloor` as the worst projection reaches its limit.
+ */
+export function providerQuotaHeadroom(providerId: string, model: string | null): number {
+	if (projectedUse.size === 0) return 1;
+	const now = Date.now();
+	return quotaHeadroomMultiplier(Math.max(scopeProjectedUse(providerId, now),
+		model != null ? scopeProjectedUse(providerLimitScope({ providerId, modelSlug: model }), now) : 0));
 }
 
 type ProviderRateLimitStub = {
-	admit(config: ProviderRateLimitConfig, reservationTokens: number | null, reservationId: string, nowMs?: number): Promise<ProviderRateLimitAdmission>;
+	admit(config: ProviderRateLimitConfig, reservationTokens: number | null, reservationId: string, nowMs?: number, reservationRequests?: number): Promise<ProviderRateLimitAdmission>;
+	acquireLease(config: ProviderRateLimitConfig, need: LeaseVector, want: LeaseVector, returns: LeaseReturn[], reservationId: string, nowMs?: number, held?: LeaseProgress[]): Promise<LeaseAcquireResult<ProviderLeaseMeta, ProviderRateLimitAdmission>>;
+	returnLeases(returns: LeaseReturn[], nowMs?: number): Promise<void>;
+	recordRequests(requests: number, nowMs?: number): Promise<void>;
 	recordTokens(tokens: number, nowMs?: number): Promise<void>;
 	reconcileTokens(reservation: ProviderTokenReservation, actualTokens: number, nowMs?: number): Promise<void>;
 };
 
-function getStub(providerId: string): ProviderRateLimitStub | null {
+function getStub(scope: string): ProviderRateLimitStub | null {
 	const namespace = getBindings().PROVIDER_RATE_LIMITS;
 	if (!namespace) return null;
-	return namespace.getByName(`managed:${providerId}`) as unknown as ProviderRateLimitStub;
+	// Provider-wide scopes keep the original object names, so their counters carry over.
+	return namespace.getByName(`managed:${scope}`) as unknown as ProviderRateLimitStub;
 }
 
+type ProviderPool = { fingerprint: string; pool: LeasePool<ProviderLeaseMeta, ProviderRateLimitAdmission> };
+const pools = new Map<string, ProviderPool>();
+
+function configFingerprint(config: ProviderRateLimitConfig): string {
+	return [config.requestsPerMinute, config.requestsPerDay, config.tokensPerMinute, config.tokensPerDay, config.headroomBps].join(":");
+}
+
+function background(promise: Promise<unknown>): void {
+	try {
+		dispatchBackground(promise);
+	} catch {
+		promise.catch(() => undefined);
+	}
+}
+
+function transportFor(stub: ProviderRateLimitStub, config: ProviderRateLimitConfig, reservationId: string): LeaseTransport<ProviderLeaseMeta, ProviderRateLimitAdmission> {
+	return {
+		acquire: (need, want, returns, held) => stub.acquireLease(config, need, want, returns,
+			need.requests > 0 ? reservationId : crypto.randomUUID(), undefined, held),
+		returnLeases: (returns) => stub.returnLeases(returns),
+	};
+}
+
+function poolFor(scope: string, config: ProviderRateLimitConfig, stub: ProviderRateLimitStub): ProviderPool["pool"] {
+	const fingerprint = configFingerprint(config);
+	const existing = pools.get(scope);
+	if (existing?.fingerprint === fingerprint) return existing.pool;
+	if (existing) {
+		// Limits changed: stop admitting from slices sized for the old limits.
+		const returns = existing.pool.drain();
+		if (returns.length) background(stub.returnLeases(returns));
+	}
+	const pool = new LeasePool<ProviderLeaseMeta, ProviderRateLimitAdmission>({ background });
+	pools.set(scope, { fingerprint, pool });
+	return pool;
+}
+
+type TokenEstimate = number | null | (() => number | null);
+const ALLOWED: ProviderRateLimitAdmission = { allowed: true, reason: null, retryAfterSeconds: null, reservation: null };
+
+/**
+ * Admits against one limit scope. A refusal marks the scope saturated in this isolate.
+ * `unboundedTokens` decides what a request without a safe token upper bound reserves:
+ * everything (the coordinator then refuses it) or nothing (usage is counted once known).
+ */
+async function admitScope(
+	config: ProviderRateLimitConfig,
+	reservationTokens: TokenEstimate,
+	reservationId: string,
+	reservationRequests: number,
+	unboundedTokens: "reserve_all" | "count_after",
+): Promise<ProviderRateLimitAdmission> {
+	const scope = providerLimitScope(config);
+	try {
+		const stub = getStub(scope);
+		if (!stub) return { ...ALLOWED, source: "unconfigured" };
+		if (!Number.isSafeInteger(reservationRequests) || reservationRequests < 1) {
+			return { allowed: false, reason: "requests_per_minute", retryAfterSeconds: 60, reservation: null, source: "coordinator" };
+		}
+		const hasTokenLimit = config.tokensPerMinute != null || config.tokensPerDay != null;
+		const estimate = hasTokenLimit
+			? (typeof reservationTokens === "function" ? reservationTokens() : reservationTokens)
+			: 0;
+		const tokens = !hasTokenLimit ? 0
+			: Number.isSafeInteger(estimate) && Number(estimate) > 0 ? Number(estimate)
+			: unboundedTokens === "count_after" ? 0 : Number.MAX_SAFE_INTEGER;
+		const pool = poolFor(scope, config, stub);
+		const admission = await pool.admit(reservationId, { requests: reservationRequests, units: tokens },
+			transportFor(stub, config, reservationId));
+		if ("denial" in admission) {
+			markSaturated(scope, admission.denial);
+			if (unboundedTokens === "reserve_all") return { ...admission.denial, source: "coordinator" };
+			// The attempt is still sent (deranked, not blocked), so it must still count, above all
+			// toward longer windows: its request now, its tokens once usage is known.
+			background(stub.recordRequests(reservationRequests).catch((error: unknown) =>
+				console.error("[gateway] provider rate-limit request recording failed", {
+					provider: config.providerId,
+					scope,
+					error: error instanceof Error ? error.message : String(error),
+				})));
+			const now = Date.now();
+			return {
+				...admission.denial,
+				reservation: hasTokenLimit ? {
+					id: reservationId, providerId: config.providerId, scope, tokens: 0,
+					minuteWindow: Math.floor(now / 60_000), dayWindow: Math.floor(now / DAY_MS),
+				} : null,
+				source: "coordinator",
+			};
+		}
+		saturatedUntil.delete(scope);
+		const { ticket } = admission;
+		rememberProjectedUse(scope, ticket.meta);
+		return {
+			allowed: true,
+			reason: null,
+			retryAfterSeconds: null,
+			reservation: hasTokenLimit && (tokens > 0 || unboundedTokens === "count_after") ? {
+				id: reservationId,
+				providerId: config.providerId,
+				scope,
+				tokens,
+				minuteWindow: ticket.meta.minuteWindow,
+				dayWindow: ticket.meta.dayWindow,
+				leaseId: ticket.leaseId,
+			} : null,
+			source: ticket.fromSlice ? "lease" : "coordinator",
+		};
+	} catch (error) {
+		console.error("[gateway] provider rate-limit admission failed open", {
+			provider: config.providerId,
+			scope,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return { ...ALLOWED, source: "fail_open" };
+	}
+}
+
+/**
+ * Awaited admission against a provider's provider-wide limit. Request paths use
+ * `chargeManagedProvider`, which never waits and covers per-model limits too.
+ */
 export async function admitManagedProvider(
 	providerId: string,
-	reservationTokens: number | null,
+	/** Token reservation, or a function computing it; evaluated only when a token limit exists. */
+	reservationTokens: TokenEstimate,
 	reservationId = crypto.randomUUID(),
+	reservationRequests = 1,
 ): Promise<ProviderRateLimitAdmission> {
-	const fallback: ProviderRateLimitAdmission = { allowed: true, reason: null, retryAfterSeconds: null, reservation: null };
+	let config: ProviderRateLimitConfig | undefined;
 	try {
-		const config = await loadConfig(providerId);
-		if (!config) return fallback;
-		const stub = getStub(providerId);
-		return stub ? await stub.admit(config, reservationTokens, reservationId) : fallback;
+		config = (await loadConfigs(providerId))?.find((entry) => providerLimitScope(entry) === providerId);
 	} catch (error) {
 		console.error("[gateway] provider rate-limit admission failed open", {
 			provider: providerId,
 			error: error instanceof Error ? error.message : String(error),
 		});
-		return fallback;
+		return { ...ALLOWED, source: "fail_open" };
 	}
+	if (!config) return { ...ALLOWED, source: "unconfigured" };
+	// Without a safe upper bound the coordinator fails closed, as before.
+	return admitScope(config, reservationTokens, reservationId, reservationRequests, "reserve_all");
 }
 
-export async function releaseManagedProviderReservation(
-	reservation: ProviderTokenReservation | null | undefined,
-): Promise<void> {
-	if (!reservation) return;
-	try {
-		await getStub(reservation.providerId)?.reconcileTokens(reservation, 0);
-	} catch (error) {
-		console.error("[gateway] provider token reservation release failed", {
-			provider: reservation.providerId,
-			reservationId: reservation.id,
+/** Usage counted for one attempt across every limit scope that applies to it. */
+export type ProviderQuotaCharge = {
+	id: string;
+	providerId: string;
+	model: string | null;
+	/** Reservations held in each scope; settles once the background admissions do. */
+	reservations: Promise<ProviderTokenReservation[]>;
+};
+
+/**
+ * Counts an attempt on Phaseo's managed credentials against the provider-wide limit and the
+ * model's limit, globally. Returns at once: admissions run in the background (instant from a
+ * held slice). A refused scope is deranked by routing until its window resets; the attempt
+ * itself is never blocked, so a cold isolate may briefly exceed a limit.
+ */
+export function chargeManagedProvider(args: {
+	providerId: string;
+	model: string | null;
+	/** Token reservation, or a function computing it; evaluated at most once, only for token limits. */
+	reservationTokens: TokenEstimate;
+	reservationId?: string;
+	reservationRequests?: number;
+}): ProviderQuotaCharge {
+	const id = args.reservationId ?? crypto.randomUUID();
+	let estimated: { value: number | null } | null = null;
+	const estimate = () => {
+		estimated ??= { value: typeof args.reservationTokens === "function" ? args.reservationTokens() : args.reservationTokens };
+		return estimated.value;
+	};
+	const reservations = (async () => {
+		const configs = await loadConfigs(args.providerId);
+		const applicable = (configs ?? []).filter((config) =>
+			(config.modelSlug ?? ALL_PROVIDER_MODELS) === ALL_PROVIDER_MODELS || config.modelSlug === args.model);
+		const admissions = await Promise.all(applicable.map((config) =>
+			admitScope(config, estimate, id, args.reservationRequests ?? 1, "count_after")));
+		return admissions.flatMap((admission) => admission.reservation ? [admission.reservation] : []);
+	})().catch((error: unknown) => {
+		console.error("[gateway] provider rate-limit charge failed open", {
+			provider: args.providerId,
 			error: error instanceof Error ? error.message : String(error),
 		});
+		return [] as ProviderTokenReservation[];
+	});
+	background(reservations);
+	return { id, providerId: args.providerId, model: args.model, reservations };
+}
+
+/**
+ * Applies the actual token usage of a reservation exactly once. Refunds go to the isolate's
+ * lease while it is still held (no round trip); anything else is sent to the coordinator,
+ * whose reconciliation is idempotent per reservation id. Returns that call, if any.
+ */
+function settleReservation(reservation: ProviderTokenReservation, actualTokens: number): Promise<void> | null {
+	const scope = reservation.scope ?? reservation.providerId;
+	const pool = pools.get(scope)?.pool;
+	if (pool?.isSettled(reservation.id)) return null;
+	const delta = actualTokens - reservation.tokens;
+	if (delta <= 0 && reservation.leaseId && pool?.settle(
+		{ id: reservation.id, leaseId: reservation.leaseId, requests: 0 },
+		{ requests: 0, units: delta },
+	)) {
+		return null;
+	}
+	// Overruns always go to the coordinator so they are counted even if this isolate dies.
+	pool?.markSettled(reservation.id);
+	if (reservation.tokens === 0 && delta === 0) return null;
+	const stub = getStub(scope);
+	return stub ? stub.reconcileTokens(reservation, actualTokens) : null;
+}
+
+/** A single reservation, or an attempt's charge across limit scopes. */
+type HeldTokens = ProviderTokenReservation | ProviderQuotaCharge;
+
+const isCharge = (held: HeldTokens): held is ProviderQuotaCharge => "reservations" in held;
+
+function logSettlementFailure(message: string, reservation: ProviderTokenReservation, error: unknown): void {
+	console.error(message, {
+		provider: reservation.providerId,
+		reservationId: reservation.id,
+		error: error instanceof Error ? error.message : String(error),
+	});
+}
+
+function settleInBackground(held: HeldTokens, actualTokens: number, failure: string): void {
+	if (isCharge(held)) {
+		background(held.reservations.then((parts) => {
+			for (const part of parts) settleInBackground(part, actualTokens, failure);
+		}));
+		return;
+	}
+	try {
+		const call = settleReservation(held, actualTokens);
+		if (call) background(call.catch((error) => logSettlementFailure(failure, held, error)));
+	} catch (error) {
+		logSettlementFailure(failure, held, error);
 	}
 }
 
+/** Returns a reservation's tokens. Never blocks failover: coordinator calls run in the background. */
+export async function releaseManagedProviderReservation(
+	reservation: HeldTokens | null | undefined,
+): Promise<void> {
+	if (!reservation) return;
+	settleInBackground(reservation, 0, "[gateway] provider token reservation release failed");
+}
+
+/** Settles a failed attempt's reservation without blocking failover. Returns whether it was handled. */
 export async function settleFailedManagedProviderReservation(args: {
-	reservation: ProviderTokenReservation | null | undefined;
+	reservation: HeldTokens | null | undefined;
 	status: number;
 	usageCandidates: unknown[];
 	upstreamRequestCount: number;
@@ -337,15 +747,7 @@ export async function settleFailedManagedProviderReservation(args: {
 		0,
 	);
 	if (tokens > 0) {
-		try {
-			await getStub(args.reservation.providerId)?.reconcileTokens(args.reservation, tokens);
-		} catch (error) {
-			console.error("[gateway] failed provider token reservation reconciliation failed", {
-				provider: args.reservation.providerId,
-				reservationId: args.reservation.id,
-				error: error instanceof Error ? error.message : String(error),
-			});
-		}
+		settleInBackground(args.reservation, tokens, "[gateway] failed provider token reservation reconciliation failed");
 		return true;
 	}
 
@@ -358,12 +760,23 @@ export async function settleFailedManagedProviderReservation(args: {
 	return false;
 }
 
+/**
+ * Gateway usage counts cache reads inside input tokens (OpenAI semantics). Anthropic's input
+ * token limits do not count cache reads, so leave them out of its managed token windows.
+ */
+function rateLimitExemptCacheReads(providerId: string, usage: unknown): number {
+	if (!providerId.startsWith("anthropic")) return 0;
+	const record = usage && typeof usage === "object" ? usage as Record<string, any> : {};
+	const reads = record.input_tokens_details?.cached_tokens ?? record.prompt_tokens_details?.cached_tokens;
+	return typeof reads === "number" && Number.isFinite(reads) ? Math.max(0, reads) : 0;
+}
+
 export async function recordManagedProviderTokensOnce(args: {
 	ctx: PipelineContext;
 	providerId: string;
 	keySource: "gateway" | "byok" | undefined;
 	usage: unknown;
-	reservation?: ProviderTokenReservation | null;
+	reservation?: HeldTokens | null;
 }): Promise<void> {
 	if (args.keySource === "byok" || args.ctx.testingMode) return;
 	const meta = args.ctx.meta as Record<string, unknown>;
@@ -372,18 +785,28 @@ export async function recordManagedProviderTokensOnce(args: {
 		? meta.__providerRateLimitTokensRecorded as string[]
 		: [];
 	if (recorded.includes(accountingKey)) return;
-	const tokens = resolveCanonicalTokenUsage(args.usage).totalTokens;
+	const tokens = Math.max(
+		0,
+		resolveCanonicalTokenUsage(args.usage).totalTokens - rateLimitExemptCacheReads(args.providerId, args.usage),
+	);
 	// Once dispatch may have occurred, missing usage is not evidence of zero provider consumption.
 	// Keep the conservative reservation until its fixed window expires rather than reopening capacity.
 	if (tokens <= 0) return;
 	try {
-		const config = await loadConfig(args.providerId);
+		if (args.reservation && isCharge(args.reservation)) {
+			// The charge already holds a reservation in every scope with a token limit.
+			const parts = await args.reservation.reservations;
+			await Promise.all(parts.map((part) => settleReservation(part, tokens)));
+			meta.__providerRateLimitTokensRecorded = [...recorded, accountingKey];
+			return;
+		}
+		const reservation = args.reservation && !isCharge(args.reservation) ? args.reservation : null;
+		const config = (await loadConfigs(args.providerId))?.find((entry) => providerLimitScope(entry) === args.providerId);
 		if (!config || (!config.tokensPerMinute && !config.tokensPerDay)) return;
-		const stub = getStub(args.providerId);
-		if (args.reservation?.providerId === args.providerId) {
-			await stub?.reconcileTokens(args.reservation, tokens);
+		if (reservation?.providerId === args.providerId) {
+			await settleReservation(reservation, tokens);
 		} else {
-			await stub?.recordTokens(tokens);
+			await getStub(args.providerId)?.recordTokens(tokens);
 		}
 		meta.__providerRateLimitTokensRecorded = [...recorded, accountingKey];
 	} catch (error) {
@@ -395,6 +818,11 @@ export async function recordManagedProviderTokensOnce(args: {
 	}
 }
 
+/** Clears isolate configuration and lease state (tests only). */
 export function clearProviderRateLimitConfigCacheForTests(): void {
-	configCache.clear();
+	__resetTieredCacheForTests();
+	pools.clear();
+	saturatedUntil.clear();
+	projectedUse.clear();
 }
+

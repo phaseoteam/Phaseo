@@ -41,6 +41,9 @@ export function createAgentStreamResult<TOutput, TInput, TContext>(args: {
 		.then((result) => { channel.push({ type: "result", result }); channel.close(); return result; })
 		.catch((error) => { channel.fail(error); throw error; })
 		.finally(() => args.parentSignal?.removeEventListener("abort", onParentAbort));
+	// A failure also fails the channel, so callers that only iterate a stream still see it. Mark the
+	// promise handled: it rejects for callers that await it, and never as an unhandled rejection.
+	resultPromise.catch(() => undefined);
 
 	const result: AgentStreamResult<TOutput, TInput, TContext> = {
 		then(onfulfilled, onrejected) { return resultPromise.then(onfulfilled, onrejected); },

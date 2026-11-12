@@ -74,6 +74,16 @@ vi.mock("@/runtime/env", () => ({
 			};
 		}),
 		from: vi.fn(() => ({
+			// Credential-mode and BYOK lookups: no route rows, no BYOK keys.
+			select: () => {
+				const chain: Record<string, unknown> = {
+					eq: () => chain,
+					limit: async () => ({ data: [], error: null }),
+					maybeSingle: async () => ({ data: null, error: null }),
+					then: (resolve: (value: unknown) => unknown) => resolve({ data: [], error: null }),
+				};
+				return chain;
+			},
 			update: (patch: Record<string, unknown>) => ({
 				eq: (workspaceColumn: string, workspaceId: string) => ({
 					eq: async (uploadColumn: string, uploadId: string) => {
@@ -150,7 +160,17 @@ describe("filesRoutes", () => {
 			body: "{}",
 		});
 		expect(response.status).toBe(413);
-		await expect(response.json()).resolves.toMatchObject({ error: { reason: "batch_file_too_large" } });
+		await expect(response.json()).resolves.toMatchObject({
+			code: "validation_error",
+			error: {
+				code: "validation_error",
+				message: "The batch file exceeds the 104857600-byte upload limit for this provider.",
+				type: "invalid_request_error",
+				param: null,
+				reason: "batch_file_too_large",
+				metadata: { reason: "batch_file_too_large" },
+			},
+		});
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
@@ -250,6 +270,9 @@ describe("filesRoutes", () => {
 						headers: {
 							"Content-Type": "application/jsonl",
 							"Content-Disposition": 'attachment; filename="batch-output.jsonl"',
+							"openai-organization": "org-provider-secret",
+							"openai-project": "proj_provider_secret",
+							"Set-Cookie": "__cf_bm=provider-cookie; Path=/",
 						},
 					});
 				}
@@ -289,7 +312,7 @@ describe("filesRoutes", () => {
 
 		expect(listResponse.status).toBe(400);
 		expect(await listResponse.json()).toMatchObject({
-			error: "not_supported",
+			code: "not_supported",
 			reason: "file_list_not_supported_with_shared_gateway_key",
 		});
 
@@ -318,6 +341,11 @@ describe("filesRoutes", () => {
 		expect(contentResponse.status).toBe(200);
 		expect(contentResponse.headers.get("content-type")).toBe("application/jsonl");
 		expect(contentResponse.headers.get("content-disposition")).toBe('attachment; filename="batch-output.jsonl"');
+		expect(contentResponse.headers.get("x-content-type-options")).toBe("nosniff");
+		expect(contentResponse.headers.get("cache-control")).toBe("private, no-store");
+		for (const leaked of ["openai-organization", "openai-project", "set-cookie"]) {
+			expect(contentResponse.headers.get(leaked)).toBeNull();
+		}
 		expect(await contentResponse.text()).toBe('{"ok":true}\n');
 		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
 			"POST https://api.openai.example/v1/files",
@@ -342,7 +370,7 @@ describe("filesRoutes", () => {
 
 		expect(retrieveResponse.status).toBe(404);
 		expect(await retrieveResponse.json()).toMatchObject({
-			error: "not_found",
+			code: "not_found",
 			reason: "file_not_found_or_not_owned",
 			file_id: "file_missing_123",
 		});
@@ -353,7 +381,7 @@ describe("filesRoutes", () => {
 
 		expect(contentResponse.status).toBe(404);
 		expect(await contentResponse.json()).toMatchObject({
-			error: "not_found",
+			code: "not_found",
 			reason: "file_not_found_or_not_owned",
 			file_id: "file_missing_123",
 		});
@@ -383,10 +411,11 @@ describe("filesRoutes", () => {
 				}
 
 				if (url === "https://api.mistral.ai/v1/files/file_mistral_123/content" && method === "GET") {
+					// A provider-chosen type that a browser would render.
 					return new Response('{"ok":true}\n', {
 						status: 200,
 						headers: {
-							"Content-Type": "application/jsonl",
+							"Content-Type": "text/html; charset=utf-8",
 						},
 					});
 				}
@@ -418,6 +447,9 @@ describe("filesRoutes", () => {
 		});
 
 		expect(contentResponse.status).toBe(200);
+		expect(contentResponse.headers.get("content-type")).toBe("application/octet-stream");
+		expect(contentResponse.headers.get("content-disposition")).toBe("attachment");
+		expect(contentResponse.headers.get("x-content-type-options")).toBe("nosniff");
 		expect(await contentResponse.text()).toBe('{"ok":true}\n');
 		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
 			"POST https://api.mistral.ai/v1/files",
@@ -498,7 +530,7 @@ describe("filesRoutes", () => {
 		});
 		expect(retrieveResponse.status).toBe(404);
 		expect(await retrieveResponse.json()).toMatchObject({
-			error: "not_found",
+			code: "not_found",
 			reason: "file_not_found_or_not_owned",
 			file_id: "file_workspace_123",
 		});

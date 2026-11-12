@@ -1,43 +1,34 @@
 ---
-title: "LiteLLM से माइग्रेट करें"
+title: "LiteLLM से माइग्रेट करना"
 sidebarTitle: "LiteLLM"
-description: "ऐप के मौजूदा OpenAI-संगत अनुरोध पथ को बनाए रखते हुए LiteLLM प्रॉक्सी को Phaseo से बदलें।"
+description: "आपका ऐप्लिकेशन जो OpenAI-संगत अनुरोध पथ पहले से उपयोग करता है, उसे बनाए रखते हुए LiteLLM प्रॉक्सी को Phaseo से बदलें।"
 icon: "blocks"
 ---
 
-अगर आपका ऐप OpenAI-संगत क्लाइंट से LiteLLM प्रॉक्सी को कॉल करता है, तो इस गाइड का उपयोग करें। पहले प्रॉक्सी सीमा बदलें, फिर aliases, रूटिंग नियम और साझा डिफ़ॉल्ट को सोच-समझकर मैप करें।
+आपकी LiteLLM प्रॉक्सी को कॉल करने वाले क्लाइंट को Phaseo कुंजी के साथ `https://api.phaseo.app/v1` पर पॉइंट करें, फिर हर `model_name` उपनाम और हर प्रॉक्सी सेटिंग को सोच-समझकर मैप करें। LiteLLM रखकर Phaseo को उसके अपस्ट्रीम के रूप में उपयोग करने के लिए [LiteLLM इंटीग्रेशन](../guides/integrations/litellm) देखें।
 
-## क्या बदलेगा
-
-| सेटिंग | पहले | बाद में |
+| सेटिंग | LiteLLM प्रॉक्सी | Phaseo |
 | --- | --- | --- |
-| बेस URL | आपका LiteLLM प्रॉक्सी | `https://api.phaseo.app/v1` |
-| API कुंजी | LiteLLM प्रॉक्सी कुंजी | `PHASEO_API_KEY` |
-| मॉडल aliases | LiteLLM कॉन्फ़िगरेशन | Phaseo मॉडल ID या ऐप aliases |
-| रूटिंग डिफ़ॉल्ट | LiteLLM कॉन्फ़िगरेशन | Phaseo presets और रूटिंग सेटिंग |
+| बेस URL | आपकी प्रॉक्सी, अक्सर `http://localhost:4000` | `https://api.phaseo.app/v1` |
+| API कुंजी | `LITELLM_MASTER_KEY` या कोई वर्चुअल कुंजी | `PHASEO_API_KEY` |
+| मॉडल | `config.yaml` का `model_name` उपनाम | Phaseo मॉडल ID, एक प्रीसेट (`"model": "@slug"`), या एक मैपिंग फ़ंक्शन |
+| रूटिंग और डिफ़ॉल्ट | `router_settings`, `litellm_settings` | [प्रीसेट](../guides/presets) और [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks) |
 
-<Steps>
-<Step title="प्रॉक्सी कॉन्फ़िगरेशन की सूची बनाएं">
-
-मौजूदा LiteLLM डिप्लॉयमेंट में उपयोग किए जाने वाले सभी मॉडल aliases, fallbacks, प्रोवाइडर नियम, retry नीतियां, बजट, callbacks और पर्यावरण चर सूचीबद्ध करें। पहचानें कि कौन-सी सेटिंग साझा नीति है और कौन-सी केवल एक ऐप के लिए है।
-
-</Step>
-
-<Step title="प्रॉक्सी endpoint बदलें">
-
-OpenAI-संगत अनुरोध कोड बनाए रखें और केवल बेस URL तथा कुंजी बदलें।
+## क्लाइंट बदलें
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// पहले:
+// new OpenAI({ apiKey: process.env.LITELLM_API_KEY, baseURL: process.env.LITELLM_BASE_URL });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -57,40 +48,41 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+हर उपनाम को `GET /v1/models?format=openai` की किसी ID से स्पष्ट रूप से मैप करना होता है। अगर कॉलर आंतरिक उपनाम उपयोग करते हैं, तो हर अनुरोध बदलने के बजाय क्लाइंट सीमा पर एक फ़ंक्शन में उनका अनुवाद करें।
 
-<Step title="Aliases और रूटिंग नियम मैप करें">
+## प्रॉक्सी कॉन्फ़िगरेशन मैप करें
 
-हर प्रोडक्शन मॉडल को `GET /v1/models` से सत्यापित करें। अगर कॉल करने वाले आंतरिक aliases पर निर्भर हैं, तो हर अनुरोध संपादित करने के बजाय ऐप की एक सीमा पर उन्हें सामान्य प्रारूप में बदलें।
+प्रॉक्सी हटाने से पहले कॉलबैक, बजट और पुनः प्रयासों की सूची बनाएं: प्रॉक्सी हटते ही ये चुपचाप बंद हो जाते हैं।
 
-दोबारा उपयोग होने वाले प्रॉम्प्ट, पैरामीटर और प्रोवाइडर प्रतिबंधों को [Presets](../guides/presets.mdx) में ले जाएं। प्रोवाइडर क्रम और fallbacks को [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx) से कॉन्फ़िगर करें।
+| LiteLLM | Phaseo पर |
+| --- | --- |
+| `fallbacks` | `models` ऐरे या डायनामिक रूट फ़ॉलबैक, जो `429`, `500`, `502`, `503` और `504` पर आज़माए जाते हैं, अनुरोध त्रुटियों पर कभी नहीं। |
+| `context_window_fallbacks`, `content_policy_fallbacks` | कोई समकक्ष नहीं: Phaseo `400` पर कभी फ़ॉलबैक नहीं करता। इन्हें ऐप में संभालें। |
+| `routing_strategy` | वर्कस्पेस रूटिंग मोड या `provider.sort` (`price`, `latency`, `throughput`)। |
+| प्रति-डिप्लॉयमेंट प्रदाता चयन | `provider.order`, `provider.only`, `provider.ignore`, या `provider:org/model` जैसी [प्रदाता-योग्य ID](../guides/provider-qualified-models), जो प्रदाताओं के बीच फ़ॉलबैक नहीं करती। |
+| सेल्फ़-होस्टेड डिप्लॉयमेंट (vLLM और इसी तरह के) | [प्राइवेट मॉडल](../guides/private-models), जिनके लिए bearer प्रमाणीकरण वाला सार्वजनिक HTTPS OpenAI-संगत `/chat/completions` एंडपॉइंट चाहिए। |
+| प्रतिक्रिया कैश (`litellm_settings.cache`) | कोई प्रतिक्रिया कैश नहीं। ज़रूरत हो तो ऐप में कैश करें; [प्रॉम्प्ट कैशिंग](../guides/prompt-caching) फिर भी इनपुट लागत घटाती है। |
+| वर्चुअल कुंजियां (`max_budget`, `rpm_limit`, `tpm_limit`, `max_parallel_requests`, `models`) | खर्च सीमा और अनुमत मॉडल वाली API कुंजियां, बजट, और प्रति मिनट अनुरोध, प्रति मिनट टोकन और समवर्ती अनुरोधों के लिए दर सीमा नीतियां। देखें [सीमाएं](../api-reference/limits)। |
+| टीम बजट, `metadata.tags` | विभाग बजट और `X-Phaseo-Metadata` [लेबल](../guides/request-labels)। अंतिम-उपयोगकर्ता बजट सिर्फ़ अंतिम-उपयोगकर्ता दर सीमा नीति से मैप होते हैं; अंतिम-उपयोगकर्ता के लिए कोई खर्च सीमा नहीं है। |
+| `guardrails` (Presidio, Lakera और इसी तरह के) | कुंजी गार्डरेल अनुरोधों में प्रॉम्प्ट इंजेक्शन और PII स्कैन करते हैं। प्रतिक्रियाएं स्कैन नहीं होतीं। |
+| कॉलबैक (`success_callback`, Langfuse, Datadog, OpenTelemetry) | [ऑब्ज़र्वेबिलिटी गंतव्य](../guides/integrations/observability) या क्लाइंट-साइड ट्रेसिंग। बॉडी `metadata` `phaseo.metadata.<key>` के रूप में एक्सपोर्ट होता है। |
+| कॉन्फ़िग में प्रदाता API कुंजियां | BYOK (**सेटिंग्स → BYOK** या `POST /v1/byok`), या Phaseo क्रेडिट। क्रेडिट पर फ़ॉलबैक के लिए **सेटिंग्स → BYOK** से `byok_fallback_enabled` सेट करें। |
 
-</Step>
+प्रॉक्सी पूरी टीम का ट्रैफ़िक एक ही कुंजी मालिक से भेजती है, इसलिए वह उस उपयोगकर्ता का प्रति-मिनट-अनुरोध भत्ता साझा करती है, जो नए वर्कस्पेस के लिए 10 है। कटओवर से पहले [Gateway सीमाएं](../api-reference/limits#gateway-limits) देखें और ऊंची सीमा की व्यवस्था करें।
 
-<Step title="प्रोडक्शन वर्कफ़्लो की जांच करें">
+## टेस्ट करें और रोलआउट करें
 
-स्ट्रीमिंग, टूल, संरचित आउटपुट, retries, त्रुटि मैपिंग और LiteLLM डिप्लॉयमेंट में callbacks से संभाली जाने वाली ऑब्ज़र्वेबिलिटी का परीक्षण करें। ट्रैफ़िक धीरे-धीरे बदलने से पहले विलंबता, आउटपुट, टोकन उपयोग और लागत की तुलना करें।
+स्ट्रीमिंग, टूल, संरचित आउटपुट, पुनः प्रयास, त्रुटि मैपिंग, और प्रॉक्सी जो भी कॉलबैक-आधारित टेलीमेट्री संभालती थी, उसे टेस्ट करें। ट्रैफ़िक धीरे-धीरे बदलने से पहले लेटेंसी, आउटपुट, टोकन उपयोग और लागत की तुलना करें। कटओवर से पहले:
 
-</Step>
-</Steps>
-
-## माइग्रेशन चेकलिस्ट
-
-- LiteLLM URL, कुंजियां और डिप्लॉयमेंट निर्भरताएं दर्ज की गई हैं।
-- हर प्रोडक्शन मॉडल और alias का Phaseo मैपिंग स्पष्ट है।
-- साझा डिफ़ॉल्ट presets या ऐप की एक सीमा पर ले जाए गए हैं।
-- इस्तेमाल होने पर स्ट्रीमिंग, टूल और संरचित आउटपुट staging में पास होते हैं।
-- ज़रूरी callbacks और टेलीमेट्री का विकल्प तय है।
-- रोलबैक अब भी केवल endpoint और कुंजी की सेटिंग बदलने तक सीमित है।
-
-## अगले चरण
-
-- [Presets](../guides/presets.mdx)
-- [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx)
-- [ऑब्ज़र्वेबिलिटी](../guides/integrations/observability.mdx)
+- हर LiteLLM URL, कुंजी और `LITELLM_*` वेरिएबल पहचाना गया है;
+- हर प्रोडक्शन उपनाम का स्पष्ट Phaseo मैपिंग है;
+- साझा डिफ़ॉल्ट प्रीसेट में या एक सीमा फ़ंक्शन में हैं;
+- ज़रूरी कॉलबैक और टेलीमेट्री का विकल्प मौजूद है;
+- आपने तय कर लिया है कि खर्च का रिकॉर्ड LiteLLM, Phaseo या दोनों में से कौन रखेगा;
+- रोलबैक अब भी सिर्फ़ बेस URL और कुंजी का बदलाव है।

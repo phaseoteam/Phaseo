@@ -1,173 +1,79 @@
 ---
 title: "Plugin-Standards für strukturierte JSON-Workflows festlegen"
+sidebarTitle: "Plugin-Standards für JSON"
 icon: "puzzle"
-description: "Nutze Plugin-Richtlinien für Workspace, Preset und Anfrage, damit die Antwortkorrektur einheitlich bleibt."
+description: "Nutze Plugin-Richtlinien für Workspace, Preset und Anfrage, damit Response Healing einheitlich bleibt."
 ---
 
-Mit dieser Anleitung legst du eine einheitliche Plugin-Richtlinie für Anfragen mit strukturierter Ausgabe fest, statt jede Anfrage einzeln einzurichten.
+Schalte [Response Healing](./response-healing-for-structured-json) einmal für den ganzen Workspace oder für ein Preset ein, statt in jeder Anfrage. Am Ende erhält jeder Aufrufer mit strukturierter Ausgabe dieselbe Healing-Richtlinie, und du kannst sie sperren, damit kein Preset und keine Anfrage sie abschaltet.
 
-## 1. Prioritäten verstehen
+Dies ist ein Ablauf im Dashboard; das Anfragebeispiel am Ende ist produktionsreif.
 
-Die Plugin-Richtlinie des Gateways wird in dieser Reihenfolge aufgelöst:
+## Wie die Ebenen zusammenwirken
 
-1. Workspace-Standards
-2. Preset-Standards
-3. Plugins auf Anfrageebene
+Phaseo stellt die Plugin-Liste jeder Anfrage aus drei Ebenen zusammen. Eine spätere Ebene ersetzt die Einstellungen einer früheren Ebene für dasselbe Plugin, es sei denn, die frühere ist gesperrt:
 
-Niedriger priorisierte Ebenen können höher priorisierte überschreiben, sofern der Workspace-Standard nicht ausdrücklich gesperrt ist.
+```mermaid
+flowchart LR
+  ws["Workspace-Standard"] --> pr["Preset-Plugins"]
+  pr --> rq["Anfrage-Plugins"]
+  rq --> eff["Plugins, die laufen"]
+  lock["Workspace-Sperre aktiv"] -.->|"spätere Ebenen können response-healing nicht ändern"| pr
+```
 
-## 2. Workspace-Standard festlegen
+| Ebene | Festgelegt in | Überschreibt |
+| --- | --- | --- |
+| Workspace | **Einstellungen → Routing → Antwortreparatur** | Nichts |
+| Preset | **Einstellungen → Voreinstellungen → (Preset) → Antwortreparatur** | Den Workspace, sofern er nicht gesperrt ist |
+| Anfrage | `plugins` im Body | Das Preset und den Workspace, sofern der Workspace nicht gesperrt ist |
 
-Nutze die Routing-Einstellungen, wenn ein Workspace die Antwortkorrektur für Anfragen mit strukturiertem JSON standardmäßig aktivieren soll.
+## Einrichten
 
-Hier legst du am besten Folgendes fest:
+<Steps>
+<Step title="Den Workspace-Standard einschalten">
 
-- allgemeine Betriebsstandards
-- einheitliches Verhalten für API-Schlüssel
-- Schutz vor Abweichungen zwischen Services
+Schalte unter **Einstellungen → Routing → Antwortreparatur** die Option **Standardmäßig aktivieren** ein und wähle einen **Reparaturmodus**: `safe` für begrenzte Syntaxreparaturen, `strict`, um nur JSON auszupacken, das bereits gültig war. Verwende dies für breite Standards, die alle API-Schlüssel im Workspace teilen.
 
-## 3. Richtlinie sperren, wenn sie verbindlich ist
+</Step>
+<Step title="Sperren, wenn es nicht verhandelbar ist">
 
-Wenn die Antwortkorrektur in einem Workspace immer aktiviert bleiben muss, sperre diesen Standard.
+Schalte **Arbeitsbereichsrichtlinie sperren** ein. Presets und Anfragen können Healing dann weder abschalten noch seinen Modus ändern. Die Protokolle zeigen weiterhin, ob es angewendet oder übersprungen wurde.
 
-Bei einem gesperrten Workspace-Standard gilt:
+</Step>
+<Step title="Preset-Standards für einen Workflow festlegen">
 
-- Presets können die Funktion nicht deaktivieren
-- Anfrage-Payloads können sie nicht deaktivieren
-- Protokolle zeigen weiterhin, ob das Plugin angewendet, übersprungen oder fehlerhaft ausgeführt wurde
+Schalte im Preset-Editor **Antwortreparatur** ein und wähle den Modus, wenn eine Gruppe von Anfragen sowohl ein strukturiertes Ausgabeformat als auch Healing tragen soll. Aufrufer dieses Presets senden dann nur noch ihre Eingabe.
 
-## 4. Presets für workflow-spezifische Standards verwenden
+</Step>
+</Steps>
 
-Presets sind die richtige Ebene, wenn eine Gruppe von Anfragen beides enthalten soll:
+## Für eine Anfrage überschreiben
 
-- Einstellungen für strukturierte Ausgaben
-- Plugin-Standards für die Antwortkorrektur
+Ist der Workspace nicht gesperrt, kann eine Anfrage das Plugin selbst setzen. `"enabled": false` schaltet es für diese Anfrage ab:
 
-Auf dieser Ebene lässt sich auch der Modus der Antwortkorrektur wählen:
-
-- `safe` für begrenzte syntaktische Bereinigung
-- `strict` für ein Verhalten, das ausschließlich äußere Einfassungen entfernt
-
-Dadurch wird der Anfrage-Body kleiner. Außerdem lassen sich Routing und Ausgabeverhalten leichter dienstübergreifend wiederverwenden.
-
-## 5. Einstellungen auf Anfrageebene nur überschreiben, wenn der Workspace es erlaubt
-
-Wenn der Workspace-Standard nicht gesperrt ist, kann eine Anfrage die Plugin-Konfiguration direkt überschreiben:
-
-## Beispielanfrage
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "phaseo/free",
-    "input": "Return valid JSON",
-    "response_format": {
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "input": "Return the summary as JSON.",
+  "text": {
+    "format": {
       "type": "json_schema",
-      "json_schema": {
-        "name": "answer",
-        "schema": {
-          "type": "object",
-          "properties": {
-            "summary": { "type": "string" }
-          },
-          "required": ["summary"],
-          "additionalProperties": false
-        }
+      "name": "answer",
+      "schema": {
+        "type": "object",
+        "properties": { "summary": { "type": "string" } },
+        "required": ["summary"],
+        "additionalProperties": false
       }
-    },
-    "plugins": [
-      { "id": "response-healing", "enabled": true }
-    ]
-  }'
-```
-
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
-
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
-
-const response = await client.generateResponse({
-  model: "phaseo/free",
-  input: "Return valid JSON",
-  response_format: {
-    type: "json_schema",
-    json_schema: {
-      name: "answer",
-      schema: {
-        type: "object",
-        properties: {
-          summary: { type: "string" },
-        },
-        required: ["summary"],
-        additionalProperties: false,
-      },
-    },
-  },
-  plugins: [{ id: "response-healing", enabled: true }],
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "phaseo/free",
-        "input": "Return valid JSON",
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "answer",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "summary": {"type": "string"}
-                    },
-                    "required": ["summary"],
-                    "additionalProperties": False,
-                },
-            },
-        },
-        "plugins": [
-            {"id": "response-healing", "enabled": True}
-        ],
     }
-)
-
-print(response.get("output_text"))
+  },
+  "plugins": [{ "id": "response-healing", "enabled": true, "mode": "strict" }],
+  "meta": true
+}
 ```
-</CodeGroup>
-## 6. Verhalten in Protokollen prüfen
 
-Öffne nach einer Anfrage die Detailansicht und prüfe Folgendes:
+## Prüfen, welche Richtlinie lief
 
-- `plugin_executions` enthält `response-healing`
-- der Status ist einer der folgenden:
-  - `applied`
-  - `skipped`
-  - `failed`
-- der wirksame Plugin-Modus ist sichtbar
-- Validierungsfehler werden angezeigt, wenn die Schema-Prüfung einen möglichen korrigierten Payload ablehnt
+Öffne die Anfrage unter **Einstellungen → Nutzung → Protokolle** oder lies `meta.plugin_executions`, wenn du `meta: true` gesendet hast. Dort stehen der Status (`applied`, `skipped` oder `failed`), der tatsächlich ausgeführte Modus und gegebenenfalls `validation_errors`, wenn ein reparierter Kandidat nicht zum Schema passte.
 
-## 7. Bei abweichendem Verhalten zwischen Services
-
-Wenn sich zwei Services unterschiedlich verhalten, vergleiche:
-
-- die Workspace-Routing-Einstellungen
-- Plugin-Standards in Presets
-- `plugins` auf Anfrageebene
-- ob der Workspace-Standard gesperrt ist
-
-Untersuche das erst dann als Modellqualitätsproblem, wenn diese Richtlinienebenen übereinstimmen.
-
-## Verwandte Inhalte
-
-- [Fehlerhaftes strukturiertes JSON wiederherstellen](./response-healing-for-structured-json.mdx)
-- [Antwort-Caching mit Presets verwenden](./response-caching-with-presets.mdx)
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+Wenn sich zwei Dienste unterschiedlich verhalten, vergleiche die Workspace-Einstellung und ihre Sperre, die Plugins des Presets und die `plugins` jeder Anfrage, bevor du es als Modellproblem behandelst.

@@ -1,0 +1,92 @@
+---
+title: "मान निकालें"
+badge: "बीटा"
+tag: "बीटा"
+description: "टेक्स्ट और इमेज से टाइप किए गए मान निकालें।"
+icon: "list-filter"
+openapi: "/hi/openapi/v1/openapi.localized.yaml POST /extractions"
+---
+
+<Warning>एक्सट्रैक्शन पूर्वावलोकन में है। मॉडल की उपलब्धता कॉन्फ़िगर किए गए प्रदाता रूट पर निर्भर करती है।</Warning>
+
+जो `fields` आप चाहते हैं उनके नाम दें और उन्हें अपने स्रोत टेक्स्ट के साथ `POST /v1/extractions` पर भेजें, ताकि टाइप किए गए मान वापस मिलें, जैसे इनवॉइस नंबर, तारीख या कुल राशि। इसके बजाय ज्ञात विकल्पों में से चुनने के लिए [निर्णय](./decisions.mdx) का उपयोग करें।
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/extractions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "cloudflare/clairic",
+    "input": "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+    "fields": {
+      "invoice_number": { "type": "text" },
+      "total": { "type": "number", "decimals": 2, "instructions": "Total including shipping" }
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import { Phaseo } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+const result = await client.extractions.create({
+  model: "cloudflare/clairic",
+  input: "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+  fields: {
+    invoice_number: { type: "text" },
+    total: { type: "number", decimals: 2, instructions: "Total including shipping" },
+  },
+});
+console.log(result.answers.total.value);
+```
+
+```python Python SDK
+import os
+from phaseo import Phaseo
+
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+result = client.extractions.create({
+    "model": "cloudflare/clairic",
+    "input": "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+    "fields": {"total": {"type": "number", "decimals": 2,
+                         "instructions": "Total including shipping"}},
+})
+print(result["answers"]["total"]["value"])
+```
+</CodeGroup>
+
+उदाहरणों के लिए एक सक्रिय एक्सट्रैक्शन मॉडल रूट चाहिए, इसलिए अनुरोध भेजने से पहले
+मॉडल की उपलब्धता जांचें। Python `AsyncPhaseo` में भी
+`await client.extractions.create(...)` उपलब्ध है।
+
+## फ़ील्ड प्रकार
+
+समर्थित प्रकार `text`, `number`, `date`, `time`, `datetime`, `duration` और
+`list` हैं। सूचियों के लिए `items: "text"`, `"number"` या `"date"` आवश्यक है। 1–64 फ़ील्ड
+और अधिकतम 16,384 स्रोत अक्षर दें। फ़ील्ड नाम किसी अक्षर या अंडरस्कोर से शुरू होते हैं
+और उनमें अधिकतम 64 अक्षर, अंक, अंडरस्कोर, बिंदु या हाइफ़न हो सकते हैं।
+
+संख्याएं और अवधियां `integer` और `decimals` (0–6) का समर्थन करती हैं। अवधियां
+`seconds`, `minutes`, `hours`, `days`, `weeks`, `months` या `years` स्वीकार करती हैं। जब
+अधूरी तारीखों की व्याख्या किसी खास वर्ष पर निर्भर करती हो, तब `reference_date` सेट करें।
+
+इमेज इनपुट `{ content_type, base64 }` ऑब्जेक्ट का उपयोग करते हैं: अधिकतम चार PNG/JPEG/WebP
+इमेज, डिकोड करने के बाद हर एक 4 MiB और कुल 8 MiB। अनुरोध की सीमा 16 MiB है।
+रिमोट URL, PDF, ऑडियो, वीडियो, अनुमान, पूर्वानुमान और स्ट्रीमिंग समर्थित नहीं हैं।
+
+## उत्तर पढ़ें
+
+`answers[field_name].value` पढ़ें। जब स्रोत से कोई स्केलर मान तय नहीं होता, तो वह `null`
+हो सकता है। `p_null` मॉडल के अनुसार मान के अनिर्धारित होने की संभावना है;
+`confidence` मॉडल द्वारा बताया गया एक अलग स्कोर है। सूचियां `p_null` के बिना
+confidence देती हैं। ये स्कोर सही होने की गारंटी नहीं देते: अपने वर्कलोड के लिए समीक्षा की
+सीमाएं चुनें। एक मान्य खाली सूची विफल अनुरोध से अलग है।
+
+`truncated: true` का मतलब है कि प्रदाता ने पूरा स्रोत इनपुट प्रोसेस नहीं किया। पूर्णता पर भरोसा
+करने से पहले समीक्षा करें या छोटा इनपुट फिर से भेजें। टेक्स्ट ऑफ़सेट और कच्चे अनुमान
+उपलब्ध नहीं कराए जाते। जटिल गणना एप्लिकेशन कोड में की जानी चाहिए।
+
+उपयोग रिपोर्ट प्रदाता के सभी पास का `input_tokens` जोड़कर बताती हैं। आउटपुट टोकन
+शून्य होते हैं। स्रोत की लंबाई से लागत का अनुमान लगाने या उपयोग को फ़ील्ड की संख्या से गुणा करने के
+बजाय Gateway द्वारा लौटाई गई कीमत का उपयोग करें।

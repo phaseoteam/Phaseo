@@ -1,132 +1,125 @@
 ---
-title: "Strukturiertes JSON mit dem Python-SDK und Voreinstellungen bereitstellen"
+title: "Strukturiertes JSON mit Presets und dem Python-SDK ausliefern"
+sidebarTitle: "JSON mit Presets in Python"
 icon: "braces"
-description: "Verwende das offizielle Python-SDK mit Voreinstellungen, strukturierten Ausgaben und Anfrage-Debugging, ohne auf rohe HTTP-Aufrufe zurückzugreifen."
+description: "Verwende das offizielle Python-SDK mit Presets, strukturierten Ausgaben und Debugging auf Anfrageebene, ohne auf direkte HTTP-Aufrufe zurückzugreifen."
 ---
 
-Verwende dieses Rezept, wenn ein Python-Dienst Standardwerte aus dem Dashboard nutzen soll, statt Prompt-, Routing- und Parameterkonfiguration in jeder Anfrage zu wiederholen.
+Rufe aus Python ein Dashboard-Preset mit einem JSON Schema auf, validiere dann die Antwort und logge die IDs, die du zum Debuggen brauchst. Am Ende hast du ein Skript, das `"model": "@release-summary"` sendet, `{"summary": ..., "risk_level": ...}` zurückbekommt und die Anbieter- und Plugin-Details dieser Anfrage ausgibt.
 
-## Ziel
+Das Skript ist produktionsreif, sobald du Preset und Schema durch deine eigenen ersetzt. Behalte den Validierungsschritt: Healing behebt die Syntax, nicht den Inhalt.
 
-- den Python-Aufrufer schlank halten
-- über einen Voreinstellungs-Slug statt über ein fest codiertes Modell routen
-- eine streng strukturierte Ausgabe anfordern
-- genügend Antwortmetadaten behalten, um Routing- oder Plugin-Verhalten zu untersuchen
+## Bauen
 
-## 1. Mit einem gemeinsam genutzten Client beginnen
+<Steps>
+<Step title="Das Preset anlegen">
 
-```python
+Lege unter **Einstellungen → Voreinstellungen** `release-summary` mit dem System-Prompt, dem Modell oder den erlaubten Modellen, den Anbieterpräferenzen, den Reasoning-Einstellungen und der `temperature` an, die alle Aufrufer teilen sollen. Der Python-Code sendet dann nur noch, was sich ändert. [Presets](../guides/presets) erklärt, wie das Preset mit der Anfrage zusammengeführt wird.
+
+</Step>
+<Step title="Das SDK installieren">
+
+```bash
+pip install phaseo
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+</Step>
+<Step title="Das Skript schreiben">
+
+```python release_summary.py
+import json
 import os
 
 from phaseo import Phaseo
 
+# Einen Client erstellen und wiederverwenden.
 gateway = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
-```
 
-Verwende einen gemeinsam genutzten Client, statt für jede Anfrage einen neuen zu erstellen.
+SCHEMA = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "risk_level": {"type": "string", "enum": ["low", "medium", "high"]},
+    },
+    "required": ["summary", "risk_level"],
+    "additionalProperties": False,
+}
 
-## 2. Stabile Standardwerte in eine Voreinstellung verschieben
 
-Erstelle unter **Dashboard -> Einstellungen -> Voreinstellungen** eine Voreinstellung, wenn diese Werte für mehrere Aufrufer stabil bleiben sollen:
+def output_text(response: dict) -> str:
+    return "".join(
+        part.get("text", "")
+        for item in response.get("output", [])
+        if item.get("type") == "message"
+        for part in item.get("content", [])
+        if part.get("type") == "output_text"
+    )
 
-- der System-Prompt
-- das Modell oder die Liste erlaubter Modelle
-- Provider-Präferenzen
-- Reasoning-Konfiguration
-- Temperatur und weitere zugehörige Generierungsparameter
-- Richtlinie für das Antwort-Caching, wenn deterministische Wiederholung wichtig ist
 
-Sobald die Voreinstellung eingerichtet ist, kann der Python-Aufrufer schlank bleiben.
+def validate(payload: dict) -> dict:
+    if set(payload) != {"summary", "risk_level"}:
+        raise ValueError(f"unexpected keys: {sorted(payload)}")
+    if not isinstance(payload["summary"], str) or not payload["summary"]:
+        raise ValueError("summary must be a non-empty string")
+    if payload["risk_level"] not in ("low", "medium", "high"):
+        raise ValueError("risk_level must be low, medium or high")
+    return payload
 
-## 3. Eine strenge JSON-Form anfordern
 
-```python
 response = gateway.generate_response(
     {
-        "preset": "release-summary",
+        "model": "@release-summary",
         "input": "Summarize the last 24 hours of deployment activity.",
-        "response_format": {
-            "type": "json_schema",
-            "name": "release_summary",
-            "schema": {
-                "type": "object",
-                "required": ["summary", "risk_level"],
-                "properties": {
-                    "summary": {"type": "string"},
-                    "risk_level": {
-                        "type": "string",
-                        "enum": ["low", "medium", "high"],
-                    },
-                },
-                "additionalProperties": False,
-            },
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "release_summary",
+                "strict": True,
+                "schema": SCHEMA,
+            }
         },
         "plugins": [{"id": "response-healing"}],
         "meta": True,
     }
 )
-```
 
-Warum diese Form gut funktioniert:
+if response.get("status") != "completed":
+    raise RuntimeError(f"response {response.get('id')} ended as {response.get('status')}")
 
-- `preset` hält Routing- und Prompt-Standardwerte aus dem Anwendungscode heraus
-- `response_format` macht den Vertrag eindeutig
-- `plugins` kann fast gültiges, fehlerhaftes JSON wiederherstellen, sofern der Workflow das zulässt
-- `meta` erhält Routing- und Plugin-Ausführungsdetails für die Untersuchung
-
-## 4. JSON parsen und Betriebskennungen protokollieren
-
-```python
-import json
-
-message_text = ""
-for item in response.get("output", []):
-    if item.get("type") != "message":
-        continue
-    for part in item.get("content", []):
-        if part.get("type") == "output_text":
-            message_text = part.get("text", "")
-            break
-
-payload = json.loads(message_text)
+payload = validate(json.loads(output_text(response)))
+meta = response.get("meta", {})
 
 print("response_id:", response.get("id"))
-print("selected_provider:", response.get("meta", {}).get("routing", {}).get("selected_provider"))
-print("plugin_executions:", response.get("meta", {}).get("plugin_executions"))
+print("model:", response.get("model"))
+print("selected_provider:", meta.get("routing", {}).get("selected_provider"))
+print("plugin_executions:", meta.get("plugin_executions"))
 print(payload)
 ```
 
-Für Python-Worker reicht das normalerweise aus, um eine Anwendungs-Protokollzeile diesen Informationen zuzuordnen:
+| Feld | Wirkung |
+| --- | --- |
+| `"model": "@release-summary"` | Verwendet das Preset. Ein eigenes `preset`-Feld gibt es nicht. |
+| `text.format` | Fordert dieses JSON Schema an. Bei Chat Completions gehört es in `response_format`; siehe [Strukturierte Ausgaben](../guides/structured-outputs). |
+| `plugins` | Repariert fast gültiges JSON; siehe [Response Healing](./response-healing-for-structured-json). |
+| `meta: true` | Fügt der Antwort `meta.routing` und `meta.plugin_executions` hinzu. |
 
-- dem Dialog mit den Anfragedetails im Dashboard
-- den Routing-Diagnosen
-- den Ausführungsmetadaten der Plugins
+</Step>
+<Step title="Ausführen">
 
-## 5. Erst untersuchen, dann überschreiben
+```bash
+python release_summary.py
+```
 
-Wenn eine Anfrage anders geroutet wird als erwartet:
+</Step>
+</Steps>
 
-1. öffne sie unter **Gateway -> Nutzung**
-2. prüfe Routing-Diagnosen und mögliche Provider
-3. prüfe bei strukturiertem JSON die Ausführungsmetadaten der Plugins
-4. ändere die Voreinstellung erst, wenn die Protokolle den tatsächlichen Ablauf zeigen
+## Prüfen, ob es funktioniert hat
 
-Versuche nicht, eine fehlerhafte Anfrage mit vielen inline gesetzten Überschreibungen zu korrigieren. Das macht den Zweck von Voreinstellungen meist zunichte.
+Das Skript gibt die Antwort-ID, das Modell und den Anbieter, die geantwortet haben, den Plugin-Eintrag und ein Dict mit `summary` und einem der Werte `low`, `medium` oder `high` aus. Suche die Antwort-ID unter **Einstellungen → Nutzung → Protokolle**, um dieselbe Anfrage mit ihren Routing-Details zu sehen.
 
-## 6. Caching-Kompatibilität für die Wiederverwendung erhalten
+Ein Modell außerhalb der erlaubten Modelle des Presets schlägt mit `validation_error` (Schlüsselwort `preset_model_not_allowed`) fehl. Ein `ValueError` aus `validate()` bedeutet, dass sich das JSON parsen ließ, der Inhalt aber falsch war: Verschärfe Schema oder Prompt, statt Wiederholungen hinzuzufügen.
 
-Wenn die Voreinstellung Antwort-Caching aktiviert:
+## Debuggen, bevor du überschreibst
 
-- formuliere den Prompt stets gleich
-- behalte das Antwortschema bei
-- vermeide unnötige Provider-Überschreibungen pro Anfrage
-- vermeide häufig wechselnde Tool-Listen
-
-Wenn ein Aufrufer wirklich ein anderes Verhalten benötigt, verwende eine eigene Voreinstellung, statt die Cache-Wiederverwendung des gemeinsamen Workflows zu beeinträchtigen.
-
-## Verwandte Anleitungen
-
-- [Voreinstellungen ausrollen und Routing untersuchen](./preset-rollout-and-routing-debug.mdx)
-- [Antwort-Caching mit Voreinstellungen verwenden](./response-caching-with-presets.mdx)
-- [Antworten für strukturiertes JSON reparieren](./response-healing-for-structured-json.mdx)
-- [Überblick über das Python-SDK](../sdk-reference/python/overview.mdx)
+Wenn eine Anfrage anders geroutet wird als erwartet, öffne sie in den Protokollen, lies **Beobachtbarkeit des Routings** und den Plugin-Eintrag und ändere das Preset erst, wenn die Protokolle zeigen, was passiert ist. Inline-Überschreibungen in einer Anfrage anzuhäufen, untergräbt den Zweck des Presets; braucht ein Aufrufer wirklich ein anderes Verhalten, gib ihm ein eigenes Preset.

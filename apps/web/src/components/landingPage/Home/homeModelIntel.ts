@@ -61,7 +61,9 @@ export const BETA_OPEN_MODEL_INTEL: LandingOpenModelIntelEntry[] = [
 	},
 ];
 
-const HOME_MODEL_IDS = new Set(BETA_OPEN_MODEL_INTEL.map((entry) => entry.model));
+/** The models the homepage prices, so it can fetch them rather than the whole catalogue. */
+export const HOME_MODEL_ID_LIST = BETA_OPEN_MODEL_INTEL.map((entry) => entry.model);
+const HOME_MODEL_IDS = new Set(HOME_MODEL_ID_LIST);
 
 export function buildHomeModelPrices(
 	models: GatewaySupportedModel[],

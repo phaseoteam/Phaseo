@@ -1,100 +1,83 @@
 ---
 title: "Guardrails für API-Schlüssel einführen"
 icon: "shield-check"
-description: "Wenden Sie Guardrails auf API-Schlüssel an, testen Sie die Durchsetzung vor dem Rollout und prüfen Sie Blockierungen, Schwärzungen und Markierungen in den Aktivitäten."
+description: "Wende Guardrails auf API-Schlüssel an, teste die Durchsetzung vor dem Rollout und prüfe Blockierungen, Schwärzungen und Markierungen in den Aktivitäten."
 ---
 
-Verwenden Sie diese Anleitung, wenn Sie einen oder mehrere API-Schlüssel mit Budgetlimits, Routing-Einschränkungen, Prompt-Injection-Prüfungen oder Regeln für sensible Informationen schützen möchten.
+Lege eine Guardrail unter **Einstellungen → Leitplanken** an, hänge sie an einen API-Schlüssel mit geringem Risiko und weite sie erst aus, wenn die Protokolle zeigen, dass sie sich richtig verhält. Am Ende erreicht dieser Schlüssel nur noch die Anbieter und Modelle, die du erlaubst, und seine Prompts werden auf Prompt-Injection und sensible Daten geprüft, bevor sie ein Modell erreichen.
 
-## 1. Guardrail auf Workspace-Ebene erstellen
+Dies ist ein Ablauf im Dashboard; dieselbe Richtlinie lässt sich mit der [Guardrails-API](../api-reference/endpoint/guardrails-create) skripten.
 
-Erstellen Sie Guardrails zuerst auf Workspace-Ebene. So können Sie dieselbe Richtlinie für mehrere Schlüssel wiederverwenden.
+```mermaid
+flowchart LR
+  ws["Datenschutzregeln des Workspace"] --> gr["Guardrail: Datenverarbeitung"]
+  gr --> prov["Erlaubte oder blockierte Anbieter"]
+  prov --> mdl["Erlaubte Modelle"]
+  mdl --> scan["Prüfung auf Prompt-Injection und sensible Daten"]
+  scan -->|"markieren, schwärzen oder blockieren"| route["Anfrage routen"]
+```
 
-Für den ersten Schritt:
+Die Datenschutzregeln des Workspace gelten zuerst; eine Guardrail kann sie nur weiter einschränken. Guardrails begrenzen keine Ausgaben: Setze dafür ein Limit für den Schlüssel oder ein [Workspace-Budget](../api-reference/limits#key-limits-and-budgets).
 
-- fügen Sie Modell- und Anbietereinschränkungen vor Inhaltsprüfungen hinzu
-- beschränken Sie den ersten Rollout auf einen Schlüssel oder eine Umgebung
-- benennen Sie das Guardrail nach dem Richtlinienergebnis und nicht nach dem Team
+## Einführen
 
-## 2. Guardrail einem API-Schlüssel zuweisen
+<Steps>
+<Step title="Die Guardrail anlegen">
 
-Weisen Sie auf der Einstellungsseite des API-Schlüssels das Guardrail dem Schlüssel zu, für den die Durchsetzung gelten soll.
+Öffne **Einstellungen → Leitplanken → Neue Leitplanke**. Benenne sie nach dem, was sie durchsetzt, etwa `eu-models-pii-redact`, nicht nach einem Team, damit du sie für mehrere Schlüssel wiederverwenden kannst.
 
-Gehen Sie dabei so vor:
+Lege den Routenzugriff vor den Inhaltsprüfungen fest:
 
-1. Beginnen Sie mit einem Staging- oder Schlüssel mit geringem Risiko.
-2. Weisen Sie nach Möglichkeit jeweils nur ein Guardrail zu.
-3. Prüfen Sie, ob das Schlüsseldialogfeld das angewendete Guardrail anzeigt.
+| Einstellung | Optionen |
+| --- | --- |
+| **Anbietermodus** | Alle Anbieter erlauben, Nur ausgewählte Anbieter erlauben oder Alle Anbieter außer ausgewählten erlauben |
+| **Modellmodus** | Alle Modelle erlauben oder Nur ausgewählte Modelle erlauben (gilt nach der Anbieterfilterung) |
+| **Datenverarbeitung** | Nur ZDR, und ob kostenlose oder kostenpflichtige Endpunkte, die mit Eingaben trainieren dürfen, zulässig bleiben |
 
-## 3. Budgetrichtlinie und Routing-Einschränkungen festlegen
+Eine typische erste Richtlinie blockiert Anbieter mit geringem Vertrauen und erlaubt nur die exakten Produktionsmodelle, die der Schlüssel erreichen soll. Prüfe in der Vorschau, welche Anbieter und Modelle routbar bleiben und ob **Nur … erlauben** enger ist, als du beabsichtigt hast.
 
-Eine häufige Kombination:
+</Step>
+<Step title="Inhaltsprüfungen hinzufügen">
 
-- tägliches Kostenlimit
-- Sperrliste für Anbieter mit geringem Vertrauensniveau
-- Zulassungsliste mit den konkreten Produktionsmodellen, die weiterhin routbar sein sollen
+**Prompt-Injection** durchsucht von Nutzern gelieferte Inhalte nach gängigen Injection-Mustern. **Sensible Daten** erkennt Daten, bevor die Anfrage Phaseo verlässt:
 
-Prüfen Sie in der Live-Vorschau des Guardrail-Editors:
+| Detektor | Geschwärzt als | Erhöht die Latenz |
+| --- | --- | --- |
+| E-Mail-Adresse | `[EMAIL]` | Nein |
+| Telefonnummer | `[PHONE]` | Nein |
+| US-Sozialversicherungsnummer | `[SSN]` | Nein |
+| Kreditkartennummer | `[CREDIT_CARD]` | Nein |
+| IP-Adresse (IPv4) | `[IP_ADDRESS]` | Nein |
+| Personenname | `[PERSON_NAME]` | Ja |
+| Postanschrift | `[ADDRESS]` | Ja |
 
-- welche Anbieter weiterhin zugelassen sind
-- welche Modelle gesperrt werden
-- ob `Only allow` stärker einschränkt als beabsichtigt
+Jede Prüfung hat eine Aktion: **Markieren**, **Schwärzen** oder **Blockieren**. Starte Prompt-Injection mit **Markieren** oder **Schwärzen** und wechsle erst zu **Blockieren**, nachdem du die Fehlalarme geprüft hast. Nutze zuerst die schnellen Detektoren. Füge eigene Muster als explizite Regex-Regeln hinzu.
 
-## 4. Regeln für Prompt-Injection und sensible Informationen ergänzen
+</Step>
+<Step title="In der Vorschau testen">
 
-Für einen praktischen Rollout:
+Schicke vor dem Speichern drei Eingaben durch die Vorschau: eine harmlose, eine, die eindeutig gestoppt werden sollte, und einen realistischen Produktions-Prompt. Prüfe den Schwärzungstext, das Ergebnis (blockiert oder erlaubt) und dass nichts Unbeteiligtes anschlägt.
 
-- beginnen Sie bei Prompt-Injection mit `flag` oder `redact`
-- wechseln Sie erst nach Prüfung möglicher Fehlalarme zu `block`
-- verwenden Sie zuerst deterministische Regeln für sensible Informationen:
-  - E-Mail-Adresse
-  - Telefonnummer
-  - Sozialversicherungsnummer (SSN)
-  - Kreditkarte
-  - IP-Adresse
+</Step>
+<Step title="An einen Schlüssel hängen">
 
-Wenn Sie eigene Muster benötigen, fügen Sie sie als explizite Regex-Regeln hinzu und testen Sie sie vor dem Speichern in der Vorschau-Eingabe.
+Wähle unter **Auf Schlüssel anwenden** einen Staging-Schlüssel oder einen Schlüssel mit geringem Risiko. Du kannst die Guardrail schon beim Anlegen anhängen. **Auf Mitglieder anwenden** setzt sie stattdessen für die API-Schlüssel durch, die diese Mitglieder erstellen. Mitglieder können eine Guardrail, die ein Workspace-Owner oder Admin zugewiesen hat, weder bearbeiten noch entfernen.
 
-## 5. Richtlinie vor einem breiten Rollout testen
+</Step>
+<Step title="Die Durchsetzung prüfen">
 
-Testen Sie in der Guardrail-Vorschau:
+Sende echte Anfragen über den Schlüssel und prüfe dann:
 
-- eine unbedenkliche Eingabe
-- eine eindeutig unzulässige Eingabe
-- einen realistischen, produktionsnahen Prompt
+- **Einstellungen → Nutzung → Leitplanken** für die Anzahl blockierter, geschwärzter und markierter Anfragen.
+- Den Abschnitt **Durchsetzung der Leitplanken** einer Anfrage unter **Einstellungen → Nutzung → Protokolle**, um zu sehen, welche Guardrail und welcher Detektor ausgelöst haben.
+- Die Spalte **Leitplanken** unter **Einstellungen → API-Schlüssel**, um zu bestätigen, an welchen Schlüsseln sie hängt.
 
-Achten Sie auf:
+</Step>
+<Step title="Den Rollout ausweiten">
 
-- den richtigen Schwärzungstext
-- das richtige Blockierungs- und Zulassungsverhalten
-- keine unbeabsichtigten Treffer in nicht verwandten Inhalten
+Hänge dieselbe Guardrail an weitere Schlüssel, verschärfe die Aktionen von **Markieren** zu **Schwärzen** oder **Blockieren** und füge die Detektoren für Personennamen und Anschriften nur dort hinzu, wo ihre Latenz akzeptabel ist.
 
-## 6. Durchsetzung in Aktivitäten und Protokollen prüfen
+</Step>
+</Steps>
 
-Senden Sie echte Anfragen über den geschützten Schlüssel und prüfen Sie anschließend:
-
-- das Bedienfeld **Guardrail-Durchsetzung** auf der Aktivitätsseite
-- die Detaildialoge blockierter oder geschwärzter Anfragen
-- Guardrail-Aktivitäten pro Schlüssel im Detaildialog des API-Schlüssels
-
-Folgende Angaben sollten sichtbar sein:
-
-- Anzahl der blockierten Anfragen
-- Anzahl der geschwärzten Anfragen
-- Anzahl der markierten Anfragen
-- Details zum jeweiligen Guardrail und Detektor, wenn eine Regel gegriffen hat
-
-## 7. Rollout sicher erweitern
-
-Wenn der erste Schlüssel wie erwartet funktioniert:
-
-1. Weisen Sie dasselbe Guardrail weiteren Schlüsseln zu.
-2. Verschärfen Sie Aktionen von `flag` zu `redact` oder `block`.
-3. Aktivieren Sie die langsamere Erkennung von Namen und Adressen nur dort, wo der zusätzliche Latenzaufwand akzeptabel ist.
-
-## Verwandte Anleitungen
-
-- [Voreinstellungen](../guides/presets.mdx)
-- [Schnellstart](../quickstart.mdx)
-- [Coding-Agenten mit `SKILL.md`](./coding-agents-skill-md.mdx)
-
+Eine deaktivierte Guardrail behält ihre Konfiguration, wird aber nicht durchgesetzt. Um Routing-Regeln zwischen Aufrufern zu teilen, statt sie für Schlüssel durchzusetzen, verwende ein [Preset](../guides/presets).

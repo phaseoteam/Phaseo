@@ -1,173 +1,79 @@
 ---
-title: "構造化JSONワークフローのプラグインデフォルトを設定する"
+title: "構造化 JSON ワークフローのプラグインの既定値を設定する"
+sidebarTitle: "JSON 用プラグインの既定値"
 icon: "puzzle"
-description: "ワークスペース、プリセット、リクエスト単位のプラグインポリシーを使い、応答修復の動作を統一します。"
+description: "ワークスペース、プリセット、リクエスト単位のプラグインポリシーを使い、応答の修復の動作をそろえます。"
 ---
 
-構造化出力を使うリクエストごとに個別の設定をするのではなく、安定したプラグインポリシーを適用したい場合は、この手順を使います。
+[応答の修復](./response-healing-for-structured-json)を、リクエストごとではなく、ワークスペース全体または 1 つのプリセットで一度だけ有効にします。完成すると、構造化出力を使うすべての呼び出し元に同じ修復ポリシーが適用され、プリセットやリクエストが無効にできないようにロックすることもできます。
 
-## 1. 優先順位を理解する
+これはダッシュボードでの手順です。最後のリクエスト例は本番環境で使えます。
 
-Gatewayのプラグインポリシーは、次の順に適用されます。
+## レイヤーの組み合わせ方
 
-1. ワークスペースのデフォルト
-2. プリセットのデフォルト
-3. リクエスト単位のプラグイン
+Phaseo は、各リクエストのプラグイン一覧を 3 つのレイヤーから組み立てます。同じプラグインについては、前のレイヤーがロックされていない限り、後のレイヤーが前のレイヤーの設定を置き換えます。
 
-ワークスペースのデフォルトが明示的にロックされていない限り、優先順位が低いレイヤーで高いレイヤーを上書きできます。
+```mermaid
+flowchart LR
+  ws["ワークスペースの既定値"] --> pr["プリセットのプラグイン"]
+  pr --> rq["リクエストのプラグイン"]
+  rq --> eff["実行されるプラグイン"]
+  lock["ワークスペースのロックが有効"] -.->|"後のレイヤーは response-healing を変更できない"| pr
+```
 
-## 2. ワークスペースのデフォルトを設定する
+| レイヤー | 設定場所 | 上書きする対象 |
+| --- | --- | --- |
+| ワークスペース | **設定 → ルーティング → 応答の修復** | なし |
+| プリセット | **設定 → プリセット →（プリセット）→ 応答の修復** | ワークスペース（ロックされていない場合） |
+| リクエスト | 本文の `plugins` | プリセットとワークスペース（ワークスペースがロックされていない場合） |
 
-構造化JSONのリクエストで応答修復をデフォルトで有効にしたい場合は、ルーティング設定でワークスペースのデフォルトを設定します。
+## 設定する
 
-次のような設定に適しています。
+<Steps>
+<Step title="ワークスペースの既定値を有効にする">
 
-- 広範な運用上のデフォルト
-- APIキーの共通動作
-- サービスごとの設定差異の防止
+**設定 → ルーティング → 応答の修復** で **デフォルトで有効にする** をオンにし、**修復モード** を選びます。`safe` は範囲を限定した構文の修復、`strict` はもともと有効な JSON の取り出しだけを行います。ワークスペース内のすべての API キーが共有する広い既定値に使います。
 
-## 3. ポリシーが必須ならロックする
+</Step>
+<Step title="譲れない場合はロックする">
 
-ワークスペースで応答修復を常に有効にする必要がある場合は、そのデフォルトをロックします。
+**ワークスペースポリシーをロック** をオンにします。これにより、プリセットやリクエストは修復を無効にすることも、モードを変更することもできなくなります。ログには、適用されたかスキップされたかが引き続き表示されます。
 
-ワークスペースのデフォルトをロックすると、次のようになります。
+</Step>
+<Step title="1 つのワークフロー用にプリセットの既定値を設定する">
 
-- プリセットから無効にできない
-- リクエスト本文から無効にできない
-- プラグインが適用、スキップ、失敗のどれになったかは引き続きログに記録される
+ある種類のリクエストに構造化出力の形式と修復の両方を持たせたい場合は、プリセットエディターで **応答の修復** をオンにしてモードを選びます。そのプリセットの呼び出し元は、入力だけを送ればよくなります。
 
-## 4. ワークフロー固有のデフォルトにはプリセットを使う
+</Step>
+</Steps>
 
-ある種類のリクエストに次の両方を設定する場合は、プリセットが適しています。
+## 1 件のリクエストで上書きする
 
-- 構造化出力の設定
-- 応答修復プラグインのデフォルト
+ワークスペースがロックされていない場合、リクエスト自体でプラグインを設定できます。`"enabled": false` を指定すると、そのリクエストでは無効になります。
 
-このレイヤーでは、応答修復モードも選択できます。
-
-- `safe`は範囲を限定した構文修正に使います
-- `strict`は外側の囲みだけを取り除く動作に使います
-
-リクエスト本文を短くし、ルーティングと出力の動作を複数のサービスで再利用しやすくできます。
-
-## 5. ワークスペースが許可する場合に限り、リクエスト単位で上書きする
-
-ワークスペースのデフォルトがロックされていなければ、リクエストからプラグイン設定を直接上書きできます。
-
-## リクエスト例
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "phaseo/free",
-    "input": "Return valid JSON",
-    "response_format": {
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "input": "Return the summary as JSON.",
+  "text": {
+    "format": {
       "type": "json_schema",
-      "json_schema": {
-        "name": "answer",
-        "schema": {
-          "type": "object",
-          "properties": {
-            "summary": { "type": "string" }
-          },
-          "required": ["summary"],
-          "additionalProperties": false
-        }
+      "name": "answer",
+      "schema": {
+        "type": "object",
+        "properties": { "summary": { "type": "string" } },
+        "required": ["summary"],
+        "additionalProperties": false
       }
-    },
-    "plugins": [
-      { "id": "response-healing", "enabled": true }
-    ]
-  }'
-```
-
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
-
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
-
-const response = await client.generateResponse({
-  model: "phaseo/free",
-  input: "Return valid JSON",
-  response_format: {
-    type: "json_schema",
-    json_schema: {
-      name: "answer",
-      schema: {
-        type: "object",
-        properties: {
-          summary: { type: "string" },
-        },
-        required: ["summary"],
-        additionalProperties: false,
-      },
-    },
-  },
-  plugins: [{ id: "response-healing", enabled: true }],
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "phaseo/free",
-        "input": "Return valid JSON",
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "answer",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "summary": {"type": "string"}
-                    },
-                    "required": ["summary"],
-                    "additionalProperties": False,
-                },
-            },
-        },
-        "plugins": [
-            {"id": "response-healing", "enabled": True}
-        ],
     }
-)
-
-print(response.get("output_text"))
+  },
+  "plugins": [{ "id": "response-healing", "enabled": true, "mode": "strict" }],
+  "meta": true
+}
 ```
-</CodeGroup>
-## 6. ログで動作を確認する
 
-リクエストを1回実行したら、詳細画面を開いて次を確認します。
+## 実行されたポリシーを確認する
 
-- `plugin_executions`に`response-healing`が含まれる
-- ステータスが次のいずれかである
-  - `applied`
-  - `skipped`
-  - `failed`
-- 実際に適用されたプラグインモードが表示される
-- スキーマ検証で修復候補が拒否された場合、検証エラーが表示される
+**設定 → 使用量 → ログ** でリクエストを開くか、`meta: true` を送った場合は `meta.plugin_executions` を読みます。ステータス（`applied`、`skipped`、`failed`）、実際に実行されたモード、修復した候補がスキーマに一致しなかった場合の `validation_errors` が表示されます。
 
-## 7. サービス間で動作が異なる場合
-
-2つのサービスの動作が異なる場合は、次を比較します。
-
-- ワークスペースのルーティング設定
-- プリセットのプラグインデフォルト
-- リクエスト単位の`plugins`
-- ワークスペースのデフォルトがロックされているか
-
-これらのポリシーレイヤーが一致するまでは、モデル品質の問題として調査しないでください。
-
-## 関連情報
-
-- [不正な構造化JSONを修復する](./response-healing-for-structured-json.mdx)
-- [プリセットで応答キャッシュを使う](./response-caching-with-presets.mdx)
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+2 つのサービスの動作が異なる場合は、モデルの問題として扱う前に、ワークスペースの設定とそのロック、プリセットのプラグイン、各リクエストの `plugins` を比較してください。

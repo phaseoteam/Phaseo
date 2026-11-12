@@ -31,7 +31,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_effective_pricing_daily (
     usage.input_cost_nanos,
     usage.output_cost_nanos,
     usage.total_cost_nanos
-  from public.v2_public_effective_pricing_daily usage
+  from public.reporting_effective_pricing_daily usage
   where usage.model_slug = lower(trim(p_model_slug))
     and (p_provider_ids is null or usage.provider_id = any(p_provider_ids))
     and (p_since is null or usage.usage_date >= p_since)

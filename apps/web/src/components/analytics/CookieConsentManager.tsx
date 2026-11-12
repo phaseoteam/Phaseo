@@ -1,13 +1,12 @@
-"use client"
-
-import Link from "next/link"
-import Script from "next/script"
+import { IntentLink as Link } from "@/components/navigation/IntentLink"
+import Script from "@/components/script"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   ANALYTICS_CONSENT_EVENT,
   ANALYTICS_CONSENT_STORAGE_KEY,
   type AnalyticsConsent,
+  isAnalyticsBlockedForPageLoad,
   parseAnalyticsConsent,
   persistAnalyticsConsent,
   readAnalyticsConsent,
@@ -77,7 +76,8 @@ export function CookieConsentManager({
   } | null>(null)
   // Do not load third-party analytics until consent is explicit. This keeps
   // pending and declined visits free of analytics network requests.
-  const shouldLoadGa = Boolean(gaMeasurementId) && consent === "accepted"
+  const shouldLoadGa =
+    Boolean(gaMeasurementId) && consent === "accepted" && !isAnalyticsBlockedForPageLoad()
 
   useEffect(() => {
     if (consent !== "pending") return

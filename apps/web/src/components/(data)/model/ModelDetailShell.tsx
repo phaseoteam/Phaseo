@@ -1,17 +1,22 @@
 import { ReactNode, Suspense } from "react";
+import { useSuspenseQueries, useSuspenseQuery, type UseSuspenseQueryOptions } from "@tanstack/react-query";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
-import { Link } from "@/i18n/navigation";
+import { getModelAccessLayout } from "@/lib/models/modelAccessLayout";
+import { IntentLink as Link } from "@/components/navigation/IntentLink";
+import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
+import type { SubscriptionPlan } from "@/lib/fetchers/models/getModelSubscriptionPlans";
 import {
-	fetchFrontendModelHeader,
-	fetchFrontendModelGatewayMetadata,
-	fetchFrontendModelOverview,
-	fetchFrontendModelPageNotice,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+	modelHeaderQuery,
+	modelOverviewQuery,
+	modelPageNoticeQuery,
+	modelQuickstartGatewayMetadataQuery,
+	modelSubscriptionPlansQuery,
+} from "./modelData.queries";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Scale } from "lucide-react";
-import { notFound, redirect } from "next/navigation";
+import { notFound, redirect } from "@/lib/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import ModelIdentifierControl from "./ModelIdentifierControl";
 import ModelEditButton from "./edit/ModelEditButton";
@@ -19,6 +24,7 @@ import ModelDescriptionPanel from "./ModelDescriptionPanel";
 import ModelPageNotice from "./ModelPageNotice";
 import ModelStickyHeader from "./ModelStickyHeader";
 import UnreleasedBadge from "./UnreleasedBadge";
+import { ModelChartShareProvider } from "./share/ModelChartShareContext";
 import { UseModelSheet } from "./UseModelSheet";
 import ModelStatusBanner from "./overview/ModelStatusBanner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,7 +38,7 @@ import {
 	FREE_ROUTER_ORGANISATION_ID,
 	isFreeRouterModelId,
 } from "@/lib/models/freeRouter";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 interface ModelDetailShellProps {
 	modelId: string;
@@ -99,24 +105,22 @@ function getVisibleTabKeys(modelStatus?: string | null): string[] {
 	];
 }
 
-async function ModelNotice({ modelId, includeHidden, status }: { modelId: string; includeHidden: boolean; status?: string | null }) {
-	const notice = await fetchFrontendModelPageNotice(modelId, includeHidden).catch(() => null);
+function ModelNotice({ modelId, includeHidden, status }: { modelId: string; includeHidden: boolean; status?: string | null }) {
+	const { data: notice } = useSuspenseQuery(modelPageNoticeQuery(modelId, includeHidden));
 	return notice ? <div className="mb-6"><ModelPageNotice notice={notice} /></div> : <ModelStatusBanner status={status} className="mb-6" />;
 }
 
-async function ModelStickyHeaderContent({ modelId, chatModelId, organisationId, organisationName, modelName, canChat, canCompare, organisationHref, gatewayMetadataPromise, showUnreleased, isDecisionsModel }: {
-	modelId: string; chatModelId?: string; organisationId: string; organisationName: string; modelName: string; canChat: boolean; canCompare: boolean; organisationHref?: string; gatewayMetadataPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null>; showUnreleased: boolean; isDecisionsModel: boolean;
+function ModelStickyHeaderContent({ modelId, chatModelId, organisationId, organisationName, modelName, canChat, canCompare, organisationHref, gatewayMetadata, showUnreleased, isDecisionsModel }: {
+	modelId: string; chatModelId?: string; organisationId: string; organisationName: string; modelName: string; canChat: boolean; canCompare: boolean; organisationHref?: string; gatewayMetadata: ModelGatewayMetadata | null; showUnreleased: boolean; isDecisionsModel: boolean;
 }) {
-	const gatewayMetadata = await gatewayMetadataPromise;
 	return <ModelStickyHeader modelId={modelId} chatModelId={chatModelId} organisationId={organisationId} organisationName={organisationName} modelName={modelName} observeId="model-detail-primary-header" canChat={canChat} canCompare={canCompare} organisationHref={organisationHref} gatewayMetadata={gatewayMetadata} showUnreleased={showUnreleased} isDecisionsModel={isDecisionsModel} />;
 }
 
-async function ModelQuickstartAction({ modelId, chatModelId, modelName, gatewayMetadataPromise }: { modelId: string; chatModelId?: string; modelName: string; gatewayMetadataPromise: Promise<Awaited<ReturnType<typeof fetchFrontendModelGatewayMetadata>> | null> }) {
-	const gatewayMetadata = await gatewayMetadataPromise;
-	return <UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} triggerId="quickstart" className="col-span-2 w-full min-w-[8.5rem] justify-center sm:w-auto sm:flex-1 xl:flex-none" />;
+function ModelQuickstartAction({ modelId, chatModelId, modelName, gatewayMetadata }: { modelId: string; chatModelId?: string; modelName: string; gatewayMetadata: ModelGatewayMetadata | null }) {
+	return <UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} triggerId="quickstart" className="col-span-2 w-full min-w-[8.5rem] justify-center max-sm:h-10 sm:w-auto sm:flex-1 xl:flex-none" />;
 }
 
-export default async function ModelDetailShell({
+export default function ModelDetailShell({
 	modelId,
 	children,
 	tab,
@@ -132,13 +136,20 @@ export default async function ModelDetailShell({
 	descriptionOverride,
 	showUnreleased = false,
 }: ModelDetailShellProps) {
-	const t = await getTranslations("Catalogue.models");
-	const tx = await getTranslations();
-	const locale = await getLocale();
+	const t = useTranslations("Catalogue.models");
+	const tx = useTranslations();
+	const locale = useLocale();
 	const isFreeRouter = isFreeRouterModelId(modelId);
-	const gatewayMetadataPromise = isFreeRouter
-		? Promise.resolve(null)
-		: fetchFrontendModelGatewayMetadata(modelId).catch(() => null);
+	// One hook call for every shell query so they load in parallel. Free
+	// Router and prefetched props skip the matching fetch.
+	const shellQueries: UseSuspenseQueryOptions<any, Error, any, any>[] = [];
+	const queryIndex = (options: UseSuspenseQueryOptions<any, Error, any, any>) => shellQueries.push(options) - 1;
+	const gatewayMetadataIndex = isFreeRouter ? -1 : queryIndex(modelQuickstartGatewayMetadataQuery(modelId));
+	const subscriptionPlansIndex = isFreeRouter ? -1 : queryIndex(modelSubscriptionPlansQuery(modelId));
+	const headerIndex = isFreeRouter || prefetchedHeader ? -1 : queryIndex(modelHeaderQuery(modelId, includeHidden));
+	const modelOverviewIndex = isFreeRouter || prefetchedModelOverview !== undefined ? -1 : queryIndex(modelOverviewQuery(modelId));
+	const shellResults = useSuspenseQueries({ queries: shellQueries });
+	const resultAt = <T,>(index: number) => shellResults[index]?.data as T;
 	const [header, modelOverview] = isFreeRouter
 		? [
 				{
@@ -155,12 +166,12 @@ export default async function ModelDetailShell({
 				},
 				null,
 			]
-		: await Promise.all([
-				prefetchedHeader ?? fetchFrontendModelHeader(modelId, includeHidden).catch(() => null),
+		: [
+				prefetchedHeader ?? resultAt<ModelOverviewHeader | null>(headerIndex),
 				prefetchedModelOverview !== undefined
-					? Promise.resolve(prefetchedModelOverview)
-					: fetchFrontendModelOverview(modelId).catch(() => null),
-			]);
+					? prefetchedModelOverview
+					: resultAt<ModelOverviewPage | null>(modelOverviewIndex),
+			];
 
 	if (!header) {
 		notFound();
@@ -177,8 +188,18 @@ export default async function ModelDetailShell({
 	const scopedVisibleTabKeys = isFreeRouter
 		? ["overview"]
 		: visibleTabKeys;
-	const canChat = canChatOverride ?? header.status !== "Retired";
-	const gatewayMetadata = await gatewayMetadataPromise;
+	const [gatewayMetadata, subscriptionPlans] = isFreeRouter
+		? [null, []]
+		: [
+				resultAt<ModelGatewayMetadata | null>(gatewayMetadataIndex),
+				resultAt<SubscriptionPlan[] | null>(subscriptionPlansIndex),
+			];
+	const { canUseApi } = getModelAccessLayout({
+		hasSubscriptions: subscriptionPlans === null ? null : subscriptionPlans.length > 0,
+		hasApiProviders: (gatewayMetadata?.providers.length ?? 0) > 0,
+		isPrivateModel: header.is_private === true,
+	});
+	const canChat = canUseApi && (canChatOverride ?? header.status !== "Retired");
 	const capabilities = decisionModelCapabilities(gatewayMetadata?.activeProviders.map(provider => provider.endpoint) ?? []);
 	const isDecisionsModel = !isFreeRouter && (gatewayMetadata?.activeProviders.length
 		? capabilities.includes("decisions.make") : matchesDecisionsModel(modelId, modelOverview));
@@ -190,7 +211,7 @@ export default async function ModelDetailShell({
 	return (
 		<main className="flex flex-col">
 			<Suspense fallback={null}>
-				<ModelStickyHeaderContent modelId={modelId} chatModelId={chatModelId} organisationId={header.organisation_id} organisationName={header.organisation.name} modelName={header.name} canChat={canChat} canCompare={canCompare} organisationHref={organisationHref} gatewayMetadataPromise={gatewayMetadataPromise} showUnreleased={showUnreleased} isDecisionsModel={isDecisionsModel} />
+				<ModelStickyHeaderContent modelId={modelId} chatModelId={chatModelId} organisationId={header.organisation_id} organisationName={header.organisation.name} modelName={header.name} canChat={canChat} canCompare={canCompare} organisationHref={organisationHref} gatewayMetadata={gatewayMetadata} showUnreleased={showUnreleased} isDecisionsModel={isDecisionsModel} />
 			</Suspense>
 
 			<div className="container mx-auto px-4 py-8">
@@ -255,23 +276,23 @@ export default async function ModelDetailShell({
 							<Suspense fallback={null}><ModelEditButton modelId={modelId} tab={tab} /></Suspense>
 						) : null}
 						{canChat ? (
-							<Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
+							<Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg max-sm:h-10 xl:flex-none">
 								<Link href={`${isDecisionsModel && !supportsText ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
 									<MessageSquare className="h-4 w-4" />
 									{isDecisionsModel && !supportsText ? t("detail.actions.openDecisions") : t("detail.actions.chat")}
 								</Link>
 							</Button>
 						) : null}
-						{canCompare ? <Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
+						{canCompare ? <Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg max-sm:h-10 xl:flex-none">
 							<Link href={`/compare?models=${modelId}`}>
 								<Scale className="h-4 w-4" />
 								{t("detail.actions.compare")}
 							</Link>
 						</Button> : null}
-						{canChat && isDecisionsModel && supportsText ? <Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
+						{canChat && isDecisionsModel && supportsText ? <Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg max-sm:h-10 xl:flex-none">
 							<Link href={`/chat/decisions?model=${encodeURIComponent(chatModelId ?? modelId)}`}><Scale className="h-4 w-4" />{t("detail.actions.openDecisions")}</Link>
 						</Button> : null}
-						{canChat && supportsText ? <Suspense fallback={<Skeleton className="h-9 w-full rounded-lg sm:w-28" />}><ModelQuickstartAction modelId={modelId} chatModelId={chatModelId} modelName={header.name} gatewayMetadataPromise={gatewayMetadataPromise} /></Suspense> : null}
+						{canChat && supportsText ? <Suspense fallback={<Skeleton className="h-9 w-full rounded-lg sm:w-28" />}><ModelQuickstartAction modelId={modelId} chatModelId={chatModelId} modelName={header.name} gatewayMetadata={gatewayMetadata} /></Suspense> : null}
 					</div>
 				</div>
 
@@ -281,7 +302,9 @@ export default async function ModelDetailShell({
 					</div>
 				) : null}
 
-				<div className="mt-6 min-h-full">{children}</div>
+				<ModelChartShareProvider value={{ modelId, modelName: `${header.organisation.name}: ${header.name}` }}>
+					<div className="mt-6 min-h-full">{children}</div>
+				</ModelChartShareProvider>
 			</div>
 		</main>
 	);

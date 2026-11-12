@@ -61,6 +61,22 @@ describe("MiniMax quirks", () => {
 		expect(request.reasoning_split).toBe(true);
 	});
 
+	// https://platform.minimax.io/docs/api-reference/text-openai-api: M3.1-Flash always thinks
+	// (thinking disabled returns 400) and takes reasoning_effort low, medium, high, xhigh or max.
+	it.each([[{ enabled: false }, undefined], [{ effort: "none" }, undefined], [{ effort: "xhigh" }, "xhigh"], [{ effort: "minimal" }, "low"]] as const)(
+		"never disables thinking on M3.1-Flash and sends its effort (%j -> %s)",
+		(reasoning, effort) => {
+			const request = irToOpenAIChat({
+				model: "minimax/minimax-m3.1-flash",
+				stream: false,
+				messages: [{ role: "user", content: [{ type: "text", text: "hi" }] }],
+				reasoning,
+			} as any, "MiniMax-M3.1-Flash", "minimax");
+			expect(request.thinking).toBeUndefined();
+			expect(request.reasoning_effort).toBe(effort);
+		},
+	);
+
 	it("maps M3 thinking, current token limit, video, and native options", () => {
 		const request = irToOpenAIChat({
 			model: "minimax/minimax-m3",

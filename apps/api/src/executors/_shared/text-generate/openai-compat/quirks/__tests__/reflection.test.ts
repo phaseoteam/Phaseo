@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { irToOpenAIChat } from "../../transform-chat";
 
 describe("Reflection request mapping", () => {
+	it.each([undefined, []])("omits parallel tool calls when tools are absent: %j", tools => {
+		const request = irToOpenAIChat({ model: "reflection/beam-501b-a23b", stream: false, messages: [], parallelToolCalls: true, tools } as any, "Beam-1.0-501B-A23B", "reflection");
+		expect(request.parallel_tool_calls).toBeUndefined();
+	});
+	it("preserves parallel tool calls when tools are supplied", () => {
+		const request = irToOpenAIChat({ model: "reflection/beam-501b-a23b", stream: false, messages: [], parallelToolCalls: true, tools: [{ type: "function", name: "lookup", parameters: { type: "object" } }] } as any, "Beam-1.0-501B-A23B", "reflection");
+		expect(request.parallel_tool_calls).toBe(true);
+	});
 	it("preserves assistant reasoning and tool calls across a tool turn", () => {
 		const request = irToOpenAIChat({ model: "reflection/beam-501b-a23b", stream: false, messages: [
 			{ role: "assistant", content: [{ type: "reasoning_text", text: "Need a lookup" }], toolCalls: [{ id: "call_1", name: "lookup", arguments: "{}" }] },

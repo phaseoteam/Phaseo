@@ -1,23 +1,25 @@
 ---
 icon: "blocks"
 title: "Tool Calling (AI SDK)"
+sidebarTitle: "Tool calling"
 description: "Function/tool calling with Vercel AI SDK and Phaseo provider."
+"og:image": "https://phaseo.app/og/dynamic?title=Tool%20Calling%20%28AI%20SDK%29&description=Function/tool%20calling%20with%20Vercel%20AI%20SDK%20and%20Phaseo%20provider.&pathname=/docs/v1/sdk-reference/sdk/tool-calling"
 ---
 
-Use `tools` in `generateText` for function execution with typed parameters.
+Define tools with the AI SDK's `tool()` helper, pass them to `generateText`, and set `stopWhen` so the model can answer after the tool runs.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateText } from "ai";
+import { generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "What is 17 + 25? Use the calculator tool.",
   tools: {
-    calculator: {
+    calculator: tool({
       description: "Perform basic arithmetic",
-      parameters: z.object({
+      inputSchema: z.object({
         operation: z.enum(["add", "subtract", "multiply", "divide"]),
         a: z.number(),
         b: z.number(),
@@ -28,15 +30,18 @@ const result = await generateText({
         if (operation === "multiply") return a * b;
         return a / b;
       },
-    },
+    }),
   },
+  stopWhen: stepCountIs(2),
 });
 
 console.log(result.text);
 ```
 
-## Notes
+By default `generateText` stops after one step. If that step is a tool call, `result.text` is empty and the tool's result is in `result.toolResults`. `stepCountIs(2)` gives the model a second step to answer with the result.
 
-- Keep tool descriptions precise and parameters strict.
-- Validate external side effects inside `execute`.
-- Add retries/backoff for downstream tool APIs where needed.
+## Write safe tools
+
+- Keep descriptions precise and input schemas strict; the model fills in the arguments.
+- Treat arguments as untrusted input. Validate them inside `execute` before any side effect.
+- Add retries and backoff inside `execute` for downstream APIs that fail transiently.

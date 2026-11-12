@@ -1,17 +1,18 @@
 ---
 icon: "message-square"
-title: "إنشاء النص (AI SDK)"
-description: "إنشاء النص دون بث باستخدام Vercel AI SDK وPhaseo."
+title: "توليد النص (AI SDK)"
+sidebarTitle: "توليد النص"
+description: "توليد النص دون بث باستخدام Vercel AI SDK وPhaseo."
 ---
 
-استخدم `generateText` مع `phaseo(modelId)` لإنشاء إجابة في طلب واحد.
+استدعِ `generateText` مع `phaseo(modelId)` للحصول على استجابة واحدة مكتملة.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "Write a concise summary of Phaseo Gateway.",
 });
 
@@ -19,14 +20,16 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-## مع سجل المحادثة
+## إرسال سجل المحادثة
+
+استخدم `prompt` لجولة واحدة، و`messages` عندما تحتاج إلى عدة جولات أو إلى دور النظام.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   messages: [
     { role: "system", content: "You are a terse assistant." },
     { role: "user", content: "Give me three bullet points on retrieval augmentation." },
@@ -37,16 +40,16 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-## إعدادات خاصة بكل نموذج
+## ضبط القيم الافتراضية على النموذج
+
+مرّر الإعدادات وسيطًا ثانيًا إلى `phaseo()`. تنطبق على كل استدعاء يستخدم نسخة النموذج هذه.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano", {
-    temperature: 0.2,
-    topP: 0.9,
+  model: phaseo("openai/gpt-6-astra", {
     maxTokens: 300,
   }),
   prompt: "Draft a release note for an API update.",
@@ -56,8 +59,4 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-## Prompt أو messages
-
-- استخدم `prompt` للطلبات السريعة ذات الجولة الواحدة.
-- استخدم `messages` للسياق متعدد الجولات والتحكم في الأدوار.
-- استعلم عن `/v1/models` لتحديث معرّفات النماذج (راجع [اكتشاف النماذج](../get-models/index.mdx)).
+تأخذ معرّفات النماذج الصيغة `provider/model`. لإبقائها محدّثة، اقرأها من `/v1/models`؛ راجع [اكتشاف النماذج](/ar/v1/sdk-reference/sdk/get-models).

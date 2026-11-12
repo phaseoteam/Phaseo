@@ -2,7 +2,18 @@
 
 export type GatewayBindings = {
     GATEWAY_CONTEXT_BUNDLE_ENABLED?: string;
-    GATEWAY_PUBLIC_CATALOG_TARGETS?: string;
+    /** Kill switch for the caches.default layer of the tiered read cache ("false" disables it). */
+    GATEWAY_TIERED_CACHE_L2_ENABLED?: string;
+    /** "true" writes the post-charge balance back to the credit cache instead of deleting it. */
+    GATEWAY_CREDIT_WRITEBACK_ENABLED?: string;
+    /** Kill switch for routing unserved models to an approved successor ("false" disables it). */
+    GATEWAY_MODEL_SUCCESSOR_REDIRECT_ENABLED?: string;
+    /**
+     * Deadline (ms) for a provider request to return response headers before the
+     * attempt fails as a provider transport failure and routing fails over.
+     * Unset or 0 disables the deadline.
+     */
+    GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS?: string;
     SUPABASE_URL: string;
     SUPABASE_SERVICE_ROLE_KEY: string;
 	GATEWAY_ROUTING_REGION?: "eu" | "us";
@@ -12,6 +23,8 @@ export type GatewayBindings = {
 	GATEWAY_ROUTING_ARCHIVES_BUCKET?: R2Bucket;
 	GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF?: string;
 	GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED?: string;
+	/** Default text routing: "v9" (default), "v8", or "switchback" to alternate them in 3-hour blocks. */
+	GATEWAY_ROUTING_ALGORITHM?: string;
 	GATEWAY_IO_LOGS_BUCKET_NAME?: string;
 	GATEWAY_IO_LOGGING_MAX_BYTES?: string;
 	DATA_CONTRIBUTIONS_BUCKET?: R2Bucket;
@@ -32,6 +45,14 @@ export type GatewayBindings = {
 	V2_ANALYTICS_OUTBOX_LIMIT?: string;
 	OTEL_EXPORT_ENABLED?: string;
 	OTEL_EXPORT_OUTBOX_LIMIT?: string;
+	PLATFORM_TELEMETRY_ENABLED?: string;
+	GRAFANA_OTLP_ENDPOINT?: string;
+	GRAFANA_OTLP_AUTHORIZATION?: string;
+	PLATFORM_TRACE_SAMPLE_RATE?: string;
+	/** Broadcast event queue; consumed by this worker's queue handler. */
+	BROADCAST_QUEUE?: Queue<import("@/observability/broadcast-event").BroadcastQueueMessage>;
+	/** "true" sends Broadcast events to BROADCAST_QUEUE instead of otel_export_outbox. */
+	BROADCAST_QUEUE_ENABLED?: string;
 	INVITE_ENCRYPTION_KEY?: string;
 	HMAC_ENCRYPTION_KEY?: string;
 	SCIM_TOKEN_PEPPER?: string;
@@ -42,6 +63,27 @@ export type GatewayBindings = {
 	PROVIDER_RATE_LIMITS?: DurableObjectNamespace;
 	CUSTOMER_RATE_LIMITS?: DurableObjectNamespace;
 	CUSTOMER_RATE_LIMITS_ENABLED?: string;
+	/** JSON trust-ladder tuning; see core/customer-rate-limit-ladder.ts. */
+	CUSTOMER_RATE_LIMIT_LADDER?: string;
+	CUSTOMER_RATE_LIMIT_LADDER_ENABLED?: string;
+	CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED?: string;
+	/** Kill switch for self-serve rate limit raises: requests and active raises apply only when "true". */
+	CUSTOMER_RATE_LIMIT_SELF_SERVE_RAISES_ENABLED?: string;
+	/** Enforces workspace rate limit policies (requests per minute) through CUSTOMER_RATE_LIMITS. */
+	RATE_LIMIT_POLICIES_ENABLED?: string;
+	/** "true" runs the spend rule alert sweep (sweep_spend_rules) every 5 minutes. Off by default. */
+	SPEND_RULES_ENABLED?: string;
+	/** Kill switch: "false" stops accepting Vercel and GitHub Actions OIDC tokens. On when unset; the Statsig gate decides per workspace. */
+	WORKLOAD_IDENTITY_AUTH_ENABLED?: string;
+	/** "true" lets block spend rules start blocks, publishes their KV entries and enforces them on requests. Off by default. */
+	SPEND_RULE_BLOCKS_ENABLED?: string;
+	/** Queue daily/weekly/monthly spend report emails (public.queue_spend_reports). Default "false": nothing is sent until turned on. */
+	SPEND_REPORTS_ENABLED?: string;
+	/** Kill switch: "false" stops request classifiers. On when unset. */
+	REQUEST_CLASSIFIERS_ENABLED?: string;
+	SPEND_LIMITS?: DurableObjectNamespace;
+	/** off | shadow | enforce for the SpendLimit Durable Object (default off). */
+	GATEWAY_SPEND_LIMIT_DO_MODE?: string;
     KV?: KVNamespace;
     DB?: D1Database;
     PHASEO_CONTROL_SECRET?: string;
@@ -50,6 +92,7 @@ export type GatewayBindings = {
     GATEWAY_CONTROL_KEY?: string;
     AI_STATS_GATEWAY_KEY?: string;
     NEXT_PUBLIC_GATEWAY_VERSION?: string;
+    CF_VERSION_METADATA?: { id: string };
     AXIOM_API_KEY?: string;
     AXIOM_DATASET?: string;
     AXIOM_WIDE_DATASET?: string;
@@ -90,6 +133,10 @@ export type GatewayBindings = {
     AI21_BASE_URL?: string;
     AKASHML_API_KEY?: string;
     AKASHML_BASE_URL?: string;
+    PRIMALABS_API_KEY?: string;
+    PRIMALABS_BASE_URL?: string;
+    LG_EXAONE_PLATFORM?: string;
+    LG_EXAONE_BASE_URL?: string;
     ALIBABA_CLOUD_API_KEY?: string;
     MODELSCOPE_API_KEY?: string;
     MODELSCOPE_BASE_URL?: string;
@@ -114,6 +161,8 @@ export type GatewayBindings = {
     AMBIENT_BASE_URL?: string;
     EMPIRIOLABS_API_KEY?: string;
     EMPIRIOLABS_BASE_URL?: string;
+    SCALEDOWN_API_KEY?: string;
+    SCALEDOWN_BASE_URL?: string;
     AVIAN_API_KEY?: string;
     AVIAN_BASE_URL?: string;
     BAIDU_QIANFAN_API_KEY?: string;
@@ -179,6 +228,9 @@ export type GatewayBindings = {
     GOOGLE_VERTEX_ACCESS_TOKEN?: string;
     GOOGLE_VERTEX_PROJECT?: string;
     GOOGLE_VERTEX_LOCATION?: string;
+    GOOGLE_VERTEX_PROJECT_NUMBER?: string;
+    GOOGLE_VERTEX_BATCH_LOCATION?: string;
+    GOOGLE_VERTEX_BATCH_BUCKET?: string;
     HYPERBOLIC_API_KEY?: string;
     HYPERBOLIC_BASE_URL?: string;
     INCEPTION_API_KEY?: string;
@@ -239,6 +291,8 @@ export type GatewayBindings = {
     TENSORIX_BASE_URL?: string;
     TENCENT_CLOUD_TOKENHUB_API_KEY?: string;
     TENCENT_CLOUD_TOKENHUB_BASE_URL?: string;
+    PARTICLE_AI_API_KEY?: string;
+    PARTICLE_AI_BASE_URL?: string;
     TINKER_API_KEY?: string;
     TINKER_BASE_URL?: string;
     VENICE_API_KEY?: string;
@@ -323,14 +377,13 @@ export type GatewayBindings = {
     DISCORD_WEBHOOK_URL?: string;
     DISCORD_WEBHOOK_NEW_MODELS_PUBLIC?: string;
     DISCORD_ROLE_ID?: string;
+    DISCORD_PRIVATE_MODEL_DISCOVERY_ROLE_ID?: string;
     DISCORD_USER_ID?: string;
     MODEL_DISCOVERY_SLACK_WEBHOOK_URL?: string;
     MODEL_DISCOVERY_REVIEW_URL?: string;
     ENV?: string;
 	ACCOUNT_DELETION_PURGE_ENABLED?: string;
     HF_TOKEN?: string;
-    GITHUB_TOKEN?: string;
-    GH_TOKEN?: string;
     GATEWAY_PUBLIC_BASE_URL?: string;
     PHASEO_WEB_BASE_URL?: string;
     PHASEO_OAUTH_PRIVATE_JWK?: string;
@@ -352,10 +405,10 @@ export type GatewayBindings = {
     GATEWAY_LOCAL_TESTING_MODE?: string;
     MODEL_DISCOVERY_ENABLED?: string;
     MODEL_DISCOVERY_RETENTION_DAYS?: string;
+    MODEL_DISCOVERY_REMOVAL_CONFIRM_MINUTES?: string;
     MODEL_DISCOVERY_SHARD_SIZE?: string;
     MODEL_DISCOVERY_SHARDING_ENABLED?: string;
     MODEL_DISCOVERY_CONCURRENCY?: string;
-    MODEL_DISCOVERY_ISSUE_SYNC_ENABLED?: string;
     MODEL_UPDATES_NOTIFICATIONS_DISABLED?: string;
     VIDEO_RECONCILIATION_ENABLED?: string;
     VIDEO_RECONCILIATION_LIMIT?: string;
@@ -377,9 +430,13 @@ export type GatewayBindings = {
     STATSIG_BATCH_API_GATE?: string;
     STATSIG_VIDEO_API_GATE?: string;
     STATSIG_REALTIME_VOICE_GATE?: string;
+    STATSIG_CHAT_REALTIME_VOICE_GATE?: string;
     STATSIG_GATEWAY_IO_LOGGING_GATE?: string;
     STATSIG_DATA_CONTRIBUTION_GATE?: string;
     STATSIG_AUTO_ROUTING_GATE?: string;
+    STATSIG_REQUEST_CLASSIFIERS_GATE?: string;
+    STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE?: string;
+    STATSIG_WORKLOAD_IDENTITY_GATE?: string;
     STATSIG_ENVIRONMENT_TIER?: string;
     REALTIME_SESSION_RECONCILIATION_ENABLED?: string;
     REALTIME_SESSION_RECONCILIATION_LIMIT?: string;
@@ -391,6 +448,15 @@ export type GatewayBindings = {
     ASYNC_WEBHOOK_TIMEOUT_MS?: string;
     EMAIL_OUTBOX_DRAIN_ENABLED?: string;
     EMAIL_OUTBOX_DRAIN_LIMIT?: string;
+    FEEDBACK_REQUEST_EMAILS_ENABLED?: string;
+    FEEDBACK_REQUEST_FROM_EMAIL?: string;
+    FEEDBACK_REQUEST_REPLY_TO_EMAIL?: string;
+    FEEDBACK_REQUEST_DAILY_LIMIT?: string;
+    FEEDBACK_REQUEST_CAMPAIGN?: string;
+    FEEDBACK_REWARD_USD?: string;
+    FEEDBACK_REWARD_CAP?: string;
+    MOBILE_PUSH_ENABLED?: string;
+    EXPO_ACCESS_TOKEN?: string;
     LEAKED_KEY_REPORT_MODE?: string;
     VIDEO_API_ENABLED?: string;
     PRICING_MONITOR_ENABLED?: string;

@@ -1,0 +1,80 @@
+---
+title: "fx"
+icon: "/icons/brands/vercel.svg"
+description: "Verbinde den fx-Coding-Agent von Vercel Labs über eine benutzerdefinierte Modellverbindung mit dem Phaseo Gateway."
+---
+
+Führe `phaseo fx` aus, um Phaseo als benutzerdefinierte Verbindung in [fx](https://fx.sh) hinzuzufügen, dem Open-Source-Coding-Agent von Vercel Labs, oder trage die Verbindung selbst in `~/.fx/settings.json` ein. fx ruft den Chat-Completions-Endpunkt von Phaseo auf und läuft unter macOS und Linux.
+
+## Mit der Phaseo CLI einrichten
+
+```bash
+phaseo login
+phaseo fx --model openai/gpt-5.6-terra
+```
+
+Fehlt fx, zeigt die CLI den offiziellen Installer-Befehl an und fragt nach, bevor sie ihn ausführt. Danach geht die Einrichtung so vor:
+
+- Sie fügt `~/.fx/settings.json` eine `phaseo`-Verbindung hinzu und behält deine anderen Einstellungen und Verbindungen bei.
+- Sie synchronisiert bis zu 256 kompatible Phaseo-Modelle, das Maximum, das fx akzeptiert, mit ihren Kontext- und Ausgabelimits.
+- Sie macht `phaseo` zum aktiven fx-Anbieter und merkt sich den vorherigen, damit das Entfernen ihn wiederherstellen kann.
+- Sie erstellt einen `Phaseo CLI: fx API Key`, der nach 90 Tagen abläuft und ein monatliches Ausgabenlimit von $100 hat, und speichert ihn in der nur für den Eigentümer lesbaren Datei `~/.config/phaseo/integrations/fx.env`. Führe `phaseo fx` erneut aus, um einen abgelaufenen Schlüssel zu ersetzen.
+
+Mit `--catalog default` wird nur das ausgewählte Modell hinzugefügt, mit `--dry-run` siehst du die Änderungen vorab.
+
+fx liest Schlüssel für benutzerdefinierte Verbindungen nur aus Umgebungsvariablen, nie aus seiner Einstellungsdatei. Füge diese Zeile einmalig zu `~/.zshrc` oder `~/.bashrc` hinzu und öffne dann ein neues Terminal:
+
+```bash
+[ -f "$HOME/.config/phaseo/integrations/fx.env" ] && . "$HOME/.config/phaseo/integrations/fx.env"
+```
+
+Die Zeile setzt `PHASEO_FX_API_KEY`, wenn die Datei existiert, und bewirkt nichts mehr, nachdem du die Integration entfernt hast. Starte dann fx:
+
+```bash
+fx
+```
+
+Wechsle Modelle mit `/model`, oder nutze für einen einzelnen Lauf eine beliebige Phaseo-Modell-ID mit `FX_MODEL=<id> fx`. Mit `fx provider <name>` wechselst du zurück zu einem anderen Anbieter.
+
+## fx manuell konfigurieren
+
+Füge die Verbindung zu `~/.fx/settings.json` hinzu. fx akzeptiert keine benutzerdefinierten Verbindungen in einer projektbezogenen `.fx.json`.
+
+```json ~/.fx/settings.json
+{
+  "provider": "phaseo",
+  "providers": {
+    "phaseo": {
+      "protocol": "openai-chat-completions",
+      "base_url": "https://api.phaseo.app/v1",
+      "auth": { "type": "bearer", "env": "PHASEO_API_KEY" },
+      "model_metadata": {
+        "openai/gpt-5.6-terra": { "context_window": 400000, "max_output_tokens": 128000 }
+      }
+    }
+  },
+  "models": { "phaseo": "openai/gpt-5.6-terra" }
+}
+```
+
+Exportiere `PHASEO_API_KEY` und führe `fx` aus. Gib für jedes Modell, das du nutzt, Limits an: Ohne `context_window` kann fx nicht erkennen, wann die Unterhaltung komprimiert werden muss. Die Limits oben sind Beispiele. Echte Werte liefert der [Models-Endpunkt](../../api-reference/endpoint/models.mdx).
+
+## Prüfen, ob es funktioniert
+
+1. Führe `fx status --json` aus, um aktiven Anbieter, Endpunkt und Modell zu bestätigen.
+2. Führe vor Arbeiten, die Dateien bearbeiten, einen kurzen Prompt aus, etwa `fx ask "Summarize README.md"`.
+3. Prüfe, ob die Anfrage unter **Einstellungen → Nutzung → Protokolle** erscheint.
+
+Meldet fx fehlende Anmeldeinformationen, öffne ein neues Terminal oder prüfe, ob die Zeile im Shell-Profil vorhanden ist.
+
+## Phaseo entfernen
+
+```bash
+phaseo integrations remove fx
+```
+
+Damit werden die `phaseo`-Verbindung und das Modell entfernt, dein vorheriger fx-Anbieter wiederhergestellt, falls Phaseo noch aktiv ist, die Schlüsseldatei gelöscht und der Schlüssel widerrufen.
+
+## Bekannte Einschränkungen
+
+fx-Funktionen, die nur mit dem integrierten gehosteten Anbieter funktionieren, etwa die Websuche und Guthabenprüfungen, sind über benutzerdefinierte Verbindungen nicht verfügbar.

@@ -19,11 +19,11 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin, configureRuntime, clearRuntime } from "@/runtime/env";
-import { z } from "zod";
+import * as z from "zod";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES, GATEWAY_ACCESS_SCOPE, normalizeScopeList } from "@/lib/authz/capabilities";
 import { requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
-import { createOpaqueCode, hashOAuthClientSecret, isThirdPartyOAuthEnabled } from "@/lib/oauth/service";
+import { createOpaqueCode, hashOAuthClientSecret, isThirdPartyOAuthEnabled, thirdPartyForbiddenScopes } from "@/lib/oauth/service";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 
 const app = new Hono<Env>();
@@ -261,10 +261,16 @@ function resolveAllowedScopes(
 	input: unknown,
 	defaultScopes: readonly string[] = DEFAULT_THIRD_PARTY_ALLOWED_SCOPES,
 ) {
-	return normalizeScopeList(input, {
+	const normalized = normalizeScopeList(input, {
 		allowIdentityScopes: true,
 		defaultScopes,
 	});
+	if (normalized.ok === false) return normalized;
+	const forbidden = thirdPartyForbiddenScopes(normalized.value);
+	if (forbidden.length > 0) {
+		return { ok: false as const, message: `${forbidden.join(", ")} is only available to the Phaseo CLI and management keys` };
+	}
+	return normalized;
 }
 
 function serializeOAuthClientRecord(

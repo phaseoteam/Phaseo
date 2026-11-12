@@ -1,45 +1,48 @@
 ---
 icon: "folder-open"
 title: "リポジトリ構成"
-description: "Phaseoのアプリケーションコード、ドキュメント、SDK、カタログエクスポートを探します。"
+description: "Phaseo のアプリケーションコード、ドキュメント、SDK、データベーススキーマの場所を確認します。"
 ---
 
-PhaseoはpnpmとTurborepoのモノレポです。コードやドキュメントの変更に必要なファイルを探すときに使ってください。カタログレコードの変更は[Issueを開いて](./overview.mdx)ください。
+Phaseo は pnpm と Turborepo のモノレポです。コードやドキュメントの変更に対応するフォルダーを以下から探してください。カタログのレコードはリポジトリにはありません。変更するには [Issue を作成](./overview.mdx)してください。
 
-## アプリケーションとパッケージ
+## アプリケーション
 
 | パス | 用途 |
 | --- | --- |
-| `apps/web` | Next.js 16のWebサイト、ダッシュボード、内部カタログエディター。 |
-| `apps/web-api` | 公開カタログの読み取りと、認証付きアカウント・管理API。 |
-| `apps/api` | Cloudflare Workersでのゲートウェイルーティングとプロバイダー実行。 |
-| `apps/docs` | Mintlifyドキュメント。MDXページは`v1`、ナビゲーションは`docs.json`。 |
-| `packages/data/catalog` | カタログスキーマ、互換性フィクスチャ、生成された公開スナップショット。 |
-| `packages/sdk` | TypeScript、Python、Go、C#、PHP、Ruby、Java、Rust、C++のSDK。 |
-| `supabase/migrations` | データベーススキーマと権限のマイグレーション。 |
-| `scripts` | 検証、SDK生成、自動化のユーティリティ。 |
-| `.github/workflows` | CI、デプロイ、カタログ同期、スナップショットのスケジュール。 |
+| `apps/web` | Next.js 16 の Web サイト、ダッシュボード、内部カタログエディター。 |
+| `apps/web-api` | 公開カタログの読み取りと、認証付きのアカウント API および管理 API。 |
+| `apps/api` | Cloudflare Workers 上の Gateway ルーティングとプロバイダー実行。 |
+| `apps/docs` | Mintlify ドキュメント。MDX ページは `v1`、ナビゲーションは `docs.json` にあります。 |
+| `apps/mcp` | モデルの検索、料金、使用量を扱う Phaseo MCP サーバー。 |
+| `apps/desktop` | Phaseo Desktop アプリ。 |
+| `apps/mobile` | Phaseo モバイルアプリ（Expo、Android を優先）。 |
+| `apps/slack` | Phaseo Slack エージェントを支える Worker。 |
+
+## パッケージとツール
+
+| パス | 用途 |
+| --- | --- |
+| `packages/sdk` | TypeScript、Python、Go、C#、PHP、Ruby、Java、Rust、C++ の SDK と、Agent SDK（`agent-sdk-*`）。 |
+| `packages/cli/phaseo` | `@phaseo/cli` コマンドラインツール。 |
+| `packages/integrations` | Vercel AI SDK プロバイダーと Terraform プロバイダー。 |
+| `packages/shared` | UI、支出ルール、ルーティング設定など、アプリ間で共有するコード。 |
+| `supabase/schemas` | 宣言的なデータベース定義。 |
+| `supabase/migrations` | スキーマと権限の変更をデプロイする前方向の SQL マイグレーション。 |
+| `scripts` | 検証、SDK 生成、自動化のユーティリティ。 |
+| `.github/workflows` | CI、デプロイ、カタログ同期。 |
 | `.changeset` | バージョン管理されたパッケージのリリースメタデータ。 |
 
 ## カタログデータ
 
-モデル、プロバイダー、組織、料金、ベンチマーク、関連するカタログ設定の正本はデータベースです。管理者は[内部データ](https://phaseo.app/internal/data)でレコードを管理します。公開の貢献はGitHubのIssueでレビューされます。
+モデル、プロバイダー、組織、料金、ベンチマーク、カタログ設定の唯一の情報源はデータベースです。リポジトリにはカタログ JSON はありません。管理者は[内部データ](https://phaseo.app/internal/data)でレコードを管理し、一般からの貢献は GitHub の Issue として届きます。
 
-- `packages/data/catalog/generated/database-v2`には毎日の公開スナップショットと、OpenAPI・SDKツールが使う生成済みモデル列挙インデックスがあります。
-- `packages/data/catalog/src/data`にはアーカイブ済みの互換性フィクスチャがあります。
-- どちらのディレクトリを編集しても本番カタログのレコードは更新されません。従来のJSONからデータベースへのインポーターは廃止されました。
-
-スキーマとアプリケーションの変更には引き続きマイグレーションとプルリクエストを使います。生成されたスナップショットとSDK成果物は、それぞれの生成コマンドで更新してください。
+スキーマとアプリケーションの変更は、引き続きマイグレーションとプルリクエストで行います。生成された SDK ファイルは手作業ではなく、それぞれの生成コマンドで更新してください。
 
 ## カタログの自動化
 
-プロバイダー同期は、提案された料金を[プロバイダー更新](https://phaseo.app/internal/data/imports)でのレビュー待ちにします。ベンチマークとモデルのライフサイクルジョブはデータベースを使います。毎日の公開エクスポートは、レビュー可能なスナップショットのプルリクエストを作成します。
+プロバイダー同期は、提案された料金を[プロバイダーの更新](https://phaseo.app/internal/data/imports)でのレビュー待ちに追加します。ベンチマークとモデルのライフサイクルのジョブは、データベースを読み書きします。
 
-カタログだけのレコードはゲートウェイルーティングを自動で有効にしません。ルートと料金の変更には適切な管理者レビューが必要です。
+カタログのレコードだけでは Gateway ルーティングは有効になりません。ルートと料金の変更には管理者のレビューが必要です。
 
-## はじめに
-
-- [モデル更新を報告](./editing-a-model.mdx)。
-- [組織更新を報告](./editing-an-organisation.mdx)。
-- [ベンチマークスコアを提出](../research/submitting-scores.mdx)。
-- [コードやドキュメントに貢献](./how-to-contribute.mdx)。
+変更を始めるには、[コードやドキュメントに貢献する](./how-to-contribute.mdx)をご覧ください。

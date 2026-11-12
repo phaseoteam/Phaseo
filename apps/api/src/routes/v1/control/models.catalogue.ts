@@ -3,6 +3,8 @@
 // How: Pulls model metadata, providers, capabilities, and pricing summaries.
 
 import { getSupabaseAdmin } from "@/runtime/env";
+import { tieredRead } from "@core/tiered-cache";
+import { readProviderCatalogTier } from "@core/serviceTiers";
 import type { Endpoint } from "@core/types";
 import {
     normalizeCapabilityStatus,
@@ -13,6 +15,8 @@ import {
 type ProviderModelRow = {
     provider_api_model_id: string | null;
     provider_id: string | null;
+    // Real provider slug, kept when a stealth route replaces `provider_id`.
+    source_provider_id?: string | null;
     api_model_id: string | null;
     model_id: string | null;
     provider_model_slug?: string | null;
@@ -73,19 +77,122 @@ type PricingSkuRow = {
     description: string | null;
 };
 
-export function isCurrentStandardPricingSku(
-    sku: Pick<PricingSkuRow, "status" | "service_tier_slug" | "effective_from" | "effective_to">,
+/** Active and inside its effective window, whatever its service tier. */
+export function isCurrentPricingSku(
+    sku: Pick<PricingSkuRow, "status" | "effective_from" | "effective_to">,
     nowMs = Date.now(),
 ): boolean {
     if (sku.status && sku.status !== "active") return false;
-    const tier = sku.service_tier_slug?.trim().toLowerCase();
-    if (tier && tier !== "standard") return false;
-
     const effectiveFrom = sku.effective_from ? Date.parse(sku.effective_from) : Number.NaN;
     if (Number.isFinite(effectiveFrom) && effectiveFrom > nowMs) return false;
     const effectiveTo = sku.effective_to ? Date.parse(sku.effective_to) : Number.NaN;
     if (Number.isFinite(effectiveTo) && effectiveTo <= nowMs) return false;
     return true;
+}
+
+/**
+ * Whether `loadPriceCard` (pipeline/pricing/loader.ts) turns this SKU into
+ * price rules: active, inside its effective window and priced in USD (wallet
+ * debits are USD; foreign-currency quotes are not executable). `status`,
+ * `currency` and `effective_from` are NOT NULL in the database, so the lenient
+ * null handling of `isCurrentPricingSku` matches the loader's SQL filters.
+ * The loader also needs at least one billable meter with a finite price;
+ * callers check that against the meter rows.
+ */
+export function isExecutablePricingSku(
+    sku: Pick<PricingSkuRow, "status" | "currency" | "effective_from" | "effective_to">,
+    nowMs = Date.now(),
+): boolean {
+    return sku.currency === "USD" && isCurrentPricingSku(sku, nowMs);
+}
+
+/** Meter the loader prices: billable (filtered in the query) with a finite price. */
+function isExecutablePricingMeter(meter: Pick<PricingMeterRow, "price_nanos">): boolean {
+    return Number.isFinite(Number(meter.price_nanos));
+}
+
+/**
+ * Pricing plan of a SKU tier, as the loader and tier routing read it:
+ * lower-cased, null and blank mean "standard", and "fast" means "priority".
+ */
+function normalizePricingPlan(tier: string | null | undefined): string {
+    const plan = tier?.trim().toLowerCase() || "standard";
+    return plan === "fast" ? "priority" : plan;
+}
+
+/** Pricing plan of a pricing SKU; null and blank mean "standard", "fast" means "priority". */
+export function pricingSkuServiceTier(sku: Pick<PricingSkuRow, "service_tier_slug">): string {
+    return normalizePricingPlan(sku.service_tier_slug);
+}
+
+export function isCurrentStandardPricingSku(
+    sku: Pick<PricingSkuRow, "status" | "service_tier_slug" | "effective_from" | "effective_to">,
+    nowMs = Date.now(),
+): boolean {
+    return pricingSkuServiceTier(sku) === "standard" && isCurrentPricingSku(sku, nowMs);
+}
+
+export const OFFER_SERVICE_TIERS = ["flex", "priority", "standard", "ultrafast"] as const;
+export type OfferServiceTier = (typeof OFFER_SERVICE_TIERS)[number];
+
+const NON_STANDARD_OFFER_TIERS = ["priority", "ultrafast", "flex"] as const;
+
+// Pricing plans that make a route unusable without an explicit `service_tier`;
+// mirrors `requiresExplicitServiceTier` in pipeline/pricing/service-tiers.ts.
+const EXPLICIT_ONLY_PRICING_PLANS = new Set(["priority", "ultrafast", "flex", "batch"]);
+
+/**
+ * Service tiers one provider route serves for one operation. Mirrors
+ * `applyServiceTierRouting` in pipeline/before/serviceTierRouting.ts. `skuTiers`
+ * must hold only executable SKUs (see `isExecutablePricingSku`, plus a billable
+ * meter), the ones `loadPriceCard` turns into price rules:
+ * - standard: no executable SKUs, or at least one outside the explicit-only plans;
+ * - priority, ultrafast, flex: an executable SKU priced on that plan;
+ * - Mistral priority also needs a `service_tier`/`serviceTier` route capability param;
+ * - a route catalogued as one tier (`params.service_tier.provider_catalog`) offers only that tier.
+ * Hidden `-fast`/`-flex`/`-ultrafast` sibling routes are not considered.
+ * Returns tiers in alphabetical order.
+ */
+export function deriveOfferServiceTiers(args: {
+    providerId: string | null | undefined;
+    skuTiers: Iterable<string> | null | undefined;
+    capabilityParams: unknown;
+}): OfferServiceTier[] {
+    const skuTiers = new Set(Array.from(args.skuTiers ?? [], normalizePricingPlan));
+    const params = args.capabilityParams && typeof args.capabilityParams === "object" && !Array.isArray(args.capabilityParams)
+        ? args.capabilityParams as Record<string, unknown>
+        : {};
+    const tiers = new Set<OfferServiceTier>();
+    if (skuTiers.size === 0 || Array.from(skuTiers).some((tier) => !EXPLICIT_ONLY_PRICING_PLANS.has(tier))) {
+        tiers.add("standard");
+    }
+    for (const tier of NON_STANDARD_OFFER_TIERS) {
+        if (skuTiers.has(tier)) tiers.add(tier);
+    }
+
+    const catalogTier = readProviderCatalogTier(params);
+    if (catalogTier) {
+        // The gateway skips the Mistral check for catalogued routes but still
+        // requires pricing on the catalogued tier.
+        const plan = catalogTier.name === "fast" ? "priority" : catalogTier.name;
+        return Array.from(tiers).filter((tier) => tier === plan);
+    }
+
+    const providerId = String(args.providerId ?? "").trim().toLowerCase();
+    if ((providerId === "mistral" || providerId === "mistral-eu") && !("service_tier" in params || "serviceTier" in params)) {
+        tiers.delete("priority");
+    }
+    return Array.from(tiers).sort((a, b) => a.localeCompare(b));
+}
+
+export function mergeOfferServiceTiers(
+    ...lists: Array<readonly OfferServiceTier[] | null | undefined>
+): OfferServiceTier[] {
+    return Array.from(new Set(lists.flatMap((list) => list ?? []))).sort((a, b) => a.localeCompare(b));
+}
+
+function routeOperationKey(providerModelId: string | null | undefined, operation: string | null | undefined): string {
+    return `${providerModelId ?? ""}\u0000${operation ?? ""}`;
 }
 
 type PricingMeterRow = {
@@ -144,9 +251,7 @@ type CatalogueProvider = {
         | "project_limited"
         | "paused"
         | "soft_blocked"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "internal_testing"
         | "scheduled"
         | "coming_soon"
@@ -169,14 +274,12 @@ type CatalogueProvider = {
         | "project_limited"
         | "paused"
         | "soft_blocked";
-    provider_routing_status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
-    model_routing_status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    provider_routing_status: "active" | "deranked" | "disabled";
+    model_routing_status: "active" | "deranked" | "disabled";
     capability_status:
         | "active"
         | "coming_soon"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "disabled"
         | "internal_testing";
     input_modalities: string[];
@@ -185,6 +288,9 @@ type CatalogueProvider = {
     effective_to: string | null;
     params: string[];
     params_detail: SupportedParamDetails;
+    service_tiers: OfferServiceTier[];
+    /** The route (v2 provider_model_id) this entry comes from; internal, for /models/me. */
+    route_id: string | null;
 };
 
 export type SupportedParamDetail = Record<string, unknown>;
@@ -207,9 +313,7 @@ export type ProviderInfo = {
         | "project_limited"
         | "paused"
         | "soft_blocked"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "internal_testing"
         | "scheduled"
         | "coming_soon"
@@ -232,14 +336,12 @@ export type ProviderInfo = {
         | "project_limited"
         | "paused"
         | "soft_blocked";
-    provider_routing_status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
-    model_routing_status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    provider_routing_status: "active" | "deranked" | "disabled";
+    model_routing_status: "active" | "deranked" | "disabled";
     capability_status:
         | "active"
         | "coming_soon"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "disabled"
         | "internal_testing";
     effective_from: string | null;
@@ -249,6 +351,13 @@ export type ProviderInfo = {
     output_modalities: string[];
     params: string[];
     params_detail: SupportedParamDetails;
+    /** Absent on catalogue objects cached before the field existed; read it as ["standard"]. */
+    service_tiers?: OfferServiceTier[];
+    /**
+     * The route (v2 provider_model_id) behind each endpoint. Internal: /models/me reads each route's effective data
+     * policy by it, as the request pipeline does; the listing never serialises it.
+     */
+    route_id_by_endpoint?: Record<string, string | null>;
 };
 
 export type PricingMeterSummary = {
@@ -302,6 +411,7 @@ export type CatalogueModel = {
 };
 
 export type CatalogueFilters = {
+    batchOnly?: boolean;
     modelIds?: string[];
     endpoints?: string[];
     providerIds?: string[];
@@ -529,7 +639,7 @@ function mergeParamDetail(a: SupportedParamDetail, b: SupportedParamDetail): Sup
     return merged;
 }
 
-function mergeParamDetails(...items: Array<SupportedParamDetails | undefined | null>): SupportedParamDetails {
+export function mergeParamDetails(...items: Array<SupportedParamDetails | undefined | null>): SupportedParamDetails {
     const out: SupportedParamDetails = {};
     for (const item of items) {
         if (!item) continue;
@@ -540,7 +650,7 @@ function mergeParamDetails(...items: Array<SupportedParamDetails | undefined | n
     return out;
 }
 
-function withProviderOnParamDetails(details: SupportedParamDetails, providerId: string): SupportedParamDetails {
+export function withProviderOnParamDetails(details: SupportedParamDetails, providerId: string): SupportedParamDetails {
     return Object.fromEntries(
         Object.entries(details).map(([name, detail]) => [
             name,
@@ -557,7 +667,7 @@ function paramDetailAliases(detail: SupportedParamDetail | undefined): string[] 
         .filter((alias) => alias.length > 0);
 }
 
-function providerEntrySupportsParam(entry: Pick<CatalogueProvider, "params" | "params_detail">, param: string): boolean {
+export function providerEntrySupportsParam(entry: Pick<CatalogueProvider, "params" | "params_detail">, param: string): boolean {
     if (entry.params.includes(param)) return true;
     return Object.entries(entry.params_detail).some(([name, detail]) =>
         name === param || paramDetailAliases(detail).includes(param)
@@ -671,9 +781,7 @@ function normalizeCapabilityStatusForPublicCatalogue(
 ):
     | "active"
     | "coming_soon"
-    | "deranked_lvl1"
-    | "deranked_lvl2"
-    | "deranked_lvl3"
+    | "deranked"
     | "disabled"
     | "internal_testing" {
     const normalized = normalizeCapabilityStatus(rawStatus);
@@ -709,6 +817,51 @@ function matchesRequestedStatus(args: {
     }
 
     return modelStatus === requested;
+}
+
+/** PostgREST returns at most this many rows per request; larger reads must page. */
+export const CATALOGUE_PAGE_SIZE = 1000;
+
+/** A primary-key column, and the field it appears under when the select aliases it. */
+export type CatalogueKey = { column: string; field?: string };
+
+type PageQuery<T> = PromiseLike<{ data: T[] | null; error: { message?: string } | null }> & {
+    order(column: string): PageQuery<T>;
+    gt(column: string, value: unknown): PageQuery<T>;
+    or(filters: string): PageQuery<T>;
+    limit(count: number): PageQuery<T>;
+};
+
+/** Quotes a value for a PostgREST logical filter, where commas, dots and brackets are reserved. */
+function filterValue(value: unknown): string {
+    return `"${String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+/**
+ * Reads every row of a query in primary-key order, one page past the last key
+ * at a time. A single read stops silently at the PostgREST row cap (which once
+ * dropped every model past the first thousand), and offset paging can skip a
+ * row when an earlier one is deleted mid-read; a key cursor does neither.
+ */
+export async function selectAllRows<T>(label: string, keys: readonly CatalogueKey[], build: () => PageQuery<T>): Promise<T[]> {
+    if (keys.length < 1 || keys.length > 2) throw new Error("selectAllRows supports one or two key columns.");
+    const rows: T[] = [];
+    let last: Record<string, unknown> | undefined;
+    for (;;) {
+        let query = build();
+        for (const key of keys) query = query.order(key.column);
+        if (last) {
+            const [first, second] = keys.map((key) => ({ column: key.column, value: last![key.field ?? key.column] }));
+            query = second
+                ? query.or(`${first.column}.gt.${filterValue(first.value)},and(${first.column}.eq.${filterValue(first.value)},${second.column}.gt.${filterValue(second.value)})`)
+                : query.gt(first.column, first.value);
+        }
+        const { data, error } = await query.limit(CATALOGUE_PAGE_SIZE);
+        if (error) throw new Error(`Failed to load ${label}: ${error.message || "unknown error"}`);
+        rows.push(...(data ?? []));
+        if (!data || data.length < CATALOGUE_PAGE_SIZE) return rows;
+        last = data[data.length - 1] as Record<string, unknown>;
+    }
 }
 
 function chunkArray<T>(values: T[], size: number): T[][] {
@@ -765,8 +918,16 @@ function initPricingSummary(): PricingSummary {
     return { pricing_plan: "standard", meters };
 }
 
+/** Lower-cased filter values; the former deranked levels still match the single `deranked` status. */
+function statusFilter(values: string[] | undefined): string[] | undefined {
+    return normalizeStringSet(values)?.map((value) => {
+        const status = value.toLowerCase();
+        return /^deranked_lvl[123]$/.test(status) ? "deranked" : status;
+    });
+}
+
 function isPublicRoutingStatus(
-    status: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled"
+    status: "active" | "deranked" | "disabled"
 ): boolean {
     return status !== "disabled";
 }
@@ -775,9 +936,7 @@ function isPublicCapabilityStatus(
     status:
         | "active"
         | "coming_soon"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "disabled"
         | "internal_testing"
 ): boolean {
@@ -799,14 +958,12 @@ function resolveProviderAvailabilityStatus(args: {
         | "project_limited"
         | "paused"
         | "soft_blocked";
-    providerRoutingStatus: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
-    modelRoutingStatus: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    providerRoutingStatus: "active" | "deranked" | "disabled";
+    modelRoutingStatus: "active" | "deranked" | "disabled";
     capabilityStatus:
         | "active"
         | "coming_soon"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "disabled"
         | "internal_testing";
     effectiveFrom: string | null;
@@ -857,14 +1014,12 @@ function resolveProviderAvailabilityReason(args: {
         | "project_limited"
         | "paused"
         | "soft_blocked";
-    providerRoutingStatus: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
-    modelRoutingStatus: "active" | "deranked_lvl1" | "deranked_lvl2" | "deranked_lvl3" | "disabled";
+    providerRoutingStatus: "active" | "deranked" | "disabled";
+    modelRoutingStatus: "active" | "deranked" | "disabled";
     capabilityStatus:
         | "active"
         | "coming_soon"
-        | "deranked_lvl1"
-        | "deranked_lvl2"
-        | "deranked_lvl3"
+        | "deranked"
         | "disabled"
         | "internal_testing";
     effectiveFrom: string | null;
@@ -879,9 +1034,7 @@ function resolveProviderAvailabilityReason(args: {
     | "project_limited"
     | "paused"
     | "soft_blocked"
-    | "deranked_lvl1"
-    | "deranked_lvl2"
-    | "deranked_lvl3"
+    | "deranked"
     | "internal_testing"
     | "scheduled"
     | "coming_soon"
@@ -938,18 +1091,11 @@ function resolveProviderAvailabilityReason(args: {
         return "capability_disabled";
     }
     if (
-        args.providerRoutingStatus === "deranked_lvl1" ||
-        args.providerRoutingStatus === "deranked_lvl2" ||
-        args.providerRoutingStatus === "deranked_lvl3"
+        args.providerRoutingStatus === "deranked" ||
+        args.modelRoutingStatus === "deranked" ||
+        args.capabilityStatus === "deranked"
     ) {
-        return args.providerRoutingStatus;
-    }
-    if (
-        args.modelRoutingStatus === "deranked_lvl1" ||
-        args.modelRoutingStatus === "deranked_lvl2" ||
-        args.modelRoutingStatus === "deranked_lvl3"
-    ) {
-        return args.modelRoutingStatus;
+        return "deranked";
     }
     if (args.capabilityStatus === "internal_testing") {
         return "internal_testing";
@@ -980,9 +1126,7 @@ function availabilityPriority(value: "active" | "coming_soon" | "inactive"): num
 }
 
 const AVAILABILITY_REASON_PRIORITY: Record<ProviderInfo["availability_reason"], number> = {
-    deranked_lvl3: 0,
-    deranked_lvl2: 1,
-    deranked_lvl1: 2,
+    deranked: 2,
     active: 3,
     internal_testing: 4,
     scheduled: 5,
@@ -1004,17 +1148,13 @@ const AVAILABILITY_REASON_PRIORITY: Record<ProviderInfo["availability_reason"], 
 };
 
 const ROUTING_STATUS_PRIORITY: Record<ProviderInfo["provider_routing_status"], number> = {
-    deranked_lvl3: 0,
-    deranked_lvl2: 1,
-    deranked_lvl1: 2,
+    deranked: 2,
     active: 3,
     disabled: 4,
 };
 
 const CAPABILITY_STATUS_PRIORITY: Record<ProviderInfo["capability_status"], number> = {
-    deranked_lvl3: 0,
-    deranked_lvl2: 1,
-    deranked_lvl1: 2,
+    deranked: 2,
     active: 3,
     internal_testing: 4,
     coming_soon: 5,
@@ -1122,25 +1262,72 @@ function getTopProvider(providerMeters: Map<string, Map<string, number>>): strin
     return best?.provider ?? null;
 }
 
+// Building the catalogue costs about ten queries (~4 s). The catalogue revision changes
+// several times a minute, so keying on it would rarely hit; instead the list is served
+// stale-while-revalidate: served immediately, refreshed in the background once stale
+// (below), and only rebuilt before serving once it is an hour old. It holds public
+// catalogue data only (workspace-private models are fetched separately).
+// Refreshes run per isolate with no distributed lock, so they are staggered instead: each
+// isolate's own copy goes stale after a jittered 60-90 s and refreshes from the location
+// copy (90 s), which refreshes from KV (150 s). Only a stale KV copy rebuilds from the
+// database, and KV outlives its own cross-location propagation (about 60 s), so one
+// location's rebuild is reused elsewhere rather than repeated.
+const CATALOGUE_LIST_FRESH_S = 60;
+const CATALOGUE_LIST_JITTER_S = 30;
+const CATALOGUE_LIST_LOCATION_FRESH_S = 90;
+const CATALOGUE_LIST_KV_FRESH_S = 150;
+const CATALOGUE_LIST_MAX_STALE_S = 60 * 60;
+
+function catalogueFilterKey(filter: CatalogueFilters): string {
+    const normalized: Record<string, unknown> = {};
+    for (const [name, value] of Object.entries(filter).sort(([a], [b]) => a.localeCompare(b))) {
+        if (value === undefined || value === null || value === false) continue;
+        if (Array.isArray(value)) {
+            if (!value.length) continue;
+            normalized[name] = Array.from(new Set(value.map(String))).sort();
+            continue;
+        }
+        normalized[name] = value;
+    }
+    return JSON.stringify(normalized);
+}
+
+async function sha256Hex(text: string): Promise<string> {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/** Public catalogue for `filter`, served from cache. Returns a copy callers may mutate. */
 export async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]> {
+    // v2: provider entries carry route_id_by_endpoint (for /models/me), so v1 entries without it are not reused.
+    const key = `catalogue-list:v2:${await sha256Hex(catalogueFilterKey(filter))}`;
+    const models = await tieredRead<CatalogueModel[]>({
+        key,
+        loader: () => loadCatalogue(filter),
+        l1FreshMs: (CATALOGUE_LIST_FRESH_S + Math.random() * CATALOGUE_LIST_JITTER_S) * 1000,
+        maxStaleMs: CATALOGUE_LIST_MAX_STALE_S * 1000,
+        l2: { freshS: CATALOGUE_LIST_LOCATION_FRESH_S, storeS: CATALOGUE_LIST_MAX_STALE_S },
+        l3: { freshS: CATALOGUE_LIST_KV_FRESH_S, expirationS: CATALOGUE_LIST_MAX_STALE_S },
+        validate: (value): value is CatalogueModel[] => Array.isArray(value),
+    });
+    return structuredClone(models ?? []);
+}
+
+async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]> {
     const supabase = getSupabaseAdmin();
     const availabilityMode = filter.availability ?? "active";
     const includeNonRoutable = availabilityMode === "all";
     const modelSelection =
         "model_id:model_slug, base_model_id:base_model_slug, variant_kind, previous_model_id:previous_model_slug, replacement_model_id:replacement_model_slug, metadata, name, description, release_date:released_at, deprecation_date:deprecated_at, retirement_date:retired_at, status, organisation_id:lab_slug, input_types:input_modalities, output_types:output_modalities, organisation:v2_labs(lab_slug, name, country_code, metadata)";
-    const modelQuery = supabase
-        .from("v2_models")
-        .select(modelSelection)
-        .eq("hidden", false);
-    if (filter.modelIds?.length) {
-        modelQuery.in("model_slug", filter.modelIds);
-    }
-    const { data: requestedModelRows, error: modelError } = await modelQuery;
-    if (modelError) {
-        throw new Error(`Failed to load model metadata: ${modelError.message || "unknown error"}`);
-    }
+    const requestedModelRows = await selectAllRows<any>("model metadata", [{ column: "model_slug", field: "model_id" }], () => {
+        const modelQuery = supabase
+            .from("v2_models")
+            .select(modelSelection)
+            .eq("hidden", false);
+        return filter.modelIds?.length ? modelQuery.in("model_slug", filter.modelIds) : modelQuery;
+    });
 
-    let modelRows = requestedModelRows ?? [];
+    let modelRows = requestedModelRows;
     if (filter.modelIds?.length && modelRows.length) {
         const dependencyQueries: Array<PromiseLike<{ data: any[] | null; error: any }>> = [];
         const baseModelIds = Array.from(new Set(modelRows.map((row: any) => row.base_model_id ?? row.model_id).filter(Boolean)));
@@ -1225,14 +1412,11 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
 
     const detailsByModel = new Map<string, Record<string, unknown>>();
     for (const modelIdChunk of chunkArray(modelIds, 200)) {
-        const { data, error } = await supabase
+        const data = await selectAllRows<ModelDetailRow>("model details", [{ column: "model_slug" }, { column: "detail_name" }], () => supabase
             .from("v2_model_details")
             .select("model_slug, detail_name, detail_value")
-            .in("model_slug", modelIdChunk);
-        if (error) {
-            throw new Error(`Failed to load model details: ${error.message || "unknown error"}`);
-        }
-        for (const row of (data ?? []) as ModelDetailRow[]) {
+            .in("model_slug", modelIdChunk));
+        for (const row of data) {
             if (!row.model_slug || !row.detail_name) continue;
             const details = detailsByModel.get(row.model_slug) ?? {};
             details[row.detail_name] = row.detail_value;
@@ -1242,20 +1426,17 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
 
     const providerRows: ProviderModelRow[] = [];
     for (const modelIdChunk of chunkArray(modelIds, 200)) {
-        let { data, error: providerError }: { data: any[] | null; error: any } = await supabase
+        const data = await selectAllRows<any>("provider models", [{ column: "provider_model_id" }], () => supabase
             .from("v2_model_provider_routes")
             .select(
                 "provider_model_id, provider_slug, model_slug, provider_model_slug, is_stealth, routing_enabled, status, input_modalities, output_modalities, effective_from, effective_to, metadata"
             )
-            .in("model_slug", modelIdChunk);
-
-        if (providerError) {
-            throw new Error(`Failed to load provider models: ${providerError.message || "unknown error"}`);
-        }
+            .in("model_slug", modelIdChunk));
 
         const chunkRows = (data ?? []).map((row) => publicCatalogueProviderRoute({
             provider_api_model_id: row.provider_model_id,
             provider_id: row.provider_slug,
+            source_provider_id: row.provider_slug,
             api_model_id: row.model_slug,
             model_id: row.model_slug,
             provider_model_slug: row.provider_model_slug,
@@ -1277,15 +1458,11 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         .filter((id): id is string => Boolean(id));
     let capabilityRows: CapabilityRow[] = [];
     for (const providerModelIdChunk of chunkArray(providerModelIds, 200)) {
-        const { data: capabilityRowsRaw, error: capabilityError } = await supabase
+        const capabilityRowsRaw = await selectAllRows<any>("provider capabilities", [{ column: "provider_model_id" }, { column: "capability_id" }], () => supabase
             .from("v2_route_capabilities")
             .select("provider_model_id, capability_id, status, params, effective_from, effective_to")
-            .in("provider_model_id", providerModelIdChunk);
-
-        if (capabilityError) {
-            throw new Error(`Failed to load provider capabilities: ${capabilityError.message || "unknown error"}`);
-        }
-        capabilityRows.push(...(capabilityRowsRaw ?? []).map((row) => ({
+            .in("provider_model_id", providerModelIdChunk));
+        capabilityRows.push(...capabilityRowsRaw.map((row) => ({
             provider_api_model_id: row.provider_model_id,
             capability_id: row.capability_id,
             status: row.status,
@@ -1302,15 +1479,11 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     if (apiModelIds.length) {
         const aliases: Array<{ alias_slug: string | null; api_model_id: string | null }> = [];
         for (const apiModelIdChunk of chunkArray(apiModelIds as string[], 200)) {
-            const { data, error: aliasError } = await supabase
+            aliases.push(...await selectAllRows<{ alias_slug: string | null; api_model_id: string | null }>("model aliases", [{ column: "alias_slug" }], () => supabase
                 .from("v2_model_aliases")
                 .select("alias_slug, api_model_id:model_slug")
                 .eq("enabled", true)
-                .in("model_slug", apiModelIdChunk);
-            if (aliasError) {
-                throw new Error(`Failed to load model aliases: ${aliasError.message || "unknown error"}`);
-            }
-            aliases.push(...((data ?? []) as Array<{ alias_slug: string | null; api_model_id: string | null }>));
+                .in("model_slug", apiModelIdChunk)));
         }
         const aliasByApiModel = new Map<string, string[]>();
         for (const alias of aliases) {
@@ -1396,25 +1569,43 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
         }
     }
 
+    // One SKU query serves two purposes: current standard SKUs feed pricing
+    // (unchanged), and SKUs the runtime loader would execute feed
+    // `service_tiers` per route and operation (see below the meter load).
     const skuRows: PricingSkuRow[] = [];
+    const executableSkuRows: PricingSkuRow[] = [];
+    const skuNowMs = Date.now();
     for (const providerModelIdChunk of chunkArray(Array.from(new Set(providerModelIds)), 200)) {
-        const { data, error: skuError } = await supabase
+        const data = await selectAllRows<PricingSkuRow>("pricing SKUs", [{ column: "sku_id" }], () => supabase
             .from("v2_pricing_skus")
             .select("sku_id,provider_model_id,operation,service_tier_slug,status,currency,effective_from,effective_to,metadata,description")
-            .in("provider_model_id", providerModelIdChunk);
-        if (skuError) throw new Error(`Failed to load pricing SKUs: ${skuError.message || "unknown error"}`);
-        skuRows.push(...((data ?? []) as PricingSkuRow[]).filter((sku) => isCurrentStandardPricingSku(sku)));
+            .in("provider_model_id", providerModelIdChunk));
+        for (const sku of data) {
+            if (isCurrentStandardPricingSku(sku, skuNowMs)) skuRows.push(sku);
+            if (isExecutablePricingSku(sku, skuNowMs)) executableSkuRows.push(sku);
+        }
     }
-    const skuIds = (skuRows ?? []).map((row) => row.sku_id).filter(Boolean);
+    // Meters for standard pricing and for tier detection share one load; only
+    // standard SKUs' meters reach `pricingRows` (via `skuById` below).
+    const skuIds = [...skuRows, ...executableSkuRows].map((row) => row.sku_id).filter(Boolean);
     const meterRows: PricingMeterRow[] = [];
     for (const skuIdChunk of chunkArray(Array.from(new Set(skuIds)), 200)) {
-        const { data, error: meterError } = await supabase
+        meterRows.push(...await selectAllRows<PricingMeterRow>("pricing meters", [{ column: "sku_meter_id" }], () => supabase
             .from("v2_pricing_sku_meters")
             .select("sku_meter_id,sku_id,meter_key,unit,unit_quantity,price_nanos,meter_order,metadata")
             .eq("billable", true)
-            .in("sku_id", skuIdChunk);
-        if (meterError) throw new Error(`Failed to load pricing meters: ${meterError.message || "unknown error"}`);
-        meterRows.push(...(data ?? []) as PricingMeterRow[]);
+            .in("sku_id", skuIdChunk)));
+    }
+    // A tier is offered only when the loader would build price rules for it:
+    // an executable SKU with at least one billable, finitely priced meter.
+    const pricedSkuIds = new Set(meterRows.filter(isExecutablePricingMeter).map((meter) => meter.sku_id));
+    const skuTiersByRouteOperation = new Map<string, Set<string>>();
+    for (const sku of executableSkuRows) {
+        if (!pricedSkuIds.has(sku.sku_id)) continue;
+        const key = routeOperationKey(sku.provider_model_id, sku.operation);
+        const tiers = skuTiersByRouteOperation.get(key) ?? new Set<string>();
+        tiers.add(pricingSkuServiceTier(sku));
+        skuTiersByRouteOperation.set(key, tiers);
     }
     const routeByProviderModel = new Map(providerRows.map((row) => [row.provider_api_model_id, row]));
     const skuById = new Map((skuRows ?? []).map((row) => [row.sku_id, row]));
@@ -1529,16 +1720,16 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
     const endpointsFilter = expandEndpointFilters(filter.endpoints);
     const providerIdsFilter = normalizeStringSet(filter.providerIds)?.map((value) => value.toLowerCase());
     const providerStatusesFilter = normalizeStringSet(filter.providerStatuses)?.map((value) => value.toLowerCase());
-    const providerRoutingStatusesFilter = normalizeStringSet(filter.providerRoutingStatuses)?.map((value) => value.toLowerCase());
-    const modelRoutingStatusesFilter = normalizeStringSet(filter.modelRoutingStatuses)?.map((value) => value.toLowerCase());
-    const capabilityStatusesFilter = normalizeStringSet(filter.capabilityStatuses)?.map((value) => value.toLowerCase());
+    const providerRoutingStatusesFilter = statusFilter(filter.providerRoutingStatuses);
+    const modelRoutingStatusesFilter = statusFilter(filter.modelRoutingStatuses);
+    const capabilityStatusesFilter = statusFilter(filter.capabilityStatuses);
     const organisationIds = normalizeStringSet(filter.organisationIds);
     const inputTypesFilter = normalizeStringSet(filter.inputTypes)?.map((value) => value.toLowerCase());
     const outputTypesFilter = normalizeStringSet(filter.outputTypes)?.map((value) => value.toLowerCase());
     const paramsFilter = normalizeStringSet(filter.params);
     const statusesFilter = normalizeStringSet(filter.statuses)?.map((value) => value.toLowerCase());
     const providerAvailabilityStatusesFilter = normalizeStringSet(filter.providerAvailabilityStatuses)?.map((value) => value.toLowerCase());
-    const providerAvailabilityReasonsFilter = normalizeStringSet(filter.providerAvailabilityReasons)?.map((value) => value.toLowerCase());
+    const providerAvailabilityReasonsFilter = statusFilter(filter.providerAvailabilityReasons);
 
     const models: CatalogueModel[] = [];
     for (const [modelId, info] of baseModels) {
@@ -1567,6 +1758,8 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             const providerDetails = row.provider_id ? providerMap.get(row.provider_id) : null;
             for (const cap of caps) {
                 if (!cap.capability_id) continue;
+                if (filter.batchOnly && cap.capability_id !== "batch" &&
+                    !skuTiersByRouteOperation.get(routeOperationKey(row.provider_api_model_id, cap.capability_id))?.has("batch")) continue;
                 const providerStatus = normalizeProviderStatus(providerDetails?.status);
                 const providerRoutingStatus = normalizeRoutingStatus(providerDetails?.routing_status);
                 const externalRoutingOverride =
@@ -1617,6 +1810,14 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                     effective_to: effectiveTo,
                     params: toParamsList(cap.params),
                     params_detail: toParamsDetail(cap.params),
+                    route_id: typeof cap.provider_api_model_id === "string" ? cap.provider_api_model_id : null,
+                    service_tiers: deriveOfferServiceTiers({
+                        providerId: row.source_provider_id ?? row.provider_id,
+                        skuTiers: skuTiersByRouteOperation.get(
+                            routeOperationKey(row.provider_api_model_id, cap.capability_id),
+                        ),
+                        capabilityParams: cap.params,
+                    }),
                 });
             }
         }
@@ -1761,6 +1962,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                     output_modalities: [...entry.output_modalities],
                     params: [...entry.params].sort((a, b) => a.localeCompare(b)),
                     params_detail: { ...entry.params_detail },
+                    service_tiers: [...entry.service_tiers],
                 };
             }
             providerEndpointCapabilities[entry.api_provider_id] = providerEndpoints;
@@ -1790,9 +1992,15 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
                     output_modalities: [...entry.output_modalities],
                     params: [...entry.params].sort((a, b) => a.localeCompare(b)),
                     params_detail: { ...entry.params_detail },
+                    service_tiers: [...entry.service_tiers],
+                    route_id_by_endpoint: Object.fromEntries(entry.endpoints.map((endpoint) => [endpoint, entry.route_id])),
                 });
                 continue;
             }
+            existing.route_id_by_endpoint = {
+                ...existing.route_id_by_endpoint,
+                ...Object.fromEntries(entry.endpoints.map((endpoint) => [endpoint, entry.route_id])),
+            };
 
             existing.endpoints = Array.from(new Set([...existing.endpoints, ...entry.endpoints])).sort();
             existing.input_modalities = Array.from(
@@ -1803,6 +2011,7 @@ export async function fetchCatalogue(filter: CatalogueFilters): Promise<Catalogu
             ).sort();
             existing.params = Array.from(new Set([...existing.params, ...entry.params])).sort((a, b) => a.localeCompare(b));
             existing.params_detail = mergeParamDetails(existing.params_detail, entry.params_detail);
+            existing.service_tiers = mergeOfferServiceTiers(existing.service_tiers, entry.service_tiers);
             if (compareProviderInfoCandidate(entry, existing) < 0) {
                 existing.is_active_gateway = entry.is_active_gateway;
                 existing.availability_status = entry.availability_status;

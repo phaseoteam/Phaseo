@@ -105,7 +105,7 @@ function summarizePricing(groups: ReturnType<typeof composeModelPricing>) {
 	}));
 }
 
-function plansForModel(modelId: string, modelPlans: Row[], planRows: Row[]) {
+export function plansForModel(modelId: string, modelPlans: Row[], planRows: Row[]) {
 	const mappings = modelPlans.filter((mapping) => text(mapping.model_id) === modelId);
 	if (mappings.length === 0) return null;
 	const mappingByUuid = new Map(mappings.map((mapping) => [text(mapping.plan_uuid), mapping]));
@@ -132,7 +132,8 @@ function plansForModel(modelId: string, modelPlans: Row[], planRows: Row[]) {
 				name: text(organisation?.name) || text(row.organisation_id),
 				colour: organisation?.colour ?? null,
 			},
-			prices: [{ price: number(row.price), currency: row.currency ?? null, frequency: row.frequency ?? null }],
+			prices: Array.isArray(row.prices) ? row.prices : [{ price: number(row.price), currency: row.currency ?? null, frequency: row.frequency ?? null }],
+			offers: row.offers ?? [],
 			model_info: {
 				model_info: mapping.model_info ?? null,
 				rate_limit: mapping.rate_limit ?? null,
@@ -143,7 +144,7 @@ function plansForModel(modelId: string, modelPlans: Row[], planRows: Row[]) {
 	return [...grouped.values()];
 }
 
-function providerRowsForModel(modelId: string, providerRows: PricingSourceRow[]) {
+export function providerRowsForModel(modelId: string, providerRows: PricingSourceRow[]) {
 	const variants = new Set([modelId, `${modelId}-fast`, `${modelId}-flex`]);
 	return providerRows.filter((row) => variants.has(text(row.model_id)) || variants.has(text(row.api_model_id)));
 }

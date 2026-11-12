@@ -1,4 +1,7 @@
 CREATE TABLE "public"."request_classification_daily" (
+  "public_request_count" bigint,
+  "public_input_tokens" bigint,
+  "public_output_tokens" bigint,
   "usage_date"       date                     NOT NULL,
   "workspace_id"     uuid                     NOT NULL,
   "classifier_id"    uuid                     NOT NULL,

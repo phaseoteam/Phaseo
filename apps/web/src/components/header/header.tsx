@@ -1,8 +1,10 @@
 // components/header/Header.tsx  (STATIC)
-import Link from "next/link";
-import Image from "next/image";
+import Link from "@/components/link";
+import { IntentLink } from "@/components/navigation/IntentLink";
+import Image from "@/components/image";
 import { Suspense } from "react";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "@/i18n/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import AuthControls from "./AuthControls";
 import MainNav from "./MainNav";
 import { SearchWithCapabilities as SearchWrapper } from "@/components/header/Search/SearchWithCapabilities";
@@ -12,34 +14,29 @@ import { Button } from "@/components/ui/button";
 import HeaderShell from "./HeaderShell";
 import SettingsSidebarTrigger from "@/components/(gateway)/settings/SettingsSidebarTrigger";
 import { BrandMenu } from "./BrandMenu";
-import { autoRoutingFlag } from "@/lib/flags";
 import { getLocalizedDocsHref } from "@/lib/docs";
-import { getSettingsNavigationMessages } from "@/i18n/settings-navigation-messages";
-import { getPublicMessages } from "@/i18n/messages";
-import { isPublicLocale } from "@/i18n/routing";
-import { getSettingsNavigationCopy } from "@/components/(gateway)/settings/Sidebar.labels";
-import { getHeaderAccountData } from "./getHeaderAccountData";
-import { connection } from "next/server";
+import { shellDataQuery } from "./shellData";
+import { settingsLayoutQuery } from "@/features/settings/settings.functions";
+import { usePathname } from "@/i18n/navigation";
 
 const showHeaderAnnouncement = false;
 
-async function GatedSettingsSidebarTrigger() {
-	await connection();
-	const locale = await getLocale();
-	const publicLocale = isPublicLocale(locale) ? locale : "en-GB";
-	const [showAutoRouting, messages, navigationMessages, account] = await Promise.all([
-		autoRoutingFlag(), getPublicMessages(publicLocale), getSettingsNavigationMessages(publicLocale),
-		getHeaderAccountData(),
-	]);
-	const copy = getSettingsNavigationCopy(navigationMessages, messages.SettingsUI.sidebarNew);
-	return <SettingsSidebarTrigger showAutoRouting={showAutoRouting} copy={copy} providerMode={account.providerMode === true} />;
+function GatedSettingsSidebarTrigger() {
+	const pathname = usePathname();
+	return pathname?.startsWith("/settings") ? <SettingsMobileNavigation /> : null;
 }
 
-export default async function Header() {
-	const [t, locale] = await Promise.all([
-		getTranslations("Common.nav"),
-		getLocale(),
-	]);
+function SettingsMobileNavigation() {
+	const locale = useLocale();
+	const { data } = useSuspenseQuery(shellDataQuery(locale));
+	const { data: settings } = useSuspenseQuery(settingsLayoutQuery());
+	if (!settings.signedIn) return null;
+	return <SettingsSidebarTrigger {...settings} copy={data.settingsNavigationCopy} />;
+}
+
+export default function Header() {
+	const t = useTranslations("Common.nav");
+	const locale = useLocale();
 	const docsLink = getLocalizedDocsHref(locale, "/v1");
 	const headerContent = (
 		<div className="grid h-[var(--site-header-height,4rem)] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center max-[22rem]:gap-x-1 max-[19.375rem]:gap-x-0 lg:flex lg:gap-3 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
@@ -48,7 +45,7 @@ export default async function Header() {
 					<GatedSettingsSidebarTrigger />
 				</Suspense>
 				<BrandMenu>
-					<Link
+					<IntentLink
 						href="/"
 						aria-label={t("home")}
 						className="inline-flex h-[var(--site-header-control-h,2.25rem)] shrink-0 items-center rounded-lg px-2 transition-colors hover:bg-zinc-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 data-[state=open]:bg-zinc-100/70 lg:px-[var(--site-header-nav-px,0.75rem)] dark:hover:bg-zinc-900/60 dark:focus-visible:ring-zinc-600/50 dark:data-[state=open]:bg-zinc-900/60"
@@ -71,7 +68,7 @@ export default async function Header() {
 							style={{ width: "auto" }}
 							priority
 						/>
-					</Link>
+					</IntentLink>
 				</BrandMenu>
 				<div className="hidden h-[var(--site-header-divider-height,1.5rem)] w-px bg-zinc-200/70 dark:bg-zinc-800 lg:block" />
 				<div className="hidden max-w-full lg:block">

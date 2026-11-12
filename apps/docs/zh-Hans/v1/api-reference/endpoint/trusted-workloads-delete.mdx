@@ -1,0 +1,12 @@
+---
+title: "删除受信任的工作负载策略"
+sidebarTitle: "删除受信任的工作负载策略"
+badge: "测试版"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml DELETE /workload-identity/policies/{id}"
+description: "删除受信任的工作负载策略并吊销其密钥。"
+---
+<Note>需要管理密钥或 OAuth 令牌具有 `keys:delete` 权限，或由工作区所有者或管理员操作。受信任的工作负载目前处于 Beta 阶段，未开通的工作区会收到 `404`。</Note>
+
+匹配的令牌会在一分钟内被拒绝。过去的请求在日志和用量中仍保留其密钥。
+
+请参阅[受信任的工作负载](../../developers/trusted-workloads.mdx)，了解策略的工作方式以及如何使用 Terraform 管理策略。

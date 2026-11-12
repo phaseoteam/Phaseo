@@ -32,6 +32,13 @@ describe("Sail Research completion windows", () => {
 		});
 	});
 
+	// docs.sailresearch.com/pricing lists Default, Balanced and Flex rates for both Kimi K3 models.
+	it.each(["moonshotai/Kimi-K3", "moonshotai/Kimi-K3.1-Pro"])("maps standard to balanced for %s", (slug) => {
+		expect(preprocess(request("standard"), args(slug)).metadata).toEqual({ completion_window: "balanced" });
+		expect(preprocess(request("priority"), args(slug)).metadata).toEqual({ completion_window: "asap" });
+		expect(preprocess(request("flex"), args(slug)).metadata).toEqual({ completion_window: "flex" });
+	});
+
 	it("maps an omitted tier to the standard completion window", () => {
 		expect(preprocess(requestWithoutTier(), args("zai-org/GLM-5.2-FP8"))).toMatchObject({
 			metadata: { completion_window: "balanced" },
@@ -51,5 +58,17 @@ describe("Sail Research completion windows", () => {
 		const result = preprocess(request(tier), args("zai-org/GLM-5.2-FP8"));
 		expect(result.metadata).toEqual({ completion_window: expected });
 		expect(result.serviceTier).toBeUndefined();
+	});
+});
+
+// supercache_write bills a prefix write at 100x input (https://docs.sailresearch.com/supercache)
+// and the webhook keys send results elsewhere; clients must not set them through the gateway.
+describe("Sail reserved metadata", () => {
+	it("keeps client metadata but drops Sail's control keys", () => {
+		const ir = {
+			...request("standard"),
+			metadata: { app: "x", supercache_write: "true", completion_webhook: "https://evil.example", webhook_token: "t", completion_window: "flex" },
+		} as IRChatRequest;
+		expect(preprocess(ir, args("test/model")).metadata).toEqual({ app: "x", completion_window: "asap" });
 	});
 });

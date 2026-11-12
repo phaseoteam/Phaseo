@@ -7,7 +7,25 @@ import { AudioTranscriptionSchema, type AudioTranscriptionRequest } from "@core/
 import { buildAdapterPayload } from "../../utils";
 import { resolveOpenAITransport } from "../../shared/openai-transport";
 import { upstreamTestHeaders } from "@providers/shared/testing";
-import { estimateOpenAiSpeechToTextUsage, mergeSpeechToTextUsage } from "./audio-transcription-usage";
+import { applyProviderSpeechToTextBilling, estimateOpenAiSpeechToTextUsage, mergeSpeechToTextUsage } from "./audio-transcription-usage";
+
+const MB = 1024 * 1024;
+
+/**
+ * Documented upload limits for providers that serve the same open Whisper
+ * models with different caps. The request schema only applies the largest
+ * (OVHcloud's 2048 MB), so each provider's own limit is checked here, before
+ * the file is sent. Routing also skips routes whose stored
+ * max_file_size_bytes is smaller than the upload.
+ */
+export const OPENAI_COMPAT_TRANSCRIPTION_MAX_BYTES: Readonly<Record<string, { name: string; bytes: number; label: string }>> = {
+    // console.groq.com/docs/speech-to-text: 25 MB for attachments on every tier.
+    groq: { name: "Groq", bytes: 25 * MB, label: "25 MB" },
+    // docs.together.ai/reference/audio-transcriptions: "Maximum upload size 80 MB".
+    together: { name: "Together", bytes: 80 * MB, label: "80 MB" },
+    // OVHcloud AI Endpoints: 2048 MB per request with an API key.
+    ovhcloud: { name: "OVHcloud", bytes: 2048 * MB, label: "2048 MB" },
+};
 
 function normalizeModelName(model?: string | null): string {
     if (!model) return "";
@@ -117,6 +135,16 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
     const supportedGptFormats = isDiarize
         ? new Set(["json", "text", "diarized_json"])
         : new Set(["json"]);
+    const uploadLimit = OPENAI_COMPAT_TRANSCRIPTION_MAX_BYTES[args.providerId];
+    if (uploadLimit && body.file && body.file.size > uploadLimit.bytes) {
+        return {
+            kind: "completed",
+            upstream: invalidParameterResponse("file", `${uploadLimit.name} takes transcription uploads up to ${uploadLimit.label}; the file is ${Math.ceil(body.file.size / MB)} MB.`),
+            bill: emptyBill(),
+            keySource: keyInfo.source,
+            byokKeyId: keyInfo.byokId,
+        };
+    }
 	if (args.providerId === "deepinfra") {
 		const unsupported = ["include", "chunking_strategy", "languages", "keywords", "diarize", "known_speaker_names", "known_speaker_references"].find(name => (body as any)[name] != null);
 		const param = body.stream === true ? "stream" : unsupported ?? (!new Set(["json", "verbose_json", "text", "srt", "vtt"]).has(responseFormat) ? "response_format" : undefined);
@@ -359,7 +387,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		const usageFinalizer = async () => {
 			const upstreamUsage = await collectTranscriptionStreamUsage(accountingStream);
 			const estimated = await estimateOpenAiSpeechToTextUsage({ file: body.file, prompt: body.prompt });
-			return { ...baseBill, usage: mergeSpeechToTextUsage(upstreamUsage, estimated) };
+			return { ...baseBill, usage: applyProviderSpeechToTextBilling(args.providerId, mergeSpeechToTextUsage(upstreamUsage, estimated)) };
 		};
 		return {
 			kind: "stream",
@@ -383,7 +411,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
             prompt: body.prompt,
             text: typeof normalized?.text === "string" ? normalized.text : undefined,
         });
-        usage = mergeSpeechToTextUsage(usage, estimated);
+        usage = applyProviderSpeechToTextBilling(args.providerId, mergeSpeechToTextUsage(usage, estimated));
         if (normalized && typeof normalized === "object") {
             normalized.usage = usage;
         }

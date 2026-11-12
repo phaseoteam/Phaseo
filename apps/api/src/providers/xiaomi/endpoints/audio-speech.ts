@@ -57,6 +57,12 @@ function normalizeXiaomiVoice(voice: string | undefined): string {
 	return trimmed;
 }
 
+// VoiceDesign builds the voice from the user-message description and takes no audio.voice
+// (Xiaomi's v2.5 speech guide: "Does not support ... built-in voices, or voice cloning").
+function isVoiceDesignModel(model: string): boolean {
+	return /voicedesign/i.test(model);
+}
+
 function resolveAudioFormat(payload: AudioSpeechRequest): string {
 	return payload.response_format ?? payload.format ?? "wav";
 }
@@ -116,13 +122,31 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		model: args.providerModelSlug || adapterPayload.model,
 	};
 	const format = resolveAudioFormat(body);
-	const requestVoice = normalizeXiaomiVoice(extractVoiceCandidate(body.voice));
+	const voiceDesign = isVoiceDesignModel(body.model);
+	const callerVoice = extractVoiceCandidate(body.voice);
+	// Rejected before the paid call, so a caller never gets a different voice than they asked for.
+	if (voiceDesign && callerVoice) {
+		return {
+			kind: "completed",
+			upstream: new Response(JSON.stringify({
+				error: {
+					type: "invalid_request_error",
+					message: "MiMo VoiceDesign takes no voice; leave voice out and describe the voice in instructions.",
+					param: "voice",
+				},
+			}), { status: 400, headers: { "Content-Type": "application/json" } }),
+			bill: { cost_cents: 0, currency: "USD", usage: undefined, upstream_id: null, finish_reason: null },
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+		};
+	}
+	const requestVoice = voiceDesign ? undefined : normalizeXiaomiVoice(callerVoice);
 	const requestBody = {
 		model: body.model,
 		messages: buildMessages(body),
 		audio: {
 			format,
-			voice: requestVoice,
+			...(requestVoice ? { voice: requestVoice } : {}),
 		},
 	};
 

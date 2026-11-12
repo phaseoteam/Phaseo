@@ -1,25 +1,140 @@
 ---
 title: "Publicar um catálogo de provedor"
-description: "Feeds V1 e V1.1 com níveis de serviço padronizados."
+description: "Publique feeds de modelos V1, V1.1 ou V1.2 com ofertas normalizadas por nível de serviço, políticas de dados e limites de taxa."
 icon: "list"
 ---
 
-Provedores aprovados podem atualizar ofertas de modelos canônicos públicos. Modelos novos precisam de aprovação. Cada catálogo é um retrato completo: ofertas removidas são desativadas e o histórico de preços é preservado.
+Publique seus modelos, níveis de serviço, preços e limites como um feed de catálogo, e o Phaseo importa cada alteração para as suas ofertas. Como provedor aprovado, você pode atualizar ofertas de modelos canônicos públicos existentes pelo feed ou pelas configurações do provedor; novos modelos canônicos precisam de aprovação. Cada catálogo é um snapshot completo: remover uma oferta desativa essa oferta gerenciada pelo feed e mantém o histórico de preços dela.
 
-## Escolher o formato
+## Escolher um formato
 
-Feeds V1 sem versão continuam funcionando. `"schema_version": "1.0"` também indica V1. V1.1 declara `"schema_version": "1.1"` e um array `service_tiers` por modelo. A versão vem do documento, não dos parâmetros da URL.
+| Versão | Declare | Adiciona | Esquema |
+| --- | --- | --- | --- |
+| V1 | Sem `schema_version`, ou `"1.0"` | Ofertas de nível padrão em `{"data": [...]}` | [V1](https://phaseo.app/api/internal/provider-catalog/schema) |
+| V1.1 | `"schema_version": "1.1"` | `service_tiers` dentro de cada modelo | [V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) |
+| V1.2 | `"schema_version": "1.2"` | `data_policy` por nível e `declarations` opcionais; veja [Declarar políticas de dados](#declare-data-policies) | [V1.2](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2) |
 
-Cada modelo precisa de `standard`. Os outros níveis permitidos são `fast`, `ultrafast`, `flex` e `batch`. Cada nível contém `service_tier`, `provider_model_slug`, `availability` e `pricing`. Capacidades, limites e datas de lançamento são compartilhados pelo modelo.
+As três versões são aceitas; os feeds V1 existentes continuam funcionando sem alterações. O importador lê a versão do documento, nunca da URL, então um parâmetro de consulta como `?format=phaseo-v1.1` é só uma convenção do seu próprio endpoint. Versões não aceitas são rejeitadas.
 
-Fast, Ultrafast e Flex são suportados na geração de texto. Use um ID de modelo distinto ou `upstream_service_tier` para selecionar o nível real. Fast aceita `fast` ou `priority`; Standard aceita `default` ou `standard`. Batch usa a API Batch separada e exige integração do provedor e capacidade Batch.
+<span id="declare-data-policies"></span>
+## Declarar políticas de dados
 
-## Preços e atualizações
+A V1.2 adiciona a cada nível de serviço declarações de treinamento e retenção específicas por capacidade. Você pode publicar a V1.2 a qualquer momento. O Phaseo valida as declarações na importação, mas elas não concedem nenhuma garantia até que o Phaseo aprove a sua fonte de política.
 
-Cada nível precisa de preços explícitos para todas as unidades cobradas. `price_nanos` é o preço efetivo após promoções. Zero é válido; preços negativos, unidades desconhecidas, níveis duplicados e tarifas condicionais são rejeitados. Publique um novo retrato quando os preços mudarem; o histórico permanece disponível.
+A V1.2 também aceita `declarations` opcionais no nível do modelo ou do nível de serviço para identidade do modelo, limites tipados de entrada e saída, descrições de parâmetros, preços e capacidade com escopo, descontos e detalhes de implantação. Elas são validadas e mantidas para revisão. Não ativam parâmetros automaticamente nem alteram preços cobráveis, a aplicação de capacidade ou garantias de residência. O retorno da validação identifica as declarações armazenadas; continue publicando os preços e capacidades efetivos pelos campos existentes.
 
-Polling e webhooks assinados aceitam ambas as versões. Selecione o nível antes de editar nas configurações do provedor. Erros de associação aparecem por modelo sem bloquear modelos válidos.
+Defina `schema_version` como `"1.2"` e adicione um objeto `data_policy` a cada nível aplicável:
 
-Veja o exemplo completo e os esquemas JSON no [guia do contrato em inglês](/v1/guides/provider-catalog).
+```json
+{
+  "capabilities": [{
+    "id": "text.generate",
+    "training_policy": "no_train",
+    "retention_mode": "none",
+    "retention_days": 0,
+    "zero_data_retention": true,
+    "zdr_eligibility": "eligible",
+    "requirements": { "contract_mode": "none", "account_settings": [] },
+    "privacy_policy_url": "https://provider.example/privacy",
+    "terms_of_service_url": "https://provider.example/terms"
+  }]
+}
+```
 
-Nos catálogos API, as edições do painel são persistentes. Importações atualizam campos sem alterações manuais. **Usar valor do feed** remove uma alteração. O painel mostra os valores do feed e efetivos, o autor e a data; a atividade registra edições e reversões. Modelos adicionados manualmente continuam sendo ofertas locais. Remover um modelo do feed desativa a oferta mesmo com campos editados. Catálogos manuais continuam compatíveis.
+Este exemplo é o valor de `data_policy` do nível, não um feed completo. Os IDs de capacidade são canônicos: use `text.generate` mesmo quando o modelo declara `responses` ou `chat.completions`.
+
+A declaração cobre prompts e saídas em toda a cadeia de processamento upstream. Ela não descreve metadados de cobrança. Os valores de treinamento são `unknown`, `may_train`, `no_train`, `opt_out_available` e `enterprise_no_train`. Os modos de retenção são `unknown`, `none`, `transient`, `fixed` e `until_deleted`. Use zero dias para none, uma duração máxima positiva para transient/fixed e null para unknown/until-deleted.
+
+Declare os contratos exigidos com `contract_mode`: `none`, `customer_agreement` ou `enterprise_agreement`. As configurações de conta exigidas são objetos com `id`, `description` e `documentation_url` HTTPS no array `account_settings`. Programas condicionais usam `zdr_eligibility: "conditional"` e não podem declarar uma garantia verdadeira ativa. Eles permanecem informativos até que o Phaseo possa verificar o cumprimento.
+
+O Phaseo aprova a fonte de política de forma independente. O feed não pode marcar uma declaração como verificada. Esta versão só concede ZDR ativo para geração de texto incondicional em ofertas que não são de lote, sem treinamento e sem retenção de conteúdo. Hospedar um modelo por conta própria não declara ZDR por si só.
+
+Depois que uma oferta adota a política gerenciada pelo feed, definir false, enviar null, omitir a declaração ou rebaixar a versão do feed retira essa garantia. As substituições manuais do Phaseo são mantidas separadamente. As declarações positivas expiram após 24 horas sem uma validação bem-sucedida do catálogo; a revogação da aprovação não exige uma nova busca no provedor.
+
+## Publicar níveis normalizados
+
+| Nível | Significado |
+| --- | --- |
+| `standard` | Execução síncrona normal; obrigatório para todos os modelos. |
+| `fast` | Uma oferta mais rápida ou prioritária. Nomes do provedor, como HighSpeed, ficam no ID do modelo upstream. |
+| `ultrafast` | Uma oferta separada e ainda mais rápida, quando houver. |
+| `flex` | Uma oferta síncrona flexível e de prioridade mais baixa. |
+| `batch` | Execução assíncrona pela Batch API. Exige uma capacidade de lote. |
+
+Não use nomes de nível específicos do provedor como IDs normalizados. `priority` continua sendo um alias aceito para Fast do lado de quem chama; os catálogos publicam `fast`.
+
+A seleção de Fast, Ultrafast e Flex é aceita em solicitações de geração de texto. O Batch é executado pela Batch API separada e continua exigindo uma integração de lote do provedor instalada; publicar um nível não instala essa integração. Para arquivos nativos do provedor enviados por upload, use o ID de modelo Batch declarado ou envie as solicitações inline para que o Phaseo possa traduzi-lo.
+
+Use o mesmo ID de modelo canônico para os níveis de serviço dele. Modelos diferentes precisam de identidades canônicas separadas. Os níveis herdam as capacidades, os limites e o cronograma de lançamento do modelo. Cada nível declara o próprio ID de modelo upstream, a disponibilidade e os preços efetivos.
+
+```json
+{
+  "schema_version": "1.1",
+  "data": [{
+    "id": "your-provider/example-model",
+    "name": "Example model",
+    "capabilities": ["chat.completions"],
+    "service_tiers": [{
+      "service_tier": "standard",
+      "provider_model_slug": "example-model",
+      "availability": "ready",
+      "pricing": [{
+        "meter_key": "input_text_tokens",
+        "modality": "text",
+        "direction": "input",
+        "unit": "token",
+        "unit_quantity": 1000000,
+        "price_nanos": 100000000,
+        "display_label": "Input",
+        "display_unit": "1M tokens"
+      }, {
+        "meter_key": "output_text_tokens",
+        "modality": "text",
+        "direction": "output",
+        "unit": "token",
+        "unit_quantity": 1000000,
+        "price_nanos": 200000000,
+        "display_label": "Output",
+        "display_unit": "1M tokens"
+      }]
+    }]
+  }]
+}
+```
+
+Para adicionar Fast, adicione outro objeto de nível com `"service_tier": "fast"`, os preços efetivos e um ID de modelo upstream distinto para essa oferta. Se o provedor selecionar a faixa por um parâmetro nativo, use o mesmo ID de modelo upstream e declare `"upstream_service_tier": "priority"` ou `"fast"`. Omita esse campo quando o ID do modelo selecionar a faixa. Standard aceita `default` ou `standard`; Flex e Ultrafast aceitam os valores correspondentes. O Phaseo rejeita níveis síncronos não padrão que não tenham um ID de modelo distinto nem um seletor nativo.
+
+Todo nível precisa de preços explícitos, incluindo a saída e quaisquer medidores de cache ou mídia que você cobre. Preços zero são válidos; preços negativos, medidores desconhecidos, níveis duplicados e tarifas condicionais são rejeitados. `price_nanos` continua sendo o preço efetivo depois das promoções. Publique um novo snapshot quando as tarifas mudarem; o Phaseo mantém os preços efetivos anteriores.
+
+## Declarar limites de taxa
+
+Declare os limites de solicitações e tokens que a sua plataforma aplica à conta do Phaseo em um array opcional `rate_limits` de nível superior. Ele funciona da mesma forma em documentos V1 e V1.1. Omita `model` para um limite que vale para todos os seus modelos, ou defina-o como o `provider_model_slug` upstream de qualquer modelo ou nível no mesmo documento.
+
+```json
+{
+  "schema_version": "1.1",
+  "data": [{ "id": "your-provider/example-model", "...": "..." }],
+  "rate_limits": [
+    { "requests_per_minute": 600, "tokens_per_minute": 2000000 },
+    { "model": "example-model", "requests_per_day": 100000, "tokens_per_day": 500000000 }
+  ]
+}
+```
+
+Cada entrada aceita `requests_per_minute`, `requests_per_day`, `tokens_per_minute` e `tokens_per_day`. Cada valor é um inteiro positivo ou `null`, e cada entrada precisa de pelo menos um valor. O Phaseo conta cada limite globalmente, somando todo o tráfego dele para você. Um limite de modelo vale além do limite para todos os modelos.
+
+Os limites nunca bloqueiam solicitações. À medida que o tráfego de uma oferta se aproxima de um limite, o Phaseo envia a ela uma parcela gradualmente menor. Quando o limite é atingido, o Phaseo classifica a oferta abaixo dos outros provedores até o limite ser reiniciado. Um valor baixo demais só reduz a sua própria parcela de tráfego. Por isso, os limites se aplicam sem revisão assim que a sua solicitação de provedor é aprovada, normalmente em até um minuto.
+
+Quando o array está presente, ele substitui os limites declarados sempre que um feed alterado é importado com sucesso. Um array vazio os remove. Omita `rate_limits` para manter os limites que você gerencia nas configurações do provedor. O Phaseo rejeita o snapshot inteiro, e mantém o catálogo e os limites atuais, se uma entrada indicar um modelo que não está no documento, repetir um escopo ou usar um valor que não seja um inteiro positivo. A rejeição aparece como **Alterações solicitadas**.
+
+Você também pode editar os limites em **Configurações do provedor → Seus modelos → Limites de taxa**. Essas edições são salvas separadamente das alterações do catálogo. O editor de catálogo não aceita `rate_limits`.
+
+## Atualizar e verificar
+
+O polling e os webhooks assinados de alteração de catálogo aceitam as três versões pelo mesmo fluxo de integração e atualização. Nas configurações do provedor, selecione um nível antes de editar o ID upstream, a disponibilidade ou os preços dele. Adicionar outro nível muda o catálogo salvo para V1.1.
+
+O catálogo não adiciona um adaptador de inferência nem credenciais. Um provedor e as capacidades anunciadas por ele precisam estar integrados antes de o roteamento ser ativado. Os preços de lote não tornam o Batch disponível nos endpoints de chat síncronos.
+
+Um modelo canônico indisponível ou um mapeamento de publicador desconhecido aparece como **Alterações solicitadas** sem impedir que os modelos válidos sejam importados. Confira no painel do provedor os motivos específicos de cada modelo.
+
+Em catálogos alimentados por API, as edições no painel são substituições persistentes. As importações atualizam os campos sem substituições. Selecione **Usar valor do feed** para remover uma substituição e voltar a seguir esse campo. O painel mostra o valor mais recente do feed, o valor efetivo, quem editou e quando; a atividade do catálogo registra edições e reversões. Os modelos adicionados manualmente continuam sendo ofertas locais. Remover um modelo do feed desativa essa oferta do feed, mesmo que alguns campos tenham sido editados. Os catálogos existentes somente manuais continuam aceitos.

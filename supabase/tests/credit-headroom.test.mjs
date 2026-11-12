@@ -19,6 +19,9 @@ try {
   await db.exec(await readFile(new URL('./fixtures/credit-headroom-before.sql', import.meta.url), 'utf8'));
   const migration = await readFile(new URL('../migrations/20260916144808_gateway_credit_cache_headroom.sql', import.meta.url), 'utf8');
   await db.exec(migration); await db.exec(migration);
+  // The write-back revision must keep every invalidation decision below unchanged.
+  const writeBack = await readFile(new URL('../migrations/20261009000200_gateway_charge_returns_available_balance.sql', import.meta.url), 'utf8');
+  await db.exec(writeBack); await db.exec(writeBack);
   for (const role of ['anon', 'authenticated']) {
     await db.exec(`set role ${role}`);
     await assert.rejects(charge(1,usd(100)), /permission denied/);
@@ -27,8 +30,10 @@ try {
   await seed(usd(100_000));
   const high = await charge(usd(.001),usd(100_000),'retry');
   assert.equal(high.applied,true); assert.equal(high.invalidate_credit_cache,false,JSON.stringify(high));
+  assert.equal(Number(high.available_nanos),usd(100_000)-usd(.001));
   const replay = await charge(usd(.001),usd(100_000),'retry');
   assert.equal(replay.already_applied,true); assert.equal(replay.invalidate_credit_cache,true);
+  assert.equal(replay.available_nanos,null,'replays must not report a balance to write back');
   assert.equal(Number((await db.query('select balance_nanos from public.wallets where workspace_id=$1',[ws])).rows[0].balance_nanos),usd(100_000)-usd(.001));
   await assert.rejects(charge(2,usd(100_000),'retry'), /request_charge_amount_mismatch/);
 
@@ -48,6 +53,11 @@ try {
     await seed(usd(balance),usd(reserved));
     assert.equal((await charge(usd(cost),snapshot === null ? null : usd(snapshot))).invalidate_credit_cache,invalidate);
   }
+  // Low balances still invalidate, but report the exact post-charge available balance.
+  await seed(usd(5),usd(1));
+  const low = await charge(usd(.5),usd(4));
+  assert.equal(low.invalidate_credit_cache,true);
+  assert.equal(Number(low.available_nanos),usd(3.5));
   // Spending through another caller is detected against this request's old snapshot.
   await seed(usd(79));
   assert.equal((await charge(1,usd(100))).invalidate_credit_cache,true);

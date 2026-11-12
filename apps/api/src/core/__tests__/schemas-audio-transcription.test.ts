@@ -92,6 +92,51 @@ describe("Mistral audio transcription schema", () => {
 			file_url: "https://example.com/call.mp3",
 			context_bias: ["two words"],
 		}).success).toBe(false);
+		expect(AudioTranscriptionSchema.safeParse({
+			model: "mistral/voxtral-mini-transcribe-2",
+			file_url: "https://example.com/call.mp3",
+			context_bias: Array.from({ length: 101 }, (_, index) => `term${index}`),
+		}).success).toBe(false);
+	});
+
+	it.each(["mistral/voxtral-mini-transcribe-3", "mistral/voxtral-small-transcribe-3"])("accepts %s phrases, sentences and long lists in context_bias", (model) => {
+		const parsed = AudioTranscriptionSchema.safeParse({
+			model,
+			file_url: "https://example.com/call.mp3",
+			context_bias: [
+				"Phaseo Gateway",
+				"A support call about billing, refunds and the AC-42 router.",
+				...Array.from({ length: 150 }, (_, index) => `term ${index}`),
+			],
+		});
+		expect(parsed.success).toBe(true);
+	});
+
+	it("keeps the single-term context_bias rule for non-Mistral models", () => {
+		expect(AudioTranscriptionSchema.safeParse({
+			model: "google/gemini-3.5-transcribe",
+			file: audioFile(),
+			context_bias: ["two words"],
+		}).success).toBe(false);
+	});
+});
+
+describe("Whisper large-v3 transcription schema", () => {
+	it("allows uploads above 25 MB; each provider's own limit is checked per route", () => {
+		const file = new File([new Uint8Array(30 * 1024 * 1024)], "call.mp3", { type: "audio/mpeg" });
+		expect(AudioTranscriptionSchema.safeParse({ model: "openai/whisper-large-v3", file }).success).toBe(true);
+		expect(AudioTranscriptionSchema.safeParse({ model: "openai/whisper-1", file }).success).toBe(false);
+	});
+});
+
+describe("xAI audio transcription schema", () => {
+	it.each(["spacex-ai/grok-transcribe", "spacex-ai/grok-voice-transcribe-2.0"])("accepts %s keyterms and uploads above 25 MB", (model) => {
+		const result = AudioTranscriptionSchema.safeParse({
+			model,
+			file: new File([new Uint8Array(26 * 1024 * 1024)], "call.mp3", { type: "audio/mpeg" }),
+			keywords: ["Phaseo", "Understand the Universe"],
+		});
+		expect(result.success).toBe(true);
 	});
 });
 
@@ -119,5 +164,21 @@ describe("ElevenLabs audio transcription schema", () => {
 			file: audioFile(),
 			keywords: ["six words are too many here now"],
 		}).success).toBe(false);
+	});
+
+	it("accepts keyterms of exactly 50 characters and rejects 51", () => {
+		const keyterm = (length: number) => "a".repeat(length);
+		expect(AudioTranscriptionSchema.safeParse({
+			model: "eleven-labs/scribe-v2",
+			file: audioFile(),
+			keywords: [keyterm(50)],
+		}).success).toBe(true);
+		const tooLong = AudioTranscriptionSchema.safeParse({
+			model: "eleven-labs/scribe-v2",
+			file: audioFile(),
+			keywords: [keyterm(51)],
+		});
+		expect(tooLong.success).toBe(false);
+		if (!tooLong.success) expect(tooLong.error.issues[0]?.path).toEqual(["keywords", 0]);
 	});
 });

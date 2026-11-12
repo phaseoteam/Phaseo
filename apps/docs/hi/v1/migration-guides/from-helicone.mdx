@@ -1,54 +1,62 @@
 ---
-title: "Helicone AI Gateway से माइग्रेट करें"
+title: "Helicone AI Gateway से माइग्रेट करना"
 sidebarTitle: "Helicone"
-description: "OpenAI-संगत Helicone प्रॉक्सी इंटीग्रेशन को Phaseo पर माइग्रेट करें और अब ज़रूरी न रहे ऑब्ज़र्वेबिलिटी हेडर हटाएं।"
+description: "OpenAI-संगत Helicone प्रॉक्सी इंटीग्रेशन को Phaseo पर ले जाएं और उन ऑब्ज़र्वेबिलिटी हेडर को बदलें जिनकी अब ज़रूरत नहीं।"
 icon: "activity"
 ---
 
-अगर Helicone आपके ऐप और AI प्रोवाइडर के बीच काम करता है, तो इस गाइड का उपयोग करें। अनुरोध में मुख्य बदलाव आमतौर पर छोटा होता है, लेकिन ऑब्ज़र्वेबिलिटी का बदलाव भी एंडपॉइंट बदलने जितनी सावधानी से योजना बनाएं।
+क्लाइंट को Phaseo कुंजी के साथ `https://api.phaseo.app/v1` पर पॉइंट करें, `Helicone-Auth` हटाएं, और जिस `Helicone-*` हेडर की अब भी ज़रूरत है उसे उसके Phaseo समकक्ष पर ले जाएं। अनुरोध में बदलाव छोटा है; ऑब्ज़र्वेबिलिटी कटओवर की योजना भी उतनी ही सावधानी से बनाएं।
 
-## क्या बदलेगा
-
-| सेटिंग | पहले | बाद में |
+| सेटिंग | Helicone | Phaseo |
 | --- | --- | --- |
-| बेस URL | Helicone प्रॉक्सी URL | `https://api.phaseo.app/v1` |
-| प्रमाणीकरण | प्रोवाइडर कुंजी और Helicone प्रमाणीकरण | `PHASEO_API_KEY` |
-| Helicone हेडर | अनुरोधों में जोड़े जाते हैं | हटाए जाते हैं |
-| अनुरोध दृश्यता | Helicone डैशबोर्ड | Phaseo गतिविधि और अनुरोध विवरण |
+| बेस URL | `oai.helicone.ai/v1`, `anthropic.helicone.ai`, `ai-gateway.helicone.ai`, या `Helicone-Target-URL` के साथ `gateway.helicone.ai` | `https://api.phaseo.app/v1` |
+| प्रमाणीकरण | प्रदाता कुंजी और `Helicone-Auth`, या AI Gateway पर `HELICONE_API_KEY` | सिर्फ़ `PHASEO_API_KEY` |
+| कस्टम प्रॉपर्टी | `Helicone-Property-<Name>` | `X-Phaseo-Metadata` लेबल |
+| अनुरोध दृश्यता | Helicone डैशबोर्ड | Phaseo अनुरोध लॉग और अनुरोध विवरण |
 
-<Steps>
-<Step title="Helicone की उपयोग की जाने वाली सुविधाओं की सूची बनाएं">
-
-प्रोडक्शन संचालन को प्रभावित करने वाली कस्टम प्रॉपर्टी, सेशन, उपयोगकर्ता पहचानकर्ता, कैशिंग, अनुरोध सीमाएं, अलर्ट और डैशबोर्ड दर्ज करें। यह न मानें कि प्रॉक्सी हटाने से ये वर्कफ़्लो अपने आप कहीं और बन जाएंगे।
-
-</Step>
-
-<Step title="प्रॉक्सी कॉन्फ़िगरेशन बदलें">
-
-अपने OpenAI-संगत क्लाइंट को Phaseo पर सेट करें और `Helicone-Auth` तथा अन्य Helicone-विशिष्ट हेडर हटाएं।
+## क्लाइंट बदलें
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// पहले:
+// new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+//   baseURL: "https://oai.helicone.ai/v1",
+//   defaultHeaders: {
+//     "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
+//     "Helicone-Property-Team": "support",
+//   },
+// });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
+  defaultHeaders: {
+    "X-Phaseo-Metadata": JSON.stringify({ labels: [{ key: "team", value: "support" }] }),
+  },
 });
 
-const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
-  messages: [{ role: "user", content: "Reply with: migration ready" }],
-});
+const response = await client.chat.completions.create(
+  {
+    model: "openai/gpt-6-astra",
+    messages: [{ role: "user", content: "Reply with: migration ready" }],
+  },
+  { headers: { "X-Phaseo-User-Id": "user_123" } },
+);
 ```
 
 ```python Python
+import json
 import os
 from openai import OpenAI
 
 client = OpenAI(
     api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
+    default_headers={
+        "X-Phaseo-Metadata": json.dumps({"labels": [{"key": "team", "value": "support"}]}),
+    },
 )
 ```
 
@@ -57,37 +65,43 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+उपयोगकर्ता ID जैसे प्रति-अनुरोध मान अनुरोध पर जाते हैं, क्लाइंट पर नहीं। `anthropic.helicone.ai` रूट [Anthropic SDK से माइग्रेट करना](./from-anthropic) वाले सेटअप पर जाते हैं।
 
-<Step title="अनुरोध दृश्यता स्थानांतरित करें">
+Helicone AI Gateway पर रूटिंग `model` स्ट्रिंग में रहती है। उसे बांटें: कॉमा से अलग पहली एंट्री `model` बनती है और बाकी `models` ऐरे बनती हैं; `<model>/<provider>` पिन `provider.only` या `provider:org/model` ID बनता है; `!provider` बहिष्करण `provider.ignore` बनता है।
 
-ऑपरेशनल डिबगिंग के लिए Phaseo गतिविधि, अनुरोध ID, प्रोवाइडर प्रयास और कीमत की जानकारी का उपयोग करें। अगर आपकी टीम टेलीमेट्री कहीं और एक्सपोर्ट करती है, तो स्विच से पहले संबंधित [ऑब्ज़र्वेबिलिटी](../guides/integrations/observability.mdx) इंटीग्रेशन सेट करें।
+## Helicone हेडर मैप करें
 
-</Step>
+| Helicone | Phaseo पर |
+| --- | --- |
+| `Helicone-Auth` | हटाएं। |
+| `Helicone-Property-<Name>` | `X-Phaseo-Metadata` [लेबल](../guides/request-labels): अधिकतम 32, कुंजियां `[A-Za-z0-9_.:-]` से मेल खाती हैं (64 अक्षर), इसलिए स्पेस वाली प्रॉपर्टी का नाम बदलें। खराब JSON या दोहराई गई कुंजियां `400` लौटाती हैं। लेबल में व्यक्तिगत डेटा न रखें। |
+| `Helicone-User-Id` | `user` बॉडी फ़ील्ड या `X-Phaseo-User-Id`। यह अंतिम-उपयोगकर्ता दर सीमा नीतियों की कुंजी भी है। |
+| `Helicone-Session-Id` | `session_id` बॉडी फ़ील्ड। यह कैश और प्रदाता एफ़िनिटी चलाता है, ट्रेस ट्री नहीं। |
+| `Helicone-Session-Path`, `Helicone-Session-Name` | बॉडी में `metadata.trace_id`, `parent_span_id`, `trace_name`, `span_name`, या W3C `traceparent` हेडर। ये ऑब्ज़र्वेबिलिटी गंतव्यों को भेजे जाने वाले स्पैन को आकार देते हैं; Phaseo के अपने लॉग में कोई ट्रेस ट्री नहीं है। |
+| `Helicone-Cache-Enabled` | कोई प्रतिक्रिया कैश नहीं। ज़रूरत हो तो ऐप में कैश करें। |
+| `Helicone-Fallbacks`, `Helicone-Retry-Enabled` | `models` ऐरे, जो `429`, `500`, `502`, `503` और `504` पर आज़माया जाता है, साथ में बिल्ट-इन प्रदाता फ़ॉलबैक। क्लाइंट बैकऑफ़ बनाए रखें। |
+| `Helicone-RateLimit-Policy` | दर सीमा नीतियां और कुंजी सीमाएं। देखें [सीमाएं](../api-reference/limits)। |
+| `Helicone-LLM-Security-Enabled` | गार्डरेल की प्रॉम्प्ट-इंजेक्शन पहचान, सिर्फ़ अनुरोधों पर। |
+| `Helicone-Moderations-Enabled` | गेटवे के अंदर कोई समकक्ष नहीं। ऐप से `/v1/moderations` कॉल करें। |
+| `Helicone-Omit-Request`, `Helicone-Omit-Response` | वर्कस्पेस लॉगिंग नीति या शून्य डेटा प्रतिधारण। |
+| `Helicone-Posthog-*` | PostHog [ऑब्ज़र्वेबिलिटी गंतव्य](../guides/integrations/observability)। |
+| प्रॉम्प्ट प्रबंधन | [प्रीसेट प्रॉम्प्ट टेम्पलेट](../guides/prompt-templates): `"prompt": {"id": "@slug", "version": "production", "variables": {...}}`। |
 
-<Step title="टेस्ट करें और रोल आउट करें">
+## अनुरोध दृश्यता ले जाएं
 
-पुष्टि करें कि Helicone हेडर के बिना अनुरोध पूरे होते हैं और आपकी टीम घटनाओं के दौरान ज़रूरी ऑपरेशनल सवालों के जवाब दे सकती है। इन्फ़रेंस और ऑब्ज़र्वेबिलिटी जांच पास होने के बाद ट्रैफ़िक धीरे-धीरे स्थानांतरित करें।
+डीबगिंग के लिए अनुरोध लॉग, अनुरोध ID, प्रदाता प्रयास और मूल्य विवरण उपयोग करें। अगर टीम टेलीमेट्री एक्सपोर्ट करती है, तो कटओवर से पहले मेल खाता [ऑब्ज़र्वेबिलिटी गंतव्य](../guides/integrations/observability) जोड़ें, ताकि कोई अंतराल न रहे। Helicone की async लॉगिंग, जो ट्रैफ़िक प्रॉक्सी नहीं करती, गेटवे बदलने से अलग फ़ैसला है।
 
-</Step>
-</Steps>
+## टेस्ट करें और रोलआउट करें
 
-## माइग्रेशन चेकलिस्ट
+सत्यापित करें कि अनुरोध Helicone हेडर के बिना सफल होते हैं और टीम घटनाओं के दौरान जो सवाल पूछती है, उनके जवाब अब भी दे सकती है। ट्रैफ़िक बदलने से पहले:
 
-- Helicone प्रॉक्सी URL और प्रमाणीकरण हेडर हटा दिए गए हैं।
-- प्रोडक्शन मॉडल ID को `GET /v1/models` से सत्यापित किया गया है।
-- ज़रूरी अनुरोध मेटाडेटा Phaseo या आपके टेलीमेट्री स्टैक में अब भी उपलब्ध है।
-- ज़रूरत पड़ने पर अलर्ट और डैशबोर्ड के विकल्प तय हैं।
-- रोलबैक अब भी केवल एंडपॉइंट और कुंजी की सेटिंग बदलकर हो सकता है।
-
-## अगले चरण
-
-- [ऑब्ज़र्वेबिलिटी](../guides/integrations/observability.mdx)
-- [प्रोवाइडर स्थितियां](../guides/provider-statuses.mdx)
-- [त्रुटि प्रबंधन](../api-reference/errors.mdx)
+- हर Helicone URL और `Helicone-*` हेडर हटाया या मैप किया गया है;
+- प्रोडक्शन मॉडल ID `GET /v1/models?format=openai` में हैं;
+- जहां टीम को ज़रूरत है, वहां अलर्ट और डैशबोर्ड का विकल्प मौजूद है;
+- रोलबैक अब भी सिर्फ़ बेस URL और कुंजी का बदलाव है।

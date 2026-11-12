@@ -138,6 +138,7 @@ export function normalizeProviderModelPricing(providerId: string, modelDetails: 
 		case "novitaai":
 			return novitaPricing(model);
 		case "pioneer":
+		case "fastino":
 			return fromMeters({
 				input_text_tokens: asNumber(model.input_price_per_million),
 				cached_read_text_tokens: asNumber(model.cache_read_price_per_million),

@@ -12,6 +12,7 @@ export const CAPABILITIES = {
 	PROVIDERS_READ: "providers:read",
 	PRICING_READ: "pricing:read",
 	CREDITS_READ: "credits:read",
+	BILLING_WRITE: "billing:write",
 	ACTIVITY_READ: "activity:read",
 	ANALYTICS_READ: "analytics:read",
 	GENERATIONS_READ: "generations:read",
@@ -40,6 +41,15 @@ export const CAPABILITIES = {
 	BUDGETS_READ: "budgets:read",
 	BUDGETS_WRITE: "budgets:write",
 	BUDGETS_DELETE: "budgets:delete",
+	RATE_LIMITS_READ: "rate_limits:read",
+	RATE_LIMITS_WRITE: "rate_limits:write",
+	RATE_LIMITS_DELETE: "rate_limits:delete",
+	CLASSIFIERS_READ: "classifiers:read",
+	CLASSIFIERS_WRITE: "classifiers:write",
+	CLASSIFIERS_DELETE: "classifiers:delete",
+	SPEND_RULES_READ: "spend_rules:read",
+	SPEND_RULES_WRITE: "spend_rules:write",
+	SPEND_RULES_DELETE: "spend_rules:delete",
 	MANAGEMENT_KEYS_READ: "management_keys:read",
 	MANAGEMENT_KEYS_WRITE: "management_keys:write",
 	MANAGEMENT_KEYS_DELETE: "management_keys:delete",
@@ -84,6 +94,15 @@ const CLI_CONTROL_CAPABILITIES = Object.freeze([
 	CAPABILITIES.BUDGETS_READ,
 	CAPABILITIES.BUDGETS_WRITE,
 	CAPABILITIES.BUDGETS_DELETE,
+	CAPABILITIES.RATE_LIMITS_READ,
+	CAPABILITIES.RATE_LIMITS_WRITE,
+	CAPABILITIES.RATE_LIMITS_DELETE,
+	CAPABILITIES.CLASSIFIERS_READ,
+	CAPABILITIES.CLASSIFIERS_WRITE,
+	CAPABILITIES.CLASSIFIERS_DELETE,
+	CAPABILITIES.SPEND_RULES_READ,
+	CAPABILITIES.SPEND_RULES_WRITE,
+	CAPABILITIES.SPEND_RULES_DELETE,
 	CAPABILITIES.MANAGEMENT_KEYS_READ,
 	CAPABILITIES.MANAGEMENT_KEYS_WRITE,
 	CAPABILITIES.MANAGEMENT_KEYS_DELETE,
@@ -97,9 +116,19 @@ export const DEFAULT_CLI_OAUTH_CAPABILITIES = Object.freeze([
 	...CLI_CONTROL_CAPABILITIES,
 ]);
 
-export const DEFAULT_MANAGEMENT_KEY_CAPABILITIES = Object.freeze([
-	...CONTROL_CAPABILITIES,
-]);
+// billing:write starts credit purchases, so it is opt-in everywhere: it is not a default CLI
+// login scope (`phaseo login --scopes billing:write`) and new management keys only get it
+// when it is asked for explicitly.
+export const OPT_IN_CONTROL_CAPABILITIES = Object.freeze([CAPABILITIES.BILLING_WRITE]);
+const OPT_IN_CONTROL_CAPABILITY_SET = new Set<string>(OPT_IN_CONTROL_CAPABILITIES);
+
+export function isOptInCapability(scope: string): boolean {
+	return OPT_IN_CONTROL_CAPABILITY_SET.has(scope);
+}
+
+export const DEFAULT_MANAGEMENT_KEY_CAPABILITIES = Object.freeze(
+	CONTROL_CAPABILITIES.filter((scope) => !OPT_IN_CONTROL_CAPABILITY_SET.has(scope)),
+);
 
 export const ALL_SUPPORTED_SCOPES = Object.freeze([
 	...IDENTITY_SCOPES,

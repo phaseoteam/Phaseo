@@ -1,122 +1,168 @@
 ---
 title: "TypeScript में टिकाऊ एजेंट लूप बनाएँ"
+sidebarTitle: "TypeScript में टिकाऊ एजेंट लूप"
 icon: "repeat-2"
 description: "TypeScript Agent SDK के साथ Phaseo Gateway पर फिर से शुरू किया जा सकने वाला एजेंट लूप चलाएँ।"
 ---
 
-जब आपको एक बार के टेक्स्ट अनुरोध से अधिक चाहिए, तब यह रेसिपी अपनाएँ:
+TypeScript Agent SDK से टूल इस्तेमाल करने वाला एजेंट चलाएँ और हर चरण के बाद उसकी स्थिति सहेजें, ताकि क्रैश या रीस्टार्ट हुई प्रोसेस वहीं से आगे बढ़े जहाँ रुकी थी। अंत में आपके पास एक स्क्रिप्ट होगी जो lookup टूल से दस्तावेज़ का सवाल हल करती है, हर रन को `.agent-runs/<run id>.json` में लिखती है, और रन ID देने पर उस रन को फिर से शुरू करती है।
 
-- कई चरणों वाले टूल लूप
-- लोकल रनटाइम टूल
-- फिर से शुरू किए जा सकने वाले रन
-- एजेंट कार्य के लिए एक Gateway-आधारित एंट्री पॉइंट
+यह स्क्रिप्ट उदाहरण के लिए है: फ़ाइल स्टोर एक ही मशीन के लिए ठीक है। प्रोडक्शन में वही `load`/`save` जोड़ी रखें, लेकिन उसके पीछे अपना डेटाबेस लगाएँ। Phaseo आपके लिए Agent SDK रन संग्रहीत नहीं करता।
 
-## 1. SDK इंस्टॉल करें
+```mermaid
+flowchart LR
+  start["agent.run()"] --> model["Phaseo से मॉडल टर्न"]
+  model --> tools["टूल कॉल स्थानीय रूप से चलाएँ"]
+  tools --> save["state.save(): चेकपॉइंट"]
+  save -->|"और चरण"| model
+  save -->|"पूरा"| out["result.output"]
+  crash["प्रोसेस रुक जाती है"] -.-> resume["agent.continueRun({ runId, state })"]
+  resume --> model
+```
+
+## इसे बनाएँ
+
+<Steps>
+<Step title="इंस्टॉल करें">
 
 <CodeGroup>
 ```bash npm
-npm install @phaseo/sdk @phaseo/agent-sdk
+npm install @phaseo/agent-sdk zod
 ```
 
 ```bash pnpm
-pnpm add @phaseo/sdk @phaseo/agent-sdk
+pnpm add @phaseo/agent-sdk zod
 ```
 
 ```bash yarn
-yarn add @phaseo/sdk @phaseo/agent-sdk
+yarn add @phaseo/agent-sdk zod
 ```
 
 ```bash bun
-bun add @phaseo/sdk @phaseo/agent-sdk
+bun add @phaseo/agent-sdk zod
 ```
 </CodeGroup>
 
-## 2. एक छोटा रनटाइम टूल परिभाषित करें
+`@phaseo/agent-sdk` अपने साथ `@phaseo/sdk` इंस्टॉल करता है। अपनी कुंजी सेट करें:
 
-पहला टूल नियतात्मक और जाँचने में आसान रखें।
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
 
-```ts
-import { defineTool } from "@phaseo/agent-sdk";
+</Step>
+<Step title="एजेंट लिखें">
 
-export const lookupDocs = defineTool({
+```ts agent.ts
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { z } from "zod";
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+  type AgentStateAccessor,
+} from "@phaseo/agent-sdk";
+
+const DOC_SLUGS = ["guides/presets", "guides/routing-and-fallbacks", "guides/streaming"] as const;
+
+// मॉडल सिर्फ़ `parameters` देखता है; `inputSchema` execute चलने से पहले बाकी सब अस्वीकार कर देता है।
+const lookupDocs = defineTool({
   id: "lookup-docs",
-  description: "Look up internal docs by slug.",
-  async execute(input: { slug: string }) {
-    return {
-      slug: input.slug,
-      url: `https://phaseo.app/docs/v1/${input.slug}`,
-    };
+  description: "Return the URL of one Phaseo docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: { slug: { type: "string", enum: [...DOC_SLUGS] } },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ slug: z.enum(DOC_SLUGS) }).strict(),
+  async execute({ slug }) {
+    return { slug, url: `https://phaseo.app/docs/v1/${slug}` };
   },
 });
-```
 
-## 3. एजेंट बनाएँ
-
-```ts
-import { createAgent } from "@phaseo/agent-sdk";
-import { lookupDocs } from "./tools";
-
-export const supportDocsAgent = createAgent({
+const agent = createAgent<string, string>({
   id: "support-docs-agent",
-  model: "phaseo/free",
-  instructions: "Use tools when helpful and finish with a concise answer.",
+  model: "openai/gpt-6-astra",
+  instructions: "Use tools when helpful and finish with a concise answer that includes the docs URL.",
   tools: [lookupDocs],
-});
-```
-
-## 4. Gateway-आधारित अडैप्टर इस्तेमाल करें
-
-```ts
-import {
-  createGatewayAgentClient,
-} from "@phaseo/agent-sdk";
-import { supportDocsAgent } from "./agent";
-
-const result = await supportDocsAgent.run({
-  input: "Find the docs page for presets and explain when to use them.",
-  client: createGatewayAgentClient({
-    clientOptions: {
-      apiKey: process.env.PHASEO_API_KEY!,
-    },
-  }),
+  maxSteps: 6,
 });
 
+// हर चरण के बाद पूरा रन सहेजें। इन दो फ़ंक्शन को अपने डेटाबेस से बदलें।
+const RUNS_DIR = ".agent-runs";
+const state: AgentStateAccessor<string, unknown, string> = {
+  async load(runId) {
+    try {
+      return JSON.parse(await readFile(`${RUNS_DIR}/${runId}.json`, "utf8"));
+    } catch {
+      return null;
+    }
+  },
+  async save(result) {
+    await mkdir(RUNS_DIR, { recursive: true });
+    await writeFile(`${RUNS_DIR}/${result.run.id}.json`, JSON.stringify(result));
+  },
+};
+
+const client = createGatewayAgentClient({
+  clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+});
+
+const onEvent = (event: { type: string; runId: string }) => {
+  if (event.type === "checkpoint.saved") console.log("checkpoint", event.runId);
+};
+
+const resumeId = process.argv[2];
+let result;
+
+if (resumeId) {
+  const saved = await state.load(resumeId);
+  if (!saved) throw new Error(`No saved run ${resumeId}`);
+  result = saved.run.status === "completed"
+    ? saved
+    : await agent.continueRun({ run: saved, client, state, onEvent });
+} else {
+  result = await agent.run({
+    input: "Find the docs page for presets and explain when to use them.",
+    client,
+    state,
+    onEvent,
+  });
+}
+
+console.log(result.run.id, result.run.status);
 console.log(result.output);
 ```
 
-## 5. चरणों के बीच क्या बना रहता है
+</Step>
+<Step title="इसे चलाएँ">
 
-हर पूरा हुआ चरण लौटाई गई रन स्थिति में ये जानकारी जोड़ता है:
+```bash
+npx tsx agent.ts
+```
 
-- रन ID
-- संदेश इतिहास
-- लौटाए गए टूल कॉल
-- लोकल टूल नतीजे
-- रन पूरा होने पर अंतिम आउटपुट
+रीज़्यूम आज़माने के लिए, पहली `checkpoint` लाइन के बाद `Ctrl+C` से स्क्रिप्ट रोकें, फिर उसने जो रन ID (एक UUID) प्रिंट किया था उसे पास करें:
 
-अनुरोधों या प्रक्रियाओं के बीच रन जारी रखने के लिए, लौटाए गए मान को अपने ऐप्लिकेशन में सहेजें और बाद में `continueRun()` को दें।
+```bash
+npx tsx agent.ts 3f6c1d2e-...
+```
 
-## 6. पहला संस्करण सरल कब रखें
+</Step>
+</Steps>
 
-- हर वर्कफ़्लो के लिए एक एजेंट
-- अनुरोधों के बीच फिर से शुरू करने से पहले ऐप्लिकेशन द्वारा सीरियलाइज़ेशन
-- सामान्य टूल रजिस्ट्री से पहले छोटा टूल सेट
-- हर रन के लिए रन ID और Gateway अनुरोध ID वाली एक लॉग लाइन
+## जाँचें कि यह काम किया
 
-## 7. इस रेसिपी से आगे कब बढ़ें
+- स्क्रिप्ट हर चरण में एक बार `checkpoint` प्रिंट करती है, फिर रन ID, `completed`, और `phaseo.app/docs` URL वाला जवाब।
+- `.agent-runs/<run id>.json` में रन ID, स्थिति, संदेश इतिहास, हर चरण के टूल कॉल और उनके नतीजे, और अंतिम आउटपुट होता है।
+- बाधित रन के बाद, रीज़्यूम कमांड नया रन शुरू करने के बजाय उसी रन ID को पूरा करता है।
+- हर मॉडल टर्न **सेटिंग → उपयोग → लॉग्स** में दिखता है। रन ID को हर अनुरोध ID के साथ लॉग करें ताकि आप उन्हें मिला सकें।
 
-जब आपको ये चाहिए हों, तो पहला टिकाऊ लूप बढ़ाएँ:
+## सहेजी गई स्थिति में क्या होता है
 
-- अनुमोदन के लिए रोकना
-- लौटाई गई रन स्थिति का ऐप्लिकेशन-नियंत्रित स्थायी संग्रह
-- साझा रनटाइम टूल वाले कई एजेंट परिभाषाएँ
+हर सहेजा गया नतीजा पूरा `AgentRunResult` होता है: `run` (ID, स्थिति, संदेश, उपयोग, कोई भी पॉज़), गेटवे अनुरोध ID और टूल कॉल वाले `steps`, और रन पूरा होने पर `output`। `continueRun()` इसे सीधे स्वीकार करता है, या `runId` के साथ `state` लेकर खुद `load()` कॉल करता है।
 
-उस स्थिति में उसी Gateway-आधारित अडैप्टर को रखें और उसके आसपास स्टोर व ऑर्केस्ट्रेशन विकसित करें।
+प्रोसेस रुकते समय चल रही टूल कॉल का असर शायद पहले ही हो चुका हो, इसलिए टूल idempotent रखें। आगे बढ़ने से पहले SDK उस कॉल का इतिहास ठीक करता है जिसे कभी नतीजा नहीं मिला। [स्थिति और अनुमोदन](../sdk-reference/agent/state-and-approval) में पॉज़ और अनुमोदन की जानकारी है।
 
-## संबंधित गाइड
+## इसे सावधानी से बढ़ाएँ
 
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
-- [प्रीसेट](../guides/presets.mdx)
-- [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx)
-- [SKILL.md के साथ कोडिंग एजेंट सेट अप करें](./coding-agents-skill-md.mdx)
-- [मुफ़्त राउटर पर लॉन्च करें](./free-router-first-deploy.mdx)
+हर वर्कफ़्लो के लिए एक एजेंट, टूल की छोटी सूची, और हर रन के लिए रन ID और अनुरोध ID वाली एक लॉग लाइन रखें। जब आपको अनुमोदन पॉज़ या एक ही टूल साझा करने वाले कई एजेंट चाहिए, तो यही गेटवे क्लाइंट और स्थिति वाली जोड़ी रखें और उनके आसपास निर्माण करें: [कोड रिव्यू एजेंट](./agent-sdk-coding-review) अनुमोदन पॉज़ जोड़ता है, और [समानांतर टूल](./agent-sdk-parallel-tools) टूल को साथ-साथ चलाता है। साझा अनुरोध डिफ़ॉल्ट के लिए तय मॉडल के बजाय [प्रीसेट](../guides/presets) कॉल करें।

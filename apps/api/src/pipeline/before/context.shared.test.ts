@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	clampDynamicTtl,
 	computeAdaptiveTtlForDynamic,
 	computeStaticTtl,
 	hasConfiguredKeyLimits,
@@ -12,6 +13,10 @@ import {
 } from "./context.shared";
 
 describe("credit cache composition", () => {
+	it("bounds managed privacy cache entries without changing legacy TTLs", () => {
+		expect(computeStaticTtl({ pricing: {}, providers: [{ capabilityParams: { data_policy: { catalogManaged: true } } }] } as never)).toBe(300);
+		expect(computeStaticTtl({ pricing: {} })).toBe(600);
+	});
 	const teamEnrichment = {
 		tier: "basic",
 		created_at: "2026-01-01T00:00:00.000Z",
@@ -110,6 +115,36 @@ describe("key limit cache policy", () => {
 					},
 				},
 			},
+		} as any)).toBe(60);
+	});
+
+	it("keeps an uncapped key's dynamic context for a day, refreshed by version bumps", () => {
+		const context = {
+			key: { ok: true },
+			credit: { ok: true, balanceNanos: 1_000_000_000 },
+			keyLimit: { ok: true, buckets: { daily: { requestsUsed: 3, requestsLimit: 0, costUsedNanos: 5, costLimitNanos: 0 } } },
+			teamSettings: { dataContributionEnabled: false },
+		} as any;
+		// Low balances no longer shorten it: credit is cached and invalidated separately.
+		expect(computeAdaptiveTtlForDynamic(context)).toBe(86_400);
+		expect(clampDynamicTtl(computeAdaptiveTtlForDynamic(context))).toBe(86_400);
+		expect(clampDynamicTtl(10)).toBe(60);
+	});
+
+	it("keeps the short lifetime while a workspace contributes data, so the Statsig gate applies quickly", () => {
+		expect(computeAdaptiveTtlForDynamic({
+			key: { ok: true },
+			credit: { ok: true, balanceNanos: 500_000_000_000 },
+			keyLimit: { ok: true },
+			teamSettings: { dataContributionEnabled: true },
+		} as any)).toBeLessThanOrEqual(600);
+	});
+
+	it("revalidates quickly when the key, its limits or credit are not ok", () => {
+		expect(computeAdaptiveTtlForDynamic({
+			key: { ok: false },
+			credit: { ok: true },
+			keyLimit: { ok: true },
 		} as any)).toBe(60);
 	});
 

@@ -1,64 +1,93 @@
 ---
 title: "Summarize internal notes with the Ruby Agent SDK"
+sidebarTitle: "Summarize internal notes in Ruby"
 icon: "notebook-tabs"
 description: "Use the Ruby Agent SDK to query local notes and return one bounded summary through Phaseo Gateway."
+"og:image": "https://phaseo.app/og/dynamic?title=Summarize%20internal%20notes%20with%20the%20Ruby%20Agent%20SDK&description=Use%20the%20Ruby%20Agent%20SDK%20to%20query%20local%20notes%20and%20return%20one%20bounded%20summary%20through%20Phaseo%20Gateway.&pathname=/docs/v1/cookbook/agent-sdk-ruby-rag-notes"
 ---
 
-Use this recipe when a Ruby service needs a small internal-notes assistant without handing orchestration to another system.
+Run a Ruby agent that looks up an internal note with a local tool and answers in one short paragraph, without handing orchestration to another system. When you're done you have one script that summarises your note about presets.
 
-## 1. Prepare the SDKs
+The tool returns fixed sample data, so the script is illustrative; replace it with a lookup in your own notes store. It suits a Ruby app that already owns the data and has simple, deterministic tool inputs.
 
-<Note type="warning">The Ruby Agent SDK package is not yet on RubyGems. Follow the [source installation instructions](../sdk-reference/ruby/agent-sdk-installation).</Note>
+## Build it
 
-## 2. Define a notes lookup tool
+<Steps>
+<Step title="Install">
 
-```ruby
+```bash
+gem install phaseo_agent_sdk
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+Or add `gem "phaseo_agent_sdk"` to your `Gemfile`. It installs `phaseo_sdk` with it and needs Ruby 3.2 or newer. See [Ruby Agent SDK installation](../sdk-reference/agent/installation).
+
+</Step>
+<Step title="Write the agent">
+
+```ruby notes.rb
+require "phaseo_agent_sdk"
+
+TOPICS = %w[presets routing guardrails].freeze
+
 lookup_note = PhaseoAgentSdk.define_tool(
   PhaseoAgentSdk::Tool.new(
     id: "lookup-note",
     description: "Look up one internal note by topic.",
     parameters: {
       type: "object",
-      properties: {
-        topic: { type: "string" },
-      },
+      properties: { topic: { type: "string", enum: TOPICS } },
       required: ["topic"],
+      additionalProperties: false
     },
+    # Arguments come from the model: only known topics reach execute.
+    input_schema: lambda do |input|
+      raise ArgumentError, "topic must be one of #{TOPICS.join(', ')}" unless input.is_a?(Hash) && TOPICS.include?(input["topic"])
+
+      input
+    end,
     execute: lambda do |input, _context|
       {
         topic: input["topic"],
-        summary: "Presets centralize routing defaults so app code stays smaller.",
+        summary: "Presets centralize routing defaults so app code stays smaller."
       }
     end
   )
 )
-```
 
-## 3. Create and run the agent
-
-```ruby
 agent = PhaseoAgentSdk.create_agent(
   id: "notes-agent",
-  model: "openai/gpt-5.4-nano",
+  model: "openai/gpt-6-astra",
   instructions: "Use tools when helpful and answer in one short paragraph.",
-  tools: [lookup_note]
+  tools: [lookup_note],
+  max_steps: 4
 )
 
+# Reads PHASEO_API_KEY from the environment.
 result = agent.run(
   input: "Summarize our note about presets.",
   client: PhaseoAgentSdk.create_gateway_agent_client
 )
 
+puts result.run.status
 puts result.output
 ```
 
-## When this recipe fits
+</Step>
+<Step title="Run it">
 
-- the tool inputs are simple and deterministic
-- the Ruby app already owns the data source
-- you want an ergonomic local-tool pattern for one bounded workflow
+```bash
+ruby notes.rb
+```
 
-## Related
+</Step>
+</Steps>
 
-- [Ruby Agent SDK](../sdk-reference/ruby/agent-sdk.mdx)
-- [Build a durable agent loop](./agent-sdk-durable-loop.mdx)
+## Check it worked
+
+- The script prints `completed`, then one paragraph about presets.
+- In **Settings → Usage → Logs**, the first model turn shows a `lookup-note` call with `{"topic": "presets"}`.
+
+## Before production
+
+Keep the tool read-only, and keep `max_steps` as low as the job allows (the default is `12`). If your notes store is large, return only the matching passage rather than whole documents, so each model turn stays small. To save runs and resume them later, see the [durable loop](./agent-sdk-durable-loop); the Ruby SDK's `state:` option works the same way. The [Ruby Agent SDK reference](../sdk-reference/agent/usage) covers state, approval and streaming.

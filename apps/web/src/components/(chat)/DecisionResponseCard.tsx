@@ -1,4 +1,5 @@
-import { useTranslations, useLocale } from "next-intl";
+import { formatLatency } from "@phaseo/app-kit/format";
+import { useTranslations, useLocale } from "@/i18n/react";
 import { ChevronDown } from "lucide-react";
 
 type RecordValue = Record<string, unknown>;
@@ -181,7 +182,7 @@ export function getDecisionResponseMetadata(
 	return {
 		costLabel: parsedResult ? formatUsd(parsedResult.totalCostUsd) : null,
 		endToEndDisplay:
-			endToEndMs === null ? null : `${Math.max(0, Math.round(endToEndMs))} ms`,
+			endToEndMs === null ? null : formatLatency(endToEndMs),
 		endToEndMs,
 		generationMs: parsedResult?.generationMs ?? null,
 		latencyMs: parsedResult?.latencyMs ?? null,

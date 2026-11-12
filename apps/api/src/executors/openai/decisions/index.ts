@@ -21,6 +21,8 @@ function text(value: unknown): string {
 function questionBody(name: string, question: IRDecisionQuestion): Record<string, unknown> {
 	const instructions = text(question.instructions);
 	switch (question.type) {
+		case "box":
+			throw new Error("Box questions are unsupported on OpenAI Decisions routes.");
 		case "noul":
 			return {
 				name, type: "predicate",
@@ -93,6 +95,7 @@ export const executor: ProviderExecutor = async args => {
 	if (args.providerId !== "openai" || args.providerModelSlug !== "gpt-6-luna") {
 		return invalid("OpenAI Decisions requires the gpt-6-luna provider route.");
 	}
+	if (ir.audio?.length || ir.videos?.length) return invalid("OpenAI Decisions does not support audio or video inputs.");
 	if (!(ir.decisionContext ? NativeDecisionsBodySchema.safeParse(ir.decisionContext) : DecisionsSchema.safeParse(ir)).success) {
 		return invalid("Invalid Phaseo decision request.");
 	}

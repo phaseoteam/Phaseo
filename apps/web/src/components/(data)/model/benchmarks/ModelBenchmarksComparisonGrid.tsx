@@ -1,7 +1,5 @@
-"use client";
-
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Expand } from "lucide-react";
 import {
 	ResponsiveContainer,
@@ -19,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	Select,
 	SelectContent,
@@ -335,16 +333,13 @@ export function ModelBenchmarksComparisonGrid({
 		return comparisons[0];
 	}, [comparisons, selectedBenchmarkId]);
 
-	if (!selectedComparison) {
-		return null;
-	}
-
+	// Hooks run on every render; the empty case returns after them.
 	const topModels = React.useMemo(
-		() => selectedComparison.models.slice(0, 20),
+		() => selectedComparison?.models.slice(0, 20) ?? [],
 		[selectedComparison]
 	);
 	const allModels = React.useMemo(
-		() => selectedComparison.models,
+		() => selectedComparison?.models ?? [],
 		[selectedComparison]
 	);
 	const palette = React.useMemo(
@@ -364,10 +359,10 @@ export function ModelBenchmarksComparisonGrid({
 			buildChartRows(
 				chartModels,
 				palette,
-				selectedComparison.isLowerBetter,
+				selectedComparison?.isLowerBetter ?? false,
 				unknownProvider
 			),
-		[chartModels, palette, selectedComparison.isLowerBetter, unknownProvider]
+		[chartModels, palette, selectedComparison?.isLowerBetter, unknownProvider]
 	);
 
 	const visibleRows = Math.min(MAX_CHART_ROWS, rows.length);
@@ -377,7 +372,7 @@ export function ModelBenchmarksComparisonGrid({
 	const chartHeight = chartRowCount * ROW_HEIGHT;
 	const barSize = Math.max(18, Math.min(24, Math.round(ROW_HEIGHT * 0.6)));
 	const hasRows = rows.length > 0;
-	const isLowerBetter = selectedComparison.isLowerBetter;
+	const isLowerBetter = selectedComparison?.isLowerBetter ?? false;
 	const chartMargin = React.useMemo(
 		() =>
 			isMobile
@@ -405,6 +400,10 @@ export function ModelBenchmarksComparisonGrid({
 		(value: number) => formatAxisValue(value),
 		[formatAxisValue]
 	);
+
+	if (!selectedComparison) {
+		return null;
+	}
 
 	const currentModel =
 		selectedComparison.models.find((model) => model.isCurrent) ?? null;

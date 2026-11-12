@@ -1,0 +1,362 @@
+import {
+  checkDirectAuth, directChallenge, encodePairingLink, EnvelopeChannel, generateKeyPair, isEnvelope, okResponse, openPairRequest, errorResponse, parsePhoneFrame,
+  randomToken, readRelayOutbound, relayDesktopAddress, relayPairing, sealPairResponse, sharedKey,
+  type DesktopFrame, type PhoneCapability, type PhoneChatDetail, type PhoneEntry, type PhoneFrame, type PhoneProject, type PhoneRequest, type PhoneResults, type PhoneResponse,
+} from "./protocol";
+import type { FetchLike } from "./reach";
+import type { OpenSocket, SocketLike } from "./transport";
+
+type Device = { id: string; relayToken: string; publicKey: string };
+/** challenge: a direct peer that hasn't proved its key yet; pairingId: a relay sign-in made from the pairing code. */
+type Peer = { socket: FakeSocket; kind: "direct" | "connect"; device?: Device; channel?: EnvelopeChannel; challenge?: string; pairingId?: string };
+
+/** A socket whose other end is the fake desktop. Delivery is async, like a real socket. */
+class FakeSocket implements SocketLike {
+  onopen: (() => void) | null = null;
+  onmessage: ((event: { data: unknown }) => void) | null = null;
+  onclose: ((event: { code?: number; reason?: string }) => void) | null = null;
+  onerror: ((event: unknown) => void) | null = null;
+  closed = false;
+  constructor(private readonly deliver: (text: string) => void) {}
+  send(data: string) { if (!this.closed) queueMicrotask(() => this.deliver(data)); }
+  close(code = 1000) { this.end(code); }
+  /** The desktop (or the relay) ends the socket. */
+  end(code = 1006, reason?: string) {
+    if (this.closed) return;
+    this.closed = true;
+    queueMicrotask(() => this.onclose?.({ code, ...(reason ? { reason } : {}) }));
+  }
+  push(text: string) { if (!this.closed) queueMicrotask(() => this.onmessage?.({ data: text })); }
+}
+
+/**
+ * A desktop for the phone's tests, speaking the protocol package's frames: its phone server (health, sealed POST /pair,
+ * /v1/phone with the key handshake and envelopes) and, through a stand-in relay that sets each envelope's sender as the
+ * real one does, Phaseo Connect.
+ */
+export class FakeDesktop {
+  readonly desktopId = "desk-1";
+  readonly desktopName = "Studio PC";
+  readonly keys = generateKeyPair();
+  readonly pairingCode = randomToken(32);
+  readonly directUrl = "http://100.64.0.7:47800";
+  readonly relayUrl = "wss://connect.test";
+  /** Whether the direct address answers (false: off the tailnet). */
+  reachable = true;
+  /** How the relay closes a phone's socket once it opens instead of forwarding, e.g. 4402 connect_off. */
+  relayClose: { code: number; reason: string } | null = null;
+  readonly devices: Device[] = [];
+  readonly received: PhoneFrame[] = [];
+  /** Raw frames the relay saw from the phone, to check holding and that it only saw envelopes. */
+  readonly relayed: Record<string, unknown>[] = [];
+  readonly socketUrls: { url: string; token?: string }[] = [];
+  /** Every text that crossed the direct address, both ways, as someone on the Wi-Fi would see it. */
+  readonly directWire: string[] = [];
+  readonly peers = new Set<Peer>();
+  chats: PhoneChatDetail[] = [
+    { id: "c1", title: "Fix the build", mode: "code", status: "completed", updatedAt: "2026-11-01T09:00:00.000Z", unread: false, needsYou: false, project: "Phaseo", projectId: "p1", approvals: [], questions: [] },
+    { id: "c2", title: "Release notes", mode: "chat", status: "waiting", updatedAt: "2026-11-01T08:00:00.000Z", unread: true, needsYou: true, attention: "Wants to run a command", approvals: [{ id: "a1", title: "Run pnpm build", description: "pnpm --filter web build" }], questions: [] },
+  ];
+  /** The protocol it speaks; 1 answers like a computer from before list_projects, 2 like one from before update_chat, 3 like one from before git_status, 5 like one from before git_action. */
+  protocol = 6;
+  /** What it lets this phone do beyond threads (sent from protocol 4). */
+  capabilities: PhoneCapability[] = ["code"];
+  /** The project's files by path, for list_files and read_file; folders are what their paths imply. */
+  files: Record<string, PhoneResults["read_file"]> = { "src/usage.ts": { kind: "text", text: "export const usage = 1;\n", size: 24, truncated: false }, "README.md": { kind: "text", text: "# Phaseo\n", size: 9, truncated: false } };
+  /** Its one checkout's git status, which git_action changes as git would. */
+  git: PhoneResults["git_status"] = { repository: true, branch: "main", hasRemote: false, files: [{ path: "src/usage.ts", status: "modified", staged: false }] };
+  branches: PhoneResults["list_branches"] = { current: "main", local: ["main", "fix/login"], remote: [] };
+  /** Pull requests read_pull_request and pr_action answer with, by number. */
+  pullRequests: PhoneResults["read_pull_request"][] = [];
+  /** Its terminals, what each has written, the ones a phone watches, what was typed, and the servers threads started. */
+  terminals: PhoneResults["open_terminal"]["terminal"][] = [];
+  terminalOutput = new Map<string, string>();
+  readonly watching = new Set<string>();
+  readonly typed: { terminalId: string; data: string }[] = [];
+  servers: PhoneResults["list_servers"]["servers"] = [];
+  /** The diff read_diff answers with. */
+  diff: PhoneResults["read_diff"] = { repository: true, hash: "a".repeat(64), truncated: false, files: [{ path: "src/usage.ts", status: "modified", additions: 2, deletions: 1, patch: "diff --git a/src/usage.ts b/src/usage.ts\n@@ -1,2 +1,3 @@\n a\n-b\n+c\n+d\n" }] };
+  /** Its projects: Blog has no threads yet, Scratch is archived and a worktree folds under Phaseo. */
+  projects: PhoneProject[] = [
+    { id: "p2", name: "Blog", pinned: true, repository: true },
+    { id: "p1", name: "Phaseo", repository: true },
+    { id: "p3", name: "Scratch", archived: true, repository: false },
+    { id: "w1", name: "Phaseo (fix)", worktreeOf: "p1", branch: "fix/login", repository: true },
+  ];
+  /** What a new thread can start on; null answers list_models as a computer from before it did. */
+  models: PhoneResults["list_models"] | null = {
+    models: [
+      { id: "gpt-6.1", name: "GPT-6.1", efforts: [{ id: "low", label: "Low" }, { id: "medium", label: "Medium" }, { id: "high", label: "High" }], defaultEffort: "medium" },
+      { id: "gpt-6.1-mini", name: "GPT-6.1 mini" },
+    ],
+    selected: { model: "gpt-6.1", reasoningEffort: "low" },
+  };
+  entries = new Map<string, PhoneEntry[]>([
+    ["c1", [
+      { kind: "message", id: "m1", role: "user", text: "Fix the build", createdAt: "2026-11-01T08:59:00.000Z" },
+      { kind: "activity", id: "t1", type: "tool", title: "Ran pnpm build", text: "ok", status: "completed" },
+      { kind: "message", id: "m2", role: "assistant", text: "Fixed.", createdAt: "2026-11-01T09:00:00.000Z", completedAt: "2026-11-01T09:00:00.000Z" },
+    ]],
+    ["c2", []],
+  ]);
+
+  pairingLink(options: { direct?: boolean; connect?: boolean } = {}) {
+    return encodePairingLink({
+      v: 1, desktopId: this.desktopId, desktopName: this.desktopName, pairingCode: this.pairingCode, desktopPublicKey: this.keys.publicKey,
+      direct: options.direct === false ? [] : [this.directUrl],
+      ...(options.connect ? { connect: { relayUrl: this.relayUrl, desktopId: this.desktopId } } : {}),
+    });
+  }
+
+  private redeem(body: { pairingCode?: unknown; devicePublicKey?: unknown }) {
+    if (body.pairingCode !== this.pairingCode) throw new Error("This pairing code has expired.");
+    const device = { id: `dev-${this.devices.length + 1}`, relayToken: randomToken(), publicKey: String(body.devicePublicKey) };
+    this.devices.push(device);
+    return { deviceId: device.id, relayToken: device.relayToken, desktopId: this.desktopId, desktopName: this.desktopName };
+  }
+
+  readonly fetch: FetchLike = async (url, init) => {
+    if (!url.startsWith(this.directUrl) || !this.reachable) {
+      // An address that doesn't answer: the probe's own time limit ends it.
+      return new Promise((_, reject) => init.signal?.addEventListener("abort", () => reject(new Error("aborted"))));
+    }
+    const path = url.slice(this.directUrl.length);
+    if (path === "/v1/phone/health") return { ok: true, status: 200, json: async () => ({ ok: true, desktopId: this.desktopId }) };
+    if (path === "/pair" && init.method === "POST") {
+      this.directWire.push(init.body ?? "");
+      try {
+        const request = openPairRequest(this.keys.privateKey, JSON.parse(init.body ?? "{}"));
+        const sealed = sealPairResponse(this.keys.privateKey, request.devicePublicKey, this.redeem(request));
+        this.directWire.push(JSON.stringify(sealed));
+        return { ok: true, status: 200, json: async () => sealed };
+      } catch (error) { return { ok: false, status: 400, json: async () => ({ error: (error as Error).message }) }; }
+    }
+    return { ok: false, status: 404, json: async () => ({}) };
+  };
+
+  readonly openSocket: OpenSocket = (url, token) => {
+    this.socketUrls.push({ url, token });
+    const peer: Peer = { socket: new FakeSocket((text) => this.receive(peer, text)), kind: url.startsWith(this.relayUrl) ? "connect" : "direct" };
+    const { socket } = peer;
+    const refuse = () => { socket.end(1006); return socket; };
+    if (peer.kind === "direct") {
+      if (url !== "ws://100.64.0.7:47800/v1/phone" || !this.reachable || token) return refuse();
+      peer.challenge = directChallenge().challenge;
+    } else {
+      if (url !== `${this.relayUrl}/v1/phone/${this.desktopId}`) return refuse();
+      peer.device = this.devices.find((device) => device.relayToken === token);
+      if (!peer.device && token === relayPairing(this.pairingCode).relayToken) peer.pairingId = relayPairing(this.pairingCode).deviceId;
+      if (!peer.device && !peer.pairingId) return refuse();
+      if (peer.device) peer.channel = new EnvelopeChannel(sharedKey(this.keys.privateKey, peer.device.publicKey), relayDesktopAddress, peer.device.id);
+    }
+    this.peers.add(peer);
+    queueMicrotask(() => {
+      socket.onopen?.();
+      if (peer.challenge) this.push(peer, JSON.stringify({ type: "challenge", v: 1, challenge: peer.challenge }));
+      if (peer.kind === "connect" && this.relayClose) socket.end(this.relayClose.code, this.relayClose.reason);
+    });
+    return socket;
+  };
+
+  private push(peer: Peer, text: string) {
+    if (peer.kind === "direct") this.directWire.push(text);
+    peer.socket.push(text);
+  }
+
+  private receive(peer: Peer, text: string) {
+    if (peer.kind === "direct") {
+      this.directWire.push(text);
+      const envelope = JSON.parse(text) as unknown;
+      if (!isEnvelope(envelope)) { peer.socket.end(4401); return; }
+      if (peer.challenge) {
+        // The phone proves the key it paired with; the desktop answers with a sealed welcome.
+        const device = this.devices.find((value) => value.id === envelope.from);
+        if (!device) { peer.socket.end(4401); return; }
+        const channel = new EnvelopeChannel(sharedKey(this.keys.privateKey, device.publicKey), relayDesktopAddress, device.id);
+        let welcome: { type: string; reply: string };
+        try { welcome = checkDirectAuth(channel, envelope, peer.challenge); } catch { peer.socket.end(4401); return; }
+        Object.assign(peer, { device, channel, challenge: undefined });
+        this.push(peer, JSON.stringify(channel.seal(welcome)));
+        return;
+      }
+      this.answer(peer, parsePhoneFrame(peer.channel!.open(envelope)));
+      return;
+    }
+    this.relayed.push(JSON.parse(text) as Record<string, unknown>);
+    const outbound = readRelayOutbound(JSON.parse(text));
+    if (!outbound || outbound.to !== relayDesktopAddress) return;
+    // The relay names the sender from the socket's sign-in.
+    const envelope = { ...outbound, from: peer.device?.id ?? peer.pairingId! };
+    if (!peer.device) {
+      // Pairing over Connect: a fresh channel with the key sent beside the envelope.
+      const publicKey = envelope.senderPublicKey!;
+      const channel = new EnvelopeChannel(sharedKey(this.keys.privateKey, publicKey), relayDesktopAddress, envelope.from);
+      const request = JSON.parse(channel.open(envelope)) as { id: string; type: string; pairingCode?: string; devicePublicKey?: string };
+      const reply = request.type === "pair" && request.devicePublicKey === publicKey
+        ? { id: request.id, type: "pair", ok: true, result: this.redeem(request) }
+        : { id: request.id, type: "pair", ok: false, error: { code: "rejected", message: "Invalid pairing request." } };
+      peer.socket.push(JSON.stringify(channel.seal(reply)));
+      return;
+    }
+    this.answer(peer, parsePhoneFrame(peer.channel!.open(envelope)));
+  }
+
+  private deliver(peer: Peer, frame: DesktopFrame) {
+    if (peer.channel) this.push(peer, JSON.stringify(peer.channel.seal(frame)));
+  }
+
+  private answer(peer: Peer, frame: PhoneFrame) {
+    this.received.push(frame);
+    if (frame.type === "ping" || frame.type === "pong") return;
+    this.deliver(peer, this.respond(frame));
+  }
+
+  private respond(request: PhoneRequest): PhoneResponse {
+    const chatId = "chatId" in request ? request.chatId : undefined;
+    const chat = chatId ? this.chats.find((value) => value.id === chatId) : undefined;
+    if (chatId && !chat) return errorResponse(request.id, request.type, "not_found", "This chat no longer exists on this computer.") as PhoneResponse;
+    switch (request.type) {
+      case "hello": {
+        const protocol = Math.min(request.protocol ?? 1, this.protocol);
+        return okResponse(request, { desktopName: this.desktopName, appVersion: "1.0.0", protocol, ...(protocol >= 2 ? { capabilities: protocol >= 4 ? this.capabilities : [] } : {}) });
+      }
+      case "git_status": case "read_diff": case "read_diff_file": {
+        if (this.protocol < 4) return errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
+        if (!this.capabilities.includes("code")) return errorResponse(request.id, request.type, "forbidden", "Allow this on the computer: Settings → Phone.") as PhoneResponse;
+        if (request.type === "git_status") return okResponse(request, { ...this.git, ...(request.pullRequest && this.protocol >= 6 ? { pullRequest: null } : {}) });
+        if (request.type === "read_diff") return okResponse(request, this.diff);
+        const file = this.diff.files.find((entry) => entry.path === request.path);
+        return file ? okResponse(request, { file }) : errorResponse(request.id, request.type, "not_found", "That file isn't in these changes any more.") as PhoneResponse;
+      }
+      case "list_files": case "read_file": {
+        if (this.protocol < 5) return errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
+        if (!this.capabilities.includes("code")) return errorResponse(request.id, request.type, "forbidden", "Allow this on the computer: Settings → Phone.") as PhoneResponse;
+        if (request.type === "read_file") return this.files[request.path] ? okResponse(request, this.files[request.path]!) : errorResponse(request.id, request.type, "not_found", "That file isn't in this project any more.") as PhoneResponse;
+        const paths = Object.keys(this.files), prefix = request.directory ? `${request.directory}/` : "";
+        const names = request.query !== undefined ? paths.filter((path) => path.includes(request.query!)) : [...new Set(paths.filter((path) => path.startsWith(prefix)).map((path) => prefix + path.slice(prefix.length).split("/")[0]))];
+        return okResponse(request, { entries: names.map((path) => ({ name: path.slice(path.lastIndexOf("/") + 1), path, directory: !this.files[path] })), truncated: false });
+      }
+      case "list_branches": case "git_action": case "commit_message": case "create_pull_request": case "list_pull_requests": case "read_pull_request": case "pull_request_files": case "pr_action":
+        return this.respondGit(request);
+      case "list_terminals": case "open_terminal": case "attach_terminal": case "detach_terminal": case "terminal_input": case "close_terminal": case "list_servers": case "stop_server":
+        return this.respondTerminal(request);
+      case "list_projects":
+        return this.protocol >= 2 ? okResponse(request, { projects: this.projects }) : errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
+      case "list_chats": return okResponse(request, { chats: this.chats.filter((entry) => Boolean(entry.archived) === Boolean(request.archived)).map(({ approvals: _approvals, questions: _questions, queue: _queue, ...row }) => row) });
+      case "update_chat": {
+        if (this.protocol < 3) return errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
+        if (request.action === "settle" && chat!.status === "running") return errorResponse(request.id, request.type, "rejected", "This chat is still running. Stop it before settling.") as PhoneResponse;
+        const flags: Partial<Record<typeof request.action, Partial<PhoneChatDetail>>> = { settle: { settled: true }, unsettle: { settled: undefined }, archive: { archived: true }, unarchive: { archived: undefined }, pin: { pinned: true }, unpin: { pinned: undefined }, wake: { snoozedUntil: undefined }, "mark-unread": { unread: true } };
+        Object.assign(chat!, request.action === "rename" ? { title: request.title } : request.action === "snooze" ? { snoozedUntil: request.until } : flags[request.action]);
+        const { approvals: _approvals, questions: _questions, queue: _queue, ...row } = chat!;
+        return okResponse(request, { chat: JSON.parse(JSON.stringify(row)) as typeof row });
+      }
+      case "set_chat":
+        if (request.mode) chat!.mode = request.mode;
+        if (request.model) { chat!.model = request.model; delete chat!.reasoningEffort; }
+        if (request.reasoningEffort) chat!.reasoningEffort = request.reasoningEffort;
+        if (request.defaultEffort) delete chat!.reasoningEffort;
+        return okResponse(request, { chat: chat! });
+      case "queue":
+        if (!chat!.queue?.some((entry) => entry.id === request.messageId)) return errorResponse(request.id, request.type, "not_found", "That message has already been sent or removed.") as PhoneResponse;
+        chat!.queue = request.action === "remove" || request.action === "steer" ? chat!.queue.filter((entry) => entry.id !== request.messageId) : request.action === "edit" ? chat!.queue.map((entry) => (entry.id === request.messageId ? { ...entry, text: request.text! } : entry)) : chat!.queue;
+        return okResponse(request, { chatId: chat!.id });
+      case "read_chat": {
+        const all = this.entries.get(request.chatId) ?? [];
+        const end = request.before ? all.findIndex((entry) => entry.id === request.before) : all.length;
+        const start = Math.max(0, end - (request.limit ?? 50));
+        return okResponse(request, { chat: chat!, entries: all.slice(start, end), earlier: all.slice(0, start).filter((entry) => entry.kind === "message").length });
+      }
+      case "send": {
+        chat!.status = "running";
+        this.entries.get(chat!.id)!.push({ kind: "message", id: `u${this.received.length}`, role: "user", text: request.text, createdAt: "2026-11-01T10:00:00.000Z", ...(request.steer ? { delivery: "steer" as const } : {}) });
+        return okResponse(request, { chatId: chat!.id });
+      }
+      case "answer_approval":
+        if (!chat!.approvals.some((approval) => approval.id === request.approvalId)) return errorResponse(request.id, request.type, "rejected", "This approval is no longer pending.") as PhoneResponse;
+        chat!.approvals = chat!.approvals.filter((approval) => approval.id !== request.approvalId);
+        return okResponse(request, { chatId: chat!.id });
+      case "answer_question": return okResponse(request, { chatId: chat!.id });
+      case "stop": chat!.status = "interrupted"; return okResponse(request, { chatId: chat!.id });
+      case "list_models":
+        return this.models ? okResponse(request, this.models) : errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
+      case "new_chat": {
+        // A named agent's own models; without one, the default agent's.
+        const pool = request.harness ? this.models?.agents?.find((agent) => agent.harness === request.harness && (agent.accountId ?? "") === (request.accountId ?? ""))?.models ?? [] : this.models?.models;
+        const model = pool?.find((entry) => entry.id === (request.model ?? this.models?.selected.model));
+        if (request.model && !model) return errorResponse(request.id, request.type, "rejected", "That model isn't available on this computer any more.") as PhoneResponse;
+        if (request.reasoningEffort && !model?.efforts?.some((effort) => effort.id === request.reasoningEffort)) return errorResponse(request.id, request.type, "rejected", "That model doesn't offer that effort.") as PhoneResponse;
+        const reasoningEffort = request.reasoningEffort ?? (request.model ? undefined : this.models?.selected.reasoningEffort);
+        const created: PhoneChatDetail = { id: `c${this.chats.length + 1}`, title: "New chat", mode: request.mode, status: "running", updatedAt: "2026-11-01T10:00:00.000Z", unread: false, needsYou: false, ...(model ? { model: model.id } : {}), ...(reasoningEffort ? { reasoningEffort } : {}), approvals: [], questions: [] };
+        this.chats.push(created);
+        this.entries.set(created.id, [{ kind: "message", id: "n1", role: "user", text: request.text, createdAt: created.updatedAt }]);
+        return okResponse(request, { chat: created });
+      }
+      case "subscribe": return okResponse(request, { chatIds: request.chatIds });
+    }
+  }
+
+  /** The Git and pull request frames from protocol 6: reads need code, the rest changes too, as the computer checks them. */
+  private respondGit(request: Extract<PhoneRequest, { projectId?: string }>): PhoneResponse {
+    const refuse = (code: "invalid_frame" | "forbidden" | "rejected" | "not_found", message: string) => errorResponse(request.id, request.type, code, message) as PhoneResponse;
+    if (this.protocol < 6) return refuse("invalid_frame", "Unknown frame type.");
+    const writes = request.type === "git_action" || request.type === "commit_message" || request.type === "create_pull_request" || request.type === "pr_action";
+    if (!this.capabilities.includes("code") || (writes && !this.capabilities.includes("changes"))) return refuse("forbidden", "Allow this on the computer: Settings → Phone.");
+    switch (request.type) {
+      case "list_branches": return okResponse(request, this.branches);
+      case "commit_message": return okResponse(request, { message: "Fix the usage total" });
+      case "git_action":
+        if (request.action === "push" && !this.git.hasRemote) return refuse("rejected", "Add a remote before pushing.");
+        if (request.action === "commit") this.git = { ...this.git, files: [] };
+        if (request.action === "switch-branch" || request.action === "create-branch") this.git = { ...this.git, branch: request.name! };
+        return okResponse(request, this.git);
+      case "create_pull_request": return this.git.hasRemote ? okResponse(request, { repository: "phaseo/phaseo", number: 12, url: "https://github.com/phaseo/phaseo/pull/12", status: "created" }) : refuse("rejected", "Add a remote before pushing.");
+      case "list_pull_requests": return okResponse(request, { repository: "phaseo/phaseo", pullRequests: this.pullRequests, limitReached: false });
+      case "pull_request_files": return okResponse(request, { files: this.diff.files, total: this.diff.files.length, hasNext: false });
+      case "read_pull_request": case "pr_action": {
+        const view = this.pullRequests.find((value) => value.number === request.number);
+        if (!view) return refuse("not_found", "Could not read pull request.");
+        if (request.type === "read_pull_request") return okResponse(request, view);
+        if (view.headOid !== request.headOid) return refuse("rejected", "This pull request changed. It has been refreshed; check it and try again.");
+        if (request.action.type === "merge") view.state = "merged";
+        if (request.action.type === "close") view.state = "closed";
+        if (request.action.type === "reopen") view.state = "open";
+        return okResponse(request, view);
+      }
+    }
+    return refuse("invalid_frame", "Unknown frame type.");
+  }
+
+  /** The terminal frames from protocol 7, which need code and terminal as the computer checks them. */
+  private respondTerminal(request: Extract<PhoneRequest, { type: "list_terminals" | "open_terminal" | "attach_terminal" | "detach_terminal" | "terminal_input" | "close_terminal" | "list_servers" | "stop_server" }>): PhoneResponse {
+    const refuse = (code: "invalid_frame" | "forbidden" | "rejected" | "not_found", message: string) => errorResponse(request.id, request.type, code, message) as PhoneResponse;
+    if (this.protocol < 7) return refuse("invalid_frame", "Unknown frame type.");
+    if (request.type === "detach_terminal") { this.watching.delete(request.terminalId); return okResponse(request, { terminalId: request.terminalId }); }
+    if (!this.capabilities.includes("code") || !this.capabilities.includes("terminal")) return refuse("forbidden", "Allow this on the computer: Settings → Phone.");
+    switch (request.type) {
+      case "list_terminals": return okResponse(request, { terminals: this.terminals.filter((terminal) => terminal.chatId === request.chatId), scripts: [{ id: "dev", name: "Dev server", command: "pnpm dev" }] });
+      case "open_terminal": {
+        const terminal = { id: `t${this.terminals.length + 1}`, title: request.scriptId ? "Dev server" : `Terminal ${this.terminals.length + 1}`, chatId: request.chatId, projectId: "p1", status: "running" as const, createdAt: "2026-11-01T10:00:00.000Z" };
+        this.terminals.push(terminal);
+        return okResponse(request, { terminal });
+      }
+      case "list_servers": return okResponse(request, { servers: this.servers });
+      case "stop_server":
+        if (!this.servers.some((server) => server.port === request.port)) return refuse("rejected", "That server is no longer running from this chat.");
+        this.servers = this.servers.filter((server) => server.port !== request.port);
+        return okResponse(request, { servers: this.servers });
+    }
+    const terminal = this.terminals.find((value) => value.id === request.terminalId);
+    if (!terminal) return refuse("not_found", "This terminal is no longer on the computer.");
+    if (request.type === "attach_terminal") { this.watching.add(terminal.id); return okResponse(request, { terminal, output: this.terminalOutput.get(terminal.id) ?? "", truncated: false }); }
+    if (terminal.status !== "running") return refuse("rejected", "This terminal has exited.");
+    if (request.type === "terminal_input") { this.typed.push({ terminalId: terminal.id, data: request.data }); return okResponse(request, { terminalId: terminal.id }); }
+    terminal.status = "exited";
+    return okResponse(request, { terminalId: terminal.id });
+  }
+
+  /** Sends an event to every connected phone, as the desktop does when a chat changes. */
+  emit(frame: DesktopFrame) { for (const peer of this.peers) if (!peer.socket.closed) this.deliver(peer, frame); }
+  /** Drops every connection, as when the computer sleeps or the Wi-Fi changes. */
+  drop(code = 1006) { for (const peer of this.peers) peer.socket.end(code); this.peers.clear(); }
+}

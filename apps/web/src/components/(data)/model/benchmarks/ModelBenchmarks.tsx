@@ -1,5 +1,5 @@
+import { useTranslations } from "@/i18n/react";
 import { Card } from "@/components/ui/card";
-import { getTranslations } from "next-intl/server";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type {
 	ModelBenchmarkHighlight,
@@ -8,8 +8,8 @@ import type {
 import type { PublicBenchmarkRanking } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { ModelBenchmarksGrid } from "./ModelBenchmarksGrid";
 import { ModelBenchmarksTable } from "./ModelBenchmarksTable";
-import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
-import { isEpochCapabilitiesIndex } from "@/lib/benchmarks/epoch";
+import { isArtificialAnalysisBenchmark, isArtificialAnalysisProgressIndex, type ArtificialAnalysisRankSummary } from "@/lib/benchmarks/artificialAnalysis";
+import { isEpochCapabilitiesIndex, selectEpochLeaderboardEntries } from "@/lib/benchmarks/epoch";
 import { ArtificialAnalysisBenchmarks } from "./ArtificialAnalysisBenchmarks";
 import { EpochCapabilitiesIndex } from "./EpochCapabilitiesIndex";
 
@@ -17,27 +17,30 @@ type Props = {
 	highlightCards: ModelBenchmarkHighlight[];
 	benchmarkTableData?: Record<string, ModelBenchmarkResult[]>;
 	benchmarkResults?: ModelBenchmarkResult[];
-	benchmarkRankings?: PublicBenchmarkRanking[];
+	/** Artificial Analysis rank inputs, keyed by benchmark. */
+	rankSummaries?: Record<string, ArtificialAnalysisRankSummary>;
+	epochRanking?: PublicBenchmarkRanking | null;
 	modelId?: string;
 	modelName?: string;
 	mode?: "summary" | "full";
 };
 
-export default async function ModelBenchmarks({
+export default function ModelBenchmarks({
 	highlightCards,
 	benchmarkTableData,
 	benchmarkResults = [],
-	benchmarkRankings = [],
+	rankSummaries,
+	epochRanking,
 	modelId,
 	modelName,
 	mode = "full",
 }: Props) {
-	const t = await getTranslations("Catalogue.models.detail.benchmarkGrid");
+	const t = useTranslations("Catalogue.models.detail.benchmarkGrid");
 	const showFull = mode === "full";
 	const otherHighlights = highlightCards.filter(
-		(item) => !isArtificialAnalysisBenchmark(item.benchmarkId) && !isEpochCapabilitiesIndex(item.benchmarkId),
+		(item) => !isArtificialAnalysisBenchmark(item.benchmarkId) && !isArtificialAnalysisProgressIndex(item.benchmarkId) && !isEpochCapabilitiesIndex(item.benchmarkId),
 	);
-	const hasArtificialAnalysis = highlightCards.some((item) => isArtificialAnalysisBenchmark(item.benchmarkId) && item.score !== null);
+	const hasArtificialAnalysis = highlightCards.some((item) => (isArtificialAnalysisBenchmark(item.benchmarkId) || isArtificialAnalysisProgressIndex(item.benchmarkId)) && item.score !== null);
 	const hasEpochCapabilitiesIndex = highlightCards.some((item) => isEpochCapabilitiesIndex(item.benchmarkId) && item.score !== null);
 	const hasKeyBenchmark = hasArtificialAnalysis || hasEpochCapabilitiesIndex;
 	const otherBenchmarks = otherHighlights.length ? (
@@ -50,8 +53,8 @@ export default async function ModelBenchmarks({
 
 	return (
 		<div className="space-y-8">
-			<ArtificialAnalysisBenchmarks highlights={highlightCards} results={benchmarkResults} rankings={benchmarkRankings} modelId={modelId} modelName={modelName} />
-			<EpochCapabilitiesIndex highlights={highlightCards} ranking={benchmarkRankings.find((item) => isEpochCapabilitiesIndex(item.benchmark_id))} modelId={modelId} />
+			<ArtificialAnalysisBenchmarks highlights={highlightCards} results={benchmarkResults} rankSummaries={rankSummaries} loadRankings modelId={modelId} modelName={modelName} />
+			<EpochCapabilitiesIndex highlights={highlightCards} ranking={epochRanking ? { ...epochRanking, entries: selectEpochLeaderboardEntries(epochRanking.entries, modelId) } : undefined} modelId={modelId} />
 			{otherHighlights.length > 0 || !hasKeyBenchmark ? (
 				hasKeyBenchmark ? (
 					<section aria-label={t("otherBenchmarks")}>

@@ -1,0 +1,232 @@
+---
+icon: "rotate-cw"
+title: "आउटपुट और retries"
+description: "विफल मॉडल अनुरोधों को दोबारा आज़माएँ, अंतिम आउटपुट की जाँच करें, और हर मॉडल टर्न के लिए gateway डिफ़ॉल्ट सेट करें।"
+---
+
+रन के अंदर विफल मॉडल अनुरोधों को दोबारा आज़माने के लिए मॉडल retry नीति सेट करें, और अंतिम जवाब को आपके ऐप्लिकेशन के बाकी हिस्से तक पहुँचने से पहले जाँचे गए मान में बदलने के लिए एक parser या schema सेट करें। Gateway डिफ़ॉल्ट, जैसे कोई प्रदाता या सख़्त response format, gateway एजेंट क्लाइंट पर जाते हैं।
+
+## विफल मॉडल अनुरोधों को दोबारा आज़माएँ
+
+<CodeGroup>
+
+```typescript TypeScript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+```python Python
+from phaseo_agent import AgentModelRetryConfig
+
+retry = AgentModelRetryConfig(max_retries=2, backoff_ms=250)
+# इसे definition पर या run() पर model_retry के रूप में दें
+```
+
+```go Go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:    "research-agent",
+  Model: "openai/gpt-6-astra",
+  ModelRetry: phaseoagent.ModelRetryConfig{
+    MaxRetries: 3,
+    Backoff:    500 * time.Millisecond,
+  },
+})
+```
+
+```csharp C#
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "research-agent",
+    Model = "openai/gpt-6-astra",
+    ModelRetry = new ModelRetryConfig(MaxRetries: 3, Backoff: TimeSpan.FromMilliseconds(500)),
+});
+```
+
+```php PHP
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "research-agent",
+    model: "openai/gpt-6-astra",
+    modelRetry: ["max_retries" => 3, "backoff_ms" => 500],
+));
+```
+
+```ruby Ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "research-agent",
+  model: "openai/gpt-6-astra",
+  model_retry: { max_retries: 3, backoff_ms: 500 }
+)
+```
+
+```java Java
+// इसे एजेंट के modelRetry argument के रूप में दें, या एक रन के लिए RunOptions में
+var retry = new AgentSdk.ModelRetryConfig(3, Duration.ofMillis(500)); // maxRetries, backoff
+```
+
+```rust Rust
+use std::time::Duration;
+
+let definition = AgentDefinition::new("resilient-agent", "openai/gpt-6-astra")
+    .model_retries(2, Duration::from_millis(250));
+```
+
+</CodeGroup>
+
+Retry संख्या पहले अनुरोध के बाद अतिरिक्त प्रयासों की संख्या है, और इसका डिफ़ॉल्ट `0` है। हर स्टेप अपने model attempts फ़ील्ड (`modelAttempts`, `model_attempts` या `ModelAttempts`) में दर्ज करता है कि उसमें कितने प्रयास लगे। सिर्फ़ मॉडल अनुरोध दोबारा आज़माए जाते हैं: टूल त्रुटियाँ टूल की अपनी त्रुटि नीति का पालन करती हैं, इसलिए साइड इफ़ेक्ट वाले टूल के retries टूल के अंदर रखें और उन्हें idempotent बनाएँ।
+
+प्रयासों के बीच का इंतज़ार और कौन-सी त्रुटियाँ दोबारा आज़माई जाती हैं, यह भाषा के अनुसार अलग है:
+
+| भाषा | retry `n` से पहले इंतज़ार | दोबारा आज़माई जाने वाली त्रुटियाँ | एक रन के लिए override |
+| --- | --- | --- | --- |
+| TypeScript | `backoffMs` से exponential, full jitter के साथ, `maxBackoffMs` तक; gateway का `Retry-After` प्राथमिकता लेता है | `retryOn(error)`, डिफ़ॉल्ट `agentErrorIsRetryable`। आउटपुट की स्ट्रीमिंग शुरू होने के बाद कोई प्रयास कभी दोहराया नहीं जाता। | Run विकल्प |
+| Python | `backoff_ms × n` | मॉडल अनुरोध से कोई भी exception | `run()` पर `model_retry` |
+| Go | `Backoff × n` (डिफ़ॉल्ट 250 ms) | कोई भी मॉडल अनुरोध त्रुटि | `RunOptions.ModelRetry` |
+| C# | `Backoff × n` (डिफ़ॉल्ट 250 ms) | कोई भी मॉडल अनुरोध त्रुटि | `RunOptions.ModelRetry` |
+| PHP | `backoff_ms × n` (डिफ़ॉल्ट 250) | कोई भी मॉडल अनुरोध त्रुटि | `run()` पर `modelRetry:` |
+| Ruby | `backoff_ms × n` (डिफ़ॉल्ट 250) | कोई भी मॉडल अनुरोध त्रुटि | `run` पर `model_retry:` |
+| Java | `backoff × n` (`null` backoff का मतलब 250 ms) | कोई भी मॉडल अनुरोध त्रुटि | `RunOptions` |
+| Rust | एक तय `Duration` | कोई भी मॉडल अनुरोध त्रुटि | कोई नहीं |
+
+Linear इंतज़ार और 500 ms backoff के साथ, तीन retries 0.5 s, 1 s, फिर 1.5 s इंतज़ार करते हैं।
+
+<span id="validate-the-final-output"></span>
+## अंतिम आउटपुट की जाँच करें
+
+जब मॉडल कोई टूल कॉल किए बिना जवाब देता है, तो एक parser अंतिम टेक्स्ट को आपके मान में बदलता है और एक schema उसकी जाँच करता है। अगर कोई भी विफल होता है, तो रन `Invalid agent output: ...` त्रुटि के साथ विफल हो जाता है, इसलिए ख़राब आउटपुट एजेंट की सीमा पर ही रुक जाता है। Validators को नियत (deterministic) और साइड इफ़ेक्ट से मुक्त रखें।
+
+<CodeGroup>
+
+```typescript TypeScript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+```python Python
+import json
+from pydantic import BaseModel
+
+class Ticket(BaseModel):
+    ticket_id: str
+
+agent = create_agent({
+    "id": "ticket-agent",
+    "parse_output": json.loads,
+    "output_schema": Ticket,
+})
+```
+
+```go Go
+ParseOutput: func(text string) (any, error) {
+  var ticket Ticket
+  return ticket, json.Unmarshal([]byte(text), &ticket)
+},
+OutputSchema: validateTicket, // func(any) (any, error)
+```
+
+```csharp C#
+ParseOutput = text => JsonSerializer.Deserialize<Ticket>(text),
+OutputSchema = value => value is Ticket { Id.Length: > 0 } ? value : throw new ArgumentException("Ticket ID is required"),
+```
+
+```php PHP
+parseOutput: fn (string $text) => json_decode($text, true, flags: JSON_THROW_ON_ERROR),
+outputSchema: fn ($value) => isset($value["ticket_id"]) ? $value : throw new InvalidArgumentException("ticket_id is required"),
+```
+
+```ruby Ruby
+parse_output: ->(text) { JSON.parse(text) },
+output_schema: ->(value) { value.key?("ticket_id") ? value : raise("ticket_id is required") }
+```
+
+</CodeGroup>
+
+| भाषा | Parser | Schema | विफलता पर |
+| --- | --- | --- | --- |
+| TypeScript | `parseOutput(text)` | `outputSchema` | `target: "agent_output"` के साथ `AgentSchemaValidationError` फेंकता है |
+| Python | `parse_output(text)` | `output_schema`: एक callable, एक Pydantic मॉडल, या `parse` या `safe_parse` वाला object | `ValueError` raise करता है |
+| Go | `ParseOutput(text) (any, error)` | `OutputSchema func(any) (any, error)` | `Run` त्रुटि लौटाता है (`invalid agent output: ...`) |
+| C# | `ParseOutput` | `OutputSchema` | Exception `Run` से बाहर आता है |
+| PHP | `parseOutput` callable | `outputSchema` callable | Exception `run()` से बाहर आता है |
+| Ruby | `parse_output:` callable | `output_schema:` callable | Exception `run` से बाहर आता है |
+| Java | `parseOutput`, एक `Function<String, Object>` | `outputSchema`, एक `Validator` (13-argument `AgentDefinition` constructor) | Exception `run` से बाहर आता है |
+| Rust | कोई नहीं | कोई नहीं | आउटपुट एक `serde_json::Value` है; इसकी जाँच अपने ऐप्लिकेशन में करें |
+
+मॉडल के ज़्यादा सख़्त व्यवहार के लिए, gateway से संरचित आउटपुट भी माँगें। Gateway एजेंट क्लाइंट पर JSON Schema response format (और वैकल्पिक रूप से response-healing प्लगइन) सेट करें:
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+Python, PHP और Ruby वही `response_format`/`responseFormat` और `plugins` विकल्प लेते हैं। Go, C# और Java में response format विकल्प नहीं है; फ़ील्ड को दूसरे अनुरोध फ़ील्ड के लिए क्लाइंट के escape hatch के ज़रिए सेट करें (अगला सेक्शन)।
+
+## रूटिंग डिफ़ॉल्ट को प्रीसेट में रखें
+
+जब रूटिंग, प्रॉम्प्ट या पैरामीटर डिफ़ॉल्ट डैशबोर्ड में रहने चाहिए, तब एजेंट पर `preset` सेट करें (Go और C# में `Preset`):
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+Rust में `preset` विकल्प नहीं है।
+
+<span id="set-gateway-defaults-on-the-client"></span>
+## क्लाइंट पर gateway डिफ़ॉल्ट सेट करें
+
+Gateway एजेंट क्लाइंट (`createGatewayAgentClient()`, `create_gateway_agent_client()`, `CreateGatewayAgentClient`) हर मॉडल टर्न के लिए अनुरोध डिफ़ॉल्ट रखता है, ताकि आपको हर रन पर उन्हें फिर से न बनाना पड़े। `model`, `input`, `instructions` और उसके function टूल फिर भी एजेंट के ज़िम्मे रहते हैं; मॉडल डिफ़ॉल्ट सिर्फ़ तब लागू होता है जब एजेंट कोई मॉडल सेट न करे।
+
+| सेटिंग | camelCase (TypeScript, PHP) | snake_case (Python, Ruby) | PascalCase (Go, C#) |
+| --- | --- | --- | --- |
+| कोर क्लाइंट दोबारा उपयोग करें | `client` | `client` | `Client` |
+| नया कोर क्लाइंट कॉन्फ़िगर करें | `clientOptions` | `client_options` (Python); `api_key`, `base_url` (Ruby) | `APIKey`, `BaseURL`, `HTTPClient`, `Headers` (Go); `ClientOptions` (C#) |
+| डिफ़ॉल्ट मॉडल या प्रीसेट | `model`, `preset` | `model`, `preset` | `Model`, `Preset` |
+| प्रदाता रूटिंग | `provider` | `provider` | `Provider` |
+| Reasoning | `reasoning` | `reasoning` | `Reasoning` |
+| Sampling और लंबाई | `temperature`, `maxOutputTokens` | `temperature`, `max_output_tokens` | `Temperature`, `MaxOutputTokens` |
+| समानांतर टूल कॉल | `parallelToolCalls` | `parallel_tool_calls` | `ParallelToolCall` (Go), `ParallelToolCalls` (C#) |
+| Metadata और अंतिम उपयोगकर्ता | `metadata`, `user` | `metadata`, `user` | `Metadata`, `User` |
+| संरचित आउटपुट | `responseFormat` | `response_format` | कोई नहीं |
+| प्लगइन | `plugins` | `plugins` | कोई नहीं |
+| वेब सर्च | `webSearchOptions` | `web_search_options` | कोई नहीं |
+| प्रबंधित टूल और tool choice | `gatewayTools`, `toolChoice` | `gateway_tools`, `tool_choice` | `GatewayTools`, `ToolChoice` |
+| प्रदाता विकल्प और कैशिंग | `providerOptions`, `promptCacheKey` | `provider_options`, `prompt_cache_key` | `ProviderOptions`, `PromptCacheKey` |
+| Gateway meta ब्लॉक लौटाएँ | `includeMeta` | `include_meta` | `IncludeMeta` |
+| कोई भी दूसरा Responses API फ़ील्ड | `requestOptions` | `request_options` | `ConfigureRequest`, एक `func(*gen.ResponsesRequest)` (Go); `RequestOptions` (C#) |
+| चुप पड़ी स्ट्रीम छोड़ दें | `streamIdleTimeoutMs` (सिर्फ़ TypeScript; डिफ़ॉल्ट रूप से बंद, retry की जा सकने वाली त्रुटि के रूप में विफल होता है) | कोई नहीं | कोई नहीं |
+
+Java और Rust कम विकल्प लेते हैं:
+
+| भाषा | Gateway क्लाइंट विकल्प |
+| --- | --- |
+| Java | `new AgentSdk.GatewayOptions(client, apiKey, baseUrl, model, preset, requestOptions)`। हर दूसरा Responses API फ़ील्ड `requestOptions` में रखें। |
+| Rust | `GatewayAgentClient::new(phaseo_client, model)`, `GatewayAgentClient::from_env(model)` या `create_gateway_agent_client(model)`। मॉडल के अलावा कोई अनुरोध डिफ़ॉल्ट नहीं हैं। |
+
+[Responses पैरामीटर](/hi/v1/api-reference/parameters) पेज हर फ़ील्ड को समझाता है। नतीजे से उपयोग, लागत और स्टेटस पढ़ने के लिए [ऑब्ज़र्वेबिलिटी](./observability) देखें।

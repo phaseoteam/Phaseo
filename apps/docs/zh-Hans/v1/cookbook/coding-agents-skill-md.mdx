@@ -1,47 +1,34 @@
 ---
-title: "使用 SKILL.md 配置编程代理"
+title: "使用 SKILL.md 设置编程智能体"
 icon: "file-code"
-description: "将 SDK 与 SKILL.md 文件配合使用，让本地编程代理以一致的方式调用 Phaseo 集成。"
+description: "将 SDK 与 SKILL.md 文件搭配使用，让本地编程智能体以一致的方式使用你的 Phaseo 集成。"
 ---
 
-本指南适用于基于 Gateway SDK 构建内部工具、CLI 或编程代理工作流的团队。
+在仓库中添加一个 `SKILL.md`，让编程智能体按项目期望的方式调用 Phaseo：相同的基础 URL、密钥变量、端点、批准的模型和日志记录。完成后，你会安装好公开的 Phaseo 技能，在其之上有一个项目技能，以及一个该技能指向的共享客户端模块。
+
+把下面的模型 ID 和预设名称换成你自己的之后，这个技能和模块即可用于生产环境。
+
+<Steps>
+<Step title="安装公开的 Phaseo 技能">
 
 <Visibility for="humans">
-<Note>
-如果你想从可复用的基础开始，而不是从头编写每个技能，请从 [phaseoteam/skills](https://github.com/phaseoteam/skills) 安装 Phaseo 的公开技能：
-
-```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
-```
-
-然后，将项目专属说明保存在本地 `SKILL.md` 文件中。
-</Note>
+公开技能涵盖 Gateway、SDK、预设、路由和迁移。从 [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) 安装它们：
 </Visibility>
 
 <Visibility for="agents">
-<Note>
-可复用的 Phaseo 技能位于 [phaseoteam/skills](https://github.com/phaseoteam/skills)。请先运行以下命令安装：
-
-```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
-```
-
-然后，将项目专属说明补充到仓库的 `SKILL.md` 文件中。
-</Note>
+在编写项目本地说明之前，先从 [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) 安装公开的 Phaseo 技能：
 </Visibility>
 
-核心思路很简单：
+```bash
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
+```
 
-- 将 SDK 设置保存在仓库中
-- 添加 `SKILL.md` 文件，说明项目期望代理如何发送请求
-- 设置代理时让它读取该文件，确保请求模式一致
+把 `--agent` 改成你的团队使用的智能体。你自己的 `SKILL.md` 中只保留项目特有的规则。
 
-## 1. 安装 SDK
-
-如果你使用 TypeScript 或 JavaScript：
+</Step>
+<Step title="安装 SDK">
 
 <CodeGroup>
-
 ```bash npm
 npm install @phaseo/sdk
 ```
@@ -58,34 +45,17 @@ yarn add @phaseo/sdk
 bun add @phaseo/sdk
 ```
 
-</CodeGroup>
-
-如果你使用 Python：
-
-```bash
+```bash Python
 pip install phaseo
 ```
+</CodeGroup>
 
-## 2. 添加项目本地技能文件
+</Step>
+<Step title="添加一个共享客户端">
 
-在仓库根目录或团队使用的代理技能目录中创建 `SKILL.md`。
+相比庞大的封装，智能体更能稳定地复用一个小而直观的辅助模块。把客户端放在一个模块里，并在各处导入它：
 
-```md
-# Phaseo Gateway
-
-- Use `https://api.phaseo.app/v1` as the gateway base URL.
-- Read the API key from `PHASEO_API_KEY`.
-- Prefer the Responses API for new text integrations.
-- Use preset slugs when the repository defines shared request defaults.
-- Log request ids and model ids for debugging.
-- For async video jobs, store the returned id and poll status until terminal.
-```
-
-## 3. 首次集成保持精简
-
-对于编程代理，小型请求辅助函数比大型封装更容易复用。
-
-```ts
+```ts src/lib/phaseo.ts
 import Phaseo from "@phaseo/sdk";
 
 export const gateway = new Phaseo({
@@ -93,35 +63,48 @@ export const gateway = new Phaseo({
 });
 ```
 
-然后，为每种接口保留一条明确的调用路径：
+你使用的每个接口（例如文本生成、embeddings、图像生成或异步视频）只保留一条调用路径。
 
-- 文本生成
-- 异步视频
-- 嵌入
-- 图像生成
+</Step>
+<Step title="编写项目技能">
 
-## 4. 技能文件应包含什么
+在仓库根目录或你的智能体读取的技能文件夹中创建 `SKILL.md`（例如 `.agents/skills/phaseo-project/SKILL.md`）。智能体通过 frontmatter 中的 `name` 和 `description` 来决定何时加载该技能：
 
-`SKILL.md` 应回答最容易浪费代理时间的问题：
+```md SKILL.md
+---
+name: phaseo-project
+description: "How this repository calls Phaseo Gateway: client module, endpoint, approved models and presets, logging and async jobs. Use when adding or changing any Phaseo call in this repo."
+---
 
-- 应优先使用哪类端点
-- 哪个环境变量存放凭证
-- 哪些模型 ID 或预设标识符已获批准
-- 如何记录请求 ID
-- 如何跟踪异步任务
+# Phaseo in this repository
 
-## 5. 推荐的仓库模式
+- Import the client from `src/lib/phaseo.ts`. Never create another one.
+- The base URL is `https://api.phaseo.app/v1`. The key is in `PHASEO_API_KEY`; never hard-code it or send it to the browser.
+- Use the Responses API (`POST /v1/responses`) for new text features.
+- Approved models: `openai/gpt-6-astra` for drafts, `anthropic/claude-sonnet-5.5` for reviews. Ask before adding another.
+- Prefer the `@support-triage` preset for support features; pass it as `model`.
+- Log the response `id` and `model` on every call, and `generation_id` from error bodies.
+- For async video jobs, store the returned ID and poll status until it is terminal.
+- Validate any model-generated tool arguments before acting on them.
+```
 
-- 在一个共享模块中放置 SDK 辅助函数
-- 将 `SKILL.md` 放在集成代码旁边或仓库根目录
-- 为每个主要端点提供一个简短示例
-- 补充一条说明，介绍请求日志和错误处理
+</Step>
+</Steps>
 
-这样，团队成员和编程代理都能使用相同的操作入口。
+## 检查是否成功
 
-## 相关指南
+让你的智能体添加一个小的 Phaseo 功能，例如“用 Phaseo 总结一个工单”。改动应当导入 `src/lib/phaseo.ts`、读取 `PHASEO_API_KEY`、使用批准的模型或预设，并记录响应 ID。如果没有做到，可能是技能的 `description` 与请求不匹配：请写上你的团队常用的任务用词。
 
-- [Codex](../guides/integrations/codex.mdx)
-- [AI SDK 集成](../guides/integrations/ai-sdk.mdx)
-- [示例](../guides/examples.mdx)
+## 技能里该写什么
 
+只回答最耗费智能体时间的问题，其他一概不写：
+
+| 问题 | 示例回答 |
+| --- | --- |
+| 使用哪类端点？ | 文本用 Responses，搜索用 Embeddings |
+| 凭据在哪里？ | `PHASEO_API_KEY`，仅限服务器端 |
+| 批准了哪些模型 ID 或预设？ | 一个简短列表，采用 `org/model` 格式 |
+| 记录哪些日志？ | 响应的 `id`、`model`，出错时记录 `generation_id` |
+| 如何跟踪异步任务？ | 保存 ID，轮询直到进入终态 |
+
+[Codex](../guides/integrations/codex)、[Vercel AI SDK](../guides/integrations/ai-sdk) 和[示例](../guides/examples)展示了这些约定在各个工具中的用法。

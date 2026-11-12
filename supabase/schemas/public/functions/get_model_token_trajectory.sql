@@ -34,7 +34,7 @@ daily_tokens as (
   select date_trunc('day', fact.occurred_at at time zone 'utc') as day,
     sum(coalesce(nullif(tokens.explicit_total, 0),
       coalesce(tokens.input_tokens, 0) + coalesce(tokens.output_tokens, 0))) as tokens
-  from public.v2_request_facts fact
+  from public.reporting_request_facts fact
   cross join model_row mr
   left join lateral (
     select sum(usage.quantity) filter (where usage.meter_key = 'total_tokens') as explicit_total,

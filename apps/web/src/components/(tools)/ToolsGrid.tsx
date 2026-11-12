@@ -1,7 +1,7 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { Braces, Calculator, FileText, ShieldCheck, Terminal } from "lucide-react";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 const toolGroups = [
 	{

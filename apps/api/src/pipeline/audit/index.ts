@@ -3,23 +3,28 @@
 // Why: Ensures observability for every request.
 // How: Builds audit rows and ships them to Supabase with retries.
 
-import { getSupabaseAdmin, ensureRuntimeForBackground, isLocalTestingModeEnabled } from "@/runtime/env";
+import { getSupabaseAdmin, ensureRuntimeForBackground } from "@/runtime/env";
 import { ensureAppId } from "../after/apps";
 import type { Endpoint, RequestLabel } from "@core/types";
 import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
-import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
 import {
 	buildGatewayRequestUsageColumns,
 	buildV2RequestUsageMeters,
 	stripGatewayRequestUsageColumns,
 } from "../usage-columns";
-import { persistGatewayIoLog, resolveGatewayIoLoggingPolicy } from "./io-logging";
-import { persistGatewayUpstreamRequests } from "./upstream-requests";
+import {
+    keyKeepsContentOutOfTelemetry,
+    persistGatewayIoLog,
+    recordGatewayIoLogZeroDataRetentionSkip,
+    requestZeroDataRetention,
+    resolveGatewayIoLoggingPolicy,
+} from "./io-logging";
 import { protectStealthAuditArgs } from "./stealth-identity";
 import { buildRoutingObservability, toProviderModelId } from "./routing-observability";
 import { archiveRoutingMetadata } from "./routing-archive";
 import { lifecycleMetadata } from "../lifecycle";
 import {
+	structuredFormat,
 	validateStructuredOutputResponse,
 	validateToolCallResponses,
 	type StructuredOutputValidation,
@@ -63,6 +68,14 @@ function canonicalServiceTier(value: unknown): CanonicalServiceTier | null {
     return normalized ?? null;
 }
 
+// The requested tier is read from the raw body, before the request schema runs
+// OpenAI's "scale" as the standard tier, so it is mapped the same way here. A tier
+// the provider reports keeps canonicalServiceTier, as pricing does.
+function canonicalRequestedServiceTier(value: unknown): CanonicalServiceTier | null {
+    if (typeof value === "string" && value.trim().toLowerCase() === "scale") return "standard";
+    return canonicalServiceTier(value);
+}
+
 function nestedValue(root: unknown, path: string[]): unknown {
     let current = root;
     for (const key of path) {
@@ -84,7 +97,7 @@ export function resolveAuditServiceTiers(args: {
 } {
     const requested = args.endpoint === "batch"
         ? "batch"
-        : canonicalServiceTier(readRequestedServiceTier(args.requestPayload).value);
+        : canonicalRequestedServiceTier(readRequestedServiceTier(args.requestPayload).value);
     const observedCandidates = [
         nestedValue(args.usage, ["service_tier"]),
         nestedValue(args.usage, ["serviceTier"]),
@@ -103,13 +116,15 @@ export function resolveAuditServiceTiers(args: {
     };
 }
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DEFAULT_RETRY_ATTEMPTS = 3;
 const DEFAULT_RETRY_DELAY_MS = 250;
 let gatewayRequestsSupportsErrorPayloadColumn: boolean | null = null;
 let gatewayRequestsSupportsUsageColumns: boolean | null = null;
 let gatewayRequestsSupportsTelemetryColumns: boolean | null = null;
-let gatewayRequestDetailsTableAvailable: boolean | null = null;
-let warnedMissingGatewayRequestDetailsTable = false;
+// The column is added by a migration that deploys before the gateway; this only covers a
+// gateway deployed ahead of it, which must not lose request rows.
+let gatewayRequestsSupportsBillingRequestIdColumn = true;
 
 async function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -159,23 +174,6 @@ function isMissingColumnError(
     return message.toLowerCase().includes(table.toLowerCase());
 }
 
-function isMissingTableError(error: unknown, table: string): boolean {
-    const candidate = error && typeof error === "object" ? error as Record<string, unknown> : null;
-    const cause = candidate?.cause && typeof candidate.cause === "object"
-        ? candidate.cause as Record<string, unknown>
-        : null;
-    const code = String(cause?.code ?? candidate?.code ?? "");
-    const message = String(cause?.message ?? candidate?.message ?? "");
-    if (code !== "PGRST205" && code !== "42P01") return false;
-    const normalizedTable = table.toLowerCase();
-    const normalizedMessage = message.toLowerCase();
-    return (
-        normalizedMessage.includes(normalizedTable) ||
-        normalizedMessage.includes(`'${normalizedTable}'`) ||
-        normalizedMessage.includes(`"${normalizedTable}"`)
-    );
-}
-
 function isMissingRpcError(error: unknown, rpc: string): boolean {
     const candidate = error && typeof error === "object" ? error as Record<string, unknown> : null;
     const cause = candidate?.cause && typeof candidate.cause === "object"
@@ -222,13 +220,15 @@ async function insertGatewayRequest(row: any) {
         const usageCompatible = gatewayRequestsSupportsUsageColumns === false
             ? stripGatewayRequestUsageColumns(telemetryCompatible)
             : telemetryCompatible;
-        if (gatewayRequestsSupportsErrorPayloadColumn !== false) return usageCompatible;
-        const { error_payload: _omit, ...errorPayloadCompatible } = usageCompatible ?? {};
+        const { billing_request_id: _billingRequestId, ...billingCompatible } = usageCompatible ?? {};
+        const linkCompatible = gatewayRequestsSupportsBillingRequestIdColumn ? usageCompatible : billingCompatible;
+        if (gatewayRequestsSupportsErrorPayloadColumn !== false) return linkCompatible;
+        const { error_payload: _omit, ...errorPayloadCompatible } = linkCompatible ?? {};
         return errorPayloadCompatible;
     };
 
     let lastError: unknown;
-    const maxCompatibilityAttempts = 4;
+    const maxCompatibilityAttempts = 5;
     for (let attempt = 0; attempt < maxCompatibilityAttempts; attempt += 1) {
         try {
             const inserted = await attemptInsert(prepareCompatibleRow(row));
@@ -275,6 +275,13 @@ async function insertGatewayRequest(row: any) {
                 gatewayRequestsSupportsErrorPayloadColumn = false;
                 capabilityChanged = true;
             }
+            if (
+                gatewayRequestsSupportsBillingRequestIdColumn &&
+                isMissingColumnError(error, "billing_request_id", "gateway_requests")
+            ) {
+                gatewayRequestsSupportsBillingRequestIdColumn = false;
+                capabilityChanged = true;
+            }
             if (!capabilityChanged) throw error;
         }
     }
@@ -282,7 +289,31 @@ async function insertGatewayRequest(row: any) {
     throw lastError;
 }
 
+type RateLimitPolicyRejection = { policy_id: string; limit_scope: string; limit: "requests" | "tokens" | "concurrent_requests" | "unavailable" };
+
+const POLICY_REJECTION_LIMITS: Record<string, RateLimitPolicyRejection["limit"]> = {
+    policy_requests_per_minute: "requests",
+    policy_tokens_per_minute: "tokens",
+    policy_concurrent_requests: "concurrent_requests",
+    policy_unavailable: "unavailable",
+};
+
+/** The workspace rate limit policy that rejected a request, from its stored error payload. */
+export function rateLimitPolicyRejection(
+    errorCode: string | null | undefined,
+    errorPayload: Record<string, unknown> | null | undefined,
+): RateLimitPolicyRejection | null {
+    if (errorCode !== "user:rate_limit_exceeded") return null;
+    const reason = errorPayload?.reason;
+    const limit = typeof reason === "string" ? POLICY_REJECTION_LIMITS[reason] : undefined;
+    if (!limit) return null;
+    const { policy_id: policyId, limit_scope: limitScope } = errorPayload!;
+    if (typeof policyId !== "string" || typeof limitScope !== "string") return null;
+    return { policy_id: policyId, limit_scope: limitScope, limit };
+}
+
 async function upsertV2RequestFact(args: {
+    testingMode?: boolean;
     requestId: string;
     workspaceId: string;
     appId?: string | null;
@@ -342,6 +373,7 @@ async function upsertV2RequestFact(args: {
     routingSnapshot?: Array<Record<string, unknown>> | null;
     routingDiagnostics?: Record<string, unknown> | null;
     labels?: RequestLabel[] | null;
+    rateLimitPolicy?: RateLimitPolicyRejection | null;
 }) {
 	const serviceTier = resolveAuditServiceTiers(args);
 	const publicRoutedModel = (() => {
@@ -376,7 +408,11 @@ async function upsertV2RequestFact(args: {
         const unitPriceUsd = Number(line.unit_price_usd ?? 0);
         const chargedNanos = Number(line.line_nanos ?? 0);
         if (!meterKey || !Number.isFinite(quantity) || quantity < 0 || !Number.isFinite(chargedNanos)) return [];
+        // The SKU meter the engine priced this line with. Database price cards use the
+        // meter id as the rule id; other rule ids (static or fee lines) are not UUIDs.
+        const skuMeterId = typeof line.rule_id === "string" && UUID_PATTERN.test(line.rule_id) ? line.rule_id : null;
         return [{
+            ...(skuMeterId ? { sku_meter_id: skuMeterId } : {}),
             meter_key: meterKey,
             quantity,
             unit: typeof line.unit === "string" ? line.unit : meterKey,
@@ -439,6 +475,7 @@ async function upsertV2RequestFact(args: {
             routing_trace: routingArchive ? {} : routingTrace,
             routing_archive: routingArchive ?? null,
             safe_metadata: {
+                testing_mode: args.testingMode === true,
                 provider: args.provider ?? null,
                 response_timeline: args.responseTimeline ?? null,
                 lifecycle_events: args.lifecycleEvents ?? null,
@@ -454,11 +491,15 @@ async function upsertV2RequestFact(args: {
                 structured_output_success_basis: args.structuredOutputAttempted
                     ? (args.structuredOutputSuccessBasis ?? "unobserved")
                     : null,
+                // "none" means the output was checked and passed. A failed request or an
+                // unobserved reply has no reason: it was never checked.
                 structured_output_error_reason: args.structuredOutputAttempted
-                    ? (args.structuredOutputErrorReason ?? "none")
+                    ? (args.structuredOutputErrorReason ?? (args.structuredOutputSucceeded ? "none" : null))
                     : null,
                 tool_call_validation: args.toolCallValidation ?? null,
                 downstream_disconnected: args.downstreamDisconnected === true,
+                // Read by refresh_rate_limit_throttle_rollups.
+                rate_limit: args.rateLimitPolicy ?? null,
                 stream_cancellation_support: args.streamCancellationSupport ?? "unknown",
                 stream_provider_billing_on_cancel: args.streamProviderBillingOnCancel ?? "unknown",
                 stream_disconnect_action: args.streamDisconnectAction ?? null,
@@ -485,108 +526,9 @@ async function upsertV2RequestFact(args: {
     if (baseError) throw baseError;
 }
 
-function normalizeJsonValue(value: unknown): unknown {
-    if (value === undefined) return null;
-    if (value === null) return null;
-    if (
-        typeof value === "string" ||
-        typeof value === "number" ||
-        typeof value === "boolean"
-    ) {
-        return value;
-    }
-    try {
-        return JSON.parse(JSON.stringify(value));
-    } catch {
-        return null;
-    }
-}
-
-function extractReplayContent(value: unknown): unknown {
-    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-    const payload = value as Record<string, unknown>;
-    if (Array.isArray(payload.messages)) return payload.messages;
-    if (Array.isArray(payload.input)) return payload.input;
-    if (Array.isArray(payload.input_items)) return payload.input_items;
-    if (Array.isArray(payload.contents)) return payload.contents;
-    return null;
-}
-
-async function insertGatewayRequestDetails(row: any) {
-    if (gatewayRequestDetailsTableAvailable === false) {
-        return;
-    }
-    const client = supaAdmin();
-    const payload = row;
-    const { error } = await client
-        .from("gateway_request_details")
-        .insert(payload);
-    if (error) {
-        if (
-            isLocalTestingModeEnabled() &&
-            isMissingTableError(error, "gateway_request_details")
-        ) {
-            gatewayRequestDetailsTableAvailable = false;
-            if (!warnedMissingGatewayRequestDetailsTable) {
-                warnedMissingGatewayRequestDetailsTable = true;
-                console.warn(
-                    "[audit] gateway_request_details not available in local testing mode; skipping request detail persistence."
-                );
-            }
-            return;
-        }
-        const err = new Error(`[audit] insert gateway_request_details error: ${error?.message ?? "unknown"}`);
-        (err as any).cause = error;
-        throw err;
-    }
-    if (gatewayRequestDetailsTableAvailable === null) {
-        gatewayRequestDetailsTableAvailable = true;
-    }
-}
-
-async function syncInsertedRequestRollup(
-    insertedRow: { id: string; created_at: string; workspace_id: string } | null | undefined,
-    context: string,
-) {
-    if (!insertedRow?.id || !insertedRow?.created_at || !insertedRow?.workspace_id) {
-        return;
-    }
-    try {
-        await syncWorkspaceUsageRollupForRequest({
-            requestRowId: insertedRow.id,
-            requestCreatedAt: insertedRow.created_at,
-            workspaceId: insertedRow.workspace_id,
-            context,
-        });
-    } catch (error) {
-        console.error("[audit] failed to sync workspace usage rollup", {
-            context,
-            requestRowId: insertedRow.id,
-            workspaceId: insertedRow.workspace_id,
-            error: error instanceof Error ? error.message : String(error),
-        });
-    }
-}
-
-async function insertGatewayRequestDetailsNonBlocking(
-    row: Record<string, unknown>,
-    context: string,
-) {
-    try {
-        await retryWithBackoff(
-            () => insertGatewayRequestDetails(row),
-            context,
-        );
-    } catch (error) {
-        console.error("[audit] failed to persist request details", {
-            context,
-            error: error instanceof Error ? error.message : String(error),
-        });
-    }
-}
-
 function buildSupaRow(args: {
     requestId: string; workspaceId?: string | null;
+    billingRequestId?: string | null;
     endpoint: Endpoint; model?: string | null; canonicalModel?: string | null; provider?: string | null;
     stream?: boolean; byok?: boolean;
     nativeResponseId?: string | null;
@@ -606,6 +548,8 @@ function buildSupaRow(args: {
     outputSpeedTps?: number | null; tpotMs?: number | null;
     itlMs?: number | null; phaseoOverheadMs?: number | null;
     usage?: any | null; costNanos?: number | null; currency?: string | null;
+    /** The bill a delivered request meant to charge while its charge is pending reconciliation. */
+    expectedCostNanos?: number | null;
     pricingLines?: any[] | null; throughput?: number | null;
     finishReason?: string | null;
     requestPayload?: unknown;
@@ -646,6 +590,9 @@ function buildSupaRow(args: {
     return {
         request_id: args.requestId,
         workspace_id: args.workspaceId ?? null,
+        // gateway_request_charges.request_id for this attempt: the public ID differs, and each
+        // model fallback attempt has its own pair.
+        billing_request_id: args.billingRequestId ?? null,
         app_id: args.appId ?? null,
         endpoint: args.endpoint,
         model_id: args.model ?? null,
@@ -680,6 +627,7 @@ function buildSupaRow(args: {
         usage: args.usage ?? {},
         ...usageColumns,
         ...(args.costNanos != null ? { cost_nanos: Math.round(args.costNanos as number) } : {}),
+        ...(args.expectedCostNanos != null ? { expected_cost_nanos: Math.max(0, Math.round(args.expectedCostNanos)) } : {}),
         currency: args.currency ?? null,
         pricing_lines: Array.isArray(args.pricingLines) ? args.pricingLines : [],
         key_id: args.keyId ?? null,
@@ -687,6 +635,61 @@ function buildSupaRow(args: {
         finish_reason: args.finishReason ?? null,
         location: args.edgeColo ?? null,
         detail_metadata: detailMetadata,
+    };
+}
+
+function attemptsWithoutPayloads(attempts: unknown): unknown {
+    if (!Array.isArray(attempts)) return attempts;
+    return attempts.map((attempt) => {
+        if (!attempt || typeof attempt !== "object" || !("upstream_payload_preview" in attempt)) return attempt;
+        const { upstream_payload_preview: _payload, ...kept } = attempt as Record<string, unknown>;
+        return kept;
+    });
+}
+
+/**
+ * For a key created with never_store_content, or under zero data retention, the stored
+ * attempts and error payload keep their operational detail but not the provider's raw
+ * error body (`upstream_payload_preview`, a truncated copy that can echo the request or
+ * output), as the Axiom event already does. A failed policy read keeps it out too.
+ */
+async function withoutUpstreamPayloadsWhenPrivate<T extends {
+    workspaceId?: string | null;
+    keyId?: string | null;
+    zeroDataRetention?: boolean;
+    requestPayload?: unknown;
+    gatewayResponse?: unknown;
+    providerResponse?: unknown;
+    detailMetadata?: Record<string, unknown> | null;
+    providerAttempts?: Array<Record<string, unknown>> | null;
+    errorPayload?: Record<string, unknown> | null;
+}>(args: T): Promise<T> {
+    const hasAttempts = Array.isArray(args.providerAttempts) && args.providerAttempts.length > 0;
+    const errorPayload = args.errorPayload && typeof args.errorPayload === "object" ? args.errorPayload : null;
+    const hasErrorAttempts = Boolean(
+        errorPayload && (Array.isArray(errorPayload.failure_sample) || Array.isArray(errorPayload.provider_attempts)),
+    );
+    if (!hasAttempts && !hasErrorAttempts) return args;
+    const keepOut =
+        requestZeroDataRetention({
+            zeroDataRetention: args.zeroDataRetention,
+            requestPayload: args.requestPayload,
+            metadata: args.detailMetadata,
+            gatewayResponse: args.gatewayResponse,
+            providerResponse: args.providerResponse,
+        }) ||
+        await keyKeepsContentOutOfTelemetry({ workspaceId: args.workspaceId ?? null, keyId: args.keyId ?? null });
+    if (!keepOut) return args;
+    return {
+        ...args,
+        providerAttempts: attemptsWithoutPayloads(args.providerAttempts) as T["providerAttempts"],
+        errorPayload: errorPayload
+            ? {
+                ...errorPayload,
+                ...("failure_sample" in errorPayload ? { failure_sample: attemptsWithoutPayloads(errorPayload.failure_sample) } : {}),
+                ...("provider_attempts" in errorPayload ? { provider_attempts: attemptsWithoutPayloads(errorPayload.provider_attempts) } : {}),
+            }
+            : args.errorPayload,
     };
 }
 
@@ -699,11 +702,7 @@ function stripPricingFromUsage(usage: any): any {
 }
 
 function isStructuredOutputRequest(payload: unknown): boolean {
-    if (!payload || typeof payload !== "object" || Array.isArray(payload)) return false;
-    const body = payload as Record<string, any>;
-    const format = body.response_format ?? body.text?.format ?? null;
-    if (!format || typeof format !== "object") return false;
-    return format.type === "json_schema" || format.type === "json_object";
+    return structuredFormat(payload) !== null;
 }
 
 function readToolCallCount(usage: unknown, finishReason?: string | null): number {
@@ -717,6 +716,7 @@ function readToolCallCount(usage: unknown, finishReason?: string | null): number
 
 export async function auditSuccess(input: {
     requestId: string; workspaceId: string;
+    billingRequestId?: string | null;
     provider: string; model: string; requestedModel?: string; endpoint: Endpoint;
     providerApiModelId?: string | null;
     providerModelSlug?: string | null;
@@ -751,9 +751,12 @@ export async function auditSuccess(input: {
     internalLatencyMs?: number | null;
     endToEndMs?: number | null;
     usagePriced: any; totalCents: number; totalNanos?: number | null; currency: "USD" | string;
+    /** The priced bill of a success pending reconciliation (rounds that could not be priced). */
+    expectedCostNanos?: number | null;
     finishReason?: string | null;
     statusCode: number; throughput?: number | null; keyId?: string | null;
-    extraJson?: string | null;
+    /** Zero data retention applies to the request, so no content is stored: no I/O log. */
+    zeroDataRetention?: boolean;
     errorPayload?: Record<string, unknown> | null;
     requestPayload?: unknown;
     gatewayResponse?: unknown;
@@ -762,6 +765,16 @@ export async function auditSuccess(input: {
     serverToolTrace?: unknown;
 	lifecycleEvents?: unknown;
     detailMetadata?: Record<string, unknown> | null;
+    /**
+     * A delivered request whose charge did not go through: the row records what the database holds
+     * (costNanos, null when unreadable) and the bill it meant to charge (expected_cost_nanos).
+     */
+    pendingCharge?: { costNanos: number | null; expectedCostNanos: number } | null;
+    /**
+     * Called once the gateway_requests row is committed, before the secondary writes (the V2
+     * request fact, the I/O log) that can still fail: from then on the row is the request's record.
+     */
+    onPrimaryRowWritten?: () => void;
     // Wide event enrichment
     teamEnrichment?: any | null;
     keyEnrichment?: any | null;
@@ -773,13 +786,24 @@ export async function auditSuccess(input: {
     streamDisconnectAction?: "cancel_upstream" | "drain_upstream";
 }) {
     const detailMetadata: Record<string, unknown> = { ...input.detailMetadata, lifecycle_events: lifecycleMetadata(input.lifecycleEvents) };
-    const args = protectStealthAuditArgs({ ...input, detailMetadata });
+    const args = await withoutUpstreamPayloadsWhenPrivate(protectStealthAuditArgs({ ...input, detailMetadata }));
     const releaseRuntime = ensureRuntimeForBackground();
     try {
         const pricingLines = args.usagePriced?.pricing?.lines ?? [];
         const strippedUsage = stripPricingFromUsage(args.usagePriced);
-        const structuredOutput = validateStructuredOutputResponse(args.requestPayload, args.gatewayResponse);
-        const toolCallValidation = validateToolCallResponses(args.requestPayload, args.gatewayResponse);
+        // The reply the gateway holds can be partial: after a client disconnect the stream
+        // is drained without passing through the rebuild, and a rebuilt stream reply stops
+        // at its size cap (gateway_log_truncated). A partial reply would fail JSON and
+        // argument checks it never really failed, so rate nothing.
+        const replyComplete =
+            args.downstreamDisconnected !== true &&
+            (args.gatewayResponse as { gateway_log_truncated?: unknown } | null | undefined)?.gateway_log_truncated !== true;
+        const structuredOutput: StructuredOutputValidation = replyComplete
+            ? validateStructuredOutputResponse(args.requestPayload, args.gatewayResponse)
+            : { attempted: isStructuredOutputRequest(args.requestPayload), succeeded: false, basis: "unobserved", errorReason: null };
+        const toolCallValidation: ToolCallValidation = replyComplete
+            ? validateToolCallResponses(args.requestPayload, args.gatewayResponse)
+            : { totalCalls: 0, invalidCalls: 0, invalidJson: 0, schemaMismatch: 0, unknownToolName: 0 };
         const appId = await ensureAppId({
             workspaceId: args.workspaceId,
             appTitle: args.appTitle ?? null,
@@ -803,6 +827,7 @@ export async function auditSuccess(input: {
         const row = buildSupaRow({
             requestId: args.requestId,
             workspaceId: args.workspaceId,
+            billingRequestId: args.billingRequestId ?? null,
             endpoint: args.endpoint,
             model: args.model,
             canonicalModel: args.requestedModel ?? args.model,
@@ -835,7 +860,11 @@ export async function auditSuccess(input: {
             usage: strippedUsage ?? {},
             requestPayload: args.requestPayload,
             gatewayResponse: args.gatewayResponse,
-            costNanos: args.totalNanos ?? (Number.isFinite(args.totalCents) ? Math.round((args.totalCents as number) * 1e7) : null),
+            costNanos: args.pendingCharge
+                ? args.pendingCharge.costNanos
+                : args.totalNanos ?? (Number.isFinite(args.totalCents) ? Math.round((args.totalCents as number) * 1e7) : null),
+            // A charge pending reconciliation, or rounds that could not be priced: the bill it means to charge.
+            expectedCostNanos: args.pendingCharge?.expectedCostNanos ?? args.expectedCostNanos ?? null,
             currency: args.currency,
             pricingLines,
             throughput: args.throughput ?? null,
@@ -853,40 +882,15 @@ export async function auditSuccess(input: {
 
         let supabaseError: Error | null = null;
         try {
-            const insertedRow = await retryWithBackoff(
+            await retryWithBackoff(
                 () => insertGatewayRequest(row),
                 "supabase_audit_success_insert",
             );
-            await syncInsertedRequestRollup(insertedRow, "audit_success");
-            await persistGatewayUpstreamRequests({
-                insertedRow,
-                requestId: args.requestId,
-                workspaceId: args.workspaceId,
-                appId,
-                keyId: args.keyId ?? null,
-                endpoint: args.endpoint,
-                modelId: args.model,
-                provider: args.provider,
-                providerApiModelId: args.providerApiModelId ?? null,
-                providerModelSlug: args.providerModelSlug ?? null,
-                providerAttempts: args.providerAttempts ?? null,
-                statusCode: args.statusCode,
-                success: true,
-                nativeResponseId: args.nativeResponseId ?? null,
-                finishReason: args.finishReason ?? null,
-                usage: strippedUsage,
-                totalNanos: args.totalNanos ?? (
-                    Number.isFinite(args.totalCents) ? Math.round(args.totalCents * 1e7) : null
-                ),
-                currency: args.currency,
-                latencyMs: args.latencyMs ?? null,
-                generationMs: args.generationMs ?? null,
-                totalMs: args.endToEndMs ?? args.latencyMs ?? null,
-                context: "audit_success",
-            });
+            input.onPrimaryRowWritten?.();
             let v2PersistenceError: Error | null = null;
             try {
                 await retryWithBackoff(() => upsertV2RequestFact({
+                    testingMode: args.detailMetadata?.testing_mode === true,
                     requestId: args.requestId,
                     workspaceId: args.workspaceId,
                     appId,
@@ -924,7 +928,7 @@ export async function auditSuccess(input: {
                     nativeResponseId: args.nativeResponseId ?? null,
                     userAgent: args.userAgent ?? null,
                     clientSource: args.clientSource ?? null,
-                    costNanos: args.totalNanos ?? (
+                    costNanos: args.pendingCharge ? args.pendingCharge.costNanos : args.totalNanos ?? (
                         Number.isFinite(args.totalCents)
                             ? Math.round(args.totalCents * 1e7)
                             : null
@@ -934,9 +938,11 @@ export async function auditSuccess(input: {
                         readToolCallCount(strippedUsage, args.finishReason),
                         toolCallValidation.totalCalls,
                     ),
+                    // Only calls the validator saw are rated. Calls known only from usage
+                    // (server tools, a reply the gateway could not read) are not assumed valid.
                     toolCallSucceeded: toolCallValidation.totalCalls > 0
                         ? toolCallValidation.invalidCalls === 0
-                        : readToolCallCount(strippedUsage, args.finishReason) > 0 ? true : null,
+                        : null,
                     toolCallValidation: toolCallValidation.totalCalls > 0 ? toolCallValidation : null,
                     structuredOutputAttempted: structuredOutput.attempted,
                     structuredOutputSucceeded: structuredOutput.succeeded,
@@ -965,9 +971,18 @@ export async function auditSuccess(input: {
                     error: v2Error instanceof Error ? v2Error.message : String(v2Error),
                 });
             }
+            // Zero data retention from the request, its preset or its routing diagnostics
+            // turns capture off, so the I/O log doesn't keep its content.
             const ioLoggingPolicy = await resolveGatewayIoLoggingPolicy({
                 workspaceId: args.workspaceId,
                 keyId: args.keyId ?? null,
+                zeroDataRetention: requestZeroDataRetention({
+                    zeroDataRetention: args.zeroDataRetention,
+                    requestPayload: args.requestPayload,
+                    metadata: args.detailMetadata,
+                    gatewayResponse: args.gatewayResponse,
+                    providerResponse: args.providerResponse,
+                }),
             });
             if (ioLoggingPolicy.captureEnabled) {
                 await persistGatewayIoLog({
@@ -987,30 +1002,10 @@ export async function auditSuccess(input: {
                 serverToolTrace: args.serverToolTrace,
 				lifecycleEvents: args.lifecycleEvents,
                 metadata: args.detailMetadata ?? {},
+                zeroDataRetention: args.zeroDataRetention === true,
                 }, ioLoggingPolicy);
-                await insertGatewayRequestDetailsNonBlocking(
-                    {
-                    gateway_request_id: insertedRow.id,
-                    gateway_request_created_at: insertedRow.created_at,
-                    request_id: args.requestId,
-                    workspace_id: args.workspaceId,
-                    app_id: appId ?? null,
-                    key_id: args.keyId ?? null,
-                    endpoint: args.endpoint,
-                    model_id: args.model,
-                    provider: args.provider ?? null,
-                    status_code: args.statusCode,
-                    success: true,
-                    request_payload: normalizeJsonValue(args.requestPayload) ?? {},
-                    request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
-                    gateway_response: normalizeJsonValue(args.gatewayResponse),
-                    response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
-                    provider_request: normalizeJsonValue(args.providerRequest),
-                    provider_response: normalizeJsonValue(args.providerResponse),
-                    metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                    },
-                    "supabase_audit_success_details_insert",
-                );
+            } else if (ioLoggingPolicy.recordZeroDataRetentionSkip) {
+                await recordGatewayIoLogZeroDataRetentionSkip({ requestId: args.requestId, workspaceId: args.workspaceId });
             }
             if (v2PersistenceError) throw v2PersistenceError;
         } catch (err) {
@@ -1028,6 +1023,8 @@ type AuditFailureBefore = {
     stage: "before";
     requestId: string;
     workspaceId?: string | null;
+    /** Zero data retention applies to the request, so no content is stored: no I/O log. */
+    zeroDataRetention?: boolean;
     endpoint: Endpoint;
     model?: string | null;
     requestedModel?: string | null;
@@ -1065,7 +1062,6 @@ type AuditFailureBefore = {
     edgeCountry?: string | null;
     edgeContinent?: string | null;
     edgeAsn?: number | null;
-    extraJson?: string | null;
     requestPayload?: unknown;
     gatewayResponse?: unknown;
     providerResponse?: unknown;
@@ -1074,9 +1070,16 @@ type AuditFailureBefore = {
 };
 type AuditFailureExecute = {
     nativeResponseId?: string | null;
+    /** What the failed request was still charged; null or absent when it was not charged. */
+    costNanos?: number | null;
+    /** The bill it meant to charge, while the charge is pending reconciliation (expected_cost_nanos). */
+    expectedCostNanos?: number | null;
     stage: "execute";
     requestId: string;
     workspaceId: string;
+    billingRequestId?: string | null;
+    /** Zero data retention applies to the request, so no content is stored: no I/O log. */
+    zeroDataRetention?: boolean;
     endpoint: Endpoint;
     model: string;
     requestedModel?: string;
@@ -1117,7 +1120,6 @@ type AuditFailureExecute = {
     edgeCountry?: string | null;
     edgeContinent?: string | null;
     edgeAsn?: number | null;
-    extraJson?: string | null;
     requestPayload?: unknown;
     gatewayResponse?: unknown;
     providerRequest?: unknown;
@@ -1133,7 +1135,7 @@ type AuditFailureExecute = {
 
 export async function auditFailure(input: AuditFailureBefore | AuditFailureExecute) {
     const detailMetadata: Record<string, unknown> = { ...input.detailMetadata, lifecycle_events: lifecycleMetadata("lifecycleEvents" in input ? input.lifecycleEvents : undefined) };
-    const args = protectStealthAuditArgs({ ...input, detailMetadata });
+    const args = await withoutUpstreamPayloadsWhenPrivate(protectStealthAuditArgs({ ...input, detailMetadata }));
     const releaseRuntime = ensureRuntimeForBackground();
     try {
         if (args.stage === "before") {
@@ -1192,33 +1194,14 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
             let supabaseError: Error | null = null;
             if (args.workspaceId) {
                 try {
-                    const insertedRow = await retryWithBackoff(
+                    await retryWithBackoff(
                         () => insertGatewayRequest(row),
                         "supabase_audit_failure_before_insert",
                     );
-                    await syncInsertedRequestRollup(insertedRow, "audit_failure_before");
-                    await persistGatewayUpstreamRequests({
-                        insertedRow,
-                        requestId: args.requestId,
-                        workspaceId: args.workspaceId,
-                        appId: resolvedAppId,
-                        keyId: args.keyId ?? null,
-                        endpoint: args.endpoint,
-                        modelId: args.requestedModel ?? args.model ?? "unknown",
-                        provider: args.provider ?? null,
-                        providerApiModelId: args.providerApiModelId ?? null,
-                        providerModelSlug: args.providerModelSlug ?? null,
-                        providerAttempts: args.providerAttempts ?? null,
-                        statusCode: args.statusCode,
-                        success: false,
-                        totalNanos: 0,
-                        latencyMs: args.latencyMs ?? null,
-                        totalMs: args.latencyMs ?? null,
-                        context: "audit_failure_before",
-                    });
                     let v2PersistenceError: Error | null = null;
                     try {
                         await retryWithBackoff(() => upsertV2RequestFact({
+                            testingMode: args.detailMetadata?.testing_mode === true,
                             requestId: args.requestId,
                             workspaceId: args.workspaceId,
                             appId: resolvedAppId,
@@ -1267,6 +1250,13 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                     const ioLoggingPolicy = await resolveGatewayIoLoggingPolicy({
                         workspaceId: args.workspaceId,
                         keyId: args.keyId ?? null,
+                        zeroDataRetention: requestZeroDataRetention({
+                            zeroDataRetention: args.zeroDataRetention,
+                            requestPayload: args.requestPayload,
+                            metadata: args.detailMetadata,
+                            gatewayResponse: args.gatewayResponse,
+                            providerResponse: args.providerResponse,
+                        }),
                     });
                     if (ioLoggingPolicy.captureEnabled) {
                         await persistGatewayIoLog({
@@ -1284,30 +1274,10 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         providerRequest: null,
                         providerResponse: args.providerResponse,
                         metadata: args.detailMetadata ?? {},
+                        zeroDataRetention: args.zeroDataRetention === true,
                         }, ioLoggingPolicy);
-                        await insertGatewayRequestDetailsNonBlocking(
-                            {
-                            gateway_request_id: insertedRow.id,
-                            gateway_request_created_at: insertedRow.created_at,
-                            request_id: args.requestId,
-                            workspace_id: args.workspaceId,
-                            app_id: resolvedAppId ?? null,
-                            key_id: args.keyId ?? null,
-                            endpoint: args.endpoint,
-                            model_id: args.requestedModel ?? args.model ?? "unknown",
-                            provider: args.provider ?? null,
-                            status_code: args.statusCode,
-                            success: false,
-                            request_payload: normalizeJsonValue(args.requestPayload) ?? {},
-                            request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
-                            gateway_response: normalizeJsonValue(args.gatewayResponse),
-                            response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
-                            provider_request: null,
-                            provider_response: normalizeJsonValue(args.providerResponse),
-                            metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                            },
-                            "supabase_audit_failure_before_details_insert",
-                        );
+                    } else if (ioLoggingPolicy.recordZeroDataRetentionSkip) {
+                        await recordGatewayIoLogZeroDataRetentionSkip({ requestId: args.requestId, workspaceId: args.workspaceId });
                     }
                     if (v2PersistenceError) throw v2PersistenceError;
                 } catch (err) {
@@ -1331,6 +1301,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
         const row = buildSupaRow({
             requestId: args.requestId,
             workspaceId: args.workspaceId,
+            billingRequestId: args.billingRequestId ?? null,
             endpoint: args.endpoint,
             model: args.model,
             canonicalModel: args.requestedModel ?? args.model,
@@ -1354,6 +1325,8 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
             latencyMs: args.latencyMs ?? null,
             generationMs: args.generationMs ?? null,
             usage: args.usage ?? {},
+            costNanos: args.costNanos ?? null,
+            ...(args.expectedCostNanos != null ? { expectedCostNanos: args.expectedCostNanos } : {}),
             requestPayload: args.requestPayload,
             gatewayResponse: args.gatewayResponse,
             currency: args.currency ?? null,
@@ -1373,36 +1346,14 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
         let supabaseError: Error | null = null;
         if (args.workspaceId) {
             try {
-                const insertedRow = await retryWithBackoff(
+                await retryWithBackoff(
                     () => insertGatewayRequest(row),
                     "supabase_audit_failure_execute_insert",
                 );
-                await syncInsertedRequestRollup(insertedRow, "audit_failure_execute");
-                await persistGatewayUpstreamRequests({
-                    insertedRow,
-                    requestId: args.requestId,
-                    workspaceId: args.workspaceId,
-                    appId: resolvedAppId,
-                    keyId: args.keyId ?? null,
-                    endpoint: args.endpoint,
-                    modelId: args.model,
-                    provider: args.provider ?? null,
-                    providerApiModelId: args.providerApiModelId ?? null,
-                    providerModelSlug: args.providerModelSlug ?? null,
-                    providerAttempts: args.providerAttempts ?? null,
-                    statusCode: args.statusCode,
-                    success: false,
-                    usage: args.usage ?? {},
-                    totalNanos: 0,
-                    currency: args.currency ?? null,
-                    latencyMs: args.latencyMs ?? null,
-                    generationMs: args.generationMs ?? null,
-                    totalMs: args.latencyMs ?? null,
-                    context: "audit_failure_execute",
-                });
                 let v2PersistenceError: Error | null = null;
                 try {
                     await retryWithBackoff(() => upsertV2RequestFact({
+                        testingMode: args.detailMetadata?.testing_mode === true,
                         requestId: args.requestId,
                         workspaceId: args.workspaceId,
                         appId: resolvedAppId,
@@ -1432,9 +1383,11 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         authMethod: args.authMethod ?? null,
                         userAgent: args.userAgent ?? null,
                         clientSource: args.clientSource ?? null,
+                        costNanos: args.costNanos ?? null,
                         currency: args.currency ?? null,
                         toolCallCount: readToolCallCount(args.usage, null),
-                        toolCallSucceeded: readToolCallCount(args.usage, null) > 0 ? false : null,
+                        // A failed request's tool calls were never checked.
+                        toolCallSucceeded: null,
                         structuredOutputAttempted: isStructuredOutputRequest(args.requestPayload),
                         structuredOutputSucceeded: false,
                         usage: args.usage ?? {},
@@ -1448,6 +1401,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                             : null,
                         routingDiagnostics:
                             (args.detailMetadata as any)?.routing_diagnostics ?? null,
+                        rateLimitPolicy: rateLimitPolicyRejection(args.errorCode, args.errorPayload),
                     }), "supabase_v2_audit_failure_execute_rpc");
                 } catch (v2Error) {
                     v2PersistenceError = v2Error instanceof Error ? v2Error : new Error(String(v2Error));
@@ -1459,6 +1413,13 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                 const ioLoggingPolicy = await resolveGatewayIoLoggingPolicy({
                     workspaceId: args.workspaceId,
                     keyId: args.keyId ?? null,
+                    zeroDataRetention: requestZeroDataRetention({
+                        zeroDataRetention: args.zeroDataRetention,
+                        requestPayload: args.requestPayload,
+                        metadata: args.detailMetadata,
+                        gatewayResponse: args.gatewayResponse,
+                        providerResponse: args.providerResponse,
+                    }),
                 });
                 if (ioLoggingPolicy.captureEnabled) {
                     await persistGatewayIoLog({
@@ -1478,30 +1439,10 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                     serverToolTrace: args.serverToolTrace,
 					lifecycleEvents: args.lifecycleEvents,
                     metadata: args.detailMetadata ?? {},
+                    zeroDataRetention: args.zeroDataRetention === true,
                     }, ioLoggingPolicy);
-                    await insertGatewayRequestDetailsNonBlocking(
-                        {
-                        gateway_request_id: insertedRow.id,
-                        gateway_request_created_at: insertedRow.created_at,
-                        request_id: args.requestId,
-                        workspace_id: args.workspaceId,
-                        app_id: resolvedAppId ?? null,
-                        key_id: args.keyId ?? null,
-                        endpoint: args.endpoint,
-                        model_id: args.model,
-                        provider: args.provider ?? null,
-                        status_code: args.statusCode,
-                        success: false,
-                        request_payload: normalizeJsonValue(args.requestPayload) ?? {},
-                        request_content: normalizeJsonValue(extractReplayContent(args.requestPayload)),
-                        gateway_response: normalizeJsonValue(args.gatewayResponse),
-                        response_content: normalizeJsonValue(extractReplayContent(args.gatewayResponse)),
-                        provider_request: normalizeJsonValue(args.providerRequest),
-                        provider_response: normalizeJsonValue(args.providerResponse),
-                        metadata: normalizeJsonValue(args.detailMetadata) ?? {},
-                        },
-                        "supabase_audit_failure_execute_details_insert",
-                    );
+                } else if (ioLoggingPolicy.recordZeroDataRetentionSkip) {
+                    await recordGatewayIoLogZeroDataRetentionSkip({ requestId: args.requestId, workspaceId: args.workspaceId });
                 }
                 if (v2PersistenceError) throw v2PersistenceError;
             } catch (err) {

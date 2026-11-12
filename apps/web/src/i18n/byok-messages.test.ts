@@ -1,6 +1,7 @@
+import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { createTranslator } from "next-intl";
+import { createTranslator } from "@/i18n/react";
 import englishMessages from "../../messages/en-GB/settings-ui.json";
 import { BYOK_PROVIDER_KEY_SPECS, getProviderCredentialLabel, getProviderKeyOnboarding, validateProviderKeyFormat } from "@/lib/byok/providerKeyValidation";
 import { localizedProviderCredentialLabel, localizedProviderKeyHint, localizedProviderKeyInstruction, localizedProviderKeyOnboarding, localizedProviderKeyValidation, localizedProviderSubmissionError } from "./byok-messages";
@@ -12,7 +13,7 @@ describe("BYOK localized display boundaries", () => {
 	it.each(locales)("renders key management labels, warnings, and counts in %s", (locale) => {
 		const t = translator(locale);
 		for (const key of ["apiKeyTitle", "managementKeyNote", "gatewayKeyNote"]) {
-			expect(t(`finalSettingsCopy.${key}` as never)).toContain("AI Stats");
+			expect(t(`finalSettingsCopy.${key}` as never)).toContain("Phaseo");
 		}
 		expect(t("finalSettingsCopy.providerKeyCounts" as never, { priority: 2, fallback: 3 } as never)).toContain("2");
 		expect(t("finalSettingsCopy.providerKeyCounts" as never, { priority: 2, fallback: 3 } as never)).toContain("3");

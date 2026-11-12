@@ -1,63 +1,54 @@
 ---
 title: "DeepSeek Harness"
 icon: "/icons/brands/deepseek.svg"
-description: "DeepSeek Harness में Phaseo को custom OpenAI-संगत provider के रूप में जोड़ें।"
+description: "DeepSeek Harness में Phaseo को कस्टम OpenAI-संगत प्रदाता के रूप में जोड़ें।"
 ---
 
-Harness web interface से Phaseo models और routing उपयोग करने के लिए DeepSeek Harness को Phaseo से जोड़ें। Custom adapter की ज़रूरत नहीं; Harness सीधे Phaseo को OpenAI-संगत Chat Completions requests भेज सकता है।
-
-**नतीजा:** Harness के model picker में Phaseo provider दिखता है और नए Harness sessions Phaseo द्वारा दिए गए model का उपयोग कर सकते हैं।
-
-## ज़रूरी चीज़ें
-
-- Phaseo CLI, Phaseo खाता और DeepSeek Harness का स्थापित संस्करण
-
-इस गाइड की live request provider credentials का उपयोग करती है और model usage charges लग सकते हैं।
+DeepSeek Harness के मॉडल पिकर में Phaseo जोड़ने के लिए `phaseo deepseek-harness` चलाएँ, या Harness UI या `settings.yaml` में कस्टम प्रदाता जोड़ें। Harness OpenAI-संगत Chat Completions अनुरोध सीधे Phaseo को भेजता है, इसलिए किसी एडैप्टर की ज़रूरत नहीं है।
 
 ## Phaseo CLI से सेट अप करें
 
-एक कमांड से प्रदाता, Base URL, प्रोटोकॉल, मॉडल कैटलॉग और डिफ़ॉल्ट मॉडल सेट करें:
-
 ```bash
 phaseo login
-phaseo dsh
+phaseo deepseek-harness
 ```
 
-CLI `$DSH_HOME/cordis.patch.yml` में अन्य entries सुरक्षित रखती है और Phaseo block को mark करती है, ताकि केवल managed settings बदली या हटाई जाएँ। यह Chat Completions-संगत सभी active Phaseo text models sync करती है। ज़रूरत हो तो अलग default model दें:
+अगर Harness इंस्टॉल नहीं है, तो CLI आधिकारिक इंस्टॉल कमांड दिखाता है और उसे चलाने से पहले पूछता है। इसके बाद सेटअप:
+
+- प्रदाता, base URL, प्रोटोकॉल, मॉडल कैटलॉग और डिफ़ॉल्ट मॉडल को `$DSH_HOME/cordis.patch.yml` (`DSH_HOME` का डिफ़ॉल्ट `~/.dsh` है) में एक चिह्नित ब्लॉक के अंदर लिखता है, ताकि बाद में वह सिर्फ़ अपनी सेटिंग्स अपडेट कर सके या हटा सके;
+- Chat Completions के साथ काम करने वाला हर सक्रिय Phaseo टेक्स्ट मॉडल जोड़ता है। सिर्फ़ डिफ़ॉल्ट मॉडल जोड़ने के लिए `--catalog default` इस्तेमाल करें;
+- एक `Phaseo CLI: DeepSeek Harness API Key` बनाता है जो 90 दिनों में समाप्त होती है और जिसकी मासिक खर्च सीमा $100 है, और उसे Harness की सुरक्षित `$DSH_HOME/.credentials.yaml` में लिखता है। समाप्त कुंजी बदलने के लिए `phaseo deepseek-harness` दोबारा चलाएँ।
+
+डिफ़ॉल्ट मॉडल `anthropic/claude-sonnet-4.6` है। कोई दूसरा चुनने के लिए:
 
 ```bash
-phaseo dsh --model YOUR_PHASEO_MODEL_ID
+phaseo deepseek-harness --model YOUR_PHASEO_MODEL_ID
 ```
 
-Setup `Phaseo CLI: DeepSeek Harness API Key` नाम की बिना expiry वाली Gateway key बनाकर Harness के protected `$DSH_HOME/.credentials.yaml` store में लिखती है। केवल चुना model configure करने के लिए `--catalog default` उपयोग करें।
+## Harness UI में Phaseo जोड़ें
 
-`phaseo integrations remove deepseek-harness` से integration हटाने पर केवल Phaseo-managed configuration हटती है और CLI की बनाई key revoke होती है।
+1. **Settings > Models** खोलें और **Add a custom provider** चुनें।
+2. ये मान दर्ज करें:
 
-## Harness UI में Phaseo को स्वयं जोड़ें
-
-1. DeepSeek Harness में **Settings > Models** खोलें।
-2. **Add a custom provider** चुनें।
-3. ये values दर्ज करें:
-
-| Field | मान |
+| फ़ील्ड | मान |
 | --- | --- |
 | Provider ID | `phaseo` |
 | Display name | `Phaseo` |
 | Base URL | `https://api.phaseo.app/v1` |
 | API protocol | `OpenAI Completions` |
-| API key | आपकी Phaseo API कुंजी |
+| API key | एक Phaseo API कुंजी |
 
-4. **Model catalog** में **Fetch available models** चुनें।
-5. Tool सपोर्ट वाला Chat Completions model चुनें, जैसे `anthropic/claude-sonnet-4.6`, फिर provider save करें।
-6. Composer पर लौटें, Phaseo model चुनें और नया session शुरू करें।
+3. **Model catalog** के अंदर **Fetch available models** चुनें।
+4. टूल सपोर्ट वाला कोई Chat Completions मॉडल चुनें, जैसे `anthropic/claude-sonnet-5.5`, और प्रदाता सेव करें।
+5. कंपोज़र में Phaseo मॉडल चुनें और नया सत्र शुरू करें।
 
-Harness saved sessions और credential references में provider ID रखता है, इसलिए `phaseo` को स्थायी मानें। Display name, URL, credential और model list बाद में बदली जा सकती है।
+सेव किए गए सत्र और क्रेडेंशियल रेफ़रेंस प्रदाता ID बनाए रखते हैं, इसलिए `phaseo` को स्थायी मानें। डिस्प्ले नाम, URL, कुंजी और मॉडल सूची आप बाद में बदल सकते हैं।
 
-## YAML से Phaseo कॉन्फ़िगर करें
+## settings.yaml में Phaseo कॉन्फ़िगर करें
 
-इसी provider को `$DSH_HOME/settings.yaml` में सीधे configure कर सकते हैं। API key इस file में न रखें; `apiKeyEnv` वह credential बताता है जिसे Harness resolve करे।
+आप यही प्रदाता `$DSH_HOME/settings.yaml` में भी सेट अप कर सकते हैं। कुंजी इस फ़ाइल से बाहर रखें: `apiKeyEnv` उस वेरिएबल का नाम बताता है जिससे Harness कुंजी पढ़ता है।
 
-```yaml
+```yaml $DSH_HOME/settings.yaml
 llm-pi-ai:
   providers:
     phaseo:
@@ -69,40 +60,34 @@ llm-pi-ai:
         - id: YOUR_PHASEO_MODEL_ID
 ```
 
-Harness लॉन्च करने वाले environment में `PHASEO_API_KEY` दें या Models page से वही credential सहेजें। `YOUR_PHASEO_MODEL_ID` को Phaseo model discovery के सटीक ID से बदलें। Coding-agent workflow के लिए `anthropic/claude-sonnet-4.6` से शुरू करें।
+Harness लॉन्च करने वाले एनवायरनमेंट में `PHASEO_API_KEY` सेट करें, या कुंजी Models पेज पर सेव करें। `YOUR_PHASEO_MODEL_ID` को Phaseo के सटीक ID से बदलें; कोडिंग एजेंट के लिए `anthropic/claude-sonnet-5.5` से शुरू करें। `models` सूची एक सेव किया गया कैटलॉग है, लाइव क्वेरी नहीं, इसलिए जब Harness में और Phaseo मॉडल चाहिए हों तो इसे अपडेट करें।
 
-<Note>
-  `settings.yaml` में `models` list saved catalog है, live query नहीं। Harness में और Phaseo models दिखाने हों तो इसे update करें।
-</Note>
+## जाँचें कि यह काम करता है
 
-## कनेक्शन जाँचें
-
-Harness जाँचने से पहले credential और model discovery route अलग-अलग confirm करें:
+पहले कुंजी और मॉडल डिस्कवरी जाँचें:
 
 ```bash
 curl https://api.phaseo.app/v1/models \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-फिर नए Harness session में Phaseo model चुनें और यह भेजें:
+फिर नए Harness सत्र में कोई Phaseo मॉडल चुनें और `Reply with exactly: Phaseo is connected.` भेजें। जवाब मिलना Harness से Phaseo होते हुए मॉडल प्रदाता तक पूरे रास्ते की पुष्टि करता है। अनुरोध **सेटिंग्स → उपयोग → लॉग्स** में भी दिखता है। लाइव अनुरोधों का बिल सामान्य उपयोग की तरह बनता है।
 
-```text
-Reply with exactly: Phaseo is connected.
+## Phaseo हटाएँ
+
+```bash
+phaseo integrations remove deepseek-harness
 ```
 
-सफल response से Harness से Phaseo होकर चुने गए model provider तक का पूरा path verify होता है।
+यह सिर्फ़ Phaseo का कॉन्फ़िगरेशन हटाता है और कुंजी रद्द करता है।
 
-## समस्या निवारण
+## आम समस्याएँ ठीक करें
 
-- **Model fetch पर `401` मिलता है** - जाँचें कि Phaseo API key चालू है और Base URL में `/v1` है।
-- **Picker में model नहीं है** - Catalog दोबारा fetch करें या `$DSH_HOME/settings.yaml` के `models` में Phaseo का exact model ID जोड़ें।
-- **Harness `MISSING_CREDENTIAL` बताता है** - Models page में key सहेजें या Harness process को `PHASEO_API_KEY` उपलब्ध कराएँ।
-- **Request गलत endpoint का उपयोग करता है** - `OpenAI Completions` / `openai-completions` चुनें। यह Harness integration Phaseo का `/v1/chat/completions` compatibility route उपयोग करता है।
-- **Reasoning चालू होने पर model function tools अस्वीकार करता है** - Chat Completions पर tools सपोर्ट करने वाला model चुनें। Tools के साथ reasoning के लिए Responses API चाहने वाले models इस Harness provider protocol से संगत नहीं हैं।
-- **मौजूदा session पुराना model रखता है** - नया session शुरू करें। Harness request भेज चुकी sessions में चुने provider और model को दर्ज करता है।
-
-## संबंधित गाइड
-
-- [त्वरित शुरुआत](../../quickstart.mdx)
-- [Node REST smoke app बनाएँ](../../cookbook/build-a-node-rest-smoke-app.mdx)
-- [Routing और fallbacks](../routing-and-fallbacks.mdx)
+| समस्या | समाधान |
+| --- | --- |
+| मॉडल फ़ेच करने पर `401` मिलता है | जाँचें कि कुंजी मौजूदा है और base URL में `/v1` शामिल है। |
+| मॉडल पिकर में मॉडल नहीं दिखता | कैटलॉग फिर से फ़ेच करें, या `settings.yaml` में `models` के अंदर सटीक मॉडल ID जोड़ें। |
+| Harness `MISSING_CREDENTIAL` रिपोर्ट करता है | कुंजी Models पेज पर सेव करें, या `PHASEO_API_KEY` को Harness प्रोसेस के लिए उपलब्ध कराएँ। |
+| अनुरोध गलत एंडपॉइंट पर जाते हैं | `OpenAI Completions` (`openai-completions`) चुनें। यह प्रदाता Phaseo का `/v1/chat/completions` इस्तेमाल करता है। |
+| रीज़निंग चालू होने पर कोई मॉडल फ़ंक्शन टूल अस्वीकार करता है | ऐसा मॉडल चुनें जो Chat Completions पर टूल सपोर्ट करे। जिन मॉडल को टूल के साथ रीज़निंग के लिए Responses API चाहिए, वे इस प्रोटोकॉल के साथ काम नहीं करते। |
+| कोई सत्र अपना पुराना मॉडल बनाए रखता है | नया सत्र शुरू करें। जिन सत्रों ने अनुरोध भेजा है, उनमें Harness प्रदाता और मॉडल सेव कर लेता है। |

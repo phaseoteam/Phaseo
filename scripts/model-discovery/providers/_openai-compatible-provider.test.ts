@@ -73,14 +73,38 @@ async function main(): Promise<void> {
             });
         }) as typeof fetch;
 
+        // Phala is served through RedPill: every listed model is a Phala route, whoever hosts it.
         const phalaModels = await phala.fetchModels();
         assert.deepEqual(phalaModels.map((model) => model.id), [
+            "other-provider/model",
+            "phala/model-a",
+            "qwen/qwen3-embedding-8b",
+            "sentence-transformers/all-minilm-l6-v2",
+        ]);
+        assert.deepEqual(requestedUrls, [
+            "https://api.redpill.ai/v1/models",
+            "https://api.redpill.ai/v1/embeddings/models",
+        ]);
+
+        // providerAttribution keeps only models a gateway attributes to the provider.
+        requestedUrls.length = 0;
+        const attributed = defineOpenAICompatibleProvider({
+            providerId: "attributed-provider",
+            name: "Attributed Provider",
+            apiKeyEnv: "PHALA_API_KEY",
+            baseUrl: "https://gateway.example.com",
+            pathPrefix: "/v1",
+            providerAttribution: "phala",
+            additionalModelPaths: ["/embeddings/models"],
+        });
+        const attributedModels = await attributed.fetchModels();
+        assert.deepEqual(attributedModels.map((model) => model.id), [
             "phala/model-a",
             "sentence-transformers/all-minilm-l6-v2",
         ]);
         assert.deepEqual(requestedUrls, [
-            "https://inference.phala.com/v1/models",
-            "https://inference.phala.com/v1/embeddings/models",
+            "https://gateway.example.com/v1/models",
+            "https://gateway.example.com/v1/embeddings/models",
         ]);
     } finally {
         globalThis.fetch = originalFetch;

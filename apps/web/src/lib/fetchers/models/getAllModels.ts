@@ -71,6 +71,15 @@ export interface ModelCard {
         label: string;
         value: string;
     }>;
+    /** Headline price from the catalogue API; the card localises its wording. */
+    pricing_summary?:
+        | { kind: "free" }
+        | { kind: "tokens"; from: boolean; input: number | null; output: number | null; unit: string }
+        | { kind: "usage"; from: boolean; price: number; unit: string; per_image?: number }
+        | { kind: "provider_cost" }
+        | null;
+    /** Provider whose prices the headline and details show; null for stealth routes. */
+    pricing_provider_id?: string | null;
     popularity_tokens_week?: number | null;
     weekly_usage_metric?: string | null;
     weekly_usage_quantity?: number | null;
@@ -84,17 +93,13 @@ export interface ModelCard {
 
 const ACTIVE_GATEWAY_STATUSES = new Set([
     "active",
-    "deranked_lvl1",
-    "deranked_lvl2",
-    "deranked_lvl3",
+    "deranked",
 ]);
 
 const GATEWAY_STATUS_PRIORITY = [
     "active",
     "coming_soon",
-    "deranked_lvl1",
-    "deranked_lvl2",
-    "deranked_lvl3",
+    "deranked",
     "inactive",
     "disabled",
 ] as const;
@@ -107,12 +112,8 @@ function normalizeGatewayStatus(value: unknown): string {
     if (!normalized) return "inactive";
     if (normalized === "not_active") return "inactive";
     if (normalized === "comingsoon") return "coming_soon";
-    if (normalized === "deranked" || normalized === "de_ranked") {
-        return "deranked_lvl1";
-    }
-    if (normalized === "deranked_lvl_1") return "deranked_lvl1";
-    if (normalized === "deranked_lvl_2") return "deranked_lvl2";
-    if (normalized === "deranked_lvl_3") return "deranked_lvl3";
+    // The catalogue stores a deranked route as `degraded`; the former levels are one level now.
+    if (normalized === "degraded" || normalized === "de_ranked" || /^deranked(_lvl_?[123])?$/.test(normalized)) return "deranked";
     return normalized;
 }
 

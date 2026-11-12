@@ -4,27 +4,10 @@ description: "Erfahre, wie Rate Limits über unser Gateway und bei den Anbietern
 icon: "gauge"
 ---
 
-Rate Limits schützen die Plattform und sorgen für eine faire Nutzung. Auf dieser Seite erfährst du, wie sie mit unserem Gateway und den Anbietern funktionieren.
+Diese Anleitung wurde in die Referenz [Ratenlimits](../api-reference/limits.mdx) verschoben. Dort findest du die aktuellen Gateway-Kontingente, Anbieterlimits, `Retry-After` und begrenzte Wiederholungsversuche.
 
----
-
-## Unser Umgang mit Rate Limits
-
-Wir setzen für Nutzer keine eigenen Rate Limits. Stattdessen arbeiten wir eng mit KI-Anbietern zusammen, um möglichst hohe Limits für unsere Nutzer zu erhalten. Limits, auf die du stößt, stammen direkt von den Anbietern, an die deine Anfragen weitergeleitet werden. Wir möchten bald veröffentlichen, wie oft Limits erreicht werden. Bis dahin kannst du dich mit konkreten Fragen oder Anliegen an uns wenden.
-
-Wenn du BYOK nutzt, gelten die Rate Limits deines Anbieter-Kontos anstelle unserer Limits.
-
----
-
-## Rate Limits behandeln
-
-Sende Anfragen wie gewohnt. Wir versuchen automatisch auf einen anderen Anbieter auszuweichen, damit du weiterhin erfolgreiche Antworten erhältst.
-
----
+Anfragen können wegen eines Gateway- oder Anbieterlimits `429` zurückgeben. Bei BYOK gelten außerdem die Kontingente deines Anbieterkontos. Routing und Fallbacks können Fehler reduzieren, garantieren aber keinen Erfolg für jede Anfrage.
 
 ## Nutzung überwachen
 
--   Das Phaseo-Dashboard zeigt Diagramme zu Anfragen, Latenz und Fehlern für jeden Endpunkt.
--   Exportiere Nutzungsmetriken über das Dashboard und demnächst auch über die API für eigene Berichte.
-
----
+Prüfe `429`-Fehler und Wiederholungsversuche in den Anfrageprotokollen. Über die API kannst du bereits [Workspace-Analysen abrufen](../api-reference/endpoint/analytics-get.mdx) und [als CSV exportieren](../api-reference/endpoint/analytics-export.mdx). Beide Operationen erfordern einen Verwaltungsschlüssel mit `analytics:read`.

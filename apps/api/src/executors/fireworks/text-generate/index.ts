@@ -15,8 +15,25 @@ export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChat
 	return cherryPickIRParams(ir, args.capabilityParams);
 }
 
+/**
+ * Fireworks documents cached usage (usage.prompt_tokens_details.cached_tokens) and
+ * prompt_cache_key affinity on Chat Completions only. Its Responses API documents
+ * neither, and stores responses by default. Use Responses only for features that
+ * need it: stored state (previous_response_id, conversation, store: true) and
+ * non-function tools such as remote MCP.
+ * https://docs.fireworks.ai/api-reference/post-chatcompletions
+ * https://docs.fireworks.ai/api-reference/post-responses
+ */
+export function fireworksNeedsResponses(ir: IRChatRequest): boolean {
+	if (ir.previousResponseId || ir.conversation || ir.store === true) return true;
+	return (ir.tools ?? []).some((tool) => typeof tool?.type === "string" && tool.type !== "function");
+}
+
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
-	return executeOpenAIWire(args, { transientRetries: 1 });
+	return executeOpenAIWire(args, {
+		transientRetries: 1,
+		forceChat: !fireworksNeedsResponses(args.ir as IRChatRequest),
+	});
 }
 
 export function postprocess(ir: any): any {

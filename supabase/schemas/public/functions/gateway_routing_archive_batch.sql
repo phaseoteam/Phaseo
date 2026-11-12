@@ -9,6 +9,9 @@ AS $function$
     select request.id, request.created_at
     from public.gateway_requests request
     where (request.id, request.created_at) > (p_after_id, p_after_created_at)
+      -- Routing snapshots began on 2026-08-19. Older partitions hold only requests
+      -- that can never qualify; without this bound every batch rescans all of them.
+      and request.created_at >= timestamptz '2026-08-19 00:00:00+00'
       and request.created_at < least(p_cutoff, now() - interval '1 hour')
       and not coalesce(request.detail_metadata ? 'routing_archive', false)
       and (request.detail_metadata ? 'routing_snapshot' or exists (

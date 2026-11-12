@@ -137,7 +137,7 @@ function buildXAiVideoRequest(ir: IRVideoGenerationRequest, model: string): {
 	const body: Record<string, unknown> = { model, prompt: ir.prompt };
 	if (videoUrl) {
 		if (isGrokImagineVideo15(model)) {
-			throw new InvalidXAiVideoRequestError("grok-imagine-video-1.5 supports image-to-video only; use grok-imagine-video for editing.");
+			throw new InvalidXAiVideoRequestError("grok-imagine-video-1.5 does not edit videos; use grok-imagine-video for editing.");
 		}
 		const inputVideoSeconds = ir.inputVideoDurationSeconds;
 		if (inputVideoSeconds == null || !Number.isFinite(inputVideoSeconds) || inputVideoSeconds <= 0 || inputVideoSeconds > 8.7) {
@@ -159,12 +159,16 @@ function buildXAiVideoRequest(ir: IRVideoGenerationRequest, model: string): {
 			inputVideoSeconds,
 		};
 	}
-	const isLite = model.toLowerCase() === "grok-imagine-video-1.5-lite";
-	if (isLite && (imageUrls.length > 1 || useReferenceImages)) {
-		throw new InvalidXAiVideoRequestError("grok-imagine-video-1.5-lite accepts text-only input or one first_frame image.");
-	}
-	if (isGrokImagineVideo15(model) && !isLite && (imageUrls.length !== 1 || useReferenceImages)) {
-		throw new InvalidXAiVideoRequestError("grok-imagine-video-1.5 requires exactly one first_frame image.");
+	// Grok Imagine 1.5 (and Lite) run text-to-video or image-to-video from one first frame
+	// (docs.x.ai video generation guide, checked 2026-11-05). Reference-to-video is not
+	// wired up for 1.5 here yet.
+	if (isGrokImagineVideo15(model) && (
+		imageUrls.length > 1 ||
+		useReferenceImages ||
+		// xAI uses `image` as the first frame, so any other role would be misread.
+		imageReferences.some((entry) => entry.role != null && entry.role !== "first_frame")
+	)) {
+		throw new InvalidXAiVideoRequestError(`${model} accepts text-only input or one first_frame image.`);
 	}
 	if (seconds != null) body.duration = seconds;
 	body.resolution = resolution;
@@ -287,7 +291,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	try {
 		const reserved = await reserveVideoGenerationCredits({
 			keyId: args.apiKeyId,
-			authMethod: args.meta.authMethod,
+			apiKeyRef: args.meta.apiKeyRef,
 			onReservationDenied: args.onReservationDenied,
 			workspaceId: args.workspaceId,
 			videoId: args.requestId,

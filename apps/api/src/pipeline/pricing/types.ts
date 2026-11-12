@@ -63,6 +63,8 @@ export type PricingDimensionKey =
     | "cached_write_text_tokens"
     | "cached_write_text_tokens_5m"
     | "cached_write_text_tokens_1h"
+    | "cached_write_text_tokens_30m"
+    | "cached_write_text_tokens_12h"
     | "cached_write_image_tokens"
     | "cached_write_audio_tokens"
     | "cached_write_video_tokens"
@@ -81,6 +83,9 @@ export type PricingDimensionKey =
     | "server_tool_apply_patch_requests"
     | "native_web_search_requests"
     | "native_web_fetch_requests"
+    | "native_code_execution_requests"
+    | "native_x_search_posts"
+    | "native_x_search_users"
     | "requests";
 
 export type ConditionOp =
@@ -151,6 +156,12 @@ export type PricingBreakdownLine = {
         start_time: string;
         end_time: string;
     } | null;
+    /**
+     * `input_rate`: no rule existed for this cache meter and it was priced from the input rate.
+     * `base_rate`: the meter's rules all had unmet conditions after the provider had charged,
+     * so it was priced at the meter's base (lowest) rate.
+     */
+    pricing_fallback?: "input_rate" | "base_rate";
 };
 
 export type PricingResult = {
@@ -159,6 +170,20 @@ export type PricingResult = {
     cost_cents: number;
     currency: "USD";
     lines: PricingBreakdownLine[];
+    /** Cache meters billed from the input rate because the card has no row for them. */
+    cache_pricing_fallback?: Array<{
+        meter: string;
+        quantity: number;
+        input_meter: string;
+        input_rule_id: string | null;
+        multiplier: number;
+    }>;
+    /** Meters priced at their base rate because no rule's conditions matched (see `base_rate`). */
+    base_rate_fallback?: Array<{
+        meter: string;
+        quantity: number;
+        rule_id: string | null;
+    }>;
 };
 
 

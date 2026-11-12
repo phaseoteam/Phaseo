@@ -1,7 +1,6 @@
-"use client";
-
+import { formatLatency } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState, type SyntheticEvent } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Logo } from "@/components/Logo";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
@@ -74,6 +73,7 @@ import {
 	getDefaultImageRoomParams,
 	getImageModelSchema,
 	getDefaultVideoRoomParams,
+	type CapabilityParamsById,
 	type ImageRoomParams,
 	type VideoRoomParams,
 } from "@/lib/chat/roomModelSettings";
@@ -523,18 +523,7 @@ function formatDuration(
 	locale: string,
 	notAvailable: string,
 ): string {
-	if (typeof durationMs !== "number" || !Number.isFinite(durationMs)) return notAvailable;
-	if (durationMs < 1000) {
-		return new Intl.NumberFormat(locale, { style: "unit", unit: "millisecond", unitDisplay: "short" }).format(Math.round(durationMs));
-	}
-	const seconds = new Intl.NumberFormat(locale, {
-		style: "unit",
-		unit: "second",
-		unitDisplay: "short",
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	});
-	return seconds.format(durationMs / 1000);
+	return formatLatency(durationMs, locale) ?? notAvailable;
 }
 
 function formatVideoSeconds(
@@ -922,6 +911,23 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		() => filterModelsForRoom(models, roomId).filter((model) => model.isAvailable),
 		[models, roomId],
 	);
+	// The video options the catalogue stores for a model (sizes, durations and
+	// defaults), from the row of the chosen provider when there is one.
+	const videoParamsFor = useCallback(
+		(modelId: string, providerId?: string | null): CapabilityParamsById => {
+			const rows = filteredModels.filter((model) => model.modelId === modelId);
+			const preferred = providerId && providerId !== "auto"
+				? rows.find((model) => model.providerId === providerId)
+				: undefined;
+			const withParams = rows.find((model) => {
+				const params = model.capabilityParamsById as Record<string, unknown> | null | undefined;
+				const video = params?.["video.generate"];
+				return Boolean(video && typeof video === "object" && !Array.isArray(video));
+			});
+			return (preferred ?? withParams ?? rows[0])?.capabilityParamsById;
+		},
+		[filteredModels],
+	);
 	const [selectedModelIds, setSelectedModelIds] = useState<string[]>([]);
 	const [activeModelId, setActiveModelId] = useState("");
 	const [temporaryMode, setTemporaryMode] = useState(false);
@@ -945,7 +951,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 		getDefaultParams: (nextModelId) =>
 			(isImageRoom
 				? getDefaultImageRoomParams(nextModelId)
-				: getDefaultVideoRoomParams(nextModelId)) as ImageRoomParams | VideoRoomParams,
+				: getDefaultVideoRoomParams(nextModelId, videoParamsFor(nextModelId))) as ImageRoomParams | VideoRoomParams,
 	});
 	const modelSettingsCompat = modelSettings as any;
 	const selectedProfile =
@@ -1587,10 +1593,11 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 								? (retrySourceEntry.generationParams as VideoRoomParams | null)
 								: null) ??
 							(profile.params as VideoRoomParams) ??
-							getDefaultVideoRoomParams(selectedId);
+							getDefaultVideoRoomParams(selectedId, videoParamsFor(selectedId, profile.providerId));
 						const videoRequestOptions = buildVideoRequestOptions(
 							selectedId,
 							videoParams,
+							videoParamsFor(selectedId, profile.providerId),
 						);
 						generationParams = { ...videoParams };
 						videoSeconds = toOptionalNumber(
@@ -1681,7 +1688,8 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 										targetModelId,
 										(pendingEntry.generationParams as VideoRoomParams | null) ??
 										(profile.params as VideoRoomParams) ??
-											getDefaultVideoRoomParams(targetModelId),
+											getDefaultVideoRoomParams(targetModelId, videoParamsFor(targetModelId, profile.providerId)),
+										videoParamsFor(targetModelId, profile.providerId),
 									),
 								);
 							}
@@ -2586,6 +2594,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 					onOpenChange={modelSettings.handleModelSettingsOpenChange}
 					settings={dialogProfile as RoomModelProfile<VideoRoomParams>}
 					selectedModelId={dialogModelId}
+					capabilityParamsById={dialogModelId ? videoParamsFor(dialogModelId, dialogProfile.providerId) : undefined}
 					modelChoices={modelSettings.modelSettingsChoices}
 					onModelChange={handleModelSettingsModelChange}
 					providerOptions={modelSettings.providerOptions}

@@ -1,0 +1,10 @@
+---
+title: "プリセットのラベルを設定"
+sidebarTitle: "ラベルを設定"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml PUT /presets/{id}/labels/{label}"
+description: "ラベルをプリセットの公開バージョンに割り当てます。以前のバージョンに戻すとロールバックになります。"
+---
+<Note>このエンドポイントには、`presets:write`を持つ管理APIキーと、関連付けられたユーザーIDが必要です。ラベルを変更できるのはプリセットの作成者と、プリセットが共有されている場合のワークスペースのオーナーと管理者です。</Note>
+
+`@support-triage@production` や `prompt.version: "production"` のようにラベルを固定したリクエストは、約 2 分以内に新しいバージョンを使います。[プロンプトテンプレート](../../guides/prompt-templates.mdx) を参照してください。

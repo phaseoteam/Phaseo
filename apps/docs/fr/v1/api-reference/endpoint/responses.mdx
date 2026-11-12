@@ -3,48 +3,59 @@ title: "Créer une réponse"
 sidebarTitle: "Créer une réponse"
 openapi: "/fr/openapi/v1/openapi.localized.yaml POST /responses"
 ---
-## Outils serveur
 
-`/v1/responses` prend en charge les outils de fonction classiques ainsi que les outils serveur gérés par le Gateway suivants :
+## Utiliser les outils serveur
 
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-- `phaseo:apply_patch`
-
-### Exemple de date et heure
+Ajoutez un outil `phaseo:` dans `tools` à côté de vos propres outils de fonction : Phaseo l’exécute lorsque le modèle l’appelle. `/v1/responses` accepte tous les outils serveur, y compris `phaseo:apply_patch`, que seul cet endpoint prend en charge ; le guide [Outils serveur](../../guides/server-tools) les liste.
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
-    "stream": false,
+    "model": "openai/gpt-6-astra",
     "input": [
       { "role": "user", "content": "Give me the current datetime in Asia/Tokyo." }
     ],
     "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "Asia/Tokyo" }
-      }
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Asia/Tokyo"] } }
     ],
     "tool_choice": "auto"
   }'
 ```
 
-Lorsqu’un outil serveur est utilisé, les compteurs `usage.server_tool_use.*` correspondants sont inclus dans les données d’utilisation.
+Chaque appel d’outil serveur est compté dans `usage.server_tool_use` :
 
-- `gateway:datetime` -> `datetime_requests`
-- `phaseo:web_search` -> `web_search_requests`, `web_search_results`, `web_search_extra_results`
-- `phaseo:web_fetch` -> `web_fetch_requests`
-- `phaseo:advisor` -> `advisor_requests`
-- `phaseo:image_generation` -> `image_generation_requests`
-- `phaseo:apply_patch` -> `apply_patch_requests`
+| Outil | Compteurs |
+| --- | --- |
+| `phaseo:datetime` | `datetime_requests` |
+| `phaseo:web_search` | `web_search_requests`, `web_search_results`, `web_search_extra_results` |
+| `phaseo:web_fetch` | `web_fetch_requests` |
+| `phaseo:advisor` | `advisor_requests` |
+| `phaseo:subagent` | `subagent_requests` |
+| `phaseo:fusion` | `fusion_requests` |
+| `phaseo:search_models` | `search_models_requests` |
+| `phaseo:image_generation` | `image_generation_requests` |
+| `phaseo:apply_patch` | `apply_patch_requests` |
 
-## À propos du streaming
+L’ancien type `gateway:datetime` fonctionne toujours. Avec `stream: true`, Phaseo exécute lui-même les tours d’outils, puis vous transmet la suite de la réponse en un seul flux.
 
-`stream: true` est également pris en charge. Avec les outils serveur gérés par le Gateway, Phaseo peut matérialiser le tour d’appel d’outil amont, poursuivre la boucle, puis réémettre un flux synthétique.
+<span id="reasoning-in-tool-loops"></span>
+## Raisonnement dans les boucles d’outils
+
+Avec OpenAI, Azure OpenAI et xAI, Phaseo envoie les requêtes Responses au fournisseur avec `store: false` : le raisonnement d’un modèle ne se poursuit donc d’une étape à l’autre d’une boucle d’outils qu’au moyen des éléments de sortie `reasoning`.
+
+Chaque élément `reasoning` possède un `id`, un `summary` et un `content`. Lorsque le fournisseur renvoie un état de raisonnement, l’élément contient aussi `encrypted_content`, qui contient l’un des éléments suivants :
+
+- Le raisonnement chiffré d’OpenAI, d’Azure OpenAI et de xAI. Phaseo le demande avec `include: ["reasoning.encrypted_content"]` pour les modèles de raisonnement.
+- Les signatures de thinking de Claude et le thinking masqué.
+- Les signatures de pensée de Gemini, y compris un élément `reasoning` distinct placé juste avant l’appel de fonction auquel une signature appartient.
+- Le niveau d’effort auquel une réponse de Claude s’est exécutée, dans le dernier élément `reasoning` de la sortie, qui n’a pas de texte.
+
+Les réponses en streaming contiennent les mêmes éléments dans `response.output_item.done` et `response.completed`.
+
+<Warning>
+Renvoyez tous les éléments de sortie dans `input` sans les modifier dans chaque requête, et pas seulement dans les boucles d’outils. N’abandonnez, ne modifiez et ne réordonnez jamais les éléments `reasoning`, avec ou sans `encrypted_content`, y compris ceux sans texte.
+</Warning>
+
+`encrypted_content` est opaque et enregistre le fournisseur et le modèle qui l’ont produit. Phaseo ne l’envoie qu’à cette famille de fournisseurs et à ce modèle : un fallback vers un autre fournisseur l’abandonne au lieu d’échouer. Sans lui, Claude perd son raisonnement entre les étapes de la boucle d’outils, et un changement de `reasoning.effort` redémarre le cache de prompts de Claude ; consultez [Changer l’effort de raisonnement en cours de conversation](../../guides/reasoning-effort).

@@ -18,7 +18,7 @@ begin
   select date_trunc('week', fact.occurred_at at time zone 'utc')::date,
     coalesce(nullif(fact.routed_model_slug,''),nullif(fact.requested_model_slug,'')),
     md5('public-model-workspace:' || fact.workspace_id::text), count(*)::bigint, now()
-  from public.v2_request_facts fact
+  from public.reporting_request_facts fact
   where fact.occurred_at >= p_since and fact.occurred_at < p_until
     and fact.success is true and fact.workspace_id is not null
     and coalesce(nullif(fact.routed_model_slug,''),nullif(fact.requested_model_slug,'')) is not null

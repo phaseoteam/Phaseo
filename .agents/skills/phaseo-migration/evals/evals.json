@@ -1,0 +1,72 @@
+[
+  {
+    "id": "openai-sdk-swap",
+    "query": "Our Express server uses the openai npm package with OPENAI_API_KEY. Switch it to Phaseo without rewriting our calls.",
+    "should_trigger": true,
+    "expected_behavior": [
+      "Keeps the OpenAI SDK and changes only apiKey to process.env.PHASEO_API_KEY and baseURL to https://api.phaseo.app/v1",
+      "Checks each model ID against GET /v1/models and maps unprefixed names such as gpt-4.1-mini to Phaseo IDs instead of guessing",
+      "Smoke tests with phaseo/free, including one streaming request",
+      "Does not print or commit an API key"
+    ]
+  },
+  {
+    "id": "anthropic-sdk-base-url",
+    "query": "Move this Python service from api.anthropic.com to Phaseo. It uses anthropic.Anthropic() and client.messages.create.",
+    "should_trigger": true,
+    "expected_behavior": [
+      "Points the Anthropic client at the root host https://api.phaseo.app, not https://api.phaseo.app/v1, because the SDK appends /v1/messages",
+      "Passes PHASEO_API_KEY as a bearer token (auth_token) and reads it from os.environ",
+      "Keeps messages and max_tokens in the request body",
+      "Reviews anthropic-beta headers instead of carrying them forward"
+    ]
+  },
+  {
+    "id": "helicone-headers",
+    "query": "We proxy OpenAI through oai.helicone.ai with Helicone-Auth, Helicone-Property-Team and Helicone-User-Id headers. Move us to Phaseo and keep the per-team cost breakdown.",
+    "should_trigger": true,
+    "expected_behavior": [
+      "Removes Helicone-Auth and the Helicone base URL",
+      "Maps Helicone-Property-* to X-Phaseo-Metadata labels and Helicone-User-Id to the user field or X-Phaseo-User-Id",
+      "Lists Helicone features with no direct equivalent instead of inventing headers",
+      "Plans the observability cutover before switching traffic"
+    ]
+  },
+  {
+    "id": "litellm-proxy-config",
+    "query": "Replace our LiteLLM proxy with Phaseo. The config.yaml has model_list aliases, router_settings fallbacks and a Langfuse success_callback.",
+    "should_trigger": true,
+    "expected_behavior": [
+      "Maps each model_list alias to a Phaseo model ID verified with GET /v1/models, a preset, or one boundary map",
+      "Maps router_settings fallbacks to the models array or dynamic routes",
+      "Gives the callback an explicit replacement (observability destination or client-side tracing)",
+      "Mentions the option to keep LiteLLM and use Phaseo as its upstream with openai/<model ID>"
+    ]
+  },
+  {
+    "id": "vercel-ai-gateway-ai-sdk",
+    "query": "This Next.js app calls generateText with model strings like \"openai/gpt-4.1-mini\" through Vercel AI Gateway and AI_GATEWAY_API_KEY. Move it to Phaseo.",
+    "should_trigger": true,
+    "expected_behavior": [
+      "Installs @phaseo/ai-sdk-provider matching the installed ai major version and wraps model IDs with phaseo(...)",
+      "Notes that bare string model IDs keep routing through Vercel's gateway until replaced",
+      "Sets PHASEO_API_KEY in every runtime that held the gateway key"
+    ]
+  },
+  {
+    "id": "new-integration-not-migration",
+    "query": "Start a new FastAPI app that calls Phaseo for chat completions. There is no existing AI code.",
+    "should_trigger": false,
+    "expected_behavior": [
+      "Uses phaseo-gateway or phaseo-sdk-python instead of the migration workflow"
+    ]
+  },
+  {
+    "id": "model-upgrade-same-platform",
+    "query": "We already use Phaseo. Help me upgrade our prompts from one Claude model to a newer one.",
+    "should_trigger": false,
+    "expected_behavior": [
+      "Treats this as a model change on Phaseo, not a platform migration"
+    ]
+  }
+]

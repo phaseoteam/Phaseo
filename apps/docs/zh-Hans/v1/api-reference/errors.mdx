@@ -1,20 +1,35 @@
 ---
 title: "错误与调试"
-description: "了解 Phaseo 错误的含义，更快解决常见的请求、提供商和路由问题。"
+description: "了解 Phaseo 错误响应，更快解决常见的请求、提供商和路由问题。"
 icon: "bug"
 ---
 
-请使用本页了解 Phaseo 错误代表什么，以及接下来应该采取什么操作。
-
-所有错误响应都使用相同的 JSON 格式，因此应用可以在不同模型和提供商之间一致地处理失败。
-
-## 错误响应示例
+根据 `error.code` 和 HTTP 状态进行分支处理，而不是根据消息文本。每个 Phaseo 错误在所有端点上都有相同的 JSON 正文，其 `error` 对象（`code`、`message`、`type`、`param`）正是 OpenAI 兼容 SDK 读取的格式，因此这些 SDK 抛出的异常会带有 Phaseo 的消息。
 
 ```json
 {
+  "error": {
+    "code": "upstream_error",
+    "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
+    "type": "server_error",
+    "param": null,
+    "metadata": {
+      "reason": "all_candidates_failed",
+      "attempt_count": 1,
+      "failed_providers": ["google-ai-studio"],
+      "failed_statuses": [403],
+      "upstream_error": {
+        "code": "PERMISSION_DENIED",
+        "message": "The caller does not have permission.",
+        "description": null,
+        "param": null
+      }
+    }
+  },
+  "code": "upstream_error",
+  "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
   "generation_id": "G-abc123",
   "status_code": 502,
-  "error": "upstream_error",
   "error_type": "system",
   "error_origin": "upstream",
   "reason": "all_candidates_failed",
@@ -49,104 +64,140 @@ icon: "bug"
 }
 ```
 
-## 始终会返回的字段
+## 每个错误都包含的字段
 
-- `generation_id`：稳定的请求 ID，可提供给支持团队。
-- `status_code`：与 HTTP 状态代码一致。
-- `error`：机器可读的错误代码，例如 `validation_error`。
-- `error_type`：较高层级的分类，通常为 `user` 或 `system`。
-- `error_origin`：指出问题主要由调用方、Phaseo 还是上游提供商导致。
-- `description`：对问题的通俗说明。
-- `details`（可选）：请求验证失败时提供结构化的验证详情。
+| 字段 | 内容 |
+| --- | --- |
+| `error.code` | 机器可读的代码，例如 `validation_error`。请参阅[错误代码](#error-codes)。 |
+| `error.message` | 通俗易懂的说明。 |
+| `error.type` | 错误类别，根据 HTTP 状态设置。请参阅[错误类型](#error-types)。 |
+| `error.param` | 导致错误的请求字段（如果 Phaseo 知道）；否则为 `null`。 |
+| `error.metadata` | 可选。结构化的详细信息，例如 `reason`、`failed_providers`、`failed_statuses` 或 `retry_after_seconds`。相同的值也会出现在顶层。 |
+| `code` | 与 `error.code` 相同。旧的响应会将这个字符串放在 `error` 中返回；如果你的客户端在那里期望一个字符串，请读取 `code`。 |
+| `message`、`description` | 与 `error.message` 的文本相同。 |
+| `generation_id` | 用于记录日志和提供给支持团队的请求 ID。 |
+| `status_code` | HTTP 状态。 |
+| `error_type` | `user` 或 `system`。 |
+| `error_origin` | 问题的来源：调用方（`user`）、Phaseo（`gateway`）或提供商（`upstream`）。 |
+| `details` | 可选。请求正文无效时的校验详情。 |
 
-## 可能出现的其他字段
+有些错误会添加更多上下文：
 
-部分错误会包含更多详情，帮助你更快解决问题：
+| 字段 | 何时出现 |
+| --- | --- |
+| `reason` | 具体的子原因，例如 `all_candidates_failed` 或 `no_provider_pricing`。 |
+| `provider_failure_diagnostics` | 已连接到提供商但请求失败。请参阅[提供商失败时](#when-a-provider-fails)。 |
+| `upstream_error`、`failure_sample` | 第一次提供商失败的尽力而为的摘要。 |
+| `failed_providers`、`failed_statuses`、`attempt_count` | 尝试了哪些提供商以及它们返回了什么。 |
+| `provider_candidate_diagnostics`、`provider_enablement`、`routing_diagnostics` | 没有提供商能在此端点上提供该模型。请参阅[模型或端点不可用时](#when-a-model-or-endpoint-is-not-available)。 |
 
-- `reason`：更具体的原因，例如 `all_candidates_failed` 或 `pricing_not_configured`。
-- `provider_candidate_diagnostics` 和 `provider_enablement`：解释为何无法使用模型处理所请求的端点。
-- `routing_diagnostics`：说明路由或可用性检查如何缩小请求范围。
-- `provider_failure_diagnostics`：关于凭证缺失、访问权限不足、区域限制、速率限制及其他提供商侧失败的提示。
-- `upstream_error` 和 `failure_sample`：如果请求到达了提供商，则尽可能总结首次提供商故障。
-- `failed_providers`、`failed_statuses` 和 `attempt_count`：重试和故障转移的补充信息。
+<span id="error-types"></span>
+## 错误类型
 
-## 状态码类别指南
+`error.type` 遵循 OpenAI [记录的错误类型](https://platform.openai.com/docs/guides/error-codes)，并根据 HTTP 状态设置：
 
-| 状态 | 含义 | 建议操作 |
-| --- | --- | --- |
-| `400-499` | 请求、身份验证或权限问题 | 重试前修正请求或凭证。 |
-| `429` | 提供商或路由级限流 | 采用退避重试并遵守 `Retry-After`。 |
-| `500-599` | Phaseo 或上游提供商故障 | 采用带抖动的退避重试，并记录请求 ID。 |
+| 状态 | `error.type` |
+| --- | --- |
+| `401` | `authentication_error` |
+| `402` | `insufficient_quota` |
+| `403` | `permission_error` |
+| `404` | `not_found_error` |
+| `429` | `rate_limit_error` |
+| `408`、`500`、`502` 和其他 5xx | `server_error` |
+| `503` | `service_unavailable` |
+| `529` | `overloaded` |
+| `400`、`409`、`410`、`413`、`422` 和其他 4xx | `invalid_request_error` |
 
-## 常见错误代码
+`/v1/messages` 上的错误使用相同的正文，因此 Anthropic SDK 也能找到 `error.type` 和 `error.message`。
 
-| 类型 | HTTP 状态 | 说明 |
-| --- | --- | --- |
-| `authentication_error` | `401` | API 密钥缺失或无效。 |
-| `authorization_error` | `403` | 此密钥无权访问该资源。 |
-| `not_found_error` | `404` | 找不到端点或资源。 |
-| `rate_limit_error` | `429` | 请求过多。请在指定延迟后重试。 |
-| `validation_error` | `400` | 参数或请求正文无效。 |
-| `provider_error` | `502` | 上游模型提供商未能正确响应。 |
-| `server_error` | `500` | Phaseo 内部发生意外问题。 |
+<span id="error-codes"></span>
+## 错误代码
 
-## 提供商故障时
+| `error.code` | 状态 | 含义 | 处理方法 |
+| --- | --- | --- | --- |
+| `validation_error` | `400` | 某个参数或请求正文无效。`error.param` 指出第一个无效字段。 | 修正请求。 |
+| `invalid_json` | `400` | 正文不是有效的 JSON。 | 修正请求。 |
+| `model_required` | `400` | 请求中没有 `model`。 | 添加 `model`。 |
+| `unsupported_model_or_endpoint` | `400` | 没有提供商能在此端点上提供该模型。 | 请参阅[下文](#when-a-model-or-endpoint-is-not-available)。 |
+| `unsupported_modalities` | `400` | 没有路由接受请求中的输入或输出类型。 | 更换模型或输入。 |
+| `byok_credentials_required` | `400` | 该路由只能使用你自己的提供商密钥运行。 | 添加符合条件的[提供商密钥](./endpoint/provider-credentials-create.mdx)。 |
+| `upstream_error` | `400`、`413` 或 `422` | 所有提供商都以相同的状态拒绝了请求（reason 为 `upstream_rejected_request`）。 | 修正请求；重试没有帮助。 |
+| `unauthorised` | `401` | 密钥缺失或无效。`reason` 说明原因。 | 检查 `Authorization` 标头。 |
+| `insufficient_funds` | `402` | 工作区没有足够的额度。 | 充值额度。 |
+| `pricing_not_configured` | `402` | 该模型没有任何提供商配置了定价（reason 为 `no_provider_pricing`）。 | 选择其他模型。 |
+| `guardrail_blocked` | `403` | 护栏或访问策略阻止了请求。 | 修改请求或护栏。 |
+| `model_region_unavailable` | `403` | 没有提供商在所需区域提供该模型，或无法从调用方所在位置提供。 | 放宽区域要求或选择其他模型。 |
+| `not_found` | `404` | 端点或资源不存在。 | 检查路径和 ID。 |
+| `not_ready` | `409` | 任务的结果尚未就绪。 | 轮询任务的状态。 |
+| `model_retired` | `410` | 模型已退役，且没有提供商提供它。 | 切换到 `replacement_model`。请参阅[下文](#when-a-model-is-retired)。 |
+| `payload_too_large` | `413` | 正文大于端点接受的大小。`max_bytes` 给出上限。 | 发送更小的正文或上传文件。 |
+| `key_limit_exceeded` | `429` | 达到了密钥限制、预算或 Gateway 每分钟限制。 | 请参阅[速率限制](./limits.mdx#key-limits-and-budgets)。 |
+| `phaseo_free_model_limit_exceeded` | `429` | 免费模型的每日配额（默认 1,500 次请求）已用完。 | 遵守 `Retry-After`，等待 00:00 UTC 重置，或使用付费模型。 |
+| `rate_limit_exceeded` | `429` | 某个工作区[速率限制策略](./limits.mdx#rate-limit-policies)已耗尽。`policy_id` 和 `limit_scope` 标识该策略。 | 遵守 `Retry-After`，或请管理员修改策略。 |
+| `spend_rule_blocked` | `429` | 一条设为阻止的[支出规则](../guides/spend-alerts.mdx)正在生效。 | 遵守 `Retry-After`，或请所有者或管理员解除阻止。 |
+| `upstream_error` | `429` | 尝试的所有提供商都对请求进行了限流。 | 遵守 `Retry-After`。BYOK 请求还会携带 `X-Phaseo-Upstream-RateLimit-*` 标头。 |
+| `provider_capacity_exhausted` | `429` | 所有符合条件的提供商都已满负荷（reason 为 `all_candidates_rate_limited`）。 | 如果存在 `Retry-After` 则遵守它，否则退避。 |
+| `gateway_error` | `500` | Phaseo 内部出现故障。 | 使用退避重试。 |
+| `not_implemented_yet` | `501` | 该操作尚不可用。 | 不要重试。 |
+| `upstream_error` | `502` | 提供商未能正确响应。 | 使用退避重试。 |
+| `upstream_stream_failure` | `502` | 非流式请求的提供商在开始生成后失败。不会返回部分输出，也不会对该请求收费。 | 重试。 |
+| `provider_payment_required` | `502` | Phaseo 在该提供商的账户需要处理。 | 稍后重试或报告该问题。 |
 
-如果 Phaseo 已连接到提供商，但请求仍然失败，你可能会看到：
+## 只重试应当重试的错误
 
-- `provider_failure_diagnostics.category`
-- `provider_failure_diagnostics.hint`
-- `provider_failure_diagnostics.provider`
+| 状态 | 是否重试？ |
+| --- | --- |
+| 除 `429` 外的 `400`–`499` | 否。先修正请求、密钥或访问权限。 |
+| `429` | 是。等待 `Retry-After`（秒数或 HTTP 日期），否则使用带抖动的指数退避。没有 `Retry-After` 的 `key_limit_exceeded` 错误不会自动重置，因此不要重试。 |
+| `500`–`599` | 仅当重复该操作是安全的时候。结果不明确的提交可能已经创建了任务或产生了费用；请查找已被接受的任务，而不是再次提交。 |
 
-当前类别包括：
+设置尝试次数上限和总体截止时间。速率限制标头请参阅[速率限制](./limits.mdx)。
 
-- `credentials_not_configured`
-- `credentials_invalid_or_forbidden`
-- `provider_access_missing`
-- `region_or_project_restriction`
-- `model_unavailable_for_endpoint`
-- `rate_limited`
-- `server_error`
+<span id="when-a-provider-fails"></span>
+## 提供商失败时
 
-这些字段旨在帮助解决问题，无需开启完整调试模式。
+当 Phaseo 已连接到提供商但请求仍然失败时，`provider_failure_diagnostics` 包含 `category`、`hint` 和 `provider`。类别如下：
 
+| `category` | 含义 |
+| --- | --- |
+| `credentials_not_configured` | 此路由没有设置凭据。 |
+| `credentials_invalid_or_forbidden` | 凭据被拒绝。 |
+| `provider_access_missing` | 提供商账户无权访问该模型或功能。 |
+| `region_or_project_restriction` | 提供商因区域或项目原因拒绝。 |
+| `model_unavailable_for_endpoint` | 提供商未在此端点上提供该模型。 |
+| `rate_limited` | 提供商对请求进行了限流。 |
+| `server_error` | 提供商失败或超时。 |
+
+<span id="when-a-model-or-endpoint-is-not-available"></span>
 ## 模型或端点不可用时
 
-对于 `unsupported_model_or_endpoint` 响应，Phaseo 可能会返回：
+`unsupported_model_or_endpoint` 错误可能包含 `provider_candidate_diagnostics`、`provider_enablement`、`missing_pricing_providers` 和 `routing_diagnostics`。它们结合起来可以区分以下情况：模型尚未启用、模型不支持该端点、缺少定价，以及上线限制。
 
-- `provider_candidate_diagnostics`
-- `provider_enablement`
-- `missing_pricing_providers`
-- `routing_diagnostics`
-
-这有助于区分：
-
-- 已知但尚未启用的模型
-- 不支持所请求端点的模型
-- 缺少价格数据
-- 发布阶段或内部可用性限制
-
-常用字段：
-
-- `provider_candidate_diagnostics.totalProviders`：按端点筛选之前，该模型已知的提供商数量。
-- `provider_candidate_diagnostics.supportsEndpointCount`：其中支持所请求端点的提供商数量。
-- `provider_candidate_diagnostics.candidateCount`：适配器检查后剩余的提供商数量。
-- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`：因不支持该端点而移除的提供商。
-- `provider_candidate_diagnostics.droppedMissingAdapter`：因 Gateway 尚无该端点适配器而移除的提供商/端点组合。
-- `provider_enablement.capability`：正在执行的能力门控，例如 `video_generation`。
-- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`：能力或启用筛选前后的提供商。
-- `provider_enablement.dropped[].reason`：机器可读原因，例如 `pricing_missing`。
-- `routing_diagnostics.filterStages[].stage`：路由阶段，例如能力、发布或路由状态筛选。
-- `routing_diagnostics.filterStages[].beforeCount` / `routing_diagnostics.filterStages[].afterCount`：每个阶段前后的提供商数量。
-- `routing_diagnostics.filterStages[].droppedProviders[].reason`：机器可读原因，例如发布或路由限制。
-
-### 示例
+| 字段 | 含义 |
+| --- | --- |
+| `provider_candidate_diagnostics.totalProviders` | 端点筛选之前该模型已知的提供商。 |
+| `provider_candidate_diagnostics.supportsEndpointCount` | 支持所请求端点的提供商。 |
+| `provider_candidate_diagnostics.candidateCount` | 适配器检查后剩余的提供商。 |
+| `provider_candidate_diagnostics.droppedUnsupportedEndpoint` | 因不支持该端点而被剔除的提供商。 |
+| `provider_candidate_diagnostics.droppedMissingAdapter` | 因 Phaseo 尚无该端点的适配器而被剔除的提供商和端点组合。 |
+| `provider_enablement.capability` | 正在执行的能力，例如 `video_generation`。 |
+| `provider_enablement.providersBefore`、`providersAfter` | 能力筛选之前和之后的提供商。 |
+| `provider_enablement.dropped[].reason` | 提供商被剔除的原因，例如 `pricing_missing`。 |
+| `routing_diagnostics.filterStages[].stage` | 一个路由阶段，例如能力、上线或路由状态筛选。 |
+| `routing_diagnostics.filterStages[].beforeCount`、`afterCount` | 该阶段之前和之后的提供商。 |
+| `routing_diagnostics.filterStages[].droppedProviders[].reason` | 提供商在该阶段被剔除的原因。 |
 
 ```json
 {
+  "error": {
+    "code": "unsupported_model_or_endpoint",
+    "message": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
+    "type": "invalid_request_error",
+    "param": null
+  },
+  "code": "unsupported_model_or_endpoint",
   "generation_id": "G-unsupported123",
   "status_code": 400,
-  "error": "unsupported_model_or_endpoint",
   "description": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
   "provider_candidate_diagnostics": {
     "totalProviders": 3,
@@ -189,9 +240,70 @@ icon: "bug"
 }
 ```
 
-## 可选调试模式
+<span id="when-a-model-is-retired"></span>
+## 模型退役时
 
-大多数请求架构都支持 `debug` 对象，用于受控的问题排查：
+只要还有任何提供商提供已退役的模型，它就仍然可用。一旦没有提供商提供，请求就会以 `410` 和 `model_retired` 失败：
+
+```json
+{
+  "error": {
+    "code": "model_retired",
+    "message": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+    "type": "invalid_request_error",
+    "param": null,
+    "metadata": {
+      "retired_at": "2026-09-30T00:00:00Z",
+      "replacement_model": "lab/new-model"
+    }
+  },
+  "code": "model_retired",
+  "generation_id": "G-retired123",
+  "status_code": 410,
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "model": "lab/old-model",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+`model` 是你请求的模型，`retired_at` 是它退役的时间（或 `null`），`replacement_model` 是建议的替代模型（或 `null`）。
+
+重试没有帮助；请更改模型 ID。要在迁移期间让这些请求继续工作，请将替代模型添加到请求的 `models` 列表中，或为工作区开启已退役模型路由。请参阅[模型弃用与退役](../guides/model-retirement.mdx)。
+
+## 流式传输期间的错误
+
+如果请求在流式传输开始之前失败，你会收到上文的 JSON 错误正文。如果在流式传输中途失败，流会以该端点的失败事件结束，而不是正常结束：
+
+| 端点 | 失败事件 |
+| --- | --- |
+| Chat Completions | 一个 `error` 帧 |
+| Responses | `response.failed`（或 `error`） |
+| Messages | 一个 `error` 事件 |
+
+将部分输出视为不完整，并提供重试选项。Chat Completions 的 `error` 帧携带相同的错误对象，`error.type` 根据代码设置：
+
+```json
+{
+  "object": "error",
+  "message": "The upstream stream ended before the response completed.",
+  "code": "upstream_stream_failure",
+  "error": {
+    "code": "upstream_stream_failure",
+    "message": "The upstream stream ended before the response completed.",
+    "type": "server_error",
+    "param": null
+  }
+}
+```
+
+非流式请求的提供商中途失败时，会返回 `502` 和 `upstream_stream_failure`，而不是部分响应。请参阅[流式传输](../guides/streaming.mdx)。
+
+<span id="debug-a-request"></span>
+## 调试请求
+
+发送一个 `debug` 对象，即可获得路由追踪和上游载荷：
 
 ```json
 {
@@ -205,67 +317,18 @@ icon: "bug"
 }
 ```
 
-可用字段：
+`trace_level` 为 `summary` 或 `full`。调试载荷可能包含你的请求内容，因此只应在开发环境或严格受控的环境中使用。请参阅 [`debug`](./parameters.mdx#parameter-debug)。
 
-- `enabled`
-- `return_upstream_request`
-- `return_upstream_response`
-- `trace`
-- `trace_level`（`summary` 或 `full`）
-
-仅在开发环境或严格受控的环境中使用调试模式。
-
-## 重试策略
-
-- **429 以外的 400 系列错误：**重试前请修正请求、凭据或访问策略。
-- **429：**实施指数退避并遵循 `Retry-After` 标头。
-- **500 系列错误：**仅在重复操作安全时进行有限重试。结果不明确的提交可能已经创建了任务或产生了费用；请获取已受理的任务，而不要重新提交。
-
-设置重试次数上限和总体截止时间，并在退避延迟中加入随机抖动。有关响应标头和重试处理，请参阅[速率限制](./limits.mdx)。
-
-## 流式传输注意事项
-
-- 如果请求在流式传输开始前失败，会收到标准 JSON 错误负载。
-- 如果请求在流式传输期间失败，请将不完整的部分流视为未完成，并提供重试选项。
-- 请始终记录 `generation_id` 以及端点和模型元数据。
-
-## 故障排查提示
-
-- 查看 [Gateway 状态页](https://status.phaseo.app)了解正在发生的事故。
-- 对照端点文档检查请求负载。
-- 联系支持团队时，请提供 `generation_id`。
-
-## 相关资源
-
-<Columns cols={2}>
-	<Card
-		title="身份验证"
-		icon="key"
-		href="../developers/authentication.mdx"
-	>
-		使用 Bearer API 密钥进行身份验证。
-	</Card>
-	<Card
-		title="限制"
-		icon="gauge"
-		href="./limits.mdx"
-	>
-		处理提供商驱动的限流和重试。
-	</Card>
-	<Card
-		title="流式传输"
-		icon="radio"
-		href="../guides/streaming.mdx"
-	>
-		在生产流程中安全使用 SSE。
-	</Card>
-</Columns>
+请求失败时，请查看[状态页面](https://status.phaseo.app)了解是否有事故，将你的载荷与该端点的参考页面进行比较，并将 `generation_id` 与端点和模型一起记录到日志中。联系[支持团队](https://phaseo.app/help)时请附上 `generation_id`。
 
 <Visibility for="agents">
-如果你以代理身份实现错误处理：
+面向代理的错误处理规则，总结自本页：
 
-- 使用仓库技能处理重试逻辑、结构化日志记录和符合架构的错误解析。
-- 将调试负载视为潜在敏感数据，并在写入持久日志前进行脱敏。
-- 优先使用确定性重试（限制次数并加入抖动），避免无限循环。
+- 根据 `error.code`（也作为顶层 `code` 返回）、`error.type` 和 `status_code` 进行分支处理，而不是根据消息文本。每次失败都记录 `generation_id`。
+- `400`、`401`、`403` 和 `404`：先修正请求、密钥或访问权限。不要原样重试同一请求。
+- `410` 和 `model_retired`：当 `replacement_model` 不为 `null` 时切换到它；否则从 `GET /v1/models` 中选择一个新模型。
+- `429`：如果存在 `Retry-After`（秒数或 HTTP 日期），请等待这么长时间后再重试；否则使用带抖动的指数退避。没有 `Retry-After` 的 `key_limit_exceeded` 错误不会自动重置，因此不要重试。
+- `500` 到 `599`：仅当重复调用是安全的时候才重试，并设置尝试次数上限、总体截止时间和带抖动的指数退避。对于异步任务，请查找已被接受的任务，而不是再次提交。
+- 将调试载荷视为敏感信息，在写入持久日志之前先进行脱敏。
+- 如需经过测试的重试和错误解析模式，请安装 `phaseo-gateway` 技能：`npx skills add https://phaseo.app/docs --skill phaseo-gateway`。
 </Visibility>
-

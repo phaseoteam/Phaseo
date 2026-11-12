@@ -19,7 +19,7 @@ CREATE OR REPLACE FUNCTION public.get_public_context_length_distribution (
   AS $function$
   with scoped_requests as (
     select fact.request_event_id, fact.workspace_id
-    from public.v2_request_facts fact
+    from public.reporting_request_facts fact
     where fact.occurred_at >= now() - make_interval(days => greatest(1, least(coalesce(p_days, 30), 365)))
   ),
   per_request as (

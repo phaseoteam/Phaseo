@@ -1,203 +1,145 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
-	automationsEnabled: "true",
-	insertCalls: [] as Array<{ table: string; payload: Record<string, unknown> }>,
-	updateCalls: [] as Array<{ table: string; payload: Record<string, unknown> }>,
+	automationsEnabled: "true" as string | undefined,
+	apiKey: "resend_key",
+	rpcCalls: [] as Array<{ name: string; args: Record<string, unknown> }>,
+	rpcResult: { data: null as unknown, error: null as { message: string } | null },
+	updates: [] as Array<{ table: string; values: Record<string, unknown>; id: unknown }>,
 }));
-
-function buildSupabaseMock() {
-	return {
-		auth: {
-			admin: {
-				getUserById: async () => ({
-					data: {
-						user: {
-							email: "owner@example.com",
-							user_metadata: { first_name: "Ada" },
-						},
-					},
-				}),
-			},
-		},
-		from(table: string) {
-			if (table === "workspaces") {
-				return {
-					select: () => ({
-						eq: () => ({
-							maybeSingle: async () => ({
-								data: { id: "ws_1", name: "Research", owner_user_id: "user_1" },
-								error: null,
-							}),
-						}),
-					}),
-				};
-			}
-			if (table === "email_outbox") {
-				return {
-					insert: async (payload: Record<string, unknown>) => {
-						state.insertCalls.push({ table, payload });
-						return { error: null };
-					},
-				};
-			}
-			if (table === "workspace_settings") {
-				return {
-					update: (payload: Record<string, unknown>) => ({
-						eq: async () => {
-							state.updateCalls.push({ table, payload });
-							return { error: null };
-						},
-					}),
-				};
-			}
-			throw new Error(`Unexpected table: ${table}`);
-		},
-	};
-}
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({
-		RESEND_API_KEY: "resend_key",
+		RESEND_API_KEY: state.apiKey,
 		RESEND_ONBOARDING_AUTOMATIONS_ENABLED: state.automationsEnabled,
 	}),
-	getSupabaseAdmin: () => buildSupabaseMock(),
+	getSupabaseAdmin: () => ({
+		rpc: async (name: string, args: Record<string, unknown>) => {
+			state.rpcCalls.push({ name, args });
+			return state.rpcResult;
+		},
+		// The only direct write: reopening an outbox row whose automation event failed.
+		from: (table: string) => ({
+			update: (values: Record<string, unknown>) => ({
+				eq: async (_column: string, id: unknown) => {
+					state.updates.push({ table, values, id });
+					return { error: null };
+				},
+			}),
+		}),
+	}),
 }));
 
-describe("low-balance notifications", () => {
+const NOW = new Date("2026-10-21T16:35:00.000Z");
+// What public.sweep_low_balance_emails returns for one queued email.
+const sweptEmail = {
+	id: "outbox_1",
+	workspace_id: "ws_1",
+	to_email: "owner@example.com",
+	user_first_name: "Ada",
+	team_name: "Research",
+	balance_nanos: 8_500_000_000,
+	balance_usd: 8.5,
+	threshold_nanos: 10_000_000_000,
+	threshold_usd: 10,
+};
+const sweepResult = (emails: unknown[]) => ({
+	watched: 3, firstSeen: 0, dropped: emails.length, rearmed: 0, coveredByTopUp: 0, waiting: 0, emailed: emails.length, emails,
+});
+
+describe("low-balance email sweep", () => {
 	beforeEach(() => {
 		state.automationsEnabled = "true";
-		state.insertCalls.length = 0;
-		state.updateCalls.length = 0;
+		state.apiKey = "resend_key";
+		state.rpcCalls.length = 0;
+		state.updates.length = 0;
+		state.rpcResult = { data: sweepResult([]), error: null };
 		vi.restoreAllMocks();
+		vi.unstubAllGlobals();
 		vi.resetModules();
 	});
 
-	it("sends the Resend automation event with the expected recipient and payload", async () => {
+	it("runs the sweep RPC with the rows marked sent and sends the Resend automation event the request path sent", async () => {
 		const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: "event_1" }), { status: 200 }));
 		vi.stubGlobal("fetch", fetchMock);
+		state.rpcResult = { data: sweepResult([sweptEmail]), error: null };
+		const { runLowBalanceEmailSweep } = await import("./low-balance");
 
-		const { enqueueLowBalanceEmail } = await import("./low-balance");
-		await enqueueLowBalanceEmail({
-			workspaceId: "ws_1",
-			balanceNanos: 8_500_000_000,
-			settings: {
-				enabled: true,
-				thresholdNanos: 10_000_000_000,
-				lastSentAt: null,
-				lastSentBalanceNanos: null,
-			},
-		});
+		const summary = await runLowBalanceEmailSweep({ now: NOW });
 
+		expect(state.rpcCalls).toEqual([{ name: "sweep_low_balance_emails", args: { p_now: NOW.toISOString(), p_mark_sent: true } }]);
+		expect(summary).toMatchObject({ watched: 3, dropped: 1, emailed: 1, automationSent: 1, automationFailed: 0 });
+		expect(state.updates).toEqual([]);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
-		expect(state.insertCalls).toHaveLength(1);
-		expect(state.insertCalls[0]?.payload).toMatchObject({
-			kind: "low_balance",
-			workspace_id: "ws_1",
-		});
-		expect(state.insertCalls[0]?.payload.sent_at).toEqual(expect.any(String));
 		const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
 		expect(url).toBe("https://api.resend.com/events");
-		expect(JSON.parse(String(init.body))).toMatchObject({
+		expect(JSON.parse(String(init.body))).toEqual({
 			event: "workspace.low_balance",
 			email: "owner@example.com",
 			payload: {
 				firstName: "Ada",
 				workspaceId: "ws_1",
 				workspaceName: "Research",
+				balanceNanos: 8_500_000_000,
 				balanceUsd: 8.5,
+				thresholdNanos: 10_000_000_000,
 				thresholdUsd: 10,
+				triggeredAtIso: NOW.toISOString(),
 			},
 		});
-		expect(state.updateCalls).toHaveLength(1);
 	});
 
-	it("does not send again during the six-hour cooldown", async () => {
+	it("leaves the rows to the outbox drain when Resend automations are off", async () => {
 		const fetchMock = vi.fn();
 		vi.stubGlobal("fetch", fetchMock);
-		const { enqueueLowBalanceEmail } = await import("./low-balance");
-
-		await enqueueLowBalanceEmail({
-			workspaceId: "ws_1",
-			balanceNanos: 8_000_000_000,
-			settings: {
-				enabled: true,
-				thresholdNanos: 10_000_000_000,
-				lastSentAt: new Date().toISOString(),
-				lastSentBalanceNanos: 8_500_000_000,
-			},
-		});
-
-		expect(fetchMock).not.toHaveBeenCalled();
-		expect(state.insertCalls).toHaveLength(0);
-		expect(state.updateCalls).toHaveLength(0);
-	});
-
-	it("treats a zero threshold as an alert when the balance reaches zero", async () => {
-		const fetchMock = vi.fn(async () => new Response(JSON.stringify({ id: "event_zero" }), { status: 200 }));
-		vi.stubGlobal("fetch", fetchMock);
-		const { enqueueLowBalanceEmail } = await import("./low-balance");
-
-		await enqueueLowBalanceEmail({
-			workspaceId: "ws_1",
-			balanceNanos: 0,
-			settings: {
-				enabled: true,
-				thresholdNanos: 0,
-				lastSentAt: null,
-				lastSentBalanceNanos: null,
-			},
-		});
-
-		expect(fetchMock).toHaveBeenCalledTimes(1);
-		expect(state.updateCalls).toHaveLength(1);
-	});
-
-	it("keeps zero-threshold alerts inside the six-hour cooldown", async () => {
-		const fetchMock = vi.fn();
-		vi.stubGlobal("fetch", fetchMock);
-		const { enqueueLowBalanceEmail } = await import("./low-balance");
-
-		await enqueueLowBalanceEmail({
-			workspaceId: "ws_1",
-			balanceNanos: 0,
-			settings: {
-				enabled: true,
-				thresholdNanos: 0,
-				lastSentAt: new Date().toISOString(),
-				lastSentBalanceNanos: 0,
-			},
-		});
-
-		expect(fetchMock).not.toHaveBeenCalled();
-		expect(state.updateCalls).toHaveLength(0);
-	});
-
-	it("queues the configured template when Resend Automations are disabled", async () => {
 		state.automationsEnabled = "false";
-		const fetchMock = vi.fn();
-		vi.stubGlobal("fetch", fetchMock);
-		const { enqueueLowBalanceEmail } = await import("./low-balance");
+		state.rpcResult = { data: sweepResult([sweptEmail]), error: null };
+		const { runLowBalanceEmailSweep } = await import("./low-balance");
 
-		await enqueueLowBalanceEmail({
-			workspaceId: "ws_1",
-			balanceNanos: 8_500_000_000,
-			settings: {
-				enabled: true,
-				thresholdNanos: 10_000_000_000,
-				lastSentAt: null,
-				lastSentBalanceNanos: null,
-			},
-		});
+		const summary = await runLowBalanceEmailSweep({ now: NOW });
 
+		expect(state.rpcCalls[0]?.args.p_mark_sent).toBe(false);
+		expect(summary.emailed).toBe(1);
+		expect(summary.automationSent).toBe(0);
 		expect(fetchMock).not.toHaveBeenCalled();
-		expect(state.insertCalls).toHaveLength(1);
-		expect(state.insertCalls[0]?.payload).toMatchObject({
-			kind: "low_balance",
-			template: "low_balance",
-			to_email: "owner@example.com",
-			workspace_id: "ws_1",
-		});
-		expect(state.insertCalls[0]?.payload).not.toHaveProperty("sent_at");
+	});
+
+	it("treats a missing Resend key as automations off", async () => {
+		vi.stubGlobal("fetch", vi.fn());
+		state.apiKey = "";
+		const { runLowBalanceEmailSweep } = await import("./low-balance");
+		await runLowBalanceEmailSweep({ now: NOW });
+		expect(state.rpcCalls[0]?.args.p_mark_sent).toBe(false);
+	});
+
+	it("counts a failed automation event without failing the sweep and reopens its row for the outbox drain", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response("bad", { status: 500 })));
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		state.rpcResult = { data: sweepResult([sweptEmail, { ...sweptEmail, id: "outbox_2", workspace_id: "ws_2" }]), error: null };
+		const { runLowBalanceEmailSweep } = await import("./low-balance");
+
+		const summary = await runLowBalanceEmailSweep({ now: NOW });
+
+		expect(summary.automationFailed).toBe(2);
+		expect(summary.automationSent).toBe(0);
+		expect(state.updates).toEqual([
+			{ table: "email_outbox", values: { sent_at: null }, id: "outbox_1" },
+			{ table: "email_outbox", values: { sent_at: null }, id: "outbox_2" },
+		]);
+	});
+
+	it("throws when the sweep RPC fails", async () => {
+		state.rpcResult = { data: null, error: { message: "boom" } };
+		const { runLowBalanceEmailSweep } = await import("./low-balance");
+		await expect(runLowBalanceEmailSweep({ now: NOW })).rejects.toThrow("low_balance_email_sweep_failed:boom");
+	});
+
+	it("parses partial results with the request path's fallbacks", async () => {
+		const { parseLowBalanceEmailSweep, hasLowBalanceEmailActivity } = await import("./low-balance");
+		const parsed = parseLowBalanceEmailSweep({ skipped: true, emails: [{ id: "x", workspace_id: "ws", to_email: "a@b.c" }] });
+		expect(parsed).toMatchObject({ skipped: true, watched: 0, emailed: 0 });
+		expect(parsed.emails[0]).toMatchObject({ firstName: "there", teamName: "your team", balanceUsd: 0 });
+		expect(hasLowBalanceEmailActivity(parsed)).toBe(true);
+		expect(hasLowBalanceEmailActivity(parseLowBalanceEmailSweep(sweepResult([])))).toBe(false);
 	});
 });

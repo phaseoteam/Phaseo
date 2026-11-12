@@ -4,9 +4,17 @@ icon: "activity"
 description: "Traza las solicitudes de Phaseo con Langfuse, LangSmith, OpenTelemetry y herramientas similares."
 ---
 
-La mayoría de las herramientas de observabilidad se sitúan por encima del cliente del modelo. Conserva la misma configuración de trazas y apunta a Phaseo el cliente compatible con OpenAI o Anthropic que hay debajo.
+Puedes trazar las solicitudes de Phaseo de dos formas: activa [Broadcast](../broadcast.mdx) para que Phaseo envíe una traza de cada solicitud a Langfuse, LangSmith o cualquier herramienta de OpenTelemetry sin cambiar código, o mantén tu biblioteca de trazas en tu aplicación y haz que su cliente de modelos apunte a Phaseo.
+
+| | Broadcast | Trazas en tu aplicación |
+| --- | --- | --- |
+| De dónde vienen las trazas | De Phaseo, para cada solicitud | Del cliente de modelos de tu aplicación |
+| Cambio de código | Ninguno; se configura en **Ajustes → Difusión** | Envuelve el cliente y cambia su URL base |
+| Qué contiene la traza | Modelo, proveedor, cada intento con un proveedor, tokens, coste, tiempos y (opcionalmente) el prompt y la salida | Lo que registre tu biblioteca, más el contexto propio de tu aplicación |
 
 ## Langfuse con el SDK de OpenAI
+
+Mantén el wrapper de OpenAI de Langfuse y da al cliente envuelto la URL base de Phaseo:
 
 ```bash
 pip install langfuse openai
@@ -22,14 +30,14 @@ client = openai.OpenAI(
 )
 
 response = client.responses.create(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     input="Reply with only: ok",
 )
 ```
 
 ## LangSmith con LangChain
 
-Usa la configuración de [LangChain](./langchain.mdx) y activa LangSmith con las variables de entorno habituales de LangChain:
+Usa la configuración de `ChatOpenAI` de [LangChain](./langchain.mdx) y activa LangSmith con las variables de entorno habituales de LangChain:
 
 ```bash
 export LANGSMITH_TRACING=true
@@ -39,21 +47,11 @@ export PHASEO_API_KEY="your_phaseo_key"
 
 ## OpenTelemetry
 
-Si tu framework genera spans de OpenTelemetry, Phaseo no requiere un exportador especial. Añade tú mismo el contexto útil de la solicitud:
+Si tu framework ya emite spans de OpenTelemetry, no necesitas un exportador especial. Añade tú este contexto de la solicitud a tus spans:
 
-- ID del modelo
-- Endpoint, como `responses` o `chat.completions`
-- ID de solicitud de Phaseo, obtenido de los metadatos de respuesta o los registros
-- Proveedor seleccionado, si están habilitados los metadatos de respuesta
+- el ID del modelo;
+- el endpoint, como `responses` o `chat.completions`;
+- el ID de solicitud de Phaseo, de los metadatos de la respuesta o de los [registros](../../api-reference/endpoint/activity.mdx);
+- el proveedor que atendió la solicitud, cuando los metadatos de la respuesta están activados.
 
-## Notas
-
-- No envíes claves de API de Phaseo a las herramientas de observabilidad como atributos.
-- Si la biblioteca de observabilidad envuelve el SDK de OpenAI, configura el cliente envuelto con `base_url: "https://api.phaseo.app/v1"`.
-- Para las trazas de LangChain, combina el callback de trazas con la configuración de Phaseo `ChatOpenAI`.
-
-## Relacionado
-
-- [SDK de OpenAI](./openai-sdk.mdx)
-- [LangChain](./langchain.mdx)
-- [Actividad](../../api-reference/endpoint/activity.mdx)
+No registres nunca las claves de API de Phaseo como atributos de un span.

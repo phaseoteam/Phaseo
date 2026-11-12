@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { prepareReplayMigration } from "./declarative-replay-history.mjs";
+import { runRollupLockSmoke } from "./rollup-lock-smoke.mjs";
+import { runWorkspaceDirectoryLockSmoke } from "./workspace-directory-lock-smoke.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const source = join(root, "supabase");
@@ -62,9 +64,12 @@ if (mode === "smoke") {
 	try {
 		run(["db", "start"]);
 		run(["migration", "up", "--local"]);
-		for (const file of ["declarative_schema.sql", "public_catalogue_payloads.sql", "stealth_catalogue_security_smoke.sql", "workspace_user_usage_security_smoke.sql", "key_ip_allowlist.sql", "rankings_rolling_schema.sql", "provider_catalog_production_smoke.sql", "provider_catalog_automatic_updates.sql", "provider_catalog_model_requests.sql", "provider_catalog_review_notifications.sql", "provider_catalog_overrides.sql"]) {
+		for (const file of ["declarative_schema.sql", "public_catalogue_payloads.sql", "stealth_catalogue_security_smoke.sql", "workspace_user_usage_security_smoke.sql", "key_ip_allowlist.sql", "rankings_rolling_schema.sql", "provider_catalog_production_smoke.sql", "provider_catalog_automatic_updates.sql", "provider_catalog_retention.sql", "provider_catalog_data_policy.sql", "provider_catalog_model_requests.sql", "provider_catalog_review_notifications.sql", "provider_catalog_overrides.sql"]) {
 			query(readFileSync(join(source, "tests", file), "utf8"));
 		}
+		await runRollupLockSmoke(`supabase_db_${projectId}`);
+		await runWorkspaceDirectoryLockSmoke((database) => ({ command: "docker", args: ["exec", "-i", `supabase_db_${projectId}`, "psql", "-U", "postgres", "-d", database] }));
+		query(readFileSync(join(source, "tests", "artificial_analysis_publication.sql"), "utf8"));
 		writeFileSync(join(temporary, "schemas", "public", "tables", "phaseo_declarative_smoke.sql"),
 			"CREATE TABLE public.phaseo_declarative_smoke (id bigint PRIMARY KEY);\nALTER TABLE public.phaseo_declarative_smoke ENABLE ROW LEVEL SECURITY;\n");
 		run(["db", "schema", "declarative", "sync", "--no-apply", "--strict-coverage", "-f", "trial_incremental_change"]);

@@ -106,6 +106,42 @@ Resolution order for CA bundle:
 
 Disabling TLS verification (`verifyTls: false`) should only be used for local debugging.
 
+## Realtime voice (beta)
+
+`$client->realtime()->connect(...)` creates a realtime session and opens the relay WebSocket. It needs the optional `phrity/websocket` package: `composer require phrity/websocket`. Provider events pass through unchanged as arrays. PHP is single-threaded, so events are read when you call `receive()`, iterate `events()` or call `end()`, and your listeners run as each event is read.
+
+```php
+$session = $client->realtime()->connect(["model" => "openai/gpt-realtime-2", "voice" => "marin"]);
+$session->onWarning(fn (array $warning) => error_log($warning["code"]));
+$session->sendAudio($pcm16Chunk); // PCM16 bytes; base64 is handled for you
+$ended = $session->end(reason: "caller hung up"); // session.ended: reason, usage, cost, billing_status
+```
+
+If the socket closes without `session.ended`, `end()` throws `RealtimeSessionClosedException`, whose `getFinalBillPath()` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
+
+## Trusted workloads (OIDC tokens instead of an API key)
+
+Workspaces in the trusted workloads beta can let GitHub Actions jobs and Vercel deployments call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → API Keys → Trusted workloads, then pass a callable as `apiKey`. It is called before every request and retry, so each request uses a current token. Tokens must be issued for the audience `https://api.phaseo.app`.
+
+The built-in helpers fetch the token and reuse it until a minute before it expires:
+
+```php
+use Phaseo\Sdk\Phaseo;
+use Phaseo\Sdk\WorkloadTokens;
+
+// GitHub Actions: the job needs `permissions: id-token: write`.
+$client = new Phaseo(apiKey: WorkloadTokens::githubActions());
+
+// Vercel: exchanges the deployment's OIDC token (VERCEL_OIDC_TOKEN, or the file named by
+// VERCEL_OIDC_TOKEN_FILE) for one issued to Phaseo.
+$client = new Phaseo(apiKey: WorkloadTokens::vercel());
+
+// In a request handler, pass the request's x-vercel-oidc-token header instead.
+$client = new Phaseo(apiKey: WorkloadTokens::vercel(token: fn () => $request->getHeaderLine('x-vercel-oidc-token')));
+```
+
+Both helpers take an optional `audience:`. Any other callable that returns a credential string works too. A blank result throws and the request is not sent. An `Authorization` header you pass to `requestWithResponse()` is used as-is, without calling the provider.
+
 ## Free and paid models
 
 - Models with `:free` in the model ID can be called with zero deposited credits.

@@ -1,0 +1,131 @@
+---
+icon: "search-check"
+title: "Consultation d’une génération"
+description: "Récupérez une génération passée avec /generations depuis n’importe quel SDK Phaseo."
+---
+
+Passez un identifiant de requête (comme `G-01ABC...`) à la méthode de génération du SDK pour récupérer l’enregistrement stocké de cette requête depuis `GET /v1/generations?id=<id>`.
+
+<CodeGroup>
+
+```typescript TypeScript
+const record = await client.getGeneration("G-01ABC...");
+```
+
+```python Python
+record = client.get_generation("G-01ABC...")
+
+print(record["model_id"], record["cost_nanos"])
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+record, err := client.GetGeneration(context.Background(), "G-01ABC...")
+if err != nil {
+  panic(err)
+}
+fmt.Println(record["status_code"], record["cost_nanos"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+var record = await client.GetGeneration("G-01ABC...");
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+$record = $client->getGeneration('G-01ABC...');
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+record = client.get_generation('G-01ABC...')
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var record = client.getGeneration("G-01ABC...");
+System.out.println(record);
+```
+
+</CodeGroup>
+
+| Langage | Méthode | Renvoie |
+| --- | --- | --- |
+| TypeScript | `client.getGeneration(id)` | L’objet de l’enregistrement |
+| Python | `client.get_generation(id)` | Dict `APIResponse` |
+| Go | `client.GetGeneration(ctx, id)` | `map[string]interface{}` |
+| C# | `client.GetGeneration(id)` | `Dictionary<string, object>?` |
+| PHP | `$client->getGeneration($id)` | Tableau |
+| Ruby | `client.get_generation(id)` | Hash |
+| Java | `client.getGeneration(id)` | `JsonNode` Jackson |
+| Rust | Pas d’assistant ; appelez `client.request("GET", "/generations?id=<id>", None, &RequestOptions::default())` | `PhaseoResponse`, avec l’enregistrement dans `body` (un `serde_json::Value`) |
+
+La consultation est limitée à votre espace de travail. Un `id` manquant renvoie `400` (`missing_id`), et un identifiant qui n’appartient pas à votre espace de travail renvoie `404` (`not_found`).
+
+## Rejouer une requête stockée
+
+Si la passerelle a stocké la requête complète, l’enregistrement a `replay_supported` à true et un `replay_request`, que vous pouvez renvoyer vers l’endpoint d’origine pour une réexécution contrôlée.
+
+## Lire les champs de durée
+
+- `latency_ms` : le temps jusqu’au premier token, ou jusqu’au premier octet ou à la première trame de sortie, quand il est mesuré.
+- `generation_ms` : le temps de génération après ce point, quand il est mesuré.
+
+## Réponse
+
+```json
+{
+  "created_at": "2026-05-05T12:00:00.000Z",
+  "request_id": "G-01ABC123",
+  "team_id": "team-123",
+  "app_id": "app-123",
+  "endpoint": "chat/completions",
+  "model_id": "openai/gpt-6-astra",
+  "provider": "openai",
+  "native_response_id": "chatcmpl-123",
+  "stream": false,
+  "byok": false,
+  "status_code": 200,
+  "success": true,
+  "error_code": null,
+  "error_message": null,
+  "latency_ms": 1500,
+  "generation_ms": 1400,
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 9,
+    "total_tokens": 18
+  },
+  "cost_nanos": 1000000,
+  "currency": "USD",
+  "pricing_lines": [],
+  "key_id": "key-123",
+  "throughput": null,
+  "replay_supported": true,
+  "replay_request": {
+    "model": "openai/gpt-6-astra",
+    "messages": [
+      { "role": "user", "content": "Say hello" }
+    ]
+  }
+}
+```
+
+[Récupérer une génération](../../api-reference/endpoint/generation) liste tous les champs.

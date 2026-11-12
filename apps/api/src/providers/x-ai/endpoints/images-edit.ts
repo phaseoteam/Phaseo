@@ -1,6 +1,6 @@
 import { ImagesEditSchema, type ImagesEditRequest } from "@core/schemas";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { buildAdapterPayload } from "../../utils";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
@@ -74,7 +74,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	let currency: "USD" | "EUR" = "USD";
 	let usage: any = usageMeters;
 	if (res.ok && args.pricingCard) {
-		const priced = computeBill(usageMeters, args.pricingCard, buildImagePricingRequestOptions({ ...body, model, size: canonicalResolution, resolution: canonicalResolution, capability_id: "image.edit" }, usageMeters));
+		const priced = computeBillAfterProviderCharge(usageMeters, args.pricingCard, buildImagePricingRequestOptions({ ...body, model, size: canonicalResolution, resolution: canonicalResolution, capability_id: "image.edit" }, usageMeters));
 		cost_cents = priced.pricing.total_cents;
 		currency = priced.pricing.currency;
 		usage = priced;

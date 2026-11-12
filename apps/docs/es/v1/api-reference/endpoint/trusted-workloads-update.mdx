@@ -1,0 +1,12 @@
+---
+title: "Actualizar una política de carga de trabajo de confianza"
+sidebarTitle: "Actualizar una política de carga de trabajo de confianza"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml PATCH /workload-identity/policies/{id}"
+description: "Cambia el nombre, el estado, las condiciones de claims o la duración máxima del token de una política de carga de trabajo de confianza."
+---
+<Note>Requiere `keys:write` en una clave de administración o un token OAuth, o un propietario o administrador del espacio de trabajo. Las cargas de trabajo de confianza están en beta; los espacios de trabajo que no las tienen reciben `404`.</Note>
+
+La plataforma, el emisor y el propietario no se pueden cambiar. En su lugar, crea una política nueva. Los cambios llegan al gateway en menos de un minuto.
+
+Consulta [Cargas de trabajo de confianza](../../developers/trusted-workloads.mdx) para saber cómo funcionan las políticas y cómo gestionarlas con Terraform.

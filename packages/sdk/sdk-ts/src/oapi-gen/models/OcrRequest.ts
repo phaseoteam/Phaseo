@@ -10,6 +10,7 @@ export interface OcrRequest {
   image: string;
   language?: string;
   model: string;
+  models?: string[];
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;

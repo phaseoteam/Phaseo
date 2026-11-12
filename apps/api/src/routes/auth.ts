@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
+import { isFirstPartyOAuthClient } from "@/lib/oauth/clientIds";
 import { decodeJWT } from "@/lib/oauth/jwt";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
 import { json, withRuntime } from "@/routes/utils";
 
@@ -139,6 +141,19 @@ authRouter.post(
 		});
 		if (resolvedApp.ok === false) {
 			return resolvedApp.response;
+		}
+		// Apps that sign in with Phaseo may not mint keys that spend the workspace's money: this key would have
+		// no limit, outside the monthly limit the person approves on the /oauth flow's consent screen.
+		if (!isFirstPartyOAuthClient(resolvedApp.app.client_id)) {
+			return json(
+				{
+					ok: false,
+					error: "forbidden",
+					message: "Apps that use Sign in with Phaseo can't create API keys here. Use the /oauth authorization-code flow, whose access token is the app's key.",
+				},
+				403,
+				{ "Cache-Control": "no-store" },
+			);
 		}
 
 		if (input.scopes !== undefined) {
@@ -307,6 +322,22 @@ authRouter.post(
 				.maybeSingle();
 
 			if (!insertResult.error && insertResult.data) {
+				// Recorded like a key made in the dashboard, so owners and admins hear about it.
+				await recordWorkspaceAuditEvent(supabase, {
+					workspaceId: oauthTeamId,
+					actorUserId: oauthUserId,
+					action: "api_key.created",
+					targetType: "api_key",
+					targetId: insertResult.data.id,
+					targetName: insertResult.data.name,
+					metadata: {
+						prefix: insertResult.data.prefix,
+						status: "active",
+						source: "oauth",
+						oauthClientId,
+						appName: resolvedApp.app.name ?? null,
+					},
+				});
 				const responsePayload: Record<string, unknown> = {
 					ok: true,
 					key: {

@@ -1,0 +1,278 @@
+{
+	"id": "arcee-ai",
+	"source": {
+		"url": "https://api.arcee.ai/openapi.json",
+		"docs": "https://docs.arcee.ai/api-reference/chat-completion",
+		"fetchedAt": "2026-10-18T08:41:03.987Z",
+		"sha256": "c950116d20ff23c6fd1f42e5645f8bfbc8c2a95532f76c94b005edc5520bf30d",
+		"handWritten": false,
+		"notes": "FastAPI spec served by https://api.arcee.ai (no servers block); also contains many /app/v1/* web-app routes to ignore."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"$ref": "#/components/schemas/ChatCompletionRequest"
+			},
+			"response": {}
+		},
+		"responses": {
+			"request": {
+				"$ref": "#/components/schemas/ResponseCreateRequest"
+			},
+			"response": {}
+		}
+	},
+	"components": {
+		"schemas": {
+			"ChatCompletionRequest": {
+				"properties": {
+					"model": {
+						"type": "string",
+						"minLength": 1,
+						"title": "Model"
+					},
+					"messages": {
+						"items": {},
+						"type": "array",
+						"minItems": 1,
+						"title": "Messages"
+					},
+					"stream": {
+						"type": "boolean",
+						"title": "Stream",
+						"default": false
+					},
+					"temperature": {
+						"title": "Temperature"
+					},
+					"top_p": {
+						"title": "Top P"
+					},
+					"top_k": {
+						"title": "Top K"
+					},
+					"min_p": {
+						"title": "Min P"
+					},
+					"n": {
+						"anyOf": [
+							{
+								"type": "integer",
+								"minimum": 1
+							},
+							{
+								"type": "null"
+							}
+						],
+						"title": "N",
+						"description": "Kept structural because response accounting requires the expected choice count."
+					},
+					"stop": {
+						"title": "Stop"
+					},
+					"seed": {
+						"title": "Seed"
+					},
+					"max_tokens": {
+						"title": "Max Tokens"
+					},
+					"max_completion_tokens": {
+						"title": "Max Completion Tokens"
+					},
+					"presence_penalty": {
+						"title": "Presence Penalty"
+					},
+					"frequency_penalty": {
+						"title": "Frequency Penalty"
+					},
+					"logit_bias": {
+						"title": "Logit Bias"
+					},
+					"logprobs": {
+						"title": "Logprobs"
+					},
+					"top_logprobs": {
+						"title": "Top Logprobs"
+					},
+					"tools": {
+						"title": "Tools"
+					},
+					"tool_choice": {
+						"title": "Tool Choice"
+					},
+					"parallel_tool_calls": {
+						"title": "Parallel Tool Calls"
+					},
+					"functions": {
+						"title": "Functions"
+					},
+					"function_call": {
+						"title": "Function Call"
+					},
+					"reasoning_effort": {
+						"title": "Reasoning Effort"
+					},
+					"reasoning": {
+						"title": "Reasoning"
+					},
+					"response_format": {
+						"title": "Response Format"
+					},
+					"stream_options": {
+						"title": "Stream Options"
+					},
+					"user": {
+						"title": "User"
+					},
+					"metadata": {
+						"title": "Metadata"
+					},
+					"cache_control": {
+						"title": "Cache Control"
+					},
+					"image_config": {
+						"title": "Image Config"
+					},
+					"modalities": {
+						"title": "Modalities"
+					},
+					"prediction": {
+						"title": "Prediction"
+					},
+					"prompt_cache_key": {
+						"title": "Prompt Cache Key"
+					},
+					"prompt_cache_options": {
+						"title": "Prompt Cache Options"
+					},
+					"repetition_penalty": {
+						"title": "Repetition Penalty"
+					},
+					"top_a": {
+						"title": "Top A"
+					},
+					"trace": {
+						"title": "Trace"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"title": "ChatCompletionRequest",
+				"description": "Supported public OpenAI-compatible request fields.\n\nThis is deliberately a positive allowlist. LiteLLM mixes user-facing\nfields with credentials, URLs, retry knobs, fallback controls, and testing\nhooks in one loose kwargs surface; accepting arbitrary extras would let a\ncaller take ownership of server-side routing and transport policy. Values\ninside the safe inference allowlist intentionally remain untyped so the\nselected provider owns request validation."
+			},
+			"ResponseCreateRequest": {
+				"properties": {
+					"model": {
+						"type": "string",
+						"minLength": 1,
+						"title": "Model"
+					},
+					"input": {
+						"title": "Input"
+					},
+					"previous_response_id": {
+						"title": "Previous Response Id"
+					},
+					"include": {
+						"title": "Include"
+					},
+					"tools": {
+						"title": "Tools"
+					},
+					"tool_choice": {
+						"title": "Tool Choice"
+					},
+					"metadata": {
+						"title": "Metadata"
+					},
+					"text": {
+						"title": "Text"
+					},
+					"temperature": {
+						"title": "Temperature"
+					},
+					"top_p": {
+						"title": "Top P"
+					},
+					"presence_penalty": {
+						"title": "Presence Penalty"
+					},
+					"frequency_penalty": {
+						"title": "Frequency Penalty"
+					},
+					"parallel_tool_calls": {
+						"title": "Parallel Tool Calls"
+					},
+					"stream": {
+						"type": "boolean",
+						"title": "Stream",
+						"default": false
+					},
+					"stream_options": {
+						"title": "Stream Options"
+					},
+					"background": {
+						"type": "boolean",
+						"title": "Background",
+						"default": false
+					},
+					"max_output_tokens": {
+						"title": "Max Output Tokens"
+					},
+					"max_tool_calls": {
+						"title": "Max Tool Calls"
+					},
+					"reasoning": {
+						"title": "Reasoning"
+					},
+					"safety_identifier": {
+						"title": "Safety Identifier"
+					},
+					"prompt_cache_key": {
+						"title": "Prompt Cache Key"
+					},
+					"truncation": {
+						"title": "Truncation"
+					},
+					"instructions": {
+						"title": "Instructions"
+					},
+					"store": {
+						"type": "boolean",
+						"title": "Store",
+						"default": false
+					},
+					"service_tier": {
+						"title": "Service Tier"
+					},
+					"top_logprobs": {
+						"title": "Top Logprobs"
+					}
+				},
+				"additionalProperties": false,
+				"type": "object",
+				"required": [
+					"model",
+					"input"
+				],
+				"title": "ResponseCreateRequest",
+				"description": "Pinned, safe Open Responses create request.\n\nThe field names are pinned to Open Responses 2026-04-24. Inference values\nintentionally remain loose so OpenRouter owns their semantic validation;\nstructural and server-owned routing fields are still rejected here."
+			}
+		}
+	},
+	"servers": [],
+	"securitySchemes": {
+		"HTTPBearer": {
+			"type": "http",
+			"scheme": "bearer"
+		}
+	},
+	"operationPaths": {
+		"chat": "/v1/chat/completions",
+		"responses": "/v1/responses"
+	}
+}

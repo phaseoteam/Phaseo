@@ -29,9 +29,9 @@ CREATE OR REPLACE FUNCTION public.get_public_model_retention_rankings (
   eligible_transitions as (
     select cohort.week_start as cohort_week, cohort.model_id, cohort.workspace_hash,
       (returned.workspace_hash is not null) as returned
-    from public.public_model_workspace_usage_weekly cohort
+    from public.reporting_model_workspace_usage_weekly cohort
     cross join bounds
-    left join public.public_model_workspace_usage_weekly returned
+    left join public.reporting_model_workspace_usage_weekly returned
       on returned.week_start = cohort.week_start + 7
      and returned.model_id = cohort.model_id
      and returned.workspace_hash = cohort.workspace_hash

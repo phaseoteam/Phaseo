@@ -31,7 +31,7 @@ CREATE POLICY "deny_direct_client_access" ON "public"."model_release_push_attemp
   USING (false)
   WITH CHECK (false);
 
-COMMENT ON TABLE "public"."model_release_push_attempts" IS 'Per-device delivery state for model release push notifications.';
+COMMENT ON TABLE "public"."model_release_push_attempts" IS 'Legacy per-device state for model_release_push_events. Superseded by mobile_push_deliveries; nothing writes or reads it.';
 
 REVOKE ALL ON TABLE "public"."model_release_push_attempts" FROM "service_role";
 

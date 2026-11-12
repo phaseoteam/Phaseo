@@ -1,10 +1,11 @@
 ---
 icon: "binary"
-title: "Vetores de incorporação"
+title: "Embeddings (AI SDK)"
+sidebarTitle: "Embeddings"
 description: "Crie embeddings com modelos do provedor Phaseo no Vercel AI SDK."
 ---
 
-Use `phaseo.textEmbeddingModel(...)` (ou `embeddingModel`) com `embed` e `embedMany`.
+Passe `phaseo.embeddingModel(modelId)` (ou o alias `textEmbeddingModel`) para `embed`, com um valor, ou para `embedMany`, com uma lista. As solicitações vão para o endpoint `/v1/embeddings` do Gateway.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -25,8 +26,8 @@ const batch = await embedMany({
 console.log(batch.embeddings.length);
 ```
 
-## Observações
+## Manter os vetores comparáveis
 
-- Mantenha os embeddings de consulta e do corpus na mesma versão do modelo.
-- Normalize os vetores de forma consistente antes de calcular similaridade.
-- Armazene em cache embeddings estáveis de conteúdo repetido.
+- Gere os embeddings das consultas e do corpus com a mesma versão do modelo.
+- Normalize os vetores de forma consistente antes de calcular a similaridade.
+- Armazene em cache os embeddings estáveis de conteúdo repetido.

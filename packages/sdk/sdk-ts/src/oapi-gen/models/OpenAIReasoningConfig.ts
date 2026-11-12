@@ -7,7 +7,8 @@ export interface OpenAIReasoningConfig {
     | "medium"
     | "high"
     | "xhigh"
-    | "max";
+    | "max"
+    | null;
   enabled?: boolean;
   max_tokens?: number;
   mode?: "standard" | "pro";

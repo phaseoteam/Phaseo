@@ -27,6 +27,7 @@ import type {
 	IRModerationsResponse,
 	IRRerankResponse,
 	IRDecisionsResponse,
+	IRExtractionResponse,
 } from "@core/ir";
 import type { ByokKeyMeta } from "@pipeline/before/types";
 import type { Endpoint } from "@core/types";
@@ -77,6 +78,12 @@ export type ExecutorExecuteArgs = {
 	byokMeta: ByokKeyMeta[];
 	pricingCard: any;
 	upstreamTiming?: ExecutorUpstreamTiming;
+	/**
+	 * True when the attempt loop has further ranked candidates after this one.
+	 * Executors should then return a transient failure promptly (so routing
+	 * fails over) instead of sleeping and retrying the same provider.
+	 */
+	hasAlternateCandidates?: boolean;
 
 	meta: {
 		debug?: DebugOptions;
@@ -90,9 +97,13 @@ export type ExecutorExecuteArgs = {
 		beta?: RequestBetaOptions;
 		appId?: string | null;
 		sessionId?: string | null;
+		/** Workspace-namespaced prompt cache key for provider affinity headers (never the raw client key). */
+		cacheAffinityKey?: string | null;
 		requestUserId?: string | null;
 		trace?: Record<string, unknown> | null;
 		testId?: string | null;
+		/** The request's key reference; `oauth_…` means `apiKeyId` is an OAuth client ID, not a key. */
+		apiKeyRef?: string | null;
 		authMethod?: "api_key" | "oauth";
 		oauthClientId?: string | null;
 		oauthUserId?: string | null;
@@ -120,6 +131,7 @@ export type ExecutorCompletedResult = {
 		| IRModerationsResponse
 		| IRRerankResponse
 		| IRDecisionsResponse
+		| IRExtractionResponse
 		| IRImageGenerationResponse
 		| IRAudioSpeechResponse
 		| IRAudioTranscriptionResponse
@@ -157,6 +169,12 @@ export type ExecutorStreamingResult = {
 	stream: ReadableStream<Uint8Array>;
 	streamAlreadyTransformed?: boolean;
 	usageFinalizer: () => Promise<Bill | null>;
+	// True when the finalizer reads usage from the upstream stream itself (Anthropic,
+	// Bedrock Messages, Vertex Claude). The after-stage then bills from it, not from frames.
+	usageFinalizerAuthoritative?: boolean;
+	// The authoritative usage observed so far, read without ending the stream. Its usage
+	// frames price from it so their cost matches what the finalizer will bill.
+	usageSnapshot?: () => Bill["usage"] | null;
 	bill: Bill;
 	upstream: Response;
 	keySource?: "gateway" | "byok";

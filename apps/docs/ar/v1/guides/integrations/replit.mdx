@@ -1,10 +1,10 @@
 ---
 title: "Replit"
 icon: "box"
-description: "استدعِ Phaseo من تطبيقات Replit وعمليات النشر."
+description: "استدعِ Phaseo من تطبيقات Replit وعمليات نشرها."
 ---
 
-استخدم Phaseo من Replit عبر SDK الرسمي لـ OpenAI أو مزوّد Phaseo الرسمي لـ AI SDK. احفظ مفتاح API في Replit Secrets بدلًا من الشيفرة المصدرية.
+أضف `PHASEO_API_KEY` إلى Replit Secrets، ثم استدعِ Phaseo باستخدام [OpenAI SDK](./openai-sdk.mdx) أو [مزوّد Phaseo لـ AI SDK](./ai-sdk.mdx). أبقِ المفتاح خارج الكود المصدري.
 
 ## إضافة السر
 
@@ -14,15 +14,14 @@ description: "استدعِ Phaseo من تطبيقات Replit وعمليات ال
 PHASEO_API_KEY=phaseo_v1_sk_...
 ```
 
-سيكون السر متاحًا لتطبيقك كمتغير بيئة.
+يتيح Replit السر لتطبيقك كمتغير بيئة. راجع [المصادقة](../../developers/authentication.mdx) لمعرفة أنواع المفاتيح.
 
-## TypeScript باستخدام SDK الخاص بـ OpenAI
+## استدعاء Phaseo
 
-```bash
-npm install openai
-```
+<CodeGroup>
 
-```ts
+```ts OpenAI SDK
+// npm install openai
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -31,37 +30,30 @@ const client = new OpenAI({
 });
 
 const response = await client.responses.create({
-	model: "openai/gpt-5-nano",
+	model: "openai/gpt-6-astra",
 	input: "Reply with only: ok",
 });
 
 console.log(response.output_text);
 ```
 
-## TypeScript باستخدام AI SDK
-
-```bash
-npm install @phaseo/ai-sdk-provider
-```
-
-```ts
+```ts AI SDK
+// npm install @phaseo/ai-sdk-provider
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const { text } = await generateText({
-	model: phaseo("openai/gpt-5-nano"),
+	model: phaseo("openai/gpt-6-astra"),
 	prompt: "Reply with only: ok",
 });
 
 console.log(text);
 ```
 
-## عمليات النشر
+</CodeGroup>
 
-أضف `PHASEO_API_KEY` إلى أسرار عملية النشر، بالإضافة إلى مساحة التطوير. وتأكد من أن عملية النشر لا تسجّل متغيرات البيئة أو ترويسات الطلبات.
+طباعة `ok` تعني أن السر وBase URL يعملان.
 
-## مواضيع ذات صلة
+## النشر
 
-- [SDK الخاص بـ OpenAI](./openai-sdk.mdx)
-- [AI SDK](./ai-sdk.mdx)
-- [المصادقة](../../developers/authentication.mdx)
+أضف `PHASEO_API_KEY` إلى أسرار النشر وكذلك إلى مساحة العمل. تأكد من أن النشر لا يطبع متغيرات البيئة أو ترويسات الطلبات في سجلاته.

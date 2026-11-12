@@ -51,6 +51,11 @@ function renderModels(models: IRModel[]): string {
 	return lines.join("\n");
 }
 
+// Fields that hold either a string or an object. A Rust String cannot hold the
+// object, so they are typed as serde_json::Value, which deserialises both:
+// ErrorResponse.error is the error object, or the code string older responses sent.
+const JSON_VALUE_FIELDS = new Set(["ErrorResponse.error"]);
+
 function renderModel(model: IRModel): string {
 	if (model.schema.kind === "object") {
 		const required = new Set(model.schema.required);
@@ -58,11 +63,13 @@ function renderModel(model: IRModel): string {
 		const lines: string[] = [`pub struct ${model.name} {`];
 		for (const field of fields) {
 			const name = sanitizeIdentifier(field);
-			const type = renderFieldType(
-				model.schema.properties[field],
-				required.has(field),
-				model.name === "ImagesEditRequest" && field === "image"
-			);
+			const type = JSON_VALUE_FIELDS.has(`${model.name}.${field}`)
+				? renderJsonValueFieldType(required.has(field))
+				: renderFieldType(
+					model.schema.properties[field],
+					required.has(field),
+					model.name === "ImagesEditRequest" && field === "image"
+				);
 			lines.push(`\tpub ${name}: ${type},`);
 		}
 		lines.push("}");
@@ -161,6 +168,16 @@ function renderOperations(operations: IROperation[]): string {
 		"use std::collections::HashMap;",
 		"use crate::client::{Client, Response, Transport};",
 		"",
+		"fn path_segment(value: &str) -> Result<String, String> {",
+		"\tif value == \".\" || value == \"..\" { return Err(\"Dot segments are not valid path parameters\".into()); }",
+		"\tlet mut encoded = String::new();",
+		"\tfor byte in value.bytes() {",
+		"\t\tif byte.is_ascii_alphanumeric() || b\"-_.~\".contains(&byte) { encoded.push(byte as char); }",
+		"\t\telse { encoded.push_str(&format!(\"%{:02X}\", byte)); }",
+		"\t}",
+		"\tOk(encoded)",
+		"}",
+		"",
 		"pub fn no_query() -> HashMap<String, String> {",
 		"\tHashMap::new()",
 		"}",
@@ -195,7 +212,7 @@ function renderPathTemplate(path: string, params: IROperation["params"]): string
 		if (segment.startsWith("{") && segment.endsWith("}")) {
 			const name = JSON.stringify(segment.slice(1, -1));
 			formatParts.push("{}");
-			args.push(`path.get(${name}).cloned().unwrap_or_default()`);
+			args.push(`path_segment(path.get(${name}).map(String::as_str).unwrap_or_default())?`);
 		} else {
 			const escaped = segment
 				.replace(/\\/g, "\\\\")
@@ -209,6 +226,10 @@ function renderPathTemplate(path: string, params: IROperation["params"]): string
 	return args.length === 0
 		? `String::from(${JSON.stringify(path)})`
 		: `format!("${formatString}", ${args.join(", ")})`;
+}
+
+function renderJsonValueFieldType(required: boolean): string {
+	return required ? "serde_json::Value" : "Option<serde_json::Value>";
 }
 
 function renderFieldType(schema: IRSchema, required: boolean, stringOrStringArray = false): string {
@@ -265,11 +286,14 @@ function sanitizeIdentifier(name: string): string {
 
 function rustIdentifier(name: string): string {
 	const reserved = new Set([
-		"as", "break", "const", "continue", "crate", "else", "enum", "extern",
+		"as", "box", "break", "const", "continue", "crate", "else", "enum", "extern",
 		"false", "fn", "for", "if", "impl", "in", "let", "loop", "match",
 		"mod", "move", "mut", "pub", "ref", "return", "self", "Self", "static",
 		"struct", "super", "trait", "true", "type", "unsafe", "use", "where",
-		"while", "async", "await", "dyn"
+		"while", "async", "await", "dyn",
+		// Reserved for future use: still not valid identifiers, but r# makes them usable.
+		"abstract", "become", "do", "final", "macro", "override", "priv", "try",
+		"typeof", "unsized", "virtual", "yield"
 	]);
 	if (reserved.has(name)) {
 		return `r#${name}`;

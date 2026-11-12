@@ -1,0 +1,305 @@
+import { LegendList } from "@legendapp/list/react-native";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Check } from "lucide-react-native";
+import { useMemo, useState } from "react";
+import { ScrollView, View } from "react-native";
+import { Logo } from "@/components/Logo";
+import { Button, EmptyState, ErrorState, Fact, Header, Icon, LoadingState, Row, RouteSheet, SearchField, Section, Segmented, Text, TextField } from "@/components/ui";
+import { exportAndShare } from "@/features/chat/chatActions";
+import type { ExportFormat } from "@/features/chat/export";
+import { ChatModelPicker } from "@/features/chat/ChatModelPicker";
+import { getChat, getMessage, updateChat } from "@/features/chat/db";
+import { ModelSettingsSheet } from "@/features/chat/ModelSettingsSheet";
+import { editAndResend } from "@/features/chat/runner";
+import { notifyChat, useChats } from "@/features/chat/state";
+import { clientFor } from "@/features/desktops/connections";
+import { changeChat } from "@/features/desktops/organise";
+import { desktopsStore, renameDesktop } from "@/features/desktops/store";
+import { ModelPicker } from "@/features/models/ModelPicker";
+import { draftRuleStore, useRuleNames } from "@/features/notifications/state";
+import { useProviders } from "@/features/providers/ProviderBrowser";
+import { compareStore, toggleCompare } from "@/features/models/state";
+import { acceptChatPrivacyReview, getChatPrivacyReview } from "@/lib/api/account";
+import { MAX_COMPARE } from "@/lib/api/compare";
+import { formatRelativeDay } from "@/lib/format";
+import { useWorkspace } from "@/providers/WorkspaceProvider";
+
+/** Long pickers take the full dialog height on tablets; short forms size to their content. */
+const TALL_SHEETS = new Set(["compare", "chat-models", "model-settings", "pick", "export-chat"]);
+
+/** Root-level sheets shared by several sections: bottom sheets on phones, centred dialogs on tablets. */
+export default function SheetRoute() {
+  const { kind } = useLocalSearchParams<{ kind: string }>();
+  return (
+    <RouteSheet size={TALL_SHEETS.has(kind) ? "tall" : "fit"}>
+      {kind === "compare" ? <CompareSheet />
+        : kind === "chat-models" ? <ChatModelsSheet />
+        : kind === "model-settings" ? <ModelSettingsRoute />
+        : kind === "workspace" ? <WorkspaceSheet />
+        : kind === "rename-chat" ? <RenameChatSheet />
+        : kind === "rename-desktop" ? <RenameDesktopSheet />
+        : kind === "rename-desktop-chat" ? <RenameDesktopChatSheet />
+        : kind === "edit-message" ? <EditMessageSheet />
+        : kind === "privacy" ? <PrivacySheet />
+        : kind === "pick" ? <PickSheet />
+        : kind === "export-chat" ? <ExportChatSheet />
+        : <EmptyState title="Nothing here" />}
+    </RouteSheet>
+  );
+}
+
+function CompareSheet() {
+  const router = useRouter();
+  const selected = compareStore.use();
+  return (
+    <View className="flex-1">
+      <Header title={`Compare · ${selected.length} of ${MAX_COMPARE}`} right={<Button label="Done" size="sm" variant="ghost" onPress={() => router.back()} />} />
+      <ModelPicker selected={selected} onSelect={(model) => toggleCompare(model.model_id)} />
+    </View>
+  );
+}
+
+/** Models for a new chat, or for an existing chat's next messages when `chatId` is set. */
+function ChatModelsSheet() {
+  const { chatId } = useLocalSearchParams<{ chatId?: string }>();
+  return <ChatModelPicker chatId={chatId ?? null} />;
+}
+
+/** One model's settings in a chat (or in the new chat being set up). */
+function ModelSettingsRoute() {
+  const { chatId, model } = useLocalSearchParams<{ chatId?: string; model: string }>();
+  return <ModelSettingsSheet chatId={chatId ?? null} modelId={model} />;
+}
+
+function WorkspaceSheet() {
+  const router = useRouter();
+  const { workspaces, workspaceId, selectWorkspace } = useWorkspace();
+  return (
+    <View className="pb-2">
+      <Header title="Workspace" />
+      {workspaces.map((workspace, index) => (
+        <Row
+          key={workspace.id}
+          title={workspace.name ?? workspace.id}
+          subtitle={workspace.role ? workspace.role.replace(/^\w/, (letter) => letter.toUpperCase()) : null}
+          trailing={workspace.id === workspaceId ? <Icon icon={Check} tone="link" size={18} /> : null}
+          chevron={false}
+          onPress={() => { selectWorkspace(workspace.id); router.back(); }}
+          last={index === workspaces.length - 1}
+        />
+      ))}
+    </View>
+  );
+}
+
+function RenameChatSheet() {
+  const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [title, setTitle] = useState(() => getChat(id)?.title ?? "");
+  const save = () => {
+    if (!title.trim()) return;
+    updateChat(id, { title: title.trim() });
+    notifyChat(id);
+    router.back();
+  };
+  return (
+    <View className="gap-3 px-4 pb-4 pt-5">
+      <Text variant="heading">Rename chat</Text>
+      <TextField value={title} onChangeText={setTitle} autoFocus selectTextOnFocus returnKeyType="done" onSubmitEditing={save} accessibilityLabel="Chat title" />
+      <View className="flex-row justify-end gap-2 pt-1">
+        <Button label="Cancel" variant="outline" size="sm" onPress={() => router.back()} />
+        <Button label="Save" size="sm" disabled={!title.trim()} onPress={save} />
+      </View>
+    </View>
+  );
+}
+
+function RenameDesktopSheet() {
+  const router = useRouter();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [name, setName] = useState(() => desktopsStore.get()?.find((desktop) => desktop.desktopId === id)?.desktopName ?? "");
+  const save = () => {
+    if (!name.trim()) return;
+    void renameDesktop(id, name.trim().slice(0, 80)).then(() => router.back());
+  };
+  return (
+    <View className="gap-3 px-4 pb-4 pt-5">
+      <Text variant="heading">Rename computer</Text>
+      <TextField value={name} onChangeText={setName} autoFocus selectTextOnFocus returnKeyType="done" onSubmitEditing={save} accessibilityLabel="Computer name" />
+      <Text variant="caption">Only on this phone. Pairing the computer again brings back its own name.</Text>
+      <View className="flex-row justify-end gap-2 pt-1">
+        <Button label="Cancel" variant="outline" size="sm" onPress={() => router.back()} />
+        <Button label="Save" size="sm" disabled={!name.trim()} onPress={save} />
+      </View>
+    </View>
+  );
+}
+
+/** Renames a thread on a paired computer; the window's sidebar shows the new title too. */
+function RenameDesktopChatSheet() {
+  const router = useRouter();
+  const { id, desktopId, title } = useLocalSearchParams<{ id: string; desktopId: string; title: string }>();
+  const [name, setName] = useState(title ?? "");
+  const desktop = desktopsStore.get()?.find((entry) => entry.desktopId === desktopId);
+  const save = () => {
+    const next = name.trim().slice(0, 200);
+    if (!next || !desktop) return;
+    router.back();
+    if (next !== title) void changeChat(clientFor(desktop), { id, title: title ?? "" }, { action: "rename", title: next });
+  };
+  return (
+    <View className="gap-3 px-4 pb-4 pt-5">
+      <Text variant="heading">Rename thread</Text>
+      <TextField value={name} onChangeText={setName} autoFocus selectTextOnFocus returnKeyType="done" onSubmitEditing={save} accessibilityLabel="Thread title" />
+      <Text variant="caption">{desktop ? `Renamed on ${desktop.desktopName} too.` : "This computer isn't paired any more."}</Text>
+      <View className="flex-row justify-end gap-2 pt-1">
+        <Button label="Cancel" variant="outline" size="sm" onPress={() => router.back()} />
+        <Button label="Save" size="sm" disabled={!name.trim() || !desktop} onPress={save} />
+      </View>
+    </View>
+  );
+}
+
+function EditMessageSheet() {
+  const router = useRouter();
+  const { workspaceId } = useWorkspace();
+  const { id } = useLocalSearchParams<{ id: string; chatId: string }>();
+  const [message] = useState(() => getMessage(id));
+  const [text, setText] = useState(message?.content ?? "");
+  if (!message) return <EmptyState title="Message not found" />;
+  return (
+    <View className="gap-3 px-4 pb-4 pt-5">
+      <View>
+        <Text variant="heading">Edit message</Text>
+        <Text variant="muted" className="mt-1">Every model answers again, and answers after this message are replaced.</Text>
+      </View>
+      <TextField value={text} onChangeText={setText} multiline autoFocus className="max-h-60 min-h-28" textAlignVertical="top" accessibilityLabel="Message" />
+      <View className="flex-row justify-end gap-2 pt-1">
+        <Button label="Cancel" variant="outline" size="sm" onPress={() => router.back()} />
+        <Button label="Send" size="sm" disabled={!text.trim()} onPress={() => { editAndResend(message, text.trim(), workspaceId); router.back(); }} />
+      </View>
+    </View>
+  );
+}
+
+const yes = (value: boolean | null | undefined) => (value ? "Allowed" : "Not allowed");
+
+/** Web chat's one-time privacy confirmation, per workspace. */
+function PrivacySheet() {
+  const router = useRouter();
+  const { workspaceId } = useWorkspace();
+  const review = useQuery({ queryKey: ["account", workspaceId, "chat-privacy"], queryFn: () => getChatPrivacyReview(workspaceId) });
+  const accept = useMutation({
+    mutationFn: () => acceptChatPrivacyReview(review.data!.workspaceId, review.data!.version),
+    onSuccess: () => router.back(),
+  });
+  if (review.isLoading) return <LoadingState />;
+  if (review.isError || !review.data) return <ErrorState error={review.error} onRetry={() => void review.refetch()} />;
+  const policy = review.data.policy;
+  return (
+    <ScrollView contentContainerClassName="pb-10">
+      <Header title="Before you chat" />
+      <Text variant="muted" className="px-4">{`Chat uses ${review.data.workspaceName ?? "your workspace"}'s privacy settings. Check they're what you expect; you can change them on phaseo.app.`}</Text>
+      <Section title="Your workspace">
+        <Fact label="Providers training on paid prompts" value={yes(policy.privacy_enable_paid_may_train)} />
+        <Fact label="Providers training on free prompts" value={yes(policy.privacy_enable_free_may_train)} />
+        <Fact label="Free providers publishing prompts" value={yes(policy.privacy_enable_free_may_publish_prompts)} />
+        <Fact label="Only zero-data-retention providers" value={policy.privacy_zdr_only ? "Yes" : "No"} />
+        <Fact label="Phaseo stores prompts and answers" value={policy.io_logging_enabled ? `Yes${policy.io_logging_retention_days ? `, for ${policy.io_logging_retention_days} days` : ""}` : "No"} last />
+      </Section>
+      <View className="gap-2 px-4 pt-6">
+        <Button label="These are fine, continue" loading={accept.isPending} onPress={() => accept.mutate()} />
+        {accept.isError ? <Text variant="small" className="text-destructive">{accept.error instanceof Error ? accept.error.message : "Couldn't save that."}</Text> : null}
+      </View>
+    </ScrollView>
+  );
+}
+
+/** Lab, provider or model choices for the notification rule being edited. */
+function PickSheet() {
+  const router = useRouter();
+  const { type } = useLocalSearchParams<{ type: "labs" | "providers" | "models" }>();
+  const draft = draftRuleStore.use();
+  const names = useRuleNames();
+  const providers = useProviders();
+  const [query, setQuery] = useState("");
+  const options = useMemo(() => {
+    const all = type === "labs"
+      ? [...names.labs.entries()].map(([id, name]) => ({ id, name }))
+      : (providers.data ?? []).map((provider) => ({ id: provider.api_provider_id, name: provider.api_provider_name }));
+    const search = query.trim().toLocaleLowerCase();
+    return all.filter((option) => !search || option.name.toLocaleLowerCase().includes(search)).sort((a, b) => a.name.localeCompare(b.name));
+  }, [type, names.labs, providers.data, query]);
+  if (!draft) return <EmptyState title="Nothing to pick for" />;
+  const done = <Button label="Done" size="sm" variant="ghost" onPress={() => router.back()} />;
+  if (type === "models") {
+    return (
+      <View className="flex-1">
+        <Header title={`Models · ${draft.models.length}`} right={done} />
+        <ModelPicker selected={draft.models} onSelect={(model) => draftRuleStore.set({ ...draft, models: draft.models.includes(model.model_id) ? draft.models.filter((id) => id !== model.model_id) : [...draft.models, model.model_id].slice(0, 200) })} />
+      </View>
+    );
+  }
+  const scope = type === "labs" ? draft.labs : draft.providers;
+  const setIds = (ids: string[]) => draftRuleStore.set({ ...draft, [type === "labs" ? "labs" : "providers"]: { mode: scope.mode === "all" ? "only" : scope.mode, ids } });
+  return (
+    <View className="flex-1">
+      <Header title={`${type === "labs" ? "Labs" : "Providers"} · ${scope.ids.length}`} right={done} />
+      <View className="px-4 pb-2"><SearchField value={query} onChangeText={setQuery} placeholder={type === "labs" ? "Search labs" : "Search providers"} /></View>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pb-10">
+        {options.map((option, index) => (
+          <Row
+            key={option.id}
+            title={option.name}
+            leading={<Logo id={option.id} label={option.name} size={28} />}
+            chevron={false}
+            trailing={scope.ids.includes(option.id) ? <Icon icon={Check} tone="link" size={18} /> : null}
+            onPress={() => setIds(scope.ids.includes(option.id) ? scope.ids.filter((id) => id !== option.id) : [...scope.ids, option.id])}
+            last={index === options.length - 1}
+          />
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+/** Picks one chat to export (Account → Chats on this device), in the format chosen at the top. */
+function ExportChatSheet() {
+  const router = useRouter();
+  const chats = useChats();
+  const [query, setQuery] = useState("");
+  const [format, setFormat] = useState<ExportFormat>("markdown");
+  const shown = useMemo(() => {
+    const search = query.trim().toLocaleLowerCase();
+    return search ? chats.filter((chat) => chat.title.toLocaleLowerCase().includes(search) || chat.preview.toLocaleLowerCase().includes(search)) : chats;
+  }, [chats, query]);
+  return (
+    <View className="flex-1">
+      <Header title="Export a chat" right={<Button label="Done" size="sm" variant="ghost" onPress={() => router.back()} />} />
+      <View className="gap-2 px-4 pb-2">
+        <Segmented<ExportFormat> value={format} onChange={setFormat} options={[{ value: "markdown", label: "Markdown" }, { value: "json", label: "JSON" }]} />
+        <SearchField value={query} onChangeText={setQuery} placeholder="Search chats" />
+      </View>
+      <View className="flex-1 overflow-hidden">
+        <LegendList
+          data={shown}
+          keyExtractor={(chat) => chat.id}
+          estimatedItemSize={64}
+          recycleItems
+          keyboardShouldPersistTaps="handled"
+          ListEmptyComponent={<EmptyState title={chats.length ? "No chats match" : "No chats yet"} body={chats.length ? "Try other words." : "Chats you start appear here."} />}
+          renderItem={({ item }) => (
+            <Row
+              title={item.title || "Untitled chat"}
+              subtitle={`${formatRelativeDay(item.updatedAt)}${item.preview ? ` · ${item.preview}` : ""}`}
+              chevron={false}
+              onPress={() => { router.back(); void exportAndShare([item.id], format); }}
+            />
+          )}
+          contentContainerStyle={{ paddingBottom: 32 }}
+        />
+      </View>
+    </View>
+  );
+}

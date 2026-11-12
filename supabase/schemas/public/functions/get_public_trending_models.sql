@@ -20,7 +20,7 @@ CREATE OR REPLACE FUNCTION public.get_public_trending_models (
       sum(usage.requests) filter (where usage.usage_date >= current_date - 7)::bigint as week_0,
       sum(usage.requests) filter (where usage.usage_date >= current_date - 14 and usage.usage_date < current_date - 7)::bigint as week_1,
       sum(usage.requests) filter (where usage.usage_date >= current_date - 21 and usage.usage_date < current_date - 14)::bigint as week_2
-    from public.v2_public_usage_daily usage
+    from public.reporting_usage_daily usage
     left join public.v2_model_provider_routes route on route.provider_model_id = usage.provider_model_id
     where usage.usage_date >= current_date - 21 and lower(usage.model_slug) not in ('unknown','other')
     group by usage.model_slug, coalesce(route.provider_slug,'unknown')

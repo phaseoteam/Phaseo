@@ -42,6 +42,13 @@ CREATE POLICY "gateway_batch_requests_select_workspace_members" ON "public"."gat
    FROM public.workspace_members wm
   WHERE ((wm.workspace_id = gateway_batch_requests.workspace_id) AND (wm.user_id = ( SELECT auth.uid() AS uid))))) OR public.is_workspace_admin(workspace_id)));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_batch_requests"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_batch_requests" TO "anon", "authenticated", "service_role";
 
 COMMENT ON TABLE "public"."gateway_batch_requests" IS 'Per-request lifecycle rows for provider batch jobs. Request bodies are represented by hash by default to avoid retaining prompt payloads.';

@@ -1,0 +1,177 @@
+---
+icon: "arrow-right-left"
+title: "音声翻訳"
+description: "どの Phaseo SDK からでも POST /v1/audio/translations で音声を英語のテキストに翻訳します。"
+---
+
+音声を `POST /v1/audio/translations` にアップロードすると、英語のテキストが返ってきます。このエンドポイントはマルチパートの `file` フィールドからのみ音声を読み込み、URL のオプションがないため、直接呼び出せるのは TypeScript SDK だけです。その他の言語では、標準の HTTP クライアントでフォームを送信します。
+
+<CodeGroup>
+
+```typescript TypeScript
+import { readFile } from "node:fs/promises";
+
+const form = new FormData();
+form.append("model", "openai/whisper-1");
+form.append("file", new Blob([await readFile("interview.mp3")], { type: "audio/mpeg" }), "interview.mp3");
+
+const translated = await client.generateTranslation(form as unknown as Record<string, unknown>);
+console.log(translated.text);
+```
+
+```python Python
+# generate_translation() can't upload audio yet, so post the form with HTTPX.
+import os
+import httpx
+
+with open("interview.mp3", "rb") as audio:
+    response = httpx.post(
+        "https://api.phaseo.app/v1/audio/translations",
+        headers={"Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}"},
+        data={"model": "openai/whisper-1"},
+        files={"file": ("interview.mp3", audio, "audio/mpeg")},
+        timeout=120,
+    )
+response.raise_for_status()
+print(response.json()["text"])
+```
+
+```go Go
+// CreateTranslation() sends JSON, so post the form with net/http and mime/multipart.
+var body bytes.Buffer
+form := multipart.NewWriter(&body)
+_ = form.WriteField("model", "openai/whisper-1")
+part, _ := form.CreateFormFile("file", "interview.mp3")
+audio, _ := os.ReadFile("interview.mp3")
+_, _ = part.Write(audio)
+_ = form.Close()
+
+req, _ := http.NewRequest("POST", "https://api.phaseo.app/v1/audio/translations", &body)
+req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
+req.Header.Set("Content-Type", form.FormDataContentType())
+
+resp, err := http.DefaultClient.Do(req)
+```
+
+```csharp C#
+// CreateTranslation() sends JSON, so post the form with HttpClient.
+using var http = new HttpClient();
+http.DefaultRequestHeaders.Authorization =
+    new("Bearer", Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
+
+using var form = new MultipartFormDataContent
+{
+    { new StringContent("openai/whisper-1"), "model" },
+    { new ByteArrayContent(await File.ReadAllBytesAsync("interview.mp3")), "file", "interview.mp3" },
+};
+
+var response = await http.PostAsync("https://api.phaseo.app/v1/audio/translations", form);
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+```
+
+```php PHP
+<?php
+// generateTranslation() sends JSON, so post the form with Guzzle, which Composer installed with the SDK.
+require 'vendor/autoload.php';
+
+$http = new GuzzleHttp\Client();
+
+$response = $http->post('https://api.phaseo.app/v1/audio/translations', [
+    'headers' => ['Authorization' => 'Bearer ' . getenv('PHASEO_API_KEY')],
+    'multipart' => [
+        ['name' => 'model', 'contents' => 'openai/whisper-1'],
+        ['name' => 'file', 'contents' => fopen('interview.mp3', 'r'), 'filename' => 'interview.mp3'],
+    ],
+]);
+
+echo $response->getBody();
+```
+
+```ruby Ruby
+# generate_translation sends JSON, so post the form with Net::HTTP.
+require 'net/http'
+
+uri = URI('https://api.phaseo.app/v1/audio/translations')
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV.fetch('PHASEO_API_KEY')}"
+request.set_form(
+  [['model', 'openai/whisper-1'], ['file', File.open('interview.mp3')]],
+  'multipart/form-data'
+)
+
+response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
+puts response.body
+```
+
+```java Java
+// The SDK's JSON helpers don't encode multipart, so post the form with java.net.http.
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nopenai/whisper-1\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"interview.mp3\"\r\nContent-Type: audio/mpeg\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("interview.mp3")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/audio/translations"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body());
+```
+
+</CodeGroup>
+
+| 言語 | SDK のメソッド | ファイルをアップロードできるか |
+| --- | --- | --- |
+| TypeScript | `client.generateTranslation(form)` | はい。`FormData` の本文を渡すと、SDK はそれをマルチパートとしてそのまま送信します。メソッドの型は JSON 本文を表しているため、キャストが必要です。 |
+| Python | `client.generate_translation(request)` | いいえ。JSON を送信するため、上記のように HTTPX でフォームを送信してください。 |
+| Go | `client.CreateTranslation(ctx, req)` | いいえ。JSON を送信するため、Gateway が `file is required` で拒否します。 |
+| C# | `client.CreateTranslation(request)` | いいえ。JSON を送信するため、Gateway が `file is required` で拒否します。 |
+| PHP | `$client->generateTranslation($request)` | いいえ。JSON を送信するため、Gateway が `file is required` で拒否します。 |
+| Ruby | `client.generate_translation(...)` | いいえ。JSON を送信するため、Gateway が `file is required` で拒否します。 |
+| Java | なし | いいえ。マルチパートの本文で `java.net.http.HttpClient` を使ってください。 |
+
+Rust には翻訳のメソッドがなく、`post()` ヘルパーは JSON しか送信しません。
+
+## パラメーター
+
+どの言語でも、フィールド名はフォームのフィールドです。
+
+| フィールド | 注記 |
+| --- | --- |
+| `model` | 必須。翻訳モデルの ID。 |
+| `file` | 必須。最大 25 MB で、`flac`、`mp3`、`mp4`、`mpeg`、`mpga`、`m4a`、`ogg`、`wav`、`webm` のいずれか。 |
+| `prompt` | 翻訳の方向付けに使うコンテキスト。 |
+| `temperature` | `0`〜`1`。 |
+| `response_format` | `json`、`text`、`srt`、`verbose_json`、`vtt` のいずれか。 |
+
+完全なスキーマは [Translations API リファレンス](/ja/v1/api-reference/endpoint/audio-translations)にあります。
+
+## レスポンス
+
+`AudioTranslationResponse`：
+
+```json
+{
+  "text": "Hello world"
+}
+```

@@ -1,39 +1,134 @@
 ---
-title: "Limites de requisições"
-description: "Gerencie restrições de taxa, cotas de provedores e tentativas limitadas."
+title: "Limites de taxa"
+description: "Lide com limitação de taxa, cotas de provedores e novas tentativas limitadas."
 icon: "gauge"
 ---
 
-Uma requisição pode ser limitada pelo provedor selecionado ou por uma política aplicável ao espaço de trabalho ou à chave. O roteamento e as alternativas podem reduzir falhas do provedor, mas uma requisição ainda pode retornar `429`.
+Leia o código de erro e o `reason` de um `429` para saber qual limite bloqueou a solicitação e, em seguida, aguarde o `Retry-After` ou altere o limite. O roteamento e os fallbacks reduzem as falhas de provedores, mas uma solicitação ainda pode ser limitada por um provedor ou por uma política do espaço de trabalho ou da chave.
 
+| Limite | Código de erro | `reason` | Reinicia sozinho |
+| --- | --- | --- | --- |
+| [Solicitações por minuto](#gateway-limits) | `key_limit_exceeded` | `customer_requests_per_minute` | Sim, `Retry-After` em segundos |
+| [Solicitações a modelos gratuitos por dia](#gateway-limits) | `phaseo_free_model_limit_exceeded` | `free_requests_per_day` | Sim, às 00:00 UTC |
+| [Limite da chave ou orçamento do espaço de trabalho](#key-limits-and-budgets) | `key_limit_exceeded` | O limite atingido; `limit_window` e `reset_at` | Só quando há `Retry-After` |
+| [Orçamento do departamento](#department-budgets) | `key_limit_exceeded` | `department_daily_cost_budget_reached` (ou `weekly`, `monthly`) | Sim, em `reset_at` |
+| [Regra de gastos configurada para bloquear](#key-limits-and-budgets) | `spend_rule_blocked` | | Em `reset_at`, quando o bloqueio tem um, ou quando um proprietário ou administrador o remove |
+| [Política de limite de taxa](#rate-limit-policies) | `rate_limit_exceeded` | `policy_requests_per_minute`, `policy_tokens_per_minute`, `policy_concurrent_requests` ou `policy_unavailable` | Sim, `Retry-After` em segundos |
+| [Provedor](#provider-limits) | `upstream_error` ou `provider_capacity_exhausted` | | Siga o `Retry-After` do provedor |
+
+Todos esses retornam `429`. Se a aplicação de cotas do gateway estiver indisponível por um breve período, o gateway retorna `503` com orientação para nova tentativa.
+
+<span id="gateway-limits"></span>
 ## Limites do gateway
 
-A cota padrão é de **25 requisições por minuto em uma janela móvel** para cada usuário em cada espaço de trabalho. As chaves de API criadas pelo mesmo usuário compartilham essa cota. Requisições OAuth usam o usuário autenticado. Chaves sem proprietário compartilham uma cota do espaço de trabalho.
+Cada usuário em cada espaço de trabalho tem uma cota de solicitações por minuto, medida em uma janela móvel de um minuto. As chaves de API criadas pelo mesmo usuário compartilham essa cota. Solicitações OAuth contam para o usuário autenticado, e chaves sem proprietário compartilham uma cota do espaço de trabalho.
 
-As rotas de modelos gratuitos também têm uma cota de **1500 requisições por dia UTC**, compartilhada entre todos os modelos gratuitos do mesmo usuário e espaço de trabalho. Requisições a modelos pagos não consomem essa cota diária. Uma requisição gratuita admitida conta mesmo se o provedor falhar depois; fallbacks dentro dessa requisição contam uma única vez.
+A cota aumenta automaticamente à medida que o espaço de trabalho se consolida. Um espaço de trabalho recebe a linha mais alta para a qual se qualifica, e as alterações entram em vigor em poucos minutos:
 
-Esses limites valem para todas as regiões do gateway e podem ser aumentados para um usuário e espaço de trabalho específicos. Operações com arquivos e consultas de status de tarefas consomem a cota por minuto; endpoints de administração não.
+| Espaço de trabalho | Solicitações por minuto |
+| --- | --- |
+| Espaço de trabalho novo | 10 |
+| Pelo menos 7 dias de existência ou com uma recarga paga | 25 |
+| Pelo menos 30 dias de existência e pelo menos $50 em recargas pagas, descontados os reembolsos | 60 |
+| Cobrança por fatura | 120 |
 
-Quando uma cota do gateway se esgota, a resposta é `429` com `Retry-After` em segundos. O motivo do erro é `customer_requests_per_minute` ou `free_requests_per_day`. Aguarde esse intervalo antes de tentar novamente. Se a verificação de cotas estiver temporariamente indisponível, o gateway retorna `503` com orientação para uma nova tentativa.
+Os modelos gratuitos também têm, por padrão, uma cota de **1.500 solicitações por dia UTC**. Ela é compartilhada entre todos os modelos gratuitos e entre todos os espaços de trabalho em que o mesmo usuário envia solicitações. Solicitações a modelos pagos não a consomem. Uma solicitação gratuita admitida conta mesmo que o provedor falhe depois, e os fallbacks de provedor dentro de uma solicitação contam uma única vez.
 
-## Limites do provedor
+Os dois limites valem em todas as regiões do gateway e podem ser aumentados para um usuário e um espaço de trabalho específicos. Operações com arquivos e consultas de status de tarefas consomem a cota por minuto; endpoints de gerenciamento não.
 
-Requisições BYOK usam os limites da sua conta no provedor. Requisições gerenciadas usam capacidade compartilhada do provedor; essa capacidade não é uma cota individual do espaço de trabalho.
+Uma solicitação rejeitada retorna `429` com `Retry-After` em segundos. Aguarde esse tempo antes de tentar de novo.
 
-O Phaseo encaminha um valor validado de `Retry-After` quando o provedor para o qual a requisição foi roteada o fornece. Respostas BYOK também podem incluir cabeçalhos `X-Phaseo-Upstream-RateLimit-*`. Esses cabeçalhos de cota são omitidos em requisições gerenciadas porque descrevem capacidade compartilhada do provedor. Outros cabeçalhos de origem não são encaminhados.
+<span id="key-limits-and-budgets"></span>
+## Limites de chaves e orçamentos
 
-## Gerenciar uma requisição limitada
+Os limites diários, semanais ou mensais de solicitações e de gastos de uma chave de API, e os [orçamentos](./endpoint/budgets-list.mdx) do espaço de trabalho, retornam `429` com `key_limit_exceeded` quando atingidos. Os campos `reason`, `limit_window` e `reset_at` do corpo indicam qual limite foi atingido e quando a janela dele reinicia, e `Retry-After` informa os segundos até lá.
 
-1. Inspecione o [código de erro](./errors.mdx) para distinguir uma restrição temporária do provedor de uma restrição de política ou orçamento que exija alterações de configuração.
-2. Respeite `Retry-After` quando estiver presente. Pode ser um intervalo em segundos ou uma data HTTP; valide o valor antes de agendar uma nova tentativa.
-3. Caso contrário, use espera exponencial com variação aleatória e um intervalo máximo.
-4. Limite as novas tentativas tanto pela quantidade quanto por um prazo total. Cancele o trabalho abandonado e libere o corpo de cada resposta com falha antes de tentar novamente.
-5. Reduza a concorrência se a restrição persistir.
+`Retry-After` não aparece quando o limite não reinicia sozinho, como em um orçamento vitalício ou em uma chave com bloqueio leve. Não tente de novo: aumente o orçamento do espaço de trabalho, aumente o limite da chave ou use outra chave.
 
-Não repita automaticamente o envio de um trabalho com resultado incerto nem ações de ferramentas já concluídas. Uma requisição pode ter chegado ao provedor mesmo que o cliente tenha perdido a resposta; novas tentativas podem duplicar trabalho e cobranças. Para um trabalho de vídeo ou em lote aceito, use seu endpoint de status em vez de enviá-lo novamente.
+Proprietários e administradores do espaço de trabalho gerenciam os orçamentos com uma chave de gerenciamento pela `/v1/budgets` ou em [Configurações → Orçamentos](https://phaseo.app/settings/budgets), que mostra o gasto de cada orçamento até agora, a parcela usada, uma projeção para o período e quando ele reinicia. Os orçamentos diários, semanais e mensais reiniciam nos limites UTC: meia-noite, segunda-feira às 00:00 e o dia 1º do mês.
 
-## Monitorar restrições de taxa
+Os [alertas de gastos](../guides/spend-alerts.mdx) podem avisar antes que esses limites sejam atingidos. Uma regra de gastos configurada para bloquear retorna `429` com `spend_rule_blocked`. Ela funciona por melhor esforço e começa alguns minutos depois que o gasto ultrapassa o limite, então use limites de chave e orçamentos para tetos exatos. Um cabeçalho `x-phaseo-spend-warning` indica que um bloqueio pode vir em seguida.
 
-Acompanhe a frequência de `429` por endpoint e modelo e inspecione a frequência das alternativas nos logs de requisições. Compare os logs da sua aplicação com as [configurações de roteamento](../guides/routing-and-fallbacks.mdx) e as cotas da conta no provedor para tráfego BYOK.
+<span id="department-budgets"></span>
+### Orçamentos de departamento
 
-Consulte os [orçamentos](./endpoint/budgets-list.mdx) e as [proteções](./endpoint/guardrails.mdx) para os controles de gastos e acesso do espaço de trabalho.
+Proprietários e administradores gerenciam os orçamentos de departamento com `phaseo department-budgets`, com a API `/v1/department-budgets`, em [Configurações → Orçamentos](https://phaseo.app/settings/budgets) ou com o recurso `phaseo_department_budget` do provedor Terraform. O gasto de um departamento considera as mesmas chaves e solicitações OAuth que os [limites de taxa de departamento](#rate-limit-policies).
+
+Quando um departamento esgota o orçamento diário, semanal ou mensal, as solicitações com chave de API que contam para ele retornam `429` com `key_limit_exceeded` e o motivo `department_daily_cost_budget_reached`, `department_weekly_cost_budget_reached` ou `department_monthly_cost_budget_reached`. Os campos `department_id` e `department_name` do corpo identificam o departamento, e `reset_at` e `Retry-After` indicam quando o orçamento reinicia.
+
+- Se a verificação do orçamento estiver indisponível por um breve período, as solicitações são permitidas, então um departamento pode gastar além do orçamento por pouco tempo.
+- Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e novamente em 100% de um orçamento. Para esses alertas, os orçamentos são verificados a cada 15 minutos, então solicitações podem ser recusadas antes de o alerta de 100% chegar.
+
+<span id="rate-limit-policies"></span>
+## Políticas de limite de taxa
+
+Administradores do espaço de trabalho podem criar políticas nomeadas que definem `requests_per_minute`, `tokens_per_minute` e `concurrent_requests` e atribuí-las a chaves, membros, departamentos ou usuários finais. Gerencie-as com `phaseo rate-limits policies` e `phaseo rate-limits assignments`, com a API `/v1/rate-limits`, em [Configurações → Limites de taxa](https://phaseo.app/settings/rate-limits) ou com os recursos `phaseo_rate_limit_policy` e `phaseo_rate_limit_assignment` do provedor Terraform.
+
+| Atribuída a | O que compartilha uma cota |
+| --- | --- |
+| Chave (`key`) | As solicitações dessa chave. |
+| Membro (`member`) | As chaves e as solicitações OAuth do membro. |
+| Departamento (`department`) | Tudo o que conta para o departamento (veja abaixo). |
+| Padrão por usuário final (`end_user`) | Cada usuário final recebe a própria cota, identificado pelo campo `user` da solicitação ou pelo cabeçalho `X-Phaseo-User-Id`. Solicitações sem ID de usuário final não são limitadas. |
+
+**O que conta para um departamento.** Uma chave vinculada a um departamento conta apenas para esse departamento. Qualquer outra chave conta para todos os departamentos de que o criador faz parte, e as solicitações OAuth contam para todos os departamentos do usuário. Um membro com substituição de departamento conta apenas para o departamento da substituição. Para que essas chaves e solicitações OAuth contem apenas para o departamento principal da pessoa, defina a atribuição de departamento como principal em [Configurações → Notificações](https://phaseo.app/settings/notifications) ou com `spend.department_attribution` em `PATCH /v1/notifications/settings` e uma chave de gerenciamento. Os orçamentos de departamento e as regras de gastos usam a mesma configuração.
+
+Quando várias políticas se aplicam, cada uma é contabilizada, e a primeira que se esgota rejeita a solicitação. As políticas se aplicam além dos [limites do gateway](#gateway-limits). As alterações de políticas entram em vigor em cerca de um minuto; as alterações de participação em departamentos feitas no painel ou por SCIM podem levar até cerca de cinco minutos.
+
+### Solicitações e tokens por minuto
+
+Os dois são medidos em uma janela móvel de um minuto. `tokens_per_minute` conta os tokens de entrada e de saída de cada solicitação quando ela termina, incluindo solicitações em streaming e com falha que usaram tokens. Uma solicitação é rejeitada quando o uso no último minuto atinge o limite, então solicitações já em andamento podem levar o uso além dele. Os fallbacks de provedor dentro de uma solicitação contam uma única vez, e acertos no cache de respostas não são contabilizados.
+
+Uma solicitação rejeitada retorna `429` com `rate_limit_exceeded`, o motivo `policy_requests_per_minute` ou `policy_tokens_per_minute`, o `policy_id`, o `limit_scope` (`key`, `member`, `department`, `workspace` ou `end_user`) e `Retry-After` em segundos.
+
+As respostas a solicitações cobertas por uma política trazem os cabeçalhos do limite mais restritivo:
+
+| Cabeçalho | Exemplo |
+| --- | --- |
+| `x-ratelimit-limit-requests`, `x-ratelimit-remaining-requests` | `60`, `42` |
+| `x-ratelimit-reset-requests` | `60s` |
+| `x-ratelimit-limit-tokens`, `x-ratelimit-remaining-tokens`, `x-ratelimit-reset-tokens` | O mesmo, para o limite de tokens |
+
+Uma solicitação rejeitada traz apenas os cabeçalhos do limite que a rejeitou. A contagem acontece em segundo plano, então `remaining` é aproximado, e os cabeçalhos de tokens ainda não incluem o uso da própria solicitação atual.
+
+### Solicitações simultâneas
+
+`concurrent_requests` limita quantas solicitações podem estar em andamento ao mesmo tempo. Uma solicitação ocupa uma vaga desde que é admitida até que sua resposta tenha sido enviada por completo, incluindo toda uma resposta em streaming; os fallbacks de provedor e de modelo dentro da solicitação compartilham essa vaga. Quando todas as vagas estão em uso, a solicitação é rejeitada com o motivo `policy_concurrent_requests` e `Retry-After: 1`.
+
+A verificação de um limite de simultaneidade espera pelo contador da política, o que adiciona um pouco de latência. Uma vaga cuja liberação se perde é liberada sozinha após 15 minutos. Lotes e sessões em tempo real não são limitados, e uma geração de vídeo ocupa uma vaga apenas enquanto a solicitação que a inicia está em andamento.
+
+### Políticas estritas
+
+Por padrão, uma política falha aberta: se os limites dela não puderem ser verificados, a solicitação é permitida. Defina `fail_closed` para torná-la estrita. Uma política estrita verifica os limites de solicitações e de tokens antes de a solicitação ser enviada, e não em segundo plano, o que os torna exatos, mas adiciona latência. Se eles não puderem ser verificados em dois segundos, a solicitação é rejeitada com o motivo `policy_unavailable`.
+
+As rejeições por simultaneidade e por `policy_unavailable` não trazem cabeçalhos `x-ratelimit-*`.
+
+<span id="provider-limits"></span>
+## Limites de provedores
+
+Solicitações BYOK usam os limites da sua conta no provedor. Solicitações gerenciadas usam capacidade compartilhada do provedor, que não é uma cota do seu espaço de trabalho.
+
+O Phaseo repassa um `Retry-After` validado quando o provedor envia um. Respostas BYOK também podem incluir cabeçalhos `X-Phaseo-Upstream-RateLimit-*`; solicitações gerenciadas os omitem porque eles descrevem capacidade compartilhada. Outros cabeçalhos do upstream não são repassados. Consulte [Códigos de erro](./errors.mdx#error-codes) para ver os códigos `429` de provedores.
+
+## Lidar com uma solicitação limitada
+
+1. Leia o [código de erro](./errors.mdx) para distinguir uma limitação temporária de um limite, orçamento ou política que exige uma mudança de configuração.
+2. Respeite o `Retry-After` quando ele estiver presente. Ele pode ser em segundos ou uma data HTTP; valide-o antes de agendar uma nova tentativa.
+3. Caso contrário, use backoff exponencial com jitter e um atraso máximo.
+4. Limite as novas tentativas por número de tentativas e por um prazo total. Cancele trabalhos abandonados e libere o corpo de cada resposta com falha antes de tentar de novo.
+5. Reduza a simultaneidade se a limitação persistir.
+
+Não repita automaticamente o envio ambíguo de uma tarefa nem reexecute ações de ferramentas já concluídas. Uma solicitação pode ter chegado ao provedor mesmo que o cliente tenha perdido a resposta, então uma nova tentativa pode duplicar trabalho e cobranças. Para uma tarefa de vídeo ou de lote aceita, use o endpoint de status dela em vez de enviá-la de novo.
+
+Para monitorar a limitação, acompanhe as taxas de `429` por endpoint e por modelo e verifique a frequência de fallbacks nos logs de solicitações. Compare-as com suas [configurações de roteamento](../guides/routing-and-fallbacks.mdx) e, para tráfego BYOK, com as cotas da sua conta no provedor. As [proteções](./endpoint/guardrails.mdx) controlam quais chaves podem usar quais modelos e provedores.
+
+<Visibility for="agents">
+Regras de limite de taxa para agentes, resumindo esta página:
+
+- As cotas do gateway retornam `429` com o motivo `customer_requests_per_minute` (código `key_limit_exceeded`) ou `free_requests_per_day` (código `phaseo_free_model_limit_exceeded`); aguarde `Retry-After` segundos. Se a aplicação de cotas estiver indisponível, o gateway retorna `503` com orientação para nova tentativa.
+- Limites de chaves e orçamentos retornam `429` com `key_limit_exceeded` e um `reset_at`. Sem `Retry-After`, o limite não reinicia sozinho: aumente o limite ou use outra chave em vez de tentar de novo.
+- Um orçamento de departamento esgotado retorna `429` com `key_limit_exceeded`, o motivo `department_<interval>_cost_budget_reached`, `department_id`, `department_name` e `reset_at`; aguarde `Retry-After` segundos ou aumente o orçamento. Se a verificação do orçamento estiver indisponível, a solicitação é permitida.
+- Regras de gastos que bloqueiam retornam `429` com `spend_rule_blocked`; aguarde o `Retry-After` ou peça a um proprietário ou administrador que remova o bloqueio. `x-phaseo-spend-warning` indica que um bloqueio pode vir em seguida.
+- As políticas de limite de taxa do espaço de trabalho retornam `429` com `rate_limit_exceeded`, `policy_id` e `limit_scope`. `x-ratelimit-remaining-requests` é aproximado.
+- `Retry-After` pode ser em segundos ou uma data HTTP; valide-o antes de agendar uma nova tentativa. Nunca reenvie uma tarefa de vídeo ou de lote ambígua; verifique o status dela.
+</Visibility>

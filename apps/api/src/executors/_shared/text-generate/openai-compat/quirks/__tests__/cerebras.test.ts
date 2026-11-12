@@ -202,3 +202,12 @@ describe("Cerebras quirks", () => {
 		expect(request.disable_reasoning).toBeUndefined();
 	});
 });
+
+describe("Cerebras gpt-oss reasoning", () => {
+	// gpt-oss accepts low, medium or high (https://inference-docs.cerebras.ai/api-reference/chat-completions).
+	it("leaves out effort none for gpt-oss", () => {
+		const request: Record<string, any> = { model: "gpt-oss-120b", messages: [] };
+		cerebrasQuirks.transformRequest?.({ request, ir: { reasoning: { enabled: false } } as any });
+		expect(request).not.toHaveProperty("reasoning_effort");
+	});
+});

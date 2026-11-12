@@ -1,5 +1,6 @@
+import { describe, it, expect, vi } from "vitest";
 import { getPublicMessages } from "./messages";
-import { createTranslator } from "next-intl";
+import { createTranslator } from "@/i18n/react";
 import { publicLocales, type PublicLocale } from "./routing";
 import { getSettingsMessages } from "./settings";
 import { getProfileMessages } from "./profile";
@@ -15,9 +16,18 @@ function valueAt(value: unknown, path: string): string {
 }
 
 describe("runtime locale message loading", () => {
+	it("reuses assembled dictionaries across requests without mixing locales", async () => {
+		// Settled dictionaries are shared; in-flight loads are not (Workers must not
+		// await another request's I/O).
+		const source = await getPublicMessages("en-GB");
+		expect(await getPublicMessages("en-GB")).toBe(source);
+		const localized = await getPublicMessages("es-ES");
+		expect(localized).not.toBe(source);
+		expect(await getPublicMessages("es-ES")).toBe(localized);
+	});
 	it.each(publicLocales)("loads complete domain trees for %s", async (locale: PublicLocale) => {
 		const messages = await getPublicMessages(locale);
-		const onError = jest.fn();
+		const onError = vi.fn();
 		const translate = createTranslator({ locale, messages, onError } as never);
 		expect(translate("Common.nav.home" as never)).toBe(valueAt(messages.Common, "nav.home"));
 		expect(onError).not.toHaveBeenCalled();
@@ -37,14 +47,13 @@ describe("runtime locale message loading", () => {
 			const localizedSentinel = valueAt(localized.SettingsUI, "routingStudio.modelCatalogueError");
 			const sourceSentinel = valueAt(source.SettingsUI, "routingStudio.modelCatalogueError");
 			expect(localizedSentinel).toBeTruthy();
-			if (locale === "en-US") expect(localizedSentinel).not.toBe(sourceSentinel);
-			else expect(localizedSentinel).not.toBe(sourceSentinel);
+			expect(localizedSentinel).not.toBe(sourceSentinel);
 		},
 	);
 
-	it("resolves settings sentences through stable next-intl IDs", async () => {
+	it("resolves settings sentences through stable message IDs", async () => {
 		const messages = await getPublicMessages("es-ES");
-		const onError = jest.fn();
+		const onError = vi.fn();
 		const translate = createTranslator({ locale: "es-ES", messages, onError } as never);
 
 		expect(translate("SettingsUI.strings.phrasePleaseTryAgain" as never)).toBe(
@@ -54,14 +63,6 @@ describe("runtime locale message loading", () => {
 			translate("SettingsUI.strings.phraseInvalidCodePleaseTryAgain" as never),
 		).toBe("Código no válido. Por favor inténtalo de nuevo.");
 		expect(onError).not.toHaveBeenCalled();
-	});
-
-	it("uses the en-GB help tree for en-US while localized trees remain available", async () => {
-		const [source, us] = await Promise.all([
-			import("@/lib/content/helpCenter").then(({ getLocalizedHelpCategories }) => getLocalizedHelpCategories("en-GB")),
-			import("@/lib/content/helpCenter").then(({ getLocalizedHelpCategories }) => getLocalizedHelpCategories("en-US")),
-		]);
-		expect(us).toEqual(source);
 	});
 
 	it.each(publicLocales)("loads utility catalogs for %s", (locale: PublicLocale) => {

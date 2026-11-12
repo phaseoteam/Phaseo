@@ -1,0 +1,67 @@
+---
+title: "OpenClaw"
+icon: "/icons/brands/openclaw.svg"
+description: "Enregistrez Phaseo comme fournisseur de modèles OpenClaw, avec une clé lue depuis la CLI Phaseo."
+---
+
+Lancez `phaseo openclaw` pour enregistrer dans OpenClaw un fournisseur de modèles `phaseo` avec tous les modèles Phaseo compatibles, ou ajoutez vous-même le fournisseur avec `openclaw config set`.
+
+## Configurer avec la CLI Phaseo
+
+```bash
+phaseo login
+phaseo openclaw --model openai/gpt-6-astra
+```
+
+Si OpenClaw n’est pas installé, la CLI affiche la commande d’installation (`npm install -g openclaw@latest`, ou le même package avec pnpm, Yarn ou Bun) et demande confirmation avant de l’exécuter. La configuration exécute ensuite `openclaw config set` deux fois :
+
+- **`secrets.providers.phaseo_cli`** : un fournisseur de secrets de type exec qui exécute `phaseo integrations credential openclaw` pour lire la clé. La clé n’est jamais écrite dans la configuration d’OpenClaw.
+- **`models.providers.phaseo`** : un fournisseur avec la Base URL `https://api.phaseo.app/v1`, le type d’API `openai-completions` et la clé fournie par `phaseo_cli`. Il liste tous les modèles texte Phaseo actifs compatibles avec Chat Completions, en commençant par la valeur de `--model` (`anthropic/claude-sonnet-4.6` en son absence).
+
+La clé est une `Phaseo CLI: OpenClaw API Key` que vous approuvez dans votre navigateur pendant la configuration. Elle expire au bout de 90 jours et dispose d’une limite de dépenses mensuelle de $100. Une fois expirée, relancez `phaseo openclaw` pour en approuver une nouvelle.
+
+La configuration ne modifie pas le modèle par défaut d’OpenClaw. Sélectionnez le modèle Phaseo avec `openclaw models set` quand vous êtes prêt. Utilisez `--catalog default` pour n’enregistrer que le modèle sélectionné.
+
+## Configurer OpenClaw manuellement
+
+Enregistrez un fournisseur de secrets qui affiche votre clé, puis le fournisseur de modèles Phaseo :
+
+```bash
+openclaw config set secrets.providers.phaseo_cli \
+  '{"source":"exec","command":"phaseo","args":["integrations","credential","openclaw"],"jsonOnly":false}' \
+  --strict-json
+
+openclaw config set models.providers.phaseo '{
+  "baseUrl": "https://api.phaseo.app/v1",
+  "apiKey": { "source": "exec", "provider": "phaseo_cli", "id": "value" },
+  "api": "openai-completions",
+  "models": [
+    { "id": "openai/gpt-6-astra", "name": "openai/gpt-6-astra via Phaseo", "reasoning": false, "input": ["text"] }
+  ]
+}' --strict-json
+```
+
+Chaque entrée de `models` prend un `id` (l’ID du modèle Phaseo), un `name`, `reasoning`, `input` (`text`, `image`) et un `contextWindow` facultatif. Ajoutez une entrée pour chaque modèle Phaseo que vous voulez voir listé dans OpenClaw.
+
+## Vérifier que tout fonctionne
+
+Exécutez `openclaw config get models.providers.phaseo --json` pour confirmer que le fournisseur est enregistré. Sélectionnez un modèle Phaseo avec `openclaw models set`, puis envoyez un court prompt. Vérifiez que la requête apparaît dans **Paramètres → Utilisation → Journaux**.
+
+## Retirer Phaseo
+
+```bash
+phaseo integrations remove openclaw
+```
+
+Cette commande supprime `models.providers.phaseo` et `secrets.providers.phaseo_cli`, puis révoque la clé. Vos autres réglages OpenClaw restent en place. Redémarrez le gateway OpenClaw s’il est en cours d’exécution.
+
+## Résoudre les problèmes courants
+
+| Problème | Solution |
+| --- | --- |
+| `OpenClaw already defines models.providers.phaseo` | La configuration n’écrase pas un fournisseur `phaseo` existant. Supprimez-le ou renommez-le, ou exécutez `phaseo integrations remove openclaw`, puis relancez la configuration. |
+| Les requêtes échouent après le déplacement ou la réinstallation de la CLI Phaseo ou de Node.js | La configuration enregistre les chemins exacts de Node.js et de la CLI dans `secrets.providers.phaseo_cli`. Exécutez `phaseo integrations remove openclaw`, puis relancez `phaseo openclaw`. |
+| `OpenClaw is not installed or is not on PATH` | Installez OpenClaw ou ajoutez-le au `PATH`, puis relancez la configuration. |
+| Un modèle est refusé | Vérifiez l’ID exact avec l’[endpoint Models](../../api-reference/endpoint/models.mdx). |
+
+Pour les autres agents et les valeurs de fournisseur dont chaque agent a besoin, consultez [Agents de code](./coding-assistants.mdx).

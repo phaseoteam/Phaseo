@@ -23,8 +23,8 @@
   "sideEffects": false,
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
-    "build": "pnpm run clean && node ../sdk-ts/node_modules/typescript/bin/tsc -p tsconfig.build.json",
-    "typecheck": "node ../sdk-ts/node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "pnpm exec vitest run",
     "pack:dry": "pnpm pack --dry-run",
     "prepublishOnly": "pnpm run build"
@@ -34,8 +34,9 @@
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
+    "@typescript/native": "catalog:",
     "rimraf": "^6.0.0",
-    "typescript": "^6.0.2",
+    "typescript": "catalog:",
     "vitest": "^4.1.7"
   },
   "repository": {

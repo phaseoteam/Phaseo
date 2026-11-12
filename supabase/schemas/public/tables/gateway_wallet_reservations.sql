@@ -16,13 +16,14 @@ CREATE TABLE "public"."gateway_wallet_reservations" (
   "key_id"                uuid,
   "request_count"         integer,
   "key_usage_recorded_at" timestamp with time zone,
+  "overdraft_nanos"       bigint                   NOT NULL DEFAULT 0,
   CONSTRAINT "gateway_wallet_reservations_amount_nanos_check" CHECK ((amount_nanos > 0)),
   CONSTRAINT "gateway_wallet_reservations_capture_amount_check" CHECK (((captured_nanos >= 0) AND (released_nanos >= 0) AND ((captured_nanos + released_nanos) <= amount_nanos))),
   CONSTRAINT "gateway_wallet_reservations_pkey" PRIMARY KEY (workspace_id, reservation_id),
   CONSTRAINT "gateway_wallet_reservations_request_count_check" CHECK (((request_count IS NULL) OR (request_count > 0))),
   CONSTRAINT "gateway_wallet_reservations_status_check" CHECK ((status = ANY (ARRAY['held'::text, 'reserved'::text, 'captured'::text, 'released'::text]))),
   CONSTRAINT "gateway_wallet_reservations_key_id_fkey" FOREIGN KEY (key_id) REFERENCES public.keys(id) ON DELETE SET NULL,
-  CONSTRAINT "gateway_wallet_reservations_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "gateway_wallet_reservations_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
 
 ALTER TABLE "public"."gateway_wallet_reservations"
@@ -49,4 +50,15 @@ CREATE POLICY "gateway_wallet_reservations_service_all" ON "public"."gateway_wal
   USING (true)
   WITH CHECK (true);
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_wallet_reservations" TO "anon", "authenticated", "service_role";
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_wallet_reservations"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_wallet_reservations" TO "service_role";
+
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."gateway_wallet_reservations" TO "anon";
+
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."gateway_wallet_reservations" TO "authenticated";

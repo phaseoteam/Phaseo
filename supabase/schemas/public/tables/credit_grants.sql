@@ -28,6 +28,25 @@ CREATE UNIQUE INDEX credit_grants_code_normalized_key ON public.credit_grants US
 
 CREATE INDEX credit_grants_created_by_idx ON public.credit_grants USING btree (created_by);
 
+CREATE POLICY "credit_grants_no_oauth_client_insert" ON "public"."credit_grants"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "credit_grants_no_oauth_client_update" ON "public"."credit_grants"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "credit_grants_no_oauth_client_delete" ON "public"."credit_grants"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "credit_grants_admin_all" ON "public"."credit_grants"
   FOR ALL
   TO "authenticated"
@@ -39,5 +58,12 @@ CREATE POLICY "credit_grants_service_all" ON "public"."credit_grants"
   TO "service_role"
   USING (true)
   WITH CHECK (true);
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."credit_grants"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."credit_grants" TO "anon", "authenticated", "service_role";

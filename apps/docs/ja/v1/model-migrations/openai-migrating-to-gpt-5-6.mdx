@@ -1,102 +1,71 @@
 ---
 title: "OpenAI GPT-5.6"
-description: "GPT-5.6 Sol、Terra、Luna を本番ワークロードに導入する際に知っておくべきこと"
+description: "GPT-5.6 Sol、Terra、Luna を本番ワークロードに導入する際に知っておくべきことです。"
 icon: "/icons/brands/openai.svg"
 ---
 
-# OpenAI GPT-5.6
+ワークロードに合った GPT-5.6 のティアを選び、モデル ID だけを差し替えて、推論の effort、ツール、レイテンシー、コストを再テストします。評価に合格するまでは、以前の GPT-5 モデルをフォールバックとして残しておきます。
 
-このガイドでは、GPT-5.6 ファミリーを本番環境へ安全に導入する方法を説明します。
+## ティアを選ぶ
 
-GPT-5.6 は、複雑な本番ワークフロー向けの OpenAI の現行 GPT ファミリーです。AI Stats では、固定のティア ID が OpenAI のモデル ID `gpt-5.6-sol`、`gpt-5.6-terra`、`gpt-5.6-luna` に対応します。
-
-## 移行クイックスタート
-
-1. ワークロードに合う固定モデル Sol、Terra、Luna を選びます。
-2. モデル ID だけを置き換え、リクエストの他の部分は変えないでください。
-3. 推論の強さ、構造化出力、ツール、レイテンシ、タスクあたりのコストを再テストします。
-4. 以前の GPT-5 モデルをフォールバックとして残し、新しいルートをカナリアリリースします。
-
-## モデルを選ぶ
-
-| モデル | 用途 | 推論レベル |
+| モデル | 用途 | 推論の effort |
 | --- | --- | --- |
-| `openai/gpt-5.6-sol` | 最高性能の推論、エージェント型コーディング、科学的分析、複雑な専門業務 | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
-| `openai/gpt-5.6-terra` | 推論、コーディング、アシスタントワークフローを含む日常業務全般 | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
-| `openai/gpt-5.6-luna` | 低レイテンシとコストを重視する GPT-5.6 ワークロード | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-sol` | 最高性能の推論、エージェントによるコーディング、科学的な分析、複雑な専門業務 | `none`、`low`、`medium`、`high`、`xhigh`、`max` |
+| `openai/gpt-5.6-terra` | バランスの取れた日常的な推論、コーディング、アシスタント業務 | `none`、`low`、`medium`、`high`、`xhigh`、`max` |
+| `openai/gpt-5.6-luna` | 低レイテンシーでコストを重視する作業 | `none`、`low`、`medium`、`high`、`xhigh`、`max` |
 
-OpenAI の `gpt-5.6` エイリアスは `gpt-5.6-sol` にルーティングされます。AI Stats で Sol ティアを既定にするには `openai/gpt-5.6` または `openai/gpt-sol-latest` を使い、ルーティングを制御する場合は固定ティア ID を使います。
+3 つとも、コンテキストウィンドウは 1,050,000 トークン、出力は 128K トークンです。それぞれに Pro の ID(`openai/gpt-5.6-sol-pro`、`-terra-pro`、`-luna-pro`)もあり、自動で `reasoning.mode: "pro"` を送ります。
 
-AI Stats は各ティアの最新モデルを指すティアエイリアスも追跡します: `openai/gpt-sol-latest`、`openai/gpt-terra-latest`、`openai/gpt-luna-latest`。制御された移行には固定 GPT-5.6 ID を使い、将来の Sol、Terra、Luna リリースも同じルートで順次使いたい場合に限りティアエイリアスを使います。
-
-## 新機能
-
-- GPT-5.6 では、GPT の既定ルート 1 つではなく、Sol/Terra/Luna に分かれました。
-- GPT-5.6 の 3 つのティアはすべて、最大の推論予算として `reasoning.effort: "max"` に対応します。
-- GPT-5.6 は、別個の Pro モデルスラッグに切り替えずに `reasoning.mode: "pro"` をサポートします。
-- GPT-5.6 は `reasoning.context` による推論制御の永続化に対応します。
-- GPT-5.6 は、対象となるツール多用型ワークフロー向けに、マルチエージェントと Programmatic Tool Calling のベータサポートを追加します。
-- プロンプトキャッシュでは、非キャッシュ入力、キャッシュ読み取り、キャッシュ書き込み、出力が別々に課金されます。
-- 明示的なプロンプトキャッシュは `prompt_cache_options` で利用できます。OpenAI は現在、`prompt_cache_retention` より `prompt_cache_options.ttl` を推奨しています。
+OpenAI 自身の `gpt-5.6` エイリアスは `gpt-5.6-sol` を指します。Phaseo では、ティアの ID を直接呼び出してください。ティアのエイリアス `openai/gpt-sol-latest`、`openai/gpt-terra-latest`、`openai/gpt-luna-latest` は各ティアの最新モデルを指し、`openai/gpt-sol-latest` はすでに GPT-5.6 より新しいモデルを指しています。今後のリリースに自動で移行したい場合にのみ使ってください。
 
 ## リクエストを更新する
 
-まずモデル ID だけを置き換え、リクエストの他の部分は変えないでください。
+GPT-5.6 では、すべてのティアに最も大きな推論の予算である `max` が追加されました。追加のレイテンシーとコストに見合う場合にのみ使ってください。
 
-最初の例では Responses API 形式の `input` 構造を使います。Chat Completions のトラフィックを移行する場合は、ルートが対応していれば `messages` とフラットな `reasoning_effort` フィールドを使い続けてください。
-
-```json
-{
-  "model": "openai/gpt-5.6-terra",
-  "input": "Summarize the rollout risks in this migration plan.",
-  "reasoning": {
-    "effort": "medium"
-  }
-}
-```
-
-追加の推論予算にレイテンシとコストに見合う価値があるルートでのみ、`max` を使ってください。
-
-```json
+<CodeGroup>
+```json Responses
 {
   "model": "openai/gpt-5.6-sol",
   "input": "Review this multi-service incident report and propose a rollback plan.",
-  "reasoning": {
-    "effort": "max"
-  }
+  "reasoning": { "effort": "max" }
 }
 ```
 
-OpenAI互換のフラットフィールドを引き続き送信する統合では、ルートが対応している場合、AI Statsは`reasoning_effort`も受け付けます:
-
-```json
+```json Chat Completions
 {
-  "model": "openai/gpt-5.6-sol",
+  "model": "openai/gpt-5.6-terra",
   "messages": [
-    {
-      "role": "user",
-      "content": "Design a test plan for this agent workflow."
-    }
+    { "role": "user", "content": "Design a test plan for this agent workflow." }
   ],
-  "reasoning_effort": "max"
+  "reasoning_effort": "medium"
 }
 ```
+</CodeGroup>
+
+GPT-5.6 では次の機能も追加されています。
+
+- **`reasoning.mode: "pro"`**: モデルを切り替えずに、より難しいタスクに対応します。
+- **`reasoning.context`**(`auto`、`current_turn`、`all_turns`): どの推論を保持するかを制御します。
+- ツールを多用するワークフロー向けの、ベータ版のマルチエージェント対応と Programmatic Tool Calling。
+- `prompt_cache_options` とキャッシュブレークポイントによる明示的なプロンプトキャッシュ。GPT-5.6 では `prompt_cache_options.ttl` が `prompt_cache_retention` に代わります。Phaseo は `prompt_cache_retention` を GPT-5.6 モデルに送りません。
 
 ## 料金を確認する
 
-カタログでは GPT-5.6 の料金を 100 万トークン単位で記録しています。
+OpenAI の標準ティアでの 100 万トークンあたりの価格です(入力 272K トークンまでのリクエスト)。
 
-| モデル | 入力 | キャッシュ読み取り | キャッシュ書き込み | 出力 |
-| --- | ---: | ---: | ---: | ---: |
-| Sol | $5.00 | $0.50 | $6.25 | $30.00 |
-| Terra | $2.50 | $0.25 | $3.125 | $15.00 |
-| Luna | $1.00 | $0.10 | $1.25 | $6.00 |
+| モデル | 入力 | キャッシュ読み取り | キャッシュ書き込み(30 分) | キャッシュ書き込み(12 時間) | 出力 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Sol | $5.00 | $0.50 | $6.25 | $12.50 | $30.00 |
+| Terra | $2.00 | $0.20 | $2.50 | $5.00 | $12.00 |
+| Luna | $0.20 | $0.02 | $0.25 | $0.50 | $1.20 |
 
-キャッシュの読み取りと書き込みには別々の料金が適用されます。現在のカタログでは、読み取りはキャッシュなしの入力より90%割引、書き込みはキャッシュなしの入力料金の1.25倍です。
+入力が 272K トークンを超えるリクエストは高くなります。Sol は入力 $10.00・出力 $45.00、Terra は $4.00 と $18.00、Luna は $0.40 と $1.80 で、キャッシュの価格も同じ比率で上がります。2026 年 11 月 30 日までは、OpenAI の Sol のプロモーション価格が適用され、272K トークンまでは入力 $4.00、出力 $20.00 です。その他のティアやプロバイダーの現在の価格は、モデルページを確認してください。
 
-## プロンプトキャッシュを意図的に使う
+キャッシュ読み取りは入力料金の 10%、30 分の書き込みは 1.25 倍、12 時間の書き込みは 2.5 倍です。各入力トークンは、これらのうちちょうど 1 つの料金で課金されます。使用量では、キャッシュの読み取りと書き込みは `input_tokens`(Chat Completions では `prompt_tokens`)に含めて数えられ、書き込みは `cache_write_tokens` に報告されます。[使用量と料金のフィールド](../guides/prompt-caching.mdx#usage-and-pricing-fields)を参照してください。
 
-コンテキストを繰り返し使う場合は、プロンプトの固定部分をキャッシュ可能なブロックにし、リクエスト固有のテキストはキャッシュしないでください。
+## 繰り返すコンテキストをキャッシュする
+
+プロンプトの変わらない部分をキャッシュ可能なブロックに入れ、リクエスト固有のテキストはその後に置きます。
 
 ```json
 {
@@ -108,10 +77,7 @@ OpenAI互換のフラットフィールドを引き続き送信する統合で�
         {
           "type": "input_text",
           "text": "Stable policy document...",
-          "cache_control": {
-            "type": "ephemeral",
-            "ttl": "1h"
-          }
+          "prompt_cache_breakpoint": { "mode": "explicit" }
         },
         {
           "type": "input_text",
@@ -120,42 +86,29 @@ OpenAI互換のフラットフィールドを引き続き送信する統合で�
       ]
     }
   ],
-  "prompt_cache_options": {
-    "mode": "explicit",
-    "ttl": "24h"
-  }
+  "prompt_cache_options": { "mode": "explicit", "ttl": "30m" }
 }
 ```
 
-プロバイダーに依存しないキャッシュヒントや明示的なキャッシュ境界には `cache_control` を使います。OpenAI のキャッシュモードと TTL オプションを直接渡すには `prompt_cache_options` を使います。
+- `prompt_cache_breakpoint` は、そのブロックまでのすべて(そのブロックを含む)をキャッシュします。`explicit` モードでは、OpenAI は自分で配置したブレークポイントのみをキャッシュします。
+- `{"type": "ephemeral"}` のようなブロックの `cache_control` も使えます。Phaseo はこれを GPT-5.6 に `prompt_cache_breakpoint` として送ります。どちらの指定も Claude にはキャッシュブレークポイントとして届くため、Claude へのフォールバックでもキャッシュされます。
+- `ttl` は `30m`(既定値)または `12h` です。どのルートで使えるかは [OpenAI の 12 時間キャッシュ](../guides/prompt-caching.mdx#12-hour-cache-on-openai)を、その他のフィールドは [OpenAI の保持期間とオプション](../guides/prompt-caching.mdx#openai-retention-and-options)を参照してください。
 
-## テスト項目
+## テストする内容
 
-### 推論と出力品質
+- **推論と出力の品質:** 公開する effort レベルでの各ティア(品質を最優先する場合は `max` も含む)、難しいタスクでの標準と `reasoning.mode: "pro"` の比較、各レベルでのスキーマ合格率とツール呼び出しの品質。
+- **コストとレイテンシー:** 各 effort でのレイテンシー、現在の基準と比べた出力トークンの増加、繰り返すプロンプトでのキャッシュの読み取りと書き込みの比率、トークンあたりの価格ではなく成功したタスクあたりのコスト。
 
-- Sol、Terra、Lunaで、ユーザーに提供する予定の推論レベルを確認します。品質優先のワークフローでは`max`も試してください
-- 品質がレイテンシより重要な難しいタスクで、standardモードと`reasoning.mode: "pro"`を比較します
-- 各推論レベルで構造化出力とスキーマ適合率を確認します
-- ツール呼び出しの選択と引数の品質を確認します
+## 展開する
 
-### コストとレイテンシ
+1. 以前の GPT-5 モデルを `models` のフォールバックとして残します。
+2. 本番相当のプロンプトで実証されるまで、`max` は設定フラグまたは[プリセット](../guides/presets)の背後に置いておきます。
+3. キャッシュ書き込みの量は、キャッシュ読み取りとは別に監視します。
+4. 評価でタスクの成功、コスト、レイテンシーが確認できてから、GPT-5.6 を既定にします。
 
-- 推論レベルごとのレイテンシを確認します
-- 現在の本番環境の基準と比べた出力トークンの増加を確認します
-- プロンプトを繰り返したときのキャッシュ読み取りと書き込みの割合を確認します
-- トークン単価だけでなく、タスク成功あたりのコストを確認します
-
-### ロールバック
-
-- 以前のGPT-5.xルートをフォールバックとして利用できる状態にします
-- 本番環境に近いプロンプトで検証されるまで、`max`は設定フラグまたはプリセットの背後で管理します
-- キャッシュへの書き込み量と読み取り量を分けて監視します
-- タスクの成功率、コスト、レイテンシを自社の評価で確認してから、GPT-5.6をデフォルトルーティングに追加します
-
-## 参考資料
+## 出典
 
 - [OpenAI GPT-5.6 プレビューの発表](https://openai.com/index/previewing-gpt-5-6-sol/)
-- [OpenAI GPT-5.6 モデルガイド](https://developers.openai.com/api/docs/guides/latest-model)
-- [OpenAI model catalog](https://developers.openai.com/api/docs/models)
+- [OpenAI GPT-5.6 のモデルガイダンス](https://developers.openai.com/api/docs/guides/latest-model)
+- [OpenAI のモデルカタログ](https://developers.openai.com/api/docs/models)
 - [GPT-5.6 プレビューのシステムカード](https://deploymentsafety.openai.com/gpt-5-6-preview)
-- [AI Stats のプロンプトキャッシュガイド](../guides/prompt-caching.mdx)

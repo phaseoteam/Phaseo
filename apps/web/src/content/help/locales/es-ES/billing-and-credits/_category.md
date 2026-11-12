@@ -4,4 +4,4 @@ description: Historial de compras, facturas, reembolsos y comportamiento del sal
 order: 2
 ---
 
-Estos artículos explican las compras de créditos, los requisitos de reembolso y cómo obtener facturas.
+Estos artículos explican las compras de créditos, los requisitos de reembolso y cómo obtener recibos o facturas.

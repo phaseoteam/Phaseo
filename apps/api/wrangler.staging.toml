@@ -1,13 +1,22 @@
 name = "phaseo-gateway-staging"
 main = "src/index.ts"
 compatibility_date = "2025-10-01"
-compatibility_flags = ["global_fetch_strictly_public"]
+compatibility_flags = ["global_fetch_strictly_public", "nodejs_als"]
 workers_dev = true
 preview_urls = false
 routes = [{ pattern = "api-staging.phaseo.app", custom_domain = true }]
 
 [vars]
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
+RATE_LIMIT_POLICIES_ENABLED = "true"
+# Spend rule alerts (sweep_spend_rules every 5 minutes). Off until launch; only the
+# worker that runs the cron jobs (phaseo-gateway) acts on it.
+SPEND_RULES_ENABLED = "false"
+SPEND_RULE_BLOCKS_ENABLED = "false"
+SPEND_REPORTS_ENABLED = "false"
+# Enforce: the spend-limit coordinator decides key caps, department budgets and workspace
+# budgets for API-key requests; when it is unavailable the legacy key-limit check decides.
+GATEWAY_SPEND_LIMIT_DO_MODE = "enforce"
 ENV = "staging"
 NODE_ENV = "production"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
@@ -39,6 +48,8 @@ BATCH_RECONCILIATION_CONCURRENCY = "2"
 BATCH_RECONCILIATION_LEASE_SECONDS = "300"
 BATCH_API_PREVIEW_PROVIDERS = "openai,anthropic,google-ai-studio,mistral,together"
 EMAIL_OUTBOX_DRAIN_ENABLED = "false"
+FEEDBACK_REQUEST_EMAILS_ENABLED = "false"
+MOBILE_PUSH_ENABLED = "false"
 PRICING_MONITOR_ENABLED = "false"
 ENTERPRISE_INVOICING_ENABLED = "false"
 
@@ -103,6 +114,14 @@ class_name = "CustomerRateLimitDurableObject"
 [[migrations]]
 tag = "v2-customer-rate-limits"
 new_sqlite_classes = ["CustomerRateLimitDurableObject"]
+
+[[durable_objects.bindings]]
+name = "SPEND_LIMITS"
+class_name = "SpendLimitDurableObject"
+
+[[migrations]]
+tag = "v3-spend-limits"
+new_sqlite_classes = ["SpendLimitDurableObject"]
 
 [[ratelimits]]
 name = "REALTIME_RELAY_RATE_LIMITER"

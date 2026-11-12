@@ -202,16 +202,21 @@ export async function parseChatErrorResponse(response: Response) {
 			const payload = (await response.json()) as Record<string, unknown> | null;
 			if (payload) {
 				rawPayload = payload;
-				if (typeof payload.message === "string") {
-					errorMessage = payload.message;
-				} else if (typeof payload.description === "string") {
-					errorMessage = payload.description;
-				} else if (typeof payload.error === "string") {
-					errorMessage = payload.error;
-				}
-				if (typeof payload.error === "string") {
-					errorCode = payload.error;
-				}
+				// The gateway returns `error` as an object ({ code, message, type })
+				// with `code` repeated at the top level; older bodies had the code string.
+				const errorObject = isRecord(payload.error) ? payload.error : undefined;
+				const message = firstString(
+					payload.message,
+					payload.description,
+					errorObject?.message,
+					typeof payload.error === "string" ? payload.error : undefined,
+				);
+				if (message) errorMessage = message;
+				errorCode = firstString(
+					typeof payload.error === "string" ? payload.error : undefined,
+					payload.code,
+					errorObject?.code,
+				);
 				if (typeof payload.request_id === "string") {
 					errorRequestId = payload.request_id;
 				}

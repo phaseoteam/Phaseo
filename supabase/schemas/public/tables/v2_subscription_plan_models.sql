@@ -37,3 +37,14 @@ CREATE POLICY "v2_subscription_plan_models_public_select" ON "public"."v2_subscr
   USING (((effective_to IS NULL) OR (effective_to > now())));
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."v2_subscription_plan_models" TO "anon", "authenticated", "service_role";
+
+alter table public.v2_subscription_plan_models
+  add column access_mode text not null default 'unknown' check (access_mode in ('selectable','automatic','conditional','unknown')),
+  add column access_channel text,
+  add column conditions text,
+  add column mapping_status text not null default 'unverified' check (mapping_status in ('confirmed','example','unverified')),
+  add column source_url text,
+  add column verified_at timestamptz,
+  add column effective_from timestamptz not null default '-infinity';
+
+create trigger subscription_model_identity before insert on public.v2_subscription_plan_models for each row execute function public.canonicalize_subscription_identity();

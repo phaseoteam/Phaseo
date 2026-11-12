@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "@/index";
 
+// The fixtures' users have a verified TOTP factor, so their session must have used it (aal2).
+const sessionToken = `header.${btoa(JSON.stringify({ sub: "user-1", aal: "aal2" })).replace(/=+$/, "")}.signature`;
+
 const env = {
 	ENV: "development" as const,
 	SUPABASE_URL: "https://example.supabase.co",
@@ -10,12 +13,39 @@ const env = {
 
 afterEach(() => vi.unstubAllGlobals());
 
-it.each(["keys", "management-api-keys"])("omits credential material from the %s response", async (path) => {
+it.each(["keys", "management-api-keys", "management-keys", "management-keys/management-key-1"])("omits credential material from the %s response", async (path) => {
 	vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input)));
-	const response = await app.request(`https://phaseo.app/api/account/settings/${path}?workspaceId=workspace-1`, { headers: { authorization: "Bearer token" } }, env);
+	const response = await app.request(`https://phaseo.app/api/account/settings/${path}?workspaceId=workspace-1`, { headers: { authorization: `Bearer ${sessionToken}` } }, env);
 	expect(response.status).toBe(200);
 	expect(response.headers.get("cache-control")).toContain("no-store");
 	expect(await response.text()).not.toContain("do-not-send");
+});
+
+it("reports weekly and monthly key usage from the gateway's window totals", async () => {
+	const fetchMock = vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input));
+	vi.stubGlobal("fetch", fetchMock);
+	const response = await app.request("https://phaseo.app/api/account/settings/keys?workspaceId=workspace-1", { headers: { authorization: `Bearer ${sessionToken}` } }, env);
+	const payload = await response.json() as { teamsWithKeys: Array<{ keys: Array<Record<string, unknown>> }> };
+	expect(payload.teamsWithKeys[0]?.keys[0]).toMatchObject({
+		current_usage_daily: 3,
+		current_usage_weekly: 20,
+		current_usage_monthly: 80,
+		current_usage_daily_cost_nanos: 100,
+		current_usage_weekly_cost_nanos: 500,
+		current_usage_monthly_cost_nanos: 2000,
+	});
+	const urls = fetchMock.mock.calls.map(([input]) => input instanceof Request ? input.url : String(input));
+	expect(urls.some((url) => url.includes("/rpc/get_workspace_key_usage"))).toBe(false);
+});
+
+it("leaves workload identity keys off the Keys page", async () => {
+	const fetchMock = vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input));
+	vi.stubGlobal("fetch", fetchMock);
+	await app.request("https://phaseo.app/api/account/settings/keys?workspaceId=workspace-1", { headers: { authorization: `Bearer ${sessionToken}` } }, env);
+	const keyList = fetchMock.mock.calls
+		.map(([input]) => new URL(input instanceof Request ? input.url : String(input)))
+		.find((url) => url.pathname.endsWith("/rest/v1/keys"));
+	expect(keyList?.searchParams.get("key_kind")).toBe("neq.workload_identity");
 });
 
 function authenticatedFetch(input: RequestInfo | URL): Response {
@@ -77,6 +107,17 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 			created_at: "2025-01-01T00:00:00Z",
 		}]), { status: 200 });
 	}
+	if (url.includes("workspace_guardrails") && url.includes("is_workspace_baseline=eq.true")) {
+		// The workspace baseline guardrail holds the Settings, Privacy rules; workspace_settings mirrors it.
+		return new Response(JSON.stringify([{
+			id: "baseline-1",
+			privacy_enable_paid_may_train: false,
+			privacy_zdr_only: true,
+			provider_restriction_mode: "none",
+			model_restriction_mode: "allowlist",
+			allowed_api_model_ids: ["gpt-test"],
+		}]), { status: 200 });
+	}
 	if (url.includes("workspace_settings")) {
 		if (url.includes("low_balance_email")) {
 			return new Response(JSON.stringify([{
@@ -95,6 +136,7 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 			balance_nanos: 12500000000, reserved_nanos: 0, auto_top_up_enabled: false,
 		}]), { status: 200 });
 	}
+	if (url.includes("/rpc/get_workspace_recent_credit_spend")) return new Response(JSON.stringify(35_000_000_000), { status: 200 });
 	if (url.includes("credit_ledger")) {
 		return new Response(JSON.stringify([{
 			event_time: "2026-07-13T00:00:00Z", status: "paid", amount_nanos: 10000000000,
@@ -120,6 +162,18 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 	if (url.includes("v2_models")) {
 		return new Response(JSON.stringify([{
 			model_id: "openai/gpt-test", name: "GPT Test", organisation_id: "openai",
+		}]), { status: 200 });
+	}
+	if (url.includes("/rpc/broadcast_destination_health_summary")) {
+		return new Response(JSON.stringify([{
+			destination_id: "destination-row-1",
+			last_success_at: "2026-10-21T09:00:00Z",
+			last_failure_at: "2026-10-21T10:00:00Z",
+			last_http_status: 401,
+			last_error: "OTLP endpoint returned 401",
+			consecutive_failures: 3,
+			delivered_24h: "120",
+			failed_24h: "4",
 		}]), { status: 200 });
 	}
 	if (url.includes("workspace_broadcast_destinations")) {
@@ -180,7 +234,7 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 	if (url.includes("management_keys")) {
 		return new Response(JSON.stringify([{
 			id: "management-key-1", workspace_id: "workspace-1", name: "Automation",
-			hash: "do-not-send-credential-hash", encrypted_key: "do-not-send-ciphertext",
+			hash: "do-not-send-credential-hash", encrypted_key: "do-not-send-ciphertext", kid: "do-not-send-kid",
 			created_at: "2026-01-01T00:00:00Z",
 		}]), { status: 200 });
 	}
@@ -191,7 +245,7 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 			status: "active", last_used_at: null,
 		}]), { status: 200 });
 	}
-	if (url.includes("/rpc/get_workspace_key_usage")) {
+	if (url.includes("/rpc/gateway_workspace_key_usage")) {
 		return new Response(JSON.stringify([{
 			key_id: "key-1", daily_request_count: 3, weekly_request_count: 20,
 			monthly_request_count: 80, daily_cost_nanos: 100, weekly_cost_nanos: 500,
@@ -213,17 +267,6 @@ function authenticatedFetch(input: RequestInfo | URL): Response {
 	}
 	if (url.includes("workspace_byok_monthly_usage")) {
 		return new Response(JSON.stringify([{ request_count: 1_000_250 }]), { status: 200 });
-	}
-	if (url.includes("workspace_invoice_profiles")) {
-		return new Response(JSON.stringify([{
-			enabled: true, billing_day: 15, payment_terms_days: 14,
-		}]), { status: 200 });
-	}
-	if (url.includes("workspace_invoices")) {
-		return new Response(JSON.stringify([{
-			id: "invoice-1", period_start: "2026-06-01", period_end: "2026-06-30",
-			amount_nanos: 12000000000, currency: "USD", status: "issued",
-		}]), { status: 200 });
 	}
 	if (url.includes("select=id%2Cname")) {
 		return new Response(JSON.stringify([{ id: "workspace-1", name: "Team One" }]), { status: 200 });
@@ -254,11 +297,11 @@ describe("account settings routes", () => {
 		}));
 		const response = await app.request(
 			"https://phaseo.app/api/account/settings/credits/transactions?workspaceId=workspace-1",
-			{ headers: { authorization: "Bearer session-token" } }, env,
+			{ headers: { authorization: `Bearer ${sessionToken}` } }, env,
 		);
 		expect(response.status).toBe(200);
 		expect(ledgerQuery?.searchParams.get("workspace_id")).toBe("eq.workspace-1");
-		expect(ledgerQuery?.searchParams.get("or")).toBe("(kind.is.null,kind.not.in.(charge,usage))");
+		expect(ledgerQuery?.searchParams.get("or")).toBe("(kind.is.null,kind.not.in.(charge,usage),ref_type.eq.slack_agent_month,ref_type.eq.connect_month)");
 		expect(ledgerQuery?.searchParams.get("limit")).toBe("250");
 		const body = await response.json() as { transactions: Array<{ kind: string | null }> };
 		expect(body.transactions.map(row => row.kind)).toEqual(billingKinds);
@@ -278,7 +321,7 @@ describe("account settings routes", () => {
 		}));
 
 		const response = await app.request("https://phaseo.app/api/account/settings/authorized-apps", {
-			headers: { authorization: "Bearer session-token" },
+			headers: { authorization: `Bearer ${sessionToken}` },
 		}, env);
 
 		expect(response.status).toBe(200);
@@ -294,12 +337,14 @@ describe("account settings routes", () => {
 
 	it("lets an authorization owner reduce granted scopes", async () => {
 		let updatedScopes: unknown = null;
+		let expected: string | null = null;
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			const request = input instanceof Request ? input : new Request(String(input), init);
 			if (request.url.includes("oauth_authorizations")) {
 				if (request.method === "PATCH") {
 					updatedScopes = (await request.clone().json() as { scopes?: unknown }).scopes;
-					return new Response(JSON.stringify([]), { status: 200 });
+					expected = new URL(request.url).searchParams.get("scopes");
+					return new Response(JSON.stringify([{ id: "authorization-1" }]), { status: 200 });
 				}
 				return new Response(JSON.stringify([{
 					id: "authorization-1", scopes: ["models:read", "usage:read"],
@@ -312,7 +357,7 @@ describe("account settings routes", () => {
 			"https://phaseo.app/api/account/settings/authorized-apps/authorization-1/scopes",
 			{
 				method: "PATCH",
-				headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+				headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 				body: JSON.stringify({ scopes: ["models:read"] }),
 			},
 			env,
@@ -321,6 +366,74 @@ describe("account settings routes", () => {
 		expect(response.status).toBe(200);
 		await expect(response.json()).resolves.toEqual({ success: true, scopes: ["models:read"] });
 		expect(updatedScopes).toEqual(["models:read"]);
+		// Only while the stored scopes are still the ones read.
+		expect(expected).toBe('eq.{"models:read","usage:read"}');
+	});
+
+	it.each([
+		["stored order", ["usage:read", "models:read"], ["models:read"], 'eq.{"usage:read","models:read"}'],
+		["duplicates", ["models:read", "usage:read", "models:read"], ["models:read"], 'eq.{"models:read","usage:read","models:read"}'],
+		["a reordered request", ["keys:read", "models:read", "usage:read"], ["usage:read", "keys:read"], 'eq.{"keys:read","models:read","usage:read"}'],
+	])("matches the stored scopes exactly as read, keeping %s", async (_label, stored, requested, filter) => {
+		let sentFilter: string | null = null;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const request = input instanceof Request ? input : new Request(String(input), init);
+			if (request.url.includes("oauth_authorizations")) {
+				if (request.method === "PATCH") {
+					sentFilter = new URL(request.url).searchParams.get("scopes");
+					return new Response(JSON.stringify([{ id: "authorization-1" }]), { status: 200 });
+				}
+				return new Response(JSON.stringify([{ id: "authorization-1", scopes: stored }]), { status: 200 });
+			}
+			return authenticatedFetch(input);
+		}));
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/authorized-apps/authorization-1/scopes",
+			{
+				method: "PATCH",
+				headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
+				body: JSON.stringify({ scopes: requested }),
+			},
+			env,
+		);
+		expect(response.status).toBe(200);
+		// Not sorted or deduplicated: Postgres compares text[] element by element, so only the array as read matches.
+		expect(sentFilter).toBe(filter);
+	});
+
+	it("doesn't put back a scope the dashboard removed after the reduction read it", async () => {
+		// The stored row, as PostgREST would apply the update's filters to it.
+		let stored = ["models:read", "usage:read", "keys:read"];
+		const literal = (values: string[]) => `{${values.map((value) => `"${value}"`).join(",")}}`;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const request = input instanceof Request ? input : new Request(String(input), init);
+			if (request.url.includes("oauth_authorizations")) {
+				if (request.method === "PATCH") {
+					if (new URL(request.url).searchParams.get("scopes") !== `eq.${literal(stored)}`) return new Response(JSON.stringify([]), { status: 200 });
+					stored = (await request.clone().json() as { scopes: string[] }).scopes;
+					return new Response(JSON.stringify([{ id: "authorization-1" }]), { status: 200 });
+				}
+				const snapshot = [...stored];
+				// Meanwhile the person removes usage:read in the dashboard.
+				stored = ["models:read", "keys:read"];
+				return new Response(JSON.stringify([{ id: "authorization-1", scopes: snapshot }]), { status: 200 });
+			}
+			return authenticatedFetch(input);
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/authorized-apps/authorization-1/scopes",
+			{
+				method: "PATCH",
+				headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
+				body: JSON.stringify({ scopes: ["models:read", "usage:read"] }),
+			},
+			env,
+		);
+
+		expect(response.status).toBe(409);
+		await expect(response.json()).resolves.toMatchObject({ error: "scopes_changed" });
+		expect(stored).toEqual(["models:read", "keys:read"]);
 	});
 
 	it("rejects attempts to add scopes through authorization settings", async () => {
@@ -340,7 +453,7 @@ describe("account settings routes", () => {
 			"https://phaseo.app/api/account/settings/authorized-apps/authorization-1/scopes",
 			{
 				method: "PATCH",
-				headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+				headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 				body: JSON.stringify({ scopes: ["models:read", "usage:read"] }),
 			},
 			env,
@@ -371,7 +484,7 @@ describe("account settings routes", () => {
 			"https://phaseo.app/api/account/settings/authorized-apps/authorization-cli/reauthorize",
 			{
 				method: "POST",
-				headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+				headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 				body: JSON.stringify({ scopes: ["openid", "models:read", "pricing:read"] }),
 			},
 			env,
@@ -389,7 +502,7 @@ describe("account settings routes", () => {
 	it("returns private layout, beta, and privacy bootstrap data", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => authenticatedFetch(input)));
 		const init = {
-			headers: { authorization: "Bearer session-token" },
+			headers: { authorization: `Bearer ${sessionToken}` },
 		};
 		const [layout, beta, privacy, broadcast, danger, details, mfa, apps, authorizedApps, oauthApps, managementKeys, byok, keys, onboarding, transactions, credits, paymentMethods, oauthAppDetail, observability, workspacePrivacy] = await Promise.all([
 			app.request("https://phaseo.app/api/account/settings/layout?workspaceId=workspace-1", init, env),
@@ -442,9 +555,11 @@ describe("account settings routes", () => {
 			profile: { betaOptIn: true, betaFeatures: { models_catalogue_v2: true } },
 		});
 		await expect(privacy.json()).resolves.toMatchObject({
+			canManage: true,
 			workspaceId: "workspace-1",
 			teamName: "Team One",
-			initialGlobal: { privacy_zdr_only: true },
+			initialGlobal: { privacy_zdr_only: true, privacy_enable_paid_may_train: false, model_restriction_model_ids: ["gpt-test"] },
+			policy: { privacyEnablePaidMayTrain: false, privacyZdrOnly: true, modelRestrictionMode: "allowlist", modelRestrictionModelIds: ["gpt-test"] },
 			providers: [{ id: "openai-eu", name: "OpenAI (EU)" }],
 			activeProviderModels: [{
 				apiModelId: "gpt-test",
@@ -459,6 +574,15 @@ describe("account settings routes", () => {
 				id: "destination-row-1",
 				destinationId: "destination-1",
 				samplingRate: 0.5,
+				health: {
+					lastSuccessAt: "2026-10-21T09:00:00Z",
+					lastFailureAt: "2026-10-21T10:00:00Z",
+					lastHttpStatus: 401,
+					lastError: "OTLP endpoint returned 401",
+					consecutiveFailures: 3,
+					delivered24h: 120,
+					failed24h: 4,
+				},
 			}],
 		});
 		await expect(danger.json()).resolves.toEqual({ signedIn: true });
@@ -548,9 +672,9 @@ describe("account settings routes", () => {
 			canAccessOnboarding: true,
 			canManageBilling: true,
 			currentBillingMode: "invoice",
-			initialBillingDay: 15,
-			initialPaymentTermsDays: 14,
-			invoiceProfileEnabled: true,
+			initialBillingDay: 1,
+			initialPaymentTermsDays: 30,
+			invoiceProfileEnabled: false,
 			signedIn: true,
 			workspaceId: "workspace-1",
 		});
@@ -558,7 +682,7 @@ describe("account settings routes", () => {
 			billingMode: "invoice",
 			isEnterpriseInvoiceMode: true,
 			teamTier: "enterprise",
-			invoices: [{ id: "invoice-1", amount_nanos: 12000000000 }],
+			invoices: [],
 			transactions: [],
 			workspaceId: "workspace-1",
 		});
@@ -571,6 +695,8 @@ describe("account settings routes", () => {
 			notificationRoutes: { low_balance: ["destination-1"] },
 			notificationDestinations: [{ id: "destination-1", name: "Operations" }],
 			obfuscateInfo: true,
+			// $35 of applied charges over the 7-day window.
+			recentCreditSpend: { dailyNanos: 5_000_000_000, windowDays: 7 },
 			stripeInfo: {
 				customer: { id: null, email: null },
 				defaultPaymentMethodId: null,
@@ -641,7 +767,7 @@ describe("account settings routes", () => {
 			"https://phaseo.app/api/account/settings/apps/source-app/merge",
 			{
 				method: "POST",
-				headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+				headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" },
 				body: JSON.stringify({ targetAppId: "target-app" }),
 			},
 			env,
@@ -662,6 +788,86 @@ describe("account settings routes", () => {
 		expect(requestedUrls.some((url) => url.includes("/gateway_requests?"))).toBe(false);
 	});
 
+	describe("app editing, publishing and merging", () => {
+		const executionCtx = { waitUntil: vi.fn(), passThroughOnException: vi.fn(), props: {} } as unknown as ExecutionContext;
+		function stubApps(role: string, patchError?: { code: string; message: string }) {
+			const writes: string[] = [];
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const url = input instanceof Request ? input.url : String(input);
+				const method = (input instanceof Request ? input.method : init?.method ?? "GET").toUpperCase();
+				if (url.includes("workspace_members") && !url.includes("teams%3Aworkspaces") && !url.includes("select=workspace_id")) return new Response(JSON.stringify([{ role }]), { status: 200 });
+				// The shared fixture makes user-1 the workspace owner; here only the member role decides.
+				if (url.includes("select=owner_user_id")) return new Response(JSON.stringify([{ owner_user_id: "owner-1" }]), { status: 200 });
+				if (url.includes("/rpc/merge_v2_gateway_app_history")) { writes.push("merge"); return new Response(JSON.stringify({ gateway_requests: 1 }), { status: 200 }); }
+				if (url.includes("api_apps")) {
+					if (method === "PATCH" && patchError) return new Response(JSON.stringify(patchError), { status: 409 });
+					if (method === "PATCH") { writes.push(`update:${url}`); return new Response(JSON.stringify({ id: "app-1", is_public: true, is_active: true, image_url: null }), { status: 200 }); }
+					return new Response(JSON.stringify(url.includes("id=in.")
+						? [{ id: "app-1", workspace_id: "workspace-1", title: "One", app_key: "one" }, { id: "app-2", workspace_id: "workspace-1", title: "Two", app_key: "two" }]
+						: [{ id: "app-1", workspace_id: "workspace-1", title: "One", app_key: "one" }]), { status: 200 });
+				}
+				return authenticatedFetch(input);
+			}));
+			return writes;
+		}
+		const put = (body: Record<string, unknown>) => app.request("https://phaseo.app/api/account/settings/apps/app-1", { method: "PUT", headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" }, body: JSON.stringify(body) }, env, executionCtx);
+		const merge = () => app.request("https://phaseo.app/api/account/settings/apps/app-1/merge", { method: "POST", headers: { authorization: `Bearer ${sessionToken}`, "content-type": "application/json" }, body: JSON.stringify({ targetAppId: "app-2" }) }, env, executionCtx);
+
+		it("refuses plain members before writing anything", async () => {
+			const writes = stubApps("member");
+			expect((await put({ is_public: true, title: "Mine", url: "https://mine.example" })).status).toBe(403);
+			expect((await merge()).status).toBe(403);
+			expect(writes).toEqual([]);
+		});
+
+		it("lets admins publish and merge apps", async () => {
+			const writes = stubApps("admin");
+			expect((await put({ is_public: true })).status).toBe(200);
+			expect((await merge()).status).toBe(200);
+			expect(writes.some((write) => write.startsWith("update:"))).toBe(true);
+			expect(writes).toContain("merge");
+		});
+
+		it.each(["javascript:alert(1)", "data:text/html,hi", "not a url"])("rejects the app URL %s", async (url) => {
+			const writes = stubApps("owner");
+			const response = await put({ url });
+			expect(response.status).toBe(400);
+			await expect(response.json()).resolves.toEqual({ error: "invalid_url" });
+			expect(writes).toEqual([]);
+		});
+
+		it("says the URL is in use when another app in the workspace already has it, including no URL", async () => {
+			stubApps("owner", { code: "23505", message: "duplicate key value violates unique constraint \"api_apps_workspace_id_url_key\"" });
+			for (const url of ["", "https://taken.example.com"]) {
+				const response = await put({ url });
+				expect(response.status, url).toBe(409);
+				await expect(response.json()).resolves.toEqual({ error: "app_url_in_use", message: "Another app in this workspace already uses this URL" });
+			}
+			// Other failures are still reported as unavailable.
+			stubApps("owner", { code: "57014", message: "canceling statement due to statement timeout" });
+			expect((await put({ title: "Renamed" })).status).toBe(503);
+		});
+
+		it("treats about:blank, which the dashboard sends for no URL, like an empty URL", async () => {
+			const bodies: unknown[] = [];
+			stubApps("owner");
+			const inner = globalThis.fetch;
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const request = input instanceof Request ? input : new Request(String(input), init);
+				if (request.method === "PATCH" && request.url.includes("api_apps")) bodies.push(JSON.parse(await request.clone().text()));
+				return inner(request);
+			}));
+			for (const url of ["about:blank", " ABOUT:BLANK ", "", null]) expect((await put({ url })).status, String(url)).toBe(200);
+			expect(bodies).toEqual([{ url: "about:blank" }, { url: "about:blank" }, { url: "about:blank" }, { url: "about:blank" }]);
+		});
+
+		it("accepts http(s) app URLs as typed and clears an empty one", async () => {
+			stubApps("owner");
+			expect((await put({ url: " https://app.example.com/path " })).status).toBe(200);
+			expect((await put({ url: "" })).status).toBe(200);
+		});
+	});
+
 	it("rejects a workspace that is not accessible to the authenticated user", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
@@ -672,7 +878,7 @@ describe("account settings routes", () => {
 		}));
 		const response = await app.request(
 			"https://phaseo.app/api/account/settings/privacy?workspaceId=workspace-2",
-			{ headers: { authorization: "Bearer session-token" } },
+			{ headers: { authorization: `Bearer ${sessionToken}` } },
 			env,
 		);
 		expect(response.status).toBe(403);

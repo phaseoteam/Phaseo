@@ -1,121 +1,62 @@
 ---
 title: "Exploring Models"
 description: "Learn how to browse, compare, and understand the AI models listed on Phaseo."
+"og:image": "https://phaseo.app/og/dynamic?title=Exploring%20Models&description=Learn%20how%20to%20browse%2C%20compare%2C%20and%20understand%20the%20AI%20models%20listed%20on%20Phaseo.&pathname=/docs/v1/exploring/models"
 sidebarTitle: "Models"
 icon: "brain"
 ---
 
-Phaseo tracks a broad open catalog of text, image, audio, video, embedding, and other AI models.
+Open the [Models](https://phaseo.app/models) list to find text, image, audio, video, embedding and other models, then open a model to see its providers, prices, performance and benchmark scores.
 
-Each model page on Phaseo includes detailed technical and commercial information to help you evaluate, compare, and select the right model for your needs.
+![A model page on Phaseo](/images/gemini-3-page.png)
 
-<Info>
-The catalog is broader than the Gateway. The Models page shows models with an active Gateway route by default. Select a different Gateway Status only when you intentionally want to inspect coming-soon or inactive catalog entries.
-</Info>
+## Catalog models and callable models
 
----
-
-## What you'll find on a model page
-
-Every model on Phaseo contains the following key sections:
-
-| Section          | Description                                                                                                                    |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| **Overview**     | Includes provider, release date, model type (chat, code, embedding, image, etc.), and short description.                       |
-| **Family**       | Easily see related models and their relationships.                                                                             |
-| **Timeline**     | Visualizes release history and major updates over time.                                                                        |
-| **Benchmarks**   | Shows performance results across benchmarks, easily compare to nearest models.                                                 |
-| **Availability** | Separates active Gateway routes from coming-soon, inactive, and external provider mappings. |
-| **Pricing**      | Displays detailed pricing in USD, normalized for easy comparison to make it easy to see what the model costs.                  |
-| **Gateway**      | Direct links and quickstarts when a public Gateway route is available.                                                        |
-| **Performance**  | Observational latency, throughput, and success data from routed Gateway requests when enough data is available.              |
-
-## Catalog models vs routable models
-
-Use these terms consistently:
+The catalog is broader than the Gateway. The Models list shows only models that are **Active on Gateway** by default. Change the **Gateway status** filter to **Coming soon** or **Not active** to see the rest.
 
 | Term | Meaning |
 | --- | --- |
-| Catalog model | Phaseo tracks metadata for the model. A public route may not exist. |
+| Catalog model | Phaseo tracks metadata for the model. It may have no route you can call. |
 | Routable model | At least one provider route is active on the Phaseo Gateway now. |
-| External mapping | Phaseo tracks a provider offer that is not executed by the Gateway. |
+| External mapping | Phaseo lists a provider offer that the Gateway doesn't execute. |
 
-For programmatic discovery, `GET /v1/models` returns only routable models by default. Set `availability=all` to inspect the broader set.
+`GET /v1/models` returns only routable models. Add `availability=all` to include the rest.
 
----
+## Filter and sort the list
 
-## Example model page
+| Control | Options |
+| --- | --- |
+| Gateway status | Active on Gateway (default), Coming soon, Not active |
+| Endpoints | The API endpoints a model supports, such as text generation or embeddings |
+| Input and output modalities | Text, image, audio, video and others |
+| Features | Capabilities such as tool calling or reasoning |
+| Year | Release year |
+| Sort | Newest, most popular (7-day tokens), price, context length, throughput, latency |
 
-Here's an example of what a model's data might look like within Phaseo:
+To see every model from one lab, open its [organisation page](./organisations.mdx).
 
-![GPT-5 Model Page](../../images/gemini-3-page.png)
+## What a model page shows
 
----
+| Section | What it tells you |
+| --- | --- |
+| **Providers** | Each provider route with its status, context length, price, uptime and data policy. [Provider statuses](../guides/provider-statuses) explains the icons. |
+| **Performance** | Latency and throughput measured on Gateway traffic, when there is enough data. |
+| **Pricing** | Every meter in USD: input, output, cached input, and media units. |
+| **Benchmarks** | Scores on each benchmark, with sources. |
+| **Activity** | Gateway token usage over time. |
+| **Apps** | Public apps that use the model. |
+| **Uptime** | Route availability over recent days. |
+| **Verification** | Content-provenance checks, for image and video models. |
+| **About** | Release dates, licence, links and family. |
+| **Subscriptions** | Provider subscription plans that include the model. |
+| **FAQs** | Common questions about the model. |
 
-## Comparing models
+A section appears only when there is data for it. Models with an active route also show a quickstart with the model ID to send.
 
-You can compare models side-by-side on metrics such as performance, pricing, and features.
-Phaseo automatically highlights differences and ranks models based on various benchmark averages.
+## Compare models
 
-<Columns cols={2}>
-	<Card
-		title="Compare Models"
-		icon="scale"
-		href="./pricing-performance.mdx"
-	>
-		Analyze cost vs performance trade-offs to choose the right model for
-		your workload.
-	</Card>
-	<Card
-		title="View Benchmarks"
-		icon="chart-column-increasing"
-		href="./benchmarks.mdx"
-	>
-		Understand how benchmark scores are gathered and standardized.
-	</Card>
-</Columns>
+[Compare](https://phaseo.app/compare) puts models side by side on price, benchmark scores, context and features. [Pricing and performance](./pricing-performance.mdx) explains how to read the cost and speed numbers.
 
----
+## Report a correction
 
-## Finding models by criteria
-
-Use filters and tags across the Phaseo interface to locate models that fit your needs:
-
--   **By provider:** "Show all Anthropic models."
--   **By capability:** "List models supporting JSON structured responses."
--   **By benchmark:** "Top-10 models on GPQA."
--   **By pricing:** "Models costing under $0.01 per 1K tokens."
--   **By release date:** "Recently released models."
-
-Each filter combines seamlessly, letting you discover exactly what you need.
-
----
-
-## Contributing model updates
-
-Because AI evolves rapidly, Phaseo relies on contributors to keep model data accurate.
-Open a GitHub issue to report a correction, submit missing benchmarks, or request new metadata. Include the model page and official sources; maintainers apply approved updates through the database editor.
-
-<Card
-	title="Contribute Model Data"
-	icon="github"
-	href="../contributing/editing-a-model.mdx"
-	horizontal
->
-	Learn how to report a model correction or request a missing entry.
-</Card>
-
----
-
-## Next steps
-
-Now that you understand how models are structured, you can move on to learn about the **organizations** that build them.
-
-<Card
-	title="Explore Organizations"
-	icon="building"
-	href="./organisations.mdx"
-	horizontal
->
-	Discover the companies and research groups behind each model.
-</Card>
+Open a GitHub issue with the model page and an official source. Maintainers apply approved updates in the database. See [Report a model update](../contributing/editing-a-model.mdx).

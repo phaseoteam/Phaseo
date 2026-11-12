@@ -57,12 +57,8 @@ function normalizeCapabilityStatus(value: unknown): string {
 		.replace(/[\s-]+/g, "_");
 	if (!normalized) return "";
 	if (normalized === "not_active") return "inactive";
-	if (normalized === "de_ranked" || normalized === "deranked") {
-		return "deranked_lvl1";
-	}
-	if (normalized === "deranked_lvl_1") return "deranked_lvl1";
-	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
-	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
+	// The catalogue stores a deranked route as `degraded`; the former levels are one level now.
+	if (normalized === "degraded" || normalized === "de_ranked" || /^deranked(_lvl_?[123])?$/.test(normalized)) return "deranked";
 	return normalized;
 }
 

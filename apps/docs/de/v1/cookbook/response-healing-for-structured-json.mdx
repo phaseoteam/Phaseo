@@ -1,119 +1,162 @@
 ---
-title: "Antworten für strukturiertes JSON reparieren"
+title: "Response Healing für strukturiertes JSON verwenden"
+sidebarTitle: "Response Healing für JSON"
 icon: "file-check"
 description: "Stelle fast gültige strukturierte JSON-Ausgaben wieder her, ohne Schemas zu erweitern oder fehlerhafte Antworten manuell erneut anzufordern."
 ---
 
-Verwende dieses Rezept, wenn deine Anwendung striktes JSON benötigt und Modelle gelegentlich eine fast gültige Ausgabe zurückgeben, die der Parser trotzdem nicht verarbeiten kann.
+Füge einer Anfrage mit strukturierter Ausgabe das Plugin `response-healing` hinzu, und Phaseo repariert fast gültiges JSON, etwa JSON in einem Markdown-Codeblock oder mit einem überzähligen Komma, bevor es deinen Parser erreicht. Am Ende hast du eine Anfrage, die ein JSON Schema anfordert, die Antwort bei Bedarf repariert und dir in der Antwort mitteilt, ob sie das getan hat.
 
-## 1. Mit einem Vertrag für strukturierte Antworten beginnen
+Die Anfrage ist produktionsreif. Healing behebt nur die Syntax, daher validiert dein Code das Ergebnis weiterhin, wie unter [Das Ergebnis validieren](../guides/structured-outputs#validate-the-result) beschrieben.
 
-Die Antwortreparatur ist nur dann sinnvoll, wenn die Anfrage bereits eine strukturierte Ausgabe verlangt.
+```mermaid
+flowchart TD
+  ans["Gepufferte Antwort auf eine json_object- oder json_schema-Anfrage"] --> valid{{"Bereits gültiges JSON?"}}
+  valid -->|"Ja"| schema{{"Passt zum Schema?"}}
+  valid -->|"Nein"| fix["Transformationen des Modus der Reihe nach anwenden"]
+  fix --> parsed{{"Jetzt parsebar?"}}
+  parsed -->|"Ja"| schema
+  parsed -->|"Nein"| unfixed["skipped: unrepairable oder truncated"]
+  schema -->|"Ja"| out["Kanonisches JSON verwenden: applied, falls geändert"]
+  schema -->|"Nein"| mismatch["skipped: schema_mismatch"]
+```
 
-Geeignete Fälle:
+## Eine Anfrage mit Healing senden
 
-- `response_format.type = "json_object"`
-- Ausgabe im JSON-Schema-Format
-- eine stabile Objektform, die mehrere Aufrufer verwenden
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-astra",
+    "input": "Summarize this release in one sentence: dark mode and faster search.",
+    "text": {
+      "format": {
+        "type": "json_schema",
+        "name": "answer",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": { "summary": { "type": "string" } },
+          "required": ["summary"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "plugins": [{ "id": "response-healing", "mode": "safe" }],
+    "meta": true
+  }'
+```
 
-Aktiviere die Reparatur nicht für offene Prosaanfragen.
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
 
-## 2. Das Plugin auf der passenden Ebene aktivieren
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
-Du kannst `response-healing` an drei Stellen aktivieren:
+const response = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input: "Summarize this release in one sentence: dark mode and faster search.",
+  text: {
+    format: {
+      type: "json_schema",
+      name: "answer",
+      strict: true,
+      schema: {
+        type: "object",
+        properties: { summary: { type: "string" } },
+        required: ["summary"],
+        additionalProperties: false,
+      },
+    },
+  },
+  plugins: [{ id: "response-healing", mode: "safe" }],
+  meta: true,
+});
 
-1. in der Standard-Plugin-Richtlinie des Arbeitsbereichs
-2. in der Plugin-Konfiguration einer Voreinstellung
-3. in `plugins` der Anfrage
+console.log(response.meta?.plugin_executions);
+```
 
-Die Priorität ist:
+```python Python
+import os
 
-1. Arbeitsbereich
-2. Voreinstellung
-3. Anfrage
+from phaseo import Phaseo
 
-Verwende die Standardwerte einer Voreinstellung, wenn ein Workflow immer strukturiertes JSON erwartet.
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
-## 3. Die Modellausgabe eng begrenzen
+response = client.generate_response(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Summarize this release in one sentence: dark mode and faster search.",
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "answer",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {"summary": {"type": "string"}},
+                    "required": ["summary"],
+                    "additionalProperties": False,
+                },
+            }
+        },
+        "plugins": [{"id": "response-healing", "mode": "safe"}],
+        "meta": True,
+    }
+)
 
-Die Reparatur funktioniert am besten, wenn die gewünschte Ausgabeform bereits eingeschränkt ist.
+print(response["meta"].get("plugin_executions"))
+```
+</CodeGroup>
 
-Empfehlungen:
+Bei Chat Completions sendest du dasselbe Schema in `response_format` statt in `text.format`. Healing läuft nur, wenn die Anfrage `json_object` oder `json_schema` anfordert, und nie bei Streams: Eine gestreamte Anfrage überspringt es mit `streaming_unsupported`.
 
-- ein Objekt statt mehrerer unabhängiger Blöcke
-- explizite Pflichtfelder
-- nach Möglichkeit eine deterministische Temperatur
-- keine zusätzlichen Erläuterungen außerhalb der JSON-Nutzlast anfordern
+## Prüfen, ob es lief
 
-## 4. Möglichkeiten und Grenzen der Antwortreparatur kennen
+Mit `meta: true` listet `meta.plugin_executions` das Plugin auf, wenn es lief:
 
-Der aktuelle Reparaturpfad ist deterministisch und funktioniert nur ohne Streaming. Bei Streaming-Anfragen wird die Antwortreparatur vollständig übersprungen.
+```json
+{
+  "id": "response-healing",
+  "stage": "response.post_provider",
+  "status": "applied",
+  "changed": true,
+  "metadata": {
+    "attempted": true,
+    "healed": true,
+    "mode": "safe",
+    "transforms_applied": ["strip_markdown_fence"]
+  }
+}
+```
 
-Er kann Folgendes korrigieren:
+| `status` | Bedeutung |
+| --- | --- |
+| `applied` | Die Antwort wurde in gültiges JSON umgeschrieben. |
+| `skipped` | Die Antwort blieb unverändert. Mit `attempted: false` war die Anfrage nicht zulässig; andernfalls war das JSON bereits gültig oder ließ sich nicht reparieren. `metadata.failure_reason` nennt den Grund: `streaming_unsupported`, `not_json` (keine strukturierte Ausgabe angefordert oder kein Text), `unrepairable`, `truncated` (die Antwort endete am Token-Limit) oder `schema_mismatch` mit `validation_errors`. |
+| `failed` | Das Plugin selbst ist fehlgeschlagen (`reason: plugin_error`); die Antwort ist unverändert. |
 
-- Markdown-Codeblöcke um das JSON
-- nachgestellte Kommas
-- fehlende, sicher ergänzbare Abschlüsse
-- Schlüssel ohne Anführungszeichen in ansonsten wiederherstellbaren Objekten
+Derselbe Eintrag erscheint bei der Anfrage unter **Einstellungen → Nutzung → Protokolle**. Taucht das Plugin nie auf, prüfe, ob die Anfrage, ihr Preset oder der Workspace es tatsächlich eingeschaltet hat; [Plugin-Standards festlegen](./plugin-defaults-and-response-healing) zeigt, wo.
 
-Wenn du eine engere Richtlinie brauchst, verwende den `strict`-Modus. Er löst nur bereits gültiges JSON aus Codeblöcken oder umgebendem Text heraus und überspringt die umfangreicheren syntaktischen Reparaturen.
+## Einen Modus wählen
 
-Wenn die Anfrage eine JSON-Schema-Ausgabe verwendet, validiert die Reparatur die wiederhergestellte Nutzlast zusätzlich, bevor sie sie umschreibt. Der aktuelle Validator deckt übliche Einschränkungen ab, darunter:
+| Modus | Transformationen, der Reihe nach |
+| --- | --- |
+| `safe` (Standard) | Markdown-Codeblock entfernen, auf das äußerste `{…}` oder `[…]` kürzen, überzählige Kommas entfernen, Schlüssel ohne Anführungszeichen in Anführungszeichen setzen und fehlende schließende Klammern ergänzen (nicht, wenn die Antwort das Token-Limit erreicht hat) |
+| `strict` | Nur Markdown-Codeblock entfernen und auf das äußerste `{…}` oder `[…]` kürzen, sodass nur JSON akzeptiert wird, das in seiner Umhüllung bereits gültig war |
 
-- Pflichtschlüssel
-- grundlegende Skalare und Containertypen
-- Enums und const-Werte
-- Array-Grenzen und `uniqueItems`
-- Zeichenkettenlänge, reguläre Ausdrücke und gängige Formate wie `email`, `uri`, `uuid` und `date-time`
-- Zahlengrenzen und `multipleOf`
-- Objekt-Eigenschaftsgrenzen und `additionalProperties: false`
+Mit einem JSON Schema wird das reparierte Ergebnis geprüft, bevor es die Antwort ersetzt: Pflichtschlüssel, Typen, `enum` und `const`, Array-Grenzen und `uniqueItems`, Zeichenkettenlänge, `pattern` und die Formate `email`, `uri`, `uuid` und `date-time`, Zahlengrenzen und `multipleOf`, Anzahl der Eigenschaften und `additionalProperties: false`.
 
-Er kann nicht:
+## Wissen, wann es nicht hilft
 
-- fehlende semantische Felder erfinden
-- fachliche Werte erraten
-- beliebige Prosa in gültige Daten umwandeln
+Healing erfindet nie fehlende Felder, rät keine Werte und macht aus Prosa keine Daten. Unterscheide diese Fehler, bevor du darauf zurückgreifst:
 
-## 5. Prüfen, ob das Plugin tatsächlich ausgeführt wurde
+| Fehler | Lösung |
+| --- | --- |
+| Strukturell fast korrektes JSON | Response Healing |
+| Gültiges JSON mit falschen Feldern | Schema und Prompt verschärfen |
+| Prosa statt JSON | `json_schema` anfordern, nicht nur eine Anweisung im Prompt |
+| Am Token-Limit abgeschnitten | `max_output_tokens` erhöhen |
 
-Wenn die Reparatur ausgeführt wird, sollten die Anfragedetails Informationen zur Plugin-Ausführung enthalten.
-
-Prüfe:
-
-- die Plugin-ID
-- ob eine Transformation versucht wurde
-- ob sich die Nutzlast geändert hat
-- den Fehlergrund, wenn die Antwort nicht wiederhergestellt werden konnte
-- ob die Anfrage ohne Streaming erfolgte, falls du eine Reparatur erwartet hast
-
-Wenn das Plugin nicht auftaucht, überprüfe, ob es in der Anfrage, der Voreinstellung oder der Arbeitsbereichsrichtlinie aktiviert ist.
-
-## 6. Parserprobleme von Inhaltsproblemen unterscheiden
-
-Wenn die Reparatur nicht hilft, bestimme die Art des Fehlers:
-
-1. fehlerhaftes JSON, das strukturell noch nahe am erwarteten Format ist
-2. schemakonformes JSON mit falschen Feldern
-3. Prosa statt JSON
-4. abgeschnittene Ausgabe wegen eines zu niedrigen Tokenlimits
-
-Nur Fall 1 eignet sich für die Antwortreparatur.
-
-## 7. Schrittweise ausrollen
-
-1. aktiviere die Reparatur für eine Voreinstellung mit stabiler strukturierter Ausgabe
-2. beobachte die Ausführungsmetadaten des Plugins in den Protokollen
-3. bestätige, dass wiederhergestellte Nutzlasten dem erwarteten Schema entsprechen
-4. erweitere die Einstellung erst auf ähnliche Voreinstellungen, wenn die Protokolle unauffällig sind
-
-## 8. Den passenden Modus wählen
-
-- Verwende `safe`, wenn der Workflow von begrenzter Syntaxbereinigung wie dem Entfernen nachgestellter Kommas oder dem Ergänzen von Anführungszeichen um Schlüssel profitiert.
-- Verwende `strict`, wenn der Workflow nur bereits gültiges JSON nach dem Entfernen von umgebendem Text akzeptieren soll.
-- Prüfe die Anfragedetails, um den ausgeführten Modus zu bestätigen.
-
-## Verwandte Anleitungen
-
-- [Antwort-Caching mit Voreinstellungen verwenden](./response-caching-with-presets.mdx)
-- [Voreinstellungen ausrollen und Routing untersuchen](./preset-rollout-and-routing-debug.mdx)
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+Healing funktioniert am besten bei einem einzelnen Objekt mit expliziten Pflichtschlüsseln, niedriger Temperatur und ohne Aufforderung zu Text außerhalb des JSON. Schalte es zuerst für ein Preset ein, beobachte `plugin_executions` in den Protokollen und weite es aus, sobald die reparierten Payloads zu deinem Schema passen.

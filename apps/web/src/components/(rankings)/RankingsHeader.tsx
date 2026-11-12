@@ -3,11 +3,11 @@
 // Why: Provides title, description, and context for the page
 // How: Simple presentational component
 
+import { useTranslations } from "@/i18n/react";
 import { Trophy } from "lucide-react";
-import { getTranslations } from "next-intl/server";
 
-export async function RankingsHeader() {
-    const t = await getTranslations("Catalogue.rankings");
+export function RankingsHeader() {
+    const t = useTranslations("Catalogue.rankings");
     return (
         <div className="space-y-4">
             <div className="flex items-center gap-3">

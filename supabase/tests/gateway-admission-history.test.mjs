@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { installCatalogPolicyContext } from './fixtures/catalog-policy-context.mjs';
+import { installUnbilledSpend } from './fixtures/unbilled-spend.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
@@ -11,10 +13,11 @@ const access = async (name = 'private.gateway_context_access') => (await db.quer
 )).rows[0].payload;
 try {
   await db.exec(await read('./fixtures/context-bundle-before.sql'));
+  await installCatalogPolicyContext(db);
   await db.exec('alter table public.byok_keys add column name text');
   await db.exec(await read('../migrations/20260916121303_gateway_context_bundle.sql'));
+  await installUnbilledSpend(db);
   await db.exec(await read('../schemas/private/functions/gateway_context_access.sql'));
-  await db.exec(await read('../schemas/private/functions/gateway_compiled_context_access.sql'));
   await db.exec(await read('../schemas/public/functions/gateway_fetch_request_context_without_workspace_budget.sql'));
   await db.exec(`
     insert into public.workspaces(id,billing_mode,created_at) values ('${workspace}','wallet',now());
@@ -33,9 +36,6 @@ try {
   const legacyUnlimited = await access('public.gateway_fetch_request_context_without_workspace_budget');
   assert.equal(legacyUnlimited.key_limit_ok.ok, true);
   assert.equal(legacyUnlimited.team_enrichment.total_requests, null);
-  const compiledUnlimited = await access('private.gateway_compiled_context_access');
-  assert.equal(compiledUnlimited.key_limit_ok.ok, true);
-  assert.equal(compiledUnlimited.team_enrichment.total_requests, null);
   await db.exec('reset role');
   await db.query('update public.wallets set balance_nanos=100000000 where workspace_id=$1', [workspace]);
   await db.exec('set role service_role');
@@ -56,9 +56,25 @@ try {
   const limited = await access();
   assert.equal(limited.key_limit_ok.reason, 'daily_request_limit_reached');
   assert.equal(limited.key_limit_ok.buckets.daily.requests_used, 1);
-  assert.equal(limited.key_limit_ok.buckets.daily.cost_used_nanos, 10);
+  // The failed request was charged (999): it counts toward cost, not toward the request count.
+  assert.equal(limited.key_limit_ok.buckets.daily.cost_used_nanos, 10 + 999);
   assert.equal(limited.key_enrichment.requests_today, 1);
   assert.equal((await access('public.gateway_fetch_request_context_without_workspace_budget')).key_limit_ok.reason, 'daily_request_limit_reached');
+  // Money movements win: a request pending reconciliation with an applied charge counts that charge
+  // and what it did not collect, never its row's cost. One row holds a stale 500 against an intended
+  // 300 whose charge is 200 (counts 200 + 100); the other says 70 against an intended and charged 40
+  // (counts 40). (A legacy row flagged only by billing_status is checked in
+  // budget-enforcement-money-hygiene.test.mjs, at fixed dates around its cutoff.)
+  await db.exec('reset role');
+  await db.query(`insert into public.gateway_request_charges(workspace_id,request_id,cost_nanos,status,is_final,key_id) values
+    ($1,'billing-stale',200,'applied',true,$2),($1,'billing-flag',40,'applied',true,$2)`, [workspace,key]);
+  await db.query(`insert into public.gateway_requests(workspace_id,key_id,created_at,success,cost_nanos,billing_request_id,expected_cost_nanos,detail_metadata) values
+    ($1,$2,now(),false,500,'billing-stale',300,null),
+    ($1,$2,now(),false,70,'billing-flag',40,null)`, [workspace,key]);
+  await db.exec('set role service_role');
+  for (const name of ['private.gateway_context_access', 'public.gateway_fetch_request_context_without_workspace_budget']) {
+    assert.equal((await access(name)).key_limit_ok.buckets.daily.cost_used_nanos, 10 + 999 + 300 + 40, name);
+  }
   for (const [column,reason] of [
     ['weekly_limit_requests','weekly_request_limit_reached'],
     ['monthly_limit_requests','monthly_request_limit_reached'],
@@ -73,7 +89,6 @@ try {
     await db.exec('set role service_role');
     assert.equal((await access()).key_limit_ok.reason, reason);
     assert.equal((await access('public.gateway_fetch_request_context_without_workspace_budget')).key_limit_ok.reason, reason);
-    assert.equal((await access('private.gateway_compiled_context_access')).key_limit_ok.reason, reason);
   }
   await db.exec('reset role');
   await db.query('update public.keys set soft_blocked=true where id=$1', [key]);

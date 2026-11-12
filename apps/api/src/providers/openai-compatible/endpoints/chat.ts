@@ -62,7 +62,7 @@ function parseAssistantContent(
                         reasoningDetails: [{
                             id: `${reasoningIdPrefix}-reasoning-1`,
                             index: 0,
-                            type: "text",
+                            type: "reasoning.text", format: "unknown",
                             text: reasoningContent,
                         }],
                     };
@@ -129,7 +129,7 @@ function parseAssistantContent(
         reasoningDetails: [{
             id: `${reasoningIdPrefix}-reasoning-1`,
             index: 0,
-            type: "text",
+            type: "reasoning.text", format: "unknown",
             text: reasoningContent,
         }],
     };
@@ -412,7 +412,7 @@ async function bufferOpenAICompatStream(
                         reasoning_details: [{
                             id: `${responseId ?? "stream"}-${choice.index}-reasoning-1`,
                             index: 0,
-                            type: "text" as const,
+                            type: "reasoning.text" as const, format: "unknown",
                             text: choice.reasoningContent,
                         }],
                     }

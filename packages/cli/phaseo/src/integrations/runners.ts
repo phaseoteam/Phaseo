@@ -5,7 +5,7 @@ import { delimiter, join } from "node:path";
 import { tmpdir } from "node:os";
 import { stringify as stringifyYaml } from "yaml";
 import { fetchCompatibleModels } from "./catalog.js";
-import { getIntegrationGatewayCredential } from "./credential.js";
+import { getIntegrationGatewayCredential, readKeyFlag } from "./credential.js";
 import { confirmHarnessInstall, installHarness, renderInstallInvocation, runnerInstallPlan } from "./installer.js";
 import type { IntegrationModel } from "./types.js";
 
@@ -421,7 +421,7 @@ export async function runRunnerCommand(
 		await installHarness(installPlan);
 	}
 
-	const credential = await getIntegrationGatewayCredential(CREDENTIAL_IDS[runner]);
+	const credential = await getIntegrationGatewayCredential(CREDENTIAL_IDS[runner], { existingKey: await readKeyFlag(flags) });
 	const root = await mkdtemp(join(tmpdir(), `phaseo-${runner}-`));
 	const configPaths = paths(root);
 	try {

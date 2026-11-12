@@ -1,10 +1,8 @@
-"use client";
-
 import { useId } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { endpointToCapability } from "@/lib/config/capabilityToEndpoints";
-import type { ProviderManagedCatalogModel } from "@/app/(dashboard)/settings/account/providers/actions";
+import type { ProviderManagedCatalogModel } from "@/features/settings/account/providers/actions";
 
 type Capabilities = ProviderManagedCatalogModel["capabilities"];
 
@@ -16,7 +14,7 @@ export default function ProviderCatalogCapabilities({ value, options, disabled, 
 	return <div role="group" aria-label={label} className="space-y-3">{ids.map((id, index) => {
 		const selected = value.find((item) => item.id === id);
 		const canonicalId = endpointToCapability[`/${id.replaceAll(".", "/")}`] ?? id;
-		const parameters = Array.from(new Set([...(options[id] ?? options[canonicalId] ?? []), ...(selected?.parameters ?? [])])).sort();
+		const parameters = Array.from(new Set([...(options[id] ?? []), ...(options[canonicalId] ?? []), ...(selected?.parameters ?? [])])).sort();
 		const controlId = `${prefix}-capability-${index}`;
 		return <div key={id} className="rounded-lg border p-3">
 			<div className="flex items-center gap-2"><Checkbox id={controlId} checked={Boolean(selected)} disabled={disabled} onCheckedChange={(checked) => onChange(checked ? [...value, { id, parameters: [] }] : value.filter((item) => item.id !== id))} /><Label htmlFor={controlId}><code>{id}</code></Label></div>

@@ -15,6 +15,7 @@ export type Endpoint =
     | "moderations"
     | "rerank"
     | "decisions"
+    | "extractions"
     | "video.generation"
     | "embeddings"
     | "batch"
@@ -40,7 +41,20 @@ export type RequestBetaOptions = {
     [key: string]: unknown;
 };
 
+/** A charge for a model a server tool ran inside a request, priced on that model's own card. */
+export type ServerToolPricing = {
+    component: string;
+    model: string;
+    provider: string;
+    total_nanos: number;
+    lines: Record<string, unknown>[];
+    /** The credential the tool's model ran on: a BYOK run is charged the BYOK fee, not its cost. */
+    key_source?: "byok" | "gateway";
+};
+
 export type RequestMeta = {
+    /** Server-tool charges in this request (such as Chat's image tool); calculatePricing adds them to the total. */
+    serverToolPricing?: ServerToolPricing[];
     apiKeyId: string;             // Internal UUID for the gateway key
     apiKeyRef: string;            // Human-readable reference, e.g. kid_xxx
     apiKeyKid: string;            // Raw kid from token
@@ -55,6 +69,8 @@ export type RequestMeta = {
     requestUserId?: string | null;
     sessionId?: string | null;
     trace?: Record<string, unknown> | null;
+    /** The body's `metadata` as string pairs, for Broadcast. */
+    requestMetadata?: Record<string, string> | null;
     otelTraceContext?: {
         traceId: string;
         parentSpanId: string;
@@ -94,6 +110,12 @@ export type RequestMeta = {
 	selectedUpstreamFetchStartMs?: number;
     adapterRequestBuildMs?: number;
     timeToUpstreamRequestMs?: number;
+	/**
+	 * The request timer's spans at the first upstream dispatch, taken once. The response
+	 * timeline's routing steps read it, so later rounds (server-tool continuations reuse the
+	 * timer and restart attempt numbering) cannot overwrite what routing_ms describes.
+	 */
+	routingTiming?: Record<string, number>;
 	timeToLatestUpstreamRequestMs?: number;
     upstreamHeadersMs?: number;
 	provider_duration_ms?: number;
@@ -115,16 +137,25 @@ export type RequestMeta = {
     gateway_ttft_ms?: number;     // Gateway request start to first generated output (user-visible TTFT)
     tpot_ms?: number;             // Average time per output token after the first token
     itl_ms?: number;              // Average inter-token latency
-    phaseo_overhead_ms?: number;  // Gateway E2E minus selected provider duration
+    phaseo_overhead_ms?: number;  // Gateway E2E minus selected provider duration and failover
+    failover_ms?: number;         // First upstream dispatch to the selected one (failed attempts)
     end_to_end_ms?: number;       // Request start to completion when available
     preserve_stream_timing?: boolean; // Internal: stream is synthetic and already has authoritative timing
+    providerRoundsMs?: number;    // Internal: provider time of the rounds read to the end so far (recordProviderRound)
+    providerRoundsFailoverMs?: number; // Internal: failover time of those rounds
+    firstProviderOutputAtMs?: number; // Internal: epoch ms of the first generated output read from a provider
+    outputArrivals?: number;      // Internal: separate network reads that carried output (1 = the answer arrived at once)
+    reasoningStreamed?: boolean;  // Internal: the first generated output was streamed reasoning, so reasoning tokens are inside the output-speed window
+    // Internal: the latest round read to the end, from its first output to its end; null when it had no output.
+    lastProviderRoundSpeedWindow?: { durationMs: number | null; outputTokens: number; reasoningTokens?: number | null; arrivals?: number | null } | null;
     downstreamDisconnected?: boolean; // Client closed the response while the gateway continued draining upstream
+    upstreamStreamBroken?: boolean; // The upstream body errored (connection reset) before the stream ended
     streamCancellationSupport?: "supported" | "unsupported" | "unknown";
     streamProviderBillingOnCancel?: "stops" | "unknown";
     streamDisconnectAction?: "cancel_upstream" | "drain_upstream";
     before_ms?: number;           // Gateway preflight ("before" stage) latency
     beforeContextMs?: number;     // Context fetch + enrichment latency inside before
-    beforeContextCacheStatus?: "hit" | "miss" | "bypass" | "credit_refresh";
+    beforeContextCacheStatus?: "hit" | "miss" | "bypass" | "credit_refresh" | "model_miss";
     beforeContextKeyVersionMs?: number;
     beforeContextCacheReadMs?: number;
     beforeContextCreditRefreshMs?: number;
@@ -237,6 +268,7 @@ export type GatewayCompletionsChoice = {
         }>;
         // Per-message reasoning fields (MiniMax/Aion format)
         reasoning_content?: string; // Simple format: single string with all reasoning
+        reasoning?: string; // The same text under the name other Chat clients read
         reasoning_details?: GatewayReasoningDetail[]; // Structured format: array of reasoning blocks
     };
     finish_reason: "stop" | "length" | "tool_calls" | "content_filter" | "error" | null;
@@ -313,10 +345,15 @@ export type GatewayUsage = {
 
 }
 
+// Follows the `reasoning_details` convention OpenRouter uses. `signature` and
+// `data` are sealed gateway values; send them back unchanged.
 export type GatewayReasoningDetail = {
     id: string;
     index: number;
-    type: "summary" | "encrypted" | "text";
-    text?: string; // For type "text" or "summary"
-    data?: string; // For type "encrypted" (base64 encoded)
+    type: "reasoning.text" | "reasoning.summary" | "reasoning.encrypted";
+    text?: string; // For type "reasoning.text"
+    summary?: string; // For type "reasoning.summary"
+    signature?: string; // Thinking or thought signature for "reasoning.text"
+    data?: string; // For type "reasoning.encrypted"
+    format?: string; // Provider format, for example "anthropic-claude-v1", or "unknown"
 };

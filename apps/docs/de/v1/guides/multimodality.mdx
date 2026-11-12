@@ -4,24 +4,21 @@ description: "Nutze Text, Bilder, Audio, Video und weitere Modalitäten über da
 icon: "shapes"
 ---
 
-Das Gateway stellt über eine einheitliche API mehrere Modalitäten bereit. Jeder Endpunkt gehört zu einer anderen Funktion, und die Modellunterstützung unterscheidet sich je nach Provider.
+Wähle den Endpunkt für die gewünschte Ausgabe und dann ein Modell, das diesen Endpunkt unterstützt. Derselbe Modellname kann bei mehreren Endpunkten vorkommen, und die Unterstützung durch die Anbieter unterscheidet sich je Endpunkt.
 
-## Modalitäten und Endpunkte
-
-| Modalität | Zentrale Endpunkte | Hinweise |
+| Modalität | Endpunkte | Funktion |
 | --- | --- | --- |
-| Text | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | Strukturierte und dialogorientierte Ausgaben. |
-| Bilder | `/v1/images/generations`, `/v1/images/edits` | Bilderzeugung aus Text und Bildbearbeitung. |
-| Audio (TTS/STT/Übersetzungen) | `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/audio/translations` | Text-zu-Sprache, Sprache-zu-Text und Übersetzung gesprochener Audiodaten. |
-| Video | `/v1/videos`, `/v1/videos/{video_id}`, `/v1/videos/{video_id}/content`, `/v1/videos/{video_id}` (DELETE) | Erstelle asynchrone Videojobs, frage ihren Status ab, rufe Inhalte ab und lösche Jobs. |
-| Musik | `/v1/music/generate` | Musikgenerierung über unterstützte Provider. |
-| OCR | `/v1/ocr` | Extrahiere Text aus Bildern, sofern unterstützt. |
+| Text | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | Dialogorientierte und strukturierte Textausgabe. |
+| Bilder | [`/v1/images/generations`](../api-reference/endpoint/images-generations.mdx), [`/v1/images/edits`](../api-reference/endpoint/images-edits.mdx) | Bilderzeugung aus Text und Bildbearbeitung. |
+| Audio | [`/v1/audio/speech`](../api-reference/endpoint/audio-speech.mdx), [`/v1/audio/transcriptions`](../api-reference/endpoint/audio-transcriptions.mdx), [`/v1/audio/translations`](../api-reference/endpoint/audio-translations.mdx) | Text-zu-Sprache, Sprache-zu-Text und Übersetzung gesprochener Audiodaten. |
+| Echtzeit-Sprache | `/v1/audio/realtime/sessions` | Live-Sprachanrufe. Siehe [Echtzeit-Sprache](./realtime-voice.mdx). |
+| Video | [`POST /v1/videos`](../api-reference/endpoint/video-create.mdx), `GET /v1/videos/{video_id}`, `GET /v1/videos/{video_id}/content`, `DELETE /v1/videos/{video_id}` | Erstelle einen asynchronen Videojob, frage seinen Status ab, rufe den Inhalt ab und lösche den Job. Siehe [Video- und Batch-Jobs](./async-video-and-batch.mdx). |
+| Musik | [`/v1/music/generate`](../api-reference/endpoint/music-generate.mdx) | Musikgenerierung bei unterstützten Anbietern. |
+| OCR | [`/v1/ocr`](../api-reference/endpoint/ocr.mdx) | Textextraktion aus Bildern. |
+| Dokumentanalyse | [`/v1/parse`](../api-reference/endpoint/parse.mdx) | Geordneter Text, Tabellen und Layout aus Dokumentbildern. Siehe [Dokumentbilder analysieren](./document-parsing.mdx). |
 
-## Modellunterstützung prüfen
+## Prüfen, welche Modelle einen Endpunkt unterstützen
 
-Mit dem [Modelle-Endpunkt](../api-reference/endpoint/models.mdx) kannst du verfügbare Modelle und ihre unterstützten Endpunkte abrufen. Die Abdeckung der Provider zeigt der [Provider-Endpunkt](../api-reference/endpoint/providers.mdx).
+Rufe den [Modelle-Endpunkt](../api-reference/endpoint/models.mdx) auf: Jedes Modell listet die `endpoints` auf, die es unterstützt, und `GET /v1/models/{author}/{slug}/endpoints` zeigt jede Anbieterroute eines Modells mit ihren Modalitäten und unterstützten Parametern. Der [Anbieter-Endpunkt](../api-reference/endpoint/providers.mdx) listet die Abdeckung der Anbieter auf.
 
-## Bewährte Vorgehensweisen
-
-Wähle den Endpunkt passend zur benötigten Modalität, auch wenn der Modellname modalitätsübergreifend gleich ist.
-Validiere Payloads vor dem Go-live anhand der [API-Referenz](../api-reference/introduction.mdx).
+Prüfe Anfrage-Bodys vor dem Go-live anhand der [API-Referenz](../api-reference/introduction) für den jeweiligen Endpunkt.

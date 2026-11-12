@@ -23,7 +23,7 @@ begin
   ), daily_rows as materialized (
     select d.rollup_id, d.model_slug, d.provider_model_id, d.app_id,
       d.requests, d.successful_requests, d.tool_call_count
-    from public.v2_public_usage_daily d
+    from public.reporting_usage_daily d
     where d.usage_date >= v_full_from and d.usage_date < v_full_to
   ), daily_meter_totals as (
     select u.rollup_id, u.meter_key, sum(u.quantity) as quantity
@@ -37,7 +37,7 @@ begin
     select f.request_event_id, f.routed_model_slug, f.requested_model_slug,
       f.provider_model_id, f.app_id, f.success, f.tool_call_count
     from edges e
-    join public.v2_request_facts f on f.occurred_at >= e.start_at and f.occurred_at < e.end_at
+    join public.reporting_request_facts f on f.occurred_at >= e.start_at and f.occurred_at < e.end_at
     where lower(coalesce(f.routed_model_slug, f.requested_model_slug)) not in ('unknown', 'other')
   ), edge_meter_totals as (
     select u.request_event_id, u.meter_key, sum(u.quantity) as quantity

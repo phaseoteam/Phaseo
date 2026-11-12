@@ -1,8 +1,0 @@
-{
-  "key": "sambanova:deepseek/deepseek-v3.2:text.generate", "api_provider_id": "sambanova", "provider_slug": "sambanova", "api_model_id": "deepseek/deepseek-v3.2", "capability_id": "text.generate",
-  "rules": [
-    { "meter": "input_text_tokens", "unit": "token", "unit_size": 1000000, "price_per_unit": 3, "currency": "USD", "pricing_plan": "standard", "note": null, "match": [], "priority": 100, "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://cloud.sambanova.ai/plans/pricing" },
-    { "meter": "output_text_tokens", "unit": "token", "unit_size": 1000000, "price_per_unit": 4.5, "currency": "USD", "pricing_plan": "standard", "note": null, "match": [], "priority": 100, "region": null, "cache_duration_seconds": null, "conditions": [], "source": "https://cloud.sambanova.ai/plans/pricing" }
-  ],
-  "regions": [], "service_tiers": ["standard"], "sources": [{ "kind": "pricing", "url": "https://cloud.sambanova.ai/plans/pricing", "accessed_at": "2026-08-12T00:00:00Z", "notes": "$3/M input and $4.50/M output." }], "verification": { "status": "verified", "checked_at": "2026-08-12T00:00:00Z", "notes": "Current first-party on-demand pricing." }
-}

@@ -14,6 +14,25 @@ ALTER TABLE "public"."broadcast_destination_keys"
 
 CREATE INDEX broadcast_destination_keys_key_id_idx ON public.broadcast_destination_keys USING btree (key_id);
 
+CREATE POLICY "broadcast_destination_keys_no_oauth_client_insert" ON "public"."broadcast_destination_keys"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "broadcast_destination_keys_no_oauth_client_update" ON "public"."broadcast_destination_keys"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "broadcast_destination_keys_no_oauth_client_delete" ON "public"."broadcast_destination_keys"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "broadcast_destination_keys_delete_own_team" ON "public"."broadcast_destination_keys"
   FOR DELETE
   TO "authenticated"
@@ -45,5 +64,12 @@ CREATE POLICY "broadcast_destination_keys_update_own_team" ON "public"."broadcas
   WITH CHECK ((EXISTS ( SELECT 1
    FROM public.workspace_broadcast_destinations d
   WHERE ((d.id = broadcast_destination_keys.destination_id) AND public.is_workspace_admin(d.workspace_id)))));
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."broadcast_destination_keys"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."broadcast_destination_keys" TO "anon", "authenticated", "service_role";

@@ -1,0 +1,92 @@
+---
+title: "استخراج القيم"
+badge: "تجريبي"
+tag: "تجريبي"
+description: "استخرج قيمًا ذات أنواع محددة من النصوص والصور."
+icon: "list-filter"
+openapi: "/ar/openapi/v1/openapi.localized.yaml POST /extractions"
+---
+
+<Warning>الاستخراج في مرحلة المعاينة. يعتمد توفر النماذج على مسارات المزوّدين المكوّنة.</Warning>
+
+سمِّ الحقول `fields` التي تريدها وأرسلها مع النص المصدر إلى `POST /v1/extractions` لتحصل على قيم ذات أنواع محددة، مثل رقم فاتورة أو تاريخ أو إجمالي. للاختيار من بين خيارات معروفة بدلًا من ذلك، استخدم [Decisions](./decisions.mdx).
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/extractions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "cloudflare/clairic",
+    "input": "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+    "fields": {
+      "invoice_number": { "type": "text" },
+      "total": { "type": "number", "decimals": 2, "instructions": "Total including shipping" }
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import { Phaseo } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+const result = await client.extractions.create({
+  model: "cloudflare/clairic",
+  input: "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+  fields: {
+    invoice_number: { type: "text" },
+    total: { type: "number", decimals: 2, instructions: "Total including shipping" },
+  },
+});
+console.log(result.answers.total.value);
+```
+
+```python Python SDK
+import os
+from phaseo import Phaseo
+
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+result = client.extractions.create({
+    "model": "cloudflare/clairic",
+    "input": "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+    "fields": {"total": {"type": "number", "decimals": 2,
+                         "instructions": "Total including shipping"}},
+})
+print(result["answers"]["total"]["value"])
+```
+</CodeGroup>
+
+تحتاج الأمثلة إلى مسار نشط لنموذج استخراج، لذا تحقق من توفر النموذج
+قبل إرسال الطلبات. تتيح `AsyncPhaseo` في Python أيضًا
+`await client.extractions.create(...)`.
+
+## أنواع الحقول
+
+الأنواع المدعومة هي `text` و`number` و`date` و`time` و`datetime` و`duration` و
+`list`. تتطلب القوائم `items: "text"` أو `"number"` أو `"date"`. قدّم من 1 إلى 64 حقلًا
+و16,384 حرفًا مصدريًا على الأكثر. تبدأ أسماء الحقول بحرف أو شرطة سفلية،
+وتحتوي حتى 64 حرفًا من الأحرف أو الأرقام أو الشرطات السفلية أو النقاط أو الشرطات.
+
+تدعم الأرقام والمدد `integer` و`decimals` (0–6). تقبل المدد
+`seconds` و`minutes` و`hours` و`days` و`weeks` و`months` و`years`. اضبط
+`reference_date` عندما يعتمد تفسير التواريخ غير المكتملة على سنة محددة.
+
+تستخدم مدخلات الصور كائنات `{ content_type, base64 }`: أربع صور PNG/JPEG/WebP على الأكثر،
+4 MiB لكل منها و8 MiB مجتمعة بعد فك الترميز. حد الطلب 16 MiB.
+العناوين البعيدة وملفات PDF والصوت والفيديو والتقديرات والتنبؤات والبث غير مدعومة.
+
+## اقرأ الإجابات
+
+اقرأ `answers[field_name].value`. قد تكون القيمة المفردة `null` عندما لا يحددها
+المصدر. `p_null` هو احتمال النموذج لقيمة غير محددة؛
+و`confidence` درجة منفصلة يبلغ عنها النموذج. توفّر القوائم الثقة بدون
+`p_null`. لا تضمن هذه الدرجات الصحة: اختر عتبات المراجعة المناسبة
+لعبء العمل لديك. القائمة الفارغة الصالحة تختلف عن الطلب الفاشل.
+
+تعني `truncated: true` أن المزوّد لم يعالج كل الإدخال المصدري. راجع الإدخال أو
+أعد إرساله بطول أقصر قبل الاعتماد على اكتماله. لا تُتاح إزاحات النص ولا التخمينات الخام.
+ينبغي إجراء العمليات الحسابية المعقدة في شيفرة التطبيق.
+
+تجمع تقارير الاستخدام `input_tokens` عبر تمريرات المزوّد. tokens الإخراج
+صفر. استخدم التسعير الذي يُرجعه الـ Gateway بدلًا من تقدير التكلفة من طول المصدر
+أو ضرب الاستخدام في عدد الحقول.

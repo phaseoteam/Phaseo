@@ -1,22 +1,21 @@
-"use client";
+import { capabilityPrivacyDecision } from "./capabilityPrivacyDecision";
 
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { parseAsArrayOf, parseAsString, useQueryState } from "nuqs";
 import { toast } from "sonner";
 import { localizedSettingsError } from "@/i18n/error-messages";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Logo } from "@/components/Logo";
 import {
 	formatProviderOfferVariantLabel,
 	resolveProviderLogoId,
 	type ProviderOfferScope,
 } from "@/lib/providers/providerOffers";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
 	Accordion,
 	AccordionContent,
@@ -59,20 +58,21 @@ import {
 	PopoverTitle,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Check, ChevronLeft, Info, KeyRound, Trash2, UserRound, X } from "lucide-react";
+import { Check, ChevronLeft, KeyRound, Trash2, UserRound, X } from "lucide-react";
 
 import {
 	createGuardrail,
 	deleteGuardrail,
 	setGuardrailKeys,
 	setGuardrailMembers,
+	updateGuardrailAssignments,
 	type SensitiveInfoAction,
 	type SensitiveInfoCustomRulePayload,
 	type SensitiveInfoRulePayload,
 	updateGuardrail,
 	type PromptInjectionAction,
 	type ProviderRestrictionMode,
-} from "@/app/(dashboard)/settings/guardrails/actions";
+} from "@/features/settings/guardrails/actions";
 import {
 	buildGuardrailRestrictionPreview,
 	describeProviderRestrictionMode,
@@ -84,14 +84,29 @@ import {
 	normalizeSensitiveInfoAction,
 	validateSensitiveInfoRulePayload,
 } from "./sensitiveInfoPreview";
+import GuardrailCreateWizard from "./GuardrailCreateWizard";
+import { MAX_ASSIGNMENT_TARGETS } from "./guardrailAssignmentLimits";
+import { chunkAssignmentChange } from "./guardrailAssignments";
+import { parseSpendLimit, rateIssue, rateLimits, spendIssue, wizardKind, type WizardSection } from "./guardrailWizard";
+import RateGuardrailSection from "./RateGuardrailSection";
+import SpendGuardrailSection from "./SpendGuardrailSection";
+import type { RateCounting, SpendAction, SpendCounting, SpendPeriod } from "@/features/settings/guardrails/actions";
 
-const NANOS_PER_USD = 1_000_000_000;
 const GUARDRAIL_SECTION_IDS = new Set([
 	"access",
 	"prompt-injection",
 	"sensitive-info",
-	"budgets",
+	"rate",
+	"spend",
 ]);
+
+const RATE_COUNTINGS: readonly string[] = ["shared", "each_key", "each_end_user"];
+const SPEND_PERIODS: readonly string[] = ["daily", "weekly", "monthly"];
+const SPEND_ACTIONS: readonly string[] = ["notify", "block"];
+const SPEND_COUNTINGS: readonly string[] = ["shared", "each_key"];
+/** A stored value when it is one of `choices`, else null (nothing chosen). */
+const choice = <T extends string>(choices: readonly string[], value: unknown): T | null =>
+	choices.includes(String(value)) ? value as T : null;
 const expandedSectionsParser = parseAsArrayOf(parseAsString)
 	.withDefault([])
 	.withOptions({ shallow: true, clearOnDefault: true, history: "replace" });
@@ -141,12 +156,16 @@ type GuardrailRow = {
 	sensitive_info_enabled?: boolean | null;
 	sensitive_info_default_action?: string | null;
 	sensitive_info_rules?: SensitiveInfoRulePayload[] | null;
-	daily_limit_requests?: number | null;
-	weekly_limit_requests?: number | null;
-	monthly_limit_requests?: number | null;
-	daily_limit_cost_nanos?: number | null;
-	weekly_limit_cost_nanos?: number | null;
-	monthly_limit_cost_nanos?: number | null;
+	kind?: string | null;
+	rate_requests_per_minute?: number | null;
+	rate_tokens_per_minute?: number | null;
+	rate_concurrent_requests?: number | null;
+	rate_fail_closed?: boolean | null;
+	rate_counting?: string | null;
+	spend_limit_nanos?: number | null;
+	spend_period?: string | null;
+	spend_action?: string | null;
+	spend_counting?: string | null;
 };
 
 function normalizeMode(value: unknown): ProviderRestrictionMode {
@@ -154,6 +173,23 @@ function normalizeMode(value: unknown): ProviderRestrictionMode {
 	if (raw === "allowlist") return "allowlist";
 	if (raw === "blocklist") return "blocklist";
 	return "none";
+}
+
+/**
+ * Assigns a guardrail the new-guardrail flow just created to the whole workspace and the chosen
+ * departments. Keys and members go through their own saves; a failed level throws, as they do.
+ */
+async function assignWizardLevels(guardrailId: string, levels: { workspaceAssigned: boolean; departmentIds: string[] }) {
+	const changes = [
+		...(levels.workspaceAssigned ? [{ targetType: "workspace" as const, targetIds: [] as string[], addGuardrailIds: [guardrailId] }] : []),
+		// The API takes up to MAX_ASSIGNMENT_TARGETS targets per change.
+		...chunkAssignmentChange({ targetIds: levels.departmentIds, addGuardrailIds: [guardrailId] }, MAX_ASSIGNMENT_TARGETS)
+			.map((part) => ({ targetType: "department" as const, ...part })),
+	];
+	for (const change of changes) {
+		const result = await updateGuardrailAssignments({ data: { change } });
+		if (!result.ok) throw new Error(result.error ?? "guardrail_assignment_failed");
+	}
 }
 
 function uniqStrings(items: string[]): string[] {
@@ -336,25 +372,6 @@ function formatModelPreviewTitle(args: {
 				: args.apiModelId.trim();
 	return orgLabel ? `${orgLabel}: ${modelLabel}` : modelLabel;
 }
-
-const formatUsdFromNanos = (value: number | null | undefined) =>
-	typeof value === "number" && Number.isFinite(value) && value > 0
-		? String(value / NANOS_PER_USD)
-		: "";
-
-const parseUsdToNanos = (value: string): number | null | undefined => {
-	if (!value || value.trim().length === 0) return null;
-	const parsed = Number(value);
-	if (!Number.isFinite(parsed) || parsed < 0) return undefined;
-	return Math.round(parsed * NANOS_PER_USD);
-};
-
-const parseInteger = (value: string): number | null | undefined => {
-	if (!value || value.trim().length === 0) return null;
-	const parsed = Number(value);
-	if (!Number.isFinite(parsed) || parsed < 0) return undefined;
-	return Math.floor(parsed);
-};
 
 type SelectionOption = { value: string; label: string; group?: string; variant?: string };
 
@@ -578,6 +595,23 @@ function ToggleRow(props: {
 	);
 }
 
+const SECTION_HEADINGS: Record<"access" | "prompt-injection" | "sensitive-info" | "rate", (s: (key: string) => string, rate: (key: string) => string) => { title: string; description: string }> = {
+	rate: (_s, rate) => ({ title: rate("title"), description: rate("description") }),
+	access: (s) => ({ title: s("Access"), description: s("phraseControlPrivacyProviderAccessAndModelAccess") }),
+	"prompt-injection": (s) => ({ title: s("Prompt Injection"), description: s("phraseScanUserSuppliedRequestContentForCommonPromptInjectionPatternsBeforeItReachesTheModel") }),
+	"sensitive-info": (s) => ({ title: s("Sensitive Info Detection"), description: s("phraseDetectAndHandleSensitiveDataBeforeRequestsLeavePhaseo") }),
+};
+
+/** Heading for a section in the new-guardrail flow, where the accordion triggers are hidden. */
+function WizardSectionHeading(props: { title: string; description: string }) {
+	return (
+		<div className="mb-5 border-b pb-3">
+			<h2 className="text-base font-semibold">{props.title}</h2>
+			<p className="mt-1 text-sm text-muted-foreground">{props.description}</p>
+		</div>
+	);
+}
+
 function EditorSection(props: {
 	title: string;
 	description: string;
@@ -780,44 +814,6 @@ type PreviewModelProviderState = {
 	reasonCode: "available" | "provider_restriction" | "model_restriction" | "zdr_required" | "data_policy_unknown" | "data_policy_unverified" | "logging_disabled" | "training_disabled";
 };
 
-function capabilityPrivacyDecision(args: {
-	row: ActiveProviderModel;
-	capability: { id: string; dataPolicy: Record<string, unknown> | null };
-	privacyZdrOnly: boolean;
-	privacyEnableInputOutputLogging: boolean;
-	privacyEnablePaidMayTrain: boolean;
-	privacyEnableFreeMayTrain: boolean;
-}): { accessible: boolean; reasonCode: PreviewModelProviderState["reasonCode"] } {
-	const policy = args.capability.dataPolicy;
-	const stateful = ["batch", "files.upload", "files.list", "files.retrieve"].includes(args.capability.id);
-	const tier = String(policy?.tier ?? (stateful ? "logs" : args.row.providerPolicy?.dataPolicyTier ?? "unknown"));
-	const confidence = String(policy?.confidence ?? (stateful ? "confirmed" : args.row.providerPolicy?.dataPolicyConfidence ?? "unknown"));
-	const zdrEligibility = String(policy?.zdrEligibility ?? (
-		stateful
-			? "ineligible"
-			: args.row.providerPolicy?.zeroDataRetention === true
-				? "eligible"
-				: "ineligible"
-	));
-
-	if (args.privacyZdrOnly && zdrEligibility !== "eligible") {
-		return { accessible: false, reasonCode: "zdr_required" };
-	}
-	const privacyRestricted = args.privacyZdrOnly || !args.privacyEnableInputOutputLogging || !args.privacyEnablePaidMayTrain || !args.privacyEnableFreeMayTrain;
-	if (privacyRestricted && tier === "unknown") {
-		return { accessible: false, reasonCode: "data_policy_unknown" };
-	}
-	if (privacyRestricted && confidence !== "confirmed") {
-		return { accessible: false, reasonCode: "data_policy_unverified" };
-	}
-	if (!args.privacyEnableInputOutputLogging && tier === "logs") {
-		return { accessible: false, reasonCode: "logging_disabled" };
-	}
-	if ((!args.privacyEnablePaidMayTrain && !args.privacyEnableFreeMayTrain) && tier === "trains") {
-		return { accessible: false, reasonCode: "training_disabled" };
-	}
-	return { accessible: true, reasonCode: "available" };
-}
 
 function buildProviderReason(args: {
 	row: ActiveProviderModel;
@@ -875,6 +871,20 @@ export default function GuardrailEditorPageClient(props: {
 		[expandedSections],
 	);
 	const activeSection = validExpandedSections[0] ?? null;
+	// Creating a guardrail goes through the step-by-step flow; editing keeps the single page.
+	const isWizard = props.mode === "create";
+	const [wizardSections, setWizardSections] = useState<WizardSection[]>([]);
+	const tRate = useTranslations("SettingsUI.rateGuardrail");
+	const rateCopy = (key: string) => tRate(key as never);
+	const tSpend = useTranslations("SettingsUI.spendGuardrail");
+	const spendCopy = (key: string) => tSpend(key as never);
+	// One kind per guardrail: a rate or spend guardrail shows only its own section, and other kinds never show them.
+	const editingRate = !isWizard && props.initialGuardrail?.kind === "rate";
+	const editingSpend = !isWizard && props.initialGuardrail?.kind === "spend";
+	const editingKindSection: WizardSection | null = editingRate ? "rate" : editingSpend ? "spend" : null;
+	const sectionHidden = (id: WizardSection) => isWizard
+		? !wizardSections.includes(id)
+		: (editingKindSection ? id !== editingKindSection : id === "rate" || id === "spend") || Boolean(activeSection && activeSection !== id);
 	const activeSectionDetails = activeSection
 		? {
 			access: {
@@ -889,11 +899,9 @@ export default function GuardrailEditorPageClient(props: {
 				title: s("Sensitive Info Detection"),
 				description: s("phraseDetectAndHandleSensitiveDataBeforeRequestsLeavePhaseo"),
 			},
-			budgets: {
-				title: s("Budget Policies"),
-				description: s("phraseSetRequestAndSpendCeilingsByTimeWindow"),
-			},
-		}[activeSection]
+			rate: { title: rateCopy("title"), description: rateCopy("description") },
+			spend: { title: spendCopy("title"), description: spendCopy("description") },
+		}[activeSection as "access" | "prompt-injection" | "sensitive-info" | "rate" | "spend"]
 		: null;
 	const g = props.initialGuardrail;
 
@@ -1084,16 +1092,21 @@ export default function GuardrailEditorPageClient(props: {
 				normalizeSensitiveInfoAction(g?.sensitive_info_default_action),
 			),
 			sensitiveInfoPreviewInput: "",
-
-			dailyRequests: g?.daily_limit_requests ? String(g.daily_limit_requests) : "",
-			weeklyRequests: g?.weekly_limit_requests ? String(g.weekly_limit_requests) : "",
-			monthlyRequests: g?.monthly_limit_requests ? String(g.monthly_limit_requests) : "",
-			dailyCostUsd: formatUsdFromNanos(Number(g?.daily_limit_cost_nanos ?? 0)),
-			weeklyCostUsd: formatUsdFromNanos(Number(g?.weekly_limit_cost_nanos ?? 0)),
-			monthlyCostUsd: formatUsdFromNanos(Number(g?.monthly_limit_cost_nanos ?? 0)),
+			rateRequestsPerMinute: g?.rate_requests_per_minute == null ? "" : String(g.rate_requests_per_minute),
+			rateTokensPerMinute: g?.rate_tokens_per_minute == null ? "" : String(g.rate_tokens_per_minute),
+			rateConcurrentRequests: g?.rate_concurrent_requests == null ? "" : String(g.rate_concurrent_requests),
+			rateFailClosed: Boolean(g?.rate_fail_closed ?? false),
+			rateCounting: (RATE_COUNTINGS.includes(String(g?.rate_counting)) ? g?.rate_counting : null) as RateCounting | null,
+			spendLimit: g?.spend_limit_nanos == null ? "" : (Number(g.spend_limit_nanos) / 1e9).toFixed(2),
+			spendPeriod: choice<SpendPeriod>(SPEND_PERIODS, g?.spend_period),
+			spendAction: choice<SpendAction>(SPEND_ACTIONS, g?.spend_action),
+			spendCounting: choice<SpendCounting>(SPEND_COUNTINGS, g?.spend_counting),
 
 			keyIds: props.initialKeyIds ?? [],
 			memberIds: props.initialMemberIds ?? [],
+			// Only the new-guardrail flow assigns departments and the whole workspace; editing leaves them as they are.
+			departmentIds: [] as string[],
+			workspaceAssigned: false,
 		};
 	}, [g, props.initialKeyIds, props.initialMemberIds]);
 
@@ -1391,23 +1404,6 @@ export default function GuardrailEditorPageClient(props: {
 		() => form.sensitiveInfoRules.filter((rule) => rule.enabled).length,
 		[form.sensitiveInfoRules],
 	);
-	const configuredBudgetCount = useMemo(() => {
-		return [
-			form.dailyRequests,
-			form.weeklyRequests,
-			form.monthlyRequests,
-			form.dailyCostUsd,
-			form.weeklyCostUsd,
-			form.monthlyCostUsd,
-		].filter((value) => value.trim().length > 0).length;
-	}, [
-		form.dailyCostUsd,
-		form.dailyRequests,
-		form.monthlyCostUsd,
-		form.monthlyRequests,
-		form.weeklyCostUsd,
-		form.weeklyRequests,
-	]);
 	const privacyRestrictionCount = useMemo(() => {
 		let count = 0;
 		if (!form.privacyEnablePaidMayTrain) count += 1;
@@ -1425,8 +1421,8 @@ export default function GuardrailEditorPageClient(props: {
 	]);
 
 	useEffect(() => {
-		setForm(initial);
-	}, [initial]);
+		if (props.mode !== "create") setForm(initial);
+	}, [initial, props.mode]);
 
 	function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
 		setForm((prev) => ({ ...prev, [key]: value }));
@@ -1540,44 +1536,6 @@ export default function GuardrailEditorPageClient(props: {
 		);
 	}
 
-	function validateBudgets() {
-		const dailyRequests = parseInteger(form.dailyRequests);
-		const weeklyRequests = parseInteger(form.weeklyRequests);
-		const monthlyRequests = parseInteger(form.monthlyRequests);
-		const dailyCostNanos = parseUsdToNanos(form.dailyCostUsd);
-		const weeklyCostNanos = parseUsdToNanos(form.weeklyCostUsd);
-		const monthlyCostNanos = parseUsdToNanos(form.monthlyCostUsd);
-
-		const invalidField =
-			dailyRequests === undefined
-				? "Daily request budget"
-				: weeklyRequests === undefined
-					? "Weekly request budget"
-					: monthlyRequests === undefined
-						? "Monthly request budget"
-						: dailyCostNanos === undefined
-							? "Daily spend budget"
-							: weeklyCostNanos === undefined
-								? "Weekly spend budget"
-								: monthlyCostNanos === undefined
-									? "Monthly spend budget"
-									: null;
-
-		if (invalidField) {
-			toast.error(`${invalidField} ${t("strings.phraseMustBeAPositiveNumber" as never)}`);
-			return null;
-		}
-
-		return {
-			dailyRequests,
-			weeklyRequests,
-			monthlyRequests,
-			dailyCostNanos,
-			weeklyCostNanos,
-			monthlyCostNanos,
-		};
-	}
-
 	async function onSave() {
 		if (!form.name.trim()) {
 			toast.error(t("strings.phraseNameIsRequired" as never));
@@ -1595,9 +1553,36 @@ export default function GuardrailEditorPageClient(props: {
 			toast.error(firstSensitiveInfoIssue);
 			return;
 		}
-		const budgets = validateBudgets();
-		if (!budgets) return;
-
+		const savingRate = isWizard ? wizardSections.includes("rate") : editingRate;
+		// Saving a guardrail made through the rate limits API keeps its counting unless one is chosen.
+		const rateProblem = savingRate ? rateIssue(form, { legacyCounting: editingRate && !props.initialGuardrail?.rate_counting }) : null;
+		if (rateProblem) {
+			toast.error(tRate(`issue.${String(rateProblem)}` as never));
+			return;
+		}
+		const limits = savingRate ? rateLimits(form) : null;
+		// A rate guardrail saves only its rate settings; the table refuses any other rule on it.
+		const rateFields = limits ? {
+			rateRequestsPerMinute: limits.requestsPerMinute,
+			rateTokensPerMinute: limits.tokensPerMinute,
+			rateConcurrentRequests: limits.concurrentRequests,
+			rateFailClosed: form.rateFailClosed,
+			...(form.rateCounting ? { rateCounting: form.rateCounting } : {}),
+		} : {};
+		const savingSpend = isWizard ? wizardSections.includes("spend") : editingSpend;
+		const spendProblem = savingSpend ? spendIssue(form) : null;
+		if (spendProblem) {
+			toast.error(tSpend(`issue.${String(spendProblem)}` as never));
+			return;
+		}
+		const spendLimitNanos = savingSpend ? parseSpendLimit(form.spendLimit) : null;
+		// A spend guardrail saves only its spend settings; the table refuses any other rule on it.
+		const spendFields = savingSpend && typeof spendLimitNanos === "number" && form.spendPeriod && form.spendAction && form.spendCounting ? {
+			spendLimitNanos,
+			spendPeriod: form.spendPeriod,
+			spendAction: form.spendAction,
+			spendCounting: form.spendCounting,
+		} : {};
 		setSaving(true);
 		const toastId = toast.loading(
 			props.mode === "create" ? t("strings.phraseCreatingGuardrail" as never) : t("strings.phraseSavingGuardrail" as never),
@@ -1605,7 +1590,10 @@ export default function GuardrailEditorPageClient(props: {
 		try {
 			let guardrailId = props.guardrailId;
 			if (props.mode === "create") {
-				const created = await createGuardrail({
+				const created = await createGuardrail({ data: {
+					kind: wizardKind(wizardSections),
+					...rateFields,
+					...spendFields,
 					enabled: form.enabled,
 					name: form.name,
 					description: form.description || null,
@@ -1624,11 +1612,12 @@ export default function GuardrailEditorPageClient(props: {
 					sensitiveInfoEnabled: form.sensitiveInfoEnabled,
 					sensitiveInfoDefaultAction: form.sensitiveInfoDefaultAction,
 					sensitiveInfoRules: form.sensitiveInfoRules,
-					budgets,
-				});
+				} });
 				guardrailId = created.id ?? null;
 			} else if (props.mode === "edit" && props.guardrailId) {
-				await updateGuardrail(props.guardrailId, {
+				await updateGuardrail({ data: { id: props.guardrailId, payload: {
+					...rateFields,
+					...spendFields,
 					enabled: form.enabled,
 					name: form.name,
 					description: form.description || null,
@@ -1647,15 +1636,15 @@ export default function GuardrailEditorPageClient(props: {
 					sensitiveInfoEnabled: form.sensitiveInfoEnabled,
 					sensitiveInfoDefaultAction: form.sensitiveInfoDefaultAction,
 					sensitiveInfoRules: form.sensitiveInfoRules,
-					budgets,
-				});
+				} } });
 			}
 
 			if (guardrailId) {
 				await Promise.all([
-					setGuardrailKeys(guardrailId, form.keyIds),
-					setGuardrailMembers(guardrailId, form.memberIds),
+					setGuardrailKeys({ data: { guardrailId, keyIds: form.keyIds } }),
+					setGuardrailMembers({ data: { guardrailId, userIds: form.memberIds } }),
 				]);
+				if (props.mode === "create") await assignWizardLevels(guardrailId, form);
 			}
 
 			toast.success(t("credits.Guardrail saved" as never), { id: toastId });
@@ -1674,7 +1663,7 @@ export default function GuardrailEditorPageClient(props: {
 		setDeleting(true);
 		const toastId = toast.loading(t("strings.phraseDeletingGuardrail" as never));
 		try {
-			await deleteGuardrail(props.guardrailId);
+			await deleteGuardrail({ data: props.guardrailId });
 			toast.success(t("credits.Guardrail deleted" as never), { id: toastId });
 			router.push(props.backHref);
 			router.refresh();
@@ -1686,139 +1675,15 @@ export default function GuardrailEditorPageClient(props: {
 		}
 	}
 
-	return (
-		<div className="space-y-6 [&_[data-slot=button]]:!rounded-md [&_[data-slot=select-trigger]]:!rounded-md">
-			<div className="w-full space-y-6">
-				{activeSection ? (
-					<div className="space-y-4 border-b pb-5">
-						<button
-							type="button"
-							onClick={() => void setExpandedSections([])}
-							className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-						>
-							<ChevronLeft className="h-4 w-4" />
-							<span>{t("strings.Overview" as never)} / {activeSectionDetails?.title}</span>
-						</button>
-						<div>
-							<h1 className="text-2xl font-semibold tracking-tight">{activeSectionDetails?.title}</h1>
-							<p className="mt-1 text-sm text-muted-foreground">{activeSectionDetails?.description}</p>
-						</div>
-					</div>
-				) : null}
-				{!activeSection ? <>
-				<div className="flex flex-wrap items-center justify-between gap-3">
-					<div className="min-w-0 flex-1">
-						<Label htmlFor="guardrail-name" className="sr-only">
-							{t("strings.Guardrail name" as never)}
-						</Label>
-						<Input
-							id="guardrail-name"
-							value={form.name}
-							onChange={(e) => set("name", e.target.value)}
-							placeholder={t("strings.New Guardrail" as never)}
-							className="h-auto rounded-none border-0 bg-transparent px-0 py-0 text-4xl font-semibold leading-tight tracking-tight shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 md:text-3xl"
-						/>
-					</div>
-					<div className="flex flex-wrap items-center gap-2">
-						<Button asChild type="button" variant="outline" disabled={saving || deleting} className="rounded-md">
-							<Link href={props.backHref}>{t("strings.Cancel" as never)}</Link>
-						</Button>
-						<Button type="button" onClick={onSave} disabled={saving || deleting} className="rounded-md">
-							{saving ? t("strings.phraseSaving" as never) : props.mode === "create" ? t("strings.Create" as never) : t("strings.Save" as never)}
-						</Button>
-						{props.mode === "edit" ? (
-							<Button type="button" variant="destructive" onClick={onDelete} disabled={saving || deleting} className="rounded-md">
-								<Trash2 className="mr-2 h-4 w-4" />
-								{t("strings.Delete" as never)}
-							</Button>
-						) : null}
-					</div>
-				</div>
-
-				<div className="space-y-6">
-						<div className="space-y-5">
-							<div className="space-y-3">
-								<Textarea
-									value={form.description}
-									onChange={(e) => set("description", e.target.value)}
-									placeholder={t("strings.Who is this for? What does it restrict?" as never)}
-									className="min-h-0 h-10 resize-none overflow-hidden rounded-none border-0 bg-transparent px-0 py-2 text-base text-muted-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0"
-								/>
-							</div>
-							<div className="space-y-4 border-t pt-5">
-								<div>
-									<h2 className="text-sm font-semibold">{t("strings.Status & Assignments" as never)}</h2>
-									<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseEnableThisGuardrailAndChooseWhoItProtects" as never)}</p>
-								</div>
-								<div className="flex items-center justify-between gap-4 py-2">
-									<div>
-										<p className="text-sm font-medium">{t("strings.Enabled" as never)}</p>
-										<p className="mt-1 text-xs text-muted-foreground">{t("strings.phraseDisabledGuardrailsRemainConfiguredButAreNotEnforced" as never)}</p>
-									</div>
-									<Switch checked={form.enabled} onCheckedChange={(checked) => set("enabled", checked)} />
-								</div>
-								<div className="flex flex-wrap items-center justify-between gap-3">
-									<div>
-										<div className="text-sm font-medium">{t("strings.Apply to members" as never)}</div>
-										<p className="text-xs text-muted-foreground">
-											{t("strings.phraseEnforceThisPolicyOnAPIKeysCreatedForSelectedMembers" as never)}
-										</p>
-									</div>
-									<SelectionCombobox
-										title={t("strings.Select members" as never)}
-										description={t("strings.phraseMembersCannotEditOrRemovePoliciesAssignedByWorkspaceOwnersOrAdmins" as never)}
-										options={memberOptions}
-										selected={form.memberIds}
-										onChange={(next) => set("memberIds", next)}
-										trigger={<Button type="button" variant="outline" size="sm" className="h-8 rounded-md">{form.memberIds.length ? `${form.memberIds.length} ${t("strings.selected" as never)}` : t("strings.Select members" as never)}</Button>}
-									/>
-								</div>
-				<SelectedItemBadges items={selectedMemberItems} empty={t("strings.phraseNoMembersSelectedYet" as never)} onRemove={removeSelectedMember} />
-								<div className="flex flex-wrap items-center justify-between gap-3">
-									<div>
-								<div className="text-sm font-medium">{t("strings.Apply to keys" as never)}</div>
-										<p className="text-xs text-muted-foreground">
-										{t("strings.phraseAttachThisGuardrailDuringCreationInsteadOfAfterTheFact" as never)}
-										</p>
-									</div>
-									<SelectionCombobox
-										title={t("strings.Select keys" as never)}
-										description={t("strings.phraseApplyThisGuardrailToOneOrMoreKeys" as never)}
-										options={keyOptions}
-										selected={form.keyIds}
-										onChange={(next) => set("keyIds", next)}
-										trigger={
-											<Button type="button" variant="outline" size="sm" className="h-8 rounded-md">
-												{form.keyIds.length
-													? `${form.keyIds.length} ${t("strings.selected" as never)}`
-													: t("strings.Select keys" as never)}
-											</Button>
-										}
-									/>
-								</div>
-								<SelectedItemBadges
-									items={selectedKeyItems}
-									empty={t("strings.phraseNoKeysSelectedYet" as never)}
-									onRemove={removeSelectedKey}
-								/>
-							</div>
-						</div>
-
-					</div>
-
-				<div>
-					<h2 className="text-sm font-semibold">{t("strings.Configuration Groups" as never)}</h2>
-					<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseConfigureAccessSafetyAndSpendingPolicies" as never)}</p>
-				</div>
-				</> : null}
+	const sectionsAccordion = (
 				<Accordion
 					type="multiple"
-					value={validExpandedSections}
-					onValueChange={(sections) => void setExpandedSections(sections.slice(-1))}
-					className={activeSection ? "space-y-0" : "border-y border-border/70 py-1"}
+					value={isWizard ? wizardSections : validExpandedSections}
+					onValueChange={(sections) => { if (!isWizard) void setExpandedSections(sections.slice(-1)); }}
+					className={isWizard ? "space-y-10" : activeSection ? "space-y-0" : "border-y border-border/70 py-1"}
 				>
-					<AccordionItem value="access" className={activeSection && activeSection !== "access" ? "hidden" : "border-0"}>
-						<AccordionTrigger className={activeSection ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
+					<AccordionItem value="access" className={sectionHidden("access") ? "hidden" : "border-0"}>
+						<AccordionTrigger className={activeSection || isWizard ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
 							<div className="min-w-0 flex-1 text-left">
 				<div className="text-sm font-medium">{t("strings.Access" as never)}</div>
 								<p className="mt-1 text-sm font-normal text-muted-foreground">
@@ -1830,6 +1695,7 @@ export default function GuardrailEditorPageClient(props: {
 							</span>
 						</AccordionTrigger>
 						<AccordionContent disableAnimation className="pb-2 pt-0">
+							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["access"](s, rateCopy)} /> : null}
 							<div className="space-y-4">
 						<EditorSection
 							title={t("strings.Access" as never)}
@@ -2120,8 +1986,8 @@ export default function GuardrailEditorPageClient(props: {
 							</div>
 						</AccordionContent>
 					</AccordionItem>
-					<AccordionItem value="prompt-injection" className={activeSection && activeSection !== "prompt-injection" ? "hidden" : "border-0"}>
-						<AccordionTrigger className={activeSection ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
+					<AccordionItem value="prompt-injection" className={sectionHidden("prompt-injection") ? "hidden" : "border-0"}>
+						<AccordionTrigger className={activeSection || isWizard ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
 							<div className="min-w-0 flex-1 text-left">
 							<div className="text-sm font-medium">{t("strings.Prompt Injection" as never)}</div>
 								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.phraseScanRequestContentBeforeRouting" as never)}</p>
@@ -2131,6 +1997,7 @@ export default function GuardrailEditorPageClient(props: {
 							</span>
 						</AccordionTrigger>
 						<AccordionContent disableAnimation className="pb-2 pt-0">
+							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["prompt-injection"](s, rateCopy)} /> : null}
 							<div className="space-y-4">
 						<EditorSection
 							title={t("strings.Prompt injection" as never)}
@@ -2166,8 +2033,8 @@ export default function GuardrailEditorPageClient(props: {
 							</div>
 						</AccordionContent>
 					</AccordionItem>
-					<AccordionItem value="sensitive-info" className={activeSection && activeSection !== "sensitive-info" ? "hidden" : "border-0"}>
-						<AccordionTrigger className={activeSection ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
+					<AccordionItem value="sensitive-info" className={sectionHidden("sensitive-info") ? "hidden" : "border-0"}>
+						<AccordionTrigger className={activeSection || isWizard ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
 							<div className="min-w-0 flex-1 text-left">
 								<div className="text-sm font-medium">{t("strings.Sensitive Info Detection" as never)}</div>
 								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.phraseDetectAndHandleSensitiveDataBeforeRequestsLeavePhaseo" as never)}</p>
@@ -2177,6 +2044,7 @@ export default function GuardrailEditorPageClient(props: {
 							</span>
 						</AccordionTrigger>
 						<AccordionContent disableAnimation className="pb-2 pt-0">
+							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["sensitive-info"](s, rateCopy)} /> : null}
 							<div className="space-y-6">
 						<EditorSection
 							title={t("strings.Sensitive info" as never)}
@@ -2495,108 +2363,184 @@ export default function GuardrailEditorPageClient(props: {
 							</div>
 						</AccordionContent>
 					</AccordionItem>
-					<AccordionItem value="budgets" className={activeSection && activeSection !== "budgets" ? "hidden" : "border-0"}>
-						<AccordionTrigger className={activeSection ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
+					<AccordionItem value="rate" className={sectionHidden("rate") ? "hidden" : "border-0"}>
+						<AccordionTrigger className={activeSection || isWizard ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
 							<div className="min-w-0 flex-1 text-left">
-								<div className="text-sm font-medium">{t("strings.Budget Policies" as never)}</div>
-								<p className="mt-1 text-sm font-normal text-muted-foreground">{t("strings.phraseSetRequestAndSpendCeilingsByTimeWindow" as never)}</p>
+								<div className="text-sm font-medium">{rateCopy("title")}</div>
+								<p className="mt-1 text-sm font-normal text-muted-foreground">{rateCopy("description")}</p>
 							</div>
-							<span className="hidden shrink-0 text-sm font-normal text-muted-foreground md:block">
-								{configuredBudgetCount ? tGuardrail("limitsConfigured", { count: configuredBudgetCount }) : t("credits.No limits" as never)}
-							</span>
 						</AccordionTrigger>
 						<AccordionContent disableAnimation className="pb-2 pt-0">
-							<div className="space-y-4">
-						<EditorSection
-							title={t("strings.Budgets" as never)}
-							description={t("strings.phraseLeaveAFieldBlankForUnlimited" as never)}
-							compact
-						>
-							<div className="space-y-4">
-								<Alert>
-									<Info />
-									<div>
-										<AlertTitle>{t("strings.Aggregate guardrail budgets are not yet enforced" as never)}</AlertTitle>
-										<AlertDescription>
-											{t("strings.phraseUseAPIKeyLimitsForHardRequestAndSpendEnforcementWhileMemberAndWorkspaceAggregationIsCompleted" as never)}
-										</AlertDescription>
-									</div>
-								</Alert>
-								<div className="grid gap-4 md:grid-cols-3">
-									<div className="space-y-2">
-												<Label>{t("strings.Daily requests" as never)}</Label>
-										<Input
-											type="number"
-											min="0"
-													placeholder={t("strings.Unlimited" as never)}
-											value={form.dailyRequests}
-											onChange={(e) => set("dailyRequests", e.target.value)}
-										/>
-									</div>
-									<div className="space-y-2">
-												<Label>{t("strings.Weekly requests" as never)}</Label>
-										<Input
-											type="number"
-											min="0"
-											placeholder={t("strings.Unlimited" as never)}
-											value={form.weeklyRequests}
-											onChange={(e) => set("weeklyRequests", e.target.value)}
-										/>
-									</div>
-									<div className="space-y-2">
-												<Label>{t("strings.Monthly requests" as never)}</Label>
-										<Input
-											type="number"
-											min="0"
-											placeholder={t("strings.Unlimited" as never)}
-											value={form.monthlyRequests}
-											onChange={(e) => set("monthlyRequests", e.target.value)}
-										/>
-									</div>
-								</div>
-								<div className="grid gap-4 md:grid-cols-3">
-									<div className="space-y-2">
-												<Label>{t("strings.Daily spend (USD)" as never)}</Label>
-										<Input
-											type="number"
-											min="0"
-											step="0.01"
-											placeholder={t("strings.Unlimited" as never)}
-											value={form.dailyCostUsd}
-											onChange={(e) => set("dailyCostUsd", e.target.value)}
-										/>
-									</div>
-									<div className="space-y-2">
-												<Label>{t("strings.Weekly spend (USD)" as never)}</Label>
-										<Input
-											type="number"
-											min="0"
-											step="0.01"
-											placeholder={t("strings.Unlimited" as never)}
-											value={form.weeklyCostUsd}
-											onChange={(e) => set("weeklyCostUsd", e.target.value)}
-										/>
-									</div>
-									<div className="space-y-2">
-												<Label>{t("strings.Monthly spend (USD)" as never)}</Label>
-										<Input
-											type="number"
-											min="0"
-											step="0.01"
-											placeholder={t("strings.Unlimited" as never)}
-											value={form.monthlyCostUsd}
-											onChange={(e) => set("monthlyCostUsd", e.target.value)}
-										/>
-									</div>
-								</div>
+							{isWizard ? <WizardSectionHeading {...SECTION_HEADINGS["rate"](s, rateCopy)} /> : null}
+							<RateGuardrailSection
+								value={form}
+								legacyCounting={editingRate && !props.initialGuardrail?.rate_counting}
+								onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+							/>
+						</AccordionContent>
+					</AccordionItem>
+					<AccordionItem value="spend" className={sectionHidden("spend") ? "hidden" : "border-0"}>
+						<AccordionTrigger className={activeSection || isWizard ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
+							<div className="min-w-0 flex-1 text-left">
+								<div className="text-sm font-medium">{spendCopy("title")}</div>
+								<p className="mt-1 text-sm font-normal text-muted-foreground">{spendCopy("description")}</p>
 							</div>
-						</EditorSection>
-							</div>
+						</AccordionTrigger>
+						<AccordionContent disableAnimation className="pb-2 pt-0">
+							{isWizard ? <WizardSectionHeading title={spendCopy("title")} description={spendCopy("description")} /> : null}
+							<SpendGuardrailSection value={form} onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))} />
 						</AccordionContent>
 					</AccordionItem>
 				</Accordion>
+	);
 
-				{activeSection ? <div className="flex justify-end gap-2 border-t pt-4">
+	if (isWizard) {
+		return (
+			<div className="w-full max-w-4xl [&_[data-slot=select-trigger]]:!rounded-md">
+				<GuardrailCreateWizard
+					form={form}
+					defaults={initial}
+					onFormChange={(update) => setForm((prev) => ({ ...prev, ...update(prev) }))}
+					sections={wizardSections}
+					onSectionsChange={setWizardSections}
+					configure={sectionsAccordion}
+					modelCoverage={{ available: modelCoverageCounts.available, total: modelCoverageCounts.available + modelCoverageCounts.unavailable }}
+					saving={saving}
+					onCreate={() => void onSave()}
+					backHref={props.backHref}
+				/>
+			</div>
+		);
+	}
+
+	return (
+		<div className="w-full max-w-4xl space-y-8 [&_[data-slot=button]]:!rounded-md [&_[data-slot=select-trigger]]:!rounded-md">
+			<div className="w-full space-y-6">
+				{activeSection ? (
+					<div className="space-y-4 border-b pb-5">
+						<button
+							type="button"
+							onClick={() => void setExpandedSections([])}
+							className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+						>
+							<ChevronLeft className="h-4 w-4" />
+							<span>{t("strings.Overview" as never)} / {activeSectionDetails?.title}</span>
+						</button>
+						<div>
+							<h1 className="text-2xl font-semibold tracking-tight">{activeSectionDetails?.title}</h1>
+							<p className="mt-1 text-sm text-muted-foreground">{activeSectionDetails?.description}</p>
+						</div>
+					</div>
+				) : null}
+				{!activeSection ? <>
+				<div className="flex flex-wrap items-center justify-between gap-3">
+					<div className="min-w-0 flex-1">
+						<Label htmlFor="guardrail-name" className="sr-only">
+							{t("strings.Guardrail name" as never)}
+						</Label>
+						<Input
+							id="guardrail-name"
+							value={form.name}
+							onChange={(e) => set("name", e.target.value)}
+							placeholder={t("strings.New Guardrail" as never)}
+							className="h-auto rounded-none border-0 bg-transparent px-0 py-0 text-4xl font-semibold leading-tight tracking-tight shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 md:text-3xl"
+						/>
+					</div>
+					<div className="flex flex-wrap items-center gap-2">
+						<Button asChild type="button" variant="outline" disabled={saving || deleting} className="rounded-md">
+							<Link href={props.backHref}>{t("strings.Cancel" as never)}</Link>
+						</Button>
+						<Button type="button" onClick={onSave} disabled={saving || deleting} className="rounded-md">
+							{saving ? t("strings.phraseSaving" as never) : props.mode === "create" ? t("strings.Create" as never) : t("strings.Save" as never)}
+						</Button>
+						{props.mode === "edit" ? (
+							<Button type="button" variant="destructive" onClick={onDelete} disabled={saving || deleting} className="rounded-md">
+								<Trash2 className="mr-2 h-4 w-4" />
+								{t("strings.Delete" as never)}
+							</Button>
+						) : null}
+					</div>
+				</div>
+
+				<div className="space-y-6">
+						<div className="space-y-5">
+							<div className="space-y-3">
+								<Textarea
+									value={form.description}
+									onChange={(e) => set("description", e.target.value)}
+									placeholder={t("strings.Who is this for? What does it restrict?" as never)}
+									className="min-h-0 h-10 resize-none overflow-hidden rounded-none border-0 bg-transparent px-0 py-2 text-base text-muted-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0"
+								/>
+							</div>
+							<div className="space-y-4 border-t pt-5">
+								<div>
+									<h2 className="text-sm font-semibold">{t("strings.Status & Assignments" as never)}</h2>
+									<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseEnableThisGuardrailAndChooseWhoItProtects" as never)}</p>
+								</div>
+								<div className="flex items-center justify-between gap-4 py-2">
+									<div>
+										<p className="text-sm font-medium">{t("strings.Enabled" as never)}</p>
+										<p className="mt-1 text-xs text-muted-foreground">{t("strings.phraseDisabledGuardrailsRemainConfiguredButAreNotEnforced" as never)}</p>
+									</div>
+									<Switch checked={form.enabled} onCheckedChange={(checked) => set("enabled", checked)} />
+								</div>
+								<div className="flex flex-wrap items-center justify-between gap-3">
+									<div>
+										<div className="text-sm font-medium">{t("strings.Apply to members" as never)}</div>
+										<p className="text-xs text-muted-foreground">
+											{t("strings.phraseEnforceThisPolicyOnAPIKeysCreatedForSelectedMembers" as never)}
+										</p>
+									</div>
+									<SelectionCombobox
+										title={t("strings.Select members" as never)}
+										description={t("strings.phraseMembersCannotEditOrRemovePoliciesAssignedByWorkspaceOwnersOrAdmins" as never)}
+										options={memberOptions}
+										selected={form.memberIds}
+										onChange={(next) => set("memberIds", next)}
+										trigger={<Button type="button" variant="outline" size="sm" className="h-8 rounded-md">{form.memberIds.length ? `${form.memberIds.length} ${t("strings.selected" as never)}` : t("strings.Select members" as never)}</Button>}
+									/>
+								</div>
+				<SelectedItemBadges items={selectedMemberItems} empty={t("strings.phraseNoMembersSelectedYet" as never)} onRemove={removeSelectedMember} />
+								<div className="flex flex-wrap items-center justify-between gap-3">
+									<div>
+								<div className="text-sm font-medium">{t("strings.Apply to keys" as never)}</div>
+										<p className="text-xs text-muted-foreground">
+										{t("strings.phraseAttachThisGuardrailDuringCreationInsteadOfAfterTheFact" as never)}
+										</p>
+									</div>
+									<SelectionCombobox
+										title={t("strings.Select keys" as never)}
+										description={t("strings.phraseApplyThisGuardrailToOneOrMoreKeys" as never)}
+										options={keyOptions}
+										selected={form.keyIds}
+										onChange={(next) => set("keyIds", next)}
+										trigger={
+											<Button type="button" variant="outline" size="sm" className="h-8 rounded-md">
+												{form.keyIds.length
+													? `${form.keyIds.length} ${t("strings.selected" as never)}`
+													: t("strings.Select keys" as never)}
+											</Button>
+										}
+									/>
+								</div>
+								<SelectedItemBadges
+									items={selectedKeyItems}
+									empty={t("strings.phraseNoKeysSelectedYet" as never)}
+									onRemove={removeSelectedKey}
+								/>
+							</div>
+						</div>
+
+					</div>
+
+				<div>
+					<h2 className="text-sm font-semibold">{t("strings.Configuration Groups" as never)}</h2>
+					<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseConfigureAccessSafetyAndSpendingPolicies" as never)}</p>
+				</div>
+				</> : null}
+				{sectionsAccordion}
+
+				{activeSection ? <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
 					<Button asChild type="button" variant="outline" disabled={saving || deleting} className="rounded-md">
 						<Link href={props.backHref}>{t("strings.Cancel" as never)}</Link>
 					</Button>

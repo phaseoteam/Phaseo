@@ -38,6 +38,11 @@ function resolveReasoningConfig(providerId?: string): ReasoningConfig | null {
 	if (providerId === "openai" || providerId === "openai-eu" || providerId === "ovhcloud") {
 		return { mode: "effort", field: "reasoning" };
 	}
+	if (providerId === "io-net") {
+		// io.net documents reasoning: { effort: "none" | "low" | "medium" | "high" }.
+		// https://io.net/docs/guides/intelligence/reasoning-for-chat-completions
+		return { mode: "effort", field: "reasoning" };
+	}
 	if (providerId === "morph") {
 		// Morph's fast-model API documents reasoning: { effort: "low" | "medium" | "high" }.
 		return { mode: "effort", field: "reasoning" };
@@ -49,10 +54,12 @@ function resolveReasoningConfig(providerId?: string): ReasoningConfig | null {
 	// Note: Google is no longer OpenAI-compatible - it uses native implementation
 	// Thinking mode is handled in the Google executor via generationConfig.thinkingBudget
 
-	if (providerId === "deepseek" || providerId === "wafer") {
+	if (providerId === "deepseek" || providerId === "wafer" || providerId === "atlascloud") {
 		// DeepSeek uses thinking: {type: "enabled"} for thinking mode
 		// https://api-docs.deepseek.com/guides/thinking_mode
 		// Wafer's first-party model quick starts document the same shape.
+		// Atlas Cloud's chat API takes a `thinking` object and unifies `thinking.type` with
+		// its other reasoning flags (https://www.atlascloud.ai/docs/llm-protocols).
 		return { mode: "enabled", field: "thinking", format: "type" };
 	}
 
@@ -67,8 +74,11 @@ export function applyReasoningParams(args: {
 }): void {
 	const reasoning = args.ir.reasoning;
 	if (!reasoning) return;
-	if (args.providerId === "wafer") {
-		const effort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+	if (args.providerId === "wafer" || args.providerId === "wafer-zdr" || args.providerId === "wafer-us") {
+		// Chat Completions accepts none, low, medium, high, xhigh or max; anything else,
+		// minimal included, is a 400 (https://docs.wafer.ai/serverless/models).
+		const requested = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+		const effort = requested === "minimal" || requested === "instant" ? "low" : requested;
 		if (effort && effort !== "none") {
 			args.request.reasoning_effort = effort;
 		} else if (reasoning.enabled !== undefined || effort === "none") {
@@ -118,10 +128,56 @@ export function applyReasoningParams(args: {
 		}
 		return;
 	}
+	if (args.providerId === "particle-ai") {
+		// Particle takes reasoning_effort none, minimal, low, medium, high, xhigh, max
+		// (and ultra); omitting it means high (https://docs.particle.ai/reasoning).
+		// An explicit enabled: false wins over any effort, so a disable request never bills reasoning.
+		const effort = reasoning.enabled === false
+			? "none"
+			: typeof reasoning.effort === "string"
+				? reasoning.effort
+				: reasoning.enabled === true ? "high" : undefined;
+		if (effort !== undefined) args.request.reasoning_effort = effort;
+		return;
+	}
+	if (args.providerId === "tencent-cloud" && /^(?:tencent\/)?hy\d/i.test(String(args.providerModelSlug ?? args.ir.model ?? ""))) {
+		// TokenHub's Hy models (hy3, hy4, hy4-preview) take reasoning_effort low or high
+		// (default high) and thinking: { type: "disabled" } to turn thinking off.
+		// https://intl.cloud.tencent.com/document/product/1300/80695
+		const rawEffort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+		if (reasoning.enabled === false || rawEffort === "none") {
+			args.request.thinking = { type: "disabled" };
+			return;
+		}
+		const effort = rawEffort === "minimal" || rawEffort === "low"
+			? "low"
+			: rawEffort !== undefined || reasoning.enabled === true
+				? "high"
+				: undefined;
+		if (effort !== undefined) args.request.reasoning_effort = effort;
+		return;
+	}
 	if (args.providerId === "thinking-machines") {
 		const effort = typeof reasoning.effort === "string"
 			? reasoning.effort
 			: reasoning.enabled === false ? "none" : reasoning.enabled === true ? "high" : undefined;
+		if (effort !== undefined) args.request.reasoning_effort = effort;
+		return;
+	}
+	if (args.providerId === "lg") {
+		// K-EXAONE always thinks (enable_thinking is forced on) and takes reasoning_effort
+		// low, high or max, defaulting to max (https://docs.exaone.ai/en/docs/k-exaone-2.5).
+		// Requests that turn reasoning off never reach here: providerDocsValidation skips
+		// this provider for them. Budgets have no upstream field.
+		if (reasoning.enabled === false || reasoning.effort === "none") return;
+		const rawEffort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+		const effort = rawEffort === "instant" || rawEffort === "minimal" || rawEffort === "low"
+			? "low"
+			: rawEffort === "medium" || rawEffort === "high"
+				? "high"
+				: rawEffort === "xhigh" || rawEffort === "max"
+					? "max"
+					: undefined;
 		if (effort !== undefined) args.request.reasoning_effort = effort;
 		return;
 	}
@@ -208,6 +264,30 @@ export function applyReasoningParams(args: {
 	}
 	if (args.providerId === "alibaba-cloud") {
 		const rawEffort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+		const upstreamModel = String(args.providerModelSlug ?? args.ir.model ?? "").toLowerCase();
+		// glm-5.3 always thinks: it takes reasoning_effort low, high or max only,
+		// and enable_thinking false fails the request. Requests to turn thinking
+		// off run at low.
+		// https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai-chat-completions
+		if (/(^|\/)glm-5\.3\b/.test(upstreamModel)) {
+			const glmEffort = reasoning.enabled === false || rawEffort === "none" || rawEffort === "minimal" || rawEffort === "low"
+				? "low"
+				: rawEffort === "medium" || rawEffort === "high"
+					? "high"
+					: rawEffort === "xhigh" || rawEffort === "max"
+						? "max"
+						: undefined;
+			if ("input" in args.request) {
+				if (glmEffort !== undefined) args.request.reasoning = { effort: glmEffort };
+				return;
+			}
+			if (typeof reasoning.maxTokens === "number") {
+				args.request.thinking_budget = reasoning.maxTokens;
+			} else if (glmEffort !== undefined) {
+				args.request.reasoning_effort = glmEffort;
+			}
+			return;
+		}
 		const effort = rawEffort === "minimal" || rawEffort === "low"
 			? "low"
 			: rawEffort === "medium"
@@ -264,12 +344,16 @@ export function applyReasoningParams(args: {
 			reasoning.effort !== "none" &&
 			args.request.reasoning_effort == null
 		) {
-			args.request.reasoning_effort =
+			const deepseekEffort =
 				reasoning.effort === "minimal"
 					? "low"
 					: reasoning.effort === "low" || reasoning.effort === "max"
 						? reasoning.effort
 					: "high";
+			// DeepSeek's Responses API reads reasoning.effort and silently ignores unknown
+			// fields (https://api-docs.deepseek.com/guides/responses_api/).
+			if ("input" in args.request) args.request.reasoning = { effort: deepseekEffort };
+			else args.request.reasoning_effort = deepseekEffort;
 		}
 		if (args.request[field] == null) {
 			const format = config.format ?? "type";

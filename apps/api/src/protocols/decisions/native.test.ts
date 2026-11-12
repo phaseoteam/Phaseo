@@ -16,6 +16,22 @@ const body = {
 	],
 };
 describe("OpenAI Decisions wire format", () => {
+	it("preserves Box answers and long-context options", () => {
+		const ir = decodeDecisionsRequest(DecisionsSchema.parse({ model: "typesafe/jev-1.14.0",
+			input: [{ role: "user", content: [{ type: "input_image", image_url: "data:image/png;base64,AQID" }] }],
+			questions: [{ type: "box", name: "mug", instructions: "The mug" }],
+			provider_options: { typesafe: { long_context: true } },
+		}));
+		expect(ir.providerOptions).toEqual({ typesafe: { long_context: true } });
+		expect(ir.questions.question_0.type).toBe("box");
+		const box = { top: 0.1, bottom: 0.7, left: 0.2, right: 0.8 };
+		const answer = { type: "box", name: "mug", box, confidence: 0.9 };
+		expect(encodeDecisionsResponse({ model: ir.model, answers: { question_0: answer } }, ir).answers).toEqual([answer]);
+		expect(decodeNativeDecisionAnswer(answer, ir.decisionContext!.questions[0])).toEqual({ type: "box", box, confidence: 0.9 });
+		expect(() => encodeDecisionsResponse({ model: ir.model, answers: { question_0: { ...answer, box: { ...box, left: 0.9 } } } }, ir)).toThrow();
+		const legacy = decodeDecisionsRequest(DecisionsSchema.parse({ state: "Text", questions: { yes: { type: "noul", instructions: "Yes?" } }, provider_options: { typesafe: { long_context: false } } }));
+		expect(legacy.providerOptions).toEqual({ typesafe: { long_context: false } });
+	});
 	it("normalizes ordered, repeated-name and typed-value questions for System One providers", () => {
 		const ir = decodeDecisionsRequest(DecisionsSchema.parse(body));
 		expect(ir.state).toBe("Customer");

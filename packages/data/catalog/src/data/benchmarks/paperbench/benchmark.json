@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "paperbench",
-  "benchmark_name": "PaperBench",
-  "category": null,
-  "ascending_order": null,
-  "type": "percentage",
-  "link": "https://openai.com/index/paperbench/",
-  "total_models": 1
-}

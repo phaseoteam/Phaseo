@@ -3,48 +3,59 @@ title: "创建响应"
 sidebarTitle: "创建响应"
 openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /responses"
 ---
-## 服务器工具
 
-`/v1/responses` 支持常规函数工具，以及以下由 Gateway 管理的服务器工具：
+## 使用服务器工具
 
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-- `phaseo:apply_patch`
-
-### 日期和时间示例
+在 `tools` 中、你自己的函数工具旁添加一个 `phaseo:` 工具，模型调用它时由 Phaseo 运行。`/v1/responses` 接受所有服务器工具，包括仅此端点支持的 `phaseo:apply_patch`；[服务器工具](../../guides/server-tools)指南列出了这些工具。
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
-    "stream": false,
+    "model": "openai/gpt-6-astra",
     "input": [
       { "role": "user", "content": "Give me the current datetime in Asia/Tokyo." }
     ],
     "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "Asia/Tokyo" }
-      }
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Asia/Tokyo"] } }
     ],
     "tool_choice": "auto"
   }'
 ```
 
-使用服务器工具时，usage 中会包含相应的 `usage.server_tool_use.*` 计数器。
+每次服务器工具调用都会计入 `usage.server_tool_use`：
 
-- `gateway:datetime` -> `datetime_requests`
-- `phaseo:web_search` -> `web_search_requests`, `web_search_results`, `web_search_extra_results`
-- `phaseo:web_fetch` -> `web_fetch_requests`
-- `phaseo:advisor` -> `advisor_requests`
-- `phaseo:image_generation` -> `image_generation_requests`
-- `phaseo:apply_patch` -> `apply_patch_requests`
+| 工具 | 计数器 |
+| --- | --- |
+| `phaseo:datetime` | `datetime_requests` |
+| `phaseo:web_search` | `web_search_requests`、`web_search_results`、`web_search_extra_results` |
+| `phaseo:web_fetch` | `web_fetch_requests` |
+| `phaseo:advisor` | `advisor_requests` |
+| `phaseo:subagent` | `subagent_requests` |
+| `phaseo:fusion` | `fusion_requests` |
+| `phaseo:search_models` | `search_models_requests` |
+| `phaseo:image_generation` | `image_generation_requests` |
+| `phaseo:apply_patch` | `apply_patch_requests` |
 
-## 流式传输说明
+旧的 `gateway:datetime` 类型仍然可用。设置 `stream: true` 时，Phaseo 会自行运行工具轮次，然后将后续回答作为单个流发送给你。
 
-同样支持 `stream: true`。对于 Gateway 管理的服务器工具，Phaseo 可能会先处理上游工具调用轮次、继续循环，再重新发出合成流。
+<span id="reasoning-in-tool-loops"></span>
+## 工具循环中的推理
+
+在 OpenAI、Azure OpenAI 和 xAI 上，Phaseo 以 `store: false` 向上游发送 Responses 请求，因此模型的推理只能通过 `reasoning` 输出项在工具循环的各步骤之间延续。
+
+每个 `reasoning` 项都有 `id`、`summary` 和 `content`。当提供商返回推理状态时，该项还会包含 `encrypted_content`，其中保存以下之一：
+
+- OpenAI、Azure OpenAI 和 xAI 的加密推理。对于推理模型，Phaseo 会通过 `include: ["reasoning.encrypted_content"]` 请求它。
+- Claude 思考签名和已编辑的思考。
+- Gemini 思维签名，包括一个单独的 `reasoning` 项，它紧挨着放在签名所属的函数调用之前。
+- Claude 回复运行时的强度级别，位于输出的最后一个 `reasoning` 项中，该项没有文本。
+
+流式响应会在 `response.output_item.done` 和 `response.completed` 上携带相同的项。
+
+<Warning>
+在每个请求中（而不仅是在工具循环中）都要在 `input` 中原样发回所有输出项。切勿丢弃、编辑或重新排序 `reasoning` 项，无论是否带有 `encrypted_content`，也包括没有文本的项。
+</Warning>
+
+`encrypted_content` 是不透明的，并记录了生成它的提供商和模型。Phaseo 只会把它发送给该提供商系列和模型，因此回退到其他提供商时会丢弃它，而不会导致请求失败。缺少它时，Claude 会在工具循环的各步骤之间丢失推理，而更改 `reasoning.effort` 会重启 Claude 的提示词缓存；参见[在对话中途更改推理强度](../../guides/reasoning-effort)。

@@ -1,0 +1,32 @@
+{
+	"id": "mara",
+	"source": {
+		"url": null,
+		"docs": "https://cloud.mara.com/",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Page says OpenAI-compatible; no full parameter list. Only the dashboard landing page found (search summary); its Python example uses the SambaNova SDK, suggesting (unconfirmed) a SambaNova-compatible backend."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"temperature": {},
+					"top_p": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

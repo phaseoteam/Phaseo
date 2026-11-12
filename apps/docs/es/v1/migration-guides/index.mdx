@@ -4,74 +4,44 @@ description: "Guías para cambiar de plataforma o adoptar una versión específi
 icon: "compass"
 ---
 
-Las guías de migración de Phaseo cubren dos tipos de cambios:
+Elige la guía según lo que cambies: la plataforma a la que llama tu aplicación (abajo) o el modelo que usa ([migraciones de modelos](../model-migrations)). Si cambias ambas cosas, migra primero la plataforma y mantén el mismo modelo hasta verificar la nueva ruta.
 
-- pasar de otra plataforma o pasarela a Phaseo
-- adoptar una nueva versión de un modelo en la misma plataforma
+Para obtener una lista de comprobación a medida, usa el [Asistente de migración](https://phaseo.app/migrate).
 
-<Columns cols={2}>
-	<Card title="Migraciones de modelos" icon="brain-circuit" href="../model-migrations/index.mdx">
-		Actualiza un modelo y conserva en gran medida la integración existente.
-	</Card>
-	<Card title="Migraciones de plataformas" icon="arrow-right-left" href="./gateway-parity-review.mdx">
-		Cambia de SDK, proveedor o pasarela y conecta la integración con Phaseo.
-	</Card>
-</Columns>
+<span id="platform-migrations"></span>
+## Migraciones de plataforma
+
+Todas las guías de plataforma siguen el mismo orden: cambia la URL base y la clave, asigna los ID de modelos, asigna las funciones de la plataforma y después prueba y despliega, manteniendo la reversión como un cambio de URL base y clave.
+
+| A qué llamas | Señales en el código | Guía |
+| --- | --- | --- |
+| OpenAI directamente | `api.openai.com`, `OPENAI_API_KEY`, `AzureOpenAI` | [SDK de OpenAI](./from-openai) |
+| Anthropic directamente | `api.anthropic.com`, `ANTHROPIC_API_KEY`, `@anthropic-ai/sdk` | [SDK de Anthropic](./from-anthropic) |
+| OpenRouter | `openrouter.ai`, `OPENROUTER_API_KEY`, claves `sk-or-v1` | [OpenRouter](./from-openrouter) |
+| Vercel AI Gateway | `ai-gateway.vercel.sh`, `@ai-sdk/gateway`, modelos como cadenas simples en las llamadas de AI SDK | [Vercel AI Gateway](./from-vercel) |
+| LLM Gateway | `api.llmgateway.io`, `LLM_GATEWAY_API_KEY` | [LLM Gateway](./from-llmgateway) |
+| Un proxy de LiteLLM | `config.yaml` con `model_list`, variables `LITELLM_*`, puerto 4000 | [LiteLLM](./from-litellm) |
+| Cloudflare AI Gateway | `gateway.ai.cloudflare.com`, encabezados `cf-aig-*` | [Cloudflare AI Gateway](./from-cloudflare) |
+| Helicone | `*.helicone.ai`, `Helicone-Auth` | [Helicone](./from-helicone) |
+
+Para planificar y comprobar el despliegue, usa la [Lista de comprobación de funciones para la migración](./feature-parity-matrix).
+
+## Migra con un agente de programación
+
+<Prompt description="Pide a un agente de programación que planifique y lleve a cabo la migración contigo." icon="arrow-right-left" actions={["copy", "cursor"]}>
+{`Migrate this project's AI requests to Phaseo Gateway.
+
+1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
+   Use phaseo-migration, which has a guide for each source platform (and openrouter-to-phaseo-migration for a detailed OpenRouter move).
+2. Find every place the project calls its current provider or gateway (OpenAI, Anthropic, OpenRouter, Vercel AI Gateway, LiteLLM or another), including environment variables, SDK clients, base URLs and model IDs.
+3. Read the matching guide at https://phaseo.app/docs/es/v1/migration-guides and map each call to its Phaseo equivalent at https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
+4. Check every model ID against data[].id from GET /v1/models?format=openai. Do not assume IDs carry over unchanged.
+5. List the changes and a rollback plan before editing. After editing, verify one normal request and one streaming request if the project streams.
+6. Never print or commit API keys, and do not switch production traffic without my approval.`}
+</Prompt>
 
 ## Migraciones de modelos
 
-Para obtener una lista inicial personalizada, usa el [Asistente de migración](https://phaseo.app/migrate).
+Usa una [guía de migración de modelos](../model-migrations) cuando la integración no cambia pero el modelo sí. Cada una explica los cambios en los parámetros de la solicitud, las variaciones en el comportamiento de los prompts y del razonamiento, las diferencias en la salida estructurada y las llamadas a herramientas, y cómo desplegar con un respaldo.
 
-Usa estas guías cuando la integración siga siendo prácticamente la misma, pero cambie el modelo.
-
-Incluyen:
-
-- cambios en los parámetros de solicitud
-- cambios en el comportamiento de prompts y razonamiento
-- diferencias en salidas estructuradas y llamadas a herramientas
-- estrategias de despliegue gradual, alternativas y reversión
-
-Guías de migración de modelos disponibles:
-
-- [Anthropic Claude Opus 5](../model-migrations/anthropic-claude-opus-5.mdx)
-- [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx)
-- [Anthropic Claude Opus 4.8](../model-migrations/anthropic-claude-opus-4-1-to-4-8.mdx)
-- [Anthropic Claude Opus 4.7](../model-migrations/anthropic-claude-opus-4-6-to-4-7.mdx)
-- [Mistral Small 4](../model-migrations/mistral-small-3-2-to-mistral-small-4.mdx)
-- [OpenAI GPT-5.4](../model-migrations/openai-migrating-to-gpt-5-4.mdx)
-- [Google Nano Banana 2](../model-migrations/google-nano-banana-1-to-nano-banana-2.mdx)
-- [Google Gemini 3.1](../model-migrations/google-migrating-to-gemini-3-and-3-1.mdx)
-- [Anthropic Claude Sonnet 4.6](../model-migrations/anthropic-claude-sonnet-4-5-to-4-6.mdx)
-- [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx)
-- [Anthropic Claude Opus 4.6](../model-migrations/anthropic-claude-opus-4-5-to-4-6.mdx)
-
-## Migraciones de plataforma
-
-Usa estas guías si vas a cambiar de SDK, proveedor o pasarela y necesitas adaptar tu integración actual a Phaseo.
-
-<Card title="Crea una lista de migración" icon="list-checks" href="https://phaseo.app/migrate">
-	Elige tu integración actual y abre el asistente interactivo de migración.
-</Card>
-
-Guías de migración de plataforma disponibles:
-
-- [Migración desde OpenAI SDK](./from-openai.mdx)
-- [Migración desde Anthropic SDK](./from-anthropic.mdx)
-- [Migración desde OpenRouter](./from-openrouter.mdx): cambia el endpoint y la clave, verifica los modelos y prueba el streaming y la reversión.
-- [Migración desde Vercel AI Gateway](./from-vercel.mdx)
-- [Migración desde LLMGateway](./from-llmgateway.mdx)
-- [Migración desde LiteLLM](./from-litellm.mdx)
-- [Migración desde Cloudflare AI Gateway](./from-cloudflare.mdx)
-- [Migración desde Helicone AI Gateway](./from-helicone.mdx)
-
-Planifica y valida el despliegue:
-
-- [Revisión de preparación para la migración](./gateway-parity-review.mdx)
-- [Lista de comprobación de funciones para la migración](./feature-parity-matrix.mdx)
-
-## Cómo usar estas guías
-
-1. Determina si vas a cambiar de plataforma, de modelo o de ambos.
-2. Empieza por la guía que corresponda a la parte más arriesgada de la migración.
-3. Verifica los parámetros de solicitud y el comportamiento del endpoint antes de comparar la calidad de las respuestas.
-4. Ejecuta evaluaciones similares a producción antes de desviar tráfico real.
+En cualquiera de los dos tipos de migración, comprueba los parámetros de la solicitud y el comportamiento del endpoint antes de comparar la calidad de la salida, y ejecuta evaluaciones en condiciones similares a producción antes de mover el tráfico real.

@@ -33,10 +33,13 @@ vi.mock("@/core/kv", () => ({ setKeyVersion: vi.fn() }));
 
 import { authenticateDashboardDataContribution } from "./data-contribution";
 
+// Supabase access tokens are JWTs; other bearer tokens fall back to management authentication.
+const SESSION_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLWFkbWluIn0.signature";
+
 function dashboardRequest() {
 	return new Request("https://api.phaseo.app/v1/data-contribution", {
 		headers: {
-			authorization: "Bearer supabase-session-token",
+			authorization: `Bearer ${SESSION_TOKEN}`,
 			"x-phaseo-workspace-id": "workspace-preview",
 		},
 	});
@@ -58,7 +61,7 @@ describe("dashboard data contribution authentication", () => {
 			userId: "user-admin",
 			authMethod: "oauth",
 		});
-		expect(getSupabaseActorMock).toHaveBeenCalledWith("supabase-session-token");
+		expect(getSupabaseActorMock).toHaveBeenCalledWith(SESSION_TOKEN);
 		expect(featureEnabledMock).toHaveBeenCalledWith(expect.objectContaining({
 			workspaceId: "workspace-preview",
 			userId: "user-admin",

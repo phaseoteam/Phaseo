@@ -91,7 +91,7 @@ CREATE TABLE "public"."v2_request_facts" (
     ((((latency_ms IS NULL) OR (latency_ms >= 0)) AND ((time_to_first_token_ms IS NULL) OR (time_to_first_token_ms >= 0)) AND ((generation_ms IS NULL) OR (generation_ms >= 0)) AND
     ((queue_ms IS NULL) OR (queue_ms >= 0)) AND ((upstream_latency_ms IS NULL) OR (upstream_latency_ms >= 0)))),
   CONSTRAINT "v2_request_facts_tool_count_check" CHECK ((tool_call_count >= 0)),
-  CONSTRAINT "v2_request_facts_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "v2_request_facts_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
 
 ALTER TABLE "public"."v2_request_facts"
@@ -153,6 +153,9 @@ ALTER TABLE "public"."v2_request_facts"
 
 CREATE INDEX v2_request_facts_app_time_idx ON public.v2_request_facts USING btree (app_id, occurred_at DESC)
   WHERE (app_id IS NOT NULL);
+
+CREATE INDEX v2_request_facts_byok_retention_idx ON public.v2_request_facts USING btree (occurred_at, request_event_id)
+  WHERE (byok AND (NOT (safe_metadata ? 'retention_redacted_at'::text)));
 
 CREATE INDEX v2_request_facts_country_time_idx ON public.v2_request_facts USING btree (edge_country, occurred_at DESC)
   WHERE (edge_country IS NOT NULL);
@@ -255,6 +258,13 @@ CREATE TRIGGER v2_request_facts_service_tier
   FOR EACH ROW
   EXECUTE FUNCTION public.set_v2_request_fact_service_tier();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_request_facts"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "v2_request_facts_workspace_select" ON "public"."v2_request_facts"
   FOR SELECT
   TO "authenticated"
@@ -323,3 +333,8 @@ CREATE INDEX v2_request_facts_public_ranking_idx ON public.v2_request_facts USIN
 
 CREATE INDEX v2_request_facts_resolved_model_time_idx ON public.v2_request_facts USING btree
   ((COALESCE(routed_model_slug, requested_model_slug, requested_model_input)), occurred_at DESC);
+
+create trigger set_public_reporting_scope before insert or update on public.v2_request_facts
+for each row execute function private.set_request_public_reporting_scope();
+
+ALTER TABLE public.v2_request_facts ADD COLUMN public_reporting_allowed boolean NOT NULL DEFAULT false;

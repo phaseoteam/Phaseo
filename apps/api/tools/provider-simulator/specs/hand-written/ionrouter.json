@@ -1,0 +1,34 @@
+{
+	"id": "ionrouter",
+	"source": {
+		"url": null,
+		"docs": "https://ionrouter.io/docs",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Recorded from a web-search summary of ionrouter.io/docs (not fetched directly)."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"max_tokens": {},
+					"temperature": {},
+					"top_p": {},
+					"system_prompt": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

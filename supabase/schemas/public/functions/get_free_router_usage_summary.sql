@@ -14,7 +14,7 @@ CREATE OR REPLACE FUNCTION public.get_free_router_usage_summary (
   AS $function$
   with matching_usage as materialized (
     select fact.request_event_id, fact.routed_model_slug, fact.occurred_at
-    from public.v2_request_facts as fact
+    from public.reporting_request_facts as fact
     where fact.requested_model_input = 'phaseo/free'
       and fact.routed_model_slug = any (p_model_slugs)
       and fact.occurred_at >= p_since

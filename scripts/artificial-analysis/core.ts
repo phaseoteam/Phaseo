@@ -76,8 +76,11 @@ export function reasoningVariant(source: Pick<SourceModel, "name" | "slug">): st
 }
 
 function reasoningFamilyName(source: Pick<SourceModel, "name">) {
-	return normalized(source.name.replace(CONFIGURATION_GROUP, (full, configuration: string) =>
-		isReasoningConfiguration(configuration) ? "" : full));
+	return normalized(source.name.replace(CONFIGURATION_GROUP, (_full, configuration: string) => {
+		const qualifiers = configuration.split(",").map((part) => part.trim())
+			.filter((part) => !isReasoningConfiguration(part));
+		return qualifiers.length ? `(${qualifiers.join(", ")})` : "";
+	}));
 }
 
 export async function fetchModels(apiKey: string, fetcher: typeof fetch = fetch) {

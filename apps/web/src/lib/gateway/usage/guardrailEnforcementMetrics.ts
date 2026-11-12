@@ -323,3 +323,33 @@ export function buildGuardrailEnforcementMetrics(args: {
 		signalsRecorded,
 	};
 }
+
+/**
+ * Guardrail metrics from exact block counts per time bucket. Requests only
+ * record blocks, so redactions and flags show as not recorded.
+ */
+export function buildGuardrailBlockMetrics(args: {
+	blocks: Array<{ bucket: string; blocked: number }>;
+	timeRange: { from: string; to: string };
+	range: "1h" | "1d" | "1w" | "1m" | "1y";
+}): GuardrailEnforcementMetricsResult {
+	const buckets = buildEmptyBuckets({ from: args.timeRange.from, to: args.timeRange.to, range: args.range });
+	const bucketMap = new Map(buckets.map((bucket) => [bucket.bucket, bucket] as const));
+	const unit = bucketUnitForRange(args.range);
+	let blocked = 0;
+	for (const block of args.blocks) {
+		const start = new Date(block.bucket);
+		if (Number.isNaN(start.getTime()) || block.blocked <= 0) continue;
+		const bucket = bucketMap.get(floorToBucket(start, unit).toISOString());
+		if (!bucket) continue;
+		bucket.blocked += block.blocked;
+		bucket.total += block.blocked;
+		blocked += block.blocked;
+	}
+	return {
+		totals: { blocked, redacted: 0, flagged: 0 },
+		buckets,
+		topGuardrails: [],
+		signalsRecorded: { blocked: blocked > 0, redacted: false, flagged: false },
+	};
+}

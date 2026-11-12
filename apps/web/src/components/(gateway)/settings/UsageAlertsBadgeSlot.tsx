@@ -1,4 +1,5 @@
-import { fetchSettingsUsageAlertsInitialData } from "@/lib/fetchers/internal/fetchSettingsUsageAlertsInitialData";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { usageAlertsCountQuery } from "./UsageAlertsBadgeSlot.functions";
 
 function Badge({ count }: { count: number }) {
 	if (!count || count <= 0) return null;
@@ -12,17 +13,9 @@ function Badge({ count }: { count: number }) {
 	);
 }
 
-export default async function UsageAlertsBadgeSlot() {
-	let warnings: Awaited<
-		ReturnType<typeof fetchSettingsUsageAlertsInitialData>
-	>["warnings"] = [];
-	try {
-		const data = await fetchSettingsUsageAlertsInitialData();
-		if (!data.signedIn || !data.workspaceId) return null;
-		warnings = data.warnings;
-	} catch {
-		return null;
-	}
-	const count = warnings.filter((w) => w.countAsAlert).length;
+export default function UsageAlertsBadgeSlot() {
+	// null: signed out, no workspace, or the alerts failed to load.
+	const { data: count } = useSuspenseQuery(usageAlertsCountQuery());
+	if (count === null) return null;
 	return <Badge count={count} />;
 }

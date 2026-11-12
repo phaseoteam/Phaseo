@@ -1,3 +1,4 @@
+import { describe, it, expect, test } from "vitest";
 import {
 	buildAudioRequestOptions,
 	buildEmbeddingsRequestOptions,
@@ -157,26 +158,76 @@ describe("roomModelSettings", () => {
 
 	it("uses Xiaomi-specific speech settings for mimo v2 tts", () => {
 		const schema = getAudioModelSchema("xiaomi/mimo-v2-tts:free");
-		expect(schema.voiceOptions).toEqual(["mimo_Default"]);
-		expect(schema.formatOptions).toEqual(["mp3", "wav", "pcm"]);
+		expect(schema.voiceOptions).toEqual(["mimo_default", "default_zh", "default_en"]);
+		expect(schema.formatOptions).toEqual(["wav"]);
 		expect(schema.supportsSpeechSpeed).toBe(false);
 	});
 
 	it("builds speech requests with fixed mp3 response_format and omits unsupported speed", () => {
 		const request = buildAudioRequestOptions(
 			"speech",
-			"xiaomi/mimo-v2-tts:free",
+			"mistral/voxtral-tts",
 			{
-				...getDefaultAudioRoomParams("xiaomi/mimo-v2-tts:free"),
-				speechVoice: "mimo_Default",
+				...getDefaultAudioRoomParams("mistral/voxtral-tts"),
+				speechVoice: "gb_jane_neutral",
 				speechFormat: "pcm",
 				speechSpeed: 1.75,
 			},
 		);
-		expect(request.voice).toBe("mimo_Default");
+		expect(request.voice).toBe("gb_jane_neutral");
 		expect(request.response_format).toBe("mp3");
 		expect(request).not.toHaveProperty("format");
 		expect(request).not.toHaveProperty("speed");
+	});
+
+	it("gives Gemini voices only to Gemini TTS models", () => {
+		expect(getAudioModelSchema("google/gemini-3.8-flash-tts").voiceOptions).toHaveLength(30);
+		for (const modelId of [
+			"stepfun/step-tts-2",
+			"mistral/voxtral-tts-3",
+			"qwen/qwen3-tts",
+			"nvidia/riva-tts-en-us",
+			"xiaomi/mimo-v2.5-tts:free",
+		]) {
+			expect(getAudioModelSchema(modelId).voiceOptions).not.toContain("Kore");
+		}
+		expect(getAudioModelSchema("nvidia/riva-tts-de-de").voiceOptions).toEqual(["German-DE-Male-1"]);
+	});
+
+	it("allows custom voice ids on Gemini 3.8 TTS only", () => {
+		expect(getAudioModelSchema("google/gemini-3.8-flash-lite-tts").customVoice).toBe(true);
+		expect(getAudioModelSchema("google/gemini-3.1-flash-tts-preview").customVoice).toBeUndefined();
+	});
+
+	it("uses MiMo v2.5 voices and sends no voice for VoiceDesign", () => {
+		expect(getAudioModelSchema("xiaomi/mimo-v2.5-tts:free").voiceOptions).toEqual(
+			["mimo_default", "冰糖", "茉莉", "苏打", "白桦", "Mia", "Chloe", "Milo", "Dean"],
+		);
+		const modelId = "xiaomi/mimo-v2.5-tts-voicedesign:free";
+		expect(getAudioModelSchema(modelId).voiceOptions).toEqual([]);
+		const request = buildAudioRequestOptions("speech", modelId, getDefaultAudioRoomParams(modelId));
+		expect(request).not.toHaveProperty("voice");
+		expect(request.response_format).toBe("wav");
+	});
+
+	it("lists every grok-tts voice, uses xAI's codec names and clamps speed to 0.7-1.5", () => {
+		const schema = getAudioModelSchema("spacex-ai/grok-tts");
+		expect(schema.voiceOptions).toHaveLength(28);
+		expect(schema.voiceOptions).toEqual(expect.arrayContaining(["eve", "aurora", "liora"]));
+		expect(schema.formatOptions).toEqual(["mp3", "wav", "pcm"]);
+		const params = { ...getDefaultAudioRoomParams("spacex-ai/grok-tts"), speechSpeed: 3 };
+		expect(buildAudioRequestOptions("speech", "spacex-ai/grok-tts", params).speed).toBe(1.5);
+		expect(buildAudioRequestOptions("speech", "spacex-ai/grok-tts", { ...params, speechSpeed: 0.3 }).speed).toBe(0.7);
+	});
+
+	it("gives ElevenLabs, MiniMax and Kokoro their own voices", () => {
+		expect(getAudioModelSchema("eleven-labs/eleven-v3").voiceOptions[0]).toBe("21m00Tcm4TlvDq8ikWAM");
+		expect(getAudioModelSchema("eleven-labs/eleven-v4").supportsSpeechSpeed).toBe(false);
+		expect(getAudioModelSchema("minimax/speech-2.8-hd").voiceOptions[0]).toBe("English_expressive_narrator");
+		expect(getAudioModelSchema("hexgrad/kokoro-82m").voiceOptions[0]).toBe("af_heart");
+		for (const modelId of ["eleven-labs/eleven-v3", "minimax/speech-2.8-hd", "hexgrad/kokoro-82m"]) {
+			expect(getAudioModelSchema(modelId).voiceOptions).not.toContain("alloy");
+		}
 	});
 
 	it("returns empty request options for music generation mode", () => {
@@ -237,5 +288,120 @@ describe("roomModelSettings", () => {
 	it("moderation threshold is normalized", () => {
 		expect(getModerationThreshold({ scoreThreshold: -1 })).toBe(0);
 		expect(getModerationThreshold({ scoreThreshold: 5 })).toBe(1);
+	});
+});
+
+describe("Video options stored in the catalogue", () => {
+	// As stored in v2_route_capabilities.params for google-ai-studio:google/gemini-omni-flash.
+	const omniParams = {
+		"video.generate": {
+			size: { enum: ["360p", "720p", "1080p", "4k"], type: "string", aliases: ["resolution"], default: "720p" },
+			duration: { type: "enum", values: [3, 4, 5, 6, 7, 8, 9, 10], aliases: ["seconds", "duration_seconds"], default: 8 },
+		},
+	};
+
+	test("reads sizes, durations and defaults from the stored params", () => {
+		expect(getVideoModelSchema("google/gemini-omni-flash", omniParams)).toMatchObject({
+			sizeOptions: ["360p", "720p", "1080p", "4k"],
+			durationOptions: [3, 4, 5, 6, 7, 8, 9, 10],
+			defaultSize: "720p",
+			defaultDuration: 8,
+		});
+		expect(getDefaultVideoRoomParams("google/gemini-omni-flash", omniParams)).toEqual({ duration: 8, size: "720p", n: 1 });
+		expect(buildVideoRequestOptions("google/gemini-omni-flash", { duration: 3, size: "360p", n: 1 }, omniParams))
+			.toEqual({ duration: 3, size: "360p", n: 1 });
+	});
+
+	test("replaces values the stored params do not allow with the stored defaults", () => {
+		expect(buildVideoRequestOptions("google/gemini-omni-flash", { duration: 5, size: "1280x720", n: 1 }, omniParams))
+			.toEqual({ duration: 5, size: "720p", n: 1 });
+		expect(buildVideoRequestOptions("google/gemini-omni-flash", { duration: 12, size: "4k", n: 1 }, omniParams))
+			.toEqual({ duration: 8, size: "4k", n: 1 });
+	});
+
+	test("uses per-size durations and min/max/step ranges", () => {
+		const params = {
+			"video.generate": {
+				size: { type: "enum", values: ["720p", "1080p", "4k"] },
+				duration: { type: "number", min: 4, max: 8, step: 2, values_by_size: { "1080p": [8], "4k": [8] } },
+			},
+		};
+		expect(getVideoDurationOptions("google/veo-3.1", "720p", params)).toEqual([4, 6, 8]);
+		expect(getVideoDurationOptions("google/veo-3.1", "4k", params)).toEqual([8]);
+	});
+
+	test("offers a size listed in two cases once, and keeps the stored default", () => {
+		// As stored for alibaba-cloud:qwen/wan3.0-video.
+		const params = {
+			"video.generate": {
+				size: { type: "enum", values: ["480P", "480p", "720P", "720p", "1080P", "1080p"], default: "1080P" },
+				duration: { type: "number", min: 2, max: 30 },
+			},
+		};
+		const schema = getVideoModelSchema("qwen/wan3.0-video", params);
+		expect(schema.sizeOptions).toEqual(["480P", "720P", "1080P"]);
+		expect(schema.durationOptions).toHaveLength(29);
+		expect(getDefaultVideoRoomParams("qwen/wan3.0-video", params)).toEqual({ duration: 2, size: "1080P", n: 1 });
+	});
+
+	test("ignores null and open-ended durations", () => {
+		expect(getVideoModelSchema("ltx-2-5-pro", { "video.generate": { duration: { enum: [null, 6, 8, 10] } } }).durationOptions)
+			.toEqual([6, 8, 10]);
+		expect(getVideoModelSchema("spacex-ai/grok-imagine-video", { "video.generate": { duration: { min: 1, type: "number" } } }).durationOptions)
+			.toEqual(getVideoModelSchema("spacex-ai/grok-imagine-video").durationOptions);
+	});
+
+	test("keeps the built-in options when nothing is stored", () => {
+		expect(getVideoModelSchema("google/veo-3.1", { "video.generate": [] })).toEqual(getVideoModelSchema("google/veo-3.1"));
+		expect(getDefaultVideoRoomParams("google/gemini-omni-flash")).toEqual({ duration: 5, size: "1280x720", n: 1 });
+	});
+});
+
+describe("Voices stored in the catalogue", () => {
+	test("reads voice lists in any stored spelling, default first", () => {
+		const params = { "audio.speech": { voice: { values: [{ id: "alloy", label: "Alloy" }, "echo"], default: "echo" } } };
+		expect(getAudioModelSchema("openai/gpt-4o-mini-tts", params).voiceOptions).toEqual(["echo", "alloy"]);
+		const listed = { "audio.speech": [{ param_id: "voice", type: "enum", supported_values: ["kore", "puck"] }] };
+		expect(getAudioModelSchema("google/gemini-2.5-flash-tts", listed).voiceOptions).toEqual(["kore", "puck"]);
+	});
+
+	test("keeps the built-in voices when the catalogue lists none", () => {
+		const params = { "audio.speech": ["input", "voice"] };
+		expect(getAudioModelSchema("openai/gpt-4o-mini-tts", params).voiceOptions)
+			.toEqual(getAudioModelSchema("openai/gpt-4o-mini-tts").voiceOptions);
+	});
+});
+
+describe("Open voice lists", () => {
+	const eleven = {
+		"audio.speech": {
+			voice: { values: ["21m00Tcm4TlvDq8ikWAM", "pNInz6obpgDQGcFmaJgB"], options: [{ value: "21m00Tcm4TlvDq8ikWAM", label: "Rachel" }, { value: "pNInz6obpgDQGcFmaJgB", label: "Adam" }], open: true },
+		},
+	};
+
+	test("labels voices and allows any voice id", () => {
+		const schema = getAudioModelSchema("eleven-labs/eleven-v3", eleven);
+		expect(schema.voiceLabels).toEqual({ "21m00Tcm4TlvDq8ikWAM": "Rachel", pNInz6obpgDQGcFmaJgB: "Adam" });
+		expect(schema.customVoice).toBe(true);
+		const params = { ...getDefaultAudioRoomParams("eleven-labs/eleven-v3", eleven), speechVoice: "NfUrCNRReUL9RXS9upG1" };
+		expect(buildAudioRequestOptions("speech", "eleven-labs/eleven-v3", params, eleven).voice).toBe("NfUrCNRReUL9RXS9upG1");
+	});
+
+	test("drops a voice a closed list does not have", () => {
+		const closed = { "audio.speech": { voice: { values: ["alloy", "echo"] } } };
+		const params = { ...getDefaultAudioRoomParams("openai/gpt-4o-mini-tts", closed), speechVoice: "nova" };
+		expect(buildAudioRequestOptions("speech", "openai/gpt-4o-mini-tts", params, closed).voice).toBeUndefined();
+	});
+
+	test("a stored closed list turns off the built-in custom voice field", () => {
+		const closed = { "audio.speech": { voice: { values: ["Kore", "Puck"] } } };
+		expect(getAudioModelSchema("google/gemini-3.8-flash-tts", closed).customVoice).toBe(false);
+	});
+
+	test("stored speed bounds replace the built-in range", () => {
+		const params = { "audio.speech": { speed: { type: "number", min: 0.5, max: 2 } } };
+		const room = { ...getDefaultAudioRoomParams("openai/gpt-4o-mini-tts", params), speechSpeed: 4 };
+		expect(getAudioModelSchema("openai/gpt-4o-mini-tts", params).speedRange).toEqual({ min: 0.5, max: 2 });
+		expect(buildAudioRequestOptions("speech", "openai/gpt-4o-mini-tts", room, params).speed).toBe(2);
 	});
 });

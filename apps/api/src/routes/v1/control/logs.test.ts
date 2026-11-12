@@ -57,6 +57,8 @@ function buildQuery() {
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
 		from: (table: string) => {
+			// The management key acts as its creator, an admin of the workspace.
+			if (table === "workspace_members") { const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) }; return membership; }
 			if (table !== "gateway_requests") throw new Error(`Unexpected table: ${table}`);
 			return buildQuery();
 		},
@@ -76,7 +78,7 @@ describe("logs routes", () => {
 	beforeEach(() => {
 		state.guardResult = {
 			ok: true,
-			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false, scopes: ["activity:read"] },
+			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", userId: "user_1", internal: false, scopes: ["activity:read"] },
 		};
 		state.rows = [{
 			request_id: "req_1",
@@ -173,7 +175,7 @@ describe("logs routes", () => {
 	it("requires management keys to explicitly carry the activity-read scope", async () => {
 		state.guardResult = {
 			ok: true,
-			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false, scopes: [] },
+			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", userId: "user_1", internal: false, scopes: [] },
 		};
 		const { logsRoutes } = await import("./logs");
 		const response = await logsRoutes.request("https://example.com/");

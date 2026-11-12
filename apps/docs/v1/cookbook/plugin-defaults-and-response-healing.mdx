@@ -1,173 +1,80 @@
 ---
 title: "Set plugin defaults for structured JSON workflows"
+sidebarTitle: "Plugin defaults for JSON"
 icon: "puzzle"
 description: "Use workspace, preset, and request-level plugin policy to keep response healing consistent."
+"og:image": "https://phaseo.app/og/dynamic?title=Set%20plugin%20defaults%20for%20structured%20JSON%20workflows&description=Use%20workspace%2C%20preset%2C%20and%20request-level%20plugin%20policy%20to%20keep%20response%20healing%20consistent.&pathname=/docs/v1/cookbook/plugin-defaults-and-response-healing"
 ---
 
-Use this recipe when structured-output callers need one stable plugin policy instead of ad hoc request-by-request settings.
+Turn on [response healing](./response-healing-for-structured-json) once for the whole workspace or one preset, instead of in every request. When you're done every structured-output caller gets the same healing policy, and you can lock it so no preset or request turns it off.
 
-## 1. Understand precedence
+This is a dashboard procedure; the request example at the end is production-ready.
 
-Gateway plugin policy resolves in this order:
+## How the layers combine
 
-1. workspace defaults
-2. preset defaults
-3. request-level plugins
+Phaseo builds each request's plugin list from three layers. A later layer replaces an earlier layer's settings for the same plugin, unless the earlier one is locked:
 
-Lower-precedence layers can override higher layers unless the workspace default is explicitly locked.
+```mermaid
+flowchart LR
+  ws["Workspace default"] --> pr["Preset plugins"]
+  pr --> rq["Request plugins"]
+  rq --> eff["Plugins that run"]
+  lock["Workspace lock on"] -.->|"later layers can't change response-healing"| pr
+```
 
-## 2. Set the workspace default
+| Layer | Set in | Overrides |
+| --- | --- | --- |
+| Workspace | **Settings → Routing → Response Healing** | Nothing |
+| Preset | **Settings → Presets → (preset) → Response Healing** | The workspace, unless it's locked |
+| Request | `plugins` in the body | The preset and the workspace, unless the workspace is locked |
 
-Use the routing settings surface when one workspace should enable response healing by default for structured JSON callers.
+## Set it up
 
-That is the right place for:
+<Steps>
+<Step title="Turn on the workspace default">
 
-- broad operational defaults
-- shared API key behavior
-- preventing per-service drift
+In **Settings → Routing → Response Healing**, turn on **Enable by Default** and pick a **Healing Mode**: `safe` for bounded syntax repair, `strict` to only unwrap JSON that was already valid. Use this for broad defaults that every API key in the workspace shares.
 
-## 3. Lock it when the policy is non-negotiable
+</Step>
+<Step title="Lock it if it's not negotiable">
 
-If one workspace must always keep response healing enabled, lock that default.
+Turn on **Lock Workspace Policy**. Presets and requests can then neither turn healing off nor change its mode. Logs still show whether it applied or skipped.
 
-With a locked workspace default:
+</Step>
+<Step title="Set preset defaults for one workflow">
 
-- presets cannot disable it
-- request payloads cannot disable it
-- logs still show whether the plugin applied, skipped, or failed
+In the preset editor, turn on **Response Healing** and pick its mode when one family of requests should carry both a structured output format and healing. Callers of that preset then send only their input.
 
-## 4. Use presets for workflow-specific defaults
+</Step>
+</Steps>
 
-Presets are the right layer when one family of requests should carry both:
+## Override it for one request
 
-- structured output settings
-- response-healing plugin defaults
+When the workspace isn't locked, a request can set the plugin itself. `"enabled": false` turns it off for that request:
 
-That layer can also choose the response-healing mode:
-
-- `safe` for bounded syntactic cleanup
-- `strict` for unwrap-only behavior
-
-That keeps the request body smaller and makes routing plus output behavior easier to reuse across services.
-
-## 5. Override at request level only when the workspace allows it
-
-If the workspace default is not locked, one request can still override plugin config directly:
-
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "phaseo/free",
-    "input": "Return valid JSON",
-    "response_format": {
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "input": "Return the summary as JSON.",
+  "text": {
+    "format": {
       "type": "json_schema",
-      "json_schema": {
-        "name": "answer",
-        "schema": {
-          "type": "object",
-          "properties": {
-            "summary": { "type": "string" }
-          },
-          "required": ["summary"],
-          "additionalProperties": false
-        }
+      "name": "answer",
+      "schema": {
+        "type": "object",
+        "properties": { "summary": { "type": "string" } },
+        "required": ["summary"],
+        "additionalProperties": false
       }
-    },
-    "plugins": [
-      { "id": "response-healing", "enabled": true }
-    ]
-  }'
-```
-
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
-
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
-
-const response = await client.generateResponse({
-  model: "phaseo/free",
-  input: "Return valid JSON",
-  response_format: {
-    type: "json_schema",
-    json_schema: {
-      name: "answer",
-      schema: {
-        type: "object",
-        properties: {
-          summary: { type: "string" },
-        },
-        required: ["summary"],
-        additionalProperties: false,
-      },
-    },
-  },
-  plugins: [{ id: "response-healing", enabled: true }],
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "phaseo/free",
-        "input": "Return valid JSON",
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "answer",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "summary": {"type": "string"}
-                    },
-                    "required": ["summary"],
-                    "additionalProperties": False,
-                },
-            },
-        },
-        "plugins": [
-            {"id": "response-healing", "enabled": True}
-        ],
     }
-)
-
-print(response.get("output_text"))
+  },
+  "plugins": [{ "id": "response-healing", "enabled": true, "mode": "strict" }],
+  "meta": true
+}
 ```
-</CodeGroup>
 
-## 6. Verify the behavior in logs
+## Check the policy that ran
 
-After one request, inspect the request detail view and confirm:
+Open the request in **Settings → Usage → Logs**, or read `meta.plugin_executions` when you sent `meta: true`. It shows the status (`applied`, `skipped` or `failed`), the mode that actually ran, and any `validation_errors` when a healed candidate didn't match the schema.
 
-- `plugin_executions` includes `response-healing`
-- the status is one of:
-  - `applied`
-  - `skipped`
-  - `failed`
-- the effective plugin mode is visible
-- validation errors are visible when schema enforcement rejects a candidate healed payload
-
-## 7. What to do when behavior differs across services
-
-If two services behave differently, compare:
-
-- workspace routing settings
-- preset plugin defaults
-- request-level `plugins`
-- whether the workspace default is locked
-
-Do not debug that as a model-quality issue until those policy layers match.
-
-## Related
-
-- [Recover malformed structured JSON](./response-healing-for-structured-json.mdx)
-- [Use response caching with presets](./response-caching-with-presets.mdx)
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+If two services behave differently, compare the workspace setting and its lock, the preset's plugins, and each request's `plugins` before you treat it as a model problem.

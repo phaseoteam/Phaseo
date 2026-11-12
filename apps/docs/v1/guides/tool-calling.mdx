@@ -1,25 +1,36 @@
 ---
 title: "Tool Calling"
 description: "Use model-driven function calls safely through the Gateway."
+"og:image": "https://phaseo.app/og/dynamic?title=Tool%20Calling&description=Use%20model-driven%20function%20calls%20safely%20through%20the%20Gateway.&pathname=/docs/v1/guides/tool-calling"
 icon: "wrench"
 ---
 
-Tool calling lets models request structured actions (for example, database lookups, weather checks, or internal API calls) instead of guessing answers.
+Describe your functions in `tools`, and the model answers with a call to one of them, such as a database lookup or weather check, instead of guessing. Your app runs the function and sends the result back; the model then writes the final answer.
 
-The Gateway supports tool payloads across these text endpoints:
+```mermaid
+flowchart LR
+  ask["Request with tools"] --> model["Model"]
+  model -->|"tool call"| app["Your app runs the function"]
+  app -->|"tool result in the next request"| model
+  model -->|"final answer"| done["Response"]
+```
 
-- `/v1/chat/completions` (OpenAI-style `tools` and `tool_calls`)
-- `/v1/responses` (Responses-style `function_call` output items)
-- `/v1/messages` (Anthropic-style `tool_use` blocks)
+Tool calling works on all three text endpoints, each in its own format:
 
-## Request
+| Endpoint | Model's call | Your result |
+| --- | --- | --- |
+| `/v1/chat/completions` | `tool_calls` on the assistant message, `finish_reason: "tool_calls"` | A `role: "tool"` message |
+| `/v1/responses` | A `function_call` output item | A `function_call_output` input item |
+| `/v1/messages` | A `tool_use` content block | A `tool_result` content block |
+
+## Send a request with tools
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What is the weather in London?" }
     ],
@@ -42,12 +53,13 @@ curl https://api.phaseo.app/v1/chat/completions \
     "tool_choice": {
       "type": "function",
       "function": { "name": "get_weather" }
-    },
-    "stream": false
+    }
   }'
 ```
 
-## Response
+`tool_choice` here forces the call. Leave it out, or set `"auto"`, to let the model decide.
+
+The model replies with a call instead of text:
 
 ```json
 {
@@ -76,218 +88,37 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-Run your tool, then send the tool result back in the next request so the assistant can finish the answer.
+Parse and check `arguments` before you run anything; see [Tool Calling Safety](./tool-calling-safety). Then send the assistant message and your result back in the next request. [Tool Calling Patterns](./tool-calling-patterns) shows that follow-up request for Chat Completions and Responses.
 
-## Built-in server tools
+## Let Phaseo run the tool
 
-The gateway currently exposes these built-in server tools:
+Tools whose type starts with `phaseo:` run on Phaseo's side: the model calls them, Phaseo executes them and continues the loop, and you get the final answer without writing an executor. You can mix them with your own functions in one request.
 
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-- `phaseo:apply_patch`
-
-This tool runs on the gateway side (no client-side executor required). The gateway rewrites it into an upstream tool/function call, executes it, and feeds the tool result back into the model loop.
-
-For full configuration, usage, and pricing details, see [Server Tools](./server-tools).
-
-Supported request shape:
-
-```json
-{
-  "tools": [
-    {
-      "type": "gateway:datetime",
-      "parameters": {
-        "timezones": ["Europe/London", "UTC"]
-      }
-    }
-  ]
-}
-```
-
-Notes:
-
-- `parameters.timezones` is optional and can request up to 5 valid IANA timezones in one call.
-- The result contains a `timezones` array with ISO datetime plus the resolved timezone for each requested zone.
-- Usage includes `usage.server_tool_use.datetime_requests`.
-- Prefer `tool_choice: "auto"` so the model can decide when to call it.
-
-### Web search example
+| Tool | Type |
+| --- | --- |
+| [Datetime](./server-tools/datetime) | `phaseo:datetime` |
+| [Web Search](./server-tools/web-search) | `phaseo:web_search` |
+| [Web Fetch](./server-tools/web-fetch) | `phaseo:web_fetch` |
+| [Advisor](./server-tools/advisor) | `phaseo:advisor` |
+| [Subagent](./server-tools/subagent) | `phaseo:subagent` |
+| [Fusion](./server-tools/fusion) | `phaseo:fusion` |
+| [Search Models](./server-tools/search-models) | `phaseo:search_models` |
+| [Image Generation](./server-tools/image-generation) | `phaseo:image_generation` |
+| [Apply Patch](./server-tools/apply-patch) | `phaseo:apply_patch` (Responses only) |
 
 ```json
 {
   "tools": [
-    {
-      "type": "phaseo:web_search",
-      "parameters": {
-        "engine": "exa",
-        "max_results": 5,
-        "max_total_results": 15,
-        "search_context_size": "medium",
-        "max_characters": 2048,
-        "allowed_domains": ["arxiv.org", "nature.com"],
-        "include_highlights": true
-      }
-    }
-  ]
-}
-```
-
-Notes:
-
-- The model supplies the search query when it calls the tool.
-- `engine: "auto"` resolves to managed Exa search. `engine: "exa"`, `engine: "parallel"`, `engine: "firecrawl"`, and `engine: "tinyfish"` run managed gateway search when the matching provider key is configured.
-- TinyFish Search supports localized, paginated ranked results and is free on its published plans; use `language` and `page` in the tool parameters when needed.
-- `engine: "native"` on `phaseo:web_search` is converted to the provider-native web search tool for the request surface, such as OpenAI `web_search_preview` or Anthropic `web_search_20250305`.
-- `max_results` caps each search call; `max_total_results` caps cumulative results across the server-tool loop.
-- Managed search supports `allowed_domains` / `excluded_domains`, `search_context_size`, and `max_characters` where the selected engine exposes matching controls.
-- Usage includes `usage.server_tool_use.web_search_requests`, `usage.server_tool_use.web_search_results`, and `usage.server_tool_use.web_search_extra_results`.
-- Pricing can bill managed Exa search with `server_tool_web_search_requests` and `server_tool_web_search_extra_results` meters.
-
-### Web fetch example
-
-```json
-{
-  "tools": [
-    {
-      "type": "phaseo:web_fetch",
-      "parameters": {
-        "engine": "direct",
-        "max_chars": 12000,
-        "allowed_domains": ["docs.example.com"],
-        "blocked_domains": ["internal.example.com"]
-      }
-    }
-  ]
-}
-```
-
-Notes:
-
-- The model supplies the target `url` when it calls the tool.
-- Only HTTP(S) URLs and text-like content types are supported.
-- `engine: "auto"` uses native fetch on the Anthropic Messages surface, otherwise Exa when `EXA_API_KEY` is configured, otherwise direct gateway HTTP fetch.
-- `engine: "direct"` uses direct gateway HTTP fetch. `engine: "exa"` uses Exa content extraction when `EXA_API_KEY` is configured.
-- `engine: "parallel"` uses Parallel Extract when `PARALLEL_API_KEY` is configured. `engine: "firecrawl"` uses Firecrawl Scrape when `FIRECRAWL_API_KEY` is configured.
-- `engine: "native"` on the Anthropic Messages surface is converted to Anthropic's native `web_fetch_20260209` tool. Other request surfaces should use `engine: "direct"` or a managed extraction engine.
-- `max_content_tokens` is accepted as a token-style bounded fetch size alias when `max_chars` is omitted.
-- `allowed_domains` and `blocked_domains` constrain which URLs can be fetched.
-- HTML content is reduced to bounded plain text before being injected back into the model loop.
-- Usage includes `usage.server_tool_use.web_fetch_requests`.
-- Pricing can bill managed fetch with the `server_tool_web_fetch_requests` meter. Provider-native fetch/search usage is priced with `native_web_fetch_requests` and `native_web_search_requests`; model price cards can override the built-in provider defaults.
-
-Native Anthropic fetch example:
-
-```json
-{
-  "tools": [
-    {
-      "type": "phaseo:web_fetch",
-      "parameters": {
-        "engine": "native",
-        "max_content_tokens": 9000,
-        "allowed_domains": ["docs.example.com"]
-      }
-    }
-  ],
-  "tool_choice": "phaseo:web_fetch"
-}
-```
-
-### Advisor example
-
-```json
-{
-  "tools": [
-    {
-      "type": "phaseo:advisor",
-      "parameters": {
-        "name": "reviewer",
-        "model": "claude-opus-5",
-        "instructions": "Review plans for correctness, missing edge cases, and implementation risk.",
-        "forward_transcript": true,
-        "max_uses": 2,
-        "max_completion_tokens": 1400,
-        "temperature": 0.2
-      }
-    }
-  ],
-  "tool_choice": "phaseo:advisor"
-}
-```
-
-Notes:
-
-- Advisor is gateway-managed and works across supported text models. The calling model receives an `phaseo_advisor` tool, or a named variant such as `phaseo_advisor_reviewer`, and the gateway executes the Advisor request.
-- `parameters.name` is optional. Use unique names to expose multiple advisors; names may contain letters, numbers, spaces, underscores, and dashes.
-- `parameters.model` pins the Advisor model. If omitted, the tool call can provide `model`; otherwise the gateway falls back to the outer request model.
-- `parameters.forward_transcript` defaults to `false`. Set it to `true` when the Advisor should receive the current conversation transcript.
-- The model normally supplies the Advisor `prompt` when it calls the tool. When `forward_transcript` is `true`, the gateway can execute a transcript-only Advisor call if no prompt is supplied. `max_tokens` is accepted as a legacy alias for `max_completion_tokens`.
-- Usage includes `usage.server_tool_use.advisor_requests`.
-
-### Image generation example
-
-```json
-{
-  "tools": [
-    {
-      "type": "phaseo:image_generation",
-      "parameters": {
-        "model": "openai/gpt-image-2",
-        "quality": "high",
-        "aspect_ratio": "16:9",
-        "output_format": "png"
-      }
-    }
-  ]
-}
-```
-
-Notes:
-
-- The model supplies the image `prompt` when it calls the tool. `description` is also accepted as a prompt alias.
-- `parameters.model` pins the image model. If omitted, the tool call can provide `model`; otherwise Phaseo uses the default image model.
-- The tool result contains either `imageUrl` or base64 image data, depending on the provider response.
-- Usage includes `usage.server_tool_use.image_generation_requests`; image-model token usage is merged into the parent request.
-
-### Apply patch example
-
-```json
-{
-  "tools": [
-    {
-      "type": "phaseo:apply_patch"
-    }
+    { "type": "phaseo:datetime", "parameters": { "timezones": ["Europe/London", "UTC"] } }
   ],
   "tool_choice": "auto"
 }
 ```
 
-Notes:
+See [Server Tools](./server-tools) for limits, usage counters, and pricing.
 
-- `phaseo:apply_patch` is supported on the Responses API.
-- Phaseo validates patch operations and returns them in the tool result. Your client decides whether to apply or reject the patch.
-- Supported operation types are `create_file`, `update_file`, and `delete_file`.
-- Usage includes `usage.server_tool_use.apply_patch_requests`.
+## Stream tool calls
 
-## Streaming behavior
+Tool-calling requests accept `stream: true`. Function-call arguments arrive in pieces; collect them all before you parse the call. When a server tool runs, Phaseo finishes that tool turn, runs the tool, continues the model, and streams the rest of the answer to you, so your client still reads one stream. See [Streaming](./streaming).
 
-Tool-calling requests can also use `stream: true`.
-
-For gateway-managed server tools, the gateway may:
-
-- materialize the upstream tool-call turn
-- execute the server tool
-- continue the model loop
-- re-emit a synthetic stream back to the client
-
-That keeps the client-side contract streaming-friendly even when the gateway executes part of the tool loop itself.
-
-## Next guides
-
-1. [Tool Calling Patterns](./tool-calling-patterns)
-2. [Tool Calling Safety and Validation](./tool-calling-safety)
-3. [Structured Outputs](./structured-outputs)
+For answers that must match a schema rather than call a function, use [Structured Outputs](./structured-outputs).

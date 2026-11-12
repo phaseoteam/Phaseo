@@ -1,0 +1,258 @@
+---
+icon: "circle-check"
+title: "Condições de parada do Agent SDK"
+sidebarTitle: "Condições de parada"
+description: "Limite a execução de um agente por etapas, tokens, custo, tempo, chamadas de ferramenta ou motivo de término."
+---
+
+Defina condições de parada no agente para encerrar uma execução segundo o seu orçamento, não o do modelo. A primeira condição atendida registra seu motivo como o motivo de parada da execução e retorna a execução com o status `stopped`. Separadamente, o limite de etapas restringe os turnos do modelo em cada chamada de run ou de continuação. O Rust só tem o limite de etapas.
+
+## Combine os limites integrados
+
+<CodeGroup>
+
+```typescript TypeScript
+import {
+  maxCost,
+  maxDuration,
+  maxTokensUsed,
+  stepCountIs,
+} from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "bounded-research",
+  stopWhen: [
+    stepCountIs(12),
+    maxTokensUsed(40_000),
+    maxCost(2),
+    maxDuration(60_000),
+  ],
+});
+```
+
+```python Python
+from phaseo_agent import create_agent, max_cost, max_duration, max_tokens_used, step_count_is
+
+agent = create_agent({
+    "id": "bounded-research",
+    "stop_when": [
+        step_count_is(12),
+        max_tokens_used(40_000),
+        max_cost(2),
+        max_duration(60_000),
+    ],
+})
+```
+
+```go Go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:    "bounded-research",
+  Model: "openai/gpt-6-astra",
+  StopWhen: []phaseoagent.StopCondition{
+    phaseoagent.StepCountIs(12),
+    phaseoagent.MaxTokensUsed(40_000),
+    phaseoagent.MaxCost(2.50),
+    phaseoagent.MaxDuration(2 * time.Minute),
+  },
+})
+```
+
+```csharp C#
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "bounded-research",
+    Model = "openai/gpt-6-astra",
+    StopWhen = new[]
+    {
+        AgentSdk.StepCountIs(12),
+        AgentSdk.MaxTokensUsed(40_000),
+        AgentSdk.MaxCost(2.50),
+        AgentSdk.MaxDuration(TimeSpan.FromMinutes(2)),
+    },
+});
+```
+
+```php PHP
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "bounded-research",
+    model: "openai/gpt-6-astra",
+    stopWhen: [
+        AgentSdk::stepCountIs(12),
+        AgentSdk::maxTokensUsed(40000),
+        AgentSdk::maxCost(2.50),
+        AgentSdk::maxDuration(120000), // milissegundos
+    ]
+));
+```
+
+```ruby Ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "bounded-research",
+  model: "openai/gpt-6-astra",
+  stop_when: [
+    PhaseoAgentSdk.step_count_is(12),
+    PhaseoAgentSdk.max_tokens_used(40_000),
+    PhaseoAgentSdk.max_cost(2.50),
+    PhaseoAgentSdk.max_duration(120_000) # milissegundos
+  ]
+)
+```
+
+```java Java
+// stopWhen é o 11º argumento do construtor de 13 argumentos.
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "bounded-research", "openai/gpt-6-astra", null, null, List.of(), 12,
+    null, null, null, null,
+    List.of(                                    // stopWhen
+        AgentSdk.stepCountIs(12),
+        AgentSdk.maxTokensUsed(40_000),
+        AgentSdk.maxCost(2.50),
+        AgentSdk.maxDuration(Duration.ofMinutes(2))),
+    null, null                                  // outputSchema, requireApproval
+));
+```
+
+```rust Rust
+// O Rust 0.2 não tem condições de parada; limite a execução com o limite de etapas.
+let agent = create_agent(
+    AgentDefinition::new("bounded-research", "openai/gpt-6-astra")
+        .max_steps(6),
+);
+```
+
+</CodeGroup>
+
+Os limites de tokens e de custo dependem do uso que o provedor informa, então mantenha também um limite de etapas ou de duração.
+
+## Helpers disponíveis
+
+| Helper | `camelCase` (TS, PHP, Java) | `snake_case` (Python, Ruby) | `PascalCase` (Go, C#) | Para quando | Motivo de parada |
+| --- | --- | --- | --- | --- | --- |
+| Contagem de etapas | `stepCountIs(n)` | `step_count_is(n)` | `StepCountIs(n)` | `n` turnos do modelo foram executados | `step_count:n` |
+| Tokens | `maxTokensUsed(n)` | `max_tokens_used(n)` | `MaxTokensUsed(n)` | O total de tokens chega a `n` | `max_tokens:n` |
+| Custo | `maxCost(usd)` | `max_cost(usd)` | `MaxCost(usd)` | O custo informado chega a `usd` | `max_cost:usd` |
+| Duração | `maxDuration(...)` | `max_duration(ms)` | `MaxDuration(...)` | O tempo decorrido chega à duração | `max_duration:...` |
+| Chamada de ferramenta | `hasToolCall(name)` | `has_tool_call(name)` | `HasToolCall(name)` | Um turno chamou `name` | `tool_call:name` |
+| Motivo de término | `finishReasonIs(reason)` | `finish_reason_is(reason)` | `FinishReasonIs(reason)` | Um turno informou `reason` | `finish_reason:reason` |
+
+Os helpers ficam em `AgentSdk` no C#, no PHP (`AgentSdk::`) e no Java, em `PhaseoAgentSdk` no Ruby, e são funções do pacote no TypeScript, no Python e no Go. O argumento de duração varia:
+
+| Linguagem | Argumento de duração |
+| --- | --- |
+| TypeScript | Milissegundos |
+| Python | Milissegundos |
+| Go | `time.Duration` |
+| C# | `TimeSpan` |
+| PHP | Milissegundos |
+| Ruby | Milissegundos |
+| Java | `java.time.Duration` |
+
+## Quando as condições são verificadas
+
+As linguagens não verificam as condições no mesmo ponto e não tratam o limite de etapas da mesma forma:
+
+| Linguagem | Condições verificadas | `hasToolCall` e `finishReasonIs` olham para | Limite de etapas (padrão) | Quando o limite de etapas se esgota |
+| --- | --- | --- | --- | --- |
+| TypeScript | Depois de cada etapa concluída | Todas as etapas concluídas | `maxSteps` (12) | Lança `Max steps exceeded` |
+| Python | Só em uma etapa em que o modelo não faz chamadas de ferramenta | Essa etapa (então `has_tool_call` nunca corresponde) | `max_steps` (12) | Lança `RuntimeError` |
+| Go | Depois de cada turno do modelo e das ferramentas dele | O último turno | `MaxSteps` (8) | Falha com o erro `Max steps exceeded (N)` |
+| C# | Depois de cada turno do modelo e das ferramentas dele | O último turno | `MaxSteps` (12) | Lança `InvalidOperationException("Max steps exceeded (N)")` |
+| PHP | Depois de cada turno do modelo e das ferramentas dele | O último turno | `maxSteps` (12) | Lança `Max steps exceeded (N)` |
+| Ruby | Depois de cada turno do modelo e das ferramentas dele | O último turno | `max_steps` (12) | Lança `Max steps exceeded (N)` |
+| Java | Depois de cada turno do modelo e das ferramentas dele | O último turno | `maxSteps` (12) | Lança `Max steps exceeded (N)` |
+| Rust | Sem condições de parada | | `max_steps` (8) | Retorna a execução com o status `stopped` e o motivo de parada `max_steps:N` |
+
+<Warning>
+As condições de parada do Python não interrompem um loop de ferramentas. Limite os loops de ferramentas com `max_steps`. Um `stop_when` passado a `run()` é ignorado; defina-o na definição do agente.
+</Warning>
+
+## Leia por que uma execução parou
+
+Uma execução interrompida é um retorno normal, não um erro. Verifique se o status da execução é `stopped`, leia o motivo de parada e depois leia o uso e a última etapa. Decida no seu aplicativo quais motivos contam como sucesso, quais permitem nova tentativa e quais vale mostrar ao usuário.
+
+| Linguagem | Status e motivo |
+| --- | --- |
+| TypeScript | `result.run.status`, `result.run.stopReason` |
+| Python | `result.run.status`, `result.run.stop_reason` |
+| Go | `result.Run.Status`, `result.Run.StopReason` |
+| C# | `result.Run.Status`, `result.Run.StopReason` |
+| PHP | `$result->run->status`, `$result->run->stopReason` |
+| Ruby | `result.run.status`, `result.run.stop_reason` |
+| Java | `result.run().status()`, `result.run().stopReason()` |
+| Rust | `result.run.status`, `result.run.stop_reason` |
+
+## Escreva uma condição personalizada
+
+Uma condição personalizada recebe o estado da execução e retorna um motivo para parar, ou um valor de "não" para continuar. Retorne uma string de motivo quando operadores ou sua interface precisarem explicar por que uma execução terminou; ela é salva como o motivo de parada.
+
+<CodeGroup>
+
+```typescript TypeScript
+import type { AgentStopCondition } from "@phaseo/agent-sdk";
+
+const stopAfterRepeatedToolErrors: AgentStopCondition = ({ steps }) => {
+  const failures = steps
+    .flatMap((step) => step.toolResults)
+    .filter((result) => result.error).length;
+  return failures >= 2 ? "repeated_tool_errors" : false;
+};
+
+const agent = createAgent({
+  id: "support-agent",
+  stopWhen: [stepCountIs(10), stopAfterRepeatedToolErrors],
+});
+```
+
+```python Python
+def stop_on_refund(state):
+    if any(call.name == "issue_refund" for call in state["tool_calls"]):
+        return "refund_requested"
+    return False
+```
+
+```go Go
+stopOnRefund := func(state phaseoagent.StopState) (string, bool) {
+  for _, call := range state.ToolCalls {
+    if call.Name == "issue_refund" {
+      return "refund_requested", true
+    }
+  }
+  return "", false
+}
+```
+
+```csharp C#
+Func<StopState, (bool Stop, string Reason)> stopOnRefund =
+    state => (state.ToolCalls.Any(call => call.Name == "issue_refund"), "refund_requested");
+```
+
+```php PHP
+$stopOnRefund = fn (array $state) => in_array(
+    "issue_refund",
+    array_map(fn ($call) => $call->name, $state["tool_calls"]),
+    true
+) ? "refund_requested" : null;
+```
+
+```ruby Ruby
+stop_on_refund = ->(state) {
+  "refund_requested" if state[:tool_calls].any? { |call| call.name == "issue_refund" }
+}
+```
+
+```java Java
+AgentSdk.StopCondition stopOnRefund = state ->
+    state.toolCalls().stream().anyMatch(call -> call.name().equals("issue_refund")) ? "refund_requested" : null;
+```
+
+</CodeGroup>
+
+| Linguagem | Recebe | Retorna |
+| --- | --- | --- |
+| TypeScript | `{ steps, usage, elapsedMs }`; cada etapa tem `stepIndex`, `text`, `toolCalls`, `toolResults`, `usage`, `finishReason` | `false`, `true` ou uma string de motivo |
+| Python | Dict com `step_count`, `usage`, `tool_calls`, `finish_reason`, `elapsed_ms` | `False` ou uma string de motivo |
+| Go | `StopState` com `StepCount`, `Usage`, `ToolCalls`, `FinishReason`, `Elapsed` | `(reason string, stop bool)` |
+| C# | `StopState` com `StepCount`, `Usage`, `ToolCalls`, `FinishReason`, `Elapsed` | `(bool Stop, string Reason)` |
+| PHP | Array com `step_count`, `usage`, `tool_calls`, `finish_reason`, `elapsed_ms` | Uma string de motivo ou `null` |
+| Ruby | Hash com `:step_count`, `:usage`, `:tool_calls`, `:finish_reason`, `:elapsed_ms` | Uma String de motivo ou `nil` |
+| Java | `StopState` com `stepCount()`, `usage()`, `toolCalls()`, `finishReason()`, `elapsed()` | Uma string de motivo ou `null` |

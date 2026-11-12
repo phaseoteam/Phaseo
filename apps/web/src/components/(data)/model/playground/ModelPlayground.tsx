@@ -1,8 +1,6 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { LocalizedRequestError, localizedRequestErrorMessage } from "@/i18n/localized-request-error";
 import { Streamdown } from "streamdown";
 import {
@@ -60,7 +58,7 @@ import {
 import { normalizeMediaGenerationStatus } from "@/lib/chat/mediaGenerationStatus";
 import { extractResponseText } from "@/components/(chat)/chatPayload";
 import { extractTotalCostUsd } from "@/components/(chat)/playground/chat-playground-core";
-import { BASE_URL } from "@/components/(data)/model/quickstart/config";
+import { ANTHROPIC_SDK_BASE_URL, BASE_URL } from "@/components/(data)/model/quickstart/config";
 import { jsonToPythonLiteral } from "@/components/(data)/model/quickstart/quickstartPayloads";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type { ShikiLang } from "@/components/(data)/model/quickstart/shiki";
@@ -1234,8 +1232,9 @@ public class Main {
 			code: `import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "${BASE_URL}",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "${ANTHROPIC_SDK_BASE_URL}",
 });
 
 const response = await client.messages.create({
@@ -1255,8 +1254,9 @@ console.log(response);`,
 			code: `const Anthropic = require("@anthropic-ai/sdk");
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "${BASE_URL}",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "${ANTHROPIC_SDK_BASE_URL}",
 });
 
 const response = await client.messages.create({
@@ -1277,8 +1277,8 @@ console.log(response);`,
 from anthropic import Anthropic
 
 client = Anthropic(
-    api_key=os.environ.get("PHASEO_API_KEY"),
-    base_url="${BASE_URL}",
+    auth_token=os.environ.get("PHASEO_API_KEY"),
+    base_url="${ANTHROPIC_SDK_BASE_URL}",
 )
 
 response = client.messages.create(
@@ -1329,14 +1329,14 @@ print(response)`,
 			category: "Phaseo SDK",
 			lang: "go",
 			installCommand:
-				"go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2@latest",
+				"go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3@latest",
 			code: `package main
 
 import (
     "context"
     "encoding/json"
     "fmt"
-    phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v2"
+    phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
 )
 
 func main() {
@@ -2251,10 +2251,17 @@ export default function ModelPlayground({
 		setVideoResponseText("");
 
 		try {
-			const videoDefaults = getDefaultVideoRoomParams(resolvedVideoModelId);
+			// The catalogue's stored video options (sizes, durations, defaults) for the model.
+			const videoRows = modelsByMode.video.filter((model) => model.modelId === resolvedVideoModelId);
+			const videoParams = (videoRows.find((model) => {
+				const video = (model.capabilityParamsById as Record<string, unknown> | null | undefined)?.["video.generate"];
+				return Boolean(video && typeof video === "object" && !Array.isArray(video));
+			}) ?? videoRows[0])?.capabilityParamsById;
+			const videoDefaults = getDefaultVideoRoomParams(resolvedVideoModelId, videoParams);
 			const videoOptions = buildVideoRequestOptions(
 				resolvedVideoModelId,
 				videoDefaults,
+				videoParams,
 			);
 			const response = await fetchChatWebApi("/api/chat/video", {
 				method: "POST",

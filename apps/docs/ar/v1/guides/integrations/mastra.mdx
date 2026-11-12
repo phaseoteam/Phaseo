@@ -1,10 +1,10 @@
 ---
 title: "Mastra"
 icon: "workflow"
-description: "استخدم نماذج Phaseo داخل وكلاء ومهام Mastra."
+description: "استخدم نماذج Phaseo داخل وكلاء Mastra وسير عمله."
 ---
 
-يعمل Mastra مع مزوّدي AI SDK، لذا فإن أسهل طريقة هي إنشاء مزوّد متوافق مع OpenAI يشير إلى Phaseo.
+أنشئ مزوّد OpenAI من AI SDK بمفتاح Phaseo و`baseURL: "https://api.phaseo.app/v1"`، ومرّر نماذجه إلى وكلاء Mastra وسير عمله.
 
 ## التثبيت
 
@@ -12,7 +12,7 @@ description: "استخدم نماذج Phaseo داخل وكلاء ومهام Mast
 npm install @mastra/core @ai-sdk/openai ai
 ```
 
-## تهيئة وكيل
+## توجيه وكيل Mastra إلى Phaseo
 
 ```ts
 import { Agent } from "@mastra/core/agent";
@@ -27,18 +27,13 @@ const phaseo = createOpenAI({
 export const agent = new Agent({
 	name: "support-agent",
 	instructions: "Answer in two short paragraphs.",
-	model: phaseo("openai/gpt-5-nano"),
+	model: phaseo("openai/gpt-6-astra"),
 });
 ```
 
-## ملاحظات
+استخدم Base URL وحده، دون `/chat/completions` أو `/responses`. شغّل الوكيل مرة واحدة بموجّه قصير وتأكد من ظهور الطلب في **الإعدادات → الاستخدام → السجلات**.
 
-- استخدم عنوان URL الأساسي فقط، دون `/chat/completions` أو `/responses`.
-- يعتمد سلوك وكلاء Mastra على مسار مزوّد AI SDK. اختبر الأدوات والتدفق قبل النشر للإنتاج.
-- استخدم عناصر التحكم في توجيه Phaseo على مستوى الطلب أو عبر presets عند الحاجة إلى تفضيلات للمزوّد.
+## القيود المعروفة
 
-## مواضيع ذات صلة
-
-- [AI SDK](./ai-sdk.mdx)
-- [الإعدادات المسبقة](../presets.mdx)
-- [استدعاء الأدوات](../tool-calling.mdx)
+- يعتمد سلوك وكلاء Mastra على مزوّد AI SDK. اختبر [استدعاء الأدوات](../tool-calling.mdx) والبث قبل الإنتاج.
+- لتفضيل مزوّدين معيّنين، اضبط عناصر التحكم في توجيه Phaseo في الطلب أو في [إعداد مسبق](../presets.mdx).

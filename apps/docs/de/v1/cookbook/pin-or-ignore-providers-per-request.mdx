@@ -4,211 +4,126 @@ icon: "pin"
 description: "Nutze anfragebezogene Anbietersteuerung, um eine Reihenfolge zu bevorzugen, die Auswahl einzugrenzen oder einen Anbieter auszuschließen."
 ---
 
-Nutze dieses Rezept, wenn eine Anfrage einen bestimmten Anbieterpfad bevorzugen soll, ohne die Routing-Standards des gesamten Arbeitsbereichs zu ändern.
+Füge einer Anfrage ein `provider`-Objekt hinzu, um zu ändern, welche Anbieter sie bedienen, ohne die Workspace-Standards oder Presets anzufassen. Am Ende kannst du eine Reihenfolge bevorzugen, eine Anfrage innerhalb einer Zulassungsliste halten oder einen Anbieter überspringen und in der Antwort sehen, welcher Anbieter geantwortet hat.
 
-## Ziel
+Diese Anfrageformen sind produktionsreif. Die Anbieter-Slugs sind echte Beispiele; prüfe auf der Seite des Modells, welche Anbieter dein Modell bedienen.
 
-- Anbieter in bevorzugter Reihenfolge versuchen.
-- Eine Anfrage auf eine genehmigte Anbieterauswahl beschränken.
-- Einen Anbieter vorübergehend ignorieren, ohne Presets zu bearbeiten.
+| Feld | Wirkung | Beispiel |
+| --- | --- | --- |
+| `order` | Versucht zuerst diese Anbieter, danach den Rest der zulässigen Auswahl | `["anthropic-us", "anthropic"]` |
+| `only` | Hält die Anfrage innerhalb dieser Liste | `["openai", "openai-eu"]` |
+| `ignore` | Entfernt diese Anbieter für diese Anfrage | `["novita"]` |
+| `sort` | Ordnet die verbleibenden nach `price`, `latency` oder `throughput` | `"price"` |
 
-## 1. Anbieter in einer bestimmten Reihenfolge versuchen
+Um genau einen Anbieter zu verwenden und den anbieterübergreifenden Fallback abzuschalten, stelle ihn stattdessen der Modell-ID voran: siehe [Einen Anbieter festlegen](../guides/routing-and-fallbacks#pin-one-provider).
 
-Verwende `provider.order`, wenn du die bevorzugte Routenreihenfolge bereits kennst.
+## Anbieter in einer festen Reihenfolge versuchen
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-opus-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "input": "Write a concise launch summary.",
     "provider": {
       "order": ["anthropic-us", "anthropic"]
-    }
+    },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "anthropic/claude-opus-4.6",
+  model: "anthropic/claude-sonnet-5.5",
   input: "Write a concise launch summary.",
   provider: {
     order: ["anthropic-us", "anthropic"],
   },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing); // { selected_provider: "anthropic-us", ... }
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "anthropic/claude-opus-4.6",
+        "model": "anthropic/claude-sonnet-5.5",
         "input": "Write a concise launch summary.",
         "provider": {
             "order": ["anthropic-us", "anthropic"],
         },
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-Die aufgeführten Anbieter werden vor den übrigen geeigneten Kandidaten platziert.
+`meta: true` fügt der Antwort `meta.routing.selected_provider` hinzu, sodass du das Ergebnis prüfen kannst, ohne die Protokolle zu öffnen.
 
-## 2. Die Anfrage auf eine feste Anbieterauswahl beschränken
+## Eine Anfrage innerhalb einer Zulassungsliste halten
 
-Verwende `provider.only`, wenn die Anfrage auf eine kleine Zulassungsliste beschränkt bleiben muss.
+Sende `only` und optional `sort`, um innerhalb dieser Liste zu ordnen:
 
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "openai/gpt-5.4-nano",
-    "input": "Extract the action items.",
-    "provider": {
-      "only": ["openai", "openai-eu"],
-      "sort": "price"
-    }
-  }'
+```json
+{
+  "model": "openai/gpt-5.6-luna",
+  "input": "Extract the action items.",
+  "provider": {
+    "only": ["openai", "openai-eu"],
+    "sort": "price"
+  }
+}
 ```
 
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
+Bedient keiner der aufgeführten Anbieter das Modell, schlägt die Anfrage fehl, statt die Liste zu verlassen.
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+## Einen Anbieter überspringen
 
-const response = await client.generateResponse({
-  model: "openai/gpt-5.4-nano",
-  input: "Extract the action items.",
-  provider: {
-    only: ["openai", "openai-eu"],
-    sort: "price",
-  },
-});
+Sende `ignore`, wenn ein Anbieter beeinträchtigt ist oder während du einen anderen Pfad testest:
 
-console.log(response.output_text);
+```json
+{
+  "model": "meta/llama-4-maverick",
+  "input": "Summarize the transcript.",
+  "provider": {
+    "ignore": ["novita"]
+  }
+}
 ```
 
-```python Python SDK
-from phaseo import Phaseo
+## Kombinieren
 
-client = Phaseo(api_key="YOUR_API_KEY")
+Verwende `only` für die Auswahl, `order` für die Bevorzugung darin und `sort` für den Rest. Dieses Beispiel hält eine Anfrage bei Google Vertex, versucht zuerst die EU-Region und ordnet dann nach Latenz:
 
-response = client.generate_response(
-    {
-        "model": "openai/gpt-5.4-nano",
-        "input": "Extract the action items.",
-        "provider": {
-            "only": ["openai", "openai-eu"],
-            "sort": "price",
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-Die Anfrage bleibt auf diese Anbieter beschränkt; innerhalb dieser Auswahl wird anschließend die gewählte Sortierung angewendet.
-
-## 3. Einen Anbieter ausschließen
-
-Verwende `provider.ignore`, wenn ein Anbieter bei einer Anfrage oder einem kurzfristigen Rollout übersprungen werden soll.
-
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "meta/llama-4-maverick",
-    "input": "Summarize the transcript.",
-    "provider": {
-      "ignore": ["deepinfra"]
-    }
-  }'
+```json
+{
+  "model": "anthropic/claude-sonnet-5.5",
+  "input": "Summarize the incident in one sentence.",
+  "provider": {
+    "only": ["google-vertex", "google-vertex-eu"],
+    "order": ["google-vertex-eu"],
+    "sort": "latency"
+  }
+}
 ```
 
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
+## Prüfen, wohin sie ging
 
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+Öffne die Anfrage unter **Einstellungen → Nutzung → Protokolle** und klappe **Beobachtbarkeit des Routings** auf. Dort stehen die Anbieter, die vor der Rangfolge ausgeschlossen wurden, samt Grund, und die gereihten Kandidaten mit ihren Bewertungen; [Eine Routing-Entscheidung erklären](../guides/routing-and-fallbacks#explain-a-routing-decision) beschreibt jedes Feld.
 
-const response = await client.generateResponse({
-  model: "meta/llama-4-maverick",
-  input: "Summarize the transcript.",
-  provider: {
-    ignore: ["deepinfra"],
-  },
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "meta/llama-4-maverick",
-        "input": "Summarize the transcript.",
-        "provider": {
-            "ignore": ["deepinfra"],
-        },
-    }
-)
-
-print(response.get("output_text"))
-```
-</CodeGroup>
-
-Das ist nützlich, wenn:
-
-- ein Anbieter beeinträchtigt ist
-- du einen anderen Anbieterpfad prüfst
-- du Routing-Ergebnisse vergleichen möchtest, ohne ein Preset zu bearbeiten
-
-## 4. Steuerungen sorgfältig kombinieren
-
-Du kannst diese Steuerungen kombinieren, solltest aber ein klares Ziel verfolgen:
-
-- verwende `order`, um eine Präferenz auszudrücken
-- verwende `only`, um die Kandidatenauswahl festzulegen
-- verwende `ignore`, um einen Anbieter auszunehmen
-
-Ein praktisches Muster kombiniert:
-
-- `only`, damit die Anfrage auf `google-vertex` und `google-vertex-eu` beschränkt bleibt
-- `order`, um `google-vertex-eu` an erste Stelle zu setzen
-- `sort: "latency"`, um die zulässigen Anbieter zu sortieren
-
-## 5. Wann du dies in ein Preset verschieben solltest
-
-Wenn dieselben Anbieterregeln in mehreren Diensten vorkommen, kopiere sie nicht pro Anfrage, sondern verschiebe sie in ein Preset.
-
-Nutze anfragebezogenes Routing, wenn die Ausnahme:
-
-- vorübergehend
-- aufruferspezifisch
-- an einen Nutzerablauf gebunden
-
-## Verwandte Leitfäden
-
-- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
-- [Presets ausrollen und Routing debuggen](./preset-rollout-and-routing-debug.mdx)
+Verwende Regeln auf Anfrageebene für Überschreibungen, die vorübergehend sind, nur für einen Aufrufer gelten oder an einen Nutzerablauf gebunden sind. Sobald dieselben Regeln in mehreren Diensten auftauchen, verschiebe sie in ein [Preset](../guides/presets), wo sie auch begrenzen, welche Anbieter ein Fallback nutzen darf. Um Rangfolgen zu vergleichen, siehe [Anbieter sortieren](./sort-providers-by-price-latency-or-throughput).

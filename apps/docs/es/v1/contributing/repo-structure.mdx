@@ -1,45 +1,48 @@
 ---
 icon: "folder-open"
 title: "Estructura del repositorio"
-description: "Encuentra el código de aplicaciones, documentación, SDK y exportaciones del catálogo de Phaseo."
+description: "Encuentra el código de las aplicaciones, la documentación, los SDK y el esquema de la base de datos de Phaseo."
 ---
 
-Phaseo es un monorepositorio de pnpm y Turborepo. Usa esta referencia para encontrar los archivos de un cambio de código o documentación. Para cambios de registros del catálogo, [abre una incidencia](./overview.mdx).
+Phaseo es un monorepositorio de pnpm y Turborepo. Busca abajo la carpeta de tu cambio de código o documentación. Los registros del catálogo no están en el repositorio; para cambiar uno, [abre una incidencia](./overview.mdx).
 
-## Aplicaciones y paquetes
+## Aplicaciones
 
 | Ruta | Finalidad |
 | --- | --- |
 | `apps/web` | Sitio web Next.js 16, panel y editor interno del catálogo. |
 | `apps/web-api` | Lecturas públicas del catálogo y API autenticadas de cuentas y administración. |
-| `apps/api` | Enrutamiento de la pasarela y ejecución de proveedores en Cloudflare Workers. |
-| `apps/docs` | Documentación Mintlify; páginas MDX en `v1` y navegación en `docs.json`. |
-| `packages/data/catalog` | Esquemas del catálogo, datos de prueba de compatibilidad e instantáneas públicas generadas. |
-| `packages/sdk` | SDK de TypeScript, Python, Go, C#, PHP, Ruby, Java, Rust y C++. |
-| `supabase/migrations` | Migraciones de esquemas y permisos de la base de datos. |
+| `apps/api` | Enrutamiento del Gateway y ejecución de proveedores en Cloudflare Workers. |
+| `apps/docs` | Documentación de Mintlify; las páginas MDX están en `v1` y la navegación en `docs.json`. |
+| `apps/mcp` | Servidor MCP de Phaseo para descubrir modelos, precios y uso. |
+| `apps/desktop` | Aplicación Phaseo Desktop. |
+| `apps/mobile` | Aplicación móvil de Phaseo (Expo, primero Android). |
+| `apps/slack` | Worker que da servicio al agente de Slack de Phaseo. |
+
+## Paquetes y herramientas
+
+| Ruta | Finalidad |
+| --- | --- |
+| `packages/sdk` | SDK de TypeScript, Python, Go, C#, PHP, Ruby, Java, Rust y C++, además de los Agent SDK (`agent-sdk-*`). |
+| `packages/cli/phaseo` | La herramienta de línea de comandos `@phaseo/cli`. |
+| `packages/integrations` | El proveedor para Vercel AI SDK y el proveedor de Terraform. |
+| `packages/shared` | Código compartido entre aplicaciones, como la interfaz, las reglas de gasto y los ajustes de enrutamiento. |
+| `supabase/schemas` | Definiciones declarativas de la base de datos. |
+| `supabase/migrations` | Migraciones SQL hacia delante que despliegan los cambios de esquema y permisos. |
 | `scripts` | Utilidades de validación, generación de SDK y automatización. |
-| `.github/workflows` | CI, despliegue, sincronización del catálogo y programación de instantáneas. |
-| `.changeset` | Metadatos de publicación de paquetes versionados. |
+| `.github/workflows` | CI, despliegue y sincronización del catálogo. |
+| `.changeset` | Metadatos de publicación de los paquetes versionados. |
 
 ## Datos del catálogo
 
-La base de datos es la fuente de verdad de modelos, proveedores, organizaciones, precios, benchmarks y ajustes relacionados del catálogo. Los administradores gestionan registros mediante [Datos internos](https://phaseo.app/internal/data). Las contribuciones públicas se revisan mediante incidencias de GitHub.
+La base de datos es la única fuente de modelos, proveedores, organizaciones, precios, benchmarks y ajustes del catálogo. El repositorio no contiene JSON del catálogo. Los administradores gestionan los registros en [Datos internos](https://phaseo.app/internal/data); las contribuciones públicas llegan como incidencias de GitHub.
 
-- `packages/data/catalog/generated/database-v2` contiene instantáneas públicas diarias y el índice generado de enumeraciones de modelos que usan las herramientas OpenAPI y SDK.
-- `packages/data/catalog/src/data` contiene datos de prueba de compatibilidad archivados.
-- Editar cualquiera de estos directorios no actualiza los registros del catálogo en vivo. El importador antiguo de JSON a base de datos está retirado.
-
-Los cambios de esquemas y aplicaciones siguen usando migraciones y solicitudes de cambios. Las instantáneas y los artefactos SDK generados deben actualizarse con sus comandos de generación.
+Los cambios de esquema y de aplicaciones siguen pasando por migraciones y solicitudes de incorporación. Actualiza los archivos de SDK generados con sus comandos de generación, no a mano.
 
 ## Automatización del catálogo
 
-La sincronización de proveedores pone los precios propuestos en cola para su revisión en [Actualizaciones de proveedores](https://phaseo.app/internal/data/imports). Los trabajos de benchmarks y ciclo de vida de modelos usan la base de datos. Las exportaciones públicas diarias producen solicitudes de cambios de instantáneas revisables.
+La sincronización de proveedores pone en cola los precios propuestos para su revisión en [Actualizaciones de proveedores](https://phaseo.app/internal/data/imports). Los trabajos de benchmarks y del ciclo de vida de los modelos leen y escriben en la base de datos.
 
-Los registros exclusivos del catálogo no habilitan automáticamente el enrutamiento de la pasarela. Los cambios de rutas y precios requieren la revisión administrativa correspondiente.
+Un registro del catálogo no habilita por sí solo el enrutamiento en el Gateway. Los cambios de rutas y precios requieren la revisión de un administrador.
 
-## Por dónde empezar
-
-- [Informar de una actualización de modelo](./editing-a-model.mdx).
-- [Informar de una actualización de organización](./editing-an-organisation.mdx).
-- [Enviar puntuaciones de benchmarks](../research/submitting-scores.mdx).
-- [Contribuir código o documentación](./how-to-contribute.mdx).
+Para empezar un cambio, consulta [Contribuir código o documentación](./how-to-contribute.mdx).

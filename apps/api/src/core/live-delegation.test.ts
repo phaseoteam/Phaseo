@@ -6,7 +6,7 @@ import { loadPriceCard } from "@pipeline/pricing/loader";
 vi.mock("@pipeline/pricing/loader", () => ({ loadPriceCard: vi.fn() }));
 const settings = liveBackendSettingsSchema.parse({ web_search: true, service_tier: "priority" });
 const card = { ...LIVE_PRICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules:
-	["standard", "priority", "flex"].flatMap((plan) => ["input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens", "output_text_tokens"].map((meter) => ({
+	["standard", "priority", "flex"].flatMap((plan) => ["input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m", "output_text_tokens"].map((meter) => ({
 		...LIVE_PRICE_CARD.rules[0], meter: meter as any, pricing_plan: plan, unit_size: 1e6,
 		price_per_unit: plan === "priority" ? "2" : plan === "flex" ? "0.5" : "1",
 	}))) };
@@ -21,7 +21,7 @@ const tool = (type = "response.output_item.done", id = "search1", delegationId =
 
 describe("Live delegation configuration", () => {
 	it("exposes all 22 reference voices and maps supported backend settings", () => {
-		expect(new Set(LIVE_VOICES).size).toBe(22);
+		expect(new Set(LIVE_VOICES).size).toBe(31);
 		const configured = { ...config, settings: liveBackendSettingsSchema.parse({ instructions: "Verify facts.", max_output_tokens: 16000,
 			reasoning_effort: "high", reasoning_summary: "concise", verbosity: "low", web_search: true, tool_choice: "required", parallel_tool_calls: false }) };
 		expect(liveStartEvent(configured, "vesper", "Listen carefully.").session).toMatchObject({ instructions: "Listen carefully.",
@@ -40,6 +40,26 @@ describe("Live delegation configuration", () => {
 		const snapshot = await createLiveConfig(config.backendModel, settings);
 		expect(snapshot.settings).toEqual(settings);
 		expect(snapshot.searchCard).toEqual(LIVE_SEARCH_PRICE_CARD);
+	});
+	it("starts on OpenAI's cards that price 30-minute and 12-hour cache writes separately, and bills each", async () => {
+		// The shape of the openai GPT-5.6 cards since 2026-10-21: no single cache-write row.
+		const rules = ["input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m", "cached_write_text_tokens_12h", "output_text_tokens"]
+			.map((meter, index) => ({ ...LIVE_PRICE_CARD.rules[0], meter: meter as any, unit_size: 1e6, price_per_unit: ["1", "0.1", "1.25", "2.5", "10"][index] }));
+		vi.mocked(loadPriceCard).mockResolvedValue({ ...card, rules });
+		const live = await createLiveConfig(config.backendModel, {});
+		const reported = terminal("r1", "d1", "default");
+		Object.assign(reported.event.response.usage.input_tokens_details, { cache_write_tokens_details: { ttl_30m_tokens: 150, ttl_12h_tokens: 50 } });
+		const usage = ingestLiveUsage(ingestLiveUsage({}, delegate()), reported);
+		expect(usage.live_responses?.[0].usage).toMatchObject({ input_text_tokens: 400, cached_write_text_tokens_30m: 150, cached_write_text_tokens_12h: 50 });
+		// 400×$1 + 400×$0.10 + 150×$1.25 + 50×$2.50 + 200×$10 per million tokens.
+		expect(priceLiveUsage(usage, live).live_backend_nanos).toBe(2_752_500);
+		const unsplit = ingestLiveUsage(ingestLiveUsage({}, delegate()), terminal("r1", "d1", "default"));
+		expect(unsplit.live_responses?.[0].usage).toMatchObject({ cached_write_text_tokens_30m: 200 });
+		// A repeat of the same response that moves writes to the other lifetime changes the price.
+		const relabelled = terminal("r1", "d1", "default");
+		Object.assign(relabelled.event.response.usage.input_tokens_details, { cache_write_tokens_details: { ttl_30m_tokens: 0, ttl_12h_tokens: 200 } });
+		expect(() => ingestLiveUsage(unsplit, relabelled)).toThrow("live_response_usage_conflict");
+		expect(() => ingestLiveUsage(unsplit, terminal("r1", "d1", "default"))).not.toThrow();
 	});
 });
 
@@ -64,7 +84,7 @@ describe("Live delegated usage", () => {
 		expect(bill.pricing.lines.filter((line: any) => line.component === "tool")).toEqual([expect.objectContaining({ response_id: "r1", delegation_id: "d1", tool_call_id: "search1" })]);
 		expect(usage.live_responses?.[0].provider_usage).toEqual(terminal().event.response.usage);
 		expect(liveUsageMeters(usage)).toMatchObject({ input_tokens: 1000, input_text_tokens: 400, cached_read_text_tokens: 400,
-			cached_write_text_tokens: 200, output_tokens: 200, output_reasoning_tokens: 100, native_web_search_requests: 1 });
+			cached_write_text_tokens_30m: 200, output_tokens: 200, output_reasoning_tokens: 100, native_web_search_requests: 1 });
 	});
 	it("keeps multiple delegations and continued Responses separately priced", () => {
 		let usage: LiveUsage = {};
@@ -92,7 +112,8 @@ describe("Live delegated usage", () => {
 		usage = ingestLiveUsage(usage, terminal());
 		expect(() => assertLiveFinalUsage(usage)).toThrow("tool_authoritative_usage_pending");
 		expect(() => priceLiveUsage(usage, { ...config, searchCard: undefined })).toThrow("search_price_snapshot_missing");
-		const event = tool(); event.event.item.type = "function_call";
+		// Function calls run on the client; other unpriced tool types are still refused.
+		const event = tool(); event.event.item.type = "mcp_call";
 		expect(() => ingestLiveUsage(usage, event)).toThrow("tool_not_supported");
 		expect(() => ingestLiveUsage({}, tool())).toThrow("tool_identity_missing");
 	});

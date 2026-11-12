@@ -1,63 +1,50 @@
 ---
-title: "Listar os recursos dos endpoints do modelo"
+title: "Listar recursos dos endpoints do modelo"
 badge: "Beta"
 openapi: "/pt-BR/openapi/v1/openapi.localized.yaml GET /models/{author}/{slug}/endpoints"
-description: "Consultar as rotas de provedores, modalidades, parâmetros, disponibilidade e preços de um modelo."
+description: "Inspecione as rotas de provedor, modalidades, parâmetros, disponibilidade e preços disponíveis para um modelo."
 ---
 
-Use este endpoint antes de enviar uma solicitação quando o aplicativo precisar confirmar a disponibilidade de uma combinação de modelo, provedor, endpoint e parâmetros.
-
-Para `openai/gpt-5.4-mini`, use:
+Chame este endpoint antes de enviar uma solicitação para confirmar que uma combinação de modelo, provedor, endpoint e parâmetro está disponível. Para `openai/gpt-6-astra`:
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Cada linha representa um recurso de provedor e endpoint. Ela inclui:
+Cada entrada em `endpoints` é uma rota de provedor para um endpoint:
 
-- o ID canônico do recurso e o caminho público da API
-- o ID e o nome do provedor, além do slug do modelo do provedor
-- as modalidades de entrada e saída
-- os nomes dos parâmetros compatíveis e os detalhes estruturados
-- os estados do provedor, modelo, recurso, roteamento e disponibilidade
-- as datas de vigência quando a rota está programada ou limitada no tempo
-- um resumo de preços do endpoint
+| Campo | Contém |
+| --- | --- |
+| `endpoint`, `capability_id`, `public_path`, `collection` | Os IDs canônicos do endpoint e do recurso e o caminho público da API |
+| `provider`, `model` | O ID e o nome do provedor, e o slug do modelo no provedor |
+| `routable`, `status`, `status_reason` | Se a rota recebe tráfego agora, sua disponibilidade e por que ela está apenas em prévia ou inativa |
+| `modalities` | Modalidades de entrada e saída |
+| `capabilities` | Nomes dos parâmetros suportados e detalhes estruturados dos parâmetros |
+| `routing` | Estados de roteamento do provedor, do modelo e do recurso |
+| `effective` | Datas `from` e `to` quando a rota está agendada ou tem prazo definido |
+| `pricing` | O resumo de preços do endpoint |
+
+Para comparar modelos antes, use [Listar modelos](./models.mdx); para ver todos os endpoints que a API expõe, use [Listar endpoints](./endpoints.mdx).
 
 ## Incluir rotas planejadas e inativas
 
-O padrão `availability=active` retorna apenas linhas com rotas públicas. Use `availability=all` para consultar rotas futuras e inativas:
+O padrão `availability=active` retorna apenas linhas roteáveis publicamente. Use `availability=all` para inspecionar rotas em breve e inativas:
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?availability=all" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints?availability=all" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Não encaminhe tráfego de produção para uma linha a menos que `availability_status` seja `active` e `is_active_gateway` seja `true`.
+Só envie tráfego de produção para uma linha em que `routable` seja `true` e `status` seja `active`.
 
 ## Filtrar rotas
 
-Use filtros repetíveis ou separados por vírgulas para:
+Estes filtros aceitam parâmetros repetidos ou uma lista separada por vírgulas: `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status` e `supported_parameters` (alias `params`). [Listar modelos](./models.mdx#filter-the-list) descreve os valores deles.
 
-- `provider`
-- `provider_status`
-- `provider_routing_status`
-- `model_routing_status`
-- `capability_status`
-- `provider_availability_status`
-- `provider_availability_reason`
-- `status`
-- `supported_parameters`
-
-Por exemplo, isto retorna as rotas da OpenAI compatíveis com `temperature`:
+Esta chamada retorna as rotas da OpenAI que suportam `reasoning_effort`:
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?provider=openai&supported_parameters=temperature" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints?provider=openai&supported_parameters=reasoning_effort" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
-
-## Endpoints relacionados
-
-- [Listar modelos](./models.mdx)
-- [Listar endpoints](./endpoints.mdx)
-

@@ -1,4 +1,5 @@
 import { ResponsesSchema } from "@/core/schemas";
+import { admitCustomerRequest } from "@/routes/v1/data/customer-quota";
 import { makeEndpointHandler } from "@/pipeline";
 import { ensureRuntimeForBackground } from "@/runtime/env";
 import {
@@ -287,7 +288,7 @@ async function invokeResponses(args: {
 	});
 
 	try {
-		const response = await responsesHandler(request);
+		const response = await admitCustomerRequest(request) ?? await responsesHandler(request);
 		const rawText = await response.text();
 		let payload: any = null;
 		try {

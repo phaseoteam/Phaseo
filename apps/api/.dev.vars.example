@@ -11,9 +11,21 @@ AMAZON_BEDROCK_API_KEY=replace-with-a-bedrock-api-key
 # REFLECTION_API_KEY=replace-with-a-reflection-api-key
 # REFLECTION_BASE_URL=https://api.reflection.ai/openai/v1
 
+# Particle AI Chat Completions (enable catalogue routing separately).
+# PARTICLE_AI_API_KEY=replace-with-a-particle-api-key
+# PARTICLE_AI_BASE_URL=https://api.particle.ai/v1
+
+# Tencent Cloud TokenHub (international) Chat Completions (enable catalogue routing separately).
+# TENCENT_CLOUD_TOKENHUB_API_KEY=replace-with-a-tokenhub-api-key
+# TENCENT_CLOUD_TOKENHUB_BASE_URL=https://tokenhub-intl.tencentcloudmaas.com/v1
+
 # EmpirioLabs text inference (enable catalog routing separately).
 # EMPIRIOLABS_API_KEY=replace-with-an-empiriolabs-api-key
 # EMPIRIOLABS_BASE_URL=https://api.empiriolabs.ai
+
+# ScaleDown Summarize, Extract and Classify (enable catalogue routing separately).
+# SCALEDOWN_API_KEY=replace-with-a-scaledown-api-key
+# SCALEDOWN_BASE_URL=https://api.scaledown.xyz
 
 # Optional SigV4 alternative to AMAZON_BEDROCK_API_KEY.
 # AWS_ACCESS_KEY_ID=replace-with-an-access-key-id

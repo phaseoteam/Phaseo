@@ -4,6 +4,7 @@ const state = vi.hoisted(() => ({
 	inserted: null as Record<string, unknown> | null,
 	auditEvents: [] as Array<Record<string, unknown>>,
 	loggingUpdate: null as Record<string, unknown> | null,
+	insertError: null as Record<string, unknown> | null,
 }));
 
 const destination = {
@@ -51,7 +52,7 @@ function supabase() {
 				const base = chain({ data: destination, error: null });
 				base.insert = (payload: Record<string, unknown>) => {
 					state.inserted = payload;
-					return chain({ data: destination, error: null });
+					return chain(state.insertError ? { data: null, error: state.insertError } : { data: { ...destination, destination_id: payload.destination_id ?? destination.destination_id }, error: null });
 				};
 				return base;
 			}
@@ -89,6 +90,7 @@ vi.mock("@/pipeline/before/guards", () => ({
 vi.mock("./route-helpers", () => ({
 	requireCapability: () => null,
 	requireOAuthWorkspaceRole: async () => null,
+	rejectThirdPartyOAuthSpendingChange: () => null,
 	internalServerError: (_name: string, error: unknown) => new Response(JSON.stringify({ error: String(error) }), { status: 500 }),
 }));
 
@@ -102,6 +104,7 @@ describe("observability destination management", () => {
 		state.inserted = null;
 		state.auditEvents.length = 0;
 		state.loggingUpdate = null;
+		state.insertError = null;
 		vi.resetModules();
 	});
 
@@ -128,6 +131,39 @@ describe("observability destination management", () => {
 		expect(state.auditEvents[0]).toMatchObject({ action: "observability.destination.created", target_id: "destination_1" });
 	});
 
+	it("creates object storage destinations and returns their type", async () => {
+		const configs: Record<string, Record<string, string>> = {
+			s3: { bucket: "traces", region: "eu-west-2", access_key_id: "AKIA", secret_access_key: "secret" },
+			r2: { bucket: "traces", account_id: "0123456789abcdef0123456789abcdef", access_key_id: "key", secret_access_key: "secret" },
+			gcs: { bucket: "project_logs", access_key_id: "GOOG1", secret_access_key: "secret" },
+		};
+		for (const [type, config] of Object.entries(configs)) {
+			vi.resetModules();
+			const { observabilityRoutes } = await import("./observability");
+			const response = await observabilityRoutes.request("https://example.com/destinations", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ type, name: "Archive", config }),
+			});
+			const body = await response.json() as Record<string, any>;
+			expect({ type, status: response.status }).toEqual({ type, status: 201 });
+			expect(body.data).toMatchObject({ type, configured: true });
+			expect(body.data.config).toBeUndefined();
+			expect(state.inserted?.destination_config_ciphertext).not.toContain("secret");
+		}
+	});
+
+	it("names the object storage field at fault", async () => {
+		const { observabilityRoutes } = await import("./observability");
+		const response = await observabilityRoutes.request("https://example.com/destinations", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ type: "s3", name: "Archive", config: { bucket: "Bad_Bucket", access_key_id: "AKIA", secret_access_key: "secret" } }),
+		});
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ message: "bucket must be 3-63 lower-case letters, digits, dots or hyphens" });
+	});
+
 	it("rejects private destination endpoints", async () => {
 		const { observabilityRoutes } = await import("./observability");
 		const response = await observabilityRoutes.request("https://example.com/destinations", {
@@ -149,6 +185,44 @@ describe("observability destination management", () => {
 		expect(response.status).toBe(400);
 	});
 
+	it("reports the per-type destination cap as a bad request", async () => {
+		state.insertError = { code: "23514", message: "broadcast_destination_limit_reached" };
+		const { observabilityRoutes } = await import("./observability");
+		const response = await observabilityRoutes.request("https://example.com/destinations", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ type: "webhook", name: "Sixth", config: { url: "https://telemetry.example.com/traces" } }),
+		});
+		expect(response.status).toBe(400);
+		expect(await response.json()).toEqual({ error: "destination_limit_reached", message: "Destination limit reached for this type" });
+		expect(state.auditEvents).toHaveLength(0);
+	});
+
+	it("validates the OTLP endpoint the exporter will call", async () => {
+		const { observabilityRoutes } = await import("./observability");
+		const create = (config: Record<string, string>) => observabilityRoutes.request("https://example.com/destinations", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ type: "otel_collector", name: "Collector", config }),
+		});
+		// The exporter never reads `url` for OTLP, so it cannot stand in for an endpoint.
+		expect((await create({ url: "https://collector.example.com" })).status).toBe(400);
+		expect((await create({ collector_endpoint: "https://collector.example.com" })).status).toBe(201);
+	});
+
+	it("accepts only the supported OTLP protocols", async () => {
+		const { observabilityRoutes } = await import("./observability");
+		const create = (otlp_protocol: string) => observabilityRoutes.request("https://example.com/destinations", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ type: "otel_collector", name: "Collector", config: { endpoint: "https://collector.example.com", otlp_protocol } }),
+		});
+		expect((await create("http/protobuf")).status).toBe(201);
+		const rejected = await create("grpc");
+		expect(rejected.status).toBe(400);
+		expect(await rejected.json()).toMatchObject({ message: "otlp_protocol must be one of: http/json, http/protobuf" });
+	});
+
 	it("bounds rule groups and key filters", async () => {
 		const { observabilityRoutes } = await import("./observability");
 		const response = await observabilityRoutes.request("https://example.com/destinations", {
@@ -164,16 +238,31 @@ describe("observability destination management", () => {
 		const response = await observabilityRoutes.request("https://example.com/logging-policy", {
 			method: "PATCH",
 			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ enabled: true, retention_days: 120, include_provider_payloads: false }),
+			body: JSON.stringify({ enabled: true, retention_days: 90, include_provider_payloads: false }),
 		});
 		expect(response.status).toBe(200);
 		expect(state.loggingUpdate).toMatchObject({
 			workspace_id: "workspace_1",
 			io_logging_enabled: true,
 			privacy_enable_input_output_logging: true,
-			io_logging_retention_days: 120,
+			io_logging_retention_days: 90,
 			io_logging_include_provider_payloads: false,
 		});
 		expect(state.auditEvents[0]).toMatchObject({ action: "observability.logging_policy.updated" });
+	});
+
+	it("refuses retention over 90 days, which is not billed yet", async () => {
+		const { observabilityRoutes } = await import("./observability");
+		for (const days of [91, 120, 365]) {
+			state.loggingUpdate = null;
+			const response = await observabilityRoutes.request("https://example.com/logging-policy", {
+				method: "PATCH",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ retention_days: days }),
+			});
+			expect(response.status).toBe(400);
+			expect(await response.json()).toMatchObject({ error: "bad_request", message: "retention_days must be 90" });
+			expect(state.loggingUpdate).toBeNull();
+		}
 	});
 });

@@ -1,77 +1,58 @@
 ---
 title: "Anthropic Claude Opus 4.6"
-description: "構造化出力、適応型思考、assistant prefill など、Claude Opus 4.6 の導入時に確認する内容です。"
+description: "構造化出力、適応型思考、プリフィルなど、Claude Opus 4.6 の導入時に知っておくべきことです。"
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 4.6
+モデルを `anthropic/claude-opus-4.6` に変更し、assistant のプリフィルを削除し、構造化出力を `output_config.format` に移します。これらはリクエスト形式の変更で、Opus 4.5 の古いパターンを残したままにすると `400` で失敗します。
 
-`anthropic/claude-opus-4.6` を本番環境に安全に導入するには、このガイドを使います。
+| | Claude Opus 4.5 | Claude Opus 4.6 |
+| --- | --- | --- |
+| Phaseo のモデル ID | `anthropic/claude-opus-4.5` | `anthropic/claude-opus-4.6` |
+| コンテキストウィンドウ | 200K トークン | 1M トークン |
+| 最大出力 | 64K トークン | 128K トークン |
+| assistant のプリフィル | サポート | `400` を返す |
+| 構造化出力 | `output_format` | `output_config.format` |
+| 思考 | `budget_tokens` | 適応型。`output_config.effort` で調整 |
+| `interleaved-thinking-2025-05-14` ベータ | 必要 | 不要 |
 
-Claude Opus 4.6 への移行はモデル ID の変更だけではありません。Anthropic の移行ガイドには、リクエストの変更、ベータフラグの廃止、prefill の厳格化が含まれています。
+## リクエストを更新する
 
-## 新機能
+**1. assistant のプリフィルを削除します。** JSON や特定の書き出しを強制するために assistant のターンを事前に埋めている場合、Opus 4.6 は `400` を返します。代わりに、より明確なシステム指示、プロンプト内の例、または構造化出力を使ってください。
 
-- Claude 4.6 モデルでは assistant prefill が使えなくなり、`400` が返されます。
-- 構造化出力の設定は `output_format` から `output_config.format` に移りました。
-- 適応型思考は `output_config.effort` で設定します。
-- 古いベータヘッダーを削除します。
-- Opus 4.6 では `interleaved-thinking-2025-05-14` ベータヘッダーも不要です。
-- Opus 4.6 はベータ版で 100 万トークンのコンテキストウィンドウを追加し、長時間のコーディングやエージェント処理を改善します。
+**2. 構造化出力を移します。** `output_format` から `output_config.format` に移し、スキーマとパーサーのテストを再実行します。
 
-## 移行クイックスタート
+```json
+{
+  "model": "anthropic/claude-opus-4.6",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "Extract the invoice fields." }],
+  "output_config": {
+    "format": { "type": "json_schema", "schema": { "type": "object", "properties": { "total": { "type": "number" } } } }
+  }
+}
+```
 
-### 1. assistant prefill を削除する
+`/v1/chat/completions` と `/v1/responses` では、引き続き `response_format` を使います。
 
-assistant ターンを一部先に埋めて JSON や応答プレフィックスを強制していた場合、その方法は 4.6 では失敗します。次の方法に置き換えます。
+**3. 思考を適応型に切り替えます。** Opus 4.6 は、リクエストで求めない限り思考しません。Phaseo では、トークン予算なしの `reasoning.effort` または `reasoning.enabled: true` で適応型思考が有効になり、effort は `output_config.effort` になります。Opus 4.6 は `xhigh` 以外のすべての effort レベルを受け付け、`xhigh` は Phaseo が `max` として送ります。思考が有効な間、Phaseo は `temperature` と `top_k`、および 0.95 未満の `top_p` を除外します。
 
-- より明確なシステム指示
-- ユーザーまたはシステムプロンプト内の例
-- `output_config.format` による構造化出力
+**4. 古いベータヘッダーを削除します。** SDK のラッパー、ミドルウェア、プリセットから取り除いてください。Phaseo は `anthropic-beta` ヘッダーを転送しないため、もう何の効果もありません。
 
-### 2. 構造化出力を移行する
+## テストする内容
 
-`output_format` を送信している場合は、リクエスト本文を `output_config.format` に更新します。
+- **プロンプト:** 長いコーディングとリファクタリングのプロンプト、複数ステップのリサーチとドキュメントのワークフロー、プリフィルに依存していたプロンプト、1M のウィンドウを使う場合は長いコンテキストのタスク。
+- **契約とツール:** `output_config.format` に移した後のスキーマ合格率、複数ステップのエージェントタスクでのツール呼び出しの引数、モデルが拒否したり出力の形式を変えたりしたときのリトライ、コードレビューとデバッグのワークフロー。
+- **運用:** 思考を有効にしたときのレイテンシーの中央値と p95、長い実行でのトークン使用量、大きなコンテキストのタスクでのタイムアウト率、評価セットでの Opus 4.5 と比べた成功率。
 
-### 3. 思考設定を見直す
+## 展開する
 
-古い thinking ベータに依存している場合は、`output_config` 内の現在の `effort` 設定に移行し、レイテンシに敏感な経路を再テストします。
-
-### 4. 古いベータフラグを削除する
-
-SDK wrapper、middleware、Gateway プリセットにハードコードされたベータヘッダーがないか確認します。古いフラグを残すとロールアウト時に不要なエラーが発生します。
-
-## テスト項目
-
-### プロンプトの動作
-
-- 長いコーディングやリファクタリングのプロンプト。
-- 複数ステップの調査や文書処理。
-- 以前 assistant prefill に依存していたプロンプト。
-- 100 万トークンのベータウィンドウを使う場合は長いコンテキストのタスク。
-
-### 契約とツール
-
-- `output_config.format` に移行した後のスキーマ成功率。
-- 複数ステップのエージェントタスクにおけるツール引数の品質。
-- モデルが出力を拒否または再形式化した場合の再試行動作。
-- コードレビューやデバッグでの回帰処理。
-
-### 運用
-
-- 新しい thinking 設定での中央値および p95 レイテンシ。
-- 長時間実行時のトークン使用量。
-- 大きなコンテキストのタスクにおけるタイムアウト率。
-- 本番評価セットでの Opus 4.5 に対する成功率。
-
-## 安全なロールアウト
-
-1. トラフィック切り替え前に prefill を削除し、構造化出力設定を移行します。
+1. トラフィックを移す前に、プリフィルを削除し、構造化出力を移行します。
 2. 重要な本番プロンプトで Opus 4.6 をシャドー実行します。
-3. Opus 4.5 をフォールバックに残して段階的に試します。
-4. スキーマ成功率、レイテンシ、タスク完了率が安定してから拡大します。
+3. `models` に Opus 4.5 をフォールバックとして入れてカナリアリリースします。
+4. スキーマ合格率、レイテンシー、タスク完了が維持されたら昇格させます。
 
-## 参考資料
+## 出典
 
 - [Anthropic の移行ガイド](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
-- [Claude Opus 4.6 の紹介](https://www.anthropic.com/news/claude-opus-4-6)
+- [Claude Opus 4.6 の発表](https://www.anthropic.com/news/claude-opus-4-6)

@@ -1,10 +1,8 @@
-"use client";
-
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import NumberFlow from "@number-flow/react";
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { ReactNode } from "react";
@@ -62,6 +60,8 @@ import { RoomResponseTimestamp } from "@/components/(chat)/RoomResponseTimestamp
 import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { DEFAULT_LIVE_SETTINGS, LIVE_VOICE_OPTIONS, LiveSettings, LiveUsageDetails, type LiveUsageView, type LiveSettingsValue } from "./LiveSettings";
 import { createAudioBufferFromPcm16, createPcmCapture, ensureAudioRunning, type PcmChunk } from "./realtimeAudio";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
+import { normalizeParameterSpecs, parameterOptions, type ParameterSpec } from "@/lib/models/modelParameters";
 
 const RealtimePersona = dynamic(
 	() => import("@/components/ai-elements/persona").then((mod) => mod.Persona),
@@ -71,7 +71,10 @@ const RealtimePersona = dynamic(
 	},
 );
 
-type RealtimeProvider = "openai" | "xai" | "google";
+// xAI and Google need their own event handling; every other provider speaks the
+// OpenAI realtime events through the relay, so any catalogue provider id is valid.
+type RealtimeProvider = "openai" | "xai" | "google" | (string & {});
+type RealtimeTranslate = (key: string, values?: Record<string, string>) => string;
 type SessionStatus = "idle" | "connecting" | "connected" | "ended" | "error";
 
 function PersonaLoadingPlaceholder({ className }: { className?: string }) {
@@ -169,7 +172,10 @@ type RealtimeSessionResponse = {
 	id?: string;
 	session_id?: string;
 	provider: RealtimeProvider;
+	/** Phaseo model id. */
 	model: string;
+	/** The provider's own model name, for connecting to the provider directly. */
+	provider_model?: string;
 	voice: string;
 	clientSecret: string;
 	expiresAt: string | null;
@@ -521,7 +527,7 @@ const REALTIME_MODELS: RealtimeModel[] = [
 
 const GPT_LIVE_MODEL: RealtimeModel = {
 	id: "openai:gpt-live-1", label: "OpenAI GPT Live 1", provider: "openai", providerLabel: "OpenAI",
-	logoId: "openai", model: "openai/gpt-live-1", releaseDate: null, defaultVoice: "marin",
+	logoId: "openai", model: "openai/gpt-live-1", releaseDate: "2026-07-08T00:00:00", defaultVoice: "marin",
 	voices: LIVE_VOICE_OPTIONS,
 	transport: "WebSocket", billing: "Live duration + backend tokens",
 };
@@ -1140,8 +1146,14 @@ function RealtimeVoiceSelector({
 	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const t = useTranslations("Product.chatRooms");
 	const localizeVoiceProfile = (description: string) => {
-		const parts: Record<string, string> = { "English": tCopy("english"), "Portuguese": tCopy("portuguese"), "Filipino-influenced": tCopy("filipino"), "Brazilian-influenced": tCopy("brazilian"), "Southern U.S.-influenced": tCopy("southernUs"), "North American-influenced": tCopy("northAmerican"), "Australian-influenced": tCopy("australian"), "Irish-influenced": tCopy("irish"), "British-influenced": tCopy("british"), "Masculine": tCopy("masculine"), "Feminine": tCopy("feminine"), };
-		const [language, style, gender] = description.split(" · ");
+		const parts: Record<string, string> = { "English": tCopy("english"), "Portuguese": tCopy("portuguese"), "French": tCopy("french"), "German": tCopy("german"), "Hindi": tCopy("hindi"), "Japanese": tCopy("japanese"), "Korean": tCopy("korean"), "Filipino-influenced": tCopy("filipino"), "Brazilian-influenced": tCopy("brazilian"), "Southern U.S.-influenced": tCopy("southernUs"), "North American-influenced": tCopy("northAmerican"), "Australian-influenced": tCopy("australian"), "Irish-influenced": tCopy("irish"), "British-influenced": tCopy("british"), "Masculine": tCopy("masculine"), "Feminine": tCopy("feminine"), };
+		const segments = description.split(" · ");
+		// Non-English Live voices are described as "Language · Gender".
+		if (segments.length === 2) {
+			const [shortLanguage, shortGender] = segments;
+			return parts[shortLanguage] && parts[shortGender] ? tCopy("voiceProfileShort", { language: parts[shortLanguage], gender: parts[shortGender] }) : description;
+		}
+		const [language, style, gender] = segments;
 		return parts[language] && parts[style] && parts[gender] ? tCopy("voiceProfile", { language: parts[language], style: parts[style], gender: parts[gender] }) : description;
 	};
 	const selectedVoice =
@@ -1255,43 +1267,50 @@ function getArrayField<T = unknown>(
 	return Array.isArray(value) ? (value as T[]) : [];
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function providerFromGatewayModel(model: GatewaySupportedModel): RealtimeProvider | null {
 	const providerId = model.providerId.trim().toLowerCase();
-	if (providerId === "openai") return "openai";
+	if (!providerId) return null;
 	if (providerId === "x-ai" || providerId === "xai" || providerId === "spacex-ai") {
 		return "xai";
 	}
 	if (providerId === "google-ai-studio" || providerId === "google") {
 		return "google";
 	}
-	return null;
+	return providerId;
 }
 
-function providerLabel(provider: RealtimeProvider): string {
+function providerLabel(provider: RealtimeProvider, providerName?: string | null): string {
 	if (provider === "openai") return "OpenAI";
 	if (provider === "xai") return "xAI";
-	return "Google";
+	if (provider === "google") return "Google";
+	return providerName?.trim() || titleCaseModelId(provider);
 }
 
-function billingLabel(provider: RealtimeProvider, translate: (key: string) => string): RealtimeModel["billing"] {
+function billingLabel(
+	provider: RealtimeProvider,
+	providerName: string,
+	translate: RealtimeTranslate,
+): RealtimeModel["billing"] {
+	if (provider === "openai") return translate("realtimeBillingOpenAI");
 	if (provider === "xai") return translate("realtimeBillingXai");
 	if (provider === "google") return translate("realtimeBillingGoogle");
-	return translate("realtimeBillingOpenAI");
+	return translate("realtimeBillingProvider", { provider: providerName });
 }
 
 function fallbackVoiceOptions(provider: RealtimeProvider): RealtimeVoiceOption[] {
 	const fallback = REALTIME_MODELS.find((model) => model.provider === provider);
-	return fallback?.voices ?? [{ id: fallbackDefaultVoice(provider) }];
+	if (fallback) return fallback.voices;
+	const defaultVoice = fallbackDefaultVoice(provider);
+	return defaultVoice ? [{ id: defaultVoice }] : [];
 }
 
+// Other providers fall back to the gateway's default voice, so an empty id is valid.
 function fallbackDefaultVoice(provider: RealtimeProvider): string {
+	if (provider === "openai") return "marin";
 	if (provider === "xai") return "eve";
 	if (provider === "google") return "Puck";
-	return "marin";
+	return "";
 }
 
 function titleCaseModelId(modelId: string): string {
@@ -1318,39 +1337,27 @@ function realtimeCapabilityParams(model: GatewaySupportedModel): unknown {
 	return null;
 }
 
+/** The voice parameter from a route's stored params, in the shared standard shape. */
+function realtimeVoiceSpec(params: unknown): ParameterSpec | undefined {
+	const specs = normalizeParameterSpecs(params);
+	return specs.voice ?? specs.voices;
+}
+
 function readRealtimeVoiceOptions(params: unknown, provider: RealtimeProvider): RealtimeVoiceOption[] {
-	if (!isRecord(params)) return fallbackVoiceOptions(provider);
-	const voice = params.voice ?? params.voices;
-	const source = isRecord(voice)
-		? voice.values ?? voice.options ?? voice.enum
-		: voice;
-	if (!Array.isArray(source)) return fallbackVoiceOptions(provider);
-	const voices = source
-		.map((entry): RealtimeVoiceOption | null => {
-			if (typeof entry === "string" && entry.trim()) {
-				return { id: entry.trim(), label: entry.trim() };
-			}
-			if (!isRecord(entry)) return null;
-			const id = entry.id ?? entry.value ?? entry.voice_id ?? entry.voiceId;
-			if (typeof id !== "string" || !id.trim()) return null;
-			const label = entry.label;
-			const description = entry.description;
-			return {
-				id: id.trim(),
-				...(typeof label === "string" && label.trim() ? { label: label.trim() } : {}),
-				...(typeof description === "string" && description.trim()
-					? { description: description.trim() }
-					: {}),
-			};
+	const spec = realtimeVoiceSpec(params);
+	const voices = parameterOptions(spec)
+		.map((option): RealtimeVoiceOption | null => {
+			const id = String(option.value).trim();
+			if (!id) return null;
+			const label = typeof option.label === "string" && option.label.trim() ? option.label.trim() : id;
+			const description = typeof option.description === "string" && option.description.trim() ? option.description.trim() : undefined;
+			return { id, label, ...(description ? { description } : {}) };
 		})
 		.filter((voice): voice is RealtimeVoiceOption => Boolean(voice));
-	const seen = new Set<string>();
-	const deduped = voices.filter((voice) => {
-		if (seen.has(voice.id)) return false;
-		seen.add(voice.id);
-		return true;
-	});
-	return deduped.length > 0 ? deduped : fallbackVoiceOptions(provider);
+	if (voices.length > 0) return voices;
+	// Only a default stored: offer that voice alone.
+	const defaultVoice = typeof spec?.default === "string" ? spec.default.trim() : "";
+	return defaultVoice ? [{ id: defaultVoice, label: defaultVoice }] : fallbackVoiceOptions(provider);
 }
 
 function readRealtimeDefaultVoice(
@@ -1358,8 +1365,7 @@ function readRealtimeDefaultVoice(
 	voices: RealtimeVoiceOption[],
 	provider: RealtimeProvider,
 ): string {
-	const voice = isRecord(params) ? params.voice ?? params.voices : null;
-	const defaultVoice = isRecord(voice) ? voice.default ?? voice.default_voice : null;
+	const defaultVoice = realtimeVoiceSpec(params)?.default;
 	if (typeof defaultVoice === "string" && voices.some((option) => option.id === defaultVoice.trim())) {
 		return defaultVoice.trim();
 	}
@@ -1368,7 +1374,7 @@ function readRealtimeDefaultVoice(
 
 function gatewayModelToRealtimeModel(
 	model: GatewaySupportedModel,
-	translate: (key: string) => string,
+	translate: RealtimeTranslate,
 ): RealtimeModel | null {
 	const provider = providerFromGatewayModel(model);
 	if (!provider) return null;
@@ -1376,23 +1382,26 @@ function gatewayModelToRealtimeModel(
 	const voices = readRealtimeVoiceOptions(params, provider);
 	const labelBase = model.modelName?.trim() || titleCaseModelId(model.selectorModelId || model.modelId);
 	const modelKey = model.selectorModelId || model.modelId;
+	const label = providerLabel(provider, model.providerName);
 	const releaseDateOverride =
 		REALTIME_RELEASE_DATE_OVERRIDES[`${provider}:${modelKey}`] ??
 		REALTIME_RELEASE_DATE_OVERRIDES[`${provider}:${model.modelId}`];
 	return {
 		id: `${provider}:${modelKey}`,
-		label: labelBase.startsWith(providerLabel(provider))
+		label: labelBase.startsWith(label)
 			? labelBase
-			: `${providerLabel(provider)} ${labelBase}`,
+			: `${label} ${labelBase}`,
 		provider,
-		providerLabel: providerLabel(provider),
-		logoId: provider === "google" ? "google" : provider,
+		providerLabel: label,
+		logoId: provider === "google" || provider === "xai" || provider === "openai"
+			? provider
+			: model.organisationId || provider,
 		model: modelKey,
 		releaseDate: releaseDateOverride ?? model.releaseDate ?? model.announcementDate ?? null,
 		defaultVoice: readRealtimeDefaultVoice(params, voices, provider),
 		voices,
 		transport: "WebSocket",
-		billing: billingLabel(provider, translate),
+		billing: billingLabel(provider, label, translate),
 	};
 }
 
@@ -1412,7 +1421,7 @@ function compareRealtimeModelsByRelease(a: RealtimeModel, b: RealtimeModel): num
 
 function buildRealtimeModels(
 	models: GatewaySupportedModel[],
-	translate: (key: string) => string,
+	translate: RealtimeTranslate,
 ): RealtimeModel[] {
 	const mapped = filterModelsForRoom(models, "realtime")
 		.map((model) => gatewayModelToRealtimeModel(model, translate))
@@ -1423,7 +1432,7 @@ function buildRealtimeModels(
 		seen.add(model.id);
 		return true;
 	});
-	return [GPT_LIVE_MODEL, ...deduped.filter((model) => !model.model.endsWith("gpt-live-1")).sort(compareRealtimeModelsByRelease)];
+	return [GPT_LIVE_MODEL, ...deduped.filter((model) => !model.model.endsWith("gpt-live-1"))].sort(compareRealtimeModelsByRelease);
 }
 
 type RealtimeRoomProps = {
@@ -1433,13 +1442,12 @@ type RealtimeRoomProps = {
 export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const t = useTranslations("Product.chatRooms");
-	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const formatElapsedSeconds = (ms: number) =>
 		`${format.number(Math.floor(ms / 1000), { notation: "standard" })}s`;
 	const { toggleSidebar, state: sidebarState } = useSidebar();
 	const realtimeModels = useMemo(
-		() => buildRealtimeModels(models, (key) => t(key as never)),
+		() => buildRealtimeModels(models, (key, values) => t(key as never, values as never)),
 		[models, t],
 	);
 	const suggestedModels = useMemo(() => {
@@ -2285,7 +2293,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 			if (
 				type === "response.output_audio.delta" &&
-				(provider === "xai" || (provider === "openai" && relaySessionRef.current))
+				(provider === "xai" || (provider !== "google" && relaySessionRef.current))
 			) {
 				assistantResponseInFlightRef.current = true;
 				setPersonaState("speaking");
@@ -2304,7 +2312,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 			if (
 				type === "response.output_audio.done" &&
-				(provider === "xai" || (provider === "openai" && relaySessionRef.current))
+				(provider === "xai" || (provider !== "google" && relaySessionRef.current))
 			) {
 				outputScheduleRef.current = outputAudioContextRef.current?.currentTime ?? 0;
 				if (provider === "xai") {
@@ -2709,6 +2717,8 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 	const startGoogle = useCallback(
 		async (session: RealtimeSessionResponse) => {
+			// Gateways before provider_model sent the provider's name in `model`.
+			const googleModel = session.provider_model ?? session.model;
 			const ws = new WebSocket(session.connect.url);
 			webSocketRef.current = ws;
 			let resolveSetupComplete: (() => void) | null = null;
@@ -2794,11 +2804,11 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			ws.send(
 				JSON.stringify({
 					setup: {
-						model: `models/${session.model}`,
+						model: `models/${googleModel}`,
 						generationConfig: {
 							responseModalities: ["AUDIO"],
 							temperature: 0.7,
-							...(session.model === "gemini-3.8-live-extended-thinking"
+							...(googleModel === "gemini-3.8-live-extended-thinking"
 								? { thinkingConfig: { thinkingLevel: googleThinkingLevel.toUpperCase() } }
 								: {}),
 							speechConfig: {
@@ -3131,8 +3141,10 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				await startOpenAI(session);
 			} else if (session.provider === "google") {
 				await startGoogle(session);
-			} else {
+			} else if (session.provider === "xai") {
 				await startXAI(session);
+			} else {
+				throw new Error(t("realtimeSessionFailed"));
 			}
 		} catch (sessionError) {
 			if (attempt !== startupAttemptRef.current) return;
@@ -3314,7 +3326,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 									>
 										<NumberFlow
 											value={displayedCostUsd}
-											locales={locale}
+											locales={MONEY_LOCALE}
 											format={{
 												style: "currency",
 												currency: "USD",
@@ -3326,7 +3338,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 								</div>
 
 								{selectedModel?.id === GPT_LIVE_MODEL.id && <p className="text-sm text-muted-foreground">
-									{tCopy("livePrice", { voice: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "voice").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.voice_nanos ?? 0) / 1e9), backend: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "backend").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.backend_nanos ?? 0) / 1e9), tools: new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "tool").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.tool_nanos ?? 0) / 1e9) })}
+									{tCopy("livePrice", { voice: new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "voice").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.voice_nanos ?? 0) / 1e9), backend: new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "backend").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.backend_nanos ?? 0) / 1e9), tools: new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "tool").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.tool_nanos ?? 0) / 1e9) })}
 								</p>}
 								{selectedModel?.id === GPT_LIVE_MODEL.id && <LiveUsageDetails usage={liveUsage || ledger?.usage ? { ...ledger?.usage, ...liveUsage?.usage } : undefined} pending={liveUsage?.pending_response_count} />}
 								{billingSessionId && <p className="text-sm text-muted-foreground">
@@ -3342,7 +3354,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 										>
 											<NumberFlow
 												value={reservedBudgetUsd}
-												locales={locale}
+												locales={MONEY_LOCALE}
 												format={{
 													style: "currency",
 													currency: "USD",
@@ -3357,7 +3369,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 										>
 											<NumberFlow
 												value={ledger?.final_cost_nanos != null ? ledger.released_nanos / 1e9 : remainingBudgetUsd}
-												locales={locale}
+												locales={MONEY_LOCALE}
 												format={{
 													style: "currency",
 													currency: "USD",
@@ -3418,7 +3430,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 												{model.label.replace(`${model.providerLabel} `, "")}
 											</p>
 											<p className="mt-2 text-xs text-muted-foreground">
-												{model.id === GPT_LIVE_MODEL.id ? tCopy("liveBillingMeter") : billingLabel(model.provider, (key) => t(key as never))} / {t("realtimeVoicesCount", { count: model.voices.length })}
+												{model.id === GPT_LIVE_MODEL.id ? tCopy("liveBillingMeter") : billingLabel(model.provider, model.providerLabel, (key, values) => t(key as never, values as never))} / {t("realtimeVoicesCount", { count: model.voices.length })}
 											</p>
 										</button>
 									))}

@@ -1,25 +1,15 @@
 ---
 title: "Anthropic Claude Opus 5"
-description: "O que considerar ao adotar Claude Opus 5 para raciocínio com contexto longo, programação e cargas agentivas."
+description: "O que saber ao adotar o Claude Opus 5 para raciocínio com contexto longo, programação e cargas de trabalho de agentes."
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 5
-
-Use este guia para adotar `anthropic/claude-opus-5` com segurança em produção.
-
-Claude Opus 5 é o modelo Opus atual para raciocínio complexo, programação agentiva de longa duração e fluxos de alta autonomia. Mantém o mesmo preço do Opus 4.8, aceita uma janela de contexto de 1 milhão de tokens e gera até 128 mil tokens.
-
-## Início rápido da migração
-
-1. Troque o ID do modelo para `anthropic/claude-opus-5` sem alterar o restante da requisição.
-2. Execute novamente as avaliações de produção para prompts, ferramentas e saídas estruturadas.
-3. Reestabeleça as referências de latência, uso de tokens e custo por tarefa em cargas de contexto longo e alto esforço.
-4. Teste o modelo gradualmente, mantendo Claude Opus 4.8 como fallback antes de mudar a rota padrão.
+Troque o modelo para `anthropic/claude-opus-5` e mantenha o Claude Opus 4.8 como fallback enquanto você o avalia. O preço é o mesmo do Opus 4.8, então a diferença de custo vem do uso de tokens.
 
 ```json
 {
   "model": "anthropic/claude-opus-5",
+  "models": ["anthropic/claude-opus-4.8"],
   "messages": [
     {
       "role": "user",
@@ -29,45 +19,38 @@ Claude Opus 5 é o modelo Opus atual para raciocínio complexo, programação ag
 }
 ```
 
-## Novidades
+| | Claude Opus 4.8 | Claude Opus 5 |
+| --- | --- | --- |
+| ID do modelo no Phaseo | `anthropic/claude-opus-4.8` | `anthropic/claude-opus-5` |
+| Janela de contexto | 1M tokens | 1M tokens |
+| Saída máxima | 128K tokens | 128K tokens |
+| Preço por 1M tokens (entrada / saída) | $5.00 / $25.00 | $5.00 / $25.00 |
+| Pensamento quando a solicitação não define raciocínio | Desativado | Adaptativo |
 
-- O ID do modelo no Phaseo é `anthropic/claude-opus-5`.
-- A janela de contexto é de 1 milhão de tokens.
-- A saída máxima é de 128 mil tokens.
-- O modelo é indicado para raciocínio, programação e fluxos autônomos com ferramentas de longa duração.
-- O preço continua alinhado ao Claude Opus 4.8.
+Os preços são do nível padrão da Anthropic no catálogo; consulte a página do modelo para outros níveis e provedores.
+
+## Como o Phaseo envia a solicitação
+
+O Opus 5 aceita o mesmo formato de solicitação do Opus 4.7 e do 4.8:
+
+- **Os parâmetros de amostragem são omitidos.** `temperature`, `top_p` e `top_k` não são enviados ao modelo.
+- **Qualquer configuração de raciocínio ativa o pensamento adaptativo.** O Phaseo envia `thinking: {"type": "adaptive", "display": "summarized"}`, e `reasoning.effort` vira `output_config.effort`. Os orçamentos de pensamento não são repassados.
+- **`reasoning.effort: "none"` ou `reasoning.enabled: false` desativa o pensamento** (`thinking: {"type": "disabled"}`).
+- **Sem nenhuma configuração de raciocínio, o Phaseo não envia o campo `thinking`,** então vale o padrão do Opus 5, que é o pensamento adaptativo. O Opus 4.8 só pensa quando solicitado, então a mesma solicitação pode usar mais tokens de saída no Opus 5.
 
 ## O que testar
 
-### Prompts e saídas
+- **Prompts e saídas:** cumprimento de instruções nos seus prompts de sistema mais longos, taxas de aprovação do esquema, tamanho e encerramento das respostas, e prompts ajustados para o Opus 4.8.
+- **Ferramentas e agentes:** seleção de ferramentas e argumentos, recuperação após erros de ferramentas ou resultados parciais, taxa de conclusão em tarefas de longo horizonte e limites de permissão em fluxos de alta autonomia.
+- **Operações:** latência e uso de tokens em cada nível de esforço que você expõe, uso de contexto em documentos longos e traces de agentes, custo por tarefa bem-sucedida e fallback quando a rota principal excede o tempo limite ou falha.
 
-- Seguir instruções nos seus prompts de sistema mais longos.
-- Taxas de aprovação de saídas estruturadas e esquemas.
-- Comprimento das respostas e comportamento de encerramento.
-- Regressões em prompts ajustados especificamente para Claude Opus 4.8.
+## Faça o rollout
 
-### Ferramentas e agentes
-
-- Seleção de ferramentas e qualidade dos argumentos.
-- Recuperação após erros de ferramenta ou resultados parciais.
-- Taxa de conclusão em tarefas longas.
-- Limites de permissão e aprovação em fluxos de alta autonomia.
-
-### Operações
-
-- Latência e uso de tokens em cada nível de esforço disponível.
-- Uso da janela de contexto em documentos longos e rastros de agentes.
-- Custo por tarefa concluída com sucesso.
-- Comportamento de fallback quando a rota principal falha ou excede o tempo limite.
-
-## Rollout seguro
-
-1. Mantenha Claude Opus 4.8 disponível como fallback durante a avaliação.
-2. Execute tráfego de produção representativo em paralelo antes de atender requisições de usuários.
-3. Faça o canário por tipo de carga, sem migrar todas as rotas Opus de uma só vez.
-4. Amplie somente quando qualidade, latência, custo e segurança das ferramentas atingirem suas metas.
+1. Rode em modo sombra com tráfego de produção representativo antes de atender usuários.
+2. Faça o canário por carga de trabalho em vez de mover todas as rotas do Opus de uma vez.
+3. Promova só depois que as verificações de qualidade, latência, custo e segurança de ferramentas atingirem as suas metas.
 
 ## Fontes
 
 - [Anúncio do Claude Opus 5](https://www.anthropic.com/news/claude-opus-5)
-- [Cartão do sistema Claude Opus 5](https://www.anthropic.com/claude-opus-5-system-card)
+- [System card do Claude Opus 5](https://www.anthropic.com/claude-opus-5-system-card)

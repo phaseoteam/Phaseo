@@ -1,6 +1,7 @@
+import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { createTranslator } from "next-intl";
+import { createTranslator } from "@/i18n/react";
 import { unitLabel, conciseConditionLabel } from "@/components/(data)/model/pricing/pricingHelpers";
 import { localizedPricingDisplayLabel, PRICING_DISPLAY_LABEL_KEYS } from "./pricing-display";
 
@@ -10,12 +11,17 @@ describe("generated pricing presentation copy", () => {
 		const catalogs = Object.fromEntries([["Common", "common"], ["Catalogue", "catalogue"], ["Product", "product"]].map(([namespace, file]) => [namespace, JSON.parse(fs.readFileSync(path.resolve(process.cwd(), "messages", locale, file + ".json"), "utf8"))]));
 		const t = createTranslator({ locale, messages: catalogs });
 		for (const key of Object.values(PRICING_DISPLAY_LABEL_KEYS)) expect(t.has(key)).toBe(true);
+		for (const meter of ["cached_write_text_tokens_30m", "cached_write_text_tokens_12h"]) {
+			const key = `Catalogue.modelDetail.pricing.meters.${meter}`;
+			expect(t.has(key)).toBe(true);
+			expect(t(key)).not.toContain("Catalogue.");
+		}
 		const canonical = [
 			...Object.keys(PRICING_DISPLAY_LABEL_KEYS),
 			...(["token", "pixel", "image", "video", "second", "minute", "page", "call", "character", "byte", "frame", "message", "credit", "usd", "unknown"] as const).flatMap((unit) => [unitLabel(unit, 1), unitLabel(unit, 1000)]),
 			conciseConditionLabel([{ op: "eq", path: "cache_ttl", value: "5m" }]),
 			conciseConditionLabel([{ op: "eq", path: "cache_ttl", value: "nx" }]),
-			"Text Tokens · Cache Reads", "Image Tokens · Input", "Audio Inputs", "5 min TTL", "1 hour TTL", "quality = high", "Video Generation - With audio",
+			"Text Tokens · Cache Reads", "Image Tokens · Input", "Audio Inputs", "5 min TTL", "1 hour TTL", "30 min TTL", "12 hour TTL", "quality = high", "Video Generation - With audio",
 		];
 		for (const label of canonical) {
 			const display = localizedPricingDisplayLabel(label, locale, t as never);
@@ -29,5 +35,20 @@ describe("generated pricing presentation copy", () => {
 			`≤ 100K ${localizedPricingDisplayLabel("input", locale, t as never)} ${localizedPricingDisplayLabel("tokens", locale, t as never)}`,
 		].join(" · "));
 		expect(localizedPricingDisplayLabel("custom_meter_id", locale, t as never)).toBe("custom_meter_id");
+		const audience = localizedPricingDisplayLabel("> 200K input tokens · In Claude Code", locale, t as never);
+		expect(audience).toContain("Claude Code");
+		expect(audience).not.toContain("Common.ui.");
+		if (!["en-GB", "de-DE"].includes(locale)) expect(audience).not.toContain("In Claude Code");
+			const usOnly = conciseConditionLabel([{ op: "eq", path: "inference_geo", value: "us" }]);
+			expect(usOnly).toBe("US-only inference");
+			const usOnlyDisplay = localizedPricingDisplayLabel(usOnly, locale, t as never);
+			expect(usOnlyDisplay).not.toMatch(/inference_geo|Common\.ui\./);
+			if (locale !== "en-GB") expect(usOnlyDisplay).not.toBe("US-only inference");
+			const euOnly = conciseConditionLabel([{ op: "eq", path: "inference_geo", value: "eu" }]);
+			expect(euOnly).toBe("EU-only inference");
+			const euOnlyDisplay = localizedPricingDisplayLabel(euOnly, locale, t as never);
+			expect(euOnlyDisplay).toContain("EU");
+			expect(euOnlyDisplay).not.toMatch(/Common\.ui\.|\{region\}/);
+			if (locale !== "en-GB") expect(euOnlyDisplay).not.toBe("EU-only inference");
 	});
 });

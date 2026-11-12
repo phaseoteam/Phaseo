@@ -2,9 +2,10 @@
 title: "Update observability logging policy"
 sidebarTitle: "Update logging policy"
 badge: "Beta"
-openapi: "PATCH /observability/logging-policy"
+openapi: "/openapi/v1/openapi.yaml PATCH /observability/logging-policy"
 description: "Configure workspace I/O log storage and retention."
+"og:image": "https://phaseo.app/og/dynamic?title=Update%20observability%20logging%20policy&description=Configure%20workspace%20I/O%20log%20storage%20and%20retention.&pathname=/docs/v1/api-reference/endpoint/observability-logging-policy-update"
 ---
 <Note>This endpoint requires a management API key with `settings:write`.</Note>
 
-Retention must be between 90 and 365 days. Disabling logging also disables the workspace input/output logging privacy gate.
+Retention is 90 days; `retention_days` must be 90. Disabling logging also disables the workspace input/output logging privacy gate.

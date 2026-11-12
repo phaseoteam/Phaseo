@@ -1,6 +1,9 @@
 ---
 title: "Create SCIM token"
+"og:image": "https://phaseo.app/og/dynamic?title=Create%20SCIM%20token&pathname=/docs/v1/api-reference/endpoint/identity-scim-token-create"
 badge: "Beta"
-openapi: "POST /identity/scim/tokens"
+openapi: "/openapi/v1/openapi.yaml POST /identity/scim/tokens"
 ---
 <Note>Identity administration requires an owner or admin identity. Enabling SSO or SCIM and creating provisioning tokens require the identity add-on.</Note>
+
+Only the workspace owner can change SCIM provisioning or create and revoke its tokens. SCIM requests are accepted only with a token the current workspace owner created; if an admin or a previous owner created yours, the owner must create a new one.

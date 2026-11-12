@@ -20,6 +20,16 @@ describe("encodeUnifiedStreamEvent", () => {
 		expect(encoded?.frame.choices?.[0]?.delta?.content).toBe("hello");
 	});
 
+	it("encodes reasoning text as both reasoning_content and reasoning for openai chat completions", () => {
+		const encoded = encodeUnifiedStreamEvent(
+			"openai.chat.completions",
+			{ type: "delta_text", channel: "reasoning_text", text: "think", choiceIndex: 0 },
+			{ requestId: "req_1", model: "gpt-test" },
+		);
+
+		expect(encoded?.frame.choices?.[0]?.delta).toEqual({ reasoning_content: "think", reasoning: "think" });
+	});
+
 	it("encodes tool argument delta for openai responses", () => {
 		const encoded = encodeUnifiedStreamEvent(
 			"openai.responses",

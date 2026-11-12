@@ -13,6 +13,7 @@ import {
     fetchCatalogue,
     scopePricingSummary,
     type CatalogueModel,
+    type OfferServiceTier,
     type PricingMeterSummary,
     type PricingSummary,
     type SupportedParamDetail,
@@ -20,8 +21,11 @@ import {
 } from "./models.catalogue";
 import { buildFeedResponse, parseFeedFormat, type FeedItem } from "./models.feeds";
 import { getEndpointMetadata } from "./endpoint-metadata";
+import { normalizeParameterSpecs } from "@core/model-parameters";
 import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { normalizeGatewayRoutingRegion } from "@pipeline/before/deployment-region";
+import { fetchMemberWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
+import { modelAccessSummary, modelsForPolicy, type PolicyRouteFacts } from "./models.policy";
 
 type LifecycleStatus = "active" | "deprecated" | "retired" | null;
 type AvailabilityMode = "active" | "all";
@@ -47,6 +51,78 @@ const FREE_ROUTER_ENDPOINTS = ["chat/completions", "responses", "messages"] as c
 // five minutes fresh, followed by five minutes of stale-while-revalidate.
 const MODEL_CATALOGUE_CACHE_TTL_SECONDS = 5 * 60;
 const MODEL_CATALOGUE_CACHE_STALE_SECONDS = 5 * 60;
+const MY_MODELS_CACHE_TTL_SECONDS = 60;
+
+// Bump when the ETag input changes shape so old validators stop matching.
+const MODEL_LIST_ETAG_VERSION = 1;
+
+/** JSON with object keys sorted, so equal content hashes equally whatever its key order. */
+function canonicalJson(value: unknown): string {
+    if (value === null || typeof value !== "object") {
+        return JSON.stringify(value) ?? "null";
+    }
+    if (Array.isArray(value)) {
+        return `[${value.map((item) => (item === undefined || typeof item === "function" ? "null" : canonicalJson(item))).join(",")}]`;
+    }
+    const record = value as Record<string, unknown>;
+    const entries = Object.keys(record)
+        .sort()
+        .flatMap((key) => {
+            const entry = record[key];
+            if (entry === undefined || typeof entry === "function") return [];
+            return [`${JSON.stringify(key)}:${canonicalJson(entry)}`];
+        });
+    return `{${entries.join(",")}}`;
+}
+
+function toBase64Url(bytes: Uint8Array): string {
+    let binary = "";
+    for (const byte of bytes) binary += String.fromCharCode(byte);
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+/**
+ * Weak ETag (RFC 9110 §8.8.1) over the catalogue-describing parts of a model
+ * list response. Callers leave out volatile fields such as `gateway_region`,
+ * so the same catalogue served from another region keeps the same ETag. The
+ * bytes can therefore differ between responses that share a validator, which
+ * is exactly what a weak validator promises: semantic, not byte, equivalence.
+ */
+export async function computeModelListEtag(parts: Record<string, unknown>): Promise<string> {
+    const input = canonicalJson({ etag_version: MODEL_LIST_ETAG_VERSION, ...parts });
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+    return `W/"${toBase64Url(new Uint8Array(digest))}"`;
+}
+
+/**
+ * `If-None-Match` evaluation (RFC 9110 §13.1.2): weak comparison, so `W/`
+ * prefixes are ignored; accepts a comma-separated list and `*`.
+ */
+export function ifNoneMatchMatches(header: string | null | undefined, etag: string): boolean {
+    if (!header) return false;
+    const opaque = (tag: string) => tag.trim().replace(/^W\//i, "").replace(/^"(.*)"$/, "$1");
+    const target = opaque(etag);
+    return header
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+        .some((tag) => tag === "*" || opaque(tag) === target);
+}
+
+/** 200 JSON with an ETag, or a body-less 304 when the client already holds it. */
+async function jsonWithEtag(
+    req: Request,
+    body: unknown,
+    etagParts: Record<string, unknown>,
+    headers: Record<string, string>,
+): Promise<Response> {
+    const etag = await computeModelListEtag(etagParts);
+    const responseHeaders = { ...headers, ETag: etag };
+    if (ifNoneMatchMatches(req.headers.get("If-None-Match"), etag)) {
+        return new Response(null, { status: 304, headers: responseHeaders });
+    }
+    return json(body, 200, responseHeaders);
+}
 
 function parsePaginationParam(raw: string | null, fallback: number, max: number): number {
     if (!raw) return fallback;
@@ -266,7 +342,12 @@ function cloneJsonObject<T>(value: T): T {
     return JSON.parse(JSON.stringify(value ?? {}));
 }
 
-function toModelOffer(model: CatalogueModel, provider: CatalogueModel["providers"][number], regional = false) {
+function toModelOffer(
+    model: CatalogueModel,
+    provider: CatalogueModel["providers"][number],
+    regional = false,
+    includeParameterSpecs = false,
+) {
     return {
         provider: {
             id: provider.api_provider_id,
@@ -288,7 +369,14 @@ function toModelOffer(model: CatalogueModel, provider: CatalogueModel["providers
         capabilities: {
             parameters: [...(provider.params ?? [])],
             parameter_details: cloneJsonObject(provider.params_detail ?? {}),
+            // The same details in one standard shape; opt-in on the list (?include=parameter_specs).
+            ...(includeParameterSpecs ? { parameter_specs: normalizeParameterSpecs(provider.params_detail ?? {}) } : {}),
         },
+        // Catalogue objects cached before this field existed lack it; those
+        // routes were listed on standard pricing only.
+        service_tiers: Array.isArray(provider.service_tiers)
+            ? [...provider.service_tiers]
+            : ["standard" as OfferServiceTier],
         routing: {
             provider: provider.provider_routing_status,
             model: provider.model_routing_status,
@@ -353,7 +441,7 @@ async function buildFreeRouterCatalogueModel(args: {
     endpoints: string[];
     catalogue: CatalogueModel[];
     freeContext?: Awaited<ReturnType<typeof fetchGatewayContext>> | null;
-}): Promise<CatalogueModel | null> {
+}): Promise<{ model: CatalogueModel; routes: Map<string, PolicyRouteFacts> } | null> {
     if (!canIncludeFreeRouter(args.endpoints)) return null;
 
     try {
@@ -373,6 +461,8 @@ async function buildFreeRouterCatalogueModel(args: {
         const matchedConcreteModels: CatalogueModel[] = [];
         const providers: CatalogueModel["providers"] = [];
         const providerKeySet = new Set<string>();
+        // Each offer's concrete model and data facts, as the request pipeline checks them (/models/me's policy check).
+        const routes = new Map<string, PolicyRouteFacts>();
         for (const snapshot of freeContext.providers) {
             const providerId = String(snapshot.providerId ?? "").trim();
             const apiModelId = String(snapshot.apiModelId ?? "").trim();
@@ -386,6 +476,17 @@ async function buildFreeRouterCatalogueModel(args: {
 
             providerKeySet.add(providerId);
             matchedConcreteModels.push(concreteModel);
+            routes.set(providerId, {
+                apiModelId,
+                capabilityParams: (snapshot.capabilityParams ?? {}) as Record<string, unknown>,
+                facts: {
+                    zeroDataRetention: snapshot.zeroDataRetention ?? null,
+                    promptTrainingPolicy: snapshot.promptTrainingPolicy ?? null,
+                    dataPolicyTier: snapshot.dataPolicyTier ?? null,
+                    dataPolicyConfidence: snapshot.dataPolicyConfidence ?? null,
+                    dataPolicyVariant: snapshot.dataPolicyVariant ?? null,
+                },
+            });
             providers.push({
                 ...concreteProvider,
                 params: Array.from(
@@ -425,7 +526,7 @@ async function buildFreeRouterCatalogueModel(args: {
             ...providers.map((provider) => provider.params_detail)
         );
 
-        return {
+        return { routes, model: {
             model_id: FREE_ROUTER_MODEL_ID,
             base_model_id: FREE_ROUTER_MODEL_ID,
             variant_kind: "standard",
@@ -469,7 +570,7 @@ async function buildFreeRouterCatalogueModel(args: {
                 coming_soon_provider_count: 0,
                 inactive_provider_count: 0,
             },
-        };
+        } };
     } catch {
         return null;
     }
@@ -495,6 +596,7 @@ function toPhaseoModel(
     replacementModelId: string | null,
     variants: ModelVariantLinks,
 	regional = false,
+    includeParameterSpecs = false,
 ) {
     const lifecycleStatus = normalizeLifecycleStatus(model.status, model.deprecation_date, model.retirement_date);
     return {
@@ -544,7 +646,7 @@ function toPhaseoModel(
             inactive_provider_count: model.availability.inactive_provider_count,
         },
         pricing: cloneJsonObject(model.pricing),
-        offers: model.providers.map((provider) => toModelOffer(model, provider, regional)),
+        offers: model.providers.map((provider) => toModelOffer(model, provider, regional, includeParameterSpecs)),
     };
 }
 
@@ -708,6 +810,7 @@ async function fetchWorkspacePrivateCatalogue(args: {
                 },
                 residency: { execution_regions: [], data_regions: [] },
                 capabilities: { parameters: [], parameter_details: {} },
+                service_tiers: ["standard"],
                 routing: { provider: "active", model: "active", capability: "active" },
                 effective: { from: null, to: null },
                 pricing: { pricing_plan: "byok", meters: {} },
@@ -716,7 +819,16 @@ async function fetchWorkspacePrivateCatalogue(args: {
     });
 }
 
-export async function handleModels(req: Request) {
+export function handleModels(req: Request) {
+    return listModels(req, "shared");
+}
+
+/** GET /v1/models/me: the catalogue as this key may use it, after its workspace, department, member and key guardrails. */
+export function handleMyModels(req: Request) {
+    return listModels(req, "me");
+}
+
+async function listModels(req: Request, scope: "shared" | "me") {
     const url = new URL(req.url);
     const gatewayRegion = normalizeGatewayRoutingRegion(
 		getBindingsIfConfigured()?.GATEWAY_ROUTING_REGION,
@@ -780,14 +892,23 @@ export async function handleModels(req: Request) {
     }
     const scopeError = requireCapability(auth.value, CAPABILITIES.MODELS_READ);
     if (scopeError) return scopeError;
+    // An OAuth access token (a CLI or app sign-in) is not a key: its apiKeyId is the client id. It gets the rules of
+    // the person who signed in (the workspace, their departments and their own), as a key they create would.
+    // An OAuth-delegated key (Phaseo desktop's, a third-party app's) is a real key and keeps the key path.
+    const oauthUserId = auth.value.oauthAccessToken ? String(auth.value.userId ?? "").trim() : "";
+    if (scope === "me" && auth.value.oauthAccessToken && !oauthUserId) {
+        return json({ ok: false, error: "unauthorized", message: "This sign-in has no user. Sign in again." }, 401, { "Cache-Control": "no-store" });
+    }
 
-    const requestedFormat = parseFeedFormat(url);
+    const requestedFormat = url.searchParams.get("format")?.trim().toLowerCase() === "openai"
+        ? { ok: true as const, format: "openai" as const }
+        : parseFeedFormat(url);
     if (requestedFormat.ok === false) {
         return json(
             {
                 ok: false,
                 error: "invalid_request",
-                message: "format must be one of: json, rss, atom",
+                message: "format must be one of: json, openai, rss, atom",
                 provided: requestedFormat.raw,
             },
             400,
@@ -795,16 +916,20 @@ export async function handleModels(req: Request) {
         );
     }
 
-    const cacheScope = "models:shared:v1";
+    const cacheScope = scope === "me" ? "models:me:v1" : "models:shared:v1";
 
-    const cacheOptions = {
-        scope: cacheScope,
-        ttlSeconds: MODEL_CATALOGUE_CACHE_TTL_SECONDS,
-        staleSeconds: MODEL_CATALOGUE_CACHE_STALE_SECONDS,
-        varyHeaders: [],
-    };
+    // A key's own list follows guardrail edits, so clients re-check it after a minute (cheaply, with If-None-Match).
+    const cacheOptions = scope === "me"
+        ? { scope: cacheScope, ttlSeconds: MY_MODELS_CACHE_TTL_SECONDS, staleSeconds: 0, varyHeaders: [] }
+        : {
+            scope: cacheScope,
+            ttlSeconds: MODEL_CATALOGUE_CACHE_TTL_SECONDS,
+            staleSeconds: MODEL_CATALOGUE_CACHE_STALE_SECONDS,
+            varyHeaders: [],
+        };
 
     const endpoints = parseMultiValue(url.searchParams, "endpoints");
+    const includeParameterSpecs = parseMultiValue(url.searchParams, "include").includes("parameter_specs");
     const statuses = parseMultiValue(url.searchParams, "status");
     const providerIds = parseMultiValue(url.searchParams, "provider");
     const providerStatuses = parseMultiValue(url.searchParams, "provider_status");
@@ -907,13 +1032,14 @@ export async function handleModels(req: Request) {
             const knownModelIds = new Set(catalogue.map((model) => model.model_id));
             catalogue.push(...freeRouterCatalogue.filter((model) => !knownModelIds.has(model.model_id)));
         }
-        const freeRouterModel = await buildFreeRouterCatalogueModel({
+        const freeRouter = await buildFreeRouterCatalogueModel({
             workspaceId: auth.value.workspaceId,
             apiKeyId: auth.value.apiKeyId,
             endpoints,
             catalogue,
             freeContext: prefetchedFreeContext,
         });
+        const freeRouterModel = freeRouter?.model ?? null;
         const enrichedCatalogue =
             freeRouterModel && !catalogue.some((model) => model.model_id === freeRouterModel.model_id)
                 ? [freeRouterModel, ...catalogue]
@@ -928,6 +1054,7 @@ export async function handleModels(req: Request) {
                     model.replacement_model_id ?? replacementByPreviousModel.get(model.model_id) ?? null,
                     variantsByBaseModel.get(model.base_model_id || model.model_id) ?? {},
 					gatewayRegion !== null,
+                    includeParameterSpecs,
                 )
             );
         const privateModels = await fetchWorkspacePrivateCatalogue({
@@ -954,8 +1081,30 @@ export async function handleModels(req: Request) {
                 },
             };
         });
+        const listed = [...privateByModelId.values(), ...mergedPublicModels] as PhaseoModel[];
+        // Filtered before search and paging, so totals and pages count only what the key may use.
+        const policy = scope !== "me"
+            ? null
+            : oauthUserId
+                ? await fetchMemberWorkspacePolicy({ workspaceId: auth.value.workspaceId, userId: oauthUserId })
+                : await fetchWorkspacePolicy({ workspaceId: auth.value.workspaceId, apiKeyId: auth.value.apiKeyId });
+        // What the request pipeline checks per route, which the listing doesn't show: the Free router's concrete
+        // models and data facts, and each text route's id (its effective data policy is read by it).
+        const routeFacts = new Map<string, Map<string, PolicyRouteFacts>>();
+        if (policy) {
+            for (const model of enrichedCatalogue) {
+                if (model.model_id === FREE_ROUTER_MODEL_ID && freeRouter) { routeFacts.set(model.model_id, freeRouter.routes); continue; }
+                routeFacts.set(model.model_id, new Map(model.providers.map((provider) => {
+                    const routeId = provider.route_id_by_endpoint?.["text.generate"];
+                    return [provider.api_provider_id, routeId ? { routeId } : {}];
+                })));
+            }
+        }
+        const permitted = policy ? await modelsForPolicy(listed, policy, routeFacts) : listed;
+        // What the key's rules leave out of this listing (before search), so apps can say why a model is missing.
+        const access = policy ? modelAccessSummary(listed, permitted, policy) : undefined;
         const models = filterAndSortModels(
-            [...privateByModelId.values(), ...mergedPublicModels] as PhaseoModel[],
+            permitted,
             {
                 search,
                 provider: providerSearch,
@@ -967,8 +1116,28 @@ export async function handleModels(req: Request) {
                 sortOrder: sortOrderRaw as ModelListSortOrder | null,
             },
         );
-        const paged = models.slice(offset, offset + limit);
+        // OpenAI model discovery has no pagination contract. Return all matches
+        // unless the caller explicitly opts into Phaseo's limit parameter.
+        const paged = models.slice(offset, requestedFormat.format === "openai" && !url.searchParams.has("limit")
+            ? undefined : offset + limit);
         const headers = cacheHeaders({ ...cacheOptions, varyHeaders: ["Authorization"] });
+        if (requestedFormat.format === "openai") {
+            const data = paged.map(model => ({
+                id: model.id,
+                object: "model",
+                created: Math.max(0, toUnixSeconds(model.lifecycle.released_at) ?? 0),
+                owned_by: model.organization?.id ?? "phaseo",
+            }));
+            // The ETag covers what this format serves, so catalogue changes that
+            // the OpenAI shape does not expose (prices, offers) keep it stable.
+            return await jsonWithEtag(req, { object: "list", data }, {
+                format: "openai",
+                limit: url.searchParams.has("limit") ? limit : null,
+                offset,
+                total: models.length,
+                models: data,
+            }, headers);
+        }
         if (requestedFormat.format !== "json") {
             const items: FeedItem[] = paged.map((model) => ({
                 id: model.id,
@@ -985,7 +1154,8 @@ export async function handleModels(req: Request) {
                 headers,
             });
         }
-        return json(
+        return await jsonWithEtag(
+            req,
             {
                 ok: true,
                 availability_mode: availabilityMode,
@@ -994,9 +1164,21 @@ export async function handleModels(req: Request) {
                 offset,
                 total: models.length,
                 models: paged,
+                ...(access ? { access } : {}),
             },
-            200,
-            headers
+            // gateway_region is deliberately left out: the same catalogue served
+            // from another region keeps the same ETag. That is why the ETag is
+            // weak: responses sharing it are equivalent, not byte-identical.
+            {
+                format: "json",
+                availability_mode: availabilityMode,
+                limit,
+                offset,
+                total: models.length,
+                models: paged,
+                ...(access ? { access } : {}),
+            },
+            headers,
         );
     } catch (error: any) {
         return json(
@@ -1127,6 +1309,7 @@ export async function handleModelEndpoints(req: Request) {
                     capabilities: {
                         parameters: [...provider.params],
                         parameter_details: cloneJsonObject(provider.params_detail ?? {}),
+                        parameter_specs: normalizeParameterSpecs(provider.params_detail ?? {}),
                     },
                     routing: {
                         provider: provider.provider_routing_status,
@@ -1175,24 +1358,6 @@ export async function handleModelEndpoints(req: Request) {
             { "Cache-Control": "no-store" },
         );
     }
-}
-
-export async function handleMyModels(req: Request) {
-    const auth = await guardAuth(req, { allowOAuthJwt: true });
-    if (!auth.ok) {
-        return (auth as GuardErr).response;
-    }
-
-    return json(
-        {
-            status_code: 501,
-            error: "not_implemented",
-            description:
-                "GET /models/me is reserved for future guardrail-aware model filtering and is not implemented yet. Use /models for the shared gateway catalogue.",
-        },
-        501,
-        { "Cache-Control": "no-store" }
-    );
 }
 
 export const modelsRoutes = new Hono<Env>();

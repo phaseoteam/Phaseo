@@ -31,6 +31,8 @@ CREATE TABLE "public"."v2_models" (
   CONSTRAINT "v2_models_lab_slug_prefix_check" CHECK (((split_part(model_slug, '/'::text, 1) = lab_slug) AND (split_part(model_slug, '/'::text, 2) <> ''::text))),
   CONSTRAINT "v2_models_pkey" PRIMARY KEY (model_slug),
   CONSTRAINT "v2_models_base_model_slug_fkey" FOREIGN KEY (base_model_slug) REFERENCES public.v2_models(model_slug) ON DELETE RESTRICT,
+  CONSTRAINT "v2_models_replacement_model_slug_fkey" FOREIGN KEY (replacement_model_slug) REFERENCES public.v2_models(model_slug) ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED,
+  CONSTRAINT "v2_models_replacement_not_self_check" CHECK ((replacement_model_slug IS DISTINCT FROM model_slug)),
   CONSTRAINT "v2_models_slug_check" CHECK (((model_slug = lower(model_slug)) AND (model_slug ~ '^[a-z0-9][a-z0-9._:/+@-]*$'::text))),
   CONSTRAINT "v2_models_status_check" CHECK ((status = ANY (ARRAY['draft'::text, 'active'::text, 'deprecated'::text, 'retired'::text, 'disabled'::text]))),
   CONSTRAINT "v2_models_variant_identity_check"
@@ -74,10 +76,11 @@ CREATE TRIGGER catalogue_row_history
   FOR EACH ROW
   EXECUTE FUNCTION catalogue_private.record_row_history();
 
-CREATE TRIGGER enqueue_public_model_release_push
-  AFTER INSERT OR UPDATE OF status, hidden, released_at ON public.v2_models
+CREATE TRIGGER guard_replacement_cycle
+  BEFORE INSERT OR UPDATE OF replacement_model_slug ON public.v2_models
   FOR EACH ROW
-  EXECUTE FUNCTION public.enqueue_public_model_release_push();
+  WHEN ((new.replacement_model_slug IS NOT NULL))
+  EXECUTE FUNCTION private.guard_model_replacement_cycle();
 
 CREATE TRIGGER routing_catalogue_changed
   AFTER INSERT OR DELETE OR UPDATE OR TRUNCATE ON public.v2_models
@@ -102,6 +105,8 @@ COMMENT ON COLUMN "public"."v2_models"."base_model_slug" IS 'Optional related st
 COMMENT ON COLUMN "public"."v2_models"."catalogue_status" IS 'Canonical model lifecycle; independent of provider offers and Phaseo routing.';
 
 COMMENT ON COLUMN "public"."v2_models"."license_url" IS 'Authoritative URL for the model licence text or terms; nullable when not verified.';
+
+COMMENT ON COLUMN "public"."v2_models"."replacement_model_slug" IS 'Recommended successor shown to customers when this model is deprecated or retired. Must be an existing model; chains may not loop.';
 
 COMMENT ON COLUMN "public"."v2_models"."variant_kind" IS 'Canonical API model kind. Free models may stand alone or optionally reference a related standard model.';
 

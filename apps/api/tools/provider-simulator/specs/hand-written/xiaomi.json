@@ -1,0 +1,38 @@
+{
+	"id": "xiaomi",
+	"source": {
+		"url": null,
+		"docs": "https://mimo.mi.com/docs/en-US/quick-start/summary/first-api-call",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Only a quick-start page found; params are those used in the examples, not a reference list. Example curl authenticates with an \"api-key\" header (gateway may use Bearer). Assistant messages carry reasoning_content in thinking mode and docs recommend sending it back in multi-turn tool calls. Thinking on/off parameter is on a separate Deep Thinking guide (not reviewed); third-party guides use extra_b"
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"max_completion_tokens": {},
+					"temperature": {},
+					"top_p": {},
+					"stop": {},
+					"frequency_penalty": {},
+					"presence_penalty": {},
+					"tools": {},
+					"tool_choice": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

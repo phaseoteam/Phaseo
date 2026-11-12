@@ -1,10 +1,9 @@
-import fs from "node:fs";
-import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { PriceCard } from "@pipeline/pricing/types";
 import { computeVideoPricedUsage } from "./video-pricing";
 import { buildVideoPricingRequestOptions } from "./video-request-options";
 import { bflVideoPricingOptions } from "@providers/black-forest-labs/video";
+import { VIDEO_PRICE_CARDS } from "./__fixtures__/video-price-cards";
 
 function makeCard(rules: Array<Record<string, unknown>>): PriceCard {
 	return {
@@ -20,11 +19,9 @@ function makeCard(rules: Array<Record<string, unknown>>): PriceCard {
 }
 
 function loadCatalogCard(provider: string, model: string): PriceCard {
-	const pricingPath = path.resolve(
-		process.cwd(),
-		`../../packages/data/catalog/src/data/pricing/${provider}/${model}/video.generate/pricing.json`,
-	);
-	return JSON.parse(fs.readFileSync(pricingPath, "utf8")) as PriceCard;
+	const card = VIDEO_PRICE_CARDS[`${provider}/${model}`];
+	if (!card) throw new Error(`missing video price card fixture for ${provider}/${model}`);
+	return card as unknown as PriceCard;
 }
 
 function loadLtxCard(model: string): PriceCard {
@@ -157,7 +154,7 @@ describe("video-pricing", () => {
 		["t2v", "hd", false, 1.7], ["i2v", "fhd", false, 2.9], ["t2v", "hd", true, 0.6],
 		["v2v", "hd", false, 4.3], ["v2v", "fhd", false, 5.4], ["v2v", "hd", true, 1.2],
 	] as const)("prices FLUX 3 %s %s draft=%s using the catalog", (mode, resolution, draft, usd) => {
-		const card = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), "../../packages/data/catalog/src/data/pricing/black-forest-labs/black-forest-labs-flux-3-video/video.generate/pricing.json"), "utf8")) as PriceCard;
+		const card = loadCatalogCard("black-forest-labs", "black-forest-labs-flux-3-video");
 		const result = computeVideoPricedUsage({ seconds: 10, card, model: "black-forest-labs/flux-3-video", requestOptions: bflVideoPricingOptions(resolution, mode, draft) });
 		expect((result.pricing as any).total_nanos).toBe(Math.round(usd * 1e9));
 	});

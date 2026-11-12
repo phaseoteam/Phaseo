@@ -35,3 +35,7 @@ GRANT SELECT ON TABLE "public"."public_model_task_daily" TO "anon";
 REVOKE ALL ON TABLE "public"."public_model_task_daily" FROM "authenticated";
 
 GRANT SELECT ON TABLE "public"."public_model_task_daily" TO "authenticated";
+
+create policy public_task_model_visibility on public.public_model_task_daily as restrictive
+for select to anon, authenticated
+using (public.public_reporting_route_is_visible(model_slug, null, provider_slug));

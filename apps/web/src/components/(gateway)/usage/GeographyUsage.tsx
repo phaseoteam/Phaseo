@@ -1,8 +1,6 @@
-"use client";
-
-import Image from "next/image";
-import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import Image from "@/components/image";
+import Link from "@/components/link";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Globe2 } from "lucide-react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
@@ -82,13 +80,7 @@ export function GeographyUsage({
 			maximumFractionDigits: 4,
 			notation: "standard",
 		});
-	const formatLatency = (value: number | null | undefined) =>
-		value == null
-			? "—"
-			: `${format.number(Math.round(value), {
-					maximumFractionDigits: 0,
-					notation: "standard",
-				})} ms`;
+	const formatLatency = (value: number | null | undefined) => format.latency(value) ?? "—";
 	const totalRequests = rows.reduce((sum, row) => sum + row.requests, 0);
 	if (publicView) {
 		if (rows.length === 0) {

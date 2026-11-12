@@ -1,67 +1,97 @@
 ---
 title: "PHP Agent SDK से CMS सामग्री की समीक्षा करें"
+sidebarTitle: "PHP में CMS सामग्री की समीक्षा"
 icon: "file-check"
-description: "सीमित समीक्षा loop में स्थानीय content lookup tool जोड़ने के लिए PHP Agent SDK उपयोग करें।"
+description: "एक स्थानीय सामग्री lookup टूल को सीमित रिव्यू लूप में लपेटने के लिए PHP Agent SDK इस्तेमाल करें।"
 ---
 
-किसी PHP ऐप या admin backend में orchestration कहीं और भेजे बिना सामग्री की त्वरित समीक्षा चाहिए, तो यह रेसिपी उपयोग करें।
+एक PHP एजेंट चलाएँ जो स्थानीय टूल से CMS ड्राफ़्ट लोड करे और संपादकीय बदलाव सुझाए, उसी ऐप या एडमिन बैकएंड के अंदर जो पहले से सामग्री का मालिक है। अंत में आपके पास एक स्क्रिप्ट होगी जो होमपेज ड्राफ़्ट के लिए हेडलाइन का सुझाव प्रिंट करती है।
 
-## 1. SDK तैयार करें
+टूल तय नमूना डेटा लौटाता है, इसलिए यह स्क्रिप्ट उदाहरण के लिए है; इसे अपने CMS lookup से बदलें। यह ऐसे PHP ऐप के लिए सही है जहाँ एक या दो स्थानीय टूल काफ़ी हैं।
 
-<Note type="warning">PHP Agent SDK पैकेज अभी Packagist पर उपलब्ध नहीं है।[सोर्स से इंस्टॉल करने के निर्देश](../sdk-reference/php/agent-sdk-installation.mdx) देखें।</Note>
+## इसे बनाएँ
 
-## 2. सामग्री lookup टूल तय करें
+<Steps>
+<Step title="इंस्टॉल करें">
 
-```php
+```bash
+composer require phaseo/agent-sdk
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+`phaseo/agent-sdk` अपने साथ `phaseo/sdk` इंस्टॉल करता है और इसके लिए PHP 8.1 या नया चाहिए। [PHP Agent SDK इंस्टॉलेशन](../sdk-reference/agent/installation) देखें।
+
+</Step>
+<Step title="एजेंट लिखें">
+
+```php review.php
 <?php
+require 'vendor/autoload.php';
+
+use Phaseo\AgentSdk\AgentDefinition;
 use Phaseo\AgentSdk\AgentSdk;
 use Phaseo\AgentSdk\Tool;
 
+const ALLOWED_SLUGS = ['homepage', 'pricing', 'about'];
+
 $loadDraft = AgentSdk::defineTool(new Tool(
-    id: "load-draft",
-    description: "Load one CMS draft by slug.",
+    id: 'load-draft',
+    description: 'Load one CMS draft by slug.',
     parameters: [
-        "type" => "object",
-        "properties" => [
-            "slug" => ["type" => "string"],
+        'type' => 'object',
+        'properties' => [
+            'slug' => ['type' => 'string', 'enum' => ALLOWED_SLUGS],
         ],
-        "required" => ["slug"],
+        'required' => ['slug'],
+        'additionalProperties' => false,
     ],
-    execute: static fn (mixed $input, $context) => [
-        "slug" => $input["slug"] ?? "homepage",
-        "headline" => "Phaseo makes gateway routing visible.",
-    ]
+    // आर्ग्युमेंट मॉडल से आते हैं: सिर्फ़ ज्ञात slug ही execute तक पहुँचते हैं।
+    inputSchema: static function (mixed $input): array {
+        if (!is_array($input) || !in_array($input['slug'] ?? null, ALLOWED_SLUGS, true)) {
+            throw new InvalidArgumentException('slug must be one of ' . implode(', ', ALLOWED_SLUGS));
+        }
+        return $input;
+    },
+    execute: static fn (array $input, $context) => [
+        'slug' => $input['slug'],
+        'headline' => 'Phaseo makes gateway routing visible.',
+    ],
 ));
-```
-
-## 3. एजेंट बनाएँ और चलाएँ
-
-```php
-<?php
-use Phaseo\AgentSdk\AgentDefinition;
 
 $agent = AgentSdk::createAgent(new AgentDefinition(
-    id: "content-review-agent",
-    model: "openai/gpt-5.4-nano",
-    instructions: "Use tools when helpful and return concise editorial feedback.",
-    tools: [$loadDraft]
+    id: 'content-review-agent',
+    model: 'openai/gpt-6-astra',
+    instructions: 'Use tools when helpful and return concise editorial feedback.',
+    tools: [$loadDraft],
+    maxSteps: 4,
 ));
 
+// PHASEO_API_KEY को एनवायरनमेंट से पढ़ता है।
 $result = $agent->run(
-    input: "Review the homepage draft and suggest one headline improvement.",
-    client: AgentSdk::createGatewayAgentClient()
+    input: 'Review the homepage draft and suggest one headline improvement.',
+    client: AgentSdk::createGatewayAgentClient(),
 );
 
+echo $result->run->status . PHP_EOL;
 echo $result->output . PHP_EOL;
 ```
 
-## यह रेसिपी कब उपयुक्त है
+</Step>
+<Step title="इसे चलाएँ">
 
-- PHP ऐप पहले से सामग्री के स्रोत का स्वामी हो
-- एक या दो स्थानीय टूल पर्याप्त हों
-- बड़े orchestration platform के बजाय सीमित loop चाहिए
+```bash
+php review.php
+```
 
-## संबंधित विषय
+</Step>
+</Steps>
 
-- [PHP Agent SDK](../sdk-reference/php/agent-sdk.mdx)
-- [गलत संरचना वाले JSON को ठीक करें](./response-healing-for-structured-json.mdx)
+## जाँचें कि यह काम किया
+
+- स्क्रिप्ट `completed` प्रिंट करती है, फिर हेडलाइन का एक सुझाव।
+- **सेटिंग → उपयोग → लॉग्स** में पहले मॉडल टर्न में `{"slug": "homepage"}` के साथ `load-draft` कॉल दिखती है।
+- `PHASEO_API_KEY` के बिना `createGatewayAgentClient()` यह त्रुटि देता है: `PHASEO_API_KEY is required`।
+
+## प्रोडक्शन से पहले
+
+टूल को सिर्फ़ पढ़ने वाला रखें। अगर आप ऐसा टूल जोड़ते हैं जो सामग्री प्रकाशित या संपादित करे, तो उस पर `requireApproval: true` सेट करें ताकि रन किसी संपादक के लिए रुक जाए। फ़ीडबैक को ऐसे JSON के रूप में पाने के लिए जिसे आपका CMS संग्रहीत कर सके, एक स्कीमा माँगें और लगभग-सही आउटपुट को [response healing](./response-healing-for-structured-json) से ठीक करें। [PHP Agent SDK संदर्भ](../sdk-reference/agent/usage) में स्थिति, अनुमोदन और स्ट्रीमिंग की जानकारी है।

@@ -1,5 +1,6 @@
 import { CircleAlert } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
+import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import {
 	Empty,
 	EmptyContent,
@@ -11,41 +12,11 @@ import {
 import ModelPricingInsightsClient from "@/components/(data)/model/pricing/ModelPricingInsightsClient";
 import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/ModelPendingApiReleaseBanner";
 import {
-	fetchFrontendModelPendingApiReleaseState,
-	fetchFrontendModelPricing,
-	fetchFrontendModelPricingHistory,
-	fetchFrontendModelEffectivePricingDaily,
-	fetchFrontendModelUsageDailyBreakdown,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
+	modelPendingApiReleaseSectionQuery,
+	modelPricingInsightsProvidersQuery,
+} from "@/components/(data)/model/modelData.queries";
 
-const OPTIONAL_PRICING_INSIGHTS_TIMEOUT_MS = 2_500;
-
-function withOptionalPricingTimeout<T>(
-	promise: Promise<T>,
-	fallback: T,
-	label: string
-): Promise<T> {
-	let timeout: ReturnType<typeof setTimeout> | null = null;
-	const timeoutPromise = new Promise<T>((resolve) => {
-		timeout = setTimeout(() => {
-			console.warn(`[pricing] ${label} timed out; using fallback.`);
-			resolve(fallback);
-		}, OPTIONAL_PRICING_INSIGHTS_TIMEOUT_MS);
-	});
-
-	return Promise.race([promise, timeoutPromise])
-		.catch((error) => {
-			console.warn(`[pricing] ${label} failed; using fallback.`, {
-				error,
-			});
-			return fallback;
-		})
-		.finally(() => {
-			if (timeout) clearTimeout(timeout);
-		});
-}
-
-export default async function ModelPricingInsightsSection({
+export default function ModelPricingInsightsSection({
 	modelId,
 	includeHidden,
 	showPageHeader = false,
@@ -56,32 +27,17 @@ export default async function ModelPricingInsightsSection({
 	showPageHeader?: boolean;
 	hasSubmittedProviderPrices?: boolean;
 }) {
-	const providers = await withOptionalPricingTimeout(
-		fetchFrontendModelPricing(modelId),
-		[],
-		"pricing providers"
-	);
-	const pendingApiRelease = await withOptionalPricingTimeout(
-		fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
-		null,
-		"pending API release state"
-	);
+	const queryClient = useQueryClient();
+	const [{ data: providers }, { data: pendingApiRelease }] = useSuspenseQueries({
+		queries: [
+			modelPricingInsightsProvidersQuery(queryClient, modelId, includeHidden),
+			modelPendingApiReleaseSectionQuery(modelId, includeHidden),
+		],
+	});
 	const providersForDisplay = providers || [];
-	const tEmpty = await getTranslations("Catalogue.modelDetail.emptyStates");
+	const tEmpty = useTranslations("Catalogue.modelDetail.emptyStates");
 	const providerIds = Array.from(
 		new Set(providersForDisplay.map((provider) => provider.provider.api_provider_id)),
-	).sort((a, b) => a.localeCompare(b));
-	const modelAliases = Array.from(
-		new Set(
-			providersForDisplay.flatMap((provider) =>
-				provider.provider_models.flatMap((providerModel) =>
-					[providerModel.model_id, providerModel.provider_model_slug].filter(
-						(value): value is string =>
-							typeof value === "string" && value.trim().length > 0,
-					),
-				),
-			),
-		),
 	).sort((a, b) => a.localeCompare(b));
 	if (!providersForDisplay.length) {
 		const isPreview = pendingApiRelease?.isPendingApiRelease === true || hasSubmittedProviderPrices;
@@ -117,36 +73,6 @@ export default async function ModelPricingInsightsSection({
 		);
 	}
 
-	const [pricingHistoryRules, usageRows, effectivePricingRows] = await Promise.all([
-		withOptionalPricingTimeout(
-			fetchFrontendModelPricingHistory(modelId, {
-				includeHidden,
-				days: 3650,
-			}),
-			[],
-			"pricing history rules"
-		),
-		withOptionalPricingTimeout(
-			fetchFrontendModelUsageDailyBreakdown({
-				modelId,
-				providerIds,
-				modelAliases,
-				days: 365,
-			}),
-			[],
-			"usage breakdown"
-		),
-		withOptionalPricingTimeout(
-			fetchFrontendModelEffectivePricingDaily({
-				modelId,
-				providerIds,
-				days: 365,
-			}),
-			[],
-			"effective pricing"
-		),
-	]);
-
 	return (
 		<div className="space-y-4">
 			{pendingApiRelease?.isPendingApiRelease ? (
@@ -158,9 +84,8 @@ export default async function ModelPricingInsightsSection({
 			<ModelPricingInsightsClient
 				modelId={modelId}
 				providers={providersForDisplay}
-				historyRules={pricingHistoryRules}
-				usageRows={usageRows}
-				effectivePricingRows={effectivePricingRows}
+				providerIds={providerIds}
+				includeHidden={includeHidden}
 				showPageHeader={showPageHeader}
 			/>
 		</div>

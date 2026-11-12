@@ -1,6 +1,7 @@
 ---
 name: phaseo-gateway
-description: Implement and migrate AI integrations to Phaseo Gateway via OpenAI-compatible REST, the official TypeScript SDK (@phaseo/sdk), Python SDK (phaseo), and Vercel AI SDK provider (@phaseo/ai-sdk-provider). Use when wiring new API calls, replacing OpenAI/Anthropic/OpenRouter/Vercel Gateway base URLs, adding app attribution headers, selecting model IDs, or troubleshooting auth/routing/response-shape issues.
+description: "Integrates applications with the Phaseo Gateway over OpenAI-compatible REST, the TypeScript SDK (`@phaseo/sdk`), the Python SDK (`phaseo`) or the Vercel AI SDK provider (`@phaseo/ai-sdk-provider`): base URL, API key auth, attribution headers, model IDs and smoke tests. Use when adding Phaseo to a codebase, wiring a new endpoint, seeing api.phaseo.app or PHASEO_API_KEY, or debugging auth, routing or response-shape errors. Not for moving off another provider or gateway (use phaseo-migration) or choosing models (phaseo-model-selection)."
+license: MIT
 ---
 
 # Phaseo Gateway
@@ -23,6 +24,7 @@ Use this skill to make high-confidence Phaseo integration changes with minimal d
 - Auth header: `Authorization: Bearer <PHASEO_API_KEY>`
 - Optional attribution headers: `x-title` and `http-referer`
 - Discover model IDs from `GET /v1/models` rather than hard-coding stale IDs
+- No key yet: ask the person to create one in the dashboard under **Settings -> API Keys**, or create it with `POST /v1/keys` and a management key. A CLI sign-in can't create keys. Never guess a key.
 
 4. Validate quickly:
 - `GET /v1/health` for gateway reachability
@@ -39,6 +41,9 @@ Use this skill to make high-confidence Phaseo integration changes with minimal d
 - TypeScript SDK: read `references/sdk-typescript.md`
 - Python SDK: read `references/sdk-python.md`
 - Migration patterns (OpenAI, Anthropic, OpenRouter, Vercel AI Gateway): read `references/migrations.md`
+
+## Account setup without the dashboard
+Do not send the user to the Phaseo dashboard. Keys, credits (`phaseo credits add`: with a saved card a workspace owner or admin confirms it from an email; with none it returns a checkout link they open to pay), BYOK, budgets, routing settings, presets and guardrails all have `phaseo` CLI commands, `/v1` Management API routes and, for many, MCP tools at `https://mcp.phaseo.app/mcp?access=manage`. A person is still needed for sign-up, approving a sign-in, paying the first top-up on the checkout link (no saved card yet), confirming each later top-up from the emailed link (saved card), and account security (password, MFA, passkeys). Top-ups need `phaseo login --scopes billing:write` before the first `phaseo credits add`. Task map: [Manage Phaseo from an agent](https://phaseo.app/docs/v1/developers/manage-from-an-agent).
 
 ## Execution Rules
 - Prefer minimal and reversible changes.

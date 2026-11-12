@@ -1,112 +1,149 @@
 ---
-title: "Septembre"
-description: "Mises à jour du produit et sorties de modèles Phaseo de septembre 2026."
+title: "Novembre"
+description: "Mises à jour produit et sorties de modèles sur Phaseo en novembre 2026."
 rss: true
 ---
 
-## 28 septembre 2026
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Nouveaux modèles</p>
+<ChangelogFilters labels={{"product":"Produit","api":"API et SDK","models":"Modèles"}} clearLabel="Effacer" />
 
-![Illustration de sortie du modèle Claude Sonnet 5.5](/images/model-releases/2026-09-28--anthropic--claude-sonnet-5.5.png)
+<Update label="11 novembre 2026">
 
-- [Claude Sonnet 5.5](https://phaseo.app/models/anthropic/claude-sonnet-5.5) ajouté avec des routes Anthropic, Claude Platform on AWS, Amazon Bedrock et Google Vertex. Anthropic affiche un tarif standard de $2 par million de jetons d’entrée et $10 par million de jetons de sortie.
+<div data-changelog-category="product">
 
-***
+<p className="changelog-category">Produit</p>
 
-## 13 septembre 2026
+- **Bêta :** La voix en temps réel est désormais disponible pour tous les utilisateurs dans [Chat → Realtime](https://phaseo.app/chat/realtime), avec les modèles vocaux d'OpenAI, Google, xAI et ElevenLabs ; voir [La voix en temps réel dans Chat](https://phaseo.app/blog/realtime-voice-in-chat) ([#3675](https://github.com/phaseoteam/Phaseo/pull/3675)).
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Produit</p>
+</div>
 
-- Les salons de chat permettent désormais de choisir le niveau de service par requête pour Priority et Flex ([#2357](https://github.com/phaseoteam/Phaseo/pull/2357)).
-- Les pages des modèles proposent désormais des vues interactives des performances horaires des fournisseurs ([#2361](https://github.com/phaseoteam/Phaseo/pull/2361)).
+<div data-changelog-category="api">
 
-***
+<p className="changelog-category">API et SDK</p>
 
-## 11 septembre 2026
+- `POST /v1/decisions` accepte jusqu’à 1000 questions sur `google/gemini-decision-1` ; les autres modèles sont limités à 128 par défaut et certains en acceptent moins, et une requête qui dépasse la limite du modèle renvoie `400` ; voir [Prendre une décision](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682)).
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Produit</p>
+</div>
 
-![Illustration de sortie du modèle GPT Live 1](/images/model-releases/2026-09-14--openai--gpt-live-1.png)
+<div data-changelog-category="models">
 
-- [GPT Live 1](https://phaseo.app/models/openai/gpt-live-1) est désormais disponible dans le salon de chat Realtime, avec sélection vocale intégrée, délégation Responses configurable et recherche web facultative ([#2338](https://github.com/phaseoteam/Phaseo/pull/2338)).
+<p className="changelog-category">Modèles</p>
 
-***
+- [Google: Gemini Decision 1](https://phaseo.app/models/google/gemini-decision-1)
 
-## 10 septembre 2026
-
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Produit</p>
-
-- La CLI Phaseo comprend désormais des intégrations et lanceurs d’agents de programmation, notamment la configuration et la gestion sécurisées d’OpenCode ([#2325](https://github.com/phaseoteam/Phaseo/pull/2325)).
-
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Nouveaux modèles</p>
-
-- [DeepSeek V4.1 Flash](https://phaseo.app/models/deepseek/deepseek-v4.1-flash)
-
-***
-
-<Update label="9 septembre 2026" tags={["Sorties de modèles"]}>
-
-### Sorties de modèles
-
-![Illustration de sortie du modèle Suno V6](/images/model-releases/2026-09-09--suno--suno-v6.png)
-
-- [Suno V6](https://phaseo.app/models/suno/suno-v6)
-- [Suno V6 Wild](https://phaseo.app/models/suno/suno-v6-wild)
-- [Suno V6 Mini](https://phaseo.app/models/suno/suno-v6-mini)
+</div>
 
 </Update>
 
-<Update label="8 septembre 2026" tags={["Sorties de modèles"]}>
+<Update label="10 novembre 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
 
-![Illustration de sortie du modèle GPT Image 2.5](/images/model-releases/2026-09-08-08--openai--gpt-image-2.5.png)
+<p className="changelog-category">Modèles</p>
 
-- [GPT Image 2.5 Flare](https://phaseo.app/models/openai/gpt-image-2.5-flare)
-- [GPT Image 2.5 Sunburst](https://phaseo.app/models/openai/gpt-image-2.5-sunburst)
-- [DeepSeek V4.1 Flash Preview](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview)
-- [Mercury 2.5](https://phaseo.app/models/inception/mercury-2.5)
-- [Nex N2.5 Max](https://phaseo.app/models/nex-agi/nex-n2.5-max)
-- [Nex N2.5 Mini](https://phaseo.app/models/nex-agi/nex-n2.5-mini)
-- [Nex N2.5 Pro](https://phaseo.app/models/nex-agi/nex-n2.5-pro)
+![Gemini 4 Carbon](/images/model-releases/2026-11-10--google--gemini-4-carbon.png)
 
-</Update>
+- [Google: Gemini 4 Carbon](https://phaseo.app/models/google/gemini-4-carbon)
+- [MiniMax: MiniMax H3-Image](https://phaseo.app/models/minimax/minimax-h3-image)
+- [MiniMax: MiniMax H3-Image Highspeed](https://phaseo.app/models/minimax/minimax-h3-image-highspeed)
 
-<Update label="3 septembre 2026" tags={["Sorties de modèles"]}>
-
-### Sorties de modèles
-
-![Illustration de sortie du modèle GPT-6 Astra](/images/model-releases/2026-09-03--openai--gpt-6-astra.png)
-
-- [GPT-6 Astra](https://phaseo.app/models/openai/gpt-6-astra)
-- [GPT-6 Astra Pro](https://phaseo.app/models/openai/gpt-6-astra-pro)
-
-- [Ling 3.0 Flash Sante](https://phaseo.app/models/inclusionai/ling-3.0-flash-sante)
-- [Ling 3.0 Flash VL](https://phaseo.app/models/inclusionai/ling-3.0-flash-vl)
+</div>
 
 </Update>
 
-<Update label="2 septembre 2026" tags={["Sorties de modèles"]}>
+<Update label="9 novembre 2026">
 
-### Sorties de modèles
+<div data-changelog-category="models">
 
-![Illustration de sortie du modèle Gemini 3.8 Flash](/images/model-releases/2026-09-02--google--gemini-3.8-flash.png)
+<p className="changelog-category">Modèles</p>
 
-- [Gemini 3.8 Flash](https://phaseo.app/models/google/gemini-3.8-flash)
-- [Muse Spark 1.3](https://phaseo.app/models/meta/muse-spark-1.3)
-- [Muse Spark 1.3 Contributor](https://phaseo.app/models/meta/muse-spark-1.3-contributor)
-- [Qwen 3.8 Max 0902](https://phaseo.app/models/qwen/qwen3.8-max-0902)
+![Claude Fable 5.2](/images/model-releases/2026-11-09--anthropic--claude-fable-5.2.png)
+
+- [Anthropic: Claude Fable 5.2](https://phaseo.app/models/anthropic/claude-fable-5.2)
+- [Parallel: Decisions Fast](https://phaseo.app/models/parallel/decisions-fast)
+
+</div>
 
 </Update>
 
-<Update label="1 septembre 2026" tags={["Sorties de modèles"]}>
+<Update label="5 novembre 2026">
 
-### Sorties de modèles
+<div data-changelog-category="api">
 
-![Illustration de sortie du modèle Claude Fable 5.1](/images/model-releases/2026-09-01--anthropic--claude-fable-5.1.png)
+<p className="changelog-category">API et SDK</p>
 
-- [Claude Fable 5.1](https://phaseo.app/models/anthropic/claude-fable-5.1)
-- [Muse Voice Transcribe 1.0](https://phaseo.app/models/meta/muse-voice-transcribe-1.0)
+- Les requêtes GPT Image 2.6 acceptent `complexity`, la sortie GIF animée, la sortie SVG rédigée par le modèle OpenAI indiqué dans `svg.model` et les modifications guidées par `markup` ; voir [Générer une image](./api-reference/endpoint/images-generations.mdx) ([#3571](https://github.com/phaseoteam/Phaseo/pull/3571)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+![Inkling 2 Small](/images/model-releases/2026-11-05--thinking-machines--inkling-2-small.png)
+
+- [Thinking Machines: Inkling 2 Small](https://phaseo.app/models/thinking-machines/inkling-2-small)
+
+</div>
+
+</Update>
+
+<Update label="4 novembre 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
+
+- Les classements ajoutent une page [Décisions](https://phaseo.app/rankings/decisions) qui classe les modèles de décision par volume de tokens, et les classements texte ne comptent plus les requêtes de décision ([#3527](https://github.com/phaseoteam/Phaseo/pull/3527)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+![GPT Image 2.6](/images/model-releases/2026-11-04--openai--gpt-image-2.6.png)
+
+- [OpenAI: GPT Image 2.6 Flare](https://phaseo.app/models/openai/gpt-image-2.6-flare)
+- [OpenAI: GPT Image 2.6 Sunburst](https://phaseo.app/models/openai/gpt-image-2.6-sunburst)
+- [Ricursive Intelligence: Ripple 65B Preview](https://phaseo.app/models/ricursive/ripple-65b-preview)
+
+</div>
+
+</Update>
+
+<Update label="3 novembre 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
+
+- Les pages de modèles ne comptent la réussite des appels d’outils et des sorties structurées que sur les réponses vérifiées par Phaseo ; auparavant, les requêtes en échec comptaient comme du JSON valide et les heures sans données affichaient 100 % ([#3475](https://github.com/phaseoteam/Phaseo/pull/3475)).
+- La vitesse de sortie sur les pages de modèles exclut le raisonnement masqué effectué avant la réponse et n’affiche aucune valeur quand la réponse arrive d’un seul bloc ; voir [Mesurer les prix et les performances](./exploring/pricing-performance.mdx) ([#3465](https://github.com/phaseoteam/Phaseo/pull/3465), [#3476](https://github.com/phaseoteam/Phaseo/pull/3476)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
+
+- Les requêtes en streaming envoyées via Google AI Studio aux modèles de texte Gemini 2.5, 3 et 3.1, à Gemini 3.5 à 3.8 Flash et à Gemma 4 arrivent désormais token par token, et non plus d’un seul coup ([#3483](https://github.com/phaseoteam/Phaseo/pull/3483)).
+
+</div>
+
+</Update>
+
+<Update label="2 novembre 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+![GLM 5.3 FlashX Legal](/images/model-releases/2026-11-02--z-ai--glm-5.3-flashx-legal.png)
+
+- [z.AI: GLM 5.3 FlashX Legal](https://phaseo.app/models/z-ai/glm-5.3-flashx-legal)
+
+</div>
 
 </Update>

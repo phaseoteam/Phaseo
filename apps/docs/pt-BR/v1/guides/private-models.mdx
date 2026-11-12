@@ -1,70 +1,71 @@
 ---
 title: "Conectar implantações dedicadas de modelos"
+sidebarTitle: "Implantações dedicadas de modelos"
 description: "Adicione um endpoint privado compatível com OpenAI ao catálogo de modelos do seu espaço de trabalho."
 icon: "lock-keyhole"
 ---
 
-Os modelos privados permitem que sua equipe chame uma implantação dedicada ou auto-hospedada pela API habitual da Phaseo. O modelo aparece apenas para membros autenticados do espaço de trabalho e pode ser usado onde você usaria um identificador de modelo público.
+Adicione uma implantação dedicada ou auto-hospedada ao seu espaço de trabalho, e sua equipe passa a chamá-la pela API normal do Phaseo com um ID de modelo como `acme/legal-assistant`. Só o seu espaço de trabalho pode vê-la ou chamá-la, e ela funciona em qualquer lugar onde um ID de modelo público funciona.
 
-As fontes comuns incluem implantações dedicadas em Baseten, Modal, RunPod, Fireworks ou Together, além de serviços que executam vLLM ou outro servidor compatível com OpenAI.
+As origens mais comuns são implantações dedicadas no Baseten, Modal, RunPod, Fireworks ou Together, e servidores com vLLM ou outro servidor compatível com OpenAI.
 
 ## Antes de começar
 
-Sua implantação deve oferecer:
+Sua implantação precisa oferecer:
 
 - uma URL base HTTPS pública;
 - um endpoint `/chat/completions` compatível com OpenAI;
 - autenticação por token Bearer; e
-- um identificador de modelo ou implantação do provedor aceito por esse endpoint.
+- um ID de modelo ou de implantação upstream aceito por esse endpoint.
 
-O suporte a `/responses` é opcional. Deixe-o desativado, a menos que a implantação implemente explicitamente esse endpoint.
+O suporte a `/responses` é opcional. Deixe-o desativado, a menos que a implantação implemente esse endpoint explicitamente.
 
 <Warning>
-Os modelos privados não adaptam protocolos exclusivos de provedores nem esquemas personalizados de autenticação. Coloque uma camada compatível com OpenAI diante dessas implantações ou use uma integração de provedor suportada pela Phaseo.
+Os Modelos privados não adaptam protocolos exclusivos de provedores nem esquemas de autenticação personalizados. Coloque uma camada compatível com OpenAI na frente dessas implantações ou use uma integração de provedor compatível do Phaseo.
 </Warning>
 
 ## Conectar uma implantação
 
 <Steps>
-<Step title="Abrir modelos privados">
+<Step title="Abra Modelos privados">
 
-Abra **Painel → Configurações → Espaço de trabalho → Modelos privados** e selecione **Adicionar modelo**. Você precisa ser proprietário ou administrador do espaço de trabalho.
+Abra **Painel → Configurações → Espaço de trabalho → Modelos privados** e selecione **Adicionar modelo**. Você precisa ser proprietário ou administrador do espaço de trabalho. Para automatizar, chame `POST /v1/private-models` com os mesmos campos e uma chave de gerenciamento.
 
 </Step>
 
-<Step title="Nomear o modelo">
+<Step title="Dê um nome ao modelo">
 
-Escolha um modelo existente do catálogo para adicionar esta implantação à lista de provedores dele ou informe um slug curto como `legal-assistant`. Se nenhum modelo do catálogo tiver esse slug único, a Phaseo o combina com o namespace confiável do espaço de trabalho:
+Escolha um modelo existente do catálogo para adicionar esta implantação à lista de provedores dele, ou digite um slug curto de modelo, como `legal-assistant`. Se nenhum modelo do catálogo tiver esse slug único, o Phaseo o combina com o namespace confiável do espaço de trabalho:
 
 ```text
 acme/legal-assistant
 ```
 
-Você não pode escolher nem substituir o namespace do espaço de trabalho. Identificadores exatos do catálogo são vinculados ao modelo sem mudar sua identidade pública.
+Você não pode escolher nem substituir o namespace do espaço de trabalho. IDs exatos do catálogo se vinculam a esse modelo sem alterar sua identidade pública.
 
 </Step>
 
-<Step title="Configurar o endpoint">
+<Step title="Configure o endpoint">
 
-Informe a URL base sem o caminho de inferência. Por exemplo:
+Digite a URL base antes do caminho de inferência. Por exemplo, use:
 
 ```text
 https://model.example.com/v1
 ```
 
-Não inclua `/chat/completions` nem `/responses`. Informe separadamente o identificador exato do modelo ou implantação do provedor; a Phaseo o substitui ao encaminhar as solicitações.
+Não inclua `/chat/completions` nem `/responses`. Digite o ID exato do modelo ou da implantação upstream separadamente; o Phaseo o substitui ao encaminhar as solicitações.
 
 </Step>
 
-<Step title="Armazenar a credencial">
+<Step title="Armazene a credencial">
 
-Informe a chave de API da implantação. A Phaseo criptografa a credencial e nunca a retorna após salvar. Você pode substituí-la depois nas configurações do modelo.
+Digite a chave de API da implantação. O Phaseo criptografa a credencial e nunca a devolve depois de salva. Você pode substituí-la mais tarde na página de configurações do modelo.
 
 </Step>
 
-<Step title="Chamar o modelo">
+<Step title="Chame o modelo">
 
-Use o identificador de modelo gerado com o endpoint habitual de Chat Completions:
+Use o ID de modelo gerado com o endpoint normal de Chat Completions:
 
 ```bash cURL
 curl https://api.phaseo.app/v1/chat/completions \
@@ -76,43 +77,51 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-A chave de API usada na chamada deve pertencer ao mesmo espaço de trabalho do modelo privado.
+A chave de API que faz a chamada precisa pertencer ao mesmo espaço de trabalho do modelo privado.
 
 </Step>
 </Steps>
 
-## Como funciona o roteamento
+## Como o roteamento funciona
 
-Os modelos privados usam a mesma interface de solicitações da Phaseo que os modelos do catálogo. Um modelo independente do espaço de trabalho é roteado apenas para seu endpoint configurado. Um endpoint vinculado a um modelo do catálogo entra na lista de provedores segundo sua política **Preferido**, **Pool normal** ou **Somente fallback**. A Phaseo envia a credencial armazenada como token Bearer e substitui o identificador do modelo do provedor configurado.
+Um modelo autônomo do espaço de trabalho só é roteado para o endpoint configurado. Um endpoint vinculado a um modelo do catálogo entra na lista de provedores desse modelo de acordo com sua política de roteamento:
 
-Um modelo privado não se torna uma rota pública de provedor e não fica visível para outros espaços de trabalho. Modelos privados habilitados são incluídos no catálogo autenticado e aparecem no filtro **Privados**.
+| Painel | `routing_policy` na API | Efeito |
+| --- | --- | --- |
+| **Preferido** (padrão) | `preferred` | Sua implantação é tentada antes dos provedores públicos do modelo. |
+| **Grupo normal** | `balanced` | Sua implantação é classificada junto com os provedores públicos. |
+| **Somente alternativa** | `fallback` | Sua implantação só é tentada depois dos provedores públicos. |
+
+O Phaseo envia a credencial armazenada como token Bearer e substitui o ID do modelo upstream configurado.
+
+Um modelo privado nunca se torna uma rota pública de provedor e não fica visível para outros espaços de trabalho. Os modelos privados habilitados entram no catálogo de modelos autenticado e aparecem no filtro **Privados**.
 
 <Note>
-Após adicionar ou habilitar uma implantação privada em um modelo existente do catálogo, aguarde de 5 a 10 segundos para a mudança se propagar pela camada de API antes de testar o roteamento. Nesse intervalo, as solicitações podem continuar usando os provedores públicos existentes do modelo. Solicitações já em andamento não são reroteadas.
+Depois de adicionar, alterar ou habilitar uma implantação privada, aguarde até um minuto antes de testar o roteamento. Até lá, algumas solicitações ainda podem usar a configuração anterior, como os provedores públicos do modelo. Solicitações já em andamento não são redirecionadas.
 </Note>
 
 ## Exemplos de provedores
 
 | Implantação | O que informar |
 | --- | --- |
-| Endpoint dedicado Baseten | Sua URL base compatível com OpenAI, identificador do modelo da implantação e chave de API |
-| Endpoint web Modal | Um endpoint HTTPS público que implementa o contrato OpenAI Chat Completions |
-| Endpoint sem servidor RunPod | Uma URL de proxy compatível com OpenAI e credencial Bearer |
-| Implantação dedicada Fireworks ou Together | A URL dedicada compatível com OpenAI e o identificador do modelo do provedor |
-| vLLM | A URL pública terminada em `/v1` e o nome do modelo servido por vLLM |
+| Endpoint dedicado do Baseten | A URL base compatível com OpenAI, o ID do modelo da implantação e a chave de API |
+| Endpoint web do Modal | Um endpoint HTTPS público que implemente o contrato de Chat Completions da OpenAI |
+| Endpoint serverless do RunPod | Uma URL de proxy compatível com OpenAI e uma credencial Bearer |
+| Implantação dedicada do Fireworks ou Together | A URL dedicada compatível com OpenAI e o ID do modelo no provedor |
+| vLLM | A URL pública terminando em `/v1` e o nome do modelo servido pelo vLLM |
 
-Os produtos dos provedores e os formatos de URL podem mudar. Confirme a URL base, o identificador do modelo, o método de autenticação e os endpoints suportados na documentação atual de implantação do provedor.
+Os produtos e formatos de URL dos provedores podem mudar. Confirme a URL base, o ID do modelo, o método de autenticação e os endpoints aceitos na documentação de implantação atual do provedor.
 
 ## Gerenciar modelos privados pela API
 
-A administração no servidor pode usar a [API de modelos privados](../api-reference/endpoint/private-models-list) com uma chave de gerenciamento que tenha `private_models:read`, `private_models:write` ou `private_models:delete`, conforme necessário.
+A administração no servidor pode usar a [API de Modelos privados](../api-reference/endpoint/private-models-list) com uma chave de gerenciamento que tenha `private_models:read`, `private_models:write` ou `private_models:delete`, conforme necessário.
 
-Solicitações de criação e atualização aceitam `model_reference`, como identificador exato de modelo do catálogo ou slug curto. A Phaseo deriva `model_id`; os clientes não podem enviá-lo diretamente. Use `host_provider_id` para um provedor existente da Phaseo ou `custom_provider_name` e, opcionalmente, `custom_provider_url` para outro operador.
+As solicitações de criação e atualização aceitam `model_reference`, que pode ser um ID exato de modelo do catálogo ou um slug curto. O Phaseo deriva `model_id`; os clientes não podem enviá-lo diretamente. Use `host_provider_id` para um provedor existente do Phaseo, ou `custom_provider_name` e o opcional `custom_provider_url` para outro operador.
 
 ## Solução de problemas
 
-- **404 do provedor:** Verifique se a URL base termina antes do caminho de inferência.
-- **Modelo desconhecido:** Copie o identificador da implantação do provedor para **ID do modelo do provedor**. Não use ali o identificador de modelo do espaço de trabalho da Phaseo.
-- **Solicitação ao provedor não autorizada:** Substitua a credencial armazenada e confirme que o provedor aceita autenticação Bearer.
-- **Chat funciona, mas Responses falha:** Desative **Responses API**, a menos que o provedor implemente `/responses` nativamente.
-- **Modelo ausente do catálogo:** Confirme que o modelo está habilitado e que o chamador está autenticado no mesmo espaço de trabalho.
+- **404 do provedor:** confira se a URL base termina antes do caminho de inferência.
+- **Modelo desconhecido:** copie o ID da implantação upstream do provedor em **ID do modelo no provedor**. Não use ali o ID de modelo do espaço de trabalho do Phaseo.
+- **Solicitação upstream não autorizada:** substitua a credencial armazenada e confirme que o provedor aceita autenticação Bearer.
+- **Chat funciona, mas Responses falha:** desative **Responses API**, a menos que o provedor implemente `/responses` nativamente.
+- **Modelo ausente do catálogo:** confirme que o modelo está habilitado e que quem chama está autenticado no mesmo espaço de trabalho.

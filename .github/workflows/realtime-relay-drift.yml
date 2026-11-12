@@ -1,0 +1,32 @@
+name: Realtime relay changes
+
+# phaseo-realtime (the realtime voice relay) deploys only in maintenance
+# windows, not on merge. This flags pull requests that change code it runs, so
+# nobody assumes the change is live after merging. It never fails a PR.
+on:
+    pull_request:
+        paths:
+            - "apps/api/src/core/realtime-*.ts"
+            - "apps/api/src/core/live-*.ts"
+            - "apps/api/src/core/elevenlabs-realtime.ts"
+            - "apps/api/src/realtime-worker.ts"
+            - "apps/api/wrangler.realtime.toml"
+            - "supabase/schemas/public/functions/gateway_realtime_*.sql"
+
+permissions:
+    contents: read
+
+jobs:
+    notice:
+        name: Realtime relay deploy notice
+        runs-on: ubuntu-latest
+        steps:
+            - name: Explain when relay changes reach customers
+              run: |
+                  message="This PR changes code that runs in phaseo-realtime, the realtime voice relay. Merging deploys phaseo-gateway as usual, but the relay keeps running its current code until the next realtime maintenance window (realtime-relay-deploy workflow, .agents/skills/realtime-maintenance). Keep database functions and session fields compatible with the deployed relay until then."
+                  echo "::warning title=Realtime relay changes ship in a maintenance window::$message"
+                  {
+                    echo "### Realtime relay changes ship in a maintenance window"
+                    echo
+                    echo "$message"
+                  } >> "$GITHUB_STEP_SUMMARY"

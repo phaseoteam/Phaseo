@@ -1,14 +1,10 @@
 ---
 title: "Effect AI SDK"
 icon: "square-function"
-description: "Effectを使うTypeScriptアプリケーションからPhaseoを利用します。"
+description: "Effect の TypeScript アプリケーションから Phaseo を使います。"
 ---
 
-アプリケーションですでにEffectを使っており、EffectのサービスやワークフローからPhaseoを利用したい場合に、このガイドを使います。
-
-## 状況
-
-PhaseoはOpenAI互換のHTTPエンドポイントを提供します。Effectの公式プロバイダーパッケージが必要なプロバイダーに直接対応していれば便利です。インストール済みのEffect OpenAIパッケージにBase URLオプションがない場合は、Effect HTTPクライアントからPhaseoを呼ぶか、[OpenAI SDK](./openai-sdk.mdx)を独自のEffectレイヤーでラップします。
+Effect の HTTP クライアントで Phaseo の OpenAI 互換エンドポイントを呼び出すか、[OpenAI SDK](./openai-sdk.mdx) を Effect のレイヤーでラップします。Effect 独自の OpenAI プロバイダーパッケージは、インストールしたバージョンがカスタムの Base URL を受け付ける場合にのみ使ってください。
 
 ## インストール
 
@@ -16,7 +12,7 @@ PhaseoはOpenAI互換のHTTPエンドポイントを提供します。Effectの�
 npm install effect @effect/platform
 ```
 
-## Effect HTTPでPhaseoを呼び出す
+## Effect HTTP で Phaseo を呼び出す
 
 ```ts
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "@effect/platform";
@@ -31,7 +27,7 @@ const generate = Effect.gen(function* () {
 	).pipe(
 		HttpClientRequest.bearerToken(Redacted.value(apiKey)),
 		HttpClientRequest.jsonBody({
-			model: "openai/gpt-5-nano",
+			model: "openai/gpt-6-astra",
 			messages: [{ role: "user", content: "Reply with only: ok" }],
 		}),
 	);
@@ -44,9 +40,11 @@ const generate = Effect.gen(function* () {
 const runnable = generate.pipe(Effect.provide(FetchHttpClient.layer));
 ```
 
-## OpenAI SDKをEffectサービスに組み込む
+実行すると、メッセージが `ok` の Chat Completions レスポンスが返ります。
 
-他の場所ですでに公式OpenAI SDKを使っている場合は、Phaseoの設定を1つのレイヤーにまとめます。
+## OpenAI SDK を Effect のレイヤーでラップする
+
+すでに OpenAI SDK を使っている場合は、Phaseo の設定を 1 か所にまとめます。
 
 ```ts
 import OpenAI from "openai";
@@ -62,15 +60,9 @@ const makeClient = Effect.gen(function* () {
 });
 ```
 
-## 注意事項
+アプリ全体でプロバイダー形式の抽象化を使いたい場合は、これをもとにカスタムレイヤーを作成します。
 
-- OpenAI互換の呼び出しには`https://api.phaseo.app/v1`を使います。
-- モデルIDは`openai/gpt-5-nano`のようにPhaseo形式で指定します。
-- アプリ全体で共通のプロバイダー抽象化を使う場合は、独自のEffectレイヤーを作成します。
-- 本番投入前に、実際に使用するEffectパッケージのバージョンでストリーミングとツール呼び出しをテストします。
+## 既知の制限
 
-## 関連項目
-
-- [OpenAI SDK](./openai-sdk.mdx)
-- [AI SDK](./ai-sdk.mdx)
-- [ストリーミング](../streaming.mdx)
+- モデル ID は `openai/gpt-6-astra` のような Phaseo の形式のままにします。
+- 本番環境の前に、お使いの Effect パッケージの正確なバージョンで[ストリーミング](../streaming.mdx)とツール呼び出しをテストしてください。

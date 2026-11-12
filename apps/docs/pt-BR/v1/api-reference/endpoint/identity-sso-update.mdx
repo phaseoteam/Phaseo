@@ -1,6 +1,9 @@
 ---
-title: "Atualizar o SSO do workspace"
+title: "Atualizar o SSO do espaço de trabalho"
+sidebarTitle: "Atualizar o SSO"
 badge: "Beta"
 openapi: "/pt-BR/openapi/v1/openapi.localized.yaml PUT /identity/sso"
 ---
 <Note>A administração de identidade exige uma identidade de proprietário ou administrador. A ativação de SSO ou SCIM e a criação de tokens de provisionamento exigem o complemento de identidade.</Note>
+
+Só o proprietário do espaço de trabalho pode alterar as configurações de login único, porque os logins pelo provedor de identidade são vinculados aos usuários do diretório do espaço de trabalho.

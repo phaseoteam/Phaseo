@@ -1,10 +1,21 @@
-import { z } from "zod";
-import { dispatchBackground, getBindingsIfConfigured, getCache, getSupabaseAdmin } from "@/runtime/env";
+import * as z from "zod";
+import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
+import { knownCatalogueRevision } from "@core/catalogue-revision";
+import { invalidateTieredL1, tieredReadDetailed, writeTiered } from "@core/tiered-cache";
 
-export const PUBLIC_CATALOG_MAX_AGE_MS = 300_000;
-const MAX_ENTRIES = 32;
-const MAX_BYTES = 256_000;
-const REFRESH_AFTER_MS = 60_000;
+/**
+ * Model catalogue data is always served from cache, stale-while-revalidate.
+ * A snapshot stays usable until the next scheduled catalogue boundary (route,
+ * capability or price activation/expiry). When a boundary is near, the loader
+ * also fetches the post-boundary snapshot so readers switch exactly on time
+ * without a database read. Catalogue edits are picked up in the background by
+ * comparing the snapshot revision with the published catalogue revision.
+ */
+const NEXT_SNAPSHOT_PREFETCH_MS = 15 * 60_000;
+// Used only when no catalogue revision has been published (staging).
+const UNPUBLISHED_REVISION_REFRESH_S = 300;
+const MAX_ENTRY_BYTES = 512_000;
+const CATALOG_KEY_PREFIX = "gateway:public-catalog:v2:";
 const record = z.record(z.string(), z.unknown());
 const publicProvider = record.refine(row =>
     typeof row.provider_id === "string" && typeof row.api_model_id === "string" &&
@@ -16,8 +27,33 @@ const catalogSchema = z.object({
     checkedAt: z.number().finite(), expiresAt: z.number().finite(),
     variants: z.array(z.object({ endpoint: z.string(), providers: z.array(publicProvider), pricing: record }).strict()).min(1).max(2),
     providerRows: z.array(record), routeModes: z.array(record),
+    revision: z.string().nullable(),
+    boundaryAt: z.number().finite().nullable(),
 }).strict();
+const entrySchema = z.object({ current: catalogSchema, next: catalogSchema.nullable() }).strict();
 export type PublicCatalogSnapshot = z.infer<typeof catalogSchema>;
+type CatalogEntry = z.infer<typeof entrySchema>;
+/**
+ * The workspace-scoped, model-independent part of the bundle RPC: BYOK key metadata (never
+ * secrets), workspace settings and billing mode. Cached per workspace, key and version token
+ * (context.ts) so a request for a model this workspace has not used yet needs no workspace RPC.
+ */
+export type WorkspaceBundle = {
+    workspaceId: string;
+    byok: Record<string, Record<string, unknown>[]>;
+    settings: Record<string, unknown>;
+    billingMode: "wallet" | "invoice";
+    /** Epoch ms when the RPC returned it. */
+    at: number;
+};
+const workspaceBundleSchema = z.object({
+    workspaceId: z.string().min(1), byok: z.record(z.string(), z.array(record)), settings: record,
+    billingMode: z.enum(["wallet", "invoice"]), at: z.number().finite(),
+}).strict();
+export function parseWorkspaceBundle(value: unknown): WorkspaceBundle | null {
+    const parsed = workspaceBundleSchema.safeParse(value);
+    return parsed.success ? parsed.data : null;
+}
 export type ContextBundle = {
     variants: { endpoint: string; payload: Record<string, unknown> }[];
     catalog: PublicCatalogSnapshot;
@@ -26,139 +62,264 @@ export type ContextBundle = {
     cacheStatus: "hit" | "miss" | "bypass";
     catalogReadMs: number;
     rpcMs: number;
+    /** The workspace part used: the caller's cached copy, or the one this load fetched. */
+    workspace: WorkspaceBundle;
+    /** True when `workspace` came from the caller; the variants then carry no account data. */
+    workspaceFromCache: boolean;
 };
-const entries = new Map<string, { value: PublicCatalogSnapshot; refreshAfter: number }>();
 export const publicCatalogEndpoints = (endpoint: string): string[] =>
     endpoint === "text.generate" ? [endpoint] : ["text.generate", endpoint];
 export const publicCatalogKey = (model: string, endpoints: string[]) =>
-    `gateway:public-catalog:v1:${JSON.stringify([model, endpoints])}`;
+    `${CATALOG_KEY_PREFIX}${JSON.stringify([model, endpoints])}`;
 
 export function contextBundleEnabled(): boolean {
     return getBindingsIfConfigured()?.GATEWAY_CONTEXT_BUNDLE_ENABLED === "true";
 }
 
-function fresh(value: PublicCatalogSnapshot, model: string, endpoints: string[]): boolean {
-    const now = Date.now();
-    return value.model === model && value.checkedAt <= now && value.expiresAt > now &&
-        value.expiresAt <= value.checkedAt + PUBLIC_CATALOG_MAX_AGE_MS &&
-        JSON.stringify(value.endpoints) === JSON.stringify(endpoints) &&
-        value.variants.length === endpoints.length &&
-        value.variants.every((variant, index) => variant.endpoint === endpoints[index]);
+function matches(snapshot: PublicCatalogSnapshot, model: string, endpoints: string[]): boolean {
+    return snapshot.model === model &&
+        JSON.stringify(snapshot.endpoints) === JSON.stringify(endpoints) &&
+        snapshot.variants.length === endpoints.length &&
+        snapshot.variants.every((variant, index) => variant.endpoint === endpoints[index]);
 }
 
-function remember(key: string, value: PublicCatalogSnapshot): void {
-    if (JSON.stringify(value).length > MAX_BYTES) return;
-    const existing = entries.get(key);
-    // An older replica or delayed refresh must not replace a newer snapshot.
-    if (existing && existing.value.checkedAt > value.checkedAt) return;
-    if (!entries.has(key) && entries.size >= MAX_ENTRIES) entries.delete(entries.keys().next().value!);
-    entries.set(key, { value: structuredClone(value), refreshAfter: Date.now() + REFRESH_AFTER_MS });
+function catalogPolicyBoundary(snapshot: PublicCatalogSnapshot): number | null {
+    const managed = snapshot.variants.some(variant => variant.providers.some(row =>
+        (row.capability_params as { data_policy?: { catalogManaged?: boolean } } | undefined)?.data_policy?.catalogManaged === true));
+    return managed ? Math.min(snapshot.boundaryAt ?? Infinity, snapshot.checkedAt + 300_000) : snapshot.boundaryAt;
 }
 
-async function readCatalogFromKv(cache: KVNamespace, model: string, endpoints: string[]): Promise<PublicCatalogSnapshot | null> {
-    const key = publicCatalogKey(model, endpoints);
-    try {
-        const raw = await cache.get(key, { type: "text", cacheTtl: 30 });
-        if (!raw || raw.length > MAX_BYTES) return null;
-        const parsed = catalogSchema.safeParse(JSON.parse(raw));
-        if (!parsed.success || !fresh(parsed.data, model, endpoints)) return null;
-        remember(key, parsed.data);
-        return parsed.data;
-    } catch { return null; }
+function covers(snapshot: PublicCatalogSnapshot, now: number): boolean {
+    const boundary = catalogPolicyBoundary(snapshot);
+    return snapshot.checkedAt <= now && (boundary === null || now < boundary);
 }
 
-export async function publicCatalogHasRefreshHeadroom(model: string, endpoints: string[]): Promise<boolean> {
-    // The publisher runs every two minutes. Reuse a validated snapshot only
-    // when it remains valid beyond the next tick; never extend its deadline.
-    const catalog = await readCatalogFromKv(getCache(), model, endpoints);
-    return Boolean(catalog && catalog.expiresAt > Date.now() + 120_000 &&
-        catalog.variants.some(variant => variant.providers.length > 0));
+/** The snapshot valid at `now`, or `null` when a boundary passed without a prefetched successor. */
+export function selectCatalogSnapshot(entry: CatalogEntry, now = Date.now()): PublicCatalogSnapshot | null {
+    if (covers(entry.current, now)) return entry.current;
+    if (entry.next && covers(entry.next, now)) return entry.next;
+    return null;
 }
 
-async function readCatalog(model: string, endpoints: string[]): Promise<PublicCatalogSnapshot | null> {
-    const key = publicCatalogKey(model, endpoints);
-    const local = entries.get(key);
-    if (local && fresh(local.value, model, endpoints)) {
-        if (Date.now() >= local.refreshAfter) {
-            local.refreshAfter = Date.now() + REFRESH_AFTER_MS;
-            // Capture the binding before the request runtime is released. Never
-            // share a request's I/O promise with another Worker invocation.
-            dispatchBackground(readCatalogFromKv(getCache(), model, endpoints));
-        }
-        return structuredClone(local.value);
-    }
-    entries.delete(key);
-    return readCatalogFromKv(getCache(), model, endpoints);
+function hasPublicProviders(entry: CatalogEntry | null): boolean {
+    return Boolean(entry?.current.variants.some(variant => variant.providers.length > 0));
 }
 
-export async function publishPublicCatalog(input: unknown, expected?: { model: string; endpoints: string[] }): Promise<boolean> {
-    const parsed = catalogSchema.safeParse(input);
-    if (!parsed.success) return false;
-    const value = parsed.data;
-    if (!fresh(value, expected?.model ?? value.model, expected?.endpoints ?? value.endpoints)) return false;
-    // Unknown/hidden models can be workspace-private identifiers. Avoid putting
-    // their names into a shared negative cache; private-route lookup stays scoped.
-    if (value.variants.every(variant => variant.providers.length === 0)) return false;
-    const raw = JSON.stringify(value);
-    if (raw.length > MAX_BYTES) return false;
-    const key = publicCatalogKey(value.model, value.endpoints);
-    remember(key, value);
-    // Absolute expiresAt is checked on every read, including deadlines below
-    // KV's 60-second minimum expiration TTL and replicas with stale values.
-    await getCache().put(key, raw, {
-        expirationTtl: Math.max(60, Math.ceil((value.expiresAt - Date.now()) / 1000)),
+async function fetchSnapshot(model: string, endpoints: string[], at: number): Promise<PublicCatalogSnapshot> {
+    const { data, error } = await getSupabaseAdmin().rpc("gateway_fetch_public_catalog_at", {
+        p_model: model, p_endpoints: endpoints, p_at: new Date(at).toISOString(),
     });
-    return true;
+    if (error) throw new Error("gateway_public_catalog_refresh_failed");
+    const snapshot = catalogSchema.parse(data);
+    if (!matches(snapshot, model, endpoints)) throw new Error("gateway_public_catalog_mismatch");
+    return snapshot;
+}
+
+export async function fetchCatalogEntry(model: string, endpoints: string[]): Promise<CatalogEntry> {
+    const current = await fetchSnapshot(model, endpoints, Date.now());
+    const next = current.boundaryAt !== null && current.boundaryAt - Date.now() <= NEXT_SNAPSHOT_PREFETCH_MS
+        ? await fetchSnapshot(model, endpoints, current.boundaryAt)
+        : null;
+    return { current, next };
+}
+
+function catalogCacheOptions(model: string, endpoints: string[]) {
+    return {
+        key: publicCatalogKey(model, endpoints),
+        loader: () => fetchCatalogEntry(model, endpoints),
+        l1FreshMs: 30_000,
+        l2: { freshS: 60, storeS: 86_400 },
+        l3: { freshS: UNPUBLISHED_REVISION_REFRESH_S },
+        validate: (value: unknown): value is CatalogEntry => {
+            const parsed = entrySchema.safeParse(value);
+            return parsed.success && matches(parsed.data.current, model, endpoints) &&
+                JSON.stringify(parsed.data).length <= MAX_ENTRY_BYTES;
+        },
+        isUsable: (entry: CatalogEntry) => selectCatalogSnapshot(entry) !== null,
+        isFreshInL3: (entry: CatalogEntry) => {
+            const now = Date.now();
+            if (selectCatalogSnapshot(entry, now) !== entry.current) return false;
+            const boundaryAt = entry.current.boundaryAt;
+            if (boundaryAt !== null && !entry.next && boundaryAt - now <= NEXT_SNAPSHOT_PREFETCH_MS) return false;
+            const revision = knownCatalogueRevision();
+            return revision === null ? undefined : entry.current.revision === revision;
+        },
+        // Unknown or hidden names can be workspace-private model identifiers;
+        // keep them out of the shared layers.
+        isShareable: (entry: CatalogEntry | null) => hasPublicProviders(entry),
+    };
+}
+
+async function readCatalogEntry(model: string, endpoints: string[]): Promise<{ entry: CatalogEntry | null; loaded: boolean }> {
+    // Starts (or reuses) the background revision refresh before freshness is checked.
+    knownCatalogueRevision();
+    const result = await tieredReadDetailed<CatalogEntry>(catalogCacheOptions(model, endpoints));
+    return { entry: result.value, loaded: result.source === "loader" };
+}
+
+/** Replaces the cached entry everywhere after an authoritative reload. */
+async function rememberCatalogEntry(model: string, endpoints: string[], entry: CatalogEntry): Promise<void> {
+    const options = catalogCacheOptions(model, endpoints);
+    invalidateTieredL1(options.key);
+    if (!hasPublicProviders(entry)) return;
+    await writeTiered({ key: options.key, l2: options.l2, l3: options.l3 }, entry);
 }
 
 export async function loadTextContextBundle(args: {
     workspaceId: string; apiKeyId: string; model: string; endpoint: string; disableCache?: boolean;
-    /** Diagnostics: exercise shared KV without reusing this isolate's snapshot. */
+    /** Diagnostics: exercise shared layers without reusing this isolate's snapshot. */
     skipCatalogMemoryCache?: boolean;
+    /**
+     * A cached workspace part. The workspace RPC is skipped and only the model's catalogue data
+     * is loaded. The variants' account fields (key, key limit, credit, enrichment) are then
+     * placeholders: the caller must take them from its own cached copies, never from here.
+     */
+    workspace?: WorkspaceBundle | null;
 }): Promise<ContextBundle> {
+    const cachedWorkspace = args.workspace && args.workspace.workspaceId === args.workspaceId ? args.workspace : null;
+    if (cachedWorkspace) return composeFromCachedWorkspace(args, cachedWorkspace);
     const endpoints = publicCatalogEndpoints(args.endpoint);
     const cacheStarted = performance.now();
-    let catalog = args.disableCache ? null : args.skipCatalogMemoryCache
-        ? await readCatalogFromKv(getCache(), args.model, endpoints)
-        : await readCatalog(args.model, endpoints);
-    const catalogReadMs = performance.now() - cacheStarted;
-    const cacheStatus = args.disableCache ? "bypass" : catalog ? "hit" : "miss";
-    const rpcStarted = performance.now();
-    const { data, error } = await getSupabaseAdmin().rpc("gateway_fetch_request_context_bundle", {
-        workspace_id: args.workspaceId, api_key_id: args.apiKeyId, model: args.model,
-        endpoint: args.endpoint, include_catalog: !catalog,
+    if (args.skipCatalogMemoryCache) invalidateTieredL1(publicCatalogKey(args.model, endpoints));
+    let catalogReadMs = 0;
+    // The workspace-scoped RPC and the catalogue lookup are independent; on a
+    // warm isolate the catalogue resolves from memory without any I/O.
+    const catalogPromise = (args.disableCache
+        ? fetchCatalogEntry(args.model, endpoints).then(entry => ({ entry, loaded: true }))
+        : readCatalogEntry(args.model, endpoints)
+    ).then(result => {
+        catalogReadMs = performance.now() - cacheStarted;
+        return result;
     });
-    if (error) throw new Error(`gateway_context_bundle_error:${error.message ?? "unknown"}`);
-    let rpcMs = performance.now() - rpcStarted;
+    const rpcStarted = performance.now();
+    const bundlePromise = getSupabaseAdmin().rpc("gateway_fetch_request_context_bundle", {
+        workspace_id: args.workspaceId, api_key_id: args.apiKeyId, model: args.model,
+        endpoint: args.endpoint, include_catalog: false,
+    }).then(result => ({ ...result, ms: performance.now() - rpcStarted }));
+    const [{ entry, loaded }, rpc] = await Promise.all([catalogPromise, bundlePromise]);
+    if (rpc.error) throw new Error(`gateway_context_bundle_error:${rpc.error.message ?? "unknown"}`);
+    let rpcMs = rpc.ms;
     const bundle = z.object({
         context: record, byok: z.record(z.string(), z.array(record)), settings: record,
-        billingMode: z.enum(["wallet", "invoice"]), catalog: catalogSchema.nullable(),
-    }).parse(data);
+        billingMode: z.enum(["wallet", "invoice"]), catalog: z.unknown(),
+    }).parse(rpc.data);
     if (bundle.context.workspace_id !== args.workspaceId) throw new Error("gateway_context_bundle_workspace_mismatch");
-    // Alias edits or a deadline crossed while loading access require a fresh
-    // catalog. Never use another model's routes or re-age a stale snapshot.
-    if (!catalog || !fresh(catalog, args.model, endpoints) || catalog.resolvedModel !== bundle.context.resolved_model) {
-        if (bundle.catalog && fresh(bundle.catalog, args.model, endpoints)) catalog = bundle.catalog;
-        else {
-            const refreshStarted = performance.now();
-            const refreshed = await getSupabaseAdmin().rpc("gateway_fetch_public_catalog", { p_model: args.model, p_endpoints: endpoints });
-            rpcMs += performance.now() - refreshStarted;
-            if (refreshed.error) throw new Error("gateway_public_catalog_refresh_failed");
-            catalog = catalogSchema.parse(refreshed.data);
-        }
-        if (!fresh(catalog, args.model, endpoints) || catalog.resolvedModel !== bundle.context.resolved_model) {
+
+    let catalog = entry ? selectCatalogSnapshot(entry) : null;
+    const cacheStatus = args.disableCache ? "bypass" : catalog && !loaded ? "hit" : "miss";
+    // An alias edit can move the model before the background revalidation
+    // lands. Never use another model's routes: reload authoritatively.
+    if (!catalog || catalog.resolvedModel !== bundle.context.resolved_model) {
+        const refreshStarted = performance.now();
+        const reloaded = await fetchCatalogEntry(args.model, endpoints);
+        rpcMs += performance.now() - refreshStarted;
+        catalog = selectCatalogSnapshot(reloaded);
+        if (!catalog || catalog.resolvedModel !== bundle.context.resolved_model) {
             throw new Error("gateway_public_catalog_changed_during_request");
         }
-        if (!args.disableCache) dispatchBackground(publishPublicCatalog(catalog).catch(() => false));
+        if (!args.disableCache) await rememberCatalogEntry(args.model, endpoints, reloaded).catch(() => undefined);
     }
+    const workspace: WorkspaceBundle = {
+        workspaceId: args.workspaceId, byok: bundle.byok, settings: bundle.settings, billingMode: bundle.billingMode, at: Date.now(),
+    };
+    return compose(catalog, bundle.context, workspace, { cacheStatus, catalogReadMs, rpcMs, workspaceFromCache: false });
+}
+
+function compose(
+    catalog: PublicCatalogSnapshot,
+    context: Record<string, unknown>,
+    workspace: WorkspaceBundle,
+    meta: Pick<ContextBundle, "cacheStatus" | "catalogReadMs" | "rpcMs" | "workspaceFromCache">,
+): ContextBundle {
+    const selected = { ...catalog, boundaryAt: catalogPolicyBoundary(catalog) };
     return {
-        catalog, settings: bundle.settings, billingMode: bundle.billingMode, cacheStatus, catalogReadMs, rpcMs,
-        variants: catalog.variants.map(variant => ({ endpoint: variant.endpoint, payload: {
-            ...bundle.context, pricing: structuredClone(variant.pricing),
+        ...meta, workspace,
+        catalog: selected, settings: structuredClone(workspace.settings), billingMode: workspace.billingMode,
+        variants: selected.variants.map(variant => ({ endpoint: variant.endpoint, payload: {
+            ...context, pricing: structuredClone(variant.pricing),
             providers: variant.providers.map(provider => ({
                 ...structuredClone(provider),
-                byok_meta: structuredClone(bundle.byok[String(provider.provider_id)] ?? []),
+                byok_meta: structuredClone(workspace.byok[String(provider.provider_id)] ?? []),
             })),
         } })),
     };
+}
+
+type AliasRow = { model_slug: string | null };
+type RouteRow = { model_slug: string | null; provider_model_id: string | null; effective_from: string | null; effective_to: string | null };
+
+/**
+ * Resolves the requested model now, with the same rules and tables as the workspace RPC
+ * (private.gateway_context_access): an enabled alias, else the provider-scoped route slug
+ * (`provider/provider_model_slug`) of a routing-enabled route in its effective window (latest
+ * effective_from first, then provider_model_id), else the name itself. Two small indexed reads,
+ * in parallel. Throws on a database error, as the RPC would.
+ */
+export async function resolveRequestedModel(model: string): Promise<string> {
+    const supabase = getSupabaseAdmin();
+    const slash = model.indexOf("/");
+    const [alias, route] = await Promise.all([
+        supabase.from("v2_model_aliases").select("model_slug").eq("alias_slug", model).eq("enabled", true)
+            .not("model_slug", "is", null).limit(1),
+        slash > 0
+            ? supabase.from("v2_model_provider_routes").select("model_slug,provider_model_id,effective_from,effective_to")
+                .eq("provider_slug", model.slice(0, slash)).eq("provider_model_slug", model.slice(slash + 1)).eq("routing_enabled", true)
+            : Promise.resolve({ data: [] as RouteRow[], error: null }),
+    ]);
+    if (alias.error || route.error) throw new Error("gateway_model_resolution_failed");
+    const aliased = ((alias.data ?? []) as unknown as AliasRow[]).find(row => typeof row.model_slug === "string")?.model_slug;
+    if (aliased) return aliased;
+    const now = Date.now();
+    const at = (value: string | null) => (value ? Date.parse(value) : Number.NaN);
+    const routed = ((route.data ?? []) as unknown as RouteRow[])
+        .filter(row => typeof row.model_slug === "string" && !(at(row.effective_from) > now) && !(at(row.effective_to) <= now))
+        .sort((left, right) => (at(right.effective_from) || 0) - (at(left.effective_from) || 0) ||
+            String(left.provider_model_id ?? "").localeCompare(String(right.provider_model_id ?? "")))[0];
+    return routed?.model_slug ?? model;
+}
+
+/**
+ * Builds the bundle for a new model from the public catalogue and a cached workspace part, with
+ * no workspace RPC. The model is resolved fresh (resolveRequestedModel), as the RPC does, and the
+ * catalogue snapshot is reloaded when it disagrees, exactly as on the RPC path. An alias edit
+ * therefore reaches this path as soon as it reaches a full load.
+ */
+async function composeFromCachedWorkspace(
+    args: { workspaceId: string; model: string; endpoint: string; disableCache?: boolean; skipCatalogMemoryCache?: boolean },
+    workspace: WorkspaceBundle,
+): Promise<ContextBundle> {
+    const endpoints = publicCatalogEndpoints(args.endpoint);
+    const started = performance.now();
+    if (args.skipCatalogMemoryCache) invalidateTieredL1(publicCatalogKey(args.model, endpoints));
+    let catalogReadMs = 0;
+    const catalogPromise = (args.disableCache
+        ? fetchCatalogEntry(args.model, endpoints).then(entry => ({ entry, loaded: true }))
+        : readCatalogEntry(args.model, endpoints)
+    ).then(result => {
+        catalogReadMs = performance.now() - started;
+        return result;
+    });
+    const resolveStarted = performance.now();
+    const resolvedPromise = resolveRequestedModel(args.model).then(value => ({ value, ms: performance.now() - resolveStarted }));
+    const [{ entry, loaded }, resolved] = await Promise.all([catalogPromise, resolvedPromise]);
+    let rpcMs = resolved.ms;
+    let catalog = entry ? selectCatalogSnapshot(entry) : null;
+    let reloaded = loaded;
+    // Same rule as the RPC path: never use another model's routes; reload authoritatively.
+    if (!catalog || catalog.resolvedModel !== resolved.value) {
+        const refreshStarted = performance.now();
+        const fresh = await fetchCatalogEntry(args.model, endpoints);
+        reloaded = true;
+        rpcMs += performance.now() - refreshStarted;
+        catalog = selectCatalogSnapshot(fresh);
+        if (!catalog || catalog.resolvedModel !== resolved.value) throw new Error("gateway_public_catalog_changed_during_request");
+        if (!args.disableCache) await rememberCatalogEntry(args.model, endpoints, fresh).catch(() => undefined);
+    }
+    // Placeholders only: context.ts replaces every account field with its cached copies.
+    const context = {
+        workspace_id: args.workspaceId, resolved_model: resolved.value, preset: null,
+        key_ok: { ok: true, reason: null }, key_limit_ok: { ok: true, reason: null }, credit_ok: { ok: true, reason: null },
+    };
+    const cacheStatus = args.disableCache ? "bypass" : reloaded ? "miss" : "hit";
+    return compose(catalog, context, workspace, { cacheStatus, catalogReadMs, rpcMs, workspaceFromCache: true });
 }

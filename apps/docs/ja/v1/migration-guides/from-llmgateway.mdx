@@ -1,117 +1,99 @@
 ---
 title: "LLM Gateway からの移行"
 sidebarTitle: "LLM Gateway"
-description: "OpenAI 互換エンドポイントの切り替え、モデルIDの確認、段階的な検証を行い、LLMGateway から Phaseo Gateway に移行します。"
+description: "OpenAI 互換エンドポイントの切り替え、モデル ID の確認、段階的な展開の検証を行い、LLMGateway から Phaseo Gateway に移行します。"
 icon: "/icons/brands/llmgateway.svg"
 ---
 
-OpenAI 互換クライアントで LLM Gateway を利用している場合、多くはリクエストペイロードを変更せず、まず Gateway の境界だけを切り替えられます。
+ベース URL とキーを切り替え、リクエストのペイロードはそのままにして、各モデル ID を対応付けます。LLM Gateway のプレフィックスは提供元のプロバイダーを表し、Phaseo のプレフィックスはモデルの開発元を表します。
 
-## 変更点
-
-| 設定 | 変更前 | 変更後 |
+| 設定 | LLM Gateway | Phaseo |
 | --- | --- | --- |
-| ベースURL | `https://api.llmgateway.io/v1` | `https://api.phaseo.app/v1` |
-| APIキー | `LLM_GATEWAY_API_KEY` | `PHASEO_API_KEY` |
-| モデルエイリアス | 既存の Gateway エイリアス | `GET /v1/models` で確認するか、1か所で正規化 |
-| リクエストペイロード | 既存の OpenAI 互換リクエスト | 最初の移行では変更しない |
+| ベース URL | `https://api.llmgateway.io/v1` | `https://api.phaseo.app/v1` |
+| Anthropic 形式のクライアント | `ANTHROPIC_BASE_URL=https://api.llmgateway.io` | `https://api.phaseo.app`。[Anthropic SDK からの移行](./from-anthropic)を参照してください |
+| API キー | `LLM_GATEWAY_API_KEY`(`llmgtwy_…`) | `PHASEO_API_KEY` |
+| モデル ID | `gpt-4o`、`<provider>/<model>`、`auto` | `GET /v1/models?format=openai` の `<org>/<model>` |
+| リクエストのペイロード | OpenAI 互換 | 変更なし |
 
-## 開始前に用意するもの
-
-- 現在の LLM Gateway エンドポイントと API キーの設定。
-- ローカル、ステージング、本番環境で利用できる `PHASEO_API_KEY`。
-- 出力品質、レイテンシ、エラー率の基準となるサンプル。
-
-## 1) 連携箇所を洗い出す
-
-LLM Gateway クライアントを作成・設定するファイルを特定します。
-
-- `LLM_GATEWAY_*` 環境変数の使用箇所を探します。
-- 実行時設定にあるベースURLの参照箇所を見つけます。
-- 現在有効なモデルIDとフォールバックの連鎖を記録します。
-- 共有プロンプトの既定値、プロバイダーの許可・拒否ロジック、Gateway プリセットに移すパラメーター設定を記録します。
-
-## 2) エンドポイントと認証情報を切り替える
-
-まずペイロードは変更せず、リスクを抑えるためにエンドポイントとキーだけを切り替えます。
+## クライアントを切り替える
 
 <CodeGroup>
 ```typescript TypeScript
-// Before
 import OpenAI from "openai";
 
-const before = new OpenAI({
-  apiKey: process.env.LLM_GATEWAY_API_KEY,
-  baseURL: "https://api.llmgateway.io/v1",
-});
-```
-
-```typescript TypeScript
-// After
-import OpenAI from "openai";
-
-const after = new OpenAI({
+// Before:
+// new OpenAI({ apiKey: process.env.LLM_GATEWAY_API_KEY, baseURL: "https://api.llmgateway.io/v1" });
+const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 ```
 
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
 ```bash cURL
-curl -s "https://api.phaseo.app/v1/chat/completions" \
+curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
-    "messages": [{"role":"user","content":"Hello"}]
+    "model": "openai/gpt-6-astra",
+    "messages": [{"role": "user", "content": "Hello"}]
   }'
 ```
 </CodeGroup>
 
-## 3) モデルの互換性を確認する
+CI やホスティングの設定も含め、すべての `LLM_GATEWAY_*` 変数を対応付けるか削除してください。アプリが `@llmgateway/ai-sdk-provider` を使っている場合は、[Vercel AI Gateway からの移行](./from-vercel)のとおり `@phaseo/ai-sdk-provider` に切り替えます。
 
-Phaseo のモデルカタログを照会し、本番で使うすべてのモデルを確認します。
+## モデル ID を対応付ける
 
-現在の設定で `gpt-4o` のような接頭辞のないエイリアスを使っている場合は、呼び出し元ごとに変更せず、1か所で正規化します。
-
-これまでの Gateway 層でリクエストの既定値やプロバイダー制限も一元管理していた場合は、呼び出し元ごとに再実装せず、移行中に[プリセット](../guides/presets.mdx)と[ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)へ対応付けます。
+Phaseo の ID を一覧表示し、本番の各モデルと照合します。
 
 ```bash
-curl -s "https://api.phaseo.app/v1/models" \
-  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data | length'
+curl -s "https://api.phaseo.app/v1/models?format=openai" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq -r '.data[].id'
 ```
 
-## 4) LLMGateway 移行チェックリスト
+LLM Gateway の `alibaba/<model>` は Phaseo の ID ではありません。各 ID を Phaseo の `<org>/<model>` に対応付け、プロバイダーの固定は `provider.only` または `provider:org/model` 形式の ID で維持します。`gpt-4o` のようなプレフィックスのないエイリアスは、呼び出し箇所ごとではなく、クライアントの境界にある 1 つの関数で変換してください。
 
-- すべての `LLM_GATEWAY_*` 変数を対応付けるか削除した。
-- ベースURLを `https://api.phaseo.app/v1` に変更した。
-- すべてのデプロイ環境で `PHASEO_API_KEY` を設定した。
-- 本番のモデルIDを `/v1/models` で確認した。
-- ステージングでストリーミングあり・なしのリクエストを検証した。
-- 無効なキーとモデルのエラー処理を再確認した。
-- 必要に応じて、共有プロンプトやルーティングの既定値をプリセットに移した。
-- `GET /v1/generations?id=<request_id>` による生成情報の検索を再確認した。`replay_supported=true` の場合、保存済みの `replay_request` ペイロードから失敗したリクエストを再生できます。
+## Gateway の機能を対応付ける
 
-## 5) 検証して段階的に切り替える
+| LLM Gateway | Phaseo での扱い |
+| --- | --- |
+| `auto` ルーター | `phaseo/auto`([自動ルーティング](../guides/auto-routing)、アルファ版)。`models` とは併用できません。 |
+| フォールバックチェーン | `models` 配列または動的ルート。`429`、`500`、`502`、`503`、`504` で試され、リクエストエラーでは試されません。 |
+| `X-No-Fallback` | `provider.allow_fallbacks: false`、または `provider:org/model` 形式の ID。 |
+| プロバイダーの許可・拒否ロジック | `provider.only`、`provider.ignore`、または[プリセット](../guides/presets)。対象となるプロバイダーを少なくとも 1 つ残してください。 |
+| `X-LLMGateway-<Key>` ヘッダー | `X-Phaseo-Metadata` の[ラベル](../guides/request-labels)。最大 32 個です。 |
+| セッションヘッダー(`x-session-id`) | ボディの `session_id` フィールド。Phaseo はセッションヘッダーを無視します。 |
+| `X-Source` | `HTTP-Referer` または `X-App-Name`。[アプリの帰属](../guides/app-attribution)を参照してください。 |
+| レスポンスキャッシュ | レスポンスキャッシュはありません。 |
+| プロバイダーキー | BYOK(**設定 → BYOK** または `POST /v1/byok`)、または Phaseo のクレジット。クレジットへのフォールバックはワークスペース設定の `byok_fallback_enabled` です。 |
+| リクエストログ | リクエストログ、オブザーバビリティの送信先、`GET /v1/generations?id=<request_id>`。`replay_supported` が `true` の場合は、失敗したリクエストを `replay_request` のペイロードからリプレイできます。 |
 
-1. 基準となるプロンプトセットを実行し、品質、レイテンシ、コストを基準値と比較します。
-2. ステージングで失敗したリクエストを、`GET /v1/generations` が返す再生用ペイロードで復旧できることを確認します。
-3. カナリアフラグを使って公開し、安定したらトラフィックの割合を段階的に増やします。
-4. 古い設定を削除する前に、少なくとも1回のリリースサイクルで本番メトリクスを監視します。
+## テストして展開する
 
-## 検証用コマンド
+基準となるプロンプトを両方の Gateway で実行し、品質、レイテンシー、コストを比較します。まずエンドポイントを確認してください。
 
 ```bash
 curl -s "https://api.phaseo.app/v1/health"
-curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+curl -s "https://api.phaseo.app/v1/models?format=openai" -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-続いて:
+トラフィックを移す前に、次を確認してください。
 
-- ステージングでストリーミングあり・なしのリクエストを実行します。
-- 基準となるプロンプトを再実行し、結果を比較します。
+- すべての環境に `PHASEO_API_KEY` が設定されている
+- 本番のすべてのモデル ID が対応付けられ、一覧に載っている
+- ステージングで非ストリーミングとストリーミングのリクエストが通る
+- 無効なキーと無効なモデルのエラーを処理している。エラーのボディは LLM Gateway と異なる場合があります
+- ステージングで失敗したリクエストを `GET /v1/generations` から復元できる
+- 共有のプロンプトとルーティングの既定値が、本来あるべきプリセットにまとまっている
 
-## 次のステップ
-
-- [OpenRouter からの移行](./from-openrouter.mdx)
-- [Vercel AI Gateway からの移行](./from-vercel.mdx)
-- [クイックスタート](../quickstart.mdx)
+カナリアフラグの背後でリリースし、安定したら少量のトラフィックから全量へ移します。旧設定を削除する前に、少なくとも 1 リリースサイクルは本番のメトリクスを監視してください。

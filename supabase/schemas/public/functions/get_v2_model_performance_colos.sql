@@ -16,7 +16,7 @@ cross join lateral public.get_v2_model_performance_colos_unfiltered(model.model_
 where model.model_slug = lower(trim(p_model_slug))
   and model.hidden = false
   and model.status <> 'disabled'
-  and colos.request_count >= 1;
+  and colos.request_count >= 20;
 $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."get_v2_model_performance_colos"(text) TO "service_role";

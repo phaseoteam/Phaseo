@@ -17,7 +17,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_public_model_weekly_metrics()
     select
       rollup.model_slug,
       sum(rollup.requests)::numeric as requests
-    from public.v2_public_usage_daily rollup
+    from public.reporting_usage_daily rollup
     where rollup.usage_date >= current_date - 6
       and rollup.usage_date <= current_date
     group by rollup.model_slug

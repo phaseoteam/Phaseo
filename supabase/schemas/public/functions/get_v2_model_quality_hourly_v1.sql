@@ -35,6 +35,15 @@ with params as not materialized (
     case when lower(p_context_bucket) in ('lte_4k', '4k_16k', '16k_64k', 'gt_64k') then lower(p_context_bucket) else 'all' end context_bucket,
     now() now_ts
 ),
+threshold as (
+  -- Unfiltered views publish at any volume. A colo, stream or context filter can
+  -- narrow a cohort to one customer's requests, so filtered views need 20.
+  select case
+    when params.cloudflare_colo is null and params.stream_mode = 'all' and params.context_bucket = 'all'
+    then 1 else 20
+  end min_requests
+  from params
+),
 visible_model as (
   select model.model_slug
   from public.v2_models model
@@ -48,15 +57,18 @@ scoped_facts as (
     fact.request_event_id,
     fact.workspace_id,
     fact.request_id,
+    fact.gateway_request_id,
+    fact.gateway_request_created_at,
     fact.occurred_at,
     fact.stream,
+    fact.success,
     fact.cloudflare_colo,
     fact.safe_metadata,
     fact.tool_call_count,
     fact.tool_call_succeeded,
     fact.structured_output_attempted,
     fact.structured_output_succeeded
-  from public.v2_request_facts fact
+  from public.reporting_request_facts fact
   join visible_model
     on visible_model.model_slug = coalesce(fact.routed_model_slug, fact.requested_model_slug)
   cross join params
@@ -91,22 +103,51 @@ usage_by_request as (
           )
         )
       )::numeric input_tokens,
-      sum(usage.quantity) filter (
+      -- The gateway writes no meter row for a zero quantity, so a request with input
+      -- tokens and no cached row is a cache miss (0 cached tokens), not missing telemetry.
+      case when count(*) > 0 then coalesce(sum(usage.quantity) filter (
         where usage.meter_key in ('cached_input_tokens', 'cached_read_tokens')
-      )::numeric cached_read_tokens,
-      bool_or(usage.meter_key in ('cached_input_tokens', 'cached_read_tokens')) cache_telemetry_observed
+      ), 0) end::numeric cached_read_tokens,
+      coalesce(
+        sum(usage.quantity) filter (
+          where usage.meter_key in (
+            'input_tokens', 'prompt_tokens', 'input_text_tokens',
+            'input_image_tokens', 'input_audio_tokens', 'input_video_tokens'
+          )
+        ),
+        0
+      ) > 0 cache_telemetry_observed
     from public.v2_request_usage usage
     where usage.request_event_id = fact.request_event_id
   ) meters on true
+  -- Linked facts read their authoritative request by primary key, which prunes
+  -- to one partition; only unlinked facts fall back to the nearest request.
   left join lateral (
-    select
-      request.request_id,
-      request.usage_input_tokens,
-      request.usage_cached_read_tokens
-    from public.gateway_requests request
-    where request.workspace_id = fact.workspace_id
-      and request.request_id = fact.request_id
-    order by abs(extract(epoch from request.created_at - fact.occurred_at))
+    (
+      select
+        request.request_id,
+        request.usage_input_tokens,
+        request.usage_cached_read_tokens
+      from public.gateway_requests request
+      where fact.gateway_request_id is not null
+        and request.id = fact.gateway_request_id
+        and request.created_at = fact.gateway_request_created_at
+        and request.workspace_id = fact.workspace_id
+        and request.request_id = fact.request_id
+    )
+    union all
+    (
+      select
+        request.request_id,
+        request.usage_input_tokens,
+        request.usage_cached_read_tokens
+      from public.gateway_requests request
+      where fact.gateway_request_id is null
+        and request.workspace_id = fact.workspace_id
+        and request.request_id = fact.request_id
+      order by abs(extract(epoch from request.created_at - fact.occurred_at))
+      limit 1
+    )
     limit 1
   ) legacy on true
 ),
@@ -116,42 +157,41 @@ classified as (
     fact.input_tokens,
     fact.cached_read_tokens,
     fact.cache_telemetry_observed,
+    -- Tool calls the gateway validated in a successful reply. Calls known only
+    -- from usage were never checked, so they are not rated either way.
     case
-      when fact.safe_metadata #>> '{tool_call_validation,totalCalls}' ~ '^\d+$'
+      when fact.success is true and fact.safe_metadata #>> '{tool_call_validation,totalCalls}' ~ '^\d+$'
         then (fact.safe_metadata #>> '{tool_call_validation,totalCalls}')::bigint
-      when fact.tool_call_count > 0 then fact.tool_call_count::bigint
       else 0
     end tool_call_responses,
     case
-      when fact.safe_metadata #>> '{tool_call_validation,invalidCalls}' ~ '^\d+$'
+      when fact.success is true and fact.safe_metadata #>> '{tool_call_validation,invalidCalls}' ~ '^\d+$'
         then (fact.safe_metadata #>> '{tool_call_validation,invalidCalls}')::bigint
-      when fact.tool_call_count > 0 and fact.tool_call_succeeded = false
-        then fact.tool_call_count::bigint
       else 0
     end tool_call_errors,
     case
-      when fact.safe_metadata #>> '{tool_call_validation,invalidJson}' ~ '^\d+$'
+      when fact.success is true and fact.safe_metadata #>> '{tool_call_validation,invalidJson}' ~ '^\d+$'
         then (fact.safe_metadata #>> '{tool_call_validation,invalidJson}')::bigint
       else 0
     end tool_invalid_json_errors,
     case
-      when fact.safe_metadata #>> '{tool_call_validation,schemaMismatch}' ~ '^\d+$'
+      when fact.success is true and fact.safe_metadata #>> '{tool_call_validation,schemaMismatch}' ~ '^\d+$'
         then (fact.safe_metadata #>> '{tool_call_validation,schemaMismatch}')::bigint
       else 0
     end tool_schema_mismatch_errors,
     case
-      when fact.safe_metadata #>> '{tool_call_validation,unknownToolName}' ~ '^\d+$'
+      when fact.success is true and fact.safe_metadata #>> '{tool_call_validation,unknownToolName}' ~ '^\d+$'
         then (fact.safe_metadata #>> '{tool_call_validation,unknownToolName}')::bigint
       else 0
     end tool_unknown_name_errors,
-    coalesce(
-      fact.safe_metadata ->> 'structured_output_error_reason',
-      case
-        when fact.structured_output_attempted and fact.structured_output_succeeded then 'none'
-        when fact.structured_output_attempted then 'legacy_error'
-        else null
-      end
-    ) structured_error_reason,
+    -- A structured-output result only for a successful reply the gateway read.
+    case
+      when fact.success is true
+        and fact.structured_output_attempted
+        and coalesce(fact.safe_metadata ->> 'structured_output_success_basis', '') <> 'unobserved'
+        then fact.safe_metadata ->> 'structured_output_error_reason'
+      else null
+    end structured_error_reason,
     case
       when fact.input_tokens is null then null
       else fact.input_tokens
@@ -179,10 +219,10 @@ hourly as (
     sum(base.tool_schema_mismatch_errors)::bigint tool_schema_mismatch_errors,
     sum(base.tool_unknown_name_errors)::bigint tool_unknown_name_errors,
     count(*) filter (
-      where base.structured_error_reason in ('none', 'invalid_json', 'schema_mismatch', 'missing_output', 'legacy_error')
+      where base.structured_error_reason in ('none', 'invalid_json', 'schema_mismatch', 'missing_output')
     )::bigint structured_output_responses,
     count(*) filter (
-      where base.structured_error_reason in ('invalid_json', 'schema_mismatch', 'missing_output', 'legacy_error')
+      where base.structured_error_reason in ('invalid_json', 'schema_mismatch', 'missing_output')
     )::bigint structured_output_errors,
     count(*) filter (where base.structured_error_reason = 'invalid_json')::bigint structured_invalid_json_errors,
     count(*) filter (where base.structured_error_reason = 'schema_mismatch')::bigint structured_schema_mismatch_errors,
@@ -211,20 +251,21 @@ select
   hourly.structured_schema_mismatch_errors,
   hourly.structured_missing_output_errors,
   hourly.cache_telemetry_requests,
-  case when hourly.cache_telemetry_requests >= 1 then hourly.input_tokens else null end,
-  case when hourly.cache_telemetry_requests >= 1 then hourly.cached_read_tokens else null end,
+  case when hourly.cache_telemetry_requests >= threshold.min_requests then hourly.input_tokens else null end,
+  case when hourly.cache_telemetry_requests >= threshold.min_requests then hourly.cached_read_tokens else null end,
   case
-    when hourly.cache_telemetry_requests >= 1 and hourly.input_tokens > 0
+    when hourly.cache_telemetry_requests >= threshold.min_requests and hourly.input_tokens > 0
       then least(100, coalesce(hourly.cached_read_tokens, 0) * 100.0 / hourly.input_tokens)
     else null
   end cache_read_pct
 from hourly
+cross join threshold
 order by hourly.bucket_start;
 $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."get_v2_model_quality_hourly_v1"(text, text, text, text) TO "service_role";
 
-COMMENT ON FUNCTION "public"."get_v2_model_quality_hourly_v1"(text, text, text, text) IS 'Hourly tool-calling, structured-output, token, and cache aggregates, available from the first aggregated request.';
+COMMENT ON FUNCTION "public"."get_v2_model_quality_hourly_v1"(text, text, text, text) IS 'Hourly tool-calling, structured-output, token, and cache aggregates, suppressed below twenty aggregated requests.';
 
 REVOKE ALL ON FUNCTION "public"."get_v2_model_quality_hourly_v1"(text, text, text, text) FROM "postgres";
 

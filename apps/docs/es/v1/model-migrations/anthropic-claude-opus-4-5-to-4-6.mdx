@@ -4,72 +4,53 @@ description: "Aspectos clave para adoptar Claude Opus 4.6, incluidas las salidas
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 4.6
+Cambia el modelo a `anthropic/claude-opus-4.6`, elimina los prefills del asistente y pasa la salida estructurada a `output_config.format`. Son cambios en la estructura de la solicitud: los patrones antiguos de Opus 4.5 fallan con `400` si se dejan como están.
 
-Usa esta guía para incorporar `anthropic/claude-opus-4.6` de forma segura en producción.
+| | Claude Opus 4.5 | Claude Opus 4.6 |
+| --- | --- | --- |
+| ID de modelo de Phaseo | `anthropic/claude-opus-4.5` | `anthropic/claude-opus-4.6` |
+| Ventana de contexto | 200K tokens | 1M tokens |
+| Salida máxima | 64K tokens | 128K tokens |
+| Prefill del asistente | Compatible | Devuelve `400` |
+| Salida estructurada | `output_format` | `output_config.format` |
+| Pensamiento | `budget_tokens` | Adaptativo, guiado por `output_config.effort` |
+| Beta `interleaved-thinking-2025-05-14` | Necesaria | No necesaria |
 
-La migración a Claude Opus 4.6 no consiste solo en cambiar el ID del modelo. La guía de Anthropic incluye cambios en las solicitudes, la retirada de indicadores beta y un comportamiento más estricto con los prefills.
+## Actualiza la solicitud
 
-## Novedades
+**1. Elimina los prefills del asistente.** Si rellenas de antemano el turno del asistente para forzar JSON o un prefijo, Opus 4.6 devuelve `400`. Usa en su lugar instrucciones de sistema más claras, ejemplos en el prompt o salida estructurada.
 
-- Los prefills del asistente ya no son compatibles con Claude 4.6 y ahora devuelven `400`.
-- Las salidas estructuradas pasan de `output_format` a `output_config.format`.
-- El pensamiento adaptativo se configura mediante `output_config.effort`.
-- Se deben quitar las cabeceras beta obsoletas.
-- Opus 4.6 ya no necesita la cabecera beta `interleaved-thinking-2025-05-14`.
-- Opus 4.6 añade una ventana de contexto de 1 millón de tokens en beta y mejora las tareas largas de programación y agentes.
+**2. Pasa la salida estructurada** de `output_format` a `output_config.format` y vuelve a ejecutar las pruebas de esquema y del analizador:
 
-## Inicio rápido de la migración
+```json
+{
+  "model": "anthropic/claude-opus-4.6",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "Extract the invoice fields." }],
+  "output_config": {
+    "format": { "type": "json_schema", "schema": { "type": "object", "properties": { "total": { "type": "number" } } } }
+  }
+}
+```
 
-### 1. Quita los prefills del asistente
+En `/v1/chat/completions` y `/v1/responses`, sigue usando `response_format`.
 
-Si forzabas JSON o un prefijo de respuesta iniciando parcialmente el turno del asistente, ese patrón falla en 4.6. Traslada ese control a:
+**3. Cambia el pensamiento a adaptativo.** Opus 4.6 no piensa a menos que la solicitud lo pida. En Phaseo, `reasoning.effort` o `reasoning.enabled: true` sin presupuesto de tokens activa el pensamiento adaptativo, y el esfuerzo pasa a ser `output_config.effort`. Opus 4.6 admite todos los niveles de esfuerzo excepto `xhigh`, que Phaseo envía como `max`. Mientras el pensamiento está activado, Phaseo omite `temperature` y `top_k`, y `top_p` por debajo de 0.95.
 
-- instrucciones del sistema más claras
-- ejemplos en el prompt del usuario o del sistema
-- salidas estructuradas mediante `output_config.format`
-
-### 2. Migra las salidas estructuradas
-
-Si aún envías `output_format`, actualiza el cuerpo de la solicitud para usar `output_config.format`.
-
-### 3. Revisa la configuración del pensamiento
-
-Si dependías de versiones beta antiguas del pensamiento, migra al ajuste `effort` actual dentro de `output_config` y vuelve a probar las rutas sensibles a la latencia.
-
-### 4. Quita los indicadores beta obsoletos
-
-Revisa las cabeceras beta codificadas en wrappers de SDK, middleware y presets de Gateway. Mantener indicadores obsoletos provoca errores innecesarios durante el despliegue.
+**4. Elimina los encabezados beta obsoletos** de los wrappers del SDK, el middleware y los presets. Phaseo no reenvía los encabezados `anthropic-beta`, así que ya no tienen ningún efecto.
 
 ## Qué probar
 
-### Comportamiento de los prompts
+- **Prompts:** prompts largos de programación y refactorización, flujos de investigación y documentos de varios pasos, prompts que dependían de prefills y tareas de contexto largo si vas a usar la ventana de 1M.
+- **Contratos y herramientas:** tasa de validación del esquema tras pasar a `output_config.format`, argumentos de las llamadas a herramientas en tareas de agente de varios pasos, reintentos cuando el modelo se niega o cambia el formato de la salida, y flujos de revisión de código y depuración.
+- **Operaciones:** latencia mediana y p95 con el pensamiento activado, uso de tokens en ejecuciones más largas, tasa de tiempos de espera agotados en tareas con mucho contexto y tasa de éxito frente a Opus 4.5 en tu conjunto de evaluación.
 
-- Prompts largos de programación y refactorización.
-- Flujos de investigación o documentos con varios pasos.
-- Prompts que antes dependían de prefills del asistente.
-- Tareas con mucho contexto si planeas usar la ventana beta de 1 millón de tokens.
+## Despliega
 
-### Contratos y herramientas
-
-- Tasa de validación de esquemas después de migrar a `output_config.format`.
-- Calidad de los argumentos de llamadas a herramientas en tareas de agentes con varios pasos.
-- Reintentos cuando el modelo rechaza o reformatea una salida.
-- Manejo de regresiones en revisión de código y depuración.
-
-### Operaciones
-
-- Latencia mediana y p95 con los nuevos ajustes de pensamiento.
-- Consumo de tokens en ejecuciones largas.
-- Tasa de tiempo de espera en tareas con contexto amplio.
-- Tasa de éxito frente a Opus 4.5 con tu conjunto de evaluaciones de producción.
-
-## Despliegue seguro
-
-1. Quita los prefills y migra la configuración de salida estructurada antes de desviar tráfico.
-2. Ejecuta Opus 4.6 en paralelo con los prompts de producción que más te importan.
-3. Prueba el tráfico gradualmente y conserva Opus 4.5 como alternativa.
-4. Aumenta el tráfico solo cuando las tasas de esquemas, latencia y finalización de tareas sean estables.
+1. Elimina los prefills y migra la salida estructurada antes de mover tráfico.
+2. Ejecuta Opus 4.6 en modo sombra con los prompts de producción que te importan.
+3. Haz un canary con Opus 4.5 como respaldo en `models`.
+4. Promuévelo cuando se mantengan la tasa de validación del esquema, la latencia y la finalización de tareas.
 
 ## Fuentes
 

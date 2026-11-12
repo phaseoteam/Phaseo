@@ -37,7 +37,7 @@ CREATE OR REPLACE FUNCTION public.get_public_model_rankings (
     -- Broad yearly rankings keep the efficient full meter aggregate. For
     -- shorter periods, exclude historical meters before grouping.
     where p_time_range = 'year' or exists (
-      select 1 from public.v2_public_usage_daily scoped cross join bounds
+      select 1 from public.reporting_usage_daily scoped cross join bounds
       where scoped.rollup_id = meter.rollup_id
         and scoped.usage_date >= bounds.previous_since
         and lower(scoped.model_slug) not in ('unknown','other')
@@ -51,7 +51,7 @@ CREATE OR REPLACE FUNCTION public.get_public_model_rankings (
       coalesce(meter.total_tokens,0) as total_tokens,
       coalesce(meter.input_tokens,0) as input_tokens,
       coalesce(meter.output_tokens,0) as output_tokens
-    from public.v2_public_usage_daily usage
+    from public.reporting_usage_daily usage
     left join public.v2_model_provider_routes route on route.provider_model_id = usage.provider_model_id
     left join meters meter on meter.rollup_id = usage.rollup_id
     cross join bounds

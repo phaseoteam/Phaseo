@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "livecodebench-v6",
-  "benchmark_name": "LiveCodeBench V6",
-  "category": null,
-  "ascending_order": null,
-  "type": "percentage",
-  "link": "https://livecodebench.github.io/leaderboard.html",
-  "total_models": 56
-}

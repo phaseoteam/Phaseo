@@ -4,31 +4,50 @@ title: "المخرجات المنظّمة"
 description: "أعِد JSON يمكن توقّعه باستخدام تنسيقي الإخراج json_object أو json_schema."
 ---
 
-تتيح لك المخرجات المنظّمة فرض تنسيق قابل للقراءة آليًا بدلًا من النص الحر.
+أرسل JSON Schema مع الطلب فيعيد النموذج JSON بهذا الشكل بدلًا من النص الحر. ويظل على شيفرتك تحليله والتحقق منه قبل استخدامه.
 
-## دعم نقاط النهاية
+```mermaid
+flowchart LR
+  schema["طلب مع JSON Schema"] --> model["يجيب النموذج"]
+  model --> parse{{"هل يُحلَّل ويطابق المتحقِّق لديك؟"}}
+  parse -->|"نعم"| use["استخدم النتيجة"]
+  parse -->|"لا، أول مرة"| retry["إعادة محاولة تصحيحية واحدة"]
+  retry --> parse
+  parse -->|"لا، مجددًا"| fail["أعِد فشلًا آمنًا"]
+```
 
-استخدم المخرجات المنظّمة مع:
+## اختيار تنسيق
 
-- `/v1/chat/completions` باستخدام `response_format`
-- `/v1/responses` باستخدام `text.format`
-- لا يزال بإمكان `/v1/messages` إرجاع نص JSON، لكنه لا يستخدم عقد `response_format` نفسه.
+| `type` | ما تحصل عليه |
+| --- | --- |
+| `json_schema` | JSON يتبع المخطط الذي ترسله. استخدمه افتراضيًا. |
+| `json_object` | كائن JSON صالح ما، دون فرض شكل معيّن. |
+| `text` | نص عادي (الافتراضي). |
 
-## الطلب
+يعتمد موضع التنسيق على نقطة النهاية:
 
-```bash
+| نقطة النهاية | الحقل |
+| --- | --- |
+| `/v1/chat/completions` | `response_format` |
+| `/v1/responses` | `text.format` |
+| `/v1/messages` | `output_config.format` (`json_schema` فقط) |
+
+## إرسال مخطط
+
+<CodeGroup>
+```bash Chat Completions
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
-      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+      { "role": "user", "content": "Return the city and weather for London." }
     ],
     "response_format": {
       "type": "json_schema",
       "json_schema": {
-        "name": "weather_schema",
+        "name": "weather",
         "strict": true,
         "schema": {
           "type": "object",
@@ -44,14 +63,39 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## الرد
+```bash Responses
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-astra",
+    "input": "Return the city and weather for London.",
+    "text": {
+      "format": {
+        "type": "json_schema",
+        "name": "weather",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+</CodeGroup>
+
+يعود JSON في صورة سلسلة نصية داخل محتوى الرسالة:
 
 ```json
 {
-  "id": "chatcmpl_...",
   "choices": [
     {
-      "index": 0,
       "finish_reason": "stop",
       "message": {
         "role": "assistant",
@@ -62,19 +106,14 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-## ملاحظات حول العقد
-
-- يجب أن تكون قيمة `response_format.type` هي `text` أو `json_object` أو `json_schema`.
-- مع `json_schema`، أدرج كائن مخطط (`response_format.json_schema.schema` في حمولة على نمط chat أو `text.format.schema` في حمولة على نمط Responses).
-- تحقّق من JSON على خادمك قبل استخدامه في الأنظمة اللاحقة.
-
 ## تصميم المخطط
 
-ابدأ بكائن صغير وحدد الحقول المطلوبة صراحةً واستخدم التعدادات للفئات المعروفة. عيّن `additionalProperties: false` لرفض المفاتيح الإضافية. حافظ على تزامن المخطط المطلوب ومتحقق الخادم وأدِر إصداراتهما معًا.
+ابدأ بكائن صغير. أدرج كل حقل في `required`، واستخدم `enum` للفئات المعروفة، وعيّن `additionalProperties: false` عندما يجب رفض المفاتيح الإضافية. أدِر إصدارات المخطط مع المتحقِّق على الخادم معًا حتى لا يختلفا أبدًا.
 
+<span id="validate-the-result"></span>
 ## التحقق من النتيجة
 
-حلّل النتيجة الكاملة وتحقق منها قبل استخدامها لاحقًا. يستخدم مثال TypeScript هذا Zod ويطابق مخطط الطقس أعلاه:
+تحقّق من وجود رفض أو محتوى مفقود أو إجابة مبتورة (`finish_reason` غير `stop`) قبل التحليل. ثم تحقّق من الكائن المحلَّل. يطابق متحقِّق Zod هذا المخطط أعلاه:
 
 ```typescript
 import { z } from "zod";
@@ -89,6 +128,6 @@ function parseWeather(content: string) {
 }
 ```
 
-عالج الرفض والمحتوى المفقود والاستجابات المبتورة قبل التحليل. إذا فشل التحقق، اسمح بعدد محدود فقط من المحاولات التصحيحية ثم أعد فشلًا آمنًا. قد تترتب رسوم إضافية على إعادة التوليد. لا يثبت JSON صالح صحة القيم واقعيًا ولا يمنح إذنًا لتنفيذ إجراء.
+إذا فشل التحقق، فأعد المحاولة مرة واحدة مع إدراج الخطأ في الموجّه، ثم أعِد فشلًا آمنًا. تُفرض رسوم على كل إعادة محاولة. ولا يثبت JSON الصالح أن القيم صحيحة أو أن إجراءً ما مصرّح به.
 
-تتبّع إخفاقات التحقق بحسب النموذج وإصدار المخطط. أعد فحص حالات التقييم عند تغير أي منهما. لاستعادة JSON غير سليم، راجع [إصلاح الاستجابة](../cookbook/response-healing-for-structured-json.mdx).
+تتبّع إخفاقات التحقق لكل نموذج وإصدار مخطط، وأعد تشغيل حالات التقييم لديك عندما يتغير أي منهما. لإصلاح JSON غير السليم تلقائيًا، راجع [إصلاح الاستجابة](../cookbook/response-healing-for-structured-json.mdx).

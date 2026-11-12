@@ -1,208 +1,172 @@
 ---
-title: "واجهة Phaseo CLI"
+title: "Phaseo CLI"
 icon: "terminal"
-description: "ثبّت واجهة Phaseo CLI الرسمية، واضبط بيئات البرمجة، وأدر Phaseo من الطرفية."
+description: "ثبّت Phaseo CLI الرسمية، وأعدّ أدوات البرمجة، وأدِر Phaseo من الطرفية."
 ---
 
-تُوزّع Phaseo CLI ضمن الحزمة `@phaseo/cli`. وهي تربط بيئات البرمجة بـ Phaseo وتوفّر سير عمل رسميًا من الطرفية لإدارة مستوى التحكم في Phaseo.
-
-استخدمها عندما تريد:
-
-- تسجيل الدخول كمستخدم Phaseo من shell محلية أو بعيدة أو من بيئة وكيل
-- إنشاء مفاتيح API أو مفاتيح الإدارة وتدويرها
-- إدارة مساحات العمل والإعدادات المسبقة والضوابط والإعدادات
-- استخدام OAuth الرسمي في CLI بينما تظل تطبيقات OAuth التي ينشئها المستخدمون قيد الاختبار الخاص
-- استعراض النماذج والمزوّدين والأسعار والأرصدة والنشاط والتحليلات وعمليات الإنشاء
+ثبّت `@phaseo/cli` وشغّل `phaseo login` لربط وكلاء البرمجة بـ Phaseo وإدارة المفاتيح ومساحات العمل والإعدادات المسبقة والإعدادات وحواجز الحماية من الطرفية. تقرأ CLI أيضًا النماذج والمزوّدين والأسعار والرصيد والنشاط والتحليلات وعمليات التوليد.
 
 ## التثبيت
 
 <CodeGroup>
 
-```bash title="npm"
+```bash npm
 npm install -g @phaseo/cli
 ```
 
-```bash title="pnpm"
+```bash pnpm
 pnpm add -g @phaseo/cli
 ```
 
-```bash title="yarn"
+```bash yarn
 yarn global add @phaseo/cli
 ```
 
-```bash title="bun"
+```bash bun
 bun add -g @phaseo/cli
 ```
 
 </CodeGroup>
 
-## التحقق من الإصدار المثبّت
+تحقق من الإصدار:
 
-```bash
-phaseo --version
-phaseo version
-phaseo version --json
-```
+| الأمر | يطبع |
+| --- | --- |
+| `phaseo --version` | الإصدار المثبت. |
+| `phaseo version` | الإصدار وأمر التحديث لمدير الحزم لديك. أضف `--json` للحصول على مخرجات منظمة. |
 
-- يعرض `phaseo --version` الإصدار المثبّت.
-- يعرض `phaseo version` الإصدار وأمر التحديث الموصى به لمدير الحزم الحالي.
-- تعرض عمليات التشغيل التفاعلية أيضًا تلميحًا بالتحديث عند توفر إصدار أحدث منشور.
-
-يظل الأمر السابق `phaseo` متاحًا كاسم مستعار للتوافق.
+تعرض عمليات التشغيل التفاعلية أيضًا تلميحًا عند نشر إصدار أحدث.
 
 ## تسجيل الدخول
-
-ابدأ باستخدام:
 
 ```bash
 phaseo login
 ```
 
-تدعم CLI مسارين رسميين:
+| المسار | الخيار | استخدمه لـ |
+| --- | --- | --- |
+| Sign in with Phaseo | `--browser` | OAuth عبر المتصفح باستخدام رمز التفويض وPKCE. |
+| Sign in with Device Code | `--device-code` | SSH وCI والصدفات دون واجهة وبيئات الوكلاء. |
 
-- **تسجيل الدخول باستخدام Phaseo**: OAuth عبر المتصفح باستخدام رمز التفويض وPKCE
-- **تسجيل الدخول برمز الجهاز**: الأنسب لـ SSH وCI وبيئات shell غير التفاعلية والوكلاء
-
-يمكنك فرض استخدام أي من المسارين:
-
-```bash
-phaseo login --browser
-phaseo login --device-code
-```
-
-تفضّل البيئات البعيدة وغير التفاعلية رمز الجهاز تلقائيًا.
-
-## مخرجات الطرفية
-
-تعرض الطرفيات التفاعلية ألوان Phaseo وتسلسله المرئي ومؤشرات إعداد مؤقتة. تستخدم المؤشرات `stderr` وتمسح سطرها عند اكتمال العمل. يعطّل `stderr` غير التفاعلي و`TERM=dumb` الحركة، بينما يعطّل `NO_COLOR` الألوان. تعيد الأوامر التي تستخدم `--json` دائمًا مخرجات منظّمة بلا زخرفة للوكلاء والأتمتة. استخدم `FORCE_COLOR=1` فقط عندما يدعم غلاف الطرفية الألوان لكنه لا يعرّف نفسه كـ TTY.
-
-## تأكيد هويتك
+تستخدم البيئات البعيدة وغير التفاعلية رمز الجهاز تلقائيًا. تحقق من الحساب الذي سجّلت الدخول به، مع نطاقاتك ومساحة العمل النشطة ومساحات العمل الأخرى:
 
 ```bash
 phaseo whoami
 phaseo whoami --json
 ```
 
-يعرض هذا المستخدم الحالي في Phaseo والنطاقات ومساحة العمل النشطة ومساحات العمل المتاحة.
-
-## إنشاء المفاتيح
+## إدارة مساحة العمل
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
-```
 
-استخدم `--json` عندما يحتاج وكيل أو إجراء آلي إلى المفتاح المُنشأ بصيغته الخام لمرة واحدة.
-
-## إدارة مساحات العمل والضوابط
-
-```bash
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-تهدف CLI إلى إتاحة الوظائف المفيدة في لوحة Phaseo وواجهات الإدارة من الطرفية.
+استخدم `--json` عندما يقرأ وكيل أو برنامج نصي المخرجات. تغطي CLI المهام اليومية في الحساب؛ أما تغييرات حدود المفاتيح والميزانيات وBYOK وقواعد التوجيه والإعدادات المسبقة والهوية فتُجرى من لوحة التحكم أو باستخدام مفتاح إدارة. راجع [إدارة Phaseo من وكيل](../../developers/manage-from-an-agent) لمعرفة المهام التي تغطيها CLI.
 
-## تشغيل بيئات البرمجة المدعومة
+## ربط وكيل برمجة
 
-تستخدم التكاملات الدائمة اسم المنتج مباشرةً:
+استخدم اسم الوكيل كأمر. تطلب CLI مفتاحًا مخصصًا توافق عليه في المتصفح، ثم تكتب إعداد الوكيل:
 
 ```bash
 phaseo codex
 phaseo claude-code
-phaseo deepseek-harness
 phaseo opencode
+phaseo fx
+phaseo deepseek-harness
 phaseo pi
 phaseo prime-agent
 phaseo openclaw
+phaseo hermes
 phaseo aider
+phaseo continue
+phaseo zed
 phaseo roo-code
 phaseo kilo-code
-phaseo continue
 phaseo cursor
-phaseo zed
 ```
 
-استخدم `--model` أو `--catalog all|default` أو `--dry-run` حسب الحاجة. يبقى الشكل القديم `phaseo integrations setup <integration>` متاحًا للتوافق، لكنه غير مطلوب.
+استخدم `--model` أو `--catalog all|default` أو `--dry-run` حسب الحاجة. يعمل أيضًا `phaseo setup <agent>` و`phaseo integrations setup <agent>`.
 
-تستطيع CLI تشغيل Cline وKilo Code وoh-my-pi وMuse Code وMiniMax Code بإعداد مزوّد مؤقت ومفتاح Phaseo مخصص. لكل بيئة دليل تكامل للإعداد وحل المشاكل: [Cline](./cline) و[Kilo Code](./kilo-code) و[oh-my-pi](./oh-my-pi) و[Muse Code](./muse-code) و[MiniMax Code](./minimax-code).
+### الموافقة على المفتاح في المتصفح
+
+عند إعداد وكيل لأول مرة، تفتح CLI صفحة في لوحة تحكم Phaseo وتعرض رابطها. تعرض الصفحة مساحة العمل واسم المفتاح وحد الإنفاق الشهري البالغ $100 وانتهاء الصلاحية بعد 90 يومًا، وأن Phaseo CLI هي التي طلبته. اختر **الموافقة وإنشاء المفتاح** لتستلم CLI المفتاح مرة واحدة وتُكمل الإعداد. إذا اخترت **رفض**، أو تركت الطلب حتى تنتهي صلاحيته بعد 10 دقائق، فلن يُنشأ أي شيء.
+
+وافق وأنت مسجّل الدخول إلى لوحة التحكم بالحساب الذي استخدمته في CLI، بصفتك مالكًا لمساحة العمل أو مسؤولًا عنها، ومع عامل التحقق الثاني إذا كنت قد أعددته. عبر SSH أو في CI، افتح الرابط المعروض على أي جهاز سجّلت الدخول عليه.
+
+لاستخدام مفتاح أنشأته في لوحة التحكم بدلًا من ذلك، مرّره باستخدام `--key <key>`، أو باستخدام `--key-stdin` لإبقائه خارج سجل الصدفة. تتحقق CLI من المفتاح وتحفظه، ولا تلغيه عند إزالة الوكيل.
+
+لتشغيل Cline أو Kilo Code أو oh-my-pi أو Muse Code أو MiniMax Code بإعدادات مؤقتة تُحذف عند خروجه، استخدم مشغّل الجلسات. توضع خيارات Phaseo قبل `--`، وخيارات الوكيل الخاصة بعده:
 
 ```bash
 phaseo cline --model openai/gpt-5.6-terra -- --tui
-phaseo kilo --model openai/gpt-5.6-terra --
-phaseo omp --model openai/gpt-5.6-terra --
-phaseo muse --model meta/muse-spark-1.3 --
-phaseo minimax --model openai/gpt-5.6-terra --
+phaseo kilo --model openai/gpt-5.6-terra
+phaseo omp --model openai/gpt-5.6-terra
+phaseo muse --model meta/muse-spark-1.3
+phaseo minimax --model openai/gpt-5.6-terra
 ```
 
-استخدم `phaseo run <cline|kilo|omp|muse|minimax>` للصيغة الصريحة. تأتي خيارات Phaseo قبل `--` وخيارات البيئة بعدها. استخدم `--catalog all` لمزامنة كل نماذج النص والدردشة النشطة في Phaseo، أو عاين دون إنشاء بيانات اعتماد باستخدام:
+`phaseo run <cline|kilo|omp|muse|minimax>` هو الصيغة الطويلة. أضف `--catalog all` لسرد كل نماذج النص النشطة في Phaseo، أو `--dry-run --json` للمعاينة دون إنشاء مفتاح. تعرض المشغّلات تثبيت الوكيل المفقود في الطرفية التفاعلية (يستخدم MiniMax Code مثبّت PowerShell الرسمي على Windows؛ ويجب تثبيت Muse Code يدويًا على Windows). استخدم `--skip-install` عندما تدير الوكيل بنفسك.
 
-```bash
-phaseo cline --model openai/gpt-5.6-terra --dry-run --json
-```
+تسرد صفحة [وكلاء البرمجة](./coding-assistants.mdx) كل وكيل، وما يفعله أمره، ودليله.
 
-يُعرض تثبيت Cline وKilo Code وoh-my-pi تفاعليًا عند غيابها. يستخدم Muse Code وMiniMax Code مثبّتاتهما الرسمية عند غياب الأمر. على Windows يستخدم MiniMax Code مثبّت PowerShell الرسمي؛ استخدم `--skip-install` عند إدارة أي من البيئتين بشكل منفصل. لا تستبدل المشغّلات إعدادات Cline أوKilo أوoh-my-pi أوMuse Code أوMiniMax Code الموجودة.
+## كتابة البرامج النصية باستخدام CLI
+
+تطبع الأوامر مع `--json` مخرجات منظمة عادية دون ألوان أو مؤشرات دوّارة. في غير ذلك، تذهب المؤشرات الدوّارة إلى `stderr` وتمسح سطرها عند الانتهاء.
+
+| المتغير | الأثر |
+| --- | --- |
+| `NO_COLOR` | يوقف الألوان. |
+| `TERM=dumb` | يوقف الحركة. ويؤدي `stderr` غير المتصل بـ TTY الأثر نفسه. |
+| `FORCE_COLOR=1` | يفرض الألوان عندما يدعمها غلاف الطرفية لكنه لا يبلّغ عن TTY. |
+
+## كيف تحافظ CLI على أمان بيانات الاعتماد
+
+- تُحفظ الجلسات في مخزن بيانات الاعتماد في نظام التشغيل. اضبط `PHASEO_SESSION_BACKEND=file` فقط إذا لم يتوفر مخزن لبيانات الاعتماد؛ فهو يحفظ رموز التحديث في ملف نصي صريح مقيّد الأذونات.
+- يلغي `phaseo logout` رمز التحديث المحفوظ قبل مسح الحالة المحلية.
+- تحتاج مفاتيح الإدارة إلى صلاحيات صريحة. تُقيَّد مفاتيح الاستدلال بحواجز الحماية وسياسات التوجيه وإعدادات مساحة العمل بدلًا من النطاقات.
+
 ## تطبيقات OAuth
 
-يستخدم Phaseo خادم تفويض OAuth واحدًا لواجهة CLI الرسمية والتطبيقات التي ينشئها المستخدمون وعملاء MCP المسجّلين ديناميكيًا. تستخدم CLI تسجيل الدخول عبر المتصفح أو رمز الجهاز مع تدوير رموز التحديث. وتستخدم العملاء الخارجية رمز التفويض مع PKCE ونطاقات صريحة وموافقة مساحة العمل ورموز وصول مفوّضة قابلة للإلغاء وربطًا اختياريًا بمورد محمي.
+يستخدم Phaseo خادم تفويض OAuth واحدًا لـ CLI والتطبيقات التي ينشئها المستخدمون وعملاء MCP المسجّلين ديناميكيًا. تستخدم CLI تسجيل الدخول عبر المتصفح أو الجهاز مع رموز تحديث متناوبة. تستخدم العملاء الخارجية رمز التفويض مع PKCE، ونطاقات صريحة وموافقة على مساحة العمل، وربطًا اختياريًا بالمورد المحمي. تحصل على رمز وصول قابل للإلغاء يدوم 7 أيام ورمز تحديث متناوب يدوم 90 يومًا من آخر استخدام له؛ راجع [إنشاء Workbench لـ OAuth باستخدام Next.js](../../cookbook/build-an-oauth-nextjs-workbench) لمعرفة كيفية عمل التحديث. الموافقة على التطبيق نفسه مرة أخرى تجدد مفتاحه بدلًا من إضافة مفتاح ثانٍ.
 
-تفعّل واجهة Phaseo API المستضافة OAuth للجهات الخارجية. وتبقيه عمليات النشر ذاتية الاستضافة أو التجريبية معطّلًا ما لم تُضبط `PHASEO_THIRD_PARTY_OAUTH_ENABLED` على قيمة صحيحة. القيم المقبولة هي `1` و`true` و`yes` و`on`، مع تجاهل حالة الأحرف بعد حذف المسافات. يؤدي التفعيل إلى إتاحة إدارة تطبيقات OAuth التي ينشئها المستخدمون والتسجيل الديناميكي للعملاء، لذا راجع إعدادات URI لإعادة التوجيه والموافقة وأسرار العملاء وحدود المعدل وتفويض مساحة العمل.
+تفعّل واجهة Phaseo API المستضافة OAuth للجهات الخارجية. تُبقيه عمليات نشر API المستضافة ذاتيًا ونشر المعاينة معطّلًا ما لم تكن قيمة `PHASEO_THIRD_PARTY_OAUTH_ENABLED` صحيحة: `1` أو `true` أو `yes` أو `on`، دون تمييز حالة الأحرف، مع تجاهل المسافات المحيطة.
 
-```bash title=".env"
+```bash .env
 PHASEO_THIRD_PARTY_OAUTH_ENABLED=true
 ```
 
-```bash title="Docker"
-docker run -e PHASEO_THIRD_PARTY_OAUTH_ENABLED=true phaseo
-```
-
-```yaml title="Kubernetes"
-env:
-  - name: PHASEO_THIRD_PARTY_OAUTH_ENABLED
-    value: "true"
-```
-
-## نموذج الأمان
-
-تتطلب جلسات CLI افتراضيًا تخزينًا آمنًا يوفره نظام التشغيل. اضبط `PHASEO_SESSION_BACKEND=file` صراحةً فقط عند عدم توفر مخزن بيانات اعتماد للنظام؛ إذ يحفظ رموز التحديث في ملف نصي عادي بصلاحيات مقيّدة.
-- يُبطل `phaseo logout` رمز التحديث المخزّن قبل مسح الحالة المحلية.
-- تتطلب مفاتيح الإدارة إمكانات محددة صراحةً.
-- تعتمد مفاتيح الاستدلال العادية على الضوابط وسياسات التوجيه وإعدادات مساحة العمل بدلًا من نموذج نطاقات منفصل.
+يكشف تفعيله إدارة تطبيقات OAuth التي ينشئها المستخدمون والتسجيل الديناميكي للعملاء، لذا راجع أولًا إعدادات URI إعادة التوجيه والموافقة وسر العميل وحدود المعدل وتفويض مساحة العمل.
 
 ## التحديث
 
+```bash
+phaseo update
+```
+
+يشغّل هذا الأمر التحديث بمدير الحزم الذي ثبّتّ به CLI. للتحديث يدويًا:
+
 <CodeGroup>
 
-```bash title="npm"
+```bash npm
 npm install -g @phaseo/cli@latest
 ```
 
-```bash title="pnpm"
+```bash pnpm
 pnpm add -g @phaseo/cli@latest
 ```
 
-```bash title="yarn"
+```bash yarn
 yarn global add @phaseo/cli@latest
 ```
 
-```bash title="bun"
+```bash bun
 bun add -g @phaseo/cli@latest
 ```
 
 </CodeGroup>
-
-## الخطوات التالية
-
-- [مفاتيح إدارة API](../../developers/management-api-keys.mdx)
-- [المصادقة](../../developers/authentication.mdx)
-- [Codex](./codex.mdx)
-- [Claude Code](./claude-code.mdx)
-- [Cline](./cline)
-- [Kilo Code](./kilo-code)
-- [oh-my-pi](./oh-my-pi)
-- [Muse Code](./muse-code)
-- [MiniMax Code](./minimax-code)

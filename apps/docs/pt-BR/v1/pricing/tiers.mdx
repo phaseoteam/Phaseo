@@ -1,80 +1,42 @@
 ---
 title: "Faixas de preço"
-description: "Entenda a taxa fixa de 5% na compra de créditos e como funciona a cobrança do Gateway."
+description: "Entenda a taxa fixa de 5% na compra de créditos e como funciona a cobrança do Gateway"
 sidebarTitle: "Preços e cobrança"
 icon: "credit-card"
 ---
 
-# Faixas de preço
+Compre créditos uma vez e gaste-os em solicitações pelo preço de catálogo de cada modelo. A única taxa do Phaseo nas solicitações gerenciadas é de 5% sobre cada compra de créditos, com mínimo de $1; as solicitações em si não têm acréscimo.
 
-A cobrança do Gateway tem duas partes:
+```mermaid
+flowchart LR
+  buy["Compra de $100 em créditos"] -->|"Paga $105<br/>(taxa de 5%)"| wallet["Carteira do espaço de trabalho<br/>$100.00"]
+  wallet -->|"Cada solicitação custa<br/>o preço de catálogo do modelo"| spend["O saldo diminui"]
+```
 
-1. **Preço de uso dos modelos**: os créditos são consumidos pelos preços dos modelos exibidos no catálogo.
-2. **Taxa de compra de créditos**: uma taxa fixa de **5%** é aplicada somente na compra de créditos.
+## Quanto custa uma recarga
 
-## Plano atual
+A taxa é o maior valor entre 5% dos créditos que você compra e $1. Ela é somada ao valor que você paga.
 
-<Card title="Plano padrão" icon="tag">
-  **Taxa de 5% na compra de créditos**
+| Créditos que você compra | Taxa | Você paga |
+| ---: | ---: | ---: |
+| $5.00 | $1.00 (mínimo) | $6.00 |
+| $20.00 | $1.00 | $21.00 |
+| $100.00 | $5.00 | $105.00 |
+| $1,000.00 | $50.00 | $1,050.00 |
 
-  Os workspaces padrão usam a cobrança do Gateway conforme o uso. Há complementos Enterprise para equipes que precisam de controles de identidade e diretório.
-</Card>
+Visto pelo outro lado, uma cobrança de $100.00 adiciona $95.24 em créditos e uma taxa de $4.76. As recargas pelo painel começam em $5.
 
-## Como funciona a cobrança
+Compre créditos em **Configurações -> Cobrança -> Faturamento e créditos** ou, pelo terminal, com `phaseo credits add --amount <usd>` (veja o [início rápido](../quickstart#add-credits-for-paid-models)). A mesma página mostra o seu saldo, a taxa atual e os gastos recentes; **Configurações -> Cobrança -> Transações** lista cada compra.
 
-<Steps>
-  <Step title="Compre créditos">
-    Ao adicionar créditos, uma **taxa de plataforma de 5%** é aplicada à compra.
-  </Step>
+## O que não usa créditos
 
-  <Step title="Use o Gateway">
-    As solicitações consomem créditos pelos preços dos modelos listados no catálogo.
-  </Step>
+| Uso | Cobrança do Phaseo |
+| --- | --- |
+| Modelos gratuitos (`phaseo/free` e modelos com preço $0) | Nenhuma. Solicitações a modelos gratuitos têm uma cota diária; veja [Planos](../exploring/subscription-plans). |
+| Traga sua própria chave (BYOK) | Sem recarga. As primeiras 250.000 solicitações BYOK concluídas por espaço de trabalho em cada mês UTC não têm taxa de serviço; depois disso, a taxa é de 2.5% do custo equivalente no provedor. O seu provedor cobra o uso do modelo. Veja [Considerações sobre BYOK](../guides/routing-and-fallbacks#byok-considerations). |
 
-  <Step title="Consulte o uso">
-    O painel mostra a taxa atual de recarga, o saldo de créditos e os gastos recentes.
-  </Step>
-</Steps>
+## Enterprise
 
-## Exemplo
+O Self Serve Enterprise é uma assinatura mensal separada para SSO, SCIM, gerenciamento de diretório, departamentos e suporte prioritário por e-mail. Começa em $29/mês para até 100 membros do espaço de trabalho e custa $79/mês com 1.000 membros. Ele não inclui créditos nem altera a taxa de 5% (mínimo de $1). [Planos](../exploring/subscription-plans#enterprise-member-pricing) traz os preços completos por membro e como os membros são contados.
 
-| Cenário | Cobrança total | Taxa aplicada | Créditos adicionados |
-|---|---:|---:|---:|
-| Plano padrão | $100 | 5% (~$4.76) | ~$95.24 em créditos |
-| Uso de modelos gratuitos | Sem recarga | $0 | Usa a cota de modelos gratuitos |
-
-## Perguntas frequentes
-
-<AccordionGroup>
-  <Accordion title="Há cobrança de taxa em cada solicitação?">
-    Não. As taxas são cobradas quando você compra créditos. As solicitações consomem esses créditos pelos preços dos modelos exibidos no catálogo.
-  </Accordion>
-
-  <Accordion title="Os preços dos modelos incluem acréscimo no valor dos tokens?">
-    As tarifas de uso dos modelos seguem os preços do catálogo. A taxa de plataforma separada é de 5% e é aplicada quando os créditos são comprados.
-  </Accordion>
-
-  <Accordion title="Existe um plano Enterprise?">
-    Sim. Self Serve Enterprise começa em **US$ 29/mês para até 100 membros do espaço de trabalho**, incluindo equipes pequenas, e custa **US$ 79/mês com 1.000 membros**. Inclui SSO, SCIM, diretórios, departamentos e suporte prioritário por e-mail. Os créditos de modelos são comprados separadamente com a taxa padrão de recarga de 5% (mínimo de US$ 1). Abra **Preços** no painel para escolher a capacidade e consultar a cotação onde o autoatendimento estiver disponível.
-  </Accordion>
-
-  <Accordion title="Quais membros contam para a capacidade Enterprise?">
-    Os membros contam enquanto pertencem ao espaço, mesmo sem fazer login. A assinatura inicial inclui até 100 membros. Abaixo de 100.000, novas adesões são bloqueadas apenas se excederem a capacidade escolhida. Alterações de capacidade por autoatendimento ainda não estão disponíveis; escolha capacidade para o crescimento previsto antes de assinar. Acima de 100.000, cada membro adicional único é cobrado a US$ 0,02 por período de cobrança da assinatura, incluindo os removidos durante esse período.
-  </Accordion>
-
-  <Accordion title="Posso solicitar condições comerciais personalizadas?">
-    Sim. Para faturamento, compras ou requisitos comerciais específicos, fale com a equipe de vendas. O uso padrão do Gateway continua disponível sem um complemento Enterprise.
-  </Accordion>
-</AccordionGroup>
-
-## Consulte seus preços
-
-Confira a taxa atual de recarga e a situação da cobrança no painel:
-
-1. Acesse **Configurações -> Preços e faixas**
-2. Veja a taxa atual e o uso recente
-3. Confira o saldo de créditos e a tendência de gastos
-
-<Card title="Dúvidas?" icon="question">
-  Precisa de ajuda com cobrança ou preços? Acesse a [Central de ajuda da Phaseo](https://phaseo.app/help).
-</Card>
+Para faturamento, compras corporativas ou condições comerciais personalizadas, entre em contato pela [Central de Ajuda](https://phaseo.app/help). O uso padrão do Gateway não exige o Enterprise.

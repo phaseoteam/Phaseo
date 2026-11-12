@@ -4,4 +4,4 @@ description: Registros de compras, faturas, reembolsos e comportamento do saldo 
 order: 2
 ---
 
-Estes artigos explicam compras de créditos, elegibilidade para reembolso e recuperação de faturas.
+Estes artigos explicam compras de créditos, elegibilidade para reembolso e recuperação de recibos ou faturas.

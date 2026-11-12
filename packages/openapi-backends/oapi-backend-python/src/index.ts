@@ -154,8 +154,15 @@ function renderOperations(operations: IROperation[], modelTypes: ModelTypeResolv
 		"from __future__ import annotations",
 		"",
 		"from typing import Any, Dict, Optional",
+		"from urllib.parse import quote",
 		"from .client import Client",
 		"from . import models",
+		"",
+		"def _path_segment(value: Any) -> str:",
+		"\tvalue = str(value)",
+		"\tif value in ('.', '..'):",
+		"\t\traise ValueError('Dot segments are not valid path parameters')",
+		"\treturn quote(value, safe='')",
 		""
 	];
 	const exports: string[] = [];
@@ -197,7 +204,7 @@ function renderPathTemplate(path: string, params: IROperation["params"]): string
 	const parts = segments.map((segment) => {
 		if (segment.startsWith("{") && segment.endsWith("}")) {
 			const name = sanitizeIdentifier(segment.slice(1, -1));
-			return `{path.get('${name}', '')}`;
+			return `{_path_segment(path.get('${name}', ''))}`;
 		}
 		return segment
 			.replace(/\\/g, "\\\\")

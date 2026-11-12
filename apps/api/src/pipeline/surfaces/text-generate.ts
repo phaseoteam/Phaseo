@@ -4,10 +4,11 @@
 
 import type { IRChatRequest, IRChatResponse } from "@core/ir";
 import { handleError } from "@core/error-handler";
-import { detectTextProtocol } from "@protocols/detect";
+import { detectProtocol, detectTextProtocol } from "@protocols/detect";
 import type { UnifiedStreamEvent } from "../after/stream-events";
 import { decodeProtocol, encodeProtocol } from "@protocols/index";
 import { doRequestWithIR } from "../execute";
+import { droppedParamsForClient, restoreDroppedParams } from "../execute/unsupportedParams";
 import { finalizeRequest, settleNonBillableFailure } from "../after";
 import { handleFailureAudit, handleSuccessAudit } from "../after/audit";
 import { makeHeaders, createResponse } from "../after/http";
@@ -34,6 +35,10 @@ import {
 	mergeIRUsageTotals,
 	prepareServerToolsForTextRequest,
 } from "./server-tools";
+import { UpstreamStreamError } from "@core/stream-errors";
+import { suppressFailedResponseBilling } from "../after/billing-policy";
+import { recordProviderRound } from "../after/timing";
+import { recordManagedProviderTokensOnce } from "@core/provider-rate-limits";
 import {
 	buildResponseCacheFingerprint,
 	buildResponseCacheKey,
@@ -57,7 +62,21 @@ import {
 } from "../after/fetch-observability";
 import { fetchGatewayContext } from "../before/context";
 import { buildProviderCandidatesWithDiagnostics } from "../before/utils";
-import type { PipelineContext } from "../before/types";
+import type { PipelineContext, ProviderCandidate, ServerToolSubCallCharge } from "../before/types";
+import { presentUsageForClient } from "../after/payload";
+import { responsesRequestBody } from "../after/responses-stream-normaliser";
+import { applyWorkspacePolicy, fetchWorkspacePolicy } from "../before/workspacePolicy";
+import { decodeNonTextRequest, encodeNonTextResponse } from "./non-text";
+import { priceServerToolResult } from "./server-tool-pricing";
+import { gptImageSizeForAspectRatio, isGptImageModel } from "./image-tool-size";
+import type { IRImageGenerationResponse } from "@core/ir";
+import type { ServerToolPricing } from "@core/types";
+import { ImagesGenerationSchema } from "@core/schemas";
+import { normalizeCapability } from "@/executors";
+import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
+import { resolveSvgAuthor } from "@providers/openai/endpoints/images-svg";
+import { passesWalletCreditCheck, walletCanPay } from "../before/guards";
+import { chargeCompletedServerToolRounds, priceServerToolRounds, priceServerToolSubCall } from "../after/server-tool-charges";
 import {
 	buildEmptyResponseDiagnostics,
 	emptyResponseMessage,
@@ -89,6 +108,19 @@ function createJsonErrorResponse(
 	);
 }
 
+/**
+ * tool_choice for the request that continues after a server tool ran. A forced
+ * choice ("required" or a named tool) would make the model call a tool again
+ * on every round, so it relaxes to "auto". Anything else is kept as the client
+ * sent it, so the follow-up's prefix matches the first request and its cache.
+ */
+export function serverToolFollowUpToolChoice(
+	toolChoice: IRChatRequest["toolChoice"],
+): IRChatRequest["toolChoice"] {
+	if (toolChoice === "required" || (toolChoice && typeof toolChoice === "object")) return "auto";
+	return toolChoice;
+}
+
 function cloneJsonValue<T>(value: T): T {
 	if (value === null || value === undefined) return value;
 	return JSON.parse(JSON.stringify(value)) as T;
@@ -102,6 +134,62 @@ function extractAssistantText(response: IRChatResponse): string {
 		.map((part) => part.text)
 		.join("")
 		.trim();
+}
+
+const UPSTREAM_STREAM_FAILURE_MESSAGE = "The upstream stream failed before successful completion.";
+
+/**
+ * A buffered client asked for one complete response, so an upstream stream
+ * that failed after output began is a failed request: the client gets a 502
+ * and no partial text. Billing follows the streaming path
+ * (pipeline/after/stream.ts): partial output of a failed stream is not charged,
+ * but its tokens still count against managed provider rate limits.
+ */
+export async function settleBufferedUpstreamStreamFailure(
+	ctx: PipelineContext,
+	result: any,
+	error: UpstreamStreamError,
+	/** Usage of earlier server-tool rounds of the same request, which the failing round's usage does not include. */
+	priorUsage?: IRChatResponse["usage"],
+): Promise<Response> {
+	const usage = priorUsage
+		? mergeIRUsageTotals(priorUsage, (error.partial.ir as IRChatResponse | undefined)?.usage) ?? null
+		: error.partial.usageRaw ?? result.bill?.usage ?? null;
+	const partialResult = {
+		...result,
+		kind: "completed" as const,
+		ir: error.partial.ir,
+		stream: null,
+		usageFinalizer: null,
+		rawResponse: error.partial.rawResponse,
+		bill: { ...result.bill, usage: usage ?? undefined },
+	};
+	await recordManagedProviderTokensOnce({
+		ctx,
+		providerId: result.provider,
+		keySource: result.keySource,
+		usage,
+		reservation: result.providerRateLimitReservation,
+	});
+	suppressFailedResponseBilling({ ctx, result: partialResult, usage: usage ?? undefined, reason: "upstream_failure" });
+	await handleFailureAudit(
+		ctx,
+		partialResult,
+		502,
+		"upstream",
+		"upstream_stream_failure",
+		UPSTREAM_STREAM_FAILURE_MESSAGE,
+		{ upstream_error_message: sanitizeErrorMessage(error.upstreamMessage) },
+		{
+			generation_id: ctx.requestId,
+			status_code: 502,
+			error: "upstream_stream_failure",
+			description: UPSTREAM_STREAM_FAILURE_MESSAGE,
+		},
+	);
+	return createJsonErrorResponse(502, "upstream_stream_failure", UPSTREAM_STREAM_FAILURE_MESSAGE, {
+		error_origin: "upstream",
+	});
 }
 
 function emptyProviderResponse(
@@ -155,6 +243,44 @@ function formatAdvisorConversation(messages: IRChatRequest["messages"]): string 
 		.join("\n\n");
 }
 
+/**
+ * Price a server tool's model call on the called model's own route and add it to the
+ * request's bill. A call that cannot be priced is treated as failed so its output is not
+ * delivered for free.
+ */
+async function recordSubCallCharge(
+	pre: PipelineRunnerArgs["pre"],
+	subCtx: PipelineContext,
+	result: any,
+	kind: ServerToolSubCallCharge["kind"],
+	model: string,
+): Promise<string | null> {
+	try {
+		const charge = await priceServerToolSubCall({ ctx: subCtx, result, kind, model });
+		(pre.ctx.serverToolSubCallCharges ??= []).push(charge);
+		return null;
+	} catch (error) {
+		console.error("[gateway] server tool sub-call pricing failed", {
+			requestId: pre.ctx.requestId,
+			kind,
+			model,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return `Pricing is unavailable for ${model}.`;
+	}
+}
+
+/** The wallet check the main request passed, applied to the model a server tool calls. */
+function subCallCreditDenied(
+	pre: PipelineRunnerArgs["pre"],
+	model: string,
+	context: Awaited<ReturnType<typeof fetchGatewayContext>>,
+	candidates: unknown[],
+): string | null {
+	if (passesWalletCreditCheck({ model, context, providers: candidates as any[], internal: pre.ctx.internal })) return null;
+	return `Insufficient credits to call ${model}. Add credits to use paid models in server tools.`;
+}
+
 async function executeAdvisorModel(args: {
 	pre: PipelineRunnerArgs["pre"];
 	timing: any;
@@ -195,6 +321,8 @@ async function executeAdvisorModel(args: {
 			message: `No text.generate providers are available for advisor model ${args.model}.`,
 		};
 	}
+	const advisorCreditDenied = subCallCreditDenied(args.pre, args.model, advisorContext, candidates);
+	if (advisorCreditDenied) return { ok: false, message: advisorCreditDenied };
 
 	const advisorInstructions = [
 		ADVISOR_DEFAULT_INSTRUCTIONS,
@@ -278,9 +406,13 @@ async function executeAdvisorModel(args: {
 		teamSettings: advisorContext.teamSettings ?? args.pre.ctx.teamSettings,
 		attemptErrors: [],
 		providerAttempts: [],
+		lifecycle: undefined,
+		lifecycleParentSpanId: undefined,
+		lifecycleProviderSpanId: undefined,
 		searchObservability: null,
 		webFetchObservability: null,
 		responseCache: null,
+		serverToolSubCallCharges: undefined,
 	};
 
 	const executed = await doRequestWithIR(advisorCtx, advisorIr, args.timing);
@@ -302,6 +434,8 @@ async function executeAdvisorModel(args: {
 		return { ok: false, message: "Advisor request returned an unsupported response kind." };
 	}
 	const advisorResponse = executed.result.ir as IRChatResponse;
+	const advisorPricingError = await recordSubCallCharge(args.pre, advisorCtx, executed.result, "advisor", advisorCtx.model);
+	if (advisorPricingError) return { ok: false, message: advisorPricingError };
 	return {
 		ok: true,
 		content: extractAssistantText(advisorResponse),
@@ -309,7 +443,7 @@ async function executeAdvisorModel(args: {
 	};
 }
 
-async function executeImageGenerationModel(args: {
+type ImageToolArgs = {
 	pre: PipelineRunnerArgs["pre"];
 	timing: any;
 	model: string;
@@ -321,11 +455,248 @@ async function executeImageGenerationModel(args: {
 	outputFormat?: string;
 	outputCompression?: number;
 	moderation?: string;
-}): Promise<{ ok: true; imageUrl?: string; b64Json?: string; mimeType?: string; model: string; usage?: IRChatResponse["usage"] } | { ok: false; message: string }> {
+	complexity?: string;
+	frameCount?: number;
+	frameDurationMs?: number;
+	svgModel?: string;
+};
+
+type ImageToolResult =
+	| { ok: true; imageUrl?: string; b64Json?: string; mimeType?: string; model: string; usage?: IRChatResponse["usage"]; pricing?: ServerToolPricing }
+	| { ok: false; message: string };
+
+/** Image tool settings that fall back to the image model's default when the value is invalid for it. */
+const IMAGE_TOOL_DEFAULTABLE_FIELDS = new Set(["moderation", "quality", "background", "size", "aspect_ratio", "output_compression"]);
+
+const IMAGE_TOOL_MIME_TYPES: Record<string, string> = {
+	png: "image/png",
+	jpeg: "image/jpeg",
+	webp: "image/webp",
+	gif: "image/gif",
+	svg: "image/svg+xml",
+};
+
+/** A copy of the parent context for a model the image tool runs, with its own meta so parent charges stay out of its price. */
+function imageToolContext(
+	pre: PipelineRunnerArgs["pre"],
+	context: Awaited<ReturnType<typeof fetchGatewayContext>>,
+	overrides: Pick<PipelineContext, "endpoint" | "capability" | "protocol" | "rawBody" | "body" | "providers"> & { model: string },
+): PipelineContext {
+	const { model, ...rest } = overrides;
+	return {
+		...pre.ctx,
+		...rest,
+		meta: { ...pre.ctx.meta, serverToolPricing: undefined },
+		requestId: `${pre.ctx.requestId}:image_generation`,
+		model: context.resolvedModel ?? model,
+		requestedModel: model,
+		stream: false,
+		pricing: context.pricing,
+		gating: {
+			key: context.key,
+			keyLimit: context.keyLimit,
+			credit: context.credit,
+		},
+		preset: context.preset
+			? {
+				id: context.preset.id,
+				name: context.preset.name,
+				slug: context.preset.slug ?? null,
+				config: context.preset.config,
+			}
+			: null,
+		teamEnrichment: context.teamEnrichment ?? pre.ctx.teamEnrichment,
+		keyEnrichment: context.keyEnrichment ?? pre.ctx.keyEnrichment,
+		teamSettings: context.teamSettings ?? pre.ctx.teamSettings,
+		attemptErrors: [],
+		providerAttempts: [],
+		searchObservability: null,
+		lifecycle: undefined,
+		lifecycleParentSpanId: undefined,
+		lifecycleProviderSpanId: undefined,
+		webFetchObservability: null,
+		responseCache: null,
+	};
+}
+
+async function failedImageToolMessage(executed: Response): Promise<string> {
+	let message = `Image generation request failed with status ${executed.status}.`;
+	try {
+		const json = await executed.clone().json() as any;
+		message = typeof json?.description === "string"
+			? json.description
+			: typeof json?.message === "string"
+			? json.message
+			: typeof json?.error?.message === "string"
+				? json.error.message
+				: typeof json?.error === "string"
+					? json.error
+					: message;
+	} catch {
+		// Keep status message.
+	}
+	return message;
+}
+
+/** Workspace and key model rules, as the before stage applies them to a request of its own. */
+async function imageToolPolicyCandidates(
+	pre: PipelineRunnerArgs["pre"],
+	candidates: ProviderCandidate[],
+	model: string,
+	body: any,
+): Promise<{ ok: true; providers: ProviderCandidate[]; policy: Awaited<ReturnType<typeof fetchWorkspacePolicy>> } | { ok: false; message: string }> {
+	const policy = await fetchWorkspacePolicy({ workspaceId: pre.ctx.workspaceId, apiKeyId: pre.ctx.keyId! });
+	const result = applyWorkspacePolicy({ providers: candidates, resolvedModel: model, body, workspacePolicy: policy });
+	if (!result.ok) {
+		return { ok: false, message: `Image model "${model}" is blocked by a workspace policy or guardrail.` };
+	}
+	return { ok: true, providers: result.providers, policy };
+}
+
+async function executeImageGenerationModel(args: ImageToolArgs): Promise<ImageToolResult> {
 	const apiKeyId = args.pre.ctx.keyId;
 	if (!apiKeyId) {
 		return { ok: false, message: "Image generation cannot resolve the current API key context." };
 	}
+	// Image models with an Images API route (GPT Image, FLUX and others) run there, which takes the
+	// full image options. Models that make images in chat replies (Gemini image models) run as chat.
+	const imagesCapability = normalizeCapability(resolveCapabilityFromEndpoint("images.generations"));
+	let imagesContext: Awaited<ReturnType<typeof fetchGatewayContext>> | null = null;
+	try {
+		imagesContext = await fetchGatewayContext({
+			workspaceId: args.pre.ctx.workspaceId,
+			model: args.model,
+			endpoint: imagesCapability,
+			apiKeyId,
+			includeTestingMode: args.pre.ctx.testingMode,
+			disableCache: Boolean(args.pre.ctx.meta.debug?.enabled),
+		});
+	} catch (error) {
+		// A model without an Images API route resolves with no candidates; a throw is a real
+		// failure, and falling back to chat would change the image's options and pricing.
+		return {
+			ok: false,
+			message: `Could not load the Images API route for ${args.model}: ${error instanceof Error ? error.message : String(error)}`,
+		};
+	}
+	const imagesCandidates = buildProviderCandidatesWithDiagnostics(imagesContext).candidates;
+	if (imagesCandidates.length > 0) {
+		return executeImageToolViaImagesApi(args, imagesContext, imagesCandidates, imagesCapability);
+	}
+	if (args.complexity || args.frameCount != null || args.frameDurationMs != null || args.svgModel || args.outputFormat === "gif" || args.outputFormat === "svg") {
+		return { ok: false, message: `Image model ${args.model} has no Images API route, so complexity, GIF and SVG output are not available for it.` };
+	}
+	return executeImageToolViaChatModel(args, apiKeyId);
+}
+
+async function executeImageToolViaImagesApi(
+	args: ImageToolArgs,
+	context: Awaited<ReturnType<typeof fetchGatewayContext>>,
+	candidates: ProviderCandidate[],
+	capability: string,
+): Promise<ImageToolResult> {
+	// A paid image model needs wallet credit even when the calling model is free.
+	const creditDenied = subCallCreditDenied(args.pre, args.model, context, candidates);
+	if (creditDenied) return { ok: false, message: creditDenied };
+	// GPT Image takes a size, not an aspect ratio; other image models keep aspect_ratio.
+	const gptImageSize = !args.size && args.aspectRatio && isGptImageModel(args.model)
+		? gptImageSizeForAspectRatio(args.aspectRatio)
+		: undefined;
+	const size = args.size ?? gptImageSize;
+	const rawBody: Record<string, unknown> = {
+		model: args.model,
+		prompt: args.prompt,
+		n: 1,
+		...(size ? { size } : {}),
+		...(args.aspectRatio && !isGptImageModel(args.model) ? { aspect_ratio: args.aspectRatio } : {}),
+		...(args.quality ? { quality: args.quality } : {}),
+		...(args.background ? { background: args.background } : {}),
+		...(args.outputFormat ? { output_format: args.outputFormat } : {}),
+		...(typeof args.outputCompression === "number" ? { output_compression: args.outputCompression } : {}),
+		...(args.moderation ? { moderation: args.moderation } : {}),
+		...(args.complexity ? { complexity: args.complexity } : {}),
+		...(typeof args.frameCount === "number" ? { frame_count: args.frameCount } : {}),
+		...(typeof args.frameDurationMs === "number" ? { frame_duration_ms: args.frameDurationMs } : {}),
+		...(args.svgModel ? { svg: { model: args.svgModel } } : {}),
+	};
+	// The chat model picks these freely ("standard" moderation, a size the image model lacks).
+	// An invalid value falls back to the image model's default instead of failing the image.
+	// Format, complexity, frames and the SVG author change what comes back, so they still fail.
+	let parsed = ImagesGenerationSchema.safeParse(rawBody);
+	while (!parsed.success) {
+		const droppable = [...new Set(parsed.error.issues.map((issue) => String(issue.path[0] ?? "")))]
+			.filter((field) => IMAGE_TOOL_DEFAULTABLE_FIELDS.has(field) && field in rawBody);
+		if (droppable.length === 0) {
+			return { ok: false, message: parsed.error.issues.map((issue) => `${issue.path.join(".") || "request"}: ${issue.message}`).join("; ") };
+		}
+		for (const field of droppable) delete rawBody[field];
+		parsed = ImagesGenerationSchema.safeParse(rawBody);
+	}
+	const policy = await imageToolPolicyCandidates(args.pre, candidates, context.resolvedModel ?? args.model, rawBody);
+	if ("message" in policy) return { ok: false, message: policy.message };
+	if (args.outputFormat === "svg" && args.svgModel) {
+		// The SVG author runs, and bills, as its own model: it needs a price and the same model rules.
+		const author = await resolveSvgAuthor(args.svgModel);
+		if (!author) {
+			return { ok: false, message: `svg.model "${args.svgModel}" is not an OpenAI text model with Phaseo pricing. Use an OpenAI model id such as openai/gpt-5-nano.` };
+		}
+		const authorPolicy = applyWorkspacePolicy({
+			providers: policy.providers
+				.filter((candidate) => candidate.providerId === "openai")
+				.map((candidate) => ({ ...candidate, apiModelId: author.model })),
+			resolvedModel: author.model,
+			body: { ...rawBody, model: author.model },
+			workspacePolicy: policy.policy,
+		});
+		if (!authorPolicy.ok) {
+			return { ok: false, message: `SVG author model "${author.model}" is blocked by a workspace policy or guardrail.` };
+		}
+	}
+	const ir = decodeNonTextRequest("images.generations", parsed.data);
+	(ir as any).rawRequest = rawBody;
+	const imageCtx = imageToolContext(args.pre, context, {
+		model: args.model,
+		endpoint: "images.generations" as any,
+		capability,
+		protocol: detectProtocol("images.generations" as any),
+		rawBody,
+		body: parsed.data,
+		providers: policy.providers,
+	});
+	const executed = await doRequestWithIR(imageCtx, ir as any, args.timing);
+	if (executed instanceof Response) {
+		return { ok: false, message: await failedImageToolMessage(executed) };
+	}
+	if (executed.result.kind !== "completed" || !executed.result.ir) {
+		return { ok: false, message: "Image generation request returned an unsupported response kind." };
+	}
+	const imageResponse = executed.result.ir as unknown as IRImageGenerationResponse;
+	const first = Array.isArray(imageResponse.data) ? imageResponse.data[0] : undefined;
+	if (!first?.b64Json && !first?.url) {
+		return { ok: false, message: "Image generation response did not include an image." };
+	}
+	const model = context.resolvedModel ?? args.model;
+	const payload = encodeNonTextResponse("images.generations", imageResponse, imageCtx.requestId);
+	const pricing = await priceServerToolResult({
+		ctx: imageCtx,
+		result: executed.result,
+		payloadUsage: payload?.usage,
+		body: parsed.data,
+		component: "image_generation",
+		model,
+	});
+	const format = imageResponse.outputFormat ?? args.outputFormat ?? "png";
+	return {
+		ok: true,
+		...(first.url ? { imageUrl: first.url } : {}),
+		...(first.b64Json ? { b64Json: first.b64Json } : {}),
+		mimeType: IMAGE_TOOL_MIME_TYPES[format] ?? "image/png",
+		model,
+		pricing,
+	};
+}
+
+async function executeImageToolViaChatModel(args: ImageToolArgs, apiKeyId: string): Promise<ImageToolResult> {
 	let imageContext;
 	try {
 		imageContext = await fetchGatewayContext({
@@ -347,9 +718,11 @@ async function executeImageGenerationModel(args: {
 	if (candidates.length === 0) {
 		return {
 			ok: false,
-			message: `No text.generate providers are available for image generation model ${args.model}.`,
+			message: `No Images API or chat providers are available for image generation model ${args.model}.`,
 		};
 	}
+	const imageCreditDenied = subCallCreditDenied(args.pre, args.model, imageContext, candidates);
+	if (imageCreditDenied) return { ok: false, message: imageCreditDenied };
 
 	const imageConfig = {
 		...(args.aspectRatio ? { aspectRatio: args.aspectRatio } : {}),
@@ -376,6 +749,8 @@ async function executeImageGenerationModel(args: {
 			: {}),
 		...(Object.keys(providerOptions).length > 0 ? providerOptions : {}),
 	};
+	const policy = await imageToolPolicyCandidates(args.pre, candidates, imageContext.resolvedModel ?? args.model, rawBody);
+	if ("message" in policy) return { ok: false, message: policy.message };
 	const imageIr: IRChatRequest = {
 		model: args.model,
 		stream: false,
@@ -391,56 +766,19 @@ async function executeImageGenerationModel(args: {
 		toolChoice: "none",
 		rawRequest: rawBody,
 	};
-	const imageCtx: PipelineContext = {
-		...args.pre.ctx,
-		requestId: `${args.pre.ctx.requestId}:image_generation`,
-		model: imageContext.resolvedModel ?? args.model,
-		requestedModel: args.model,
+	const imageCtx = imageToolContext(args.pre, imageContext, {
+		model: args.model,
 		endpoint: "text.generate" as any,
 		capability: "text.generate",
 		protocol: "openai.chat",
 		rawBody,
 		body: rawBody,
-		stream: false,
-		providers: candidates,
-		pricing: imageContext.pricing,
-		gating: {
-			key: imageContext.key,
-			keyLimit: imageContext.keyLimit,
-			credit: imageContext.credit,
-		},
-		preset: imageContext.preset
-			? {
-				id: imageContext.preset.id,
-				name: imageContext.preset.name,
-				slug: imageContext.preset.slug ?? null,
-				config: imageContext.preset.config,
-			}
-			: null,
-		teamEnrichment: imageContext.teamEnrichment ?? args.pre.ctx.teamEnrichment,
-		keyEnrichment: imageContext.keyEnrichment ?? args.pre.ctx.keyEnrichment,
-		teamSettings: imageContext.teamSettings ?? args.pre.ctx.teamSettings,
-		attemptErrors: [],
-		providerAttempts: [],
-		searchObservability: null,
-		webFetchObservability: null,
-		responseCache: null,
-	};
+		providers: policy.providers,
+	});
 
 	const executed = await doRequestWithIR(imageCtx, imageIr, args.timing);
 	if (executed instanceof Response) {
-		let message = `Image generation request failed with status ${executed.status}.`;
-		try {
-			const json = await executed.clone().json() as any;
-			message = typeof json?.message === "string"
-				? json.message
-				: typeof json?.error === "string"
-					? json.error
-					: message;
-		} catch {
-			// Keep status message.
-		}
-		return { ok: false, message };
+		return { ok: false, message: await failedImageToolMessage(executed) };
 	}
 	if (executed.result.kind !== "completed" || !executed.result.ir) {
 		return { ok: false, message: "Image generation request returned an unsupported response kind." };
@@ -450,11 +788,21 @@ async function executeImageGenerationModel(args: {
 	if (!image) {
 		return { ok: false, message: "Image generation response did not include an image." };
 	}
+	const model = imageContext.resolvedModel ?? args.model;
+	const payload = encodeProtocol("openai.chat.completions", imageResponse, imageCtx.requestId);
+	const pricing = await priceServerToolResult({
+		ctx: imageCtx,
+		result: executed.result,
+		payloadUsage: payload?.usage,
+		body: rawBody,
+		component: "image_generation",
+		model,
+	});
 	return {
 		ok: true,
 		...image,
-		model: imageContext.resolvedModel ?? args.model,
-		usage: imageResponse.usage,
+		model,
+		pricing,
 	};
 }
 
@@ -468,6 +816,9 @@ async function handleCachedTextResponse(args: {
 	const ctx = pre.ctx;
 	ctx.meta.generation_ms = 0;
 	ctx.meta.latency_ms = ctx.meta.before_ms ?? 0;
+	// The cached result was generated without these parameters; report them as
+	// a live call would (header, meta and audit). Older entries carry none.
+	restoreDroppedParams(ctx, record.droppedParams);
 
 	const result = {
 		kind: "completed" as const,
@@ -535,8 +886,16 @@ async function handleCachedTextResponse(args: {
 			responseBodyRecord.meta && typeof responseBodyRecord.meta === "object"
 				? responseBodyRecord.meta
 				: {};
+		const existingRouting =
+			existingMeta.routing && typeof existingMeta.routing === "object"
+				? existingMeta.routing
+				: null;
+		const droppedParams = droppedParamsForClient(ctx).map(({ param, reason }) => ({ param, reason }));
 		responseBodyRecord.meta = {
 			...existingMeta,
+			...(existingRouting || droppedParams.length > 0
+				? { routing: { ...(existingRouting ?? {}), dropped_params: droppedParams } }
+				: {}),
 			...(ctx.responseCache ? { response_cache: ctx.responseCache } : {}),
 			...(ctx.guardrailEnforcement
 				? { guardrail_enforcement: ctx.guardrailEnforcement }
@@ -561,18 +920,52 @@ async function materializeStreamResultToCompleted(args: {
 		throw new Error("gateway_stream_materialization_missing_body");
 	}
 	const materializeStartedAt = performance.now();
+	// When the first generated output arrived, for provider TTFT (recordProviderRound).
+	let firstOutputAtMs: number | null = null;
+	let reasoningStreamed = false;
+	// Separate moments output arrived: 1 means the answer came in one read.
+	let outputArrivals = 0;
+	let lastOutputAtMs: number | null = null;
 	const consumed = await consumeTextProtocolStreamToIR({
 		protocol: args.protocol,
 		stream,
 		requestId: args.requestId,
 		model: args.model,
 		provider: args.result.provider,
-		onEvent: args.onEvent,
+		onEvent: (event) => {
+			const isOutput =
+				(event.type === "delta_text" && event.text.length > 0) || event.type === "delta_tool" || event.type === "delta_content_part";
+			if (isOutput) {
+				const nowMs = Date.now();
+				if (lastOutputAtMs === null || nowMs > lastOutputAtMs) outputArrivals += 1;
+				lastOutputAtMs = nowMs;
+			}
+			if (firstOutputAtMs === null && isOutput) {
+				firstOutputAtMs = Date.now();
+				reasoningStreamed = event.type === "delta_text" && event.channel === "reasoning_text";
+			}
+			args.onEvent?.(event);
+		},
 	});
 	const materializedGenerationMs = Math.max(
 		0,
 		Math.round(performance.now() - materializeStartedAt),
 	);
+	// Executors that read usage from the upstream stream itself are authoritative for
+	// streamed clients (pipeline/after/stream.ts); buffered clients bill from the same usage.
+	// The finalizer is read once: its usage also carries the server-tool counters.
+	const finalizedUsage = await readAuthoritativeFinalizedUsage(args.result);
+	const authoritativeUsage = args.protocol === "anthropic.messages"
+		? null
+		: billableAuthoritativeUsage(finalizedUsage);
+	const baseUsage =
+		authoritativeUsage ??
+		((args.result.bill?.usage && typeof args.result.bill.usage === "object")
+			? args.result.bill.usage
+			: (consumed.usageRaw && typeof consumed.usageRaw === "object"
+				? consumed.usageRaw
+				: args.result.bill?.usage));
+	const serverToolMeters = serverToolMetersFrom(finalizedUsage);
 	return {
 		...args.result,
 		kind: "completed" as const,
@@ -586,6 +979,9 @@ async function materializeStreamResultToCompleted(args: {
 		rawResponse: consumed.rawResponse,
 		timing: {
 			...(args.result.timing ?? {}),
+			firstOutputAtMs,
+			reasoningStreamed,
+			outputArrivals,
 			generationMs: Math.max(
 				typeof args.result.timing?.generationMs === "number"
 					? args.result.timing.generationMs
@@ -595,20 +991,70 @@ async function materializeStreamResultToCompleted(args: {
 		},
 		bill: {
 			...args.result.bill,
-			usage:
-				(args.result.bill?.usage && typeof args.result.bill.usage === "object")
-					? args.result.bill.usage
-					: (consumed.usageRaw && typeof consumed.usageRaw === "object"
-						? consumed.usageRaw
-						: args.result.bill?.usage),
+			usage: serverToolMeters && (baseUsage == null || typeof baseUsage === "object")
+				? { ...(baseUsage ?? {}), ...serverToolMeters }
+				: baseUsage,
 		},
 	};
+}
+
+/** The usage an executor's own stream finalizer reports, when the executor marks it authoritative. */
+async function readAuthoritativeFinalizedUsage(result: any): Promise<Record<string, any> | null> {
+	if (result?.usageFinalizerAuthoritative !== true || typeof result.usageFinalizer !== "function") return null;
+	try {
+		const finalized = await result.usageFinalizer();
+		const usage = finalized?.usage;
+		return usage && typeof usage === "object" ? usage : null;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * The after-stage lays the client payload's usage over these meters, so they are only used
+ * when their input_tokens means what an OpenAI-shaped payload's does: the whole prompt with
+ * cache reads and writes inside it. Anthropic-semantics meters (Claude accounting) and the
+ * Messages payload (cache on top of input_tokens) would contradict each other's hints.
+ */
+function billableAuthoritativeUsage(usage: Record<string, any> | null): Record<string, any> | null {
+	if (!usage) return null;
+	if (usage.cached_read_tokens_are_subset_of_input === false || usage.cached_write_tokens_are_subset_of_input === false) {
+		return null;
+	}
+	const billable = ["input_tokens", "output_tokens", "cached_read_text_tokens", "cached_write_text_tokens"]
+		.some((key) => typeof usage[key] === "number" && usage[key] > 0);
+	return billable ? usage : null;
+}
+
+const SERVER_TOOL_METER_KEYS = ["native_web_search_requests", "native_web_fetch_requests", "server_tool_use"] as const;
+
+function serverToolMetersFrom(usage: Record<string, any> | null): Record<string, unknown> | null {
+	if (!usage) return null;
+	const meters: Record<string, unknown> = {};
+	for (const key of SERVER_TOOL_METER_KEYS) {
+		const value = usage[key];
+		if ((typeof value === "number" && Number.isFinite(value) && value >= 0) || (value && typeof value === "object")) meters[key] = value;
+	}
+	return Object.keys(meters).length ? meters : null;
+}
+
+/**
+ * Server-tool counters from an executor whose usage finalizer reads the upstream stream
+ * itself (Claude on Anthropic, Bedrock and Vertex). The client-protocol stream a buffered
+ * request is materialised from carries no such counters, so without this a buffered
+ * request's web searches (usage.server_tool_use.web_search_requests) were never billed.
+ */
+export async function readAuthoritativeServerToolMeters(result: any): Promise<Record<string, unknown> | null> {
+	return serverToolMetersFrom(await readAuthoritativeFinalizedUsage(result));
 }
 
 export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise<Response> {
 	if (args.pre.ctx.stream) {
 		const protocol = detectTextProtocol(args.endpoint, new URL(args.req.url).pathname);
 		const prepared = prepareServerToolsForTextRequest(args.pre.ctx.body, protocol);
+		// The inner pipeline reuses this result rather than preparing (and, with
+		// server tools, deep-cloning the body) a second time.
+		const reuse = { body: args.pre.ctx.body, protocol, prepared };
 		if (prepared.ok && prepared.config.enabled && (
 			protocol === "openai.responses" || protocol === "openai.chat.completions" || protocol === "anthropic.messages"
 		)) {
@@ -616,15 +1062,54 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				protocol,
 				requestId: args.pre.ctx.requestId,
 				model: args.pre.ctx.model,
-				run: (sink) => runTextGeneratePipelineInner(args, sink),
+				run: (sink) => runTextGeneratePipelineInner(args, sink, reuse),
+				chargedUsage: () => chargedServerToolUsageForClient(args.pre.ctx),
+				request: responsesRequestBody(args.pre.ctx),
 			});
 		}
+		return runTextGeneratePipelineInner(args, undefined, reuse);
 	}
 	return runTextGeneratePipelineInner(args);
 }
 
-async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?: ManagedToolLiveSink): Promise<Response> {
+/**
+ * The client usage of completed server-tool rounds a failed request was charged for, with the
+ * settled pricing (the failure row records the same charge). Null when nothing was charged.
+ */
+function chargedServerToolUsageForClient(ctx: PipelineContext): Record<string, unknown> | null {
+	const partial = ctx.serverToolPartialCharge;
+	if (!partial || !(partial.costNanos > 0)) return null;
+	const totalNanos = Math.round(partial.costNanos);
+	return presentUsageForClient({
+		...partial.usage,
+		pricing: {
+			currency: partial.currency ?? "USD",
+			total_nanos: totalNanos,
+			total_cents: Math.trunc(totalNanos / 10_000_000),
+			total_usd_str: String(Number((totalNanos / 1_000_000_000).toFixed(9))),
+			lines: partial.pricingLines ?? [],
+		},
+	}, { endpoint: ctx.endpoint, body: ctx.body });
+}
+
+type PreparedServerToolsReuse = {
+	body: unknown;
+	protocol: ReturnType<typeof detectTextProtocol>;
+	prepared: ReturnType<typeof prepareServerToolsForTextRequest>;
+};
+
+async function runTextGeneratePipelineInner(
+	args: PipelineRunnerArgs,
+	liveSink?: ManagedToolLiveSink,
+	reusePrepared?: PreparedServerToolsReuse,
+): Promise<Response> {
 	const { pre, req, endpoint, timing } = args;
+	// Each attempt (model fallbacks rerun this) bills only the sub-calls it made itself.
+	pre.ctx.serverToolSubCallCharges = [];
+	pre.ctx.serverToolPartialCharge = null;
+	pre.ctx.serverToolRoundsBill = null;
+	// Set once a server-tool round has completed: charges that work if the request then fails.
+	let settleServerToolRoundsOnError: (() => Promise<void>) | null = null;
 
 	try {
 		// Protocol detection
@@ -634,7 +1119,10 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 		(pre.ctx as any).protocol = protocol; // Store for observability
 		timing.timer.end("protocol_detect");
 
-		const preparedServerTools = prepareServerToolsForTextRequest(pre.ctx.body, protocol);
+		const preparedServerTools =
+			reusePrepared && reusePrepared.body === pre.ctx.body && reusePrepared.protocol === protocol
+				? reusePrepared.prepared
+				: prepareServerToolsForTextRequest(pre.ctx.body, protocol);
 		if (preparedServerTools.ok === false) {
 			const header = timing.timer.header();
 			pre.ctx.timing = timing.timer.snapshot();
@@ -660,6 +1148,9 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 		ir.rawRequest = pre.ctx.rawBody;
 		timing.timer.end("ir_decode");
 		const requestedStream = ir.stream === true;
+		// Anthropic documents max_tokens: 0 as a prompt-cache pre-warm: an empty answer is the
+		// requested result, and the cache writes it made are billed.
+		const cachePreWarm = protocol === "anthropic.messages" && ir.maxTokens === 0;
 		const irForExecution: IRChatRequest = {
 			...ir,
 			// Always use the provider's streaming transport for text generation.
@@ -672,6 +1163,8 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 			debugEnabled: Boolean(pre.ctx.meta?.debug?.enabled),
 			hasTools: Array.isArray(pre.ctx.body?.tools) && pre.ctx.body.tools.length > 0,
 			serverToolsEnabled: preparedServerTools.config.enabled,
+			neverStoreContent: pre.ctx.neverStoreContent === true,
+			zeroDataRetention: pre.ctx.zeroDataRetention === true,
 		});
 		pre.ctx.responseCache = {
 			enabled: false,
@@ -709,6 +1202,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 					protocol,
 					presetId: pre.ctx.preset?.id ?? null,
 					presetSlug: pre.ctx.preset?.slug ?? null,
+					presetVersionId: pre.ctx.preset?.ref ? pre.ctx.preset.versionId ?? null : null,
 					routingMode: pre.ctx.routingMode ?? null,
 				});
 				const cacheKey = buildResponseCacheKey(
@@ -789,6 +1283,8 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 
 		// Execute with IR
 		timing.timer.mark("execute_start");
+		// Protocol detection, IR decode and the response-cache lookup, plus anything untimed between them.
+		timing.timer.between("before_to_execute", "before_end", "execute_start");
 		let exec = await doRequestWithIR(pre.ctx, irForExecution, timing);
 		let finalTurnBuffered = !(exec instanceof Response) && exec.result.kind === "completed";
 
@@ -817,28 +1313,42 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 					onEvent: liveSink?.beginRound(),
 				});
 				finishStreamingProvider(pre.ctx);
-			} catch {
+			} catch (error) {
 				finishStreamingProvider(pre.ctx, "error");
 				const header = timing.timer.header();
 				pre.ctx.timing = timing.timer.snapshot();
+				const upstreamFailed = error instanceof UpstreamStreamError;
 				return await handleError({
 					stage: "execute",
-					res: createJsonErrorResponse(
-						502,
-						"gateway_stream_materialization_error",
-						"The upstream stream could not be materialized.",
-					),
+					res: upstreamFailed
+						? await settleBufferedUpstreamStreamFailure(pre.ctx, exec.result, error)
+						: createJsonErrorResponse(
+							502,
+							"gateway_stream_materialization_error",
+							"The upstream stream could not be materialized.",
+						),
 					endpoint,
 					ctx: pre.ctx,
 					timingHeader: header || undefined,
-					auditFailure,
+					// The upstream failure is audited with its partial result above.
+					auditFailure: upstreamFailed ? async () => {} : auditFailure,
 					req,
 				});
 			}
 		}
+		if (exec.result.kind === "completed") {
+			const roundTiming = (exec.result as { timing?: { firstOutputAtMs?: number | null; reasoningStreamed?: boolean; outputArrivals?: number } }).timing;
+			recordProviderRound(pre.ctx, {
+				firstOutputAtMs: roundTiming?.firstOutputAtMs,
+				reasoningStreamed: roundTiming?.reasoningStreamed,
+				outputArrivals: roundTiming?.outputArrivals,
+				usage: (exec.result.ir as IRChatResponse | undefined)?.usage,
+			});
+		}
 		if (
 			exec.result.kind === "completed" &&
 			exec.result.allowEmptySuccess !== true &&
+			!cachePreWarm &&
 			!hasUsableIRChatResponse(exec.result.ir as IRChatResponse | undefined)
 		) {
 			const emptyResponseDiagnostics = buildEmptyResponseDiagnostics(
@@ -892,6 +1402,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 			let serverToolRounds = 0;
 			let serverToolCalls = 0;
 			let billableWebSearchRequests: number | undefined;
+			let billableWebFetchRequests: number | undefined;
 			const serverToolUsage = {
 				datetimeRequests: 0,
 				webSearchRequests: 0,
@@ -912,6 +1423,39 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 			let webFetchObservability = pre.ctx.webFetchObservability ?? null;
 			let activeToolSpan: string | undefined;
 			let previousParentSpan: string | undefined;
+			// Each completed round as it ran: rounds can use different routes and credentials (a
+			// fallback mid-loop), and the aggregate below replaces each result's own usage.
+			const roundSnapshot = (result: any) => ({
+				result: { ...result, bill: { ...result.bill } },
+				usage: (result.ir as IRChatResponse | undefined)?.usage,
+			});
+			const completedRounds = [roundSnapshot(exec.result)];
+			const serverToolUsageMetrics = () => ({
+				...serverToolUsage,
+				...(billableWebSearchRequests === undefined ? {} : { billableWebSearchRequests }),
+				...(billableWebFetchRequests === undefined ? {} : { billableWebFetchRequests }),
+			});
+			// Completed rounds, the searches and fetches they ran and the model calls their tools
+			// made were all paid for upstream; an error after them must not make them free.
+			const settleCompletedServerToolRounds = async () => {
+				settleServerToolRoundsOnError = null;
+				const metrics = serverToolUsageMetrics();
+				try {
+					await chargeCompletedServerToolRounds({
+						ctx: pre.ctx,
+						protocol,
+						rounds: completedRounds,
+						usage: attachServerToolUsage(aggregateUsage, metrics),
+						toolMeters: attachServerToolUsageToRawUsage(undefined, metrics),
+					});
+				} catch (error) {
+					console.error("[gateway] server tool partial charge failed", {
+						requestId: pre.ctx.requestId,
+						error: error instanceof Error ? error.message : String(error),
+					});
+				}
+			};
+			settleServerToolRoundsOnError = settleCompletedServerToolRounds;
 
 			while (true) {
 				if (liveSink?.signal.aborted) break;
@@ -919,6 +1463,9 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 				const serverToolRound: NonNullable<typeof pre.ctx.serverToolTrace>[number] = {
 					round: serverToolRounds + 1, durationMs: 0, calls: [],
 				};
+				// Past the last follow-up turn no tool may run: with no calls left, the
+				// continuation reports server tool calls as over the limit without executing them.
+				const roundsExhausted = serverToolRounds >= maxServerToolRounds;
 				const continuation = await buildServerToolContinuation(
 					latestIrResponse,
 					preparedServerTools.config,
@@ -969,6 +1516,10 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 								outputFormat: imageArgs.outputFormat,
 								outputCompression: imageArgs.outputCompression,
 								moderation: imageArgs.moderation,
+								complexity: imageArgs.complexity,
+								frameCount: imageArgs.frameCount,
+								frameDurationMs: imageArgs.frameDurationMs,
+								svgModel: imageArgs.svgModel,
 							}),
 						searchModels: async (searchArgs) => {
 							const { fetchCatalogue } = await import("@/routes/v1/control/models.catalogue");
@@ -989,12 +1540,17 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 							const matched = filtered.slice(0, searchArgs.maxResults);
 							return { models: matched.map((model) => ({ id: model.model_id, name: model.name, description: model.description, input_modalities: model.input_types, output_modalities: model.output_types, providers: model.providers.map((item) => item.api_provider_id), supported_params: model.supported_params, pricing: model.pricing })), total_results: filtered.length, showing: matched.length };
 						},
-						remainingToolCalls: maxServerToolCalls - serverToolCalls,
+						remainingToolCalls: roundsExhausted ? 0 : maxServerToolCalls - serverToolCalls,
+						paidToolsAllowed: walletCanPay({
+							context: { credit: pre.ctx.gating?.credit, teamSettings: pre.ctx.teamSettings },
+							internal: pre.ctx.internal,
+						}),
 						signal: liveSink?.signal,
 					},
 				);
 				if (!continuation) break;
-				if ("limitExceeded" in continuation) {
+				if ("limitExceeded" in continuation && !roundsExhausted) {
+					await settleCompletedServerToolRounds();
 					const header = timing.timer.header();
 					pre.ctx.timing = timing.timer.snapshot();
 					return await handleError({
@@ -1004,7 +1560,8 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 					});
 				}
 				serverToolCalls += continuation.serverToolCallCount ?? continuation.toolResults.length;
-				if (!liveSink?.signal.aborted && serverToolRounds >= maxServerToolRounds) {
+				if ("limitExceeded" in continuation) {
+					await settleCompletedServerToolRounds();
 					const header = timing.timer.header();
 					pre.ctx.timing = timing.timer.snapshot();
 					return await handleError({
@@ -1035,7 +1592,14 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 				}
 				serverToolUsage.webSearchResults += continuation.usage.webSearchResults ?? 0;
 				serverToolUsage.webSearchExtraResults += continuation.usage.webSearchExtraResults ?? 0;
+				const webFetchRequestsBefore = serverToolUsage.webFetchRequests;
 				serverToolUsage.webFetchRequests += continuation.usage.webFetchRequests ?? 0;
+				if (typeof continuation.usage.billableWebFetchRequests === "number") {
+					billableWebFetchRequests =
+						(billableWebFetchRequests ?? webFetchRequestsBefore) + continuation.usage.billableWebFetchRequests;
+				} else if (billableWebFetchRequests !== undefined) {
+					billableWebFetchRequests += continuation.usage.webFetchRequests ?? 0;
+				}
 				serverToolUsage.advisorRequests += continuation.usage.advisorRequests ?? 0;
 				serverToolUsage.imageGenerationRequests += continuation.usage.imageGenerationRequests ?? 0;
 				serverToolUsage.applyPatchRequests += continuation.usage.applyPatchRequests ?? 0;
@@ -1054,17 +1618,21 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 						id: call.id,
 						name: call.name,
 						arguments: call.arguments,
-						output: result.content,
+						output: result.clientOutput ?? result.content,
 						...(result.isError ? { isError: true } : {}),
 					};
 					serverToolTrace.push(tracedCall);
 					liveSink?.toolResult(serverToolTrace[serverToolTrace.length - 1]);
 				}
-				if (continuation.advisorUsage) {
-					aggregateUsage = mergeIRUsageTotals(aggregateUsage, continuation.advisorUsage);
-				}
-				if (continuation.imageGenerationUsage) {
-					aggregateUsage = mergeIRUsageTotals(aggregateUsage, continuation.imageGenerationUsage);
+				// Advisor, subagent and fusion calls are billed on their own models' routes
+				// (pre.ctx.serverToolSubCallCharges), not as the main model's tokens.
+				// Tool images are priced on their own model's card, not this request's; the after
+				// stage adds these charges to the total (calculatePricing, meta.serverToolPricing).
+				if (continuation.imageGenerationPricing?.length) {
+					pre.ctx.meta.serverToolPricing = [
+						...(pre.ctx.meta.serverToolPricing ?? []),
+						...continuation.imageGenerationPricing,
+					];
 				}
 				searchObservability = mergeSearchObservability(
 					searchObservability,
@@ -1083,7 +1651,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 				nextIrRequest = {
 					...nextIrRequest,
 					stream: true,
-					toolChoice: "auto",
+					toolChoice: serverToolFollowUpToolChoice(nextIrRequest.toolChoice),
 					...(latestIrResponse.provider === "google-ai-studio" &&
 						latestIrResponse.nativeId &&
 						latestIrResponse.nativeId !== pre.ctx.requestId &&
@@ -1107,8 +1675,12 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 						},
 					],
 				};
+				// Advisor and image tools share this meta and make their own provider calls;
+				// the follow-up's failover is measured from its own first dispatch only.
+				delete (pre.ctx.meta as Record<string, unknown>).upstreamFetchStartMs;
 				const followUpExec = await doRequestWithIR(pre.ctx, nextIrRequest, timing);
 				if (followUpExec instanceof Response) {
+					await settleCompletedServerToolRounds();
 					const header = timing.timer.header();
 					pre.ctx.timing = timing.timer.snapshot();
 					return await handleError({
@@ -1133,28 +1705,43 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 							onEvent: liveSink?.beginRound(),
 						});
 						finishStreamingProvider(pre.ctx);
-					} catch {
+					} catch (error) {
 						finishStreamingProvider(pre.ctx, "error");
+						// The failing round's partial output stays free; the rounds before it are charged.
+						await settleCompletedServerToolRounds();
 						const header = timing.timer.header();
 						pre.ctx.timing = timing.timer.snapshot();
+						const upstreamFailed = error instanceof UpstreamStreamError;
 						return await handleError({
 							stage: "execute",
-							res: createJsonErrorResponse(
-								502,
-								"gateway_stream_materialization_error",
-								"The upstream stream could not be materialized.",
-							),
+							res: upstreamFailed
+								? await settleBufferedUpstreamStreamFailure(pre.ctx, followUpResult, error, aggregateUsage)
+								: createJsonErrorResponse(
+									502,
+									"gateway_stream_materialization_error",
+									"The upstream stream could not be materialized.",
+								),
 							endpoint,
 							ctx: pre.ctx,
 							timingHeader: header || undefined,
-							auditFailure,
+							auditFailure: upstreamFailed ? async () => {} : auditFailure,
 							req,
 						});
 					}
 				}
+				if (followUpResult.kind === "completed") {
+					const roundTiming = (followUpResult as { timing?: { firstOutputAtMs?: number | null; reasoningStreamed?: boolean; outputArrivals?: number } }).timing;
+					recordProviderRound(pre.ctx, {
+						firstOutputAtMs: roundTiming?.firstOutputAtMs,
+						reasoningStreamed: roundTiming?.reasoningStreamed,
+						outputArrivals: roundTiming?.outputArrivals,
+						usage: (followUpResult.ir as IRChatResponse | undefined)?.usage,
+					});
+				}
 				if (
 					followUpResult.kind === "completed" &&
 					followUpResult.allowEmptySuccess !== true &&
+					!cachePreWarm &&
 					!hasUsableIRChatResponse(followUpResult.ir as IRChatResponse | undefined)
 				) {
 					const emptyResponseDiagnostics = buildEmptyResponseDiagnostics(
@@ -1162,6 +1749,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 					);
 					const message = emptyResponseMessage(emptyResponseDiagnostics);
 					await settleNonBillableFailure(pre.ctx, followUpResult);
+					await settleCompletedServerToolRounds();
 					await handleFailureAudit(
 						pre.ctx,
 						followUpResult,
@@ -1191,6 +1779,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 					});
 				}
 				if (followUpResult.kind !== "completed" || !followUpResult.ir) {
+					await settleCompletedServerToolRounds();
 					const header = timing.timer.header();
 					pre.ctx.timing = timing.timer.snapshot();
 					return await handleError({
@@ -1208,6 +1797,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 					});
 				}
 
+				completedRounds.push(roundSnapshot(followUpResult));
 				exec.result = followUpResult;
 				latestIrResponse = followUpResult.ir as IRChatResponse;
 				aggregateUsage = mergeIRUsageTotals(aggregateUsage, latestIrResponse.usage);
@@ -1220,6 +1810,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 
 			pre.ctx.searchObservability = searchObservability;
 			pre.ctx.webFetchObservability = webFetchObservability;
+			settleServerToolRoundsOnError = null;
 
 			if (
 				serverToolUsage.datetimeRequests > 0 ||
@@ -1234,9 +1825,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 				serverToolUsage.fusionRequests > 0 ||
 				serverToolUsage.searchModelsRequests > 0
 			) {
-				const usageMetrics = billableWebSearchRequests === undefined
-					? { ...serverToolUsage }
-					: { ...serverToolUsage, billableWebSearchRequests };
+				const usageMetrics = serverToolUsageMetrics();
 				const mergedUsage = attachServerToolUsage(aggregateUsage, usageMetrics);
 				if (exec.result.ir) {
 					(exec.result.ir as IRChatResponse).usage = mergedUsage;
@@ -1253,6 +1842,17 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 					);
 					exec.result.rawResponse = rawResponse;
 				}
+			}
+			// Rounds can run on different routes and credentials (a fallback mid-loop): each is
+			// billed on its own, and the finalizer charges that bill once, never the aggregate on
+			// the final round's card. A single round keeps the ordinary pricing of its own usage.
+			if (completedRounds.length > 1) {
+				pre.ctx.serverToolRoundsBill = await priceServerToolRounds({
+					ctx: pre.ctx,
+					protocol,
+					rounds: completedRounds,
+					toolMeters: attachServerToolUsageToRawUsage(undefined, serverToolUsageMetrics()),
+				});
 			}
 		}
 
@@ -1280,30 +1880,39 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 			protocolResponse
 		) {
 			if (finalTurnBuffered) liveSink?.markFinalTurnBuffered();
-			const requestStartMs =
-				typeof pre.ctx.meta.upstreamStartMs === "number"
-					? pre.ctx.meta.upstreamStartMs
-					: typeof pre.ctx.meta.startedAtMs === "number"
-						? pre.ctx.meta.startedAtMs
-						: null;
+			// The same clocks as every other response: end to end from Worker receipt,
+			// provider time from recordProviderRound (all rounds, from each dispatch).
 			const endToEndMs =
-				requestStartMs !== null
-					? Math.max(0, Math.round(Date.now() - requestStartMs))
+				typeof pre.ctx.meta.startedAtMs === "number"
+					? Math.max(0, Math.round(Date.now() - pre.ctx.meta.startedAtMs))
 					: Math.max(0, Math.round(timing.timer.elapsed("execute_start")));
 			const resultTiming = (exec.result as { timing?: { generationMs?: number } }).timing;
-			const generationMs = Math.max(
-				0,
-				Math.round(
-					typeof resultTiming?.generationMs === "number"
-						? resultTiming.generationMs
-						: typeof exec.result.generationTimeMs === "number"
-							? exec.result.generationTimeMs
-							: 0,
-				),
-			);
+			const generationMs = typeof pre.ctx.meta.providerRoundsMs === "number"
+				? pre.ctx.meta.providerRoundsMs
+				: Math.max(
+					0,
+					Math.round(
+						typeof resultTiming?.generationMs === "number"
+							? resultTiming.generationMs
+							: typeof exec.result.generationTimeMs === "number"
+								? exec.result.generationTimeMs
+								: 0,
+					),
+				);
 			pre.ctx.meta.end_to_end_ms = endToEndMs;
 			pre.ctx.meta.generation_ms = generationMs;
-			pre.ctx.meta.latency_ms = Math.max(0, endToEndMs - generationMs);
+			if (typeof pre.ctx.meta.provider_ttft_ms === "number") {
+				pre.ctx.meta.latency_ms = pre.ctx.meta.provider_ttft_ms;
+			} else {
+				delete pre.ctx.meta.latency_ms;
+			}
+			// A live sink forwards each round's output as it arrives, so the client saw
+			// the first one then. Otherwise its first output is the synthetic stream, sent now.
+			const firstLiveOutputAtMs = liveSink ? pre.ctx.meta.firstProviderOutputAtMs : undefined;
+			pre.ctx.meta.gateway_ttft_ms =
+				typeof firstLiveOutputAtMs === "number" && typeof pre.ctx.meta.startedAtMs === "number"
+					? Math.max(1, Math.round(firstLiveOutputAtMs - pre.ctx.meta.startedAtMs))
+					: Math.max(1, endToEndMs);
 			pre.ctx.meta.preserve_stream_timing = true;
 
 			const stream = buildSyntheticServerToolStream({
@@ -1347,6 +1956,7 @@ async function runTextGeneratePipelineInner(args: PipelineRunnerArgs, liveSink?:
 		});
 	} catch (err) {
 		logPipelineExecutionError("text-generate", err);
+		await (settleServerToolRoundsOnError as (() => Promise<void>) | null)?.();
 		const header = timing.timer.header();
 		pre.ctx.timing = timing.timer.snapshot();
 		return await handleError({

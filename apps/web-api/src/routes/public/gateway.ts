@@ -116,6 +116,12 @@ async function gatewayModels(env: Env) {
 	return output.sort((a, b) => String(a.providerId).localeCompare(String(b.providerId)) || String(a.modelId).localeCompare(String(b.modelId)));
 }
 
-publicGatewayRouter.get("/gateway/models", async (c) => { try { const models = await gatewayModels(c.env); const availableOnly = c.req.query("available_only") !== "false"; return withPublicCache(c.json({ models: availableOnly ? models.filter((model) => model.isAvailable) : models }), CACHE); } catch (error) { console.error("[web-api/gateway] models failed", error); return c.json({ error: "gateway_models_unavailable" }, 503); } });
+/** Optional `ids` (comma-separated `modelId`s) lets a page that shows a few models skip the whole catalogue. */
+function requestedModelIds(value: string | undefined): Set<string> | null {
+	if (value === undefined) return null;
+	return new Set(value.split(",").map((id) => id.trim()).filter(Boolean).slice(0, 100));
+}
+
+publicGatewayRouter.get("/gateway/models", async (c) => { try { const models = await gatewayModels(c.env); const availableOnly = c.req.query("available_only") !== "false"; const ids = requestedModelIds(c.req.query("ids")); return withPublicCache(c.json({ models: models.filter((model) => (!availableOnly || model.isAvailable) && (!ids || ids.has(String(model.modelId)))) }), CACHE); } catch (error) { console.error("[web-api/gateway] models failed", error); return c.json({ error: "gateway_models_unavailable" }, 503); } });
 
 publicGatewayRouter.get("/gateway/model-aliases", async (c) => { try { const models = await gatewayModels(c.env); const byId = new Map<string, Record<string, unknown>[]>(); for (const model of models.filter((row) => row.isAvailable)) for (const id of [model.modelId, model.selectorModelId, model.internalModelId]) if (id) byId.set(String(id), [...(byId.get(String(id)) ?? []), model]); const result = await getDataClient(c.env).from("v2_model_aliases").select("alias_slug,api_model_id:model_slug").eq("enabled", true).order("alias_slug", { ascending: true }); if (result.error) throw result.error; const aliases: Array<Record<string, unknown>> = []; const seen = new Set<string>(); for (const row of result.data ?? []) { const slug = String(row.alias_slug ?? "").trim(); const [resolved] = byId.get(String(row.api_model_id ?? "")) ?? []; if (!slug || !resolved || seen.has(slug)) continue; seen.add(slug); aliases.push({ ...resolved, modelId: slug, selectorModelId: slug, modelName: slug.split(/[\/_-]+/).filter(Boolean).map((part) => part.slice(0, 1).toUpperCase() + part.slice(1)).join(" ") }); } return withPublicCache(c.json({ aliases }), CACHE); } catch (error) { console.error("[web-api/gateway] aliases failed", error); return c.json({ error: "gateway_aliases_unavailable" }, 503); } });

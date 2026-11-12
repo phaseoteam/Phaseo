@@ -418,7 +418,9 @@ export function buildGatewayRequestUsageColumns(args: {
 	const endpointQuads = endpointQuadBreakdown(args.endpoint, totalQuadTokens);
 	const splitCachedWriteTextTokens =
 		firstNumber(shaped, ["cached_write_text_tokens_5m"]) +
-		firstNumber(shaped, ["cached_write_text_tokens_1h"]);
+		firstNumber(shaped, ["cached_write_text_tokens_1h"]) +
+		firstNumber(shaped, ["cached_write_text_tokens_30m"]) +
+		firstNumber(shaped, ["cached_write_text_tokens_12h"]);
 	const cachedWriteTextTokens =
 		firstNumber(shaped, ["cached_write_text_tokens"]) || splitCachedWriteTextTokens;
 
@@ -581,6 +583,11 @@ export function buildV2RequestUsageMeters(args: {
 	}
 	if (args.endpoint === "audio.transcription" || args.endpoint === "audio.translations") {
 		addWorkload("transcription_seconds", columns.usage_audio_seconds, "audio", "seconds");
+	}
+	if (args.endpoint === "decisions") {
+		// Decision models report ordinary text tokens. Mark them so public text
+		// rankings can leave them out and Decisions rankings can count them.
+		addWorkload("decision_tokens", columns.usage_input_text_tokens + columns.usage_output_text_tokens, "text", "tokens");
 	}
 	return meters;
 }

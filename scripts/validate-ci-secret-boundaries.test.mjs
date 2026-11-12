@@ -1,7 +1,37 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { validateAgentSdkReleaseSecretBoundaries, validateCiSecretBoundaries } from "./validate-ci-secret-boundaries.mjs";
+import { validateAgentSdkReleaseSecretBoundaries, validateCiSecretBoundaries, validateInfisicalDeploymentPaths } from "./validate-ci-secret-boundaries.mjs";
+
+function infisicalDeployment(path) {
+	return `
+    deploy:
+        steps:
+            - name: Load runtime secrets
+              uses: Infisical/secrets-action@pinned-version
+              with:
+${path === null ? "" : `                  secret-path: ${path}`}
+            - name: Deploy Worker
+              run: deploy
+`;
+}
+
+for (const path of ["/", '"/"', "'/'", "/./", "/gateway/..", null]) {
+	test(`rejects Infisical deployment path ${path ?? "(default root)"}`, () => {
+		assert.throws(() => validateInfisicalDeploymentPaths(infisicalDeployment(path)), /explicit non-root folder/);
+	});
+}
+
+for (const path of ["/gateway", '"/operations"', "'/provider-keys'"]) {
+	test(`accepts explicit Infisical deployment folder ${path}`, () => {
+		assert.doesNotThrow(() => validateInfisicalDeploymentPaths(infisicalDeployment(path)));
+	});
+}
+
+test("all configured Infisical deployment steps use non-root folders", () => {
+	const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+	assert.doesNotThrow(() => validateInfisicalDeploymentPaths(workflow));
+});
 
 const productionMigrationCondition = `
             always() &&

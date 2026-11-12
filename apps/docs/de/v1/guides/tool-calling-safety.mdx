@@ -1,20 +1,10 @@
 ---
 icon: "shield-check"
 title: "Sicherheit und Validierung bei Tool-Aufrufen"
-description: "Validiere Tool-Argumente, sichere die Ausführung ab und verhindere unsichere Modellaktionen."
+description: "Validiere Tool-Argumente, härte die Ausführung ab und vermeide unsichere Modellaktionen."
 ---
 
-Behandle vom Modell erzeugte Tool-Argumente als nicht vertrauenswürdige Eingaben.
-
-## Sicherheits-Checkliste
-
-Halte Tool-Schemas knapp und eindeutig.
-Validiere geparste Argumente vor der Ausführung des Tools.
-Lass nur freigegebene Tool-Namen zu und lehne unbekannte ab.
-Füge für externe Aufrufe Timeouts und Wiederholungen hinzu.
-Protokolliere Call-ID, Tool-Name und Validierungsfehler.
-
-## Beispiel für Request-Validierung (TypeScript + Zod)
+Behandle jeden Tool-Aufruf als nicht vertrauenswürdige Eingabe: Prüfe den Tool-Namen gegen eine Zulassungsliste und validiere die Argumente, bevor irgendetwas ausgeführt wird.
 
 ```typescript
 import { z } from "zod";
@@ -33,14 +23,18 @@ function executeToolCall(name: string, rawArgs: string) {
 }
 ```
 
-## Vorgehen bei Fehlern
+## Checkliste
 
-Wenn die Validierung fehlschlägt:
+- **Halte Schemas klein und eindeutig.** Weniger, typisierte Felder lassen dem Modell weniger Raum, etwas Unerwartetes zu senden.
+- **Validiere geparste Argumente** vor der Ausführung, wie oben.
+- **Lehne unbekannte Tool-Namen ab**, statt zu raten, was das Modell gemeint hat.
+- **Füge Timeouts und Wiederholungsversuche** zu Aufrufen hinzu, die externe Systeme erreichen.
+- **Protokolliere** die Aufruf-ID, den Tool-Namen und jeden Validierungsfehler.
 
-1. Führe das Tool nicht aus.
-2. Gib im nächsten Modell-Turn eine kontrollierte Fehlermeldung zurück.
-3. Bitte das Modell, es mit korrigierten Argumenten erneut zu versuchen.
+## Wenn die Validierung fehlschlägt
 
-## Hinweis zu Streaming
+Führe das Tool nicht aus. Sende im nächsten Durchgang einen kurzen, kontrollierten Fehler als Tool-Ergebnis und bitte das Modell, es mit korrigierten Argumenten erneut zu versuchen.
 
-Tool-Aufrufe im Streaming hängen von Modell und Anbieter ab. Sammle alle Argumentfragmente, bevor du einen Aufruf analysierst, validierst oder ausführst. Siehe [Streaming](./streaming.mdx).
+## Streaming
+
+Mit `stream: true` kommen die Argumente in Teilen an. Sammle alle Argument-Deltas eines Aufrufs, bevor du ihn parst, validierst oder ausführst. Ob Tool-Aufrufe überhaupt gestreamt werden, hängt vom Modell und vom Anbieter ab. Siehe [Streaming](./streaming.mdx).

@@ -1,8 +1,6 @@
-"use client";
-
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	compareByReleaseDateDesc,
 	groupModelsByReleaseMonth,
@@ -23,18 +21,16 @@ import {
 } from "@/components/ai-elements/model-selector";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "@/components/ui/hover-card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Logo } from "@/components/Logo";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { cn } from "@/lib/utils";
-import { CircleCheck, Plus, Star, X } from "lucide-react";
+import { ChevronDown, CircleCheck, Plus, Star, X } from "lucide-react";
 
 type ModelOption = {
+	isInternal: boolean;
 	modelId: string;
 	orgId: string;
 	orgName: string;
@@ -191,6 +187,7 @@ function buildModelOptions(models: GatewaySupportedModel[]) {
 
 		if (!existing) {
 			map.set(selectorModelId, {
+				isInternal: model.isInternal === true,
 				modelId: selectorModelId,
 				orgId,
 				orgName,
@@ -202,6 +199,7 @@ function buildModelOptions(models: GatewaySupportedModel[]) {
 				gatewayStatus: model.isAvailable ? "active" : "inactive",
 			});
 		} else {
+			existing.isInternal ||= model.isInternal === true;
 			if (!existing.providerIds.includes(model.providerId)) {
 				existing.providerIds.push(model.providerId);
 			}
@@ -279,9 +277,11 @@ export function RoomModelSelector({
 	onOpenModelSettingsForModel,
 }: RoomModelSelectorProps) {
 	const t = useTranslations("Product.chat.modelPicker");
+	const tCards = useTranslations("Common.ui.hoverCards");
 	const format = useDisplayFormatters();
 	const modelOptions = useMemo(() => buildModelOptions(models), [models]);
 	const [open, setOpen] = useState(false);
+	const [internalModelsOpen, setInternalModelsOpen] = useState(true);
 	const [searchValue, setSearchValue] = useState("");
 	const [nowMs, setNowMs] = useState<number | null>(null);
 	const [quickFilters, setQuickFilters] = useState({
@@ -508,13 +508,15 @@ export function RoomModelSelector({
 	};
 
 	const filteredActive = useMemo(
-		() => modelOptions.active.filter(optionMatchesQuickFilters),
+		() => modelOptions.active.filter((option) => !option.isInternal && optionMatchesQuickFilters(option)),
 		[modelOptions.active, optionMatchesQuickFilters],
 	);
 	const filteredComingSoonEntries = useMemo(
-		() => modelOptions.comingSoon.filter(optionMatchesQuickFilters),
+		() => modelOptions.comingSoon.filter((option) => !option.isInternal && optionMatchesQuickFilters(option)),
 		[modelOptions.comingSoon, optionMatchesQuickFilters],
 	);
+	const internalOptions = [...modelOptions.active, ...modelOptions.comingSoon]
+		.filter((option) => option.isInternal && optionMatchesQuickFilters(option));
 	const favoriteModelIds = useMemo(
 		() => Array.from(favoriteModelIdSet),
 		[favoriteModelIdSet],
@@ -555,8 +557,10 @@ export function RoomModelSelector({
 		() => [
 			...filteredActive,
 			...filteredComingSoonEntries,
+			...modelOptions.active.filter((option) => option.isInternal && optionMatchesQuickFilters(option)),
+			...modelOptions.comingSoon.filter((option) => option.isInternal && optionMatchesQuickFilters(option)),
 		],
-		[filteredActive, filteredComingSoonEntries],
+		[filteredActive, filteredComingSoonEntries, modelOptions, optionMatchesQuickFilters],
 	);
 	const normalizedSearchValue = useMemo(
 		() => normalizeSearchText(searchValue),
@@ -596,21 +600,24 @@ export function RoomModelSelector({
 				<div className="flex max-w-[min(60vw,520px)] items-center gap-1 overflow-x-auto lg:max-w-[760px] xl:max-w-[880px]">
 					{selectedModelPreview.map(renderSelectedModelChip)}
 					{hiddenSelectedCount > 0 ? (
-						<HoverCard openDelay={100} closeDelay={120}>
-							<HoverCardTrigger asChild>
-								<Badge
-									variant="secondary"
-									className="h-5 cursor-default rounded-full px-1.5 text-[10px]"
+						<Popover>
+							<PopoverTrigger asChild>
+								<Button
+									type="button"
+									variant="ghost"
+									size="sm"
+									className="h-6 shrink-0 rounded-md px-1.5 text-[11px] tabular-nums"
+									aria-label={tCards("moreSelectedModels", { count: hiddenSelectedCount })}
 								>
 									+{hiddenSelectedCount}
-								</Badge>
-							</HoverCardTrigger>
-							<HoverCardContent className="w-[min(86vw,540px)] p-2">
+								</Button>
+							</PopoverTrigger>
+							<PopoverContent align="start" className="w-[min(86vw,540px)] rounded-md p-2">
 								<div className="flex max-h-[280px] flex-wrap items-center gap-1 overflow-auto pr-1">
 									{hiddenSelectedModelIds.map(renderSelectedModelChip)}
 								</div>
-							</HoverCardContent>
-						</HoverCard>
+							</PopoverContent>
+						</Popover>
 					) : null}
 				</div>
 			) : null}
@@ -675,6 +682,27 @@ export function RoomModelSelector({
 					</div>
 					<ModelSelectorList className="max-h-[70vh]" viewportClassName="p-3">
 						<ModelSelectorEmpty>{t("noModelsFound")}</ModelSelectorEmpty>
+						{!hasSearchValue && internalOptions.length > 0 ? (
+							<Collapsible open={internalModelsOpen} onOpenChange={setInternalModelsOpen}>
+								<CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm font-semibold hover:bg-muted">
+									<ChevronDown aria-hidden="true" className={cn("h-4 w-4 transition-transform", !internalModelsOpen && "-rotate-90")} />
+									{t("internalModels")}
+								</CollapsibleTrigger>
+								<CollapsibleContent>
+									<ModelSelectorGroup>
+										{internalOptions.map((option) => (
+											<ModelSelectorItem key={option.modelId} value={option.modelId}
+												onSelect={() => { onSelectModel(option.modelId); setOpen(false); }}
+												keywords={buildSearchKeywords(option)}
+												className={cn("flex min-h-8 items-center gap-2 py-1", selectedModelIds.includes(option.modelId) && "bg-foreground/5")}>
+												<Logo id={option.orgId} alt={option.orgName} width={16} height={16} className="shrink-0" />
+												{renderModelRow(option)}
+											</ModelSelectorItem>
+										))}
+									</ModelSelectorGroup>
+								</CollapsibleContent>
+							</Collapsible>
+						) : null}
 						{hasSearchValue ? (
 							<ModelSelectorGroup
 								heading={t("results", { count: rankedSearchResults.length })}

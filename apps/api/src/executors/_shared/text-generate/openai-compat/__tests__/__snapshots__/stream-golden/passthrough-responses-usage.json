@@ -1,0 +1,17 @@
+{
+  "usageRaw": {
+    "input_tokens": 10,
+    "output_tokens": 20,
+    "total_tokens": 30,
+    "input_tokens_details": {
+      "cached_tokens": 3
+    },
+    "output_tokens_details": {
+      "reasoning_tokens": 5
+    }
+  },
+  "info": {
+    "aborted": false,
+    "sawFinalUsage": true
+  }
+}

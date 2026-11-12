@@ -1,39 +1,130 @@
 ---
 title: "Rate Limits"
 description: "Handle throttling, provider quotas, and bounded retries."
+"og:image": "https://phaseo.app/og/dynamic?title=Rate%20Limits&description=Handle%20throttling%2C%20provider%20quotas%2C%20and%20bounded%20retries.&pathname=/docs/v1/api-reference/limits"
 icon: "gauge"
 ---
 
-A request can be throttled by the selected provider or by an applicable workspace or key policy. Routing and fallbacks can reduce provider failures, but a request can still return `429`.
+Read the error code and `reason` on a `429` to tell which limit stopped the request, then wait for `Retry-After` or change the limit. Routing and fallbacks reduce provider failures, but a request can still be throttled by a provider or by a workspace or key policy.
+
+| Limit | Error code | `reason` | Resets by itself |
+| --- | --- | --- | --- |
+| [Requests per minute](#gateway-limits) | `key_limit_exceeded` | `customer_requests_per_minute` | Yes, `Retry-After` in seconds |
+| [Free-model requests per day](#gateway-limits) | `phaseo_free_model_limit_exceeded` | `free_requests_per_day` | Yes, at 00:00 UTC |
+| [Key limit or workspace budget](#key-limits-and-budgets) | `key_limit_exceeded` | The limit that was reached; `limit_window` and `reset_at` | Only when `Retry-After` is present |
+| [Department budget](#department-budgets) | `key_limit_exceeded` | `department_daily_cost_budget_reached` (or `weekly`, `monthly`) | Yes, at `reset_at` |
+| [Spend rule set to block](#key-limits-and-budgets) | `spend_rule_blocked` | | At `reset_at` when the block has one, or when an owner or admin lifts it |
+| [Rate limit policy](#rate-limit-policies) | `rate_limit_exceeded` | `policy_requests_per_minute`, `policy_tokens_per_minute`, `policy_concurrent_requests` or `policy_unavailable` | Yes, `Retry-After` in seconds |
+| [Provider](#provider-limits) | `upstream_error` or `provider_capacity_exhausted` | | Follow the provider's `Retry-After` |
+
+All of these return `429`. If gateway quota enforcement is briefly unavailable, the gateway returns `503` with retry guidance instead.
 
 ## Gateway limits
 
-The default allowance is **25 requests per rolling minute** for each user in each workspace. API keys created by the same user share that allowance. OAuth requests use the authenticated user. Keys without an owner share a workspace allowance.
+Each user in each workspace has a requests-per-minute allowance, measured over a rolling minute. API keys created by the same user share it. OAuth requests count against the signed-in user, and keys without an owner share one workspace allowance.
 
-Free-model routes also have a default allowance of **1500 requests per UTC day**, shared across free models for the same user and workspace. Paid-model requests do not consume this daily allowance. An admitted free request counts even if the provider subsequently fails; provider fallbacks within that request count once.
+The allowance rises automatically as the workspace becomes established. A workspace gets the highest row it qualifies for, and changes take effect within a few minutes:
 
-These limits apply across gateway regions. They can be increased for a specific user and workspace. File operations and job-status polling use the minute allowance; management endpoints do not.
+| Workspace | Requests per minute |
+| --- | --- |
+| New workspace | 10 |
+| At least 7 days old, or has made a paid top-up | 25 |
+| At least 30 days old with at least $50 of paid top-ups, net of refunds | 60 |
+| Invoiced billing | 120 |
 
-A gateway quota rejection returns `429` with `Retry-After` in seconds. Its error reason is `customer_requests_per_minute` or `free_requests_per_day`. Wait for that delay before retrying. If quota enforcement is temporarily unavailable, the gateway returns `503` with retry guidance.
+Free models also have an allowance of **1,500 requests per UTC day** by default. It is shared across all free models and across every workspace the same user sends requests in. Paid-model requests don't use it. An admitted free request counts even if the provider then fails, and provider fallbacks within one request count once.
+
+Both limits apply across gateway regions and can be raised for a specific user and workspace. File operations and job-status polling use the minute allowance; management endpoints don't.
+
+A rejected request returns `429` with `Retry-After` in seconds. Wait that long before retrying.
+
+## Key limits and budgets
+
+An API key's daily, weekly or monthly request and spend limits, and the workspace's [budgets](./endpoint/budgets-list.mdx), return `429` with `key_limit_exceeded` once reached. The body's `reason`, `limit_window` and `reset_at` say which limit it was and when its window resets, and `Retry-After` gives the seconds until then.
+
+`Retry-After` is missing when the limit doesn't reset by itself, such as a lifetime budget or a soft-blocked key. Don't retry: raise the workspace budget, raise the key's limit, or use a different key.
+
+Workspace owners and admins manage budgets with a management key through `/v1/budgets` or under [Settings → Budgets](https://phaseo.app/settings/budgets), which shows each budget's spend so far, the share used, a projection for the period and when it resets. Daily, weekly and monthly budgets reset on UTC boundaries: midnight, Monday 00:00 and the 1st of the month.
+
+[Spend alerts](../guides/spend-alerts.mdx) can warn before these limits are reached. A spend rule set to block returns `429` with `spend_rule_blocked`. It is best effort and starts a few minutes after spend passes its limit, so use key limits and budgets for exact caps. An `x-phaseo-spend-warning` header means a block may follow.
+
+### Department budgets
+
+Owners and admins manage department budgets with `phaseo department-budgets`, the `/v1/department-budgets` API, under [Settings → Budgets](https://phaseo.app/settings/budgets), or with the Terraform provider's `phaseo_department_budget` resource. A department's spend counts the same keys and OAuth requests as [department rate limits](#rate-limit-policies).
+
+Once a department has used its daily, weekly or monthly budget, API-key requests that count toward it return `429` with `key_limit_exceeded` and reason `department_daily_cost_budget_reached`, `department_weekly_cost_budget_reached` or `department_monthly_cost_budget_reached`. The body's `department_id` and `department_name` identify the department, and `reset_at` and `Retry-After` say when its budget resets.
+
+- If the budget check is briefly unavailable, requests are allowed, so a department can spend past its budget for a short time.
+- Owners and admins get a mobile push at about 80% and again at 100% of a budget. Budgets are checked for these alerts every 15 minutes, so requests can be refused before the 100% alert arrives.
+
+## Rate limit policies
+
+Workspace admins can create named policies that set `requests_per_minute`, `tokens_per_minute` and `concurrent_requests`, and assign them to keys, members, departments or end users. Manage them with `phaseo rate-limits policies` and `phaseo rate-limits assignments`, the `/v1/rate-limits` API, under [Settings → Rate limits](https://phaseo.app/settings/rate-limits), or with the Terraform provider's `phaseo_rate_limit_policy` and `phaseo_rate_limit_assignment` resources.
+
+| Assigned to | What shares one allowance |
+| --- | --- |
+| Key (`key`) | That key's requests. |
+| Member (`member`) | The member's keys and OAuth requests. |
+| Department (`department`) | Everything that counts toward the department (see below). |
+| End-user default (`end_user`) | Each end user gets their own allowance, identified by the request's `user` field or `X-Phaseo-User-Id` header. Requests without an end-user ID aren't limited. |
+
+**What counts toward a department.** A key linked to a department counts toward that department only. Any other key counts toward every department its creator belongs to, and OAuth requests count toward every department of their user. A member with a department override counts toward the override department only. To count those keys and OAuth requests toward the person's primary department only, set department attribution to primary under [Settings → Notifications](https://phaseo.app/settings/notifications), or with `spend.department_attribution` in `PATCH /v1/notifications/settings` and a management key. Department budgets and spend rules use the same setting.
+
+When several policies apply, each is counted and the first one exhausted rejects the request. Policies apply on top of the [gateway limits](#gateway-limits). Policy changes take effect within about a minute; department membership changes made in the dashboard or through SCIM can take up to about five minutes.
+
+### Requests and tokens per minute
+
+Both are measured over a rolling minute. `tokens_per_minute` counts each request's input and output tokens once it completes, including streamed and failed requests that used tokens. A request is rejected once usage over the last minute reaches the limit, so requests already in progress can take usage past it. Provider fallbacks within one request count once, and response cache hits aren't counted.
+
+A rejected request returns `429` with `rate_limit_exceeded`, reason `policy_requests_per_minute` or `policy_tokens_per_minute`, the `policy_id`, the `limit_scope` (`key`, `member`, `department`, `workspace` or `end_user`), and `Retry-After` in seconds.
+
+Responses to requests a policy covers carry the most restrictive limit's headers:
+
+| Header | Example |
+| --- | --- |
+| `x-ratelimit-limit-requests`, `x-ratelimit-remaining-requests` | `60`, `42` |
+| `x-ratelimit-reset-requests` | `60s` |
+| `x-ratelimit-limit-tokens`, `x-ratelimit-remaining-tokens`, `x-ratelimit-reset-tokens` | Same, for the token limit |
+
+A rejected request carries only the headers of the limit that rejected it. Counting happens in the background, so `remaining` is approximate, and the token headers don't yet include the current request's own usage.
+
+### Concurrent requests
+
+`concurrent_requests` caps how many requests can be in progress at once. A request holds a slot from when it is admitted until its response has been sent in full, including the whole of a streamed response; provider and model fallbacks within the request share that slot. When every slot is in use, the request is rejected with reason `policy_concurrent_requests` and `Retry-After: 1`.
+
+Checking a concurrency limit waits for the policy's counter, which adds a little latency. A slot whose release is lost frees itself after 15 minutes. Batches and realtime sessions aren't limited, and a video generation holds a slot only while the request that starts it is in progress.
+
+### Strict policies
+
+By default a policy fails open: if its limits can't be checked, the request is allowed. Set `fail_closed` to make it strict. A strict policy checks request and token limits before the request is sent rather than in the background, which makes them exact but adds latency. If they can't be checked within two seconds, the request is rejected with reason `policy_unavailable`.
+
+Concurrency and `policy_unavailable` rejections carry no `x-ratelimit-*` headers.
 
 ## Provider limits
 
-BYOK requests use the limits of your provider account. Managed requests use shared provider capacity; that capacity is not an individual workspace allowance.
+BYOK requests use the limits of your provider account. Managed requests use shared provider capacity, which isn't an allowance for your workspace.
 
-Phaseo forwards a validated `Retry-After` value when the routed provider supplies one. BYOK responses can also include `X-Phaseo-Upstream-RateLimit-*` headers. These quota headers are omitted for managed requests because they describe shared provider capacity. Other upstream headers are not forwarded.
+Phaseo forwards a validated `Retry-After` when the provider sends one. BYOK responses can also include `X-Phaseo-Upstream-RateLimit-*` headers; managed requests omit them because they describe shared capacity. Other upstream headers aren't forwarded. See [Error codes](./errors.mdx#error-codes) for the provider `429` codes.
 
 ## Handle a throttled request
 
-1. Inspect the [error code](./errors.mdx) to distinguish temporary provider throttling from a policy or budget restriction that requires configuration changes.
-2. Respect `Retry-After` when present. It can be a delay in seconds or an HTTP date; validate the value before scheduling a retry.
+1. Read the [error code](./errors.mdx) to tell temporary throttling from a limit, budget or policy that needs a configuration change.
+2. Respect `Retry-After` when present. It can be seconds or an HTTP date; validate it before scheduling a retry.
 3. Otherwise, use exponential backoff with jitter and a maximum delay.
-4. Bound retries by both attempt count and an overall deadline. Cancel abandoned work and release each failed response body before retrying.
+4. Bound retries by attempt count and an overall deadline. Cancel abandoned work and release each failed response body before retrying.
 5. Reduce concurrency if throttling persists.
 
-Do not automatically retry an ambiguous job submission or replay completed tool actions. A request may have reached the provider even if the client lost its response; retries can duplicate work and charges. For an accepted video or batch job, use its status endpoint rather than submitting it again.
+Don't automatically retry an ambiguous job submission or replay completed tool actions. A request may have reached the provider even if the client lost the response, so a retry can duplicate work and charges. For an accepted video or batch job, use its status endpoint instead of submitting it again.
 
-## Monitor throttling
+To monitor throttling, track `429` rates by endpoint and model, and check fallback frequency in request logs. Compare them with your [routing settings](../guides/routing-and-fallbacks.mdx) and, for BYOK traffic, your provider account quotas. [Guardrails](./endpoint/guardrails.mdx) control which keys can use which models and providers.
 
-Track `429` rates by endpoint and model, and inspect fallback frequency in request logs. Compare your application logs with [routing settings](../guides/routing-and-fallbacks.mdx) and provider account quotas for BYOK traffic.
+<Visibility for="agents">
+Rate-limit rules for agents, summarising this page:
 
-See [budgets](./endpoint/budgets-list.mdx) and [guardrails](./endpoint/guardrails.mdx) for workspace spending and access controls.
+- Gateway quotas return `429` with reason `customer_requests_per_minute` (code `key_limit_exceeded`) or `free_requests_per_day` (code `phaseo_free_model_limit_exceeded`); wait `Retry-After` seconds. If quota enforcement is unavailable, the gateway returns `503` with retry guidance.
+- Key limits and budgets return `429` with `key_limit_exceeded` and a `reset_at`. Without `Retry-After` the limit does not reset by itself: raise the limit or use another key instead of retrying.
+- A used-up department budget returns `429` with `key_limit_exceeded`, reason `department_<interval>_cost_budget_reached`, `department_id`, `department_name` and `reset_at`; wait `Retry-After` seconds or raise the budget. If the budget check is unavailable, the request is allowed.
+- Spend rules that block return `429` with `spend_rule_blocked`; wait for `Retry-After`, or ask an owner or admin to lift the block. `x-phaseo-spend-warning` means a block may follow.
+- Workspace rate limit policies return `429` with `rate_limit_exceeded`, `policy_id` and `limit_scope`. `x-ratelimit-remaining-requests` is approximate.
+- `Retry-After` can be seconds or an HTTP date; validate it before scheduling a retry. Never resubmit an ambiguous video or batch job; check its status instead.
+</Visibility>

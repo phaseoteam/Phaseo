@@ -19,6 +19,10 @@ const K2_7_CODE_MODELS = new Set([
 const K3_MODELS = new Set([
 	"kimi-k3",
 	"moonshotai/kimi-k3",
+	"kimi-k3.1-pro",
+	"moonshotai/kimi-k3.1-pro",
+	"kimi-k3.1-pro-highspeed",
+	"moonshotai/kimi-k3.1-pro-highspeed",
 ]);
 
 const K2_MULTIMODAL_MODELS = new Set([
@@ -99,6 +103,8 @@ function normalizeK27CodeRequest(request: Record<string, any>) {
 
 function normalizeK3Request(request: Record<string, any>, ir: Record<string, any>) {
 	if (!isK3Model(request?.model)) return;
+	// Moonshot selects Highspeed by model ID; the gateway tier is not an API field.
+	if (String(request.model).includes("kimi-k3.1-pro")) delete request.service_tier;
 
 	// K3 always thinks and replaces the K2.x thinking object with top-level reasoning_effort.
 	delete request.thinking;

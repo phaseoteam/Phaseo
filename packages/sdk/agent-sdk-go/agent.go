@@ -370,10 +370,13 @@ func CreateAgentDevtools(directory string) *DevtoolsConfig {
 }
 
 type GatewayAgentClientOptions struct {
-	Client           *phaseo.Phaseo
-	HTTPClient       *http.Client
-	Headers          map[string]string
-	APIKey           string
+	Client     *phaseo.Phaseo
+	HTTPClient *http.Client
+	Headers    map[string]string
+	APIKey     string
+	// APIKeyProvider returns the credential before every request and retry, for example
+	// phaseo.GitHubActionsToken() or phaseo.VercelToken(). It takes precedence over APIKey.
+	APIKeyProvider   phaseo.APIKeyProvider
 	BaseURL          string
 	Model            string
 	Preset           string
@@ -621,7 +624,7 @@ type GatewayAgentClient struct {
 func CreateGatewayAgentClient(options GatewayAgentClientOptions) (*GatewayAgentClient, error) {
 	client := options.Client
 	apiKey := strings.TrimSpace(options.APIKey)
-	if apiKey == "" {
+	if apiKey == "" && options.APIKeyProvider == nil {
 		apiKey = strings.TrimSpace(os.Getenv("PHASEO_API_KEY"))
 	}
 	baseURL := strings.TrimSpace(options.BaseURL)
@@ -632,10 +635,13 @@ func CreateGatewayAgentClient(options GatewayAgentClientOptions) (*GatewayAgentC
 		baseURL = "https://api.phaseo.app/v1"
 	}
 	if client == nil {
-		if apiKey == "" {
+		if options.APIKeyProvider != nil {
+			client = phaseo.NewWithAPIKeyProvider(options.APIKeyProvider, baseURL)
+		} else if apiKey == "" {
 			return nil, errors.New("PHASEO_API_KEY is required")
+		} else {
+			client = phaseo.New(apiKey, baseURL)
 		}
-		client = phaseo.New(apiKey, baseURL)
 		client.RawClient().Headers["X-Phaseo-Client"] = "phaseo-agent-go"
 		client.RawClient().Headers["X-Phaseo-Client-Version"] = "0.3.0"
 	}
@@ -644,6 +650,21 @@ func CreateGatewayAgentClient(options GatewayAgentClientOptions) (*GatewayAgentC
 		httpClient = http.DefaultClient
 	}
 	return &GatewayAgentClient{client: client, options: options, apiKey: apiKey, baseURL: strings.TrimRight(baseURL, "/"), httpClient: httpClient}, nil
+}
+
+// credential returns the bearer credential for a streaming request, asking APIKeyProvider each time.
+func (g *GatewayAgentClient) credential(ctx context.Context) (string, error) {
+	if g.options.APIKeyProvider == nil {
+		return g.apiKey, nil
+	}
+	credential, err := g.options.APIKeyProvider(ctx)
+	if err != nil {
+		return "", fmt.Errorf("resolve API key: %w", err)
+	}
+	if credential = strings.TrimSpace(credential); credential == "" {
+		return "", phaseo.ErrEmptyAPIKey
+	}
+	return credential, nil
 }
 
 func toGatewayModelResponse(response gen.ResponsesResponse) ModelResponse {
@@ -797,8 +818,8 @@ func (g *GatewayAgentClient) Stream(ctx context.Context, request ModelRequest) <
 	events := make(chan ModelStreamEvent)
 	go func() {
 		defer close(events)
-		if g.apiKey == "" {
-			events <- ModelStreamEvent{Err: errors.New("streaming with a custom Phaseo client requires APIKey or PHASEO_API_KEY")}
+		if g.apiKey == "" && g.options.APIKeyProvider == nil {
+			events <- ModelStreamEvent{Err: errors.New("streaming with a custom Phaseo client requires APIKey, APIKeyProvider or PHASEO_API_KEY")}
 			return
 		}
 		request.Stream = true
@@ -859,13 +880,20 @@ func (g *GatewayAgentClient) Stream(ctx context.Context, request ModelRequest) <
 			events <- ModelStreamEvent{Err: err}
 			return
 		}
-		httpRequest.Header.Set("Authorization", "Bearer "+g.apiKey)
 		httpRequest.Header.Set("Content-Type", "application/json")
 		httpRequest.Header.Set("Accept", "text/event-stream")
 		httpRequest.Header.Set("X-Phaseo-Client", "phaseo-agent-go")
 		httpRequest.Header.Set("X-Phaseo-Client-Version", "0.3.0")
 		for key, value := range g.options.Headers {
 			httpRequest.Header.Set(key, value)
+		}
+		if httpRequest.Header.Get("Authorization") == "" {
+			credential, err := g.credential(ctx)
+			if err != nil {
+				events <- ModelStreamEvent{Err: err}
+				return
+			}
+			httpRequest.Header.Set("Authorization", "Bearer "+credential)
 		}
 		response, err := g.httpClient.Do(httpRequest)
 		if err != nil {

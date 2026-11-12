@@ -1,5 +1,7 @@
+import { describe, it, expect } from "vitest";
 import { DEFAULT_SEARCH_CAPABILITIES, getGlobalNavigationItems, GLOBAL_NAVIGATION_ITEMS, isSearchDestinationEnabled } from "@/components/header/Search/Search.navigation";
 import { getSettingsSidebar } from "@/components/(gateway)/settings/Sidebar.config";
+import { GLOBAL_ACTION_ITEMS } from "@/components/header/Search/Search.commands";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -9,8 +11,20 @@ describe("global search navigation", () => {
 		expect(disabled).not.toContain("/settings/routing/auto");
 		expect(disabled).not.toContain("/settings/workspaces/enterprise/sso");
 		expect(disabled).not.toContain("/settings/webhooks/new");
+		expect(disabled).not.toContain("/settings/oauth-apps");
+		expect(getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, oauthApps: true }).map((item) => item.href)).toContain("/settings/oauth-apps");
 		expect(disabled).not.toContain("/chat/video");
 		expect(disabled).not.toContain("/games");
+		expect(disabled).not.toContain("/settings/classifiers");
+		expect(isSearchDestinationEnabled("/settings/classifiers/new", DEFAULT_SEARCH_CAPABILITIES)).toBe(false);
+		expect(getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, classifiers: true }).map((item) => item.href)).toContain("/settings/classifiers");
+		// The palette filters its actions the same way, so "Create a classifier" is hidden too.
+		const createClassifier = GLOBAL_ACTION_ITEMS.find((item) => item.id === "action-create-classifier");
+		expect(isSearchDestinationEnabled(createClassifier?.href, DEFAULT_SEARCH_CAPABILITIES)).toBe(false);
+		expect(isSearchDestinationEnabled(createClassifier?.href, { ...DEFAULT_SEARCH_CAPABILITIES, classifiers: true })).toBe(true);
+		expect(disabled).not.toContain("/settings/slack");
+		expect(isSearchDestinationEnabled("/settings/slack?installed=1", DEFAULT_SEARCH_CAPABILITIES)).toBe(false);
+		expect(getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, slackAgent: true }).map((item) => item.href)).toContain("/settings/slack");
 		expect(disabled).toContain("/settings/routing");
 		const enabled = getGlobalNavigationItems({ ...DEFAULT_SEARCH_CAPABILITIES, autoRouting: true });
 		expect(enabled.map((item) => item.href)).toContain("/settings/routing/auto");
@@ -25,17 +39,19 @@ describe("global search navigation", () => {
 	});
 	it("covers public static pages in the dashboard", () => {
 		const hrefs = new Set(GLOBAL_NAVIGATION_ITEMS.map((item) => item.href));
-		for (const directory of ["src/app/(dashboard)", "src/app/[locale]/(dashboard)"]) {
-			const root = path.join(process.cwd(), directory);
-			const pages = fs.readdirSync(root, { recursive: true, encoding: "utf8" });
-			for (const file of pages) {
-				const normalized = file.replaceAll("\\", "/");
-				if ((normalized !== "page.tsx" && !normalized.endsWith("/page.tsx")) || normalized.includes("[") || normalized.startsWith("internal/") || normalized.startsWith("settings/internal/")) continue;
-				const source = fs.readFileSync(path.join(root, file), "utf8");
-				if (/\b(?:redirect|permanentRedirect)\(/.test(source)) continue;
-				const href = normalized === "page.tsx" ? "/" : `/${normalized.slice(0, -"/page.tsx".length)}`;
-				expect(hrefs).toContain(href);
-			}
+		const root = path.join(process.cwd(), "src/routes/{-$locale}/_dashboard");
+		const routes = fs.readdirSync(root, { recursive: true, encoding: "utf8" });
+		for (const file of routes) {
+			const normalized = file.replaceAll("\\", "/");
+			if ((normalized !== "index.tsx" && !normalized.endsWith("/index.tsx")) || normalized.includes("$") || normalized.startsWith("internal/") || normalized.startsWith("settings/internal/")) continue;
+			const source = fs.readFileSync(path.join(root, file), "utf8");
+			if (/\b(?:redirect|permanentRedirect|redirectBeforeLoad)\(/.test(source)) continue;
+			// These redirect from helpers their route calls (onboarding.functions.ts, link.functions.ts).
+			if (normalized === "onboarding/index.tsx" || normalized === "slack/link/index.tsx") continue;
+			// Pathless segments such as `_list` are not part of the URL.
+			const route = normalized === "index.tsx" ? "" : normalized.slice(0, -"/index.tsx".length).split("/").filter((segment) => !segment.startsWith("_")).join("/");
+			const href = `/${route}`;
+			expect(hrefs).toContain(href);
 		}
 	});
 	it("has translated labels for every navigation destination", () => {

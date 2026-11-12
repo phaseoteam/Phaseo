@@ -52,39 +52,23 @@ CREATE OR REPLACE FUNCTION public.get_monitor_model_rows (
   STABLE
   SET search_path TO 'public', 'pg_temp'
   AS $function$
-  with normalized_weekly_requests as (
+  with weekly_model_usage as (
+    -- The raw seven-day scan runs in refresh_public_monitor_weekly_usage().
     select
-      coalesce(
-        nullif(gr.canonical_model_id, ''),
-        public.resolve_public_model_id(gr.model_id, gr.provider),
-        nullif(gr.model_id, '')
-      ) as canonical_model_id,
-      coalesce(nullif(gr.provider, ''), 'unknown') as provider_id,
-      public.gateway_usage_total_tokens(gr.usage)::bigint as total_tokens,
-      gr.throughput::numeric as throughput,
-      gr.latency_ms::numeric as latency_ms
-    from private.v2_rpc_gateway_requests_compat gr
-    where gr.created_at >= now() - interval '7 days'
-  ),
-  weekly_model_usage as (
-    select
-      r.canonical_model_id as model_id,
-      sum(r.total_tokens)::bigint as weekly_tokens_model,
-      round(avg(r.throughput), 2) as weekly_throughput_model,
-      round(avg(r.latency_ms), 0) as weekly_latency_model
-    from normalized_weekly_requests r
-    where r.canonical_model_id is not null
-    group by r.canonical_model_id
+      u.model_id,
+      sum(u.total_tokens)::bigint as weekly_tokens_model,
+      round(sum(u.throughput_sum) / nullif(sum(u.throughput_count), 0), 2) as weekly_throughput_model,
+      round(sum(u.latency_sum) / nullif(sum(u.latency_count), 0), 0) as weekly_latency_model
+    from public.public_monitor_weekly_usage u
+    group by u.model_id
   ),
   weekly_model_provider_usage as (
     select
-      r.canonical_model_id as model_id,
-      r.provider_id,
-      sum(r.total_tokens)::bigint as weekly_tokens_model_provider
-    from normalized_weekly_requests r
-    where r.canonical_model_id is not null
-      and r.provider_id <> 'unknown'
-    group by r.canonical_model_id, r.provider_id
+      u.model_id,
+      u.provider_id,
+      u.total_tokens::bigint as weekly_tokens_model_provider
+    from public.public_monitor_weekly_usage u
+    where u.provider_id <> 'unknown'
   ),
   active_pricing_rules as (
     select
@@ -320,7 +304,7 @@ $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."get_monitor_model_rows"(boolean) TO "service_role";
 
-COMMENT ON FUNCTION "public"."get_monitor_model_rows"(boolean) IS 'Returns provider-capability monitor rows with joined model/provider/pricing metadata and 7d raw gateway usage metrics.';
+COMMENT ON FUNCTION "public"."get_monitor_model_rows"(boolean) IS 'Returns provider-capability monitor rows with joined model/provider/pricing metadata and the rolling 7d gateway usage snapshot from public_monitor_weekly_usage.';
 
 REVOKE ALL ON FUNCTION "public"."get_monitor_model_rows"(boolean) FROM "postgres";
 

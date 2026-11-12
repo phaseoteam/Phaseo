@@ -1,64 +1,99 @@
 ---
 title: "Créer un agent de procédures opérationnelles en Go"
 icon: "clipboard-check"
-description: "Utilisez le SDK Agent Go pour combiner quelques outils locaux déterministes dans un cycle de dépannage limité."
+description: "Utilisez l’Agent SDK Go pour combiner quelques outils locaux déterministes dans une boucle de dépannage limitée."
 ---
 
-Utilisez cette recette lorsqu’un service Go doit répondre à des questions opérationnelles à partir de son contexte local.
+Exécutez un agent Go qui répond à une question opérationnelle en appelant un outil d’état local, au sein d’un même service et sans système de tâches. À la fin, vous avez un seul `main.go` qui affiche une courte réponse sur la latence actuelle des fournisseurs.
 
-## 1. Préparer les SDK
+L’outil renvoie des données d’exemple fixes : le programme est donc illustratif ; remplacez-le par votre propre appel d’état ou de métriques. Il convient à un service Go dont le contexte existe déjà sous forme d’appels locaux ou internes.
 
-<Note type="warning">Le module Go Agent SDK ne dispose pas encore d’une version publique. Suivez les [instructions d’installation depuis les sources](../sdk-reference/go/agent-sdk-installation.mdx).</Note>
+## Le construire
 
-## 2. Définir de petits outils d’exécution
+<Steps>
+<Step title="Installer">
 
-```go
-statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
-  ID:          "read-status",
-  Description: "Read the current service status page summary.",
-  Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
-    return map[string]any{
-      "status": "degraded",
-      "summary": "Latency is elevated on one provider route.",
-    }, nil
-  },
-})
+```bash
+go mod init ops-runbook
+go get github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go@latest
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 3. Créer l’agent
+Le module principal `sdk-go/v3` est installé avec lui. Consultez [Installation de l’Agent SDK Go](../sdk-reference/agent/installation) pour les prérequis.
 
-```go
-agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
-  ID:           "ops-runbook-agent",
-  Model:        "openai/gpt-5.4-nano",
-  Instructions: "Use tools when helpful and answer briefly.",
-  Tools:        []phaseoagent.Tool{statusTool},
-})
-```
+</Step>
+<Step title="Écrire l’agent">
 
-## 4. Exécuter un tour de dépannage limité
+```go main.go
+package main
 
-```go
-client, _ := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+import (
+  "context"
+  "fmt"
 
-result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
-  Input:  "What is happening with provider latency right now?",
-  Client: client,
-})
-if err != nil {
-  panic(err)
+  phaseoagent "github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go"
+)
+
+func main() {
+  statusTool := phaseoagent.DefineTool(phaseoagent.Tool{
+    ID:          "read-status",
+    Description: "Read the current service status page summary.",
+    Parameters: map[string]any{
+      "type":                 "object",
+      "properties":           map[string]any{},
+      "additionalProperties": false,
+    },
+    Execute: func(input any, ctx phaseoagent.RuntimeContext) (any, error) {
+      return map[string]any{
+        "status":  "degraded",
+        "summary": "Latency is elevated on one provider route.",
+      }, nil
+    },
+  })
+
+  agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+    ID:           "ops-runbook-agent",
+    Model:        "openai/gpt-6-astra",
+    Instructions: "Use tools when helpful and answer briefly.",
+    Tools:        []phaseoagent.Tool{statusTool},
+    MaxSteps:     4,
+  })
+
+  // Lit PHASEO_API_KEY (et PHASEO_BASE_URL s’il est défini).
+  client, err := phaseoagent.CreateGatewayAgentClient(phaseoagent.GatewayAgentClientOptions{})
+  if err != nil {
+    panic(err)
+  }
+
+  result, err := agent.Run(context.Background(), phaseoagent.RunOptions{
+    Input:  "What is happening with provider latency right now?",
+    Client: client,
+  })
+  if err != nil {
+    panic(err)
+  }
+
+  fmt.Println(result.Run.Status)
+  fmt.Println(result.Output)
 }
-
-fmt.Println(result.Output)
 ```
 
-## Quand utiliser cette recette
+</Step>
+<Step title="L’exécuter">
 
-- le workflow appartient à un seul service Go
-- le contexte complémentaire est déjà accessible par des appels locaux ou internes
-- vous souhaitez un cycle d’agent sans introduire pour l’instant un système de tâches plus vaste
+```bash
+go run .
+```
 
-## À lire aussi
+</Step>
+</Steps>
 
-- [SDK Agent Go](../sdk-reference/go/agent-sdk.mdx)
-- [Ancrer les extractions avec web fetch](./tool-grounding-with-web-fetch.mdx)
+## Vérifier que ça fonctionne
+
+- Le programme affiche `completed`, puis une réponse qui mentionne une latence dégradée sur une route de fournisseur.
+- Dans **Paramètres → Utilisation → Journaux**, le premier tour du modèle affiche un appel d’outil `read-status`.
+- Sans `PHASEO_API_KEY`, `CreateGatewayAgentClient` renvoie `PHASEO_API_KEY is required`.
+
+## Avant la production
+
+`MaxSteps` vaut `8` par défaut dans le SDK Go ; fixez-le au plus petit nombre qui permet de terminer la tâche. Quand un outil prend des arguments, donnez-lui un schéma `Parameters` et un validateur `InputSchema` qui renvoie une erreur pour toute valeur inattendue, car les arguments viennent du modèle. Gardez les outils en lecture seule, sauf si une personne approuve l’appel (`RequireApproval: true`). La [référence de l’Agent SDK Go](../sdk-reference/agent/usage) couvre les approbations, l’état et le streaming, et l’[ancrage avec web fetch](./tool-grounding-with-web-fetch) montre comment lire une page connue au lieu d’un outil local.

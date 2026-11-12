@@ -8,13 +8,17 @@ import type { Env } from "@/runtime/types";
 
 import { v1Router } from "@/routes/v1";
 import { lazyRouter } from "@/routes/lazy";
-import type { GatewayBindings } from "@/runtime/env";
+import { runWithRequestScope, type GatewayBindings } from "@/runtime/env";
 import { sendAxiomWideEvent } from "@/observability/axiom";
 import { requestIdFor } from "@/runtime/request-id";
+import { withErrorObject } from "@/core/error-object";
 import { enforceRegionalSurface } from "@/regional-surface";
+import { markRequestReceived } from "@pipeline/telemetry/request-receipt";
+import { emitLogs, safeError, telemetryConfig, traceContext } from "../../../packages/shared/observability/index.mjs";
 export { RealtimeRelayDurableObject } from "@core/realtime-relay-durable-object";
 export { ProviderRateLimitDurableObject } from "@core/provider-rate-limit-durable-object";
 export { CustomerRateLimitDurableObject } from "@core/customer-rate-limit-durable-object";
+export { SpendLimitDurableObject } from "@core/spend-limit-durable-object";
 export { RoutingHealthDurableObject } from "@core/routing-health-durable-object";
 
 const app = new Hono<Env>();
@@ -50,6 +54,14 @@ app.all("/internal/*", internal);
 
 app.onError((error, c) => {
 	const requestId = c.get("requestId") ?? requestIdFor(c.req.raw);
+	try {
+		const trace = traceContext(c.req.header("traceparent"));
+		c.executionCtx.waitUntil(emitLogs(telemetryConfig(c.env, "phaseo-gateway"), [{
+			event_name: "gateway.unhandled_error", outcome: "error", actionable: true,
+			request_id: requestId, trace_id: trace?.traceId,
+			method: c.req.method, route: c.req.routePath, ...safeError(error),
+		}]).catch(() => {}));
+	} catch { /* Preserve the original failure response if monitoring is unavailable. */ }
 	const url = new URL(c.req.url);
 	const event = sendAxiomWideEvent({
 		event_type: "api.unhandled_error",
@@ -83,16 +95,23 @@ app.onError((error, c) => {
 	});
 
 	return c.json(
-		{ error: "internal_error", message: "An unexpected error occurred.", request_id: requestId },
+		withErrorObject({ error: "internal_error", message: "An unexpected error occurred.", request_id: requestId }, 500),
 		500,
 		{ "x-request-id": requestId },
 	);
 });
 
 export default {
-	fetch: app.fetch,
+	fetch(request: Request, env: GatewayBindings, ctx: ExecutionContext) {
+		markRequestReceived(request);
+		return runWithRequestScope(ctx?.waitUntil?.bind(ctx), () => app.fetch(request, env, ctx));
+	},
 	async scheduled(event: ScheduledController, env: GatewayBindings) {
 		const { handleScheduledEvent } = await import("@/scheduled");
 		await handleScheduledEvent(event, env);
+	},
+	async queue(batch: MessageBatch<unknown>, env: GatewayBindings) {
+		const { handleBroadcastQueue } = await import("@/observability/broadcast-queue");
+		await handleBroadcastQueue(batch, env);
 	},
 };

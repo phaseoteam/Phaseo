@@ -6,8 +6,10 @@ CREATE OR REPLACE FUNCTION public.gateway_realtime_review_admission()
   AS $function$
 begin
   perform 1 from public.wallets where workspace_id = new.workspace_id for update;
+  -- Only the API key whose session is under review is blocked, not the workspace.
   if exists (select 1 from public.gateway_realtime_billing_reviews
-    where workspace_id = new.workspace_id and access_blocked) then
+    where workspace_id = new.workspace_id and access_blocked
+      and key_id is not distinct from new.key_id) then
     raise exception 'realtime_billing_review_required';
   end if;
   return new;

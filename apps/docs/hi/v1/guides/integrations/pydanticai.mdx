@@ -1,10 +1,10 @@
 ---
 title: "PydanticAI"
 icon: "braces"
-description: "PydanticAI और Phaseo से typed Python agents बनाएँ।"
+description: "PydanticAI और Phaseo के साथ टाइप्ड Python एजेंट बनाएँ।"
 ---
 
-Typed outputs, validation और संक्षिप्त OpenAI-संगत model setup वाले Python agents के लिए PydanticAI उपयोग करें।
+`https://api.phaseo.app/v1` पर इशारा करने वाले `OpenAIProvider` के साथ एक `OpenAIChatModel` बनाएँ, और PydanticAI एजेंट Phaseo मॉडल पर चलते हैं।
 
 ## इंस्टॉल करें
 
@@ -12,7 +12,7 @@ Typed outputs, validation और संक्षिप्त OpenAI-संगत
 pip install "pydantic-ai-slim[openai]"
 ```
 
-## मॉडल कॉन्फ़िगर करें
+## PydanticAI को Phaseo पर ले जाएँ
 
 ```python
 import os
@@ -21,7 +21,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 model = OpenAIChatModel(
-    "openai/gpt-5-nano",
+    "openai/gpt-6-astra",
     provider=OpenAIProvider(
         api_key=os.environ["PHASEO_API_KEY"],
         base_url="https://api.phaseo.app/v1",
@@ -33,14 +33,9 @@ result = agent.run_sync("Reply with only: ok")
 print(result.output)
 ```
 
-## नोट्स
+`ok` प्रिंट होने का मतलब है कि सेटअप काम करता है।
 
-- PydanticAI का OpenAI-संगत path OpenAI-शैली का chat behavior उपयोग करता है।
-- `phaseo:apply_patch` जैसी Responses-only सुविधाओं के लिए direct Phaseo Responses calls उपयोग करें।
-- Structured output schemas को चुने गए model की context window के अनुरूप छोटा रखें।
+## ज्ञात सीमाएँ
 
-## संबंधित विषय
-
-- [Structured Outputs](../structured-outputs.mdx)
-- [OpenAI SDK](./openai-sdk.mdx)
-- [मॉडल](../../api-reference/endpoint/models.mdx)
+- यह तरीका OpenAI-शैली Chat Completions इस्तेमाल करता है। `phaseo:apply_patch` जैसी सिर्फ़-Responses सुविधाओं के लिए Phaseo के Responses एंडपॉइंट को सीधे कॉल करें।
+- [संरचित आउटपुट](../structured-outputs.mdx) स्कीमा इतने छोटे रखें कि वे मॉडल की कॉन्टेक्स्ट विंडो में आ जाएँ। सीमाएँ [मॉडल](../../api-reference/endpoint/models.mdx) में जाँचें।

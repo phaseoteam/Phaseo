@@ -10,10 +10,13 @@ import {
 	buildProviderApiModelSnapshotDiff,
 	canonicalProviderId,
 	confirmModelRemovals,
+	removalConfirmAfterMs,
+	createSharedProviderModelsFetcher,
 	computeConfiguredModelCoverageFingerprint,
 	diffModelIds,
 	extractProviderApiModelSnapshot,
-	fetchProviderModels,
+	extractProviderModels,
+	type ProviderModelsPayloadFetcher,
 	getDiscordProviderFamilyId,
 	hasDiscordNotifiableChanges,
 	hasProviderApiSnapshotValue,
@@ -22,6 +25,7 @@ import {
 	loadLatestDiscordNotificationFingerprint,
 	loadPricingPageStates,
 	readBindingEnv,
+	resolveDiscoveryApiKey,
 	runPricingMonitorCheck,
 	shouldRunPricingMonitor,
 	savePricingPageStates,
@@ -34,17 +38,22 @@ import {
 	computePrivateModelDiscoveryFingerprint,
 	sendPrivateModelDiscoveryNotification,
 } from "./private-model-discovery-notifications";
-import {
-	buildPricingTableIssueEntries,
-	buildCatalogPricingIssueEntries,
-	buildProviderPricingIssueEntries,
-	buildProviderIssueEntries,
-	shouldSyncProviderDiscoveryIssues,
-	syncUpstreamDiscoveryIssues,
-} from "./github-issues";
-import { dispatchProviderCatalogSync, type CatalogSyncDispatchSummary } from "./github-dispatch";
 import { fetchPricingTableSnapshots, hasPricingSourceChanged, type PricingTableSnapshot } from "./pricing-tables";
+import {
+	seenModelRefreshIntervalMs,
+	shouldWriteSeenModel,
+	storedModelsAreCurrent,
+	type SeenModelWritePolicy,
+	type StoredSeenModel,
+} from "./seen-model-writes";
 import { MODEL_DISCOVERY_PROVIDERS, type ProviderConfig } from "./providers";
+import {
+	loadProviderStatuses,
+	redactProviderError,
+	runProviderHealthCheck,
+	type ProviderCheckOutcome,
+	type ProviderHealthSummary,
+} from "./provider-health";
 import {
 	DEFAULT_MODEL_DISCOVERY_CONCURRENCY,
 	mapWithConcurrency,
@@ -186,6 +195,12 @@ type ProviderResult =
 			modelCount: number;
 			durationMs: number;
 			change: ProviderChange | null;
+			/** True when the provider's first check was deferred, so none of its models were written. */
+			firstCheckDeferred?: boolean;
+			/** Fingerprint of the /models response this result reflects; null when it is not reusable. */
+			payloadFingerprint?: string | null;
+			/** True when the response matched the last processed one and extraction was skipped. */
+			unchangedPayload?: boolean;
 	  }
 	| {
 			providerId: string;
@@ -214,16 +229,9 @@ type DiscoveryRunSummary = {
 	providersError: number;
 	changesDetected: number;
 	staleModelsDeleted: number;
+	seenModels: SeenModelWriteSummary;
 	results: ProviderResult[];
 	changes: ProviderChange[];
-	issueSync?: {
-		created: number;
-		updated: number;
-		skipped: boolean;
-		reason?: string | null;
-		error?: string | null;
-	};
-	catalogSyncDispatch?: CatalogSyncDispatchSummary & { error?: string | null };
 	statePersisted: boolean;
 	persistenceDeferredReason?: string | null;
 	pricingMonitor: PricingMonitorSummary;
@@ -232,6 +240,7 @@ type DiscoveryRunSummary = {
 	configuredModelCoverageMonitor: ConfiguredModelCoverageMonitorSummary;
 	reviewQueue: ModelDiscoveryReviewQueueSummary;
 	publicModelAnnouncements: PublicModelAnnouncementSummary;
+	providerHealth: ProviderHealthSummary;
 	notificationFingerprint: string | null;
 };
 
@@ -240,6 +249,7 @@ type SupabaseSeenModelRow = {
 	model_id: string;
 	watch_snapshot?: unknown;
 	removal_pending?: boolean;
+	last_seen_at?: string | null;
 };
 
 type ConfiguredProviderModelRow = {
@@ -249,6 +259,15 @@ type ConfiguredProviderModelRow = {
 };
 
 type RunStatus = "completed" | "completed_with_errors" | "failed";
+
+type SeenModelWriteSummary = {
+	/** Rows upserted this sweep: new, changed, resurfaced, or due their periodic last_seen_at refresh. */
+	written: number;
+	/** Current models whose stored row was already up to date. */
+	unchanged: number;
+	/** Providers whose /models response matched the last processed one, so extraction was skipped. */
+	unchangedProviders: number;
+};
 
 const DISCOVERY_TIMEOUT_MS = 30_000;
 const DEFAULT_RETENTION_DAYS = 7;
@@ -304,7 +323,7 @@ const PROVIDER_API_PRICING_WATCH_PROVIDER_IDS = new Set<string>([
 	"venice",
 	"vercel",
 	"weights-and-biases",
-	"pioneer",
+	"fastino",
 	"poe",
 	"requesty",
 	"zenmux",
@@ -312,7 +331,6 @@ const PROVIDER_API_PRICING_WATCH_PROVIDER_IDS = new Set<string>([
 
 const PROVIDERS: ProviderConfig[] = MODEL_DISCOVERY_PROVIDERS;
 
-const PROVIDER_NAMES_BY_ID = new Map(PROVIDERS.map((provider) => [provider.providerId, provider.providerName]));
 
 export function getModelDiscoveryProviderCount(): number {
 	return PROVIDERS.length;
@@ -375,6 +393,33 @@ async function insertRunStart(runId: string, args: RunArgs, startedAt: string): 
 	if (error) throw new Error(error.message || "Failed to insert model discovery run row");
 }
 
+// A scheduled Worker invocation cannot outlive 15 minutes, so an older scheduled run
+// still marked "running" lost its worker before it could record an outcome. Manual
+// runs (scripts/model-discovery) have no such limit and are left alone.
+const ABANDONED_RUN_AFTER_MS = 30 * 60 * 1000;
+export const ABANDONED_RUN_ERROR = "abandoned: the worker stopped before the run recorded an outcome";
+
+/** Closes runs whose worker died mid-run; best effort, never blocks discovery. */
+export async function closeAbandonedRuns(now: Date, currentRunId: string): Promise<number> {
+	try {
+		const { data, error } = await getSupabaseAdmin()
+			.from("model_discovery_runs")
+			.update({ status: "failed", finished_at: now.toISOString(), error: ABANDONED_RUN_ERROR })
+			.eq("status", "running")
+			.eq("trigger", "scheduled")
+			.lt("started_at", new Date(now.getTime() - ABANDONED_RUN_AFTER_MS).toISOString())
+			.neq("id", currentRunId)
+			.select("id");
+		if (error) throw new Error(error.message || "Failed to close abandoned model discovery runs");
+		const closed = Array.isArray(data) ? data.length : 0;
+		if (closed > 0) console.warn("[model-discovery] Closed abandoned runs:", closed);
+		return closed;
+	} catch (error) {
+		console.warn("[model-discovery] Could not close abandoned runs:", error instanceof Error ? error.message : String(error));
+		return 0;
+	}
+}
+
 function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError?: string | null; error?: string | null } = {}): Record<string, unknown> {
 	// Persist only state that later runs read back (fingerprints, cursors,
 	// coverage baselines) plus counters for triage. Per-provider result arrays
@@ -382,6 +427,7 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 	return {
 		discoveryConcurrency: summary.discoveryConcurrency,
 		statePersisted: summary.statePersisted,
+		seenModels: summary.seenModels,
 		persistenceDeferredReason: summary.persistenceDeferredReason ?? undefined,
 		notificationFingerprint: summary.notificationFingerprint ?? undefined,
 		pricingMonitor: {
@@ -417,6 +463,7 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 		},
 		reviewQueue: summary.reviewQueue,
 		publicModelAnnouncements: summary.publicModelAnnouncements,
+		providerHealth: summary.providerHealth,
 		notificationError: extra.notificationError ?? undefined,
 		error: extra.error ?? undefined,
 	};
@@ -465,6 +512,7 @@ type PreviousProviderModels = {
 	modelIds: string[];
 	pendingRemovalIds: Set<string>;
 	providerApiSnapshotByModelId: Map<string, ProviderApiModelSnapshot>;
+	storedByModelId: Map<string, StoredSeenModel>;
 };
 
 type PreviousModelsState = {
@@ -483,6 +531,8 @@ type ProviderProcessingResult = {
 	providerApiModelsWithPricing: number;
 	providerApiPricingBaselineInitialized: boolean;
 	providerApiProviderWithoutPricing: boolean;
+	/** Current models whose stored row was already up to date, so no write was needed. */
+	unchangedModelCount: number;
 };
 
 function emptyProviderProcessingResult(result: ProviderResult): ProviderProcessingResult {
@@ -497,16 +547,43 @@ function emptyProviderProcessingResult(result: ProviderResult): ProviderProcessi
 		providerApiModelsWithPricing: 0,
 		providerApiPricingBaselineInitialized: false,
 		providerApiProviderWithoutPricing: false,
+		unchangedModelCount: 0,
 	};
+}
+
+export type ProviderFirstCheckDecision = "report" | "baseline" | "defer";
+
+/**
+ * Decides how to treat a provider's listed models when nothing is stored for it. Only a provider whose
+ * last recorded successful check inside the retention window listed zero models (AI21) reports its first
+ * models; anything else with no stored models is a baseline, including a provider whose rows were pruned
+ * after a long outage and one whose earlier success was never persisted. When the status needed to tell
+ * these apart could not be read (`null`), the provider's rows are not written this sweep, so the next
+ * sweep decides instead of guessing.
+ */
+export function providerFirstCheckDecision(
+	previousModelIds: readonly string[],
+	checkedEmptyWithinRetention: boolean | null,
+): ProviderFirstCheckDecision {
+	if (previousModelIds.length > 0) return "report";
+	if (checkedEmptyWithinRetention === null) return "defer";
+	return checkedEmptyWithinRetention ? "report" : "baseline";
 }
 
 async function processProvider(
 	provider: ProviderConfig,
 	previousState: PreviousModelsState,
 	runId: string,
+	checkedEmptyWithinRetention: boolean | null,
+	writePolicy: SeenModelWritePolicy,
+	fetchPayload: ProviderModelsPayloadFetcher,
+	/** Fingerprint of the response last processed and persisted for this provider, if any. */
+	processedPayloadFingerprint: string | null,
+	/** How long a model must stay missing before its removal is confirmed. */
+	removalConfirmMs: number,
 ): Promise<ProviderProcessingResult> {
 	const requiresApiKey = !["none", "optional_bearer"].includes(provider.authStyle ?? "bearer");
-	const apiKey = provider.apiKeyEnv ? readBindingEnv(provider.apiKeyEnv) : null;
+	const apiKey = resolveDiscoveryApiKey(provider);
 	if (requiresApiKey && !apiKey) {
 		return emptyProviderProcessingResult({
 			providerId: provider.providerId,
@@ -522,17 +599,69 @@ async function processProvider(
 	const providerStarted = Date.now();
 
 	try {
-		const discoveredModels = await fetchProviderModels(provider, apiKey);
-		const currentModelIds = discoveredModels.map((model) => model.id);
+		const response = await fetchPayload(provider, apiKey);
 		const previousProviderState = previousState.byProvider.get(provider.providerId);
 		const previousModelIds = previousProviderState?.modelIds ?? [];
+		// Most lists are byte-identical between sweeps; extracting them again is the bulk of a sweep's CPU.
+		if (
+			response.fingerprint !== null &&
+			response.fingerprint === processedPayloadFingerprint &&
+			previousProviderState &&
+			storedModelsAreCurrent(previousProviderState.storedByModelId.values(), writePolicy)
+		) {
+			let storedModelsWithPricing = 0;
+			for (const stored of previousProviderState.storedByModelId.values()) {
+				if (asRecord(stored.snapshot)?.pricingFingerprint) storedModelsWithPricing += 1;
+			}
+			return {
+				...emptyProviderProcessingResult({
+					providerId: provider.providerId,
+					providerName: provider.providerName,
+					status: "success",
+					modelCount: previousModelIds.length,
+					durationMs: Date.now() - providerStarted,
+					change: null,
+					payloadFingerprint: response.fingerprint,
+					unchangedPayload: true,
+				}),
+				currentModelIds: previousModelIds,
+				providerApiModelsWithPricing: storedModelsWithPricing,
+				providerApiPricingBaselineInitialized,
+				providerApiProviderWithoutPricing:
+					PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(provider.providerId) && storedModelsWithPricing === 0,
+				unchangedModelCount: previousModelIds.length,
+			};
+		}
+		const discoveredModels = extractProviderModels(provider, response);
+		const currentModelIds = discoveredModels.map((model) => model.id);
 		assertSafeDiscoverySnapshot(provider.providerId, previousModelIds, currentModelIds);
 		const modelIdDiff = diffModelIds(previousModelIds, currentModelIds);
+		// A pending row's last_seen_at is when it first went missing, so it dates the unbroken absence.
+		const pendingSinceMs = new Map<string, number | null>();
+		for (const modelId of previousProviderState?.pendingRemovalIds ?? []) {
+			const lastSeenAt = previousProviderState?.storedByModelId.get(modelId)?.lastSeenAt;
+			const parsed = lastSeenAt ? Date.parse(lastSeenAt) : Number.NaN;
+			pendingSinceMs.set(modelId, Number.isFinite(parsed) ? parsed : null);
+		}
 		const { confirmed: removed, provisional: provisionalRemovals } = confirmModelRemovals(
 			modelIdDiff.removed,
-			previousProviderState?.pendingRemovalIds ?? new Set<string>(),
+			pendingSinceMs,
+			{ nowMs: writePolicy.nowMs, confirmAfterMs: removalConfirmMs },
 		);
-		const added = modelIdDiff.added;
+		// A provider's first successful check records a baseline rather than announcing every model it
+		// lists as new, as the pricing and public-announcement monitors already do. Without this, a
+		// provider that starts working (a fixed key name, a new host) floods the review queue.
+		const firstCheck = providerFirstCheckDecision(previousModelIds, checkedEmptyWithinRetention);
+		if (firstCheck !== "report" && currentModelIds.length > 0) {
+			console.log(
+				firstCheck === "baseline"
+					? "[model-discovery] Recorded provider baseline:"
+					: "[model-discovery] Deferred provider baseline until provider status loads:",
+				provider.providerId,
+				currentModelIds.length,
+			);
+		}
+		const added = firstCheck === "report" ? modelIdDiff.added : [];
 		const nowIso = new Date().toISOString();
 		const upsertRows: SeenModelUpsertRow[] = [];
 		const deleteRows: SeenModelDeleteRow[] = removed.map((modelId) => ({
@@ -545,6 +674,7 @@ async function processProvider(
 		}));
 		const watchSnapshotsById = new Map<string, ProviderApiModelSnapshot>();
 		let providerModelsWithPricing = 0;
+		let unchangedModelCount = 0;
 
 		for (const model of discoveredModels) {
 			const watchSnapshot = extractProviderApiModelSnapshot(
@@ -554,6 +684,11 @@ async function processProvider(
 			);
 			watchSnapshotsById.set(model.id, watchSnapshot);
 			if (watchSnapshot.pricingFingerprint) providerModelsWithPricing += 1;
+			if (firstCheck === "defer") continue;
+			if (!shouldWriteSeenModel(previousProviderState?.storedByModelId.get(model.id), watchSnapshot, writePolicy)) {
+				unchangedModelCount += 1;
+				continue;
+			}
 			upsertRows.push({
 				provider_id: provider.providerId,
 				provider_name: provider.providerName,
@@ -618,6 +753,9 @@ async function processProvider(
 				modelCount: currentModelIds.length,
 				durationMs: Date.now() - providerStarted,
 				change,
+				firstCheckDeferred: firstCheck === "defer",
+				// A deferred first check wrote nothing, so its response must not count as processed.
+				payloadFingerprint: firstCheck === "defer" ? null : response.fingerprint,
 			},
 			currentModelIds,
 			upsertRows,
@@ -629,16 +767,35 @@ async function processProvider(
 			providerApiPricingBaselineInitialized,
 			providerApiProviderWithoutPricing:
 				PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(provider.providerId) && providerModelsWithPricing === 0,
+			unchangedModelCount,
 		};
 	} catch (error) {
 		return emptyProviderProcessingResult({
 			providerId: provider.providerId,
 			providerName: provider.providerName,
 			status: "error",
-			reason: error instanceof Error ? error.message : String(error),
+			reason: redactProviderError(error instanceof Error ? error.message : String(error), apiKey),
 			durationMs: Date.now() - providerStarted,
 		});
 	}
+}
+
+/**
+ * Maps a provider result onto the health outcome it records. A success counts as recorded only when its
+ * models were persisted: the sweep's state was saved and the provider's first check was not deferred. Its
+ * response fingerprint is only recorded then too, because a later sweep may skip extraction when it matches.
+ */
+export function toProviderCheckOutcome(result: ProviderResult, statePersisted = true): ProviderCheckOutcome {
+	return {
+		providerId: result.providerId,
+		providerName: result.providerName,
+		status: result.status === "success" ? "ok" : result.status,
+		reason: result.status === "success" ? null : result.reason,
+		modelCount: result.status === "success" ? result.modelCount : null,
+		durationMs: result.status === "skipped" ? null : result.durationMs,
+		recorded: result.status === "success" ? statePersisted && !result.firstCheckDeferred : true,
+		payloadFingerprint: result.status !== "success" ? null : statePersisted ? result.payloadFingerprint ?? null : undefined,
+	};
 }
 
 async function upsertModelDiscoveryReviewItems(
@@ -715,6 +872,7 @@ export async function fetchPreviousModelsByProviders(providerIds: string[]): Pro
 			modelIds: [],
 			pendingRemovalIds: new Set<string>(),
 			providerApiSnapshotByModelId: new Map<string, ProviderApiModelSnapshot>(),
+			storedByModelId: new Map<string, StoredSeenModel>(),
 		});
 	}
 	if (providerIds.length === 0) {
@@ -726,7 +884,7 @@ export async function fetchPreviousModelsByProviders(providerIds: string[]): Pro
 	for (let offset = 0; ; offset += SEEN_MODELS_PAGE_SIZE) {
 		const { data, error } = await supabase
 			.from("model_discovery_seen_models")
-			.select("provider_id,model_id,watch_snapshot,removal_pending")
+			.select("provider_id,model_id,watch_snapshot,removal_pending,last_seen_at")
 			.in("provider_id", providerIds)
 			.order("provider_id", { ascending: true })
 			.order("model_id", { ascending: true })
@@ -749,6 +907,11 @@ export async function fetchPreviousModelsByProviders(providerIds: string[]): Pro
 		if (!state) continue;
 		state.modelIds.push(row.model_id);
 		if (row.removal_pending === true) state.pendingRemovalIds.add(row.model_id);
+		state.storedByModelId.set(row.model_id, {
+			snapshot: row.watch_snapshot ?? null,
+			lastSeenAt: typeof row.last_seen_at === "string" ? row.last_seen_at : null,
+			removalPending: row.removal_pending === true,
+		});
 		if (PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(row.provider_id)) {
 			const snapshot = parseWatchSnapshot(row.watch_snapshot);
 			if (snapshot) {
@@ -767,7 +930,34 @@ export async function fetchPreviousModelsByProviders(providerIds: string[]): Pro
 	return { byProvider: map, providerApiSnapshotReadyByProvider };
 }
 
-async function upsertCurrentModels(rows: SeenModelUpsertRow[]): Promise<void> {
+// Postgres rejects an INSERT ... ON CONFLICT DO UPDATE that touches one key twice, which would
+// abort persistence for every provider in the run. Keep the first row per key; rows arrive in
+// provider order, so the winner is deterministic.
+export function dedupeSeenModelRows(
+	rows: SeenModelUpsertRow[],
+	onDuplicate?: (row: SeenModelUpsertRow) => void,
+): SeenModelUpsertRow[] {
+	const byKey = new Map<string, SeenModelUpsertRow>();
+	for (const row of rows) {
+		const key = JSON.stringify([row.provider_id, row.model_id]);
+		if (byKey.has(key)) onDuplicate?.(row);
+		else byKey.set(key, row);
+	}
+	return Array.from(byKey.values());
+}
+
+async function upsertCurrentModels(allRows: SeenModelUpsertRow[]): Promise<void> {
+	const droppedByProvider = new Map<string, number>();
+	const rows = dedupeSeenModelRows(allRows, (row) => {
+		droppedByProvider.set(row.provider_id, (droppedByProvider.get(row.provider_id) ?? 0) + 1);
+	});
+	if (droppedByProvider.size > 0) {
+		// Provider ids and counts only, so the duplicate source is visible without logging model lists.
+		console.warn("model_discovery_duplicate_rows_dropped", {
+			count: allRows.length - rows.length,
+			providers: Object.fromEntries([...droppedByProvider].sort(([a], [b]) => a.localeCompare(b))),
+		});
+	}
 	if (rows.length === 0) return;
 	const supabase = getSupabaseAdmin();
 
@@ -855,6 +1045,15 @@ async function pruneOldRuns(cutoffIso: string): Promise<void> {
 	if (error) throw new Error(error.message || "Failed to prune old model discovery runs");
 }
 
+// Official pricing pages change a few times a month, and the catalogue sync that acts on them runs
+// hourly, so scheduled sweeps check them on the top-of-hour tick (always a discovery tick) only.
+export function shouldCheckPricingPages(args: RunArgs, startedAt: Date): boolean {
+	if (!shouldRunPricingMonitor(args)) return false;
+	if (args.trigger !== "scheduled") return true;
+	const anchor = args.scheduledAtIso ? new Date(args.scheduledAtIso) : startedAt;
+	return Number.isFinite(anchor.getTime()) && anchor.getUTCMinutes() === 0;
+}
+
 function shouldPruneRunsDaily(args: RunArgs, startedAt: Date): boolean {
 	if (args.trigger !== "scheduled") return false;
 	if (args.shardIndex !== undefined && args.shardIndex !== 0) return false;
@@ -885,39 +1084,61 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 	const pricingEnabled = toBool(readBindingEnv(["PRICING_MONITOR_ENABLED"]) ?? "false", false);
 	const pricingExecuted = pricingEnabled && shouldRunPricingMonitor(args);
 	const pricingPageExecuted = toBool(readBindingEnv(["PRICING_PAGE_MONITOR_ENABLED"]) ?? "true", true)
-		&& shouldRunPricingMonitor(args);
+		&& shouldCheckPricingPages(args, startedAt);
+	const seenModelWritePolicy: SeenModelWritePolicy = {
+		nowMs: startedAt.getTime(),
+		refreshIntervalMs: seenModelRefreshIntervalMs(retentionDays),
+	};
+	const removalConfirmMs = removalConfirmAfterMs(readBindingEnv(["MODEL_DISCOVERY_REMOVAL_CONFIRM_MINUTES"]));
 
 	await insertRunStart(runId, args, startedAt.toISOString());
+	await closeAbandonedRuns(startedAt, runId);
 	let deliveredNotificationFingerprint: string | null = null;
 
 	try {
 		const results: ProviderResult[] = [];
 		const changes: ProviderChange[] = [];
-		let issueSyncSummary: DiscoveryRunSummary["issueSync"] = {
-			created: 0,
-			updated: 0,
-			skipped: false,
-			reason: "not attempted",
-		};
-		let catalogSyncDispatch: DiscoveryRunSummary["catalogSyncDispatch"] = {
-			dispatched: false,
-			skipped: true,
-			providers: [],
-			reason: "not attempted",
-		};
 		const upsertRows: SeenModelUpsertRow[] = [];
 		const deleteRows: SeenModelDeleteRow[] = [];
 		const pendingRemovalRows: SeenModelPendingRemovalRow[] = [];
 		const discoveredModelIdsByProvider = new Map<string, string[]>();
 		const previousState = await fetchPreviousModelsByProviders(providers.map((provider) => provider.providerId));
+		const previousProviderStatuses = await loadProviderStatuses().catch((error: unknown) => {
+			console.warn("[model-discovery] Could not load provider status:", error instanceof Error ? error.message : String(error));
+			return null;
+		});
+		const staleCutoffMs = Date.parse(staleCutoff);
+		// last_success_at and model_count only move on successes whose models were persisted, so a recent
+		// empty one proves the provider listed nothing rather than that its rows were never written.
+		const checkedEmptyWithinRetention = (providerId: string): boolean | null => {
+			if (!previousProviderStatuses) return null;
+			const status = previousProviderStatuses.get(providerId);
+			const lastSuccessMs = Date.parse(status?.last_success_at ?? "");
+			return status?.model_count === 0 && Number.isFinite(lastSuccessMs) && lastSuccessMs >= staleCutoffMs;
+		};
+		const processedPayloadFingerprint = (providerId: string): string | null => {
+			const status = previousProviderStatuses?.get(providerId);
+			return status?.status === "ok" ? status.payload_fingerprint ?? null : null;
+		};
 		const providerApiPricingChangesByProvider = new Map<string, PricingProviderChange>();
 		const providerApiProvidersWithoutPricing = new Set<string>();
 		let providerApiModelsWithPricing = 0;
 		let providerApiPricingBaselineInitialized = false;
+		let unchangedSeenModels = 0;
+		const fetchPayload = createSharedProviderModelsFetcher();
 		const providerProcessingResults = await mapWithConcurrency(
 			providers,
 			discoveryConcurrency,
-			(provider) => processProvider(provider, previousState, runId),
+			(provider) => processProvider(
+				provider,
+				previousState,
+				runId,
+				checkedEmptyWithinRetention(provider.providerId),
+				seenModelWritePolicy,
+				fetchPayload,
+				processedPayloadFingerprint(provider.providerId),
+				removalConfirmMs,
+			),
 		);
 
 		// Merge in provider order, not completion order, so stored summaries and
@@ -940,6 +1161,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 			providerApiModelsWithPricing += processed.providerApiModelsWithPricing;
 			providerApiPricingBaselineInitialized ||= processed.providerApiPricingBaselineInitialized;
+			unchangedSeenModels += processed.unchangedModelCount;
 			if (processed.providerApiProviderWithoutPricing) {
 				providerApiProvidersWithoutPricing.add(processed.result.providerId);
 			}
@@ -1049,8 +1271,12 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				});
 				pricingTableMonitor.updatesDetected = pricingTableMonitor.providerChanges.length;
 				// State is persisted only after notifications succeed so a delivery
-				// failure never silently swallows a pricing-page change.
-				pricingPageSnapshotsToSave = sources;
+				// failure never silently swallows a pricing-page change. Unchanged
+				// pages keep their row; only new or changed sources are written.
+				pricingPageSnapshotsToSave = sources.filter((source) => {
+					const previous = previousPages.get(canonicalProviderId(source.providerId));
+					return previous?.source_url !== source.sourceUrl || previous.fingerprint !== source.fingerprint;
+				});
 			} catch (error) {
 				const reason = error instanceof Error ? error.message : String(error);
 				pricingTableMonitor.error = reason;
@@ -1200,98 +1426,19 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			}
 		}
 
-		if (
-			changes.length > 0 ||
-			pricingMonitor.providerChanges.length > 0 ||
-			providerApiPricingMonitor.providerChanges.length > 0 ||
-			pricingTableMonitor.providerChanges.length > 0
-		) {
-			if (!shouldSyncProviderDiscoveryIssues()) {
-				issueSyncSummary = {
-					created: 0,
-					updated: 0,
-					skipped: true,
-					reason: "disabled by MODEL_DISCOVERY_ISSUE_SYNC_ENABLED",
-				};
-				console.log("[model-discovery] Provider GitHub issue sync skipped:", issueSyncSummary.reason);
-			} else {
-				try {
-					const detectedAt = new Date().toISOString();
-					const issueEntries = [
-						...buildProviderIssueEntries({ changes, detectedAt, detectionSource: args.source }),
-						...buildCatalogPricingIssueEntries({
-							changes: pricingMonitor.providerChanges.map((change) => ({
-								...change,
-								providerName: PROVIDER_NAMES_BY_ID.get(change.providerId) ?? change.providerId,
-							})),
-							detectedAt,
-							detectionSource: args.source,
-						}),
-						...buildProviderPricingIssueEntries({
-							changes: providerApiPricingMonitor.providerChanges.map((change) => ({
-								...change,
-								providerName: PROVIDER_NAMES_BY_ID.get(change.providerId) ?? change.providerId,
-							})),
-							detectedAt,
-							detectionSource: args.source,
-						}),
-						...buildPricingTableIssueEntries({
-							changes: pricingTableMonitor.providerChanges,
-							detectedAt,
-							detectionSource: args.source,
-						}),
-					];
-					issueSyncSummary = await syncUpstreamDiscoveryIssues(issueEntries);
-					if (issueSyncSummary.skipped) {
-						console.log(
-							"[model-discovery] Provider GitHub issue sync skipped:",
-							issueSyncSummary.reason ?? "no reason provided"
-						);
-					} else {
-						console.log(
-							`[model-discovery] Provider GitHub issue sync complete: created=${issueSyncSummary.created}, updated=${issueSyncSummary.updated}.`
-						);
-					}
-				} catch (error) {
-					const reason = error instanceof Error ? error.message : String(error);
-					issueSyncSummary = {
-						created: 0,
-						updated: 0,
-						skipped: false,
-						error: reason,
-					};
-					console.error("[model-discovery] Provider GitHub issue sync failed:", reason);
-				}
-			}
-		}
-
-		const catalogSyncProviders = [
-			...changes.map((change) => change.providerId),
-			...pricingMonitor.providerChanges.map((change) => change.providerId),
-			...providerApiPricingMonitor.providerChanges.map((change) => change.providerId),
-			...pricingTableMonitor.providerChanges.map((change) => change.providerId),
-		];
+		// Independent of model-change delivery: a provider can fail for hours with nothing else changing.
+		let providerHealth: ProviderHealthSummary = { checked: 0, failing: 0, alertsSent: 0 };
 		try {
-			catalogSyncDispatch = persistenceDeferredReason
-				? {
-					dispatched: false,
-					skipped: true,
-					providers: [...new Set(catalogSyncProviders)].sort(),
-					reason: "discovery state was not persisted",
-				}
-				: await dispatchProviderCatalogSync(catalogSyncProviders);
-			if (catalogSyncDispatch.skipped && catalogSyncProviders.length > 0) {
-				console.log("[model-discovery] Provider catalog sync dispatch skipped:", catalogSyncDispatch.reason);
-			}
+			providerHealth = await runProviderHealthCheck({
+				runId,
+				outcomes: results.map((result) => toProviderCheckOutcome(result, !persistenceDeferredReason)),
+				notify: shouldNotify,
+				coversAllProviders: providers.length === PROVIDERS.length,
+				previousById: previousProviderStatuses ?? undefined,
+			});
 		} catch (error) {
-			const reason = error instanceof Error ? error.message : String(error);
-			catalogSyncDispatch = {
-				dispatched: false,
-				skipped: false,
-				providers: [...new Set(catalogSyncProviders)].sort(),
-				error: reason,
-			};
-			console.error("[model-discovery] Provider catalog sync dispatch failed:", reason);
+			providerHealth.error = error instanceof Error ? error.message : String(error);
+			console.error("[model-discovery] Provider health check failed:", providerHealth.error);
 		}
 
 		const finishedAt = new Date();
@@ -1308,10 +1455,13 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			providersError: results.filter((result) => result.status === "error").length,
 			changesDetected: changes.length,
 			staleModelsDeleted,
+			seenModels: {
+				written: persistenceDeferredReason ? 0 : upsertRows.length,
+				unchanged: unchangedSeenModels,
+				unchangedProviders: results.filter((result) => result.status === "success" && result.unchangedPayload).length,
+			},
 			results,
 			changes,
-			issueSync: issueSyncSummary,
-			catalogSyncDispatch,
 			statePersisted: !persistenceDeferredReason,
 			persistenceDeferredReason,
 			pricingMonitor,
@@ -1320,14 +1470,13 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			configuredModelCoverageMonitor,
 			reviewQueue,
 			publicModelAnnouncements,
+			providerHealth,
 			notificationFingerprint,
 		};
 
 		const status: RunStatus =
 			summary.providersError > 0 ||
 			notificationError ||
-			Boolean(summary.issueSync?.error) ||
-			Boolean(summary.catalogSyncDispatch?.error) ||
 			Boolean(summary.persistenceDeferredReason) ||
 			Boolean(summary.pricingMonitor.error) ||
 			Boolean(summary.providerApiPricingMonitor.error) ||
@@ -1335,7 +1484,8 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			summary.pricingTableMonitor.errors.length > 0 ||
 			Boolean(summary.configuredModelCoverageMonitor.error) ||
 			Boolean(summary.reviewQueue.error) ||
-			Boolean(summary.publicModelAnnouncements.error)
+			Boolean(summary.publicModelAnnouncements.error) ||
+			Boolean(summary.providerHealth.error)
 				? "completed_with_errors"
 				: "completed";
 		await updateRunFinish(summary, status, { notificationError });
@@ -1356,20 +1506,9 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			providersError: 0,
 			changesDetected: 0,
 			staleModelsDeleted: 0,
+			seenModels: { written: 0, unchanged: 0, unchangedProviders: 0 },
 			results: [],
 			changes: [],
-			issueSync: {
-				created: 0,
-				updated: 0,
-				skipped: false,
-				error: reason,
-			},
-			catalogSyncDispatch: {
-				dispatched: false,
-				skipped: false,
-				providers: [],
-				error: reason,
-			},
 			statePersisted: false,
 			persistenceDeferredReason: null,
 			pricingMonitor: {
@@ -1421,6 +1560,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				pending: 0,
 				error: reason,
 			},
+			providerHealth: { checked: 0, failing: 0, alertsSent: 0 },
 			notificationFingerprint: deliveredNotificationFingerprint,
 		};
 		try {

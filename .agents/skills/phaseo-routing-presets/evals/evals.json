@@ -1,0 +1,36 @@
+[
+	{
+		"id": "move-to-preset",
+		"query": "Twelve files repeat the same system prompt, temperature and provider order for Phaseo calls. Clean this up.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Moves the shared defaults into one preset",
+			"Keeps request overrides minimal and references the preset slug"
+		]
+	},
+	{
+		"id": "cache-misses",
+		"query": "We enabled response caching but every request is a miss.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Compares the fingerprint inputs: system prompt, tool list, response format and provider options",
+			"Checks request-detail cache diagnostics before raising the TTL"
+		]
+	},
+	{
+		"id": "unexpected-provider",
+		"query": "Requests for one model keep landing on a provider we didn't expect.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Inspects the providers considered and routing factors in request details before changing config"
+		]
+	},
+	{
+		"id": "not-for-budget",
+		"query": "Stop this API key from spending more than $50 a month.",
+		"should_trigger": false,
+		"expected_behavior": [
+			"Uses the guardrails skill for budget limits"
+		]
+	}
+]

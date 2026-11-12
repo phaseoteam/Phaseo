@@ -1,40 +1,28 @@
 ---
 title: "从 OpenAI SDK 迁移"
 sidebarTitle: "OpenAI SDK"
-description: "通过更改客户端配置、验证模型 ID 并测试应用使用的工作流，将现有 OpenAI SDK 集成迁移到 Phaseo。"
+description: "通过修改客户端配置、核对模型 ID 并测试应用使用的工作流，将现有 OpenAI SDK 集成迁移到 Phaseo。"
 icon: "/icons/brands/openai.svg"
 ---
 
-使用本指南可将现有 OpenAI SDK 集成迁移到 Phaseo，无需重写应用的其他部分。先更改基础 URL 和 API 密钥，保持请求内容不变，然后在切换生产流量前验证每个模型和端点。
+保留 OpenAI SDK，只改两处：base URL 和 API 密钥。然后为每个模型使用其 Phaseo ID，也就是加上 `openai/` 前缀。
 
-## 变更内容
-
-| 设置项 | 之前 | 之后 |
+| 设置 | OpenAI | Phaseo |
 | --- | --- | --- |
-| 基础 URL | OpenAI 默认值 | `https://api.phaseo.app/v1` |
-| API 密钥 | OpenAI 密钥 | `PHASEO_API_KEY` |
-| 模型 | OpenAI 模型名称 | `GET /v1/models` 返回的模型 ID |
-| 请求代码 | 现有 SDK 调用 | 通常无需更改 |
+| Base URL | SDK 默认值（`https://api.openai.com/v1`） | `https://api.phaseo.app/v1` |
+| API 密钥 | `OPENAI_API_KEY` | `PHASEO_API_KEY`，以 `Authorization: Bearer` 发送 |
+| 模型 | `gpt-4.1-mini` | `openai/gpt-4.1-mini`，或 `GET /v1/models` 返回的任意 ID |
+| 请求代码 | `chat.completions.create`、`responses.create` | 不变 |
 
-<Steps>
-<Step title="创建 Phaseo API 密钥">
+## 切换客户端
 
-在 [Gateway 密钥](https://phaseo.app/gateway/keys) 中创建密钥，然后将其添加到运行应用的每个环境。
-
-```bash
-PHASEO_API_KEY=phaseo_v1_sk_...
-```
-
-</Step>
-
-<Step title="将客户端指向 Phaseo">
-
-保留 OpenAI SDK，首先只更改凭据和基础 URL。
+在 [API 密钥](https://phaseo.app/settings/keys)中创建密钥，并添加到运行应用的每个环境中。然后把它和 base URL 传给现有客户端：
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// 之前：const client = new OpenAI();
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
@@ -50,6 +38,7 @@ const response = await client.chat.completions.create({
 import os
 from openai import OpenAI
 
+# 之前：client = OpenAI()
 client = OpenAI(
     api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
@@ -72,39 +61,39 @@ curl https://api.phaseo.app/v1/chat/completions \
 ```
 </CodeGroup>
 
-</Step>
+使用一个新的变量名，而不是把 Phaseo 密钥放进 `OPENAI_API_KEY`，并删除过时的 `OPENAI_BASE_URL` 值，避免仓库中其他客户端继续调用 OpenAI。`AzureOpenAI` 客户端改用普通的 `OpenAI` 客户端；Azure 部署名称也以同样方式映射到 Phaseo 模型 ID。
 
-<Step title="验证模型 ID 和端点覆盖情况">
+## 映射模型 ID
 
-请列出 Phaseo 当前可用的模型，不要假设之前的所有别名都保持不变。
+以 OpenAI 的列表格式列出 Phaseo 提供的 ID，并用 `data[].id` 核对每个生产模型：
 
 ```bash
-curl https://api.phaseo.app/v1/models \
+curl "https://api.phaseo.app/v1/models?format=openai" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-检查依赖的所有生产工作流，包括流式传输、工具、结构化输出、图像、音频、文件和批处理。请通过 [API 参考](../api-reference/introduction.mdx) 确认对应端点。
+不带 `format=openai` 时，响应是 Phaseo 的分页 `models` 列表，没有 `data` 数组。`client.models.list()` 也是如此：在 Node 中传入 `{ query: { format: "openai" } }`，在 Python 中传入 `extra_query={"format": "openai"}`。默认列表只包含现在可以调用的模型；添加 `availability=all` 可以包含未激活和即将推出的模型。
 
-</Step>
+## 有哪些不同
 
-<Step title="测试并逐步上线">
+| OpenAI 功能 | 在 Phaseo 上 |
+| --- | --- |
+| Chat Completions、Responses | `/v1/chat/completions` 和 `/v1/responses` 上的请求结构相同。未知的顶层字段会返回 `400` `unknown_param`。 |
+| `previous_response_id`、`conversation` | 返回 `400`：Phaseo 不存储响应。每次请求都在 `input` 中发送完整历史。 |
+| 嵌入、内容审核、图像、语音、转录 | `/v1/embeddings`、`/v1/moderations`、`/v1/images/*`、`/v1/audio/*`。请确认模型支持该操作。 |
+| Batch API | `/v1/files` 和 `/v1/batches`。`/v1/files` 只存放批处理输入；它不能为其他请求提供 `file_id` 输入。 |
+| Realtime | `POST /v1/audio/realtime/sessions`，然后通过 WebSocket 连接返回的 `connect.url`。参见[实时语音](../guides/realtime-voice)。 |
+| 已存储的提示词（`prompt: { id: "pmpt_…" }`） | 把提示词重建为预设，并用 `prompt: { id: "@slug", version, variables }` 调用。参见[提示词模板](../guides/prompt-templates)。 |
+| `organization`、`project`、`OpenAI-Organization` 请求头 | 没有对应项。请删除它们；改用 Phaseo 工作区和密钥。 |
+| Assistants、Threads、向量存储、微调、旧版 `/v1/completions` | 没有 Phaseo 接口。把它们保留在 OpenAI 上，或移植到 `/v1/responses`。 |
 
-在旧配置和新配置上运行相同的代表性提示词。在逐步切换流量前，比较输出格式、延迟、token 用量、错误和成本。
+## 测试并上线
 
-</Step>
-</Steps>
+用同一组有代表性的提示词分别调用旧配置和新配置，比较输出形状、延迟、token 用量、错误和成本。迁移流量之前确认：
 
-## 迁移检查清单
+- 开发、预发布和生产环境都设置了 Phaseo 密钥；
+- 每个生产模型 ID 都出现在 `GET /v1/models?format=openai` 中；
+- 一个非流式请求和一个流式请求在预发布环境中通过；如果应用用到工具调用和结构化输出，它们也要通过；
+- 回退仍然只需更改 base URL 和密钥。
 
-- 已在开发、预发布和生产环境配置 Phaseo 密钥。
-- 客户端基础 URL 为 `https://api.phaseo.app/v1`。
-- 所有生产模型 ID 均出现在 `GET /v1/models` 中。
-- 流式和非流式请求均通过预发布环境验证。
-- 如果应用使用工具调用和结构化输出，它们均通过验证。
-- 回滚仍只需更改配置中的密钥和端点。
-
-## 后续步骤
-
-- [路由与回退](../guides/routing-and-fallbacks.mdx)
-- [模型](../exploring/models.mdx)
-- [错误处理](../api-reference/errors.mdx)
+然后逐步迁移流量。[路由与回退](../guides/routing-and-fallbacks)介绍了回退模型，[错误处理](../api-reference/errors.mdx)列出了应用现在可能收到的错误响应体。

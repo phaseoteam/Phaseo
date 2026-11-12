@@ -1,9 +1,7 @@
-"use client";
-
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useEffect, useState } from "react";
 import { Search as SearchIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { cn } from "@/lib/utils";
 import { useSearchShortcutLabel } from "./SearchShortcut";
@@ -16,12 +14,13 @@ const Search = dynamic(() => import("./Search"), {
 });
 
 interface SearchWrapperProps {
+	isAdmin?: boolean;
 	className?: string;
 	capabilities?: SearchCapabilities;
 	accountQueryScope?: AccountQueryScope | null;
 }
 
-export function SearchWrapper({ className, capabilities, accountQueryScope }: SearchWrapperProps) {
+export function SearchWrapper({ className, capabilities, accountQueryScope, isAdmin }: SearchWrapperProps) {
 	const t = useTranslations("Common.search");
 	const [activated, setActivated] = useState(false);
 	const shortcutLabel = useSearchShortcutLabel();
@@ -43,6 +42,7 @@ export function SearchWrapper({ className, capabilities, accountQueryScope }: Se
 				className={className}
 				capabilities={capabilities}
 				accountQueryScope={accountQueryScope}
+				isAdmin={isAdmin}
 				initiallyOpen
 			/>
 		);

@@ -3,6 +3,7 @@ import { codexAdapter } from "./adapters/codex.js";
 import { claudeCodeAdapter } from "./adapters/claude-code.js";
 import { deepSeekHarnessAdapter } from "./adapters/deepseek-harness.js";
 import { openCodeAdapter } from "./adapters/opencode.js";
+import { fxAdapter } from "./adapters/fx.js";
 import { guidedAdapters } from "./adapters/guided.js";
 import { piAdapter } from "./adapters/pi.js";
 import { primeAgentAdapter } from "./adapters/prime-agent.js";
@@ -12,13 +13,13 @@ import { zedAdapter } from "./adapters/zed.js";
 import { aiderAdapter } from "./adapters/aider.js";
 import { continueAdapter } from "./adapters/continue.js";
 import { applyChanges, renderPlan } from "./files.js";
-import { getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, hasIntegrationGatewayCredential, revokeIntegrationGatewayCredential } from "./credential.js";
+import { getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, hasIntegrationGatewayCredential, readKeyFlag, revokeIntegrationGatewayCredential } from "./credential.js";
 import { fetchIntegrationModels, supportsModelCatalog } from "./catalog.js";
 import { confirmHarnessInstall, harnessInstallPlan, installHarness, isPrimaryHarness, renderInstallInvocation } from "./installer.js";
 import { createSpinner, terminalUi } from "../output.js";
 import type { IntegrationAdapter, IntegrationId, IntegrationOptions } from "./types.js";
 
-const adapters: IntegrationAdapter[] = [codexAdapter, claudeCodeAdapter, openCodeAdapter, deepSeekHarnessAdapter, piAdapter, primeAgentAdapter, openClawAdapter, hermesAdapter, aiderAdapter, continueAdapter, zedAdapter, ...guidedAdapters];
+const adapters: IntegrationAdapter[] = [codexAdapter, claudeCodeAdapter, openCodeAdapter, fxAdapter, deepSeekHarnessAdapter, piAdapter, primeAgentAdapter, openClawAdapter, hermesAdapter, aiderAdapter, continueAdapter, zedAdapter, ...guidedAdapters];
 
 function adapterFor(value: string | undefined): IntegrationAdapter {
 	const aliases: Record<string, IntegrationId> = {
@@ -104,7 +105,8 @@ export async function runIntegrationCommand(
 			return;
 		}
 		const adapter = adapterFor(integration);
-		const credential = await getIntegrationGatewayCredential(adapter.id);
+		// Agents call this as a credential helper, with nobody watching for a browser approval.
+		const credential = await getIntegrationGatewayCredential(adapter.id, { approve: false });
 		process.stdout.write(credential);
 		return;
 	}
@@ -129,7 +131,7 @@ export async function runIntegrationCommand(
 
 	const adapter = adapterFor(integration);
 	if (commandOptions.primaryOnly && !isPrimaryHarness(adapter.id)) {
-		throw new Error("Phaseo direct setup currently supports codex, claude-code, hermes, opencode, pi, prime-agent, deepseek-harness, and openclaw");
+		throw new Error("Phaseo direct setup currently supports codex, claude-code, hermes, opencode, fx, pi, prime-agent, deepseek-harness, and openclaw");
 	}
 	if (adapter.id === "claude-code" && stringFlag(flags, "model")) {
 		throw new Error("--model is not supported for the Claude Code integration");
@@ -139,7 +141,7 @@ export async function runIntegrationCommand(
 		throw new Error("--catalog must be all or default");
 	}
 	if (catalog !== undefined && !supportsModelCatalog(adapter.id)) {
-		throw new Error("--catalog is only supported for OpenCode, DeepSeek Harness, Pi, Prime Agent, and OpenClaw");
+		throw new Error("--catalog is only supported for OpenCode, fx, DeepSeek Harness, Pi, Prime Agent, and OpenClaw");
 	}
 	const json = isTrue(flags.json);
 	const dryRun = isTrue(flags["dry-run"]);
@@ -220,15 +222,19 @@ export async function runIntegrationCommand(
 
 	let provisionedCredential = false;
 	if (command === "setup") {
-		const spinner = createSpinner("Preparing a dedicated credential", { enabled: interactive });
+		const existingKey = await readKeyFlag(flags);
+		const credentialExisted = existingKey === undefined && await hasIntegrationGatewayCredential(adapter.id);
+		// A new key is approved in the browser, which prints its own progress; no spinner over it.
+		const spinner = credentialExisted || existingKey !== undefined ? createSpinner("Preparing a dedicated credential", { enabled: interactive }) : null;
 		try {
-			const credentialExisted = await hasIntegrationGatewayCredential(adapter.id);
-			const credential = await getIntegrationGatewayCredential(adapter.id);
-			provisionedCredential = !credentialExisted;
+			const credential = await getIntegrationGatewayCredential(adapter.id, { existingKey });
+			provisionedCredential = !credentialExisted && existingKey === undefined;
 			if (adapter.planCredential) changes = [...changes, ...await adapter.planCredential(options, credential)];
-			spinner.succeed(credentialExisted ? "Reused the existing credential" : "Created a dedicated credential");
+			const message = existingKey !== undefined ? "Using the key you provided" : credentialExisted ? "Reused the existing credential" : "Approved a dedicated credential";
+			if (spinner) spinner.succeed(message);
+			else if (!json) process.stderr.write(`${ui.success(message)}\n`);
 		} catch (error) {
-			spinner.fail("Could not prepare the credential");
+			spinner?.fail("Could not prepare the credential");
 			if (provisionedCredential) await revokeIntegrationGatewayCredential(adapter.id).catch(() => undefined);
 			throw error;
 		}
@@ -277,6 +283,9 @@ export async function runIntegrationCommand(
 	}
 	if (command === "setup" && !json && adapter.setupInstructions) {
 		printSetupInstructions(adapter, options);
+	}
+	if (command === "setup" && !json) {
+		for (const tip of adapter.setupTips?.(options) ?? []) process.stdout.write(`${ui.dim(`Optional: ${tip}`)}\n`);
 	}
 	if (command === "remove" && !json) printRemoveInstructions(adapter, options);
 }

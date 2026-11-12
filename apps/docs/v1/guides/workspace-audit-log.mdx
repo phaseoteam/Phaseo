@@ -2,21 +2,45 @@
 icon: "scroll-text"
 title: "Workspace audit log"
 description: "Review security-sensitive workspace administration changes."
+"og:image": "https://phaseo.app/og/dynamic?title=Workspace%20audit%20log&description=Review%20security-sensitive%20workspace%20administration%20changes.&pathname=/docs/v1/guides/workspace-audit-log"
 ---
 
-Workspace owners and admins can review key lifecycle changes in **Settings → Workspace → Activity**. Events are scoped to the active workspace and ordered from newest to oldest.
+Open **Settings → Workspace → Activity** to see who changed a key, member, or other administrative control in the active workspace, and when. Events are listed newest first. Only workspace owners and admins can read the log.
 
-The first release records these operations:
+Request and generation logs show what traffic ran. The audit log shows who changed the controls around it.
 
-- API key creation, rename, pause, resume, limit changes, rotation, and deletion
-- management key creation, rename, pause, resume, access-template changes, limit changes, expiry changes, and deletion
+## What is recorded
 
-Each event includes the actor, action, target, timestamp, and a small set of safe change metadata. Audit events are append-only. Phaseo does not store plaintext keys, credential hashes, authorization headers, full scope lists, or request bodies in this log.
+| Area | Example actions |
+| --- | --- |
+| API keys | `api_key.created`, `api_key.updated`, `api_key.paused`, `api_key.resumed`, `api_key.rotated`, `api_key.deleted` |
+| Management keys | `management_key.created`, `management_key.updated`, `management_key.deleted` |
+| Members and invites | `workspace.member.added`, `workspace.member.role_updated`, `workspace.member.removed`, `workspace.invite.created` |
+| Provider keys (BYOK) | `provider_credential.created`, `provider_credential.updated`, `provider_credential.reordered`, `provider_credential.deleted` |
+| Routing and presets | `routing.policy.updated`, `routing.dynamic_route.deployed`, `preset.version.published` |
+| Budgets and spend | `workspace_budget.updated`, `spend_block.lifted`, `rate_limit_raise.requested` |
+| Guardrails | `guardrail.created`, `guardrail.updated`, `guardrail.keys.added` |
+| Identity | `identity.sso.updated`, `identity.scim_token.created`, `identity.group_mapping.updated` |
+| Integrations | `observability.destination.created`, `notifications.destination.created`, `webhook_endpoint.secret_rotated`, `oauth_authorization.revoked` |
 
-Audit-log access is limited to workspace owners and admins. Ordinary members cannot read audit events, and the underlying table is not exposed to authenticated database clients.
+Each event has the actor, action, target type, target ID and name, timestamp, request ID, and a small set of change metadata. Events are append-only.
 
-For automation, call `GET /v1/audit-events` with a management key that has `activity:read`. Use the returned `next_cursor` to retrieve older events without timestamp gaps.
+The log never stores plaintext keys, credential hashes, authorization headers, full scope lists, or request bodies. Metadata fields whose names mention a secret, token, hash, credential, scope, or value are stripped before the event is written.
 
-<Note>
-  Request and generation logs answer what traffic ran. The workspace audit log answers who changed an administrative control and when.
-</Note>
+## Read events from the API
+
+Call `GET /v1/audit-events` with a [management key](../developers/management-api-keys.mdx) that has `activity:read`. An OAuth token also needs `activity:read`, and its user must be a workspace owner or admin.
+
+```bash
+curl "https://api.phaseo.app/v1/audit-events?limit=50" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY"
+```
+
+| Query parameter | Meaning |
+| --- | --- |
+| `limit` | Events per page, 1 to 100. Default `50`. |
+| `cursor` | The `next_cursor` from the previous page. Paging by cursor never skips events that share a timestamp. |
+| `action` | Return only one action, such as `api_key.rotated`. |
+| `target_type` | Return only one target type, such as `api_key`. |
+
+The response has `data`, `has_more`, and `next_cursor`. Each event includes an `actor` object with the member's `display_name` and `email`.

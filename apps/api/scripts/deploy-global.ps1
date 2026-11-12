@@ -19,7 +19,7 @@ $globalSecretNames = @(
     "CLOUDFLARE_ACCOUNT_ID"
 )
 $temporarySecretsFile = $null
-$optionalGlobalSecretNames = @("PERPLEXITY_API_KEY", "EMPIRIOLABS_API_KEY")
+$optionalGlobalSecretNames = @("PERPLEXITY_API_KEY", "EMPIRIOLABS_API_KEY", "SCALEDOWN_API_KEY", "REFLECTION_API_KEY", "PARTICLE_AI_API_KEY", "TENCENT_CLOUD_TOKENHUB_API_KEY", "PHALA_API_KEY", "PHALA_BASE_URL", "PRIMALABS_API_KEY", "PRIMALABS_BASE_URL", "LG_EXAONE_PLATFORM", "LG_EXAONE_BASE_URL")
 $deployApiToken = [Environment]::GetEnvironmentVariable("CLOUDFLARE_DEPLOY_API_TOKEN")
 $deployAccountId = [Environment]::GetEnvironmentVariable("CLOUDFLARE_DEPLOY_ACCOUNT_ID")
 $previousApiToken = $env:CLOUDFLARE_API_TOKEN

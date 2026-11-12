@@ -11,6 +11,13 @@ CREATE OR REPLACE FUNCTION public.refresh_v2_analytics_range (
 declare
   result jsonb;
 begin
+  -- A synchronous refresh must own the processor before enqueueing its range.
+  -- Otherwise an overlapping worker cannot see these uncommitted events, and
+  -- its skipped result could be mistaken for a fully drained queue.
+  if not pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended('public.process_v2_analytics_outbox', 0)) then
+    raise exception 'Analytics processor is busy; retry the range refresh after it completes'
+      using errcode = '55P03';
+  end if;
   insert into public.v2_analytics_outbox (
     request_event_id, workspace_id, occurred_at, status,
     attempt_count, available_at, last_error, updated_at

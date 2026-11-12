@@ -1,21 +1,23 @@
+import { describe, it, expect } from "vitest";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import { englishSettingsUiMessages } from "@/i18n/default-messages";
 import { nestDottedMessageKeys } from "@/i18n/message-overlays";
-import { DEFAULT_LIVE_SETTINGS, LIVE_VOICE_OPTIONS, LiveSettings, LiveUsageDetails } from "./LiveSettings";
+import { DEFAULT_LIVE_SETTINGS, LIVE_VOICE_OPTIONS, LiveSettings, LiveUsageDetails, type LiveUsageView } from "./LiveSettings";
 
 function renderToStaticMarkup(children: ReactNode) {
-	return renderMarkup(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: nestDottedMessageKeys(englishSettingsUiMessages) }}>{children}</NextIntlClientProvider>);
+	return renderMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: nestDottedMessageKeys(englishSettingsUiMessages) }}>{children}</AppIntlProvider>);
 }
 
 describe("Live settings and usage", () => {
 	it("offers all built-in voices without generating paid voice previews", () => {
-		expect(new Set(LIVE_VOICE_OPTIONS.map((voice) => voice.id)).size).toBe(22);
+		expect(new Set(LIVE_VOICE_OPTIONS.map((voice) => voice.id)).size).toBe(31);
 		expect(LIVE_VOICE_OPTIONS).toEqual(expect.arrayContaining([
 			expect.objectContaining({ id: "vesper", label: "Vesper" }),
 			expect.objectContaining({ id: "willow", label: "Willow" }),
 			expect.objectContaining({ id: "bossa", label: "Bossa" }),
+			expect.objectContaining({ id: "noeul", label: "Noeul" }),
 		]));
 	});
 	it("describes documented Live voices without inventing profiles for the others", () => {
@@ -23,12 +25,21 @@ describe("Live settings and usage", () => {
 			.map((voice) => [voice.id, voice.description]))).toEqual({
 			beacon: "English · Filipino-influenced · Masculine",
 			bossa: "Portuguese · Brazilian-influenced · Feminine",
+			brise: "French · Feminine",
 			cinder: "English · Southern U.S.-influenced · Masculine",
 			delta: "English · Southern U.S.-influenced · Feminine",
+			flitz: "German · Masculine",
 			gleam: "English · North American-influenced · Feminine",
+			harema: "Japanese · Feminine",
+			juni: "German · Feminine",
 			meridian: "English · North American-influenced · Masculine",
+			nira: "Hindi · Feminine",
+			noeul: "Korean · Feminine",
+			nuri: "German · Feminine",
 			quartz: "English · Australian-influenced · Feminine",
 			ripple: "English · Australian-influenced · Masculine",
+			shida: "Japanese · Masculine",
+			sillage: "French · Masculine",
 			stone: "English · Irish-influenced · Masculine",
 			tempo: "Portuguese · Brazilian-influenced · Masculine",
 			vesper: "English · British-influenced · Masculine",
@@ -41,6 +52,11 @@ describe("Live settings and usage", () => {
 		expect(html).toContain("Changes apply to the next session");
 		expect(html).toContain("$0.01 per call");
 		expect(html).toContain('max="32768"');
+	});
+	it("shows cache writes from both lifetimes, and from calls that reported one total", () => {
+		const cacheWrites = (usage: LiveUsageView) => renderToStaticMarkup(<LiveUsageDetails usage={usage} />).match(/Cache writes<\/dt><dd[^>]*>([^<]*)</)?.[1];
+		expect(cacheWrites({ cached_write_text_tokens_30m: 5041, cached_write_text_tokens_12h: 9 })).toBe("5,050");
+		expect(cacheWrites({ cached_write_text_tokens: 50 })).toBe("50");
 	});
 	it("renders separately reported cache/reasoning/tool usage and delegated response status", () => {
 		const html = renderToStaticMarkup(<LiveUsageDetails pending={1} usage={{ input_tokens: 1234, output_tokens: 250, output_reasoning_tokens: 100,

@@ -1,0 +1,9 @@
+---
+title: "支出ルールの履歴を一覧表示"
+sidebarTitle: "ルールの履歴"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /spend-rules/{id}/history"
+description: "支出ルールが送信したアラートとブロックのイベントを一覧表示します。"
+---
+
+`spend_rules:read` が必要です。`limit`（1〜100）と `offset` でイベントをページ送りします。`periods` には期間ごとに送信済みのしきい値が示されます。

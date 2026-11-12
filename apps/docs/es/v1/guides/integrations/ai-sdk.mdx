@@ -4,94 +4,80 @@ icon: "bolt"
 description: "Usa el proveedor oficial de Phaseo para Vercel AI SDK."
 ---
 
-Phaseo ofrece un proveedor oficial para Vercel AI SDK en el paquete `@phaseo/ai-sdk-provider`.
+Instala `@phaseo/ai-sdk-provider` y pasa `phaseo("<model id>")` como modelo en cualquier llamada de AI SDK. El proveedor lee `PHASEO_API_KEY` del entorno.
 
-## Instalación
-
-AI SDK 7 y la implementación nativa `ProviderV4` de Phaseo son los valores predeterminados para los proyectos nuevos:
+## Instalar
 
 ```bash
 npm install @phaseo/ai-sdk-provider
 ```
 
-El paquete de Phaseo sin versión sigue la etiqueta `latest` de npm y, por tanto, selecciona la versión activa del proveedor compatible con AI SDK 7. El paquete declara AI SDK 7 como dependencia de par, que npm instala automáticamente.
+El paquete sin versión sigue la etiqueta `latest` de npm, que es la línea de AI SDK 7, y declara `ai@^7` como dependencia par que npm instala por ti. Para un AI SDK anterior, instala la etiqueta correspondiente:
 
-### Línea de mantenimiento de AI SDK 6
+| AI SDK | Contrato del proveedor | Instalación |
+| --- | --- | --- |
+| 7 (actual) | `ProviderV4` (proveedor 2.x) | `npm install @phaseo/ai-sdk-provider` |
+| 6 | `ProviderV3` (proveedor 1.x, mantenimiento) | `npm install @phaseo/ai-sdk-provider@ai-sdk-v6` |
+| 5 | `ProviderV2` | `npm install @phaseo/ai-sdk-provider@ai-sdk-v5` |
 
-AI SDK 6 usa el contrato anterior `ProviderV3`. Instala la versión de compatibilidad etiquetada:
+Si tu gestor de paquetes no instala las dependencias pares, instala también la versión principal de `ai` correspondiente (`ai@^7`, `ai@^6` o `ai@^5`).
 
-```bash
-npm install @phaseo/ai-sdk-provider@ai-sdk-v6
-```
+Cuando AI SDK 8 sea estable, Phaseo marcará el proveedor 1.x como obsoleto en npm. Las versiones existentes no se eliminarán, y cualquier fin de soporte se anunciará por separado.
 
-Phaseo provider 1.x seguirá en mantenimiento mientras AI SDK 7 sea la versión vigente. Cuando AI SDK 8 alcance una versión estable, Phaseo marcará la línea 1.x como obsoleta en npm. Esto no eliminará las versiones existentes; cualquier decisión futura de fin de soporte se anunciará por separado.
-
-### Compatibilidad con AI SDK 5
-
-AI SDK 5 acepta el contrato anterior `ProviderV2`. Instala la versión de compatibilidad específica de Phaseo:
-
-```bash
-npm install @phaseo/ai-sdk-provider@ai-sdk-v5
-```
-
-Si tu gestor de paquetes no instala automáticamente las dependencias de par, instala por separado la versión principal correspondiente de `ai` (`ai@^7`, `ai@^6` o `ai@^5`).
+## Generar texto
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-	model: phaseo("openai/gpt-4o"),
+	model: phaseo("openai/gpt-6-astra"),
 	prompt: "Summarize this in one sentence.",
 });
+
+console.log(result.text);
 ```
 
-La línea v5 admite generación y transmisión de texto, herramientas, salida estructurada, embeddings, imágenes, transcripción y voz. El reordenamiento estandarizado está disponible en los contratos de proveedor de AI SDK 6 y 7.
+El mismo código funciona en las tres líneas. Usa los ID de modelo del [endpoint Models](../../api-reference/endpoint/models.mdx); cada capacidad sigue dependiendo del modelo y del proveedor de origen.
 
-## Uso básico
+## Qué admite cada línea
+
+| Función | AI SDK 7 (proveedor 2.x) | AI SDK 5 |
+| --- | --- | --- |
+| Generación de texto y streaming | Sí | Sí |
+| Herramientas de funciones e idas y vueltas con resultados de herramientas | Sí, incluidas las entradas de herramientas en streaming | Sí |
+| Salida estructurada JSON y JSON Schema | Sí | Sí |
+| Embeddings y generación de imágenes | Sí | Sí |
+| Transcripción y voz | Sí | Sí |
+| Reordenación (reranking) | Sí | No |
+| Ajustes y salida de razonamiento independientes del proveedor | Sí | |
+| Entradas de archivos de texto e imagen (datos de archivo etiquetados de V7) | Sí | |
+| Fuentes de citas por URL | Sí | |
+| Metadatos del proveedor, uso, cabeceras de solicitud, señales de cancelación, fragmentos sin procesar del stream | Sí | |
+
+La columna de AI SDK 7 es lo que el proveedor 2.x implementa y prueba con los contratos nativos v4 de AI SDK 7. La reordenación también está disponible en la línea de AI SDK 6.
+
+## Reordenar documentos
+
+Usa el asistente `rerank()` de AI SDK con `phaseo.rerankingModel(modelId)`:
 
 ```ts
-import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateText } from "ai";
-
-const result = await generateText({
-	model: phaseo("openai/gpt-4o"),
-	prompt: "Summarize this in one sentence.",
-});
-```
-
-## Funciones compatibles con AI SDK 7
-
-Provider 2.x implementa y prueba los contratos nativos v4 de AI SDK 7 para:
-
-- generación y transmisión de texto
-- ajustes de razonamiento independientes del proveedor y salida de razonamiento
-- herramientas de función estándar, entradas transmitidas de herramientas e intercambios de resultados
-- salida estructurada en JSON y JSON Schema
-- entradas de archivos de texto e imagen con el formato de datos de archivo etiquetado de V7
-- fuentes de citas de URL
-- embeddings y generación de imágenes
-- reordenamiento
-- transcripción y generación de voz
-- metadatos del proveedor, uso, cabeceras de solicitud, señales de cancelación y fragmentos sin procesar del flujo
-
-Usa los ID de modelo del [endpoint de modelos](../../api-reference/endpoint/models.mdx). Las funciones disponibles también dependen del modelo seleccionado y del proveedor ascendente.
-
-## Reordenamiento y límites de compatibilidad
-
-El reordenamiento está disponible mediante el helper `rerank()` de AI SDK y `phaseo.rerankingModel(modelId)`. No se anuncian las funciones de ProviderV4 que requieren superficies de la API de Phaseo aún no expuestas: cargas y referencias a archivos gestionados, habilidades, ni definiciones, resultados o respuestas de aprobación de herramientas ejecutadas por el proveedor. Las herramientas de función ejecutadas por la aplicación siguen usando el flujo normal de ejecución y aprobación de AI SDK. Las partes de prompts personalizadas o específicas del proveedor no admitidas generan un error claro en vez de descartarse silenciosamente.
-
-```typescript
 import { rerank } from "ai";
 import { phaseo } from "@phaseo/ai-sdk-provider";
 
 const result = await rerank({
-  model: phaseo.rerankingModel("voyage/rerank-2"),
-  query: "Which document is about TypeScript?",
-  documents: [
-    "TypeScript adds static types to JavaScript.",
-    "Rust is a systems programming language.",
-  ],
-  topN: 1,
+	model: phaseo.rerankingModel("voyage/rerank-2"),
+	query: "Which document is about TypeScript?",
+	documents: [
+		"TypeScript adds static types to JavaScript.",
+		"Rust is a systems programming language.",
+	],
+	topN: 1,
 });
 ```
+
+## Límites conocidos
+
+- El proveedor no anuncia funciones de `ProviderV4` que necesitan superficies de la API de Phaseo que todavía no existen: subidas y referencias de archivos gestionados, skills, y definiciones, resultados o respuestas de aprobación de herramientas ejecutadas por el proveedor.
+- Las herramientas de funciones que ejecuta tu aplicación siguen usando el flujo normal de ejecución y aprobación de AI SDK.
+- Las partes de prompt específicas del proveedor o personalizadas que no se admiten fallan con un error claro en lugar de descartarse.

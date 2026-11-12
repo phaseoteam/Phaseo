@@ -1,122 +1,168 @@
 ---
-title: "TypeScriptで永続化可能なエージェントループを構築する"
+title: "TypeScript で永続化可能なエージェントループを作る"
+sidebarTitle: "TypeScript の永続化可能なエージェントループ"
 icon: "repeat-2"
-description: "TypeScript Agent SDKを使ってPhaseo Gateway上で再開可能なエージェントループを実行します。"
+description: "TypeScript Agent SDK を使い、Phaseo Gateway 上で再開可能なエージェントループを実行します。"
 ---
 
-単発のテキストリクエスト以上の処理が必要な場合に、このレシピを使います。
+TypeScript Agent SDK でツールを使うエージェントを実行し、各ステップの後に状態を保存します。こうすると、クラッシュや再起動をしたプロセスが止まったところから再開できます。完成すると、検索ツールでドキュメントに関する質問に答え、各実行を `.agent-runs/<run id>.json` に書き込み、ID を渡すとその実行を再開するスクリプトが 1 つできます。
 
-- 複数ステップのツールループ
-- ローカルランタイムツール
-- 再開可能な実行
-- エージェント処理のための単一のGateway経由エントリーポイント
+このスクリプトは例示用で、ファイルストアは 1 台のマシン向けです。本番環境では同じ `load`/`save` の組を残し、保存先をデータベースにしてください。Phaseo は Agent SDK の実行を保存しません。
 
-## 1. SDKをインストールする
+```mermaid
+flowchart LR
+  start["agent.run()"] --> model["Phaseo 経由のモデルターン"]
+  model --> tools["ツール呼び出しをローカルで実行"]
+  tools --> save["state.save()：チェックポイント"]
+  save -->|"ステップが残っている"| model
+  save -->|"完了"| out["result.output"]
+  crash["プロセスが停止"] -.-> resume["agent.continueRun({ runId, state })"]
+  resume --> model
+```
+
+## 作成する
+
+<Steps>
+<Step title="インストールする">
 
 <CodeGroup>
 ```bash npm
-npm install @phaseo/sdk @phaseo/agent-sdk
+npm install @phaseo/agent-sdk zod
 ```
 
 ```bash pnpm
-pnpm add @phaseo/sdk @phaseo/agent-sdk
+pnpm add @phaseo/agent-sdk zod
 ```
 
 ```bash yarn
-yarn add @phaseo/sdk @phaseo/agent-sdk
+yarn add @phaseo/agent-sdk zod
 ```
 
 ```bash bun
-bun add @phaseo/sdk @phaseo/agent-sdk
+bun add @phaseo/agent-sdk zod
 ```
 </CodeGroup>
 
-## 2. 小さなランタイムツールを定義する
+`@phaseo/agent-sdk` をインストールすると `@phaseo/sdk` も一緒にインストールされます。キーを設定します。
 
-最初のツールは決定的で、簡単に確認できるものにします。
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
 
-```ts
-import { defineTool } from "@phaseo/agent-sdk";
+</Step>
+<Step title="エージェントを書く">
 
-export const lookupDocs = defineTool({
+```ts agent.ts
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { z } from "zod";
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+  type AgentStateAccessor,
+} from "@phaseo/agent-sdk";
+
+const DOC_SLUGS = ["guides/presets", "guides/routing-and-fallbacks", "guides/streaming"] as const;
+
+// モデルに見えるのは `parameters` だけです。`inputSchema` は execute の実行前にそれ以外の入力を拒否します。
+const lookupDocs = defineTool({
   id: "lookup-docs",
-  description: "Look up internal docs by slug.",
-  async execute(input: { slug: string }) {
-    return {
-      slug: input.slug,
-      url: `https://phaseo.app/docs/v1/${input.slug}`,
-    };
+  description: "Return the URL of one Phaseo docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: { slug: { type: "string", enum: [...DOC_SLUGS] } },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ slug: z.enum(DOC_SLUGS) }).strict(),
+  async execute({ slug }) {
+    return { slug, url: `https://phaseo.app/docs/v1/${slug}` };
   },
 });
-```
 
-## 3. エージェントを作成する
-
-```ts
-import { createAgent } from "@phaseo/agent-sdk";
-import { lookupDocs } from "./tools";
-
-export const supportDocsAgent = createAgent({
+const agent = createAgent<string, string>({
   id: "support-docs-agent",
-  model: "phaseo/free",
-  instructions: "Use tools when helpful and finish with a concise answer.",
+  model: "openai/gpt-6-astra",
+  instructions: "Use tools when helpful and finish with a concise answer that includes the docs URL.",
   tools: [lookupDocs],
-});
-```
-
-## 4. Gatewayアダプターを使う
-
-```ts
-import {
-  createGatewayAgentClient,
-} from "@phaseo/agent-sdk";
-import { supportDocsAgent } from "./agent";
-
-const result = await supportDocsAgent.run({
-  input: "Find the docs page for presets and explain when to use them.",
-  client: createGatewayAgentClient({
-    clientOptions: {
-      apiKey: process.env.PHASEO_API_KEY!,
-    },
-  }),
+  maxSteps: 6,
 });
 
+// 各ステップの後に実行全体を保存します。この 2 つの関数をデータベース用に置き換えてください。
+const RUNS_DIR = ".agent-runs";
+const state: AgentStateAccessor<string, unknown, string> = {
+  async load(runId) {
+    try {
+      return JSON.parse(await readFile(`${RUNS_DIR}/${runId}.json`, "utf8"));
+    } catch {
+      return null;
+    }
+  },
+  async save(result) {
+    await mkdir(RUNS_DIR, { recursive: true });
+    await writeFile(`${RUNS_DIR}/${result.run.id}.json`, JSON.stringify(result));
+  },
+};
+
+const client = createGatewayAgentClient({
+  clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+});
+
+const onEvent = (event: { type: string; runId: string }) => {
+  if (event.type === "checkpoint.saved") console.log("checkpoint", event.runId);
+};
+
+const resumeId = process.argv[2];
+let result;
+
+if (resumeId) {
+  const saved = await state.load(resumeId);
+  if (!saved) throw new Error(`No saved run ${resumeId}`);
+  result = saved.run.status === "completed"
+    ? saved
+    : await agent.continueRun({ run: saved, client, state, onEvent });
+} else {
+  result = await agent.run({
+    input: "Find the docs page for presets and explain when to use them.",
+    client,
+    state,
+    onEvent,
+  });
+}
+
+console.log(result.run.id, result.run.status);
 console.log(result.output);
 ```
 
-## 5. ステップ間で保持される情報
+</Step>
+<Step title="実行する">
 
-各ステップが完了すると、返される実行状態に次の情報が追加されます。
+```bash
+npx tsx agent.ts
+```
 
-- 実行ID
-- メッセージ履歴
-- 返されたツール呼び出し
-- ローカルツールの結果
-- 実行完了時の最終出力
+再開を試すには、最初の `checkpoint` の行が出た後に `Ctrl+C` でスクリプトを止め、出力された実行 ID（UUID）を渡します。
 
-リクエストやプロセスをまたいで再開するには、返された値をアプリケーションに保存し、後から`continueRun()`に渡します。
+```bash
+npx tsx agent.ts 3f6c1d2e-...
+```
 
-## 6. 最初のバージョンをシンプルに保つ場面
+</Step>
+</Steps>
 
-- ワークフローごとにエージェントを1つ用意する
-- リクエストをまたいで再開する前にアプリケーション側でシリアライズする
-- 汎用ツールレジストリを作る前にツールを少数に絞る
-- 各実行につき、実行IDとGatewayリクエストIDを含むログを1行出力する
+## 動作を確認する
 
-## 7. このレシピを拡張する場面
+- スクリプトはステップごとに `checkpoint` を 1 回出力し、続いて実行 ID、`completed`、`phaseo.app/docs` の URL を含む回答を出力します。
+- `.agent-runs/<run id>.json` には、実行 ID、ステータス、メッセージ履歴、各ステップのツール呼び出しと結果、最終出力が入ります。
+- 中断した実行の後で再開コマンドを実行すると、新しい実行を始めるのではなく、同じ実行 ID の実行が完了します。
+- 各モデルターンは **設定 → 利用状況 → ログ** に表示されます。照合できるように、各リクエスト ID の隣に実行 ID をログに記録してください。
 
-次の要件が出てきたら、最初の永続化ループを拡張します。
+## 保存される状態の中身
 
-- 承認のための一時停止
-- 返された実行状態のアプリケーション側での永続化
-- 共通のランタイムツールを使う複数のエージェント定義
+保存される各結果は `AgentRunResult` 全体です。`run`（ID、ステータス、メッセージ、使用量、一時停止の情報）、Gateway のリクエスト ID とツール呼び出しを持つ `steps`、実行完了後の `output` が含まれます。`continueRun()` はこれをそのまま受け取るか、`runId` と `state` を受け取って自分で `load()` を呼び出します。
 
-その場合もGatewayアダプターはそのまま使い、ストアとオーケストレーションを拡張します。
+プロセスが止まったときに実行中だったツール呼び出しは、すでに効果を及ぼしている場合があるため、ツールは冪等にしてください。SDK は、結果を得られなかった呼び出しの履歴を修復してから続行します。一時停止と承認については[状態と承認](../sdk-reference/agent/state-and-approval)で説明しています。
 
-## 関連ガイド
+## 慎重に拡張する
 
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
-- [プリセット](../guides/presets.mdx)
-- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
-- [SKILL.mdでコーディングエージェントを設定する](./coding-agents-skill-md.mdx)
-- [無料ルーターでデプロイする](./free-router-first-deploy.mdx)
+ワークフローごとにエージェントを 1 つにし、ツールの一覧は短く保ち、実行ごとに実行 ID とリクエスト ID を含むログ行を 1 行残してください。承認のための一時停止や、ツールを共有する複数のエージェントが必要になったら、この Gateway クライアントと状態の組を残したまま、その周りに組み立ててください。[コードレビューエージェント](./agent-sdk-coding-review)は承認のための一時停止を追加し、[並列ツール](./agent-sdk-parallel-tools)はツールを並行して実行します。リクエストの既定値を共有するには、固定のモデルの代わりに[プリセット](../guides/presets)を呼び出してください。

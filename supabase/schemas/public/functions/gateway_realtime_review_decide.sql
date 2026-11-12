@@ -16,7 +16,6 @@ declare
   v_review public.gateway_realtime_billing_reviews%rowtype;
   v_previous public.gateway_realtime_billing_decisions%rowtype;
   v_settlement record;
-  v_held bigint;
   v_cost bigint;
 begin
   if not exists (select 1 from public.users where user_id::text = p_actor_user_id and lower(role::text) = 'admin') then
@@ -67,10 +66,7 @@ begin
           or v_review.evidence_metadata is distinct from v_session.metadata then raise exception 'realtime_review_evidence_missing'; end if;
         v_cost := v_review.confirmed_cost_nanos;
       end if;
-      select coalesce(sum(amount_nanos), 0) into v_held from public.gateway_wallet_reservations r
-      where r.workspace_id = v_session.workspace_id and r.status in ('held', 'reserved')
-        and (r.hold_ref_id = p_session_id or r.reservation_id like v_session.reservation_prefix || '%');
-      if v_cost > v_held then raise exception 'realtime_review_cost_exceeds_hold'; end if;
+      -- Settlement captures beyond the holds within the overdraft cap; no hold cap here.
       if p_action = 'write_off' then
         update public.gateway_realtime_billing_reviews set evidence_usage = v_session.usage, evidence_metadata = v_session.metadata
         where session_id = p_session_id;

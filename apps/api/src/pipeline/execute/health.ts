@@ -5,6 +5,9 @@
 import { dispatchBackground, getCache, getSupabaseAdmin } from "@/runtime/env";
 import { HEALTH_CONSTANTS, HEALTH_KEYS, isRecoveryProbeRequest } from "./health.config";
 import type { Endpoint } from "@core/types";
+import { awaitShared } from "@core/shared-wait";
+import { TOKEN_MIX_TAU_MS } from "./health-evidence";
+import { classifyAttemptHealth, isRateLimitSignal, PROVIDER_FAILURE_CLASSES } from "./attempt-health";
 import { coordinatedHealthEnabled, coordinatedHealthMany, coordinatedHealthRead, reportCoordinatedHealth, resetCoordinatedHealthForTests } from "./health-coordinator";
 
 export type BreakerState = "closed" | "open" | "half_open";
@@ -32,6 +35,13 @@ export type ProviderHealth = {
     rec_ok_ew_10s?: number;
     rec_tot_ew_10s?: number;
     rec_rate_limited_ew_10s?: number;
+    // Typical request size on this route, for routing cost: prompt tokens (cache reads
+    // included), the cache-read part of them, and output tokens, blended by tok_weight.
+    prompt_tok_ewma?: number;
+    cached_tok_ewma?: number;
+    out_tok_ewma?: number;
+    tok_weight?: number;
+    last_tok_ms?: number;
     last_success_ms?: number;
     consecutive_failures?: number;
 
@@ -48,22 +58,6 @@ export type ProviderHealth = {
     last_updated: number;
 };
 
-function normalizeHealthSignal(value: unknown): string {
-    return String(value ?? "").trim().toLowerCase();
-}
-
-function isRateLimitSignal(value: unknown): boolean {
-    const normalized = normalizeHealthSignal(value);
-    if (!normalized) return false;
-    return (
-        normalized.includes("rate limit") ||
-        normalized.includes("rate_limit") ||
-        normalized.includes("too many requests") ||
-        normalized.includes("ratelimit") ||
-        normalized.includes("quota exceeded")
-    );
-}
-
 export function classifyProviderHealthImpact(args: {
     upstreamStatus?: number | null;
     aborted?: boolean;
@@ -74,33 +68,12 @@ export function classifyProviderHealthImpact(args: {
     credentialSource?: "gateway" | "byok";
     failureOrigin?: "provider" | "gateway" | "client";
 }): HealthImpact {
-    if (args.aborted || args.failureOrigin === "client" || args.failureOrigin === "gateway") return "neutral";
-    const status = Number(args.upstreamStatus ?? 0);
-    // Credential ownership remains authoritative if a stream also reports an error.
-    if (args.credentialSource === "byok" && [401, 402, 403, 429].includes(status)) return "neutral";
-	if (args.midStreamError) return "failure";
-	const finishReason = normalizeHealthSignal(args.finishReason);
-	if (finishReason === "error" || finishReason === "failed" || finishReason === "failure" || finishReason === "upstream_failure") {
-		return "failure";
-	}
-
-    if (Number.isFinite(status) && status >= 200 && status < 300) {
-        return "success";
-    }
-	// A user's own key/quota is not evidence against the shared managed route.
-	if (status === 429 || status === 408) return "failure";
-	// Authentication, billing, model lookup and request validation describe a
-	// credential/request/configuration problem, not shared provider reliability.
-	if (status >= 400 && status < 500) return "neutral";
-	if (status >= 500 && status < 600) return "failure";
-    if (isRateLimitSignal(args.errorCode) || isRateLimitSignal(args.errorMessage)) {
-        return args.credentialSource !== "byok" && args.failureOrigin === "provider" ? "failure" : "neutral";
-    }
-    const code = normalizeHealthSignal(args.errorCode);
-    if (/^(econnreset|econnrefused|etimedout|ehostunreach|enetunreach|und_err_(connect_timeout|headers_timeout|body_timeout|socket))$/.test(code)) return args.failureOrigin === "provider" ? "failure" : "neutral";
-    // Unknown exceptions may be request mapping, billing, or gateway bugs.
-    // Only explicit upstream evidence should affect provider selection.
-    return args.failureOrigin === "provider" ? "failure" : "neutral";
+	// Same classes the model pages report per attempt: provider failures
+	// (reachability, capacity, call errors) count against the route; customer-
+	// and Phaseo-caused failures are neutral.
+	const healthClass = classifyAttemptHealth(args);
+	if (healthClass === "success") return "success";
+	return PROVIDER_FAILURE_CLASSES.has(healthClass) ? "failure" : "neutral";
 }
 
 type ProviderConfigField = "err_open_th" | "base_open_secs" | "max_open_secs" | "load_soft_cap";
@@ -120,6 +93,11 @@ const NUMERIC_DEFAULTS: Record<keyof Omit<ProviderHealth, "endpoint" | "provider
     rec_ok_ew_10s: 0,
     rec_tot_ew_10s: 0,
     rec_rate_limited_ew_10s: 0,
+    prompt_tok_ewma: 0,
+    cached_tok_ewma: 0,
+    out_tok_ewma: 0,
+    tok_weight: 0,
+    last_tok_ms: 0,
     last_success_ms: 0,
     consecutive_failures: 0,
     inflight: 0,
@@ -143,6 +121,8 @@ const breakerField = (provider: string) => `${provider}::breaker`;
 const field = (provider: string, metric: string) => `${provider}::${metric}`;
 
 const HEALTH_STATE_TTL_SECONDS = 24 * 60 * 60;
+// Waits on another request's health load or update lock are bounded to this long.
+const SHARED_HEALTH_WAIT_MS = 2_000;
 // KV requires expirationTtl >= 60 seconds. Retain sparse recovery probes long
 // enough to accumulate a batch; each recorded probe refreshes this TTL.
 const HALF_STATE_TTL_SECONDS = HEALTH_CONSTANTS.MAX_OPEN_SECS;
@@ -155,6 +135,7 @@ type L1StateEntry = {
 
 const l1State = new Map<string, L1StateEntry>();
 const l1StateInflight = new Map<string, Promise<Record<string, string>>>();
+const l1StateGenerations = new Map<string, number>();
 const pendingBackgroundSaves = new Map<string, { map: Record<string, string>; ttlSeconds: number }>();
 const activeBackgroundSave = new Set<string>();
 const keyUpdateQueues = new Map<string, Array<() => void>>();
@@ -163,7 +144,9 @@ let healthStateEpoch = 0;
 async function withKeyUpdateLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
     const queue = keyUpdateQueues.get(key);
     if (queue) {
-        await new Promise<void>((resolve) => queue.push(resolve));
+        // The holder may be another request whose I/O is cancelled when it ends; health
+        // state is best-effort, so proceed concurrently rather than wait forever.
+        await awaitShared(new Promise<void>((resolve) => queue.push(resolve)), SHARED_HEALTH_WAIT_MS);
     } else {
         keyUpdateQueues.set(key, []);
     }
@@ -382,30 +365,38 @@ async function loadMapByKey(key: string): Promise<Record<string, string>> {
 
     const inflight = l1StateInflight.get(key);
     if (inflight) {
-        return { ...(await inflight) };
+        // The load may belong to another request; never wait on it unboundedly.
+        const shared = await awaitShared(inflight, SHARED_HEALTH_WAIT_MS);
+        if (shared.settled) return { ...shared.value };
     }
 
+    // A read superseded by a replacement (see above) must not overwrite the newer state.
+    const generation = (l1StateGenerations.get(key) ?? 0) + 1;
+    l1StateGenerations.set(key, generation);
+    const remember = (map: Record<string, string>) => {
+        if (l1StateGenerations.get(key) === generation) l1State.set(key, { map: { ...map }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+    };
     const loader = (async () => {
         try {
             const raw = await getCache().get(key, "text");
             if (!raw) {
                 const empty: Record<string, string> = {};
-                l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+                remember(empty);
                 return empty;
             }
             try {
                 const normalized = normalizeMap(JSON.parse(raw));
-                l1State.set(key, { map: { ...normalized }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+                remember(normalized);
                 return normalized;
             } catch {
                 const empty: Record<string, string> = {};
-                l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+                remember(empty);
                 return empty;
             }
         } catch {
             // Fail open to in-memory defaults when KV is unavailable.
             const empty: Record<string, string> = {};
-            l1State.set(key, { map: { ...empty }, expiresAtMs: now + HEALTH_L1_TTL_MS });
+            remember(empty);
             return empty;
         }
     })();
@@ -453,6 +444,7 @@ async function saveMap(
     mode: SaveMapMode = "sync"
 ) {
     const normalized = normalizeMap(map);
+    l1StateGenerations.set(key, (l1StateGenerations.get(key) ?? 0) + 1);
     l1State.set(key, { map: { ...normalized }, expiresAtMs: Date.now() + HEALTH_L1_TTL_MS });
     if (mode === "background") {
         pendingBackgroundSaves.set(key, { map: { ...normalized }, ttlSeconds });
@@ -528,6 +520,11 @@ function snapshotFromMap(
         rec_ok_ew_10s: readNumber(map, provider, "rec_ok_ew_10s"),
         rec_tot_ew_10s: readNumber(map, provider, "rec_tot_ew_10s"),
         rec_rate_limited_ew_10s: readNumber(map, provider, "rec_rate_limited_ew_10s"),
+        prompt_tok_ewma: readNumber(map, provider, "prompt_tok_ewma"),
+        cached_tok_ewma: readNumber(map, provider, "cached_tok_ewma"),
+        out_tok_ewma: readNumber(map, provider, "out_tok_ewma"),
+        tok_weight: readNumber(map, provider, "tok_weight"),
+        last_tok_ms: readNumber(map, provider, "last_tok_ms"),
         last_success_ms: readNumber(map, provider, "last_success_ms"),
         consecutive_failures: readNumber(map, provider, "consecutive_failures"),
         inflight: readNumber(map, provider, "inflight"),
@@ -867,6 +864,7 @@ export function resetHealthStateForTests(): void {
     healthStateEpoch += 1;
     l1State.clear();
     l1StateInflight.clear();
+    l1StateGenerations.clear();
     pendingBackgroundSaves.clear();
     activeBackgroundSave.clear();
     keyUpdateQueues.clear();
@@ -888,6 +886,18 @@ export async function onCallStart(endpoint: Endpoint, provider: string, model: s
     }, HEALTH_STATE_TTL_SECONDS, "background");
 }
 
+function observedTokenMix(params: { prompt_tokens?: number; cached_prompt_tokens?: number; tokens_out?: number }) {
+    const prompt = Number(params.prompt_tokens);
+    if (!Number.isFinite(prompt) || prompt <= 0) return null;
+    const cached = Number(params.cached_prompt_tokens);
+    const output = Number(params.tokens_out);
+    return {
+        prompt,
+        cached: Number.isFinite(cached) ? Math.max(0, Math.min(prompt, cached)) : 0,
+        output: Number.isFinite(output) ? Math.max(0, output) : 0,
+    };
+}
+
 export async function onCallEnd(
     endpoint: Endpoint,
     params: {
@@ -902,6 +912,9 @@ export async function onCallEnd(
         generation_ms?: number;
         tokens_in?: number;
         tokens_out?: number;
+        /** Text prompt size for routing cost: cache reads included, and the cache-read part. */
+        prompt_tokens?: number;
+        cached_prompt_tokens?: number;
         observationId?: string;
         startedAt?: number;
         probe?: boolean;
@@ -914,6 +927,7 @@ export async function onCallEnd(
     // Generated text speed excludes the prompt. Other endpoints retain their
     // existing token-volume metric (e.g. input tokens processed by embeddings).
     const tokens = Math.max(0, params.tokens_out ?? 0) + (textGeneration ? 0 : Math.max(0, params.tokens_in ?? 0));
+    const tokenMix = impact === "success" && textGeneration ? observedTokenMix(params) : null;
     if (coordinatedHealthEnabled()) {
         if (impact !== "neutral") {
             const now = Date.now();
@@ -926,6 +940,7 @@ export async function onCallEnd(
                 ok: impact === "success", limited: rateLimited, probe: params.probe ?? false,
                 latencyMs: latency,
                 tps: tps !== null && Number.isFinite(tps) ? tps : null,
+                ...(tokenMix ? { tokens: tokenMix } : {}),
             });
         }
         return { rateLimited };
@@ -991,6 +1006,18 @@ export async function onCallEnd(
         if (healthOk && tokens > 0 && params.generation_ms && params.generation_ms > 0) {
             const tps = tokens / Math.max(params.generation_ms / 1000, 0.001);
             tp60 = decay(tp60, tps, performanceDecay(tau60));
+        }
+        if (tokenMix) {
+            const lastTok = readNumber(map, provider, "last_tok_ms");
+            const tokDecay = lastTok > 0 ? Math.exp(-Math.max(0, now - lastTok) / TOKEN_MIX_TAU_MS) : 0;
+            const oldWeight = readNumber(map, provider, "tok_weight") * tokDecay;
+            const blend = (metric: "prompt_tok_ewma" | "cached_tok_ewma" | "out_tok_ewma", sample: number) =>
+                String((readNumber(map, provider, metric) * oldWeight + sample) / (oldWeight + 1));
+            map[field(provider, "prompt_tok_ewma")] = blend("prompt_tok_ewma", tokenMix.prompt);
+            map[field(provider, "cached_tok_ewma")] = blend("cached_tok_ewma", tokenMix.cached);
+            map[field(provider, "out_tok_ewma")] = blend("out_tok_ewma", tokenMix.output);
+            map[field(provider, "tok_weight")] = String(oldWeight + 1);
+            map[field(provider, "last_tok_ms")] = String(now);
         }
         if (healthOk) map[field(provider, "last_success_ms")] = String(now);
         map[field(provider, "rec_ok_ew_10s")] = String(recOk10);

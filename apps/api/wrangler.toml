@@ -1,19 +1,46 @@
 name = "phaseo-gateway"
 main = "src/index.ts"
 compatibility_date = "2025-10-01"
-compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close"]
+compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close", "nodejs_als"]
 workers_dev = false
 preview_urls = false
 
+[version_metadata]
+binding = "CF_VERSION_METADATA"
+
 [vars]
+GOOGLE_VERTEX_PROJECT_NUMBER = "916177560808"
+GOOGLE_VERTEX_BATCH_LOCATION = "global"
+GOOGLE_VERTEX_BATCH_BUCKET = "ai-stats-469110-phaseo-vertex-batch-us-central1"
+# Private discovery pings Dev; DISCORD_ROLE_ID is managed separately for public announcements.
+DISCORD_PRIVATE_MODEL_DISCOVERY_ROLE_ID = "1404372600821645473"
 # Record the activation boundary in KV after all production writers are verified.
 GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF = "activation"
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
+RATE_LIMIT_POLICIES_ENABLED = "true"
+# Spend rule alerts (sweep_spend_rules every 5 minutes). Off until launch; only the
+# worker that runs the cron jobs (phaseo-gateway) acts on it.
+SPEND_RULES_ENABLED = "false"
+SPEND_RULE_BLOCKS_ENABLED = "false"
+SPEND_REPORTS_ENABLED = "false"
+# When a charge would have invalidated the credit cache, store its exact
+# post-charge balance instead if it is at least $1, no higher than the cached
+# balance, and not throttled; otherwise the cache is still invalidated.
+GATEWAY_CREDIT_WRITEBACK_ENABLED = "true"
+# Fail over when a streaming provider sends no response headers within 60 s.
+# Never applied to non-streaming requests, whose headers wait for the generation.
+GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS = "60000"
+# Trust-ladder RPM per workspace (off = 25 RPM for everyone). Enable only after
+# the tier publisher reports a complete backfill.
+CUSTOMER_RATE_LIMIT_LADDER_ENABLED = "true"
+CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED = "true"
+# Enforce: the spend-limit coordinator decides key caps, department budgets and workspace
+# budgets for API-key requests; when it is unavailable the legacy key-limit check decides.
+GATEWAY_SPEND_LIMIT_DO_MODE = "enforce"
+# Also enables the per-minute catalogue revision publisher; catalogue
+# snapshots are cached stale-while-revalidate against that revision.
 GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
-# Two-minute publication: four public snapshots, 86,400 KV writes / 30 days.
-# Keep this only on the primary scheduler; regional Workers share its KV.
-GATEWAY_PUBLIC_CATALOG_TARGETS = '[{"model":"openai/gpt-5.4-mini","endpoint":"responses"},{"model":"openai/gpt-5.4-mini","endpoint":"text.generate"},{"model":"anthropic/claude-haiku-4.5","endpoint":"messages"},{"model":"anthropic/claude-haiku-4.5","endpoint":"text.generate"}]'
 ENV = "prod"
 SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
 AMAZON_BEDROCK_REGION = "us-west-2"
@@ -21,12 +48,13 @@ AMAZON_BEDROCK_MANTLE_BASE_URL = "https://bedrock-mantle.us-west-2.api.aws"
 MODEL_DISCOVERY_ENABLED = "true"
 ACCOUNT_DELETION_PURGE_ENABLED = "true"
 MODEL_DISCOVERY_RETENTION_DAYS = "7"
+# A model must be missing from a provider's /models list this long (minutes) before its removal is announced.
+MODEL_DISCOVERY_REMOVAL_CONFIRM_MINUTES = "360"
 MODEL_DISCOVERY_SHARD_SIZE = "20"
 # Run every provider check in one scheduled invocation. The watcher itself
 # uses bounded concurrency so this removes shard-to-shard notification delay.
 MODEL_DISCOVERY_SHARDING_ENABLED = "false"
 MODEL_DISCOVERY_CONCURRENCY = "8"
-MODEL_DISCOVERY_ISSUE_SYNC_ENABLED = "false"
 VIDEO_RECONCILIATION_ENABLED = "true"
 VIDEO_RECONCILIATION_LIMIT = "1000"
 VIDEO_RECONCILIATION_CONCURRENCY = "24"
@@ -35,11 +63,13 @@ BATCH_RECONCILIATION_ENABLED = "true"
 BATCH_RECONCILIATION_LIMIT = "500"
 BATCH_RECONCILIATION_CONCURRENCY = "12"
 BATCH_RECONCILIATION_LEASE_SECONDS = "300"
-BATCH_API_PREVIEW_PROVIDERS = "openai,anthropic,google-ai-studio,mistral,together"
+BATCH_API_PREVIEW_PROVIDERS = "openai,anthropic,google-ai-studio,google-vertex,mistral,together"
 BATCH_PROVIDER_WEBHOOK_REPLAY_ENABLED = "true"
 BATCH_PROVIDER_WEBHOOK_REPLAY_LIMIT = "100"
 OTEL_EXPORT_ENABLED = "true"
 OTEL_EXPORT_OUTBOX_LIMIT = "100"
+# Send Broadcast exports to BROADCAST_QUEUE; the outbox remains the fallback.
+BROADCAST_QUEUE_ENABLED = "true"
 AXIOM_SUCCESS_SAMPLE_RATE = "0.1"
 AXIOM_DETAIL_SAMPLE_RATE = "0.01"
 AXIOM_SLOW_REQUEST_MS = "8000"
@@ -55,6 +85,12 @@ ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION = "v1"
 STATSIG_ENVIRONMENT_TIER = "production"
 EMAIL_OUTBOX_DRAIN_ENABLED = "true"
 EMAIL_OUTBOX_DRAIN_LIMIT = "25"
+# Approved by the founder on 2026-10-28. Queues up to 10 a day at 10:05 UTC; only this
+# worker runs the cron, so the regional and jobs workers keep it off.
+FEEDBACK_REQUEST_EMAILS_ENABLED = "true"
+# Sends app notifications from catalogue changes; the first run starts from now, with no backlog.
+MOBILE_PUSH_ENABLED = "true"
+FEEDBACK_REQUEST_FROM_EMAIL = "Daniel at Phaseo <daniel@phaseo.app>"
 VIDEO_API_ENABLED = "true"
 PRICING_MONITOR_ENABLED = "false"
 PRICING_PAGE_MONITOR_ENABLED = "true"
@@ -113,6 +149,21 @@ binding = "DATA_CONTRIBUTIONS_BUCKET"
 bucket_name = "phaseo-data-contributions"
 preview_bucket_name = "phaseo-data-contributions-preview"
 
+# Broadcast exports, consumed by this worker's queue handler. Create the queue
+# before deploying: wrangler queues create phaseo-broadcast
+[[queues.producers]]
+binding = "BROADCAST_QUEUE"
+queue = "phaseo-broadcast"
+
+[[queues.consumers]]
+queue = "phaseo-broadcast"
+max_batch_size = 100
+max_batch_timeout = 5
+# Counts the handler's own retries after Supabase or R2 failures, which back off
+# up to 15 minutes, as well as batches that throw. Delivery failures are requeued
+# as new messages and do not count. 100 is the maximum.
+max_retries = 100
+
 # Native per-location Workers rate limiting. Application-level device polling
 # checks remain authoritative because these counters are intentionally approximate.
 [[ratelimits]]
@@ -139,9 +190,13 @@ namespace_id = "41003"
 limit = 60
 period = 60
 
+# The relay runs in phaseo-realtime (wrangler.realtime.toml) so gateway deploys
+# don't end live calls. This Worker still exports the class and keeps its
+# migration, leaving its old, unused namespace in place.
 [[durable_objects.bindings]]
 name = "REALTIME_RELAY"
 class_name = "RealtimeRelayDurableObject"
+script_name = "phaseo-realtime"
 
 [[durable_objects.bindings]]
 name = "PROVIDER_RATE_LIMITS"
@@ -170,3 +225,11 @@ class_name = "CustomerRateLimitDurableObject"
 [[migrations]]
 tag = "v4-customer-rate-limits"
 new_sqlite_classes = ["CustomerRateLimitDurableObject"]
+
+[[durable_objects.bindings]]
+name = "SPEND_LIMITS"
+class_name = "SpendLimitDurableObject"
+
+[[migrations]]
+tag = "v5-spend-limits"
+new_sqlite_classes = ["SpendLimitDurableObject"]

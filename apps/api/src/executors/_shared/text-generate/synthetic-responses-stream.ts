@@ -39,25 +39,57 @@ export function createSyntheticResponsesStreamFromIR(
 					emit(controller, "response.output_item.added", { item, output_index: outputIndex });
 
 					if (item.type === "message") {
-						for (const part of Array.isArray(item.content) ? item.content : []) {
+						for (const [contentIndex, part] of (Array.isArray(item.content) ? item.content : []).entries()) {
+							if (part?.type === "refusal" && typeof part.refusal === "string") {
+								emit(controller, "response.refusal.delta", {
+									item_id: item.id,
+									output_index: outputIndex,
+									content_index: contentIndex,
+									delta: part.refusal,
+								});
+								emit(controller, "response.refusal.done", {
+									item_id: item.id,
+									output_index: outputIndex,
+									content_index: contentIndex,
+									refusal: part.refusal,
+								});
+								continue;
+							}
 							if (part?.type !== "output_text" || typeof part.text !== "string") continue;
 							emit(controller, "response.output_text.delta", {
 								item_id: item.id,
 								output_index: outputIndex,
-								content_index: 0,
+								content_index: contentIndex,
 								delta: part.text,
 							});
+							for (const [annotationIndex, annotation] of (Array.isArray(part.annotations) ? part.annotations : []).entries()) {
+								emit(controller, "response.output_text.annotation.added", {
+									item_id: item.id,
+									output_index: outputIndex,
+									content_index: contentIndex,
+									annotation_index: annotationIndex,
+									annotation,
+								});
+							}
 							emit(controller, "response.output_text.done", {
 								item_id: item.id,
 								output_index: outputIndex,
-								content_index: 0,
+								content_index: contentIndex,
 								text: part.text,
 							});
 						}
 					} else if (item.type === "reasoning") {
-						for (const part of Array.isArray(item.content) ? item.content : []) {
-							if (part?.type !== "output_text" || typeof part.text !== "string") continue;
-							emit(controller, "response.reasoning.delta", { item_id: item.id, delta: part.text });
+						// The documented reasoning delta event; its done events are added at
+						// the client boundary (pipeline/after/responses-stream-normaliser.ts),
+						// after which internal readers have already finished the item.
+						for (const [contentIndex, part] of (Array.isArray(item.content) ? item.content : []).entries()) {
+							if ((part?.type !== "reasoning_text" && part?.type !== "output_text") || typeof part.text !== "string") continue;
+							emit(controller, "response.reasoning_text.delta", {
+								item_id: item.id,
+								output_index: outputIndex,
+								content_index: contentIndex,
+								delta: part.text,
+							});
 						}
 					} else if (item.type === "function_call") {
 						emit(controller, "response.function_call_arguments.delta", {

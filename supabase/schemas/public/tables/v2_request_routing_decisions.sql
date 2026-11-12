@@ -36,11 +36,21 @@ CREATE TABLE "public"."v2_request_routing_decisions" (
 ALTER TABLE "public"."v2_request_routing_decisions"
   ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE "public"."v2_request_routing_decisions"
+  SET (autovacuum_vacuum_scale_factor = 0, autovacuum_vacuum_threshold = 1000, autovacuum_analyze_scale_factor = 0, autovacuum_analyze_threshold = 1000);
+
 CREATE INDEX v2_request_routing_decisions_excluded_idx ON public.v2_request_routing_decisions USING btree (exclusion_reason, created_at DESC)
   WHERE (decision = 'excluded'::text);
 
 CREATE INDEX v2_request_routing_decisions_route_idx ON public.v2_request_routing_decisions USING btree (provider_model_id, created_at DESC)
   WHERE (provider_model_id IS NOT NULL);
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_request_routing_decisions"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 CREATE POLICY "v2_request_routing_decisions_workspace_select" ON "public"."v2_request_routing_decisions"
   FOR SELECT
@@ -68,3 +78,5 @@ COMMENT ON COLUMN "public"."v2_request_routing_decisions"."score_factors" IS 'Bo
 COMMENT ON COLUMN "public"."v2_request_routing_decisions"."score_trace" IS 'Bounded raw inputs, normalization values, weights, contributions, and intermediate calculations for one candidate.';
 
 COMMENT ON TABLE "public"."v2_request_routing_decisions" IS 'Content-free scored/ranked and excluded provider decisions used to explain routing for one gateway request.';
+
+CREATE INDEX v2_request_routing_decisions_retention_idx ON public.v2_request_routing_decisions USING btree (created_at, routing_decision_id);

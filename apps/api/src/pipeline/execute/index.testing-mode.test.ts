@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Timer } from "../telemetry/timer";
 import { doRequestWithIR } from "./index";
+import { executor as extractionExecutor } from "@executors/cloudflare/extraction";
+import { decodeExtractionRequest, encodeExtractionResponse } from "@protocols/extraction";
+import { ExtractionsSchema } from "@core/extraction";
+import { formatClientPayload } from "../after/payload";
+import { installFetchMock, jsonResponse } from "../../../tests/helpers/mock-fetch";
+import { resetManagedCredentialStateForTests } from "./managedCredentials";
 
 const guardCandidatesMock = vi.fn();
 const guardPricingFoundMock = vi.fn();
@@ -14,10 +20,19 @@ const reportProbeResultMock = vi.fn();
 const resolveProviderExecutorMock = vi.fn();
 const loadPriceCardMock = vi.fn();
 const freeQuotaMock = vi.fn();
+const policyGuardMock = vi.fn();
+const policyTokenChargeMock = vi.fn();
 const releaseBackgroundRuntimeMock = vi.fn();
 const ensureRuntimeForBackgroundMock = vi.fn(() => releaseBackgroundRuntimeMock);
+const runtimeBindings = vi.hoisted(() => ({ value: null as Record<string, unknown> | null }));
+const classifyHealthCalls = vi.hoisted(() => [] as Array<Record<string, unknown>>);
+// Providers whose (mocked) text executor reads its managed key like the OpenAI-compatible wire.
+const openAICompatTextProviders = vi.hoisted(() => new Set<string>());
 
 vi.mock("@/runtime/env", () => ({
+	getBindings: () => runtimeBindings.value ?? {},
+	getCache: () => ({ get: async () => null, put: async () => undefined }),
+	getBindingsIfConfigured: () => runtimeBindings.value,
 	dispatchBackground: (promise: Promise<unknown>) => void promise,
 	ensureRuntimeForBackground: () => ensureRuntimeForBackgroundMock(),
     getSupabaseAdmin: () => ({ from: (table: string) => {
@@ -39,8 +54,9 @@ vi.mock("./providers", () => ({
 
 vi.mock("./health", () => ({
 	admitThroughBreaker: (...args: any[]) => admitThroughBreakerMock(...args),
-	classifyProviderHealthImpact: ({ upstreamStatus }: { upstreamStatus?: number | null } = {}) => {
-		const status = Number(upstreamStatus ?? 0);
+	classifyProviderHealthImpact: (args: { upstreamStatus?: number | null } = {}) => {
+		classifyHealthCalls.push(args);
+		const status = Number(args.upstreamStatus ?? 0);
 		return status >= 200 && status < 300 ? "success" : "failure";
 	},
 	onCallStart: (...args: any[]) => onCallStartMock(...args),
@@ -52,10 +68,16 @@ vi.mock("./health", () => ({
 vi.mock("../../executors", () => ({
 	resolveProviderExecutor: (...args: any[]) => resolveProviderExecutorMock(...args),
 	normalizeCapability: (capability: string) => capability,
+	textExecutorUsesOpenAICompatKey: (providerId: string) => openAICompatTextProviders.has(providerId),
 }));
 
 vi.mock("@core/customer-rate-limits", () => ({
 	guardFreeRouteQuota: (...args: any[]) => freeQuotaMock(...args),
+}));
+
+vi.mock("@core/rate-limit-policies", () => ({
+	guardRateLimitPolicies: (...args: any[]) => policyGuardMock(...args),
+	chargeRateLimitPolicyTokens: (...args: any[]) => policyTokenChargeMock(...args),
 }));
 
 vi.mock("../pricing", () => ({
@@ -101,6 +123,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		vi.clearAllMocks();
 		guardPricingFoundMock.mockResolvedValue({ ok: true });
 		freeQuotaMock.mockResolvedValue(null);
+		policyGuardMock.mockResolvedValue(null);
 
 		guardAllFailedMock.mockResolvedValue({
 			ok: false,
@@ -111,6 +134,40 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		onCallEndMock.mockResolvedValue(undefined);
 		maybeOpenOnRecentErrorsMock.mockResolvedValue(undefined);
 		reportProbeResultMock.mockResolvedValue(undefined);
+	});
+
+	it("executes extraction through provider routing and presents typed answers with aggregate usage", async () => {
+		runtimeBindings.value = { CLOUDFLARE_ACCOUNT_ID: "test-account", CLOUDFLARE_API_TOKEN: "test-token" };
+		const body = ExtractionsSchema.parse({ model: "cloudflare/clairic", input: "Total: $1080", fields: { total: { type: "number" } } });
+		const candidate = { providerId: "cloudflare", providerModelSlug: "@cf/cloudflare/clairic", pricingCard: { currency: "USD", rules: [] }, byokMeta: [], capabilityParams: {}, inputModalities: ["text"] };
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+		rankProvidersMock.mockResolvedValue([{ candidate, health: {} }]);
+		resolveProviderExecutorMock.mockReturnValue(extractionExecutor);
+		const mock = installFetchMock([{ match: url => url.endsWith("/ai/run/@cf/cloudflare/clairic"), response: jsonResponse({ success: true, result: {
+			model: "clairic", truncated: false, answers: { total: { type: "number", value: 1080, confidence: 0.99, p_null: 0.001 } },
+			usage: { input_tokens: 655, output_tokens: 0, passes: 3 },
+		} }) }]);
+		try {
+			const ctx = createCtx({ endpoint: "extractions", capability: "extraction.extract", model: body.model, body, rawBody: body, testingMode: true });
+			const result = await doRequestWithIR(ctx, decodeExtractionRequest(body), createTiming());
+			if (result instanceof Response) throw new Error(await result.text());
+			const payload = encodeExtractionResponse(result.result.ir as import("@core/ir").IRExtractionResponse);
+			const presented = formatClientPayload({ ctx, result: result.result, payload, includeMeta: false });
+			expect(presented).toMatchObject({ model: body.model, truncated: false, answers: { total: { type: "number", value: 1080, p_null: 0.001 } }, usage: { input_tokens: 655, output_tokens: 0, total_tokens: 655 } });
+			expect(mock.calls).toHaveLength(1);
+			expect(result.result.bill.usage?.input_tokens).toBe(655);
+		} finally { mock.restore(); runtimeBindings.value = null; }
+	});
+
+	it("rejects extraction images before dispatch when the route lacks image capability", async () => {
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [{ providerId: "cloudflare", inputModalities: ["text"], capabilityParams: {} }] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "extractions", capability: "extraction.extract" }), {
+			model: "cloudflare/clairic", sourceText: "", fields: { x: { type: "text" } }, images: [{ contentType: "image/png", base64: "AQID" }],
+		}, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(400);
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
 	});
 
 	it("returns a customer free quota denial before dispatch or provider fallback", async () => {
@@ -131,6 +188,41 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(executor).not.toHaveBeenCalled();
 		expect(freeQuotaMock).toHaveBeenCalledTimes(1);
 		expect(freeQuotaMock).toHaveBeenCalledWith(expect.objectContaining({ userId: "authenticated-owner", admissionId: "server-billing-id", pricingCard }));
+	});
+
+	it("returns a rate limit policy denial before the free quota, dispatch or provider fallback", async () => {
+		const pricingCard = { currency: "USD", rules: [{ pricing_plan: "free", price_per_unit: "0", currency: "USD" }] };
+		const candidates = ["first", "second"].map(providerId => ({ providerId, pricingCard, byokMeta: [], providerModelSlug: "model", capabilityParams: {} }));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map(candidate => ({ candidate, health: {} })));
+		const executor = vi.fn();
+		resolveProviderExecutorMock.mockReturnValue(executor);
+		const denial = new Response("{}", { status: 429, headers: { "Retry-After": "12" } });
+		policyGuardMock.mockResolvedValue(denial);
+		const ctx = createCtx({ billingRequestId: "server-billing-id" });
+		const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
+		expect(result).toBe(denial);
+		expect(policyGuardMock).toHaveBeenCalledTimes(1);
+		expect(policyGuardMock).toHaveBeenCalledWith(ctx);
+		expect(freeQuotaMock).not.toHaveBeenCalled();
+		expect(admitThroughBreakerMock).not.toHaveBeenCalled();
+		expect(executor).not.toHaveBeenCalled();
+		expect(ctx.lifecycle?.events).toContainEqual(expect.objectContaining({ type: "provider.rejected", outcome: "quota_rejected", status: 429 }));
+	});
+
+	it("checks rate limit policies on every provider attempt of the same request", async () => {
+		const pricingCard = { currency: "USD", rules: [] };
+		const candidates = ["first", "second"].map(providerId => ({ providerId, pricingCard, byokMeta: [], providerModelSlug: "model", capabilityParams: {} }));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map(candidate => ({ candidate, health: {} })));
+		resolveProviderExecutorMock.mockReturnValue(vi.fn(async () => ({
+			kind: "completed", ir: {}, upstream: new Response("{}", { status: 503 }),
+			bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway",
+		})));
+		const ctx = createCtx({ testingMode: true });
+		await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
+		// The guard memoizes per request, so later attempts are never counted again.
+		expect(policyGuardMock.mock.calls.map(([arg]) => arg)).toEqual([ctx, ctx]);
 	});
 
 	it.each([
@@ -200,6 +292,79 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(executor.mock.calls[0][0]).toMatchObject({ apiKeyId: "key_test_1" });
 	});
 
+	const syncMediaCases = [
+		["image.generate", "images.generations"],
+		["image.edit", "images.edits"],
+		["audio.speech", "audio.speech"],
+		["audio.transcription", "audio.transcription"],
+		["audio.translations", "audio.translations"],
+		["music.generate", "music.generate"],
+		["ocr", "ocr"],
+	] as const;
+
+	function mediaCandidates() {
+		const candidates = ["first", "second"].map((providerId) => ({
+			providerId, pricingCard: { rules: [], currency: "USD" }, byokMeta: [],
+			providerModelSlug: "media-model", capabilityParams: {},
+		}));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+	}
+
+	const succeeded = () => ({
+		kind: "completed", ir: { ok: true }, upstream: new Response("{}", { status: 200 }),
+		bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway",
+	});
+
+	it.each(syncMediaCases)("does not send a %s request to a second provider once the first has answered 2xx", async (capability, endpoint) => {
+		mediaCandidates();
+		const first = vi.fn(async (args: any) => {
+			const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+			await args.upstreamTiming.fetch("https://provider.test/media", { method: "POST" });
+			fetchSpy.mockRestore();
+			// The provider has charged; mapping or pricing its answer then fails.
+			throw new Error("pricing_rule_missing:output_image");
+		});
+		const second = vi.fn(async () => succeeded());
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => providerId === "first" ? first : second);
+		const result = await doRequestWithIR(createCtx({ capability, endpoint }), { model: "media-model", prompt: "x" } as any, createTiming());
+		expect(first).toHaveBeenCalledTimes(1);
+		expect(second).not.toHaveBeenCalled();
+		expect((result as Response).status).toBe(502);
+	});
+
+	it("does not send a media request elsewhere when a later call fails after an earlier provider call succeeded", async () => {
+		mediaCandidates();
+		const first = vi.fn(async (args: any) => {
+			const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 200 }));
+			await args.upstreamTiming.fetch("https://provider.test/music", { method: "POST" });
+			fetchSpy.mockRestore();
+			return { kind: "completed", upstream: new Response("{}", { status: 500 }), bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+		});
+		const second = vi.fn(async () => succeeded());
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => providerId === "first" ? first : second);
+		await doRequestWithIR(createCtx({ capability: "music.generate", endpoint: "music.generate" }), { model: "media-model", prompt: "x" } as any, createTiming());
+		expect(second).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		["a non-2xx answer", 503],
+		["a transport error", "transport"],
+	] as const)("still fails a media request over to the next provider after %s", async (_label, failure) => {
+		mediaCandidates();
+		const first = vi.fn(async (args: any) => {
+			const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: failure === "transport" ? 200 : failure }));
+			if (failure === "transport") fetchSpy.mockRejectedValue(new Error("Network connection lost."));
+			const response = await args.upstreamTiming.fetch("https://provider.test/media", { method: "POST" }).finally(() => fetchSpy.mockRestore());
+			return { kind: "completed", upstream: response, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+		});
+		const second = vi.fn(async () => succeeded());
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => providerId === "first" ? first : second);
+		const result = await doRequestWithIR(createCtx({ capability: "image.generate", endpoint: "images.generations" }), { model: "media-model", prompt: "x" } as any, createTiming());
+		expect(second).toHaveBeenCalledTimes(1);
+		expect((result as any).ok).toBe(true);
+	});
+
     it.each(["completed", "stream"] as const)("retains private health identity through %s execution", async kind => {
         const candidate = { providerId: "private-model", privateEndpoint: { baseUrl: "https://private.example/v1", supportsResponses: true }, pricingCard: { currency: "USD", rules: [] }, byokMeta: [{ id: "route-1", key: "test-private-key", value: "test-private-key", alwaysUse: true, routingMode: "priority" }], providerModelSlug: "private", capabilityParams: {} };
         const scopedProvider = "private-model:workspace-a:route-1";
@@ -214,8 +379,30 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
         else expect((result as any).result.healthContext.provider).toBe(scopedProvider);
     });
 
-	it("loads pricing lazily for testing-mode candidates and executes", async () => {
+	it.each([200, 503])("records buffered text generation from the selected dispatch only on success (%s)", async (status) => {
+		const candidate = { providerId: "openai", pricingCard: { currency: "USD", rules: [] }, byokMeta: [], providerModelSlug: "gpt-test", capabilityParams: {} };
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+		rankProvidersMock.mockResolvedValue([{ candidate, health: {} }]);
+		resolveProviderExecutorMock.mockReturnValue(vi.fn(async (args: any) => {
+			const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status }));
+			const response = await args.upstreamTiming.fetch("https://provider.test/chat", { method: "POST" }).finally(() => fetchSpy.mockRestore());
+			return { kind: "completed", ir: {}, upstream: response, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+		}));
+		const ctx = createCtx({ endpoint: "chat.completions", capability: "text.generate", model: "openai/gpt-test", testingMode: true });
+		await doRequestWithIR(ctx, { model: "openai/gpt-test", messages: [] } as any, createTiming());
+		if (status === 200) {
+			expect(ctx.meta.generation_ms).toEqual(expect.any(Number));
+			expect(ctx.meta.generation_ms).toBe(ctx.meta.provider_duration_ms);
+			// Routing throughput keeps using streamed generation only.
+			expect(onCallEndMock).toHaveBeenCalledWith("chat.completions", expect.objectContaining({ ok: true, generation_ms: 0 }));
+		} else {
+			expect(ctx.meta.generation_ms).toBeUndefined();
+		}
+	});
+
+	it.each([false, true])("loads lazy pricing using the selected route scope (%s)", async (pricingInternalOnly) => {
 		const candidate = {
+			accessScope: pricingInternalOnly ? "internal" : "public",
 			providerId: "openai",
 			pricingCard: null,
 			byokMeta: [],
@@ -243,7 +430,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 			byokKeyId: null,
 		});
 		resolveProviderExecutorMock.mockReturnValue(executor);
-		const ctx = createCtx({ testingMode: true });
+		const ctx = createCtx({ testingMode: true, billableInternalTesting: true, pricingInternalOnly: !pricingInternalOnly });
 
 		const result = await doRequestWithIR(
 			ctx,
@@ -252,7 +439,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		);
 
 		expect((result as any).ok).toBe(true);
-		expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-image-1-mini", "image.generate", "gpt-image-1-mini");
+		expect(loadPriceCardMock).toHaveBeenCalledWith("openai", "openai/gpt-image-1-mini", "image.generate", "gpt-image-1-mini", pricingInternalOnly);
 		expect(executor).toHaveBeenCalledTimes(1);
 		expect(guardPricingFoundMock).not.toHaveBeenCalled();
 		expect(onCallEndMock).toHaveBeenCalledWith(
@@ -280,6 +467,135 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		]);
 	});
 
+	it("tells executors whether alternate candidates remain after the current attempt", async () => {
+		const candidates = ["first", "second", "third"].map((providerId) => ({
+			providerId, pricingCard: { currency: "USD", rules: [] }, byokMeta: [],
+			providerModelSlug: "model", capabilityParams: {},
+		}));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+		const executor = vi.fn(async () => ({
+			kind: "completed", ir: {}, upstream: new Response("{}", { status: 503 }),
+			bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway",
+		}));
+		resolveProviderExecutorMock.mockReturnValue(executor);
+		await doRequestWithIR(createCtx({ testingMode: true }), { model: "model", prompt: "test" } as any, createTiming());
+		expect(executor.mock.calls.map(([args]: any[]) => [args.providerId, args.hasAlternateCandidates])).toEqual([
+			["first", true],
+			["second", true],
+			["third", false],
+		]);
+	});
+
+	it("fails over to the next provider when the first stalls before response headers", async () => {
+		runtimeBindings.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "25" };
+		classifyHealthCalls.length = 0;
+		try {
+			const candidates = ["stalled", "healthy"].map((providerId) => ({
+				providerId, pricingCard: { currency: "USD", rules: [] }, byokMeta: [],
+				providerModelSlug: "model", capabilityParams: {},
+			}));
+			guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+			rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+			vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => {
+				if (String(input).includes("stalled")) {
+					return new Promise<Response>((_resolve, reject) => {
+						init?.signal?.addEventListener("abort", () => reject(init.signal!.reason));
+					});
+				}
+				return Promise.resolve(new Response("{}", { status: 200 }));
+			});
+			const executor = vi.fn(async (args: any) => {
+				const upstream = await args.upstreamTiming.fetch(`https://${args.providerId}.test/generate`, { method: "POST", body: JSON.stringify({ stream: true }) });
+				return { kind: "completed", ir: {}, upstream, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+			});
+			resolveProviderExecutorMock.mockReturnValue(executor);
+			const ctx = createCtx({ testingMode: true, stream: true });
+
+			const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
+
+			expect((result as any).ok).toBe(true);
+			expect(executor.mock.calls.map(([args]) => args.providerId)).toEqual(["stalled", "healthy"]);
+			expect(ctx.attemptErrors).toEqual([expect.objectContaining({
+				provider: "stalled",
+				upstream_error_code: "upstream_headers_timeout",
+			})]);
+			// Counted against the provider, unlike a caller cancellation.
+			expect(classifyHealthCalls).toContainEqual(expect.objectContaining({
+				failureOrigin: "provider",
+				errorCode: "upstream_headers_timeout",
+			}));
+		} finally {
+			runtimeBindings.value = null;
+			vi.restoreAllMocks();
+		}
+	});
+
+	it("lets a slow non-streaming provider finish instead of failing over", async () => {
+		runtimeBindings.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "25" };
+		try {
+			const candidates = ["slow", "other"].map((providerId) => ({
+				providerId, pricingCard: { currency: "USD", rules: [] }, byokMeta: [],
+				providerModelSlug: "model", capabilityParams: {},
+			}));
+			guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+			rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+			// Non-streaming providers send headers only once the whole generation is done.
+			vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+				await new Promise((resolve) => setTimeout(resolve, 80));
+				return new Response("{}", { status: 200 });
+			});
+			const executor = vi.fn(async (args: any) => {
+				const upstream = await args.upstreamTiming.fetch(`https://${args.providerId}.test/generate`, { method: "POST" });
+				return { kind: "completed", ir: {}, upstream, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+			});
+			resolveProviderExecutorMock.mockReturnValue(executor);
+			const ctx = createCtx({ testingMode: true, stream: false });
+
+			const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
+
+			expect((result as any).ok).toBe(true);
+			expect(executor.mock.calls.map(([args]) => args.providerId)).toEqual(["slow"]);
+		} finally {
+			runtimeBindings.value = null;
+			vi.restoreAllMocks();
+		}
+	});
+
+	it.each([
+		["gemini-4-argon", ["google-vertex"]],
+		["gemini-3.6-flash", ["google-vertex", "google-ai-studio"]],
+	])("gives streaming %s the long-thinking headers deadline only where documented", async (model, expectedProviders) => {
+		runtimeBindings.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "25" };
+		try {
+			const candidates = ["google-vertex", "google-ai-studio"].map((providerId) => ({
+				providerId, pricingCard: { currency: "USD", rules: [] }, byokMeta: [],
+				providerModelSlug: model, capabilityParams: {},
+			}));
+			guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+			rankProvidersMock.mockResolvedValue(candidates.map((candidate) => ({ candidate, health: {} })));
+			// The first chunk, and so the headers, arrives after the model has thought.
+			vi.spyOn(globalThis, "fetch").mockImplementation((input, init) => new Promise<Response>((resolve, reject) => {
+				const timer = setTimeout(() => resolve(new Response("{}", { status: 200 })), String(input).includes("google-vertex") ? 80 : 0);
+				init?.signal?.addEventListener("abort", () => { clearTimeout(timer); reject(init.signal!.reason); });
+			}));
+			const executor = vi.fn(async (args: any) => {
+				const upstream = await args.upstreamTiming.fetch(`https://${args.providerId}.test/models/${model}:streamGenerateContent?alt=sse`, { method: "POST" });
+				return { kind: "completed", ir: {}, upstream, bill: { cost_cents: 0, currency: "USD" }, keySource: "gateway" };
+			});
+			resolveProviderExecutorMock.mockReturnValue(executor);
+			const ctx = createCtx({ testingMode: true, stream: true });
+
+			const result = await doRequestWithIR(ctx, { model: `google/${model}`, prompt: "test" } as any, createTiming());
+
+			expect((result as any).ok).toBe(true);
+			expect(executor.mock.calls.map(([args]) => args.providerId)).toEqual(expectedProviders);
+		} finally {
+			runtimeBindings.value = null;
+			vi.restoreAllMocks();
+		}
+	});
+
 	it.each([false, true])("retains first dispatch through a transport failure (fallback succeeds: %s)", async (recover) => {
 		const candidates = (recover ? ["openai", "other"] : ["openai"]).map((providerId) => ({
 			providerId, pricingCard: { currency: "USD", rules: [] }, byokMeta: [],
@@ -303,6 +619,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		try {
 			const result = await doRequestWithIR(ctx, { model: "model", prompt: "test" } as any, createTiming());
 			expect(ctx.meta.timeToUpstreamRequestMs).toBe(15);
+			expect(ctx.meta.upstreamFetchStartMs).toBe(1015);
 			expect(fetchSpy).toHaveBeenCalledTimes(recover ? 2 : 1);
 			if (recover) {
 				expect(result.ok).toBe(true);
@@ -415,6 +732,82 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(rankProvidersMock).not.toHaveBeenCalled();
 		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
 	});
+	it.each([
+		{ questions: { mug: { type: "box", instructions: "The mug" } } },
+		{ providerOptions: { typesafe: { long_context: true } } },
+	])("rejects unsupported decision features before provider execution: %j", async feature => {
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [{ providerId: "typesafe", inputModalities: ["text", "image"], capabilityParams: { images: true } }] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make" }), {
+			model: "typesafe/jev-1.13.0", state: "Photo", questions: {}, images: ["data:image/png;base64,AQID"], ...feature,
+		} as any, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(400);
+		expect(await (result as Response).json()).toMatchObject({ error: "unsupported_parameter" });
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
+	});
+	it.each([
+		{ audio: [{ type: "audio", source: "data", data: "AQID", format: "wav" }] },
+		{ videos: ["data:video/mp4;base64,AQID"] },
+	])("rejects unsupported decision media before provider selection: %j", async media => {
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [{ providerId: "openai", inputModalities: ["text", "image"], capabilityParams: { images: true } }] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make" }), {
+			model: "openai/gpt-6-luna", state: "Recording", questions: {}, ...media,
+		} as any, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(400);
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
+	});
+
+	it("rejects more questions than any route accepts and names the limit", async () => {
+		const questions = Object.fromEntries(Array.from({ length: 129 }, (_, index) => [`q${index}`, { type: "noul", instructions: "Safe?" }]));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [
+			{ providerId: "openai", inputModalities: ["text"], capabilityParams: {} },
+			{ providerId: "cloudflare", inputModalities: ["text"], capabilityParams: { max_questions: 64 } },
+		] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make", model: "openai/gpt-6-luna" }), {
+			model: "openai/gpt-6-luna", state: "Text", questions,
+		} as any, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(400);
+		expect(await (result as Response).json()).toMatchObject({
+			error: "unsupported_parameter",
+			message: "This request has 129 questions, and none of the routes available for this request accepts more than 128.",
+		});
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
+	});
+	it("reports the limit of the routes that support the request's other inputs", async () => {
+		const questions = Object.fromEntries(Array.from({ length: 65 }, (_, index) => [`q${index}`, { type: "box", instructions: "The mug" }]));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [
+			{ providerId: "text-only", inputModalities: ["text"], capabilityParams: { max_questions: 1000 } },
+			{ providerId: "typesafe", inputModalities: ["text", "image"], capabilityParams: { images: true, box: true, max_questions: 64 } },
+		] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make", model: "typesafe/jev-1.14.0" }), {
+			model: "typesafe/jev-1.14.0", state: "Photo", questions, images: ["data:image/png;base64,AQID"],
+		} as any, createTiming());
+		expect((result as Response).status).toBe(400);
+		expect(await (result as Response).json()).toMatchObject({
+			message: "This request has 65 questions, and none of the routes available for this request accepts more than 64.",
+		});
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+	});
+	it("reports the limit of the routes left after provider selection", async () => {
+		// The guard has already applied `provider.only`, which removed the route allowing 1,000.
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [
+			{ providerId: "cloudflare", inputModalities: ["text"], capabilityParams: { max_questions: 64 } },
+		] });
+		const questions = Object.fromEntries(Array.from({ length: 100 }, (_, index) => [`q${index}`, { type: "noul", instructions: "Safe?" }]));
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make", model: "google/gemini-decision-1" }), {
+			model: "google/gemini-decision-1", state: "Text", questions, providerOptions: undefined,
+		} as any, createTiming());
+		expect((result as Response).status).toBe(400);
+		expect(await (result as Response).json()).toMatchObject({
+			message: "This request has 100 questions, and none of the routes available for this request accepts more than 64.",
+		});
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+	});
 
 	it("still returns pricing guard failure on non-testing traffic when no pricing is preloaded", async () => {
 		const candidate = {
@@ -480,7 +873,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		const firstExecutor = vi.fn().mockResolvedValue({
 			kind: "completed",
 			ir: {},
-			upstream: new Response(JSON.stringify({ error: "rate_limited" }), {
+			upstream: new Response(JSON.stringify({ error: "rate_limited", usage: { input_tokens: 12, output_tokens: 0 } }), {
 				status: 429,
 				headers: {
 					"retry-after": "10",
@@ -520,6 +913,8 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(ctx.lifecycle?.events.map((event) => event.type)).toEqual(["routing.completed", "provider.admission", "provider.started", "provider.completed", "provider.admission", "provider.started", "provider.completed"]);
 		expect(ctx.lifecycle?.events.filter((event) => event.type === "provider.started").map((event) => event.call_kind)).toEqual(["initial", "retry"]);
 		expect(guardAllFailedMock).not.toHaveBeenCalled();
+		// The failed attempt is charged to token policies under its own attempt key.
+		expect(policyTokenChargeMock).toHaveBeenCalledWith(ctx, [undefined, { input_tokens: 12, output_tokens: 0 }, expect.objectContaining({ error: "rate_limited" })], "attempt:1:first");
 		expect(ctx.attemptErrors?.[0]?.upstream_rate_limit_headers).toEqual({
 			"Retry-After": "10",
 		});
@@ -637,6 +1032,38 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 				status: 200,
 			}),
 		]);
+	});
+
+	it("records a thrown executor error without its stack", async () => {
+		const pricingCard = { provider: "openai", model: "openai/gpt-image-1-mini", endpoint: "image.generate", currency: "USD", rules: [] };
+		const candidate = {
+			providerId: "first",
+			pricingCard,
+			byokMeta: [],
+			providerModelSlug: "gpt-image-1-mini",
+			capabilityParams: {},
+			maxInputTokens: null,
+			maxOutputTokens: null,
+		};
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [candidate] });
+		rankProvidersMock.mockResolvedValue([{ candidate, health: {} }]);
+		const thrown = new TypeError("Cannot read properties of undefined (reading 'data')");
+		thrown.stack = `TypeError: ${thrown.message}\n    at mapImages (worker.js:4321:9)\n    at async execute (worker.js:12:3)`;
+		resolveProviderExecutorMock.mockImplementation(() => vi.fn().mockRejectedValue(thrown));
+		const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		const ctx = createCtx({ testingMode: false });
+
+		await doRequestWithIR(ctx, { model: "openai/gpt-image-1-mini", prompt: "tiny blue square" } as any, createTiming());
+		consoleError.mockRestore();
+
+		for (const attempt of [ctx.attemptErrors[0], ctx.providerAttempts[0]]) {
+			expect(attempt).toMatchObject({
+				provider: "first",
+				upstream_error_message: "Cannot read properties of undefined (reading 'data')",
+				upstream_error_description: "executor_exception:TypeError",
+			});
+			expect(JSON.stringify(attempt)).not.toContain("worker.js");
+		}
 	});
 
 	it("skips breaker-blocked providers and falls back to the next candidate", async () => {
@@ -1114,5 +1541,121 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(executors.first).toHaveBeenCalledTimes(1);
 		expect(executors.second).not.toHaveBeenCalled();
 		expect(executors.third).not.toHaveBeenCalled();
+	});
+});
+
+describe("doRequestWithIR managed credentials", () => {
+	const pricingCard = { provider: "test", model: "deepseek/deepseek-v4-flash", endpoint: "chat.completions", currency: "USD", rules: [] };
+	const route = (providerId: string, extra: Record<string, unknown> = {}) => ({
+		providerId,
+		pricingCard,
+		byokMeta: [],
+		providerModelSlug: "deepseek-v4-flash",
+		capabilityParams: {},
+		maxInputTokens: null,
+		maxOutputTokens: null,
+		...extra,
+	});
+	const failing = (status: number, keySource: "gateway" | "byok" = "gateway") => vi.fn().mockResolvedValue({
+		kind: "completed",
+		ir: {},
+		upstream: new Response(JSON.stringify({ error: { message: "upstream said no" } }), { status }),
+		bill: { cost_cents: 0, currency: "USD" },
+		keySource,
+		byokKeyId: keySource === "byok" ? "byok_1" : null,
+	});
+	const run = (candidates: any[]) => {
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: candidates });
+		return doRequestWithIR(
+			createCtx({ endpoint: "chat.completions", capability: "text.generate", model: "deepseek/deepseek-v4-flash" }),
+			{ model: "deepseek/deepseek-v4-flash", messages: [{ role: "user", content: [{ type: "text", text: "hi" }] }] } as any,
+			createTiming(),
+		);
+	};
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		resetManagedCredentialStateForTests();
+		openAICompatTextProviders.clear();
+		for (const id of ["canopy-wave", "baseten", "atlascloud"]) openAICompatTextProviders.add(id);
+		runtimeBindings.value = { BASETEN_API_KEY: "bt-key", ATLAS_CLOUD_API_KEY: "atlas-key" };
+		guardPricingFoundMock.mockResolvedValue({ ok: true });
+		freeQuotaMock.mockResolvedValue(null);
+		policyGuardMock.mockResolvedValue(null);
+		guardAllFailedMock.mockResolvedValue({ ok: false, response: new Response(JSON.stringify({ error: "all_failed" }), { status: 502 }) });
+		admitThroughBreakerMock.mockResolvedValue("closed");
+		onCallStartMock.mockResolvedValue(undefined);
+		onCallEndMock.mockResolvedValue(undefined);
+		maybeOpenOnRecentErrorsMock.mockResolvedValue(undefined);
+		reportProbeResultMock.mockResolvedValue(undefined);
+		rankProvidersMock.mockImplementation(async (candidates: any[]) => candidates.map((candidate) => ({ candidate, health: {} })));
+	});
+
+	it("never tries a provider whose managed key is missing", async () => {
+		const executors: Record<string, ReturnType<typeof failing>> = { "canopy-wave": failing(500), baseten: failing(500) };
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => executors[providerId] ?? null);
+
+		await run([route("canopy-wave"), route("baseten")]);
+
+		expect(executors["canopy-wave"]).not.toHaveBeenCalled();
+		expect(executors.baseten).toHaveBeenCalledTimes(1);
+		expect(rankProvidersMock.mock.calls[0][0].map((candidate: any) => candidate.providerId)).toEqual(["baseten"]);
+	});
+
+	it("still sends a BYOK request to a provider without a managed key", async () => {
+		const executors: Record<string, ReturnType<typeof failing>> = { "canopy-wave": failing(500, "byok") };
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => executors[providerId] ?? null);
+		const byok = { id: "byok_1", providerId: "canopy-wave", fingerprintSha256: "f", keyVersion: "1", routingMode: "fallback", key: "sk-own" };
+
+		await run([route("canopy-wave", { byokMeta: [byok] })]);
+
+		expect(executors["canopy-wave"]).toHaveBeenCalledTimes(1);
+		expect(executors["canopy-wave"].mock.calls[0][0]).toMatchObject({ byokMeta: [expect.objectContaining({ id: "byok_1" })] });
+	});
+
+	it("returns a credentials error without any attempt when no candidate can authenticate", async () => {
+		const executors: Record<string, ReturnType<typeof failing>> = { "canopy-wave": failing(500) };
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => executors[providerId] ?? null);
+
+		const response = await run([route("canopy-wave")]) as Response;
+
+		expect(executors["canopy-wave"]).not.toHaveBeenCalled();
+		expect(response.status).toBe(502);
+		expect(await response.json()).toMatchObject({
+			error: "upstream_error",
+			reason: "canopy-wave_key_missing",
+			provider_failure_diagnostics: { category: "credentials_not_configured" },
+		});
+	});
+
+	it("skips a provider for managed traffic after its managed key returns 402", async () => {
+		const executors: Record<string, ReturnType<typeof failing>> = { atlascloud: failing(402), baseten: failing(500) };
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => executors[providerId] ?? null);
+
+		await run([route("atlascloud"), route("baseten")]);
+		expect(executors.atlascloud).toHaveBeenCalledTimes(1);
+
+		await run([route("atlascloud"), route("baseten")]);
+		expect(executors.atlascloud).toHaveBeenCalledTimes(1);
+		expect(executors.baseten).toHaveBeenCalledTimes(2);
+	});
+
+	it("does not let a customer's BYOK 402 affect anyone else", async () => {
+		const byok = { id: "byok_1", providerId: "atlascloud", fingerprintSha256: "f", keyVersion: "1", routingMode: "priority", key: "sk-own" };
+		// The customer's key is out of credit; the gateway's own key is fine.
+		const atlascloud = vi.fn(async (args: any) => {
+			const ownKey = (args.byokMeta ?? []).length > 0;
+			return (await failing(ownKey ? 402 : 500, ownKey ? "byok" : "gateway")());
+		});
+		const executors: Record<string, any> = { atlascloud, baseten: failing(500) };
+		resolveProviderExecutorMock.mockImplementation((providerId: string) => executors[providerId] ?? null);
+
+		await run([route("atlascloud", { byokMeta: [byok] }), route("baseten")]);
+		const firstRequestCalls = atlascloud.mock.calls.length;
+		expect(atlascloud.mock.calls[0][0].byokMeta).toHaveLength(1);
+
+		await run([route("atlascloud"), route("baseten")]);
+		expect(atlascloud).toHaveBeenCalledTimes(firstRequestCalls + 1);
+		expect(atlascloud.mock.calls.at(-1)![0].byokMeta ?? []).toHaveLength(0);
 	});
 });

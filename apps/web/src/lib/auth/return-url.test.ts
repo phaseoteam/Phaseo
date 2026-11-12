@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { sanitizeReturnUrl } from "./return-url";
 
 describe("sanitizeReturnUrl", () => {
@@ -12,6 +13,12 @@ describe("sanitizeReturnUrl", () => {
 	});
 	it.each(["/%2Fevil.example.com", "/%5Cevil.example.com", "/%0Asettings", "/%73ign-in", "/de-DE/%73ign-in"])("rejects unsafe encoded paths: %s", (path) => {
 		expect(sanitizeReturnUrl(path)).toBe("/");
+	});
+
+	it("drops the single-use token from credit top-up review links", () => {
+		const id = "00000000-0000-4000-8000-0000000000aa";
+		expect(sanitizeReturnUrl(`/settings/credits/topups/${id}?token=secret`)).toBe(`/settings/credits/topups/${id}`);
+		expect(sanitizeReturnUrl(encodeURIComponent(`/de-DE/settings/credits/topups/${id}?token=secret`))).toBe(`/de-DE/settings/credits/topups/${id}`);
 	});
 
 	it("accepts URL-encoded internal paths", () => {

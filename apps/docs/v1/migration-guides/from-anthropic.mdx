@@ -2,42 +2,35 @@
 title: "Migrating from Anthropic SDK"
 sidebarTitle: "Anthropic SDK"
 description: "Move an Anthropic SDK integration to Phaseo while keeping the Messages API workflow familiar."
+"og:image": "https://phaseo.app/og/dynamic?title=Migrating%20from%20Anthropic%20SDK&description=Move%20an%20Anthropic%20SDK%20integration%20to%20Phaseo%20while%20keeping%20the%20Messages%20API%20workflow%20familiar.&pathname=/docs/v1/migration-guides/from-anthropic"
 icon: "/icons/brands/anthropic.svg"
 ---
 
-Use this guide to keep your Anthropic SDK workflow while moving requests through Phaseo. Change the client configuration first, then verify model IDs and the Anthropic-specific behavior your application depends on.
+Keep the Anthropic SDK and the Messages call. Point the client at `https://api.phaseo.app`, pass your Phaseo key as `authToken`, and give each model its Phaseo ID.
 
-## What changes
-
-| Setting | Before | After |
+| Setting | Anthropic | Phaseo |
 | --- | --- | --- |
-| Base URL | Anthropic default | `https://api.phaseo.app/v1` |
-| API key | Anthropic key | `PHASEO_API_KEY` |
-| Model | Anthropic model name | A Phaseo model ID returned by `GET /v1/models` |
-| Messages call | Existing SDK call | Usually unchanged |
+| Base URL | SDK default (`https://api.anthropic.com`) | `https://api.phaseo.app` (the SDK appends `/v1/messages`) |
+| API key | `ANTHROPIC_API_KEY`, sent as `x-api-key` | `PHASEO_API_KEY` as `authToken` / `auth_token`, sent as `Authorization: Bearer` |
+| Model | `claude-sonnet-5-5` | `anthropic/claude-sonnet-5.5`, or any ID from `GET /v1/models` |
+| Messages call | `messages.create` | Unchanged |
 
-<Steps>
-<Step title="Create a Phaseo API key">
+## Switch the client
 
-Create a key in [Gateway Keys](https://phaseo.app/gateway/keys) and make it available to your application as `PHASEO_API_KEY`.
-
-</Step>
-
-<Step title="Update the Anthropic client">
-
-Point the SDK at the Phaseo base URL and use your Phaseo key.
+Create a key in [API Keys](https://phaseo.app/settings/keys), and make it available to the app as `PHASEO_API_KEY`.
 
 <CodeGroup>
 ```typescript TypeScript
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app",
 });
 
 const response = await client.messages.create({
-  model: "anthropic/claude-sonnet-4.6",
+  model: "anthropic/claude-sonnet-5.5",
   max_tokens: 256,
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
@@ -48,12 +41,12 @@ import os
 import anthropic
 
 client = anthropic.Anthropic(
-    api_key=os.environ["PHASEO_API_KEY"],
-    base_url="https://api.phaseo.app/v1",
+    auth_token=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app",
 )
 
 response = client.messages.create(
-    model="anthropic/claude-sonnet-4.6",
+    model="anthropic/claude-sonnet-5.5",
     max_tokens=256,
     messages=[{"role": "user", "content": "Reply with: migration ready"}],
 )
@@ -64,39 +57,47 @@ curl https://api.phaseo.app/v1/messages \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "max_tokens": 256,
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+Three details break this step most often:
 
-<Step title="Verify Anthropic-specific behavior">
+- **Use the root host.** `baseURL: "https://api.phaseo.app/v1"` produces `/v1/v1/messages`. OpenAI-compatible clients in the same repo still use `/v1`.
+- **Send the key as a bearer token.** The gateway reads only `Authorization: Bearer`; an `x-api-key` header gets `401` `missing_or_invalid_authorization_header`. `authToken` sends Bearer on every SDK version. `apiKey` does so only from `@anthropic-ai/sdk` 1.0 and `anthropic` 2.0 onwards.
+- **Remove `ANTHROPIC_API_KEY`** from environments that now call Phaseo. `apiKey: null` stops older TypeScript SDKs from reading it, and Python SDKs before 0.98 read it even when `auth_token` is set.
 
-Test system prompts, streaming, tool use, thinking or reasoning options, and structured output behavior with the exact models your application uses. Remove obsolete beta headers or request fields rather than carrying them into the new path blindly.
+Tools configured through environment variables, such as Claude Code, use `ANTHROPIC_BASE_URL=https://api.phaseo.app`, `ANTHROPIC_AUTH_TOKEN` set to the Phaseo key, and an empty `ANTHROPIC_API_KEY`.
 
-</Step>
+## Map model IDs
 
-<Step title="Roll out gradually">
+Check every production model against `data[].id` from `GET /v1/models?format=openai`. Phaseo IDs use dots in the version: `claude-sonnet-5-5` becomes `anthropic/claude-sonnet-5.5`. If the model is also changing, read the [model migration guide](../model-migrations) for it.
 
-Compare a representative prompt set across both configurations. Check output shape, latency, token usage, errors, and cost before shifting production traffic.
+## What works differently
 
-</Step>
-</Steps>
+| Anthropic feature | On Phaseo |
+| --- | --- |
+| `anthropic-version` header | Any value is accepted; Phaseo calls Claude with its own version. |
+| `anthropic-beta` headers | Not forwarded. Phaseo adds the betas its supported features need; beta-only body fields such as `mcp_servers` return `400`. |
+| `temperature`, `top_p`, `top_k` | Dropped where the model or route doesn't take them, and listed in `X-Phaseo-Dropped-Params`. |
+| `speed: "fast"` | Returns `400`. Use `service_tier: "fast"`. |
+| Native web search and web fetch tools | Accepted where the provider runs them, or use Phaseo's `phaseo:web_search` server tool. |
+| `cache_control` | Supported at the top level or per block. See [Prompt Caching](../guides/prompt-caching). |
+| `metadata.user_id` | Not used as the end-user ID. Send `user` or the `X-Phaseo-User-Id` header for end-user rate limit policies. |
+| Message Batches (`/v1/messages/batches`) | No such path. `/v1/batches` accepts `/v1/messages` rows in a different shape. |
+| Token counting (`/v1/messages/count_tokens`) | No equivalent. Keep it on Anthropic or estimate client-side. |
+| Files API (`client.beta.files`) | No equivalent. Send documents inline. |
+| `AnthropicBedrock`, `AnthropicVertex` clients | Replace with the plain `Anthropic` client; cloud auth and region settings don't apply. |
 
-## Migration checklist
+## Test and roll out
 
-- The Phaseo key is configured in every deployment environment.
-- The Anthropic client points to `https://api.phaseo.app/v1`.
-- Every production model ID is verified against `GET /v1/models`.
-- Streaming and tool-use flows pass in staging.
-- Anthropic-specific beta headers and parameters have been reviewed.
-- Rollback remains a configuration-only key and endpoint change.
+Test system prompts, streaming, tool use, thinking, and structured output with the exact model IDs the app uses. Then compare a representative prompt set across both configurations for output shape, latency, token usage, errors, and cost. Before moving traffic:
 
-## Next steps
-
-- [Anthropic model migrations](../model-migrations)
-- [Models](../exploring/models)
-- [Tool Calling](../guides/tool-calling)
+- the Phaseo key is set in every deployment environment;
+- every production model ID is in `GET /v1/models?format=openai`;
+- streaming and tool-use flows pass in staging;
+- each `anthropic-beta` header and beta-only field has been removed or replaced;
+- rollback is still only a base URL and key change.

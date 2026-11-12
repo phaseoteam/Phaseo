@@ -5,7 +5,7 @@ import type { Env } from "@/env";
 const mocks = vi.hoisted(() => ({
 	viewer: "33333333-3333-4333-8333-333333333333", workspace: "11111111-1111-4111-8111-111111111111", target: "22222222-2222-4222-8222-222222222222",
 	signedIn: true, allowedWorkspace: true, role: "admin", targetMember: true, keyCount: 1, pageRows: 1, historicalKey: false, usageError: false, logsError: false,
-	queries: [] as Array<{ table: string; columns?: string; filters: Array<[string, unknown]>; range?: number[]; limit?: number }>,
+	queries: [] as Array<{ table: string; columns?: string; filters: Array<[string, unknown]>; range?: number[]; limit?: number; excluded?: Array<[string, unknown]> }>,
 	rpc: vi.fn(), profile: vi.fn(),
 }));
 
@@ -26,7 +26,7 @@ vi.mock("./context", () => ({ requireAccountWorkspace: async () => mocks.allowed
 		const builder = {
 			select: (columns: string) => { query.columns = columns; return builder; },
 			eq: (key: string, value: unknown) => { query.filters.push([key, value]); return builder; },
-			neq: () => builder, gte: () => builder, lt: () => builder, order: () => builder,
+			neq: (key: string, value: unknown) => { query.excluded = [...(query.excluded ?? []), [key, value]]; return builder; }, gte: () => builder, lt: () => builder, order: () => builder,
 			range: (...bounds: number[]) => { query.range = bounds; return builder; },
 			limit: (limit: number) => { query.limit = limit; return builder; },
 			maybeSingle: async () => result(),
@@ -73,6 +73,10 @@ describe("workspace user profiles", () => {
 		expect(existence.limit).toBe(1);
 	});
 	it("paginates keys without broadening their creator scope", async () => { mocks.pageRows = 51; mocks.keyCount = 120; const payload = await (await load("&keyPage=2")).json() as any; expect(payload.keys).toHaveLength(50); expect(payload.hasMoreKeys).toBe(true); expect(mocks.queries.find((query) => query.table === "keys")?.range).toEqual([50, 100]); });
+	it("leaves out workload identity keys, which have no detail page", async () => {
+		await load();
+		expect(mocks.queries.find((query) => query.table === "keys" && query.range)?.excluded).toContainEqual(["key_kind", "workload_identity"]);
+	});
 	it("keeps failed analytics distinct from zero", async () => { mocks.rpc.mockResolvedValue({ data: null, error: { message: "unavailable" } }); expect(await (await load()).json()).toMatchObject({ analytics: null, profile: { name: "Alice" } }); });
 	it("keeps failed logs distinct from an empty list", async () => { mocks.logsError = true; expect(await (await load()).json()).toMatchObject({ logs: null }); });
 });

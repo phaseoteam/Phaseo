@@ -75,32 +75,49 @@ The script performs a Wrangler dry-run unless `-Deploy` is explicitly supplied.
 
 ## Deploy from Infisical
 
-Inject the production Infisical environment, then let the script copy only its
+Inject the production `/gateway` folder, then let the script copy only its
 regional allowlist into the Worker. The temporary JSON file used by Wrangler is
 deleted in a `finally` block and its contents are never printed:
 
 ```powershell
-infisical run --env=prod -- ./scripts/deploy-regional.ps1 -Region eu -SecretsFromEnvironment -Deploy
-infisical run --env=prod -- ./scripts/deploy-regional.ps1 -Region us -SecretsFromEnvironment -Deploy
+infisical run --env=prod --path=/gateway --include-imports=false -- ./scripts/deploy-regional.ps1 -Region eu -SecretsFromEnvironment -Deploy
+infisical run --env=prod --path=/gateway --include-imports=false -- ./scripts/deploy-regional.ps1 -Region us -SecretsFromEnvironment -Deploy
 ```
 
-The global deployment uses the same Infisical root through the GitHub OIDC
-action and forwards the global allowlist:
+The global deployment loads its named provider keys from `/provider-keys` and
+its Cloudflare and Discord settings from `/operations`. For a local deployment,
+inject both folders and forward only the global allowlist:
 
 ```powershell
-infisical run --env=prod -- ./scripts/deploy-global.ps1 -SecretsFromEnvironment -Deploy
+infisical run --env=prod --path=/provider-keys --include-imports=false -- infisical run --env=prod --path=/operations --include-imports=false -- ./scripts/deploy-global.ps1 -SecretsFromEnvironment -Deploy
 ```
 
 The GitHub deployment uses Infisical's OIDC action and the same script. Configure
 `INFISICAL_IDENTITY_ID` and `INFISICAL_PROJECT_SLUG` as GitHub repository
 variables. The machine identity must have read-only access to the production
-gateway secrets. The action reads the production root (`/`), where the current
-gateway and provider credentials are stored. No Infisical credential needs to
-be stored in GitHub.
+gateway secrets and their reference sources. No deployment reads the Infisical
+root, and no Infisical credential needs to be stored in GitHub.
+
+Keep provider values in `/provider-keys`, shared database settings in `/common`,
+and Cloudflare and Discord values in `/operations`. The `/gateway` folder holds
+gateway configuration plus explicit references to the credentials used by its
+deployment allowlist. For example, its `OPENAI_API_KEY` references
+`${prod.provider-keys.OPENAI_API_KEY}` and its `SUPABASE_SERVICE_ROLE_KEY`
+references `${prod.common.SUPABASE_SERVICE_ROLE_KEY}`. Add the corresponding
+reference when enabling a new regional credential; do not import whole folders
+and unintentionally activate another allowlisted credential.
+
+After this workflow change is merged and the folder reads have been verified,
+remove the old root references. Keep them until then so a deployment using the
+previous workflow can still run.
 
 The scripts deliberately ignore unrelated Infisical values. Extend the relevant
 allowlist when a provider is enabled for a new Worker. A manual external secrets
 file remains available through `-SecretsFile` for regional recovery.
+
+Reflection uses `REFLECTION_API_KEY` from `/provider-keys` in the production
+Infisical environment. CI loads it for the global, EU, and US gateway Workers;
+both deployment scripts forward it under the same binding name.
 
 ## Verify the control plane
 

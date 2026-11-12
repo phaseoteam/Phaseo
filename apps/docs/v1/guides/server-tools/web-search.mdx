@@ -2,32 +2,17 @@
 icon: "search-check"
 title: "Web Search Server Tool"
 description: "Let models search the web during a request."
+"og:image": "https://phaseo.app/og/dynamic?title=Web%20Search%20Server%20Tool&description=Let%20models%20search%20the%20web%20during%20a%20request.&pathname=/docs/v1/guides/server-tools/web-search"
 ---
 
-Use `phaseo:web_search` when the model needs current or source-backed information. The model decides when to search, writes the query, and can search multiple times in one request.
-
-Phaseo returns URLs, titles, snippets, highlights, and optional page text to the model so it can write a grounded response.
-
-<Note>
-TinyFish Search is available as an optional managed engine. Provider-native search remains available through `engine: "native"` on supported routes.
-</Note>
-
-## How it works
-
-1. Add `{ "type": "phaseo:web_search" }` to `tools`.
-2. The model decides whether it needs a search and emits a query.
-3. Phaseo executes the search using the configured engine.
-4. Results are returned to the model as tool context.
-5. The model writes the final response and may search again if needed.
-
-## Quick start
+Add `phaseo:web_search` so the model can search the web when it needs current or sourced information. The model writes the query and can search several times in one request; Phaseo returns URLs, titles, snippets, highlights, and optionally page text, and the model writes a grounded answer.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What were the major AI announcements this week?" }
     ],
@@ -37,7 +22,9 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Configuration
+The same tool entry works in `tools` on `/v1/responses` and `/v1/messages`.
+
+## Parameters
 
 ```json
 {
@@ -49,7 +36,6 @@ curl https://api.phaseo.app/v1/chat/completions \
     "search_context_size": "medium",
     "max_characters": 2048,
     "allowed_domains": ["arxiv.org", "nature.com"],
-    "excluded_domains": ["reddit.com"],
     "include_highlights": true,
     "include_text": false
   }
@@ -58,90 +44,70 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | Search engine: `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity`, or `tinyfish`. |
-| `max_results` | integer | `5` | Maximum results returned per search call. |
-| `max_total_results` | integer | `10` | Maximum cumulative results across the server-tool loop. |
-| `max_uses` | integer | `10` | Maximum search calls across the server-tool loop. |
-| `search_context_size` | string | `medium` | Context size for engines that support highlight sizing: `low`, `medium`, or `high`. |
-| `max_characters` | integer | engine default | Maximum text characters per result when text is included. |
-| `allowed_domains` | string[] | none | Only return results from these domains. Alias: `include_domains`. |
-| `excluded_domains` | string[] | none | Exclude results from these domains. Alias: `exclude_domains`. |
-| `include_highlights` | boolean | `true` | Include engine-provided highlights/snippets when available. |
-| `include_text` | boolean | `false` | Include fuller result text when the engine supports it. |
-| `user_location` | object | none | Optional location hint for engines that support localized search. |
-| `language` | string | none | TinyFish language hint, such as `en`. |
-| `page` | integer | `0` | TinyFish result page, from `0` through `10`. |
+| `engine` | string | `exa` | `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity`, or `tinyfish`. See [Choose an engine](#choose-an-engine). |
+| `max_results` | integer | `5` | Results per search call, up to `25`. |
+| `max_total_results` | integer | `25` | Results across all searches in the request, up to `100`. Never lower than `max_results`. |
+| `max_uses` | integer | `10` | Search calls per request, up to `100`. |
+| `search_context_size` | string | `medium` | `low`, `medium`, or `high`, for engines that size highlights. |
+| `max_characters` | integer | Engine default | Text characters per result when text is included. |
+| `allowed_domains` | string[] | None | Search only these domains. Alias: `include_domains`. |
+| `excluded_domains` | string[] | None | Leave these domains out. Alias: `exclude_domains`. |
+| `include_highlights` | boolean | `true` | Include the engine's highlights or snippets. |
+| `include_text` | boolean | `false` | Include fuller page text where the engine supports it. |
+| `user_location` | object | None | Location hint passed to the provider's own search when `engine` is `native`. |
 
-## Engine selection
+## What the model sends
 
-| Engine | Behavior |
+Each call has a `query`. The model can also send `max_results`, `engine`, `search_context_size`, the domain lists, `include_text`, `include_highlights`, `max_characters`, and these localization hints:
+
+| Argument | Description |
 | --- | --- |
-| `exa` | Managed Exa search. Requires Phaseo to have Exa configured for the gateway runtime. |
-| `auto` | Uses the configured managed default, currently Exa. |
-| `parallel` | Uses Parallel search when configured. |
-| `firecrawl` | Uses Firecrawl search when configured. |
-| `perplexity` | Uses the first-party Perplexity Search API when configured. Supports ranked results, `search_context_size`, regional search from `user_location.country`, and either allowed or excluded domains. |
-| `tinyfish` | Uses TinyFish Search when `TINYFISH_API_KEY` is configured. Supports localized, paginated ranked results and translates `allowed_domains` / `excluded_domains` into search operators. TinyFish Search does not supply full page text; use `phaseo:web_fetch` when fuller content is needed. |
-| `native` | Converts the declaration to a provider-native web-search tool before the upstream model call when the request surface supports it. |
+| `user_location` | Approximate location. Perplexity uses `user_location.country` for regional search; TinyFish uses the country and language. |
+| `language` | Result language code, such as `en`, for engines that localize. |
+| `page` | Result page `0` to `10`, for TinyFish. |
 
-Use `engine: "native"` only in the tool declaration. If a model tries to pass `engine: "native"` inside an already-emitted gateway search call, Phaseo returns a tool error because native tools must be selected before the upstream request is sent.
+Values the model sends replace the tool's defaults for that call. `max_results` is still capped by what's left of `max_total_results`; once that runs out, further calls return `max_total_results_reached`.
 
-## TinyFish Search
+## Choose an engine
 
-Enable the engine by configuring `TINYFISH_API_KEY` in your Phaseo gateway runtime secrets, then select it in the tool parameters:
+| Engine | What runs |
+| --- | --- |
+| `exa` | Managed Exa search. The default. |
+| `auto` | The managed default, currently Exa. |
+| `parallel` | Managed Parallel search. |
+| `firecrawl` | Managed Firecrawl search. |
+| `perplexity` | The Perplexity Search API: ranked results, `search_context_size`, and regional search from `user_location.country`. |
+| `tinyfish` | TinyFish Search: localized, paginated ranked results. It returns snippets, not full page text; use [`phaseo:web_fetch`](./web-fetch) when the model needs more. |
+| `native` | The provider's own web search tool, such as OpenAI's `web_search_preview` or Anthropic's `web_search_20250305`. |
 
-```json
-{
-  "type": "phaseo:web_search",
-  "parameters": {
-    "engine": "tinyfish",
-    "language": "en",
-    "page": 0,
-    "max_results": 5,
-    "allowed_domains": ["phaseo.app", "github.com"],
-    "excluded_domains": ["reddit.com"]
-  }
-}
-```
+If a managed engine isn't enabled, the call returns `search_not_configured` to the model.
 
-`language` provides a locale hint and `page` selects a result page from `0` through `10`. TinyFish supports both domain-filter lists; Phaseo converts them into search operators. Results include URLs, titles, and snippets/highlights. Use `phaseo:web_fetch` when the model needs fuller text from a result.
+With `engine: "native"` on `/v1/chat/completions` or `/v1/responses`, the request goes only to providers that run web search themselves. If none serve the model, Phaseo runs its default engine instead and bills it as managed search. Set `native` in the tool definition only: if the model asks for `native` in a call, the call returns `unsupported_search_engine`, because the provider's tool has to be chosen before the request is sent.
 
-## Domain filtering
+## Filter by domain
 
-Use `allowed_domains` when the answer must come from a controlled source set:
+Use `allowed_domains` when the answer must come from a fixed set of sources, and `excluded_domains` to drop specific sites from an otherwise open search.
 
 ```json
 {
   "type": "phaseo:web_search",
-  "parameters": {
-    "allowed_domains": ["phaseo.app", "github.com"]
-  }
+  "parameters": { "allowed_domains": ["phaseo.app", "github.com"] }
 }
 ```
 
-Use `excluded_domains` when broad web search is allowed but specific domains should be removed from the result set.
+Engines handle the lists differently:
 
-Perplexity and Firecrawl accept either `allowed_domains` or `excluded_domains` in a single search call, not both. Perplexity accepts up to 20 domain filters per request and maps excluded domains to its denylist format. TinyFish translates both arrays to `site:` and `-site:` operators in the query.
+- **Perplexity** takes either list, not both, and up to 20 domains. Excluded domains are sent as its deny-list format.
+- **Firecrawl** takes either list, not both.
+- **TinyFish** takes both and turns them into `site:` and `-site:` operators in the query.
 
-TinyFish Search is free on its published plans, so Phaseo does not add a provider usage charge for `engine: "tinyfish"`; normal Phaseo request and token pricing still applies.
+## What the tool returns
 
-## Responses API
-
-The same tool shape works with `/v1/responses`:
-
-```json
-{
-  "model": "openai/gpt-5-nano",
-  "input": "Find the latest release notes for Phaseo.",
-  "tools": [
-    { "type": "phaseo:web_search", "parameters": { "max_results": 4 } }
-  ]
-}
-```
+A JSON result with the engine, the query, and a `results` array. Each result has a `title`, `url`, `snippet` or `highlights`, and `text` when page text was requested and the engine supplies it.
 
 ## Usage and pricing
 
-Web search calls increment:
+Each search adds to `usage.server_tool_use`:
 
 ```json
 {
@@ -155,10 +121,4 @@ Web search calls increment:
 }
 ```
 
-Managed search pricing can use `server_tool_web_search_requests` and `server_tool_web_search_extra_results`. Provider-native search usage can use `native_web_search_requests` where a model price card defines that meter.
-
-## Related
-
-- [Web Fetch](./web-fetch)
-- [Server Tools](./index)
-- [Tool grounding with web fetch](../../cookbook/tool-grounding-with-web-fetch)
+Phaseo bills each managed search at $0.007, plus $0.001 for each result past the first 10, unless the model's price card sets its own `server_tool_web_search_requests` and `server_tool_web_search_extra_results` prices. Failed searches are not billed, and TinyFish Search is free on its published plans, so `engine: "tinyfish"` adds no search charge. Searches on paid engines need credits even when the model is free. Native search is billed with `native_web_search_requests` where the model's price card defines it.

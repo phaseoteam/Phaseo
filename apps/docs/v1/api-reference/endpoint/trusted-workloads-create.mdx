@@ -1,0 +1,11 @@
+---
+title: "Create trusted workload policy"
+sidebarTitle: "Create trusted workload policy"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml POST /workload-identity/policies"
+description: "Create a trust policy so a Vercel deployment or GitHub Actions workflow can call Phaseo with its OIDC token instead of an API key."
+"og:image": "https://phaseo.app/og/dynamic?title=Create%20trusted%20workload%20policy&description=Create%20a%20trust%20policy%20so%20a%20Vercel%20deployment%20or%20GitHub%20Actions%20workflow%20can%20call%20Phaseo%20with%20its%20OIDC%20token%20instead%20of%20an%20API%20key.&pathname=/docs/v1/api-reference/endpoint/trusted-workloads-create"
+---
+<Note>Requires `keys:write` on a management key or OAuth token, or a workspace owner or admin. Trusted workloads is in beta; workspaces without it get `404`.</Note>
+
+See [Trusted Workloads](../../developers/trusted-workloads.mdx) for how policies work and how to manage them with Terraform.

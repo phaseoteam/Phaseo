@@ -1,0 +1,34 @@
+{
+	"id": "infermatic",
+	"source": {
+		"url": null,
+		"docs": "https://ui.infermatic.ai/docs",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Recorded from a web-search summary. Models without a chat template are rejected on /v1/chat/completions."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"temperature": {},
+					"max_tokens": {},
+					"top_p": {},
+					"top_k": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

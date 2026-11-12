@@ -1,0 +1,33 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "app.phaseo/phaseo",
+  "title": "Phaseo",
+  "description": "Live AI models, pricing, benchmarks and cost estimates, plus your Phaseo usage and request health.",
+  "version": "0.5.0",
+  "websiteUrl": "https://phaseo.app/docs",
+  "repository": {
+    "url": "https://github.com/phaseoteam/Phaseo",
+    "source": "github",
+    "subfolder": "apps/mcp"
+  },
+  "icons": [
+    {
+      "src": "https://phaseo.app/png_logo_light.png",
+      "mimeType": "image/png",
+      "sizes": ["1024x1024"],
+      "theme": "light"
+    },
+    {
+      "src": "https://phaseo.app/png_logo_dark.png",
+      "mimeType": "image/png",
+      "sizes": ["1024x1024"],
+      "theme": "dark"
+    }
+  ],
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  ]
+}

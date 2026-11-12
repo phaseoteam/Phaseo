@@ -1,47 +1,44 @@
 ---
 title: "Pi"
 icon: "/icons/brands/pi.svg"
-description: "インストール済みのPiモデルカタログをPhaseo Gatewayに接続します。"
+description: "インストール済みの Pi のモデルカタログを Phaseo Gateway に接続します。"
 ---
 
-## Phaseo CLIで設定する
+`phaseo pi` を実行すると、互換性のあるすべての Phaseo モデルを含む Phaseo のプロバイダー拡張機能が Pi に追加されます。
 
-本番環境向けのこれらのコマンドにはPhaseoアカウントが必要です。CLIはログインとセットアップ時に専用のGateway資格情報を作成します。
+## Phaseo CLI で設定する
 
 ```bash
 phaseo login
 phaseo pi
 ```
 
-まずPiの公式リリースをインストールします。セットアップにより、管理対象のプロバイダー拡張機能が`~/.pi/agent/extensions/phaseo.ts`に作成されます。この拡張機能はChat Completions対応の有効なPhaseoテキストモデルをすべて公開し、各リクエスト時にPhaseo CLIから専用APIキーを取得します。
+Pi がインストールされていない場合、CLI は公式のインストールコマンドを表示し、実行する前に確認します。その後、セットアップは `Phaseo CLI: Pi API Key`（有効期限 90 日、月額 $100 の利用上限）を作成し、`~/.pi/agent/extensions/phaseo.ts` にプロバイダー拡張機能を書き込みます。拡張機能には、Chat Completions で動作する Phaseo の有効なテキストモデルがすべて登録されます。
 
-初期モデルを選ぶか、必要に応じて1つのモデルだけを設定します。
+| フラグ | 効果 |
+| --- | --- |
+| `--model <id>` | 最初のモデルを設定します。デフォルトは `anthropic/claude-sonnet-4.6` です。 |
+| `--catalog default` | 選択したモデルだけを追加します。 |
+| `--dry-run` | ファイルを変更せずに、変更内容を表示します。 |
 
-```bash
-phaseo pi --model anthropic/claude-sonnet-4.6
-phaseo pi --catalog default
-```
-
-ファイルの変更内容を事前に確認するには`--dry-run`を使います。
-
-## 起動して確認する
-
-```bash
-pi
-```
-
-「/model」を開いて`phaseo`プロバイダーを選び、簡単なプロンプトを送ります。管理対象の拡張機能だけを削除し、専用キーを失効させるには、次を実行します。
-
-```bash
-phaseo integrations remove pi
-```
-
-## 資格情報への手動アクセス
-
-生成された拡張機能は、Piのコマンド連携型キー構文を使います。
+拡張機能は、Pi のコマンドでキーを取得する構文を使ってリクエスト時にキーを取得するため、平文のキーはファイルに書き込まれません。
 
 ```text
 !phaseo integrations credential pi
 ```
 
-拡張機能にキーが平文で書き込まれることはありません。
+## 動作を確認する
+
+```bash
+pi
+```
+
+`/model` を開いて `phaseo` プロバイダーを選び、短いプロンプトを送信します。**設定 → 利用状況 → ログ**にリクエストが表示されることを確認します。
+
+## Phaseo を削除する
+
+```bash
+phaseo integrations remove pi
+```
+
+これにより、Phaseo の拡張機能だけが削除され、キーが失効します。

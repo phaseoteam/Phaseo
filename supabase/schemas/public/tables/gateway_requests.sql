@@ -103,7 +103,10 @@ CREATE TABLE "public"."gateway_requests" (
   "attributed_department_id"          uuid,
   "attributed_department_name"        text,
   "attributed_department_color"       text,
-  "attribution_basis"                 text
+  "attribution_basis"                 text,
+  "billing_request_id"                text,
+  "expected_cost_nanos"               bigint,
+  CONSTRAINT "gateway_requests_expected_cost_nanos_check" CHECK ((expected_cost_nanos >= 0))
 ) PARTITION BY RANGE (created_at);
 
 ALTER TABLE "public"."gateway_requests"
@@ -346,13 +349,24 @@ ALTER TABLE "public"."gateway_requests"
   ADD CONSTRAINT "gateway_requests_key_id_fkey" FOREIGN KEY (key_id) REFERENCES public.keys(id) ON DELETE SET NULL;
 
 ALTER TABLE "public"."gateway_requests"
-  ADD CONSTRAINT "gateway_requests_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE;
+  ADD CONSTRAINT "gateway_requests_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT;
+
+CREATE INDEX gateway_requests_async_spend_idx ON ONLY public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos)
+  WHERE ((success IS TRUE) AND (endpoint = ANY (ARRAY['video.generation'::text, 'batch'::text, 'music.generate'::text, 'audio.realtime'::text])));
 
 CREATE INDEX gateway_requests_auth_method_idx ON ONLY public.gateway_requests USING btree (auth_method)
   WHERE (auth_method = 'oauth'::text);
 
 CREATE INDEX gateway_requests_finish_reason_created_idx ON ONLY public.gateway_requests USING btree (finish_reason, created_at DESC)
   WHERE (finish_reason IS NOT NULL);
+
+-- In migration order: partitions name their copies of these two from the same truncated columns,
+-- numbered in creation order (expected_cost ..._co_idx1, charged_unsuccessful ..._co_idx2).
+CREATE INDEX gateway_requests_expected_cost_idx ON ONLY public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos, expected_cost_nanos, request_id, billing_request_id)
+  WHERE (expected_cost_nanos IS NOT NULL);
+
+CREATE INDEX gateway_requests_charged_unsuccessful_cost_idx ON ONLY public.gateway_requests USING btree (workspace_id, created_at) INCLUDE (key_id, cost_nanos)
+  WHERE ((success IS NOT TRUE) AND (cost_nanos > 0));
 
 CREATE INDEX gateway_requests_key_id_idx ON ONLY public.gateway_requests USING btree (key_id)
   WHERE (key_id IS NOT NULL);
@@ -381,6 +395,9 @@ CREATE INDEX gateway_requests_success_workspace_cost_idx ON ONLY public.gateway_
   WHERE (success IS TRUE);
 
 CREATE INDEX gateway_requests_workspace_auth_method_created_idx ON ONLY public.gateway_requests USING btree (workspace_id, auth_method, created_at DESC);
+
+CREATE INDEX gateway_requests_workspace_billing_request_idx ON ONLY public.gateway_requests USING btree (workspace_id, billing_request_id)
+  WHERE (billing_request_id IS NOT NULL);
 
 CREATE INDEX gateway_requests_workspace_client_source_time_idx ON ONLY public.gateway_requests USING btree (workspace_id, client_source_id, created_at DESC)
   WHERE (client_source_id IS NOT NULL);
@@ -516,6 +533,13 @@ CREATE POLICY "gateway_requests_select_own_team" ON "public"."gateway_requests"
   TO "authenticated"
   USING (public.is_workspace_member(workspace_id));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_requests"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "service_role_full_access" ON "public"."gateway_requests_2026_03"
   FOR ALL
   TO "service_role"
@@ -578,7 +602,13 @@ CREATE POLICY "service_role_full_access" ON "public"."gateway_requests_default"
   USING (true)
   WITH CHECK (true);
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_requests" TO "anon", "authenticated", "service_role";
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_requests" TO "service_role";
+
+-- Clients read every column except detail_metadata (search queries, results and fetched URLs); the apps read it
+-- with the service role and apply the workspace contents setting. New columns need a grant here to be client-readable.
+GRANT SELECT ("api_model_id", "app_id", "attributed_access_role", "attributed_department_color", "attributed_department_id", "attributed_department_name", "attributed_user_id", "attribution_basis", "auth_method", "billing_request_id", "byok", "canonical_model_id", "client_source_detection", "client_source_id", "client_source_kind", "client_source_name", "client_source_version", "cost_nanos", "created_at", "currency", "end_user_id", "endpoint", "error_code", "error_message", "error_payload", "expected_cost_nanos", "finish_reason", "gateway_ttft_ms", "generation_ms", "id", "is_free_variant", "itl_ms", "key_id", "latency_ms", "location", "model_id", "native_response_id", "oauth_client_id", "oauth_user_id", "output_speed_tps", "phaseo_overhead_ms", "pricing_lines", "pricing_plan", "provider", "provider_attempts", "provider_ttft_ms", "realtime_session_id", "request_id", "requested_model_id", "routed_model_id", "session_id", "status_code", "stream", "success", "throughput", "tpot_ms", "trace_data", "usage", "usage_audio_inputs", "usage_audio_outputs", "usage_audio_seconds", "usage_cached_read_audio_tokens", "usage_cached_read_image_tokens", "usage_cached_read_text_tokens", "usage_cached_read_tokens", "usage_cached_read_video_tokens", "usage_cached_write_audio_tokens", "usage_cached_write_image_tokens", "usage_cached_write_text_tokens", "usage_cached_write_text_tokens_1h", "usage_cached_write_text_tokens_5m", "usage_cached_write_tokens", "usage_cached_write_video_tokens", "usage_embedding_quad_tokens", "usage_embedding_tokens", "usage_image_inputs", "usage_image_megapixels", "usage_image_outputs", "usage_input_audio_tokens", "usage_input_characters", "usage_input_image_tokens", "usage_input_quad_tokens", "usage_input_text_tokens", "usage_input_tokens", "usage_input_video_tokens", "usage_moderation_quad_tokens", "usage_normalized_at", "usage_ocr_quad_tokens", "usage_output_audio_tokens", "usage_output_characters", "usage_output_image_tokens", "usage_output_quad_tokens", "usage_output_text_tokens", "usage_output_tokens", "usage_output_video_tokens", "usage_reasoning_tokens", "usage_rerank_quad_tokens", "usage_text_quad_tokens", "usage_total_characters", "usage_total_quad_tokens", "usage_total_tokens", "usage_video_inputs", "usage_video_outputs", "usage_video_pixel_seconds", "usage_video_seconds", "workspace_id") ON TABLE "public"."gateway_requests" TO "anon";
+
+GRANT SELECT ("api_model_id", "app_id", "attributed_access_role", "attributed_department_color", "attributed_department_id", "attributed_department_name", "attributed_user_id", "attribution_basis", "auth_method", "billing_request_id", "byok", "canonical_model_id", "client_source_detection", "client_source_id", "client_source_kind", "client_source_name", "client_source_version", "cost_nanos", "created_at", "currency", "end_user_id", "endpoint", "error_code", "error_message", "error_payload", "expected_cost_nanos", "finish_reason", "gateway_ttft_ms", "generation_ms", "id", "is_free_variant", "itl_ms", "key_id", "latency_ms", "location", "model_id", "native_response_id", "oauth_client_id", "oauth_user_id", "output_speed_tps", "phaseo_overhead_ms", "pricing_lines", "pricing_plan", "provider", "provider_attempts", "provider_ttft_ms", "realtime_session_id", "request_id", "requested_model_id", "routed_model_id", "session_id", "status_code", "stream", "success", "throughput", "tpot_ms", "trace_data", "usage", "usage_audio_inputs", "usage_audio_outputs", "usage_audio_seconds", "usage_cached_read_audio_tokens", "usage_cached_read_image_tokens", "usage_cached_read_text_tokens", "usage_cached_read_tokens", "usage_cached_read_video_tokens", "usage_cached_write_audio_tokens", "usage_cached_write_image_tokens", "usage_cached_write_text_tokens", "usage_cached_write_text_tokens_1h", "usage_cached_write_text_tokens_5m", "usage_cached_write_tokens", "usage_cached_write_video_tokens", "usage_embedding_quad_tokens", "usage_embedding_tokens", "usage_image_inputs", "usage_image_megapixels", "usage_image_outputs", "usage_input_audio_tokens", "usage_input_characters", "usage_input_image_tokens", "usage_input_quad_tokens", "usage_input_text_tokens", "usage_input_tokens", "usage_input_video_tokens", "usage_moderation_quad_tokens", "usage_normalized_at", "usage_ocr_quad_tokens", "usage_output_audio_tokens", "usage_output_characters", "usage_output_image_tokens", "usage_output_quad_tokens", "usage_output_text_tokens", "usage_output_tokens", "usage_output_video_tokens", "usage_reasoning_tokens", "usage_rerank_quad_tokens", "usage_text_quad_tokens", "usage_total_characters", "usage_total_quad_tokens", "usage_total_tokens", "usage_video_inputs", "usage_video_outputs", "usage_video_pixel_seconds", "usage_video_seconds", "workspace_id") ON TABLE "public"."gateway_requests" TO "authenticated";
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_requests_2026_03" TO "service_role";
 
@@ -599,6 +629,10 @@ GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON
 COMMENT ON COLUMN "public"."gateway_requests"."api_model_id" IS 'Concrete provider API model id executed for this request, preserving variants such as :free, -fast, or -flex.';
 
 COMMENT ON COLUMN "public"."gateway_requests"."auth_method" IS 'Authentication method used for the request: api_key (legacy HMAC keys) or oauth (JWT tokens)';
+
+COMMENT ON COLUMN "public"."gateway_requests"."expected_cost_nanos" IS 'Expected cost of a delivered request whose wallet charge did not go through (pending reconciliation); NULL otherwise. cost_nanos is what the wallet took. Budgets count greatest(cost_nanos, expected_cost_nanos).';
+
+COMMENT ON COLUMN "public"."gateway_requests"."billing_request_id" IS 'Wallet charge key for this attempt: gateway_request_charges.request_id in the same workspace. Null for rows written before it was recorded, requests rejected before execution, and requests billed through wallet reservations.';
 
 COMMENT ON COLUMN "public"."gateway_requests"."detail_metadata" IS 'Request-level routing, provider, guardrail, and plugin diagnostics for observability detail views.';
 

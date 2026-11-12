@@ -1,63 +1,68 @@
 ---
 title: "Receitas"
 icon: "chef-hat"
-description: "Receitas práticas e baseadas em cenários para criar com o Phaseo."
+description: "Receitas práticas, baseadas em cenários, para criar com o Phaseo."
 ---
 
-Use este guia de receitas quando já souber o que quer construir e precisar de um caminho funcional da configuração à verificação.
+Escolha uma receita pelo que você quer criar. Cada uma começa pelo resultado final e depois traz os passos, o código completo, como executá-lo e como conferir se funcionou. Cada receita diz se o código está pronto para produção ou se é um ponto de partida que você precisa terminar.
 
-## Comece com uma solicitação funcional
+Todos os exemplos usam `https://api.phaseo.app/v1` e leem a sua chave de `PHASEO_API_KEY`.
+
+## Envie a sua primeira solicitação
 
 <Columns cols={2}>
-	<Card title="Comece pelo roteador gratuito" icon="route" href="./free-router-first-deploy.mdx">
-		Envie uma solicitação real sem precisar escolher ou financiar um modelo específico antes.
+	<Card title="Comece com o roteador gratuito" icon="route" href="./free-router-first-deploy">
+		Envie uma solicitação real para `phaseo/free` antes de escolher ou pagar por um modelo.
 	</Card>
-	<Card title="Crie um app de chat web com Next.js" icon="message-square" href="./build-a-nextjs-web-chat-app.mdx">
-		Crie uma interface de chat no navegador mantendo a chave de API do Phaseo no servidor.
-	</Card>
-	<Card title="Crie um app Node REST para teste rápido" icon="terminal" href="./build-a-node-rest-smoke-app.mdx">
-		Use HTTP diretamente para verificar uma integração de backend com o menor exemplo prático possível.
-	</Card>
-	<Card title="Crie uma CLI de gateway em Python" icon="terminal-square" href="./build-a-python-gateway-cli.mdx">
-		Crie um fluxo de trabalho de linha de comando com o SDK Python.
+	<Card title="Prompts iniciais para miniaplicativos" icon="square-terminal" href="./mini-app-starter-prompts">
+		Cole um prompt em um agente de programação e receba um pequeno aplicativo funcionando.
 	</Card>
 </Columns>
 
-<Tip>
-  Quer que um agente de programação crie a estrutura inicial do projeto? Comece com os [prompts iniciais para mini apps](./mini-app-starter-prompts.mdx).
-</Tip>
+## Crie um aplicativo
 
-## Escolha uma receita pelo resultado desejado
+| Receita | O que você recebe | Chama o Phaseo com |
+| --- | --- | --- |
+| [Aplicativo de chat web com Next.js](./build-a-nextjs-web-chat-app) | Uma interface de chat no navegador com seletor de modelo | `fetch` no servidor |
+| [Workbench OAuth com Next.js](./build-an-oauth-nextjs-workbench) | Login, um proxy que renova tokens, chat e um testador de endpoints | `fetch` no servidor com tokens OAuth |
+| [Aplicativo de smoke test REST com Node](./build-a-node-rest-smoke-app) | Um script de smoke test sem dependências | `fetch` direto |
+| [CLI do Gateway em Python](./build-a-python-gateway-cli) | Uma CLI com a biblioteca padrão para vários endpoints | `urllib` |
 
-<Columns cols={2}>
-	<Card title="Criar uma aplicação" icon="layout-template" href="./build-a-nextjs-web-chat-app.mdx">
-		Siga tutoriais completos para apps web, ambientes de trabalho autenticados, scripts de backend e CLIs.
-	</Card>
-	<Card title="Controlar o roteamento e as políticas" icon="route" href="./preset-rollout-and-routing-debug.mdx">
-		Implemente presets, escolha provedores, aplique requisitos de residência e controle chaves de API.
-	</Card>
-	<Card title="Pesquisar e retornar dados estruturados" icon="search-check" href="./sdk-typescript-managed-search.mdx">
-		Enriqueça as solicitações com busca na web ou busca de conteúdo e depois valide e recupere saídas estruturadas.
-	</Card>
-	<Card title="Comece com um Agent SDK" icon="bot" href="./agent-sdk-durable-loop.mdx">
-		Crie um loop de ferramentas com limites em TypeScript, Python, Go, C#, Java, PHP ou Ruby.
-	</Card>
-	<Card title="Crie fluxos de trabalho avançados para agentes" icon="workflow" href="./agent-sdk-research-brief.mdx">
-		Adicione pesquisa, revisão humana, ferramentas paralelas, saídas estruturadas e fluxos de trabalho de programação.
-	</Card>
-</Columns>
+## Controle o roteamento e as políticas
 
-## Receitas populares
+| Receita | Use para |
+| --- | --- |
+| [Implante uma predefinição](./preset-rollout-and-routing-debug) | Migrar chamadores para uma predefinição e explicar para onde cada solicitação foi |
+| [Ordene provedores](./sort-providers-by-price-latency-or-throughput) | Classificar os provedores de um modelo por preço, latência ou throughput |
+| [Fixe ou ignore provedores](./pin-or-ignore-providers-per-request) | Preferir, permitir ou pular provedores em uma solicitação |
+| [Roteie só para provedores na UE ou com ZDR](./route-only-to-eu-or-zdr-providers) | Adicionar regras de residência e de retenção zero de dados a uma solicitação |
+| [Guardrails para chaves de API](./guardrails-for-api-keys) | Restringir modelos e provedores e verificar os prompts de uma chave |
 
-- [Ordenar provedores por preço, latência ou throughput](./sort-providers-by-price-latency-or-throughput.mdx)
-- [Roteie apenas para provedores da UE ou ZDR](./route-only-to-eu-or-zdr-providers.mdx)
-- [Corrigir JSON estruturado malformado](./response-healing-for-structured-json.mdx)
-- [Pesquisar com busca na web baseada em agentes](./agent-sdk-research-brief.mdx)
-- [Executar ferramentas locais de agentes em paralelo](./agent-sdk-parallel-tools.mdx)
+## Pesquise, busque e retorne dados estruturados
 
-## Guias relacionados
+| Receita | Use para |
+| --- | --- |
+| [JSON estruturado com Python](./sdk-python-presets-and-json) | Chamar uma predefinição com um JSON Schema e registrar os detalhes do roteamento |
+| [Busca na web gerenciada com TypeScript](./sdk-typescript-managed-search) | Fundamentar uma resposta com `phaseo:web_search` e retornar JSON |
+| [Depure a busca na web](./web-search-debugging) | Descobrir se uma busca foi executada e o que ela retornou |
+| [Fundamente a extração com web fetch](./tool-grounding-with-web-fetch) | Ler uma URL conhecida com `phaseo:web_fetch` antes de extrair |
+| [Recupere JSON malformado](./response-healing-for-structured-json) | Reparar JSON quase válido com o plugin `response-healing` |
+| [Defina padrões de plugins](./plugin-defaults-and-response-healing) | Ativar o reparo de respostas para um espaço de trabalho ou uma predefinição e travá-la |
 
-- [Início rápido](../quickstart.mdx)
-- [Exemplos](../guides/examples.mdx)
-- [Roteamento e alternativas](../guides/routing-and-fallbacks.mdx)
-- [Visão geral do Agent SDK](../sdk-reference/agent-sdk/overview.mdx)
+## Crie agentes
+
+Os SDKs de agentes executam um loop de ferramentas no seu processo e enviam cada turno do modelo pelo Phaseo. Veja a [visão geral do Agent SDK](../sdk-reference/agent/overview) para a instalação em cada linguagem.
+
+| Receita | Linguagem | Mostra |
+| --- | --- | --- |
+| [Loop de agente durável](./agent-sdk-durable-loop) | TypeScript | Salvar o estado da execução após cada passo e retomar depois de uma falha |
+| [Ferramentas em paralelo](./agent-sdk-parallel-tools) | TypeScript | Executar ao mesmo tempo ferramentas independentes somente leitura |
+| [Resumo de pesquisa](./agent-sdk-research-brief) | TypeScript | Busca na web e um resumo em JSON estrito |
+| [Triagem de suporte](./agent-sdk-support-triage) | TypeScript | Uma predefinição, revisão humana e erros do Gateway que você consegue depurar |
+| [Revisão de código](./agent-sdk-coding-review) | TypeScript | JSON estrito e uma pausa para aprovação |
+| [Extração estruturada](./agent-sdk-python-structured-extraction) | Python | Uma ferramenta e um JSON Schema |
+| [Runbook de operações](./agent-sdk-go-ops-runbook) | Go | Uma ferramenta de status em um loop limitado |
+| [Triagem de tickets](./agent-sdk-csharp-ticket-triage) | C# | Uma ferramenta de consulta dentro de um serviço .NET |
+| [Revisão de conteúdo](./agent-sdk-php-content-review) | PHP | Uma ferramenta de consulta ao CMS |
+| [Notas internas](./agent-sdk-ruby-rag-notes) | Ruby | Uma ferramenta de consulta a notas |
+| [Agentes de programação com SKILL.md](./coding-agents-skill-md) | Qualquer | Ensinar um agente de programação como o seu repositório chama o Phaseo |

@@ -5,6 +5,7 @@ declare module "@phaseo/sdk" {
 		timeoutMs?: number;
 		fetchImpl?: typeof fetch;
 		headers?: Record<string, string>;
+		modelLifecycleChecks?: boolean;
 	};
 
 		export type ResponsesRequest = {

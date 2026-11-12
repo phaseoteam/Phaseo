@@ -1,63 +1,53 @@
 ---
 title: "वर्कफ़्लो ऑटोमेशन"
 icon: "workflow"
-description: "Zapier, n8n, Pipedream और अन्य automation platform से Phaseo उपयोग करें।"
+description: "Zapier, n8n, Pipedream और दूसरे ऑटोमेशन प्लेटफ़ॉर्म से Phaseo इस्तेमाल करें।"
 ---
 
-Authenticated HTTP requests भेजने वाले automation products में Phaseo अभी काम करता है। आगे चलकर native marketplace app अधिक guided अनुभव दे सकते हैं।
+ऐसे किसी भी ऑटोमेशन प्लेटफ़ॉर्म से Phaseo को कॉल करें जो प्रमाणित HTTP अनुरोध भेज सकता हो: एक HTTP स्टेप जोड़ें जो आपकी कुंजी को bearer token के रूप में लेकर `https://api.phaseo.app/v1/responses` पर POST करे। Phaseo का कोई नेटिव Zapier, n8n या Pipedream ऐप नहीं है।
 
-## साझा अनुरोध
-
-HTTP, webhook या code action में ये settings उपयोग करें:
+## अनुरोध बनाएँ
 
 | सेटिंग | मान |
 | --- | --- |
-| तरीका | `POST` |
+| मेथड | `POST` |
 | URL | `https://api.phaseo.app/v1/responses` |
-| Header | `Authorization: Bearer <PHASEO_API_KEY>` |
-| Header | `Content-Type: application/json` |
+| हेडर | `Authorization: Bearer <PHASEO_API_KEY>` |
+| हेडर | `Content-Type: application/json` |
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "input": "Summarise the supplied workflow data in one paragraph."
 }
 ```
 
-Phaseo API key को platform के credential या secret store में रखें। इसे shared workflow definition में सीधे न डालें।
+कुंजी को प्लेटफ़ॉर्म के क्रेडेंशियल या सीक्रेट स्टोर में रखें, किसी साझा वर्कफ़्लो परिभाषा में नहीं। हर अनुरोध फ़ील्ड के लिए [Responses](../../api-reference/endpoint/responses.mdx) देखें।
 
 ## Zapier
 
-**Webhooks by Zapier → Custom Request** उपयोग करें:
+**Webhooks by Zapier → Custom Request** इस्तेमाल करें:
 
-1. `POST` चुनें।
-2. `https://api.phaseo.app/v1/responses` दर्ज करें।
-3. bearer और content-type headers जोड़ें।
-4. पिछले Zap steps के fields को `input` से map करें।
-5. गैर-संवेदनशील data से Zap जाँचें।
-
-Native Phaseo Zapier app में model selection, structured-output actions और Phaseo authentication जोड़ी जा सकती है, लेकिन इसे Zapier developer platform पर प्रकाशित करना होगा।
+1. `POST` चुनें और `https://api.phaseo.app/v1/responses` दर्ज करें।
+2. bearer और content-type हेडर जोड़ें।
+3. पिछले Zap स्टेप के फ़ील्ड `input` में मैप करें।
+4. संवेदनशील न होने वाले डेटा से Zap टेस्ट करें।
 
 ## n8n
 
-Bearer प्रमाणीकरण और JSON बॉडी वाले **HTTP Request** नोड का उपयोग करें। संरचित कार्यप्रवाह डेटा के लिए n8n एक्सप्रेशन से ऊपर से आए आइटम को `input` फ़ील्ड में मैप करें।
-
-आगे चलकर n8n का आधिकारिक कम्युनिटी नोड बिना मैन्युअल HTTP सेटअप के Generate Response, List Models, Get Model Pricing और Create Embedding जैसी कार्रवाइयाँ दे सकता है।
+bearer ऑथेंटिकेशन और JSON बॉडी के साथ **HTTP Request** नोड इस्तेमाल करें। आने वाले आइटम को n8n एक्सप्रेशन से `input` में मैप करें।
 
 ## Pipedream
 
-HTTP request step या Node.js code step उपयोग करें। `PHASEO_API_KEY` को Pipedream secret में रखें और step environment से पढ़ें।
+एक HTTP अनुरोध स्टेप या Node.js कोड स्टेप इस्तेमाल करें। `PHASEO_API_KEY` को Pipedream सीक्रेट के रूप में रखें और उसे स्टेप एनवायरनमेंट से पढ़ें।
 
-## प्रोडक्शन संबंधी सुझाव
+## जाँचें कि यह काम करता है
 
-- हर automation की Gateway API key पर spending limit तय करें।
-- उपयोग और revocation अलग रखने के लिए हर automation को अलग key दें।
-- जब अगले steps को machine-readable fields चाहिए, तो structured output उपयोग करें।
-- `429` और recoverable `5xx` responses के लिए retry handling जोड़ें।
-- केवल model step retry होने के कारण non-idempotent बाहरी actions दोबारा न चलाएँ।
+स्टेप एक बार चलाएँ। `output` ऐरे वाली `200` प्रतिक्रिया का मतलब है कि कुंजी और URL काम करते हैं, और अनुरोध **सेटिंग्स → उपयोग → लॉग्स** में दिखता है।
 
-## संबंधित विषय
+## ऑटोमेशन सुरक्षित रूप से चलाएँ
 
-- [उत्तर](../../api-reference/endpoint/responses.mdx)
-- [Structured Outputs](../structured-outputs.mdx)
-- [त्रुटि प्रबंधन](../../api-reference/errors.mdx)
+- हर ऑटोमेशन को खर्च सीमा वाली उसकी अपनी कुंजी दें, ताकि आप उसे अलग से ट्रैक और रद्द कर सकें।
+- जब बाद के स्टेप मशीन से पढ़े जाने लायक फ़ील्ड की उम्मीद करें, तो [संरचित आउटपुट](../structured-outputs.mdx) इस्तेमाल करें।
+- `429` और ठीक हो सकने वाली `5xx` प्रतिक्रियाओं पर दोबारा कोशिश करें; [एरर](../../api-reference/errors.mdx) देखें।
+- जो बाहरी कार्रवाइयाँ idempotent नहीं हैं, उन्हें सिर्फ़ इसलिए न दोहराएँ कि किसी मॉडल स्टेप की दोबारा कोशिश हुई।

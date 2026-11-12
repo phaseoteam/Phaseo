@@ -1,14 +1,10 @@
 ---
 title: "Effect AI SDK"
 icon: "square-function"
-description: "استخدم Phaseo من تطبيقات TypeScript التي تعتمد على Effect."
+description: "استخدم Phaseo من تطبيقات Effect المكتوبة بـ TypeScript."
 ---
 
-استخدم هذا الدليل إذا كان تطبيقك يستخدم Effect بالفعل وتريد الوصول إلى Phaseo من خدمة أو سير عمل Effect.
-
-## الحالة
-
-يوفر Phaseo نقاط نهاية HTTP متوافقة مع OpenAI. وتفيد حزم المزوّد الرسمية في Effect عندما تدعم المزوّد المطلوب مباشرةً؛ وإذا لم توفر حزمة OpenAI المثبتة في Effect خيار عنوان URL أساسي، فاتصل بـ Phaseo عبر عميل HTTP في Effect أو غلّف [OpenAI SDK](./openai-sdk.mdx) في طبقة Effect خاصة بك.
+استدعِ نقاط نهاية Phaseo المتوافقة مع OpenAI من Effect باستخدام عميل HTTP الخاص به، أو غلّف [OpenAI SDK](./openai-sdk.mdx) في طبقة Effect. لا تستخدم حزمة مزوّد OpenAI الخاصة بـ Effect إلا إذا كان الإصدار المثبت لديك يقبل Base URL مخصّصًا.
 
 ## التثبيت
 
@@ -16,7 +12,7 @@ description: "استخدم Phaseo من تطبيقات TypeScript التي تعت
 npm install effect @effect/platform
 ```
 
-## استدعاء Phaseo عبر Effect HTTP
+## استدعاء Phaseo باستخدام Effect HTTP
 
 ```ts
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "@effect/platform";
@@ -31,7 +27,7 @@ const generate = Effect.gen(function* () {
 	).pipe(
 		HttpClientRequest.bearerToken(Redacted.value(apiKey)),
 		HttpClientRequest.jsonBody({
-			model: "openai/gpt-5-nano",
+			model: "openai/gpt-6-astra",
 			messages: [{ role: "user", content: "Reply with only: ok" }],
 		}),
 	);
@@ -44,9 +40,11 @@ const generate = Effect.gen(function* () {
 const runnable = generate.pipe(Effect.provide(FetchHttpClient.layer));
 ```
 
-## تضمين OpenAI SDK في خدمة Effect
+يعيد تشغيله استجابة Chat Completions تقول رسالتها `ok`.
 
-إذا كنت تستخدم OpenAI SDK الرسمي في موضع آخر، فاجعل إعداد Phaseo في طبقة واحدة:
+## تغليف OpenAI SDK في طبقة Effect
+
+إذا كنت تستخدم OpenAI SDK بالفعل، فاحتفظ بإعداد Phaseo في مكان واحد:
 
 ```ts
 import OpenAI from "openai";
@@ -62,15 +60,9 @@ const makeClient = Effect.gen(function* () {
 });
 ```
 
-## ملاحظات
+ابنِ طبقة مخصّصة فوق هذا عندما تريد تجريدًا على نمط المزوّد عبر تطبيقك.
 
-- استخدم `https://api.phaseo.app/v1` لطلبات OpenAI المتوافقة.
-- أبقِ معرّفات النماذج بتنسيق Phaseo، مثل `openai/gpt-5-nano`.
-- استخدم طبقة Effect مخصصة إذا أردت تجريدًا موحدًا للمزوّد عبر بقية التطبيق.
-- اختبر التدفق واستدعاءات الأدوات باستخدام إصدارات حزم Effect نفسها قبل النشر للإنتاج.
+## القيود المعروفة
 
-## مواضيع ذات صلة
-
-- [OpenAI SDK](./openai-sdk.mdx)
-- [AI SDK](./ai-sdk.mdx)
-- [البث](../streaming.mdx)
+- أبقِ معرّفات النماذج بصيغة Phaseo، مثل `openai/gpt-6-astra`.
+- اختبر [البث](../streaming.mdx) واستدعاءات الأدوات بإصدارات حزم Effect التي تستخدمها بالضبط قبل الإنتاج.

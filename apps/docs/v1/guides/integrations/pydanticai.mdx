@@ -2,9 +2,10 @@
 title: "PydanticAI"
 icon: "braces"
 description: "Build typed Python agents with PydanticAI and Phaseo."
+"og:image": "https://phaseo.app/og/dynamic?title=PydanticAI&description=Build%20typed%20Python%20agents%20with%20PydanticAI%20and%20Phaseo.&pathname=/docs/v1/guides/integrations/pydanticai"
 ---
 
-Use PydanticAI when you want Python agents with typed outputs, validation, and a compact OpenAI-compatible model setup.
+Create an `OpenAIChatModel` with an `OpenAIProvider` pointed at `https://api.phaseo.app/v1`, and PydanticAI agents run on Phaseo models.
 
 ## Install
 
@@ -12,7 +13,7 @@ Use PydanticAI when you want Python agents with typed outputs, validation, and a
 pip install "pydantic-ai-slim[openai]"
 ```
 
-## Configure the model
+## Point PydanticAI at Phaseo
 
 ```python
 import os
@@ -21,7 +22,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 model = OpenAIChatModel(
-    "openai/gpt-5-nano",
+    "openai/gpt-6-astra",
     provider=OpenAIProvider(
         api_key=os.environ["PHASEO_API_KEY"],
         base_url="https://api.phaseo.app/v1",
@@ -33,14 +34,9 @@ result = agent.run_sync("Reply with only: ok")
 print(result.output)
 ```
 
-## Notes
+A printed `ok` means the setup works.
 
-- PydanticAI's OpenAI-compatible path uses OpenAI-style chat behavior.
-- Use direct Phaseo Responses calls for Responses-only features such as `phaseo:apply_patch`.
-- Keep structured output schemas small enough for the selected model's context window.
+## Known limits
 
-## Related
-
-- [Structured Outputs](../structured-outputs.mdx)
-- [OpenAI SDK](./openai-sdk.mdx)
-- [Models](../../api-reference/endpoint/models.mdx)
+- This path uses OpenAI-style Chat Completions. For Responses-only features such as `phaseo:apply_patch`, call Phaseo's Responses endpoint directly.
+- Keep [structured output](../structured-outputs.mdx) schemas small enough for the model's context window. Check limits in [Models](../../api-reference/endpoint/models.mdx).

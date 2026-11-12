@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
+// Table files carry the MFA and OAuth-client policies (require_mfa_for_data_api, refuse_oauth_client_writes); these fixtures don't load their helpers.
+const MFA_SATISFIED_STUB = "create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true'; create or replace function public.request_is_oauth_client() returns boolean language sql stable as 'select false';";
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 const workspace = '10000000-0000-4000-8000-000000000001';
@@ -30,6 +32,7 @@ try {
       create function public.ingest_v2_gateway_request(jsonb) returns uuid language sql as
         'select request_event_id from public.v2_request_facts where workspace_id=($1->>''workspace_id'')::uuid and request_id=$1->>''request_id''';
     `);
+    await db.exec(MFA_SATISFIED_STUB);
     await db.exec(await read('../schemas/public/tables/v2_request_routing_decisions.sql'));
     await db.exec(await read('../schemas/public/tables/v2_request_routing_traces.sql'));
     if (process.env.ROUTING_ARCHIVE_MIGRATION) {
@@ -61,12 +64,20 @@ try {
             ['00000000-0000-0000-0000-000000000000', '1970-01-01', '2026-10-01']), /permission denied/);
         await db.exec('reset role');
     }
+    // Requests before routing snapshots began are outside the backfill's scan bound.
+    const preSnapshot = '20000000-0000-4000-8000-000000000000';
+    await db.query(`insert into public.gateway_requests values($1,'2026-08-18T23:59:59Z',$2,'old',$3,0,'{}')`,
+        [preSnapshot, workspace, { routing_snapshot: [] }]);
     await db.exec('set role service_role');
     const before = await source();
     assert.equal(before.routing_decisions.length, 1);
     const batch = await db.query('select public.gateway_routing_archive_batch($1,$2,$3,25) value',
         ['00000000-0000-0000-0000-000000000000', '1970-01-01', '2026-10-01']);
-    assert.equal(batch.rows.length, 1);
+    assert.deepEqual(batch.rows.map(row => row.value.id), [request]);
+    await db.exec('reset role');
+    await db.query('delete from public.gateway_requests where id=$1', [preSnapshot]);
+    await db.query('delete from public.gateway_routing_archive_deletions');
+    await db.exec('set role service_role');
     assert.equal(await commit('stale-source'), false);
     await assert.rejects(commit(before.source_hash, { ...reference, key: `workspaces/other/routing/v1/request/${sha}.json` }), /reference_invalid/);
     assert.equal((await source()).routing_decisions.length, 1);

@@ -10,6 +10,7 @@ import { json, withRuntime } from "@/routes/utils";
 import {
 	isResponse,
 	internalServerError,
+	rejectThirdPartyOAuthSpendingChange,
 	requireJsonBody,
 	requireCapability,
 	requireOAuthWorkspaceRole,
@@ -33,6 +34,9 @@ const WRITABLE_FIELDS = new Set([
 	"provider_restriction_mode",
 	"provider_restriction_provider_ids",
 	"provider_restriction_enforce_allowed",
+	"model_successor_redirect_enabled",
+	"model_successor_price_policy",
+	"model_successor_max_price_increase_percent",
 ]);
 
 const SETTINGS_COLUMNS = ["workspace_id", ...WRITABLE_FIELDS, "updated_at"].join(",");
@@ -64,9 +68,52 @@ const CAMEL_TO_SNAKE: Record<string, string> = {
 	providerRestrictionMode: "provider_restriction_mode",
 	providerRestrictionProviderIds: "provider_restriction_provider_ids",
 	providerRestrictionEnforceAllowed: "provider_restriction_enforce_allowed",
+	modelSuccessorRedirectEnabled: "model_successor_redirect_enabled",
+	modelSuccessorPricePolicy: "model_successor_price_policy",
+	modelSuccessorMaxPriceIncreasePercent: "model_successor_max_price_increase_percent",
 };
 
-const WORKSPACE_POLICY_FIELDS = new Set([
+// What a successor redirect may cost, and whether a failed BYOK request may spend credits instead: limits
+// on spending, which apps that sign in with Phaseo can't change.
+const SPENDING_LIMIT_FIELDS = new Set([
+	"model_successor_price_policy",
+	"model_successor_max_price_increase_percent",
+	"byok_fallback_enabled",
+]);
+
+// What content is stored or forwarded, and to which providers: I/O logging, training and publishing
+// permissions, zero data retention and provider restrictions. An app that signs in with Phaseo may only
+// tighten them (the value listed here), whatever scopes the person consented to; null means any change is
+// refused. camelCase aliases are mapped to these names before the check.
+const CONTENT_POLICY_FIELDS = new Map<string, boolean | null>([
+	["io_logging_enabled", false],
+	["io_logging_include_provider_payloads", false],
+	["privacy_enable_input_output_logging", false],
+	["privacy_enable_paid_may_train", false],
+	["privacy_enable_free_may_train", false],
+	["privacy_enable_free_may_publish_prompts", false],
+	["privacy_zdr_only", true],
+	["provider_restriction_mode", null],
+	["provider_restriction_provider_ids", null],
+	["provider_restriction_enforce_allowed", null],
+]);
+
+function widensContentPolicy(patch: Record<string, unknown>): boolean {
+	return Object.entries(patch).some(([field, value]) => CONTENT_POLICY_FIELDS.has(field) && CONTENT_POLICY_FIELDS.get(field) !== value);
+}
+
+/**
+ * The workspace-wide privacy and restriction rules. They are saved to the workspace baseline guardrail
+ * (save_workspace_baseline_guardrail, which creates it on first use), which the gateway reads with
+ * the key's other guardrails; a trigger copies them to the same workspace_settings columns, which this
+ * route still returns, so the request and response shapes are unchanged.
+ */
+const WORKSPACE_BASELINE_FIELDS = new Set([
+	"privacy_enable_paid_may_train",
+	"privacy_enable_free_may_train",
+	"privacy_enable_free_may_publish_prompts",
+	"privacy_enable_input_output_logging",
+	"privacy_zdr_only",
 	"provider_restriction_mode",
 	"provider_restriction_provider_ids",
 	"provider_restriction_enforce_allowed",
@@ -81,10 +128,6 @@ const GATEWAY_CONTEXT_FIELDS = new Set([
 	"response_healing_mode",
 	"byok_fallback_enabled",
 	"cache_aware_routing_enabled",
-	"privacy_enable_paid_may_train",
-	"privacy_enable_free_may_train",
-	"privacy_enable_input_output_logging",
-	"privacy_zdr_only",
 	"io_logging_enabled",
 	"io_logging_include_provider_payloads",
 ]);
@@ -110,8 +153,17 @@ function normalizeSettingsPatch(body: Record<string, unknown>): { data: Record<s
 	if (patch.provider_restriction_mode !== undefined && !["none", "allowlist", "blocklist"].includes(String(patch.provider_restriction_mode))) {
 		return { error: "provider_restriction_mode must be none, allowlist, or blocklist" };
 	}
+	const pricePolicy = patch.model_successor_price_policy;
+	if (pricePolicy !== undefined && (typeof pricePolicy !== "string" || !["never", "limit", "any"].includes(pricePolicy))) {
+		return { error: "model_successor_price_policy must be never, limit, or any" };
+	}
+	const percent = patch.model_successor_max_price_increase_percent;
+	if (percent !== undefined && (typeof percent !== "number" || !Number.isInteger(percent) || percent < 0 || percent > 1000)) {
+		return { error: "model_successor_max_price_increase_percent must be an integer from 0 to 1000" };
+	}
 	for (const [field, value] of Object.entries(patch)) {
 		if (field === "routing_mode" || field === "response_healing_mode" || field === "provider_restriction_mode" || field === "provider_restriction_provider_ids") continue;
+		if (field === "model_successor_price_policy" || field === "model_successor_max_price_increase_percent") continue;
 		if (typeof value !== "boolean") return { error: `${field} must be a boolean` };
 	}
 	if (patch.provider_restriction_provider_ids !== undefined) {
@@ -126,7 +178,7 @@ function normalizeSettingsPatch(body: Record<string, unknown>): { data: Record<s
 	return { data: patch };
 }
 
-async function invalidateWorkspaceGatewayContextCache(workspaceId: string): Promise<void> {
+export async function invalidateWorkspaceGatewayContextCache(workspaceId: string): Promise<void> {
 	const { data, error } = await getSupabaseAdmin()
 		.from("keys")
 		.select("id")
@@ -181,20 +233,40 @@ async function handleUpdateSettings(req: Request) {
 	if (Object.keys(patch).length === 0) {
 		return json({ error: "bad_request", message: "No supported settings fields were provided" }, 400, { "Cache-Control": "no-store" });
 	}
+	if (Object.keys(patch).some((field) => SPENDING_LIMIT_FIELDS.has(field))) {
+		const appError = rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't change the successor price policy or BYOK fallback to credits. The person can change them under Settings, Routing or Settings, BYOK.");
+		if (appError) return appError;
+	}
+	if (widensContentPolicy(patch)) {
+		const appError = rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't turn on I/O logging, allow training or publishing, turn off zero data retention or change provider restrictions, because these control where request content goes. The person can change them under Settings, Privacy.");
+		if (appError) return appError;
+	}
 
 	try {
-		const payload = {
-			workspace_id: auth.value.workspaceId,
-			...patch,
-			updated_at: new Date().toISOString(),
-		};
-		const { data, error } = await getSupabaseAdmin()
-			.from("workspace_settings")
-			.upsert(payload, { onConflict: "workspace_id" })
-			.select(SETTINGS_COLUMNS)
-			.maybeSingle();
+		const supabase = getSupabaseAdmin();
+		const baselinePatch = Object.fromEntries(Object.entries(patch).filter(([field]) => WORKSPACE_BASELINE_FIELDS.has(field)));
+		const settingsPatch = Object.fromEntries(Object.entries(patch).filter(([field]) => !WORKSPACE_BASELINE_FIELDS.has(field)));
+		if (Object.keys(baselinePatch).length) {
+			const saved = await supabase.rpc("save_workspace_baseline_guardrail", {
+				p_workspace_id: auth.value.workspaceId,
+				p_settings: baselinePatch,
+			});
+			if (saved.error) throw new Error(saved.error.message || "Failed to update workspace settings");
+		}
+		const settingsQuery = Object.keys(settingsPatch).length
+			? supabase
+				.from("workspace_settings")
+				.upsert({ workspace_id: auth.value.workspaceId, ...settingsPatch, updated_at: new Date().toISOString() }, { onConflict: "workspace_id" })
+				.select(SETTINGS_COLUMNS)
+				.maybeSingle()
+			: supabase
+				.from("workspace_settings")
+				.select(SETTINGS_COLUMNS)
+				.eq("workspace_id", auth.value.workspaceId)
+				.maybeSingle();
+		const { data, error } = await settingsQuery;
 		if (error) throw new Error(error.message || "Failed to update workspace settings");
-		if (Object.keys(patch).some((field) => WORKSPACE_POLICY_FIELDS.has(field))) {
+		if (Object.keys(baselinePatch).length) {
 			await bumpWorkspacePolicyVersion(auth.value.workspaceId);
 		}
 		if (Object.keys(patch).some((field) => GATEWAY_CONTEXT_FIELDS.has(field))) {

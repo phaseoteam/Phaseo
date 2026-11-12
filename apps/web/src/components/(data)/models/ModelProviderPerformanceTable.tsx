@@ -1,8 +1,6 @@
-"use client";
-
 import { useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import Link from "next/link";
+import { useLocale, useTranslations } from "@/i18n/react";
+import Link from "@/components/link";
 import {
 	type ColumnDef,
 	getCoreRowModel,
@@ -195,7 +193,7 @@ export default function ModelProviderPerformanceTable({
 				),
 				cell: ({ row }) => (
 					<span className="ml-3">
-						{formatProviderDuration(row.original.avgGenerationMs, format.number)}
+						{formatProviderDuration(row.original.avgGenerationMs)}
 					</span>
 				),
 			},

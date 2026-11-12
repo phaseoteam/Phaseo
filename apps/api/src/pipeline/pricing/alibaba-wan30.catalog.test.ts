@@ -1,15 +1,32 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 import { computeBill } from "./engine";
 import type { PriceCard, PriceRule } from "./types";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../..");
+// Resolution-tiered rules copied from the alibaba-cloud Wan 3.0 video.generate price cards.
+const resolutionRule = (meter: string, resolution: string, price: number) => ({
+	meter,
+	unit: "second",
+	unit_size: 1,
+	price_per_unit: price,
+	currency: "USD",
+	pricing_plan: "standard",
+	match: [{ path: "video_params.resolution", op: "eq", or_group: 1, and_index: 1, value: resolution }],
+	priority: 100,
+});
 
-function loadCard(relativePath: string): PriceCard {
-	const raw = JSON.parse(fs.readFileSync(path.join(repoRoot, relativePath), "utf8"));
+const resolutionCard = (apiModelId: string, prices: Record<"480P" | "720P" | "1080P", number>) => ({
+	api_provider_id: "alibaba-cloud",
+	api_model_id: apiModelId,
+	capability_id: "video.generate",
+	rules: (["output_video_seconds", "input_video_seconds"] as const).flatMap((meter) =>
+		(Object.entries(prices) as Array<[string, number]>).map(([resolution, price]) => resolutionRule(meter, resolution, price))),
+});
+
+const WAN30_VIDEO = resolutionCard("qwen/wan3.0-video", { "480P": 0.05, "720P": 0.1, "1080P": 0.2 });
+const WAN30_VIDEO_PRIME = resolutionCard("qwen/wan3.0-video-prime", { "480P": 0.068, "720P": 0.14, "1080P": 0.28 });
+
+function loadCard(raw: ReturnType<typeof resolutionCard>): PriceCard {
 	return {
 		provider: raw.api_provider_id,
 		model: raw.api_model_id,
@@ -34,7 +51,7 @@ function loadCard(relativePath: string): PriceCard {
 
 describe("Alibaba Cloud Wan 3.0 pricing", () => {
 	it("bills standard output and reference-video input seconds at the selected resolution", () => {
-		const card = loadCard("packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-wan3.0-video/video.generate/pricing.json");
+		const card = loadCard(WAN30_VIDEO);
 		const priced = computeBill(
 			{ output_video_seconds: 10, input_video_seconds: 8 },
 			card,
@@ -49,7 +66,7 @@ describe("Alibaba Cloud Wan 3.0 pricing", () => {
 	});
 
 	it("uses the higher Prime rate for 1080P output", () => {
-		const card = loadCard("packages/data/catalog/src/data/pricing/alibaba-cloud/qwen-wan3.0-video-prime/video.generate/pricing.json");
+		const card = loadCard(WAN30_VIDEO_PRIME);
 		const priced = computeBill(
 			{ output_video_seconds: 5 },
 			card,

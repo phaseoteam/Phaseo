@@ -1,0 +1,34 @@
+{
+	"id": "tencent-cloud",
+	"source": {
+		"url": null,
+		"docs": "https://www.tencentcloud.com/document/product/1300/80695",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Recorded from a web-search summary of the Hy/GLM/DeepSeek API guides. Integration PDF has a typo host \"tokenhubintl\"."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"temperature": {},
+					"max_tokens": {},
+					"stream_options": {},
+					"thinking": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

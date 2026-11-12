@@ -1,6 +1,0 @@
-{
-  "key": "together:openai/gpt-image-1.5:image.generate",
-  "api_provider_id": "together", "provider_slug": "together", "api_model_id": "openai/gpt-image-1.5", "capability_id": "image.generate",
-  "rules": [{"meter":"image_pixels","unit":"pixel","unit_size":1000000,"price_per_unit":0.034,"currency":"USD","pricing_plan":"standard","note":"$0.034 per generated megapixel.","match":[],"priority":100,"effective_from":null,"region":null,"cache_duration_seconds":null,"conditions":[],"source":{"kind":"pricing","url":"https://docs.together.ai/docs/serverless/models","accessed_at":"2026-08-20T00:00:00Z","notes":"Official per-megapixel rate."}}],
-  "regions": [], "service_tiers": ["standard"], "sources": [], "verification": {"status":"verified","checked_at":"2026-08-20T00:00:00Z","notes":"Verified from Together's current serverless model catalogue."}
-}

@@ -1,27 +1,75 @@
 ---
 title: "从这里开始"
-description: "发送第一个请求、连接应用或查找所需参考。"
+description: "发送第一个请求、连接应用，或查找你需要的参考。"
 icon: "house"
 ---
 
-使用 Phaseo 通过一个 API 调用多个提供商的模型、控制路由并跟踪使用量和费用。
+通过 `https://api.phaseo.app/v1` 这一个 API 调用多家提供商的模型，为每个请求选择路由方式，并按请求跟踪使用量和费用。下面的请求使用 `phaseo/free`，所以在你充值额度之前就能运行：
 
-<Columns cols={2}>
-  <Card title="发送第一个请求" icon="rocket" href="./quickstart.mdx">
-    创建密钥、发送请求并读取结果。
-  </Card>
-  <Card title="迁移应用" icon="arrow-right-left" href="./migration-guides/index.mdx">
-    更新现有提供商或网关集成。
-  </Card>
-  <Card title="连接编程助手" icon="terminal" href="./guides/integrations/coding-assistants.mdx">
-    配置 Codex、Claude Code、Cursor 或其他助手。
-  </Card>
-  <Card title="使用 SDK 构建" icon="package" href="./sdk-reference/typescript/overview.mdx">
-    从客户端 SDK 菜单选择语言。
-  </Card>
-</Columns>
+<CodeGroup>
 
-## 构建与运行
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "phaseo/free", "input": "Hello"}'
+```
+
+```typescript TypeScript
+import Phaseo, { outputText } from "@phaseo/sdk";
+
+const client = new Phaseo(); // reads PHASEO_API_KEY
+
+const response = await client.generateResponse({
+  model: "phaseo/free",
+  input: "Hello",
+});
+
+console.log(outputText(response));
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo()  # reads PHASEO_API_KEY
+
+response = client.responses.create({"model": "phaseo/free", "input": "Hello"})
+
+print(response.output_text)
+```
+
+</CodeGroup>
+
+还没有 API 密钥？[在控制台创建一个](https://phaseo.app/settings/keys)，然后按照[快速开始](./quickstart.mdx)操作。
+
+## 从你的现状出发
+
+<div className="ph-paths not-prose">
+
+[**<Icon icon="rocket" /> 发送第一个请求** 创建密钥、发送请求并读取结果。](./quickstart.mdx)
+
+[**<Icon icon="arrow-right-left" /> 迁移应用** 更新现有的提供商或网关集成。](./migration-guides/index.mdx)
+
+[**<Icon icon="terminal" /> 连接编程助手** 配置 Codex、Claude Code、Cursor 或其他助手。](./guides/integrations/coding-assistants.mdx)
+
+[**<Icon icon="bot" /> 构建智能体** 使用智能体 SDK 为模型提供工具、流式输出它的每一步，并审批它的操作。](./sdk-reference/agent/overview.mdx)
+
+</div>
+
+## 选择 SDK
+
+<div className="ph-sdks not-prose">
+
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> <Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> TypeScript 和 Python](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/client/overview.mdx)
+
+</div>
+
+## 构建与运营
 
 | 任务 | 文档 |
 | --- | --- |
@@ -30,11 +78,23 @@ icon: "house"
 | 实现特定工作流 | [实用指南](./cookbook/index.mdx) |
 | 选择提供商和回退 | [路由](./guides/routing-and-fallbacks.mdx) |
 | 处理视频或批处理任务 | [异步任务与 Webhook](./guides/async-video-and-batch.mdx) |
-| 构建使用工具的智能体 | [Agent SDK](./sdk-reference/agent-sdk/overview.mdx) |
 | 诊断失败的请求 | [错误与调试](./api-reference/errors.mdx) |
 
 ## 选择模型
 
-[浏览模型](https://phaseo.app/models)或[比较模型](https://phaseo.app/compare)。目录可能包含无法路由的模型；集成前请检查 Gateway 可用性。模型、提供商和计费请参阅 [Phaseo 工作原理](./developers/introduction.mdx)。
+[浏览模型](https://phaseo.app/models)或[比较模型](https://phaseo.app/compare)。目录中也列出了你暂时还不能调用的模型，因此集成之前请确认模型标记为 **Gateway 已启用**，或者用 `GET /v1/models` 列出可调用的模型。模型、提供商和计费请参阅 [Phaseo 工作原理](./developers/introduction.mdx)。
 
-在助手内部访问文档，请连接 [Docs MCP](./guides/integrations/docs-mcp.mdx)，或阅读[智能体能力概要](https://phaseo.app/docs/skill.md)。
+## 使用 AI 智能体构建
+
+<Prompt description="把将 Phaseo 加入项目所需的一切交给你的编程智能体（Cursor、Claude Code、Codex 等）。" icon="bot" actions={["copy", "cursor"]}>
+{`Add Phaseo Gateway to this project.
+
+1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
+2. If your tools support MCP, connect the Phaseo docs server at https://phaseo.app/docs/mcp and look up endpoints and SDK usage there instead of guessing.
+3. Inspect the current AI provider setup and propose the smallest change that sends requests to https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
+4. Use the official SDK for this language if there is one (@phaseo/sdk for TypeScript, phaseo for Python). Otherwise call the REST API.
+5. Check model IDs with GET /v1/models instead of inventing them. Use phaseo/free for a first test if no paid model has been chosen.
+6. Explain which files you will change and how you will verify the change before you edit. Never print or commit API keys.`}
+</Prompt>
+
+智能体也可以通过 [Docs MCP](./guides/integrations/docs-mcp.mdx) 搜索本文档、阅读[能力摘要](https://phaseo.app/docs/skill.md)，或从 [llms.txt](https://phaseo.app/docs/llms.txt) 开始。

@@ -26,6 +26,7 @@ CREATE TABLE "public"."users" (
   "display_density"         text                     NOT NULL DEFAULT 'comfortable'::text,
   "display_code_language"   text                     NOT NULL DEFAULT 'typescript'::text,
   "display_landing_page"    text                     NOT NULL DEFAULT 'home'::text,
+  "product_emails_opted_out_at" timestamp with time zone,
   CONSTRAINT "users_declared_country_code_check" CHECK (((declared_country_code IS NULL) OR (declared_country_code ~ '^[A-Z]{2}$'::text))),
   CONSTRAINT "users_display_code_language_check" CHECK ((display_code_language = ANY (ARRAY['typescript'::text, 'python'::text, 'curl'::text]))),
   CONSTRAINT "users_display_dark_accent_check" CHECK ((display_dark_accent ~ '^#[0-9A-Fa-f]{6}$'::text)),
@@ -76,6 +77,32 @@ CREATE TRIGGER protect_users_global_role
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_users_global_role();
 
+CREATE POLICY "users_no_oauth_client_insert" ON "public"."users"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "users_no_oauth_client_update" ON "public"."users"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "users_no_oauth_client_delete" ON "public"."users"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."users"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "users: delete self" ON "public"."users"
   FOR DELETE
   TO "authenticated"
@@ -114,6 +141,8 @@ COMMENT ON COLUMN "public"."users"."declared_country_code" IS 'ISO 3166-1 alpha-
 
 COMMENT ON COLUMN "public"."users"."display_code_language" IS 'Preferred language for code samples.';
 
+COMMENT ON COLUMN "public"."users"."product_emails_opted_out_at" IS 'When the user unsubscribed from non-essential email such as feedback requests. Service and billing email is unaffected.';
+
 COMMENT ON COLUMN "public"."users"."display_dark_accent" IS 'Preferred hexadecimal accent colour for dark mode.';
 
 COMMENT ON COLUMN "public"."users"."display_dark_palette" IS 'Preferred neutral surface palette for dark mode.';
@@ -140,7 +169,7 @@ COMMENT ON COLUMN "public"."users"."display_time_zone" IS 'Preferred IANA time z
 
 REVOKE ALL ON TABLE "public"."users" FROM "anon";
 
-GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."users" TO "anon";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."users" TO "anon";
 
 REVOKE ALL ON TABLE "public"."users" FROM "authenticated";
 
@@ -200,4 +229,4 @@ REVOKE ALL ("user_id") ON TABLE "public"."users" FROM "authenticated";
 
 GRANT INSERT ("user_id") ON TABLE "public"."users" TO "authenticated";
 
-GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."users" TO "authenticated";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."users" TO "authenticated";

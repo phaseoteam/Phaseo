@@ -5,6 +5,9 @@ import {
 	getGatewayIoLoggingFeatureGateName,
 	getDataContributionFeatureGateName,
 	getAutoRoutingFeatureGateName,
+	getRequestClassifiersFeatureGateName,
+	getModelSuccessorRedirectFeatureGateName,
+	getWorkloadIdentityFeatureGateName,
 	getVideoApiFeatureGateName,
 	getRealtimeVoiceFeatureGateName,
 	isBatchApiAccessEnabled,
@@ -13,6 +16,9 @@ import {
 	isDataContributionAccessEnabled,
 	isRealtimeVoiceAccessEnabled,
 	isAutoRoutingAccessEnabled,
+	isModelSuccessorRedirectAccessEnabled,
+	isWorkloadIdentityAccessEnabled,
+	__resetFeatureGateCacheForTests,
 } from "./feature-flags";
 import type { AuthSuccess } from "@pipeline/before/auth";
 
@@ -29,6 +35,20 @@ const auth: AuthSuccess = {
 describe("batch API feature gate", () => {
 	beforeEach(() => {
 		vi.unstubAllGlobals();
+		__resetFeatureGateCacheForTests();
+	});
+
+	it("reuses a recent gate evaluation instead of calling Statsig every time", async () => {
+		const fetchMock = vi.fn(async () => new Response(JSON.stringify({ value: true }), { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+		const bindings = { STATSIG_SERVER_KEY: "secret-statsig-key" };
+
+		await expect(isBatchApiAccessEnabled(auth, bindings)).resolves.toBe(true);
+		await expect(isBatchApiAccessEnabled(auth, bindings)).resolves.toBe(true);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+
+		await expect(isBatchApiAccessEnabled({ ...auth, apiKeyId: "other_key" }, bindings)).resolves.toBe(true);
+		expect(fetchMock).toHaveBeenCalledTimes(2);
 	});
 
 	it("uses the configured Statsig gate name", () => {
@@ -38,12 +58,47 @@ describe("batch API feature gate", () => {
 		expect(getVideoApiFeatureGateName({})).toBe("gateway_video_api");
 		expect(getRealtimeVoiceFeatureGateName({ STATSIG_REALTIME_VOICE_GATE: "custom_realtime_gate" })).toBe("custom_realtime_gate");
 		expect(getRealtimeVoiceFeatureGateName({})).toBe("gateway_realtime_voice");
+		expect(getRealtimeVoiceFeatureGateName({}, "chat")).toBe("chat_realtime_voice");
+		expect(getRealtimeVoiceFeatureGateName({ STATSIG_CHAT_REALTIME_VOICE_GATE: "custom_chat_gate" }, "chat")).toBe("custom_chat_gate");
 		expect(getGatewayIoLoggingFeatureGateName({ STATSIG_GATEWAY_IO_LOGGING_GATE: "custom_io_gate" })).toBe("custom_io_gate");
 		expect(getGatewayIoLoggingFeatureGateName({})).toBe("gateway_io_logging");
 		expect(getDataContributionFeatureGateName({ STATSIG_DATA_CONTRIBUTION_GATE: "custom_contribution_gate" })).toBe("custom_contribution_gate");
 		expect(getDataContributionFeatureGateName({})).toBe("gateway_data_contribution");
 		expect(getAutoRoutingFeatureGateName({ STATSIG_AUTO_ROUTING_GATE: "custom_auto_gate" })).toBe("custom_auto_gate");
 		expect(getAutoRoutingFeatureGateName({})).toBe("gateway_auto_routing");
+		expect(getRequestClassifiersFeatureGateName({ STATSIG_REQUEST_CLASSIFIERS_GATE: "custom_classifier_gate" })).toBe("custom_classifier_gate");
+		expect(getRequestClassifiersFeatureGateName({})).toBe("gateway_request_classifiers");
+		expect(getModelSuccessorRedirectFeatureGateName({ STATSIG_MODEL_SUCCESSOR_REDIRECT_GATE: "custom_successor_gate" })).toBe("custom_successor_gate");
+		expect(getModelSuccessorRedirectFeatureGateName({})).toBe("gateway_model_successor_redirect");
+		expect(getWorkloadIdentityFeatureGateName({ STATSIG_WORKLOAD_IDENTITY_GATE: "custom_oidc_gate" })).toBe("custom_oidc_gate");
+		expect(getWorkloadIdentityFeatureGateName({})).toBe("gateway_workload_identity");
+	});
+
+	it("fails workload identity closed when the workspace owner cannot be found", async () => {
+		const fetchMock = vi.fn(async () => new Response(JSON.stringify({ value: true })));
+		vi.stubGlobal("fetch", fetchMock);
+		const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		await expect(isWorkloadIdentityAccessEnabled(
+			{ workspaceId: "ws_without_owner", apiKeyId: "key_oidc" },
+			{ STATSIG_SERVER_KEY: "secret-statsig-key" },
+		)).resolves.toBe(false);
+		expect(fetchMock).not.toHaveBeenCalled();
+		consoleError.mockRestore();
+	});
+
+	it("checks the model successor redirect against its own gate for the given owner", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+			const body = JSON.parse(String(init?.body));
+			expect(body).toMatchObject({
+				gateName: "gateway_model_successor_redirect",
+				user: { userID: "user_owner", custom: { workspace_id: "ws_batch_admin", surface: "gateway_model_successor_redirect" } },
+			});
+			return new Response(JSON.stringify({ value: false }));
+		}));
+		await expect(isModelSuccessorRedirectAccessEnabled(
+			{ workspaceId: "ws_batch_admin", userId: "user_owner" },
+			{ STATSIG_SERVER_KEY: "secret-statsig-key" },
+		)).resolves.toBe(false);
 	});
 
 	it("checks Auto Routing against its independent workspace gate", async () => {
@@ -100,6 +155,14 @@ describe("batch API feature gate", () => {
 		await expect(isRealtimeVoiceAccessEnabled(auth, {
 			STATSIG_SERVER_KEY: "secret-statsig-key",
 		})).resolves.toBe(true);
+	});
+
+	it("checks Chat realtime voice against the Chat gate", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+			expect(JSON.parse(String(init?.body))).toMatchObject({ gateName: "chat_realtime_voice", user: { custom: { surface: "chat_realtime_voice" } } });
+			return new Response(JSON.stringify({ value: true }));
+		}));
+		await expect(isRealtimeVoiceAccessEnabled(auth, { STATSIG_SERVER_KEY: "secret-statsig-key" }, "chat")).resolves.toBe(true);
 	});
 
 	it("fails realtime voice closed when Statsig is unavailable", async () => {

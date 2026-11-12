@@ -2,13 +2,17 @@
 title: "Get music generation"
 sidebarTitle: "Get music generation"
 badge: "Beta"
-openapi: "GET /music/generate/{music_id}"
+openapi: "/openapi/v1/openapi.yaml GET /music/generate/{music_id}"
 description: "Retrieve a music generation using its Phaseo request ID."
+"og:image": "https://phaseo.app/og/dynamic?title=Get%20music%20generation&description=Retrieve%20a%20music%20generation%20using%20its%20Phaseo%20request%20ID.&pathname=/docs/v1/api-reference/endpoint/music-status"
 ---
 
-Retrieve a music result created by `POST /music/generate`. This endpoint returns the stored normalized result for completed providers and polls the upstream provider when a job is still asynchronous.
+Pass the `id` returned by [`POST /v1/music/generate`](./music-generate.mdx), not its `nativeResponseId`. Phaseo returns the stored result when the generation is finished, and polls the provider for you while it is still running.
 
-## Response Shape
+```bash
+curl https://api.phaseo.app/v1/music/generate/req_01JY6MUSIC123 \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
 
 ```json
 {
@@ -37,9 +41,4 @@ Retrieve a music result created by `POST /music/generate`. This endpoint returns
 }
 ```
 
-## Notes
-
-- `status` can be: `queued`, `in_progress`, `completed`, `failed`.
-- `usage` is included when generation is complete.
-- Pass the Phaseo `id` returned by `POST /music/generate`, not `nativeResponseId`.
-- Provider-specific status and retrieval APIs are handled behind this endpoint.
+`status` is `queued`, `in_progress`, `completed` or `failed`. `usage` is included once the generation is complete.

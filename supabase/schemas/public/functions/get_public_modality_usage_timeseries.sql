@@ -34,7 +34,9 @@ begin
       sum(d.requests)::bigint as req_count,
       sum(
         case p_metric
-          when 'text_tokens' then d.input_text_tokens + d.output_text_tokens
+          -- Decisions have their own ranking; keep them out of text volume.
+          when 'text_tokens' then greatest(d.input_text_tokens + d.output_text_tokens - d.decision_tokens, 0)
+          when 'decision_tokens' then d.decision_tokens
           when 'image_inputs' then d.image_inputs
           when 'image_outputs' then d.image_outputs
           when 'audio_tokens' then d.input_audio_tokens + d.output_audio_tokens

@@ -1,7 +1,5 @@
-"use client";
-
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { ArrowUpRight, Check, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -10,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { IdentityAddonSummary } from "@/lib/billing/identityAddon";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 type Props = {
 	workspaceId: string;
@@ -24,7 +23,7 @@ async function responseJson<T>(response: Response, unavailableMessage: string): 
 export default function EnterpriseSubscriptionCard({ workspaceId }: Props) {
 	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
-	const currency = (value: number) => new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(value);
+	const currency = (value: number) => new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(value);
 	const [summary, setSummary] = React.useState<IdentityAddonSummary | null>(null);
 	const [loading, setLoading] = React.useState(true);
 	const [working, setWorking] = React.useState(false);

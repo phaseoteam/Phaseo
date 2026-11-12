@@ -22,7 +22,32 @@ function canonicalProviderId(value: unknown): string {
 	return providerId === "x-ai" || providerId === "xai" ? "spacex-ai" : providerId;
 }
 
-function validateProviderKey(providerId: string, rawValue: unknown): { value: string; strict: boolean } {
+// Azure resource hosts a workspace's own Azure key may be sent to (the gateway checks the
+// same list before each request): Azure OpenAI, Foundry and Azure AI services, plus the
+// Azure Government (.us) and Azure China (.cn) clouds.
+// https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/endpoints
+const AZURE_BYOK_HOST_SUFFIXES = [
+	".openai.azure.com",
+	".services.ai.azure.com",
+	".cognitiveservices.azure.com",
+	".openai.azure.us",
+	".cognitiveservices.azure.us",
+	".openai.azure.cn",
+	".cognitiveservices.azure.cn",
+];
+
+export function isAllowedAzureByokEndpoint(value: unknown): boolean {
+	if (typeof value !== "string") return false;
+	let url: URL;
+	try { url = new URL(value.trim()); } catch { return false; }
+	if (url.protocol !== "https:" || url.username || url.password || url.port || url.search) return false;
+	const host = url.hostname.toLowerCase();
+	const suffix = AZURE_BYOK_HOST_SUFFIXES.find((candidate) => host.endsWith(candidate));
+	if (!suffix) return false;
+	return /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/.test(host.slice(0, -suffix.length));
+}
+
+export function validateProviderKey(providerId: string, rawValue: unknown): { value: string; strict: boolean } {
 	const value = String(rawValue ?? "").trim();
 	if (!value) throw new Error("Key is required.");
 	const patterns: Record<string, RegExp> = {
@@ -42,7 +67,13 @@ function validateProviderKey(providerId: string, rawValue: unknown): { value: st
 		try { parsed = JSON.parse(value); } catch { throw new Error("Valid JSON credentials are required for this provider."); }
 		if (providerId === "google-vertex" && !(parsed?.type === "service_account" && parsed.client_email && parsed.private_key)) throw new Error("Google service-account credentials are incomplete.");
 		if (providerId === "cloudflare" && !(parsed?.apiToken && parsed.accountId)) throw new Error("Cloudflare credentials require apiToken and accountId.");
+		if (providerId === "cloudflare" && !/^[0-9a-f]{32}$/i.test(String(parsed.accountId))) throw new Error("Cloudflare accountId must be the 32-character hexadecimal account ID.");
 		if (providerId === "azure" && !(Array.isArray(parsed?.deployments) && parsed.deployments.length)) throw new Error("Azure credentials require at least one deployment mapping.");
+		if (providerId === "azure" && parsed.deployments.some((deployment: any) => !isAllowedAzureByokEndpoint(
+			deployment?.endpointUrl ?? deployment?.endpoint ?? deployment?.foundryEndpoint ?? deployment?.azureEndpoint,
+		))) {
+			throw new Error("Azure endpoints must be https://<resource>.openai.azure.com, .services.ai.azure.com or .cognitiveservices.azure.com (or the .us and .cn clouds), with no port, credentials or query.");
+		}
 		return { value, strict: true };
 	}
 	if (providerId === "amazon-bedrock" && value.startsWith("{")) {

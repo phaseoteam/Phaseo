@@ -45,8 +45,8 @@ Before expanding or changing the documented contract:
    a live API probe, including streaming, tools, structured outputs, reasoning,
    prompt caching, service tiers, and long-context billing.
 3. Add OpenAI EU provider routes only where documented.
-4. Run `pnpm data:prep-pr` to sync the manifest and generated SDK surfaces and
-   validate catalog, pricing, gateway, and documentation data.
+4. Run `pnpm openapi:gen` to refresh the generated SDK surfaces, and
+   `pnpm validate:docs` to check the documentation.
 5. Keep authenticated smoke coverage for requests, streaming, usage accounting,
    tool calls, and error handling as OpenAI broadens the rollout.
 

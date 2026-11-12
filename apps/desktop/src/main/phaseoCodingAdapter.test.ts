@@ -1,0 +1,121 @@
+import { phaseoMcpPool } from "./phaseoMcp";
+// Servers close with their turn, so the temporary folders they run in can be removed.
+phaseoMcpPool.idleMs = 0;
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { describe, expect, it, vi } from "vitest";
+import type { Account, Task } from "../shared/workspace";
+import { WorkspaceStore } from "./workspaceStore";
+import { createGatewayAgentClient } from "@phaseo/agent-sdk";
+import type { AgentModelClient } from "@phaseo/agent-sdk";
+import { PhaseoCodingAdapter, phaseoGatewayClientOptions } from "./phaseoCodingAdapter";
+
+const task: Task = { id: "task", title: "Task", harness: "phaseo", model: "model", mode: "code", status: "idle", pinned: false, archived: false, messages: [], queue: [], createdAt: "", updatedAt: "" };
+const account: Account = { id: "account", name: "API", harness: "phaseo", kind: "api", configured: true, endpoint: "https://api.phaseo.app/v1" };
+describe("Phaseo coding run loop", () => {
+ it("executes shared delegation and consumes a child result through the model loop", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "phaseo-model-delegation-")); const store = new WorkspaceStore(path.join(root, "state.sqlite"));
+  try {
+   const child = { id: "child", title: "Review", harness: "phaseo" as const, model: "owned", status: "completed" as const };
+   const delegate = vi.fn(async () => child), wait = vi.fn(async () => ({ thread: child, timedOut: false, result: "Child findings" }));
+   const generate = vi.fn().mockImplementationOnce(async request => { expect(request.tools.some((tool: {id:string}) => tool.id === "delegate_task")).toBe(true); return {message:{role:"assistant",content:"",toolCalls:[{id:"delegate",name:"delegate_task",input:{requestId:"stable",title:"Review",prompt:"Inspect"}}]}}; }).mockResolvedValueOnce({message:{role:"assistant",content:"",toolCalls:[{id:"wait",name:"wait_thread",input:{id:"child",timeoutMs:0}}]}}).mockImplementationOnce(async request => { expect(JSON.stringify(request.messages)).toContain("Child findings"); return { message: { role: "assistant", content: "Reviewed child findings" } }; });
+   const onDelta = vi.fn();
+   await new PhaseoCodingAdapter(() => "fixture", store, () => ({ generate })).run(task, root, "Delegate", { onSession: () => {}, onDelta, onApproval: async () => "accept", threads: { list: () => [], read: vi.fn(), delegate, wait, interrupt: vi.fn() } }, account);
+   expect(delegate).toHaveBeenCalledWith(expect.objectContaining({ requestId: "stable", prompt: "Inspect" })); expect(wait).toHaveBeenCalledWith("child", 0, expect.any(AbortSignal)); expect(onDelta).toHaveBeenCalledWith(expect.any(String), "Reviewed child findings");
+  } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+ });
+ it("builds the gateway client with the task's effort and speed and sends them on the Responses request", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "phaseo-code-settings-")); const store = new WorkspaceStore(path.join(root, "state.sqlite"));
+  try {
+   const current = { ...task, modelOptions: { effort: "xhigh", speed: "flex" } };
+   const factory = vi.fn<(account: Account, key: string, task: Task) => AgentModelClient>(() => ({ generate: async () => ({ message: { role: "assistant" as const, content: "Done" } }) }));
+   await new PhaseoCodingAdapter(() => "owned-key", store, factory).run(current, root, "Go", { onSession: () => {}, onDelta: () => {}, onApproval: async () => "accept" }, account);
+   expect(factory).toHaveBeenCalledWith(account, "owned-key", current);
+   // Streams get an hour in total but are abandoned after three quiet minutes; each chat has its own cache key.
+   expect(phaseoGatewayClientOptions(account, "owned-key", current)).toEqual({ clientOptions: { apiKey: "owned-key", baseUrl: account.endpoint, timeoutMs: 3_600_000 }, includeMeta: true, streamIdleTimeoutMs: 180_000, promptCacheKey: "phaseo-desktop:task", providerOptions: { anthropic: { cache_control: { type: "ephemeral", scope: "agent" } } }, reasoning: { effort: "xhigh" }, requestOptions: { service_tier: "flex" } });
+   expect(phaseoGatewayClientOptions(account, "owned-key", { modelOptions: { speed: "standard" } })).toEqual({ clientOptions: { apiKey: "owned-key", baseUrl: account.endpoint, timeoutMs: 3_600_000 }, includeMeta: true, streamIdleTimeoutMs: 180_000, providerOptions: { anthropic: { cache_control: { type: "ephemeral", scope: "agent" } } } });
+   const create = vi.fn(async () => ({ id: "response", model: "model", output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Done" }] }] }));
+   await createGatewayAgentClient({ ...phaseoGatewayClientOptions(account, "owned-key", { modelOptions: { effort: "high", speed: "priority" } }), client: { responses: { create } } as never }).generate({ model: "model", messages: [{ role: "user", content: "Go" }], tools: [] } as never);
+   expect(create).toHaveBeenCalledWith(expect.objectContaining({ model: "model", reasoning: { effort: "high" }, service_tier: "priority" }));
+  } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+ });
+ it("reports an empty completed model response instead of silently succeeding", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "phaseo-empty-response-")); const store = new WorkspaceStore(path.join(root, "state.sqlite"));
+  try {
+   const adapter = new PhaseoCodingAdapter(() => "owned-key", store, () => ({ generate: async () => ({ message: { role: "assistant" as const, content: "" } }) }));
+   await expect(adapter.run(task, root, "Check the drives", { onSession: () => {}, onDelta: () => {}, onApproval: async () => "decline" }, account)).rejects.toThrow("The model returned no answer");
+  } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+ });
+ it.each(["code", "plan"] as const)("reviews only the unfinished serial MCP effect after SQLite recovery in %s", async mode => {
+  const root = mkdtempSync(path.join(tmpdir(), "phaseo-serial-recovery-")); let store = new WorkspaceStore(path.join(root, "state.sqlite"));
+  try {
+   const script = path.join(root, "server.cjs"), calls = path.join(root, "calls.txt");
+   writeFileSync(script,`const readline=require('node:readline'),fs=require('node:fs');readline.createInterface({input:process.stdin}).on('line',line=>{const r=JSON.parse(line);if(r.id===undefined)return;let result;if(r.method==='initialize')result={protocolVersion:r.params.protocolVersion,capabilities:{tools:{}},serverInfo:{name:'owned',version:'1'}};else if(r.method==='tools/list')result={tools:[{name:'effect',inputSchema:{type:'object',properties:{value:{type:'string'}},required:['value']}}]};else if(r.method==='tools/call'){fs.appendFileSync(process.argv[2],r.params.arguments.value+'\\n');if(r.params.arguments.value==='second'){process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:r.id,error:{code:-32603,message:'Owned interrupted effect'}})+'\\n');return;}result={content:[{type:'text',text:'Confirmed first effect'}]};}else result={};process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:r.id,result})+'\\n');});`);
+   const connections = [{id:"12345678-1234-1234-1234-123456789abc",name:"Owned",enabled:true,transport:"stdio" as const,executable:process.execPath,arguments:[script,calls]}];
+   let runId = "";
+   const generate = vi.fn(async request => { const name = request.tools.find((tool: {id:string}) => tool.id.startsWith("phaseo_")).id; return {message:{role:"assistant" as const,content:"",toolCalls:[{id:"one",name,input:{value:"first"}},{id:"two",name,input:{value:"second"}}]}}; });
+   const adapter = new PhaseoCodingAdapter(()=>"owned-key",store,()=>({generate}),connections);
+   await expect(adapter.run({...task,mode},root,"Perform owned effects",{onSession:id=>{runId=id;},onDelta:()=>{},onApproval:async()=>"accept",onActivity:activity=>{if(activity.id==="two" && activity.status==="running")void adapter.cancel();}},account)).rejects.toThrow("abort");
+   const saved = store.loadAgentRun(runId)!; expect(saved.run.pause?.pendingToolCalls?.map(entry=>entry.call.id)).toEqual(["two"]); expect(saved.run.messages.filter(message=>message.role==="tool").map(message=>message.toolCallId)).toEqual(["one"]);
+   store.close(); store = new WorkspaceStore(path.join(root,"state.sqlite"));
+   const approval = vi.fn(async (_title, details) => {expect(details).toContain("may already have completed");return "decline" as const;});
+   const resumed = vi.fn(async request => {expect(request.messages.filter((message:{role:string})=>message.role==="tool").map((message:{toolCallId:string})=>message.toolCallId)).toEqual(["one","two"]);return {message:{role:"assistant" as const,content:"Recovered"}};});
+   await new PhaseoCodingAdapter(()=>"owned-key",store,()=>({generate:resumed}),connections).run({...task,mode,nativeSessionId:runId},root,"Continue",{onSession:()=>{},onDelta:()=>{},onApproval:approval},account);
+   expect(approval).toHaveBeenCalledOnce();expect(resumed).toHaveBeenCalledOnce();expect(readFileSync(calls,"utf8").trim().split("\n")).toEqual(["first"]);expect(store.loadAgentRun(runId)?.run.status).toBe("completed");
+  } finally {store.close();rmSync(root,{recursive:true,force:true});}
+ });
+
+ it.each(["code", "plan"] as const)("retains images and role history through pending skill recovery in %s", async mode => {
+  const root = mkdtempSync(path.join(tmpdir(), "phaseo-code-images-")), global = path.join(root, "instructions"), skill = path.join(root, "skills/explain/SKILL.md"); mkdirSync(global); mkdirSync(path.dirname(skill), { recursive: true }); writeFileSync(skill, "---\nname: explain\ndescription: Explain images\n---\nOriginal guidance");
+  const image = { id: "image", taskId: task.id, name: "owned.png", kind: "image" as const, mimeType: "image/png", size: 3, filePath: "owned.png", dataUrl: "data:image/png;base64,YWJj" };
+  const current = { ...task, mode, messages: [{ id: "earlier", role: "user" as const, text: "Earlier question", createdAt: "" }, { id: "reply", role: "assistant" as const, text: "Earlier answer", createdAt: "" }, { id: "question", role: "user" as const, text: "Inspect this", attachments: [image], createdAt: "" }] };
+  let store = new WorkspaceStore(path.join(root, "state.sqlite")), runId = "";
+  try {
+   const generate = vi.fn(async request => { expect(request.messages.slice(0, 2)).toEqual([{ role: "user", content: "Earlier question" }, { role: "assistant", content: "Earlier answer" }]); expect(request.messages.at(-1).content).toEqual([{ type: "text", text: "Inspect this" }, { type: "image_url", image_url: { url: image.dataUrl } }]); if (mode === "plan") expect(request.tools.some((tool: { id: string }) => ["write_project_file", "run_project_command"].includes(tool.id))).toBe(false); return { message: { role: "assistant" as const, content: "", toolCalls: [{ id: "pending", name: "load_skill", input: { id: "global:explain" } }] } }; });
+   const first = new PhaseoCodingAdapter(() => "owned-key", store, () => ({ generate }), [], global);
+   await expect(first.run(current, root, "Inspect this", { onDelta: () => {}, onSession: id => { runId = id; }, onApproval: async () => { await first.cancel(); return "accept"; } }, account, [image])).rejects.toThrow("Task stopped");
+   expect(store.loadAgentRun(runId)?.run.status).toBe("waiting_for_human"); store.close(); store = new WorkspaceStore(path.join(root, "state.sqlite")); writeFileSync(skill, readFileSync(skill, "utf8").replace("Original guidance", "Updated guidance"));
+   const nextImage = { ...image, id: "new-image", dataUrl: "data:image/png;base64,ZGVm" }, document = { id: "document", taskId: task.id, name: "notes.txt", kind: "text" as const, mimeType: "text/plain", size: 5, filePath: "notes.txt", text: "Owned notes" };
+   const resumed = vi.fn(async request => { expect(request.instructions).toContain("Updated guidance"); expect(JSON.stringify(request.messages)).toContain(image.dataUrl); expect(request.messages.at(-1).content[0].text).toContain("Continue with correction"); expect(request.messages.at(-1).content[0].text).toContain("Owned notes"); expect(request.messages.at(-1).content[1].image_url.url).toBe(nextImage.dataUrl); expect(request.messages.filter((message: { role: string }) => message.role === "user")).toHaveLength(3); expect(request.messages.at(-2).toolCallId).toBe("pending"); return { message: { role: "assistant" as const, content: "Finished with image" } }; });
+   const approval = vi.fn(async (_title, details) => { expect(details).toContain("Updated guidance"); return "accept" as const; });
+   await new PhaseoCodingAdapter(() => "owned-key", store, () => ({ generate: resumed }), [], global).run({ ...current, nativeSessionId: runId, messages: [...current.messages, { id: "follow-up", role: "user", text: "Continue with correction", attachments: [nextImage, document], createdAt: "" }] }, root, "Continue with correction", { onSession: () => {}, onDelta: () => {}, onApproval: approval }, account, [image, nextImage, document]);
+   expect(approval).toHaveBeenCalledOnce(); expect(resumed).toHaveBeenCalledOnce(); expect(store.loadAgentRun(runId)?.run.status).toBe("completed");
+  } finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+ });
+ it.each(["accept", "decline"] as const)("executes an owned native MCP tool only after %s", async decision => {
+  const root=mkdtempSync(path.join(tmpdir(),"phaseo-mcp-run-"));const store=new WorkspaceStore(path.join(root,"state.sqlite"));
+  try {
+   const script=path.join(root,"server.cjs"),calls=path.join(root,"calls.txt");
+   writeFileSync(script,`const readline=require('node:readline'),fs=require('node:fs');readline.createInterface({input:process.stdin}).on('line',line=>{const request=JSON.parse(line);if(request.id===undefined)return;let result;if(request.method==='initialize')result={protocolVersion:request.params.protocolVersion,capabilities:{tools:{}},serverInfo:{name:'owned-fixture',version:'1'}};else if(request.method==='tools/list')result={tools:[{name:'owned_lookup',description:'Owned fixture',inputSchema:{type:'object',properties:{query:{type:'string'}},required:['query']}}]};else if(request.method==='tools/call'){fs.writeFileSync(process.argv[2],request.params.arguments.query);result={content:[{type:'text',text:'Owned result'}]};}else result={};process.stdout.write(JSON.stringify({jsonrpc:'2.0',id:request.id,result})+'\\n');});`);
+   const connection={id:"12345678-1234-1234-1234-123456789abc",name:"Owned",enabled:true,transport:"stdio" as const,executable:process.execPath,arguments:[script,calls]};
+   const generate=vi.fn().mockImplementationOnce(async request=>{const tool=request.tools.find((tool:{id:string})=>tool.id.startsWith('phaseo_'));expect(tool).toBeDefined();return {message:{role:'assistant',content:'',toolCalls:[{id:'lookup',name:tool.id,input:{query:'owned query'}}]}};}).mockResolvedValueOnce({message:{role:'assistant',content:'Finished'}});
+   let runId='';const approval=vi.fn(async()=>{expect(()=>readFileSync(calls)).toThrow();expect(store.loadAgentRun(runId)?.run.status).toBe('waiting_for_human');return decision;});
+   const adapter=new PhaseoCodingAdapter(()=>"secret",store,()=>({generate}),[connection]);
+   await adapter.run(task,root,"Look up owned data",{onSession:id=>{runId=id;},onDelta:()=>{},onApproval:approval},account);
+   expect(approval).toHaveBeenCalledWith('Owned · owned_lookup',expect.stringContaining('owned query'),{always:"Always allow this tool in this chat"},undefined);expect(store.loadAgentRun(runId)?.run.status).toBe('completed');
+   if(decision==='accept')expect(readFileSync(calls,'utf8')).toBe('owned query');else expect(()=>readFileSync(calls)).toThrow();
+  } finally {store.close();rmSync(root,{recursive:true,force:true});}
+ });
+ it("leaves an unreachable MCP server out of the turn and says so",async()=>{const root=mkdtempSync(path.join(tmpdir(),"phaseo-mcp-failure-"));const store=new WorkspaceStore(path.join(root,"state.sqlite"));try{const generate=vi.fn();const adapter=new PhaseoCodingAdapter(()=>"secret",store,()=>({generate}),[{id:"12345678-1234-1234-1234-123456789abc",name:"Missing",enabled:true,transport:"stdio",executable:path.join(root,"missing.exe"),arguments:[]}]);const onActivity=vi.fn();generate.mockResolvedValue({message:{role:"assistant",content:"Answered without it"}});await adapter.run(task,root,"Pending",{onSession:()=>{},onDelta:()=>{},onApproval:async()=>"accept",onActivity},account);expect(onActivity).toHaveBeenCalledWith(expect.objectContaining({title:"Missing is unavailable",status:"failed"}));expect(generate).toHaveBeenCalledOnce();}finally{store.close();rmSync(root,{recursive:true,force:true});}});
+
+	it.each(["accept", "decline"] as const)("persists a pending edit and continues after %s", async decision => {
+		const root = mkdtempSync(path.join(tmpdir(), "phaseo-agent-"));
+		const store = new WorkspaceStore(path.join(root, "state.sqlite"));
+		try {
+			const generate = vi.fn().mockResolvedValueOnce({ message: { role: "assistant", content: "", toolCalls: [{ id: "edit", name: "write_file", input: { path: "hello.txt", content: "Hello" } }] } }).mockResolvedValueOnce({ message: { role: "assistant", content: "Finished" } });
+			let runId = "";
+			const adapter = new PhaseoCodingAdapter(() => "secret", store, () => ({ generate }));
+			await adapter.run(task, root, "Create hello.txt", {
+				onSession: id => { runId = id; }, onDelta: () => {}, onApproval: async () => {
+					expect(store.loadAgentRun(runId)?.run.status).toBe("waiting_for_human");
+					return decision;
+				},
+			}, account);
+			expect(store.loadAgentRun(runId)?.run.status).toBe("completed");
+			if (decision === "accept") expect(readFileSync(path.join(root, "hello.txt"), "utf8")).toBe("Hello");
+			else expect(() => readFileSync(path.join(root, "hello.txt"))).toThrow();
+			expect(JSON.stringify(store.loadAgentRun(runId))).not.toContain("secret");
+		} finally { store.close(); rmSync(root, { recursive: true, force: true }); }
+	});
+});

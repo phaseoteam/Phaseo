@@ -8,6 +8,18 @@ namespace Phaseo.Sdk.Tests;
 
 public class ModelsTests
 {
+    [Theory]
+    [InlineData(".")]
+    [InlineData("..")]
+    public async Task CapabilityDotSegmentsNeverReachTransport(string value)
+    {
+        var calls = 0;
+        using var http = new HttpClient(new StubHttpHandler(_ => { calls++; return new HttpResponseMessage(HttpStatusCode.OK); }));
+        var client = new Phaseo.Gen.Client("http://localhost", http);
+        await Assert.ThrowsAsync<ArgumentException>(async () => await Phaseo.Gen.Operations.ListModelEndpointsAsync(client,
+            new Dictionary<string, string> { ["author"] = value, ["slug"] = "model" }));
+        Assert.Equal(0, calls);
+    }
     [Fact]
     public async Task ListModelsPreservesAvailabilityReason()
     {

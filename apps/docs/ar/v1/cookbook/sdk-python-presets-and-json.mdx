@@ -1,132 +1,125 @@
 ---
-title: "إرسال JSON منظّم باستخدام الإعدادات المسبقة وPython SDK"
+title: "أطلق JSON منظَّمًا قائمًا على الإعدادات المسبقة باستخدام Python SDK"
+sidebarTitle: "JSON قائم على الإعدادات المسبقة في Python"
 icon: "braces"
-description: "استخدم Python SDK الرسمي والإعدادات المسبقة والمخرجات المنظّمة وتصحيح الأخطاء على مستوى الطلب من دون اللجوء إلى استدعاءات HTTP الخام."
+description: "استخدم Python SDK الرسمي مع الإعدادات المسبقة والمخرجات المنظَّمة وتصحيح الأخطاء على مستوى الطلب دون النزول إلى استدعاءات HTTP مباشرة."
 ---
 
-استخدم هذه الوصفة عندما تحتاج خدمة Python إلى الاعتماد على القيم الافتراضية التي يديرها dashboard بدلًا من تكرار إعداد المطالبات والتوجيه والمعاملات في كل طلب.
+استدعِ إعدادًا مسبقًا من لوحة التحكم عبر Python مع JSON Schema، ثم تحقّق من الإجابة وسجّل المعرّفات التي تحتاجها لتصحيحها. في النهاية يصبح لديك سكربت واحد يرسل `"model": "@release-summary"`، ويستلم `{"summary": ..., "risk_level": ...}`، ويطبع تفاصيل المزوّد والإضافة لذلك الطلب.
 
-## الهدف
+السكربت جاهز للإنتاج بمجرد أن تستبدل الإعداد المسبق والمخطط بما يخصك. احتفظ بخطوة التحقق: الإصلاح يعالج البنية، لا المحتوى.
 
-- إبقاء شيفرة استدعاء Python صغيرة
-- التوجيه باستخدام slug لإعداد مُسبق بدلًا من تثبيت نموذج في الشيفرة
-- طلب مخرجات منظّمة صارمة
-- الاحتفاظ ببيانات استجابة وصفية كافية لتصحيح أخطاء التوجيه أو سلوك الإضافات
+## ابنِه
 
-## 1. ابدأ بعميل مشترك
+<Steps>
+<Step title="أنشئ الإعداد المسبق">
 
-```python
+في **الإعدادات → الإعدادات المسبقة**، أنشئ `release-summary` مع مطالبة النظام، والنموذج أو النماذج المسموح بها، وتفضيلات المزوّدين، وإعدادات الاستدلال، و`temperature` التي يجب أن يتشاركها كل المستدعين. عندها لا ترسل شيفرة Python إلا ما يتغير. تشرح صفحة [الإعدادات المسبقة](../guides/presets) كيف يُدمج الإعداد المسبق مع الطلب.
+
+</Step>
+<Step title="ثبّت SDK">
+
+```bash
+pip install phaseo
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+</Step>
+<Step title="اكتب السكربت">
+
+```python release_summary.py
+import json
 import os
 
 from phaseo import Phaseo
 
+# Create one client and reuse it.
 gateway = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
-```
 
-أعد استخدام العميل نفسه بدلًا من إنشاء عميل لكل طلب.
+SCHEMA = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "risk_level": {"type": "string", "enum": ["low", "medium", "high"]},
+    },
+    "required": ["summary", "risk_level"],
+    "additionalProperties": False,
+}
 
-## 2. انقل القيم الافتراضية المستقرة إلى إعداد مُسبق
 
-أنشئ إعدادًا مسبقًا ضمن **لوحة التحكم -> الإعدادات -> الإعدادات المسبقة** عندما ينبغي تثبيت القيم التالية عبر عدة مستدعين:
+def output_text(response: dict) -> str:
+    return "".join(
+        part.get("text", "")
+        for item in response.get("output", [])
+        if item.get("type") == "message"
+        for part in item.get("content", [])
+        if part.get("type") == "output_text"
+    )
 
-- مطالبة النظام
-- النموذج أو قائمة النماذج المسموح بها
-- تفضيلات المزوّد
-- إعداد الاستدلال
-- درجة الحرارة ومعاملات التوليد ذات الصلة
-- سياسة التخزين المؤقت للاستجابات عندما يكون التكرار الحتمي مهمًا
 
-بعد إنشاء الإعداد المسبق، يمكن إبقاء شيفرة استدعاء Python موجزة.
+def validate(payload: dict) -> dict:
+    if set(payload) != {"summary", "risk_level"}:
+        raise ValueError(f"unexpected keys: {sorted(payload)}")
+    if not isinstance(payload["summary"], str) or not payload["summary"]:
+        raise ValueError("summary must be a non-empty string")
+    if payload["risk_level"] not in ("low", "medium", "high"):
+        raise ValueError("risk_level must be low, medium or high")
+    return payload
 
-## 3. اطلب شكل JSON صارمًا
 
-```python
 response = gateway.generate_response(
     {
-        "preset": "release-summary",
+        "model": "@release-summary",
         "input": "Summarize the last 24 hours of deployment activity.",
-        "response_format": {
-            "type": "json_schema",
-            "name": "release_summary",
-            "schema": {
-                "type": "object",
-                "required": ["summary", "risk_level"],
-                "properties": {
-                    "summary": {"type": "string"},
-                    "risk_level": {
-                        "type": "string",
-                        "enum": ["low", "medium", "high"],
-                    },
-                },
-                "additionalProperties": False,
-            },
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "release_summary",
+                "strict": True,
+                "schema": SCHEMA,
+            }
         },
         "plugins": [{"id": "response-healing"}],
         "meta": True,
     }
 )
-```
 
-أسباب فعالية هذا الشكل:
+if response.get("status") != "completed":
+    raise RuntimeError(f"response {response.get('id')} ended as {response.get('status')}")
 
-- يُبقي `preset` إعدادات التوجيه والمطالبة الافتراضية خارج شيفرة التطبيق
-- يجعل `response_format` العقد واضحًا
-- يمكن لـ `plugins` استعادة JSON غير السليم شبه الصالح عندما يسمح سير العمل بذلك
-- يحتفظ `meta` بتفاصيل التوجيه وتنفيذ الإضافات لتصحيح الأخطاء
-
-## 4. حلّل JSON وسجّل معرّفات التشغيل
-
-```python
-import json
-
-message_text = ""
-for item in response.get("output", []):
-    if item.get("type") != "message":
-        continue
-    for part in item.get("content", []):
-        if part.get("type") == "output_text":
-            message_text = part.get("text", "")
-            break
-
-payload = json.loads(message_text)
+payload = validate(json.loads(output_text(response)))
+meta = response.get("meta", {})
 
 print("response_id:", response.get("id"))
-print("selected_provider:", response.get("meta", {}).get("routing", {}).get("selected_provider"))
-print("plugin_executions:", response.get("meta", {}).get("plugin_executions"))
+print("model:", response.get("model"))
+print("selected_provider:", meta.get("routing", {}).get("selected_provider"))
+print("plugin_executions:", meta.get("plugin_executions"))
 print(payload)
 ```
 
-يكفي هذا عادةً للعاملين في Python لربط سطر سجل واحد في التطبيق بما يلي:
+| الحقل | ما يفعله |
+| --- | --- |
+| `"model": "@release-summary"` | يستخدم الإعداد المسبق. لا يوجد حقل `preset` منفصل. |
+| `text.format` | يطلب JSON Schema هذا. في Chat Completions يوضع في `response_format`؛ راجع [المخرجات المنظَّمة](../guides/structured-outputs). |
+| `plugins` | يصلح الـ JSON شبه الصالح؛ راجع [إصلاح الردود](./response-healing-for-structured-json). |
+| `meta: true` | يضيف `meta.routing` و`meta.plugin_executions` إلى الرد. |
 
-- نافذة تفاصيل الطلب في لوحة التحكم
-- تشخيصات التوجيه
-- بيانات تنفيذ الإضافات الوصفية
+</Step>
+<Step title="شغّله">
 
-## 5. صحّح الأخطاء قبل إضافة تجاوزات
+```bash
+python release_summary.py
+```
 
-إذا وُجّه طلب بطريقة مختلفة عن المتوقع:
+</Step>
+</Steps>
 
-1. افتح الطلب ضمن **Gateway -> الاستخدام**
-2. افحص تشخيصات التوجيه والمزوّدين المرشحين
-3. افحص بيانات تنفيذ الإضافات الوصفية إذا كان الطلب يتضمن JSON منظّمًا
-4. غيّر الإعداد المسبق بعد أن توضّح السجلات ما حدث فعلًا فقط
+## تحقّق من نجاحه
 
-تجنب محاولة إصلاح طلب واحد سيئ عبر إضافة تجاوزات مضمنة كثيرة. فهذا يهزم عادةً الغرض من استخدام الإعدادات المسبقة.
+يطبع السكربت معرّف الرد، والنموذج والمزوّد اللذين أجابا، وسجل الإضافة، وقاموسًا يحتوي على `summary` وإحدى القيم `low` أو `medium` أو `high`. ابحث عن معرّف الرد في **الإعدادات → الاستخدام → السجلات** لترى الطلب نفسه مع تفاصيل توجيهه.
 
-## 6. حافظ على التوافق مع التخزين المؤقت عند إعادة الاستخدام
+النموذج الذي يقع خارج النماذج المسموح بها في الإعداد المسبق يفشل بالخطأ `validation_error` (الكلمة المفتاحية `preset_model_not_allowed`). أما `ValueError` الصادر من `validate()` فيعني أن الـ JSON حُلّل لكن المحتوى كان خاطئًا: شدّد المخطط أو المطالبة بدلًا من إضافة إعادات محاولة.
 
-إذا فعّل الإعداد المسبق تخزين الاستجابات مؤقتًا:
+## صحّح قبل أن تتجاوز
 
-- حافظ على ثبات صياغة المطالبة
-- حافظ على ثبات مخطط الاستجابة
-- تجنّب تجاوزات المزوّد غير الضرورية لكل طلب
-- تجنّب قوائم الأدوات المتغيرة باستمرار
-
-إذا احتاج أحد المستدعين فعلًا إلى سلوك مختلف، فاستخدم له إعدادًا مسبقًا منفصلًا بدل تقليل إعادة استخدام التخزين المؤقت في سير العمل المشترك.
-
-## أدلة ذات صلة
-
-- [إطلاق الإعدادات المسبقة وتصحيح أخطاء التوجيه](./preset-rollout-and-routing-debug.mdx)
-- [استخدام تخزين الاستجابات المؤقت مع الإعدادات المسبقة](./response-caching-with-presets.mdx)
-- [إصلاح استجابات JSON المنظّمة](./response-healing-for-structured-json.mdx)
-- [نظرة عامة على Python SDK](../sdk-reference/python/overview.mdx)
+إذا وُجّه طلب بشكل مختلف عمّا توقعته، فافتحه في السجلات، واقرأ **قابلية رصد التوجيه** وسجل الإضافة، ولا تغيّر الإعداد المسبق إلا بعد أن تُظهر السجلات ما حدث. تكديس التجاوزات المضمّنة في طلب واحد يُفقد الإعداد المسبق فائدته؛ وإذا احتاج مستدعٍ واحد فعلًا إلى سلوك مختلف، فخصّص له إعدادًا مسبقًا خاصًا به.

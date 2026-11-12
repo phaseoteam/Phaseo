@@ -12,7 +12,7 @@ CREATE TABLE "public"."gateway_batch_key_usage_records" (
   CONSTRAINT "gateway_batch_key_usage_records_cost_nanos_check" CHECK ((cost_nanos >= 0)),
   CONSTRAINT "gateway_batch_key_usage_records_pkey" PRIMARY KEY (workspace_id, batch_id, custom_id),
   CONSTRAINT "gateway_batch_key_usage_records_key_id_fkey" FOREIGN KEY (key_id) REFERENCES public.keys(id) ON DELETE CASCADE,
-  CONSTRAINT "gateway_batch_key_usage_records_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "gateway_batch_key_usage_records_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES private.usage_workspace_identity(workspace_id) ON DELETE RESTRICT
 );
 
 ALTER TABLE "public"."gateway_batch_key_usage_records"

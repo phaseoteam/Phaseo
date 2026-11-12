@@ -1,15 +1,19 @@
+import { violatesMcpManagementBinding } from "@/lib/oauth/mcpScopes";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
+import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import {
 	CAPABILITIES,
 	DEFAULT_CLI_OAUTH_CAPABILITIES,
 	GATEWAY_ACCESS_SCOPE,
 	IDENTITY_SCOPES,
+	isOptInCapability,
 	parseStoredScopeList,
 } from "@/lib/authz/capabilities";
 import { resolveActiveKeyPepper, resolveKeyPepperCandidates } from "@/lib/security/keyPepper";
-import { generateGatewayKey, hmacSecret, timingSafeEqual } from "@/routes/auth.helpers";
+import { generateGatewayKey, hmacSecret, INFERENCE_KEY_PREFIX, randomBase62, timingSafeEqual } from "@/routes/auth.helpers";
 import { validateWebhookEndpointUrlForDelivery } from "@/core/webhook-endpoints";
-import { validateOAuthToken, type JWTClaims } from "./jwt";
+import { decodeJWT, validateOAuthToken, type JWTClaims } from "./jwt";
+import { CLI_CLIENT_ID, DESKTOP_CLIENT_ID, LEGACY_CLI_CLIENT_ID, isFirstPartyCliClient, isFirstPartyOAuthClient } from "./clientIds";
 
 const encoder = new TextEncoder();
 const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
@@ -21,17 +25,13 @@ const DEFAULT_WEB_BASE_URL = "https://phaseo.app";
 const DEFAULT_API_BASE_URL = "https://api.phaseo.app";
 const ACCESS_TOKEN_AUDIENCE = "phaseo-api";
 const MCP_UPSTREAM_TOKEN_TTL_SECONDS = 5 * 60;
+// A third-party app's access token is a delegated gateway key. It lasts 7 days (the database sets the
+// key's expiry to match) and the app renews it with its refresh token, which lasts REFRESH_TOKEN_TTL_SECONDS
+// from its last use.
 const DELEGATED_ACCESS_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
 const TRUTHY_VALUES = new Set(["1", "true", "yes", "on"]);
 
-export const CLI_CLIENT_ID = "phaseo_cli";
-export const DESKTOP_CLIENT_ID = "phaseo_desktop";
-export const LEGACY_CLI_CLIENT_ID = "aistats_cli";
-const CLI_CLIENT_IDS = new Set([CLI_CLIENT_ID, LEGACY_CLI_CLIENT_ID]);
-
-export function isFirstPartyCliClient(clientId: string): boolean {
-	return CLI_CLIENT_IDS.has(clientId.trim());
-}
+export { CLI_CLIENT_ID, DESKTOP_CLIENT_ID, LEGACY_CLI_CLIENT_ID, isFirstPartyCliClient };
 
 export const CLI_DEFAULT_SCOPES = DEFAULT_CLI_OAUTH_CAPABILITIES;
 
@@ -97,6 +97,10 @@ export function isReservedOAuthClientName(value: string): boolean {
 
 export type OAuthActor = {
 	userId: string;
+	/** The Phaseo app (CLI or desktop) the auth provider issued the token to, or null for the person's own session. */
+	clientId?: string | null;
+	mfaRequired?: boolean;
+	assuranceLevel?: string | null;
 	email?: string | null;
 	name?: string | null;
 };
@@ -414,6 +418,50 @@ export async function issueMcpUpstreamToken(input: TokenIssueInput) {
 	};
 }
 
+export const CLI_MCP_ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
+
+/**
+ * `phaseo mcp` swaps the CLI's own access token for this one. Its audience is the MCP resource and
+ * never `phaseo-api`, so every API route rejects it (validateLocalAccessToken checks that audience)
+ * and only the MCP token exchange accepts it. It has no refresh token: the CLI swaps again from its
+ * own session when it expires.
+ */
+export async function issueCliMcpAccessToken(input: TokenIssueInput & { resource: string }) {
+	const now = Math.floor(Date.now() / 1000);
+	return {
+		access_token: await signJwt({
+			iss: getIssuer(),
+			sub: input.userId,
+			aud: input.resource,
+			exp: now + CLI_MCP_ACCESS_TOKEN_TTL_SECONDS,
+			iat: now,
+			jti: crypto.randomUUID(),
+			user_id: input.userId,
+			workspace_id: input.workspaceId,
+			client_id: input.clientId,
+			scope: input.scopes.join(" "),
+		}),
+		issued_token_type: "urn:ietf:params:oauth:token-type:access_token" as const,
+		token_type: "Bearer" as const,
+		expires_in: CLI_MCP_ACCESS_TOKEN_TTL_SECONDS,
+		scope: input.scopes.join(" "),
+		resource: input.resource,
+	};
+}
+
+/** Claims of a token from issueCliMcpAccessToken for this resource, or null for anything else. */
+export async function validateCliMcpAccessToken(token: string, resource: string): Promise<JWTClaims | null> {
+	if (!resource || resource === ACCESS_TOKEN_AUDIENCE) return null;
+	const jwks = await getLocalJwks();
+	const result = await validateOAuthToken(token, jwks.keys, getIssuer(), resource);
+	if (!result.valid || !result.claims) return null;
+	// Exactly one audience: a token that also names phaseo-api is not an MCP-only token.
+	const audiences = Array.isArray(result.claims.aud) ? result.claims.aud : [result.claims.aud];
+	if (audiences.length !== 1 || audiences[0] !== resource) return null;
+	if (!isFirstPartyCliClient(String(result.claims.client_id))) return null;
+	return result.claims;
+}
+
 async function fetchUserProfile(userId: string): Promise<{ email?: string | null; name?: string | null }> {
 	const supabase = getSupabaseAdmin();
 	const { data } = await supabase.auth.admin.getUserById(userId);
@@ -430,13 +478,26 @@ async function fetchUserProfile(userId: string): Promise<{ email?: string | null
 	};
 }
 
+/**
+ * The person a Supabase access token belongs to, for the routes that act as that person: consent approval,
+ * device activation, the desktop key and dashboard sessions. The auth provider's OAuth server also issues
+ * such tokens to apps, with the app's client_id claim. A third-party app's token is the app acting for the
+ * person, not the person, so it is refused here (null, as if signed out); Phaseo's own apps keep theirs.
+ */
 export async function getSupabaseActor(accessToken: string): Promise<OAuthActor | null> {
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase.auth.getUser(accessToken);
 	if (error || !data?.user?.id) return null;
+	// getUser above authenticates this exact token before its claims are used.
+	const claims = decodeJWT(accessToken)?.payload ?? {};
+	const clientId = claims.client_id === undefined || claims.client_id === null ? null : String(claims.client_id).trim();
+	if (clientId !== null && !isFirstPartyOAuthClient(clientId)) return null;
 	const metadata = (data.user.user_metadata ?? {}) as Record<string, unknown>;
 	return {
 		userId: data.user.id,
+		clientId,
+		mfaRequired: (data.user.factors ?? []).some((factor) => factor.status === "verified"),
+		assuranceLevel: claims.aal ?? null,
 		email: data.user.email ?? null,
 		name:
 			typeof metadata.full_name === "string"
@@ -582,10 +643,12 @@ async function loadCimdClient(clientId: string): Promise<OAuthClient | null> {
 	) return null;
 	const responseTypes = Array.isArray(metadata.response_types) ? metadata.response_types.map(String) : ["code"];
 	const grantTypes = Array.isArray(metadata.grant_types) ? metadata.grant_types.map(String) : ["authorization_code"];
+	// Clients publish one document for every server they talk to, so it can list
+	// grants Phaseo doesn't offer (Claude lists the JWT bearer grant). Ignore those:
+	// the token endpoint answers unsupported_grant_type for anything but its own.
 	if (
 		!responseTypes.every((value) => value === "code")
 		|| !grantTypes.includes("authorization_code")
-		|| !grantTypes.every((value) => value === "authorization_code" || value === "refresh_token")
 	) return null;
 	const requestedScopes = normalizeScopes(metadata.scope, CIMD_DEFAULT_SCOPES);
 	const allowedScopeSet = new Set<string>(CIMD_DEFAULT_SCOPES);
@@ -687,11 +750,18 @@ export async function loadOAuthClient(clientId: string): Promise<OAuthClient | n
 
 export function filterAllowedScopes(client: OAuthClient, requested: string[]): string[] {
 	const allowed = new Set(parseStoredScopeList(client.allowed_scopes));
-	return requested.filter((scope) => allowed.has(scope));
+	// Opt-in scopes (billing:write) are for the first-party CLI only, whatever a client lists.
+	const optInAllowed = isFirstPartyCliClient(String(client.id ?? "")) && client.is_first_party === true;
+	return requested.filter((scope) => allowed.has(scope) && (optInAllowed || !isOptInCapability(scope)));
+}
+
+/** Scopes a third-party or dynamically registered client may not register for. */
+export function thirdPartyForbiddenScopes(scopes: readonly string[]): string[] {
+	return scopes.filter((scope) => isOptInCapability(scope));
 }
 
 function isCliLoopbackRedirectUri(client: OAuthClient, redirectUri: string): boolean {
-	if (!CLI_CLIENT_IDS.has(client.id)) return false;
+	if (!isFirstPartyCliClient(client.id)) return false;
 	try {
 		const url = new URL(redirectUri);
 		return (
@@ -912,23 +982,67 @@ export async function issueTokenPairForGrant(
 	return material.response;
 }
 
+// A delegated key is recorded like a key made in the dashboard, so owners and admins hear about
+// it. This never fails the token exchange.
+async function recordOAuthKeyIssued(args: { kid: string; workspaceId: string; userId: string; clientId: string; clientName?: string | null }) {
+	try {
+		const supabase = getSupabaseAdmin();
+		const { data, error } = await supabase.from("keys").select("id, name, prefix").eq("kid", args.kid).maybeSingle();
+		if (error || !data?.id) return;
+		await recordWorkspaceAuditEvent(supabase, {
+			workspaceId: args.workspaceId,
+			actorUserId: args.userId,
+			action: "api_key.created",
+			targetType: "api_key",
+			targetId: String(data.id),
+			targetName: typeof data.name === "string" ? data.name : null,
+			metadata: { prefix: data.prefix ?? null, status: "active", source: "oauth", oauthClientId: args.clientId, appName: args.clientName ?? null },
+		});
+	} catch (error) {
+		console.error("oauth_key_audit_failed", { message: error instanceof Error ? error.message : String(error) });
+	}
+}
+
+type DelegatedGrantResult =
+	| { ok: true; tokens: DelegatedTokens }
+	| { ok: false; reason: "invalid_grant" | "key_inactive" };
+
+type DelegatedTokens = {
+	access_token: string;
+	token_type: "Bearer";
+	expires_in: number;
+	refresh_token: string;
+	scope: string;
+	resource?: string;
+};
+
+/**
+ * Exchanges a third-party app's authorization code for its delegated key and a refresh token. When the
+ * person has approved the same app for the same workspace before and that key is still active, the
+ * database renews it (same row, new secret, new refresh-token family), so its id, limits, month-to-date
+ * spend and history carry over and no new api_key.created event is recorded. A paused or disabled key is
+ * never turned back on this way: the code is spent and the result is key_inactive.
+ */
 export async function issueOAuthManagedKeyForAuthorizationCode(
 	grantId: string,
 	input: TokenIssueInput,
-) {
+	options: { clientName?: string | null } = {},
+): Promise<DelegatedGrantResult> {
 	// Unbound delegated keys can spend workspace credits and require Gateway
 	// consent. A key bound to the Gateway API is still a Gateway credential and
 	// must carry the same explicit credit-spending permission.
 	if ((!input.resource || isGatewayOAuthResource(input.resource)) && !input.scopes.includes(GATEWAY_ACCESS_SCOPE)) {
-		return null;
+		return { ok: false, reason: "invalid_grant" };
 	}
 
 	const pepper = resolveActiveKeyPepper(getBindings());
 	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
 
 	const generated = generateGatewayKey();
+	const refreshToken = randomBase64Url(48);
 	const supabase = getSupabaseAdmin();
-	const rpcInput = {
+	// The key and the refresh token that renews it are issued in one transaction with the code's consumption.
+	const { data, error } = await supabase.rpc("consume_oauth_code_and_issue_delegated_grant", {
 		p_code_id: grantId,
 		p_key_hash: await hmacSecret(generated.secret, pepper),
 		p_key_kid: generated.kid,
@@ -939,48 +1053,110 @@ export async function issueOAuthManagedKeyForAuthorizationCode(
 		p_client_id: input.clientId,
 		p_scopes: input.scopes,
 		p_resource: input.resource ?? null,
-	};
-	let { data, error } = await supabase.rpc("consume_oauth_code_and_issue_managed_key", rpcInput);
-	if (error && !input.resource && /p_resource|schema cache|function.*not found/i.test(error.message)) {
-		const { p_resource: _resource, ...legacyRpcInput } = rpcInput;
-		const legacyResult = await supabase.rpc(
-			"consume_oauth_code_and_issue_managed_key",
-			legacyRpcInput,
-		);
-		data = legacyResult.data;
-		error = legacyResult.error;
-	}
+		p_refresh_token_hash: await hashOAuthSecret(refreshToken),
+		p_refresh_expires_at: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000).toISOString(),
+	});
 	if (error) throw new Error(error.message || "Failed to consume OAuth code and issue key");
-	if (data !== "issued") return null;
+	const result = data && typeof data === "object" ? data as Record<string, unknown> : null;
+	if (result?.status === "key_inactive") return { ok: false, reason: "key_inactive" };
+	const kid = typeof result?.kid === "string" ? result.kid : "";
+	if ((result?.status !== "issued" && result?.status !== "renewed") || !kid) return { ok: false, reason: "invalid_grant" };
+	// A renewal keeps the existing key, so it isn't announced as a new one.
+	if (result.status === "issued") {
+		await recordOAuthKeyIssued({
+			kid,
+			workspaceId: input.workspaceId,
+			userId: input.userId,
+			clientId: input.clientId,
+			clientName: options.clientName,
+		});
+	}
 	return {
-		access_token: generated.plaintext,
-		token_type: "Bearer",
-		expires_in: DELEGATED_ACCESS_TOKEN_TTL_SECONDS,
-		scope: input.scopes.join(" "),
-		...(input.resource ? { resource: input.resource } : {}),
+		ok: true,
+		tokens: {
+			// A renewed key keeps its key ID; only the secret is new.
+			access_token: `${INFERENCE_KEY_PREFIX}${kid}_${generated.secret}`,
+			token_type: "Bearer",
+			expires_in: DELEGATED_ACCESS_TOKEN_TTL_SECONDS,
+			refresh_token: refreshToken,
+			scope: input.scopes.join(" "),
+			...(input.resource ? { resource: input.resource } : {}),
+		},
 	};
+}
+
+type RefreshedTokens = Awaited<ReturnType<typeof issueTokenPair>> & { resource?: string };
+type RefreshResult =
+	| { ok: true; tokens: RefreshedTokens }
+	| { ok: false; reason: "invalid_client" | "invalid_grant" };
+
+/**
+ * Refreshes a third-party app's delegated key. The database checks membership, consent, the key and
+ * scopes (see rotate_oauth_delegated_refresh_token), then gives the same key a new secret, so the
+ * previous access token stops working at once, with no grace period. Its limits, attribution, history
+ * and the person's Settings → Keys entry carry over, and no new api_key.created event is recorded.
+ */
+async function rotateDelegatedRefreshToken(tokenHash: string): Promise<RefreshResult> {
+	const pepper = resolveActiveKeyPepper(getBindings());
+	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
+	const secret = randomBase62(40);
+	const refreshToken = randomBase64Url(48);
+	const { data, error } = await getSupabaseAdmin().rpc("rotate_oauth_delegated_refresh_token", {
+		p_current_token_hash: tokenHash,
+		p_next_token_hash: await hashOAuthSecret(refreshToken),
+		p_next_expires_at: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000).toISOString(),
+		p_key_hash: await hmacSecret(secret, pepper),
+	});
+	// Fail closed: a reused token's chain must be revoked before anyone is told the refresh failed.
+	if (error) throw new Error(error.message || "Failed to rotate the delegated OAuth refresh token");
+	const result = data && typeof data === "object" ? data as Record<string, unknown> : null;
+	const kid = typeof result?.kid === "string" ? result.kid : "";
+	if (result?.status !== "rotated" || !kid) return { ok: false, reason: "invalid_grant" };
+	const scopes = Array.isArray(result.scopes) ? result.scopes.map(String) : [];
+	const resource = typeof result.resource === "string" && result.resource ? result.resource : null;
+	return {
+		ok: true,
+		tokens: {
+			access_token: `${INFERENCE_KEY_PREFIX}${kid}_${secret}`,
+			token_type: "Bearer",
+			expires_in: DELEGATED_ACCESS_TOKEN_TTL_SECONDS,
+			refresh_token: refreshToken,
+			scope: scopes.join(" "),
+			...(resource ? { resource } : {}),
+		},
+	};
+}
+
+/**
+ * Scopes for a refreshed token: the authorization's scopes, narrowed to the refreshed token's.
+ * A later login that adds scopes (such as opt-in billing:write) must not widen older sessions.
+ * Only a token with no stored scope list (null) is legacy: it keeps the authorization's scopes
+ * minus opt-in ones. An empty result means the session must log in again (the caller refuses
+ * it), because an empty list must never be stored and later read as legacy.
+ * Mirrors public.rotate_oauth_refresh_token, which stores the same set.
+ */
+export function refreshedScopes(authorizationScopes: unknown, tokenScopes: unknown): string[] {
+	const granted = Array.isArray(authorizationScopes) ? authorizationScopes.map(String) : [];
+	if (tokenScopes === null || tokenScopes === undefined) return granted.filter((scope) => !isOptInCapability(scope));
+	const held = Array.isArray(tokenScopes) ? tokenScopes.map(String) : [];
+	const heldSet = new Set(held);
+	return granted.filter((scope) => heldSet.has(scope));
 }
 
 export async function rotateRefreshToken(
 	refreshToken: string,
 	clientAuth?: { clientId?: string; clientSecret?: string | null },
-): Promise<
-	| { ok: true; tokens: Awaited<ReturnType<typeof issueTokenPair>> }
-	| { ok: false; reason: "invalid_client" | "invalid_grant" }
-> {
+): Promise<RefreshResult> {
 	const tokenHashes = await hashOAuthSecretCandidates(refreshToken);
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase
 		.from("oauth_refresh_tokens")
-		.select("id, token_hash, user_id, workspace_id, client_id, scopes, expires_at, revoked_at")
+		.select("id, token_hash, user_id, workspace_id, client_id, scopes, expires_at, revoked_at, key_id")
 		.in("token_hash", tokenHashes)
 		.maybeSingle();
 	if (error || !data) return { ok: false, reason: "invalid_grant" };
 	const tokenHash = String(data.token_hash ?? "");
 	if (!tokenHash) return { ok: false, reason: "invalid_grant" };
-	if (data.expires_at && Date.parse(String(data.expires_at)) <= Date.now()) {
-		return { ok: false, reason: "invalid_grant" };
-	}
 	const clientId = String(data.client_id ?? "").trim();
 	const client = await loadOAuthClient(clientId);
 	if (!client) return { ok: false, reason: "invalid_grant" };
@@ -994,6 +1170,12 @@ export async function rotateRefreshToken(
 		if (!(await verifyClientSecret(client, clientAuth.clientSecret))) {
 			return { ok: false, reason: "invalid_client" };
 		}
+	}
+	// A third-party app's token renews its delegated key. The database checks expiry too, after reuse:
+	// an expired token that was already rotated is still a replay, and must end its live successor.
+	if (data.key_id) return rotateDelegatedRefreshToken(tokenHash);
+	if (data.expires_at && Date.parse(String(data.expires_at)) <= Date.now()) {
+		return { ok: false, reason: "invalid_grant" };
 	}
 	if (data.revoked_at) {
 		const replay = await supabase.rpc("rotate_oauth_refresh_token", {
@@ -1024,11 +1206,17 @@ export async function rotateRefreshToken(
 	if (membership.error || !membership.data) {
 		return { ok: false, reason: "invalid_grant" };
 	}
-	const scopes = Array.isArray(authorization.data.scopes)
-		? authorization.data.scopes.map(String)
-		: Array.isArray(data.scopes)
-			? data.scopes.map(String)
-			: [];
+	// The new pair is bound to no resource, so a dynamic client whose authorization holds MCP
+	// management scopes fails closed (checked on the authorization, as before narrowing).
+	// The pair itself takes the authorization's scopes narrowed to the refreshed token's,
+	// so a later consent never widens an existing session.
+	const authorizationScopes = Array.isArray(authorization.data.scopes) ? authorization.data.scopes.map(String) : [];
+	if (violatesMcpManagementBinding(client.registration_source, null, authorizationScopes)) {
+		return { ok: false, reason: "invalid_grant" };
+	}
+	const scopes = refreshedScopes(authorization.data.scopes, data.scopes);
+	// Nothing left in common: refuse instead of storing an empty scope list.
+	if (scopes.length === 0) return { ok: false, reason: "invalid_grant" };
 	const material = await createTokenPairMaterial({
 		userId: String(data.user_id),
 		workspaceId: String(data.workspace_id),
@@ -1074,14 +1262,23 @@ export async function ensureGrants(args: {
 	}
 }
 
+// Revoked, compromised and deleted keys can't be turned back on; any other state can.
+const FINAL_KEY_STATUSES = ["revoked", "compromised", "deleted"];
+
+/**
+ * RFC 7009 revocation. Throws when storage fails, so the caller can report it instead of claiming success.
+ */
 export async function revokeToken(token: string) {
 	const tokenHashes = await hashOAuthSecretCandidates(token);
 	const supabase = getSupabaseAdmin();
-	await supabase
-		.from("oauth_refresh_tokens")
-		.update({ revoked_at: new Date().toISOString() })
-		.in("token_hash", tokenHashes)
-		.is("revoked_at", null);
+	// One transaction: the token's family and, for a third-party app's token, its delegated key and every
+	// refresh token bound to it. It matches a token already rotated, so a logout that races a refresh
+	// still ends the token that refresh issued.
+	const { data: revoked, error: revokeError } = await supabase.rpc("revoke_oauth_refresh_token_grant", {
+		p_token_hashes: tokenHashes,
+	});
+	if (revokeError) throw new Error(revokeError.message || "Failed to revoke the OAuth refresh token");
+	if (revoked === "revoked") return;
 
 	// Third-party authorization-code grants return an opaque delegated Gateway
 	// key as their OAuth access token. RFC 7009 revocation must invalidate that
@@ -1094,18 +1291,95 @@ export async function revokeToken(token: string) {
 		.select("id, hash, key_kind, status")
 		.eq("kid", kid)
 		.maybeSingle();
-	if (error || !keyRow || keyRow.key_kind !== "oauth_delegated" || keyRow.status !== "active") return;
+	if (error) throw new Error(error.message || "Failed to load the delegated key to revoke");
+	if (!keyRow || keyRow.key_kind !== "oauth_delegated" || FINAL_KEY_STATUSES.includes(String(keyRow.status))) return;
 
 	const candidates = resolveKeyPepperCandidates(getBindings());
 	const hashes = await Promise.all(candidates.map((candidate) => hmacSecret(secret, candidate.value)));
 	if (!hashes.some((candidate) => timingSafeEqual(candidate, String(keyRow.hash ?? "")))) return;
 
-	await supabase
+	// A paused key is revoked too, so turning it back on can't bring back the app's access.
+	const { error: updateError } = await supabase
 		.from("keys")
-		.update({ status: "revoked" })
+		.update({ status: "revoked", revoked_reason: "oauth_token_revoked" })
 		.eq("id", keyRow.id)
+		.eq("hash", String(keyRow.hash))
+		.eq("key_kind", "oauth_delegated")
+		.not("status", "in", `(${FINAL_KEY_STATUSES.join(",")})`);
+	if (updateError) throw new Error(updateError.message || "Failed to revoke the delegated key");
+}
+
+export const DESKTOP_KEY_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+/**
+ * Keeps the desktop app's delegated key alive while it's used, so a sign-in lasts like the CLI's renewing session
+ * without minting (and announcing to the workspace's owners) a new key each time. An expired or revoked key isn't
+ * brought back; the caller has already checked the key's authorization and membership.
+ */
+export async function renewDesktopKey(keyId: string): Promise<{ expiresAt: string } | null> {
+	const now = new Date();
+	const expiresAt = new Date(now.getTime() + DESKTOP_KEY_TTL_SECONDS * 1000).toISOString();
+	const { data, error } = await getSupabaseAdmin()
+		.from("keys")
+		.update({ expires_at: expiresAt })
+		.eq("id", keyId)
+		.eq("key_kind", "oauth_delegated")
+		.eq("oauth_client_id", DESKTOP_CLIENT_ID)
 		.eq("status", "active")
-		.eq("key_kind", "oauth_delegated");
+		.gt("expires_at", now.toISOString())
+		.select("expires_at")
+		.maybeSingle();
+	if (error) throw new Error(error.message || "Failed to renew the desktop key");
+	return data?.expires_at ? { expiresAt: String(data.expires_at) } : null;
+}
+
+export const DESKTOP_KEY_SCOPES = [GATEWAY_ACCESS_SCOPE, "models:read"] as const;
+
+/**
+ * The workspace a desktop sign-in's key belongs to: the one asked for, else the person's default, else the first they
+ * joined. Membership of the one asked for is checked when the key is issued.
+ */
+export async function desktopKeyWorkspace(userId: string, requested?: string | null): Promise<string | null> {
+	if (requested) return requested;
+	const supabase = getSupabaseAdmin();
+	const [user, membership] = await Promise.all([
+		supabase.from("users").select("default_workspace_id").eq("user_id", userId).maybeSingle(),
+		supabase.from("workspace_members").select("workspace_id").eq("user_id", userId).order("joined_at", { ascending: true }).limit(1).maybeSingle(),
+	]);
+	if (user.error || membership.error) throw new Error(user.error?.message || membership.error?.message || "Failed to load the person's workspaces");
+	const fallback = membership.data?.workspace_id ? String(membership.data.workspace_id) : null;
+	const preferred = user.data?.default_workspace_id ? String(user.data.default_workspace_id) : null;
+	if (!preferred) return fallback;
+	const { data, error } = await supabase.from("workspace_members").select("workspace_id").eq("user_id", userId).eq("workspace_id", preferred).maybeSingle();
+	if (error) throw new Error(error.message || "Failed to load the person's workspaces");
+	return data ? preferred : fallback;
+}
+
+/**
+ * The desktop app's key for model calls, issued against the person's own Phaseo login rather than an OAuth code: the
+ * app is Phaseo's, so it signs in like the website and gets no consent screen. It's the same delegated key an OAuth
+ * sign-in gave it (renewable, revocable, listed under Connected apps), and owners hear about it like any new key.
+ * Earlier desktop keys stay, one per signed-in computer; keys_oauth_delegated_active_idx doesn't count them.
+ * Null when the person isn't a member of the workspace.
+ */
+export async function issueDesktopSessionKey(args: { userId: string; workspaceId: string }) {
+	const pepper = resolveActiveKeyPepper(getBindings());
+	if (!pepper) throw new Error("KEY_PEPPER_ACTIVE is not configured");
+	const generated = generateGatewayKey();
+	const { data, error } = await getSupabaseAdmin().rpc("issue_desktop_session_key", {
+		p_user_id: args.userId,
+		p_workspace_id: args.workspaceId,
+		p_key_hash: await hmacSecret(generated.secret, pepper),
+		p_key_kid: generated.kid,
+		p_key_prefix: generated.prefix,
+		p_key_name: "Phaseo desktop",
+		p_resource: getGatewayOAuthResource(),
+		p_ttl_seconds: DESKTOP_KEY_TTL_SECONDS,
+	});
+	if (error) throw new Error(error.message || "Failed to issue the desktop key");
+	if (typeof data !== "string" || !data) return null;
+	await recordOAuthKeyIssued({ kid: generated.kid, workspaceId: args.workspaceId, userId: args.userId, clientId: DESKTOP_CLIENT_ID, clientName: "Phaseo desktop" });
+	return { key: generated.plaintext, expiresAt: new Date(data).toISOString(), scopes: [...DESKTOP_KEY_SCOPES] };
 }
 
 export function makeDeviceCodeExpiry(): string {

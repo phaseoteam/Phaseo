@@ -1,0 +1,166 @@
+---
+icon: "radio-tower"
+title: "Lifecycle-Hooks"
+description: "An jedem Punkt eines Agentenlaufs ein Event erhalten, um eine Oberfläche zu aktualisieren, Audit-Einträge zu schreiben oder Telemetrie zu speisen."
+---
+
+Übergib einem Lauf oder einer Fortsetzung einen Event-Handler, um ein Event zu erhalten, wenn der Lauf startet, jeder Modell-Turn beginnt und endet, jedes Tool läuft, der Lauf pausiert und der Lauf endet. Damit aktualisierst du deine Oberfläche, schreibst Audit-Einträge oder speist deine bestehende Telemetrie.
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await agent.run({
+  input,
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+```
+
+```python Python
+def on_event(event):
+    logger.info("%s %s", event["type"], event["run_id"])
+
+result = agent.run(input="Summarise this ticket", client=client, on_event=on_event)
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input:  prompt,
+  Client: client,
+  OnEvent: func(event phaseoagent.AgentEvent) {
+    logger.Info("agent event",
+      "type", event.Type,
+      "run_id", event.RunID,
+      "details", event.Details,
+    )
+  },
+})
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions
+{
+    Input = prompt,
+    Client = client,
+    OnEvent = value => logger.LogInformation(
+        "{EventType} {RunId} {Details}", value.Type, value.RunId, value.Details),
+});
+```
+
+```php PHP
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    onEvent: function (array $event) use ($logger): void {
+        $logger->info("agent event", $event);
+    }
+);
+```
+
+```ruby Ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  on_event: ->(event) { logger.info("agent event #{event.inspect}") }
+)
+```
+
+```java Java
+var result = agent.run(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null,
+    event -> logger.info("{} {} {}", event.type(), event.runId(), event.details()),
+    null));
+```
+
+```rust Rust
+use phaseo_agent::{AgentEvent, RunOptions};
+
+let mut on_event = |event: &AgentEvent| {
+    println!("{} run={} details={}", event.event_type, event.run_id, event.details);
+};
+
+let result = agent.run_with_events(
+    &mut client,
+    RunOptions::new("Check project health"),
+    Some(&mut on_event),
+)?;
+```
+
+</CodeGroup>
+
+## Wo der Handler hingehört und was er erhält
+
+| Sprache | Handler | Form des Events |
+| --- | --- | --- |
+| TypeScript | `onEvent` in den Lauf- und Fortsetzungsoptionen | Objekt mit `type`, `runId`, `agentId`, `timestamp` und Event-Feldern in camelCase (`stepIndex`, `toolCallId`) |
+| Python | `on_event` an `run()`, `stream()` oder einer Fortsetzung | Dict mit `type`, `run_id`, `agent_id`, `timestamp`, `status` und Event-Schlüsseln |
+| Go | `OnEvent` an `RunOptions` oder `ContinueOptions` | `AgentEvent` mit `Type`, `RunID`, `AgentID`, `Timestamp`, `Status`, `Details` |
+| C# | `OnEvent` an `RunOptions` oder `ContinueOptions` | `AgentEvent` mit `Type`, `RunId`, `AgentId`, `Timestamp`, `Status`, `Details` |
+| PHP | `onEvent`-Callable an `run()` oder `continueRun()` | Array mit `type`, `run_id`, `agent_id`, `timestamp`, `status`, Event-Schlüssel auf oberster Ebene eingefügt |
+| Ruby | `on_event:` an `run` oder `continue_run` | Hash mit `:type`, `:run_id`, `:agent_id`, `:timestamp`, `:status`, Event-Schlüssel als Symbole eingefügt |
+| Java | `Consumer<AgentEvent>` als `onEvent`-Argument von `RunOptions` oder `ContinueOptions` | `AgentEvent` mit `type()`, `runId()`, `agentId()`, `timestamp()`, `status()`, `details()` |
+| Rust | Callback, der an `run_with_events` oder `continue_with_events` übergeben wird | `&AgentEvent` mit `event_type`, `run_id`, `agent_id`, `timestamp_ms`, `details` (JSON) |
+
+## Events, die die Laufzeit sendet
+
+Die Detail-Schlüssel sind unten in snake_case aufgeführt; TypeScript verwendet die camelCase-Form.
+
+| Event | Wann | Details | Sprachen |
+| --- | --- | --- | --- |
+| `run.started` | Ein Lauf beginnt | Keine | Alle |
+| `run.resumed` | Eine Fortsetzung beginnt | `previous_status` | Alle |
+| `step.started` | Ein Modell-Turn beginnt | `step_index` | Alle außer Rust |
+| `model.requested` | Jeder Modellversuch, einschließlich Wiederholungen | `step_index`, `attempt`, `model` | Alle außer Rust |
+| `model.retrying` | Vor einer Wiederholung | | TypeScript |
+| `model.completed` | Das Modell hat geantwortet | `step_index`, `attempt`, `request_id`, `model` | Alle außer Rust |
+| `model.failed` | Eine Modellanfrage ist fehlgeschlagen | | TypeScript |
+| `tool.started` | Ein Tool beginnt | `tool_call_id`, `tool_name` | Alle |
+| `tool.preliminary_result` | Das Tool hat Fortschritt gemeldet | `tool_call_id`, `tool_name`, `result` | Alle außer Rust |
+| `tool.completed` | Ein Tool ist zurückgekehrt | `tool_call_id`, `tool_name`, `output` | Alle |
+| `tool.failed` | Ein Tool ist fehlgeschlagen (der Auslöser unterscheidet sich; siehe [Events und Fehler](./events-and-errors#which-events-fire-when-something-fails)) | `tool_call_id`, `tool_name`, `error` | Alle außer Rust |
+| `step.completed`, `step.failed`, `step.cancelled` | Ein Schritt endet | `step_index` | TypeScript |
+| `checkpoint.saved` | Ein Schritt ist abgeschlossen | `step_index` | Alle außer Rust |
+| `history.repaired` | Eine Fortsetzung hat Tool-Aufrufe ohne Ergebnis beantwortet | | TypeScript |
+| `run.waiting_for_human` | Der Lauf wurde pausiert | `step_index`, `pause` | Alle außer Rust |
+| `run.completed` | Das Modell hat eine endgültige Antwort gegeben | `output` | Alle |
+| `run.stopped` | Eine Stoppbedingung hat den Lauf beendet (TypeScript) oder das Schrittlimit wurde erreicht (Rust) | `stop_reason` (TypeScript), `reason` (Rust) | TypeScript, Rust |
+| `run.cancelled` | Der Lauf wurde abgebrochen | | TypeScript |
+| `run.failed` | Der Lauf ist fehlgeschlagen (der Auslöser unterscheidet sich; siehe [Events und Fehler](./events-and-errors#which-events-fire-when-something-fails)) | `error` | Alle außer Rust |
+| `response.output_text.delta`, `response.reasoning.delta`, `response.item` und andere `response.*`-Events | Nur bei Streaming-Läufen | | Alle außer Rust |
+
+Rust `0.2` verwendet für einige Events eigene Namen:
+
+| Rust-Event | Entspricht | Details |
+| --- | --- | --- |
+| `model.request.started` | `step.started` und `model.requested`, einmal pro Schritt gesendet, nicht pro Versuch | `step_index` |
+| `model.response.completed` | `model.completed` | `step_index`, `attempts` |
+| `tool.started`, `tool.completed` | Denselben Events | `tool_call_id`, `name`; `tool.completed` ergänzt `is_error` |
+| `run.paused` | `run.waiting_for_human` | Keine |
+| `run.stopped` | Wird gesendet, wenn das Schrittlimit erreicht ist | `reason` |
+
+Ein Lauf, der an einer [Stoppbedingung](./stop-conditions) endet, sendet in TypeScript `run.stopped` und in Python, Go, C#, PHP, Ruby oder Java kein abschließendes Event; lies stattdessen den Status des Laufs. In TypeScript wird `step.completed` gesendet, nachdem der Schritt als Checkpoint gespeichert wurde, sodass Persistenz- und Telemetrie-Consumer es als stabile Grenze behandeln können.
+
+## Events streamen
+
+Beim Streaming kommen dieselben Lifecycle-Events zusammen mit den `response.*`-Events des Modells an. In TypeScript, Python, Go, C# und Java erhält sie der Handler; in PHP und Ruby erscheinen sie außerdem in `fullStream()` / `full_stream`. Rust hat kein Streaming. Die Stream-Consumer sind unter [Streaming](./streaming) beschrieben.
+
+## Handler schnell halten
+
+Die Laufzeit wartet auf den Handler, bevor sie weitermacht. Kehre daher schnell zurück und verlagere langsame Speicher- oder Netzwerkarbeit in eine Warteschlange. Schwärze sensible Tool-Eingaben und -Ausgaben, bevor Events deinen Prozess verlassen.
+
+| Sprache | Wie der Handler läuft |
+| --- | --- |
+| TypeScript | Wird mit `await` abgewartet, bevor der Lauf weitergeht |
+| Python | Wird synchron aufgerufen |
+| Go | Inline; parallele Tools rufen ihn aus mehreren Goroutinen auf, daher muss er für parallele Nutzung sicher sein |
+| C# | Inline; parallele Tools rufen ihn aus mehreren Tasks auf, daher muss er threadsicher sein |
+| PHP | Inline |
+| Ruby | Inline; parallele Tools rufen ihn aus ihren Threads auf, daher muss er threadsicher sein |
+| Java | Inline; parallele Tools rufen ihn aus Pool-Threads auf, daher muss er threadsicher sein |
+| Rust | Auf dem Thread des Laufs |
+
+## Events für eine Produktoberfläche auswählen
+
+Verwende `response.output_text.delta` für Live-Antworttext, Tool-Events für Tool-Aufruf-Karten und Fortschrittsanzeigen, `run.waiting_for_human` (Rust: `run.paused`), um Bedienelemente für Freigabe oder Eingabe anzuzeigen, und abschließende Lauf-Events, um Ladezustände zu beenden. Für eine lokale Aufzeichnung ganzer Läufe während der Entwicklung verwendest du [DevTools](./devtools).

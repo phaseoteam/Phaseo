@@ -18,6 +18,15 @@ with params as (
     case when lower(p_context_bucket) in ('lte_4k', '4k_16k', '16k_64k', 'gt_64k') then lower(p_context_bucket) else 'all' end context_bucket,
     now() now_ts
 ),
+threshold as (
+  -- Unfiltered views publish at any volume. A colo, stream or context filter can
+  -- narrow a cohort to one customer's requests, so filtered views need 20.
+  select case
+    when params.cloudflare_colo is null and params.stream_mode = 'all' and params.context_bucket = 'all'
+    then 1 else 20
+  end min_requests
+  from params
+),
 visible_model as (
   select model.model_slug
   from public.v2_models model
@@ -34,7 +43,7 @@ scoped_facts as (
     fact.cloudflare_colo,
     fact.safe_metadata,
     route.provider_slug provider_id
-  from public.v2_request_facts fact
+  from public.reporting_request_facts fact
   join visible_model on visible_model.model_slug = coalesce(fact.routed_model_slug, fact.requested_model_slug)
   left join public.v2_model_provider_routes route on route.provider_model_id = fact.provider_model_id
   cross join params
@@ -46,8 +55,10 @@ usage_by_request as (
   select
     usage.request_event_id,
     sum(usage.quantity) filter (where usage.meter_key = 'input_tokens')::numeric input_tokens,
-    sum(usage.quantity) filter (where usage.meter_key = 'cached_input_tokens')::numeric cached_input_tokens,
-    bool_or(usage.meter_key = 'cached_input_tokens') cache_telemetry_observed
+    -- The gateway writes no meter row for a zero quantity, so a request with input
+    -- tokens and no cached row is a cache miss (0 cached tokens), not missing telemetry.
+    coalesce(sum(usage.quantity) filter (where usage.meter_key = 'cached_input_tokens'), 0)::numeric cached_input_tokens,
+    coalesce(sum(usage.quantity) filter (where usage.meter_key = 'input_tokens'), 0) > 0 cache_telemetry_observed
   from scoped_facts fact
   join public.v2_request_usage usage on usage.request_event_id = fact.request_event_id
   where usage.meter_key in ('input_tokens', 'cached_input_tokens')
@@ -122,7 +133,8 @@ select jsonb_build_object(
       'cached_input_pct', case when input_tokens > 0 then least(100, cached_input_tokens * 100.0 / input_tokens) else null end
     ) order by bucket_start)
     from hourly
-    where requests >= 1 and telemetry_requests > 0
+    cross join threshold
+    where telemetry_requests >= threshold.min_requests
   ), '[]'::jsonb),
   'provider_daily_7d', coalesce((
     select jsonb_agg(jsonb_build_object(
@@ -137,14 +149,15 @@ select jsonb_build_object(
     ) order by daily.usage_day, daily.provider_id)
     from provider_daily daily
     join public.v2_providers provider on provider.provider_slug = daily.provider_id
-    where daily.requests >= 1 and daily.telemetry_requests > 0
+    cross join threshold
+    where daily.telemetry_requests >= threshold.min_requests
   ), '[]'::jsonb)
 );
 $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."get_v2_model_cached_input_metrics"(text, text, text, text) TO "service_role";
 
-COMMENT ON FUNCTION "public"."get_v2_model_cached_input_metrics"(text, text, text, text) IS 'Token-weighted cached input percentage over time and by provider, available from the first aggregated request.';
+COMMENT ON FUNCTION "public"."get_v2_model_cached_input_metrics"(text, text, text, text) IS 'Token-weighted cached input percentage over time and by provider, suppressed below twenty aggregated requests.';
 
 REVOKE ALL ON FUNCTION "public"."get_v2_model_cached_input_metrics"(text, text, text, text) FROM "postgres";
 

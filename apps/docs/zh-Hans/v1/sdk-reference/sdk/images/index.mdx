@@ -1,10 +1,11 @@
 ---
 icon: "image"
-title: "图像（AI SDK）"
-description: "使用 Vercel AI SDK 和 Phaseo 供应商生成图像。"
+title: "图像 (AI SDK)"
+sidebarTitle: "图像"
+description: "使用 Vercel AI SDK 和 Phaseo 提供商生成图像。"
 ---
 
-将 `generateImage` 与 `phaseo.imageModel(...)` 配合使用。
+把 `phaseo.imageModel(modelId)` 传给 `generateImage`。请求会发送到 Gateway 的 `/v1/images/generations` 端点。
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -21,9 +22,9 @@ console.log(result.images[0].uint8Array.length);
 console.log(result.providerMetadata);
 ```
 
-## 说明
+## 读取结果
 
-- 可用的 `size` 值取决于所选模型。
-- 网关返回的 URL 图像会被规范化为 AI SDK 文件输出格式，因此应优先读取稳定字段 `uint8Array` 和 `mediaType`。
-- 对于确定性工作流，请将提示词、模型和参数一起保存。
-- 将返回的图像元数据与资源引用一起保存。
+Gateway 以 URL 形式返回的图像会被转换为 AI SDK 的文件结构，因此无论提供商返回的是什么，都可以在每张图像上读取 `uint8Array` 和 `mediaType`。
+
+- 可用的 `size` 取值取决于模型。
+- 如果之后需要重现某张图像，请把提示词、模型和参数与图像的元数据一起保存。

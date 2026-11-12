@@ -44,4 +44,6 @@ The [machine-readable version 1 schema](https://phaseo.app/api/internal/provider
 
 Use `availability: "not_ready"` for an offer that cannot yet serve traffic. New upcoming models stay hidden until release. Runnable offers require the provider's configured endpoint, credentials, adapter, and pricing meters. Phaseo blocks remain effective even when the provider updates its feed. Omitting a model retires only that provider's feed-managed offer; canonical models and price history remain intact.
 
+An optional top-level `rate_limits` array declares the limits your platform applies to Phaseo's account: `[{ "model"?: "<provider_model_slug>", "requests_per_minute"?, "requests_per_day"?, "tokens_per_minute"?, "tokens_per_day"? }]`. Leave out `model` for a provider-wide limit. Values are positive integers or `null`. Each scope appears once, and every `model` must be a `provider_model_slug` in the same document, otherwise the snapshot is rejected. Reaching a limit only ranks your offers lower in routing, so limits apply without review once your application is approved. When present, the array replaces your declared limits on import. Omit it to manage limits in provider settings.
+
 The version 1 schema URL remains stable. Future optional fields can be added without breaking version 1 feeds; incompatible changes will use a new versioned contract with a migration period.

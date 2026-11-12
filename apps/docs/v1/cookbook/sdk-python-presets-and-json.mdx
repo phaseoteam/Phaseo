@@ -1,132 +1,126 @@
 ---
 title: "Ship preset-driven structured JSON with the Python SDK"
+sidebarTitle: "Preset-driven JSON in Python"
 icon: "braces"
 description: "Use the official Python SDK with presets, structured outputs, and request-level debugging without dropping to raw HTTP calls."
+"og:image": "https://phaseo.app/og/dynamic?title=Ship%20preset-driven%20structured%20JSON%20with%20the%20Python%20SDK&description=Use%20the%20official%20Python%20SDK%20with%20presets%2C%20structured%20outputs%2C%20and%20request-level%20debugging%20without%20dropping%20to%20raw%20HTTP%20calls.&pathname=/docs/v1/cookbook/sdk-python-presets-and-json"
 ---
 
-Use this recipe when a Python service should rely on dashboard-managed defaults instead of repeating prompt, routing, and parameter config in every request.
+Call a dashboard preset from Python with a JSON Schema, then validate the answer and log the IDs you need to debug it. When you're done you have one script that sends `"model": "@release-summary"`, gets back `{"summary": ..., "risk_level": ...}`, and prints the provider and plugin details for that request.
 
-## Goal
+The script is production-ready once you replace the preset and schema with your own. Keep the validation step: healing fixes syntax, not content.
 
-- keep the Python caller small
-- route through a preset slug instead of one hard-coded model
-- request strict structured output
-- retain enough response metadata to debug routing or plugin behavior
+## Build it
 
-## 1. Start with one shared client
+<Steps>
+<Step title="Create the preset">
 
-```python
+In **Settings → Presets**, create `release-summary` with the system prompt, model or allowed models, provider preferences, reasoning settings and `temperature` every caller should share. The Python code then only sends what varies. [Presets](../guides/presets) explains how the preset merges with the request.
+
+</Step>
+<Step title="Install the SDK">
+
+```bash
+pip install phaseo
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+</Step>
+<Step title="Write the script">
+
+```python release_summary.py
+import json
 import os
 
 from phaseo import Phaseo
 
+# Create one client and reuse it.
 gateway = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
-```
 
-Keep the client shared instead of creating one per request.
+SCHEMA = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "risk_level": {"type": "string", "enum": ["low", "medium", "high"]},
+    },
+    "required": ["summary", "risk_level"],
+    "additionalProperties": False,
+}
 
-## 2. Move stable defaults into a preset
 
-Create a preset in **Dashboard -> Settings -> Presets** when these should stay stable across multiple callers:
+def output_text(response: dict) -> str:
+    return "".join(
+        part.get("text", "")
+        for item in response.get("output", [])
+        if item.get("type") == "message"
+        for part in item.get("content", [])
+        if part.get("type") == "output_text"
+    )
 
-- system prompt
-- model or model allowlist
-- provider preferences
-- reasoning config
-- temperature and related generation parameters
-- response caching policy when deterministic replay matters
 
-Once the preset exists, the Python caller can stay narrow.
+def validate(payload: dict) -> dict:
+    if set(payload) != {"summary", "risk_level"}:
+        raise ValueError(f"unexpected keys: {sorted(payload)}")
+    if not isinstance(payload["summary"], str) or not payload["summary"]:
+        raise ValueError("summary must be a non-empty string")
+    if payload["risk_level"] not in ("low", "medium", "high"):
+        raise ValueError("risk_level must be low, medium or high")
+    return payload
 
-## 3. Request one strict JSON shape
 
-```python
 response = gateway.generate_response(
     {
-        "preset": "release-summary",
+        "model": "@release-summary",
         "input": "Summarize the last 24 hours of deployment activity.",
-        "response_format": {
-            "type": "json_schema",
-            "name": "release_summary",
-            "schema": {
-                "type": "object",
-                "required": ["summary", "risk_level"],
-                "properties": {
-                    "summary": {"type": "string"},
-                    "risk_level": {
-                        "type": "string",
-                        "enum": ["low", "medium", "high"],
-                    },
-                },
-                "additionalProperties": False,
-            },
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "release_summary",
+                "strict": True,
+                "schema": SCHEMA,
+            }
         },
         "plugins": [{"id": "response-healing"}],
         "meta": True,
     }
 )
-```
 
-Why this shape works well:
+if response.get("status") != "completed":
+    raise RuntimeError(f"response {response.get('id')} ended as {response.get('status')}")
 
-- `preset` keeps routing and prompt defaults outside application code
-- `response_format` keeps the contract explicit
-- `plugins` can recover near-valid malformed JSON when that workflow allows it
-- `meta` preserves routing and plugin execution detail for debugging
-
-## 4. Parse the JSON, then log the operational identifiers
-
-```python
-import json
-
-message_text = ""
-for item in response.get("output", []):
-    if item.get("type") != "message":
-        continue
-    for part in item.get("content", []):
-        if part.get("type") == "output_text":
-            message_text = part.get("text", "")
-            break
-
-payload = json.loads(message_text)
+payload = validate(json.loads(output_text(response)))
+meta = response.get("meta", {})
 
 print("response_id:", response.get("id"))
-print("selected_provider:", response.get("meta", {}).get("routing", {}).get("selected_provider"))
-print("plugin_executions:", response.get("meta", {}).get("plugin_executions"))
+print("model:", response.get("model"))
+print("selected_provider:", meta.get("routing", {}).get("selected_provider"))
+print("plugin_executions:", meta.get("plugin_executions"))
 print(payload)
 ```
 
-For Python workers, this is usually enough to correlate one application log line back to:
+| Field | Does |
+| --- | --- |
+| `"model": "@release-summary"` | Uses the preset. There is no separate `preset` field. |
+| `text.format` | Asks for this JSON Schema. On Chat Completions it goes in `response_format`; see [Structured outputs](../guides/structured-outputs). |
+| `plugins` | Repairs near-valid JSON; see [response healing](./response-healing-for-structured-json). |
+| `meta: true` | Adds `meta.routing` and `meta.plugin_executions` to the response. |
 
-- the request detail dialog in the dashboard
-- routing diagnostics
-- plugin execution metadata
+</Step>
+<Step title="Run it">
 
-## 5. Debug before you override
+```bash
+python release_summary.py
+```
 
-If one request routes differently from what you expected:
+</Step>
+</Steps>
 
-1. open the request in **Gateway -> Usage**
-2. inspect routing diagnostics and provider candidates
-3. inspect plugin execution metadata if structured JSON was involved
-4. change the preset only after the logs show what actually happened
+## Check it worked
 
-Avoid the temptation to fix one bad request by adding many inline request overrides. That usually defeats the point of using presets.
+The script prints the response ID, the model and provider that answered, the plugin record, and a dict with `summary` and one of `low`, `medium` or `high`. Search for the response ID in **Settings → Usage → Logs** to see the same request with its routing details.
 
-## 6. Keep caching compatible when you want reuse
+A model outside the preset's allowed models fails with `validation_error` (keyword `preset_model_not_allowed`). A `ValueError` from `validate()` means the JSON parsed but the content was wrong: tighten the schema or prompt rather than adding retries.
 
-If the preset enables response caching:
+## Debug before you override
 
-- keep the prompt wording stable
-- keep the response schema stable
-- avoid unnecessary per-request provider overrides
-- avoid volatile tool lists
-
-If one caller genuinely needs different behavior, move it to a different preset instead of degrading cache reuse for the shared workflow.
-
-## Related
-
-- [Roll out presets and debug routing](./preset-rollout-and-routing-debug.mdx)
-- [Use response caching with presets](./response-caching-with-presets.mdx)
-- [Use response healing for structured JSON](./response-healing-for-structured-json.mdx)
-- [Python SDK Overview](../sdk-reference/python/overview.mdx)
+If a request routes differently from what you expected, open it in the logs, read **Routing observability** and the plugin record, and change the preset only once the logs show what happened. Piling inline overrides onto one request defeats the point of the preset; if one caller really needs different behaviour, give it its own preset.

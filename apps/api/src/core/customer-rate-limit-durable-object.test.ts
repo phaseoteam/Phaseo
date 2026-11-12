@@ -13,20 +13,21 @@ import type { GatewayBindings } from "@/runtime/env.types";
 const key = "customer-quota:v1:workspace:user";
 let db: DatabaseSync;
 let state: DurableObjectState;
-let env: GatewayBindings;
-let getConfig: ReturnType<typeof vi.fn>;
+let sqlCalls: string[];
 
-function object() { return new CustomerRateLimitDurableObject(state, env); }
+function object() { return new CustomerRateLimitDurableObject(state, {} as GatewayBindings); }
 
 beforeEach(() => {
 	vi.useFakeTimers();
 	vi.setSystemTime(new Date("2026-10-02T23:59:30Z"));
 	db = new DatabaseSync(":memory:");
+	sqlCalls = [];
 	state = {
 		blockConcurrencyWhile: (fn: () => Promise<unknown>) => fn(),
 		storage: {
 			sql: {
 				exec: (query: string, ...args: Array<string | number>) => {
+					sqlCalls.push(query);
 					const statement = db.prepare(query);
 					const rows = statement.columns().length ? statement.all(...args) : (statement.run(...args), []);
 					return { toArray: () => rows, one: () => rows[0] };
@@ -34,19 +35,18 @@ beforeEach(() => {
 			},
 		},
 	} as unknown as DurableObjectState;
-	getConfig = vi.fn().mockResolvedValue(null);
-	env = { GATEWAY_CACHE: { get: getConfig } } as unknown as GatewayBindings;
 });
 
 afterEach(() => { db.close(); vi.useRealTimers(); });
 
 describe("customer quota coordinator", () => {
-	it("admits only 25 concurrent requests and coalesces config reads", async () => {
+	it("admits exactly the default limit concurrently with one checkpoint write and no KV access", async () => {
 		const limiter = object();
+		sqlCalls = [];
 		const results = await Promise.all(Array.from({ length: 100 }, (_, index) => limiter.admit(key, "minute", String(index))));
 		expect(results.filter(result => result.allowed)).toHaveLength(25);
 		expect(results[25]).toEqual({ allowed: false, limit: 25, remaining: 0, retryAfterSeconds: 60 });
-		expect(getConfig).toHaveBeenCalledTimes(1);
+		expect(sqlCalls).toEqual(["INSERT OR REPLACE INTO minute_checkpoint (id, entries) VALUES (1, ?)"]);
 	});
 
 	it("uses a rolling minute across the wall-clock minute boundary", async () => {
@@ -58,39 +58,175 @@ describe("customer quota coordinator", () => {
 		expect(await limiter.admit(key, "minute", "next")).toMatchObject({ allowed: true, remaining: 24 });
 	});
 
+	it("keeps admission IDs idempotent and reports when the last slot is used", async () => {
+		const limiter = object();
+		const limits = { requestsPerMinute: 2 };
+		expect(await limiter.admit(key, "minute", "a", limits)).toEqual({ allowed: true, limit: 2, remaining: 1, retryAfterSeconds: 0 });
+		vi.advanceTimersByTime(10_000);
+		expect(await limiter.admit(key, "minute", "b", limits)).toEqual({ allowed: true, limit: 2, remaining: 0, retryAfterSeconds: 50 });
+		expect(await limiter.admit(key, "minute", "a", limits)).toMatchObject({ allowed: true, remaining: 0 });
+		expect(await limiter.admit(key, "minute", "c", limits)).toMatchObject({ allowed: false, retryAfterSeconds: 50 });
+	});
+
 	it("counts one free admission through fallback and resets at midnight UTC", async () => {
 		const limiter = object();
-		for (let index = 0; index < 1500; index++) await limiter.admit(key, "free-day", String(index));
+		for (let index = 0; index < 1499; index++) await limiter.admit(key, "free-day", String(index));
+		expect(await limiter.admit(key, "free-day", "last")).toMatchObject({ allowed: true, remaining: 0, retryAfterSeconds: 30 });
 		expect(await limiter.admit(key, "free-day", "0")).toMatchObject({ allowed: true, remaining: 0 });
 		expect(await limiter.admit(key, "free-day", "extra")).toMatchObject({ allowed: false, limit: 1500, retryAfterSeconds: 30 });
 		vi.advanceTimersByTime(30_000);
 		expect(await limiter.admit(key, "free-day", "extra")).toMatchObject({ allowed: true, remaining: 1499 });
 	});
 
-	it("retains counters across coordinator restarts", async () => {
+	it("retains daily free counters exactly across restarts", async () => {
 		const first = object();
-		for (let index = 0; index < 25; index++) await first.admit(key, "minute", String(index));
-		expect(await object().admit(key, "minute", "extra")).toMatchObject({ allowed: false });
+		for (let index = 0; index < 3; index++) await first.admit(key, "free-day", String(index), { freeRequestsPerDay: 3 });
+		const second = object();
+		expect(await second.admit(key, "free-day", "extra", { freeRequestsPerDay: 3 })).toMatchObject({ allowed: false });
 	});
 
-	it("uses administrator overrides and refreshes them after one minute", async () => {
-		getConfig.mockResolvedValue({ requestsPerMinute: 50, freeRequestsPerDay: 250 });
-		const limiter = object();
-		expect(await limiter.admit(key, "minute", "1")).toMatchObject({ limit: 50, remaining: 49 });
-		expect(await limiter.admit(key, "free-day", "1")).toMatchObject({ limit: 250 });
-		getConfig.mockResolvedValue({ requestsPerMinute: 75 });
+	it("restores the checkpointed minute window after a restart, forgetting at most five seconds", async () => {
+		const limits = { requestsPerMinute: 3 };
+		const first = object();
+		await first.admit(key, "minute", "a", limits);
+		vi.advanceTimersByTime(1_000);
+		await first.admit(key, "minute", "b", limits);
+		// Restart before the next checkpoint: "a" survives, "b" is forgotten.
+		const second = object();
+		expect(await second.admit(key, "minute", "a", limits)).toMatchObject({ allowed: true, remaining: 2 });
+		expect(await second.admit(key, "minute", "b", limits)).toMatchObject({ allowed: true, remaining: 1 });
+		expect(await second.admit(key, "minute", "c", limits)).toMatchObject({ allowed: true, remaining: 0 });
+		expect(await second.admit(key, "minute", "d", limits)).toMatchObject({ allowed: false });
 		vi.advanceTimersByTime(60_000);
-		expect(await limiter.admit(key, "minute", "2")).toMatchObject({ limit: 75 });
-		expect(getConfig).toHaveBeenCalledTimes(2);
+		const third = object();
+		expect(await third.admit(key, "minute", "f", limits)).toMatchObject({ allowed: true, remaining: 2 });
 	});
 
-	it("does not increment counters when config is invalid or unavailable", async () => {
-		getConfig.mockResolvedValue({ requestsPerMinute: 0 });
+	it("drops the legacy persisted minute log", async () => {
+		db.exec("CREATE TABLE minute_requests (admission_id TEXT PRIMARY KEY, started_at INTEGER NOT NULL)");
+		object();
+		expect(db.prepare("SELECT name FROM sqlite_master WHERE name='minute_requests'").get()).toBeUndefined();
+	});
+
+	it("applies caller-supplied limits immediately and ignores invalid ones", async () => {
 		const limiter = object();
-		await expect(limiter.admit(key, "minute", "1")).rejects.toThrow("invalid_customer_limits");
-		getConfig.mockRejectedValue(new Error("KV unavailable"));
-		await expect(limiter.admit(key, "minute", "1")).rejects.toThrow("KV unavailable");
-		getConfig.mockResolvedValue(null);
-		expect(await limiter.admit(key, "minute", "1")).toMatchObject({ remaining: 24 });
+		expect(await limiter.admit(key, "minute", "1", { requestsPerMinute: 50, freeRequestsPerDay: 250 })).toMatchObject({ limit: 50, remaining: 49 });
+		expect(await limiter.admit(key, "free-day", "1", { requestsPerMinute: 50, freeRequestsPerDay: 250 })).toMatchObject({ limit: 250 });
+		expect(await limiter.admit(key, "minute", "2", { requestsPerMinute: 75 })).toMatchObject({ limit: 75, remaining: 73 });
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		expect(await limiter.admit(key, "minute", "3", { requestsPerMinute: 0 })).toMatchObject({ limit: 25, remaining: 22 });
+	});
+
+	it("serves one scope per object", async () => {
+		const limiter = object();
+		await limiter.admit(key, "minute", "1");
+		await expect(limiter.admit("customer-quota:v1:other:user", "minute", "2")).rejects.toThrow("customer_scope_mismatch");
 	});
 });
+
+describe("policy token counter", () => {
+	const scope = "rate-limit-policy:v1:workspace:policy:key:key-1";
+
+	it("charges completed usage over a rolling minute and reports when the allowance frees up", async () => {
+		const limiter = object();
+		expect(await limiter.chargeTokens(scope, 600, 1000)).toEqual({ allowed: true, limit: 1000, remaining: 400, retryAfterSeconds: 0 });
+		vi.advanceTimersByTime(20_000);
+		// Usage can overshoot: the request was already admitted.
+		expect(await limiter.chargeTokens(scope, 700, 1000)).toEqual({ allowed: false, limit: 1000, remaining: 0, retryAfterSeconds: 40 });
+		vi.advanceTimersByTime(40_000);
+		expect(await limiter.peekTokens(scope, 1000)).toEqual({ allowed: true, limit: 1000, remaining: 300, retryAfterSeconds: 0 });
+		vi.advanceTimersByTime(20_000);
+		expect(await limiter.peekTokens(scope, 1000)).toMatchObject({ allowed: true, remaining: 1000 });
+	});
+
+	it("waits for as many charges to expire as it takes to get back under the limit", async () => {
+		const limiter = object();
+		await limiter.chargeTokens(scope, 100, 1000);
+		vi.advanceTimersByTime(10_000);
+		await limiter.chargeTokens(scope, 100, 1000);
+		vi.advanceTimersByTime(10_000);
+		expect(await limiter.chargeTokens(scope, 950, 1000)).toMatchObject({ allowed: false, retryAfterSeconds: 50 });
+	});
+
+	it("keeps at most one entry per second however many requests a scope serves", async () => {
+		const limiter = object();
+		for (let second = 0; second < 120; second++) {
+			for (let request = 0; request < 50; request++) await limiter.chargeTokens(scope, 1, Number.MAX_SAFE_INTEGER);
+			vi.advanceTimersByTime(1_000);
+		}
+		expect(await limiter.peekTokens(scope, 10_000)).toMatchObject({ remaining: 10_000 - 59 * 50 }); // The 59 seconds still inside the rolling minute.
+		vi.advanceTimersByTime(5_000);
+		await limiter.chargeTokens(scope, 1, 10_000);
+		const checkpoint = db.prepare("SELECT entries FROM token_checkpoint WHERE id = 1").get() as { entries: string };
+		expect((JSON.parse(checkpoint.entries) as unknown[]).length).toBeLessThanOrEqual(60);
+	});
+
+	it("keeps token usage across a restart and ignores zero or invalid charges", async () => {
+		const limiter = object();
+		await limiter.chargeTokens(scope, 900, 1000);
+		expect(await limiter.chargeTokens(scope, 0, 1000)).toMatchObject({ remaining: 100 });
+		expect(await limiter.chargeTokens(scope, 1.5, 1000)).toMatchObject({ remaining: 100 });
+		vi.advanceTimersByTime(5_000);
+		const restarted = object();
+		expect(await restarted.peekTokens(scope, 1000)).toMatchObject({ remaining: 100 });
+	});
+
+	it("rejects a scope mismatch", async () => {
+		const limiter = object();
+		await limiter.chargeTokens(scope, 1, 10);
+		await expect(limiter.peekTokens("other", 10)).rejects.toThrow("customer_scope_mismatch");
+	});
+});
+
+describe("concurrency slots", () => {
+	const scope = "rate-limit-policy:v1:workspace:policy:key:key-1";
+
+	it("holds one slot per request in flight, shared by its attempts, and frees it on release", async () => {
+		const limiter = object();
+		sqlCalls = [];
+		expect(await limiter.acquireConcurrency(scope, "request-1", 2, 60_000)).toEqual({ allowed: true, limit: 2, remaining: 1, retryAfterSeconds: 0 });
+		// A fallback attempt of the same request reuses its slot.
+		expect(await limiter.acquireConcurrency(scope, "request-1", 2, 60_000)).toMatchObject({ allowed: true, remaining: 1 });
+		expect(await limiter.acquireConcurrency(scope, "request-2", 2, 60_000)).toMatchObject({ allowed: true, remaining: 0 });
+		expect(await limiter.acquireConcurrency(scope, "request-3", 2, 60_000)).toEqual({ allowed: false, limit: 2, remaining: 0, retryAfterSeconds: 1 });
+		await limiter.releaseConcurrency(scope, "request-1");
+		expect(await limiter.acquireConcurrency(scope, "request-3", 2, 60_000)).toMatchObject({ allowed: true, remaining: 0 });
+		// Slots are memory only: no storage writes.
+		expect(sqlCalls).toEqual([]);
+	});
+
+	it("frees a slot whose release was lost once it expires, and forgets slots on restart", async () => {
+		const limiter = object();
+		await limiter.acquireConcurrency(scope, "lost", 1, 60_000);
+		expect(await limiter.acquireConcurrency(scope, "next", 1, 60_000)).toMatchObject({ allowed: false });
+		vi.advanceTimersByTime(60_000);
+		expect(await limiter.acquireConcurrency(scope, "next", 1, 60_000)).toMatchObject({ allowed: true });
+		expect(await object().acquireConcurrency(scope, "after-restart", 1, 60_000)).toMatchObject({ allowed: true });
+	});
+
+	it("ignores a release for a slot it does not hold, and rejects a scope mismatch", async () => {
+		const limiter = object();
+		await limiter.acquireConcurrency(scope, "request-1", 1, 60_000);
+		await limiter.releaseConcurrency(scope, "unknown");
+		expect(await limiter.acquireConcurrency(scope, "request-2", 1, 60_000)).toMatchObject({ allowed: false });
+		await expect(limiter.releaseConcurrency("other", "request-1")).rejects.toThrow("customer_scope_mismatch");
+	});
+});
+
+describe("releaseFreeDay", () => {
+	it("takes back today's admission once, and ignores unknown ones", async () => {
+		const limiter = object();
+		const limits = { freeRequestsPerDay: 2 };
+		await limiter.admit(key, "free-day", "a", limits);
+		await limiter.admit(key, "free-day", "b", limits);
+		expect(await limiter.admit(key, "free-day", "c", limits)).toMatchObject({ allowed: false });
+		await limiter.releaseFreeDay(key, "b");
+		await limiter.releaseFreeDay(key, "b");
+		await limiter.releaseFreeDay(key, "unknown");
+		expect(await limiter.admit(key, "free-day", "c", limits)).toMatchObject({ allowed: true, remaining: 0 });
+		expect(await limiter.admit(key, "free-day", "d", limits)).toMatchObject({ allowed: false });
+		// It survives a restart: the released row is gone from storage.
+		expect(await object().admit(key, "free-day", "d", limits)).toMatchObject({ allowed: false });
+	});
+});
+

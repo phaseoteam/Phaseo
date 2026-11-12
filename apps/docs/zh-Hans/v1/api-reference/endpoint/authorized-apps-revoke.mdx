@@ -1,0 +1,8 @@
+---
+title: "撤销已授权应用"
+sidebarTitle: "撤销已授权应用"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml DELETE /me/authorized-apps/{id}"
+description: "撤销应用的访问权限，使其令牌失效。"
+---
+<Note>此端点需要具有 `oauth_clients:delete` 的 OAuth 访问令牌。撤销调用方应用自身的授权会使其退出登录。</Note>

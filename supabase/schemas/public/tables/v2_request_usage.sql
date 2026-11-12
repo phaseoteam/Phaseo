@@ -25,8 +25,6 @@ CREATE INDEX v2_request_usage_meter_time_idx ON public.v2_request_usage USING bt
 
 CREATE INDEX v2_request_usage_modality_time_idx ON public.v2_request_usage USING btree (modality, created_at DESC);
 
-CREATE INDEX v2_request_usage_request_idx ON public.v2_request_usage USING btree (request_event_id, meter_key);
-
 CREATE INDEX v2_request_usage_public_ranking_idx ON public.v2_request_usage USING btree (request_event_id, meter_key) INCLUDE (quantity);
 
 CREATE INDEX v2_request_usage_public_tokens_idx ON public.v2_request_usage USING btree (request_event_id, meter_key) INCLUDE (quantity)
@@ -49,6 +47,13 @@ CREATE TRIGGER v2_request_usage_service_tier
   BEFORE INSERT OR UPDATE OF request_event_id, sku_meter_id, meter_key ON public.v2_request_usage
   FOR EACH ROW
   EXECUTE FUNCTION public.set_v2_request_usage_service_tier();
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_request_usage"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 CREATE POLICY "v2_request_usage_workspace_select" ON "public"."v2_request_usage"
   FOR SELECT

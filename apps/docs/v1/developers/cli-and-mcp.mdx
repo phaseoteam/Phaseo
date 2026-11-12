@@ -1,22 +1,20 @@
 ---
 title: "CLI and MCP"
-description: "Use the Phaseo CLI for terminal automation or connect the authenticated MCP server to AI clients for live, read-only Phaseo data."
+description: "Use the Phaseo CLI for terminal automation or connect the authenticated MCP server to AI clients for live Phaseo data and, if you allow it, account management."
+"og:image": "https://phaseo.app/og/dynamic?title=CLI%20and%20MCP&description=Use%20the%20Phaseo%20CLI%20for%20terminal%20automation%20or%20connect%20the%20authenticated%20MCP%20server%20to%20AI%20clients%20for%20live%20Phaseo%20data%20and%2C%20if%20you%20allow%20it%2C%20account%20management.&pathname=/docs/v1/developers/cli-and-mcp"
 icon: "square-terminal"
 ---
 
-# CLI and MCP
+Use the CLI to change Phaseo from a terminal or script, or connect an AI client to the Phaseo MCP server to give it live Phaseo data. Both sign in with Phaseo OAuth.
 
-Use Phaseo from your terminal with the CLI, or connect an AI client through MCP. Both use Phaseo OAuth, but they are designed for different jobs.
-
-| Interface | Best for | Access |
+| Interface | Use it to | Access |
 | --- | --- | --- |
-| Phaseo CLI | Terminal workflows, CI, administration, and automation | Read and write, limited by your scopes and workspace role |
-| Phaseo MCP | Live Phaseo data inside Codex, Claude, ChatGPT, and other MCP clients | Authenticated and read-only |
-| Docs MCP | Looking up current Phaseo documentation while coding | Documentation-only and read-only |
+| [Phaseo CLI](#phaseo-cli) | Create keys, change settings, manage workspaces, and automate admin work from a shell or CI | Read and write, limited by your scopes and workspace role |
+| [Phaseo MCP](#phaseo-mcp) | Give Codex, Claude, ChatGPT and other MCP clients live Phaseo data, and optionally let them manage your account | Read-only unless you connect with account management |
+| [Docs MCP](#docs-mcp) | Give a coding assistant current Phaseo documentation | Documentation only, no account access |
+| [Phaseo plugin](#phaseo-plugin) | Install both MCP servers and the Phaseo skills in Claude Code or Codex at once | Same as each MCP server |
 
 ## Phaseo CLI
-
-Use the CLI when you need to create or change Phaseo resources, script a workflow, or inspect account data from a shell.
 
 ### Install and sign in
 
@@ -39,7 +37,7 @@ phaseo models list --limit 20
 phaseo pricing models
 phaseo credits get
 phaseo workspaces list
-phaseo keys create --name "Local development"
+phaseo keys list
 phaseo logs list --since 1h --status error --json
 ```
 
@@ -51,35 +49,112 @@ Use `--json` when another tool or script needs structured output. Secret values 
 
 ## Phaseo MCP
 
-Connect the Phaseo MCP server when you want an AI client to answer questions using live model, pricing, provider, usage, and workspace data.
+The server URL is `https://mcp.phaseo.app/mcp`. An AI client connected to it can answer questions with live model, pricing, provider, usage and workspace data.
 
-### Server URL
+### Connect your client
 
-`https://mcp.phaseo.app/mcp`
+Install in one click: [Add to Cursor](cursor://anysphere.cursor-deeplink/mcp/install?name=phaseo&config=eyJ1cmwiOiJodHRwczovL21jcC5waGFzZW8uYXBwL21jcCJ9) · [Add to VS Code](vscode:mcp/install?%7B%22name%22%3A%22phaseo%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.phaseo.app%2Fmcp%22%7D). When the client asks you to sign in, Phaseo OAuth opens in your browser. Choose a workspace and approve the requested read scopes.
 
-### Connect from Codex
+<Tabs>
+<Tab title="Claude Code">
+```bash
+claude mcp add --transport http phaseo https://mcp.phaseo.app/mcp
+```
 
+Then run `/mcp`, select `phaseo` and choose **Authenticate**. Add `--scope user` to make it available in every project.
+</Tab>
+<Tab title="Codex">
 ```bash
 codex mcp add phaseo --url https://mcp.phaseo.app/mcp
 codex mcp login phaseo
-```
-
-The login command opens Phaseo OAuth. Choose a workspace and approve the requested read scopes, then confirm the connection:
-
-```bash
 codex mcp list
 ```
+
+The login command opens Phaseo OAuth. `codex mcp list` confirms the connection.
+</Tab>
+<Tab title="Cursor">
+```json ~/.cursor/mcp.json
+{
+  "mcpServers": {
+    "phaseo": {
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+Use **Add to Cursor** above, or add the server to `~/.cursor/mcp.json`, then sign in from Cursor's MCP settings.
+</Tab>
+<Tab title="VS Code">
+```json .vscode/mcp.json
+{
+  "servers": {
+    "phaseo": {
+      "type": "http",
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+Use **Add to VS Code** above, or add the server to `.vscode/mcp.json`. Start it from the MCP view and sign in when VS Code asks.
+</Tab>
+<Tab title="Claude">
+In Claude, open **Settings → Connectors**, choose **Add custom connector**, enter `Phaseo` and the server URL, then select **Connect**. If you don't see the option, an owner of your Claude organisation needs to allow custom connectors.
+</Tab>
+<Tab title="OpenCode">
+```json opencode.json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseo": {
+      "type": "remote",
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+Add the server to `opencode.json`, then run `opencode mcp auth phaseo` to sign in.
+</Tab>
+</Tabs>
 
 For another MCP client, add the same URL as a remote Streamable HTTP server. The client must support OAuth discovery, authorization code with S256 PKCE, and the MCP `resource` parameter.
 
 ### What the MCP can read
 
-- models, providers, organisations, endpoint families, and pricing
-- credits, activity, analytics, request logs, and generation metadata
-- workspaces, members, presets, settings, and guardrails
-- API-key, management-key, OAuth-application, and webhook metadata without secret values
+The read-only tools cover models, providers, benchmark rankings, pricing and cost estimates, plus credits, activity, analytics, request logs and generation metadata. They never return prompts, responses or secret values.
 
-The MCP does not run billable inference, return secret values, or mutate Phaseo resources. Use the dashboard, CLI, or Management API for those operations.
+### Manage your account (optional)
+
+To let an agent change your Phaseo workspace, connect with the manage URL instead:
+
+`https://mcp.phaseo.app/mcp?access=manage`
+
+```bash
+codex mcp add phaseo --url "https://mcp.phaseo.app/mcp?access=manage"
+codex mcp login phaseo
+```
+
+When you sign in, the consent screen lists each permission the connection asks for, such as managing API keys or deleting budgets, and marks it **Read**, **Write**, or **Delete**. Untick any you do not want. The agent only gets tools for the permissions you allow, and Phaseo still checks your workspace role on every change, so a member who is not an owner or admin cannot change admin-only settings this way.
+
+If you already connected with the read-only URL, switch the client to the manage URL and sign in again. To go back to read-only access, reconnect with the plain URL or revoke the app under **Settings → Connected Apps**.
+
+| Area | Tools | Permissions |
+| --- | --- | --- |
+| API keys | `api_keys_list`, `api_key_get`, `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete` | `keys:read`, `keys:write`, `keys:delete` |
+| Budgets | `budgets_list`, `budget_create`, `budget_update`, `budget_delete` | `budgets:read`, `budgets:write`, `budgets:delete` |
+| Spend rules | `spend_rules_list`, `spend_rule_create`, `spend_rule_update`, `spend_rule_delete` | `spend_rules:read`, `spend_rules:write`, `spend_rules:delete` |
+| Provider keys (BYOK) | `provider_keys_list`, `provider_key_create`, `provider_key_update`, `provider_key_delete` | `provider_credentials:read`, `provider_credentials:write`, `provider_credentials:delete` |
+| Guardrails | `guardrails_list`, `guardrail_get`, `guardrail_create`, `guardrail_update`, `guardrail_delete`, `guardrail_keys_set` | `guardrails:read`, `guardrails:write`, `guardrails:delete` |
+| Presets | `presets_list`, `preset_get`, `preset_create`, `preset_update`, `preset_version_publish` | `presets:read`, `presets:write` |
+| Settings | `settings_get`, `settings_update` (routing mode, privacy and ZDR, logging, provider restrictions) | `settings:read`, `settings:write` |
+| Webhooks | `webhooks_list`, `webhook_create`, `webhook_delete` | `settings:read`, `settings:write` |
+| Observability destinations | `observability_destinations_list`, `observability_destination_create`, `observability_destination_delete` | `settings:read`, `settings:write` |
+
+Tools that change or delete something are marked as such, so MCP clients that support it ask you before each call. A new API key or webhook signing secret is shown once in the tool result and cannot be shown again. Stored provider keys and destination credentials are never returned.
+
+The MCP has no billing, payment, workspace, member, management-key, or OAuth-app tools. Use the dashboard, CLI, or Management API for those.
 
 ## Docs MCP
 
@@ -89,15 +164,30 @@ The Docs MCP is a separate endpoint for searching and reading Phaseo documentati
 codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
 ```
 
-Use it when a coding assistant needs current API examples, integration guidance, or feature documentation.
-
 <Card title="Docs MCP guide" icon="book-open" href="../guides/integrations/docs-mcp">
 	Connect the documentation server to Codex, Claude Code, Cursor, OpenCode, or VS Code.
 </Card>
 
-## Choose the right interface
+## Phaseo plugin
 
-- Use the **CLI** to create keys, change settings, manage workspaces, or automate administrative workflows.
-- Use the **Phaseo MCP** to give an AI client safe access to live Phaseo data.
-- Use the **Docs MCP** to give a coding assistant current Phaseo documentation without account access.
+The Phaseo plugin bundles the Phaseo MCP, the Docs MCP, and the Phaseo agent skills for integration, migration, model selection, usage monitoring, the SDKs, and the CLI. Install it once instead of connecting each piece yourself.
+
+### Claude Code
+
+```bash
+claude plugin marketplace add phaseoteam/skills
+claude plugin install phaseo@phaseo
+```
+
+Run `/mcp` and sign in to `plugin:phaseo:phaseo` to connect your Phaseo account. Skills load when a request matches them, or you can run one directly, such as `/phaseo:phaseo-gateway`.
+
+### Codex
+
+```bash
+codex plugin marketplace add phaseoteam/skills
+codex plugin add phaseo@phaseo
+codex mcp login phaseo
+```
+
+The last command opens Phaseo OAuth for the Phaseo MCP. Skills load when a request matches them.
 

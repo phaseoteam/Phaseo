@@ -71,6 +71,79 @@ describe("non-text adapter bridge", () => {
 		}
 	});
 
+	it("routes Mistral speech through its native adapter and returns decoded audio bytes", async () => {
+		const audio = Buffer.from([9, 8, 7, 6]);
+		let sent: Record<string, unknown> | undefined;
+		const mock = installFetchMock([{
+			match: (url, init) => {
+				sent = JSON.parse(String(init?.body));
+				return url.includes("/audio/speech");
+			},
+			response: jsonResponse({ audio_data: audio.toString("base64") }),
+		}]);
+		const result = await executeNonTextAdapter({
+			ir: {
+				model: "mistral/voxtral-tts-3",
+				input: "hello",
+				voice: "preset-voice",
+				responseFormat: "flac",
+			},
+			requestId: "req_mistral_speech_1",
+			workspaceId: "team_test",
+			providerId: "mistral",
+			endpoint: "audio.speech",
+			providerModelSlug: "voxtral-mini-tts-3-0",
+			byokMeta: [],
+			pricingCard: {
+				...PRICING_CARD,
+				provider: "mistral",
+				endpoint: "audio.speech",
+				rules: [{ ...PRICING_CARD.rules[0], meter: "input_characters", unit: "character", unit_size: 1000, price_per_unit: 0.016 }],
+			},
+			meta: {},
+		} as any);
+		mock.restore();
+
+		expect(sent).toMatchObject({ model: "voxtral-mini-tts-3-0", input: "hello", voice_id: "preset-voice", response_format: "flac", stream: false });
+		expect(result.kind).toBe("completed");
+		if (result.kind === "completed") {
+			expect(result.upstream.headers.get("content-type")).toBe("audio/flac");
+			expect(Buffer.from(await result.upstream.clone().arrayBuffer())).toEqual(audio);
+			expect((result.ir as any)?.audio?.data).toBe(audio.toString("base64"));
+		}
+	});
+
+	it.each([{ xai: { language: "fr" } }, { "x-ai": { language: "fr" } }])("passes xAI speech language through the bridge (%j)", async (config) => {
+		let sent: Record<string, unknown> | undefined;
+		const mock = installFetchMock([{
+			match: (url, init) => {
+				if (!url.includes("/tts")) return false;
+				sent = JSON.parse(String(init?.body));
+				return true;
+			},
+			response: new Response(new Uint8Array([1, 2, 3]), { headers: { "Content-Type": "audio/mpeg" } }),
+		}]);
+		await executeNonTextAdapter({
+			ir: {
+				model: "spacex-ai/grok-tts",
+				input: "bonjour",
+				voice: "eve",
+				rawRequest: { model: "spacex-ai/grok-tts", input: "bonjour", config },
+			},
+			requestId: "req_xai_speech_language",
+			workspaceId: "team_test",
+			providerId: "spacex-ai",
+			endpoint: "audio.speech",
+			providerModelSlug: "grok-tts",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, provider: "spacex-ai", endpoint: "audio.speech" },
+			meta: {},
+		} as any);
+		mock.restore();
+
+		expect(sent).toMatchObject({ text: "bonjour", language: "fr" });
+	});
+
 	it("forwards diarization controls through the transcription IR bridge", async () => {
 		let capturedForm: FormData | undefined;
 		const mock = installFetchMock([{
@@ -323,5 +396,33 @@ describe("non-text adapter bridge", () => {
 			seed: 42,
 		});
 		expect(result.kind).toBe("completed");
+	});
+
+	it("carries GPT Image 2.6 complexity from the request to OpenAI", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/images/generations"),
+			response: jsonResponse({ created: 1, data: [{ b64_json: "openai-image" }] }),
+			onRequest: (call) => { capturedBody = call.bodyJson; },
+		}]);
+
+		await executeNonTextAdapter({
+			ir: {
+				model: "openai/gpt-image-2.6-flare",
+				prompt: "A geometric fox",
+				rawRequest: { model: "openai/gpt-image-2.6-flare", prompt: "A geometric fox", complexity: "high" },
+			},
+			requestId: "req_non_text_openai_image_complexity",
+			workspaceId: "team_test",
+			providerId: "openai",
+			endpoint: "images.generations",
+			providerModelSlug: "gpt-image-2.6-flare",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, provider: "openai" },
+			meta: {},
+		} as any);
+
+		mock.restore();
+		expect(capturedBody?.complexity).toBe("high");
 	});
 });

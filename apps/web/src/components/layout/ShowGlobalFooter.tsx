@@ -1,5 +1,3 @@
-"use client";
-
 import { useLayoutEffect } from "react";
 import { registerShowFooter } from "@/components/layout/footerVisibility";
 

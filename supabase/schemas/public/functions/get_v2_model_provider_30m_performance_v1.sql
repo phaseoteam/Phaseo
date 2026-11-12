@@ -42,6 +42,15 @@ with params as (
     case when lower(p_context_bucket) in ('lte_4k', '4k_16k', '16k_64k', 'gt_64k') then lower(p_context_bucket) else 'all' end context_bucket,
     now() now_ts
 ),
+threshold as (
+  -- Unfiltered views publish at any volume. A colo, stream or context filter can
+  -- narrow a cohort to one customer's requests, so filtered views need 20.
+  select case
+    when params.cloudflare_colo is null and params.stream_mode = 'all' and params.context_bucket = 'all'
+    then 1 else 20
+  end min_requests
+  from params
+),
 visible_model as (
   select model.model_slug
   from public.v2_models model
@@ -72,7 +81,7 @@ scoped_facts as (
     fact.structured_output_attempted,
     fact.structured_output_succeeded,
     route.provider_slug provider_id
-  from public.v2_request_facts fact
+  from public.reporting_request_facts fact
   join visible_model
     on visible_model.model_slug = coalesce(fact.routed_model_slug, fact.requested_model_slug)
   left join public.v2_model_provider_routes route
@@ -85,13 +94,23 @@ scoped_facts as (
 usage_by_request as (
   select
     usage.request_event_id,
-    sum(usage.quantity) filter (
-      where usage.meter_key in ('input_tokens', 'input_text_tokens', 'prompt_tokens')
+    -- input_tokens already includes input_text_tokens; the others are fallbacks only.
+    coalesce(
+      sum(usage.quantity) filter (where usage.meter_key = 'input_tokens'),
+      sum(usage.quantity) filter (where usage.meter_key = 'prompt_tokens'),
+      sum(usage.quantity) filter (where usage.meter_key = 'input_text_tokens')
     )::numeric input_tokens,
-    sum(usage.quantity) filter (
+    -- The gateway writes no meter row for a zero quantity, so a request with input
+    -- tokens and no cached row is a cache miss (0 cached tokens), not missing telemetry.
+    coalesce(sum(usage.quantity) filter (
       where usage.meter_key in ('cached_input_tokens', 'cached_read_tokens')
-    )::numeric cached_input_tokens,
-    bool_or(usage.meter_key in ('cached_input_tokens', 'cached_read_tokens')) cache_telemetry_observed
+    ), 0)::numeric cached_input_tokens,
+    coalesce(
+      sum(usage.quantity) filter (where usage.meter_key = 'input_tokens'),
+      sum(usage.quantity) filter (where usage.meter_key = 'prompt_tokens'),
+      sum(usage.quantity) filter (where usage.meter_key = 'input_text_tokens'),
+      0
+    ) > 0 cache_telemetry_observed
   from scoped_facts fact
   join public.v2_request_usage usage on usage.request_event_id = fact.request_event_id
   where usage.meter_key in (
@@ -207,23 +226,24 @@ select
   hourly.tool_call_errors,
   hourly.structured_output_requests,
   hourly.structured_output_errors,
-  hourly.cache_telemetry_requests,
-  hourly.cache_hit_requests,
-  case when hourly.cache_telemetry_requests >= 1 then hourly.effective_input_tokens else null end,
-  case when hourly.cache_telemetry_requests >= 1 then hourly.cached_input_tokens else null end,
+  case when hourly.cache_telemetry_requests >= threshold.min_requests then hourly.cache_telemetry_requests else null end,
+  case when hourly.cache_telemetry_requests >= threshold.min_requests then hourly.cache_hit_requests else null end,
+  case when hourly.cache_telemetry_requests >= threshold.min_requests then hourly.effective_input_tokens else null end,
+  case when hourly.cache_telemetry_requests >= threshold.min_requests then hourly.cached_input_tokens else null end,
   case
-    when hourly.cache_telemetry_requests >= 1 and hourly.effective_input_tokens > 0
+    when hourly.cache_telemetry_requests >= threshold.min_requests and hourly.effective_input_tokens > 0
       then least(100, hourly.cached_input_tokens * 100.0 / hourly.effective_input_tokens)
     else null
   end cached_input_pct
 from hourly
 join public.v2_providers provider on provider.provider_slug = hourly.provider_id
+cross join threshold
 order by hourly.bucket_start, hourly.provider_id;
 $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."get_v2_model_provider_30m_performance_v1"(text, text, numeric, text, text) TO "service_role";
 
-COMMENT ON FUNCTION "public"."get_v2_model_provider_30m_performance_v1"(text, text, numeric, text, text) IS 'Thirty-minute provider performance percentiles for the trailing day, available from the first aggregated request.';
+COMMENT ON FUNCTION "public"."get_v2_model_provider_30m_performance_v1"(text, text, numeric, text, text) IS 'Thirty-minute provider performance percentiles for the trailing day, suppressed below twenty aggregated requests.';
 
 REVOKE ALL ON FUNCTION "public"."get_v2_model_provider_30m_performance_v1"(text, text, numeric, text, text) FROM "postgres";
 

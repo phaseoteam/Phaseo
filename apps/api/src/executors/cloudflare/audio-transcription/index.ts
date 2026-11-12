@@ -1,26 +1,59 @@
 import type { IRAudioTranscriptionRequest, IRAudioTranscriptionResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult, ProviderExecutor } from "@executors/types";
-import { validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
+import { fetchPublicMedia } from "@core/public-media-fetch";
+import { mediaInputErrorResult } from "@executors/_shared/media/remote-media";
 import { estimateOpenAiSpeechToTextUsage } from "@providers/openai/endpoints/audio-transcription-usage";
 import { blobToBase64, runCloudflareModel, unwrapCloudflareResult } from "../shared";
+
+// Matches the default transcription upload limit in core/schemas.ts.
+const MAX_REMOTE_AUDIO_BYTES = 25 * 1024 * 1024;
+const REMOTE_AUDIO_TIMEOUT_MS = 30_000;
 
 async function resolveAudio(ir: IRAudioTranscriptionRequest, args: ExecutorExecuteArgs): Promise<Blob> {
 	if (ir.file) return ir.file;
 	const url = ir.fileUrl || ir.s3PresignedUrl;
 	if (!url) throw new Error("cloudflare_audio_file_required");
-	const validated = await validateWebhookEndpointUrlForDelivery(url);
-	if (validated.ok === false) throw new Error(`cloudflare_audio_url_rejected_${validated.reason}`);
-	const response = args.upstreamTiming
-		? await args.upstreamTiming.fetch(validated.url, { redirect: "manual" }, "media")
-		: await fetch(validated.url, { redirect: "manual" });
-	if (response.status >= 300 && response.status < 400) throw new Error("cloudflare_audio_redirect_not_allowed");
-	if (!response.ok) throw new Error(`cloudflare_audio_fetch_failed_${response.status}`);
-	return response.blob();
+	const media = await fetchPublicMedia({
+		url,
+		maxBytes: MAX_REMOTE_AUDIO_BYTES,
+		timeoutMs: REMOTE_AUDIO_TIMEOUT_MS,
+		allowHttp: false,
+		upstreamTiming: args.upstreamTiming,
+	});
+	return new Blob([media.bytes as Uint8Array<ArrayBuffer>], { type: media.contentType ?? "" });
+}
+
+// A file_url that cannot be downloaded is the caller's error, so it returns a
+// 400 like other media URL failures. Other errors are rethrown.
+function remoteAudioError(args: ExecutorExecuteArgs, error: unknown): ExecutorResult | null {
+	const code = error instanceof Error ? error.message : "";
+	const name = error instanceof Error ? error.name : "";
+	if (code.startsWith("remote_media_url_rejected") || code === "remote_media_redirect_rejected") {
+		return mediaInputErrorResult("invalid_file_url", "Audio URLs and redirect targets must use public HTTPS addresses.", args.requestId);
+	}
+	if (code === "remote_media_too_large" || code === "remote_media_invalid_content_length") {
+		return mediaInputErrorResult("file_too_large", "Audio at file_url must be at most 25 MB.", args.requestId);
+	}
+	if (code.startsWith("remote_media_fetch_failed") || name === "AbortError" || name === "TimeoutError") {
+		return mediaInputErrorResult(
+			"invalid_file_url",
+			"Unable to retrieve audio from file_url. Check that the server is available and responds within 30 seconds.",
+			args.requestId,
+		);
+	}
+	return null;
 }
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IRAudioTranscriptionRequest;
-	const audio = await resolveAudio(ir, args);
+	let audio: Blob;
+	try {
+		audio = await resolveAudio(ir, args);
+	} catch (error) {
+		const failure = remoteAudioError(args, error);
+		if (failure) return failure;
+		throw error;
+	}
 	const isTurbo = args.providerModelSlug === "@cf/openai/whisper-large-v3-turbo";
 	const requestBody = isTurbo ? JSON.stringify({
 		audio: await blobToBase64(audio),

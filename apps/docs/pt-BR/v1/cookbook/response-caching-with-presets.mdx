@@ -1,92 +1,29 @@
 ---
-title: "Usar cache de respostas com presets"
+title: "Use cache de respostas com predefinições"
+noindex: true
 icon: "database"
-description: "Combine padrões de preset com cache determinístico de respostas para retornar solicitações repetidas com rapidez e previsibilidade."
+description: "O que a configuração response_caching de uma predefinição faz hoje e como reduzir o custo de prompts repetidos até o cache de respostas ser lançado."
 ---
 
-Use esta receita quando houver solicitações repetidas com prompts estáveis e você quiser reduzir a latência e o custo de inferências repetidas.
+<Warning>
+O cache de respostas ainda não está disponível. Uma predefinição aceita `response_caching.enabled` e `response_caching.ttl_seconds`, mas hoje o Gateway não armazena nem reproduz nenhuma resposta, então toda solicitação vai para um provedor e é cobrada normalmente.
+</Warning>
 
-## 1. Comece com um preset, não com solicitações avulsas
+Para reduzir agora o custo e a latência de solicitações repetidas, use o [cache de prompts](../guides/prompt-caching): os provedores reutilizam um prefixo de prompt longo e estável e cobram a parte em cache a uma taxa menor. O Phaseo mantém uma conversa no provedor que guarda o cache dela; veja [Afinidade de provedor](../guides/prompt-caching#provider-affinity).
 
-Crie um preset para manter estáveis:
+## Prepare uma predefinição para o cache
 
-- o modelo de destino
-- as preferências de provedor
-- a temperatura e outros parâmetros de geração
-- as configurações de raciocínio
-- o prompt do sistema
+Estes hábitos ajudam o cache de prompts hoje e vão importar para o cache de respostas quando ele for lançado, porque os dois dependem de as solicitações continuarem idênticas:
 
-Isso mantém a chave de cache estável porque a solicitação também permanece estável.
+| Mantenha estável | Por quê |
+| --- | --- |
+| O texto do prompt de sistema | Qualquer mudança cria uma nova entrada no cache |
+| O modelo, as opções de provedor e as configurações de raciocínio | Fazem parte do que torna duas solicitações iguais |
+| `temperature` e outros parâmetros | Idem |
+| O formato da resposta, as ferramentas e a escolha de ferramenta | Idem |
 
-## 2. Ative o cache de respostas no preset
+Coloque tudo isso em uma [predefinição](../guides/presets) para que todos os chamadores enviem a mesma solicitação, e dê aos chamadores exploratórios ou com temperatura alta uma predefinição própria, para que não se misturem com o tráfego que pode ir para o cache.
 
-Configure:
+## Quando não usar cache
 
-- `response_caching.enabled = true`
-- um valor adequado para `ttl_seconds`
-
-Padrões recomendados:
-
-- TTL curto para prompts factuais que mudam rapidamente
-- TTL mais longo para saídas estruturadas estáveis
-
-## 3. Mantenha a solicitação determinística
-
-O cache de respostas funciona melhor quando você evita alterações desnecessárias nas solicitações.
-
-Evite alterar:
-
-- o texto do prompt do sistema
-- a temperatura
-- as substituições de provedor
-- a configuração de raciocínio
-- as listas de ferramentas
-
-Se um chamador mudar esses valores constantemente, use outro preset para ele em vez de impedir a reutilização do cache por todos os demais.
-
-## 4. Confira o comportamento do cache nos detalhes da solicitação
-
-Os detalhes de solicitações que passam pelo cache devem mostrar informações sobre ele.
-
-Verifique:
-
-- acertos e falhas de cache
-- comportamento do TTL
-- contexto do provedor quando uma resposta em cache é retornada
-
-## 5. Combine cache e roteamento de forma intencional
-
-Padrões recomendados:
-
-1. use um preset com cache ativado para saídas estruturadas determinísticas
-2. use outro preset sem cache para solicitações exploratórias ou com temperatura mais alta
-
-Assim, o cache mantém sinal útil em vez de misturar tráfego incompatível.
-
-## 6. Investigue falhas antes de aumentar o TTL
-
-Se você espera acertos, mas continua tendo falhas, compare:
-
-- o texto do prompt
-- o ID do modelo
-- as opções do provedor
-- o formato da resposta
-- as ferramentas e a seleção de ferramentas
-- o slug e a configuração do preset
-
-Aumentar o TTL não corrige divergências de fingerprint.
-
-## 7. Quando evitar o cache
-
-Não ative o cache de respostas por padrão para:
-
-- prompts que dependem de estado externo em tempo real
-- respostas específicas de usuários cujo contexto muda rapidamente
-- solicitações com saídas variáveis de ferramentas
-- gerações muito estocásticas em que a reprodução exata não seja desejável
-
-## Conteúdo relacionado
-
-- [Lançar presets e depurar o roteamento](./preset-rollout-and-routing-debug.mdx)
-- [Exemplos](../guides/examples.mdx)
-- [SDK TypeScript](../sdk-reference/typescript/overview.mdx)
+Não planeje usar cache em prompts que dependem de estado externo em tempo real, em respostas específicas de um usuário cujo contexto muda rápido, em solicitações com saída de ferramenta volátil nem em gerações em que você quer uma resposta nova a cada vez.

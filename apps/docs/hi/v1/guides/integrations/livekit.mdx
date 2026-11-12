@@ -1,59 +1,62 @@
 ---
 title: "LiveKit"
 icon: "radio"
-description: "LiveKit Agents में Phaseo models उपयोग करें।"
+description: "LiveKit Agents में Phaseo मॉडल इस्तेमाल करें।"
 ---
 
-LiveKit Agents अपने OpenAI plugin से किसी भी OpenAI-संगत chat endpoint को call कर सकता है। Phaseo model IDs और routing के लिए इस plugin को Phaseo पर point करें।
+LiveKit Agents OpenAI प्लगइन के LLM को अपनी Phaseo कुंजी के साथ `https://api.phaseo.app/v1` पर ले जाएँ, और आपके वॉइस एजेंट Phaseo मॉडल ID और रूटिंग इस्तेमाल करते हैं। प्लगइन Phaseo के Chat Completions एंडपॉइंट को कॉल करता है।
 
-## Python
+## इंस्टॉल करें
 
-```bash
+<CodeGroup>
+
+```bash Python
 uv add "livekit-agents[openai]"
 ```
 
-```python
+```bash Node.js
+pnpm add @livekit/agents @livekit/agents-plugin-openai
+```
+
+</CodeGroup>
+
+## एजेंट के LLM को Phaseo पर ले जाएँ
+
+<CodeGroup>
+
+```python Python
 import os
 from livekit.agents import AgentSession
 from livekit.plugins import openai
 
 session = AgentSession(
     llm=openai.LLM(
-        model="openai/gpt-5-nano",
+        model="openai/gpt-6-astra",
         api_key=os.environ["PHASEO_API_KEY"],
         base_url="https://api.phaseo.app/v1",
     ),
 )
 ```
 
-## Node.js
-
-```bash
-pnpm add @livekit/agents @livekit/agents-plugin-openai
-```
-
-```ts
+```ts Node.js
 import { voice } from "@livekit/agents";
 import * as openai from "@livekit/agents-plugin-openai";
 
 const session = new voice.AgentSession({
 	llm: new openai.LLM({
-		model: "openai/gpt-5-nano",
+		model: "openai/gpt-6-astra",
 		apiKey: process.env.PHASEO_API_KEY,
 		baseURL: "https://api.phaseo.app/v1",
 	}),
 });
 ```
 
-## नोट्स
+</CodeGroup>
 
-- Custom endpoints के लिए OpenAI-संगत Chat Completions mode उपयोग करें।
-- LiveKit के Responses-विशेष OpenAI tools अपने-आप Phaseo server tools नहीं बनते।
-- चुना हुआ LiveKit interface उस modality के लिए custom OpenAI-संगत URL support न करे, तो speech-to-text और text-to-speech अलग configure करें।
-- उत्पादन में वॉइस ट्रैफ़िक शुरू करने से पहले, बीच में रोकने के व्यवहार, टूल कॉल और स्ट्रीमिंग की विलंबता जाँचें।
+एक सत्र शुरू करें, कुछ बोलें, और पुष्टि करें कि अनुरोध **सेटिंग्स → उपयोग → लॉग्स** में दिखता है।
 
-## संबंधित विषय
+## ज्ञात सीमाएँ
 
-- [OpenAI SDK](./openai-sdk.mdx)
-- [स्ट्रीमिंग](../streaming.mdx)
-- [टूल कॉलिंग](../tool-calling.mdx)
+- कस्टम एंडपॉइंट के लिए प्लगइन का Chat Completions मोड इस्तेमाल करें। LiveKit के Responses-विशिष्ट OpenAI टूल Phaseo सर्वर टूल नहीं बनते।
+- यह सिर्फ़ LLM को रूट करता है। स्पीच-टू-टेक्स्ट और टेक्स्ट-टू-स्पीच अलग से कॉन्फ़िगर करें, जब तक कि आप जो LiveKit इंटरफ़ेस इस्तेमाल करते हैं वह उस मोडैलिटी के लिए कस्टम OpenAI-संगत URL स्वीकार न करे।
+- प्रोडक्शन वॉइस ट्रैफ़िक से पहले इंटरप्शन हैंडलिंग, [टूल कॉल](../tool-calling.mdx) और [स्ट्रीमिंग](../streaming.mdx) लेटेंसी की जाँच करें।

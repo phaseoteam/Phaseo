@@ -23,6 +23,8 @@ export type ModelsFilterFacets = {
 	providerOptions: OptionCount[];
 	regionOptions: OptionCount[];
 	creatorOptions: OptionCount[];
+	/** Optional so the page tolerates catalogue responses cached before licences shipped. */
+	licenseOptions?: OptionCount[];
 	yearOptions: OptionCount[];
 };
 
@@ -75,6 +77,8 @@ export type ModelsPageModel = Omit<
 		| "lowest_from_price"
 		| "lowest_from_price_unit"
 		| "pricing_detail_rows"
+		| "pricing_summary"
+		| "pricing_provider_id"
 		| "popularity_tokens_week"
 		| "weekly_usage_metric"
 		| "weekly_usage_quantity"
@@ -85,6 +89,7 @@ export type ModelsPageModel = Omit<
 	"gateway_status"
 > & {
 	description?: string | null;
+	license?: string | null;
 	gateway_status?:
 		| "active"
 		| "coming_soon"

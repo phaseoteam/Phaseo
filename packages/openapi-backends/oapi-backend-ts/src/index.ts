@@ -131,6 +131,9 @@ function renderOperation(operation: IROperation): string {
 	lines.push(`\targs: ${paramsTypeName}${hasRequiredPathParams ? "" : " = {}"}`);
 	lines.push(`): Promise<${responseType}> {`);
 	lines.push(`\tconst { path, query, headers, body } = args;`);
+	for (const param of pathParams) {
+		lines.push(`\tif ([".", ".."].includes(String(path?.[${JSON.stringify(param.name)}]))) throw new Error("Dot segments are not valid path parameters");`);
+	}
 	lines.push(`\tconst resolvedPath = ${renderPathTemplate(operation.path, pathParams)};`);
 	lines.push(`\treturn client.request<${responseType}>({`);
 	lines.push(`\t\tmethod: "${operation.method.toUpperCase()}",`);

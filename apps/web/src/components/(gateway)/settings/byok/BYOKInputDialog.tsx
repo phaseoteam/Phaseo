@@ -1,8 +1,6 @@
-"use client";
-
 import React, { useMemo, useState } from "react";
 import { Link } from "@/i18n/navigation";
-import { Info, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -13,18 +11,13 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { cn } from "@/lib/utils";
@@ -38,7 +31,7 @@ import { localizedProviderCredentialLabel, localizedProviderKeyHint, localizedPr
 import {
 	createByokKeyAction,
 	updateByokKeyAction,
-} from "@/app/(dashboard)/settings/byok/actions";
+} from "@/features/settings/byok/actions";
 
 type Props = {
 	providerId?: string;
@@ -233,6 +226,7 @@ export default function BYOKInputDialog({
 		() => localizedProviderKeyOnboarding(activeProviderId, providerName, t),
 		[activeProviderId, providerName, t],
 	);
+	const docsUrl = onboarding.docsUrl;
 	const providerModelsHref = activeProviderId
 		? `/api-providers/${encodeURIComponent(activeProviderId)}`
 		: null;
@@ -287,24 +281,18 @@ export default function BYOKInputDialog({
 		try {
 			setLoading(true);
 			if (initial && initial.id) {
-				await write(updateByokKeyAction(initial.id, {
+				await write(updateByokKeyAction({ data: { id: initial.id, updates: {
 					name: normalizedName,
 					value: submission.value ?? undefined,
 					enabled,
 					always_use: alwaysUse,
 					allowedModelSlugs,
 					allowedApiKeyIds,
-				}));
+				} } }));
 			toast.success(submission.value ? t("credits.Key updated and replaced" as never) : t("strings.Key updated" as never));
 			} else {
 				await write(createByokKeyAction(
-					normalizedName,
-					providerId as string,
-					submission.value as string,
-					enabled,
-					alwaysUse,
-					allowedModelSlugs,
-					allowedApiKeyIds,
+					{ data: { name: normalizedName, providerId: providerId as string, value: submission.value as string, enabled, always_use: alwaysUse, allowedModelSlugs, allowedApiKeyIds } },
 				));
 		toast.success(t("credits.Key saved" as never));
 			}
@@ -349,39 +337,28 @@ export default function BYOKInputDialog({
 					) : null}
 
 					<div className="grid gap-2">
-						<div className="flex items-center justify-between gap-2">
-							<Label htmlFor="value">{initial ? t("settingsCopy.byok.replaceCredentialOptional", { credential: credentialLabel }) : credentialLabel}</Label>
-							<HoverCard>
-								<HoverCardTrigger asChild>
-									<span
-										className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-help select-none"
-										aria-label={t("strings.Credential setup info" as never)}
-									>
-										<Info className="h-3.5 w-3.5" />
-					<span>{t("credits.Info" as never)}</span>
-									</span>
-								</HoverCardTrigger>
-								<HoverCardContent align="end" className="max-w-sm">
-									<div className="grid gap-2 text-xs">
-										<div>{onboarding.intro}</div>
-										{onboarding.docsUrl ? (
-											<div>
-												{t("settingsCopy.byok.docsPrefix")} {" "}
-												<Link
-													href={onboarding.docsUrl}
-													target={onboarding.docsUrl.startsWith("http") ? "_blank" : undefined}
-													rel={onboarding.docsUrl.startsWith("http") ? "noreferrer" : undefined}
-													className="underline underline-offset-2 hover:text-foreground"
-												>
-													{onboarding.docsLabel}
-												</Link>{" "}
-												{t("settingsCopy.byok.docsSuffix")}
-											</div>
-										) : null}
-									</div>
-								</HoverCardContent>
-							</HoverCard>
-						</div>
+						<Label htmlFor="value">{initial ? t("settingsCopy.byok.replaceCredentialOptional", { credential: credentialLabel }) : credentialLabel}</Label>
+						<p id="byok-credential-description" className="text-xs text-muted-foreground">
+							{onboarding.intro}
+							{docsUrl ? (
+								<>
+									{" "}
+									{t.rich("settingsCopy.byok.docsLink", {
+										label: onboarding.docsLabel,
+										link: (chunks) => (
+											<Link
+												href={docsUrl}
+												target={docsUrl.startsWith("http") ? "_blank" : undefined}
+												rel={docsUrl.startsWith("http") ? "noreferrer" : undefined}
+												className="underline underline-offset-2 hover:text-foreground"
+											>
+												{chunks}
+											</Link>
+										),
+									})}
+								</>
+							) : null}
+						</p>
 						{initial ? (
 							<div className="rounded-md border bg-muted/5 p-2 font-mono text-sm">
 								{initial.prefix || initial.suffix
@@ -550,6 +527,7 @@ export default function BYOKInputDialog({
 						) : (
 							<Textarea
 								id="value"
+								aria-describedby="byok-credential-description"
 								rows={initial ? 3 : 4}
 								value={value}
 								onChange={(e) => setValue(e.target.value)}

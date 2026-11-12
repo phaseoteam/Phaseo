@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { compareSearchCategories, searchContextScore } from "@/components/header/Search/Search.ranking";
 
 it("prioritises nearby pages using complete route segments", () => {

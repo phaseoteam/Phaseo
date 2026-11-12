@@ -1,91 +1,97 @@
 ---
-title: "Fundamentar la extracción posterior con web fetch"
+title: "Fundamenta la extracción posterior con web fetch"
+sidebarTitle: "Fundamenta la extracción con web fetch"
 icon: "file-search"
-description: "Usa `phaseo:web_fetch` para incorporar texto limitado de una página al ciclo de herramientas y realizar después una extracción y revisión deterministas."
+description: "Usa `phaseo:web_fetch` para llevar texto de páginas, con un tamaño acotado, al bucle de herramientas para una extracción y revisión posteriores deterministas."
 ---
 
-Usa esta receta cuando un flujo necesite obtener una página y convertirla en texto limitado antes de que el modelo extraiga, resuma o clasifique su contenido.
+Dale al modelo `phaseo:web_fetch` y una URL que ya conoces, y Phaseo obtendrá la página, la recortará a un tamaño máximo y devolverá el texto antes de que el modelo lo extraiga, resuma o clasifique. Al terminar tendrás una solicitud que lee una sola página y devuelve campos de ella, y podrás confirmar en el registro qué página leyó realmente.
 
-## 1. Usa `phaseo:web_fetch` para fundamentar una sola página
+La solicitud está lista para producción con el límite de dominio que se muestra. Las páginas obtenidas son entrada no fiable: el modelo puede ver instrucciones en ellas, así que valida lo que devuelve. Usa la [búsqueda web](../guides/server-tools/web-search) cuando no conozcas la URL.
 
-`phaseo:web_fetch` es una herramienta de servidor administrada por Gateway.
+## Envía una solicitud fundamentada
 
-Úsala cuando necesites:
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-astra",
+    "input": "Fetch https://phaseo.app/docs/v1/guides/tool-calling and list the section headings. Use only the fetched text.",
+    "tools": [
+      {
+        "type": "phaseo:web_fetch",
+        "parameters": {
+          "allowed_domains": ["phaseo.app"],
+          "max_chars": 8000,
+          "max_uses": 1
+        }
+      }
+    ],
+    "tool_choice": "phaseo:web_fetch"
+  }'
+```
 
-- que Gateway obtenga directamente una URL
-- que se devuelva texto limitado al ciclo de herramientas
-- seguimiento del uso por solicitud
-- visibilidad de la página obtenida en los registros de solicitudes
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
 
-Es más adecuada que una búsqueda amplia cuando ya conoces la URL.
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
-## 2. Formula la solicitud de manera explícita
+const response = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input:
+    "Fetch https://phaseo.app/docs/v1/guides/tool-calling and list the section headings. Use only the fetched text.",
+  tools: [
+    {
+      type: "phaseo:web_fetch",
+      parameters: {
+        allowed_domains: ["phaseo.app"],
+        max_chars: 8000,
+        max_uses: 1,
+      },
+    },
+  ],
+  tool_choice: "phaseo:web_fetch",
+});
 
-Patrón habitual:
+console.log(JSON.stringify(response.output, null, 2));
+console.log(response.usage?.server_tool_use);
+```
+</CodeGroup>
 
-1. pide al modelo que llame a `phaseo:web_fetch`
-2. deja que Gateway obtenga y normalice la página
-3. deja que el modelo continúe la extracción sobre el texto devuelto
+Deja claro en el prompt qué hay que hacer después de obtener la página: extraer estos campos, resumir esta sección, clasificar el documento o comprobar una afirmación.
 
-Indica explícitamente en el prompt qué tarea debe realizar después de obtener la página:
+| Parámetro | Valor predeterminado | Uso |
+| --- | --- | --- |
+| `allowed_domains` | Ninguno | Obtiene páginas solo de estos dominios. El modelo puede reducir la lista, nunca ampliarla. |
+| `max_chars` | `12000` | Caracteres de texto de la página que se devuelven, hasta `100000`. Más bajo para un título o un resumen, más alto para extraer campos. |
+| `max_uses` | `10` | Llamadas de obtención por solicitud, hasta `100`. |
 
-- extraer campos
-- resumir una sección
-- clasificar el documento
-- validar una afirmación
+La [guía de web fetch](../guides/server-tools/web-fetch#parameters) lista el resto, incluidos `blocked_domains` y los motores.
 
-## 3. Limita intencionalmente el tamaño de la extracción
+## Comprueba qué leyó
 
-Usa `max_chars` cuando el límite predeterminado sea demasiado grande o pequeño para la tarea.
+El resultado de la herramienta, que aparece en el registro de la solicitud, indica exactamente en qué página se basó el modelo:
 
-Patrón recomendado:
+```json
+{
+  "url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "final_url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "status": 200,
+  "content_type": "text/html",
+  "title": "Tool Calling",
+  "truncated": false,
+  "returned_chars": 8000
+}
+```
 
-- límites menores para extraer títulos o resúmenes
-- límites mayores para extraer campos estructurados
+Comprueba `final_url` después de las redirecciones y `truncated` antes de dar por hecho que el modelo vio la página completa. Cada obtención suma 1 a `usage.server_tool_use.web_fetch_requests`.
 
-Si la página es muy extensa, prefiere una tarea de extracción más acotada en lugar de quitar el límite de tamaño.
+## Conoce los límites
 
-## 4. Valida los registros, no solo la respuesta final
+Con el motor `direct` predeterminado, Phaseo obtiene la página por sí mismo y reduce el HTML a texto sin formato. Rechaza `localhost` y las direcciones privadas, sigue como máximo 5 redirecciones y comprueba cada redirección con tus listas de dominios; una redirección fuera de ellas devuelve `redirect_blocked_by_domain_policy` al modelo.
 
-Los detalles de la solicitud deberían mostrar:
+Web fetch sirve para páginas HTML, texto sin formato y respuestas JSON o XML pequeñas. No sirve para archivos binarios, para rastrear muchas páginas ni para comprobar cómo se renderiza una página con JavaScript; para eso, usa un flujo con navegador. Si la página es muy grande, acota la tarea de extracción en lugar de subir `max_chars`.
 
-- URL obtenida
-- URL final tras las redirecciones
-- título de la página, si está disponible
-- estado HTTP
-- tipo de contenido
-- cantidad de caracteres devueltos
-- indicador de truncamiento
-
-Usa esa vista para confirmar que el modelo se basó en la página esperada.
-
-## 5. Conoce los límites de la herramienta
-
-`phaseo:web_fetch` tiene límites intencionales.
-
-Es adecuada para:
-
-- páginas HTML
-- texto sin formato
-- respuestas JSON o XML sencillas
-
-No es la herramienta adecuada para:
-
-- archivos binarios
-- rastreo de muchos sitios
-- comprobaciones de páginas que solo se renderizan con JavaScript
-
-Para verificar contenido renderizado por un navegador, usa un flujo de trabajo de navegador en lugar de depender solo del texto obtenido.
-
-## 6. Patrón recomendado para el despliegue
-
-1. empieza con un preset o una ruta de endpoint
-2. revisa en los registros los metadatos de obtención y el truncamiento
-3. acota el prompt si el contenido obtenido es demasiado amplio
-4. amplía el alcance solo cuando la extracción fundamentada sea estable
-
-## Relacionado
-
-- [Depurar solicitudes de búsqueda web](./web-search-debugging.mdx)
-- [Llamadas a herramientas](../guides/tool-calling.mdx)
-- [Usar la reparación de respuestas para JSON estructurado](./response-healing-for-structured-json.mdx)
+Empieza con un preajuste o un endpoint, lee en los registros los detalles de la obtención y el recorte, y ajusta el prompt si el texto obtenido es demasiado amplio antes de extender su uso.

@@ -34,6 +34,12 @@ CREATE TABLE "public"."gateway_realtime_sessions" (
   "metadata"                    jsonb                    NOT NULL DEFAULT '{}'::jsonb,
   "created_at"                  timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at"                  timestamp with time zone NOT NULL DEFAULT now(),
+  "billing_estimated"           boolean                  NOT NULL DEFAULT false,
+  "estimate_basis"              text,
+  "debt_nanos"                  bigint                   NOT NULL DEFAULT 0,
+  "uncollected_nanos"           bigint                   NOT NULL DEFAULT 0,
+  "billing_anomaly"             text,
+  CONSTRAINT "gateway_realtime_sessions_debt_nanos_check" CHECK ((debt_nanos >= 0)),
   CONSTRAINT "gateway_realtime_sessions_pkey" PRIMARY KEY (id),
   CONSTRAINT "gateway_realtime_sessions_session_id_key" UNIQUE (session_id),
   CONSTRAINT "gateway_realtime_sessions_source_check" CHECK ((source = ANY (ARRAY['api'::text, 'chat'::text]))),
@@ -41,6 +47,7 @@ CREATE TABLE "public"."gateway_realtime_sessions" (
     CHECK
     ((status = ANY (ARRAY['created'::text, 'connecting'::text, 'connected'::text, 'ending'::text, 'billing_unresolved'::text, 'completed'::text, 'failed'::text, 'cancelled'::text,
     'expired'::text]))),
+  CONSTRAINT "gateway_realtime_sessions_uncollected_nanos_check" CHECK ((uncollected_nanos >= 0)),
   CONSTRAINT "gateway_realtime_sessions_key_id_fkey" FOREIGN KEY (key_id) REFERENCES public.keys(id) ON DELETE SET NULL,
   CONSTRAINT "gateway_realtime_sessions_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
 );
@@ -52,6 +59,9 @@ CREATE INDEX idx_gateway_realtime_sessions_active_provider ON public.gateway_rea
   WHERE (status = ANY (ARRAY['created'::text, 'connecting'::text, 'connected'::text, 'ending'::text]));
 
 CREATE INDEX idx_gateway_realtime_sessions_key_created ON public.gateway_realtime_sessions USING btree (key_id, created_at DESC);
+
+CREATE INDEX idx_gateway_realtime_sessions_uncollected ON public.gateway_realtime_sessions USING btree (workspace_id)
+  WHERE (uncollected_nanos > 0);
 
 CREATE INDEX idx_gateway_realtime_sessions_status_updated ON public.gateway_realtime_sessions USING btree (status, updated_at DESC);
 
@@ -85,3 +95,9 @@ GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON
 REVOKE ALL ON TABLE "public"."gateway_realtime_sessions" FROM "authenticated";
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_realtime_sessions" TO "authenticated";
+
+COMMENT ON COLUMN "public"."gateway_realtime_sessions"."billing_estimated" IS 'Part of the settled usage was estimated from metered audio because the provider usage for an interrupted turn never arrived.';
+
+COMMENT ON COLUMN "public"."gateway_realtime_sessions"."debt_nanos" IS 'Charged beyond the session holds and free balance; the wallet went negative by this much (at most the $1 realtime overdraft cap).';
+
+COMMENT ON COLUMN "public"."gateway_realtime_sessions"."uncollected_nanos" IS 'Priced cost beyond the overdraft cap that settlement could not charge. Needs follow-up; settlement does not retry it.';

@@ -8,6 +8,8 @@
 // - No c.env at module scope
 
 import { getCache } from "@/runtime/env";
+import { awaitShared } from "@core/shared-wait";
+import { normalizeVersion, readSharedVersion, rememberSharedVersion } from "@core/shared-version-cache";
 
 export function getKv() {
     return getCache();
@@ -15,13 +17,14 @@ export function getKv() {
 
 const KEY_VERSION_PREFIX = "gateway:keyver";
 const KEY_VERSION_L1_CACHE_TTL_MS = 1000;
+const KEY_VERSION_SHARED_WAIT_MS = 1_000;
 const KEY_VERSION_L1_CACHE_MAX_ENTRIES = 2000;
 type KeyVersionL1Entry = {
     version: number;
     expiresAt: number;
 };
 const keyVersionL1Cache = new Map<string, KeyVersionL1Entry>();
-const keyVersionInflight = new Map<string, Promise<number>>();
+const keyVersionInflight = new Map<string, Promise<number | null>>();
 const keyVersionEpochs = new Map<string, number>();
 
 export function __resetKeyVersionL1ForTests(): void {
@@ -125,14 +128,15 @@ export async function deleteKey(key: string): Promise<void> {
     await getCache().delete(key);
 }
 
-export async function getKeyVersion(
+/** The key's cache version, or null when KV could not be read. */
+async function readKeyVersion(
     scope: "kid" | "id",
     value: string,
     options?: {
         useL1Cache?: boolean;
         l1TtlMs?: number;
     }
-): Promise<number> {
+): Promise<number | null> {
     const key = keyVersionKey(scope, value);
     const useL1Cache = options?.useL1Cache ?? false;
     const l1TtlMs = options?.l1TtlMs ?? KEY_VERSION_L1_CACHE_TTL_MS;
@@ -142,21 +146,27 @@ export async function getKeyVersion(
             return cached;
         }
         const inflight = keyVersionInflight.get(key);
-        if (inflight) return inflight;
+        if (inflight) {
+            // The read may belong to another request; never wait on it unboundedly.
+            const shared = await awaitShared(inflight, KEY_VERSION_SHARED_WAIT_MS);
+            if (shared.settled) return shared.value;
+        }
     }
     const epochAtStart = readKeyVersionEpoch(key);
     const loader = (async () => {
         try {
-            const raw = await getCache().get(key, "text");
-            const parsed = raw ? Number(raw) : 0;
-            const normalized = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 0;
-            if (useL1Cache && readKeyVersionEpoch(key) === epochAtStart) {
-                writeKeyVersionL1(scope, value, normalized, l1TtlMs);
+            // Request-path reads share one location-wide copy (see shared-version-cache);
+            // the isolate copy never outlives it.
+            const shared = useL1Cache ? await readSharedVersion(key) : null;
+            const normalized = shared ? shared.value : normalizeVersion(await getCache().get(key, "text"));
+            // Skip the write when invalidated or superseded by a replacement read (see above).
+            if (shared && readKeyVersionEpoch(key) === epochAtStart && keyVersionInflight.get(key) === loader) {
+                writeKeyVersionL1(scope, value, normalized, Math.min(l1TtlMs, shared.expiresAt - Date.now()));
             }
             return normalized;
         } catch {
-            // Fail open: if KV is unavailable, use version 0 to keep requests serving.
-            return 0;
+            // Unknown, not 0: an entry cached under version 0 could predate every bump.
+            return null;
         } finally {
             if (useL1Cache && keyVersionInflight.get(key) === loader) {
                 keyVersionInflight.delete(key);
@@ -169,6 +179,17 @@ export async function getKeyVersion(
     return loader;
 }
 
+export async function getKeyVersion(
+    scope: "kid" | "id",
+    value: string,
+    options?: {
+        useL1Cache?: boolean;
+        l1TtlMs?: number;
+    }
+): Promise<number> {
+    return (await readKeyVersion(scope, value, options)) ?? 0;
+}
+
 export async function setKeyVersion(scope: "kid" | "id", value: string, version: number): Promise<number> {
     const next = Number.isFinite(version) ? Math.max(0, Math.floor(version)) : Date.now();
     const key = keyVersionKey(scope, value);
@@ -176,12 +197,15 @@ export async function setKeyVersion(scope: "kid" | "id", value: string, version:
     keyVersionInflight.delete(key);
     await getCache().put(key, String(next));
     writeKeyVersionL1(scope, value, next, KEY_VERSION_L1_CACHE_TTL_MS);
+    rememberSharedVersion(key, next);
     return next;
 }
 
 export async function bumpKeyVersion(scope: "kid" | "id", value: string): Promise<number> {
     const current = await getKeyVersion(scope, value, { useL1Cache: false });
-    const next = current + 1;
+    // Clock-based like setKeyVersion's callers: a failed or stale read must not
+    // move the counter back onto a version that already has cached entries.
+    const next = Math.max(current + 1, Date.now());
     return setKeyVersion(scope, value, next);
 }
 
@@ -192,8 +216,10 @@ export async function keyVersionToken(
         useL1Cache?: boolean;
         l1TtlMs?: number;
     }
-): Promise<string> {
-    const version = await getKeyVersion(scope, value, options);
-    return `v${version}`;
+): Promise<string | null> {
+    // Null when KV could not be read: callers skip their caches for that request
+    // instead of trusting entries stored under a guessed version.
+    const version = await readKeyVersion(scope, value, options);
+    return version === null ? null : `v${version}`;
 }
 

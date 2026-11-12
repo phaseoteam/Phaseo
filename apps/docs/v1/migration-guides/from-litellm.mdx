@@ -2,42 +2,34 @@
 title: "Migrating from LiteLLM"
 sidebarTitle: "LiteLLM"
 description: "Replace a LiteLLM proxy with Phaseo while preserving the OpenAI-compatible request path your application already uses."
+"og:image": "https://phaseo.app/og/dynamic?title=Migrating%20from%20LiteLLM&description=Replace%20a%20LiteLLM%20proxy%20with%20Phaseo%20while%20preserving%20the%20OpenAI-compatible%20request%20path%20your%20application%20already%20uses.&pathname=/docs/v1/migration-guides/from-litellm"
 icon: "blocks"
 ---
 
-Use this guide when your application calls a LiteLLM proxy through an OpenAI-compatible client. Swap the proxy boundary first, then map aliases, routing rules, and shared defaults deliberately.
+Point the clients that call your LiteLLM proxy at `https://api.phaseo.app/v1` with a Phaseo key, then map each `model_name` alias and each proxy setting deliberately. To keep LiteLLM and use Phaseo as its upstream instead, see [LiteLLM integration](../guides/integrations/litellm).
 
-## What changes
-
-| Setting | Before | After |
+| Setting | LiteLLM proxy | Phaseo |
 | --- | --- | --- |
-| Base URL | Your LiteLLM proxy | `https://api.phaseo.app/v1` |
-| API key | LiteLLM proxy key | `PHASEO_API_KEY` |
-| Model aliases | LiteLLM configuration | Phaseo model IDs or application aliases |
-| Routing defaults | LiteLLM configuration | Phaseo presets and routing settings |
+| Base URL | Your proxy, often `http://localhost:4000` | `https://api.phaseo.app/v1` |
+| API key | `LITELLM_MASTER_KEY` or a virtual key | `PHASEO_API_KEY` |
+| Model | `model_name` alias from `config.yaml` | Phaseo model ID, a preset (`"model": "@slug"`), or one mapping function |
+| Routing and defaults | `router_settings`, `litellm_settings` | [Presets](../guides/presets) and [Routing and Fallbacks](../guides/routing-and-fallbacks) |
 
-<Steps>
-<Step title="Inventory the proxy configuration">
-
-List every model alias, fallback, provider rule, retry policy, budget, callback, and environment variable used by the current LiteLLM deployment. Identify which settings are shared policy and which belong to a single application.
-
-</Step>
-
-<Step title="Replace the proxy endpoint">
-
-Keep the OpenAI-compatible request code and change its base URL and key.
+## Switch the client
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// Before:
+// new OpenAI({ apiKey: process.env.LITELLM_API_KEY, baseURL: process.env.LITELLM_BASE_URL });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -57,40 +49,41 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+Every alias needs an explicit mapping to an ID in `GET /v1/models?format=openai`. If callers use internal aliases, translate them in one function at the client boundary instead of editing every request.
 
-<Step title="Map aliases and routing rules">
+## Map the proxy configuration
 
-Verify every production model against `GET /v1/models`. If callers rely on internal aliases, normalize them in one application boundary instead of editing every request.
+Inventory callbacks, budgets, and retries before removing the proxy: they stop silently when it goes away.
 
-Move reusable prompt, parameter, and provider restrictions into [Presets](../guides/presets). Configure provider ranking and fallbacks through [Routing and Fallbacks](../guides/routing-and-fallbacks).
+| LiteLLM | On Phaseo |
+| --- | --- |
+| `fallbacks` | `models` array or dynamic route fallbacks, tried on `429`, `500`, `502`, `503` and `504`, never on request errors. |
+| `context_window_fallbacks`, `content_policy_fallbacks` | No equivalent: Phaseo never falls back on a `400`. Handle these in the app. |
+| `routing_strategy` | Workspace routing mode or `provider.sort` (`price`, `latency`, `throughput`). |
+| Per-deployment provider choice | `provider.order`, `provider.only`, `provider.ignore`, or a [provider-qualified ID](../guides/provider-qualified-models) such as `provider:org/model`, which doesn't fall back across providers. |
+| Self-hosted deployments (vLLM and similar) | [Private Models](../guides/private-models), which need a public HTTPS OpenAI-compatible `/chat/completions` endpoint with bearer auth. |
+| Response cache (`litellm_settings.cache`) | No response cache. Cache in the app if needed; [prompt caching](../guides/prompt-caching) still cuts input cost. |
+| Virtual keys (`max_budget`, `rpm_limit`, `tpm_limit`, `max_parallel_requests`, `models`) | API keys with spend limits and allowed models, budgets, and rate limit policies for requests per minute, tokens per minute, and concurrent requests. See [Limits](../api-reference/limits). |
+| Team budgets, `metadata.tags` | Department budgets and `X-Phaseo-Metadata` [labels](../guides/request-labels). End-user budgets map only to an end-user rate limit policy; there's no end-user spend cap. |
+| `guardrails` (Presidio, Lakera and similar) | Key guardrails scan requests for prompt injection and PII. Responses aren't scanned. |
+| Callbacks (`success_callback`, Langfuse, Datadog, OpenTelemetry) | [Observability destinations](../guides/integrations/observability) or client-side tracing. Body `metadata` exports as `phaseo.metadata.<key>`. |
+| Provider API keys in config | BYOK (**Settings → BYOK** or `POST /v1/byok`), or Phaseo credits. Set `byok_fallback_enabled` with **Settings → BYOK** to fall back to credits. |
 
-</Step>
+A proxy sends a whole team's traffic through one key owner, so it shares that user's requests-per-minute allowance, which is 10 for a new workspace. Check [Gateway limits](../api-reference/limits#gateway-limits) and arrange a higher limit before cutover.
 
-<Step title="Validate the production workflows">
+## Test and roll out
 
-Test streaming, tools, structured outputs, retries, error mapping, and any callback-driven observability your LiteLLM deployment handled. Compare latency, output, token usage, and cost before moving traffic gradually.
+Test streaming, tools, structured outputs, retries, error mapping, and any callback-driven telemetry the proxy handled. Compare latency, output, token usage, and cost before moving traffic gradually. Before cutover:
 
-</Step>
-</Steps>
-
-## Migration checklist
-
-- LiteLLM URLs, keys, and deployment dependencies have been identified.
-- Every production model and alias has an explicit Phaseo mapping.
-- Shared defaults have moved to presets or one application boundary.
-- Streaming, tools, and structured outputs pass in staging where used.
-- Required callbacks and telemetry have an intentional replacement.
-- Rollback remains a configuration-only endpoint and key change.
-
-## Next steps
-
-- [Presets](../guides/presets)
-- [Routing and Fallbacks](../guides/routing-and-fallbacks)
-- [Observability](../guides/integrations/observability)
+- every LiteLLM URL, key, and `LITELLM_*` variable is identified;
+- every production alias has an explicit Phaseo mapping;
+- shared defaults live in presets or one boundary function;
+- required callbacks and telemetry have a replacement;
+- you've decided whether LiteLLM, Phaseo, or both is the record for spend;
+- rollback is still only a base URL and key change.

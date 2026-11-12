@@ -4,13 +4,39 @@ description: "Différences entre la disponibilité chez le fournisseur, la prép
 icon: "activity"
 ---
 
-Une offre fournisseur/modèle possède des états amont et Phaseo distincts. Cette distinction est utile lorsqu’un fournisseur publie un modèle que Phaseo n’a pas encore intégré ou activé sur le point de terminaison correspondant.
+import { ProviderStatusExplorer } from "/snippets/provider-status.jsx";
 
-Ces champs apparaissent sur les pages de modèles, les cartes tarifaires des fournisseurs et les vues de disponibilité associées.
+Sur la page d’un modèle, jusqu’à deux icônes suivent le nom de chaque fournisseur : une **icône d’état**, définie par Phaseo, et une **icône de routage en direct**, qui n’apparaît que lorsque le Gateway détourne le trafic d’un fournisseur en échec.
 
-## Disponibilité du fournisseur
+<ProviderStatusExplorer locale="fr" />
 
-La disponibilité du fournisseur décrit l’offre chez le fournisseur d’origine.
+## Icône d’état
+
+Phaseo définit cet état manuellement, et il reste en place jusqu’à ce que Phaseo le modifie. Une route à priorité réduite est un dernier recours : le Gateway ne l’essaie qu’après tous les autres fournisseurs sains.
+
+| Icône | État | Routage |
+| --- | --- | --- |
+| <Icon icon="circle-check" color="#16a34a" /> | `Active` | Routé normalement. |
+| <Icon icon="triangle-alert" color="#d97706" /> | `Priorité réduite` | Uniquement en secours, après tous les autres fournisseurs sains. |
+| <Icon icon="ban" color="#dc2626" /> | `Disabled` | Pas de routage. |
+
+## Routage en direct
+
+Le Gateway le définit automatiquement pour chaque fournisseur, modèle et endpoint, à partir des requêtes qu’il traite en ce moment. Une route limitée ou en rétablissement reste routable, mais les autres fournisseurs sont essayés en premier.
+
+```mermaid
+flowchart TD
+  ok["Normal"] -->|"Plusieurs échecs de suite, ou la moitié des requêtes récentes échouent"| lim["Limité temporairement"]
+  lim -->|"Fin du délai"| rec["Rétablissement en cours"]
+  rec -->|"Toutes les requêtes d’un lot réussissent"| ok
+  rec -->|"La moitié ou plus échouent : délai plus long"| lim
+```
+
+## Disponibilité et intégration
+
+La carte d’état indique aussi si le fournisseur propose le modèle et si Phaseo l’a activé. Une route n’est publique que si les deux le permettent. Par exemple, un fournisseur peut proposer un nouveau modèle (`Available`) pendant que Phaseo développe encore sa prise en charge (`Implementing`).
+
+### Disponibilité chez le fournisseur
 
 | État | Signification |
 | --- | --- |
@@ -22,11 +48,7 @@ La disponibilité du fournisseur décrit l’offre chez le fournisseur d’origi
 | `Removed` | Le fournisseur ne propose plus l’offre. |
 | `Unknown` | Phaseo n’a pas encore vérifié la disponibilité chez le fournisseur d’origine. |
 
-La disponibilité chez le fournisseur ne signifie pas que Phaseo peut router la requête.
-
-## État de l’intégration Phaseo
-
-L’état Phaseo décrit notre implémentation et son déploiement.
+### Intégration Phaseo
 
 | État | Signification | Routage Phaseo |
 | --- | --- | --- |
@@ -38,56 +60,11 @@ L’état Phaseo décrit notre implémentation et son déploiement.
 | `Disabled` | Phaseo a volontairement désactivé l’intégration. | Non routable. |
 | `Blocked` | Une dépendance externe ou non résolue empêche le déploiement. | Non routable. |
 
-Seules les intégrations `Enabled` peuvent avoir un routage public activé.
-
-## Accès interne
-
-La portée d’accès est distincte de l’état de l’intégration Phaseo :
-
-| Portée | Signification |
-| --- | --- |
-| `Public` | Les requêtes client ordinaires peuvent utiliser la route si tous les contrôles de routage sont satisfaits. |
-| `Internal` | Seul le trafic de test Phaseo authentifié peut utiliser la route. |
-
-Une route interne nécessite le jeton interne à forte entropie et une requête qui indique explicitement le mode test. Un client ne peut pas l’activer avec le seul en-tête de test. Les requêtes ordinaires ne recherchent pas les routes internes en base de données ; elles utilisent le cache de contexte par défaut existant. Les tests internes utilisent un segment de cache distinct et ne prennent en compte que les routes explicitement internes, dont l’offre amont est utilisable et dont l’état Phaseo est `Testing` ou `Enabled`.
-
-## État de santé du routage
-
-L’état de santé du routage est un troisième signal opérationnel. Il indique comment sélectionner une route activée à l’instant présent.
-
-| État | Signification | Comportement de routage |
-| --- | --- | --- |
-| `Active` | La route est suffisamment saine pour être sélectionnée normalement. | Routable maintenant. |
-| `Deranked L1` | La santé récente réduit légèrement sa priorité. | Routable maintenant. |
-| `Deranked L2` | La santé récente réduit nettement sa priorité. | Routable maintenant, derrière les routes plus saines. |
-| `Deranked L3` | La santé récente réduit fortement sa priorité. | Routable maintenant, avec une priorité très basse. |
-| `Disabled` | Le contrôle de routage est désactivé. | Pas de routage. |
-
-La rétrogradation ne modifie ni la disponibilité du fournisseur ni le cycle de vie de l’intégration Phaseo. Les observations de santé en temps réel ne modifient pas non plus ces états de cycle de vie.
-
-## Exemples
-
-Une offre fournisseur récemment publiée peut présenter les états suivants :
-
-- disponibilité du fournisseur : `Available`
-- état Phaseo : `Implementing`
-- santé du routage : sans objet, car le routage est désactivé
-
-Une route mature temporairement dégradée peut présenter les états suivants :
-
-- disponibilité du fournisseur : `Available`
-- état Phaseo : `Enabled`
-- santé du routage : `Deranked L2`
-
-Une annonce d’un fournisseur peut présenter les états suivants :
-
-- disponibilité du fournisseur : `Coming Soon`
-- état Phaseo : `Planned`
-- santé du routage : sans objet
+Seules les routes `Enabled` peuvent être publiques. Les routes `Internal` ne servent que le trafic de test de Phaseo.
 
 ## Compatibilité
 
-Les champs API existants, tels que `availability_status`, `routing_status`, `is_active_gateway` et `routable`, restent disponibles pendant le déploiement additif. Les nouvelles intégrations doivent utiliser les champs explicites du fournisseur et de Phaseo.
+`availability_status`, `routing_status`, `is_active_gateway` et `routable` restent dans l’API pour les intégrations existantes. Les nouvelles intégrations doivent lire les champs distincts du fournisseur et de Phaseo.
 
 ## Pages associées
 

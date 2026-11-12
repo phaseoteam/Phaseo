@@ -1,90 +1,69 @@
 ---
 title: "Support-Triage mit Presets und Guardrail-bewussten Fehlern"
+sidebarTitle: "Support-Triage mit Presets"
 icon: "life-buoy"
-description: "Führe einen Preset-gesteuerten Support-Triage-Agenten aus, der striktes JSON zurückgibt, Hochrisikofälle zur Prüfung anhält und Guardrail-Fehler sichtbar hält."
+description: "Führe einen Preset-gesteuerten Support-Triage-Agenten aus, der streng strukturiertes JSON zurückgibt, Hochrisikofälle zur Prüfung anhält und Guardrail-Fehler sichtbar hält."
 ---
 
-Nutze dieses Rezept, wenn ein Support-Workflow Folgendes leisten soll:
+Baue einen TypeScript-Triage-Agenten, dessen Modell, Prompt und Anbieterregeln aus einem Preset im Dashboard stammen, sodass der Code nur den Workflow behandelt. Am Ende gibt er eine streng strukturierte JSON-Triage-Entscheidung zurück, hält Fälle an, die eine Person brauchen, wiederholt Modellaufrufe eine begrenzte Anzahl von Malen und protokolliert Gateway-Fehler mit den IDs, die du brauchst, um sie zu finden.
 
-- Routing- und Prompt-Standards aus einem Dashboard-Preset übernehmen
-- eine strikt strukturierte Ausgabe zurückgeben
-- riskante Fälle zur Prüfung durch Menschen anhalten
-- Gateway-Fehler in den Logs sichtbar halten, statt sie im Agent-Code zu verbergen
+Das Skript ist produktionsreif, sobald das Preset existiert und du angehaltene Läufe speicherst, wie in der [robusten Agent-Schleife](./agent-sdk-durable-loop). Eine fertig verpackte Version liegt in `packages/sdk/agent-sdk-ts/examples/support-triage-agent.ts`.
 
-## 1. Mit einem Preset beginnen
+## Agenten bauen
 
-Erstelle ein Preset wie `support-triage`, das Folgendes festlegt:
+<Steps>
+<Step title="Preset anlegen">
 
-- das standardmäßig geroutete Modell oder Router-Ziel
-- Anbieterpräferenzen
-- den Support-System-Prompt
-- stabile Decoding-Parameter
+Lege unter **Einstellungen → Voreinstellungen** das Preset `support-triage` mit dem gerouteten Modell, den Anbieterpräferenzen, dem Support-Systemprompt und stabilen Decoding-Parametern an. Das Modell muss JSON-Schema-Ausgabe unterstützen. [Presets](../guides/presets) erklärt, wie ein Preset mit jeder Anfrage zusammengeführt wird.
 
-So bleibt der Agent-Code auf die Workflow-Steuerung fokussiert, statt Anfragerichtlinien zu duplizieren.
+</Step>
+<Step title="Installieren">
 
-## 2. Einen klar abgegrenzten Triage-Vertrag definieren
-
-```ts
-type SupportTriageDecision = {
-  queue: "billing" | "reliability" | "product" | "security";
-  severity: "low" | "medium" | "high";
-  needsHumanReview: boolean;
-  summary: string;
-};
+```bash
+npm install @phaseo/agent-sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-Halte die erste Ausgabe so kompakt, dass das Betriebsteam sie schnell prüfen kann.
+</Step>
+<Step title="Agenten schreiben">
 
-## 3. Den Preset-gesteuerten Agenten erstellen
+```ts triage-agent.ts
+import { z } from "zod";
+import { AgentGatewayError, createAgent, createGatewayAgentClient } from "@phaseo/agent-sdk";
 
-```ts
-import { createAgent } from "@phaseo/agent-sdk";
+const SupportTriageDecision = z
+  .object({
+    queue: z.enum(["billing", "reliability", "product", "security"]),
+    severity: z.enum(["low", "medium", "high"]),
+    needsHumanReview: z.boolean(),
+    summary: z.string().min(1),
+  })
+  .strict();
+type SupportTriageDecision = z.infer<typeof SupportTriageDecision>;
 
+// `preset` wird in jedem Zug zum Modell `@support-triage`.
 const supportTriageAgent = createAgent<string, SupportTriageDecision>({
   id: "support-triage-agent",
   preset: "support-triage",
-  parseOutput(text) {
-    return JSON.parse(text) as SupportTriageDecision;
-  },
+  maxSteps: 3,
+  parseOutput: (text) => JSON.parse(text),
+  outputSchema: SupportTriageDecision,
   humanReview: ({ parsedOutput }) =>
     parsedOutput?.needsHumanReview
-      ? {
-          reason: "support_triage_review_required",
-          payload: parsedOutput,
-        }
+      ? { reason: "support_triage_review_required", payload: parsedOutput }
       : null,
 });
-```
-
-Das SDK löst `preset: "support-triage"` in die Gateway-Aliasform `@support-triage` auf.
-
-## 4. Den Gateway-gestützten Adapter konfigurieren
-
-Verwende Adapter-Standards für Einstellungen, die bei jedem Triage-Lauf gleich bleiben sollen:
-
-```ts
-import {
-  createGatewayAgentClient,
-} from "@phaseo/agent-sdk";
 
 const client = createGatewayAgentClient({
-  clientOptions: {
-    apiKey: process.env.PHASEO_API_KEY!,
-  },
+  clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
   responseFormat: {
     type: "json_schema",
     name: "support_triage_decision",
     schema: {
       type: "object",
       properties: {
-        queue: {
-          type: "string",
-          enum: ["billing", "reliability", "product", "security"],
-        },
-        severity: {
-          type: "string",
-          enum: ["low", "medium", "high"],
-        },
+        queue: { type: "string", enum: ["billing", "reliability", "product", "security"] },
+        severity: { type: "string", enum: ["low", "medium", "high"] },
         needsHumanReview: { type: "boolean" },
         summary: { type: "string" },
       },
@@ -94,53 +73,23 @@ const client = createGatewayAgentClient({
   },
   plugins: [{ id: "response-healing", mode: "strict" }],
 });
-```
-
-## 5. Den Workflow mit begrenzten Wiederholungsversuchen ausführen
-
-```ts
-const result = await supportTriageAgent.run({
-  input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
-  client,
-  modelRetry: {
-    maxRetries: 2,
-    backoffMs: 250,
-  },
-  onEvent(event) {
-    console.log(event.type, event.runId, event.attempt);
-  },
-});
-```
-
-Wenn der Run zur Prüfung pausiert, setze ihn ausdrücklich fort:
-
-```ts
-if (result.run.status === "waiting_for_human") {
-  const continued = await supportTriageAgent.continueRun({
-    run: result,
-    client,
-    humanInput: "Approved. Finalize the triage decision.",
-  });
-
-  console.log(continued.output);
-}
-```
-
-## 6. Gateway-Fehler als Betriebsereignisse behandeln
-
-Verbirg Fehler nicht, indem du sie in der Agent-Callback-Kette abfängst und unterdrückst.
-
-Fange stattdessen `AgentGatewayError` ausdrücklich ab:
-
-```ts
-import { AgentGatewayError } from "@phaseo/agent-sdk";
 
 try {
-  await supportTriageAgent.run({
+  const result = await supportTriageAgent.run({
     input: "Customer says webhook deliveries failed overnight and asks whether data was lost.",
     client,
-    store,
+    modelRetry: { maxRetries: 2, backoffMs: 250 },
+    onEvent(event) {
+      if (event.type === "model.retrying") console.log("retrying", event.attempt, event.error);
+    },
   });
+
+  if (result.run.status === "waiting_for_human") {
+    // `result` speichern und fortsetzen, sobald ein Support-Mitarbeiter es geprüft hat.
+    console.log("Needs review:", result.run.pause?.payload);
+  } else {
+    console.log(result.output);
+  }
 } catch (error) {
   if (error instanceof AgentGatewayError) {
     console.error("Gateway request failed", {
@@ -156,38 +105,44 @@ try {
 }
 ```
 
-Anschließend:
+</Step>
+<Step title="Ausführen">
 
-1. Lass die Runtime den `failed`-Status von Lauf und Schritten speichern.
-2. Prüfe bei späteren Wiederherstellungsabläufen `loaded.run.errorDetails` oder `loaded.steps[n].errorDetails`, wenn die ursprüngliche Exception nicht mehr im Speicher liegt.
-3. Prüfe in den Anfragedetails:
-   - die Durchsetzung der Guardrails
-   - Routing-Details
-   - Plugin-Ausführung
-   - Request-IDs und Anbieterdaten
+```bash
+npx tsx triage-agent.ts
+```
 
-Das ist besonders wichtig, wenn:
+</Step>
+</Steps>
 
-- eine Guardrail die Anfrage blockiert
-- die Zulassungsliste des Presets das angeforderte Modell ablehnt
-- Anbieterzugangsdaten oder Aktivierungsfilter die gerouteten Kandidaten entfernen
-- Response-Healing kein schema-konformes JSON wiederherstellen kann
+Um einen angehaltenen Fall abzuschließen, setze ihn mit der Entscheidung der prüfenden Person fort:
 
-## 7. Was zu prüfen ist
+```ts
+const continued = await supportTriageAgent.continueRun({
+  run: storedResult,
+  client,
+  humanInput: "Approved. Finalize the triage decision.",
+});
+```
 
-Prüfe nach einem erfolgreichen und einem gezielt riskanten Lauf Folgendes:
+## Prüfen, ob es funktioniert hat
 
-- die Anfragedetails das durch das Preset festgelegte Ziel anzeigen
-- Hochrisikofälle mit `waiting_for_human` angehalten werden
-- Wiederholungen von Modellschritten `modelAttempts` speichern
-- Guardrail- oder Preset-Fehler in den Anfragedetails sichtbar bleiben und nicht in Agent-Ausnahmen verborgen werden
+Führe ein Routineticket und ein riskantes Ticket aus und prüfe dann:
 
-## Verwandte Leitfäden
+- Unter **Einstellungen → Nutzung → Protokolle** zeigt das Modell der Anfrage, dass das Preset verwendet wurde.
+- Der riskante Fall endet bei `waiting_for_human`, mit der Entscheidung in `pause.payload`.
+- Ein wiederholter Modellaufruf wird im Schritt als `modelAttempts` erfasst, und jede Wiederholung protokolliert `model.retrying`.
+- Eine blockierte Anfrage wird mit ihrer `requestId` und ihrem `reason` protokolliert, und dieselbe Anfrage in den Protokollen zeigt den Grund.
 
-- [TypeScript-Agent-SDK](../sdk-reference/typescript/agent-sdk.mdx)
-- [Voreinstellungen](../guides/presets.mdx)
-- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
-- [Strukturierte Ausgaben validieren](../guides/structured-outputs.mdx)
-- [Presets ausrollen und Routing debuggen](./preset-rollout-and-routing-debug.mdx)
-- [Fehlerhaftes strukturiertes JSON wiederherstellen](./response-healing-for-structured-json.mdx)
-- [Eine dauerhafte Agent-Schleife in TypeScript erstellen](./agent-sdk-durable-loop.mdx)
+## Gateway-Fehler sichtbar halten
+
+Verschlucke keine Fehler in Agent-Callbacks. Fange `AgentGatewayError` am Rand ab, protokolliere seine IDs und wirf ihn erneut. Sobald ein Lauf fehlschlägt, behält sein gespeicherter Zustand dieselben Details in `run.errorDetails` und `steps[n].errorDetails`, sodass ein späterer Wiederherstellungsjob sie lesen kann, nachdem die Ausnahme verschwunden ist.
+
+Diese Fehler stammen aus Gateway-Richtlinien, nicht vom Agenten, deshalb ist die Anfrage in den Protokollen der richtige Ort zum Nachsehen:
+
+| Fehler | Wo er erscheint |
+| --- | --- |
+| Eine Guardrail blockiert die Anfrage | Der Abschnitt **Durchsetzung der Leitplanken** der Anfrage |
+| Die erlaubten Modelle des Presets lehnen das Modell ab | `validation_error` mit dem Schlüsselwort `preset_model_not_allowed` |
+| Anbieter-Zugangsdaten oder -Aktivierung lassen keinen Anbieter übrig | `providerFailureDiagnostics` und **Beobachtbarkeit des Routings** |
+| Die Reparatur kann kein schemagültiges JSON erzeugen | Der Plugin-Eintrag, danach `AgentSchemaValidationError` aus `outputSchema` |

@@ -1,13 +1,18 @@
 ---
 title: "SDK C++ (en cours)"
-description: "Consultez les en-têtes C++ en cours de développement."
+description: "Découvrez les en-têtes C++ en cours de développement."
 ---
 
 <Note type="warning">
-  Le SDK C++ est en cours de développement et n’est pas encore disponible via un gestionnaire de packages. Utilisez les en-têtes sources uniquement à des fins d’évaluation.
+  Le SDK C++ est en cours de développement et n’est pas encore disponible via un gestionnaire de paquets. Utilisez les en-têtes sources uniquement à des fins d’évaluation.
 </Note>
 
-- État : en cours de développement (pas encore publié).
-- Les sources se trouvent dans `packages/sdk/sdk-cpp`.
-- Les en-têtes générés se trouvent dans `packages/sdk/sdk-cpp/src/gen`.
-- `src/phaseo.hpp` ajoute la récupération des capacités des modèles en temps réel et des rapports de prise en charge des paramètres. Le transport en préversion renvoie du JSON brut ; désérialisez donc la réponse en `ModelEndpointCapabilities` avant de la vérifier.
+Le SDK C++ est un ensemble de sources C++17 composées uniquement d’en-têtes, dans `packages/sdk/sdk-cpp` ; il n’est pas publié et reste exclu des versions des SDK tant qu’il ne fonctionne pas de bout en bout.
+
+| Fichier | Contenu |
+| --- | --- |
+| `src/gen/client.hpp`, `src/gen/operations.hpp`, `src/gen/models.hpp`, `src/gen/model_ids.hpp` | Le client généré |
+| `src/phaseo.hpp` | `GetModelEndpointCapabilities(...)` pour les capacités des modèles en direct et `CheckParameterSupport(...)` pour les rapports de prise en charge des paramètres |
+| `src/workflows.hpp` | Assistants de pagination et d’interrogation des tâches |
+
+Le transport en préversion renvoie du JSON brut : désérialisez donc la réponse en `ModelEndpointCapabilities` avant de la vérifier. Pour l’essayer, consultez [Installation](./installation). Il n’existe pas d’Agent SDK C++.

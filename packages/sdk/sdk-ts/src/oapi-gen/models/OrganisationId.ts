@@ -27,6 +27,7 @@ export type OrganisationId =
   | "cursor"
   | "cyfragovpl"
   | "databricks"
+  | "dealignai"
   | "decart"
   | "deepseek"
   | "dots-studio"

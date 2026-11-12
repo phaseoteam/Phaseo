@@ -1,0 +1,8 @@
+---
+title: "Remover escopos de um aplicativo autorizado"
+sidebarTitle: "Reduzir escopos"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml PATCH /me/authorized-apps/{id}"
+description: "Restrinja o acesso de um aplicativo autorizado a menos escopos."
+---
+<Note>Este endpoint exige um token de acesso OAuth com `oauth_clients:write`. Escopos só podem ser removidos; para adicioná-los, autorize o aplicativo novamente no navegador.</Note>

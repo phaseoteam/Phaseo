@@ -4,6 +4,13 @@
 #include "../src/phaseo.hpp"
 
 int main() {
+  assert(phaseo::gen::path_segment("model.1?x#fragment") == "model.1%3Fx%23fragment");
+  assert(phaseo::gen::path_segment("a/b") == "a%2Fb");
+  for (const auto& value : {".", ".."}) {
+    bool rejected = false;
+    try { phaseo::gen::path_segment(value); } catch (const std::invalid_argument&) { rejected = true; }
+    assert(rejected);
+  }
   phaseo::ModelEndpointCapabilities model;
   model.id = "openai/example";
   model.endpoints.push_back({

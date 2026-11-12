@@ -2,9 +2,10 @@
 title: "Mastra"
 icon: "workflow"
 description: "Use Phaseo models inside Mastra agents and workflows."
+"og:image": "https://phaseo.app/og/dynamic?title=Mastra&description=Use%20Phaseo%20models%20inside%20Mastra%20agents%20and%20workflows.&pathname=/docs/v1/guides/integrations/mastra"
 ---
 
-Mastra works with AI SDK providers, so the shortest path is to create an OpenAI-compatible provider that points at Phaseo.
+Create an AI SDK OpenAI provider with your Phaseo key and `baseURL: "https://api.phaseo.app/v1"`, and pass its models to Mastra agents and workflows.
 
 ## Install
 
@@ -12,7 +13,7 @@ Mastra works with AI SDK providers, so the shortest path is to create an OpenAI-
 npm install @mastra/core @ai-sdk/openai ai
 ```
 
-## Configure an agent
+## Point a Mastra agent at Phaseo
 
 ```ts
 import { Agent } from "@mastra/core/agent";
@@ -27,18 +28,13 @@ const phaseo = createOpenAI({
 export const agent = new Agent({
 	name: "support-agent",
 	instructions: "Answer in two short paragraphs.",
-	model: phaseo("openai/gpt-5-nano"),
+	model: phaseo("openai/gpt-6-astra"),
 });
 ```
 
-## Notes
+Use the base URL only, without `/chat/completions` or `/responses`. Run the agent once with a short prompt and confirm the request appears in **Settings → Usage → Logs**.
 
-- Use the base URL only, not `/chat/completions` or `/responses`.
-- Mastra agent behavior depends on the AI SDK provider path. Test tools and streaming before production.
-- Use Phaseo routing controls at the request level or through presets when you need provider preferences.
+## Known limits
 
-## Related
-
-- [AI SDK](./ai-sdk.mdx)
-- [Presets](../presets.mdx)
-- [Tool Calling](../tool-calling.mdx)
+- How Mastra agents behave depends on the AI SDK provider. Test [tool calling](../tool-calling.mdx) and streaming before production.
+- To prefer certain providers, set Phaseo routing controls on the request or in a [preset](../presets.mdx).

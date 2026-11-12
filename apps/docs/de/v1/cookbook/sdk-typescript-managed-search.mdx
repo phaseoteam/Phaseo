@@ -1,155 +1,136 @@
 ---
 title: "Einen TypeScript-SDK-Workflow mit verwalteter Websuche fundieren"
+sidebarTitle: "Verwaltete Websuche in TypeScript"
 icon: "search"
-description: "Verwende das offizielle TypeScript-SDK mit Voreinstellungen, verwalteter Websuche und Antwortmetadaten für einen fundierten und leicht zu untersuchenden Workflow."
+description: "Verwende das offizielle TypeScript-SDK mit Presets, verwalteter Websuche und Antwortmetadaten, damit ein Workflow fundiert bleibt und sich debuggen lässt."
 ---
 
-Verwende dieses Rezept, wenn ein TypeScript- oder JavaScript-Dienst Folgendes kombinieren soll:
+Gib einer TypeScript-Anfrage das Tool `phaseo:web_search` und ein JSON Schema, damit das Modell sucht, bevor es antwortet, und ein Briefing mit seinen Quellen zurückgibt. Am Ende hast du ein Skript, das ein validiertes `{ summary, sources }`-Objekt ausgibt, dazu die IDs und Suchzähler, die du zum Debuggen brauchst.
 
-- routingbezogene Standardwerte aus einer Voreinstellung
-- das verwaltete Tool `phaseo:web_search`
-- striktes Parsen der Antwort
-- Metadaten auf Anfrageebene zum Debuggen
+Das Skript ist produktionsreif, sobald du Preset und Domain durch deine eigenen ersetzt. Suchergebnisse sind nicht vertrauenswürdige Webinhalte: Validiere die Ausgabe und befolge keine Anweisungen, die darin stehen.
 
-## Ziel
+## Bauen
 
-- den Aufrufer beim offiziellen SDK belassen
-- keine rohen Kompatibilitätsnutzlasten von Hand neu aufbauen
-- genügend Metadaten für die Untersuchung von Suchergebnissen, Routing und Plugin-Verhalten behalten
+<Steps>
+<Step title="Ein Preset anlegen">
 
-## 1. Mit einem gemeinsam genutzten Client beginnen
+Lege unter **Einstellungen → Voreinstellungen** `research-brief` mit dem Modell, den Anbieterpräferenzen, den Reasoning-Einstellungen und dem System-Prompt an, die alle Aufrufer teilen sollen. Das Modell muss Tools und Ausgaben nach JSON Schema unterstützen.
 
-```ts
-import Phaseo from "@phaseo/sdk";
+</Step>
+<Step title="Das SDK installieren">
 
-export const gateway = new Phaseo({
-  apiKey: process.env.PHASEO_API_KEY!,
-});
+```bash
+npm install @phaseo/sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 2. Stabile Standardwerte zuerst in einer Voreinstellung festlegen
+</Step>
+<Step title="Das Skript schreiben">
 
-Erstelle eine Voreinstellung, wenn mehrere Aufrufer Folgendes gemeinsam verwenden sollen:
+```ts research-brief.ts
+import Phaseo from "@phaseo/sdk";
+import { z } from "zod";
 
-- Modellrichtlinien
-- Provider-Präferenzen
-- Reasoning-Standardwerte
-- System-Prompt
-- deterministisches Caching-Verhalten
+const gateway = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
-Beschränke die SDK-Anfrage anschließend auf die Werte, die sich bei diesem Aufruf ändern.
+const Brief = z
+  .object({
+    summary: z.string().min(1),
+    sources: z
+      .array(z.object({ title: z.string(), url: z.string().url() }).strict())
+      .min(1),
+  })
+  .strict();
 
-## 3. Eine fundierte Antwort mit dem verwalteten Such-Tool anfordern
-
-```ts
 const response = await gateway.generateResponse({
-  preset: "research-brief",
-  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  model: "@research-brief",
+  input: "Find the latest public changes to Phaseo webhook delivery behavior and summarize them.",
   tools: [
     {
       type: "phaseo:web_search",
       parameters: {
-        query: "site:phaseo.app webhook delivery retries",
+        allowed_domains: ["phaseo.app"],
         max_results: 5,
         include_highlights: true,
       },
     },
   ],
   tool_choice: "phaseo:web_search",
-  response_format: {
-    type: "json_schema",
-    name: "research_brief",
-    schema: {
-      type: "object",
-      required: ["summary", "sources"],
-      properties: {
-        summary: { type: "string" },
-        sources: {
-          type: "array",
-          minItems: 1,
-          items: {
-            type: "object",
-            required: ["title", "url"],
-            properties: {
-              title: { type: "string" },
-              url: { type: "string", format: "uri" },
+  text: {
+    format: {
+      type: "json_schema",
+      name: "research_brief",
+      strict: true,
+      schema: {
+        type: "object",
+        required: ["summary", "sources"],
+        properties: {
+          summary: { type: "string" },
+          sources: {
+            type: "array",
+            minItems: 1,
+            items: {
+              type: "object",
+              required: ["title", "url"],
+              properties: {
+                title: { type: "string" },
+                url: { type: "string", format: "uri" },
+              },
+              additionalProperties: false,
             },
-            additionalProperties: false,
           },
         },
+        additionalProperties: false,
       },
-      additionalProperties: false,
     },
   },
   plugins: [{ id: "response-healing" }],
   meta: true,
 });
-```
 
-Damit erhältst du:
+const text = (response.output ?? [])
+  .filter((item) => item.type === "message")
+  .flatMap((item) => item.content ?? [])
+  .filter((part) => part.type === "output_text")
+  .map((part) => part.text ?? "")
+  .join("");
 
-- von der Voreinstellung verwaltete Routing- und Prompt-Standardwerte
-- eine serverseitig verwaltete Suche, die nicht von nativer Suchunterstützung des Providers abhängt
-- strukturierte Ausgabe für eine zuverlässige nachgelagerte Verarbeitung
-- die Metadaten, die für betriebliche Analysen nötig sind
-
-## 4. Die Ausgabe parsen und Debug-Felder beibehalten
-
-```ts
-const firstMessage = Array.isArray(response.output)
-  ? response.output.find((item) => item?.type === "message")
-  : null;
-
-const text = Array.isArray(firstMessage?.content)
-  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
-  : "";
-
-const payload = JSON.parse(text);
+const brief = Brief.parse(JSON.parse(text));
 
 console.log({
   responseId: response.id,
-  selectedProvider: response.meta?.routing?.selected_provider,
+  model: response.model,
+  routing: response.meta?.routing,
   pluginExecutions: response.meta?.plugin_executions,
   serverToolUse: response.usage?.server_tool_use,
 });
-
-console.log(payload);
+console.log(brief);
 ```
 
-Diese Felder erleichtern die folgenden Prüfungen:
+| Feld | Wirkung |
+| --- | --- |
+| `tools` mit `phaseo:web_search` | Phaseo führt die Suche aus, unabhängig davon, ob der Anbieter eine eigene Suche hat. Das Modell formuliert die Suchanfrage. |
+| `allowed_domains` | Beschränkt die Ergebnisse auf deine eigenen Quellen. Alle Parameter stehen im [Leitfaden zur Websuche](../guides/server-tools/web-search#parameters). |
+| `tool_choice: "phaseo:web_search"` | Bringt das Modell dazu zu suchen, statt aus dem Gedächtnis zu antworten. |
+| `text.format` | Das JSON Schema für die Antwort. |
+| `plugins` | Repariert fast gültiges JSON; siehe [Response Healing](./response-healing-for-structured-json). |
+| `meta: true` | Fügt `meta.routing` und `meta.plugin_executions` hinzu. |
 
-- welcher Provider die Anfrage tatsächlich ausgeführt hat
-- ob die verwaltete Suche ausgeführt wurde
-- ob die Antwortreparatur ausgeführt wurde
-- welche Anfrage du im Dashboard untersuchen solltest
+</Step>
+<Step title="Ausführen">
 
-## 5. Die fundierte Anfrage in den Protokollen prüfen
+```bash
+npx tsx research-brief.ts
+```
 
-Öffne die Anfrage unter **Gateway -> Nutzung** und prüfe:
+</Step>
+</Steps>
 
-- normalisierte Suchergebnisse
-- Zitate
-- ausgewählten Provider
-- Ausführungsmetadaten des Plugins
+## Prüfen, ob es funktioniert hat
 
-Wenn Suchverhalten oder Rangfolge nicht stimmen, passe die Voreinstellung oder Tool-Parameter anhand der Protokolle an, statt unüberlegt Überschreibungen hinzuzufügen.
+- `serverToolUse.web_search_requests` ist mindestens `1`, die Suche lief also.
+- `brief.sources` listet URLs von `phaseo.app` auf.
+- `routing.selected_provider` nennt den Anbieter, und `pluginExecutions` zeigt, ob Healing etwas geändert hat.
+- Unter **Einstellungen → Nutzung → Protokolle** zeigt der Abschnitt **Überwachung der Websuche** der Anfrage die verwalteten Suchen, Ergebnisse und Zitate.
 
-## 6. Explorative und deterministische Workflows trennen
-
-Empfohlenes Muster:
-
-1. eine Voreinstellung für deterministische strukturierte Rechercheergebnisse
-2. eine weitere Voreinstellung für explorative Anfragen oder eine höhere Temperatur
-
-So bleiben:
-
-- der Antwortcache übersichtlicher
-- das Routing-Verhalten leichter nachvollziehbar
-- suchintensive Workflows vom allgemeinen Generierungsverkehr getrennt
-
-## Verwandte Anleitungen
-
-- [Websuchanfragen untersuchen](./web-search-debugging.mdx)
-- [Voreinstellungen ausrollen und Routing untersuchen](./preset-rollout-and-routing-debug.mdx)
-- [Antworten für strukturiertes JSON reparieren](./response-healing-for-structured-json.mdx)
-- [Überblick über das TypeScript-SDK](../sdk-reference/typescript/overview.mdx)
+Sehen die Ergebnisse falsch aus, korrigiere Preset oder Tool-Parameter anhand dessen, was die Protokolle zeigen, statt Überschreibungen hinzuzufügen. [Websuche debuggen](./web-search-debugging) listet die häufigen Fälle auf. Halte explorative Recherche mit höherer Temperatur in einem anderen Preset als diesem deterministischen, damit sich ihr Routing leicht vergleichen lässt.

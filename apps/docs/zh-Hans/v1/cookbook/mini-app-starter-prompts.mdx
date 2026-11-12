@@ -1,108 +1,107 @@
 ---
 title: "迷你应用入门提示"
 icon: "code"
-description: "可复制的提示，可让编程代理使用原始 HTTP、SDK 或代理运行时构建小型 Phaseo 应用。"
+description: "可复制给编程智能体的提示，用原始 HTTP、SDK 或智能体运行时构建小型 Phaseo 应用。"
 ---
 
-当你想给编程代理一个具体提示，让它构建小型可运行应用，而不是给出模糊的集成计划时，请使用此页面。
+把下面任一提示粘贴到 Cursor、Claude Code、Codex 或类似的编程智能体中，它就会构建一个可运行的小型 Phaseo 应用，然后报告它运行了什么、哪些内容无法检查。每个提示都写明了集成方式、安全规则和你期望的验证内容。
 
-<Tip>
-这些提示以结果为导向，并明确实现细节，因此在 Cursor、Claude Code、Codex 等工具中效果更好。
-</Tip>
+它们生成的应用只是起点：部署之前请审查代码，尤其是密钥处理和工具验证。
 
-## 如何使用这些提示
+## 使用提示
 
 <Steps>
   <Step title="选择集成方式">
-    选择与你希望应用调用 Phaseo 的方式相匹配的提示：
-
-    - 原始 HTTP
-    - 一个官方 SDK
-    - Vercel AI SDK
-    - Agent SDK
+    | 提示 | 调用 Phaseo 的方式 |
+    | --- | --- |
+    | 原始 HTTP | 针对 `https://api.phaseo.app/v1` 的 `fetch` |
+    | TypeScript SDK | `@phaseo/sdk` |
+    | Python SDK | `phaseo` |
+    | Vercel AI SDK | `@phaseo/ai-sdk-provider` |
+    | Agent SDK | `@phaseo/agent-sdk`、`phaseo-agent-sdk`，或对应你所用语言的 Agent SDK |
   </Step>
   <Step title="替换方括号中的变量">
-    将提示粘贴到编程代理之前，请先填写 `[应用创意]`、`[框架]`、`[模型]` 和 `[LANGUAGE]` 等值。
+    在把提示粘贴到编程智能体之前，填好 `[APP IDEA]`、`[FRAMEWORK]`、`[MODEL]` 和 `[LANGUAGE]` 等值。
   </Step>
   <Step title="要求验证，而不只是代码">
-    保留提示中的验证要求，以便代理报告实际运行了什么、做了哪些假设，以及还需要哪些手动设置。
+    保留提示中的验证内容。它们会迫使智能体报告实际运行了什么、做了哪些假设，以及还需要哪些手动设置。
   </Step>
 </Steps>
 
-## 提示包
+## 提示合集
 
 <AccordionGroup>
   <Accordion title="原始 HTTP 迷你应用" icon="globe">
     <Prompt
-      description="构建一个使用**原始 HTTP** 而非 SDK 调用 Phaseo 的小型应用。"
+      description="构建一个通过**原始 HTTP** 而非 SDK 调用 Phaseo 的小应用。"
       icon="globe"
       actions={["copy", "cursor"]}
     >
-{`你正在使用 Phaseo Gateway 实现一个小型、接近生产质量的演示应用。
+{`You are implementing a small production-style demo app with Phaseo Gateway.
 
-为 [应用创意] 构建一个 [框架] 迷你应用。
+Build a [FRAMEWORK] mini app for [APP IDEA].
 
-要求：
-- 使用原始 HTTP 请求，不要使用 Phaseo SDK。
-- 使用 Phaseo 端点 [ENDPOINT]。
-- 使用模型 [模型]。
-- 从名为 PHASEO_API_KEY 的环境变量读取 API 密钥。
-- 有意保持应用精简：一个主页、一个服务器路由或处理器，以及最少的样式。
-- 显示用户输入、请求提交状态、模型输出以及任何网关错误状态。
-- 在注释或文档中添加一个请求负载示例，以便之后轻松审查集成。
+Requirements:
+- Use raw HTTP requests, not a Phaseo SDK.
+- Use the base URL https://api.phaseo.app/v1 and the Phaseo endpoint [ENDPOINT].
+- Use model [MODEL].
+- Read the API key from an environment variable named PHASEO_API_KEY and send it as Authorization: Bearer.
+- Keep the app intentionally small: one main page, one server route or handler, and minimal styling.
+- Show the user input, the request submission state, the model output, and any gateway error state.
+- Add one example request payload in comments or docs so the integration is easy to audit later.
 
-实现细节：
-- 使用 fetch。
-- 明确写出请求正文，不要将字段隐藏在抽象层后面。
-- 发起 API 请求前，添加对空输入的基本验证。
-- 妥善处理非 200 响应，并在有用时显示响应正文。
-- 仅在服务器端保留机密信息。
+Implementation details:
+- Use fetch.
+- Keep the request body explicit instead of hiding fields behind abstractions.
+- Add basic validation for empty input before making the API request.
+- Handle non-200 responses cleanly and surface the response body when useful.
+- Keep secrets server-side only.
 
-交付内容：
-- 应用代码。
-- 简短的 README 部分，说明如何运行应用。
-- 在 .env.example 中添加 PHASEO_API_KEY 项。
+Deliverables:
+- The app code.
+- A short README section explaining how to run it.
+- A .env.example entry for PHASEO_API_KEY.
 
-验证：
-- 如果可以，请运行本地应用。
-- 验证一条成功的请求路径。
-- 准确报告已验证的内容、无法验证的内容以及仍需确认的假设。`}
+Verification:
+- Run the local app if possible.
+- Verify one successful request path.
+- Report exactly what you verified, what you could not verify, and any remaining assumptions.`}
     </Prompt>
   </Accordion>
 
   <Accordion title="TypeScript SDK 迷你应用" icon="file-code-2">
     <Prompt
-      description="使用 **TypeScript SDK** 构建一个集成简单、便于检查的迷你应用。"
+      description="基于 **TypeScript SDK** 构建一个集成小巧、便于检查的迷你应用。"
       icon="file-code-2"
       actions={["copy", "cursor"]}
     >
-{`你正在基于 Phaseo TypeScript SDK 构建一个小型应用。
+{`You are building a small app on top of the Phaseo TypeScript SDK.
 
-为 [应用创意] 构建一个 [框架] 迷你应用。
+Create a [FRAMEWORK] mini app for [APP IDEA].
 
-要求：
-- 使用 @phaseo/sdk。
-- 使用模型 [模型]。
-- 除非有充分理由使用其他端点，否则优先使用 Responses API。
-- 从 PHASEO_API_KEY 读取 API 密钥。
-- 保持代码精简易懂，便于首次集成。
-- 在 UI 中显示加载、成功和失败状态。
+Requirements:
+- Use @phaseo/sdk.
+- Use model [MODEL].
+- Prefer the responses API unless there is a strong reason to use another endpoint.
+- Read the API key from PHASEO_API_KEY.
+- Keep the code compact and understandable for a first integration.
+- Show loading, success, and failure states in the UI.
 
-实现细节：
-- 通过一个服务器端集成边界处理调用，不要将 SDK 调用分散到多个文件中。
-- 明确写出请求结构，包括模型、输入和重要选项。
-- 添加一个安全提取助手最终文本的响应解析示例。
-- 只在 SDK 响应结构难以理解时添加少量注释。
+Implementation details:
+- Use one server-side integration boundary instead of scattering SDK calls across many files.
+- Keep the request shape explicit, including model, input, and any important options.
+- Include one example of response parsing that extracts the final assistant text safely.
+- Add minimal comments only where the SDK response shape would otherwise be unclear.
 
-交付内容：
-- 可运行的应用代码。
-- 简短的设置说明。
-- 简要说明为什么此迷你应用使用 TypeScript SDK 比使用原始 HTTP 更合适。
+Deliverables:
+- Working app code.
+- Short setup instructions.
+- One short explanation of why the TypeScript SDK path is better than raw HTTP for this mini app.
 
-验证：
-- 如果可以，请运行应用。
-- 端到端执行一次请求。
-- 准确报告更改的文件，以及用户仍需完成的设置。`}
+Verification:
+- Run the app if possible.
+- Exercise one end-to-end request.
+- Report the exact files changed and any remaining setup the user must do.`}
     </Prompt>
   </Accordion>
 
@@ -112,120 +111,117 @@ description: "可复制的提示，可让编程代理使用原始 HTTP、SDK 或
       icon="snake"
       actions={["copy", "cursor"]}
     >
-{`你正在使用 Phaseo Gateway 实现一个小型 AI Python 应用。
+{`You are implementing a small AI-powered Python app with Phaseo Gateway.
 
-为 [应用创意] 构建一个 [Python 框架或应用类型] 应用。
+Build a [PYTHON FRAMEWORK OR APP TYPE] app for [APP IDEA].
 
-要求：
-- 使用官方 Python SDK phaseo。
-- 使用模型 [模型]。
-- 从 PHASEO_API_KEY 读取凭证。
-- 保持代码精简，让新团队成员能够快速理解。
-- 包含一条用户输入路径和一条模型输出路径。
-- 妥善处理无效输入和上游网关失败。
+Requirements:
+- Use the official Python SDK phaseo.
+- Use model [MODEL].
+- Read credentials from PHASEO_API_KEY.
+- Keep the code small enough for a new team member to understand quickly.
+- Include one user input path and one model output path.
+- Include clean error handling for invalid input and upstream gateway failures.
 
-实现细节：
-- 优先使用一个专门负责创建 Phaseo 客户端的集成模块。
-- 直接使用 SDK 响应结构，不要用不必要的抽象层包装。
-- 如果结构化输出对应用有帮助，请使用它并验证返回的结构。
-- 在 README 中添加简短的安装和运行步骤。
+Implementation details:
+- Prefer one integration module that owns the Phaseo client creation.
+- Use the SDK response shape directly rather than wrapping it in unnecessary abstractions.
+- If structured output is useful for the app, use it and validate the returned shape.
+- Add a short README section with install and run steps.
 
-交付内容：
-- 应用代码。
-- 任何依赖项更新。
-- 简短的使用说明。
+Deliverables:
+- App code.
+- Any dependency updates.
+- Short usage instructions.
 
-验证：
-- 如果可以，请运行相关命令。
-- 验证一条成功的请求路径，或者说明无法验证的原因。
-- 指出用户仍需配置的环境变量或本地服务。`}
+Verification:
+- Run the relevant command if possible.
+- Verify one successful request path or explain why you could not.
+- Call out any environment variables or local services the user still needs.`}
     </Prompt>
   </Accordion>
 
   <Accordion title="Vercel AI SDK 迷你应用" icon="code">
     <Prompt
-      description="构建一个通过 **Vercel AI SDK 使用 Phaseo** 的小型应用。"
+      description="构建一个**通过 Vercel AI SDK 使用 Phaseo** 的小应用。"
       icon="code"
       actions={["copy", "cursor"]}
     >
-{`你正在构建一个通过 Vercel AI SDK 提供商使用 Phaseo 的迷你应用。
+{`You are building a mini app that uses Phaseo through the Vercel AI SDK provider.
 
-为 [应用创意] 构建一个 [框架] 应用。
+Create a [FRAMEWORK] app for [APP IDEA].
 
-要求：
-- 使用 Phaseo Vercel AI SDK 提供商。
-- 使用模型 [模型]。
-- 从 PHASEO_API_KEY 读取 Phaseo API 密钥。
-- 保持轻量的用户体验，并围绕一项明确的用户任务设计。
-- 如果应用类似聊天，请支持流式输出；否则说明此处采用非流式处理为何更简单。
+Requirements:
+- Use the Phaseo Vercel AI SDK provider, @phaseo/ai-sdk-provider.
+- Use model [MODEL].
+- Call the provider only from server code; never ship PHASEO_API_KEY to the browser.
+- Read the Phaseo API key from PHASEO_API_KEY.
+- Keep the UX lightweight and oriented around one clear user task.
+- Support streamed output if the app is chat-like; otherwise explain why non-streaming is simpler here.
 
-实现细节：
-- 明确写出提供商的连接配置。
-- 以标准且符合框架惯例的方式使用 AI SDK 原语。
-- 首个版本中避免不必要的额外状态管理。
-- 简要说明如何选择提供商模型 ID。
+Implementation details:
+- Keep the provider wiring explicit.
+- Use the AI SDK primitives in a standard, framework-appropriate way.
+- Avoid unnecessary extra state management for the first version.
+- Add one short explanation of how the provider model id is chosen.
 
-交付内容：
-- 应用代码。
-- 设置步骤。
-- 简要说明之后如何切换到其他模型。
+Deliverables:
+- App code.
+- Setup steps.
+- A brief note on how to switch to a different model later.
 
-验证：
-- 如果可以，请运行应用。
-- 验证主要用户流程。
-- 单独报告尚未验证的部分。`}
+Verification:
+- Run the app if possible.
+- Verify the main user flow.
+- Report any unverified parts separately.`}
     </Prompt>
   </Accordion>
 
   <Accordion title="Agent SDK 迷你应用" icon="bot">
     <Prompt
-      description="使用 **Phaseo Agent SDK** 和有限工具循环构建一个小型应用。"
+      description="使用 **Phaseo Agent SDK** 和一个有上限的工具循环构建小应用。"
       icon="bot"
       actions={["copy", "cursor"]}
     >
-{`你正在基于 Phaseo Gateway 构建一个小型代理应用。
+{`You are building a small agentic app on top of Phaseo Gateway.
 
-使用 Phaseo Agent SDK 为 [应用创意] 构建一个 [LANGUAGE] 迷你应用。
+Create a [LANGUAGE] mini app for [APP IDEA] using the Phaseo Agent SDK.
 
-要求：
-- 使用适用于 [LANGUAGE] 的 Phaseo Agent SDK。
-- 使用模型 [模型]。
-- 只包含一到两个确定性的本地工具。
-- 限制工具循环范围，并确保易于调试。
-- 从 PHASEO_API_KEY 读取 API 密钥。
-- 显示最终输出，并在适当时展示工具活动或中间推理状态。
+Requirements:
+- Use the Phaseo Agent SDK for [LANGUAGE] (@phaseo/agent-sdk for TypeScript, phaseo-agent-sdk for Python).
+- Use model [MODEL].
+- Include one or two deterministic local tools only.
+- Give every tool a JSON Schema for its parameters and validate the model's arguments before running it.
+- Require human approval for any tool that writes, deletes, sends or spends.
+- Keep the tool loop bounded with a step limit and easy to debug.
+- Read the API key from PHASEO_API_KEY.
+- Show the final output and, where appropriate, the tool activity or intermediate reasoning state.
 
-实现细节：
-- 将代理定义集中在一个位置。
-- 保持工具定义精简且确定。
-- 首个版本避免使用庞大、通用型代理框架。
-- 添加说明，指出如果应用之后支持恢复运行，运行状态应持久化到哪里。
+Implementation details:
+- Keep the agent definition in one place.
+- Keep tool definitions small and deterministic.
+- Avoid a giant general-purpose agent framework for the first version.
+- Add a note about where run state would be persisted if the app later becomes resumable.
 
-交付内容：
-- 应用代码。
-- 设置说明。
-- 简要说明为什么此工作流使用 Agent SDK 比单次补全更合适。
+Deliverables:
+- App code.
+- Setup instructions.
+- A short explanation of why the Agent SDK is better than a one-shot completion for this workflow.
 
-验证：
-- 如果可以，请运行主要流程。
-- 端到端验证一次代理运行。
-- 报告所有剩余假设，尤其是环境设置或本地工具依赖方面。`}
+Verification:
+- Run the main path if possible.
+- Verify one end-to-end agent run.
+- Report any remaining assumptions, especially around environment setup or local tool dependencies.`}
     </Prompt>
   </Accordion>
 </AccordionGroup>
 
-## 如何让提示效果更好
+## 让提示效果更好
 
-- 将 `[应用创意]` 替换为一项具体的用户任务，而不是宽泛的产品构想。
-- 将 `[模型]` 替换为你希望代理使用的确切模型 ID。
-- 说明输出应为自由文本、严格 JSON、聊天内容还是单个生成资产。
-- 如果已知，请注明 UI 框架和部署目标。
-- 添加一两项重要约束，例如 `仅限欧盟提供商`、`使用流式输出` 或 `所有密钥仅保留在服务器端`。
+- 把 `[APP IDEA]` 换成一个具体的用户任务，而不是宽泛的产品构想。
+- 把 `[MODEL]` 换成你希望智能体使用的确切模型 ID。
+- 说明输出应当是自由文本、严格 JSON、聊天，还是一个生成的资源。
+- 如果已经确定，写明 UI 框架和部署目标。
+- 添加一两条关键约束，例如 `EU-only providers`、`use streaming` 或 `keep all secrets server-side`。
 
-## 相关指南
-
-- [快速入门](../quickstart.mdx)
-- [示例](../guides/examples.mdx)
-- [TypeScript SDK 概览](../sdk-reference/typescript/overview.mdx)
-- [Python SDK 概览](../sdk-reference/python/overview.mdx)
-- [Agent SDK 概览](../sdk-reference/agent-sdk/overview.mdx)
+[TypeScript 和 Python SDK](../sdk-reference/client/overview) 以及 [Agent SDK](../sdk-reference/agent/overview) 参考文档列出了每个包提供的功能，你可以据此检查智能体写出的代码。

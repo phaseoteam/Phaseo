@@ -11,14 +11,19 @@ export class Timer {
     private prefix = "";
     private readonly requestStartEpochMs: number;
 
-    constructor(prefix?: string) {
-        this.requestStartEpochMs = Date.now();
+    /** `startedAtMs` backdates the start to an earlier epoch time, such as Worker receipt. */
+    constructor(prefix?: string, startedAtMs?: number) {
+        const nowMs = Date.now();
+        const backdateMs = startedAtMs !== undefined && Number.isFinite(startedAtMs)
+            ? Math.max(0, nowMs - startedAtMs)
+            : 0;
+        this.requestStartEpochMs = nowMs - backdateMs;
         if (prefix) this.prefix = sanitize(prefix) + ".";
         // Always set a request_start mark for convenience
-        this.marks.set(this.k("request_start"), performance.now());
+        this.marks.set(this.k("request_start"), performance.now() - backdateMs);
     }
 
-    /** Epoch timestamp captured when the request pipeline timer was created. */
+    /** Epoch timestamp at which the request timer starts. */
     startedAtMs(): number {
         return this.requestStartEpochMs;
     }

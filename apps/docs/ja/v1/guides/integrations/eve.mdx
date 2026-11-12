@@ -1,0 +1,57 @@
+---
+title: "eve"
+icon: "bot"
+description: "Phaseo AI SDK プロバイダーを使って、Phaseo のモデルで eve エージェントを実行します。"
+---
+
+[Phaseo AI SDK プロバイダー](./ai-sdk.mdx)のモデルを [eve](https://eve.dev) エージェントに渡すと、すべてのモデル呼び出しが、ルーティング、キー、予算、ログの設定とともに Phaseo を経由します。eve は任意の AI SDK の言語モデルを受け付けます。
+
+## インストール
+
+eve は AI SDK 7 を使うため、`@phaseo/ai-sdk-provider` 2.0.1 以降をインストールします。
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+`eve dev` 用に `.env.local` で `PHASEO_API_KEY` を設定し、すべてのデプロイ先のサーバー環境でも設定します。eve の `/login` による接続は、自分のマシンでのみ機能します。
+
+## eve エージェントを Phaseo に向ける
+
+```ts agent/agent.ts
+import { defineAgent } from "eve";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: phaseo("openai/gpt-6-astra"),
+	modelContextWindowTokens: 922_000,
+	reasoning: "low",
+});
+```
+
+`phaseo("openai/gpt-6-astra")` のようなモデルオブジェクトを渡してください。モデル ID の文字列だけでは Phaseo に送信されません。`modelContextWindowTokens` には、[Models エンドポイント](../../api-reference/endpoint/models.mdx)で取得したモデルの `limits.input_tokens` を設定します。eve はモデルオブジェクトのコンテキストウィンドウを参照できず、この数値を使って会話を圧縮するタイミングを判断します。
+
+エージェントを一度実行し、**設定 → 利用状況 → ログ**にリクエストが表示されることを確認します。
+
+## ターンごとにモデルを選ぶ
+
+`defineDynamic` は各モデル呼び出しの前に実行されます。各モデルが独自のコンテキストウィンドウを保持できるように、選択オブジェクトを返します。
+
+```ts agent/agent.ts
+import { defineAgent } from "eve";
+import { defineDynamic } from "eve/models";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: defineDynamic((ctx) =>
+		ctx.session.auth.initiator?.attributes.plan === "enterprise"
+			? { model: phaseo("openai/gpt-6-sol"), modelContextWindowTokens: 1_050_000 }
+			: { model: phaseo("openai/gpt-6-luna"), modelContextWindowTokens: 1_050_000 },
+	),
+});
+```
+
+## 既知の制限
+
+- ツール、ストリーミング、推論、圧縮、プロンプトキャッシュは Phaseo 経由で動作します。プロンプトキャッシュの読み取りは、eve の利用イベントと Phaseo のログに表示されます。
+- モデルオブジェクトを使う場合、eve は各実行のコストを空のままにします。コストは Phaseo の**利用状況**ページまたは**ログ**で確認してください。

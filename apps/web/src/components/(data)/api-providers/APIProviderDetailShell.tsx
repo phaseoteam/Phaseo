@@ -1,18 +1,20 @@
+import type { UseSuspenseQueryOptions } from "@tanstack/react-query";
 import { ReactNode } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import { useSuspenseQueries } from "@tanstack/react-query";
+import Image from "@/components/image";
+import Link from "@/components/link";
 import { MapPin, Scale } from "lucide-react";
 
-import { fetchFrontendAPIProviderHeader } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { apiProviderHeaderQuery } from "./apiProvider.queries";
 import type { APIProviderHeader } from "@/lib/fetchers/api-providers/types";
-import { notFound } from "next/navigation";
+import { notFound } from "@/lib/navigation";
 import { Logo } from "@/components/Logo";
 import APIProviderEditButton from "./edit/APIProviderEditButton";
 import WorkspacePolicyNotice from "../WorkspacePolicyNotice";
 import ModelPageToc, { type ModelPageTocItem } from "../model/ModelPageToc";
 import EntityStickyHeader from "../EntityStickyHeader";
 import { Button } from "@/components/ui/button";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { formatLocation } from "@/lib/locations";
 
 interface APIProviderDetailShellProps {
@@ -22,17 +24,24 @@ interface APIProviderDetailShellProps {
 	prefetchedHeader?: APIProviderHeader | null;
 }
 
-export default async function APIProviderDetailShell({
+// Conditional query tuples; each result is read with its own cast.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SuspenseQueryList = UseSuspenseQueryOptions<any, Error, any, any>[];
+
+export default function APIProviderDetailShell({
 	apiProviderId,
 	children,
 	tocItems = [],
 	prefetchedHeader,
 }: APIProviderDetailShellProps) {
+	const headerQueries = useSuspenseQueries({
+		queries: (prefetchedHeader !== undefined ? [] : [apiProviderHeaderQuery(apiProviderId)]) as SuspenseQueryList,
+	});
 	const header = prefetchedHeader !== undefined
 		? prefetchedHeader
-		: await fetchFrontendAPIProviderHeader(apiProviderId).catch(() => null);
-	const locale = await getLocale();
-	const t = await getTranslations("Catalogue.providers");
+		: ((headerQueries[0]?.data as APIProviderHeader | null | undefined) ?? null);
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.providers");
 
 	if (!header) {
 		notFound();
@@ -85,6 +94,16 @@ export default async function APIProviderDetailShell({
 			<EntityStickyHeader kind="provider" id={apiProviderId} name={header.api_provider_name} observeId="provider-detail-primary-header" baseHref={`/api-providers/${apiProviderId}`} navigation={[]} />
 			<div className="container mx-auto px-4 py-6 md:py-8">
 				<WorkspacePolicyNotice kind="provider" id={apiProviderId} />
+				{header.retirement_notice ? (
+					<div role="status" className="mb-6 rounded-lg border bg-muted/30 px-4 py-3 text-sm">
+						{header.retirement_notice}{" "}
+						{header.successor_provider_id && header.successor_provider_name ? (
+							<Link href={`/api-providers/${header.successor_provider_id}`} className="font-medium underline underline-offset-4">
+								{header.successor_provider_name}
+							</Link>
+						) : null}
+					</div>
+				) : null}
 				<div id="provider-detail-primary-header" className="mb-6 flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 					<div className="flex min-w-0 items-center gap-4">
 						<div className="relative flex size-14 shrink-0 items-center justify-center rounded-md border border-border/70 bg-card/40">

@@ -1,104 +1,135 @@
 ---
-title: "लोकल एजेंट टूल एक साथ चलाएँ"
+title: "स्थानीय एजेंट टूल एक साथ चलाएँ"
 icon: "network"
-description: "TypeScript Agent SDK में लोकल टूल की समवर्ती संख्या सीमित करें, ताकि हर टूल कॉल को क्रम से चलाए बिना मॉडल एक टर्न में स्वतंत्र संदर्भ जुटा सके।"
+description: "TypeScript Agent SDK में सीमित स्थानीय टूल समवर्तिता इस्तेमाल करें, ताकि एक मॉडल टर्न हर टूल कॉल को क्रम से चलाए बिना स्वतंत्र संदर्भ जुटा सके।"
 ---
 
-जब एजेंट का एक टर्न कई स्वतंत्र लोकल टूल सुरक्षित रूप से कॉल कर सकता हो और आप नतीजों का तय क्रम बनाए रखते हुए उन्हें साथ चलाना चाहते हों, तब यह रेसिपी अपनाएँ।
+`toolExecution.toolConcurrency` सेट करें, ताकि TypeScript Agent SDK एक मॉडल टर्न की कई स्वतंत्र टूल कॉल एक के बाद एक चलाने के बजाय एक साथ चलाए। अंत में आपके पास ऐसा एजेंट होगा जो दस्तावेज़, स्टेटस और इंसिडेंट का संदर्भ समानांतर रूप से जुटाता है, और फिर भी नतीजों को उसी क्रम में दर्ज करता है जिसमें मॉडल ने उन्हें माँगा था।
 
-## इसका उपयोग कब करें
+टूल तय नमूना डेटा लौटाते हैं, इसलिए यह स्क्रिप्ट उदाहरण के लिए है; इन्हें अपने सिर्फ़ पढ़ने वाले lookup से बदलें। पैकेज किया गया संस्करण `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts` में है।
 
-इन स्थितियों में `toolExecution.toolConcurrency` उपयोग करें:
+## इसे बनाएँ
 
-- मॉडल एक टर्न में कई लोकल टूल कॉल कर सकता हो
-- वे टूल एक-दूसरे के नतीजों पर निर्भर न हों
-- क्रमिक निष्पादन से वर्कर का समय बर्बाद हो
-- आप सहेजे गए टूल-नतीजा संदेशों को मूल कॉल क्रम में रखना चाहते हों
+<Steps>
+<Step title="इंस्टॉल करें">
 
-अगर कोई टूल साझा स्थिति बदलता हो या बाद के टूल पहले के नतीजों पर निर्भर हों, तो अधिक समवर्ती संख्या न रखें।
+```bash
+npm install @phaseo/agent-sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
 
-## उदाहरण
+</Step>
+<Step title="एजेंट लिखें">
 
-```ts
-import {
-  createAgent,
-  createGatewayAgentClient,
-  defineTool,
-} from "@phaseo/agent-sdk";
+```ts parallel-agent.ts
+import { z } from "zod";
+import { createAgent, createGatewayAgentClient, defineTool } from "@phaseo/agent-sdk";
 
 const fetchDocs = defineTool({
   id: "fetch-docs",
-  async execute(input: { slug: string }) {
-    return {
-      slug: input.slug,
-      summary: `Docs summary for ${input.slug}`,
-    };
+  description: "Return a short summary of one Phaseo docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: { slug: { type: "string" } },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ slug: z.string().regex(/^[a-z0-9/-]{1,80}$/) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ slug }) {
+    return { slug, summary: `Docs summary for ${slug}` };
   },
 });
 
 const fetchStatus = defineTool({
   id: "fetch-status",
-  async execute(input: { component: string }) {
-    return {
-      component: input.component,
-      status: "operational",
-    };
+  description: "Return the status of one Phaseo component.",
+  parameters: {
+    type: "object",
+    properties: { component: { type: "string", enum: ["gateway", "dashboard", "async-jobs"] } },
+    required: ["component"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ component: z.enum(["gateway", "dashboard", "async-jobs"]) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ component }) {
+    return { component, status: "operational" };
   },
 });
 
 const fetchIncidents = defineTool({
   id: "fetch-incidents",
-  async execute(input: { service: string }) {
-    return {
-      service: input.service,
-      openIncidents: 0,
-    };
+  description: "Return the open incident count for one service.",
+  parameters: {
+    type: "object",
+    properties: { service: { type: "string", enum: ["gateway", "dashboard", "async-jobs"] } },
+    required: ["service"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ service: z.enum(["gateway", "dashboard", "async-jobs"]) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ service }) {
+    return { service, openIncidents: 0 };
   },
 });
 
 const agent = createAgent({
   id: "parallel-tool-agent",
-  model: "phaseo/free",
+  model: "openai/gpt-6-astra",
   instructions:
     "Use the available tools to gather context, then return one concise operational summary.",
   tools: [fetchDocs, fetchStatus, fetchIncidents],
-  toolExecution: {
-    toolConcurrency: 3,
-  },
+  toolExecution: { toolConcurrency: 3 },
+  maxSteps: 4,
 });
 
 const result = await agent.run({
   input:
-    "Fetch the presets docs, the gateway status component, and the async-jobs incident digest, then summarize the current state.",
+    "Fetch the presets docs, the gateway status, and the async-jobs incident digest, then summarize the current state.",
   client: createGatewayAgentClient({
-    clientOptions: {
-      apiKey: process.env.PHASEO_API_KEY!,
-    },
+    clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+    parallelToolCalls: true,
   }),
+  onEvent(event) {
+    if (event.type === "tool.started" || event.type === "tool.completed") {
+      console.log(event.type, event.toolName, event.timestamp);
+    }
+  },
 });
+
+console.log(result.output);
 ```
 
-पैकेज में शामिल उदाहरण देखें: `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
+</Step>
+<Step title="इसे चलाएँ">
 
-## रनटाइम की गारंटी
+```bash
+npx tsx parallel-agent.ts
+```
 
-- लोकल टूल, कॉन्फ़िगर किए गए `toolConcurrency` तक एक साथ चल सकते हैं
-- हर टूल के लिए `tool.started` और `tool.completed` इवेंट जारी होते हैं
-- सहेजे गए टूल-नतीजा संदेश मूल कॉल क्रम में रहते हैं
-- टूल चरण पूरा होने के बाद भी चेकपॉइंट बनता है
-- `timeoutMs` के ज़रिए हर टूल पर टाइमआउट लागू रहता है
+</Step>
+</Steps>
 
-## संचालन संबंधी सुझाव
+## जाँचें कि यह काम किया
 
-- `2` या `3` जैसी छोटी समवर्ती संख्या से शुरू करें
-- लोकल टूल को इडेम्पोटेंट और कम साइड इफ़ेक्ट वाला रखें
-- `timeoutMs` उपयोग करें ताकि अटकी निर्भरता सभी वर्कर स्लॉट न घेर ले
-- `store` तभी जोड़ें जब ऐप्लिकेशन को वाकई रन फिर शुरू करने या रिमोट समन्वय की ज़रूरत हो
+- जब मॉडल एक ही टर्न में तीनों टूल माँगता है, तो तीनों `tool.started` लाइनें मेल खाती `tool.completed` लाइनों से पहले, करीबी टाइमस्टैम्प के साथ, प्रिंट होती हैं।
+- `result.messages` टूल नतीजों को मॉडल की टूल कॉल के क्रम में दिखाता है, चाहे वे किसी भी क्रम में पूरे हुए हों।
+- रन `result.output` में एक सारांश के साथ खत्म होता है।
 
-## सत्यापन
+## क्या साथ-साथ चलता है
 
-इस पैटर्न को सक्षम करने के बाद:
+| सेटिंग | असर |
+| --- | --- |
+| `toolExecution.toolConcurrency` | एक टर्न की इतनी टूल कॉल तक एक साथ चलती हैं। डिफ़ॉल्ट `1`। |
+| टर्न के हर टूल पर `parallelSafe: true` | 8 तक एक साथ चलती हैं, या `toolConcurrency` अगर वह ज़्यादा है। इसे सिर्फ़ सिर्फ़-पढ़ने वाले टूल के लिए इस्तेमाल करें। |
+| किसी टूल पर `timeoutMs` | इतने समय के बाद वह कॉल विफल हो जाती है, ताकि एक अटकी हुई निर्भरता सारे स्लॉट न रोक सके। |
+| गेटवे क्लाइंट पर `parallelToolCalls` | मॉडल को एक टर्न में कई टूल कॉल माँगने देता है; वह ऐसा करता है या नहीं, यह मॉडल पर निर्भर है। |
 
-- कई टूल वाले टर्न के लिए एजेंट लूप टेस्ट चलाएँ
-- पुष्टि करें कि वर्कफ़्लो टूल-नतीजा संदेश सही क्रम में देता है
-- पुष्टि करें कि ऑपरेटर लॉग में अपेक्षित `tool.started` और `tool.completed` इवेंट अब भी दिखते हैं
+`tool.started` और `tool.completed` अब भी हर कॉल के लिए चलते हैं, और टूल चरण पूरा होने पर रन चेकपॉइंट बनाता है।
+
+## इसे सुरक्षित रखें
+
+समवर्तिता सिर्फ़ उन टूल के लिए इस्तेमाल करें जो एक-दूसरे के आउटपुट पर निर्भर नहीं हैं और साझा स्थिति नहीं बदलते। `2` या `3` से शुरू करें, टूल को कम साइड इफ़ेक्ट वाला और idempotent रखें, और ऊपर की तरह हर आर्ग्युमेंट को `inputSchema` से सत्यापित करें। `state` एक्सेसर, जैसा [टिकाऊ लूप](./agent-sdk-durable-loop) में है, सिर्फ़ तब जोड़ें जब आपको रन फिर से शुरू करने हों। इस पर भरोसा करने से पहले, कई टूल वाले टर्न को कवर करने वाले अपने टेस्ट चलाएँ और नतीजों का क्रम जाँचें।

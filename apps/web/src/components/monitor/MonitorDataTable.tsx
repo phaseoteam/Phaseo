@@ -1,9 +1,7 @@
-"use client";
-
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import {
 	Table,
 	TableBody,
@@ -16,13 +14,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
 	HoverCard,
 	HoverCardContent,
+	HoverCardHeader,
+	HoverCardNote,
+	HoverCardRows,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
 import {
 	AlignCenter,
 	AlertTriangle,
@@ -65,19 +63,36 @@ import type {
 	TableDensity,
 } from "@/components/(gateway)/usage/tablePreferences";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useQueryState } from "nuqs";
 import { getModalityTone } from "@/lib/models/modalityStyles";
-import { ModelCapabilityBadges } from "@/components/(data)/models/ModelCapabilityBadges";
-import { decisionModelCapability, modelOutputFilterValues } from "@/lib/models/modelCapabilities";
+import {
+	getCapabilityIconMeta,
+	MODEL_ICON_BADGE_CLASS_NAME,
+	ModelCapabilityIcons,
+	useModelCapabilityLabel,
+} from "@/components/(data)/models/ModelCapabilityIcons";
+import { formatExecutionRegionLabel } from "@/lib/providers/executionRegions";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
+import { mergeWeights, parseModelWeights, readLicenseTypeParam } from "@/lib/models/licenseFilter";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
 import {
+	describeProviderRoutes,
 	groupModelRows,
+	lowestDisplayedPrice,
+	type ProviderRoute,
 	type GroupedModelData,
 	type ModelData,
+	type ModelOperationPrices,
+	type ModelUsagePrice,
 } from "./modelTableGrouping";
+import {
+	matchesModelTableRow,
+	normalizeModelTableStatus as normalizeStatusValue,
+	type ModelTableFilters,
+} from "./modelTableFilters";
 
 export type { ModelData } from "./modelTableGrouping";
 
@@ -208,22 +223,6 @@ function normalizeModality(value: string): string {
 	return normalized.replace(/\s+/g, "_");
 }
 
-function normalizeStatusValue(value: string): string {
-	const normalized = String(value ?? "")
-		.trim()
-		.toLowerCase()
-		.replace(/[\s-]+/g, "_");
-	if (!normalized) return "";
-	if (normalized === "not_active") return "inactive";
-	if (normalized === "deranked" || normalized === "de_ranked") {
-		return "deranked_lvl1";
-	}
-	if (normalized === "deranked_lvl_1") return "deranked_lvl1";
-	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
-	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
-	return normalized;
-}
-
 function sortModalities(values: string[]): string[] {
 	const unique = Array.from(
 		new Set(values.map((value) => normalizeModality(value)).filter(Boolean)),
@@ -243,43 +242,53 @@ function sortModalities(values: string[]): string[] {
 	});
 }
 
-const featureIcons = {
+const featureIcons: Record<string, { icon: LucideIcon; badgeClassName: string; iconClassName: string }> = {
 	tools: {
 		icon: Wrench,
-		color: "text-yellow-600",
-		darkColor: "dark:text-yellow-300",
+		badgeClassName: "bg-yellow-100 dark:bg-yellow-950/50",
+		iconClassName: "text-yellow-700 dark:text-yellow-300",
 	},
 	reasoning: {
 		icon: Brain,
-		color: "text-indigo-600",
-		darkColor: "dark:text-indigo-300",
+		badgeClassName: "bg-indigo-100 dark:bg-indigo-950/50",
+		iconClassName: "text-indigo-700 dark:text-indigo-300",
 	},
 	structured_outputs: {
 		icon: Braces,
-		color: "text-cyan-600",
-		darkColor: "dark:text-cyan-300",
+		badgeClassName: "bg-cyan-100 dark:bg-cyan-950/50",
+		iconClassName: "text-cyan-700 dark:text-cyan-300",
 	},
 	caching: {
 		icon: Database,
-		color: "text-emerald-600",
-		darkColor: "dark:text-emerald-300",
+		badgeClassName: "bg-emerald-100 dark:bg-emerald-950/50",
+		iconClassName: "text-emerald-700 dark:text-emerald-300",
 	},
 	web_search: {
 		icon: Globe,
-		color: "text-blue-500",
-		darkColor: "dark:text-blue-300",
+		badgeClassName: "bg-blue-100 dark:bg-blue-950/50",
+		iconClassName: "text-blue-700 dark:text-blue-300",
 	},
 	moderated: {
 		icon: ShieldAlert,
-		color: "text-red-500",
-		darkColor: "dark:text-red-300",
+		badgeClassName: "bg-red-100 dark:bg-red-950/50",
+		iconClassName: "text-red-700 dark:text-red-300",
 	},
 	free: {
 		icon: BadgeCheck,
-		color: "text-emerald-600",
-		darkColor: "dark:text-emerald-300",
+		badgeClassName: "bg-emerald-100 dark:bg-emerald-950/50",
+		iconClassName: "text-emerald-700 dark:text-emerald-300",
 	},
 };
+
+/** A route feature as its key in featureIcons and the feature messages. */
+function normalizeFeatureKey(feature: string): string {
+	const rawKey = feature.trim().toLowerCase().replace(/\s+/g, "_");
+	return rawKey === "native_web_search"
+		? "web_search"
+		: rawKey === "structured_output"
+			? "structured_outputs"
+			: rawKey;
+}
 
 const statusMetaByKey: Record<
 	string,
@@ -289,17 +298,9 @@ const statusMetaByKey: Record<
 		icon: CheckCircle2,
 		color: "text-green-600 dark:text-green-400",
 	},
-	deranked_lvl1: {
-		icon: AlertTriangle,
-		color: "text-amber-500 dark:text-amber-400",
-	},
-	deranked_lvl2: {
+	deranked: {
 		icon: AlertTriangle,
 		color: "text-amber-600 dark:text-amber-400",
-	},
-	deranked_lvl3: {
-		icon: AlertTriangle,
-		color: "text-red-500 dark:text-red-400",
 	},
 	coming_soon: {
 		icon: Clock3,
@@ -324,9 +325,7 @@ const statusMetaByKey: Record<
 };
 const statusLegendOrder = [
 	"active",
-	"deranked_lvl1",
-	"deranked_lvl2",
-	"deranked_lvl3",
+	"deranked",
 	"coming_soon",
 	"inactive",
 	"disabled",
@@ -338,9 +337,9 @@ export const MODEL_TABLE_COLUMNS = [
 	{ id: "model", label: "Model", width: 360 },
 	{ id: "providers", label: "Providers", width: 184 },
 	{ id: "status", label: "Gateway Status", width: 148 },
-	{ id: "capability", label: "Capabilities", width: 190 },
-	{ id: "inputPrice", label: "Input $", width: 112, numeric: true },
-	{ id: "outputPrice", label: "Output $", width: 112, numeric: true },
+	{ id: "capability", label: "Capabilities", width: 128 },
+	{ id: "inputPrice", label: "Input $", width: 128, numeric: true },
+	{ id: "outputPrice", label: "Output $", width: 128, numeric: true },
 	{ id: "tier", label: "Tier", width: 112 },
 	{ id: "inputModalities", label: "Input Modalities", width: 164 },
 	{ id: "outputModalities", label: "Output Modalities", width: 164 },
@@ -390,9 +389,11 @@ export function MonitorDataTable({
 		values: { modality: string },
 	) => string;
 	const modelsUiT = useTranslations("Catalogue.models.filtersUi");
+	const capabilityLabel = useModelCapabilityLabel();
 	const pricingT = useTranslations("Catalogue.modelDetail.pricing");
 	const sectionsT = useTranslations("Catalogue.modelDetail.sections");
 	const comparisonT = useTranslations("Catalogue.compare");
+	const hoverT = useTranslations("Catalogue.hoverCards");
 	const format = useDisplayFormatters();
 	const localizedModelTableColumns = useMemo(() => {
 		const labels: Record<ModelTableColumnId, string> = {
@@ -446,7 +447,7 @@ export function MonitorDataTable({
 	});
 	const [selectedTiers] = useQueryState("tiers", {
 		defaultValue: [],
-		parse: (value) => (value ? value.split(",") : []),
+		parse: parseCatalogueTierFilters,
 		serialize: (value) => value.join(","),
 	});
 
@@ -473,6 +474,33 @@ export function MonitorDataTable({
 		parse: (value) => (value ? value.split(",") : []),
 		serialize: (value) => value.join(","),
 	});
+
+	const [selectedLicenses] = useQueryState("licenses", {
+		defaultValue: [],
+		parse: (value) => (value ? value.split(",") : []),
+		serialize: (value) => value.join(","),
+	});
+
+	const [licenseTypeParam] = useQueryState("licenseType", {
+		defaultValue: [],
+		parse: (value) => (value ? value.split(",") : []),
+		serialize: (value) => value.join(","),
+	});
+
+	const [weightsParam] = useQueryState("weights", {
+		defaultValue: [],
+		parse: (value) => parseModelWeights(value ? value.split(",") : []),
+		serialize: (value) => value.join(","),
+	});
+	// Old links use licenseType=open|closed for weights.
+	const { groups: selectedLicenseTypes, legacyWeights } = useMemo(
+		() => readLicenseTypeParam(licenseTypeParam),
+		[licenseTypeParam],
+	);
+	const selectedWeights = useMemo(
+		() => mergeWeights(weightsParam, legacyWeights),
+		[weightsParam, legacyWeights],
+	);
 
 	const [selectedContextMin] = useQueryState("contextMin", {
 		defaultValue: 0,
@@ -577,112 +605,44 @@ export function MonitorDataTable({
 		);
 	};
 
+	const filters = useMemo<ModelTableFilters>(() => ({
+		search: searchQuery,
+		year: yearSelected,
+		inputModalities: selectedInputModalities,
+		outputModalities: selectedOutputModalities,
+		features: selectedFeatures,
+		tiers: selectedTiers,
+		supportedParameters: selectedSupportedParameters,
+		providers: selectedProviders,
+		regions: selectedRegions,
+		creators: selectedCreators,
+		licenses: selectedLicenses,
+		licenseTypes: selectedLicenseTypes,
+		weights: selectedWeights,
+		contextMin: selectedContextMin,
+		endpoints: selectedEndpoints,
+		statuses: selectedStatuses,
+	}), [
+		searchQuery,
+		yearSelected,
+		selectedInputModalities,
+		selectedOutputModalities,
+		selectedFeatures,
+		selectedTiers,
+		selectedSupportedParameters,
+		selectedProviders,
+		selectedRegions,
+		selectedCreators,
+		selectedLicenses,
+		selectedLicenseTypes,
+		selectedWeights,
+		selectedContextMin,
+		selectedEndpoints,
+		selectedStatuses,
+	]);
+
 	const filteredGroupedData = useMemo(() => {
-		const filtered = data.filter((item) => {
-			if (searchQuery) {
-				const searchLower = searchQuery.toLowerCase();
-				const matchesSearch = Object.values(item).some((value) => {
-					if (Array.isArray(value)) {
-						return value.some((v) =>
-							String(v).toLowerCase().includes(searchLower),
-						);
-					}
-					if (typeof value === "object" && value !== null) {
-						return Object.values(value).some((nestedValue) => {
-							if (Array.isArray(nestedValue)) {
-								return nestedValue.some((v) =>
-									String(v).toLowerCase().includes(searchLower),
-								);
-							}
-							return String(nestedValue).toLowerCase().includes(searchLower);
-						});
-					}
-					return String(value).toLowerCase().includes(searchLower);
-				});
-				if (!matchesSearch) return false;
-			}
-
-			if (yearSelected && yearSelected > 0) {
-				const itemYear = item.added ? new Date(item.added).getFullYear() : null;
-				if (itemYear !== yearSelected) return false;
-			}
-
-			if (selectedInputModalities.length > 0) {
-				const hasAllInputModalities = selectedInputModalities.every((mod) =>
-					item.inputModalities.includes(mod),
-				);
-				if (!hasAllInputModalities) return false;
-			}
-
-			if (selectedOutputModalities.length > 0) {
-				const hasAllOutputModalities = selectedOutputModalities.every((mod) =>
-					modelOutputFilterValues(item.outputModalities, [item.endpoint]).includes(mod),
-				);
-				if (!hasAllOutputModalities) return false;
-			}
-
-			if (selectedFeatures.length > 0) {
-				const hasAllFeatures = selectedFeatures.every((feat) =>
-					item.provider.features.includes(feat),
-				);
-				if (!hasAllFeatures) return false;
-			}
-
-			if (selectedTiers.length > 0) {
-				const tier = String(item.tier ?? "standard")
-					.trim()
-					.toLowerCase();
-				if (!selectedTiers.includes(tier)) return false;
-			}
-
-			if (selectedSupportedParameters.length > 0) {
-				const parameters = new Set(item.supportedParameters ?? []);
-				if (
-					!selectedSupportedParameters.every((value) => parameters.has(value))
-				) {
-					return false;
-				}
-			}
-
-			if (
-				selectedProviders.length > 0 &&
-				!selectedProviders.includes(item.provider.id)
-			) {
-				return false;
-			}
-
-			if (selectedRegions.length > 0) {
-				const regions = new Set(
-					(item.provider.executionRegions ?? []).map((value) =>
-						String(value).trim().toLowerCase(),
-					),
-				);
-				if (!selectedRegions.every((value) => regions.has(value))) return false;
-			}
-
-			if (
-				selectedCreators.length > 0 &&
-				(!item.organisationId ||
-					!selectedCreators.includes(item.organisationId))
-			) {
-				return false;
-			}
-
-			if (selectedContextMin > 0 && item.context < selectedContextMin) {
-				return false;
-			}
-
-			if (selectedEndpoints.length > 0) {
-				if (!selectedEndpoints.includes(item.endpoint)) return false;
-			}
-
-			if (selectedStatuses.length > 0) {
-				const normalizedStatus = normalizeStatusValue(item.gatewayStatus);
-				if (!selectedStatuses.includes(normalizedStatus)) return false;
-			}
-
-			return true;
-		});
+		const filtered = data.filter((item) => matchesModelTableRow(item, filters));
 
 		const grouped = groupModelRows(filtered);
 		if (!sortField) return grouped;
@@ -720,12 +680,12 @@ export function MonitorDataTable({
 						bValue = b.endpoints[0] ?? "";
 						break;
 					case "inputPrice":
-						aValue = a.inputPrices[0] ?? Number.POSITIVE_INFINITY;
-						bValue = b.inputPrices[0] ?? Number.POSITIVE_INFINITY;
+						aValue = lowestDisplayedPrice(a, "inputPrices");
+						bValue = lowestDisplayedPrice(b, "inputPrices");
 						break;
 					case "outputPrice":
-						aValue = a.outputPrices[0] ?? Number.POSITIVE_INFINITY;
-						bValue = b.outputPrices[0] ?? Number.POSITIVE_INFINITY;
+						aValue = lowestDisplayedPrice(a, "outputPrices");
+						bValue = lowestDisplayedPrice(b, "outputPrices");
 						break;
 					case "status":
 						aValue = normalizeStatusValue(a.statusEndpoints[0]?.status ?? "");
@@ -765,24 +725,7 @@ export function MonitorDataTable({
 				? aStr.localeCompare(bStr)
 				: bStr.localeCompare(aStr);
 		});
-	}, [
-		data,
-		searchQuery,
-		yearSelected,
-		selectedInputModalities,
-		selectedOutputModalities,
-		selectedFeatures,
-		selectedTiers,
-		selectedSupportedParameters,
-		selectedProviders,
-		selectedRegions,
-		selectedCreators,
-		selectedContextMin,
-		selectedEndpoints,
-		selectedStatuses,
-		sortField,
-		sortDirection,
-	]);
+	}, [data, filters, sortField, sortDirection]);
 
 	const totalItems = filteredGroupedData.length;
 	const tableContainerRef = useRef<HTMLDivElement | null>(null);
@@ -920,59 +863,144 @@ export function MonitorDataTable({
 			(provider) => provider.id && provider.id !== "unlinked",
 		);
 		if (!linkedProviders.length) return <span className="text-xs">-</span>;
-		const visibleProviders = linkedProviders.slice(0, 5);
-		const hiddenProviders = linkedProviders.slice(visibleProviders.length);
+		const routes = describeProviderRoutes(linkedProviders);
+		const regionsLabel = (regions: string[]) => regions.map((region) =>
+			region === "jp" ? modelsUiT("regionJapan")
+				: region === "au" ? modelsUiT("regionAustralia")
+					: formatExecutionRegionLabel(region)).join(", ");
+		const routeLabel = (route: ProviderRoute) => [
+			route.name,
+			route.regions.length ? `${modelsUiT("regionRouting")}: ${regionsLabel(route.regions)}` : null,
+			route.routeId,
+		].filter(Boolean).join(" · ");
+		// Per-million rates can be fractions of a cent; two fixed decimals would show them as $0.00.
+		const formatRate = (value: number) => format.number(value, {
+			style: "currency",
+			currency: "USD",
+			notation: "standard",
+			...(value > 0 && value < 0.01
+				? { maximumSignificantDigits: 3 }
+				: { minimumFractionDigits: 2, maximumFractionDigits: 3 }),
+		});
+		// The route's cheapest listed charge, for the overflow list.
+		const cheapestLabel = (route: ProviderRoute) => {
+			if (route.inputPrice !== null && route.outputPrice !== null) return `${formatRate(route.inputPrice)} / ${formatRate(route.outputPrice)}`;
+			if (route.inputPrice !== null) return formatRate(route.inputPrice);
+			if (route.outputPrice !== null) return formatRate(route.outputPrice);
+			if (route.usagePrice !== undefined && route.usageUnit) return `${formatUsagePrice(route.usagePrice)} / ${route.usageUnit}`;
+			return null;
+		};
+		const routeLogo = (route: ProviderRoute, size: "sm" | "md" = "md") => (
+			<span className={cn("relative shrink-0", size === "sm" ? "size-3.5" : "size-4")}>
+				<Logo id={resolveProviderLogoId({ providerId: route.id })} alt="" className="object-contain" fill />
+			</span>
+		);
+		const renderRouteDetails = (route: ProviderRoute) => {
+			const featureLabels = route.features
+				.map((feature) => normalizeFeatureKey(feature))
+				.filter((key, index, keys) => featureIcons[key] && keys.indexOf(key) === index)
+				.map((key) => t(`featureLabels.${key}` as never) as string);
+			return (
+				<>
+					<HoverCardHeader
+						icon={routeLogo(route)}
+						title={route.name}
+						meta={[route.regions.length ? regionsLabel(route.regions) : null, route.routeId]}
+					/>
+					<HoverCardRows
+						rows={[
+							route.inputPrice !== null ? { key: "input", label: hoverT("rowInput"), value: hoverT("perMillion", { price: formatRate(route.inputPrice) }) } : null,
+							route.outputPrice !== null ? { key: "output", label: hoverT("rowOutput"), value: hoverT("perMillion", { price: formatRate(route.outputPrice) }) } : null,
+							route.usagePrice !== undefined && route.usageUnit
+								? { key: "usage", label: sectionsT("from"), value: `${formatUsagePrice(route.usagePrice)} / ${route.usageUnit}` }
+								: null,
+						]}
+					/>
+					{featureLabels.length ? (
+						<div className="flex flex-wrap gap-1">
+							{featureLabels.map((label) => (
+								<Badge key={label} variant="secondary" className="rounded-md font-normal">{label}</Badge>
+							))}
+						</div>
+					) : null}
+				</>
+			);
+		};
+		const visibleProviders = routes.slice(0, 5);
+		const hiddenProviders = routes.slice(visibleProviders.length);
 		return (
 			<div className="flex items-center">
 				<div className="flex items-center gap-1">
 					{visibleProviders.map((provider) => (
-						<Tooltip key={provider.id}>
-							<TooltipTrigger asChild>
+						<HoverCard key={provider.id}>
+							<HoverCardTrigger asChild>
 								<Link
 									href={`/api-providers/${provider.id}`}
-									aria-label={provider.name}
+									aria-label={routeLabel(provider)}
 									className="relative flex size-6 items-center justify-center rounded-md border bg-background transition-transform hover:z-10 hover:-translate-y-0.5 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 								>
-									<span className="relative size-4">
-									<Logo
-										id={resolveProviderLogoId({ providerId: provider.id })}
-										alt=""
-										className="object-contain"
-										fill
-									/>
-									</span>
+									{routeLogo(provider)}
 								</Link>
-							</TooltipTrigger>
-							<TooltipContent side="top">{provider.name}</TooltipContent>
-						</Tooltip>
+							</HoverCardTrigger>
+							<HoverCardContent align="center" className="w-64 space-y-2.5">{renderRouteDetails(provider)}</HoverCardContent>
+						</HoverCard>
 					))}
 				</div>
 				{hiddenProviders.length > 0 ? (
-					<Tooltip>
-						<TooltipTrigger asChild>
-							<span
-								tabIndex={0}
-								aria-label={`${hiddenProviders.length} additional providers`}
+					// A popover rather than a hover card: it holds links, and a popover
+					// takes keyboard focus so Tab reaches them. It still opens on hover.
+					<Popover>
+						<PopoverTrigger asChild openOnHover delay={150} closeDelay={100}>
+							<button
+								type="button"
+								aria-label={hoverT("moreProviders", { count: hiddenProviders.length })}
 								className="ml-2 inline-flex h-6 min-w-6 items-center justify-center rounded-md border px-1 text-[10px] font-medium tabular-nums text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
 							>
 								+{hiddenProviders.length}
-							</span>
-						</TooltipTrigger>
-						<TooltipContent side="top" className="max-w-56">
-							<div className="space-y-1">
-								{hiddenProviders.map(({ id, name }) => (
-									<span key={id} className="block">{name}</span>
-								))}
-							</div>
-						</TooltipContent>
-					</Tooltip>
+							</button>
+						</PopoverTrigger>
+						<PopoverContent side="top" align="center" className="w-72 gap-2.5 p-3">
+							<HoverCardHeader title={hoverT("moreProviders", { count: hiddenProviders.length })} />
+							<ul className="space-y-1.5 text-xs">
+								{hiddenProviders.map((route) => {
+									const price = cheapestLabel(route);
+									return (
+										<li key={route.id} className="flex items-center justify-between gap-3">
+											<Link
+												href={`/api-providers/${route.id}`}
+												aria-label={routeLabel(route)}
+												className="flex min-w-0 items-center gap-2 text-foreground underline-offset-2 hover:underline"
+											>
+												{routeLogo(route, "sm")}
+												<span className="truncate">{route.name}</span>
+												{route.routeId ? <span className="truncate text-muted-foreground">{route.routeId}</span> : null}
+											</Link>
+											{price ? <span className="shrink-0 tabular-nums text-muted-foreground">{price}</span> : null}
+										</li>
+									);
+								})}
+							</ul>
+						</PopoverContent>
+					</Popover>
 				) : null}
 			</div>
 		);
 	};
 
+	// Per-unit charges can be fractions of a cent, so keep three significant digits.
+	const formatUsagePrice = (value: number) => format.number(value, {
+		style: "currency",
+		currency: "USD",
+		...(value > 0 && value < 0.01
+			? { maximumSignificantDigits: 3 }
+			: { minimumFractionDigits: 2, maximumFractionDigits: 3 }),
+		notation: "standard",
+	});
+
 	const renderPriceRange = (prices: number[]) => {
-		if (!prices.length) return "-";
+		if (!prices.length) {
+			return <span title={comparisonT("priceUnavailable")} aria-label={comparisonT("priceUnavailable")}>-</span>;
+		}
 		const minimum = prices[0];
 		const maximum = prices[prices.length - 1];
 		return minimum === maximum
@@ -997,35 +1025,25 @@ export function MonitorDataTable({
 						type === "input" ? iconConfig.input : iconConfig.output;
 
 					return (
-						<HoverCard key={modality} openDelay={160} closeDelay={80}>
+						<HoverCard key={modality}>
 							<HoverCardTrigger asChild>
 								<button
 									type="button"
-					aria-label={tWithModality(`modalityAriaLabels.${type}`, { modality: label })}
-									className={cn(
-										"group inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] transition-[transform,box-shadow] hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
-										tone.badgeClassName,
-									)}
+									aria-label={tWithModality(`modalityAriaLabels.${type}`, { modality: label })}
+									className={cn(MODEL_ICON_BADGE_CLASS_NAME, tone.badgeClassName)}
 								>
 									<IconComponent
-										className={cn(
-											"h-4 w-4 transition-transform group-hover:scale-105",
-											tone.iconClassName,
-										)}
+										aria-hidden
+										className={cn("h-3.5 w-3.5", tone.iconClassName)}
 									/>
 								</button>
 							</HoverCardTrigger>
-							<HoverCardContent
-								align="center"
-								side="top"
-								className="w-72 p-3"
-							>
-								<p className="text-sm font-semibold leading-tight text-foreground">
-									{tWithModality(`modalityHeadings.${type}`, { modality: label })}
-								</p>
-								<p className="mt-2 text-[13px] leading-5 text-muted-foreground">
-									{description}
-								</p>
+							<HoverCardContent align="center" className="w-60 space-y-1.5">
+								<HoverCardHeader
+									icon={<IconComponent aria-hidden className={tone.iconClassName} />}
+									title={tWithModality(`modalityHeadings.${type}`, { modality: label })}
+								/>
+								<HoverCardNote>{description}</HoverCardNote>
 							</HoverCardContent>
 						</HoverCard>
 					);
@@ -1038,59 +1056,33 @@ export function MonitorDataTable({
 		return (
 			<div className="flex min-w-max flex-nowrap justify-center gap-1 whitespace-nowrap">
 				{features.map((feature) => {
-					const rawKey = feature.trim().toLowerCase().replace(/\s+/g, "_");
-					const key =
-						rawKey === "native_web_search"
-							? "web_search"
-							: rawKey === "structured_output"
-								? "structured_outputs"
-								: rawKey;
-					const iconConfig = featureIcons[key as keyof typeof featureIcons];
+					const key = normalizeFeatureKey(feature);
+					const iconConfig = featureIcons[key];
 					if (!iconConfig) return null;
-
 					const IconComponent = iconConfig.icon;
-					if (!IconComponent) return null;
-
-					const colorMap: Record<string, string> = {
-						"text-yellow-600":
-							"border-yellow-600 bg-yellow-50 dark:border-yellow-400/50 dark:bg-yellow-950/40",
-						"text-indigo-600":
-							"border-indigo-600 bg-indigo-50 dark:border-indigo-400/50 dark:bg-indigo-950/40",
-						"text-cyan-600":
-							"border-cyan-600 bg-cyan-50 dark:border-cyan-400/50 dark:bg-cyan-950/40",
-						"text-emerald-600":
-							"border-emerald-600 bg-emerald-50 dark:border-emerald-400/50 dark:bg-emerald-950/40",
-						"text-blue-500":
-							"border-blue-500 bg-blue-50 dark:border-blue-400/50 dark:bg-blue-950/40",
-						"text-red-500":
-							"border-red-500 bg-red-50 dark:border-red-400/50 dark:bg-red-950/40",
-					};
-
-					const borderClass =
-						colorMap[iconConfig.color] || "border-gray-600 bg-gray-50";
 
 					const label = t(`featureLabels.${key}` as never) as string;
 					const description = t(`featureDescriptions.${key}` as never) as string;
 					return (
-						<HoverCard key={feature} openDelay={160} closeDelay={80}>
+						<HoverCard key={feature}>
 							<HoverCardTrigger asChild>
 								<button
 									type="button"
-					aria-label={t("featureAriaLabel", { label })}
-									className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded border transition-transform hover:-translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 ${borderClass}`}
+									aria-label={t("featureAriaLabel", { label })}
+									className={cn(MODEL_ICON_BADGE_CLASS_NAME, iconConfig.badgeClassName)}
 								>
 									<IconComponent
-										className={`h-4 w-4 ${iconConfig.color} ${iconConfig.darkColor}`}
+										aria-hidden
+										className={cn("h-3.5 w-3.5", iconConfig.iconClassName)}
 									/>
 								</button>
 							</HoverCardTrigger>
-							<HoverCardContent align="center" side="top" className="w-72 p-3">
-								<p className="text-sm font-semibold leading-tight text-foreground">
-									{label}
-								</p>
-								<p className="mt-2 text-[13px] leading-5 text-muted-foreground">
-									{description}
-								</p>
+							<HoverCardContent align="center" className="w-60 space-y-1.5">
+								<HoverCardHeader
+									icon={<IconComponent aria-hidden className={iconConfig.iconClassName} />}
+									title={label}
+								/>
+								<HoverCardNote>{description}</HoverCardNote>
 							</HoverCardContent>
 						</HoverCard>
 					);
@@ -1099,7 +1091,7 @@ export function MonitorDataTable({
 		);
 	};
 
-	const renderStatus = (status: string, endpoint?: string) => {
+	const renderStatus = (status: string, capabilities: string[]) => {
 		const normalizedStatus = normalizeStatusValue(status);
 		const iconConfig =
 			statusMetaByKey[normalizedStatus] ?? statusMetaByKey.inactive;
@@ -1107,10 +1099,12 @@ export function MonitorDataTable({
 		const label = statusMetaByKey[normalizedStatus]
 			? (t(`providerStatus.${normalizedStatus}` as never) as string)
 			: t("providerStatus.unknown", { status });
-		const endpointLabel = formatEndpoint(endpoint);
+		const endpointLabel = capabilities.length
+			? capabilities.map(capabilityLabel).join(", ")
+			: "-";
 
 		return (
-			<HoverCard openDelay={140} closeDelay={80}>
+			<HoverCard>
 				<HoverCardTrigger asChild>
 					<button
 						type="button"
@@ -1122,19 +1116,13 @@ export function MonitorDataTable({
 						)}
 					</button>
 				</HoverCardTrigger>
-				<HoverCardContent
-					align="center"
-					side="top"
-					className="w-64 p-3 text-xs"
-				>
-					<p className="font-semibold text-foreground">{label}</p>
-					<div className="mt-1.5 space-y-1 text-muted-foreground">
-						<p>
-							{t("capabilityLabel")}:{" "}
-							<span className="font-mono text-foreground">{endpointLabel}</span>
-						</p>
-						<p>{t("capabilityStatusDescription")}</p>
-					</div>
+				<HoverCardContent align="center" className="w-64 space-y-2.5">
+					<HoverCardHeader
+						icon={IconComponent ? <IconComponent className={iconConfig.color} /> : null}
+						title={label}
+					/>
+					<HoverCardRows rows={[{ key: "capability", label: t("capabilityLabel"), value: endpointLabel }]} />
+					<HoverCardNote>{t("capabilityStatusDescription")}</HoverCardNote>
 				</HoverCardContent>
 			</HoverCard>
 		);
@@ -1158,6 +1146,7 @@ export function MonitorDataTable({
 							free: modelsUiT("tierFree"),
 							flex: modelsUiT("tierFlex"),
 							priority: modelsUiT("tierPriority"),
+							fast: modelsUiT("tierPriority"),
 						} as Record<string, string>)[normalizedTier] ?? normalizedTier
 					}</span>
 			</span>
@@ -1168,26 +1157,71 @@ export function MonitorDataTable({
 		return format.calendarDate(dateStr);
 	};
 
-	const formatEndpoint = (endpoint?: string) => {
-		const trimmed = endpoint?.replace(/\uFFFD/g, "").trim();
-		return trimmed ? trimmed : "-";
-	};
-
 	const renderStatuses = (item: GroupedModelData) => (
 		<div className="flex items-center justify-center gap-0.5">
-			{item.statusEndpoints.map(({ status, endpoint }) => (
-				<span key={`${status}-${endpoint}`}>
-					{renderStatus(status, formatEndpoint(endpoint))}
-				</span>
+			{item.statusEndpoints.map(({ status, endpoints }) => (
+				<span key={status}>{renderStatus(status, endpoints)}</span>
 			))}
 		</div>
 	);
 
-	const renderCapabilities = (endpoints: string[]) => {
-		const labels = endpoints.filter(endpoint => !decisionModelCapability(endpoint)).map(formatEndpoint);
+	// Charges without a token rate (per image, per second, ...) sit in the output
+	// column with their unit, so they never read as a $0 token price.
+	const renderPriceCell = (
+		prices: number[],
+		usage: ModelUsagePrice[],
+		column: "inputPrices" | "outputPrices",
+	) => {
+		if (column === "inputPrices" || !usage.length) return renderPriceRange(prices);
 		return (
-			<div className="space-y-1"><ModelCapabilityBadges endpoints={endpoints} />
-				{labels.length ? <span className="block truncate font-mono text-[11px]" title={labels.join(", ")}>{labels.join(", ")}</span> : null}
+			<div className="space-y-1">
+				{prices.length ? <div>{renderPriceRange(prices)}</div> : null}
+				{usage.map(({ price, unit }) => (
+					<div key={unit} className="leading-tight">
+						<span className="mr-1 font-sans text-[10px] text-muted-foreground">{sectionsT("from")}</span>
+						{formatUsagePrice(price)}
+						<div className="font-sans text-[10px] text-muted-foreground">/ {unit}</div>
+					</div>
+				))}
+			</div>
+		);
+	};
+
+	// Per-capability rows only when this column's prices differ between
+	// capabilities; each row is marked by the capability's icon, as in the
+	// Capabilities column, so labels never spill into the next column.
+	const renderOperationPrices = (
+		item: GroupedModelData,
+		column: "inputPrices" | "outputPrices",
+	) => {
+		const operations = item.operationPrices;
+		const columnKey = (operation: ModelOperationPrices) => column === "inputPrices"
+			? operation.inputPrices.join()
+			: `${operation.outputPrices.join()}|${JSON.stringify(operation.usagePrices)}`;
+		const differs = operations.some(operation => columnKey(operation) !== columnKey(operations[0]));
+		if (!differs) return renderPriceCell(item[column], item.usagePrices, column);
+		return (
+			<div className="inline-grid grid-cols-[auto_auto] items-start gap-x-1.5 gap-y-1 text-left">
+				{operations.map(operation => {
+					const { icon: Icon, tone } = getCapabilityIconMeta(operation.capability);
+					const label = capabilityLabel(operation.capability);
+					return (
+						<Fragment key={operation.capability}>
+							<HoverCard>
+								<HoverCardTrigger asChild>
+									<span role="img" tabIndex={0} aria-label={label}
+										className={cn(MODEL_ICON_BADGE_CLASS_NAME, "size-4 rounded-sm", tone.badgeClassName)}>
+										<Icon aria-hidden className={cn("h-2.5 w-2.5", tone.iconClassName)} />
+									</span>
+								</HoverCardTrigger>
+								<HoverCardContent align="center" className="w-auto max-w-60">
+									<HoverCardHeader icon={<Icon aria-hidden className={tone.iconClassName} />} title={label} />
+								</HoverCardContent>
+							</HoverCard>
+							<div className="leading-4">{renderPriceCell(operation[column], operation.usagePrices, column)}</div>
+						</Fragment>
+					);
+				})}
 			</div>
 		);
 	};
@@ -1278,24 +1312,24 @@ export function MonitorDataTable({
 		if (column.id !== "status") return content;
 		return (
 			<HoverCard openDelay={1000} closeDelay={120}>
-				<HoverCardTrigger asChild>{content}</HoverCardTrigger>
-				<HoverCardContent align="start" className="w-52 p-3">
-					<div className="space-y-2">
-						<p className="text-[11px] font-medium text-muted-foreground">{t("statusKeyLabel")}</p>
-						<div className="space-y-1.5">
+				<HoverCardTrigger asChild openOnTap={false}>{content}</HoverCardTrigger>
+				<HoverCardContent align="start" className="w-56 font-normal">
+					<div className="space-y-2.5">
+						<HoverCardHeader title={t("statusKeyLabel")} />
+						<ul className="space-y-1.5">
 							{statusLegendOrder.map((statusKey) => {
 								const statusMeta = statusMetaByKey[statusKey];
 								if (!statusMeta) return null;
 								const IconComponent = statusMeta.icon;
 								return (
-									<div key={statusKey} className="flex items-center gap-2 text-xs">
+									<li key={statusKey} className="flex items-center gap-2 text-xs">
 										<IconComponent className={`h-3.5 w-3.5 ${statusMeta.color}`} />
 										<span>{t(`providerStatus.${statusKey}` as never)}</span>
-									</div>
+									</li>
 								);
 							})}
-						</div>
-						<p className="text-[11px] text-muted-foreground">{t("statusAppliesToRowCapability")}</p>
+						</ul>
+						<HoverCardNote>{t("statusAppliesToRowCapability")}</HoverCardNote>
 					</div>
 				</HoverCardContent>
 			</HoverCard>
@@ -1313,17 +1347,11 @@ export function MonitorDataTable({
 			case "status":
 				return renderStatuses(item);
 			case "capability":
-				return renderCapabilities(item.endpoints);
+				return <ModelCapabilityIcons endpoints={item.endpoints} />;
 			case "inputPrice":
-				return item.operationPrices.length === 2 ? <div className="space-y-1">{item.operationPrices.map(operation => <div key={operation.capability}>
-					<span className="mr-1 text-[10px] text-muted-foreground">{modelsUiT(operation.capability === "text.generate" ? "capabilityTextGeneration" : "modalityDecisions")}</span>
-					{renderPriceRange(operation.inputPrices)}
-				</div>)}</div> : renderPriceRange(item.inputPrices);
+				return renderOperationPrices(item, "inputPrices");
 			case "outputPrice":
-				return item.operationPrices.length === 2 ? <div className="space-y-1">{item.operationPrices.map(operation => <div key={operation.capability}>
-					<span className="mr-1 text-[10px] text-muted-foreground">{modelsUiT(operation.capability === "text.generate" ? "capabilityTextGeneration" : "modalityDecisions")}</span>
-					{renderPriceRange(operation.outputPrices)}
-				</div>)}</div> : renderPriceRange(item.outputPrices);
+				return renderOperationPrices(item, "outputPrices");
 			case "tier":
 				return renderTiers(item.tiers);
 			case "inputModalities":

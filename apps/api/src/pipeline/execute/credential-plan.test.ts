@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { buildCredentialAttemptPlan, MAX_BYOK_CREDENTIAL_ATTEMPTS } from "./index";
+import { describe, expect, it, vi } from "vitest";
+import { buildCredentialAttemptPlan, MAX_BYOK_CREDENTIAL_ATTEMPTS, preferPinnedCredential } from "./index";
+
+const saturated = vi.hoisted(() => new Map<string, number>());
+vi.mock("@core/provider-rate-limits", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@core/provider-rate-limits")>()),
+	providerQuotaPressure: (providerId: string) => saturated.get(providerId) ?? 0,
+}));
 
 function key(id: string, routingMode: "priority" | "fallback", sortOrder: number) {
 	return {
@@ -69,6 +75,31 @@ describe("credential attempt plan", () => {
 			"provider-a:a-fallback",
 			"provider-b:b-fallback",
 		]);
+	});
+
+	it("tries a saturated managed credential after every other managed attempt", () => {
+		const providerA = { candidate: { providerId: "provider-a", byokMeta: [key("a-priority", "priority", 0)] } };
+		const providerB = { candidate: { providerId: "provider-b", byokMeta: [] } };
+		saturated.set("provider-a", 1.2);
+		try {
+			const plan = buildCredentialAttemptPlan([providerA, providerB], { allowManagedFallback: true });
+			expect(plan.map((attempt) =>
+				`${attempt.routed.candidate.providerId}:${attempt.credential.kind === "gateway" ? "gateway" : attempt.credential.key.id}`,
+			)).toEqual(["provider-a:a-priority", "provider-b:gateway", "provider-a:gateway"]);
+		} finally {
+			saturated.clear();
+		}
+	});
+
+	it("tries the saturated managed credential least over its limit first", () => {
+		const providers = ["provider-a", "provider-b", "provider-c"].map((providerId) => ({ candidate: { providerId, byokMeta: [] } }));
+		saturated.set("provider-a", 3).set("provider-b", 1.1);
+		try {
+			const plan = buildCredentialAttemptPlan(providers, { allowManagedFallback: true });
+			expect(plan.map((attempt) => attempt.routed.candidate.providerId)).toEqual(["provider-c", "provider-b", "provider-a"]);
+		} finally {
+			saturated.clear();
+		}
 	});
 
 	it("omits fallback BYOK keys when requested", () => {
@@ -144,5 +175,44 @@ describe("credential attempt plan", () => {
 		expect(plan.filter((attempt) => attempt.phase === "fallback_byok")).toHaveLength(
 			Math.min(20, MAX_BYOK_CREDENTIAL_ATTEMPTS - 3),
 		);
+	});
+
+	it("tries the pinned credential first for the pinned route, keeping the rest as failover", () => {
+		const providerA = {
+			candidate: {
+				providerId: "provider-a",
+				providerModelSlug: "model-a",
+				byokMeta: [key("a-priority-1", "priority", 1), key("a-priority-2", "priority", 2)],
+			},
+		};
+		const providerB = { candidate: { providerId: "provider-b", byokMeta: [] } };
+		const plan = buildCredentialAttemptPlan([providerA, providerB], { allowManagedFallback: true });
+		const describe = (attempts: typeof plan) => attempts.map((attempt) => [
+			attempt.routed.candidate.providerId,
+			attempt.credential.kind === "byok" ? attempt.credential.key.id : "gateway",
+		]);
+		expect(describe(preferPinnedCredential(plan, {
+			hintedProvider: "provider-a",
+			hintedProviderModelSlug: "model-a",
+			hintedKeySource: "byok",
+			hintedByokKeyId: "a-priority-2",
+		}))).toEqual([
+			["provider-a", "a-priority-2"],
+			["provider-a", "a-priority-1"],
+			["provider-a", "gateway"],
+			["provider-b", "gateway"],
+		]);
+		expect(describe(preferPinnedCredential(plan, {
+			hintedProvider: "provider-a",
+			hintedKeySource: "gateway",
+		}))).toEqual([
+			["provider-a", "gateway"],
+			["provider-a", "a-priority-1"],
+			["provider-a", "a-priority-2"],
+			["provider-b", "gateway"],
+		]);
+		// A pinned credential that is no longer in the plan changes nothing.
+		expect(preferPinnedCredential(plan, { hintedProvider: "provider-a", hintedKeySource: "byok", hintedByokKeyId: "gone" })).toBe(plan);
+		expect(preferPinnedCredential(plan, null)).toBe(plan);
 	});
 });

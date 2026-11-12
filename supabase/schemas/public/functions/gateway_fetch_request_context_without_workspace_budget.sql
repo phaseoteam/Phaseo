@@ -18,6 +18,7 @@ declare
   providers           jsonb;
   pricing             jsonb;
   preset_data         jsonb := null;
+  preset_matches      jsonb := null;
 
   -- key row fields
   v_key_active        boolean;
@@ -55,6 +56,8 @@ declare
   is_preset           boolean := false;
   preset_name         text := null;
   preset_publisher    text := null;
+  preset_ref          text := null;
+  pinned_version      jsonb := null;
 
   -- Resolve model from alias if exists
   resolved_model      text := gateway_fetch_request_context_without_workspace_budget.model;
@@ -92,29 +95,50 @@ begin
   if base_model like '@%' then
     is_preset := true;
     preset_name := substring(base_model from 2); -- Remove @ prefix
+    -- "@slug@ref" and "@handle/slug@ref" pin a published version: its label
+    -- (v3, 1.2.0, 2026.10.27) or a named label such as production.
+    if position('@' in preset_name) > 0 then
+      preset_ref := substring(preset_name from position('@' in preset_name) + 1);
+      preset_name := substring(preset_name from 1 for position('@' in preset_name) - 1);
+    end if;
 
     -- Fetch preset configuration. Qualified references resolve a
     -- public publisher globally; unqualified references remain workspace-local.
     if position('/' in preset_name) > 0 then
       preset_publisher := split_part(preset_name, '/', 1);
       preset_name := substring(preset_name from position('/' in preset_name) + 1);
-      select jsonb_build_object(
+      select jsonb_agg(m.match) into preset_matches from (
+        select jsonb_build_object(
         'id', p.id, 'name', p.name, 'slug', p.slug, 'description', p.description,
-        'config', p.config, 'visibility', p.visibility, 'publisher', w.publisher_handle
-      ) into preset_data
+        'config', p.config, 'visibility', p.visibility, 'publisher', w.publisher_handle,
+        'version_id', p.active_version_id,
+        'version_label', (select v.version_label from public.preset_versions v where v.id = p.active_version_id)
+      ) as match
       from public.presets p
       join public.workspaces w on w.id = p.workspace_id
       where p.archived_at is null and lower(p.slug) = lower(preset_name)
         and p.visibility = 'public'
         and true
         and (lower(w.publisher_handle) = lower(preset_publisher) or exists (select 1 from public.workspace_publisher_handle_aliases alias where alias.workspace_id = w.id and alias.handle = lower(preset_publisher)))
-      limit 1;
+      limit 2
+      ) m;
+      -- Slugs are matched case-insensitively; two matches would make the choice arbitrary.
+      if jsonb_array_length(coalesce(preset_matches, '[]'::jsonb)) > 1 then
+        raise exception using
+          errcode = '22023',
+          message = 'preset_ambiguous',
+          detail = format('Preset "%s" matches more than one preset', preset_name);
+      end if;
+      preset_data := preset_matches -> 0;
     else
-      select jsonb_build_object(
+      select jsonb_agg(m.match) into preset_matches from (
+        select jsonb_build_object(
         'id', p.id, 'name', p.name,
         'slug', coalesce(nullif(p.slug, ''), regexp_replace(p.name, '^@', '')),
-        'description', p.description, 'config', p.config, 'visibility', p.visibility
-      ) into preset_data
+        'description', p.description, 'config', p.config, 'visibility', p.visibility,
+        'version_id', p.active_version_id,
+        'version_label', (select v.version_label from public.preset_versions v where v.id = p.active_version_id)
+      ) as match
       from public.presets p
       where p.archived_at is null and lower(coalesce(nullif(p.slug, ''), regexp_replace(p.name, '^@', ''))) = lower(preset_name)
         and p.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
@@ -127,7 +151,16 @@ begin
               and ak.status = 'active'
           )
         )
-      limit 1;
+      limit 2
+      ) m;
+      -- Slugs are matched case-insensitively; two matches would make the choice arbitrary.
+      if jsonb_array_length(coalesce(preset_matches, '[]'::jsonb)) > 1 then
+        raise exception using
+          errcode = '22023',
+          message = 'preset_ambiguous',
+          detail = format('Preset "%s" matches more than one preset', preset_name);
+      end if;
+      preset_data := preset_matches -> 0;
     end if;
 
     if preset_data is null then
@@ -135,6 +168,44 @@ begin
         errcode = '22023',
         message = 'preset_not_found',
         detail = format('Preset "%s" not found or not accessible', preset_name);
+    end if;
+
+    if preset_ref is not null then
+      -- An exact version label (v3, 1.2.0, 2026.10.27) wins; otherwise a named
+      -- label points at a version. Labels never look like version labels.
+      -- Public references reach public versions only; workspace references
+      -- apply the preset access rule to the pinned version's visibility.
+      select jsonb_build_object(
+        'name', v.name, 'slug', v.slug, 'description', v.description,
+        'config', v.config, 'visibility', v.visibility,
+        'version_id', v.id, 'version_label', v.version_label, 'ref', preset_ref
+      ) into pinned_version
+      from public.preset_versions v
+      where v.preset_id = (preset_data->>'id')::uuid
+        and v.id = coalesce(
+          (select exact.id from public.preset_versions exact
+            where exact.preset_id = v.preset_id and exact.version_label = preset_ref),
+          (select l.version_id from public.preset_version_labels l
+            where l.preset_id = v.preset_id and l.label = lower(preset_ref))
+        )
+        and case
+          when preset_publisher is not null then v.visibility = 'public'
+          else v.visibility in ('public', 'team') or exists (
+            select 1 from public.presets p
+            join public.keys ak on ak.created_by = p.created_by
+            where p.id = v.preset_id
+              and ak.id = gateway_fetch_request_context_without_workspace_budget.api_key_id
+              and ak.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
+              and ak.status = 'active'
+          )
+        end;
+      if pinned_version is null then
+        raise exception using
+          errcode = '22023',
+          message = 'preset_version_not_found',
+          detail = format('Version "%s" of preset "%s" not found', preset_ref, preset_name);
+      end if;
+      preset_data := preset_data || pinned_version;
     end if;
 
     -- Extract model from preset config (fallback to default/default_model/model/first models entry)
@@ -243,20 +314,18 @@ begin
   if greatest(v_day_req_limit, v_wk_req_limit, v_mo_req_limit,
       v_day_cost_limit, v_wk_cost_limit, v_mo_cost_limit) > 0 then
   select
-    count(*) filter (where gr.created_at >= day_start)                                  as used_day_reqs,
-    count(*) filter (where gr.created_at >= week_start)                                 as used_wk_reqs,
-    count(*) filter (where gr.created_at >= month_start)                                as used_mo_reqs,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= day_start), 0)::bigint   as used_day_cost,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= week_start), 0)::bigint  as used_wk_cost,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= month_start), 0)::bigint as used_mo_cost
+    count(*) filter (where gr.served and gr.at >= day_start)                    as used_day_reqs,
+    count(*) filter (where gr.served and gr.at >= week_start)                   as used_wk_reqs,
+    count(*) filter (where gr.served and gr.at >= month_start)                  as used_mo_reqs,
+    coalesce(sum(gr.nanos) filter (where gr.at >= day_start), 0)::bigint   as used_day_cost,
+    coalesce(sum(gr.nanos) filter (where gr.at >= week_start), 0)::bigint  as used_wk_cost,
+    coalesce(sum(gr.nanos) filter (where gr.at >= month_start), 0)::bigint as used_mo_cost
   into
     used_day_reqs, used_wk_reqs, used_mo_reqs,
     used_day_cost, used_wk_cost, used_mo_cost
-  from public.gateway_requests gr
-  where gr.key_id  = gateway_fetch_request_context_without_workspace_budget.api_key_id
-    and gr.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
-    and gr.success is true
-    and gr.created_at >= month_start;
+  -- The key's usage (private.key_spend_items): successful requests count as requests and cost,
+  -- charged ones that did not succeed and money movements as cost only.
+  from private.key_spend_items(gateway_fetch_request_context_without_workspace_budget.workspace_id, least(week_start, month_start), array[gateway_fetch_request_context_without_workspace_budget.api_key_id]) gr;
   end if;
 
   if v_soft_blocked then
@@ -449,7 +518,7 @@ begin
       p.data_policy_contract_mode,
 	  p.data_policy_variant,
       c.status as capability_status,
-      c.params as capability_params,
+      coalesce(c.params,'{}'::jsonb) || jsonb_strip_nulls(jsonb_build_object('data_policy',public.resolve_catalog_data_policy(m.provider_api_model_id,c.capability_id))) as capability_params,
       c.max_input_tokens,
       c.max_output_tokens
     from (select provider_model_id as provider_api_model_id, provider_slug as provider_id, model_slug as api_model_id, model_slug as model_id, provider_model_slug, routing_enabled as is_active_gateway, status as routing_status, input_modalities, output_modalities, context_length, max_output_tokens, effective_from, effective_to, created_at, updated_at, metadata from public.v2_model_provider_routes) m
@@ -461,10 +530,9 @@ begin
       on c.provider_api_model_id = m.provider_api_model_id
     where m.api_model_id = resolved_model
       and coalesce(dm.hidden, false) = false
-      and (dm.status is null or lower(dm.status) in ('active', 'available', 'deprecated'))
-      and (dm.retirement_date is null or dm.retirement_date > now() at time zone 'utc')
+      and (dm.status is null or lower(dm.status) in ('active', 'available', 'deprecated', 'retired'))
       and c.capability_id = gateway_fetch_request_context_without_workspace_budget.endpoint
-      and c.status in ('active', 'deranked', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')
+      and c.status in ('active', 'degraded', 'deranked', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')
       and m.is_active_gateway
       and (
         p.status <> 'external'

@@ -78,7 +78,7 @@ describe("proxyOpenAIVideoRequest", () => {
 		expect(response.status).toBe(502);
 		const payload = await response.json();
 		expect(payload).toMatchObject({
-			error: "upstream_error",
+			code: "upstream_error",
 			reason: "video_provider_upstream_error",
 			request_id: "req_video_forbidden",
 			workspace_id: "ws_video_forbidden",
@@ -124,7 +124,7 @@ describe("proxyOpenAIVideoRequest", () => {
 		expect(response.status).toBe(502);
 		const payload = await response.json();
 		expect(payload).toMatchObject({
-			error: "upstream_error",
+			code: "upstream_error",
 			reason: "video_provider_upstream_error",
 			request_id: "req_video_500",
 			workspace_id: "ws_video_500",

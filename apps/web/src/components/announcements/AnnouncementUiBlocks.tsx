@@ -1,8 +1,6 @@
-"use client";
-
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import { getLocalizedDocsHref } from "@/lib/docs";
@@ -49,7 +47,7 @@ const socialLinks: Array<{
 
 const getStartedLinks = [
 	{
-		href: "https://phaseo.app/gateway/keys",
+		href: "https://phaseo.app/settings/keys",
 		label: "getGatewayKey",
 		external: true,
 		variant: "primary",

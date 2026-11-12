@@ -1,4 +1,5 @@
-import { existsSync, readdirSync } from "node:fs";
+import { describe, it, expect } from "vitest";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { resolveLogo } from "@/lib/logos";
 import { markdownToPlainText } from "@/lib/models/modelDescription";
@@ -280,19 +281,29 @@ describe("Discord component embed", () => {
 	});
 
 	it("ships PNGs for every catalog lab with a known logo", () => {
-		const modelCatalogPath = path.resolve(
-			__dirname,
-			"../../../../../packages/data/catalog/src/data/models",
-		);
 		const discordLogoPath = path.resolve(
 			__dirname,
 			"../../../public/logos/discord",
 		);
-		const organisationIds = readdirSync(modelCatalogPath, {
-			withFileTypes: true,
-		})
-			.filter((entry) => entry.isDirectory())
-			.map((entry) => entry.name);
+		// Snapshot of catalogue organisation ids (the database is the source of truth).
+		// fastino is left out: it has a bundled logo but no Discord PNG yet.
+		const organisationIds = [
+			"ai21", "aion-labs", "aisingapore", "alibaba", "allenai", "amazon", "anthropic",
+			"arcee-ai", "baai", "baichuan", "baidu", "black-forest-labs", "bytedance",
+			"bytedance-seed", "cogito", "cognitivecomputations", "cohere", "crofai", "cursor",
+			"databricks", "deepseek", "dots-studio", "early-access", "eleven-labs",
+			"essential-ai", "fish-audio", "google", "gpt-5.6-luna", "gryphe",
+			"hexgrad", "ibm", "inception", "inclusionai", "inference-net", "inflection",
+			"jetbrains", "kblab", "kling", "kwaipilot", "lg", "lightricks", "liquid-ai",
+			"mancer", "medaibase", "meituan", "meta", "microsoft", "mindai", "minimax",
+			"mistral", "moonshotai", "morph", "naver-hyperclova", "nex-agi", "nous",
+			"nousresearch", "nvidia", "openai", "opencompass", "orcarouter", "ornith",
+			"perplexity", "phala", "poolside", "prime-intellect", "qwen", "reka", "relace",
+			"runway", "sakana", "sapiens-ai", "sentence-transformers", "snowflake",
+			"sourceful", "spacex-ai", "speakleash", "stability-ai", "stealth", "stepfun",
+			"suno", "tencent", "thedrummer", "thinking-machines", "undi95", "upstage",
+			"venice", "vercel", "voyage", "windsurf", "writer", "xiaomi", "z-ai", "zyphra",
+		];
 		const knownLogos = organisationIds
 			.map((organisationId) => resolveLogo(organisationId, { variant: "dark" }))
 			.filter((logo) => logo.id && logo.src);
@@ -306,17 +317,17 @@ describe("Discord component embed", () => {
 
 	it.each(["preview", "production", "development", undefined])("never publishes deployment credentials (%s)", (environment) => {
 		const previousEnvironment = {
-			VERCEL_ENV: process.env.VERCEL_ENV,
-			VERCEL_URL: process.env.VERCEL_URL,
+			PHASEO_ENV: process.env.PHASEO_ENV,
+			PUBLIC_DEPLOY_URL: process.env.PUBLIC_DEPLOY_URL,
 			VERCEL_AUTOMATION_BYPASS_SECRET:
 				process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
 		};
 		if (environment === undefined) {
-			delete process.env.VERCEL_ENV;
+			delete process.env.PHASEO_ENV;
 		} else {
-			process.env.VERCEL_ENV = environment;
+			process.env.PHASEO_ENV = environment;
 		}
-		process.env.VERCEL_URL = "phaseo-preview.vercel.app";
+		process.env.PUBLIC_DEPLOY_URL = "phaseo-web-preview.workers.dev";
 		const secret = "preview-test-secret/+?&=sensitive";
 		process.env.VERCEL_AUTOMATION_BYPASS_SECRET = secret;
 
@@ -343,7 +354,7 @@ describe("Discord component embed", () => {
 					expect(output).not.toContain(secret);
 					expect(output).not.toContain(encodeURIComponent(secret));
 					expect(output).not.toContain("x-vercel-protection-bypass");
-					expect(output).not.toContain("phaseo-preview.vercel.app");
+					expect(output).not.toContain("phaseo-web-preview.workers.dev");
 				}
 				const payload = JSON.parse(serialized);
 				const labSection = payload.component.components.find(

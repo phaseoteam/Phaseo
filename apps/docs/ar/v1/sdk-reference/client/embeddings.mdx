@@ -1,0 +1,123 @@
+---
+icon: "binary"
+title: "Embeddings"
+description: "حوّل النص والمدخلات الأخرى إلى متجهات باستخدام POST /v1/embeddings من أي حزمة Phaseo SDK."
+---
+
+أرسل نصًا إلى `POST /v1/embeddings` لتحصل على متجه واحد لكل مُدخل. تستخدم الأمثلة `client` مُنشأً كما في [التثبيت](./installation).
+
+<CodeGroup>
+
+```typescript TypeScript
+const embedding = await client.generateEmbedding({
+  model: "openai/text-embedding-3-large",
+  input: "Sample text",
+});
+```
+
+```python Python
+embedding = client.generate_embedding({
+    "model": "openai/text-embedding-3-large",
+    "input": "Sample text",
+})
+```
+
+```go Go
+resp, err := client.GenerateEmbedding(context.Background(), map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["data"])
+```
+
+```csharp C#
+var response = await client.CreateEmbedding(new Dictionary<string, object>
+{
+    ["model"] = "openai/text-embedding-3-large",
+    ["input"] = "Sample text",
+});
+```
+
+```php PHP
+$response = $client->generateEmbedding([
+    'model' => 'openai/text-embedding-3-large',
+    'input' => 'Sample text',
+]);
+```
+
+```ruby Ruby
+response = client.generate_embedding(
+  model: 'openai/text-embedding-3-large',
+  input: 'Sample text'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text"
+}
+""";
+
+Object response = client.createEmbedding(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
+System.out.println(String.valueOf(response));
+```
+
+```rust Rust
+// لا توجد دالة للتضمينات بعد: ترسل post() بيانات JSON إلى أي مسار في Phaseo.
+let response = client.post("/embeddings", &json!({
+    "model": "openai/text-embedding-3-large",
+    "input": "Sample text"
+}))?;
+```
+
+</CodeGroup>
+
+| اللغة | الدالة | القيمة المُعادة |
+| --- | --- | --- |
+| TypeScript | `client.generateEmbedding(request)` | الاستجابة ذات الأنواع المحددة |
+| Python | `client.generate_embedding(request)` أو `client.embeddings.create(request)` | قاموس (dict) |
+| Go | `client.GenerateEmbedding(ctx, req)`، والاسم البديل `CreateEmbedding` | `map[string]interface{}` |
+| C# | `client.CreateEmbedding(request)` | `Dictionary<string, object>?` |
+| PHP | `$client->generateEmbedding($request)`، والاسم البديل `createEmbedding()` | مصفوفة |
+| Ruby | `client.generate_embedding(...)`، والاسم البديل `create_embedding` | Hash |
+| Java | `client.createEmbedding(jsonNode)` | `Object` |
+| Rust | `client.post("/embeddings", &request)` | `PhaseoResponse`، وبيانات JSON في `body` |
+
+## المعاملات
+
+أسماء الحقول في كل حزمة SDK هي حقول جسم JSON.
+
+| الحقل | ملاحظات |
+| --- | --- |
+| `model` | مطلوب. معرّف نموذج تضمين. |
+| `input` | مطلوب. سلسلة نصية، أو مصفوفة من السلاسل، أو أجزاء محتوى متعددة الوسائط (نص، صورة، صوت، فيديو) للنماذج التي تقبلها. |
+| `encoding_format` | `float` (الافتراضي) أو `base64` أو `base64_int8` أو `base64_binary`. |
+| `dimensions` | عدد صحيح موجب يقصّر كل متجه، في النماذج التي تدعم ذلك. |
+| `provider_options` | إعدادات المزوّد، مثل `task_type` و`title` لدى Google أو `output_dtype` لدى Mistral. |
+| `user` | وسم المستخدم النهائي. |
+
+المخطط الكامل موجود في [مرجع Embeddings API](/ar/v1/api-reference/endpoint/embeddings).
+
+## الاستجابة
+
+```json
+{
+  "data": [
+    {
+      "embedding": [0.1, 0.2, 0.3],
+      "index": 0
+    }
+  ],
+  "usage": {
+    "input_tokens": 5,
+    "output_tokens": 0,
+    "total_tokens": 5,
+    "embedding_tokens": 5
+  }
+}
+```

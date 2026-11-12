@@ -1,0 +1,10 @@
+---
+title: "Quitar etiqueta del preajuste"
+sidebarTitle: "Quitar etiqueta"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml DELETE /presets/{id}/labels/{label}"
+description: "Quita una etiqueta de un preajuste."
+---
+<Note>Este endpoint requiere una clave de API de gestión con `presets:write` y una identidad de usuario asociada. Quien creó el preajuste puede cambiar sus etiquetas, y también los propietarios y administradores del espacio de trabajo cuando el preajuste está compartido.</Note>
+
+Las solicitudes que aún fijan la etiqueta fallan con `preset_version_not_found` hasta que la vuelvas a añadir.

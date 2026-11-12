@@ -98,7 +98,7 @@ describe("videosRoutes download_url", () => {
 
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "invalid_json",
+			code: "invalid_json",
 			reason: "invalid_video_download_request_body",
 			request_id: "req_video_download_test",
 			workspace_id: "ws_video_download_test",
@@ -133,7 +133,7 @@ describe("videosRoutes download_url", () => {
 
 		expect(response.status).toBe(400);
 		expect(await response.json()).toMatchObject({
-			error: "validation_error",
+			code: "validation_error",
 			reason: "video_download_requires_completed_status",
 			request_id: "req_video_download_test",
 			workspace_id: "ws_video_download_test",
@@ -162,7 +162,7 @@ describe("videosRoutes download_url", () => {
 
 		expect(response.status).toBe(500);
 		expect(await response.json()).toMatchObject({
-			error: "gateway_error",
+			code: "gateway_error",
 			reason: "video_download_signing_not_configured",
 			request_id: "req_video_download_test",
 			workspace_id: "ws_video_download_test",

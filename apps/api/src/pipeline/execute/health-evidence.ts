@@ -21,7 +21,19 @@ export type HealthObservation = {
     latencyMs: number;
     tps: number | null;
     probe: boolean;
+    /** Text request size for routing cost; absent on failures and older reporters. */
+    tokens?: { prompt: number; cached: number; output: number };
 };
+
+/** Request sizes change slowly; a long horizon keeps sparse traffic from swinging the mix. */
+export const TOKEN_MIX_TAU_MS = 30 * 60_000;
+
+export function validTokenMix(tokens: unknown): tokens is NonNullable<HealthObservation["tokens"]> {
+    if (!tokens || typeof tokens !== "object") return false;
+    const { prompt, cached, output } = tokens as Record<string, unknown>;
+    return [prompt, cached, output].every((value) => typeof value === "number" && Number.isFinite(value) && value >= 0) &&
+        (cached as number) <= (prompt as number);
+}
 
 export type HealthEvidence = ProviderHealth & {
     observations: number;
@@ -49,6 +61,7 @@ export function emptyHealth(endpoint: Endpoint, model: string, provider: string)
         lat_ewma_10s: 800, lat_ewma_60s: 800, lat_ewma_300s: 800, tp_ewma_60s: 0,
         err_ewma_10s: 0, err_ewma_60s: 0, err_ewma_300s: 0, rate_10s: 0, rate_60s: 0,
         rec_ok_ew_10s: 0, rec_tot_ew_10s: 0, rec_rate_limited_ew_10s: 0,
+        prompt_tok_ewma: 0, cached_tok_ewma: 0, out_tok_ewma: 0, tok_weight: 0, last_tok_ms: 0,
         rec_ok_ew_60s: 0, rec_tot_ew_60s: 0, last_success_ms: 0, consecutive_failures: 0,
         inflight: 0, current_load: 0, breaker: "closed", breaker_until_ms: 0, breaker_attempts: 0,
         last_ts_10s: 0, last_ts_60s: 0, last_ts_300s: 0, last_updated: 0,
@@ -102,6 +115,18 @@ export function reduceHealth(previous: HealthEvidence | undefined, event: Health
             h.tp_ewma_60s += (event.tps - h.tp_ewma_60s) * tpsWeight / (oldTpsWeight + tpsWeight);
             h.tpsWeight = oldTpsWeight + tpsWeight;
             h.lastTpsAt = tpsAt;
+        }
+        if (validTokenMix(event.tokens) && event.tokens.prompt > 0) {
+            const lastTok = h.last_tok_ms ?? 0;
+            const tokAt = Math.max(lastTok, event.observedAt);
+            const oldTokWeight = (h.tok_weight ?? 0) * Math.exp(-(tokAt - lastTok) / TOKEN_MIX_TAU_MS);
+            const tokWeight = Math.exp(-(tokAt - event.observedAt) / TOKEN_MIX_TAU_MS);
+            const share = tokWeight / (oldTokWeight + tokWeight);
+            h.prompt_tok_ewma = (h.prompt_tok_ewma ?? 0) + (event.tokens.prompt - (h.prompt_tok_ewma ?? 0)) * share;
+            h.cached_tok_ewma = (h.cached_tok_ewma ?? 0) + (event.tokens.cached - (h.cached_tok_ewma ?? 0)) * share;
+            h.out_tok_ewma = (h.out_tok_ewma ?? 0) + (event.tokens.output - (h.out_tok_ewma ?? 0)) * share;
+            h.tok_weight = oldTokWeight + tokWeight;
+            h.last_tok_ms = tokAt;
         }
         h.successWeight = oldWeight + weight;
         h.last_success_ms = at;
@@ -158,9 +183,12 @@ export function reduceHealth(previous: HealthEvidence | undefined, event: Health
 export function ageHealth(h: ProviderHealth, now: number): ProviderHealth {
     const age10 = h.last_ts_10s > 0 ? Math.max(0, now - h.last_ts_10s) : 0;
     const age60 = h.last_ts_60s > 0 ? Math.max(0, now - h.last_ts_60s) : 0;
+    const ageTok = (h.last_tok_ms ?? 0) > 0 ? Math.max(0, now - h.last_tok_ms!) : 0;
     return { ...h,
         rec_ok_ew_10s: (h.rec_ok_ew_10s ?? 0) * Math.exp(-age10 / 10_000),
         rec_tot_ew_10s: (h.rec_tot_ew_10s ?? 0) * Math.exp(-age10 / 10_000),
+        rec_rate_limited_ew_10s: (h.rec_rate_limited_ew_10s ?? 0) * Math.exp(-age10 / 10_000),
+        tok_weight: (h.tok_weight ?? 0) * Math.exp(-ageTok / TOKEN_MIX_TAU_MS),
         rec_ok_ew_60s: h.rec_ok_ew_60s * Math.exp(-age60 / 60_000),
         rec_tot_ew_60s: h.rec_tot_ew_60s * Math.exp(-age60 / 60_000),
         rate_10s: h.rate_10s * Math.exp(-age10 / 10_000),

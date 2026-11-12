@@ -1,0 +1,241 @@
+---
+title: "Configurar o agente do Slack"
+sidebarTitle: "Configurar"
+description: "Adicione o agente do Phaseo ao Slack para que a sua equipe faça perguntas a ele, respondidas pelo modelo que você escolher."
+icon: "messages-square"
+---
+
+Adicione o agente do Phaseo ao Slack em **Configurações → Slack**, e a sua equipe pode mencioná-lo em um canal ou enviar uma mensagem direta a ele para receber respostas do modelo que você escolher. Ele responde na thread, transmitindo a resposta enquanto escreve. Proprietários e administradores escolhem quem pode usá-lo e definem os limites dele. Você paga um preço mensal pelas pessoas que o usaram, e os tokens de modelo são cobrados como qualquer outra solicitação do gateway (veja [Administração e cobrança do agente do Slack](/pt-BR/v1/guides/slack-agent-admin)).
+
+<Note>
+O agente do Slack está sendo liberado aos poucos para os espaços de trabalho. Se **Configurações → Slack** ainda não aparece nas suas configurações, ele ainda não está disponível para o seu espaço de trabalho.
+</Note>
+
+| Ele pode | Seção |
+| --- | --- |
+| Responder com o modelo que você escolher, ou com um indicado por mensagem, e comparar 2 ou 3 modelos | [Escolher um modelo por mensagem](/pt-BR/v1/guides/slack-agent-usage#choosing-a-model-per-message) |
+| Pesquisar na web e ler páginas da web | [Usar o agente no Slack](/pt-BR/v1/guides/slack-agent-usage#use-the-agent-in-slack) |
+| Publicar gráficos e imagens e ler as imagens e os PDFs que você compartilha | [Gráficos, imagens e arquivos](/pt-BR/v1/guides/slack-agent-usage#charts-images-and-files) |
+| Pesquisar nos canais públicos do seu espaço de trabalho do Slack como a pessoa que pergunta | [Pesquisar no Slack](/pt-BR/v1/guides/slack-agent-usage#searching-slack) |
+| Informar membros vinculados sobre gastos no Phaseo, créditos, uso de chaves de API e modelos | [Perguntar sobre o uso](/pt-BR/v1/guides/slack-agent-usage#ask-about-usage) |
+| Lembrar notas e seguir habilidades salvas | [Memória e habilidades](/pt-BR/v1/guides/slack-agent-usage#memory-and-skills) |
+| Executar um pedido de forma agendada | [Tarefas agendadas](/pt-BR/v1/guides/slack-agent-usage#scheduled-tasks) |
+| Publicar uma resposta longa como página da web | [Páginas compartilhadas](/pt-BR/v1/guides/slack-agent-usage#shared-pages) |
+
+## Antes de começar
+
+- Você precisa ser proprietário ou administrador do espaço de trabalho do Phaseo e ter permissão para adicionar apps ao seu espaço de trabalho do Slack.
+- Abra o **Chat** uma vez e revise as configurações de privacidade do seu espaço de trabalho. O Phaseo pede isso antes da primeira instalação.
+- Adicione [créditos](https://phaseo.app/settings/credits). A cobrança mensal e os tokens de modelo do agente são pagos com eles.
+
+## Adicionar o agente ao Slack
+
+<Steps>
+<Step title="Escolha como ele funciona">
+
+Abra **Configurações → Slack**. Em **Adicionar ao Slack**, escolha o modelo, quem pode usar o agente, onde ele pode compartilhar dados de uso e os [limites](/pt-BR/v1/guides/slack-agent-admin#limits) dele. Se o seu espaço de trabalho tem Roteamento Automático, **Automático** deixa o Phaseo escolher um modelo adequado para cada pergunta; caso contrário, escolha um modelo específico. Você pode mudar tudo isso depois.
+
+</Step>
+
+<Step title="Aprove no Slack">
+
+Selecione **Adicionar ao Slack**. O Slack mostra as permissões que o agente pede. Aprove-as, e o Slack leva você de volta a **Configurações → Slack**, que passa a mostrar a instalação.
+
+</Step>
+
+<Step title="Pergunte algo a ele">
+
+No Slack, abra o agente nos seus apps e envie uma mensagem a ele. Para usá-lo em um canal, convide-o com `/invite @Phaseo` e depois mencione-o. [Usar o agente do Slack](/pt-BR/v1/guides/slack-agent-usage) mostra o que as pessoas podem pedir a ele.
+
+</Step>
+</Steps>
+
+A instalação cria duas coisas no seu espaço de trabalho do Phaseo:
+
+- **Uma chave de API para o agente.** O Phaseo a gerencia, então ela não aparece na página Chaves. Os tokens de modelo do agente são cobrados por ela.
+- **Um guardrail chamado Slack agent** nessa chave, que impede que as mensagens do Slack sejam usadas em treinamento (veja [Dados e privacidade](/pt-BR/v1/guides/slack-agent-admin#data-and-privacy)).
+
+Um espaço de trabalho do Slack pode ter o agente de um espaço de trabalho do Phaseo por vez.
+
+<span id="who-can-use-it"></span>
+## Quem pode usar
+
+Escolha em **Quem pode usar**:
+
+| Opção | Quem recebe respostas |
+| --- | --- |
+| **Todos no Slack** (padrão) | Qualquer pessoa no seu espaço de trabalho do Slack, dentro dos seus [limites](/pt-BR/v1/guides/slack-agent-admin#limits). |
+| **Somente contas vinculadas** | Só pessoas que vincularam a conta do Slack a um membro deste espaço de trabalho do Phaseo. O agente envia a todas as outras um link para fazer isso. |
+
+Em **Limites**, **Permitir convidados** (ativado por padrão) deixa os convidados do seu espaço de trabalho do Slack usarem o agente, e **Permitir pessoas de outras empresas** (desativado por padrão) deixa pessoas de outras organizações em canais compartilhados do Slack Connect usá-lo. Pessoas em outros espaços de trabalho da mesma organização do Enterprise Grid contam como pessoas da sua própria organização. O agente nunca responde a bots ou outros apps.
+
+<span id="link-a-slack-account"></span>
+### Vincular uma conta do Slack
+
+O agente envia às pessoas que não estão vinculadas um botão particular **Connect your Phaseo account**:
+
+- Com **Somente contas vinculadas**, quando elas enviam uma mensagem a ele. Ele não responde até que se conectem.
+- Com **Todos no Slack**, quando elas perguntam sobre o uso onde os [dados de uso](/pt-BR/v1/guides/slack-agent-usage#ask-about-usage) são permitidos. Ele ainda responde o que pode e envia o botão no máximo uma vez por pessoa em cada thread. Para receber um novo botão, pergunte em uma nova thread.
+
+O botão funciona por 15 minutos.
+
+1. Selecione o botão. O Phaseo abre no seu navegador.
+2. Faça login com uma conta que seja membro do espaço de trabalho do Phaseo que instalou o agente.
+3. Selecione **Conectar conta**.
+
+Uma conta vinculada também permite que as pessoas perguntem sobre o uso.
+
+<span id="update-slack-permissions"></span>
+## Atualizar as permissões do Slack
+
+Gráficos e imagens precisam da permissão `files:write` do Slack, ler arquivos precisa de `files:read`, e [pesquisar no Slack](/pt-BR/v1/guides/slack-agent-usage#searching-slack) precisa de `search:read.public` e `search:read.files`. Se o agente foi adicionado antes de ter esses recursos, ele ainda não tem essas permissões: ele avisa às pessoas que um administrador precisa atualizar as permissões dele, e **Configurações → Slack** mostra **Atualizar permissões do Slack**.
+
+1. Selecione **Atualizar permissões do Slack**. O Slack mostra as permissões que o agente pede.
+2. Aprove-as para o mesmo espaço de trabalho do Slack. O Slack leva você de volta a **Configurações → Slack**.
+
+A atualização mantém as configurações, a chave de API, o guardrail e o histórico do agente. Com o seu próprio app do Slack, adicione primeiro ao [manifesto](#use-your-own-slack-app) dele os escopos que **Configurações → Slack** lista.
+
+<span id="use-your-own-slack-app"></span>
+## Usar o seu próprio app do Slack
+
+Por padrão, o agente instala o app do Slack do Phaseo. Para usar um app do Slack da sua empresa, por exemplo com o seu próprio nome e ícone, crie um a partir do manifesto do Phaseo.
+
+<Steps>
+<Step title="Crie o app a partir do manifesto">
+
+Nas configurações de apps do Slack ([api.slack.com/apps](https://api.slack.com/apps)), escolha **Create New App** e depois **From a manifest**. Escolha o seu espaço de trabalho do Slack e cole o manifesto abaixo. Você pode alterar `name`, `description`, `long_description` e `display_name`; mantenha todo o resto. O Slack pode dizer que a URL de solicitação ainda não foi verificada. Isso é esperado até a etapa 3.
+
+</Step>
+
+<Step title="Salve o app no Phaseo">
+
+Na página **Basic Information** do app no Slack, copie **App ID**, **Client ID**, **Client Secret** e **Signing Secret**. No Phaseo, abra **Configurações → Slack**, informe esses valores em **Avançado: usar seu próprio app do Slack** e selecione **Salvar app do Slack**.
+
+</Step>
+
+<Step title="Aponte as URLs de solicitação para o seu app">
+
+Na Phaseo, **Configurações → Slack** agora mostra duas URLs de solicitação para o seu app salvo. No Slack, abra a página **App Manifest** do app e coloque-as no lugar dos dois valores de `request_url` (a primeira para eventos e a segunda para interatividade). Salve e verifique a URL de solicitação quando o Slack pedir.
+
+</Step>
+
+<Step title="Instale o app">
+
+Em **Configurações → Slack**, escolha **Seu app do Slack** em **App do Slack** e selecione **Adicionar ao Slack**.
+
+</Step>
+</Steps>
+
+```json manifest.json
+{
+  "_metadata": {
+    "major_version": 2,
+    "minor_version": 1
+  },
+  "display_information": {
+    "name": "Phaseo",
+    "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
+    "background_color": "#0069a8",
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. It can also search your Slack workspace's public channels for the person asking, finding only what they can see (searching by meaning needs a Business+ or Enterprise+ Slack plan). Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+  },
+  "features": {
+    "app_home": {
+      "home_tab_enabled": true,
+      "messages_tab_enabled": true,
+      "messages_tab_read_only_enabled": false
+    },
+    "bot_user": {
+      "display_name": "Phaseo",
+      "always_online": true
+    },
+    "agent_view": {
+      "agent_description": "Answers your team's questions with the model your Phaseo workspace chooses. It can search the web, and linked members can ask about Phaseo spend, credits, API key usage and models."
+    }
+  },
+  "oauth_config": {
+    "redirect_urls": [
+      "https://phaseo.app/api/account/settings/slack/oauth/callback",
+      "https://slack.phaseo.app/p/signin"
+    ],
+    "scopes": {
+      "bot": [
+        "app_mentions:read",
+        "assistant:write",
+        "chat:write",
+        "im:history",
+        "channels:history",
+        "groups:history",
+        "users:read",
+        "files:read",
+        "files:write",
+        "search:read.public",
+        "search:read.files"
+      ]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events",
+      "bot_events": [
+        "app_mention",
+        "message.im",
+        "agent_session_stopped",
+        "app_uninstalled",
+        "tokens_revoked",
+        "app_home_opened"
+      ]
+    },
+    "interactivity": {
+      "is_enabled": true,
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions"
+    },
+    "org_deploy_enabled": true,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}
+```
+
+| Configuração | Valor |
+| --- | --- |
+| URL de redirecionamento | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
+| URL de solicitação de Event Subscriptions | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events` |
+| URL de solicitação de Interactivity | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions` |
+| Eventos do bot | `app_mention`, `message.im`, `agent_session_stopped`, `app_uninstalled`, `tokens_revoked`, `app_home_opened` |
+
+O Phaseo pede ao Slack exatamente estes escopos de token de bot na instalação, então o app precisa de todos eles:
+
+| Escopo | O que permite |
+| --- | --- |
+| `app_mentions:read` | Ver mensagens que mencionam o agente. |
+| `assistant:write` | Funcionar como agente no Slack, com um status e um botão de parar enquanto responde. |
+| `chat:write` | Publicar e transmitir respostas. |
+| `im:history` | Ler mensagens diretas enviadas ao agente. |
+| `channels:history`, `groups:history` | Ler a thread em que ele foi mencionado, em canais públicos e privados. |
+| `users:read` | Verificar se alguém é convidado, bot ou de outra organização. |
+| `files:read` | Ler imagens e PDFs compartilhados com o agente. |
+| `files:write` | Publicar gráficos e imagens na thread. |
+| `search:read.public` | Pesquisar em canais públicos pela pessoa que pergunta. |
+| `search:read.files` | Incluir nessas pesquisas os arquivos compartilhados em canais públicos. |
+
+Algumas regras para o seu próprio app:
+
+- Mantenha a rotação de tokens desativada, como no manifesto. O Slack não permite desativá-la de novo depois que ela é ativada.
+- O manifesto usa a experiência de mensagens de agente do Slack (`agent_view`), a única que o Slack oferece a apps novos.
+- O `home_tab_enabled: true` e o evento de bot `app_home_opened` do manifesto dão ao agente a [aba Home](/pt-BR/v1/guides/slack-agent-usage#check-the-home-tab). Se você criou o app a partir de um manifesto anterior, adicione os dois na página **App Manifest** do app.
+- Um app do Slack pode ser conectado a um espaço de trabalho do Phaseo, e um espaço de trabalho do Phaseo pode salvar um app do Slack.
+- Enquanto o agente estiver instalado com o seu app, você só pode substituir os segredos dele. Para trocar por outro app, ou voltar ao do Phaseo, desinstale primeiro.
+- A segunda URL de redirecionamento do manifesto, `https://slack.phaseo.app/p/signin`, permite que as pessoas façam login com o Slack para ver [páginas compartilhadas com o seu espaço de trabalho do Slack](/pt-BR/v1/guides/slack-agent-usage#shared-pages). Se você criou o app a partir de um manifesto anterior, adicione-a na página **App Manifest** do app.
+
+<span id="fix-setup-problems"></span>
+## Resolver problemas de configuração
+
+Se a instalação não terminar, **Configurações → Slack** diz o motivo. Os motivos mais comuns são uma revisão de privacidade que ainda não foi feita (abra o **Chat** uma vez) e um espaço de trabalho do Slack que já tem o agente de outro espaço de trabalho do Phaseo (desinstale-o lá primeiro).
+
+Se o agente não responder nada:
+
+- Em um canal, confirme que ele é membro do canal e mencione-o em cada mensagem que você quer que ele responda.
+- Ele não responde a mensagens editadas, bots ou outros apps.
+- Com o seu próprio app do Slack, confira se as URLs de solicitação são as que **Configurações → Slack** mostra para o seu app salvo e se o Slack as marca como verificadas.
+
+Quando ele responde em particular que não pode responder, a resposta diz o motivo: veja [Quando o agente não consegue responder](/pt-BR/v1/guides/slack-agent-admin#when-the-agent-cant-answer).

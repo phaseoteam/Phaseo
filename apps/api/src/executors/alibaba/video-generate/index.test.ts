@@ -264,6 +264,85 @@ describe("alibaba wan video executor", () => {
 		});
 	});
 
+	it("sends Wan 3.0 21:9", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/video-synthesis"),
+			response: jsonResponse({ output: { task_id: "wan30_wide", task_status: "PENDING" } }),
+			onRequest: (call) => { capturedBody = call.bodyJson; },
+		}]);
+		const result = await execute(buildArgs({ model: "qwen/wan3.0-video", prompt: "A wide desert", duration: 5, aspectRatio: "21:9" }));
+		mock.restore();
+		expect(result.upstream?.status).toBe(200);
+		expect(capturedBody.parameters).toMatchObject({ ratio: "21:9", duration: 5 });
+	});
+
+	it("sends Wan 3.0 smart duration as -1 and reserves the 30-second maximum", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/video-synthesis"),
+			response: jsonResponse({ output: { task_id: "wan30_auto", task_status: "PENDING" } }),
+			onRequest: (call) => { capturedBody = call.bodyJson; },
+		}]);
+		const result = await execute(buildArgs({
+			model: "qwen/wan3.0-video",
+			prompt: "A short story in three shots",
+			resolution: "720p",
+			providerParams: { smart_duration: true },
+		}));
+		mock.restore();
+
+		expect(result.upstream?.status).toBe(200);
+		expect(capturedBody.parameters).toMatchObject({ duration: -1, resolution: "720P" });
+		expect(capturedBody.parameters).not.toHaveProperty("smart_duration");
+		const { reserveVideoGenerationCredits } = await import("@core/video-reservations");
+		expect(reserveVideoGenerationCredits).toHaveBeenLastCalledWith(expect.objectContaining({ seconds: 30 }));
+		expect(saveVideoJobMetaMock).toHaveBeenCalledWith(
+			"team_test",
+			"req_wan_video_test",
+			expect.objectContaining({ seconds: 30, autoDuration: true, resolution: "720P" }),
+			"wan30_auto",
+			"queued",
+		);
+		expect((result as any).ir.usage).not.toHaveProperty("output_video_seconds");
+	});
+
+	it("allows smart duration with a reference video without the 30-second sum check", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([{
+			match: (url) => url.includes("/video-synthesis"),
+			response: jsonResponse({ output: { task_id: "wan30_auto_ref", task_status: "PENDING" } }),
+			onRequest: (call) => { capturedBody = call.bodyJson; },
+		}]);
+		await execute(buildArgs({
+			model: "qwen/wan3.0-video",
+			prompt: "Extend the reference",
+			inputVideoDurationSeconds: 15,
+			inputReferences: [{ type: "video", role: "reference", url: "https://example.com/source.mp4" }],
+			providerParams: { smart_duration: true },
+		}));
+		mock.restore();
+		expect(capturedBody.parameters.duration).toBe(-1);
+		expect(saveVideoJobMetaMock).toHaveBeenCalledWith(
+			"team_test", "req_wan_video_test",
+			expect.objectContaining({ seconds: 30, autoDuration: true, inputVideoSeconds: 15 }),
+			"wan30_auto_ref", "queued",
+		);
+	});
+
+	it.each([
+		[{ model: "qwen/wan3.0-video", prompt: "x", duration: 5, providerParams: { smart_duration: true } }, "not both"],
+		[{ model: "qwen/wan3.0-video", prompt: "x", providerParams: { smart_duration: "yes" } }, "true or false"],
+		[{ model: "qwen/wan2.7-t2v", prompt: "x", providerParams: { smart_duration: true } }, "only available on Wan 3.0"],
+	])("rejects invalid smart duration requests before submission", async (ir, message) => {
+		const mock = installFetchMock([]);
+		const result = await execute(buildArgs(ir as IRVideoGenerationRequest));
+		mock.restore();
+		expect(result.upstream?.status).toBe(400);
+		expect(await result.upstream?.clone().json()).toMatchObject({ error: { message: expect.stringContaining(message) } });
+		expect(mock.calls).toEqual([]);
+	});
+
 	it("rejects Wan 3.0 reference video without its billing duration", async () => {
 		const mock = installFetchMock([]);
 

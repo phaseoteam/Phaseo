@@ -3,15 +3,18 @@
 // How: Validates token limits, parameter support, and filters incompatible providers.
 
 import type { Endpoint } from "@core/types";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import type { ParamRoutingDiagnostics, ProviderCandidate } from "./types";
 import { err } from "./http";
 import {
 	providerParamSupportStatus,
 	extractRequestedParams,
+	getGatewayFallbackParams,
 	getUnknownTopLevelParams,
 } from "./paramCapabilities";
 import { isAlwaysSupportedParam } from "./textParamPolicy";
 import { validateProviderDocsCompliance } from "./providerDocsValidation";
+import { describeParameterValueIssue, parameterValueIssues, type ParameterValueIssue } from "./paramValueSupport";
 import { getEffectiveRoutingHints } from "../requestRouting";
 
 type ValidationResult =
@@ -149,6 +152,64 @@ function preferProvidersByRequestedParams(args: {
 	return preferred.length > 0 ? preferred : args.providers;
 }
 
+/**
+ * Narrows candidates by the requested parameter values their stored specs
+ * accept. Routes that accept every value are kept when there are any; when
+ * none do, the pool is kept as it is (stored lists can be incomplete, and the
+ * provider's own validation still applies), unless the request requires its
+ * parameters, which then fails with the allowed values.
+ */
+function filterProvidersByParameterValues(args: {
+	endpoint: Endpoint;
+	rawBody: any;
+	body: any;
+	providers: ProviderCandidate[];
+	requestId: string;
+	workspaceId: string;
+	model: string;
+}): { ok: true; providers: ProviderCandidate[] } | { ok: false; response: Response } {
+	if (args.providers.length === 0) return { ok: true, providers: args.providers };
+	const issuesByProvider = new Map<ProviderCandidate, ParameterValueIssue[]>();
+	for (const provider of args.providers) issuesByProvider.set(provider, parameterValueIssues(provider, args.rawBody, args.endpoint));
+	const accepting = args.providers.filter((provider) => (issuesByProvider.get(provider) ?? []).length === 0);
+	if (accepting.length === args.providers.length) return { ok: true, providers: args.providers };
+	const rejected = args.providers
+		.filter((provider) => (issuesByProvider.get(provider) ?? []).length > 0)
+		.map((provider) => ({ provider: provider.providerId, issues: issuesByProvider.get(provider) ?? [] }));
+	if (accepting.length > 0) return { ok: true, providers: accepting };
+	if (getEffectiveRoutingHints(args.body).requireParameters) {
+		return {
+			ok: false,
+			response: err("validation_error", {
+				details: rejected.flatMap((row) => row.issues.map((issue) => ({
+					message: describeParameterValueIssue(issue),
+					path: issue.param.split("."),
+					keyword: "unsupported_param_value",
+					params: {
+						provider: row.provider,
+						value: issue.value,
+						...(issue.allowed ? { allowed: issue.allowed } : {}),
+						...(issue.min !== undefined ? { min: issue.min } : {}),
+						...(issue.max !== undefined ? { max: issue.max } : {}),
+					},
+				}))),
+				request_id: args.requestId,
+				workspace_id: args.workspaceId,
+			}),
+		};
+	}
+	// Names and reasons only: request values must not reach the logs.
+	console.warn("param_value_unsupported_all_candidates", {
+		requestId: args.requestId,
+		model: args.model,
+		rejected: rejected.map((row) => ({
+			provider: row.provider,
+			issues: row.issues.map((issue) => ({ param: issue.param, reason: issue.reason })),
+		})),
+	});
+	return { ok: true, providers: args.providers };
+}
+
 function filterProvidersForRequiredParams(args: {
 	endpoint: Endpoint;
 	providers: ProviderCandidate[];
@@ -171,12 +232,13 @@ function isJsonSchemaResponseFormat(body: any): boolean {
 	if (directFormat && typeof directFormat === "object" && directFormat.type === "json_schema") {
 		return true;
 	}
-	const textFormat = body?.text?.format;
+	// Responses text.format, or Anthropic Messages output_config.format (json_schema only).
+	const textFormat = body?.text?.format ?? body?.output_config?.format;
 	return Boolean(textFormat && typeof textFormat === "object" && textFormat.type === "json_schema");
 }
 
 function hasRequestedResponseFormat(body: any): boolean {
-	return body?.response_format != null || body?.text?.format != null;
+	return body?.response_format != null || body?.text?.format != null || body?.output_config?.format != null;
 }
 
 function filterProvidersByCapability(
@@ -205,6 +267,19 @@ function getRequestedMaxTokens(body: any): number | null {
 }
 
 /**
+ * Responses state parameters that cannot work through the gateway: OpenAI,
+ * Azure and xAI requests are forced to `store: false`, and a follow-up may be
+ * routed to a different provider, so the referenced state never exists there.
+ */
+function getUnsupportedStatefulResponsesParams(endpoint: Endpoint, rawBody: any): string[] {
+	if (endpoint !== "responses" || !rawBody || typeof rawBody !== "object") return [];
+	return ["previous_response_id", "conversation"].filter((param) => {
+		const value = rawBody[param];
+		return value !== undefined && value !== null && value !== "";
+	});
+}
+
+/**
  * Validates that providers support all requested parameters
  */
 function validateParameterSupport(args: {
@@ -229,6 +304,23 @@ function validateParameterSupport(args: {
 			ok: false,
 			response: err("validation_error", {
 				details,
+				request_id: args.requestId,
+				workspace_id: args.workspaceId,
+			}),
+		};
+	}
+
+	const statefulParams = getUnsupportedStatefulResponsesParams(args.endpoint, args.rawBody);
+	if (statefulParams.length > 0) {
+		return {
+			ok: false,
+			response: err("validation_error", {
+				details: statefulParams.map((param) => ({
+					message: `${param} is not supported: the gateway does not store responses (requests are sent with store=false and may be routed to any provider), so there is no earlier response or conversation to continue. Send the full conversation in input instead.`,
+					path: [param],
+					keyword: "unsupported_param",
+					params: { param, model: args.model },
+				})),
 				request_id: args.requestId,
 				workspace_id: args.workspaceId,
 			}),
@@ -263,13 +355,15 @@ function validateParameterSupport(args: {
 	}
 
 	const requireParameters = getEffectiveRoutingHints(args.body).requireParameters;
+	const gatewayFallbackParams = getGatewayFallbackParams(args.endpoint, args.rawBody);
 	return {
 		ok: true,
 		providers: requireParameters
 			? filterProvidersForRequiredParams({
 				endpoint: args.endpoint,
 				providers: args.providers,
-				requestedParams: requested,
+				// Params the gateway can satisfy itself never exclude a provider.
+				requestedParams: requested.filter((param) => !gatewayFallbackParams.includes(param)),
 				supportMap,
 			})
 			: args.providers,
@@ -333,12 +427,13 @@ function filterProvidersByTokenLimits(args: {
 
 	// Filter providers that can accommodate this token limit
 	const filtered = args.providers.filter((provider) => {
-		// If provider has no limit specified, assume it can handle the request
-		if (provider.maxOutputTokens === null || provider.maxOutputTokens === undefined) {
+		// No known limit (null, or a stored 0): assume it can handle the request.
+		const limit = routeOutputTokenLimit(provider.maxOutputTokens);
+		if (limit === null) {
 			return true;
 		}
 		// Provider must support at least the requested amount
-		return provider.maxOutputTokens >= requestedMaxTokens;
+		return limit >= requestedMaxTokens;
 	});
 
 	if (!filtered.length) {
@@ -456,6 +551,19 @@ export function validateCapabilities(args: {
 		preferredProviders,
 	);
 
+	// Step 1.2: Requested values each route's stored parameter specs accept
+	const valueResult = filterProvidersByParameterValues({
+		endpoint: args.endpoint,
+		rawBody: args.rawBody,
+		body: paramResult.body,
+		providers: preferredProviders,
+		requestId: args.requestId,
+		workspaceId: args.workspaceId,
+		model: args.model,
+	});
+	if (valueResult.ok === false) return { ok: false, response: valueResult.response };
+	pushFilteringStage(filteringStages, "param_values", preferredProviders, valueResult.providers);
+
 	// Step 1.5: Provider docs validation (hard constraints from provider API docs)
 	const docsResult = validateProviderDocsCompliance({
 		endpoint: args.endpoint,
@@ -463,11 +571,11 @@ export function validateCapabilities(args: {
 		requestId: args.requestId,
 		workspaceId: args.workspaceId,
 		model: args.model,
-		providers: preferredProviders,
+		providers: valueResult.providers,
 		requestedParams: paramResult.requestedParams,
 	});
 	if ("response" in docsResult) return { ok: false, response: docsResult.response };
-	pushFilteringStage(filteringStages, "provider_docs", preferredProviders, docsResult.providers);
+	pushFilteringStage(filteringStages, "provider_docs", valueResult.providers, docsResult.providers);
 
 	// Step 2: Response format validation
 	const formatResult = validateResponseFormat({

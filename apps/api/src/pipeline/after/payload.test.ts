@@ -499,6 +499,26 @@ describe("enrichSuccessPayload model selection", () => {
 		expect(body.provider_id).toBe("minimax");
 	});
 
+	it("keeps the message refusal and annotations on chat completions payloads", () => {
+		const annotations = [{ type: "url_citation", url_citation: { url: "https://example.com/a", title: "A", start_index: 0, end_index: 2 } }];
+		const body = formatClientPayload({
+			ctx: { endpoint: "chat.completions", protocol: "openai.chat.completions", requestId: "req_chat_refusal", model: "openai/gpt-5", body: {}, meta: {} } as any,
+			result: { provider: "openai", ir: { choices: [] } } as any,
+			payload: {
+				id: "req_chat_refusal",
+				model: "openai/gpt-5",
+				choices: [
+					{ index: 0, message: { role: "assistant", content: "OK", annotations }, finish_reason: "stop" },
+					{ index: 1, message: { role: "assistant", content: "", refusal: "I can't help with that." }, finish_reason: "stop" },
+				],
+			},
+			includeMeta: false,
+		});
+
+		expect(body.choices[0].message).toMatchObject({ annotations, refusal: null });
+		expect(body.choices[1].message).toMatchObject({ annotations: [], refusal: "I can't help with that." });
+	});
+
 	it("returns the observed Standard tier after a Priority fallback", () => {
 		const body = formatClientPayload({
 			ctx: {

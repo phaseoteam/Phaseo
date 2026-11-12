@@ -1,0 +1,38 @@
+[
+	{
+		"id": "video-webhook",
+		"query": "Generate videos through Phaseo and update our database when each one is ready via a webhook.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Persists the job ID right after creation",
+			"Makes the webhook consumer signature-aware, idempotent and tolerant of retries",
+			"Keeps a polling or websocket recovery path"
+		]
+	},
+	{
+		"id": "stuck-jobs",
+		"query": "Some video jobs show pending in our DB forever but Phaseo says completed.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Fetches the latest job status before changing durable state",
+			"Treats completed, failed, cancelled and expired as terminal"
+		]
+	},
+	{
+		"id": "batch-lifecycle",
+		"query": "Track Phaseo batch jobs and show their status in our admin page.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Uses lifecycle_status and polling_url",
+			"Separates job execution telemetry from webhook delivery telemetry"
+		]
+	},
+	{
+		"id": "not-for-sync-image",
+		"query": "Generate one image from a prompt with Phaseo and return it in the response.",
+		"should_trigger": false,
+		"expected_behavior": [
+			"Treats it as a synchronous request, not an async job flow"
+		]
+	}
+]

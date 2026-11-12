@@ -1,0 +1,38 @@
+[
+	{
+		"id": "new-client",
+		"query": "Set up @phaseo/sdk in this Next.js route handler and generate a short product description.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Creates one shared Phaseo client reading PHASEO_API_KEY",
+			"Uses generateResponse for new text work",
+			"Keeps the model ID configurable"
+		]
+	},
+	{
+		"id": "async-video-sdk",
+		"query": "Use the Phaseo TypeScript SDK to generate a 5-second video and show it when it's ready.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Uses generateVideo and stores the returned job ID",
+			"Polls or subscribes until a terminal state rather than assuming completion"
+		]
+	},
+	{
+		"id": "request-ids",
+		"query": "Our logs can't link failures back to Phaseo. We use @phaseo/sdk.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Logs request ID, model ID and preset slug when available",
+			"Does not log API keys or full prompts"
+		]
+	},
+	{
+		"id": "not-for-python",
+		"query": "Add Phaseo to our FastAPI service.",
+		"should_trigger": false,
+		"expected_behavior": [
+			"Uses the Python SDK skill, not the TypeScript one"
+		]
+	}
+]

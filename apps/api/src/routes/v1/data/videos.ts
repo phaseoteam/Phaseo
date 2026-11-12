@@ -3,6 +3,7 @@
 // Why: Keeps endpoint wiring separate from pipeline logic.
 // How: Wires HTTP routes to pipeline entrypoints and response helpers.
 
+import { normalizeParameterSpecs } from "@core/model-parameters";
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { makeEndpointHandler } from "@pipeline/index";
@@ -369,6 +370,7 @@ videosRoutes.get("/models", withRuntime(async (req) => {
 				supported_parameters: provider.params,
 				supported_params_detail: mapVideoParamDetailProviders(provider.params_detail),
 				supported_parameters_detail: mapVideoParamDetailProviders(provider.params_detail),
+				parameter_specs: normalizeParameterSpecs(provider.params_detail ?? {}),
 			})),
 			pricing: model.pricing,
 		})),

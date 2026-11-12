@@ -1,12 +1,13 @@
 # Apps Directory
 
-This folder holds the three main parts of **Phaseo** — each a core piece of the ecosystem.
+This folder holds the main parts of **Phaseo** — each a core piece of the ecosystem.
 
 | App              | Description                         |
 | ---------------- | ----------------------------------- |
 | [`web`](./web)   | The public website and dashboard.   |
 | [`docs`](./docs) | The Mintlify-powered documentation. |
 | [`api`](./api)   | The Cloudflare-based API gateway.   |
+| [`desktop`](./desktop) | Phaseo Desktop, the workspace app for chats and coding agents. |
 
 Each can run independently, but they’re designed to work together — forming a complete open infrastructure for model tracking and access.
 

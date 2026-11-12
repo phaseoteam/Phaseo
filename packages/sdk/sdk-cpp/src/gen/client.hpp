@@ -57,6 +57,18 @@ private:
 	Response response_;
 };
 
+inline bool has_header(const std::map<std::string, std::string>& headers, const std::string& name) {
+	for (const auto& [key, value] : headers) {
+		if (key.size() == name.size() && std::equal(key.begin(), key.end(), name.begin(), [](char a, char b) { return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b)); })) return true;
+	}
+	return false;
+}
+
+// Returns the credential for one request: an API key, or a short-lived token such as a
+// GitHub Actions or Vercel OIDC token for a trusted workload. Called before every attempt,
+// including retries, so it can refresh tokens; cache inside it if fetching one is expensive.
+using ApiKeyProvider = std::function<std::string()>;
+
 class Transport {
 public:
 	virtual ~Transport() = default;
@@ -76,6 +88,8 @@ public:
 		headers_["X-Phaseo-Client-Version"] = "1.0.2";
 	}
 	void set_header(const std::string& key, const std::string& value) { headers_[key] = value; }
+	// Sends `Authorization: Bearer <provider()>` on every attempt unless the client or request already sets Authorization.
+	void set_api_key_provider(ApiKeyProvider provider) { api_key_provider_ = std::move(provider); }
 	void set_timeout(std::chrono::milliseconds timeout) { timeout_ = timeout; }
 	void set_max_retries(unsigned int max_retries) { max_retries_ = max_retries; }
 	void set_request_hooks(std::function<void(const RequestEvent&)> on_request, std::function<void(const ResponseEvent&)> on_response, std::function<void(const RetryEvent&)> on_retry) { on_request_ = std::move(on_request); on_response_ = std::move(on_response); on_retry_ = std::move(on_retry); }
@@ -87,8 +101,10 @@ public:
 		const bool safe = method == "GET" || method == "HEAD" || method == "get" || method == "head";
 		const auto retries = safe ? options.max_retries.value_or(max_retries_) : 0;
 		for (unsigned int attempt = 0;; ++attempt) {
+			const bool use_provider = api_key_provider_ && !has_header(headers_, "Authorization") && !has_header(options.headers, "Authorization");
+			auto headers = use_provider ? authorized_headers() : std::map<std::string, std::string>{};
 			if (on_request_) on_request_({method, path, attempt});
-			auto response = transport_->request_with_options(method, base_url_ + path, body, headers_, options);
+			auto response = transport_->request_with_options(method, base_url_ + path, body, use_provider ? headers : headers_, options);
 			const bool retryable = response.status == 408 || response.status == 429 || response.status == 500 || response.status == 502 || response.status == 503 || response.status == 504;
 			if (retryable && attempt < retries) {
 				auto delay = std::chrono::milliseconds(250 * (1 << std::min(attempt, 5u)));
@@ -108,9 +124,20 @@ public:
 	}
 
 private:
+	std::map<std::string, std::string> authorized_headers() const {
+		std::string credential = api_key_provider_();
+		const auto first = credential.find_first_not_of(" \t\r\n");
+		if (first == std::string::npos) throw std::invalid_argument("The API key provider returned an empty credential.");
+		credential = credential.substr(first, credential.find_last_not_of(" \t\r\n") - first + 1);
+		auto headers = headers_;
+		headers["Authorization"] = "Bearer " + credential;
+		return headers;
+	}
+
 	std::string base_url_;
 	Transport* transport_;
 	std::map<std::string, std::string> headers_;
+	ApiKeyProvider api_key_provider_;
 	std::chrono::milliseconds timeout_{60000};
 	unsigned int max_retries_ = 0;
 	std::function<void(const RequestEvent&)> on_request_;

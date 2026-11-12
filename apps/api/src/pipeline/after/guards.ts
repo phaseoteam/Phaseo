@@ -32,7 +32,7 @@ export async function guardUpstreamStatus(
 
     if (!statusOk) {
         const stealth = isStealthRequest(ctx);
-        const safeDecisionError = ctx.endpoint === "decisions";
+        const safeDecisionError = ctx.endpoint === "decisions" || ctx.endpoint === "extractions";
         // Import error helpers dynamically to avoid circular deps
         const {
             safeJson,
@@ -52,7 +52,7 @@ export async function guardUpstreamStatus(
             null;
         let errCode = upstreamErrorCode;
         let description = safeDecisionError
-            ? `The decision provider returned status ${upstreamStatus}.`
+            ? `The ${ctx.endpoint === "extractions" ? "extraction" : "decision"} provider returned status ${upstreamStatus}.`
             : extractErrorDescription(body) ?? `Upstream returned status ${upstreamStatus}`;
         let details: Array<Record<string, unknown>> | undefined;
         const unsupportedParamSignal = extractUpstreamUnsupportedParamSignal({

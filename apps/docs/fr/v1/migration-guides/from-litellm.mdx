@@ -5,39 +5,30 @@ description: "Remplacez un proxy LiteLLM par Phaseo tout en conservant le chemin
 icon: "blocks"
 ---
 
-Utilisez ce guide si votre application appelle un proxy LiteLLM depuis un client compatible avec OpenAI. Commencez par remplacer le proxy, puis remappez explicitement les alias, les règles de routage et les valeurs par défaut partagées.
+Pointez les clients qui appellent votre proxy LiteLLM vers `https://api.phaseo.app/v1` avec une clé Phaseo, puis faites correspondre délibérément chaque alias `model_name` et chaque paramètre du proxy. Pour conserver LiteLLM et utiliser plutôt Phaseo comme service en amont, consultez [Intégration LiteLLM](../guides/integrations/litellm).
 
-## Ce qui change
-
-| Paramètre | Avant | Après |
+| Paramètre | Proxy LiteLLM | Phaseo |
 | --- | --- | --- |
-| URL de base | Votre proxy LiteLLM | `https://api.phaseo.app/v1` |
-| Clé API | Clé du proxy LiteLLM | `PHASEO_API_KEY` |
-| Alias de modèles | Configuration LiteLLM | Identifiants de modèles Phaseo ou alias de l’application |
-| Valeurs par défaut du routage | Configuration LiteLLM | Préréglages et paramètres de routage Phaseo |
+| URL de base | Votre proxy, souvent `http://localhost:4000` | `https://api.phaseo.app/v1` |
+| Clé API | `LITELLM_MASTER_KEY` ou une clé virtuelle | `PHASEO_API_KEY` |
+| Modèle | Alias `model_name` de `config.yaml` | Identifiant de modèle Phaseo, un préréglage (`"model": "@slug"`) ou une fonction de correspondance unique |
+| Routage et valeurs par défaut | `router_settings`, `litellm_settings` | [Préréglages](../guides/presets) et [Routage et secours](../guides/routing-and-fallbacks) |
 
-<Steps>
-<Step title="Inventoriez la configuration du proxy">
-
-Listez tous les alias de modèles, modèles de secours, règles de fournisseur, politiques de nouvelle tentative, budgets, callbacks et variables d’environnement de votre déploiement LiteLLM actuel. Distinguez les paramètres de politique partagés de ceux propres à une seule application.
-
-</Step>
-
-<Step title="Remplacez le point de terminaison du proxy">
-
-Conservez le code de requête compatible avec OpenAI et modifiez l’URL de base et la clé.
+## Changer de client
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// Avant :
+// new OpenAI({ apiKey: process.env.LITELLM_API_KEY, baseURL: process.env.LITELLM_BASE_URL });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -57,40 +48,41 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+Chaque alias doit correspondre explicitement à un identifiant de `GET /v1/models?format=openai`. Si les appelants utilisent des alias internes, traduisez-les dans une seule fonction à la frontière du client au lieu de modifier chaque requête.
 
-<Step title="Mappez les alias et les règles de routage">
+## Faire correspondre la configuration du proxy
 
-Vérifiez chaque modèle de production avec `GET /v1/models`. Si les clients dépendent d’alias internes, normalisez-les à un seul point d’entrée de l’application au lieu de modifier chaque requête.
+Inventoriez les callbacks, les budgets et les nouvelles tentatives avant de retirer le proxy : ils s’arrêtent sans bruit lorsqu’il disparaît.
 
-Déplacez les prompts, paramètres et restrictions de fournisseur réutilisables dans les [préréglages](../guides/presets.mdx). Configurez le classement des fournisseurs et les modèles de secours avec le [routage et les solutions de repli](../guides/routing-and-fallbacks.mdx).
+| LiteLLM | Sur Phaseo |
+| --- | --- |
+| `fallbacks` | Tableau `models` ou secours des routes dynamiques, essayés sur `429`, `500`, `502`, `503` et `504`, jamais sur les erreurs de requête. |
+| `context_window_fallbacks`, `content_policy_fallbacks` | Pas d’équivalent : Phaseo ne bascule jamais sur un secours après un `400`. Gérez ces cas dans l’application. |
+| `routing_strategy` | Mode de routage de l’espace de travail ou `provider.sort` (`price`, `latency`, `throughput`). |
+| Choix du fournisseur par déploiement | `provider.order`, `provider.only`, `provider.ignore`, ou un [identifiant qualifié par le fournisseur](../guides/provider-qualified-models) comme `provider:org/model`, qui ne bascule pas vers d’autres fournisseurs. |
+| Déploiements auto-hébergés (vLLM et similaires) | [Modèles privés](../guides/private-models), qui nécessitent un endpoint `/chat/completions` HTTPS public compatible OpenAI avec authentification bearer. |
+| Cache de réponses (`litellm_settings.cache`) | Pas de cache de réponses. Mettez en cache dans l’application si nécessaire ; la [mise en cache des prompts](../guides/prompt-caching) réduit tout de même le coût des entrées. |
+| Clés virtuelles (`max_budget`, `rpm_limit`, `tpm_limit`, `max_parallel_requests`, `models`) | Clés API avec limites de dépenses et modèles autorisés, budgets, et règles de limite de débit pour les requêtes par minute, les jetons par minute et les requêtes simultanées. Consultez [Limites](../api-reference/limits). |
+| Budgets d’équipe, `metadata.tags` | Budgets de département et [étiquettes](../guides/request-labels) `X-Phaseo-Metadata`. Les budgets par utilisateur final ne correspondent qu’à une règle de limite de débit par utilisateur final ; il n’y a pas de plafond de dépenses par utilisateur final. |
+| `guardrails` (Presidio, Lakera et similaires) | Les garde-fous de clé analysent les requêtes pour détecter l’injection de prompt et les données personnelles. Les réponses ne sont pas analysées. |
+| Callbacks (`success_callback`, Langfuse, Datadog, OpenTelemetry) | [Destinations d’observabilité](../guides/integrations/observability) ou traçage côté client. Le champ de corps `metadata` est exporté sous la forme `phaseo.metadata.<key>`. |
+| Clés API de fournisseur dans la configuration | BYOK (**Paramètres → BYOK** ou `POST /v1/byok`), ou crédits Phaseo. Définissez `byok_fallback_enabled` avec **Paramètres → BYOK** pour basculer sur les crédits. |
 
-</Step>
+Un proxy fait passer le trafic de toute une équipe par le propriétaire d’une seule clé ; il partage donc le quota de requêtes par minute de cet utilisateur, qui est de 10 pour un nouvel espace de travail. Consultez [Limites de la passerelle](../api-reference/limits#gateway-limits) et obtenez une limite plus élevée avant la bascule.
 
-<Step title="Validez les flux de production">
+## Tester et déployer
 
-Testez le streaming, les outils, les sorties structurées, les nouvelles tentatives, la conversion des erreurs et toute observabilité pilotée par des callbacks que gérait votre déploiement LiteLLM. Comparez la latence, les réponses, l’utilisation des jetons et le coût avant de transférer progressivement le trafic.
+Testez le streaming, les outils, les sorties structurées, les nouvelles tentatives, la correspondance des erreurs et toute télémétrie pilotée par des callbacks que gérait le proxy. Comparez la latence, la sortie, l’utilisation des jetons et le coût avant de déplacer le trafic progressivement. Avant la bascule, vérifiez que :
 
-</Step>
-</Steps>
-
-## Liste de contrôle de la migration
-
-- Les URL, clés et dépendances de déploiement LiteLLM ont été identifiées.
-- Chaque modèle et alias de production possède un mappage Phaseo explicite.
-- Les valeurs par défaut partagées ont été déplacées vers des préréglages ou un point d’entrée unique de l’application.
-- Le streaming, les outils et les sorties structurées fonctionnent en préproduction lorsqu’ils sont utilisés.
-- Les callbacks et données de télémétrie nécessaires ont un remplacement prévu.
-- Le retour arrière se limite toujours à modifier la clé et le point de terminaison dans la configuration.
-
-## Étapes suivantes
-
-- [Préréglages](../guides/presets.mdx)
-- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
-- [Observabilité](../guides/integrations/observability.mdx)
+- chaque URL, clé et variable `LITELLM_*` de LiteLLM est identifiée ;
+- chaque alias de production a une correspondance Phaseo explicite ;
+- les valeurs par défaut partagées se trouvent dans des préréglages ou dans une seule fonction de frontière ;
+- les callbacks et la télémétrie nécessaires ont un remplaçant ;
+- vous avez décidé si LiteLLM, Phaseo ou les deux font foi pour les dépenses ;
+- le retour arrière se limite toujours à un changement d’URL de base et de clé.

@@ -1,104 +1,135 @@
 ---
 title: "Exécuter des outils locaux d’agent en parallèle"
 icon: "network"
-description: "Limitez l’exécution parallèle des outils locaux avec l’Agent SDK TypeScript afin qu’un tour de modèle puisse réunir des informations indépendantes sans exécuter chaque appel en série."
+description: "Limitez l’exécution parallèle des outils locaux avec l’Agent SDK TypeScript afin qu’un tour de modèle puisse réunir des informations indépendantes sans exécuter chaque appel d’outil en série."
 ---
 
-Utilisez cette recette lorsqu’un tour d’agent peut appeler sans risque plusieurs outils locaux indépendants et que vous souhaitez les exécuter en parallèle tout en préservant l’ordre déterministe des résultats.
+Définissez `toolExecution.toolConcurrency` pour que l’Agent SDK TypeScript exécute en même temps plusieurs appels d’outils indépendants d’un même tour de modèle, au lieu de les enchaîner. À la fin, vous avez un agent qui réunit en parallèle la documentation, l’état et le contexte des incidents, tout en enregistrant les résultats dans l’ordre où le modèle les a demandés.
 
-## Quand l’utiliser
+Les outils renvoient des données d’exemple fixes : le script est donc illustratif ; remplacez-les par vos propres recherches en lecture seule. Une version packagée se trouve dans `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
 
-Utilisez `toolExecution.toolConcurrency` lorsque :
+## Le construire
 
-- le modèle peut appeler plusieurs outils locaux pendant un même tour
-- ces outils ne dépendent pas des résultats des autres
-- l’exécution séquentielle ferait perdre du temps aux workers
-- vous souhaitez conserver l’ordre d’origine des appels dans les messages de résultat enregistrés
+<Steps>
+<Step title="Installer">
 
-Évitez une forte concurrence si un outil modifie un état partagé ou si les outils suivants dépendent des résultats précédents.
+```bash
+npm install @phaseo/agent-sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
 
-## Exemple
+</Step>
+<Step title="Écrire l’agent">
 
-```ts
-import {
-  createAgent,
-  createGatewayAgentClient,
-  defineTool,
-} from "@phaseo/agent-sdk";
+```ts parallel-agent.ts
+import { z } from "zod";
+import { createAgent, createGatewayAgentClient, defineTool } from "@phaseo/agent-sdk";
 
 const fetchDocs = defineTool({
   id: "fetch-docs",
-  async execute(input: { slug: string }) {
-    return {
-      slug: input.slug,
-      summary: `Docs summary for ${input.slug}`,
-    };
+  description: "Return a short summary of one Phaseo docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: { slug: { type: "string" } },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ slug: z.string().regex(/^[a-z0-9/-]{1,80}$/) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ slug }) {
+    return { slug, summary: `Docs summary for ${slug}` };
   },
 });
 
 const fetchStatus = defineTool({
   id: "fetch-status",
-  async execute(input: { component: string }) {
-    return {
-      component: input.component,
-      status: "operational",
-    };
+  description: "Return the status of one Phaseo component.",
+  parameters: {
+    type: "object",
+    properties: { component: { type: "string", enum: ["gateway", "dashboard", "async-jobs"] } },
+    required: ["component"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ component: z.enum(["gateway", "dashboard", "async-jobs"]) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ component }) {
+    return { component, status: "operational" };
   },
 });
 
 const fetchIncidents = defineTool({
   id: "fetch-incidents",
-  async execute(input: { service: string }) {
-    return {
-      service: input.service,
-      openIncidents: 0,
-    };
+  description: "Return the open incident count for one service.",
+  parameters: {
+    type: "object",
+    properties: { service: { type: "string", enum: ["gateway", "dashboard", "async-jobs"] } },
+    required: ["service"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ service: z.enum(["gateway", "dashboard", "async-jobs"]) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ service }) {
+    return { service, openIncidents: 0 };
   },
 });
 
 const agent = createAgent({
   id: "parallel-tool-agent",
-  model: "phaseo/free",
+  model: "openai/gpt-6-astra",
   instructions:
     "Use the available tools to gather context, then return one concise operational summary.",
   tools: [fetchDocs, fetchStatus, fetchIncidents],
-  toolExecution: {
-    toolConcurrency: 3,
-  },
+  toolExecution: { toolConcurrency: 3 },
+  maxSteps: 4,
 });
 
 const result = await agent.run({
   input:
-    "Fetch the presets docs, the gateway status component, and the async-jobs incident digest, then summarize the current state.",
+    "Fetch the presets docs, the gateway status, and the async-jobs incident digest, then summarize the current state.",
   client: createGatewayAgentClient({
-    clientOptions: {
-      apiKey: process.env.PHASEO_API_KEY!,
-    },
+    clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+    parallelToolCalls: true,
   }),
+  onEvent(event) {
+    if (event.type === "tool.started" || event.type === "tool.completed") {
+      console.log(event.type, event.toolName, event.timestamp);
+    }
+  },
 });
+
+console.log(result.output);
 ```
 
-Consultez la version fournie dans `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
+</Step>
+<Step title="L’exécuter">
 
-## Garanties du runtime
+```bash
+npx tsx parallel-agent.ts
+```
 
-- les outils locaux peuvent s’exécuter en parallèle jusqu’à la limite `toolConcurrency` configurée
-- les événements `tool.started` et `tool.completed` continuent d’être émis pour chaque outil
-- les messages de résultat enregistrés conservent l’ordre d’origine des appels
-- un point de contrôle est toujours enregistré à la fin de la phase d’outils
-- le délai `timeoutMs` continue de s’appliquer à chaque outil
+</Step>
+</Steps>
 
-## Conseils opérationnels
+## Vérifier que ça fonctionne
 
-- commencez par une faible valeur de concurrence, comme `2` ou `3`
-- privilégiez des outils locaux idempotents et avec peu d’effets secondaires
-- utilisez `timeoutMs` pour qu’une dépendance bloquée ne monopolise pas tous les workers
-- n’ajoutez `store` que si votre application a réellement besoin de reprise ou de coordination distante
+- Quand le modèle demande les trois outils dans un même tour, les trois lignes `tool.started` s’affichent avant les lignes `tool.completed` correspondantes, avec des horodatages proches.
+- `result.messages` liste les résultats des outils dans l’ordre des appels d’outils du modèle, quel que soit l’ordre dans lequel ils se sont terminés.
+- L’exécution se termine avec un seul résumé dans `result.output`.
 
-## Validation
+## Ce qui s’exécute en même temps
 
-Après avoir activé ce modèle :
+| Paramètre | Effet |
+| --- | --- |
+| `toolExecution.toolConcurrency` | Jusqu’à ce nombre d’appels d’outils d’un même tour s’exécutent à la fois. Valeur par défaut : `1`. |
+| `parallelSafe: true` sur chaque outil du tour | Jusqu’à 8 s’exécutent à la fois, ou `toolConcurrency` si cette valeur est plus élevée. Réservez-le aux outils en lecture seule. |
+| `timeoutMs` sur un outil | L’appel échoue après ce délai, pour qu’une dépendance bloquée ne puisse pas occuper tous les emplacements. |
+| `parallelToolCalls` sur le client Gateway | Permet au modèle de demander plusieurs appels d’outils dans un même tour ; qu’il le fasse ou non dépend du modèle. |
 
-- exécutez les tests de boucle d’agent qui couvrent les tours faisant appel à plusieurs outils
-- vérifiez que le workflow produit toujours les messages de résultat dans l’ordre
-- vérifiez que les journaux d’exploitation indiquent toujours les événements `tool.started` et `tool.completed` attendus
+`tool.started` et `tool.completed` sont toujours émis pour chaque appel, et l’exécution enregistre un point de reprise une fois la phase d’outils terminée.
+
+## Garder l’exécution sûre
+
+N’utilisez la concurrence que pour des outils qui ne dépendent pas de la sortie des autres et ne modifient pas d’état partagé. Commencez à `2` ou `3`, gardez des outils idempotents avec peu d’effets de bord et validez chaque argument avec `inputSchema`, comme ci-dessus. Ajoutez un accesseur `state`, comme dans la [boucle durable](./agent-sdk-durable-loop), seulement si vous devez reprendre des exécutions. Avant de vous y fier, lancez vos tests qui couvrent les tours à plusieurs outils et vérifiez l’ordre des résultats.

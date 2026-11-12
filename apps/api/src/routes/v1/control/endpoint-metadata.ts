@@ -104,6 +104,12 @@ const ENDPOINT_METADATA: EndpointMetadata[] = [
         aliases: ["systemone", "system.one", "decision.make", "typed.decisions"],
     },
     {
+        id: "extraction.extract",
+        public_path: "/v1/extractions",
+        collection: "decisions",
+        aliases: [],
+    },
+    {
         id: "moderations",
         public_path: "/v1/moderations",
         collection: "moderation",

@@ -393,4 +393,76 @@ describe("pricing engine unit_size handling", () => {
 			unit_price_usd: "0.000000000",
 		});
 	});
+
+	const emptyCard = (provider: string): PriceCard => ({
+		provider,
+		model: "model",
+		endpoint: "text.generate",
+		effective_from: null,
+		effective_to: null,
+		currency: "USD",
+		version: null,
+		rules: [],
+	});
+
+	it.each(["anthropic-us", "anthropic-aws", "anthropic-aws-us", "openai-eu"])(
+		"bills native web search at the documented 10 USD per 1,000 on %s when the card has no row",
+		(provider) => {
+			const priced = computeBill({ server_tool_use: { web_search_requests: 2 } }, emptyCard(provider), {}, "standard");
+			expect(priced.pricing.total_nanos).toBe(20_000_000);
+			expect(priced.pricing.lines[0]).toMatchObject({ dimension: "native_web_search_requests", quantity: 2 });
+		},
+	);
+
+	it("bills Claude Platform on AWS web fetch at $0, as on the Claude API", () => {
+		const priced = computeBill({ server_tool_use: { web_fetch_requests: 1 } }, emptyCard("anthropic-aws"), {}, "standard");
+		expect(priced.pricing.lines[0]).toMatchObject({ dimension: "native_web_fetch_requests", unit_price_usd: "0.000000000" });
+	});
+
+	it("does not invent a web search price for providers without a documented one", () => {
+		const priced = computeBill({ server_tool_use: { web_search_requests: 2 } }, emptyCard("amazon-bedrock"), {}, "standard");
+		expect(priced.pricing.total_nanos).toBe(0);
+	});
+
+	it("bills xAI server-side tools at the documented per-call and per-item prices", () => {
+		const priced = computeBill(
+			{ server_tool_use: { web_search_requests: 2, code_execution_requests: 1, x_search_posts: 10, x_search_users: 3 } },
+			emptyCard("spacex-ai"),
+			{},
+			"standard",
+		);
+		const byMeter = Object.fromEntries(priced.pricing.lines.map((line: any) => [line.dimension, line.line_nanos]));
+		expect(byMeter).toEqual({
+			native_web_search_requests: 10_000_000,
+			native_code_execution_requests: 5_000_000,
+			native_x_search_posts: 50_000_000,
+			native_x_search_users: 30_000_000,
+		});
+	});
+
+	it("bills Meta web search queries at $2.50 per 1,000 when the card has no row", () => {
+		const priced = computeBill({ native_web_search_requests: 4 }, emptyCard("meta"), {}, "standard");
+		expect(priced.pricing.total_nanos).toBe(10_000_000);
+	});
+
+	it("lets a price row match Claude's reported inference_geo", () => {
+		const tokenRule = (price: string, match: any[] = []) => ({
+			pricing_plan: "standard",
+			meter: "input_text_tokens" as const,
+			unit: "token",
+			unit_size: 1_000_000,
+			price_per_unit: price,
+			currency: "USD",
+			match,
+			priority: 100,
+		});
+		const geoCard: PriceCard = {
+			...emptyCard("anthropic"),
+			rules: [tokenRule("2"), tokenRule("2.2", [{ path: "inference_geo", op: "eq", value: "us" }])],
+		};
+		const usd = (usage: Record<string, unknown>) => computeBill(usage, geoCard, {}, "standard").pricing.total_nanos / 1e9;
+		expect(usd({ input_text_tokens: 1_000_000, inference_geo: "us" })).toBe(2.2);
+		expect(usd({ input_text_tokens: 1_000_000, inference_geo: "global" })).toBe(2);
+		expect(usd({ input_text_tokens: 1_000_000 })).toBe(2);
+	});
 });

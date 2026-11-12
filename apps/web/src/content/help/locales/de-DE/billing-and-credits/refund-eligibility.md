@@ -12,4 +12,4 @@ Ein Kauf ist nicht mehr berechtigt, wenn:
 - das 24-Stunden-Fenster abgelaufen ist oder
 - Guthaben aus diesem Kauf verwendet wurde.
 
-Den Status können Sie unter `Einstellungen -> Guthaben` prüfen.
+Den Status kannst du unter `Einstellungen -> Guthaben` prüfen.

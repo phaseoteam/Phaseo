@@ -1,17 +1,19 @@
 ---
 icon: "radio"
 title: "Stream Text (AI SDK)"
+sidebarTitle: "Stream text"
 description: "Streaming text generation with Vercel AI SDK and Phaseo."
+"og:image": "https://phaseo.app/og/dynamic?title=Stream%20Text%20%28AI%20SDK%29&description=Streaming%20text%20generation%20with%20Vercel%20AI%20SDK%20and%20Phaseo.&pathname=/docs/v1/sdk-reference/sdk/stream-text"
 ---
 
-Use `streamText` when you want partial tokens as they arrive.
+Call `streamText` with `phaseo(modelId)` and read `textStream` to get text as it arrives. `streamText` returns at once; read `providerMetadata` after the stream finishes.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { streamText } from "ai";
 
 const result = streamText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "Explain SSE streaming in plain language.",
 });
 
@@ -22,14 +24,14 @@ for await (const chunk of result.textStream) {
 console.log(await result.providerMetadata);
 ```
 
-## Streaming with messages
+## Stream from chat history
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { streamText } from "ai";
 
 const result = streamText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   messages: [
     { role: "user", content: "Write a five-step rollout plan for a gateway migration." },
   ],
@@ -44,8 +46,19 @@ console.log(text);
 console.log(await result.providerMetadata);
 ```
 
-## Production tips
+## Stop an abandoned stream
 
-- Prefer streaming for long responses and interactive UIs.
-- Handle cancellation/timeout in your runtime for abandoned streams.
-- Keep model IDs fresh via `/v1/models` to avoid stale aliases.
+Pass an `abortSignal` to `streamText` and abort it when the user leaves or a timeout passes, so the request doesn't keep running:
+
+```ts
+const controller = new AbortController();
+setTimeout(() => controller.abort(), 60_000);
+
+const result = streamText({
+  model: phaseo("openai/gpt-6-astra"),
+  prompt: "Write a long report.",
+  abortSignal: controller.signal,
+});
+```
+
+Read model IDs from `/v1/models` rather than hard-coding them; see [Model Discovery](/v1/sdk-reference/sdk/get-models).

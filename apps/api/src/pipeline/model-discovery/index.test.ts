@@ -7,13 +7,22 @@ vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => getSupabaseAdminMock(),
 }));
 
-import { fetchPreviousModelsByProviders, markPendingModelRemovals } from "./index";
+import {
+	ABANDONED_RUN_ERROR,
+	closeAbandonedRuns,
+	dedupeSeenModelRows,
+	fetchPreviousModelsByProviders,
+	markPendingModelRemovals,
+	shouldCheckPricingPages,
+	toProviderCheckOutcome,
+} from "./index";
 
 type SeenModelRow = {
 	provider_id: string;
 	model_id: string;
 	watch_snapshot?: unknown;
 	removal_pending?: boolean;
+	last_seen_at?: string;
 };
 
 function buildPagedSupabase(rows: SeenModelRow[]) {
@@ -85,6 +94,76 @@ describe("fetchPreviousModelsByProviders", () => {
 	});
 });
 
+describe("dedupeSeenModelRows", () => {
+	function seenRow(providerId: string, modelId: string, contextLength: number | null = null) {
+		return {
+			provider_id: providerId,
+			provider_name: providerId,
+			model_id: modelId,
+			watch_snapshot: { contextLength, maxCompletionTokens: null, pricingDetails: null, pricingFingerprint: null },
+			model_details: null,
+			pricing_details: null,
+			last_seen_at: "2026-10-09T11:05:00.000Z",
+			last_run_id: "run-1",
+			removal_pending: false,
+		};
+	}
+
+	it("keeps one row per provider and model so ON CONFLICT never sees a key twice", () => {
+		const rows = [
+			seenRow("empiriolabs", "model-a", 1_000),
+			seenRow("empiriolabs", "model-b"),
+			seenRow("empiriolabs", "model-a", 2_000),
+			seenRow("other", "model-a"),
+		];
+
+		const deduped = dedupeSeenModelRows(rows);
+
+		expect(deduped.map((row) => [row.provider_id, row.model_id])).toEqual([
+			["empiriolabs", "model-a"],
+			["empiriolabs", "model-b"],
+			["other", "model-a"],
+		]);
+		// First occurrence wins, so the result does not depend on the later duplicate.
+		expect(deduped[0]?.watch_snapshot.contextLength).toBe(1_000);
+	});
+
+	it("reports each dropped duplicate so the source provider can be logged", () => {
+		const dropped: string[] = [];
+
+		dedupeSeenModelRows(
+			[
+				seenRow("empiriolabs", "model-a"),
+				seenRow("empiriolabs", "model-a"),
+				seenRow("empiriolabs", "model-b"),
+				seenRow("empiriolabs", "model-b"),
+				seenRow("other", "model-a"),
+			],
+			(row) => dropped.push(`${row.provider_id}/${row.model_id}`),
+		);
+
+		expect(dropped).toEqual(["empiriolabs/model-a", "empiriolabs/model-b"]);
+	});
+
+	it("does not call the duplicate callback when every key is unique", () => {
+		const onDuplicate = vi.fn();
+
+		dedupeSeenModelRows([seenRow("a", "m1"), seenRow("a", "m2"), seenRow("b", "m1")], onDuplicate);
+
+		expect(onDuplicate).not.toHaveBeenCalled();
+	});
+
+	it("treats case and whitespace variants as distinct keys, matching the primary key", () => {
+		const deduped = dedupeSeenModelRows([
+			seenRow("provider", "Model-A"),
+			seenRow("provider", "model-a"),
+			seenRow("provider", "model-a "),
+		]);
+
+		expect(deduped).toHaveLength(3);
+	});
+});
+
 describe("markPendingModelRemovals", () => {
 	it("refreshes retention while marking the first missing check", async () => {
 		const query = {
@@ -103,5 +182,101 @@ describe("markPendingModelRemovals", () => {
 			removal_pending: true,
 			last_seen_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
 		});
+	});
+});
+
+describe("fetchPreviousModelsByProviders write state", () => {
+	it("keeps each row's snapshot key, last_seen_at and pending flag for the write decision", async () => {
+		const supabase = buildPagedSupabase([{
+			provider_id: "vercel",
+			model_id: "openai/gpt-6",
+			watch_snapshot: { pricingFingerprint: null, contextLength: 400_000, maxCompletionTokens: null, pricingDetails: null },
+			removal_pending: false,
+			last_seen_at: "2026-10-17T09:00:00.000Z",
+		} as SeenModelRow]);
+		getSupabaseAdminMock.mockReturnValue(supabase.client);
+
+		const state = await fetchPreviousModelsByProviders(["vercel"]);
+
+		expect(state.byProvider.get("vercel")?.storedByModelId.get("openai/gpt-6")).toEqual({
+			snapshot: { pricingFingerprint: null, contextLength: 400_000, maxCompletionTokens: null, pricingDetails: null },
+			lastSeenAt: "2026-10-17T09:00:00.000Z",
+			removalPending: false,
+		});
+	});
+});
+
+describe("shouldCheckPricingPages", () => {
+	const scheduled = (scheduledAtIso: string) => ({ trigger: "scheduled" as const, source: "cloudflare_cron:all-providers", scheduledAtIso });
+
+	it("checks official pricing pages on the top-of-hour sweep only", () => {
+		const startedAt = new Date("2026-10-17T15:03:01.000Z");
+		expect(shouldCheckPricingPages(scheduled("2026-10-17T15:00:00.000Z"), startedAt)).toBe(true);
+		expect(shouldCheckPricingPages(scheduled("2026-10-17T15:03:00.000Z"), startedAt)).toBe(false);
+		expect(shouldCheckPricingPages(scheduled("2026-10-17T15:45:00.000Z"), startedAt)).toBe(false);
+	});
+
+	it("always checks them on manual runs, and only on the first shard", () => {
+		const startedAt = new Date("2026-10-17T15:03:01.000Z");
+		expect(shouldCheckPricingPages({ trigger: "manual", source: "script" }, startedAt)).toBe(true);
+		expect(shouldCheckPricingPages({ ...scheduled("2026-10-17T15:00:00.000Z"), shardIndex: 1, shardCount: 2 }, startedAt)).toBe(false);
+	});
+});
+
+describe("toProviderCheckOutcome", () => {
+	it("maps each provider result onto the health outcome it records", () => {
+		const mistral = {
+			providerId: "mistral", providerName: "Mistral", status: "success" as const, modelCount: 54, durationMs: 190, change: null, payloadFingerprint: "abc",
+		};
+		expect(toProviderCheckOutcome(mistral)).toEqual({
+			providerId: "mistral", providerName: "Mistral", status: "ok", reason: null, modelCount: 54, durationMs: 190, recorded: true, payloadFingerprint: "abc",
+		});
+		expect(toProviderCheckOutcome({
+			providerId: "avian", providerName: "Avian", status: "skipped", reason: "Missing env: AVIAN_API_KEY",
+		})).toEqual({ providerId: "avian", providerName: "Avian", status: "skipped", reason: "Missing env: AVIAN_API_KEY", modelCount: null, durationMs: null, recorded: true, payloadFingerprint: null });
+		expect(toProviderCheckOutcome({
+			providerId: "stepfun", providerName: "StepFun", status: "error", reason: "HTTP 401", durationMs: 510,
+		})).toEqual({ providerId: "stepfun", providerName: "StepFun", status: "error", reason: "HTTP 401", modelCount: null, durationMs: 510, recorded: true, payloadFingerprint: null });
+	});
+
+	it("does not count a success, or its response fingerprint, as recorded when its models were not persisted", () => {
+		const mistral = { providerId: "mistral", providerName: "Mistral", status: "success" as const, modelCount: 54, durationMs: 190, change: null, payloadFingerprint: "abc" };
+		expect(toProviderCheckOutcome(mistral, false)).toMatchObject({ recorded: false, payloadFingerprint: undefined });
+		expect(toProviderCheckOutcome({ ...mistral, firstCheckDeferred: true, payloadFingerprint: null })).toMatchObject({ recorded: false, payloadFingerprint: null });
+	});
+});
+
+describe("closeAbandonedRuns", () => {
+	function updateMock(result: { data: unknown; error: unknown }) {
+		const calls: Array<[string, ...unknown[]]> = [];
+		const builder: any = {};
+		for (const method of ["update", "eq", "lt", "neq"]) {
+			builder[method] = (...args: unknown[]) => { calls.push([method, ...args]); return builder; };
+		}
+		builder.select = async () => result;
+		getSupabaseAdminMock.mockReturnValue({ from: (table: string) => { calls.push(["from", table]); return builder; } });
+		return calls;
+	}
+
+	it("fails scheduled runs still marked running after 30 minutes, except the current run", async () => {
+		const calls = updateMock({ data: [{ id: "old-1" }, { id: "old-2" }], error: null });
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		const now = new Date("2026-10-09T20:00:00Z");
+		expect(await closeAbandonedRuns(now, "current-run")).toBe(2);
+		expect(calls).toEqual([
+			["from", "model_discovery_runs"],
+			["update", { status: "failed", finished_at: now.toISOString(), error: ABANDONED_RUN_ERROR }],
+			["eq", "status", "running"],
+			// Manual runs from scripts/model-discovery may legitimately run longer.
+			["eq", "trigger", "scheduled"],
+			["lt", "started_at", "2026-10-09T19:30:00.000Z"],
+			["neq", "id", "current-run"],
+		]);
+	});
+
+	it("never blocks discovery when the update fails", async () => {
+		updateMock({ data: null, error: { message: "statement timeout" } });
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		expect(await closeAbandonedRuns(new Date(), "current-run")).toBe(0);
 	});
 });

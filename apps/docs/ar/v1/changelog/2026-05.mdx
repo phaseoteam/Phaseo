@@ -3,42 +3,88 @@ title: "مايو"
 description: "تحديثات منتجات Phaseo وتغييرات SDK وإصدارات النماذج لشهر مايو 2026."
 ---
 
-<Update label="31 مايو 2026" tags={["إصدارات النماذج"]}>
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-### إصدارات النماذج
+<ChangelogFilters labels={{"product":"المنتج","api":"API وحزم SDK","models":"النماذج"}} clearLabel="مسح" />
+
+<Update label="31 مايو 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- **تغيير غير متوافق:** تختار طلبات النص المستوى عبر `service_tier` فقط؛ استبدل `speed: "fast"` بـ `service_tier: "priority"`، وأصبحت الطلبات المتزامنة التي تستخدم `service_tier: "batch"` تُرجع خطأ تحقق؛ راجع [مستويات الخدمة](../guides/service-tiers.mdx) ([#565](https://github.com/phaseoteam/Phaseo/pull/565)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Cosmos3 Super Reasoner صورة إصدار النموذج](../../../images/model-releases/2026-05-31--nvidia--cosmos3-super-reasoner.png)
 
 - [Nvidia: Cosmos3 Super Reasoner](https://phaseo.app/models/nvidia/cosmos3-super-reasoner)
 
+</div>
+
 </Update>
 
-<Update label="30 مايو 2026" tags={["إصدارات النماذج"]}>
+<Update label="30 مايو 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Grok Imagine Video 1.5 Preview صورة إصدار النموذج](../../../images/model-releases/2026-05-30--x-ai--grok-imagine-video-1-5-preview.png)
 
 - [xAI: Grok Imagine Video 1.5 Preview](https://phaseo.app/models/x-ai/grok-imagine-video-1.5-preview)
 
+</div>
+
 </Update>
 
-<Update label="29 مايو 2026" tags={["إصدارات النماذج"]}>
+<Update label="29 مايو 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تعرض أدلة البدء السريع في صفحات النماذج نقاط النهاية التي يدعمها النموذج مع طريقة HTTP لكل منها، واختيار إحداها يحدّث مثال الشيفرة ([#521](https://github.com/phaseoteam/Phaseo/pull/521)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- أصبحت الطلبات التي تستخدم `service_tier: "priority"` تُوجَّه فقط إلى المزوّدين الذين يدعمون هذا المستوى، وتخدم Venice طلبات الأولوية لـ Claude Opus 4.8 بمعرّف النموذج نفسه؛ راجع [مستويات الخدمة](../guides/service-tiers.mdx) ([#524](https://github.com/phaseoteam/Phaseo/pull/524), [#530](https://github.com/phaseoteam/Phaseo/pull/530)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 - [StepFun: Step 3.7 Flash](https://phaseo.app/models/stepfun/step-3.7-flash)
 
+</div>
+
 </Update>
 
-<Update label="28 مايو 2026" tags={["الميزات","إصدارات النماذج","دعم المزوّدين","التسعير"]}>
+<Update label="28 مايو 2026">
 
-### الميزات
+<div data-changelog-category="product">
 
-- تعرض محددات الأسعار الآن إصدارات Qwen 3.7 Max بوضوح أكبر، ما يقلل الالتباس بين المسارات التجريبية والمؤرخة والحالية ([PR #418](https://github.com/phaseoteam/Phaseo/pull/418)).
-- حُدّثت علامة Anthropic لدى AWS لتمييز مسارات Bedrock وClaude Platform بسهولة أكبر في قوائم المزوّدين ([PR #415](https://github.com/phaseoteam/Phaseo/pull/415)).
+<p className="changelog-category">المنتج</p>
 
-### إصدارات النماذج
+- تُبقي لوحات أسعار النماذج محدد الخطة ظاهرًا عندما يكون لدى المزوّد خطة نشطة واحدة فقط، مثل تسعير الدفعات فقط ([#515](https://github.com/phaseoteam/Phaseo/pull/515)).
+- تعرض مسارات Anthropic on AWS شعار AWS وأسماء مزوّدين أوضح في أسعار النماذج وقوائم المزوّدين ([#519](https://github.com/phaseoteam/Phaseo/pull/519), [#525](https://github.com/phaseoteam/Phaseo/pull/525), [#526](https://github.com/phaseoteam/Phaseo/pull/526)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Claude Opus 4.8 صورة إصدار النموذج](../../../images/model-releases/2026-05-28--anthropic--claude-opus-4-8.png)
 
@@ -47,109 +93,178 @@ description: "تحديثات منتجات Phaseo وتغييرات SDK وإصدا
 - [Google: Gemini 3 Pro Image (Nano Banana Pro)](https://phaseo.app/models/google/gemini-3-pro-image)
 - [Google: Gemini 3.1 Flash Image (Nano Banana 2)](https://phaseo.app/models/google/gemini-3.1-flash-image)
 
+</div>
+
 </Update>
 
-<Update label="26 مايو 2026" tags={["إصدارات النماذج"]}>
+<Update label="26 مايو 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Qwen 3.7 Plus (2026-05-26) صورة إصدار النموذج](../../../images/model-releases/2026-05-26--qwen--qwen3-7-plus-2026-05-26.png)
 
 - [Qwen: Qwen 3.7 Plus (2026-05-26)](https://phaseo.app/models/qwen/qwen3.7-plus-2026-05-26)
 
+</div>
+
 </Update>
 
-<Update label="25 مايو 2026" tags={["إصدارات النماذج"]}>
+<Update label="25 مايو 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Qwen 3.7 Max (2026-05-17) صورة إصدار النموذج](../../../images/model-releases/2026-05-25--qwen--qwen3-7-max-2026-05-17.png)
 
 - [Qwen: Qwen 3.7 Max (2026-05-17)](https://phaseo.app/models/qwen/qwen3.7-max-2026-05-17)
 - [Qwen: Qwen 3.7 Max Preview](https://phaseo.app/models/qwen/qwen3.7-max-preview)
 
+</div>
+
 </Update>
 
-<Update label="21 مايو 2026" tags={["إصدارات النماذج"]}>
+<Update label="21 مايو 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Qwen 3.7 Max صورة إصدار النموذج](../../../images/model-releases/2026-05-21--qwen--qwen3-7-max.png)
 
 - [Qwen: Qwen 3.7 Max](https://phaseo.app/models/qwen/qwen3.7-max)
 
+</div>
+
 </Update>
 
-<Update label="20 مايو 2026" tags={["إصدارات النماذج"]}>
+<Update label="20 مايو 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Command A+ صورة إصدار النموذج](../../../images/model-releases/2026-05-20--cohere--command-a-plus.png)
 
 - [Cohere: Command A+](https://phaseo.app/models/cohere/command-a-plus)
 
+</div>
+
 </Update>
 
-<Update label="19 مايو 2026" tags={["الميزات","إصدارات النماذج","SDK","الوثائق"]}>
+<Update label="19 مايو 2026">
 
-### إصدارات SDK
+<div data-changelog-category="product">
 
-- أضاف إطلاق TypeScript Agent SDK حزمة مخصصة لبناء تطبيقات الوكلاء على Phaseo Gateway ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)). راجع [`@phaseo/agent-sdk`](https://github.com/phaseoteam/Phaseo/tree/main/packages/sdk/agent-sdk-ts).
+<p className="changelog-category">المنتج</p>
 
-### إصدارات النماذج
+- تعرض **Models** الموجّه المجاني، وتبيّن صفحته النماذج المجانية التي يمكنه التوجيه إليها والاستخدام الأخير؛ راجع [ابدأ بالموجّه المجاني](../cookbook/free-router-first-deploy.mdx) ([#495](https://github.com/phaseoteam/Phaseo/pull/495)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Gemini 3.5 Flash صورة إصدار النموذج](../../../images/model-releases/2026-05-19--google--gemini-3-5-flash.png)
 
 - [Google: Gemini 3.5 Flash](https://phaseo.app/models/google/gemini-3.5-flash)
 - [Qwen: Qwen 3.5 LiveTranslate Flash Realtime (2026-05-19)](https://phaseo.app/models/qwen/qwen3.5-livetranslate-flash-realtime-2026-05-19)
 
+</div>
+
 </Update>
 
-<Update label="18 مايو 2026" tags={["إصدارات النماذج"]}>
+<Update label="18 مايو 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Composer 2.5 صورة إصدار النموذج](../../../images/model-releases/2026-05-18--cursor--composer-2-5.png)
 
 - [Cursor: Composer 2.5](https://phaseo.app/models/cursor/composer-2.5)
 
+</div>
+
 </Update>
 
-<Update label="16 مايو 2026" tags={["الميزات","إصدارات النماذج","دعم المزوّدين","SDK","التسعير","الوثائق"]}>
+<Update label="16 مايو 2026">
 
-### الميزات
+<div data-changelog-category="models">
 
-- حُسّنت حالات تفعيل المزوّدين وفلاتر المناطق لتسهيل التعرف على المسارات غير المتاحة قبل إرسال الطلب ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-- أصبح سلوك الموجّه المجاني أكثر قابلية للتوقع في التسعير واختيار المزوّدين وتوجيه البوابة ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-
-### إصدارات SDK
-
-- أُطلقت وثائق وأمثلة Agent SDK مع أول إرشادات عامة لسير العمل حول الحلقات المستمرة والأدوات المتوازية وتنسيق الوكلاء ([PR #495](https://github.com/phaseoteam/Phaseo/pull/495)).
-
-### إصدارات النماذج
+<p className="changelog-category">النماذج</p>
 
 - [xAI: Grok TTS](https://phaseo.app/models/x-ai/grok-tts)
 
+</div>
+
 </Update>
 
-<Update label="15 مايو 2026" tags={["إصدارات النماذج"]}>
+<Update label="15 مايو 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Grok Build 0.1 صورة إصدار النموذج](../../../images/model-releases/2026-05-15--x-ai--grok-build-0-1.png)
 
 - [xAI: Grok Build 0.1](https://phaseo.app/models/x-ai/grok-build-0.1)
 
+</div>
+
 </Update>
 
-<Update label="7 مايو 2026" tags={["الميزات","إصدارات النماذج","دعم المزوّدين","التسعير"]}>
+<Update label="9 مايو 2026">
 
-### الميزات
+<div data-changelog-category="product">
 
-- وُسّعت ملخصات توفر المزوّدين والأسعار لتوضيح اختلاف المسارات والفئات والتكاليف في صفحات النماذج ([PR #474](https://github.com/phaseoteam/Phaseo/pull/474)).
-- أصبح سعر الدقيقة في الوقت الفعلي ظاهرًا في المنتج، ما يسهّل مقارنة نماذج الصوت والجلسات المباشرة بالنماذج المسعّرة بالرموز ([PR #477](https://github.com/phaseoteam/Phaseo/pull/477)).
+<p className="changelog-category">المنتج</p>
 
-### إصدارات النماذج
+- يمكن لـ Chat إعادة محاولة توليد صورة أو فيديو فشل، بالموجّه نفسه والنموذج نفسه وإعداد الدردشة المؤقتة نفسه ([#479](https://github.com/phaseoteam/Phaseo/pull/479)).
+
+</div>
+
+</Update>
+
+<Update label="8 مايو 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تضيف حزم SDK لـ TypeScript وPython وGo وC# وJava وPHP وRuby `2.0.4` إلى أنواعها `session_id` وتشخيصات الأخطاء المنظّمة وحقول توفر النماذج؛ راجع [ملاحظات الإصدار](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.4) ([#476](https://github.com/phaseoteam/Phaseo/pull/476)).
+
+</div>
+
+</Update>
+
+<Update label="7 مايو 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تعرض بطاقات الأسعار المنبثقة في **Models** أسعار الصور والفيديو والنص المتدرج، مجمّعة حسب الجودة والدقة والمدة والصوت وحجم السياق ([#474](https://github.com/phaseoteam/Phaseo/pull/474)).
+- تعرض **Models** نماذج الصوت المحتسبة بالدقيقة، مثل `whisper-1`، بسعرها لكل دقيقة، مثل $0.006 للدقيقة، بدلًا من سعر تقريبي لكل رمز ([#477](https://github.com/phaseoteam/Phaseo/pull/477)).
+- يضيف رأس صفحات النماذج عنصر تحكم بمعرّف النموذج يبدّل بين الأسماء البديلة للنموذج وينسخ المعرّف المختار ([#473](https://github.com/phaseoteam/Phaseo/pull/473)).
+- أصبحت أعداد عوامل التصفية في الشريط الجانبي لـ **Models** تتحدّث وفق عوامل التصفية الأخرى المختارة ([#473](https://github.com/phaseoteam/Phaseo/pull/473)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- **تغيير غير متوافق:** نقاط النهاية `/v1/videos` و`/v1/batches` و`/v1/files` و`/v1/music/generations` معطّلة مؤقتًا وتُرجع `501 not_implemented`؛ أوقف استدعاءها حتى يُعاد تفعيلها ([#473](https://github.com/phaseoteam/Phaseo/pull/473)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Gemini 3.1 Flash-Lite صورة إصدار النموذج](../../../images/model-releases/2026-05-07--google--gemini-3-1-flash-lite.png)
 
@@ -158,44 +273,98 @@ description: "تحديثات منتجات Phaseo وتغييرات SDK وإصدا
 - [OpenAI: GPT Realtime Translate](https://phaseo.app/models/openai/gpt-realtime-translate)
 - [OpenAI: GPT Realtime Whisper](https://phaseo.app/models/openai/gpt-realtime-whisper)
 
+</div>
+
 </Update>
 
-<Update label="6 مايو 2026" tags={["الميزات","إصدارات النماذج"]}>
+<Update label="6 مايو 2026">
 
-### الميزات
+<div data-changelog-category="api">
 
-- وُسّع دعم إنشاء الفيديو ودورة حياة المهام غير المتزامنة، مع توضيح أفضل لحالة أعمال المزوّدين طويلة التشغيل ([PR #468](https://github.com/phaseoteam/Phaseo/pull/468)).
-- تعرض واجهات البوابة الآن مزيدًا من حالات الحجز والإكمال والفشل لتسهيل تصحيح طلبات الوسائط غير المتزامنة ([PR #468](https://github.com/phaseoteam/Phaseo/pull/468)).
+<p className="changelog-category">API وحزم SDK</p>
 
-### إصدارات النماذج
+- تقبل نقطة نهاية سرد النماذج `availability=all` لتضمين النماذج القادمة وغير النشطة، ويُرجع كل مزوّد `availability_status` و`availability_reason`؛ راجع [سرد النماذج](../api-reference/endpoint/models.mdx) ([#466](https://github.com/phaseoteam/Phaseo/pull/466)).
+- تتضمن استجابات الأخطاء `failed_providers` و`routing_diagnostics` و`provider_failure_diagnostics`، وهي تشير إلى أسباب مثل غياب بيانات الاعتماد أو القيود الإقليمية؛ راجع [الأخطاء وتصحيحها](../api-reference/errors.mdx) ([#467](https://github.com/phaseoteam/Phaseo/pull/467)).
+- تُرجع نقطة نهاية جلب التوليد `replay_request` و`replay_supported`، لإعادة إرسال طلب مسجّل إلى نقطة نهايته الأصلية؛ راجع [جلب توليد](../api-reference/endpoint/generation.mdx) ([#467](https://github.com/phaseoteam/Phaseo/pull/467)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![Grok Imagine Image Quality صورة إصدار النموذج](../../../images/model-releases/2026-05-06--x-ai--grok-imagine-image-quality.png)
 
 - [xAI: Grok Imagine Image Quality](https://phaseo.app/models/x-ai/grok-imagine-image-quality)
 
+</div>
+
 </Update>
 
-<Update label="5 مايو 2026" tags={["إصدارات النماذج"]}>
+<Update label="5 مايو 2026">
 
-### إصدارات النماذج
+<div data-changelog-category="models">
+
+<p className="changelog-category">النماذج</p>
 
 ![chat-latest صورة إصدار النموذج](../../../images/model-releases/2026-05-05--openai--chat-latest.png)
 
 - [OpenAI: chat-latest](https://phaseo.app/models/openai/chat-latest)
 
-</Update>
-
-<Update label="1 مايو 2026" tags={["الميزات","SDK"]}>
-
-### إصدارات SDK
-
-- [TypeScript SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
-- [Python SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fpy-sdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
-- [Go SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fgo-sdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
-- [C# SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fcsharp-sdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
-- [Java SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fjava-sdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
-- [PHP SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fphp-sdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
-- [Ruby SDK 2.0.4](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fruby-sdk%402.0.4): تحديثات OpenAPI المولّدة وسطح النماذج وفق أحدث مخطط للبوابة.
+</div>
 
 </Update>
 
+<Update label="4 مايو 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تقسّم **Settings -> Usage** النشاط إلى طرق العرض **Logs** و**Jobs** و**Sessions**، مع تحديث مباشر وحفظ عوامل التصفية والفترات الزمنية في عنوان URL ([#463](https://github.com/phaseoteam/Phaseo/pull/463), [#467](https://github.com/phaseoteam/Phaseo/pull/467)).
+- تعرض ساحة تجربة النماذج **Retry** و**Delete** على عمليات توليد الصور والفيديو الفاشلة، ويعيد **Retry** استخدام الموجّه والنموذج نفسيهما ([#465](https://github.com/phaseoteam/Phaseo/pull/465)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تقبل طلبات Chat Completions وResponses الحقل `session_id`، الذي يجمع الطلبات المرتبطة في جلسة واحدة في سجلات الاستخدام ([#463](https://github.com/phaseoteam/Phaseo/pull/463)).
+
+</div>
+
+</Update>
+
+<Update label="2 مايو 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- عادت سياسات مساحة العمل التي تحظر نماذج أو مزوّدين إلى التطبيق، فتُرفض الطلبات المحظورة قبل التوجيه ([#444](https://github.com/phaseoteam/Phaseo/pull/444)).
+
+</div>
+
+</Update>
+
+<Update label="1 مايو 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">المنتج</p>
+
+- تضيف ساحة تجربة النماذج وضعي **TTS** و**Music** لنماذج تحويل النص إلى كلام وتوليد الموسيقى ([#441](https://github.com/phaseoteam/Phaseo/pull/441)).
+- لم تعد بطاقات النماذج في **Models** تعرض **Free** للنماذج المدفوعة، وأصبح عدد عامل تصفية النماذج القادمة مطابقًا للنماذج المعروضة ([#441](https://github.com/phaseoteam/Phaseo/pull/441)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API وحزم SDK</p>
+
+- تضيف حزم SDK لـ TypeScript وPython وGo وC# وJava وPHP وRuby `2.0.3` أحدث معرّفات النماذج والمقاييس المعيارية إلى قوائمها المحددة الأنواع؛ راجع [ملاحظات الإصدار](https://github.com/phaseoteam/Phaseo/releases/tag/%40ai-stats%2Fsdk%402.0.3) ([#439](https://github.com/phaseoteam/Phaseo/pull/439)).
+
+</div>
+
+</Update>

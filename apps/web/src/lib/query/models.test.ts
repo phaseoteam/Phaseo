@@ -1,3 +1,4 @@
+import { describe, it, expect, afterEach, vi } from "vitest";
 import type {
 	ModelsFilterFacets,
 	ModelsPageModel,
@@ -39,8 +40,26 @@ describe("fetchModelsPageData", () => {
 		global.fetch = originalFetch;
 	});
 
+	it("merges staged records only through the account-scoped admin request", async () => {
+		global.fetch = vi.fn(async (url) => {
+			const path = String(url);
+			if (path.includes("/models/hidden")) return new Response(JSON.stringify({ models: [
+				{ model_id: "test/staged", name: "Staged", status: "draft", hidden: true, organisation: { lab_slug: "test", name: "Test" } },
+			] }));
+			if (path.includes("/api/account/")) return new Response(JSON.stringify({ private_catalogue: true, models: [] }));
+			return new Response(JSON.stringify({ models: [model("public")], facets: structuredClone(facets), pricing_complete: true, total: 1, limit: 2000 }));
+		});
+		const publicData = await fetchModelsPageData("/api/_web/models");
+		expect(publicData.models.map((row) => row.model_id)).toEqual(["public"]);
+		const adminData = await fetchModelsPageData("/api/_web/models", [], {
+			accountQueryScope: { userId: "admin", workspaceId: null }, accessToken: "admin-token", fetchProviderPreviews: false,
+		});
+		expect(adminData.models.map((row) => row.model_id)).toEqual(["test/staged", "public"]);
+		expect(adminData.facets.statusCounts.coming_soon).toBe(1);
+	});
+
 	it("combines every API page while retaining the catalogue facets", async () => {
-		const fetchMock = jest
+		const fetchMock = vi
 			.fn()
 			.mockResolvedValueOnce(
 				new Response(
@@ -76,7 +95,7 @@ describe("fetchModelsPageData", () => {
 	});
 
 	it("rejects responses that cannot power the filters", async () => {
-		global.fetch = jest.fn().mockResolvedValue(
+		global.fetch = vi.fn().mockResolvedValue(
 			new Response(
 				JSON.stringify({
 					models: [],
@@ -93,7 +112,7 @@ describe("fetchModelsPageData", () => {
 	});
 
 	it("loads the dedicated V2 page response without a pricing waterfall", async () => {
-		const fetchMock = jest.fn().mockResolvedValue(
+		const fetchMock = vi.fn().mockResolvedValue(
 			new Response(
 				JSON.stringify({
 					models: [model("v2-model")],
@@ -118,7 +137,7 @@ describe("fetchModelsPageData", () => {
 	});
 
 	it("rejects a mismatched catalogue response for the V2 cache key", async () => {
-		global.fetch = jest.fn().mockResolvedValue(
+		global.fetch = vi.fn().mockResolvedValue(
 			new Response(
 				JSON.stringify({
 					models: [],

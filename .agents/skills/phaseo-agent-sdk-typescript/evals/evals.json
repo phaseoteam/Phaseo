@@ -1,0 +1,38 @@
+[
+	{
+		"id": "first-agent",
+		"query": "Build a small agent with @phaseo/agent-sdk that looks up our docs with one tool and answers questions.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Uses createAgent, defineTool and createGatewayAgentClient",
+			"Starts with one agent and one or two tools",
+			"Reads PHASEO_API_KEY from the environment"
+		]
+	},
+	{
+		"id": "resumable-run",
+		"query": "Our agent runs take minutes and the worker restarts. Make runs resumable.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Persists the returned run state in the app's own store",
+			"Does not add an SDK-owned persistence layer"
+		]
+	},
+	{
+		"id": "transient-failures",
+		"query": "The agent fails the whole run when a provider returns a 503 once.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Sets a bounded modelRetry policy",
+			"Catches AgentGatewayError to tell policy blocks from transport errors"
+		]
+	},
+	{
+		"id": "not-for-single-call",
+		"query": "I just need one call that summarises a string with @phaseo/sdk.",
+		"should_trigger": false,
+		"expected_behavior": [
+			"Uses the TypeScript SDK skill rather than building an agent"
+		]
+	}
+]

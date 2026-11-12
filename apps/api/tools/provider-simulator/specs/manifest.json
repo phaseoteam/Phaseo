@@ -1,0 +1,463 @@
+{
+	"note": "Maps gateway provider ids to cached specs. kind: own = provider OpenAPI/discovery spec; hand-written = from the provider API reference; baseline = OpenAI schema stand-in. usageFields = documented usage fields (drives synthesised usage).",
+	"providers": {
+		"ai21": {
+			"spec": "ai21",
+			"kind": "own"
+		},
+		"akashml": {
+			"spec": "akashml",
+			"kind": "own"
+		},
+		"ambient": {
+			"spec": "ambient",
+			"kind": "own"
+		},
+		"anthropic": {
+			"spec": "anthropic",
+			"kind": "own"
+		},
+		"arcee-ai": {
+			"spec": "arcee-ai",
+			"kind": "own"
+		},
+		"azure": {
+			"spec": "azure",
+			"kind": "own"
+		},
+		"baseten": {
+			"spec": "baseten",
+			"kind": "own"
+		},
+		"cerebras": {
+			"spec": "cerebras",
+			"kind": "own"
+		},
+		"deepinfra": {
+			"spec": "deepinfra",
+			"kind": "own"
+		},
+		"fireworks": {
+			"spec": "fireworks",
+			"kind": "own"
+		},
+		"friendli": {
+			"spec": "friendli",
+			"kind": "own"
+		},
+		"google-ai-studio": {
+			"spec": "google-ai-studio",
+			"kind": "own"
+		},
+		"google-vertex": {
+			"spec": "google-vertex",
+			"kind": "own"
+		},
+		"groq": {
+			"spec": "groq",
+			"kind": "own"
+		},
+		"inception": {
+			"spec": "inception",
+			"kind": "own"
+		},
+		"io-net": {
+			"spec": "io-net",
+			"kind": "own"
+		},
+		"meta": {
+			"spec": "meta",
+			"kind": "own"
+		},
+		"mistral": {
+			"spec": "mistral",
+			"kind": "own"
+		},
+		"moonshotai": {
+			"spec": "moonshotai",
+			"kind": "own"
+		},
+		"morph": {
+			"spec": "morph",
+			"kind": "own"
+		},
+		"morpheus": {
+			"spec": "morpheus",
+			"kind": "own"
+		},
+		"nebius-token-factory": {
+			"spec": "nebius-token-factory",
+			"kind": "own"
+		},
+		"openai": {
+			"spec": "openai",
+			"kind": "own"
+		},
+		"ovhcloud": {
+			"spec": "ovhcloud",
+			"kind": "own"
+		},
+		"perplexity": {
+			"spec": "perplexity",
+			"kind": "own"
+		},
+		"reka": {
+			"spec": "reka",
+			"kind": "own"
+		},
+		"relace": {
+			"spec": "relace",
+			"kind": "own"
+		},
+		"sail-research": {
+			"spec": "sail-research",
+			"kind": "own"
+		},
+		"sambanova": {
+			"spec": "sambanova",
+			"kind": "own"
+		},
+		"scaleway": {
+			"spec": "scaleway",
+			"kind": "own"
+		},
+		"spacex-ai": {
+			"spec": "spacex-ai",
+			"kind": "own"
+		},
+		"together": {
+			"spec": "together",
+			"kind": "own"
+		},
+		"venice": {
+			"spec": "venice",
+			"kind": "own"
+		},
+		"z-ai": {
+			"spec": "z-ai",
+			"kind": "own"
+		},
+		"openai-eu": {
+			"spec": "openai",
+			"kind": "own",
+			"notes": "OpenAI EU data residency endpoint; same API"
+		},
+		"google-vertex-eu": {
+			"spec": "google-vertex",
+			"kind": "own"
+		},
+		"mistral-eu": {
+			"spec": "mistral",
+			"kind": "own"
+		},
+		"anthropic-us": {
+			"spec": "anthropic",
+			"kind": "own"
+		},
+		"anthropic-aws": {
+			"spec": "anthropic",
+			"kind": "own",
+			"notes": "Claude Platform on AWS uses the Anthropic Messages API"
+		},
+		"anthropic-aws-us": {
+			"spec": "anthropic",
+			"kind": "own"
+		},
+		"minimax-lightning": {
+			"spec": "minimax",
+			"kind": "hand-written"
+		},
+		"amazon-bedrock": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "Bedrock Mantle chat defers to the OpenAI reference; Claude Messages bodies are validated against the Anthropic schema"
+		},
+		"deepseek": {
+			"spec": "deepseek",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens",
+				"prompt_cache_hit_tokens",
+				"prompt_cache_miss_tokens",
+				"prompt_tokens_details.cached_tokens",
+				"completion_tokens_details.reasoning_tokens"
+			]
+		},
+		"cohere": {
+			"spec": "cohere",
+			"kind": "hand-written"
+		},
+		"novita": {
+			"spec": "novita",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			]
+		},
+		"minimax": {
+			"spec": "minimax",
+			"kind": "hand-written"
+		},
+		"alibaba-cloud": {
+			"spec": "alibaba-cloud",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens",
+				"prompt_tokens_details.cached_tokens",
+				"prompt_tokens_details.text_tokens",
+				"prompt_tokens_details.image_tokens",
+				"prompt_tokens_details.video_tokens",
+				"prompt_tokens_details.audio_tokens",
+				"completion_tokens_details.reasoning_tokens",
+				"completion_tokens_details.text_tokens",
+				"completion_tokens_details.audio_tokens",
+				"cache_creation_input_tokens",
+				"cache_creation.ephemeral_5m_input_tokens",
+				"cache_type",
+				"x_tools.search.count"
+			]
+		},
+		"baidu": {
+			"spec": "baidu",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"prompt_tokens_details.search_tokens",
+				"prompt_tokens_details.cached_tokens",
+				"completion_tokens",
+				"total_tokens"
+			]
+		},
+		"byteplus": {
+			"spec": "byteplus",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens",
+				"prompt_tokens_details.cached_tokens",
+				"prompt_tokens_details.audio_cached_tokens",
+				"prompt_tokens_details.audio_tokens",
+				"completion_tokens_details.reasoning_tokens"
+			]
+		},
+		"stepfun": {
+			"spec": "stepfun",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"cached_tokens",
+				"completion_tokens",
+				"total_tokens"
+			]
+		},
+		"xiaomi": {
+			"spec": "xiaomi",
+			"kind": "hand-written"
+		},
+		"aion-labs": {
+			"spec": "aion-labs",
+			"kind": "hand-written"
+		},
+		"atlascloud": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "API reference lists too few parameters to write a schema; OpenAI schema used as a stand-in"
+		},
+		"avian": {
+			"spec": "avian",
+			"kind": "hand-written"
+		},
+		"canopy-wave": {
+			"spec": "canopy-wave",
+			"kind": "hand-written"
+		},
+		"cloudflare": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "API reference lists too few parameters to write a schema; OpenAI schema used as a stand-in"
+		},
+		"gmicloud": {
+			"spec": "gmicloud",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			]
+		},
+		"inflection": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "API reference lists too few parameters to write a schema; OpenAI schema used as a stand-in"
+		},
+		"ionrouter": {
+			"spec": "ionrouter",
+			"kind": "hand-written"
+		},
+		"longcat": {
+			"spec": "longcat",
+			"kind": "hand-written"
+		},
+		"modelscope": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "API reference lists too few parameters to write a schema; OpenAI schema used as a stand-in"
+		},
+		"parasail": {
+			"spec": "parasail",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			]
+		},
+		"poolside": {
+			"spec": "poolside",
+			"kind": "hand-written"
+		},
+		"sakana": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "API reference lists too few parameters to write a schema; OpenAI schema used as a stand-in"
+		},
+		"streamlake": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "API reference lists too few parameters to write a schema; OpenAI schema used as a stand-in"
+		},
+		"tensorix": {
+			"spec": "tensorix",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			]
+		},
+		"upstage": {
+			"spec": "upstage",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens",
+				"prompt_tokens_details.cached_tokens",
+				"prompt_tokens_details.audio_tokens",
+				"completion_tokens_details.reasoning_tokens",
+				"completion_tokens_details.audio_tokens",
+				"completion_tokens_details.accepted_prediction_tokens",
+				"completion_tokens_details.rejected_prediction_tokens"
+			]
+		},
+		"wafer": {
+			"spec": "wafer",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens",
+				"prompt_tokens_details.cached_tokens",
+				"completion_tokens_details.reasoning_tokens"
+			]
+		},
+		"weights-and-biases": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "API reference lists too few parameters to write a schema; OpenAI schema used as a stand-in"
+		},
+		"chutes": {
+			"spec": "chutes",
+			"kind": "hand-written"
+		},
+		"crusoe": {
+			"spec": "crusoe",
+			"kind": "hand-written"
+		},
+		"hyperbolic": {
+			"spec": "hyperbolic",
+			"kind": "hand-written"
+		},
+		"featherless": {
+			"spec": "featherless",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			]
+		},
+		"mancer": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "API reference lists too few parameters to write a schema; OpenAI schema used as a stand-in"
+		},
+		"infermatic": {
+			"spec": "infermatic",
+			"kind": "hand-written"
+		},
+		"nvidia": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "API reference lists too few parameters to write a schema; OpenAI schema used as a stand-in"
+		},
+		"thinking-machines": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "Only the native Tinker sampling API has a spec"
+		},
+		"darkbloom": {
+			"spec": "darkbloom",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			]
+		},
+		"doubleword": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "API reference lists too few parameters to write a schema; OpenAI schema used as a stand-in"
+		},
+		"mara": {
+			"spec": "mara",
+			"kind": "hand-written"
+		},
+		"inference-net": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "API reference lists too few parameters to write a schema; OpenAI schema used as a stand-in"
+		},
+		"tencent-cloud": {
+			"spec": "tencent-cloud",
+			"kind": "hand-written"
+		},
+		"phala": {
+			"spec": "phala",
+			"kind": "hand-written",
+			"usageFields": [
+				"prompt_tokens",
+				"completion_tokens",
+				"total_tokens"
+			]
+		},
+		"qwen": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "API reference lists too few parameters to write a schema; OpenAI schema used as a stand-in"
+		},
+		"siliconflow": {
+			"spec": "openai",
+			"kind": "baseline",
+			"notes": "The provider OpenAPI is embedded in a docs page (not machine-fetchable by the refresh script); OpenAI schema used as a stand-in"
+		}
+	}
+}

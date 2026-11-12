@@ -4,171 +4,133 @@ icon: "messages-square"
 description: "Nutze die vorhandene Next.js-Beispiel-Chat-App als vollständige Anleitung mit einem kopierbaren Erstellungs-Prompt am Anfang."
 ---
 
-Diese Seite hilft dir, eine kleine, realistische Next.js-Chat-App zu erstellen, während dein Phaseo-API-Schlüssel auf dem Server bleibt.
+Führe eine kleine Next.js-Chat-App aus, deren Browser-Code nur mit deinen eigenen Server-Routen spricht, sodass dein Phaseo-API-Schlüssel nie den Browser erreicht. Am Ende hast du eine lokale Chat-Seite mit einer Modellauswahl, die aus `GET /v1/models` befüllt wird, und Antworten von `POST /v1/responses`.
 
-**Ziel:** Eine Browser-Chat-App ausführen, die Modelle ermittelt und Antworten über serverseitige Routen sendet.
+Das Beispiel dient der Veranschaulichung: Seine Routen haben weder Anmeldung noch Ratenbegrenzung, sodass jeder, der sie erreicht, deinen Schlüssel verbraucht. Ergänze zuerst die Prüfungen aus [Vor dem Deployment](#before-you-deploy-it).
 
-**Ergebnis:** Eine funktionsfähige lokale Chat-Oberfläche, die deine Phaseo-Zugangsdaten nicht dem Browser offenlegt.
+Damit ein Coding-Agent dieselbe App von Grund auf baut, füge diesen Prompt ein:
 
 <Prompt
-  description="Erstelle eine **Next.js-Web-Chat-App** mit Phaseo Gateway."
+  description="Erstelle eine **Next.js-Web-Chat-App** auf Basis von Phaseo Gateway."
   icon="message-square"
   actions={["copy", "cursor"]}
 >
-{`Du erstellst eine kleine, produktionsnahe Chat-App mit Phaseo Gateway.
+{`You are building a small production-style chat app with Phaseo Gateway.
 
-Erstelle eine Next.js-App mit:
-- eine Chat-Oberfläche
-- eine Modellauswahl auf Basis von GET /v1/models
-- eine serverseitige Route, die POST /v1/responses aufruft
-- serverseitige Verwaltung des API-Schlüssels mit PHASEO_API_KEY
-- Lade-, Erfolgs- und Fehlerzustände
+Create a Next.js app with:
+- a chat UI
+- a model picker backed by GET https://api.phaseo.app/v1/models
+- a server-side route that calls POST https://api.phaseo.app/v1/responses
+- server-side API key handling using PHASEO_API_KEY (Authorization: Bearer)
+- loading, success, and error states
 
-Halte die App bewusst klein und leicht zu überblicken.
+Keep the app intentionally small and easy to inspect.
 
-Anforderungen an die Implementierung:
-- Verwende eine lokale API-Route zur Modellerkennung.
-- Verwende eine lokale API-Route zur Antwortgenerierung.
-- Belasse Geheimnisse ausschließlich auf dem Server.
-- Zeige den Ablauf von Anfrage und Antwort klar im Code.
-- Ergänze eine kurze README mit Einrichtungs- und Ausführungsschritten.
+Implementation requirements:
+- Use one local API route for model discovery.
+- Use one local API route for responses generation.
+- Keep secrets server-side only.
+- Send the whole conversation in input on every turn. The gateway rejects previous_response_id.
+- Only accept model IDs from an allowlist on the server, and cap the input length.
+- Show the request/response flow clearly in code.
+- Add a short README with setup and run steps.
 
-Überprüfung:
-- Führe die App nach Möglichkeit aus.
-- Prüfe einen erfolgreichen Chat-Turn.
-- Berichte die genau geänderten Dateien, deine Prüfungen und verbleibende Annahmen.`}
+Verification:
+- Run the app if possible.
+- Verify two successful chat turns in a row.
+- Report the exact files changed, what you verified, and any remaining assumptions.`}
 </Prompt>
 
-## Beispielprojekt
+## So ist das Beispiel aufgebaut
 
-- GitHub: [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs)
-- Lokaler Repository-Pfad: `examples/web-chat-nextjs`
+```mermaid
+flowchart LR
+  ui["ChatClient.tsx im Browser"] -->|"GET /api/models"| models["app/api/models/route.ts"]
+  ui -->|"POST /api/responses"| resp["app/api/responses/route.ts"]
+  models --> lib["lib/gateway.ts fügt den Bearer-Schlüssel hinzu"]
+  resp --> lib
+  lib -->|"GET /v1/models, POST /v1/responses"| gw["Phaseo Gateway"]
+```
 
-## Was die App macht
+Das Beispiel liegt in [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs):
 
-- - ruft verfügbare Modelle über `GET /v1/models`
-- - sendet Chat-Beiträge über `POST /v1/responses`
-- bewahrt den API-Schlüssel auf dem Server auf
-- bietet einen einfachen Startpunkt für ein echtes Produkt ohne OAuth-Komplexität
-
-## Wichtige Dateien
-
-- `app/api/models/route.ts`
-- `app/api/responses/route.ts`
-- `app/components/ChatClient.tsx`
-- `lib/gateway.ts`
-
-## Warum das Beispiel so aufgebaut ist
-
-### 1. Der Browser ruft Phaseo nicht direkt auf
-
-Die Oberfläche kommuniziert zuerst mit deinen eigenen Next.js-Routen. Diese Routen rufen Phaseo auf dem Server auf.
-
-Dadurch erhältst du:
-
-- serverseitige Verwaltung von Geheimnissen
-- einen zentralen Ort für Header und Request-Payloads
-- einen einfacheren Weg für spätere Erweiterungen wie Authentifizierung, Ratenlimits oder Protokollierung
-
-### 2. Modellerkennung und Generierung sind getrennt
-
-Halte die Routen für Modelllisten und Chat-Generierung getrennt, damit jeder Teil verständlich bleibt:
-
-- eine Route zum Auflisten von Modellen
-- eine Route zum Ausführen der Chat-Anfrage
-
-### 3. Die UI verwaltet nur den Interaktionsstatus
-
-Der React-Client verwaltet:
-
-- den Eingabestatus
-- den Ladestatus
-- die Fehleranzeige
-- die gerenderten Nachrichten
-
-Die Serverroute übernimmt den KI-Aufruf. Der Browser kümmert sich nur um das Nutzungserlebnis.
-
-## Voraussetzungen
-
-- - Node.js und ein unterstützter Paketmanager
-- ein Phaseo-API-Schlüssel
+| Datei | Aufgabe |
+| --- | --- |
+| `app/components/ChatClient.tsx` | Eingabe, Lade- und Fehlerzustand, gerenderte Nachrichten, Modellauswahl |
+| `app/api/models/route.ts` | Gibt die Modell-IDs aus `GET /v1/models` zurück |
+| `app/api/responses/route.ts` | Prüft, ob `model` und `input` nicht leere Strings sind (`400 missing_model`, `400 missing_input`), und ruft dann `POST /v1/responses` auf |
+| `lib/gateway.ts` | Baut URL und Header: `Authorization: Bearer $PHASEO_API_KEY`, `x-title` und `http-referer`, wenn gesetzt |
 
 ## Beispiel ausführen
 
-<CodeGroup>
-```bash npm
+Du brauchst Node.js und einen Phaseo-API-Schlüssel.
+
+<Steps>
+<Step title="Installieren">
+
+```bash
 cd examples/web-chat-nextjs
 npm install
-cp .env.example .env.local
 ```
 
-```bash pnpm
-cd examples/web-chat-nextjs
-pnpm install
-cp .env.example .env.local
+Das Beispiel enthält eine `package-lock.json`, daher installiert `npm` die getesteten Versionen.
+
+</Step>
+<Step title=".env.local anlegen">
+
+Das Beispiel hat keine `.env.example`. Lege `.env.local` selbst an:
+
+```bash .env.local
+PHASEO_API_KEY=phaseo_v1_sk_...
+# Optional. Standard ist https://api.phaseo.app; /v1 wird automatisch ergänzt.
+NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
+# Optionale Header für die App-Zuordnung.
+GATEWAY_APP_TITLE=My chat app
+GATEWAY_HTTP_REFERER=https://myapp.example
 ```
 
-```bash yarn
-cd examples/web-chat-nextjs
-yarn install
-cp .env.example .env.local
+`NEXT_PUBLIC_GATEWAY_URL` wird hier nur auf dem Server gelesen, aber das Präfix `NEXT_PUBLIC_` würde den Wert für Browser-Code offenlegen, also schreibe niemals einen Schlüssel hinein. [App-Zuordnung](../guides/app-attribution) erklärt die beiden optionalen Header.
+
+</Step>
+<Step title="Den zweiten Chat-Zug reparieren">
+
+`ChatClient.tsx` sendet die `id` der vorherigen Antwort als `previous_response_id`. Das Gateway speichert keine Antworten und lehnt dieses Feld daher mit `400 validation_error` (Schlüsselwort `unsupported_param`) ab, und die zweite Nachricht schlägt fehl. Lösche in `app/api/responses/route.ts` den Block, der `previous_response_id` in den Payload kopiert:
+
+```ts app/api/responses/route.ts
+  // Diese Zeilen löschen:
+  if (typeof body.previous_response_id === 'string' && body.previous_response_id.trim()) {
+    payload.previous_response_id = body.previous_response_id.trim();
+  }
 ```
 
-```bash bun
-cd examples/web-chat-nextjs
-bun install
-cp .env.example .env.local
-```
-</CodeGroup>
+Jeder Zug wird dann für sich beantwortet. Um den Kontext zu behalten, sende die früheren Züge als Array von Nachrichten in `input`.
 
-Setze folgende Variablen:
+</Step>
+<Step title="Entwicklungsserver starten">
 
-- `PHASEO_API_KEY`
-- `NEXT_PUBLIC_GATEWAY_URL`
-
-Starte dann:
-
-<CodeGroup>
-```bash npm
+```bash
 npm run dev
 ```
 
-```bash pnpm
-pnpm dev
-```
-
-```bash yarn
-yarn dev
-```
-
-```bash bun
-bun run dev
-```
-</CodeGroup>
-
 Öffne `http://localhost:3000`.
 
-## Ergebnis prüfen
+</Step>
+</Steps>
 
-- Der Modellauswahlschalter lädt Modelle über die Serverroute.
-- Eine gesendete Nachricht erzeugt eine Antwort des Assistenten.
-- Das Netzwerk-Panel des Browsers legt `PHASEO_API_KEY`.
-- Eine fehlgeschlagene Gateway-Anfrage wird in der UI als hilfreicher Fehler angezeigt.
+## Prüfen, ob es funktioniert hat
 
-## Die App anpassen
+- Die Modellauswahl füllt sich mit Modell-IDs.
+- Zwei Nachrichten hintereinander erhalten jeweils eine Antwort.
+- Im Netzwerk-Panel des Browsers gehen Anfragen nur an `/api/models` und `/api/responses`, und keine Anfrage enthält `PHASEO_API_KEY`.
+- Eine ungültige Modell-ID zeigt die Fehlermeldung des Gateways statt einer leeren Antwort.
+- Die Anfragen erscheinen unter **Einstellungen → Nutzung → Protokolle** mit dem App-Titel, den du gesetzt hast.
 
-- ändere das Standardmodell auf dein gewünschtes Produktionsmodell
-- füge Streaming hinzu, wenn deine Oberfläche Token für Token anzeigen soll
-- ergänze später Authentifizierung, falls die App mehrere Nutzer unterstützt
-- ersetze die interne Implementierung der Serverroute später durch das TypeScript-SDK, wenn du einen Client mit höherer Abstraktion möchtest
+<span id="before-you-deploy-it"></span>
+## Vor dem Deployment
 
-## Wann ein anderer Startpunkt sinnvoll ist
+- **Routen authentifizieren.** Verlange auf `/api/responses` und `/api/models` eine angemeldete Person, oder nutze die [OAuth-Workbench](./build-an-oauth-nextjs-workbench), damit jede Person ihr eigenes Guthaben verbraucht.
+- **Modelle per Zulassungsliste beschränken.** Die Route leitet jeden `model`-String aus dem Browser weiter. Prüfe ihn auf dem Server gegen eine feste Liste.
+- **Eingabe und Rate begrenzen.** Begrenze die Eingabelänge und die Anfragen pro Person und setze ein [Ausgabenlimit für den Schlüssel](../api-reference/limits#key-limits-and-budgets).
+- **Streamen, wenn du es brauchst.** Setze `stream: true` und leite die Ereignisse weiter; [Streaming](../guides/streaming) zeigt, welches Ereignis einen Responses-Stream beendet.
 
-- nutze den Node-Schnellstart für ein Skript oder einen Backend-Test statt einer UI
-- nutze den Python-Schnellstart, wenn die erste Integration in einem Worker, einer CLI oder einem Backend-Dienst liegt
-
-## Verwandte Anleitungen
-
-- [Prompts für den Einstieg mit einer Mini-App](./mini-app-starter-prompts.mdx)
-- [Beispiele](../guides/examples.mdx)
-- [Schnellstart](../quickstart.mdx)
+Für ein Backend-Skript statt einer UI beginne mit der [Node-REST-Smoke-App](./build-a-node-rest-smoke-app) oder der [Python-Gateway-CLI](./build-a-python-gateway-cli).

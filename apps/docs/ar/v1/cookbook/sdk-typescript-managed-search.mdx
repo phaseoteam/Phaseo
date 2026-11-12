@@ -1,155 +1,136 @@
 ---
-title: "إسناد سير عمل TypeScript SDK باستخدام البحث المُدار على الويب"
+title: "أسّس سير عمل واحدًا في TypeScript SDK على البحث المُدار على الويب"
+sidebarTitle: "البحث المُدار على الويب في TypeScript"
 icon: "search"
-description: "استخدم TypeScript SDK الرسمي والبحث المُدار على الويب وبيانات الاستجابة الوصفية لإنشاء سير عمل موثوق يسهل تصحيح أخطائه."
+description: "استخدم TypeScript SDK الرسمي مع الإعدادات المسبقة والبحث المُدار على الويب والبيانات الوصفية للرد، ليبقى سير العمل مؤسَّسًا على مصادر وسهل التصحيح."
 ---
 
-استخدم هذه الوصفة عندما تحتاج خدمة TypeScript أو JavaScript إلى الجمع بين:
+امنح طلب TypeScript واحدًا الأداة `phaseo:web_search` وJSON Schema، لكي يبحث النموذج قبل أن يجيب ويعيد موجزًا مع مصادره. في النهاية يصبح لديك سكربت يطبع كائن `{ summary, sources }` تم التحقق منه، إضافةً إلى المعرّفات وعدّادات البحث التي تحتاجها لتصحيحه.
 
-- إعدادات التوجيه الافتراضية المحددة مسبقًا
-- أداة البحث المُدارة `phaseo:web_search`
-- تحليل صارم للاستجابة
-- بيانات وصفية على مستوى الطلب لتصحيح الأخطاء
+السكربت جاهز للإنتاج بمجرد أن تستبدل الإعداد المسبق والنطاق بما يخصك. نتائج البحث محتوى ويب غير موثوق: تحقّق من المخرجات ولا تتبع أي تعليمات موجودة فيها.
 
-## الهدف
+## ابنِه
 
-- إبقاء المستدعي على SDK الرسمي
-- تجنب إعادة إنشاء حمولات التوافق الخام يدويًا
-- الاحتفاظ ببيانات وصفية كافية لتصحيح أخطاء نتائج البحث والتوجيه وسلوك الإضافات
+<Steps>
+<Step title="أنشئ إعدادًا مسبقًا">
 
-## 1. ابدأ بعميل مشترك
+أنشئ `research-brief` في **الإعدادات → الإعدادات المسبقة** مع النموذج، وتفضيلات المزوّدين، وإعدادات الاستدلال، ومطالبة النظام التي يجب أن يتشاركها كل المستدعين. يجب أن يدعم النموذج الأدوات ومخرجات JSON Schema.
 
-```ts
-import Phaseo from "@phaseo/sdk";
+</Step>
+<Step title="ثبّت SDK">
 
-export const gateway = new Phaseo({
-  apiKey: process.env.PHASEO_API_KEY!,
-});
+```bash
+npm install @phaseo/sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 2. ضع الإعدادات الافتراضية المستقرة في إعداد مُسبق أولًا
+</Step>
+<Step title="اكتب السكربت">
 
-أنشئ إعدادًا مسبقًا عندما تحتاج عدة جهات مستدعية إلى مشاركة ما يلي:
+```ts research-brief.ts
+import Phaseo from "@phaseo/sdk";
+import { z } from "zod";
 
-- سياسة النماذج
-- تفضيلات المزوّد
-- إعدادات الاستدلال الافتراضية
-- مطالبة النظام
-- سلوك تخزين مؤقت حتمي
+const gateway = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
-بعد ذلك، أبقِ في طلب SDK القيم التي تختلف لهذا الاستدعاء فقط.
+const Brief = z
+  .object({
+    summary: z.string().min(1),
+    sources: z
+      .array(z.object({ title: z.string(), url: z.string().url() }).strict())
+      .min(1),
+  })
+  .strict();
 
-## 3. اطلب مخرجات موثوقة باستخدام أداة البحث المُدارة
-
-```ts
 const response = await gateway.generateResponse({
-  preset: "research-brief",
-  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  model: "@research-brief",
+  input: "Find the latest public changes to Phaseo webhook delivery behavior and summarize them.",
   tools: [
     {
       type: "phaseo:web_search",
       parameters: {
-        query: "site:phaseo.app webhook delivery retries",
+        allowed_domains: ["phaseo.app"],
         max_results: 5,
         include_highlights: true,
       },
     },
   ],
   tool_choice: "phaseo:web_search",
-  response_format: {
-    type: "json_schema",
-    name: "research_brief",
-    schema: {
-      type: "object",
-      required: ["summary", "sources"],
-      properties: {
-        summary: { type: "string" },
-        sources: {
-          type: "array",
-          minItems: 1,
-          items: {
-            type: "object",
-            required: ["title", "url"],
-            properties: {
-              title: { type: "string" },
-              url: { type: "string", format: "uri" },
+  text: {
+    format: {
+      type: "json_schema",
+      name: "research_brief",
+      strict: true,
+      schema: {
+        type: "object",
+        required: ["summary", "sources"],
+        properties: {
+          summary: { type: "string" },
+          sources: {
+            type: "array",
+            minItems: 1,
+            items: {
+              type: "object",
+              required: ["title", "url"],
+              properties: {
+                title: { type: "string" },
+                url: { type: "string", format: "uri" },
+              },
+              additionalProperties: false,
             },
-            additionalProperties: false,
           },
         },
+        additionalProperties: false,
       },
-      additionalProperties: false,
     },
   },
   plugins: [{ id: "response-healing" }],
   meta: true,
 });
-```
 
-يوفر لك هذا:
+const text = (response.output ?? [])
+  .filter((item) => item.type === "message")
+  .flatMap((item) => item.content ?? [])
+  .filter((part) => part.type === "output_text")
+  .map((part) => part.text ?? "")
+  .join("");
 
-- إعدادات التوجيه والمطالبات الافتراضية التي يديرها الإعداد المسبق
-- بحثًا يديره الخادم ولا يعتمد على دعم البحث الأصلي لدى الموفّر
-- مخرجات منظّمة لتسهيل التحليل اللاحق بطريقة متوقعة
-- البيانات الوصفية المطلوبة لتصحيح أخطاء التشغيل
-
-## 4. حلّل المخرجات واحتفظ بحقول تصحيح الأخطاء
-
-```ts
-const firstMessage = Array.isArray(response.output)
-  ? response.output.find((item) => item?.type === "message")
-  : null;
-
-const text = Array.isArray(firstMessage?.content)
-  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
-  : "";
-
-const payload = JSON.parse(text);
+const brief = Brief.parse(JSON.parse(text));
 
 console.log({
   responseId: response.id,
-  selectedProvider: response.meta?.routing?.selected_provider,
+  model: response.model,
+  routing: response.meta?.routing,
   pluginExecutions: response.meta?.plugin_executions,
   serverToolUse: response.usage?.server_tool_use,
 });
-
-console.log(payload);
+console.log(brief);
 ```
 
-تسهّل هذه الحقول معرفة ما يلي:
+| الحقل | ما يفعله |
+| --- | --- |
+| `tools` مع `phaseo:web_search` | يشغّل Phaseo البحث، سواء كان لدى المزوّد بحثه الخاص أم لا. والنموذج هو من يكتب الاستعلام. |
+| `allowed_domains` | يقصر النتائج على مصادرك الخاصة. كل المعاملات موجودة في [دليل البحث على الويب](../guides/server-tools/web-search#parameters). |
+| `tool_choice: "phaseo:web_search"` | يُلزم النموذج بالبحث بدلًا من الإجابة من ذاكرته. |
+| `text.format` | JSON Schema الخاص بالإجابة. |
+| `plugins` | يصلح الـ JSON شبه الصالح؛ راجع [إصلاح الردود](./response-healing-for-structured-json). |
+| `meta: true` | يضيف `meta.routing` و`meta.plugin_executions`. |
 
-- الموفّر الذي عالج الطلب فعليًا
-- ما إذا كان البحث المُدار قد نُفّذ
-- ما إذا كان إصلاح الاستجابة قد نُفّذ
-- الطلب الذي ينبغي فحصه في لوحة التحكم
+</Step>
+<Step title="شغّله">
 
-## 5. تحقّق من الطلب الموثوق في السجلات
+```bash
+npx tsx research-brief.ts
+```
 
-افتح الطلب ضمن **Gateway -> الاستخدام** وافحص:
+</Step>
+</Steps>
 
-- نتائج البحث الموحّدة
-- الاستشهادات
-- الموفّر المحدد
-- البيانات الوصفية لتنفيذ الإضافة
+## تحقّق من نجاحه
 
-إذا بدا سلوك البحث أو ترتيبه غير صحيح، فعدّل الإعداد المسبق أو معاملات الأداة استنادًا إلى أدلة السجلات بدلًا من إضافة تجاوزات عشوائية.
+- قيمة `serverToolUse.web_search_requests` تساوي `1` على الأقل، أي أن البحث جرى.
+- يسرد `brief.sources` عناوين URL من `phaseo.app`.
+- يذكر `routing.selected_provider` المزوّد، ويُظهر `pluginExecutions` ما إذا كان الإصلاح قد غيّر شيئًا.
+- في **الإعدادات → الاستخدام → السجلات**، يعرض قسم **قابلية رصد البحث على الويب** في الطلب عمليات البحث المُدارة والنتائج والاستشهادات.
 
-## 6. افصل بين مسارات الاستكشاف والمسارات الحتمية
-
-النمط الموصى به:
-
-1. إعداد مسبق واحد لمخرجات البحث المنظّمة والحتمية
-2. إعداد مسبق آخر للطلبات الاستكشافية أو ذات درجة حرارة أعلى
-
-وهذا يحافظ على:
-
-- تنظيم أفضل لذاكرة الاستجابات المؤقتة
-- سهولة فهم سلوك التوجيه
-- فصل مسارات البحث المكثف عن حركة التوليد العامة
-
-## أدلة ذات صلة
-
-- [تصحيح أخطاء طلبات البحث على الويب](./web-search-debugging.mdx)
-- [إطلاق الإعدادات المسبقة وتصحيح أخطاء التوجيه](./preset-rollout-and-routing-debug.mdx)
-- [إصلاح استجابات JSON المنظّمة](./response-healing-for-structured-json.mdx)
-- [نظرة عامة على TypeScript SDK](../sdk-reference/typescript/overview.mdx)
+إذا بدت النتائج خاطئة، فأصلح الإعداد المسبق أو معاملات الأداة بناءً على ما تُظهره السجلات بدلًا من إضافة تجاوزات. تسرد صفحة [صحّح البحث على الويب](./web-search-debugging) الحالات الشائعة. أبقِ البحث الاستكشافي ذا `temperature` الأعلى في إعداد مسبق منفصل عن هذا الإعداد الحتمي، لتبقى مقارنة توجيههما سهلة.

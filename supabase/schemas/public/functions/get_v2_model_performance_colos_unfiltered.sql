@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_performance_colos_unfiltered (
   select
     upper(trim(usage.cloudflare_colo)) as cloudflare_colo,
     sum(usage.requests)::bigint as request_count
-  from public.v2_public_usage_hourly usage
+  from public.reporting_usage_hourly usage
   where usage.model_slug = lower(trim(p_model_slug))
     and usage.cloudflare_colo is not null
     and usage.bucket_start >= now() - interval '30 days'

@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import {
@@ -21,7 +19,7 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import OAuthScopeSelector from "./OAuthScopeSelector";
 import { DEFAULT_THIRD_PARTY_OAUTH_SCOPES } from "@/lib/oauth/scopes";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface CreateOAuthAppDialogProps {
@@ -57,16 +55,16 @@ export default function CreateOAuthAppDialog({
 
 		try {
 			// Import the action dynamically to avoid bundling issues
-			const { createOAuthAppAction } = await import("@/app/(dashboard)/settings/oauth-apps/actions");
+			const { createOAuthAppAction } = await import("@/features/settings/oauth-apps/actions");
 
-			const result = await write(createOAuthAppAction({
+			const result = await write(createOAuthAppAction({ data: {
 				name: formData.name,
 				description: formData.description || undefined,
 				homepage_url: formData.homepageUrl || undefined,
 				redirect_uris: formData.redirectUris.split("\n").filter(uri => uri.trim()),
 				workspace_id: currentTeamId!,
 				allowed_scopes: formData.allowedScopes,
-			}));
+			} }));
 
 			if (result.error) {
 				setError(localizedSettingsError(result.error, t, "Failed to create OAuth app"));
@@ -76,7 +74,7 @@ export default function CreateOAuthAppDialog({
 			// Show the created app with client secret (only shown once!)
 			setCreatedApp(result.data);
 
-			toast.success(`${t("credits.OAuth app" as never)} "${formData.name}" ${t("credits.created successfully" as never)}`);
+			toast.success(t("oauthCardCopy.createdToast", { appName: formData.name }));
 
 		} catch (err: any) {
 			setError(localizedSettingsError(err, t, "Failed to create OAuth app"));
@@ -150,7 +148,7 @@ export default function CreateOAuthAppDialog({
 				<Label>{t("credits.Client Secret" as never)}</Label>
 							<Card className="p-3 mt-1 bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
 								<div className="flex items-center justify-between gap-2">
-									<code className="text-xs break-all flex-1">{createdApp.client_secret}</code>
+									<code className="ph-no-capture text-xs break-all flex-1">{createdApp.client_secret}</code>
 									<Button
 										size="sm"
 										variant="outline"

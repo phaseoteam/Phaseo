@@ -2,62 +2,68 @@
 title: "Cookbook"
 icon: "chef-hat"
 description: "Practical, scenario-driven recipes for building with Phaseo."
+"og:image": "https://phaseo.app/og/dynamic?title=Cookbook&description=Practical%2C%20scenario-driven%20recipes%20for%20building%20with%20Phaseo.&pathname=/docs/v1/cookbook"
 ---
 
-Use the cookbook when you know what you want to build and need a working path from setup to verification.
+Pick a recipe by what you want to build. Each one starts with the finished result, then gives the steps, the full code, how to run it, and how to check it worked. Each recipe says whether its code is ready for production or a starting point you need to finish.
 
-## Start with a working request
+Every example uses `https://api.phaseo.app/v1` and reads your key from `PHASEO_API_KEY`.
+
+## Send your first request
 
 <Columns cols={2}>
 	<Card title="Launch on the free router" icon="route" href="./free-router-first-deploy">
-		Send a live request without choosing or funding a specific model first.
+		Send a live request to `phaseo/free` before you pick or pay for a model.
 	</Card>
-	<Card title="Build a Next.js web chat app" icon="message-square" href="./build-a-nextjs-web-chat-app">
-		Build a browser chat interface while keeping your Phaseo API key on the server.
-	</Card>
-	<Card title="Build a Node REST smoke app" icon="terminal" href="./build-a-node-rest-smoke-app">
-		Use raw HTTP to verify a backend integration with the smallest practical example.
-	</Card>
-	<Card title="Build a Python gateway CLI" icon="terminal-square" href="./build-a-python-gateway-cli">
-		Create a command-line workflow with the Python SDK.
+	<Card title="Mini app starter prompts" icon="square-terminal" href="./mini-app-starter-prompts">
+		Paste one prompt into a coding agent and get a small working app.
 	</Card>
 </Columns>
 
-<Tip>
-  Want a coding agent to scaffold the project? Start with the [mini app starter prompts](./mini-app-starter-prompts).
-</Tip>
+## Build an app
 
-## Choose a recipe by outcome
+| Recipe | You get | Calls Phaseo with |
+| --- | --- | --- |
+| [Next.js web chat app](./build-a-nextjs-web-chat-app) | A browser chat UI with a model picker | Server-side `fetch` |
+| [OAuth Next.js workbench](./build-an-oauth-nextjs-workbench) | Sign-in, a token-refreshing proxy, chat and an endpoint tester | Server-side `fetch` with OAuth tokens |
+| [Node REST smoke app](./build-a-node-rest-smoke-app) | A zero-dependency smoke test script | Raw `fetch` |
+| [Python gateway CLI](./build-a-python-gateway-cli) | A standard-library CLI for many endpoints | `urllib` |
 
-<Columns cols={2}>
-	<Card title="Build an application" icon="layout-template" href="./build-a-nextjs-web-chat-app">
-		Follow complete walkthroughs for browser apps, authenticated workbenches, backend scripts, and CLIs.
-	</Card>
-	<Card title="Control routing and policy" icon="route" href="./preset-rollout-and-routing-debug">
-		Roll out presets, choose providers, enforce residency requirements, and control API keys.
-	</Card>
-	<Card title="Search and return structured data" icon="search-check" href="./sdk-typescript-managed-search">
-		Ground requests with web search or fetch, then validate and recover structured output.
-	</Card>
-	<Card title="Start with an Agent SDK" icon="bot" href="./agent-sdk-durable-loop">
-		Build a bounded tool loop in TypeScript, Python, Go, C#, Java, PHP, or Ruby.
-	</Card>
-	<Card title="Build advanced agent workflows" icon="workflow" href="./agent-sdk-research-brief">
-		Add research, human review, parallel tools, structured outputs, and coding workflows.
-	</Card>
-</Columns>
+## Control routing and policy
 
-## Popular recipes
+| Recipe | Use it to |
+| --- | --- |
+| [Roll out a preset](./preset-rollout-and-routing-debug) | Move callers onto a preset and explain where each request went |
+| [Sort providers](./sort-providers-by-price-latency-or-throughput) | Rank one model's providers by price, latency or throughput |
+| [Pin or ignore providers](./pin-or-ignore-providers-per-request) | Prefer, allow or skip providers for one request |
+| [Route only to EU or ZDR providers](./route-only-to-eu-or-zdr-providers) | Add residency and zero-data-retention rules to one request |
+| [Guardrails for API keys](./guardrails-for-api-keys) | Restrict models and providers and scan prompts for a key |
 
-- [Sort providers by price, latency, or throughput](./sort-providers-by-price-latency-or-throughput)
-- [Route only to EU or ZDR providers](./route-only-to-eu-or-zdr-providers)
-- [Recover malformed structured JSON](./response-healing-for-structured-json)
-- [Research with agent-backed web search](./agent-sdk-research-brief)
-- [Fan out local agent tools concurrently](./agent-sdk-parallel-tools)
+## Search, fetch and return structured data
 
-## Related guides
+| Recipe | Use it to |
+| --- | --- |
+| [Structured JSON from Python](./sdk-python-presets-and-json) | Call a preset with a JSON Schema and log the routing details |
+| [Managed web search from TypeScript](./sdk-typescript-managed-search) | Ground one answer with `phaseo:web_search` and return JSON |
+| [Debug web search](./web-search-debugging) | Find out whether a search ran and what it returned |
+| [Ground extraction with web fetch](./tool-grounding-with-web-fetch) | Read one known URL with `phaseo:web_fetch` before extracting |
+| [Recover malformed JSON](./response-healing-for-structured-json) | Repair near-valid JSON with the `response-healing` plugin |
+| [Set plugin defaults](./plugin-defaults-and-response-healing) | Turn on response healing for a workspace or preset, and lock it |
 
-- [Quickstart](../quickstart)
-- [Examples](../guides/examples)
-- [Routing and Fallbacks](../guides/routing-and-fallbacks)
-- [Agent SDK overview](../sdk-reference/agent-sdk/overview)
+## Build agents
+
+The Agent SDKs run a tool loop in your process and send each model turn through Phaseo. See the [Agent SDK overview](../sdk-reference/agent/overview) for installation in each language.
+
+| Recipe | Language | Shows |
+| --- | --- | --- |
+| [Durable agent loop](./agent-sdk-durable-loop) | TypeScript | Save run state after every step and resume after a crash |
+| [Parallel tools](./agent-sdk-parallel-tools) | TypeScript | Run independent read-only tools at the same time |
+| [Research brief](./agent-sdk-research-brief) | TypeScript | Web search plus a strict JSON brief |
+| [Support triage](./agent-sdk-support-triage) | TypeScript | A preset, human review, and gateway errors you can debug |
+| [Code review](./agent-sdk-coding-review) | TypeScript | Strict JSON and an approval pause |
+| [Structured extraction](./agent-sdk-python-structured-extraction) | Python | One tool and a JSON Schema |
+| [Ops runbook](./agent-sdk-go-ops-runbook) | Go | One status tool in a bounded loop |
+| [Ticket triage](./agent-sdk-csharp-ticket-triage) | C# | One lookup tool inside a .NET service |
+| [Content review](./agent-sdk-php-content-review) | PHP | One CMS lookup tool |
+| [Internal notes](./agent-sdk-ruby-rag-notes) | Ruby | One notes lookup tool |
+| [Coding agents with SKILL.md](./coding-agents-skill-md) | Any | Teach a coding agent how your repo calls Phaseo |

@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react"
 import { Link } from "@/i18n/navigation"
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery"
@@ -597,7 +595,7 @@ export default function ProfileDashboard({
 						)}
 					</div>
 					<div className="min-w-0">
-						<h1 className="text-base font-semibold text-foreground">
+						<h1 className="break-words text-2xl font-semibold tracking-tight text-foreground">
 							{profile.displayName}
 						</h1>
 						{publicView ? (

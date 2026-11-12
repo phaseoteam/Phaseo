@@ -12,18 +12,92 @@ afterEach(() => {
 });
 
 describe("public reference-data routes", () => {
+	it("loads bounded AA data for a selected model and major", async () => {
+		const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			expect(String(input)).toContain("/rpc/get_artificial_analysis_public_models");
+			expect(JSON.parse(String(init?.body))).toEqual({ p_model_slug: "lab/model", p_major: 4, p_limit: 20, p_offset: 10 });
+			return Response.json({ snapshot_id: "snapshot", methodology_version: "4.3.2", total: 1, models: [{ model_id: "lab/model", totalTokens: { output: 0 } }] });
+		});
+		vi.stubGlobal("fetch", fetch);
+		const response = await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis/data?model=lab%2Fmodel&version=4&limit=20&offset=10", {}, env);
+		expect(response.status).toBe(200);
+		expect((await response.json() as { models: unknown[] }).models).toHaveLength(1);
+		expect(response.headers.get("Cache-Control")).toContain("s-maxage=300");
+	});
+	it.each(["limit=201", "offset=-1", "version=4.3", "model="])("rejects invalid public data selection %s", async (query) => {
+		const fetch = vi.fn(); vi.stubGlobal("fetch", fetch);
+		expect((await app.request(`https://phaseo.app/api/_web/benchmarks/artificial-analysis/data?${query}`, {}, env)).status).toBe(400);
+		expect(fetch).not.toHaveBeenCalled();
+	});
+	it("keeps missing AA publications distinct from unavailable storage", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => Response.json(null)));
+		expect((await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis/data", {}, env)).status).toBe(404);
+		vi.stubGlobal("fetch", vi.fn(async () => Response.json({ message: "not deployed" }, { status: 503 })));
+		const response = await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis/data", {}, env);
+		expect(response.status).toBe(503);
+		expect(await response.json()).toEqual({ error: "aa_data_unavailable" });
+		expect(response.headers.get("Cloudflare-CDN-Cache-Control")).toBeNull();
+	});
+	it("loads AA comparisons in one nested score query and preserves configurations", async () => {
+		const ids = ["aa-intelligence-index-v4", "aa-coding-index-v4", "aa-agentic-index-v4", "aa-intelligence-index-cost-v4"];
+		const scoreQueries: URL[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(String(input));
+			if (url.pathname.includes("get_artificial_analysis_coverage")) return Response.json(ids.map((benchmark_id) => ({ benchmark_id, total_models: 1, published: true })));
+			if (url.pathname.endsWith("v2_models")) return Response.json([{ model_slug: "lab/model", name: "Model", hidden: false, lab_slug: "lab", lab: null }]);
+			if (url.searchParams.get("select")?.includes("results:v2_benchmark_results")) {
+				scoreQueries.push(url);
+				return Response.json(ids.map((benchmark_id) => ({ benchmark_id, results: Array.from({ length: 300 }, (_, i) => ({
+					result_id: `${benchmark_id}-${i}`, model_slug: "lab/model", score: i, variant: "high", result_key: String(i),
+					other_info: `Artificial Analysis ID source-${i}; Intelligence Index v4.3.2`, updated_at: "2026-10-18T00:00:00Z",
+				})) })));
+			}
+			if (url.searchParams.has("benchmark_id")) return Response.json([{ benchmark_id: ids[0], name: "Artificial Analysis Intelligence Index" }]);
+			return Response.json(ids.map((benchmark_id) => ({ benchmark_id, name: benchmark_id, total_models: 1 })));
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/benchmarks/artificial-analysis", {}, env);
+		expect(response.status).toBe(200);
+		const { benchmark } = await response.json() as { benchmark: { results: unknown[]; comparison_benchmarks: Array<{ results: Array<{ variant: string; result_key: string }> }> } };
+		expect(benchmark.results).toHaveLength(300);
+		expect(benchmark.comparison_benchmarks.map((metric) => metric.results.length)).toEqual([300, 300, 300, 300]);
+		expect(benchmark.comparison_benchmarks[0].results[0]).toMatchObject({ variant: "high", result_key: "0" });
+		expect(scoreQueries).toHaveLength(1);
+		expect(scoreQueries[0].searchParams.get("results.or")).toContain("effective_to.is.null");
+	});
+
+	it("keeps retired provider pages addressable and links their successor", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => Response.json([{
+			provider_slug: "pioneer", name: "Pioneer", status: "deprecated", country_code: "US", subdivision_code: null,
+			metadata: { retirement: { message: "Pioneer is now Fastino.", successor_provider_slug: "fastino", successor_name: "Fastino" } },
+		}])));
+		const response = await app.request("https://phaseo.app/api/_web/api-providers/pioneer/header", {}, env);
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ provider: {
+			api_provider_id: "pioneer", api_provider_name: "Pioneer", retirement_notice: "Pioneer is now Fastino.",
+			successor_provider_id: "fastino", successor_provider_name: "Fastino",
+		} });
+	});
+
+	it("only exposes retirement notices for retired providers and rejects invalid successor IDs", async () => {
+		for (const status of ["active", "deprecated"]) {
+			vi.stubGlobal("fetch", vi.fn(async () => Response.json([{
+				provider_slug: "sample", name: "Sample", status,
+				metadata: { retirement: { message: "Retired.", successor_provider_slug: "../settings", successor_name: "Invalid" } },
+			}])));
+			const response = await app.request("https://phaseo.app/api/_web/api-providers/sample/header", {}, env);
+			expect(await response.json()).toMatchObject({ provider: {
+				retirement_notice: status === "deprecated" ? "Retired." : null,
+				successor_provider_id: null, successor_provider_name: null,
+			} });
+		}
+	});
     it("excludes retired plan prices from listings and detail pages", async () => {
-        vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
-            const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
-            if (!url.pathname.endsWith("/v2_subscription_plans")) return new Response("[]");
-            const rows = [
-                { plan_uuid: "active", plan_id: "active", name: "Active", price: 10, effective_to: null },
-                { plan_uuid: "retired", plan_id: "retired", name: "Retired", price: 20, effective_to: "2020-01-01T00:00:00Z" },
-            ];
-            const activeOnly = url.searchParams.get("or")?.includes("effective_to.is.null,effective_to.gt.");
-            const selected = rows.filter(row => (!activeOnly || row.effective_to === null)
-                && (!url.searchParams.has("plan_id") || url.searchParams.get("plan_id") === `eq.${row.plan_id}`));
-            return new Response(JSON.stringify(selected));
+        vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+            const url = String(input);
+            if (!url.includes("get_v2_subscription_catalogue")) return Response.json([]);
+            const body = JSON.parse(String(init?.body ?? "{}"));
+            expect(body.p_include_hidden).toBe(false);
+            return Response.json(body.p_plan_id === "retired" ? [] : [{ plan_uuid: "active", plan_id: "active", name: "Active", offers: [] }]);
         }));
         const listing = await app.request("https://phaseo.app/api/_web/subscription-plans", {}, env);
         expect(listing.status).toBe(200);
@@ -33,7 +107,7 @@ describe("public reference-data routes", () => {
         expect(retired.status).toBe(404);
     });
 
-	it("keeps reference data long-lived but refreshes provider information every fifteen minutes", async () => {
+	it("keeps reference data long-lived but refreshes scored benchmark coverage and provider information every fifteen minutes", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("v2_labs")) {
@@ -55,7 +129,7 @@ describe("public reference-data routes", () => {
 		for (const response of [organisations, benchmarks, providerHeader, sources]) {
 			expect(response.status).toBe(200);
 			expect(response.headers.get("cloudflare-cdn-cache-control")).toBe(
-				response === providerHeader || response === sources
+				response === benchmarks || response === providerHeader || response === sources
 					? "public, max-age=900, stale-while-revalidate=900, stale-if-error=3600"
 					: "public, max-age=86400, stale-while-revalidate=604800",
 			);
@@ -71,6 +145,11 @@ describe("public reference-data routes", () => {
 	it("preserves the family and subscription-plan payloads consumed by the web app", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
+            if (url.includes("/rpc/get_v2_subscription_catalogue")) return new Response(JSON.stringify([{
+              plan_uuid: "plan-uuid", plan_id: "pro", name: "Pro", organisation_id: "phaseo", organisation: { organisation_id: "phaseo", name: "Phaseo" },
+              offers: [{ offer_uuid: "offer", billing_interval: "month", billing_interval_count: 1, currency: "USD", components: [{ component_key: "base", pricing_type: "fixed", amount: 20, charge_basis: "account" }] }],
+              features: [{ feature_name: "Requests", availability: "limited" }], allowances: [], models: [{ model_id: "openai/gpt-test" }]
+            }]), { status: 200 });
 			if (url.includes("v2_model_families")) {
 				return new Response(JSON.stringify([{
 					family_id: "openai/gpt",

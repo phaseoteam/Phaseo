@@ -23,7 +23,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_apps (
       sum(rollup.successful_requests)::bigint as success_requests,
       sum(coalesce(meters.total_tokens, 0))::numeric as total_tokens,
       max(rollup.usage_date)::timestamptz as last_seen
-    from public.v2_public_usage_daily rollup
+    from public.reporting_usage_daily rollup
     left join lateral (
       select sum(quantity) as total_tokens
       from public.v2_public_usage_daily_meters meter

@@ -4,3 +4,5 @@ badge: "Beta"
 openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml DELETE /identity/departments/{id}"
 ---
 <Note>企业目录管理需要身份扩展、所有者或管理员身份，以及相应的设置范围。</Note>
+
+如果有目录组映射使用该部门，则只有工作区所有者可以删除它，因为删除部门也会删除这些映射及其授予的角色。

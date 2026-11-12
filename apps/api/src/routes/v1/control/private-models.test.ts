@@ -5,11 +5,19 @@ const state = vi.hoisted(() => ({
 	rows: [] as any[],
 	inserted: null as Record<string, unknown> | null,
 	eqCalls: [] as Array<[string, unknown]>,
+	tables: [] as string[],
+	catalogueModel: null as Record<string, unknown> | null,
 	audit: vi.fn(async () => true),
     cacheDelete: vi.fn(async (_key: string) => undefined),
+    invalidated: vi.fn(async (..._args: unknown[]) => undefined),
 }));
 
 function query(table?: string) {
+	// The management key acts as its creator, an admin of the workspace.
+	if (table === "workspace_members") {
+		const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) };
+		return membership;
+	}
 	let mutation: "insert" | "update" | null = null;
 	const q: any = {
 		select: () => q,
@@ -22,6 +30,8 @@ function query(table?: string) {
         delete: () => q,
 		maybeSingle: async () => table === "workspaces"
 			? { data: { slug: "acme" }, error: null }
+			: table === "v2_models"
+			? { data: state.catalogueModel, error: null }
 			: mutation === "insert" || mutation === "update"
 			? { data: { ...state.inserted }, error: null }
 			: { data: state.rows[0] ?? null, error: null },
@@ -30,7 +40,8 @@ function query(table?: string) {
 }
 
 vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: vi.fn(async () => state.auth) }));
-vi.mock("@/runtime/env", () => ({ getSupabaseAdmin: () => ({ from: (table: string) => query(table) }), getCache: () => ({ delete: state.cacheDelete }) }));
+vi.mock("@/pipeline/before/privateModelCache", () => ({ invalidatePrivateRoutes: (...args: unknown[]) => state.invalidated(...args) }));
+vi.mock("@/runtime/env", () => ({ getSupabaseAdmin: () => ({ from: (table: string) => { state.tables.push(table); return query(table); } }), getCache: () => ({ delete: state.cacheDelete }) }));
 vi.mock("@/core/provider-credentials", () => ({
 	encryptProviderCredential: vi.fn(async () => ({
 		enc_value: "encrypted", enc_iv: "iv", enc_tag: "tag", key_version: 1,
@@ -55,6 +66,8 @@ describe("private model management", () => {
 		state.rows = [];
 		state.inserted = null;
 		state.eqCalls = [];
+		state.tables = [];
+		state.catalogueModel = null;
 		state.audit.mockClear();
         state.cacheDelete.mockReset();
 		vi.resetModules();
@@ -82,7 +95,8 @@ describe("private model management", () => {
 			}),
 		});
 		expect(response.status).toBe(201);
-        expect(state.cacheDelete).toHaveBeenCalledWith(`gateway:private-routes:v1:${state.auth.value.workspaceId}`);
+        // Bumps the workspace cache version, so every location reloads the snapshot.
+        expect(state.invalidated).toHaveBeenCalledWith(state.auth.value.workspaceId);
 		expect(state.inserted).toMatchObject({
 			workspace_id: state.auth.value.workspaceId,
 			model_id: "acme/legal-assistant",
@@ -93,6 +107,43 @@ describe("private model management", () => {
 		expect(payload).not.toContain("private-token-value");
 		expect(payload).not.toContain("enc_value");
 		expect(state.audit).toHaveBeenCalled();
+	});
+
+	it("links a catalogue model ID by checking the v2_models catalogue", async () => {
+		state.catalogueModel = { model_id: "openai/gpt-5" };
+		const { privateModelsRoutes } = await import("./private-models");
+		const response = await privateModelsRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				model_reference: "openai/gpt-5",
+				name: "GPT-5 via Acme",
+				base_url: "https://models.example.com/v1",
+				upstream_model_id: "gpt-5",
+				credential: "private-token-value",
+			}),
+		});
+		expect(response.status).toBe(201);
+		expect(state.tables).toContain("v2_models");
+		expect(state.tables).not.toContain("models");
+		expect(state.eqCalls).toContainEqual(["model_slug", "openai/gpt-5"]);
+		expect(state.inserted).toMatchObject({ model_id: "openai/gpt-5", catalog_model_id: "openai/gpt-5", local_slug: "gpt-5" });
+	});
+
+	it("rejects an unknown catalogue model ID", async () => {
+		const { privateModelsRoutes } = await import("./private-models");
+		const response = await privateModelsRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				model_reference: "openai/not-a-model",
+				name: "Missing",
+				base_url: "https://models.example.com/v1",
+				upstream_model_id: "missing",
+				credential: "private-token-value",
+			}),
+		});
+		expect(response.status).toBe(400);
 	});
 
 	it("rejects private-network endpoint forms before encryption", async () => {
@@ -153,7 +204,8 @@ describe("private model management", () => {
 			custom_provider_name: "Acme Hosting",
 			custom_provider_url: "https://new.example.com",
 		});
-        expect(state.cacheDelete).toHaveBeenCalledWith(`gateway:private-routes:v1:${state.auth.value.workspaceId}`);
+        // Bumps the workspace cache version, so every location reloads the snapshot.
+        expect(state.invalidated).toHaveBeenCalledWith(state.auth.value.workspaceId);
 	});
     it("deletes the route and invalidates its workspace snapshot", async () => {
         const id = "00000000-0000-4000-8000-000000000001";
@@ -161,6 +213,7 @@ describe("private model management", () => {
         const { privateModelsRoutes } = await import("./private-models");
         const response = await privateModelsRoutes.request(`https://example.com/${id}`, { method: "DELETE" });
         expect(response.status).toBe(200);
-        expect(state.cacheDelete).toHaveBeenCalledWith(`gateway:private-routes:v1:${state.auth.value.workspaceId}`);
+        // Bumps the workspace cache version, so every location reloads the snapshot.
+        expect(state.invalidated).toHaveBeenCalledWith(state.auth.value.workspaceId);
     });
 });

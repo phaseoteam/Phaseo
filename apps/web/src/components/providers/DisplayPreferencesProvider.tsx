@@ -1,6 +1,5 @@
-"use client";
-
 import * as React from "react";
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 
 import {
@@ -10,10 +9,14 @@ import {
 	formatDisplayDateParts,
 	formatDisplayDateTime,
 	formatDisplayDateTimeRange,
+	formatDisplayElapsed,
 	formatDisplayNumber,
+	formatDisplayRelative,
 	formatDisplayTime,
 	formatDisplayTimestamp,
+	formatDisplayUtcDateTime,
 	normalizeDisplayPreferences,
+	resolveDisplayTimeZone,
 	readableForegroundForAccent,
 	type DisplayDateValue,
 	type DisplayPreferences,
@@ -154,6 +157,10 @@ export function useDisplayFormatters() {
 
 	return React.useMemo(() => ({
 		count: (value: number) => formatRoundedCount(value, preferences.locale),
+		/** "0.85 s": latency in seconds, from milliseconds. Null without a reading. */
+		latency: (milliseconds: number | null | undefined) => formatLatency(milliseconds, preferences.locale),
+		/** "45.3 tps": output speed. Null without a reading. */
+		tps: (value: number | null | undefined) => formatTps(value, preferences.locale),
 		countAxisTick: (value: number) => formatCompactAxisTick(value, preferences.locale),
 		calendarDate: (value: DisplayDateValue, fallback?: string) =>
 			formatDisplayCalendarDate(value, preferences, fallback),
@@ -178,5 +185,15 @@ export function useDisplayFormatters() {
 		) => formatDisplayTime(value, preferences, options),
 		timestamp: (value: DisplayDateValue, referenceDate?: Date) =>
 			formatDisplayTimestamp(value, preferences, referenceDate),
+		/** "3 minutes ago", always relative; unit "day" gives "in 65 days". */
+		relative: (value: DisplayDateValue, referenceDate: Date, unit?: "day") =>
+			formatDisplayRelative(value, preferences, referenceDate, unit),
+		/** "4m 12s": how long something took. */
+		elapsed: (milliseconds: number | null | undefined) =>
+			formatDisplayElapsed(milliseconds, preferences),
+		/** A date and time in UTC, with seconds. */
+		utcDateTime: (value: DisplayDateValue) => formatDisplayUtcDateTime(value, preferences),
+		/** The IANA time zone dates are shown in, such as "Europe/London". */
+		timeZone: () => resolveDisplayTimeZone(preferences),
 	}), [preferences]);
 }

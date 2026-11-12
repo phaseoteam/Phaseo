@@ -24,3 +24,8 @@ CREATE POLICY "v2_public_usage_hourly_meters_public_select" ON "public"."v2_publ
   WHERE (rollup.rollup_id = v2_public_usage_hourly_meters.rollup_id))));
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."v2_public_usage_hourly_meters" TO "anon", "authenticated", "service_role";
+
+create policy public_usage_meter_visibility on public.v2_public_usage_hourly_meters as restrictive
+for select to anon, authenticated using (exists (
+  select 1 from public.v2_public_usage_hourly usage where usage.rollup_id = v2_public_usage_hourly_meters.rollup_id
+));

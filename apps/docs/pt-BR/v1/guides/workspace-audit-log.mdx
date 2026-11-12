@@ -1,22 +1,45 @@
 ---
 icon: "scroll-text"
 title: "Registro de auditoria do espaço de trabalho"
-description: "Revise alterações administrativas do espaço de trabalho relacionadas à segurança."
+description: "Revise as alterações administrativas do espaço de trabalho que afetam a segurança."
 ---
 
-Proprietários e administradores do espaço de trabalho podem revisar alterações no ciclo de vida das chaves em **Configurações → Espaço de trabalho → Atividade**. Os eventos pertencem ao espaço de trabalho ativo e aparecem do mais recente para o mais antigo.
+Abra **Configurações → Espaço de trabalho → Atividade** para ver quem alterou uma chave, um membro ou outro controle administrativo no espaço de trabalho ativo, e quando. Os eventos aparecem do mais recente para o mais antigo. Só proprietários e administradores do espaço de trabalho podem ler o registro.
 
-A primeira versão registra estas operações:
+Os registros de solicitações e de gerações mostram o tráfego que foi executado. O registro de auditoria mostra quem alterou os controles em torno dele.
 
-- Criação, renomeação, pausa, retomada, alteração de limites, rotação e exclusão de chaves de API
-- Criação e exclusão de chaves de gerenciamento; renomeação, pausa, retomada e alteração de modelos de acesso, limites e validade
+## O que é registrado
 
-Cada evento inclui o autor, a ação, o destino, o horário e um pequeno conjunto de metadados seguros da alteração. Os eventos de auditoria são somente de acréscimo. O Phaseo não armazena neste registro chaves em texto simples, hashes de credenciais, cabeçalhos de autorização, listas completas de escopos nem corpos de solicitações.
+| Área | Exemplos de ações |
+| --- | --- |
+| Chaves de API | `api_key.created`, `api_key.updated`, `api_key.paused`, `api_key.resumed`, `api_key.rotated`, `api_key.deleted` |
+| Chaves de gerenciamento | `management_key.created`, `management_key.updated`, `management_key.deleted` |
+| Membros e convites | `workspace.member.added`, `workspace.member.role_updated`, `workspace.member.removed`, `workspace.invite.created` |
+| Chaves de provedor (BYOK) | `provider_credential.created`, `provider_credential.updated`, `provider_credential.reordered`, `provider_credential.deleted` |
+| Roteamento e predefinições | `routing.policy.updated`, `routing.dynamic_route.deployed`, `preset.version.published` |
+| Orçamentos e gastos | `workspace_budget.updated`, `spend_block.lifted`, `rate_limit_raise.requested` |
+| Guardrails | `guardrail.created`, `guardrail.updated`, `guardrail.keys.added` |
+| Identidade | `identity.sso.updated`, `identity.scim_token.created`, `identity.group_mapping.updated` |
+| Integrações | `observability.destination.created`, `notifications.destination.created`, `webhook_endpoint.secret_rotated`, `oauth_authorization.revoked` |
 
-O acesso ao registro de auditoria é restrito aos proprietários e administradores do espaço de trabalho. Membros comuns não podem ler os eventos, e a tabela subjacente não fica exposta a clientes de banco de dados autenticados.
+Cada evento tem o autor, a ação, o tipo do alvo, o ID e o nome do alvo, o horário, o ID da solicitação e um pequeno conjunto de metadados da alteração. Os eventos só podem ser acrescentados, nunca alterados.
 
-Para automatizar, chame `GET /v1/audit-events` com uma chave de gerenciamento que tenha `activity:read`. Use o `next_cursor` retornado para buscar eventos anteriores sem lacunas entre os horários.
+O registro nunca guarda chaves em texto simples, hashes de credenciais, cabeçalhos de autorização, listas completas de escopos nem corpos de solicitação. Os campos de metadados cujo nome menciona secret, token, hash, credential, scope ou value são removidos antes de o evento ser gravado.
 
-<Note>
-  Os registros de solicitações e gerações mostram qual tráfego foi executado. O registro de auditoria do espaço de trabalho mostra quem alterou um controle administrativo e quando.
-</Note>
+## Ler eventos pela API
+
+Chame `GET /v1/audit-events` com uma [chave de gerenciamento](../developers/management-api-keys.mdx) que tenha `activity:read`. Um token OAuth também precisa de `activity:read`, e o usuário dele precisa ser proprietário ou administrador do espaço de trabalho.
+
+```bash
+curl "https://api.phaseo.app/v1/audit-events?limit=50" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY"
+```
+
+| Parâmetro de consulta | Significado |
+| --- | --- |
+| `limit` | Eventos por página, de 1 a 100. Padrão `50`. |
+| `cursor` | O `next_cursor` da página anterior. A paginação por cursor nunca pula eventos que têm o mesmo horário. |
+| `action` | Retorna só uma ação, como `api_key.rotated`. |
+| `target_type` | Retorna só um tipo de alvo, como `api_key`. |
+
+A resposta tem `data`, `has_more` e `next_cursor`. Cada evento inclui um objeto `actor` com o `display_name` e o `email` do membro.

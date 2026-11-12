@@ -1,0 +1,10 @@
+---
+title: "プリセットのラベルを削除"
+sidebarTitle: "ラベルを削除"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml DELETE /presets/{id}/labels/{label}"
+description: "プリセットからラベルを削除します。"
+---
+<Note>このエンドポイントには、`presets:write`を持つ管理APIキーと、関連付けられたユーザーIDが必要です。ラベルを変更できるのはプリセットの作成者と、プリセットが共有されている場合のワークスペースのオーナーと管理者です。</Note>
+
+まだラベルを固定しているリクエストは、ラベルを再度追加するまで `preset_version_not_found` で失敗します。

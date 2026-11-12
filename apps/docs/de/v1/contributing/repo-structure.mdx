@@ -1,45 +1,48 @@
 ---
 icon: "folder-open"
 title: "Repositorystruktur"
-description: "Anwendungscode, Dokumentation, SDKs und Katalogexporte von Phaseo finden."
+description: "Anwendungscode, Dokumentation, SDKs und Datenbankschema von Phaseo finden."
 ---
 
-Phaseo ist ein pnpm- und Turborepo-Monorepo. Finden Sie mit dieser Referenz die Dateien für Code- oder Dokumentationsänderungen. Für Katalogdatensatzänderungen [öffnen Sie ein Issue](./overview.mdx).
+Phaseo ist ein pnpm- und Turborepo-Monorepo. Unten findest du den Ordner für deine Code- oder Dokumentationsänderung. Katalogeinträge liegen nicht im Repository; um einen zu ändern, [öffne ein Issue](./overview.mdx).
 
-## Anwendungen und Pakete
+## Anwendungen
 
 | Pfad | Zweck |
 | --- | --- |
 | `apps/web` | Next.js-16-Website, Dashboard und interner Katalogeditor. |
 | `apps/web-api` | Öffentliche Katalogabfragen und authentifizierte Konto- und Admin-APIs. |
 | `apps/api` | Gateway-Routing und Anbieterausführung auf Cloudflare Workers. |
-| `apps/docs` | Mintlify-Dokumentation; MDX-Seiten in `v1`, Navigation in `docs.json`. |
-| `packages/data/catalog` | Katalogschemata, Kompatibilitätsfixtures und generierte öffentliche Snapshots. |
-| `packages/sdk` | SDKs für TypeScript, Python, Go, C#, PHP, Ruby, Java, Rust und C++. |
-| `supabase/migrations` | Migrationen für Datenbankschema und Berechtigungen. |
+| `apps/docs` | Mintlify-Dokumentation; MDX-Seiten liegen in `v1`, die Navigation in `docs.json`. |
+| `apps/mcp` | Phaseo-MCP-Server für Modellsuche, Preise und Nutzung. |
+| `apps/desktop` | Phaseo-Desktop-App. |
+| `apps/mobile` | Phaseo-Mobile-App (Expo, zuerst Android). |
+| `apps/slack` | Worker hinter dem Phaseo-Slack-Agenten. |
+
+## Pakete und Werkzeuge
+
+| Pfad | Zweck |
+| --- | --- |
+| `packages/sdk` | SDKs für TypeScript, Python, Go, C#, PHP, Ruby, Java, Rust und C++ sowie die Agent SDKs (`agent-sdk-*`). |
+| `packages/cli/phaseo` | Das Befehlszeilenwerkzeug `@phaseo/cli`. |
+| `packages/integrations` | Der Vercel-AI-SDK-Provider und der Terraform-Provider. |
+| `packages/shared` | Code, den mehrere Apps gemeinsam nutzen, etwa UI, Ausgaberegeln und Routing-Einstellungen. |
+| `supabase/schemas` | Deklarative Datenbankdefinitionen. |
+| `supabase/migrations` | Vorwärts gerichtete SQL-Migrationen, die Schema- und Berechtigungsänderungen ausrollen. |
 | `scripts` | Hilfsprogramme für Validierung, SDK-Generierung und Automatisierung. |
-| `.github/workflows` | CI, Bereitstellung, Katalogsynchronisierung und Snapshot-Zeitpläne. |
+| `.github/workflows` | CI, Bereitstellung und Katalogsynchronisierung. |
 | `.changeset` | Releasemetadaten versionierter Pakete. |
 
 ## Katalogdaten
 
-Die Datenbank ist die maßgebliche Quelle für Modelle, Anbieter, Organisationen, Preise, Benchmarks und unterstützende Katalogeinstellungen. Administratoren verwalten Datensätze über [Interne Daten](https://phaseo.app/internal/data). Öffentliche Beiträge werden über GitHub-Issues geprüft.
+Die Datenbank ist die einzige Quelle für Modelle, Anbieter, Organisationen, Preise, Benchmarks und Katalogeinstellungen. Das Repository enthält keine Katalog-JSON-Dateien. Administratoren verwalten Datensätze unter [Interne Daten](https://phaseo.app/internal/data); öffentliche Beiträge kommen als GitHub-Issues an.
 
-- `packages/data/catalog/generated/database-v2` enthält tägliche öffentliche Snapshots und den generierten Modell-Enum-Index für OpenAPI- und SDK-Werkzeuge.
-- `packages/data/catalog/src/data` enthält archivierte Kompatibilitätsfixtures.
-- Änderungen an einem dieser Verzeichnisse aktualisieren keine Livekatalogdatensätze. Der alte JSON-zu-Datenbank-Importer wurde eingestellt.
-
-Schema- und Anwendungsänderungen verwenden weiterhin Migrationen und Pull Requests. Generierte Snapshots und SDK-Artefakte sollten mit den jeweiligen Generierungsbefehlen aktualisiert werden.
+Schema- und Anwendungsänderungen laufen weiterhin über Migrationen und Pull Requests. Aktualisiere generierte SDK-Dateien mit ihren Generierungsbefehlen, nicht von Hand.
 
 ## Katalogautomatisierung
 
-Die Anbietersynchronisierung stellt vorgeschlagene Preise unter [Anbieteraktualisierungen](https://phaseo.app/internal/data/imports) zur Prüfung in die Warteschlange. Benchmark- und Modelllebenszyklusaufträge verwenden die Datenbank. Tägliche öffentliche Exporte erzeugen überprüfbare Snapshot-Pull-Requests.
+Die Anbietersynchronisierung stellt vorgeschlagene Preise unter [Anbieteraktualisierungen](https://phaseo.app/internal/data/imports) zur Prüfung in die Warteschlange. Benchmark- und Modelllebenszyklus-Jobs lesen und schreiben die Datenbank.
 
-Reine Katalogdatensätze aktivieren Gateway-Routing nicht automatisch. Routen- und Preisänderungen erfordern die entsprechende Adminprüfung.
+Ein Katalogeintrag allein aktiviert kein Gateway-Routing. Routen- und Preisänderungen erfordern eine Adminprüfung.
 
-## Wo beginnen
-
-- [Modellaktualisierung melden](./editing-a-model.mdx).
-- [Organisationsaktualisierung melden](./editing-an-organisation.mdx).
-- [Benchmark-Ergebnisse einreichen](../research/submitting-scores.mdx).
-- [Code oder Dokumentation beitragen](./how-to-contribute.mdx).
+Um eine Änderung zu beginnen, siehe [Code oder Dokumentation beitragen](./how-to-contribute.mdx).

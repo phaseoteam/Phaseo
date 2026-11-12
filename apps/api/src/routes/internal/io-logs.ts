@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 
-import { readGatewayIoLogObject } from "@/pipeline/audit/io-logging";
+import { gatewayIoLogSkipReason, readGatewayIoLogObject } from "@/pipeline/audit/io-logging";
 import { isGatewayIoLoggingFeatureEnabled } from "@/core/feature-flags";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import type { Env } from "@/runtime/types";
@@ -68,6 +68,8 @@ async function handleIoLogRequest(req: Request) {
 		bytes: data.io_log_bytes ?? null,
 		retention_until: data.io_log_retention_until ?? null,
 		error: data.io_log_error ?? null,
+		// A stable code for why nothing was stored, which the request log shows in the reader's language.
+		reason: gatewayIoLogSkipReason(data),
 		payload,
 	} }, 200, { "Cache-Control": "no-store" });
 }

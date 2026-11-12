@@ -1,173 +1,79 @@
 ---
-title: "Configura valores predeterminados de plugins para flujos de trabajo con JSON estructurado"
+title: "Define valores predeterminados de plugins para flujos de JSON estructurado"
+sidebarTitle: "Plugins predeterminados para JSON"
 icon: "puzzle"
-description: "Usa políticas de plugins del espacio de trabajo, de presets y de cada solicitud para mantener coherente la reparación de respuestas."
+description: "Usa la política de plugins del espacio de trabajo, del preajuste y de la solicitud para que la reparación de respuestas sea coherente."
 ---
 
-Usa esta receta cuando las solicitudes con salida estructurada necesiten una política de plugins estable, en lugar de configuraciones distintas para cada solicitud.
+Activa la [reparación de respuestas](./response-healing-for-structured-json) una sola vez para todo el espacio de trabajo o para un preajuste, en lugar de en cada solicitud. Al terminar, todos los llamantes con salida estructurada recibirán la misma política de reparación, y podrás bloquearla para que ningún preajuste ni ninguna solicitud la desactive.
 
-## 1. Comprende la precedencia
+Este es un procedimiento del panel; el ejemplo de solicitud del final está listo para producción.
 
-La política de plugins del gateway se resuelve en este orden:
+## Cómo se combinan las capas
 
-1. valores predeterminados del espacio de trabajo
-2. valores predeterminados de presets
-3. plugins de cada solicitud
+Phaseo construye la lista de plugins de cada solicitud a partir de tres capas. Una capa posterior sustituye los ajustes de una capa anterior para el mismo plugin, salvo que la anterior esté bloqueada:
 
-Las capas de menor precedencia pueden sobrescribir las de mayor precedencia, salvo que el valor predeterminado del espacio de trabajo esté bloqueado explícitamente.
+```mermaid
+flowchart LR
+  ws["Valor predeterminado del espacio de trabajo"] --> pr["Plugins del preajuste"]
+  pr --> rq["Plugins de la solicitud"]
+  rq --> eff["Plugins que se ejecutan"]
+  lock["Bloqueo del espacio de trabajo activado"] -.->|"las capas posteriores no pueden cambiar response-healing"| pr
+```
 
-## 2. Configura el valor predeterminado del espacio de trabajo
+| Capa | Dónde se define | Sustituye a |
+| --- | --- | --- |
+| Espacio de trabajo | **Configuración → Enrutamiento → Reparación de respuestas** | Nada |
+| Preajuste | **Configuración → Preajustes → (preajuste) → Reparación de respuestas** | El espacio de trabajo, salvo que esté bloqueado |
+| Solicitud | `plugins` en el cuerpo | El preajuste y el espacio de trabajo, salvo que el espacio de trabajo esté bloqueado |
 
-Usa los ajustes de enrutamiento si quieres que un espacio de trabajo habilite de forma predeterminada la reparación de respuestas para las solicitudes con JSON estructurado.
+## Configúralo
 
-Este es el lugar adecuado para:
+<Steps>
+<Step title="Activa el valor predeterminado del espacio de trabajo">
 
-- valores operativos predeterminados generales
-- comportamiento compartido de las claves de API
-- evitar diferencias entre servicios
+En **Configuración → Enrutamiento → Reparación de respuestas**, activa **Habilitar de forma predeterminada** y elige un **Modo de reparación**: `safe` para una reparación de sintaxis acotada, `strict` para solo desenvolver JSON que ya era válido. Úsalo para valores predeterminados amplios que comparten todas las claves de API del espacio de trabajo.
 
-## 3. Bloquéalo si la política no es negociable
+</Step>
+<Step title="Bloquéalo si no es negociable">
 
-Si la reparación de respuestas debe permanecer habilitada en todo momento en un espacio de trabajo, bloquea ese valor predeterminado.
+Activa **Bloquear la política del espacio de trabajo**. Entonces ni los preajustes ni las solicitudes pueden desactivar la reparación ni cambiar su modo. Los registros siguen mostrando si se aplicó o se omitió.
 
-Cuando el valor predeterminado del espacio de trabajo está bloqueado:
+</Step>
+<Step title="Define valores predeterminados del preajuste para un flujo">
 
-- los presets no pueden desactivarlo
-- las cargas de las solicitudes no pueden desactivarlo
-- los registros siguen indicando si el plugin se aplicó, se omitió o falló
+En el editor del preajuste, activa **Reparación de respuestas** y elige su modo cuando una familia de solicitudes deba llevar tanto un formato de salida estructurada como la reparación. Los llamantes de ese preajuste solo envían su entrada.
 
-## 4. Usa presets para valores predeterminados específicos de un flujo de trabajo
+</Step>
+</Steps>
 
-Los presets son la capa adecuada cuando una familia de solicitudes debe incluir tanto:
+## Sustitúyelo en una solicitud
 
-- ajustes de salida estructurada
-- valores predeterminados del plugin de reparación de respuestas
+Cuando el espacio de trabajo no está bloqueado, una solicitud puede definir el plugin por sí misma. `"enabled": false` lo desactiva para esa solicitud:
 
-Esta capa también puede elegir el modo de reparación de respuestas:
-
-- `safe` para una limpieza sintáctica limitada
-- `strict` para un comportamiento que solo elimina envolturas
-
-Así se reduce el cuerpo de la solicitud y se facilita la reutilización del enrutamiento y del comportamiento de salida entre servicios.
-
-## 5. Sobrescribe la configuración por solicitud solo si el espacio de trabajo lo permite
-
-Si el valor predeterminado del espacio de trabajo no está bloqueado, una solicitud puede sobrescribir directamente la configuración del plugin:
-
-## Ejemplo de solicitud
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "phaseo/free",
-    "input": "Return valid JSON",
-    "response_format": {
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "input": "Return the summary as JSON.",
+  "text": {
+    "format": {
       "type": "json_schema",
-      "json_schema": {
-        "name": "answer",
-        "schema": {
-          "type": "object",
-          "properties": {
-            "summary": { "type": "string" }
-          },
-          "required": ["summary"],
-          "additionalProperties": false
-        }
+      "name": "answer",
+      "schema": {
+        "type": "object",
+        "properties": { "summary": { "type": "string" } },
+        "required": ["summary"],
+        "additionalProperties": false
       }
-    },
-    "plugins": [
-      { "id": "response-healing", "enabled": true }
-    ]
-  }'
-```
-
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
-
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
-
-const response = await client.generateResponse({
-  model: "phaseo/free",
-  input: "Return valid JSON",
-  response_format: {
-    type: "json_schema",
-    json_schema: {
-      name: "answer",
-      schema: {
-        type: "object",
-        properties: {
-          summary: { type: "string" },
-        },
-        required: ["summary"],
-        additionalProperties: false,
-      },
-    },
-  },
-  plugins: [{ id: "response-healing", enabled: true }],
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "phaseo/free",
-        "input": "Return valid JSON",
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "answer",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "summary": {"type": "string"}
-                    },
-                    "required": ["summary"],
-                    "additionalProperties": False,
-                },
-            },
-        },
-        "plugins": [
-            {"id": "response-healing", "enabled": True}
-        ],
     }
-)
-
-print(response.get("output_text"))
+  },
+  "plugins": [{ "id": "response-healing", "enabled": true, "mode": "strict" }],
+  "meta": true
+}
 ```
-</CodeGroup>
-## 6. Verifica el comportamiento en los registros
 
-Después de una solicitud, inspecciona la vista de detalles y confirma lo siguiente:
+## Comprueba la política que se ejecutó
 
-- `plugin_executions` incluye `response-healing`
-- el estado es uno de estos:
-  - `applied`
-  - `skipped`
-  - `failed`
-- el modo efectivo del plugin está visible
-- los errores de validación aparecen cuando la aplicación del esquema rechaza una posible carga reparada
+Abre la solicitud en **Configuración → Uso → Registros**, o lee `meta.plugin_executions` si enviaste `meta: true`. Muestra el estado (`applied`, `skipped` o `failed`), el modo que se ejecutó realmente y cualquier `validation_errors` cuando un candidato reparado no coincidía con el esquema.
 
-## 7. Qué hacer si el comportamiento cambia entre servicios
-
-Si dos servicios se comportan de forma distinta, compara:
-
-- los ajustes de enrutamiento del espacio de trabajo
-- los valores predeterminados de plugins en los presets
-- `plugins` en cada solicitud
-- si el valor predeterminado del espacio de trabajo está bloqueado
-
-No lo investigues como un problema de calidad del modelo hasta que coincidan esas capas de políticas.
-
-## Relacionado
-
-- [Recupera JSON estructurado mal formado](./response-healing-for-structured-json.mdx)
-- [Usa caché de respuestas con presets](./response-caching-with-presets.mdx)
-- [Agent SDK de TypeScript](../sdk-reference/typescript/agent-sdk.mdx)
+Si dos servicios se comportan de forma distinta, compara el ajuste del espacio de trabajo y su bloqueo, los plugins del preajuste y los `plugins` de cada solicitud antes de tratarlo como un problema del modelo.

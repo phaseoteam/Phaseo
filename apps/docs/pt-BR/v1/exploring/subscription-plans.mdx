@@ -1,34 +1,60 @@
 ---
 title: "Planos de assinatura"
-description: "Visão geral dos planos e níveis de assinatura oferecidos por provedores de API e de como eles afetam o acesso e os preços."
-sidebarTitle: "Planos dos provedores"
+description: "Escolha acesso gratuito, uso de modelos pago por consumo, BYOK ou um complemento Enterprise para o espaço de trabalho."
+sidebarTitle: "Planos"
 icon: "tags"
 ---
 
-## Planos de assinatura
+Comece de graça, pague por consumo pelos modelos pagos ou traga as suas próprias chaves de provedor. Adicione a assinatura Enterprise somente se precisar de controles de identidade e diretório. Todos os preços estão em USD.
 
-Esta página explica os planos e níveis de assinatura comuns que você pode encontrar ao usar provedores de API listados no Phaseo. Ela aborda limites típicos, frequência de cobrança e como os recursos do plano afetam o acesso aos modelos e os preços.
+## Escolha como usar o Phaseo
 
----
+| Opção | O Phaseo cobra | O que inclui |
+| --- | --- | --- |
+| Acesso gratuito | Nada | Solicitações a modelos gratuitos, dados públicos do catálogo, SDKs e integrações |
+| Pay As You Go | O uso de modelos aos preços do catálogo, mais uma taxa de 5% na compra de créditos (mínimo de $1) | Solicitações a modelos pagos usando créditos pré-pagos do espaço de trabalho |
+| Traga sua própria chave (BYOK) | Nenhuma taxa nas primeiras 250.000 solicitações concluídas por espaço de trabalho a cada mês UTC; depois, 2.5% do custo equivalente no provedor | Roteamento e observabilidade do Phaseo usando as suas credenciais de provedor; o provedor cobra o uso dos modelos diretamente |
+| Self Serve Enterprise | Assinatura mensal do espaço de trabalho a partir de $29, mais o uso de modelos e as taxas de compra de créditos | SSO, SCIM, gerenciamento de diretório, departamentos e suporte prioritário por e-mail |
 
-### O que os planos de assinatura incluem
+Pay As You Go não tem assinatura mensal, contrato nem gasto mínimo mensal. A taxa é cobrada quando você compra créditos; depois, as solicitações usam esses créditos aos preços listados dos modelos. [Preços e cobrança](../pricing/tiers.mdx) traz exemplos de recarga.
 
--   Limites de taxa (solicitações por minuto ou por dia)
--   Franquia incluída de computação ou tokens
--   Acesso a modelos ou recursos premium (por exemplo, modo JSON e endpoints dedicados)
--   SLAs de suporte e termos comerciais
+## Limites padrão de solicitações
 
-### Níveis comuns
+Os modelos gratuitos têm uma cota diária além do limite padrão por minuto do Gateway:
 
-Veja a seguir exemplos de níveis comuns; os nomes e recursos exatos variam conforme o provedor:
+| Limite | Padrão | Escopo |
+| --- | --- | --- |
+| Solicitações por minuto, todos os modelos | 25 | Por usuário em cada espaço de trabalho, minuto móvel |
+| Solicitações a modelos gratuitos por dia | 1.500 | Por usuário, compartilhado entre todos os seus espaços de trabalho e todos os modelos gratuitos; reinicia às 00:00 UTC |
 
--   Gratuito / avaliação: uso limitado, limites de taxa menores e sem SLA
--   Desenvolvedor / hobby: mensalidade baixa e limites moderados para prototipagem
--   Empresa / equipe: limites maiores, assentos para a equipe e suporte prioritário
--   Empresarial: limites personalizados, suporte dedicado e SLAs contratuais
+Solicitações acima da cota diária falham com `phaseo_free_model_limit_exceeded`. As cotas dos provedores também se aplicam. Consulte [Limites de taxa](../api-reference/limits.mdx) para ver o escopo e o comportamento de novas tentativas.
 
----
+## Taxas de BYOK
 
-Para ver preços detalhados por modelo e comparar o custo por token, consulte a página [Preços e desempenho](./pricing-performance.mdx).
+Uma solicitação BYOK continua gerando a cobrança de uso do seu provedor, mesmo quando o Phaseo não cobra taxa. Se o Phaseo não conseguir ler a contagem mensal de solicitações do espaço de trabalho (o contador e a leitura alternativa falham), essa solicitação paga a taxa de 2.5%. Configure chaves e regras de fallback em [Roteamento e fallbacks](../guides/routing-and-fallbacks.mdx#byok-considerations).
 
-Se quiser, posso ampliar esta página com uma análise por provedor ou uma tabela curta comparando os recursos de planos de exemplo.
+<span id="enterprise-member-pricing"></span>
+## Preços do Enterprise por membros
+
+A assinatura de entrada inclui até 100 membros no espaço de trabalho, inclusive para equipes menores. Cotas maiores usam preços por número de membros; estes são preços de referência, não níveis de recursos separados:
+
+| Membros incluídos no espaço de trabalho | Assinatura mensal |
+| ---: | ---: |
+| 100 | $29 |
+| 1.000 | $79 |
+| 10.000 | $299 |
+| 25.000 | $599 |
+| 50.000 | $1,099 |
+| 100.000 | $1,999 |
+
+Cotas entre esses pontos têm preço calculado em linha reta entre as duas linhas mais próximas. Abra [Preços](https://phaseo.app/pricing) para escolher uma cota e ver a cotação para o seu número de membros. A disponibilidade no autoatendimento depende do acesso do seu espaço de trabalho à liberação.
+
+**Como os membros são contados.** Os membros contam enquanto pertencem ao espaço de trabalho, façam login ou não. Abaixo de 100.000 membros, novas associações são bloqueadas quando ultrapassariam a cota selecionada. Você não pode alterar a cota por conta própria depois de assinar, então escolha a capacidade pensando no crescimento esperado. Na cota de 100.000 membros, cada membro único adicional custa $0.02 por período de cobrança da assinatura, incluindo os membros removidos durante esse período.
+
+O Enterprise não inclui créditos de modelos nem elimina a taxa de 5% na compra de créditos (mínimo de $1). Para faturamento, compras ou condições comerciais personalizadas, entre em contato pela [Central de Ajuda](https://phaseo.app/help).
+
+## Planos de assinatura dos provedores
+
+O [catálogo de planos de assinatura](https://phaseo.app/subscription-plans) lista assinaturas vendidas por provedores de modelos. Essas ofertas têm preços, modelos incluídos, limites e condições de cobrança próprios. Uma assinatura de provedor não adiciona créditos do Phaseo nem ativa uma rota no Gateway.
+
+Verifique as condições do provedor e as rotas ativas do modelo no Gateway antes de escolher um plano. Use [Preços e desempenho](./pricing-performance.mdx) para comparar os custos de uso e os dados de desempenho dos modelos.

@@ -1,0 +1,129 @@
+---
+icon: "binary"
+title: "Quantisierung"
+description: "Wähle ein Präzisionsformat und eine Quantisierungsmethode und route nur zu Anbietern, die die getestete Variante bereitstellen."
+---
+
+Sende `provider.quantizations`, um eine Anfrage nur an Anbieter zu routen, die das Modell in der Präzision bereitstellen, die du getestet hast:
+
+```json
+{
+  "model": "meta/llama-3.3-70b-instruct",
+  "messages": [{ "role": "user", "content": "Hello" }],
+  "provider": {
+    "quantizations": ["FP8"]
+  }
+}
+```
+
+## Was Quantisierung verändert
+
+Quantisierung speichert die Gewichte eines Modells in einem kleineren Zahlentyp. Dasselbe Modell braucht dann weniger Speicher und antwortet schneller, auf Kosten eines Teils der Ausgabequalität. Zwei Dinge beschreiben ein quantisiertes Modell: das **Format** (der Zahlentyp, etwa `FP8` oder `INT4`) und die **Methode** (wie die Gewichte in dieses Format umgewandelt wurden, etwa `AWQ` oder `GPTQ`).
+
+Jede Halbierung der Bits halbiert den Speicher, den die Gewichte brauchen. Bei einem Modell mit 70B Parametern belegen allein die Gewichte ungefähr:
+
+| Format | Bits pro Gewicht | Gewichte eines 70B-Modells |
+| --- | --- | --- |
+| `FP32` | 32 | ~280 GB |
+| `BF16`, `FP16` | 16 | ~140 GB |
+| `FP8`, `INT8` | 8 | ~70 GB |
+| `FP4`, `INT4` | 4 | ~35 GB |
+
+Diese Werte sind reine Rechnung (Parameter × Bytes pro Gewicht) und lassen Aktivierungen und den KV-Cache außen vor, für die Anbieter ebenfalls Speicher brauchen.
+
+## Präzisionsformate vergleichen
+
+Ein Präzisionsformat ist der Zahlentyp, in dem ein Anbieter die Gewichte eines Modells speichert. Geringere Präzision braucht weniger Speicher und antwortet schneller, mit einem höheren Risiko für die Ausgabequalität.
+
+| Format | Typische Nutzung | Hauptvorteil | Hauptrisiko |
+| --- | --- | --- | --- |
+| `FP32` | Referenz/volle Präzision | Maximale numerische Stabilität | Höchste Speicher- und Rechenkosten |
+| `BF16` | Training + hochwertige Inferenz | Hohe Qualität bei besserer Effizienz als FP32 | Immer noch schwerer als 8 Bit/4 Bit |
+| `FP16` | Gängige Inferenz- und Trainingspfade | Gute Geschwindigkeit und Speichereinsparung | Geringerer Dynamikumfang als BF16 |
+| `FP8` | Durchsatzorientierte Inferenz/Training | Große Gewinne bei Geschwindigkeit und Speicher | Spürbare Qualitätseinbußen bei schwierigen Prompts |
+| `FP4` | Aggressive Effizienzmodi | Sehr hohe Dichte und niedrige Kosten | Höheres Risiko für schlechtere Ausgaben |
+| `INT8` | Breit unterstützte Inferenz-Quantisierung | Hohe Effizienz bei mäßigem Qualitätseinfluss | Kalibrierungs- und Empfindlichkeitsprobleme bei manchen Modellen |
+| `INT4` | Kostensensible Bereitstellung | Sehr wenig Speicher und hoher Durchsatz | Größere Abstriche bei Qualität und Robustheit |
+
+### BF16 oder FP16
+
+Beide sind 16-Bit-Formate. `BF16` hat einen größeren Exponentenbereich und ist dadurch stabiler; `FP16` ist verbreitet und schnell, aber bei manchen Workloads weniger stabil. Bietet ein Anbieter `BF16` an, ist das die sicherere Wahl für qualitätskritischen Traffic.
+
+### FP8 und FP4
+
+`FP8` bringt einen großen Effizienzgewinn und behält für die meisten Aufgaben eine brauchbare Qualität. `FP4` geht weiter, aber die Qualität sinkt häufiger, besonders bei nuanciertem Reasoning, langen Kontexten und strikten strukturierten Ausgaben.
+
+### INT8 und INT4
+
+Ganzzahlformate sind auf Inferenzdurchsatz und Speicher ausgelegt. Wie gut sie die Qualität halten, hängt von der [Quantisierungsmethode](#compare-quantization-methods), den Kalibrierungsdaten und der Modellarchitektur ab. `INT8` lässt sich leichter sicher einsetzen als `INT4`.
+
+### Die Bezeichnung eines Modells lesen
+
+Anbieter bezeichnen Varianten als `bf16`, `fp16`, `fp8`, `int8`, `q4`, `4bit`, `8bit` und so weiter. Die Benennung ist nicht standardisiert: `4bit` kann `FP4` oder `INT4` bedeuten. Prüfe die genaue Variante in der Dokumentation des Anbieters.
+
+<span id="compare-quantization-methods"></span>
+## Quantisierungsmethoden vergleichen
+
+Ein Format wie `INT4` ist das Präzisionsziel; eine Methode wie `AWQ` oder `GPTQ` ist der Weg, auf dem die Gewichte in dieses Format umgewandelt wurden. `AWQ INT4` und `GPTQ INT4` erreichen dasselbe Ziel auf unterschiedliche Weise und können sich daher sehr unterschiedlich verhalten. Die Methode beeinflusst, wie viel Genauigkeit erhalten bleibt, welche Laufzeitumgebungen das Modell bereitstellen können, Speicherlayout und Antwortgeschwindigkeit sowie, ob Kalibrierungsdaten nötig waren.
+
+| Methodenfamilie | Typischer Zweck | Hinweise |
+| --- | --- | --- |
+| `AWQ` | Wichtige aktivierungsempfindliche Gewichte erhalten | Verbreitet für eine praxistaugliche Balance aus Inferenzqualität und Effizienz |
+| `GPTQ` | Quantisierung nach dem Training mit Fehlerminimierung | Beliebt für kompakte lokale Inferenzvarianten |
+| `GGUF` | Paketformat der llama.cpp-Ökosysteme | Oft mit verschiedenen Quantisierungsstufen kombiniert (`Q4`, `Q5` usw.) |
+| `EXL2` | Aggressive Low-Bit-Varianten in ExLlama-Ökosystemen | Auf hohen Durchsatz ausgerichtet, mit Einschränkungen bei Architektur und Laufzeitumgebung |
+
+So vergleichst du Methoden für deinen eigenen Workload:
+
+1. Wähle zuerst die Laufzeitumgebung: die, die du zuverlässig bereitstellen kannst.
+2. Behalte nur die Methodenfamilien, die diese Laufzeitumgebung unterstützt.
+3. Benchmarke mehrere Methoden mit demselben Präzisionsziel.
+4. Verfolge Fehlermuster, nicht nur durchschnittliche Benchmark-Werte: Korrektheit strukturierter Ausgaben, Treue bei langen Kontexten, Zuverlässigkeit von Tool-Aufrufen, Sicherheits- und Moderationsverhalten sowie Tail-Latenz unter Last.
+
+## Zu einer Präzision routen
+
+Der Filter `provider.quantizations` prüft das Angebot jedes Anbieters für das Modell, nicht nur den Anbieternamen:
+
+- **Beim Abgleich werden Groß-/Kleinschreibung, Leerzeichen, `-` und `_` ignoriert.** Eindeutige Aliase passen ebenfalls: `bfloat16` für `BF16`, `float16` für `FP16`, `float8` für `FP8`. Eine Bezeichnung wie `4bit` wird weder als `FP4` noch als `INT4` behandelt.
+- **Angebote ohne Quantisierungsmetadaten passen nie.**
+- **Es gibt keinen Fallback auf eine andere Präzision.** Passt kein Angebot, schlägt die Anfrage mit `400 unsupported_model_or_endpoint` und dem Grund `quantization_not_available` fehl. Der Fehler listet die verfügbaren Präzisionen auf und unter `routing_diagnostics.quantization`, welche Anbieter aussortiert wurden und warum.
+- `routing.quantizations` wird als Alternative zu `provider.quantizations` akzeptiert.
+
+<span id="pick-a-precision"></span>
+## Eine Präzision wählen
+
+| Workload | Beginne mit |
+| --- | --- |
+| Qualitätskritisches Reasoning | `BF16` / `FP16` |
+| Ausgewogene Kosten und Qualität | `FP8` / `INT8` |
+| Hoher Durchsatz, kostensensibel | `INT4` / `FP4`, nach Validierung |
+
+Du brauchst nicht eine Präzision für alles. Behalte höhere Präzision für Kundensupport und kritische Entscheidungen und akzeptiere geringere Präzision für Klassifizierung oder Zusammenfassung in großem Umfang.
+
+<Steps>
+<Step title="Erfolgskriterien festlegen">
+
+Lege Qualitätsschwellen (Aufgabengenauigkeit, Erfolgsquoten, Gültigkeit strukturierter Ausgaben), Latenz- und Kostenziele sowie die Fehlermuster fest, die du nicht akzeptierst.
+
+</Step>
+<Step title="Eine Referenz mit hoher Präzision messen">
+
+Beginne mit `BF16` oder `FP16`. Erfasse Ausgabequalität, Median- und Tail-Latenz sowie Token-Kosten. Jede geringere Präzision wird damit verglichen.
+
+</Step>
+<Step title="Stufe für Stufe heruntergehen">
+
+Probiere als Nächstes `FP8` oder `INT8`. Wechsle nur zu `FP4` oder `INT4`, wenn du die zusätzlichen Einsparungen bei Kosten oder Durchsatz brauchst. Springe nicht direkt zur kleinsten Variante, sofern du nicht schon belegt hast, dass sie für deinen Workload funktioniert.
+
+</Step>
+<Step title="Mit produktionsnahen Prompts testen">
+
+Nimm lange Prompts, mehrstufiges Reasoning, Tool Calling und Grenzfälle aus Support-Tickets mit auf.
+
+</Step>
+<Step title="Ausrollen und weiter beobachten">
+
+Halte in deinem eigenen Client ein Fallback-Modell oder eine Fallback-Präzision bereit, falls kein Angebot passt, überwache die Qualität nach dem Rollout und teste erneut, wenn sich die Laufzeitumgebung des Anbieters oder die Modellrevision ändert. Sobald eine Präzision gewählt ist, stimme darauf die [Inferenzparameter](./inference-parameters.mdx) ab.
+
+</Step>
+</Steps>

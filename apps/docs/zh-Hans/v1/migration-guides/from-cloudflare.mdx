@@ -5,39 +5,35 @@ description: "将 Cloudflare AI Gateway 路由替换为 Phaseo，同时保留应
 icon: "/icons/brands/cloudflare.svg"
 ---
 
-如果你的应用已经通过 Cloudflare AI Gateway 发送兼容 OpenAI 的请求，请使用本指南。先切换 Gateway 边界，再重新配置生产流量真正需要的路由、缓存和可观测性行为。
+把 Cloudflare 网关 URL 和提供商密钥换成 `https://api.phaseo.app/v1` 和 Phaseo 密钥，并删除 `cf-aig-*` 请求头。请求载荷保持不变。
 
-## 变更内容
-
-| 设置 | 之前 | 之后 |
+| 设置 | Cloudflare AI Gateway | Phaseo |
 | --- | --- | --- |
-| Gateway URL | 账户和 Gateway 专属的 Cloudflare URL | `https://api.phaseo.app/v1` |
-| 身份验证 | Cloudflare 和提供商凭据 | `PHASEO_API_KEY` |
-| 路由策略 | Cloudflare Gateway 配置 | Phaseo 路由设置和预设 |
-| 请求可见性 | Cloudflare 分析 | Phaseo 活动和请求详情 |
+| Base URL | `gateway.ai.cloudflare.com/v1/<account_id>/<gateway_id>/<provider>`，或 `api.cloudflare.com/client/v4/accounts/<account_id>/ai/v1` | `https://api.phaseo.app/v1` |
+| 身份验证 | 提供商密钥，加上 `cf-aig-authorization` 或 Cloudflare API 令牌 | `PHASEO_API_KEY`，以 `Authorization: Bearer` 发送 |
+| 提供商选择 | 每个提供商一条路由 | 一个 base URL；模型 ID 决定模型，路由决定提供商 |
+| 网关请求头 | `cf-aig-*` | 删除，或按下表映射 |
+| 请求可见性 | Cloudflare 分析 | Phaseo 请求日志和请求详情 |
 
-<Steps>
-<Step title="梳理当前 Gateway 配置">
-
-记录 Cloudflare Gateway URL、提供商路由、自定义请求头、缓存规则、重试行为和应用依赖的分析功能。这有助于区分必须保留的行为和无需迁移的设置。
-
-</Step>
-
-<Step title="替换端点和凭据">
-
-尽可能保持请求负载不变，并更新兼容 OpenAI 的客户端连接边界。
+## 切换客户端
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// 之前：
+// new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+//   baseURL: `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/openai`,
+//   defaultHeaders: { "cf-aig-authorization": `Bearer ${process.env.CF_AIG_TOKEN}` },
+// });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -57,39 +53,40 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+`/anthropic` 路由改用[从 Anthropic SDK 迁移](./from-anthropic)中的 Anthropic SDK 配置。Workers AI 绑定调用（`env.AI.run(model, input, { gateway })`）不是 HTTP 客户端：请改用 `fetch` 或 OpenAI SDK 调用 Phaseo，并且只用于 `GET /v1/models?format=openai` 列出的模型。把 `PHASEO_API_KEY` 存为 Worker secret，不要放在 `wrangler` 配置中。
 
-<Step title="重新配置路由和共享默认值">
+## 映射网关功能
 
-将稳定的提供商限制、提示词默认值和生成参数移到[预设](../guides/presets.mdx)中。通过[路由和回退](../guides/routing-and-fallbacks.mdx)配置提供商排序和回退行为。
+Cloudflare 的设置不会自动迁移。逐项决定它属于 Phaseo、应用还是边缘层。
 
-Cloudflare 的缓存和分析设置不会自动迁移。请明确决定每项行为应由 Phaseo、应用还是边缘层负责。
+| Cloudflare AI Gateway | 在 Phaseo 上 |
+| --- | --- |
+| 回退链 | `models` 数组、提供商回退或[动态路由](../guides/routing-and-fallbacks)。模型回退在 `429`、`500`、`502`、`503` 和 `504` 时触发，请求错误时从不触发。 |
+| `dynamic/<route>` 模型字符串 | 绑定到 API 密钥的动态路由；请发送真实的模型 ID。 |
+| `cloudflare/auto` | `phaseo/auto`（[自动路由](../guides/auto-routing)，alpha）；不能与 `models` 一起使用。 |
+| 缓存（`cf-aig-cache-ttl`、`cf-aig-skip-cache`、`cf-aig-cache-key`） | 没有响应缓存。如有需要请在应用中缓存；[提示词缓存](../guides/prompt-caching)仍然可以降低输入成本。 |
+| `cf-aig-metadata` | `X-Phaseo-Metadata` [标签](../guides/request-labels)：最多 32 个，键匹配 `[A-Za-z0-9_.:-]`（64 个字符），值为最多 256 个字符的字符串。请转换数字和布尔值。 |
+| `cf-aig-collect-log` | 工作区日志策略，或 `provider.require_zero_data_retention`，后者也会把路由限制为 ZDR 提供商。 |
+| `cf-aig-request-timeout`、`cf-aig-max-attempts` | 没有按请求的控制。使用内置的提供商回退加上客户端退避。 |
+| `cf-aig-session-id` | 请求体字段 `session_id`。 |
+| `cf-aig-custom-cost` | 没有对应项。 |
+| 速率限制、支出限制 | 速率限制策略、密钥限制，以及工作区、密钥和部门预算。参见[限制](../api-reference/limits)。 |
+| 护栏和 DLP | 密钥和成员护栏会扫描请求中的提示词注入和 PII。响应不会被扫描；如需内容安全，请调用 `/v1/moderations`。 |
+| 日志和分析 | 请求日志、包含提供商尝试和价格的请求详情，以及[可观测性目标](../guides/integrations/observability)。 |
+| Workers AI `@cf/...` 模型 | 仅当 `GET /v1/models?format=openai` 列出它们时可用；否则把这些调用保留在 Workers AI 上。 |
 
-</Step>
+## 测试并上线
 
-<Step title="切换前完成验证">
+按应用实际的用法测试非流式、流式、错误、工具和结构化输出，并在逐步迁移流量之前比较延迟、输出、token 用量和成本。切换前确认：
 
-根据需要测试非流式传输、流式传输、错误、工具和结构化输出。逐步切换流量前，比较延迟、输出、令牌用量和费用。
-
-</Step>
-</Steps>
-
-## 迁移检查清单
-
-- 已移除 Cloudflare 专用的 Gateway URL 和请求头。
-- 已通过 `GET /v1/models` 验证生产模型 ID。
-- 已有意重新配置或停用所需的缓存行为。
-- Phaseo 活动和请求详情能提供团队所需的可见性。
-- 回滚仍只需更改端点和密钥配置。
-
-## 后续步骤
-
-- [预设](../guides/presets.mdx)
-- [路由和回退](../guides/routing-and-fallbacks.mdx)
-- [可观测性](../guides/integrations/observability.mdx)
+- 所有 `gateway.ai.cloudflare.com` 和 `api.cloudflare.com/.../ai/v1` URL 以及所有 `cf-aig-*` 请求头都已删除；遗留的路由会让流量留在旧路径上；
+- 生产模型 ID 都出现在 `GET /v1/models?format=openai` 中；
+- 每种缓存行为都已在应用中重建，或被有意放弃；
+- 请求日志能为团队提供所需的可见性；
+- 回退仍然只需更改 base URL 和密钥。

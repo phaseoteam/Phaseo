@@ -1,0 +1,90 @@
+import { useEffect, useRef, useState, type RefObject } from "react";
+import { activitiesForWindow, conversationWindow, type ConversationPage, type ConversationPageQuery } from "../../shared/conversationPage";
+import type { AgentActivity, Message, Task } from "../../shared/workspace";
+
+function recentPage(task: Task, kind: ConversationPage["kind"]): ConversationPage {
+	const entries = task[kind] ?? [];
+	return { kind, entries, earlier: Math.max(0, (task.conversationCounts?.[kind] ?? entries.length) - entries.length), later: 0, revision: task.revision ?? 0, ...(kind === "messages" ? { activities: task.activities ?? [] } : {}) };
+}
+
+/**
+ * Message pages carry their turns' activities. Joining or trimming windows keeps the activities of the turns still
+ * in view: `combined` is every message the two windows held, in order, so the message after the window is known.
+ */
+function windowActivities(combined: readonly Message[], window: readonly Message[], sources: (AgentActivity[] | undefined)[], later: number) {
+	const byId = new Map<string, AgentActivity>();
+	for (const source of sources) for (const activity of source ?? []) { byId.delete(activity.id); byId.set(activity.id, activity); }
+	const known = new Set(combined.filter(message => message.role === "user").map(message => message.id));
+	const last = window.at(-1), next = last ? combined[combined.findIndex(message => message.id === last.id) + 1]?.timelineOrder : undefined;
+	return activitiesForWindow(window, [...byId.values()].sort((a, b) => (a.timelineOrder ?? -1) - (b.timelineOrder ?? -1)), known, { next, latest: later === 0 });
+}
+
+export function useConversationPage(task: Task, kind: ConversationPage["kind"], following: RefObject<boolean>, beforeUpdate: () => void) {
+	const [page, setPage] = useState(() => recentPage(task, kind));
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState("");
+	const current = useRef(page);
+	const source = useRef(task); source.current = task;
+	const mounted = useRef(true);
+	const pending = useRef(false);
+	const refreshPending = useRef(false);
+	const lastRequest = useRef<{ query: ConversationPageQuery; mode: "older" | "newer" | "replace" } | undefined>(undefined);
+	const read = window.phaseoDesktop?.workspace.conversationPage;
+	useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+	function apply(next: ConversationPage) {
+		if (!mounted.current) return;
+		if (!following.current) beforeUpdate();
+		current.current = next; setPage(next);
+	}
+	async function request(query: ConversationPageQuery, mode: "older" | "newer" | "replace") {
+		if (!read || pending.current) return;
+		if (mode !== "replace" || !following.current) beforeUpdate();
+		pending.current = true; lastRequest.current = { query, mode }; setLoading(true); setError("");
+		try {
+			const result = await read(query);
+			if (!mounted.current) return;
+			const previous = current.current;
+			const total = result.earlier + result.entries.length + result.later;
+			const combined = mode === "older" ? [...result.entries, ...previous.entries] : mode === "newer" ? [...previous.entries, ...result.entries] : result.entries;
+			const entries = mode === "older" ? conversationWindow(combined, "start") : mode === "newer" ? conversationWindow(combined, "end") : result.entries;
+			const earlier = mode === "newer" ? total - result.later - entries.length : result.earlier, later = total - earlier - entries.length;
+			const activities = kind === "messages" ? { activities: mode === "replace" ? result.activities ?? [] : windowActivities(combined as Message[], entries as Message[], mode === "older" ? [result.activities, previous.activities] : [previous.activities, result.activities], later) } : {};
+			apply({ ...result, entries, earlier, later, ...activities });
+			if ((mode !== "replace" && previous.revision !== result.revision) || result.revision < (source.current.revision ?? 0)) refreshPending.current = true;
+		} catch (reason) { if (mounted.current) setError((reason instanceof Error ? reason.message : String(reason)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "")); }
+		finally {
+			pending.current = false;
+			if (mounted.current) { setLoading(false); if (refreshPending.current) { refreshPending.current = false; refresh(true); } }
+		}
+	}
+	function refresh(force = false) {
+		if (pending.current) { refreshPending.current = true; return; }
+		const previous = current.current, latest = recentPage(source.current, kind);
+		if (!force && latest.revision < previous.revision) return;
+		if (force || previous.later > 0 || previous.entries.length > latest.entries.length || (!following.current && previous.entries.length >= 100)) {
+			const added = Math.max(0, latest.earlier + latest.entries.length - previous.earlier - previous.entries.length - previous.later);
+			const limit = Math.min(100, Math.max(50, previous.entries.length + added));
+			if (previous.entries[0]) void request({ taskId: task.id, kind, limit, ...(!following.current || previous.later > 0 ? { fromId: previous.entries[0].id } : {}) }, "replace");
+			else apply(latest);
+			return;
+		}
+		const start = previous.entries.findIndex(entry => entry.id === latest.entries[0]?.id);
+		if (start < 0) {
+			if (!following.current && previous.entries[0] && latest.entries.length) void request({ taskId: task.id, kind, limit: 100, fromId: previous.entries[0].id }, "replace");
+			else apply(latest);
+			return;
+		}
+		const combined = [...previous.entries.slice(0, start), ...latest.entries], entries = conversationWindow(combined, "end");
+		apply({ ...latest, entries, earlier: latest.earlier + latest.entries.length - entries.length, ...(kind === "messages" ? { activities: windowActivities(combined as Message[], entries as Message[], [previous.activities, latest.activities], 0) } : {}) });
+	}
+	useEffect(() => { refresh(); }, [task]); // Refresh the visible window as task revisions arrive.
+	return {
+		page, loading, error,
+		older: () => { if (page.entries[0]) void request({ taskId: task.id, kind, limit: 50, beforeId: page.entries[0].id }, "older"); },
+		newer: () => { if (page.entries.at(-1)) void request({ taskId: task.id, kind, limit: 50, afterId: page.entries.at(-1)!.id }, "newer"); },
+		/** Loads the window that starts at an entry (find in chat steps to a match on a page not loaded). */
+		jumpTo: (id: string) => { following.current = false; void request({ taskId: task.id, kind, limit: 50, fromId: id }, "replace"); },
+		latest: () => { if (pending.current) return; setError(""); lastRequest.current = undefined; if (error || current.current.later > 0) apply(recentPage(source.current, kind)); },
+		retry: () => { if (lastRequest.current) void request(lastRequest.current.query, lastRequest.current.mode); },
+	};
+}

@@ -2,17 +2,62 @@
 icon: "list-filter"
 title: "Search Models Server Tool"
 description: "Let a model discover suitable models from Phaseo's live catalogue."
+"og:image": "https://phaseo.app/og/dynamic?title=Search%20Models%20Server%20Tool&description=Let%20a%20model%20discover%20suitable%20models%20from%20Phaseo%27s%20live%20catalogue.&pathname=/docs/v1/guides/server-tools/search-models"
 ---
 
-Use `phaseo:search_models` when the calling model needs to select or recommend a model using current catalogue metadata.
+Add `phaseo:search_models` so the model can pick or recommend a model using Phaseo's live catalogue: current modalities, providers, supported parameters, and prices.
 
 ```json
 {
+  "model": "openai/gpt-6-astra",
+  "messages": [
+    { "role": "user", "content": "Which models can transcribe audio and return JSON?" }
+  ],
   "tools": [{ "type": "phaseo:search_models", "parameters": { "max_results": 5 } }],
   "max_tool_calls": 10
 }
 ```
 
-The tool call can filter by `query`, `input_modalities`, `output_modalities`, `series`, `provider`, and `required_params`. Results include model IDs, modalities, providers, supported parameters, and pricing metadata.
+## Parameters
 
-Usage is reported as `usage.server_tool_use.search_models_requests`.
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `max_results` | integer | `5` | Models returned per search, up to `20`. |
+
+## What the model sends
+
+Any of these filters. Only active models are searched, and a model must match every filter sent.
+
+| Argument | Matches |
+| --- | --- |
+| `query` | Text in the model ID, name, or description |
+| `series` | Text in the model ID, name, or description |
+| `input_modalities` | Models that accept all of these inputs |
+| `output_modalities` | Models that produce all of these outputs |
+| `provider` | A provider ID or name |
+| `required_params` | Models that support all of these request parameters |
+
+## What the tool returns
+
+```json
+{
+  "models": [
+    {
+      "id": "openai/gpt-4o-mini-transcribe",
+      "name": "...",
+      "description": "...",
+      "input_modalities": ["audio"],
+      "output_modalities": ["text"],
+      "providers": ["openai"],
+      "supported_params": ["..."],
+      "pricing": {}
+    }
+  ],
+  "total_results": 4,
+  "showing": 4
+}
+```
+
+## Usage and pricing
+
+Each search adds 1 to `usage.server_tool_use.search_models_requests` and can be billed with `server_tool_search_models_requests`.

@@ -1,6 +1,9 @@
 ---
 title: "Update workspace SCIM"
+"og:image": "https://phaseo.app/og/dynamic?title=Update%20workspace%20SCIM&pathname=/docs/v1/api-reference/endpoint/identity-scim-update"
 badge: "Beta"
-openapi: "PUT /identity/scim"
+openapi: "/openapi/v1/openapi.yaml PUT /identity/scim"
 ---
 <Note>Identity administration requires an owner or admin identity. Enabling SSO or SCIM and creating provisioning tokens require the identity add-on.</Note>
+
+Only the workspace owner can change SCIM provisioning or create and revoke its tokens. SCIM requests are accepted only with a token the current workspace owner created; if an admin or a previous owner created yours, the owner must create a new one.

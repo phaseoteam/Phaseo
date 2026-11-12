@@ -1,5 +1,3 @@
-"use client";
-
 import {
 	Fragment,
 	type KeyboardEvent,
@@ -11,7 +9,7 @@ import {
 	useState,
 } from "react";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import type { DateRange } from "react-day-picker";
 import {
 	CartesianGrid,
@@ -114,6 +112,16 @@ import {
 	dispatchProviderInspectorOpen,
 	subscribeProviderInspector,
 } from "@/components/(data)/model/pricing/providerInspectorSync";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
+import ModelChartShareButton from "@/components/(data)/model/share/ModelChartShareButton";
+import type { ChartShareRenderSize } from "@/components/share/ChartShareButton";
+import { fromShareDate, readSharedChartState, toShareDate } from "@/lib/share/chartShare";
+import {
+	MOBILE_NAME_CELL,
+	MOBILE_ROW,
+	MOBILE_STAT_CELL,
+	MOBILE_TABLE_BLOCK,
+} from "@/components/(data)/model/pricing/providerTableMobile";
 
 const dailyAveragePricePer1MCache = new WeakMap<ModelPricingHistoryRule, number>();
 
@@ -201,7 +209,7 @@ function formatTokenCount(value: number, formatCount: (count: number) => string)
 function formatUsdValue(value: number | null, locale: string, freeLabel: string): string {
 	if (value == null || !Number.isFinite(value)) return "--";
 	if (value === 0) return freeLabel;
-	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 6 }).format(value);
+	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 6 }).format(value);
 }
 
 function formatAxisUsd(value: number, locale: string): string {
@@ -510,7 +518,7 @@ function PricingLineTypeIcon({ plan, color }: { plan: string; color: string }) {
 
 function PricingTierLabel({ providerName, plan }: { providerName: string; plan: string }) {
 	return (
-		<span className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground">
+		<span className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground max-sm:whitespace-normal">
 			<span>{providerName}</span>
 			<ServiceTierBadge plan={plan} />
 		</span>
@@ -724,12 +732,15 @@ function PricingHistoryChart({
 	highlightedSeriesKey,
 	range,
 	expanded,
+	exportSize,
 }: {
 	state: ReturnType<typeof buildPricingHistoryState>;
 	visibleSeriesKeys: string[];
 	highlightedSeriesKey: string | null;
 	range: PricingRange;
 	expanded?: boolean;
+	/** Renders at exactly this size, for a share image. */
+	exportSize?: ChartShareRenderSize;
 }) {
 	const locale = useLocale();
 	const tx = useTranslations();
@@ -737,7 +748,9 @@ function PricingHistoryChart({
 	return (
 		<ChartContainer
 			config={state.chartConfig}
-			className={cn("w-full min-w-0", expanded ? "h-[min(34vh,360px)]" : "h-[300px]")}
+			className={exportSize ? undefined : cn("w-full min-w-0", expanded ? "h-[min(34vh,360px)]" : "h-[300px]")}
+			style={exportSize}
+			initialDimension={exportSize}
 		>
 			<LineChart data={state.chartData} margin={{ top: 12, right: 16, bottom: 4, left: 4 }}>
 				<CartesianGrid vertical={false} className="stroke-muted/70" />
@@ -864,8 +877,23 @@ export default function PricingInsights({
 		) - 1
 		: undefined;
 	const effectivePricingViewportRef = useRef<HTMLDivElement>(null);
+	const pricingHistoryShareRef = useRef<HTMLDivElement>(null);
 	const [effectivePricingTableOverflows, setEffectivePricingTableOverflows] =
 		useState(false);
+
+	// A shared chart link carries the view, meter and range it was shared with.
+	useEffect(() => {
+		const shared = readSharedChartState(window.location.search, "pricing-history");
+		if (!shared) return;
+		const view = shared.get("view");
+		if (view === "effective" || view === "listed") setPricingView(view);
+		const range = shared.get("range");
+		if (range && (RANGE_OPTIONS as string[]).includes(range)) setPricingRange(range as PricingRange);
+		const meter = shared.get("meter");
+		if (meter) setSelectedMeter(meter);
+		const from = fromShareDate(shared.get("from"));
+		if (from) setCustomPricingRange({ from, to: fromShareDate(shared.get("to")) ?? from });
+	}, []);
 
 	useEffect(() => subscribeProviderInspector(setActiveProviderInspectorId), []);
 
@@ -1402,7 +1430,7 @@ export default function PricingInsights({
 				</div>
 
 				<div className="flex w-full flex-wrap items-center gap-2">
-					<div className="inline-flex h-8 rounded-md border bg-background p-0.5" aria-label={t("pricingView")}>
+					<div className="inline-flex h-8 rounded-md border bg-background p-0.5 max-sm:h-10" aria-label={t("pricingView")}>
 						{(["effective", "listed"] as const).map((view) => (
 							<button
 								key={view}
@@ -1419,7 +1447,7 @@ export default function PricingInsights({
 						<SelectTrigger
 							id={expanded ? "expanded-pricing-meter" : "pricing-meter"}
 							size="default"
-							className="h-8 w-fit max-w-full rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted/40"
+							className="h-8 w-fit max-w-full rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted/40 max-sm:h-10!"
 							aria-label={t("meter")}
 						>
 							<SelectValue>{formatLocalizedMeterLabel(activeMeter)}</SelectValue>
@@ -1432,19 +1460,21 @@ export default function PricingInsights({
 							))}
 						</SelectContent>
 					</Select>
-					<div className="ml-auto flex flex-wrap items-center gap-1.5">
-						<div className="inline-flex h-8 rounded-md border bg-background p-0.5" aria-label={t("historyRange")}>
+					<div className="ml-auto flex flex-wrap items-center gap-1.5 max-sm:w-full">
+						<div className="inline-flex h-8 rounded-md border bg-background p-0.5 max-sm:h-10 max-sm:flex-1" aria-label={t("historyRange")}>
 							{RANGE_OPTIONS.map((range) => (
 								<button
 									key={range}
 									type="button"
+									aria-label={range === "7d" ? t("ranges.week") : range === "30d" ? t("ranges.month") : range === "90d" ? t("ranges.quarter") : range === "1y" ? t("ranges.year") : t("all")}
+									title={range === "7d" ? t("ranges.week") : range === "30d" ? t("ranges.month") : range === "90d" ? t("ranges.quarter") : range === "1y" ? t("ranges.year") : t("all")}
 									onClick={() => {
 										setCustomPricingRange(undefined);
 										setPricingRange(range);
 									}}
-									className={cn("rounded-[5px] px-2 text-xs font-medium transition-colors", !customPricingRange && pricingRange === range ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+									className={cn("rounded-[5px] px-2 text-xs font-medium transition-colors max-sm:flex-1", !customPricingRange && pricingRange === range ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
 								>
-									{range === "7d" ? t("ranges.week") : range === "30d" ? t("ranges.month") : range === "90d" ? t("ranges.quarter") : range === "1y" ? t("ranges.year") : t("all")}
+									{range === "7d" ? t("rangesShort.week") : range === "30d" ? t("rangesShort.month") : range === "90d" ? t("rangesShort.quarter") : range === "1y" ? t("rangesShort.year") : t("all")}
 								</button>
 							))}
 						</div>
@@ -1453,7 +1483,7 @@ export default function PricingInsights({
 							onOpenChange={(open) => setOpenCalendarSurface(open ? (expanded ? "expanded" : "base") : null)}
 						>
 							<PopoverTrigger asChild>
-								<Button type="button" variant="outline" size="icon" className={cn("size-8 rounded-md", customPricingRange && "bg-muted text-foreground")} aria-label={t("customRange")}>
+								<Button type="button" variant="outline" size="icon" className={cn("size-8 rounded-md max-sm:size-10", customPricingRange && "bg-muted text-foreground")} aria-label={t("customRange")}>
 									<CalendarDays className="size-3.5" />
 								</Button>
 							</PopoverTrigger>
@@ -1473,6 +1503,37 @@ export default function PricingInsights({
 							<Download className="size-3.5" />
 							CSV
 						</Button> : null}
+						{!expanded && pricingHistoryState.hasData ? (
+							<ModelChartShareButton
+								targetRef={pricingHistoryShareRef}
+								section="pricing"
+								chartId="pricing-history"
+								title={t("historyTitle")}
+								subtitle={[
+									displayedPricingView === "listed" ? t("list") : t("effective"),
+									formatLocalizedMeterLabel(activeMeter),
+									customPricingRange?.from
+										? `${customPricingRange.from.toLocaleDateString(locale, { day: "numeric", month: "short" })} – ${(customPricingRange.to ?? customPricingRange.from).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })}`
+										: pricingRange === "7d" ? t("ranges.week") : pricingRange === "30d" ? t("ranges.month") : pricingRange === "90d" ? t("ranges.quarter") : pricingRange === "1y" ? t("ranges.year") : t("all"),
+								].join(" · ")}
+								state={{
+									view: displayedPricingView,
+									meter: activeMeter,
+									range: customPricingRange?.from ? null : pricingRange,
+									from: customPricingRange?.from ? toShareDate(customPricingRange.from) : null,
+									to: customPricingRange?.from ? toShareDate(customPricingRange.to ?? customPricingRange.from) : null,
+								}}
+								renderForShare={(size) => (
+									<PricingHistoryChart state={pricingHistoryState} visibleSeriesKeys={visibleSeriesKeys} highlightedSeriesKey={null} range={pricingRange} exportSize={size} />
+								)}
+								legend={visibleSeriesKeys.flatMap((key) => {
+									const series = pricingHistoryState.chartConfig[key];
+									// Leave out providers with no line in the current view.
+									const hasPoints = pricingHistoryState.chartData.some((row) => Number.isFinite(Number((row as Record<string, unknown>)[key])) && (row as Record<string, unknown>)[key] != null);
+									return series?.color && hasPoints ? [{ label: String(series.label ?? key), color: series.color }] : [];
+								})}
+							/>
+						) : null}
 						{!expanded ? (
 							<Button type="button" variant="outline" size="icon" className="size-8 rounded-md" onClick={() => setIsHistoryExpanded(true)} aria-label={t("expand")}>
 								<Maximize2 className="size-3.5" />
@@ -1482,7 +1543,7 @@ export default function PricingInsights({
 				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-lg border bg-background p-2 sm:p-3">
+			<div ref={expanded ? undefined : pricingHistoryShareRef} className="overflow-hidden rounded-lg border bg-background p-2 sm:p-3">
 			{pricingHistoryState.hasData ? (
 				<PricingHistoryChart state={pricingHistoryState} visibleSeriesKeys={visibleSeriesKeys} highlightedSeriesKey={highlightedSeriesKey} range={pricingRange} expanded={expanded} />
 			) : (
@@ -1554,8 +1615,8 @@ export default function PricingInsights({
 					}
 					viewportRef={effectivePricingViewportRef}
 				>
-					<Table className="min-w-[1040px]" wrapInContainer={false}>
-						<TableHeader>
+					<Table className={cn("sm:min-w-[1040px]", MOBILE_TABLE_BLOCK)} wrapInContainer={false}>
+						<TableHeader className="max-sm:hidden">
 							<TableRow className="hover:bg-transparent">
 								<TableHead className="h-8 w-[28%] px-3">
 									<SortHead
@@ -1611,7 +1672,7 @@ export default function PricingInsights({
 								</TableHead>
 							</TableRow>
 						</TableHeader>
-						<TableBody>
+						<TableBody className={MOBILE_TABLE_BLOCK}>
 							{sortedRows.map((row) => {
 								const additionalTierRows = (providerTierRowsById.get(row.providerId) ?? [])
 									.filter((tierRow) => tierRow.pricingPlan !== row.pricingPlan);
@@ -1631,9 +1692,9 @@ export default function PricingInsights({
 									}}
 									onClick={(event) => handleProviderRowClick(event, row.providerId)}
 									onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
-									className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+									className={cn("cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring", MOBILE_ROW)}
 								>
-									<TableCell className="relative px-3 py-1.5">
+									<TableCell className={cn("relative px-3 py-1.5", MOBILE_NAME_CELL)}>
 										{activeProviderInspectorId === row.providerId ? (
 											<span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-primary" />
 										) : null}
@@ -1656,7 +1717,7 @@ export default function PricingInsights({
 												event.preventDefault();
 												openProviderSheet(row.providerId);
 											}}
-											className="group/provider inline-flex items-center gap-2.5 whitespace-nowrap"
+											className="group/provider inline-flex min-w-0 items-center gap-2.5 whitespace-nowrap max-sm:whitespace-normal"
 										>
 											<span className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover/provider:border-zinc-300 dark:border-zinc-800 dark:group-hover/provider:border-zinc-700">
 												<span className="relative h-3.5 w-3.5">
@@ -1691,32 +1752,32 @@ export default function PricingInsights({
 										</Button> : null}
 										</div>
 									</TableCell>
-									<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">
+									<TableCell data-label={t("table.effectiveIn")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>
 										{formatUsd(row.inputPricePer1M)}
 									</TableCell>
-									<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">
+									<TableCell data-label={t("table.effectiveOut")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>
 										{formatUsd(row.outputPricePer1M)}
 									</TableCell>
-									<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">
+									<TableCell data-label={t("table.listIn")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>
 										{formatUsd(row.listedInputPricePer1M)}
 									</TableCell>
-									<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">
+									<TableCell data-label={t("table.listOut")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>
 										{formatUsd(row.listedOutputPricePer1M)}
 									</TableCell>
-									<TableCell className="px-3 py-1.5 text-left tabular-nums">
+									<TableCell data-label={t("table.cacheHitRate")} className={cn("px-3 py-1.5 text-left tabular-nums", MOBILE_STAT_CELL)}>
 										<div className="font-medium text-foreground">
 											{formatPercent(row.cacheHitRatePct)}
 										</div>
 									</TableCell>
-									<TableCell className="px-3 py-1.5 text-left tabular-nums">
+									<TableCell data-label={t("table.tokenShare")} className={cn("px-3 py-1.5 text-left tabular-nums", MOBILE_STAT_CELL)}>
 										<Tooltip delayDuration={120}>
 											<TooltipTrigger asChild>
 												<button
 													type="button"
-												className="flex items-center justify-start gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+												className="flex items-center justify-start gap-2 rounded-sm max-sm:w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 										aria-label={t("tokenShareFrom", { percent: formatPercent(row.tokenSharePct), count: formatTokenCount(row.totalTokens30d, formatLocalizedTokenCount) })}
 												>
-													<div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+													<div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted max-sm:w-auto max-sm:min-w-0 max-sm:flex-1">
 														<div
 															className="h-full rounded-full bg-primary"
 															style={{
@@ -1724,7 +1785,7 @@ export default function PricingInsights({
 															}}
 														/>
 													</div>
-													<div className="w-12 font-medium text-foreground">
+													<div className="w-12 shrink-0 font-medium text-foreground">
 														{formatPercent(row.tokenSharePct)}
 													</div>
 												</button>
@@ -1752,9 +1813,9 @@ export default function PricingInsights({
 											}}
 											onClick={(event) => handleProviderRowClick(event, row.providerId)}
 											onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
-											className="cursor-pointer bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+											className={cn("cursor-pointer bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring", MOBILE_ROW)}
 										>
-						<TableCell className="px-3 py-1.5">
+						<TableCell className={cn("px-3 py-1.5", MOBILE_NAME_CELL)}>
 						<div className="flex items-center gap-2">
 											<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan, tx) }) : t("tierUnavailable", { provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan, tx) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
 									<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
@@ -1762,12 +1823,12 @@ export default function PricingInsights({
 								<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />
 							</div>
 						</TableCell>
-										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.inputPricePer1M)}</TableCell>
-										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.outputPricePer1M)}</TableCell>
-										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.listedInputPricePer1M)}</TableCell>
-										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.listedOutputPricePer1M)}</TableCell>
-										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatPercent(tierRow.cacheHitRatePct)}</TableCell>
-										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatPercent(tierRow.tokenSharePct)}</TableCell>
+										<TableCell data-label={t("table.effectiveIn")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>{formatUsd(tierRow.inputPricePer1M)}</TableCell>
+										<TableCell data-label={t("table.effectiveOut")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>{formatUsd(tierRow.outputPricePer1M)}</TableCell>
+										<TableCell data-label={t("table.listIn")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>{formatUsd(tierRow.listedInputPricePer1M)}</TableCell>
+										<TableCell data-label={t("table.listOut")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>{formatUsd(tierRow.listedOutputPricePer1M)}</TableCell>
+										<TableCell data-label={t("table.cacheHitRate")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>{formatPercent(tierRow.cacheHitRatePct)}</TableCell>
+										<TableCell data-label={t("table.tokenShare")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>{formatPercent(tierRow.tokenSharePct)}</TableCell>
 										</TableRow>
 									);
 								}) : null}

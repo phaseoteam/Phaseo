@@ -5,72 +5,31 @@ sidebarTitle: "Organisations"
 icon: "building-2"
 ---
 
-Chaque modèle de Phaseo est associé à une **organisation**, l’entité responsable de son développement, de son entraînement et de sa maintenance.
-Les organisations forment la base de l’écosystème de l’IA. Savoir qui développe chaque modèle aide à comprendre son objectif, ses capacités et sa fiabilité.
+Ouvrez une organisation sur la page [Organisations](https://phaseo.app/organisations) pour voir tous les modèles qu’elle a publiés et leurs performances sur le Gateway. Chaque modèle de Phaseo appartient à une organisation : l’entreprise ou le laboratoire qui le développe et le maintient.
 
----
+## Ce que montre une page d’organisation
 
-## Contenu d’une page d’organisation
+La page comporte deux onglets.
 
-Chaque page présente l’entreprise ou l’équipe de recherche, notamment :
-
-| Section | Description |
-| --- | --- |
-| **Vue d’ensemble** | Informations générales : nom, description, pays, année de création et site web. |
-| **Modèles publiés** | Tous les modèles publiés par l’organisation, y compris ceux qui sont archivés ou obsolètes. |
-
----
-
-## Types d’organisations sur Phaseo
-
-| Type | Exemple | Description |
+| Onglet | Section | Ce qu’elle vous apprend |
 | --- | --- | --- |
-| **Laboratoires de recherche** | OpenAI, Anthropic, DeepMind | Se consacrent au développement et à l’innovation en matière de modèles d’IA de pointe. |
-| **Entreprises technologiques** | Google, Meta, Microsoft | Déploient une infrastructure d’IA à grande échelle et des applications grand public. |
-| **Startups** | Mistral, Perplexity, Suno | Petites équipes qui créent des systèmes d’IA spécialisés ou efficaces. |
-| **Communautés open source** | Hugging Face, Stability AI | Collaborations décentralisées qui développent des modèles de manière transparente. |
+| **Vue d’ensemble** | À propos | Nom, description et pays. |
+| | Performances | La latence et le débit récents sur le Gateway pour l’ensemble des modèles de l’organisation. |
+| | Modèles récents | Les dernières sorties, avec leur disponibilité, leur contexte, leurs tarifs et leur utilisation. |
+| | Sur le web | Des liens vers le site web de l’organisation, son GitHub, son Hugging Face et ses comptes sur les réseaux sociaux. |
+| **Modèles** | | Tous les modèles publiés par l’organisation, y compris ceux archivés et dépréciés. |
 
----
+## Organisations et fournisseurs d’API
 
-## Fournisseur ou organisation
+L’organisation crée le modèle ; un [fournisseur d’API](./api-providers.mdx) le sert. Un même modèle a souvent plusieurs fournisseurs.
 
-Il est important de distinguer les **organisations** des **fournisseurs d’API** :
-
-| Aspect | Organisation | Fournisseur d’API |
+| | Organisation | Fournisseur d’API |
 | --- | --- | --- |
-| **Définition** | Crée ou maintient le modèle. | Fournit un accès API au modèle. |
-| **Exemple** | _Anthropic_ a créé la série Claude. | _Anthropic_, _AWS_ et _Google Vertex_ donnent tous accès aux modèles Claude. |
-| **Priorité** | Recherche, entraînement et architecture du modèle. | Hébergement, routage, tarification et expérience utilisateur. |
+| **Rôle** | Entraîne et maintient le modèle. | Héberge le modèle derrière une API. |
+| **Exemple** | Anthropic a créé les modèles Claude. | Anthropic, Amazon Bedrock et Google Vertex servent tous des modèles Claude. |
 
-Certaines organisations, comme OpenAI ou Google, sont à la fois **développeur** et **fournisseur**. D’autres s’associent à plusieurs plateformes pour distribuer leurs modèles.
+Certaines organisations, comme OpenAI et Google, sont aussi fournisseurs de leurs propres modèles.
 
----
+## Signaler une correction
 
-## Contribuer aux données des organisations
-
-Si des informations sur une organisation sont manquantes ou obsolètes, ouvrez une issue GitHub avec la page concernée et les sources officielles. Les responsables appliquent les corrections approuvées dans l’éditeur de base de données.
-Vos contributions contribuent à maintenir la précision des données sur toute la plateforme.
-
-<Card
-	title="Contribuer aux données des organisations"
-	icon="github"
-	href="../contributing/editing-an-organisation.mdx"
-	horizontal
->
-	Découvrez comment signaler une correction d’organisation ou demander une entrée manquante.
-</Card>
-
----
-
-## Étapes suivantes
-
-Maintenant que vous savez comment les organisations sont présentées, découvrez leurs **benchmarks** et leurs **performances comparées**.
-
-<Card
-	title="Découvrir les benchmarks"
-	icon="chart-column-increasing"
-	href="./benchmarks.mdx"
-	horizontal
->
-	Comparez les performances des modèles de différentes organisations sur des tâches standardisées.
-</Card>
+Ouvrez une issue GitHub avec la page de l’organisation et une source officielle. Les mainteneurs appliquent les modifications approuvées dans la base de données. Consultez [Signaler une mise à jour d’organisation](../contributing/editing-an-organisation.mdx).

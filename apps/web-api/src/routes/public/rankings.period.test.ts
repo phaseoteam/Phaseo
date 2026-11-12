@@ -10,6 +10,8 @@ describe("ranking period comparisons", () => {
 		vi.stubGlobal("fetch", fetchMock);
 		const response = await publicRankingsRouter.request(`/rankings/period-leaderboard?metric=text_tokens&days=${days}`, {}, env);
 		expect(response.status).toBe(200);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
+		expect(response.headers.get("cache-tag")).toBe("web-api-rankings");
 		expect(String(fetchMock.mock.calls[0]?.[0])).toContain("get_public_period_leaderboard");
 		const body = await response.json() as { data: unknown[]; period: { start: string; end: string; previousStart: string } };
 		expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({ p_metric: "text_tokens", p_days: days, p_as_of: body.period.end });

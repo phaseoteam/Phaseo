@@ -66,6 +66,7 @@ const CATALOGUE_TAGS = [
 	"web-api-subscription-plans",
 	"web-api-countries",
 	"web-api-collections",
+	"web-api-entity-cards",
 	"web-api-search",
 ] as const;
 
@@ -90,7 +91,6 @@ const ALL_PUBLIC_TAGS = [
 	"web-api-rankings",
 	"web-api-ranking-metadata",
 	"web-api-pricing-models",
-	"web-api-monitor-history",
 	"web-api-og",
 ] as const;
 

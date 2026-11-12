@@ -1,11 +1,9 @@
-"use client";
-
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { toast } from "sonner";
 import { ArrowRight, Building2, PenLine } from "lucide-react";
 
-import { saveBillingOnboardingSettings } from "@/app/(dashboard)/settings/credits/actions";
+import { saveBillingOnboardingSettings } from "@/features/settings/credits/actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -15,7 +13,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 type Props = {
@@ -153,12 +151,12 @@ export default function EnterpriseBillingOnboardingClient(props: Props) {
 		setSaving(true);
 		try {
 			await toast.promise(
-				saveBillingOnboardingSettings({
+				saveBillingOnboardingSettings({ data: {
 					billingDay,
 					paymentTermsDays,
 					termsAccepted: isInvoiceActive ? true : holdComplete,
 					signedByName: safeSignerName,
-				}),
+				} }),
 				{
 					loading: t("savingBilling"),
 					success: t("billingSaved"),

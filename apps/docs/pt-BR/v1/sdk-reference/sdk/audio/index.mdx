@@ -1,28 +1,27 @@
 ---
 icon: "audio-lines"
-title: "TTS / STT (texto para fala / fala para texto, AI SDK)"
-description: "Transcrição de fala (STT) e síntese de fala (TTS) com modelos do provedor Phaseo."
+title: "TTS / STT (AI SDK)"
+sidebarTitle: "TTS / STT"
+description: "Fala para texto (STT) e texto para fala (TTS) com modelos do provedor Phaseo."
 ---
 
-Use `experimental_transcribe` com `transcriptionModel` e `experimental_generateSpeech` com `speechModel`.
+Passe `phaseo.transcriptionModel(modelId)` para `transcribe` para converter fala em texto e `phaseo.speechModel(modelId)` para `generateSpeech` para converter texto em fala. O provedor envia o áudio para `/v1/audio/transcriptions` como um formulário multipart e envia as solicitações de fala para `/v1/audio/speech`.
 
 ```ts
 import { readFileSync, writeFileSync } from "node:fs";
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { experimental_generateSpeech, experimental_transcribe } from "ai";
+import { generateSpeech, transcribe } from "ai";
 
-const audioInput = readFileSync("./audio.mp3");
-
-const transcription = await experimental_transcribe({
+const transcription = await transcribe({
   model: phaseo.transcriptionModel("openai/whisper-1"),
-  audioData: new Blob([audioInput], { type: "audio/mpeg" }),
+  audio: readFileSync("./audio.mp3"),
 });
 
 console.log(transcription.text);
 console.log(transcription.providerMetadata);
 
-const speech = await experimental_generateSpeech({
-  model: phaseo.speechModel("openai/tts-1"),
+const speech = await generateSpeech({
+  model: phaseo.speechModel("openai/gpt-4o-mini-tts"),
   text: "Hello from Phaseo audio.",
   voice: "alloy",
   outputFormat: "mp3",
@@ -32,9 +31,10 @@ writeFileSync("./speech.mp3", Buffer.from(speech.audio.uint8Array));
 console.log(speech.providerMetadata);
 ```
 
-## Observações
+`audio` aceita um `Buffer`, `Uint8Array`, `ArrayBuffer`, string base64 ou `URL`. O AI SDK 7 ainda exporta os nomes antigos `experimental_transcribe` e `experimental_generateSpeech` como aliases.
 
-- Os helpers de áudio atuais do AI SDK ainda são experimentais, portanto os nomes podem mudar quando as APIs estáveis upstream forem lançadas.
-- Os formatos de entrada e saída de áudio variam conforme o modelo.
-- Ajuste o tamanho dos dados e os tempos limite para arquivos longos.
-- Repita as solicitações após respostas transitórias `429` e `5xx`.
+## Lidar com áudios longos ou com falhas
+
+- Os formatos de entrada e saída compatíveis dependem do modelo.
+- Aumente os timeouts para arquivos longos e mantenha os uploads dentro do limite de tamanho do modelo (25 MB na maioria dos modelos).
+- Repita respostas `429` e `5xx` transitórias com backoff.

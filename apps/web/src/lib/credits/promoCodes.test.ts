@@ -1,7 +1,9 @@
+import { describe, it, expect } from "vitest";
 import {
 	defaultRedeemMessageForStatus,
 	getCreditTransactionKindLabel,
 	isPromoCodeFormatValid,
+	isSlackAgentCharge,
 	normalizePromoCodeInput,
 	resolveRedeemMessage,
 } from "./promoCodes";
@@ -47,5 +49,13 @@ describe("promo code helpers", () => {
 		expect(getCreditTransactionKindLabel("goodwill_credit")).toBe(
 			"Goodwill Credit",
 		);
+	});
+
+	it("labels the Slack agent's month-end charge apart from usage", () => {
+		expect(getCreditTransactionKindLabel("charge", "slack_agent_month")).toBe("Slack agent");
+		expect(getCreditTransactionKindLabel("charge", "SLACK_AGENT_MONTH")).toBe("Slack agent");
+		expect(getCreditTransactionKindLabel("charge", "gateway_request")).toBe("Usage");
+		expect(getCreditTransactionKindLabel("charge")).toBe("Usage");
+		expect(isSlackAgentCharge(null)).toBe(false);
 	});
 });

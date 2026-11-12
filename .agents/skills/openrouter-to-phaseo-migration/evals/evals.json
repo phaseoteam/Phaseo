@@ -1,0 +1,39 @@
+[
+	{
+		"id": "full-openrouter-migration",
+		"query": "This repo calls https://openrouter.ai/api/v1 with OPENROUTER_API_KEY in four places. Migrate it all to Phaseo.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Inventories every OpenRouter usage before editing",
+			"Replaces the endpoint and key with the Phaseo base URL and PHASEO_API_KEY",
+			"Maps model IDs through GET /v1/models instead of assuming they match",
+			"Validates with health, models, a non-streaming and a streaming request, and produces a migration report"
+		]
+	},
+	{
+		"id": "provider-routing-object",
+		"query": "Our OpenRouter requests send a provider object with order and allow_fallbacks. What happens to that on Phaseo?",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Explains how the OpenRouter-only behaviour maps to Phaseo routing, or that it has no direct equivalent",
+			"Does not silently drop the setting without telling the user"
+		]
+	},
+	{
+		"id": "sk-or-key-found",
+		"query": "I found sk-or-v1 keys in .env.example and a test fixture. We're switching to Phaseo.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Replaces them with PHASEO_API_KEY placeholders",
+			"Warns that real keys must be rotated if they were ever committed"
+		]
+	},
+	{
+		"id": "not-for-litellm",
+		"query": "We use LiteLLM proxy with a config.yaml of model aliases. How do we move to Phaseo?",
+		"should_trigger": false,
+		"expected_behavior": [
+			"Uses the general migration skill rather than the OpenRouter playbook"
+		]
+	}
+]

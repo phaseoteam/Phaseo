@@ -1,6 +1,6 @@
 import type { DecisionsRequest } from "@core/schemas";
 import { LegacyDecisionsSchema } from "@core/schemas";
-import type { z } from "zod";
+import type * as z from "zod";
 import type { IRDecisionQuestion, IRDecisionsRequest } from "@core/ir";
 import { NativeDecisionAnswerSchema, type NativeDecisionQuestion, type NativeDecisionRequest } from "@core/decisions";
 
@@ -13,16 +13,29 @@ export function decodeDecisionsRequest(req: DecisionsRequest): IRDecisionsReques
 		const legacy = req as z.infer<typeof LegacyDecisionsSchema>;
 		return {
 			model: legacy.model, state: legacy.state,
+			...(legacy.provider_options === undefined ? {} : { providerOptions: legacy.provider_options }),
 			...(legacy.images === undefined ? {} : { images: legacy.images }),
 			questions: legacy.questions as IRDecisionsRequest["questions"],
 		};
 	}
 	const native = req as unknown as NativeDecisionRequest;
 	const images: string[] = [];
+	const audio: NonNullable<IRDecisionsRequest["audio"]> = [];
+	const videos: string[] = [];
 	const state = typeof native.input === "string" ? native.input : native.input.map(message => ({
 		role: message.role,
 		content: typeof message.content === "string" ? message.content : message.content.map(part => {
 			if (part.type === "input_text") return part.text;
+			if (part.type === "input_audio") {
+				const clip = part.input_audio;
+				const index = audio.push({ type: "audio", source: clip.url ? "url" : "data",
+					data: clip.url ?? clip.data!, ...(clip.format ? { format: clip.format } : {}) }) - 1;
+				return `[Audio ${index}]`;
+			}
+			if (part.type === "input_video") {
+				const index = videos.push(typeof part.video_url === "string" ? part.video_url : part.video_url.url) - 1;
+				return `[Video ${index}]`;
+			}
 			const index = images.push(part.image_url) - 1;
 			return `[Image ${index}]`;
 		}).join("\n"),
@@ -30,6 +43,7 @@ export function decodeDecisionsRequest(req: DecisionsRequest): IRDecisionsReques
 	const questions = Object.fromEntries(native.questions.map((question, index): [string, IRDecisionQuestion] => {
 		const id = decisionQuestionId(index);
 		if (question.type === "predicate") return [id, { type: "noul", instructions: question.instructions }];
+		if (question.type === "box") return [id, { type: "box", instructions: question.instructions }];
 		if (question.type === "choice") return [id, {
 			type: "choice", instructions: question.instructions,
 			criteria: Object.fromEntries(question.choices.map((choice, option) => [String(option),
@@ -42,7 +56,10 @@ export function decodeDecisionsRequest(req: DecisionsRequest): IRDecisionsReques
 	}));
 	return {
 		model: native.model, state, questions,
+		...(native.provider_options === undefined ? {} : { providerOptions: native.provider_options }),
 		...(images.length ? { images } : {}),
+		...(audio.length ? { audio } : {}),
+		...(videos.length ? { videos } : {}),
 		decisionContext: {
 			model: native.model, input: native.input, questions: native.questions,
 			...(native.safety_identifier === undefined ? {} : { safety_identifier: native.safety_identifier }),
@@ -56,6 +73,9 @@ export function decodeNativeDecisionAnswer(payload: unknown, question: NativeDec
 	if (!parsed.success || parsed.data.name !== (question.name ?? null)) return null;
 	const answer = parsed.data;
 	if (answer.type === "refusal") return { type: "refusal" };
+	if (question.type === "box") return answer.type === "box"
+		? { type: "box", box: answer.box, confidence: answer.confidence } : null;
+	if (answer.type === "box") return null;
 	if (question.type === "predicate") {
 		return answer.type === "predicate" ? { type: "noul", noul: answer.probability } : null;
 	}

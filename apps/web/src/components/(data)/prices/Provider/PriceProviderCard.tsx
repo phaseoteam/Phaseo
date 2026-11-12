@@ -1,7 +1,7 @@
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
+import Link from "@/components/link";
+import Image from "@/components/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

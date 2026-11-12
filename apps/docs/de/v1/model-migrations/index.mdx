@@ -4,40 +4,28 @@ title: "Modellmigrationen"
 description: "Modellspezifische Hinweise für die sichere Einführung neuer Modellversionen in der Produktion."
 ---
 
-# Modellmigrationen
+Suche das Modell, zu dem du wechselst, ändere die Anfrageform wie in seinem Leitfaden beschrieben und führe deine Evaluierungen erneut aus, bevor du Traffic verschiebst. Diese Leitfäden behandeln einen Modellwechsel auf derselben Plattform; um Gateway oder SDK zu wechseln, verwende die [Leitfäden zur Plattformmigration](../migration-guides/index).
 
-Nutzen Sie diese Leitfäden, wenn Sie das Modell aktualisieren und auf derselben Plattform bleiben.
+Neueste Version zuerst:
 
-Sie konzentrieren sich auf Änderungen, die bestehende Integrationen häufig zuerst beeinträchtigen:
+| Leitfaden | Phaseo-Modell-ID | Veröffentlicht | Wichtigste Anfrageänderungen |
+| --- | --- | --- | --- |
+| [Anthropic Claude Opus 5](./anthropic-claude-opus-5) | `anthropic/claude-opus-5` | 24. Juli 2026 | Adaptives Thinking standardmäßig an; keine Sampling-Parameter |
+| [OpenAI GPT-5.6](./openai-migrating-to-gpt-5-6) | `openai/gpt-5.6-sol`, `-terra`, `-luna` | 9. Juli 2026 | Drei Stufen, Effort `max`, neue Cache-Zähler |
+| [Anthropic Claude Opus 4.8](./anthropic-claude-opus-4-1-to-4-8) | `anthropic/claude-opus-4.8` | 28. Mai 2026 | Ersetzt das eingestellte Opus 4.1; adaptives Thinking |
+| [Anthropic Claude Opus 4.7](./anthropic-claude-opus-4-6-to-4-7) | `anthropic/claude-opus-4.7` | 16. April 2026 | Keine Thinking-Budgets oder Sampling-Parameter; Effort `xhigh` |
+| [Mistral Small 4](./mistral-small-3-2-to-mistral-small-4) | `mistral/mistral-small-4` | 16. März 2026 | Reasoning an oder aus |
+| [OpenAI GPT-5.4](./openai-migrating-to-gpt-5-4) | `openai/gpt-5.4` | 5. März 2026 | Effort `xhigh`, Bilddetail `original` |
+| [Google Nano Banana 2](./google-nano-banana-1-to-nano-banana-2) | `google/gemini-3.1-flash-image` | 26. Februar 2026 | Seitenverhältnis und Ausgabe von 0.5K bis 4K |
+| [Google Gemini 3.1](./google-migrating-to-gemini-3-and-3-1) | `google/gemini-3.1-pro-preview` | 19. Februar 2026 | Thinking-Stufen, Thought Signatures |
+| [Anthropic Claude Sonnet 4.6](./anthropic-claude-sonnet-4-5-to-4-6) | `anthropic/claude-sonnet-4.6` | 17. Februar 2026 | Keine Prefills; `output_config.format` |
+| [SpaceXAI Grok 4.20](./xai-grok-4-20) | `spacex-ai/grok-4.20` | 17. Februar 2026 | Reasoning-Schalter; Effort für Multi-Agent |
+| [Anthropic Claude Opus 4.6](./anthropic-claude-opus-4-5-to-4-6) | `anthropic/claude-opus-4.6` | 5. Februar 2026 | Keine Prefills; `output_config.format` |
 
-- Änderungen an Anfrageparametern
-- Unterschiede im Verhalten von Prompts und Reasoning
-- Regressionen bei strukturierten Ausgaben und Tool-Aufrufen
-- Strategien für schrittweise Einführung, Fallback und Rollback
+[Abgekündigte OpenAI-Modelle](./openai-deprecations) listet die Abschalttermine und Nachfolger von OpenAI auf.
 
-## Modellleitfäden
+## Ein Modell migrieren
 
-Die Leitfäden sind nach Veröffentlichungsdatum des Zielmodells sortiert, beginnend mit dem neuesten.
-
-| Modell | Veröffentlicht | Geeignet für |
-| --- | --- | --- |
-| [Anthropic Claude Opus 5](./anthropic-claude-opus-5.mdx) | 24. Juli 2026 | Komplexes Reasoning und lang laufende Agenten |
-| [OpenAI GPT-5.6](./openai-migrating-to-gpt-5-6.mdx) | 9. Juli 2026 | Abgestuftes Reasoning, Programmierung und professionelle Arbeit |
-| [Anthropic Claude Opus 4.8](./anthropic-claude-opus-4-1-to-4-8.mdx) | 28. Mai 2026 | Langer Kontext und adaptives Denken |
-| [Anthropic Claude Opus 4.7](./anthropic-claude-opus-4-6-to-4-7.mdx) | 16. April 2026 | Intensives Reasoning mit strengeren Anfragekontrollen |
-| [Mistral Small 4](./mistral-small-3-2-to-mistral-small-4.mdx) | 16. März 2026 | Effiziente Workloads mit optionalem Reasoning |
-| [OpenAI GPT-5.4](./openai-migrating-to-gpt-5-4.mdx) | 5. März 2026 | Reasoning, Vision und Computernutzung |
-| [Google Nano Banana 2](./google-nano-banana-1-to-nano-banana-2.mdx) | 26. Februar 2026 | Bildgenerierung und -bearbeitung in der Produktion |
-| [Google Gemini 3.1](./google-migrating-to-gemini-3-and-3-1.mdx) | 19. Februar 2026 | Multimodale und reasoning-intensive Workloads |
-| [Anthropic Claude Sonnet 4.6](./anthropic-claude-sonnet-4-5-to-4-6.mdx) | 17. Februar 2026 | Programmierung, Computernutzung und Agentenplanung |
-| [SpaceXAI Grok 4.20](./xai-grok-4-20.mdx) | 17. Februar 2026 | Reasoning und Multi-Agenten-Workloads |
-| [Anthropic Claude Opus 4.6](./anthropic-claude-opus-4-5-to-4-6.mdx) | 5. Februar 2026 | Lang laufende Programmier- und Agentenaufgaben |
-
-## Diesen Bereich verwenden
-
-1. Beginnen Sie mit dem Leitfaden für die genaue Modellfamilie, auf die Sie wechseln.
-2. Aktualisieren Sie die Anfrageparameter, bevor Sie die Ausgabequalität testen.
-3. Wiederholen Sie Prompt- und Schema-Auswertungen mit produktionsnahen Beispielen.
-4. Stellen Sie den Traffic schrittweise um und legen Sie Fallback- und Rollback-Regeln fest.
-
-Wenn Sie Anbieter, SDK oder Gateway statt nur des Modells wechseln, nutzen Sie den Bereich [Migrationsleitfäden](../migration-guides/index.mdx).
+1. Passe die Anfrageform gemäß dem Leitfaden des Modells an, bevor du die Ausgabequalität testest.
+2. Führe Prompt- und Schema-Evaluierungen mit produktionsnahen Prompts erneut aus.
+3. Verschiebe Traffic schrittweise, mit dem bisherigen Modell als Fallback in `models` und einer klaren Regel zum Zurückrollen.

@@ -5,6 +5,8 @@ import { ATLAS_CLOUD_OPENAI_COMPAT_CONFIGS } from "../atlas-cloud/config";
 import { ARCEE_OPENAI_COMPAT_CONFIGS } from "../arcee/config";
 import { AI21_OPENAI_COMPAT_CONFIGS } from "../ai21/config";
 import { AKASHML_OPENAI_COMPAT_CONFIGS } from "../akashml/config";
+import { PRIMALABS_OPENAI_COMPAT_CONFIGS } from "../primalabs/config";
+import { LG_OPENAI_COMPAT_CONFIGS } from "../lg/config";
 import { AMAZON_BEDROCK_OPENAI_COMPAT_CONFIGS } from "../amazon-bedrock/config";
 import { BASETEN_OPENAI_COMPAT_CONFIGS } from "../baseten/config";
 import { BYTEPLUS_OPENAI_COMPAT_CONFIGS } from "../byteplus/config";
@@ -76,10 +78,12 @@ import { REKA_OPENAI_COMPAT_CONFIGS } from "../reka/config";
 import { UPSTAGE_OPENAI_COMPAT_CONFIGS } from "../upstage/config";
 import { AMBIENT_OPENAI_COMPAT_CONFIGS } from "../ambient/config";
 import { EMPIRIOLABS_OPENAI_COMPAT_CONFIGS } from "../empiriolabs/config";
+import { SCALEDOWN_OPENAI_COMPAT_CONFIGS } from "../scaledown/config";
 import { STREAMLAKE_OPENAI_COMPAT_CONFIGS } from "../streamlake/config";
 import { SWITCHPOINT_OPENAI_COMPAT_CONFIGS } from "../switchpoint/config";
 import { WAFER_OPENAI_COMPAT_CONFIGS } from "../wafer/config";
 import { TENCENT_CLOUD_OPENAI_COMPAT_CONFIGS } from "../tencent-cloud/config";
+import { PARTICLE_AI_OPENAI_COMPAT_CONFIGS } from "../particle-ai/config";
 import { OPENROUTER_OPENAI_COMPAT_CONFIGS } from "../openrouter/config";
 
 export const OPENAI_COMPAT_CONFIG = {
@@ -89,6 +93,8 @@ export const OPENAI_COMPAT_CONFIG = {
 	...ARCEE_OPENAI_COMPAT_CONFIGS,
 	...AI21_OPENAI_COMPAT_CONFIGS,
 	...AKASHML_OPENAI_COMPAT_CONFIGS,
+	...PRIMALABS_OPENAI_COMPAT_CONFIGS,
+	...LG_OPENAI_COMPAT_CONFIGS,
 	...AMAZON_BEDROCK_OPENAI_COMPAT_CONFIGS,
 	...BASETEN_OPENAI_COMPAT_CONFIGS,
 	...BYTEPLUS_OPENAI_COMPAT_CONFIGS,
@@ -159,10 +165,12 @@ export const OPENAI_COMPAT_CONFIG = {
 	...UPSTAGE_OPENAI_COMPAT_CONFIGS,
 	...AMBIENT_OPENAI_COMPAT_CONFIGS,
 	...EMPIRIOLABS_OPENAI_COMPAT_CONFIGS,
+	...SCALEDOWN_OPENAI_COMPAT_CONFIGS,
 	...STREAMLAKE_OPENAI_COMPAT_CONFIGS,
 	...SWITCHPOINT_OPENAI_COMPAT_CONFIGS,
 	...WAFER_OPENAI_COMPAT_CONFIGS,
 	...TENCENT_CLOUD_OPENAI_COMPAT_CONFIGS,
+	...PARTICLE_AI_OPENAI_COMPAT_CONFIGS,
 	...OPENROUTER_OPENAI_COMPAT_CONFIGS,
 	...REFLECTION_OPENAI_COMPAT_CONFIGS,
 } satisfies Record<string, OpenAICompatConfig>;

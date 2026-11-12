@@ -9,11 +9,63 @@ const env = {
 };
 
 afterEach(() => {
+	vi.restoreAllMocks();
 	vi.unstubAllGlobals();
 	vi.useRealTimers();
 });
 
 describe("progressive model catalogue", () => {
+	it.each(["get_public_monitor_rows_payload", "v2_model_provider_routes?", "get_v2_provider_region_map", "v2_providers?"])("bounds a stalled enrichment query: %s", async (stage) => {
+		const controller = new AbortController();
+		const timeout = vi.spyOn(AbortSignal, "timeout").mockReturnValue(controller.signal);
+		let stalled = false;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			if (String(input).includes(stage)) {
+				expect(init?.signal).toBe(controller.signal);
+				stalled = true;
+				return new Promise<Response>((_resolve, reject) => {
+					if (init!.signal!.aborted) reject(init!.signal!.reason);
+					else init!.signal!.addEventListener("abort", () => reject(init!.signal!.reason), { once: true });
+				});
+			}
+			if (String(input).includes("get_public_monitor_rows_payload")) return new Response(JSON.stringify([{ model_id: "public/model", provider_api_model_id: "route", provider_id: "provider" }]));
+			if (!String(input).includes("v2_models?")) return new Response("[]");
+			return new Response(JSON.stringify([{ model_slug: "public/model", name: "Public", status: "active" }]), { headers: { "content-range": "0-0/1" } });
+		}));
+		const pending = app.request("/api/_web/models?limit=10", {}, env);
+		await vi.waitFor(() => expect(stalled).toBe(true));
+		controller.abort(new DOMException("Enrichment deadline", "TimeoutError"));
+		const response = await pending;
+		expect(response.status).toBe(200);
+		expect(timeout).toHaveBeenCalledWith(6_000);
+		expect(await response.json()).toMatchObject({ gateway_data_complete: false });
+	});
+	it("returns model metadata with incomplete gateway data when monitor enrichment times out", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input).includes("get_public_monitor_rows_payload")) return new Response(JSON.stringify({ code: "57014", message: "canceling statement due to statement timeout" }), { status: 500 });
+			if (String(input).includes("v2_models?")) return new Response(JSON.stringify([{ model_slug: "public/model", name: "Public", status: "active" }]), { headers: { "content-range": "0-0/1" } });
+			throw new Error("Unexpected request");
+		}));
+		const response = await app.request("/api/_web/models?limit=10", {}, env);
+		expect(response.status).toBe(200);
+		// Cached briefly at the edge, never served stale, so a slow database
+		// costs about one miss per minute instead of one per request.
+		expect(response.headers.get("cache-control")).toBe("public, max-age=0");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=60");
+		expect(response.headers.get("cache-tag")).toContain("web-api-models");
+		expect(await response.json()).toMatchObject({ gateway_data_complete: false, total: 1, models: [{ model_id: "public/model", gateway_monitor_rows: [] }] });
+	});
+	it("keeps the normal catalogue cache policy when gateway enrichment succeeds", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input).includes("get_public_monitor_rows_payload")) return new Response(JSON.stringify([{ model_id: "public/model", provider_api_model_id: "route", provider_id: "provider" }]));
+			if (String(input).includes("v2_models?")) return new Response(JSON.stringify([{ model_slug: "public/model", name: "Public", status: "active" }]), { headers: { "content-range": "0-0/1" } });
+			return new Response("[]");
+		}));
+		const response = await app.request("/api/_web/models?limit=10", {}, env);
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
+		expect(await response.json()).toMatchObject({ gateway_data_complete: true, models: [{ model_id: "public/model" }] });
+	});
 	it("returns a usable catalogue and router card without querying usage", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
@@ -66,7 +118,7 @@ describe("provider health RPC fallback", () => {
 		})).toBe(false);
 	});
 
-	it("publishes a redacted one-request stealth aggregate without exact timestamps or error categories", async () => {
+	it("publishes a one-request stealth aggregate only under the stealth identity", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("v2_model_provider_routes")) {
@@ -94,15 +146,122 @@ describe("provider health RPC fallback", () => {
 		);
 		const payload = await response.json() as any;
 
+		// Provider health has no location, stream or context filter, so it
+		// publishes at any volume; the stealth route keeps its masked identity.
 		expect(response.status).toBe(200);
-		expect(payload.rows).toEqual([expect.objectContaining({
-			provider_id: "stealth",
-			provider_name: "Stealth",
-			health_requests: 1,
-			uptime_pct: 100,
-		})]);
-		expect(payload.rows[0]).not.toHaveProperty("last_request_at");
-		expect(payload.rows[0]).not.toHaveProperty("error_code_counts");
+		expect(payload.rows).toEqual([
+			expect.objectContaining({
+				provider_id: "stealth",
+				provider_name: "Stealth",
+				health_requests: 1,
+				uptime_pct: 100,
+				error_category_counts: {},
+			}),
+		]);
+		expect(JSON.stringify(payload)).not.toMatch(/private[- ]provider|last_request_at/i);
+	});
+
+	it("reports per-attempt health beside the rows, including providers that only failed over", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("v2_model_provider_routes")) {
+				return new Response(JSON.stringify([{ provider_slug: "private-provider", is_stealth: true }]));
+			}
+			if (url.includes("get_v2_model_provider_tier_health_metrics")) {
+				return new Response(JSON.stringify([{ provider_id: "served", service_tier: "standard", provider_name: "Served", health_requests: 5, uptime_pct: 100 }]));
+			}
+			if (url.includes("get_v2_model_provider_attempt_health")) {
+				return new Response(JSON.stringify([
+					{ provider_id: "served", service_tier: "standard", provider_name: "Served", attempts: 5, eligible_attempts: 5, success_attempts: 5,
+						reachability_failures: 0, capacity_failures: 0, call_error_failures: 0, customer_excluded: 0, phaseo_excluded: 0, buckets: [] },
+					// Never served a request, so the per-request rows above have nothing for it.
+					{ provider_id: "failover-only", service_tier: "standard", provider_name: "Failover Only", attempts: 4, eligible_attempts: 3, success_attempts: 0,
+						reachability_failures: 2, capacity_failures: 1, call_error_failures: 0, customer_excluded: 1, phaseo_excluded: 0,
+						buckets: [{ start: "2026-08-27T09:20:00Z", attempts: 4, eligible_attempts: 3, success_attempts: 0, reachability_failures: 2, capacity_failures: 1, call_error_failures: 0, customer_excluded: 1, phaseo_excluded: 0 }] },
+					{ provider_id: "private-provider", service_tier: "standard", provider_name: "Private Provider", attempts: 1, eligible_attempts: 1, success_attempts: 1,
+						reachability_failures: 0, capacity_failures: 0, call_error_failures: 0, customer_excluded: 0, phaseo_excluded: 0, buckets: [] },
+					{ provider_id: "not-requested", service_tier: "standard", provider_name: "Other", attempts: 9, eligible_attempts: 9, success_attempts: 9,
+						reachability_failures: 0, capacity_failures: 0, call_error_failures: 0, customer_excluded: 0, phaseo_excluded: 0, buckets: [] },
+				]));
+			}
+			return new Response(JSON.stringify([]));
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/test%2Fmodel/provider-health?provider_ids=served,failover-only,stealth",
+			{},
+			env,
+		);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		expect(payload.rows).toEqual([expect.objectContaining({ provider_id: "served", uptime_pct: 100 })]);
+		expect(payload.attempt_health.map((row: any) => row.provider_id)).toEqual(["served", "failover-only", "stealth"]);
+		// Rates only: the attempt and failure counts behind them reveal traffic volume.
+		expect(payload.attempt_health[1]).toEqual({
+			provider_id: "failover-only",
+			service_tier: "standard",
+			provider_name: "Failover Only",
+			// 1 of 3 reached the provider, which turned it away: nothing was accepted,
+			// so there is no completed rate.
+			reachability_pct: 33.33,
+			capacity_pct: 0,
+			call_error_pct: null,
+			uptime_pct: 0,
+			buckets: [{ start: "2026-08-27T09:00:00.000Z", end: "2026-08-27T10:00:00.000Z", reachability_pct: 33.33, capacity_pct: 0, call_error_pct: null, uptime_pct: 0 }],
+			days: [{ start: "2026-08-27T00:00:00.000Z", end: "2026-08-28T00:00:00.000Z", reachability_pct: 33.33, capacity_pct: 0, call_error_pct: null, uptime_pct: 0 }],
+		});
+		expect(payload.attempt_health[2]).toMatchObject({ provider_id: "stealth", provider_name: "Stealth" });
+		expect(JSON.stringify(payload)).not.toMatch(/private[- ]provider|customer_excluded|phaseo_excluded|health_reason/i);
+		expect(JSON.stringify(payload.attempt_health)).not.toMatch(/"attempts"|eligible_attempts|success_attempts|_failures/);
+	});
+
+	it("rates each UTC day of attempt health from that day's attempts", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_v2_model_provider_tier_health_metrics")) {
+				return new Response(JSON.stringify([{ provider_id: "flaky", service_tier: "standard", health_requests: 5, uptime_pct: 100 }]));
+			}
+			if (url.includes("get_v2_model_provider_attempt_health")) {
+				const bucket = (start: string, eligible: number, success: number) => ({
+					start, attempts: eligible, eligible_attempts: eligible, success_attempts: success,
+					reachability_failures: eligible - success, capacity_failures: 0, call_error_failures: 0,
+				});
+				return new Response(JSON.stringify([{
+					provider_id: "flaky", service_tier: "standard", provider_name: "Flaky", attempts: 14, eligible_attempts: 14, success_attempts: 11,
+					reachability_failures: 3, capacity_failures: 0, call_error_failures: 0,
+					// Day one: 1 of 4 and 9 of 9 succeeded (10 of 13 = 76.92%, not the 62.5% hourly mean).
+					buckets: [bucket("2026-08-26T22:00:00Z", 4, 1), bucket("2026-08-26T23:00:00Z", 9, 9), bucket("2026-08-27T00:00:00Z", 1, 1)],
+				}]));
+			}
+			return new Response(JSON.stringify([]));
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/models/test%2Fmodel/provider-health?provider_ids=flaky", {}, env);
+		const payload = await response.json() as any;
+		expect(response.status).toBe(200);
+		expect(payload.attempt_health[0].days).toEqual([
+			expect.objectContaining({ start: "2026-08-26T00:00:00.000Z", end: "2026-08-27T00:00:00.000Z", uptime_pct: 76.92, reachability_pct: 76.92 }),
+			expect.objectContaining({ start: "2026-08-27T00:00:00.000Z", uptime_pct: 100 }),
+		]);
+	});
+
+	it("still serves provider health rows when attempt health fails", async () => {
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_v2_model_provider_tier_health_metrics")) {
+				return new Response(JSON.stringify([{ provider_id: "served", service_tier: "standard", health_requests: 5, uptime_pct: 100 }]));
+			}
+			if (url.includes("get_v2_model_provider_attempt_health")) {
+				return new Response(JSON.stringify({ code: "57014", message: "canceling statement due to statement timeout" }), { status: 500 });
+			}
+			return new Response(JSON.stringify([]));
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/models/test%2Fmodel/provider-health?provider_ids=served", {}, env);
+		const payload = await response.json() as any;
+		expect(response.status).toBe(200);
+		expect(payload.rows).toHaveLength(1);
+		expect(payload.attempt_health).toEqual([]);
 	});
 });
 
@@ -158,6 +317,51 @@ describe("stealth provider filters", () => {
 		const result = await fetchGatewayMonitorRows(env);
 		expect(result.size).toBe(1001);
 		expect(fetchMock.mock.calls.filter(([input]) => String(input).includes("get_public_monitor_rows_payload"))).toHaveLength(1);
+	});
+
+	it("looks up route flags for every chunk concurrently", async () => {
+		const routeCount = 450;
+		let pendingRouteLookups = 0;
+		let maxConcurrentRouteLookups = 0;
+		const routeChunkSizes: number[] = [];
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_public_monitor_rows_payload")) {
+				return new Response(JSON.stringify(Array.from({ length: routeCount }, (_, index) => ({
+					model_id: `test/model-${index}`, api_model_id: `test/model-${index}`,
+					provider_api_model_id: `route-${index}`, provider_id: index === 449 ? "external-provider" : "test",
+					capability_id: "text.generate", capability_status: "active",
+				}))));
+			}
+			if (url.includes("v2_model_provider_routes")) {
+				const routeIds = decodeURIComponent(url).match(/route-\d+/g) ?? [];
+				routeChunkSizes.push(routeIds.length);
+				pendingRouteLookups += 1;
+				maxConcurrentRouteLookups = Math.max(maxConcurrentRouteLookups, pendingRouteLookups);
+				await new Promise((resolve) => setTimeout(resolve, 5));
+				pendingRouteLookups -= 1;
+				return new Response(JSON.stringify(routeIds.flatMap((routeId) => {
+					if (routeId === "route-420") return [{ provider_model_id: routeId, is_stealth: true }];
+					if (routeId === "route-449") return [{ provider_model_id: routeId, metadata: { external_routing_override: true } }];
+					return [];
+				})));
+			}
+			if (url.includes("v2_providers?")) {
+				return new Response(JSON.stringify([{ provider_slug: "external-provider", status: "external" }]));
+			}
+			return new Response("[]");
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const result = await fetchGatewayMonitorRows(env);
+
+		expect(routeChunkSizes.sort((left, right) => right - left)).toEqual([200, 200, 50]);
+		expect(maxConcurrentRouteLookups).toBe(3);
+		// Flags from the last chunk still apply: stealth redaction and the
+		// external-provider override.
+		expect(result.get("test/model-420")?.[0]).toMatchObject({ provider: { id: "stealth" } });
+		expect(result.get("test/model-449")?.[0]).toMatchObject({ provider: { id: "external-provider" } });
+		expect(result.size).toBe(routeCount);
 	});
 
 	it("rebuilds on Worker invocation instead of renewing an inner stale response", async () => {
@@ -373,7 +577,7 @@ describe("public model routes", () => {
 		expect(scopedCall).toBeDefined();
 		expect(JSON.parse(String(scopedCall?.[1]?.body))).toMatchObject({
 			p_region: "ca",
-			p_service_tier: "priority",
+			p_service_tier: null,
 		});
 		expect(fetchMock.mock.calls.filter(([input]) => String(input).includes("get_public_models_page_payload"))).toHaveLength(1);
 	});
@@ -423,8 +627,8 @@ describe("public model routes", () => {
 					lowest_standard_input_price_unit: "1M tokens",
 					lowest_standard_output_price_unit: "1M tokens",
 					pricing_detail_rows: [
-						{ label: "Input Text Tokens", value: "$0.3 / 1M tokens" },
-						{ label: "Output Text Tokens", value: "$1.2 / 1M tokens" },
+						{ label: "Input Text Tokens", value: "$0.30 / 1M tokens" },
+						{ label: "Output Text Tokens", value: "$1.20 / 1M tokens" },
 					],
 				},
 			],
@@ -553,8 +757,104 @@ describe("public model routes", () => {
 				model: "Laguna S 2.1 (Free)",
 				modelId: "poolside/laguna-s-2.1:free",
 				tier: "free",
+				provider: { inputPrice: 0, outputPrice: 0 },
 			}],
 		});
+	});
+
+	it("gives free table rows their base model's licence when they have none", async () => {
+		const base = {
+			model_name: "Laguna S 2.1", organisation_id: "poolside", organisation_name: "Poolside",
+			provider_id: "poolside", api_provider_name: "Poolside", capability_id: "text.generate",
+			capability_status: "active", is_active_gateway: true,
+			input_modalities: ["text"], output_modalities: ["text"],
+		};
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_public_monitor_rows_payload")) return new Response(JSON.stringify([
+				{ ...base, model_id: "poolside/laguna-s-2.1:free", api_model_id: "poolside/laguna-s-2.1:free",
+					provider_api_model_id: "poolside:laguna:free", is_free_variant: true, model_license: null },
+				{ ...base, model_id: "poolside/laguna-s-2.1", api_model_id: "poolside/laguna-s-2.1",
+					provider_api_model_id: "poolside:laguna", model_license: "Apache-2.0" },
+			]), { status: 200 });
+			if (url.includes("v2_providers?")) return new Response(JSON.stringify([
+				{ provider_slug: "poolside", status: "active" },
+			]), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models?catalogue_version=v2&shape=table&projection=2&limit=10000",
+			{},
+			env,
+		);
+
+		const payload = await response.json() as { models: Array<{ modelId: string; license?: string }> };
+		expect(Object.fromEntries(payload.models.map((model) => [model.modelId, model.license]))).toEqual({
+			"poolside/laguna-s-2.1": "Apache 2.0",
+			"poolside/laguna-s-2.1:free": "Apache 2.0",
+		});
+	});
+
+	it("reports unlisted token prices as null and keeps per-unit charges in the table projection", async () => {
+		const base = {
+			organisation_id: "alibaba", organisation_name: "Alibaba", provider_id: "venice",
+			api_provider_name: "Venice", capability_status: "active", is_active_gateway: true,
+			input_modalities: ["text"], output_modalities: ["video"],
+		};
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_public_monitor_rows_payload")) return new Response(JSON.stringify([
+				{ ...base, model_id: "alibaba/happyhorse-1.0", api_model_id: "alibaba/happyhorse-1.0",
+					model_name: "HappyHorse 1.0", provider_api_model_id: "venice:happyhorse",
+					capability_id: "video.generate", input_price: null, output_price: null,
+					standard_input_price: null, standard_output_price: null,
+					from_price: 0.14, from_price_unit: "second" },
+				{ ...base, model_id: "openai/gpt-image-test", api_model_id: "openai/gpt-image-test",
+					model_name: "GPT Image Test", provider_api_model_id: "venice:gpt-image",
+					capability_id: "image.generate", input_price: 5, output_price: null,
+					standard_input_price: 5, standard_output_price: 40, standard_output_price_label: "Image Output",
+					from_price: null, from_price_unit: null },
+				{ ...base, model_id: "openai/embed-test", api_model_id: "openai/embed-test",
+					model_name: "Embed Test", provider_api_model_id: "venice:embed",
+					capability_id: "text.embed", input_price: 0.02, output_price: null,
+					standard_input_price: 0.02, standard_output_price: null,
+					from_price: 0.02, from_price_unit: "1M tokens" },
+				{ ...base, model_id: "black-forest-labs/flux-at-cost", api_model_id: "black-forest-labs/flux-at-cost",
+					model_name: "Flux At Cost", provider_api_model_id: "venice:flux-at-cost",
+					capability_id: "image.generate", input_price: null, output_price: null,
+					from_price: 1, from_price_unit: "usd" },
+				{ ...base, model_id: "openai/listed-zero", api_model_id: "openai/listed-zero",
+					model_name: "Listed Zero", provider_api_model_id: "venice:listed-zero",
+					capability_id: "text.generate", input_price: 0, output_price: 0,
+					from_price: 0, from_price_unit: "1M tokens" },
+			]), { status: 200 });
+			if (url.includes("get_v2_provider_region_map")) return new Response(JSON.stringify([]), { status: 200 });
+			if (url.includes("v2_providers?")) return new Response(JSON.stringify([
+				{ provider_slug: "venice", status: "active" },
+			]), { status: 200 });
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models?catalogue_version=v2&shape=table&projection=2&limit=10000",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		const payload = await response.json() as { models: Array<{ modelId: string; provider: Record<string, unknown> }> };
+		const provider = (modelId: string) => payload.models.find((model) => model.modelId === modelId)?.provider;
+		expect(provider("alibaba/happyhorse-1.0")).toMatchObject({
+			inputPrice: null, outputPrice: null, usagePrice: 0.14, usageUnit: "second",
+		});
+		expect(provider("openai/gpt-image-test")).toMatchObject({ inputPrice: 5, outputPrice: 40 });
+		expect(provider("openai/gpt-image-test")).not.toHaveProperty("usagePrice");
+		expect(provider("openai/embed-test")).toMatchObject({ inputPrice: 0.02, outputPrice: null });
+		expect(provider("openai/embed-test")).not.toHaveProperty("usagePrice");
+		expect(provider("black-forest-labs/flux-at-cost")).toMatchObject({ inputPrice: null, outputPrice: null });
+		expect(provider("black-forest-labs/flux-at-cost")).not.toHaveProperty("usagePrice");
+		expect(provider("openai/listed-zero")).toMatchObject({ inputPrice: 0, outputPrice: 0 });
 	});
 
 	it("does not fall back to the V1 catalogue when the complete V2 page RPC is unavailable", async () => {
@@ -736,11 +1036,11 @@ describe("public model routes", () => {
 		]);
 
 		expect(catalogue.status).toBe(200);
-		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
+		expect(catalogue.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		expect(catalogue.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(catalogue.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models,web-api-models-v2");
 		expect(benchmarks.status).toBe(200);
-		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=3600, stale-while-revalidate=3600, stale-if-error=86400");
+		expect(benchmarks.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=21600, stale-while-revalidate=64800, stale-if-error=86400");
 		expect(benchmarks.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(benchmarks.headers.get("cache-tag")).toContain("web-api-model-info-openai2Fgpt-test");
 		await expect(benchmarks.json()).resolves.toMatchObject({ highlights: [{ benchmarkId: "mmlu", score: 85, scoreDisplay: "85%", rank: 2 }] });
@@ -810,8 +1110,8 @@ describe("public model routes", () => {
 		}] });
 	});
 
-	it("publishes performance, quality, and cache series for a single-request cohort", async () => {
-		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+	const stubLowVolumePerformance = () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
 			if (url.includes("/rpc/get_v2_model_quality_hourly_v1")) {
 				return new Response(JSON.stringify([{
@@ -895,7 +1195,13 @@ describe("public model routes", () => {
 				}), { status: 200 });
 			}
 			return new Response(JSON.stringify([]), { status: 200 });
-		}));
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		return fetchMock;
+	};
+
+	it("publishes one-request performance, quality, and cache series when no filter is applied", async () => {
+		stubLowVolumePerformance();
 
 		const response = await app.request(
 			"https://phaseo.app/api/_web/models/test%2Flow-volume/performance?range=1",
@@ -907,19 +1213,217 @@ describe("public model routes", () => {
 		expect(response.status).toBe(200);
 		expect(payload.minimumSampleSize).toBe(1);
 		expect(payload.metrics.rangeDays).toBe(1);
-		expect(payload.metrics.summary).toMatchObject({ totalRequests: 1, successfulRequests: 1 });
-		expect(payload.metrics.hourly).toHaveLength(1);
-		expect(payload.metrics.hourly[0]).toMatchObject({ avgEndToEndMs: 680 });
-		expect(payload.metrics.successSeries).toHaveLength(1);
-		expect(payload.metrics.successSeries[0]).toMatchObject({ overallSuccessPct: 100, requests: 1 });
-		expect(payload.metrics.providerPerformance[0].uptimeBuckets[0]).toMatchObject({ successPct: 100, errorPct: 0, requests: 1, failedRequests: 0 });
+		expect(payload.metrics.summary).toMatchObject({ totalRequests: 1, successfulRequests: 1, avgLatencyMs: 240 });
+		expect(payload.metrics.hourly).toEqual([expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", requests: 1 })]);
+		expect(payload.metrics.successSeries).toEqual([
+			expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", overallSuccessPct: 100, requests: 1 }),
+		]);
+		expect(payload.metrics.successSeries[0]).not.toHaveProperty("failedRequests");
+		expect(payload.metrics.providerPerformance).toEqual([expect.objectContaining({ provider: "test-provider", requests: 1 })]);
 		expect(payload.metrics.providerHourly7d).toEqual([
-			expect.objectContaining({ requests: 1, cacheTelemetryRequests: 20 }),
+			expect.objectContaining({ provider: "test-provider", requests: 1, cacheTelemetryRequests: 20 }),
 		]);
 		expect(payload.metrics.qualitySeries).toEqual([
-			expect.objectContaining({ requests: 1, cacheHitRatePct: 60 }),
-			expect.objectContaining({ requests: 2 }),
+			expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", toolCallErrorPct: 100, structuredOutputErrorPct: 0, cacheHitRatePct: 60 }),
 		]);
+	});
+
+	it("keeps the cohort minimum when a location filter is applied", async () => {
+		const fetchMock = stubLowVolumePerformance();
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/test%2Flow-volume/performance?range=1&colo=LHR",
+			{},
+			env,
+		);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		expect(fetchMock.mock.calls.some((call) => String(call[0]).includes("get_v2_model_provider_health_metrics"))).toBe(false);
+		expect(payload.minimumSampleSize).toBe(20);
+		expect(payload.metrics.summary).toMatchObject({ totalRequests: 0, successfulRequests: 0, avgLatencyMs: null });
+		expect(payload.metrics.hourly).toEqual([]);
+		expect(payload.metrics.successSeries).toEqual([]);
+		expect(payload.metrics.providerPerformance).toEqual([]);
+		expect(payload.metrics.providerHourly7d).toEqual([]);
+		expect(payload.metrics.qualitySeries).toEqual([]);
+	});
+
+	it.each([
+		["stream mode", "stream=stream"],
+		["context size", "context=lte_4k"],
+	])("keeps the cohort minimum when a %s filter is applied", async (_filter, query) => {
+		stubLowVolumePerformance();
+
+		const response = await app.request(
+			`https://phaseo.app/api/_web/models/test%2Flow-volume/performance?range=1&${query}`,
+			{},
+			env,
+		);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		expect(payload.minimumSampleSize).toBe(20);
+		expect(payload.metrics.hourly).toEqual([]);
+		expect(payload.metrics.providerHourly7d).toEqual([]);
+		expect(payload.metrics.qualitySeries).toEqual([]);
+	});
+
+	it("shows failed hours as uptime dips and leaves customer-caused errors out", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/rpc/get_v2_model_provider_health_metrics")) {
+				return new Response(JSON.stringify([{
+					provider_id: "test-provider",
+					provider_name: "Test Provider",
+					requests: 9,
+					health_requests: 4,
+					health_success_requests: 3,
+					uptime_pct: 75,
+					buckets: [{
+						start: "2026-08-27T09:00:00Z",
+						end: "2026-08-27T10:00:00Z",
+						requests: 4,
+						health_requests: 4,
+						health_success_requests: 3,
+						uptime_pct: 75,
+					}, {
+						// Five bad requests from the customer: no request counts toward uptime.
+						start: "2026-08-27T10:00:00Z",
+						end: "2026-08-27T11:00:00Z",
+						requests: 5,
+						health_requests: 0,
+						health_success_requests: 0,
+						uptime_pct: null,
+					}],
+				}]), { status: 200 });
+			}
+			if (url.includes("/rpc/get_v2_model_performance_metrics")) {
+				return new Response(JSON.stringify({
+					last_24h: { total_requests: 9, successful_requests: 3 },
+					hourly_24h: [
+						{ bucket: "2026-08-27T09:00:00Z", requests: 4, success_pct: 75 },
+						{ bucket: "2026-08-27T10:00:00Z", requests: 5, success_pct: 0 },
+					],
+					provider_uptime_24h: [],
+					provider_daily_7d: [],
+				}), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/test%2Fmodel/performance",
+			{},
+			env,
+		);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		expect(payload.metrics.successSeries).toEqual([
+			expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", overallSuccessPct: 75, requests: 4 }),
+			expect.objectContaining({ bucket: "2026-08-27T10:00:00Z", overallSuccessPct: null, requests: 0 }),
+		]);
+		// The rate is published; the failure count behind it is not.
+		expect(JSON.stringify(payload.metrics.successSeries)).not.toMatch(/failedRequests/);
+	});
+
+	it("adds per-attempt reachability, capacity and call errors to the uptime series and providers", async () => {
+		const attemptBucket = (start: string, counts: Record<string, number>) => ({
+			start, end: "ignored", attempts: 0, eligible_attempts: 0, success_attempts: 0,
+			reachability_failures: 0, capacity_failures: 0, call_error_failures: 0, customer_excluded: 0, phaseo_excluded: 0, ...counts,
+		});
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/rpc/get_v2_model_provider_attempt_health")) {
+				return new Response(JSON.stringify([
+					// Failed over twice: those attempts count against this provider.
+					{ provider_id: "flaky", service_tier: "standard", provider_name: "Flaky", attempts: 10, eligible_attempts: 9, success_attempts: 6,
+						reachability_failures: 2, capacity_failures: 1, call_error_failures: 0, customer_excluded: 1, phaseo_excluded: 0,
+						buckets: [attemptBucket("2026-08-27T09:00:00Z", { attempts: 10, eligible_attempts: 9, success_attempts: 6, reachability_failures: 2, capacity_failures: 1, customer_excluded: 1 })] },
+					{ provider_id: "flaky", service_tier: "priority", provider_name: "Flaky", attempts: 1, eligible_attempts: 1, success_attempts: 0,
+						reachability_failures: 0, capacity_failures: 0, call_error_failures: 1, customer_excluded: 0, phaseo_excluded: 0,
+						buckets: [attemptBucket("2026-08-27T09:00:00Z", { attempts: 1, eligible_attempts: 1, call_error_failures: 1 })] },
+					{ provider_id: "steady", service_tier: "standard", provider_name: "Steady", attempts: 10, eligible_attempts: 10, success_attempts: 10,
+						reachability_failures: 0, capacity_failures: 0, call_error_failures: 0, customer_excluded: 0, phaseo_excluded: 3,
+						buckets: [attemptBucket("2026-08-27T09:00:00Z", { attempts: 13, eligible_attempts: 10, success_attempts: 10, phaseo_excluded: 3 })] },
+				]), { status: 200 });
+			}
+			if (url.includes("/rpc/get_v2_model_provider_health_metrics")) {
+				return new Response(JSON.stringify([{
+					provider_id: "steady", provider_name: "Steady", requests: 10, health_requests: 10, health_success_requests: 10, uptime_pct: 100,
+					buckets: [{ start: "2026-08-27T09:00:00Z", end: "2026-08-27T10:00:00Z", requests: 10, health_requests: 10, health_success_requests: 10, uptime_pct: 100 }],
+				}]), { status: 200 });
+			}
+			if (url.includes("/rpc/get_v2_model_performance_metrics")) {
+				return new Response(JSON.stringify({
+					last_24h: { total_requests: 10, successful_requests: 10 },
+					hourly_24h: [
+						{ bucket: "2026-08-27T09:00:00Z", requests: 10, success_pct: 100 },
+						{ bucket: "2026-08-27T10:00:00Z", requests: 2, success_pct: 0 },
+					],
+					provider_uptime_24h: [],
+					provider_daily_7d: [],
+				}), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request("https://phaseo.app/api/_web/models/test%2Fmodel/performance", {}, env);
+		const payload = await response.json() as any;
+
+		expect(response.status).toBe(200);
+		// 20 eligible attempts across providers: 2 couldn't reach the provider (18 of 20
+		// reachable), 1 of those 18 was turned away for capacity, and 1 of the 17
+		// accepted failed afterwards. Each rate is of the step before it.
+		expect(payload.metrics.successSeries[0]).toMatchObject({
+			bucket: "2026-08-27T09:00:00Z",
+			overallSuccessPct: 100,
+			reachabilityPct: 90,
+			capacityPct: 94.44,
+			callErrorPct: 94.12,
+		});
+		// An hour with no attempts has no rates; the chart shows it as 100%.
+		expect(payload.metrics.successSeries[1]).toMatchObject({ reachabilityPct: null, capacityPct: null, callErrorPct: null });
+		// The chart's 24 hours as shares of all their attempts (the tooltips use these),
+		// not an average of hourly rates that the idle hour would dilute.
+		expect(payload.metrics.attemptHealth24h).toEqual({ reachabilityPct: 90, capacityPct: 94.44, callErrorPct: 94.12, uptimePct: expect.any(Number) });
+		expect(payload.metrics.providerPerformance).toEqual([
+			expect.objectContaining({
+				provider: "steady",
+				attemptHealth: { reachabilityPct: 100, capacityPct: 100, callErrorPct: 100, uptimePct: 100 },
+			}),
+		]);
+		expect(JSON.stringify(payload)).not.toMatch(/customer_excluded|phaseo_excluded|customerExcluded|phaseoExcluded/);
+		// Rates only: attempt and failure counts reveal traffic volume.
+		expect(JSON.stringify(payload)).not.toMatch(/eligibleAttempts|successAttempts|reachabilityFailures|capacityFailures|callErrorFailures|"attempts"/);
+		expect(JSON.stringify(payload.metrics.successSeries)).not.toMatch(/failedRequests/);
+	});
+
+	it("keeps request-level uptime when the attempt health RPC is not deployed", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("/rpc/get_v2_model_provider_attempt_health")) {
+				return new Response(JSON.stringify({ code: "PGRST202", message: "Could not find the function public.get_v2_model_provider_attempt_health" }), { status: 404 });
+			}
+			if (url.includes("/rpc/get_v2_model_performance_metrics")) {
+				return new Response(JSON.stringify({
+					last_24h: { total_requests: 4, successful_requests: 4 },
+					hourly_24h: [{ bucket: "2026-08-27T09:00:00Z", requests: 4, success_pct: 100 }],
+					provider_uptime_24h: [],
+					provider_daily_7d: [],
+				}), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/models/test%2Fmodel/performance", {}, env);
+		const payload = await response.json() as any;
+		expect(response.status).toBe(200);
+		expect(payload.metrics.successSeries).toEqual([
+			expect.objectContaining({ bucket: "2026-08-27T09:00:00Z", overallSuccessPct: 100, requests: 4 }),
+		]);
+		expect(payload.metrics.successSeries[0]).not.toHaveProperty("reachabilityPct");
+		expect(payload.metrics).not.toHaveProperty("attemptHealth24h");
 	});
 
 	it("never exposes a synthetic unknown provider in performance data", async () => {
@@ -932,7 +1436,7 @@ describe("public model routes", () => {
 			}
 			if (url.includes("/rpc/get_v2_model_provider_hourly_performance_v2")) {
 				return new Response(JSON.stringify([
-					{ bucket: "2026-07-23T12:00:00Z", provider_id: "poolside", provider_name: "Poolside", requests: 20 },
+					{ bucket: "2026-07-23T12:00:00Z", provider_id: "poolside", provider_name: "Poolside", requests: 20, cache_telemetry_requests: 19, cached_input_pct: 80 },
 					{ bucket: "2026-07-23T12:00:00Z", provider_id: "unknown", provider_name: "unknown", requests: 1 },
 				]), { status: 200 });
 			}
@@ -1012,7 +1516,7 @@ describe("public model routes", () => {
 		}),
 		]);
 		expect(payload.metrics.providerHourly7d).toEqual([
-			expect.objectContaining({ provider: "poolside", requests: 20, cachedInputPct: 0 }),
+			expect.objectContaining({ provider: "poolside", requests: 20, cachedInputPct: 80, cacheTelemetryRequests: 19 }),
 		]);
 		expect(payload.metrics.providerHourly7d).toEqual([
 			expect.objectContaining({ provider: "poolside", requests: 20 }),
@@ -1190,6 +1694,7 @@ describe("public model routes", () => {
 		);
 
 		expect(response.status).toBe(200);
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		await expect(response.json()).resolves.toMatchObject({
 			providers: [{
 				provider: { routing_status: "active" },
@@ -1262,6 +1767,7 @@ describe("public model routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cache-tag")).toContain("web-api-model-details");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		expect(response.headers.get("cache-tag")).toContain("web-api-model-openai2Fgpt-test");
 		await expect(response.json()).resolves.toMatchObject({
 			model: {
@@ -1370,8 +1876,8 @@ describe("public model routes", () => {
 	it("returns parity-shaped timeline and subscription-plan sections", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = decodeURIComponent(String(input));
-			if (url.includes("/rpc/get_v2_model_subscription_plans")) {
-				return new Response(JSON.stringify([{ plan_uuid: "plan-uuid", plan_id: "pro", name: "Pro", lab_slug: "phaseo", price: 20, currency: "USD", frequency: "month", model_info: { note: "included" }, rate_limit: { rpm: 10 }, model_other_info: null }]), { status: 200 });
+			if (url.includes("/rpc/get_v2_subscription_catalogue")) {
+				return new Response(JSON.stringify([{ plan_uuid: "plan-uuid", plan_id: "pro", name: "Pro", organisation_id: "phaseo", offers: [{ offer_uuid: "offer", billing_interval: "month", billing_interval_count: 1, currency: "USD", components: [{ component_key: "base", pricing_type: "fixed", amount: 20, charge_basis: "account" }] }], models: [{ model_id: "openai/gpt-test", model_info: { note: "included" }, rate_limit: { rpm: 10 }, other_info: null }] }]), { status: 200 });
 			}
 			if (url.includes("data_subscription_plan_models")) {
 				return new Response(JSON.stringify([{
@@ -1427,6 +1933,7 @@ describe("public model routes", () => {
 		]);
 
 		expect(timeline.status).toBe(200);
+		expect(timeline.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=21600, stale-while-revalidate=64800, stale-if-error=86400");
 		expect(timeline.headers.get("cache-tag")).toContain("web-api-model-timelines");
 		expect(timeline.headers.get("cache-tag")).toContain("web-api-model-openai2Fgpt-test");
 		expect(await timeline.json()).toMatchObject({
@@ -1441,10 +1948,40 @@ describe("public model routes", () => {
 		await expect(subscriptions.json()).resolves.toMatchObject({
 			subscription_plans: [{
 				plan_id: "pro",
-				prices: [{ price: 20, frequency: "month" }],
+				prices: [{ price: 20, frequency: "monthly" }],
 				model_info: { rate_limit: { rpm: 10 } },
 			}],
 		});
+	});
+
+	it("links the recommended successor ahead of later models in the timeline", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = decodeURIComponent(String(input));
+			if (url.includes("previous_model_slug=eq.openai/gpt-test")) {
+				return new Response(JSON.stringify([{ model_slug: "openai/gpt-next", name: "GPT Next", released_at: "2026-08-01" }]), { status: 200 });
+			}
+			if (url.includes("model_slug=eq.openai/gpt-successor")) {
+				return new Response(JSON.stringify([{ model_slug: "openai/gpt-successor", name: "GPT Successor", announced_at: null, released_at: null }]), { status: 200 });
+			}
+			if (url.includes("model_slug=eq.openai/gpt-test")) {
+				return new Response(JSON.stringify([{
+					model_slug: "openai/gpt-test",
+					name: "GPT Test",
+					previous_model_slug: null,
+					replacement_model_slug: "openai/gpt-successor",
+					released_at: "2026-07-01",
+					deprecated_at: "2026-09-01",
+				}]), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const timeline = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/timeline", {}, env);
+		expect(timeline.status).toBe(200);
+		const { events } = await timeline.json() as { events: Array<Record<string, string>> };
+		expect(events.filter((event) => event.eventType === "FutureModel")).toEqual([
+			{ date: "2026-09-01", eventType: "FutureModel", modelId: "openai/gpt-successor", modelName: "GPT Successor" },
+		]);
 	});
 
 	it("resolves aliases to a validated public model notice", async () => {
@@ -1562,7 +2099,7 @@ describe("public model routes", () => {
 		]), { status: 200 })));
 
 		const response = await app.request(
-			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai",
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test",
 			{},
 			env,
 		);
@@ -1577,5 +2114,113 @@ describe("public model routes", () => {
 			halfOpenCount: 1,
 			checkedPairs: 2,
 		} } });
+	});
+
+	it("reports an open breaker past its cooldown as recovering, whatever was stored at opening", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([
+			{ provider_id: "openai", breaker_state: "open", is_deranked: true, open_until_ms: Date.now() - 1_000 },
+		]), { status: 200 })));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test",
+			{},
+			env,
+		);
+
+		await expect(response.json()).resolves.toEqual({ providers: { openai: {
+			providerId: "openai",
+			deranked: false,
+			recovering: true,
+			openCount: 0,
+			halfOpenCount: 1,
+			checkedPairs: 1,
+		} } });
+	});
+
+	it("requires a model, so one model's outage never limits a provider on another model", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai", {}, env);
+		expect(response.status).toBe(400);
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("fails rather than report a partial status when the rows fill a page", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(Array.from({ length: 1_000 }, () => ({
+			provider_id: "openai", breaker_state: "closed", is_deranked: false, open_until_ms: 0,
+		}))), { status: 200 })));
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test", {}, env,
+		);
+		expect(response.status).toBe(503);
+		expect(response.headers.get("cache-tag")).toBeNull();
+	});
+
+	it("limits the status to the model page's own model", async () => {
+		const fetchMock = vi.fn(async () => new Response(JSON.stringify([]), { status: 200 }));
+		vi.stubGlobal("fetch", fetchMock);
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=moonshotai%2Fkimi-k3",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		const url = new URL(String(fetchMock.mock.calls[0][0]));
+		expect(url.searchParams.get("model_id")).toBe("eq.moonshotai/kimi-k3");
+		expect(url.searchParams.get("provider_id")).toBe("in.(openai)");
+	});
+
+	it("does not cache an empty status when breaker state cannot be read", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ message: "unavailable" }), { status: 500 })));
+
+		const response = await app.request(
+			"https://phaseo.app/api/_web/models/provider-routing-health?provider_ids=openai&model_id=openai%2Fgpt-test",
+			{},
+			env,
+		);
+
+		expect(response.status).toBe(503);
+		expect(response.headers.get("cache-tag")).toBeNull();
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBeNull();
+	});
+});
+
+describe("public model query validation", () => {
+	// Every distinct URL misses the edge cache, so free-text values must never reach the database.
+	it.each([
+		["/performance?colo=random-buster-1", "invalid_colo"],
+		["/performance?colo=ab", "invalid_colo"],
+		["/performance?colo=LHR1", "invalid_colo"],
+		["/usage-daily?since=yesterday", "invalid_date"],
+		["/usage-daily?until=2026-02-30", "invalid_date"],
+		["/effective-pricing-daily?since=2026-13-01", "invalid_date"],
+	])("rejects %s before any query", async (path, error) => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request(`https://phaseo.app/api/_web/models/openai%2Fgpt-test${path}`, {}, env);
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ error });
+		expect(fetchMock).not.toHaveBeenCalled();
+	});
+
+	it("passes a valid colo to the performance RPCs", async () => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/performance?colo=lhr", {}, env);
+		expect(response.status).toBe(200);
+		const metricsCall = fetchMock.mock.calls.find((call: any[]) => String(call[0]).includes("get_v2_model_performance_metrics")) as any[] | undefined;
+		expect(String(metricsCall?.[1]?.body)).toContain('"p_cloudflare_colo":"LHR"');
+	});
+
+	it("keeps accepting ISO days and timestamps for since and until", async () => {
+		const fetchMock = vi.fn(async () => new Response("[]"));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/usage-daily?since=2026-10-01T00:00:00Z&until=2026-10-31", {}, env);
+		expect(response.status).toBe(200);
+		const usageCall = fetchMock.mock.calls.find((call: any[]) => String(call[0]).includes("get_v2_model_usage_daily")) as any[] | undefined;
+		expect(String(usageCall?.[1]?.body)).toContain('"p_since":"2026-10-01"');
+		expect(String(usageCall?.[1]?.body)).toContain('"p_until":"2026-10-31"');
 	});
 });

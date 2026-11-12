@@ -1,193 +1,160 @@
 ---
-title: "OAuth対応のNext.jsワークベンチを構築する"
+title: "OAuth 対応の Next.js ワークベンチを構築する"
 icon: "key-round"
-description: "OAuthを使ったNext.jsの完全なサンプルを通じて、統合プロキシを備えたログイン済みGatewayアプリを作ります。"
+description: "OAuth を使った Next.js の完全なサンプルを通じて、統合プロキシを備えたログイン済み Gateway アプリを作ります。"
 ---
 
-ログイン、セッションベースのGatewayアクセス、複数のチャットルートが必要な場合にこのページを使います。
+ユーザーが Phaseo でログインし、自分のクレジットをあなたのアプリで使えるようにします。PKCE を使う OAuth 2.1 でサーバーがアクセストークンを受け取り、サーバー側のプロキシ 1 つがすべての Gateway 呼び出しにそのトークンを付けます。完成すると、ログイン、更新されるセッションベースのトークン、モデル検出、`/responses` を使うチャットフロー、他のエンドポイント用のテスターを備えたローカルアプリができます。
 
-**目標:** ログイン済みのワークベンチを実行し、保護されたサーバー側プロキシを1つ通してPhaseoへリクエストを送信します。
+このサンプルは説明用です。`lib/oauth.ts` はまだ古いログイン用エンドポイントを呼び出しており、これは[実行する](#run-it)の手順 3 で修正します。また、プロキシの許可リストは製品に必要な範囲より広くなっています。
 
-**成果:** OAuthログイン、セッションベースのトークン、モデル検出、チャット、エンドポイントテスターを備えたローカルアプリを用意します。
+同じアプリをコーディングエージェントにゼロから作らせるには、次のプロンプトを貼り付けます。
 
 <Prompt
-  description="OAuthとPhaseo統合プロキシを備えた**ログイン機能付きNext.jsワークベンチ**を構築します。"
+  description="OAuth と Phaseo 統合プロキシを備えた**ログイン機能付き Next.js ワークベンチ**を構築します。"
   icon="shield-user"
   actions={["copy", "cursor"]}
 >
-{`Phaseo Gatewayを使って、ログイン機能付きのNext.jsアプリを作成します。
+{`You are building a signed-in Next.js app on top of Phaseo Gateway.
 
-次の機能を持つワークベンチ型アプリを作成します。
-- OAuth 2.1 + PKCEによるログイン
-- セッションベースのトークン保存
-- サーバー上に統合Gatewayプロキシルートを1つ
-- モデル検出
-- Responses APIを使うチャットフローを1つ
-- Phaseoの他のエンドポイントも試せる汎用テスターを1つ
+Create a workbench-style app with:
+- OAuth 2.1 + PKCE sign-in against https://api.phaseo.app/oauth/authorize and https://api.phaseo.app/oauth/token (discover them from https://api.phaseo.app/.well-known/oauth-authorization-server), requesting the gateway:access scope
+- session-backed token storage in an encrypted, httpOnly cookie
+- one unified gateway proxy route on the server that calls https://api.phaseo.app/v1
+- model discovery
+- one chat flow using the Responses API, sending the whole conversation in input on every turn
+- one generic endpoint tester for additional Phaseo endpoints
 
-要件:
-- Gatewayの認証情報とアクセストークンはサーバー側だけで管理します。
-- 安全のため、プロキシの許可リストを使います。
-- トークンの更新に対応します。
-- 過度に複雑にせず、理解しやすいワークベンチにします。
-- セットアップ、環境変数、実行手順を記載した短いREADMEを追加します。
+Requirements:
+- Keep gateway credentials and access tokens server-side.
+- Use a proxy allowlist of exact paths for safety.
+- Support token refresh. Store the new refresh token from every refresh and drop the old one.
+- Sign out by sending the refresh token to https://api.phaseo.app/oauth/revoke.
+- Keep the workbench understandable rather than over-engineered.
+- Add a short README with setup, env vars, and run steps.
 
-確認項目:
-- 可能であればアプリを実行します。
-- ローカル環境で可能な範囲までログインフローを確認します。
-- プロキシ経由のGatewayリクエストを少なくとも1つ確認します。
-- 検証した内容と、外部OAuth設定が必要な未確認事項を正確に報告します。`}
+Verification:
+- run the app if possible
+- verify sign-in flow as far as local setup allows
+- verify at least one proxied gateway request path
+- report exactly what you verified and what remains dependent on external OAuth configuration.`}
 </Prompt>
 
-## サンプルプロジェクト
+## サンプルの構成
 
-- GitHub: [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs)
-- リポジトリ内のパス: `examples/oauth-client-nextjs`
+```mermaid
+flowchart LR
+  browser["ブラウザー"] -->|"ログイン"| start["app/api/auth/start"]
+  start -->|"PKCE チャレンジ付きでリダイレクト"| authz["Phaseo のログインと同意"]
+  authz -->|"コード"| cb["app/auth コールバック"]
+  cb -->|"コードを交換"| sess["lib/session.ts: 暗号化されたセッション"]
+  browser -->|"/api/gateway/..."| proxy["app/api/gateway/[...surface]/route.ts"]
+  proxy -->|"許可リスト、Bearer トークン、期限切れなら更新"| gw["api.phaseo.app/v1"]
+```
 
-## このアプリで扱う内容
+サンプルは [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs) にあります。
 
-- OAuth 2.1 + PKCEログイン
-- セッションベースのトークン保存と更新
-- 制御ルートと生成ルートをまとめるプロキシ
-- モデル検出
-- を使ったチャットフロー `/responses`
-- 他のGatewayルート用の汎用エンドポイントテスター
+| ファイル | 役割 |
+| --- | --- |
+| `app/page.tsx` | ログインの入口ページ |
+| `app/dashboard/page.tsx` | 保護されたシェル |
+| `app/dashboard/GatewayWorkbench.tsx` | 制御ルートを読み込み、モデル ID を一覧表示し、`POST /responses` でチャットを実行し、他のエンドポイントをテストします |
+| `app/api/gateway/[...surface]/route.ts` | キャッチオールのプロキシ。許可リストを確認し、Bearer トークンを付け、期限切れなら更新し、本文とステータスを転送します |
+| `lib/oauth.ts` | PKCE、コードの交換、トークンの更新 |
+| `lib/session.ts` | 暗号化されたセッションの保存 |
 
-## このサンプルから始める場合
+ログインと Gateway 呼び出しを分けておくと、ログインの問題がモデルの問題に見えることはなく、すべてのエンドポイントがトークンを扱う 1 か所を共有できます。
 
-次のような場合に使います。
+<span id="run-it"></span>
+## 実行する
 
-- エンドユーザーに委任アクセスでログインしてもらう
-- シンプルなチャットページ以上の機能が必要
-- 複数のPhaseoエンドポイントを1つの安全なサーバールートで扱いたい
+Node.js、リダイレクト URI に `http://localhost:3000/auth/callback`（または独自のコールバック）を登録した OAuth アプリ、長いランダムなセッションシークレットが必要です。OAuth アプリは **設定 → OAuth アプリ** または [OAuth クライアント API](../api-reference/endpoint/oauth-clients-create) で作成します。
 
-次の場合は別の例から始めます。
+<Steps>
+<Step title="インストールする">
 
-- APIキーを使うシンプルなチャットUIだけが必要
-- まずスクリプトやCLIを作りたい
-
-## 主なファイル
-
-- `app/page.tsx`
-- `app/dashboard/page.tsx`
-- `app/dashboard/GatewayWorkbench.tsx`
-- `app/api/gateway/[...surface]/route.ts`
-- `lib/oauth.ts`
-- `lib/session.ts`
-
-## この構成を採用している理由
-
-### 1. OAuthとGatewayのロジックを分離する
-
-アプリでは次の処理を分離します。
-
-- 認証開始とコールバックのロジック
-- 暗号化されたセッションの処理
-- トークン更新
-
-これによりAI統合コードがシンプルになり、ログインの問題もデバッグしやすくなります。
-
-### 2. 1つのプロキシルートでGateway呼び出しを処理する
-
-catch-allプロキシルートは次の処理を行います。
-
-- エンドポイント許可リストを確認する
-- 現在のBearerトークンを追加する
-- 必要に応じてトークンを更新する
-- リクエストとレスポンスの本文を転送する
-
-認証ロジックを各ルートに複製せず、複数のPhaseoエンドポイントを使いたい場合に適したパターンです。
-
-### 3. ダッシュボードを内部ワークベンチとしても使う
-
-ワークベンチページではチャット以外に次のこともできます。
-
-- モデルを検出する
-- を試す `/responses`
-- チャット以外のエンドポイントもテストする
-
-より洗練されたユーザー向けUIを作る前のオンボーディング、QA、内部デバッグに役立ちます。
-
-## 前提条件
-
-- - Node.jsと対応するパッケージマネージャー
-- - ローカルのコールバックURLを設定したOAuthクライアント
-- - 十分に強力なセッションシークレット
-
-## サンプルを実行する
-
-<CodeGroup>
-```bash npm
+```bash
 cd examples/oauth-client-nextjs
 npm install
-cp .env.example .env.local
 ```
 
-```bash pnpm
-cd examples/oauth-client-nextjs
-pnpm install
-cp .env.example .env.local
+</Step>
+<Step title=".env.local を作成する">
+
+サンプルには `.env.example` がありません。コードが読み取る名前で `.env.local` を作成します。
+
+```bash .env.local
+NEXT_PUBLIC_OAUTH_CLIENT_ID=your_client_id
+OAUTH_CLIENT_SECRET=your_client_secret
+# サンプルは OAuth サーバーのベース URL をこの名前で読み取ります。
+NEXT_PUBLIC_AISTATS_URL=https://api.phaseo.app
+NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/callback
+SESSION_SECRET=a-long-random-string
+NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
 ```
 
-```bash yarn
-cd examples/oauth-client-nextjs
-yarn install
-cp .env.example .env.local
-```
+`OAUTH_CLIENT_SECRET` や `SESSION_SECRET` を `NEXT_PUBLIC_` 変数に入れないでください。
 
-```bash bun
-cd examples/oauth-client-nextjs
-bun install
-cp .env.example .env.local
-```
-</CodeGroup>
+</Step>
+<Step title="サンプルを現在の OAuth エンドポイントに向ける">
 
-次を設定します。
+`lib/oauth.ts` は `${NEXT_PUBLIC_AISTATS_URL}/auth/v1/oauth/authorize` と `/auth/v1/token` を組み立て、`openid email profile` を要求します。Phaseo の OAuth サーバーは、エンドポイントを `https://api.phaseo.app/.well-known/oauth-authorization-server` で公開しています。
 
-- `NEXT_PUBLIC_OAUTH_CLIENT_ID`
-- `OAUTH_CLIENT_SECRET`
-- `NEXT_PUBLIC_PHASEO_URL`
-- `NEXT_PUBLIC_REDIRECT_URI`
-- `SESSION_SECRET`
-- `NEXT_PUBLIC_GATEWAY_URL`
+| 用途 | URL |
+| --- | --- |
+| 認可 | `https://api.phaseo.app/oauth/authorize` |
+| トークン | `https://api.phaseo.app/oauth/token` |
+| 取り消し | `https://api.phaseo.app/oauth/revoke` |
 
-次に実行します。
+`lib/oauth.ts` の 3 つの URL をこれらに変更し、トークンで Gateway を呼び出せるように `scope` に `gateway:access` を追加します。
 
-<CodeGroup>
-```bash npm
+</Step>
+<Step title="開発サーバーを起動する">
+
+```bash
 npm run dev
 ```
 
-```bash pnpm
-pnpm dev
-```
+`http://localhost:3000` を開いてログインし、ダッシュボードを開きます。
 
-```bash yarn
-yarn dev
-```
-
-```bash bun
-bun run dev
-```
-</CodeGroup>
-
-次を開きます: `http://localhost:3000`.
+</Step>
+</Steps>
 
 ## 動作を確認する
 
-- ログイン後、設定したコールバックに戻り、セッションが作成されます。
-- ダッシュボードからプロキシ経由でモデルを検出できます。
-- アクセス用トークンをブラウザーに公開せずにResponses APIリクエストが完了します。
-- プロキシ許可リストにないエンドポイントは拒否されます。
+- ログインするとコールバック URL に戻り、セッションが作成されます。
+- ダッシュボードが `/api/gateway/models` を通じてモデルを一覧表示します。
+- `/api/gateway/responses` を通したチャットのターンで回答が返り、ブラウザーのリクエストにはアクセストークンが含まれません。
+- プロキシの許可リストにないパスは拒否されます。
 
-## 独自の用途に合わせる方法
+## トークンの有効期間
 
-- - プロキシ許可リストを製品に必要なエンドポイントだけに絞る
-- - ユーザー向けの分かりやすいUIを上に構築しつつ、ワークベンチは内部用に残す
-- - 統合が安定したら汎用テスターを製品専用のフローに置き換える
+トークンエンドポイントは 2 つのトークンを返します。
 
-## 関連ガイド
+| トークン | 有効期間 | 用途 |
+| --- | --- | --- |
+| `access_token` | 7 日（`expires_in`） | Gateway リクエストで `Authorization: Bearer` として送ります。ユーザーが選んだワークスペースのクレジットを消費します。 |
+| `refresh_token` | 最後に使ってから 90 日 | `grant_type=refresh_token` とともに送ると、新しいトークンの組を取得できます。 |
 
-- [Next.jsでWebチャットアプリを作成する](./build-a-nextjs-web-chat-app.mdx)
-- [ミニアプリ用の開始プロンプト](./mini-app-starter-prompts.mdx)
-- [サンプル](../guides/examples.mdx)
+- **更新のたびにローテーションする。** 更新するたびに、新しいアクセストークンと新しいリフレッシュトークンが返ります。両方を保存し、古いものは破棄してください。古いアクセストークンはすぐに使えなくなり、古いリフレッシュトークンは再利用できません。
+- **期限切れ後に更新する。** リフレッシュトークンが期限切れでなければ、アクセストークンの期限が切れた後でも更新できます。
+- **リフレッシュトークンを再利用しない。** 同じリフレッシュトークンを 2 回使うと、そのログインは終了します。Phaseo はそれを漏えいしたトークンとして扱い、そのログインのアクセストークンとすべてのリフレッシュトークンを取り消すため、ユーザーは再ログインが必要になります。
+- **スコープは減るだけ。** 更新でスコープが追加されることはありません。ユーザーが承認したスコープから、その後に外したものを除いたスコープが維持されます。
+- **更新に失敗する場合。** ユーザーがアプリを取り消した、キーを取り消すか無効にした、キーに必要なスコープ（`gateway:access` など）を外した、またはワークスペースを離れた時点で、更新は失敗します。`gateway:access` を外すとキーも取り消されるため、そのアクセストークンはすぐに使えなくなります。スコープを再度付与しても、リフレッシュトークンは戻りません。ユーザーにもう一度ログインしてもらってください。
+- **再ログインでキーが更新される。** `resource=https://api.phaseo.app/v1` を送るかどうかにかかわらず、キーを追加するのではなく同じキーを更新します。新しいアクセストークンとリフレッシュトークンが発行されて以前のものは使えなくなり、キーは今月の支出額を引き継ぎます。月間の支出上限は、ユーザーが今回承認した値になります。以前のログインのリフレッシュトークンは単に拒否され、それをトークンエンドポイントや取り消しエンドポイントに送っても新しいログインは終了しません。
+- **一時停止中のキーはログインを妨げる。** そのユーザーとワークスペースに対するアプリのキーのいずれかが一時停止中の場合、リソースに関係なく、誰かが **設定 → APIキー** でキーを再び有効にするまで、トークンエンドポイントは `invalid_grant` を返します。更新が機能するのはキーが取り消されていない間だけです。ログアウトなどで取り消された後にログインすると新しいキーが発行され、上限と支出額は最初からになります。
+- **ログアウトには取り消しを使う。** リフレッシュトークンを `https://api.phaseo.app/oauth/revoke` に送ります。これにより、キーと、そのログインのすべてのリフレッシュトークンが取り消されます。直前の更新で発行されたものも含まれます。
+
+## 支出上限
+
+同意画面で、ユーザーはアプリの月間支出上限を設定します。既定は $20.00 で、別の金額や上限なしも選べます。キーが暦月内にその額を使い切ると、翌月になるか、ユーザーが **設定 → APIキー** で上限を引き上げるまで、Gateway リクエストは `key_limit_exceeded` とともに `429` を返します。
+
+どのスコープを持っていても、アプリが API を通じてこの上限を解除したり回避したりすることはできません。アプリにできるのは API キーの名前変更と削除だけです。キーの作成やローテーション、キーの上限・ステータス・有効期限の変更、管理キーや信頼済みワークロードの作成、メンバーの追加、予算・ガードレール・レート制限・支出ルールの変更、ワークスペースのルーティング用価格上限や BYOK からクレジットへのフォールバックの変更はできません。
+
+## 公開する前に
+
+- **許可リストを絞り込む。** `lib/gateway.ts` は、完全一致のパスに加えて `videos/`、`music/generate/`、`control/`、`internal/` 以下のすべてのパスを許可しています。製品が呼び出す完全一致のパスだけを残してください。
+- **会話全体を送る。** Gateway はレスポンスを保存せず、`previous_response_id` を拒否します。以前のターンは `input` に含めて再送してください。
+- **テスターを置き換える。** ワークベンチは社内 QA 用に残し、エンドユーザー向けには目的に合わせたフローを作ってください。
+
+ログインなしで API キーを使うアプリには、[Next.js ウェブチャットアプリ](./build-a-nextjs-web-chat-app)から始めてください。

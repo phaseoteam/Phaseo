@@ -13,6 +13,9 @@ export function encodeDecisionsResponse(ir: IRDecisionsResponse, request?: IRDec
 		if (!answer || typeof answer !== "object") throw new Error("invalid_decisions_response");
 		const name = question.name ?? null;
 		if (answer.type === "refusal") return { type: "refusal", name };
+		if (question.type === "box" && answer.type === "box") {
+			return { type: "box", name, box: answer.box, confidence: answer.confidence };
+		}
 		if (question.type === "predicate" && answer.type === "noul") {
 			return { type: "predicate", name, probability: answer.noul };
 		}

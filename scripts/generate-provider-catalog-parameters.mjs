@@ -10,18 +10,37 @@ const yaml = require("js-yaml");
 const policyPath = path.join(root, "apps/api/src/pipeline/before/textParamPolicy.ts");
 const source = ts.createSourceFile(policyPath, fs.readFileSync(policyPath, "utf8"), ts.ScriptTarget.Latest, true);
 let registry;
+let mappedParamIds;
 function find(node) {
 	if (ts.isVariableDeclaration(node) && node.name.getText(source) === "TEXT_ENDPOINT_REGISTRY") registry = node.initializer;
+	if (ts.isFunctionDeclaration(node) && node.name?.text === "gatewayMappedParamIds") mappedParamIds = node;
 	ts.forEachChild(node, find);
 }
 find(source);
+// gatewayMappedParamIds() adds supported ids that are not keyToCanonicalParam values
+// (include_reasoning, reasoning.*, structured_outputs, verbosity). Read its string list too.
+if (!mappedParamIds) throw new Error("gatewayMappedParamIds was not found.");
+// The endpoint list is the `[...] as const` array; the supplemental ids are the other string array.
+const supplementalTextParams = [];
+const mappedEndpoints = new Set();
+(function collect(node) {
+	if (ts.isArrayLiteralExpression(node) && node.elements.every(ts.isStringLiteral)) {
+		const target = ts.isAsExpression(node.parent) ? mappedEndpoints : null;
+		for (const item of node.elements) target ? target.add(item.text) : supplementalTextParams.push(item.text);
+	}
+	ts.forEachChild(node, collect);
+})(mappedParamIds);
+if (supplementalTextParams.length === 0 || mappedEndpoints.size === 0) throw new Error("gatewayMappedParamIds lists were not found.");
 if (!registry || !ts.isObjectLiteralExpression(registry)) throw new Error("Text parameter registry was not found.");
 const options = {};
 for (const endpoint of registry.properties) {
 	const id = endpoint.name.getText(source).replace(/^['"]|['"]$/g, "");
 	const mapping = endpoint.initializer.properties.find((item) => item.name.getText(source) === "keyToCanonicalParam").initializer;
-	options[id] = Array.from(new Set(mapping.properties.flatMap((item) => [item.name.getText(source).replace(/^['"]|['"]$/g, ""), item.initializer.text]))).sort();
+	const ids = mapping.properties.flatMap((item) => [item.name.getText(source).replace(/^['"]|['"]$/g, ""), item.initializer.text]);
+	if (mappedEndpoints.has(id)) ids.push(...supplementalTextParams);
+	options[id] = Array.from(new Set(ids)).sort();
 }
+for (const id of mappedEndpoints) if (!options[id]) throw new Error(`gatewayMappedParamIds names unknown endpoint ${id}.`);
 options["text.generate"] = Array.from(new Set(Object.values(options).flat())).sort();
 
 const spec = yaml.load(fs.readFileSync(path.join(root, "apps/docs/openapi/v1/openapi.yaml"), "utf8"));

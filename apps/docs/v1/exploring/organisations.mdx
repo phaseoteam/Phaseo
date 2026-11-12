@@ -1,76 +1,36 @@
 ---
 title: "Exploring Organisations"
 description: "Discover the companies, research groups, and communities that develop and publish AI models."
+"og:image": "https://phaseo.app/og/dynamic?title=Exploring%20Organisations&description=Discover%20the%20companies%2C%20research%20groups%2C%20and%20communities%20that%20develop%20and%20publish%20AI%20models.&pathname=/docs/v1/exploring/organisations"
 sidebarTitle: "Organisations"
 icon: "building-2"
 ---
 
-Every model on Phaseo is linked to an **organisation** - the entity responsible for developing, training, and maintaining that model.
-Organisations form the backbone of the AI ecosystem, and understanding who builds what helps you contextualize each model's purpose, capabilities, and reliability.
+Open an organisation on [Organisations](https://phaseo.app/organisations) to see every model it has released and how those models perform on the Gateway. Every model on Phaseo belongs to one organisation: the company or lab that develops and maintains it.
 
----
+## What an organisation page shows
 
-## What an organisation page includes
+The page has two tabs.
 
-Each organisation page provides an overview of the company or research group, including:
+| Tab | Section | What it tells you |
+| --- | --- | --- |
+| **Overview** | About | Name, description and country. |
+| | Performance | Recent Gateway latency and throughput across the organisation's models. |
+| | Latest models | Recent releases with availability, context, pricing and usage. |
+| | Around the web | Links to the organisation's website, GitHub, Hugging Face and social accounts. |
+| **Models** | | Every model the organisation has released, including archived and deprecated ones. |
 
-| Section              | Description                                                                     |
-| -------------------- | ------------------------------------------------------------------------------- |
-| **Overview**         | Basic details such as name, description, country, founding year, and website.   |
-| **Published Models** | All models released by the organisation, including archived or deprecated ones. |
+## Organisations and API providers
 
----
+The organisation builds the model; an [API provider](./api-providers.mdx) serves it. One model often has several providers.
 
-## Types of organisations on Phaseo
+| | Organisation | API provider |
+| --- | --- | --- |
+| **Does** | Trains and maintains the model. | Hosts the model behind an API. |
+| **Example** | Anthropic built the Claude models. | Anthropic, Amazon Bedrock and Google Vertex all serve Claude models. |
 
-| Type                        | Example                     | Description                                                          |
-| --------------------------- | --------------------------- | -------------------------------------------------------------------- |
-| **Research labs**           | OpenAI, Anthropic, DeepMind | Focused on cutting-edge AI model development and innovation.         |
-| **Tech companies**          | Google, Meta, Microsoft     | Deploy large-scale AI infrastructure and consumer applications.      |
-| **Startups**                | Mistral, Perplexity, Suno   | Smaller teams building specialized or efficient AI systems.          |
-| **Open-source communities** | Hugging Face, Stability AI  | Decentralized collaborations offering transparent model development. |
+Some organisations, such as OpenAI and Google, are also providers for their own models.
 
----
+## Report a correction
 
-## Provider vs organisation
-
-It's important to distinguish between **organisations** and **API providers**:
-
-| Aspect         | Organisation                                | API Provider                                                                |
-| -------------- | ------------------------------------------- | --------------------------------------------------------------------------- |
-| **Definition** | The creator or maintainer of the model.     | The platform offering API access to that model.                             |
-| **Example**    | _Anthropic_ built the Claude series.        | _Anthropic_, _AWS_ and _Google Vertex_ all provide access to Claude models. |
-| **Focus**      | Research, training, and model architecture. | Hosting, routing, pricing, and user experience.                             |
-
-Some organisations (like OpenAI or Google) are both the **developer** and **provider**, while others partner with multiple platforms for distribution.
-
----
-
-## Contributing organisation data
-
-If you notice missing or outdated information about an organisation, open a GitHub issue with the affected page and official sources. Maintainers apply approved corrections through the database editor.
-Contributions help maintain accuracy across the platform.
-
-<Card
-	title="Contribute Organisation Data"
-	icon="github"
-	href="../contributing/editing-an-organisation.mdx"
-	horizontal
->
-	Learn how to report an organisation correction or request a missing entry.
-</Card>
-
----
-
-## Next steps
-
-Now that you understand how organisations are represented, you can dive deeper into their **benchmarks** and **comparative performance**.
-
-<Card
-	title="Explore Benchmarks"
-	icon="chart-column-increasing"
-	href="./benchmarks.mdx"
-	horizontal
->
-	See how different organisations' models perform across standardized tasks.
-</Card>
+Open a GitHub issue with the organisation page and an official source. Maintainers apply approved changes in the database. See [Report an organisation update](../contributing/editing-an-organisation.mdx).

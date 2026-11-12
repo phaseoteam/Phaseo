@@ -1,0 +1,44 @@
+{
+	"id": "featherless",
+	"source": {
+		"url": null,
+		"docs": "https://featherless.ai/docs/completions",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. stream, n, logprobs, logit_bias, tools, user are absent from this page (tool calling on a separate page). seed \"not reliable\". Asks for HTTP-Referer and X-Title headers."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"presence_penalty": {},
+					"frequency_penalty": {},
+					"repetition_penalty": {},
+					"temperature": {},
+					"top_p": {},
+					"top_k": {},
+					"min_p": {},
+					"seed": {},
+					"stop": {},
+					"stop_token_ids": {},
+					"include_stop_str_in_output": {},
+					"max_tokens": {},
+					"min_tokens": {},
+					"chat_template_kwargs": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

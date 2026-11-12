@@ -14,4 +14,20 @@ describe("Timer request epoch", () => {
 			vi.useRealTimers();
 		}
 	});
+
+	it("starts from an earlier receipt time so admission is measured", () => {
+		vi.useFakeTimers();
+		try {
+			vi.setSystemTime(new Date("2026-07-22T17:00:00.250Z"));
+			const receivedAt = Date.parse("2026-07-22T17:00:00.100Z");
+			const timer = new Timer(undefined, receivedAt);
+
+			expect(timer.startedAtMs()).toBe(receivedAt);
+			expect(timer.between("admission", "request_start")).toBeCloseTo(150, 0);
+			expect(new Timer(undefined, Date.parse("2026-07-22T17:00:01Z")).startedAtMs())
+				.toBe(Date.parse("2026-07-22T17:00:00.250Z"));
+		} finally {
+			vi.useRealTimers();
+		}
+	});
 });

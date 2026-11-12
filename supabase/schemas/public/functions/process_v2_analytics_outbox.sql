@@ -9,12 +9,19 @@ CREATE OR REPLACE FUNCTION public.process_v2_analytics_outbox (
 declare
   v_limit integer := greatest(1, least(coalesce(p_limit, 250), 2000));
   v_selected integer := 0;
+  v_coalesced integer := 0;
   v_private_grains integer := 0;
   v_public_daily_grains integer := 0;
   v_public_hourly_grains integer := 0;
+  v_workspace_hours integer := 0;
   v_rollup_id uuid;
   grain record;
 begin
+  -- Different event batches can rebuild the same summary concurrently.
+  if not pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtextextended('public.process_v2_analytics_outbox', 0)) then
+    return jsonb_build_object('selected', 0, 'coalesced', 0, 'private_grains', 0,
+      'public_daily_grains', 0, 'public_hourly_grains', 0, 'workspace_hours', 0, 'skipped_locked', true);
+  end if;
   create temporary table if not exists pg_temp.v2_rollup_batch (
     request_event_id uuid primary key,
     workspace_id uuid not null,
@@ -65,11 +72,45 @@ begin
   if v_selected = 0 then
     return jsonb_build_object(
       'selected', 0,
+      'coalesced', 0,
       'private_grains', 0,
       'public_daily_grains', 0,
-      'public_hourly_grains', 0
+      'public_hourly_grains', 0,
+      'workspace_hours', 0
     );
   end if;
+
+  -- The full-grain rebuild also includes other ready events in these same
+  -- workspace/hour identities. Lock them before reading sources: corrections
+  -- then re-enqueue after this transaction, even when an existing pending
+  -- outbox upsert would otherwise have been a no-op. Cap all acknowledgments
+  -- at 2,000; do not enlarge the set of summaries that must be rebuilt.
+  insert into pg_temp.v2_rollup_batch (
+    request_event_id, workspace_id, occurred_at, app_id, model_slug,
+    provider_model_id, cloudflare_colo
+  )
+  select outbox.request_event_id, fact.workspace_id, fact.occurred_at, fact.app_id,
+    coalesce(fact.routed_model_slug, fact.requested_model_slug),
+    fact.provider_model_id, fact.cloudflare_colo
+  from public.v2_analytics_outbox outbox
+  join public.v2_request_facts fact on fact.request_event_id = outbox.request_event_id
+  where outbox.status in ('pending', 'failed') and outbox.available_at <= now()
+    and outbox.occurred_at >= (select date_trunc('hour', min(occurred_at)) from pg_temp.v2_rollup_batch)
+    and outbox.occurred_at < (select date_trunc('hour', max(occurred_at)) + interval '1 hour' from pg_temp.v2_rollup_batch)
+    and not exists (select 1 from pg_temp.v2_rollup_batch batch where batch.request_event_id = outbox.request_event_id)
+    and exists (
+      select 1 from pg_temp.v2_rollup_batch batch
+      where batch.model_slug is not null and batch.workspace_id = fact.workspace_id
+        and date_trunc('hour', batch.occurred_at) = date_trunc('hour', fact.occurred_at)
+        and batch.app_id is not distinct from fact.app_id
+        and batch.model_slug = coalesce(fact.routed_model_slug, fact.requested_model_slug)
+        and batch.provider_model_id is not distinct from fact.provider_model_id
+        and batch.cloudflare_colo is not distinct from fact.cloudflare_colo
+    )
+  order by outbox.occurred_at, outbox.request_event_id
+  for update of outbox skip locked
+  limit greatest(0, least(2000, v_limit * 8) - v_selected);
+  get diagnostics v_coalesced = row_count;
 
   update public.v2_analytics_outbox outbox
   set status = 'processing', updated_at = now()
@@ -164,6 +205,81 @@ begin
     v_private_grains := v_private_grains + 1;
   end loop;
 
+  -- The usage overview's 15-minute rollups are rebuilt a whole workspace hour at a
+  -- time, so a correction that moves a request to another key or model within the
+  -- hour is rebuilt too. v2_usage_overview_requests counts each request as the
+  -- overview does; get_private_usage_overview reads requests outside the rollups
+  -- from the same view. The 15-minute rollup also keeps each request's actor (key creator
+  -- or OAuth user) apart for spend rules; the label rollup does not.
+  for grain in
+    select distinct batch.workspace_id, date_trunc('hour', batch.occurred_at, 'UTC') as bucket_start
+    from pg_temp.v2_rollup_batch batch
+  loop
+    delete from public.v2_private_usage_15m rollup
+    where rollup.workspace_id = grain.workspace_id
+      and rollup.bucket_start >= grain.bucket_start
+      and rollup.bucket_start < grain.bucket_start + interval '1 hour';
+    delete from public.v2_private_usage_labels_15m rollup
+    where rollup.workspace_id = grain.workspace_id
+      and rollup.bucket_start >= grain.bucket_start
+      and rollup.bucket_start < grain.bucket_start + interval '1 hour';
+
+    -- Read each request's usage meters once for both rollups.
+    with requests as materialized (
+      select request.*, date_bin('15 minutes', request.occurred_at, grain.bucket_start) as bucket_start
+      from private.v2_usage_overview_requests request
+      where request.workspace_id = grain.workspace_id
+        and request.occurred_at >= grain.bucket_start
+        and request.occurred_at < grain.bucket_start + interval '1 hour'
+    ), totals as (
+      insert into public.v2_private_usage_15m (
+        workspace_id, bucket_start, model_id, provider_model_id, key_id, app_id, byok, actor_user_id,
+        requests, successful_requests, guardrail_blocked, cost_nanos,
+        tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
+      )
+      select
+        grain.workspace_id, request.bucket_start, request.model_id, request.provider_model_id,
+        request.key_id, request.app_id, request.byok, request.actor_user_id,
+        count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
+        sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
+        sum(request.reasoning_tokens), sum(request.cached_tokens)
+      from requests request
+      group by 2, 3, 4, 5, 6, 7, 8
+    )
+    insert into public.v2_private_usage_labels_15m (
+      workspace_id, bucket_start, label_key, label_value, model_id, provider_model_id, key_id, app_id, byok,
+      requests, successful_requests, guardrail_blocked, cost_nanos,
+      tokens, input_tokens, output_tokens, reasoning_tokens, cached_tokens
+    )
+    select
+      grain.workspace_id, request.bucket_start, label.label_key, label.label_value,
+      request.model_id, request.provider_model_id, request.key_id, request.app_id, request.byok,
+      count(*), count(*) filter (where request.successful), count(*) filter (where request.guardrail_blocked),
+      sum(request.cost_nanos), sum(request.tokens), sum(request.input_tokens), sum(request.output_tokens),
+      sum(request.reasoning_tokens), sum(request.cached_tokens)
+    from requests request
+    cross join lateral (
+      -- A request counts once per label, however often it repeats it.
+      select distinct element.value ->> 'key' as label_key, element.value ->> 'value' as label_value
+      from jsonb_array_elements(request.labels) element
+      where jsonb_typeof(element.value -> 'key') = 'string' and jsonb_typeof(element.value -> 'value') = 'string'
+    ) label
+    group by 2, 3, 4, 5, 6, 7, 8, 9;
+
+    v_workspace_hours := v_workspace_hours + 1;
+  end loop;
+
+  -- Spend rules: mark each rebuilt workspace that has an enabled rule, in one statement, for
+  -- public.sweep_spend_rules. A row already there stays as it is.
+  insert into public.workspace_spend_rule_dirty (workspace_id)
+  select batch.workspace_id
+  from (select distinct rollup_batch.workspace_id from pg_temp.v2_rollup_batch rollup_batch) batch
+  where exists (
+    select 1 from public.workspace_spend_rules rule
+    where rule.workspace_id = batch.workspace_id and rule.enabled and rule.deleted_at is null
+  )
+  on conflict (workspace_id) do nothing;
+
   for grain in
     select distinct
       batch.occurred_at::date as usage_date,
@@ -208,7 +324,7 @@ begin
       coalesce(sum(attempts.attempts), 0), coalesce(sum(attempts.failed_attempts), 0),
       coalesce(sum(usage.cached_input_tokens), 0), coalesce(sum(usage.input_tokens), 0),
       coalesce(sum(fact.cost_nanos), 0)
-    from public.v2_request_facts fact
+    from public.reporting_request_facts fact
     left join lateral (
       select count(*)::bigint as attempts,
         count(*) filter (where not attempt.success)::bigint as failed_attempts
@@ -236,7 +352,7 @@ begin
     )
     select v_rollup_id, meter.meter_key, meter.modality, meter.unit, sum(meter.quantity)
     from public.v2_request_usage meter
-    join public.v2_request_facts fact on fact.request_event_id = meter.request_event_id
+    join public.reporting_request_facts fact on fact.request_event_id = meter.request_event_id
     where fact.occurred_at >= grain.usage_date::timestamptz
       and fact.occurred_at < (grain.usage_date + 1)::timestamptz
       and fact.app_id is not distinct from grain.app_id
@@ -292,7 +408,7 @@ begin
       coalesce(sum(attempts.attempts), 0), coalesce(sum(attempts.failed_attempts), 0),
       coalesce(sum(usage.cached_input_tokens), 0), coalesce(sum(usage.input_tokens), 0),
       coalesce(sum(fact.cost_nanos), 0)
-    from public.v2_request_facts fact
+    from public.reporting_request_facts fact
     left join lateral (
       select count(*)::bigint as attempts,
         count(*) filter (where not attempt.success)::bigint as failed_attempts
@@ -320,7 +436,7 @@ begin
     )
     select v_rollup_id, meter.meter_key, meter.modality, meter.unit, sum(meter.quantity)
     from public.v2_request_usage meter
-    join public.v2_request_facts fact on fact.request_event_id = meter.request_event_id
+    join public.reporting_request_facts fact on fact.request_event_id = meter.request_event_id
     where fact.occurred_at >= grain.bucket_start
       and fact.occurred_at < grain.bucket_start + interval '1 hour'
       and fact.app_id is not distinct from grain.app_id
@@ -362,23 +478,26 @@ begin
 
   update public.v2_analytics_outbox outbox
   set status = 'complete', last_error = null, updated_at = now()
-  where outbox.request_event_id in (select batch.request_event_id from pg_temp.v2_rollup_batch batch);
+  where outbox.status = 'processing'
+    and outbox.request_event_id in (select batch.request_event_id from pg_temp.v2_rollup_batch batch);
 
 
   delete from private.v2_analytics_previous_grains
   where grain_id in (select grain_id from pg_temp.v2_previous_grain_batch);
   return jsonb_build_object(
     'selected', v_selected,
+    'coalesced', v_coalesced,
     'private_grains', v_private_grains,
     'public_daily_grains', v_public_daily_grains,
-    'public_hourly_grains', v_public_hourly_grains
+    'public_hourly_grains', v_public_hourly_grains,
+    'workspace_hours', v_workspace_hours
   );
 end;
 $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."process_v2_analytics_outbox"(integer) TO "service_role";
 
-COMMENT ON FUNCTION "public"."process_v2_analytics_outbox"(integer) IS 'Claims a bounded outbox batch with SKIP LOCKED and idempotently rebuilds only affected private daily, public daily, and public hourly grains.';
+COMMENT ON FUNCTION "public"."process_v2_analytics_outbox"(integer) IS 'Serializes summary rebuilds, claims a bounded seed batch, and coalesces covered workspace/hour events before idempotent private daily, public daily, public hourly, and usage overview 15-minute rebuilds; the 15-minute and label rollups are rebuilt per touched workspace hour, and rebuilt workspaces with enabled spend rules are marked in workspace_spend_rule_dirty. At most 2000 acknowledgments per run; corrections retain row locks and re-enqueue after commit.';
 
 REVOKE ALL ON FUNCTION "public"."process_v2_analytics_outbox"(integer) FROM "postgres";
 

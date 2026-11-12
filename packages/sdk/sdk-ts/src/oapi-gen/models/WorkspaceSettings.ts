@@ -4,6 +4,9 @@ export interface WorkspaceSettings {
   byok_fallback_enabled?: boolean | null;
   io_logging_enabled?: boolean | null;
   io_logging_include_provider_payloads?: boolean | null;
+  model_successor_max_price_increase_percent?: number | null;
+  model_successor_price_policy?: "never" | "limit" | "any" | null;
+  model_successor_redirect_enabled?: boolean | null;
   privacy_enable_free_may_publish_prompts?: boolean | null;
   privacy_enable_free_may_train?: boolean | null;
   privacy_enable_input_output_logging?: boolean | null;

@@ -109,6 +109,20 @@ test("reasoning variants come from configuration labels without misreading famil
 	assert.equal(reasoningVariant(source({ name: "Mistral Medium 3.5", slug: "mistral-medium-3-5" })), null);
 });
 
+test("groups effort levels with the same fallback while preserving other evaluation settings", () => {
+	const variants = [
+		source({ id: "aa-low", name: "Example 1 (Low, Default Fallback)", slug: "example-1-low" }),
+		source({ id: "aa-max", name: "Example 1 (Max, Default Fallback)", slug: "example-1" }),
+		source({ id: "aa-adaptive", name: "Example 1 (Adaptive Reasoning, High Effort, Default Fallback)", slug: "example-1-high" }),
+		source({ id: "aa-other-fallback", name: "Example 1 (Max, Custom Fallback)", slug: "example-1-custom" }),
+		source({ id: "aa-no-fallback", name: "Example 1 (Max)", slug: "example-1-no-fallback" }),
+		source({ id: "aa-preview", name: "Example 1 (Max, Default Fallback, Preview)", slug: "example-1-preview" }),
+	];
+	const match = matchModel(model, variants, { ...config, models: { [model.model_id]: "aa-max" } });
+	assert.deepEqual(match.sources.map((item) => item.id), ["aa-low", "aa-max", "aa-adaptive"]);
+	assert.deepEqual(match.sources.map(reasoningVariant), ["low", "max", "high"]);
+});
+
 test("slug/name variant disagreements require an explicit mapping", () => {
 	const variant = source({ name: "Example 1 (high)" });
 	for (const candidate of [model, { ...model, model_id: "openai/example-1-high", name: "Example 1 (high)" }]) {
@@ -201,4 +215,17 @@ test("stores V5 separately while preserving V4 results", async () => {
 	const merged = mergeResults({ ...model, benchmarks: v4 }, v5, snapshot.version);
 	assert.equal(merged.filter((row) => String(row.benchmark_id).endsWith("-v4")).length, v4.length);
 	assert.equal(merged.filter((row) => String(row.benchmark_id).endsWith("-v5")).length, v5.length);
+});
+
+test("requires matching V5 methodology and rejects a V4/V5 rollout split", () => {
+	assert.equal(methodologyVersionFromHtml("Current version: v5.0.1", 5), "5.0.1");
+	assert.throws(() => methodologyVersionFromHtml("Current version: v4.3.2", 5), /does not match/);
+	assert.throws(() => methodologyVersionFromHtml("Current version: v5.0", 4.3), /does not match/);
+});
+
+test("rejects a major-version transition partway through the API pages", async () => {
+	let request = 0;
+	await assert.rejects(() => fetchModels("key", async () => ++request === 1
+		? page([source()], 1, true, 4.3)
+		: page([source({ id: "aa-next" })], 2, false, 5)), /inconsistent/);
 });

@@ -1,0 +1,14 @@
+interface:
+  display_name: "Phaseo Guardrails"
+  short_description: "Restrict and protect API keys with guardrails"
+  brand_color: "#0069A8"
+  default_prompt: "Use $phaseo-guardrails to set up and verify guardrails for this API key."
+policy:
+  allow_implicit_invocation: true
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "phaseo-docs"
+      description: "Phaseo documentation search"
+      transport: "streamable_http"
+      url: "https://phaseo.app/docs/mcp"

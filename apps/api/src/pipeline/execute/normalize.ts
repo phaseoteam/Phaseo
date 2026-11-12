@@ -3,7 +3,11 @@
 // How: Adjusts IR params that are not provider-specific.
 
 import type { IRChatRequest } from "@core/ir";
+import { effectiveEffortFromMarkers, hasExplicitEffortMarkers } from "@core/claudePerMessageEffort";
+import { supportsAnthropicPerMessageEffort } from "@core/claudeModelCapabilities";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import type { Protocol } from "@protocols/detect";
+import { forwardsOpenAIAllowedTools } from "@protocols/shared/text-normalizers";
 import { getProviderProfile } from "@providers/providerProfiles";
 import {
 	DEFAULT_ANTHROPIC_MAX_TOKENS,
@@ -14,6 +18,11 @@ import {
 	REASONING_EFFORT_ORDER,
 	type ReasoningEffort,
 } from "./textNormalizePolicy";
+import { dropUnsupportedParams, type DroppedParam } from "./unsupportedParams";
+import { dropVerbatimResponsesItems } from "./responsesItems";
+import { dropAssistantAudioReferences } from "./assistantAudio";
+import { dropUnsupportedCacheTtl, dropUnsupportedPromptCacheOptions } from "./cacheTtl";
+import { dropUnsupportedTwelveHourCache } from "./prompt-cache-ttl";
 type ParamRange = {
     min?: number;
     max?: number;
@@ -178,8 +187,10 @@ function normalizeMaxTokens(
         keys: ["max_tokens", "max_output_tokens"],
         fallback: { min: 1 },
     });
-    if (typeof providerMaxOutputTokens === "number" && Number.isFinite(providerMaxOutputTokens)) {
-        range.max = Math.min(range.max ?? Number.POSITIVE_INFINITY, providerMaxOutputTokens);
+    // A stored limit of 0 is unknown, not a cap of zero tokens.
+    const providerLimit = routeOutputTokenLimit(providerMaxOutputTokens);
+    if (providerLimit !== null) {
+        range.max = Math.min(range.max ?? Number.POSITIVE_INFINITY, providerLimit);
     }
 
     if (typeof ir.maxTokens === "number" && Number.isFinite(ir.maxTokens)) {
@@ -194,6 +205,41 @@ function normalizeMaxTokens(
     return undefined;
 }
 
+/**
+ * Replace effort-only system messages with the effort they put in force for this
+ * reply, on routes without per-message effort. The reply runs at the same level
+ * it would on Claude; only the cached prefix is lost.
+ */
+export function foldEffortMarkersForProvider(ir: IRChatRequest, providerId: string, model: string | null | undefined): IRChatRequest {
+    if (!hasExplicitEffortMarkers(ir.messages)) return ir;
+    if (supportsAnthropicPerMessageEffort(model, providerId)) return ir;
+    const effective = effectiveEffortFromMarkers(ir.messages);
+    const messages = ir.messages.filter((message) => !(message.role === "system" && message.effort !== undefined));
+    return {
+        ...ir,
+        messages,
+        ...(effective ? { reasoning: { ...(ir.reasoning ?? {}), effort: effective } } : {}),
+    };
+}
+
+/**
+ * An `allowed_tools` choice limits the model to some of the defined tools.
+ * OpenAI is sent the original choice and every tool, which keeps the tool list
+ * (and its prompt cache) the same across turns; every other provider has no
+ * such choice, so it is sent only the allowed tools.
+ */
+function restrictToAllowedTools(ir: IRChatRequest, providerId: string): IRChatRequest {
+    if (!ir.allowedToolNames) return ir;
+    const { allowedToolNames, ...rest } = ir;
+    if (forwardsOpenAIAllowedTools(providerId) || !rest.tools) return rest;
+    const allowed = new Set(allowedToolNames);
+    const tools = rest.tools.filter((tool) => allowed.has(tool.name));
+    if (tools.length > 0) return { ...rest, tools };
+    // Nothing the model may call. (An entry that names no defined tool keeps
+    // these providers out of routing; see providerDocsValidation.)
+    return { ...rest, tools: undefined, toolChoice: undefined };
+}
+
 export function normalizeIRForProvider(
     ir: IRChatRequest,
     providerId: string,
@@ -202,9 +248,42 @@ export function normalizeIRForProvider(
         capabilityParams?: Record<string, any> | null;
         providerMaxOutputTokens?: number | null;
         modelForReasoning?: string | null;
+        /** Called with the optional parameters removed for this provider. */
+        onDroppedParams?: (dropped: DroppedParam[]) => void;
+        /** The route's price card: a 12-hour cache needs a 12-hour write row. */
+        pricingCard?: { rules?: Array<{ meter?: string }> } | null;
     }
 ): IRChatRequest {
     const capabilityParams = options?.capabilityParams ?? null;
+    // Effort-only system messages (Messages per-message effort) reach only the
+    // Claude routes that take them; elsewhere they become the top-level effort.
+    ir = foldEffortMarkersForProvider(ir, providerId, options?.modelForReasoning ?? ir.model);
+    // Parameters the provider does not support are dropped (and reported), not
+    // forwarded: see ./unsupportedParams.ts.
+    const supported = dropUnsupportedParams(ir, providerId, capabilityParams);
+    // Responses input items only OpenAI's API defines are removed the same way.
+    const items = dropVerbatimResponsesItems(supported.ir, providerId);
+    // And assistant audio references, which only OpenAI's Chat routes take.
+    const assistantAudio = dropAssistantAudioReferences(items.ir, providerId);
+    // So is a 1-hour cache TTL on a model the provider caches for 5 minutes only.
+    const cacheTtl = dropUnsupportedCacheTtl(assistantAudio.ir, providerId, [options?.modelForReasoning]);
+    // And OpenAI's 12-hour cache lifetime, where the route cannot take it: see ./prompt-cache-ttl.ts.
+    const twelveHourCache = dropUnsupportedTwelveHourCache(cacheTtl.ir, providerId, {
+        models: [options?.modelForReasoning, cacheTtl.ir.model],
+        pricingCard: options?.pricingCard,
+    });
+    // And Moonshot's prompt_cache_options, to the mode and lifetimes the route can take.
+    const cacheOptions = dropUnsupportedPromptCacheOptions(twelveHourCache.ir, providerId, options?.pricingCard);
+    const dropped = [
+        ...supported.dropped,
+        ...items.dropped,
+        ...assistantAudio.dropped,
+        ...cacheTtl.dropped,
+        ...twelveHourCache.dropped,
+        ...cacheOptions.dropped,
+    ];
+    if (dropped.length > 0) options?.onDroppedParams?.(dropped);
+    ir = restrictToAllowedTools(cacheOptions.ir, providerId);
     const modelForReasoning = options?.modelForReasoning ?? ir.model;
     const nextMaxTokens = normalizeMaxTokens(
         ir,

@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import React, { useState } from "react";
 import {
@@ -14,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { createApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
+import { createApiKeyAction } from "@/features/settings/keys/actions";
 import {
 	DropdownMenu,
 	DropdownMenuTrigger,
@@ -23,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	API_KEY_LIMIT_PRESETS,
@@ -31,6 +30,7 @@ import {
 	type ApiKeyPresetId,
 } from "@/lib/gateway/secretReveal";
 import { SecretRevealActions } from "./SecretRevealActions";
+import { KeyStorageLocationPicker } from "./KeyStorageLocationPicker";
 import { captureProductEvent } from "@/lib/productAnalytics";
 
 export default function CreateKeyDialog({
@@ -54,6 +54,7 @@ export default function CreateKeyDialog({
 	const t = useTranslations("SettingsUI");
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const [plainKey, setPlainKey] = useState<string | null>(null);
+	const [storageLocations, setStorageLocations] = useState<string[]>([]);
 	const [selectedPresetId, setSelectedPresetId] =
 		useState<ApiKeyPresetId>("production");
 	const [selectedTeamId, setSelectedTeamId] = useState<string | null>(
@@ -79,11 +80,7 @@ export default function CreateKeyDialog({
 			const teamArg =
 				selectedTeamId === null ? "" : (selectedTeamId as string);
 			const res: any = await createApiKeyAction(
-				name,
-				currentUserId as string,
-				teamArg,
-				JSON.stringify([]), // default empty scopes
-				getApiKeyPreset(selectedPresetId).limits
+				{ data: { name, creatorUserId: currentUserId as string, workspaceId: teamArg, scopes: JSON.stringify([]), limits: getApiKeyPreset(selectedPresetId).limits, storageLocations } }
 			);
 			setPlainKey(res?.plaintext ?? null);
 			void invalidateSettings();
@@ -103,6 +100,7 @@ export default function CreateKeyDialog({
 		setName("");
 		setPlainKey(null);
 		setSelectedPresetId("production");
+		setStorageLocations([]);
 	}
 
 	return (
@@ -209,6 +207,16 @@ export default function CreateKeyDialog({
 								})}
 							</div>
 						</div>
+						<div className="space-y-2">
+							<div>
+								<label htmlFor="create-key-storage" className="text-sm font-medium">
+									{t("keyStorage.title")}{" "}
+									<span className="font-normal text-muted-foreground">{t("keyStorage.optional")}</span>
+								</label>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">{t("keyStorage.help")}</p>
+							</div>
+							<KeyStorageLocationPicker id="create-key-storage" value={storageLocations} onChange={setStorageLocations} disabled={loading} />
+						</div>
 						<DialogFooter>
 							<DialogClose asChild>
 								<Button
@@ -226,7 +234,7 @@ export default function CreateKeyDialog({
 					</form>
 				) : (
 					<div className="space-y-5">
-						<div className="select-all break-all rounded-lg border border-border bg-muted/60 p-3 font-mono text-xs leading-5 sm:text-sm">
+						<div className="ph-no-capture select-all break-all rounded-lg border border-border bg-muted/60 p-3 font-mono text-xs leading-5 sm:text-sm">
 							{plainKey}
 						</div>
 						<p className="text-sm leading-5 text-muted-foreground">
@@ -234,7 +242,7 @@ export default function CreateKeyDialog({
 						</p>
 						<SecretRevealActions
 							secret={plainKey}
-							name={name || "AI Stats API key"}
+							name={name || "Phaseo API key"}
 							kind="api-key"
 						/>
 						<DialogFooter className="pt-1">

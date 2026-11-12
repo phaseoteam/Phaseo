@@ -1,0 +1,8 @@
+---
+title: "Autorisierte App widerrufen"
+sidebarTitle: "App widerrufen"
+badge: "Beta"
+openapi: "/de/openapi/v1/openapi.localized.yaml DELETE /me/authorized-apps/{id}"
+description: "Widerruft den Zugriff einer App, sodass ihre Tokens nicht mehr funktionieren."
+---
+<Note>Für diesen Endpunkt ist ein OAuth-Zugriffstoken mit `oauth_clients:delete` erforderlich. Widerrufst du die Autorisierung der aufrufenden App selbst, wird sie abgemeldet.</Note>

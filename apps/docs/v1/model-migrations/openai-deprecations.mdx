@@ -1,12 +1,11 @@
 ---
 title: "OpenAI Deprecations"
-description: "OpenAI model and platform deprecations tracked in the AI Stats catalog."
+description: "OpenAI model and platform deprecations tracked in the Phaseo catalog."
+"og:image": "https://phaseo.app/og/dynamic?title=OpenAI%20Deprecations&description=OpenAI%20model%20and%20platform%20deprecations%20tracked%20in%20the%20Phaseo%20catalog.&pathname=/docs/v1/model-migrations/openai-deprecations"
 icon: "/icons/brands/openai.svg"
 ---
 
-# OpenAI Deprecations
-
-OpenAI publishes deprecation dates and recommended replacements on its [API deprecations page](https://developers.openai.com/api/docs/deprecations). Use this page as a migration checklist, then validate the replacement against your production prompts, tools, latency, and cost envelope.
+Find the OpenAI model or product you use, move to the replacement before the shutdown date, and validate it against your production prompts, tools, latency, and cost. Dates come from OpenAI's [API deprecations page](https://developers.openai.com/api/docs/deprecations).
 
 ## Model deprecations
 
@@ -20,21 +19,23 @@ OpenAI publishes deprecation dates and recommended replacements on its [API depr
 | Legacy GPT-3.5, GPT-4, GPT-4.1 nano, GPT-4o, o1, o3-mini, and o4-mini snapshots | April 22, 2026 | October 23, 2026 | See the model-specific recommendations on OpenAI's deprecations page |
 | Sora 2 models | March 24, 2026 | September 24, 2026 | No replacement announced |
 
-The catalog records these lifecycle dates on the affected OpenAI model entries, including replacement model IDs where OpenAI provides one. The dates apply to the provider snapshots named by OpenAI; the catalog may expose those snapshots through a canonical model ID.
+The catalogue records these dates on the affected model entries, with a replacement model ID where there is one. The dates apply to the snapshots OpenAI names; Phaseo may serve a snapshot under a canonical model ID. A model's page shows its dates and suggested replacement, and Phaseo keeps serving a retired model while any provider does. See [Model Deprecation and Retirement](../guides/model-retirement) for alerts and automatic replacement.
 
 ## Platform deprecations
 
-OpenAI also lists product-level migrations that are not model records:
+OpenAI also retires products that aren't models:
 
-- Reusable prompts are scheduled to shut down on November 30, 2026. Move prompt content into application code.
-- The Evals platform becomes read-only on October 31, 2026 and shuts down on November 30, 2026. OpenAI recommends migrating to Promptfoo.
-- Agent Builder shuts down on November 30, 2026. Migrate to the Agents SDK or ChatGPT Workspace Agents.
+| Product | Date | Move to |
+| --- | --- | --- |
+| Reusable prompts | Shut down November 30, 2026 | Application code, or a Phaseo preset with [prompt templates](../guides/prompt-templates) |
+| Evals platform | Read-only October 31, 2026; shut down November 30, 2026 | OpenAI recommends Promptfoo |
+| Agent Builder | Shut down November 30, 2026 | The Agents SDK or ChatGPT Workspace Agents |
 
-## Migration checklist
+## Migrate
 
-1. Replace the deprecated model or product in a staging environment.
+1. Replace the deprecated model or product in staging.
 2. Re-run representative evaluations, especially structured outputs, tool calls, audio quality, and long-context tasks.
 3. Compare latency and spend under production-like concurrency.
 4. Canary the replacement with an explicit rollback route before the shutdown date.
 
-For the authoritative dates, full snapshot mapping, and endpoint-specific guidance, see [OpenAI's API deprecations documentation](https://developers.openai.com/api/docs/deprecations).
+For full snapshot mappings and endpoint-specific guidance, see [OpenAI's API deprecations documentation](https://developers.openai.com/api/docs/deprecations).

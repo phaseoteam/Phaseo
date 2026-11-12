@@ -8,18 +8,18 @@ Abre una incidencia en GitHub para corregir un modelo o solicitar una entrada qu
 
 ## Comunicar una corrección
 
-1. Copia la URL de la página del modelo en Phaseo o su ID.
-2. [Comunica información incorrecta](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml), describiendo el valor actual y la corrección propuesta.
+1. Copia la URL de la página del modelo en Phaseo o su ID de modelo.
+2. [Comunica información incorrecta](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml) describiendo el valor actual y la corrección propuesta.
 3. Incluye documentación oficial, un anuncio de lanzamiento u otra fuente verificable.
 
-Para los precios, incluye el proveedor, la moneda, la unidad de facturación, el nivel aplicable y la fecha de entrada en vigor. Para las puntuaciones de evaluaciones, sigue [Enviar puntuaciones](../research/submitting-scores.mdx).
+Para los precios, incluye el proveedor, la moneda, la unidad de facturación, el nivel aplicable y la fecha de entrada en vigor. Para las puntuaciones de benchmarks, sigue [Enviar puntuaciones](../research/submitting-scores.mdx).
 
-## Solicitar un modelo que falte
+## Solicitar un modelo que falta
 
-[Abre una solicitud de datos](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) con el nombre del modelo, la organización, el enlace oficial, la fecha de lanzamiento y las capacidades conocidas. Un modelo puede aparecer en el catálogo antes de disponer de una ruta compatible en Gateway.
+[Abre una solicitud de datos](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) con el nombre del modelo, la organización, el enlace oficial, la fecha de lanzamiento y las capacidades conocidas. Un modelo puede aparecer en el catálogo antes de tener una ruta compatible en el Gateway.
 
 ## Después del envío
 
-Los responsables revisan las pruebas y actualizan la base de datos mediante el editor interno. Sigue las preguntas y la publicación en la incidencia. Las instantáneas JSON diarias exportan el catálogo; los cambios en archivos JSON archivados no actualizan el sitio en producción.
+Los responsables revisan las pruebas y actualizan la base de datos mediante el editor interno. Sigue las preguntas y la publicación en la incidencia. La base de datos es la única fuente de los registros del catálogo; el repositorio no contiene JSON del catálogo que editar.
 
-Los administradores pueden editar registros en [Datos internos](https://phaseo.app/internal/data) y revisar precios propuestos en [Actualizaciones de proveedores](https://phaseo.app/internal/data/imports). Estas páginas requieren acceso de administrador.
+Los administradores editan registros en [Datos internos](https://phaseo.app/internal/data) y revisan los precios propuestos en [Actualizaciones de proveedores](https://phaseo.app/internal/data/imports). Ambas páginas requieren acceso de administrador.

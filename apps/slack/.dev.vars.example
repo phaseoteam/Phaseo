@@ -1,0 +1,14 @@
+# Copy to .dev.vars for `pnpm --filter @phaseo/slack-agent dev`. Never commit real values.
+SLACK_SIGNING_SECRET=replace-with-the-dev-app-signing-secret
+# SLACK_APP_ID=A0000000000
+# Only for rotating bot tokens:
+# SLACK_CLIENT_ID=0000000000.0000000000
+# SLACK_CLIENT_SECRET=replace-me
+# Must match web-api's values.
+SLACK_SECRETS_ENCRYPTION_KEY=replace-with-a-long-random-string
+SLACK_STATE_SECRET=replace-with-a-long-random-string
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_SERVICE_ROLE_KEY=replace-with-the-local-service-role-key
+PHASEO_WEB_ORIGIN=http://localhost:3000
+# Optional internal alert when the app is removed inside Slack:
+# DISCORD_SIGNUP_WEBHOOK_URL=

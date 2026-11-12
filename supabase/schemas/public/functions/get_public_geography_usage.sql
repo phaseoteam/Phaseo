@@ -17,7 +17,7 @@ CREATE OR REPLACE FUNCTION public.get_public_geography_usage (
   AS $function$
   with scoped_facts as (
     select request_event_id, workspace_id, edge_country
-    from public.v2_request_facts
+    from public.reporting_request_facts
     where occurred_at >= p_from
       and occurred_at < p_to
       and edge_country is not null

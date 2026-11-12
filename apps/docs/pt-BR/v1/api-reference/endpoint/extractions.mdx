@@ -1,0 +1,92 @@
+---
+title: "Extrair valores"
+badge: "Beta"
+tag: "Beta"
+description: "Extraia valores tipados de texto e imagens."
+icon: "list-filter"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /extractions"
+---
+
+<Warning>A extração está em prévia. A disponibilidade de modelos depende das rotas de provedor configuradas.</Warning>
+
+Indique os `fields` que você quer e envie-os com o texto de origem para `POST /v1/extractions` para receber valores tipados, como número de fatura, data ou total. Para escolher entre opções conhecidas, use [Decisões](./decisions.mdx).
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/extractions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "cloudflare/clairic",
+    "input": "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+    "fields": {
+      "invoice_number": { "type": "text" },
+      "total": { "type": "number", "decimals": 2, "instructions": "Total including shipping" }
+    }
+  }'
+```
+
+```typescript TypeScript SDK
+import { Phaseo } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+const result = await client.extractions.create({
+  model: "cloudflare/clairic",
+  input: "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+  fields: {
+    invoice_number: { type: "text" },
+    total: { type: "number", decimals: 2, instructions: "Total including shipping" },
+  },
+});
+console.log(result.answers.total.value);
+```
+
+```python Python SDK
+import os
+from phaseo import Phaseo
+
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+result = client.extractions.create({
+    "model": "cloudflare/clairic",
+    "input": "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+    "fields": {"total": {"type": "number", "decimals": 2,
+                         "instructions": "Total including shipping"}},
+})
+print(result["answers"]["total"]["value"])
+```
+</CodeGroup>
+
+Os exemplos precisam de uma rota de modelo de extração ativa, então verifique a
+disponibilidade do modelo antes de enviar solicitações. O `AsyncPhaseo` do Python também
+expõe `await client.extractions.create(...)`.
+
+## Tipos de campo
+
+Os tipos suportados são `text`, `number`, `date`, `time`, `datetime`, `duration` e
+`list`. Listas exigem `items: "text"`, `"number"` ou `"date"`. Informe de 1 a 64 campos
+e no máximo 16.384 caracteres de origem. Os nomes de campo começam com uma letra ou sublinhado
+e contêm até 64 letras, dígitos, sublinhados, pontos ou hifens.
+
+Números e durações aceitam `integer` e `decimals` (0–6). Durações aceitam
+`seconds`, `minutes`, `hours`, `days`, `weeks`, `months` ou `years`. Defina
+`reference_date` quando a interpretação de datas incompletas depender de um ano específico.
+
+Entradas de imagem usam objetos `{ content_type, base64 }`: no máximo quatro imagens PNG/JPEG/WebP,
+4 MiB cada e 8 MiB no total após a decodificação. O limite da solicitação é 16 MiB.
+URLs remotas, PDFs, áudio, vídeo, estimativas, previsões e streaming não são suportados.
+
+## Ler as respostas
+
+Leia `answers[field_name].value`. Um valor escalar pode ser `null` quando a origem
+não o determina. `p_null` é a probabilidade, segundo o modelo, de um valor indeterminado;
+`confidence` é uma pontuação separada informada pelo modelo. Listas trazem confiança sem
+`p_null`. Essas pontuações não garantem que a resposta esteja correta: escolha limites de revisão para
+a sua carga de trabalho. Uma lista vazia válida é diferente de uma solicitação com falha.
+
+`truncated: true` significa que o provedor não processou toda a entrada de origem. Revise ou
+reenvie uma entrada mais curta antes de confiar que ela está completa. Offsets de texto e palpites brutos
+não são expostos. Cálculos complexos devem ser feitos no código da aplicação.
+
+Os relatórios de uso somam `input_tokens` de todas as passagens pelo provedor. Os tokens de saída são
+zero. Use o preço retornado pelo gateway em vez de estimar o custo pelo tamanho da origem
+ou multiplicar o uso pelo número de campos.

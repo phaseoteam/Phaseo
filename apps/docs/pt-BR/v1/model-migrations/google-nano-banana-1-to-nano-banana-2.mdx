@@ -1,72 +1,47 @@
 ---
 title: "Google Nano Banana 2"
-description: "O que considerar ao adotar Nano Banana 2 para geração e edição de imagens em produção."
+description: "O que saber ao adotar o Nano Banana 2 para geração e edição de imagens em produção."
 icon: "/icons/brands/google.svg"
 ---
 
-# Google Nano Banana 2
+Mude as solicitações de imagem para `google/gemini-3.1-flash-image` (Nano Banana 2) e escolha a proporção e o tamanho da saída com `image_config`. O que quebra primeiro é o código downstream que presume um único tamanho de imagem.
 
-Use este guia para adotar Nano Banana 2 com segurança nos fluxos de imagem em produção.
+| | Nano Banana | Nano Banana 2 |
+| --- | --- | --- |
+| ID do modelo no Phaseo | `google/gemini-2.5-flash-image` | `google/gemini-3.1-flash-image` |
+| Status | Descontinuado; será aposentado em 15 de março de 2027 | Disponível |
 
-Nano Banana 2 não é apenas uma melhoria de qualidade. O Google o posiciona como um modelo de imagem pronto para produção, com mais controle sobre formato, resolução e fidelidade de saída.
+O Nano Banana 2 adiciona controle explícito da proporção (`image_config.aspect_ratio`, como `16:9` ou `9:16`) e do tamanho da saída, de 512px a 4K (`image_config.image_size`: `0.5K`, `1K`, `2K` ou `4K`). O Google também informa melhor consistência do sujeito entre gerações e edições, melhor cumprimento de instruções, melhor renderização e tradução de texto dentro das imagens e maior fidelidade com velocidade semelhante. O sucessor dele, `google/gemini-nano-banana-2.1`, também está disponível.
 
-## Novidades
+```json
+{
+  "model": "google/gemini-3.1-flash-image",
+  "messages": [{ "role": "user", "content": "A product photo of a ceramic mug on a walnut desk." }],
+  "modalities": ["image", "text"],
+  "image_config": { "aspect_ratio": "16:9", "image_size": "2K" }
+}
+```
 
-- Nano Banana 2 oferece controle explícito da proporção da imagem.
-- As resoluções de saída vão de `512px` a `4K`.
-- A consistência dos elementos melhora entre gerações e edições.
-- O seguimento de instruções é mais preciso.
-- A renderização e a tradução de texto dentro das imagens melhoraram.
-- A fidelidade visual é maior sem deixar a geração lenta.
+Provedores que não aceitam `image_config` o descartam e o listam no cabeçalho de resposta `X-Phaseo-Dropped-Params`; veja [Parâmetros](../api-reference/parameters).
 
-## Início rápido da migração
+## Atualize o seu produto
 
-### 1. Revise as premissas sobre as saídas
-
-Se o código downstream presume tamanho, proporção ou recorte fixos, atualize-o antes do rollout. A maior flexibilidade do Nano Banana 2 torna mais fácil invalidar essas premissas antigas.
-
-### 2. Atualize as predefinições do produto
-
-Revise:
-
-- predefinições de proporção para redes sociais
-- resoluções padrão
-- fluxos de edição e preenchimento
-- rótulos da interface que descrevem os tamanhos de imagem disponíveis
-
-### 3. Ajuste prompts de edição de imagem
-
-Como o seguimento de instruções melhorou, prompts que especificavam demais composição, texto ou estilo podem ficar rígidos sem necessidade. Teste novamente com prompts mais curtos e compare os resultados.
+1. **Confira as premissas sobre a saída.** Se o código downstream espera um tamanho, uma proporção ou um recorte fixo, atualize-o primeiro.
+2. **Revise as predefinições:** proporções para redes sociais, tamanhos padrão, fluxos de edição e inpainting, e rótulos da interface que descrevem tamanhos de imagem.
+3. **Encurte os prompts de edição.** Prompts que especificam demais a composição, o texto ou o estilo para compensar o modelo antigo podem ficar rígidos demais agora. Teste de novo versões mais curtas.
 
 ## O que testar
 
-### Qualidade da saída
+- **Qualidade da saída:** proporções vertical, quadrada e widescreen; tamanhos pequenos e grandes; consistência do sujeito entre edições; texto, placas, legendas e texto traduzido nas imagens.
+- **Fluxo de trabalho:** manipulação de arquivos em tamanhos maiores, timeouts em gerações de alta fidelidade, taxa de aprovação na moderação ou na revisão humana e redimensionamento downstream.
+- **Métricas do produto:** latência de ponta a ponta, taxa de saídas utilizáveis, taxa de novas tentativas e custo por recurso aprovado.
 
-- proporções vertical, quadrada e widescreen
-- saídas em baixa e alta resolução
-- consistência dos elementos em edições sucessivas
-- texto, placas, legendas e traduções dentro das imagens
+## Faça o rollout
 
-### Compatibilidade do fluxo
-
-- tratamento de arquivos em resoluções maiores
-- timeouts em gerações de maior fidelidade
-- taxa de aprovação na moderação ou revisão humana
-- premissas de redimensionamento e processamento posterior dos assets
-
-### Métricas do produto
-
-- latência total de geração
-- taxa de saídas utilizáveis
-- taxa de novas tentativas
-- custo por asset aprovado
-
-## Recomendações de rollout
-
-1. Separe os testes por proporção e resolução, em vez de tratar tudo como uma única migração.
-2. Valide o pipeline de assets no maior tamanho de saída que pretende suportar.
-3. Teste prompts reais de produção, especialmente edições e pedidos de texto dentro da imagem.
-4. Se a interface oferecer opções de imagem, publique alterações nas predefinições padrão separadamente da troca do modelo.
+1. Teste por proporção e tamanho, em vez de tratar tudo como uma única migração.
+2. Valide o seu pipeline de recursos no maior tamanho que você vai oferecer.
+3. Use uma amostra de prompts reais de produção, especialmente edições e solicitações com texto na imagem.
+4. Se a sua interface expõe opções de imagem, lance as mudanças nas predefinições padrão separadamente da troca de modelo.
 
 ## Fontes
 

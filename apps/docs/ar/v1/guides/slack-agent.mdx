@@ -1,0 +1,241 @@
+---
+title: "إعداد وكيل Slack"
+sidebarTitle: "الإعداد"
+description: "أضف وكيل Phaseo إلى Slack ليطرح فريقك عليه الأسئلة، ويجيب عنها النموذج الذي تختاره."
+icon: "messages-square"
+---
+
+أضف وكيل Phaseo إلى Slack من **الإعدادات ← Slack**، فيتمكن فريقك من ذكره في قناة أو مراسلته مباشرةً للحصول على إجابات من النموذج الذي تختاره. يردّ في سلسلة الرسائل، ويبثّ الإجابة أثناء كتابتها. يختار المالكون والمسؤولون من يمكنه استخدامه ويضبطون حدوده. تدفع سعرًا شهريًا مقابل الأشخاص الذين استخدموه، وتُفوتر tokens النماذج كأي طلب آخر عبر الـ Gateway (راجع [إدارة وكيل Slack والفوترة](/ar/v1/guides/slack-agent-admin)).
+
+<Note>
+يُطرح وكيل Slack لمساحات العمل تدريجيًا. إذا لم تظهر **الإعدادات ← Slack** في إعداداتك بعد، فهو غير متاح لمساحة عملك بعد.
+</Note>
+
+| يستطيع | القسم |
+| --- | --- |
+| الإجابة بالنموذج الذي تختاره، أو بنموذج يُذكر في كل رسالة، ومقارنة نموذجين أو 3 نماذج | [اختيار نموذج لكل رسالة](/ar/v1/guides/slack-agent-usage#choosing-a-model-per-message) |
+| البحث في الويب وقراءة صفحات الويب | [استخدام الوكيل في Slack](/ar/v1/guides/slack-agent-usage#use-the-agent-in-slack) |
+| نشر الرسوم البيانية والصور، وقراءة الصور وملفات PDF التي تشاركها | [الرسوم البيانية والصور والملفات](/ar/v1/guides/slack-agent-usage#charts-images-and-files) |
+| البحث في القنوات العامة لمساحة عمل Slack لديك نيابةً عن الشخص الذي يسأل | [البحث في Slack](/ar/v1/guides/slack-agent-usage#searching-slack) |
+| إخبار الأعضاء المرتبطين بإنفاق Phaseo والأرصدة واستخدام مفاتيح API والنماذج | [السؤال عن الاستخدام](/ar/v1/guides/slack-agent-usage#ask-about-usage) |
+| تذكّر الملاحظات واتباع المهارات المحفوظة | [الذاكرة والمهارات](/ar/v1/guides/slack-agent-usage#memory-and-skills) |
+| تشغيل طلب وفق جدول زمني | [المهام المجدولة](/ar/v1/guides/slack-agent-usage#scheduled-tasks) |
+| نشر إجابة طويلة صفحة ويب | [الصفحات المشتركة](/ar/v1/guides/slack-agent-usage#shared-pages) |
+
+## قبل أن تبدأ
+
+- يجب أن تكون مالكًا أو مسؤولًا في مساحة عمل Phaseo، وأن يُسمح لك بإضافة التطبيقات إلى مساحة عمل Slack لديك.
+- افتح **الدردشة** مرة واحدة وراجع إعدادات الخصوصية لمساحة عملك. يطلب Phaseo ذلك قبل التثبيت الأول.
+- أضف [أرصدة](https://phaseo.app/settings/credits). تُدفع منها الرسوم الشهرية وtokens النماذج التي يستخدمها الوكيل.
+
+## إضافة الوكيل إلى Slack
+
+<Steps>
+<Step title="اختر طريقة عمله">
+
+افتح **الإعدادات ← Slack**. تحت **أضف إلى Slack**، اختر النموذج، ومن يمكنه استخدام الوكيل، وأين يمكنه مشاركة بيانات الاستخدام، و[حدوده](/ar/v1/guides/slack-agent-admin#limits). إذا كان لدى مساحة عملك Auto Routing، يتيح **تلقائي** لـ Phaseo اختيار نموذج مناسب لكل سؤال؛ وإلا فاختر نموذجًا محددًا. يمكنك تغيير كل ذلك لاحقًا.
+
+</Step>
+
+<Step title="وافق عليه في Slack">
+
+اختر **أضف إلى Slack**. يعرض Slack الأذونات التي يطلبها الوكيل. وافق عليها، فيعيدك Slack إلى **الإعدادات ← Slack**، التي تعرض الآن التثبيت.
+
+</Step>
+
+<Step title="اسأله شيئًا">
+
+في Slack، افتح الوكيل من تطبيقاتك وأرسل إليه رسالة. لاستخدامه في قناة، ادعُه بالأمر `/invite @Phaseo`، ثم اذكره. تشرح صفحة [استخدام وكيل Slack](/ar/v1/guides/slack-agent-usage) ما يمكن للأشخاص أن يطلبوه منه.
+
+</Step>
+</Steps>
+
+ينشئ التثبيت شيئين في مساحة عمل Phaseo لديك:
+
+- **مفتاح API للوكيل.** يديره Phaseo، لذا لا يظهر في صفحة المفاتيح. تُفوتر tokens النماذج التي يستخدمها الوكيل عبره.
+- **ضابط حماية باسم Slack agent** على ذلك المفتاح، يُبقي رسائل Slack بعيدًا عن التدريب (راجع [البيانات والخصوصية](/ar/v1/guides/slack-agent-admin#data-and-privacy)).
+
+يمكن لمساحة عمل Slack أن تحتوي على الوكيل من مساحة عمل Phaseo واحدة في كل مرة.
+
+<span id="who-can-use-it"></span>
+## من يمكنه استخدامه
+
+اختر تحت **من يمكنه استخدامه**:
+
+| الخيار | من يتلقى الإجابات |
+| --- | --- |
+| **الجميع في Slack** (الافتراضي) | أي شخص في مساحة عمل Slack لديك، ضمن [حدودك](/ar/v1/guides/slack-agent-admin#limits). |
+| **الحسابات المرتبطة فقط** | الأشخاص الذين ربطوا حساب Slack الخاص بهم بعضو في مساحة عمل Phaseo هذه فقط. يرسل الوكيل إلى كل من سواهم رابطًا للقيام بذلك. |
+
+تحت **الحدود**، يتيح **السماح للضيوف** (مفعّل افتراضيًا) للضيوف في مساحة عمل Slack لديك استخدام الوكيل، ويتيح **السماح لأشخاص من شركات أخرى** (متوقف افتراضيًا) للأشخاص من مؤسسات أخرى في قنوات Slack Connect المشتركة استخدامه. يُعدّ الأشخاص في مساحات العمل الأخرى التابعة لمؤسسة Enterprise Grid نفسها من أشخاصك. لا يجيب الوكيل أبدًا عن الروبوتات أو التطبيقات الأخرى.
+
+<span id="link-a-slack-account"></span>
+### ربط حساب Slack
+
+يرسل الوكيل إلى الأشخاص غير المرتبطين زرًا خاصًا **Connect your Phaseo account**:
+
+- مع **الحسابات المرتبطة فقط**، عندما يراسلونه. لا يجيب حتى يربطوا حساباتهم.
+- مع **الجميع في Slack**، عندما يسألون عن الاستخدام حيث يُسمح بـ[بيانات الاستخدام](/ar/v1/guides/slack-agent-usage#ask-about-usage). يظل يجيب عمّا يستطيع، ويرسل الزر مرة واحدة على الأكثر لكل شخص في كل سلسلة. للحصول على زر جديد، اسأل في سلسلة جديدة.
+
+يعمل الزر لمدة 15 دقيقة.
+
+1. اختر الزر. يُفتح Phaseo في متصفحك.
+2. سجّل الدخول بحساب عضو في مساحة عمل Phaseo التي ثبّتت الوكيل.
+3. اختر **اربط الحساب**.
+
+يتيح الحساب المرتبط أيضًا للأشخاص السؤال عن الاستخدام.
+
+<span id="update-slack-permissions"></span>
+## تحديث أذونات Slack
+
+تحتاج الرسوم البيانية والصور إلى إذن `files:write` من Slack، وتحتاج قراءة الملفات إلى `files:read`، ويحتاج [البحث في Slack](/ar/v1/guides/slack-agent-usage#searching-slack) إلى `search:read.public` و`search:read.files`. إذا أُضيف الوكيل قبل أن يتمكن من ذلك، فليست لديه هذه الأذونات بعد: يخبر الأشخاص بأن مسؤولًا يحتاج إلى تحديث أذوناته، وتعرض **الإعدادات ← Slack** الخيار **تحديث أذونات Slack**.
+
+1. اختر **تحديث أذونات Slack**. يعرض Slack الأذونات التي يطلبها الوكيل.
+2. وافق عليها لمساحة عمل Slack نفسها. يعيدك Slack إلى **الإعدادات ← Slack**.
+
+يُبقي التحديث إعدادات الوكيل ومفتاح API وحاجز الحماية والسجل. مع تطبيق Slack خاص بك، أضف أولًا النطاقات التي تسردها **الإعدادات ← Slack** إلى [الـ manifest](#use-your-own-slack-app) الخاص به.
+
+<span id="use-your-own-slack-app"></span>
+## استخدام تطبيق Slack خاص بك
+
+افتراضيًا، يثبّت الوكيل تطبيق Slack من Phaseo. لاستخدام تطبيق Slack تملكه شركتك، مثلًا باسمك وأيقونتك الخاصين، أنشئ واحدًا من manifest الخاص بـ Phaseo.
+
+<Steps>
+<Step title="أنشئ التطبيق من الـ manifest">
+
+في إعدادات التطبيقات في Slack ([api.slack.com/apps](https://api.slack.com/apps))، اختر **Create New App**، ثم **From a manifest**. اختر مساحة عمل Slack لديك والصق الـ manifest أدناه. يمكنك تغيير `name` و`description` و`long_description` و`display_name`؛ وأبقِ كل ما عداها. قد يقول Slack إن عنوان URL للطلبات لم يُتحقق منه بعد. هذا متوقع حتى الخطوة 3.
+
+</Step>
+
+<Step title="احفظ التطبيق في Phaseo">
+
+في صفحة **Basic Information** للتطبيق في Slack، انسخ **App ID** و**Client ID** و**Client Secret** و**Signing Secret**. في Phaseo، افتح **الإعدادات ← Slack**، وأدخلها تحت **متقدم: استخدم تطبيق Slack الخاص بك**، ثم اختر **احفظ تطبيق Slack**.
+
+</Step>
+
+<Step title="وجّه عناوين URL للطلبات إلى تطبيقك">
+
+في Phaseo، تعرض **الإعدادات → Slack** الآن عنواني URL للطلبات خاصّين بتطبيقك المحفوظ. في Slack، افتح صفحة **App Manifest** الخاصة بالتطبيق وضعهما مكان قيمتي `request_url` (الأول للأحداث والثاني للتفاعل). احفظ، ثم تحقّق من عنوان URL للطلبات عندما يطلب Slack ذلك.
+
+</Step>
+
+<Step title="ثبّته">
+
+في **الإعدادات ← Slack**، اختر **تطبيق Slack الخاص بك** تحت **تطبيق Slack**، ثم اختر **أضف إلى Slack**.
+
+</Step>
+</Steps>
+
+```json manifest.json
+{
+  "_metadata": {
+    "major_version": 2,
+    "minor_version": 1
+  },
+  "display_information": {
+    "name": "Phaseo",
+    "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
+    "background_color": "#0069a8",
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. It can also search your Slack workspace's public channels for the person asking, finding only what they can see (searching by meaning needs a Business+ or Enterprise+ Slack plan). Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+  },
+  "features": {
+    "app_home": {
+      "home_tab_enabled": true,
+      "messages_tab_enabled": true,
+      "messages_tab_read_only_enabled": false
+    },
+    "bot_user": {
+      "display_name": "Phaseo",
+      "always_online": true
+    },
+    "agent_view": {
+      "agent_description": "Answers your team's questions with the model your Phaseo workspace chooses. It can search the web, and linked members can ask about Phaseo spend, credits, API key usage and models."
+    }
+  },
+  "oauth_config": {
+    "redirect_urls": [
+      "https://phaseo.app/api/account/settings/slack/oauth/callback",
+      "https://slack.phaseo.app/p/signin"
+    ],
+    "scopes": {
+      "bot": [
+        "app_mentions:read",
+        "assistant:write",
+        "chat:write",
+        "im:history",
+        "channels:history",
+        "groups:history",
+        "users:read",
+        "files:read",
+        "files:write",
+        "search:read.public",
+        "search:read.files"
+      ]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events",
+      "bot_events": [
+        "app_mention",
+        "message.im",
+        "agent_session_stopped",
+        "app_uninstalled",
+        "tokens_revoked",
+        "app_home_opened"
+      ]
+    },
+    "interactivity": {
+      "is_enabled": true,
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions"
+    },
+    "org_deploy_enabled": true,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}
+```
+
+| الإعداد | القيمة |
+| --- | --- |
+| عنوان URL لإعادة التوجيه | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
+| عنوان URL للطلبات في Event Subscriptions | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events` |
+| عنوان URL للطلبات في Interactivity | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions` |
+| أحداث الروبوت | `app_mention`، `message.im`، `agent_session_stopped`، `app_uninstalled`، `tokens_revoked`، `app_home_opened` |
+
+يطلب Phaseo من Slack نطاقات bot token هذه بالضبط عند التثبيت، لذا يحتاج التطبيق إليها جميعًا:
+
+| النطاق | ما يتيحه |
+| --- | --- |
+| `app_mentions:read` | رؤية الرسائل التي تذكر الوكيل. |
+| `assistant:write` | العمل وكيلًا في Slack، مع حالة وزر إيقاف أثناء الإجابة. |
+| `chat:write` | نشر الإجابات وبثّها. |
+| `im:history` | قراءة الرسائل المباشرة المرسلة إلى الوكيل. |
+| `channels:history`، `groups:history` | قراءة السلسلة التي ذُكر فيها، في القنوات العامة والخاصة. |
+| `users:read` | التحقق مما إذا كان شخص ما ضيفًا أو روبوتًا أو من مؤسسة أخرى. |
+| `files:read` | قراءة الصور وملفات PDF المشتركة مع الوكيل. |
+| `files:write` | نشر الرسوم البيانية والصور في السلسلة. |
+| `search:read.public` | البحث في القنوات العامة نيابةً عن الشخص الذي يسأل. |
+| `search:read.files` | تضمين الملفات المشتركة في القنوات العامة في عمليات البحث هذه. |
+
+بعض القواعد لتطبيقك الخاص:
+
+- أبقِ تدوير الـ token متوقفًا، كما في الـ manifest. لا يستطيع Slack إيقافه مجددًا بعد تفعيله.
+- يستخدم الـ manifest تجربة مراسلة الوكلاء في Slack (`agent_view`)، وهي التجربة الوحيدة التي يقدمها Slack للتطبيقات الجديدة.
+- يمنح `home_tab_enabled: true` وحدث الروبوت `app_home_opened` في الـ manifest الوكيلَ [علامة التبويب Home](/ar/v1/guides/slack-agent-usage#check-the-home-tab). إذا أنشأت تطبيقك من manifest سابق، فأضف الاثنين في صفحة **App Manifest** للتطبيق.
+- يمكن ربط تطبيق Slack بمساحة عمل Phaseo واحدة، ويمكن لمساحة عمل Phaseo حفظ تطبيق Slack واحد.
+- ما دام الوكيل مثبّتًا بتطبيقك، لا يمكنك إلا استبدال أسراره. للتبديل إلى تطبيق آخر، أو العودة إلى تطبيق Phaseo، ألغِ التثبيت أولًا.
+- يتيح عنوان URL الثاني لإعادة التوجيه في الـ manifest، `https://slack.phaseo.app/p/signin`، للأشخاص تسجيل الدخول عبر Slack لعرض [الصفحات المشتركة مع مساحة عمل Slack لديك](/ar/v1/guides/slack-agent-usage#shared-pages). إذا أنشأت تطبيقك من manifest سابق، فأضفه في صفحة **App Manifest** للتطبيق.
+
+<span id="fix-setup-problems"></span>
+## إصلاح مشكلات الإعداد
+
+إذا لم يكتمل التثبيت، تذكر **الإعدادات ← Slack** السبب. أكثر الأسباب شيوعًا مراجعة خصوصية لم تُجرَ بعد (افتح **الدردشة** مرة واحدة) ومساحة عمل Slack تحتوي على الوكيل من مساحة عمل Phaseo أخرى (ألغِ تثبيته هناك أولًا).
+
+إذا لم يردّ الوكيل إطلاقًا:
+
+- في القناة، تأكد من أنه عضو فيها، واذكره في كل رسالة تريد الإجابة عنها.
+- لا يجيب عن الرسائل المعدّلة أو الروبوتات أو التطبيقات الأخرى.
+- مع تطبيق Slack خاص بك، تحقّق من أن عنواني URL للطلبات هما العنوانان اللذان تعرضهما **الإعدادات ← Slack** لتطبيقك المحفوظ، وأن Slack يعرضهما على أنهما متحقق منهما.
+
+عندما يردّ بشكل خاص بأنه لا يستطيع الإجابة، يذكر الرد السبب: راجع [عندما لا يستطيع الوكيل الإجابة](/ar/v1/guides/slack-agent-admin#when-the-agent-cant-answer).

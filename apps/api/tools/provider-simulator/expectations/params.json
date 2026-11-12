@@ -1,0 +1,1089 @@
+{
+	"note": "Where each client parameter must land upstream, per dialect. A target names one of: path (exact dotted path), paths (any one of them), anywhere (the value appears somewhere in the body), header, or absent. 'value' overrides the expected upstream value (default: the client value); 'valueMap' translates client enum values. A path target is checked against the provider's spec: if the spec does not define the path, or its enum excludes the value, the parameter is expected to be removed (source assumed-unsupported-dropped). Dialects: openai-chat, openai-responses, anthropic-messages, gemini, gemini-interactions.",
+	"aliases": {
+		"chat.max_completion_tokens": "max_tokens",
+		"chat.max_output_tokens": "max_tokens",
+		"responses.max_output_tokens": "max_tokens",
+		"messages.stop_sequences": "stop",
+		"chat.reasoning_effort": "reasoning_effort",
+		"messages.thinking": "thinking",
+		"chat.user_id": "user_id",
+		"messages.metadata": "messages_metadata"
+	},
+	"concepts": {
+		"temperature": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "temperature"
+				},
+				"openai-responses": {
+					"path": "temperature"
+				},
+				"anthropic-messages": {
+					"path": "temperature"
+				},
+				"gemini": {
+					"path": "generationConfig.temperature"
+				},
+				"gemini-interactions": {
+					"path": "generation_config.temperature"
+				}
+			}
+		},
+		"top_p": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "top_p"
+				},
+				"openai-responses": {
+					"path": "top_p"
+				},
+				"anthropic-messages": {
+					"path": "top_p"
+				},
+				"gemini": {
+					"path": "generationConfig.topP"
+				},
+				"gemini-interactions": {
+					"path": "generation_config.top_p"
+				}
+			}
+		},
+		"top_k": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "top_k"
+				},
+				"openai-responses": {
+					"path": "top_k"
+				},
+				"anthropic-messages": {
+					"path": "top_k"
+				},
+				"gemini": {
+					"path": "generationConfig.topK"
+				},
+				"gemini-interactions": {
+					"path": "generation_config.top_k"
+				}
+			}
+		},
+		"min_p": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "min_p"
+				},
+				"openai-responses": {
+					"path": "min_p"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"seed": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "seed"
+				},
+				"openai-responses": {
+					"path": "seed"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"path": "generationConfig.seed"
+				},
+				"gemini-interactions": {
+					"path": "generation_config.seed"
+				}
+			}
+		},
+		"max_tokens": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"paths": [
+						"max_completion_tokens",
+						"max_tokens"
+					]
+				},
+				"openai-responses": {
+					"path": "max_output_tokens"
+				},
+				"anthropic-messages": {
+					"path": "max_tokens"
+				},
+				"gemini": {
+					"path": "generationConfig.maxOutputTokens"
+				},
+				"gemini-interactions": {
+					"path": "generation_config.max_output_tokens"
+				}
+			}
+		},
+		"frequency_penalty": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "frequency_penalty"
+				},
+				"openai-responses": {
+					"path": "frequency_penalty"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"path": "generationConfig.frequencyPenalty"
+				}
+			}
+		},
+		"presence_penalty": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "presence_penalty"
+				},
+				"openai-responses": {
+					"path": "presence_penalty"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"path": "generationConfig.presencePenalty"
+				}
+			}
+		},
+		"repetition_penalty": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "repetition_penalty"
+				},
+				"openai-responses": {
+					"path": "repetition_penalty"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"logprobs": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "logprobs"
+				},
+				"openai-responses": {
+					"path": "logprobs"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"path": "generationConfig.responseLogprobs"
+				}
+			}
+		},
+		"top_logprobs": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "top_logprobs"
+				},
+				"openai-responses": {
+					"path": "top_logprobs"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"path": "generationConfig.logprobs"
+				}
+			}
+		},
+		"logit_bias": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "logit_bias"
+				},
+				"openai-responses": {
+					"path": "logit_bias"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"stop": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "stop"
+				},
+				"openai-responses": {
+					"path": "stop"
+				},
+				"anthropic-messages": {
+					"path": "stop_sequences"
+				},
+				"gemini": {
+					"path": "generationConfig.stopSequences"
+				},
+				"gemini-interactions": {
+					"path": "generation_config.stop_sequences"
+				}
+			}
+		},
+		"n": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "n",
+					"defaultValue": 1
+				},
+				"openai-responses": {
+					"path": "n",
+					"defaultValue": 1
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"path": "generationConfig.candidateCount",
+					"defaultValue": 1
+				}
+			}
+		},
+		"user": {
+			"source": {
+				"kind": "ref",
+				"ref": "assumed-identity-fields"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "user"
+				},
+				"openai-responses": {
+					"path": "user"
+				},
+				"anthropic-messages": {
+					"path": "metadata.user_id"
+				},
+				"gemini": {
+					"absent": true
+				},
+				"gemini-interactions": {
+					"absent": true
+				}
+			}
+		},
+		"user_id": {
+			"source": {
+				"kind": "ref",
+				"ref": "assumed-identity-fields"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "user"
+				},
+				"openai-responses": {
+					"path": "user"
+				},
+				"anthropic-messages": {
+					"path": "metadata.user_id"
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"safety_identifier": {
+			"source": {
+				"kind": "ref",
+				"ref": "assumed-identity-fields"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "safety_identifier"
+				},
+				"openai-responses": {
+					"path": "safety_identifier"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"prompt_cache_key": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-caching-forwarding"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "prompt_cache_key",
+					"hashed": true
+				},
+				"openai-responses": {
+					"path": "prompt_cache_key",
+					"hashed": true
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				},
+				"gemini-interactions": {
+					"absent": true
+				}
+			}
+		},
+		"prompt_cache_retention": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-caching-forwarding"
+			},
+			"note": "Only OpenAI and Azure OpenAI models before GPT-5.6 receive it; everything else removes it (handled by providerRules).",
+			"targets": {
+				"openai-chat": {
+					"path": "prompt_cache_retention",
+					"onlyProviders": [
+						"openai",
+						"openai-eu",
+						"azure"
+					]
+				},
+				"openai-responses": {
+					"path": "prompt_cache_retention",
+					"onlyProviders": [
+						"openai",
+						"openai-eu",
+						"azure"
+					]
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"metadata": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "metadata.sim_meta_key",
+					"value": "sim-meta-value-55"
+				},
+				"openai-responses": {
+					"path": "metadata.sim_meta_key",
+					"value": "sim-meta-value-55"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"parallel_tool_calls": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "parallel_tool_calls"
+				},
+				"openai-responses": {
+					"path": "parallel_tool_calls"
+				},
+				"anthropic-messages": {
+					"path": "tool_choice.disable_parallel_tool_use",
+					"value": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"max_tool_calls": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "max_tool_calls"
+				},
+				"openai-responses": {
+					"path": "max_tool_calls"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"tools": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "tools.0.function.name",
+					"value": "sim_tool_weather"
+				},
+				"openai-responses": {
+					"path": "tools.0.name",
+					"value": "sim_tool_weather"
+				},
+				"anthropic-messages": {
+					"path": "tools.0.name",
+					"value": "sim_tool_weather"
+				},
+				"gemini": {
+					"path": "tools.0.functionDeclarations.0.name",
+					"value": "sim_tool_weather"
+				},
+				"gemini-interactions": {
+					"anywhere": true,
+					"value": "sim_tool_weather"
+				}
+			}
+		},
+		"tool_choice": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"valueMap": {
+				"openai-chat": {
+					"required": "required",
+					"auto": "auto",
+					"none": "none",
+					"any": "required"
+				},
+				"openai-responses": {
+					"required": "required",
+					"auto": "auto",
+					"none": "none",
+					"any": "required"
+				},
+				"anthropic-messages": {
+					"required": "any",
+					"auto": "auto",
+					"none": "none",
+					"any": "any",
+					"tool": "tool"
+				},
+				"gemini": {
+					"required": "ANY",
+					"auto": "AUTO",
+					"none": "NONE",
+					"any": "ANY"
+				}
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "tool_choice"
+				},
+				"openai-responses": {
+					"path": "tool_choice"
+				},
+				"anthropic-messages": {
+					"path": "tool_choice.type"
+				},
+				"gemini": {
+					"path": "toolConfig.functionCallingConfig.mode"
+				}
+			}
+		},
+		"response_format": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "response_format.type",
+					"valueFromClient": "type"
+				},
+				"openai-responses": {
+					"path": "text.format.type",
+					"valueFromClient": "type"
+				},
+				"anthropic-messages": {
+					"paths": [
+						"output_config.format.type",
+						"output_format.type"
+					],
+					"valueFromClient": "type"
+				},
+				"gemini": {
+					"paths": [
+						"generationConfig.responseJsonSchema",
+						"generationConfig.responseSchema"
+					],
+					"present": true
+				}
+			}
+		},
+		"text": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "response_format.type",
+					"valueFromClient": "format.type"
+				},
+				"openai-responses": {
+					"path": "text.format.type",
+					"valueFromClient": "format.type"
+				},
+				"anthropic-messages": {
+					"paths": [
+						"output_config.format.type",
+						"output_format.type"
+					],
+					"valueFromClient": "format.type"
+				},
+				"gemini": {
+					"paths": [
+						"generationConfig.responseJsonSchema",
+						"generationConfig.responseSchema"
+					],
+					"present": true
+				}
+			}
+		},
+		"reasoning_effort": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "reasoning_effort"
+				},
+				"openai-responses": {
+					"path": "reasoning.effort"
+				},
+				"anthropic-messages": {
+					"paths": [
+						"output_config.effort",
+						"thinking.type",
+						"thinking.budget_tokens"
+					],
+					"present": true
+				},
+				"gemini": {
+					"paths": [
+						"generationConfig.thinkingConfig.thinkingLevel",
+						"generationConfig.thinkingConfig.thinkingBudget"
+					],
+					"present": true
+				}
+			}
+		},
+		"reasoning": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "reasoning_effort",
+					"value": "high"
+				},
+				"openai-responses": {
+					"path": "reasoning.effort",
+					"value": "high"
+				},
+				"anthropic-messages": {
+					"paths": [
+						"output_config.effort",
+						"thinking.type",
+						"thinking.budget_tokens"
+					],
+					"present": true
+				},
+				"gemini": {
+					"paths": [
+						"generationConfig.thinkingConfig.thinkingLevel",
+						"generationConfig.thinkingConfig.thinkingBudget"
+					],
+					"present": true
+				}
+			}
+		},
+		"thinking": {
+			"source": {
+				"kind": "ref",
+				"ref": "anthropic-thinking"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "reasoning_effort",
+					"present": true
+				},
+				"openai-responses": {
+					"path": "reasoning.effort",
+					"present": true
+				},
+				"anthropic-messages": {
+					"path": "thinking.budget_tokens",
+					"value": 2048
+				},
+				"gemini": {
+					"paths": [
+						"generationConfig.thinkingConfig.thinkingBudget",
+						"generationConfig.thinkingConfig.thinkingLevel"
+					],
+					"present": true
+				}
+			}
+		},
+		"verbosity": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "verbosity"
+				},
+				"openai-responses": {
+					"path": "text.verbosity"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"service_tier": {
+			"source": {
+				"kind": "gateway-docs",
+				"page": "apps/docs/v1/guides/service-tiers.mdx"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "service_tier"
+				},
+				"openai-responses": {
+					"path": "service_tier"
+				},
+				"anthropic-messages": {
+					"path": "service_tier"
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"web_search_options": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "web_search_options"
+				},
+				"openai-responses": {
+					"path": "web_search_options"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"store": {
+			"source": {
+				"kind": "assumed",
+				"reason": "Phaseo does not document store; OpenAI-dialect providers that define it receive the client value."
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "store"
+				},
+				"openai-responses": {
+					"path": "store"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"include": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-responses": {
+					"path": "include.0",
+					"value": "reasoning.encrypted_content"
+				},
+				"openai-chat": {
+					"absent": true
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"truncation": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-responses": {
+					"path": "truncation"
+				},
+				"openai-chat": {
+					"absent": true
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"background": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-responses": {
+					"path": "background"
+				},
+				"openai-chat": {
+					"absent": true
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"previous_response_id": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-responses": {
+					"path": "previous_response_id"
+				},
+				"openai-chat": {
+					"absent": true
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"conversation": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-responses": {
+					"path": "conversation"
+				},
+				"openai-chat": {
+					"absent": true
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"prompt": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-responses": {
+					"path": "prompt.id",
+					"value": "pmpt_sim_0001"
+				},
+				"openai-chat": {
+					"absent": true
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"modalities": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "modalities"
+				},
+				"openai-responses": {
+					"path": "modalities"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"path": "generationConfig.responseModalities"
+				}
+			}
+		},
+		"image_config": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-parameters"
+			},
+			"targets": {
+				"openai-chat": {
+					"path": "image_config"
+				},
+				"openai-responses": {
+					"path": "image_config"
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"path": "generationConfig.imageConfig"
+				}
+			}
+		},
+		"cache_control": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-caching-controls"
+			},
+			"note": "Accepted on every surface; Claude routes receive breakpoints, other providers ignore it.",
+			"accepted": true,
+			"targets": {
+				"anthropic-messages": {
+					"anywhereKey": "cache_control"
+				},
+				"openai-chat": {
+					"absent": true
+				},
+				"openai-responses": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"provider_options": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-caching-forwarding"
+			},
+			"accepted": true,
+			"targets": {
+				"anthropic-messages": {
+					"anywhereKey": "cache_control"
+				},
+				"gemini": {
+					"path": "cachedContent",
+					"value": "cachedContents/sim-cache-1"
+				},
+				"openai-chat": {
+					"anywhereValue": "sim-cache-1",
+					"absent": true
+				},
+				"openai-responses": {
+					"anywhereValue": "sim-cache-1",
+					"absent": true
+				}
+			}
+		},
+		"session_id": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-openapi-chat"
+			},
+			"gatewayOnly": true,
+			"accepted": true
+		},
+		"usage": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-openapi-chat"
+			},
+			"gatewayOnly": true,
+			"accepted": true
+		},
+		"meta": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-openapi-chat"
+			},
+			"gatewayOnly": true,
+			"accepted": true
+		},
+		"echo_upstream_request": {
+			"source": {
+				"kind": "ref",
+				"ref": "phaseo-openapi-chat"
+			},
+			"gatewayOnly": true,
+			"accepted": true
+		},
+		"stream_options": {
+			"source": {
+				"kind": "ref",
+				"ref": "openai-chat-streaming"
+			},
+			"accepted": true,
+			"targets": {
+				"openai-chat": {
+					"path": "stream_options.include_usage",
+					"value": true
+				},
+				"openai-responses": {
+					"path": "stream_options.include_obfuscation",
+					"value": false
+				},
+				"anthropic-messages": {
+					"absent": true
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		},
+		"messages_metadata": {
+			"source": {
+				"kind": "ref",
+				"ref": "anthropic-messages"
+			},
+			"targets": {
+				"anthropic-messages": {
+					"path": "metadata.user_id",
+					"value": "sim-user-meta-4c3"
+				},
+				"openai-chat": {
+					"path": "user",
+					"value": "sim-user-meta-4c3"
+				},
+				"openai-responses": {
+					"path": "user",
+					"value": "sim-user-meta-4c3"
+				},
+				"gemini": {
+					"absent": true
+				}
+			}
+		}
+	}
+}
