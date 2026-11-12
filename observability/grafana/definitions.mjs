@@ -1,4 +1,5 @@
 // Canonical dashboard/query definitions. Run build.mjs to refresh importable JSON.
+import { addDiagnostics } from './diagnostics.mjs';
 const loki = { type: 'loki', uid: '${loki}' };
 const window = '$__auto';
 const env = '$environment';
@@ -94,7 +95,7 @@ export function dashboards() {
   overview.templating.list[2].hide = 2;
   const destinations = ['telemetry', 'gateway', 'gateway', 'web', 'web', 'jobs'];
   for (const [index, item] of overview.panels.slice(1, 7).entries()) item.fieldConfig.defaults.links = [{ title: 'Investigate', url: `/d/phaseo-${destinations[index]}?var-environment=$environment&from=$__from&to=$__to` }];
-  return [
+  return addDiagnostics([
     overview,
     dashboard('phaseo-gateway', 'Gateway and providers', 'Request summaries cover received terminal events. Trace retention is sampled. Delivery is best effort, so counts are operational rather than financial.', [
       panel('Requests by outcome', `sum by (outcome) (rate(${logs(gateway, 'gateway.request', ['outcome'])} [${window}]))`, { unit: 'reqps', legend: '{{outcome}}' }),
@@ -130,7 +131,7 @@ export function dashboards() {
       panel('Recent heartbeats', logs('phaseo-jobs', 'job.heartbeat'), { type: 'logs' }),
       panel('Persistence errors', logs(gateway, 'telemetry.delivery'), { type: 'logs' }),
     ]),
-  ];
+  ], logs);
 }
 
 export function jobFailureExpression(environment) {
