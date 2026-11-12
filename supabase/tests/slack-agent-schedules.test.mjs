@@ -369,11 +369,19 @@ try {
   assert.deepEqual([notInChannel.paused, notInChannel.pause_reason], [true, 'not_in_channel']);
   assert.equal((await schedule(hourly.schedule.id)).status, 'paused');
 
-  // Settings: pause and resume.
+  // Settings: pause and resume. Resuming moves the schedule to its next local time after now and at least 50
+  // minutes after its last claim. Its time today is pinned 20 minutes from now, inside those 50 minutes, so it
+  // resumes at that time tomorrow whatever the clock says.
+  const slotToday = new Date(Math.floor((Date.now() + 20 * MINUTE) / MINUTE) * MINUTE);
+  await db.exec('reset role');
+  await rows(`update public.slack_agent_schedules set timezone = 'UTC', hour = $2, minute = $3 where id = $1`,
+    [daily.schedule.id, slotToday.getUTCHours(), slotToday.getUTCMinutes()]);
+  await db.exec('set role service_role');
   const resumed = await setStatus(daily.schedule.id, 'active');
   assert.deepEqual([resumed.status, resumed.pause_reason, resumed.failures], ['active', null, 0]);
   assert.ok(Date.parse(resumed.next_run_at) > Date.now(), 'resumed from now');
-  assert.ok(Date.parse(resumed.next_run_at) >= failed.last_run_at.getTime() + 59 * MINUTE);
+  assert.ok(Date.parse(resumed.next_run_at) >= failed.last_claimed_at.getTime() + 50 * MINUTE, 'at least 50 minutes after its last claim');
+  assert.equal(Date.parse(resumed.next_run_at), slotToday.getTime() + 24 * 60 * MINUTE, 'not at its time today, which is sooner, but tomorrow');
   const paused = await setStatus(weekly.schedule.id, 'paused');
   assert.deepEqual([paused.status, paused.pause_reason], ['paused', 'admin']);
   assert.equal((await setStatus(hourly.schedule.id, 'paused')).pause_reason, 'not_in_channel', 'pausing a paused one keeps its reason');

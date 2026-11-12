@@ -10,6 +10,7 @@ import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 import { resolveOpenAITransport } from "../../shared/openai-transport";
 import { buildImagePricingRequestOptions, normalizeOpenAIImageTokenUsage } from "@core/image-request-options";
 import { upstreamTestHeaders } from "@providers/shared/testing";
+import { priceSvgAuthorUsage, resolveSvgAuthor, type SvgAuthor } from "./images-svg";
 
 function shouldLogRawImageResponse(args: ProviderExecuteArgs): boolean {
     return (
@@ -84,13 +85,51 @@ function logRawImageResponse(
         },
     });
 }
-function mapGatewayToOpenAIImages(body: ImagesGenerationRequest, rawBody: Record<string, unknown>, providerId: string) {
+/** A `WIDTHxHEIGHT` size as numbers, or null. */
+function parseSizeDimensions(size: string | undefined): { width: number; height: number } | null {
+    const match = /^(\d+)x(\d+)$/i.exec(size?.trim() ?? "");
+    return match ? { width: Number(match[1]), height: Number(match[2]) } : null;
+}
+
+/**
+ * Together has no `size` field (only width and height) and calls base64 output
+ * `base64`, not `b64_json`; its response still uses `b64_json`.
+ * https://docs.together.ai/reference/post-images-generations
+ */
+function togetherSizeError(body: ImagesGenerationRequest): string | null {
+    if (!body.size || body.size.trim().toLowerCase() === "auto" || parseSizeDimensions(body.size)) return null;
+    return "Together image size must be WIDTHxHEIGHT, for example 1024x768. You can also send width and height.";
+}
+
+function invalidRequestResult(message: string, param: string): AdapterResult {
+    const normalized = { error: { type: "invalid_request_error", message, param } };
+    return {
+        kind: "completed",
+        upstream: new Response(JSON.stringify(normalized), { status: 400, headers: { "Content-Type": "application/json" } }),
+        normalized,
+        bill: { cost_cents: 0, currency: "USD", usage: undefined, upstream_id: null, finish_reason: null },
+        keySource: null,
+        byokKeyId: null,
+    };
+}
+
+function mapGatewayToOpenAIImages(
+    body: ImagesGenerationRequest,
+    rawBody: Record<string, unknown>,
+    providerId: string,
+    svgAuthor?: SvgAuthor | null,
+) {
     const providerParams = rawBody.provider_params && typeof rawBody.provider_params === "object"
         ? rawBody.provider_params as Record<string, unknown>
         : {};
-    const togetherParams = providerId === "together" ? {
-        width: rawBody.width ?? providerParams.width,
-        height: rawBody.height ?? providerParams.height,
+    const isTogether = providerId === "together";
+    const explicitWidth = rawBody.width ?? providerParams.width;
+    const explicitHeight = rawBody.height ?? providerParams.height;
+    // Each explicit width or height wins; a WIDTHxHEIGHT size fills whichever is missing.
+    const sizeDimensions = parseSizeDimensions(body.size);
+    const togetherParams = isTogether ? {
+        width: explicitWidth ?? sizeDimensions?.width,
+        height: explicitHeight ?? sizeDimensions?.height,
         steps: rawBody.steps ?? providerParams.steps,
         seed: rawBody.seed ?? providerParams.seed,
         negative_prompt: rawBody.negative_prompt ?? providerParams.negative_prompt,
@@ -110,12 +149,18 @@ function mapGatewayToOpenAIImages(body: ImagesGenerationRequest, rawBody: Record
         quality: body.quality,
         stream: body.stream,
         partial_images: body.partial_images,
-        response_format: body.response_format,
+        response_format: isTogether && body.response_format === "b64_json" ? "base64" : body.response_format,
         output_format: body.output_format,
         output_compression: body.output_compression,
         background: body.background,
         moderation: body.moderation,
-        size: body.size,
+        complexity: body.complexity,
+        frame_count: body.frame_count,
+        frame_duration_ms: body.frame_duration_ms,
+        svg: body.svg && svgAuthor
+            ? { ...body.svg, model: svgAuthor.upstreamModel }
+            : undefined,
+        size: isTogether ? undefined : body.size,
         style: body.style,
         user: body.user,
         ...Object.fromEntries(Object.entries(xAiParams).filter(([, value]) => value !== undefined)),
@@ -145,7 +190,19 @@ function mapOpenAIToGatewayImages(json: any): any {
         quality: json.quality,
         size: json.size,
         usage: json.usage,
+        ...(json.svg_usage && typeof json.svg_usage === "object" ? { svg_usage: json.svg_usage } : {}),
     };
+}
+
+function invalidSvgModelResponse(model: string): Response {
+    return new Response(JSON.stringify({
+        error: {
+            message: `svg.model "${model}" is not an OpenAI text model with Phaseo pricing. Use an OpenAI model id such as openai/gpt-5-nano.`,
+            type: "invalid_request_error",
+            param: "svg.model",
+            code: "invalid_svg_model",
+        },
+    }), { status: 400, headers: { "Content-Type": "application/json" } });
 }
 
 function resolveOutputImageCount(body: ImagesGenerationRequest, normalized: any): number {
@@ -221,18 +278,44 @@ export function usesGptImageTokenPricing(...modelIds: Array<string | null | unde
 }
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
-    const { keyInfo, url, headers, deployment } = resolveOpenAITransport(args, "/images/generations", upstreamTestHeaders(args.meta));
     const sanitizedBody = sanitizePayload(ImagesGenerationSchema, args.body);
+    if (args.providerId === "together") {
+        const sizeError = togetherSizeError(sanitizedBody);
+        if (sizeError) return invalidRequestResult(sizeError, "size");
+    }
+    const { keyInfo, url, headers, deployment } = resolveOpenAITransport(args, "/images/generations", upstreamTestHeaders(args.meta));
     const modifiedBody: ImagesGenerationRequest = {
         ...sanitizedBody,
         model: deployment || args.providerModelSlug || args.model,
     };
-    const req = mapGatewayToOpenAIImages(modifiedBody, args.body as Record<string, unknown>, args.providerId);
+    // SVG output also bills the caller-chosen author model; without a Phaseo price for it the
+    // request is refused here, before OpenAI charges for tokens we could not bill.
+    let svgAuthor: SvgAuthor | null = null;
+    if (modifiedBody.output_format === "svg" && modifiedBody.svg?.model) {
+        svgAuthor = await resolveSvgAuthor(modifiedBody.svg.model);
+        if (!svgAuthor) {
+            return {
+                kind: "completed",
+                upstream: invalidSvgModelResponse(modifiedBody.svg.model),
+                bill: { cost_cents: 0, currency: "USD" as const, usage: undefined as any, upstream_id: null, finish_reason: null },
+                keySource: keyInfo.source,
+                byokKeyId: keyInfo.byokId,
+            };
+        }
+    }
+    const req = mapGatewayToOpenAIImages(modifiedBody, args.body as Record<string, unknown>, args.providerId, svgAuthor);
     // Together takes no size or quality field; its output follows width and height,
-    // which default to 1024 (https://docs.together.ai/openapi.yaml).
+    // which default to 1024 (https://docs.together.ai/openapi.yaml). Price the
+    // dimensions sent, keeping `size` only when it is what Together was given.
     const togetherSize = req as { width?: unknown; height?: unknown };
+    const sentSize = parseSizeDimensions(modifiedBody.size);
     const pricingInput = args.providerId === "together"
-        ? { ...modifiedBody, width: togetherSize.width ?? 1024, height: togetherSize.height ?? 1024 }
+        ? {
+            ...modifiedBody,
+            size: sentSize && sentSize.width === togetherSize.width && sentSize.height === togetherSize.height ? modifiedBody.size : undefined,
+            width: togetherSize.width ?? 1024,
+            height: togetherSize.height ?? 1024,
+        }
         : modifiedBody;
     const res = await (args.upstreamTiming?.fetch ?? fetch)(url, {
         method: "POST",
@@ -315,6 +398,27 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         bill.cost_cents = pricedUsage.pricing.total_cents;
         bill.currency = pricedUsage.pricing.currency;
         bill.usage = pricedUsage;
+        if (svgAuthor) {
+            // OpenAI has already charged; a pricing failure is logged, never thrown.
+            try {
+                const svgAuthorPricing = priceSvgAuthorUsage(json?.svg_usage, svgAuthor);
+                if (svgAuthorPricing) {
+                    bill.usage = { ...pricedUsage, svg_author_pricing: svgAuthorPricing };
+                    bill.cost_cents = Math.trunc((Number(pricedUsage.pricing.total_nanos ?? 0) + svgAuthorPricing.total_nanos) / 10_000_000);
+                } else {
+                    console.error("[gateway][openai][images] svg_usage missing from SVG response", {
+                        requestId: args.meta?.requestId ?? null,
+                        svgAuthor: svgAuthor.model,
+                    });
+                }
+            } catch (error) {
+                console.error("[gateway][openai][images] svg author pricing failed", {
+                    requestId: args.meta?.requestId ?? null,
+                    svgAuthor: svgAuthor.model,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+        }
     }
     
     return { kind: "completed", upstream: res, bill, normalized, keySource: keyInfo.source, byokKeyId: keyInfo.byokId };

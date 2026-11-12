@@ -85,7 +85,7 @@ export default function AccountMFAClient({
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="space-y-8">
 			<section aria-labelledby="authenticator-app-title" className="space-y-3">
 				<h2
 					id="authenticator-app-title"
@@ -93,9 +93,9 @@ export default function AccountMFAClient({
 				>
 					{s("Authenticator App")}
 				</h2>
-				<div className="overflow-hidden rounded-xl border bg-background/40">
-					<div className="px-4 py-4">
-					<div className="flex items-start justify-between gap-4">
+				<div className="divide-y divide-border/60">
+					<div className="py-5">
+					<div className="flex flex-wrap items-start justify-between gap-4 sm:flex-nowrap">
 						<div className="min-w-0">
 							<h3 className="text-sm font-medium">{s("Two-Factor Authentication")}</h3>
 							<p className="mt-0.5 text-sm text-muted-foreground">
@@ -110,7 +110,7 @@ export default function AccountMFAClient({
 					</div>
 
 					{mfaEnabled ? (
-						<div className="flex flex-col gap-3 pt-3 pl-3 sm:flex-row sm:items-center sm:justify-between sm:pl-4">
+						<div className="mt-5 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
 							<div className="min-w-0">
 							<p className="text-xs font-medium">{s("Disable Two-Factor Authentication")}</p>
 								<p className="mt-0.5 text-xs text-muted-foreground">

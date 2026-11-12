@@ -68,7 +68,7 @@ Das AI SDK schickt Modelle als einfache Strings (`model: "openai/gpt-4.1-mini"`)
 | `providerOptions.gateway.sort` (`cost`, `ttft`, `tps`) | `provider.sort` (`price`, `latency`, `throughput`). |
 | `providerOptions.gateway.zeroDataRetention` | `provider.require_zero_data_retention`, das das Routing auf ZDR-Anbieter beschränkt. |
 | `providerOptions.gateway.user`, `.tags` | `user` und `X-Phaseo-Metadata`-[Labels](../guides/request-labels). |
-| Anfragebezogene `byok`-Zugangsdaten | Keine Entsprechung. Füge Anbieterschlüssel mit `phaseo byok create` zum Workspace hinzu. |
+| Anfragebezogene `byok`-Zugangsdaten | Keine Entsprechung. Füge Anbieterschlüssel mit **Einstellungen → BYOK** zum Workspace hinzu. |
 | Text, Streaming, Tools, strukturierte Ausgaben, Embeddings, Bilder, Transkription, Sprachausgabe | Vom Provider unterstützt; die Fähigkeiten hängen weiterhin vom Modell ab. |
 | Reranking | `phaseo.rerankingModel(id)` in den Linien für AI SDK 6 und 7. |
 | Verwaltete Dateireferenzen, vom Anbieter ausgeführte Tools | Nicht unterstützt. Nicht unterstützte Teile schlagen mit einem Fehler fehl, statt verworfen zu werden. |

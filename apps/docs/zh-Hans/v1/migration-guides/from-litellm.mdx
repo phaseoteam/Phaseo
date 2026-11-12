@@ -72,7 +72,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | 团队预算、`metadata.tags` | 部门预算和 `X-Phaseo-Metadata` [标签](../guides/request-labels)。终端用户预算只能映射为终端用户速率限制策略；没有终端用户支出上限。 |
 | `guardrails`（Presidio、Lakera 等） | 密钥护栏会扫描请求中的提示词注入和 PII。响应不会被扫描。 |
 | 回调（`success_callback`、Langfuse、Datadog、OpenTelemetry） | [可观测性目标](../guides/integrations/observability)或客户端追踪。请求体 `metadata` 会导出为 `phaseo.metadata.<key>`。 |
-| 配置中的提供商 API 密钥 | BYOK（`phaseo byok create --provider <id> --name <name> --key-stdin` 或 `POST /v1/byok`），或 Phaseo 额度。用 `phaseo settings update` 设置 `byok_fallback_enabled`，即可回退到额度。 |
+| 配置中的提供商 API 密钥 | BYOK（**设置 → BYOK** 或 `POST /v1/byok`），或 Phaseo 额度。用 **设置 → BYOK** 设置 `byok_fallback_enabled`，即可回退到额度。 |
 
 代理会让整个团队的流量通过同一个密钥所有者发送，因此共享该用户的每分钟请求数额度，新工作区为 10。请查看[网关限制](../api-reference/limits#gateway-limits)，并在切换前申请更高的限制。
 

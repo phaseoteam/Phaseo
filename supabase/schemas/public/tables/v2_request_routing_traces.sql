@@ -23,6 +23,9 @@ CREATE TABLE "public"."v2_request_routing_traces" (
 ALTER TABLE "public"."v2_request_routing_traces"
   ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE "public"."v2_request_routing_traces"
+  SET (autovacuum_vacuum_scale_factor = 0, autovacuum_vacuum_threshold = 500, autovacuum_analyze_scale_factor = 0, autovacuum_analyze_threshold = 500);
+
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_request_routing_traces"
   AS RESTRICTIVE
   FOR ALL

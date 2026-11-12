@@ -1,4 +1,5 @@
 import { SortableTableHead } from "../SortableTableHead";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 // The dashboard's formats are shared with the mobile app's usage screen.
 import {
 	formatUsageDeltaPercent as formatDeltaPercent,
@@ -2512,13 +2513,10 @@ export default function ObservabilityHub({
 }) {
 	const t = useTranslations("SettingsUI.observability");
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-				<div className="min-w-0 flex-1">
-					<h1 className="text-xl font-semibold tracking-tight sm:text-2xl">{t("activity")}</h1>
-					<p className="mt-1 text-xs text-muted-foreground sm:text-sm">{t("yourUsage")}</p>
-				</div>
-				<div className="flex shrink-0 flex-wrap justify-end gap-2">
+				<SettingsPageHeader title={t("activity")} description={t("yourUsage")} />
+				<div className="flex min-w-0 max-w-full flex-wrap gap-2 lg:justify-end">
 					<RequestLabelFilter facets={labelFacets} classifiers={requestClassifiers} mode="usage" />
 					<UsageLogsToolbar
 						view="logs"

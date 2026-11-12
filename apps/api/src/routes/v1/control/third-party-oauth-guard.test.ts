@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CONTROL_CAPABILITIES } from "@/lib/authz/capabilities";
 import { guardManagementAuth } from "@/pipeline/before/guards";
 import { getSupabaseActor } from "@/lib/oauth/service";
-import { isThirdPartyOAuthApp } from "./route-helpers";
+import { isPublicNativeOAuthClient, isThirdPartyOAuthApp, PUBLIC_NATIVE_CLIENT_REFUSAL } from "./route-helpers";
 
 // Every control-API write that could create, re-enable or reshape something that spends the workspace's
 // money, or change a limit on that spending, refuses an app that signs in with Phaseo, and only such an app.
@@ -90,11 +90,15 @@ const caller = (overrides: Record<string, unknown>) => ({
 });
 const PARTNER_APP = caller({ authMethod: "oauth", oauthClientId: "partner_app", apiKeyRef: "kid_app" });
 const ALLOWED = {
+	"a dashboard session": caller({ authMethod: "oauth", apiKeyRef: "dashboard" }),
+	"a management key": caller({ authMethod: "api_key", apiKeyRef: "mk_terraform" }),
+};
+// Their client IDs are public, so anyone can start their sign-in; they get no exemption.
+const PUBLIC_NATIVE = {
 	"the Phaseo CLI": caller({ authMethod: "oauth", oauthClientId: "phaseo_cli", apiKeyRef: "oauth_phaseo_cli" }),
 	"the legacy CLI client": caller({ authMethod: "oauth", oauthClientId: "aistats_cli", apiKeyRef: "oauth_aistats_cli" }),
 	"the desktop app": caller({ authMethod: "oauth", oauthClientId: "phaseo_desktop", apiKeyRef: "kid_desktop" }),
-	"a dashboard session": caller({ authMethod: "oauth", apiKeyRef: "dashboard" }),
-	"a management key": caller({ authMethod: "api_key", apiKeyRef: "mk_terraform" }),
+	"a CLI token presented as a dashboard session": caller({ authMethod: "oauth", oauthClientId: "phaseo_cli", apiKeyRef: "dashboard" }),
 };
 
 type Case = { route: string; method: string; path: string; body?: unknown; refusal: string };
@@ -251,6 +255,19 @@ describe("apps that use Sign in with Phaseo can't create or reshape what spends 
 			state.auth = auth;
 			const { body } = await send(testCase);
 			expect(String(body?.message ?? ""), label(testCase)).not.toContain("Sign in with Phaseo");
+			expect(String(body?.message ?? ""), label(testCase)).not.toBe(PUBLIC_NATIVE_CLIENT_REFUSAL);
+		}
+	});
+
+	it.each(Object.entries(PUBLIC_NATIVE))("refuses %s and points to the dashboard or a management key", async (_name, auth) => {
+		expect(isPublicNativeOAuthClient(auth as any)).toBe(true);
+		for (const testCase of CASES) {
+			state.writes.length = 0;
+			state.auth = auth;
+			const { status, body } = await send(testCase);
+			expect(status, label(testCase)).toBe(403);
+			expect(body, label(testCase)).toMatchObject({ error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL });
+			expect(state.writes, label(testCase)).toEqual([]);
 		}
 	});
 });
@@ -289,17 +306,32 @@ describe("tokens the auth provider issued to apps, at the dashboard-session boun
 		},
 	);
 
-	it.each([
-		["the person's own session", {}],
-		["the Phaseo CLI's token", { client_id: "phaseo_cli" }],
-		["the desktop app's token", { client_id: "phaseo_desktop" }],
-	])("keeps %s a dashboard session", async (_name, claims) => {
+	it("keeps the person's own session a dashboard session", async () => {
 		for (const testCase of DASHBOARD_CASES) {
-			const token = supabaseToken(claims);
+			const token = supabaseToken({});
 			const { body } = await send(testCase, { authorization: `Bearer ${token}`, "x-phaseo-workspace-id": "ws_1" });
 			expect(String(body?.message ?? ""), label(testCase)).not.toContain("Sign in with Phaseo");
+			expect(String(body?.message ?? ""), label(testCase)).not.toBe(PUBLIC_NATIVE_CLIENT_REFUSAL);
 		}
 		expect(guardManagementAuth).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		["the Phaseo CLI's token", "phaseo_cli"],
+		["the desktop app's token", "phaseo_desktop"],
+	])("judges %s as that app, not as a dashboard session", async (_name, clientId) => {
+		for (const testCase of DASHBOARD_CASES) {
+			state.writes.length = 0;
+			// What management authentication makes of the token: an OAuth caller with that client ID.
+			state.auth = caller({ authMethod: "oauth", oauthClientId: clientId, apiKeyRef: `oauth_${clientId}` });
+			vi.mocked(guardManagementAuth).mockClear();
+			const token = supabaseToken({ client_id: clientId });
+			const { status, body } = await send(testCase, { authorization: `Bearer ${token}`, "x-phaseo-workspace-id": "ws_1" });
+			expect(status, label(testCase)).toBe(403);
+			expect(guardManagementAuth, label(testCase)).toHaveBeenCalled();
+			expect(body, label(testCase)).toMatchObject({ message: PUBLIC_NATIVE_CLIENT_REFUSAL });
+			expect(state.writes, label(testCase)).toEqual([]);
+		}
 	});
 
 	it("reads the client from the token: none for the person, Phaseo's own apps kept, anything else refused", async () => {

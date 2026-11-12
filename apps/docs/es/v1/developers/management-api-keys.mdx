@@ -6,11 +6,7 @@ icon: "key-round"
 
 Crea una clave de administración para llamar a las API de administración de Phaseo desde tus propios servidores: créditos, actividad, espacios de trabajo, claves, preajustes, ajustes y guardrails. Las claves de administración no pueden enviar solicitudes de inferencia.
 
-```bash
-phaseo management-keys create --name <name> --template read-only --json
-```
-
-También puedes crearla en el panel, en **Ajustes → Claves de administración**. El secreto solo se muestra una vez, así que guárdalo en tu gestor de secretos. Envíalo solo desde código del lado del servidor, a la misma URL base que el Gateway (`https://api.phaseo.app/v1`):
+Créala en el panel, en **Ajustes → Claves de administración**. El secreto solo se muestra una vez, así que guárdalo en tu gestor de secretos. Envíalo solo desde código del lado del servidor, a la misma URL base que el Gateway (`https://api.phaseo.app/v1`):
 
 ```http
 Authorization: Bearer phaseo_v1_mk_<kid>_<secret>

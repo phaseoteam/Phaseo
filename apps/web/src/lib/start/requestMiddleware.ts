@@ -3,6 +3,7 @@
 // markdown negotiation, legacy redirects, blog gates, locale negotiation and
 // the Supabase session refresh) before the route runs. Site header rules are
 // added to every response.
+import { isRedirect } from "@tanstack/react-router";
 import { createMiddleware } from "@tanstack/react-start";
 import { headerRules, redirects, type HostCondition } from "./siteRules";
 import { readRequestCookie, serializeCookie } from "@/lib/http/cookies";
@@ -150,23 +151,38 @@ async function proxyTo(request: Request, target: string, init: { headers?: Heade
 	return new Response(upstream.body, { status: upstream.status, statusText: upstream.statusText, headers: new Headers(upstream.headers) });
 }
 
-function applyHeaderRules(response: Response, url: URL): Response {
-	let headers: Headers | null = null;
-	for (const rule of headerRules) {
-		if (!matchRule(rule, url)) continue;
-		headers ??= new Headers(response.headers);
-		for (const { key, value } of rule.headers) headers.set(key, value);
+/**
+ * Applies header changes to a response. A `redirect()` thrown by a route or a
+ * server function is changed in place: TanStack Start recognises it by
+ * identity (`isRedirect`) and turns it into a JSON redirect for server
+ * function calls. A copy would reach the browser as a raw 307, which `fetch`
+ * follows by POSTing to the target page (405), breaking sign-in and every
+ * other action that ends in a redirect.
+ */
+function withHeaders(response: Response, change: (headers: Headers) => void): Response {
+	if (isRedirect(response)) {
+		change(response.headers);
+		return response;
 	}
-	if (!headers) return response;
+	const headers = new Headers(response.headers);
+	change(headers);
 	return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
+function applyHeaderRules(response: Response, url: URL): Response {
+	const rules = headerRules.filter((rule) => matchRule(rule, url));
+	if (!rules.length) return response;
+	return withHeaders(response, (headers) => {
+		for (const rule of rules) for (const { key, value } of rule.headers) headers.set(key, value);
+	});
 }
 
 function withCookies(response: Response, cookies: string[], extraHeaders?: Headers): Response {
 	if (!cookies.length && !extraHeaders) return response;
-	const headers = new Headers(response.headers);
-	for (const cookie of cookies) headers.append("set-cookie", cookie);
-	extraHeaders?.forEach((value, name) => headers.set(name, value));
-	return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+	return withHeaders(response, (headers) => {
+		for (const cookie of cookies) headers.append("set-cookie", cookie);
+		extraHeaders?.forEach((value, name) => headers.set(name, value));
+	});
 }
 
 async function handle(request: Request, next: () => Promise<Response>): Promise<Response> {

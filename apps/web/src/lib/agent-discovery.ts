@@ -131,6 +131,7 @@ Phaseo is an open model database and OpenAI-compatible gateway for comparing mod
 
 - Public model and provider browsing pages
 - Pricing and gateway overview pages
+- Every page as Markdown: add \`.md\` to the URL or send \`Accept: text/markdown\`
 - Machine-readable API discovery metadata
 - Browser-native WebMCP homepage tools for navigation and API discovery
 `;

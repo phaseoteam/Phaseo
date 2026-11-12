@@ -90,13 +90,21 @@ const fixtureQuotes = new Map<
   }
 >();
 // ?mode=fullscreen starts in the explorer; the default is an inline card, like a
-// tool result in ChatGPT. ?card=estimate or ?card=credits picks the result shown.
+// tool result in the host. ?card=estimate or ?card=credits picks the result shown.
+// ?loading=1 never sends the result, to show the loading card; ?insets=24 reports
+// that many pixels of safe area on every edge, as a mobile host does.
 const params = new URLSearchParams(location.search);
 const startMode = params.get("mode") === "fullscreen" ? "fullscreen" : "inline";
+const previewTool =
+  { estimate: "cost_estimate", credits: "credits_get" }[params.get("card") ?? ""] ??
+  "models_list";
+const inset = Number(params.get("insets") ?? 0);
 bridge.setHostContext({
   theme: params.get("theme") === "dark" ? "dark" : "light",
   displayMode: startMode,
   availableDisplayModes: ["inline", "fullscreen"],
+  toolInfo: { tool: { name: previewTool, inputSchema: { type: "object" } } },
+  ...(inset ? { safeAreaInsets: { top: inset, right: inset, bottom: inset, left: inset } } : {}),
 });
 bridge.onrequestdisplaymode = async ({ mode }) => {
   bridge.setHostContext({ displayMode: mode });
@@ -308,6 +316,7 @@ const cardResults: Record<string, Record<string, unknown>> = {
 bridge.oninitialized = async () => {
   if (startMode === "fullscreen" && params.get("entry") === "panel") return;
   await bridge.sendToolInput({ arguments: {} });
+  if (params.get("loading")) return;
   await bridge.sendToolResult({
     content: [{ type: "text", text: "Preview fixtures" }],
     structuredContent: cardResults[params.get("card") ?? ""] ?? { models },

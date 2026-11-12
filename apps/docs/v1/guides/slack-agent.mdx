@@ -112,7 +112,7 @@ On the app's **Basic Information** page in Slack, copy its **App ID**, **Client 
 
 <Step title="Point the request URLs at your app">
 
-In Slack, open the app's **App Manifest** page. In both request URLs, replace `YOUR_APP_ID` with the app ID, for example `https://slack.phaseo.app/events/A0123ABCDEF`. Save, and verify the request URL when Slack asks.
+In Phaseo, **Settings → Slack** now shows two request URLs for your saved app. In Slack, open the app's **App Manifest** page and put them in place of the two `request_url` values (the first for events, the second for interactivity). Save, and verify the request URL when Slack asks.
 
 </Step>
 
@@ -172,7 +172,7 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
   },
   "settings": {
     "event_subscriptions": {
-      "request_url": "https://slack.phaseo.app/events/YOUR_APP_ID",
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events",
       "bot_events": [
         "app_mention",
         "message.im",
@@ -184,7 +184,7 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
     },
     "interactivity": {
       "is_enabled": true,
-      "request_url": "https://slack.phaseo.app/interactions/YOUR_APP_ID"
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions"
     },
     "org_deploy_enabled": true,
     "socket_mode_enabled": false,
@@ -196,8 +196,8 @@ In **Settings → Slack**, choose **Your Slack app** under **Slack app**, then s
 | Setting | Value |
 | --- | --- |
 | Redirect URL | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
-| Event Subscriptions request URL | `https://slack.phaseo.app/events/YOUR_APP_ID` |
-| Interactivity request URL | `https://slack.phaseo.app/interactions/YOUR_APP_ID` |
+| Event Subscriptions request URL | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events` |
+| Interactivity request URL | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions` |
 | Bot events | `app_mention`, `message.im`, `agent_session_stopped`, `app_uninstalled`, `tokens_revoked`, `app_home_opened` |
 
 Phaseo asks Slack for exactly these bot token scopes when you install, so the app needs all of them:
@@ -232,6 +232,6 @@ If the agent doesn't reply at all:
 
 - In a channel, make sure it's a member of the channel, and mention it in each message you want answered.
 - It doesn't answer edited messages, bots or other apps.
-- With your own Slack app, check that both request URLs end in your app ID, that Slack shows them as verified, and that the app is saved in **Settings → Slack**.
+- With your own Slack app, check that the request URLs are the ones **Settings → Slack** shows for your saved app, and that Slack marks them as verified.
 
 When it replies privately that it can't answer, the reply says why: see [When the agent can't answer](/v1/guides/slack-agent-admin#when-the-agent-cant-answer).

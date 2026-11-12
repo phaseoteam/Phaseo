@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { delimiter, dirname, join, resolve } from "node:path";
@@ -19,7 +20,7 @@ import { continueAdapter } from "../src/integrations/adapters/continue.js";
 import { zedAdapter } from "../src/integrations/adapters/zed.js";
 import { applyChanges } from "../src/integrations/files.js";
 import { isIntegrationSetupName, isPrimarySetupName, runIntegrationCommand } from "../src/integrations/index.js";
-import { INTEGRATION_KEY_LIFETIME_MS, INTEGRATION_KEY_MONTHLY_LIMIT_USD, getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, hasIntegrationGatewayCredential, integrationCredentialsForNewLogin, revokeIntegrationGatewayCredential } from "../src/integrations/credential.js";
+import { INTEGRATION_KEY_LIFETIME_MS, INTEGRATION_KEY_MONTHLY_LIMIT_USD, getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, hasIntegrationGatewayCredential, integrationCredentialsForNewLogin, readKeyFlag, revokeIntegrationGatewayCredential } from "../src/integrations/credential.js";
 import { HERMES_BLOCK_END, HERMES_BLOCK_START, HermesEnvQuotingError, hermesAdapter, assertHermesEnvEditable, firstUnsupportedHermesEnvLine, hermesEnvDefinesOpenAIKey, hermesEnvPath, removeHermesKey, renderHermesEnv, renderHermesEnvWithoutKey, resolveHermesHome, writeHermesKey } from "../src/integrations/adapters/hermes.js";
 import { readSession, writeSession } from "../src/session.js";
 import { fetchIntegrationModels, toIntegrationModel } from "../src/integrations/catalog.js";
@@ -34,6 +35,13 @@ test("Codex profile uses the Responses API without embedding a credential", () =
 	assert.match(profile, /model = "anthropic\/claude-sonnet-4.6"/);
 	assert.doesNotMatch(profile, /phaseo_v1_sk_/);
 	assert.doesNotMatch(profile, /env_key/);
+	// The profile also runs the read-only Phaseo MCP through the CLI login (no --manage).
+	assert.match(profile, /\[mcp_servers\.phaseo\]\ncommand = "phaseo"\nargs = \["mcp"\]\n/);
+});
+
+test("Claude Code setup suggests the Phaseo MCP without editing ~/.claude.json", () => {
+	const tips = claudeCodeAdapter.setupTips?.({ homeDir: "/tmp" }) ?? [];
+	assert.deepEqual(tips.filter((tip) => tip.includes("claude mcp add --scope user phaseo -- phaseo mcp")).length, 1);
 });
 
 test("Pi extension registers Phaseo with a command-backed credential", async () => {
@@ -684,116 +692,248 @@ test("model catalog flags are limited to catalog-backed harnesses", async () => 
 	);
 });
 
-test("browser login provisions and securely reuses a named, expiring, spend-limited integration key", async () => {
-	const homeDir = await mkdtemp(join(tmpdir(), "phaseo-integration-credential-"));
-	const previousBackend = process.env.PHASEO_SESSION_BACKEND;
-	const previousConfigDir = process.env.PHASEO_CONFIG_DIR;
-	const previousApiKey = process.env.PHASEO_API_KEY;
-	const previousFetch = globalThis.fetch;
-	process.env.PHASEO_SESSION_BACKEND = "file";
-	process.env.PHASEO_CONFIG_DIR = homeDir;
-	delete process.env.PHASEO_API_KEY;
-	const requests: Array<{ url: string; method: string; body?: string }> = [];
-	globalThis.fetch = async (input, init) => {
+type RecordedRequest = { url: string; method: string; body?: any; authorization: string | null };
+
+function keyRequestServer(outcomes: Array<{ status: number; body: Record<string, unknown> }>, extra?: (url: string, method: string, init?: RequestInit) => Response | null) {
+	const requests: RecordedRequest[] = [];
+	let polls = 0;
+	const fetchImpl: typeof fetch = async (input, init) => {
 		const url = String(input);
 		const method = init?.method ?? "GET";
-		requests.push({ url, method, body: typeof init?.body === "string" ? init.body : undefined });
-		if (method === "POST" && url.endsWith("/v1/keys")) {
-			return new Response(JSON.stringify({ data: { id: "key_agent", key: "phaseo_v1_sk_agent_secret" } }), {
-				status: 201,
-				headers: { "content-type": "application/json" },
-			});
+		const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
+		requests.push({ url, method, body, authorization: new Headers(init?.headers).get("authorization") });
+		if (method === "POST" && url.endsWith("/v1/key-requests")) {
+			return new Response(JSON.stringify({
+				request_id: "req_1",
+				status: "pending",
+				approval_url: "https://phaseo.app/settings/keys/requests/req_1",
+				poll_interval: 3,
+				expires_in: 600,
+				expires_at: new Date(Date.now() + 600_000).toISOString(),
+			}), { status: 201, headers: { "content-type": "application/json" } });
 		}
-		if (method === "DELETE" && url.endsWith("/v1/keys/key_agent")) {
-			return new Response(null, { status: 204 });
+		if (method === "POST" && url.endsWith("/v1/key-requests/req_1/token")) {
+			const outcome = outcomes[Math.min(polls, outcomes.length - 1)];
+			polls += 1;
+			return new Response(JSON.stringify(outcome.body), { status: outcome.status, headers: { "content-type": "application/json" } });
 		}
+		const handled = extra?.(url, method, init);
+		if (handled) return handled;
 		throw new Error(`Unexpected request: ${method} ${url}`);
 	};
-	try {
-		await writeSession({
-			accessToken: "oauth-session-token",
-			refreshToken: "refresh-token",
-			expiresAt: Date.now() + 60 * 60 * 1000,
-			apiUrl: "https://api.phaseo.app",
+	return { requests, fetchImpl };
+}
+
+const APPROVED = {
+	status: 200,
+	body: { status: "approved", key: "phaseo_v1_sk_agent_secret", key_id: "key_agent", expires_at: "2027-02-04T20:00:00.000Z", limits: { monthly_cost_usd: 100 } },
+};
+
+function approvalHooks() {
+	const lines: string[] = [];
+	const opened: string[] = [];
+	const sleeps: number[] = [];
+	return {
+		lines,
+		opened,
+		sleeps,
+		hooks: {
+			notify: (line: string) => { lines.push(line); },
+			open: (url: string) => { opened.push(url); return true; },
+			sleep: async (ms: number) => { sleeps.push(ms); },
+		},
+	};
+}
+
+const SESSION = () => ({
+	accessToken: "oauth-session-token",
+	refreshToken: "refresh-token",
+	expiresAt: Date.now() + 60 * 60 * 1000,
+	apiUrl: "https://api.phaseo.app",
+});
+
+test("setup asks for a key the person approves in the browser, then collects it once with the verifier", async () => {
+	const server = keyRequestServer([
+		{ status: 200, body: { status: "pending", final: false, poll_interval: 3 } },
+		{ status: 429, body: { error: "slow_down", poll_interval: 3 } },
+		APPROVED,
+	], (url, method) => method === "DELETE" && url.endsWith("/v1/keys/key_agent") ? new Response(null, { status: 204 }) : null);
+	const ui = approvalHooks();
+	await withFileSession(server.fetchImpl, async () => {
+		await writeSession(SESSION());
+		assert.equal(await getIntegrationGatewayCredential("codex", { hooks: ui.hooks }), "phaseo_v1_sk_agent_secret");
+		assert.equal(await getIntegrationGatewayCredential("codex", { hooks: ui.hooks }), "phaseo_v1_sk_agent_secret", "the approved key is reused");
+
+		// The CLI sign-in never creates a key itself.
+		assert.equal(server.requests.some((request) => request.url.endsWith("/v1/keys") && request.method === "POST"), false);
+		const created = server.requests[0];
+		assert.equal(created.url, "https://api.phaseo.app/v1/key-requests");
+		assert.equal(created.authorization, "Bearer oauth-session-token");
+		assert.deepEqual({ ...created.body, code_challenge: undefined }, {
+			name: "Phaseo CLI: Codex API Key",
+			agent: "codex",
+			limits: { monthly_cost_usd: INTEGRATION_KEY_MONTHLY_LIMIT_USD },
+			expires_in_days: 90,
+			code_challenge: undefined,
+			code_challenge_method: "S256",
 		});
-		assert.equal(await getIntegrationGatewayCredential("codex"), "phaseo_v1_sk_agent_secret");
-		assert.equal(await getIntegrationGatewayCredential("codex"), "phaseo_v1_sk_agent_secret");
-		assert.equal(requests.filter((request) => request.method === "POST").length, 1);
-		const created = JSON.parse(requests.find((request) => request.method === "POST")?.body ?? "{}");
-		assert.equal(created.name, "Phaseo CLI: Codex API Key");
-		assert.equal(created.limit, INTEGRATION_KEY_MONTHLY_LIMIT_USD);
-		assert.equal(created.limit_reset, "monthly");
-		const lifetime = Date.parse(created.expires_at) - Date.now();
-		assert.ok(lifetime > INTEGRATION_KEY_LIFETIME_MS - 60_000 && lifetime <= INTEGRATION_KEY_LIFETIME_MS, "key expires after 90 days");
-		assert.equal((await readSession())?.integrationGatewayCredentials?.codex?.keyId, "key_agent");
-		assert.equal((await readSession())?.integrationGatewayCredentials?.codex?.expiresAt, Date.parse(created.expires_at));
+		const polls = server.requests.filter((request) => request.url.endsWith("/token"));
+		assert.equal(polls.length, 3);
+		const verifier = polls[0].body.code_verifier;
+		assert.match(verifier, /^[A-Za-z0-9_-]{43}$/);
+		assert.ok(polls.every((poll) => poll.body.code_verifier === verifier), "the same verifier on every poll");
+		assert.equal(createHash("sha256").update(verifier).digest("base64url"), created.body.code_challenge, "the challenge is S256 of the verifier");
+		assert.equal(server.requests.length, 4, "nothing more after the key is stored");
+
+		assert.deepEqual(ui.opened, ["https://phaseo.app/settings/keys/requests/req_1"]);
+		assert.match(ui.lines.join("\n"), /Approve the new key in your browser: https:\/\/phaseo\.app\/settings\/keys\/requests\/req_1/);
+		assert.match(ui.lines.join("\n"), /\$100\.00 monthly limit/);
+		assert.deepEqual(ui.sleeps, [3000, 3000, 5000], "slow_down lengthens the polling interval");
+
+		const stored = (await readSession())?.integrationGatewayCredentials?.codex;
+		assert.deepEqual(stored, { key: "phaseo_v1_sk_agent_secret", keyId: "key_agent", expiresAt: Date.parse("2027-02-04T20:00:00.000Z") });
 		assert.equal(await revokeIntegrationGatewayCredential("codex"), true);
 		assert.equal((await readSession())?.integrationGatewayCredentials?.codex, undefined);
-		assert.equal(requests.filter((request) => request.method === "DELETE").length, 1);
-	} finally {
-		globalThis.fetch = previousFetch;
-		if (previousBackend === undefined) delete process.env.PHASEO_SESSION_BACKEND;
-		else process.env.PHASEO_SESSION_BACKEND = previousBackend;
-		if (previousConfigDir === undefined) delete process.env.PHASEO_CONFIG_DIR;
-		else process.env.PHASEO_CONFIG_DIR = previousConfigDir;
-		if (previousApiKey === undefined) delete process.env.PHASEO_API_KEY;
-		else process.env.PHASEO_API_KEY = previousApiKey;
-		await rm(homeDir, { recursive: true, force: true });
+		assert.equal(server.requests.filter((request) => request.method === "DELETE").length, 1);
+	});
+});
+
+test("a denied or expired key request stops setup with a clear message and stores nothing", async () => {
+	for (const [status, message] of [["denied", /denied in the browser\. Nothing was created/], ["expired", /expired before it was approved/]] as const) {
+		const server = keyRequestServer([{ status: 200, body: { status, final: true } }]);
+		await withFileSession(server.fetchImpl, async () => {
+			await writeSession(SESSION());
+			await assert.rejects(getIntegrationGatewayCredential("claude-code", { hooks: approvalHooks().hooks }), message);
+			assert.equal((await readSession())?.integrationGatewayCredentials?.["claude-code"], undefined);
+		});
 	}
 });
 
-test("legacy credential helpers remain supported and bulk revocation clears every integration key", async () => {
-	const homeDir = await mkdtemp(join(tmpdir(), "phaseo-legacy-integration-credential-"));
-	const previousBackend = process.env.PHASEO_SESSION_BACKEND;
-	const previousConfigDir = process.env.PHASEO_CONFIG_DIR;
-	const previousApiKey = process.env.PHASEO_API_KEY;
-	const previousFetch = globalThis.fetch;
-	process.env.PHASEO_SESSION_BACKEND = "file";
-	process.env.PHASEO_CONFIG_DIR = homeDir;
-	delete process.env.PHASEO_API_KEY;
-	let keyNumber = 0;
-	const deleted: string[] = [];
-	globalThis.fetch = async (input, init) => {
+test("a key approval page outside phaseo.app is printed, never opened", async () => {
+	const server = keyRequestServer([APPROVED]);
+	const original = server.fetchImpl;
+	const ui = approvalHooks();
+	await withFileSession(async (input, init) => {
+		const response = await original(input, init);
+		if (String(input).endsWith("/v1/key-requests")) {
+			const body = await response.json() as Record<string, unknown>;
+			return new Response(JSON.stringify({ ...body, approval_url: "https://evil.example/approve" }), { status: 201 });
+		}
+		return response;
+	}, async () => {
+		await writeSession(SESSION());
+		await getIntegrationGatewayCredential("codex", { hooks: ui.hooks });
+		assert.deepEqual(ui.opened, []);
+		assert.match(ui.lines.join("\n"), /Open that link in a browser/);
+	});
+});
+
+test("credential helpers never wait for a browser: no stored key is an error pointing to setup", async () => {
+	await withFileSession(async () => { throw new Error("no network expected"); }, async () => {
+		await writeSession(SESSION());
+		await assert.rejects(getIntegrationGatewayCredential("codex", { approve: false }), /Run `phaseo setup codex` to approve one in your browser, or pass a key from the dashboard with --key/);
+		await assert.rejects(runIntegrationCommand(["credential", "codex"], {}), /phaseo setup codex/);
+	});
+});
+
+test("--key uses a dashboard key after the gateway accepts it, and the CLI never revokes it", async () => {
+	const requests: RecordedRequest[] = [];
+	await withFileSession(async (input, init) => {
 		const url = String(input);
 		const method = init?.method ?? "GET";
-		if (method === "POST" && url.endsWith("/v1/keys")) {
-			keyNumber += 1;
-			return new Response(JSON.stringify({ data: { id: `key_${keyNumber}`, key: `phaseo_v1_sk_${keyNumber}` } }), {
-				status: 201,
-				headers: { "content-type": "application/json" },
-			});
+		requests.push({ url, method, authorization: new Headers(init?.headers).get("authorization") });
+		if (method === "GET" && url.endsWith("/v1/key")) {
+			return new Response(JSON.stringify({ data: { id: "key_dashboard", expires_at: null } }), { status: 200 });
 		}
+		throw new Error(`Unexpected request: ${method} ${url}`);
+	}, async () => {
+		await writeSession(SESSION());
+		await assert.rejects(getIntegrationGatewayCredential("codex", { existingKey: "not-a-key" }), /--key must be a Phaseo API key/);
+		const key = "phaseo_v1_sk_abcdefghijkl_secretsecretsecret";
+		assert.equal(await getIntegrationGatewayCredential("codex", { existingKey: ` ${key} ` }), key);
+		assert.deepEqual(requests, [{ url: "https://api.phaseo.app/v1/key", method: "GET", authorization: `Bearer ${key}` }]);
+		assert.deepEqual((await readSession())?.integrationGatewayCredentials?.codex, { key, keyId: "key_dashboard", external: true });
+		assert.equal(await revokeIntegrationGatewayCredential("codex"), true);
+		assert.equal((await readSession())?.integrationGatewayCredentials?.codex, undefined, "forgotten locally");
+		assert.equal(requests.length, 1, "but not deleted from the dashboard");
+	});
+});
+
+test("--key-stdin reads the key without putting it on the command line", async () => {
+	async function* stdin() { yield "phaseo_v1_sk_abc_def\n"; }
+	assert.equal(await readKeyFlag({ "key-stdin": true }, stdin()), "phaseo_v1_sk_abc_def");
+	assert.equal(await readKeyFlag({ key: " phaseo_v1_sk_abc_def " }), "phaseo_v1_sk_abc_def");
+	assert.equal(await readKeyFlag({}), undefined);
+	await assert.rejects(readKeyFlag({ key: true }), /--key needs a Phaseo API key/);
+	await assert.rejects(readKeyFlag({ key: "x", "key-stdin": true }, stdin()), /not both/);
+});
+
+test("--key and --key-stdin win over PHASEO_API_KEY, and are still checked and stored", async () => {
+	const checked: string[] = [];
+	await withFileSession(async (input, init) => {
+		if (String(input).endsWith("/v1/key")) {
+			checked.push(new Headers(init?.headers).get("authorization") ?? "");
+			return new Response(JSON.stringify({ data: { id: `key_${checked.length}`, expires_at: null } }), { status: 200 });
+		}
+		throw new Error(`Unexpected request: ${init?.method ?? "GET"} ${String(input)}`);
+	}, async () => {
+		await writeSession(SESSION());
+		process.env.PHASEO_API_KEY = "phaseo_v1_sk_env_fromtheenvironment";
+		const flagKey = "phaseo_v1_sk_flag_secretsecretsecret";
+		const stdinKey = "phaseo_v1_sk_stdin_secretsecretsecret";
+		async function* stdin() { yield `${stdinKey}\n`; }
+		assert.equal(await getIntegrationGatewayCredential("codex", { existingKey: await readKeyFlag({ key: flagKey }) }), flagKey);
+		assert.equal(await getIntegrationGatewayCredential("aider", { existingKey: await readKeyFlag({ "key-stdin": true }, stdin()) }), stdinKey);
+		assert.deepEqual(checked, [`Bearer ${flagKey}`, `Bearer ${stdinKey}`], "both keys were checked with the gateway");
+		const stored = (await readSession())?.integrationGatewayCredentials;
+		assert.deepEqual(stored?.codex, { key: flagKey, keyId: "key_1", external: true });
+		assert.deepEqual(stored?.aider, { key: stdinKey, keyId: "key_2", external: true });
+		await assert.rejects(getIntegrationGatewayCredential("codex", { existingKey: "not-a-key" }), /--key must be a Phaseo API key/, "validated even with PHASEO_API_KEY set");
+		assert.equal(await getIntegrationGatewayCredential("zed"), "phaseo_v1_sk_env_fromtheenvironment", "without a flag the environment still wins");
+	});
+});
+
+test("legacy credential helpers keep a valid shared key, and bulk revocation clears every integration key", async () => {
+	const deleted: string[] = [];
+	await withFileSession(async (input, init) => {
+		const url = String(input);
+		const method = init?.method ?? "GET";
 		if (method === "DELETE") {
-			deleted.push(url);
+			deleted.push(url.split("/").at(-1)!);
 			return new Response(null, { status: 204 });
 		}
 		throw new Error(`Unexpected request: ${method} ${url}`);
-	};
-	try {
+	}, async () => {
 		await writeSession({
-			accessToken: "oauth-session-token",
-			refreshToken: "refresh-token",
-			expiresAt: Date.now() + 60 * 60 * 1000,
-			apiUrl: "https://api.phaseo.app",
+			...SESSION(),
+			integrationGatewayKey: "phaseo_v1_sk_1",
+			integrationGatewayKeyId: "key_1",
+			integrationGatewayKeyExpiresAt: Date.now() + 60 * 60 * 1000,
+			integrationGatewayCredentials: { codex: { key: "phaseo_v1_sk_2", keyId: "key_2" } },
 		});
 		assert.equal(await getLegacyIntegrationGatewayCredential(), "phaseo_v1_sk_1");
-		assert.equal(await getLegacyIntegrationGatewayCredential(), "phaseo_v1_sk_1");
-		assert.equal(await getIntegrationGatewayCredential("codex"), "phaseo_v1_sk_2");
 		assert.equal(await revokeIntegrationGatewayCredential(), true);
 		const session = await readSession();
 		assert.equal(session?.integrationGatewayKeyId, undefined);
 		assert.deepEqual(session?.integrationGatewayCredentials, {});
-		assert.deepEqual(deleted.map((url) => url.split("/").at(-1)).sort(), ["key_1", "key_2"]);
-	} finally {
-		globalThis.fetch = previousFetch;
-		if (previousBackend === undefined) delete process.env.PHASEO_SESSION_BACKEND;
-		else process.env.PHASEO_SESSION_BACKEND = previousBackend;
-		if (previousConfigDir === undefined) delete process.env.PHASEO_CONFIG_DIR;
-		else process.env.PHASEO_CONFIG_DIR = previousConfigDir;
-		if (previousApiKey === undefined) delete process.env.PHASEO_API_KEY;
-		else process.env.PHASEO_API_KEY = previousApiKey;
-		await rm(homeDir, { recursive: true, force: true });
-	}
+		assert.deepEqual(deleted.sort(), ["key_1", "key_2"]);
+	});
+});
+
+test("an expired legacy shared key isn't replaced: the CLI can't create keys", async () => {
+	const deleted: string[] = [];
+	await withFileSession(async (input, init) => {
+		if (init?.method === "DELETE") {
+			deleted.push(String(input).split("/").at(-1)!);
+			return new Response(null, { status: 204 });
+		}
+		throw new Error(`Unexpected request: ${init?.method ?? "GET"} ${String(input)}`);
+	}, async () => {
+		await writeSession({ ...SESSION(), integrationGatewayKey: "old", integrationGatewayKeyId: "key_old", integrationGatewayKeyExpiresAt: Date.now() + 1_000 });
+		await assert.rejects(getLegacyIntegrationGatewayCredential(), /Run `phaseo setup <agent>` again/);
+		assert.deepEqual(deleted, ["key_old"]);
+		assert.equal((await readSession())?.integrationGatewayKeyId, undefined);
+	});
 });
 
 test("transaction rollback removes files created earlier in the plan", async () => {
@@ -851,9 +991,12 @@ test("expired integration keys are replaced; unexpired and pre-expiry keys are k
 	await withFileSession(async (input, init) => {
 		const method = init?.method ?? "GET";
 		calls.push(`${method} ${String(input).split("/v1")[1]}`);
-		if (method === "POST") {
+		if (method === "POST" && String(input).endsWith("/v1/key-requests")) {
 			keyNumber += 1;
-			return new Response(JSON.stringify({ data: { id: `key_new_${keyNumber}`, key: `phaseo_v1_sk_new_${keyNumber}` } }), { status: 201 });
+			return new Response(JSON.stringify({ request_id: `req_${keyNumber}`, approval_url: `https://phaseo.app/settings/keys/requests/req_${keyNumber}`, poll_interval: 3, expires_at: new Date(Date.now() + 600_000).toISOString() }), { status: 201 });
+		}
+		if (method === "POST") {
+			return new Response(JSON.stringify({ status: "approved", key: `phaseo_v1_sk_new_${keyNumber}`, key_id: `key_new_${keyNumber}`, expires_at: new Date(Date.now() + INTEGRATION_KEY_LIFETIME_MS).toISOString() }), { status: 200 });
 		}
 		return new Response(null, { status: 204 });
 	}, async () => {
@@ -873,9 +1016,9 @@ test("expired integration keys are replaced; unexpired and pre-expiry keys are k
 		assert.deepEqual(calls, []);
 
 		assert.equal(await hasIntegrationGatewayCredential("hermes"), false);
-		assert.equal(await getIntegrationGatewayCredential("hermes"), "phaseo_v1_sk_new_1");
+		assert.equal(await getIntegrationGatewayCredential("hermes", { hooks: { notify: () => undefined, open: () => false, sleep: async () => undefined } }), "phaseo_v1_sk_new_1");
 		// The expired key is only dropped from the session; it already stopped working.
-		assert.deepEqual(calls, ["POST /keys"]);
+		assert.deepEqual(calls, ["POST /key-requests", "POST /key-requests/req_1/token"]);
 		const stored = (await readSession())?.integrationGatewayCredentials;
 		assert.equal(stored?.hermes?.keyId, "key_new_1");
 		assert.ok((stored?.hermes?.expiresAt ?? 0) > Date.now() + INTEGRATION_KEY_LIFETIME_MS - 60_000);

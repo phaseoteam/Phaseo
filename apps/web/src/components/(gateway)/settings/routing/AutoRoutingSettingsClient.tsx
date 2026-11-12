@@ -9,6 +9,7 @@ import { updateAutoRoutingSettings } from "@/features/settings/routing/actions";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -212,7 +213,10 @@ export default function AutoRoutingSettingsClient({ initialData }: { initialData
 				</div>
 			</section>
 
-			<section className="grid gap-6 pt-2 lg:grid-cols-[1fr_320px] lg:items-start"><div className="text-xs leading-5 text-muted-foreground"><p>{revision ? <>{s("revision")} <span className="font-mono text-foreground">{revision.slice(0, 8)}</span></> : s("usingWorkspaceDefaults")}{updatedAt ? <> · {m("updatedAt", { date: new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(updatedAt)) })}</> : null}</p>{!initialData.canManage ? <p className="mt-1">{s("ownersAdminsOnly")}</p> : null}</div><div className="space-y-3"><div className="rounded-lg border bg-zinc-950 p-4 text-zinc-100"><div className="flex items-center gap-2 text-xs font-medium text-zinc-300"><ShieldCheck className="size-3.5" />{s("requestContract")}</div><pre className="mt-3 overflow-x-auto font-mono text-[11px] leading-5 text-zinc-300"><code>{`{\n  "model": "phaseo/auto",\n  "input": "Your prompt"\n}`}</code></pre></div><Button className="w-full" onClick={save} disabled={!initialData.canManage || !dirty || !valid || isPending}>{isPending ? <Loader2 className="size-4 animate-spin" /> : null}{isPending ? s("saving") : s("saveConfiguration")}</Button></div></section>
+			<section className="grid gap-6 pt-2 lg:grid-cols-[1fr_320px] lg:items-start"><div className="text-xs leading-5 text-muted-foreground"><p>{revision ? <>{s("revision")} <span className="font-mono text-foreground">{revision.slice(0, 8)}</span></> : s("usingWorkspaceDefaults")}{updatedAt ? <> · {m("updatedAt", { date: new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(updatedAt)) })}</> : null}</p>{!initialData.canManage ? <p className="mt-1">{s("ownersAdminsOnly")}</p> : null}</div><div className="rounded-lg border bg-zinc-950 p-4 text-zinc-100"><div className="flex items-center gap-2 text-xs font-medium text-zinc-300"><ShieldCheck className="size-3.5" />{s("requestContract")}</div><pre className="mt-3 overflow-x-auto font-mono text-[11px] leading-5 text-zinc-300"><code>{`{\n  "model": "phaseo/auto",\n  "input": "Your prompt"\n}`}</code></pre></div></section>
+			<SettingsFormActions active={dirty || isPending}>
+				<Button onClick={save} disabled={!initialData.canManage || !dirty || !valid || isPending}>{isPending ? <Loader2 className="size-4 animate-spin" /> : null}{isPending ? s("saving") : s("saveConfiguration")}</Button>
+			</SettingsFormActions>
 		</div>
 	);
 }

@@ -1,6 +1,7 @@
 import { getTranslations } from "@/i18n/server";
 import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 
 export async function getSettingsMetadata() {
 	const t = await getTranslations("SettingsUI.settingsPageMetadata");
@@ -11,5 +12,5 @@ export async function getSettingsMetadata() {
 // only renders when the account could not be loaded.
 export default function SettingsIndexPage() {
 	const t = useTranslations("SettingsUI.settingsAvailability");
- return <main className="container mx-auto max-w-xl px-4 py-16"><h1 className="text-xl font-semibold">{t("title")}</h1><p className="mt-2 text-sm text-muted-foreground">{t("description")}</p><Link className="mt-5 inline-flex text-sm font-medium underline underline-offset-4" href="/settings">{t("retry")}</Link></main>;
+	return <main className="min-w-0 w-full max-w-4xl space-y-8"><SettingsPageHeader title={t("title")} description={t("description")} /><Link className="inline-flex text-sm font-medium underline underline-offset-4" href="/settings">{t("retry")}</Link></main>;
 }

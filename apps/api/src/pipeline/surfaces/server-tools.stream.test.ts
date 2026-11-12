@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildSyntheticServerToolStream, consumeTextProtocolStreamToIR } from "./server-tools.stream";
+import { hasUsableIRChatResponse } from "./empty-response";
+import { irReportsNonTextOutput } from "../after/response-output";
 
 function buildSseStream(frames: string[]): ReadableStream<Uint8Array> {
 	const encoder = new TextEncoder();
@@ -913,5 +915,33 @@ describe("buildSyntheticServerToolStream Responses frames", () => {
 		const terminal = frames.at(-2)!;
 		expect(terminal.event).toBe("response.incomplete");
 		expect(terminal.data.response).toMatchObject({ status: "incomplete", incomplete_details: { reason: "max_output_tokens" } });
+	});
+});
+
+describe("streamed tool calls, classified as a buffered response classifies them", () => {
+	const consumeToolDelta = (call: Record<string, unknown>) => consumeTextProtocolStreamToIR({
+		protocol: "openai.chat.completions",
+		stream: buildSseStream([
+			`data: ${JSON.stringify({ object: "chat.completion.chunk", choices: [{ index: 0, delta: { tool_calls: [{ index: 0, ...call }] } }] })}\n\n`,
+			`data: ${JSON.stringify({ object: "chat.completion.chunk", choices: [{ index: 0, delta: {}, finish_reason: "tool_calls" }] })}\n\n`,
+			"data: [DONE]\n\n",
+		]),
+		requestId: "req_nameless_tool",
+		model: "gpt",
+		provider: "openai",
+	});
+
+	it("keeps a nameless tool call with arguments: it is output, as when buffered", async () => {
+		const { ir } = await consumeToolDelta({ id: "call_1", type: "function", function: { name: "", arguments: "{}" } });
+		// Before: the materialiser dropped a call without a name, so the stream became an empty response.
+		expect(ir.choices[0]?.message.toolCalls).toEqual([expect.objectContaining({ name: "", arguments: "{}" })]);
+		expect(hasUsableIRChatResponse(ir)).toBe(true);
+		expect(irReportsNonTextOutput(ir)).toBe(true);
+	});
+
+	it("drops an empty placeholder tool call: it is not output, as when buffered", async () => {
+		const { ir } = await consumeToolDelta({ id: "", type: "function", function: { name: "", arguments: "" } });
+		expect(ir.choices[0]?.message.toolCalls ?? []).toEqual([]);
+		expect(hasUsableIRChatResponse(ir)).toBe(false);
 	});
 });

@@ -182,4 +182,17 @@ describe("active realtime policy recheck", () => {
 			idle_timeout_seconds: 300,
 		});
 	});
+
+	it("returns the Phaseo model id as model and the provider's name as provider_model", () => {
+		const scribe = { ...session("api"), provider: "elevenlabs", model_id: "eleven-labs/scribe-v3-live", provider_model_id: "scribe_v3_live" };
+		expect(publicRealtimeSessionPayload({ session: scribe as any })).toMatchObject({
+			model: "eleven-labs/scribe-v3-live",
+			model_id: "eleven-labs/scribe-v3-live",
+			provider_model: "scribe_v3_live",
+		});
+		// Older rows without provider_model_id still get the provider's name.
+		const payload = publicRealtimeSessionPayload({ session: { ...session("api"), provider_model_id: null } as any });
+		expect(payload.model).toBe("openai/gpt-realtime-2");
+		expect(payload.provider_model).toBe("gpt-realtime-2");
+	});
 });

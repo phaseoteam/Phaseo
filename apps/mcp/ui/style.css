@@ -1,5 +1,5 @@
-/* Phaseo's website neutrals, with ChatGPT's own theme variables and system font
-   taking over when the host provides them (OpenAI asks apps not to ship custom fonts). */
+/* Phaseo's website neutrals, with the host's theme variables and font taking over
+   when it provides them (hosts ask apps not to ship custom fonts). */
 :root {
   color-scheme: light dark;
   --bg: var(--color-background-primary, oklch(1 0 0));
@@ -44,6 +44,9 @@
 }
 body {
   margin: 0;
+  /* Host safe-area insets, set from the host context (see bridge.ts). */
+  padding: var(--safe-top, 0px) var(--safe-right, 0px) var(--safe-bottom, 0px)
+    var(--safe-left, 0px);
 }
 .explorer {
   max-width: 1120px;
@@ -69,6 +72,30 @@ body {
 }
 .card-error {
   color: var(--danger);
+}
+/* Loading placeholders shaped like the card that is coming. */
+.skeleton {
+  display: block;
+  height: 10px;
+  border-radius: 4px;
+  background: var(--field);
+}
+.skeleton.logo {
+  border: 0;
+  background: var(--field);
+}
+.skeleton-stack {
+  display: grid;
+  gap: 8px;
+  padding-top: 2px;
+}
+.skeleton.price {
+  width: 72px;
+}
+.skeleton.value {
+  height: 26px;
+  width: 120px;
+  margin-top: 6px;
 }
 .card-actions {
   display: flex;
@@ -787,5 +814,23 @@ td {
     transition:
       background 0.15s,
       border-color 0.15s;
+  }
+  .skeleton {
+    animation: skeleton-pulse 1.6s ease-in-out infinite;
+  }
+}
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+/* Touch screens: 44px tap targets, as Claude's and Apple's guidelines ask. */
+@media (pointer: coarse) {
+  button {
+    min-height: 44px;
+  }
+  input:not([type="checkbox"]),
+  select {
+    height: 44px;
   }
 }

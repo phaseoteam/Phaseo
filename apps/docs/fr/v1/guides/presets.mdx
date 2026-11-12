@@ -26,7 +26,7 @@ Les règles sont les suivantes :
 
 Ouvrez **Tableau de bord -> Paramètres -> Préréglages** et créez un préréglage avec un slug tel que `support-triage`. N’ajoutez que les valeurs par défaut que tous les appelants doivent partager.
 
-Depuis la CLI : `phaseo presets create --name @support-triage --model <model-id>`.
+Pour le créer depuis un script, appelez `POST /v1/presets` avec une clé de gestion.
 
 </Step>
 
@@ -116,7 +116,7 @@ Choisissez l’apparence des libellés de version :
 
 Faites pointer un libellé nommé tel que `production` vers une version, et ramenez-le vers une version antérieure pour revenir en arrière. Consultez [Versions et libellés](/fr/v1/guides/prompt-templates#versions-and-labels).
 
-Depuis la CLI : `phaseo presets versions create` et `phaseo presets labels set`, ou l’API `/v1/presets`.
+Depuis un script, publiez avec `POST /v1/presets/{id}/versions` et déplacez les étiquettes avec `PUT /v1/presets/{id}/labels/{label}`, avec une clé de gestion. Une connexion via la CLI ou une app qui utilise Se connecter avec Phaseo peut lire les préréglages, mais pas les modifier.
 
 ## Dupliquer un préréglage de la marketplace
 

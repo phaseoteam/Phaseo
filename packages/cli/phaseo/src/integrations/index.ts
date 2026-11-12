@@ -13,7 +13,7 @@ import { zedAdapter } from "./adapters/zed.js";
 import { aiderAdapter } from "./adapters/aider.js";
 import { continueAdapter } from "./adapters/continue.js";
 import { applyChanges, renderPlan } from "./files.js";
-import { getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, hasIntegrationGatewayCredential, revokeIntegrationGatewayCredential } from "./credential.js";
+import { getIntegrationGatewayCredential, getLegacyIntegrationGatewayCredential, hasIntegrationGatewayCredential, readKeyFlag, revokeIntegrationGatewayCredential } from "./credential.js";
 import { fetchIntegrationModels, supportsModelCatalog } from "./catalog.js";
 import { confirmHarnessInstall, harnessInstallPlan, installHarness, isPrimaryHarness, renderInstallInvocation } from "./installer.js";
 import { createSpinner, terminalUi } from "../output.js";
@@ -105,7 +105,8 @@ export async function runIntegrationCommand(
 			return;
 		}
 		const adapter = adapterFor(integration);
-		const credential = await getIntegrationGatewayCredential(adapter.id);
+		// Agents call this as a credential helper, with nobody watching for a browser approval.
+		const credential = await getIntegrationGatewayCredential(adapter.id, { approve: false });
 		process.stdout.write(credential);
 		return;
 	}
@@ -221,15 +222,19 @@ export async function runIntegrationCommand(
 
 	let provisionedCredential = false;
 	if (command === "setup") {
-		const spinner = createSpinner("Preparing a dedicated credential", { enabled: interactive });
+		const existingKey = await readKeyFlag(flags);
+		const credentialExisted = existingKey === undefined && await hasIntegrationGatewayCredential(adapter.id);
+		// A new key is approved in the browser, which prints its own progress; no spinner over it.
+		const spinner = credentialExisted || existingKey !== undefined ? createSpinner("Preparing a dedicated credential", { enabled: interactive }) : null;
 		try {
-			const credentialExisted = await hasIntegrationGatewayCredential(adapter.id);
-			const credential = await getIntegrationGatewayCredential(adapter.id);
-			provisionedCredential = !credentialExisted;
+			const credential = await getIntegrationGatewayCredential(adapter.id, { existingKey });
+			provisionedCredential = !credentialExisted && existingKey === undefined;
 			if (adapter.planCredential) changes = [...changes, ...await adapter.planCredential(options, credential)];
-			spinner.succeed(credentialExisted ? "Reused the existing credential" : "Created a dedicated credential");
+			const message = existingKey !== undefined ? "Using the key you provided" : credentialExisted ? "Reused the existing credential" : "Approved a dedicated credential";
+			if (spinner) spinner.succeed(message);
+			else if (!json) process.stderr.write(`${ui.success(message)}\n`);
 		} catch (error) {
-			spinner.fail("Could not prepare the credential");
+			spinner?.fail("Could not prepare the credential");
 			if (provisionedCredential) await revokeIntegrationGatewayCredential(adapter.id).catch(() => undefined);
 			throw error;
 		}
@@ -278,6 +283,9 @@ export async function runIntegrationCommand(
 	}
 	if (command === "setup" && !json && adapter.setupInstructions) {
 		printSetupInstructions(adapter, options);
+	}
+	if (command === "setup" && !json) {
+		for (const tip of adapter.setupTips?.(options) ?? []) process.stdout.write(`${ui.dim(`Optional: ${tip}`)}\n`);
 	}
 	if (command === "remove" && !json) printRemoveInstructions(adapter, options);
 }

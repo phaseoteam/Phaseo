@@ -35,7 +35,7 @@ export default function CreditTopupReviewPage() {
 
 	if (review.kind === "notFound") {
 		return (
-			<div className="space-y-4">
+			<div className="w-full max-w-4xl space-y-8">
 				{header}
 				<Callout tone="warning" title={t("notFoundTitle")}>{t("notFoundBody")}</Callout>
 			</div>
@@ -43,7 +43,7 @@ export default function CreditTopupReviewPage() {
 	}
 	if (review.kind === "forbidden") {
 		return (
-			<div className="space-y-4">
+			<div className="w-full max-w-4xl space-y-8">
 				{header}
 				<Callout tone="warning" title={t("forbiddenTitle")}>{t("forbiddenBody")}</Callout>
 			</div>
@@ -70,7 +70,7 @@ export default function CreditTopupReviewPage() {
 	];
 
 	return (
-		<div className="space-y-4">
+		<div className="w-full max-w-4xl space-y-8">
 			{header}
 			<Card className="rounded-md">
 				<CardContent className="p-0">

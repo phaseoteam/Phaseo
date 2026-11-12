@@ -401,8 +401,35 @@ const extractImagesFromOutputItems = (output: any): ExtractedImage[] => {
 				});
 			}
 		}
+		const toolImage = extractImageToolOutput(item);
+		if (toolImage) images.push(toolImage);
 	}
 	return images;
+};
+
+const IMAGE_TOOL_FUNCTION_NAME = "phaseo_image_generation";
+const IMAGE_TOOL_MIME_TYPE = /^image\/(png|jpeg|webp|gif|svg\+xml)$/;
+
+/**
+ * Phaseo's image tool returns its image as the function call's output JSON
+ * ({ status, b64_json | imageUrl, mime_type }). The output can be GIF or SVG.
+ */
+export const extractImageToolOutput = (item: any): ExtractedImage | null => {
+	if (item?.type !== "function_call" || item.name !== IMAGE_TOOL_FUNCTION_NAME) return null;
+	const output = typeof item.output === "string" ? parseJsonIfPossible(item.output) : item.output;
+	if (!output || typeof output !== "object") return null;
+	const result = output as Record<string, unknown>;
+	if (result.status !== "ok") return null;
+	const mimeType = typeof result.mime_type === "string" && IMAGE_TOOL_MIME_TYPE.test(result.mime_type)
+		? result.mime_type
+		: "image/png";
+	if (typeof result.b64_json === "string" && result.b64_json.trim()) {
+		const data = result.b64_json.trim();
+		return { url: `data:${mimeType};base64,${data}`, data, mimeType };
+	}
+	const url = typeof result.imageUrl === "string" ? result.imageUrl.trim() : "";
+	if (/^https:\/\//i.test(url)) return { url, mimeType };
+	return null;
 };
 
 const extractImagesFromDataArray = (data: any): ExtractedImage[] => {

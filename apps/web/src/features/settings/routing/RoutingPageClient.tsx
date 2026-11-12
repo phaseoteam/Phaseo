@@ -11,7 +11,7 @@ import type { SettingsRoutingInitialData } from "@/lib/fetchers/internal/setting
 export default function RoutingSettingsPage({ showModelSuccessor }: { showModelSuccessor: boolean }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<SettingsPageHeader
 				title={t("headers.routing")}
 				description={t("headers.routingDescription")}
@@ -45,6 +45,9 @@ function RoutingSettingsView({ initialData, showModelSuccessor }: { initialData:
 	return (
 		<div className="space-y-8">
 			<RoutingSettingsClient
+				key={initialData.workspaceId}
+				workspaceId={initialData.workspaceId}
+				canManage={initialData.canManage}
 				initialMode={initialData.routingMode}
 				initialBetaChannelEnabled={initialData.betaChannelEnabled}
 				initialAlphaChannelEnabled={initialData.alphaChannelEnabled}

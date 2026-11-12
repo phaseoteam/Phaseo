@@ -4,7 +4,7 @@ import { emptyWorkspace } from "../shared/workspace";
 import { workspaceOverview } from "../shared/workspaceOverview";
 import { defaultPreferences, defaultWorktreeCleanup, validatePreferences } from "../shared/preferences";
 
-const preferenceGroups = { chat: defaultPreferences.chat, browser: defaultPreferences.browser, sourceControl: defaultPreferences.sourceControl, threads: defaultPreferences.threads };
+const preferenceGroups = { analyticsEnabled: false, chat: defaultPreferences.chat, browser: defaultPreferences.browser, sourceControl: defaultPreferences.sourceControl, threads: defaultPreferences.threads };
 
 function fixture() {
 	const close = vi.fn(); const ports = { focused: vi.fn(() => false), supported: vi.fn(() => true), show: vi.fn<(title: string, body: string, click: () => void) => () => void>(() => close), open: vi.fn() };

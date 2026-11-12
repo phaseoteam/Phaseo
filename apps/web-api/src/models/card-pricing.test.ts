@@ -29,7 +29,12 @@ describe("formatUsd", () => {
 		expect(formatUsd(0.035)).toBe("$0.035");
 		expect(formatUsd(1.125)).toBe("$1.125");
 		expect(formatUsd(0.006)).toBe("$0.006");
-		expect(formatUsd(0.000123456)).toBe("$0.000123");
+		// Every published digit stays: never rounded up, never truncated.
+		expect(formatUsd(0.000123456)).toBe("$0.000123456");
+		expect(formatUsd(0.01875)).toBe("$0.01875");
+		expect(formatUsd(0.0004255)).toBe("$0.0004255");
+		// Per-million arithmetic noise is trimmed.
+		expect(formatUsd(0.000000425 * 1_000_000)).toBe("$0.425");
 	});
 });
 

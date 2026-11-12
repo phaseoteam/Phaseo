@@ -53,6 +53,7 @@ describe("long-thinking headers deadline", () => {
 		expect(longThinkingMinimumHeadersTimeoutMs(provider, "gemini-4-argon")).toBe(1_200_000);
 		expect(longThinkingMinimumHeadersTimeoutMs(provider, "google/gemini-4-argon")).toBe(1_200_000);
 		expect(longThinkingMinimumHeadersTimeoutMs(provider, "gemini-4-argon-cyber-permissive")).toBe(1_200_000);
+		expect(longThinkingMinimumHeadersTimeoutMs(provider, "google/gemini-4-carbon")).toBe(1_200_000);
 	});
 	it("keeps the configured deadline for other models and providers", () => {
 		expect(longThinkingMinimumHeadersTimeoutMs("google-vertex", "gemini-3.6-flash")).toBeUndefined();

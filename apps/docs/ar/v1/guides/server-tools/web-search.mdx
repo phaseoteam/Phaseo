@@ -122,4 +122,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-يُحتسب البحث المُدار عبر `server_tool_web_search_requests` و`server_tool_web_search_extra_results`. ويُحتسب البحث الأصلي عبر `native_web_search_requests` حيث تحدده بطاقة سعر النموذج. TinyFish Search مجاني ضمن خططه المنشورة، لذا لا يضيف Phaseo رسوم بحث على `engine: "tinyfish"`؛ ويبقى تسعير الرموز المعتاد للطلب ساريًا.
+يحاسب Phaseo كل بحث مُدار بمبلغ $0.007، إضافة إلى $0.001 لكل نتيجة بعد أول 10 نتائج، ما لم تحدد بطاقة سعر النموذج أسعارها الخاصة لـ `server_tool_web_search_requests` و`server_tool_web_search_extra_results`. لا تُحتسب عمليات البحث الفاشلة، وبحث TinyFish مجاني ضمن خططه المنشورة، لذا لا يضيف `engine: "tinyfish"` أي رسوم بحث. وتتطلب عمليات البحث على المحركات المدفوعة رصيدًا حتى عندما يكون النموذج مجانيًا. ويُحتسب البحث الأصلي عبر `native_web_search_requests` حيث تحدده بطاقة سعر النموذج.

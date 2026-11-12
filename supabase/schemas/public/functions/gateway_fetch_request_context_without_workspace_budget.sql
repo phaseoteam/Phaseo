@@ -18,6 +18,7 @@ declare
   providers           jsonb;
   pricing             jsonb;
   preset_data         jsonb := null;
+  preset_matches      jsonb := null;
 
   -- key row fields
   v_key_active        boolean;
@@ -106,27 +107,38 @@ begin
     if position('/' in preset_name) > 0 then
       preset_publisher := split_part(preset_name, '/', 1);
       preset_name := substring(preset_name from position('/' in preset_name) + 1);
-      select jsonb_build_object(
+      select jsonb_agg(m.match) into preset_matches from (
+        select jsonb_build_object(
         'id', p.id, 'name', p.name, 'slug', p.slug, 'description', p.description,
         'config', p.config, 'visibility', p.visibility, 'publisher', w.publisher_handle,
         'version_id', p.active_version_id,
         'version_label', (select v.version_label from public.preset_versions v where v.id = p.active_version_id)
-      ) into preset_data
+      ) as match
       from public.presets p
       join public.workspaces w on w.id = p.workspace_id
       where p.archived_at is null and lower(p.slug) = lower(preset_name)
         and p.visibility = 'public'
         and true
         and (lower(w.publisher_handle) = lower(preset_publisher) or exists (select 1 from public.workspace_publisher_handle_aliases alias where alias.workspace_id = w.id and alias.handle = lower(preset_publisher)))
-      limit 1;
+      limit 2
+      ) m;
+      -- Slugs are matched case-insensitively; two matches would make the choice arbitrary.
+      if jsonb_array_length(coalesce(preset_matches, '[]'::jsonb)) > 1 then
+        raise exception using
+          errcode = '22023',
+          message = 'preset_ambiguous',
+          detail = format('Preset "%s" matches more than one preset', preset_name);
+      end if;
+      preset_data := preset_matches -> 0;
     else
-      select jsonb_build_object(
+      select jsonb_agg(m.match) into preset_matches from (
+        select jsonb_build_object(
         'id', p.id, 'name', p.name,
         'slug', coalesce(nullif(p.slug, ''), regexp_replace(p.name, '^@', '')),
         'description', p.description, 'config', p.config, 'visibility', p.visibility,
         'version_id', p.active_version_id,
         'version_label', (select v.version_label from public.preset_versions v where v.id = p.active_version_id)
-      ) into preset_data
+      ) as match
       from public.presets p
       where p.archived_at is null and lower(coalesce(nullif(p.slug, ''), regexp_replace(p.name, '^@', ''))) = lower(preset_name)
         and p.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
@@ -139,7 +151,16 @@ begin
               and ak.status = 'active'
           )
         )
-      limit 1;
+      limit 2
+      ) m;
+      -- Slugs are matched case-insensitively; two matches would make the choice arbitrary.
+      if jsonb_array_length(coalesce(preset_matches, '[]'::jsonb)) > 1 then
+        raise exception using
+          errcode = '22023',
+          message = 'preset_ambiguous',
+          detail = format('Preset "%s" matches more than one preset', preset_name);
+      end if;
+      preset_data := preset_matches -> 0;
     end if;
 
     if preset_data is null then
@@ -293,20 +314,18 @@ begin
   if greatest(v_day_req_limit, v_wk_req_limit, v_mo_req_limit,
       v_day_cost_limit, v_wk_cost_limit, v_mo_cost_limit) > 0 then
   select
-    count(*) filter (where gr.created_at >= day_start)                                  as used_day_reqs,
-    count(*) filter (where gr.created_at >= week_start)                                 as used_wk_reqs,
-    count(*) filter (where gr.created_at >= month_start)                                as used_mo_reqs,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= day_start), 0)::bigint   as used_day_cost,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= week_start), 0)::bigint  as used_wk_cost,
-    coalesce(sum(gr.cost_nanos) filter (where gr.created_at >= month_start), 0)::bigint as used_mo_cost
+    count(*) filter (where gr.served and gr.at >= day_start)                    as used_day_reqs,
+    count(*) filter (where gr.served and gr.at >= week_start)                   as used_wk_reqs,
+    count(*) filter (where gr.served and gr.at >= month_start)                  as used_mo_reqs,
+    coalesce(sum(gr.nanos) filter (where gr.at >= day_start), 0)::bigint   as used_day_cost,
+    coalesce(sum(gr.nanos) filter (where gr.at >= week_start), 0)::bigint  as used_wk_cost,
+    coalesce(sum(gr.nanos) filter (where gr.at >= month_start), 0)::bigint as used_mo_cost
   into
     used_day_reqs, used_wk_reqs, used_mo_reqs,
     used_day_cost, used_wk_cost, used_mo_cost
-  from public.gateway_requests gr
-  where gr.key_id  = gateway_fetch_request_context_without_workspace_budget.api_key_id
-    and gr.workspace_id = gateway_fetch_request_context_without_workspace_budget.workspace_id
-    and gr.success is true
-    and gr.created_at >= least(week_start, month_start);
+  -- The key's usage (private.key_spend_items): successful requests count as requests and cost,
+  -- charged ones that did not succeed and money movements as cost only.
+  from private.key_spend_items(gateway_fetch_request_context_without_workspace_budget.workspace_id, least(week_start, month_start), array[gateway_fetch_request_context_without_workspace_budget.api_key_id]) gr;
   end if;
 
   if v_soft_blocked then

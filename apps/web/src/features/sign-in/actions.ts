@@ -1,6 +1,6 @@
 // app/(auth)/sign-in/actions.ts
 import { createServerFn } from "@tanstack/react-start";
-import { serverAction, serverRedirectAction } from "@/lib/serverFn/actionMiddleware";
+import { serverAction, serverAuthRedirectAction } from "@/lib/serverFn/actionMiddleware";
 import { currentRequestHeaders } from "@/lib/server/currentRequest";
 import { redirect } from "@/lib/navigation";
 import { createClient } from "@/utils/supabase/server";
@@ -90,7 +90,7 @@ function mapSsoAuthErrorCode(error: unknown): AuthErrorCode {
 
 // react-doctor-disable-next-line
 export const handleOAuthRedirect = createServerFn({ method: "POST" })
-	.middleware([serverRedirectAction])
+	.middleware([serverAuthRedirectAction])
 	.validator((formData: FormData) => formData)
 	.handler(async ({ data: formData }) => {
 		const locale = readAuthLocale(formData);
@@ -116,7 +116,7 @@ export const handleOAuthRedirect = createServerFn({ method: "POST" })
 
 // react-doctor-disable-next-line
 export const handlePasswordSignIn = createServerFn({ method: "POST" })
-	.middleware([serverRedirectAction])
+	.middleware([serverAuthRedirectAction])
 	.validator((formData: FormData) => formData)
 	.handler(async ({ data: formData }) => {
 		const locale = readAuthLocale(formData);
@@ -125,8 +125,11 @@ export const handlePasswordSignIn = createServerFn({ method: "POST" })
 		const password = String(formData.get("password") ?? "");
 		const safeReturnUrl = await resolveSafeReturnUrl(formData);
 
+		const inDialog = formData.get("surface") === "dialog";
 		const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 		if (error) {
+			// The sign-in dialog shows the error in place instead of loading /sign-in.
+			if (inDialog) return { error: "auth-failed" as const };
 			redirect(
 				buildLocalizedAuthPath(locale, "/sign-in", {
 					error: "auth-failed",
@@ -159,6 +162,8 @@ export const handlePasswordSignIn = createServerFn({ method: "POST" })
 			errorRedirectUrl = buildAuthErrorRedirect(locale, "workspace-setup");
 		}
 		if (errorRedirectUrl) redirect(errorRedirectUrl);
+		// The dialog asks for the two-factor code in place; the session stays gated until then.
+		if (inDialog && redirectPath.startsWith("/auth/verify-mfa")) return { step: "mfa" as const };
 		redirect(redirectPath);
 	});
 
@@ -197,7 +202,7 @@ export const completePasskeySignIn = createServerFn({ method: "POST" })
 
 // react-doctor-disable-next-line
 export const startSsoSignIn = createServerFn({ method: "POST" })
-	.middleware([serverRedirectAction])
+	.middleware([serverAuthRedirectAction])
 	.validator((input: { input: StartSsoInput; localeInput?: string }) => input)
 	.handler(async ({ data: { input, localeInput = defaultLocale } }) => {
 		const locale = resolveAuthLocale(localeInput);
@@ -271,7 +276,7 @@ export const startSsoSignIn = createServerFn({ method: "POST" })
 
 // react-doctor-disable-next-line
 export const handleEnterpriseSsoRedirect = createServerFn({ method: "POST" })
-	.middleware([serverRedirectAction])
+	.middleware([serverAuthRedirectAction])
 	.validator((formData: FormData) => formData)
 	.handler(async ({ data: formData }) => {
 		const domain = String(formData.get("domain") ?? "").trim();

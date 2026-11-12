@@ -1,8 +1,9 @@
 import { BADGE_TONES, type BadgeTone } from "@phaseo/app-kit/ui-recipes";
 import { ChevronDown, type LucideIcon } from "lucide-react-native";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
+import { HorizontalScroll } from "./horizontal-scroll";
 import { Icon } from "./icon";
 import { Text } from "./text";
 
@@ -24,9 +25,9 @@ export function Chip({ label, selected, onPress, icon, leading, dropdown, classN
 
 export function ChipRow({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" className={cn("grow-0", className)} contentContainerClassName="gap-2 px-4">
+    <HorizontalScroll keyboardShouldPersistTaps="handled" className={cn("grow-0", className)} contentContainerClassName="gap-2 px-4">
       {children}
-    </ScrollView>
+    </HorizontalScroll>
   );
 }
 

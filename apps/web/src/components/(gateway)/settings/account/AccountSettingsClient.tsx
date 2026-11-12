@@ -25,6 +25,7 @@ import { PasswordStrengthIndicator } from "./PasswordStrengthIndicator";
 import { resolveDefaultWorkspaceId } from "./defaultWorkspace";
 
 import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { Input } from "@/components/ui/input";
 import { CountryCombobox } from "@/components/ui/country-combobox";
 import { Label } from "@/components/ui/label";
@@ -438,9 +439,9 @@ export default function AccountSettingsClient({
 			<section aria-label={s("Account details")}>
 				<form
 					onSubmit={handleSave}
-					className="overflow-hidden rounded-xl border bg-background/40"
+					className="divide-y divide-border/60"
 				>
-					<div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+					<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 						<div className="min-w-0">
 							<Label htmlFor="displayName" className="text-sm font-medium">
 								{s("Display Name")}
@@ -449,7 +450,7 @@ export default function AccountSettingsClient({
 								{s("phraseThisIsHowYourNameAppearsToOtherPeople")}
 							</p>
 						</div>
-						<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
+						<div className="min-w-0 w-full">
 								<Input
 									id="displayName"
 									value={displayName ?? ""}
@@ -463,21 +464,21 @@ export default function AccountSettingsClient({
 					</div>
 
 					{user.email ? (
-						<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+						<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 							<div className="min-w-0">
 								<Label className="text-sm font-medium">{s("Email")}</Label>
 								<p className="mt-0.5 text-sm text-muted-foreground">
 									{s("phraseContactSupportToChangeYourSignInEmail")}
 								</p>
 							</div>
-							<SensitiveValue className="w-full shrink-0 sm:w-[min(32rem,55%)]" label="email address">
+							<SensitiveValue className="min-w-0 w-full" label="email address">
 								<Input value={user.email} readOnly />
 							</SensitiveValue>
 						</div>
 						) : null}
 
 					{user.countryStorageAvailable !== false ? (
-						<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+						<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 							<div className="min-w-0">
 								<Label htmlFor="account-country" className="text-sm font-medium">
 									{s("Country")}
@@ -486,7 +487,7 @@ export default function AccountSettingsClient({
 									{s("phraseUsedToDetermineProviderAndServiceAvailabilityBillingAddressesAreManagedSeparately")}
 								</p>
 							</div>
-							<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
+							<div className="min-w-0 w-full">
 									<CountryCombobox
 										id="account-country"
 										value={declaredCountryCode}
@@ -497,7 +498,7 @@ export default function AccountSettingsClient({
 						</div>
 						) : null}
 
-					<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+					<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 						<div className="min-w-0">
 							<Label htmlFor="defaultTeam" className="text-sm font-medium">
 								{s("Default Workspace")}
@@ -506,7 +507,7 @@ export default function AccountSettingsClient({
 								{s("phraseSetTheWorkspaceShownByDefault")}
 							</p>
 						</div>
-						<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
+						<div className="min-w-0 w-full">
 								{teams && teams.length > 0 ? (
 									<WorkspaceCombobox
 										teams={teams}
@@ -520,7 +521,7 @@ export default function AccountSettingsClient({
 						</div>
 					</div>
 
-					<div className="flex items-center justify-between gap-4 border-t px-4 py-3.5">
+					<div className="flex items-center justify-between gap-4 py-5">
 						<div className="min-w-0">
 							<Label className="text-sm font-medium">{s("Analytics Cookies")}</Label>
 							<p className="mt-0.5 text-sm text-muted-foreground">
@@ -540,8 +541,7 @@ export default function AccountSettingsClient({
 								/>
 						</div>
 
-					<div className="flex flex-col gap-3 border-t bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-						<div className="flex min-w-0 items-center gap-2">
+					<SettingsFormActions active={hasChanges || saving} status={<div className="flex flex-wrap items-center gap-2">
 							<p className="text-xs text-muted-foreground">
 								{m("Member since {date}", {
 									date: new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
@@ -550,8 +550,7 @@ export default function AccountSettingsClient({
 								})}
 							</p>
 							{hasChanges ? <Badge variant="secondary">{s("Unsaved changes")}</Badge> : null}
-						</div>
-						<div className="flex items-center justify-end gap-2">
+						</div>}>
 							<Button
 								type="button"
 								variant="outline"
@@ -562,7 +561,7 @@ export default function AccountSettingsClient({
 								}}
 								disabled={!hasChanges || saving}
 							>
-								{s("Reset")}
+								{s("Cancel")}
 							</Button>
 							<Button type="submit" disabled={!hasChanges || saving}>
 								{saving ? (
@@ -574,8 +573,7 @@ export default function AccountSettingsClient({
 									s("Save changes")
 								)}
 							</Button>
-						</div>
-					</div>
+					</SettingsFormActions>
 				</form>
 			</section>
 
@@ -586,8 +584,8 @@ export default function AccountSettingsClient({
 				>
 					{s("Notifications")}
 				</h3>
-				<div className="overflow-hidden rounded-xl border bg-background/40">
-					<div className="flex items-center justify-between gap-4 px-4 py-3.5">
+				<div>
+					<div className="flex items-center justify-between gap-4 py-5">
 						<div className="min-w-0">
 							<h4 className="text-sm font-medium">{s("Chat Completion")}</h4>
 							<p className="mt-0.5 text-sm text-muted-foreground">
@@ -619,12 +617,12 @@ export default function AccountSettingsClient({
 					</div>
 
 					<form onSubmit={handleChangePassword} className="mt-3">
-						<div className="grid gap-3">
-							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
+						<div className="divide-y divide-border/60">
+							<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 								<Label htmlFor="currentPassword" className="sm:pt-2">
 									{s("Current password")}
 								</Label>
-								<div className="max-w-lg">
+								<div className="min-w-0">
 									<Input
 										id="currentPassword"
 										type="password"
@@ -635,11 +633,11 @@ export default function AccountSettingsClient({
 								</div>
 							</div>
 
-							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
+							<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 								<Label htmlFor="newPassword" className="sm:pt-2">
 									{s("New password")}
 								</Label>
-								<div className="grid gap-2 max-w-lg">
+								<div className="grid min-w-0 gap-2">
 									<Input
 										id="newPassword"
 										type="password"
@@ -653,11 +651,11 @@ export default function AccountSettingsClient({
 								</div>
 							</div>
 
-							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
+							<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 								<Label htmlFor="confirmPassword" className="sm:pt-2">
 									{s("Confirm password")}
 								</Label>
-								<div className="max-w-lg">
+								<div className="min-w-0">
 									<Input
 										id="confirmPassword"
 										type="password"
@@ -669,7 +667,7 @@ export default function AccountSettingsClient({
 							</div>
 						</div>
 
-						<div className="flex items-center justify-end gap-2 mt-3">
+						<SettingsFormActions>
 							<Button
 								type="button"
 								variant="outline"
@@ -700,7 +698,7 @@ export default function AccountSettingsClient({
 									s("Change password")
 								)}
 							</Button>
-						</div>
+						</SettingsFormActions>
 					</form>
 				</section>
 			)}
@@ -718,19 +716,19 @@ export default function AccountSettingsClient({
 					</div>
 
 					<form onSubmit={handleChangeEmail} className="mt-3">
-						<div className="grid gap-3">
-							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
+						<div className="divide-y divide-border/60">
+							<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 								<Label className="sm:pt-2">{s("Current email")}</Label>
-								<SensitiveValue className="max-w-lg" label={s("Current email")}>
+								<SensitiveValue className="min-w-0" label={s("Current email")}>
 									<Input value={user.email ?? ""} readOnly />
 								</SensitiveValue>
 							</div>
 
-							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
+							<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 								<Label htmlFor="newEmail" className="sm:pt-2">
 									{s("New email")}
 								</Label>
-								<SensitiveValue className="max-w-lg" label="new email address">
+								<SensitiveValue className="min-w-0" label="new email address">
 									<Input
 										id="newEmail"
 										type="email"
@@ -741,11 +739,11 @@ export default function AccountSettingsClient({
 								</SensitiveValue>
 							</div>
 
-							<div className="grid gap-2 sm:grid-cols-[160px_1fr] sm:items-start">
+							<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 								<Label htmlFor="emailPassword" className="sm:pt-2">
 									{s("Confirm with password")}
 								</Label>
-								<div className="grid gap-1 max-w-lg">
+								<div className="grid min-w-0 gap-1">
 									<Input
 										id="emailPassword"
 										type="password"
@@ -760,7 +758,7 @@ export default function AccountSettingsClient({
 							</div>
 						</div>
 
-						<div className="flex items-center justify-end gap-2 mt-3">
+						<SettingsFormActions>
 							<Button
 								type="button"
 								variant="outline"
@@ -785,7 +783,7 @@ export default function AccountSettingsClient({
 									s("Change email")
 								)}
 							</Button>
-						</div>
+						</SettingsFormActions>
 					</form>
 				</section>
 			)}

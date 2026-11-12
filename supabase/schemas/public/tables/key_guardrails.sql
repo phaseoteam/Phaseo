@@ -27,6 +27,25 @@ CREATE TRIGGER sync_guardrail_assignments
   FOR EACH ROW
   EXECUTE FUNCTION private.sync_guardrail_assignments();
 
+CREATE POLICY "key_guardrails_no_oauth_client_insert" ON "public"."key_guardrails"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "key_guardrails_no_oauth_client_update" ON "public"."key_guardrails"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "key_guardrails_no_oauth_client_delete" ON "public"."key_guardrails"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "key_guardrails_delete_own_team" ON "public"."key_guardrails"
   FOR DELETE
   TO "authenticated"

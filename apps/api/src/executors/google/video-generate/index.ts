@@ -288,7 +288,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const isOmni = isGoogleOmniVideoModel(model);
 	let normalizedRequest: NormalizedGoogleVeoRequest | NormalizedGoogleOmniRequest;
 	try {
-		normalizedRequest = isOmni ? normalizeGoogleOmniRequest(ir) : normalizeGoogleVeoRequest(ir, model);
+		normalizedRequest = isOmni ? normalizeGoogleOmniRequest(ir, model) :normalizeGoogleVeoRequest(ir, model);
 	} catch (error) {
 		if (!(error instanceof InvalidGoogleVideoRequestError)) throw error;
 		return {

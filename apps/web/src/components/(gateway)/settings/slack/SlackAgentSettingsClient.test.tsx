@@ -86,6 +86,38 @@ describe("SlackAgentSettingsClient Slack permissions", () => {
 	});
 });
 
+describe("SlackAgentSettingsClient own Slack app", () => {
+	it("shows the saved app's own request URLs to paste into its manifest", () => {
+		const view: SlackAgentManagerView = {
+			workspaceId: "w1", canManage: true, configured: { hosted_app: true, custom_app: true }, redirect_url: "https://phaseo.app/callback",
+			scopes: [], auto_routing: false, installed: false, installation: null, charges: [],
+			custom_app: {
+				id: "row-1", slack_app_id: "A0CUSTOM01", client_id: "1.2", created_at: "x", updated_at: "x",
+				events_url: "https://slack.phaseo.app/apps/row-1/events", interactions_url: "https://slack.phaseo.app/apps/row-1/interactions",
+			},
+		};
+		const html = renderToStaticMarkup(
+			<QueryClientProvider client={queryClient}>
+				<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
+					<SlackAgentSettingsClient view={view} />
+				</AppIntlProvider>
+			</QueryClientProvider>,
+		);
+		expect(html).toContain("Request URLs");
+		expect(html).toContain("https://slack.phaseo.app/apps/row-1/events");
+		expect(html).toContain("https://slack.phaseo.app/apps/row-1/interactions");
+		// Each URL is labelled for its Slack setting, and so is its copy button.
+		const eventsAt = html.indexOf("Event Subscriptions request URL");
+		const interactionsAt = html.indexOf("Interactivity request URL");
+		expect(eventsAt).toBeGreaterThan(-1);
+		expect(interactionsAt).toBeGreaterThan(-1);
+		expect(html.indexOf("https://slack.phaseo.app/apps/row-1/events")).toBeGreaterThan(eventsAt);
+		expect(html.indexOf("https://slack.phaseo.app/apps/row-1/interactions")).toBeGreaterThan(interactionsAt);
+		expect(html).toContain('aria-label="Copy Event Subscriptions request URL"');
+		expect(html).toContain('aria-label="Copy Interactivity request URL"');
+	});
+});
+
 describe("SlackAgentSettingsClient Slack search", () => {
 	const GRANTED = { granted: ["chat:write", "search:read.public"], missing: [] };
 	/** The options chosen in the Slack search section. */

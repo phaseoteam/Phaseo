@@ -8,6 +8,7 @@
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { installCatalogPolicyContext } from './fixtures/catalog-policy-context.mjs';
+import { installUnbilledSpend } from './fixtures/unbilled-spend.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
@@ -96,6 +97,7 @@ try {
       last_used_at timestamptz, family_id uuid not null
     );
   `);
+  await installUnbilledSpend(db);
   for (const path of ['public/functions/gateway_workspace_budget_status.sql', 'public/functions/gateway_fetch_request_context_without_workspace_budget.sql']) {
     await db.exec(await read(`../schemas/${path}`));
   }
@@ -129,8 +131,8 @@ try {
 
   // The gateway's existing per-key check enforces it.
   await spend(capped.id, 19_990_000_000);
-  await spend(capped.id, 50_000_000_000, false);
-  assert.equal((await keyLimit(capped.id)).ok, true, 'under the limit (failed requests cost nothing)');
+  await spend(capped.id, 0, false);
+  assert.equal((await keyLimit(capped.id)).ok, true, 'under the limit (a failed request that was not charged costs nothing)');
   await spend(capped.id, 10_000_000);
   const reached = await keyLimit(capped.id);
   assert.equal(reached.ok, false);

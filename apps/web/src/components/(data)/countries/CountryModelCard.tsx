@@ -50,6 +50,7 @@ export function CountryModelCard({
                     <div className="min-w-0">
                         <Link
                             href={`/models/${modelSlug}`}
+                            data-no-entity-card
                             className="block truncate text-sm font-semibold leading-tight text-zinc-950 hover:text-primary dark:text-zinc-50"
                         >
                             <span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
@@ -84,7 +85,7 @@ export function CountryModelCard({
                         "--provider-color": accentBorder,
                     } as React.CSSProperties}
                 >
-                    <Link href={`/models/${modelSlug}`} tabIndex={-1}>
+                    <Link href={`/models/${modelSlug}`} tabIndex={-1} data-no-entity-card>
                         <ArrowRight className="h-4 w-4 transition-colors group-hover:text-[var(--provider-color)]" />
                     </Link>
                 </Button>
@@ -120,6 +121,7 @@ export function CountryModelCard({
                     <div className="min-w-0 flex-1">
                         <Link
                             href={`/models/${modelSlug}`}
+                            data-no-entity-card
                             className="block truncate font-semibold leading-tight text-zinc-950 hover:text-primary dark:text-zinc-50"
                         >
                             <span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
@@ -154,7 +156,7 @@ export function CountryModelCard({
                                 "--provider-color": accentBorder,
                             } as React.CSSProperties}
                         >
-                            <Link href={`/models/${modelSlug}`} tabIndex={-1}>
+                            <Link href={`/models/${modelSlug}`} tabIndex={-1} data-no-entity-card>
                                 <ArrowRight className="h-4 w-4 transition-colors group-hover:text-[var(--provider-color)]" />
                             </Link>
                         </Button>

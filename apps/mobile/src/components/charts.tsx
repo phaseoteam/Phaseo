@@ -1,12 +1,13 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { type AccessibilityActionEvent, type LayoutChangeEvent, View } from "react-native";
 import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from "react-native-svg";
+import { scheduleOnRN } from "react-native-worklets";
 import { Text, useToneColor } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
-import { barLayout, linePath, nearestIndex, niceTicks, placeTooltip, slotIndex, stepIndex } from "./chartMath";
+import { barLayout, linePath, nearestIndex, niceTicks, placeTooltip, readingIndex, stepIndex } from "./chartMath";
 
 export { niceTicks } from "./chartMath";
 
@@ -24,11 +25,8 @@ type SurfaceProps = {
   height: number;
   width: number;
   onLayout(event: LayoutChangeEvent): void;
-  count: number;
-  /** The x (in the chart's own coordinates) a point or bar is drawn at. */
-  anchor(index: number): number;
-  /** The index under a finger at x. */
-  hitTest(x: number): number;
+  /** The x (in the chart's own coordinates) each point or bar is drawn at, in order; a finger reads the nearest. */
+  anchors: readonly number[];
   active: number | null;
   onActive(index: number | null): void;
   /** What the chart shows, for screen readers. */
@@ -48,12 +46,17 @@ type SurfaceProps = {
  * the chart highlights the point, and each new point gives a light haptic tick. Screen readers get the chart as
  * an adjustable element: swiping up or down steps through the points and reads each one.
  */
-function ChartSurface({ height, width, onLayout, count, anchor, hitTest, active, onActive, label, describe, tooltip, className, children }: SurfaceProps) {
-  // The gesture's callbacks are made once; they read the chart's current geometry from here.
-  const latest = useRef({ anchor, hitTest, onActive, count, active });
-  useLayoutEffect(() => { latest.current = { anchor, hitTest, onActive, count, active }; });
-  const selected = useRef<number | null>(null);
+function ChartSurface({ height, width, onLayout, anchors, active: chosen, onActive, label, describe, tooltip, className, children }: SurfaceProps) {
+  const count = anchors.length;
+  // Never described or drawn past the end, even for the one render before the effect below clears the choice.
+  const active = readingIndex(chosen, count);
+  // The drag runs on the UI thread and moves the bubble there, so it keeps up with the finger while JS is busy
+  // (an answer streaming in). JS only hears about a new point, to redraw the bubble's content and tick.
+  const latest = useRef({ onActive, count });
+  useLayoutEffect(() => { latest.current = { onActive, count }; });
   const a11yTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const points = useSharedValue<readonly number[]>(anchors);
+  const selected = useSharedValue(-1);
   const fingerY = useSharedValue(height / 2);
   const anchorX = useSharedValue(0);
   const chartWidth = useSharedValue(width);
@@ -61,31 +64,56 @@ function ChartSurface({ height, width, onLayout, count, anchor, hitTest, active,
   const interactive = Boolean(tooltip) && count > 0;
 
   useEffect(() => { chartWidth.set(width); }, [chartWidth, width]);
+  useEffect(() => {
+    points.set(anchors);
+    // New data mid-drag: the finger's next move picks again from the new points.
+    selected.set(-1);
+  }, [points, selected, anchors]);
+  // A shorter series can leave the reading past its end; drop it rather than read a point that's gone.
+  useEffect(() => {
+    if (chosen != null && chosen >= count) latest.current.onActive(null);
+  }, [chosen, count]);
   useEffect(() => () => clearTimeout(a11yTimer.current), []);
 
-  const gesture = usePanGesture(useMemo(() => {
-    const move = (x: number, y: number) => {
-      const index = latest.current.hitTest(x);
-      if (index < 0) return;
-      fingerY.set(y);
-      anchorX.set(latest.current.anchor(index));
-      if (index === selected.current) return;
-      selected.current = index;
-      latest.current.onActive(index);
-      haptic("tick");
-    };
-    return {
-      activateAfterLongPress: INSPECT_HOLD_MS,
-      runOnJS: true,
-      onActivate: (event: { x: number; y: number }) => move(event.x, event.y),
-      onUpdate: (event: { x: number; y: number }) => move(event.x, event.y),
-      onFinalize: () => {
-        if (selected.current == null) return;
-        selected.current = null;
-        latest.current.onActive(null);
-      },
-    };
-  }, [anchorX, fingerY]));
+  const pick = useCallback((index: number) => {
+    // A pick queued from the UI thread just before the data shrank may point past the new end.
+    if (index >= latest.current.count) return;
+    latest.current.onActive(index);
+    haptic("tick");
+  }, []);
+  const release = useCallback(() => latest.current.onActive(null), []);
+
+  // Declared before the gesture's worklets capture it: the worklets plugin turns a function declaration into a
+  // variable, so a later declaration would be captured as undefined.
+  const moveTo = (x: number, y: number) => {
+    "worklet";
+    const at = points.get();
+    const index = nearestIndex(at, x);
+    if (index < 0) return;
+    fingerY.set(y);
+    anchorX.set(at[index] ?? 0);
+    if (index === selected.get()) return;
+    selected.set(index);
+    scheduleOnRN(pick, index);
+  };
+
+  const gesture = usePanGesture({
+    activateAfterLongPress: INSPECT_HOLD_MS,
+    onActivate: (event) => {
+      "worklet";
+      moveTo(event.x, event.y);
+    },
+    onUpdate: (event) => {
+      "worklet";
+      moveTo(event.x, event.y);
+    },
+    onFinalize: () => {
+      "worklet";
+      if (selected.get() < 0) return;
+      selected.set(-1);
+      scheduleOnRN(release);
+    },
+  });
 
   const bubbleStyle = useAnimatedStyle(() => {
     const size = bubbleSize.get();
@@ -98,7 +126,7 @@ function ChartSurface({ height, width, onLayout, count, anchor, hitTest, active,
     if (!direction) return;
     const next = stepIndex(active, count, direction);
     if (next == null) return;
-    anchorX.set(anchor(next));
+    anchorX.set(anchors[next] ?? 0);
     fingerY.set(height);
     onActive(next);
     clearTimeout(a11yTimer.current);
@@ -215,7 +243,10 @@ export function LineChart({ series, height = 160, yFormat = String, xFormat, val
   const [xMin, xMax] = [xs[0] ?? 0, xs.at(-1) ?? 1];
   const scaleX = (x: number) => left + (xMax === xMin ? plotWidth / 2 : ((x - xMin) / (xMax - xMin)) * plotWidth);
   const scaleY = (y: number) => 8 + plotHeight - ((y - yMin) / (top - yMin || 1)) * plotHeight;
-  const positions = xs.map(scaleX);
+  const positions = useMemo(
+    () => xs.map((x) => left + (xMax === xMin ? plotWidth / 2 : ((x - xMin) / (xMax - xMin)) * plotWidth)),
+    [xs, left, plotWidth, xMin, xMax],
+  );
   const format = valueFormat ?? yFormat;
   const title = tooltipTitle ?? xFormat ?? ((x: number) => String(x));
 
@@ -250,9 +281,7 @@ export function LineChart({ series, height = 160, yFormat = String, xFormat, val
       height={height}
       width={width}
       onLayout={onLayout}
-      count={xs.length}
-      anchor={(index) => positions[index] ?? 0}
-      hitTest={(x) => nearestIndex(positions, x)}
+      anchors={positions}
       active={active}
       onActive={select}
       label={accessibilityLabel ?? `Line chart with ${series.length} ${series.length === 1 ? "line" : "lines"} and ${xs.length} points`}
@@ -324,6 +353,10 @@ export function StackedBarChart({ bars, height = 220, yFormat = String, xLabel, 
   const plotWidth = Math.max(1, width - left - 2);
   const plotHeight = height - bottom - 8;
   const layout = barLayout(bars.length, left, plotWidth);
+  const centres = useMemo(() => {
+    const { centre } = barLayout(bars.length, left, plotWidth);
+    return bars.map((_, index) => centre(index));
+  }, [bars, left, plotWidth]);
   const scaleY = (value: number) => (value / top) * plotHeight;
   const select = (index: number | null) => {
     setActive(index);
@@ -336,9 +369,8 @@ export function StackedBarChart({ bars, height = 220, yFormat = String, xLabel, 
       height={height}
       width={width}
       onLayout={onLayout}
-      count={bars.length}
-      anchor={layout.centre}
-      hitTest={(x) => slotIndex(x, left, layout.slot, bars.length)}
+      // Bars sit in equal slots, so the nearest centre is the slot under the finger (the end bars past either end).
+      anchors={centres}
       active={active}
       onActive={select}
       label={accessibilityLabel ?? `Bar chart with ${bars.length} bars`}

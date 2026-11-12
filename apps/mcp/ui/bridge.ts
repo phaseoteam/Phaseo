@@ -45,7 +45,13 @@ let fontsApplied = false;
 function applyContext(context: McpUiHostContext | undefined) {
   if (!context) return;
   if (context.theme) applyDocumentTheme(context.theme);
-  // Use ChatGPT's own colours and font stack when the host provides them.
+  // The resource asks for no host border, so nothing pads the view: keep content
+  // clear of the mobile navigation bar, the composer and the device edges.
+  const insets = context.safeAreaInsets;
+  if (insets)
+    for (const side of ["top", "right", "bottom", "left"] as const)
+      document.documentElement.style.setProperty(`--safe-${side}`, `${insets[side]}px`);
+  // Use the host's own colours and font stack when it provides them.
   if (context.styles?.variables) applyHostStyleVariables(context.styles.variables);
   if (context.styles?.css?.fonts && !fontsApplied) {
     applyHostFonts(context.styles.css.fonts);

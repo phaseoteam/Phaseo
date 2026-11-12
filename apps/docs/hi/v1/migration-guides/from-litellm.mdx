@@ -72,7 +72,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | टीम बजट, `metadata.tags` | विभाग बजट और `X-Phaseo-Metadata` [लेबल](../guides/request-labels)। अंतिम-उपयोगकर्ता बजट सिर्फ़ अंतिम-उपयोगकर्ता दर सीमा नीति से मैप होते हैं; अंतिम-उपयोगकर्ता के लिए कोई खर्च सीमा नहीं है। |
 | `guardrails` (Presidio, Lakera और इसी तरह के) | कुंजी गार्डरेल अनुरोधों में प्रॉम्प्ट इंजेक्शन और PII स्कैन करते हैं। प्रतिक्रियाएं स्कैन नहीं होतीं। |
 | कॉलबैक (`success_callback`, Langfuse, Datadog, OpenTelemetry) | [ऑब्ज़र्वेबिलिटी गंतव्य](../guides/integrations/observability) या क्लाइंट-साइड ट्रेसिंग। बॉडी `metadata` `phaseo.metadata.<key>` के रूप में एक्सपोर्ट होता है। |
-| कॉन्फ़िग में प्रदाता API कुंजियां | BYOK (`phaseo byok create --provider <id> --name <name> --key-stdin` या `POST /v1/byok`), या Phaseo क्रेडिट। क्रेडिट पर फ़ॉलबैक के लिए `phaseo settings update` से `byok_fallback_enabled` सेट करें। |
+| कॉन्फ़िग में प्रदाता API कुंजियां | BYOK (**सेटिंग्स → BYOK** या `POST /v1/byok`), या Phaseo क्रेडिट। क्रेडिट पर फ़ॉलबैक के लिए **सेटिंग्स → BYOK** से `byok_fallback_enabled` सेट करें। |
 
 प्रॉक्सी पूरी टीम का ट्रैफ़िक एक ही कुंजी मालिक से भेजती है, इसलिए वह उस उपयोगकर्ता का प्रति-मिनट-अनुरोध भत्ता साझा करती है, जो नए वर्कस्पेस के लिए 10 है। कटओवर से पहले [Gateway सीमाएं](../api-reference/limits#gateway-limits) देखें और ऊंची सीमा की व्यवस्था करें।
 

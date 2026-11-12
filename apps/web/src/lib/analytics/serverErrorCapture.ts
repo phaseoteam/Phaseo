@@ -9,6 +9,7 @@ import { isAnalyticsBlockedPath, readAnalyticsConsentFromCookieHeader } from "@/
 import { readPosthogCookieIdentity } from "@/lib/posthogCookie";
 import { waitUntil } from "@/lib/start/wait-until";
 import { getPhaseoEnv } from "@/lib/deployEnv";
+import { capturePlatformServerError } from "@/lib/grafana.server";
 
 export type ServerErrorContext = {
 	/** Where the error surfaced: an unhandled request failure or a route error boundary. */
@@ -66,5 +67,6 @@ async function capture(error: unknown, request: Request, context: ServerErrorCon
 export function captureServerError(error: unknown, request: Request, context: ServerErrorContext): void {
 	// Redirects and not-found are control flow, not failures.
 	if (error instanceof Response || isRedirect(error) || isNotFound(error)) return;
+	capturePlatformServerError(error, request, context);
 	void waitUntil(capture(error, request, context));
 }

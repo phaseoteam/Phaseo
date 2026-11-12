@@ -8,6 +8,18 @@
     "category": "DEVELOPER_TOOLS"
   },
   "tools": {
+    "open_model_explorer": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Opens the model explorer on the first page of the model catalogue without creating or changing any record.",
+        "open_world_justification": "Reads only the bounded Phaseo model catalogue and does not browse or contact arbitrary external entities.",
+        "destructive_justification": "Does not delete, overwrite, revoke, transact, or perform another irreversible action."
+      }
+    },
     "models_list": {
       "annotations": {
         "readOnlyHint": true,

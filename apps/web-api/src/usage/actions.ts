@@ -9,6 +9,7 @@ import { applyRequestLabelFilter, requestLabelFilterFromParams } from "@/usage/r
 import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
 import { detailMetadataWithoutContent } from "@/usage/requestContentDetails";
 import { validPageCursor } from "@/lib/pageCursor";
+import { V2_ATTEMPT_DETAIL_COLUMNS, hasV2AttemptDetail, v2AttemptsToProviderAttempts } from "@/usage/requestAttempts";
 import {
 	LONG_RUNNING_REQUEST_ENDPOINTS,
 	buildNotInFilter,
@@ -228,6 +229,7 @@ export interface RequestRow extends NormalizedRequestUsageColumns {
 		retryable?: boolean | null;
 		fallback_attempted?: boolean;
 		upstream_error_code: string | null;
+		upstream_error_type?: string | null;
 		upstream_error_message: string | null;
 		upstream_error_description: string | null;
 	}>;
@@ -283,6 +285,30 @@ export type GatewayIoLog = {
 	payload: Record<string, unknown> | null;
 };
 
+/**
+ * Provider attempts for the request detail. Requests created at or after the cut-over read
+ * v2_request_attempts through the request's v2_request_facts row; older ones read
+ * gateway_upstream_requests. An empty result keeps gateway_requests.provider_attempts.
+ */
+export async function fetchRequestProviderAttempts(
+	workspaceId: string,
+	requestId: string,
+	createdAt: string | null | undefined,
+): Promise<RequestRow["provider_attempts"]> {
+	if (!hasV2AttemptDetail(createdAt)) return fetchGatewayUpstreamRequests(workspaceId, requestId);
+	const { data, error } = await createAdminClient()
+		.from("v2_request_facts")
+		.select(`latency_ms,generation_ms,gateway_total_ms,cost_nanos,currency,stop_reason,v2_request_attempts(${V2_ATTEMPT_DETAIL_COLUMNS})`)
+		.eq("workspace_id", workspaceId)
+		.eq("request_id", requestId)
+		.maybeSingle();
+	if (error) {
+		console.error("Error fetching request attempts:", error);
+		return [];
+	}
+	return v2AttemptsToProviderAttempts(data);
+}
+
 async function fetchGatewayUpstreamRequests(
 	workspaceId: string,
 	requestId: string,
@@ -311,6 +337,7 @@ async function fetchGatewayUpstreamRequests(
 			retryable,
 			fallback_attempted,
 			error_code,
+			error_type,
 			error_message,
 			error_description,
 			metadata
@@ -361,6 +388,7 @@ export function normalizeGatewayUpstreamRows(
 		retryable: typeof row.retryable === "boolean" ? row.retryable : null,
 		fallback_attempted: row.fallback_attempted === true,
 		upstream_error_code: stringOrNull(row.error_code),
+		upstream_error_type: stringOrNull(row.error_type),
 		upstream_error_message: stringOrNull(row.error_message),
 		upstream_error_description: stringOrNull(row.error_description),
 		};
@@ -1813,9 +1841,10 @@ export async function investigateGeneration(
 		}
 
 		const request = toRequestRow(fallbackData);
-		const upstreamRequests = await fetchGatewayUpstreamRequests(
+		const upstreamRequests = await fetchRequestProviderAttempts(
 			workspaceId,
 			trimmedRequestId,
+			request.created_at,
 		);
 		if (upstreamRequests.length > 0) request.provider_attempts = upstreamRequests;
 		await attachRoutingObservability(supabase, workspaceId, trimmedRequestId, request);
@@ -1871,9 +1900,10 @@ export async function investigateGeneration(
 	}
 
 	const request = toRequestRow(data);
-	const upstreamRequests = await fetchGatewayUpstreamRequests(
+	const upstreamRequests = await fetchRequestProviderAttempts(
 		workspaceId,
 		trimmedRequestId,
+		request.created_at,
 	);
 	if (upstreamRequests.length > 0) request.provider_attempts = upstreamRequests;
 	await attachRoutingObservability(supabase, workspaceId, trimmedRequestId, request);

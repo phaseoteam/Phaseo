@@ -1,16 +1,13 @@
+// Auth errors (OAuth and SSO callbacks, failed workspace setup) show in the site-wide
+// auth dialog: this URL opens it over the home page. A Supabase error hash survives
+// the redirect and is read by AuthErrorMessage.
 import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { routeMetadataInput, toSerializableMetadata, type RouteMetadataInput } from "@/lib/start/metadata";
-import { metadataToHead } from "@/lib/start/metadataToHead";
-import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { AuthErrorPage, getAuthErrorMetadata } from "@/features/error/AuthErrorPage";
-
-const routeMetadata = createServerFn({ method: "GET" })
-	.validator((input: RouteMetadataInput) => input)
-	.handler(async ({ data }) => toSerializableMetadata(await getAuthErrorMetadata(data)));
+import { redirectToAuthDialog, searchValue } from "@/lib/auth/authDialogRedirect";
 
 export const Route = createFileRoute("/{-$locale}/_auth/error/")({
-	loader: ({ params, location }) => metadataLoaderData(routeMetadata({ data: routeMetadataInput(params, location.search) })),
-	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: AuthErrorPage,
+	beforeLoad: redirectToAuthDialog((search) => ({
+		auth: "error",
+		code: searchValue(search, "code"),
+		message: searchValue(search, "message"),
+	})),
 });

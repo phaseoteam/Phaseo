@@ -42,8 +42,8 @@ type Editing = { mode: "create" } | { mode: "edit"; budget: SettingsDepartmentBu
 
 /**
  * Department budgets under the workspace budgets. At 100% the gateway refuses the
- * department's API-key requests (batch, realtime and OAuth requests excepted);
- * owners and admins are pushed at about 80% and 100%.
+ * department's requests, holds and realtime sessions; owners and admins are pushed at
+ * about 80% and 100%.
  */
 export default function DepartmentBudgetsSection({ data }: { data: SettingsBudgetsInitialData }) {
 	const t = useTranslations("SettingsUI.budgets");

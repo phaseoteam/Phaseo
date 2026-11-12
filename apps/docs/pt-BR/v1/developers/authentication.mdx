@@ -4,7 +4,7 @@ description: "Use chaves de API para autenticar cada solicitação ao Phaseo Gat
 icon: "key-round"
 ---
 
-Crie uma chave com `phaseo keys create --name <name> --json` na [CLI do Phaseo](../guides/integrations/phaseo-cli) ou no [painel](https://phaseo.app/settings/keys), guarde-a no seu servidor e envie-a como token bearer em cada solicitação ao Gateway. Agentes devem usar a CLI; veja [Gerencie o Phaseo a partir de um agente](./manage-from-an-agent).
+Crie uma chave no [painel](https://phaseo.app/settings/keys) ou com `POST /v1/keys` e uma chave de gerenciamento, guarde-a no seu servidor e envie-a como token bearer em cada solicitação ao Gateway. Agentes devem usar a CLI; veja [Gerencie o Phaseo a partir de um agente](./manage-from-an-agent).
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>

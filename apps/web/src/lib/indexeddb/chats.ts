@@ -117,9 +117,16 @@ export type ChatImageGenerationServerToolConfig = {
     size?: string;
     aspectRatio?: string;
     background?: "auto" | "transparent" | "opaque";
-    outputFormat?: "auto" | "png" | "jpeg" | "webp";
+    outputFormat?: "auto" | "png" | "jpeg" | "webp" | "gif" | "svg";
     outputCompression?: number | null;
     moderation?: "auto" | "low" | "standard";
+    /** GPT Image 2.6: planning effort before rendering. */
+    complexity?: "auto" | "low" | "medium" | "high";
+    /** GIF output: number of frames and milliseconds per frame. */
+    frameCount?: number | null;
+    frameDurationMs?: number | null;
+    /** SVG output: the OpenAI text model that writes the SVG. */
+    svgModel?: string;
 };
 
 export type ChatServerToolConfigs = {

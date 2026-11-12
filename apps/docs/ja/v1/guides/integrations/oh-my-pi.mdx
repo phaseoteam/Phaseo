@@ -26,10 +26,9 @@ phaseo omp --model openai/gpt-5.6-terra
 
 ## oh-my-pi を手動で設定する
 
-キーを作成し、oh-my-pi を起動するシェルでエクスポートして、設定ディレクトリを作成します。
+ダッシュボードの **設定 → APIキー** でキーを作成し、oh-my-pi を起動するシェルでエクスポートして、設定ディレクトリを作成します。
 
 ```bash
-phaseo keys create --name "oh-my-pi Phaseo key" --json
 export PHASEO_OMP_API_KEY="<your Phaseo API key>"
 mkdir -p ~/.omp/agent
 ```

@@ -47,7 +47,7 @@ export default withSettingsResource("guardrails", function GuardrailsContent({ i
 
 	if (!initialData.workspaceId) {
 		return (
-			<div className="space-y-6">
+			<div className="w-full max-w-4xl space-y-8">
 				{header}
 				<Empty className="rounded-xl border border-dashed border-border/80 p-8">
 				<EmptyHeader>
@@ -65,7 +65,7 @@ export default withSettingsResource("guardrails", function GuardrailsContent({ i
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			{header}
 			<Tabs value={tab} onValueChange={(value) => void setTab(value === "assignments" ? "assignments" : null)} className="gap-4">
 				<TabsList variant="line" className="w-full justify-start border-b">

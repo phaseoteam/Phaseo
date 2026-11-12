@@ -1,4 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { mcpClientSdk } from "./mcpSdk";
+// Loaded up front, as the app warms it after launch: connections then create their client without waiting.
+beforeAll(() => mcpClientSdk());
 const ports=vi.hoisted(()=>({clients:[] as {getServerCapabilities:ReturnType<typeof vi.fn>;readResource:ReturnType<typeof vi.fn>;getPrompt:ReturnType<typeof vi.fn>;connect:ReturnType<typeof vi.fn>;listTools:ReturnType<typeof vi.fn>;callTool:ReturnType<typeof vi.fn>;setRequestHandler:ReturnType<typeof vi.fn>;close:ReturnType<typeof vi.fn>}[],transports:[] as unknown[]}));
 vi.mock("@modelcontextprotocol/sdk/client/index.js",()=>({Client:class {getServerCapabilities=vi.fn().mockReturnValue({tools:{}});readResource=vi.fn();getPrompt=vi.fn();setRequestHandler=vi.fn();connect=vi.fn().mockResolvedValue(undefined);listTools=vi.fn().mockResolvedValue({tools:[{name:"search",description:"Find notes",inputSchema:{type:"object"}}]});callTool=vi.fn().mockResolvedValue({content:[{type:"text",text:"Found"}]});close=vi.fn().mockResolvedValue(undefined);constructor(){ports.clients.push(this);}}}));
 vi.mock("@modelcontextprotocol/sdk/client/stdio.js",()=>({getDefaultEnvironment:()=>({PATH:"owned-path"}),StdioClientTransport:class {constructor(parameters:unknown){ports.transports.push(parameters);}}}));

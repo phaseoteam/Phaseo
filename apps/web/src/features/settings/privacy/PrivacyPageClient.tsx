@@ -1,4 +1,6 @@
 import { Suspense } from "react";
+import { Link } from "@/i18n/navigation";
+import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/i18n/react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
@@ -11,10 +13,11 @@ import type { SettingsPrivacyInitialData } from "@/lib/fetchers/internal/setting
 export default function PrivacySettingsPage() {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<SettingsPageHeader
 				title={t("headers.privacy")}
-				description={t("headers.privacyDescription")}
+				description={t("strings.phraseSetTheMinimumPrivacyStandardForEveryRequestInThisWorkspace")}
+				actions={<Button asChild variant="outline"><Link href="/settings/routing/access">{t("strings.Route Access")}</Link></Button>}
 			/>
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<PrivacySettingsContent />
@@ -37,6 +40,8 @@ const PrivacySettingsContent = withSettingsResource("privacy", function PrivacyS
 	return (
 		<div className="space-y-8">
 		<AccountPrivacySettingsClient
+			key={initialData.workspaceId}
+			canManage={initialData.canManage}
 			policy={initialData.policy}
 			providers={initialData.providers}
 			models={initialData.models}

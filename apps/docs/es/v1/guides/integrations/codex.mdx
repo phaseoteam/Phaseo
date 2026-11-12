@@ -14,7 +14,7 @@ phaseo codex --model openai/gpt-5.6-terra
 codex --profile phaseo
 ```
 
-Si falta Codex, la CLI muestra el comando de instalación oficial y pide confirmación antes de ejecutarlo. Después, la configuración crea una `Phaseo CLI: Codex API Key` que caduca a los 90 días y tiene un límite de gasto mensual de $100, la guarda en el almacén de credenciales del sistema operativo y escribe el perfil en `~/.codex/phaseo.config.toml` (o dentro de `CODEX_HOME`). Codex obtiene la clave de la CLI, que crea una nueva cuando la anterior caduca, así que no se escribe ninguna clave en texto plano en la configuración. Sin `--model`, el perfil usa `openai/gpt-5.6-terra`.
+Si falta Codex, la CLI muestra el comando de instalación oficial y pide confirmación antes de ejecutarlo. Después, la configuración abre una página del panel en la que apruebas una `Phaseo CLI: Codex API Key` que caduca a los 90 días y tiene un límite de gasto mensual de $100. La CLI guarda la clave en el almacén de credenciales del sistema operativo y escribe el perfil en `~/.codex/phaseo.config.toml` (o dentro de `CODEX_HOME`). Codex obtiene la clave de la CLI, así que no se escribe ninguna clave en texto plano en la configuración. Cuando la clave caduque, vuelve a ejecutar `phaseo codex` para aprobar una nueva. Sin `--model`, el perfil usa `openai/gpt-5.6-terra`.
 
 ## Configura Codex manualmente
 

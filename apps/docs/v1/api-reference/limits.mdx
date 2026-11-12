@@ -44,7 +44,7 @@ An API key's daily, weekly or monthly request and spend limits, and the workspac
 
 `Retry-After` is missing when the limit doesn't reset by itself, such as a lifetime budget or a soft-blocked key. Don't retry: raise the workspace budget, raise the key's limit, or use a different key.
 
-Workspace owners and admins manage budgets with `phaseo budgets create|update|delete` or under [Settings → Budgets](https://phaseo.app/settings/budgets), which shows each budget's spend so far, the share used, a projection for the period and when it resets. Daily, weekly and monthly budgets reset on UTC boundaries: midnight, Monday 00:00 and the 1st of the month.
+Workspace owners and admins manage budgets with a management key through `/v1/budgets` or under [Settings → Budgets](https://phaseo.app/settings/budgets), which shows each budget's spend so far, the share used, a projection for the period and when it resets. Daily, weekly and monthly budgets reset on UTC boundaries: midnight, Monday 00:00 and the 1st of the month.
 
 [Spend alerts](../guides/spend-alerts.mdx) can warn before these limits are reached. A spend rule set to block returns `429` with `spend_rule_blocked`. It is best effort and starts a few minutes after spend passes its limit, so use key limits and budgets for exact caps. An `x-phaseo-spend-warning` header means a block may follow.
 
@@ -54,9 +54,8 @@ Owners and admins manage department budgets with `phaseo department-budgets`, th
 
 Once a department has used its daily, weekly or monthly budget, API-key requests that count toward it return `429` with `key_limit_exceeded` and reason `department_daily_cost_budget_reached`, `department_weekly_cost_budget_reached` or `department_monthly_cost_budget_reached`. The body's `department_id` and `department_name` identify the department, and `reset_at` and `Retry-After` say when its budget resets.
 
-- Batch jobs, realtime sessions and OAuth requests aren't blocked by department budgets.
 - If the budget check is briefly unavailable, requests are allowed, so a department can spend past its budget for a short time.
-- Owners and admins get a mobile push at about 80% and again at 100% of a budget. These alerts come from usage that can lag by up to an hour, so requests can be refused before the 100% alert arrives.
+- Owners and admins get a mobile push at about 80% and again at 100% of a budget. Budgets are checked for these alerts every 15 minutes, so requests can be refused before the 100% alert arrives.
 
 ## Rate limit policies
 
@@ -69,7 +68,7 @@ Workspace admins can create named policies that set `requests_per_minute`, `toke
 | Department (`department`) | Everything that counts toward the department (see below). |
 | End-user default (`end_user`) | Each end user gets their own allowance, identified by the request's `user` field or `X-Phaseo-User-Id` header. Requests without an end-user ID aren't limited. |
 
-**What counts toward a department.** A key linked to a department counts toward that department only. Any other key counts toward every department its creator belongs to, and OAuth requests count toward every department of their user. A member with a department override counts toward the override department only. To count those keys and OAuth requests toward the person's primary department only, set department attribution to primary under [Settings → Notifications](https://phaseo.app/settings/notifications), with `spend.department_attribution` in `PATCH /v1/notifications/settings`, or with `phaseo notifications settings update --department-attribution primary`. Department budgets and spend rules use the same setting.
+**What counts toward a department.** A key linked to a department counts toward that department only. Any other key counts toward every department its creator belongs to, and OAuth requests count toward every department of their user. A member with a department override counts toward the override department only. To count those keys and OAuth requests toward the person's primary department only, set department attribution to primary under [Settings → Notifications](https://phaseo.app/settings/notifications), or with `spend.department_attribution` in `PATCH /v1/notifications/settings` and a management key. Department budgets and spend rules use the same setting.
 
 When several policies apply, each is counted and the first one exhausted rejects the request. Policies apply on top of the [gateway limits](#gateway-limits). Policy changes take effect within about a minute; department membership changes made in the dashboard or through SCIM can take up to about five minutes.
 
@@ -124,7 +123,7 @@ Rate-limit rules for agents, summarising this page:
 
 - Gateway quotas return `429` with reason `customer_requests_per_minute` (code `key_limit_exceeded`) or `free_requests_per_day` (code `phaseo_free_model_limit_exceeded`); wait `Retry-After` seconds. If quota enforcement is unavailable, the gateway returns `503` with retry guidance.
 - Key limits and budgets return `429` with `key_limit_exceeded` and a `reset_at`. Without `Retry-After` the limit does not reset by itself: raise the limit or use another key instead of retrying.
-- A used-up department budget returns `429` with `key_limit_exceeded`, reason `department_<interval>_cost_budget_reached`, `department_id`, `department_name` and `reset_at`; wait `Retry-After` seconds or raise the budget. Batch, realtime and OAuth requests are not blocked by department budgets. If the budget check is unavailable, the request is allowed.
+- A used-up department budget returns `429` with `key_limit_exceeded`, reason `department_<interval>_cost_budget_reached`, `department_id`, `department_name` and `reset_at`; wait `Retry-After` seconds or raise the budget. If the budget check is unavailable, the request is allowed.
 - Spend rules that block return `429` with `spend_rule_blocked`; wait for `Retry-After`, or ask an owner or admin to lift the block. `x-phaseo-spend-warning` means a block may follow.
 - Workspace rate limit policies return `429` with `rate_limit_exceeded`, `policy_id` and `limit_scope`. `x-ratelimit-remaining-requests` is approximate.
 - `Retry-After` can be seconds or an HTTP date; validate it before scheduling a retry. Never resubmit an ambiguous video or batch job; check its status instead.

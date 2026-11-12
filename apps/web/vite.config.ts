@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => {
 
 	return {
 		publicDir: path.join(root, "public"),
+		build: { sourcemap: process.env.PHASEO_PRIVATE_SOURCEMAPS === "true" ? "hidden" : false },
 		define,
 		resolve: {
 			alias: [

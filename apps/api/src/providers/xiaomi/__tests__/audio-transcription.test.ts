@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { setupRuntimeFromEnv, setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
-import { exec } from "../endpoints/audio-transcription";
+import { exec, xiaomiEncodedAudioLength } from "../endpoints/audio-transcription";
 
 beforeAll(() => setupTestRuntime());
 afterAll(() => teardownTestRuntime());
@@ -83,6 +83,37 @@ describe("Xiaomi audio.transcription endpoint", () => {
 
 		expect(result.upstream.status).toBe(400);
 		expect(await result.upstream.json()).toMatchObject({ error: { param: "file" } });
+	});
+
+	it("measures the 10 MB limit on the base64 data URL, not the raw file", () => {
+		const limit = 10 * 1024 * 1024;
+		// 7,864,302 raw bytes is the largest WAV whose data URL fits.
+		expect(xiaomiEncodedAudioLength(7_864_302, "audio/wav")).toBeLessThanOrEqual(limit);
+		expect(xiaomiEncodedAudioLength(7_864_303, "audio/wav")).toBeGreaterThan(limit);
+		expect(xiaomiEncodedAudioLength(4, "audio/wav")).toBe("data:audio/wav;base64,AQIDBA==".length);
+	});
+
+	it("rejects an 8 MB file, whose base64 is over 10 MB, before calling Xiaomi", async () => {
+		let fetchCalled = false;
+		const result = await exec({
+			endpoint: "audio.transcription",
+			body: {
+				model: "xiaomi/mimo-v2.5-asr",
+				file: new File([new Uint8Array(8 * 1024 * 1024)], "sample.mp3", { type: "audio/mpeg" }),
+			},
+			meta: {},
+			workspaceId: "team_test",
+			providerId: "xiaomi",
+			byokMeta: [],
+			pricingCard: null,
+			providerModelSlug: "mimo-v2.5-asr",
+			stream: false,
+			upstreamTiming: { fetch: async () => { fetchCalled = true; throw new Error("must not be called"); } },
+		} as any);
+
+		expect(result.upstream.status).toBe(400);
+		expect(fetchCalled).toBe(false);
+		expect(await result.upstream.json()).toMatchObject({ error: { param: "file", message: expect.stringContaining("7.5 MB") } });
 	});
 
 	it.each([

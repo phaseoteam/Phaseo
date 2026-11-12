@@ -3,6 +3,7 @@ import { isWorkspaceAddonActive } from "@/lib/billing/identityAddon";
 import { requireActiveWorkspaceBillingAdmin } from "@/lib/server/activeTeamStripe";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { rejectCrossOriginRequest } from "@/lib/http/sameOrigin";
+import { retryTransaction } from "@/lib/server/retryTransaction";
 
 const ICONS = new Set(["users","briefcase","megaphone","code","palette","headphones","landmark","scale","heart-pulse","globe","flask","graduation-cap","shield-check","shopping-bag","wrench","truck","handshake","chart"]);
 const COLORS = new Set(["blue","emerald","amber","rose","violet","slate","cyan","teal","lime","yellow","orange","red","pink","fuchsia","indigo","sky","green","purple"]);
@@ -84,10 +85,9 @@ async function handlePost(request: Request) {
 			if (name.length < 1 || name.length > 100 || !ICONS.has(icon) || !COLORS.has(color)) {
 				return Response.json({ error: "Invalid department" }, { status: 400 });
 			}
-			const rpc = action === "create_department"
+			const result = await retryTransaction(() => action === "create_department"
 				? admin.rpc("create_workspace_department", { p_workspace_id: workspaceId, p_name: name, p_icon: icon, p_color: color, p_actor_user_id: userId, p_request_id: requestId })
-				: admin.rpc("update_workspace_department", { p_workspace_id: workspaceId, p_department_id: String(body.departmentId ?? ""), p_name: name, p_icon: icon, p_color: color, p_actor_user_id: userId, p_request_id: requestId });
-			const result = await rpc;
+				: admin.rpc("update_workspace_department", { p_workspace_id: workspaceId, p_department_id: String(body.departmentId ?? ""), p_name: name, p_icon: icon, p_color: color, p_actor_user_id: userId, p_request_id: requestId }));
 			if (result.error) throw result.error;
 			return Response.json({ department: result.data });
 		}
@@ -99,12 +99,26 @@ async function handlePost(request: Request) {
 			if (!targetUserId || (accessRole !== null && !["member","admin"].includes(accessRole)) || !["directory","department","none"].includes(departmentMode)) {
 				return Response.json({ error: "Invalid member override" }, { status: 400 });
 			}
-			const { error } = await admin.rpc("apply_workspace_member_override", {
-				p_workspace_id: workspaceId,p_user_id: targetUserId,p_access_role: accessRole,
+			// The role override can make someone an admin, so only the owner writes it. Admins change departments
+			// through a function that never writes the role override, so a role they read earlier can't come back.
+			const [workspace, current] = await Promise.all([
+				admin.from("workspaces").select("owner_user_id").eq("id", workspaceId).maybeSingle(),
+				admin.from("workspace_member_overrides").select("access_role").eq("workspace_id", workspaceId).eq("user_id", targetUserId).maybeSingle(),
+			]);
+			if (workspace.error) throw workspace.error;
+			if (current.error) throw current.error;
+			const isOwner = workspace.data?.owner_user_id === userId;
+			if (!isOwner && accessRole !== (current.data?.access_role ?? null)) {
+				return Response.json({ error: "Only the workspace owner can change directory roles." }, { status: 403 });
+			}
+			const department = {
 				p_department_override_enabled: departmentMode !== "directory",
-				p_department_id: departmentId,p_department_position: "member",
-				p_actor_user_id: userId,p_request_id: requestId,
-			});
+				p_department_id: departmentId, p_department_position: "member",
+				p_actor_user_id: userId, p_request_id: requestId,
+			};
+			const { error } = await retryTransaction(() => isOwner
+				? admin.rpc("apply_workspace_member_override", { p_workspace_id: workspaceId, p_user_id: targetUserId, p_access_role: accessRole, ...department })
+				: admin.rpc("apply_workspace_member_department_override", { p_workspace_id: workspaceId, p_user_id: targetUserId, ...department }));
 			if (error) throw error;
 			return Response.json({ ok: true });
 		}

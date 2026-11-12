@@ -18,7 +18,7 @@ phaseo openclaw --model openai/gpt-6-astra
 - **`secrets.providers.phaseo_cli`**：一个 exec 机密提供程序，运行 `phaseo integrations credential openclaw` 来读取密钥。密钥从不写入 OpenClaw 的配置。
 - **`models.providers.phaseo`**：一个提供商，Base URL 为 `https://api.phaseo.app/v1`，API 类型为 `openai-completions`，密钥取自 `phaseo_cli`。它列出所有支持 Chat Completions 的活跃 Phaseo 文本模型，`--model` 的值排在首位（未指定时为 `anthropic/claude-sonnet-4.6`）。
 
-该密钥是一个 `Phaseo CLI: OpenClaw API Key`，90 天后过期，每月支出上限为 $100。密钥过期后，当 OpenClaw 向 CLI 请求密钥时，CLI 会创建一个新密钥。
+该密钥是一个 `Phaseo CLI: OpenClaw API Key`，由你在设置过程中在浏览器中批准。它 90 天后过期，每月支出上限为 $100。过期后，再次运行 `phaseo openclaw` 批准新密钥。
 
 setup 不会更改 OpenClaw 的默认模型。准备好之后，用 `openclaw models set` 选择 Phaseo 模型。使用 `--catalog default` 可以只注册所选模型。
 

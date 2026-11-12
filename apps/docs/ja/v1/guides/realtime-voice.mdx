@@ -39,8 +39,8 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
 
 | プロバイダー | 入力音声 |
 | --- | --- |
-| OpenAI、xAI、ElevenLabs、GPT Live | 24 kHz PCM16 |
-| Google、Mistral | 16 kHz PCM16 |
+| OpenAI、xAI、ElevenLabs Realtime、GPT Live | 24 kHz PCM16 |
+| Google、Mistral、ElevenLabs Scribe v3 Live | 16 kHz PCM16 |
 
 Phaseo はセッション開始時に $5 のクレジットを確保し、通話が続くにつれて確保額を延長します。
 
@@ -109,7 +109,7 @@ ElevenLabs は接続している秒数と、使用した言語モデルのトー
 
 ### ストリーミング文字起こし
 
-Mistral の Voxtral Realtime モデル（`mistral/voxtral-mini-transcribe-realtime-3` と `mistral/voxtral-mini-transcribe-realtime`）は、届いたライブ音声をその場で文字起こしします。音声で返答しないため、`voice` や `instructions` を付けずにセッションを作成します。
+ストリーミング文字起こしモデルは、届いたライブ音声をその場で文字起こしします。Mistral の `mistral/voxtral-mini-transcribe-realtime-3` と `mistral/voxtral-mini-transcribe-realtime`、ElevenLabs の `eleven-labs/scribe-v3-live` です。音声で返答しないため、`voice` や `instructions` を付けずにセッションを作成します。
 
 ```bash
 curl https://api.phaseo.app/v1/audio/realtime/sessions \
@@ -122,7 +122,13 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
 
 `session.end` を送ると、リレーは Mistral の音声ストリームを終了し、完全な文字起こしを含む `transcription.done` を最大 10 秒待ってから、請求を確定して `session.ended` を送ります。すでに送った音声は使われ、破棄されることはありません。
 
-ストリーミング文字起こしは、送信した音声の分数（Voxtral Mini Transcribe Realtime 3 では 1 分あたり $0.008）で課金され、リレーが計測します。`transcription.done` にある Mistral 自身の数が最低請求額になります。手元にある録音には、代わりに[音声の文字起こし](/ja/v1/api-reference/endpoint/audio-transcriptions)を使ってください。
+`eleven-labs/scribe-v3-live` では、リレーが ElevenLabs のイベントを同じ `transcription.*` イベントに変換します。まず `session.created`、次に進行中のセグメントのテキストを含む `transcription.partial`（新しいものが前のものを置き換え、`turn_probability` を含みます）、そして確定した各セグメントについて、そのテキストを含む `transcription.text.delta` と `segment_index` を含む `transcription.segment` です。`include_timestamps` または `include_language_detection` を指定すると、単語のタイミングと検出された言語を含む `transcription.segment.words` が続き、言語が変わると `transcription.language` も届きます。`diarize` を指定すると、話者ラベルを含む `transcription.segment.speakers` が続き、2 つの話者 ID が同一人物だと分かると `transcription.speakers_merged` が届きます。ElevenLabs のエラーは `error` として届きます。
+
+リレーは最初の `client.audio` の時点で ElevenLabs に接続し、それ以降は設定が固定されます。その前に `session.update` を送り、`language`, `secondary_languages`, `commit_strategy` (`vad`, 既定, `turn_prediction` または `manual`), `vad_silence_threshold_secs` (0.192 〜 3), `vad_threshold`, `min_speech_duration_ms`, `min_silence_duration_ms`, `include_timestamps`, `include_language_detection`, `multilang_mode`, `diarize`, `no_verbatim`, `filter_background_audio`、`previous_text` のいずれかを指定します。リレーは `session.updated` で応答します。キーターム、キータームライブラリ、文字起こしの編集、エンティティの検出や伏せ字は ElevenLabs で追加料金がかかり、まだ利用できません。これらは `relay.client_event_rejected` と `reason: "realtime_transcription_option_not_supported"` で拒否されます。`manual` では、新しい音声を 0.3 秒以上送った後に `{"type": "input_audio.commit"}` を送るとセグメントが確定します。無音も含めて音声を送り続けてください。ElevenLabs は 15 秒間何も受け取らないセッションを終了します。
+
+Scribe セッションに `session.end` を送ると、リレーはまだ文字起こしされていない音声を確定し、その文字起こしを最大 10 秒待ってから、完全な文字起こしを含む `transcription.done` を送り、請求を確定します。最後のセグメントの後の音声が 0.3 秒未満の場合は確定できないため、文字起こしされません。
+
+ストリーミング文字起こしは、送信した音声の分数（Voxtral Mini Transcribe Realtime 3 では 1 分あたり $0.008、Scribe v3 Live では 1 時間あたり $0.22）で課金され、リレーが計測します。`transcription.done` にある Mistral 自身の数が最低請求額になります。ElevenLabs は使用量を報告しないため、Scribe セッションはリレーの計測だけで課金されます。手元にある録音には、代わりに[音声の文字起こし](/ja/v1/api-reference/endpoint/audio-transcriptions)を使ってください。
 
 ## セッションを終了する
 
@@ -248,7 +254,7 @@ API セッションがアイドルを理由に Phaseo によって終了され�
 | Google Live | リレーが再開した接続を通算して 60 分。クライアントが約 150 秒間音声を送らない場合も通話は終了します。 |
 | GPT Live | 25 分 |
 | ElevenLabs Realtime | 30 分 |
-| Mistral のストリーミング文字起こし | 60 分 |
+| Mistral と ElevenLabs のストリーミング文字起こし | 60 分 |
 | 当座貸越の上限 | 確保額と無料残高を超えて $1 |
 | アクセスの喪失 | キーが取り消された、期限切れになった、一時停止された、またはワークスペースが削除された場合。約 1 分以内に検出され、猶予期間なしで通話が終了します。 |
 | ポリシーの変更 | `policy_blocked` の警告から 30 秒後、ポリシーがまだ通話をブロックしている場合 |

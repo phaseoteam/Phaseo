@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: Listar modelos do gateway por equipe
-      description: Retorna a lista de modelos do gateway por equipe. Por padrão, inclui modelos roteáveis publicamente; use `availability=all` para incluir registros de disponibilidade não roteáveis.
+      summary: Listar os modelos que esta chave pode usar
+      description: 'Retorna a lista de /models com as proteções de quem chama aplicadas: ficam de fora os modelos bloqueados por uma regra e os sem nenhum provedor permitido, e cada modelo mantém apenas as ofertas para as quais as solicitações podem ser roteadas, com preços, capacidades e disponibilidade calculados a partir delas. O objeto access informa o que as regras deixaram de fora. Por padrão inclui os modelos atualmente roteáveis publicamente; use availability=all para incluir registros de disponibilidade não roteáveis.'
       parameters:
         - name: endpoints
           in: query
@@ -1174,8 +1174,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: ID de modelo da Phaseo, por exemplo `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: ID de modelo da Phaseo. Igual a `model`.
+                  provider_model:
+                    type: string
+                    description: O nome que o provedor dá ao modelo, por exemplo `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1373,8 +1378,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: ID de modelo da Phaseo, por exemplo `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: ID de modelo da Phaseo. Igual a `model`.
+                  provider_model:
+                    type: string
+                    description: O nome que o provedor dá ao modelo, por exemplo `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1585,8 +1595,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: ID de modelo da Phaseo, por exemplo `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: ID de modelo da Phaseo. Igual a `model`.
+                  provider_model:
+                    type: string
+                    description: O nome que o provedor dá ao modelo, por exemplo `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -3846,7 +3861,7 @@ paths:
         - Gateway
       operationId: updateWorkspaceNotificationSettings
       summary: Atualizar as configurações de notificação do espaço de trabalho
-      description: Atualiza uma ou mais seções persistentes da política de notificações. Habilitar a recarga automática exige um identificador existente de método de pagamento salvo e autenticação de dois fatores verificada. Uma configuração existente pode ser atualizada sem repetir a confirmação MFA. Para habilitar sem MFA, os clientes devem definir explicitamente `mfa_bypass_acknowledged` como true e fornecer o valor exato `I ACCEPT THE RISK` em `mfa_bypass_phrase`; a coleta do pagamento continua sendo um fluxo interativo da conta.
+      description: Atualiza uma ou mais seções persistentes da política de notificações. Ativar a recarga automática, ou alterar o valor, o limite ou a forma de pagamento, exige `billing:write`, o identificador de uma forma de pagamento salva e autenticação de dois fatores verificada, e apps que usam Entrar com Phaseo não podem fazer isso. Desativá-la exige apenas `settings:write`. Uma configuração existente de recarga automática pode ser atualizada sem repetir a confirmação de MFA. A dispensa da autenticação de dois fatores (`mfa_bypass_acknowledged` e `mfa_bypass_phrase`) só pode ser aceita nas Configurações; a API a recusa. A cobrança continua sendo um fluxo interativo da conta.
       requestBody:
         required: true
         content:
@@ -4850,7 +4865,7 @@ paths:
         - Gateway
       operationId: listDepartmentBudgets
       summary: List department budgets
-      description: Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+      description: Lista os orçamentos de gastos dos departamentos com o gasto de cada departamento no período UTC atual. O gasto é contado como a admissão do departamento o conta, então está atualizado.
       parameters:
         - name: department_id
           in: query
@@ -4878,7 +4893,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: Cria um orçamento de gastos diário, semanal ou mensal para um departamento. Quando o departamento o esgota, as solicitações com chave de API que contam para ele retornam 429 key_limit_exceeded até o orçamento ser redefinido. Tarefas em lote, sessões em tempo real e solicitações OAuth não são bloqueadas. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e em 100%.
+      description: Cria um orçamento de gastos diário, semanal ou mensal para um departamento. Quando o departamento o esgota, as solicitações com chave de API que contam para ele retornam 429 key_limit_exceeded até o orçamento ser redefinido. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e em 100%.
       requestBody:
         required: true
         content:
@@ -7301,7 +7316,7 @@ paths:
         - Gateway
       operationId: deleteWorkspace
       summary: Excluir um espaço de trabalho
-      description: Exclui um espaço de trabalho por UUID ou slug. É necessária uma chave de API de gerenciamento.
+      description: Exclui um espaço de trabalho pelo UUID ou slug. Só o proprietário do espaço de trabalho pode excluí-lo. É necessária uma chave de API de gerenciamento.
       parameters:
         - name: id
           in: path
@@ -7378,7 +7393,7 @@ paths:
         - Gateway
       operationId: addWorkspaceMembers
       summary: Adicionar membros ao espaço de trabalho
-      description: Adiciona usuários existentes a um espaço de trabalho com a função `admin` ou `member`. É necessária uma chave de API de gerenciamento.
+      description: 'Adiciona as pessoas que pediram para entrar: cada usuário precisa ter uma solicitação de entrada pendente (criada ao aceitar um convite), que esta operação aprova. Outros usuários são recusados; envie um convite a eles. Membros existentes mantêm a função. Sem função, cada pessoa recebe a função do convite; adicionar um administrador exige o proprietário do espaço de trabalho. É necessária uma chave de API de gerenciamento. Cada pessoa é aprovada separadamente. Se uma falhar, as aprovadas antes continuam adicionadas, as restantes não são tentadas e a resposta é um 409 que lista os usuários em approved, failed e not_attempted.'
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -7412,6 +7427,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Nem todos os usuários puderam ser adicionados. O corpo lista quem foi adicionado, quem falhou e quem não foi tentado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberAddResponse'
   /workspaces/{id}/members/remove:
     post:
       x-beta: true
@@ -7419,7 +7440,7 @@ paths:
         - Gateway
       operationId: removeWorkspaceMembers
       summary: Remover membros do espaço de trabalho
-      description: Remove do espaço de trabalho os membros que não são titulares. É necessária uma chave de API de gerenciamento.
+      description: Remove do espaço de trabalho os membros que não são proprietários. Só o proprietário do espaço de trabalho pode remover outros membros; qualquer pessoa pode remover a si mesma. É necessária uma chave de API de gerenciamento.
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -15531,10 +15552,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: Formato de saída. gif e svg exigem um modelo GPT Image 2.6 e não aceitam stream nem partial_images. svg também exige svg.model e n=1.
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -15550,6 +15574,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: Obrigatório quando output_format é svg. svg.model é o modelo de texto da OpenAI que escreve o SVG a partir da imagem de referência. Os tokens dele são cobrados pelos preços de texto desse modelo, com tokens de raciocínio contados como saída, além do custo da imagem.
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -15567,6 +15626,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -15597,6 +15669,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: Camada de anotação PNG transparente sobre a primeira imagem, como upload de arquivo, URL ou string base64. Exige GPT Image 2.5 ou posterior e não pode ser combinada com mask.
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:
@@ -15717,7 +15798,13 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
-          type: integer
+          description: Compactação da saída. O Vertex Veo aceita optimized ou lossless e rejeita um número; os outros provedores que a suportam aceitam um inteiro.
+          oneOf:
+            - type: integer
+            - type: string
+              enum:
+                - optimized
+                - lossless
         person_generation:
           type: string
         resize_mode:
@@ -15760,7 +15847,7 @@ components:
         provider_params:
           type: object
           additionalProperties: true
-          description: Somente extensões específicas do provedor. O repasse completo da solicitação e campos duplicados de roteamento, prompt, callback ou cobrança são rejeitados.
+          description: 'Somente extensões específicas do provedor. O repasse completo da solicitação e campos duplicados de roteamento, prompt, callback ou cobrança são rejeitados. Por exemplo, o Wan 3.0 aceita smart_duration: true para deixar o modelo escolher a duração (não envie duration junto); o job reserva 30 segundos e é cobrada a duração informada pelo provedor.'
         provider_options:
           type: object
           additionalProperties:
@@ -18381,7 +18468,6 @@ components:
       type: object
       required:
         - id
-        - hash
         - workspace_id
         - name
         - label
@@ -18411,9 +18497,6 @@ components:
           type: string
           format: uuid
           example: 11111111-1111-4111-8111-111111111111
-        hash:
-          type: string
-          example: a3f5b7c9d8e1f23456789abcdeffedcba9876543210fedcba1234567890abcdef
         workspace_id:
           type: string
           format: uuid
@@ -18957,15 +19040,55 @@ components:
       type: object
       required:
         - added_count
-        - data
+        - approved
+        - failed
+        - not_attempted
       properties:
+        error:
+          type: string
+        message:
+          type: string
         added_count:
           type: integer
           minimum: 0
         data:
           type: array
+          description: Os detalhes dos membros adicionados. São omitidos se não puderem ser lidos depois das aprovações; approved continua listando quem foi adicionado.
           items:
             $ref: '#/components/schemas/WorkspaceMember'
+        approved:
+          type: array
+          description: Usuários adicionados por esta solicitação, na ordem em que foram aprovados.
+          items:
+            type: string
+        failed:
+          type: array
+          description: O usuário cuja aprovação falhou, com o motivo. Os usuários seguintes não são tentados.
+          items:
+            $ref: '#/components/schemas/WorkspaceMemberAddFailure'
+        not_attempted:
+          type: array
+          description: Usuários não tentados porque uma aprovação anterior falhou. As solicitações de entrada deles continuam pendentes.
+          items:
+            type: string
+      additionalProperties: false
+    WorkspaceMemberAddFailure:
+      type: object
+      required:
+        - user_id
+        - code
+        - message
+      properties:
+        user_id:
+          type: string
+        code:
+          type: string
+          enum:
+            - forbidden
+            - conflict
+            - internal_error
+        message:
+          type: string
       additionalProperties: false
     WorkspaceMemberRemoveResponse:
       type: object
@@ -20201,7 +20324,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
         billing_status:
@@ -20233,7 +20356,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
       minProperties: 1
@@ -20970,6 +21093,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: 'Retornado apenas por /models/me: o que as proteções de quem chama deixaram de fora da lista, antes da busca e da paginação.'
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: Se alguma regra restringe modelos ou provedores para esta chave.
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: Quantos modelos as regras deixam de fora.
+          example: 12
+        hidden_models:
+          type: array
+          description: Os modelos que ficaram de fora, com seus nomes (até 500).
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: Quantos modelos listados perderam alguns de seus provedores por causa das regras.
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

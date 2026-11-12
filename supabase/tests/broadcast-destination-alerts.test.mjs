@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
-// Table files carry the MFA policy (require_mfa_for_data_api); these fixtures don't load its helper.
-const MFA_SATISFIED_STUB = "create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true';";
+// Table files carry the MFA and OAuth-client policies (require_mfa_for_data_api, refuse_oauth_client_writes); these fixtures don't load their helpers.
+const MFA_SATISFIED_STUB = "create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true'; create or replace function public.request_is_oauth_client() returns boolean language sql stable as 'select false';";
 
 const db = new PGlite();
 const id = (prefix, n) => `${prefix}0000000-0000-4000-8000-0000000000${String(n).padStart(2, '0')}`;

@@ -8,7 +8,7 @@ API キーを作成し、`POST /v1/responses` にリクエストを 1 回送信�
 
 ```mermaid
 flowchart LR
-  key["キーを作成<br/>phaseo keys create"] --> req["POST /v1/responses<br/>model + input"]
+  key["キーを作成<br/>phaseo.app/settings/keys"] --> req["POST /v1/responses<br/>model + input"]
   req --> read["output[].content[] を読む<br/>type: output_text"]
   req -->|"401、402、429"| fix["トラブルシューティング"]
 ```
@@ -31,8 +31,8 @@ Rules:
 <Visibility for="agents">
 エージェント向けクイックスタートのチェックリスト：
 
-- CLI でキーを作成します。`npm install -g @phaseo/cli` を実行し、次に `phaseo login`（ヘッドレスのシェルでは `phaseo login --device-code`。サインインは人が承認します）、最後に `phaseo keys create --name <name> --json` を実行します。キーを生成したり推測したりしないでください。キーはサーバー側のコードからのみ、`Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` として送信します。
-- 有料モデルを使う場合は、`phaseo login --scopes billing:write` を一度実行してから、`phaseo credits add --amount <usd> --json` でチャージを開始します。保存済みのカードがある場合は、ワークスペースのオーナーまたは管理者がメールのリンクから確認します。保存済みのカードがない場合は、レスポンスに `next_action: "open_checkout_url"` と支払いリンクが含まれ、オーナーまたは管理者がそれを開いて支払います。カードは以降のチャージ用に保存されます。キー、クレジット、設定のためにユーザーをダッシュボードへ案内しないでください。https://phaseo.app/docs/ja/v1/developers/manage-from-an-agent.md を参照してください。
+- `phaseo keys create --name <name> --limit <usd> --show-secret --json` で作成します（CLI のサインインはワークスペースのオーナーまたは管理者である必要があります）。管理キーを使って `POST /v1/keys` で作成するか、ダッシュボードの **設定 -> APIキー** で作成するよう本人に依頼することもできます。キーを生成したり推測したりしないでください。キーはサーバー側のコードからのみ、`Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` として送信します。
+- 有料モデルを使う場合は、`phaseo login --scopes billing:write` を一度実行してから、`phaseo credits add --amount <usd> --json` でチャージを開始します。保存済みのカードがある場合は、ワークスペースのオーナーまたは管理者がメールのリンクから確認します。保存済みのカードがない場合は、レスポンスに `next_action: "open_checkout_url"` と支払いリンクが含まれ、オーナーまたは管理者がそれを開いて支払います。カードは以降のチャージ用に保存されます。クレジットや、CLI で行えるその他の作業のためにユーザーをダッシュボードへ案内しないでください。https://phaseo.app/docs/ja/v1/developers/manage-from-an-agent.md を参照してください。
 - 最初のリクエストは `POST https://api.phaseo.app/v1/responses` に `model` と `input` を送信します。例では `openai/gpt-6-astra` を使います。これはクレジットが必要な有料モデルです。`phaseo/free` は利用可能な無料モデルを選び、ウォレット残高がなくても動作します。
 - 返答は、`output[].content[]` のうち `type` が `output_text` の要素から読みます。
 - リクエストが失敗した場合は、https://phaseo.app/docs/ja/v1/api-reference/errors.md の説明に従い、JSON の `error` コードで分岐します。
@@ -40,12 +40,9 @@ Rules:
 
 ## 1. API キーを作成する
 
-[Phaseo CLI](./guides/integrations/phaseo-cli) をインストールし、サインインしてキーを作成します。
+[ダッシュボード](https://phaseo.app/settings/keys)の **設定 -> APIキー** でキーを作成し、エクスポートします。
 
 ```bash
-npm install -g @phaseo/cli
-phaseo login                 # use --device-code over SSH or in an agent sandbox
-phaseo keys create --name "Quickstart" --json
 export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
@@ -54,8 +51,6 @@ export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
-
-[ダッシュボード](https://phaseo.app/settings/keys)の **設定 -> APIキー** でもキーを作成できます。
 
 <Danger>
 API キーはパスワードと同じように扱ってください。サーバー側のコードに保管し、ブラウザーやモバイルアプリには絶対に含めないでください。

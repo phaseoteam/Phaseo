@@ -9,7 +9,7 @@ import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButt
 export default withSettingsResource("trusted-workloads", function TrustedWorkloadsContent({ initialData }: { initialData: SettingsWorkloadIdentityInitialData }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<SettingsPageHeader
 				title={t("trustedWorkloads.title")}
 				description={t("trustedWorkloads.description")}

@@ -12,11 +12,12 @@ CREATE OR REPLACE FUNCTION public.gateway_realtime_extend_hold_once (
   AS $function$
 declare
   v_current_reserved_nanos bigint;
+  v_key_id uuid;
   v_additional_nanos bigint;
   v_budget_status jsonb;
 begin
   perform pg_advisory_xact_lock(hashtextextended(p_workspace_id::text, 0));
-  select reserved_nanos into v_current_reserved_nanos
+  select reserved_nanos, key_id into v_current_reserved_nanos, v_key_id
   from public.gateway_realtime_sessions
   where workspace_id = p_workspace_id and session_id = p_session_id;
   if not found then raise exception 'realtime_session_not_found'; end if;
@@ -24,6 +25,10 @@ begin
   v_additional_nanos := greatest(0, coalesce(p_target_reserved_nanos, 0) - coalesce(v_current_reserved_nanos, 0));
   if v_additional_nanos > 0 then
     v_budget_status := public.gateway_workspace_budget_status(p_workspace_id, v_additional_nanos);
+    if not coalesce((v_budget_status->>'ok')::boolean, true) then
+      raise exception '%', v_budget_status->>'reason';
+    end if;
+    v_budget_status := public.gateway_department_budget_status(p_workspace_id, v_key_id, v_additional_nanos);
     if not coalesce((v_budget_status->>'ok')::boolean, true) then
       raise exception '%', v_budget_status->>'reason';
     end if;

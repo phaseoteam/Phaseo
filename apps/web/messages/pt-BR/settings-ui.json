@@ -1079,7 +1079,15 @@
 		"columnRate": "Taxa",
 		"rateRequests": "{count, plural, one {# solicitação} other {# solicitações}} por minuto",
 		"rateTokens": "{count, plural, one {# token} other {# tokens}} por minuto",
-		"rateConcurrent": "{count, plural, other {# ao mesmo tempo}}"
+		"rateConcurrent": "{count, plural, other {# ao mesmo tempo}}",
+		"columnSpend": "Gastos",
+		"spend": {
+			"daily": "{amount} por dia",
+			"weekly": "{amount} por semana",
+			"monthly": "{amount} por mês"
+		},
+		"spendBlocks": "Bloqueia",
+		"spendNotifies": "Só alertas"
 	},
 	"guardrailWizard": {
 		"title": "Novo guardrail",
@@ -1106,7 +1114,12 @@
 			"sensitiveInfoOff": "Ative pelo menos um padrão de informação sensível, ou remova esta verificação.",
 			"rateLimitEmpty": "Defina pelo menos um limite para continuar.",
 			"rateLimitInvalid": "Os limites devem ser números inteiros maiores que 0.",
-			"rateCountingRequired": "Escolha como os limites contam para continuar."
+			"rateCountingRequired": "Escolha como os limites contam para continuar.",
+			"spendLimitEmpty": "Defina um limite para continuar.",
+			"spendLimitInvalid": "Insira um valor acima de $0.00 com até 2 casas decimais.",
+			"spendPeriodRequired": "Escolha um período para continuar.",
+			"spendActionRequired": "Escolha o que acontece no limite para continuar.",
+			"spendCountingRequired": "Escolha como o limite conta para continuar."
 		},
 		"nameLabel": "Nome",
 		"namePlaceholder": "ex.: Política para terceirizados",
@@ -1208,7 +1221,28 @@
 			"each_key": "Separado para cada chave",
 			"each_end_user": "Separado para cada usuário final"
 		},
-		"summaryRateFailClosed": "Recusa solicitações quando os limites não podem ser verificados"
+		"summaryRateFailClosed": "Recusa solicitações quando os limites não podem ser verificados",
+		"templateSpendLimit": {
+			"name": "Limite de gastos",
+			"body": "Limite os gastos por dia, semana ou mês, com alertas."
+		},
+		"sectionSpend": {
+			"name": "Limite de gastos",
+			"body": "Um limite em dólares por dia, semana ou mês. Um guardrail de gastos não tem outras verificações."
+		},
+		"summarySpendLimit": {
+			"daily": "Até {amount} por dia",
+			"weekly": "Até {amount} por semana",
+			"monthly": "Até {amount} por mês"
+		},
+		"summarySpendAction": {
+			"notify": "Alerta em 80% e 100%, sem bloquear",
+			"block": "Bloqueia solicitações com chave de API no limite"
+		},
+		"summarySpendCounting": {
+			"shared": "Compartilhado por tudo a que está atribuído",
+			"each_key": "Separado para cada chave"
+		}
 	},
 	"broadcastControls": {
 		"optional": "(opcional)",
@@ -2148,6 +2182,8 @@
 		"Completion": "Resposta",
 		"phraseNoIOPayloadIsAvailableForThisRequest": "Não há dados de entrada e saída disponíveis para esta solicitação.",
 		"Technical Details": "Detalhes técnicos",
+		"SVG author": "Autor do SVG",
+		"Image tool": "Ferramenta de imagem",
 		"Pricing": "Preços",
 		"Direct HTTP": "Solicitação HTTP direta",
 		"Data policy": "Política de dados",
@@ -6025,6 +6061,12 @@
 		"voiceProfile": "{language} · {style} · {gender}",
 		"english": "Inglês",
 		"portuguese": "Português",
+		"voiceProfileShort": "{language} · {gender}",
+		"french": "Francês",
+		"german": "Alemão",
+		"hindi": "Hindi",
+		"japanese": "Japonês",
+		"korean": "Coreano",
 		"filipino": "Influência filipina",
 		"brazilian": "Influência brasileira",
 		"southernUs": "Influência do sul dos EUA",
@@ -7190,7 +7232,7 @@
 			"period": "Período",
 			"createTitle": "Adicionar um orçamento de departamento",
 			"editTitle": "Editar orçamento de departamento",
-			"limitHelp": "Quando o gasto do departamento no período chega a este valor, suas solicitações com chave de API são recusadas até o período ser redefinido. Solicitações em lote, em tempo real e OAuth não são bloqueadas. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores são avisados em cerca de 80% e 100%.",
+			"limitHelp": "Quando o gasto do departamento no período chega a este valor, suas solicitações com chave de API são recusadas até o período ser redefinido. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores são avisados em cerca de 80% e 100%.",
 			"saved": "Orçamento de departamento salvo",
 			"deleted": "Orçamento de departamento excluído",
 			"deleteTitle": "Excluir este orçamento de departamento?",
@@ -7387,6 +7429,12 @@
 			"copyRedirectUrl": "Copiar URL de redirecionamento",
 			"scopes": "Escopos do token de bot",
 			"copyScopes": "Copiar escopos",
+			"requestUrls": "URLs de solicitação",
+			"requestUrlsHelp": "As URLs de solicitação próprias deste app. Cole cada uma na configuração correspondente do manifesto do seu app do Slack.",
+			"eventsUrl": "URL de solicitação de Event Subscriptions",
+			"interactionsUrl": "URL de solicitação de Interactivity",
+			"copyEventsUrl": "Copiar a URL de solicitação de Event Subscriptions",
+			"copyInteractionsUrl": "Copiar a URL de solicitação de Interactivity",
 			"appId": "ID do app",
 			"clientId": "ID do cliente",
 			"clientSecret": "Segredo do cliente",
@@ -7651,8 +7699,11 @@
 		"link": {
 			"metaTitle": "Conectar Slack",
 			"title": "Conecte sua conta do Slack",
-			"description": "Isso vincula a conta do Slack que abriu esta página à sua conta da Phaseo, para que o agente da Phaseo saiba quem você é.",
-			"warning": "Continue somente se você abriu este link pela mensagem do agente da Phaseo no Slack.",
+			"description": "Isso vincula a conta do Slack abaixo à sua conta da Phaseo, para que o agente da Phaseo saiba quem você é.",
+			"account": "Conta do Slack: {name} ({id}) em {team}",
+			"accountUnnamed": "Conta do Slack: {id} em {team}",
+			"unknownTeam": "um espaço de trabalho do Slack cujo nome o Slack não informou",
+			"warning": "Continue somente se esta for a sua própria conta do Slack. Se alguém enviou este link para você, não o use: essa conta do Slack agiria como você.",
 			"confirm": "Conectar conta",
 			"confirming": "Conectando…",
 			"missingToken": "Falta o código deste link. Abra-o de novo pela mensagem do agente da Phaseo no Slack.",
@@ -7663,6 +7714,7 @@
 			"close": "Você pode fechar esta página e voltar ao Slack.",
 			"errors": {
 				"expired": "Este link expirou. Peça um novo ao agente da Phaseo no Slack.",
+				"used": "Este link já foi usado. Peça um novo ao agente da Phaseo no Slack.",
 				"invalid": "Este link não é válido. Peça um novo ao agente da Phaseo no Slack.",
 				"notInstalled": "O agente da Phaseo não está mais instalado nesse workspace do Slack.",
 				"wrongWorkspace": "Entre com uma conta do workspace da Phaseo que adicionou o agente ao Slack.",
@@ -8056,6 +8108,44 @@
 		"resume": "Concluir a verificação do cartão",
 		"resumeNotice": "Esta recarga foi confirmada, mas a verificação do cartão pelo banco não foi concluída. Conclua-a para finalizar o pagamento."
 	},
+	"keyRequests": {
+		"title": "Aprovar chave de API",
+		"description": "Um app em que você está conectado pediu uma nova chave de API. Nada é criado até você aprovar aqui.",
+		"requestedBy": "Solicitada por",
+		"workspace": "Workspace",
+		"keyName": "Nome da chave",
+		"dailyLimit": "Limite de gastos diário",
+		"monthlyLimit": "Limite de gastos mensal",
+		"noLimit": "Sem limite",
+		"keyExpires": "A chave expira",
+		"keyLifetime": "{days, plural, one {# dia} other {# dias}} após a aprovação",
+		"requestedAt": "Solicitada",
+		"requestExpires": "Aprovar até",
+		"phaseoAppTitle": "Aprove somente se foi você quem iniciou",
+		"phaseoAppBody": "Aprove somente se você acabou de executar um comando de configuração da CLI da Phaseo. A nova chave vai uma única vez para esse terminal e nunca é exibida aqui.",
+		"otherAppTitle": "Solicitada por {app}, não pela CLI da Phaseo",
+		"otherAppBody": "{app} é um app que usa Entrar com a Phaseo. Aprove somente se você mesmo pediu uma chave a ele. Ele recebe a nova chave uma única vez.",
+		"approve": "Aprovar e criar chave",
+		"approving": "Criando a chave…",
+		"deny": "Recusar",
+		"approvedTitle": "Chave aprovada",
+		"approvedBody": "Volte ao seu terminal: a configuração recebe a chave e é concluída. Você pode alterar os limites ou excluí-la em Configurações, Chaves de API.",
+		"approvingTitle": "Criando a chave",
+		"approvingBody": "Recarregue a página em instantes.",
+		"deniedTitle": "Solicitação recusada",
+		"deniedBody": "Nenhuma chave foi criada. A configuração no seu terminal para de esperar.",
+		"expiredTitle": "Solicitação expirada",
+		"expiredBody": "Nada foi criado. Execute o comando de configuração de novo para pedir uma nova chave.",
+		"forbiddenTitle": "Você não pode criar chaves de API neste workspace",
+		"forbiddenBody": "Somente proprietários e administradores do workspace podem criar chaves de API. Peça uma chave a um deles e passe-a para a configuração com --key.",
+		"notFoundTitle": "Solicitação de chave não encontrada",
+		"notFoundBody": "Entre com a conta que você usou na CLI e abra o link completo que a configuração mostrou.",
+		"errorTitle": "Não foi possível concluir",
+		"keyLimitReached": "Este workspace atingiu o limite de chaves de API. Exclua uma chave que você não usa mais e aprove de novo.",
+		"requestChanged": "Esta solicitação mudou. Recarregue a página e revise de novo.",
+		"notPending": "Esta solicitação já foi respondida ou expirou. Recarregue a página.",
+		"genericError": "Algo deu errado. Tente de novo."
+	},
 	"rateGuardrail": {
 		"title": "Limites de taxa",
 		"description": "Limite solicitações e tokens por minuto, e quantas solicitações rodam ao mesmo tempo.",
@@ -8099,6 +8189,62 @@
 			"rateLimitEmpty": "Defina pelo menos um limite para continuar.",
 			"rateLimitInvalid": "Os limites devem ser números inteiros maiores que 0.",
 			"rateCountingRequired": "Escolha como os limites contam para continuar."
+		}
+	},
+	"spendGuardrail": {
+		"title": "Limite de gastos",
+		"description": "Limite o que as chaves cobertas gastam por dia, semana ou mês.",
+		"limitTitle": "Limite",
+		"limitBody": "O máximo que as chaves cobertas podem gastar em cada período, em dólares americanos.",
+		"limitLabel": "Valor",
+		"limitHelp": "Até 2 casas decimais, por exemplo 25.00.",
+		"invalidLimit": "Insira um valor acima de $0.00 com até 2 casas decimais.",
+		"periodTitle": "Período",
+		"periodBody": "Os períodos são dias corridos em UTC, semanas a partir de segunda-feira e meses. Não há padrão.",
+		"period": {
+			"daily": {
+				"name": "Diário",
+				"body": "Reinicia todos os dias às 00:00 UTC."
+			},
+			"weekly": {
+				"name": "Semanal",
+				"body": "Reinicia toda segunda-feira às 00:00 UTC."
+			},
+			"monthly": {
+				"name": "Mensal",
+				"body": "Reinicia no dia 1 de cada mês às 00:00 UTC."
+			}
+		},
+		"actionTitle": "No limite",
+		"actionBody": "O que acontece quando os gastos chegam ao limite. Proprietários e administradores recebem um push em 80% e em 100% de qualquer forma. Não há padrão.",
+		"action": {
+			"notify": {
+				"name": "Notificar",
+				"body": "Enviar apenas os alertas. As solicitações continuam passando."
+			},
+			"block": {
+				"name": "Bloquear",
+				"body": "Recusar as solicitações com chave de API cobertas até o período reiniciar. Jobs em lote, sessões em tempo real e solicitações OAuth não são bloqueados."
+			}
+		},
+		"countingTitle": "Como conta",
+		"countingBody": "Escolha quem compartilha o limite. Não há padrão.",
+		"counting": {
+			"shared": {
+				"name": "Compartilhado",
+				"body": "Um limite para tudo a que está atribuído. Em um departamento, todas as chaves do departamento o compartilham."
+			},
+			"each_key": {
+				"name": "Cada chave",
+				"body": "Cada chave de API coberta tem seu próprio limite."
+			}
+		},
+		"issue": {
+			"spendLimitEmpty": "Defina um limite para continuar.",
+			"spendLimitInvalid": "Insira um valor acima de $0.00 com até 2 casas decimais.",
+			"spendPeriodRequired": "Escolha um período para continuar.",
+			"spendActionRequired": "Escolha o que acontece no limite para continuar.",
+			"spendCountingRequired": "Escolha como o limite conta para continuar."
 		}
 	}
 }

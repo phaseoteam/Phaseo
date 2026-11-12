@@ -14,7 +14,7 @@ import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { loadOAuthClient } from "@/lib/oauth/service";
-import { canTargetOtherWorkspace, internalServerError, rejectThirdPartyOAuthSpendingChange, requireCapability, type ManagementRouteAuth } from "./route-helpers";
+import { canTargetOtherWorkspace, internalServerError, rejectThirdPartyOAuthAppChange, requireCapability, type ManagementRouteAuth } from "./route-helpers";
 import { MANAGED_KEY_NAMES_FILTER, enforceWorkspaceKeyLimit, isManagedKeyName, isUsableWorkspaceKey } from "./management-helpers";
 
 const RESERVED_KEY_NAME = { error: "bad_request", message: "This key name is reserved for keys Phaseo manages" } as const;
@@ -61,7 +61,8 @@ type KeyUsageRow = {
 	last_used_at?: string | null;
 };
 
-const KEY_COLUMNS = "id, hash, workspace_id, name, prefix, status, scopes, created_by, created_at, updated_at, last_used_at, soft_blocked, expires_at, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos, department_id, storage_locations, ip_allowlist";
+// Never `hash` (the HMAC that checks a key's secret) or `kid`: these columns feed key responses.
+const KEY_COLUMNS = "id, workspace_id, name, prefix, status, scopes, created_by, created_at, updated_at, last_used_at, soft_blocked, expires_at, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos, department_id, storage_locations, ip_allowlist";
 const KEY_WITH_KID_COLUMNS = `${KEY_COLUMNS}, kid`;
 
 const DEFAULT_LIMIT = 100;
@@ -99,6 +100,11 @@ function parsePathId(url: URL): string | null {
 	return decodeURIComponent(candidate).trim() || null;
 }
 
+/**
+ * Keys are looked up by id. A hash is still accepted for lookups, because older responses returned it and
+ * clients (the CLI's `keys get|update|delete <id-or-hash>`, the MCP key tools) may have kept it; no
+ * response returns it any more.
+ */
 function resolveKeyLookupColumn(identifier: string): "id" | "hash" {
 	return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identifier)
 		? "id"
@@ -251,7 +257,6 @@ function formatApiKey(row: KeyRow, usage?: KeyUsageRow) {
 	const selectedUsage = limitReset === "daily" ? dailyCostNanos : limitReset === "weekly" ? weeklyCostNanos : monthlyCostNanos;
 	return {
 		id: row.id,
-		hash: row.hash ?? row.id,
 		workspace_id: row.workspace_id,
 		name: row.name ?? null,
 		label: row.name ?? null,
@@ -445,7 +450,6 @@ async function handleGetCurrentKey(req: Request) {
 				{
 					data: {
 						id: client.id,
-						hash: client.id,
 						workspace_id: auth.value.workspaceId,
 						name: client.name ?? "OAuth session",
 						label: client.name ?? "OAuth session",
@@ -589,7 +593,7 @@ async function handleCreateKey(req: Request) {
 	}
 	const scopeError = requireCapability(auth.value, CAPABILITIES.KEYS_WRITE);
 	if (scopeError) return scopeError;
-	const appError = rejectThirdPartyOAuthSpendingChange(
+	const appError = rejectThirdPartyOAuthAppChange(
 		auth.value,
 		"Apps that use Sign in with Phaseo can't create API keys. The person can create one under Settings, API Keys.",
 	);
@@ -880,7 +884,7 @@ async function handleUpdateKey(req: Request) {
 		// On any key, an app may only rename it: limits, pausing and resuming, expiry, department, IP allowlist
 		// and storage locations are the person's, so an app can't lift what holds its own key or another one.
 		if (Object.keys(updatePayload).some((field) => field !== "name")) {
-			const appError = rejectThirdPartyOAuthSpendingChange(
+			const appError = rejectThirdPartyOAuthAppChange(
 				auth.value,
 				"Apps that use Sign in with Phaseo can only rename API keys. The person can change a key's limits, status and expiry under Settings, API Keys.",
 			);
@@ -1020,7 +1024,7 @@ async function handleRotateKey(req: Request) {
 	const keyId = segments.at(-2)?.trim();
 	if (!keyId) return json({ error: "bad_request", message: "Key id is required" }, 400, { "Cache-Control": "no-store" });
 	// A rotation mints a replacement key, which would start its own month with no consent limit behind it.
-	const appError = rejectThirdPartyOAuthSpendingChange(
+	const appError = rejectThirdPartyOAuthAppChange(
 		auth.value,
 		"Apps that use Sign in with Phaseo can't rotate or replace API keys. The person can rotate a key under Settings, API Keys.",
 	);
@@ -1179,7 +1183,6 @@ async function handleInvalidateKey(req: Request) {
 				ok: true,
 				key: {
 					id: data.id,
-					kid: data.kid ?? null,
 					workspace_id: data.workspace_id,
 					status: data.status,
 				},

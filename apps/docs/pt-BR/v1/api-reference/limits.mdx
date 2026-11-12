@@ -45,7 +45,7 @@ Os limites diários, semanais ou mensais de solicitações e de gastos de uma ch
 
 `Retry-After` não aparece quando o limite não reinicia sozinho, como em um orçamento vitalício ou em uma chave com bloqueio leve. Não tente de novo: aumente o orçamento do espaço de trabalho, aumente o limite da chave ou use outra chave.
 
-Proprietários e administradores do espaço de trabalho gerenciam os orçamentos com `phaseo budgets create|update|delete` ou em [Configurações → Orçamentos](https://phaseo.app/settings/budgets), que mostra o gasto de cada orçamento até agora, a parcela usada, uma projeção para o período e quando ele reinicia. Os orçamentos diários, semanais e mensais reiniciam nos limites UTC: meia-noite, segunda-feira às 00:00 e o dia 1º do mês.
+Proprietários e administradores do espaço de trabalho gerenciam os orçamentos com uma chave de gerenciamento pela `/v1/budgets` ou em [Configurações → Orçamentos](https://phaseo.app/settings/budgets), que mostra o gasto de cada orçamento até agora, a parcela usada, uma projeção para o período e quando ele reinicia. Os orçamentos diários, semanais e mensais reiniciam nos limites UTC: meia-noite, segunda-feira às 00:00 e o dia 1º do mês.
 
 Os [alertas de gastos](../guides/spend-alerts.mdx) podem avisar antes que esses limites sejam atingidos. Uma regra de gastos configurada para bloquear retorna `429` com `spend_rule_blocked`. Ela funciona por melhor esforço e começa alguns minutos depois que o gasto ultrapassa o limite, então use limites de chave e orçamentos para tetos exatos. Um cabeçalho `x-phaseo-spend-warning` indica que um bloqueio pode vir em seguida.
 
@@ -56,9 +56,8 @@ Proprietários e administradores gerenciam os orçamentos de departamento com `p
 
 Quando um departamento esgota o orçamento diário, semanal ou mensal, as solicitações com chave de API que contam para ele retornam `429` com `key_limit_exceeded` e o motivo `department_daily_cost_budget_reached`, `department_weekly_cost_budget_reached` ou `department_monthly_cost_budget_reached`. Os campos `department_id` e `department_name` do corpo identificam o departamento, e `reset_at` e `Retry-After` indicam quando o orçamento reinicia.
 
-- Tarefas em lote, sessões em tempo real e solicitações OAuth não são bloqueadas por orçamentos de departamento.
 - Se a verificação do orçamento estiver indisponível por um breve período, as solicitações são permitidas, então um departamento pode gastar além do orçamento por pouco tempo.
-- Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e novamente em 100% de um orçamento. Esses alertas vêm de dados de uso que podem atrasar até uma hora, então solicitações podem ser recusadas antes de o alerta de 100% chegar.
+- Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e novamente em 100% de um orçamento. Para esses alertas, os orçamentos são verificados a cada 15 minutos, então solicitações podem ser recusadas antes de o alerta de 100% chegar.
 
 <span id="rate-limit-policies"></span>
 ## Políticas de limite de taxa
@@ -72,7 +71,7 @@ Administradores do espaço de trabalho podem criar políticas nomeadas que defin
 | Departamento (`department`) | Tudo o que conta para o departamento (veja abaixo). |
 | Padrão por usuário final (`end_user`) | Cada usuário final recebe a própria cota, identificado pelo campo `user` da solicitação ou pelo cabeçalho `X-Phaseo-User-Id`. Solicitações sem ID de usuário final não são limitadas. |
 
-**O que conta para um departamento.** Uma chave vinculada a um departamento conta apenas para esse departamento. Qualquer outra chave conta para todos os departamentos de que o criador faz parte, e as solicitações OAuth contam para todos os departamentos do usuário. Um membro com substituição de departamento conta apenas para o departamento da substituição. Para que essas chaves e solicitações OAuth contem apenas para o departamento principal da pessoa, defina a atribuição de departamento como principal em [Configurações → Notificações](https://phaseo.app/settings/notifications), com `spend.department_attribution` em `PATCH /v1/notifications/settings` ou com `phaseo notifications settings update --department-attribution primary`. Os orçamentos de departamento e as regras de gastos usam a mesma configuração.
+**O que conta para um departamento.** Uma chave vinculada a um departamento conta apenas para esse departamento. Qualquer outra chave conta para todos os departamentos de que o criador faz parte, e as solicitações OAuth contam para todos os departamentos do usuário. Um membro com substituição de departamento conta apenas para o departamento da substituição. Para que essas chaves e solicitações OAuth contem apenas para o departamento principal da pessoa, defina a atribuição de departamento como principal em [Configurações → Notificações](https://phaseo.app/settings/notifications) ou com `spend.department_attribution` em `PATCH /v1/notifications/settings` e uma chave de gerenciamento. Os orçamentos de departamento e as regras de gastos usam a mesma configuração.
 
 Quando várias políticas se aplicam, cada uma é contabilizada, e a primeira que se esgota rejeita a solicitação. As políticas se aplicam além dos [limites do gateway](#gateway-limits). As alterações de políticas entram em vigor em cerca de um minuto; as alterações de participação em departamentos feitas no painel ou por SCIM podem levar até cerca de cinco minutos.
 
@@ -128,7 +127,7 @@ Regras de limite de taxa para agentes, resumindo esta página:
 
 - As cotas do gateway retornam `429` com o motivo `customer_requests_per_minute` (código `key_limit_exceeded`) ou `free_requests_per_day` (código `phaseo_free_model_limit_exceeded`); aguarde `Retry-After` segundos. Se a aplicação de cotas estiver indisponível, o gateway retorna `503` com orientação para nova tentativa.
 - Limites de chaves e orçamentos retornam `429` com `key_limit_exceeded` e um `reset_at`. Sem `Retry-After`, o limite não reinicia sozinho: aumente o limite ou use outra chave em vez de tentar de novo.
-- Um orçamento de departamento esgotado retorna `429` com `key_limit_exceeded`, o motivo `department_<interval>_cost_budget_reached`, `department_id`, `department_name` e `reset_at`; aguarde `Retry-After` segundos ou aumente o orçamento. Solicitações em lote, em tempo real e OAuth não são bloqueadas por orçamentos de departamento. Se a verificação do orçamento estiver indisponível, a solicitação é permitida.
+- Um orçamento de departamento esgotado retorna `429` com `key_limit_exceeded`, o motivo `department_<interval>_cost_budget_reached`, `department_id`, `department_name` e `reset_at`; aguarde `Retry-After` segundos ou aumente o orçamento. Se a verificação do orçamento estiver indisponível, a solicitação é permitida.
 - Regras de gastos que bloqueiam retornam `429` com `spend_rule_blocked`; aguarde o `Retry-After` ou peça a um proprietário ou administrador que remova o bloqueio. `x-phaseo-spend-warning` indica que um bloqueio pode vir em seguida.
 - As políticas de limite de taxa do espaço de trabalho retornam `429` com `rate_limit_exceeded`, `policy_id` e `limit_scope`. `x-ratelimit-remaining-requests` é aproximado.
 - `Retry-After` pode ser em segundos ou uma data HTTP; valide-o antes de agendar uma nova tentativa. Nunca reenvie uma tarefa de vídeo ou de lote ambígua; verifique o status dela.

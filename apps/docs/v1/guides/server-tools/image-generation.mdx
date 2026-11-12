@@ -62,4 +62,4 @@ Some providers return `b64_json` with base64 image data instead of `imageUrl`. I
 
 ## Usage and pricing
 
-Each image adds 1 to `usage.server_tool_use.image_generation_requests` and can be billed with `server_tool_image_generation_requests`. When the image model reports token usage, it is added to the request's usage and billed at that model's normal rates.
+Each image adds 1 to `usage.server_tool_use.image_generation_requests` and can be billed with `server_tool_image_generation_requests`. The image model is billed at its own rates, as a separate line on the request's bill. A paid image model needs credits even when the calling model is free.

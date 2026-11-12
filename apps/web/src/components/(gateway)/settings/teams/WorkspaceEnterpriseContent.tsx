@@ -27,7 +27,7 @@ function EnterpriseContent({ mode, data }: { mode: Mode; data: TeamsSettingsData
 
 	if (!workspaceId || workspaceId === data.personalTeamId) {
 		return (
-			<div className="space-y-6">
+			<div className="w-full max-w-4xl space-y-8">
 				<SettingsPageHeader title={copy.title} description={copy.description} />
 				<section className="space-y-3 border-y border-border/60 py-5">
 					<div>
@@ -48,7 +48,7 @@ function EnterpriseContent({ mode, data }: { mode: Mode; data: TeamsSettingsData
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className={mode === "directory" || mode === "departments" ? "min-w-0 space-y-8" : "min-w-0 w-full max-w-4xl space-y-8"}>
 			<SettingsPageHeader title={copy.title} description={copy.description} meta={mode === "directory" ? <Badge variant="secondary">{t("headers.membersCount", { count: memberCount })}</Badge> : undefined} />
 			{mode === "directory" || mode === "departments" ? <WorkspaceEnterpriseDirectory
 				mode={mode}

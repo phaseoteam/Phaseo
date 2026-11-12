@@ -542,7 +542,8 @@ describe("runTextGeneratePipeline server tools", () => {
 		await vi.waitFor(() => expect(finalizeRequestMock).toHaveBeenCalledOnce());
 		expect(doRequestWithIRMock).toHaveBeenCalledOnce();
 		const settled = finalizeRequestMock.mock.calls[0]?.[0].exec.result;
-		expect(settled.ir.usage).toMatchObject({ totalTokens: 49 });
+		// The advisor's own tokens are billed on its model's route, not added to the main usage.
+		expect(settled.ir.usage).toMatchObject({ totalTokens: 7 });
 		expect(settled.bill.usage.metrics.advisorRequests).toBe(1);
 	});
 

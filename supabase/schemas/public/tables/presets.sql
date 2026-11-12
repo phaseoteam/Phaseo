@@ -62,6 +62,9 @@ CREATE UNIQUE INDEX presets_workspace_id_slug_idx ON public.presets USING btree 
 
 CREATE INDEX presets_workspace_slug_ci_idx ON public.presets USING btree (workspace_id, lower(slug));
 
+CREATE UNIQUE INDEX presets_workspace_resolution_key ON public.presets USING btree (workspace_id, lower(COALESCE(NULLIF(slug, ''::text), regexp_replace(name, '^@'::text, ''::text))))
+  WHERE (archived_at IS NULL);
+
 CREATE TRIGGER presets_finish_creation
   AFTER INSERT ON public.presets
   FOR EACH ROW
@@ -76,6 +79,25 @@ CREATE TRIGGER presets_sync_legacy_writes
   BEFORE UPDATE OF name, slug, description, config, visibility ON public.presets
   FOR EACH ROW
   EXECUTE FUNCTION public.sync_legacy_preset_writes_to_draft();
+
+CREATE POLICY "presets_no_oauth_client_insert" ON "public"."presets"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "presets_no_oauth_client_update" ON "public"."presets"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "presets_no_oauth_client_delete" ON "public"."presets"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
 
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."presets"
   AS RESTRICTIVE
@@ -123,3 +145,5 @@ GRANT SELECT ("active_version_id", "archived_at", "config", "created_at", "creat
 GRANT SELECT ("active_version_id", "archived_at", "config", "created_at", "created_by", "description", "fork_depth", "id", "name", "root_preset_id", "slug", "source_preset_id", "source_preset_version_id", "updated_at", "upstream_version_id", "versioning_method", "visibility", "workspace_id") ON TABLE "public"."presets" TO "authenticated";
 
 COMMENT ON INDEX "public"."presets_public_workspace_slug_key" IS 'Public preset slugs are unique within their workspace publisher namespace.';
+
+COMMENT ON INDEX "public"."presets_workspace_resolution_key" IS 'The gateway finds a preset by this key, case-insensitively, so it is unique among presets that are not archived.';

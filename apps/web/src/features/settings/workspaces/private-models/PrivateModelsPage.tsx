@@ -14,7 +14,7 @@ export async function getPrivateModelsMetadata() {
 
 export default function PrivateModelsPage() {
 	const t = useTranslations("SettingsUI");
-	return <div className="mx-auto space-y-6">
+	return <div className="min-w-0 space-y-8">
 		<SettingsPageHeader
 			title={t("privateModelsCopy.privateModels")}
 			description={t("privateModelsCopy.privateModelsHelp")}

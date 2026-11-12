@@ -154,6 +154,9 @@ ALTER TABLE "public"."v2_request_facts"
 CREATE INDEX v2_request_facts_app_time_idx ON public.v2_request_facts USING btree (app_id, occurred_at DESC)
   WHERE (app_id IS NOT NULL);
 
+CREATE INDEX v2_request_facts_byok_retention_idx ON public.v2_request_facts USING btree (occurred_at, request_event_id)
+  WHERE (byok AND (NOT (safe_metadata ? 'retention_redacted_at'::text)));
+
 CREATE INDEX v2_request_facts_country_time_idx ON public.v2_request_facts USING btree (edge_country, occurred_at DESC)
   WHERE (edge_country IS NOT NULL);
 

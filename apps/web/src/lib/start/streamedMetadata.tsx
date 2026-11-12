@@ -5,16 +5,24 @@
 import { createIsomorphicFn } from "@tanstack/react-start";
 import { defer, useMatches } from "@tanstack/react-router";
 import { Suspense, use, useEffect } from "react";
+import { COMPLETE_HEAD_HEADER } from "@/lib/start/completeHead";
 import { getCurrentRequest } from "@/lib/start/request-context";
 import { metadataToHead } from "./metadataToHead";
 import type { SerializableMetadata } from "./metadata";
 
 // Bots that read metadata from the first HTML (Googlebot etc. render JS, but still index the
-// first HTML), plus generic crawler words for bots that identify themselves.
-const BOT_USER_AGENT = /Googlebot|Google-|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti|TelegramBot|Embedly|Pinterest|bot\b|crawler|spider/i;
+// first HTML), plus generic crawler words for bots that identify themselves. The `-User`
+// agents are AI assistants fetching a page for a user (Claude-User, ChatGPT-User,
+// Perplexity-User, MistralAI-User); they read the first HTML only.
+const BOT_USER_AGENT = /Googlebot|Google-|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti|TelegramBot|Embedly|Pinterest|Claude-|ChatGPT-|Perplexity-|MistralAI-|DuckAssist|bot\b|crawler|spider/i;
+
+export function wantsCompleteHead(request: Request | undefined): boolean {
+	if (!request) return false;
+	return request.headers.get(COMPLETE_HEAD_HEADER) === "1" || BOT_USER_AGENT.test(request.headers.get("user-agent") ?? "");
+}
 
 const isCrawlerRequest = createIsomorphicFn()
-	.server(() => BOT_USER_AGENT.test(getCurrentRequest()?.headers.get("user-agent") ?? ""))
+	.server(() => wantsCompleteHead(getCurrentRequest()))
 	.client(() => false);
 
 type Metadata = SerializableMetadata | null;
@@ -23,8 +31,8 @@ export type MetadataLoaderData = { metadata?: Metadata; deferredMetadata?: Promi
 
 /** Loader result: awaited metadata for crawlers, a streamed promise for everyone else. */
 export async function metadataLoaderData(promise: Promise<Metadata>): Promise<MetadataLoaderData> {
-	if (isCrawlerRequest()) return { metadata: await promise };
 	// A metadata failure must not fail the page; the title just stays generic.
+	if (isCrawlerRequest()) return { metadata: await promise.catch(() => null) };
 	return { deferredMetadata: defer(promise.catch(() => null)) };
 }
 

@@ -56,25 +56,23 @@ phaseo whoami
 phaseo whoami --json
 ```
 
-## Create keys and manage your workspace
+## Manage your workspace
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
 
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-Use `--json` when an agent or script needs the new key; it's shown only once. The CLI covers the dashboard's management tasks, including billing, budgets, BYOK, routing, and identity. See [Manage Phaseo from an agent](../../developers/manage-from-an-agent) for the command for each task.
+Use `--json` when an agent or script reads the output. The CLI covers everyday account tasks; changes to key limits, budgets, BYOK, routing rules, presets and identity are made in the dashboard or with a management key. See [Manage Phaseo from an agent](../../developers/manage-from-an-agent) for which tasks the CLI covers.
 
 ## Connect a coding agent
 
-Use the agent's name as the command. The CLI creates a dedicated key and writes the agent's configuration:
+Use the agent's name as the command. The CLI asks for a dedicated key, which you approve in your browser, and writes the agent's configuration:
 
 ```bash
 phaseo codex
@@ -95,6 +93,14 @@ phaseo cursor
 ```
 
 Use `--model`, `--catalog all|default`, or `--dry-run` as needed. `phaseo setup <agent>` and `phaseo integrations setup <agent>` also work.
+
+### Approve the key in your browser
+
+The first time you set up an agent, the CLI opens a Phaseo dashboard page and prints its link. The page shows the workspace, the key's name, its $100 monthly spend limit and 90-day expiry, and that the Phaseo CLI asked for it. Choose **Approve and create key**, and the CLI picks up the key once and finishes setup. Choose **Deny**, or leave the request for 10 minutes until it expires, and nothing is created.
+
+Approve while signed in to the dashboard with the account you used in the CLI, as a workspace owner or admin, and with your second factor if you've set one up. Over SSH or in CI, open the printed link on any device where you're signed in.
+
+To use a key you made in the dashboard instead, pass it with `--key <key>`, or with `--key-stdin` to keep it out of your shell history. The CLI checks the key and stores it, and doesn't revoke it when you remove the agent.
 
 To run Cline, Kilo Code, oh-my-pi, Muse Code, or MiniMax Code with temporary settings that are deleted when it exits, use the session runner. Phaseo flags go before `--`, the agent's own flags after it:
 

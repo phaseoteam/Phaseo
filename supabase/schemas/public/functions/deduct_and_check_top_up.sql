@@ -22,8 +22,9 @@ begin
   where workspace_id = p_workspace_id
   for update;
 
+  -- Nothing was debited, so the caller must not record this charge as applied.
   if not found then
-    return json_build_object('status', 'wallet_not_found');
+    raise exception 'wallet_not_found';
   end if;
 
   -- The request has already been served, so its real cost is always charged.

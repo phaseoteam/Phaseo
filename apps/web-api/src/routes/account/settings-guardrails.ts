@@ -38,6 +38,10 @@ export function guardrailRow(payload: GuardrailPayload, includeName = true): Rec
 		["rateConcurrentRequests", "rate_concurrent_requests"],
 		["rateFailClosed", "rate_fail_closed"],
 		["rateCounting", "rate_counting"],
+		["spendLimitNanos", "spend_limit_nanos"],
+		["spendPeriod", "spend_period"],
+		["spendAction", "spend_action"],
+		["spendCounting", "spend_counting"],
 	];
 	for (const [input, column] of fields) if (payload[input] !== undefined) row[column] = payload[input];
 	const ioLoggingUpdated =
@@ -49,11 +53,9 @@ export function guardrailRow(payload: GuardrailPayload, includeName = true): Rec
 	if (typeof payload.ioLoggingEnabled === "boolean") {
 		row.io_logging_enabled = payload.ioLoggingEnabled;
 	}
+	// Extended retention (over 90 days) is not billed yet, so every workspace keeps 90 days.
 	if (typeof payload.ioLoggingRetentionDays === "number") {
-		row.io_logging_retention_days = Math.max(
-			90,
-			Math.min(365, Math.trunc(payload.ioLoggingRetentionDays)),
-		);
+		row.io_logging_retention_days = 90;
 	}
 	if (typeof payload.ioLoggingIncludeProviderPayloads === "boolean") {
 		row.io_logging_include_provider_payloads =
@@ -114,8 +116,7 @@ export function protectedGuardrailError(error: unknown): { error: "guardrail_pro
 export const GUARDRAIL_KINDS = ["access", "safety", "spend", "rate"] as const;
 export type GuardrailKind = (typeof GUARDRAIL_KINDS)[number];
 
-/** Spend guardrails have no settings yet (they come with a later phase), so only these can be written. */
-const WRITABLE_GUARDRAIL_KINDS: ReadonlySet<GuardrailKind> = new Set(["access", "safety", "rate"]);
+const WRITABLE_GUARDRAIL_KINDS: ReadonlySet<GuardrailKind> = new Set(GUARDRAIL_KINDS);
 
 export const RATE_COUNTINGS = ["shared", "each_key", "each_end_user"] as const;
 const RATE_LIMIT_MAX = { rateRequestsPerMinute: 2_147_483_647, rateTokensPerMinute: Number.MAX_SAFE_INTEGER, rateConcurrentRequests: 2_147_483_647 } as const;
@@ -136,6 +137,34 @@ export function rateFieldsError(payload: GuardrailPayload, creatingRate: boolean
 	if (creatingRate) {
 		if (!Object.keys(RATE_LIMIT_MAX).some((field) => payload[field] != null)) return "Set at least one of rateRequestsPerMinute, rateTokensPerMinute or rateConcurrentRequests";
 		if (payload.rateCounting === undefined) return "Choose how the rate guardrail counts (rateCounting)";
+	}
+	return null;
+}
+
+export const SPEND_PERIODS = ["daily", "weekly", "monthly"] as const;
+export const SPEND_ACTIONS = ["notify", "block"] as const;
+export const SPEND_COUNTINGS = ["shared", "each_key"] as const;
+const SPEND_CHOICES = { spendPeriod: SPEND_PERIODS, spendAction: SPEND_ACTIONS, spendCounting: SPEND_COUNTINGS } as const;
+
+/**
+ * Problems with a payload's spend fields, or null. A new spend guardrail sets all four, since none
+ * has a default: a limit in nanodollars (a positive whole number), a period, notify or block, and
+ * how it counts. The table refuses spend fields on other kinds and other rules on spend ones.
+ */
+export function spendFieldsError(payload: GuardrailPayload, creatingSpend: boolean): string | null {
+	const limit = payload.spendLimitNanos;
+	if (limit !== undefined && (typeof limit !== "number" || !Number.isSafeInteger(limit) || limit <= 0)) {
+		return "spendLimitNanos must be a positive whole number of nanodollars";
+	}
+	for (const [field, choices] of Object.entries(SPEND_CHOICES)) {
+		const value = payload[field];
+		if (value !== undefined && !(choices as readonly unknown[]).includes(value)) return `${field} must be one of ${choices.join(", ")}`;
+	}
+	if (creatingSpend) {
+		if (limit === undefined) return "Set the spend limit (spendLimitNanos)";
+		if (payload.spendPeriod === undefined) return "Choose the period (spendPeriod)";
+		if (payload.spendAction === undefined) return "Choose what happens at the limit (spendAction)";
+		if (payload.spendCounting === undefined) return "Choose how the spend guardrail counts (spendCounting)";
 	}
 	return null;
 }
@@ -167,7 +196,7 @@ export function guardrailKindForWrite(payload: GuardrailPayload, mode: "create" 
 	if (payload.kind === undefined || payload.kind === null) return { kind: mode === "create" ? inferGuardrailKind(payload) : null };
 	const kind = String(payload.kind).trim().toLowerCase();
 	if (!(GUARDRAIL_KINDS as readonly string[]).includes(kind)) return { error: `kind must be one of ${GUARDRAIL_KINDS.join(", ")}` };
-	if (!WRITABLE_GUARDRAIL_KINDS.has(kind as GuardrailKind)) return { error: "Spend guardrails are not available yet" };
+	if (!WRITABLE_GUARDRAIL_KINDS.has(kind as GuardrailKind)) return { error: `kind must be one of ${GUARDRAIL_KINDS.join(", ")}` };
 	return { kind: kind as GuardrailKind };
 }
 
@@ -323,7 +352,7 @@ accountSettingsGuardrailsRouter.post("/guardrails", async (c) => {
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const kind = guardrailKindForWrite(body, "create");
 	if ("error" in kind) return c.json({ error: kind.error }, 400, PRIVATE_NO_STORE_HEADERS);
-	const rateError = rateFieldsError(body, kind.kind === "rate");
+	const rateError = rateFieldsError(body, kind.kind === "rate") ?? spendFieldsError(body, kind.kind === "spend");
 	if (rateError) return c.json({ error: rateError }, 400, PRIVATE_NO_STORE_HEADERS);
 	try {
 		const result = await context.client.from("workspace_guardrails").insert({ workspace_id: context.workspaceId, ...guardrailRow(body), kind: kind.kind }).select("id,kind").maybeSingle();
@@ -339,7 +368,7 @@ accountSettingsGuardrailsRouter.put("/guardrails/:guardrailId", async (c) => {
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const kind = guardrailKindForWrite(body, "update");
 	if ("error" in kind) return c.json({ error: kind.error }, 400, PRIVATE_NO_STORE_HEADERS);
-	const rateError = rateFieldsError(body, false);
+	const rateError = rateFieldsError(body, false) ?? spendFieldsError(body, false);
 	if (rateError) return c.json({ error: rateError }, 400, PRIVATE_NO_STORE_HEADERS);
 	try {
 		const result = await context.client.from("workspace_guardrails").update({ ...guardrailRow(body), ...(kind.kind ? { kind: kind.kind } : {}) })

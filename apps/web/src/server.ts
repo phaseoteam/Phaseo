@@ -2,6 +2,7 @@
 // site answers or the request passes through to the previous site, then
 // TanStack Start handles everything served here.
 import { createServerEntry, createStartHandler, defaultStreamHandler } from "@tanstack/react-start/server";
+import { withMarkdownForAgents } from "@/lib/markdown/markdownForAgents";
 import { decideCanary, markResponse } from "@/lib/start/canary";
 
 const startFetch = createStartHandler(defaultStreamHandler);
@@ -15,7 +16,8 @@ export default createServerEntry({
 			// site), not back into this Worker.
 			return markResponse(await fetch(request), "previous", decision.setCookies);
 		}
-		const response = await startFetch(request, opts);
+		// Pages are also served as Markdown to agents (lib/markdown).
+		const response = await withMarkdownForAgents(request, (pageRequest) => startFetch(pageRequest, opts));
 		return markResponse(response, "this", decision.setCookies);
 	},
 });

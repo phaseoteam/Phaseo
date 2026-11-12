@@ -55,25 +55,23 @@ phaseo whoami
 phaseo whoami --json
 ```
 
-## キーを作成してワークスペースを管理する
+## ワークスペースを管理する
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
 
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-エージェントやスクリプトが新しいキーを必要とする場合は `--json` を使います。キーは 1 回しか表示されません。CLI は、請求、予算、BYOK、ルーティング、ID など、ダッシュボードの管理作業に対応しています。各作業のコマンドについては、[エージェントから Phaseo を管理する](../../developers/manage-from-an-agent)を参照してください。
+エージェントやスクリプトが出力を読み取る場合は `--json` を使います。CLI は日常的なアカウント作業に対応しています。キーの上限、予算、BYOK、ルーティングルール、プリセット、ID の変更は、ダッシュボードまたは管理キーで行います。CLI が対応する作業は [エージェントから Phaseo を管理する](../../developers/manage-from-an-agent) を参照してください。
 
 ## コーディングエージェントを接続する
 
-エージェントの名前をコマンドとして使います。CLI は専用のキーを作成し、エージェントの設定を書き込みます。
+エージェントの名前をコマンドとして使います。CLI は専用のキーを要求し、ブラウザーで承認されるとエージェントの設定を書き込みます。
 
 ```bash
 phaseo codex
@@ -94,6 +92,14 @@ phaseo cursor
 ```
 
 必要に応じて `--model`、`--catalog all|default`、`--dry-run` を使います。`phaseo setup <agent>` と `phaseo integrations setup <agent>` も使えます。
+
+### ブラウザーでキーを承認する
+
+エージェントを初めてセットアップすると、CLI は Phaseo ダッシュボードのページを開き、そのリンクを表示します。ページには、ワークスペース、キー名、月額 $100 の利用上限と 90 日の有効期限、そして Phaseo CLI からの要求であることが表示されます。**承認してキーを作成** を選ぶと、CLI がキーを一度だけ受け取り、セットアップを完了します。**拒否** を選ぶか、10 分経って要求の期限が切れた場合は、何も作成されません。
+
+CLI で使ったアカウントでダッシュボードにサインインし、ワークスペースのオーナーまたは管理者として承認してください。2 要素認証を設定している場合は、その確認も必要です。SSH や CI では、表示されたリンクをサインイン済みの任意のデバイスで開いてください。
+
+代わりにダッシュボードで作成したキーを使うには、`--key <key>` で渡します。シェルの履歴に残したくない場合は `--key-stdin` を使います。CLI はキーを確認して保存しますが、エージェントを削除してもそのキーは取り消しません。
 
 終了時に削除される一時的な設定で Cline、Kilo Code、oh-my-pi、Muse Code、MiniMax Code を実行するには、セッションランナーを使います。Phaseo のフラグは `--` の前に、エージェント自体のフラグは `--` の後に指定します。
 

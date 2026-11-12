@@ -3,7 +3,7 @@ import { useTranslations } from "@/i18n/react";
 export default function ByokProviderLoading() {
 	const t = useTranslations("SettingsUI.labels");
 	return (
-		<div className="mx-auto animate-pulse space-y-8" aria-label={t("loading")}>
+		<div className="min-w-0 animate-pulse space-y-8" aria-label={t("loading")}>
 			<div className="space-y-5">
 				<div className="h-5 w-36 rounded-md bg-muted" />
 				<div className="flex items-center justify-between gap-4">

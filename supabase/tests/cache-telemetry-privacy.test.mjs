@@ -36,9 +36,12 @@ try {
   ]) {
     await db.exec(await readFile(new URL(`../schemas/public/functions/${name}.sql`, import.meta.url), 'utf8'));
   }
+  // Cache telemetry is any request with input tokens: zero meters are never written, so a
+  // request without a cached row is a cache miss. Only request 1 hits the cache.
   for (const telemetryCount of [1,19,20]) {
-    await db.exec(`delete from public.v2_request_usage where meter_key='cached_input_tokens';
-      insert into public.v2_request_usage select n::text,'cached_input_tokens',20 from generate_series(1,${telemetryCount}) n;`);
+    await db.exec(`delete from public.v2_request_usage;
+      insert into public.v2_request_usage select n::text,'input_tokens',100 from generate_series(1,${telemetryCount}) n;
+      insert into public.v2_request_usage values ('1','cached_input_tokens',20);`);
     for (const [filter, minimum] of [[unfiltered, 1], [filtered, 20]]) {
       const published = telemetryCount >= minimum;
       const cached = (await db.query(`select public.get_v2_model_cached_input_metrics('model', ${filter}) data`)).rows[0].data;
@@ -52,9 +55,17 @@ try {
           if (!published) assert.equal(rows[0][field], null, `${name} leaked ${field} at ${telemetryCount} (${filter})`);
           else assert.notEqual(rows[0][field], null, `${name} suppressed a publishable cohort at ${telemetryCount} (${filter})`);
         }
+        if (published) {
+          // Misses count: 20 cached of ${telemetryCount} x 100 input tokens.
+          assert.equal(Number(rows[0].cache_telemetry_requests), telemetryCount, `${name} telemetry at ${telemetryCount} (${filter})`);
+          assert.equal(Number(rows[0].cache_hit_requests), 1, `${name} hits at ${telemetryCount} (${filter})`);
+          assert.ok(Math.abs(Number(rows[0].cached_input_pct) - 2000 / telemetryCount / 100) < 0.01, `${name} cached share at ${telemetryCount} (${filter})`);
+        }
       }
     }
   }
+  await db.exec(`delete from public.v2_request_usage;
+    insert into public.v2_request_usage select request_event_id,'input_tokens',100 from public.v2_request_facts;`);
   for (const requestCount of [20,19,1]) {
     await db.exec(`delete from public.v2_request_facts where request_event_id::int > ${requestCount}`);
     for (const [filter, minimum] of [[unfiltered, 1], [filtered, 20]]) {

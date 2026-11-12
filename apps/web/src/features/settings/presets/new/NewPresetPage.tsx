@@ -7,6 +7,7 @@ import PresetEditorContent from "../PresetEditorContent";
 import { useSuspenseQueries } from "@tanstack/react-query";
 import { settingsApiProvidersQuery, settingsPresetModelsQuery } from "../../catalog.queries";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { getTranslations } from "@/i18n/server";
 import { useTranslations } from "@/i18n/react";
 
@@ -18,7 +19,7 @@ export async function getNewPresetMetadata() {
 export default function NewPresetPage() {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<Link
 				href="/settings/presets"
 				className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -37,17 +38,7 @@ export default function NewPresetPage() {
 				</AlertDescription>
 			</Alert>
 
-			<div className="flex items-center justify-between">
-				<div>
-					<div className="flex items-center gap-2">
-						<h1 className="text-2xl font-bold">{t("headers.newPreset")}</h1>
-						<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>
-					</div>
-					<p className="text-sm text-muted-foreground mt-1">
-						{t("headers.newPresetDescription")}
-					</p>
-				</div>
-			</div>
+			<SettingsPageHeader title={t("headers.newPreset")} description={t("headers.newPresetDescription")} meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>} />
 
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<NewPresetContent />

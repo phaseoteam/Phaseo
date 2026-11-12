@@ -4,3 +4,5 @@ badge: "Beta"
 openapi: "/de/openapi/v1/openapi.localized.yaml DELETE /identity/scim/tokens/{id}"
 ---
 <Note>Für die Identitätsverwaltung ist eine Owner- oder Admin-Identität erforderlich. Zum Aktivieren von SSO oder SCIM und zum Erstellen von Provisioning-Tokens wird das Identity-Add-on benötigt.</Note>
+
+Nur der Workspace-Inhaber kann die SCIM-Bereitstellung ändern sowie deren Tokens erstellen und widerrufen. SCIM-Anfragen werden nur mit einem Token angenommen, den der aktuelle Workspace-Inhaber erstellt hat. Hat ein Admin oder ein früherer Inhaber deinen Token erstellt, muss der Inhaber einen neuen erstellen.

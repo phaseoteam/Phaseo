@@ -68,4 +68,4 @@ Se a chamada não puder ser executada, o modelo recebe `subagent_invalid_request
 
 ## Uso e preços
 
-Cada chamada soma 1 a `usage.server_tool_use.subagent_requests` e pode ser cobrada com `server_tool_subagent_requests`. Os tokens do trabalhador são somados ao uso da solicitação e cobrados com os preços do modelo trabalhador. Para obter uma revisão em vez de delegar trabalho, use o [Advisor](./advisor).
+Cada chamada soma 1 a `usage.server_tool_use.subagent_requests` e pode ser cobrada com `server_tool_subagent_requests`. Os tokens do modelo auxiliar são cobrados pelos preços desse modelo, como uma linha separada na cobrança da solicitação, e não são somados aos tokens do modelo que o chama. Um modelo auxiliar pago exige créditos mesmo quando o modelo que o chama é gratuito. Para obter uma revisão em vez de delegar o trabalho, use o [Advisor](./advisor).

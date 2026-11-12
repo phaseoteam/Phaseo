@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import Link from "@/components/link";
 import { useLocale, useTranslations } from "@/i18n/react";
-import { Boxes, Check, EyeOff, Gauge, Plus, ScanText, Server, ShieldAlert, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Boxes, Check, EyeOff, Gauge, Plus, ScanText, Server, ShieldAlert, ShieldCheck, Wallet, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,6 +37,7 @@ const TEMPLATE_ICONS: Record<GuardrailTemplateId, LucideIcon> = {
 	"block-prompt-injection": ShieldAlert,
 	"redact-personal-info": ScanText,
 	"rate-limit": Gauge,
+	"spend-limit": Wallet,
 };
 
 const TEMPLATE_COPY: Record<GuardrailTemplateId, string> = {
@@ -47,6 +48,7 @@ const TEMPLATE_COPY: Record<GuardrailTemplateId, string> = {
 	"block-prompt-injection": "templateBlockPromptInjection",
 	"redact-personal-info": "templateRedactPersonalInfo",
 	"rate-limit": "templateRateLimit",
+	"spend-limit": "templateSpendLimit",
 };
 
 const SECTION_COPY: Record<WizardSection, string> = {
@@ -54,6 +56,7 @@ const SECTION_COPY: Record<WizardSection, string> = {
 	"prompt-injection": "sectionPromptInjection",
 	"sensitive-info": "sectionSensitiveInfo",
 	rate: "sectionRate",
+	spend: "sectionSpend",
 };
 
 /**
@@ -86,9 +89,10 @@ export default function GuardrailCreateWizard(props: {
 	const stepIndex = WIZARD_STEPS.indexOf(step);
 	const reachableIndex = WIZARD_STEPS.indexOf(reachable);
 	const draft = useMemo(() => draftGuardrailRow(props.form, "draft", props.sections), [props.form, props.sections]);
-	// One kind per guardrail: once rate is chosen nothing else can be added, and rate can't be added to other checks.
+	// One kind per guardrail: once rate or spend is chosen nothing else can be added, and neither can be added to other checks.
+	const ownKind = (section: WizardSection) => section === "rate" || section === "spend";
 	const addable = WIZARD_SECTIONS.filter((section) => !props.sections.includes(section)
-		&& !(props.sections.length && (section === "rate" || props.sections.includes("rate"))));
+		&& !(props.sections.length && (ownKind(section) || props.sections.some(ownKind))));
 
 	function issueText(value: WizardIssue): string {
 		return typeof value === "string" ? tx(`issue.${value}`) : value.sensitiveRule;

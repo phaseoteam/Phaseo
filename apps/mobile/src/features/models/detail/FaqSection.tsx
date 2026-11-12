@@ -3,8 +3,8 @@ import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
 import { useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
-import { Icon, Text } from "@/components/ui";
+import { Pressable, View } from "react-native";
+import { HorizontalScroll, Icon, Text } from "@/components/ui";
 import { getOrganisationModels } from "@/lib/api/models";
 import { cn } from "@/lib/cn";
 import { WEB_ORIGIN } from "@/lib/config";
@@ -58,7 +58,7 @@ export function OtherModels({ modelId, organisationId }: { modelId: string; orga
   return (
     <View>
       {others.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-3 px-4" snapToInterval={232} decelerationRate="fast">
+        <HorizontalScroll contentContainerClassName="gap-3 px-4" snapToInterval={232} decelerationRate="fast">
           {others.map((model) => (
             <Pressable key={model.model_id} accessibilityRole="link" onPress={() => router.push(`/models/${model.model_id}`)} className={cn("w-[220px] rounded-md border border-border bg-muted/20 px-3 py-3 active:bg-accent")}>
               <Text variant="label" numberOfLines={1}>{model.name ?? model.model_id}</Text>
@@ -66,7 +66,7 @@ export function OtherModels({ modelId, organisationId }: { modelId: string; orga
               <Text variant="caption" className="mt-3">{model.primary_date ? formatCalendarDate(model.primary_date) : "Undated"}</Text>
             </Pressable>
           ))}
-        </ScrollView>
+        </HorizontalScroll>
       ) : (
         <Text variant="muted" className="px-4">No additional models from this creator are available yet.</Text>
       )}

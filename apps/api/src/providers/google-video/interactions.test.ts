@@ -7,6 +7,7 @@ import {
 	buildGoogleOmniInteractionRequest,
 	estimateGoogleOmniUsageMeters,
 	googleInteractionUsageMeters,
+	googleOmniMaxSeconds,
 	isGoogleOmniVideoModel,
 	normalizeGoogleInteractionVideoPayload,
 	normalizeGoogleOmniRequest,
@@ -39,6 +40,18 @@ describe("Gemini Omni request", () => {
 	it("defaults to 8 seconds of 720p 16:9", () => {
 		const request = normalizeGoogleOmniRequest(ir({}));
 		expect(request).toMatchObject({ seconds: 8, resolution: "720p", aspectRatio: "16:9", outputCount: 1, inputImageCount: 0 });
+	});
+
+	it("allows up to 15 seconds from Omni 1.2 and keeps 1.1 at 10", () => {
+		expect(googleOmniMaxSeconds("gemini-omni-1.1-flash")).toBe(10);
+		expect(googleOmniMaxSeconds("gemini-omni-flash-preview")).toBe(10);
+		expect(googleOmniMaxSeconds("models/gemini-omni-1.2-flash")).toBe(15);
+		expect(googleOmniMaxSeconds("gemini-omni-2.0-flash")).toBe(15);
+		expect(googleOmniMaxSeconds(undefined)).toBe(10);
+		expect(normalizeGoogleOmniRequest(ir({ model: "gemini-omni-1.2-flash", seconds: 15 })).seconds).toBe(15);
+		expect(normalizeGoogleOmniRequest(ir({ seconds: 8 }), "gemini-omni-1.2-flash").seconds).toBe(8);
+		expect(() => normalizeGoogleOmniRequest(ir({ model: "gemini-omni-1.2-flash", seconds: 16 }))).toThrow("3 to 15");
+		expect(() => normalizeGoogleOmniRequest(ir({ model: "gemini-omni-1.1-flash", seconds: 15 }))).toThrow("3 to 10");
 	});
 
 	it.each([

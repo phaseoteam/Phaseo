@@ -62,4 +62,4 @@ flowchart LR
 
 ## 用量和价格
 
-每次调用会使 `usage.server_tool_use.fusion_requests` 加 1，并可按 `server_tool_fusion_requests` 计费。每次分析调用和分析师调用的 token 都会计入请求的用量，并按对应模型的价格计费。
+每次调用会使 `usage.server_tool_use.fusion_requests` 加 1，并可通过 `server_tool_fusion_requests` 计费。每次分析和分析师调用都按其模型的费率计费，作为请求账单中的单独一项，其 token 不会计入调用模型的 token 数。即使调用模型免费，使用付费模型也需要账户有余额。

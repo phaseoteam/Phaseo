@@ -29,6 +29,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SwapTeam } from "@/lib/workspace/actions";
+import { confirmWorkspaceSwitch } from "@/lib/workspace/switchGuard";
 import { CurrentUserAvatar } from "../ui/current-user-avatar";
 import { cn } from "@/lib/utils";
 import { getLondonInfo, getSupportAvailability } from "@/lib/support/schedule";
@@ -112,6 +113,7 @@ export default function TeamSwitcher({
 
 	async function handleWorkspaceSelect(team: { id: string; name: string }) {
 		if (team.id === activeWorkspaceId) return true;
+		if (!await confirmWorkspaceSwitch()) return false;
 
 		const previous = activeWorkspaceId;
 		setActiveTeamId(team.id);

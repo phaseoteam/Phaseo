@@ -31,7 +31,7 @@ A custom webhook gets a signing secret when you create it. Copy it from the dial
 </Step>
 </Steps>
 
-From the CLI, run `phaseo notifications destinations create`, check it with `phaseo notifications destinations test <id>`, then choose which alerts it receives with `phaseo notifications routes set <event-kind> --destination-ids <id>`.
+To script it, create the destination with `POST /v1/notifications/destinations`, test it with `POST /v1/notifications/destinations/{id}/test`, then choose which alerts it receives with `PUT /v1/notifications/routes/{eventKind}`, using a management key.
 
 Use mentions sparingly: send high-volume alerts to a monitored channel rather than paging a broad group.
 

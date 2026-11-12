@@ -1,5 +1,6 @@
 import { updateNativeActionText } from "../shared/nativeActions";
 import { messageRange, TaskEntries, taskEntriesSchema, type EntryOffsets } from "./taskEntries";
+import { textPrefilter } from "./textPrefilter";
 import { existsSync, renameSync } from "node:fs";
 import { BrowserDownloadStore } from "./browserDownloadStore";
 import { settleBlocker, snoozeBlocker } from "../shared/threadLifecycle";
@@ -419,17 +420,17 @@ export class WorkspaceStore {
 	 * the text around the match. Summed and cut in SQL, so a large history never crosses to JavaScript.
 	 */
 	searchMessages(value: unknown): MessageSearchHit[] {
-		const { query, limit } = validateMessageSearchQuery(value);
+		const { query, limit } = validateMessageSearchQuery(value), prefilter = textPrefilter("data", "pattern", query);
 		const rows = this.statement(`SELECT task_id, title, project_id, message_id, role, created_at, matches,
 			replace(replace((CASE WHEN at > 61 THEN '…' ELSE '' END) || substr(text, max(1, at - 60), 180) || (CASE WHEN length(text) >= max(1, at - 60) + 180 THEN '…' ELSE '' END), char(10), ' '), char(13), ' ') AS snippet
 		FROM (
 			SELECT tasks.id AS task_id, json_extract(tasks.data, '$.title') AS title, json_extract(tasks.data, '$.projectId') AS project_id, json_extract(tasks.data, '$.updatedAt') AS updated_at,
 				m.id AS message_id, m.role AS role, m.text AS text, json_extract(m.data, '$.createdAt') AS created_at, instr(history_lower(m.text), $needle) AS at,
 				row_number() OVER (PARTITION BY m.task_key ORDER BY m.rowid DESC) AS place, count(*) OVER (PARTITION BY m.task_key) AS matches
-			FROM (SELECT rowid, task_key, id, role, data, json_extract(data, '$.text') AS text FROM task_entries WHERE kind = 0 AND role IN ('user', 'assistant')) AS m
+			FROM (SELECT rowid, task_key, id, role, data, json_extract(data, '$.text') AS text FROM task_entries WHERE kind = 0 AND role IN ('user', 'assistant') AND ${prefilter.sql}) AS m
 			JOIN tasks ON tasks.key = m.task_key
 			WHERE json_extract(tasks.data, '$.delegation') IS NULL AND instr(history_lower(m.text), $needle) > 0
-		) WHERE place = 1 ORDER BY updated_at DESC LIMIT $limit`).all({ needle: query.toLowerCase(), limit }) as { task_id: string; title: string; project_id: string | null; message_id: string; role: "user" | "assistant"; created_at: string | null; matches: number; snippet: string }[];
+		) WHERE place = 1 ORDER BY updated_at DESC LIMIT $limit`).all({ needle: query.toLowerCase(), limit, ...prefilter.params }) as { task_id: string; title: string; project_id: string | null; message_id: string; role: "user" | "assistant"; created_at: string | null; matches: number; snippet: string }[];
 		return rows.map(row => ({ taskId: row.task_id, title: row.title, ...(row.project_id ? { projectId: row.project_id } : {}), messageId: row.message_id, role: row.role, snippet: row.snippet, ...(row.created_at ? { createdAt: row.created_at } : {}), matches: row.matches }));
 	}
 	/** Records what GitHub last said about a pull request on every chat linking it. True when anything changed. */
@@ -741,21 +742,21 @@ export class WorkspaceStore {
 		return { version: 1, projects: this.getProjects(), accounts: this.getAccounts(), agents: this.getAgents(), mcpConnections: this.getMcpConnections().map(publicMcpConnection), tasks: tasks.sort(overviewOrder) };
 	}
 	taskHistory(value: unknown): TaskHistoryPage {
-		const { query, archived, offset, limit, projectId } = validateTaskHistoryQuery(value);
+		const { query, archived, offset, limit, projectId } = validateTaskHistoryQuery(value), prefilter = textPrefilter("message.data", "pattern", query);
 		const rows = this.statement(`SELECT json_object(
 			'id', id, 'title', json_extract(data, '$.title'), 'projectId', json_extract(data, '$.projectId'),
 			'harness', json_extract(data, '$.harness'), 'model', json_extract(data, '$.model'), 'status', json_extract(data, '$.status'),
 			'pinned', coalesce(json_extract(data, '$.pinned'), 0), 'updatedAt', json_extract(data, '$.updatedAt')
 		) AS summary FROM tasks
-		WHERE coalesce(json_extract(data, '$.archived'), 0) = ?
+		WHERE coalesce(json_extract(data, '$.archived'), 0) = $archived
 		AND json_extract(data, '$.delegation') IS NULL
-		AND (? = 0 OR (? IS NULL AND json_extract(data, '$.projectId') IS NULL) OR json_extract(data, '$.projectId') = ?)
-		AND (? = '' OR instr(history_lower(json_extract(data, '$.title')), history_lower(?)) > 0
-			OR EXISTS (SELECT 1 FROM task_entries AS message WHERE message.${messageRange("tasks.key")}
-				AND instr(history_lower(json_extract(message.data, '$.text')), history_lower(?)) > 0))
+		AND ($scoped = 0 OR ($project IS NULL AND json_extract(data, '$.projectId') IS NULL) OR json_extract(data, '$.projectId') = $project)
+		AND ($query = '' OR instr(history_lower(json_extract(data, '$.title')), $query) > 0
+			OR EXISTS (SELECT 1 FROM task_entries AS message WHERE message.${messageRange("tasks.key")} AND ${prefilter.sql}
+				AND instr(history_lower(json_extract(message.data, '$.text')), $query) > 0))
 		ORDER BY coalesce(json_extract(data, '$.pinned'), 0) DESC,
-			json_extract(data, '$.updatedAt') DESC, id DESC LIMIT ? OFFSET ?
-		`).all(Number(archived), Number(projectId !== undefined), projectId ?? null, projectId ?? null, query, query, query, limit + 1, offset);
+			json_extract(data, '$.updatedAt') DESC, id DESC LIMIT $limit OFFSET $offset
+		`).all({ archived: Number(archived), scoped: Number(projectId !== undefined), project: projectId ?? null, query: query.toLowerCase(), limit: limit + 1, offset, ...prefilter.params });
 		return { tasks: rows.slice(0, limit).map(row => { const summary = JSON.parse(row.summary as string); return { ...summary, projectId: summary.projectId ?? undefined, pinned: Boolean(summary.pinned) }; }), hasMore: rows.length > limit };
 	}
 	/** A run rebuilt for continuing; earlier steps lack their tool output and `items` only the resumed step's (see AgentRuns). */

@@ -27,7 +27,7 @@ The rules are:
 
 Open **Dashboard -> Settings -> Presets** and create a preset with a slug such as `support-triage`. Add only the defaults every caller should share.
 
-From the CLI: `phaseo presets create --name @support-triage --model <model-id>`.
+To create one from a script, call `POST /v1/presets` with a management key.
 
 </Step>
 
@@ -116,7 +116,7 @@ Choose how release labels look:
 
 Point a named label such as `production` at a version, and move it back to an earlier version to roll back. See [Versions and labels](/v1/guides/prompt-templates#versions-and-labels).
 
-From the CLI: `phaseo presets versions create` and `phaseo presets labels set`, or the `/v1/presets` API.
+From a script, publish with `POST /v1/presets/{id}/versions` and move labels with `PUT /v1/presets/{id}/labels/{label}`, using a management key. A CLI sign-in or an app that uses Sign in with Phaseo can read presets but can't change them.
 
 ## Fork a marketplace preset
 

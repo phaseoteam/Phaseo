@@ -65,7 +65,7 @@ function ActivityTable({ data }: { data: ActivityData }) {
 
 
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<SettingsPageHeader title={t("title")} description={t("description")} />
 			{!data.workspaceId ? (
 				<Alert><AlertTitle>{t("noWorkspaceSelected")}</AlertTitle><AlertDescription>{t("selectWorkspace")}</AlertDescription></Alert>

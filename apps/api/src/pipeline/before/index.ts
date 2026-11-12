@@ -53,6 +53,7 @@ import {
 	validateProviderQualifiedModelProvider,
 } from "../requestRouting";
 import { fetchWorkspacePolicy, applyWorkspacePolicy, providerPermittedByPolicy } from "./workspacePolicy";
+import { normalizeSvgAuthorModel, resolveSvgAuthor } from "@providers/openai/endpoints/images-svg";
 import {
     findModelSuccessor,
     findWorkspaceModelSuccessor,
@@ -1382,6 +1383,32 @@ async function runBeforeRequest(
     }
     presetFilteredProviders = providerQualifiedCandidates.providers;
 
+    const requestedSvgAuthor = endpoint === "images.generations" && mergedBody?.output_format === "svg" && typeof mergedBody?.svg?.model === "string"
+        ? mergedBody.svg.model as string
+        : null;
+    const svgAuthorModel = requestedSvgAuthor ? normalizeSvgAuthorModel(requestedSvgAuthor) : null;
+    // The author must be an OpenAI text model with a Phaseo price, or its tokens could not be billed.
+    // Checked here so the caller gets a plain validation error, not a provider failure.
+    if (requestedSvgAuthor && (!svgAuthorModel || !(await resolveSvgAuthor(requestedSvgAuthor)))) {
+        const description = `svg.model "${requestedSvgAuthor}" is not an OpenAI text model with Phaseo pricing. Use an OpenAI model id such as openai/gpt-5-nano.`;
+        return {
+            ok: false,
+            response: err("validation_error", {
+                reason: "invalid_svg_model",
+                description,
+                error_type: "user",
+                error_origin: "user",
+                details: [{
+                    message: description,
+                    path: ["svg", "model"],
+                    keyword: "invalid_svg_model",
+                    params: { model: requestedSvgAuthor },
+                }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
     const workspacePolicyResult = applyWorkspacePolicy({
         providers: presetFilteredProviders,
         resolvedModel: resolvedModel || model,
@@ -1455,6 +1482,45 @@ async function runBeforeRequest(
         };
     }
     presetFilteredProviders = workspacePolicyResult.providers;
+
+    // GPT Image SVG output also runs, and bills, the text model named in svg.model. Hold it to
+    // the same workspace and key model rules as the image model, on the OpenAI routes that run it.
+    if (svgAuthorModel) {
+        const authorPolicy = applyWorkspacePolicy({
+            providers: presetFilteredProviders
+                .filter((candidate) => candidate.providerId === "openai")
+                .map((candidate) => ({ ...candidate, apiModelId: svgAuthorModel })),
+            resolvedModel: svgAuthorModel,
+            body: { ...mergedBody, model: svgAuthorModel },
+            workspacePolicy,
+        });
+        if (!authorPolicy.ok) {
+            const description = `SVG author model "${svgAuthorModel}" is blocked by a workspace policy or guardrail`;
+            return {
+                ok: false,
+                response: err("guardrail_blocked", {
+                    model: resolvedModel || model,
+                    reason: "model_restricted_by_policy",
+                    description,
+                    error_operational_kind: "model_restricted_by_policy",
+                    guardrail: {
+                        type: "route_access",
+                        scope: "workspace",
+                        active_guardrail_ids: authorPolicy.diagnostics.activeGuardrailIds,
+                    },
+                    details: [{
+                        message: description,
+                        path: ["svg", "model"],
+                        keyword: "model_restricted_by_policy",
+                        params: authorPolicy.diagnostics,
+                    }],
+                    routing_diagnostics: { workspacePolicy: authorPolicy.diagnostics },
+                    request_id: requestId,
+                    workspace_id: workspaceId,
+                }),
+            };
+        }
+    }
 
     const { applyPromptInjectionGuardrails } = await import("./promptInjection");
     const promptInjectionResult = applyPromptInjectionGuardrails({

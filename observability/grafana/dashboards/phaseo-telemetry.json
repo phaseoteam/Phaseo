@@ -1,0 +1,400 @@
+{
+  "uid": "phaseo-telemetry",
+  "title": "Phaseo · Telemetry health",
+  "description": "Check Grafana Cloud Billing / Usage for authoritative ingest volume and quotas. These panels monitor the application pipeline and do not estimate billable bytes.",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "tags": [
+    "phaseo",
+    "observability"
+  ],
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "links": [
+    {
+      "title": "Overview",
+      "type": "link",
+      "url": "/d/phaseo-overview?var-environment=$environment",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Gateway",
+      "type": "link",
+      "url": "/d/phaseo-gateway?var-environment=$environment",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Web",
+      "type": "link",
+      "url": "/d/phaseo-web?var-environment=$environment",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Jobs",
+      "type": "link",
+      "url": "/d/phaseo-jobs?var-environment=$environment",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Explore",
+      "type": "link",
+      "url": "/explore"
+    },
+    {
+      "title": "Frontend Observability",
+      "type": "link",
+      "url": "/a/grafana-kowalski-app"
+    },
+    {
+      "title": "Alerts",
+      "type": "link",
+      "url": "/alerting/list"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "loki",
+        "label": "Logs",
+        "type": "datasource",
+        "query": "loki",
+        "refresh": 1
+      },
+      {
+        "name": "environment",
+        "label": "Environment",
+        "type": "custom",
+        "query": "production,staging",
+        "current": {
+          "text": "production",
+          "value": "production"
+        },
+        "options": [
+          {
+            "text": "production",
+            "value": "production",
+            "selected": true
+          },
+          {
+            "text": "staging",
+            "value": "staging",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "name": "request",
+        "label": "Request ID",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        },
+        "hide": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "Annotations & Alerts",
+        "type": "dashboard",
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Received events / second",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (service_name) (rate({service_name=~\"phaseo-.*\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" [$__auto]))",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": "{{service_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Scheduler ticks / 15 minutes",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Independent of request volume. If absent, check Cloudflare cron and Worker console delivery warnings.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-jobs\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.heartbeat\" | __error__=\"\" [15m])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Persistence delivery failures",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Existing application persistence failures. An OTLP outage cannot reliably report itself through the same OTLP destination.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"telemetry.delivery\" | __error__=\"\" [$__auto])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Attempt batches truncated",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Provider attempt detail is capped at 16 per request; the request total is still retained.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", attempts_truncated=\"attempts_truncated\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | attempts_truncated > 0 | __error__=\"\" [$__auto])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Recent heartbeats",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service_name=~\"phaseo-jobs\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.heartbeat\"",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 6,
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 9
+      },
+      "title": "Persistence errors",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"telemetry.delivery\"",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": ""
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showTime": true,
+        "wrapLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending"
+      }
+    }
+  ]
+}

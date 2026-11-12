@@ -172,7 +172,10 @@ type RealtimeSessionResponse = {
 	id?: string;
 	session_id?: string;
 	provider: RealtimeProvider;
+	/** Phaseo model id. */
 	model: string;
+	/** The provider's own model name, for connecting to the provider directly. */
+	provider_model?: string;
 	voice: string;
 	clientSecret: string;
 	expiresAt: string | null;
@@ -1143,8 +1146,14 @@ function RealtimeVoiceSelector({
 	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const t = useTranslations("Product.chatRooms");
 	const localizeVoiceProfile = (description: string) => {
-		const parts: Record<string, string> = { "English": tCopy("english"), "Portuguese": tCopy("portuguese"), "Filipino-influenced": tCopy("filipino"), "Brazilian-influenced": tCopy("brazilian"), "Southern U.S.-influenced": tCopy("southernUs"), "North American-influenced": tCopy("northAmerican"), "Australian-influenced": tCopy("australian"), "Irish-influenced": tCopy("irish"), "British-influenced": tCopy("british"), "Masculine": tCopy("masculine"), "Feminine": tCopy("feminine"), };
-		const [language, style, gender] = description.split(" · ");
+		const parts: Record<string, string> = { "English": tCopy("english"), "Portuguese": tCopy("portuguese"), "French": tCopy("french"), "German": tCopy("german"), "Hindi": tCopy("hindi"), "Japanese": tCopy("japanese"), "Korean": tCopy("korean"), "Filipino-influenced": tCopy("filipino"), "Brazilian-influenced": tCopy("brazilian"), "Southern U.S.-influenced": tCopy("southernUs"), "North American-influenced": tCopy("northAmerican"), "Australian-influenced": tCopy("australian"), "Irish-influenced": tCopy("irish"), "British-influenced": tCopy("british"), "Masculine": tCopy("masculine"), "Feminine": tCopy("feminine"), };
+		const segments = description.split(" · ");
+		// Non-English Live voices are described as "Language · Gender".
+		if (segments.length === 2) {
+			const [shortLanguage, shortGender] = segments;
+			return parts[shortLanguage] && parts[shortGender] ? tCopy("voiceProfileShort", { language: parts[shortLanguage], gender: parts[shortGender] }) : description;
+		}
+		const [language, style, gender] = segments;
 		return parts[language] && parts[style] && parts[gender] ? tCopy("voiceProfile", { language: parts[language], style: parts[style], gender: parts[gender] }) : description;
 	};
 	const selectedVoice =
@@ -2708,6 +2717,8 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 
 	const startGoogle = useCallback(
 		async (session: RealtimeSessionResponse) => {
+			// Gateways before provider_model sent the provider's name in `model`.
+			const googleModel = session.provider_model ?? session.model;
 			const ws = new WebSocket(session.connect.url);
 			webSocketRef.current = ws;
 			let resolveSetupComplete: (() => void) | null = null;
@@ -2793,11 +2804,11 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			ws.send(
 				JSON.stringify({
 					setup: {
-						model: `models/${session.model}`,
+						model: `models/${googleModel}`,
 						generationConfig: {
 							responseModalities: ["AUDIO"],
 							temperature: 0.7,
-							...(session.model === "gemini-3.8-live-extended-thinking"
+							...(googleModel === "gemini-3.8-live-extended-thinking"
 								? { thinkingConfig: { thinkingLevel: googleThinkingLevel.toUpperCase() } }
 								: {}),
 							speechConfig: {

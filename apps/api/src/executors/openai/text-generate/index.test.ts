@@ -91,6 +91,8 @@ describe("openai text executor HTTP mode", () => {
 		expect(mapped.metadata?.phaseo_request_id).toBe("req_openai_http_test");
 		expect(mapped.safety_identifier).toBe("team_test");
 		expect(mock.calls[0]?.bodyJson?.store).toBe(false);
+		expect(mock.calls[0]?.bodyJson?.prompt_cache_key).toMatch(/^ph_[a-f0-9]{60}$/);
+		expect(mock.calls[0]?.bodyJson?.stream_options?.include_obfuscation).not.toBe(false);
 	});
 
 	it("uses native chat completions for OpenAI chat requests without reasoning", async () => {

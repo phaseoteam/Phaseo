@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import { execute } from "../index";
+import { decodeAnthropicMessagesRequest } from "@protocols/anthropic-messages/decode";
 import { assertBedrockMantleBaseUrl } from "../bedrock-utils";
 import { installFetchMock, jsonResponse } from "../../../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, setupTestRuntime, teardownTestRuntime } from "../../../../../tests/helpers/runtime";
@@ -137,6 +138,107 @@ const CLAUDE_STREAM_EVENTS = [
 ];
 
 describe("amazon-bedrock text executor", () => {
+	it.each([
+		{ model: "anthropic.claude-sonnet-5-v1:0", stream: true, eager: true },
+		{ model: "anthropic.claude-sonnet-4-5-v1:0", stream: true, eager: undefined },
+		{ model: "anthropic.claude-sonnet-5-v1:0", stream: false, eager: undefined },
+		...[
+			"global.anthropic.claude-opus-4-7-v1",
+			"us.anthropic.claude-opus-4-8-v1:0",
+			"global.anthropic.claude-opus-5-v1",
+			"us.anthropic.claude-fable-5-v1",
+			"global.anthropic.claude-sonnet-4-6-v1",
+			"us.anthropic.claude-sonnet-5-v1",
+		].flatMap((model) => [
+			{ model, stream: true, eager: true },
+			{ model, stream: false, eager: undefined },
+		]),
+		...[
+			"global.anthropic.claude-opus-4-6-v1",
+			"us.anthropic.claude-opus-4-5-20251101-v1:0",
+			"global.anthropic.claude-sonnet-4-20250514-v1:0",
+			"us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+			"us.anthropic.claude-haiku-4-5-20251001-v1:0",
+			"anthropic.claude-3-5-sonnet-20241022-v2:0",
+			"global.anthropic.claude-opus-6-v1",
+			"global.anthropic.claude-opus-4-70-v1",
+			"global.anthropic.claude-opus-5-9-v1",
+		].map((model) => ({ model, stream: true, eager: undefined })),
+	])("gates eager streaming for Bedrock Messages: $model stream=$stream", async ({ model, stream, eager }) => {
+		const runtime = /^(global|us)\./.test(model);
+		const url = runtime
+			? `https://bedrock-runtime.us-west-2.amazonaws.com/model/${encodeURIComponent(model)}/${stream ? "invoke-with-response-stream" : "invoke"}`
+			: "https://api.bedrock.example/anthropic/v1/messages";
+		const mock = installFetchMock([{
+			match: (requestUrl) => requestUrl === url,
+			response: stream ? (runtime ? eventStreamResponse(CLAUDE_STREAM_EVENTS.map(invokeChunkFrame)) : sseResponse(CLAUDE_STREAM_EVENTS)) : jsonResponse({ id: "msg_1", type: "message", role: "assistant", content: [{ type: "text", text: "hi" }], stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 } }),
+		}]);
+		try {
+			const result = await execute(buildArgs({ model, stream, messages: [], tools: [{ name: "lookup", parameters: { type: "object" } }] }, { endpoint: "messages", protocol: "anthropic.messages" }));
+			if (result.kind === "stream") await new Response(result.stream).text();
+			expect(mock.calls[0].bodyJson.tools[0].eager_input_streaming).toBe(eager);
+		} finally { mock.restore(); }
+	});
+
+	it.each([true, false])("preserves native opt-in cache placement on InvokeModel stream=%s", async (stream) => {
+		const model = "global.anthropic.claude-opus-4-6-v1";
+		const ir = decodeAnthropicMessagesRequest({
+			model, stream, max_tokens: 128,
+			system: "Reusable policy",
+			cache_control: { type: "ephemeral", ttl: "1h" },
+			messages: [0, 1, 2, 3, 4].map((index) => ({
+				role: "user" as const,
+				content: [{ type: "text" as const, text: `Turn ${index}`, ...(index === 0 ? { cache_control: { type: "ephemeral" as const, ttl: "5m" as const } } : {}) }],
+			})),
+		});
+		const original = structuredClone(ir);
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith(stream ? "/invoke-with-response-stream" : "/invoke"),
+			response: stream ? eventStreamResponse(CLAUDE_STREAM_EVENTS.map(invokeChunkFrame)) : jsonResponse({ id: "msg_cache", type: "message", role: "assistant", content: [], stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 } }),
+		}]);
+		try {
+			const result = await execute(buildArgs(ir, { endpoint: "messages", protocol: "anthropic.messages" }));
+			if (result.kind === "stream") await new Response(result.stream).text();
+			const body = mock.calls[0].bodyJson;
+			expect(body.cache_control).toBeUndefined();
+			expect(body.system[0].cache_control).toEqual({ type: "ephemeral", ttl: "1h" });
+			const marked = body.messages.flatMap((message: { content: Array<{ text: string; cache_control?: unknown }> }) => message.content.filter((block) => block.cache_control));
+			expect(marked.map((block: { text: string }) => block.text)).toEqual(["Turn 0", "Turn 3", "Turn 4"]);
+			expect(marked.every((block: { cache_control: { ttl: string } }) => block.cache_control.ttl === "1h")).toBe(true);
+			expect(ir).toEqual(original);
+		} finally { mock.restore(); }
+	});
+
+	it.each([
+		{ model: "global.anthropic.claude-opus-4-6-v1", scope: undefined, automatic: false },
+		{ model: "global.anthropic.claude-opus-4-6-v1", scope: "last_user_message", automatic: false },
+		{ model: "global.anthropic.claude-opus-4-6-v1", scope: "none", automatic: false },
+		{ model: "anthropic.claude-sonnet-5", scope: undefined, automatic: true },
+	].flatMap((scenario) => [true, false].map((stream) => ({ ...scenario, stream }))))(
+		"keeps cache opt-in and scoped controls on $model scope=$scope stream=$stream",
+		async ({ model, scope, automatic, stream }) => {
+			const ir = decodeAnthropicMessagesRequest({
+				model, stream, max_tokens: 128, system: "Policy",
+				...(automatic || scope ? { cache_control: { type: "ephemeral" as const } } : {}),
+				...(scope ? { provider_options: { anthropic: { cache_control: { type: "ephemeral", scope } } } } : {}),
+				messages: [{ role: "user", content: "Question" }],
+			});
+			const mock = installFetchMock([{
+				match: (url) => url.endsWith("/invoke") || url.endsWith("/invoke-with-response-stream") || url.endsWith("/anthropic/v1/messages"),
+				response: stream ? (automatic ? sseResponse(CLAUDE_STREAM_EVENTS) : eventStreamResponse(CLAUDE_STREAM_EVENTS.map(invokeChunkFrame))) : jsonResponse({ id: "msg_cache", type: "message", role: "assistant", content: [], stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 } }),
+			}]);
+			try {
+				const result = await execute(buildArgs(ir, { endpoint: "messages", protocol: "anthropic.messages" }));
+				if (result.kind === "stream") await new Response(result.stream).text();
+				const body = mock.calls[0].bodyJson;
+				expect(body.cache_control).toEqual(automatic ? { type: "ephemeral" } : undefined);
+				expect(body.messages[0].content[0].cache_control).toEqual(scope === "last_user_message" ? { type: "ephemeral" } : undefined);
+				expect(typeof body.system === "string" || !body.system[0].cache_control).toBe(true);
+			} finally { mock.restore(); }
+		},
+	);
+
+
 	beforeAll(() => {
 		setupTestRuntime();
 	});
