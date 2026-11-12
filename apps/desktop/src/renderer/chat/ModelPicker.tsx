@@ -19,9 +19,11 @@ import { harnessNames } from "../../shared/harnessNames";
 export { harnessNames };
 export const MAX_COMPARE = 4;
 
+/** A readable name from a model id, for before a catalog has named it: "claude-haiku-5-5" reads "Claude Haiku 5.5". */
 export function modelLabel(id: string) {
 	const base = id.includes("/") ? id.slice(id.indexOf("/") + 1) : id;
-	return base.replace(/[-_]/g, " ").replace(/\b([a-z])/g, letter => letter.toUpperCase()).replace(/\bGpt\b/g, "GPT");
+	// Single-digit pairs are versions ("5-5" → "5.5"); dates such as "2024-08-06" have multi-digit parts and stay apart.
+	return base.replace(/(?<!\d)(\d)-(\d)(?!\d)/g, "$1.$2").replace(/[-_]/g, " ").replace(/\b([a-z])/g, letter => letter.toUpperCase()).replace(/\bGpt\b/g, "GPT");
 }
 
 export const sameSelection = (a: ModelSelection, b: ModelSelection) => a.harness === b.harness && a.model === b.model && (a.accountId ?? "") === (b.accountId ?? "");

@@ -172,7 +172,8 @@ const quitGuard = new QuitGuard({
 	working: () => workspaceRuntime ? workingChats(workspaceRuntime.store.getOverview().tasks) : 0,
 	ask: async working => {
 		const owner = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows().find(window => !window.isDestroyed());
-		const options = { type: "question" as const, buttons: ["Quit", "Cancel"], defaultId: 1, cancelId: 1, noLink: true, checkboxLabel: "Don't ask again",
+		// Without a title Windows shows the package name ("@phaseo/desktop") in the dialog's title bar.
+		const options = { type: "question" as const, title: "Phaseo", buttons: ["Quit", "Cancel"], defaultId: 1, cancelId: 1, noLink: true, checkboxLabel: "Don't ask again",
 			message: working ? `${working === 1 ? "A chat is" : `${working} chats are`} still working. Quit Phaseo?` : "Quit Phaseo?",
 			detail: working ? "Quitting stops them. Phaseo offers to continue them when it next opens." : "" };
 		const answer = owner ? await dialog.showMessageBox(owner, options) : await dialog.showMessageBox(options);
