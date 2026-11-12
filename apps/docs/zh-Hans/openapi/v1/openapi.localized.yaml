@@ -13312,7 +13312,7 @@ components:
                 $ref: '#/components/schemas/AnthropicSystemTextBlock'
         output_config:
           type: object
-          description: 在不重启提示词缓存的情况下，更改 Claude 在后续轮次中的强度级别。发送时将 `content` 留空，并在后续请求中把该消息保留在原位。不支持逐消息强度的路由会改为把当前生效的级别作为顶层强度。
+          description: 在不重启提示词缓存的情况下，更改 Claude 在后续轮次中的强度级别。在已发送的消息之后发送，将 `content` 留空，并在后续请求中把它保留在原位；插入到更早的位置会改变已缓存的前缀。不支持逐消息强度的路由会改为把当前生效的级别作为顶层强度，这样不会保留缓存。
           required:
             - effort
           properties:

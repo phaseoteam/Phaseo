@@ -13312,7 +13312,7 @@ components:
                 $ref: '#/components/schemas/AnthropicSystemTextBlock'
         output_config:
           type: object
-          description: Change le niveau d’effort de Claude pour les tours suivants sans redémarrer le cache de prompts. Envoyez-le avec un `content` vide et laissez le message en place dans les requêtes suivantes. Les routes sans effort par message reçoivent à la place le niveau en vigueur comme effort de premier niveau.
+          description: Change le niveau d’effort de Claude pour les tours suivants sans redémarrer le cache de prompts. Envoyez-le avec un `content` vide après les messages déjà envoyés, et laissez-le en place dans les requêtes suivantes ; l’insérer plus tôt modifie le préfixe mis en cache. Les routes sans effort par message reçoivent à la place le niveau en vigueur comme effort de premier niveau, ce qui ne conserve pas le cache.
           required:
             - effort
           properties:

@@ -13312,7 +13312,7 @@ components:
                 $ref: '#/components/schemas/AnthropicSystemTextBlock'
         output_config:
           type: object
-          description: Cambia el nivel de esfuerzo de Claude para los turnos posteriores sin reiniciar la caché de prompts. Envíalo con `content` vacío y mantén el mensaje en su sitio en las solicitudes posteriores. Las rutas sin esfuerzo por mensaje reciben en su lugar el nivel vigente como esfuerzo de nivel superior.
+          description: Cambia el nivel de esfuerzo de Claude para los turnos posteriores sin reiniciar la caché de prompts. Envíalo con `content` vacío después de los mensajes ya enviados y mantenlo en su sitio en las solicitudes posteriores; insertarlo antes cambia el prefijo en caché. Las rutas sin esfuerzo por mensaje reciben en su lugar el nivel vigente como esfuerzo de nivel superior, lo que no conserva la caché.
           required:
             - effort
           properties:

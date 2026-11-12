@@ -13312,7 +13312,7 @@ components:
                 $ref: '#/components/schemas/AnthropicSystemTextBlock'
         output_config:
           type: object
-          description: Ändert Claudes Aufwandsstufe für spätere Züge, ohne den Prompt-Cache neu zu starten. Sende es mit leerem `content` und lass die Nachricht bei späteren Anfragen an ihrer Stelle. Routen ohne Aufwand pro Nachricht erhalten stattdessen die geltende Stufe als Aufwand auf oberster Ebene.
+          description: Ändert Claudes Aufwandsstufe für spätere Züge, ohne den Prompt-Cache neu zu starten. Sende es mit leerem `content` nach den bereits gesendeten Nachrichten und lass es bei späteren Anfragen an seiner Stelle; weiter vorne eingefügt ändert es das gecachte Präfix. Routen ohne Aufwand pro Nachricht erhalten stattdessen die geltende Stufe als Aufwand auf oberster Ebene, wodurch der Cache nicht erhalten bleibt.
           required:
             - effort
           properties:
