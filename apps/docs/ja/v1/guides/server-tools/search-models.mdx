@@ -1,18 +1,62 @@
 ---
 icon: "list-filter"
 title: "モデル検索サーバーツール"
-description: "Phaseoの最新カタログからモデルが適切な候補を見つけられるようにします。"
+description: "Phaseo の最新カタログから、モデルが適切なモデルを見つけられるようにします。"
 ---
 
-次のように使います：`phaseo:search_models` 呼び出し元のモデルが最新のカタログメタデータを使ってモデルを選択または提案する場合に使います。
+`phaseo:search_models` を追加すると、モデルは Phaseo の最新カタログ（現在のモダリティ、プロバイダー、対応パラメーター、料金）を使って、モデルを選んだり勧めたりできます。
 
 ```json
 {
+  "model": "openai/gpt-6-astra",
+  "messages": [
+    { "role": "user", "content": "Which models can transcribe audio and return JSON?" }
+  ],
   "tools": [{ "type": "phaseo:search_models", "parameters": { "max_results": 5 } }],
   "max_tool_calls": 10
 }
 ```
 
-ツール呼び出しでは次の項目で絞り込めます: `query`, `input_modalities`, `output_modalities`, `series`, `provider`, と `required_params`. 結果にはモデル ID、モダリティ、プロバイダー、対応パラメーター、料金メタデータが含まれます。
+## パラメーター
 
-使用量は次のフィールドで報告されます: `usage.server_tool_use.search_models_requests`.
+| パラメーター | 型 | デフォルト | 説明 |
+| --- | --- | --- | --- |
+| `max_results` | integer | `5` | 1 回の検索で返すモデルの数。最大 `20`。 |
+
+## モデルが送信する内容
+
+次のフィルターのいずれかです。検索対象は有効なモデルだけで、モデルは送信されたすべてのフィルターに一致する必要があります。
+
+| 引数 | 一致する対象 |
+| --- | --- |
+| `query` | モデル ID、名前、説明に含まれるテキスト |
+| `series` | モデル ID、名前、説明に含まれるテキスト |
+| `input_modalities` | これらの入力をすべて受け付けるモデル |
+| `output_modalities` | これらの出力をすべて生成するモデル |
+| `provider` | プロバイダー ID または名前 |
+| `required_params` | これらのリクエストパラメーターにすべて対応するモデル |
+
+## ツールが返す内容
+
+```json
+{
+  "models": [
+    {
+      "id": "openai/gpt-4o-mini-transcribe",
+      "name": "...",
+      "description": "...",
+      "input_modalities": ["audio"],
+      "output_modalities": ["text"],
+      "providers": ["openai"],
+      "supported_params": ["..."],
+      "pricing": {}
+    }
+  ],
+  "total_results": 4,
+  "showing": 4
+}
+```
+
+## 利用量と料金
+
+検索ごとに `usage.server_tool_use.search_models_requests` に 1 が加算され、`server_tool_search_models_requests` で課金されることがあります。

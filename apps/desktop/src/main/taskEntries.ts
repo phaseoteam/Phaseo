@@ -1,5 +1,6 @@
 import type { DatabaseSync, StatementSync } from "node:sqlite";
 import { deflateRawSync, inflateRawSync } from "node:zlib";
+import { textPrefilter } from "./textPrefilter";
 import { activitiesForWindow, conversationPageBytes, type ConversationPage, type ConversationPageQuery } from "../shared/conversationPage";
 import { isPhaseoUsageId } from "../shared/usageAmounts";
 import type { AgentActivity, Message, Task } from "../shared/workspace";
@@ -181,10 +182,11 @@ export class TaskEntries {
 	 * user message that opens each one's turn. One range scan of the chat's messages; activities are not searched.
 	 */
 	find(key: number, needle: string, limit: number): { id: string; turnId?: string; count: number }[] {
+		const prefilter = textPrefilter("data", "pattern", needle);
 		const rows = this.statement(`SELECT id, (length(t) - length(replace(t, $needle, ''))) / length($needle) AS count,
 			(SELECT turn.id FROM task_entries AS turn WHERE turn.rowid >= $from AND turn.rowid <= m.rowid AND turn.role = 'user' ORDER BY turn.rowid DESC LIMIT 1) AS turn_id
-			FROM (SELECT rowid, id, history_lower(json_extract(data, '$.text')) AS t FROM task_entries WHERE rowid >= $from AND rowid < $to) AS m
-			WHERE instr(t, $needle) > 0 ORDER BY rowid LIMIT $limit`).all({ needle, from: base(key, 0), to: base(key, 0) + kindSpan, limit }) as { id: string; count: number; turn_id: string | null }[];
+			FROM (SELECT rowid, id, history_lower(json_extract(data, '$.text')) AS t FROM task_entries WHERE rowid >= $from AND rowid < $to AND ${prefilter.sql}) AS m
+			WHERE instr(t, $needle) > 0 ORDER BY rowid LIMIT $limit`).all({ needle, from: base(key, 0), to: base(key, 0) + kindSpan, limit, ...prefilter.params }) as { id: string; count: number; turn_id: string | null }[];
 		return rows.map(row => ({ id: row.id, ...(row.turn_id ? { turnId: row.turn_id } : {}), count: Math.max(1, row.count) }));
 	}
 

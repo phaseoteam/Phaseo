@@ -4,77 +4,59 @@ description: "À connaître pour adopter Claude Opus 4.8, notamment la réflexio
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 4.8
+Faites passer le trafic Claude Opus 4.1 vers `anthropic/claude-opus-4.8` : changez l’identifiant de modèle, supprimez les paramètres d’échantillonnage et remplacez les budgets de réflexion par un niveau d’effort.
 
-Suivez ce guide pour adopter `anthropic/claude-opus-4.8` en production en toute sécurité.
+Anthropic a déprécié Opus 4.1 le 5 juin 2026 et l’a retiré le 5 août 2026. Phaseo continue de servir `anthropic/claude-opus-4.1` tant qu’un fournisseur le propose, puis, lorsque plus aucun ne le propose, achemine ces requêtes vers Opus 4.8 (voir [Dépréciation et retrait des modèles](../guides/model-retirement)). Migrez avant que cela ne se produise, pour que le changement soit testé plutôt qu’automatique.
 
-Anthropic a déclaré Claude Opus 4.1 obsolète le 5 juin 2026 et a prévu son retrait le 5 août 2026. Les consignes de migration sont cumulatives : appliquez d’abord les changements de requête d’Opus 4.7, puis examinez les changements de comportement d’Opus 4.8.
+Les recommandations d’Anthropic sont cumulatives : appliquez les changements de format de requête d’Opus 4.7, puis examinez les changements de comportement d’Opus 4.8.
 
-## Nouveautés
+| | Claude Opus 4.1 | Claude Opus 4.8 |
+| --- | --- | --- |
+| Identifiant de modèle Phaseo | `anthropic/claude-opus-4.1` | `anthropic/claude-opus-4.8` |
+| Fenêtre de contexte | 200K jetons | 1M jetons |
+| Sortie maximale | 32K jetons | 128K jetons |
+| `temperature`, `top_p`, `top_k` | Envoyés | Omis par Phaseo |
+| Réflexion | `budget_tokens` | Adaptative, pilotée par l’effort (`high` par défaut) |
+| Messages système en cours de conversation | Non | Oui |
 
-- L’identifiant de modèle Phaseo est `anthropic/claude-opus-4.8`.
-- Opus 4.7 et les versions ultérieures rejettent les paramètres d’échantillonnage non définis par défaut, comme `temperature`, `top_p` et `top_k`.
-- Opus 4.7 et les versions ultérieures rejettent les budgets manuels de réflexion étendue ; utilisez la réflexion adaptative.
-- Opus 4.8 définit `output_config.effort` sur `high` par défaut.
-- Opus 4.8 prend en charge les messages système au milieu d’une conversation.
-- Opus 4.8 porte les limites de référence à un million de tokens de contexte et 128 000 tokens de sortie maximale sur l’API Claude, Claude Platform sur AWS, Amazon Bedrock et Vertex AI.
+## Mettre à jour la requête
 
-## Démarrage rapide de la migration
+**1. Changez l’identifiant de modèle** pour `anthropic/claude-opus-4.8`.
 
-### 1. Mettez à jour l’identifiant du modèle
+**2. Supprimez les paramètres d’échantillonnage.** Anthropic rejette avec `400` les valeurs non par défaut de `temperature`, `top_p` et `top_k` sur Opus 4.7 et les versions ultérieures. Phaseo les omet au lieu d’échouer, si bien qu’ils n’ont plus aucun effet ; ajustez plutôt le comportement par des instructions.
 
-Utilisez `anthropic/claude-opus-4.8`.
+**3. Remplacez les budgets de réflexion par un niveau d’effort.** Phaseo ne transmet pas `budget_tokens` à Opus 4.8. Tout paramètre de raisonnement est envoyé sous la forme `thinking: {"type": "adaptive", "display": "summarized"}`, et `reasoning.effort` (ou `output_config.effort` sur `/v1/messages`) définit la profondeur :
 
-### 2. Supprimez les paramètres d’échantillonnage non définis par défaut
+```json
+{
+  "model": "anthropic/claude-opus-4.8",
+  "max_tokens": 4096,
+  "thinking": { "type": "adaptive" },
+  "output_config": { "effort": "high" },
+  "messages": [{ "role": "user", "content": "Plan the schema migration." }]
+}
+```
 
-Si vos requêtes Opus 4.1 définissent encore l’un de ces paramètres, supprimez-le avant le déploiement :
+Sans aucun paramètre de raisonnement, Opus 4.8 ne réfléchit pas. `reasoning.effort: "none"` envoie `thinking: {"type": "disabled"}`.
 
-- `temperature`
-- `top_p`
-- `top_k`
+**4. Réétalonnez l’effort et le long contexte.** Opus 4.8 utilise par défaut l’effort `high` et dispose d’une fenêtre de contexte bien plus grande qu’Opus 4.1. Retestez les budgets de latence, l’utilisation des jetons, la mise en cache des prompts, ainsi que les traces de longs documents et de longues sessions d’agent. Sur Microsoft Foundry, Anthropic indique une fenêtre de contexte de 200K pour Opus 4.8 au lancement.
 
-Sur Opus 4.7 et les versions ultérieures, les valeurs non définies par défaut renvoient `400`.
+**5. Simplifiez la mise à jour des instructions dans les longues conversations.** Opus 4.8 accepte des messages `role: "system"` en cours de conversation. Si votre boucle d’agent réécrit tout le prompt système à chaque tour, ajoutez plutôt un message système et conservez davantage de succès de cache.
 
-### 3. Remplacez les budgets manuels de réflexion par la réflexion adaptative
+## Ce qu’il faut tester
 
-Si vous envoyez encore une ancienne charge de réflexion telle que :
+- les requêtes qui envoient encore `temperature`, `top_p` ou `top_k`, puisque leur effet a disparu ;
+- les routes de réflexion qui s’appuyaient sur `budget_tokens` ;
+- les workflows d’agent et d’outils à long horizon ;
+- les sorties sensibles au schéma à chaque niveau d’`effort` ;
+- le coût en jetons et la latence sur vos catégories de prompts Opus 4.1 les plus volumineuses.
 
-- `thinking: { "type": "enabled", "budget_tokens": 32000 }`
+## Déployer
 
-remplacez-la par :
-
-- `thinking: { "type": "adaptive" }`
-- `output_config.effort = "high"` comme valeur de référence
-
-### 4. Redéfinissez les attentes en matière d’effort et de long contexte
-
-Opus 4.8 utilise `high` par défaut et accepte un contexte bien plus long qu’Opus 4.1 sur les API exploitées par Anthropic. Retestez :
-
-- les budgets de latence
-- l’utilisation des tokens
-- le comportement de mise en cache des prompts
-- les traces d’agents et les longs documents
-
-Avec Microsoft Foundry, ne supposez pas que la fenêtre d’un million de tokens est disponible dès le lancement ; Anthropic documente une fenêtre de 200 000 tokens pour Opus 4.8 sur Foundry.
-
-### 5. Revérifiez les changements d’instructions dans les longues conversations
-
-Opus 4.8 accepte les messages système au milieu d’une conversation. Si votre boucle d’agent réécrit actuellement tout le prompt système à chaque tour, vous pourriez simplifier le flux et conserver davantage de succès de cache.
-
-## Points à tester
-
-- Les requêtes qui envoient encore `temperature`, `top_p` ou `top_k`.
-- Les routes de réflexion qui dépendaient auparavant de `budget_tokens`.
-- Les flux d’agents et d’outils de longue durée.
-- Les sorties sensibles aux schémas avec des niveaux `effort` explicites.
-- Les écarts de coût en tokens et de latence sur vos catégories de prompts Opus 4.1 les plus utilisées.
-
-## Déploiement sûr
-
-1. Supprimez les paramètres d’échantillonnage et les anciens budgets de réflexion avant de déplacer le trafic.
-2. Exécutez Opus 4.8 en parallèle sur des prompts et des flux d’outils proches de la production.
-3. Faites un déploiement progressif en gardant une solution de repli pendant la période de chevauchement précédant le 5 août 2026.
-4. Augmentez le trafic seulement lorsque les écarts de latence, de coût et d’achèvement respectent vos objectifs.
+1. Supprimez les paramètres d’échantillonnage et les budgets de réflexion avant de basculer le trafic.
+2. Exécutez Opus 4.8 en mode fantôme sur des prompts et des flux d’outils proches de la production.
+3. Lancez un canary avec Opus 4.1 comme secours dans `models` tant que des fournisseurs le servent.
+4. Généralisez une fois que les changements de latence, de coût et de réussite des tâches sont dans les objectifs.
 
 ## Sources
 

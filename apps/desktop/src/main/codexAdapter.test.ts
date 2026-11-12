@@ -183,6 +183,19 @@ describe("Codex native integration", () => {
 		await vi.waitFor(() => expect(complete).toBeDefined()); await expect(adapter.steer({ id: "instruction", text: "Change direction", createdAt: "" }, [])).rejects.toMatchObject({ constructor: expect.any(Function), message: "Turn changed" });
 		await vi.waitFor(() => expect(response).toMatchObject({ error: { message: "Approval belongs to another task." } })); expect(onApproval).not.toHaveBeenCalled(); complete!(); await execution;
 	});
+	it("names command and file-change approvals by the action, not the protocol method", async () => {
+		const answered: string[] = [];
+		fixture((packet, send) => {
+			if (packet.method === "initialize") send({ id: packet.id, result: {} });
+			if (packet.method === "thread/start") send({ id: packet.id, result: { thread: { id: "native" } } });
+			if (packet.method === "turn/start") { send({ id: packet.id, result: { turn: { id: "turn" } } }); send({ id: "command", method: "item/commandExecution/requestApproval", params: { threadId: "native", command: "git status" } }); send({ id: "files", method: "item/fileChange/requestApproval", params: { threadId: "native", reason: "Edit hello.py" } }); }
+			if (String(packet.id) === "command" || String(packet.id) === "files") { answered.push(String(packet.id)); if (answered.length === 2) send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } }); }
+		});
+		const onApproval = vi.fn(async () => "accept" as const);
+		await new CodexAdapter().run(task, ".", "Start", { onDelta: () => {}, onSession: () => {}, onApproval });
+		expect(onApproval).toHaveBeenCalledWith("command", "git status");
+		expect(onApproval).toHaveBeenCalledWith("file changes", "Edit hello.py");
+	});
 	it("steers the exact active turn with a stable client message identity", async () => {
 		let complete: (() => void) | undefined;
 		fixture((packet, send) => {

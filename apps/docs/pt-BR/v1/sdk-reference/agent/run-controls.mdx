@@ -1,0 +1,232 @@
+---
+icon: "rotate-cw"
+title: "Saídas e novas tentativas"
+description: "Repita requisições ao modelo que falharam, valide a saída final e defina padrões do gateway para todos os turnos do modelo."
+---
+
+Defina uma política de novas tentativas do modelo para repetir requisições ao modelo que falharam dentro de uma execução, e um parser ou schema para transformar a resposta final em um valor verificado antes que ela chegue ao restante do seu aplicativo. Os padrões do gateway, como um provedor ou um formato de resposta estrito, ficam no cliente de gateway do agente.
+
+## Repita requisições ao modelo que falharam
+
+<CodeGroup>
+
+```typescript TypeScript
+const agent = createAgent({
+  id: "support-agent",
+  modelRetry: {
+    maxRetries: 2,
+    backoffMs: 250,
+  },
+});
+```
+
+```python Python
+from phaseo_agent import AgentModelRetryConfig
+
+retry = AgentModelRetryConfig(max_retries=2, backoff_ms=250)
+# Passe como model_retry na definição ou em run()
+```
+
+```go Go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:    "research-agent",
+  Model: "openai/gpt-6-astra",
+  ModelRetry: phaseoagent.ModelRetryConfig{
+    MaxRetries: 3,
+    Backoff:    500 * time.Millisecond,
+  },
+})
+```
+
+```csharp C#
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "research-agent",
+    Model = "openai/gpt-6-astra",
+    ModelRetry = new ModelRetryConfig(MaxRetries: 3, Backoff: TimeSpan.FromMilliseconds(500)),
+});
+```
+
+```php PHP
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "research-agent",
+    model: "openai/gpt-6-astra",
+    modelRetry: ["max_retries" => 3, "backoff_ms" => 500],
+));
+```
+
+```ruby Ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "research-agent",
+  model: "openai/gpt-6-astra",
+  model_retry: { max_retries: 3, backoff_ms: 500 }
+)
+```
+
+```java Java
+// Passe como o argumento modelRetry do agente, ou em RunOptions para uma execução
+var retry = new AgentSdk.ModelRetryConfig(3, Duration.ofMillis(500)); // maxRetries, backoff
+```
+
+```rust Rust
+use std::time::Duration;
+
+let definition = AgentDefinition::new("resilient-agent", "openai/gpt-6-astra")
+    .model_retries(2, Duration::from_millis(250));
+```
+
+</CodeGroup>
+
+O número de novas tentativas é a quantidade de tentativas extras depois da primeira requisição, e o padrão é `0`. Cada etapa registra quantas tentativas usou no seu campo de tentativas do modelo (`modelAttempts`, `model_attempts` ou `ModelAttempts`). Só as requisições ao modelo são repetidas: os erros de ferramenta seguem a política de erro da própria ferramenta, então coloque as novas tentativas de ferramentas com efeitos colaterais dentro da ferramenta e torne-as idempotentes.
+
+A espera entre tentativas e quais erros são repetidos variam por linguagem:
+
+| Linguagem | Espera antes da tentativa `n` | Erros repetidos | Substituição para uma execução |
+| --- | --- | --- | --- |
+| TypeScript | Exponencial a partir de `backoffMs` com jitter completo, até `maxBackoffMs`; um `Retry-After` do gateway tem prioridade | `retryOn(error)`, padrão `agentErrorIsRetryable`. Uma tentativa nunca é repetida depois que a saída começou a ser transmitida. | Opções da execução |
+| Python | `backoff_ms × n` | Qualquer exceção da requisição ao modelo | `model_retry` em `run()` |
+| Go | `Backoff × n` (padrão 250 ms) | Qualquer erro da requisição ao modelo | `RunOptions.ModelRetry` |
+| C# | `Backoff × n` (padrão 250 ms) | Qualquer erro da requisição ao modelo | `RunOptions.ModelRetry` |
+| PHP | `backoff_ms × n` (padrão 250) | Qualquer erro da requisição ao modelo | `modelRetry:` em `run()` |
+| Ruby | `backoff_ms × n` (padrão 250) | Qualquer erro da requisição ao modelo | `model_retry:` em `run` |
+| Java | `backoff × n` (um backoff `null` significa 250 ms) | Qualquer erro da requisição ao modelo | `RunOptions` |
+| Rust | Uma `Duration` fixa | Qualquer erro da requisição ao modelo | Nenhuma |
+
+Com espera linear e backoff de 500 ms, três novas tentativas esperam 0,5 s, 1 s e depois 1,5 s.
+
+<span id="validate-the-final-output"></span>
+## Valide a saída final
+
+Quando o modelo responde sem chamar uma ferramenta, um parser transforma o texto final no seu valor e um schema o verifica. Se algum dos dois falhar, a execução falha com um erro `Invalid agent output: ...`, então uma saída ruim para na fronteira do agente. Mantenha os validadores determinísticos e sem efeitos colaterais.
+
+<CodeGroup>
+
+```typescript TypeScript
+const agent = createAgent<string, { summary: string }>({
+  id: "summary-agent",
+  parseOutput(text) {
+    return JSON.parse(text) as { summary: string };
+  },
+});
+```
+
+```python Python
+import json
+from pydantic import BaseModel
+
+class Ticket(BaseModel):
+    ticket_id: str
+
+agent = create_agent({
+    "id": "ticket-agent",
+    "parse_output": json.loads,
+    "output_schema": Ticket,
+})
+```
+
+```go Go
+ParseOutput: func(text string) (any, error) {
+  var ticket Ticket
+  return ticket, json.Unmarshal([]byte(text), &ticket)
+},
+OutputSchema: validateTicket, // func(any) (any, error)
+```
+
+```csharp C#
+ParseOutput = text => JsonSerializer.Deserialize<Ticket>(text),
+OutputSchema = value => value is Ticket { Id.Length: > 0 } ? value : throw new ArgumentException("Ticket ID is required"),
+```
+
+```php PHP
+parseOutput: fn (string $text) => json_decode($text, true, flags: JSON_THROW_ON_ERROR),
+outputSchema: fn ($value) => isset($value["ticket_id"]) ? $value : throw new InvalidArgumentException("ticket_id is required"),
+```
+
+```ruby Ruby
+parse_output: ->(text) { JSON.parse(text) },
+output_schema: ->(value) { value.key?("ticket_id") ? value : raise("ticket_id is required") }
+```
+
+</CodeGroup>
+
+| Linguagem | Parser | Schema | Em caso de falha |
+| --- | --- | --- | --- |
+| TypeScript | `parseOutput(text)` | `outputSchema` | Lança `AgentSchemaValidationError` com `target: "agent_output"` |
+| Python | `parse_output(text)` | `output_schema`: um callable, um modelo Pydantic ou um objeto com `parse` ou `safe_parse` | Lança `ValueError` |
+| Go | `ParseOutput(text) (any, error)` | `OutputSchema func(any) (any, error)` | `Run` retorna o erro (`invalid agent output: ...`) |
+| C# | `ParseOutput` | `OutputSchema` | A exceção se propaga para fora de `Run` |
+| PHP | Callable `parseOutput` | Callable `outputSchema` | A exceção se propaga para fora de `run()` |
+| Ruby | Callable `parse_output:` | Callable `output_schema:` | A exceção se propaga para fora de `run` |
+| Java | `parseOutput`, uma `Function<String, Object>` | `outputSchema`, um `Validator` (construtor de `AgentDefinition` com 13 argumentos) | A exceção se propaga para fora de `run` |
+| Rust | Nenhum | Nenhum | A saída é um `serde_json::Value`; valide-a no seu aplicativo |
+
+Para um comportamento mais estrito do modelo, peça também saída estruturada ao gateway. Defina um formato de resposta JSON Schema (e, opcionalmente, o plugin response-healing) no cliente de gateway do agente:
+
+```typescript
+const client = createGatewayAgentClient({
+  clientOptions: {
+    apiKey: process.env.PHASEO_API_KEY!,
+  },
+  responseFormat: {
+    type: "json_schema",
+    name: "agent_answer",
+    schema: {
+      type: "object",
+      properties: {
+        summary: { type: "string" },
+      },
+      required: ["summary"],
+      additionalProperties: false,
+    },
+  },
+  plugins: [{ id: "response-healing" }],
+});
+```
+
+Python, PHP e Ruby aceitam as mesmas opções `response_format`/`responseFormat` e `plugins`. Go, C# e Java não têm opção de formato de resposta; defina o campo pela via de escape do cliente para outros campos da requisição (próxima seção).
+
+## Mantenha os padrões de roteamento em uma predefinição
+
+Defina `preset` no agente (`Preset` no Go e no C#) quando os padrões de roteamento, prompt ou parâmetros devem ficar no painel:
+
+```typescript
+const agent = createAgent({
+  id: "support-triage-agent",
+  preset: "support-triage",
+});
+```
+
+O Rust não tem a opção `preset`.
+
+<span id="set-gateway-defaults-on-the-client"></span>
+## Defina os padrões do gateway no cliente
+
+O cliente de gateway do agente (`createGatewayAgentClient()`, `create_gateway_agent_client()`, `CreateGatewayAgentClient`) carrega os padrões de requisição para todos os turnos do modelo, então você não precisa recriá-los a cada execução. O agente continua controlando `model`, `input`, `instructions` e suas ferramentas de função; o modelo padrão só se aplica quando o agente não define nenhum.
+
+| Configuração | camelCase (TypeScript, PHP) | snake_case (Python, Ruby) | PascalCase (Go, C#) |
+| --- | --- | --- | --- |
+| Reutilizar um cliente principal | `client` | `client` | `Client` |
+| Configurar um novo cliente principal | `clientOptions` | `client_options` (Python); `api_key`, `base_url` (Ruby) | `APIKey`, `BaseURL`, `HTTPClient`, `Headers` (Go); `ClientOptions` (C#) |
+| Modelo ou predefinição padrão | `model`, `preset` | `model`, `preset` | `Model`, `Preset` |
+| Roteamento de provedores | `provider` | `provider` | `Provider` |
+| Raciocínio | `reasoning` | `reasoning` | `Reasoning` |
+| Amostragem e tamanho | `temperature`, `maxOutputTokens` | `temperature`, `max_output_tokens` | `Temperature`, `MaxOutputTokens` |
+| Chamadas de ferramenta paralelas | `parallelToolCalls` | `parallel_tool_calls` | `ParallelToolCall` (Go), `ParallelToolCalls` (C#) |
+| Metadados e usuário final | `metadata`, `user` | `metadata`, `user` | `Metadata`, `User` |
+| Saída estruturada | `responseFormat` | `response_format` | Nenhum |
+| Plugins | `plugins` | `plugins` | Nenhum |
+| Busca na web | `webSearchOptions` | `web_search_options` | Nenhum |
+| Ferramentas gerenciadas e escolha de ferramenta | `gatewayTools`, `toolChoice` | `gateway_tools`, `tool_choice` | `GatewayTools`, `ToolChoice` |
+| Opções do provedor e cache | `providerOptions`, `promptCacheKey` | `provider_options`, `prompt_cache_key` | `ProviderOptions`, `PromptCacheKey` |
+| Retornar o bloco meta do gateway | `includeMeta` | `include_meta` | `IncludeMeta` |
+| Qualquer outro campo da Responses API | `requestOptions` | `request_options` | `ConfigureRequest`, uma `func(*gen.ResponsesRequest)` (Go); `RequestOptions` (C#) |
+| Abandonar um stream silencioso | `streamIdleTimeoutMs` (só TypeScript; desativado por padrão, falha como um erro que permite nova tentativa) | Nenhum | Nenhum |
+
+Java e Rust aceitam menos opções:
+
+| Linguagem | Opções do cliente de gateway |
+| --- | --- |
+| Java | `new AgentSdk.GatewayOptions(client, apiKey, baseUrl, model, preset, requestOptions)`. Coloque todos os outros campos da Responses API em `requestOptions`. |
+| Rust | `GatewayAgentClient::new(phaseo_client, model)`, `GatewayAgentClient::from_env(model)` ou `create_gateway_agent_client(model)`. Não há padrões de requisição além do modelo. |
+
+A página [Parâmetros da Responses API](/pt-BR/v1/api-reference/parameters) explica cada campo. Para ler uso, custo e status do resultado, veja [Observabilidade](./observability).

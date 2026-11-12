@@ -72,7 +72,7 @@ response = completion(
 | Team budgets, `metadata.tags` spend tracking | Department budgets, `X-Phaseo-Metadata` labels | End-user budgets map only to an end-user rate limit policy; there is no end-user spend cap |
 | `guardrails` (Presidio, Lakera and similar) | Key guardrails: prompt injection and PII on requests | Responses are not scanned; see `phaseo-guardrails` |
 | Callbacks (`success_callback`, Langfuse, Datadog, OpenTelemetry) | Observability destinations (Langfuse, LangSmith, Datadog, PostHog, any OTLP collector, a webhook, row exports to S3 or BigQuery) or client-side tracing | Body `metadata` exports as `phaseo.metadata.<key>`; decide which system is the record for cost |
-| Provider API keys in config | BYOK (`phaseo byok create --provider <id> --name <name> --key-stdin` or `POST /v1/byok`), or managed Phaseo credits | BYOK can fall back to Phaseo credits: set `byok_fallback_enabled` with `phaseo settings update` or `PATCH /v1/settings` |
+| Provider API keys in config | BYOK (**Settings -> BYOK** or `POST /v1/byok` with a management key), or managed Phaseo credits | BYOK can fall back to Phaseo credits: set `byok_fallback_enabled` with `phaseo settings update` or `PATCH /v1/settings` |
 
 ## Gotchas
 

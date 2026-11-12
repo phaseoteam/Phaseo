@@ -1,8 +1,6 @@
-"use client";
-
 import { useState, useTransition, type ReactNode } from "react";
 import { FingerprintPattern, Plus } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import {
 	createTrustedWorkload,
@@ -10,7 +8,7 @@ import {
 	setTrustedWorkloadStatus,
 	updateTrustedWorkload,
 	type TrustedWorkloadActionError,
-} from "@/app/(dashboard)/settings/trusted-workloads/actions";
+} from "@/features/settings/trusted-workloads/actions";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -42,20 +40,145 @@ import {
 	MAX_LIFETIME_HOURS,
 	MAX_NAME_LENGTH,
 	VERCEL_ENVIRONMENTS,
+	WORKLOAD_PROVIDERS,
 	draftFromPolicy,
 	draftToPayload,
 	emptyWorkloadDraft,
-	githubActionsSnippet,
 	isOwnerWide,
+	policyOwnerClaim,
 	toUpdatePayload,
-	vercelSnippet,
+	tokenSnippet,
 	type WorkloadDraft,
 	type WorkloadProblem,
 } from "./trustedWorkloadForm";
 
 type Data = SettingsWorkloadIdentityInitialData;
 type EditorState = { mode: "create" } | { mode: "edit"; policy: SettingsWorkloadIdentityPolicy } | null;
-const PROVIDERS: SettingsWorkloadIdentityProvider[] = ["vercel", "github_actions"];
+type Translate = ReturnType<typeof useTranslations<"SettingsUI.trustedWorkloads">>;
+type MessageKey = Parameters<Translate>[0];
+
+/** Where a text field's value lives in the draft. */
+type FieldTarget = "issuer" | "ownerClaim" | "ownerId" | "customClaim" | "customValue" | { claim: string };
+type FieldSpec = {
+	id: string;
+	target: FieldTarget;
+	label: MessageKey;
+	placeholder: string;
+	problem?: WorkloadProblem;
+	/** Identifiers and URLs read better in a monospace font. */
+	mono?: boolean;
+	numeric?: boolean;
+};
+/** One line of the form: up to two fields side by side, with an optional hint underneath. */
+type FieldRow = { fields: FieldSpec[]; hint?: MessageKey };
+
+// What each platform's policy asks for. Issuer and owner fields identify what is
+// trusted, so they lock once the policy is saved.
+const PROVIDER_FIELDS: Record<SettingsWorkloadIdentityProvider, FieldRow[]> = {
+	vercel: [
+		{
+			fields: [
+				{ id: "team-slug", target: "issuer", label: "fields.vercelTeamSlug", placeholder: "acme", problem: "vercelTeamSlug" },
+				{ id: "team-id", target: "ownerId", label: "fields.vercelTeamId", placeholder: "team_…", problem: "vercelTeamId", mono: true },
+			],
+			hint: "fields.vercelTeamHint",
+		},
+		{ fields: [{ id: "project-id", target: { claim: "project_id" }, label: "fields.vercelProjectId", placeholder: "prj_…", problem: "vercelProjectId", mono: true }], hint: "fields.vercelProjectHint" },
+	],
+	github_actions: [
+		{
+			fields: [
+				{ id: "github-owner", target: "ownerId", label: "fields.githubOwnerId", placeholder: "123456", problem: "githubOwnerId", mono: true, numeric: true },
+				{ id: "github-repository", target: { claim: "repository_id" }, label: "fields.githubRepositoryId", placeholder: "456789", problem: "githubRepositoryId", mono: true, numeric: true },
+			],
+			hint: "fields.githubIdsHint",
+		},
+		{
+			fields: [
+				{ id: "github-ref", target: { claim: "ref" }, label: "fields.githubRef", placeholder: "refs/heads/main", mono: true },
+				{ id: "github-environment", target: { claim: "environment" }, label: "fields.environment", placeholder: "production" },
+			],
+		},
+	],
+	gitlab: [
+		{ fields: [{ id: "gitlab-project", target: "ownerId", label: "fields.gitlabProjectId", placeholder: "12345678", problem: "gitlabProjectId", mono: true, numeric: true }], hint: "fields.gitlabProjectHint" },
+		{
+			fields: [
+				{ id: "gitlab-ref", target: { claim: "ref" }, label: "fields.gitlabRef", placeholder: "main", mono: true },
+				{ id: "gitlab-environment", target: { claim: "environment" }, label: "fields.environmentOptional", placeholder: "production" },
+			],
+			hint: "fields.gitlabConditionsHint",
+		},
+	],
+	google_cloud: [
+		{ fields: [{ id: "google-account", target: "ownerId", label: "fields.googleServiceAccountId", placeholder: "104523456789012345678", problem: "googleServiceAccountId", mono: true, numeric: true }], hint: "fields.googleServiceAccountHint" },
+		{ fields: [{ id: "google-email", target: { claim: "email" }, label: "fields.googleServiceAccountEmail", placeholder: "app@project.iam.gserviceaccount.com", problem: "googleServiceAccountEmail", mono: true }], hint: "fields.googleEmailHint" },
+	],
+	buildkite: [
+		{ fields: [{ id: "buildkite-organization", target: "ownerId", label: "fields.buildkiteOrganizationId", placeholder: "0b9f7c5e-…", problem: "buildkiteOrganizationId", mono: true }], hint: "fields.buildkiteOrganizationHint" },
+		{ fields: [{ id: "buildkite-pipeline", target: { claim: "pipeline_slug" }, label: "fields.buildkitePipelineSlug", placeholder: "deploy", mono: true }], hint: "fields.buildkitePipelineHint" },
+	],
+	circleci: [
+		{ fields: [{ id: "circleci-organization", target: "ownerId", label: "fields.circleciOrganizationId", placeholder: "0b9f7c5e-…", problem: "circleciOrganizationId", mono: true }], hint: "fields.circleciOrganizationHint" },
+		{ fields: [{ id: "circleci-project", target: { claim: "oidc.circleci.com/project-id" }, label: "fields.circleciProjectId", placeholder: "4c2d9e1a-…", problem: "circleciProjectId", mono: true }], hint: "fields.circleciProjectHint" },
+	],
+	aws: [
+		{ fields: [{ id: "aws-issuer", target: "issuer", label: "fields.awsIssuer", placeholder: "https://….tokens.sts.global.api.aws", problem: "awsIssuer", mono: true }], hint: "fields.awsIssuerHint" },
+		{ fields: [{ id: "aws-role", target: "ownerId", label: "fields.awsRoleArn", placeholder: "arn:aws:iam::123456789012:role/…", problem: "awsRoleArn", mono: true }], hint: "fields.awsRoleHint" },
+	],
+	custom: [
+		{ fields: [{ id: "custom-issuer", target: "issuer", label: "fields.customIssuer", placeholder: "https://oidc.example.com", problem: "customIssuer", mono: true }], hint: "fields.customIssuerHint" },
+		{
+			fields: [
+				{ id: "custom-owner-claim", target: "ownerClaim", label: "fields.customOwnerClaim", placeholder: "sub", problem: "customOwnerClaim", mono: true },
+				{ id: "custom-owner", target: "ownerId", label: "fields.customOwnerId", placeholder: "system:serviceaccount:default:app", problem: "customOwnerId", mono: true },
+			],
+			hint: "fields.customOwnerHint",
+		},
+		{
+			fields: [
+				{ id: "custom-claim", target: "customClaim", label: "fields.customConditionClaim", placeholder: "environment", problem: "customCondition", mono: true },
+				{ id: "custom-value", target: "customValue", label: "fields.customConditionValue", placeholder: "production", mono: true },
+			],
+			hint: "fields.customConditionHint",
+		},
+	],
+};
+
+// Labels for conditions in the policy list; other claims show their own name.
+const CONDITION_LABELS: Record<string, MessageKey> = {
+	project_id: "fields.vercelProjectId",
+	repository_id: "fields.githubRepositoryId",
+	environment: "fields.environment",
+	ref: "listRef",
+	pipeline_slug: "listPipeline",
+	email: "listEmail",
+	"oidc.circleci.com/project-id": "fields.vercelProjectId",
+};
+const OWNER_WIDE: Partial<Record<SettingsWorkloadIdentityProvider, MessageKey>> = {
+	vercel: "ownerWide.vercel",
+	github_actions: "ownerWide.github_actions",
+	buildkite: "ownerWide.buildkite",
+	circleci: "ownerWide.circleci",
+};
+const OWNER_LABELS: Record<Exclude<SettingsWorkloadIdentityProvider, "custom">, MessageKey> = {
+	vercel: "ownerLabel.vercel",
+	github_actions: "ownerLabel.github_actions",
+	gitlab: "ownerLabel.gitlab",
+	google_cloud: "ownerLabel.google_cloud",
+	buildkite: "ownerLabel.buildkite",
+	circleci: "ownerLabel.circleci",
+	aws: "ownerLabel.aws",
+};
+const LOCKED_TARGETS = new Set<FieldTarget>(["issuer", "ownerClaim", "ownerId"]);
+
+function readField(draft: WorkloadDraft, target: FieldTarget): string {
+	return typeof target === "string" ? draft[target] : draft.conditions[target.claim] ?? "";
+}
+
+function writeField(draft: WorkloadDraft, target: FieldTarget, value: string): WorkloadDraft {
+	return typeof target === "string" ? { ...draft, [target]: value } : { ...draft, conditions: { ...draft.conditions, [target.claim]: value } };
+}
 
 function Notice({ children }: { children: ReactNode }) {
 	return <p className="rounded-md border border-dashed px-4 py-6 text-sm text-muted-foreground">{children}</p>;
@@ -100,23 +223,20 @@ export default function TrustedWorkloadsSettingsClient({ data }: { data: Data })
 					</Empty>
 				)}
 			</section>
-			<UsageSection audience={data.audience} />
+			<UsageSection audience={data.audience} initialProvider={data.policies[0]?.provider ?? "vercel"} />
 			{editor ? <PolicyDialog key={editor.mode === "edit" ? editor.policy.id : "new"} state={editor} onClose={() => setEditor(null)} /> : null}
 		</div>
 	);
 }
 
-function conditionSummary(t: ReturnType<typeof useTranslations<"SettingsUI.trustedWorkloads">>, policy: SettingsWorkloadIdentityPolicy): string {
+function conditionSummary(t: Translate, policy: SettingsWorkloadIdentityPolicy): string {
 	const conditions = policy.claimConditions ?? {};
 	const parts: string[] = [];
 	for (const [claim, values] of Object.entries(conditions)) {
 		if (!values?.length) continue;
-		const label = claim === "project_id" ? t("fields.vercelProjectId")
-			: claim === "repository_id" ? t("fields.githubRepositoryId")
-			: claim === "environment" ? t("fields.environment")
-			: claim === "ref" ? t("listRef")
-			: claim;
-		parts.push(`${label}: ${values.join(", ")}`);
+		// Custom issuers name their own claims, so show those as they are.
+		const key = policy.provider === "custom" ? undefined : CONDITION_LABELS[claim];
+		parts.push(`${key ? t(key) : claim}: ${values.join(", ")}`);
 	}
 	return parts.length ? parts.join(" · ") : t("noConditions");
 }
@@ -129,10 +249,11 @@ function PolicyRow({ policy, onEdit }: { policy: SettingsWorkloadIdentityPolicy;
 	const [confirming, setConfirming] = useState(false);
 	const [pending, startPending] = useTransition();
 	const active = policy.status === "active";
+	const ownerWide = OWNER_WIDE[policy.provider];
 
 	function toggle(next: boolean) {
 		startPending(async () => {
-			const result = await write(setTrustedWorkloadStatus(policy.id, next ? "active" : "disabled"));
+			const result = await write(setTrustedWorkloadStatus({ data: { id: policy.id, status: next ? "active" : "disabled" } }));
 			if (!result.ok) {
 				toast.error(actionError(result, t("errors.saveFailed")));
 				return;
@@ -143,7 +264,7 @@ function PolicyRow({ policy, onEdit }: { policy: SettingsWorkloadIdentityPolicy;
 
 	function remove() {
 		startPending(async () => {
-			const result = await write(deleteTrustedWorkload(policy.id));
+			const result = await write(deleteTrustedWorkload({ data: policy.id }));
 			if (!result.ok) {
 				toast.error(actionError(result, t("errors.deleteFailed")));
 				return;
@@ -162,7 +283,7 @@ function PolicyRow({ policy, onEdit }: { policy: SettingsWorkloadIdentityPolicy;
 						<Badge variant="outline">{t(`providers.${policy.provider}`)}</Badge>
 						{active ? null : <Badge variant="secondary">{t("disabled")}</Badge>}
 					</div>
-					{isOwnerWide(policy) ? <p className="mt-1 text-xs text-muted-foreground">{t(`ownerWide.${policy.provider}`)}</p> : null}
+					{ownerWide && isOwnerWide(policy) ? <p className="mt-1 text-xs text-muted-foreground">{t(ownerWide)}</p> : null}
 				</div>
 				<div className="flex items-center gap-2">
 					<Switch checked={active} disabled={pending} onCheckedChange={toggle} aria-label={t("enabledLabel", { name: policy.name })} />
@@ -172,7 +293,7 @@ function PolicyRow({ policy, onEdit }: { policy: SettingsWorkloadIdentityPolicy;
 			</div>
 			<dl className="grid gap-x-6 gap-y-1 text-xs sm:grid-cols-2">
 				<div className="flex min-w-0 gap-2"><dt className="shrink-0 text-muted-foreground">{t("listIssuer")}</dt><dd className="truncate font-mono">{policy.issuer}</dd></div>
-				<div className="flex min-w-0 gap-2"><dt className="shrink-0 text-muted-foreground">{t(`ownerLabel.${policy.provider}`)}</dt><dd className="truncate font-mono">{policy.ownerId}</dd></div>
+				<div className="flex min-w-0 gap-2"><dt className="shrink-0 text-muted-foreground">{policy.provider === "custom" ? policyOwnerClaim(policy) : t(OWNER_LABELS[policy.provider])}</dt><dd className="truncate font-mono">{policy.ownerId}</dd></div>
 				<div className="flex min-w-0 gap-2 sm:col-span-2"><dt className="shrink-0 text-muted-foreground">{t("listConditions")}</dt><dd className="break-all">{conditionSummary(t, policy)}</dd></div>
 				<div className="flex gap-2"><dt className="text-muted-foreground">{t("listLastUsed")}</dt><dd>
 					{policy.lastUsedAt ? format.relativeTime(new Date(policy.lastUsedAt)) : t("neverUsed")}
@@ -209,7 +330,10 @@ function PolicyDialog({ state, onClose }: { state: Exclude<EditorState, null>; o
 		setDraft((current) => ({ ...current, [field]: value }));
 		setProblem(null);
 	};
-	const vercel = draft.provider === "vercel";
+	const update = (next: WorkloadDraft) => {
+		setDraft(next);
+		setProblem(null);
+	};
 
 	function save() {
 		const built = draftToPayload(draft);
@@ -219,8 +343,8 @@ function PolicyDialog({ state, onClose }: { state: Exclude<EditorState, null>; o
 		}
 		startSaving(async () => {
 			const result = existing
-				? await write(updateTrustedWorkload(existing.id, toUpdatePayload(built.payload)))
-				: await write(createTrustedWorkload(built.payload));
+				? await write(updateTrustedWorkload({ data: { id: existing.id, payload: toUpdatePayload(built.payload) } }))
+				: await write(createTrustedWorkload({ data: built.payload }));
 			if (!result.ok) {
 				toast.error(actionError(result, t("errors.saveFailed")));
 				return;
@@ -251,76 +375,54 @@ function PolicyDialog({ state, onClose }: { state: Exclude<EditorState, null>; o
 						<Select value={draft.provider} disabled={locked} onValueChange={(value) => setDraft({ ...emptyWorkloadDraft(value as SettingsWorkloadIdentityProvider), name: draft.name })}>
 							<SelectTrigger id="workload-provider" className="w-full rounded-md"><SelectValue>{t(`providers.${draft.provider}`)}</SelectValue></SelectTrigger>
 							<SelectContent>
-								{PROVIDERS.map((provider) => <SelectItem key={provider} value={provider}>{t(`providers.${provider}`)}</SelectItem>)}
+								{WORKLOAD_PROVIDERS.map((provider) => <SelectItem key={provider} value={provider}>{t(`providers.${provider}`)}</SelectItem>)}
 							</SelectContent>
 						</Select>
 					</div>
-					{vercel ? (
-						<>
-							<div className="grid gap-4 sm:grid-cols-2">
-								<div className="space-y-1.5">
-									<Label htmlFor="workload-team-slug">{t("fields.vercelTeamSlug")}</Label>
-									<Input id="workload-team-slug" value={draft.vercelTeamSlug} disabled={locked} placeholder="acme" onChange={(event) => set("vercelTeamSlug", event.target.value)} aria-invalid={problem === "vercelTeamSlug"} />
-									{field("vercelTeamSlug")}
-								</div>
-								<div className="space-y-1.5">
-									<Label htmlFor="workload-team-id">{t("fields.vercelTeamId")}</Label>
-									<Input id="workload-team-id" value={draft.ownerId} disabled={locked} placeholder="team_…" className="font-mono" onChange={(event) => set("ownerId", event.target.value)} aria-invalid={problem === "vercelTeamId"} />
-									{field("vercelTeamId")}
-								</div>
+					{PROVIDER_FIELDS[draft.provider].map((row) => (
+						<div key={row.fields[0].id} className="space-y-1.5">
+							<div className={row.fields.length > 1 ? "grid gap-4 sm:grid-cols-2" : undefined}>
+								{row.fields.map((spec) => (
+									<div key={spec.id} className="min-w-0 space-y-1.5">
+										<Label htmlFor={`workload-${spec.id}`}>{t(spec.label)}</Label>
+										<Input
+											id={`workload-${spec.id}`}
+											value={readField(draft, spec.target)}
+											disabled={locked && LOCKED_TARGETS.has(spec.target)}
+											placeholder={spec.placeholder}
+											inputMode={spec.numeric ? "numeric" : undefined}
+											autoComplete="off"
+											spellCheck={false}
+											className={spec.mono ? "font-mono" : undefined}
+											onChange={(event) => update(writeField(draft, spec.target, event.target.value))}
+											aria-invalid={spec.problem !== undefined && problem === spec.problem}
+										/>
+										{spec.problem ? field(spec.problem) : null}
+									</div>
+								))}
 							</div>
-							<p className="text-xs text-muted-foreground">{t("fields.vercelTeamHint")}</p>
-							<div className="space-y-1.5">
-								<Label htmlFor="workload-project-id">{t("fields.vercelProjectId")}</Label>
-								<Input id="workload-project-id" value={draft.vercelProjectId} placeholder="prj_…" className="font-mono" onChange={(event) => set("vercelProjectId", event.target.value)} aria-invalid={problem === "vercelProjectId"} />
-								{field("vercelProjectId")}
-								<p className="text-xs text-muted-foreground">{t("fields.vercelProjectHint")}</p>
+							{row.hint ? <p className="text-xs text-muted-foreground">{t(row.hint)}</p> : null}
+						</div>
+					))}
+					{draft.provider === "vercel" ? (
+						<fieldset className="space-y-2">
+							<legend className="text-sm font-medium">{t("fields.environment")}</legend>
+							<div className="flex flex-wrap gap-x-5 gap-y-2">
+								{VERCEL_ENVIRONMENTS.map((environment) => (
+									<label key={environment} className="flex items-center gap-2 text-sm">
+										<Checkbox
+											checked={draft.vercelEnvironments.includes(environment)}
+											onCheckedChange={(checked) => set("vercelEnvironments", checked
+												? [...draft.vercelEnvironments, environment]
+												: draft.vercelEnvironments.filter((value) => value !== environment))}
+										/>
+										{t(`environments.${environment}`)}
+									</label>
+								))}
 							</div>
-							<fieldset className="space-y-2">
-								<legend className="text-sm font-medium">{t("fields.environment")}</legend>
-								<div className="flex flex-wrap gap-x-5 gap-y-2">
-									{VERCEL_ENVIRONMENTS.map((environment) => (
-										<label key={environment} className="flex items-center gap-2 text-sm">
-											<Checkbox
-												checked={draft.vercelEnvironments.includes(environment)}
-												onCheckedChange={(checked) => set("vercelEnvironments", checked
-													? [...draft.vercelEnvironments, environment]
-													: draft.vercelEnvironments.filter((value) => value !== environment))}
-											/>
-											{t(`environments.${environment}`)}
-										</label>
-									))}
-								</div>
-								<p className="text-xs text-muted-foreground">{t("fields.environmentHint")}</p>
-							</fieldset>
-						</>
-					) : (
-						<>
-							<div className="grid gap-4 sm:grid-cols-2">
-								<div className="space-y-1.5">
-									<Label htmlFor="workload-github-owner">{t("fields.githubOwnerId")}</Label>
-									<Input id="workload-github-owner" value={draft.ownerId} disabled={locked} inputMode="numeric" placeholder="123456" className="font-mono" onChange={(event) => set("ownerId", event.target.value)} aria-invalid={problem === "githubOwnerId"} />
-									{field("githubOwnerId")}
-								</div>
-								<div className="space-y-1.5">
-									<Label htmlFor="workload-github-repository">{t("fields.githubRepositoryId")}</Label>
-									<Input id="workload-github-repository" value={draft.githubRepositoryId} inputMode="numeric" placeholder="456789" className="font-mono" onChange={(event) => set("githubRepositoryId", event.target.value)} aria-invalid={problem === "githubRepositoryId"} />
-									{field("githubRepositoryId")}
-								</div>
-							</div>
-							<p className="text-xs text-muted-foreground">{t("fields.githubIdsHint")}</p>
-							<div className="grid gap-4 sm:grid-cols-2">
-								<div className="space-y-1.5">
-									<Label htmlFor="workload-github-ref">{t("fields.githubRef")}</Label>
-									<Input id="workload-github-ref" value={draft.githubRef} placeholder="refs/heads/main" className="font-mono" onChange={(event) => set("githubRef", event.target.value)} />
-								</div>
-								<div className="space-y-1.5">
-									<Label htmlFor="workload-github-environment">{t("fields.environment")}</Label>
-									<Input id="workload-github-environment" value={draft.githubEnvironment} placeholder="production" onChange={(event) => set("githubEnvironment", event.target.value)} />
-								</div>
-							</div>
-						</>
-					)}
+							<p className="text-xs text-muted-foreground">{t("fields.environmentHint")}</p>
+						</fieldset>
+					) : null}
 					<div className="space-y-1.5">
 						<Label htmlFor="workload-lifetime">{t("fields.lifetime")}</Label>
 						<Input id="workload-lifetime" inputMode="numeric" className="w-24" value={draft.maxLifetimeHours} onChange={(event) => set("maxLifetimeHours", event.target.value)} aria-invalid={problem === "lifetime"} />
@@ -349,8 +451,9 @@ function Snippet({ title, code }: { title: string; code: string }) {
 	);
 }
 
-function UsageSection({ audience }: { audience: string }) {
+function UsageSection({ audience, initialProvider }: { audience: string; initialProvider: SettingsWorkloadIdentityProvider }) {
 	const t = useTranslations("SettingsUI.trustedWorkloads");
+	const [provider, setProvider] = useState(initialProvider);
 	return (
 		<section className="space-y-3">
 			<div>
@@ -363,9 +466,18 @@ function UsageSection({ audience }: { audience: string }) {
 				<code className="rounded-md border bg-muted/40 px-2 py-0.5 font-mono text-xs">{audience}</code>
 				<CopyButton content={audience} variant="ghost" size="sm" aria-label={t("audienceLabel")} />
 			</div>
-			<div className="grid gap-4 lg:grid-cols-2">
-				<Snippet title={t("providers.vercel")} code={vercelSnippet(audience)} />
-				<Snippet title={t("providers.github_actions")} code={githubActionsSnippet(audience)} />
+			<div className="space-y-3">
+				<div className="flex flex-wrap items-center gap-2">
+					<Label htmlFor="workload-usage-provider" className="text-sm text-muted-foreground">{t("fields.provider")}</Label>
+					<Select value={provider} onValueChange={(value) => setProvider(value as SettingsWorkloadIdentityProvider)}>
+						<SelectTrigger id="workload-usage-provider" className="w-56 rounded-md"><SelectValue>{t(`providers.${provider}`)}</SelectValue></SelectTrigger>
+						<SelectContent>
+							{WORKLOAD_PROVIDERS.map((option) => <SelectItem key={option} value={option}>{t(`providers.${option}`)}</SelectItem>)}
+						</SelectContent>
+					</Select>
+				</div>
+				{provider === "custom" ? <p className="text-xs text-muted-foreground">{t("usageCustomHint")}</p> : null}
+				<Snippet title={t(`providers.${provider}`)} code={tokenSnippet(provider, audience)} />
 			</div>
 		</section>
 	);

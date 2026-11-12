@@ -1,54 +1,62 @@
 ---
 title: "从 Helicone AI Gateway 迁移"
 sidebarTitle: "Helicone"
-description: "将兼容 OpenAI 的 Helicone 代理集成迁移到 Phaseo，并移除不再需要的可观测性请求头。"
+description: "将兼容 OpenAI 的 Helicone 代理集成迁移到 Phaseo，并替换不再需要的可观测性请求头。"
 icon: "activity"
 ---
 
-如果 Helicone 位于你的应用与 AI 提供商之间，请使用本指南。请求本身通常只需少量更改，但可观测性切换也要像端点切换一样认真规划。
+把客户端指向 `https://api.phaseo.app/v1` 并使用 Phaseo 密钥，删除 `Helicone-Auth`，然后把仍需要的每个 `Helicone-*` 请求头迁移到对应的 Phaseo 设置。请求本身的改动很小；可观测性的切换同样需要仔细规划。
 
-## 变更内容
-
-| 设置 | 之前 | 之后 |
+| 设置 | Helicone | Phaseo |
 | --- | --- | --- |
-| 基础 URL | Helicone 代理 URL | `https://api.phaseo.app/v1` |
-| 身份验证 | 提供商密钥和 Helicone 身份验证 | `PHASEO_API_KEY` |
-| Helicone 请求头 | 添加到请求中 | 移除 |
-| 请求可见性 | Helicone 控制台 | Phaseo 活动和请求详情 |
+| Base URL | `oai.helicone.ai/v1`、`anthropic.helicone.ai`、`ai-gateway.helicone.ai`，或带 `Helicone-Target-URL` 的 `gateway.helicone.ai` | `https://api.phaseo.app/v1` |
+| 身份验证 | 提供商密钥加 `Helicone-Auth`，或 AI Gateway 上的 `HELICONE_API_KEY` | 只需 `PHASEO_API_KEY` |
+| 自定义属性 | `Helicone-Property-<Name>` | `X-Phaseo-Metadata` 标签 |
+| 请求可见性 | Helicone 控制台 | Phaseo 请求日志和请求详情 |
 
-<Steps>
-<Step title="列出你依赖的 Helicone 功能">
-
-记录会影响生产运维的自定义属性、会话、用户标识、缓存、速率限制、告警和控制面板。不要假设移除代理后，这些工作流会自动在其他位置重现。
-
-</Step>
-
-<Step title="替换代理配置">
-
-将兼容 OpenAI 的客户端指向 Phaseo，并移除 `Helicone-Auth` 及其他 Helicone 专用请求头。
+## 切换客户端
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// 之前：
+// new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+//   baseURL: "https://oai.helicone.ai/v1",
+//   defaultHeaders: {
+//     "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
+//     "Helicone-Property-Team": "support",
+//   },
+// });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
+  defaultHeaders: {
+    "X-Phaseo-Metadata": JSON.stringify({ labels: [{ key: "team", value: "support" }] }),
+  },
 });
 
-const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
-  messages: [{ role: "user", content: "Reply with: migration ready" }],
-});
+const response = await client.chat.completions.create(
+  {
+    model: "openai/gpt-6-astra",
+    messages: [{ role: "user", content: "Reply with: migration ready" }],
+  },
+  { headers: { "X-Phaseo-User-Id": "user_123" } },
+);
 ```
 
 ```python Python
+import json
 import os
 from openai import OpenAI
 
 client = OpenAI(
     api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
+    default_headers={
+        "X-Phaseo-Metadata": json.dumps({"labels": [{"key": "team", "value": "support"}]}),
+    },
 )
 ```
 
@@ -57,37 +65,43 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+用户 ID 这类按请求变化的值放在请求上，而不是客户端上。`anthropic.helicone.ai` 路由改用[从 Anthropic SDK 迁移](./from-anthropic)中的配置。
 
-<Step title="迁移请求可见性">
+在 Helicone AI Gateway 上，路由写在 `model` 字符串里。把它拆开：逗号分隔的第一项成为 `model`，其余项成为 `models` 数组；`<model>/<provider>` 固定写法改为 `provider.only` 或 `provider:org/model` ID；`!provider` 排除写法改为 `provider.ignore`。
 
-使用 Phaseo 活动、请求 ID、提供商尝试记录和定价详情进行运维排查。如果团队会将遥测数据导出到其他位置，请在切换前配置相应的[可观测性](../guides/integrations/observability.mdx)集成。
+## 映射 Helicone 请求头
 
-</Step>
+| Helicone | 在 Phaseo 上 |
+| --- | --- |
+| `Helicone-Auth` | 删除。 |
+| `Helicone-Property-<Name>` | `X-Phaseo-Metadata` [标签](../guides/request-labels)：最多 32 个，键匹配 `[A-Za-z0-9_.:-]`（64 个字符），因此需要重命名含空格的属性。格式错误的 JSON 或重复的键会返回 `400`。不要在标签中放个人数据。 |
+| `Helicone-User-Id` | 请求体字段 `user` 或 `X-Phaseo-User-Id`。它也是终端用户速率限制策略的键。 |
+| `Helicone-Session-Id` | 请求体字段 `session_id`。它决定缓存和提供商亲和性，而不是追踪树。 |
+| `Helicone-Session-Path`、`Helicone-Session-Name` | 请求体中的 `metadata.trace_id`、`parent_span_id`、`trace_name`、`span_name`，或 W3C `traceparent` 请求头。它们决定发送到可观测性目标的 span 结构；Phaseo 自己的日志没有追踪树。 |
+| `Helicone-Cache-Enabled` | 没有响应缓存。如有需要请在应用中缓存。 |
+| `Helicone-Fallbacks`、`Helicone-Retry-Enabled` | `models` 数组（在 `429`、`500`、`502`、`503` 和 `504` 时尝试），加上内置的提供商回退。保留客户端退避。 |
+| `Helicone-RateLimit-Policy` | 速率限制策略和密钥限制。参见[限制](../api-reference/limits)。 |
+| `Helicone-LLM-Security-Enabled` | 护栏的提示词注入检测，仅作用于请求。 |
+| `Helicone-Moderations-Enabled` | 网关内没有对应项。请在应用中调用 `/v1/moderations`。 |
+| `Helicone-Omit-Request`、`Helicone-Omit-Response` | 工作区日志策略或零数据保留。 |
+| `Helicone-Posthog-*` | PostHog [可观测性目标](../guides/integrations/observability)。 |
+| 提示词管理 | [预设提示词模板](../guides/prompt-templates)：`"prompt": {"id": "@slug", "version": "production", "variables": {...}}`。 |
 
-<Step title="测试并逐步发布">
+## 迁移请求可见性
 
-确认请求在没有 Helicone 请求头的情况下也能完成，并确保团队在事件处理期间仍能回答所需的运维问题。推理和可观测性检查都通过后，再逐步切换流量。
+使用请求日志、请求 ID、提供商尝试和价格详情进行调试。如果团队导出遥测数据，请在切换前连接相应的[可观测性目标](../guides/integrations/observability)，避免出现空档。Helicone 的异步日志不代理流量，是否保留它与替换网关是两个独立的决定。
 
-</Step>
-</Steps>
+## 测试并上线
 
-## 迁移检查清单
+确认去掉 Helicone 请求头后请求仍然成功，并且团队在事故期间仍能回答常问的问题。迁移流量之前确认：
 
-- 已移除 Helicone 代理 URL 和身份验证请求头。
-- 已通过 `GET /v1/models` 验证生产模型 ID。
-- 必要的请求元数据仍可在 Phaseo 或遥测技术栈中查看。
-- 必要时已为告警和控制面板安排替代方案。
-- 回滚仍只需更改端点和密钥配置。
-
-## 后续步骤
-
-- [可观测性](../guides/integrations/observability.mdx)
-- [提供商状态](../guides/provider-statuses.mdx)
-- [错误处理](../api-reference/errors.mdx)
+- 每个 Helicone URL 和 `Helicone-*` 请求头都已删除或映射；
+- 生产模型 ID 都出现在 `GET /v1/models?format=openai` 中；
+- 团队需要的告警和仪表板都有替代方案；
+- 回退仍然只需更改 base URL 和密钥。

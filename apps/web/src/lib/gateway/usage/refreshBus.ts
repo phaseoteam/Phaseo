@@ -1,5 +1,3 @@
-"use client";
-
 import type { UsageLogsViewKey } from "./timeRange";
 
 type RefreshHandler = () => Promise<void>;

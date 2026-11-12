@@ -1,0 +1,26 @@
+import type { PageMetadata } from "@/lib/seo/metadataTypes";
+import { Suspense } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { apiProvidersQuery } from "../page.queries";
+import APIProvidersDisplay from "@/components/(data)/api-providers/APIProvidersDisplay";
+import { Skeleton } from "@/components/ui/skeleton";
+import { buildMetadata } from "@/lib/seo";
+import { getTranslations } from "@/i18n/server";
+
+export async function getApiProvidersTableMetadata(): Promise<PageMetadata> {
+	const t = await getTranslations("Catalogue.providers");
+	return buildMetadata({
+		title: t("browseProviders"),
+		description: t("compareProvidersDescription"),
+		path: "/api-providers/table",
+	});
+}
+
+function ProviderTable() {
+	const { data: providers } = useSuspenseQuery(apiProvidersQuery());
+	return <APIProvidersDisplay providers={providers} />;
+}
+
+export default function ApiProvidersTablePage() {
+	return <main className="flex min-h-0 flex-1 flex-col"><Suspense fallback={<Skeleton className="m-6 h-[32rem] rounded-md" />}><ProviderTable /></Suspense></main>;
+}

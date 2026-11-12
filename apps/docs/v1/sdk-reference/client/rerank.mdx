@@ -1,0 +1,87 @@
+---
+icon: "list-ordered"
+title: "Rerank Documents"
+description: "Order candidate documents by relevance to a query with POST /v1/rerank."
+"og:image": "https://phaseo.app/og/dynamic?title=Rerank%20Documents&description=Order%20candidate%20documents%20by%20relevance%20to%20a%20query%20with%20POST%20/v1/rerank.&pathname=/docs/v1/sdk-reference/client/rerank"
+---
+
+Call `client.rerank.create()` to order candidate documents by relevance to a query with `POST /v1/rerank`. The method has the same name in TypeScript and Python; Rust posts the same JSON with `client.post()`.
+
+<CodeGroup>
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const result = await client.rerank.create({
+  model: "voyage/rerank-2",
+  query: "How do I check whether a model is routable?",
+  documents: [
+    "Call GET /v1/models and use the default availability filter.",
+    "Create an image with POST /v1/images/generations.",
+  ],
+});
+
+console.log(result.results);
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo()  # reads PHASEO_API_KEY
+
+result = client.rerank.create({
+    "model": "voyage/rerank-2",
+    "query": "How do I check whether a model is routable?",
+    "documents": [
+        "Call GET /v1/models and use the default availability filter.",
+        "Create an image with POST /v1/images/generations.",
+    ],
+})
+
+print(result["results"])
+```
+
+```rust Rust
+// No rerank method yet: post() sends JSON to any Phaseo path.
+use phaseo::Phaseo;
+use serde_json::json;
+
+let client = Phaseo::from_env()?; // reads PHASEO_API_KEY
+
+let result = client.post("/rerank", &json!({
+    "model": "voyage/rerank-2",
+    "query": "How do I check whether a model is routable?",
+    "documents": [
+        "Call GET /v1/models and use the default availability filter.",
+        "Create an image with POST /v1/images/generations."
+    ]
+}))?;
+
+println!("{}", result.body["results"]);
+```
+
+</CodeGroup>
+
+**Python:** `client.rerank.create()` posts the dict you pass as the JSON body and returns the JSON response; there's no typed `generate_rerank` helper. On `AsyncPhaseo`, await it.
+
+The Go, C#, PHP, Ruby and Java SDKs have no rerank method. Send `POST /v1/rerank` with your HTTP client, as in the [Rerank API reference](/v1/api-reference/endpoint/rerank).
+
+Confirm the model ID with `GET /v1/models` before using it in production.
+
+## Parameters
+
+Field names are the JSON body fields in every SDK.
+
+| Field | Notes |
+| --- | --- |
+| `model`, `query`, `documents` | Required. `documents` holds at least one string or object. |
+| `top_n` | Return only the best `n` results. `top_k` is accepted as an alias. |
+| `return_documents` | Include each document in its result. |
+| `rank_fields` | For object documents, the fields to rank on. |
+| `max_chunks_per_doc`, `max_tokens_per_doc` | Limits for long documents, on providers that support them. |
+
+## Response
+
+`RerankResponse` has `results`, each with the document's `index` in your list, its `relevance_score`, and the `document` when `return_documents` is set, plus `usage`.

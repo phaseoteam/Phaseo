@@ -1,33 +1,17 @@
 ---
 icon: "search-check"
-title: "أداة بحث الويب على الخادم"
-description: "أتِح للنماذج البحث على الويب أثناء الطلب."
+title: "أداة الخادم Web Search"
+description: "اسمح للنماذج بالبحث على الويب أثناء الطلب."
 ---
 
-استخدم `phaseo:web_search` عندما يحتاج النموذج إلى معلومات حديثة أو موثّقة بالمصادر. يحدّد النموذج وقت البحث ويصوغ الاستعلام، ويمكنه البحث عدة مرات ضمن الطلب الواحد.
-
-تعيد Phaseo إلى النموذج عناوين URL والعناوين والمقتطفات والنتائج البارزة ونص الصفحة اختياريًا، ليتمكن من كتابة رد يستند إلى المصادر.
-
-<Note>
-يتوفر TinyFish Search كمحرك مُدار اختياري. يبقى بحث المزوّد الأصلي متاحًا عبر `engine: "native"` على المسارات المدعومة.
-</Note>
-
-## آلية العمل
-
-1. أضف `{ "type": "phaseo:web_search" }` إلى `tools`.
-2. يقرّر النموذج ما إذا كان يحتاج إلى البحث ثم يصدر استعلامًا.
-3. تنفّذ Phaseo البحث باستخدام المحرك المُعدّ.
-4. تُعاد النتائج إلى النموذج ضمن سياق الأداة.
-5. يكتب النموذج الرد النهائي، ويمكنه البحث مجددًا عند الحاجة.
-
-## بدء سريع
+أضف `phaseo:web_search` ليتمكن النموذج من البحث على الويب عندما يحتاج إلى معلومات حديثة أو موثّقة بالمصادر. يكتب النموذج الاستعلام ويمكنه البحث عدة مرات في الطلب الواحد؛ ويعيد Phaseo عناوين URL والعناوين والمقتطفات والنقاط البارزة، ونص الصفحة اختياريًا، ثم يكتب النموذج إجابة مستندة إلى المصادر.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What were the major AI announcements this week?" }
     ],
@@ -37,7 +21,10 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## الإعداد
+يعمل إدخال الأداة نفسه في `tools` على `/v1/responses` و`/v1/messages`.
+
+<span id="parameters"></span>
+## المعاملات
 
 ```json
 {
@@ -49,99 +36,79 @@ curl https://api.phaseo.app/v1/chat/completions \
     "search_context_size": "medium",
     "max_characters": 2048,
     "allowed_domains": ["arxiv.org", "nature.com"],
-    "excluded_domains": ["reddit.com"],
     "include_highlights": true,
     "include_text": false
   }
 }
 ```
 
-| المعلمة | النوع | الافتراضي | الوصف |
+| المعامل | النوع | القيمة الافتراضية | الوصف |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | محرك البحث: `auto` أو `native` أو `exa` أو `parallel` أو `firecrawl` أو `perplexity` أو `tinyfish`. |
-| `max_results` | integer | `5` | العدد الأقصى للنتائج المعادة في استدعاء البحث الواحد. |
-| `max_total_results` | integer | `10` | الحد الأقصى التراكمي للنتائج عبر دورة أدوات الخادم. |
-| `max_uses` | integer | `10` | الحد الأقصى لاستدعاءات البحث عبر دورة أدوات الخادم. |
-| `search_context_size` | string | `medium` | حجم السياق للمحركات التي تدعم ضبط حجم المقاطع البارزة: `low` أو `medium` أو `high`. |
-| `max_characters` | integer | engine default | الحد الأقصى لأحرف النص لكل نتيجة عند تضمين النص. |
-| `allowed_domains` | string[] | none | أعِد النتائج من هذه النطاقات فقط. الاسم البديل: `include_domains`. |
-| `excluded_domains` | string[] | none | استبعد النتائج من هذه النطاقات. الاسم البديل: `exclude_domains`. |
-| `include_highlights` | boolean | `true` | ضمّ المقاطع البارزة أو المقتطفات التي يوفرها المحرك عند توفرها. |
-| `include_text` | boolean | `false` | ضمّ نصًا أكثر اكتمالًا للنتيجة إذا كان المحرك يدعم ذلك. |
-| `user_location` | object | none | تلميح موقع اختياري للمحركات التي تدعم البحث المحلي. |
-| `language` | نص | لا شيء | تلميح لغة TinyFish مثل `en`. |
-| `page` | عدد صحيح | `0` | صفحة نتائج TinyFish من `0` إلى `10`. |
+| `engine` | string | `exa` | `auto` أو `native` أو `exa` أو `parallel` أو `firecrawl` أو `perplexity` أو `tinyfish`. راجع [اختيار المحرك](#choose-an-engine). |
+| `max_results` | integer | `5` | عدد النتائج لكل استدعاء بحث، حتى `25`. |
+| `max_total_results` | integer | `25` | عدد النتائج عبر جميع عمليات البحث في الطلب، حتى `100`. لا تقل أبدًا عن `max_results`. |
+| `max_uses` | integer | `10` | عدد استدعاءات البحث لكل طلب، حتى `100`. |
+| `search_context_size` | string | `medium` | `low` أو `medium` أو `high`، للمحركات التي تحدد حجم النقاط البارزة. |
+| `max_characters` | integer | القيمة الافتراضية للمحرك | عدد أحرف النص لكل نتيجة عند تضمين النص. |
+| `allowed_domains` | string[] | لا شيء | البحث في هذه النطاقات فقط. الاسم البديل: `include_domains`. |
+| `excluded_domains` | string[] | لا شيء | استبعاد هذه النطاقات. الاسم البديل: `exclude_domains`. |
+| `include_highlights` | boolean | `true` | تضمين النقاط البارزة أو المقتطفات من المحرك. |
+| `include_text` | boolean | `false` | تضمين نص أكمل للصفحة حيث يدعمه المحرك. |
+| `user_location` | object | لا شيء | تلميح للموقع يُمرَّر إلى بحث المزوّد نفسه عندما تكون قيمة `engine` هي `native`. |
 
+## ما يرسله النموذج
+
+يحتوي كل استدعاء على `query`. ويمكن للنموذج أيضًا إرسال `max_results` و`engine` و`search_context_size` وقوائم النطاقات و`include_text` و`include_highlights` و`max_characters`، إضافة إلى تلميحات الترجمة المحلية التالية:
+
+| الوسيط | الوصف |
+| --- | --- |
+| `user_location` | الموقع التقريبي. يستخدم Perplexity القيمة `user_location.country` للبحث الإقليمي؛ ويستخدم TinyFish الدولة واللغة. |
+| `language` | رمز لغة النتائج، مثل `en`، للمحركات التي تدعم الترجمة المحلية. |
+| `page` | صفحة النتائج من `0` إلى `10`، لـ TinyFish. |
+
+تحل القيم التي يرسلها النموذج محل القيم الافتراضية للأداة في ذلك الاستدعاء. يبقى `max_results` محدودًا بما تبقى من `max_total_results`؛ وعندما ينفد، تعيد الاستدعاءات اللاحقة `max_total_results_reached`.
+
+<span id="choose-an-engine"></span>
 ## اختيار المحرك
 
-| Engine | السلوك |
+| المحرك | ما الذي يعمل |
 | --- | --- |
-| `exa` | بحث Exa مُدار. يجب أن تكون Phaseo قد أعدّت Exa لبيئة تشغيل البوابة. |
-| `auto` | يستخدم المحرك المُدار الافتراضي المُعدّ، وهو Exa حاليًا. |
-| `parallel` | يستخدم بحث Parallel عند إعداده. |
-| `firecrawl` | يستخدم بحث Firecrawl عند إعداده. |
-| `perplexity` | يستخدم واجهة Perplexity Search API الرسمية عند إعدادها. ويدعم النتائج المرتبة و`search_context_size` والبحث الإقليمي استنادًا إلى `user_location.country` والنطاقات المسموح بها أو المستبعدة. |
-| `tinyfish` | يستخدم TinyFish Search عند إعداد `TINYFISH_API_KEY`. يدعم نتائج مرتبة ومترجمة ومقسمة إلى صفحات ويحوّل `allowed_domains` / `excluded_domains` إلى عوامل بحث. لا يوفّر TinyFish Search نص الصفحة كاملًا؛ استخدم `phaseo:web_fetch` عند الحاجة إلى محتوى أشمل. |
-| `native` | يحوّل التعريف إلى أداة بحث ويب أصلية للمزوّد قبل استدعاء النموذج upstream إذا كانت واجهة الطلب تدعم ذلك. في Chat Completions وResponses، يُرسَل الطلب فقط إلى المزوّدين الذين يشغّلون البحث على الويب بأنفسهم؛ وإذا لم يخدم أيٌّ منهم النموذج، تشغّل Phaseo محرك البحث الافتراضي لديها بدلًا من ذلك وتفوتر عمليات البحث هذه كبحث مُدار. |
+| `exa` | بحث Exa المُدار. القيمة الافتراضية. |
+| `auto` | المحرك المُدار الافتراضي، وهو Exa حاليًا. |
+| `parallel` | بحث Parallel المُدار. |
+| `firecrawl` | بحث Firecrawl المُدار. |
+| `perplexity` | واجهة Perplexity Search API: نتائج مرتبة، و`search_context_size`، وبحث إقليمي من `user_location.country`. |
+| `tinyfish` | TinyFish Search: نتائج مرتبة ومقسمة إلى صفحات ومخصصة محليًا. يعيد مقتطفات، لا نص الصفحة الكامل؛ استخدم [`phaseo:web_fetch`](./web-fetch) عندما يحتاج النموذج إلى المزيد. |
+| `native` | أداة البحث على الويب الخاصة بالمزوّد، مثل `web_search_preview` من OpenAI أو `web_search_20250305` من Anthropic. |
 
-استخدم `engine: "native"` في تعريف الأداة فقط. إذا حاول النموذج إرسال `engine: "native"` ضمن استدعاء بحث صادر بالفعل عبر البوابة، تعيد Phaseo خطأ أداة لأن اختيار الأدوات الأصلية يجب أن يتم قبل إرسال الطلب upstream.
+إذا لم يكن المحرك المُدار مفعّلًا، يعيد الاستدعاء `search_not_configured` إلى النموذج.
 
-## TinyFish Search
+مع `engine: "native"` على `/v1/chat/completions` أو `/v1/responses`، لا يُرسل الطلب إلا إلى المزوّدين الذين ينفذون البحث على الويب بأنفسهم. إذا لم يقدّم أي منهم النموذج، يشغّل Phaseo محركه الافتراضي بدلًا من ذلك ويحتسبه بحثًا مُدارًا. اضبط `native` في تعريف الأداة فقط: إذا طلب النموذج `native` في استدعاء ما، يعيد الاستدعاء `unsupported_search_engine`، لأن أداة المزوّد يجب اختيارها قبل إرسال الطلب.
 
-فعّل المحرك بإعداد `TINYFISH_API_KEY` في أسرار تشغيل بوابة Phaseo، ثم اختره في معلمات الأداة:
+## التصفية حسب النطاق
 
-```json
-{
-  "type": "phaseo:web_search",
-  "parameters": {
-    "engine": "tinyfish",
-    "language": "en",
-    "page": 0,
-    "max_results": 5,
-    "allowed_domains": ["phaseo.app", "github.com"],
-    "excluded_domains": ["reddit.com"]
-  }
-}
-```
-
-يوفّر `language` تلميحًا للغة ويختار `page` صفحة نتائج من `0` إلى `10`. يدعم TinyFish قائمتي تصفية النطاقات ويحوّلهما Phaseo إلى عوامل بحث. تشمل النتائج عناوين URL والعناوين والمقتطفات والمقاطع البارزة. استخدم `phaseo:web_fetch` عندما يحتاج النموذج إلى نص أشمل من النتيجة.
-
-## تصفية النطاقات
-
-استخدم `allowed_domains` عندما يجب أن تستند الإجابة إلى مجموعة مصادر محددة:
+استخدم `allowed_domains` عندما يجب أن تأتي الإجابة من مجموعة ثابتة من المصادر، و`excluded_domains` لاستبعاد مواقع محددة من بحث مفتوح فيما عدا ذلك.
 
 ```json
 {
   "type": "phaseo:web_search",
-  "parameters": {
-    "allowed_domains": ["phaseo.app", "github.com"]
-  }
+  "parameters": { "allowed_domains": ["phaseo.app", "github.com"] }
 }
 ```
 
-استخدم `excluded_domains` عندما يُسمح بالبحث الواسع على الويب، مع استبعاد نطاقات محددة من النتائج.
+تتعامل المحركات مع القوائم بطرق مختلفة:
 
-يقبل Perplexity وFirecrawl إما `allowed_domains` أو`excluded_domains` في استدعاء بحث واحد، وليس كليهما. يقبل Perplexity حتى 20 مرشح نطاق لكل طلب ويحوّل النطاقات المستبعدة إلى تنسيق قائمة الحظر. يحوّل TinyFish المصفوفتين إلى العاملين `site:` و`-site:` في الاستعلام.
+- **Perplexity** يقبل إحدى القائمتين، لا كلتيهما، وحتى 20 نطاقًا. تُرسل النطاقات المستبعدة بصيغة قائمة الحظر الخاصة به.
+- **Firecrawl** يقبل إحدى القائمتين، لا كلتيهما.
+- **TinyFish** يقبل القائمتين ويحوّلهما إلى عاملَي `site:` و`-site:` في الاستعلام.
 
-TinyFish Search مجاني ضمن خططه المنشورة، لذا لا يضيف Phaseo رسوم استخدام للمزوّد عند `engine: "tinyfish"`؛ وتبقى أسعار طلبات ورموز Phaseo العادية سارية.
+## ما تعيده الأداة
 
-## Responses API
-
-تعمل بنية الأداة نفسها مع `/v1/responses`:
-
-```json
-{
-  "model": "openai/gpt-5-nano",
-  "input": "Find the latest release notes for Phaseo.",
-  "tools": [
-    { "type": "phaseo:web_search", "parameters": { "max_results": 4 } }
-  ]
-}
-```
+نتيجة JSON تتضمن المحرك والاستعلام ومصفوفة `results`. تحتوي كل نتيجة على `title` و`url` و`snippet` أو `highlights`، و`text` عندما يُطلب نص الصفحة ويوفّره المحرك.
 
 ## الاستخدام والتسعير
 
-تزيد استدعاءات البحث على الويب العدادات التالية:
+تضيف كل عملية بحث إلى `usage.server_tool_use`:
 
 ```json
 {
@@ -155,10 +122,4 @@ TinyFish Search مجاني ضمن خططه المنشورة، لذا لا يضي
 }
 ```
 
-يمكن أن يستخدم تسعير البحث المُدار العدادين `server_tool_web_search_requests` و`server_tool_web_search_extra_results`. ويمكن استخدام `native_web_search_requests` للبحث الأصلي للمزوّد إذا عرّفت بطاقة سعر النموذج هذا العداد.
-
-## ذات صلة
-
-- [جلب الويب](./web-fetch.mdx)
-- [أدوات الخادم](./index.mdx)
-- [إسناد الإجابات باستخدام البحث وجلب صفحات الويب](../../cookbook/tool-grounding-with-web-fetch.mdx)
+يحاسب Phaseo كل بحث مُدار بمبلغ $0.007، إضافة إلى $0.001 لكل نتيجة بعد أول 10 نتائج، ما لم تحدد بطاقة سعر النموذج أسعارها الخاصة لـ `server_tool_web_search_requests` و`server_tool_web_search_extra_results`. لا تُحتسب عمليات البحث الفاشلة، وبحث TinyFish مجاني ضمن خططه المنشورة، لذا لا يضيف `engine: "tinyfish"` أي رسوم بحث. وتتطلب عمليات البحث على المحركات المدفوعة رصيدًا حتى عندما يكون النموذج مجانيًا. ويُحتسب البحث الأصلي عبر `native_web_search_requests` حيث تحدده بطاقة سعر النموذج.

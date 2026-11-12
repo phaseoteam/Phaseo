@@ -1,21 +1,17 @@
 ---
 icon: "bot"
 title: "Subagent 服务器工具"
-description: "让主模型将特定任务委托给工作模型。"
+description: "让主模型把专注的工作委派给工作模型。"
 ---
 
-如果主模型需要在同一请求中将独立任务交给更小或更快的工作模型，请使用 `phaseo:subagent`。
-
-主模型通过任务说明调用 Subagent 工具。Phaseo 在服务器端运行工作模型，将其结果作为工具上下文返回，然后由主模型完成回答。
-
-## 快速开始
+添加 `phaseo:subagent`，主模型就能在同一个请求中把一个独立任务交给工作模型（通常是更小或更快的模型）。主模型描述任务；Phaseo 运行工作模型并返回其结果，再由主模型完成回答。
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "anthropic/claude-opus-5",
     "messages": [
       { "role": "user", "content": "Compare these release notes and summarize the breaking changes." }
     ],
@@ -23,7 +19,7 @@ curl https://api.phaseo.app/v1/chat/completions \
       {
         "type": "phaseo:subagent",
         "parameters": {
-          "model": "openai/gpt-5-nano",
+          "model": "openai/gpt-6-astra",
           "instructions": "Return concise findings for the main model. Do not address the end user directly.",
           "max_uses": 3,
           "max_completion_tokens": 1200
@@ -35,33 +31,20 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## 参数
 
-```json
-{
-  "type": "phaseo:subagent",
-  "parameters": {
-    "model": "openai/gpt-5-nano",
-    "instructions": "You are a fast, focused worker. Complete only the delegated task.",
-    "max_uses": 3,
-    "max_completion_tokens": 1200,
-    "reasoning": { "effort": "low" },
-    "temperature": 0.2
-  }
-}
-```
-
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `model` | string | `openai/gpt-5-nano` | 要调用的工作模型。 |
-| `instructions` | string | 面向工作模型的具体指令 | 添加到 Subagent 默认行为中的附加指令。 |
-| `max_uses` | integer | `10` | 服务器工具循环中 Subagent 调用次数的上限。 |
-| `max_completion_tokens` | integer | 顾问默认值 | 每个工作模型响应的最大输出 Token 数。 |
-| `max_tokens` | integer | 顾问默认值 | `max_completion_tokens` 的旧别名。 |
-| `reasoning` | object | 提供商默认值 | 支持时传递给工作模型调用的推理配置。 |
+| `model` | string | 请求的模型 | 工作模型。 |
+| `instructions` | string | 内置的工作模型指令 | 给工作模型的额外指令。 |
+| `max_uses` | integer | `1` | 每个请求中的 Subagent 调用次数。 |
+| `max_completion_tokens` | integer | `1400` | 每次工作模型回复的输出 token 数。低于 `1024` 的值会被提高到 `1024`。`max_tokens` 作为旧别名仍被接受。 |
+| `reasoning` | object | 提供商默认值 | 推理设置，在工作模型支持时传递。 |
 | `temperature` | number | 提供商默认值 | 工作模型调用的采样温度。 |
 
-## 工具调用参数
+工作模型永远不会收到对话内容：请把它需要的一切都写进任务中。
 
-模型通常使用 `task_description` 调用 Subagent：
+## 模型发送的内容
+
+一个 `task_description`，包含完整的任务、上下文和预期输出，另外还可以带一个简短的 `task_name`：
 
 ```json
 {
@@ -69,40 +52,20 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-如果模型使用了略有不同的参数名称，Phaseo 也会将 `task`、`prompt` 或 `input` 识别为别名。
+`task`、`prompt` 或 `input` 也可以代替 `task_description`。
 
-## 工具返回内容
-
-Subagent 会以 JSON 形式返回工具结果：
+## 工具返回的内容
 
 ```json
 {
   "status": "ok",
-  "model": "openai/gpt-5-nano",
-  "result": "The highest-risk steps are schema migration, traffic cutover, and rollback verification."
+  "model": "openai/gpt-6-astra",
+  "outcome": "The highest-risk steps are schema migration, traffic cutover, and rollback verification."
 }
 ```
 
-如果工作模型请求无法执行，Phaseo 会返回工具错误，例如 `subagent_invalid_request`、`subagent_max_uses_exceeded` 或 `subagent_request_failed`。
+如果调用无法执行，模型会收到 `subagent_invalid_request`（没有任务）、`subagent_max_uses_exceeded` 或 `subagent_request_failed`。
 
 ## 用量和价格
 
-Subagent 调用会增加：
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "subagent_requests": 1
-    }
-  }
-}
-```
-
-工作模型使用的 Token 会计入总用量，并按所选工作模型的价格计费。
-
-## 相关内容
-
-- [Advisor](./advisor.mdx)
-- [Fusion](./fusion.mdx)
-- [服务器工具](./index.mdx)
+每次调用会使 `usage.server_tool_use.subagent_requests` 加 1，并可通过 `server_tool_subagent_requests` 计费。工作模型的 token 按该模型自身的费率计费，作为请求账单中的单独一项，不会计入调用模型的 token 数。即使调用模型免费，使用付费工作模型也需要账户有余额。如需审阅而非委派工作，请使用 [Advisor](./advisor)。

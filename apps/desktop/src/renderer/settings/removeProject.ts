@@ -3,7 +3,7 @@ import type { Project, Task } from "../../shared/workspace";
 import { errorText, useWorkspace } from "../app/workspace";
 import { saveKeybindings, useKeybindings } from "../lib/keybindings";
 
-/** T3's confirmation for Remove project, with "chats" for its threads. */
+/** The confirmation for Remove project. */
 export function removeProjectMessage(project: Pick<Project, "name" | "directory">, chats: number) {
 	return [
 		chats > 0 ? `Remove project "${project.name}" and delete its ${chats} chat${chats === 1 ? "" : "s"}?` : `Remove project "${project.name}"?`,
@@ -21,7 +21,7 @@ export function projectChats(project: Pick<Project, "id">, projects: readonly Pr
 }
 
 /**
- * T3's Remove project: asks first, then deletes the project entry, its worktree entries and their chats. Files on
+ * Remove project: asks first, then deletes the project entry, its worktree entries and their chats. Files on
  * disk are never touched. Its action shortcuts go too. Resolves true when it was removed.
  */
 export function useRemoveProject() {

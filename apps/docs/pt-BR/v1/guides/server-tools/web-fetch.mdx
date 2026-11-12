@@ -1,29 +1,17 @@
 ---
 icon: "cloud-download"
 title: "Ferramenta de servidor Web Fetch"
-description: "Permita que os modelos consultem URLs específicas durante uma requisição."
+description: "Permita que os modelos busquem e leiam URLs específicas durante uma solicitação."
 ---
 
-Use `phaseo:web_fetch` quando o modelo precisar ler uma URL conhecida, como uma página de documentação, um artigo, um changelog ou uma fonte de texto semelhante a PDF.
-
-O modelo decide quando consultar, fornece a URL e recebe um trecho limitado da página como contexto da ferramenta.
-
-## Como funciona
-
-1. Adicione `{ "type": "phaseo:web_fetch" }` a `tools`.
-2. O modelo decide se precisa consultar uma URL.
-3. A Phaseo busca e extrai o conteúdo usando o mecanismo configurado.
-4. O texto extraído, o título, a URL e os metadados de truncamento são retornados ao modelo.
-5. O modelo escreve a resposta final e pode consultar outras URLs, se necessário.
-
-## Início rápido
+Adicione `phaseo:web_fetch` para que o modelo possa ler uma URL conhecida, como uma página de documentação, um artigo ou um changelog. O modelo fornece a `url`; o Phaseo busca a página e retorna o texto dela, cortado em um limite de tamanho, e o modelo pode buscar mais páginas antes de responder.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "Summarize https://phaseo.app/docs/v1/guides/tool-calling" }
     ],
@@ -33,7 +21,8 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Configuração
+<span id="parameters"></span>
+## Parâmetros
 
 ```json
 {
@@ -49,31 +38,38 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | Parâmetro | Tipo | Padrão | Descrição |
 | --- | --- | --- | --- |
-| `engine` | string | depende da superfície | Mecanismo de busca: `auto`, `native`, `direct`, `exa`, `parallel` ou `firecrawl`. |
-| `max_chars` | inteiro | `12000` | Número máximo de caracteres extraídos retornados ao modelo. |
-| `max_content_tokens` | inteiro | nenhum | Alias por tokens usado quando `max_chars` não é informado. |
-| `max_uses` | inteiro | `10` | Número máximo de chamadas de busca durante o ciclo da ferramenta de servidor. |
-| `allowed_domains` | string[] | nenhum | Permite buscas somente nestes domínios. |
-| `blocked_domains` | string[] | nenhum | Rejeita buscas nesses domínios. Alias: `excluded_domains`. |
+| `engine` | string | `direct` | `auto`, `native`, `direct`, `exa`, `parallel` ou `firecrawl`. Veja [Escolha um mecanismo](#choose-an-engine). |
+| `max_chars` | inteiro | `12000` | Caracteres do texto da página retornados ao modelo, até `100000`. |
+| `max_content_tokens` | inteiro | Nenhum | Usado no lugar de `max_chars` quando `max_chars` é omitido. Também é o limite de tamanho para `native`. |
+| `max_uses` | inteiro | `10` | Chamadas de busca por solicitação, até `100`. |
+| `allowed_domains` | string[] | Nenhum | Busca somente nestes domínios. O modelo pode restringir esta lista em uma chamada, mas não ampliá-la. |
+| `blocked_domains` | string[] | Nenhum | Nunca busca nestes domínios. Alias: `excluded_domains`. |
 
-## Seleção do mecanismo
+## O que o modelo envia
 
-| Mecanismo | Comportamento |
+Cada chamada tem uma `url`. O modelo também pode enviar `engine`, `max_chars`, `max_content_tokens` e as listas de domínios.
+
+<span id="choose-an-engine"></span>
+## Escolha um mecanismo
+
+| Mecanismo | O que é executado |
 | --- | --- |
-| `auto` | Usa a busca nativa da Anthropic em `/v1/messages`; caso contrário, usa Exa se estiver configurado; se não, usa a busca direta do gateway. |
-| `direct` | Busca diretamente no runtime do gateway e extrai texto com limite. |
-| `exa` | Usa a extração de conteúdo do Exa quando configurada. |
-| `parallel` | Usa o Parallel Extract quando configurado. |
-| `firecrawl` | Usa o Firecrawl Scrape quando configurado. |
-| `native` | Converte para `web_fetch_20260209` nativo da Anthropic em `/v1/messages`. Outras superfícies devem usar `direct` ou um mecanismo gerenciado. |
+| `auto` | A busca nativa da Anthropic em `/v1/messages`. Em outros endpoints, Exa quando estiver habilitado; caso contrário, `direct`. |
+| `direct` | O próprio Phaseo busca a página e reduz o HTML a texto simples. |
+| `exa` | Extração de conteúdo do Exa. |
+| `parallel` | Parallel Extract. |
+| `firecrawl` | Firecrawl Scrape. |
+| `native` | A ferramenta `web_fetch_20260209` da Anthropic, somente em `/v1/messages`. Em outros endpoints, a solicitação é rejeitada; use `direct` ou um mecanismo gerenciado. |
 
-São compatíveis apenas URLs HTTP(S). A busca direta do gateway aceita tipos de conteúdo textuais e converte HTML em texto simples antes de retorná-lo ao modelo.
+Se um mecanismo gerenciado não estiver habilitado, a chamada retorna `fetch_not_configured` ao modelo.
 
-## Busca nativa da Anthropic
+Só URLs HTTP(S) funcionam. `direct` aceita apenas tipos de conteúdo de texto, como HTML, texto simples e JSON, e retorna `unsupported_content_type` para qualquer outro. Ele segue até 5 redirecionamentos e verifica cada um em relação às suas listas de domínios.
+
+### Busca nativa da Anthropic
 
 ```json
 {
-  "model": "claude-sonnet-4.6",
+  "model": "anthropic/claude-sonnet-4.6",
   "max_tokens": 1024,
   "messages": [
     { "role": "user", "content": "Read the docs page and summarize the limits." }
@@ -92,9 +88,7 @@ São compatíveis apenas URLs HTTP(S). A busca direta do gateway aceita tipos de
 }
 ```
 
-## Resultado da ferramenta
-
-A busca gerenciada retorna um resultado JSON da ferramenta com campos como:
+## O que a ferramenta retorna
 
 ```json
 {
@@ -111,26 +105,8 @@ A busca gerenciada retorna um resultado JSON da ferramenta com campos como:
 }
 ```
 
-Confira `truncated` antes de presumir que o modelo recebeu a página inteira.
+Verifique `truncated` antes de presumir que o modelo viu a página inteira. Para um exemplo completo, veja [Fundamentação de ferramentas com web fetch](../../cookbook/tool-grounding-with-web-fetch).
 
 ## Uso e preços
 
-As chamadas de Web Fetch incrementam:
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "web_fetch_requests": 1
-    }
-  }
-}
-```
-
-A cobrança da busca gerenciada pode usar `server_tool_web_fetch_requests`. O uso da busca nativa do provedor pode usar `native_web_fetch_requests` quando o cartão de preços do modelo define essa métrica.
-
-## Guias relacionados
-
-- [Busca na web](./web-search.mdx)
-- [Ferramentas de servidor](./index.mdx)
-- [Fundamente respostas com Web Fetch](../../cookbook/tool-grounding-with-web-fetch.mdx)
+Cada busca de página soma 1 a `usage.server_tool_use.web_fetch_requests`. A Phaseo cobra $0.001 por busca gerenciada feita pelo Exa, Parallel ou Firecrawl, a menos que o cartão de preços do modelo defina o próprio preço de `server_tool_web_fetch_requests`; buscas diretas são gratuitas. Buscas por mecanismos pagos exigem créditos mesmo quando o modelo é gratuito. A busca nativa é cobrada com `native_web_fetch_requests` quando o cartão de preços do modelo a define.

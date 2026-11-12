@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
+// Table files carry the MFA and OAuth-client policies (require_mfa_for_data_api, refuse_oauth_client_writes); these fixtures don't load their helpers.
+const MFA_SATISFIED_STUB = "create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true'; create or replace function public.request_is_oauth_client() returns boolean language sql stable as 'select false';";
 
 // The removed columns, as they were declared before this migration.
 const REMOVED = [
@@ -27,11 +29,14 @@ const prelude = `
   create function public.is_workspace_admin(uuid) returns boolean language sql as $$ select true $$;
   create function public.is_workspace_member(uuid) returns boolean language sql as $$ select true $$;
   create function public.protect_slack_agent_guardrail() returns trigger language plpgsql as $$ begin return coalesce(new, old); end $$;
+  create function private.protect_workspace_baseline_guardrail() returns trigger language plpgsql as $$ begin return coalesce(new, old); end $$;
+  create function private.sync_workspace_baseline_guardrail() returns trigger language plpgsql as $$ begin return null; end $$;
 `;
 
 async function database(tableSql) {
   const db = new PGlite();
   await db.exec(prelude);
+  await db.exec(MFA_SATISFIED_STUB);
   await db.exec(tableSql);
   return db;
 }

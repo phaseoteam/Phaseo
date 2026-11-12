@@ -1,0 +1,177 @@
+---
+icon: "arrow-right-left"
+title: "الترجمة"
+description: "ترجم الكلام إلى نص إنجليزي باستخدام POST /v1/audio/translations من أي حزمة Phaseo SDK."
+---
+
+ارفع الكلام إلى `POST /v1/audio/translations` لتحصل على نص باللغة الإنجليزية. لا تقرأ نقطة النهاية الصوت إلا من حقل `file` متعدد الأجزاء وليس لديها خيار لعنوان URL، لذا لا يمكن استدعاؤها مباشرة إلا من حزمة TypeScript SDK؛ أما كل لغة أخرى فترسل النموذج باستخدام عميل HTTP القياسي الخاص بها.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { readFile } from "node:fs/promises";
+
+const form = new FormData();
+form.append("model", "openai/whisper-1");
+form.append("file", new Blob([await readFile("interview.mp3")], { type: "audio/mpeg" }), "interview.mp3");
+
+const translated = await client.generateTranslation(form as unknown as Record<string, unknown>);
+console.log(translated.text);
+```
+
+```python Python
+# لا تستطيع generate_translation() رفع الصوت بعد، لذا أرسل النموذج باستخدام HTTPX.
+import os
+import httpx
+
+with open("interview.mp3", "rb") as audio:
+    response = httpx.post(
+        "https://api.phaseo.app/v1/audio/translations",
+        headers={"Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}"},
+        data={"model": "openai/whisper-1"},
+        files={"file": ("interview.mp3", audio, "audio/mpeg")},
+        timeout=120,
+    )
+response.raise_for_status()
+print(response.json()["text"])
+```
+
+```go Go
+// ترسل CreateTranslation() بيانات JSON، لذا أرسل النموذج باستخدام net/http وmime/multipart.
+var body bytes.Buffer
+form := multipart.NewWriter(&body)
+_ = form.WriteField("model", "openai/whisper-1")
+part, _ := form.CreateFormFile("file", "interview.mp3")
+audio, _ := os.ReadFile("interview.mp3")
+_, _ = part.Write(audio)
+_ = form.Close()
+
+req, _ := http.NewRequest("POST", "https://api.phaseo.app/v1/audio/translations", &body)
+req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
+req.Header.Set("Content-Type", form.FormDataContentType())
+
+resp, err := http.DefaultClient.Do(req)
+```
+
+```csharp C#
+// ترسل CreateTranslation() بيانات JSON، لذا أرسل النموذج باستخدام HttpClient.
+using var http = new HttpClient();
+http.DefaultRequestHeaders.Authorization =
+    new("Bearer", Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
+
+using var form = new MultipartFormDataContent
+{
+    { new StringContent("openai/whisper-1"), "model" },
+    { new ByteArrayContent(await File.ReadAllBytesAsync("interview.mp3")), "file", "interview.mp3" },
+};
+
+var response = await http.PostAsync("https://api.phaseo.app/v1/audio/translations", form);
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+```
+
+```php PHP
+<?php
+// ترسل generateTranslation() بيانات JSON، لذا أرسل النموذج باستخدام Guzzle، الذي ثبّته Composer مع حزمة SDK.
+require 'vendor/autoload.php';
+
+$http = new GuzzleHttp\Client();
+
+$response = $http->post('https://api.phaseo.app/v1/audio/translations', [
+    'headers' => ['Authorization' => 'Bearer ' . getenv('PHASEO_API_KEY')],
+    'multipart' => [
+        ['name' => 'model', 'contents' => 'openai/whisper-1'],
+        ['name' => 'file', 'contents' => fopen('interview.mp3', 'r'), 'filename' => 'interview.mp3'],
+    ],
+]);
+
+echo $response->getBody();
+```
+
+```ruby Ruby
+# ترسل generate_translation بيانات JSON، لذا أرسل النموذج باستخدام Net::HTTP.
+require 'net/http'
+
+uri = URI('https://api.phaseo.app/v1/audio/translations')
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV.fetch('PHASEO_API_KEY')}"
+request.set_form(
+  [['model', 'openai/whisper-1'], ['file', File.open('interview.mp3')]],
+  'multipart/form-data'
+)
+
+response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
+puts response.body
+```
+
+```java Java
+// لا ترمّز دوال JSON المساعدة في حزمة SDK البيانات متعددة الأجزاء، لذا أرسل النموذج باستخدام java.net.http.
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nopenai/whisper-1\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"interview.mp3\"\r\nContent-Type: audio/mpeg\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("interview.mp3")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/audio/translations"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body());
+```
+
+</CodeGroup>
+
+| اللغة | دالة حزمة SDK | هل يمكنها رفع ملف؟ |
+| --- | --- | --- |
+| TypeScript | `client.generateTranslation(form)` | نعم. مرّر جسم `FormData` وسترسله حزمة SDK بوصفه بيانات متعددة الأجزاء دون تغيير؛ والتحويل (cast) ضروري لأن نوع الدالة يصف جسم JSON. |
+| Python | `client.generate_translation(request)` | لا. ترسل بيانات JSON، لذا أرسل النموذج باستخدام HTTPX، كما في المثال أعلاه. |
+| Go | `client.CreateTranslation(ctx, req)` | لا. ترسل بيانات JSON، وترفضها البوابة بالخطأ `file is required`. |
+| C# | `client.CreateTranslation(request)` | لا. ترسل بيانات JSON، وترفضها البوابة بالخطأ `file is required`. |
+| PHP | `$client->generateTranslation($request)` | لا. ترسل بيانات JSON، وترفضها البوابة بالخطأ `file is required`. |
+| Ruby | `client.generate_translation(...)` | لا. ترسل بيانات JSON، وترفضها البوابة بالخطأ `file is required`. |
+| Java | لا توجد | لا. استخدم `java.net.http.HttpClient` مع جسم متعدد الأجزاء. |
+
+لا تتضمن Rust دالة للترجمة، ودالتها المساعدة `post()` ترسل بيانات JSON فقط.
+
+## المعاملات
+
+أسماء الحقول في كل لغة هي حقول النموذج.
+
+| الحقل | ملاحظات |
+| --- | --- |
+| `model` | مطلوب. معرّف نموذج ترجمة. |
+| `file` | مطلوب. ما يصل إلى 25 MB، بتنسيق `flac` أو `mp3` أو `mp4` أو `mpeg` أو `mpga` أو `m4a` أو `ogg` أو `wav` أو `webm`. |
+| `prompt` | سياق لتوجيه الترجمة. |
+| `temperature` | من `0` إلى `1`. |
+| `response_format` | `json` أو `text` أو `srt` أو `verbose_json` أو `vtt`. |
+
+المخطط الكامل موجود في [مرجع Translations API](/ar/v1/api-reference/endpoint/audio-translations).
+
+## الاستجابة
+
+`AudioTranslationResponse`:
+
+```json
+{
+  "text": "Hello world"
+}
+```

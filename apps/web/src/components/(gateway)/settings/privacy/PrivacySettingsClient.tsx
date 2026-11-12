@@ -1,10 +1,8 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,7 +35,7 @@ import { DataContributionSettingsCard } from "./DataContributionSettingsCard";
 import {
 	updateGlobalGuardrailsSettings,
 	type ProviderRestrictionMode,
-} from "@/app/(dashboard)/settings/guardrails/actions";
+} from "@/features/settings/guardrails/actions";
 
 const AUTO_SAVE_DEBOUNCE_MS = 650;
 
@@ -542,7 +540,7 @@ export default function PrivacySettingsClient(props: {
 			setSavingGlobal(true);
 			try {
 				await toast.promise(
-					updateGlobalGuardrailsSettings({
+					updateGlobalGuardrailsSettings({ data: { payload: {
 						privacyEnablePaidMayTrain: global.privacyEnablePaidMayTrain,
 						privacyEnableFreeMayTrain: global.privacyEnableFreeMayTrain,
 						privacyEnableFreeMayPublishPrompts:
@@ -561,7 +559,7 @@ export default function PrivacySettingsClient(props: {
 							global.providerRestrictionProviderIds,
 						providerRestrictionEnforceAllowed:
 							global.providerRestrictionEnforceAllowed,
-					}),
+					} } }),
 					{
 						loading: s("phraseSavingPrivacySettings"),
 						success: s("Privacy settings updated"),
@@ -698,8 +696,6 @@ export default function PrivacySettingsClient(props: {
 											}
 										>
 										<option value="90">{s("90 days")}</option>
-										<option value="180">{s("180 days")}</option>
-										<option value="365">{s("365 days")}</option>
 										</select>
 									</label>
 									<ToggleRow

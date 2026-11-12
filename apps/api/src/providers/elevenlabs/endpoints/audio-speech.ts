@@ -8,7 +8,7 @@ import { buildAdapterPayload } from "../../utils";
 import { resolveProviderKey } from "../../keys";
 import { getBindings } from "@/runtime/env";
 import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
-import { resolveElevenLabsVoiceId, validateElevenLabsVoiceForModel } from "../voices";
+import { ELEVENLABS_TTS_VOICE_ALIASES, resolveElevenLabsVoiceId, validateElevenLabsVoiceForModel } from "../voices";
 
 function resolveElevenLabsModelSlug(requestedModel: string, providerModelSlug?: string | null): string {
 	if (providerModelSlug && providerModelSlug.trim().length > 0) {
@@ -28,7 +28,9 @@ function resolveOutputFormat(
 
 	const target = responseFormat ?? format;
 	if (target === "mp3") return "mp3_44100_128";
-	if (target === "wav" || target === "pcm") return "pcm_44100";
+	// wav_44100 is a WAV file; pcm_44100 is raw 16-bit PCM without a header.
+	if (target === "wav") return "wav_44100";
+	if (target === "pcm") return "pcm_44100";
 	return undefined;
 }
 
@@ -54,15 +56,14 @@ function missingVoiceResponse(): Response {
 	);
 }
 
-function invalidVoiceResponse(voice: string, model: string, supported: string[]): Response {
-	const isV4 = /(?:^|\/)eleven[-_]v4(?:[-_]turbo)?$/.test(model);
+function invalidVoiceResponse(voice: string, model: string): Response {
 	return new Response(
 		JSON.stringify({
 			error: {
 				type: "invalid_request_error",
 				message:
 					`Invalid voice "${voice}" for ElevenLabs model "${model}". ` +
-					(isV4 ? "Use a 20-character ElevenLabs voice ID." : `Supported voices: ${supported.join(", ")}`),
+					`Use a 20-character ElevenLabs voice ID from your voice library, or one of: ${ELEVENLABS_TTS_VOICE_ALIASES.join(", ")}.`,
 				param: "voice",
 			},
 		}),
@@ -142,7 +143,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	if (!voiceValidation.ok) {
 		return {
 			kind: "completed",
-			upstream: invalidVoiceResponse(voiceId, typedPayload.model, voiceValidation.supported),
+			upstream: invalidVoiceResponse(voiceId, typedPayload.model),
 			bill: {
 				cost_cents: 0,
 				currency: "USD",

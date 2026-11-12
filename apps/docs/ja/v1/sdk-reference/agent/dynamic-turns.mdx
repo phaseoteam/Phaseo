@@ -1,0 +1,233 @@
+---
+icon: "shuffle"
+title: "Agent SDK の動的ターン"
+sidebarTitle: "動的ターン"
+description: "エージェントを作り直さずに、ターンの間にモデル、指示、サンプリング、ツールを変更します。"
+---
+
+後のモデルターンをアプリケーションのコンテキストやそれまでの結果に応じて変えたい場合は、固定値の代わりに関数を渡します。ランタイムは、各モデルリクエストの前に、ターン数、ステップ番号、メッセージ、コンテキストを渡してその関数を呼び出します。Rust にはターンごとのコールバックがなく、[実行ごとにモデルを設定](#set-the-model-per-run-in-rust)します。
+
+## ターンごとに設定を変える
+
+<CodeGroup>
+
+```typescript TypeScript
+type ResearchContext = {
+  fast: boolean;
+};
+
+const agent = createAgent<string, string, ResearchContext>({
+  id: "research-agent",
+  model: ({ context }) =>
+    context?.fast ? "openai/gpt-6-astra" : "openai/gpt-6-astra-pro",
+  instructions: ({ numberOfTurns }) =>
+    `Research turn ${numberOfTurns}. Cite the evidence you use.`,
+});
+```
+
+```python Python
+agent = create_agent({
+    "id": "research-agent",
+    "model": lambda turn: "openai/gpt-6-astra" if (turn["context"] or {}).get("fast") else "openai/gpt-6-astra-pro",
+    "instructions": lambda turn: f"Research turn {turn['number_of_turns']}. Cite the evidence you use.",
+})
+```
+
+```go Go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:    "support-agent",
+  Model: "openai/gpt-6-astra",
+  DynamicModel: func(turn phaseoagent.TurnContext) string {
+    if turn.StepIndex >= 3 {
+      return "openai/gpt-6-astra-pro"
+    }
+    return "openai/gpt-6-astra"
+  },
+  DynamicInstructions: func(turn phaseoagent.TurnContext) string {
+    return fmt.Sprintf("Resolve the request. Current context: %v", turn.Context)
+  },
+})
+```
+
+```csharp C#
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "support-agent",
+    Model = "openai/gpt-6-astra",
+    DynamicModel = turn => turn.StepIndex >= 3 ? "openai/gpt-6-astra-pro" : "openai/gpt-6-astra",
+    DynamicInstructions = turn => $"Resolve the request. Current context: {turn.Context}",
+});
+```
+
+```php PHP
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "support-agent",
+    model: fn (array $turn) => $turn["step_index"] >= 3
+        ? "openai/gpt-6-astra-pro"
+        : "openai/gpt-6-astra",
+    instructions: fn (array $turn) => "Resolve the request. Current context: " . json_encode($turn["context"]),
+));
+```
+
+```ruby Ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "support-agent",
+  model: ->(turn) {
+    turn[:step_index] >= 3 ? "openai/gpt-6-astra-pro" : "openai/gpt-6-astra"
+  },
+  instructions: ->(turn) {
+    "Resolve the request. Current context: #{turn[:context].inspect}"
+  }
+)
+```
+
+```java Java
+// コールバックは19引数コンストラクターの最後の6つの引数です。
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "support-agent", "openai/gpt-6-astra", null, "Resolve the request.",
+    List.of(), 12, null, null, null, null,
+    List.of(), null, null,                         // stopWhen, outputSchema, requireApproval
+    turn -> turn.stepIndex() >= 3 ? "openai/gpt-6-astra-pro" : "openai/gpt-6-astra", // dynamicModel
+    turn -> "Resolve the request. Current context: " + turn.context(),         // dynamicInstructions
+    null, null, null,                              // temperature, maxOutputTokens, topP
+    null                                           // dynamicTools
+));
+```
+
+</CodeGroup>
+
+### ターンごとに変えられるもの
+
+| 設定 | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| モデル | `model` | `model` | `DynamicModel` | `DynamicModel` | `model` | `model:` | `dynamicModel` |
+| 指示 | `instructions` | `instructions` | `DynamicInstructions` | `DynamicInstructions` | `instructions` | `instructions:` | `dynamicInstructions` |
+| temperature | `temperature` | `temperature` | `Temperature`（`*float64`） | `Temperature`（`double?`） | `temperature` | `temperature:` | `temperature`（`Double`） |
+| top-p | `topP` | `top_p` | `TopP`（`*float64`） | `TopP`（`double?`） | `topP` | `top_p:` | `topP`（`Double`） |
+| 最大出力トークン数 | `maxOutputTokens` | `max_output_tokens` | `MaxOutputTokens`（`*int`） | `MaxOutputTokens`（`int?`） | `maxOutputTokens` | `max_output_tokens:` | `maxOutputTokens`（`Integer`） |
+| 提供するツール | `activeTools`（ツール ID） | ターンごとには不可。`next_turn_params` を使う | `DynamicTools`（`[]Tool`） | `DynamicTools`（`IReadOnlyList<Tool>`） | `dynamicTools` | `dynamic_tools:` | `dynamicTools`（`List<Tool>`） |
+| モデルのリスト | `models` | なし | なし | なし | なし | なし | なし |
+
+TypeScript、Python、PHP、Ruby は、固定のフィールドの代わりに関数を受け取ります。Go、C#、Java は、固定の `Model` と `Instructions` とは別のコールバックフィールドを使います。TypeScript では、`activeTools` から外したツールも呼び出し可能なままなので、以前の呼び出しは引き続き解決されます。
+
+ターンの引数は、どの言語でも同じ4つの値を持ちます。
+
+| 言語 | ターンの引数 |
+| --- | --- |
+| TypeScript | `numberOfTurns`、`stepIndex`、`messages`、`context` を持つオブジェクト |
+| Python | `number_of_turns`、`step_index`、`messages`、`context` を持つ dict |
+| Go、C# | `NumberOfTurns`、`StepIndex`、`Messages`、`Context` を持つ `TurnContext` |
+| PHP | `number_of_turns`、`step_index`、`messages`、`context` を持つ配列 |
+| Ruby | `:number_of_turns`、`:step_index`、`:messages`、`:context` を持つハッシュ |
+| Java | `numberOfTurns()`、`stepIndex()`、`messages()`、`context()` を持つ `TurnContext` |
+
+Python では、`run()` に渡した `model` または `preset` が、すべてのターンで定義のモデルを置き換えます。
+
+## ツールからアプリケーションのコンテキストを更新する
+
+ツールは、後のターンが読むアプリケーションのコンテキストを置き換えられます。TypeScript では `context.setContext()`、Python では `runtime.set_context()`、その他の言語の同等のものは[ツール](./tools#report-progress-and-update-context)にあります。実行を保存して後で続行する場合は、コンテキストを小さく、シリアライズ可能に保ってください。
+
+```typescript
+const chooseMode = defineTool({
+  id: "choose-mode",
+  async execute(input: { fast: boolean }, context) {
+    context.setContext({ fast: input.fast });
+    return { selected: input.fast ? "fast" : "thorough" };
+  },
+});
+```
+
+## 次のターンだけを上書きする
+
+ツールに次のターンのパラメーターを設定すると、エージェント定義を変えずに、そのツールの直後のリクエストを変更できます。その1ターンについては、ターンごとの関数より優先されます。
+
+<CodeGroup>
+
+```typescript TypeScript
+const broadenSearch = defineTool({
+  id: "broaden-search",
+  nextTurnParams: {
+    model: "openai/gpt-6-astra-pro",
+    maxOutputTokens: 2_000,
+  },
+  async execute() {
+    return { broadened: true };
+  },
+});
+```
+
+```python Python
+broaden_search = define_tool(AgentTool(
+    id="broaden-search",
+    next_turn_params={"model": "openai/gpt-6-astra-pro", "max_output_tokens": 2_000},
+    execute=lambda tool_input, runtime: {"broadened": True},
+))
+```
+
+```go Go
+inspect := phaseoagent.Tool{
+  ID:       "inspect_repository",
+  Execute:  inspectRepository,
+  NextTurn: &phaseoagent.NextTurnParams{Model: "openai/gpt-6-astra-pro"},
+}
+```
+
+```csharp C#
+var inspect = new Tool("inspect_repository", InspectRepository)
+{
+    NextTurnParams = new NextTurnParams(Model: "openai/gpt-6-astra-pro"),
+};
+```
+
+```php PHP
+$inspect = new Tool(
+    id: "inspect_repository",
+    execute: fn (array $input, $runtime) => inspectRepository($input),
+    nextTurnParams: ["model" => "openai/gpt-6-astra-pro"],
+);
+```
+
+```ruby Ruby
+inspect_repo = PhaseoAgentSdk::Tool.new(
+  id: "inspect_repository",
+  execute: ->(input, runtime) { inspect_repository(input) },
+  next_turn_params: { model: "openai/gpt-6-astra-pro" }
+)
+```
+
+```java Java
+// ツールのコンストラクターの最後の引数として渡します。
+new AgentSdk.NextTurnParams("openai/gpt-6-astra-pro", null, null, null, null, null)
+```
+
+</CodeGroup>
+
+次のターンのパラメーターには、モデル、指示、temperature、top-p、最大出力トークン数、ツールを、各言語の命名規則で指定できます。Python では、ターンの間にツールのリストを変える唯一の方法です。
+
+ツールが承認を待っている場合、その上書きは一時停止した実行と一緒に保存され、続行した後のターンに適用されます。
+
+| 言語 | 保存先 |
+| --- | --- |
+| TypeScript | 続行時に承認された呼び出しが実行されるときに適用 |
+| Python | `run.next_turn_params` |
+| Go | `Run.NextTurn` |
+| C# | `Run.NextTurn` |
+| PHP | `$result->run->nextTurnParams` |
+| Ruby | `result.run.next_turn_params` |
+| Java | `run().nextTurn()` |
+
+毎ターン再計算したい方針にはターンごとの関数を、特定のツールからの1回限りの引き継ぎには次のターンのパラメーターを使ってください。
+
+<span id="set-the-model-per-run-in-rust"></span>
+## Rust で実行ごとにモデルを設定する
+
+Rust の `phaseo-agent` 0.2 には、ターンごとのコールバック、ツールからのコンテキスト更新、次のターンのパラメーターがありません。モデル、ステップ上限、アプリケーションのコンテキストは、`RunOptions` で実行ごとに設定します。
+
+```rust
+let mut options = RunOptions::new("Explain when to use routing presets.");
+options.model = Some("openai/gpt-6-astra-pro".to_string());
+options.max_steps = Some(4);
+options.context = serde_json::json!({ "workspace": "docs" });
+
+let result = agent.run(&mut client, options)?;
+```

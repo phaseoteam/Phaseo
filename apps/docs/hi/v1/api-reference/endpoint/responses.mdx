@@ -1,64 +1,61 @@
 ---
-title: "रिस्पॉन्स बनाएँ"
-sidebarTitle: "रिस्पॉन्स बनाएँ"
+title: "रिस्पॉन्स बनाएं"
+sidebarTitle: "रिस्पॉन्स बनाएं"
 openapi: "/hi/openapi/v1/openapi.localized.yaml POST /responses"
 ---
-## सर्वर टूल
 
-`/v1/responses` सामान्य function tools और Gateway द्वारा प्रबंधित इन server tools को सपोर्ट करता है:
+## सर्वर टूल का उपयोग करें
 
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-- `phaseo:apply_patch`
-
-### दिनांक और समय का उदाहरण
+`tools` में अपने function टूल के साथ एक `phaseo:` टूल जोड़ें, और जब मॉडल उसे कॉल करता है तो Phaseo उसे चलाता है। `/v1/responses` हर सर्वर टूल स्वीकार करता है, जिसमें `phaseo:apply_patch` भी शामिल है, जिसे सिर्फ़ यही एंडपॉइंट सपोर्ट करता है; [सर्वर टूल](../../guides/server-tools) गाइड में उनकी सूची है।
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
-    "stream": false,
+    "model": "openai/gpt-6-astra",
     "input": [
       { "role": "user", "content": "Give me the current datetime in Asia/Tokyo." }
     ],
     "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "Asia/Tokyo" }
-      }
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Asia/Tokyo"] } }
     ],
     "tool_choice": "auto"
   }'
 ```
 
-सर्वर टूल उपयोग होने पर usage में संबंधित `usage.server_tool_use.*` counters शामिल होते हैं।
+हर सर्वर टूल कॉल `usage.server_tool_use` में गिनी जाती है:
 
-- `gateway:datetime` -> `datetime_requests`
-- `phaseo:web_search` -> `web_search_requests`, `web_search_results`, `web_search_extra_results`
-- `phaseo:web_fetch` -> `web_fetch_requests`
-- `phaseo:advisor` -> `advisor_requests`
-- `phaseo:image_generation` -> `image_generation_requests`
-- `phaseo:apply_patch` -> `apply_patch_requests`
+| टूल | काउंटर |
+| --- | --- |
+| `phaseo:datetime` | `datetime_requests` |
+| `phaseo:web_search` | `web_search_requests`, `web_search_results`, `web_search_extra_results` |
+| `phaseo:web_fetch` | `web_fetch_requests` |
+| `phaseo:advisor` | `advisor_requests` |
+| `phaseo:subagent` | `subagent_requests` |
+| `phaseo:fusion` | `fusion_requests` |
+| `phaseo:search_models` | `search_models_requests` |
+| `phaseo:image_generation` | `image_generation_requests` |
+| `phaseo:apply_patch` | `apply_patch_requests` |
 
-## स्ट्रीमिंग नोट
+पुराना `gateway:datetime` टाइप अब भी काम करता है। `stream: true` के साथ, Phaseo टूल टर्न खुद चलाता है, फिर आगे का उत्तर आपको एक ही स्ट्रीम में भेजता है।
 
-`stream: true` भी समर्थित है। Gateway-प्रबंधित server tools के लिए Phaseo upstream tool-call turn को materialize करके loop जारी रख सकता है और फिर synthetic stream दोबारा भेज सकता है।
-
+<span id="reasoning-in-tool-loops"></span>
 ## टूल लूप में रीज़निंग
 
-OpenAI, Azure OpenAI और xAI पर Phaseo Responses अनुरोध अपस्ट्रीम को `store: false` के साथ भेजता है, इसलिए टूल लूप के चरणों के बीच मॉडल की रीज़निंग केवल `reasoning` आउटपुट आइटम के ज़रिए जारी रहती है।
+OpenAI, Azure OpenAI और xAI पर, Phaseo Responses अनुरोध अपस्ट्रीम में `store: false` के साथ भेजता है, इसलिए टूल लूप के चरणों के बीच मॉडल की रीज़निंग सिर्फ़ `reasoning` आउटपुट items के ज़रिए जारी रहती है।
 
-हर `reasoning` आइटम में `id`, `summary` और `content` होते हैं। जब प्रदाता रीज़निंग स्थिति लौटाता है, तो आइटम में `encrypted_content` भी होता है:
+हर `reasoning` item में `id`, `summary` और `content` होते हैं। जब प्रदाता रीज़निंग स्थिति लौटाता है, तो item में `encrypted_content` भी होता है, जिसमें इनमें से एक होता है:
 
-- OpenAI, Azure OpenAI और xAI की एन्क्रिप्टेड रीज़निंग। Phaseo रीज़निंग मॉडल के लिए इसे `include: ["reasoning.encrypted_content"]` के साथ माँगता है।
-- Claude के thinking सिग्नेचर और छिपाई गई thinking।
-- Gemini के थॉट सिग्नेचर, जिसमें उस फ़ंक्शन कॉल से ठीक पहले रखा गया अलग `reasoning` आइटम भी शामिल है जिससे सिग्नेचर जुड़ा है।
+- OpenAI, Azure OpenAI और xAI की encrypted reasoning। रीज़निंग मॉडल के लिए Phaseo इसे `include: ["reasoning.encrypted_content"]` के साथ मांगता है।
+- Claude thinking signatures और redacted thinking।
+- Gemini thought signatures, जिनमें एक अलग `reasoning` item भी शामिल है जो उस function call के ठीक पहले रखा जाता है जिससे signature जुड़ा है।
+- वह प्रयास लेवल जिस पर Claude का जवाब चला, आउटपुट के आखिरी `reasoning` item में, जिसमें कोई टेक्स्ट नहीं होता।
 
-स्ट्रीमिंग रिस्पॉन्स में यही आइटम `response.output_item.done` और `response.completed` में आते हैं।
+स्ट्रीमिंग प्रतिक्रियाएं यही items `response.output_item.done` और `response.completed` पर भेजती हैं।
 
-टूल लूप जारी रखने के लिए, `reasoning` आइटम सहित सभी आउटपुट आइटम को `input` में बिना बदलाव वापस भेजें। `encrypted_content` अपारदर्शी होता है और उसे बनाने वाले प्रदाता और मॉडल को दर्ज करता है। Phaseo इसे केवल उसी प्रदाता परिवार और मॉडल को भेजता है, इसलिए किसी दूसरे प्रदाता पर फ़ॉलबैक होने पर यह विफल होने के बजाय हटा दिया जाता है।
+<Warning>
+हर आउटपुट item को हर अनुरोध पर `input` में बिना बदले वापस भेजें, सिर्फ़ टूल लूप में नहीं। `reasoning` items को कभी न हटाएं, न बदलें, न उनका क्रम बदलें, चाहे उनमें `encrypted_content` हो या न हो, बिना टेक्स्ट वाले items समेत।
+</Warning>
+
+`encrypted_content` अपारदर्शी है और उसे बनाने वाले प्रदाता और मॉडल को दर्ज करता है। Phaseo इसे सिर्फ़ उसी प्रदाता परिवार और मॉडल को भेजता है, इसलिए किसी दूसरे प्रदाता पर फ़ॉलबैक होने पर यह विफल होने के बजाय हटा दिया जाता है। इसके बिना, Claude टूल लूप के चरणों के बीच अपनी रीज़निंग खो देता है, और `reasoning.effort` बदलने पर Claude का प्रॉम्प्ट कैश दोबारा शुरू हो जाता है; [बातचीत के बीच में रीज़निंग प्रयास बदलें](../../guides/reasoning-effort) देखें।

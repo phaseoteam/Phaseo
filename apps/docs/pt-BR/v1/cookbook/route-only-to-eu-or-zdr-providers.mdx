@@ -1,127 +1,110 @@
 ---
-title: "Roteie apenas para provedores da UE ou compatíveis com ZDR"
-sidebarTitle: "Rotear para UE ou ZDR"
+title: "Roteie só para provedores na UE ou compatíveis com ZDR"
+sidebarTitle: "Roteie para provedores na UE ou com ZDR"
 icon: "globe"
-description: "Defina requisitos de residência de dados e retenção zero na requisição para encaminhá-la somente a ofertas de provedores em conformidade."
+description: "Aplique requisitos de residência e de retenção zero de dados no nível da solicitação para que um modelo só seja roteado para ofertas de provedores em conformidade."
 ---
 
-Use esta receita quando uma requisição precisar filtrar provedores por motivos de conformidade ou tratamento de dados, sem alterar a política de todo o espaço de trabalho.
+Adicione requisitos de residência e de <Tooltip tip="Retenção zero de dados: o provedor não guarda prompts nem saídas.">ZDR</Tooltip> ao objeto `provider` de uma solicitação, e o Phaseo remove todas as ofertas de provedor que não os atendem antes de classificar as restantes. No fim, um fluxo de trabalho roda só em provedores na UE ou compatíveis com ZDR, sem mudar a política de todo o espaço de trabalho.
 
-## Objetivo
+A solicitação está pronta para produção. Se nenhum provedor do modelo atender a todos os requisitos, a solicitação falha antes de qualquer provedor ser chamado, então confira a disponibilidade primeiro.
 
-- Exigir execução na UE.
-- Exigir residência de dados na UE.
-- Exigir provedores compatíveis com retenção zero de dados.
+| Campo | Mantém só os provedores que |
+| --- | --- |
+| `required_execution_region: "eu"` | Executam o modelo na UE |
+| `required_data_region: "eu"` | Tratam os dados de prompt e de resposta na UE |
+| `require_zero_data_retention: true` | Atendem aos requisitos de retenção zero de dados |
 
-## 1. Adicione os requisitos de residência à requisição
+## Envie uma solicitação restrita
 
-Defina os requisitos do provedor diretamente no corpo da requisição.
+<Steps>
+<Step title="Confira se um provedor se qualifica">
+
+Na página do modelo, os cards de provedor mostram ofertas regionais como **OpenAI EU** ou **Google Vertex EU**, o suporte a ZDR e as notas e fontes sobre a política de dados de cada provedor. Para a UE, você também pode listar o que o Gateway da UE atende:
+
+```bash
+curl https://eu.api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+</Step>
+<Step title="Adicione só os requisitos de que você precisa">
+
+Cada requisito reduz o conjunto, então a solicitação pode ser roteada para uma oferta regional mais cara ou ficar sem nenhum provedor. Envie só o que a sua política exige:
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemini-3.1-flash-lite",
+    "model": "openai/gpt-5.6-luna",
     "input": "Summarize the ticket in one line.",
     "provider": {
       "required_execution_region": "eu",
-      "required_data_region": "eu",
-      "require_zero_data_retention": true
-    }
+      "required_data_region": "eu"
+    },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "google/gemini-3.1-flash-lite",
+  model: "openai/gpt-5.6-luna",
   input: "Summarize the ticket in one line.",
   provider: {
     required_execution_region: "eu",
     required_data_region: "eu",
-    require_zero_data_retention: true,
   },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "google/gemini-3.1-flash-lite",
+        "model": "openai/gpt-5.6-luna",
         "input": "Summarize the ticket in one line.",
         "provider": {
             "required_execution_region": "eu",
             "required_data_region": "eu",
-            "require_zero_data_retention": True,
         },
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-Filtros compatíveis no nível da requisição para este fluxo:
+Para exigir também ZDR, adicione `"require_zero_data_retention": true`. Com os três, o modelo precisa de pelo menos um provedor na UE que também atenda ao ZDR.
 
-- `required_execution_region`
-- `required_data_region`
-- `require_zero_data_retention`
+</Step>
+<Step title="Veja onde foi executada">
 
-## 2. Use o conjunto mínimo de regras que atende à política
+`meta.routing.selected_provider` indica o provedor que atendeu a solicitação, por exemplo `openai-eu`. A solicitação em **Configurações → Uso → Registros** registra as regiões exigidas e o provedor selecionado.
 
-Exija somente o que a carga de trabalho realmente precisa.
+</Step>
+</Steps>
 
-Exemplos:
+## Escolha entre campos da solicitação, o Gateway da UE ou as configurações do espaço de trabalho
 
-- somente local de execução:
-  - `required_execution_region: "eu"`
-- somente local dos dados:
-  - `required_data_region: "eu"`
-- somente provedores compatíveis com <Tooltip tip="Retenção zero de dados: somente provedores que cumprem as restrições de retenção zero de dados.">ZDR</Tooltip>:
-  - `require_zero_data_retention: true`
+| Use | Quando |
+| --- | --- |
+| Estes campos da solicitação em `api.phaseo.app` | A regra vale para um fluxo de trabalho, um cliente ou uma solicitação. Todos os endpoints e recursos continuam disponíveis. |
+| [`eu.api.phaseo.app`](../guides/regional-routing) | Todas as solicitações de texto de um serviço precisam ficar na UE. O hostname aplica a região e também rejeita entrada de mídia, ferramentas de servidor do Phaseo e ferramentas hospedadas pelo provedor. Enviar ali um `required_execution_region` ou `required_data_region` de outra região retorna `400 validation_error` com o motivo `deployment_region_conflict`. |
+| **Configurações → Privacidade** | A regra vale para todas as solicitações do espaço de trabalho. |
 
-## 3. Considere que o grupo de provedores candidatos ficará menor
-
-Os filtros são aplicados antes da classificação dos provedores e podem removê-los por completo.
-
-Isso significa que:
-
-- a requisição pode ser roteada para uma oferta regional mais cara
-- a lista de provedores pode ficar bem menor
-- a requisição pode falhar se nenhum provedor para o modelo atender aos requisitos
-
-## 4. Faça uma verificação prévia na página do modelo, quando possível
-
-Antes de implantar a requisição, confira nos cartões de provedores da página do modelo:
-
-- ofertas regionais, como `OpenAI EU` ou `Google Vertex EU`
-- suporte a ZDR
-- observações e fontes sobre as políticas de dados dos provedores
-
-Assim, você confirma que existe pelo menos um provedor elegível antes de exigir essa condição no tráfego de produção.
-
-## 5. Use as configurações de privacidade do espaço de trabalho como padrão
-
-Se a política deve valer para todas as requisições de um espaço de trabalho, configure-a em **Configurações -> Privacidade** em vez de repetir os mesmos filtros em cada requisição.
-
-Use os campos da requisição quando a regra se aplicar:
-
-- a um fluxo de trabalho
-- a um cliente
-- a uma requisição
-
-## Guias relacionados
-
-- [Roteamento e alternativas](../guides/routing-and-fallbacks.mdx)
-- [Predefinições](../guides/presets.mdx)
+O roteamento regional restringe quais provedores tratam a chamada ao modelo. Ele ainda não é uma garantia de residência de dados de ponta a ponta; [O que fica fora da região](../guides/regional-routing#what-stays-outside-the-region) lista os sistemas compartilhados. Para restringir provedores sem uma regra de residência, veja [Fixe ou ignore provedores](./pin-or-ignore-providers-per-request).

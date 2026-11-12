@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import test from "node:test";
 import { goModule } from "./sync-dependent-sdk-releases.mjs";
+import { hash as translationSourceHash } from "../apps/docs/scripts/translation-freshness.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 
@@ -21,7 +22,9 @@ test("release synchronization updates real manifests, dependencies, attribution 
   await mkdir(path.join(root, ".tmp"), { recursive: true });
   const fixture = await mkdtemp(path.join(root, ".tmp/release-sync-"));
   for (const relative of [
-    "packages/sdk", "apps/docs/v1", "apps/docs/openapi/v1/openapi.yaml",
+    "packages/sdk", "apps/docs/v1", "apps/docs/de/v1", "apps/docs/openapi/v1/openapi.yaml",
+    "apps/docs/translation-status.json", "apps/docs/scripts/translation-freshness.mjs",
+    "apps/web/src/lib/chat/sdkExport.ts", "apps/web/src/components/(chat)/RoomSdkExport.tsx",
     "scripts/update-sdk-language-manifest-versions.ts", "scripts/update-pyproject-version.ts", "scripts/sync-dependent-sdk-releases.mjs",
     "scripts/sdk/generate-model-id-constants.mjs",
   ]) {
@@ -35,7 +38,8 @@ test("release synchronization updates real manifests, dependencies, attribution 
     for (const kind of ["sdk", "agent-sdk"]) {
       const relative = `packages/sdk/${kind}-${language}/package.json`;
       const metadata = JSON.parse(await read(relative));
-      metadata.version = language === "rust" ? "0.2.0" : kind === "sdk" ? "3.0.0" : "0.3.0";
+      // Go moves to a new major, which changes its module path everywhere it is named.
+      metadata.version = language === "rust" ? "0.2.0" : kind === "agent-sdk" ? "0.3.0" : language === "go" ? "4.0.0" : "3.0.0";
       await writeFile(path.join(fixture, relative), JSON.stringify(metadata, null, 2) + "\n");
     }
   }
@@ -51,10 +55,10 @@ test("release synchronization updates real manifests, dependencies, attribution 
     ["agent-sdk-py/pyproject.toml", /version = "0\.3\.0"/, /phaseo>=3\.0\.0,<4\.0\.0/],
     ["agent-sdk-py/src/phaseo_agent/__init__.py", /client_source_version="0\.3\.0"/],
     ["agent-sdk-go/VERSION", /^0\.3\.0\s*$/],
-    ["agent-sdk-go/go.mod", /sdk-go\/v3 v3\.0\.0/],
-    ["agent-sdk-go/agent.go", /sdk-go\/v3/, /X-Phaseo-Client-Version"\] = "0\.3\.0"/, /X-Phaseo-Client-Version", "0\.3\.0"/],
-    ["sdk-go/go.mod", /sdk-go\/v3/],
-    ["sdk-go/model_ids.go", /sdk-go\/v3\/src\/gen/],
+    ["agent-sdk-go/go.mod", /sdk-go\/v4 v4\.0\.0/],
+    ["agent-sdk-go/agent.go", /sdk-go\/v4/, /X-Phaseo-Client-Version"\] = "0\.3\.0"/, /X-Phaseo-Client-Version", "0\.3\.0"/],
+    ["sdk-go/go.mod", /sdk-go\/v4/],
+    ["sdk-go/model_ids.go", /sdk-go\/v4\/src\/gen/],
     ["agent-sdk-csharp/Phaseo.AgentSdk.csproj", /<Version>0\.3\.0<\/Version>/, /ProjectReference Include="\.\.\/sdk-csharp\/Phaseo.Sdk.csproj"/],
     ["sdk-csharp/Phaseo.Sdk.csproj", /<Version>3\.0\.0<\/Version>/],
     ["agent-sdk-csharp/AgentSdk.cs", /X-Phaseo-Client-Version", "0\.3\.0"/],
@@ -73,6 +77,20 @@ test("release synchronization updates real manifests, dependencies, attribution 
     const content = await read(`packages/sdk/${file}`);
     for (const pattern of patterns) assert.match(content, pattern, file);
   }
+  // Every Go package, page, translation and website sample names the new module.
+  for (const file of [
+    "packages/sdk/sdk-go/realtime/realtime.go", "packages/sdk/sdk-go/README.md",
+    "apps/docs/v1/quickstart.mdx", "apps/docs/de/v1/quickstart.mdx",
+    "apps/docs/v1/sdk-reference/agent/installation.mdx", "apps/docs/de/v1/sdk-reference/agent/installation.mdx",
+    "apps/web/src/lib/chat/sdkExport.ts", "apps/web/src/components/(chat)/RoomSdkExport.tsx",
+  ]) {
+    const content = await read(file);
+    assert.match(content, /sdk-go\/v4/, file);
+    assert.doesNotMatch(content, /sdk-go\/v[0-35-9]/, file);
+  }
+  // The translations got the same code change, so they are still current.
+  const manifest = JSON.parse(await read("apps/docs/translation-status.json"));
+  assert.equal(manifest.locales.de["quickstart.mdx"], translationSourceHash(await read("apps/docs/v1/quickstart.mdx")));
   async function digest(directory) {
     const hash = createHash("sha256");
     for (const entry of (await readdir(directory, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {

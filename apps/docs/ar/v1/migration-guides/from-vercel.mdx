@@ -1,75 +1,42 @@
 ---
 title: "الترحيل من Vercel AI Gateway"
 sidebarTitle: "Vercel AI Gateway"
-description: "استبدل توجيه Vercel AI Gateway بـ Phaseo Gateway مع الحفاظ على سلوك التطبيقات التي تستخدم AI SDK أو واجهة متوافقة مع OpenAI."
+description: "استبدل توجيه Vercel AI Gateway بـ Phaseo Gateway مع الحفاظ على سلوك تطبيقك المبني على AI SDK أو المتوافق مع OpenAI."
 icon: "/icons/brands/vercel.svg"
 ---
 
-إذا كنت تستخدم Vercel AI Gateway عبر Vercel AI SDK أو عميل متوافق مع OpenAI، فأبقِ منطق التطبيق كما هو وبدّل نقطة الاتصال بالمزوّد فقط في البداية.
+في شيفرة AI SDK، استبدل `@ai-sdk/gateway` بـ `@phaseo/ai-sdk-provider` وغلّف كل معرّف نموذج بـ `phaseo(...)`. وفي العملاء المتوافقين مع OpenAI، غيّر عنوان URL الأساسي والمفتاح. يبقى منطق التوليد لديك كما هو.
 
-## ما الذي سيتغير
-
-| الإعداد | قبل | بعد |
+| الإعداد | Vercel AI Gateway | Phaseo |
 | --- | --- | --- |
-| عنوان URL للبوابة | `https://ai-gateway.vercel.sh/v1` | `https://api.phaseo.app/v1` |
-| مفتاح API | مفتاح Vercel AI Gateway | `PHASEO_API_KEY` |
-| مزوّد AI SDK | الإعداد الحالي | `@phaseo/ai-sdk-provider` عند استخدام AI SDK مباشرةً |
-| تدفّق التطبيق | منطق التوليد الحالي | اتركه كما هو في المرحلة الأولى |
+| عنوان URL الأساسي | `https://ai-gateway.vercel.sh/v1` | `https://api.phaseo.app/v1` |
+| مفتاح API | `AI_GATEWAY_API_KEY` أو Vercel OIDC | `PHASEO_API_KEY`، كسرّ على جهة الخادم |
+| مزوّد AI SDK | `@ai-sdk/gateway`، أو نماذج بسلاسل نصية مجردة | `@phaseo/ai-sdk-provider` |
+| خيارات التوجيه | `providerOptions.gateway` | `providerOptions.phaseo` |
 
-## قبل البدء
-
-- عنوان URL الأساسي الحالي وإعداد المفتاح لـ Vercel AI Gateway.
-- إتاحة `PHASEO_API_KEY` في بيئات التطوير المحلية والاختبار والإنتاج.
-- مجموعة صغيرة من المطالبات أو اختبارات التكامل تغطي الطلبات دون بث ومع البث واستدعاء الأدوات المستخدم.
-
-## 1) وثّق نقطة الاتصال الحالية بالبوابة
-
-اعثر على الموضع المركزي الذي ينشئ فيه التطبيق مزوّدي النماذج أو عملاء API. ابدأ الترحيل من هناك.
-
-- حدّد مصنع المزوّد أو العميل المستخدم.
-- أدرج معرّفات النماذج المستخدمة في الإنتاج.
-- سجّل القيم الافتراضية لإعادة المحاولة والمهل الزمنية والبدائل.
-- دوّن ما إذا كانت بيئتا edge والخادم تحتاجان إلى التغيير نفسه.
-- حدّد القيم المشتركة للمطالبات أو المعلمات التي ينبغي تحويلها إلى إعدادات Gateway مسبقة بدلًا من تضمينها في كل استدعاء AI SDK.
-
-## 2) بدّل نقطة النهاية والمفتاح
-
-في معظم العملاء المتوافقين مع OpenAI، يكفي استبدال عنوان URL الأساسي والمفتاح.
+## تبديل المزوّد
 
 <CodeGroup>
-```typescript TypeScript
-// OpenAI-compatible client before
-import OpenAI from "openai";
-
-const before = new OpenAI({
-  apiKey: process.env.VERCEL_AI_GATEWAY_API_KEY,
-  baseURL: "https://ai-gateway.vercel.sh/v1",
-});
-```
-
-```typescript TypeScript
-// OpenAI-compatible client after
-import OpenAI from "openai";
-
-const after = new OpenAI({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
-});
-```
-
-```typescript TypeScript
-// Official Phaseo provider for the Vercel AI SDK
+```typescript AI SDK
 import { generateText } from "ai";
-import { createPhaseo } from "@phaseo/ai-sdk-provider";
-
-const phaseo = createPhaseo({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
-});
+// قبل: import { gateway } from "@ai-sdk/gateway";
+import { phaseo } from "@phaseo/ai-sdk-provider";
 
 const { text } = await generateText({
+  // قبل: model: gateway("openai/gpt-4.1-mini"),
   model: phaseo("openai/gpt-4.1-mini"),
   prompt: "Generate a migration checklist.",
+});
+```
+
+```typescript OpenAI SDK
+import OpenAI from "openai";
+
+// قبل:
+// new OpenAI({ apiKey: process.env.AI_GATEWAY_API_KEY, baseURL: "https://ai-gateway.vercel.sh/v1" });
+const client = new OpenAI({
+  apiKey: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app/v1",
 });
 ```
 
@@ -78,59 +45,50 @@ curl -s "https://api.phaseo.app/v1/chat/completions" \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role":"user","content":"Hello"}]
   }'
 ```
 </CodeGroup>
 
-## 3) تحقّق من تطابق السلوك
+يقرأ التصدير الافتراضي `phaseo` المتغير `PHASEO_API_KEY` مرة واحدة عند استيراد الوحدة، ويستخدم `https://api.phaseo.app/v1`. إذا ضُبط المتغير بعد الاستيراد، كما في بعض إعدادات الحوسبة بلا خادم والاختبار، فسيرمي كل استدعاء خطأ مفتاح مفقود؛ استدعِ `createPhaseo({ apiKey, baseURL, headers })` داخل المعالج بدلًا من ذلك.
 
-شغّل مجموعة المطالبات نفسها عبر المسارين القديم والجديد، ثم قارن زمن الاستجابة وتنسيق المخرجات واستهلاك الرموز.
+ثبّت إصدار المزوّد المطابق للإصدار الرئيسي من `ai` لديك: `@phaseo/ai-sdk-provider` لـ AI SDK 7، و`@phaseo/ai-sdk-provider@ai-sdk-v6` لـ AI SDK 6، و`@phaseo/ai-sdk-provider@ai-sdk-v5` لـ AI SDK 5.
 
-- تحقّق من توليد النص دون بث.
-- تحقّق من معالجة أجزاء البث عبر مسار التعليمات البرمجية المستخدم في الإنتاج.
-- تحقّق من استدعاء الأدوات إذا كان التطبيق يعتمد عليه.
-- أكّد أن تعيين الأخطاء على مستوى التطبيق لم يتغير.
-- انقل إعدادات التوجيه الدائمة وقيود المزوّدين إلى [الإعدادات المسبقة](../guides/presets.mdx) أو [التوجيه والبدائل](../guides/routing-and-fallbacks.mdx)، بدلًا من تكرارها في كل مصنع للنماذج.
+يرسل AI SDK النماذج المكتوبة كسلاسل نصية مجردة (`model: "openai/gpt-4.1-mini"`) عبر بوابة Vercel افتراضيًا، لذا فإن أي سلسلة مجردة متبقية تواصل استدعاءها. غيّر مصنع النماذج المشترك مرة واحدة، ثم ابحث عن `model: "` في استدعاءات AI SDK. تنتقل عملاء Anthropic SDK الموجّهة إلى `ai-gateway.vercel.sh` إلى الإعداد الموضح في [الترحيل من Anthropic SDK](./from-anthropic).
 
-## 4) قائمة التحقق لـ Vercel AI SDK وGateway
+## مطابقة خيارات البوابة
 
-أكمل هذه القائمة قبل زيادة حركة المرور:
+يُدمج `providerOptions.phaseo` في جسم الطلب. أما `providerOptions.gateway` المتبقي فيُتجاهل دون خطأ.
 
-- تم تحديث عنوان URL الأساسي إلى `https://api.phaseo.app/v1`.
-- تم إعداد `PHASEO_API_KEY` في كل بيئة استخدمت مفتاح Vercel Gateway.
-- تم دمج المزوّد الرسمي `@phaseo/ai-sdk-provider` إذا كان التطبيق يستخدم Vercel AI SDK مباشرةً.
-- يعمل مسار توليد النص الأساسي في AI SDK في بيئة الاختبار.
-- ينجح اختبار بث على مستوى التطبيق دون تغيير.
-- أُعيد التحقق من استدعاء الأدوات والمخرجات المنظّمة عند استخدامها.
-- قورنت المخرجات القديمة والجديدة بمجموعة صغيرة من المطالبات.
-- يظل التراجع ممكنًا عبر تغيير الإعدادات أو مفتاح ميزة فقط.
-- نُقلت القيم المشتركة للمطالبات والتوجيه إلى الإعدادات المسبقة عند الاقتضاء.
-- أُعيد التحقق من الاستعلام عبر `GET /v1/generations?id=<request_id>`، كي يمكن إعادة تشغيل الطلبات الفاشلة من حمولة `replay_request` المخزّنة عندما تكون `replay_supported=true`.
+| Vercel AI Gateway | على Phaseo |
+| --- | --- |
+| `providerOptions.gateway.order` و`.only` | `providerOptions: { phaseo: { provider: { order, only } } }`، أو [إعداد مسبق](../guides/presets) يُستدعى بصيغة `phaseo("@slug")`. |
+| `providerOptions.gateway.models` | `providerOptions: { phaseo: { models: [...] } }`، أو الاحتياطات في مسار ديناميكي. |
+| `providerOptions.gateway.sort` (`cost` و`ttft` و`tps`) | `provider.sort` (`price` و`latency` و`throughput`). |
+| `providerOptions.gateway.zeroDataRetention` | `provider.require_zero_data_retention`، الذي يقصر التوجيه على مزوّدي ZDR. |
+| `providerOptions.gateway.user` و`.tags` | `user` و[تسميات](../guides/request-labels) `X-Phaseo-Metadata`. |
+| بيانات اعتماد `byok` على مستوى الطلب | لا يوجد مقابل. أضف مفاتيح المزوّدين إلى مساحة العمل باستخدام **الإعدادات → BYOK**. |
+| النص والبث والأدوات والمخرجات المنظّمة والتضمينات والصور والنسخ الصوتي والكلام | يدعمها المزوّد؛ وتظل الإمكانات معتمدة على النموذج. |
+| إعادة الترتيب | `phaseo.rerankingModel(id)` في إصداري AI SDK 6 و7. |
+| مراجع الملفات المُدارة والأدوات التي ينفذها المزوّد | غير مدعومة. تفشل الأجزاء غير المدعومة بخطأ بدلًا من إسقاطها. |
+| لوحة استخدام البوابة | سجلات الطلبات في Phaseo و`GET /v1/generations?id=<request_id>`. تتضمن بيانات المزوّد الوصفية في النتائج معرّف الطلب. |
 
-## 5) خطة إصدار منخفضة المخاطر
+## الاختبار والنشر
 
-1. أطلق التغيير خلف مفتاح ميزة أو عبر طرح تدريجي.
-2. ابدأ بحركة المرور الداخلية أو بجزء صغير من حركة الإنتاج.
-3. راقب زمن الاستجابة ومعدل الأخطاء والتغير في استهلاك الرموز والتكلفة.
-4. أبقِ الإعدادين متاحين خلال دورة إصدار واحدة على الأقل.
+شغّل مجموعة المطالبات نفسها عبر المسارين وقارن زمن الاستجابة وتنسيق المخرجات واستخدام الرموز. قبل ترقية الحركة، تأكد من أن:
 
-## أوامر التحقق
+- `PHASEO_API_KEY` مضبوط في كل بيئة تشغيل كان فيها مفتاح البوابة، بما في ذلك عمليات النشر على الحافة والخادم والمعاينة؛
+- مسار توليد النص الرئيسي واختبار بث واحد ينجحان دون تغيير في بيئة الاختبار المرحلية؛
+- استدعاءات الأدوات والمخرجات المنظّمة تنجح إذا كان التطبيق يستخدمها؛
+- مطابقة الأخطاء على مستوى التطبيق لا تزال تعمل؛
+- يمكن العثور على طلب فاشل في بيئة الاختبار المرحلية، وعندما تكون قيمة `replay_supported` هي `true`، إعادة تشغيله من `GET /v1/generations?id=<request_id>`.
+
+أطلق التغيير خلف علامة ميزة أو نشر بنسبة مئوية، بدءًا بالحركة الداخلية. راقب زمن الاستجابة ومعدل الأخطاء وانحراف الرموز والتكلفة، وأبقِ المزوّد القديم متاحًا لإصدار واحد على الأقل حتى لا يحتاج التراجع إلى تغيير في الشيفرة.
 
 ```bash
 curl -s "https://api.phaseo.app/v1/health"
-curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+curl -s "https://api.phaseo.app/v1/models?format=openai" -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-بعد ذلك:
-
-- شغّل اختبار التكامل الأساسي لتوليد النص في التطبيق.
-- شغّل اختبار بث في بيئة الاختبار.
-- قارن مخرجات المطالبات الرئيسية عبر المسارين قبل الترحيل الكامل.
-
-## الخطوات التالية
-
-- [الترحيل من OpenRouter](./from-openrouter.mdx)
-- [البدء السريع](../quickstart.mdx)
-- [أمثلة](../guides/examples.mdx)
+لمزيد من المعلومات عن المزوّد، راجع [AI SDK](../guides/integrations/ai-sdk).

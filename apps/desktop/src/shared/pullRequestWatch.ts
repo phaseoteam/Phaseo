@@ -1,7 +1,7 @@
 import type { PullRequestCheck, PullRequestComment, PullRequestView } from "./pullRequestView";
 import { untrustedBlock, untrustedLabel, untrustedNotice } from "./untrustedContent";
 
-/** What a watching chat's agent was last told about a pull request, after T3 Code's thread pull request watch. */
+/** What a watching chat's agent was last told about a pull request. */
 export type PullRequestWatchState = {
 	startedAt: string;
 	/** The head commit the last read saw; null until the first read. */
@@ -56,7 +56,7 @@ const isFailedCheck = (check: PullRequestCheck) => check.status === "failure" ||
 const activeAt = (remark: PullRequestComment) => remark.editedAt ?? remark.createdAt;
 
 /**
- * Compares a watched pull request with what its agent was last told (T3's evaluatePullRequestWatch). Each check is reported
+ * Compares a watched pull request with what its agent was last told. Each check is reported
  * as soon as it fails; "passed" once the required checks all passed, or every check where none is required. Remarks count
  * when someone other than the viewer wrote them, so the agent's own replies never wake it. `remarks` is null when the
  * conversation could not be read; remarks then wait for a later pass.
@@ -136,7 +136,7 @@ function changeLines(change: PullRequestWatchChange, base: string, commit: strin
 const summaries: Record<PullRequestWatchChange["kind"], string> = { "checks-failed": "checks failed", "checks-passed": "checks passed", remarks: "new comments", conflicting: "merge conflict" };
 
 /**
- * The update the agent reads and the notice the person sees (T3's pullRequestWatchMessage). Instructions stay outside the
+ * The update the agent reads and the notice the person sees. Instructions stay outside the
  * fenced comment text, which only collaborators' comments get.
  */
 export function pullRequestWatchMessage(input: { number: number; url: string; base: string; headSha: string | null; report: PullRequestWatchReport }): PullRequestWatchMessage {

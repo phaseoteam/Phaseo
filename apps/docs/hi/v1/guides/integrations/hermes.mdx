@@ -1,0 +1,79 @@
+---
+title: "Hermes Agent"
+icon: "/icons/brands/hermes.svg"
+description: "Hermes Agent को कस्टम OpenAI-संगत एंडपॉइंट के रूप में Phaseo Gateway पर ले जाएँ।"
+---
+
+Phaseo को उसकी अपनी कुंजी के साथ Hermes Agent का कस्टम एंडपॉइंट बनाने के लिए `phaseo hermes` चलाएँ, या वही चार Hermes सेटिंग्स और एक `.env` लाइन ख़ुद सेट करें।
+
+## Phaseo CLI से सेट अप करें
+
+```bash
+phaseo login
+phaseo hermes --model openai/gpt-6-astra
+```
+
+अगर Hermes इंस्टॉल नहीं है, तो CLI Nous Research का आधिकारिक इंस्टॉलर कमांड दिखाता है और उसे चलाने से पहले पूछता है। macOS और Linux पर इंस्टॉलर को `sh`, `bash` और `curl` चाहिए। इसके बाद सेटअप:
+
+1. `model.provider`, `model.base_url`, `model.default` और `model.key_env` के आपके मौजूदा मान सेव करता है, ताकि हटाने पर उन्हें बहाल किया जा सके।
+2. एक `Phaseo CLI: Hermes Agent API Key` बनाता है जो 90 दिनों में समाप्त होती है और जिसकी मासिक खर्च सीमा $100 है।
+3. कुंजी को Hermes की `.env` फ़ाइल में `OPENAI_API_KEY` के रूप में लिखता है, एक ऐसे ब्लॉक के अंदर जो `# >>> phaseo managed (do not edit)` से शुरू होता है और `# <<< phaseo managed` पर ख़त्म होता है। आपकी बाकी लाइनें नहीं छुई जातीं, और कुंजी कभी कमांड लाइन पर नहीं दिखती।
+4. Hermes को Phaseo पर ले जाने के लिए `hermes config set` चलाता है:
+
+| सेटिंग | मान |
+| --- | --- |
+| `model.provider` | `custom` |
+| `model.base_url` | `https://api.phaseo.app/v1` |
+| `model.default` | `--model` का मान, या उसके बिना `anthropic/claude-sonnet-4.6` |
+| `model.key_env` | `OPENAI_API_KEY` |
+
+`model.key_env` Hermes को कस्टम एंडपॉइंट पर `OPENAI_API_KEY` भेजने के लिए कहता है। इसके बिना Hermes वह कुंजी सिर्फ़ OpenAI के अपने होस्ट को भेजता है, और अनुरोध बिना कुंजी के Phaseo तक पहुँचते हैं।
+
+Phaseo, Hermes से पूछता है कि उसकी `.env` फ़ाइल कहाँ है (`hermes config env-path`), जिससे प्रोफ़ाइल और दूसरे ओवरराइड भी कवर हो जाते हैं। अगर Hermes नहीं बता पाता, तो CLI `HERMES_HOME` वाली `.env`, या `~/.hermes/.env` (नेटिव Windows पर `%LOCALAPPDATA%\hermes\.env`) इस्तेमाल करता है। Hermes प्रदाता कुंजियाँ इसी सादा-टेक्स्ट फ़ाइल में रखता है, इसलिए इसे किसी भी दूसरी कुंजी फ़ाइल की तरह सुरक्षित रखें।
+
+समाप्त कुंजी बदलने या मॉडल बदलने के लिए `phaseo hermes` दोबारा चलाएँ। यह पहली बार चलाने पर सेव की गई सेटिंग्स बनाए रखता है।
+
+<span id="configure-hermes-manually"></span>
+## Hermes को मैन्युअल रूप से कॉन्फ़िगर करें
+
+अपनी Phaseo API कुंजी Hermes की `.env` फ़ाइल में जोड़ें:
+
+```bash .env
+OPENAI_API_KEY=your_phaseo_api_key
+```
+
+फिर Hermes को Phaseo पर ले जाएँ:
+
+```bash
+hermes config set model.provider custom
+hermes config set model.base_url https://api.phaseo.app/v1
+hermes config set model.default openai/gpt-6-astra
+hermes config set model.key_env OPENAI_API_KEY
+```
+
+Hermes जो `.env` फ़ाइल पढ़ता है उसे ढूँढने के लिए `hermes config env-path` चलाएँ।
+
+## जाँचें कि यह काम करता है
+
+सक्रिय Hermes सत्र रीस्टार्ट करें ताकि वे Phaseo एंडपॉइंट और कुंजी इस्तेमाल करें। `hermes config get model.base_url --json` चलाकर पुष्टि करें कि यह `https://api.phaseo.app/v1` लौटाता है, फिर एक छोटा प्रॉम्प्ट भेजें और पुष्टि करें कि अनुरोध **सेटिंग्स → उपयोग → लॉग्स** में दिखता है।
+
+## Phaseo हटाएँ
+
+```bash
+phaseo integrations remove hermes
+```
+
+यह सेटअप के दौरान सेव की गई चार मॉडल सेटिंग्स बहाल करता है (या जो सेट नहीं थीं उन्हें अनसेट करता है), `.env` से Phaseo का ब्लॉक हटाता है, `~/.config/phaseo/integrations/hermes.json` में CLI की सेव की गई स्थिति मिटाता है, और कुंजी रद्द करता है। सक्रिय Hermes सत्र रीस्टार्ट करें ताकि वे बहाल किया गया कॉन्फ़िगरेशन फिर से लोड करें।
+
+## आम समस्याएँ ठीक करें
+
+| समस्या | समाधान |
+| --- | --- |
+| `Hermes already defines OPENAI_API_KEY` | सेटअप आपकी ख़ुद सेट की गई कुंजी को ओवरराइट नहीं करता। Hermes की `.env` से वह `OPENAI_API_KEY` लाइन हटाएँ, फिर `phaseo hermes` दोबारा चलाएँ। |
+| `Phaseo will not edit <path>` | CLI सिर्फ़ ऐसी `.env` संपादित करता है जिसकी हर लाइन ख़ाली हो, पूरी लाइन की टिप्पणी हो, या बैकस्लैश के बिना सादे ASCII में एक-लाइन `NAME=VALUE` हो। जिस लाइन का नाम दिया गया है उसे सरल बनाएँ, या [मैन्युअल सेटअप](#configure-hermes-manually) अपनाएँ। |
+| `Hermes could not set model.key_env` | आपका Hermes वर्ज़न `model.key_env` सपोर्ट नहीं करता। `hermes update` चलाएँ, फिर `phaseo hermes` दोबारा चलाएँ। |
+| `Refusing to write <path>` | `.env` फ़ाइल या उसका फ़ोल्डर एक सिंबॉलिक लिंक है या सामान्य फ़ाइल नहीं है। Hermes को किसी असली फ़ाइल पर ले जाएँ, या मैन्युअल सेटअप इस्तेमाल करें। |
+| `Hermes Agent is not installed or is not on PATH` | Hermes इंस्टॉल करें या उसे `PATH` में जोड़ें, फिर सेटअप दोबारा चलाएँ। |
+| कोई मॉडल अस्वीकार होता है | [Models एंडपॉइंट](../../api-reference/endpoint/models.mdx) से सटीक ID जाँचें। |
+
+दूसरे एजेंट और हर एजेंट के लिए ज़रूरी प्रदाता मानों के लिए [कोडिंग एजेंट](./coding-assistants.mdx) देखें।

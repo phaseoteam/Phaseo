@@ -80,11 +80,13 @@ export default defineConfig({
     // },
   ],
 
-  /* Run your local dev server before starting the tests */
+  /* Start the app before the tests: `pnpm dev` (Vite on port 3100) locally,
+     reusing one that is already running; a production build served through
+     the Workers runtime on CI. */
   webServer: {
-    command: 'npm run dev',
+    command: process.env.CI ? 'pnpm build && pnpm preview --port 3100' : 'pnpm dev',
     url: baseURL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
+    timeout: (process.env.CI ? 15 : 2) * 60 * 1000,
   },
 });

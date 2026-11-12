@@ -1,89 +1,55 @@
 ---
 title: "Anthropic Claude Opus 4.7"
-description: "O que considerar ao adotar Claude Opus 4.7, incluindo pensamento adaptativo, controles de amostragem e uso de tokens."
+description: "O que saber ao adotar o Claude Opus 4.7, incluindo pensamento adaptativo, controles de amostragem e uso de tokens."
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 4.7
+Troque o modelo para `anthropic/claude-opus-4.7`, remova os parâmetros de amostragem e os orçamentos de pensamento e defina a profundidade com um nível de esforço. Solicitações que ainda trazem campos do Opus 4.6 não falham no Phaseo; o gateway as reescreve como mostrado abaixo.
 
-Use este guia para adotar `anthropic/claude-opus-4.7` com segurança em produção.
+| Solicitação do Opus 4.6 | O que o Phaseo envia ao Opus 4.7 |
+| --- | --- |
+| `temperature`, `top_p`, `top_k` | Omitidos. A Anthropic retornaria `400` para valores não padrão. |
+| `thinking: {"type": "enabled", "budget_tokens": …}` | `thinking: {"type": "adaptive", "display": "summarized"}`; o orçamento não é repassado. |
+| `reasoning.effort` | `output_config.effort`, incluindo `xhigh`. |
+| `reasoning.effort: "none"` ou `reasoning.enabled: false` | `thinking: {"type": "disabled"}`. |
+| Nenhuma configuração de raciocínio | Nenhum campo `thinking`, então o Opus 4.7 não pensa. |
 
-Claude Opus 4.7 altera o formato das requisições. Padrões do 4.6 podem falhar se não forem atualizados.
+O Opus 4.7 também oculta o conteúdo do pensamento, a menos que você o solicite; o Phaseo pede a exibição resumida sempre que ativa o pensamento. O tokenizador dele pode gerar mais tokens que o do Opus 4.6 para o mesmo texto.
 
-## Novidades
+## Atualize a solicitação
 
-- Novo nível de esforço: `xhigh` (API Messages).
-- Os orçamentos de pensamento estendido foram removidos; `thinking: { type: "enabled", budget_tokens: ... }` agora falha.
-- Parâmetros de amostragem com valores diferentes do padrão não são mais aceitos: `temperature`, `top_p` e `top_k`.
-- O conteúdo de pensamento é omitido por padrão, a menos que seja ativado explicitamente.
-- O tokenizador atualizado pode aumentar o uso de tokens em relação ao Opus 4.6.
+1. Defina o ID do modelo como `anthropic/claude-opus-4.7`.
+2. Remova `temperature`, `top_p` e `top_k` e ajuste o comportamento com instruções.
+3. Substitua os orçamentos de pensamento por pensamento adaptativo e um nível de esforço:
 
-## Compatibilidade do Phaseo Gateway
+```json
+{
+  "model": "anthropic/claude-opus-4.7",
+  "messages": [{ "role": "user", "content": "Refactor this module and explain the risks." }],
+  "reasoning": { "effort": "xhigh" }
+}
+```
 
-Para reduzir problemas de migração, o Phaseo aceita campos antigos do Opus 4.6 para o Opus 4.7 e os normaliza antes de encaminhar:
+Comece em `high` e use `xhigh` nas rotas de código e de agentes mais difíceis. Em `/v1/messages`, envie `thinking: {"type": "adaptive"}` com `output_config.effort` no lugar.
 
-- `temperature`, `top_p` e `top_k` são aceitos, mas removidos.
-- Orçamentos antigos de pensamento não são encaminhados.
-- O pensamento do Opus 4.7 sempre é enviado como `thinking: { "type": "adaptive", "display": "summarized" }`.
-- `reasoning.effort` continua válido e é mapeado para `output_config.effort`; `xhigh` é aceito.
-
-## Início rápido da migração
-
-### 1. Atualize o ID do modelo
-
-Defina o ID como `anthropic/claude-opus-4.7`.
-
-### 2. Use pensamento adaptativo com exibição resumida
-
-Para o Opus 4.7, use:
-
-- `thinking: { "type": "adaptive", "display": "summarized" }`
-
-Evite os antigos orçamentos de pensamento estendido.
-
-### 3. Remova controles de amostragem
-
-Não envie:
-
-- `temperature`
-- `top_p`
-- `top_k`
-
-Ajuste os prompts e as instruções no lugar desses controles.
-
-### 4. Recalibre os níveis de esforço
-
-Se usa controles de raciocínio, teste novamente com:
-
-- `output_config.effort = "high"` como referência.
-- `output_config.effort = "xhigh"` para os fluxos mais exigentes de programação e agentes.
-
-Com payloads no padrão OpenAI, `reasoning.effort` é mapeado para o mesmo valor de `output_config.effort` no Opus 4.7.
-
-### 5. Revise os limites de tokens
-
-Como a tokenização mudou, confira:
-
-- `max_tokens` / `max_output_tokens`
-- limites de tempo
-- controles e alertas de custo
+4. Como o tokenizador mudou, revise `max_tokens` e `max_output_tokens`, os orçamentos de timeout e os alertas de custo.
 
 ## O que testar
 
-- Taxa de aprovação estrita de esquemas com prompts de produção.
-- Fluxos longos com ferramentas: quantidade de chamadas, taxa de conclusão e latência.
-- Diferenças de qualidade entre `high` e `xhigh`.
-- Variação de custo de tokens nas classes de prompts de maior volume.
+- taxa de aprovação do esquema nos seus prompts de produção;
+- fluxos de ferramentas de longa duração: número de chamadas de ferramentas, taxa de conclusão e latência;
+- qualidade em `high` em comparação com `xhigh`;
+- custo de tokens nas classes de prompt com maior volume.
 
-## Rollout seguro
+## Faça o rollout
 
-1. Publique as mudanças no formato das requisições antes de direcionar tráfego.
-2. Avalie Opus 4.7 com sua suíte de produção.
-3. Faça canário mantendo a opção de voltar ao Opus 4.6.
-4. Aumente o tráfego quando as diferenças de qualidade, latência e custo estiverem dentro das metas.
+1. Implante as mudanças no formato da solicitação antes de mover o tráfego.
+2. Rode o Opus 4.7 em modo sombra no seu conjunto de avaliação de produção.
+3. Faça um canário com o Opus 4.6 como fallback em `models`.
+4. Promova quando as mudanças de qualidade, latência e custo estiverem dentro da meta.
 
 ## Fontes
 
 - [Novidades do Claude Opus 4.7](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7)
 - [Guia de migração da Anthropic](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
-- [Cartão do sistema Claude Opus 4.7 (PDF)](https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf)
+- [System Card do Claude Opus 4.7 (PDF)](https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf)

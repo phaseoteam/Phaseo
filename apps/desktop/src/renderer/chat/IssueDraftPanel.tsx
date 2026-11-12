@@ -10,6 +10,8 @@ import { ScrollArea } from "../components/ui/scroll-area";
 import { showToast } from "../components/ui/toast";
 import { settingsInput } from "../settings/SettingsLayout";
 import { cn } from "../lib/utils";
+import { MarkdownTextarea } from "../components/MarkdownTextarea";
+import { openWebLink } from "../lib/openLink";
 
 /**
  * A triage chat's drafted issue, above the composer. Filing is always the person's click, never the agent's: it works the
@@ -22,7 +24,7 @@ export function IssueDraftPanel({ task }: { task: Task }) {
 	if (!draft || draft.status === "discarded") return null;
 	if (draft.status === "filed") return <section aria-label="Filed issue" className="mx-auto flex w-full max-w-[760px] items-center gap-2 border-t border-border px-6 py-2.5 text-[13px]">
 		<CircleCheck className="size-4 shrink-0 text-success" />
-		<span className="min-w-0 truncate">Filed <button type="button" className="font-semibold text-primary hover:underline" onClick={() => void window.phaseoDesktop?.openExternal(draft.url!)}>{draft.repository}#{draft.number}</button>: {draft.title}</span>
+		<span className="min-w-0 truncate">Filed <button type="button" className="font-semibold text-primary hover:underline" onClick={() => void openWebLink(draft.url!).catch(() => undefined)}>{draft.repository}#{draft.number}</button>: {draft.title}</span>
 	</section>;
 	const discard = async () => {
 		setBusy(true);
@@ -74,7 +76,7 @@ function IssueDraftDialog({ task, open, onClose }: { task: Task; open: boolean; 
 				</div>
 				{preview
 					? <ScrollArea className="h-[340px] rounded-md border border-border" viewportClassName="h-[340px]"><div data-selectable className="px-3 py-2 text-[13px]"><MessageContent text={body} /></div></ScrollArea>
-					: <textarea value={body} disabled={busy} maxLength={maximumIssueBody} onChange={event => setBody(event.target.value)} aria-label="Issue body" className={cn(settingsInput, "h-[340px] resize-none rounded-md py-2 font-mono text-[12px] leading-relaxed")} />}
+					: <MarkdownTextarea value={body} disabled={busy} maxLength={maximumIssueBody} onChange={event => setBody(event.target.value)} aria-label="Issue body" className={cn(settingsInput, "h-[340px] resize-none rounded-md py-2 font-mono text-[12px] leading-relaxed")} />}
 				{error && <p role="alert" className="text-xs text-destructive">{error}</p>}
 				<DialogFooter className="mt-2">
 					<Button type="button" variant="ghost" disabled={busy} onClick={onClose}>Cancel</Button>

@@ -36,7 +36,7 @@ function useRowView(projectId: string, number: number, enabled: boolean) {
 	return { view, refresh: useCallback(() => setGeneration(value => value + 1), []) };
 }
 
-/** Everything GitHub reported, at a glance (T3's row tooltip): title over state, branches, checks, conflicts and size. */
+/** Everything GitHub reported, at a glance (the row tooltip): title over state, branches, checks, conflicts and size. */
 function RowTooltip({ view }: { view: PullRequestView }) {
 	const state = pullRequestStatePresentation(view.state, view.draft), checks = checksState(view.checkRuns);
 	const line = (icon: ReactNode, text: ReactNode, className?: string) => <div className={cn("flex min-w-0 items-center gap-2", className)}>{icon}<div className="min-w-0 truncate">{text}</div></div>;
@@ -47,7 +47,7 @@ function RowTooltip({ view }: { view: PullRequestView }) {
 			{line(<GitBranch aria-hidden className="size-3 shrink-0" />, `${view.base} ← ${view.head}`)}
 			{view.state === "OPEN" && checks !== "none" && line(<CheckStatusIcon status={checks === "failing" ? "failure" : checks === "pending" ? "pending" : "success"} />, describeChecks(view.checkRuns))}
 			{view.state === "OPEN" && view.mergeable === "CONFLICTING" && line(<TriangleAlert aria-hidden className="size-3 shrink-0" />, `Merge conflicts with ${view.base}`)}
-			{line(<FileDiff aria-hidden className="size-3 shrink-0" />, <span className="inline-flex items-baseline gap-1">{view.changedFiles.toLocaleString()} {view.changedFiles === 1 ? "file" : "files"}<DiffStat additions={view.additions} deletions={view.deletions} /></span>)}
+			{(!view.statsUnknown || view.changedFiles > 0) && line(<FileDiff aria-hidden className="size-3 shrink-0" />, <span className="inline-flex items-baseline gap-1">{view.changedFiles.toLocaleString()} {view.changedFiles === 1 ? "file" : "files"}{!view.statsUnknown && <DiffStat additions={view.additions} deletions={view.deletions} />}</span>)}
 		</div>
 	</div>;
 }
@@ -113,7 +113,7 @@ function ChatPullRequestRow({ projectId, target, openable, onStopWatching }: { p
 }
 
 /**
- * A chat's pull requests in its details card (T3's ThreadDetailsPrRows): the current one, then "Show N more" for the
+ * A chat's pull requests in its details card: the current one, then "Show N more" for the
  * rest in the linked list's order. Without links, the pull request for the checkout's branch stands in.
  */
 export function ChatPullRequestRows({ projectId, taskId }: { projectId: string; taskId: string }) {

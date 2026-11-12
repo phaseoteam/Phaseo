@@ -1,3 +1,4 @@
+import { describe, it, expect, afterEach, vi } from "vitest";
 import {
 	buildBillingDiscordPayload,
 	resolveBillingDiscordWebhookUrl,
@@ -14,7 +15,7 @@ describe("billing Discord webhook helpers", () => {
 			process.env.DISCORD_BILLING_WEBHOOK_URL = originalBillingWebhookUrl;
 		}
 
-		jest.restoreAllMocks();
+		vi.restoreAllMocks();
 	});
 
 	it("reads the billing webhook env var", () => {
@@ -92,7 +93,7 @@ describe("billing Discord webhook helpers", () => {
 		process.env.DISCORD_BILLING_WEBHOOK_URL =
 			"https://discord.example/billing";
 
-		const fetchImpl = jest.fn().mockResolvedValue({
+		const fetchImpl = vi.fn().mockResolvedValue({
 			ok: true,
 			status: 204,
 			statusText: "No Content",
@@ -147,7 +148,7 @@ describe("billing Discord webhook helpers", () => {
 	it("returns false without calling fetch when no billing webhook is configured", async () => {
 		delete process.env.DISCORD_BILLING_WEBHOOK_URL;
 
-		const fetchImpl = jest.fn();
+		const fetchImpl = vi.fn();
 
 		await expect(
 			sendBillingDiscordWebhook(

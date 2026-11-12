@@ -1,5 +1,3 @@
-"use client";
-
 import { Logo } from "@/components/Logo";
 import { EpochLogo } from "@/components/EpochLogo";
 import { isEpochSearchResult, benchmarkSearchAliases } from "./Search.benchmarks";

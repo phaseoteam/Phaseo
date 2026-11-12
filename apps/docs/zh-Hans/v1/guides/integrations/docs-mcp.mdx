@@ -1,60 +1,31 @@
 ---
-title: "文档 MCP"
+title: "Docs MCP"
 icon: "plug-zap"
 description: "将 Phaseo 文档 MCP 服务器连接到 Codex、Claude Code、Cursor 或 VS Code。"
 ---
 
-如果你希望编程代理使用最新文档而非过时的训练数据回答 Phaseo 相关问题，请连接 Phaseo 文档 MCP 服务器。
-
-此 MCP 服务器为只读，可帮助代理在工作时搜索文档并阅读完整页面。
-
-## 服务器 URL
-
-`https://phaseo.app/docs/mcp`
-
-## 它提供的功能
-
-- 搜索整个 Phaseo 文档并获取最新结果
-- 代理需要更多细节时可读取完整页面内容
-- 可访问托管的能力说明 [skill.md](https://phaseo.app/docs/skill.md)
+把 `https://phaseo.app/docs/mcp` 作为 MCP 服务器添加到你的编程智能体，它就会根据最新文档而不是训练数据来回答 Phaseo 相关问题。该服务器是只读的：智能体可以搜索文档、阅读完整页面，并读取托管的 [skill.md](https://phaseo.app/docs/skill.md) 能力摘要。
 
 ## Codex
 
-添加服务器：
-
 ```bash
 codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
-```
-
-检查连接：
-
-```bash
 codex mcp list
 ```
 
 ## Claude Code
 
-为当前项目添加服务器：
+把服务器添加到当前项目，或者加上 `--scope user` 让它在所有项目中可用：
 
 ```bash
 claude mcp add --transport http phaseo-docs https://phaseo.app/docs/mcp
-```
-
-使其在所有项目中可用：
-
-```bash
 claude mcp add --transport http --scope user phaseo-docs https://phaseo.app/docs/mcp
-```
-
-检查连接：
-
-```bash
 claude mcp list
 ```
 
 ## Cursor
 
-使用文档中的上下文菜单在 Cursor 中安装 MCP 服务器，或手动添加：
+从任意文档页面的上下文菜单安装，或将其添加到 Cursor 的 MCP 配置中：
 
 ```json
 {
@@ -66,25 +37,9 @@ claude mcp list
 }
 ```
 
-## OpenCode
-
-将 Phaseo 文档服务器添加到 `opencode.json`：
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "phaseoDocs": {
-      "type": "remote",
-      "url": "https://phaseo.app/docs/mcp"
-    }
-  }
-}
-```
-
 ## VS Code
 
-使用文档中的上下文菜单在 VS Code 中安装 MCP 服务器，或手动添加：
+从任意文档页面的上下文菜单安装，或将其添加到 VS Code 的 MCP 配置中：
 
 ```json
 {
@@ -97,24 +52,28 @@ claude mcp list
 }
 ```
 
-## 适用场景
+## OpenCode
 
-如果你希望代理执行以下操作，请使用 Docs MCP：
+将其添加到 `opencode.json`：
 
-- 编写代码前查询最新的请求格式
-- 确认模型或提供商是否支持某个端点
-- 检查路由、预设、护栏或异步任务的行为
-- 无需离开编辑器即可从文档获取示例
+```json opencode.json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseoDocs": {
+      "type": "remote",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
 
-## 示例提示词
+## 确认可以正常使用
 
-- `查阅 Phaseo 文档中的 Responses 请求格式，并给我一个最简示例。`
-- `更改此请求前，使用 Phaseo 文档 MCP 服务器检查 provider.sort 的工作方式。`
-- `查找 Phaseo 护栏文档，并总结其中影响提供商路由的部分。`
+问智能体一个只有文档才能回答的问题，并检查它是否调用了 Phaseo 文档服务器：
 
-## 相关指南
+- `Look up the Responses request format in the Phaseo docs and give me a minimal example.`
+- `Use the Phaseo docs MCP server to check how provider.sort works before you change this request.`
+- `Find the guardrails docs in Phaseo and summarize the parts that affect provider routing.`
 
-- [Codex](./codex.mdx)
-- [Claude Code](./claude-code.mdx)
-- [快速入门](../../quickstart.mdx)
-- [API 参考](../../api-reference/introduction.mdx)
+智能体用它来核对请求结构、某个模型或提供商支持哪些端点，以及路由、预设、护栏和异步任务的行为。文档服务器不会让 Phaseo 成为你的模型网关；如需这样做，请参阅[编程智能体](./coding-assistants.mdx)。

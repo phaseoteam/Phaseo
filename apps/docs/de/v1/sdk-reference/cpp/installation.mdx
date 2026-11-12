@@ -3,11 +3,15 @@ title: "C++-SDK installieren (in Arbeit)"
 description: "Verwende die C++-Header in Arbeit direkt aus dem Quellcode."
 ---
 
-<Note type="warning">Das C++-SDK befindet sich in Arbeit und wurde noch nicht in einer Paketregistrierung veröffentlicht.</Note>
+<Note type="warning">Das C++-SDK befindet sich in Arbeit und ist noch nicht in einer Paket-Registry veröffentlicht.</Note>
 
 ## Lokale Verwendung
 
-- Verwende die generierten Header unter `packages/sdk/sdk-cpp/src/gen`.
-- Füge diesen Ordner zum Include-Pfad deines Buildsystems hinzu.
-- Der Client besteht derzeit nur aus Headern.
+Das SDK besteht nur aus Headern und nutzt C++17. Füge `packages/sdk/sdk-cpp` zu deinem CMake-Build hinzu und linke das Interface-Target, oder nimm `packages/sdk/sdk-cpp/src` in deinen Include-Pfad auf:
 
+```cmake
+add_subdirectory(path/to/Phaseo/packages/sdk/sdk-cpp)
+target_link_libraries(your_app PRIVATE phaseo::sdk)
+```
+
+Binde dann `phaseo.hpp` ein, das den generierten Client in `src/gen` einbezieht.

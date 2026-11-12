@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { GatewaySupabaseClient } from "@/runtime/supabase-client";
 
 const SENSITIVE_KEY = /(authorization|credential|hash|plaintext|scope|secret|token|value)/i;
 const MAX_DEPTH = 3;
@@ -35,7 +35,7 @@ export function sanitizeAuditMetadata(metadata: Record<string, unknown> | undefi
 }
 
 export async function recordWorkspaceAuditEvent(
-	client: SupabaseClient,
+	client: GatewaySupabaseClient,
 	event: WorkspaceAuditEventInput,
 ): Promise<boolean> {
 	const { error } = await client.from("workspace_audit_events").insert({

@@ -4,7 +4,7 @@ description: "Realiza tu primera solicitud, conecta una aplicación o encuentra 
 icon: "house"
 ---
 
-Usa Phaseo para llamar a modelos de varios proveedores mediante una API, controlar el enrutamiento y seguir el uso y los costes.
+Llama a modelos de muchos proveedores mediante una sola API en `https://api.phaseo.app/v1`, elige cómo se enruta cada solicitud y sigue el uso y el coste de cada una. Esta solicitud usa `phaseo/free`, así que funciona antes de que añadas créditos:
 
 <CodeGroup>
 
@@ -40,7 +40,7 @@ print(response.output_text)
 
 </CodeGroup>
 
-¿Aún no tienes una clave de API? Ejecuta `phaseo keys create` con la [CLI de Phaseo](./guides/integrations/phaseo-cli) o [crea una en el panel](https://phaseo.app/es-ES/settings/keys), y luego sigue la [guía de inicio rápido](./quickstart.mdx).
+¿Aún no tienes una clave de API? [Crea una en el panel](https://phaseo.app/settings/keys) y luego sigue la [guía de inicio rápido](./quickstart.mdx).
 
 ## Empieza desde donde estás
 
@@ -52,7 +52,7 @@ print(response.output_text)
 
 [**<Icon icon="terminal" /> Conecta un asistente de programación** Configura Codex, Claude Code, Cursor u otro asistente.](./guides/integrations/coding-assistants.mdx)
 
-[**<Icon icon="bot" /> Crea un agente** Dale herramientas a un modelo, transmite sus pasos y aprueba sus acciones con el SDK de agentes.](./sdk-reference/agent-sdk/overview.mdx)
+[**<Icon icon="bot" /> Crea un agente** Dale herramientas a un modelo, transmite sus pasos y aprueba sus acciones con el SDK de agentes.](./sdk-reference/agent/overview.mdx)
 
 </div>
 
@@ -60,13 +60,12 @@ print(response.output_text)
 
 <div className="ph-sdks not-prose">
 
-[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> <Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> TypeScript y Python](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/client/overview.mdx)
 
 </div>
 
@@ -74,16 +73,16 @@ print(response.output_text)
 
 | Tarea | Documentación |
 | --- | --- |
-| Consultar un campo o endpoint de solicitud | [Referencia de la API](./api-reference/introduction.mdx) |
+| Consultar un campo de solicitud o un endpoint | [Referencia de la API](./api-reference/introduction.mdx) |
 | Ejecutar una aplicación inicial | [Ejemplos](./guides/examples.mdx) |
-| Implementar un flujo de trabajo específico | [Recetario](./cookbook/index.mdx) |
+| Implementar un flujo de trabajo concreto | [Recetario](./cookbook/index.mdx) |
 | Elegir proveedores y alternativas | [Enrutamiento](./guides/routing-and-fallbacks.mdx) |
-| Procesar tareas de vídeo o lotes | [Tareas asíncronas y webhooks](./guides/async-video-and-batch.mdx) |
+| Procesar trabajos de vídeo o por lotes | [Trabajos asíncronos y webhooks](./guides/async-video-and-batch.mdx) |
 | Diagnosticar una solicitud fallida | [Errores y depuración](./api-reference/errors.mdx) |
 
 ## Elige un modelo
 
-[Explora modelos](https://phaseo.app/models) o [compáralos](https://phaseo.app/compare). El catálogo puede incluir modelos sin rutas disponibles; comprueba la disponibilidad en el Gateway antes de integrarlos. Consulta [Cómo funciona Phaseo](./developers/introduction.mdx) para conocer modelos, proveedores y facturación.
+[Explora modelos](https://phaseo.app/models) o [compáralos](https://phaseo.app/compare). El catálogo también incluye modelos a los que aún no puedes llamar, así que comprueba que un modelo esté **Activo en Gateway** antes de integrarlo, o lista los modelos disponibles con `GET /v1/models`. Consulta [Cómo funciona Phaseo](./developers/introduction.mdx) para conocer los modelos, los proveedores y la facturación.
 
 ## Crea con un agente de IA
 

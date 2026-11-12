@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "phaseo": {
+      "url": "https://mcp.phaseo.app/mcp"
+    },
+    "phaseo-docs": {
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}

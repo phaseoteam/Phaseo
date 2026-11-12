@@ -1,27 +1,24 @@
 ---
-title: "मल्टीमॉडलिटी"
-description: "गेटवे के ज़रिए पाठ, छवियों, ऑडियो, वीडियो और अन्य माध्यमों का उपयोग करें।"
+title: "मल्टीमोडैलिटी"
+description: "Gateway के ज़रिए टेक्स्ट, इमेज, ऑडियो, वीडियो और अन्य मोडैलिटी का उपयोग करें।"
 icon: "shapes"
 ---
 
-गेटवे एकीकृत API के ज़रिए कई माध्यम उपलब्ध कराता है। हर एंडपॉइंट अलग क्षमता से जुड़ा है, और मॉडल का समर्थन प्रदाता के अनुसार बदलता है।
+जो आउटपुट आपको चाहिए उसका एंडपॉइंट चुनें, फिर ऐसा मॉडल चुनें जो उस एंडपॉइंट को सपोर्ट करता हो। एक ही मॉडल नाम कई एंडपॉइंट पर दिख सकता है, और हर एंडपॉइंट पर प्रदाता सपोर्ट अलग होता है।
 
-## मोडैलिटी और एंडपॉइंट
-
-| मोडैलिटी | मुख्य एंडपॉइंट | टिप्पणियाँ |
+| मोडैलिटी | एंडपॉइंट | ये क्या करते हैं |
 | --- | --- | --- |
-| पाठ | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | संरचित और संवादात्मक आउटपुट। |
-| छवियाँ | `/v1/images/generations`, `/v1/images/edits` | पाठ से छवि बनाना और छवियों का संपादन। |
-| ऑडियो (TTS/STT/अनुवाद) | `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/audio/translations` | पाठ से वाणी, वाणी से पाठ और बोले गए ऑडियो का अनुवाद। |
-| वीडियो | `/v1/videos`, `/v1/videos/{video_id}`, `/v1/videos/{video_id}/content`, `/v1/videos/{video_id}` (DELETE) | असिंक्रोनस वीडियो कार्य बनाएँ, उनकी स्थिति जाँचें, सामग्री प्राप्त करें और कार्य हटाएँ। |
-| संगीत | `/v1/music/generate` | समर्थित प्रदाताओं के ज़रिए संगीत बनाएँ। |
-| OCR | `/v1/ocr` | समर्थन उपलब्ध होने पर छवियों से पाठ निकालें। |
+| टेक्स्ट | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | बातचीत वाला और संरचित टेक्स्ट आउटपुट। |
+| इमेज | [`/v1/images/generations`](../api-reference/endpoint/images-generations.mdx), [`/v1/images/edits`](../api-reference/endpoint/images-edits.mdx) | टेक्स्ट से इमेज बनाना और इमेज एडिट करना। |
+| ऑडियो | [`/v1/audio/speech`](../api-reference/endpoint/audio-speech.mdx), [`/v1/audio/transcriptions`](../api-reference/endpoint/audio-transcriptions.mdx), [`/v1/audio/translations`](../api-reference/endpoint/audio-translations.mdx) | टेक्स्ट से स्पीच, स्पीच से टेक्स्ट, और बोले गए ऑडियो का अनुवाद। |
+| रियलटाइम वॉइस | `/v1/audio/realtime/sessions` | लाइव वॉइस कॉल। [रियलटाइम वॉइस](./realtime-voice.mdx) देखें। |
+| वीडियो | [`POST /v1/videos`](../api-reference/endpoint/video-create.mdx), `GET /v1/videos/{video_id}`, `GET /v1/videos/{video_id}/content`, `DELETE /v1/videos/{video_id}` | एसिंक्रोनस वीडियो जॉब बनाएँ, उसका स्टेटस पोल करें, कंटेंट फ़ेच करें और जॉब डिलीट करें। [वीडियो और बैच जॉब](./async-video-and-batch.mdx) देखें। |
+| संगीत | [`/v1/music/generate`](../api-reference/endpoint/music-generate.mdx) | समर्थित प्रदाताओं पर संगीत बनाना। |
+| OCR | [`/v1/ocr`](../api-reference/endpoint/ocr.mdx) | इमेज से टेक्स्ट निकालना। |
+| दस्तावेज़ पार्सिंग | [`/v1/parse`](../api-reference/endpoint/parse.mdx) | दस्तावेज़ इमेज से क्रमबद्ध टेक्स्ट, तालिकाएँ और लेआउट। [दस्तावेज़ इमेज पार्स करें](./document-parsing.mdx) देखें। |
 
-## मॉडल समर्थन की जाँच करें
+## देखें कि कौन-से मॉडल किसी एंडपॉइंट को सपोर्ट करते हैं
 
-उपलब्ध मॉडल और उनके समर्थित एंडपॉइंट देखने के लिए [मॉडल एंडपॉइंट](../api-reference/endpoint/models.mdx) का उपयोग करें। प्रदाताओं के समर्थन की जानकारी [प्रदाता एंडपॉइंट](../api-reference/endpoint/providers.mdx) पर देखें।
+[Models एंडपॉइंट](../api-reference/endpoint/models.mdx) को कॉल करें: हर मॉडल उन `endpoints` की सूची देता है जिन्हें वह सपोर्ट करता है, और `GET /v1/models/{author}/{slug}/endpoints` एक मॉडल के हर प्रदाता रूट को उसकी मोडैलिटी और समर्थित पैरामीटर के साथ दिखाता है। [Providers एंडपॉइंट](../api-reference/endpoint/providers.mdx) प्रदाता कवरेज की सूची देता है।
 
-## सर्वोत्तम तरीके
-
-- मॉडल का नाम कई मोडैलिटी में साझा हो, तब भी अपनी ज़रूरत के अनुसार एंडपॉइंट चुनें।
-- उपयोग में लाने से पहले [API संदर्भ](../api-reference/introduction.mdx) के अनुसार अनुरोध डेटा की पुष्टि करें।
+शिप करने से पहले अनुरोध बॉडी को उस एंडपॉइंट के [API संदर्भ](../api-reference/introduction) से मिलाकर जाँचें।

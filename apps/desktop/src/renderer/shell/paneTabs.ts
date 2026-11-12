@@ -1,5 +1,5 @@
 /**
- * The right pane's tabs, after T3 Code: every browser tab, terminal, file and pull request is its own pane tab.
+ * The right pane's tabs: every browser tab, terminal, file and pull request is its own pane tab.
  * A tab is a key: "browser:<id>", "pull:<number>", "file:<path>", "terminal:<id>", or a single surface
  * ("files", "diff", "pulls", "terminal", "agents").
  */
@@ -19,7 +19,7 @@ export function openPaneTab(state: PaneState, key: PaneKey, background = false):
 	return { ...state, tabs, active: background && state.active ? state.active : key };
 }
 
-/** Closes tabs; the active tab's neighbour at the same place becomes active (T3). Closed tabs can be reopened. */
+/** Closes tabs; the active tab's neighbour at the same place becomes active. Closed tabs can be reopened. */
 export function closePaneTabs(state: PaneState, keys: PaneKey[]): PaneState {
 	const tabs = state.tabs.filter(key => !keys.includes(key));
 	const index = state.active ? state.tabs.indexOf(state.active) : -1;

@@ -14,6 +14,7 @@ import { requestIdFor } from "@/runtime/request-id";
 import { withErrorObject } from "@/core/error-object";
 import { enforceRegionalSurface } from "@/regional-surface";
 import { markRequestReceived } from "@pipeline/telemetry/request-receipt";
+import { emitLogs, safeError, telemetryConfig, traceContext } from "../../../packages/shared/observability/index.mjs";
 export { RealtimeRelayDurableObject } from "@core/realtime-relay-durable-object";
 export { ProviderRateLimitDurableObject } from "@core/provider-rate-limit-durable-object";
 export { CustomerRateLimitDurableObject } from "@core/customer-rate-limit-durable-object";
@@ -53,6 +54,14 @@ app.all("/internal/*", internal);
 
 app.onError((error, c) => {
 	const requestId = c.get("requestId") ?? requestIdFor(c.req.raw);
+	try {
+		const trace = traceContext(c.req.header("traceparent"));
+		c.executionCtx.waitUntil(emitLogs(telemetryConfig(c.env, "phaseo-gateway"), [{
+			event_name: "gateway.unhandled_error", outcome: "error", actionable: true,
+			request_id: requestId, trace_id: trace?.traceId,
+			method: c.req.method, route: c.req.routePath, ...safeError(error),
+		}]).catch(() => {}));
+	} catch { /* Preserve the original failure response if monitoring is unavailable. */ }
 	const url = new URL(c.req.url);
 	const event = sendAxiomWideEvent({
 		event_type: "api.unhandled_error",

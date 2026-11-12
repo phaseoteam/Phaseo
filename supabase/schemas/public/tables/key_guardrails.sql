@@ -22,6 +22,30 @@ CREATE TRIGGER protect_slack_agent_guardrail
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_slack_agent_guardrail();
 
+CREATE TRIGGER sync_guardrail_assignments
+  AFTER INSERT OR DELETE OR UPDATE ON public.key_guardrails
+  FOR EACH ROW
+  EXECUTE FUNCTION private.sync_guardrail_assignments();
+
+CREATE POLICY "key_guardrails_no_oauth_client_insert" ON "public"."key_guardrails"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "key_guardrails_no_oauth_client_update" ON "public"."key_guardrails"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "key_guardrails_no_oauth_client_delete" ON "public"."key_guardrails"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "key_guardrails_delete_own_team" ON "public"."key_guardrails"
   FOR DELETE
   TO "authenticated"
@@ -56,5 +80,12 @@ CREATE POLICY "key_guardrails_update_own_team" ON "public"."key_guardrails"
    FROM (public.keys k
      JOIN public.workspace_guardrails g ON ((g.id = key_guardrails.guardrail_id)))
   WHERE ((k.id = key_guardrails.key_id) AND (k.workspace_id = g.workspace_id) AND public.is_workspace_admin(k.workspace_id)))));
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."key_guardrails"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."key_guardrails" TO "anon", "authenticated", "service_role";

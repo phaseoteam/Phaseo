@@ -1,8 +1,6 @@
 export const PROVIDER_STATUS_PRIORITY_ORDER = [
 	"active",
-	"deranked_lvl1",
-	"deranked_lvl2",
-	"deranked_lvl3",
+	"deranked",
 	"internal_testing",
 	"coming_soon",
 	"inactive",
@@ -36,23 +34,15 @@ export function normalizeGatewayStatusValue(value: unknown): string {
 		.replace(/[\s-]+/g, "_");
 	if (!normalized) return "";
 	if (normalized === "not_active") return "inactive";
-	if (normalized === "de_ranked" || normalized === "deranked") return "deranked_lvl1";
-	if (normalized === "deranked_lvl_1") return "deranked_lvl1";
-	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
-	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
+	// The catalogue stores a deranked route as `degraded`; the former levels are one level now.
+	if (normalized === "degraded" || normalized === "de_ranked" || /^deranked(_lvl_?[123])?$/.test(normalized)) {
+		return "deranked";
+	}
 	return normalized;
 }
 
-function normalizeDerankStatus(value: unknown): CanonicalGatewayStatus | null {
-	const normalized = normalizeGatewayStatusValue(value);
-	if (
-		normalized === "deranked_lvl1" ||
-		normalized === "deranked_lvl2" ||
-		normalized === "deranked_lvl3"
-	) {
-		return normalized;
-	}
-	return null;
+function isDeranked(value: unknown): boolean {
+	return normalizeGatewayStatusValue(value) === "deranked";
 }
 
 export function resolveGatewayStatus({
@@ -157,14 +147,11 @@ export function resolveGatewayStatus({
 		return "inactive";
 	}
 
-	return (
-		normalizeDerankStatus(providerRoutingStatus) ??
-		normalizeDerankStatus(modelRoutingStatus) ??
-		normalizeDerankStatus(capabilityStatus) ??
-		(normalizedCapabilityStatus === "inactive" || !isActiveGateway
-			? "inactive"
-			: "active")
-	);
+	// `degraded` is also stored on routes whose routing is off: those are inactive, not a fallback.
+	if (normalizedCapabilityStatus === "inactive" || !isActiveGateway) return "inactive";
+	return [providerRoutingStatus, modelRoutingStatus, capabilityStatus].some(isDeranked)
+		? "deranked"
+		: "active";
 }
 
 export function chooseGatewayStatus(statuses: CanonicalGatewayStatus[]): CanonicalGatewayStatus {

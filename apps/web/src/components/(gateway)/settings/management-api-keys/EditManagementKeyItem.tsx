@@ -1,4 +1,3 @@
-"use client";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
@@ -21,11 +20,11 @@ import {
 	updateManagementKeyAction,
 	updateManagementKeyScopesAction,
 	type ManagementKeyTemplate,
-} from "@/app/(dashboard)/settings/management-api-keys/actions";
+} from "@/features/settings/management-api-keys/actions";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { MANAGEMENT_KEY_TEMPLATE_SCOPES } from "@/lib/managementKeyScopes";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 const KEY_TEMPLATES: Array<{ value: ManagementKeyTemplate; label: string; description: string }> = [
 	{ value: "read-only", label: "Read", description: "All control-plane reads." },
@@ -100,14 +99,14 @@ export default function EditManagementKeyItem({
 		e?.preventDefault();
 		setLoading(true);
 		const updates = [
-			updateManagementKeyAction(k.id, {
+			updateManagementKeyAction({ data: { id: k.id, updates: {
 				name,
 				paused,
 				expiresAt: toIsoFromDateTimeLocalInput(expiresAtLocal),
-			}),
+			} } }),
 		];
 		if (templateChanged && template) {
-			updates.push(updateManagementKeyScopesAction(k.id, template));
+			updates.push(updateManagementKeyScopesAction({ data: { id: k.id, template } }));
 		}
 		const promise = Promise.all(updates);
 		try {

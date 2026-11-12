@@ -1,78 +1,41 @@
 ---
 title: "SpaceXAI Grok 4.20"
-description: "ما ينبغي معرفته لاعتماد Grok 4.20، بما في ذلك ضوابط الاستدلال وجهد الوكلاء المتعددين."
+description: "ما ينبغي معرفته عند اعتماد Grok 4.20، بما في ذلك ضوابط الاستدلال وجهد الوكلاء المتعددين."
 icon: "/icons/brands/grok.svg"
 ---
 
-# SpaceXAI Grok 4.20
+غيّر معرّف النموذج وأعد تشغيل مجموعة التحقق لديك؛ إذ تبقى أشكال الطلب والاستجابة كما هي. عنصر التحكم الجديد الوحيد هو مدى عمق عمل نسخة الوكلاء المتعددين.
 
-استخدم هذا الدليل لاعتماد Grok 4.20 بأمان عبر Phaseo Gateway.
+| النموذج | معرّف النموذج في Phaseo | التحكم في الاستدلال |
+| --- | --- | --- |
+| Grok 4.20 | `spacex-ai/grok-4.20` | `reasoning.enabled`: مفعّل أو متوقف |
+| Grok 4.20 Multi-Agent (تجريبي) | `spacex-ai/grok-4.20-multi-agent-beta` | `reasoning.effort`: `low` أو `medium` أو `high` |
 
-المسار الأساسي في الكتالوج:
+## تبديل الاستدلال في Grok 4.20
 
-- `spacex-ai/grok-4-20-2026-02-17`
-
-مسار اختياري للوكلاء المتعددين يُتاح عبر معرّف نموذج المزوّد:
-
-- `spacex-ai/grok-4.20-multi-agent-beta-0309`
-
-## البدء السريع للترحيل
-
-في معظم عمليات التكامل، يكفي تحديث معرّف النموذج وإعادة مجموعة التحقق المعتادة.
-
-يمكن إبقاء أنماط الطلب والاستجابة الحالية كما هي.
-
-## الجديد
-
-لا يتطلب المسار الأساسي لـ Grok 4.20 تغييرًا في السلوك ضمن Phaseo Gateway.
-
-التغيير العملي الوحيد هو طريقة ضبط إصدار الوكلاء المتعددين.
-
-عند استخدام Phaseo Gateway:
-
-- يمكن تفعيل استدلال Grok 4.20 الأساسي أو إيقافه عبر `reasoning.enabled` كالمعتاد.
-- اضبط إصدار الوكلاء المتعددين عبر `reasoning.effort`.
-- استخدم `low` أو `medium` أو `high` أو `extra high`.
-- وفقًا لإرشادات SpaceXAI، يستخدم `low` و`medium` أربعة وكلاء، بينما يستخدم `high` و`extra high` إعدادات أكبر للوكلاء المتعددين.
-
-لا نستخدم `agent_count` مباشرةً في طلبات Gateway.
-
-### Grok 4.20 الأساسي مع مفتاح الاستدلال
-
-استخدم النموذج الأساسي واضبط `reasoning.enabled` مباشرةً:
+اضبط `reasoning.enabled: true` لاستخدام نسخة الاستدلال من النموذج. دونه، أو مع `false`، يستدعي Phaseo النسخة غير المستدلّة.
 
 ```json
 {
-  "model": "spacex-ai/grok-4-20-2026-02-17",
+  "model": "spacex-ai/grok-4.20",
   "input": "Explain this architecture",
-  "reasoning": {
-    "enabled": true
-  }
+  "reasoning": { "enabled": true }
 }
 ```
 
-### Grok 4.20 متعدد الوكلاء مع التحكم في الجهد
+## تحديد العمق في نموذج الوكلاء المتعددين
 
-استخدم نموذج الوكلاء المتعددين واضبط العمق عبر `reasoning.effort`:
+تحكّم في العمق باستخدام `reasoning.effort`. لا تقبل طلبات البوابة `agent_count` الخاص بـ xAI؛ ووفقًا لـ xAI، يشغّل `low` و`medium` أربعة وكلاء، ويشغّل `high` إعدادًا أكبر.
 
 ```json
 {
-  "model": "spacex-ai/grok-4.20-multi-agent-beta-0309",
+  "model": "spacex-ai/grok-4.20-multi-agent-beta",
   "input": "Evaluate three rollout options with tradeoffs",
-  "reasoning": {
-    "effort": "medium"
-  }
+  "reasoning": { "effort": "medium" }
 }
 ```
-
-مستويات جهد الاستدلال:
-
-- `low`
-- `medium`
-- `high`
-- `extra high`
 
 ## المصادر
 
-- [قدرات SpaceXAI متعددة الوكلاء](https://docs.x.ai/developers/model-capabilities/text/multi-agent)
-- [الترحيل إلى نماذج SpaceXAI الجديدة](https://docs.x.ai/docs/guides/migrating-to-new-models)
+- [إمكانات الوكلاء المتعددين في SpaceXAI](https://docs.x.ai/developers/model-capabilities/text/multi-agent)
+- [الترحيل إلى النماذج الجديدة في SpaceXAI](https://docs.x.ai/docs/guides/migrating-to-new-models)

@@ -1,17 +1,16 @@
-"use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { useQuery } from "@tanstack/react-query";
 import { LoaderCircle, RefreshCw } from "lucide-react";
 import ProviderCatalogManager from "@/components/(gateway)/settings/account/ProviderCatalogManager";
 import { Button } from "@/components/ui/button";
-import { fetchProviderCatalogLinksAction } from "@/app/(dashboard)/settings/account/providers/actions";
+import { fetchProviderCatalogLinksAction } from "@/features/settings/account/providers/actions";
 
 export function ProviderCatalogDockPanel({ userId, onDirtyChange }: { userId: string; onDirtyChange?: (dirty: boolean) => void }) {
 	const tx = useTranslations();
 	const query = useQuery({
 		queryKey: ["providerCatalogLinks", userId],
-		queryFn: fetchProviderCatalogLinksAction,
+		queryFn: () => fetchProviderCatalogLinksAction(),
 	});
 
 	if (query.isPending) {

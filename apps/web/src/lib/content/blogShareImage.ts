@@ -32,9 +32,9 @@ export function blogShareImage(post: {
 	slug: string;
 	title: string;
 	description: string;
-	coverImage: string;
+	coverImage: string | null;
 }): BlogShareImage | null {
-	if (RASTER_COVER.test(post.coverImage)) return { path: post.coverImage };
+	if (post.coverImage && RASTER_COVER.test(post.coverImage)) return { path: post.coverImage };
 
 	const title = truncate(post.title, DYNAMIC_OG_LIMITS.title);
 	const pathname = `/blog/${post.slug}`;

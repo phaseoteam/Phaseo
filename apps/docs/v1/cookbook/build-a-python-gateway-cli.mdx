@@ -5,11 +5,11 @@ description: "Use the Python quickstart sample as a full walkthrough for a Pytho
 "og:image": "https://phaseo.app/og/dynamic?title=Build%20a%20Python%20Gateway%20CLI&description=Use%20the%20Python%20quickstart%20sample%20as%20a%20full%20walkthrough%20for%20a%20Python-first%20CLI%20or%20backend%20integration.&pathname=/docs/v1/cookbook/build-a-python-gateway-cli"
 ---
 
-Use this page when your first real Phaseo integration lives in Python and you want a practical starting point for a CLI, worker, or backend service.
+Run a standard-library Python CLI that calls Phaseo endpoints one command at a time. When you're done you have `python quickstart.py <command>` working for health, models, Responses and Chat Completions, plus commands for embeddings, moderation, images, OCR, video and music you can copy into a worker or backend.
 
-**Goal:** Run Phaseo control and generation routes from a small Python command-line application.
+The CLI is illustrative: it's a reference for request shapes, not a packaged tool. Several of its default model IDs for the media commands are no longer served, so pass `--model` for those (see [Pick models for the media commands](#pick-models-for-the-media-commands)).
 
-**Outcome:** A dependency-light CLI you can adapt into a worker, script, or backend integration.
+To have a coding agent build a similar CLI from scratch, paste this prompt:
 
 <Prompt
   description="Build a **Python gateway CLI** around Phaseo routes."
@@ -19,15 +19,16 @@ Use this page when your first real Phaseo integration lives in Python and you wa
 {`You are building a Python-first CLI or backend integration for Phaseo Gateway.
 
 Create a small Python app that:
-- reads PHASEO_API_KEY from the environment
-- supports one control-route smoke mode
-- supports one text-generation command
+- reads PHASEO_API_KEY from the environment and sends it as Authorization: Bearer
+- uses https://api.phaseo.app/v1 as the base URL
+- supports one control-route smoke mode (GET /health, GET /models)
+- supports one text-generation command (POST /responses)
 - keeps the implementation dependency-light
 
 Requirements:
 - Prefer the Python standard library unless there is a strong reason not to.
 - Keep the request payloads explicit.
-- Print clear success and failure output.
+- Print clear success and failure output, and exit non-zero on a failed call.
 - Include one or two useful commands instead of a huge general CLI.
 - Add a short README with examples.
 
@@ -42,77 +43,85 @@ Verification:
 - report exactly what you verified and what remains unverified.`}
 </Prompt>
 
-## Sample project
+## What the CLI does
 
-- GitHub: [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart)
-- Local repo path: `examples/gateway-python-quickstart`
+The sample is [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart): one file, `quickstart.py`, using only `urllib`, `json` and `argparse`.
 
-## What this app does
+| Command | Calls |
+| --- | --- |
+| `smoke` | `GET /v1/health`, `GET /v1/models`, `GET /v1/providers`, and one `POST /v1/responses` |
+| `health`, `models`, `providers` | The matching `GET` route |
+| `responses --prompt` | `POST /v1/responses` |
+| `chat --prompt` | `POST /v1/chat/completions` |
+| `embeddings --text` | `POST /v1/embeddings` |
+| `moderations --text` | `POST /v1/moderations` |
+| `image --prompt` | `POST /v1/images/generations` |
+| `ocr --image-url` | `POST /v1/ocr` |
+| `video-create`, `video-status`, `video-cancel`, `video-download-url` | `POST /v1/videos`, `GET /v1/videos/{video_id}`, `POST /v1/videos/{video_id}/cancel`, `POST /v1/videos/{video_id}/download_url` |
+| `music-create`, `music-status` | `POST /v1/music/generate`, `GET /v1/music/generate/{music_id}` |
 
-- supports control routes like:
-  - `GET /v1/health`
-  - `GET /v1/models`
-  - `GET /v1/providers`
-- supports generation routes like:
-  - `POST /v1/responses`
-  - `POST /v1/chat/completions`
-  - `POST /v1/embeddings`
-  - and several additional endpoints
+Every request retries twice on `429`, `5xx` and network errors, with 1 s then 2 s waits, and times out after 45 seconds. Each command exits `1` when the call isn't `2xx`, so you can use it in scripts.
 
-## Why this sample is useful
+## Run it
 
-It gives you:
+You need Python 3 and a Phaseo API key.
 
-- a Python-first reference without third-party dependencies
-- explicit request payloads and response handling
-- a practical pattern for workers, scripts, and internal tools
+<Steps>
+<Step title="Create .env.local">
 
-## Prerequisites
+The script reads `.env.local` from the folder you run it in. The sample has no `.env.example`, so create the file:
 
-- Python 3
-- a Phaseo API key
+```bash .env.local
+PHASEO_API_KEY=phaseo_v1_sk_...
+# Optional
+PHASEO_MODEL=openai/gpt-6-astra
+PHASEO_BASE_URL=https://api.phaseo.app/v1
+PHASEO_APP_TITLE=My Python CLI
+PHASEO_HTTP_REFERER=https://myapp.example
+```
 
-## Run the sample
+Variables already set in your shell win over the file. Without `PHASEO_MODEL`, text commands use `openai/gpt-5.6-sol`.
+
+</Step>
+<Step title="Run the smoke check">
 
 ```bash
 cd examples/gateway-python-quickstart
-cp .env.example .env.local
+python quickstart.py smoke
 ```
 
-Set:
+`smoke` also sends one short Responses request, so it uses a few credits.
 
-- `PHASEO_API_KEY`
-
-Then try:
+</Step>
+<Step title="Send one request">
 
 ```bash
-python quickstart.py smoke
 python quickstart.py responses --prompt "Return exactly: integration_ok"
 python quickstart.py --help
 ```
 
-## Check your work
+</Step>
+</Steps>
 
-- Smoke mode confirms that the API is reachable.
-- The Responses command prints `integration_ok`.
-- `--help` lists the supported commands without making a request.
-- Authentication and API failures produce clear terminal errors.
+## Check it worked
 
-## What to look at in the code
+- `smoke` prints `HTTP 200` for every block and exits `0`.
+- The `responses` command's output contains `integration_ok`.
+- `--help` lists the commands without making a request.
+- Without a key, the script prints `Missing PHASEO_API_KEY` and exits `1`.
+- The requests appear in **Settings → Usage → Logs**.
 
-- how the environment is loaded
-- how the CLI dispatches commands
-- how different request payloads are built
-- how async video and music routes are handled separately from one-shot text routes
+## Pick models for the media commands
 
-## How to make it your own
+These defaults in `quickstart.py` are retired or have no active provider. Pass a current model with `--model`, and pick one from the [models page](https://phaseo.app/models) or `python quickstart.py models`:
 
-- strip it down to only the endpoints your service needs
-- keep one shared request helper instead of duplicating headers everywhere
-- switch to the Python SDK later if you want a higher-level client
+| Command | Default in the sample | Status |
+| --- | --- | --- |
+| `moderations` | `openai/omni-moderation-latest` | Not a catalogue ID; use `openai/omni-moderation` |
+| `ocr` | `mistral/mistral-ocr` | Retired; try `mistral/ocr-4.1` |
+| `video-create` | `openai/sora-2` | Retired |
+| `music-create` | `suno/suno-v4` | No active provider |
 
-## Related guides
+`embeddings` (`google/gemini-embedding-2`) and `image` (`openai/gpt-image-2`) defaults are served. Video and music jobs are asynchronous: store the returned ID and poll the status command; [Async video and batch](../guides/async-video-and-batch) covers the job lifecycle.
 
-- [Mini app starter prompts](./mini-app-starter-prompts)
-- [Ship structured JSON from Python](./sdk-python-presets-and-json)
-- [Examples](../guides/examples)
+Strip the file down to the commands your service needs, keep the one shared `gateway_request()` helper, and switch to the [Python SDK](../sdk-reference/client/overview) when you want typed requests.

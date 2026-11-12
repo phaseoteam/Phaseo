@@ -10,16 +10,42 @@ import { settingsProject, type ProjectScript } from "../shared/projectSettings";
 import { readProcessTable, shellIsBusy, type ProcessRow } from "./terminalProcesses";
 
 /** `activity` counts output and input, so a close check notices a command typed while it ran. */
-type Entry = { pty: IPty; session: TerminalSession; pending: string; activity: number; timer?: ReturnType<typeof setTimeout>; settle?: (error?: Error) => void; /** A setup action's exit code, or undefined when the app closed it. */ exited?: (exitCode?: number) => void };
+type Entry = { pty: IPty; session: TerminalSession; pending: string; activity: number; timer?: ReturnType<typeof setTimeout>; settle?: (error?: Error) => void; /** A setup action's exit code, or undefined when the app closed it. */ exited?: (exitCode?: number) => void;
+	/** Phones watching it (see attach), by a key per attachment, so one phone on two screens counts twice. */ viewers: Map<symbol, { name: string; listener: TerminalListener }> };
+type TerminalListener = (event: TerminalEvent) => void;
 
 export class TerminalService {
 	private readonly running = new Map<string, Entry>();
 	/** Terminals closed because their chat settled: their transcripts go with them. */
 	private readonly discarding = new Set<string>();
 	private closed = false;
-	onEvent: (event: TerminalEvent) => void = () => {};
+	private readonly listeners = new Set<TerminalListener>();
 	constructor(private readonly store: WorkspaceStore, private readonly directory: string, private readonly spawnPty = spawn, private readonly processTable: () => Promise<ProcessRow[]> = readProcessTable) {}
-	get(): TerminalSession[] { return [...this.running.values()].filter(value => value.session.ephemeral).map(value => ({ ...value.session })).concat(this.store.getTerminals()); }
+	get(): TerminalSession[] { return [...this.running.values()].filter(value => value.session.ephemeral).map(value => ({ ...value.session })).concat(this.store.getTerminals().map(session => { const entry = this.running.get(session.id); return entry ? { ...session, ...this.watchers(entry) } : session; })); }
+	/** Hears every terminal's events, as each window does; returns the way to stop. */
+	listen(listener: TerminalListener) { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; }
+	/**
+	 * A phone watching a running terminal: its output so far, then each of its events until detach. The output is read
+	 * after pending output is flushed and before the listener joins, so nothing is missed or sent twice. While a phone
+	 * watches, the session names it (`phones`), so the window's title shows who else is in the terminal.
+	 */
+	attach(id: string, viewer: string, listener: TerminalListener): { session: TerminalSession; output: string; detach: () => void } {
+		const entry = this.running.get(id);
+		if (this.closed || !entry || entry.session.ephemeral) throw new Error("This terminal is no longer running.");
+		this.flush(id);
+		const key = Symbol(viewer);
+		entry.viewers.set(key, { name: viewer, listener });
+		this.emit({ sessionId: id, session: entry.session }, entry);
+		return { session: this.view(entry), output: entry.session.output, detach: () => { if (entry.viewers.delete(key) && this.running.get(id) === entry) this.emit({ sessionId: id, session: entry.session }, entry); } };
+	}
+	private watchers(entry: Entry): Pick<TerminalSession, "phones"> { return entry.viewers.size ? { phones: [...new Set([...entry.viewers.values()].map(value => value.name))] } : {}; }
+	private view(entry: Entry): TerminalSession { return { ...entry.session, ...this.watchers(entry) }; }
+	/** To the windows and to the phones watching this terminal; a session goes with the phones watching it. */
+	private emit(event: TerminalEvent, entry: Entry) {
+		const value = event.session ? { ...event, session: this.view(entry) } : event;
+		for (const listener of [...this.listeners]) listener(value);
+		for (const { listener } of [...entry.viewers.values()]) listener(value);
+	}
 	/** Each running terminal's shell PID with its title and chat, for Settings → Diagnostics. */
 	processOwners(): { pid: number; title: string; taskId?: string; projectId?: string }[] {
 		return [...this.running.values()].flatMap(entry => Number.isInteger(entry.pty.pid) && entry.pty.pid > 0 ? [{ pid: entry.pty.pid, title: entry.session.title, ...(entry.session.taskId ? { taskId: entry.session.taskId } : {}), ...(entry.session.projectId ? { projectId: entry.session.projectId } : {}) }] : []);
@@ -31,7 +57,7 @@ export class TerminalService {
 		const session: TerminalSession = { id: randomUUID(), projectId: request.projectId, taskId: request.taskId, title: request.title.slice(0, 200), cwd: request.cwd, output: "", ephemeral: true, status: "running", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
 		let resolve!: () => void; let reject!: (error: Error) => void; const completed = new Promise<void>((accept, decline) => { resolve = accept; reject = decline; });
 		const entry = this.start(session, request.agent.executable, [...request.agent.arguments, ...request.args], { ...process.env, ...request.env, ELECTRON_RUN_AS_NODE: "1" });
-		const abort = () => { this.flush(session.id); this.running.delete(session.id); session.output = ""; session.status = "interrupted"; this.onEvent({ sessionId: session.id, session }); entry.settle?.(new Error("Native sign-in cancelled.")); try { entry.pty.kill(); } catch { /* The native process may already have exited. */ } };
+		const abort = () => { this.flush(session.id); this.running.delete(session.id); session.output = ""; session.status = "interrupted"; this.emit({ sessionId: session.id, session }, entry); entry.settle?.(new Error("Native sign-in cancelled.")); try { entry.pty.kill(); } catch { /* The native process may already have exited. */ } };
 		const timeout = setTimeout(abort, 10 * 60 * 1000);
 		entry.settle = error => { clearTimeout(timeout); signal.removeEventListener("abort", abort); if (error) reject(error); else resolve(); };
 		signal.addEventListener("abort", abort, { once: true }); if (signal.aborted) abort();
@@ -39,19 +65,23 @@ export class TerminalService {
 	}
 	private start(session: TerminalSession, executable: string, args: string[], env: NodeJS.ProcessEnv) {
 		const pty = this.spawnPty(executable, args, { name: "xterm-256color", cwd: session.cwd, cols: 100, rows: 30, env });
-		const entry: Entry = { pty, session, pending: "", activity: 0 };
-		this.running.set(session.id, entry); if (!session.ephemeral) this.store.saveTerminal(session); this.onEvent({ sessionId: session.id, session });
+		const entry: Entry = { pty, session, pending: "", activity: 0, viewers: new Map() };
+		this.running.set(session.id, entry); if (!session.ephemeral) this.store.saveTerminal(session); this.emit({ sessionId: session.id, session }, entry);
 		pty.onData(data => { if (this.closed || !this.running.has(session.id)) return; entry.activity++; entry.pending = (entry.pending + data).slice(-1024 * 1024); entry.timer ??= setTimeout(() => this.flush(session.id), 100); });
 		pty.onExit(({ exitCode }) => {
 			if (this.closed || !this.running.has(session.id)) return;
 			this.flush(session.id); session.status = "exited"; session.exitCode = exitCode;
 			if (!session.ephemeral) this.store.saveTerminal(session); else session.output = "";
 			if (this.discarding.delete(session.id)) this.store.deleteTerminal(session.id);
-			this.running.delete(session.id); this.onEvent({ sessionId: session.id, session }); entry.settle?.(exitCode === 0 ? undefined : new Error("Native sign-in ended without completing.")); entry.exited?.(exitCode);
+			this.running.delete(session.id);
+			// The phones hear it exit, but a finished transcript no longer names them in the window.
+			const watching = [...entry.viewers.values()]; entry.viewers.clear();
+			this.emit({ sessionId: session.id, session }, entry); for (const { listener } of watching) listener({ sessionId: session.id, session: { ...session } });
+			entry.settle?.(exitCode === 0 ? undefined : new Error("Native sign-in ended without completing.")); entry.exited?.(exitCode);
 		});
 		return entry;
 	}
-	/** A shell in a project (and chat), running a project script when one is given, as T3's script terminals do. */
+	/** A shell in a project (and chat), running a project script when one is given. */
 	private open(projectId: string | undefined, taskId: string | undefined, script?: ProjectScript, asProcess = false) {
 		if (this.running.size >= 10 || this.store.getTerminals().length >= 50) throw new Error("Close a terminal or delete an old transcript first.");
 		const project = projectId ? this.store.getProjects().find(project => project.id === projectId) : undefined;
@@ -66,7 +96,7 @@ export class TerminalService {
 		if (script && !asProcess) entry.pty.write(`${script.command}\r`);
 		return session;
 	}
-	/** T3's setup script terminal: runs a worktree's setup action to completion in a terminal of the chat. */
+	/** The setup script terminal: runs a worktree's setup action to completion in a terminal of the chat. */
 	runSetup(projectId: string, script: ProjectScript, taskId: string): { terminalId: string; exited: Promise<number | undefined> } {
 		if (this.closed) throw new Error("Terminals are shutting down.");
 		const session = this.open(projectId, taskId, script, true), entry = this.running.get(session.id);
@@ -105,7 +135,7 @@ export class TerminalService {
 		return command.type === "write" || command.type === "resize" ? [] : this.get();
 	}
 	/**
-	 * T3's settle cleanup: closes a chat's terminals that sit at an idle shell prompt. One running a command
+	 * Settle cleanup: closes a chat's terminals that sit at an idle shell prompt. One running a command
 	 * (a dev server, an editor) stays, and so does every terminal when the process table cannot be read.
 	 */
 	async closeIdle(taskId: string): Promise<number> {
@@ -123,7 +153,7 @@ export class TerminalService {
 		}
 		return closed;
 	}
-	/** T3's numbering: "Terminal N", one above the highest number in use for the same chat or project. */
+	/** Numbering: "Terminal N", one above the highest number in use for the same chat or project. */
 	private nextTitle(projectId?: string, taskId?: string) {
 		const used = this.get().filter(session => !session.ephemeral && session.projectId === projectId && session.taskId === taskId).map(session => /^Terminal (\d+)$/.exec(session.title)?.[1]).filter(Boolean).map(Number);
 		return `Terminal ${used.length ? Math.max(...used) + 1 : 1}`;
@@ -133,7 +163,7 @@ export class TerminalService {
 		if (entry.timer) clearTimeout(entry.timer); entry.timer = undefined;
 		if (!entry.pending) return;
 		const data = entry.pending; entry.pending = ""; entry.session.output = (entry.session.output + data).slice(-1024 * 1024);
-		if (!entry.session.ephemeral) this.store.saveTerminal(entry.session); this.onEvent({ sessionId: id, data });
+		if (!entry.session.ephemeral) this.store.saveTerminal(entry.session); this.emit({ sessionId: id, data }, entry);
 	}
 	close() {
 		this.closed = true;

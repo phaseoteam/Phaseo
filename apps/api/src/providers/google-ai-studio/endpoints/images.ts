@@ -40,24 +40,36 @@ function gcd(a: number, b: number): number {
     return x || 1;
 }
 
-const GOOGLE_IMAGE_ALLOWED_ASPECT_RATIOS = [
+// Gemini 3 Pro Image and 2.5 Flash Image take these 10 ratios; Gemini 3.1 Flash
+// Image and Nano Banana 2.1 add 1:4, 4:1, 1:8 and 8:1.
+// https://aistudio.google.com/docs/image-generation
+const GOOGLE_IMAGE_STANDARD_ASPECT_RATIOS = [
     "1:1",
-    "1:4",
-    "1:8",
     "2:3",
     "3:2",
     "3:4",
-    "4:1",
     "4:3",
     "4:5",
     "5:4",
-    "8:1",
     "9:16",
     "16:9",
     "21:9",
 ] as const;
 
-const GOOGLE_IMAGE_ALLOWED_ASPECT_RATIO_SET = new Set<string>(GOOGLE_IMAGE_ALLOWED_ASPECT_RATIOS);
+const GOOGLE_IMAGE_EXTENDED_ASPECT_RATIOS = [
+    ...GOOGLE_IMAGE_STANDARD_ASPECT_RATIOS,
+    "1:4",
+    "1:8",
+    "4:1",
+    "8:1",
+] as const;
+
+/** The aspect ratios a Google image model accepts. */
+export function googleImageAspectRatios(model: string): readonly string[] {
+    return /gemini-3-pro-image|gemini-2[.-]5-flash-image/i.test(model)
+        ? GOOGLE_IMAGE_STANDARD_ASPECT_RATIOS
+        : GOOGLE_IMAGE_EXTENDED_ASPECT_RATIOS;
+}
 
 function parseRatio(value: string): { width: number; height: number } | null {
     const match = /^(\d+):(\d+)$/i.exec(value.trim());
@@ -70,14 +82,14 @@ function parseRatio(value: string): { width: number; height: number } | null {
     return { width, height };
 }
 
-function closestSupportedAspectRatio(width: number, height: number): string | undefined {
+function closestSupportedAspectRatio(width: number, height: number, allowed: readonly string[]): string | undefined {
     if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
         return undefined;
     }
     const target = width / height;
     let bestRatio: string | undefined;
     let bestDelta = Number.POSITIVE_INFINITY;
-    for (const ratio of GOOGLE_IMAGE_ALLOWED_ASPECT_RATIOS) {
+    for (const ratio of allowed) {
         const parsed = parseRatio(ratio);
         if (!parsed) continue;
         const candidate = parsed.width / parsed.height;
@@ -90,15 +102,16 @@ function closestSupportedAspectRatio(width: number, height: number): string | un
     return bestRatio;
 }
 
-function toAspectRatio(size: string | undefined): string | undefined {
+/** A size (ratio or WIDTHxHEIGHT) as the nearest ratio in `allowed`. */
+export function toAspectRatio(size: string | undefined, allowed: readonly string[]): string | undefined {
     if (!size) return undefined;
     const ratioLike = parseRatio(size);
     if (ratioLike) {
         const ratioLabel = `${ratioLike.width}:${ratioLike.height}`;
-        if (GOOGLE_IMAGE_ALLOWED_ASPECT_RATIO_SET.has(ratioLabel)) {
+        if (allowed.includes(ratioLabel)) {
             return ratioLabel;
         }
-        return closestSupportedAspectRatio(ratioLike.width, ratioLike.height);
+        return closestSupportedAspectRatio(ratioLike.width, ratioLike.height, allowed);
     }
     const dimensionLike = /^(\d+)x(\d+)$/i.exec(size.trim());
     if (!dimensionLike) return undefined;
@@ -111,10 +124,10 @@ function toAspectRatio(size: string | undefined): string | undefined {
     const reducedWidth = Math.floor(width / divisor);
     const reducedHeight = Math.floor(height / divisor);
     const reducedRatio = `${reducedWidth}:${reducedHeight}`;
-    if (GOOGLE_IMAGE_ALLOWED_ASPECT_RATIO_SET.has(reducedRatio)) {
+    if (allowed.includes(reducedRatio)) {
         return reducedRatio;
     }
-    return closestSupportedAspectRatio(width, height);
+    return closestSupportedAspectRatio(width, height, allowed);
 }
 
 function toGeminiImageSize(quality: string | undefined): "512" | "1K" | "2K" | "4K" | undefined {
@@ -128,7 +141,7 @@ function toGeminiImageSize(quality: string | undefined): "512" | "1K" | "2K" | "
 }
 
 function mapGatewayToGoogleImages(body: ImagesGenerationRequest) {
-    const aspectRatio = toAspectRatio(body.size);
+    const aspectRatio = toAspectRatio(body.size, googleImageAspectRatios(body.model));
     return {
         prompt: body.prompt,
         ...(typeof body.n === "number" ? { numberOfImages: body.n } : {}),
@@ -138,7 +151,7 @@ function mapGatewayToGoogleImages(body: ImagesGenerationRequest) {
 
 function mapGatewayToGeminiGenerateContent(body: ImagesGenerationRequest) {
     const imageConfig: Record<string, unknown> = {};
-    const aspectRatio = toAspectRatio(body.size);
+    const aspectRatio = toAspectRatio(body.size, googleImageAspectRatios(body.model));
     const imageSize = toGeminiImageSize(body.quality);
     if (aspectRatio) imageConfig.aspectRatio = aspectRatio;
     if (imageSize) imageConfig.imageSize = imageSize;

@@ -19,6 +19,7 @@ packages:
 catalog:
   "@typescript/native": npm:typescript@^7.0.2
   typescript: npm:@typescript/typescript6@^6.0.2
+  vitest: ^4.1.11
 
 publicHoistPattern:
   - "@electron-forge/*"
@@ -73,6 +74,3 @@ minimumReleaseAgeExclude:
   - "react-native-keyboard-controller@1.22.7"
   - "react-native-screens@4.30.0"
   - "react-native-svg@15.16.0"
-  - "@next/*"
-  - "eslint-config-next"
-  - "next"

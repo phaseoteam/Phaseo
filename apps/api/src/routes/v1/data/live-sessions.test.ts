@@ -3,12 +3,16 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { liveSessionsRoutes, realtimeSessionsRoutes } from "./realtime-sessions";
 import { LIVE_VOICES } from "@core/live-settings";
 
-const mocks = vi.hoisted(() => ({ auth: {} as any, create: vi.fn(), context: vi.fn(), policy: null as any, cache: undefined as any }));
+const mocks = vi.hoisted(() => ({ auth: {} as any, create: vi.fn(), context: vi.fn(), policy: null as any, cache: undefined as any,
+	openGates: new Set(["chat", "api"]) }));
 vi.mock("../../utils", () => ({ withRuntime: (handler: any) => (c: any) => handler(c.req.raw) }));
 vi.mock("@/runtime/env", () => ({ getBindings: () => ({ CHAT_ROUTE_KEY_SEED: "test-seed", GATEWAY_CACHE: mocks.cache }) }));
 vi.mock("@pipeline/before/guards", () => ({ guardAuth: async () => ({ ok: true, value: mocks.auth }),
 	guardJson: async (req: Request) => ({ ok: true, value: await req.json() }), guardContext: mocks.context }));
-vi.mock("@core/feature-flags", () => ({ isRealtimeVoiceAccessEnabled: async () => true }));
+vi.mock("@core/feature-flags", () => ({
+	isRealtimeVoiceAccessEnabled: async (_auth: unknown, _bindings: unknown, source: "api" | "chat" = "api") => mocks.openGates.has(source),
+	getRealtimeVoiceFeatureGateName: (_bindings: unknown, source: "api" | "chat" = "api") => source === "chat" ? "chat_realtime_voice" : "gateway_realtime_voice",
+}));
 vi.mock("@pipeline/before/workspacePolicy", async (original) => ({
 	...await original<typeof import("@pipeline/before/workspacePolicy")>(), fetchWorkspacePolicy: async () => mocks.policy,
 }));
@@ -26,7 +30,7 @@ function post(body: unknown, live = true) {
 	});
 }
 beforeEach(() => {
-	vi.clearAllMocks(); mocks.policy = null; mocks.cache = undefined;
+	vi.clearAllMocks(); mocks.policy = null; mocks.cache = undefined; mocks.openGates = new Set(["chat", "api"]);
 	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 	mocks.auth = { workspaceId, apiKeyId: "key", requestId: "request", authMethod: "api_key",
 		apiKeyKid: Array.from(createHash("sha256").update(`test-seed:kid:${workspaceId}:${userId}:0`).digest())
@@ -50,6 +54,23 @@ it("creates GPT Live API sessions for an ordinary key, with function tools", asy
 	expect(response.status).toBe(201);
 	expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ model: "openai/gpt-live-1", source: "api", relay: true,
 		voice: "cedar", liveBackendSettings: expect.objectContaining({ tools }), auth: expect.objectContaining({ userId: null }) }));
+});
+
+it("opens Chat sessions on the Chat gate while API sessions stay behind the API gate", async () => {
+	mocks.openGates = new Set(["chat"]);
+	expect((await post(request)).status).toBe(201);
+	mocks.auth.apiKeyKid = "ordinary-key";
+	const api = await post({ model: "openai/gpt-live-1", provider: "openai" });
+	expect(api.status).toBe(401);
+	expect(await api.json()).toMatchObject({ reason: "realtime_voice_feature_flag_disabled", feature_gate: "gateway_realtime_voice" });
+	expect(mocks.create).toHaveBeenCalledTimes(1);
+});
+
+it("names the Chat gate when Chat sessions are closed", async () => {
+	mocks.openGates = new Set(["api"]);
+	const response = await post(request);
+	expect(await response.json()).toMatchObject({ reason: "realtime_voice_feature_flag_disabled", feature_gate: "chat_realtime_voice" });
+	expect(mocks.create).not.toHaveBeenCalled();
 });
 
 it("points GPT Live requests on the Realtime endpoint at the Live endpoint", async () => {

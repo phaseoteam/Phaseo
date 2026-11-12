@@ -43,6 +43,8 @@ export type BackgroundSummary = { id: string; command: string; directory: string
 export class BackgroundCommands {
 	private readonly entries = new Map<string, Entry>();
 	private closing = false;
+	/** Called when one of a task's commands starts or ends, so its chat can show it. */
+	onChange?: (taskId: string) => void;
 	constructor(private readonly options: { env?: () => NodeJS.ProcessEnv; shell?: CommandShell; jobObject?: boolean } = {}) {}
 
 	async start(taskId: string, root: string, command: string, directory = "."): Promise<{ id: string; pid: number; shell: ShellName }> {
@@ -62,9 +64,10 @@ export class BackgroundCommands {
 		child.on("error", () => undefined);
 		child.once("exit", () => { entry.exitedAt = Date.now(); });
 		// A process the shell left behind may still be writing; the command counts as running until the pipes close.
-		child.once("close", () => { entry.running = false; entry.exitedAt ??= Date.now(); closed(); });
+		child.once("close", () => { entry.running = false; entry.exitedAt ??= Date.now(); closed(); this.onChange?.(taskId); });
 		this.entries.set(entry.id, entry);
 		this.prune(taskId);
+		this.onChange?.(taskId);
 		return { id: entry.id, pid: entry.pid, shell: entry.shell };
 	}
 
@@ -112,6 +115,12 @@ export class BackgroundCommands {
 		return this.summary(entry);
 	}
 
+	/** The last lines of a command's output for the person, without moving the agent's read position. */
+	peek(taskId: string, id: string, maxBytes = 4096) {
+		const ring = this.entry(taskId, id).output, raw = ring.slice(Math.max(ring.start, ring.end - maxBytes), ring.end);
+		return wholeEnd(wholeStart(raw)).toString("utf8");
+	}
+
 	list(taskId: string): BackgroundSummary[] { return [...this.entries.values()].filter(entry => entry.taskId === taskId).map(entry => this.summary(entry)); }
 
 	/** Stops and forgets every command of a task, for a chat that is deleted or archived. */
@@ -137,6 +146,7 @@ export class BackgroundCommands {
 		entry.child.stdout?.destroy(); entry.child.stderr?.destroy();
 		await Promise.race([entry.closed, new Promise<void>(resolve => setTimeout(resolve, 1000).unref())]);
 		entry.running = false; entry.exitedAt ??= Date.now();
+		this.onChange?.(entry.taskId);
 	}
 
 	private summary(entry: Entry): BackgroundSummary {

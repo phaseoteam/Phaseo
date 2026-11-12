@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { getProviderListingCategory, getProviderRoutePresentation, isProviderRouteVariant, isSelectableServiceTier } from "./providerRoutePresentation";
 import { resolveGatewayStatus } from "./providerGatewayStatus";
 
@@ -17,7 +18,7 @@ describe("provider listing categories", () => {
     it("preserves lifecycle categories for integrated providers", () => {
         expect(getProviderListingCategory(openai, "coming_soon")).toBe("preview");
         expect(getProviderListingCategory(openai, "internal_testing")).toBe("preview");
-        expect(getProviderListingCategory(openai, "deranked_lvl1")).toBe("routable");
+        expect(getProviderListingCategory(openai, "deranked")).toBe("routable");
         expect(getProviderListingCategory(openai, "inactive")).toBe("inactive");
     });
 });

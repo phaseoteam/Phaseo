@@ -11,6 +11,7 @@ export const modalityMetrics = {
 	video: { metric: "video_seconds", title: "Video Generated", unit: "seconds" },
 	speech: { metric: "speech_seconds", title: "Speech Generated", unit: "seconds" },
 	transcription: { metric: "transcription_seconds", title: "Audio Transcribed", unit: "seconds" },
+	decisions: { metric: "decision_tokens", title: "Decision Tokens", unit: "tokens" },
 } satisfies Record<string, ModalityMetric>;
 
 export const secondaryModalityMetrics: Partial<Record<keyof typeof modalityMetrics, ModalityMetric>> = {

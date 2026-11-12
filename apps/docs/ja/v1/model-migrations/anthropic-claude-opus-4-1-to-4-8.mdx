@@ -1,83 +1,65 @@
 ---
 title: "Anthropic Claude Opus 4.8"
-description: "適応型思考、サンプリング制御、長いコンテキストなど、Claude Opus 4.8 の導入時に確認する内容です。"
+description: "適応型思考、サンプリング制御、長いコンテキストなど、Claude Opus 4.8 の導入時に知っておくべきことです。"
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 4.8
+Claude Opus 4.1 のトラフィックを `anthropic/claude-opus-4.8` に移します。モデル ID を変更し、サンプリングパラメーターを削除し、思考の予算を effort レベルに置き換えます。
 
-`anthropic/claude-opus-4.8` を本番環境に安全に導入するには、このガイドを使います。
+Anthropic は 2026 年 6 月 5 日に Opus 4.1 を非推奨とし、2026 年 8 月 5 日に提供を終了しました。Phaseo は、いずれかのプロバイダーが提供している間は `anthropic/claude-opus-4.1` の提供を続け、提供するプロバイダーがなくなると、それらのリクエストを Opus 4.8 にルーティングします([モデルの非推奨化と提供終了](../guides/model-retirement)を参照)。変更が自動で行われるのではなくテスト済みの状態になるよう、その前に移行してください。
 
-Anthropic は 2026 年 6 月 5 日に Claude Opus 4.1 を非推奨にし、2026 年 8 月 5 日に提供終了する予定を発表しました。移行手順は段階的です。まず Claude Opus 4.7 のリクエスト形式の変更を適用し、その後 Opus 4.8 の動作変更を確認します。
+Anthropic のガイダンスは累積的です。Opus 4.7 のリクエスト形式の変更を適用してから、Opus 4.8 の動作の変更を確認してください。
 
-## 新機能
+| | Claude Opus 4.1 | Claude Opus 4.8 |
+| --- | --- | --- |
+| Phaseo のモデル ID | `anthropic/claude-opus-4.1` | `anthropic/claude-opus-4.8` |
+| コンテキストウィンドウ | 200K トークン | 1M トークン |
+| 最大出力 | 32K トークン | 128K トークン |
+| `temperature`、`top_p`、`top_k` | 送信される | Phaseo が除外する |
+| 思考 | `budget_tokens` | 適応型。effort で調整(既定は `high`) |
+| 会話途中のシステムメッセージ | 不可 | 可 |
 
-- Phaseo のモデル ID は `anthropic/claude-opus-4.8` です。
-- Opus 4.7 以降では `temperature`、`top_p`、`top_k` などのデフォルト以外のサンプリング設定が拒否されます。
-- Opus 4.7 以降では手動の拡張 thinking budget が拒否されるため、適応型 thinking を使います。
-- Opus 4.8 の `output_config.effort` はデフォルトで `high` です。
-- Opus 4.8 は会話の途中で system メッセージを追加できます。
-- Opus 4.8 は Claude API、AWS 上の Claude Platform、Amazon Bedrock、Vertex AI で、標準の上限をコンテキスト 100 万トークン、最大出力 128K トークンに引き上げます。
+## リクエストを更新する
 
-## 移行クイックスタート
+**1. モデル ID を変更します。** `anthropic/claude-opus-4.8` にします。
 
-### 1. モデル ID を更新する
+**2. サンプリングパラメーターを削除します。** Anthropic は、Opus 4.7 以降で既定以外の `temperature`、`top_p`、`top_k` を `400` で拒否します。Phaseo は失敗させる代わりにこれらを除外するため、もう何の効果もありません。代わりに指示で調整してください。
 
-モデル ID を `anthropic/claude-opus-4.8` にします。
+**3. 思考の予算を effort レベルに置き換えます。** Phaseo は `budget_tokens` を Opus 4.8 に転送しません。推論の設定はすべて `thinking: {"type": "adaptive", "display": "summarized"}` として送られ、`reasoning.effort`(`/v1/messages` では `output_config.effort`)で深さを設定します。
 
-### 2. デフォルト以外のサンプリングパラメーターを削除する
+```json
+{
+  "model": "anthropic/claude-opus-4.8",
+  "max_tokens": 4096,
+  "thinking": { "type": "adaptive" },
+  "output_config": { "effort": "high" },
+  "messages": [{ "role": "user", "content": "Plan the schema migration." }]
+}
+```
 
-Opus 4.1 のリクエストで次の値を設定している場合は、ロールアウト前に削除します。
+推論の設定がない場合、Opus 4.8 は思考しません。`reasoning.effort: "none"` は `thinking: {"type": "disabled"}` を送ります。
 
-- `temperature`
-- `top_p`
-- `top_k`
+**4. effort と長いコンテキストの基準を取り直します。** Opus 4.8 は effort の既定値が `high` で、コンテキストウィンドウも Opus 4.1 よりはるかに大きくなっています。レイテンシーの予算、トークン使用量、プロンプトキャッシュ、長いドキュメントや長時間のエージェントのトレースを再テストしてください。Microsoft Foundry では、Anthropic はリリース時点での Opus 4.8 のコンテキストウィンドウを 200K と記載しています。
 
-Opus 4.7 以降では、これらのデフォルト以外の値に `400` が返されます。
+**5. 長い会話での指示の更新を簡素化します。** Opus 4.8 は会話の途中で `role: "system"` メッセージを受け付けます。エージェントのループが毎ターンシステムプロンプト全体を書き換えている場合は、代わりにシステムメッセージを追加すると、キャッシュヒットを多く保てます。
 
-### 3. 手動の thinking budget を適応型 thinking に置き換える
+## テストする内容
 
-次のような従来の thinking payload を送っている場合：
+- まだ `temperature`、`top_p`、`top_k` を送っているリクエスト。これらの効果はなくなっています
+- `budget_tokens` に依存していた思考のルート
+- 長期にわたるエージェントとツールのワークフロー
+- 各 `effort` レベルでの、スキーマに敏感な出力
+- Opus 4.1 で最も量の多いプロンプト分類でのトークンコストとレイテンシー
 
-- `thinking: { "type": "enabled", "budget_tokens": 32000 }`
+## 展開する
 
-次に移行します。
+1. トラフィックを切り替える前に、サンプリングパラメーターと思考の予算を削除します。
+2. 本番相当のプロンプトとツールフローで Opus 4.8 をシャドー実行します。
+3. プロバイダーがまだ提供している間は、`models` に Opus 4.1 をフォールバックとして入れてカナリアリリースします。
+4. レイテンシー、コスト、タスク完了の変化が目標内に収まったら昇格させます。
 
-- `thinking: { "type": "adaptive" }`
-- 基準として `output_config.effort = "high"`
+## 出典
 
-### 4. effort と長いコンテキストの想定を見直す
-
-Opus 4.8 は `high` をデフォルトとし、Anthropic が運営する API で Opus 4.1 より大きなコンテキストウィンドウに対応します。次を再テストします。
-
-- レイテンシ予算
-- トークン使用量
-- プロンプトキャッシュの動作
-- 長い文書やエージェントトレース
-
-Microsoft Foundry では、提供開始時から 100 万トークンのコンテキストウィンドウを使えるとは限りません。Anthropic は Foundry 上の Opus 4.8 について 20 万トークンのウィンドウを案内しています。
-
-### 5. 長い会話中の指示更新を確認する
-
-Opus 4.8 は会話の途中で system メッセージを受け付けます。エージェントループが各ターンでシステムプロンプト全体を書き換えている場合、フローを簡素化してキャッシュヒットを維持できる可能性があります。
-
-## テスト項目
-
-- `temperature`、`top_p`、`top_k` をまだ送るリクエスト。
-- `budget_tokens` に依存していた thinking 有効化ルート。
-- 長時間のエージェントおよびツールワークフロー。
-- 明示的な `effort` レベルを使うスキーマ重視の出力。
-- 使用量の多い Opus 4.1 プロンプトでのトークンコストとレイテンシの差。
-
-## 安全なロールアウト
-
-1. トラフィックを切り替える前に、サンプリング設定と古い thinking budget を削除します。
-2. 本番に近いプロンプトとツール処理で Opus 4.8 をシャドー実行します。
-3. 2026 年 8 月 5 日より前の重複期間中はフォールバック経路を残して段階的に試します。
-4. レイテンシ、コスト、タスク完了の差が目標範囲内になってから拡大します。
-
-## 参考資料
-
-- [Anthropic モデルの非推奨情報](https://platform.claude.com/docs/en/about-claude/model-deprecations)
+- [Anthropic のモデル非推奨情報](https://platform.claude.com/docs/en/about-claude/model-deprecations)
 - [Anthropic の移行ガイド](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
 - [Claude Opus 4.8 の新機能](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8)

@@ -1,35 +1,36 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import SiteNoticeSlot from "./SiteNoticeSlot";
-import { connection } from "next/server";
-import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
+import { shellDataQuery } from "@/components/header/shellData";
 import { getActiveSiteNotice, SITE_NOTICES } from "@/lib/siteNotice";
 
-jest.mock("next/server", () => ({ connection: jest.fn().mockResolvedValue(undefined) }));
-jest.mock("./SiteNoticeBar", () => ({ __esModule: true, default: () => null }));
-jest.mock("@/lib/fetchers/internal/fetchInternalAuthStatus", () => ({ fetchInternalAuthStatus: jest.fn() }));
-jest.mock("@/lib/siteNotice", () => ({
+vi.mock("./SiteNoticeBar", () => ({ default: () => null }));
+vi.mock("@/i18n/react", () => ({ useLocale: () => "en-GB" }));
+vi.mock("@/lib/siteNotice", () => ({
 	SITE_NOTICES: [{ enabled: false }],
-	getActiveSiteNotice: jest.fn(),
+	getActiveSiteNotice: vi.fn(),
 }));
 
 describe("site notice rendering", () => {
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		SITE_NOTICES[0].enabled = false;
 	});
 
-	it("keeps disabled notices out of dynamic rendering and authentication", async () => {
-		expect(await SiteNoticeSlot()).toBeNull();
-		expect(connection).not.toHaveBeenCalled();
-		expect(fetchInternalAuthStatus).not.toHaveBeenCalled();
+	it("keeps disabled notices out of dynamic rendering and authentication", () => {
+		expect(SiteNoticeSlot()).toBeNull();
 		expect(getActiveSiteNotice).not.toHaveBeenCalled();
 	});
 
-	it("still checks authentication for enabled notices", async () => {
+	it("still checks authentication for enabled notices", () => {
 		SITE_NOTICES[0].enabled = true;
-		jest.mocked(fetchInternalAuthStatus).mockResolvedValue({ isAdmin: false, role: "user", signedIn: true });
-		jest.mocked(getActiveSiteNotice).mockReturnValue(null);
-		expect(await SiteNoticeSlot()).toBeNull();
-		expect(connection).toHaveBeenCalledTimes(1);
+		vi.mocked(getActiveSiteNotice).mockReturnValue(null);
+		// The signed-in state comes from the shell data the root loader fetched.
+		const queryClient = new QueryClient();
+		queryClient.setQueryData(shellDataQuery("en-GB").queryKey, { account: { isLoggedIn: true } } as never);
+		const html = renderToStaticMarkup(<QueryClientProvider client={queryClient}><SiteNoticeSlot /></QueryClientProvider>);
+		expect(html).toBe("");
 		expect(getActiveSiteNotice).toHaveBeenCalledWith(true);
 	});
 });

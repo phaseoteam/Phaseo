@@ -366,7 +366,6 @@ describe("DevTools Integration", () => {
         return new Response(JSON.stringify({
           data: {
             id: "key_123",
-            hash: "keyhash_123",
             status: "active"
           }
         }), {
@@ -403,7 +402,6 @@ describe("DevTools Integration", () => {
       response: {
         data: {
           id: "key_123",
-          hash: "keyhash_123",
           status: "active"
         }
       },

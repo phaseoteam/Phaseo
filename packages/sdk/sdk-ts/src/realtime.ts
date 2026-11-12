@@ -30,6 +30,8 @@ export type RealtimeSessionInfo = {
   provider?: string;
   model?: string;
   model_id?: string;
+  /** The provider's own name for the model. `model` is the Phaseo model id. */
+  provider_model?: string;
   client_secret?: string;
   connect?: { transport?: string; url?: string; [key: string]: unknown };
   max_duration_seconds?: number;

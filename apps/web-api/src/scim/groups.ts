@@ -3,6 +3,7 @@ import { ScimProtocolError } from "./errors";
 import type { ScimFilter } from "./filter";
 import { parseScimGroupInput, toScimGroup, type ScimGroupMember, type ScimGroupRow } from "./group";
 import { parseGroupPatch } from "./group-patch";
+import { retryTransaction } from "@/data/retry-transaction";
 
 const GROUP_COLUMNS = "id,external_id,display_name,version,created_at,updated_at";
 const FILTER_COLUMNS: Record<string, string> = { displayName: "display_name_normalized", externalId: "external_id", id: "id" };
@@ -25,23 +26,13 @@ export class ScimGroupService {
 
 	private async representation(row: ScimGroupRow) { return toScimGroup(row, await this.members(row.id), this.baseUrl); }
 
-	private async replaceMembers(groupId: string, userIds: string[]) {
-		const result = await this.client.rpc("replace_scim_group_members", { p_workspace_id: this.workspaceId, p_group_id: groupId, p_user_ids: [...new Set(userIds)] });
-		if (result.error) databaseError(result.error, "Unable to replace Group members.");
-	}
-
-	private async touch(groupId: string) {
-		const result = await this.client.from("scim_groups").update({ updated_at: new Date().toISOString() }).eq("workspace_id", this.workspaceId).eq("id", groupId);
-		if (result.error) databaseError(result.error, "Unable to update Group metadata.");
-	}
-
 	async create(value: unknown) {
 		const input = parseScimGroupInput(value);
-		const result = await this.client.from("scim_groups").insert({ workspace_id: this.workspaceId, external_id: input.externalId ?? null, display_name: input.displayName }).select(GROUP_COLUMNS).single();
+		// The group and its members are created in one transaction (create_scim_group), so a failure leaves
+		// no group behind and there is nothing to clean up; only that whole call is retried.
+		const result = await retryTransaction(() => this.client.rpc("create_scim_group", { p_workspace_id: this.workspaceId, p_external_id: input.externalId ?? null, p_display_name: input.displayName, p_user_ids: [...new Set(input.members.map((member) => member.value))] }).select(GROUP_COLUMNS).single());
 		if (result.error) databaseError(result.error, "Unable to create Group.");
-		try { await this.replaceMembers(result.data.id, input.members.map((member) => member.value)); }
-		catch (error) { await this.client.from("scim_groups").delete().eq("workspace_id", this.workspaceId).eq("id", result.data.id); throw error; }
-		return this.get(result.data.id);
+		return this.representation(result.data as ScimGroupRow);
 	}
 
 	async get(id: string) {
@@ -61,21 +52,22 @@ export class ScimGroupService {
 
 	async replace(id: string, value: unknown) {
 		const input = parseScimGroupInput(value);
-		const result = await this.client.rpc("replace_scim_group", { p_workspace_id: this.workspaceId, p_group_id: id, p_external_id: input.externalId ?? null, p_display_name: input.displayName, p_user_ids: [...new Set(input.members.map((member) => member.value))] }).select(GROUP_COLUMNS).maybeSingle();
+		const result = await retryTransaction(() => this.client.rpc("replace_scim_group", { p_workspace_id: this.workspaceId, p_group_id: id, p_external_id: input.externalId ?? null, p_display_name: input.displayName, p_user_ids: [...new Set(input.members.map((member) => member.value))] }).select(GROUP_COLUMNS).maybeSingle());
 		if (result.error) databaseError(result.error, "Unable to replace Group."); if (!result.data) throw new ScimProtocolError(404, "Group not found.", "noTarget");
 		return this.representation(result.data as ScimGroupRow);
 	}
 
 	async patch(id: string, value: unknown) {
-		await this.get(id);
-		for (const change of parseGroupPatch(value)) {
-			if (change.kind === "attributes") { const result = await this.client.from("scim_groups").update(change.values).eq("workspace_id", this.workspaceId).eq("id", id); if (result.error) databaseError(result.error, "Unable to patch Group."); }
-			else if (change.kind === "members-replace") await this.replaceMembers(id, change.userIds);
-			else if (change.kind === "members-add") { const result = await this.client.from("scim_group_members").upsert(change.userIds.map((userId) => ({ workspace_id: this.workspaceId, group_id: id, user_id: userId })), { onConflict: "group_id,user_id", ignoreDuplicates: true }); if (result.error) databaseError(result.error, "Unable to add Group members."); await this.touch(id); }
-			else { const result = await this.client.from("scim_group_members").delete().eq("workspace_id", this.workspaceId).eq("group_id", id).in("user_id", change.userIds); if (result.error) databaseError(result.error, "Unable to remove Group members."); await this.touch(id); }
-		}
-		return this.get(id);
+		// All operations and the metadata change apply in one transaction (apply_scim_group_patch): a later
+		// operation failing rolls back the earlier ones, and only that whole call is retried.
+		const changes = parseGroupPatch(value).map((change) => change.kind === "attributes"
+			? { kind: change.kind, values: change.values }
+			: { kind: change.kind, user_ids: change.userIds });
+		const result = await retryTransaction(() => this.client.rpc("apply_scim_group_patch", { p_workspace_id: this.workspaceId, p_group_id: id, p_changes: changes }).select(GROUP_COLUMNS).maybeSingle());
+		if (result.error) databaseError(result.error, "Unable to patch Group.");
+		if (!result.data) throw new ScimProtocolError(404, "Group not found.", "noTarget");
+		return this.representation(result.data as ScimGroupRow);
 	}
 
-	async delete(id: string) { const result = await this.client.from("scim_groups").delete().eq("workspace_id", this.workspaceId).eq("id", id).select("id").maybeSingle(); if (result.error) databaseError(result.error, "Unable to delete Group."); if (!result.data) throw new ScimProtocolError(404, "Group not found.", "noTarget"); }
+	async delete(id: string) { const result = await retryTransaction(() => this.client.from("scim_groups").delete().eq("workspace_id", this.workspaceId).eq("id", id).select("id").maybeSingle()); if (result.error) databaseError(result.error, "Unable to delete Group."); if (!result.data) throw new ScimProtocolError(404, "Group not found.", "noTarget"); }
 }

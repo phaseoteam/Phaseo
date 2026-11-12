@@ -18,7 +18,7 @@ function Tab({ active, onClick, children }: { active: boolean; onClick: () => vo
 }
 
 /**
- * The current pane's Files surface, composed from the T3-style surfaces until the pane mounts them as their own tabs:
+ * The current pane's Files surface, composed from the pane surfaces until the pane mounts them as their own tabs:
  * Changes is Git actions over the diff, Files is the explorer and one open file.
  */
 export function FilesPanel({ initialProjectId, taskId }: { initialProjectId?: string; taskId?: string }) {

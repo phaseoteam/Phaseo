@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const db = new PGlite();
@@ -9,6 +9,10 @@ const key = (n) => id('3', n);
 const policy = (n) => id('6', n);
 const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
 const migration = await readFile(new URL('../migrations/20261016165752_rate_limit_throttle_rollups.sql', import.meta.url), 'utf8');
+// Rate guardrails added the 'workspace' limit scope to the table's check and the function.
+const rateGuardrailsName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_rate_guardrails.sql'));
+const rateGuardrails = await readFile(new URL(`../migrations/${rateGuardrailsName}`, import.meta.url), 'utf8');
+const latestScopes = rateGuardrails.slice(rateGuardrails.indexOf('-- ---- 4.'));
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
 const rateLimit = (policyId, scope) => JSON.stringify({ rate_limit: { policy_id: policyId, limit_scope: scope } });
 
@@ -28,9 +32,13 @@ try {
     insert into public.workspaces values ('${ws(1)}'), ('${ws(2)}');
   `);
   await db.exec(migration);
+  await db.exec(latestScopes);
 
-  assert.ok(migration.includes(await schema('public/tables/workspace_rate_limit_throttles_minute.sql')), 'table migration matches the declarative definition');
-  assert.ok(migration.includes(await schema('public/functions/refresh_rate_limit_throttle_rollups.sql')), 'function migration matches the declarative definition');
+  const table = await schema('public/tables/workspace_rate_limit_throttles_minute.sql');
+  const scopeCheck = /CONSTRAINT "workspace_rate_limit_throttles_minute_limit_scope_check"\s+(CHECK \(\(limit_scope = ANY \(ARRAY\[[^\]]+\]\)\)\))/;
+  assert.ok(migration.includes(table.replace(scopeCheck.exec(table)[1], scopeCheck.exec(migration)[1])), 'table migration matches the declarative definition, apart from the scope check');
+  assert.ok(latestScopes.includes(scopeCheck.exec(table)[1]), 'the rate guardrails migration sets the declared scope check');
+  assert.ok(latestScopes.includes(await schema('public/functions/refresh_rate_limit_throttle_rollups.sql')), 'function migration matches the declarative definition');
 
   const fact = (workspace, at, keyId, errorCode, metadata) => db.query(
     `insert into public.v2_request_facts (workspace_id, occurred_at, key_id, error_code, safe_metadata) values ($1, $2, $3, $4, $5::jsonb)`,
@@ -49,7 +57,7 @@ try {
   await fact(ws(1), at(5), key(1), 'rate_limit_exceeded', rateLimit(policy(1), 'key'));
   await fact(ws(1), at(5), key(1), 'user:rate_limit_exceeded', '{}');
   await fact(ws(1), at(5), key(1), 'user:rate_limit_exceeded', rateLimit('not-a-uuid', 'key'));
-  await fact(ws(1), at(5), key(1), 'user:rate_limit_exceeded', rateLimit(policy(1), 'workspace'));
+  await fact(ws(1), at(5), key(1), 'user:rate_limit_exceeded', rateLimit(policy(1), 'team'));
   await fact(ws(1), at(5), key(1), null, rateLimit(policy(1), 'key'));
   // Outside the default one-hour window.
   await fact(ws(1), new Date(minute.getTime() - 2 * 3600_000).toISOString(), key(1), 'user:rate_limit_exceeded', rateLimit(policy(1), 'key'));

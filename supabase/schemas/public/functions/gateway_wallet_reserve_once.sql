@@ -22,14 +22,14 @@ CREATE OR REPLACE FUNCTION public.gateway_wallet_reserve_once (
   AS $function$
 declare
   v_budget_status jsonb;
+  v_department_status jsonb;
   v_balance_nanos bigint;
   v_reserved_nanos bigint;
 begin
+  -- Serializes holds with each other and with budget changes: the lock_workspace_budget_change
+  -- trigger takes the same lock on every write to workspace_budgets and
+  -- workspace_department_budgets. No budget row lock here, which would invert that order.
   perform pg_advisory_xact_lock(hashtextextended(p_workspace_id::text, 0));
-  perform 1 from public.workspace_budgets
-    where workspace_id = p_workspace_id
-    order by interval
-    for update;
 
   if not exists (
     select 1 from public.gateway_wallet_reservations
@@ -38,6 +38,13 @@ begin
     v_budget_status := public.gateway_workspace_budget_status(p_workspace_id, p_amount_nanos);
     if not coalesce((v_budget_status->>'ok')::boolean, true) then
       return query select false, false, (v_budget_status->>'reason')::text, p_amount_nanos,
+        null::bigint, null::bigint, null::bigint, null::bigint;
+      return;
+    end if;
+
+    v_department_status := public.gateway_department_budget_status(p_workspace_id, p_key_id, p_amount_nanos);
+    if not coalesce((v_department_status->>'ok')::boolean, true) then
+      return query select false, false, (v_department_status->>'reason')::text, p_amount_nanos,
         null::bigint, null::bigint, null::bigint, null::bigint;
       return;
     end if;

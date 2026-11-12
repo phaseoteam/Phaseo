@@ -22,7 +22,7 @@ function badgeImage(count: number) {
 }
 
 /**
- * T3's notification coordinator: while Phaseo has focus, a toast says another chat finished or needs you (desktop
+ * Notifications: while Phaseo has focus, a toast says another chat finished or needs you (desktop
  * alerts cover the background), and the dock or taskbar icon counts unread chats. Both follow Settings → Notifications.
  */
 export function ChatNotifications() {
@@ -42,5 +42,7 @@ export function ChatNotifications() {
 	}, [overview.tasks]); // Only a new overview is news; the open chat and settings are read as they are.
 	const count = useMemo(() => preferences.notificationBadge ? badgeCount(overview.tasks) : 0, [overview.tasks, preferences.notificationBadge]);
 	useEffect(() => { void window.phaseoDesktop?.setBadge?.(count, count ? badgeImage(count) : undefined).catch(() => undefined); }, [count]);
+	// What a phone changed is always said, whatever the notification settings, so a lost phone's actions are seen.
+	useEffect(() => window.phaseoDesktop?.workspace?.onPhoneNote?.(note => showToast("info", `${note.summary} from ${note.device}`, note.project)), []);
 	return null;
 }

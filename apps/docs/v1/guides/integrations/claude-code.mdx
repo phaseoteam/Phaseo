@@ -5,9 +5,7 @@ description: "Connect Claude Code to the Phaseo Gateway via the Anthropic-compat
 "og:image": "https://phaseo.app/og/dynamic?title=Claude%20Code&description=Connect%20Claude%20Code%20to%20the%20Phaseo%20Gateway%20via%20the%20Anthropic-compatible%20API.&pathname=/docs/v1/guides/integrations/claude-code"
 ---
 
-Claude Code supports third-party LLM gateways via environment variables. Phaseo exposes an Anthropic-compatible surface at `/v1/messages`, so you can point Claude Code at Phaseo without changing your prompts.
-
-If you want Claude Code to read the live Phaseo documentation during a session, add the [Docs MCP](./docs-mcp.mdx) server too.
+Run `phaseo claude-code` to send Claude Code's requests through Phaseo, or set three environment variables yourself. Claude Code calls Anthropic-style `/v1/messages`, which Phaseo serves as [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx), so your prompts don't change.
 
 ## Set up with the Phaseo CLI
 
@@ -17,39 +15,48 @@ phaseo claude-code
 claude
 ```
 
-Install Claude Code from its official release first. Setup creates a `Phaseo CLI: Claude Code API Key` that expires after 90 days and has a $100 monthly spend limit, stores it in the OS credential store, and configures Claude Code's gateway and API-key helper. The helper creates a new key when the old one expires. No plaintext key is written to Claude Code settings.
+If Claude Code is missing, the CLI shows the official install command and asks before running it. Setup then:
 
-## Manual configuration
+- creates a `Phaseo CLI: Claude Code API Key` that expires after 90 days and has a $100 monthly spend limit, and keeps it in the OS credential store;
+- sets `ANTHROPIC_BASE_URL` and an `apiKeyHelper` in `~/.claude/settings.json`. The helper fetches the key from the CLI and creates a new one when the old one expires, so no plaintext key is written to Claude Code settings.
 
-```bash
+Setup stops without changes if `settings.json` already has a different `ANTHROPIC_BASE_URL`, a different `apiKeyHelper`, or a non-empty `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN`. `--model` isn't supported for Claude Code; set `ANTHROPIC_MODEL` instead (see below).
+
+## Configure Claude Code manually
+
+Set these in the shell you start Claude Code from:
+
+<CodeGroup>
+
+```bash bash
 export ANTHROPIC_BASE_URL="https://api.phaseo.app"
 export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
 export ANTHROPIC_API_KEY=""
 ```
 
-```powershell
+```powershell PowerShell
 $env:ANTHROPIC_BASE_URL = "https://api.phaseo.app"
 $env:ANTHROPIC_AUTH_TOKEN = "your_phaseo_api_key"
 $env:ANTHROPIC_API_KEY = ""
 ```
 
-## Pick a model (optional)
+</CodeGroup>
 
-Set `ANTHROPIC_MODEL` if you want a fixed default. Use model ids listed in [Models](../../api-reference/endpoint/models.mdx).
+Claude Code sends `ANTHROPIC_AUTH_TOKEN` as an `Authorization` header, which Phaseo accepts. To fix a default model, set `ANTHROPIC_MODEL` to a Phaseo model ID from [Models](../../api-reference/endpoint/models.mdx).
 
-## Start Claude Code
+## Check it works
+
+Run `claude`, send a short prompt, and confirm the request appears in **Settings → Usage → Logs**.
+
+## Remove Phaseo
 
 ```bash
-claude
+phaseo integrations remove claude-code
 ```
 
-## Endpoint mapping
+This removes the base URL, key helper, and the empty credential variables Phaseo added to `settings.json`, then revokes the key. For a manual setup, unset the three environment variables.
 
-- Claude Code calls Anthropic-style endpoints (`/v1/messages`).
-- Phaseo handles those requests through [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx).
+## Known limits
 
-## Compatibility notes
-
-- `ANTHROPIC_AUTH_TOKEN` is sent as an `Authorization` header, which Phaseo accepts.
-- You can also set `ANTHROPIC_MODEL` to A Phaseo model id when you want Claude Code to use one default model.
-- Current limitation: streaming + tools on Anthropic Messages can return `400 invalid_request`. If your workflow depends on streamed tool loops, test this path before broad rollout.
+- Test streamed tool loops with your workflow before moving a team over.
+- Add the [Docs MCP](./docs-mcp.mdx) server if you want Claude Code to read the Phaseo docs during a session.

@@ -1,40 +1,40 @@
 ---
-title: "OpenAI の提供終了モデルとサービス"
-description: "Phaseo カタログで管理している OpenAI モデルおよびプラットフォームの提供終了日です。"
+title: "OpenAI の非推奨化"
+description: "Phaseo のカタログで追跡している OpenAI のモデルとプラットフォームの非推奨化です。"
 icon: "/icons/brands/openai.svg"
 ---
 
-# OpenAI の提供終了モデルとサービス
+使っている OpenAI のモデルまたはプロダクトを探し、提供終了日の前に代替へ移行して、本番のプロンプト、ツール、レイテンシー、コストで検証します。日付は OpenAI の [API 非推奨化ページ](https://developers.openai.com/api/docs/deprecations)に基づいています。
 
-OpenAI は [API の提供終了ページ](https://developers.openai.com/api/docs/deprecations)で提供終了日と推奨される移行先を公開しています。このページを移行チェックリストとして使い、本番プロンプト、ツール、レイテンシ、コストの範囲で移行先を検証します。
+## モデルの非推奨化
 
-## 提供終了予定のモデル
-
-| モデルファミリー | 非推奨日 | 停止日 | 推奨される移行先 |
+| 非推奨のモデルファミリー | 非推奨化日 | 提供終了日 | 推奨される代替 |
 | --- | --- | --- | --- |
-| `whisper-1`, `gpt-4o-transcribe`, `gpt-4o-mini-transcribe`, `gpt-4o-transcribe-diarize` | 2026年8月26日 | 2027年2月26日 | `openai/gpt-transcribe` または `openai/gpt-live-transcribe` |
-| `gpt-realtime`, `gpt-audio`, `gpt-4o-audio`, `gpt-4o-realtime`, `gpt-realtime-mini`, `gpt-audio-mini`, `gpt-4o-mini-realtime`, `gpt-4o-mini-audio` | 2026年7月20日 | 2027年1月20日 | `openai/gpt-realtime-2.1`, `openai/gpt-realtime-2.1-mini`, または `openai/gpt-audio-1.5` |
-| `gpt-4o-mini-transcribe-2025-03-20` | 2026年7月20日 | 2027年1月20日 | `openai/gpt-4o-mini-transcribe` |
-| 日付付き GPT-5 および o3 スナップショット | 2026年6月11日 | 2026年12月11日 | `openai/gpt-5.6-sol`、`openai/gpt-5.6-terra`、または `openai/gpt-5.6-luna` |
-| `gpt-image-1-mini`、`gpt-image-1.5`、`chatgpt-image-latest` | 2026年6月2日 | 2026年12月1日 | `openai/gpt-image-2` |
-| GPT-3.5、GPT-4、GPT-4.1 nano、GPT-4o、o1、o3-mini、o4-mini の旧スナップショット | 2026年4月22日 | 2026年10月23日 | OpenAI の提供終了ページにあるモデル別の推奨事項を参照してください |
-| Sora 2 モデル | 2026年3月24日 | 2026年9月24日 | 移行先は未発表 |
+| `whisper-1`、`gpt-4o-transcribe`、`gpt-4o-mini-transcribe`、`gpt-4o-transcribe-diarize` | 2026 年 8 月 26 日 | 2027 年 2 月 26 日 | `openai/gpt-transcribe` または `openai/gpt-live-transcribe` |
+| `gpt-realtime`、`gpt-audio`、`gpt-4o-audio`、`gpt-4o-realtime`、`gpt-realtime-mini`、`gpt-audio-mini`、`gpt-4o-mini-realtime`、`gpt-4o-mini-audio` | 2026 年 7 月 20 日 | 2027 年 1 月 20 日 | `openai/gpt-realtime-2.1`、`openai/gpt-realtime-2.1-mini`、または `openai/gpt-audio-1.5` |
+| `gpt-4o-mini-transcribe-2025-03-20` | 2026 年 7 月 20 日 | 2027 年 1 月 20 日 | `openai/gpt-4o-mini-transcribe` |
+| GPT-5 と o3 の日付付きスナップショット | 2026 年 6 月 11 日 | 2026 年 12 月 11 日 | `openai/gpt-5.6-sol`、`openai/gpt-5.6-terra`、または `openai/gpt-5.6-luna` |
+| `gpt-image-1-mini`、`gpt-image-1.5`、`chatgpt-image-latest` | 2026 年 6 月 2 日 | 2026 年 12 月 1 日 | `openai/gpt-image-2` |
+| 旧来の GPT-3.5、GPT-4、GPT-4.1 nano、GPT-4o、o1、o3-mini、o4-mini のスナップショット | 2026 年 4 月 22 日 | 2026 年 10 月 23 日 | OpenAI の非推奨化ページにあるモデル別の推奨を参照してください |
+| Sora 2 モデル | 2026 年 3 月 24 日 | 2026 年 9 月 24 日 | 代替は発表されていません |
 
-カタログは該当する OpenAI モデルの項目にライフサイクル日を記録し、OpenAI が代替モデルを示している場合はその ID も掲載します。日付は OpenAI が指定したプロバイダーのスナップショットに適用されます。カタログでは正規のモデル ID を通じて公開される場合があります。
+カタログは、対象となるモデルのエントリにこれらの日付を記録し、代替モデルがある場合はその ID も記録しています。日付は OpenAI が名前を挙げたスナップショットに適用されます。Phaseo はスナップショットを正規のモデル ID で提供している場合があります。モデルのページにはその日付と推奨される代替が表示され、Phaseo はいずれかのプロバイダーが提供している間は提供終了したモデルの提供を続けます。アラートと自動の置き換えについては、[モデルの非推奨化と提供終了](../guides/model-retirement)を参照してください。
 
-## プラットフォームの提供終了
+## プラットフォームの非推奨化
 
-OpenAI はモデルではない製品の移行も案内しています。
+OpenAI は、モデル以外のプロダクトも提供を終了しています。
 
-- 再利用可能なプロンプトは 2026 年 11 月 30 日に終了予定です。プロンプトの内容をアプリケーションコードに移します。
-- Evals プラットフォームは 2026 年 10 月 31 日に読み取り専用となり、11 月 30 日に終了します。OpenAI は Promptfoo への移行を推奨しています。
-- Agent Builder は 2026 年 11 月 30 日に終了します。Agents SDK または ChatGPT Workspace Agents に移行します。
+| プロダクト | 日付 | 移行先 |
+| --- | --- | --- |
+| 再利用可能なプロンプト | 2026 年 11 月 30 日に提供終了 | アプリケーションのコード、または[プロンプトテンプレート](../guides/prompt-templates)を使った Phaseo のプリセット |
+| Evals プラットフォーム | 2026 年 10 月 31 日に読み取り専用化。2026 年 11 月 30 日に提供終了 | OpenAI は Promptfoo を推奨しています |
+| Agent Builder | 2026 年 11 月 30 日に提供終了 | Agents SDK または ChatGPT Workspace Agents |
 
-## 移行チェックリスト
+## 移行する
 
-1. テスト環境で提供終了予定のモデルまたは製品を置き換えます。
-2. 構造化出力、ツール呼び出し、音声品質、長いコンテキストのタスクを中心に、代表的な評価を再実行します。
-3. 本番に近い並行処理数でレイテンシと費用を比較します。
-4. 停止日前に、明示的なロールバック経路を用意して移行先を段階的に試します。
+1. ステージングで、非推奨のモデルまたはプロダクトを置き換えます。
+2. 代表的な評価、特に構造化出力、ツール呼び出し、音声の品質、長いコンテキストのタスクを再実行します。
+3. 本番相当の同時実行数で、レイテンシーと支出を比較します。
+4. 提供終了日の前に、明示的な切り戻しのルートを用意して代替をカナリアリリースします。
 
-公式日付、スナップショットの完全な対応表、エンドポイント別の案内は[OpenAI API の提供終了ドキュメント](https://developers.openai.com/api/docs/deprecations)を参照してください。
+スナップショットの完全な対応表とエンドポイント別のガイダンスについては、[OpenAI の API 非推奨化ドキュメント](https://developers.openai.com/api/docs/deprecations)を参照してください。

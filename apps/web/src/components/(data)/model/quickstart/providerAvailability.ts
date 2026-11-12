@@ -25,9 +25,7 @@ export type ProviderStateKey =
 	| "project_limited"
 	| "paused"
 	| "soft_blocked"
-	| "deranked_lvl1"
-	| "deranked_lvl2"
-	| "deranked_lvl3"
+	| "deranked"
 	| "internal_testing"
 	| "scheduled"
 	| "coming_soon"
@@ -140,27 +138,11 @@ function isExpiredEffectiveWindow(
 	return Number.isFinite(to.getTime()) && now >= to;
 }
 
-function describeRoutingDerank(level: string): ProviderState {
-	if (level === "deranked_lvl3") {
-		return {
-			key: "deranked_lvl3",
-			label: "Deranked L3",
-			description: "Publicly routable, but heavily deprioritized by routing health.",
-			availability: "active",
-		};
-	}
-	if (level === "deranked_lvl2") {
-		return {
-			key: "deranked_lvl2",
-			label: "Deranked L2",
-			description: "Publicly routable, but currently deprioritized by routing health.",
-			availability: "active",
-		};
-	}
+function describeRoutingDerank(_level: string): ProviderState {
 	return {
-		key: "deranked_lvl1",
-		label: "Deranked L1",
-		description: "Publicly routable, but slightly deprioritized by routing health.",
+		key: "deranked",
+		label: "Lower priority",
+		description: "Publicly routable, but used only as a backup when the other providers fail.",
 		availability: "active",
 	};
 }
@@ -233,9 +215,7 @@ function stateFromAvailabilityReason(
 		return describeExternalProvider(availabilityStatus);
 	}
 	if (
-		reason === "deranked_lvl1" ||
-		reason === "deranked_lvl2" ||
-		reason === "deranked_lvl3"
+		reason === "deranked"
 	) {
 		return describeRoutingDerank(reason);
 	}
@@ -518,17 +498,13 @@ export function resolveProviderState(
 	}
 
 	if (
-		providerModel.provider_routing_status === "deranked_lvl1" ||
-		providerModel.provider_routing_status === "deranked_lvl2" ||
-		providerModel.provider_routing_status === "deranked_lvl3"
+		providerModel.provider_routing_status === "deranked"
 	) {
 		return describeRoutingDerank(providerModel.provider_routing_status);
 	}
 
 	if (
-		providerModel.model_routing_status === "deranked_lvl1" ||
-		providerModel.model_routing_status === "deranked_lvl2" ||
-		providerModel.model_routing_status === "deranked_lvl3"
+		providerModel.model_routing_status === "deranked"
 	) {
 		return describeRoutingDerank(providerModel.model_routing_status);
 	}
@@ -572,9 +548,7 @@ function chooseState(states: ProviderState[]): ProviderState {
 	const activeStates = states.filter((state) => state.availability === "active");
 	if (activeStates.length > 0) {
 		return (
-			activeStates.find((state) => state.key === "deranked_lvl3") ??
-			activeStates.find((state) => state.key === "deranked_lvl2") ??
-			activeStates.find((state) => state.key === "deranked_lvl1") ??
+			activeStates.find((state) => state.key === "deranked") ??
 			activeStates[0]
 		);
 	}

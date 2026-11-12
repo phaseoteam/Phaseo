@@ -1,27 +1,24 @@
 ---
 title: "多模态"
-description: "通过网关使用文本、图像、音频、视频和其他模态。"
+description: "通过 Gateway 使用文本、图像、音频、视频和其他模态。"
 icon: "shapes"
 ---
 
-网关通过统一 API 提供多种模态。每个端点对应不同能力，模型支持情况因供应商而异。
+先选择与你想要的输出对应的端点，再选择支持该端点的模型。同一个模型名称可能出现在多个端点上，而每个端点上的提供商支持情况各不相同。
 
-## 模态与端点
-
-| 模态 | 主要端点 | 说明 |
+| 模态 | 端点 | 用途 |
 | --- | --- | --- |
-| 文本 | `/v1/responses`、`/v1/chat/completions`、`/v1/messages` | 结构化和对话式输出。 |
-| 图像 | `/v1/images/generations`、`/v1/images/edits` | 文生图和图像编辑。 |
-| 音频（TTS/STT/翻译） | `/v1/audio/speech`、`/v1/audio/transcriptions`、`/v1/audio/translations` | 文字转语音、语音转文字和语音翻译。 |
-| 视频 | `/v1/videos`、`/v1/videos/{video_id}`、`/v1/videos/{video_id}/content`、`/v1/videos/{video_id}`（DELETE） | 创建异步视频任务、轮询状态、获取内容并删除任务。 |
-| 音乐 | `/v1/music/generate` | 通过受支持的供应商生成音乐。 |
-| OCR | `/v1/ocr` | 在支持的情况下从图像中提取文本。 |
+| 文本 | `/v1/responses`、`/v1/chat/completions`、`/v1/messages` | 对话式和结构化文本输出。 |
+| 图像 | [`/v1/images/generations`](../api-reference/endpoint/images-generations.mdx)、[`/v1/images/edits`](../api-reference/endpoint/images-edits.mdx) | 文生图和图像编辑。 |
+| 音频 | [`/v1/audio/speech`](../api-reference/endpoint/audio-speech.mdx)、[`/v1/audio/transcriptions`](../api-reference/endpoint/audio-transcriptions.mdx)、[`/v1/audio/translations`](../api-reference/endpoint/audio-translations.mdx) | 文字转语音、语音转文字和口语音频翻译。 |
+| 实时语音 | `/v1/audio/realtime/sessions` | 实时语音通话。参见[实时语音](./realtime-voice.mdx)。 |
+| 视频 | [`POST /v1/videos`](../api-reference/endpoint/video-create.mdx)、`GET /v1/videos/{video_id}`、`GET /v1/videos/{video_id}/content`、`DELETE /v1/videos/{video_id}` | 创建异步视频任务、轮询其状态、获取内容并删除任务。参见[视频和批处理任务](./async-video-and-batch.mdx)。 |
+| 音乐 | [`/v1/music/generate`](../api-reference/endpoint/music-generate.mdx) | 在受支持的提供商上生成音乐。 |
+| OCR | [`/v1/ocr`](../api-reference/endpoint/ocr.mdx) | 从图像中提取文本。 |
+| 文档解析 | [`/v1/parse`](../api-reference/endpoint/parse.mdx) | 从文档图像中提取有序文本、表格和版面布局。参见[解析文档图像](./document-parsing.mdx)。 |
 
-## 检查模型支持情况
+## 查看哪些模型支持某个端点
 
-使用[模型端点](../api-reference/endpoint/models.mdx)查看可用模型及其支持的端点。供应商覆盖情况可通过[供应商端点](../api-reference/endpoint/providers.mdx)查询。
+调用 [Models 端点](../api-reference/endpoint/models.mdx)：每个模型都会列出它支持的 `endpoints`，而 `GET /v1/models/{author}/{slug}/endpoints` 会显示某个模型的每条提供商路由，以及其模态和受支持的参数。[Providers 端点](../api-reference/endpoint/providers.mdx)列出了提供商覆盖情况。
 
-## 最佳实践
-
-- 即使不同模态共用模型名称，也要根据所需模态选择端点。
-- 发布前请根据 [API 参考](../api-reference/introduction.mdx)验证载荷。
+上线之前，请根据该端点的 [API 参考](../api-reference/introduction)检查请求体。

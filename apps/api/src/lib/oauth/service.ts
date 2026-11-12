@@ -418,6 +418,50 @@ export async function issueMcpUpstreamToken(input: TokenIssueInput) {
 	};
 }
 
+export const CLI_MCP_ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
+
+/**
+ * `phaseo mcp` swaps the CLI's own access token for this one. Its audience is the MCP resource and
+ * never `phaseo-api`, so every API route rejects it (validateLocalAccessToken checks that audience)
+ * and only the MCP token exchange accepts it. It has no refresh token: the CLI swaps again from its
+ * own session when it expires.
+ */
+export async function issueCliMcpAccessToken(input: TokenIssueInput & { resource: string }) {
+	const now = Math.floor(Date.now() / 1000);
+	return {
+		access_token: await signJwt({
+			iss: getIssuer(),
+			sub: input.userId,
+			aud: input.resource,
+			exp: now + CLI_MCP_ACCESS_TOKEN_TTL_SECONDS,
+			iat: now,
+			jti: crypto.randomUUID(),
+			user_id: input.userId,
+			workspace_id: input.workspaceId,
+			client_id: input.clientId,
+			scope: input.scopes.join(" "),
+		}),
+		issued_token_type: "urn:ietf:params:oauth:token-type:access_token" as const,
+		token_type: "Bearer" as const,
+		expires_in: CLI_MCP_ACCESS_TOKEN_TTL_SECONDS,
+		scope: input.scopes.join(" "),
+		resource: input.resource,
+	};
+}
+
+/** Claims of a token from issueCliMcpAccessToken for this resource, or null for anything else. */
+export async function validateCliMcpAccessToken(token: string, resource: string): Promise<JWTClaims | null> {
+	if (!resource || resource === ACCESS_TOKEN_AUDIENCE) return null;
+	const jwks = await getLocalJwks();
+	const result = await validateOAuthToken(token, jwks.keys, getIssuer(), resource);
+	if (!result.valid || !result.claims) return null;
+	// Exactly one audience: a token that also names phaseo-api is not an MCP-only token.
+	const audiences = Array.isArray(result.claims.aud) ? result.claims.aud : [result.claims.aud];
+	if (audiences.length !== 1 || audiences[0] !== resource) return null;
+	if (!isFirstPartyCliClient(String(result.claims.client_id))) return null;
+	return result.claims;
+}
+
 async function fetchUserProfile(userId: string): Promise<{ email?: string | null; name?: string | null }> {
 	const supabase = getSupabaseAdmin();
 	const { data } = await supabase.auth.admin.getUserById(userId);
@@ -599,10 +643,12 @@ async function loadCimdClient(clientId: string): Promise<OAuthClient | null> {
 	) return null;
 	const responseTypes = Array.isArray(metadata.response_types) ? metadata.response_types.map(String) : ["code"];
 	const grantTypes = Array.isArray(metadata.grant_types) ? metadata.grant_types.map(String) : ["authorization_code"];
+	// Clients publish one document for every server they talk to, so it can list
+	// grants Phaseo doesn't offer (Claude lists the JWT bearer grant). Ignore those:
+	// the token endpoint answers unsupported_grant_type for anything but its own.
 	if (
 		!responseTypes.every((value) => value === "code")
 		|| !grantTypes.includes("authorization_code")
-		|| !grantTypes.every((value) => value === "authorization_code" || value === "refresh_token")
 	) return null;
 	const requestedScopes = normalizeScopes(metadata.scope, CIMD_DEFAULT_SCOPES);
 	const allowedScopeSet = new Set<string>(CIMD_DEFAULT_SCOPES);

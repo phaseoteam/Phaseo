@@ -1,32 +1,39 @@
 ---
 icon: "braces"
 title: "Structured Output (AI SDK)"
+sidebarTitle: "Structured output"
 description: "Generate schema-validated JSON objects with Phaseo and Vercel AI SDK."
 "og:image": "https://phaseo.app/og/dynamic?title=Structured%20Output%20%28AI%20SDK%29&description=Generate%20schema-validated%20JSON%20objects%20with%20Phaseo%20and%20Vercel%20AI%20SDK.&pathname=/docs/v1/sdk-reference/sdk/structured-output"
 ---
 
-Use `generateObject` for typed outputs.
+Pass `output: Output.object({ schema })` to `generateText` to get a typed object that matches your schema. The AI SDK sends the schema as a JSON Schema response format and validates the result.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 
-const { object } = await generateObject({
-  model: phaseo("openai/gpt-5-nano"),
-  schema: z.object({
-    title: z.string(),
-    priority: z.enum(["low", "medium", "high"]),
-    actions: z.array(z.string()),
+const { output } = await generateText({
+  model: phaseo("openai/gpt-6-astra"),
+  output: Output.object({
+    schema: z.object({
+      title: z.string(),
+      priority: z.enum(["low", "medium", "high"]),
+      actions: z.array(z.string()),
+    }),
   }),
   prompt: "Create a short incident follow-up plan.",
 });
 
-console.log(object);
+console.log(output);
 ```
 
-## Notes
+`generateObject` still works in AI SDK 7 with the same `schema` and returns `object`, but it is deprecated in favour of `generateText` with `output`.
 
-- Prefer explicit enums and required fields in schemas.
-- Keep prompts aligned with the schema shape.
-- Handle parse/validation errors in caller code.
+## Handle invalid output
+
+Reading `output` throws `NoOutputGeneratedError` when the model returns no usable object, for example when the last step ended in a tool call. Catch it where you call the model.
+
+- Use explicit enums and required fields in the schema.
+- Keep the prompt consistent with the schema's shape.
+- Model support for JSON Schema output varies; check the model's supported parameters in `/v1/models`.

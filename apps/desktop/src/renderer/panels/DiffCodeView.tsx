@@ -5,7 +5,7 @@ import { addReviewComment, nextReviewCommentId, rangeLabel, removeReviewComment,
 import { diffExcerpt } from "../lib/diffSurface";
 import { DiffComment } from "./DiffComment";
 
-/** The diff stylesheet inside the viewer's shadow root, after T3's: 32px sticky file headers, quiet hunk separators. */
+/** The diff stylesheet inside the viewer's shadow root: 32px sticky file headers, quiet hunk separators. */
 export const DIFF_VIEW_CSS = `
 :host { --code-background: var(--background); --code-foreground: var(--foreground); }
 [data-diffs-header] {

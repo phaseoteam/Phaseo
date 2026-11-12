@@ -5,13 +5,13 @@ badge: "Beta"
 openapi: "/es/openapi/v1/openapi.localized.yaml POST /observability/destinations"
 description: "Crea un destino de Broadcast: una herramienta de OpenTelemetry, un webhook, un bucket de almacenamiento o un almacén de datos."
 ---
-<Note>Este endpoint requiere una clave de API de gestión con `settings:write`.</Note>
+<Note>Este endpoint requiere una clave de API de administración con `settings:write`.</Note>
 
-El objeto `config` es de solo escritura y se cifra antes de almacenarse. Los endpoints deben usar direcciones HTTPS públicas. Consulta [Broadcast](../../guides/broadcast.mdx) para saber qué hace cada destino y qué recibe.
+El objeto `config` es de solo escritura y se cifra antes de guardarse. Los endpoints deben usar direcciones HTTPS públicas. Consulta [Broadcast](/es/v1/guides/broadcast) para saber qué hace cada destino y qué recibe.
 
-## Claves de `config` por tipo
+## Configura `config` para cada tipo de destino
 
-Todos los valores son cadenas. Una solicitud a la que le falte una clave obligatoria, o con un valor que el destino no puede usar, devuelve `400` con un mensaje que indica la clave.
+Todos los valores son cadenas. Una solicitud a la que le falta una clave obligatoria, o con un valor que el destino no puede usar, devuelve `400` con un mensaje que nombra la clave.
 
 | `type` | Claves de `config` obligatorias | Claves de `config` opcionales |
 | --- | --- | --- |
@@ -40,4 +40,4 @@ Todos los valores son cadenas. Una solicitud a la que le falte una clave obligat
 | `wandb_weave` | `api_key`, `entity`, `project` | `base_url` |
 | `webhook` | `url` | `method`, `headers_json`, `signing_secret` |
 
-Los tipos de OpenTelemetry también aceptan `otlp_protocol` (`http/json` o `http/protobuf`) y `otlp_compression` (`none` o `gzip`), salvo cuando el proveedor solo acepta un valor. El `headers_json` de un webhook es un objeto JSON que asigna nombres de cabecera a valores, en forma de cadena.
+Los tipos de OpenTelemetry también aceptan `otlp_protocol` (`http/json` o `http/protobuf`) y `otlp_compression` (`none` o `gzip`), salvo cuando el proveedor solo acepta un valor. El `headers_json` de un webhook es un objeto JSON de nombres de encabezado a valores, en forma de cadena.

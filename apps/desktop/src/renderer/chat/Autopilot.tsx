@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Checkbox } from "../components/ui/checkbox";
 import { SettingsButton, settingsInput } from "../settings/SettingsLayout";
 import { cn } from "../lib/utils";
+import { controlClass } from "./ComposerControls";
 
 export type AutopilotSetting = { capNanos: number | null };
 const toNanos = (dollars: number) => Math.round(dollars * 1e9);
@@ -55,11 +56,11 @@ export function AutopilotDialog({ open, onOpenChange, value, onConfirm }: { open
 /** The composer's Autopilot switch: off, it opens the dialog; on, it shows the cap with ways to change it or turn it off. */
 export function AutopilotControl({ value, onChange, disabled, disabledReason }: { value?: AutopilotSetting; onChange: (value: AutopilotSetting | null) => void; disabled?: boolean; disabledReason?: string }) {
 	const [dialog, setDialog] = useState(false);
-	const button = "flex h-8 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium hover:bg-muted disabled:opacity-50 [&_svg]:size-4";
+	const button = controlClass("sm");
 	return <>
 		{value
 			? <DropdownMenu>
-				<DropdownMenuTrigger render={<button type="button" title="Autopilot is on (experimental)" className={cn(button, "text-warning")} />}>
+				<DropdownMenuTrigger render={<button type="button" title="Autopilot is on (experimental)" className={cn(button, "text-warning hover:text-warning [&_svg]:text-current!")} />}>
 					<Plane />Autopilot{value.capNanos !== null && <span className="text-muted-foreground tabular-nums">· {formatSpend(value.capNanos)} cap</span>}<ChevronDown className="size-3!" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="start" side="top" className="w-56">

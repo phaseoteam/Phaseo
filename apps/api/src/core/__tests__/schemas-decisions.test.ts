@@ -30,6 +30,20 @@ describe("DecisionsSchema", () => {
 		expect(DecisionsSchema.safeParse({ ...base, input: [{ role: "user", content: Array(128).fill(part) }] }).success).toBe(true);
 		expect(DecisionsSchema.safeParse({ ...base, input: [{ role: "user", content: Array(129).fill(part) }] }).success).toBe(false);
 	});
+	it("accepts up to 1,000 questions in either format and rejects 1,001", () => {
+		const nativeQuestions = (count: number) => Array.from({ length: count }, () => ({ type: "predicate", instructions: "Safe?" }));
+		const mapQuestions = (count: number) => Object.fromEntries(Array.from({ length: count }, (_, index) =>
+			[`q${index}`, { type: "noul", instructions: "Safe?" }]));
+		const native = (count: number) => DecisionsSchema.safeParse({ model: "google/gemini-decision-1", input: "Text", questions: nativeQuestions(count) });
+		const legacy = (count: number) => DecisionsSchema.safeParse({ model: "google/gemini-decision-1", state: "Text", questions: mapQuestions(count) });
+		for (const parse of [native, legacy]) {
+			expect(parse(129).success).toBe(true);
+			expect(parse(1000).success).toBe(true);
+			expect(parse(1001).success).toBe(false);
+		}
+		const tooMany = legacy(1001);
+		expect(!tooMany.success && JSON.stringify(tooMany.error.issues)).toContain("at most 1000 questions");
+	});
 	it("accepts hosted HTTPS image URLs in native input", () => {
 		expect(DecisionsSchema.safeParse({ model: "baselabs/joey-1", questions: [{ type: "predicate", instructions: "Visible?" }],
 			input: [{ role: "user", content: [{ type: "input_image", image_url: "https://bucket.s3.amazonaws.com/a.png" }] }] }).success).toBe(true);

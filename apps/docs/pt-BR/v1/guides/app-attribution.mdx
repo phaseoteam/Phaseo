@@ -4,13 +4,10 @@ description: "Agrupe o uso do Gateway por aplicativo com IDs, nomes, URLs e cate
 icon: "badge-check"
 ---
 
-Use a atribuição de aplicativos para separar o uso entre produtos, ambientes ou experiências voltadas ao cliente. Ela aparece nas análises de aplicativos e auditorias de solicitações sem alterar a resposta de inferência.
+Envie um cabeçalho `X-App-Id` em cada solicitação para agrupar o uso dela em um aplicativo nas análises de aplicativos e nas auditorias de solicitações. Use um ID diferente para cada produto, ambiente ou experiência voltada ao cliente que você queira acompanhar separadamente. A atribuição nunca altera a resposta de inferência.
 
-## Adicionar cabeçalhos de atribuição
-
-Envie um ID de aplicativo estável em cada solicitação. Adicione nome, URL e até três categorias para obter um agrupamento mais detalhado no painel.
-
-```bash
+<CodeGroup>
+```bash cURL
 curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
@@ -19,16 +16,12 @@ curl https://api.phaseo.app/v1/responses \
   -H "HTTP-Referer: https://acme.example/support" \
   -H "X-App-Categories: chat,productivity" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Summarize this ticket."
   }'
 ```
 
-Use o mesmo `X-App-Id` em todas as solicitações do mesmo aplicativo. O Phaseo o usa como identidade estável quando não há uma URL disponível.
-
-## Usar o SDK TypeScript
-
-```typescript
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const phaseo = new Phaseo({
@@ -42,44 +35,37 @@ const phaseo = new Phaseo({
 });
 
 const response = await phaseo.generateResponse({
-  model: "openai/gpt-5-nano",
+  model: "openai/gpt-6-astra",
   input: "Summarize this ticket.",
 });
 ```
+</CodeGroup>
 
-## Cabeçalhos compatíveis
+A opção `app` do SDK de TypeScript envia os mesmos cabeçalhos em todas as solicitações. O Phaseo nunca define a atribuição por você.
+
+## Cabeçalhos
 
 | Cabeçalho | Finalidade |
 | --- | --- |
 | `X-App-Id` | Identificador estável escolhido pelo seu aplicativo. |
-| `X-App-Name` | Nome legível exibido nas telas de aplicativos e uso. |
-| `HTTP-Referer` | URL pública da página ou implantação associada ao aplicativo. |
-| `X-App-Categories` | Lista separada por vírgulas com até três categorias compatíveis. |
+| `X-App-Name` | Nome legível exibido nas visualizações de aplicativos e de uso. |
+| `HTTP-Referer` | URL da página pública ou do deployment associado ao aplicativo. |
+| `X-App-Categories` | Lista separada por vírgulas com até três categorias. |
 | `X-Title` | Alias de compatibilidade para um nome legível do aplicativo. |
 
-`HTTP-Referer` é um metadado de atribuição; não precisa corresponder ao cabeçalho `Referer` automático do navegador. Defina-o explicitamente em integrações no servidor se quiser usar uma única URL canônica para o aplicativo.
+O Phaseo identifica o aplicativo pela URL em `HTTP-Referer` quando você a envia e, caso contrário, por `X-App-Id`. Mantenha os dois estáveis: uma nova URL ou um novo ID cria um novo aplicativo nas análises.
+
+`HTTP-Referer` não precisa corresponder ao cabeçalho `Referer` automático do navegador. Defina-o explicitamente em integrações do lado do servidor quando quiser uma URL canônica para o aplicativo.
 
 ## Categorias
 
-Escolha até três valores:
+Escolha até três entre `chat`, `developer-tools`, `research`, `productivity`, `education`, `commerce`, `media`, `finance` e `other`.
 
-- `chat`
-- `developer-tools`
-- `research`
-- `productivity`
-- `education`
-- `commerce`
-- `media`
-- `finance`
-- `other`
+Os valores não diferenciam maiúsculas de minúsculas. O Phaseo ignora valores desconhecidos, remove duplicados e mantém as três primeiras categorias válidas. As categorias enviadas em solicitações posteriores são adicionadas às que já estão salvas para o aplicativo; elas nunca removem categorias escolhidas no painel.
 
-Os valores não diferenciam maiúsculas de minúsculas. O Phaseo ignora valores desconhecidos, remove duplicatas e mantém as três primeiras categorias válidas. Categorias recebidas em solicitações posteriores são combinadas às já salvas para o aplicativo; elas não removem seleções feitas no painel.
+Para gerenciar as categorias de forma centralizada em vez de no código do aplicativo, edite-as em **Configurações → Apps**.
 
-Você também pode editar categorias em **Gateway → Configurações → Aplicativos**. Use o painel quando a classificação for gerenciada centralmente, e não pelo código do aplicativo.
+## Mantenha a atribuição segura para compartilhar
 
-## Diretrizes de atribuição
-
-- Mantenha os IDs estáveis entre implantações para que o uso continue agrupado.
-- Use IDs separados para aplicativos que precisam de relatórios de custo ou uso independentes.
-- Não inclua IDs de clientes, endereços de e-mail ou outros dados pessoais nos cabeçalhos de atribuição.
-- Considere a URL como metadado público quando o aplicativo puder aparecer em visualizações públicas ou compartilhadas.
+- Não coloque IDs de clientes, endereços de e-mail nem outros dados pessoais nos cabeçalhos de atribuição.
+- Trate a URL e o nome como públicos: eles podem aparecer em visualizações de aplicativos compartilhadas ou públicas.

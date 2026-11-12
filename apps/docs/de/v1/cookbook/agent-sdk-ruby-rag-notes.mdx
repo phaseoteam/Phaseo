@@ -1,65 +1,92 @@
 ---
 title: "Interne Notizen mit dem Ruby Agent SDK zusammenfassen"
-sidebarTitle: "Notizen in Ruby zusammenfassen"
+sidebarTitle: "Interne Notizen in Ruby zusammenfassen"
 icon: "notebook-tabs"
 description: "Nutze das Ruby Agent SDK, um lokale Notizen abzufragen und über Phaseo Gateway eine begrenzte Zusammenfassung zurückzugeben."
 ---
 
-Verwende dieses Rezept, wenn ein Ruby-Dienst einen kleinen Assistenten für interne Notizen benötigt, ohne die Orchestrierung an ein anderes System auszulagern.
+Führe einen Ruby-Agenten aus, der eine interne Notiz mit einem lokalen Tool nachschlägt und in einem kurzen Absatz antwortet, ohne die Orchestrierung an ein anderes System abzugeben. Am Ende hast du ein Skript, das deine Notiz zu Presets zusammenfasst.
 
-## 1. SDKs vorbereiten
+Das Tool liefert feste Beispieldaten, das Skript dient also der Veranschaulichung; ersetze es durch eine Abfrage in deinem eigenen Notizspeicher. Es passt zu einer Ruby-App, der die Daten bereits gehören und die einfache, deterministische Tool-Eingaben hat.
 
-<Note type="warning">Das Ruby Agent SDK ist noch nicht auf RubyGems verfügbar. Folge der [Installationsanleitung aus dem Quellcode](../sdk-reference/ruby/agent-sdk-installation.mdx).</Note>
+## Agenten bauen
 
-## 2. Ein Tool zum Suchen von Notizen definieren
+<Steps>
+<Step title="Installieren">
 
-```ruby
+```bash
+gem install phaseo_agent_sdk
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+Oder füge `gem "phaseo_agent_sdk"` zu deinem `Gemfile` hinzu. Es installiert `phaseo_sdk` mit und benötigt Ruby 3.2 oder neuer. Siehe [Installation des Ruby Agent SDK](../sdk-reference/agent/installation).
+
+</Step>
+<Step title="Agenten schreiben">
+
+```ruby notes.rb
+require "phaseo_agent_sdk"
+
+TOPICS = %w[presets routing guardrails].freeze
+
 lookup_note = PhaseoAgentSdk.define_tool(
   PhaseoAgentSdk::Tool.new(
     id: "lookup-note",
     description: "Look up one internal note by topic.",
     parameters: {
       type: "object",
-      properties: {
-        topic: { type: "string" },
-      },
+      properties: { topic: { type: "string", enum: TOPICS } },
       required: ["topic"],
+      additionalProperties: false
     },
+    # Argumente stammen vom Modell: Nur bekannte Themen erreichen execute.
+    input_schema: lambda do |input|
+      raise ArgumentError, "topic must be one of #{TOPICS.join(', ')}" unless input.is_a?(Hash) && TOPICS.include?(input["topic"])
+
+      input
+    end,
     execute: lambda do |input, _context|
       {
         topic: input["topic"],
-        summary: "Presets centralize routing defaults so app code stays smaller.",
+        summary: "Presets centralize routing defaults so app code stays smaller."
       }
     end
   )
 )
-```
 
-## 3. Agent erstellen und ausführen
-
-```ruby
 agent = PhaseoAgentSdk.create_agent(
   id: "notes-agent",
-  model: "openai/gpt-5.4-nano",
+  model: "openai/gpt-6-astra",
   instructions: "Use tools when helpful and answer in one short paragraph.",
-  tools: [lookup_note]
+  tools: [lookup_note],
+  max_steps: 4
 )
 
+# Liest PHASEO_API_KEY aus der Umgebung.
 result = agent.run(
   input: "Summarize our note about presets.",
   client: PhaseoAgentSdk.create_gateway_agent_client
 )
 
+puts result.run.status
 puts result.output
 ```
 
-## Wann dieses Rezept passt
+</Step>
+<Step title="Ausführen">
 
-- die Tool-Eingaben einfach und deterministisch sind
-- die Ruby-Anwendung die Datenquelle bereits verwaltet
-- du ein einfaches Muster für lokale Tools in einem begrenzten Ablauf suchst
+```bash
+ruby notes.rb
+```
 
-## Weiterführende Themen
+</Step>
+</Steps>
 
-- [Ruby Agent SDK](../sdk-reference/ruby/agent-sdk.mdx)
-- [Einen dauerhaften Agent-Ablauf erstellen](./agent-sdk-durable-loop.mdx)
+## Prüfen, ob es funktioniert hat
+
+- Das Skript gibt `completed` aus und danach einen Absatz über Presets.
+- Unter **Einstellungen → Nutzung → Protokolle** zeigt der erste Modellzug einen `lookup-note`-Aufruf mit `{"topic": "presets"}`.
+
+## Vor dem Produktionseinsatz
+
+Halte das Tool nur lesend und `max_steps` so niedrig, wie es die Aufgabe erlaubt (der Standardwert ist `12`). Wenn dein Notizspeicher groß ist, gib nur die passende Textstelle statt ganzer Dokumente zurück, damit jeder Modellzug klein bleibt. Um Läufe zu speichern und später fortzusetzen, siehe die [robuste Agent-Schleife](./agent-sdk-durable-loop); die Option `state:` des Ruby SDK funktioniert genauso. Die [Ruby Agent SDK-Referenz](../sdk-reference/agent/usage) behandelt Status, Freigabe und Streaming.

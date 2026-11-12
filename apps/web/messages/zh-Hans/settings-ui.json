@@ -1009,7 +1009,240 @@
 		"rules": "规则",
 		"flag": "标记",
 		"redact": "脱敏",
-		"block": "阻止"
+		"block": "阻止",
+		"workspaceBaseline": "工作区基础防护规则",
+		"workspaceBaselineDescription": "适用于工作区中的每个密钥。请在“隐私”中编辑。",
+		"wholeWorkspace": "整个工作区"
+	},
+	"guardrailAssignments": {
+		"tabGuardrails": "护栏",
+		"tabAssignments": "分配",
+		"keysView": "API 密钥",
+		"membersView": "成员",
+		"search": "搜索名称和护栏",
+		"columnKey": "API 密钥",
+		"columnMember": "成员",
+		"columnGuardrails": "护栏",
+		"columnAccess": "访问",
+		"none": "无",
+		"off": "已关闭",
+		"offHint": "此护栏已关闭，网关会跳过它。",
+		"viaMember": "通过 {name}",
+		"inheritedHint": "通过 {name} 的成员分配生效。请在“成员”视图中更改。",
+		"formerMember": "前成员",
+		"formerMemberHint": "通过此密钥创建者（已离开工作区）的成员分配生效。网关仍会执行它。在此取消勾选即可移除。",
+		"noLimits": "无限制",
+		"zdrOnly": "仅 ZDR",
+		"providersAllowed": "允许 {count} 个提供商",
+		"providersBlocked": "已屏蔽 {count} 个提供商",
+		"modelsAllowed": "允许 {count} 个模型",
+		"modelsBlocked": "已屏蔽 {count} 个模型",
+		"noProvidersAllowed": "不允许任何提供商",
+		"noModelsAllowed": "不允许任何模型",
+		"editGuardrails": "编辑 {name} 的护栏",
+		"selectRow": "选择 {name}",
+		"selectAll": "全选",
+		"selectedCount": "已选择 {count} 项",
+		"addGuardrail": "添加护栏",
+		"removeGuardrail": "移除护栏",
+		"clearSelection": "清除",
+		"saved": "分配已更新",
+		"saveFailed": "无法更新分配",
+		"savedPartly": "已更新 {count} 项中的 {done} 项，其余未更改。",
+		"emptyTitle": "没有可分配的护栏",
+		"emptyBody": "请先创建护栏，然后在这里将其分配给 API 密钥或成员。",
+		"noKeys": "此工作区没有 API 密钥。",
+		"noMembers": "此工作区没有成员。",
+		"noMatches": "没有与搜索匹配的结果。",
+		"readOnly": "只有工作区所有者和管理员可以更改分配。",
+		"workspaceView": "工作区",
+		"departmentsView": "部门",
+		"columnWorkspace": "工作区",
+		"columnDepartment": "部门",
+		"columnSafety": "安全",
+		"wholeWorkspace": "整个工作区",
+		"wholeWorkspaceDetail": "所有 API 密钥和成员",
+		"departmentReach": "{members} 名成员 · {keys} 个密钥",
+		"noDepartments": "此工作区还没有部门。",
+		"fromWorkspace": "工作区",
+		"workspaceHint": "适用于整个工作区。请在“工作区”视图中更改。",
+		"departmentHint": "通过 {name} 部门生效。请在“部门”视图中更改。",
+		"baselineHint": "工作区基础护栏适用于所有 API 密钥和成员。请在“隐私”中编辑。",
+		"fromGuardrails": "来自 {names}",
+		"promptInjectionPart": "提示注入：{action}",
+		"sensitiveInfoPart": "{count} 条敏感信息规则",
+		"footnoteLevels": "每一行显示作用于它的所有护栏：它自己的，以及其成员、所属部门和整个工作区的。多条护栏同时生效时，以最严格的规则为准。",
+		"noTraining": "不允许训练",
+		"noPaidTraining": "付费端点不允许训练",
+		"noFreeTraining": "免费端点不允许训练",
+		"noLogging": "不使用会记录日志的端点",
+		"columnRate": "速率",
+		"rateRequests": "每分钟 {count} 个请求",
+		"rateTokens": "每分钟 {count} 个令牌",
+		"rateConcurrent": "同时 {count} 个",
+		"columnSpend": "支出",
+		"spend": {
+			"daily": "每天 {amount}",
+			"weekly": "每周 {amount}",
+			"monthly": "每月 {amount}"
+		},
+		"spendBlocks": "阻止",
+		"spendNotifies": "仅提醒"
+	},
+	"guardrailWizard": {
+		"title": "新建护栏",
+		"subtitle": "选择要检查的内容并完成设置，然后选择适用对象。",
+		"stepsLabel": "护栏设置步骤",
+		"step": {
+			"start": "作用",
+			"configure": "设置",
+			"assign": "分配",
+			"review": "确认"
+		},
+		"cancel": "取消",
+		"back": "上一步",
+		"continue": "继续",
+		"create": "创建护栏",
+		"creating": "正在创建…",
+		"issue": {
+			"nameRequired": "请先填写名称。",
+			"chooseSection": "请选择一个模板或至少一项检查。",
+			"accessEmpty": "请至少开启一条访问或隐私规则，或移除此项检查。",
+			"providerAllowlistEmpty": "请至少选择一个允许的提供商。空列表会屏蔽所有提供商。",
+			"modelAllowlistEmpty": "请至少选择一个允许的模型。空列表会屏蔽所有模型。",
+			"promptInjectionOff": "请选择如何处理提示注入，或移除此项检查。",
+			"sensitiveInfoOff": "请至少开启一个敏感信息模式，或移除此项检查。",
+			"rateLimitEmpty": "至少设置一项限制才能继续。",
+			"rateLimitInvalid": "限制必须是大于 0 的整数。",
+			"rateCountingRequired": "选择限制的计算方式才能继续。",
+			"spendLimitEmpty": "请设置上限以继续。",
+			"spendLimitInvalid": "请输入大于 $0.00 且最多 2 位小数的金额。",
+			"spendPeriodRequired": "请选择周期以继续。",
+			"spendActionRequired": "请选择达到上限时的操作以继续。",
+			"spendCountingRequired": "请选择上限的计数方式以继续。"
+		},
+		"nameLabel": "名称",
+		"namePlaceholder": "例如：外包人员策略",
+		"descriptionLabel": "描述（可选）",
+		"descriptionPlaceholder": "适用于谁？",
+		"templatesTitle": "从模板开始",
+		"templatesBody": "模板会自动填写设置，你可以在下一步修改所有内容。",
+		"templateZdr": {
+			"name": "零数据保留",
+			"body": "只路由到不存储提示和输出的端点。"
+		},
+		"templateNoTraining": {
+			"name": "不用提示训练",
+			"body": "跳过可能用你的提示训练或公开提示的端点。"
+		},
+		"templateApprovedProviders": {
+			"name": "仅限已批准的提供商",
+			"body": "只允许你选择的提供商。"
+		},
+		"templateApprovedModels": {
+			"name": "仅限已批准的模型",
+			"body": "只允许你选择的模型。"
+		},
+		"templateBlockPromptInjection": {
+			"name": "阻止提示注入",
+			"body": "在疑似提示注入的请求到达模型前将其拦截。"
+		},
+		"templateRedactPersonalInfo": {
+			"name": "隐去个人信息",
+			"body": "在请求离开 Phaseo 前替换邮箱、电话号码、SSN 和卡号。"
+		},
+		"sectionsTitle": "检查项",
+		"sectionsBody": "选择一项或多项。选择模板会自动勾选。",
+		"sectionAccess": {
+			"name": "访问与隐私",
+			"body": "数据保留、训练，以及可以使用哪些提供商和模型。"
+		},
+		"sectionPromptInjection": {
+			"name": "提示注入",
+			"body": "扫描请求中的提示注入，然后标记、隐去或拦截。"
+		},
+		"sectionSensitiveInfo": {
+			"name": "敏感信息",
+			"body": "查找请求中的个人数据和密钥，然后标记、隐去或拦截。"
+		},
+		"addCheck": "添加检查：",
+		"assignTitle": "“{name}”应适用于谁？",
+		"assignBody": "选择整个工作区，或部门、成员和 API 密钥。每一行显示其护栏当前的叠加效果，以及加上这条护栏后的效果。你可以跳过此步，稍后再分配。",
+		"columnNow": "当前",
+		"columnAfter": "加上此护栏后",
+		"assignMemberHint": "成员的护栏也适用于其创建的 API 密钥。",
+		"notApplied": "未应用",
+		"coveredVia": "通过 {name}",
+		"noTighter": "无变化：当前护栏已覆盖这些规则。",
+		"promptInjectionPart": "提示注入：{action}",
+		"sensitiveInfoPart": "{count} 条敏感信息规则",
+		"reviewWhat": "作用",
+		"reviewModels": "模型",
+		"reviewWho": "适用对象",
+		"change": "修改",
+		"modelsAvailable": "{total} 个模型中仍有 {available} 个可用。",
+		"blocksEverything": "这些规则会屏蔽所有模型，适用密钥发出的请求将会失败。",
+		"appliesToNothing": "暂无。你可以稍后在“分配”标签页中分配。",
+		"turnOnNow": "立即开启",
+		"turnOnNowBody": "关闭时会保存，但网关会跳过它。",
+		"summaryZdr": "只路由到零数据保留的端点",
+		"summaryNoPaidTraining": "跳过可能用提示训练的付费端点",
+		"summaryNoFreeTraining": "跳过可能用提示训练的免费端点",
+		"summaryNoPublishing": "跳过可能公开提示的免费端点",
+		"summaryNoLogging": "跳过记录提示和输出的端点",
+		"summaryProvidersAllowed": "仅允许 {count} 个提供商",
+		"summaryProvidersBlocked": "屏蔽 {count} 个提供商",
+		"summaryModelsAllowed": "仅允许 {count} 个模型",
+		"summaryModelsBlocked": "屏蔽 {count} 个模型",
+		"summaryPromptInjection": "提示注入：{action}",
+		"summarySensitiveInfo": "检查 {count} 个敏感信息模式",
+		"wholeWorkspaceTitle": "整个工作区",
+		"wholeWorkspaceBody": "适用于所有 API 密钥和成员，包括之后添加的。",
+		"wholeWorkspaceOn": "适用于整个工作区，因此下方每一行都会生效。",
+		"coveredByWorkspace": "通过整个工作区生效",
+		"coveredByDepartment": "通过 {name} 生效",
+		"levelWorkspace": "整个工作区",
+		"levelDepartments": "{count} 个部门",
+		"levelMembers": "{count} 名成员",
+		"levelKeys": "{count} 个 API 密钥",
+		"templateRateLimit": {
+			"name": "速率限制",
+			"body": "限制每分钟的请求数或令牌数，或并发请求数。"
+		},
+		"sectionRate": {
+			"name": "速率限制",
+			"body": "每分钟请求数和令牌数，以及并发请求数。速率防护规则不包含其他检查。"
+		},
+		"summaryRateRequests": "每分钟 {count} 个请求",
+		"summaryRateTokens": "每分钟 {count} 个令牌",
+		"summaryRateConcurrent": "同时 {count} 个请求",
+		"summaryRateCounting": {
+			"shared": "分配到的所有对象共享",
+			"each_key": "每个密钥单独计算",
+			"each_end_user": "每个最终用户单独计算"
+		},
+		"summaryRateFailClosed": "无法检查限制时拒绝请求",
+		"templateSpendLimit": {
+			"name": "支出上限",
+			"body": "按天、周或月限制支出，并发送提醒。"
+		},
+		"sectionSpend": {
+			"name": "支出上限",
+			"body": "按天、周或月设置的美元上限。支出护栏没有其他检查。"
+		},
+		"summarySpendLimit": {
+			"daily": "每天最多 {amount}",
+			"weekly": "每周最多 {amount}",
+			"monthly": "每月最多 {amount}"
+		},
+		"summarySpendAction": {
+			"notify": "在 80% 和 100% 时提醒，不阻止",
+			"block": "达到上限时阻止 API 密钥请求"
+		},
+		"summarySpendCounting": {
+			"shared": "分配到的所有对象共享",
+			"each_key": "每个密钥单独计算"
+		}
 	},
 	"broadcastControls": {
 		"optional": "（可选）",
@@ -1145,6 +1378,8 @@
 		"authorizedUsers": "授权用户",
 		"noAuthorizations": "无授权用户",
 		"authorizationEmpty": "授权此应用程序的用户将出现在此处。",
+		"usersAdminsOnly": "只有所有者和管理员可以查看此应用的用户",
+		"usersAdminsOnlyDescription": "授权应用的用户通常属于其他工作区，因此只有此工作区的所有者和管理员才能看到他们是谁以及他们的请求。",
 		"activityDescription": "最近的授权和使用活动。",
 		"noActivity": "还没有活动",
 		"activityEmpty": "应用程序使用后会出现活动。",
@@ -1410,7 +1645,9 @@
 			"selectWorkspace": "选择一个工作区以管理防护规则。",
 			"notFound": "未找到防护规则。",
 			"back": "返回防护规则",
-			"permissions": "只有工作区所有者和管理员可以更改防护规则。分配给成员的策略会自动执行。"
+			"permissions": "只有工作区所有者和管理员可以更改防护规则。分配给成员的策略会自动执行。",
+			"workspaceBaseline": "这是工作区基础防护规则。它包含“设置 > 隐私”中的规则，并适用于整个工作区，因此无法删除、关闭，也无法单独分配给某个密钥或成员。",
+			"openPrivacy": "在“隐私”中编辑"
 		},
 		"keyDelete": {
 			"permanent": "此操作无法撤销。",
@@ -1945,6 +2182,8 @@
 		"Completion": "补全",
 		"phraseNoIOPayloadIsAvailableForThisRequest": "此请求没有可用的 I/O 负载。",
 		"Technical Details": "技术细节",
+		"SVG author": "SVG 编写模型",
+		"Image tool": "图像工具",
 		"Pricing": "定价",
 		"Direct HTTP": "直接 HTTP 请求",
 		"Data policy": "数据政策",
@@ -2484,6 +2723,8 @@
 		"Are you sure you want to leave {workspace}?": "你确定要离开 {workspace} 吗？",
 		"phraseYouCanTRevokeAccessForSomeoneWithAHigherRoleThanYours": "你无法撤销角色比你更高的人员的访问权限。",
 		"Are you sure you want to revoke access for {member}?": "你确定要撤销 {member} 的访问权限吗？",
+		"phraseMemberKeysWillBeRevoked": "此成员在该工作区创建的 API 密钥和管理密钥将被撤销。",
+		"phraseYourKeysWillBeRevoked": "你在该工作区创建的 API 密钥和管理密钥将被撤销。",
 		"phraseUpdatedMemberSSampleRole": "更新了 {member} 的示例角色。",
 		"phraseUnableToUpdateTheMemberRoleRightNow": "目前无法更新成员角色。",
 		"phraseYouCanTRevokeAccessForMembersWithAHigherRoleThanYours": "你无法撤消角色比你更高的成员的访问权限。",
@@ -5820,6 +6061,12 @@
 		"voiceProfile": "{language} · {style} · {gender}",
 		"english": "英语",
 		"portuguese": "葡萄牙语",
+		"voiceProfileShort": "{language} · {gender}",
+		"french": "法语",
+		"german": "德语",
+		"hindi": "印地语",
+		"japanese": "日语",
+		"korean": "韩语",
 		"filipino": "受菲律宾风格影响",
 		"brazilian": "受巴西风格影响",
 		"southernUs": "受美国南方风格影响",
@@ -6754,17 +7001,17 @@
 	},
 	"trustedWorkloads": {
 		"title": "受信任的工作负载",
-		"description": "让 Vercel 部署和 GitHub Actions 作业使用短期 OIDC 令牌而不是 API 密钥调用 API。",
+		"description": "让部署、CI 作业和云端工作负载使用短期 OIDC 令牌而不是 API 密钥调用 API。",
 		"feedback": "受信任的工作负载怎样才能更好地为你所用？",
 		"selectWorkspace": "请选择一个工作区来管理受信任的工作负载。",
 		"unavailable": "此工作区暂时无法使用受信任的工作负载。",
 		"adminsOnly": "只有工作区所有者和管理员可以查看和更改受信任的工作负载。",
-		"howItWorks": "Vercel 和 GitHub Actions 会为每个部署或作业签发一个已签名的令牌，说明其身份，并在数小时内过期。令牌与其中一条策略匹配时，请求会以该策略的密钥运行，限额、预算、日志和计费都与 API 密钥相同。无需保存任何密钥。",
+		"howItWorks": "Vercel、GitHub Actions、GitLab、Google Cloud、Buildkite、CircleCI 和 AWS 可以为每个部署、作业或工作负载签发一个已签名的令牌，说明其身份，并在数小时内过期；你自己运行的 OIDC 签发方（例如 Kubernetes 集群）也可以。令牌与其中一条策略匹配时，请求会以该策略的密钥运行，限额、预算、日志和计费都与 API 密钥相同。无需保存任何密钥。",
 		"policiesTitle": "信任策略",
 		"propagation": "更改大约在一分钟内生效。",
 		"newPolicy": "新建策略",
 		"emptyTitle": "还没有受信任的工作负载",
-		"emptyBody": "为 Vercel 项目或 GitHub 仓库添加策略后，它就能在没有 API 密钥的情况下调用 API。",
+		"emptyBody": "为项目、仓库、流水线、服务账号或角色添加策略后，它就能在没有 API 密钥的情况下调用 API。",
 		"noConditions": "无",
 		"disabled": "已关闭",
 		"enabledLabel": "接受 {name} 的令牌",
@@ -6789,15 +7036,28 @@
 		"audienceLabel": "受众",
 		"providers": {
 			"vercel": "Vercel",
-			"github_actions": "GitHub Actions"
+			"github_actions": "GitHub Actions",
+			"gitlab": "GitLab",
+			"google_cloud": "Google Cloud",
+			"buildkite": "Buildkite",
+			"circleci": "CircleCI",
+			"aws": "AWS",
+			"custom": "自定义 OIDC 签发方"
 		},
 		"ownerLabel": {
 			"vercel": "团队 ID",
-			"github_actions": "所有者 ID"
+			"github_actions": "所有者 ID",
+			"gitlab": "项目 ID",
+			"google_cloud": "服务账号 ID",
+			"buildkite": "组织 ID",
+			"circleci": "组织 ID",
+			"aws": "角色 ARN"
 		},
 		"ownerWide": {
 			"vercel": "信任此 Vercel 团队中的所有项目。添加项目 ID 可缩小范围。",
-			"github_actions": "信任此所有者的所有仓库。添加仓库 ID 可缩小范围。"
+			"github_actions": "信任此所有者的所有仓库。添加仓库 ID 可缩小范围。",
+			"buildkite": "信任此 Buildkite 组织中的所有流水线。添加流水线 slug 可缩小范围。",
+			"circleci": "信任此 CircleCI 组织中的所有项目。添加项目 ID 可缩小范围。"
 		},
 		"environments": {
 			"production": "生产",
@@ -6820,7 +7080,36 @@
 			"githubIdsHint": "请使用数字 ID，所有者或仓库改名后它们也不会变。仓库 ID 为可选项，但不填写时会信任该所有者的所有仓库。",
 			"githubRef": "分支或标签（可选）",
 			"lifetime": "可接受的最长令牌（小时）",
-			"lifetimeHint": "签发时有效期超过此值的令牌会被拒绝。最多 {max} 小时。"
+			"lifetimeHint": "签发时有效期超过此值的令牌会被拒绝。最多 {max} 小时。",
+			"environmentOptional": "环境（可选）",
+			"gitlabProjectId": "项目 ID",
+			"gitlabProjectHint": "GitLab.com 上项目概览页中的数字 ID。项目改名或移动后它也不会变。自管理 GitLab 请选择“自定义 OIDC 签发方”。",
+			"gitlabRef": "分支或标签（可选）",
+			"gitlabConditionsHint": "请使用分支或标签名称，例如 main。两项都留空则接受项目中的所有作业。",
+			"googleServiceAccountId": "服务账号唯一 ID",
+			"googleServiceAccountHint": "Google Cloud 控制台中服务账号详情页上的数字唯一 ID。请使用它而不是邮箱，因为账号删除后邮箱可能被重新使用。",
+			"googleServiceAccountEmail": "服务账号邮箱（可选）",
+			"googleEmailHint": "只有工作负载使用 format=full 请求令牌时，令牌中才会包含邮箱。",
+			"buildkiteOrganizationId": "组织 ID",
+			"buildkiteOrganizationHint": "组织的 UUID，每个 Buildkite 令牌都会在 organization_id 声明中携带它。",
+			"buildkitePipelineSlug": "流水线 slug（可选）",
+			"buildkitePipelineHint": "不填写时会信任组织中的所有流水线。",
+			"circleciOrganizationId": "组织 ID",
+			"circleciOrganizationHint": "可在 CircleCI 的 Organization Settings → Overview 中找到。",
+			"circleciProjectId": "项目 ID（可选）",
+			"circleciProjectHint": "可在 Project Settings → Overview 中找到。不填写时会信任组织中的所有项目。",
+			"awsIssuer": "签发方 URL",
+			"awsIssuerHint": "每个 AWS 账号都有自己的签发方。运行 aws iam get-outbound-web-identity-federation-info 并复制 IssuerIdentifier。",
+			"awsRoleArn": "IAM 角色 ARN",
+			"awsRoleHint": "只接受此角色的令牌。",
+			"customIssuer": "签发方 URL",
+			"customIssuerHint": "一个公开的 https URL，需提供 /.well-known/openid-configuration，且签名密钥位于同一主机。",
+			"customOwnerClaim": "所有者声明",
+			"customOwnerId": "所有者值",
+			"customOwnerHint": "每个令牌都必须携带此声明且值完全一致，例如 Kubernetes 服务账号的 sub。请选择其他人无法重复使用的声明。",
+			"customConditionClaim": "额外声明（可选）",
+			"customConditionValue": "要求的值",
+			"customConditionHint": "令牌还必须携带此声明且值完全一致。"
 		},
 		"problems": {
 			"name": "请输入不超过 100 个字符的名称。",
@@ -6829,7 +7118,19 @@
 			"vercelProjectId": "项目 ID 以 prj_ 开头。",
 			"githubOwnerId": "请输入所有者的数字 ID。",
 			"githubRepositoryId": "请输入仓库的数字 ID。",
-			"lifetime": "请输入 1 到 12 之间的整数小时数。"
+			"lifetime": "请输入 1 到 12 之间的整数小时数。",
+			"gitlabProjectId": "请输入项目的数字 ID。",
+			"googleServiceAccountId": "请输入服务账号的数字唯一 ID。",
+			"googleServiceAccountEmail": "请输入邮箱地址，例如 app@project.iam.gserviceaccount.com。",
+			"buildkiteOrganizationId": "请输入组织的 UUID。",
+			"circleciOrganizationId": "请输入组织 ID（UUID 格式）。",
+			"circleciProjectId": "请输入项目 ID（UUID 格式）。",
+			"awsIssuer": "请输入 AWS 提供的签发方，它以 .tokens.sts.global.api.aws 结尾。",
+			"awsRoleArn": "请输入角色 ARN，例如 arn:aws:iam::123456789012:role/evals。",
+			"customIssuer": "请输入不含端口、查询或片段的公开 https URL。",
+			"customOwnerClaim": "请输入声明名称，例如 sub。不能使用 iss、aud、exp、iat、nbf 和 jti。",
+			"customOwnerId": "请输入所有者声明必须具有的值。",
+			"customCondition": "请同时填写声明和值，或两者都留空。该声明必须不同于所有者声明。"
 		},
 		"errors": {
 			"invalid": "{message}",
@@ -6842,7 +7143,10 @@
 			"deleted": "策略已删除",
 			"enabled": "策略已开启",
 			"disabled": "策略已关闭"
-		}
+		},
+		"listPipeline": "流水线",
+		"listEmail": "服务账号邮箱",
+		"usageCustomHint": "任何支持公开发现的 OIDC 签发方都可以使用。此示例为 Kubernetes Pod 提供面向该受众的服务账号令牌。"
 	},
 	"budgets": {
 		"title": "预算",
@@ -6928,7 +7232,7 @@
 			"period": "周期",
 			"createTitle": "添加部门预算",
 			"editTitle": "编辑部门预算",
-			"limitHelp": "部门在该周期内的支出达到此金额后，其 API 密钥请求会被拒绝，直到周期重置。批处理、实时和 OAuth 请求不会被阻止。如果预算检查短暂不可用，请求会被放行而不是被拒绝。达到约 80% 和 100% 时会通知所有者和管理员。",
+			"limitHelp": "部门在该周期内的支出达到此金额后，其 API 密钥请求会被拒绝，直到周期重置。如果预算检查短暂不可用，请求会被放行而不是被拒绝。达到约 80% 和 100% 时会通知所有者和管理员。",
 			"saved": "部门预算已保存",
 			"deleted": "部门预算已删除",
 			"deleteTitle": "删除此部门预算？",
@@ -7125,6 +7429,12 @@
 			"copyRedirectUrl": "复制重定向 URL",
 			"scopes": "机器人令牌权限范围",
 			"copyScopes": "复制权限范围",
+			"requestUrls": "请求 URL",
+			"requestUrlsHelp": "此应用专用的请求 URL。请将每个 URL 粘贴到 Slack 应用清单中对应的设置。",
+			"eventsUrl": "Event Subscriptions 请求 URL",
+			"interactionsUrl": "Interactivity 请求 URL",
+			"copyEventsUrl": "复制 Event Subscriptions 请求 URL",
+			"copyInteractionsUrl": "复制 Interactivity 请求 URL",
 			"appId": "应用 ID",
 			"clientId": "客户端 ID",
 			"clientSecret": "客户端密钥",
@@ -7389,8 +7699,11 @@
 		"link": {
 			"metaTitle": "连接 Slack",
 			"title": "连接你的 Slack 账户",
-			"description": "这会将打开此页面的 Slack 账户与你的 Phaseo 账户关联，让 Phaseo 智能体知道你是谁。",
-			"warning": "仅当你是从 Slack 中 Phaseo 智能体的消息打开此链接时才继续。",
+			"description": "这会将下方的 Slack 账户与你的 Phaseo 账户关联，让 Phaseo 智能体知道你是谁。",
+			"account": "Slack 账户：{name}（{id}），位于 {team}",
+			"accountUnnamed": "Slack 账户：{id}，位于 {team}",
+			"unknownTeam": "Slack 未提供名称的工作区",
+			"warning": "仅当这是你自己的 Slack 账户时才继续。如果是别人发给你的链接，请不要使用：否则该 Slack 账户将以你的身份操作。",
 			"confirm": "连接账户",
 			"confirming": "正在连接…",
 			"missingToken": "此链接缺少代码。请从 Slack 中 Phaseo 智能体的消息重新打开。",
@@ -7401,6 +7714,7 @@
 			"close": "你可以关闭此页面并返回 Slack。",
 			"errors": {
 				"expired": "此链接已过期。请在 Slack 中向 Phaseo 智能体索取新链接。",
+				"used": "此链接已被使用。请在 Slack 中向 Phaseo 智能体索取新链接。",
 				"invalid": "此链接无效。请在 Slack 中向 Phaseo 智能体索取新链接。",
 				"notInstalled": "该 Slack 工作区已不再安装 Phaseo 智能体。",
 				"wrongWorkspace": "请使用将智能体添加到 Slack 的 Phaseo 工作区中的账户登录。",
@@ -7793,5 +8107,144 @@
 		"expiredBody": "30 分钟内无人处理，因此未扣款。代理会被告知不要重试；有人可以处理时，它可以发起新的请求。",
 		"resume": "完成银行卡验证",
 		"resumeNotice": "此充值已确认，但银行的银行卡验证尚未完成。请完成验证以完成付款。"
+	},
+	"keyRequests": {
+		"title": "批准 API 密钥",
+		"description": "你已登录的某个应用请求了一个新的 API 密钥。在你于此处批准之前，不会创建任何内容。",
+		"requestedBy": "请求方",
+		"workspace": "工作区",
+		"keyName": "密钥名称",
+		"dailyLimit": "每日支出上限",
+		"monthlyLimit": "每月支出上限",
+		"noLimit": "无上限",
+		"keyExpires": "密钥到期",
+		"keyLifetime": "批准后 {days} 天",
+		"requestedAt": "请求时间",
+		"requestExpires": "批准截止",
+		"phaseoAppTitle": "仅在由你本人发起时批准",
+		"phaseoAppBody": "仅当你刚刚亲自运行了 Phaseo CLI 设置命令时才批准。新密钥只会发送到该终端一次，且不会在此处显示。",
+		"otherAppTitle": "由 {app} 请求，而不是 Phaseo CLI",
+		"otherAppBody": "{app} 是一个使用“通过 Phaseo 登录”的应用。仅当你本人向它请求了密钥时才批准。它会收到一次新密钥。",
+		"approve": "批准并创建密钥",
+		"approving": "正在创建密钥…",
+		"deny": "拒绝",
+		"approvedTitle": "密钥已批准",
+		"approvedBody": "返回你的终端：设置会取回密钥并完成。你可以在“设置”中的“API 密钥”里更改其上限或删除它。",
+		"approvingTitle": "正在创建密钥",
+		"approvingBody": "请稍后重新加载页面。",
+		"deniedTitle": "请求已拒绝",
+		"deniedBody": "未创建任何密钥。终端中的设置将停止等待。",
+		"expiredTitle": "请求已过期",
+		"expiredBody": "未创建任何内容。再次运行设置命令以请求新密钥。",
+		"forbiddenTitle": "你无法在此工作区中创建 API 密钥",
+		"forbiddenBody": "只有工作区所有者和管理员可以创建 API 密钥。请向他们索取一个密钥，然后通过 --key 传给设置。",
+		"notFoundTitle": "未找到密钥请求",
+		"notFoundBody": "请使用你在 CLI 中使用的账户登录，并打开设置输出的完整链接。",
+		"errorTitle": "无法完成",
+		"keyLimitReached": "此工作区的 API 密钥已达到上限。请删除一个不再使用的密钥，然后再次批准。",
+		"requestChanged": "此请求已更改。请重新加载页面并再次查看。",
+		"notPending": "此请求已被处理或已过期。请重新加载页面。",
+		"genericError": "出现问题，请重试。"
+	},
+	"rateGuardrail": {
+		"title": "速率限制",
+		"description": "限制每分钟的请求数和令牌数，以及同时运行的请求数。",
+		"limitsTitle": "限制",
+		"limitsBody": "至少设置一项。留空表示不限制该项。",
+		"noLimit": "不限制",
+		"invalidLimit": "请输入大于 0 的整数。",
+		"requests": {
+			"label": "每分钟请求数",
+			"help": "按滚动的一分钟计算。"
+		},
+		"tokens": {
+			"label": "每分钟令牌数",
+			"help": "输入和输出令牌，在每个请求完成时计算。"
+		},
+		"concurrent": {
+			"label": "并发请求数",
+			"help": "同时进行中的请求。"
+		},
+		"countingTitle": "计算方式",
+		"countingBody": "选择由谁共享每份配额。没有默认值。",
+		"legacyCounting": "它是通过速率限制 API 创建的，因此按分配到的每个密钥、成员或部门计算，在整个工作区上按每个最终用户计算。选择一个选项即可更改。",
+		"countingLegacy": "按分配",
+		"counting": {
+			"shared": {
+				"name": "共享",
+				"body": "分配到的所有对象共用一份配额。分配给部门时，整个部门共享。"
+			},
+			"each_key": {
+				"name": "每个密钥",
+				"body": "覆盖的每个 API 密钥各有一份配额。OAuth 请求按人计算。"
+			},
+			"each_end_user": {
+				"name": "每个最终用户",
+				"body": "每个最终用户各有一份配额，依据请求的 user 字段或 X-Phaseo-User-Id 请求头识别。没有最终用户的请求不受其限制。"
+			}
+		},
+		"failClosedTitle": "无法检查限制时拒绝请求",
+		"failClosedBody": "每个请求都会等待计数器，会增加少量延迟。关闭时，如果计数器没有响应，请求会照常通过。",
+		"issue": {
+			"rateLimitEmpty": "至少设置一项限制才能继续。",
+			"rateLimitInvalid": "限制必须是大于 0 的整数。",
+			"rateCountingRequired": "选择限制的计算方式才能继续。"
+		}
+	},
+	"spendGuardrail": {
+		"title": "支出上限",
+		"description": "限制其覆盖的密钥每天、每周或每月的支出。",
+		"limitTitle": "上限",
+		"limitBody": "其覆盖的密钥在每个周期内最多可支出的金额，以美元计。",
+		"limitLabel": "金额",
+		"limitHelp": "最多 2 位小数，例如 25.00。",
+		"invalidLimit": "请输入大于 $0.00 且最多 2 位小数的金额。",
+		"periodTitle": "周期",
+		"periodBody": "周期为 UTC 自然日、从周一开始的周和自然月。没有默认值。",
+		"period": {
+			"daily": {
+				"name": "每天",
+				"body": "每天 00:00 UTC 重置。"
+			},
+			"weekly": {
+				"name": "每周",
+				"body": "每周一 00:00 UTC 重置。"
+			},
+			"monthly": {
+				"name": "每月",
+				"body": "每月 1 日 00:00 UTC 重置。"
+			}
+		},
+		"actionTitle": "达到上限时",
+		"actionBody": "支出达到上限时会发生什么。无论哪种方式，所有者和管理员都会在 80% 和 100% 时收到推送通知。没有默认值。",
+		"action": {
+			"notify": {
+				"name": "通知",
+				"body": "只发送提醒。请求继续通过。"
+			},
+			"block": {
+				"name": "阻止",
+				"body": "在周期重置前拒绝其覆盖的 API 密钥请求。批处理任务、实时会话和 OAuth 请求不会被阻止。"
+			}
+		},
+		"countingTitle": "计数方式",
+		"countingBody": "选择由谁共享上限。没有默认值。",
+		"counting": {
+			"shared": {
+				"name": "共享",
+				"body": "分配到的所有对象共用一个上限。分配给部门时，部门的所有密钥共享该上限。"
+			},
+			"each_key": {
+				"name": "每个密钥",
+				"body": "其覆盖的每个 API 密钥都有自己的上限。"
+			}
+		},
+		"issue": {
+			"spendLimitEmpty": "请设置上限以继续。",
+			"spendLimitInvalid": "请输入大于 $0.00 且最多 2 位小数的金额。",
+			"spendPeriodRequired": "请选择周期以继续。",
+			"spendActionRequired": "请选择达到上限时的操作以继续。",
+			"spendCountingRequired": "请选择上限的计数方式以继续。"
+		}
 	}
 }

@@ -13,11 +13,13 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import type { Chip } from "../lib/messageChips";
 import { FilePathChip, LinkChip, MessageChip } from "./MessageChips";
 import { remarkMessageChips } from "./remarkMessageChips";
+import { remarkLineBreaks } from "./remarkLineBreaks";
 import { remarkPullRequestLinks } from "./remarkPullRequestLinks";
 import { remarkMathGuard, remarkRichBlocks, type AlertKind } from "./remarkRichBlocks";
 import { repairFileLinks } from "./repairFileLinks";
 import type { PluggableList } from "unified";
 import { tableCsv, tableMarkdown, tableRows } from "./markdownTable";
+import { extractLargeTables, remarkLargeTables } from "./largeTables";
 import { ImageViewer, type GalleryImage } from "./ImageViewer";
 
 const MathTypeset = lazy(() => import("./MathTypeset"));
@@ -214,10 +216,16 @@ const markdownPlugins: PluggableList = [mathPlugin, remarkMathGuard, remarkGfm, 
 
 /**
  * `repository` links `#123` and commit SHAs into that GitHub repository and plays GitHub video uploads, as pull request comments do.
+ * `lineBreaks` keeps each typed newline, for what people write.
  * Memoised: a long chat re-renders on every streamed update, and parsing Markdown is most of the cost of each message.
  */
-export const MessageContent = memo(function MessageContent({ text, projectId, repairLocalLinks = false, repository }: { text: string; projectId?: string; repairLocalLinks?: boolean; repository?: string }) {
-	const rendered = useMemo(() => repairLocalLinks ? repairFileLinks(text) : text, [text, repairLocalLinks]);
-	const plugins = useMemo((): PluggableList => repository ? [mathPlugin, remarkMathGuard, remarkGfm, remarkRichBlocks, remarkPullRequestLinks({ repository }), remarkMessageChips] : markdownPlugins, [repository]);
+export const MessageContent = memo(function MessageContent({ text, projectId, repairLocalLinks = false, repository, lineBreaks = false }: { text: string; projectId?: string; repairLocalLinks?: boolean; repository?: string; lineBreaks?: boolean }) {
+	// Long tables are lifted out and parsed in pieces (largeTables.ts); remarkLargeTables puts them back before any other plugin.
+	const { text: rendered, tables } = useMemo(() => extractLargeTables(repairLocalLinks ? repairFileLinks(text) : text), [text, repairLocalLinks]);
+	const plugins = useMemo((): PluggableList => {
+		const base = repository ? [mathPlugin, remarkMathGuard, remarkGfm, remarkRichBlocks, remarkPullRequestLinks({ repository }), remarkMessageChips] : markdownPlugins;
+		const lifted: PluggableList = tables.length ? [[remarkLargeTables, { tables }], ...base] : base;
+		return lineBreaks ? [...lifted, remarkLineBreaks] : lifted;
+	}, [repository, lineBreaks, tables]);
 	return <ProjectContext value={projectId}><div className="message-markdown"><ReactMarkdown remarkPlugins={plugins} components={markdownComponents} urlTransform={messageUrl}>{rendered}</ReactMarkdown></div></ProjectContext>;
 });

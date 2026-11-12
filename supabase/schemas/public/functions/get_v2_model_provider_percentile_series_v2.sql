@@ -36,7 +36,14 @@ cross join lateral public.get_v2_model_provider_percentile_series_v2_unsuppresse
 where model.model_slug = lower(trim(p_model_slug))
   and model.hidden = false
   and model.status <> 'disabled'
-  and series.requests >= 20;
+  -- Unfiltered views publish at any volume. A colo, stream or context filter can
+  -- narrow a cohort to one customer's requests, so filtered views need 20.
+  and series.requests >= case
+    when nullif(trim(p_cloudflare_colo), '') is null
+      and coalesce(lower(p_stream_mode), 'all') not in ('stream', 'non_stream')
+      and coalesce(lower(p_context_bucket), 'all') not in ('lte_4k', '4k_16k', '16k_64k', 'gt_64k')
+    then 1 else 20
+  end;
 $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."get_v2_model_provider_percentile_series_v2"(text, text, text, text) TO "service_role";

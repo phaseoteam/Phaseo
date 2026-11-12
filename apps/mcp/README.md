@@ -145,7 +145,7 @@ Apps bridge with labeled fixture data. It is never included in the Worker bundle
 
 ## Plugin
 
-`plugin/phaseo` is one plugin for Codex, ChatGPT and Claude Code. It bundles:
+`plugin/phaseo` is one plugin for Codex, ChatGPT, Claude Code and Cursor. It bundles:
 
 - the Phaseo MCP (`https://mcp.phaseo.app/mcp`, OAuth) and the Phaseo Docs MCP
   (`https://phaseo.app/docs/mcp`, no sign-in);
@@ -161,12 +161,15 @@ checks the versions and paths):
 | `plugin.json` | Portable Agent Plugins format; ChatGPT and Codex (`extensions.com.openai`) |
 | `.codex-plugin/plugin.json` | Codex compatibility layout, for hosts that do not read `plugin.json` |
 | `.claude-plugin/plugin.json` | Claude Code; declares the MCP servers with `type: "http"` |
+| `.cursor-plugin/plugin.json`, `.cursor-plugin/mcp.json` | Cursor; its schema rejects unknown keys, so keep these minimal |
 | `.mcp.json`, `mcp.json` | Codex and portable hosts (`streamable-http`) |
 | `README.md` | Directory listings and the mirror; required by Anthropic's plugin directory |
 | `../openai-submission.json` | Only the OpenAI directory package: review cases and release notes |
+| `../registry/*/server.json` | The official MCP Registry entries for the Phaseo MCP and the Docs MCP |
 
 The repository root has a marketplace for each host
-(`.claude-plugin/marketplace.json` and `.agents/plugins/marketplace.json`). Users
+(`.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json` and
+`.cursor-plugin/marketplace.json`). Users
 install from the small `phaseoteam/skills` mirror rather than this repository:
 
 ```bash
@@ -208,6 +211,12 @@ OpenAI listing limits.
 
 Keep reviewer credentials out of every package. Enter them in the OpenAI
 dashboard under Review details.
+
+The **MCP Registry publish** workflow publishes `registry/<server>/server.json`
+under the DNS-verified `app.phaseo` namespace. Every other directory, with its
+requirements and listing copy, is in [docs/directory-listings.md](docs/directory-listings.md).
+Domain verification files are Worker secrets: `OPENAI_APPS_CHALLENGE_TOKEN` and
+`GOOGLE_CONNECTED_APPS_VERIFICATION`.
 
 ## Validation
 

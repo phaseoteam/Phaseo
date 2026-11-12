@@ -1,21 +1,22 @@
+import { describe, it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../../messages/en-GB/settings-ui.json";
 import commonMessages from "../../../../../messages/en-GB/common.json";
 import { NotesList, SkillsList, SlackMemorySection } from "./SlackMemorySection";
 import { noteScope, skillPatch, slackMemoryError, type SlackAgentMemory, type SlackAgentNote } from "./slackAgentMemory";
 
-jest.mock("@/app/(dashboard)/settings/slack/actions", () => ({
-	updateSlackAgent: jest.fn(),
-	loadSlackAgentMemory: jest.fn(),
-	deleteSlackAgentNote: jest.fn(),
-	updateSlackAgentSkill: jest.fn(),
-	deleteSlackAgentSkill: jest.fn(),
+vi.mock("@/features/settings/slack/actions", () => ({
+	updateSlackAgent: vi.fn(),
+	loadSlackAgentMemory: vi.fn(),
+	deleteSlackAgentNote: vi.fn(),
+	updateSlackAgentSkill: vi.fn(),
+	deleteSlackAgentSkill: vi.fn(),
 }));
-jest.mock("../PrivateSettingsQuery", () => ({
+vi.mock("../PrivateSettingsQuery", () => ({
 	useSettingsWrite: () => (operation: Promise<unknown>) => operation,
 }));
-jest.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({
 	Link: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => <a href={href} {...props}>{children}</a>,
 }));
 
@@ -44,9 +45,9 @@ const MEMORY: SlackAgentMemory = {
 
 function render(children: React.ReactNode) {
 	return renderToStaticMarkup(
-		<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
+		<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
 			{children}
-		</NextIntlClientProvider>,
+		</AppIntlProvider>,
 	);
 }
 

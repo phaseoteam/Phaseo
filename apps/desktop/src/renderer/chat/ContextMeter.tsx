@@ -9,7 +9,7 @@ import { cn } from "../lib/utils";
 const tokens = (count: number) => formatRoundedCount(count, "en-US");
 
 /**
- * T3's context meter beside the send button: how full the model's window was after the latest turn, with what that
+ * The context meter beside the send button: how full the model's window was after the latest turn, with what that
  * turn processed and cost, and Compact where the harness can compact. Hidden when the harness does not report its window.
  */
 export function ContextMeter({ task, onCompact }: { task: Pick<Task, "messages" | "activities">; onCompact?: () => void }) {
@@ -20,7 +20,7 @@ export function ContextMeter({ task, onCompact }: { task: Pick<Task, "messages" 
 	const tone = share >= 0.9 ? "text-destructive" : share >= 0.8 ? "text-warning" : "text-muted-foreground";
 	const radius = 7, circumference = 2 * Math.PI * radius;
 	return <Popover>
-		<PopoverTrigger openOnHover delay={300} render={<button type="button" aria-label={`Context window ${percent}% full`} className={cn("flex h-8 items-center gap-1 rounded-md px-1.5 text-[11.5px] font-medium tabular-nums transition-colors hover:bg-muted data-popup-open:bg-muted", tone)} />}>
+		<PopoverTrigger openOnHover delay={300} render={<button type="button" aria-label={`Context window ${percent}% full`} className={cn("flex h-7 items-center gap-1 rounded-md px-1.5 text-[11.5px] font-medium tabular-nums transition-colors hover:bg-muted data-popup-open:bg-muted", tone)} />}>
 			<svg aria-hidden viewBox="0 0 18 18" className="size-4 -rotate-90"><circle cx="9" cy="9" r={radius} fill="none" stroke="currentColor" strokeOpacity="0.2" strokeWidth="2" /><circle cx="9" cy="9" r={radius} fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - share)} strokeLinecap="round" /></svg>
 			{percent}%
 		</PopoverTrigger>

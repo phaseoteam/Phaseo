@@ -64,7 +64,7 @@ export const toPhaseoModel = (id: string) => modelMap[id] ?? id;
 | `X-Source` | `HTTP-Referer` or `X-App-Name` | |
 | Response caching | No equivalent yet | Phaseo does not cache responses |
 | Shared prompt and parameter defaults | Presets (`"model": "@slug"`) | Move them out of call sites |
-| Provider keys | BYOK (`phaseo byok create` or `POST /v1/byok`), or managed Phaseo credits | BYOK fallback to credits is the `byok_fallback_enabled` workspace setting (`phaseo settings update` or `PATCH /v1/settings`) |
+| Provider keys | BYOK (**Settings -> BYOK** or `POST /v1/byok` with a management key), or managed Phaseo credits | BYOK fallback to credits is the `byok_fallback_enabled` workspace setting (`phaseo settings update` or `PATCH /v1/settings`) |
 | Request logs, data streams | Request logs, `GET /v1/generations?id=<request_id>`, observability destinations | Replay failed requests from `replay_request` when `replay_supported` is true |
 
 ## Gotchas

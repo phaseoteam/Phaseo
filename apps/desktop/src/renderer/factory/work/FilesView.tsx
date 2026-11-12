@@ -7,6 +7,7 @@ import { Button } from "../../components/ui/button";
 import { factory, openExternal } from "../lib/useFactory";
 import { cn } from "../../lib/utils";
 import { CommentEntry } from "./Timeline";
+import { MarkdownTextarea } from "../../components/MarkdownTextarea";
 
 /** Past this many changed lines a file starts folded, so a big pull request opens quickly. */
 const FOLD_OVER = 400;
@@ -51,7 +52,7 @@ function Writer({ placeholder, action, onSend, onCancel, autoFocus }: { placehol
 		}
 	};
 	return <div className="rounded-md border bg-background focus-within:border-ring">
-		<textarea value={text} autoFocus={autoFocus} rows={Math.min(10, Math.max(2, text.split("\n").length))} placeholder={placeholder} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => {
+		<MarkdownTextarea value={text} autoFocus={autoFocus} rows={Math.min(10, Math.max(2, text.split("\n").length))} placeholder={placeholder} onChange={(event) => setText(event.target.value)} onKeyDown={(event) => {
 			if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
 				event.preventDefault();
 				void send();

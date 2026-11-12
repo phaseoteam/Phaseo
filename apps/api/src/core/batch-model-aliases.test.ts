@@ -58,6 +58,12 @@ describe("batch-model-aliases", () => {
 			.toEqual({ model: "gpt-6.1-sol", proMode: true });
 		expect(toProviderNativeBatchModelId("openai", "openai/gpt-6.1-sol-pro"))
 			.toBe("gpt-6.1-sol");
+		expect(normalizeOpenAIProBatchModel("openai/gpt-6.1-terra-pro"))
+			.toEqual({ model: "gpt-6.1-terra", proMode: true });
+		expect(toProviderNativeBatchModelId("openai", "openai/gpt-6.1-terra-pro"))
+			.toBe("gpt-6.1-terra");
+		expect(normalizeOpenAIProBatchModel("openai/gpt-6.1-terra"))
+			.toEqual({ model: "gpt-6.1-terra", proMode: false });
 	});
 
 	it("maps the current SpaceXAI catalog namespace to the native xAI model", () => {

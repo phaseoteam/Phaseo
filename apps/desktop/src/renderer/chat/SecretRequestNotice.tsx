@@ -5,7 +5,7 @@ import type { SecretRequest } from "../../shared/secretRequests";
 import { errorText, useWorkspace } from "../app/workspace";
 
 /**
- * T3's secret request card, restyled: the agent's label and reason, a masked field and Save or Don't share. The value
+ * The secret request: the agent's label and reason, a masked field and Save or Don't share. The value
  * goes straight to the vault and is never kept here or shown in the chat.
  */
 export function SecretRequestNotice({ task }: { task: Task }) {

@@ -1,6 +1,6 @@
 import type { PullRequestFilesViewed, PullRequestFileViewedState } from "../../../shared/pullRequestFiles";
 
-/** What GitHub last said about each file, by path (T3's pullRequestFilesViewed.logic). Absent means it said nothing. */
+/** What GitHub last said about each file, by path. Absent means it said nothing. */
 export type FileViewedStates = ReadonlyMap<string, PullRequestFileViewedState>;
 /** Presses GitHub has not confirmed yet, by path. */
 export type FileViewedOverlay = ReadonlyMap<string, boolean>;

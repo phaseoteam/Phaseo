@@ -1,12 +1,12 @@
 ---
 icon: "package"
-title: "AI SDK da Vercel"
-description: "Gere texto, transmita respostas e use ferramentas com o provedor da Phaseo para AI SDK 7."
+title: "AI SDK (Vercel)"
+description: "Gere texto, transmita respostas e use ferramentas com o provedor Phaseo para o AI SDK 7."
 ---
 
-Use o provedor oficial da Phaseo para chamar modelos da Phaseo pelo Vercel AI SDK 7. Comece aqui se seu aplicativo já usa `generateText`, `streamText` ou outra função do AI SDK.
+Instale `@phaseo/ai-sdk-provider` e passe `phaseo(modelId)` como `model` para `generateText`, `streamText` ou qualquer outra função do Vercel AI SDK 7. As solicitações de texto vão para o endpoint `/v1/chat/completions` do Gateway.
 
-## Instalação
+## Instalar
 
 <CodeGroup>
 
@@ -28,9 +28,9 @@ bun add @phaseo/ai-sdk-provider
 
 </CodeGroup>
 
-O pacote da Phaseo sem versão segue a tag `latest` do npm e seleciona a linha ativa do provedor compatível com o AI SDK 7. Ele declara o AI SDK 7 como dependência peer. Por isso, gerenciadores de pacotes com instalação automática de peers também instalam o runtime compatível.
+O pacote sem versão instala a tag `latest` do npm, que é a linha do AI SDK 7. Ele declara `ai@^7` como dependência peer, então gerenciadores de pacotes que instalam peers automaticamente a adicionam para você.
 
-Defina `PHASEO_API_KEY` no ambiente do servidor e faça sua primeira requisição:
+Defina `PHASEO_API_KEY` no ambiente do servidor e faça sua primeira solicitação. O export padrão `phaseo` lança um erro se `PHASEO_API_KEY` não estiver definida.
 
 ```typescript
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -45,9 +45,9 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-Use um ID de modelo atual do [endpoint de modelos](../../api-reference/endpoint/models.mdx).
+Use um ID de modelo atual do [endpoint Models](../../api-reference/endpoint/models.mdx).
 
-## Transmita texto
+## Transmitir texto
 
 ```typescript
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -65,9 +65,9 @@ for await (const chunk of result.textStream) {
 console.log(await result.providerMetadata);
 ```
 
-## Adicione a identificação do aplicativo
+## Configurar uma instância do provedor
 
-Crie uma instância do provedor quando quiser que os detalhes das requisições da Phaseo identifiquem seu aplicativo:
+Chame `createPhaseo()` para definir `apiKey`, `baseURL`, `headers` ou um `fetch` personalizado. Use-o para identificar seu aplicativo nos detalhes das solicitações do Phaseo:
 
 ```typescript
 import { createPhaseo } from "@phaseo/ai-sdk-provider";
@@ -81,36 +81,44 @@ const phaseo = createPhaseo({
 });
 ```
 
-`PHASEO_BASE_URL` é opcional e, por padrão, usa `https://api.phaseo.app/v1`.
+`PHASEO_BASE_URL` é opcional e tem como padrão `https://api.phaseo.app/v1`.
 
-## Recursos compatíveis com o AI SDK 7
+## Escolher um tipo de modelo
 
-- Geração e transmissão de texto
+| Método do provedor | Função do AI SDK |
+| --- | --- |
+| `phaseo(modelId)` ou `phaseo.languageModel(modelId)` | `generateText`, `streamText` |
+| `phaseo.embeddingModel(modelId)` (alias `textEmbeddingModel`) | `embed`, `embedMany` |
+| `phaseo.imageModel(modelId)` | `generateImage` |
+| `phaseo.transcriptionModel(modelId)` | `transcribe` |
+| `phaseo.speechModel(modelId)` | `generateSpeech` |
+| `phaseo.rerankingModel(modelId)` | `rerank` |
+
+Todos os métodos, exceto `rerankingModel`, aceitam configurações opcionais por modelo como segundo argumento: `temperature`, `topP`, `topK`, `maxTokens`, `frequencyPenalty`, `presencePenalty`, `seed`, `user`, `headers` e `fetch`.
+
+## Recursos compatíveis do AI SDK 7
+
+- Geração de texto e streaming
 - Saída e configurações de raciocínio
-- Ferramentas de função e entradas de ferramenta transmitidas
+- Ferramentas de função e entradas de ferramentas transmitidas
 - Saída em JSON e JSON Schema
 - Entradas de arquivos de texto e imagem
-- Fontes de citação de URL
+- Fontes de citação por URL
 - Embeddings e geração de imagens
-- Reclassificação
+- Reranking
 - Transcrição e geração de fala
-- Metadados do provedor, uso, sinais de cancelamento e blocos brutos do fluxo
+- Metadados do provedor, uso, sinais de cancelamento e chunks brutos do stream
 
-A reclassificação é compatível por meio de `rerank()` com `phaseo.rerankingModel(modelId)`. Os recursos disponíveis ainda variam conforme o modelo e o provedor. No momento, o provedor não anuncia suporte a referências de arquivos gerenciados, skills nem definições, resultados ou respostas de aprovação de ferramentas executadas pelo provedor. Ferramentas de função executadas pelo aplicativo podem usar o fluxo normal de execução e aprovação do AI SDK.
+O que uma chamada consegue fazer ainda depende do modelo e do provedor. O provedor não anuncia referências a arquivos gerenciados, skills nem ferramentas executadas pelo provedor (suas definições, resultados ou respostas de aprovação). As ferramentas de função que o seu aplicativo executa usam o fluxo normal de execução e aprovação do AI SDK.
 
-## Versões anteriores do AI SDK
+## Usar uma versão anterior do AI SDK
 
-- AI SDK 6: instale `@phaseo/ai-sdk-provider@ai-sdk-v6`.
-- AI SDK 5: instale `@phaseo/ai-sdk-provider@ai-sdk-v5`.
+| AI SDK | Instalação |
+| --- | --- |
+| 7 | `@phaseo/ai-sdk-provider` (`latest`) |
+| 6 | `@phaseo/ai-sdk-provider@ai-sdk-v6` |
+| 5 | `@phaseo/ai-sdk-provider@ai-sdk-v5` |
 
-Se a instalação automática de dependências peer estiver desativada, instale separadamente a versão principal correspondente de `ai` (`ai@^7`, `ai@^6` ou `ai@^5`).
+Se a instalação automática de peers estiver desativada, instale você mesmo a versão principal correspondente de `ai` (`ai@^7`, `ai@^6` ou `ai@^5`).
 
-## Guias relacionados
-
-- [Gere texto](./generate-text/index.mdx)
-- [Transmita texto](./stream-text/index.mdx)
-- [Chamadas de ferramentas](./tool-calling/index.mdx)
-- [Saída estruturada](./structured-output/index.mdx)
-- [Embeddings](./embeddings/index.mdx)
-- [Imagens](./images/index.mdx)
-- [Áudio](./audio/index.mdx)
+As páginas desta seção mostram cada função: [gerar texto](/pt-BR/v1/sdk-reference/sdk/generate-text), [transmitir texto](/pt-BR/v1/sdk-reference/sdk/stream-text), [chamada de ferramentas](/pt-BR/v1/sdk-reference/sdk/tool-calling), [saída estruturada](/pt-BR/v1/sdk-reference/sdk/structured-output), [embeddings](/pt-BR/v1/sdk-reference/sdk/embeddings), [imagens](/pt-BR/v1/sdk-reference/sdk/images) e [áudio](/pt-BR/v1/sdk-reference/sdk/audio).

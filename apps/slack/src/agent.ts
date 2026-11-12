@@ -75,6 +75,8 @@ export type AgentTurnRequest = {
 	attachments?: Array<Record<string, unknown>>;
 	/** Whether a request must go only to providers that keep no data: asked before each model request (withZeroDataRetention). */
 	zeroDataRetention?: () => Promise<boolean>;
+	/** false: the run never has the gateway's web search and web fetch (an answer with the usage tools; workflow.webToolsFor). */
+	webTools?: boolean;
 };
 
 /**
@@ -412,7 +414,7 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 			let spentUsd = 0;
 			const otherCostUsd = () => request.otherCostUsd?.() ?? 0;
 			const fetchImpl = withZeroDataRetention(withAttachments(options.fetchImpl, request.attachments ?? []), request.zeroDataRetention);
-			const client = meteredClient(gatewayClient({ ...options, fetchImpl }, request, true), (usd) => {
+			const client = meteredClient(gatewayClient({ ...options, fetchImpl }, request, request.webTools !== false), (usd) => {
 				spentUsd += usd;
 				hooks.onCost?.(spentUsd);
 			});
@@ -519,6 +521,18 @@ function errorCodes(error: unknown): { status: number | null; codes: string[]; f
 		.filter((value): value is string => typeof value === "string")
 		.map((value) => value.toLowerCase());
 	return { status: gateway.status, codes, failedProviders: gateway.failedProviders.length, zeroDataRetentionUnmet: zeroDataRetentionUnmet(body, nested, gateway.routingDiagnostics) };
+}
+
+/**
+ * The gateway's refusal of a model response with nothing in it: no text, no
+ * tool call. It names it google_empty_response for every provider (the code is
+ * part of its public API), and empty_response in places. A model may well end
+ * that way on purpose, after posting a chart and being asked for nothing else.
+ */
+const EMPTY_RESPONSE_CODES = new Set(["google_empty_response", "empty_response"]);
+
+export function isEmptyModelResponse(error: unknown): boolean {
+	return errorCodes(error).codes.some((code) => EMPTY_RESPONSE_CODES.has(code));
 }
 
 /**

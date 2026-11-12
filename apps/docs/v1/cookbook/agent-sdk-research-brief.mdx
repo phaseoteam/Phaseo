@@ -6,84 +6,67 @@ description: "Build a search-backed TypeScript agent that returns strict JSON th
 "og:image": "https://phaseo.app/og/dynamic?title=Research%20with%20structured%20output%20and%20web%20search&description=Build%20a%20search-backed%20TypeScript%20agent%20that%20returns%20strict%20JSON%20through%20the%20Agent%20SDK.&pathname=/docs/v1/cookbook/agent-sdk-research-brief"
 ---
 
-Use this recipe when one agent workflow should:
+Build a TypeScript agent that searches the web through Phaseo before it answers, and returns a research brief as strict JSON with its sources. When you're done you have one script that prints a validated `{ topic, summary, sources }` object for any topic you give it.
 
-- run through the TypeScript Agent SDK
-- rely on managed web search
-- return strict structured JSON
-- recover near-valid malformed JSON deterministically
+The script is production-ready for one-shot research. Search results are untrusted web content: the schema check below stops malformed output, but review the sources before you act on them. A packaged version is in `packages/sdk/agent-sdk-ts/examples/research-brief-agent.ts`.
 
-## 1. Install the SDKs
+## Build it
+
+<Steps>
+<Step title="Install">
 
 <CodeGroup>
 ```bash npm
-npm install @phaseo/sdk @phaseo/agent-sdk
+npm install @phaseo/agent-sdk zod
 ```
 
 ```bash pnpm
-pnpm add @phaseo/sdk @phaseo/agent-sdk
+pnpm add @phaseo/agent-sdk zod
 ```
 
 ```bash yarn
-yarn add @phaseo/sdk @phaseo/agent-sdk
+yarn add @phaseo/agent-sdk zod
 ```
 
 ```bash bun
-bun add @phaseo/sdk @phaseo/agent-sdk
+bun add @phaseo/agent-sdk zod
 ```
 </CodeGroup>
 
-## 2. Define one narrow output contract
-
-Keep the first research output small enough that operators can inspect it easily in logs.
-
-```ts
-type ResearchBrief = {
-  topic: string;
-  summary: string;
-  sources: Array<{
-    title: string;
-    url: string;
-  }>;
-};
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 3. Create the agent
+</Step>
+<Step title="Write the agent">
 
-Use `parseOutput` so the runtime returns typed data instead of raw text.
+```ts research-agent.ts
+import { z } from "zod";
+import { createAgent, createGatewayAgentClient } from "@phaseo/agent-sdk";
 
-```ts
-import { createAgent } from "@phaseo/agent-sdk";
+// Small enough to read in a log line.
+const ResearchBrief = z
+  .object({
+    topic: z.string(),
+    summary: z.string().min(1),
+    sources: z.array(z.object({ title: z.string(), url: z.string().url() }).strict()).min(1),
+  })
+  .strict();
+type ResearchBrief = z.infer<typeof ResearchBrief>;
 
-export const researchBriefAgent = createAgent<string, ResearchBrief>({
+const researchBriefAgent = createAgent<string, ResearchBrief>({
   id: "research-brief-agent",
-  model: "phaseo/free",
+  model: "openai/gpt-6-astra",
   instructions:
-    "Research the user's topic with web search when needed and return a concise JSON brief with cited sources.",
-  parseOutput(text) {
-    return JSON.parse(text) as ResearchBrief;
-  },
+    "Research the user's topic with web search and return a concise JSON brief with cited sources.",
+  maxSteps: 4,
+  parseOutput: (text) => JSON.parse(text),
+  outputSchema: ResearchBrief,
 });
-```
-
-## 4. Configure the gateway-backed adapter once
-
-This is the important part:
-
-- `responseFormat` keeps the output schema explicit
-- `plugins` enables response healing for near-valid JSON
-- `gatewayTools` exposes managed web search to the model
-- `toolChoice` forces the search tool when this workflow should always ground itself
-
-```ts
-import {
-  createGatewayAgentClient,
-} from "@phaseo/agent-sdk";
 
 const client = createGatewayAgentClient({
-  clientOptions: {
-    apiKey: process.env.PHASEO_API_KEY!,
-  },
+  clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+  // The JSON Schema the Gateway asks the model for.
   responseFormat: {
     type: "json_schema",
     name: "research_brief",
@@ -96,10 +79,7 @@ const client = createGatewayAgentClient({
           type: "array",
           items: {
             type: "object",
-            properties: {
-              title: { type: "string" },
-              url: { type: "string" },
-            },
+            properties: { title: { type: "string" }, url: { type: "string" } },
             required: ["title", "url"],
             additionalProperties: false,
           },
@@ -110,18 +90,15 @@ const client = createGatewayAgentClient({
       additionalProperties: false,
     },
   },
+  // Repair near-valid JSON.
   plugins: [{ id: "response-healing" }],
-  gatewayTools: [
-    { type: "phaseo:web_search", parameters: { max_results: 5 } },
-  ],
+  // Phaseo runs the search; the model writes the queries.
+  gatewayTools: [{ type: "phaseo:web_search", parameters: { max_results: 5 } }],
+  // Always search before answering.
   toolChoice: "phaseo:web_search",
   webSearchOptions: { search_context_size: "high" },
 });
-```
 
-## 5. Run the workflow
-
-```ts
 const result = await researchBriefAgent.run({
   input: "Summarize the latest browser automation support patterns for coding agents.",
   client,
@@ -133,33 +110,34 @@ const result = await researchBriefAgent.run({
 console.log(result.output);
 ```
 
-## 6. What to verify in logs
+| Client option | Does |
+| --- | --- |
+| `responseFormat` | Keeps the output schema explicit |
+| `plugins` | [Response healing](./response-healing-for-structured-json) for near-valid JSON |
+| `gatewayTools` | Adds `phaseo:web_search`; the [web search guide](../guides/server-tools/web-search) lists its parameters |
+| `toolChoice` | Forces the search for a workflow that must always ground itself |
+| `webSearchOptions` | Search settings for engines that size their results |
 
-After one successful run, inspect the request detail view and confirm:
+</Step>
+<Step title="Run it">
 
-- `requested native web search tools` or managed search activity is present
-- search results and citations were persisted
-- plugin execution shows `response-healing` only when recovery was needed
-- the final output matches the JSON schema you asked for
+```bash
+npx tsx research-agent.ts
+```
 
-## 7. When to use this pattern
+</Step>
+</Steps>
 
-Use this recipe when:
+## Check it worked
 
-- the workflow is mostly one-shot research, not a deep local-tool loop
-- the model should ground itself before answering
-- downstream callers want typed JSON instead of prose
+The script prints a brief with at least one source URL. Then open the request in **Settings → Usage → Logs** and check:
 
-Do not use this pattern when:
+- **Web search observability** shows managed searches, results and citations.
+- The plugin record shows `response-healing` as `applied` only when the JSON needed repair.
+- The response matched the schema; a mismatch would have failed the run with an `AgentSchemaValidationError`.
 
-- the workflow already knows the exact URLs and `phaseo:web_fetch` is enough
-- the agent needs rich local tools more than upstream-native tools
-- the output contract is loose enough that strict JSON adds more overhead than value
+[Debug web search](./web-search-debugging) covers the cases where no search ran.
 
-## Related guides
+## When to use something else
 
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
-- [Structured outputs](../guides/structured-outputs.mdx)
-- [Validate structured outputs](../guides/structured-outputs.mdx)
-- [Debug web search requests](./web-search-debugging.mdx)
-- [Recover malformed structured JSON](./response-healing-for-structured-json.mdx)
+This pattern suits one-shot research where the model should ground itself and callers want typed JSON. Use [`phaseo:web_fetch`](./tool-grounding-with-web-fetch) when you already know the URLs, a [local-tool agent](./agent-sdk-durable-loop) when the work needs your own data more than the web, and plain text output when the contract is loose enough that a schema adds more work than it saves.

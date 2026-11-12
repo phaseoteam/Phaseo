@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { z } from "zod";
+import * as z from "zod";
 import type { Env } from "@/runtime/types";
 import { clearRuntime, configureRuntime, getSupabaseAdmin } from "@/runtime/env";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
@@ -13,9 +13,13 @@ import {
 	validateWebhookEndpointUrlForDelivery,
 } from "@core/webhook-endpoints";
 import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/feature-flags";
-import { requireCapability, requireOAuthWorkspaceRole, type ManagementRouteAuth } from "./route-helpers";
+import { rejectThirdPartyOAuthSpendingChange, requireCapability, requireOAuthWorkspaceRole, type ManagementRouteAuth } from "./route-helpers";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { sendWebhookTestEvent } from "@core/async-notifications";
+
+// Webhook endpoints receive workspace events, so an app that signs in with Phaseo must not create, change,
+// test or remove them, whatever scopes the person consented to.
+const WEBHOOK_APP_REFUSAL = "Apps that use Sign in with Phaseo can't change webhook endpoints, because they receive workspace events. The person can change them under Settings, Webhooks.";
 
 const app = new Hono<Env>();
 const PAGE_SIZE = 100;
@@ -157,6 +161,8 @@ app.use("*", async (c, next) => {
 			readOnly ? ["owner", "admin", "member"] : ["owner", "admin"],
 		);
 		if (roleError) return roleError;
+		const appError = readOnly ? null : rejectThirdPartyOAuthSpendingChange(auth.value, WEBHOOK_APP_REFUSAL);
+		if (appError) return appError;
 		const accessDenied = await requireWebhookEndpointAccess({
 			workspaceId: auth.value.workspaceId,
 			apiKeyId: auth.value.apiKeyId,

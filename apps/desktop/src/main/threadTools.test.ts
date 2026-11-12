@@ -81,7 +81,7 @@ describe("scoped desktop orchestration", () => {
 			await expect(tools.editQueue!(child.id, "missing", "Test")).rejects.toThrow("not found");
 			await expect(tools.rename!(parentId, "Denied")).rejects.toThrow("outside");
 			await expect(tools.steer!(parentId, "Denied")).rejects.toThrow("outside");
-			expect(() => tools.queue!(parentId)).toThrow("outside");
+			expect(tools.queue!(parentId)).toEqual([]); await expect(tools.editQueue!(parentId, "queued")).rejects.toThrow("outside");
 		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 	it("forks at a boundary with inherited permissions and merges results once", async () => {

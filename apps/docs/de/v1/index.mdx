@@ -1,10 +1,10 @@
 ---
 title: "Hier starten"
-description: "Sende deine erste Anfrage, verbinde eine Anwendung oder finde die passende Referenz."
+description: "Sende deine erste Anfrage, verbinde eine Anwendung oder finde die Referenz, die du brauchst."
 icon: "house"
 ---
 
-Nutze Phaseo, um Modelle mehrerer Anbieter über eine API aufzurufen, Routing zu steuern und Nutzung sowie Kosten zu verfolgen.
+Rufe Modelle vieler Anbieter über eine API unter `https://api.phaseo.app/v1` auf, lege fest, wie jede Anfrage geroutet wird, und verfolge Nutzung und Kosten pro Anfrage. Diese Anfrage nutzt `phaseo/free` und funktioniert daher schon, bevor du Guthaben aufgeladen hast:
 
 <CodeGroup>
 
@@ -40,9 +40,9 @@ print(response.output_text)
 
 </CodeGroup>
 
-Noch kein API-Schlüssel? Führe `phaseo keys create` mit der [Phaseo CLI](./guides/integrations/phaseo-cli) aus oder [erstelle einen im Dashboard](https://phaseo.app/de-DE/settings/keys) und folge dann dem [Schnellstart](./quickstart.mdx).
+Noch kein API-Schlüssel? [Erstelle einen im Dashboard](https://phaseo.app/settings/keys) und folge dann dem [Schnellstart](./quickstart.mdx).
 
-## Einstieg wählen
+## Dort anfangen, wo du stehst
 
 <div className="ph-paths not-prose">
 
@@ -52,7 +52,7 @@ Noch kein API-Schlüssel? Führe `phaseo keys create` mit der [Phaseo CLI](./gui
 
 [**<Icon icon="terminal" /> Programmierassistenten verbinden** Konfiguriere Codex, Claude Code, Cursor oder einen anderen Assistenten.](./guides/integrations/coding-assistants.mdx)
 
-[**<Icon icon="bot" /> Agenten entwickeln** Gib einem Modell Tools, streame seine Schritte und genehmige seine Aktionen mit dem Agenten-SDK.](./sdk-reference/agent-sdk/overview.mdx)
+[**<Icon icon="bot" /> Agenten entwickeln** Gib einem Modell Tools, streame seine Schritte und genehmige seine Aktionen mit dem Agent SDK.](./sdk-reference/agent/overview.mdx)
 
 </div>
 
@@ -60,13 +60,12 @@ Noch kein API-Schlüssel? Führe `phaseo keys create` mit der [Phaseo CLI](./gui
 
 <div className="ph-sdks not-prose">
 
-[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> <Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> TypeScript und Python](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/client/overview.mdx)
 
 </div>
 
@@ -83,7 +82,7 @@ Noch kein API-Schlüssel? Führe `phaseo keys create` mit der [Phaseo CLI](./gui
 
 ## Modell wählen
 
-[Durchsuche Modelle](https://phaseo.app/models) oder [vergleiche sie](https://phaseo.app/compare). Katalogeinträge können nicht routbare Modelle enthalten; prüfe die Gateway-Verfügbarkeit vor der Integration. Siehe [So funktioniert Phaseo](./developers/introduction.mdx) für Modelle, Anbieter und Abrechnung.
+[Durchsuche Modelle](https://phaseo.app/models) oder [vergleiche sie](https://phaseo.app/compare). Der Katalog listet auch Modelle, die du noch nicht aufrufen kannst. Prüfe daher vor der Integration, ob ein Modell **Auf Gateway aktiv** ist, oder liste aufrufbare Modelle mit `GET /v1/models` auf. Unter [So funktioniert Phaseo](./developers/introduction.mdx) findest du mehr zu Modellen, Anbietern und Abrechnung.
 
 ## Mit einem KI-Agenten entwickeln
 

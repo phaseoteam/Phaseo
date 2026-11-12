@@ -16,6 +16,13 @@ ALTER TABLE "public"."v2_private_usage_daily_meters"
 
 CREATE INDEX v2_private_usage_daily_meters_lookup_idx ON public.v2_private_usage_daily_meters USING btree (meter_key, modality, unit, rollup_id);
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_private_usage_daily_meters"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "v2_private_usage_daily_meters_workspace_select" ON "public"."v2_private_usage_daily_meters"
   FOR SELECT
   TO "authenticated"

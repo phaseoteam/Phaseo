@@ -79,9 +79,11 @@ export type AnthropicMessage =
 		content: string | AnthropicContentBlock[];
 	}
 	| {
-		// Mid-conversation system message: a string or text blocks.
+		// Mid-conversation system message: a string or text blocks. With
+		// `output_config.effort` and empty content it is an effort-only message.
 		role: "system";
 		content: string | Array<Extract<AnthropicContentBlock, { type: "text" }>>;
+		output_config?: { effort?: "low" | "medium" | "high" | "xhigh" | "max" };
 	};
 
 export type AnthropicCacheControl = {
@@ -174,6 +176,11 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 
 	// Transform messages
 	for (const msg of req.messages) {
+		if (msg.role === "system" && msg.output_config?.effort) {
+			// Per-message effort: an effort-only system message, kept in place.
+			messages.push({ role: "system", content: [], effort: msg.output_config.effort });
+			continue;
+		}
 		if (msg.role === "system") {
 			const content =
 				typeof msg.content === "string"
@@ -259,6 +266,8 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 					toolSignatures.set(thinking.callId, thinking.signature);
 					continue;
 				}
+				// The gateway's own effort record: never sent to a provider.
+				if (thinking?.kind === "effort") continue;
 				if (thinking?.kind === "part") {
 					textContent.push(thinking.part);
 					if (toolCalls.length > 0) unanchored.push(thinking.part);
@@ -350,7 +359,12 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		// provider_options apply as they do on Chat and Responses.
 		promptCacheRetention: providerCacheOptions.promptCacheRetention,
 		promptCacheOptions: providerOptions?.openai?.prompt_cache_options,
-		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
+		anthropicCacheControl: providerCacheOptions.anthropicCacheControl &&
+			!(req.provider_options ?? req.providerOptions)?.anthropic?.cache_control &&
+			!(req.provider_options ?? req.providerOptions)?.anthropic?.cacheControl &&
+			!providerCacheOptions.anthropicCacheControl.scope
+			? { ...providerCacheOptions.anthropicCacheControl, scope: "automatic" }
+			: providerCacheOptions.anthropicCacheControl,
 		googleCachedContent: providerCacheOptions.googleCachedContent,
 		xaiConversationId: providerCacheOptions.xaiConversationId,
 		vendor,

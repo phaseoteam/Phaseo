@@ -16,7 +16,14 @@ import {
 } from "@providers/openai/endpoints/audio-transcription-usage";
 import { upstreamTestHeaders } from "@providers/shared/testing";
 
-const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
+// Xiaomi: "The encoded string size must not exceed 10 MB." The limit is on the
+// base64 data URL we send, so the raw file can be about 7.5 MB.
+const MAX_ENCODED_AUDIO_CHARS = 10 * 1024 * 1024;
+
+/** Length of the data URL a file of `bytes` becomes: prefix plus 4 chars per 3 bytes. */
+export function xiaomiEncodedAudioLength(bytes: number, mimeType: string): number {
+	return `data:${mimeType};base64,`.length + 4 * Math.ceil(bytes / 3);
+}
 const SUPPORTED_LANGUAGES = new Set(["auto", "zh", "en"]);
 const UNSUPPORTED_PARAMETERS = [
 	"file_url",
@@ -125,20 +132,20 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 			byokKeyId: keyInfo.byokId,
 		};
 	}
-	if (body.file.size > MAX_AUDIO_BYTES) {
-		return {
-			kind: "completed",
-			upstream: invalidParameterResponse("file", "Xiaomi speech recognition files must be 10 MB or smaller."),
-			bill: emptyBill(),
-			keySource: keyInfo.source,
-			byokKeyId: keyInfo.byokId,
-		};
-	}
 	const mimeType = resolveAudioMimeType(body.file);
 	if (!mimeType) {
 		return {
 			kind: "completed",
 			upstream: invalidParameterResponse("file", "Xiaomi speech recognition supports only WAV and MP3 files."),
+			bill: emptyBill(),
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+		};
+	}
+	if (xiaomiEncodedAudioLength(body.file.size, mimeType) > MAX_ENCODED_AUDIO_CHARS) {
+		return {
+			kind: "completed",
+			upstream: invalidParameterResponse("file", "Xiaomi speech recognition files must be about 7.5 MB or smaller (Xiaomi limits the base64-encoded audio to 10 MB)."),
 			bill: emptyBill(),
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,

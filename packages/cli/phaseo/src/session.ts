@@ -14,7 +14,8 @@ export type Session = {
 	integrationGatewayKey?: string;
 	integrationGatewayKeyId?: string;
 	integrationGatewayKeyExpiresAt?: number;
-	integrationGatewayCredentials?: Record<string, { key: string; keyId: string; expiresAt?: number }>;
+	/** Keys per coding agent. external: pasted with --key (made in the dashboard), so the CLI never revokes it. */
+	integrationGatewayCredentials?: Record<string, { key: string; keyId: string; expiresAt?: number; external?: boolean }>;
 };
 
 type SessionBackend = "dpapi-file" | "keychain" | "secret-service" | "file" | "unavailable";
@@ -113,6 +114,7 @@ function parseSession(raw: string): Session | null {
 			for (const value of Object.values(parsed.integrationGatewayCredentials)) {
 				if (!value || typeof value !== "object" || typeof value.key !== "string" || !value.key || typeof value.keyId !== "string" || !value.keyId) return null;
 				if (value.expiresAt !== undefined && (typeof value.expiresAt !== "number" || !Number.isFinite(value.expiresAt))) return null;
+				if (value.external !== undefined && typeof value.external !== "boolean") return null;
 			}
 		}
 		const integrationFields = [

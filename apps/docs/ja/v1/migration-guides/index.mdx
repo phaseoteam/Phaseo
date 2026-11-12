@@ -1,89 +1,47 @@
 ---
 title: "移行ガイド"
-description: "プラットフォームの変更や特定モデルの新バージョンへの移行に関するガイドです。"
+description: "プラットフォーム間の移行や、特定のモデルリリースの導入に関するガイドです。"
 icon: "compass"
 ---
 
-Phaseo の移行ガイドでは、次の 2 種類の移行を扱います。
+変更する対象に合わせてガイドを選びます。アプリが呼び出すプラットフォーム(下記)か、アプリが使うモデル([モデルの移行](../model-migrations))です。両方を変更する場合は、まずプラットフォームを移行し、新しい経路を検証するまでモデルは変えないでください。
 
-- 別のプラットフォームや Gateway から Phaseo への移行
-- 同じプラットフォームでのモデルバージョンの更新
+自分に合わせたチェックリストが必要な場合は、[移行アシスタント](https://phaseo.app/migrate)を使ってください。
 
-<Columns cols={2}>
-	<Card title="モデルの移行" icon="brain-circuit" href="../model-migrations/index.mdx">
-		周辺の連携をほぼそのまま保ってモデルを更新します。
-	</Card>
-	<Card title="プラットフォームの移行" icon="arrow-right-left" href="./gateway-parity-review.mdx">
-		SDK、プロバイダー、Gateway を切り替えて、既存の連携を Phaseo に対応させます。
-	</Card>
-</Columns>
-
-## モデルの移行
-
-個別の開始チェックリストには[移行アシスタント](https://phaseo.app/migrate)を使ってください。
-
-連携方法はほぼ変えず、使用するモデルだけを変更する場合に利用します。
-
-次の内容を扱います。
-
-- リクエストパラメーターの変更
-- プロンプトや推論の動作の違い
-- 構造化出力やツール呼び出しの違い
-- 段階的な展開、フォールバック、ロールバックの方法
-
-利用できるモデル移行ガイド：
-
-- [Anthropic Claude Opus 5](../model-migrations/anthropic-claude-opus-5.mdx)
-- [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx)
-- [Anthropic Claude Opus 4.8](../model-migrations/anthropic-claude-opus-4-1-to-4-8.mdx)
-- [Anthropic Claude Opus 4.7](../model-migrations/anthropic-claude-opus-4-6-to-4-7.mdx)
-- [Mistral Small 4](../model-migrations/mistral-small-3-2-to-mistral-small-4.mdx)
-- [OpenAI GPT-5.4](../model-migrations/openai-migrating-to-gpt-5-4.mdx)
-- [Google Nano Banana 2](../model-migrations/google-nano-banana-1-to-nano-banana-2.mdx)
-- [Google Gemini 3.1](../model-migrations/google-migrating-to-gemini-3-and-3-1.mdx)
-- [Anthropic Claude Sonnet 4.6](../model-migrations/anthropic-claude-sonnet-4-5-to-4-6.mdx)
-- [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx)
-- [Anthropic Claude Opus 4.6](../model-migrations/anthropic-claude-opus-4-5-to-4-6.mdx)
-
+<span id="platform-migrations"></span>
 ## プラットフォームの移行
 
-SDK、プロバイダー、Gateway を変更し、現在の連携を Phaseo に対応させる場合に利用します。
+どのプラットフォームのガイドも同じ順序で進みます。ベース URL とキーを切り替え、モデル ID を対応付け、プラットフォームの機能を対応付けてから、切り戻しをベース URL とキーの変更だけにしたままテストして展開します。
 
-<Card title="移行チェックリストを作成" icon="list-checks" href="https://phaseo.app/migrate">
-	現在の連携を選択し、対話型移行アシスタントを開きます。
-</Card>
+| 呼び出している対象 | コード上の目印 | ガイド |
+| --- | --- | --- |
+| OpenAI を直接 | `api.openai.com`、`OPENAI_API_KEY`、`AzureOpenAI` | [OpenAI SDK](./from-openai) |
+| Anthropic を直接 | `api.anthropic.com`、`ANTHROPIC_API_KEY`、`@anthropic-ai/sdk` | [Anthropic SDK](./from-anthropic) |
+| OpenRouter | `openrouter.ai`、`OPENROUTER_API_KEY`、`sk-or-v1` キー | [OpenRouter](./from-openrouter) |
+| Vercel AI Gateway | `ai-gateway.vercel.sh`、`@ai-sdk/gateway`、AI SDK 呼び出しでの文字列のみのモデル指定 | [Vercel AI Gateway](./from-vercel) |
+| LLM Gateway | `api.llmgateway.io`、`LLM_GATEWAY_API_KEY` | [LLM Gateway](./from-llmgateway) |
+| LiteLLM プロキシ | `model_list` を含む `config.yaml`、`LITELLM_*` 変数、ポート 4000 | [LiteLLM](./from-litellm) |
+| Cloudflare AI Gateway | `gateway.ai.cloudflare.com`、`cf-aig-*` ヘッダー | [Cloudflare AI Gateway](./from-cloudflare) |
+| Helicone | `*.helicone.ai`、`Helicone-Auth` | [Helicone](./from-helicone) |
 
-<Prompt description="コーディングエージェントに、移行の計画と実施を一緒に進めてもらいます。" icon="arrow-right-left" actions={["copy", "cursor"]}>
+展開の計画と確認には、[移行機能チェックリスト](./feature-parity-matrix)を使ってください。
+
+## コーディングエージェントで移行する
+
+<Prompt description="移行の計画と実施をコーディングエージェントに一緒に進めてもらいます。" icon="arrow-right-left" actions={["copy", "cursor"]}>
 {`Migrate this project's AI requests to Phaseo Gateway.
 
 1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
    Use phaseo-migration, which has a guide for each source platform (and openrouter-to-phaseo-migration for a detailed OpenRouter move).
 2. Find every place the project calls its current provider or gateway (OpenAI, Anthropic, OpenRouter, Vercel AI Gateway, LiteLLM or another), including environment variables, SDK clients, base URLs and model IDs.
-3. Read the matching guide at https://phaseo.app/docs/v1/migration-guides and map each call to its Phaseo equivalent at https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
-4. Check every model ID with GET /v1/models. Do not assume IDs carry over unchanged.
+3. Read the matching guide at https://phaseo.app/docs/ja/v1/migration-guides and map each call to its Phaseo equivalent at https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
+4. Check every model ID against data[].id from GET /v1/models?format=openai. Do not assume IDs carry over unchanged.
 5. List the changes and a rollback plan before editing. After editing, verify one normal request and one streaming request if the project streams.
 6. Never print or commit API keys, and do not switch production traffic without my approval.`}
 </Prompt>
 
-利用できるプラットフォーム移行ガイド：
+## モデルの移行
 
-- [OpenAI SDK からの移行](./from-openai.mdx)
-- [Anthropic SDK からの移行](./from-anthropic.mdx)
-- [OpenRouter からの移行](./from-openrouter.mdx)：endpoint とキーを切り替え、モデルを確認し、streaming とロールバックを検証します。
-- [Vercel AI Gateway からの移行](./from-vercel.mdx)
-- [LLMGateway からの移行](./from-llmgateway.mdx)
-- [LiteLLM からの移行](./from-litellm.mdx)
-- [Cloudflare AI Gateway からの移行](./from-cloudflare.mdx)
-- [Helicone AI Gateway からの移行](./from-helicone.mdx)
+連携はそのままでモデルだけが変わる場合は、[モデル移行ガイド](../model-migrations)を使います。各ガイドでは、リクエストパラメーターの変更、プロンプトと推論の動作の変化、構造化出力とツール呼び出しの違い、フォールバックを用意した展開の方法を扱います。
 
-展開を計画して検証します。
-
-- [移行準備状況のレビュー](./gateway-parity-review.mdx)
-- [移行機能チェックリスト](./feature-parity-matrix.mdx)
-
-## ガイドの使い方
-
-1. 変更対象がプラットフォーム、モデル、またはその両方かを確認します。
-2. 移行で最もリスクの高い部分に合うガイドから始めます。
-3. 出力品質を比べる前に、リクエストパラメーターと endpoint の動作を確認します。
-4. 本番トラフィックを切り替える前に、本番に近い評価を実行します。
+どちらの移行でも、出力の品質を比べる前にリクエストパラメーターとエンドポイントの動作を確認し、本番のトラフィックを移す前に本番相当の評価を実行してください。

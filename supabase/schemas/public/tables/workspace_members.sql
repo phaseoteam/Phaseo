@@ -50,27 +50,44 @@ CREATE TRIGGER zz_workspace_members_refresh_effective
   FOR EACH ROW
   EXECUTE FUNCTION public.refresh_effective_entitlements_after_directory_change();
 
-CREATE POLICY "team_members_insert_admin" ON "public"."workspace_members"
+CREATE POLICY "workspace_members_no_oauth_client_insert" ON "public"."workspace_members"
+  AS RESTRICTIVE
   FOR INSERT
   TO "authenticated"
-  WITH CHECK (public.is_workspace_admin(workspace_id));
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_members_no_oauth_client_update" ON "public"."workspace_members"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_members_no_oauth_client_delete" ON "public"."workspace_members"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_members"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 CREATE POLICY "team_members_select_own_team" ON "public"."workspace_members"
   FOR SELECT
   TO "authenticated"
   USING (public.is_workspace_member(workspace_id));
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."workspace_members" TO "anon", "authenticated", "service_role";
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."workspace_members" TO "service_role";
 
-CREATE POLICY "team_members_update_admin" ON "public"."workspace_members"
-  FOR UPDATE
-  TO "authenticated"
-  USING (public.is_workspace_admin(workspace_id))
-  WITH CHECK ((public.is_workspace_admin(workspace_id) AND (NOT (EXISTS ( SELECT 1
-   FROM public.workspaces t
-  WHERE
-    ((t.id = workspace_members.workspace_id) AND (t.owner_user_id = workspace_members.user_id) AND (lower(COALESCE((workspace_members.role)::text, ''::text)) <>
-    'owner'::text)))))));
+GRANT SELECT ON TABLE "public"."workspace_members" TO "anon";
+
+GRANT DELETE, SELECT ON TABLE "public"."workspace_members" TO "authenticated";
+
+GRANT UPDATE ("role") ON TABLE "public"."workspace_members" TO "authenticated";
 
 CREATE POLICY "workspace_members_delete_authorized" ON "public"."workspace_members"
   FOR DELETE
@@ -78,6 +95,18 @@ CREATE POLICY "workspace_members_delete_authorized" ON "public"."workspace_membe
   USING (((NOT (EXISTS ( SELECT 1
    FROM public.workspaces workspace
   WHERE ((workspace.id = workspace_members.workspace_id) AND (workspace.owner_user_id = workspace_members.user_id))))) AND
-    (public.is_workspace_admin(workspace_id) OR (user_id = ( SELECT auth.uid() AS uid)))));
+    ((EXISTS ( SELECT 1
+   FROM public.workspaces workspace
+  WHERE ((workspace.id = workspace_members.workspace_id) AND (workspace.owner_user_id = ( SELECT auth.uid() AS uid))))) OR (user_id = ( SELECT auth.uid() AS uid)))));
+
+CREATE POLICY "workspace_members_update_owner" ON "public"."workspace_members"
+  FOR UPDATE
+  TO "authenticated"
+  USING ((EXISTS ( SELECT 1
+   FROM public.workspaces workspace
+  WHERE ((workspace.id = workspace_members.workspace_id) AND (workspace.owner_user_id = ( SELECT auth.uid() AS uid))))))
+  WITH CHECK ((EXISTS ( SELECT 1
+   FROM public.workspaces workspace
+  WHERE ((workspace.id = workspace_members.workspace_id) AND (workspace.owner_user_id = ( SELECT auth.uid() AS uid))))));
 
 COMMENT ON COLUMN "public"."workspace_members"."last_accessed_at" IS 'Most recent time this member selected the workspace in the Phaseo web app.';

@@ -4,22 +4,12 @@ description: "Wichtige Hinweise zur Einführung von Claude Opus 5 für Reasoning
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 5
-
-Mit diesem Leitfaden führst du `anthropic/claude-opus-5` sicher in der Produktion ein.
-
-Claude Opus 5 ist das aktuelle Opus-Modell für komplexes Reasoning, lang laufende agentische Programmierung und hochautonome Abläufe. Der Preis entspricht weiterhin Opus 4.8. Das Modell unterstützt ein Kontextfenster von einer Million Tokens und bis zu 128.000 Ausgabetokens.
-
-## Schnelleinstieg für die Migration
-
-1. Ändere die Modell-ID zu `anthropic/claude-opus-5` und lass die übrige Anfrage unverändert.
-2. Wiederhole deine Produktionsauswertungen für Prompts, Tools und strukturierte Ausgaben.
-3. Erfasse Latenz, Tokenverbrauch und Aufgabenkosten für lange Kontexte und hohe Aufwandsstufen neu.
-4. Teste das Modell schrittweise mit Claude Opus 4.8 als Fallback, bevor du die Standardroute änderst.
+Ändere das Modell in `anthropic/claude-opus-5` und behalte Claude Opus 4.8 als Fallback, während du es evaluierst. Der Preis ist derselbe wie bei Opus 4.8, der Kostenunterschied ergibt sich also aus dem Tokenverbrauch.
 
 ```json
 {
   "model": "anthropic/claude-opus-5",
+  "models": ["anthropic/claude-opus-4.8"],
   "messages": [
     {
       "role": "user",
@@ -29,43 +19,36 @@ Claude Opus 5 ist das aktuelle Opus-Modell für komplexes Reasoning, lang laufen
 }
 ```
 
-## Neuerungen
+| | Claude Opus 4.8 | Claude Opus 5 |
+| --- | --- | --- |
+| Phaseo-Modell-ID | `anthropic/claude-opus-4.8` | `anthropic/claude-opus-5` |
+| Kontextfenster | 1M Tokens | 1M Tokens |
+| Maximale Ausgabe | 128K Tokens | 128K Tokens |
+| Preis pro 1M Tokens (Eingabe / Ausgabe) | $5.00 / $25.00 | $5.00 / $25.00 |
+| Thinking, wenn die Anfrage kein Reasoning setzt | Aus | Adaptiv |
 
-- Die Phaseo-Modell-ID lautet `anthropic/claude-opus-5`.
-- Das Kontextfenster umfasst eine Million Tokens.
-- Die maximale Ausgabe beträgt 128.000 Tokens.
-- Das Modell ist auf längeres Reasoning, Programmierung und autonome Tool-Workflows ausgelegt.
-- Der Preis bleibt auf dem Niveau von Claude Opus 4.8.
+Die Preise entsprechen der Standardstufe von Anthropic aus dem Katalog; weitere Stufen und Anbieter findest du auf der Modellseite.
+
+## Wie Phaseo die Anfrage sendet
+
+Opus 5 nimmt dieselbe Anfrageform an wie Opus 4.7 und 4.8:
+
+- **Sampling-Parameter werden weggelassen.** `temperature`, `top_p` und `top_k` werden nicht an das Modell gesendet.
+- **Jede Reasoning-Einstellung schaltet adaptives Thinking ein.** Phaseo sendet `thinking: {"type": "adaptive", "display": "summarized"}`, und `reasoning.effort` wird zu `output_config.effort`. Thinking-Budgets werden nicht weitergeleitet.
+- **`reasoning.effort: "none"` oder `reasoning.enabled: false` schaltet Thinking aus** (`thinking: {"type": "disabled"}`).
+- **Ohne Reasoning-Einstellung sendet Phaseo kein `thinking`-Feld,** sodass der Standard von Opus 5, adaptives Thinking, greift. Opus 4.8 denkt nur auf Anfrage, dieselbe Anfrage kann bei Opus 5 also mehr Ausgabetokens verbrauchen.
 
 ## Was du testen solltest
 
-### Prompts und Ausgaben
+- **Prompts und Ausgaben:** Befolgung von Anweisungen bei deinen längsten System-Prompts, Schema-Erfolgsquoten, Antwortlänge und Abbruchverhalten sowie Prompts, die auf Opus 4.8 abgestimmt sind.
+- **Tools und Agenten:** Tool-Auswahl und Argumente, Erholung nach Tool-Fehlern oder Teilergebnissen, Abschlussrate bei langem Horizont und Berechtigungsgrenzen in Workflows mit hoher Autonomie.
+- **Betrieb:** Latenz und Tokenverbrauch auf jeder Effort-Stufe, die du anbietest, Kontextnutzung bei langen Dokumenten und Agenten-Traces, Kosten pro erfolgreicher Aufgabe und Fallback, wenn die primäre Route in ein Timeout läuft oder fehlschlägt.
 
-- Befolgung von Anweisungen bei deinen längsten System-Prompts.
-- Erfolgsraten strukturierter Ausgaben und Schemas.
-- Antwortlänge und Beendigungsverhalten.
-- Regressionen bei Prompts, die speziell für Claude Opus 4.8 optimiert wurden.
+## Umstellen
 
-### Tools und Agenten
-
-- Tool-Auswahl und Qualität der Argumente.
-- Wiederherstellung nach Tool-Fehlern oder Teilergebnissen.
-- Abschlussrate bei lang laufenden Aufgaben.
-- Berechtigungs- und Freigabegrenzen in hochautonomen Workflows.
-
-### Betrieb
-
-- Latenz und Tokenverbrauch auf jeder angebotenen Aufwandsstufe.
-- Kontextfensternutzung bei langen Dokumenten und Agenten-Traces.
-- Kosten pro erfolgreich abgeschlossener Aufgabe.
-- Fallback-Verhalten bei Zeitüberschreitung oder Fehler der primären Route.
-
-## Sicherer Rollout
-
-1. Halte Claude Opus 4.8 während der Auswertung als Fallback verfügbar.
-2. Führe repräsentativen Produktions-Traffic parallel aus, bevor Nutzeranfragen bedient werden.
-3. Teste schrittweise nach Workload, statt alle Opus-Routen gleichzeitig umzustellen.
-4. Erhöhe den Anteil erst, wenn Qualität, Latenz, Kosten und Tool-Sicherheit deine Ziele erfüllen.
+1. Lass repräsentativen Produktions-Traffic im Schattenbetrieb laufen, bevor du Benutzer bedienst.
+2. Führe Canary-Tests pro Workload durch, statt alle Opus-Routen auf einmal zu verschieben.
+3. Stufe erst hoch, wenn die Prüfungen zu Qualität, Latenz, Kosten und Tool-Sicherheit deine Ziele erfüllen.
 
 ## Quellen
 

@@ -1,4 +1,3 @@
-import { cacheLife, cacheTag } from "next/cache";
 import {
 	fetchFrontendComparePairs,
 	fetchFrontendComparePeers,
@@ -41,13 +40,9 @@ export async function loadCompareData(ids: string[]): Promise<{ view: CompareVie
 }
 
 /**
- * A pair page's data, cached for an hour. Pair pages are what crawlers visit,
- * so each one renders from the cache instead of reading the web API per hit.
+ * A pair page's data: the pair, its peers and related curated pairs.
  */
 export async function loadComparePairData(ids: [string, string]) {
-	"use cache";
-	cacheLife({ revalidate: 60 * 60, expire: 24 * 60 * 60 });
-	cacheTag("frontend:compare-models");
 	const [data, pairs] = await Promise.all([loadCompareData(ids), loadComparePairs()]);
 	const related = pairs.filter((pair) => {
 		const pairIds = pair.models.map((model) => model.id);
@@ -58,9 +53,6 @@ export async function loadComparePairData(ids: [string, string]) {
 
 /** The curated comparisons that get their own pages, for links and the sitemap. */
 export async function loadComparePairs(): Promise<ComparePairLink[]> {
-	"use cache";
-	cacheLife({ revalidate: 60 * 60, expire: 24 * 60 * 60 });
-	cacheTag("frontend:compare-models");
 	return fetchFrontendComparePairs().catch((error) => {
 		// eslint-disable-next-line no-console
 		console.warn("[compare] Curated pairs unavailable", error);

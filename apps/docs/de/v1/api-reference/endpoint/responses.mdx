@@ -3,62 +3,59 @@ title: "Eine Antwort erstellen"
 sidebarTitle: "Eine Antwort erstellen"
 openapi: "/de/openapi/v1/openapi.localized.yaml POST /responses"
 ---
-## Servertools
 
-`/v1/responses` unterstützt reguläre Funktionstools sowie diese vom Gateway verwalteten Servertools:
+## Server-Tools verwenden
 
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-- `phaseo:apply_patch`
-
-### Beispiel für Datum und Uhrzeit
+Füge `tools` neben deinen eigenen Funktions-Tools ein `phaseo:`-Tool hinzu, und Phaseo führt es aus, wenn das Modell es aufruft. `/v1/responses` akzeptiert jedes Server-Tool, einschließlich `phaseo:apply_patch`, das nur dieser Endpunkt unterstützt; der Leitfaden [Server-Tools](../../guides/server-tools) listet sie auf.
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
-    "stream": false,
+    "model": "openai/gpt-6-astra",
     "input": [
       { "role": "user", "content": "Give me the current datetime in Asia/Tokyo." }
     ],
     "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "Asia/Tokyo" }
-      }
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Asia/Tokyo"] } }
     ],
     "tool_choice": "auto"
   }'
 ```
 
-Bei Verwendung eines Servertools enthält die Nutzungsübersicht die passenden `usage.server_tool_use.*`-Zähler.
+Jeder Server-Tool-Aufruf wird in `usage.server_tool_use` gezählt:
 
-- `gateway:datetime` -> `datetime_requests`
-- `phaseo:web_search` -> `web_search_requests`, `web_search_results`, `web_search_extra_results`
-- `phaseo:web_fetch` -> `web_fetch_requests`
-- `phaseo:advisor` -> `advisor_requests`
-- `phaseo:image_generation` -> `image_generation_requests`
-- `phaseo:apply_patch` -> `apply_patch_requests`
+| Tool | Zähler |
+| --- | --- |
+| `phaseo:datetime` | `datetime_requests` |
+| `phaseo:web_search` | `web_search_requests`, `web_search_results`, `web_search_extra_results` |
+| `phaseo:web_fetch` | `web_fetch_requests` |
+| `phaseo:advisor` | `advisor_requests` |
+| `phaseo:subagent` | `subagent_requests` |
+| `phaseo:fusion` | `fusion_requests` |
+| `phaseo:search_models` | `search_models_requests` |
+| `phaseo:image_generation` | `image_generation_requests` |
+| `phaseo:apply_patch` | `apply_patch_requests` |
 
-## Hinweis zu Streaming
+Der ältere Typ `gateway:datetime` funktioniert weiterhin. Mit `stream: true` führt Phaseo die Tool-Züge selbst aus und streamt dir dann die fortgesetzte Antwort als einen einzigen Stream.
 
-`stream: true` wird ebenfalls unterstützt. Bei vom Gateway verwalteten Servertools kann Phaseo den Upstream-Tool-Aufruf-Zug materialisieren, die Schleife fortsetzen und anschließend einen synthetischen Stream erneut ausgeben.
-
+<span id="reasoning-in-tool-loops"></span>
 ## Reasoning in Tool-Schleifen
 
-Bei OpenAI, Azure OpenAI und xAI sendet Phaseo Responses-Anfragen mit `store: false` an den Anbieter. Das Reasoning eines Modells setzt sich zwischen den Schritten einer Tool-Schleife daher nur über die `reasoning`-Ausgabeelemente fort.
+Bei OpenAI, Azure OpenAI und xAI sendet Phaseo Responses-Anfragen mit `store: false` an den Upstream, sodass das Reasoning eines Modells zwischen den Schritten einer Tool-Schleife nur über die `reasoning`-Ausgabeelemente weiterläuft.
 
-Jedes `reasoning`-Element hat eine `id`, `summary` und `content`. Liefert der Anbieter Reasoning-Zustand, hat das Element zusätzlich `encrypted_content`:
+Jedes `reasoning`-Element hat eine `id`, `summary` und `content`. Wenn der Anbieter Reasoning-Zustand zurückgibt, hat das Element außerdem `encrypted_content`, das eines der folgenden enthält:
 
-- Verschlüsseltes Reasoning von OpenAI, Azure OpenAI und xAI. Phaseo fordert es für Reasoning-Modelle mit `include: ["reasoning.encrypted_content"]` an.
+- Verschlüsseltes Reasoning von OpenAI, Azure OpenAI und xAI. Phaseo fordert es bei Reasoning-Modellen mit `include: ["reasoning.encrypted_content"]` an.
 - Claude-Thinking-Signaturen und geschwärztes Thinking.
-- Gemini-Thought-Signaturen, einschließlich eines eigenen `reasoning`-Elements direkt vor dem Funktionsaufruf, zu dem eine Signatur gehört.
+- Gemini-Thought-Signaturen, einschließlich eines separaten `reasoning`-Elements direkt vor dem Funktionsaufruf, zu dem eine Signatur gehört.
+- Die Aufwandsstufe, mit der eine Claude-Antwort lief, im letzten `reasoning`-Element der Ausgabe, das keinen Text hat.
 
-Gestreamte Antworten enthalten dieselben Elemente in `response.output_item.done` und `response.completed`.
+Streaming-Antworten enthalten dieselben Elemente in `response.output_item.done` und `response.completed`.
 
-Um eine Tool-Schleife fortzusetzen, sende alle Ausgabeelemente unverändert in `input` zurück, auch die `reasoning`-Elemente. `encrypted_content` ist undurchsichtig und vermerkt Anbieter und Modell, die es erzeugt haben. Phaseo sendet es nur an diese Anbieterfamilie und dieses Modell. Ein Fallback auf einen anderen Anbieter verwirft es daher, statt fehlzuschlagen.
+<Warning>
+Sende jedes Ausgabeelement bei jeder Anfrage unverändert in `input` zurück, nicht nur in Tool-Schleifen. Verwirf, bearbeite oder sortiere `reasoning`-Elemente nie um, mit oder ohne `encrypted_content`, auch Elemente ohne Text.
+</Warning>
+
+`encrypted_content` ist undurchsichtig und hält fest, welcher Anbieter und welches Modell es erzeugt haben. Phaseo sendet es nur an diese Anbieterfamilie und dieses Modell, sodass ein Fallback auf einen anderen Anbieter es verwirft, statt fehlzuschlagen. Ohne es verliert Claude sein Reasoning zwischen den Schritten der Tool-Schleife, und eine Änderung von `reasoning.effort` startet Claudes Prompt-Cache neu; siehe [Reasoning-Aufwand mitten in der Unterhaltung ändern](../../guides/reasoning-effort).

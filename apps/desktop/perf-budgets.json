@@ -1,0 +1,13 @@
+{
+	"$comment": "Startup budgets checked by scripts/perf/budgets.mjs. Raise a byte budget only with the reason in the pull request; add a package to eagerPackages only if the window can't open without it.",
+	"eagerPackages": [
+		"electron",
+		"node-pty"
+	],
+	"bytes": {
+		"mainEagerBytes": 4382720,
+		"preloadBytes": 20480,
+		"rendererInitialBytes": 2949120,
+		"rendererInitialGzipBytes": 880640
+	}
+}

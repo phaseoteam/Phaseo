@@ -1,10 +1,11 @@
 ---
 icon: "image"
 title: "Imagens (AI SDK)"
+sidebarTitle: "Imagens"
 description: "Gere imagens com o Vercel AI SDK e o provedor Phaseo."
 ---
 
-Use `generateImage` com `phaseo.imageModel(...)`.
+Passe `phaseo.imageModel(modelId)` para `generateImage`. As solicitações vão para o endpoint `/v1/images/generations` do Gateway.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -21,9 +22,9 @@ console.log(result.images[0].uint8Array.length);
 console.log(result.providerMetadata);
 ```
 
-## Observações
+## Ler o resultado
 
-- Os valores disponíveis de `size` dependem do modelo selecionado.
-- Respostas de imagem do gateway baseadas em URL são normalizadas para o formato de arquivo do AI SDK. Por isso, consulte primeiro os campos estáveis `uint8Array` e `mediaType`.
-- Para fluxos determinísticos, armazene o prompt, o modelo e os parâmetros juntos.
-- Armazene os metadados de imagem retornados junto com as referências dos recursos.
+As imagens que o Gateway retorna como URLs são convertidas para o formato de arquivo do AI SDK, então leia `uint8Array` e `mediaType` em todas as imagens, seja qual for o retorno do provedor.
+
+- Os valores de `size` disponíveis dependem do modelo.
+- Para reproduzir uma imagem depois, armazene o prompt, o modelo e os parâmetros junto com os metadados da imagem.

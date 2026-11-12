@@ -1,5 +1,3 @@
-"use client";
-
 import { AuditFilters } from "./AuditFilters";
 import { AuditDataTable } from "./AuditDataTable";
 import type { AuditModelData } from "@/lib/fetchers/models/table-view/getAuditModels";

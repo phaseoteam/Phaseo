@@ -13,6 +13,7 @@ import {
 	type ManagementInput,
 } from "../src/management.ts";
 import { helpKeyForCommand, isCommandGroup, parseArgs, renderHelp, shouldPrintUpdateNoticeForCommand } from "../src/index.ts";
+import { resolveWorkspaceFlag } from "../src/flags.ts";
 
 const noInput: ManagementInput = {
 	readStdin: async () => {
@@ -298,7 +299,12 @@ test("builds workload identity, audit event, app, feedback, and test run request
 		await build(["workload-identity", "policies", "create", "--name", "CI", "--provider", "github_actions", "--owner-id", "acme", "--claim-conditions-json", "{\"repository\":\"acme/app\"}"]),
 		{ method: "POST", path: "/workload-identity/policies", body: { name: "CI", provider: "github_actions", owner_id: "acme", claim_conditions: { repository: "acme/app" } } },
 	);
+	assert.deepEqual(
+		await build(["workload-identity", "policies", "create", "--name", "Cluster", "--provider", "custom", "--issuer", "https://oidc.example.com", "--owner-claim", "sub", "--owner-id", "system:serviceaccount:prod:api"]),
+		{ method: "POST", path: "/workload-identity/policies", body: { name: "Cluster", provider: "custom", issuer: "https://oidc.example.com", owner_claim: "sub", owner_id: "system:serviceaccount:prod:api" } },
+	);
 	await assert.rejects(build(["workload-identity", "policies", "update", "p1", "--provider", "vercel"]), /Provide a field to update/);
+	await assert.rejects(build(["workload-identity", "policies", "update", "p1", "--owner-claim", "email"]), /Provide a field to update/);
 	assert.deepEqual(await build(["audit-events", "list", "--action", "key.created", "--target-type", "key", "--limit", "10"]), {
 		method: "GET",
 		path: "/audit-events?limit=10&action=key.created&target_type=key",
@@ -508,6 +514,34 @@ test("S5: keys rotate needs confirmation with or without --previous-key-expires-
 	await runManagementCommand(["keys", "rotate", "k1"], { yes: true }, confirmed.deps);
 	assert.deepEqual(confirmed.calls, [{ path: "/keys/k1/rotate", method: "POST", body: {} }]);
 	assert.match(renderHelp(["keys", "rotate"]), /--yes/);
+});
+
+test("--workspace on keys takes an id as given, or a slug of one of the person's workspaces", async () => {
+	const workspaceId = "0b6f2b8e-61a4-4e8b-9f1e-3c0d2a5b7c91";
+	const mine = [{ id: "6108396e-0e12-425d-91ff-a02d39a346e0", slug: "personal" }, { id: workspaceId, slug: "cache-test" }];
+	let loads = 0;
+	const load = async () => { loads += 1; return mine; };
+
+	assert.equal(await resolveWorkspaceFlag({}, load), undefined);
+	assert.equal(await resolveWorkspaceFlag({ workspace: workspaceId.toUpperCase() }, load), workspaceId.toUpperCase());
+	assert.equal(loads, 0, "an id needs no lookup");
+	assert.equal(await resolveWorkspaceFlag({ workspace: "cache-test" }, load), workspaceId);
+	await assert.rejects(resolveWorkspaceFlag({ workspace: "someone-elses" }, load), /None of your workspaces has the slug someone-elses/);
+	await assert.rejects(resolveWorkspaceFlag({ workspace: true }, load), /--workspace needs a workspace id or slug/);
+
+	const byId = fakeDeps();
+	await runManagementCommand(["keys", "rotate", "k1"], { yes: true, workspace: workspaceId }, byId.deps);
+	assert.deepEqual(byId.calls, [{ path: `/keys/k1/rotate?workspace_id=${workspaceId}`, method: "POST", body: {} }]);
+
+	const paths: string[] = [];
+	const bySlug = fakeDeps({ request: async (path: string) => { paths.push(path); return path === "/me" ? { data: { workspaces: mine } } : { data: { id: "k2" } }; } });
+	await runManagementCommand(["keys", "rotate", "k1"], { yes: true, workspace: "cache-test" }, bySlug.deps);
+	assert.deepEqual(paths, ["/me", `/keys/k1/rotate?workspace_id=${workspaceId}`]);
+
+	for (const command of ["list", "create", "get", "update", "delete", "rotate"]) {
+		assert.match(renderHelp(["keys", command]), /--workspace <id-or-slug>/, command);
+	}
+	assert.match(renderHelp(["keys"]), /owner or admin/);
 });
 
 test("S6: analytics export stdout gets no update notice", () => {

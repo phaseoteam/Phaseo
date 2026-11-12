@@ -154,14 +154,15 @@ describe("credit top-ups API", () => {
 		});
 
 		it("needs billing:write listed on management keys, even keys with no scope list", async () => {
-			state.auth = { ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", userId: null, scopes: [] } };
+			// The management key acts as its creator, a member of the workspace.
+			state.auth = { ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", userId: MEMBER, scopes: [] } };
 			expect((await post({ amount_usd: 20 })).status).toBe(403);
 			state.auth.value.scopes = ["credits:read", "keys:write"];
 			expect((await post({ amount_usd: 20 })).status).toBe(403);
 			state.auth.value.scopes = ["billing:write"];
 			const allowed = await post({ amount_usd: 20 });
 			expect(allowed.status).toBe(201);
-			expect(createdCalls()[0][1]).toMatchObject({ p_requested_via: "management_key", p_requested_by: null, p_oauth_client_id: null });
+			expect(createdCalls()[0][1]).toMatchObject({ p_requested_via: "management_key", p_requested_by: MEMBER, p_oauth_client_id: null });
 		});
 
 		it("passes through rejected credentials such as inference keys", async () => {

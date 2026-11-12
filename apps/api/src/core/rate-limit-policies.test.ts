@@ -7,7 +7,8 @@ const mocks = vi.hoisted(() => ({
 	onPut: null as null | (() => void),
 	tables: {} as Record<string, Array<Record<string, unknown>>>,
 	selectError: null as { message: string } | null,
-	inserts: [] as Array<{ table: string; payload: Record<string, unknown> }>,
+	inserts: [] as Array<{ table: string; payload: unknown }>,
+	deleted: [] as string[],
 	bindings: {} as Record<string, unknown>,
 	admit: vi.fn(),
 	chargeTokens: vi.fn(),
@@ -28,7 +29,8 @@ function query(table: string) {
 	};
 	const builder: any = {
 		select: () => builder,
-		eq: (column: string, value: unknown) => { filters.push((row) => row[column] === value); return builder; },
+		// "workspace_guardrails.kind" filters on an embedded row.
+		eq: (column: string, value: unknown) => { filters.push((row) => column.split(".").reduce<any>((item, part) => item?.[part], row) === value); return builder; },
 		in: (column: string, values: unknown[]) => { filters.push((row) => values.includes(row[column])); return builder; },
 		not: (column: string, operator: string, value: unknown) => {
 			if (operator !== "is" || value !== null) throw new Error(`unsupported not filter ${operator}`);
@@ -56,7 +58,7 @@ vi.mock("@/runtime/env", () => ({
 			mocks.onPut = null;
 			onPut?.();
 		},
-		delete: async (key: string) => { mocks.store.delete(key); },
+		delete: async (key: string) => { mocks.deleted.push(key); mocks.store.delete(key); },
 		list: async ({ prefix }: { prefix: string }) => ({
 			keys: [...mocks.store.keys()].filter((name) => name.startsWith(prefix)).map((name) => ({ name })),
 			list_complete: true,
@@ -66,6 +68,10 @@ vi.mock("@/runtime/env", () => ({
 		from: (table: string) => ({
 			select: () => query(table),
 			insert: async (payload: Record<string, unknown>) => {
+				mocks.inserts.push({ table, payload });
+				return { error: null };
+			},
+			upsert: async (payload: unknown) => {
 				mocks.inserts.push({ table, payload });
 				return { error: null };
 			},
@@ -92,28 +98,40 @@ const STRICT = "policy-strict";
 const LOOSE = "policy-loose";
 const TOKENS = "policy-tokens";
 
-function policy(id: string, name: string, rpm: number | null, workspace = WS, tpm: number | string | null = null) {
-	return { id, workspace_id: workspace, name, requests_per_minute: rpm, tokens_per_minute: tpm };
+const STRICT_SHARED = "policy-strict-shared";
+
+/** A rate guardrail row (workspace_guardrails kind rate). */
+function guardrail(id: string, name: string, rpm: number | null, workspace = WS, tpm: number | string | null = null, extra: Record<string, unknown> = {}) {
+	return {
+		id, workspace_id: workspace, kind: "rate", enabled: true, name,
+		rate_requests_per_minute: rpm, rate_tokens_per_minute: tpm, rate_concurrent_requests: null, rate_fail_closed: false, rate_counting: null,
+		...extra,
+	};
 }
-function assignment(policyId: string, target: string, columns: Record<string, string> = {}, workspace = WS) {
-	return { id: `${target}-${Object.values(columns).join("-")}`, workspace_id: workspace, policy_id: policyId, target_type: target,
-		key_id: null, user_id: null, department_id: null, guardrail_id: null, ...columns };
+/** A workspace_guardrail_assignments row. */
+function level(guardrailId: string, targetType: string, targetId: string | null, workspace = WS) {
+	return { id: `${guardrailId}-${targetType}-${targetId}`, workspace_id: workspace, guardrail_id: guardrailId, target_type: targetType, target_id: targetId };
 }
 
+// STRICT counts each key, and reaches requests made by "user-guarded". LOOSE was made through the
+// rate limits API (no counting set): per key and member, and per end user at workspace level.
 const plan: RateLimitPlan = {
-	v: 1,
-	policies: { [STRICT]: { rpm: 2, name: "Strict" }, [LOOSE]: { rpm: 100, name: "Loose" }, [TOKENS]: { rpm: null, name: "Tokens" } },
-	keys: { "key-1": LOOSE, "key-tokens": TOKENS },
-	members: { "user-1": LOOSE },
-	guardrails: { "guard-1": STRICT },
-	endUserDefault: LOOSE,
+	v: 2,
+	policies: {
+		[STRICT]: { rpm: 2, tpm: null, counting: "each_key", name: "Strict" },
+		[LOOSE]: { rpm: 100, tpm: null, name: "Loose" },
+		[TOKENS]: { rpm: null, tpm: null, name: "Tokens" },
+	},
+	workspace: [LOOSE],
+	keys: { "key-1": [LOOSE], "key-tokens": [TOKENS] },
+	members: { "user-1": [LOOSE], "user-guarded": [STRICT] },
 };
 
 let sequence = 0;
 function ctx(overrides: Partial<PipelineContext> & { authMethod?: "api_key" | "oauth"; apiKeyRef?: string; endUser?: string | null } = {}): PipelineContext {
 	const { authMethod = "api_key", apiKeyRef = "kid_key", endUser = null, ...rest } = overrides;
 	return {
-		workspaceId: WS, keyId: "key-1", quotaUserId: "user-2", activeGuardrailIds: [],
+		workspaceId: WS, keyId: "key-1", quotaUserId: "user-2",
 		billingRequestId: `billing-${++sequence}`, requestId: `request-${sequence}`, internal: false,
 		meta: { authMethod, apiKeyRef, requestUserId: endUser },
 		...rest,
@@ -135,8 +153,9 @@ beforeEach(() => {
 	mocks.failGet = mocks.failPut = false;
 	mocks.selectError = null;
 	mocks.inserts.length = 0;
+	mocks.deleted.length = 0;
 	mocks.background.length = 0;
-	mocks.tables = { workspace_rate_limit_policies: [], workspace_rate_limit_policy_assignments: [] };
+	mocks.tables = { workspace_guardrails: [], workspace_guardrail_assignments: [] };
 	mocks.admit.mockReset().mockImplementation(async (_scope: string, _kind: string, _id: string, limits: { requestsPerMinute: number }) =>
 		({ allowed: true, limit: limits.requestsPerMinute, remaining: limits.requestsPerMinute - 1, retryAfterSeconds: 0 }));
 	mocks.chargeTokens.mockReset().mockImplementation(async (_scope: string, tokens: number, limit: number) =>
@@ -154,35 +173,51 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe("rate limit plan publication", () => {
-	it("builds a compact plan from the workspace's policies and assignments", async () => {
-		mocks.tables.workspace_rate_limit_policies = [policy(STRICT, "Strict", 2), policy(TOKENS, "Tokens", null, WS, "50000"), policy("other", "Other", 9, "elsewhere")];
-		mocks.tables.workspace_rate_limit_policy_assignments = [
-			assignment(STRICT, "key", { key_id: "key-1" }),
-			assignment(STRICT, "member", { user_id: "user-1" }),
-			assignment(TOKENS, "guardrail", { guardrail_id: "guard-1" }),
-			assignment(STRICT, "end_user_default"),
-			assignment("other", "key", { key_id: "key-9" }, "elsewhere"),
+	it("builds a compact plan from the workspace's enabled rate guardrails and their assignments", async () => {
+		mocks.tables.workspace_guardrails = [
+			guardrail(STRICT, "Strict", 2, WS, null, { rate_counting: "each_key" }),
+			guardrail(TOKENS, "Tokens", null, WS, "50000"),
+			guardrail(LOOSE, "Loose", 100),
+			guardrail("disabled", "Disabled", 1, WS, null, { enabled: false }),
+			guardrail("other", "Other", 9, "elsewhere"),
+			{ id: "access", workspace_id: WS, kind: "access", enabled: true, name: "ZDR" },
+		];
+		mocks.tables.workspace_guardrail_assignments = [
+			level(STRICT, "key", "key-1"),
+			level(STRICT, "member", "user-1"),
+			level(LOOSE, "member", "user-1"),
+			level(TOKENS, "workspace", null),
+			level("disabled", "key", "key-1"),
+			level("access", "key", "key-1"),
+			level("other", "key", "key-9", "elsewhere"),
 		];
 		expect(await buildRateLimitPlan(WS)).toEqual({
-			v: 1,
-			policies: { [STRICT]: { rpm: 2, tpm: null, name: "Strict" }, [TOKENS]: { rpm: null, tpm: 50000, name: "Tokens" } },
-			keys: { "key-1": STRICT },
-			members: { "user-1": STRICT },
-			guardrails: { "guard-1": TOKENS },
-			endUserDefault: STRICT,
+			v: 2,
+			policies: {
+				[STRICT]: { rpm: 2, tpm: null, counting: "each_key", name: "Strict" },
+				[LOOSE]: { rpm: 100, tpm: null, name: "Loose" },
+				[TOKENS]: { rpm: null, tpm: 50000, name: "Tokens" },
+			},
+			workspace: [TOKENS],
+			keys: { "key-1": [STRICT] },
+			members: { "user-1": [STRICT, LOOSE] },
 		});
+		// An unassigned rate guardrail limits nothing, and none at all means an empty plan.
+		mocks.tables.workspace_guardrail_assignments = [];
+		expect(await buildRateLimitPlan(WS)).toEqual({ v: 2, policies: {}, workspace: [], keys: {}, members: {} });
 	});
 
-	it("adds the department links a department policy needs", async () => {
+	it("adds the department links department guardrails need", async () => {
 		mocks.tables = {
-			workspace_rate_limit_policies: [policy(STRICT, "Strict", 2), policy(LOOSE, "Loose", 100)],
-			workspace_rate_limit_policy_assignments: [
-				assignment(STRICT, "department", { department_id: "dept-sales" }),
-				assignment(LOOSE, "department", { department_id: "dept-legal" }),
+			workspace_guardrails: [guardrail(STRICT, "Strict", 2), guardrail(LOOSE, "Loose", 100)],
+			workspace_guardrail_assignments: [
+				level(STRICT, "department", "dept-sales"),
+				level(LOOSE, "department", "dept-legal"),
+				level(STRICT, "department", "dept-legal"),
 			],
 			keys: [
 				{ id: "key-linked", workspace_id: WS, department_id: "dept-sales" },
-				// Linked to a department without a policy: still kept, so it does not fall back to its creator's.
+				// Linked to a department without a guardrail: still kept, so it does not fall back to its creator's.
 				{ id: "key-unlimited-dept", workspace_id: WS, department_id: "dept-ops" },
 				{ id: "key-unlinked", workspace_id: WS, department_id: null },
 				{ id: "key-elsewhere", workspace_id: "elsewhere", department_id: "dept-x" },
@@ -203,14 +238,14 @@ describe("rate limit plan publication", () => {
 		};
 		const built = await buildRateLimitPlan(WS);
 		expect(built).toMatchObject({
-			departments: { "dept-sales": STRICT, "dept-legal": LOOSE },
+			departments: { "dept-sales": [STRICT], "dept-legal": [LOOSE, STRICT] },
 			keyDepartments: { "key-linked": "dept-sales", "key-unlimited-dept": "dept-ops" },
-			// Every department with a policy; an enabled override replaces the directory's departments.
+			// Every department with a guardrail; an enabled override replaces the directory's departments.
 			memberDepartments: { "user-both": ["dept-legal", "dept-sales"], "user-overridden": ["dept-legal"] },
 		});
 		expect(Object.keys(built.policies).sort()).toEqual([LOOSE, STRICT]);
-		// Without a department policy the plan carries no department links.
-		mocks.tables.workspace_rate_limit_policy_assignments = [assignment(STRICT, "key", { key_id: "key-1" })];
+		// Without a department guardrail the plan carries no department links.
+		mocks.tables.workspace_guardrail_assignments = [level(STRICT, "key", "key-1")];
 		const withoutDepartments = await buildRateLimitPlan(WS);
 		expect(withoutDepartments).not.toHaveProperty("departments");
 		expect(withoutDepartments).not.toHaveProperty("keyDepartments");
@@ -220,10 +255,10 @@ describe("rate limit plan publication", () => {
 		const grant = (user: string, department: string, extra: Record<string, unknown> = {}) =>
 			({ workspace_id: WS, user_id: user, department_id: department, source_type: "manual", is_primary: false, created_at: "2026-10-01T00:00:00Z", ...extra });
 		mocks.tables = {
-			workspace_rate_limit_policies: [policy(STRICT, "Strict", 2), policy(LOOSE, "Loose", 100)],
-			workspace_rate_limit_policy_assignments: [
-				assignment(STRICT, "department", { department_id: "dept-sales" }),
-				assignment(LOOSE, "department", { department_id: "dept-legal" }),
+			workspace_guardrails: [guardrail(STRICT, "Strict", 2), guardrail(LOOSE, "Loose", 100)],
+			workspace_guardrail_assignments: [
+				level(STRICT, "department", "dept-sales"),
+				level(LOOSE, "department", "dept-legal"),
 			],
 			keys: [],
 			workspace_department_grants: [
@@ -234,7 +269,7 @@ describe("rate limit plan publication", () => {
 				grant("user-manual", "dept-sales"),
 				grant("user-oldest", "dept-legal", { created_at: "2026-10-02T00:00:00Z" }),
 				grant("user-oldest", "dept-sales"),
-				// The primary department has no policy, so this member counts toward none.
+				// The primary department has no guardrail, so this member counts toward none.
 				grant("user-elsewhere", "dept-ops", { is_primary: true }),
 				grant("user-elsewhere", "dept-sales"),
 			],
@@ -256,17 +291,22 @@ describe("rate limit plan publication", () => {
 	});
 
 	it("writes the plan to KV, and deletes the key once the workspace has no assignments", async () => {
-		mocks.tables.workspace_rate_limit_policies = [policy(STRICT, "Strict", 2)];
-		mocks.tables.workspace_rate_limit_policy_assignments = [assignment(STRICT, "key", { key_id: "key-1" })];
+		mocks.tables.workspace_guardrails = [guardrail(STRICT, "Strict", 2)];
+		mocks.tables.workspace_guardrail_assignments = [level(STRICT, "key", "key-1")];
 		expect(await publishRateLimitPlan(WS)).toBe(true);
-		expect(JSON.parse(mocks.store.get(rateLimitPlanKey(WS))!).v.keys).toEqual({ "key-1": STRICT });
-		expect((await readRateLimitPlan(WS))?.keys).toEqual({ "key-1": STRICT });
+		expect(rateLimitPlanKey(WS)).toBe(`rate-limit-plan:v2:${WS}`);
+		expect(JSON.parse(mocks.store.get(rateLimitPlanKey(WS))!).v.keys).toEqual({ "key-1": [STRICT] });
+		expect((await readRateLimitPlan(WS))?.keys).toEqual({ "key-1": [STRICT] });
 
-		mocks.tables.workspace_rate_limit_policy_assignments = [];
+		mocks.tables.workspace_guardrail_assignments = [];
 		expect(await publishRateLimitPlan(WS)).toBe(true);
 		expect(mocks.store.has(rateLimitPlanKey(WS))).toBe(false);
 		// Publishing also drops this isolate's copy.
 		expect(await readRateLimitPlan(WS)).toBeNull();
+		// A workspace that never had a plan stores and removes nothing.
+		mocks.deleted.length = 0;
+		expect(await publishRateLimitPlan("workspace-never")).toBe(true);
+		expect(mocks.deleted).toEqual([]);
 	});
 
 	it("logs and reports failure instead of throwing when publishing fails", async () => {
@@ -275,8 +315,8 @@ describe("rate limit plan publication", () => {
 		expect(await publishRateLimitPlan(WS)).toBe(false);
 		mocks.selectError = null;
 		mocks.failPut = true;
-		mocks.tables.workspace_rate_limit_policies = [policy(STRICT, "Strict", 2)];
-		mocks.tables.workspace_rate_limit_policy_assignments = [assignment(STRICT, "end_user_default")];
+		mocks.tables.workspace_guardrails = [guardrail(STRICT, "Strict", 2)];
+		mocks.tables.workspace_guardrail_assignments = [level(STRICT, "workspace", null)];
 		expect(await publishRateLimitPlan(WS)).toBe(false);
 		expect(error).toHaveBeenCalledWith("rate_limit_plan_publish_failed", expect.objectContaining({ workspaceId: WS }));
 	});
@@ -285,31 +325,39 @@ describe("rate limit plan publication", () => {
 		vi.useFakeTimers({ now: 1_000_000 });
 		expect(await readRateLimitPlan(WS)).toBeNull();
 		// Another isolate publishes; this one keeps its cached "no plan" meanwhile.
-		mocks.tables.workspace_rate_limit_policies = [policy(STRICT, "Strict", 2)];
-		mocks.tables.workspace_rate_limit_policy_assignments = [assignment(STRICT, "key", { key_id: "key-1" })];
+		mocks.tables.workspace_guardrails = [guardrail(STRICT, "Strict", 2)];
+		mocks.tables.workspace_guardrail_assignments = [level(STRICT, "key", "key-1")];
 		const plan = await buildRateLimitPlan(WS);
 		mocks.store.set(rateLimitPlanKey(WS), JSON.stringify({ v: plan, at: 1_005_000 }));
 
 		vi.setSystemTime(1_000_000 + 121_000);
-		expect((await readRateLimitPlan(WS))?.keys).toEqual({ "key-1": STRICT });
+		expect((await readRateLimitPlan(WS))?.keys).toEqual({ "key-1": [STRICT] });
 	});
 
 	it("treats a missing, malformed or unreadable plan as no policies", async () => {
 		expect(await readRateLimitPlan(WS)).toBeNull();
 		__resetTieredCacheForTests();
-		mocks.store.set(rateLimitPlanKey(WS), JSON.stringify({ v: { v: 1, policies: {} }, at: Date.now() }));
+		mocks.store.set(rateLimitPlanKey(WS), JSON.stringify({ v: { v: 2, policies: {} }, at: Date.now() }));
+		expect(await readRateLimitPlan(WS)).toBeNull();
+		__resetTieredCacheForTests();
+		// A v1 plan (rate limit policies) is not read as v2.
+		mocks.store.set(rateLimitPlanKey(WS), JSON.stringify({ v: { v: 1, policies: {}, keys: {}, members: {}, guardrails: {}, endUserDefault: null }, at: Date.now() }));
 		expect(await readRateLimitPlan(WS)).toBeNull();
 		__resetTieredCacheForTests();
 		mocks.failGet = true;
 		expect(await readRateLimitPlan(WS)).toBeNull();
 	});
 
-	it("copies a rotated key's assignment to its replacement", async () => {
-		mocks.tables.workspace_rate_limit_policy_assignments = [assignment(STRICT, "key", { key_id: "old" })];
+	it("copies a rotated key's rate guardrails to its replacement", async () => {
+		mocks.tables.workspace_guardrail_assignments = [
+			{ ...level(STRICT, "key", "old"), workspace_guardrails: { kind: "rate" } },
+			{ ...level(LOOSE, "key", "old"), workspace_guardrails: { kind: "rate" } },
+		];
 		expect(await copyKeyRateLimitAssignment({ workspaceId: WS, fromKeyId: "old", toKeyId: "new", createdBy: "admin" })).toBe(true);
-		expect(mocks.inserts).toEqual([{ table: "workspace_rate_limit_policy_assignments", payload: {
-			workspace_id: WS, policy_id: STRICT, target_type: "key", key_id: "new", created_by: "admin",
-		} }]);
+		expect(mocks.inserts).toEqual([{ table: "key_guardrails", payload: [
+			{ key_id: "new", guardrail_id: STRICT },
+			{ key_id: "new", guardrail_id: LOOSE },
+		] }]);
 		expect(await copyKeyRateLimitAssignment({ workspaceId: WS, fromKeyId: "unassigned", toKeyId: "new", createdBy: null })).toBe(false);
 		expect(mocks.inserts).toHaveLength(1);
 	});
@@ -325,7 +373,6 @@ describe("applicable rate limits", () => {
 	});
 
 	it("skips the end-user default without an end-user id, and policies without any enforced limit", () => {
-		// TOKENS has no request limit and was published before plans carried tpm.
 		expect(applicableRateLimits(plan, { keyId: "key-tokens", userId: "user-2", endUserId: null })).toEqual([]);
 		expect(applicableRateLimits(null, { keyId: "key-1" })).toEqual([]);
 	});
@@ -333,7 +380,8 @@ describe("applicable rate limits", () => {
 	it("shares one department allowance among everything that counts toward the department", () => {
 		const departmentPlan: RateLimitPlan = {
 			...plan,
-			departments: { "dept-sales": STRICT, "dept-legal": LOOSE },
+			departments: { "dept-sales": [STRICT_SHARED], "dept-legal": [LOOSE] },
+			policies: { ...plan.policies, [STRICT_SHARED]: { rpm: 2, tpm: null, counting: "shared", name: "Strict" } },
 			keyDepartments: { "key-linked": "dept-sales", "key-ops": "dept-ops" },
 			memberDepartments: { "user-both": ["dept-legal", "dept-sales"] },
 		};
@@ -347,34 +395,68 @@ describe("applicable rate limits", () => {
 		expect(scopes({ keyId: "key-linked", userId: "user-both", keyIdIsOAuthClient: true })).toEqual(["department:dept-legal", "department:dept-sales"]);
 		expect(scopes({ keyId: "key-2", userId: "user-9" })).toEqual([]);
 		expect(applicableRateLimits(departmentPlan, { keyId: "key-linked" })).toContainEqual(
-			{ policyId: STRICT, name: "Strict", targetType: "department", rpm: 2, tpm: null, scopeKey: "department:dept-sales" },
+			{ policyId: STRICT_SHARED, name: "Strict", targetType: "department", rpm: 2, tpm: null, scopeKey: "department:dept-sales" },
 		);
-		// Plans published before department limits carry none of the department fields.
 		expect(applicableRateLimits(plan, { keyId: "key-linked", userId: "user-both" }).some((limit) => limit.targetType === "department")).toBe(false);
 	});
 
-	it("gives each key or OAuth user its own guardrail allowance", () => {
-		const forKey = applicableRateLimits(plan, { keyId: "key-2", userId: "user-2", guardrailIds: ["guard-1", "guard-1", "unlimited"] });
-		expect(forKey).toEqual([{ policyId: STRICT, name: "Strict", targetType: "guardrail", rpm: 2, tpm: null, scopeKey: "guardrail:guard-1:key:key-2" }]);
-		expect(applicableRateLimits(plan, { keyId: "key-3", guardrailIds: ["guard-1"] })[0].scopeKey).toBe("guardrail:guard-1:key:key-3");
-		// OAuth requests carry the client ID in keyId; it never matches a key assignment.
-		const oauth = applicableRateLimits({ ...plan, keys: { client: STRICT } }, {
-			keyId: "client", userId: "user-1", keyIdIsOAuthClient: true, guardrailIds: ["guard-1"],
-		});
-		expect(oauth.map((limit) => limit.scopeKey)).toEqual(["member:user-1", "guardrail:guard-1:user:user-1"]);
+	it("counts each rate guardrail the way it was set to count", () => {
+		const EACH_END_USER = "policy-each-end-user";
+		const counting: RateLimitPlan = {
+			v: 2,
+			policies: {
+				[STRICT_SHARED]: { rpm: 5, tpm: null, counting: "shared", name: "Shared" },
+				[STRICT]: { rpm: 2, tpm: null, counting: "each_key", name: "Each key" },
+				[EACH_END_USER]: { rpm: 1, tpm: null, counting: "each_end_user", name: "Each end user" },
+				[LOOSE]: { rpm: 100, tpm: null, name: "Through the API" },
+			},
+			workspace: [STRICT_SHARED, STRICT, EACH_END_USER, LOOSE],
+			keys: {},
+			members: { "user-1": [STRICT_SHARED] },
+		};
+		const scopes = (subject: Parameters<typeof applicableRateLimits>[1]) =>
+			applicableRateLimits(counting, subject).map((limit) => `${limit.name}|${limit.targetType}|${limit.scopeKey}`);
+		expect(scopes({ keyId: "key-1", userId: "user-1", endUserId: "customer-42" })).toEqual([
+			"Shared|member|member:user-1",
+			"Shared|workspace|workspace",
+			"Each key|key|key:key-1",
+			"Each end user|end_user|end-user:customer-42",
+			// Made through the rate limits API: at workspace level, the default for each end user.
+			"Through the API|end_user|end-user:customer-42",
+		]);
+		// Without an end user, the per-end-user ones do not apply.
+		expect(scopes({ keyId: "key-2", userId: "user-2" })).toEqual(["Shared|workspace|workspace", "Each key|key|key:key-2"]);
+		// An OAuth access token counts each key per OAuth user.
+		expect(scopes({ keyId: "client", userId: "user-2", keyIdIsOAuthClient: true })).toEqual(["Shared|workspace|workspace", "Each key|member|member:user-2"]);
+	});
+
+	it("counts a guardrail that reaches a request at several levels once per allowance", () => {
+		const twice: RateLimitPlan = {
+			v: 2,
+			policies: { [STRICT]: { rpm: 2, tpm: null, counting: "each_key", name: "Each key" }, [STRICT_SHARED]: { rpm: 5, tpm: null, counting: "shared", name: "Shared" } },
+			workspace: [STRICT],
+			keys: { "key-1": [STRICT, STRICT_SHARED] },
+			members: { "user-1": [STRICT, STRICT_SHARED] },
+		};
+		expect(applicableRateLimits(twice, { keyId: "key-1", userId: "user-1" }).map((limit) => `${limit.policyId}|${limit.scopeKey}`)).toEqual([
+			`${STRICT}|key:key-1`,
+			// Shared at two levels is two allowances: this key's and the member's.
+			`${STRICT_SHARED}|key:key-1`,
+			`${STRICT_SHARED}|member:user-1`,
+		]);
 	});
 });
 
 describe("rate limit policy enforcement", () => {
 	it("counts every applicable scope in the background with the policy's limit", async () => {
 		publishPlan(plan);
-		const request = ctx({ activeGuardrailIds: ["guard-1"], endUser: "customer-42" });
+		const request = ctx({ quotaUserId: "user-guarded", endUser: "customer-42" });
 		expect(await guardRateLimitPolicies(request)).toBeNull();
 		await settle();
 		const scopes = mocks.admit.mock.calls.map(([scope, kind, id, limits]) => [scope, kind, id, limits]);
 		expect(scopes).toEqual([
 			[`rate-limit-policy:v1:${WS}:${LOOSE}:key:key-1`, "minute", request.billingRequestId, { requestsPerMinute: 100 }],
-			[`rate-limit-policy:v1:${WS}:${STRICT}:guardrail:guard-1:key:key-1`, "minute", request.billingRequestId, { requestsPerMinute: 2 }],
+			[`rate-limit-policy:v1:${WS}:${STRICT}:key:key-1`, "minute", request.billingRequestId, { requestsPerMinute: 2 }],
 			[`rate-limit-policy:v1:${WS}:${LOOSE}:end-user:customer-42`, "minute", request.billingRequestId, { requestsPerMinute: 100 }],
 		]);
 		expect(mocks.getByName).toHaveBeenCalledWith(`rate-limit-policy:v1:${WS}:${LOOSE}:key:key-1`);
@@ -407,7 +489,7 @@ describe("rate limit policy enforcement", () => {
 		const request = ctx();
 		expect(await guardRateLimitPolicies(request)).toBeNull();
 		// A plan change mid-request does not change what this request is counted against.
-		publishPlan({ ...plan, keys: { "key-1": STRICT } });
+		publishPlan({ ...plan, keys: { "key-1": [STRICT] } });
 		__resetTieredCacheForTests();
 		for (let attempt = 0; attempt < 2; attempt++) expect(await guardRateLimitPolicies(request)).toBeNull();
 		await settle();
@@ -423,15 +505,15 @@ describe("rate limit policy enforcement", () => {
 
 	it("replays a reported denial locally with the 429 contract and headers", async () => {
 		publishPlan(plan);
-		mocks.admit.mockImplementation(async (scope: string) => scope.includes("guardrail")
+		mocks.admit.mockImplementation(async (scope: string) => scope.includes(STRICT)
 			? { allowed: true, limit: 2, remaining: 0, retryAfterSeconds: 42 }
 			: { allowed: true, limit: 100, remaining: 50, retryAfterSeconds: 0 });
-		const first = ctx({ activeGuardrailIds: ["guard-1"] });
+		const first = ctx({ quotaUserId: "user-guarded" });
 		expect(await guardRateLimitPolicies(first)).toBeNull();
 		await settle();
 		const calls = mocks.admit.mock.calls.length;
 
-		const second = ctx({ activeGuardrailIds: ["guard-1"] });
+		const second = ctx({ quotaUserId: "user-guarded" });
 		const response = await guardRateLimitPolicies(second);
 		expect(response?.status).toBe(429);
 		expect(response?.headers.get("Retry-After")).toBe("42");
@@ -443,24 +525,24 @@ describe("rate limit policy enforcement", () => {
 			error_origin: "user",
 			reason: "policy_requests_per_minute",
 			policy_id: STRICT,
-			limit_scope: "guardrail",
+			limit_scope: "key",
 			request_id: second.requestId,
-			description: "This API key, through a guardrail, reached the \"Strict\" rate limit policy's 2 requests per minute. Retry after 42 seconds.",
+			description: "This API key reached the \"Strict\" rate limit policy's 2 requests per minute. Retry after 42 seconds.",
 		});
 		// A rejected request uses no other scope's allowance.
 		await settle();
 		expect(mocks.admit).toHaveBeenCalledTimes(calls);
 		expect(rejectedByRateLimitPolicy(second)).toBe(true);
 		// Another key covered by the same guardrail has its own allowance.
-		expect(await guardRateLimitPolicies(ctx({ keyId: "key-2", activeGuardrailIds: ["guard-1"] }))).toBeNull();
+		expect(await guardRateLimitPolicies(ctx({ keyId: "key-2", quotaUserId: "user-guarded" }))).toBeNull();
 		// The first request's later attempts are already admitted.
 		expect(await guardRateLimitPolicies(first)).toBeNull();
 	});
 
 	it("counts a department as one allowance and rejects every request that counts toward it", async () => {
 		publishPlan({
-			v: 1, policies: { [STRICT]: { rpm: 2, tpm: null, name: "Sales cap" } }, keys: {}, members: {}, guardrails: {}, endUserDefault: null,
-			departments: { "dept-sales": STRICT }, keyDepartments: { "key-linked": "dept-sales" }, memberDepartments: { "user-sales": ["dept-sales"] },
+			v: 2, policies: { [STRICT]: { rpm: 2, tpm: null, counting: "shared", name: "Sales cap" } }, workspace: [], keys: {}, members: {},
+			departments: { "dept-sales": [STRICT] }, keyDepartments: { "key-linked": "dept-sales" }, memberDepartments: { "user-sales": ["dept-sales"] },
 		});
 		const department = `rate-limit-policy:v1:${WS}:${STRICT}:department:dept-sales`;
 		mocks.admit.mockImplementation(async () => ({ allowed: true, limit: 2, remaining: 0, retryAfterSeconds: 20 }));
@@ -484,7 +566,7 @@ describe("rate limit policy enforcement", () => {
 
 	it("reports approximate headers for the most restrictive applicable policy", async () => {
 		publishPlan(plan);
-		const request = ctx({ activeGuardrailIds: ["guard-1"] });
+		const request = ctx({ quotaUserId: "user-guarded" });
 		await guardRateLimitPolicies(request);
 		// Before any counter report: limit - 1 of the tightest policy.
 		expect(rateLimitPolicyHeaders(request)).toEqual({
@@ -494,7 +576,7 @@ describe("rate limit policy enforcement", () => {
 		expect(rateLimitPolicyHeaders(request)).toEqual({
 			"x-ratelimit-limit-requests": "2", "x-ratelimit-remaining-requests": "1", "x-ratelimit-reset-requests": "60s",
 		});
-		const next = ctx({ activeGuardrailIds: ["guard-1"] });
+		const next = ctx({ quotaUserId: "user-guarded" });
 		mocks.admit.mockImplementation(async () => new Promise(() => {}));
 		await guardRateLimitPolicies(next);
 		// The last report predates this request's own count.
@@ -540,7 +622,7 @@ describe("tokens per minute", () => {
 	const tokenPlan: RateLimitPlan = {
 		...plan,
 		policies: { ...plan.policies, [TPM]: { rpm: null, tpm: 1000, name: "Token budget" }, [LOOSE]: { rpm: 100, tpm: 5000, name: "Loose" } },
-		keys: { "key-1": TPM },
+		keys: { "key-1": [TPM] },
 	};
 	const scope = (target: string) => `rate-limit-policy:v1:${WS}:${target}`;
 
@@ -658,25 +740,25 @@ describe("plan publication under concurrent changes", () => {
 
 	it("stores the newest plan when the database changes while publishing", async () => {
 		mocks.tables = {
-			workspace_rate_limit_policies: [policy(STRICT, "Strict", 2)],
-			workspace_rate_limit_policy_assignments: [assignment(STRICT, "key", { key_id: "key-1" })],
+			workspace_guardrails: [guardrail(STRICT, "Strict", 2)],
+			workspace_guardrail_assignments: [level(STRICT, "key", "key-1")],
 		};
 		// Another request adds an assignment after this publish read the database.
 		mocks.onPut = () => {
-			mocks.tables.workspace_rate_limit_policy_assignments.push(assignment(STRICT, "member", { user_id: "user-1" }));
+			mocks.tables.workspace_guardrail_assignments.push(level(STRICT, "member", "user-1"));
 		};
 		expect(await publishRateLimitPlan(WS)).toBe(true);
 		const stored = JSON.parse(mocks.store.get(rateLimitPlanKey(WS))!).v as RateLimitPlan;
-		expect(stored.keys).toEqual({ "key-1": STRICT });
-		expect(stored.members).toEqual({ "user-1": STRICT });
+		expect(stored.keys).toEqual({ "key-1": [STRICT] });
+		expect(stored.members).toEqual({ "user-1": [STRICT] });
 	});
 
-	it("reconciles every workspace with assignments or a stored plan", async () => {
+	it("reconciles every workspace with rate guardrails or a stored plan", async () => {
 		mocks.tables = {
-			workspace_rate_limit_policies: [policy(STRICT, "Strict", 2), policy(LOOSE, "Loose", 100, "workspace-2")],
-			workspace_rate_limit_policy_assignments: [
-				assignment(STRICT, "key", { key_id: "key-1" }),
-				assignment(LOOSE, "end_user_default", {}, "workspace-2"),
+			workspace_guardrails: [guardrail(STRICT, "Strict", 2), guardrail(LOOSE, "Loose", 100, "workspace-2")],
+			workspace_guardrail_assignments: [
+				level(STRICT, "key", "key-1"),
+				level(LOOSE, "workspace", null, "workspace-2"),
 			],
 		};
 		// A plan whose assignments were removed while a publish failed.
@@ -685,8 +767,8 @@ describe("plan publication under concurrent changes", () => {
 		const summary = await reconcileRateLimitPlans();
 
 		expect(summary).toEqual({ workspaces: 3, published: 3, failed: 0, truncated: false });
-		expect(JSON.parse(mocks.store.get(rateLimitPlanKey(WS))!).v.keys).toEqual({ "key-1": STRICT });
-		expect(JSON.parse(mocks.store.get(rateLimitPlanKey("workspace-2"))!).v.endUserDefault).toBe(LOOSE);
+		expect(JSON.parse(mocks.store.get(rateLimitPlanKey(WS))!).v.keys).toEqual({ "key-1": [STRICT] });
+		expect(JSON.parse(mocks.store.get(rateLimitPlanKey("workspace-2"))!).v.workspace).toEqual([LOOSE]);
 		expect(mocks.store.has(rateLimitPlanKey("workspace-3"))).toBe(false);
 	});
 });
@@ -694,22 +776,22 @@ describe("plan publication under concurrent changes", () => {
 describe("concurrency limits and strict policies", () => {
 	const CONCURRENT = "policy-concurrent";
 	const STRICT_RPM = "policy-fail-closed";
-	const concurrencyPlan = (policy: RateLimitPlan["policies"][string], keyId = "key-1"): RateLimitPlan => ({
-		v: 1, policies: { [CONCURRENT]: policy }, keys: { [keyId]: CONCURRENT }, members: {}, guardrails: {}, endUserDefault: null,
+	const concurrencyPlan = (policy: Omit<RateLimitPlan["policies"][string], "tpm"> & { tpm?: number | null }, keyId = "key-1"): RateLimitPlan => ({
+		v: 2, policies: { [CONCURRENT]: { tpm: null, ...policy } }, workspace: [], keys: { [keyId]: [CONCURRENT] }, members: {},
 	});
 	const scopeKey = `rate-limit-policy:v1:${WS}:${CONCURRENT}:key:key-1`;
 
 	it("publishes the concurrency limit and strict flag only when a policy sets them", async () => {
-		mocks.tables.workspace_rate_limit_policies = [
-			{ ...policy(CONCURRENT, "Concurrent", null), concurrent_requests: 3, fail_closed: true },
-			{ ...policy(LOOSE, "Loose", 100), concurrent_requests: null, fail_closed: false },
+		mocks.tables.workspace_guardrails = [
+			guardrail(CONCURRENT, "Concurrent", null, WS, null, { rate_concurrent_requests: 3, rate_fail_closed: true }),
+			guardrail(LOOSE, "Loose", 100),
 		];
-		mocks.tables.workspace_rate_limit_policy_assignments = [assignment(CONCURRENT, "key", { key_id: "key-1" }), assignment(LOOSE, "member", { user_id: "user-1" })];
+		mocks.tables.workspace_guardrail_assignments = [level(CONCURRENT, "key", "key-1"), level(LOOSE, "member", "user-1")];
 		expect((await buildRateLimitPlan(WS)).policies).toEqual({
 			[CONCURRENT]: { rpm: null, tpm: null, cc: 3, strict: true, name: "Concurrent" },
 			[LOOSE]: { rpm: 100, tpm: null, name: "Loose" },
 		});
-		expect(applicableRateLimits(concurrencyPlan({ rpm: null, cc: 3, strict: true, name: "Concurrent" }), { keyId: "key-1" })).toEqual([
+		expect(applicableRateLimits(concurrencyPlan({ rpm: null, tpm: null, cc: 3, strict: true, name: "Concurrent" }), { keyId: "key-1" })).toEqual([
 			{ policyId: CONCURRENT, name: "Concurrent", targetType: "key", rpm: null, tpm: null, cc: 3, strict: true, scopeKey: "key:key-1" },
 		]);
 	});
@@ -782,7 +864,7 @@ describe("concurrency limits and strict policies", () => {
 	});
 
 	it("awaits a strict policy's request count instead of counting in the background", async () => {
-		publishPlan({ v: 1, policies: { [STRICT_RPM]: { rpm: 1, strict: true, name: "Fail closed" } }, keys: { "key-1": STRICT_RPM }, members: {}, guardrails: {}, endUserDefault: null });
+		publishPlan({ v: 2, policies: { [STRICT_RPM]: { rpm: 1, tpm: null, strict: true, name: "Fail closed" } }, workspace: [], keys: { "key-1": [STRICT_RPM] }, members: {} });
 		mocks.admit.mockResolvedValueOnce({ allowed: true, limit: 1, remaining: 0, retryAfterSeconds: 40 })
 			.mockResolvedValueOnce({ allowed: false, limit: 1, remaining: 0, retryAfterSeconds: 40 });
 		const first = ctx();
@@ -800,7 +882,7 @@ describe("concurrency limits and strict policies", () => {
 
 	it("rejects a strict policy's request when its counter fails", async () => {
 		vi.spyOn(console, "warn").mockImplementation(() => {});
-		publishPlan({ v: 1, policies: { [STRICT_RPM]: { rpm: 10, tpm: 1000, strict: true, name: "Fail closed" } }, keys: { "key-1": STRICT_RPM }, members: {}, guardrails: {}, endUserDefault: null });
+		publishPlan({ v: 2, policies: { [STRICT_RPM]: { rpm: 10, tpm: 1000, strict: true, name: "Fail closed" } }, workspace: [], keys: { "key-1": [STRICT_RPM] }, members: {} });
 		mocks.peekTokens.mockRejectedValue(new Error("object unavailable"));
 		const response = await guardRateLimitPolicies(ctx());
 		expect(response?.status).toBe(429);

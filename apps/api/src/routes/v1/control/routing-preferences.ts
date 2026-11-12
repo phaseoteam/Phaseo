@@ -106,13 +106,25 @@ export async function handleUpdateAutoRouting(req: Request) {
 	}
 	const { workspaceId } = access.auth;
 	try {
-		const current = autoRoutingFromRow(await readAutoRoutingRow(workspaceId));
+		const stored = await readAutoRoutingRow(workspaceId);
+		const current = autoRoutingFromRow(stored);
 		const update = parseAutoRoutingUpdate({ ...current, ...changes });
 		if (update.ok === false) return json({ ...update.error, message: autoRoutingErrorMessage(update.error.error) }, 400, NO_STORE);
-		const { data, error } = await getSupabaseAdmin().from("workspace_settings")
-			.upsert({ workspace_id: workspaceId, ...update.value }, { onConflict: "workspace_id" })
-			.select(AUTO_ROUTING_COLUMNS).maybeSingle();
+		// The whole settings are written back, so only over the revision they were read at: otherwise an
+		// objective change could restore price limits the dashboard tightened in the meantime. Every save sets a
+		// new revision.
+		const settings = getSupabaseAdmin().from("workspace_settings");
+		const write = stored
+			? (current.revision === null
+				? settings.update(update.value).eq("workspace_id", workspaceId).is("auto_routing_revision", null)
+				: settings.update(update.value).eq("workspace_id", workspaceId).eq("auto_routing_revision", current.revision))
+			: settings.upsert({ workspace_id: workspaceId, ...update.value }, { onConflict: "workspace_id", ignoreDuplicates: true });
+		const { data: written, error } = await write.select(AUTO_ROUTING_COLUMNS);
 		if (error) throw new Error(error.message || "Failed to update auto-routing settings");
+		const data = written?.[0] ?? null;
+		if (!data) {
+			return json({ error: "conflict", message: "Auto-routing settings changed since they were read. Read them again and retry." }, 409, NO_STORE);
+		}
 		await invalidateWorkspaceGatewayContextCache(workspaceId);
 		await recordWorkspaceAuditEvent(getSupabaseAdmin(), {
 			workspaceId,

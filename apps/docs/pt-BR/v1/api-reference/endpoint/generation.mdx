@@ -4,22 +4,25 @@ sidebarTitle: "Obter uma geração"
 badge: "Beta"
 openapi: "/pt-BR/openapi/v1/openapi.localized.yaml GET /generations"
 ---
-Busca o registro de auditoria armazenado para um `request_id` da sua equipe.
 
-Novas solicitações recebem um ID de geração `G-` criado pelo servidor, retornado no cabeçalho de resposta `x-request-id` e na resposta da geração. Use esse ID para registros, consultas e suporte. Um `x-request-id` enviado pelo cliente não substitui esse ID. IDs UUID de registros antigos continuam válidos para consultas.
+Chame `GET /v1/generations?id=<request_id>` para buscar o registro de auditoria armazenado de uma solicitação do seu espaço de trabalho. É preciso o escopo `generations:read`; sem `id`, a chamada retorna `400` `missing_id`.
 
-Use:
-- `GET /v1/generations?id=<request_id>`
+Novas solicitações recebem um ID de geração `G-` criado pelo servidor, retornado no cabeçalho de resposta `x-request-id` e na resposta da geração. Use esse ID para registros de solicitações, consulta de gerações e suporte. Um `x-request-id` enviado pelo cliente não substitui o ID de geração. IDs UUID de registros antigos continuam funcionando para consultas.
 
-Quando o gateway capturou todos os detalhes da solicitação dessa geração, a resposta também inclui:
+## Repetir uma solicitação
 
-- `replay_supported`: indica se há um payload pronto para repetição
-- `replay_request`: o corpo da solicitação armazenado que pode ser enviado ao endpoint original para uma nova execução controlada
+Toda resposta inclui `replay_supported`. Quando o registro de E/S armazenou o corpo da solicitação e você pode ler conteúdos armazenados, `replay_supported` é `true` e `replay_request` contém o corpo a ser reenviado para uma nova execução controlada:
 
-Fluxo típico para repetir uma solicitação:
+<Steps>
+  <Step title="Leia a geração">
+    Chame `GET /v1/generations?id=<request_id>`.
+  </Step>
+  <Step title="Confirme que ela pode ser repetida">
+    Continue somente se `replay_supported` for `true`.
+  </Step>
+  <Step title="Envie de novo">
+    Envie `replay_request` ao endpoint indicado em `endpoint`, como `/v1/chat/completions` ou `/v1/responses`.
+  </Step>
+</Steps>
 
-1. Leia o registro da geração com `GET /v1/generations?id=<request_id>`.
-2. Verifique se `replay_supported === true`.
-3. Reenvie `replay_request` ao endpoint original indicado por `endpoint`, como `/v1/chat/completions` ou `/v1/responses`.
-
-
+Um espaço de trabalho pode restringir os conteúdos armazenados a proprietários e administradores. Os demais chamadores, incluindo chaves de API criadas por membros, recebem então `replay_request: null` e os detalhes da solicitação sem os conteúdos.

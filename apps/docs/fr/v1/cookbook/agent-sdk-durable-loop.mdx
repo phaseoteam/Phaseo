@@ -1,123 +1,168 @@
 ---
 title: "Créer une boucle d’agent durable en TypeScript"
-sidebarTitle: "Boucle durable en TypeScript"
+sidebarTitle: "Boucle d’agent durable en TypeScript"
 icon: "repeat-2"
 description: "Exécutez une boucle d’agent reprenable avec Phaseo Gateway et l’Agent SDK TypeScript."
 ---
 
-Utilisez cette recette si vous avez besoin de plus qu’une requête textuelle ponctuelle :
+Exécutez un agent qui utilise des outils avec l’Agent SDK TypeScript et enregistrez son état après chaque étape, pour qu’un processus planté ou redémarré reprenne là où il s’était arrêté. À la fin, vous avez un script qui répond à une question sur la documentation avec un outil de recherche, écrit chaque exécution dans `.agent-runs/<run id>.json` et reprend une exécution quand vous lui passez son identifiant.
 
-- boucles d’outils en plusieurs étapes
-- outils locaux du runtime
-- exécutions reprenables
-- un point d’entrée Gateway unique pour le travail de l’agent
+Le script est illustratif : le stockage dans des fichiers convient à une seule machine. En production, gardez la même paire `load`/`save`, mais appuyez-la sur votre base de données. Phaseo ne stocke pas les exécutions de l’Agent SDK à votre place.
 
-## 1. Installer les SDK
+```mermaid
+flowchart LR
+  start["agent.run()"] --> model["Tour du modèle via Phaseo"]
+  model --> tools["Exécuter les appels d’outils en local"]
+  tools --> save["state.save() : point de reprise"]
+  save -->|"Autres étapes"| model
+  save -->|"Terminé"| out["result.output"]
+  crash["Le processus s’arrête"] -.-> resume["agent.continueRun({ runId, state })"]
+  resume --> model
+```
+
+## Le construire
+
+<Steps>
+<Step title="Installer">
 
 <CodeGroup>
 ```bash npm
-npm install @phaseo/sdk @phaseo/agent-sdk
+npm install @phaseo/agent-sdk zod
 ```
 
 ```bash pnpm
-pnpm add @phaseo/sdk @phaseo/agent-sdk
+pnpm add @phaseo/agent-sdk zod
 ```
 
 ```bash yarn
-yarn add @phaseo/sdk @phaseo/agent-sdk
+yarn add @phaseo/agent-sdk zod
 ```
 
 ```bash bun
-bun add @phaseo/sdk @phaseo/agent-sdk
+bun add @phaseo/agent-sdk zod
 ```
 </CodeGroup>
 
-## 2. Définir un outil simple pour le runtime
+`@phaseo/agent-sdk` installe `@phaseo/sdk` avec lui. Définissez votre clé :
 
-Veillez à ce que le premier outil soit déterministe et facile à inspecter.
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
 
-```ts
-import { defineTool } from "@phaseo/agent-sdk";
+</Step>
+<Step title="Écrire l’agent">
 
-export const lookupDocs = defineTool({
+```ts agent.ts
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { z } from "zod";
+import {
+  createAgent,
+  createGatewayAgentClient,
+  defineTool,
+  type AgentStateAccessor,
+} from "@phaseo/agent-sdk";
+
+const DOC_SLUGS = ["guides/presets", "guides/routing-and-fallbacks", "guides/streaming"] as const;
+
+// Le modèle ne voit que `parameters` ; `inputSchema` rejette tout le reste avant l’appel d’execute.
+const lookupDocs = defineTool({
   id: "lookup-docs",
-  description: "Look up internal docs by slug.",
-  async execute(input: { slug: string }) {
-    return {
-      slug: input.slug,
-      url: `https://phaseo.app/docs/v1/${input.slug}`,
-    };
+  description: "Return the URL of one Phaseo docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: { slug: { type: "string", enum: [...DOC_SLUGS] } },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ slug: z.enum(DOC_SLUGS) }).strict(),
+  async execute({ slug }) {
+    return { slug, url: `https://phaseo.app/docs/v1/${slug}` };
   },
 });
-```
 
-## 3. Créer l’agent
-
-```ts
-import { createAgent } from "@phaseo/agent-sdk";
-import { lookupDocs } from "./tools";
-
-export const supportDocsAgent = createAgent({
+const agent = createAgent<string, string>({
   id: "support-docs-agent",
-  model: "phaseo/free",
-  instructions: "Use tools when helpful and finish with a concise answer.",
+  model: "openai/gpt-6-astra",
+  instructions: "Use tools when helpful and finish with a concise answer that includes the docs URL.",
   tools: [lookupDocs],
-});
-```
-
-## 4. Utiliser l’adaptateur connecté à Gateway
-
-```ts
-import {
-  createGatewayAgentClient,
-} from "@phaseo/agent-sdk";
-import { supportDocsAgent } from "./agent";
-
-const result = await supportDocsAgent.run({
-  input: "Find the docs page for presets and explain when to use them.",
-  client: createGatewayAgentClient({
-    clientOptions: {
-      apiKey: process.env.PHASEO_API_KEY!,
-    },
-  }),
+  maxSteps: 6,
 });
 
+// Enregistrer toute l’exécution après chaque étape. Remplacez ces deux fonctions par votre base de données.
+const RUNS_DIR = ".agent-runs";
+const state: AgentStateAccessor<string, unknown, string> = {
+  async load(runId) {
+    try {
+      return JSON.parse(await readFile(`${RUNS_DIR}/${runId}.json`, "utf8"));
+    } catch {
+      return null;
+    }
+  },
+  async save(result) {
+    await mkdir(RUNS_DIR, { recursive: true });
+    await writeFile(`${RUNS_DIR}/${result.run.id}.json`, JSON.stringify(result));
+  },
+};
+
+const client = createGatewayAgentClient({
+  clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+});
+
+const onEvent = (event: { type: string; runId: string }) => {
+  if (event.type === "checkpoint.saved") console.log("checkpoint", event.runId);
+};
+
+const resumeId = process.argv[2];
+let result;
+
+if (resumeId) {
+  const saved = await state.load(resumeId);
+  if (!saved) throw new Error(`No saved run ${resumeId}`);
+  result = saved.run.status === "completed"
+    ? saved
+    : await agent.continueRun({ run: saved, client, state, onEvent });
+} else {
+  result = await agent.run({
+    input: "Find the docs page for presets and explain when to use them.",
+    client,
+    state,
+    onEvent,
+  });
+}
+
+console.log(result.run.id, result.run.status);
 console.log(result.output);
 ```
 
-## 5. Données conservées entre les étapes
+</Step>
+<Step title="L’exécuter">
 
-Chaque étape terminée met à jour l’état renvoyé de l’exécution avec :
+```bash
+npx tsx agent.ts
+```
 
-- l’ID de l’exécution
-- l’historique des messages
-- les appels d’outils renvoyés
-- les résultats des outils locaux
-- le résultat final lorsque l’exécution se termine
+Pour tester une reprise, arrêtez le script avec `Ctrl+C` après la première ligne `checkpoint`, puis passez l’identifiant d’exécution qu’il a affiché (un UUID) :
 
-Pour reprendre l’exécution entre plusieurs requêtes ou processus, enregistrez cette valeur dans votre application et transmettez-la ultérieurement à `continueRun()`.
+```bash
+npx tsx agent.ts 3f6c1d2e-...
+```
 
-## 6. Quand garder une première version simple
+</Step>
+</Steps>
 
-- un agent par workflow
-- sérialisation par l’application avant toute reprise entre requêtes
-- une courte liste d’outils avant de créer un registre générique
-- une ligne de journal par exécution avec son ID et l’ID de requête Gateway
+## Vérifier que ça fonctionne
 
-## 7. Quand aller plus loin
+- Le script affiche `checkpoint` une fois par étape, puis l’identifiant d’exécution, `completed` et une réponse avec une URL `phaseo.app/docs`.
+- `.agent-runs/<run id>.json` contient l’identifiant d’exécution, le statut, l’historique des messages, les appels d’outils et résultats de chaque étape, et la sortie finale.
+- Après une exécution interrompue, la commande de reprise termine la même exécution au lieu d’en démarrer une nouvelle.
+- Chaque tour du modèle apparaît dans **Paramètres → Utilisation → Journaux**. Journalisez l’identifiant d’exécution à côté de chaque identifiant de requête pour pouvoir les faire correspondre.
 
-Faites évoluer cette première boucle durable lorsque vous avez besoin de :
+## Ce que contient l’état enregistré
 
-- pauses pour approbation
-- persistance de l’état renvoyé gérée par l’application
-- plusieurs définitions d’agent partageant les outils du runtime
+Chaque résultat enregistré est l’`AgentRunResult` complet : `run` (identifiant, statut, messages, utilisation, pause éventuelle), `steps` avec leurs identifiants de requête Gateway et leurs appels d’outils, et `output` une fois l’exécution terminée. `continueRun()` l’accepte directement, ou bien un `runId` accompagné de `state`, auquel cas il appelle `load()` lui-même.
 
-Conservez alors le même adaptateur Gateway et faites évoluer le stockage et l’orchestration autour de celui-ci.
+Un appel d’outil en cours au moment où le processus s’est arrêté a peut-être déjà produit son effet : gardez donc vos outils idempotents. Le SDK répare l’historique d’un appel qui n’a jamais reçu de résultat avant de continuer. [État et approbation](../sdk-reference/agent/state-and-approval) couvre les pauses et les approbations.
 
-## Guides associés
+## Le faire évoluer prudemment
 
-- [Agent SDK TypeScript](../sdk-reference/typescript/agent-sdk.mdx)
-- [Préréglages](../guides/presets.mdx)
-- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
-- [Configurer des agents de programmation avec SKILL.md](./coding-agents-skill-md.mdx)
-- [Déployer sur le routeur gratuit](./free-router-first-deploy.mdx)
+Gardez un agent par flux de travail, une courte liste d’outils et une ligne de journal par exécution avec l’identifiant d’exécution et les identifiants de requête. Quand vous avez besoin de pauses d’approbation ou de plusieurs agents partageant des outils, conservez ce client Gateway et cette paire d’état et construisez autour : l’[agent de revue de code](./agent-sdk-coding-review) ajoute une pause d’approbation, et les [outils en parallèle](./agent-sdk-parallel-tools) exécutent des outils côte à côte. Pour des valeurs par défaut de requête partagées, appelez un [préréglage](../guides/presets) au lieu d’un modèle fixe.

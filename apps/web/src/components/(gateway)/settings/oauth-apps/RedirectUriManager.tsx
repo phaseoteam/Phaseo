@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { Button } from "@/components/ui/button";
@@ -7,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, Trash2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	Empty,
@@ -59,9 +57,9 @@ export default function RedirectUriManager({
 		setRedirectUris(nextRedirectUris);
 		try {
 			const { updateRedirectUrisAction } = await import(
-				"@/app/(dashboard)/settings/oauth-apps/actions"
+				"@/features/settings/oauth-apps/actions"
 			);
-			const result = await write(updateRedirectUrisAction(clientId, nextRedirectUris));
+			const result = await write(updateRedirectUrisAction({ data: { clientId, redirectUris: nextRedirectUris } }));
 			if (result.error) {
 				throw new Error(result.error);
 			}

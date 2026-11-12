@@ -1,7 +1,5 @@
-"use client";
-
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "@/components/link";
+import { usePathname } from "@/lib/navigation";
 import { debounce, useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,7 +25,7 @@ import { featureLabels } from "@/lib/config/featureLabels";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface ModelsTableHeaderProps {
 	allEndpoints: string[];
@@ -104,9 +102,7 @@ export default function ModelsTableHeader({
 			coming_soon: t("filtersUi.comingSoon"),
 			inactive: t("filtersUi.notActive"),
 			not_active: t("filtersUi.notActive"),
-			deranked_lvl1: t("filtersUi.statusDeranked1"),
-			deranked_lvl2: t("filtersUi.statusDeranked2"),
-			deranked_lvl3: t("filtersUi.statusDeranked3"),
+			deranked: t("filtersUi.statusDeranked"),
 			disabled: t("filtersUi.statusDisabled"),
 		};
 		return statusLabels[normalized] ?? value;

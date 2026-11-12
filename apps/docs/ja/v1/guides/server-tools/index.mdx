@@ -1,48 +1,48 @@
 ---
 icon: "server-cog"
 title: "サーバーツール"
-description: "リクエスト中にモデルがPhaseo運営のツールを呼び出せるようにします。"
+description: "リクエスト中にモデルが Phaseo 運営のツールを呼び出せるようにします。"
 ---
 
-サーバーツールは、モデルへのリクエスト中にPhaseoが実行するツールです。呼び出すタイミングはモデルが判断し、Phaseoがサーバー側で実行して、その結果をモデルの処理ループに返します。
+`tools` に `phaseo:` ツールを追加すると、モデルがそのツールを呼び出したときに Phaseo が実行します。モデルが現在時刻、Web 検索、別のモデルの意見を求めると、Phaseo が呼び出しを実行して結果をモデルに返し、モデルが回答を完成させます。ツールの実行処理を自分で書く必要はありません。
 
-モデルに現在時刻、Web上の情報、取得したページのテキスト、または別のモデルの助言が必要で、自前のツール実行機能を追加したくない場合にサーバーツールを使います。
+```mermaid
+flowchart LR
+  req["phaseo: ツールを含むリクエスト"] --> model["モデル"]
+  model -->|"phaseo: ツールを呼び出す"| run["Phaseo がツールを実行"]
+  run -->|"ツールの結果"| model
+  model -->|"関数ツールを呼び出す"| you["アプリに返される"]
+  model -->|"最終回答"| out["レスポンス"]
+```
 
 <Note>
-サーバーツールはベータ版です。プロバイダーの対応状況に応じて、リクエスト形式や結果の内容が変更される場合があります。
+サーバーツールはベータ版です。プロバイダーの対応状況に応じて、リクエストの形式や結果の内容が変更される場合があります。
 </Note>
 
 ## 利用可能なツール
 
-| ツール | 種類 | 用途 |
-| --- | --- | --- |
-| 日時 | `phaseo:datetime` | 最大5つのタイムゾーンで現在の日付と時刻を取得 |
-| Web検索 | `phaseo:web_search` | リクエスト中にモデルが実行するWeb検索 |
-| Webページ取得 | `phaseo:web_fetch` | 指定したURLからの取得とテキスト抽出 |
-| Advisor | `phaseo:advisor` | 生成中に別のモデルへ相談 |
-| サブエージェント | `phaseo:subagent` | 特定の作業をワーカーモデルに委任 |
-| Fusion | `phaseo:fusion` | 並列分析とモデルによる統合 |
-| モデル検索 | `phaseo:search_models` | 最新カタログから適切なモデルを検索 |
-| 画像生成 | `phaseo:image_generation` | モデルのツールループから画像を作成 |
-| パッチを適用 | `phaseo:apply_patch` | Responses APIで検証済みファイルパッチを生成 |
+| ツール | 種類 | 用途 | エンドポイント |
+| --- | --- | --- | --- |
+| [日時](./datetime) | `phaseo:datetime` | 最大 5 つのタイムゾーンでの現在の日付と時刻 | 3 つすべて |
+| [Web 検索](./web-search) | `phaseo:web_search` | 最新の情報や出典のある情報を Web で検索 | 3 つすべて |
+| [Web Fetch](./web-fetch) | `phaseo:web_fetch` | 特定の URL のテキストを読み取り | 3 つすべて |
+| [Advisor](./advisor) | `phaseo:advisor` | 別のモデルにレビューや計画を依頼 | 3 つすべて |
+| [Subagent](./subagent) | `phaseo:subagent` | 独立したタスクをワーカーモデルに委任 | 3 つすべて |
+| [Fusion](./fusion) | `phaseo:fusion` | 複数のモデルの分析を得てから 1 つに統合 | 3 つすべて |
+| [モデル検索](./search-models) | `phaseo:search_models` | 最新の Phaseo カタログからモデルを検索 | 3 つすべて |
+| [画像生成](./image-generation) | `phaseo:image_generation` | 回答中に画像を作成 | 3 つすべて |
+| [パッチの適用](./apply-patch) | `phaseo:apply_patch` | 検証済みのファイルパッチを返す | `/v1/responses` のみ |
 
-## サーバーツールの仕組み
+「3 つすべて」は `/v1/chat/completions`、`/v1/responses`、`/v1/messages` を指します。
 
-1. `tools` 配列に1つ以上のサーバーツールを追加します。
-2. モデルがツールを使うか判断し、ツール呼び出しを出力します。
-3. Phaseoがサーバーツールの呼び出しを受け取り、実行して、結果をモデルに返します。
-4. モデルは処理を続け、最終回答を作成します。
-
-サーバーツールは独自の関数ツールと併用できます。Phaseoが実行するのはサーバーツールのみで、通常の`function`呼び出しは引き続きアプリケーション側で処理します。
-
-## クイックスタート
+## リクエストを送信する
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What are the latest AI policy updates this week?" }
     ],
@@ -53,11 +53,15 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## 関数ツールとの併用
+各ツールには任意の `parameters` オブジェクトを指定でき、内容は各ツールのページで説明しています。`stream: true` も使えます。Phaseo がツールのターンを自分で実行し、最終回答をストリーミングで返します。
+
+## サーバーツールと独自の関数を組み合わせる
+
+Phaseo が実行するのは `phaseo:` ツールだけです。同じリクエスト内の通常の `function` ツールは通常どおりアプリに返されるため、[ツール呼び出し](../tool-calling)と同様に、その結果を後続のリクエストで送り返します。
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "messages": [
     { "role": "user", "content": "Find recent funding news and save the best item." }
   ],
@@ -82,21 +86,17 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-モデルが`phaseo:web_search`を呼び出すと、Phaseoが自動的に実行します。`save_research_item`を呼び出した場合は、アプリケーションが関数呼び出しを受け取り、次のリクエストで関数の結果を返す必要があります。
+## ツールループの上限
 
-## 対応エンドポイント
+| 上限 | 値 | 上限に達したとき |
+| --- | --- | --- |
+| リクエストあたりのサーバーツール呼び出し | リクエストの `max_tool_calls`。デフォルトは `30`、最大 `100` | `400 gateway_server_tool_limit` |
+| 後続のターン | `8` | `502 gateway_server_tool_error` |
+| 1 つのツールの呼び出し | そのツールの `max_uses` | ツールがエラー結果をモデルに返し、モデルはそのツールなしで続行できます |
 
-サーバーツールに対応しているエンドポイント:
+## 利用量と料金
 
-- `/v1/chat/completions`
-- `/v1/responses`
-- `/v1/messages`
-
-ストリーミングリクエストにも対応しています。ゲートウェイ管理のサーバーツールでは、Phaseoが上流のツール呼び出しターンを展開してツールを実行し、ループを続けた後、最終回答用の合成ストリームを出力する場合があります。
-
-## 使用状況の追跡
-
-サーバーツールの使用量は`usage.server_tool_use`に記録されます。
+各サーバーツールは `usage.server_tool_use` にカウンターを追加し、モデルの料金カードで対応するメーターが課金されることがあります。2 つ目のモデル（Advisor、Subagent、Fusion、画像生成）が使ったトークンはリクエストの利用量に加算され、そのモデルの料金で計算されます。
 
 ```json
 {
@@ -106,48 +106,22 @@ curl https://api.phaseo.app/v1/chat/completions \
     "server_tool_use": {
       "datetime_requests": 1,
       "web_search_requests": 2,
-      "web_search_results": 8,
-      "web_fetch_requests": 1,
-      "advisor_requests": 1,
-      "subagent_requests": 1,
-      "fusion_requests": 1,
-      "search_models_requests": 1,
-      "image_generation_requests": 1
+      "web_search_results": 8
     }
   }
 }
 ```
 
-モデルの料金カードに設定されている場合、`server_tool_web_search_requests`、`server_tool_web_search_extra_results`、`server_tool_web_fetch_requests`、`server_tool_advisor_requests`、`server_tool_image_generation_requests`、`native_web_search_requests`、`native_web_fetch_requests`などのサーバーツール用メーターを料金計算に使用できます。
+| ツール | 利用量のカウンター | 料金メーター |
+| --- | --- | --- |
+| 日時 | `datetime_requests` | なし |
+| Web 検索 | `web_search_requests`、`web_search_results`、`web_search_extra_results` | `server_tool_web_search_requests`、`server_tool_web_search_extra_results` |
+| Web Fetch | `web_fetch_requests` | `server_tool_web_fetch_requests` |
+| Advisor | `advisor_requests` | `server_tool_advisor_requests` |
+| Subagent | `subagent_requests` | `server_tool_subagent_requests` |
+| Fusion | `fusion_requests` | `server_tool_fusion_requests` |
+| モデル検索 | `search_models_requests` | `server_tool_search_models_requests` |
+| 画像生成 | `image_generation_requests` | `server_tool_image_generation_requests` |
+| パッチの適用 | `apply_patch_requests` | `server_tool_apply_patch_requests` |
 
-## ツールのページ
-
-<Columns cols={2}>
-  <Card title="日時" icon="clock" href="./datetime.mdx">
-    モデルに現在の日付と時刻を渡します。
-  </Card>
-  <Card title="Web検索" icon="search" href="./web-search.mdx">
-    最新情報が必要なときにモデルがWeb検索できるようにします。
-  </Card>
-  <Card title="Webページ取得" icon="file-search" href="./web-fetch.mdx">
-    モデルが指定したURLを取得して読み取れるようにします。
-  </Card>
-  <Card title="Advisor" icon="message-square" href="./advisor.mdx">
-    生成中にモデルが別のモデルへ相談できるようにします。
-  </Card>
-  <Card title="サブエージェント" icon="cpu" href="./subagent.mdx">
-    モデルが特定の作業をワーカーモデルに委任できるようにします。
-  </Card>
-  <Card title="Fusion" icon="combine" href="./fusion.mdx">
-	複数モデルで並列分析を行い、結果を統合します。
-  </Card>
-	<Card title="モデル検索" icon="list-filter" href="./search-models.mdx">
-		モデルが最新のPhaseoカタログから適切なモデルを検索できるようにします。
-	</Card>
-  <Card title="画像生成" icon="image" href="./image-generation.mdx">
-    回答中にモデルが画像を生成できるようにします。
-  </Card>
-	<Card title="パッチを適用" icon="file-diff" href="./apply-patch.mdx">
-		検証済みの作成・更新・削除パッチを生成します。
-	</Card>
-</Columns>
+Web 検索や Web Fetch がプロバイダー独自のツール（`engine: "native"`）として実行される場合は、代わりに `native_web_search_requests` または `native_web_fetch_requests` で課金されます。

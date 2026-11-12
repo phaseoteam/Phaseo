@@ -1,10 +1,9 @@
-"use client";
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { reviewProviderModelRequestAction, refreshProviderModelRequestsAction } from "@/app/(dashboard)/settings/internal/provider-review/actions";
+import { reviewProviderModelRequestAction, refreshProviderModelRequestsAction } from "@/features/settings/internal/provider-review/actions";
 import type { ProviderModelRequest } from "@/lib/fetchers/internal/fetchInternalProviderCatalogReviews";
 
 export default function ProviderModelRequests({ initialRequests }: {initialRequests:ProviderModelRequest[]}) {
@@ -17,7 +16,7 @@ export default function ProviderModelRequests({ initialRequests }: {initialReque
   async function review(request:ProviderModelRequest,decision:"approved"|"rejected"|"needs_changes") {
     if(decision!=="approved" && !reasons[request.id]?.trim()) {toast.error(t("current.changesReason"));return;}
     setSaving(request.id);
-    try {await reviewProviderModelRequestAction({requestId:request.id,decision,reason:reasons[request.id],expectedUpdatedAt:request.updated_at});setRequests(await refreshProviderModelRequestsAction());}
+    try {await reviewProviderModelRequestAction({ data: {requestId:request.id,decision,reason:reasons[request.id],expectedUpdatedAt:request.updated_at} });setRequests(await refreshProviderModelRequestsAction());}
     catch {toast.error(t("current.updateFailed"));try {setRequests(await refreshProviderModelRequestsAction());} catch { /* Keep the existing queue if refreshing fails. */ }}
     finally {setSaving(null);}
   }

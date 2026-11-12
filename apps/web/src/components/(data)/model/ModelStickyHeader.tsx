@@ -1,12 +1,11 @@
-"use client";
-
 import { IntentLink as Link } from "@/components/navigation/IntentLink";
 import { useEffect, useState } from "react";
 import { MessageSquare, Scale } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { TAP_TARGET_28_TIGHT } from "@/lib/tapTargets";
+import { useTranslations } from "@/i18n/react";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
 import { UseModelSheet } from "./UseModelSheet";
@@ -134,13 +133,13 @@ export default function ModelStickyHeader({
 								</Link>
 							</Button> : null}
 							{canChat ? (
-								<Button asChild variant="outline" size="icon-sm" className="rounded-lg sm:hidden">
+								<Button asChild variant="outline" size="icon-sm" className={cn("rounded-lg sm:hidden", TAP_TARGET_28_TIGHT)}>
 									<Link href={`${decisionsOnly ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`} aria-label={decisionsOnly ? t("openDecisionsPlayground") : t("chatAbout")}>
 										<MessageSquare className="h-4 w-4" />
 									</Link>
 								</Button>
 							) : null}
-			{canCompare ? <Button asChild variant="outline" size="icon-sm" className="rounded-lg sm:hidden">
+			{canCompare ? <Button asChild variant="outline" size="icon-sm" className={cn("rounded-lg sm:hidden", TAP_TARGET_28_TIGHT)}>
 								<Link href={`/compare?models=${modelId}`} aria-label={t("compareThis")}>
 									<Scale className="h-4 w-4" />
 								</Link>
@@ -150,7 +149,7 @@ export default function ModelStickyHeader({
 							</Button> : null}
 							{canChat && supportsText ? <UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} className="hidden h-8 px-2.5 text-[13px] sm:inline-flex" /> : null}
 							{canChat && supportsText ? (
-								<UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} compact className="sm:hidden" />
+								<UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} compact className={cn("sm:hidden", TAP_TARGET_28_TIGHT)} />
 							) : null}
 						</div>
 					</div>

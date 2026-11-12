@@ -4,74 +4,61 @@ description: "Aspectos clave para adoptar Gemini 3.1, incluidos los controles de
 icon: "/icons/brands/google.svg"
 ---
 
-# Google Gemini 3.1
+Fija la profundidad del razonamiento con `reasoning.effort`, que Phaseo envía a Gemini 3 como `thinking_level`, y devuelve los turnos del asistente con llamadas a herramientas tal como Phaseo los devolvió para que se conserven las firmas de pensamiento. Trata Gemini 3 y Gemini 3.1 Pro como dos migraciones distintas.
 
-Usa esta guía para incorporar de forma segura la familia Gemini 3.1 en producción:
+| ID de modelo de Phaseo | Estado |
+| --- | --- |
+| `google/gemini-3.1-pro-preview` | Disponible |
+| `google/gemini-3-flash-preview` | Disponible |
+| `google/gemini-3.1-flash-lite` | Obsoleto; se retira el 7 de mayo de 2027 |
+| `google/gemini-3-pro-preview` | Retirado el 9 de marzo de 2026; las solicitudes se enrutan a `google/gemini-3.1-pro-preview` |
+| `google/gemini-3.1-flash-lite-preview` | Retirado el 25 de mayo de 2026; las solicitudes se enrutan a `google/gemini-3.1-flash-lite` |
 
-- `google/gemini-3-pro-preview`
-- `google/gemini-3-flash-preview`
-- `google/gemini-3.1-pro-preview`
-- `google/gemini-3.1-flash-lite-preview`
+Los ID retirados solo siguen funcionando mediante la sustitución automática; consulta [Obsolescencia y retirada de modelos](../guides/model-retirement). Llama directamente al ID actual.
 
-Gemini 3 introdujo cambios reales en la API para controlar el razonamiento y manejar contenido multimodal. Gemini 3.1 amplió estas capacidades, sobre todo para tareas complejas que requieren mucho razonamiento.
+## Fija la profundidad del razonamiento
 
-## Novedades
+Gemini 3 sustituyó los presupuestos de pensamiento por `thinking_level`. Phaseo asigna `reasoning.effort` (o el campo plano `reasoning_effort`) a ese parámetro:
 
-- Gemini 3 introdujo `thinking_level` como control principal de la profundidad del razonamiento.
-- Gemini 3 añadió `media_resolution` para gestionar imágenes multimodales.
-- Gemini 3 usa firmas de pensamiento para conservar el contexto de razonamiento entre llamadas.
-- En flujos más estrictos, la ausencia de firmas puede reducir la calidad o producir errores `400`.
-- Gemini 3.1 Pro es una mejora de razonamiento para tareas complejas y flujos de agentes.
+| `reasoning.effort` | Gemini 3 Flash | Gemini 3.1 Pro |
+| --- | --- | --- |
+| `minimal` | `MINIMAL` | `LOW` (3.1 Pro no tiene `MINIMAL`) |
+| `low` | `LOW` | `LOW` |
+| `medium` | `MEDIUM` | `MEDIUM` |
+| `high`, `xhigh`, `max` | `HIGH` | `HIGH` |
 
-## Inicio rápido de la migración
+```json
+{
+  "model": "google/gemini-3.1-pro-preview",
+  "messages": [{ "role": "user", "content": "Compare these three architecture options." }],
+  "reasoning": { "effort": "medium" }
+}
+```
 
-### 1. Vuelve a asignar los controles de razonamiento
+Los niveles no se comportan exactamente igual que los ajustes de esfuerzo de otros proveedores, así que vuelve a probar la latencia y la calidad en cada nivel que expongas.
 
-Si tu aplicación ofrece un control genérico de razonamiento, asígnalo cuidadosamente para las rutas de Gemini 3. En flujos compatibles con OpenAI, `reasoning_effort` se corresponde conceptualmente con `thinking_level`, pero no se comportan igual y debes volver a probarlos.
+## Conserva las firmas de pensamiento
 
-### 2. Maneja correctamente las firmas de pensamiento
+Gemini 3 devuelve firmas de pensamiento que llevan el contexto del razonamiento de una llamada a otra y, en las llamadas a funciones, una firma ausente puede reducir la calidad o devolver `400`. Devuelve cada turno del asistente, incluidas sus llamadas a herramientas, exactamente como lo devolvió Phaseo. Phaseo reenvía cada firma al modelo que la emitió; cuando falta una o procede de otro modelo, envía el marcador de omisión de Google para que la solicitud no falle.
 
-Con los SDK oficiales de Gemini y el historial de chat estándar, las firmas suelen gestionarse automáticamente. Si creas solicitudes de bajo nivel, sobre todo para llamadas a funciones o generación y edición de imágenes, conserva las firmas devueltas y reenvíalas exactamente como se requiere.
+## Revisa los prompts y los contenidos multimedia
 
-### 3. Revisa el estilo de los prompts
+Las indicaciones de Google para Gemini 3 favorecen los prompts directos y el control mediante parámetros frente a las estructuras de prompt largas. Si tus prompts compensan el comportamiento de modelos anteriores, simplifícalos y vuelve a evaluarlos.
 
-Las recomendaciones de Gemini 3 favorecen prompts directos y controles mediante parámetros, en lugar de instrucciones largas. Si tus prompts actuales compensan en exceso el comportamiento de modelos anteriores, simplifícalos y vuelve a evaluarlos.
-
-### 4. Ajusta la configuración multimodal
-
-Si tus rutas incluyen imágenes, documentos o medios mixtos, vuelve a probar `media_resolution` en lugar de asumir que los valores predeterminados anteriores siguen siendo adecuados.
+Gemini 3 también añadió `media_resolution` para imágenes y documentos. Phaseo no lo expone, así que se aplica el valor predeterminado de Google; vuelve a probar las rutas de imágenes, documentos y contenido mixto en lugar de dar por hecho que los resultados anteriores se mantienen.
 
 ## Qué probar
 
-### Comportamiento de prompts y razonamiento
+- **Razonamiento:** prompts concisos frente a prompts con estructura, tareas paso a paso, síntesis con contexto largo y flujos de agentes que dependen de la continuidad del razonamiento.
+- **Respuestas:** firmas entre turnos, tasa de éxito de las llamadas a funciones, tasa de validación del esquema y salidas vacías, parciales o mal formadas tras cambiar el esfuerzo.
+- **Métricas de producción:** latencia en cada nivel, uso de tokens y coste, rutas multimodales y éxito de las tareas en Gemini 3 frente a Gemini 3.1 Pro.
 
-- prompts concisos frente a prompts con mucha estructura
-- tareas de razonamiento paso a paso
-- síntesis con contexto largo
-- flujos de agentes que deben conservar la continuidad del razonamiento
+## Despliega
 
-### Manejo de respuestas
-
-- conservación de firmas entre turnos
-- tasa de éxito de llamadas a funciones
-- tasa de aprobación de esquemas
-- salidas vacías, parciales o malformadas después de cambiar los controles de pensamiento
-
-### Métricas de producción
-
-- latencia en cada nivel de `thinking_level`
-- uso de tokens y coste
-- rendimiento de rutas multimodales con distintos valores de `media_resolution`
-- éxito de tareas al comparar Gemini 3 con Gemini 3.1 Pro
-
-## Recomendaciones para el despliegue
-
-Trata Gemini 3 y Gemini 3.1 como migraciones distintas.
-
-1. Primero migra el formato de solicitud y el manejo de firmas.
-2. Después vuelve a ejecutar las evaluaciones de prompts y esquemas en Gemini 3.
+1. Migra primero la estructura de la solicitud y la gestión de firmas.
+2. Vuelve a ejecutar las evaluaciones de prompts y esquemas en Gemini 3.
 3. Promueve Gemini 3.1 Pro por separado para las rutas que necesitan un razonamiento más profundo.
-4. Mantén una alternativa más sencilla o económica para las cargas de gran volumen.
+4. Mantén un respaldo más barato para las cargas de trabajo de gran volumen.
 
 ## Fuentes
 

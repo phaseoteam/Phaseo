@@ -6,13 +6,13 @@ description: "Check incidents, confirm a model is routable, interpret Gateway me
 icon: "shield-check"
 ---
 
-Use this guide when you need to answer one of three questions: is Phaseo healthy, is a model routable now, or does a route meet your application's reliability target?
+Check the [status page](https://status.phaseo.app) and `GET /v1/health` to see whether Phaseo is healthy, `GET /v1/models` to see whether a model is routable now, and your own test run to see whether a route meets your reliability target.
 
 ## Check current service health
 
 1. Open the [Phaseo status page](https://status.phaseo.app) for current incidents and incident history.
 2. Call `GET /v1/health` for a minimal Gateway health check.
-3. If one request failed, keep its request ID and inspect the activity or generation record before assuming the whole service is unavailable.
+3. If a single request failed, keep its request ID and inspect its activity or generation record before assuming the whole service is down.
 
 ```bash
 curl https://api.phaseo.app/v1/health
@@ -30,16 +30,14 @@ The public status page reports service health. Phaseo does not currently claim a
 
 ## Confirm that a model is routable
 
-The Phaseo catalog is broader than the set of models available through the Gateway. Catalog presence means Phaseo tracks the model; it does not mean a public route exists.
-
-`GET /v1/models` returns only currently routable models by default:
+The Phaseo catalog lists more models than the Gateway can route: a catalog entry means Phaseo tracks the model, not that a public route exists. `GET /v1/models` returns only currently routable models by default:
 
 ```bash
 curl https://api.phaseo.app/v1/models \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Use `availability=all` only when you intentionally want to inspect coming-soon or inactive mappings. Do not send production traffic to a provider row unless `availability_status` is `active` and `is_active_gateway` is `true`.
+Add `availability=all` to also see coming-soon and inactive mappings. Send production traffic to a provider row only when its `availability_status` is `active` and `is_active_gateway` is `true`. See [Provider and Phaseo Statuses](../guides/provider-statuses.mdx) for what the status icons on model pages mean.
 
 | State | What it means |
 | --- | --- |
@@ -48,11 +46,11 @@ Use `availability=all` only when you intentionally want to inspect coming-soon o
 | `inactive` | A known route is disabled, unavailable, expired, or otherwise not routable. |
 | `not_listed` | No Gateway provider mapping is currently listed for the model. |
 
-Availability does not guarantee perpetual uptime, access in every region, or identical commercial terms for every workspace.
+`active` doesn't guarantee uptime, access in every region, or the same commercial terms for every workspace.
 
 ## Interpret performance metrics
 
-Phaseo performance data is observational: it summarizes requests routed through the Gateway rather than a controlled lab benchmark.
+Phaseo's performance data summarizes real requests routed through the Gateway; it isn't a controlled lab benchmark.
 
 | Metric | Definition |
 | --- | --- |
@@ -64,15 +62,15 @@ Phaseo performance data is observational: it summarizes requests routed through 
 | Effective throughput | All output tokens divided by full provider duration. |
 | Output speed | Output tokens after the first divided by provider time after TTFT. |
 
-TTFT and output speed require a streaming response with a content-bearing first output. A non-streaming request can still contribute duration and effective-throughput measurements without an invented TTFT.
+TTFT and output speed need a streaming response with a content-bearing first output. A non-streaming request still contributes duration and effective throughput, but no TTFT.
 
-Always read a metric with its time window, route, region, streaming mode, and percentile. Provider load, prompt length, output length, retries, and transport conditions can all change the result.
+Read every metric with its time window, route, region, streaming mode and percentile. Provider load, prompt length, output length, retries and network conditions all change the result.
 
 For the complete definitions, see [Pricing & Performance](../exploring/pricing-performance) and [How Phaseo measures latency and throughput](https://phaseo.app/how-phaseo-measures-latency-throughput).
 
 ## Validate with your workload
 
-Public telemetry is directional evidence, not proof that a route meets your production target. Build a small, reproducible study before a rollout:
+Public metrics show direction; they don't prove a route meets your production target. Run a small, reproducible test before a rollout:
 
 1. Remove sensitive production data and keep a representative prompt mix.
 2. Record the model ID, endpoint, provider constraints, region, streaming mode, and concurrency.
@@ -85,15 +83,10 @@ Do not publish a customer name, quote, workload result, or reliability percentag
 
 ## Triage a failed request
 
-- Check [service status](https://status.phaseo.app).
-- Confirm the model still appears in the default `GET /v1/models` response.
-- Review the HTTP status and error code in [Error Handling](../api-reference/errors).
-- Retry transient `429` and `5xx` responses with bounded exponential backoff.
-- Keep the request ID when contacting [support](https://phaseo.app/help).
+1. Check [service status](https://status.phaseo.app).
+2. Confirm the model still appears in the default [`GET /v1/models`](../api-reference/endpoint/models) response, and check its [endpoints](../api-reference/endpoint/model-endpoints).
+3. Look up the HTTP status and error code in [Errors and Debugging](../api-reference/errors).
+4. Retry transient `429` and `5xx` responses with bounded exponential backoff; see [Rate Limits](../api-reference/limits.mdx).
+5. Keep the request ID when you contact [support](https://phaseo.app/help).
 
-## Related guides
-
-- [Models API](../api-reference/endpoint/models)
-- [Model endpoints](../api-reference/endpoint/model-endpoints)
-- [Routing and Fallbacks](../guides/routing-and-fallbacks)
-- [Rate Limits](../api-reference/limits.mdx)
+To keep requests working when one provider fails, set up [routing and fallbacks](../guides/routing-and-fallbacks).

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from "react";
 
-/** T3 Code's floating player: one browser tab per chat floats over the chat, sized and placed as the person left it. */
+/** The floating player: one browser tab per chat floats over the chat, sized and placed as the person left it. */
 export type MiniPlayerSize = { width: number; height: number };
 export type MiniPlayerPosition = { x: number; y: number };
 export type MiniPlayerFrame = MiniPlayerPosition & MiniPlayerSize;
@@ -44,7 +44,7 @@ export function resolveMiniPlayerFrame(state: Pick<MiniPlayerState, "source" | "
 	const anchored = state.position ?? { x: container.width - miniPlayerEdgeGap - size.width, y: miniPlayerHandleSpace };
 	return { ...clampMiniPlayerPosition(anchored, container, size), ...size };
 }
-/** Resizes from an edge or corner, holding the aspect; the opposite edge stays put (T3 Code). */
+/** Resizes from an edge or corner, holding the aspect; the opposite edge stays put. */
 export function resizeMiniPlayer(start: MiniPlayerFrame, direction: MiniPlayerResizeDirection, delta: MiniPlayerPosition, source: MiniPlayerSize, container: MiniPlayerSize): MiniPlayerFrame {
 	const east = direction.includes("east"), west = direction.includes("west"), north = direction.includes("north"), south = direction.includes("south");
 	const right = start.x + start.width, bottom = start.y + start.height;
@@ -107,7 +107,7 @@ export function placeMiniPlayer(context: string, frame: Partial<MiniPlayerFrame>
 	commit({ ...saved, [context]: { ...previous, ...(frame.width !== undefined ? { width: Math.round(frame.width) } : {}), ...(frame.x !== undefined && frame.y !== undefined ? { position: { x: Math.round(frame.x), y: Math.round(frame.y) } } : {}) } });
 }
 
-/** Browser tabs a pane surface is showing right now: the player hides while its tab shows in the pane (T3 Code). */
+/** Browser tabs a pane surface is showing right now: the player hides while its tab shows in the pane. */
 const shown = new Map<string, number>();
 const shownListeners = new Set<() => void>();
 export function markBrowserSurfaceShown(tabId: string) {

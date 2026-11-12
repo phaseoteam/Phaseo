@@ -55,6 +55,8 @@ export function renderClaudeSettings(path: string, before: string | null): strin
 export const claudeCodeAdapter: IntegrationAdapter = {
 	id: "claude-code",
 	name: "Claude Code",
+	// User MCP servers live in ~/.claude.json, which Claude Code rewrites constantly; leave it to `claude mcp add`.
+	setupTips: () => ["give Claude Code live Phaseo model, pricing and usage tools with: claude mcp add --scope user phaseo -- phaseo mcp"],
 	async inspect(options) {
 		const path = settingsPath(options);
 		const current = await readOptionalFile(path);

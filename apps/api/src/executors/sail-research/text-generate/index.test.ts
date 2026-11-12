@@ -32,6 +32,13 @@ describe("Sail Research completion windows", () => {
 		});
 	});
 
+	// docs.sailresearch.com/pricing lists Default, Balanced and Flex rates for both Kimi K3 models.
+	it.each(["moonshotai/Kimi-K3", "moonshotai/Kimi-K3.1-Pro"])("maps standard to balanced for %s", (slug) => {
+		expect(preprocess(request("standard"), args(slug)).metadata).toEqual({ completion_window: "balanced" });
+		expect(preprocess(request("priority"), args(slug)).metadata).toEqual({ completion_window: "asap" });
+		expect(preprocess(request("flex"), args(slug)).metadata).toEqual({ completion_window: "flex" });
+	});
+
 	it("maps an omitted tier to the standard completion window", () => {
 		expect(preprocess(requestWithoutTier(), args("zai-org/GLM-5.2-FP8"))).toMatchObject({
 			metadata: { completion_window: "balanced" },

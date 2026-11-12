@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import React, { useState } from "react";
 import {
@@ -14,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { createApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
+import { createApiKeyAction } from "@/features/settings/keys/actions";
 import {
 	DropdownMenu,
 	DropdownMenuTrigger,
@@ -23,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	API_KEY_LIMIT_PRESETS,
@@ -81,12 +80,7 @@ export default function CreateKeyDialog({
 			const teamArg =
 				selectedTeamId === null ? "" : (selectedTeamId as string);
 			const res: any = await createApiKeyAction(
-				name,
-				currentUserId as string,
-				teamArg,
-				JSON.stringify([]), // default empty scopes
-				getApiKeyPreset(selectedPresetId).limits,
-				storageLocations
+				{ data: { name, creatorUserId: currentUserId as string, workspaceId: teamArg, scopes: JSON.stringify([]), limits: getApiKeyPreset(selectedPresetId).limits, storageLocations } }
 			);
 			setPlainKey(res?.plaintext ?? null);
 			void invalidateSettings();

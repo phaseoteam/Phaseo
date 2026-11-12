@@ -1,4 +1,3 @@
-"use client";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
@@ -16,9 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2 } from "lucide-react";
-import { deleteApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
+import { deleteApiKeyAction } from "@/features/settings/keys/actions";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function DeleteKeyItem({
 	k,
@@ -45,7 +44,7 @@ export default function DeleteKeyItem({
 		e?.preventDefault();
 		if (confirm !== k.name) return;
 		setLoading(true);
-		const promise = deleteApiKeyAction(k.id, confirm);
+		const promise = deleteApiKeyAction({ data: { id: k.id, confirmName: confirm } });
 		try {
 			await toast.promise(promise, {
 					loading: t("keys.deletingKey"),

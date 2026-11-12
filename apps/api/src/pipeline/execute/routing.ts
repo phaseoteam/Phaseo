@@ -120,12 +120,9 @@ function normalizeCapabilityStatus(value?: string | null): CapabilityStatus {
     return normalizeSharedCapabilityStatus(value);
 }
 
+// A deranked route keeps its score: it is ordered as a last resort by tier, not by weight.
 function routingStatusMultiplier(status: RoutingStatus): number {
-    if (status === "deranked_lvl1") return 1e-3;
-    if (status === "deranked_lvl2") return 1e-6;
-    if (status === "deranked_lvl3") return 1e-9;
-    if (status === "disabled") return 0;
-    return 1;
+    return status === "disabled" ? 0 : 1;
 }
 
 function applyRoutingMode(preset: RoutingPreset, mode: RoutingMode): RoutingPreset {
@@ -1501,14 +1498,7 @@ export async function routeProviders(
                 })),
         });
     }
-    // Stable, so each evidence tier keeps the order routing chose within it.
-    const jsonOutputEvidenceLast = <T extends { candidate: ProviderCandidate }>(entries: T[]): T[] =>
-        evidenceRanks.size === 0
-            ? entries
-            : entries
-                .map((entry, index) => ({ entry, index, rank: evidenceRanks.get(entry.candidate) ?? 0 }))
-                .sort((a, b) => a.rank - b.rank || a.index - b.index)
-                .map(({ entry }) => entry);
+    const evidenceRankOf = (entry: { candidate: ProviderCandidate }) => evidenceRanks.get(entry.candidate) ?? 0;
     if (debugEnabled) {
         console.log("[gateway] provider pool", {
             model: ctx.model,
@@ -1723,6 +1713,8 @@ export async function routeProviders(
             score,
             providerQuotaOverage,
             recentOutage: isRecentOutage(v),
+            lastResort: providerRoutingStatus === "deranked" || modelRoutingStatus === "deranked" ||
+                capabilityStatus === "deranked",
             stickyMatch,
             stickyFailing: stickyMatch && enoughFailureEvidence,
 			scoreFactorValues,
@@ -1793,21 +1785,23 @@ export async function routeProviders(
         primary: entries.filter((entry) => !isExternalProvider(entry)),
         external: entries.filter(isExternalProvider),
     });
-    // Candidates at a managed upstream limit stay routable behind every other candidate except
-    // open breakers, least over their limit first. Weighted order alone cannot guarantee this:
-    // it floors tiny weights. Without a saturated candidate the order is unchanged.
-    const quotaSaturatedLast = (entries: typeof routableScored) => {
-        if (!entries.some((entry) => entry.providerQuotaOverage > 0)) return entries;
-        const tier = (entry: typeof routableScored[number]) =>
-            entry.recentOutage ? 2 : entry.providerQuotaOverage > 0 ? 1 : 0;
-        return [...entries].sort((a, b) => tier(a) - tier(b) ||
-            (tier(a) === 1 ? a.providerQuotaOverage - b.providerQuotaOverage : 0));
+    // Fallback tiers, each behind the one before: deranked routes (a last resort), candidates at
+    // a managed upstream limit (least over first), then open breakers. Weighted order alone cannot
+    // guarantee this: it floors tiny weights. JSON output evidence orders routes within a tier, so
+    // it never lifts a fallback above a healthy route. The sort is stable, so ties keep their order.
+    const fallbackTier = (entry: typeof routableScored[number]) =>
+        entry.recentOutage ? 3 : entry.providerQuotaOverage > 0 ? 2 : entry.lastResort ? 1 : 0;
+    const fallbacksLast = (entries: typeof routableScored) => {
+        if (!entries.some((entry) => fallbackTier(entry) > 0 || evidenceRankOf(entry) > 0)) return entries;
+        return [...entries].sort((a, b) => fallbackTier(a) - fallbackTier(b) ||
+            evidenceRankOf(a) - evidenceRankOf(b) ||
+            (fallbackTier(a) === 2 ? a.providerQuotaOverage - b.providerQuotaOverage : 0));
     };
     const weightedOrderWithExternalFallback = (entries: typeof routableScored) => {
         const { primary, external } = splitExternalFallback(entries);
         return [
-            ...quotaSaturatedLast(weightedOrder(primary, (entry) => entry.score, rng)),
-            ...quotaSaturatedLast(weightedOrder(external, (entry) => entry.score, rng)),
+            ...fallbacksLast(weightedOrder(primary, (entry) => entry.score, rng)),
+            ...fallbacksLast(weightedOrder(external, (entry) => entry.score, rng)),
         ];
     };
     const explorationRequest = Boolean(ctx.requestId && isRecoveryProbeRequest(ctx.workspaceId, ctx.requestId));
@@ -1819,9 +1813,12 @@ export async function routeProviders(
             stickyRecoveryProbeSkipped = true;
             return null;
         }
-        const recoveryPool = entries.some((entry) => !isExternalProvider(entry))
-            ? entries.filter((entry) => !isExternalProvider(entry))
-            : entries;
+        // A last-resort route is a backup only, and a JSON request keeps routes that do not list
+        // the format behind those that do: neither is promoted ahead of the main pool.
+        const mainPool = entries.filter((entry) => !entry.lastResort && evidenceRankOf(entry) === 0);
+        const recoveryPool = mainPool.some((entry) => !isExternalProvider(entry))
+            ? mainPool.filter((entry) => !isExternalProvider(entry))
+            : mainPool;
         const recovering = recoveryPool.filter(e => e.health.breaker === "half_open" ||
             (e.health.breaker === "open" && e.health.breaker_until_ms <= now) ||
             (e.health.breaker === "closed" && Math.max(e.health.err_ewma_10s, e.health.err_ewma_60s) >= 0.1 &&
@@ -1877,14 +1874,14 @@ export async function routeProviders(
             (entry) => !orderedSet.has(getRoutingCandidateKey(entry.candidate))
         );
         if (strict || deterministicRequestSort) {
-            const ranked = [...ordered, ...jsonOutputEvidenceLast(quotaSaturatedLast(remaining.sort((a, b) => b.score - a.score)))];
+            const ranked = [...ordered, ...fallbacksLast(remaining.sort((a, b) => b.score - a.score))];
             recordStickyOutcome(ranked, true);
             return {
                 ranked,
 			diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "explicit_provider_order"),
             };
         }
-        const remainingRanked = jsonOutputEvidenceLast(weightedOrderWithExternalFallback(remaining));
+        const remainingRanked = weightedOrderWithExternalFallback(remaining);
         const ranked = [...ordered, ...remainingRanked];
         recordStickyOutcome(ranked, true);
         return {
@@ -1896,11 +1893,11 @@ export async function routeProviders(
     if (strict || deterministicRequestSort) {
         const { primary, external } = splitExternalFallback(routableScored);
         const ranked = [
-            ...quotaSaturatedLast(primary.sort(compareScores)),
-            ...quotaSaturatedLast(external.sort(compareScores)),
+            ...fallbacksLast(primary.sort(compareScores)),
+            ...fallbacksLast(external.sort(compareScores)),
         ];
         const recovery = selectRecovery(ranked);
-        const finalRanked = jsonOutputEvidenceLast(recovery ? promote(ranked, recovery) : ranked);
+        const finalRanked = recovery ? promote(ranked, recovery) : ranked;
         recordStickyOutcome(finalRanked, false);
         return {
             ranked: finalRanked,
@@ -1912,14 +1909,13 @@ export async function routeProviders(
     const ranked = weightedOrderWithExternalFallback(routableScored);
     const recovery = selectRecovery(ranked);
     if (recovery) {
-        const recoveredRank = jsonOutputEvidenceLast(promote(ranked, recovery));
+        const recoveredRank = promote(ranked, recovery);
         recordStickyOutcome(recoveredRank, false);
         return { ranked: recoveredRank, diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(recoveredRank), false, "recovery_probe") };
     }
-    const weightedRanked = jsonOutputEvidenceLast(ranked);
-    recordStickyOutcome(weightedRanked, false);
+    recordStickyOutcome(ranked, false);
     return {
-        ranked: weightedRanked,
-		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(weightedRanked), false, "weighted_order"),
+        ranked,
+		diagnostics: buildDiagnostics(ranked.length, rankedProviderDiagnostics(ranked), false, "weighted_order"),
     };
 }

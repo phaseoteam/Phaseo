@@ -1,9 +1,7 @@
-"use client";
-
 import { useMemo, useState, useTransition, type ReactNode } from "react";
 import { Check, ChevronsUpDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link, useRouter } from "@/i18n/navigation";
 import {
 	AlertDialog,
@@ -27,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import type { SettingsClassifier, SettingsClassifiersInitialData } from "@/lib/fetchers/internal/settingsTypes";
-import { createClassifier, deleteClassifier, updateClassifier, type ClassifierActionError } from "@/app/(dashboard)/settings/classifiers/actions";
+import { createClassifier, deleteClassifier, updateClassifier, type ClassifierActionError } from "@/features/settings/classifiers/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { GatewayModelCombobox, useGatewayModelOptions } from "../GatewayModelCombobox";
 import { CLASSIFIER_PRESETS, type ClassifierPresetId } from "./classifierPresets";
@@ -141,7 +139,7 @@ export default function ClassifierEditor({ classifier, keys, apps }: {
 			return;
 		}
 		startSaving(async () => {
-			const result = classifier ? await write(updateClassifier(classifier.id, built.payload)) : await write(createClassifier(built.payload));
+			const result = classifier ? await write(updateClassifier({ data: { id: classifier.id, payload: built.payload } })) : await write(createClassifier({ data: built.payload }));
 			if (!result.ok) {
 				toast.error(actionError(result, t("errors.saveFailed")));
 				return;
@@ -155,7 +153,7 @@ export default function ClassifierEditor({ classifier, keys, apps }: {
 	function remove() {
 		if (!classifier) return;
 		startDeleting(async () => {
-			const result = await write(deleteClassifier(classifier.id));
+			const result = await write(deleteClassifier({ data: classifier.id }));
 			if (!result.ok) {
 				toast.error(actionError(result, t("errors.deleteFailed")));
 				return;
@@ -317,11 +315,7 @@ export default function ClassifierEditor({ classifier, keys, apps }: {
 				<ClassifierTestPanel classifierId={classifier?.id ?? null} buildRequest={testRequest} includeResponse={draft.includeResponse} />
 			</Section>
 
-			<div className="flex flex-wrap items-center justify-between gap-3 border-t pt-6">
-				<div className="flex flex-wrap items-center gap-2">
-					<Button type="button" onClick={save} disabled={busy}>{saving ? t("actions.saving") : classifier ? t("actions.save") : t("actions.create")}</Button>
-					<Button type="button" variant="ghost" asChild><Link href="/settings/classifiers">{t("actions.cancel")}</Link></Button>
-				</div>
+			<div className="flex flex-wrap items-center justify-between gap-3 border-t py-4">
 				{classifier ? (
 					<AlertDialog>
 						<AlertDialogTrigger asChild>
@@ -339,6 +333,10 @@ export default function ClassifierEditor({ classifier, keys, apps }: {
 						</AlertDialogContent>
 					</AlertDialog>
 				) : null}
+				<div className="ms-auto flex flex-wrap items-center justify-end gap-3">
+					<Button type="button" variant="outline" asChild><Link href="/settings/classifiers">{t("actions.cancel")}</Link></Button>
+					<Button type="button" onClick={save} disabled={busy}>{saving ? t("actions.saving") : classifier ? t("actions.save") : t("actions.create")}</Button>
+				</div>
 			</div>
 			{problem?.field === "api" ? <p role="alert" className="text-sm text-destructive">{t("errors.invalid", { message: problem.message })}</p> : null}
 		</div>

@@ -36,7 +36,7 @@ export async function taskExport(task: Task, format: TaskExportFormat, attachmen
 		sections.push(`## ${message.role === "user" ? "You" : message.role === "assistant" ? heading(task.harness) : heading(message.role)}${message.delivery === "steer" ? " — Steering instruction" : ""}`, message.text);
 		for (const reference of message.attachments ?? []) {
 			const attachment = contents.get(reference.id)!;
-			sections.push(`### Attachment: ${heading(attachment.name)}`, attachment.kind === "image" ? `![${heading(attachment.name)}](${attachment.dataUrl})` : block(attachment.text ?? ""));
+			sections.push(`### Attachment: ${heading(attachment.name)}`, attachment.kind === "image" ? `![${heading(attachment.name)}](${attachment.dataUrl})` : attachment.kind === "text" ? block(attachment.text ?? "") : `${attachment.mimeType}, ${attachment.size} bytes (the JSON export carries the file).`);
 		}
 	}
 	return sections.join("\n\n") + "\n";

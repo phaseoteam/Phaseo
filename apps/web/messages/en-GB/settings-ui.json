@@ -1009,7 +1009,240 @@
 		"rules": "rules",
 		"flag": "Flag",
 		"redact": "Redact",
-		"block": "Block"
+		"block": "Block",
+		"workspaceBaseline": "Workspace baseline",
+		"workspaceBaselineDescription": "Applies to every key in the workspace. Edit it under Privacy.",
+		"wholeWorkspace": "Whole workspace"
+	},
+	"guardrailAssignments": {
+		"tabGuardrails": "Guardrails",
+		"tabAssignments": "Assignments",
+		"keysView": "API keys",
+		"membersView": "Members",
+		"search": "Search names and guardrails",
+		"columnKey": "API key",
+		"columnMember": "Member",
+		"columnGuardrails": "Guardrails",
+		"columnAccess": "Access",
+		"none": "None",
+		"off": "Off",
+		"offHint": "This guardrail is off, so the gateway skips it.",
+		"viaMember": "via {name}",
+		"inheritedHint": "Applies through {name}'s member assignment. Change it in the Members view.",
+		"formerMember": "a former member",
+		"formerMemberHint": "Applies through the member assignment of this key's creator, who has left the workspace. The gateway still enforces it. Untick it here to remove it.",
+		"noLimits": "No limits",
+		"zdrOnly": "ZDR only",
+		"providersAllowed": "{count, plural, one {# provider allowed} other {# providers allowed}}",
+		"providersBlocked": "{count, plural, one {# provider blocked} other {# providers blocked}}",
+		"modelsAllowed": "{count, plural, one {# model allowed} other {# models allowed}}",
+		"modelsBlocked": "{count, plural, one {# model blocked} other {# models blocked}}",
+		"noProvidersAllowed": "No providers allowed",
+		"noModelsAllowed": "No models allowed",
+		"editGuardrails": "Edit guardrails for {name}",
+		"selectRow": "Select {name}",
+		"selectAll": "Select all",
+		"selectedCount": "{count} selected",
+		"addGuardrail": "Add guardrail",
+		"removeGuardrail": "Remove guardrail",
+		"clearSelection": "Clear",
+		"saved": "Assignments updated",
+		"saveFailed": "Couldn't update assignments",
+		"savedPartly": "Updated {done} of {count}. The rest weren't changed.",
+		"emptyTitle": "No guardrails to assign",
+		"emptyBody": "Create a guardrail first, then assign it to API keys or members here.",
+		"noKeys": "This workspace has no API keys.",
+		"noMembers": "This workspace has no members.",
+		"noMatches": "Nothing matches your search.",
+		"readOnly": "Only workspace owners and admins can change assignments.",
+		"workspaceView": "Workspace",
+		"departmentsView": "Departments",
+		"columnWorkspace": "Workspace",
+		"columnDepartment": "Department",
+		"columnSafety": "Safety",
+		"wholeWorkspace": "Whole workspace",
+		"wholeWorkspaceDetail": "Every API key and member",
+		"departmentReach": "{members, plural, one {# member} other {# members}} · {keys, plural, one {# key} other {# keys}}",
+		"noDepartments": "This workspace has no departments yet.",
+		"fromWorkspace": "Workspace",
+		"workspaceHint": "Applies to the whole workspace. Change it in the Workspace view.",
+		"departmentHint": "Applies through the {name} department. Change it in the Departments view.",
+		"baselineHint": "The workspace baseline applies to every API key and member. Edit it under Privacy.",
+		"fromGuardrails": "From {names}",
+		"promptInjectionPart": "Prompt injection: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# sensitive info rule} other {# sensitive info rules}}",
+		"footnoteLevels": "Each row shows every guardrail that reaches it: its own, and those from its member, its departments and the whole workspace. When several apply, the strictest rule wins.",
+		"noTraining": "No training",
+		"noPaidTraining": "No training on paid endpoints",
+		"noFreeTraining": "No training on free endpoints",
+		"noLogging": "No logging endpoints",
+		"columnRate": "Rate",
+		"rateRequests": "{count, plural, one {# request} other {# requests}} a minute",
+		"rateTokens": "{count, plural, one {# token} other {# tokens}} a minute",
+		"rateConcurrent": "{count, plural, other {# at a time}}",
+		"columnSpend": "Spend",
+		"spend": {
+			"daily": "{amount} a day",
+			"weekly": "{amount} a week",
+			"monthly": "{amount} a month"
+		},
+		"spendBlocks": "Blocks",
+		"spendNotifies": "Alerts only"
+	},
+	"guardrailWizard": {
+		"title": "New guardrail",
+		"subtitle": "Choose what it checks, set it up, then choose who it applies to.",
+		"stepsLabel": "Guardrail setup steps",
+		"step": {
+			"start": "What it does",
+			"configure": "Configure",
+			"assign": "Assign",
+			"review": "Review"
+		},
+		"cancel": "Cancel",
+		"back": "Back",
+		"continue": "Continue",
+		"create": "Create guardrail",
+		"creating": "Creating…",
+		"issue": {
+			"nameRequired": "Add a name to continue.",
+			"chooseSection": "Pick a template or at least one check to continue.",
+			"accessEmpty": "Turn on at least one access or privacy rule, or remove this check.",
+			"providerAllowlistEmpty": "Pick at least one provider to allow. An empty list blocks every provider.",
+			"modelAllowlistEmpty": "Pick at least one model to allow. An empty list blocks every model.",
+			"promptInjectionOff": "Choose how to handle prompt injection, or remove this check.",
+			"sensitiveInfoOff": "Turn on at least one sensitive info pattern, or remove this check.",
+			"rateLimitEmpty": "Set at least one limit to continue.",
+			"rateLimitInvalid": "Limits must be whole numbers above 0.",
+			"rateCountingRequired": "Choose how the limits count to continue.",
+			"spendLimitEmpty": "Set a limit to continue.",
+			"spendLimitInvalid": "Enter an amount above $0.00 with up to 2 decimal places.",
+			"spendPeriodRequired": "Choose a period to continue.",
+			"spendActionRequired": "Choose what happens at the limit to continue.",
+			"spendCountingRequired": "Choose how the limit counts to continue."
+		},
+		"nameLabel": "Name",
+		"namePlaceholder": "e.g. Contractor policy",
+		"descriptionLabel": "Description (optional)",
+		"descriptionPlaceholder": "Who is it for?",
+		"templatesTitle": "Start from a template",
+		"templatesBody": "A template fills in the settings. You can change all of them on the next step.",
+		"templateZdr": {
+			"name": "Zero data retention",
+			"body": "Only route to endpoints that don't store prompts or outputs."
+		},
+		"templateNoTraining": {
+			"name": "No training on prompts",
+			"body": "Skip endpoints that may train on or publish your prompts."
+		},
+		"templateApprovedProviders": {
+			"name": "Approved providers only",
+			"body": "Allow only the providers you pick."
+		},
+		"templateApprovedModels": {
+			"name": "Approved models only",
+			"body": "Allow only the models you pick."
+		},
+		"templateBlockPromptInjection": {
+			"name": "Block prompt injection",
+			"body": "Stop requests that look like prompt injection before they reach the model."
+		},
+		"templateRedactPersonalInfo": {
+			"name": "Redact personal info",
+			"body": "Replace emails, phone numbers, SSNs and card numbers before requests leave Phaseo."
+		},
+		"sectionsTitle": "Checks",
+		"sectionsBody": "Pick one or more. Choosing a template ticks these for you.",
+		"sectionAccess": {
+			"name": "Access and privacy",
+			"body": "Data retention, training, and which providers and models can be used."
+		},
+		"sectionPromptInjection": {
+			"name": "Prompt injection",
+			"body": "Scan requests for prompt injection, then flag, redact or block them."
+		},
+		"sectionSensitiveInfo": {
+			"name": "Sensitive info",
+			"body": "Find personal data and secrets in requests, then flag, redact or block them."
+		},
+		"addCheck": "Add a check:",
+		"assignTitle": "Who should “{name}” apply to?",
+		"assignBody": "Pick the whole workspace, or departments, members and API keys. Each row shows what its guardrails add up to now and with this one. You can skip this and assign it later.",
+		"columnNow": "Now",
+		"columnAfter": "With this guardrail",
+		"assignMemberHint": "A member's guardrails also apply to the API keys they create.",
+		"notApplied": "Not applied",
+		"coveredVia": "Through {name}",
+		"noTighter": "No change: its current guardrails already cover this.",
+		"promptInjectionPart": "Prompt injection: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# sensitive info rule} other {# sensitive info rules}}",
+		"reviewWhat": "What it does",
+		"reviewModels": "Models",
+		"reviewWho": "Applies to",
+		"change": "Change",
+		"modelsAvailable": "{available} of {total} models can still be used.",
+		"blocksEverything": "These rules block every model, so requests from the keys this applies to will fail.",
+		"appliesToNothing": "Nothing yet. You can assign it later from the Assignments tab.",
+		"turnOnNow": "Turn on now",
+		"turnOnNowBody": "When it's off, it's saved but the gateway skips it.",
+		"summaryZdr": "Only routes to endpoints with zero data retention",
+		"summaryNoPaidTraining": "Skips paid endpoints that may train on prompts",
+		"summaryNoFreeTraining": "Skips free endpoints that may train on prompts",
+		"summaryNoPublishing": "Skips free endpoints that may publish prompts",
+		"summaryNoLogging": "Skips endpoints that log prompts and outputs",
+		"summaryProvidersAllowed": "Allows only {count, plural, one {# provider} other {# providers}}",
+		"summaryProvidersBlocked": "Blocks {count, plural, one {# provider} other {# providers}}",
+		"summaryModelsAllowed": "Allows only {count, plural, one {# model} other {# models}}",
+		"summaryModelsBlocked": "Blocks {count, plural, one {# model} other {# models}}",
+		"summaryPromptInjection": "Prompt injection: {action}",
+		"summarySensitiveInfo": "Checks {count, plural, one {# sensitive info pattern} other {# sensitive info patterns}}",
+		"wholeWorkspaceTitle": "Whole workspace",
+		"wholeWorkspaceBody": "Apply to every API key and member, including ones added later.",
+		"wholeWorkspaceOn": "Applies to the whole workspace, so every row below gets it.",
+		"coveredByWorkspace": "Covered by the whole workspace",
+		"coveredByDepartment": "Covered through {name}",
+		"levelWorkspace": "The whole workspace",
+		"levelDepartments": "{count, plural, one {# department} other {# departments}}",
+		"levelMembers": "{count, plural, one {# member} other {# members}}",
+		"levelKeys": "{count, plural, one {# API key} other {# API keys}}",
+		"templateRateLimit": {
+			"name": "Rate limit",
+			"body": "Cap requests or tokens per minute, or requests at once."
+		},
+		"sectionRate": {
+			"name": "Rate limits",
+			"body": "Requests and tokens per minute, and requests at once. A rate guardrail has no other checks."
+		},
+		"summaryRateRequests": "{count, plural, one {# request} other {# requests}} a minute",
+		"summaryRateTokens": "{count, plural, one {# token} other {# tokens}} a minute",
+		"summaryRateConcurrent": "{count, plural, one {# request} other {# requests}} at a time",
+		"summaryRateCounting": {
+			"shared": "Shared by everything it's assigned to",
+			"each_key": "Separate for each key",
+			"each_end_user": "Separate for each end user"
+		},
+		"summaryRateFailClosed": "Refuses requests when limits can't be checked",
+		"templateSpendLimit": {
+			"name": "Spend limit",
+			"body": "Cap spend per day, week or month, with alerts."
+		},
+		"sectionSpend": {
+			"name": "Spend limit",
+			"body": "A dollar limit per day, week or month. A spend guardrail has no other checks."
+		},
+		"summarySpendLimit": {
+			"daily": "Up to {amount} a day",
+			"weekly": "Up to {amount} a week",
+			"monthly": "Up to {amount} a month"
+		},
+		"summarySpendAction": {
+			"notify": "Alerts at 80% and 100%, without blocking",
+			"block": "Blocks API-key requests at the limit"
+		},
+		"summarySpendCounting": {
+			"shared": "Shared by everything it's assigned to",
+			"each_key": "Separate for each key"
+		}
 	},
 	"broadcastControls": {
 		"optional": "(optional)",
@@ -1145,6 +1378,8 @@
 		"authorizedUsers": "Authorized users",
 		"noAuthorizations": "No authorized users",
 		"authorizationEmpty": "Users who authorize this application will appear here.",
+		"usersAdminsOnly": "Only owners and admins can see this app's users",
+		"usersAdminsOnlyDescription": "The people who authorize an app usually belong to other workspaces, so only this workspace's owners and admins see who they are and their requests.",
 		"activityDescription": "Recent authorization and usage activity.",
 		"noActivity": "No activity yet",
 		"activityEmpty": "Activity will appear after the application is used.",
@@ -1410,7 +1645,9 @@
 			"selectWorkspace": "Select a workspace to manage guardrails.",
 			"notFound": "Guardrail not found.",
 			"back": "Back to guardrails",
-			"permissions": "Only workspace owners and admins can change guardrails. Assigned policies are enforced automatically for members."
+			"permissions": "Only workspace owners and admins can change guardrails. Assigned policies are enforced automatically for members.",
+			"workspaceBaseline": "This is the workspace baseline. It holds the rules from Settings, Privacy and applies to the whole workspace, so it can't be deleted, turned off or assigned to single keys or members.",
+			"openPrivacy": "Edit it under Privacy"
 		},
 		"keyDelete": {
 			"permanent": "This action is permanent.",
@@ -1945,6 +2182,8 @@
 		"Completion": "Completion",
 		"phraseNoIOPayloadIsAvailableForThisRequest": "No I/O payload is available for this request.",
 		"Technical Details": "Technical details",
+		"SVG author": "SVG author",
+		"Image tool": "Image tool",
 		"Pricing": "Pricing",
 		"Direct HTTP": "Direct HTTP",
 		"Data policy": "Data policy",
@@ -2484,6 +2723,8 @@
 		"Are you sure you want to leave {workspace}?": "Are you sure you want to leave {workspace}?",
 		"phraseYouCanTRevokeAccessForSomeoneWithAHigherRoleThanYours": "You can't revoke access for someone with a higher role than yours.",
 		"Are you sure you want to revoke access for {member}?": "Are you sure you want to revoke access for {member}?",
+		"phraseMemberKeysWillBeRevoked": "The API keys and management keys they created in this workspace will be revoked.",
+		"phraseYourKeysWillBeRevoked": "The API keys and management keys you created in this workspace will be revoked.",
 		"phraseUpdatedMemberSSampleRole": "Updated {member}'s sample role.",
 		"phraseUnableToUpdateTheMemberRoleRightNow": "Unable to update the member role right now.",
 		"phraseYouCanTRevokeAccessForMembersWithAHigherRoleThanYours": "You can't revoke access for members with a higher role than yours.",
@@ -5820,6 +6061,12 @@
 		"voiceProfile": "{language} · {style} · {gender}",
 		"english": "English",
 		"portuguese": "Portuguese",
+		"voiceProfileShort": "{language} · {gender}",
+		"french": "French",
+		"german": "German",
+		"hindi": "Hindi",
+		"japanese": "Japanese",
+		"korean": "Korean",
 		"filipino": "Filipino-influenced",
 		"brazilian": "Brazilian-influenced",
 		"southernUs": "Southern U.S.-influenced",
@@ -6754,17 +7001,17 @@
 	},
 	"trustedWorkloads": {
 		"title": "Trusted workloads",
-		"description": "Let Vercel deployments and GitHub Actions jobs call the API with a short-lived OIDC token instead of an API key.",
+		"description": "Let deployments, CI jobs and cloud workloads call the API with a short-lived OIDC token instead of an API key.",
 		"feedback": "How could trusted workloads work better for you?",
 		"selectWorkspace": "Select a workspace to manage trusted workloads.",
 		"unavailable": "Trusted workloads are not available for this workspace yet.",
 		"adminsOnly": "Only workspace owners and admins can see and change trusted workloads.",
-		"howItWorks": "Vercel and GitHub Actions give each deployment or job a signed token that says who it is and expires within hours. When a token matches one of these policies, the request runs as that policy's key, with the same limits, budgets, logs and billing as an API key. Nothing needs to be stored as a secret.",
+		"howItWorks": "Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI and AWS can give each deployment, job or workload a signed token that says who it is and expires within hours, and so can an OIDC issuer you run yourself, such as a Kubernetes cluster. When a token matches one of these policies, the request runs as that policy's key, with the same limits, budgets, logs and billing as an API key. Nothing needs to be stored as a secret.",
 		"policiesTitle": "Trust policies",
 		"propagation": "Changes take effect within about a minute.",
 		"newPolicy": "New policy",
 		"emptyTitle": "No trusted workloads yet",
-		"emptyBody": "Add a policy for a Vercel project or a GitHub repository so it can call the API without an API key.",
+		"emptyBody": "Add a policy for a project, repository, pipeline, service account or role so it can call the API without an API key.",
 		"noConditions": "None",
 		"disabled": "Off",
 		"enabledLabel": "Accept tokens for {name}",
@@ -6789,15 +7036,28 @@
 		"audienceLabel": "Audience",
 		"providers": {
 			"vercel": "Vercel",
-			"github_actions": "GitHub Actions"
+			"github_actions": "GitHub Actions",
+			"gitlab": "GitLab",
+			"google_cloud": "Google Cloud",
+			"buildkite": "Buildkite",
+			"circleci": "CircleCI",
+			"aws": "AWS",
+			"custom": "Custom OIDC issuer"
 		},
 		"ownerLabel": {
 			"vercel": "Team ID",
-			"github_actions": "Owner ID"
+			"github_actions": "Owner ID",
+			"gitlab": "Project ID",
+			"google_cloud": "Service account ID",
+			"buildkite": "Organisation ID",
+			"circleci": "Organisation ID",
+			"aws": "Role ARN"
 		},
 		"ownerWide": {
 			"vercel": "Trusts every project in this Vercel team. Add a project ID to narrow it.",
-			"github_actions": "Trusts every repository this owner has. Add a repository ID to narrow it."
+			"github_actions": "Trusts every repository this owner has. Add a repository ID to narrow it.",
+			"buildkite": "Trusts every pipeline in this Buildkite organisation. Add a pipeline slug to narrow it.",
+			"circleci": "Trusts every project in this CircleCI organisation. Add a project ID to narrow it."
 		},
 		"environments": {
 			"production": "Production",
@@ -6820,7 +7080,36 @@
 			"githubIdsHint": "Use the numeric IDs, which stay the same if the owner or repository is renamed. The repository ID is optional, but without it every repository the owner has is trusted.",
 			"githubRef": "Branch or tag (optional)",
 			"lifetime": "Longest token accepted (hours)",
-			"lifetimeHint": "Tokens that were issued to last longer than this are refused. Up to {max} hours."
+			"lifetimeHint": "Tokens that were issued to last longer than this are refused. Up to {max} hours.",
+			"environmentOptional": "Environment (optional)",
+			"gitlabProjectId": "Project ID",
+			"gitlabProjectHint": "The numeric ID on the project's overview page on GitLab.com. It stays the same if the project is renamed or moved. For self-managed GitLab, choose Custom OIDC issuer.",
+			"gitlabRef": "Branch or tag (optional)",
+			"gitlabConditionsHint": "Use the branch or tag name, such as main. Leave both empty to accept every job in the project.",
+			"googleServiceAccountId": "Service account unique ID",
+			"googleServiceAccountHint": "The numeric unique ID on the service account's details page in the Google Cloud console. Use it rather than the email, which can be reused if the account is deleted.",
+			"googleServiceAccountEmail": "Service account email (optional)",
+			"googleEmailHint": "Tokens only include the email when the workload requests them with format=full.",
+			"buildkiteOrganizationId": "Organisation ID",
+			"buildkiteOrganizationHint": "The organisation's UUID, which every Buildkite token carries in its organization_id claim.",
+			"buildkitePipelineSlug": "Pipeline slug (optional)",
+			"buildkitePipelineHint": "Without it, every pipeline in the organisation is trusted.",
+			"circleciOrganizationId": "Organisation ID",
+			"circleciOrganizationHint": "Find it in CircleCI under Organization Settings → Overview.",
+			"circleciProjectId": "Project ID (optional)",
+			"circleciProjectHint": "Find it under Project Settings → Overview. Without it, every project in the organisation is trusted.",
+			"awsIssuer": "Issuer URL",
+			"awsIssuerHint": "Each AWS account has its own issuer. Run aws iam get-outbound-web-identity-federation-info and copy IssuerIdentifier.",
+			"awsRoleArn": "IAM role ARN",
+			"awsRoleHint": "Only tokens for this role are accepted.",
+			"customIssuer": "Issuer URL",
+			"customIssuerHint": "A public https URL that serves /.well-known/openid-configuration, with its signing keys on the same host.",
+			"customOwnerClaim": "Owner claim",
+			"customOwnerId": "Owner value",
+			"customOwnerHint": "Every token must carry this claim with exactly this value, such as sub for a Kubernetes service account. Choose a claim that nobody else can reuse.",
+			"customConditionClaim": "Extra claim (optional)",
+			"customConditionValue": "Required value",
+			"customConditionHint": "Tokens must also carry this claim with exactly this value."
 		},
 		"problems": {
 			"name": "Enter a name of up to 100 characters.",
@@ -6829,7 +7118,19 @@
 			"vercelProjectId": "Project IDs start with prj_.",
 			"githubOwnerId": "Enter the owner's numeric ID.",
 			"githubRepositoryId": "Enter the repository's numeric ID.",
-			"lifetime": "Enter a whole number of hours from 1 to 12."
+			"lifetime": "Enter a whole number of hours from 1 to 12.",
+			"gitlabProjectId": "Enter the project's numeric ID.",
+			"googleServiceAccountId": "Enter the service account's numeric unique ID.",
+			"googleServiceAccountEmail": "Enter an email address, such as app@project.iam.gserviceaccount.com.",
+			"buildkiteOrganizationId": "Enter the organisation's UUID.",
+			"circleciOrganizationId": "Enter the organisation ID, which is a UUID.",
+			"circleciProjectId": "Enter the project ID, which is a UUID.",
+			"awsIssuer": "Enter the issuer from AWS. It ends in .tokens.sts.global.api.aws.",
+			"awsRoleArn": "Enter a role ARN, such as arn:aws:iam::123456789012:role/evals.",
+			"customIssuer": "Enter a public https URL without a port, query or fragment.",
+			"customOwnerClaim": "Enter a claim name such as sub. iss, aud, exp, iat, nbf and jti can't be used.",
+			"customOwnerId": "Enter the value the owner claim must have.",
+			"customCondition": "Enter both a claim and a value, or leave both empty. The claim must differ from the owner claim."
 		},
 		"errors": {
 			"invalid": "{message}",
@@ -6842,7 +7143,10 @@
 			"deleted": "Policy deleted",
 			"enabled": "Policy turned on",
 			"disabled": "Policy turned off"
-		}
+		},
+		"listPipeline": "Pipeline",
+		"listEmail": "Service account email",
+		"usageCustomHint": "Any OIDC issuer with public discovery works. This example gives a Kubernetes pod a service account token for the audience."
 	},
 	"budgets": {
 		"title": "Budgets",
@@ -6928,7 +7232,7 @@
 			"period": "Period",
 			"createTitle": "Add a department budget",
 			"editTitle": "Edit department budget",
-			"limitHelp": "Once the department's spend in the period reaches this amount, its API-key requests are refused until the period resets. Batch, realtime and OAuth requests are not blocked. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins are notified at about 80% and 100%.",
+			"limitHelp": "Once the department's spend in the period reaches this amount, its API-key requests are refused until the period resets. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins are notified at about 80% and 100%.",
 			"saved": "Department budget saved",
 			"deleted": "Department budget deleted",
 			"deleteTitle": "Delete this department budget?",
@@ -7125,6 +7429,12 @@
 			"copyRedirectUrl": "Copy redirect URL",
 			"scopes": "Bot token scopes",
 			"copyScopes": "Copy scopes",
+			"requestUrls": "Request URLs",
+			"requestUrlsHelp": "This app's own request URLs. Paste each into the matching setting in your Slack app's manifest.",
+			"eventsUrl": "Event Subscriptions request URL",
+			"interactionsUrl": "Interactivity request URL",
+			"copyEventsUrl": "Copy Event Subscriptions request URL",
+			"copyInteractionsUrl": "Copy Interactivity request URL",
 			"appId": "App ID",
 			"clientId": "Client ID",
 			"clientSecret": "Client secret",
@@ -7389,8 +7699,11 @@
 		"link": {
 			"metaTitle": "Connect Slack",
 			"title": "Connect your Slack account",
-			"description": "This links the Slack account that opened this page to your Phaseo account, so the Phaseo agent knows who you are.",
-			"warning": "Only continue if you opened this link from the Phaseo agent's message in Slack.",
+			"description": "This links the Slack account below to your Phaseo account, so the Phaseo agent knows who you are.",
+			"account": "Slack account: {name} ({id}) in {team}",
+			"accountUnnamed": "Slack account: {id} in {team}",
+			"unknownTeam": "a Slack workspace whose name Slack didn't share",
+			"warning": "Only continue if this is your own Slack account. If someone sent you this link, don't use it: that Slack account would act as you.",
 			"confirm": "Connect account",
 			"confirming": "Connecting…",
 			"missingToken": "This link is missing its code. Open it again from the Phaseo agent's message in Slack.",
@@ -7401,6 +7714,7 @@
 			"close": "You can close this page and go back to Slack.",
 			"errors": {
 				"expired": "This link has expired. Ask the Phaseo agent in Slack for a new one.",
+				"used": "This link has already been used. Ask the Phaseo agent in Slack for a new one.",
 				"invalid": "This link isn't valid. Ask the Phaseo agent in Slack for a new one.",
 				"notInstalled": "The Phaseo agent is no longer installed in that Slack workspace.",
 				"wrongWorkspace": "Sign in with an account in the Phaseo workspace that added the agent to Slack.",
@@ -7793,5 +8107,144 @@
 		"expiredBody": "Nobody answered within 30 minutes, so nothing was charged. The agent is told not to retry; it can start a new request when someone is available.",
 		"resume": "Finish card verification",
 		"resumeNotice": "This top-up was confirmed, but the bank's card verification was not finished. Finish it to complete the payment."
+	},
+	"keyRequests": {
+		"title": "Approve API key",
+		"description": "An app you're signed in to asked for a new API key. Nothing is created until you approve it here.",
+		"requestedBy": "Requested by",
+		"workspace": "Workspace",
+		"keyName": "Key name",
+		"dailyLimit": "Daily spending limit",
+		"monthlyLimit": "Monthly spending limit",
+		"noLimit": "No limit",
+		"keyExpires": "Key expires",
+		"keyLifetime": "{days, plural, one {# day} other {# days}} after approval",
+		"requestedAt": "Requested",
+		"requestExpires": "Approve before",
+		"phaseoAppTitle": "Approve only if you started this",
+		"phaseoAppBody": "Approve only if you just ran a Phaseo CLI setup command yourself. The new key goes to that terminal once and is never shown here.",
+		"otherAppTitle": "Requested by {app}, not by the Phaseo CLI",
+		"otherAppBody": "{app} is an app that uses Sign in with Phaseo. Approve only if you asked it for a key yourself. It receives the new key once.",
+		"approve": "Approve and create key",
+		"approving": "Creating key…",
+		"deny": "Deny",
+		"approvedTitle": "Key approved",
+		"approvedBody": "Return to your terminal: setup picks up the key and finishes. You can change its limits or delete it under Settings, API Keys.",
+		"approvingTitle": "Creating the key",
+		"approvingBody": "Reload the page in a moment.",
+		"deniedTitle": "Request denied",
+		"deniedBody": "No key was created. Setup in your terminal stops waiting.",
+		"expiredTitle": "Request expired",
+		"expiredBody": "Nothing was created. Run the setup command again to ask for a new key.",
+		"forbiddenTitle": "You can't create API keys in this workspace",
+		"forbiddenBody": "Only workspace owners and admins can create API keys. Ask one of them for a key, then pass it to setup with --key.",
+		"notFoundTitle": "Key request not found",
+		"notFoundBody": "Sign in with the account you used in the CLI, and open the full link that setup printed.",
+		"errorTitle": "Couldn't finish",
+		"keyLimitReached": "This workspace has reached its API key limit. Delete a key you no longer use, then approve again.",
+		"requestChanged": "This request changed. Reload the page and review it again.",
+		"notPending": "This request was already answered or has expired. Reload the page.",
+		"genericError": "Something went wrong. Try again."
+	},
+	"rateGuardrail": {
+		"title": "Rate limits",
+		"description": "Limit requests and tokens per minute, and how many requests run at once.",
+		"limitsTitle": "Limits",
+		"limitsBody": "Set at least one. Leave a limit blank to not limit it.",
+		"noLimit": "No limit",
+		"invalidLimit": "Enter a whole number above 0.",
+		"requests": {
+			"label": "Requests per minute",
+			"help": "Counted over a rolling minute."
+		},
+		"tokens": {
+			"label": "Tokens per minute",
+			"help": "Input and output tokens, counted as each request finishes."
+		},
+		"concurrent": {
+			"label": "Concurrent requests",
+			"help": "Requests in progress at the same time."
+		},
+		"countingTitle": "How it counts",
+		"countingBody": "Choose who shares each allowance. There's no default.",
+		"legacyCounting": "This was made through the rate limits API, so it counts per key, member or department it's assigned to, and per end user on the whole workspace. Choose an option to change that.",
+		"countingLegacy": "Per assignment",
+		"counting": {
+			"shared": {
+				"name": "Shared",
+				"body": "One allowance for everything it's assigned to. On a department, the whole department shares it."
+			},
+			"each_key": {
+				"name": "Each key",
+				"body": "Every API key it covers gets its own allowance. OAuth requests count per person."
+			},
+			"each_end_user": {
+				"name": "Each end user",
+				"body": "Every end user gets their own allowance, from the request's user field or X-Phaseo-User-Id header. Requests without one aren't limited by it."
+			}
+		},
+		"failClosedTitle": "Refuse requests when limits can't be checked",
+		"failClosedBody": "Waits for the counter on every request, which adds a little latency. When this is off, requests go through if the counter doesn't answer.",
+		"issue": {
+			"rateLimitEmpty": "Set at least one limit to continue.",
+			"rateLimitInvalid": "Limits must be whole numbers above 0.",
+			"rateCountingRequired": "Choose how the limits count to continue."
+		}
+	},
+	"spendGuardrail": {
+		"title": "Spend limit",
+		"description": "Limit what the keys it covers spend in a day, week or month.",
+		"limitTitle": "Limit",
+		"limitBody": "The most the keys it covers can spend in each period, in US dollars.",
+		"limitLabel": "Amount",
+		"limitHelp": "Up to 2 decimal places, for example 25.00.",
+		"invalidLimit": "Enter an amount above $0.00 with up to 2 decimal places.",
+		"periodTitle": "Period",
+		"periodBody": "Periods are UTC calendar days, weeks from Monday, and months. There's no default.",
+		"period": {
+			"daily": {
+				"name": "Daily",
+				"body": "Resets at 00:00 UTC every day."
+			},
+			"weekly": {
+				"name": "Weekly",
+				"body": "Resets at 00:00 UTC every Monday."
+			},
+			"monthly": {
+				"name": "Monthly",
+				"body": "Resets at 00:00 UTC on the 1st of each month."
+			}
+		},
+		"actionTitle": "At the limit",
+		"actionBody": "What happens when spend reaches the limit. Owners and admins get a push at 80% and at 100% either way. There's no default.",
+		"action": {
+			"notify": {
+				"name": "Notify",
+				"body": "Send the alerts only. Requests keep going through."
+			},
+			"block": {
+				"name": "Block",
+				"body": "Refuse the API-key requests it covers until the period resets. Batch jobs, realtime sessions and OAuth requests aren't blocked."
+			}
+		},
+		"countingTitle": "How it counts",
+		"countingBody": "Choose who shares the limit. There's no default.",
+		"counting": {
+			"shared": {
+				"name": "Shared",
+				"body": "One limit for everything it's assigned to. On a department, the whole department's keys share it."
+			},
+			"each_key": {
+				"name": "Each key",
+				"body": "Every API key it covers gets its own limit."
+			}
+		},
+		"issue": {
+			"spendLimitEmpty": "Set a limit to continue.",
+			"spendLimitInvalid": "Enter an amount above $0.00 with up to 2 decimal places.",
+			"spendPeriodRequired": "Choose a period to continue.",
+			"spendActionRequired": "Choose what happens at the limit to continue.",
+			"spendCountingRequired": "Choose how the limit counts to continue."
+		}
 	}
 }

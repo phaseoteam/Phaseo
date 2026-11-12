@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
+import { oauthClientWriteRefused } from "@/auth/oauthClientWrites";
+import { hasOAuthClientToken } from "@/auth/requireUser";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { CHAT_PRIVACY_REVIEW_VERSION, hasReviewedChatPrivacy } from "@/chat/privacyReview";
@@ -22,6 +24,9 @@ accountChatPrivacyReviewRouter.get("/privacy/review", async (c) => {
 });
 
 accountChatPrivacyReviewRouter.post("/privacy/review", bodyLimit({ maxSize: 2048 }), async (c) => {
+	// The person confirms they have seen a workspace's privacy settings before chat uses it; an app can't do
+	// that for them.
+	if (hasOAuthClientToken(c.req.raw)) return oauthClientWriteRefused(c);
 	const body = await c.req.json<{ workspaceId?: string; version?: string; accepted?: boolean }>().catch(() => null);
 	if (!body || body.accepted !== true || body.version !== CHAT_PRIVACY_REVIEW_VERSION) {
 		return c.json({ error: "privacy_review_required" }, 400, PRIVATE_NO_STORE_HEADERS);

@@ -1,34 +1,46 @@
 ---
 title: "प्रीसेट"
-description: "अपनी टीम के लिए Gateway कॉन्फ़िगरेशन को दोबारा उपयोग करने के लिए सेव करें।"
+description: "अपनी टीम के लिए दोबारा उपयोग होने वाले Gateway कॉन्फ़िगरेशन सेव करें।"
 icon: "sliders-horizontal"
 ---
 
-प्रीसेट दोबारा इस्तेमाल किए जा सकने वाले कॉन्फ़िगरेशन हैं, जिनसे टीमें prompts, model preferences और routing defaults को मानकीकृत कर सकती हैं। इन्हें Phaseo dashboard में प्रबंधित करके टीम के साथ साझा किया जा सकता है। आप इन्हें CLI के `phaseo presets` कमांड या `/v1/presets` API से भी प्रबंधित कर सकते हैं।
+import { PresetMergeExplorer } from "/snippets/preset-merge.jsx";
 
-## क्विकस्टार्ट
+प्रीसेट किसी एक काम के लिए मॉडल, सिस्टम प्रॉम्प्ट, पैरामीटर और प्रदाता नियमों को `@support-triage` जैसे नाम के तहत सेव करता है। कॉलर `model` के रूप में वह नाम और सिर्फ़ इनपुट भेजते हैं; बाकी सब Gateway प्रदाता चुनने से पहले भर देता है।
+
+अनुरोध फ़ील्ड को चालू-बंद करके देखें कि कौन-सा मान लागू होता है:
+
+<PresetMergeExplorer locale="hi" />
+
+नियम ये हैं:
+
+- **पैरामीटर खाली जगह भरते हैं।** प्रीसेट के डिफ़ॉल्ट पैरामीटर सिर्फ़ उन फ़ील्ड पर लागू होते हैं जिन्हें अनुरोध छोड़ देता है। अनुरोध में दिया गया मान हमेशा लागू होता है।
+- **सिस्टम प्रॉम्प्ट जुड़ते जाते हैं।** प्रीसेट का प्रॉम्प्ट पहले आता है। अगर अनुरोध में अपना सिस्टम प्रॉम्प्ट या `instructions` है, तो वह एक खाली पंक्ति के बाद आता है।
+- **अनुरोध की प्रदाता सेटिंग लागू होती हैं।** अनुरोध में `provider.order` या `provider.max_price` जैसे फ़ील्ड उस फ़ील्ड के लिए प्रीसेट का मान बदल देते हैं।
+- **अनुमति सूचियाँ दायरा घटाती हैं, कभी बढ़ाती नहीं।** प्रीसेट की प्रदाता अनुमति और अनदेखी सूचियाँ प्रदाता चुनने से पहले लागू होती हैं, इसलिए ये यह भी सीमित करती हैं कि फ़ॉलबैक किन प्रदाताओं का उपयोग कर सकता है। प्रीसेट के अनुमत मॉडलों से बाहर का मॉडल `validation_error` के साथ विफल होता है, जिसका विवरण कीवर्ड `preset_model_not_allowed` होता है; उसे दूसरी जगह रूट नहीं किया जाता।
+
+## प्रीसेट बनाएँ और उपयोग करें
 
 <Steps>
 <Step title="प्रीसेट बनाएँ">
 
-**डैशबोर्ड -> सेटिंग -> प्रीसेट** खोलें और `release-summary` जैसे स्पष्ट slug वाला प्रीसेट बनाएँ। केवल वे defaults जोड़ें जिन्हें callers के बीच साझा करना है। CLI से `phaseo presets create --name @release-summary --model <model-id>` चलाएँ।
+**डैशबोर्ड -> सेटिंग्स -> प्रीसेट** खोलें और `support-triage` जैसे slug के साथ प्रीसेट बनाएँ। सिर्फ़ वे डिफ़ॉल्ट जोड़ें जो हर कॉलर को साझा करने चाहिए।
+
+स्क्रिप्ट से बनाने के लिए प्रबंधन कुंजी के साथ `POST /v1/presets` कॉल करें।
 
 </Step>
 
-<Step title="अनुरोध में प्रीसेट का संदर्भ दें">
-
-Caller को user input पर ध्यान देने दें; prompt, parameters और routing के स्थिर defaults प्रीसेट से आएँ।
+<Step title="इसे नाम से कॉल करें">
 
 <CodeGroup>
-
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
-	  -d '{
-	    "model": "@release-summary",
-	    "input": "Generate a release summary for the last 24 hours."
-	  }'
+  -d '{
+    "model": "@support-triage",
+    "input": "Customer says the invoice total is wrong."
+  }'
 ```
 
 ```typescript TypeScript
@@ -37,8 +49,8 @@ import Phaseo from "@phaseo/sdk";
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-	  model: "@release-summary",
-	  input: "Generate a release summary for the last 24 hours.",
+  model: "@support-triage",
+  input: "Customer says the invoice total is wrong.",
 });
 ```
 
@@ -48,97 +60,68 @@ from phaseo import Phaseo
 client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response({
-	    "model": "@release-summary",
-	    "input": "Generate a release summary for the last 24 hours.",
+    "model": "@support-triage",
+    "input": "Customer says the invoice total is wrong.",
 })
 ```
-
 </CodeGroup>
 
 </Step>
 
-<Step title="रूटिंग का परिणाम जाँचें">
+<Step title="देखें कि क्या लागू हुआ">
 
-**Gateway -> उपयोग** में अनुरोध खोलें और पुष्टि करें कि कौन से defaults लागू हुए तथा किस provider ने उसे पूरा किया।
+**Gateway -> उपयोग** में अनुरोध खोलें और देखें कि प्रीसेट के कौन-से डिफ़ॉल्ट लागू हुए और किस प्रदाता ने उसे संभाला।
 
 </Step>
 </Steps>
 
-## प्रीसेट में क्या हो सकता है
+## प्रीसेट में क्या रखा जा सकता है
 
-- ऐसा सिस्टम प्रॉम्प्ट जो हर अनुरोध से पहले जोड़ा जाए।
-- [प्रॉम्प्ट टेम्पलेट](./prompt-templates.mdx): `{{variables}}` वाले संदेश, जिन्हें हर अनुरोध भरता है।
-- अनुमति-प्राप्त मॉडल या मॉडल परिवार।
-- रूटिंग प्राथमिकताओं के लिए प्रदाता की अनुमति/अनदेखी सूचियाँ।
-- `temperature`, `top_p`, `max_tokens` और मिलती-जुलती सेटिंग के डिफ़ॉल्ट पैरामीटर।
-- समर्थित मॉडल के लिए तर्क के वैकल्पिक डिफ़ॉल्ट।
+| सेटिंग | असर |
+| --- | --- |
+| मॉडल | जब अनुरोध प्रीसेट के नाम से भेजा जाता है, तब उपयोग होता है। |
+| अनुमत मॉडल | मॉडल ID या `anthropic/*` जैसे पैटर्न। बाकी मॉडल अस्वीकार किए जाते हैं। |
+| सिस्टम प्रॉम्प्ट | हर अनुरोध की शुरुआत में जोड़ा जाता है। |
+| [प्रॉम्प्ट टेम्पलेट](./prompt-templates) | `{{variables}}` वाले संदेश, जिन्हें हर अनुरोध भरता है। |
+| डिफ़ॉल्ट पैरामीटर | `temperature`, `top_p`, `max_tokens`, रीज़निंग सेटिंग और इसी तरह के अन्य। |
+| प्रदाता नियम | अनुमति और अनदेखी सूचियाँ, प्रदाता क्रम, क्षेत्र, कीमत की ऊपरी सीमा। |
 
-प्रीसेट नाम `@` से शुरू होते हैं, ताकि उन्हें आसानी से पहचाना जा सके।
+कॉलर-विशेष लॉजिक अपने ऐप्लिकेशन में रखें, और जब वर्कफ़्लो को अलग प्रॉम्प्ट, रूटिंग या कैशिंग चाहिए तो अलग प्रीसेट का उपयोग करें।
 
-प्रीसेट को request के `model` फ़ील्ड से बुलाएँ, या प्रीसेट में [प्रॉम्प्ट टेम्पलेट](./prompt-templates.mdx) हो तो `prompt.id` से। Phaseo अलग `preset` request फ़ील्ड नहीं देता।
+## प्रीसेट को नाम दें
 
-- Private और workspace presets `@{slug}` उपयोग करते हैं और API key के workspace में resolve होते हैं।
-- Public presets `@{username}/{slug}` उपयोग करते हैं और किसी भी workspace से resolve हो सकते हैं। उदाहरण: `@octavia/release-summary`।
+प्रीसेट को `model` फ़ील्ड से भेजें, या जब उसमें [प्रॉम्प्ट टेम्पलेट](./prompt-templates) हो तो `prompt.id` से। कोई अलग `preset` फ़ील्ड नहीं है।
 
-Public publishing के लिए enabled public profile और username ज़रूरी हैं। Public slug का टकराव publisher के दायरे में रहता है, इसलिए दो publishers बिना भ्रम के एक ही slug उपयोग कर सकते हैं। Usernames वैश्विक स्तर पर unique होते हैं। Slugs छोटे अक्षरों में normalize होते हैं और इनमें अक्षर, अंक, hyphen, underscore, period और colon चल सकते हैं।
+| रूप | कहाँ से रिज़ॉल्व होता है |
+| --- | --- |
+| `@support-triage` | API कुंजी का वर्कस्पेस (निजी और वर्कस्पेस प्रीसेट)। |
+| `@octavia/support-triage` | कोई भी वर्कस्पेस (सार्वजनिक प्रीसेट, उपयोगकर्ता `octavia` द्वारा प्रकाशित)। |
+| `@support-triage@v3` | वह प्रकाशित संस्करण। |
+| `@support-triage@production` | वह संस्करण जिस पर `production` लेबल इशारा करता है। |
 
-## संस्करण और मार्केटप्लेस फ़ोर्क
+सार्वजनिक प्रीसेट प्रकाशित करने के लिए सक्षम सार्वजनिक प्रोफ़ाइल और उपयोगकर्ता नाम चाहिए। उपयोगकर्ता नाम पूरे Phaseo में अद्वितीय होते हैं; slug सिर्फ़ एक प्रकाशक के लिए अद्वितीय होने चाहिए। Slug छोटे अक्षरों में बदल दिए जाते हैं और उनमें अक्षर, अंक, `-`, `_`, `.` और `:` हो सकते हैं।
 
-बदलाव सेव करने पर private draft अपडेट होता है। बदलाव तैयार होने पर **नया version प्रकाशित करें** चुनें; Phaseo immutable numbered release बनाता है और समीक्षा के लिए पुराने versions रखता है।
+<span id="version-and-roll-back"></span>
+## संस्करण बनाएँ और वापस लौटें
 
-Preset owners चुन सकते हैं कि release labels कैसे दिखें:
+सेव करने से एक निजी ड्राफ़्ट में बदलाव होता है। **नया संस्करण प्रकाशित करें** ड्राफ़्ट को एक अपरिवर्तनीय, क्रमांकित रिलीज़ में बदल देता है और हर पिछली रिलीज़ को बनाए रखता है।
 
-- **क्रमिक:** `v1`, `v2`, `v3`।
-- **Semantic versioning:** स्पष्ट SemVer labels, जैसे `1.2.0`, `2.0.0-beta.1` या `1.4.2+build.7`।
-- **तारीख आधारित:** `YYYY.MM.DD`; एक ही तारीख़ पर कई releases हों तो numeric suffix, जैसे `2026.08.02.2`।
+चुनें कि रिलीज़ लेबल कैसे दिखें:
 
-Phaseo आंतरिक रूप से अलग monotonic release number रखता है, ताकि चुने गए public label format से स्वतंत्र chronology, upstream तुलना और lineage निश्चित रहें।
+| फ़ॉर्मैट | उदाहरण |
+| --- | --- |
+| क्रमिक | `v1`, `v2`, `v3` |
+| सिमैंटिक वर्ज़निंग | `1.2.0`, `2.0.0-beta.1`, `1.4.2+build.7` |
+| तारीख | `2026.08.02`, फिर उसी दिन दूसरी रिलीज़ के लिए `2026.08.02.2` |
 
-Marketplace copies उसी सटीक upstream version पर pinned रहती हैं जिसे उन्होंने कॉपी किया था। Publisher update जारी करे, तो copy में सूचना दिखती है। उसे लागू करने पर केवल copy का draft अपडेट होता है; workspace owner समीक्षा करके स्पष्ट रूप से प्रकाशित कर सकता है, जबकि upstream author production behavior नहीं बदल सकता।
+`production` जैसे नामित लेबल को किसी संस्करण पर इंगित करें, और वापस लौटने के लिए उसे किसी पिछले संस्करण पर ले जाएँ। [संस्करण और लेबल](/hi/v1/guides/prompt-templates#versions-and-labels) देखें।
 
-Phaseo हर fork का immediate source और पूरी ancestry दोनों बनाए रखता है। इसलिए marketplace pages direct forks और सभी descendants में अंतर कर सकते हैं, भले ही किसी preset को कई बार कॉपी करके फिर से प्रकाशित किया गया हो।
+स्क्रिप्ट से, प्रबंधन कुंजी के साथ `POST /v1/presets/{id}/versions` से प्रकाशित करें और `PUT /v1/presets/{id}/labels/{label}` से लेबल बदलें। CLI साइन-इन या Phaseo से साइन इन इस्तेमाल करने वाला ऐप presets पढ़ सकता है, लेकिन बदल नहीं सकता।
 
-अनुरोध किसी प्रकाशित संस्करण को उसके लेबल से pin कर सकते हैं, जैसे `@support-triage@v3`, या `production` जैसे नाम वाले लेबल से, जिसे आप किसी संस्करण पर लगाते हैं। लेबल को पुराने संस्करण पर वापस ले जाना रोलबैक है। [प्रॉम्प्ट टेम्पलेट](./prompt-templates.mdx) देखें।
+## मार्केटप्लेस प्रीसेट को फ़ोर्क करें
 
-## प्रीसेट कैसे merge होते हैं
+मार्केटप्लेस प्रीसेट की कॉपी उसी संस्करण पर पिन रहती है जिसे आपने कॉपी किया था। जब प्रकाशक कोई अपडेट रिलीज़ करता है, तो आपकी कॉपी पर एक सूचना दिखती है। उसे लागू करने से सिर्फ़ आपका ड्राफ़्ट बदलता है, इसलिए जब तक आप खुद प्रकाशित नहीं करते, प्रोडक्शन तक कुछ नहीं पहुँचता।
 
-Gateway context में अनुरोध प्रीसेट के साथ resolve हो, तो provider routing से पहले प्रीसेट लागू होता है:
+Phaseo हर फ़ोर्क का स्रोत और पूरी वंशावली दर्ज करता है, ताकि मार्केटप्लेस पेज सीधे फ़ोर्क को सभी वंशजों से अलग दिखा सके।
 
-- Default parameters केवल request body में अनुपस्थित fields भरते हैं। Caller के पहले से दिए values को overwrite नहीं करते।
-- Request में पहले से system message हो, तो preset prompt उससे पहले जोड़ा जाता है। Anthropic-style `system` field हो, तो prompt उसी में जोड़ा जाता है।
-- प्रदाता की अनुमति/अनदेखी सूचियाँ चयन से पहले लागू होती हैं, इसलिए वे fallback pool घटाती हैं; वे केवल सजावटी लेबल नहीं हैं।
-- Preset की allowed-model सूची से बाहर के मॉडल वाले अनुरोध जल्दी reject होते हैं; उन्हें चुपचाप दूसरे मॉडल पर route नहीं किया जाता।
-
-इस तरह presets reusable request defaults और हल्के compatibility transforms का मुख्य सार्वजनिक तरीका हैं; हर caller को वही prompt या parameter logic दोहरानी नहीं पड़ती।
-
-## वर्तमान सार्वजनिक preset सुविधाएँ
-
-Dashboard में preset flow जानबूझकर request shaping के एक स्थिर और स्पष्ट उपसमूह तक सीमित है:
-
-- सिस्टम प्रॉम्प्ट जोड़ना
-- टाइप किए गए वेरिएबल वाले प्रॉम्प्ट टेम्पलेट
-- अनुमत मॉडल की सूचियाँ
-- प्रदाता की अनुमति/अनदेखी से जुड़ी रूटिंग सीमाएँ
-- डिकोडिंग और जनरेशन के डिफ़ॉल्ट
-- तर्क के डिफ़ॉल्ट
-
-अधिक जटिल caller-specific transforms चाहिए, तो उन्हें एक application boundary layer में रखें और टीम के साझा defaults के लिए presets का उपयोग करें।
-
-## प्रीसेट प्रबंधित करें
-
-**डैशबोर्ड -> सेटिंग -> प्रीसेट** में presets बनाएँ और प्रबंधित करें। जिन workflows में prompt, routing या caching behavior का अंतर महत्वपूर्ण हो, उनके लिए अलग slugs रखें। CLI से `phaseo presets create|update`, `phaseo presets versions create` और `phaseo presets labels set` (`/v1/presets` API) इस्तेमाल करें।
-
-## प्रीसेट कब उपयोग करें
-
-- कई services में system prompts मानकीकृत करें।
-- compliance के लिए routing को स्वीकृत providers तक सीमित करें।
-- environments में default parameters एक जैसे रखें।
-- migration projects को prompt, routing और parameter defaults के लिए टिकाऊ स्थान दें, जबकि application code लगभग वैसा ही रहे।
-
-## संबंधित गाइड
-
-- [प्रॉम्प्ट टेम्पलेट](./prompt-templates.mdx)
-- [प्रीसेट पर प्रतिक्रिया लें](./preset-feedback.mdx)
-- [रूटिंग और फ़ॉलबैक](./routing-and-fallbacks.mdx)
-- [इन्फ़रेंस पैरामीटर](./inference-parameters.mdx)
-- [फ़ीचर समानता मैट्रिक्स](../migration-guides/feature-parity-matrix.mdx)
+किसी प्रीसेट के जवाबों पर रेटिंग इकट्ठा करने के लिए [प्रीसेट के लिए फ़ीडबैक इकट्ठा करें](./preset-feedback) देखें।

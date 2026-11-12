@@ -1,5 +1,3 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
@@ -17,9 +15,9 @@ import {
 	UserRoundX,
 } from "lucide-react";
 import { useSettingsRouter as useRouter } from "../../PrivateSettingsQuery";
-import Link from "next/link";
+import Link from "@/components/link";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { UserUsageChip } from "../../keys/UserUsageChip";
@@ -61,7 +59,7 @@ import {
 import {
 	removeMember,
 	updateMemberRole,
-} from "@/app/(dashboard)/settings/teams/memberActions";
+} from "@/features/settings/teams/memberActions";
 
 interface Member {
 	user_id: string;
@@ -269,15 +267,16 @@ export default function TeamsMembers({
 	const confirmActionTitle = canLeaveTeam ? s("Leave workspace") : s("Revoke access");
 	const confirmActionButton = canLeaveTeam ? s("Leave workspace") : s("Revoke access");
 	const confirmActionLoading = canLeaveTeam ? s("phraseLeaving") : s("phraseRevoking");
+	// Removing someone revokes the keys they created in the workspace (see revoke_oauth_on_workspace_member_delete).
 	const confirmActionDescription = canLeaveTeam
-		? s("Are you sure you want to leave {workspace}?", {
+		? `${s("Are you sure you want to leave {workspace}?", {
 				workspace: activeWorkspaceName ?? s("this workspace"),
-		  })
+		  })} ${s("phraseYourKeysWillBeRevoked")}`
 		: isSelectedHigherRole
 			? s("phraseYouCanTRevokeAccessForSomeoneWithAHigherRoleThanYours")
-			: s("Are you sure you want to revoke access for {member}?", {
+			: `${s("Are you sure you want to revoke access for {member}?", {
 					member: selectedMember?.display_name ?? selectedMember?.user_id ?? s("this member"),
-				});
+				})} ${s("phraseMemberKeysWillBeRevoked")}`;
 
 	const saveRole = async () => {
 		if (!activeWorkspaceId || !selectedMember || !canEditSelectedRole) return;
@@ -301,9 +300,7 @@ export default function TeamsMembers({
 				);
 			} else {
 				await updateMemberRole(
-					activeWorkspaceId,
-					selectedMember.user_id,
-					selectedRole
+					{ data: { workspaceId: activeWorkspaceId, userId: selectedMember.user_id, newRole: selectedRole } }
 				);
 			}
 			setRoleDialogOpen(false);
@@ -349,8 +346,7 @@ export default function TeamsMembers({
 				await onRemoveMember(activeWorkspaceId, selectedMember.user_id);
 			} else {
 				const result = await removeMember(
-					activeWorkspaceId,
-					selectedMember.user_id
+					{ data: { workspaceId: activeWorkspaceId, userId: selectedMember.user_id } }
 				);
 				if (result && result.ok === false) {
 					const message = localizedSettingsError(

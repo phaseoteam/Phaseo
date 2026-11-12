@@ -1,112 +1,104 @@
 ---
-title: "Desplegar ajustes preestablecidos y depurar el enrutamiento"
-sidebarTitle: "Desplegar presets y depurar rutas"
+title: "Despliega preajustes y depura el enrutamiento"
 icon: "route"
-description: "Usa ajustes preestablecidos para unificar los valores predeterminados de prompts y enrutamiento; después, revisa los detalles de la solicitud para entender cómo la enrutó Phaseo."
+description: "Usa preajustes para estandarizar los valores predeterminados de prompts y enrutamiento, y después revisa los detalles de la solicitud para entender por qué Phaseo la enrutó como lo hizo."
 ---
 
-Usa esta receta para reutilizar un ajuste preestablecido en varios servicios en vez de copiar por todas partes el mismo prompt, modelo y valores de enrutamiento.
+Pasa varios servicios a un mismo preajuste para que compartan prompt, modelo y reglas de proveedor, y después usa los registros de solicitudes para explicar adónde fue cada solicitud. Al terminar, tus llamantes enviarán `"model": "@release-summary"` y su entrada, y podrás desplegar un cambio de política llamante por llamante.
 
-## Objetivo
+La forma de la solicitud está lista para producción. [Preajustes](../guides/presets) explica cómo se combinan los ajustes de un preajuste con la solicitud; esta receta trata del despliegue.
 
-- Unificar los valores predeterminados de prompts y parámetros.
-- Limitar los proveedores disponibles durante un despliegue o por requisitos de cumplimiento.
-- Conservar suficiente contexto de la solicitud para explicar por qué se enrutó de esa manera.
+## Pasa un llamante a un preajuste
 
-## 1. Crea el ajuste preestablecido
+<Steps>
+<Step title="Crea el preajuste">
 
-En **Panel -> Configuración -> Ajustes preestablecidos**, crea un ajuste con:
+En **Configuración → Preajustes**, crea `release-summary` con un prompt de sistema, los modelos aprobados, las preferencias de proveedor y parámetros predeterminados como `temperature`. O con una clave de administración:
 
-- Un nombre claro y un slug
-- Un prompt de sistema
-- Modelos aprobados
-- Preferencias de proveedores
-- Valores de parámetros predeterminados, como `temperature`
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
+```
 
-Usa el slug del ajuste en el código que realiza las llamadas para reutilizar la misma política de solicitud en distintos entornos.
+</Step>
+<Step title="Llámalo por su nombre">
 
-## 2. Mantén pequeño el cuerpo de la solicitud
-
-La principal ventaja de los ajustes preestablecidos es que quien realiza la llamada ya no necesita repetir los mismos valores de enrutamiento y prompts en cada solicitud.
+Envía el preajuste como `model`. No hay un campo `preset` aparte.
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4-5",
+    "model": "@release-summary",
     "input": "Generate a release summary for the last 24 hours.",
-    "preset": "release-summary"
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "anthropic/claude-sonnet-4-5",
+  model: "@release-summary",
   input: "Generate a release summary for the last 24 hours.",
-  preset: "release-summary",
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.model, response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "anthropic/claude-sonnet-4-5",
+        "model": "@release-summary",
         "input": "Generate a release summary for the last 24 hours.",
-        "preset": "release-summary",
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response.get("model"), response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-## 3. Comprende qué cambia el ajuste preestablecido
+En la respuesta, `model` es el modelo que contestó y `meta.routing.selected_provider`, el proveedor.
 
-El ajuste preestablecido se aplica antes del enrutamiento de proveedores:
+</Step>
+<Step title="Comprueba qué aplicó el preajuste">
 
-- Los parámetros que falten en la solicitud se completan con el ajuste preestablecido
-- El prompt del ajuste preestablecido se antepone a la capa de sistema
-- las preferencias de proveedor reducen la lista de proveedores disponibles antes de ordenarla
-- Las restricciones de modelos se comprueban al principio en vez de cambiar la ruta en silencio
+Abre la solicitud en **Configuración → Uso → Registros**. Muestra qué valores predeterminados del preajuste se aplicaron. Un modelo que no está entre los permitidos del preajuste falla con `validation_error` (palabra clave `preset_model_not_allowed`) en lugar de enrutarse a otro.
 
-## 4. Depura el resultado del enrutamiento
+</Step>
+</Steps>
 
-Si una solicitud no se enruta como esperabas, ábrela en **Gateway -> Uso** y revisa:
+## Explica una decisión de enrutamiento
 
-- Proveedores considerados
-- Candidatos ordenados
-- Factores de enrutamiento asociados a cada candidato
-- Bloqueos por políticas del espacio de trabajo o protecciones
+Cuando una solicitud no se enrutó como esperabas, despliega **Observabilidad de enrutamiento** en la solicitud dentro de **Configuración → Uso → Registros**. Responde a tres preguntas:
 
-Es la forma más rápida de averiguar:
+| Pregunta | Dónde mirar |
+| --- | --- |
+| ¿Por qué se omitió un proveedor? | Los proveedores excluidos antes de la clasificación, con el motivo, y los proveedores relegados por su estado de despliegue o de enrutamiento |
+| ¿Por qué se bloqueó la solicitud? | Los bloqueos de la política del espacio de trabajo o de guardrails sobre la solicitud |
+| ¿Por qué ganó este proveedor? | La puntuación final de cada proveedor clasificado y los factores que la explican |
 
-- Por qué se omitió un proveedor
-- Por qué se bloqueó una solicitud
-- Por qué ganó un destino más barato o con menor latencia
+[Explica una decisión de enrutamiento](../guides/routing-and-fallbacks#explain-a-routing-decision) describe cada campo.
 
-## 5. Patrón operativo
+## Despliega un cambio de política
 
-Sigue este patrón de despliegue cuando cambies el comportamiento del enrutamiento:
+1. Publica el cambio como una nueva versión del preajuste, o crea un slug nuevo para una política muy distinta.
+2. Pasa a ella un llamante de bajo riesgo, por ejemplo apuntándolo a `@release-summary@v4` o a una etiqueta `canary`.
+3. Compara sus detalles de solicitud y sus tendencias de uso con los de los demás llamantes.
+4. Pasa el resto de los llamantes cuando el enrutamiento coincida con lo que esperas. Para revertir, apunta la etiqueta a la versión anterior.
 
-1. Crea un slug de ajuste preestablecido nuevo para la nueva política.
-2. Cambia una llamada de bajo riesgo al ajuste nuevo.
-3. Revisa los detalles de las solicitudes y las tendencias de actividad.
-4. Amplía el despliegue solo cuando los resultados del enrutamiento coincidan con lo esperado.
-
-## Guías relacionadas
-
-- [Ajustes preestablecidos](../guides/presets.mdx)
-- [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx)
-- [Gestión de errores](../api-reference/errors.mdx)
+[Versiona y revierte](../guides/presets#version-and-roll-back) explica las versiones y las etiquetas. Para cambios a nivel de solicitud que no deberían vivir en un preajuste, consulta [Fija o ignora proveedores](./pin-or-ignore-providers-per-request).

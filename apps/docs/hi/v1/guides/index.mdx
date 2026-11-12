@@ -1,66 +1,58 @@
 ---
 title: "गाइड"
-description: "पहली setup, feature work, integrations और production operations के लिए सही Phaseo guide पाएँ।"
+description: "पहले सेटअप, फ़ीचर पर काम, इंटीग्रेशन और प्रोडक्शन संचालन के लिए सही Phaseo गाइड ढूँढें।"
 icon: "book-open"
 ---
 
-आपको काम का प्रकार पता है और सही guide तक जल्दी पहुँचना चाहते हैं, तो यहाँ से शुरू करें।
+अपने सामने के काम के लिए गाइड चुनें। पहले Phaseo इंटीग्रेशन के लिए इस क्रम में चलें:
 
-## पहला integration
-
-Phaseo के साथ पहला integration कर रहे हैं, तो ये steps क्रम से अपनाएँ:
-
-1. [त्वरित शुरुआत](../quickstart.mdx): एक सफल request भेजें।
-2. [प्रमाणीकरण](../developers/authentication.mdx): keys सुरक्षित रूप से store और भेजें।
-3. [उदाहरण](./examples.mdx): request patterns को अपनी app में copy करें।
+1. [क्विकस्टार्ट](../quickstart): एक सफल अनुरोध करें।
+2. [प्रमाणीकरण](../developers/authentication): कुंजियाँ सुरक्षित रूप से सेव करें और भेजें।
+3. [उदाहरण](./examples): अनुरोध के पैटर्न अपने ऐप में कॉपी करें।
 
 <Note>
-Credits जमा किए बिना `:free` models call कर सकते हैं। Paid models के लिए wallet में उपलब्ध balance ज़रूरी है।
+आप क्रेडिट जमा किए बिना `:free` मॉडल कॉल कर सकते हैं। पेड मॉडल के लिए फिर भी वॉलेट में उपलब्ध बैलेंस चाहिए।
 </Note>
 
-## ऐप की सुविधाएँ बनाएँ
-
-जब basic request काम कर रही हो और आप product behavior जोड़ना चाहें, तब ये guides देखें।
+## चालू इंटीग्रेशन में फ़ीचर जोड़ें
 
 <Columns cols={2}>
-	<Card title="Cookbook" icon="chef-hat" href="../cookbook/index.mdx">
-		मुफ़्त रूटिंग, प्रीसेट, एसिंक्रोनस जॉब और कोडिंग एजेंट सेटअप के लिए परिदृश्य-आधारित उदाहरण।
+	<Card title="कुकबुक" icon="chef-hat" href="../cookbook/index">
+		मुफ़्त रूटिंग, प्रीसेट, असिंक्रोनस जॉब और कोडिंग-एजेंट सेटअप के लिए परिदृश्य-आधारित रेसिपी।
 	</Card>
-	<Card title="Routing और fallback" icon="git-branch" href="./routing-and-fallbacks.mdx">
-		Provider order, failover behavior और reliability trade-offs नियंत्रित करें।
+	<Card title="रूटिंग और फ़ॉलबैक" icon="git-branch" href="./routing-and-fallbacks">
+		प्रदाता क्रम, फ़ेलओवर व्यवहार और विश्वसनीयता से जुड़े समझौते नियंत्रित करें।
 	</Card>
-	<Card title="Tool calling" icon="wrench" href="./tool-calling.mdx">
-		फ़ंक्शन टूल, सुरक्षा जाँच और स्थिर टूल चक्र लागू करें।
+	<Card title="टूल कॉलिंग" icon="wrench" href="./tool-calling">
+		फ़ंक्शन टूल, सुरक्षा जाँच और स्थिर टूल लूप लागू करें।
 	</Card>
-	<Card title="Server tools" icon="sparkles" href="./server-tools/index.mdx">
-		Phaseo द्वारा संचालित तारीख़/समय, वेब खोज, वेब फ़ेच और Advisor टूल उपयोग करें।
+	<Card title="सर्वर टूल" icon="wrench" href="./server-tools">
+		Phaseo द्वारा चलाए जाने वाले datetime, वेब सर्च, वेब फ़ेच और Advisor टूल इस्तेमाल करें।
 	</Card>
-	<Card title="Structured outputs" icon="braces" href="./structured-outputs.mdx">
-		Predictable, machine-readable responses के लिए schemas उपयोग करें।
+	<Card title="संरचित आउटपुट" icon="braces" href="./structured-outputs">
+		अनुमान योग्य, मशीन से पढ़ी जा सकने वाली प्रतिक्रियाओं के लिए स्कीमा इस्तेमाल करें।
 	</Card>
-	<Card title="Streaming" icon="radio" href="./streaming.mdx">
-		SSE और प्रोडक्शन सुरक्षा उपायों के साथ कम विलंब वाले जवाब दें।
+	<Card title="स्ट्रीमिंग" icon="radio" href="./streaming">
+		आउटपुट बनते ही लौटाएँ, और बीच में रुकी स्ट्रीम को फिर से शुरू करें।
 	</Card>
-	<Card title="Prompt caching" icon="database-zap" href="./prompt-caching.mdx">
-		Chat Completions, Responses और Anthropic Messages में stable prompt context दोबारा उपयोग करें।
+	<Card title="प्रॉम्प्ट कैशिंग" icon="database-zap" href="./prompt-caching">
+		Chat Completions, Responses और Anthropic Messages में स्थिर प्रॉम्प्ट कॉन्टेक्स्ट दोबारा इस्तेमाल करें।
 	</Card>
 </Columns>
 
-## प्रोडक्शन में काम करें
-
-जब traffic, reliability, security और key lifecycle मायने रखने लगें, तब ये guides उपयोग करें।
+## प्रोडक्शन में चलाएँ
 
 <Columns cols={2}>
-	<Card title="Error handling" icon="triangle-alert" href="../api-reference/errors.mdx">
-		Status code, error shape और retry strategy के आधार पर debug करें।
+	<Card title="त्रुटि प्रबंधन" icon="triangle-alert" href="../api-reference/errors.mdx">
+		स्टेटस कोड, त्रुटि के ढाँचे और रीट्राई रणनीति के आधार पर डीबग करें।
 	</Card>
-	<Card title="Rate limits" icon="gauge" href="../api-reference/limits.mdx">
-		Load के दौरान throughput और backoff की योजना बनाएँ।
+	<Card title="रेट लिमिट" icon="gauge" href="../api-reference/limits.mdx">
+		लोड के दौरान थ्रूपुट और बैकऑफ़ की योजना बनाएँ।
 	</Card>
-	<Card title="Best practices" icon="shield-check" href="../developers/best-practices.mdx">
-		Reliability और safety मज़बूत करने के लिए checklist।
+	<Card title="सर्वोत्तम प्रथाएँ" icon="shield-check" href="../developers/best-practices">
+		विश्वसनीयता और सुरक्षा के लिए हार्डनिंग चेकलिस्ट।
 	</Card>
-	<Card title="Management API keys" icon="key-round" href="../developers/management-api-keys.mdx">
-		Key lifecycle और environment isolation automate करें।
+	<Card title="मैनेजमेंट API कुंजियाँ" icon="key-round" href="../developers/management-api-keys">
+		कुंजी लाइफ़साइकल और एनवायरनमेंट अलगाव को स्वचालित करें।
 	</Card>
 </Columns>

@@ -1,14 +1,10 @@
 ---
 title: "Effect AI SDK"
 icon: "square-function"
-description: "在使用 Effect 的 TypeScript 应用中使用 Phaseo。"
+description: "在 Effect TypeScript 应用中使用 Phaseo。"
 ---
 
-如果应用已使用 Effect，且你想通过 Effect 服务或工作流调用 Phaseo，请使用本指南。
-
-## 状态
-
-Phaseo 提供兼容 OpenAI 的 HTTP 端点。如果 Effect 官方供应商包直接支持所需供应商，可优先使用；若已安装的 Effect OpenAI 包没有 Base URL 选项，请通过 Effect HTTP 客户端调用 Phaseo，或在自定义 Effect 层中封装 [OpenAI SDK](./openai-sdk.mdx)。
+用 Effect 的 HTTP 客户端调用 Phaseo 的 OpenAI 兼容端点，或者把 [OpenAI SDK](./openai-sdk.mdx) 包装成一个 Effect layer。只有当你安装的 Effect 自带 OpenAI 提供商包版本支持自定义 Base URL 时，才使用该包。
 
 ## 安装
 
@@ -16,7 +12,7 @@ Phaseo 提供兼容 OpenAI 的 HTTP 端点。如果 Effect 官方供应商包直
 npm install effect @effect/platform
 ```
 
-## 使用 Effect HTTP 调用 Phaseo
+## 用 Effect HTTP 调用 Phaseo
 
 ```ts
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "@effect/platform";
@@ -31,7 +27,7 @@ const generate = Effect.gen(function* () {
 	).pipe(
 		HttpClientRequest.bearerToken(Redacted.value(apiKey)),
 		HttpClientRequest.jsonBody({
-			model: "openai/gpt-5-nano",
+			model: "openai/gpt-6-astra",
 			messages: [{ role: "user", content: "Reply with only: ok" }],
 		}),
 	);
@@ -44,9 +40,11 @@ const generate = Effect.gen(function* () {
 const runnable = generate.pipe(Effect.provide(FetchHttpClient.layer));
 ```
 
-## 在 Effect 服务中封装 OpenAI SDK
+运行后会返回一个 Chat Completions 响应，其中的消息内容为 `ok`。
 
-如果你已在其他位置使用官方 OpenAI SDK，可将 Phaseo 配置集中在一个层中：
+## 把 OpenAI SDK 包装成 Effect layer
+
+如果你已经在使用 OpenAI SDK，可以把 Phaseo 配置集中在一个地方：
 
 ```ts
 import OpenAI from "openai";
@@ -62,15 +60,9 @@ const makeClient = Effect.gen(function* () {
 });
 ```
 
-## 说明
+如果你想在整个应用中使用类似提供商的抽象，可以在此基础上构建自定义 layer。
 
-- OpenAI 兼容调用请使用 `https://api.phaseo.app/v1`。
-- 模型 ID 请使用 Phaseo 格式，例如 `openai/gpt-5-nano`。
-- 如果希望在整个应用中统一供应商抽象，可使用自定义 Effect 层。
-- 上线前，请使用实际 Effect 包版本测试流式传输和工具调用。
+## 已知限制
 
-## 相关内容
-
-- [OpenAI SDK](./openai-sdk.mdx)
-- [AI SDK](./ai-sdk.mdx)
-- [流式传输](../streaming.mdx)
+- 模型 ID 保持 Phaseo 格式，例如 `openai/gpt-6-astra`。
+- 上线生产环境之前，请用你所使用的 Effect 包的确切版本测试[流式传输](../streaming.mdx)和工具调用。

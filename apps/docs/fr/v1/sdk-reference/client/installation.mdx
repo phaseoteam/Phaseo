@@ -1,0 +1,329 @@
+---
+icon: "package"
+title: "Installer un SDK client"
+sidebarTitle: "Installation"
+description: "Installez un SDK client Phaseo, définissez votre clé API et envoyez une première requête."
+---
+
+Ajoutez le paquet Phaseo de votre langage, définissez `PHASEO_API_KEY` et envoyez votre première requête. La [présentation](./overview) indique le registre et la version publiée de chaque paquet.
+
+<Steps>
+<Step title="Installer le paquet">
+
+<Tabs>
+<Tab title="TypeScript">
+
+<CodeGroup>
+
+```bash title="npm"
+npm install @phaseo/sdk
+```
+
+```bash title="pnpm"
+pnpm add @phaseo/sdk
+```
+
+```bash title="yarn"
+yarn add @phaseo/sdk
+```
+
+</CodeGroup>
+
+Il vous faut Node.js 18 ou une version ultérieure, et TypeScript 4.5 ou une version ultérieure pour les définitions de types.
+
+</Tab>
+<Tab title="Python">
+
+<CodeGroup>
+
+```bash title="pip"
+pip install phaseo
+```
+
+```bash title="uv"
+uv add phaseo
+```
+
+</CodeGroup>
+
+Il vous faut Python 3.10 ou une version ultérieure. Pour la [voix en temps réel](./audio-realtime), installez l’extra : `pip install "phaseo[realtime]"`.
+
+</Tab>
+<Tab title="Go">
+
+```bash
+go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3@latest
+```
+
+Il vous faut Go 1.23 ou une version ultérieure. Importez le chemin de module `v3` :
+
+```go
+import phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+```
+
+</Tab>
+<Tab title="C#">
+
+```bash
+dotnet add package Phaseo.Sdk
+```
+
+Il vous faut .NET 8 ou une version ultérieure. Le client se trouve dans l’espace de noms `PhaseoSdk`.
+
+</Tab>
+<Tab title="PHP">
+
+```bash
+composer require phaseo/sdk
+```
+
+Il vous faut PHP 8.1 ou une version ultérieure, ainsi que Composer. Composer installe aussi Guzzle 7. La classe du client est `Phaseo\Sdk\Phaseo`.
+
+</Tab>
+<Tab title="Ruby">
+
+<CodeGroup>
+
+```bash title="gem"
+gem install phaseo_sdk
+```
+
+```ruby title="Gemfile"
+gem "phaseo_sdk"
+```
+
+</CodeGroup>
+
+Il vous faut Ruby 3.0 ou une version ultérieure. Chargez-le avec `require 'phaseo_sdk'` ; le client est `PhaseoSdk::Phaseo`.
+
+</Tab>
+<Tab title="Java">
+
+L’artefact `3.0.0` publié sur [Maven Central](https://repo.maven.apache.org/maven2/app/phaseo/phaseo-sdk/3.0.0/) contient l’ancienne API, sans les API actuelles de nouvelles tentatives, de métadonnées de réponse et de vérification des paramètres. Pour utiliser le SDK actuel, compilez la source épinglée. Il vous faut Java 17 ou une version ultérieure, Maven 3.8 ou une version ultérieure, et Git.
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+git checkout 1ff1119f41ceb3ac2c85ed605f6e1c4beca6e011
+mvn -f packages/sdk/sdk-java/pom.xml -DskipTests install
+```
+
+Maven installe `app.phaseo:phaseo-sdk:3.0.0` dans votre dépôt local, avec sa dépendance Jackson. Ajoutez ensuite la dépendance :
+
+```xml
+<dependency>
+  <groupId>app.phaseo</groupId>
+  <artifactId>phaseo-sdk</artifactId>
+  <version>3.0.0</version>
+</dependency>
+```
+
+</Tab>
+<Tab title="Rust">
+
+<CodeGroup>
+
+```toml title="Cargo.toml"
+[dependencies]
+phaseo = "0.2"
+serde_json = "1"
+```
+
+```bash title="cargo"
+cargo add phaseo@0.2 serde_json
+```
+
+</CodeGroup>
+
+Il vous faut Rust 1.86 ou une version ultérieure. Le crate est en version antérieure à `1.0` et son API peut encore changer d’une version mineure à l’autre : épinglez donc une version mineure compatible en production.
+
+</Tab>
+</Tabs>
+
+</Step>
+<Step title="Définir votre clé API">
+
+Créez une clé dans [Clés API](https://phaseo.app/settings/keys), puis exportez-la :
+
+<CodeGroup>
+
+```bash title="bash"
+export PHASEO_API_KEY="phaseo_v1_sk_<kid>_<secret>"
+```
+
+```powershell title="PowerShell"
+$env:PHASEO_API_KEY = "phaseo_v1_sk_<kid>_<secret>"
+```
+
+</CodeGroup>
+
+Gardez la clé sur votre serveur. Ne l’intégrez pas dans une application de bureau, mobile, de navigateur ou tout autre client distribué.
+
+</Step>
+<Step title="Envoyer une requête">
+
+<CodeGroup>
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({
+  apiKey: process.env.PHASEO_API_KEY!,
+});
+
+const response = await client.generateText({
+  model: "openai/gpt-6-astra",
+  messages: [{ role: "user", content: "Hello!" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+```python Python
+from phaseo import Phaseo
+import os
+
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
+
+response = client.generate_text(
+    {
+        "model": "openai/gpt-6-astra",
+        "messages": [{"role": "user", "content": "Hello!"}],
+    }
+)
+
+print(response["choices"][0]["message"]["content"])
+```
+
+```go Go
+client, err := phaseo.NewFromEnv() // lit PHASEO_API_KEY
+if err != nil {
+  panic(err)
+}
+
+chat, err := client.GenerateText(context.Background(), phaseo.ChatCompletionsRequest{
+  Model:    "openai/gpt-6-astra",
+  Messages: []map[string]interface{}{{"role": "user", "content": "Hello!"}},
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(chat["choices"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo(); // lit PHASEO_API_KEY
+
+var chat = await client.GenerateText(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["messages"] = new[]
+    {
+        new Dictionary<string, object> { ["role"] = "user", ["content"] = "Hello!" },
+    },
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(); // lit PHASEO_API_KEY
+
+$chat = $client->generateText([
+    'model' => 'openai/gpt-6-astra',
+    'messages' => [['role' => 'user', 'content' => 'Hello!']],
+]);
+
+echo $chat['choices'][0]['message']['content'];
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new # lit PHASEO_API_KEY
+
+chat = client.generate_text(
+  model: 'openai/gpt-6-astra',
+  messages: [{ role: 'user', content: 'Hello!' }]
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.List;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var chat = client.createChatCompletion(Map.of(
+    "model", "openai/gpt-6-astra",
+    "messages", List.of(Map.of("role", "user", "content", "Hello!"))
+));
+System.out.println(chat.path("choices").path(0).path("message").path("content").asText());
+```
+
+```rust Rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.chat_completions(&json!({
+        "model": "openai/gpt-6-astra",
+        "messages": [{ "role": "user", "content": "Hello!" }]
+    }))?;
+
+    println!("{}", response.body);
+    Ok(())
+}
+```
+
+</CodeGroup>
+
+Si vous ne passez pas de clé, le client lit lui-même `PHASEO_API_KEY`.
+
+</Step>
+</Steps>
+
+## Pointer le client vers une autre URL de base
+
+<CodeGroup>
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({
+  apiKey: "your-api-key",
+  baseUrl: "https://api.phaseo.app/v1",
+  timeoutMs: 30_000,
+});
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo(
+    api_key="your-api-key",
+    base_url="https://api.phaseo.app/v1",
+    timeout=30.0,
+)
+```
+
+```go Go
+client := phaseo.New(os.Getenv("PHASEO_API_KEY"), "https://api.phaseo.app/v1")
+```
+
+```rust Rust
+let client = Phaseo::from_env()?.with_base_url("http://localhost:8787/v1")?;
+```
+
+</CodeGroup>
+
+Le délai d’expiration est en millisecondes en TypeScript (`timeoutMs`) et en secondes en Python (`timeout`). En Rust, vous pouvez aussi définir `PHASEO_BASE_URL` (par exemple `http://localhost:8787/v1`) pour que `Phaseo::from_env()` le prenne en compte. Rust n’accepte le HTTP simple que si l’hôte est exactement `localhost` ou une adresse IP de bouclage ; les endpoints distants doivent utiliser HTTPS.
+
+La [présentation](./overview#configure-the-client) liste toutes les options par langage. Consultez ensuite [Utilisation](./usage) pour un exemple par endpoint, ou la [référence API](../../api-reference/introduction) pour chaque champ.

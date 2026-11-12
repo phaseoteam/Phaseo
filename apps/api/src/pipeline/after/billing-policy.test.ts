@@ -40,10 +40,10 @@ describe("suppressFailedResponseBilling", () => {
 		});
 	});
 
-	it("does not bill a text generation with explicitly zero output tokens", () => {
+	it("does not bill a zero-output text generation the provider reports as free", () => {
 		const result = applySuccessfulResponseBillingPolicy({
 			endpoint: "responses",
-			pricedUsage: { input_tokens: 120, output_tokens: 0, pricing: { total_nanos: 120_000_000, lines: [{ line_nanos: 120_000_000 }] } },
+			pricedUsage: { input_tokens: 120, output_tokens: 0, cost: 0, pricing: { total_nanos: 120_000_000, lines: [{ line_nanos: 120_000_000 }] } },
 			totalNanos: 120_000_000,
 			totalCents: 12,
 		});
@@ -52,6 +52,56 @@ describe("suppressFailedResponseBilling", () => {
 			lines: [],
 			billing_suppression_reason: "zero_output_tokens",
 		});
+	});
+
+	it("bills the input and cache writes of a zero-output text generation", () => {
+		for (const pricedUsage of [
+			{ input_tokens: 200_000, output_tokens: 0 },
+			{ input_tokens: 0, cached_write_text_tokens: 50_000, output_tokens: 0 },
+			{ prompt_tokens: 1_000, completion_tokens: 0, output_tokens: 0 },
+		]) {
+			const result = applySuccessfulResponseBillingPolicy({
+				endpoint: "messages",
+				pricedUsage: { ...pricedUsage, pricing: { total_nanos: 600_000_000, lines: [{ line_nanos: 600_000_000 }] } },
+				totalNanos: 600_000_000,
+				totalCents: 60,
+			});
+			expect(result).toMatchObject({ totalNanos: 600_000_000, billingSuppressed: false });
+		}
+	});
+
+	it("adds server-tool model calls as their own lines, even when the main usage is waived", () => {
+		const charges = [
+			{ kind: "advisor" as const, model: "anthropic/claude-opus-5.5", provider: "anthropic", keySource: "gateway" as const, totalNanos: 450_000_000, currency: "USD", inputTokens: 2_000, outputTokens: 32_000 },
+			{ kind: "image_generation" as const, model: "openai/gpt-image-2", provider: "openai", keySource: "gateway" as const, totalNanos: 40_000_000, currency: "USD" },
+		];
+		const paid = applySuccessfulResponseBillingPolicy({
+			endpoint: "chat.completions",
+			pricedUsage: { input_tokens: 100, output_tokens: 20, pricing: { total_nanos: 0, total_cents: 0, lines: [{ dimension: "input_text_tokens", line_nanos: 0 }] } },
+			totalNanos: 0,
+			totalCents: 0,
+			subCallCharges: charges,
+		});
+		expect(paid).toMatchObject({ totalNanos: 490_000_000, totalCents: 49, billingSuppressed: false });
+		expect(paid.pricedUsage.pricing.total_nanos).toBe(490_000_000);
+		expect(paid.pricedUsage.pricing.lines.map((line: any) => line.dimension)).toEqual([
+			"input_text_tokens",
+			"server_tool_advisor_model_call",
+			"server_tool_image_generation_model_call",
+		]);
+		expect(paid.pricedUsage.pricing.lines[1]).toMatchObject({
+			line_nanos: 450_000_000,
+			sub_call: { kind: "advisor", model: "anthropic/claude-opus-5.5", provider: "anthropic", output_tokens: 32_000 },
+		});
+
+		const waived = applySuccessfulResponseBillingPolicy({
+			endpoint: "chat.completions",
+			pricedUsage: { output_tokens: 0, pricing: { total_nanos: 0, lines: [] } },
+			totalNanos: 0,
+			totalCents: 0,
+			subCallCharges: charges,
+		});
+		expect(waived).toMatchObject({ totalNanos: 490_000_000, billingSuppressed: true });
 	});
 
 	it("reconciles BYOK billing metadata when a response is suppressed", () => {

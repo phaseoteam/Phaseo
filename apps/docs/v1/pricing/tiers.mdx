@@ -6,76 +6,38 @@ sidebarTitle: "Pricing & Billing"
 icon: "credit-card"
 ---
 
-# Pricing Tiers
+Buy credits once and spend them on requests at the catalog price of each model. Phaseo's only fee on managed requests is 5% of each credit purchase, with a $1 minimum; requests themselves carry no markup.
 
-Gateway billing has two parts:
+```mermaid
+flowchart LR
+  buy["Buy $100 of credits"] -->|"Pay $105<br/>(5% fee)"| wallet["Workspace wallet<br/>$100.00"]
+  wallet -->|"Each request costs<br/>the model's catalog price"| spend["Balance goes down"]
+```
 
-1. **Model usage pricing**: credits are consumed at model prices shown in the catalog.
-2. **Credit purchase fee**: a flat **5% top-up fee** is applied only when buying credits.
+## What a top-up costs
 
-## Current Plan
+The fee is the larger of 5% of the credits you buy and $1. It is added to the amount you pay.
 
-<Card title="Standard Plan" icon="tag">
-  **5% credit purchase fee**
+| Credits you buy | Fee | You pay |
+| ---: | ---: | ---: |
+| $5.00 | $1.00 (minimum) | $6.00 |
+| $20.00 | $1.00 | $21.00 |
+| $100.00 | $5.00 | $105.00 |
+| $1,000.00 | $50.00 | $1,050.00 |
 
-  Standard workspaces use pay-as-you-go Gateway pricing. Enterprise workspace add-ons are available for teams that need identity and directory controls.
-</Card>
+Put the other way round, a $100.00 charge adds $95.24 of credits and a $4.76 fee. Dashboard top-ups start at $5.
 
-## How Billing Works
+Buy credits in **Settings -> Billing -> Billing & Credits**, or from a terminal with `phaseo credits add --amount <usd>` (see the [quickstart](../quickstart#add-credits-for-paid-models)). The same page shows your balance, the current fee and recent spend; **Settings -> Billing -> Transactions** lists each purchase.
 
-<Steps>
-  <Step title="Buy credits">
-    When you top up, a **5% platform fee** is applied to the purchase.
-  </Step>
+## What doesn't use credits
 
-  <Step title="Use the Gateway">
-    Requests consume credits at the model prices listed in the catalog.
-  </Step>
+| Usage | Phaseo charge |
+| --- | --- |
+| Free models (`phaseo/free` and models priced at $0) | None. Free-model requests have a daily allowance; see [Plans](../exploring/subscription-plans). |
+| Bring your own key (BYOK) | No top-up. The first 250,000 completed BYOK requests per workspace each UTC month have no service fee, then 2.5% of the provider-equivalent cost. Your provider bills the model usage. See [BYOK considerations](../guides/routing-and-fallbacks#byok-considerations). |
 
-  <Step title="Review usage">
-    Your dashboard shows the current top-up fee, credit balance, and recent spend.
-  </Step>
-</Steps>
+## Enterprise
 
-## Example
+Self Serve Enterprise is a separate monthly subscription for SSO, SCIM, directory management, departments and priority email support. It starts at $29/month for up to 100 workspace members and is $79/month at 1,000 members. It doesn't include credits or change the 5% fee ($1 minimum). [Plans](../exploring/subscription-plans#enterprise-member-pricing) has the full member pricing and how members are counted.
 
-| Scenario | Total Charge | Applied Fee | Credits Added |
-|---|---:|---:|---:|
-| Standard plan | $100 | 5% (~$4.76) | ~$95.24 credits |
-| Free model usage | No top-up | $0 | Uses free model allowance |
-
-## Frequently Asked Questions
-
-<AccordionGroup>
-  <Accordion title="Are fees charged on every request?">
-    No. Fees are charged when you purchase credits. Requests consume those credits at the model prices displayed in the catalog.
-  </Accordion>
-
-  <Accordion title="Do you mark up token pricing beyond model rates?">
-    Model usage rates follow the catalog pricing. The separate platform fee is the 5% top-up fee applied when credits are purchased.
-  </Accordion>
-
-  <Accordion title="Is there an enterprise plan?">
-    Yes. Self Serve Enterprise starts at **$29/month for up to 100 workspace members**, including smaller teams, and costs **$79/month at 1,000 members**. SSO, SCIM, directory management, departments, and priority email support are included. Model credits are purchased separately with the standard 5% top-up fee ($1 minimum). Open **Pricing** in the dashboard to choose a member allowance and see the current quote, where self-service is available.
-  </Accordion>
-
-  <Accordion title="Which members count towards the Enterprise allowance?">
-    Members count while they belong to the workspace, whether or not they sign in. The entry subscription includes up to 100 members. Below 100,000, new memberships are blocked only when they would exceed your selected allowance. Self-service allowance changes are not currently available; choose capacity for expected growth before subscribing. Above 100,000, additional unique members are billed at $0.02 per member per subscription billing period, including members removed during that period.
-  </Accordion>
-
-  <Accordion title="Can I request custom commercial terms?">
-    Yes. For invoicing, procurement, or bespoke commercial requirements, contact sales. Standard Gateway usage remains available without an Enterprise add-on.
-  </Accordion>
-</AccordionGroup>
-
-## Viewing Your Pricing
-
-Check your current top-up fee and billing status in your dashboard:
-
-1. Navigate to **Settings -> Pricing & Tiers**
-2. View the current fee rate and recent usage
-3. Review credit balance and spend trends
-
-<Card title="Questions?" icon="question">
-  Need help with billing or pricing? Use the [Phaseo Help Center](https://phaseo.app/help).
-</Card>
+For invoicing, procurement or custom commercial terms, contact the [Help Center](https://phaseo.app/help). Standard Gateway usage doesn't need Enterprise.

@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { normalizeModalityFilterValue } from "./modalityOrder";
 
 // Same names the models page filters use for each modality.

@@ -7,13 +7,11 @@ description: "Estimate the bill for a specific provider/model/endpoint usage pay
 "og:image": "https://phaseo.app/og/dynamic?title=Calculate%20pricing&description=Estimate%20the%20bill%20for%20a%20specific%20provider/model/endpoint%20usage%20payload.&pathname=/docs/v1/api-reference/endpoint/pricing-calculate"
 ---
 
-Calculates pricing for a supplied usage payload against the active gateway pricing rules.
+Send a usage payload to price it against the active gateway pricing rules for one provider, model and endpoint. All four fields are required:
 
-Provide:
+- `provider`: the provider ID, for example `openai`.
+- `model`: the routed model ID.
+- `endpoint`: the endpoint family, for example `responses` or `chat.completions`.
+- `usage`: the usage to price, such as token counts or other meter inputs.
 
-- `provider`: provider ID, for example `openai`
-- `model`: routed model ID
-- `endpoint`: endpoint family, for example `responses` or `chat.completions`
-- `usage`: the usage object to price, such as token counts or other meter inputs
-
-Use this route when you already know the target provider/model/endpoint and want a bill estimate for a specific usage payload, as opposed to `GET /pricing/models`, which lists the current public catalogue pricing surfaces.
+To list current prices instead of pricing one payload, use [List model pricing](./pricing-models.mdx).

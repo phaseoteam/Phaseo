@@ -1,0 +1,174 @@
+---
+icon: "music"
+title: "TTS（文本转语音）"
+description: "在任意 Phaseo SDK 中使用 POST /v1/audio/speech 把文本转换为音频。"
+---
+
+把文本发送到 `POST /v1/audio/speech`，即可按你要求的格式拿回朗读音频。示例中的 `client` 按[安装](./installation)中的方式创建。
+
+<CodeGroup>
+
+```typescript TypeScript
+import { writeFile } from "node:fs/promises";
+
+const audio = await client.generateSpeech({
+  model: "openai/gpt-4o-mini-tts",
+  input: "Hello world",
+  voice: "alloy",
+  format: "mp3",
+});
+
+await writeFile("hello.mp3", Buffer.from(await audio.arrayBuffer()));
+```
+
+```python Python
+audio = client.generate_speech({
+    "model": "openai/gpt-4o-mini-tts",
+    "input": "Hello world",
+    "voice": "alloy",
+    "format": "mp3",
+})
+
+with open("hello.mp3", "wb") as file:
+    file.write(audio)
+```
+
+```go Go
+audio, err := client.CreateSpeech(context.Background(), map[string]interface{}{
+  "model":  "openai/gpt-4o-mini-tts",
+  "input":  "Hello world",
+  "voice":  "alloy",
+  "format": "mp3",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Printf("%T\n", audio) // 写入文件前先检查具体类型
+```
+
+```csharp C#
+var audio = await client.CreateSpeech(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-mini-tts",
+    ["input"] = "Hello world",
+    ["voice"] = "alloy",
+    ["format"] = "mp3",
+});
+```
+
+```php PHP
+$audio = $client->createSpeech([
+    'model' => 'openai/gpt-4o-mini-tts',
+    'input' => 'Hello world',
+    'voice' => 'alloy',
+    'format' => 'mp3',
+]);
+```
+
+```ruby Ruby
+audio = client.generate_speech(
+  model: 'openai/gpt-4o-mini-tts',
+  input: 'Hello world',
+  voice: 'alloy',
+  format: 'mp3'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello world",
+  "voice": "alloy",
+  "format": "mp3"
+}
+""";
+
+byte[] audio = client.rawClient().requestBytes("POST", "/audio/speech", null, null, body);
+java.nio.file.Files.write(java.nio.file.Path.of("hello.mp3"), audio);
+```
+
+</CodeGroup>
+
+## 各语言的方法
+
+| 语言 | 方法 | 返回值 |
+| --- | --- | --- |
+| TypeScript | `client.generateSpeech(request)` | `Blob` |
+| Python | `client.generate_speech(request)` 或 `client.audio.speech.create(request)` | `bytes` |
+| Go | `client.CreateSpeech(ctx, req)` | `interface{}`；写入文件前先检查具体类型 |
+| C# | `client.CreateSpeech(request)` | `object?`；写入文件前先检查具体类型 |
+| PHP | `$client->createSpeech($request)` | 音频；写入文件前先检查值的类型 |
+| Ruby | `client.generate_speech(...)`，别名 `create_speech` | 音频；写入文件前先检查值的类 |
+| Java | 没有语音方法。`client.rawClient().requestBytes("POST", "/audio/speech", ...)` 提交 JSON 正文 | `byte[]` |
+
+Rust 没有语音方法，而且它的 `post()` 辅助方法会把响应解析为 JSON，因此无法返回音频。
+
+## 参数
+
+在每个 SDK 中，字段名都是 JSON 正文字段。请使用 `format`：API 也接受 `response_format`，但 TypeScript 请求类型会拒绝它。
+
+| 字段 | 说明 |
+| --- | --- |
+| `model` | 必填。语音模型 ID。 |
+| `input` | 必填。要朗读的文本。大多数提供商最多接受 4,096 个字符；ElevenLabs 模型根据模型不同允许 5,000 到 40,000 个字符。 |
+| `voice` | 经提供商标准化的音色别名（推荐）、提供商自己的音色值，或带有 `id` 或 `name` 的对象。如果该音色对路由到的提供商无效，API 返回 `400`，并带有 `param: "voice"`。 |
+| `format` | `mp3`、`wav`、`ogg`、`aac`、`flac`、`opus` 或 `pcm`。 |
+| `speed` | 播放速度，`0.25` 到 `4`。 |
+| `instructions` | 风格指引，仅在模型支持时生效。 |
+| `config` | 提供商特定设置；见下文。 |
+| `provider` | 提供商路由偏好。 |
+
+完整的 schema 见 [Speech API 参考](/zh-Hans/v1/api-reference/endpoint/audio-speech)。
+
+## 设置提供商自己的音色
+
+在 `config` 下传入提供商的确切音色。同样的嵌套对象在每个 SDK 的请求映射中都适用。
+
+<CodeGroup>
+
+```typescript TypeScript
+// ElevenLabs：指定确切的音色 ID
+await client.generateSpeech({
+  model: "eleven-labs/eleven-v3",
+  input: "Hello from ElevenLabs",
+  voice: "rachel",
+  config: {
+    elevenlabs: {
+      voice_id: "21m00Tcm4TlvDq8ikWAM",
+    },
+  },
+});
+
+// Google：指定确切的音色名称
+await client.generateSpeech({
+  model: "google/gemini-3.1-flash-tts-preview",
+  input: "Hello from Gemini",
+  voice: "kore",
+  config: {
+    google: {
+      voice_name: "Kore",
+    },
+  },
+});
+```
+
+```python Python
+# ElevenLabs：指定确切的音色 ID
+client.generate_speech({
+    "model": "eleven-labs/eleven-v3",
+    "input": "Hello from ElevenLabs",
+    "voice": "rachel",
+    "config": {"elevenlabs": {"voice_id": "21m00Tcm4TlvDq8ikWAM"}},
+})
+
+# Google：指定确切的音色名称
+client.generate_speech({
+    "model": "google/gemini-3.1-flash-tts-preview",
+    "input": "Hello from Gemini",
+    "voice": "kore",
+    "config": {"google": {"voice_name": "Kore"}},
+})
+```
+
+</CodeGroup>

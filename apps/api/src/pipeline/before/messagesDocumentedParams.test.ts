@@ -85,7 +85,8 @@ describe("/v1/messages documented parameters", () => {
 
 		it.each([
 			["clear_at", { clear_at: "next_user_message", content: "Request independent reads in one turn." }],
-			["output_config", { output_config: { effort: "low" }, content: "" }],
+			["output_config with text", { output_config: { effort: "low" }, content: "Be brief." }],
+			["output_config with a format", { output_config: { effort: "low", format: { type: "json_schema", schema: {} } }, content: [] }],
 			["tool_addition blocks", { content: [{ type: "tool_addition", tool: { type: "tool_reference", name: "get_weather" } }] }],
 			["an image block", { content: [{ type: "image", source: { type: "url", url: "https://example.com/a.png" } }] }],
 			["empty content blocks", { content: [] }],

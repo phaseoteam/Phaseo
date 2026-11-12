@@ -32,6 +32,10 @@ begin
   if not coalesce((v_budget_status->>'ok')::boolean, true) then
     raise exception '%', v_budget_status->>'reason';
   end if;
+  v_budget_status := public.gateway_department_budget_status(p_workspace_id, p_key_id, p_hold_nanos);
+  if not coalesce((v_budget_status->>'ok')::boolean, true) then
+    raise exception '%', v_budget_status->>'reason';
+  end if;
 
   return query select * from public.gateway_realtime_create_with_hold_without_workspace_budget(
     p_workspace_id, p_session_id, p_key_id, p_user_id, p_source, p_provider,

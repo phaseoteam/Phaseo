@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { decisionModelCapabilities, modelCapabilities, modelCapability, modelOutputFilterValues } from "./modelCapabilities";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 

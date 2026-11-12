@@ -6,9 +6,9 @@ description: "Base URL, authentication, and endpoint families for the Phaseo Gat
 icon: "map"
 ---
 
-Use this page to find the correct API path before opening an endpoint reference. All Phaseo Gateway endpoints share one base URL and use bearer authentication.
+Send every request to `https://api.phaseo.app/v1` with your key in an `Authorization: Bearer` header. Find the endpoint for your task below, then open its reference page.
 
-## Choose your path
+## Find the right endpoint
 
 | If you want to | Start with |
 | --- | --- |
@@ -17,23 +17,21 @@ Use this page to find the correct API path before opening an endpoint reference.
 | Make typed decisions | [`POST /decisions`](./endpoint/decisions) |
 | Keep an existing OpenAI-compatible integration | [`POST /chat/completions`](./endpoint/chat-completions) |
 | Browse models and providers | [`GET /models`](./endpoint/models) and [`GET /providers`](./endpoint/providers) |
-| Create music or manage files | [`POST /music/generations`](./endpoint/music-generate) and [`POST /files`](./endpoint/files) |
+| Create music or manage files | [`POST /music/generate`](./endpoint/music-generate) and [`POST /files`](./endpoint/files) |
 | Generate video (Beta) | [`POST /videos`](./endpoint/video-create) |
 | Submit a batch or download results (Beta) | [`POST /batches`](./endpoint/batches-create) and [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## Base URL
 
-Production base URL:
-
 ```http
 https://api.phaseo.app/v1
 ```
 
-All endpoint paths in this reference are relative to that `/v1` base URL.
+Every endpoint path in this reference is relative to this base URL.
 
 ## OpenAPI
 
-Use the OpenAPI file if you want to import the API into Postman, Hoppscotch, or an SDK generator.
+Import the OpenAPI file into Postman, Hoppscotch or an SDK generator.
 
 <Card
 	title="Phaseo Gateway OpenAPI"
@@ -47,7 +45,10 @@ The documentation and SDKs use this same specification. Video, Batch, and Decisi
 
 ## Authentication
 
-Use a standard Gateway API key for inference and a management API key with the appropriate permissions for administration. See [Authentication](../developers/authentication.mdx) and [Management API Keys](../developers/management-api-keys.mdx).
+| Credential | Format | Calls |
+| --- | --- | --- |
+| [Gateway API key](../developers/authentication.mdx) | `phaseo_v1_sk_<kid>_<secret>` | Inference endpoints |
+| [Management API key](../developers/management-api-keys.mdx) | `phaseo_v1_mk_<kid>_<secret>` | Administration endpoints, limited to the key's permissions |
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
@@ -68,6 +69,4 @@ If authentication fails, the API returns `401`.
 
 ## Billing and rate limits
 
-- Handle provider throttling and applicable access policies using the [rate-limit guide](./limits.mdx).
-- Paid requests require enough wallet balance to pass the preflight credit check.
-- Free models with `:free` do not require deposited credits.
+Paid requests need enough wallet balance to pass a credit check before they run. Models whose ID ends in `:free` don't need deposited credits. Requests can be throttled by a provider or by workspace and key limits; see [Rate Limits](./limits.mdx).

@@ -1,10 +1,8 @@
 // components/header/TeamSwitcher.tsx (CLIENT)
-"use client";
-
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "@/lib/navigation";
 import { Link } from "@/i18n/navigation";
 import {
 	LogOut,
@@ -30,12 +28,13 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SwapTeam } from "@/app/(dashboard)/actions";
+import { SwapTeam } from "@/lib/workspace/actions";
+import { confirmWorkspaceSwitch } from "@/lib/workspace/switchGuard";
 import { CurrentUserAvatar } from "../ui/current-user-avatar";
 import { cn } from "@/lib/utils";
 import { getLondonInfo, getSupportAvailability } from "@/lib/support/schedule";
 import { toast } from "sonner";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { ProductFeedbackDialog } from "@/components/feedback/ProductFeedbackButton";
 import { isPublicDataPathname } from "@/lib/publicDataRoutes";
 import { clearAccountQueryScope } from "@/lib/query/invalidation";
@@ -114,10 +113,11 @@ export default function TeamSwitcher({
 
 	async function handleWorkspaceSelect(team: { id: string; name: string }) {
 		if (team.id === activeWorkspaceId) return true;
+		if (!await confirmWorkspaceSwitch()) return false;
 
 		const previous = activeWorkspaceId;
 		setActiveTeamId(team.id);
-		const switchPromise = SwapTeam(team.id).then((result) => {
+		const switchPromise = SwapTeam({ data: team.id }).then((result) => {
 			if (!result?.ok) throw new Error("Failed to switch workspace");
 			clearAccountQueryScope(
 				queryClient,

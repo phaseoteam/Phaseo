@@ -1,10 +1,9 @@
-"use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
-import Image from "next/image";
-import dynamic from "next/dynamic";
+import Image from "@/components/image";
+import dynamic from "@/lib/dynamic";
 import { createPortal } from "react-dom";
-import { usePathname } from "next/navigation";
+import { usePathname } from "@/lib/navigation";
 import { usePathname as useLocalePathname } from "@/i18n/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -46,7 +45,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { refreshActionDockPageDataAction } from "@/app/(dashboard)/internal/cache/actions";
+import { refreshActionDockPageDataAction } from "@/features/internal/cache/actions";
 import {
 	matchesActionDockPageQueryKey,
 	resolveActionDockPageRefresh,
@@ -108,7 +107,7 @@ const DOCK_HORIZONTAL_INSET = 16;
 const DOCK_TOP_INSET = 80;
 const DOCK_BOTTOM_INSET = 16;
 const SNAP_DURATION_MS = 491.22;
-// Next.js 16.3.6's --timing-bounce spring profile: it settles quickly with
+// A spring easing curve: it settles quickly with
 // only a near-imperceptible overshoot, unlike a generic bounce easing.
 const SNAP_EASING = `linear(
 	0 0%, 0.005871 1%, 0.022058 2%, 0.046612 3%, 0.077823 4%,
@@ -349,7 +348,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 	const refreshPageData = useCallback(async () => {
 		setIsRefreshingPageData(true);
 		try {
-			const result = await refreshActionDockPageDataAction(pathname);
+			const result = await refreshActionDockPageDataAction({ data: pathname });
 			if (pageRefreshTarget) {
 				await queryClient.invalidateQueries({
 					predicate: ({ queryKey }) => matchesActionDockPageQueryKey(queryKey, pageRefreshTarget),

@@ -1,5 +1,3 @@
-"use client";
-
 import { Check, ChevronDown } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -18,7 +16,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export type ModelSearchDropdownOption = {
   value: string;

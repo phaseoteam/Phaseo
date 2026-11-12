@@ -148,7 +148,7 @@ function hasEntries(value: unknown): boolean {
 /** The capabilities whose policy the gateway reads for a Responses request, text.generate first (its context loader). */
 const TEXT_CAPABILITIES = ["text.generate", "responses"];
 /** Capability statuses the gateway routes to. */
-const ROUTABLE_CAPABILITY_STATUSES = ["active", "deranked", "deranked_lvl1", "deranked_lvl2", "deranked_lvl3"];
+const ROUTABLE_CAPABILITY_STATUSES = ["active", "degraded"];
 
 /** A route's data policy: its tier and confidence (unset where a capability's declaration leaves them out), and whether it keeps no data. */
 type RoutePolicy = { tier: string | null | undefined; confidence: string | null | undefined; zeroDataRetention: boolean };

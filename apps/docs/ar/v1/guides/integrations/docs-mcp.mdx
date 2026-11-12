@@ -1,60 +1,31 @@
 ---
-title: "MCP للوثائق"
+title: "Docs MCP"
 icon: "plug-zap"
-description: "اربط خادم MCP لوثائق Phaseo بـ Codex أو Claude Code أو Cursor أو VS Code."
+description: "اربط خادم MCP الخاص بوثائق Phaseo بـ Codex أو Claude Code أو Cursor أو VS Code."
 ---
 
-إذا أردت أن يجيب وكيل البرمجة عن أسئلة Phaseo بالاستناد إلى الوثائق الحالية بدلًا من بيانات تدريب قديمة، فاربط خادم MCP لوثائق Phaseo.
-
-خادم MCP هذا للقراءة فقط. يساعد الوكلاء على البحث في الوثائق وقراءة الصفحات كاملة أثناء العمل.
-
-## عنوان URL للخادم
-
-`https://phaseo.app/docs/mcp`
-
-## ما الذي يتيحه
-
-- بحث مباشر في وثائق Phaseo
-- محتوى الصفحة كاملًا عندما يحتاج الوكيل إلى مزيد من التفاصيل
-- الوصول إلى ملخص الإمكانات المستضاف [skill.md](https://phaseo.app/docs/skill.md)
+أضف `https://phaseo.app/docs/mcp` إلى وكيل البرمجة كخادم MCP ليجيب عن أسئلة Phaseo من الوثائق الحية بدلًا من بيانات تدريبه. الخادم للقراءة فقط: يمكن للوكلاء البحث في الوثائق، وقراءة الصفحات كاملة، وقراءة ملخص القدرات المستضاف [skill.md](https://phaseo.app/docs/skill.md).
 
 ## Codex
 
-أضف الخادم:
-
 ```bash
 codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
-```
-
-تحقّق من الاتصال:
-
-```bash
 codex mcp list
 ```
 
 ## Claude Code
 
-أضف الخادم إلى المشروع الحالي:
+أضف الخادم إلى المشروع الحالي، أو أضف `--scope user` لإتاحته في كل المشاريع:
 
 ```bash
 claude mcp add --transport http phaseo-docs https://phaseo.app/docs/mcp
-```
-
-اجعله متاحًا في جميع المشاريع:
-
-```bash
 claude mcp add --transport http --scope user phaseo-docs https://phaseo.app/docs/mcp
-```
-
-تحقّق من الاتصال:
-
-```bash
 claude mcp list
 ```
 
 ## Cursor
 
-استخدم القائمة السياقية في الوثائق لتثبيت خادم MCP في Cursor، أو أضفه يدويًا:
+ثبّته من القائمة السياقية في أي صفحة من الوثائق، أو أضفه إلى إعداد MCP في Cursor:
 
 ```json
 {
@@ -66,25 +37,9 @@ claude mcp list
 }
 ```
 
-## OpenCode
-
-أضف خادم وثائق Phaseo إلى `opencode.json`:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "phaseoDocs": {
-      "type": "remote",
-      "url": "https://phaseo.app/docs/mcp"
-    }
-  }
-}
-```
-
 ## VS Code
 
-استخدم القائمة السياقية في الوثائق لتثبيت خادم MCP في VS Code، أو أضفه يدويًا:
+ثبّته من القائمة السياقية في أي صفحة من الوثائق، أو أضفه إلى إعداد MCP في VS Code:
 
 ```json
 {
@@ -97,24 +52,28 @@ claude mcp list
 }
 ```
 
-## متى تستخدمه
+## OpenCode
 
-استخدم Docs MCP عندما تريد من وكيلك أن:
+أضفه إلى `opencode.json`:
 
-- يتحقق من أحدث بنية للطلب قبل كتابة التعليمات البرمجية
-- يتحقق من دعم نموذج أو مزوّد لنقطة نهاية
-- يراجع التوجيه أو الإعدادات المسبقة أو الضوابط أو سلوك المهام غير المتزامنة
-- يستخرج أمثلة من الوثائق مع البقاء داخل المحرر
+```json opencode.json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseoDocs": {
+      "type": "remote",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
 
-## أمثلة على الطلبات
+## التحقق من أنه يعمل
 
-- `ابحث في وثائق Phaseo عن تنسيق طلب Responses وقدّم لي مثالًا مختصرًا.`
-- `قبل تعديل هذا الطلب، استخدم خادم Docs MCP الخاص بـ Phaseo للتحقق من طريقة عمل provider.sort.`
-- `اعثر على وثائق الضوابط في Phaseo ولخّص الأجزاء التي تؤثر في توجيه المزوّدين.`
+اسأل الوكيل سؤالًا لا تجيب عنه إلا الوثائق، وتأكد من أنه يستدعي خادم وثائق Phaseo:
 
-## أدلة ذات صلة
+- `Look up the Responses request format in the Phaseo docs and give me a minimal example.`
+- `Use the Phaseo docs MCP server to check how provider.sort works before you change this request.`
+- `Find the guardrails docs in Phaseo and summarize the parts that affect provider routing.`
 
-- [Codex](./codex.mdx)
-- [Claude Code](./claude-code.mdx)
-- [البدء السريع](../../quickstart.mdx)
-- [مرجع API](../../api-reference/introduction.mdx)
+يستخدمه الوكلاء للتحقق من أشكال الطلبات، ونقاط النهاية التي يدعمها نموذج أو مزوّد، وسلوك التوجيه والإعدادات المسبقة وحواجز الحماية والمهام غير المتزامنة. لا يجعل خادم الوثائق Phaseo بوابة النماذج لديك؛ لذلك، راجع [وكلاء البرمجة](./coding-assistants.mdx).

@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import { Eye } from "lucide-react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -13,7 +11,7 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 export type PresetFeedbackDetail = {
 	id: string;

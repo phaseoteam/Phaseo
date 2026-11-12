@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { RotateCcw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

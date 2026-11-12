@@ -1,8 +1,6 @@
-"use client";
-
 import { useState } from "react";
 import { ShieldOff } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import {
 	AlertDialog,
@@ -18,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { SettingsSpendRuleOptions } from "@/lib/fetchers/internal/settingsTypes";
-import { liftSpendBlock } from "@/app/(dashboard)/settings/notifications/spend-rules-actions";
+import { liftSpendBlock } from "@/features/settings/notifications/spend-rules-actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { useSpendActionError } from "./SpendRuleEditorSheet";
 import { useScopeLabel, useSpendUsd } from "./spendAlertsUi";
@@ -95,7 +93,7 @@ function LiftSpendBlockDialog({ block, maxRules, onClose }: { block: SpendBlock 
 	async function confirm() {
 		if (!block) return;
 		setLifting(true);
-		const result = await write(liftSpendBlock(block.id));
+		const result = await write(liftSpendBlock({ data: block.id }));
 		setLifting(false);
 		if (result.ok === false) {
 			toast.error(result.code === "spend_block_not_active" ? t("blocks.alreadyLifted") : actionError(result, maxRules));

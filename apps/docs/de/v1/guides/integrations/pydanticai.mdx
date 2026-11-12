@@ -1,10 +1,10 @@
 ---
 title: "PydanticAI"
 icon: "braces"
-description: "Erstelle typisierte Python-Agents mit PydanticAI und Phaseo."
+description: "Baue typisierte Python-Agents mit PydanticAI und Phaseo."
 ---
 
-Verwende PydanticAI, wenn du Python-Agents mit typisierten Ausgaben, Validierung und einer kompakten OpenAI-kompatiblen Modellkonfiguration möchtest.
+Erstelle ein `OpenAIChatModel` mit einem `OpenAIProvider`, der auf `https://api.phaseo.app/v1` zeigt, dann laufen PydanticAI-Agents auf Phaseo-Modellen.
 
 ## Installieren
 
@@ -12,7 +12,7 @@ Verwende PydanticAI, wenn du Python-Agents mit typisierten Ausgaben, Validierung
 pip install "pydantic-ai-slim[openai]"
 ```
 
-## Das Modell konfigurieren
+## PydanticAI auf Phaseo richten
 
 ```python
 import os
@@ -21,7 +21,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 model = OpenAIChatModel(
-    "openai/gpt-5-nano",
+    "openai/gpt-6-astra",
     provider=OpenAIProvider(
         api_key=os.environ["PHASEO_API_KEY"],
         base_url="https://api.phaseo.app/v1",
@@ -33,14 +33,9 @@ result = agent.run_sync("Reply with only: ok")
 print(result.output)
 ```
 
-## Hinweise
+Wird `ok` ausgegeben, funktioniert die Einrichtung.
 
-- Der OpenAI-kompatible Pfad von PydanticAI verwendet ein Chat-Verhalten im OpenAI-Stil.
-- Verwende direkte Phaseo-Responses-Aufrufe für Responses-spezifische Funktionen wie `phaseo:apply_patch`.
-- Halte Schemas für strukturierte Ausgaben klein genug für das Kontextfenster des ausgewählten Modells.
+## Bekannte Einschränkungen
 
-## Weiterführende Themen
-
-- [Strukturierte Ausgaben](../structured-outputs.mdx)
-- [OpenAI SDK](./openai-sdk.mdx)
-- [Modelle](../../api-reference/endpoint/models.mdx)
+- Dieser Weg nutzt Chat Completions im OpenAI-Stil. Für Funktionen, die es nur bei Responses gibt, etwa `phaseo:apply_patch`, rufe den Responses-Endpunkt von Phaseo direkt auf.
+- Halte Schemas für [strukturierte Ausgaben](../structured-outputs.mdx) klein genug für das Kontextfenster des Modells. Die Limits findest du unter [Modelle](../../api-reference/endpoint/models.mdx).

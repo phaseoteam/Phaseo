@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { matchesProviderCoverage, matchesProviderDatacenter, matchesProviderPolicy, toggleProviderCoverage } from "./providerFilters";
 import type { APIProviderCard } from "@/lib/fetchers/api-providers/providerDataTypes";
 
@@ -77,7 +78,7 @@ describe("matchesProviderPolicy", () => {
 		const provider = makeProvider({ prompt_training_policy: "may_train", data_retention_days: 30 });
 		expect(matchesProviderPolicy(provider, "training:may_train")).toBe(true);
 		expect(matchesProviderPolicy(provider, "retention:published")).toBe(true);
-		expect(matchesProviderPolicy(makeProvider({ data_retention_days: 0 }), "retention:none")).toBe(true);
+		expect(matchesProviderPolicy(makeProvider({ data_retention_days: 0, zero_data_retention: true }), "retention:none")).toBe(true);
 		expect(matchesProviderPolicy(makeProvider({ zero_data_retention: true }), "retention:zdr")).toBe(true);
 		expect(matchesProviderPolicy(makeProvider(), "training:unknown")).toBe(true);
 		expect(matchesProviderPolicy(makeProvider(), "retention:unknown")).toBe(true);

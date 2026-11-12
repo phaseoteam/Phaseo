@@ -2,67 +2,96 @@
 title: "CMS-Inhalte mit dem PHP Agent SDK prüfen"
 sidebarTitle: "CMS-Inhalte in PHP prüfen"
 icon: "file-check"
-description: "Nutze das PHP Agent SDK, um ein lokales Content-Such-Tool in einen begrenzten Prüfablauf einzubinden."
+description: "Nutze das PHP Agent SDK, um ein lokales Tool zum Nachschlagen von Inhalten in eine begrenzte Prüfschleife einzubinden."
 ---
 
-Verwende dieses Rezept, wenn eine PHP-Anwendung oder ihr Admin-Backend Inhalte schnell prüfen soll, ohne die Orchestrierung an ein anderes System auszulagern.
+Führe einen PHP-Agenten aus, der einen CMS-Entwurf mit einem lokalen Tool lädt und eine redaktionelle Änderung vorschlägt, innerhalb der App oder des Admin-Backends, dem die Inhalte bereits gehören. Am Ende hast du ein Skript, das einen Vorschlag für die Überschrift des Startseitenentwurfs ausgibt.
 
-## 1. SDKs vorbereiten
+Das Tool liefert feste Beispieldaten, das Skript dient also der Veranschaulichung; ersetze es durch deine CMS-Abfrage. Es passt zu einer PHP-App, in der ein oder zwei lokale Tools genügen.
 
-<Note type="warning">Das PHP Agent SDK ist noch nicht auf Packagist verfügbar. Folge der [Installationsanleitung aus dem Quellcode](../sdk-reference/php/agent-sdk-installation.mdx).</Note>
+## Agenten bauen
 
-## 2. Ein Tool zur Inhaltssuche definieren
+<Steps>
+<Step title="Installieren">
 
-```php
+```bash
+composer require phaseo/agent-sdk
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+`phaseo/agent-sdk` installiert `phaseo/sdk` mit und benötigt PHP 8.1 oder neuer. Siehe [Installation des PHP Agent SDK](../sdk-reference/agent/installation).
+
+</Step>
+<Step title="Agenten schreiben">
+
+```php review.php
 <?php
+require 'vendor/autoload.php';
+
+use Phaseo\AgentSdk\AgentDefinition;
 use Phaseo\AgentSdk\AgentSdk;
 use Phaseo\AgentSdk\Tool;
 
+const ALLOWED_SLUGS = ['homepage', 'pricing', 'about'];
+
 $loadDraft = AgentSdk::defineTool(new Tool(
-    id: "load-draft",
-    description: "Load one CMS draft by slug.",
+    id: 'load-draft',
+    description: 'Load one CMS draft by slug.',
     parameters: [
-        "type" => "object",
-        "properties" => [
-            "slug" => ["type" => "string"],
+        'type' => 'object',
+        'properties' => [
+            'slug' => ['type' => 'string', 'enum' => ALLOWED_SLUGS],
         ],
-        "required" => ["slug"],
+        'required' => ['slug'],
+        'additionalProperties' => false,
     ],
-    execute: static fn (mixed $input, $context) => [
-        "slug" => $input["slug"] ?? "homepage",
-        "headline" => "Phaseo makes gateway routing visible.",
-    ]
+    // Argumente stammen vom Modell: Nur bekannte Slugs erreichen execute.
+    inputSchema: static function (mixed $input): array {
+        if (!is_array($input) || !in_array($input['slug'] ?? null, ALLOWED_SLUGS, true)) {
+            throw new InvalidArgumentException('slug must be one of ' . implode(', ', ALLOWED_SLUGS));
+        }
+        return $input;
+    },
+    execute: static fn (array $input, $context) => [
+        'slug' => $input['slug'],
+        'headline' => 'Phaseo makes gateway routing visible.',
+    ],
 ));
-```
-
-## 3. Agent erstellen und ausführen
-
-```php
-<?php
-use Phaseo\AgentSdk\AgentDefinition;
 
 $agent = AgentSdk::createAgent(new AgentDefinition(
-    id: "content-review-agent",
-    model: "openai/gpt-5.4-nano",
-    instructions: "Use tools when helpful and return concise editorial feedback.",
-    tools: [$loadDraft]
+    id: 'content-review-agent',
+    model: 'openai/gpt-6-astra',
+    instructions: 'Use tools when helpful and return concise editorial feedback.',
+    tools: [$loadDraft],
+    maxSteps: 4,
 ));
 
+// Liest PHASEO_API_KEY aus der Umgebung.
 $result = $agent->run(
-    input: "Review the homepage draft and suggest one headline improvement.",
-    client: AgentSdk::createGatewayAgentClient()
+    input: 'Review the homepage draft and suggest one headline improvement.',
+    client: AgentSdk::createGatewayAgentClient(),
 );
 
+echo $result->run->status . PHP_EOL;
 echo $result->output . PHP_EOL;
 ```
 
-## Wann dieses Rezept passt
+</Step>
+<Step title="Ausführen">
 
-- die PHP-Anwendung die Inhaltsquelle bereits verwaltet
-- ein oder zwei lokale Tools ausreichen
-- du einen begrenzten Ablauf statt einer umfassenderen Orchestrierungsplattform möchtest
+```bash
+php review.php
+```
 
-## Weiterführende Themen
+</Step>
+</Steps>
 
-- [PHP Agent SDK](../sdk-reference/php/agent-sdk.mdx)
-- [Fehlerhaftes strukturiertes JSON reparieren](./response-healing-for-structured-json.mdx)
+## Prüfen, ob es funktioniert hat
+
+- Das Skript gibt `completed` aus und danach einen Vorschlag für die Überschrift.
+- Unter **Einstellungen → Nutzung → Protokolle** zeigt der erste Modellzug einen `load-draft`-Aufruf mit `{"slug": "homepage"}`.
+- Ohne `PHASEO_API_KEY` wirft `createGatewayAgentClient()` den Fehler `PHASEO_API_KEY is required`.
+
+## Vor dem Produktionseinsatz
+
+Halte das Tool nur lesend. Wenn du eines hinzufügst, das Inhalte veröffentlicht oder bearbeitet, setze darauf `requireApproval: true`, damit der Lauf für eine Redakteurin oder einen Redakteur anhält. Um das Feedback als JSON zu erhalten, das dein CMS speichern kann, fordere ein Schema an und repariere fast gültige Ausgaben mit der [Antwortreparatur](./response-healing-for-structured-json). Die [PHP Agent SDK-Referenz](../sdk-reference/agent/usage) behandelt Status, Freigabe und Streaming.

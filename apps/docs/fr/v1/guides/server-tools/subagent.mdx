@@ -1,21 +1,17 @@
 ---
 icon: "bot"
 title: "Outil serveur Subagent"
-description: "Permettez au modèle principal de déléguer une tâche ciblée à un modèle auxiliaire."
+description: "Laissez le modèle principal déléguer un travail ciblé à un modèle exécutant."
 ---
 
-Utilisez `phaseo:subagent` lorsque le modèle principal doit confier une tâche autonome à un modèle auxiliaire plus petit ou plus rapide au cours de la même requête.
-
-Le modèle principal appelle l’outil Subagent avec une description de tâche. Phaseo exécute le modèle auxiliaire côté serveur, renvoie son résultat comme contexte d’outil et permet au modèle principal de terminer la réponse.
-
-## Démarrage rapide
+Ajoutez `phaseo:subagent` pour que le modèle principal puisse confier une tâche autonome à un modèle exécutant, souvent plus petit ou plus rapide, dans la même requête. Le modèle principal décrit la tâche ; Phaseo exécute le modèle exécutant et renvoie son résultat, puis le modèle principal termine la réponse.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "anthropic/claude-opus-5",
     "messages": [
       { "role": "user", "content": "Compare these release notes and summarize the breaking changes." }
     ],
@@ -23,7 +19,7 @@ curl https://api.phaseo.app/v1/chat/completions \
       {
         "type": "phaseo:subagent",
         "parameters": {
-          "model": "openai/gpt-5-nano",
+          "model": "openai/gpt-6-astra",
           "instructions": "Return concise findings for the main model. Do not address the end user directly.",
           "max_uses": 3,
           "max_completion_tokens": 1200
@@ -35,33 +31,20 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## Paramètres
 
-```json
-{
-  "type": "phaseo:subagent",
-  "parameters": {
-    "model": "openai/gpt-5-nano",
-    "instructions": "You are a fast, focused worker. Complete only the delegated task.",
-    "max_uses": 3,
-    "max_completion_tokens": 1200,
-    "reasoning": { "effort": "low" },
-    "temperature": 0.2
-  }
-}
-```
-
-| Paramètre | Type | Valeur par défaut | Description |
+| Paramètre | Type | Défaut | Description |
 | --- | --- | --- | --- |
-| `model` | string | `openai/gpt-5-nano` | Modèle auxiliaire à appeler. |
-| `instructions` | string | instructions ciblées pour le worker | Instructions supplémentaires ajoutées au comportement par défaut de Subagent. |
-| `max_uses` | integer | `10` | Nombre maximal d’appels à Subagent pendant la boucle d’outils serveur. |
-| `max_completion_tokens` | integer | valeur par défaut du conseiller | Nombre maximal de tokens de sortie par réponse du modèle auxiliaire. |
-| `max_tokens` | integer | valeur par défaut du conseiller | Ancien alias de `max_completion_tokens`. |
-| `reasoning` | object | valeur par défaut du fournisseur | Configuration de raisonnement transmise au modèle auxiliaire si elle est prise en charge. |
-| `temperature` | number | valeur par défaut du fournisseur | Température d’échantillonnage de l’appel au modèle auxiliaire. |
+| `model` | string | Le modèle de la requête | Le modèle exécutant. |
+| `instructions` | string | Instructions intégrées de l’exécutant | Instructions supplémentaires pour l’exécutant. |
+| `max_uses` | integer | `1` | Nombre d’appels Subagent par requête. |
+| `max_completion_tokens` | integer | `1400` | Tokens de sortie pour chaque réponse de l’exécutant. Les valeurs inférieures à `1024` sont relevées à `1024`. `max_tokens` est accepté comme ancien alias. |
+| `reasoning` | object | Défaut du fournisseur | Réglages de raisonnement, transmis lorsque le modèle exécutant les prend en charge. |
+| `temperature` | number | Défaut du fournisseur | Température d’échantillonnage de l’appel à l’exécutant. |
 
-## Arguments de l’appel d’outil
+L’exécutant ne reçoit jamais la conversation : mettez dans la tâche tout ce dont il a besoin.
 
-Le modèle appelle généralement Subagent avec `task_description` :
+## Ce que le modèle envoie
+
+Un `task_description` contenant la tâche complète, le contexte et le résultat attendu, ainsi qu’un `task_name` court facultatif :
 
 ```json
 {
@@ -69,40 +52,20 @@ Le modèle appelle généralement Subagent avec `task_description` :
 }
 ```
 
-Phaseo accepte également `task`, `prompt` ou `input` comme alias si le modèle renvoie un nom d’argument légèrement différent.
+`task`, `prompt` ou `input` sont acceptés à la place de `task_description`.
 
-## Résultat de l’outil
-
-Subagent renvoie un objet JSON comme résultat de l’outil :
+## Ce que renvoie l’outil
 
 ```json
 {
   "status": "ok",
-  "model": "openai/gpt-5-nano",
-  "result": "The highest-risk steps are schema migration, traffic cutover, and rollback verification."
+  "model": "openai/gpt-6-astra",
+  "outcome": "The highest-risk steps are schema migration, traffic cutover, and rollback verification."
 }
 ```
 
-Si la requête au modèle auxiliaire ne peut pas être exécutée, Phaseo renvoie une erreur d’outil telle que `subagent_invalid_request`, `subagent_max_uses_exceeded` ou `subagent_request_failed`.
+Si l’appel ne peut pas s’exécuter, le modèle reçoit `subagent_invalid_request` (pas de tâche), `subagent_max_uses_exceeded` ou `subagent_request_failed`.
 
-## Utilisation et tarifs
+## Utilisation et tarification
 
-Chaque appel à Subagent augmente :
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "subagent_requests": 1
-    }
-  }
-}
-```
-
-Les tokens du modèle auxiliaire sont inclus dans l’utilisation totale et peuvent être facturés selon le tarif de ce modèle.
-
-## Pages associées
-
-- [Advisor](./advisor.mdx)
-- [Fusion](./fusion.mdx)
-- [Outils serveur](./index.mdx)
+Chaque appel ajoute 1 à `usage.server_tool_use.subagent_requests` et peut être facturé avec `server_tool_subagent_requests`. Les jetons du modèle auxiliaire sont facturés aux tarifs de ce modèle, sur une ligne distincte de la facture de la requête, et ne s’ajoutent pas aux jetons du modèle appelant. Un modèle auxiliaire payant nécessite du crédit même lorsque le modèle appelant est gratuit. Pour obtenir une relecture plutôt que déléguer le travail, utilisez [Advisor](./advisor).

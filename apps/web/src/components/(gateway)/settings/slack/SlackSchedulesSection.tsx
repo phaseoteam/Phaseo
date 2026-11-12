@@ -1,8 +1,6 @@
-"use client";
-
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { ChevronRight, Pause, Play, Trash2 } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import {
 	AlertDialog,
@@ -21,7 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { deleteSlackAgentSchedule, loadSlackAgentSchedules, setSlackAgentScheduleStatus, updateSlackAgent } from "@/app/(dashboard)/settings/slack/actions";
+import { deleteSlackAgentSchedule, loadSlackAgentSchedules, setSlackAgentScheduleStatus, updateSlackAgent } from "@/features/settings/slack/actions";
 import { cn } from "@/lib/utils";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { Choice, Notice, SlackError, SwitchField } from "./SlackAgentFields";
@@ -132,7 +130,7 @@ function ScheduleSettingsForm({ initial }: { initial: SlackScheduleSettingsDraft
 			return;
 		}
 		startSaving(async () => {
-			const result = await write(updateSlackAgent(built.value));
+			const result = await write(updateSlackAgent({ data: built.value }));
 			if (!result.ok) {
 				setError({ key: slackErrorKey(result.code, result.status), message: result.message });
 				return;
@@ -292,7 +290,7 @@ function ScheduleActions({ schedule, onChanged }: { schedule: SlackAgentSchedule
 
 	function setStatus(status: "active" | "paused") {
 		startWorking(async () => {
-			const result = await setSlackAgentScheduleStatus(schedule.id, status);
+			const result = await setSlackAgentScheduleStatus({ data: { id: schedule.id, status } });
 			if (!result.ok) {
 				const failure = toError(result);
 				// Deleted meanwhile: the list catches up.
@@ -308,7 +306,7 @@ function ScheduleActions({ schedule, onChanged }: { schedule: SlackAgentSchedule
 
 	function remove() {
 		startWorking(async () => {
-			const result = await deleteSlackAgentSchedule(schedule.id);
+			const result = await deleteSlackAgentSchedule({ data: schedule.id });
 			if (!result.ok) {
 				const failure = toError(result);
 				if (gone(failure)) onChanged(null, schedule.id);

@@ -1,7 +1,5 @@
-"use client";
-
 import { Link, useRouter } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
@@ -9,6 +7,7 @@ import { FormEvent, useState, useTransition } from "react";
 import { ArrowLeft, Globe2, Save, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +15,7 @@ import {
 	createWebhookEndpointAction,
 	sendWebhookEndpointTestAction,
 	updateWebhookEndpointAction,
-} from "@/app/(dashboard)/settings/webhooks/actions";
+} from "@/features/settings/webhooks/actions";
 import type { WebhookEndpoint } from "./WebhooksSettingsClient";
 import {
 	DEFAULT_WEBHOOK_EVENTS,
@@ -70,16 +69,16 @@ export default function WebhookEndpointForm({
 		startTransition(async () => {
 			try {
 				if (mode === "create") {
-					const result = await write(createWebhookEndpointAction({ name, url, events: selectedEvents }));
+					const result = await write(createWebhookEndpointAction({ data: { name, url, events: selectedEvents } }));
 					setRevealedSecret({ id: result.id, secret: result.signingSecret });
 					toast.success(t("webhookFormCopy.webhookEndpointCreated"));
 				} else if (initialEndpoint) {
 					const eventUpdate = getWebhookEventsForUpdate(mode, selectedEvents, eventsChanged);
-					await write(updateWebhookEndpointAction(initialEndpoint.id, {
+					await write(updateWebhookEndpointAction({ data: { id: initialEndpoint.id, args: {
 						name,
 						url,
 						...(eventUpdate ? { events: eventUpdate } : {}),
-					}));
+					} } }));
 					toast.success(t("webhookFormCopy.webhookEndpointUpdated"));
 					router.push("/settings/webhooks");
 				}
@@ -93,7 +92,7 @@ export default function WebhookEndpointForm({
 		if (!initialEndpoint) return;
 		setIsTesting(true);
 		try {
-			const result = await write(sendWebhookEndpointTestAction(initialEndpoint.id));
+			const result = await write(sendWebhookEndpointTestAction({ data: initialEndpoint.id }));
 			toast.success(result.status_code ? t("webhookFormCopy.testDeliveredStatus", {status: result.status_code}) : t("webhookFormCopy.testDelivered"));
 		} catch (error) {
 			toast.error(localizedSettingsError(error, t, "Test delivery failed", t("webhookFormCopy.testFailed")));
@@ -103,7 +102,7 @@ export default function WebhookEndpointForm({
 	}
 
 	return (
-		<form onSubmit={submit} className="max-w-4xl space-y-6">
+		<form onSubmit={submit} className="w-full max-w-4xl space-y-8">
 			<Button asChild type="button" variant="ghost" size="sm" className="-ml-3 w-fit text-muted-foreground">
 				<Link href="/settings/webhooks">
 					<ArrowLeft className="size-4" />
@@ -125,13 +124,9 @@ export default function WebhookEndpointForm({
 					/>
 					<p className="mt-1 text-sm text-muted-foreground">{t("webhookFormCopy.intro")}</p>
 				</div>
-				<div className="flex shrink-0 items-center gap-2">
-					<Link href="/settings/webhooks" className="inline-flex h-8 items-center justify-center rounded-md border border-border bg-background px-3 text-sm font-medium hover:bg-muted">{t("webhookFormCopy.cancel")}</Link>
-					<Button type="submit" disabled={isPending || !url || !name.trim() || selectedEvents.length === 0}><Save className="size-4" />{isPending ? t("webhookFormCopy.saving") : mode === "create" ? t("webhookFormCopy.create") : t("webhookFormCopy.save")}</Button>
-				</div>
 			</div>
 
-			<section className="grid gap-5 border-b border-border/60 pb-8 md:grid-cols-[180px_minmax(0,1fr)] md:gap-10">
+			<section className="space-y-5 border-t border-border/60 pt-8">
 				<div>
 					<h2 className="text-sm font-medium">{t("webhookFormCopy.destination")}</h2>
 					<p className="mt-1 text-sm leading-5 text-muted-foreground">{t("webhookFormCopy.destinationHelp")}</p>
@@ -149,7 +144,7 @@ export default function WebhookEndpointForm({
 				</div>
 			</section>
 
-			<section className="grid gap-5 border-b border-border/60 py-8 md:grid-cols-[180px_minmax(0,1fr)] md:gap-10">
+			<section className="space-y-5 border-t border-border/60 pt-8">
 				<div>
 					<h2 className="text-sm font-medium">{t("webhookFormCopy.events")}</h2>
 					<p className="mt-1 text-sm leading-5 text-muted-foreground">{t("webhookFormCopy.eventHelp")}</p>
@@ -189,6 +184,10 @@ export default function WebhookEndpointForm({
 			</div>
 
 			{revealedSecret ? <WebhookSecretNotice endpointId={revealedSecret.id} secret={revealedSecret.secret} /> : null}
+			<SettingsFormActions>
+				<Button asChild type="button" variant="outline"><Link href="/settings/webhooks">{t("webhookFormCopy.cancel")}</Link></Button>
+				<Button type="submit" disabled={isPending || !url || !name.trim() || selectedEvents.length === 0}><Save className="size-4" />{isPending ? t("webhookFormCopy.saving") : mode === "create" ? t("webhookFormCopy.create") : t("webhookFormCopy.save")}</Button>
+			</SettingsFormActions>
 		</form>
 	);
 }

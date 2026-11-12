@@ -1,52 +1,39 @@
 ---
 icon: "calculator"
 title: "Kontext und Token-Budgetierung"
-description: "So verteilst du Eingabe- und Ausgabetoken für Qualität, Geschwindigkeit und Kosten."
+description: "So verteilst du Prompt- und Ausgabetokens für Qualität, Geschwindigkeit und Kosten."
 ---
 
-Die Token-Budgetierung ist eine zentrale Fähigkeit für den Produktionseinsatz. Sie wirkt sich direkt auf Latenz, Kosten und Zuverlässigkeit aus.
+Gib jeder Art von Anfrage ein Eingabeziel und ein Ausgabelimit und prüfe dann die tatsächliche Nutzung dagegen. Jedes Token, das du sendest oder empfängst, erhöht Latenz und Kosten, und ein zu kleines Ausgabelimit schneidet Antworten ab.
 
-## Bestandteile des Token-Budgets
+## Was zu einer Anfrage zählt
 
-Der Gesamtumfang einer Anfrage umfasst in der Regel:
+| Teil | Zählt als | Achte auf |
+| --- | --- | --- |
+| System- und Entwickleranweisungen | Eingabe | Lange Anweisungen, die bei jeder Anfrage wiederholt werden. Speichere sie mit [Prompt-Caching](./prompt-caching.mdx) zwischen. |
+| Nutzereingabe | Eingabe | Unbegrenzt eingefügte Texte und Uploads. |
+| Abgerufener Kontext (Dokumente, Suchergebnisse, Tool-Ausgaben) | Eingabe | Wenig relevante Passagen, die Tokens hinzufügen und die Antwort verwässern. |
+| Tool-Schemas und Funktionsdefinitionen | Eingabe | Deklarierte Tools zählen als Eingabe, egal ob das Modell sie aufruft. |
+| Reasoning | Ausgabe | Reasoning-Modelle verbrauchen einen Teil des Ausgabelimits, bevor sie antworten. |
+| Die Antwort | Ausgabe | Limits, die Antworten oder strukturierte Ausgaben abschneiden. |
 
-- System- und Entwickleranweisungen
-- Nutzerprompt oder -eingabe
-- Abgerufener Kontext (RAG, Dokumentation und Tools)
-- Tool-Schemas oder Funktionsdefinitionen
-- Ausgabetoken des Modells
+## Wenn Reasoning das Ausgabelimit aufbraucht
 
-## Warum Budgets wichtig sind
+Ein Reasoning-Modell kann das ganze Ausgabelimit verbrauchen, bevor es eine Antwort erzeugt. Die Antwort ist trotzdem HTTP `200` und enthält das erzeugte Reasoning, ohne erfundene Antwort:
 
-- Längere Prompts erhöhen Latenz und Kosten.
-- Zu lange Prompts können die Relevanz beeinträchtigen, wenn der Kontext von geringer Qualität ist.
-- Ein zu kleines Ausgabebudget kann Antworten abschneiden und ungültige strukturierte Ausgaben verursachen.
+| Endpunkt | Was du erhältst |
+| --- | --- |
+| Chat Completions | `reasoning_content`, mit `finish_reason: "length"` |
+| Responses | Das Reasoning-Ausgabeelement, mit `status: "incomplete"` |
 
-Reasoning kann das Ausgabebudget aufbrauchen, bevor ein Modell eine Antwort erzeugt. Diese
-Antworten liefern HTTP 200 mit dem erzeugten Reasoning und ohne erfundene
-Antwort. Chat Completions behält `reasoning_content` und `finish_reason: "length"`
-bei Erreichen des Ausgabelimits. Responses behält das Reasoning-Ausgabeelement und
-meldet `status: "incomplete"`. Ein normaler Anbieterabschluss bleibt `stop` oder `completed`.
-## Strategie zur Budgetierung
+Ein normaler Abschluss ist weiterhin `stop` (Chat Completions) oder `completed` (Responses). Erhöhe das Ausgabelimit oder senke den Reasoning-Aufwand, wenn du diese Fälle oft siehst.
 
-1. Lege für jede Route ein maximales Eingabetoken-Ziel fest.
-2. Plane einen Ausgabepuffer für die längsten erwarteten Antworten ein.
-3. Entferne wenig hilfreichen Kontext konsequent.
-4. Überwache die tatsächliche Verteilung des Token-Verbrauchs im Zeitverlauf.
+## Ein Budget pro Route festlegen
 
-## Praktische Schutzmaßnahmen
+1. Lege für jede Art von Anfrage eine maximale Eingabegröße fest, etwa für eine Suchantwort oder einen langen Entwurf. Übernimm nicht ein Limit für jeden Endpunkt.
+2. Lass Ausgabespielraum für die längste Antwort, die diese Art von Anfrage liefern soll.
+3. Kürze großen Kontext oder fasse ihn zusammen, bevor du ihn sendest, beginnend mit den Passagen, die am wenigsten wahrscheinlich wichtig sind.
+4. Prüfe Ausgaben auf Abschneiden, etwa `finish_reason: "length"` oder unvollständiges JSON, und versuche es mit mehr Spielraum erneut, wenn es passiert.
+5. Verfolge die Token-Zahlen im `usage` jeder Antwort über die Zeit und passe die Limits an, wenn sich deine Prompts ändern.
 
-- Setze feste Obergrenzen für Ein- und Ausgabetoken.
-- Ergänze Vorabregeln zum Kürzen oder Zusammenfassen umfangreicher Kontexte.
-- Verwende routenspezifische Limits (Suchantworten oder umfangreiche Generierung).
-- Prüfe Ausgaben auf Kürzungsmarker oder unvollständiges JSON.
-
-## Häufige Fehler
-
-- Dasselbe Tokenlimit für alle Endpunkte übernehmen.
-- Ausführliche System-Prompts für jede Anfrageart beibehalten.
-- Den zusätzlichen Tokenbedarf von Tool-Schemas ignorieren.
-
-## Empfehlung
-
-Behandle Token-Budgets als Konfiguration, die fortlaufend überwacht werden muss, nicht als einmalige Einrichtung.
+Wie Ausgabelimits und Sampling zusammenwirken, erfährst du unter [Inferenzparameter](./inference-parameters.mdx).
