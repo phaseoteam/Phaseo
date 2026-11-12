@@ -763,6 +763,16 @@ export function buildServerToolDefinitions(
 			if (config?.moderation && config.moderation !== "auto") {
 				parameters.moderation = config.moderation;
 			}
+			if (config?.complexity && config.complexity !== "auto") {
+				parameters.complexity = config.complexity;
+			}
+			if (config?.outputFormat === "gif") {
+				setOptionalNumber(parameters, "frame_count", config.frameCount, { min: 2, max: 64 });
+				setOptionalNumber(parameters, "frame_duration_ms", config.frameDurationMs, { min: 20, max: 2000 });
+			}
+			if (config?.outputFormat === "svg" && config.svgModel?.trim()) {
+				parameters.svg = { model: config.svgModel.trim() };
+			}
 			return withParameters(toolType, parameters);
 		}
 		if (toolType === "phaseo:fusion") {

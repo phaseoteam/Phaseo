@@ -12,7 +12,7 @@ icon: "plug-zap"
 <Steps>
 <Step title="أنشئ مفتاحًا واحفظه">
 
-شغّل `phaseo keys create --name <app-and-environment> --json` في [Phaseo CLI](../guides/integrations/phaseo-cli)، أو افتح **الإعدادات → مفاتيح API** في [لوحة التحكم](https://phaseo.app/settings/keys). سمِّ المفتاح باسم التطبيق والبيئة، ثم احفظه في مدير أسرار أو في ملف بيئة:
+افتح **الإعدادات → مفاتيح API** في [لوحة التحكم](https://phaseo.app/settings/keys)، أو استدعِ `POST /v1/keys` باستخدام مفتاح إدارة. سمِّ المفتاح باسم التطبيق والبيئة، ثم احفظه في مدير أسرار أو في ملف بيئة:
 
 ```bash
 # .env.local

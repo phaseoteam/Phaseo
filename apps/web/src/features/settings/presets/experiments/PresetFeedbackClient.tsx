@@ -449,7 +449,7 @@ function PresetFeedbackContent({ data, parsedFilters }: { data: SettingsResource
 	const tStr = (key: string, values?: Record<string, string | number>) => t(settingsStringKey(key) as never, values as never);
 	if (!data.workspaceId) {
 		return (
-			<div className="space-y-6">
+			<div className="min-w-0 space-y-8">
 				<SettingsPageHeader
 					title={t("headers.presetFeedback")}
 					titleKey="headers.presetFeedback"
@@ -503,7 +503,7 @@ function PresetFeedbackContent({ data, parsedFilters }: { data: SettingsResource
 	const cohorts = buildCohorts(visibleFeedback, parsedFilters.metadataKey);
 
 	return (
-		<div className="min-w-0 max-w-full space-y-7 overflow-hidden lg:max-w-[calc(100vw-18rem)]">
+		<div className="min-w-0 max-w-full space-y-8">
 			<SettingsPageHeader
 				title={t("headers.presetFeedback")}
 				titleKey="headers.presetFeedback"

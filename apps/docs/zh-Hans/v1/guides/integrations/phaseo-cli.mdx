@@ -55,25 +55,23 @@ phaseo whoami
 phaseo whoami --json
 ```
 
-## 创建密钥并管理工作区
+## 管理工作区
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
 
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-当智能体或脚本需要新密钥时，请使用 `--json`；密钥只显示一次。CLI 涵盖控制台中的管理任务，包括账单、预算、BYOK、路由和身份。每项任务对应的命令请参阅[通过智能体管理 Phaseo](../../developers/manage-from-an-agent)。
+当智能体或脚本需要读取输出时，请使用 `--json`。CLI 涵盖日常账户任务；密钥限额、预算、BYOK、路由规则、预设和身份的更改需要在控制台中或使用管理密钥完成。CLI 涵盖哪些任务，请参阅[通过智能体管理 Phaseo](../../developers/manage-from-an-agent)。
 
 ## 连接编程智能体
 
-用智能体的名称作为命令。CLI 会创建一个专用密钥，并写入该智能体的配置：
+用智能体的名称作为命令。CLI 会请求一个专用密钥，由你在浏览器中批准，然后写入该智能体的配置：
 
 ```bash
 phaseo codex
@@ -94,6 +92,14 @@ phaseo cursor
 ```
 
 按需使用 `--model`、`--catalog all|default` 或 `--dry-run`。`phaseo setup <agent>` 和 `phaseo integrations setup <agent>` 也可以使用。
+
+### 在浏览器中批准密钥
+
+首次设置某个智能体时，CLI 会打开一个 Phaseo 控制台页面并输出其链接。该页面显示工作区、密钥名称、每月 $100 的支出上限和 90 天的有效期，以及请求来自 Phaseo CLI。选择 **批准并创建密钥** 后，CLI 会取回一次密钥并完成设置。选择 **拒绝**，或请求在 10 分钟后过期，则不会创建任何内容。
+
+批准时，请使用你在 CLI 中使用的账户登录控制台，以工作区所有者或管理员身份操作；如果设置了第二验证因素，也需要完成验证。通过 SSH 或在 CI 中时，在任何已登录的设备上打开输出的链接即可。
+
+如果要改用你在控制台中创建的密钥，请通过 `--key <key>` 传入，或使用 `--key-stdin`，避免密钥留在 shell 历史中。CLI 会检查并保存该密钥，移除智能体时不会吊销它。
 
 要用临时设置运行 Cline、Kilo Code、oh-my-pi、Muse Code 或 MiniMax Code（这些设置会在退出时删除），请使用会话运行器。Phaseo 参数放在 `--` 之前，智能体自己的参数放在之后：
 

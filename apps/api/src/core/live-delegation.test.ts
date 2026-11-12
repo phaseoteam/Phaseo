@@ -21,7 +21,7 @@ const tool = (type = "response.output_item.done", id = "search1", delegationId =
 
 describe("Live delegation configuration", () => {
 	it("exposes all 22 reference voices and maps supported backend settings", () => {
-		expect(new Set(LIVE_VOICES).size).toBe(22);
+		expect(new Set(LIVE_VOICES).size).toBe(31);
 		const configured = { ...config, settings: liveBackendSettingsSchema.parse({ instructions: "Verify facts.", max_output_tokens: 16000,
 			reasoning_effort: "high", reasoning_summary: "concise", verbosity: "low", web_search: true, tool_choice: "required", parallel_tool_calls: false }) };
 		expect(liveStartEvent(configured, "vesper", "Listen carefully.").session).toMatchObject({ instructions: "Listen carefully.",

@@ -150,20 +150,29 @@ export type AddWorkspaceMembersParams = {
 };
 
 /**
- * Adds existing users to a workspace with an admin or member role. Management API key required.
+ * Adds people who asked to join: each user must have a pending join request (created when they accept an invite), which this approves. Other users are rejected; send them an invite instead. Existing members keep their role. Without a role, each person gets their invite's role; adding an admin needs the workspace owner. Management API key required. Each person is approved separately. If one fails, everyone approved before them stays added, the rest aren't tried, and the response is a 409 that lists approved, failed and not_attempted users.
  */
 export async function addWorkspaceMembers(
   client: Client,
   args: AddWorkspaceMembersParams,
 ): Promise<{
   added_count: number;
-  data: {
+  approved: string[];
+  data?: {
     display_name?: string | null;
     joined_at?: string | null;
     role: "owner" | "admin" | "member";
     user_id: string;
     workspace_id: string;
   }[];
+  error?: string;
+  failed: {
+    code: "forbidden" | "conflict" | "internal_error";
+    message: string;
+    user_id: string;
+  }[];
+  message?: string;
+  not_attempted: string[];
 }> {
   const { path, query, headers, body } = args;
   if ([".", ".."].includes(String(path?.["id"])))
@@ -171,13 +180,22 @@ export async function addWorkspaceMembers(
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}/members/add`;
   return client.request<{
     added_count: number;
-    data: {
+    approved: string[];
+    data?: {
       display_name?: string | null;
       joined_at?: string | null;
       role: "owner" | "admin" | "member";
       user_id: string;
       workspace_id: string;
     }[];
+    error?: string;
+    failed: {
+      code: "forbidden" | "conflict" | "internal_error";
+      message: string;
+      user_id: string;
+    }[];
+    message?: string;
+    not_attempted: string[];
   }>({
     method: "POST",
     path: resolvedPath,
@@ -1350,7 +1368,6 @@ export async function createApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -1420,7 +1437,6 @@ export async function createApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -3247,7 +3263,7 @@ export type CreateDepartmentBudgetParams = {
 };
 
 /**
- * Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. Batch jobs, realtime sessions and OAuth requests are not blocked. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.
+ * Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.
  */
 export async function createDepartmentBudget(
   client: Client,
@@ -4248,12 +4264,15 @@ export type CreateImageParams = {
   headers?: Record<string, never>;
   body?: {
     background?: "transparent" | "opaque" | "auto";
+    complexity?: "low" | "medium" | "high";
+    frame_count?: number;
+    frame_duration_ms?: number;
     model: string;
     models?: string[];
     moderation?: "auto" | "low";
     n?: number;
     output_compression?: number;
-    output_format?: "png" | "jpeg" | "webp";
+    output_format?: "png" | "jpeg" | "webp" | "gif" | "svg";
     partial_images?: number;
     prompt: string;
     provider?: {
@@ -4299,6 +4318,13 @@ export type CreateImageParams = {
     size?: string;
     stream?: boolean;
     style?: string;
+    svg?: {
+      model: string;
+      reasoning?: {
+        effort?:
+          "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+      };
+    };
     user?: string;
   };
 };
@@ -4316,6 +4342,13 @@ export async function createImage(
     revised_prompt?: string;
     url?: string;
   }[];
+  svg_usage?: {
+    input_tokens?: number;
+    model?: string;
+    output_tokens?: number;
+    reasoning_tokens?: number;
+    total_tokens?: number;
+  };
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/images/generations";
@@ -4326,6 +4359,13 @@ export async function createImage(
       revised_prompt?: string;
       url?: string;
     }[];
+    svg_usage?: {
+      input_tokens?: number;
+      model?: string;
+      output_tokens?: number;
+      reasoning_tokens?: number;
+      total_tokens?: number;
+    };
   }>({
     method: "POST",
     path: resolvedPath,
@@ -4341,8 +4381,10 @@ export type CreateImageEditParams = {
   headers?: Record<string, never>;
   body?: {
     background?: "transparent" | "opaque" | "auto";
+    complexity?: "low" | "medium" | "high";
     image: string | string[];
     input_fidelity?: "high" | "low";
+    markup?: string;
     mask?: string;
     meta?: boolean;
     model: string;
@@ -4514,6 +4556,7 @@ export async function createLiveSession(
   model?: string;
   model_id?: string;
   provider?: string;
+  provider_model?: string;
   session_id?: string;
   status?: string;
   voice?: string | null;
@@ -4538,6 +4581,7 @@ export async function createLiveSession(
     model?: string;
     model_id?: string;
     provider?: string;
+    provider_model?: string;
     session_id?: string;
     status?: string;
     voice?: string | null;
@@ -6085,6 +6129,7 @@ export async function createRealtimeSession(
   model?: string;
   model_id?: string;
   provider?: string;
+  provider_model?: string;
   session_id?: string;
   status?: string;
   voice?: string | null;
@@ -6109,6 +6154,7 @@ export async function createRealtimeSession(
     model?: string;
     model_id?: string;
     provider?: string;
+    provider_model?: string;
     session_id?: string;
     status?: string;
     voice?: string | null;
@@ -7332,7 +7378,7 @@ export type CreateVideoParams = {
   headers?: Record<string, never>;
   body?: {
     aspect_ratio?: string;
-    compression_quality?: number;
+    compression_quality?: number | "optimized" | "lossless";
     duration?: number;
     enhance_prompt?: boolean;
     frame_images?: {
@@ -7671,7 +7717,7 @@ export type CreateVideoAliasParams = {
   headers?: Record<string, never>;
   body?: {
     aspect_ratio?: string;
-    compression_quality?: number;
+    compression_quality?: number | "optimized" | "lossless";
     duration?: number;
     enhance_prompt?: boolean;
     frame_images?: {
@@ -9433,7 +9479,7 @@ export type DeleteWorkspaceParams = {
 };
 
 /**
- * Deletes a workspace by UUID or slug. Management API key required.
+ * Deletes a workspace by UUID or slug. Only the workspace owner can delete it. Management API key required.
  */
 export async function deleteWorkspace(
   client: Client,
@@ -9777,6 +9823,7 @@ export async function finalizeRealtimeSession(
   model: string;
   model_id: string;
   provider: string;
+  provider_model?: string;
   session_id: string;
   settlement: {
     [key: string]: unknown;
@@ -9802,6 +9849,7 @@ export async function finalizeRealtimeSession(
     model: string;
     model_id: string;
     provider: string;
+    provider_model?: string;
     session_id: string;
     settlement: {
       [key: string]: unknown;
@@ -10403,7 +10451,6 @@ export async function getApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -10473,7 +10520,6 @@ export async function getApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -10842,7 +10888,6 @@ export async function getCurrentApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -10910,7 +10955,6 @@ export async function getCurrentApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -14396,7 +14440,6 @@ export async function listApiKeys(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -14465,7 +14508,6 @@ export async function listApiKeys(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -16124,7 +16166,7 @@ export type ListDepartmentBudgetsParams = {
 };
 
 /**
- * Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+ * Lists department spend budgets with each department's spend so far in the current UTC period. Spend is counted the way department admission counts it, so it is current.
  */
 export async function listDepartmentBudgets(
   client: Client,
@@ -17735,6 +17777,15 @@ export async function listModels(
   args: ListModelsParams = {},
 ): Promise<
   | {
+      access?: {
+        hidden_model_count: number;
+        hidden_models: {
+          id: string;
+          name: string;
+        }[];
+        limited_model_count: number;
+        restricted: boolean;
+      };
       availability_mode: "active" | "all";
       limit: number;
       models: {
@@ -18086,6 +18137,15 @@ export async function listModels(
   const resolvedPath = "/models";
   return client.request<
     | {
+        access?: {
+          hidden_model_count: number;
+          hidden_models: {
+            id: string;
+            name: string;
+          }[];
+          limited_model_count: number;
+          restricted: boolean;
+        };
         availability_mode: "active" | "all";
         limit: number;
         models: {
@@ -20177,12 +20237,21 @@ export type ListTeamModelsParams = {
 };
 
 /**
- * Returns team-scoped gateway model listings. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.
+ * Returns the /models listing with the caller's guardrails applied: models a rule blocks, and models with no permitted provider, are left out, and each model keeps only the offers its requests may be routed to, with its prices, capabilities and availability from those. The access object says what the rules left out. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.
  */
 export async function listTeamModels(
   client: Client,
   args: ListTeamModelsParams = {},
 ): Promise<{
+  access?: {
+    hidden_model_count: number;
+    hidden_models: {
+      id: string;
+      name: string;
+    }[];
+    limited_model_count: number;
+    restricted: boolean;
+  };
   availability_mode: "active" | "all";
   limit: number;
   models: {
@@ -20523,6 +20592,15 @@ export async function listTeamModels(
   const { path, query, headers, body } = args;
   const resolvedPath = "/models/me";
   return client.request<{
+    access?: {
+      hidden_model_count: number;
+      hidden_models: {
+        id: string;
+        name: string;
+      }[];
+      limited_model_count: number;
+      restricted: boolean;
+    };
     availability_mode: "active" | "all";
     limit: number;
     models: {
@@ -24097,7 +24175,7 @@ export type RemoveWorkspaceMembersParams = {
 };
 
 /**
- * Removes non-owner members from a workspace. Management API key required.
+ * Removes non-owner members from a workspace. Only the workspace owner can remove other members; anyone can remove themselves. Management API key required.
  */
 export async function removeWorkspaceMembers(
   client: Client,
@@ -25152,7 +25230,6 @@ export async function rotateApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -25224,7 +25301,6 @@ export async function rotateApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -26093,7 +26169,6 @@ export async function updateApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -26163,7 +26238,6 @@ export async function updateApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -28933,7 +29007,7 @@ export type UpdateWorkspaceNotificationSettingsParams = {
 };
 
 /**
- * Updates one or more durable notification-policy sections. Enabling auto top-up requires an existing saved payment method identifier and verified two-factor authentication. An existing auto top-up configuration may be updated without repeating the MFA acknowledgement. To enable auto top-up without MFA, clients must explicitly set `mfa_bypass_acknowledged` to true and provide the exact `mfa_bypass_phrase` value `I ACCEPT THE RISK`; payment collection remains an interactive account flow.
+ * Updates one or more durable notification-policy sections. Turning on auto top-up, or changing its amount, threshold or payment method, needs `billing:write`, an existing saved payment method identifier and verified two-factor authentication, and apps that use Sign in with Phaseo can't do it. Turning it off needs only `settings:write`. An existing auto top-up configuration may be updated without repeating the MFA acknowledgement. The two-factor bypass (`mfa_bypass_acknowledged` and `mfa_bypass_phrase`) can only be accepted in Settings; the API rejects it. Payment collection remains an interactive account flow.
  */
 export async function updateWorkspaceNotificationSettings(
   client: Client,

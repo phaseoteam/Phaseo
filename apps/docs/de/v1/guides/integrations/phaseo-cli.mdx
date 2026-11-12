@@ -55,25 +55,23 @@ phaseo whoami
 phaseo whoami --json
 ```
 
-## Schlüssel erstellen und deinen Workspace verwalten
+## Deinen Workspace verwalten
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
 
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-Nutze `--json`, wenn ein Agent oder Skript den neuen Schlüssel braucht. Er wird nur einmal angezeigt. Die CLI deckt die Verwaltungsaufgaben des Dashboards ab, darunter Abrechnung, Budgets, BYOK, Routing und Identität. Den Befehl für jede Aufgabe findest du unter [Phaseo aus einem Agent verwalten](../../developers/manage-from-an-agent).
+Nutze `--json`, wenn ein Agent oder Skript die Ausgabe liest. Die CLI deckt alltägliche Kontoaufgaben ab; Limits von Schlüsseln, Budgets, BYOK, Routing-Regeln, Voreinstellungen und Identität änderst du im Dashboard oder mit einem Management-Schlüssel. Welche Aufgaben die CLI abdeckt, steht unter [Phaseo aus einem Agent verwalten](../../developers/manage-from-an-agent).
 
 ## Einen Coding-Agent verbinden
 
-Verwende den Namen des Agents als Befehl. Die CLI erstellt einen eigenen Schlüssel und schreibt die Konfiguration des Agents:
+Verwende den Namen des Agents als Befehl. Die CLI fordert einen eigenen Schlüssel an, den du im Browser genehmigst, und schreibt die Konfiguration des Agents:
 
 ```bash
 phaseo codex
@@ -94,6 +92,14 @@ phaseo cursor
 ```
 
 Nutze bei Bedarf `--model`, `--catalog all|default` oder `--dry-run`. `phaseo setup <agent>` und `phaseo integrations setup <agent>` funktionieren ebenfalls.
+
+### Den Schlüssel im Browser genehmigen
+
+Wenn du einen Agent zum ersten Mal einrichtest, öffnet die CLI eine Seite im Phaseo-Dashboard und gibt ihren Link aus. Die Seite zeigt den Workspace, den Namen des Schlüssels, sein monatliches Ausgabenlimit von $100 und den Ablauf nach 90 Tagen sowie, dass die Phaseo CLI ihn angefordert hat. Wähle **Genehmigen und Schlüssel erstellen**, dann holt die CLI den Schlüssel einmal ab und schließt die Einrichtung ab. Wählst du **Ablehnen** oder lässt die Anfrage 10 Minuten liegen, bis sie abläuft, wird nichts erstellt.
+
+Genehmige im Dashboard mit dem Konto, das du in der CLI verwendet hast, als Inhaber oder Admin des Workspace und mit deinem zweiten Faktor, falls du einen eingerichtet hast. Über SSH oder in CI öffnest du den ausgegebenen Link auf einem beliebigen Gerät, auf dem du angemeldet bist.
+
+Um stattdessen einen Schlüssel zu verwenden, den du im Dashboard erstellt hast, übergib ihn mit `--key <key>` oder mit `--key-stdin`, damit er nicht in deinem Shell-Verlauf landet. Die CLI prüft den Schlüssel und speichert ihn, widerruft ihn aber nicht, wenn du den Agent entfernst.
 
 Um Cline, Kilo Code, oh-my-pi, Muse Code oder MiniMax Code mit temporären Einstellungen auszuführen, die beim Beenden gelöscht werden, nutze den Sitzungs-Runner. Phaseo-Flags stehen vor `--`, die eigenen Flags des Agents dahinter:
 

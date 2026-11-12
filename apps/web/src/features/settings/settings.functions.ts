@@ -23,10 +23,12 @@ const loadSettingsLayout = createServerFn({ method: "GET" }).handler(async () =>
 		flags.slackAgentSettingsEnabled(),
 		flags.workloadIdentityFlag().catch(() => false),
 	]);
+	const { isThirdPartyOAuthEnabled } = await import("@/lib/oauth/thirdPartyOAuth");
 	return {
 		signedIn: true as const,
 		userId: account.userId,
 		workspaceId: initialData.workspaceId,
+		workspaceName: initialData.workspaceName,
 		showBroadcast: initialData.showBroadcast,
 		showWebhooks,
 		showEnterprise,
@@ -34,6 +36,7 @@ const loadSettingsLayout = createServerFn({ method: "GET" }).handler(async () =>
 		showClassifiers,
 		showSlackAgent,
 		showWorkloadIdentity,
+		showOAuthApps: isThirdPartyOAuthEnabled(),
 		showInternal: initialData.accountContext?.isInternalAdmin === true,
 		providerMode: initialData.accountContext?.providerMode === true,
 	};

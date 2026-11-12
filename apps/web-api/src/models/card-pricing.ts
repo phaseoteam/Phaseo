@@ -196,22 +196,27 @@ function isPassThrough(unit: string): boolean {
 	return /^(?:\d+\s*)?usd$/i.test(unit);
 }
 
+/** Decimal places in the shortest form of a number ("0.01875" → 5, "4.2e-7" → 8). */
+function decimalPlaces(value: number): number {
+	const [mantissa, exponent] = String(value).toLowerCase().split("e");
+	const fraction = mantissa.split(".")[1]?.length ?? 0;
+	return Math.max(0, fraction - Number(exponent ?? 0));
+}
+
 /**
- * Formats a USD amount for display. Amounts of a cent or more get cents
- * ("$0.50", "$2.50") with up to three decimals ("$0.035"); integers stay bare
- * ("$15"); sub-cent amounts keep three significant digits so a small rate never
- * looks free.
+ * Formats a USD amount for display with every digit it was published with, so a
+ * price is never rounded up against the customer and a small rate never looks
+ * free: "$15", "$2.50", "$0.035", "$0.01875", "$0.0004255". Binary noise from
+ * per-million arithmetic is trimmed at 15 significant digits first.
  */
 export function formatUsd(price: number): string {
 	if (price === 0) return "$0";
-	if (price >= 0.01) {
-		const integer = Number.isInteger(price) || Math.abs(price - Math.round(price)) < 1e-9;
-		return `$${price.toLocaleString("en-US", {
-			minimumFractionDigits: integer ? 0 : 2,
-			maximumFractionDigits: integer ? 0 : 3,
-		})}`;
-	}
-	return `$${price.toLocaleString("en-US", { maximumSignificantDigits: 3 })}`;
+	const value = Number(price.toPrecision(15));
+	const decimals = Math.min(100, decimalPlaces(value));
+	return `$${value.toLocaleString("en-US", {
+		minimumFractionDigits: decimals === 0 ? 0 : 2,
+		maximumFractionDigits: Math.max(2, decimals),
+	})}`;
 }
 
 function min(rates: Rate[]): number {

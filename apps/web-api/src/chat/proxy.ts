@@ -1,6 +1,7 @@
 import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
+import { traceContext } from "../../../../packages/shared/observability/index.mjs";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { hasReviewedChatPrivacy } from "./privacyReview";
 
@@ -403,11 +404,13 @@ export async function proxyGateway(request: Request, env: Env, waitUntil: (promi
 		? { "x-phaseo-internal-token": String(env.GATEWAY_INTERNAL_TEST_TOKEN), "x-phaseo-testing-mode": "true" }
 		: {};
 	const requestBody = previewAccess.preview ? previewRequestBody(args.requestBody) : args.requestBody;
+	const parent = traceContext(request.headers.get("traceparent"));
+	const traceHeaders = parent ? { traceparent: `00-${parent.traceId}-${parent.parentSpanId}-${parent.traceFlags.toString(16).padStart(2, "0")}` } : {};
 	const debug = args.debug && !previewAccess.preview;
 	try {
 		const upstream = await fetch(`${baseUrl}${args.path}`, {
 			method: args.method ?? "POST",
-			headers: { ...(args.method === "GET" ? {} : { "Content-Type": "application/json" }), ...CANONICAL_CHAT_APP_HEADERS, ...sanitizeAppHeaders(args.appHeaders), ...previewHeaders, Authorization: `Bearer ${auth.apiKey}`, ...(debug ? { "x-gateway-debug": "true" } : {}), ...(args.stream ? { Accept: "text/event-stream" } : {}) },
+			headers: { ...(args.method === "GET" ? {} : { "Content-Type": "application/json" }), ...CANONICAL_CHAT_APP_HEADERS, ...sanitizeAppHeaders(args.appHeaders), ...previewHeaders, ...traceHeaders, Authorization: `Bearer ${auth.apiKey}`, ...(debug ? { "x-gateway-debug": "true" } : {}), ...(args.stream ? { Accept: "text/event-stream" } : {}) },
 			...(args.method === "GET" ? {} : { body: JSON.stringify(requestBody ?? {}) }),
 		});
 		return privateResponse(upstream);

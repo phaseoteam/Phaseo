@@ -9,7 +9,7 @@ Create an API key, send one request to `POST /v1/responses`, and read the reply 
 
 ```mermaid
 flowchart LR
-  key["Create a key<br/>phaseo keys create"] --> req["POST /v1/responses<br/>model + input"]
+  key["Create a key<br/>phaseo.app/settings/keys"] --> req["POST /v1/responses<br/>model + input"]
   req --> read["Read output[].content[]<br/>type: output_text"]
   req -->|"401, 402, 429"| fix["Troubleshoot"]
 ```
@@ -32,8 +32,8 @@ Rules:
 <Visibility for="agents">
 Quickstart checklist for agents:
 
-- Create the key with the CLI: `npm install -g @phaseo/cli`, then `phaseo login` (or `phaseo login --device-code` in a headless shell; a person approves the sign-in), then `phaseo keys create --name <name> --json`. Never generate or guess a key. Send it as `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` from server-side code only.
-- For paid models, run `phaseo login --scopes billing:write` once, then `phaseo credits add --amount <usd> --json` starts a top-up. With a saved card, a workspace owner or admin confirms it from an emailed link. With no saved card, the response has `next_action: "open_checkout_url"` and a checkout link that an owner or admin opens to pay; the card is then saved for later top-ups. Do not send the user to the dashboard for keys, credits or settings; see https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
+- Create the key with `phaseo keys create --name <name> --limit <usd> --show-secret --json` (the CLI sign-in must be a workspace owner or admin) or with `POST /v1/keys` and a management key, or ask the person to create it in the dashboard under **Settings -> API Keys**. Never generate or guess a key. Send it as `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` from server-side code only.
+- For paid models, run `phaseo login --scopes billing:write` once, then `phaseo credits add --amount <usd> --json` starts a top-up. With a saved card, a workspace owner or admin confirms it from an emailed link. With no saved card, the response has `next_action: "open_checkout_url"` and a checkout link that an owner or admin opens to pay; the card is then saved for later top-ups. Do not send the user to the dashboard for credits or other tasks the CLI covers; see https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
 - Make the first request with `POST https://api.phaseo.app/v1/responses`, sending `model` and `input`. The examples use `openai/gpt-6-astra`, a paid model that needs credits. `phaseo/free` picks an available free model and works without a wallet balance.
 - Read the reply from `output[].content[]` where `type` is `output_text`.
 - If the request fails, branch on the JSON `error` code as described in https://phaseo.app/docs/v1/api-reference/errors.md.
@@ -41,12 +41,9 @@ Quickstart checklist for agents:
 
 ## 1. Create an API key
 
-Install the [Phaseo CLI](./guides/integrations/phaseo-cli), sign in and create a key:
+Create a key in the [dashboard](https://phaseo.app/settings/keys) under **Settings -> API Keys**, then export it:
 
 ```bash
-npm install -g @phaseo/cli
-phaseo login                 # use --device-code over SSH or in an agent sandbox
-phaseo keys create --name "Quickstart" --json
 export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
@@ -55,8 +52,6 @@ The key is shown once. Every request sends it as a bearer token:
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
-
-You can also create a key in the [dashboard](https://phaseo.app/settings/keys) under **Settings -> API Keys**.
 
 <Danger>
 Treat your API key like a password. Keep it in server-side code and never ship it to a browser or mobile app.

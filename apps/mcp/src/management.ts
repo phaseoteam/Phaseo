@@ -820,6 +820,20 @@ function oauthToolMeta(scopes: readonly string[]) {
 	return { securitySchemes: [{ type: "oauth2", scopes: [...scopes] }] };
 }
 
+/**
+ * The tool description an agent sees. The server's `instructions` also hold these rules, but some
+ * MCP hosts drop `instructions` or load tools lazily, so every tool that changes the live workspace
+ * carries them itself.
+ */
+export function managementToolDescription(definition: ManagementToolDefinition): string {
+	if (definition.effect === "read") return definition.description;
+	const rules = [
+		/confirm/i.test(definition.description) ? "" : "Confirm with the user first.",
+		"Never retry a failed change automatically.",
+	].filter(Boolean).join(" ");
+	return `${definition.description} ${rules}`;
+}
+
 export function registerManagementTools(
 	server: McpServer,
 	env: PhaseoEnv,
@@ -834,7 +848,7 @@ export function registerManagementTools(
 			definition.name,
 			{
 				title: definition.title,
-				description: definition.description,
+				description: managementToolDescription(definition),
 				inputSchema: definition.inputSchema,
 				outputSchema: managementOutputSchema,
 				annotations: managementAnnotations(definition),

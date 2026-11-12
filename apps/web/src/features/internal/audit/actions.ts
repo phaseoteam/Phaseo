@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { serverAction } from "@/lib/serverFn/actionMiddleware";
+import { internalAdminAction } from "@/lib/auth/requireInternalAdmin";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
@@ -17,7 +18,7 @@ export interface CreateModelInput {
 }
 
 export const createModel = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: CreateModelInput) => input)
 	.handler(async ({ data: input }): Promise<{ success: boolean; error?: string }> => {
 		try {
@@ -46,7 +47,7 @@ export interface UpdateModelInput {
 }
 
 export const updateModel = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((input: UpdateModelInput) => input)
 	.handler(async ({ data: input }): Promise<{ success: boolean; error?: string }> => {
 		try {

@@ -137,7 +137,6 @@ struct ApiKey {
 	std::optional<std::string> department_id;
 	bool disabled;
 	std::optional<std::string> expires_at;
-	std::string hash;
 	std::string id;
 	bool include_byok_in_limit;
 	std::vector<std::map<std::string, std::any>> ip_allowlist;
@@ -258,7 +257,6 @@ struct ApiKeyWithValue {
 	std::optional<std::string> department_id;
 	bool disabled;
 	std::optional<std::string> expires_at;
-	std::string hash;
 	std::string id;
 	bool include_byok_in_limit;
 	std::vector<std::map<std::string, std::any>> ip_allowlist;
@@ -1607,6 +1605,13 @@ struct GatewayModalities {
 	std::vector<std::string> output;
 };
 
+struct GatewayModelAccess {
+	int hidden_model_count;
+	std::vector<std::map<std::string, std::any>> hidden_models;
+	int limited_model_count;
+	bool restricted;
+};
+
 struct GatewayModelLifecycle {
 	std::optional<std::string> deprecated_at;
 	std::optional<std::string> message;
@@ -1639,6 +1644,7 @@ struct GatewayModelOffer {
 using GatewayModelOrganization = std::any;
 
 struct GatewayModelsResponse {
+	std::map<std::string, std::any> access;
 	std::any availability_mode;
 	int limit;
 	std::vector<std::map<std::string, std::any>> models;
@@ -1979,8 +1985,10 @@ struct ImageModerationInput {
 
 struct ImagesEditRequest {
 	std::any background;
+	std::any complexity;
 	std::any image;
 	std::any input_fidelity;
+	std::string markup;
 	std::string mask;
 	std::optional<bool> meta;
 	std::string model;
@@ -2007,6 +2015,9 @@ struct ImagesEditResponse {
 
 struct ImagesGenerationRequest {
 	std::any background;
+	std::any complexity;
+	std::optional<int> frame_count;
+	std::optional<int> frame_duration_ms;
 	std::string model;
 	std::vector<std::string> models;
 	std::any moderation;
@@ -2022,12 +2033,14 @@ struct ImagesGenerationRequest {
 	std::string size;
 	std::optional<bool> stream;
 	std::string style;
+	std::map<std::string, std::any> svg;
 	std::string user;
 };
 
 struct ImagesGenerationResponse {
 	std::optional<int> created;
 	std::vector<std::map<std::string, std::any>> data;
+	std::map<std::string, std::any> svg_usage;
 };
 
 struct InputTokensDetails {
@@ -3914,7 +3927,7 @@ struct VideoDeleteResponse {
 
 struct VideoGenerationRequest {
 	std::string aspect_ratio;
-	std::optional<int> compression_quality;
+	std::any compression_quality;
 	std::optional<int> duration;
 	std::optional<bool> enhance_prompt;
 	std::vector<std::map<std::string, std::any>> frame_images;
@@ -4551,9 +4564,20 @@ struct WorkspaceMember {
 	std::string workspace_id;
 };
 
+struct WorkspaceMemberAddFailure {
+	std::any code;
+	std::string message;
+	std::string user_id;
+};
+
 struct WorkspaceMemberAddResponse {
 	int added_count;
+	std::vector<std::string> approved;
 	std::vector<std::map<std::string, std::any>> data;
+	std::string error;
+	std::vector<std::map<std::string, std::any>> failed;
+	std::string message;
+	std::vector<std::string> not_attempted;
 };
 
 struct WorkspaceMemberBulkRequest {

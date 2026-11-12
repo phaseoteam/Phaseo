@@ -61,4 +61,4 @@ Algunos proveedores devuelven `b64_json` con los datos de la imagen en base64 en
 
 ## Uso y precios
 
-Cada imagen suma 1 a `usage.server_tool_use.image_generation_requests` y se puede facturar con `server_tool_image_generation_requests`. Cuando el modelo de imágenes informa del uso de tokens, se suma al uso de la solicitud y se factura a las tarifas normales de ese modelo.
+Cada imagen suma 1 a `usage.server_tool_use.image_generation_requests` y puede cobrarse con `server_tool_image_generation_requests`. El modelo de imagen se cobra según sus propias tarifas, como una línea aparte en la factura de la solicitud. Un modelo de imagen de pago requiere saldo aunque el modelo que lo llama sea gratuito.

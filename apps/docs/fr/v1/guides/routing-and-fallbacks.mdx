@@ -144,7 +144,7 @@ Une route dynamique est un flux de règles associé à une ou plusieurs clés AP
 
 Les conditions ont des sorties vrai et faux ; les nœuds de débit et de budget ont des sorties « dans la limite » et « dépassé ». Les répartitions en pourcentage sont déterministes par session ou par clé de cache de prompt : une conversation en cache ne change donc pas de branche.
 
-L’enregistrement crée une version brouillon immuable. Le déploiement copie cette version dans le Gateway et vide les caches de politique de ses clés ; les versions antérieures restent disponibles pour un retour en arrière. Les recommandations sur l’état de santé des fournisseurs apparaissent sous **Insights**. Depuis la CLI : `phaseo routing dynamic-routes create`, `set-keys` et `deploy`, ou l’API `/v1/routing/dynamic-routes`.
+L’enregistrement crée une version brouillon immuable. Le déploiement copie cette version dans le Gateway et vide les caches de politique de ses clés ; les versions antérieures restent disponibles pour un retour en arrière. Les recommandations sur l’état de santé des fournisseurs apparaissent sous **Insights**. Depuis un script, utilisez l’API `/v1/routing/dynamic-routes` avec une clé de gestion.
 
 Les métadonnées personnalisées se placent dans le corps de la requête sur les endpoints texte compatibles OpenAI :
 
@@ -219,4 +219,4 @@ Avec <Tooltip tip="Apportez votre propre clé : Phaseo route la requête avec vo
 | Règles du fournisseur | Les quotas, la politique de données, l’accès aux modèles et les limites de compte de votre fournisseur s’appliquent toujours. |
 | Stockage | Les clés sont chiffrées en AES-256-GCM, liées à leur espace de travail et à leur fournisseur. |
 
-Limitez chaque clé aux modèles et aux clés API qui en ont besoin. Pour empêcher une requête BYOK en échec d’être relancée avec des crédits Phaseo, désactivez le repli dans **Tableau de bord -> Paramètres -> BYOK**, ou définissez `byok_fallback_enabled` sur `PATCH /v1/settings` (`phaseo settings update --body-json '{"byok_fallback_enabled":false}'`). Ajoutez des clés avec `phaseo byok create --provider <id> --name <name> --key-stdin`.
+Limitez chaque clé aux modèles et aux clés API qui en ont besoin. Pour empêcher une requête BYOK en échec d’être relancée avec des crédits Phaseo, désactivez le repli dans **Tableau de bord -> Paramètres -> BYOK**, ou définissez `byok_fallback_enabled` sur `PATCH /v1/settings` avec une clé de gestion. Ajoutez des clés au même endroit, ou avec `POST /v1/byok` et une clé de gestion.

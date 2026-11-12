@@ -138,7 +138,6 @@ pub struct ApiKey {
 	pub department_id: Option<Option<String>>,
 	pub disabled: bool,
 	pub expires_at: Option<String>,
-	pub hash: String,
 	pub id: String,
 	pub include_byok_in_limit: bool,
 	pub ip_allowlist: Option<Vec<HashMap<String, String>>>,
@@ -259,7 +258,6 @@ pub struct ApiKeyWithValue {
 	pub department_id: Option<Option<String>>,
 	pub disabled: bool,
 	pub expires_at: Option<String>,
-	pub hash: String,
 	pub id: String,
 	pub include_byok_in_limit: bool,
 	pub ip_allowlist: Option<Vec<HashMap<String, String>>>,
@@ -1608,6 +1606,13 @@ pub struct GatewayModalities {
 	pub output: Vec<String>,
 }
 
+pub struct GatewayModelAccess {
+	pub hidden_model_count: i64,
+	pub hidden_models: Vec<HashMap<String, String>>,
+	pub limited_model_count: i64,
+	pub restricted: bool,
+}
+
 pub struct GatewayModelLifecycle {
 	pub deprecated_at: Option<String>,
 	pub message: Option<String>,
@@ -1640,6 +1645,7 @@ pub struct GatewayModelOffer {
 pub type GatewayModelOrganization = JsonValue;
 
 pub struct GatewayModelsResponse {
+	pub access: Option<HashMap<String, String>>,
 	pub availability_mode: String,
 	pub limit: i64,
 	pub models: Vec<HashMap<String, String>>,
@@ -1980,8 +1986,10 @@ pub struct ImageModerationInput {
 
 pub struct ImagesEditRequest {
 	pub background: Option<String>,
+	pub complexity: Option<String>,
 	pub image: StringOrStringArray,
 	pub input_fidelity: Option<String>,
+	pub markup: Option<String>,
 	pub mask: Option<String>,
 	pub meta: Option<bool>,
 	pub model: String,
@@ -2008,6 +2016,9 @@ pub struct ImagesEditResponse {
 
 pub struct ImagesGenerationRequest {
 	pub background: Option<String>,
+	pub complexity: Option<String>,
+	pub frame_count: Option<i64>,
+	pub frame_duration_ms: Option<i64>,
 	pub model: String,
 	pub models: Option<Vec<String>>,
 	pub moderation: Option<String>,
@@ -2023,12 +2034,14 @@ pub struct ImagesGenerationRequest {
 	pub size: Option<String>,
 	pub stream: Option<bool>,
 	pub style: Option<String>,
+	pub svg: Option<HashMap<String, String>>,
 	pub user: Option<String>,
 }
 
 pub struct ImagesGenerationResponse {
 	pub created: Option<i64>,
 	pub data: Option<Vec<HashMap<String, String>>>,
+	pub svg_usage: Option<HashMap<String, String>>,
 }
 
 pub struct InputTokensDetails {
@@ -3915,7 +3928,7 @@ pub struct VideoDeleteResponse {
 
 pub struct VideoGenerationRequest {
 	pub aspect_ratio: Option<String>,
-	pub compression_quality: Option<i64>,
+	pub compression_quality: Option<String>,
 	pub duration: Option<i64>,
 	pub enhance_prompt: Option<bool>,
 	pub frame_images: Option<Vec<HashMap<String, String>>>,
@@ -4552,9 +4565,20 @@ pub struct WorkspaceMember {
 	pub workspace_id: String,
 }
 
+pub struct WorkspaceMemberAddFailure {
+	pub code: String,
+	pub message: String,
+	pub user_id: String,
+}
+
 pub struct WorkspaceMemberAddResponse {
 	pub added_count: i64,
-	pub data: Vec<HashMap<String, String>>,
+	pub approved: Vec<String>,
+	pub data: Option<Vec<HashMap<String, String>>>,
+	pub error: Option<String>,
+	pub failed: Vec<HashMap<String, String>>,
+	pub message: Option<String>,
+	pub not_attempted: Vec<String>,
 }
 
 pub struct WorkspaceMemberBulkRequest {

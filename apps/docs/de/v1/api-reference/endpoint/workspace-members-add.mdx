@@ -7,4 +7,8 @@ description: "Fügt vorhandene Nutzer zu einem Workspace hinzu."
 ---
 <Note>Für diesen Endpunkt sind ein Management-API-Schlüssel mit `workspaces:write` und eine Inhaber- oder Admin-Rolle erforderlich.</Note>
 
-Die Rolle kann `admin` oder `member` sein. Die Workspace-Inhaberschaft kann über diesen Endpunkt nicht zugewiesen werden.
+Personen treten einem Workspace über eine Einladung bei. Wer sie annimmt, erzeugt eine Beitrittsanfrage, und dieser Endpunkt genehmigt sie. Jeder Benutzer in `user_ids` muss eine ausstehende Beitrittsanfrage im Workspace haben. Andere Benutzer werden abgelehnt; sende ihnen zuerst eine Einladung. Bestehende Mitglieder behalten ihre Rolle.
+
+Die Rolle kann `admin` oder `member` sein. Ohne Rolle erhält jede Person die Rolle, mit der ihre Einladung erstellt wurde. Nur der Workspace-Inhaber kann Admins hinzufügen, und die Workspace-Inhaberschaft kann über diesen Endpunkt nicht vergeben werden.
+
+Jede Person wird einzeln genehmigt. Schlägt eine Genehmigung fehl, bleiben die zuvor genehmigten Personen im Workspace, und die übrigen werden nicht versucht. Die Antwort ist dann ein `409`, dessen Listen `approved`, `failed` und `not_attempted` zeigen, wo der Vorgang angehalten hat. Behebe das Problem und sende die übrigen Benutzer erneut.

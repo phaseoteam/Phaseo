@@ -50,15 +50,34 @@ CREATE INDEX idx_api_apps_public_active_docs_url ON public.api_apps USING btree 
 
 CREATE INDEX idx_api_apps_public_active ON public.api_apps USING btree (is_public, is_active);
 
+CREATE POLICY "api_apps_no_oauth_client_insert" ON "public"."api_apps"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "api_apps_no_oauth_client_update" ON "public"."api_apps"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "api_apps_no_oauth_client_delete" ON "public"."api_apps"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "api_apps_delete_own_team" ON "public"."api_apps"
   FOR DELETE
   TO "authenticated"
-  USING (public.is_workspace_member(workspace_id));
+  USING (public.is_workspace_admin(workspace_id));
 
 CREATE POLICY "api_apps_insert_own_team" ON "public"."api_apps"
   FOR INSERT
   TO "authenticated"
-  WITH CHECK (public.is_workspace_member(workspace_id));
+  WITH CHECK (public.is_workspace_admin(workspace_id));
 
 CREATE POLICY "api_apps_select_own_team" ON "public"."api_apps"
   FOR SELECT
@@ -68,8 +87,8 @@ CREATE POLICY "api_apps_select_own_team" ON "public"."api_apps"
 CREATE POLICY "api_apps_update_own_team" ON "public"."api_apps"
   FOR UPDATE
   TO "authenticated"
-  USING (public.is_workspace_member(workspace_id))
-  WITH CHECK (public.is_workspace_member(workspace_id));
+  USING (public.is_workspace_admin(workspace_id))
+  WITH CHECK (public.is_workspace_admin(workspace_id));
 
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."api_apps"
   AS RESTRICTIVE

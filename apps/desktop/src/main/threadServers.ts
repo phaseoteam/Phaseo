@@ -46,13 +46,14 @@ const taskkill = (pid: number) => new Promise<void>((resolve, reject) => execFil
 /**
  * Stops one of the chat's servers: the listening process and everything under it. The server is looked up again
  * first, so a port that changed hands since the list was read is left alone. The terminal or command that started it
- * keeps running.
+ * keeps running. `allowed` throws if the caller lost the right to stop it during the lookup; it runs just before the kill.
  */
-export async function stopThreadServer(roots: readonly ServerRoot[], port: number) {
+export async function stopThreadServer(roots: readonly ServerRoot[], port: number, allowed: () => void = () => {}) {
 	const server = (await threadServers(roots)).find(value => value.port === port);
 	if (!server) throw new Error("That server is no longer running from this chat.");
-	if (process.platform === "win32") { await taskkill(server.pid); return server; }
+	if (process.platform === "win32") { allowed(); await taskkill(server.pid); return server; }
 	const table = await readProcessTable();
+	allowed();
 	for (const pid of [...descendants(table, server.pid), server.pid]) { try { process.kill(pid, "SIGTERM"); } catch { /* Already gone. */ } }
 	return server;
 }

@@ -31,6 +31,9 @@ export type VideoJobMeta = {
 	appId?: string | null;
 	model?: string | null;
 	seconds?: number | null;
+	// The provider picked the length (e.g. Wan 3.0 smart duration). `seconds` then holds the
+	// maximum we reserved for, and completion bills the length the provider reports.
+	autoDuration?: boolean | null;
 	outputCount?: number | null;
 	resolution?: string | null;
 	aspectRatio?: string | null;
@@ -156,6 +159,7 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (typeof source.app_id === "string") out.appId = source.app_id;
 	if (typeof source.model === "string") out.model = source.model;
 	if (typeof source.seconds === "number") out.seconds = source.seconds;
+	if (typeof source.autoDuration === "boolean") out.autoDuration = source.autoDuration;
 	const outputCount = toNonNegativeInteger(source.outputCount ?? source.output_count);
 	if (outputCount != null && outputCount > 0) out.outputCount = outputCount;
 	if (typeof source.resolution === "string") out.resolution = source.resolution;

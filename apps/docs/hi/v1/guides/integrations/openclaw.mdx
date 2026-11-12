@@ -18,7 +18,7 @@ phaseo openclaw --model openai/gpt-6-astra
 - **`secrets.providers.phaseo_cli`**: एक exec सीक्रेट प्रदाता जो कुंजी पढ़ने के लिए `phaseo integrations credential openclaw` चलाता है। कुंजी कभी OpenClaw के कॉन्फ़िग में नहीं लिखी जाती।
 - **`models.providers.phaseo`**: base URL `https://api.phaseo.app/v1`, API प्रकार `openai-completions`, और `phaseo_cli` से ली गई कुंजी वाला प्रदाता। यह Chat Completions के साथ काम करने वाले हर सक्रिय Phaseo टेक्स्ट मॉडल की सूची रखता है, जिसमें `--model` का मान सबसे पहले होता है (उसके बिना `anthropic/claude-sonnet-4.6`)।
 
-कुंजी एक `Phaseo CLI: OpenClaw API Key` है जो 90 दिनों में समाप्त होती है और जिसकी मासिक खर्च सीमा $100 है। कुंजी समाप्त होने के बाद जब OpenClaw CLI से कुंजी माँगता है, तो CLI नई कुंजी बना देता है।
+कुंजी एक `Phaseo CLI: OpenClaw API Key` है जिसे आप सेटअप के दौरान ब्राउज़र में स्वीकृत करते हैं। यह 90 दिनों में समाप्त होती है और इसकी मासिक खर्च सीमा $100 है। समाप्त होने के बाद नई कुंजी स्वीकृत करने के लिए `phaseo openclaw` दोबारा चलाएँ।
 
 सेटअप OpenClaw का डिफ़ॉल्ट मॉडल नहीं बदलता। तैयार होने पर `openclaw models set` से Phaseo मॉडल चुनें। सिर्फ़ चुना गया मॉडल रजिस्टर करने के लिए `--catalog default` इस्तेमाल करें।
 

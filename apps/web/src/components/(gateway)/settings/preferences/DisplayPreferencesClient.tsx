@@ -13,6 +13,7 @@ import {
 import { updateDisplayPreferences } from "@/features/settings/preferences/actions";
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "@/components/(gateway)/settings/SettingsFormActions";
 import { ColorPicker } from "@/components/ui/color-picker";
 import {
 	Popover,
@@ -129,12 +130,12 @@ function PreferenceRow({
 }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div data-slot="preference-row" className="grid gap-3 border-t border-border/60 py-3.5 first:border-t-0 md:grid-cols-[minmax(0,1fr)_minmax(18rem,26rem)] md:items-start">
-			<div className="max-w-xl md:pt-1">
+		<div data-slot="preference-row" className="grid gap-3 border-t border-border/60 py-4 first:border-t-0 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
+			<div className="min-w-0 sm:pt-1">
 				<p className="text-sm font-medium">{title}</p>
 				<p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
 			</div>
-			<div className="w-full space-y-1.5 md:justify-self-end">
+			<div className="min-w-0 space-y-1.5">
 				{children}
 				{preview ? (
 					<div className="flex items-baseline justify-between gap-4 px-1 text-xs">
@@ -209,7 +210,7 @@ function PalettePicker<T extends string>({
 }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div role="radiogroup" aria-label={ariaLabel} className="grid grid-cols-3 gap-2 sm:w-80">
+		<div role="radiogroup" aria-label={ariaLabel} className="grid w-full grid-cols-3 gap-2">
 			{options.map((option) => {
 				const active = option === value;
 				const swatches = (
@@ -730,7 +731,7 @@ export default function DisplayPreferencesClient({
 				</PreferenceRow>
 			</SettingsSection>
 
-			<div className="flex flex-col-reverse gap-2 border-t border-border/70 pt-6 sm:flex-row sm:items-center sm:justify-end">
+			<SettingsFormActions active={dirty || isSaving}>
 				<Button
 					type="button"
 					variant="ghost"
@@ -738,10 +739,13 @@ export default function DisplayPreferencesClient({
 					disabled={isSaving || JSON.stringify(preferences) === JSON.stringify(DEFAULT_DISPLAY_PREFERENCES)}
 				>
 					<RotateCcw /> {t("preferencesCopy.resetDefaults")}</Button>
+				<Button type="button" variant="outline" onClick={() => setPreferences(savedPreferences)} disabled={!dirty || isSaving}>
+					{t("strings.Cancel")}
+				</Button>
 				<Button type="button" onClick={save} disabled={!dirty || isSaving}>
 					{isSaving ? <Loader2 className="animate-spin" /> : <Check />}
 					{t("preferencesCopy.savePreferences")}</Button>
-			</div>
+			</SettingsFormActions>
 		</div>
 	);
 }

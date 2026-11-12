@@ -6,6 +6,7 @@
 // Handles: OpenAI, Groq, DeepSeek, Together, Fireworks, and other OpenAI-compatible providers
 // Uses OpenAI Responses API format upstream for consistency
 
+import { withScopedPromptCacheKey } from "../prompt-cache";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
 import { fetchUpstream, UpstreamHeadersTimeoutError } from "@executors/_shared/timing/upstream";
 import type { IRChatResponse } from "@core/ir";
@@ -42,6 +43,7 @@ import {
 	transformResponsesStreamToChat,
 	normalizeTerminalResponsesFrames,
 	cancelledReaders,
+	readUntilFailure,
 } from "./stream-transforms";
 import {
 	adaptRequestFromUpstreamError,
@@ -157,7 +159,7 @@ export async function executeOpenAIWire(
 	// Audio given by URL is downloaded and sent as base64 input_audio.
 	const inlinedAudio = await inlineAudioUrlsForProvider(args.ir, args);
 	if (inlinedAudio.ok === false) return inlinedAudio.result;
-	const encodeIr = inlinedAudio.ir;
+	const encodeIr = await withScopedPromptCacheKey(inlinedAudio.ir, args, keyInfo.source);
 
 	const buildPayloadForRoute = (targetRoute: "responses" | "chat"): Record<string, any> => {
 		const requestPayload = targetRoute === "responses"
@@ -583,6 +585,7 @@ function transformResponsesStreamToAnthropic(
 
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
+			let upstreamError: unknown;
 			let messageStarted = false;
 			let nextBlockIndex = 0;
 			let terminalEmitted = false;
@@ -879,7 +882,7 @@ function transformResponsesStreamToAnthropic(
 
 			try {
 				while (true) {
-					const { value, done } = await reader.read();
+					const { value, done } = await readUntilFailure(reader, () => terminalEmitted);
 					if (done) break;
 					for (const frame of parser.pushBytes(value)) {
 						const { event, data } = frame;
@@ -1026,9 +1029,20 @@ function transformResponsesStreamToAnthropic(
 				}
 			} catch (err) {
 				// A client cancel ends the read loop early; that is not a failure.
-				if (!cancelledReaders.has(reader)) console.error("openai compat responses->anthropic stream transform failed:", err);
+				// After message_stop (or the failure event) the Messages stream is complete: a transport
+				// error then is only teardown.
+				if (!cancelledReaders.has(reader) && !terminalEmitted) {
+					console.error("openai compat responses->anthropic stream transform failed:", err);
+					upstreamError = err;
+				}
 			} finally {
 				if (cancelledReaders.has(reader)) return;
+				// A genuine upstream failure (a reset connection) errors this stream too, so billing
+				// sees a broken stream rather than an incomplete message that ended normally.
+				if (upstreamError !== undefined) {
+					controller.error(upstreamError);
+					return;
+				}
 				if (messageStarted && !terminalEmitted) {
 					finishMessage({ ...latestResponse, status: "incomplete" });
 				}

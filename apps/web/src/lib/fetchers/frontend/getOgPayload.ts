@@ -1,5 +1,6 @@
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import type { PricingRule, ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
+import { audienceLabel, withoutAudienceConditions } from "@/lib/pricing/promotionAudience";
 
 export type OgEntity = "organisations" | "models" | "benchmarks" | "api-providers" | "countries" | "subscription-plans";
 export type OgStat = {
@@ -9,6 +10,15 @@ export type OgStat = {
 	helper?: string;
 	promotion?: string;
 };
+/** The headline promotional price, shown as a banner on the model OG image. */
+export type OgPromotion = {
+	/** For example "20% off". */
+	label: string;
+	/** ISO end of the promotional price, when it has one. */
+	endsAt?: string;
+	/** The app the price is limited to, for example "Claude Code". */
+	audience?: string;
+};
 export type OgPayload = {
 	id: string;
 	name: string;
@@ -16,6 +26,7 @@ export type OgPayload = {
 	subtitle?: string;
 	badge?: string;
 	stats?: OgStat[];
+	promotion?: OgPromotion;
 	flagEmoji?: string;
 };
 
@@ -75,8 +86,10 @@ function formatPromotionPercent(percent: number): string {
 	return `${formatted}% off`;
 }
 
+// A rule that only adds audience conditions (the calling app) to the list price's
+// conditions is a promotion of that price, not a different price.
 function pricingMatchSignature(rule: PricingRule): string {
-	return JSON.stringify(rule.match ?? []);
+	return JSON.stringify(withoutAudienceConditions(rule.match));
 }
 
 function pricingEffectiveFromMs(rule: PricingRule): number {
@@ -118,16 +131,10 @@ function getPromotionPercent(listCandidate: PriceCandidate, candidates: PriceCan
 	return percent > 0 && percent < 100 ? percent : null;
 }
 
-export function buildModelOgStats(model: ModelOverviewPage | null, pricing: ProviderPricing[]): OgStat[] {
-	const contextLengths = pricing
-		.flatMap((entry) => entry.provider_models)
-		.map((providerModel) => Number(providerModel.context_length ?? 0))
-		.filter((value) => Number.isFinite(value) && value > 0);
-	const detailContext = model?.model_details.find((detail) => detail.detail_name === "input_context_length")?.detail_value;
-	if (detailContext != null) contextLengths.push(Number(detailContext));
-	const context = contextLengths.length ? Math.max(...contextLengths) : null;
-
-	const nowMs = Date.now();
+function collectOgPriceCandidates(pricing: ProviderPricing[], nowMs: number): {
+	standardCandidates: PriceCandidate[];
+	listCandidates: PriceCandidate[];
+} {
 	const standardCandidates = pricing.flatMap((entry): PriceCandidate[] =>
 		entry.pricing_rules
 			.filter((rule) => rule.pricing_plan.toLowerCase() === "standard" && isCurrentPricingRule(rule, nowMs))
@@ -155,26 +162,101 @@ export function buildModelOgStats(model: ModelOverviewPage | null, pricing: Prov
 		return baselinePriorities.get(key) === candidate.rule.priority &&
 			(!unconditionalKeys.has(key) || candidate.rule.match.length === 0);
 	});
-	const priceFor = (meter: string): { value: number; originalValue?: number; promotion?: string } | null => {
-		const meterCandidates = listCandidates.filter((candidate) =>
-			OG_METER_NAMES[meter as keyof typeof OG_METER_NAMES]?.has(candidate.rule.meter) &&
-			["token", "tokens"].includes(candidate.rule.unit.toLowerCase()),
-		);
-		const cheapest = meterCandidates.reduce<PriceCandidate | null>(
-			(current, candidate) =>
-				current == null || candidate.pricePerMillion < current.pricePerMillion ? candidate : current,
-			null,
-		);
+	return { standardCandidates, listCandidates };
+}
+
+// The list price with the lowest price a caller pays today. Several providers often
+// share a list price, and only one of them may run a promotion, so compare prices
+// after promotions and prefer the promoted one on a tie.
+function cheapestListCandidate(
+	meter: string,
+	listCandidates: PriceCandidate[],
+	standardCandidates: PriceCandidate[],
+): PriceCandidate | null {
+	let best: { candidate: PriceCandidate; price: number; promoted: boolean } | null = null;
+	for (const candidate of listCandidates) {
+		if (
+			!OG_METER_NAMES[meter as keyof typeof OG_METER_NAMES]?.has(candidate.rule.meter) ||
+			!["token", "tokens"].includes(candidate.rule.unit.toLowerCase())
+		) continue;
+		const promotion = getPromotionPercent(candidate, standardCandidates) == null
+			? null
+			: getPromotionCandidate(candidate, standardCandidates);
+		const price = promotion?.pricePerMillion ?? candidate.pricePerMillion;
+		const promoted = promotion != null;
+		if (best == null || price < best.price || (price === best.price && promoted && !best.promoted)) {
+			best = { candidate, price, promoted };
+		}
+	}
+	return best?.candidate ?? null;
+}
+
+/**
+ * The promotional price to headline on the model OG image: the largest current
+ * discount on the input or output list price, with its end time and the app it is
+ * limited to. Null when the model has no current promotion.
+ */
+export function buildModelOgPromotion(pricing: ProviderPricing[], nowMs: number = Date.now()): OgPromotion | null {
+	const { standardCandidates, listCandidates } = collectOgPriceCandidates(pricing, nowMs);
+	let best: { percent: number; rule: PricingRule } | null = null;
+	for (const meter of ["input", "output"]) {
+		const cheapest = cheapestListCandidate(meter, listCandidates, standardCandidates);
+		if (!cheapest) continue;
+		const promotion = getPromotionCandidate(cheapest, standardCandidates);
+		const percent = getPromotionPercent(cheapest, standardCandidates);
+		if (!promotion || percent == null) continue;
+		if (!best || percent > best.percent) best = { percent, rule: promotion.rule };
+	}
+	if (!best) return null;
+	const endsAt = best.rule.effective_to && Number.isFinite(Date.parse(best.rule.effective_to))
+		? best.rule.effective_to
+		: undefined;
+	const audience = audienceLabel(best.rule.match);
+	return {
+		label: formatPromotionPercent(best.percent),
+		...(endsAt ? { endsAt } : {}),
+		...(audience ? { audience } : {}),
+	};
+}
+
+/** The lines under the discount on the OG banner: the app it is limited to and when it ends. */
+export function promotionDetailLines(promotion: OgPromotion): string[] {
+	const lines: string[] = [];
+	if (promotion.audience) lines.push(`In ${promotion.audience}`);
+	const endsAt = promotion.endsAt ? new Date(promotion.endsAt) : null;
+	if (endsAt && !Number.isNaN(endsAt.getTime())) {
+		const day = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(endsAt);
+		const time = new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }).format(endsAt);
+		lines.push(`Ends ${day}, ${time} UTC`);
+	}
+	return lines;
+}
+
+export function buildModelOgStats(model: ModelOverviewPage | null, pricing: ProviderPricing[]): OgStat[] {
+	const contextLengths = pricing
+		.flatMap((entry) => entry.provider_models)
+		.map((providerModel) => Number(providerModel.context_length ?? 0))
+		.filter((value) => Number.isFinite(value) && value > 0);
+	const detailContext = model?.model_details.find((detail) => detail.detail_name === "input_context_length")?.detail_value;
+	if (detailContext != null) contextLengths.push(Number(detailContext));
+	const context = contextLengths.length ? Math.max(...contextLengths) : null;
+
+	const { standardCandidates, listCandidates } = collectOgPriceCandidates(pricing, Date.now());
+	const priceFor = (meter: string): { value: number; originalValue?: number; promotion?: string; audience?: string } | null => {
+		const cheapest = cheapestListCandidate(meter, listCandidates, standardCandidates);
 		if (!cheapest) return null;
 		const promotionCandidate = getPromotionCandidate(cheapest, standardCandidates);
 		const promotionPercent = getPromotionPercent(cheapest, standardCandidates);
 		const hasPromotion = promotionCandidate != null && promotionPercent != null;
+		const audience = hasPromotion ? audienceLabel(promotionCandidate.rule.match) : undefined;
 		return {
 			value: promotionCandidate && promotionPercent != null
 				? promotionCandidate.pricePerMillion
 				: cheapest.pricePerMillion,
 			...(hasPromotion ? { originalValue: cheapest.pricePerMillion } : {}),
 			...(promotionPercent != null ? { promotion: formatPromotionPercent(promotionPercent) } : {}),
+			// A price limited to one app says which, so other apps do not look eligible.
+			...(audience ? { audience } : {}),
 		};
 	};
 
@@ -186,7 +268,7 @@ export function buildModelOgStats(model: ModelOverviewPage | null, pricing: Prov
 			label: "INPUT",
 			value: formatOgPrice(inputPrice.value),
 			...(inputPrice.originalValue == null ? {} : { originalValue: formatOgPrice(inputPrice.originalValue) }),
-			helper: "per 1M tokens",
+			helper: inputPrice.audience ? `per 1M tokens in ${inputPrice.audience}` : "per 1M tokens",
 			promotion: inputPrice.promotion,
 		});
 	}
@@ -196,7 +278,7 @@ export function buildModelOgStats(model: ModelOverviewPage | null, pricing: Prov
 			label: "OUTPUT",
 			value: formatOgPrice(outputPrice.value),
 			...(outputPrice.originalValue == null ? {} : { originalValue: formatOgPrice(outputPrice.originalValue) }),
-			helper: "per 1M tokens",
+			helper: outputPrice.audience ? `per 1M tokens in ${outputPrice.audience}` : "per 1M tokens",
 			promotion: outputPrice.promotion,
 		});
 	}

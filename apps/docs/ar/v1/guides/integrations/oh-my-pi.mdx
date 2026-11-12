@@ -26,10 +26,9 @@ phaseo omp --model openai/gpt-5.6-terra
 
 ## إعداد oh-my-pi يدويًا
 
-أنشئ مفتاحًا، وصدّره في الصدفة التي تشغّل oh-my-pi، وأنشئ مجلد الإعداد:
+أنشئ مفتاحًا من **الإعدادات → مفاتيح API** في لوحة التحكم، وصدّره في الصدفة التي تشغّل oh-my-pi، وأنشئ مجلد الإعداد:
 
 ```bash
-phaseo keys create --name "oh-my-pi Phaseo key" --json
 export PHASEO_OMP_API_KEY="<your Phaseo API key>"
 mkdir -p ~/.omp/agent
 ```

@@ -50,6 +50,7 @@ export type PrivacyGlobalSettings = {
 };
 
 export type SettingsPrivacyInitialData = {
+	canManage: boolean;
 	accountPolicy: AccountPrivacyPolicy | null;
 	activeProviderModels: Array<{
 		apiModelId: string;
@@ -489,6 +490,7 @@ export type SettingsObservabilityDestinationNewInitialData = {
 };
 
 export type SettingsRoutingInitialData = {
+	canManage: boolean;
 	responseHealingEnabled: boolean;
 	responseHealingLocked: boolean;
 	responseHealingMode: "safe" | "strict";
@@ -589,8 +591,11 @@ export type SettingsPresetsInitialData = {
 
 export type SettingsGuardrailProviderModel = { providerId: string; apiModelId: string; internalModelId: string | null; internalModelName?: string | null; organisationId?: string | null; organisationName?: string | null; providerPolicy?: { zeroDataRetention: boolean; dataPolicyTier: string; dataPolicyConfidence: string }; capabilities?: Array<{ id: string; dataPolicy: Record<string, unknown> | null }> };
 export type SettingsGuardrailKind = "access" | "safety" | "spend" | "rate";
-export type SettingsGuardrailRow = { id: string; kind?: SettingsGuardrailKind | null; /** The workspace baseline: the Settings, Privacy rules, on the whole workspace. */ is_workspace_baseline?: boolean | null; enabled?: boolean | null; name?: string | null; description?: string | null; privacy_enable_paid_may_train?: boolean | null; privacy_enable_free_may_train?: boolean | null; privacy_enable_free_may_publish_prompts?: boolean | null; privacy_enable_input_output_logging?: boolean | null; privacy_zdr_only?: boolean | null; provider_restriction_mode?: string | null; provider_restriction_provider_ids?: string[] | null; provider_restriction_enforce_allowed?: boolean | null; model_restriction_mode?: string | null; allowed_api_model_ids?: string[] | null; prompt_injection_enabled?: boolean | null; prompt_injection_action?: string | null; sensitive_info_enabled?: boolean | null; sensitive_info_default_action?: string | null; sensitive_info_rules?: SensitiveInfoRulePayload[] | null; /** Rate guardrails: limits per minute, and how they count (null when made through the rate limits API). */ rate_requests_per_minute?: number | null; rate_tokens_per_minute?: number | null; rate_concurrent_requests?: number | null; rate_fail_closed?: boolean | null; rate_counting?: SettingsRateCounting | null };
+export type SettingsGuardrailRow = { id: string; kind?: SettingsGuardrailKind | null; /** The workspace baseline: the Settings, Privacy rules, on the whole workspace. */ is_workspace_baseline?: boolean | null; enabled?: boolean | null; name?: string | null; description?: string | null; privacy_enable_paid_may_train?: boolean | null; privacy_enable_free_may_train?: boolean | null; privacy_enable_free_may_publish_prompts?: boolean | null; privacy_enable_input_output_logging?: boolean | null; privacy_zdr_only?: boolean | null; provider_restriction_mode?: string | null; provider_restriction_provider_ids?: string[] | null; provider_restriction_enforce_allowed?: boolean | null; model_restriction_mode?: string | null; allowed_api_model_ids?: string[] | null; prompt_injection_enabled?: boolean | null; prompt_injection_action?: string | null; sensitive_info_enabled?: boolean | null; sensitive_info_default_action?: string | null; sensitive_info_rules?: SensitiveInfoRulePayload[] | null; /** Rate guardrails: limits per minute, and how they count (null when made through the rate limits API). */ rate_requests_per_minute?: number | null; rate_tokens_per_minute?: number | null; rate_concurrent_requests?: number | null; rate_fail_closed?: boolean | null; rate_counting?: SettingsRateCounting | null; /** Spend guardrails: a cost limit per UTC period, notify or block, and how it counts. */ spend_limit_nanos?: number | null; spend_period?: SettingsSpendPeriod | null; spend_action?: SettingsSpendAction | null; spend_counting?: SettingsSpendCounting | null };
 export type SettingsRateCounting = "shared" | "each_key" | "each_end_user";
+export type SettingsSpendPeriod = "daily" | "weekly" | "monthly";
+export type SettingsSpendAction = "notify" | "block";
+export type SettingsSpendCounting = "shared" | "each_key";
 export type SettingsGuardrailMember = { id: string; name: string; role: string };
 /** principalUserId is the member whose guardrails the gateway also applies to the key (OAuth user, else creator). */
 export type SettingsGuardrailKey = { id: string; name: string; prefix: string; status: string; principalUserId?: string | null };

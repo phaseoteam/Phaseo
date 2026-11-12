@@ -24,6 +24,25 @@ ALTER TABLE "public"."broadcast_destination_rules"
 
 CREATE INDEX broadcast_destination_rules_group_id_idx ON public.broadcast_destination_rules USING btree (rule_group_id, "position");
 
+CREATE POLICY "broadcast_destination_rules_no_oauth_client_insert" ON "public"."broadcast_destination_rules"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "broadcast_destination_rules_no_oauth_client_update" ON "public"."broadcast_destination_rules"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "broadcast_destination_rules_no_oauth_client_delete" ON "public"."broadcast_destination_rules"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "broadcast_destination_rules_delete_own_team" ON "public"."broadcast_destination_rules"
   FOR DELETE
   TO "authenticated"

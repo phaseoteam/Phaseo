@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
-import { exec as execImages } from "../endpoints/images";
+import { exec as execImages, googleImageAspectRatios, toAspectRatio } from "../endpoints/images";
 
 const REQUEST_META = {
 	requestId: "req_test_google_images_1",
@@ -161,6 +161,46 @@ describe("google-ai-studio images endpoint", () => {
 
 		expect(result.upstream.status).toBe(200);
 		expect(capturedBody?.generationConfig?.imageConfig?.aspectRatio).toBe("9:16");
+	});
+
+	it("keeps Gemini 3 Pro Image to its 10 aspect ratios and 3.1 Flash Image to its 14", () => {
+		const pro = googleImageAspectRatios("gemini-3-pro-image-preview");
+		const flash = googleImageAspectRatios("gemini-3.1-flash-image-preview");
+		expect(pro).toHaveLength(10);
+		expect(flash).toHaveLength(14);
+		// Tall and wide sizes snap to the nearest ratio the model takes.
+		expect(toAspectRatio("1024x4096", pro)).toBe("9:16");
+		expect(toAspectRatio("8192x1024", pro)).toBe("21:9");
+		expect(toAspectRatio("4:1", pro)).toBe("21:9");
+		expect(toAspectRatio("1:8", pro)).toBe("9:16");
+		expect(toAspectRatio("1024x4096", flash)).toBe("1:4");
+		expect(toAspectRatio("8:1", flash)).toBe("8:1");
+		expect(toAspectRatio("1536x1024", pro)).toBe("3:2");
+	});
+
+	it("never sends Gemini 3 Pro Image an extended aspect ratio", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([{
+			match: (url) => url.includes(":generateContent?key="),
+			response: jsonResponse({ candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: "abc" } }] } }] }),
+			onRequest: (call) => { capturedBody = call.bodyJson; },
+		}]);
+
+		await execImages({
+			endpoint: "images.generations",
+			model: "google/gemini-3-pro-image",
+			body: { model: "google/gemini-3-pro-image", prompt: "A banner", size: "4096x1024" },
+			meta: REQUEST_META,
+			workspaceId: "team_test",
+			providerId: "google-ai-studio",
+			byokMeta: [],
+			pricingCard: PRICING_CARD,
+			providerModelSlug: "gemini-3-pro-image-preview",
+			stream: false,
+		} as any);
+
+		mock.restore();
+		expect(capturedBody?.generationConfig?.imageConfig?.aspectRatio).toBe("21:9");
 	});
 
 	it("routes non-gemini image models through generateImage", async () => {

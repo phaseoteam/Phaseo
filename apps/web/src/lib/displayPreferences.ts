@@ -313,6 +313,84 @@ export function formatDisplayTimestamp(
 		.format(relativeValue, unit);
 }
 
+/**
+ * "3 minutes ago", "in 65 days": always relative, whatever the relativeTime
+ * preference. Pass unit "day" to count in days only (a retirement date).
+ */
+export function formatDisplayRelative(
+	value: DisplayDateValue,
+	preferences: DisplayFormattingPreferences,
+	referenceDate: Date,
+	unit?: "day",
+): string {
+	const date = parseDate(value);
+	if (!date) return "-";
+	const difference = date.getTime() - referenceDate.getTime();
+	const locale = localeFor(preferences);
+	const formatter = cachedFormatter("relative", locale, { numeric: "auto" }, () => new Intl.RelativeTimeFormat(locale, { numeric: "auto" }));
+	// Part of a day counts as a day, as the retirement badges count them.
+	if (unit === "day") return formatter.format(Math.sign(difference) * Math.ceil(Math.abs(difference) / 86_400_000), "day");
+	const relative = relativeUnit(difference);
+	return formatter.format(relative.value, relative.unit);
+}
+
+/** "4m 12s", "1h 5m", "850 ms": how long something took, in at most two units. */
+export function formatDisplayElapsed(
+	milliseconds: number | null | undefined,
+	preferences: DisplayFormattingPreferences,
+): string {
+	if (milliseconds == null || !Number.isFinite(milliseconds) || milliseconds < 0) return "-";
+	const locale = localeFor(preferences);
+	const unitText = (amount: number, unit: "hour" | "minute" | "second" | "millisecond") => {
+		const unitDisplay = unit === "millisecond" ? "short" : "narrow";
+		const options = { style: "unit", unit, unitDisplay } as const;
+		return cachedFormatter("number", locale, options, () => new Intl.NumberFormat(locale, options)).format(amount);
+	};
+	if (milliseconds < 1000) return unitText(Math.round(milliseconds), "millisecond");
+	const totalSeconds = Math.round(milliseconds / 1000);
+	const hours = Math.floor(totalSeconds / 3600);
+	const minutes = Math.floor((totalSeconds % 3600) / 60);
+	const seconds = totalSeconds % 60;
+	if (hours > 0) return minutes > 0 ? `${unitText(hours, "hour")} ${unitText(minutes, "minute")}` : unitText(hours, "hour");
+	if (minutes > 0) return seconds > 0 ? `${unitText(minutes, "minute")} ${unitText(seconds, "second")}` : unitText(minutes, "minute");
+	return unitText(seconds, "second");
+}
+
+/** The IANA time zone dates are shown in: the preference, else the browser's. */
+export function resolveDisplayTimeZone(preferences: DisplayFormattingPreferences): string {
+	if (preferences.timeZone !== "system") return preferences.timeZone;
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+	} catch {
+		return "UTC";
+	}
+}
+
+/** A date and time in UTC, with seconds, in the user's date style. */
+export function formatDisplayUtcDateTime(
+	value: DisplayDateValue,
+	preferences: DisplayFormattingPreferences,
+): string {
+	const date = parseDate(value);
+	if (!date) return "-";
+	if (preferences.dateStyle === "iso") {
+		const time = dateTimeFormat(localeFor(preferences), {
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit",
+			hour12: hour12For(preferences),
+			timeZone: "UTC",
+		}).format(date);
+		return `${formatIsoDate(date, preferences, "UTC")}, ${time}`;
+	}
+	return dateTimeFormat(localeFor(preferences), {
+		dateStyle: preferences.dateStyle,
+		timeStyle: "medium",
+		hour12: hour12For(preferences),
+		timeZone: "UTC",
+	}).format(date);
+}
+
 export function formatDisplayNumber(
 	value: number,
 	preferences: DisplayFormattingPreferences,

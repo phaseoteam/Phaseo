@@ -92,6 +92,28 @@ function normalizedReferenceValue(reference: NonNullable<IRVideoGenerationReques
 	return undefined;
 }
 
+class InvalidVertexVideoRequestError extends Error {}
+
+const VERTEX_COMPRESSION_QUALITIES = new Set(["optimized", "lossless"]);
+
+// Veo's compressionQuality is a string: "optimized" (Google's default) or "lossless".
+// Our schema used to take a 0-100 number, which Veo never understood, so a number
+// is refused here instead of being sent on.
+function resolveVertexCompressionQuality(
+	ir: IRVideoGenerationRequest,
+	providerParams: Record<string, any>,
+): "optimized" | "lossless" | undefined {
+	const value = ir.compressionQuality ?? providerParams.compressionQuality ?? providerParams.compression_quality;
+	if (value == null) return undefined;
+	const normalized = typeof value === "string" ? value.trim().toLowerCase() : value;
+	if (typeof normalized === "string" && VERTEX_COMPRESSION_QUALITIES.has(normalized)) {
+		return normalized as "optimized" | "lossless";
+	}
+	throw new InvalidVertexVideoRequestError(
+		'Veo compression_quality must be "optimized" or "lossless". Numbers are no longer accepted for Veo.',
+	);
+}
+
 function irToVertexVideoRequest(ir: IRVideoGenerationRequest): any {
 	const durationSeconds = toGoogleVideoDurationSeconds(ir);
 	const aspectRatio = ir.aspectRatio ?? ir.ratio;
@@ -101,6 +123,9 @@ function irToVertexVideoRequest(ir: IRVideoGenerationRequest): any {
 		ir.providerParams && typeof ir.providerParams === "object" && !Array.isArray(ir.providerParams)
 			? { ...(ir.providerParams as Record<string, any>) }
 			: {};
+	const compressionQuality = resolveVertexCompressionQuality(ir, providerParams);
+	// Only the camelCase field reaches Google; drop the snake_case alias.
+	delete providerParams.compression_quality;
 	const sampleCount =
 		typeof ir.sampleCount === "number"
 			? ir.sampleCount
@@ -138,7 +163,7 @@ function irToVertexVideoRequest(ir: IRVideoGenerationRequest): any {
 		...(typeof durationSeconds === "number" ? { durationSeconds } : {}),
 		...(aspectRatio ? { aspectRatio } : {}),
 		...(size ? { resolution: size } : {}),
-		...(typeof ir.compressionQuality === "number" ? { compressionQuality: ir.compressionQuality } : {}),
+		...(compressionQuality ? { compressionQuality } : {}),
 		...(ir.negativePrompt ? { negativePrompt: ir.negativePrompt } : {}),
 		...(typeof sampleCount === "number" ? { sampleCount } : {}),
 		...(typeof ir.seed === "number" ? { seed: ir.seed } : {}),
@@ -219,10 +244,26 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		{ providerId: args.providerId, byokMeta: args.byokMeta, forceGatewayKey: args.meta.forceGatewayKey },
 		() => bindings.GOOGLE_VERTEX_ACCESS_TOKEN || bindings.GOOGLE_VERTEX_API_KEY,
 	);
+	let requestBodyObject: any;
+	try {
+		requestBodyObject = irToVertexVideoRequest(ir);
+	} catch (error) {
+		if (!(error instanceof InvalidVertexVideoRequestError)) throw error;
+		// Refused before any credit hold or provider call.
+		return {
+			kind: "completed",
+			ir: undefined,
+			bill: { cost_cents: 0, currency: "USD", usage: undefined as any, upstream_id: undefined, finish_reason: null },
+			upstream: new Response(JSON.stringify({ error: { type: "invalid_request", message: error.message } }), {
+				status: 400,
+				headers: { "Content-Type": "application/json" },
+			}),
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+		};
+	}
 	const accessToken = await resolveVertexAccessToken(keyInfo.key);
 	const apiBase = resolveVertexApiBase(bindings);
-
-	const requestBodyObject = irToVertexVideoRequest(ir);
 	const requestBody = JSON.stringify(requestBodyObject);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest)
 		? requestBody

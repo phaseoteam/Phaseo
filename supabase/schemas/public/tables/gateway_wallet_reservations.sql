@@ -16,6 +16,7 @@ CREATE TABLE "public"."gateway_wallet_reservations" (
   "key_id"                uuid,
   "request_count"         integer,
   "key_usage_recorded_at" timestamp with time zone,
+  "overdraft_nanos"       bigint                   NOT NULL DEFAULT 0,
   CONSTRAINT "gateway_wallet_reservations_amount_nanos_check" CHECK ((amount_nanos > 0)),
   CONSTRAINT "gateway_wallet_reservations_capture_amount_check" CHECK (((captured_nanos >= 0) AND (released_nanos >= 0) AND ((captured_nanos + released_nanos) <= amount_nanos))),
   CONSTRAINT "gateway_wallet_reservations_pkey" PRIMARY KEY (workspace_id, reservation_id),
@@ -56,6 +57,8 @@ CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_wallet_reservati
   USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
   WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_wallet_reservations" TO "service_role";
+
 GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."gateway_wallet_reservations" TO "anon";
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_wallet_reservations" TO "authenticated", "service_role";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."gateway_wallet_reservations" TO "authenticated";

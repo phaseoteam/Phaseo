@@ -26,7 +26,7 @@ import { PresetMergeExplorer } from "/snippets/preset-merge.jsx";
 
 افتح **لوحة التحكم ← الإعدادات ← الإعدادات المسبقة** وأنشئ إعدادًا مسبقًا بمعرّف نصي (slug) مثل `support-triage`. أضف فقط القيم الافتراضية التي يجب أن يتشاركها كل المستدعين.
 
-من CLI: `phaseo presets create --name @support-triage --model <model-id>`.
+لإنشائه من سكربت، استدعِ `POST /v1/presets` باستخدام مفتاح إدارة.
 
 </Step>
 
@@ -116,7 +116,7 @@ response = client.generate_response({
 
 وجّه تسمية مسماة مثل `production` إلى إصدار، وأعِدها إلى إصدار سابق للتراجع. راجع [الإصدارات والتسميات](/ar/v1/guides/prompt-templates#versions-and-labels).
 
-من CLI: `phaseo presets versions create` و`phaseo presets labels set`، أو عبر واجهة `/v1/presets`.
+من سكربت، انشر باستخدام `POST /v1/presets/{id}/versions` وانقل الوسوم باستخدام `PUT /v1/presets/{id}/labels/{label}`، مع مفتاح إدارة. يمكن لتسجيل الدخول عبر CLI أو لتطبيق يستخدم تسجيل الدخول باستخدام Phaseo قراءة الإعدادات المسبقة، لكن لا يمكنه تغييرها.
 
 ## انسخ إعدادًا مسبقًا من السوق
 

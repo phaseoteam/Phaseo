@@ -3,6 +3,9 @@ import {
 	assertSafeDiscoverySnapshot,
 	buildProviderApiModelSnapshotDiff,
 	confirmModelRemovals,
+	DEFAULT_REMOVAL_CONFIRM_MINUTES,
+	MAX_REMOVAL_CONFIRM_MINUTES,
+	removalConfirmAfterMs,
 	collapseDiscordProviderChanges,
 	createSharedProviderModelsFetcher,
 	extractDiscoveredModels,
@@ -496,14 +499,68 @@ describe("extractDiscoveredModels", () => {
 });
 
 describe("confirmModelRemovals", () => {
-	it("requires the model to be missing from two consecutive successful checks", () => {
+	const HOUR = 3_600_000;
+	const policy = { nowMs: Date.parse("2026-11-07T12:00:00.000Z"), confirmAfterMs: 6 * HOUR };
+	const since = (hoursAgo: number) => policy.nowMs - hoursAgo * HOUR;
+
+	it("starts the clock for a model that is newly missing", () => {
+		expect(confirmModelRemovals(["new-miss"], new Map(), policy)).toEqual({
+			confirmed: [],
+			provisional: ["new-miss"],
+			waiting: [],
+		});
+	});
+
+	it("keeps waiting while the absence is shorter than the window, without restarting the clock", () => {
+		expect(confirmModelRemovals(["flapping"], new Map([["flapping", since(5.9)]]), policy)).toEqual({
+			confirmed: [],
+			provisional: [],
+			waiting: ["flapping"],
+		});
+	});
+
+	it("confirms a removal once the model has been missing for the whole window", () => {
+		expect(confirmModelRemovals(
+			["gone", "exactly-at-window", "just-short"],
+			new Map([["gone", since(7)], ["exactly-at-window", since(6)], ["just-short", since(6) + 1]]),
+			policy,
+		)).toEqual({
+			confirmed: ["gone", "exactly-at-window"],
+			provisional: [],
+			waiting: ["just-short"],
+		});
+	});
+
+	it("restarts a pending row whose timestamp cannot be used rather than waiting on it forever", () => {
+		expect(confirmModelRemovals(
+			["no-stamp", "bad-stamp"],
+			new Map<string, number | null>([["no-stamp", null], ["bad-stamp", Number.NaN]]),
+			policy,
+		)).toEqual({ confirmed: [], provisional: ["no-stamp", "bad-stamp"], waiting: [] });
+	});
+
+	it("with a zero window confirms on the second missed sweep, as before", () => {
 		expect(confirmModelRemovals(
 			["first-miss", "second-miss"],
-			new Set(["second-miss"]),
-		)).toEqual({
-			confirmed: ["second-miss"],
-			provisional: ["first-miss"],
-		});
+			new Map([["second-miss", since(0.25)]]),
+			{ ...policy, confirmAfterMs: 0 },
+		)).toEqual({ confirmed: ["second-miss"], provisional: ["first-miss"], waiting: [] });
+	});
+});
+
+describe("removalConfirmAfterMs", () => {
+	it("defaults to six hours when unset, blank or not a number", () => {
+		const expected = DEFAULT_REMOVAL_CONFIRM_MINUTES * 60_000;
+		expect(DEFAULT_REMOVAL_CONFIRM_MINUTES).toBe(360);
+		for (const raw of [undefined, null, "", "  ", "soon", "-5", "NaN"]) {
+			expect(removalConfirmAfterMs(raw)).toBe(expected);
+		}
+	});
+
+	it("reads minutes, allows zero, and caps the wait inside the retention window", () => {
+		expect(removalConfirmAfterMs("90")).toBe(90 * 60_000);
+		expect(removalConfirmAfterMs("0")).toBe(0);
+		expect(removalConfirmAfterMs("999999")).toBe(MAX_REMOVAL_CONFIRM_MINUTES * 60_000);
 	});
 });
 

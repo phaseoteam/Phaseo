@@ -18,7 +18,7 @@ export default withSettingsResource("profile", function ProfileSettingsPage({ in
 
 	return (
 		<div
-			className="space-y-6"
+			className="min-w-0 space-y-8"
 			data-obfuscate-pii={obfuscateInfo ? "true" : "false"}
 			data-obfuscation-sync="true"
 		>

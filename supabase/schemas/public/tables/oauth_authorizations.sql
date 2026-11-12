@@ -45,6 +45,25 @@ CREATE TRIGGER revoke_oauth_grant_on_authorization_revoke
   WHEN (((old.revoked_at IS NULL) AND (new.revoked_at IS NOT NULL)))
   EXECUTE FUNCTION public.revoke_oauth_grant_on_authorization_revoke();
 
+CREATE POLICY "oauth_authorizations_no_oauth_client_insert" ON "public"."oauth_authorizations"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "oauth_authorizations_no_oauth_client_update" ON "public"."oauth_authorizations"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "oauth_authorizations_no_oauth_client_delete" ON "public"."oauth_authorizations"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."oauth_authorizations"
   AS RESTRICTIVE
   FOR ALL

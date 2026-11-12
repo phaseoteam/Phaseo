@@ -13,10 +13,13 @@ description: "使用预设统一提示和路由默认值，然后检查请求详
 <Steps>
 <Step title="创建预设">
 
-在**设置 → 预设**中创建 `release-summary`，包含系统提示、批准的模型、提供商偏好，以及 `temperature` 等默认参数。也可以使用 CLI：
+在**设置 → 预设**中创建 `release-summary`，包含系统提示、批准的模型、提供商偏好，以及 `temperature` 等默认参数。也可以使用管理密钥：
 
 ```bash
-phaseo presets create --name @release-summary --model anthropic/claude-sonnet-5.5
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
 ```
 
 </Step>

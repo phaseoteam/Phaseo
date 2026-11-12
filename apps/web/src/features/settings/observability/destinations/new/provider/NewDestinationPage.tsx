@@ -1,4 +1,3 @@
-import { useTranslations } from "@/i18n/react";
 import { notFound } from "@/lib/navigation";
 import { Suspense } from "react";
 import { useParams } from "@tanstack/react-router";
@@ -21,11 +20,10 @@ export async function getNewDestinationMetadata({ params }: RouteMetadataInput) 
 export default function NewBroadcastDestinationPage() {
 	const { provider } = useParams({ from: "/{-$locale}/_dashboard/settings/observability/destinations/new/$provider/" });
 	const destination = getDestinationById(provider);
-	const t = useTranslations("SettingsUI");
 	if (!destination) notFound();
 
 	return (
-		<main className="space-y-6">
+		<main className="min-w-0 w-full max-w-4xl space-y-8">
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<BroadcastDestinationContent destination={destination} />
 			</Suspense>

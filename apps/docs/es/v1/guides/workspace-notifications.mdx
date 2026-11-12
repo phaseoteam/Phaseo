@@ -30,7 +30,7 @@ Un webhook personalizado recibe un secreto de firma al crearlo. Cópialo desde e
 </Step>
 </Steps>
 
-Desde la CLI, ejecuta `phaseo notifications destinations create`, compruébalo con `phaseo notifications destinations test <id>` y elige qué alertas recibe con `phaseo notifications routes set <event-kind> --destination-ids <id>`.
+Para automatizarlo, crea el destino con `POST /v1/notifications/destinations`, compruébalo con `POST /v1/notifications/destinations/{id}/test` y elige qué alertas recibe con `PUT /v1/notifications/routes/{eventKind}`, usando una clave de administración.
 
 Usa las menciones con moderación: envía las alertas frecuentes a un canal supervisado en lugar de avisar a un grupo amplio.
 

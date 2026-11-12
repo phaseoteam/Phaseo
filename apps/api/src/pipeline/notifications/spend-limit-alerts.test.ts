@@ -18,7 +18,7 @@ vi.mock("@/runtime/env", () => ({
 	},
 }));
 
-const { noteSpendLimitReached, resetRememberedSpendLimits, runDepartmentBudgetAlertSweep, runSpendLimitWarningSweep } = await import("./spend-limit-alerts");
+const { noteSpendLimitReached, resetRememberedSpendLimits, runDepartmentBudgetAlertSweep, runSpendGuardrailAlertSweep, runSpendLimitWarningSweep } = await import("./spend-limit-alerts");
 
 const oct16 = new Date("2026-10-16T12:00:00Z");
 
@@ -122,5 +122,20 @@ describe("spend limit alerts", () => {
 
 		state.rpc.mockResolvedValueOnce({ data: null, error: { message: "timeout" } });
 		await expect(runDepartmentBudgetAlertSweep()).rejects.toThrow("department_budget_sweep_failed:timeout");
+	});
+
+	it("runs the spend guardrail sweep and reports what it found", async () => {
+		state.rpc.mockResolvedValueOnce({ data: { workspaces: 2, alerted: 3 }, error: null });
+		await expect(runSpendGuardrailAlertSweep()).resolves.toEqual({ workspaces: 2, alerted: 3 });
+		expect(state.rpc).toHaveBeenCalledWith("sweep_spend_guardrail_alerts", {});
+
+		state.rpc.mockResolvedValueOnce({ data: null, error: { message: "timeout" } });
+		await expect(runSpendGuardrailAlertSweep()).rejects.toThrow("spend_guardrail_sweep_failed:timeout");
+	});
+
+	it.each([runSpendLimitWarningSweep, runDepartmentBudgetAlertSweep, runSpendGuardrailAlertSweep])("preserves the database error for safe job diagnostics", async (run) => {
+		const cause = { code: "57014", message: "canceling statement due to statement timeout" };
+		state.rpc.mockResolvedValueOnce({ data: null, error: cause });
+		await expect(run()).rejects.toMatchObject({ cause: { code: "57014" } });
 	});
 });

@@ -36,6 +36,10 @@ export type EffectiveGuardrailPolicy = {
 	requestsPerMinute: number | null;
 	tokensPerMinute: number | null;
 	concurrentRequests: number | null;
+	/** The lowest spend limit of each period that reaches the row, in nanodollars; null when none sets it. */
+	spendLimits: Record<"daily" | "weekly" | "monthly", number | null>;
+	/** Whether any spend guardrail that reaches the row blocks requests at its limit (the rest only notify). */
+	spendBlocks: boolean;
 };
 
 /** Where a guardrail that reaches a row comes from: assigned to the row itself, or inherited from a broader level. */
@@ -73,6 +77,7 @@ export type GuardrailAssignmentRow = {
 	accessFrom: AssignedGuardrail[];
 	safetyFrom: AssignedGuardrail[];
 	rateFrom: AssignedGuardrail[];
+	spendFrom: AssignedGuardrail[];
 };
 
 const ACTION_RANK: Record<GuardrailAction, number> = { flag: 0, redact: 1, block: 2 };
@@ -124,6 +129,8 @@ export function effectiveGuardrailPolicy(guardrails: SettingsGuardrailRow[]): Ef
 	let requestsPerMinute: number | null = null;
 	let tokensPerMinute: number | null = null;
 	let concurrentRequests: number | null = null;
+	const spendLimits: EffectiveGuardrailPolicy["spendLimits"] = { daily: null, weekly: null, monthly: null };
+	let spendBlocks = false;
 	const active = guardrails.filter(isGuardrailActive);
 	for (const guardrail of active) {
 		zdrOnly ||= guardrail.privacy_zdr_only === true;
@@ -133,6 +140,11 @@ export function effectiveGuardrailPolicy(guardrails: SettingsGuardrailRow[]): Ef
 		requestsPerMinute = lowest(requestsPerMinute, guardrail.rate_requests_per_minute);
 		tokensPerMinute = lowest(tokensPerMinute, guardrail.rate_tokens_per_minute);
 		concurrentRequests = lowest(concurrentRequests, guardrail.rate_concurrent_requests);
+		if (setsSpendRules(guardrail)) {
+			const period = guardrail.spend_period!;
+			spendLimits[period] = lowest(spendLimits[period], guardrail.spend_limit_nanos);
+			spendBlocks ||= guardrail.spend_action === "block";
+		}
 		// The gateway maps provider aliases onto canonical ids before it merges lists (workspacePolicy.ts).
 		const providerIds = idSet(normalizeProviderList(idSet(guardrail.provider_restriction_provider_ids)));
 		const providerMode = restrictionMode(guardrail.provider_restriction_mode);
@@ -170,6 +182,8 @@ export function effectiveGuardrailPolicy(guardrails: SettingsGuardrailRow[]): Ef
 		requestsPerMinute,
 		tokensPerMinute,
 		concurrentRequests,
+		spendLimits,
+		spendBlocks,
 	};
 }
 
@@ -206,6 +220,12 @@ export function setsSafetyRules(guardrail: SettingsGuardrailRow): boolean {
 /** Whether a guardrail sets a rate limit (requests or tokens per minute, or concurrent requests). */
 export function setsRateRules(guardrail: SettingsGuardrailRow): boolean {
 	return guardrail.rate_requests_per_minute != null || guardrail.rate_tokens_per_minute != null || guardrail.rate_concurrent_requests != null;
+}
+
+/** Whether a guardrail sets a spend limit for a day, week or month. */
+export function setsSpendRules(guardrail: SettingsGuardrailRow): boolean {
+	return guardrail.spend_limit_nanos != null && Number(guardrail.spend_limit_nanos) > 0 &&
+		(guardrail.spend_period === "daily" || guardrail.spend_period === "weekly" || guardrail.spend_period === "monthly");
 }
 
 export type GuardrailAssignmentData = {
@@ -273,6 +293,7 @@ export function buildGuardrailAssignmentRows(args: GuardrailAssignmentData & Ass
 			accessFrom: guardrails.filter((guardrail) => guardrail.enabled && setsAccessRules(guardrailById.get(guardrail.id)!)),
 			safetyFrom: guardrails.filter((guardrail) => guardrail.enabled && setsSafetyRules(guardrailById.get(guardrail.id)!)),
 			rateFrom: guardrails.filter((guardrail) => guardrail.enabled && setsRateRules(guardrailById.get(guardrail.id)!)),
+			spendFrom: guardrails.filter((guardrail) => guardrail.enabled && setsSpendRules(guardrailById.get(guardrail.id)!)),
 		};
 	};
 	const workspaceLevel = { source: { level: "workspace" } as GuardrailSource, ids: workspaceIds };

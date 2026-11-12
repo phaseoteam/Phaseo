@@ -19,6 +19,25 @@ ALTER TABLE "public"."wallets"
 
 CREATE INDEX wallets_stripe_customer_id_idx ON public.wallets USING btree (stripe_customer_id);
 
+CREATE POLICY "wallets_no_oauth_client_insert" ON "public"."wallets"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "wallets_no_oauth_client_update" ON "public"."wallets"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "wallets_no_oauth_client_delete" ON "public"."wallets"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."wallets"
   AS RESTRICTIVE
   FOR ALL
@@ -50,7 +69,7 @@ COMMENT ON COLUMN "public"."wallets"."auto_top_up_account_id" IS 'Stripe account
 
 REVOKE ALL ON TABLE "public"."wallets" FROM "anon";
 
-GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."wallets" TO "anon";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."wallets" TO "anon";
 
 REVOKE ALL ON TABLE "public"."wallets" FROM "authenticated";
 

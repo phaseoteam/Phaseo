@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "@/i18n/navigation";
-import { Info, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -11,11 +11,6 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "@/components/ui/hover-card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -342,42 +337,28 @@ export default function BYOKInputDialog({
 					) : null}
 
 					<div className="grid gap-2">
-						<div className="flex items-center justify-between gap-2">
-							<Label htmlFor="value">{initial ? t("settingsCopy.byok.replaceCredentialOptional", { credential: credentialLabel }) : credentialLabel}</Label>
-							<HoverCard>
-								<HoverCardTrigger asChild>
-									<span
-										className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-help select-none"
-										aria-label={t("strings.Credential setup info" as never)}
-									>
-										<Info className="h-3.5 w-3.5" />
-					<span>{t("credits.Info" as never)}</span>
-									</span>
-								</HoverCardTrigger>
-								<HoverCardContent align="end" className="max-w-sm">
-									<div className="grid gap-2 text-xs">
-										<div>{onboarding.intro}</div>
-										{docsUrl ? (
-											<div>
-												{t.rich("settingsCopy.byok.docsLink", {
-													label: onboarding.docsLabel,
-													link: (chunks) => (
-														<Link
-															href={docsUrl}
-															target={docsUrl.startsWith("http") ? "_blank" : undefined}
-															rel={docsUrl.startsWith("http") ? "noreferrer" : undefined}
-															className="underline underline-offset-2 hover:text-foreground"
-														>
-															{chunks}
-														</Link>
-													),
-												})}
-											</div>
-										) : null}
-									</div>
-								</HoverCardContent>
-							</HoverCard>
-						</div>
+						<Label htmlFor="value">{initial ? t("settingsCopy.byok.replaceCredentialOptional", { credential: credentialLabel }) : credentialLabel}</Label>
+						<p id="byok-credential-description" className="text-xs text-muted-foreground">
+							{onboarding.intro}
+							{docsUrl ? (
+								<>
+									{" "}
+									{t.rich("settingsCopy.byok.docsLink", {
+										label: onboarding.docsLabel,
+										link: (chunks) => (
+											<Link
+												href={docsUrl}
+												target={docsUrl.startsWith("http") ? "_blank" : undefined}
+												rel={docsUrl.startsWith("http") ? "noreferrer" : undefined}
+												className="underline underline-offset-2 hover:text-foreground"
+											>
+												{chunks}
+											</Link>
+										),
+									})}
+								</>
+							) : null}
+						</p>
 						{initial ? (
 							<div className="rounded-md border bg-muted/5 p-2 font-mono text-sm">
 								{initial.prefix || initial.suffix
@@ -546,6 +527,7 @@ export default function BYOKInputDialog({
 						) : (
 							<Textarea
 								id="value"
+								aria-describedby="byok-credential-description"
 								rows={initial ? 3 : 4}
 								value={value}
 								onChange={(e) => setValue(e.target.value)}

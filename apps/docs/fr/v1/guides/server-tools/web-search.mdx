@@ -122,4 +122,4 @@ Chaque recherche s’ajoute à `usage.server_tool_use` :
 }
 ```
 
-La recherche gérée est facturée avec `server_tool_web_search_requests` et `server_tool_web_search_extra_results`. La recherche native est facturée avec `native_web_search_requests` lorsque la carte tarifaire du modèle la définit. TinyFish Search est gratuit dans ses offres publiées ; Phaseo n’ajoute donc aucun coût de recherche pour `engine: "tinyfish"`, mais la tarification normale des jetons de la requête s’applique toujours.
+Phaseo facture chaque recherche gérée $0.007, plus $0.001 par résultat au-delà des 10 premiers, sauf si la fiche tarifaire du modèle définit ses propres prix pour `server_tool_web_search_requests` et `server_tool_web_search_extra_results`. Les recherches qui échouent ne sont pas facturées, et TinyFish Search est gratuit sur ses offres publiées : `engine: "tinyfish"` n’ajoute donc aucun coût de recherche. Les recherches sur des moteurs payants nécessitent du crédit même lorsque le modèle est gratuit. La recherche native est facturée avec `native_web_search_requests` lorsque la fiche tarifaire du modèle la définit.

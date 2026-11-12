@@ -61,4 +61,4 @@ Certains fournisseurs renvoient `b64_json` avec les données de l’image en bas
 
 ## Utilisation et tarification
 
-Chaque image ajoute 1 à `usage.server_tool_use.image_generation_requests` et peut être facturée via `server_tool_image_generation_requests`. Lorsque le modèle d’image indique une utilisation de tokens, celle-ci s’ajoute à l’utilisation de la requête et est facturée au tarif normal de ce modèle.
+Chaque image ajoute 1 à `usage.server_tool_use.image_generation_requests` et peut être facturée avec `server_tool_image_generation_requests`. Le modèle d’image est facturé à ses propres tarifs, sur une ligne distincte de la facture de la requête. Un modèle d’image payant nécessite du crédit même lorsque le modèle appelant est gratuit.

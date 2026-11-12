@@ -247,6 +247,19 @@ export function resolveExecuteTotalLatencyMs(ctx: PipelineContext): number | nul
 	return readTimingMetric(ctx, "adapter_start");
 }
 
+/**
+ * Gateway request start to the first generated output. A streamed response records it as
+ * the first output frame is forwarded. A buffered client gets the moment the first output
+ * was read from the provider stream, which is when it would have reached a streaming client.
+ */
+export function resolveGatewayTtftMs(ctx: PipelineContext, isStream: boolean): number | null {
+	if (isStream) return finiteOrNull(ctx.meta.gateway_ttft_ms);
+	const firstOutputAtMs = finiteOrNull(ctx.meta.firstProviderOutputAtMs);
+	const startedAtMs = finiteOrNull(ctx.meta.startedAtMs);
+	if (firstOutputAtMs === null || startedAtMs === null || firstOutputAtMs < startedAtMs) return null;
+	return Math.max(1, Math.round(firstOutputAtMs - startedAtMs));
+}
+
 export function resolveNonStreamLatencyMs(
 	ctx: PipelineContext,
 	_generationMs: number | null | undefined,

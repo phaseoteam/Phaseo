@@ -6,6 +6,8 @@ type GuardOk = {
 		workspaceId: string;
 		apiKeyId: string;
 		internal?: boolean;
+		authMethod?: "api_key" | "oauth";
+		userId?: string | null;
 	};
 };
 
@@ -113,6 +115,10 @@ function buildWorkspacesSupabaseMock() {
 
 			if (table === "workspace_members" || table === "wallets") {
 				return {
+					select: () => {
+						const membership: any = { eq: () => membership, maybeSingle: async () => ({ data: { role: "owner" }, error: null }) };
+						return membership;
+					},
 					upsert: async (payload?: Record<string, unknown>) => {
 						if (table === "workspace_members" && payload) {
 							state.workspaceMembersUpserts.push(payload);
@@ -191,7 +197,8 @@ describe("management workspace routes", () => {
 	beforeEach(() => {
 		state.guardManagementAuthResult = {
 			ok: true,
-			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false },
+			// The management key acts as its creator, the workspace owner.
+			value: { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false, authMethod: "api_key", userId: "user_1" },
 		};
 		state.workspaces.length = 0;
 		state.users.length = 0;
@@ -341,7 +348,7 @@ describe("management workspace routes", () => {
 	it("blocks renaming the personal workspace", async () => {
 		state.guardManagementAuthResult = {
 			ok: true,
-			value: { workspaceId: "ws_personal", apiKeyId: "mgmt_1", internal: false },
+			value: { workspaceId: "ws_personal", apiKeyId: "mgmt_1", internal: false, authMethod: "api_key", userId: "user_1" },
 		};
 		state.workspaces.push({
 			id: "ws_personal",
@@ -368,7 +375,7 @@ describe("management workspace routes", () => {
 	it("blocks deleting the default workspace", async () => {
 		state.guardManagementAuthResult = {
 			ok: true,
-			value: { workspaceId: "ws_personal", apiKeyId: "mgmt_1", internal: false },
+			value: { workspaceId: "ws_personal", apiKeyId: "mgmt_1", internal: false, authMethod: "api_key", userId: "user_1" },
 		};
 		state.workspaces.push({
 			id: "ws_personal",
@@ -394,7 +401,7 @@ describe("management workspace routes", () => {
 	it("blocks deleting a workspace that still has active keys", async () => {
 		state.guardManagementAuthResult = {
 			ok: true,
-			value: { workspaceId: "ws_prod", apiKeyId: "mgmt_1", internal: false },
+			value: { workspaceId: "ws_prod", apiKeyId: "mgmt_1", internal: false, authMethod: "api_key", userId: "user_1" },
 		};
 		state.workspaces.push({
 			id: "ws_prod",
@@ -421,7 +428,7 @@ describe("management workspace routes", () => {
 	it("deletes a non-default workspace after dependent cleanup", async () => {
 		state.guardManagementAuthResult = {
 			ok: true,
-			value: { workspaceId: "ws_prod", apiKeyId: "mgmt_1", internal: false },
+			value: { workspaceId: "ws_prod", apiKeyId: "mgmt_1", internal: false, authMethod: "api_key", userId: "user_1" },
 		};
 		state.workspaces.push({
 			id: "ws_prod",
@@ -464,7 +471,7 @@ describe("management workspace routes", () => {
 		});
 		state.guardManagementAuthResult = {
 			ok: true,
-			value: { workspaceId: "ws_current", apiKeyId: "mgmt_1", internal: false },
+			value: { workspaceId: "ws_current", apiKeyId: "mgmt_1", internal: false, authMethod: "api_key", userId: "user_1" },
 		};
 
 		const { workspacesRoutes } = await import("./workspaces");

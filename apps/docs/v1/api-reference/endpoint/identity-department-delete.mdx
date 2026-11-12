@@ -5,3 +5,5 @@ badge: "Beta"
 openapi: "/openapi/v1/openapi.yaml DELETE /identity/departments/{id}"
 ---
 <Note>Enterprise directory administration requires the identity add-on, an owner or admin identity, and the matching settings scope.</Note>
+
+If directory group mappings use the department, only the workspace owner can delete it, because deleting it also deletes those mappings and the roles they grant.

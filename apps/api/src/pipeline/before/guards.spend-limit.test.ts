@@ -252,7 +252,7 @@ describe("budget alerts from rejected requests", () => {
 
 		it("starts the footprint read before loading the context and hands it over with the context's key-limit check", async () => {
 			const order: string[] = [];
-			const footprint = Promise.resolve({ keyLimited: false, softBlocked: false, workspaceBudgets: false, departmentBudgets: false });
+			const footprint = Promise.resolve({ keyLimited: false, softBlocked: false, workspaceBudgets: false, departmentBudgets: false, spendGuardrails: false });
 			state.footprint.mockImplementation(() => { order.push("footprint"); return footprint; });
 			state.decide.mockReturnValue({ outcome: "allowed", keyLimit: { ok: true, reason: null, resetAt: null }, admission: {}, source: "footprint" });
 			const context = allowedContext();

@@ -87,7 +87,7 @@ CREATE TABLE "public"."workspace_settings" (
   CONSTRAINT "workspace_settings_io_logging_contents_access_check" CHECK ((io_logging_contents_access = ANY (ARRAY['members'::text, 'admins'::text]))),
   CONSTRAINT "workspace_settings_io_logging_billing_status_check" CHECK ((io_logging_billing_status = ANY (ARRAY['active'::text, 'grace'::text, 'suspended'::text]))),
   CONSTRAINT "workspace_settings_io_logging_price_per_million_units_check" CHECK ((io_logging_price_per_million_units_nanos >= 0)),
-  CONSTRAINT "workspace_settings_io_logging_retention_days_check" CHECK (((io_logging_retention_days >= 90) AND (io_logging_retention_days <= 365))),
+  CONSTRAINT "workspace_settings_io_logging_retention_days_check" CHECK ((io_logging_retention_days = 90)),
   CONSTRAINT "workspace_settings_low_balance_threshold_nonnegative" CHECK ((low_balance_email_threshold_nanos >= 0)),
   CONSTRAINT "workspace_settings_model_restriction_mode_valid" CHECK ((model_restriction_mode = ANY (ARRAY['none'::text, 'allowlist'::text, 'blocklist'::text]))),
   CONSTRAINT "workspace_settings_model_successor_max_price_increase_check"
@@ -111,6 +111,9 @@ CREATE INDEX workspace_settings_data_contribution_actor_idx ON public.workspace_
 CREATE INDEX workspace_settings_low_balance_email_idx ON public.workspace_settings USING btree (workspace_id)
   WHERE low_balance_email_enabled;
 
+CREATE UNIQUE INDEX workspace_settings_sso_provider_identifier_key ON public.workspace_settings USING btree (sso_provider_identifier)
+  WHERE (sso_enabled AND (sso_provider_identifier IS NOT NULL));
+
 CREATE TRIGGER gateway_workspace_publication
   AFTER INSERT OR DELETE OR UPDATE ON public.workspace_settings
   FOR EACH ROW
@@ -130,6 +133,25 @@ CREATE TRIGGER validate_billing_time_zone
   BEFORE INSERT OR UPDATE OF billing_time_zone ON public.workspace_settings
   FOR EACH ROW
   EXECUTE FUNCTION public.validate_workspace_billing_time_zone();
+
+CREATE POLICY "workspace_settings_no_oauth_client_insert" ON "public"."workspace_settings"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_settings_no_oauth_client_update" ON "public"."workspace_settings"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_settings_no_oauth_client_delete" ON "public"."workspace_settings"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
 
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_settings"
   AS RESTRICTIVE

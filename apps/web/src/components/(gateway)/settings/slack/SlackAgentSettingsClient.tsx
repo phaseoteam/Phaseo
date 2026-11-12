@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { Callout } from "@/components/ui/callout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -362,13 +363,13 @@ function InstalledView({ view, installation }: { view: SlackAgentManagerView; in
 				<LimitsFields draft={draft} disabled={busy} problem={problem} set={set} />
 			</Section>
 
-			<div className="space-y-3 border-t pt-6">
+			<div className="space-y-3">
 				{problem ? <p className="text-sm text-destructive">{t("fixFirst")}</p> : null}
 				{error ? <SlackError error={error} /> : null}
-				<div className="flex flex-wrap items-center gap-2">
+				<SettingsFormActions>
+					{dirty ? <Button type="button" variant="outline" disabled={busy} onClick={() => { setDraft(saved); setProblem(null); setError(null); }}>{t("installed.discard")}</Button> : null}
 					<Button type="button" onClick={save} disabled={busy || !dirty}>{saving ? t("saving") : t("installed.save")}</Button>
-					{dirty ? <Button type="button" variant="ghost" disabled={busy} onClick={() => { setDraft(saved); setProblem(null); setError(null); }}>{t("installed.discard")}</Button> : null}
-				</div>
+				</SettingsFormActions>
 			</div>
 
 			<Section title={t("sections.charges")}>

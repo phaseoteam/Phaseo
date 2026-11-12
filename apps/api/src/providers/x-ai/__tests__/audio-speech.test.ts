@@ -47,6 +47,36 @@ describe("xAI audio.speech endpoint", () => {
 		expect(result.normalized?.usage?.output_seconds).toBe(1.25);
 	});
 
+	it("rejects instructions, which xAI has no field for", async () => {
+		const mock = installFetchMock([]);
+		const result = await exec(args({ instructions: "Whisper" }));
+		mock.restore();
+		expect(result.upstream.status).toBe(400);
+		expect((await result.upstream.json() as any).error.param).toBe("instructions");
+	});
+
+	it("sends the caller's language from config.xai", async () => {
+		let requestBody: any;
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1/tts"),
+			response: jsonResponse({ audio: Buffer.from([1]).toString("base64"), content_type: "audio/mpeg", duration: 1 }),
+			onRequest: (call) => { requestBody = call.bodyJson; },
+		}]);
+
+		const result = await exec(args({ config: { xai: { language: "pt-BR" } } }));
+		mock.restore();
+
+		expect(result.upstream.status).toBe(200);
+		expect(requestBody.language).toBe("pt-BR");
+		expect(requestBody).not.toHaveProperty("speed");
+	});
+
+	it.each([0.5, 1.6])("rejects speed %s outside xAI's 0.7 to 1.5", async (speed) => {
+		const result = await exec(args({ speed }));
+		expect(result.upstream.status).toBe(400);
+		expect((await result.upstream.json() as any).error.param).toBe("speed");
+	});
+
 	it("rejects codecs outside xAI's documented set", async () => {
 		const result = await exec(args({ response_format: "flac" }));
 		expect(result.upstream.status).toBe(400);

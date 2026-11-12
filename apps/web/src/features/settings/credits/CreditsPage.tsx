@@ -25,7 +25,7 @@ export async function getCreditsMetadata(): Promise<PageMetadata> {
 
 export default function CreditsPage() {
 	return (
-		<div className="space-y-4">
+		<div className="w-full max-w-5xl space-y-8">
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<CreditsSettingsContent />
 			</Suspense>
@@ -49,7 +49,7 @@ function CreditsSettingsContent() {
 
 	return (
 		<div
-			className="space-y-4"
+			className="space-y-8"
 			data-obfuscate-pii={initialData.obfuscateInfo ? "true" : "false"}
 			data-obfuscation-sync="true"
 		>

@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: टीम-स्कोप वाले गेटवे मॉडल की सूची बनाएँ
-      description: टीम-स्कोप वाले गेटवे मॉडल लौटाता है। डिफ़ॉल्ट रूप से सार्वजनिक रूप से रूट किए जा सकने वाले मॉडल मिलते हैं; रूट न किए जा सकने वाले उपलब्धता रिकॉर्ड शामिल करने के लिए `availability=all` उपयोग करें।
+      summary: वे मॉडल सूचीबद्ध करें जिन्हें यह कुंजी उपयोग कर सकती है
+      description: 'कॉल करने वाले के गार्डरेल लागू करके /models की सूची लौटाता है: जिन मॉडलों को कोई नियम रोकता है और जिनका कोई अनुमत प्रदाता नहीं है, वे शामिल नहीं होते, और हर मॉडल में केवल वे ऑफ़र रहते हैं जिन तक उसके अनुरोध भेजे जा सकते हैं, और उसकी कीमतें, क्षमताएँ और उपलब्धता उन्हीं से निकाली जाती हैं। access ऑब्जेक्ट बताता है कि नियमों ने क्या बाहर रखा। डिफ़ॉल्ट रूप से अभी सार्वजनिक रूप से रूट होने वाले मॉडल; गैर-रूटेबल उपलब्धता रिकॉर्ड शामिल करने के लिए availability=all का उपयोग करें।'
       parameters:
         - name: endpoints
           in: query
@@ -1174,8 +1174,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo मॉडल ID, उदाहरण के लिए `eleven-labs/scribe-v3-live`।
                   model_id:
                     type: string
+                    description: Phaseo मॉडल ID। `model` के समान।
+                  provider_model:
+                    type: string
+                    description: प्रोवाइडर द्वारा मॉडल का अपना नाम, उदाहरण के लिए `scribe_v3_live`।
                   voice:
                     type: string
                     nullable: true
@@ -1373,8 +1378,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo मॉडल ID, उदाहरण के लिए `eleven-labs/scribe-v3-live`।
                   model_id:
                     type: string
+                    description: Phaseo मॉडल ID। `model` के समान।
+                  provider_model:
+                    type: string
+                    description: प्रोवाइडर द्वारा मॉडल का अपना नाम, उदाहरण के लिए `scribe_v3_live`।
                   voice:
                     type: string
                     nullable: true
@@ -1585,8 +1595,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo मॉडल ID, उदाहरण के लिए `eleven-labs/scribe-v3-live`।
                   model_id:
                     type: string
+                    description: Phaseo मॉडल ID। `model` के समान।
+                  provider_model:
+                    type: string
+                    description: प्रोवाइडर द्वारा मॉडल का अपना नाम, उदाहरण के लिए `scribe_v3_live`।
                   voice:
                     type: string
                     nullable: true
@@ -3846,7 +3861,7 @@ paths:
         - Gateway
       operationId: updateWorkspaceNotificationSettings
       summary: वर्कस्पेस की सूचना सेटिंग अपडेट करें
-      description: टिकाऊ अधिसूचना नीति के एक या अधिक खंड अपडेट करता है। ऑटो टॉप-अप सक्षम करने के लिए मौजूदा सहेजी गई भुगतान विधि का पहचानकर्ता और सत्यापित दो-कारक प्रमाणीकरण आवश्यक है। मौजूदा कॉन्फ़िगरेशन MFA स्वीकृति दोहराए बिना अपडेट हो सकती है। MFA के बिना सक्षम करने के लिए क्लाइंट को स्पष्ट रूप से `mfa_bypass_acknowledged` को true करना और `mfa_bypass_phrase` में सटीक मान `I ACCEPT THE RISK` देना होगा; भुगतान जानकारी संग्रह खाते का इंटरैक्टिव प्रवाह बना रहता है।
+      description: सूचना नीति के एक या अधिक स्थायी अनुभागों को अपडेट करता है। ऑटो टॉप-अप चालू करने, या उसकी राशि, सीमा या भुगतान विधि बदलने के लिए `billing:write`, सहेजी गई भुगतान विधि का पहचानकर्ता और सत्यापित दो-चरणीय प्रमाणीकरण आवश्यक है, और Phaseo से साइन इन करने वाले ऐप यह नहीं कर सकते। इसे बंद करने के लिए केवल `settings:write` चाहिए। मौजूदा ऑटो टॉप-अप कॉन्फ़िगरेशन को MFA पुष्टि दोहराए बिना अपडेट किया जा सकता है। दो-चरणीय प्रमाणीकरण की छूट (`mfa_bypass_acknowledged` और `mfa_bypass_phrase`) केवल सेटिंग्स में स्वीकार की जा सकती है; API इसे अस्वीकार करता है। भुगतान लेना एक इंटरैक्टिव खाता प्रक्रिया बना रहता है।
       requestBody:
         required: true
         content:
@@ -4850,7 +4865,7 @@ paths:
         - Gateway
       operationId: listDepartmentBudgets
       summary: List department budgets
-      description: Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+      description: विभाग खर्च बजट की सूची देता है, साथ में मौजूदा UTC अवधि में हर विभाग का अब तक का खर्च। खर्च वैसे ही गिना जाता है जैसे विभाग की अनुमति जाँच उसे गिनती है, इसलिए यह अद्यतन रहता है।
       parameters:
         - name: department_id
           in: query
@@ -4878,7 +4893,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: किसी एक विभाग के लिए दैनिक, साप्ताहिक या मासिक खर्च बजट बनाता है। विभाग के बजट पूरा कर लेने पर उसमें गिने जाने वाले API कुंजी अनुरोध बजट रीसेट होने तक 429 key_limit_exceeded लौटाते हैं। बैच जॉब, रियलटाइम सत्र और OAuth अनुरोध नहीं रोके जाते। अगर बजट जाँच थोड़ी देर के लिए उपलब्ध न हो, तो अनुरोध अस्वीकार करने के बजाय स्वीकार किए जाते हैं। लगभग 80% और 100% पर मालिकों और एडमिन को मोबाइल पुश सूचना मिलती है।
+      description: किसी एक विभाग के लिए दैनिक, साप्ताहिक या मासिक खर्च बजट बनाता है। विभाग के बजट पूरा कर लेने पर उसमें गिने जाने वाले API कुंजी अनुरोध बजट रीसेट होने तक 429 key_limit_exceeded लौटाते हैं। अगर बजट जाँच थोड़ी देर के लिए उपलब्ध न हो, तो अनुरोध अस्वीकार करने के बजाय स्वीकार किए जाते हैं। लगभग 80% और 100% पर मालिकों और एडमिन को मोबाइल पुश सूचना मिलती है।
       requestBody:
         required: true
         content:
@@ -7301,7 +7316,7 @@ paths:
         - Gateway
       operationId: deleteWorkspace
       summary: वर्कस्पेस हटाएँ
-      description: UUID या slug से वर्कस्पेस हटाता है। प्रबंधन API कुंजी आवश्यक है।
+      description: UUID या slug से वर्कस्पेस हटाता है। केवल वर्कस्पेस का मालिक उसे हटा सकता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - name: id
           in: path
@@ -7378,7 +7393,7 @@ paths:
         - Gateway
       operationId: addWorkspaceMembers
       summary: वर्कस्पेस में सदस्य जोड़ें
-      description: मौजूदा उपयोगकर्ताओं को `admin` या `member` भूमिका के साथ वर्कस्पेस में जोड़ता है। प्रबंधन API कुंजी आवश्यक है।
+      description: 'जुड़ने का अनुरोध करने वाले लोगों को जोड़ता है: हर उपयोगकर्ता का एक लंबित जुड़ने का अनुरोध होना चाहिए (जो आमंत्रण स्वीकार करने पर बनता है), जिसे यह स्वीकृत करता है। दूसरे उपयोगकर्ता अस्वीकार किए जाते हैं; उन्हें आमंत्रण भेजें। मौजूदा सदस्यों की भूमिका नहीं बदलती। भूमिका न देने पर हर व्यक्ति को उसके आमंत्रण की भूमिका मिलती है; एडमिन जोड़ने के लिए वर्कस्पेस का मालिक आवश्यक है। प्रबंधन API कुंजी आवश्यक है। हर व्यक्ति को अलग से स्वीकृत किया जाता है। अगर किसी एक की स्वीकृति विफल होती है, तो उससे पहले स्वीकृत लोग जुड़े रहते हैं, बाकी लोगों के लिए प्रयास नहीं किया जाता, और प्रतिक्रिया 409 होती है जिसमें approved, failed और not_attempted उपयोगकर्ता सूचीबद्ध होते हैं।'
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -7412,6 +7427,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: सभी उपयोगकर्ताओं को नहीं जोड़ा जा सका। बॉडी में बताया जाता है कि किसे जोड़ा गया, किसकी स्वीकृति विफल हुई और किसके लिए प्रयास नहीं किया गया।
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberAddResponse'
   /workspaces/{id}/members/remove:
     post:
       x-beta: true
@@ -7419,7 +7440,7 @@ paths:
         - Gateway
       operationId: removeWorkspaceMembers
       summary: वर्कस्पेस से सदस्य हटाएँ
-      description: वर्कस्पेस से गैर-स्वामी सदस्यों को हटाता है। प्रबंधन API कुंजी आवश्यक है।
+      description: वर्कस्पेस से उन सदस्यों को हटाता है जो मालिक नहीं हैं। केवल वर्कस्पेस का मालिक दूसरे सदस्यों को हटा सकता है; कोई भी व्यक्ति ख़ुद को हटा सकता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -15531,10 +15552,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: आउटपुट फ़ॉर्मेट। gif और svg के लिए GPT Image 2.6 मॉडल चाहिए, और ये stream या partial_images का समर्थन नहीं करते। svg के लिए svg.model और n=1 भी चाहिए।
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -15550,6 +15574,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: output_format svg होने पर ज़रूरी। svg.model वह OpenAI टेक्स्ट मॉडल है जो रेफ़रेंस इमेज से SVG लिखता है। इसके टोकन उस मॉडल की टेक्स्ट कीमतों पर, इमेज की लागत के अलावा, बिल होते हैं, और रीज़निंग टोकन आउटपुट में गिने जाते हैं।
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -15567,6 +15626,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -15597,6 +15669,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: पहली इमेज के ऊपर पारदर्शी PNG एनोटेशन लेयर, फ़ाइल अपलोड, URL या base64 स्ट्रिंग के रूप में। इसके लिए GPT Image 2.5 या बाद का मॉडल चाहिए, और इसे mask के साथ नहीं जोड़ा जा सकता।
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:
@@ -15717,7 +15798,13 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
-          type: integer
+          description: आउटपुट कम्प्रेशन। Vertex Veo optimized या lossless लेता है और संख्या अस्वीकार करता है; इसे सपोर्ट करने वाले अन्य प्रोवाइडर पूर्णांक लेते हैं।
+          oneOf:
+            - type: integer
+            - type: string
+              enum:
+                - optimized
+                - lossless
         person_generation:
           type: string
         resize_mode:
@@ -15760,7 +15847,7 @@ components:
         provider_params:
           type: object
           additionalProperties: true
-          description: केवल प्रदाता-विशिष्ट एक्सटेंशन। पूरे अनुरोध का passthrough और दोहराए गए रूटिंग, prompt, callback या बिलिंग फ़ील्ड अस्वीकार किए जाते हैं।
+          description: 'केवल प्रदाता-विशिष्ट एक्सटेंशन। पूरे अनुरोध का passthrough और दोहराए गए रूटिंग, prompt, callback या बिलिंग फ़ील्ड अस्वीकार किए जाते हैं। उदाहरण के लिए, Wan 3.0 smart_duration: true लेता है ताकि मॉडल लंबाई चुने (इसके साथ duration न भेजें); जॉब 30 सेकंड आरक्षित करता है और प्रोवाइडर द्वारा बताई गई लंबाई का बिल बनता है।'
         provider_options:
           type: object
           additionalProperties:
@@ -18381,7 +18468,6 @@ components:
       type: object
       required:
         - id
-        - hash
         - workspace_id
         - name
         - label
@@ -18411,9 +18497,6 @@ components:
           type: string
           format: uuid
           example: 11111111-1111-4111-8111-111111111111
-        hash:
-          type: string
-          example: a3f5b7c9d8e1f23456789abcdeffedcba9876543210fedcba1234567890abcdef
         workspace_id:
           type: string
           format: uuid
@@ -18957,15 +19040,55 @@ components:
       type: object
       required:
         - added_count
-        - data
+        - approved
+        - failed
+        - not_attempted
       properties:
+        error:
+          type: string
+        message:
+          type: string
         added_count:
           type: integer
           minimum: 0
         data:
           type: array
+          description: जोड़े गए सदस्यों का विवरण। स्वीकृतियों के बाद इन्हें पढ़ा न जा सके तो यह छोड़ दिया जाता है; approved में फिर भी बताया जाता है कि किसे जोड़ा गया।
           items:
             $ref: '#/components/schemas/WorkspaceMember'
+        approved:
+          type: array
+          description: इस अनुरोध से जोड़े गए उपयोगकर्ता, उसी क्रम में जिसमें उन्हें स्वीकृत किया गया।
+          items:
+            type: string
+        failed:
+          type: array
+          description: वह उपयोगकर्ता जिसकी स्वीकृति विफल हुई, कारण सहित। उसके बाद के उपयोगकर्ताओं के लिए प्रयास नहीं किया जाता।
+          items:
+            $ref: '#/components/schemas/WorkspaceMemberAddFailure'
+        not_attempted:
+          type: array
+          description: वे उपयोगकर्ता जिनके लिए प्रयास नहीं किया गया क्योंकि पहले की स्वीकृति विफल हुई। उनके जुड़ने के अनुरोध अभी भी लंबित हैं।
+          items:
+            type: string
+      additionalProperties: false
+    WorkspaceMemberAddFailure:
+      type: object
+      required:
+        - user_id
+        - code
+        - message
+      properties:
+        user_id:
+          type: string
+        code:
+          type: string
+          enum:
+            - forbidden
+            - conflict
+            - internal_error
+        message:
+          type: string
       additionalProperties: false
     WorkspaceMemberRemoveResponse:
       type: object
@@ -20201,7 +20324,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
         billing_status:
@@ -20233,7 +20356,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
       minProperties: 1
@@ -20970,6 +21093,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: 'केवल /models/me लौटाता है: कॉल करने वाले के गार्डरेल ने खोज और पेजिंग से पहले सूची से क्या बाहर रखा।'
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: क्या कोई नियम इस कुंजी के लिए मॉडल या प्रदाताओं को सीमित करता है।
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: नियम कितने मॉडलों को बाहर रखते हैं।
+          example: 12
+        hidden_models:
+          type: array
+          description: बाहर रखे गए मॉडल, उनके नामों के साथ (500 तक)।
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: सूचीबद्ध कितने मॉडलों के कुछ प्रदाता नियमों के कारण हट गए।
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

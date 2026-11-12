@@ -66,6 +66,9 @@ function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: s
         ...deriveCachePricingContext(body),
         ...buildImagePricingRequestOptions(body ?? {}, usage),
         pricing_plan: pricingPlan,
+        // Transcription keyterms (`keywords`) carry a provider surcharge that a
+        // catalogue rule can price by matching `keyterms: true`.
+        keyterms: Array.isArray(body?.keywords) && body.keywords.length > 0,
     };
 
     const serviceTier = normalizePricingServiceTier(body, usage, card);
@@ -75,6 +78,24 @@ function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: s
     }
 
     return options;
+}
+
+/**
+ * The calling app the gateway detected (`claude-code`, `codex`, an SDK id; see
+ * before/clientAttribution.ts), so a price rule can match `client_id`, as a
+ * promotional price limited to one app does. It is derived from request headers,
+ * never from the request body, and a request without a detected app gets none.
+ */
+function attachClientAttribution(
+    options: Record<string, unknown>,
+    meta?: PipelineContext["meta"] | null,
+): Record<string, unknown> {
+    const clientId = (meta as { clientSource?: { id?: unknown } | null } | null | undefined)?.clientSource?.id;
+    if (typeof clientId !== "string" || !clientId || clientId === "api") {
+        const { client_id: _ignored, ...rest } = options;
+        return rest;
+    }
+    return { ...options, client_id: clientId };
 }
 
 function attachBillingTimestamps(
@@ -256,8 +277,11 @@ export function calculatePricing(
 					prompt_tokens_details: withoutNestedCachedTokens((usageMeters as any).prompt_tokens_details),
 				};
 			}
-            const requestOptions = attachBillingTimestamps(
-                buildTrustedPricingRequestOptions(body, usage, pricingPlan, card),
+            const requestOptions = attachClientAttribution(
+                attachBillingTimestamps(
+                    buildTrustedPricingRequestOptions(body, usage, pricingPlan, card),
+                    meta,
+                ),
                 meta,
             );
 
@@ -284,7 +308,78 @@ export function calculatePricing(
             console.error("computeBill failed", calcErr);
             throw calcErr;
         }
+        const toolCharges = serverToolCharges(meta);
+        const extras = [...svgAuthorCharges(pricedUsage), ...toolCharges];
+        if (extras.length > 0) {
+            const withExtras = addExtraCharges(pricedUsage, totalNanos, extras);
+            pricedUsage = withExtras.pricedUsage;
+            totalNanos = withExtras.totalNanos;
+            totalCents = Math.trunc(totalNanos / 10_000_000);
+        }
+        if (toolCharges.length > 0) {
+            // The after stage settles these under each tool's own credential (applyByokServiceFeeWithToolCharges).
+            pricedUsage = {
+                ...pricedUsage,
+                pricing: {
+                    ...pricedUsage.pricing,
+                    server_tool_nanos: toolCharges.reduce((sum, charge) => sum + (charge.total_nanos as number), 0),
+                },
+            };
+        }
     }
 
     return { pricedUsage, totalCents, totalNanos, currency };
+}
+
+type ExtraCharge = { total_nanos: unknown; lines?: unknown };
+
+/**
+ * GPT Image SVG output also bills the model that wrote the SVG, priced by the OpenAI image
+ * adapter from that model's own card (providers/openai/endpoints/images-svg.ts). The image
+ * card cannot price it, so its total and lines are added on top.
+ */
+function svgAuthorCharges(pricedUsage: any): ExtraCharge[] {
+    const svgAuthor = pricedUsage?.svg_author_pricing;
+    if (!svgAuthor || typeof svgAuthor !== "object") return [];
+    if (!Number.isSafeInteger(svgAuthor.total_nanos) || svgAuthor.total_nanos < 0) {
+        throw new Error("svg_author_pricing_invalid");
+    }
+    return [svgAuthor];
+}
+
+/**
+ * Models a server tool ran inside this request (such as Chat's image tool) were priced on
+ * their own cards when they ran (pipeline/surfaces/server-tool-pricing.ts). The request's
+ * card cannot price them, so their totals and lines are added on top.
+ */
+function serverToolCharges(meta: PipelineContext["meta"] | null | undefined): ExtraCharge[] {
+    const charges = meta?.serverToolPricing;
+    if (!Array.isArray(charges) || charges.length === 0) return [];
+    for (const charge of charges) {
+        if (!Number.isSafeInteger(charge?.total_nanos) || charge.total_nanos < 0) {
+            throw new Error("server_tool_pricing_invalid");
+        }
+    }
+    return charges;
+}
+
+function addExtraCharges(pricedUsage: any, totalNanos: number, extras: ExtraCharge[]): { pricedUsage: any; totalNanos: number } {
+    const pricing = pricedUsage?.pricing && typeof pricedUsage.pricing === "object" ? pricedUsage.pricing : {};
+    const combinedNanos = extras.reduce((sum, extra) => sum + (extra.total_nanos as number), totalNanos);
+    return {
+        totalNanos: combinedNanos,
+        pricedUsage: {
+            ...pricedUsage,
+            pricing: {
+                ...pricing,
+                total_nanos: combinedNanos,
+                total_usd_str: String(Number((combinedNanos / 1_000_000_000).toFixed(9))),
+                total_cents: Math.trunc(combinedNanos / 10_000_000),
+                lines: [
+                    ...(Array.isArray(pricing.lines) ? pricing.lines : []),
+                    ...extras.flatMap((extra) => (Array.isArray(extra.lines) ? extra.lines : [])),
+                ],
+            },
+        },
+    };
 }

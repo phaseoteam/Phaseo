@@ -16,5 +16,13 @@
   },
   "monitor": {
     "searchPlaceholder": "Search models, organizations, providers..."
+  },
+  "entityCards": {
+    "statOrganisations": "Organizations",
+    "organisationCount": "{count, plural, one {# organization} other {# organizations}}",
+    "rowTopOrganisations": "Organizations",
+    "benchmarkCategory": {
+      "math": "Math"
+    }
   }
 }

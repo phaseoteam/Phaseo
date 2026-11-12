@@ -13,10 +13,13 @@ description: "プリセットでプロンプトとルーティングの既定値
 <Steps>
 <Step title="プリセットを作成する">
 
-**設定 → プリセット** で、システムプロンプト、承認済みのモデル、プロバイダーの優先設定、`temperature` などの既定のパラメーターを持つ `release-summary` を作成します。CLI から作成することもできます。
+**設定 → プリセット** で、システムプロンプト、承認済みのモデル、プロバイダーの優先設定、`temperature` などの既定のパラメーターを持つ `release-summary` を作成します。管理キーを使って作成することもできます。
 
 ```bash
-phaseo presets create --name @release-summary --model anthropic/claude-sonnet-5.5
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
 ```
 
 </Step>

@@ -10,10 +10,13 @@ export function useLayout() {
   return {
     width,
     height,
-    /** Sidebar navigation and list/detail panes. */
+    /** A permanent sidebar, and list/detail panes. */
     split,
     /** Room for a wider list pane and extra columns. */
     wide: split && width >= WIDE_MIN_WIDTH,
-    listWidth: !split ? width : width >= WIDE_MIN_WIDTH ? 380 : 320,
+    /** The sidebar, which stays open beside everything else. */
+    sidebarWidth: !split ? 0 : width >= WIDE_MIN_WIDTH ? 288 : 256,
+    // Narrow enough that a section's list and its detail both still fit beside the sidebar.
+    listWidth: !split ? width : width >= WIDE_MIN_WIDTH ? 340 : 280,
   };
 }

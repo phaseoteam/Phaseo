@@ -19,7 +19,8 @@ export const Route = createFileRoute("/{-$locale}/_dashboard/settings")({
 		const data = await context.queryClient.ensureQueryData(settingsLayoutQuery());
 		if (!data.signedIn) {
 			const locale = (params.locale && isPublicLocale(params.locale) ? params.locale : "en-GB") as PublicLocale;
-			const requestedPath = location.pathname || "/settings";
+			// Keep the query string too (filters, tabs), as the server-side gate does.
+			const requestedPath = `${location.pathname || "/settings"}${location.searchStr ?? ""}`;
 			const safeReturnUrl = requestedPath.startsWith("/") ? requestedPath : "/settings";
 			redirect(`${localizeAuthPath(locale, "/sign-in")}?returnUrl=${encodeURIComponent(safeReturnUrl)}`);
 		}

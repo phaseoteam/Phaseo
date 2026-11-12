@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: Teambezogene Gateway-Modelle auflisten
-      description: Gibt teambezogene Gateway-Modelle zurück. Standardmäßig werden aktuell öffentlich routbare Modelle angezeigt; mit `availability=all` lassen sich nicht routbare Verfügbarkeitsdatensätze einbeziehen.
+      summary: Modelle auflisten, die dieser Schlüssel nutzen darf
+      description: 'Gibt die Liste von /models mit den Guardrails des Aufrufers zurück: Modelle, die eine Regel sperrt, und Modelle ohne erlaubten Anbieter fehlen, und jedes Modell behält nur die Angebote, an die seine Anfragen geleitet werden dürfen, mit daraus berechneten Preisen, Fähigkeiten und Verfügbarkeit. Das Objekt access gibt an, was die Regeln ausgeschlossen haben. Standardmäßig nur derzeit öffentlich routbare Modelle; mit availability=all werden auch nicht routbare Verfügbarkeitseinträge geliefert.'
       parameters:
         - name: endpoints
           in: query
@@ -1174,8 +1174,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo-Modell-ID, zum Beispiel `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: Phaseo-Modell-ID. Gleich wie `model`.
+                  provider_model:
+                    type: string
+                    description: Der eigene Name des Anbieters für das Modell, zum Beispiel `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1373,8 +1378,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo-Modell-ID, zum Beispiel `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: Phaseo-Modell-ID. Gleich wie `model`.
+                  provider_model:
+                    type: string
+                    description: Der eigene Name des Anbieters für das Modell, zum Beispiel `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1585,8 +1595,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo-Modell-ID, zum Beispiel `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: Phaseo-Modell-ID. Gleich wie `model`.
+                  provider_model:
+                    type: string
+                    description: Der eigene Name des Anbieters für das Modell, zum Beispiel `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -3846,7 +3861,7 @@ paths:
         - Gateway
       operationId: updateWorkspaceNotificationSettings
       summary: Benachrichtigungseinstellungen des Arbeitsbereichs aktualisieren
-      description: Aktualisiert einen oder mehrere dauerhafte Abschnitte der Benachrichtigungsrichtlinie. Die automatische Aufladung erfordert eine vorhandene Kennung einer gespeicherten Zahlungsmethode und bestätigte Zwei-Faktor-Authentifizierung. Eine bestehende Konfiguration kann ohne erneute MFA-Bestätigung aktualisiert werden. Zur Aktivierung ohne MFA müssen Clients `mfa_bypass_acknowledged` ausdrücklich auf true setzen und den exakten Wert `I ACCEPT THE RISK` für `mfa_bypass_phrase` angeben; die Zahlungserfassung bleibt ein interaktiver Kontovorgang.
+      description: Aktualisiert einen oder mehrere dauerhafte Abschnitte der Benachrichtigungsrichtlinie. Die automatische Aufladung einzuschalten oder ihren Betrag, Schwellenwert oder ihre Zahlungsmethode zu ändern, erfordert `billing:write`, die Kennung einer gespeicherten Zahlungsmethode und bestätigte Zwei-Faktor-Authentifizierung; Apps, die Mit Phaseo anmelden verwenden, können das nicht. Zum Ausschalten genügt `settings:write`. Eine bestehende Konfiguration kann ohne erneute MFA-Bestätigung aktualisiert werden. Die Umgehung der Zwei-Faktor-Authentifizierung (`mfa_bypass_acknowledged` und `mfa_bypass_phrase`) kann nur in den Einstellungen akzeptiert werden; die API lehnt sie ab. Die Zahlungserfassung bleibt ein interaktiver Kontovorgang.
       requestBody:
         required: true
         content:
@@ -4850,7 +4865,7 @@ paths:
         - Gateway
       operationId: listDepartmentBudgets
       summary: List department budgets
-      description: Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+      description: Listet die Ausgabenbudgets der Abteilungen mit den bisherigen Ausgaben jeder Abteilung im aktuellen UTC-Zeitraum auf. Die Ausgaben werden so gezählt wie bei der Zulassungsprüfung der Abteilung und sind daher aktuell.
       parameters:
         - name: department_id
           in: query
@@ -4878,7 +4893,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: Erstellt ein tägliches, wöchentliches oder monatliches Ausgabenbudget für eine Abteilung. Ist es aufgebraucht, liefern API-Schlüssel-Anfragen, die der Abteilung zugerechnet werden, 429 key_limit_exceeded, bis das Budget zurückgesetzt wird. Batch-Jobs, Echtzeitsitzungen und OAuth-Anfragen werden nicht blockiert. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Administratoren erhalten bei etwa 80 % und bei 100 % eine mobile Push-Benachrichtigung.
+      description: Erstellt ein tägliches, wöchentliches oder monatliches Ausgabenbudget für eine Abteilung. Ist es aufgebraucht, liefern API-Schlüssel-Anfragen, die der Abteilung zugerechnet werden, 429 key_limit_exceeded, bis das Budget zurückgesetzt wird. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Administratoren erhalten bei etwa 80 % und bei 100 % eine mobile Push-Benachrichtigung.
       requestBody:
         required: true
         content:
@@ -7301,7 +7316,7 @@ paths:
         - Gateway
       operationId: deleteWorkspace
       summary: Arbeitsbereich löschen
-      description: Löscht einen Arbeitsbereich anhand von UUID oder Slug. Ein Management-API-Schlüssel ist erforderlich.
+      description: Löscht einen Workspace anhand von UUID oder Slug. Nur der Workspace-Inhaber kann ihn löschen. Management-API-Schlüssel erforderlich.
       parameters:
         - name: id
           in: path
@@ -7378,7 +7393,7 @@ paths:
         - Gateway
       operationId: addWorkspaceMembers
       summary: Mitglieder zum Arbeitsbereich hinzufügen
-      description: Fügt vorhandene Benutzer mit der Rolle `admin` oder `member` zu einem Arbeitsbereich hinzu. Ein Management-API-Schlüssel ist erforderlich.
+      description: 'Fügt Personen hinzu, die den Beitritt angefragt haben: Jeder Benutzer braucht eine ausstehende Beitrittsanfrage (die beim Annehmen einer Einladung entsteht), die hiermit genehmigt wird. Andere Benutzer werden abgelehnt; sende ihnen stattdessen eine Einladung. Bestehende Mitglieder behalten ihre Rolle. Ohne Rolle erhält jede Person die Rolle ihrer Einladung; einen Admin hinzuzufügen erfordert den Workspace-Inhaber. Management-API-Schlüssel erforderlich. Jede Person wird einzeln genehmigt. Schlägt eine fehl, bleiben die zuvor genehmigten hinzugefügt, die übrigen werden nicht versucht, und die Antwort ist ein 409, das die Benutzer in approved, failed und not_attempted auflistet.'
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -7412,6 +7427,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Nicht alle Benutzer konnten hinzugefügt werden. Der Body listet, wer hinzugefügt wurde, wer fehlgeschlagen ist und wer nicht versucht wurde.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberAddResponse'
   /workspaces/{id}/members/remove:
     post:
       x-beta: true
@@ -7419,7 +7440,7 @@ paths:
         - Gateway
       operationId: removeWorkspaceMembers
       summary: Mitglieder aus dem Arbeitsbereich entfernen
-      description: Entfernt Mitglieder, die nicht Inhaber sind, aus einem Arbeitsbereich. Ein Management-API-Schlüssel ist erforderlich.
+      description: Entfernt Mitglieder, die nicht Inhaber sind, aus einem Workspace. Nur der Workspace-Inhaber kann andere Mitglieder entfernen; jede Person kann sich selbst entfernen. Management-API-Schlüssel erforderlich.
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -15531,10 +15552,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: Ausgabeformat. gif und svg erfordern ein GPT-Image-2.6-Modell und unterstützen weder stream noch partial_images. svg erfordert außerdem svg.model und n=1.
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -15550,6 +15574,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: Erforderlich, wenn output_format svg ist. svg.model ist das OpenAI-Textmodell, das das SVG aus dem Referenzbild schreibt. Seine Tokens werden zusätzlich zu den Bildkosten zu den Textpreisen dieses Modells abgerechnet, wobei Reasoning-Tokens als Ausgabe zählen.
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -15567,6 +15626,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -15597,6 +15669,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: Transparente PNG-Annotationsebene über dem ersten Bild, als Datei-Upload, URL oder Base64-String. Erfordert GPT Image 2.5 oder neuer und lässt sich nicht mit mask kombinieren.
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:
@@ -15717,7 +15798,13 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
-          type: integer
+          description: Ausgabekomprimierung. Vertex Veo akzeptiert optimized oder lossless und lehnt eine Zahl ab; andere Anbieter, die sie unterstützen, akzeptieren eine ganze Zahl.
+          oneOf:
+            - type: integer
+            - type: string
+              enum:
+                - optimized
+                - lossless
         person_generation:
           type: string
         resize_mode:
@@ -15760,7 +15847,7 @@ components:
         provider_params:
           type: object
           additionalProperties: true
-          description: Nur anbieterspezifische Erweiterungen. Vollständige Durchleitung der Anfrage und doppelte Routing-, Prompt-, Callback- oder Abrechnungsfelder werden abgelehnt.
+          description: 'Nur anbieterspezifische Erweiterungen. Vollständige Durchleitung der Anfrage und doppelte Routing-, Prompt-, Callback- oder Abrechnungsfelder werden abgelehnt. Wan 3.0 akzeptiert zum Beispiel smart_duration: true, damit das Modell die Länge wählt (dann keine duration senden); der Job reserviert 30 Sekunden und abgerechnet wird die vom Anbieter gemeldete Länge.'
         provider_options:
           type: object
           additionalProperties:
@@ -18381,7 +18468,6 @@ components:
       type: object
       required:
         - id
-        - hash
         - workspace_id
         - name
         - label
@@ -18411,9 +18497,6 @@ components:
           type: string
           format: uuid
           example: 11111111-1111-4111-8111-111111111111
-        hash:
-          type: string
-          example: a3f5b7c9d8e1f23456789abcdeffedcba9876543210fedcba1234567890abcdef
         workspace_id:
           type: string
           format: uuid
@@ -18957,15 +19040,55 @@ components:
       type: object
       required:
         - added_count
-        - data
+        - approved
+        - failed
+        - not_attempted
       properties:
+        error:
+          type: string
+        message:
+          type: string
         added_count:
           type: integer
           minimum: 0
         data:
           type: array
+          description: Die Details der hinzugefügten Mitglieder. Fehlen, wenn sie nach den Genehmigungen nicht gelesen werden konnten; approved listet trotzdem, wer hinzugefügt wurde.
           items:
             $ref: '#/components/schemas/WorkspaceMember'
+        approved:
+          type: array
+          description: Durch diese Anfrage hinzugefügte Benutzer, in der Reihenfolge ihrer Genehmigung.
+          items:
+            type: string
+        failed:
+          type: array
+          description: Der Benutzer, dessen Genehmigung fehlgeschlagen ist, mit dem Grund. Nachfolgende Benutzer werden nicht versucht.
+          items:
+            $ref: '#/components/schemas/WorkspaceMemberAddFailure'
+        not_attempted:
+          type: array
+          description: Benutzer, die nicht versucht wurden, weil eine frühere Genehmigung fehlgeschlagen ist. Ihre Beitrittsanfragen sind weiterhin ausstehend.
+          items:
+            type: string
+      additionalProperties: false
+    WorkspaceMemberAddFailure:
+      type: object
+      required:
+        - user_id
+        - code
+        - message
+      properties:
+        user_id:
+          type: string
+        code:
+          type: string
+          enum:
+            - forbidden
+            - conflict
+            - internal_error
+        message:
+          type: string
       additionalProperties: false
     WorkspaceMemberRemoveResponse:
       type: object
@@ -20201,7 +20324,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
         billing_status:
@@ -20233,7 +20356,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
       minProperties: 1
@@ -20970,6 +21093,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: 'Nur von /models/me geliefert: was die Guardrails des Aufrufers aus der Liste ausgeschlossen haben, vor Suche und Paginierung.'
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: Ob eine Regel Modelle oder Anbieter für diesen Schlüssel einschränkt.
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: Wie viele Modelle die Regeln ausschließen.
+          example: 12
+        hidden_models:
+          type: array
+          description: Die ausgeschlossenen Modelle mit ihren Namen (bis zu 500).
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: Wie viele gelistete Modelle durch die Regeln einige ihrer Anbieter verloren haben.
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

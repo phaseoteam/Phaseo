@@ -11,6 +11,8 @@ import {
 import { ProductAnalyticsGaBridge } from "@/components/analytics/ProductAnalyticsGaBridge";
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import AdminDeveloperMenuLauncher from "@/components/developer-menu/AdminDeveloperMenuLauncher";
+import { EntityCards } from "@/components/entity-cards/EntityCards";
+import { AuthDialog } from "@/components/(gateway)/auth/dialog/AuthDialog";
 import { WebQueryProvider } from "@/components/providers/WebQueryProvider";
 import { DisplayPreferencesProvider } from "@/components/providers/DisplayPreferencesProvider";
 import { CatalogNavigationGuardProvider } from "@/components/(data)/UnsavedChangesGuard";
@@ -23,10 +25,12 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { FontProfile, LocaleDirection, PublicLocale } from "@/i18n/routing";
 import { GA_MEASUREMENT_ID } from "@/lib/analytics";
+import type { GrafanaBrowserConfig } from "@/lib/grafanaConfig";
 
 const APPEARANCE_INITIALIZATION_SCRIPT = `(()=>{try{const p=JSON.parse(localStorage.getItem("phaseo-display-preferences-v1")||"null");if(!p||typeof p!=="object")return;const r=document.documentElement;const lp=["phaseo","paper","warm"],dp=["phaseo","slate","midnight"],hex=/^#[0-9a-f]{6}$/i;const fg=v=>{const c=[1,3,5].map(i=>parseInt(v.slice(i,i+2),16)/255).map(x=>x<=.04045?x/12.92:Math.pow((x+.055)/1.055,2.4)),l=.2126*c[0]+.7152*c[1]+.0722*c[2];return 1.05/(l+.05)>=(l+.05)/.052?"#ffffff":"#0b0b0b"};if(lp.includes(p.lightPalette))r.dataset.lightPalette=p.lightPalette;if(dp.includes(p.darkPalette))r.dataset.darkPalette=p.darkPalette;if(["comfortable","compact"].includes(p.density))r.dataset.density=p.density;if(typeof p.maskSensitiveData==="boolean")r.dataset.obfuscatePii=p.maskSensitiveData?"true":"false";if(hex.test(p.lightAccent)){r.style.setProperty("--light-user-accent",p.lightAccent);r.style.setProperty("--light-user-accent-foreground",fg(p.lightAccent))}if(hex.test(p.darkAccent)){r.style.setProperty("--dark-user-accent",p.darkAccent);r.style.setProperty("--dark-user-accent-foreground",fg(p.darkAccent))}}catch{}})();`;
 
 export type RootDocumentProps = {
+	grafana?: GrafanaBrowserConfig;
 	children: ReactNode;
 	direction: LocaleDirection;
 	fontProfile: FontProfile;
@@ -40,10 +44,11 @@ function RootCookieConsent() {
 }
 
 /** Starts PostHog, GA exception events and client error capture once in the browser (consent rules apply). */
-function useBrowserAnalytics() {
+function useBrowserAnalytics(grafana?: GrafanaBrowserConfig) {
 	useEffect(() => {
+		void import("@/lib/grafana").then(({ startGrafanaMonitoring }) => startGrafanaMonitoring(grafana)).catch(() => {});
 		void import("@/lib/analytics/browserAnalytics").then(({ startBrowserAnalytics }) => startBrowserAnalytics());
-	}, []);
+	}, [grafana]);
 }
 
 /**
@@ -51,12 +56,13 @@ function useBrowserAnalytics() {
  * come from the request's locale, and every page shares these providers.
  */
 export function RootDocument({
+	grafana,
 	children,
 	direction,
 	fontProfile,
 	locale,
 }: RootDocumentProps) {
-	useBrowserAnalytics();
+	useBrowserAnalytics(grafana);
 	return (
 		<html
 			lang={locale}
@@ -99,6 +105,10 @@ export function RootDocument({
 							<NuqsAdapter>
 								{children}
 								<AdminDeveloperMenuLauncher />
+								{/* One card for every entity link on the page (models, providers, organisations, apps, ...). */}
+								<EntityCards />
+								{/* Sign-in and sign-up links open a dialog over the page. */}
+								<AuthDialog />
 							</NuqsAdapter>
 							</WebQueryProvider>
 						</Suspense>

@@ -5,6 +5,8 @@ import { ATLAS_CLOUD_OPENAI_COMPAT_CONFIGS } from "../atlas-cloud/config";
 import { ARCEE_OPENAI_COMPAT_CONFIGS } from "../arcee/config";
 import { AI21_OPENAI_COMPAT_CONFIGS } from "../ai21/config";
 import { AKASHML_OPENAI_COMPAT_CONFIGS } from "../akashml/config";
+import { PRIMALABS_OPENAI_COMPAT_CONFIGS } from "../primalabs/config";
+import { LG_OPENAI_COMPAT_CONFIGS } from "../lg/config";
 import { AMAZON_BEDROCK_OPENAI_COMPAT_CONFIGS } from "../amazon-bedrock/config";
 import { BASETEN_OPENAI_COMPAT_CONFIGS } from "../baseten/config";
 import { BYTEPLUS_OPENAI_COMPAT_CONFIGS } from "../byteplus/config";
@@ -91,6 +93,8 @@ export const OPENAI_COMPAT_CONFIG = {
 	...ARCEE_OPENAI_COMPAT_CONFIGS,
 	...AI21_OPENAI_COMPAT_CONFIGS,
 	...AKASHML_OPENAI_COMPAT_CONFIGS,
+	...PRIMALABS_OPENAI_COMPAT_CONFIGS,
+	...LG_OPENAI_COMPAT_CONFIGS,
 	...AMAZON_BEDROCK_OPENAI_COMPAT_CONFIGS,
 	...BASETEN_OPENAI_COMPAT_CONFIGS,
 	...BYTEPLUS_OPENAI_COMPAT_CONFIGS,

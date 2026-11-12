@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { serverAction } from "@/lib/serverFn/actionMiddleware";
+import { internalAdminAction } from "@/lib/auth/requireInternalAdmin";
 import { fetchAdminCatalogList } from "@/lib/fetchers/internal/fetchAdminCatalog";
 
 export const searchAdminModelsForDockAction = createServerFn({ method: "POST" })
-	.middleware([serverAction])
+	.middleware([serverAction, internalAdminAction])
 	.validator((query: string) => query)
 	.handler(async ({ data: query }) => {
 		const normalizedQuery = query.trim().replace(/[(),]/g, " ").slice(0, 120);

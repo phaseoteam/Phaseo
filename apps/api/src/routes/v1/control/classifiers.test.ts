@@ -8,7 +8,7 @@ const KEY = "00000000-0000-4000-8000-000000000003";
 const ALL_SCOPES = ["classifiers:read", "classifiers:write", "classifiers:delete"];
 
 const state = vi.hoisted(() => ({
-	auth: { ok: true, value: { workspaceId: "00000000-0000-4000-8000-000000000001", authMethod: "api_key", scopes: [] as string[] } } as any,
+	auth: { ok: true, value: { workspaceId: "00000000-0000-4000-8000-000000000001", authMethod: "api_key", userId: "00000000-0000-4000-8000-000000000077", scopes: [] as string[] } } as any,
 	tables: {} as Record<string, any[]>,
 	audit: vi.fn(),
 	nextId: 100,
@@ -115,6 +115,8 @@ describe("classifier management", () => {
 		state.insertError = null;
 		state.tables = {
 			workspace_request_classifiers: [existingRow(EXISTING, WORKSPACE, "Department"), existingRow(ELSEWHERE, OTHER_WORKSPACE, "Elsewhere")],
+			// The management key acts as its creator, an admin of the workspace.
+			workspace_members: [{ workspace_id: WORKSPACE, user_id: "00000000-0000-4000-8000-000000000077", role: "admin" }],
 		};
 		state.audit.mockReset();
 		state.gateEnabled = true;

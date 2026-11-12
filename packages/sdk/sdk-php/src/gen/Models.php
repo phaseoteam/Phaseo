@@ -240,8 +240,6 @@ class ApiKey
 	/** @var string|null */
 	public $expires_at;
 	/** @var string */
-	public $hash;
-	/** @var string */
 	public $id;
 	/** @var bool */
 	public $include_byok_in_limit;
@@ -449,8 +447,6 @@ class ApiKeyWithValue
 	public $disabled;
 	/** @var string|null */
 	public $expires_at;
-	/** @var string */
-	public $hash;
 	/** @var string */
 	public $id;
 	/** @var bool */
@@ -2813,6 +2809,18 @@ class GatewayModalities
 	public $output;
 }
 
+class GatewayModelAccess
+{
+	/** @var int */
+	public $hidden_model_count;
+	/** @var array */
+	public $hidden_models;
+	/** @var int */
+	public $limited_model_count;
+	/** @var bool */
+	public $restricted;
+}
+
 class GatewayModelLifecycle
 {
 	/** @var string|null */
@@ -2869,6 +2877,8 @@ class GatewayModelOrganization { }
 
 class GatewayModelsResponse
 {
+	/** @var array<string, mixed>|null */
+	public $access;
 	/** @var string */
 	public $availability_mode;
 	/** @var int */
@@ -3471,10 +3481,14 @@ class ImagesEditRequest
 {
 	/** @var string|null */
 	public $background;
+	/** @var string|null */
+	public $complexity;
 	/** @var string|array */
 	public $image;
 	/** @var string|null */
 	public $input_fidelity;
+	/** @var string|null */
+	public $markup;
 	/** @var string|null */
 	public $mask;
 	/** @var bool|null */
@@ -3523,6 +3537,12 @@ class ImagesGenerationRequest
 {
 	/** @var string|null */
 	public $background;
+	/** @var string|null */
+	public $complexity;
+	/** @var int|null */
+	public $frame_count;
+	/** @var int|null */
+	public $frame_duration_ms;
 	/** @var string */
 	public $model;
 	/** @var array|null */
@@ -3553,6 +3573,8 @@ class ImagesGenerationRequest
 	public $stream;
 	/** @var string|null */
 	public $style;
+	/** @var array<string, mixed>|null */
+	public $svg;
 	/** @var string|null */
 	public $user;
 }
@@ -3563,6 +3585,8 @@ class ImagesGenerationResponse
 	public $created;
 	/** @var array|null */
 	public $data;
+	/** @var array<string, mixed>|null */
+	public $svg_usage;
 }
 
 class InputTokensDetails
@@ -6871,7 +6895,7 @@ class VideoGenerationRequest
 {
 	/** @var string|null */
 	public $aspect_ratio;
-	/** @var int|null */
+	/** @var int|string|null */
 	public $compression_quality;
 	/** @var int|null */
 	public $duration;
@@ -7979,12 +8003,32 @@ class WorkspaceMember
 	public $workspace_id;
 }
 
+class WorkspaceMemberAddFailure
+{
+	/** @var string */
+	public $code;
+	/** @var string */
+	public $message;
+	/** @var string */
+	public $user_id;
+}
+
 class WorkspaceMemberAddResponse
 {
 	/** @var int */
 	public $added_count;
 	/** @var array */
+	public $approved;
+	/** @var array|null */
 	public $data;
+	/** @var string|null */
+	public $error;
+	/** @var array */
+	public $failed;
+	/** @var string|null */
+	public $message;
+	/** @var array */
+	public $not_attempted;
 }
 
 class WorkspaceMemberBulkRequest

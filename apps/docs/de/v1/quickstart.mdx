@@ -8,7 +8,7 @@ Erstelle einen API-Schlüssel, sende eine Anfrage an `POST /v1/responses` und li
 
 ```mermaid
 flowchart LR
-  key["Schlüssel erstellen<br/>phaseo keys create"] --> req["POST /v1/responses<br/>model + input"]
+  key["Schlüssel erstellen<br/>phaseo.app/settings/keys"] --> req["POST /v1/responses<br/>model + input"]
   req --> read["output[].content[] lesen<br/>type: output_text"]
   req -->|"401, 402, 429"| fix["Fehler beheben"]
 ```
@@ -31,8 +31,8 @@ Rules:
 <Visibility for="agents">
 Schnellstart-Checkliste für Agenten:
 
-- Erstelle den Schlüssel mit der CLI: `npm install -g @phaseo/cli`, dann `phaseo login` (oder `phaseo login --device-code` in einer Shell ohne Browser; ein Mensch bestätigt die Anmeldung), dann `phaseo keys create --name <name> --json`. Erzeuge oder rate nie einen Schlüssel. Sende ihn als `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` und nur aus serverseitigem Code.
-- Für kostenpflichtige Modelle führe einmal `phaseo login --scopes billing:write` aus; danach startet `phaseo credits add --amount <usd> --json` eine Aufladung. Mit gespeicherter Karte bestätigt ein Inhaber oder Admin des Workspace sie über einen Link per E-Mail. Ohne gespeicherte Karte enthält die Antwort `next_action: "open_checkout_url"` und einen Zahlungslink, den ein Inhaber oder Admin zum Bezahlen öffnet; die Karte wird dann für spätere Aufladungen gespeichert. Schicke den Nutzer für Schlüssel, Guthaben oder Einstellungen nicht ins Dashboard; siehe https://phaseo.app/docs/de/v1/developers/manage-from-an-agent.md.
+- Erstelle den Schlüssel mit `phaseo keys create --name <name> --limit <usd> --show-secret --json` (die CLI-Anmeldung muss Inhaber oder Admin des Workspace sein) oder mit `POST /v1/keys` und einem Management-Schlüssel, oder bitte die Person, ihn im Dashboard unter **Einstellungen -> API-Schlüssel** zu erstellen. Erzeuge oder rate nie einen Schlüssel. Sende ihn als `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` und nur aus serverseitigem Code.
+- Für kostenpflichtige Modelle führe einmal `phaseo login --scopes billing:write` aus; danach startet `phaseo credits add --amount <usd> --json` eine Aufladung. Mit gespeicherter Karte bestätigt ein Inhaber oder Admin des Workspace sie über einen Link per E-Mail. Ohne gespeicherte Karte enthält die Antwort `next_action: "open_checkout_url"` und einen Zahlungslink, den ein Inhaber oder Admin zum Bezahlen öffnet; die Karte wird dann für spätere Aufladungen gespeichert. Schicke den Nutzer für Guthaben oder andere Aufgaben, die die CLI abdeckt, nicht ins Dashboard; siehe https://phaseo.app/docs/de/v1/developers/manage-from-an-agent.md.
 - Sende die erste Anfrage mit `POST https://api.phaseo.app/v1/responses` und den Feldern `model` und `input`. Die Beispiele verwenden `openai/gpt-6-astra`, ein kostenpflichtiges Modell, das Guthaben braucht. `phaseo/free` wählt ein verfügbares kostenloses Modell und funktioniert ohne Wallet-Guthaben.
 - Lies die Antwort aus `output[].content[]`, wo `type` den Wert `output_text` hat.
 - Wenn die Anfrage fehlschlägt, entscheide anhand des JSON-Codes `error`, wie in https://phaseo.app/docs/de/v1/api-reference/errors.md beschrieben.
@@ -40,12 +40,9 @@ Schnellstart-Checkliste für Agenten:
 
 ## 1. API-Schlüssel erstellen
 
-Installiere die [Phaseo CLI](./guides/integrations/phaseo-cli), melde dich an und erstelle einen Schlüssel:
+Erstelle einen Schlüssel im [Dashboard](https://phaseo.app/settings/keys) unter **Einstellungen -> API-Schlüssel** und exportiere ihn:
 
 ```bash
-npm install -g @phaseo/cli
-phaseo login                 # über SSH oder in einer Agenten-Sandbox --device-code verwenden
-phaseo keys create --name "Quickstart" --json
 export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
@@ -54,8 +51,6 @@ Der Schlüssel wird nur einmal angezeigt. Jede Anfrage sendet ihn als Bearer-Tok
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
-
-Du kannst einen Schlüssel auch im [Dashboard](https://phaseo.app/settings/keys) unter **Einstellungen -> API-Schlüssel** erstellen.
 
 <Danger>
 Behandle deinen API-Schlüssel wie ein Passwort. Halte ihn in serverseitigem Code und liefere ihn nie an einen Browser oder eine mobile App aus.

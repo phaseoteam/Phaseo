@@ -331,9 +331,6 @@ public sealed class ApiKey
 	[JsonPropertyName("expires_at")]
 	public string? ExpiresAt { get; set; }
 
-	[JsonPropertyName("hash")]
-	public string Hash { get; set; }
-
 	[JsonPropertyName("id")]
 	public string Id { get; set; }
 
@@ -616,9 +613,6 @@ public sealed class ApiKeyWithValue
 
 	[JsonPropertyName("expires_at")]
 	public string? ExpiresAt { get; set; }
-
-	[JsonPropertyName("hash")]
-	public string Hash { get; set; }
 
 	[JsonPropertyName("id")]
 	public string Id { get; set; }
@@ -3841,6 +3835,22 @@ public sealed class GatewayModalities
 
 }
 
+public sealed class GatewayModelAccess
+{
+	[JsonPropertyName("hidden_model_count")]
+	public long HiddenModelCount { get; set; }
+
+	[JsonPropertyName("hidden_models")]
+	public List<Dictionary<string, object>> HiddenModels { get; set; }
+
+	[JsonPropertyName("limited_model_count")]
+	public long LimitedModelCount { get; set; }
+
+	[JsonPropertyName("restricted")]
+	public bool Restricted { get; set; }
+
+}
+
 public sealed class GatewayModelLifecycle
 {
 	[JsonPropertyName("deprecated_at")]
@@ -3917,6 +3927,9 @@ public sealed class GatewayModelOrganization { }
 
 public sealed class GatewayModelsResponse
 {
+	[JsonPropertyName("access")]
+	public Dictionary<string, object>? Access { get; set; }
+
 	[JsonPropertyName("availability_mode")]
 	public string AvailabilityMode { get; set; }
 
@@ -4746,11 +4759,17 @@ public sealed class ImagesEditRequest
 	[JsonPropertyName("background")]
 	public string? Background { get; set; }
 
+	[JsonPropertyName("complexity")]
+	public string? Complexity { get; set; }
+
 	[JsonPropertyName("image")]
 	public object Image { get; set; }
 
 	[JsonPropertyName("input_fidelity")]
 	public string? InputFidelity { get; set; }
+
+	[JsonPropertyName("markup")]
+	public string? Markup { get; set; }
 
 	[JsonPropertyName("mask")]
 	public string? Mask { get; set; }
@@ -4820,6 +4839,15 @@ public sealed class ImagesGenerationRequest
 	[JsonPropertyName("background")]
 	public string? Background { get; set; }
 
+	[JsonPropertyName("complexity")]
+	public string? Complexity { get; set; }
+
+	[JsonPropertyName("frame_count")]
+	public long? FrameCount { get; set; }
+
+	[JsonPropertyName("frame_duration_ms")]
+	public long? FrameDurationMs { get; set; }
+
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
@@ -4865,6 +4893,9 @@ public sealed class ImagesGenerationRequest
 	[JsonPropertyName("style")]
 	public string? Style { get; set; }
 
+	[JsonPropertyName("svg")]
+	public Dictionary<string, object>? Svg { get; set; }
+
 	[JsonPropertyName("user")]
 	public string? User { get; set; }
 
@@ -4877,6 +4908,9 @@ public sealed class ImagesGenerationResponse
 
 	[JsonPropertyName("data")]
 	public List<Dictionary<string, object>>? Data { get; set; }
+
+	[JsonPropertyName("svg_usage")]
+	public Dictionary<string, object>? SvgUsage { get; set; }
 
 }
 
@@ -9402,7 +9436,7 @@ public sealed class VideoGenerationRequest
 	public string? AspectRatio { get; set; }
 
 	[JsonPropertyName("compression_quality")]
-	public long? CompressionQuality { get; set; }
+	public object? CompressionQuality { get; set; }
 
 	[JsonPropertyName("duration")]
 	public long? Duration { get; set; }
@@ -10905,13 +10939,41 @@ public sealed class WorkspaceMember
 
 }
 
+public sealed class WorkspaceMemberAddFailure
+{
+	[JsonPropertyName("code")]
+	public string Code { get; set; }
+
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("user_id")]
+	public string UserId { get; set; }
+
+}
+
 public sealed class WorkspaceMemberAddResponse
 {
 	[JsonPropertyName("added_count")]
 	public long AddedCount { get; set; }
 
+	[JsonPropertyName("approved")]
+	public List<string> Approved { get; set; }
+
 	[JsonPropertyName("data")]
-	public List<Dictionary<string, object>> Data { get; set; }
+	public List<Dictionary<string, object>>? Data { get; set; }
+
+	[JsonPropertyName("error")]
+	public string? Error { get; set; }
+
+	[JsonPropertyName("failed")]
+	public List<Dictionary<string, object>> Failed { get; set; }
+
+	[JsonPropertyName("message")]
+	public string? Message { get; set; }
+
+	[JsonPropertyName("not_attempted")]
+	public List<string> NotAttempted { get; set; }
 
 }
 

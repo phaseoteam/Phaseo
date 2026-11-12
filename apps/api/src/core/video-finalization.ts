@@ -117,6 +117,15 @@ function resolveBillingModel(
 
 function resolveVideoUsageSeconds(videoMeta: VideoJobMeta | null, ...candidates: unknown[]): number | undefined {
 	const preferred = toPositiveNumber(videoMeta?.seconds);
+	// The provider picked the length (Wan 3.0 smart duration): `seconds` is only the
+	// maximum we held, so bill the reported length, capped at that maximum.
+	if (videoMeta?.autoDuration) {
+		for (const candidate of candidates) {
+			const reported = toPositiveNumber(candidate);
+			if (reported != null) return preferred != null ? Math.min(reported, preferred) : reported;
+		}
+		return preferred ?? undefined;
+	}
 	if (preferred != null) return preferred;
 	for (const candidate of candidates) {
 		const parsed = toPositiveNumber(candidate);

@@ -120,4 +120,4 @@ L’Advisor ne conserve aucun état entre les requêtes. Si vous rejouez des mes
 
 ## Utilisation et tarification
 
-Chaque appel ajoute 1 à `usage.server_tool_use.advisor_requests` et peut être facturé via `server_tool_advisor_requests`. Les tokens de l’Advisor s’ajoutent à l’utilisation de la requête et sont facturés au tarif du modèle Advisor.
+Chaque appel ajoute 1 à `usage.server_tool_use.advisor_requests` et peut être facturé avec `server_tool_advisor_requests`. Les jetons de l’Advisor sont facturés aux tarifs du modèle Advisor lui-même, sur une ligne distincte de la facture de la requête, et ne s’ajoutent pas aux jetons du modèle appelant. Un modèle Advisor payant nécessite du crédit même lorsque le modèle appelant est gratuit.

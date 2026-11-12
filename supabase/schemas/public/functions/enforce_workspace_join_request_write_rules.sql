@@ -8,14 +8,14 @@ begin
   if new.invite_id is not null then
     if not exists (
       select 1
-      from public.team_invites ti
+      from public.workspace_invites ti
       where ti.id = new.invite_id
-        and ti.team_id = new.team_id
+        and ti.workspace_id = new.workspace_id
     ) then
       raise exception using
         errcode = '23514',
         message = 'invite_team_mismatch',
-        detail = 'Join request invite must belong to the same team.';
+        detail = 'Join request invite must belong to the same workspace.';
     end if;
   end if;
 
@@ -53,11 +53,11 @@ begin
       detail = 'Decided join requests must include decided_by and decided_at.';
   end if;
 
-  if new.team_id <> old.team_id or new.requester_user_id <> old.requester_user_id then
+  if new.workspace_id <> old.workspace_id or new.requester_user_id <> old.requester_user_id then
     raise exception using
       errcode = '23514',
       message = 'join_request_immutable_fields_modified',
-      detail = 'team_id and requester_user_id are immutable.';
+      detail = 'workspace_id and requester_user_id are immutable.';
   end if;
 
   if new.invite_id is distinct from old.invite_id then

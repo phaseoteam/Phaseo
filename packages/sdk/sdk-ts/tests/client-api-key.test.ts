@@ -13,7 +13,6 @@ describe("Phaseo single API key helper", () => {
         JSON.stringify({
           data: {
             id: "key_123",
-            hash: "keyhash_123",
             status: "active",
           },
         }),
@@ -33,7 +32,6 @@ describe("Phaseo single API key helper", () => {
     const response = await client.getApiKey("key_123") as any;
 
     expect(response.data.id).toBe("key_123");
-    expect(response.data.hash).toBe("keyhash_123");
     expect(response.data.status).toBe("active");
   });
 });

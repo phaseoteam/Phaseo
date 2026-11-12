@@ -6,11 +6,7 @@ icon: "key-round"
 
 Erstelle einen Management-Schlüssel, um die Verwaltungs-APIs von Phaseo von deinen eigenen Servern aus aufzurufen: Guthaben, Aktivität, Workspaces, Schlüssel, Voreinstellungen, Einstellungen und Guardrails. Management-Schlüssel können keine Inferenzanfragen senden.
 
-```bash
-phaseo management-keys create --name <name> --template read-only --json
-```
-
-Oder erstelle einen im Dashboard unter **Einstellungen → Verwaltungsschlüssel**. Das Geheimnis wird nur einmal angezeigt, also speichere es in deinem Geheimnismanager. Sende es nur aus serverseitigem Code, an dieselbe Basis-URL wie das Gateway (`https://api.phaseo.app/v1`):
+Erstelle einen im Dashboard unter **Einstellungen → Verwaltungsschlüssel**. Das Geheimnis wird nur einmal angezeigt, also speichere es in deinem Geheimnismanager. Sende es nur aus serverseitigem Code, an dieselbe Basis-URL wie das Gateway (`https://api.phaseo.app/v1`):
 
 ```http
 Authorization: Bearer phaseo_v1_mk_<kid>_<secret>

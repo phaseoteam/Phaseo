@@ -26,10 +26,9 @@ phaseo omp --model openai/gpt-5.6-terra
 
 ## oh-my-pi को मैन्युअल रूप से कॉन्फ़िगर करें
 
-एक कुंजी बनाएँ, उसे उस शेल में एक्सपोर्ट करें जो oh-my-pi शुरू करता है, और कॉन्फ़िग डायरेक्टरी बनाएँ:
+डैशबोर्ड में **सेटिंग → API कुंजियाँ** से एक कुंजी बनाएँ, उसे उस शेल में एक्सपोर्ट करें जो oh-my-pi शुरू करता है, और कॉन्फ़िग डायरेक्टरी बनाएँ:
 
 ```bash
-phaseo keys create --name "oh-my-pi Phaseo key" --json
 export PHASEO_OMP_API_KEY="<your Phaseo API key>"
 mkdir -p ~/.omp/agent
 ```

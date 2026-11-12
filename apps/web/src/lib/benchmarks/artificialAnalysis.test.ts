@@ -49,6 +49,8 @@ describe("Artificial Analysis benchmark helpers", () => {
 	it("shows small positive ratios without rounding them to zero", () => {
 		expect(formatArtificialAnalysisValue(0.001234)).toBe("$0.00123");
 		expect(formatArtificialAnalysisValue(0)).toBe("$0");
+		expect(formatArtificialAnalysisValue(2.5)).toBe("$2.50");
+		expect(formatArtificialAnalysisValue(1234.5)).toBe("$1,234.50");
 	});
 	it("ignores sentence punctuation without merging index versions", () => {
 		expect(artificialAnalysisVersion("Intelligence Index v4.3. Rounded headline score")).toBe("4.3");

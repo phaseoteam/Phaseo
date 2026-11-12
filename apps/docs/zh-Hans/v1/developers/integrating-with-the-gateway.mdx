@@ -12,7 +12,7 @@ icon: "plug-zap"
 <Steps>
 <Step title="创建并保存密钥">
 
-在 [Phaseo CLI](../guides/integrations/phaseo-cli) 中运行 `phaseo keys create --name <app-and-environment> --json`，或在[仪表板](https://phaseo.app/settings/keys)中打开**设置 → API 密钥**。按应用和环境为密钥命名，然后把它存放在密钥管理器或环境变量文件中：
+在[仪表板](https://phaseo.app/settings/keys)中打开**设置 → API 密钥**，或使用管理密钥调用 `POST /v1/keys`。按应用和环境为密钥命名，然后把它存放在密钥管理器或环境变量文件中：
 
 ```bash
 # .env.local

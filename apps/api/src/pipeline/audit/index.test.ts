@@ -8,7 +8,6 @@ const ensureAppIdMock = vi.fn();
 const syncWorkspaceUsageRollupForRequestMock = vi.fn();
 const resolveGatewayIoLoggingPolicyMock = vi.fn();
 const persistGatewayIoLogMock = vi.fn();
-const persistGatewayUpstreamRequestsMock = vi.fn();
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: (...args: any[]) => getBindingsMock(...args),
@@ -31,10 +30,6 @@ vi.mock("./io-logging", () => ({
 	persistGatewayIoLog: (...args: any[]) => persistGatewayIoLogMock(...args),
 	requestZeroDataRetention: () => false,
 	keyKeepsContentOutOfTelemetry: async () => false,
-}));
-
-vi.mock("./upstream-requests", () => ({
-	persistGatewayUpstreamRequests: (...args: any[]) => persistGatewayUpstreamRequestsMock(...args),
 }));
 
 import { auditFailure, auditSuccess, resolveAuditServiceTiers } from "./index";
@@ -78,8 +73,6 @@ describe("audit request detail persistence", () => {
 		syncWorkspaceUsageRollupForRequestMock.mockReset();
 		resolveGatewayIoLoggingPolicyMock.mockReset();
 		persistGatewayIoLogMock.mockReset();
-		persistGatewayUpstreamRequestsMock.mockReset();
-		persistGatewayUpstreamRequestsMock.mockResolvedValue(undefined);
 		ensureRuntimeForBackgroundMock.mockReturnValue(() => {});
 		isLocalTestingModeEnabledMock.mockReturnValue(false);
 		ensureAppIdMock.mockResolvedValue("app_resolved");
@@ -212,6 +205,25 @@ describe("audit request detail persistence", () => {
 		});
 		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
 		expect(event.safe_metadata.rate_limit).toEqual(expected);
+	});
+
+	it("records what a failed request was charged on its row and request fact", async () => {
+		let row: any;
+		const insert = vi.fn((value: any) => { row = value; return { select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-05T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }; });
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		await auditFailure({
+			stage: "execute", requestId: "req", workspaceId: "ws", model: "model", endpoint: "chat.completions",
+			stream: false, statusCode: 400, errorCode: "upstream:gateway_server_tool_limit",
+			usage: { input_tokens: 3_000, output_tokens: 250 }, costNanos: 18_000_000, currency: "USD",
+			pricingLines: [{ dimension: "server_tool_web_search_requests", quantity: 2, unit_price_usd: "0.007", line_nanos: 14_000_000 }],
+		});
+		expect(row).toMatchObject({ success: false, cost_nanos: 18_000_000 });
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		expect(event).toMatchObject({ cost_nanos: 18_000_000, pricing_lines: [{ meter_key: "server_tool_web_search_requests", charged_nanos: 14_000_000 }] });
 	});
 
 	it("does not rate the JSON output or tool calls of a failed request", async () => {
@@ -530,12 +542,6 @@ describe("audit request detail persistence", () => {
 				upstream_url: null,
 			}],
 		});
-		expect(persistGatewayUpstreamRequestsMock).toHaveBeenCalledWith(expect.objectContaining({
-			modelId: "stealth/test-model-20260827",
-			provider: "stealth",
-			providerApiModelId: "stealth/test-model-20260827",
-			providerModelSlug: "stealth/test-model-20260827",
-		}));
 		expect(v2Events[0]).toMatchObject({
 			requested_model_input: "stealth/test-model-20260827",
 			routed_model_slug: "stealth/test-model-20260827",
@@ -543,7 +549,7 @@ describe("audit request detail persistence", () => {
 			provider_model_id: "stealth:stealth/test-model-20260827",
 			provider_api_model_id: "stealth/test-model-20260827",
 		});
-		expect(JSON.stringify({ gatewayRequestRows, v2Events, upstream: persistGatewayUpstreamRequestsMock.mock.calls }))
+		expect(JSON.stringify({ gatewayRequestRows, v2Events }))
 			.not.toMatch(/openai|pam_openai_secret|oai-stealth-test-model-internal|api\.openai\.com/i);
 	});
 
@@ -837,12 +843,6 @@ describe("audit request detail persistence", () => {
 
 		expect(fromMock).toHaveBeenCalledTimes(1);
 		expect(fromMock).toHaveBeenCalledWith("gateway_requests");
-		expect(persistGatewayUpstreamRequestsMock).toHaveBeenCalledWith(
-			expect.objectContaining({
-				requestId: "req_no_io",
-				provider: "openai",
-			}),
-		);
 		expect(rpcMock).toHaveBeenCalledOnce();
 		expect(rpcMock.mock.calls[0]?.[0]).toBe("ingest_v2_gateway_request_with_routing");
 		const event = rpcMock.mock.calls[0]?.[1]?.p_event;

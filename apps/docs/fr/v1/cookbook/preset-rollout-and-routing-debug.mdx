@@ -13,10 +13,13 @@ La forme de requête est prête pour la production. [Préréglages](../guides/pr
 <Steps>
 <Step title="Créer le préréglage">
 
-Dans **Paramètres → Préréglages**, créez `release-summary` avec un prompt système, les modèles approuvés, les préférences de fournisseur et des paramètres par défaut comme `temperature`. Ou depuis la CLI :
+Dans **Paramètres → Préréglages**, créez `release-summary` avec un prompt système, les modèles approuvés, les préférences de fournisseur et des paramètres par défaut comme `temperature`. Ou avec une clé de gestion :
 
 ```bash
-phaseo presets create --name @release-summary --model anthropic/claude-sonnet-5.5
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
 ```
 
 </Step>

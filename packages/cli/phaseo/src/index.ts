@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { clearScreenDown, cursorTo, moveCursor } from "node:readline";
 import { createInterface } from "node:readline/promises";
-import { stdin as input, stdout as output, platform } from "node:process";
+import { stdin as input, stdout as output } from "node:process";
 import {
 	apiFetch,
 	assertApiRootAllowed,
@@ -14,12 +14,15 @@ import {
 	isCustomApiRoot,
 	isTrustedBrowserUrl,
 	normalizeApiRoot,
+	oauthUrl,
 	parseScopeArgument,
 	pollDeviceToken,
 	revokeRefreshToken,
 	startDeviceLogin,
 } from "./api.js";
+import { PHASEO_MCP_URL, createMcpTokenSource, exchangeCliTokenForMcp, mcpEndpoint, mcpScopes, runMcpBridge } from "./mcp.js";
 import { clearSession, readSession, writeSession } from "./session.js";
+import { openUrl, prefersDeviceCodeByEnvironment } from "./browser.js";
 import { printError, printJson, sanitizeTerminalText, terminalUi, type TerminalOptions } from "./output.js";
 import { CLI_VERSION } from "./generated/meta.js";
 import { createDoctorReport, detectInstalledPackageManager, type DoctorReport, type PackageManager } from "./installation.js";
@@ -32,6 +35,8 @@ import { isIntegrationSetupName, runIntegrationCommand } from "./integrations/in
 import { isRunnerName, runRunnerCommand } from "./integrations/runners.js";
 import { integrationCredentialsForNewLogin, revokeIntegrationGatewayCredential } from "./integrations/credential.js";
 import { findPackageManagerExecutable, packageManagerChildEnv, packageManagerChildInvocation, windowsCommandInterpreter } from "./integrations/installer.js";
+
+export { prefersDeviceCodeByEnvironment, windowsBrowserOpenArgs } from "./browser.js";
 
 type ParsedArgs = {
 	command: string[];
@@ -138,13 +143,14 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 		description: "Phaseo CLI",
 		usage: [
 			"phaseo login [--api-url <url> [--allow-custom-api-url]] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
-			"phaseo <codex|claude-code|hermes|opencode|fx|pi|prime-agent|deepseek-harness|openclaw|aider|roo-code|kilo-code|continue|cursor|zed> [--model <id>] [--catalog all|default] [--dry-run] [--json]",
-			"phaseo <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--dry-run] [--skip-install] -- [harness args]",
+			"phaseo <codex|claude-code|hermes|opencode|fx|pi|prime-agent|deepseek-harness|openclaw|aider|roo-code|kilo-code|continue|cursor|zed> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--json]",
+			"phaseo <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--skip-install] -- [harness args]",
 			"phaseo logout [--json]",
 			"phaseo whoami [--json]",
 			"phaseo version | v [--json]",
 			"phaseo update [--check] [--json]",
 			"phaseo doctor [--json]",
+			"phaseo mcp [--manage]",
 			"",
 			"phaseo keys --help",
 			"phaseo workspaces --help",
@@ -206,12 +212,12 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 		],
 	},
 	setup: {
-		description: "Configure an installed coding harness with a dedicated Phaseo key and compatible model catalog.",
-		usage: ["phaseo setup <integration> [--model <id>] [--catalog all|default] [--dry-run] [--json]"],
+		description: "Configure an installed coding harness with a dedicated Phaseo key and compatible model catalog. The first setup opens a dashboard page where you approve the key (name, spending limit and expiry); the CLI then picks it up once. --key uses a key you made in the dashboard instead.",
+		usage: ["phaseo setup <integration> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--json]"],
 	},
 	run: {
 		description: "Launch Cline, Kilo Code, oh-my-pi, Muse Code, or MiniMax Code against the Phaseo gateway without changing persistent harness configuration.",
-		usage: ["phaseo run <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--dry-run] [--skip-install] -- [harness args]"],
+		usage: ["phaseo run <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--skip-install] -- [harness args]"],
 	},
 	login: {
 		usage: [
@@ -238,7 +244,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	},
 	"curie run": { usage: ["phaseo curie run <config.json> [--repeats <n>] [--report <path>] [--base-url <url> --allow-custom-base-url --api-key-env PHASEO_CURIE_API_KEY] [--dry-run] [--json]"] },
 	integrations: {
-		description: "Configure coding agents to use the Phaseo gateway with a dedicated key per integration. Codex, Claude Code, Pi, Prime Agent and OpenClaw fetch it on demand through phaseo integrations credential; Aider, Continue, Hermes, OpenCode and DeepSeek Harness store it in their own config or credential files. New keys expire after 90 days with a $100 monthly spend limit; setup replaces an expired key. To rotate a key, run phaseo integrations remove <integration>, then phaseo setup <integration>.",
+		description: "Configure coding agents to use the Phaseo gateway with a dedicated key per integration. Codex, Claude Code, Pi, Prime Agent and OpenClaw fetch it on demand through phaseo integrations credential; Aider, Continue, Hermes, OpenCode and DeepSeek Harness store it in their own config or credential files. You approve each new key in the browser, where the dashboard shows its name, $100 monthly spend limit and 90-day expiry; setup asks for a new one when a key expires. --key uses a key you made in the dashboard instead. To rotate a key, run phaseo integrations remove <integration>, then phaseo setup <integration>.",
 		usage: [
 			"phaseo integrations list [integration] [--json]",
 			"phaseo integrations status [integration] [--json]",
@@ -248,8 +254,12 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	},
 	"integrations list": { usage: ["phaseo integrations list [integration] [--json]"] },
 	"integrations status": { usage: ["phaseo integrations status [integration] [--json]"] },
-	"integrations setup": { usage: ["phaseo integrations setup <integration> [--model <id>] [--catalog all|default] [--dry-run] [--json]"] },
+	"integrations setup": { usage: ["phaseo integrations setup <integration> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--json]"] },
 	"integrations remove": { usage: ["phaseo integrations remove <integration> [--dry-run] [--json]"] },
+	mcp: {
+		description: "Run the Phaseo MCP over stdio for a local agent, signed in with your phaseo login (no second sign-in). Read-only unless you pass --manage, which adds the account management tools your login allows; your agent must still confirm each change with you. It never runs paid model calls. Add it with: claude mcp add phaseo -- phaseo mcp, or codex mcp add phaseo -- phaseo mcp. Each MCP token lasts 15 minutes; after phaseo logout it stops when the current one runs out.",
+		usage: ["phaseo mcp [--manage]"],
+	},
 	logout: { usage: ["phaseo logout [--json]"] },
 	whoami: { usage: ["phaseo whoami [--json]"] },
 	keys: {
@@ -725,21 +735,6 @@ function isInteractiveTerminal(): boolean {
 	return Boolean(input.isTTY && output.isTTY);
 }
 
-export function prefersDeviceCodeByEnvironment(
-	env: NodeJS.ProcessEnv = process.env,
-): boolean {
-	return Boolean(
-		env.SSH_CONNECTION ||
-			env.SSH_CLIENT ||
-			env.SSH_TTY ||
-			env.CI,
-	);
-}
-
-export function windowsBrowserOpenArgs(url: string): string[] {
-	return ["url.dll,FileProtocolHandler", url];
-}
-
 export function renderOneTimeClientSecret(secret: unknown, showSecret: boolean): string {
 	if (typeof secret !== "string" || !secret) return "";
 	return showSecret
@@ -905,30 +900,6 @@ export function validateLoopbackRedirectUri(value: string): string {
 export function callbackListenHost(redirectUri: string): string {
 	const hostname = new URL(redirectUri).hostname;
 	return hostname === "[::1]" ? "::1" : hostname;
-}
-
-function openUrl(url: string): boolean {
-	if (prefersDeviceCodeByEnvironment()) {
-		return false;
-	}
-	try {
-		if (platform === "win32") {
-			// Pass the authorization URL as data, never through a command interpreter.
-			spawn("rundll32.exe", windowsBrowserOpenArgs(url), {
-				detached: true,
-				stdio: "ignore",
-			}).unref();
-			return true;
-		}
-		if (platform === "darwin") {
-			spawn("open", [url], { detached: true, stdio: "ignore" }).unref();
-			return true;
-		}
-		spawn("xdg-open", [url], { detached: true, stdio: "ignore" }).unref();
-		return true;
-	} catch {
-		return false;
-	}
 }
 
 function resolveLoginMethod(flags: Record<string, string | boolean>, json: boolean): LoginMethod {
@@ -2187,6 +2158,37 @@ async function rawApi(method: HttpMethod, path: string | undefined, flags: Recor
 	printJson(response);
 }
 
+async function serveMcp(flags: Record<string, string | boolean>) {
+	const manage = flagBool(flags, "manage");
+	const session = await getSessionAccessToken().catch(() => null);
+	if (!session) throw new Error("Not logged in. Run `phaseo login` first, then restart your agent.");
+	// The MCP accepts tokens for its canonical address only; a custom API is for development.
+	const mcpUrl = flagString(flags, "mcp-url") ?? PHASEO_MCP_URL;
+	if (mcpUrl !== PHASEO_MCP_URL && !isCustomApiRoot(session.apiUrl)) {
+		throw new Error("--mcp-url is only for development against a custom --api-url login");
+	}
+	const scopes = mcpScopes(manage);
+	const tokens = createMcpTokenSource(async () => {
+		const current = await getSessionAccessToken();
+		return exchangeCliTokenForMcp({
+			tokenUrl: oauthUrl(current.apiUrl, "/token"),
+			subjectToken: current.accessToken,
+			resource: mcpUrl,
+			scopes,
+		});
+	});
+	// Fail before the agent's first message when the login can't reach the MCP at all.
+	await tokens.get();
+	process.stderr.write(`Phaseo MCP ready (${manage ? "read and account management" : "read-only"}) via ${mcpUrl}\n`);
+	await runMcpBridge({
+		endpoint: mcpEndpoint(mcpUrl, manage),
+		tokens,
+		input: process.stdin,
+		output: process.stdout,
+		log: (line) => process.stderr.write(`${sanitizeTerminalText(line)}\n`),
+	});
+}
+
 async function main() {
 	const parsed = parseArgs(process.argv.slice(2));
 	const json = flagBool(parsed.flags, "json");
@@ -2220,6 +2222,12 @@ async function main() {
 		if (first === "doctor") {
 			if (second) throw new Error(unknownCommandMessage(parsed.command));
 			await doctor(parsed.flags);
+			return;
+		}
+		if (first === "mcp") {
+			// Stdout belongs to the MCP client: no update notice, and errors go to stderr only.
+			if (second) throw new Error(unknownCommandMessage(parsed.command));
+			await serveMcp(parsed.flags);
 			return;
 		}
 		if (parsed.command.length === 1 && isCommandGroup(first)) {

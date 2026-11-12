@@ -32,6 +32,11 @@ CREATE INDEX workspace_classifiers_created_by_idx ON public.workspace_classifier
 
 CREATE INDEX workspace_classifiers_workspace_enabled_idx ON public.workspace_classifiers USING btree (workspace_id, enabled, created_at DESC);
 
+CREATE TRIGGER enforce_workspace_classifier_limit
+  BEFORE INSERT OR UPDATE OF workspace_id, enabled ON public.workspace_classifiers
+  FOR EACH ROW
+  EXECUTE FUNCTION public.enforce_workspace_classifier_limit();
+
 CREATE POLICY "service_role_full_access" ON "public"."workspace_classifiers"
   FOR ALL
   TO "service_role"

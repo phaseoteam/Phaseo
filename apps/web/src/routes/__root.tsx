@@ -1,6 +1,7 @@
 // The document shell: html, head and the providers every page shares (see RootDocument).
 import appCss from "@/styles/globals.css?url";
 import fontsCss from "@/components/layout/fonts.css?url";
+import montserratLatin from "@fontsource-variable/montserrat/files/montserrat-latin-wght-normal.woff2?url";
 import type { QueryClient } from "@tanstack/react-query";
 import { createRootRouteWithContext, Outlet, useLocation } from "@tanstack/react-router";
 import { RootDocument } from "@/components/layout/RootDocument";
@@ -8,6 +9,7 @@ import { GlobalError } from "@/components/layout/GlobalError";
 import { RouteNotFound } from "@/components/layout/RouteBoundaries";
 import { metadataToHead, notFoundMetadata } from "@/lib/start/metadataToHead";
 import { StreamedMetadata } from "@/lib/start/streamedMetadata";
+import { getGrafanaBrowserConfig } from "@/lib/grafana.functions";
 import { defaultLocale, getLocaleDefinition, isPublicLocale, type PublicLocale } from "@/i18n/locales";
 
 export function localeFromPathname(pathname: string): PublicLocale {
@@ -16,6 +18,7 @@ export function localeFromPathname(pathname: string): PublicLocale {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+	loader: () => getGrafanaBrowserConfig().catch(() => undefined),
 	head: ({ match }) => ({
 		meta: [
 			{ charSet: "utf-8" },
@@ -27,6 +30,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 		links: [
 			{ rel: "stylesheet", href: appCss },
 			{ rel: "stylesheet", href: fontsCss },
+			// Fetch the Latin Montserrat file alongside the stylesheets instead of after
+			// them, so the first paint usually has it (next/font preloaded it the same way).
+			{ rel: "preload", href: montserratLatin, as: "font", type: "font/woff2", crossOrigin: "anonymous" },
 		],
 	}),
 	component: RootComponent,
@@ -36,11 +42,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootComponent() {
+	const grafana = Route.useLoaderData();
 	const pathname = useLocation({ select: (location) => location.pathname });
 	const locale = localeFromPathname(pathname);
 	const definition = getLocaleDefinition(locale);
 	return (
-		<RootDocument locale={locale} direction={definition.dir} fontProfile={definition.font}>
+		<RootDocument locale={locale} direction={definition.dir} fontProfile={definition.font} grafana={grafana}>
 			<StreamedMetadata />
 			<Outlet />
 		</RootDocument>

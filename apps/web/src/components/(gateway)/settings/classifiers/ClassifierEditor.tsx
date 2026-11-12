@@ -315,11 +315,7 @@ export default function ClassifierEditor({ classifier, keys, apps }: {
 				<ClassifierTestPanel classifierId={classifier?.id ?? null} buildRequest={testRequest} includeResponse={draft.includeResponse} />
 			</Section>
 
-			<div className="flex flex-wrap items-center justify-between gap-3 border-t pt-6">
-				<div className="flex flex-wrap items-center gap-2">
-					<Button type="button" onClick={save} disabled={busy}>{saving ? t("actions.saving") : classifier ? t("actions.save") : t("actions.create")}</Button>
-					<Button type="button" variant="ghost" asChild><Link href="/settings/classifiers">{t("actions.cancel")}</Link></Button>
-				</div>
+			<div className="flex flex-wrap items-center justify-between gap-3 border-t py-4">
 				{classifier ? (
 					<AlertDialog>
 						<AlertDialogTrigger asChild>
@@ -337,6 +333,10 @@ export default function ClassifierEditor({ classifier, keys, apps }: {
 						</AlertDialogContent>
 					</AlertDialog>
 				) : null}
+				<div className="ms-auto flex flex-wrap items-center justify-end gap-3">
+					<Button type="button" variant="outline" asChild><Link href="/settings/classifiers">{t("actions.cancel")}</Link></Button>
+					<Button type="button" onClick={save} disabled={busy}>{saving ? t("actions.saving") : classifier ? t("actions.save") : t("actions.create")}</Button>
+				</div>
 			</div>
 			{problem?.field === "api" ? <p role="alert" className="text-sm text-destructive">{t("errors.invalid", { message: problem.message })}</p> : null}
 		</div>

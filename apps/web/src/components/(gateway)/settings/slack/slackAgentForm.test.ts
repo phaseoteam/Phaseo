@@ -279,6 +279,7 @@ describe("Slack agent error messages", () => {
 
 	it("explains account linking failures", () => {
 		expect(slackLinkErrorKey("link_expired")).toBe("expired");
+		expect(slackLinkErrorKey("link_used")).toBe("used");
 		expect(slackLinkErrorKey("link_invalid")).toBe("invalid");
 		expect(slackLinkErrorKey("forbidden")).toBe("wrongWorkspace");
 		expect(slackLinkErrorKey("not_installed")).toBe("notInstalled");

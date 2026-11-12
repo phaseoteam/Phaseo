@@ -75,7 +75,7 @@ LLM Gateway पर `alibaba/<model>` Phaseo ID नहीं है। हर ID 
 | सत्र हेडर (`x-session-id`) | `session_id` बॉडी फ़ील्ड; Phaseo सत्र हेडर को अनदेखा करता है। |
 | `X-Source` | `HTTP-Referer` या `X-App-Name`। देखें [ऐप एट्रिब्यूशन](../guides/app-attribution)। |
 | प्रतिक्रिया कैशिंग | कोई प्रतिक्रिया कैश नहीं। |
-| प्रदाता कुंजियां | BYOK (`phaseo byok create` या `POST /v1/byok`), या Phaseo क्रेडिट। क्रेडिट पर फ़ॉलबैक `byok_fallback_enabled` वर्कस्पेस सेटिंग है। |
+| प्रदाता कुंजियां | BYOK (**सेटिंग्स → BYOK** या `POST /v1/byok`), या Phaseo क्रेडिट। क्रेडिट पर फ़ॉलबैक `byok_fallback_enabled` वर्कस्पेस सेटिंग है। |
 | अनुरोध लॉग | अनुरोध लॉग, ऑब्ज़र्वेबिलिटी गंतव्य, और `GET /v1/generations?id=<request_id>`। `replay_supported` के `true` होने पर, विफल अनुरोध को उसके `replay_request` पेलोड से रीप्ले करें। |
 
 ## टेस्ट करें और रोलआउट करें

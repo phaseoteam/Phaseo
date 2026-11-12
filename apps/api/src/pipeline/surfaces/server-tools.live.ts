@@ -5,6 +5,7 @@ import { createToolCallKeyResolver, extractUnifiedStreamEvents, type UnifiedStre
 import { createResponsesStreamNormaliser } from "../after/responses-stream-normaliser";
 import { argumentsToSend, type ArgumentsSent } from "../after/stream-reencode";
 import { responsesOutputItemFrames, serverToolTraceOutputItem, type ServerToolTraceItem } from "./server-tools.stream";
+import { isBillableToolCall } from "../after/response-output";
 
 type LiveProtocol = Extract<Protocol, StreamProtocol>;
 
@@ -86,6 +87,13 @@ export async function createManagedToolLiveResponse(args: {
 	requestId: string;
 	model: string;
 	run: (sink: ManagedToolLiveSink) => Promise<Response>;
+	/** The client's request: the settings every Response object reports (tools, tool_choice, ...). */
+	request?: Record<string, any> | null;
+	/**
+	 * The client usage (with its settled pricing) of what a request that then failed was charged:
+	 * completed server-tool rounds. Sent before the terminal error, so the client sees the charge.
+	 */
+	chargedUsage?: () => Record<string, unknown> | null;
 }): Promise<Response> {
 	const encoder = new TextEncoder();
 	const abortController = new AbortController();
@@ -101,7 +109,7 @@ export async function createManagedToolLiveResponse(args: {
 		start(controller) {
 			// Responses frames get one event name (SSE line and data.type), sequence
 			// numbers and the part events, as every other Responses stream does.
-			const normaliser = responses ? createResponsesStreamNormaliser() : null;
+			const normaliser = responses ? createResponsesStreamNormaliser({ request: args.request, model: args.model }) : null;
 			let pending = "";
 			const write = (eventName: string | null | undefined, payload: any) => {
 				const frames = normaliser ? normaliser.normalise(eventName, payload) : [{ eventName: eventName ?? null, frame: payload }];
@@ -124,6 +132,7 @@ export async function createManagedToolLiveResponse(args: {
 			const rounds: LiveRound[] = [];
 			/** Responses items in output order, from every round and tool result. */
 			const items: Array<LiveText | LiveCall> = [];
+			const createdAt = Math.floor(Date.now() / 1000);
 			let nextIndex = 0;
 			/** Tool call indexes sent to Chat clients so far, per choice. */
 			const shownCalls = new Map<number, number>();
@@ -209,8 +218,10 @@ export async function createManagedToolLiveResponse(args: {
 				const key = round.toolKey(event);
 				let call = round.calls.get(key);
 				if (!call) {
-					const name = event.toolName && event.toolName !== "tool_call" ? event.toolName : undefined;
-					if (!name) return null;
+					const name = event.toolName && event.toolName !== "tool_call" ? event.toolName : "";
+					// Shown once it names a tool or carries arguments, as billing counts it
+					// (isBillableToolCall): a nameless call with arguments is output, a placeholder is not.
+					if (!isBillableToolCall({ name, arguments: event.arguments ?? event.argumentsDelta ?? "" })) return null;
 					// Responses items are numbered as they start; Chat and Messages calls when sent.
 					const index = responses ? nextIndex++ : -1;
 					const upstreamKey = event.toolCallKey ?? event.toolCallId;
@@ -244,6 +255,7 @@ export async function createManagedToolLiveResponse(args: {
 					}
 				}
 				call.callId ??= event.toolCallId;
+				if (!call.name && event.toolName && event.toolName !== "tool_call") call.name = event.toolName;
 				return call;
 			};
 			const writeTool = (round: LiveRound, event: ToolEvent) => {
@@ -381,7 +393,27 @@ export async function createManagedToolLiveResponse(args: {
 			const completion = args.run(sink).then(async (response) => {
 				if (!readyCalled) resolveEarlyResponse(response.clone());
 				if (!response.ok || !response.body) {
-					emit({ type: "error", message: `Managed tool request failed with status ${response.status}.` });
+					const message = `Managed tool request failed with status ${response.status}.`;
+					// What completed rounds were charged, sent before the terminal error.
+					const charged = args.chargedUsage?.() ?? null;
+					if (responses) {
+						// A complete failed Response (its output so far and the settled usage): SDK
+						// accumulators read response.output and the other required fields.
+						for (const live of rounds) closeRound(live);
+						const output = [...items].sort((a, b) => a.index - b.index)
+							.map((item) => ("channel" in item ? completedText(item) : completedCall(item)));
+						write("response.failed", { type: "response.failed", response: {
+							id: args.requestId, object: "response", created_at: createdAt, model: args.model, status: "failed",
+							error: { code: "server_error", message }, incomplete_details: null,
+							output, ...(outputText ? { output_text: outputText } : {}), usage: charged,
+						} });
+					} else if (charged && chat) {
+						emit({ type: "usage", usage: charged });
+					} else if (charged) {
+						// A Messages message_delta always carries delta: SDKs read delta.stop_reason.
+						write("message_delta", { type: "message_delta", delta: { stop_reason: null, stop_sequence: null }, usage: charged });
+					}
+					emit({ type: "error", message });
 					flush();
 					return;
 				}

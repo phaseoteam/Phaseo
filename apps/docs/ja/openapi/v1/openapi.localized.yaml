@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: チームスコープのゲートウェイモデルを一覧表示
-      description: チームスコープのゲートウェイモデル一覧を返します。既定では現在パブリックにルーティングできるモデルが対象です。ルーティングできない利用可能性レコードも含めるには `availability=all` を使用します。
+      summary: このキーで使えるモデルを一覧表示
+      description: 呼び出し元のガードレールを適用した /models の一覧を返します。ルールでブロックされたモデルと、許可されたプロバイダーがないモデルは除外され、各モデルにはリクエストをルーティングできるオファーだけが残り、価格・機能・提供状況もそれらから算出されます。access オブジェクトはルールで除外された内容を示します。既定では現在公開ルーティング可能なモデルを返します。ルーティング不可の提供状況レコードも含めるには availability=all を指定してください。
       parameters:
         - name: endpoints
           in: query
@@ -1174,8 +1174,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: 'Phaseo のモデル ID。例: `eleven-labs/scribe-v3-live`。'
                   model_id:
                     type: string
+                    description: Phaseo のモデル ID。`model` と同じです。
+                  provider_model:
+                    type: string
+                    description: 'プロバイダー側でのモデル名。例: `scribe_v3_live`。'
                   voice:
                     type: string
                     nullable: true
@@ -1373,8 +1378,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: 'Phaseo のモデル ID。例: `eleven-labs/scribe-v3-live`。'
                   model_id:
                     type: string
+                    description: Phaseo のモデル ID。`model` と同じです。
+                  provider_model:
+                    type: string
+                    description: 'プロバイダー側でのモデル名。例: `scribe_v3_live`。'
                   voice:
                     type: string
                     nullable: true
@@ -1585,8 +1595,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: 'Phaseo のモデル ID。例: `eleven-labs/scribe-v3-live`。'
                   model_id:
                     type: string
+                    description: Phaseo のモデル ID。`model` と同じです。
+                  provider_model:
+                    type: string
+                    description: 'プロバイダー側でのモデル名。例: `scribe_v3_live`。'
                   voice:
                     type: string
                     nullable: true
@@ -3846,7 +3861,7 @@ paths:
         - Gateway
       operationId: updateWorkspaceNotificationSettings
       summary: ワークスペースの通知設定を更新
-      description: 永続的な通知ポリシーの1つ以上のセクションを更新します。自動チャージの有効化には、保存済み支払い方法の既存識別子と検証済みの2要素認証が必要です。既存の自動チャージ設定はMFA確認を繰り返さず更新できます。MFAなしで有効化するには、クライアントが`mfa_bypass_acknowledged`を明示的にtrueに設定し、`mfa_bypass_phrase`に正確な値`I ACCEPT THE RISK`を指定する必要があります。支払い情報の収集は引き続き対話的なアカウント操作です。
+      description: 通知ポリシーの永続的なセクションを1つ以上更新します。自動チャージを有効にする、または金額・しきい値・支払い方法を変更するには、`billing:write`、保存済みの支払い方法の識別子、確認済みの二要素認証が必要で、Phaseo でサインインを使うアプリからは変更できません。無効にするだけなら `settings:write` で足ります。既存の自動チャージ設定は、MFA の確認を繰り返さずに更新できます。二要素認証の回避（`mfa_bypass_acknowledged` と `mfa_bypass_phrase`）は設定画面でのみ受け付け、API では拒否されます。支払いの回収は引き続き対話型のアカウント操作です。
       requestBody:
         required: true
         content:
@@ -4850,7 +4865,7 @@ paths:
         - Gateway
       operationId: listDepartmentBudgets
       summary: List department budgets
-      description: Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+      description: 部門の支出予算と、現在の UTC 期間における各部門のこれまでの支出を一覧表示します。支出は部門の受け入れ判定と同じ方法で計算されるため、最新です。
       parameters:
         - name: department_id
           in: query
@@ -4878,7 +4893,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: 1 つの部門に日次、週次、または月次の支出予算を作成します。部門が予算を使い切ると、その部門に計上される API キーのリクエストは、予算がリセットされるまで 429 key_limit_exceeded を返します。バッチジョブ、リアルタイムセッション、OAuth リクエストはブロックされません。予算のチェックが一時的に利用できない場合、リクエストは拒否されずに許可されます。約 80% と 100% に達すると、オーナーと管理者にモバイルのプッシュ通知が届きます。
+      description: 1 つの部門に日次、週次、または月次の支出予算を作成します。部門が予算を使い切ると、その部門に計上される API キーのリクエストは、予算がリセットされるまで 429 key_limit_exceeded を返します。予算のチェックが一時的に利用できない場合、リクエストは拒否されずに許可されます。約 80% と 100% に達すると、オーナーと管理者にモバイルのプッシュ通知が届きます。
       requestBody:
         required: true
         content:
@@ -7301,7 +7316,7 @@ paths:
         - Gateway
       operationId: deleteWorkspace
       summary: ワークスペースを削除
-      description: UUID または slug でワークスペースを削除します。管理 API キーが必要です。
+      description: UUID または slug を指定してワークスペースを削除します。削除できるのはワークスペースのオーナーだけです。管理APIキーが必要です。
       parameters:
         - name: id
           in: path
@@ -7378,7 +7393,7 @@ paths:
         - Gateway
       operationId: addWorkspaceMembers
       summary: ワークスペースにメンバーを追加
-      description: 既存のユーザーを `admin` または `member` ロールでワークスペースに追加します。管理 API キーが必要です。
+      description: 参加を申請したユーザーを追加します。各ユーザーには保留中の参加リクエスト（招待の承諾時に作成）が必要で、この操作で承認されます。それ以外のユーザーは拒否されるため、代わりに招待を送ってください。既存メンバーのロールは変わりません。ロールを指定しない場合は招待のロールが付与されます。管理者の追加にはワークスペースのオーナーが必要です。管理APIキーが必要です。各ユーザーは個別に承認されます。途中で失敗した場合、それまでに承認されたユーザーは追加されたままとなり、残りは試行されません。レスポンスは 409 で、approved、failed、not_attempted のユーザーを一覧で返します。
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -7412,6 +7427,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 一部のユーザーを追加できませんでした。本文には、追加されたユーザー、失敗したユーザー、試行されなかったユーザーが含まれます。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberAddResponse'
   /workspaces/{id}/members/remove:
     post:
       x-beta: true
@@ -7419,7 +7440,7 @@ paths:
         - Gateway
       operationId: removeWorkspaceMembers
       summary: ワークスペースからメンバーを削除
-      description: 所有者以外のメンバーをワークスペースから削除します。管理 API キーが必要です。
+      description: オーナー以外のメンバーをワークスペースから削除します。他のメンバーを削除できるのはワークスペースのオーナーだけで、自分自身は誰でも削除できます。管理APIキーが必要です。
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -15531,10 +15552,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: 出力形式。gif と svg には GPT Image 2.6 モデルが必要で、stream と partial_images は使えません。svg には svg.model と n=1 も必要です。
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -15550,6 +15574,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: output_format が svg の場合は必須です。svg.model は参照画像から SVG を書く OpenAI のテキストモデルです。そのトークンは画像の料金に加えて、そのモデルのテキスト料金で課金され、推論トークンは出力として数えられます。
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -15567,6 +15626,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -15597,6 +15669,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: 最初の画像に重ねる透明な PNG の注釈レイヤー。ファイルのアップロード、URL、base64 文字列のいずれかで指定します。GPT Image 2.5 以降が必要で、mask とは併用できません。
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:
@@ -15717,7 +15798,13 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
-          type: integer
+          description: 出力の圧縮。Vertex Veo は optimized または lossless を受け付け、数値は拒否します。対応しているほかのプロバイダーは整数を受け付けます。
+          oneOf:
+            - type: integer
+            - type: string
+              enum:
+                - optimized
+                - lossless
         person_generation:
           type: string
         resize_mode:
@@ -15760,7 +15847,7 @@ components:
         provider_params:
           type: object
           additionalProperties: true
-          description: プロバイダー固有の拡張のみ。リクエスト全体のパススルーと、重複するルーティング、プロンプト、コールバック、課金フィールドは拒否されます。
+          description: 'プロバイダー固有の拡張のみ。リクエスト全体のパススルーと、重複するルーティング、プロンプト、コールバック、課金フィールドは拒否されます。たとえば Wan 3.0 では smart_duration: true を指定するとモデルが長さを決めます（この場合 duration は送らないでください）。ジョブは 30 秒分を確保し、プロバイダーが報告した長さで請求されます。'
         provider_options:
           type: object
           additionalProperties:
@@ -18381,7 +18468,6 @@ components:
       type: object
       required:
         - id
-        - hash
         - workspace_id
         - name
         - label
@@ -18411,9 +18497,6 @@ components:
           type: string
           format: uuid
           example: 11111111-1111-4111-8111-111111111111
-        hash:
-          type: string
-          example: a3f5b7c9d8e1f23456789abcdeffedcba9876543210fedcba1234567890abcdef
         workspace_id:
           type: string
           format: uuid
@@ -18957,15 +19040,55 @@ components:
       type: object
       required:
         - added_count
-        - data
+        - approved
+        - failed
+        - not_attempted
       properties:
+        error:
+          type: string
+        message:
+          type: string
         added_count:
           type: integer
           minimum: 0
         data:
           type: array
+          description: 追加されたメンバーの詳細。承認後に読み取れなかった場合は省略されます。その場合も approved に追加されたユーザーが含まれます。
           items:
             $ref: '#/components/schemas/WorkspaceMember'
+        approved:
+          type: array
+          description: このリクエストで追加されたユーザー（承認された順）。
+          items:
+            type: string
+        failed:
+          type: array
+          description: 承認に失敗したユーザーとその理由。以降のユーザーは試行されません。
+          items:
+            $ref: '#/components/schemas/WorkspaceMemberAddFailure'
+        not_attempted:
+          type: array
+          description: 前の承認が失敗したため試行されなかったユーザー。参加リクエストは保留中のままです。
+          items:
+            type: string
+      additionalProperties: false
+    WorkspaceMemberAddFailure:
+      type: object
+      required:
+        - user_id
+        - code
+        - message
+      properties:
+        user_id:
+          type: string
+        code:
+          type: string
+          enum:
+            - forbidden
+            - conflict
+            - internal_error
+        message:
+          type: string
       additionalProperties: false
     WorkspaceMemberRemoveResponse:
       type: object
@@ -20201,7 +20324,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
         billing_status:
@@ -20233,7 +20356,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
       minProperties: 1
@@ -20970,6 +21093,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: /models/me のみが返します。検索とページ分割の前に、呼び出し元のガードレールが一覧から除外した内容です。
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: このキーに対してモデルまたはプロバイダーを制限するルールがあるかどうか。
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: ルールで除外されるモデルの数。
+          example: 12
+        hidden_models:
+          type: array
+          description: 除外されたモデルとその名前（最大 500 件）。
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: ルールにより一部のプロバイダーが除かれた掲載モデルの数。
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

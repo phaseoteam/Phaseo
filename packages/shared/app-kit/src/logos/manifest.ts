@@ -483,6 +483,10 @@ export const logoManifest = {
 		light: "/logos/llmgateway-light.svg",
 		dark: "/logos/llmgateway-dark.svg",
 	},
+	parallel: {
+		light: "/logos/parallel_light.svg",
+		dark: "/logos/parallel_dark.svg",
+	},
 	parasail: {
 		light: "/logos/parasail_light.svg",
 		dark: "/logos/parasail_dark.svg",
@@ -508,6 +512,10 @@ export const logoManifest = {
 		light: "/logos/prime-intellect_light.svg",
 		dark: "/logos/prime-intellect_dark.svg",
 	},
+	primalabs: {
+		light: "/logos/primalabs_light.svg",
+		dark: "/logos/primalabs_dark.svg",
+	},
 	qwen: {
 		color: "/logos/qwen.svg",
 	},
@@ -528,6 +536,10 @@ export const logoManifest = {
 	respan: {
 		light: "/logos/respan_light.svg",
 		dark: "/logos/respan_dark.svg",
+	},
+	"sail-research": {
+		light: "/logos/sail-research_light.svg",
+		dark: "/logos/sail-research_dark.svg",
 	},
 	scira: {
 		color: "/logos/scira.svg",

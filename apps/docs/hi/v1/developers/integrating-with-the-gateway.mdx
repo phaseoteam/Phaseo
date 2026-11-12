@@ -12,7 +12,7 @@ Phaseo कुंजी अपने सर्वर पर रखें, अप�
 <Steps>
 <Step title="कुंजी बनाएँ और सहेजें">
 
-[Phaseo CLI](../guides/integrations/phaseo-cli) में `phaseo keys create --name <app-and-environment> --json` चलाएँ, या [डैशबोर्ड](https://phaseo.app/settings/keys) में **सेटिंग → API कुंजियाँ** खोलें। कुंजी का नाम ऐप और एनवायरनमेंट के नाम पर रखें, फिर उसे सीक्रेट मैनेजर या एनवायरनमेंट फ़ाइल में सहेजें:
+[डैशबोर्ड](https://phaseo.app/settings/keys) में **सेटिंग → API कुंजियाँ** खोलें, या प्रबंधन कुंजी के साथ `POST /v1/keys` कॉल करें। कुंजी का नाम ऐप और एनवायरनमेंट के नाम पर रखें, फिर उसे सीक्रेट मैनेजर या एनवायरनमेंट फ़ाइल में सहेजें:
 
 ```bash
 # .env.local

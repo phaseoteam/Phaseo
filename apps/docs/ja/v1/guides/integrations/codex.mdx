@@ -14,7 +14,7 @@ phaseo codex --model openai/gpt-5.6-terra
 codex --profile phaseo
 ```
 
-Codex がインストールされていない場合、CLI は公式のインストールコマンドを表示し、実行する前に確認します。その後セットアップでは、有効期限が 90 日で月額 $100 の利用上限が付いた `Phaseo CLI: Codex API Key` を作成して OS の資格情報ストアに保存し、プロファイルを `~/.codex/phaseo.config.toml`（または `CODEX_HOME` の下）に書き込みます。Codex はキーを CLI から取得し、古いキーの期限が切れると CLI が新しいキーを作成するため、設定ファイルに平文のキーは書き込まれません。`--model` を指定しない場合、プロファイルは `openai/gpt-5.6-terra` を使います。
+Codex がインストールされていない場合、CLI は公式のインストールコマンドを表示し、実行する前に確認します。その後セットアップはダッシュボードのページを開き、有効期限が 90 日で月額 $100 の利用上限が付いた `Phaseo CLI: Codex API Key` を承認するよう求めます。CLI はキーを OS の資格情報ストアに保存し、プロファイルを `~/.codex/phaseo.config.toml`（または `CODEX_HOME` の下）に書き込みます。Codex はキーを CLI から取得するため、設定ファイルに平文のキーは書き込まれません。キーの期限が切れたら、`phaseo codex` を再実行して新しいキーを承認してください。`--model` を指定しない場合、プロファイルは `openai/gpt-5.6-terra` を使います。
 
 ## Codex を手動で設定する
 

@@ -72,7 +72,7 @@ Haz inventario de callbacks, presupuestos y reintentos antes de retirar el proxy
 | Presupuestos de equipo, `metadata.tags` | Presupuestos de departamento y [etiquetas](../guides/request-labels) `X-Phaseo-Metadata`. Los presupuestos por usuario final solo se corresponden con una política de límites de velocidad por usuario final; no hay tope de gasto por usuario final. |
 | `guardrails` (Presidio, Lakera y similares) | Los guardrails de claves analizan las solicitudes en busca de inyección de prompts y PII. Las respuestas no se analizan. |
 | Callbacks (`success_callback`, Langfuse, Datadog, OpenTelemetry) | [Destinos de observabilidad](../guides/integrations/observability) o trazas en el cliente. El `metadata` del cuerpo se exporta como `phaseo.metadata.<key>`. |
-| Claves de API de proveedores en la configuración | BYOK (`phaseo byok create --provider <id> --name <name> --key-stdin` o `POST /v1/byok`), o créditos de Phaseo. Activa `byok_fallback_enabled` con `phaseo settings update` para recurrir a los créditos. |
+| Claves de API de proveedores en la configuración | BYOK (**Ajustes → BYOK** o `POST /v1/byok`), o créditos de Phaseo. Activa `byok_fallback_enabled` con **Ajustes → BYOK** para recurrir a los créditos. |
 
 Un proxy envía el tráfico de todo un equipo a través del propietario de una sola clave, así que comparte la asignación de solicitudes por minuto de ese usuario, que es de 10 en un espacio de trabajo nuevo. Consulta los [límites del Gateway](../api-reference/limits#gateway-limits) y consigue un límite más alto antes del cambio.
 

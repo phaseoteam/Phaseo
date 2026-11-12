@@ -27,7 +27,7 @@ async function resolveImageUpload(
     throw new Error("uploadable_source_invalid");
 }
 
-function invalidUploadResponse(message: string, param: "image" | "mask", index?: number): Response {
+function invalidUploadResponse(message: string, param: "image" | "mask" | "markup", index?: number): Response {
     return new Response(JSON.stringify({
         error: {
             message,
@@ -121,6 +121,35 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         }
     }
 
+    let markupUpload: Awaited<ReturnType<typeof resolveUploadableFromString>> | null = null;
+    if (body.markup != null) {
+        try {
+            markupUpload = await resolveImageUpload(body.markup, {
+                defaultMimeType: "image/png",
+                fallbackFilename: "markup",
+				maxBytes: 50 * 1024 * 1024,
+				upstreamTiming: args.upstreamTiming,
+            });
+        } catch {
+            return {
+                kind: "completed",
+                upstream: invalidUploadResponse(
+                    "Invalid markup input. Provide a transparent PNG upload, reachable URL, or valid base64 payload.",
+                    "markup",
+                ),
+                bill: {
+                    cost_cents: 0,
+                    currency: "USD" as const,
+                    usage: undefined as any,
+                    upstream_id: null,
+                    finish_reason: null,
+                },
+                keySource: keyInfo.source,
+                byokKeyId: keyInfo.byokId,
+            };
+        }
+    }
+
     const form = new FormData();
     form.append("model", deployment || body.model);
     form.append("prompt", body.prompt);
@@ -128,6 +157,8 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
         form.append("image[]", imageUpload.blob, imageUpload.filename);
     }
     if (maskUpload) form.append("mask", maskUpload.blob, maskUpload.filename);
+    if (markupUpload) form.append("markup", markupUpload.blob, markupUpload.filename);
+    if (body.complexity) form.append("complexity", body.complexity);
     if (body.size) form.append("size", body.size);
     if (typeof body.n === "number") form.append("n", String(body.n));
     if (body.quality) form.append("quality", body.quality);

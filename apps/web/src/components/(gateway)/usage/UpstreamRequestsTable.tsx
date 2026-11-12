@@ -3,8 +3,6 @@ import * as React from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { CheckCircle2, KeyRound, XCircle } from "lucide-react";
 
-import type { ProviderMetadataEntry } from "@/features/gateway/usage/server-actions";
-
 import ConfigurableLogTable from "./ConfigurableLogTable";
 import { UPSTREAM_COLUMNS } from "./logColumns";
 import {
@@ -31,14 +29,11 @@ import {
 } from "@/components/ui/table";
 import type { UsageUpstreamRequestRow } from "@/lib/fetchers/internal/settingsTypes";
 import { formatWordyDateTime } from "@/lib/gateway/usage/timeFormatting";
-import {
-	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
-	normalizeProviderPromptTrainingPolicy,
-} from "@/lib/providers/promptTrainingPolicy";
 import { cn } from "@/lib/utils";
 import { extractUsageMeters } from "./usageMeters";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
-import UsageEntityHoverCard from "./UsageEntityHoverCard";
+import UsageEntityLink from "./UsageEntityLink";
+import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
 
 type KeyMetadata = { id: string; name: string | null; prefix: string | null };
 
@@ -165,7 +160,6 @@ export default function UpstreamRequestsTable({
 	rows,
 	modelMetadata,
 	providerNames,
-	providerMetadata,
 	keys,
 	settingsTargetId,
 }: {
@@ -173,7 +167,6 @@ export default function UpstreamRequestsTable({
 	rows: UsageUpstreamRequestRow[];
 	modelMetadata: ModelMetadataMap;
 	providerNames: Map<string, string>;
-	providerMetadata: Map<string, ProviderMetadataEntry>;
 	keys: Map<string, KeyMetadata>;
 }) {
 	const t = useTranslations("SettingsUI");
@@ -200,16 +193,6 @@ export default function UpstreamRequestsTable({
 				renderCell={(row, column) => {
 					const modelLabel = getModelDisplayName(row.model_id, modelMetadata);
 					const model = modelMetadata.get(row.model_id);
-					const provider = row.provider
-						? providerMetadata.get(row.provider)
-						: null;
-					const providerPolicy = provider
-						? PROVIDER_PROMPT_TRAINING_POLICY_LABELS[
-								normalizeProviderPromptTrainingPolicy(
-									provider.promptTrainingPolicy,
-								)
-							]
-						: null;
 					const providerLabel = row.provider
 						? (providerNames.get(row.provider) ?? row.provider)
 						: "—";
@@ -217,68 +200,33 @@ export default function UpstreamRequestsTable({
 					switch (column) {
 						case "date":
 							return (
-								<>
+								<TimestampHoverCard value={row.created_at}>
 									{formatWordyDateTime(row.created_at, { includeTime: true, locale })}
-								</>
+								</TimestampHoverCard>
 							);
 						case "model":
 							return (
 								<>
-									<UsageEntityHoverCard
-										title={modelLabel}
-										subtitle={model?.organisationName}
-										href={getModelDetailsHref(row.model_id)}
-										visual={
-											model?.organisationId ? (
-												<Logo
-													id={model.organisationId}
-													width={18}
-													height={18}
-												/>
-											) : null
-										}
-										rows={[
-											{
-												label: t("strings.Model ID" as never),
-												value: (
-													<code className="font-mono text-[11px]">
-														{row.model_id}
-													</code>
-												),
-											},
-										]}
-									>
-										<span className="flex max-w-[230px] items-center gap-2">
-											{model?.organisationId ? (
-												<Logo
-													id={model.organisationId}
-													width={15}
-													height={15}
-												/>
-											) : null}
-											<span className="truncate" title={modelLabel}>
-												{modelLabel}
-											</span>
-										</span>
-									</UsageEntityHoverCard>
+									<UsageEntityLink href={getModelDetailsHref(row.model_id)} className="max-w-[230px]">
+										{model?.organisationId ? (
+											<Logo
+												id={model.organisationId}
+												width={15}
+												height={15}
+											/>
+										) : null}
+										<span className="truncate">{modelLabel}</span>
+									</UsageEntityLink>
 								</>
 							);
 						case "provider":
 							return (
 								<>
 									{row.provider ? (
-										<UsageEntityHoverCard
-											title={providerLabel}
-											subtitle={providerPolicy}
-											href={`/api-providers/${encodeURIComponent(row.provider)}`}
-											visual={<Logo id={row.provider} width={18} height={18} />}
-											rows={[]}
-										>
-											<span className="inline-flex items-center gap-2">
-												<Logo id={row.provider} width={15} height={15} />
-												{providerLabel}
-											</span>
-										</UsageEntityHoverCard>
+										<UsageEntityLink href={`/api-providers/${encodeURIComponent(row.provider)}`}>
+											<Logo id={row.provider} width={15} height={15} />
+											{providerLabel}
+										</UsageEntityLink>
 									) : (
 										providerLabel
 									)}

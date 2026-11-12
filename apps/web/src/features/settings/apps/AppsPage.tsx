@@ -21,7 +21,7 @@ export default function AppsSettingsPage() {
 	const t = useTranslations("SettingsUI.settingsRouteCopy");
 	const locale = useLocale();
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<SettingsPageHeader
 				title="Apps"
 				titleKey="headers.apps"

@@ -10,8 +10,22 @@
 @import "@fontsource-variable/noto-sans-jp";
 @import "@fontsource-variable/noto-sans-sc";
 
+/*
+ * A metric-matched stand-in shown until Montserrat arrives, the same one Next's
+ * next/font generated: Arial scaled to Montserrat's width and line metrics, so
+ * the swap doesn't visibly change size or reflow the page.
+ */
+@font-face {
+	font-family: "Montserrat Fallback";
+	src: local("Arial"), local("ArialMT");
+	ascent-override: 85.79%;
+	descent-override: 22.25%;
+	line-gap-override: 0%;
+	size-adjust: 112.83%;
+}
+
 :root {
-	--font-montserrat: "Montserrat Variable", ui-sans-serif, system-ui, sans-serif;
+	--font-montserrat: "Montserrat Variable", "Montserrat Fallback", ui-sans-serif, system-ui, sans-serif;
 	--font-noto-sans-arabic: "Noto Sans Arabic Variable", ui-sans-serif, system-ui, sans-serif;
 	--font-noto-sans-devanagari: "Noto Sans Devanagari Variable", ui-sans-serif, system-ui, sans-serif;
 	--font-noto-sans-japanese: "Noto Sans JP Variable", ui-sans-serif, system-ui, sans-serif;

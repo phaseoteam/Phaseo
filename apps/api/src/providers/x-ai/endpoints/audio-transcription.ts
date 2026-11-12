@@ -34,6 +34,9 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		return { kind: "completed", upstream, bill: { cost_cents: 0, currency: "USD", usage: undefined, upstream_id: null, finish_reason: null }, keySource: keyInfo.source, byokKeyId: keyInfo.byokId };
 	}
 	const form = new FormData();
+	// xAI picks the model from this field (grok-transcribe, grok-voice-transcribe-2.0).
+	const model = (args.providerModelSlug || body.model || "").split("/").pop();
+	if (model) form.append("model", model);
 	if (body.language) {
 		form.append("format", "true");
 		form.append("language", body.language);

@@ -30,7 +30,7 @@ icon: "bell-ring"
 </Step>
 </Steps>
 
-CLI からは `phaseo notifications destinations create` で作成し、`phaseo notifications destinations test <id>` で確認してから、`phaseo notifications routes set <event-kind> --destination-ids <id>` で受け取るアラートを選びます。
+スクリプトからは、管理キーを使って `POST /v1/notifications/destinations` で作成し、`POST /v1/notifications/destinations/{id}/test` で確認してから、`PUT /v1/notifications/routes/{eventKind}` で受け取るアラートを選びます。
 
 メンションは控えめに使ってください。量の多いアラートは、広いグループに通知するより、監視されているチャンネルに送ってください。
 

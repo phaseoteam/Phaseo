@@ -6,11 +6,7 @@ icon: "key-round"
 
 Créez une clé de gestion pour appeler les API d’administration de Phaseo depuis vos propres serveurs : crédits, activité, espaces de travail, clés, préréglages, paramètres et garde-fous. Les clés de gestion ne peuvent pas envoyer de requêtes d’inférence.
 
-```bash
-phaseo management-keys create --name <name> --template read-only --json
-```
-
-Vous pouvez aussi en créer une dans le tableau de bord, sous **Paramètres → Clés de gestion**. Le secret ne s’affiche qu’une seule fois : enregistrez-le dans votre gestionnaire de secrets. Envoyez-le uniquement depuis du code côté serveur, vers la même URL de base que le Gateway (`https://api.phaseo.app/v1`) :
+Créez-en une dans le tableau de bord, sous **Paramètres → Clés de gestion**. Le secret ne s’affiche qu’une seule fois : enregistrez-le dans votre gestionnaire de secrets. Envoyez-le uniquement depuis du code côté serveur, vers la même URL de base que le Gateway (`https://api.phaseo.app/v1`) :
 
 ```http
 Authorization: Bearer phaseo_v1_mk_<kid>_<secret>

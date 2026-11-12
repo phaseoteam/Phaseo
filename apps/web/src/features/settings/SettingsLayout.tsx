@@ -26,7 +26,6 @@ export async function getSettingsLayoutMetadata({ params }: RouteMetadataInput) 
 export default function SettingsLayout() {
 	const { data } = useSuspenseQuery(settingsLayoutQuery());
 	if (!data.signedIn) return null;
-	const { showBroadcast, showWebhooks, showEnterprise, showAutoRouting, showClassifiers, showSlackAgent, showWorkloadIdentity } = data;
 
 	return (
 		<>
@@ -37,13 +36,13 @@ export default function SettingsLayout() {
 					collapsible="icon"
 					desktopClassName="hidden md:hidden lg:block"
 					// Keep desktop sidebar fixed under sticky chrome (notice + header).
-					className="top-[calc(var(--site-header-height,3.75rem)+var(--site-notice-height,0px)+1px)] bottom-0 h-auto bg-white dark:bg-zinc-950"
+					className="top-[calc(var(--site-header-height,3.75rem)+var(--site-notice-height,0px)+1px)] bottom-0 h-auto bg-background"
 				>
-					<SettingsSidebar showBroadcast={showBroadcast} showWebhooks={showWebhooks} showEnterprise={showEnterprise} showAutoRouting={showAutoRouting} showClassifiers={showClassifiers} showWorkloadIdentity={showWorkloadIdentity} showSlackAgent={showSlackAgent} showInternal={data.showInternal} providerMode={data.providerMode} />
+					<SettingsSidebar {...data} />
 				</Sidebar>
-				<SidebarInset className="flex w-0 min-w-0 flex-1 flex-col overflow-visible bg-white dark:bg-zinc-950">
-					<div className="container mx-auto flex min-h-full w-full flex-col px-4 sm:px-5 lg:px-6 xl:px-8">
-						<div className="w-full flex-1 pb-4 pt-5">
+				<SidebarInset className="flex w-0 min-w-0 flex-1 flex-col overflow-visible bg-background">
+					<div className="container mx-auto flex min-h-full min-w-0 w-full flex-col px-4 sm:px-5 lg:px-6 xl:px-8">
+						<div className="min-w-0 w-full flex-1 pb-8 pt-5 [&>*]:mx-auto">
 							<Suspense fallback={<SettingsPageSkeleton />}>
 								<PrivateSettingsProvider key={`${data.userId}:${data.workspaceId}`} scope={{ userId: data.userId ?? null, workspaceId: data.workspaceId }}>
 									<Outlet />

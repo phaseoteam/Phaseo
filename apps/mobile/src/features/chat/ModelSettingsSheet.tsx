@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, Layers, Layers3, Rocket, RotateCcw, Shuffle,
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { Logo } from "@/components/Logo";
-import { Button, confirm, Divider, Header, Icon, Select, Slider, Switch, Text, TextField, toast, type SelectOption } from "@/components/ui";
+import { Button, confirm, Divider, Header, Icon, INPUT_TEXT, Select, Slider, Switch, Text, TextField, toast, type SelectOption } from "@/components/ui";
 import { useLayout } from "@/hooks/useLayout";
 import { useAppearance } from "@/providers/AppearanceProvider";
 import { modelReasoningSupport, modelServiceTierSupport, REASONING_LABELS, resolveReasoningEffort, SERVICE_TIER_LABELS, serviceTierOptions, type ReasoningEffort, type ServiceTier } from "./capabilities";
@@ -235,7 +235,7 @@ function NumberSetting({ settingKey, value, onChange }: { settingKey: NumberSett
           placeholder={spec.placeholder}
           keyboardType={spec.integer ? "number-pad" : "decimal-pad"}
           accessibilityLabel={spec.label}
-          className="h-10 w-24 rounded-md border border-input bg-background px-2.5 text-right font-sans text-[15px] text-foreground"
+          className={`h-10 w-24 rounded-md border border-input bg-background px-2.5 text-right ${INPUT_TEXT}`}
           placeholderTextColorClassName="accent-muted-foreground"
           cursorColorClassName="accent-primary"
         />

@@ -30,7 +30,7 @@ icon: "bell-ring"
 </Step>
 </Steps>
 
-من CLI، نفّذ `phaseo notifications destinations create`، وتحقّق منها باستخدام `phaseo notifications destinations test <id>`، ثم اختر التنبيهات التي تتلقاها باستخدام `phaseo notifications routes set <event-kind> --destination-ids <id>`.
+للأتمتة، أنشئ الوجهة باستخدام `POST /v1/notifications/destinations`، واختبرها باستخدام `POST /v1/notifications/destinations/{id}/test`، ثم اختر التنبيهات التي تتلقاها باستخدام `PUT /v1/notifications/routes/{eventKind}`، مع مفتاح إدارة.
 
 استخدم الإشارات باعتدال: أرسل التنبيهات الكثيرة إلى قناة مراقَبة بدلًا من استدعاء مجموعة واسعة.
 

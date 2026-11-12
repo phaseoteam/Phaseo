@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isWorkspaceAddonActive } from "@/lib/billing/identityAddon";
+import { retryTransaction } from "@/lib/server/retryTransaction";
 
 export type ScimDirectoryLinkResult = { workspaceId: string; scimUserId: string } | null;
 
@@ -29,7 +30,7 @@ export async function linkScimDirectoryUser(args: {
 	if (matches.length !== 1) return null;
 	const match = matches[0];
 	if (!match.auth_user_id) {
-		const linked = await args.admin.from("scim_users").update({ auth_user_id: args.authUserId }).eq("id", match.id).eq("workspace_id", match.workspace_id).is("auth_user_id", null).select("id").maybeSingle();
+		const linked = await retryTransaction(() => args.admin.from("scim_users").update({ auth_user_id: args.authUserId }).eq("id", match.id).eq("workspace_id", match.workspace_id).is("auth_user_id", null).select("id").maybeSingle());
 		if (linked.error || !linked.data) throw new Error("scim_directory_link_conflict");
 	}
 	await args.admin.from("users").upsert({ user_id: args.authUserId, default_workspace_id: match.workspace_id }, { onConflict: "user_id" });

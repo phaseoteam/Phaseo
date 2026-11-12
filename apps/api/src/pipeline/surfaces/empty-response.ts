@@ -1,4 +1,5 @@
 import type { IRChatResponse } from "@core/ir";
+import { countBillableToolCalls } from "../after/response-output";
 
 export type EmptyResponseReason = "no_choices" | "reasoning_only" | "no_visible_output";
 
@@ -22,7 +23,8 @@ export function hasUsableIRChatResponse(response: IRChatResponse | undefined): b
 	if (!response?.choices?.length) return false;
 	return response.choices.some((choice) => {
 		if (choice.message?.refusal?.trim()) return true;
-		if ((choice.message?.toolCalls?.length ?? 0) > 0) return true;
+		// An empty placeholder tool call (no name, no arguments) is not output.
+		if (countBillableToolCalls(choice.message?.toolCalls) > 0) return true;
 		return (choice.message?.content ?? []).some((part) => {
 			if (part.type === "text" || part.type === "reasoning_text") return part.text.trim().length > 0;
 			return part.type === "image" || part.type === "audio" || part.type === "video";
@@ -43,7 +45,7 @@ export function buildEmptyResponseDiagnostics(
 
 	for (const choice of choices) {
 		finishReasons.add(choice.finishReason ?? null);
-		toolCallCount += choice.message?.toolCalls?.length ?? 0;
+		toolCallCount += countBillableToolCalls(choice.message?.toolCalls);
 		for (const part of choice.message?.content ?? []) {
 			contentPartTypes.add(part.type);
 			if (part.type === "reasoning_text") {

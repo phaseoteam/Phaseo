@@ -8,7 +8,7 @@ API कुंजी बनाएँ, `POST /v1/responses` पर एक अन�
 
 ```mermaid
 flowchart LR
-  key["कुंजी बनाएँ<br/>phaseo keys create"] --> req["POST /v1/responses<br/>model + input"]
+  key["कुंजी बनाएँ<br/>phaseo.app/settings/keys"] --> req["POST /v1/responses<br/>model + input"]
   req --> read["output[].content[] पढ़ें<br/>type: output_text"]
   req -->|"401, 402, 429"| fix["समस्या हल करें"]
 ```
@@ -31,8 +31,8 @@ Rules:
 <Visibility for="agents">
 एजेंटों के लिए क्विकस्टार्ट चेकलिस्ट:
 
-- CLI से कुंजी बनाएँ: `npm install -g @phaseo/cli`, फिर `phaseo login` (या हेडलेस शेल में `phaseo login --device-code`; साइन-इन कोई व्यक्ति स्वीकृत करता है), फिर `phaseo keys create --name <name> --json`। कभी कुंजी जनरेट या अनुमान न करें। इसे सिर्फ़ सर्वर-साइड कोड से `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` के रूप में भेजें।
-- पेड मॉडल के लिए एक बार `phaseo login --scopes billing:write` चलाएँ, फिर `phaseo credits add --amount <usd> --json` टॉप-अप शुरू करता है। सेव किए गए कार्ड के साथ, वर्कस्पेस का मालिक या एडमिन ईमेल से आए लिंक से इसकी पुष्टि करता है। सेव किया गया कार्ड न होने पर प्रतिक्रिया में `next_action: "open_checkout_url"` और एक चेकआउट लिंक होता है, जिसे मालिक या एडमिन भुगतान के लिए खोलता है; इसके बाद कार्ड आगे के टॉप-अप के लिए सेव हो जाता है। कुंजियों, क्रेडिट या सेटिंग्स के लिए उपयोगकर्ता को डैशबोर्ड पर न भेजें; देखें https://phaseo.app/docs/hi/v1/developers/manage-from-an-agent.md।
+- `phaseo keys create --name <name> --limit <usd> --show-secret --json` से कुंजी बनाएँ (CLI साइन-इन वर्कस्पेस के मालिक या एडमिन का होना चाहिए) या प्रबंधन कुंजी के साथ `POST /v1/keys` से बनाएँ, या व्यक्ति से डैशबोर्ड में **सेटिंग्स -> API कुंजियाँ** के तहत कुंजी बनाने को कहें। कभी कुंजी जनरेट या अनुमान न करें। इसे सिर्फ़ सर्वर-साइड कोड से `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` के रूप में भेजें।
+- पेड मॉडल के लिए एक बार `phaseo login --scopes billing:write` चलाएँ, फिर `phaseo credits add --amount <usd> --json` टॉप-अप शुरू करता है। सेव किए गए कार्ड के साथ, वर्कस्पेस का मालिक या एडमिन ईमेल से आए लिंक से इसकी पुष्टि करता है। सेव किया गया कार्ड न होने पर प्रतिक्रिया में `next_action: "open_checkout_url"` और एक चेकआउट लिंक होता है, जिसे मालिक या एडमिन भुगतान के लिए खोलता है; इसके बाद कार्ड आगे के टॉप-अप के लिए सेव हो जाता है। क्रेडिट या CLI से होने वाले दूसरे कामों के लिए उपयोगकर्ता को डैशबोर्ड पर न भेजें; देखें https://phaseo.app/docs/hi/v1/developers/manage-from-an-agent.md।
 - पहला अनुरोध `POST https://api.phaseo.app/v1/responses` से करें, और `model` व `input` भेजें। उदाहरण `openai/gpt-6-astra` का उपयोग करते हैं, जो एक पेड मॉडल है और जिसके लिए क्रेडिट चाहिए। `phaseo/free` कोई उपलब्ध मुफ़्त मॉडल चुनता है और वॉलेट बैलेंस के बिना काम करता है।
 - जवाब `output[].content[]` से पढ़ें, जहाँ `type` का मान `output_text` है।
 - अनुरोध विफल हो, तो JSON `error` कोड के आधार पर आगे बढ़ें, जैसा https://phaseo.app/docs/hi/v1/api-reference/errors.md में बताया गया है।
@@ -40,12 +40,9 @@ Rules:
 
 ## 1. API कुंजी बनाएँ
 
-[Phaseo CLI](./guides/integrations/phaseo-cli) इंस्टॉल करें, साइन इन करें और कुंजी बनाएँ:
+[डैशबोर्ड](https://phaseo.app/settings/keys) में **सेटिंग्स -> API कुंजियाँ** के तहत कुंजी बनाएँ, फिर उसे एक्सपोर्ट करें:
 
 ```bash
-npm install -g @phaseo/cli
-phaseo login                 # use --device-code over SSH or in an agent sandbox
-phaseo keys create --name "Quickstart" --json
 export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
@@ -54,8 +51,6 @@ export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
-
-आप [डैशबोर्ड](https://phaseo.app/settings/keys) में **सेटिंग्स -> API कुंजियाँ** के तहत भी कुंजी बना सकते हैं।
 
 <Danger>
 अपनी API कुंजी को पासवर्ड की तरह रखें। इसे सर्वर-साइड कोड में रखें, और कभी ब्राउज़र या मोबाइल ऐप में न भेजें।

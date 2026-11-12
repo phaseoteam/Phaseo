@@ -2,21 +2,20 @@ import { LegendList } from "@legendapp/list/react-native";
 import { useRouter } from "expo-router";
 import { Check, Search, Sparkles, Star, X } from "lucide-react-native";
 import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Logo } from "@/components/Logo";
-import { Badge, Button, Chip, ChipRow, EmptyState, ErrorState, Header, Icon, SearchField, SkeletonRows, Text, toast, useToneColor } from "@/components/ui";
+import { Badge, Button, Chip, ChipRow, EmptyState, ErrorState, Header, HorizontalScroll, Icon, SearchField, SkeletonRows, Text, toast, useToneColor } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatPrice, formatTokens } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
 import { useAppearance } from "@/providers/AppearanceProvider";
-import { toggleFavouriteModel, useFavourites } from "./favourites";
+import { STAR_COLOURS, toggleFavouriteModel, useFavourites } from "./favourites";
 import { isNewModel, isSelectable, normaliseFavouriteId, pickerSections, type ChatModelOption, type PickerFilters, type PickerSection } from "./modelOptions";
 import { useChatModelOptions } from "./models";
 import { chatModelStore, MAX_CHAT_MODELS, setModelsFor, useChat } from "./state";
 
 type Item = { type: "header"; key: string; section: PickerSection } | { type: "model"; key: string; option: ChatModelOption; section: PickerSection["kind"] };
 
-const STAR = { light: "#d97706", dark: "#fbbf24" };
 
 /** Lab, context and price, the facts the website's picker rows and hover cards show. */
 function facts(option: ChatModelOption) {
@@ -64,7 +63,7 @@ const PickerRow = memo(function PickerRow({ option, selected, favourite, isNew, 
         onPress={() => onStar(option)}
         className="h-10 w-10 items-center justify-center rounded-md active:bg-accent"
       >
-        <Star size={18} strokeWidth={1.8} color={favourite ? STAR[resolved] : muted} fill={favourite ? STAR[resolved] : "none"} />
+        <Star size={18} strokeWidth={1.8} color={favourite ? STAR_COLOURS[resolved] : muted} fill={favourite ? STAR_COLOURS[resolved] : "none"} />
       </Pressable>
     </Pressable>
   );
@@ -74,7 +73,7 @@ function SectionHeader({ section }: { section: PickerSection }) {
   const { resolved } = useAppearance();
   return (
     <View className="flex-row items-center gap-1.5 px-4 pb-1 pt-4">
-      {section.kind === "favourites" ? <Star size={14} color={STAR[resolved]} fill={STAR[resolved]} /> : null}
+      {section.kind === "favourites" ? <Star size={14} color={STAR_COLOURS[resolved]} fill={STAR_COLOURS[resolved]} /> : null}
       <Text variant="label" className={section.kind === "coming-soon" ? "text-muted-foreground" : undefined}>{section.title}</Text>
     </View>
   );
@@ -145,7 +144,7 @@ export function ChatModelPicker({ chatId }: { chatId: string | null }) {
         right={<Button label="Done" size="sm" variant="ghost" onPress={() => router.back()} />}
       />
       {selected.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled" className="grow-0" contentContainerClassName="gap-1.5 px-4 pb-2">
+        <HorizontalScroll keyboardShouldPersistTaps="handled" className="grow-0" contentContainerClassName="gap-1.5 px-4 pb-2">
           {selected.map((id) => {
             const option = byId.get(id);
             const label = option?.label ?? id.split("/").at(-1) ?? id;
@@ -159,7 +158,7 @@ export function ChatModelPicker({ chatId }: { chatId: string | null }) {
               </View>
             );
           })}
-        </ScrollView>
+        </HorizontalScroll>
       ) : null}
       <View className="px-4 pb-2"><SearchField value={query} onChangeText={setQuery} placeholder="Search models, labs or providers" /></View>
       <ChipRow className="pb-2">
