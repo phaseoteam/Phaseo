@@ -51,7 +51,7 @@ export type AnnouncementSummary = {
 	tags: string[];
 	category: AnnouncementCategory;
 	pinned: boolean;
-	coverImage: string;
+	coverImage: string | null;
 };
 
 export type AnnouncementFaqItem = { question: string; answer: string };
@@ -203,12 +203,6 @@ function toAnnouncementCategory(value: unknown): AnnouncementCategory {
 	return "announcements";
 }
 
-function fallbackCoverImageForCategory(category: AnnouncementCategory): string {
-	if (category === "guides") return "/blog-images/blog-guide.svg";
-	if (category === "data") return "/blog-images/blog-data.svg";
-	return "/blog-images/blog-announcement.svg";
-}
-
 function toExcerpt(content: string, maxLength = 220): string {
 	const cleaned = content
 		.replace(/```[\s\S]*?```/g, " ")
@@ -313,9 +307,7 @@ async function loadAnnouncements(locale?: string): Promise<AnnouncementPost[]> {
 			const publishedAt = toIsoDate(frontmatter.publishedAt, fallbackDate);
 			const updatedAt = toOptionalString(frontmatter.updatedAt);
 			const category = toAnnouncementCategory(frontmatter.category);
-			const coverImage =
-				toOptionalString(frontmatter.coverImage) ??
-				fallbackCoverImageForCategory(category);
+			const coverImage = toOptionalString(frontmatter.coverImage);
 
 			return {
 				slug,

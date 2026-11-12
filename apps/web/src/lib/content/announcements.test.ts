@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { getAnnouncementPost, getAnnouncementPosts } from "./announcements";
 
@@ -31,5 +33,19 @@ describe("announcement SEO frontmatter", () => {
 
 		expect(summary).not.toHaveProperty("faq");
 		expect(summary).not.toHaveProperty("seoTitle");
+	});
+});
+
+describe("announcement cover images", () => {
+	it("only points at cover images that exist", async () => {
+		const posts = await getAnnouncementPosts({ includeFuture: true });
+
+		for (const { slug, coverImage } of posts) {
+			if (!coverImage) continue;
+			expect({ slug, exists: existsSync(join(process.cwd(), "public", coverImage)) }).toEqual({
+				slug,
+				exists: true,
+			});
+		}
 	});
 });
