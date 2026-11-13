@@ -14,6 +14,7 @@ Lee el código de error y el `reason` de un `429` para saber qué límite detuvo
 | [Presupuesto de departamento](#department-budgets) | `key_limit_exceeded` | `department_daily_cost_budget_reached` (o `weekly`, `monthly`) | Sí, en `reset_at` |
 | [Regla de gasto configurada para bloquear](#key-limits-and-budgets) | `spend_rule_blocked` | | En `reset_at` cuando el bloqueo lo tiene, o cuando un propietario o administrador lo levanta |
 | [Política de límite de velocidad](#rate-limit-policies) | `rate_limit_exceeded` | `policy_requests_per_minute`, `policy_tokens_per_minute`, `policy_concurrent_requests` o `policy_unavailable` | Sí, `Retry-After` en segundos |
+| [API de administración](#management-api-limits) | `rate_limit_exceeded` | `management_api_rate_limit` | Sí, `Retry-After` en segundos |
 | [Proveedor](#provider-limits) | `upstream_error` o `provider_capacity_exhausted` | | Sigue el `Retry-After` del proveedor |
 
 Todos devuelven `429`. Si la aplicación de cuotas del gateway no está disponible durante un momento, el gateway devuelve `503` con indicaciones para reintentar.
@@ -37,6 +38,23 @@ Los modelos gratuitos también tienen una cuota de **1.500 solicitudes por día 
 Ambos límites se aplican en todas las regiones del gateway y pueden aumentarse para un usuario y un espacio de trabajo concretos. Las operaciones con archivos y las consultas del estado de trabajos usan la cuota por minuto; los endpoints de administración no.
 
 Una solicitud rechazada devuelve `429` con `Retry-After` en segundos. Espera ese tiempo antes de reintentar.
+
+<span id="management-api-limits"></span>
+## Límites de la API de administración
+
+Los endpoints de administración, como `/v1/keys`, `/v1/logs` y `/v1/analytics`, comparten una cuota de **600 unidades por minuto** por credencial. Cada clave de administración, token OAuth y sesión del panel tiene su propia cuota, y las solicitudes sin credencial comparten una por dirección IP. Los endpoints de modelos, archivos, lotes y trabajos no la usan.
+
+Cada solicitud usa unidades según el trabajo que requiere:
+
+| Unidades | Solicitudes |
+| --- | --- |
+| 1 | Lecturas del catálogo (`/v1/models`, `/v1/pricing`, `/v1/providers`, `/v1/organisations`), `/v1/key`, `/v1/me` y `/v1/settings` |
+| 2 | Otras lecturas, como `/v1/keys` y `/v1/workspaces` |
+| 3 | Crear, actualizar o eliminar cualquier cosa |
+| 5 | Búsquedas en registros, generaciones, eventos de auditoría, actividad, comentarios y eventos |
+| 10 | `/v1/analytics` y las pruebas que llaman a un servicio externo: pruebas y muestras de destinos de observabilidad, pruebas de clasificadores y ejecuciones de prueba de presets |
+
+`/v1/health` y las solicitudes CORS de preflight son gratuitas. Una solicitud que supera la cuota devuelve `429` con `rate_limit_exceeded`, el motivo `management_api_rate_limit` y `Retry-After: 60`. El recuento es aproximado y estas respuestas no incluyen encabezados `x-ratelimit-*`, así que reparte en el tiempo los scripts masivos en lugar de llevarlos hasta el límite.
 
 <span id="key-limits-and-budgets"></span>
 ## Límites de claves y presupuestos
@@ -130,5 +148,6 @@ Reglas de límites de solicitudes para agentes, que resumen esta página:
 - Un presupuesto de departamento agotado devuelve `429` con `key_limit_exceeded`, el motivo `department_<interval>_cost_budget_reached`, `department_id`, `department_name` y `reset_at`; espera los segundos de `Retry-After` o aumenta el presupuesto. Si la comprobación del presupuesto no está disponible, la solicitud se permite.
 - Las reglas de gasto que bloquean devuelven `429` con `spend_rule_blocked`; espera a `Retry-After` o pide a un propietario o administrador que levante el bloqueo. `x-phaseo-spend-warning` significa que puede llegar un bloqueo.
 - Las políticas de límite de velocidad del espacio de trabajo devuelven `429` con `rate_limit_exceeded`, `policy_id` y `limit_scope`. `x-ratelimit-remaining-requests` es aproximado.
+- Los endpoints de administración (claves, registros, analíticas, etc.) devuelven `429` con `rate_limit_exceeded` y el motivo `management_api_rate_limit` cuando una credencial ha usado sus 600 unidades del minuto; las solicitudes más pesadas usan más unidades. Espera los segundos de `Retry-After` (60).
 - `Retry-After` puede ser un número de segundos o una fecha HTTP; valídalo antes de programar un reintento. Nunca vuelvas a enviar un trabajo de vídeo o de lotes ambiguo; consulta su estado.
 </Visibility>
