@@ -246,31 +246,43 @@ export function irToOpenAIResponses(
 				content: msg.content.map((part) => mapContentPart(part, providerId)),
 			});
 		} else if (msg.role === "assistant") {
-			const assistantContent = msg.content.map(mapAssistantContentPart).filter(Boolean);
 			// Reasoning items go back only to the provider family (and model)
-			// that issued their encrypted_content; others are dropped.
+			// that issued their encrypted_content; others are dropped. Items go back
+			// in the order the provider wrote them ("keep those items in their
+			// original order"), so text written before a later reasoning item is its
+			// own message item ahead of that reasoning, and reasoning written between
+			// tool calls goes before the call it preceded.
 			const toolCallIds = new Set((msg.toolCalls ?? []).map((call) => call.id));
 			const anchoredReasoning = new Map<string, any[]>();
+			let pendingContent: any[] = [];
+			const flushAssistantMessage = () => {
+				// Assistant message with optional tool calls
+				if (hasMeaningfulAssistantContent(pendingContent)) {
+					inputItems.push({
+						type: "message",
+						role: "assistant",
+						content: pendingContent,
+						...(msg.phase !== undefined ? { phase: msg.phase } : {}),
+					});
+				}
+				pendingContent = [];
+			};
 			for (const part of msg.content) {
-				if (part.type !== "reasoning_text") continue;
+				if (part.type !== "reasoning_text") {
+					const mapped = mapAssistantContentPart(part);
+					if (mapped) pendingContent.push(mapped);
+					continue;
+				}
 				const item = toResponsesReasoningInputItem(part, replayTarget);
 				if (!item) continue;
 				if (part.beforeToolCallId && toolCallIds.has(part.beforeToolCallId)) {
 					anchoredReasoning.set(part.beforeToolCallId, [...(anchoredReasoning.get(part.beforeToolCallId) ?? []), item]);
 				} else {
+					flushAssistantMessage();
 					inputItems.push(item);
 				}
 			}
-
-			// Assistant message with optional tool calls
-			if (hasMeaningfulAssistantContent(assistantContent)) {
-				inputItems.push({
-					type: "message",
-					role: "assistant",
-					content: assistantContent,
-					...(msg.phase !== undefined ? { phase: msg.phase } : {}),
-				});
-			}
+			flushAssistantMessage();
 
 			// Add tool calls as function_call items
 			if (msg.toolCalls) {
@@ -422,7 +434,12 @@ export function irToOpenAIResponses(
 		request.service_tier = normalizeTextProviderServiceTier(actualProviderId ?? providerId ?? "", ir.serviceTier) ?? ir.serviceTier;
 	}
 	if (ir.store !== undefined) request.store = ir.store;
-	if (ir.streamOptions !== undefined) request.stream_options = ir.streamOptions;
+	// CreateResponse's stream_options only defines include_obfuscation. Chat's include_usage is
+	// rejected by Responses APIs (Groq returns 400 "unknown field `include_usage`").
+	if (ir.streamOptions && typeof ir.streamOptions === "object") {
+		const { include_usage: _includeUsage, ...responsesStreamOptions } = ir.streamOptions as Record<string, unknown>;
+		if (Object.keys(responsesStreamOptions).length > 0) request.stream_options = responsesStreamOptions;
+	}
 	if (ir.truncation !== undefined) request.truncation = ir.truncation;
 	if (ir.include !== undefined) request.include = ir.include;
 	if (ir.conversation !== undefined) request.conversation = ir.conversation;
@@ -635,10 +652,27 @@ function mapContentPart(part: IRContentPart, providerId?: string): any {
  * OpenAI, Azure and xAI continue reasoning only from encrypted_content.
  * https://platform.openai.com/docs/guides/reasoning#encrypted-reasoning-items
  */
+/**
+ * Responses APIs that continue from plain reasoning text sent back as a
+ * `reasoning` item with `reasoning_text` content (they issue no encrypted state):
+ * Groq (https://console.groq.com/docs/responses-api), DeepSeek (which needs it in
+ * tool loops) and Xiaomi MiMo.
+ */
+function takesPlainResponsesReasoning(providerId: string | undefined): boolean {
+	return providerId === "groq" || providerId === "deepseek" || providerId === "xiaomi";
+}
+
 function toResponsesReasoningInputItem(
 	part: Extract<IRContentPart, { type: "reasoning_text" }>,
 	target: { providerId?: string; model?: string | null },
 ): any | null {
+	// A reasoning item a native Responses stream passed through keeps the provider's own
+	// unsealed encrypted_content (DeepSeek's is an id), which decodes with no origin. Its
+	// text still goes back; sealed values from another provider record their origin and don't.
+	const unsealed = !part.reasoningProvider && !part.reasoningModel && (!part.reasoningFormat || part.reasoningFormat === "openai-responses-v1");
+	if (unsealed && part.text && takesPlainResponsesReasoning(target.providerId)) {
+		return { type: "reasoning", summary: [], content: [{ type: "reasoning_text", text: part.text }] };
+	}
 	if (!part.encryptedContent) return null;
 	const origin = { format: part.reasoningFormat, model: part.reasoningModel, provider: part.reasoningProvider };
 	if (!canReplayReasoning(origin, { providerId: target.providerId, model: target.model })) return null;
@@ -881,6 +915,7 @@ export function openAIResponsesToIR(
 		? json.output_items
 		: (Array.isArray(json?.output) ? json.output : []);
 
+	const reasoningAfterCall: Array<Extract<IRContentPart, { type: "reasoning_text" }>> = [];
 	for (const item of outputItems) {
 		const index = 0;
 
@@ -956,14 +991,12 @@ export function openAIResponsesToIR(
 				continue;
 			}
 			const reasoningText = extractReasoningText(item);
-			const reasoningPart = readResponsesReasoningState(item, reasoningText, provider, model);
+			const reasoningPart = readResponsesReasoningState(item, reasoningText, provider, model)
+				?? (reasoningText ? { type: "reasoning_text" as const, text: reasoningText } : null);
 			if (reasoningPart) {
 				choice.message.content.push(reasoningPart);
-			} else if (reasoningText) {
-				choice.message.content.push({
-					type: "reasoning_text",
-					text: reasoningText,
-				});
+				// Reasoning written after a tool call precedes the next one.
+				if ((choice.message.toolCalls?.length ?? 0) > 0) reasoningAfterCall.push(reasoningPart);
 			}
 		} else if (
 			item.type === "output_image" ||
@@ -988,12 +1021,14 @@ export function openAIResponsesToIR(
 			if (!toolCall) continue;
 			// Tool call from assistant
 			choice.message.toolCalls = choice.message.toolCalls || [];
+			const callId = toolCall.id || `call_${requestId}_${index}_${choice.message.toolCalls.length}`;
 			choice.message.toolCalls.push({
-				id: toolCall.id || `call_${requestId}_${index}_${choice.message.toolCalls.length}`,
+				id: callId,
 				name: toolCall.name,
 				arguments: toolCall.arguments,
 				...(toolCall.type === "custom" ? { type: "custom" as const } : {}),
 			});
+			for (const part of reasoningAfterCall.splice(0)) part.beforeToolCallId = callId;
 		}
 	}
 

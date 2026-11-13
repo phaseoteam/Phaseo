@@ -77,6 +77,21 @@ describe("azure text-generate executor", () => {
 		})).toBe(false);
 	});
 
+	it("routes Chat and Messages clients on a reasoning model to Responses so encrypted reasoning round-trips", () => {
+		const withReasoning = { model: "openai/gpt-5.4-nano", reasoning: { effort: "low" }, messages: [] } as any;
+		expect(shouldUseAzureResponsesRoute({ protocol: "openai.chat.completions", providerModelSlug: "gpt-5.4-nano", ir: withReasoning })).toBe(true);
+		expect(shouldUseAzureResponsesRoute({ protocol: "anthropic.messages", providerModelSlug: "gpt-5.4-nano", ir: withReasoning })).toBe(true);
+		// A follow-up turn that does not repeat the effort still carries the reasoning.
+		const followUp = {
+			model: "openai/gpt-5.4-nano",
+			messages: [{ role: "assistant", content: [{ type: "reasoning_text", text: "", encryptedContent: "gAAAA", reasoningFormat: "azure-openai-responses-v1", reasoningModel: "gpt-5.4-nano", reasoningProvider: "azure" }] }],
+		} as any;
+		expect(shouldUseAzureResponsesRoute({ protocol: "openai.chat.completions", providerModelSlug: "gpt-5.4-nano", providerId: "azure", ir: followUp })).toBe(true);
+		// Non-reasoning models and requests without reasoning stay on Chat.
+		expect(shouldUseAzureResponsesRoute({ protocol: "openai.chat.completions", providerModelSlug: "gpt-4o", ir: { model: "openai/gpt-4o", reasoning: { effort: "low" }, messages: [] } as any })).toBe(false);
+		expect(shouldUseAzureResponsesRoute({ protocol: "openai.chat.completions", providerModelSlug: "gpt-5.4-nano", ir: { model: "openai/gpt-5.4-nano", messages: [] } as any })).toBe(false);
+	});
+
 	it("builds v1 and legacy deployment-scoped text routes", () => {
 		expect(resolveAzureTextUrl({ route: "chat", deployment: "my-deployment", baseUrl: "https://resource.openai.azure.com", apiVersion: "v1" }))
 			.toBe("https://resource.openai.azure.com/openai/v1/chat/completions");

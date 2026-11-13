@@ -17,6 +17,7 @@ import { azureDeployment, azureHeaders, azureMaiUrl, azureOpenAIV1Url, azureUrl,
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
 import { executeAnthropic } from "@executors/anthropic/text-generate";
 import { upstreamTestHeaders } from "@providers/shared/testing";
+import { canReplayReasoning } from "@core/reasoning-state";
 
 export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChatRequest {
 	return cherryPickIRParams(ir, args.capabilityParams);
@@ -35,11 +36,30 @@ export function normalizeAzureChatRequest(
 	return request;
 }
 
-export function shouldUseAzureResponsesRoute(args: Pick<ExecutorExecuteArgs, "providerModelSlug" | "ir" | "protocol">): boolean {
+// OpenAI reasoning models: their reasoning continues across tool-loop steps only
+// through encrypted reasoning items, which only the Responses API returns.
+const AZURE_REASONING_MODEL = /^(?:openai\/)?(?:gpt-5|o\d)/;
+
+/** Whether an earlier assistant turn carries encrypted reasoning this Azure route issued. */
+function historyCarriesAzureReasoning(args: Pick<ExecutorExecuteArgs, "providerModelSlug" | "ir"> & { providerId?: string }): boolean {
+	const target = { providerId: args.providerId ?? "azure", model: args.providerModelSlug || args.ir.model };
+	return (args.ir.messages ?? []).some((message) =>
+		message.role === "assistant" &&
+		Array.isArray(message.content) &&
+		message.content.some((part) =>
+			part.type === "reasoning_text" &&
+			Boolean(part.encryptedContent) &&
+			canReplayReasoning({ format: part.reasoningFormat, model: part.reasoningModel, provider: part.reasoningProvider }, target)));
+}
+
+export function shouldUseAzureResponsesRoute(args: Pick<ExecutorExecuteArgs, "providerModelSlug" | "ir" | "protocol"> & { providerId?: string }): boolean {
 	if (/^(?:microsoft\/)?mai-/i.test(args.providerModelSlug || args.ir.model)) return false;
 	if (args.protocol === "openai.responses") return true;
-	if (args.protocol === "openai.chat.completions") return false;
 	const model = String(args.providerModelSlug || args.ir.model || "").toLowerCase();
+	// Chat and Messages clients on a reasoning model go to Responses, as on OpenAI,
+	// so the encrypted reasoning comes back and can be sent again on the next step.
+	if (AZURE_REASONING_MODEL.test(model) && (args.ir.reasoning || historyCarriesAzureReasoning(args))) return true;
+	if (args.protocol === "openai.chat.completions") return false;
 	return /^(?:openai\/)?gpt-5\.6-(?:luna|sol|terra)$/.test(model);
 }
 

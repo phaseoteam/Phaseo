@@ -20,17 +20,12 @@ export const deepseekQuirks: ProviderQuirks = {
 		// DeepSeek documents system/user/assistant/tool message roles.
 		// Normalize gateway "developer" role to "system" for compatibility.
 		if (Array.isArray(request.messages)) {
-			request.messages = request.messages.map((msg: any) => {
-				const normalized = msg?.role === "developer"
-					? { ...msg, role: "system" }
-					: { ...msg };
-				// DeepSeek V4 requires reasoning_content when replaying an assistant
-				// tool-call turn, but rejects stale CoT on ordinary assistant turns.
-				if (!Array.isArray(normalized.tool_calls) || normalized.tool_calls.length === 0) {
-					delete normalized.reasoning_content;
-				}
-				return normalized;
-			});
+			// reasoning_content stays on every assistant turn: with `tools`, DeepSeek needs it on
+			// all earlier turns, plain answers included, or returns 400; without tools it is ignored
+			// (https://api-docs.deepseek.com/guides/thinking_mode).
+			request.messages = request.messages.map((msg: any) => msg?.role === "developer"
+				? { ...msg, role: "system" }
+				: msg);
 		}
 
 		if (request.user !== undefined && request.user_id === undefined) {

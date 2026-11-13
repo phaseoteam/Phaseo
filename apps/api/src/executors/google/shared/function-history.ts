@@ -35,6 +35,9 @@ function geminiCallId(id: string | undefined, name: string): string | undefined 
 	if (typeof id !== "string" || id.length === 0 || id === name) return undefined;
 	// geminiFunctionCallId's fallback for repeated names (name_1, name_2) is not a Gemini id either.
 	if (id.startsWith(`${name}_`) && /^\d+$/.test(id.slice(name.length + 1))) return undefined;
+	// Nor is the streamed fallback (call_<requestId>_<candidate>_<n>, google-ai-studio
+	// transformStream) for a call Gemini sent without an id.
+	if (/^call_.+_\d+_\d+$/.test(id)) return undefined;
 	return id;
 }
 
