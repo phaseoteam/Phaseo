@@ -46,13 +46,13 @@ describe("chatMarkdownPlugins", () => {
 				"The final price is $72, so the discount is $28 = $28\\%$.",
 			),
 		).toBe(
-			"The final price is &#36;72, so the discount is &#36;28 = $28\\%$.",
+			"The final price is \\$72, so the discount is \\$28 = $28\\%$.",
 		);
 	});
 
 	it("preserves multiple plain currency amounts", () => {
 		expect(normalizeChatMarkdown("Prices are $5 and $7.")).toBe(
-			"Prices are &#36;5 and &#36;7.",
+			"Prices are \\$5 and \\$7.",
 		);
 	});
 
