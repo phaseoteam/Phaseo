@@ -28,7 +28,7 @@ try {
 	await db.exec('create role anon; create role authenticated; create role service_role;');
 	await db.exec(await read('../schemas/public/functions/canonical_routing_capability_id.sql'));
 	for (const name of [
-		'v2_labs', 'v2_providers', 'v2_models', 'v2_model_provider_routes', 'v2_provider_regions', 'v2_service_tiers',
+		'v2_labs', 'v2_providers', 'v2_models', 'v2_model_aliases', 'v2_model_provider_routes', 'v2_provider_regions', 'v2_service_tiers',
 		'v2_route_variants', 'v2_route_capabilities', 'v2_meter_definitions', 'v2_pricing_skus', 'v2_pricing_sku_meters',
 	]) {
 		const sql = await read(`../schemas/public/tables/${name}.sql`);
@@ -82,7 +82,7 @@ try {
 	assert.deepEqual(
 		{ ...first, unmatched_sample: undefined },
 		{
-			provider: 'gw', listed: 5, routes: 5, matched: 4, limits_updated: 2, restored: 1, missing_cleared: 0,
+			provider: 'gw', listed: 5, routes: 5, matched: 4, added: 0, added_sample: [], limits_updated: 2, restored: 1, missing_cleared: 0,
 			newly_missing: 1, removed: 0, removals_skipped: false, prices_changed: 1, prices_added: 1,
 			prices_skipped_conditional: 1, unmatched: 1, unmatched_sample: undefined,
 		},
@@ -128,6 +128,51 @@ try {
 	const back = await sync([...listed, { id: 'lab/c' }], day(6));
 	assert.equal(back.restored, 1);
 	assert.deepEqual(await route('gw:c'), { context_length: 1000, max_output_tokens: null, availability: 'available', marker: null });
+
+	// New listings on a second gateway: routes are added only when the upstream ID names one model.
+	await db.exec(`
+		insert into public.v2_providers (provider_slug, name, status) values ('gw2', 'Gateway 2', 'external');
+		insert into public.v2_models (model_slug, lab_slug, name, input_modalities, output_modalities) values
+			('lab/f', 'lab', 'F', '{text}', '{text}'),
+			('lab/g', 'lab', 'G', '{text}', '{image}'),
+			('lab/h', 'lab', 'H', '{text}', '{text}'),
+			('lab/i', 'lab', 'I', '{text}', '{text}');
+		insert into public.v2_model_aliases (alias_slug, model_slug) values ('lab/i-latest', 'lab/i');
+		-- gw2 already names lab/a "vend/a", which teaches it that vend/ means lab/.
+		insert into public.v2_model_provider_routes (provider_model_id, model_slug, provider_slug, provider_model_slug, status, routing_enabled, phaseo_status, provider_availability_status) values
+			('gw2:vend/a', 'lab/a', 'gw2', 'vend/a', 'active', false, 'unsupported', 'available'),
+			('direct:other/h', 'lab/h', 'direct', 'other/h', 'active', false, 'unsupported', 'available');
+	`);
+	const added = await sync([
+		{ id: 'vend/a' },
+		{ id: 'vend/f', context_length: 8192, meters: { input_text_tokens: 1, output_text_tokens: 2 } },
+		{ id: 'lab/g' },
+		{ id: 'other/h' },
+		{ id: 'lab/i-latest' },
+		{ id: 'vend/f:batch' },
+		{ id: 'vend/f-fast' },
+		{ id: 'lab/a' },
+		{ id: 'vend/unknown' },
+	], T0, 'gw2');
+	assert.equal(added.added, 4);
+	assert.deepEqual(added.added_sample, ['lab/f', 'lab/g', 'lab/h', 'lab/i']);
+	const { rows: newRoutes } = await db.query(`
+		select route.provider_model_id, route.model_slug, route.routing_enabled, route.phaseo_status, route.context_length,
+			route.metadata->'external_sync_added'->>'matched_by' as matched_by,
+			(select count(*)::int from public.v2_route_variants variant where variant.provider_model_id = route.provider_model_id) as variants,
+			(select count(*)::int from public.v2_route_capabilities capability where capability.provider_model_id = route.provider_model_id) as capabilities
+		from public.v2_model_provider_routes route where route.provider_slug = 'gw2' and route.metadata ? 'external_sync_added' order by route.model_slug`);
+	assert.deepEqual(newRoutes, [
+		{ provider_model_id: 'gw2:vend/f', model_slug: 'lab/f', routing_enabled: false, phaseo_status: 'unsupported', context_length: 8192, matched_by: 'org_prefix', variants: 1, capabilities: 1 },
+		{ provider_model_id: 'gw2:lab/g', model_slug: 'lab/g', routing_enabled: false, phaseo_status: 'unsupported', context_length: null, matched_by: 'model_id', variants: 1, capabilities: 0 },
+		{ provider_model_id: 'gw2:other/h', model_slug: 'lab/h', routing_enabled: false, phaseo_status: 'unsupported', context_length: null, matched_by: 'other_provider_route', variants: 1, capabilities: 1 },
+		{ provider_model_id: 'gw2:lab/i-latest', model_slug: 'lab/i', routing_enabled: false, phaseo_status: 'unsupported', context_length: null, matched_by: 'alias', variants: 1, capabilities: 1 },
+	]);
+	// lab/a already has a gw2 route, so "lab/a" is not added as a second one; variants and unknowns stay unmatched.
+	assert.equal(added.unmatched, 4);
+	assert.deepEqual(await activePrices('gw2:vend/f'), [{ sku_code: 'external-sync', version: 1, usd_per_million: { input_text_tokens: 1, output_text_tokens: 2 } }]);
+	const repeat = await sync([{ id: 'vend/a' }, { id: 'vend/f' }, { id: 'lab/g' }, { id: 'other/h' }, { id: 'lab/i-latest' }], day(1), 'gw2');
+	assert.equal(repeat.added, 0);
 
 	await assert.rejects(sync(listed, T0, 'direct'), /not an external provider/);
 	await assert.rejects(sync(listed, T0, 'missing'), /not an external provider/);

@@ -11,6 +11,7 @@ CREATE OR REPLACE FUNCTION public.sync_external_provider_catalogue (
 -- p_models: [{"id": upstream model id, "context_length": int|null, "max_output_tokens": int|null,
 --             "meters": {"input_text_tokens": usd per 1M, "output_text_tokens": ..., ...}|null}]
 -- Only external (non-routable) routes are touched, and a row is written only when a value changes.
+-- Newly listed models get a route when their upstream ID resolves to exactly one catalogue model.
 declare
   v_grace constant interval := interval '3 days';
   v_core_meters constant text[] := array['input_text_tokens','output_text_tokens','cached_read_text_tokens','cached_write_text_tokens'];
@@ -27,6 +28,8 @@ declare
   v_prices_skipped integer := 0;
   v_unmatched jsonb;
   v_unmatched_count integer;
+  v_added integer := 0;
+  v_added_sample jsonb := '[]'::jsonb;
   r record;
   v_sku public.v2_pricing_skus%rowtype;
   v_new_sku uuid;
@@ -59,6 +62,94 @@ begin
   where nullif(trim(x->>'id'), '') is not null
   order by lower(x->>'id');
 
+  -- New listings: add a route when the upstream ID names exactly one catalogue model, by the model
+  -- ID itself, an alias, another provider's route with the same upstream ID, or an organisation
+  -- prefix this provider already uses for our models (for example zai/ for z-ai/). Variant IDs
+  -- (:batch, :free, -batch, -fast ...) and aliases (~...) are left alone, and a model that already
+  -- has a route on this provider never gets a second one.
+  with prefix_pairs as (
+    select lower(split_part(route.provider_model_slug, '/', 1)) as upstream_org, split_part(route.model_slug, '/', 1) as our_org, count(*) as uses
+    from public.v2_model_provider_routes route
+    where route.provider_slug = p_provider_slug
+      and position('/' in route.provider_model_slug) > 0
+      and position('/' in route.model_slug) > 0
+      and lower(substr(route.provider_model_slug, position('/' in route.provider_model_slug) + 1)) = lower(substr(route.model_slug, position('/' in route.model_slug) + 1))
+    group by 1, 2
+  ),
+  best_prefix as (
+    select distinct on (upstream_org) upstream_org, our_org from prefix_pairs order by upstream_org, uses desc, our_org
+  ),
+  candidates as (
+    select incoming.id, incoming.key, incoming.context_length, incoming.max_output_tokens,
+      coalesce(exact.model_slug, alias.model_slug, other_route.model_slug, prefixed.model_slug) as model_slug,
+      case when exact.model_slug is not null then 'model_id' when alias.model_slug is not null then 'alias'
+        when other_route.model_slug is not null then 'other_provider_route' when prefixed.model_slug is not null then 'org_prefix' end as matched_by
+    from external_sync_incoming incoming
+    left join lateral (select model.model_slug from public.v2_models model where lower(model.model_slug) = incoming.key limit 1) exact on true
+    left join lateral (
+      select min(a.model_slug) as model_slug from public.v2_model_aliases a where lower(a.alias_slug) = incoming.key and a.enabled having count(distinct a.model_slug) = 1
+    ) alias on true
+    left join lateral (
+      select min(other.model_slug) as model_slug from public.v2_model_provider_routes other
+      where lower(other.provider_model_slug) = incoming.key having count(distinct other.model_slug) = 1
+    ) other_route on true
+    left join lateral (
+      select model.model_slug from best_prefix prefix
+      join public.v2_models model on lower(model.model_slug) = lower(prefix.our_org || '/' || substr(incoming.key, position('/' in incoming.key) + 1))
+      where position('/' in incoming.key) > 0 and prefix.upstream_org = split_part(incoming.key, '/', 1)
+      limit 1
+    ) prefixed on true
+    where incoming.key !~ '[:~]'
+      and incoming.key !~ '-(batch|fast|ultrafast|beta|free)$'
+      and not exists (
+        select 1 from public.v2_model_provider_routes existing
+        where existing.provider_slug = p_provider_slug and lower(existing.provider_model_slug) = incoming.key
+      )
+  ),
+  additions as (
+    select distinct on (candidate.model_slug) candidate.*, model.input_modalities, model.output_modalities
+    from candidates candidate
+    join public.v2_models model on model.model_slug = candidate.model_slug
+    where not exists (
+      select 1 from public.v2_model_provider_routes existing
+      where existing.provider_slug = p_provider_slug and existing.model_slug = candidate.model_slug
+    )
+    order by candidate.model_slug, (candidate.matched_by = 'model_id') desc, candidate.key
+    limit 200
+  ),
+  inserted as (
+    insert into public.v2_model_provider_routes (provider_model_id, model_slug, provider_slug, provider_model_slug, status, routing_enabled,
+      phaseo_status, provider_availability_status, access_scope, credential_mode, input_modalities, output_modalities, regions,
+      context_length, max_output_tokens, effective_from, metadata)
+    select p_provider_slug || ':' || addition.id, addition.model_slug, p_provider_slug, addition.id, 'active', false,
+      'unsupported', 'available', 'public', 'managed_and_byok', addition.input_modalities, addition.output_modalities, array['global'],
+      addition.context_length, addition.max_output_tokens, p_now,
+      jsonb_build_object(
+        'source', 'external_sync', 'routable', false, 'routing_status', 'active', 'service_tiers', '[]'::jsonb,
+        'api', jsonb_build_object('formats', '[]'::jsonb, 'endpoint', null, 'deployment', null),
+        'regions', jsonb_build_object('data', jsonb_build_array('global'), 'execution', jsonb_build_array('global')),
+        'verification', jsonb_build_object('status', 'partial', 'notes', 'Added from the provider''s public model list; routing remains disabled.', 'checked_at', p_now),
+        'external_sync_added', jsonb_build_object('at', p_now, 'matched_by', addition.matched_by))
+    from additions addition
+    returning provider_model_id, model_slug, output_modalities
+  ),
+  variants as (
+    insert into public.v2_route_variants (provider_model_id, variant_key, service_tier_slug, status, routing_enabled, metadata)
+    select provider_model_id, 'global:standard', 'standard', 'active', false, jsonb_build_object('scope', 'global', 'source', 'external_sync')
+    from inserted
+    returning provider_model_id
+  ),
+  capabilities as (
+    insert into public.v2_route_capabilities (provider_model_id, capability_id, status, metadata)
+    select provider_model_id, 'text.generate', 'active', jsonb_build_object('source', 'external_sync')
+    from inserted
+    where output_modalities = array['text']
+    returning provider_model_id
+  )
+  select count(*), coalesce(jsonb_agg(model_slug order by model_slug) filter (where position <= 25), '[]'::jsonb)
+  into v_added, v_added_sample
+  from (select model_slug, row_number() over (order by model_slug) as position from inserted) added;
+
   drop table if exists pg_temp.external_sync_routes;
   create temporary table external_sync_routes on commit drop as
   select route.provider_model_id, route.provider_availability_status, route.context_length, route.max_output_tokens,
@@ -72,7 +163,9 @@ begin
   select count(*), count(incoming_key) into v_route_count, v_seen_count from external_sync_routes;
   -- An empty list, or one that recognises under a quarter of our routes, points at an API or ID
   -- format change rather than a mass removal, so nothing is removed until a person looks.
-  v_allow_removals := v_route_count > 0 and v_seen_count >= greatest(1, ceil(v_route_count * 0.25));
+  -- Routes added in this run are listed by definition, so they do not count towards the match rate.
+  v_allow_removals := v_route_count - v_added > 0
+    and v_seen_count - v_added >= greatest(1, ceil((v_route_count - v_added) * 0.25));
 
   -- Listed routes: refresh limits, bring back removed routes, clear any missing marker.
   with changed as (
@@ -229,6 +322,8 @@ begin
     'listed', (select count(*) from external_sync_incoming),
     'routes', v_route_count,
     'matched', v_seen_count,
+    'added', v_added,
+    'added_sample', v_added_sample,
     'limits_updated', v_limits_updated,
     'restored', v_restored,
     'missing_cleared', v_cleared,
