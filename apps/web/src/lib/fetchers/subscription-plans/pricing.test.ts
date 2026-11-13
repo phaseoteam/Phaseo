@@ -29,7 +29,9 @@ describe("subscription offer formatting", () => {
 		const labels = localizedSubscriptionPriceLabels("de-DE", { custom: "Individuell", usage: "Nach Nutzung", unknown: "Unbekannt", from: "Ab", seat: "Platz" });
 		const format = (amount: number, currency: string) => new Intl.NumberFormat("de-DE", { style: "currency", currency }).format(amount);
 		const value = formatSubscriptionPrice({ ...monthly, pricing_type: "starting_at", charge_basis: "seat" }, format, labels);
-		expect(value).toContain("Ab 30,00"); expect(value).toContain("Platz / 1 Monat");
+		expect(value).toContain("Ab 30,00"); expect(value).toContain("Platz / Monat");
+		const period = (locale: string, count: number) => localizedSubscriptionPriceLabels(locale, labels).period!(count, "month");
+		expect([period("en-GB", 1), period("en-GB", 3), period("ja", 1), period("zh-Hans", 1)]).toEqual(["month", "3 months", "1 か月", "1个月"]);
 		expect(formatSubscriptionPrice({ ...monthly, components: [{ component_key: "metered", pricing_type: "usage_based", amount: 0.003, charge_basis: "unit", unit: "line" }] })).toBe("$0.003 / 1 line");
 	});
 	test("keeps ongoing seat charges in both introductory and renewal cycles", () => {

@@ -101,7 +101,8 @@ export default function SubscriptionPlanPage() {
 
 	return (
 		<SubscriptionPlanDetailShell planId={planId} tocItems={[
-			...(plan.offers?.length ? [{ id: "plan-offers", label: terms("plan_offers") }] : []),
+			...(plan.usage?.length ? [{ id: "plan-usage", label: messages.usage.title }] : []),
+			...(plan.offers?.length ? [{ id: "plan-offers", label: messages.detail.pricing }] : []),
 			...(plan.allowances?.length ? [{ id: "plan-allowances", label: terms("plan_allowances") }] : []),
 			{ id: "main-features", label: messages.detail.mainFeatures }, { id: "included-models", label: terms("plan_model_access") },
 		]}>

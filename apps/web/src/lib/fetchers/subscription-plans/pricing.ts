@@ -41,9 +41,16 @@ export interface SubscriptionPriceLabels {
 }
 
 export function localizedSubscriptionPriceLabels(locale: string, labels: SubscriptionPriceLabels): SubscriptionPriceLabels {
-	return { ...labels, period: (count, interval) => new Intl.NumberFormat(locale, {
-		style: "unit", unit: interval, unitDisplay: "long",
-	}).format(count) };
+	return { ...labels, period: (count, interval) => {
+		const format = new Intl.NumberFormat(locale, { style: "unit", unit: interval, unitDisplay: "long" });
+		if (count !== 1) return format.format(count);
+		// "/ month" rather than "/ 1 month", where the language spaces the number from the unit.
+		// Japanese keeps the count ("1 か月"), and languages without the space keep it too ("1个月").
+		const parts = format.formatToParts(1);
+		const spaced = parts.some((part) => part.type === "literal" && part.value.trim() === "");
+		const unit = parts.filter((part) => part.type === "unit").map((part) => part.value).join("").trim();
+		return spaced && unit && !locale.startsWith("ja") ? unit : format.format(1);
+	} };
 }
 
 export function formatSubscriptionPrice(price: SubscriptionPrice, formatAmount = (value: number, currency: string) =>
