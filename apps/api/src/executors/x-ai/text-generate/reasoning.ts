@@ -145,14 +145,18 @@ function clampEffort(requested: ReasoningEffort, supported: ReasoningEffort[]): 
 
 	const requestedIndex = REASONING_EFFORT_ORDER.indexOf(requested);
 	if (requestedIndex < 0) return requested;
-	if (requestedIndex === 0) return supportedOrdered[0];
-	if (requestedIndex >= REASONING_EFFORT_ORDER.length - 1) {
-		return supportedOrdered[supportedOrdered.length - 1];
-	}
 
-	return supportedOrdered.includes("medium")
-		? "medium"
-		: supportedOrdered[Math.floor(supportedOrdered.length / 2)];
+	// Nearest supported level; a tie goes to the higher one so a request never loses reasoning.
+	let best = supportedOrdered[0];
+	let bestDiff = Number.POSITIVE_INFINITY;
+	for (const effort of supportedOrdered) {
+		const diff = Math.abs(REASONING_EFFORT_ORDER.indexOf(effort) - requestedIndex);
+		if (diff <= bestDiff) {
+			best = effort;
+			bestDiff = diff;
+		}
+	}
+	return best;
 }
 
 function tokensToEffort(tokens: number, maxReasoningTokens: number): ReasoningEffort {
