@@ -15,14 +15,14 @@ const db = new PGlite();
 try {
   await db.exec(`
     create role anon; create role authenticated; create role service_role bypassrls;
-    create table v2_models(model_slug text primary key, hidden boolean not null default false);
+    create table v2_models(model_slug text primary key, name text not null, hidden boolean not null default false);
     create function catalog_model_is_public(text) returns boolean language sql stable as $$ select not hidden from v2_models where model_slug = $1 $$;
     create schema catalogue_private;
     create function catalogue_private.record_row_history() returns trigger language plpgsql as $$ begin return coalesce(new,old); end $$;
     create function prevent_catalogue_removal() returns trigger language plpgsql as $$ begin raise exception 'history preserved'; end $$;
     create table v2_subscription_plans(plan_uuid uuid primary key, plan_id text not null, name text not null, lab_slug text,
       frequency text, price numeric, currency text, effective_to timestamptz);
-    insert into v2_models values ('lab/model', false), ('lab/hidden', true);
+    insert into v2_models values ('lab/model', 'Lab Model', false), ('lab/hidden', 'Hidden', true);
     insert into v2_subscription_plans values
       (md5('max')::uuid, 'max', 'Max', 'lab', 'monthly', 200, 'USD', null),
       (md5('custom')::uuid, 'custom', 'Custom', 'lab', 'custom', 0, 'USD', null);
@@ -34,12 +34,15 @@ try {
       (md5('custom')::uuid, 'lab/model', 'standard', 1000000, 'unknown', 'assumed', 'low', 30, null, 'test', now() - interval '1 day');
   `);
 
-  const { rows } = await db.query(`select plan_id, monthly_price_usd::float, effective_usd_per_mtok::float, share_of_api_price::float from get_v2_subscription_model_usage('LAB/model ') order by plan_id`);
+  const { rows } = await db.query(`select plan_id, model_name, monthly_price_usd::float, effective_usd_per_mtok::float, share_of_api_price::float from get_v2_subscription_model_usage('LAB/model ') order by plan_id`);
   // The catalogue's own monthly USD price wins; the source price is the fallback for non-monthly plans.
   assert.deepEqual(rows, [
-    { plan_id: 'custom', monthly_price_usd: 30, effective_usd_per_mtok: 30, share_of_api_price: null },
-    { plan_id: 'max', monthly_price_usd: 200, effective_usd_per_mtok: 0.01, share_of_api_price: 0.02 },
+    { plan_id: 'custom', model_name: 'Lab Model', monthly_price_usd: 30, effective_usd_per_mtok: 30, share_of_api_price: null },
+    { plan_id: 'max', model_name: 'Lab Model', monthly_price_usd: 200, effective_usd_per_mtok: 0.01, share_of_api_price: 0.02 },
   ]);
+
+  const byPlan = await db.query(`select plan_id from get_v2_subscription_model_usage(null, 'custom')`);
+  assert.deepEqual(byPlan.rows, [{ plan_id: 'custom' }], 'filters by plan');
 
   await assert.rejects(db.exec(`insert into v2_subscription_plan_model_usage(plan_uuid, model_slug, monthly_tokens, confidence, source_name) values (md5('max')::uuid, 'lab/model', 5, 'high', 'test')`), /duplicate key/);
   await db.exec(`update v2_subscription_plan_model_usage set effective_to = now() where plan_uuid = md5('max')::uuid`);
