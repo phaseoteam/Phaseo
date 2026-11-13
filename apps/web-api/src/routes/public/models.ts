@@ -1189,7 +1189,7 @@ publicModelsRouter.get("/:modelId", async (c) => {
 				client.from("v2_model_links")
 					.select("link_kind,title,url")
 					.eq("model_slug", canonicalModelId)
-					.order("link_kind", { ascending: true })
+					.order("sort_order", { ascending: true })
 					.order("title", { ascending: true }),
 				client.from("v2_model_details")
 					.select("detail_name,detail_value")

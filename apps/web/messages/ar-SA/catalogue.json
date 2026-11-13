@@ -1623,7 +1623,9 @@
 			"totalDays": "إجمالي الأيام: {count}",
 			"modalityStructured": "حالة منظمة",
 			"modalityDecisions": "القرارات",
-			"viewLicense": "عرض الترخيص"
+			"viewLicense": "عرض الترخيص",
+			"pricing": "الأسعار",
+			"benchmark": "معيار الأداء"
 		},
 		"performance": {
 			"noTelemetry": "لا توجد طلبات خلال آخر 7 أيام",

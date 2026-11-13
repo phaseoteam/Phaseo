@@ -139,7 +139,7 @@ async function loadCompareSources(env: Env, modelIds: string[]): Promise<Compari
 	const [modelsResult, linksResult, detailsResult, benchmarkResults, modelPlansResult, pricing] = await Promise.all([
 		client.from("v2_models").select("model_slug,name,lab_slug,description,status,previous_model_slug,announced_at,released_at,deprecated_at,retired_at,license,input_modalities,output_modalities,metadata,lab:v2_labs!v2_models_lab_slug_fkey(lab_slug,name,country_code,metadata)").in("model_slug", modelIds).eq("hidden", false),
 		// Links and arbitrary legacy detail rows do not have V2 tables yet.
-		client.from("v2_model_links").select("model_id:model_slug,url,platform:link_kind,kind:link_kind").in("model_slug", modelIds),
+		client.from("v2_model_links").select("model_id:model_slug,url,platform:link_kind,kind:link_kind").in("model_slug", modelIds).order("sort_order"),
 		client.from("v2_model_details").select("model_id:model_slug,detail_name,detail_value").in("model_slug", modelIds),
 		client.from("v2_benchmark_results").select("result_id,model_slug,benchmark_id,score,is_self_reported,other_info,source_link,rank,benchmark:v2_benchmarks!v2_benchmark_results_benchmark_id_fkey(benchmark_id,name,category,link,ascending_order,benchmark_type)").or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`).in("model_slug", modelIds),
 		fetchSubscriptionPlansForModels(client, modelIds).then((data) => ({ data, error: null })),

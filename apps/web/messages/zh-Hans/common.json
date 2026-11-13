@@ -823,6 +823,15 @@
 			"removeBenchmark": "移除基准测试条目 {index}",
 			"detailsHeading": "模型详情",
 			"linksHeading": "模型链接",
+			"linksDescription": "为每个链接添加用户看到的标题。类型决定备用图标和对比列。",
+			"noLinks": "暂无链接。",
+			"addLink": "添加链接",
+			"linkUrl": "URL",
+			"linkTitle": "标题",
+			"linkKind": "类型",
+			"moveLinkUp": "上移",
+			"moveLinkDown": "下移",
+			"removeLink": "移除链接",
 			"detailFields": {
 				"input_context_length": {
 					"label": "输入上下文长度",
@@ -847,12 +856,19 @@
 			},
 			"linkFields": {
 				"announcement": "公告",
-				"api_reference": "API 参考",
 				"model_card": "模型卡",
 				"paper": "论文",
-				"playground": "试用环境",
+				"weights": "权重",
 				"repository": "代码库",
-				"weights": "权重"
+				"documentation": "文档",
+				"api_reference": "API 参考",
+				"playground": "试用环境",
+				"pricing": "价格",
+				"benchmark": "基准测试",
+				"website": "网站",
+				"provider": "提供方",
+				"deprecation": "弃用通知",
+				"license": "许可证"
 			},
 			"subscriptionPlansTitle": "订阅计划",
 			"subscriptionPlansDescription": "将此模型添加到订阅计划或从计划中移除。",

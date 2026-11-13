@@ -1623,7 +1623,9 @@
 			"totalDays": "合計{count}日",
 			"modalityStructured": "構造化された状態",
 			"modalityDecisions": "判断",
-			"viewLicense": "ライセンスを表示"
+			"viewLicense": "ライセンスを表示",
+			"pricing": "料金",
+			"benchmark": "ベンチマーク"
 		},
 		"performance": {
 			"noTelemetry": "過去7日間にリクエストはありません",

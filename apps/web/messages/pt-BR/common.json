@@ -823,6 +823,15 @@
 			"removeBenchmark": "Remover benchmark {index}",
 			"detailsHeading": "Detalhes do modelo",
 			"linksHeading": "Links do modelo",
+			"linksDescription": "Adicione cada link com o título que as pessoas devem ver. O tipo define o ícone alternativo e a coluna de comparação.",
+			"noLinks": "Nenhum link ainda.",
+			"addLink": "Adicionar link",
+			"linkUrl": "URL",
+			"linkTitle": "Título",
+			"linkKind": "Tipo",
+			"moveLinkUp": "Mover para cima",
+			"moveLinkDown": "Mover para baixo",
+			"removeLink": "Remover link",
 			"detailFields": {
 				"input_context_length": {
 					"label": "Tamanho do contexto de entrada",
@@ -847,12 +856,19 @@
 			},
 			"linkFields": {
 				"announcement": "Anúncio",
-				"api_reference": "Referência da API",
 				"model_card": "Cartão do modelo",
 				"paper": "Artigo",
-				"playground": "Ambiente de testes",
+				"weights": "Pesos",
 				"repository": "Repositório",
-				"weights": "Pesos"
+				"documentation": "Documentação",
+				"api_reference": "Referência da API",
+				"playground": "Ambiente de testes",
+				"pricing": "Preços",
+				"benchmark": "Benchmark",
+				"website": "Site",
+				"provider": "Provedor",
+				"deprecation": "Aviso de descontinuação",
+				"license": "Licença"
 			},
 			"subscriptionPlansTitle": "Planos de assinatura",
 			"subscriptionPlansDescription": "Associe ou desassocie este modelo dos planos de assinatura.",

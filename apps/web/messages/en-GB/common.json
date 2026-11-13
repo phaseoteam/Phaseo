@@ -823,6 +823,15 @@
 			"removeBenchmark": "Remove benchmark {index}",
 			"detailsHeading": "Model details",
 			"linksHeading": "Model links",
+			"linksDescription": "Add each link with the title people should see. The kind sets the fallback icon and the comparison column.",
+			"noLinks": "No links yet.",
+			"addLink": "Add link",
+			"linkUrl": "URL",
+			"linkTitle": "Title",
+			"linkKind": "Kind",
+			"moveLinkUp": "Move up",
+			"moveLinkDown": "Move down",
+			"removeLink": "Remove link",
 			"detailFields": {
 				"input_context_length": {
 					"label": "Input context length",
@@ -847,12 +856,19 @@
 			},
 			"linkFields": {
 				"announcement": "Announcement",
-				"api_reference": "API reference",
 				"model_card": "Model card",
 				"paper": "Paper",
-				"playground": "Playground",
+				"weights": "Weights",
 				"repository": "Repository",
-				"weights": "Weights"
+				"documentation": "Documentation",
+				"api_reference": "API reference",
+				"playground": "Playground",
+				"pricing": "Pricing",
+				"benchmark": "Benchmark",
+				"website": "Website",
+				"provider": "Provider",
+				"deprecation": "Deprecation notice",
+				"license": "Licence"
 			},
 			"subscriptionPlansTitle": "Subscription plans",
 			"subscriptionPlansDescription": "Attach or detach this model from subscription plans.",
