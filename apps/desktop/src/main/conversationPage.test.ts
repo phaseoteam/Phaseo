@@ -74,6 +74,7 @@ describe("database conversation pages", () => {
 	});
 	it("rejects invalid bounds and ambiguous cursors", () => {
 		const query = { taskId: "task", kind: "messages", limit: 50 };
-		for (const patch of [{ limit: 0 }, { limit: 101 }, { limit: 1.5 }, { kind: "queue" }, { taskId: "" }, { beforeId: "" }, { afterId: "x".repeat(201) }, { fromId: "" }, { fromId: "first", beforeId: "one" }, { beforeId: "one", afterId: "two" }]) expect(() => validateConversationPageQuery({ ...query, ...patch })).toThrow("Invalid conversation page");
+		expect(validateConversationPageQuery({ ...query, limit: 200 }).limit).toBe(200);
+		for (const patch of [{ limit: 0 }, { limit: 201 }, { limit: 1.5 }, { kind: "queue" }, { taskId: "" }, { beforeId: "" }, { afterId: "x".repeat(201) }, { fromId: "" }, { fromId: "first", beforeId: "one" }, { beforeId: "one", afterId: "two" }]) expect(() => validateConversationPageQuery({ ...query, ...patch })).toThrow("Invalid conversation page");
 	});
 });
