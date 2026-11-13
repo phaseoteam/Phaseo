@@ -4,6 +4,8 @@ import {
 	sortSubscriptionPlanPricesForDisplay,
 	getStartingPriceText,
 	resolveSubscriptionOrganisationName,
+	sortSubscriptionGroups,
+	type SubscriptionPlanGroup,
 	type SubscriptionPrice,
 } from "./ModelSubscriptionsClient";
 
@@ -57,5 +59,17 @@ describe("subscription organisation names", () => {
 	test("generates a label when the name is missing or just the id", () => {
 		expect(resolveSubscriptionOrganisationName("openai", "openai")).not.toBe("openai");
 		expect(resolveSubscriptionOrganisationName(null, "openai")).toBeTruthy();
+	});
+});
+
+describe("subscription plan groups", () => {
+	const group = (organisationId: string, price: number) => ({
+		organisationId, organisationName: organisationId, organisationColour: null,
+		plans: [{ plan_id: `${organisationId}-plan`, name: "Plan", organisation_id: organisationId, organisation: null, prices: [{ frequency: "monthly", currency: "USD", price }] }],
+	}) as unknown as SubscriptionPlanGroup;
+
+	test("puts the model owner's plans first even when resellers are cheaper", () => {
+		const sorted = sortSubscriptionGroups([group("cursor", 20), group("github", 10), group("anthropic", 100)], "anthropic", "Anthropic");
+		expect(sorted.map((entry) => entry.organisationId)).toEqual(["anthropic", "github", "cursor"]);
 	});
 });

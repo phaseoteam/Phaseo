@@ -1,6 +1,8 @@
 import Link from "@/components/link";
 import { useLocale, useTranslations } from "@/i18n/react";
-import { CreditCard } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, CreditCard } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
 	Empty,
 	EmptyDescription,
@@ -14,10 +16,12 @@ import type { SubscriptionPlanSummary as SubscriptionPlan } from "./subscription
 import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice, type SubscriptionPriceLabels } from "@/lib/fetchers/subscription-plans/pricing";
 import { getLogoLabel } from "@/lib/logos";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { apiMultiple, MIN_API_MULTIPLE, perMillionFractionDigits, summarizeUsage, USAGE_SOURCE_URL } from "@/lib/fetchers/subscription-plans/usage";
+import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
 
 export type { SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
 
-type SubscriptionPlanGroup = {
+export type SubscriptionPlanGroup = {
 	organisationId: string;
 	organisationName: string;
 	organisationColour: string | null;
@@ -88,7 +92,7 @@ function isNonFixedPlanFrequency(value: string | null): boolean {
 	return normalized === "usage" || normalized === "custom";
 }
 
-function toMonthlyEquivalent(price: SubscriptionPrice): number | null {
+export function toMonthlyEquivalent(price: SubscriptionPrice): number | null {
 	if (price.price == null) return null;
 	const raw = Number(price.price);
 	if (!Number.isFinite(raw) || raw < 0) return null;
@@ -108,7 +112,7 @@ function getCurrencySortRank(currency: string | null | undefined): number {
 type NumberFormatter = ReturnType<typeof useDisplayFormatters>["number"];
 
 function formatPlanPriceValue(price: SubscriptionPrice, formatNumber: NumberFormatter, labels: SubscriptionLabels): string {
-	if (price.components?.length) return formatSubscriptionPrice(price, (amount, currency) => formatNumber(amount, { style: "currency", currency, notation: "standard", maximumFractionDigits: 8 }), labels.structured ?? { custom: labels.customPricing, usage: labels.usageBased, unknown: labels.other });
+	if (price.components?.length) return formatSubscriptionPrice(price, (amount, currency) => formatNumber(amount, { style: "currency", currency, notation: "standard", ...(Number.isInteger(amount) ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : { maximumFractionDigits: 8 }) }), labels.structured ?? { custom: labels.customPricing, usage: labels.usageBased, unknown: labels.other });
 	if (price.price == null && price.frequency !== "usage" && price.frequency !== "custom") return labels.structured?.unknown ?? labels.other;
 	const normalized = normalizePlanFrequency(price.frequency);
 	if (normalized === "usage") return labels.usageBased;
@@ -139,6 +143,16 @@ function formatPlanPriceDisplay(price: SubscriptionPrice, formatNumber: NumberFo
 		value: formatPlanPriceValue(price, formatNumber, labels),
 		frequency: getFrequencyLabel(price.frequency, labels),
 	};
+}
+
+function PlanPrice({ price, formatNumber, labels }: { price: SubscriptionPrice; formatNumber: NumberFormatter; labels: SubscriptionLabels }) {
+	const display = formatPlanPriceDisplay(price, formatNumber, labels);
+	return (
+		<span className="inline-flex items-baseline gap-1">
+			<span className="font-semibold text-foreground">{display.value}</span>
+			{display.frequency ? <span className="text-xs text-muted-foreground">{display.frequency}</span> : null}
+		</span>
+	);
 }
 
 export function dedupeSubscriptionPlanPrices(
@@ -212,7 +226,7 @@ export function sortSubscriptionPlanPricesForDisplay(
 	});
 }
 
-function getPlanSortKey(prices: SubscriptionPrice[]): {
+export function getPlanSortKey(prices: SubscriptionPrice[]): {
 	currencyRank: number;
 	monthlyEquivalent: number;
 	rawPrice: number;
@@ -309,6 +323,35 @@ function getVisibleStartingPriceSortKey(plans: SubscriptionPlan[]): {
 	};
 }
 
+/** Sorts plan groups in place: the model owner first, then by cheapest visible starting price, then by name. */
+export function sortSubscriptionGroups(groups: SubscriptionPlanGroup[], ownerOrganisationId?: string | null, ownerOrganisationName?: string | null): SubscriptionPlanGroup[] {
+	return groups.sort((a, b) => {
+		const aIsOwner = isOwnerGroup(a, ownerOrganisationId, ownerOrganisationName);
+		const bIsOwner = isOwnerGroup(b, ownerOrganisationId, ownerOrganisationName);
+		if (aIsOwner !== bIsOwner) return aIsOwner ? -1 : 1;
+
+		const aKey = getVisibleStartingPriceSortKey(a.plans);
+		const bKey = getVisibleStartingPriceSortKey(b.plans);
+		if (aKey && bKey) {
+			if (aKey.currencyRank !== bKey.currencyRank) {
+				return aKey.currencyRank - bKey.currencyRank;
+			}
+			if (aKey.frequencyRank !== bKey.frequencyRank) {
+				return aKey.frequencyRank - bKey.frequencyRank;
+			}
+			if (aKey.rawPrice !== bKey.rawPrice) {
+				return aKey.rawPrice - bKey.rawPrice;
+			}
+		} else if (aKey && !bKey) {
+			return -1;
+		} else if (!aKey && bKey) {
+			return 1;
+		}
+
+		return a.organisationName.localeCompare(b.organisationName);
+	});
+}
+
 export default function ModelSubscriptionsClient({
 	subscriptionPlans,
 	ownerOrganisationId,
@@ -337,6 +380,19 @@ export default function ModelSubscriptionsClient({
 		structured: localizedSubscriptionPriceLabels(locale, { custom: tLabels("customPricing"), usage: tLabels("usageBased"), unknown: status("unknown"), from: terms("starting_at"), seat: terms("seat"), introductory: terms("introductory"), firstCycle: terms("first_billing_cycle"), cycleCount: terms("number_of_cycles") }),
 	};
 	const format = useDisplayFormatters();
+	const usageMessages = getSubscriptionPlansMessagesFor(locale).usage;
+	const listMessages = getSubscriptionPlansMessagesFor(locale).modelPage;
+	const [showAll, setShowAll] = useState(false);
+	/** "≈ $0.0063 per 1M tokens · 63× cheaper" for plans with measured usage of this model. */
+	const usageLine = (plan: SubscriptionPlan): string | null => {
+		const cheapest = summarizeUsage(plan.usage)?.cheapest;
+		if (cheapest?.effective_usd_per_mtok == null) return null;
+		const perMillion = format.number(cheapest.effective_usd_per_mtok, { style: "currency", currency: "USD", notation: "standard", ...perMillionFractionDigits(cheapest.effective_usd_per_mtok) });
+		const multiple = apiMultiple(cheapest);
+		return [formatSubscriptionPlanMessage(usageMessages.modelPage, { price: perMillion }),
+			multiple == null || multiple < MIN_API_MULTIPLE ? null : formatSubscriptionPlanMessage(usageMessages.timesCheaper, { value: format.number(multiple, { maximumFractionDigits: multiple >= 10 ? 0 : 1 }) })].filter(Boolean).join(" · ");
+	};
+	const hasUsage = subscriptionPlans.some((plan) => usageLine(plan));
 	const groupedPlans = subscriptionPlans.reduce<SubscriptionPlanGroup[]>((groups, plan) => {
 		const organisationId = plan.organisation?.organisation_id ?? plan.organisation_id;
 		const sourceOrganisationName = plan.organisation?.name?.trim();
@@ -355,31 +411,7 @@ export default function ModelSubscriptionsClient({
 		return groups;
 	}, []);
 
-	groupedPlans.sort((a, b) => {
-		const aKey = getVisibleStartingPriceSortKey(a.plans);
-		const bKey = getVisibleStartingPriceSortKey(b.plans);
-		if (aKey && bKey) {
-			if (aKey.currencyRank !== bKey.currencyRank) {
-				return aKey.currencyRank - bKey.currencyRank;
-			}
-			if (aKey.frequencyRank !== bKey.frequencyRank) {
-				return aKey.frequencyRank - bKey.frequencyRank;
-			}
-			if (aKey.rawPrice !== bKey.rawPrice) {
-				return aKey.rawPrice - bKey.rawPrice;
-			}
-		} else if (aKey && !bKey) {
-			return -1;
-		} else if (!aKey && bKey) {
-			return 1;
-		}
-
-		const aIsOwner = isOwnerGroup(a, ownerOrganisationId, ownerOrganisationName);
-		const bIsOwner = isOwnerGroup(b, ownerOrganisationId, ownerOrganisationName);
-		if (aIsOwner !== bIsOwner) return aIsOwner ? -1 : 1;
-
-		return a.organisationName.localeCompare(b.organisationName);
-	});
+	sortSubscriptionGroups(groupedPlans, ownerOrganisationId, ownerOrganisationName);
 
 	for (const group of groupedPlans) {
 		group.plans.sort((a, b) => {
@@ -404,22 +436,15 @@ export default function ModelSubscriptionsClient({
 		});
 	}
 
-	return (
-		<div className="space-y-6">
-			{showHeader ? (
-				<div className="space-y-1">
-					<h2 className="text-2xl font-semibold tracking-tight text-foreground">
-						{tLabels("subscriptions")}
-					</h2>
-					<p className="text-sm text-muted-foreground">
-						{tLabels("subscriptionsDescription")}
-					</p>
-				</div>
-			) : null}
-
-			{groupedPlans.length > 0 ? (
-				<div className="space-y-3 xl:grid xl:grid-cols-2 xl:items-start xl:gap-3 xl:space-y-0">
-					{groupedPlans.map((group) => (
+	// Show the model owner's plans in full (or the first provider when the owner sells none).
+	// With three or more providers, the rest collapse into one line each until expanded.
+	const ownerGroups = groupedPlans.filter((group) => isOwnerGroup(group, ownerOrganisationId, ownerOrganisationName));
+	const leadGroups = ownerGroups.length ? ownerGroups : groupedPlans.slice(0, 1);
+	const otherGroups = groupedPlans.filter((group) => !leadGroups.includes(group));
+	const collapsible = otherGroups.length >= 2;
+	const featuredGroups = collapsible && !showAll ? leadGroups : groupedPlans;
+	const otherPlanCount = otherGroups.reduce((count, group) => count + group.plans.length, 0);
+	const renderGroup = (group: SubscriptionPlanGroup) => (
 						<section
 							key={group.organisationId}
 							className="overflow-hidden rounded-xl border border-border bg-card"
@@ -484,35 +509,26 @@ export default function ModelSubscriptionsClient({
 											<div className="min-w-0">
 												<Link
 													href={`/subscription-plans/${plan.plan_id}`}
-													className="truncate text-sm font-medium text-foreground underline-offset-4 hover:underline"
+													className="block truncate text-sm font-medium text-foreground underline-offset-4 hover:underline"
 												>
 													{plan.name}
 												</Link>
+												{usageLine(plan) ? <p className="text-xs tabular-nums text-muted-foreground">{usageLine(plan)}</p> : null}
 											</div>
 
-											<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm sm:justify-end">
+											<div className="text-sm tabular-nums sm:text-right">
 												{sortedPrices.length > 0 ? (
-													sortedPrices.map((price, priceIndex) => {
-												const displayPrice = formatPlanPriceDisplay(price, format.number, planLabels);
-														return (
-															<span
-																key={`${plan.plan_id}:${price.frequency}:${price.currency}:${price.price}`}
-																className="inline-flex items-baseline gap-1 tabular-nums"
-															>
-																{priceIndex > 0 ? (
-																	<span className="text-muted-foreground/50">/</span>
-																) : null}
-																<span className="font-semibold text-foreground">
-																	{displayPrice.value}
-																</span>
-																{displayPrice.frequency ? (
-																	<span className="text-xs text-muted-foreground">
-																		{displayPrice.frequency}
-																	</span>
-																) : null}
-															</span>
-														);
-													})
+													<>
+														<PlanPrice price={sortedPrices[0]} formatNumber={format.number} labels={planLabels} />
+														{sortedPrices.length > 1 ? (
+															<p className="text-xs text-muted-foreground">
+																{sortedPrices.slice(1).map((price) => {
+																	const display = formatPlanPriceDisplay(price, format.number, planLabels);
+																	return display.frequency ? `${display.value} ${display.frequency}` : display.value;
+																}).join(" · ")}
+															</p>
+														) : null}
+													</>
 												) : (
 													<div className="text-sm text-muted-foreground">
 												{tEmpty("noSubscriptionPrice")}
@@ -524,9 +540,61 @@ export default function ModelSubscriptionsClient({
 								})}
 							</div>
 						</section>
-					))}
+	);
+
+	return (
+		<div className="space-y-6">
+			{showHeader ? (
+				<div className="space-y-1">
+					<h2 className="text-2xl font-semibold tracking-tight text-foreground">
+						{tLabels("subscriptions")}
+					</h2>
+					<p className="text-sm text-muted-foreground">
+						{tLabels("subscriptionsDescription")}
+					</p>
 				</div>
-			) : (
+			) : null}
+
+			{groupedPlans.length > 0 ? (
+				<div className={cn("space-y-3", featuredGroups.length > 1 && "xl:columns-2 xl:gap-3 xl:space-y-0 xl:[&>section]:mb-3 xl:[&>section]:break-inside-avoid")}>
+					{featuredGroups.map(renderGroup)}
+				</div>
+			) : null}
+			{collapsible ? (
+				<div className="space-y-2">
+					{!showAll ? (
+						<>
+							<p className="text-sm font-medium text-foreground">{formatSubscriptionPlanMessage(listMessages.otherProviders, { count: otherGroups.length })}</p>
+							<ul className="divide-y divide-border/70 overflow-hidden rounded-md border border-border/70">
+								{otherGroups.map((group) => (
+									<li key={group.organisationId}>
+										<button type="button" onClick={() => setShowAll(true)} className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/40">
+											<span className="relative size-5 shrink-0"><Logo id={group.organisationId || group.organisationName} alt="" fill sizes="20px" className="object-contain" /></span>
+											<span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{group.organisationName}</span>
+											<span className="hidden text-xs text-muted-foreground sm:inline">{tLabels("planCount", { count: group.plans.length })}</span>
+											{getStartingPriceText(group.plans, format.number, planLabels) ? (
+												<span className="shrink-0 text-xs tabular-nums text-muted-foreground">{tLabels("from")} <span className="font-medium text-foreground">{getStartingPriceText(group.plans, format.number, planLabels)}</span></span>
+											) : null}
+										</button>
+									</li>
+								))}
+							</ul>
+						</>
+					) : null}
+					<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => setShowAll((value) => !value)} aria-expanded={showAll}>
+						{showAll ? listMessages.showFewerPlans : formatSubscriptionPlanMessage(listMessages.showAllPlans, { count: otherPlanCount })}
+						<ChevronDown className={cn("size-4 transition-transform", showAll && "rotate-180")} aria-hidden="true" />
+					</Button>
+				</div>
+			) : null}
+			{groupedPlans.length > 0 && hasUsage ? (
+				<p className="text-xs leading-relaxed text-muted-foreground">
+					{usageMessages.sourceNote.split("{source}")[0]}
+					<a href={USAGE_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-foreground">real-api-pricing</a>
+					{usageMessages.sourceNote.split("{source}")[1]}
+				</p>
+			) : null}
+			{groupedPlans.length > 0 ? null : (
 				<Empty className="rounded-lg border p-8">
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
