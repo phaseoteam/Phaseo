@@ -15,6 +15,7 @@ Read the error code and `reason` on a `429` to tell which limit stopped the requ
 | [Department budget](#department-budgets) | `key_limit_exceeded` | `department_daily_cost_budget_reached` (or `weekly`, `monthly`) | Yes, at `reset_at` |
 | [Spend rule set to block](#key-limits-and-budgets) | `spend_rule_blocked` | | At `reset_at` when the block has one, or when an owner or admin lifts it |
 | [Rate limit policy](#rate-limit-policies) | `rate_limit_exceeded` | `policy_requests_per_minute`, `policy_tokens_per_minute`, `policy_concurrent_requests` or `policy_unavailable` | Yes, `Retry-After` in seconds |
+| [Management API](#management-api-limits) | `rate_limit_exceeded` | `management_api_rate_limit` | Yes, `Retry-After` in seconds |
 | [Provider](#provider-limits) | `upstream_error` or `provider_capacity_exhausted` | | Follow the provider's `Retry-After` |
 
 All of these return `429`. If gateway quota enforcement is briefly unavailable, the gateway returns `503` with retry guidance instead.
@@ -37,6 +38,22 @@ Free models also have an allowance of **1,500 requests per UTC day** by default.
 Both limits apply across gateway regions and can be raised for a specific user and workspace. File operations and job-status polling use the minute allowance; management endpoints don't.
 
 A rejected request returns `429` with `Retry-After` in seconds. Wait that long before retrying.
+
+## Management API limits
+
+Management endpoints, such as `/v1/keys`, `/v1/logs` and `/v1/analytics`, share an allowance of **600 units per minute** for each credential. Each management key, OAuth token and dashboard session has its own allowance, and requests without a credential share one per IP address. Model, file, batch and job endpoints don't use it.
+
+Each request uses units according to how much work it does:
+
+| Units | Requests |
+| --- | --- |
+| 1 | Catalogue reads (`/v1/models`, `/v1/pricing`, `/v1/providers`, `/v1/organisations`), `/v1/key`, `/v1/me` and `/v1/settings` |
+| 2 | Other reads, such as `/v1/keys` and `/v1/workspaces` |
+| 3 | Creating, updating or deleting anything |
+| 5 | Searching logs, generations, audit events, activity, feedback and events |
+| 10 | `/v1/analytics`, and tests that call an outside service: observability destination tests and samples, classifier tests and preset test runs |
+
+`/v1/health` and CORS preflight requests are free. A request over the allowance returns `429` with `rate_limit_exceeded`, reason `management_api_rate_limit` and `Retry-After: 60`. The count is approximate and these responses carry no `x-ratelimit-*` headers, so spread bulk scripts out rather than running them up to the limit.
 
 ## Key limits and budgets
 
@@ -126,5 +143,6 @@ Rate-limit rules for agents, summarising this page:
 - A used-up department budget returns `429` with `key_limit_exceeded`, reason `department_<interval>_cost_budget_reached`, `department_id`, `department_name` and `reset_at`; wait `Retry-After` seconds or raise the budget. If the budget check is unavailable, the request is allowed.
 - Spend rules that block return `429` with `spend_rule_blocked`; wait for `Retry-After`, or ask an owner or admin to lift the block. `x-phaseo-spend-warning` means a block may follow.
 - Workspace rate limit policies return `429` with `rate_limit_exceeded`, `policy_id` and `limit_scope`. `x-ratelimit-remaining-requests` is approximate.
+- Management endpoints (keys, logs, analytics and so on) return `429` with `rate_limit_exceeded` and reason `management_api_rate_limit` once a credential has used its 600 units for the minute; heavier requests use more units. Wait `Retry-After` (60) seconds.
 - `Retry-After` can be seconds or an HTTP date; validate it before scheduling a retry. Never resubmit an ambiguous video or batch job; check its status instead.
 </Visibility>
