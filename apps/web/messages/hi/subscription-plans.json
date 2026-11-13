@@ -109,5 +109,10 @@
     "mostTokens": "सबसे ज़्यादा टोकन",
     "lowestCost": "प्रति 10 लाख टोकन सबसे कम लागत",
     "modelPage": "≈ {price} प्रति 10 लाख टोकन"
+  },
+  "modelPage": {
+    "otherProviders": "{count} अन्य प्रदाताओं की योजनाओं में भी शामिल",
+    "showAllPlans": "सभी {count} योजनाएँ दिखाएँ",
+    "showFewerPlans": "कम योजनाएँ दिखाएँ"
   }
 }

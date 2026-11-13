@@ -109,5 +109,10 @@
     "mostTokens": "Token 最多",
     "lowestCost": "每 100 万 Token 最低成本",
     "modelPage": "约每 100 万 Token {price}"
+  },
+  "modelPage": {
+    "otherProviders": "另有 {count} 家提供商的方案也包含此模型",
+    "showAllPlans": "显示全部 {count} 个方案",
+    "showFewerPlans": "收起方案"
   }
 }

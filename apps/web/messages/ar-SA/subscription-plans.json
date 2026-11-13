@@ -109,5 +109,10 @@
     "mostTokens": "الأكثر رموزًا",
     "lowestCost": "الأقل تكلفة لكل مليون رمز",
     "modelPage": "≈ {price} لكل مليون رمز"
+  },
+  "modelPage": {
+    "otherProviders": "مضمّن أيضًا في خطط {count} مزوّدين آخرين",
+    "showAllPlans": "عرض كل الخطط ({count})",
+    "showFewerPlans": "عرض خطط أقل"
   }
 }
