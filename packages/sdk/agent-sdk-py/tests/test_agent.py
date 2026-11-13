@@ -269,7 +269,7 @@ def test_stop_when_ends_a_tool_loop():
 
 
 def test_tool_timeout_returns_to_the_model_when_asked():
-    import time
+    import threading
 
     import pytest
 
@@ -283,17 +283,22 @@ def test_tool_timeout_returns_to_the_model_when_asked():
                 return AgentModelResponse(AgentMessage("assistant", "", [AgentToolCall("slow_1", "slow", {})]))
             return AgentModelResponse(AgentMessage("assistant", "recovered"))
 
-    slow = lambda _input, _ctx: time.sleep(0.5) or "late"
-    forgiving = create_agent({"id": "timeout", "tools": [AgentTool("slow", slow, timeout_ms=20, on_error="return-to-model")]})
-    client = OneCallClient()
-    result = forgiving.run(input="go", client=client)
-    assert result.output == "recovered"
-    tool_message = next(message for message in client.requests[1].messages if message.role == "tool")
-    assert tool_message.is_error and "timed out after 20ms" in tool_message.content
+    # The tool blocks until released, so it can only finish after the timeout fires.
+    release = threading.Event()
+    slow = lambda _input, _ctx: release.wait() and "late"
+    try:
+        forgiving = create_agent({"id": "timeout", "tools": [AgentTool("slow", slow, timeout_ms=20, on_error="return-to-model")]})
+        client = OneCallClient()
+        result = forgiving.run(input="go", client=client)
+        assert result.output == "recovered"
+        tool_message = next(message for message in client.requests[1].messages if message.role == "tool")
+        assert tool_message.is_error and "timed out after 20ms" in tool_message.content
 
-    strict = create_agent({"id": "timeout-strict", "tools": [AgentTool("slow", slow, timeout_ms=20)]})
-    with pytest.raises(TimeoutError, match="timed out after 20ms"):
-        strict.run(input="go", client=OneCallClient())
+        strict = create_agent({"id": "timeout-strict", "tools": [AgentTool("slow", slow, timeout_ms=20)]})
+        with pytest.raises(TimeoutError, match="timed out after 20ms"):
+            strict.run(input="go", client=OneCallClient())
+    finally:
+        release.set()
 
 
 def test_gateway_client_reads_phaseo_api_key_from_the_environment(monkeypatch):
