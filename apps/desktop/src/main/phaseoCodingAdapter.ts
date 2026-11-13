@@ -11,7 +11,7 @@ import type { AgentMessage, AgentModelClient, AgentPendingToolCall, AgentRunResu
 import { phaseoRequestSettings } from "./phaseoModelOptions";
 import type { Account, ModelFacts, QueuedMessage, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
-import type { WorkspaceStore } from "./workspaceStore";
+import { recentTurns, type WorkspaceStore } from "./workspaceStore";
 import { threadTools } from "./threadTools";
 import { alwaysAskThreadTools, orchestrationInstructions, threadToolLabel, threadToolLabels } from "../shared/orchestration";
 import type { AttachmentContent } from "./attachments";
@@ -140,7 +140,7 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 			const result = await runPhaseoTurn({
 				task, input: requestedAction?.arguments ?? text, callbacks, signal: this.controller.signal, store: this.store,
 				client: this.clientFactory(account, key, task), tools, facts, steering: this.steering, streamed,
-				transcript: phaseoConversationMessages(task.messages, text, attachments, requestedAction?.arguments),
+				transcript: () => phaseoConversationMessages(task.messages, text, attachments, requestedAction?.arguments), followUp: () => phaseoConversationMessages(recentTurns(task).messages, text, attachments, requestedAction?.arguments).slice(-1),
 				previous, labels: mcp.labels,
 				hidden: () => live.writable ? new Set() : writeIds,
 				context: { ...record(unfinished?.run.context), ...(nativeAction ? { phaseoSkill: { id: nativeAction.id, name: nativeAction.name } } : {}), ...(skillTools?.snapshot().length ? { phaseoModelSkills: skillTools.snapshot() } : {}) },
