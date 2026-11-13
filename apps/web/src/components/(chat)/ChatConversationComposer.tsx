@@ -3128,24 +3128,28 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 											{label}
 										</span>
 										{onEditQueuedPrompt ? (
-											<button
+											<Button
 												type="button"
+												variant="ghost"
+												size="icon-xs"
 								aria-label={tUi("accessibility.editQueuedPrompt")}
 												onClick={() => onEditQueuedPrompt(prompt.id)}
-												className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+												className="text-muted-foreground hover:bg-background hover:text-foreground dark:hover:bg-background"
 											>
-												<Pencil className="h-3.5 w-3.5" />
-											</button>
+												<Pencil className="size-3.5" />
+											</Button>
 										) : null}
 										{onRemoveQueuedPrompt ? (
-											<button
+											<Button
 												type="button"
+												variant="ghost"
+												size="icon-xs"
 								aria-label={tUi("accessibility.removeQueuedPrompt")}
 												onClick={() => onRemoveQueuedPrompt(prompt.id)}
-												className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition hover:bg-background hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+												className="text-muted-foreground hover:bg-background hover:text-destructive dark:hover:bg-background"
 											>
-												<Trash2 className="h-3.5 w-3.5" />
-											</button>
+												<Trash2 className="size-3.5" />
+											</Button>
 										) : null}
 									</div>
 								);

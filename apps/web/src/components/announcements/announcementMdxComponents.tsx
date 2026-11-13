@@ -3,6 +3,14 @@ import Link from "@/components/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import AnnouncementCounter from "./AnnouncementCounter";
 import { Feature, FeatureGrid, Flow, FlowStep } from "./AnnouncementDiagrams";
 import CliInstallTabs from "./CliInstallTabs";
@@ -179,17 +187,31 @@ export const announcementMdxComponents = {
 	),
 	table: (props: ComponentPropsWithoutRef<"table">) => (
 		<div className="my-6 overflow-x-auto rounded-md border border-zinc-200 dark:border-zinc-800">
-			<table className="w-full border-collapse text-left text-sm" {...props} />
+			<Table
+				wrapInContainer={false}
+				className="w-full border-collapse text-left text-sm"
+				{...props}
+			/>
 		</div>
 	),
+	thead: (props: ComponentPropsWithoutRef<"thead">) => (
+		<TableHeader className="[&_tr]:border-b-0" {...props} />
+	),
+	tbody: (props: ComponentPropsWithoutRef<"tbody">) => <TableBody {...props} />,
+	tr: (props: ComponentPropsWithoutRef<"tr">) => (
+		<TableRow
+			className="border-b-0 hover:bg-transparent dark:hover:bg-transparent"
+			{...props}
+		/>
+	),
 	th: (props: ComponentPropsWithoutRef<"th">) => (
-		<th
-			className="border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 font-semibold text-zinc-950 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-50"
+		<TableHead
+			className="h-auto border-b border-zinc-200 bg-zinc-50 px-4 py-2.5 font-semibold text-zinc-950 dark:border-zinc-800 dark:bg-zinc-900/60 dark:text-zinc-50"
 			{...props}
 		/>
 	),
 	td: (props: ComponentPropsWithoutRef<"td">) => (
-		<td
+		<TableCell
 			className="border-b border-zinc-200 px-4 py-2.5 align-top leading-6 text-zinc-700 dark:border-zinc-800 dark:text-zinc-300 [tr:last-child_&]:border-b-0"
 			{...props}
 		/>

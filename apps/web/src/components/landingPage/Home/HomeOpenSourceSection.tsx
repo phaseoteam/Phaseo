@@ -484,24 +484,26 @@ function FirstPromptCodeBlock({
 						</DropdownMenu>
 					) : null}
 				</div>
-				<button
+				<Button
 					type="button"
+					variant="outline"
+					size="xs"
 					onClick={handleCopy}
 					className={cn(
-						"inline-flex items-center rounded-md border border-zinc-200/80 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 transition-all duration-200 ease-out hover:border-zinc-300 hover:text-zinc-900 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:text-zinc-100",
+						"gap-0 border-zinc-200/80 bg-white text-zinc-600 transition-all duration-200 ease-out hover:border-zinc-300 hover:bg-white hover:text-zinc-900 active:scale-[0.98] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600 dark:hover:bg-zinc-900 dark:hover:text-zinc-100",
 						copied && "border-zinc-300 text-zinc-900 dark:border-zinc-600 dark:text-zinc-100"
 					)}
 				>
-					<span className="relative mr-1.25 h-3.5 w-3.5">
+					<span className="relative mr-1.25 size-3.5">
 						<Copy
 							className={cn(
-								"absolute inset-0 h-3.5 w-3.5 transition-all duration-200 ease-out",
+								"absolute inset-0 size-3.5 transition-all duration-200 ease-out",
 								copied ? "translate-y-0.5 scale-90 opacity-0" : "translate-y-0 scale-100 opacity-100"
 							)}
 						/>
 						<Check
 							className={cn(
-								"absolute inset-0 h-3.5 w-3.5 transition-all duration-200 ease-out",
+								"absolute inset-0 size-3.5 transition-all duration-200 ease-out",
 								copied ? "translate-y-0 scale-100 opacity-100" : "-translate-y-0.5 scale-90 opacity-0"
 							)}
 						/>
@@ -529,7 +531,7 @@ function FirstPromptCodeBlock({
 							{t("copied")}
 						</span>
 					</span>
-				</button>
+				</Button>
 			</div>
 			{!error && tokens ? (
 				<pre className="overflow-x-auto px-4 py-4 text-[13px] leading-6 text-zinc-900 dark:text-zinc-200">

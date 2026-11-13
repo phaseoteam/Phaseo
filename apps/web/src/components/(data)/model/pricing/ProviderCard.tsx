@@ -3247,18 +3247,20 @@ export default function ProviderCard({
 					) : null}
 					<div className="flex items-center gap-1.5">
 						{showServiceTierDisclosureGutter && availablePlans.length > 1 && onToggleServiceTiers ? (
-							<button
+							<Button
 								type="button"
+								variant="ghost"
+								size="icon-xs"
 								aria-expanded={serviceTiersExpanded}
 								aria-label={tProvider(
 									serviceTiersExpanded ? "collapseServiceTiers" : "expandServiceTiers",
 									{ provider: displayName },
 								)}
 								onClick={onToggleServiceTiers}
-								className={cn("inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40", TAP_TARGET_20)}
+								className={cn("size-5 text-muted-foreground hover:bg-muted/60 aria-expanded:bg-transparent aria-expanded:text-muted-foreground aria-expanded:hover:bg-muted/60 aria-expanded:hover:text-foreground", TAP_TARGET_20)}
 							>
 								<ChevronDown className={cn("size-3 transition-transform", !serviceTiersExpanded && "-rotate-90")} aria-hidden="true" />
-							</button>
+							</Button>
 						) : null}
 						<div className="max-sm:min-w-0 max-sm:flex-1">
 						<div className="flex items-center gap-2.5 max-sm:flex-wrap max-sm:gap-y-1">

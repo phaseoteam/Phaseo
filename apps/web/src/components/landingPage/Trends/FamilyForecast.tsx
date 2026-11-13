@@ -5,6 +5,14 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { useLocale, useTranslations } from "@/i18n/react";
 
 const SAMPLE_ROWS = [
@@ -67,37 +75,37 @@ export default function FamilyForecastCard({
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="overflow-x-auto">
-				<table className="w-full min-w-[520px] text-sm">
-					<thead className="text-left text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-						<tr className="border-b border-zinc-200/70 dark:border-zinc-800/70">
-							<th className="py-3 pr-4">{t("family")}</th>
-							<th className="py-3 pr-4 text-right">{t("medianGap")}</th>
-							<th className="py-3 pr-4 text-right">{t("lastRelease")}</th>
-							<th className="py-3 text-right">{t("predictedNext")}</th>
-						</tr>
-					</thead>
-					<tbody>
+				<Table wrapInContainer={false} className="min-w-[520px] text-sm">
+					<TableHeader className="text-left text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+						<TableRow className="border-b border-zinc-200/70 hover:bg-transparent dark:border-zinc-800/70 dark:hover:bg-transparent">
+							<TableHead className="h-auto px-0 py-3 pr-4 font-bold">{t("family")}</TableHead>
+							<TableHead className="h-auto px-0 py-3 pr-4 text-right font-bold">{t("medianGap")}</TableHead>
+							<TableHead className="h-auto px-0 py-3 pr-4 text-right font-bold">{t("lastRelease")}</TableHead>
+							<TableHead className="h-auto px-0 py-3 text-right font-bold">{t("predictedNext")}</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody>
 						{rows.map((row) => (
-							<tr
+							<TableRow
 								key={row.family}
-								className="border-b border-zinc-200/50 text-zinc-700 last:border-none dark:border-zinc-800/50 dark:text-zinc-300"
+								className="border-b border-zinc-200/50 text-zinc-700 last:border-none hover:bg-transparent dark:border-zinc-800/50 dark:text-zinc-300 dark:hover:bg-transparent"
 							>
-								<td className="py-3 pr-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+								<TableCell className="p-0 py-3 pr-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
 									{row.family}
-								</td>
-								<td className="py-3 pr-4 text-right text-sm font-medium">
+								</TableCell>
+								<TableCell className="p-0 py-3 pr-4 text-right text-sm font-medium">
 									{new Intl.NumberFormat(locale).format(row.medianDays)} {t("daysUnit")}
-								</td>
-								<td className="py-3 pr-4 text-right text-sm">
+								</TableCell>
+								<TableCell className="p-0 py-3 pr-4 text-right text-sm">
 								{formatDate(row.lastRelease)}
-								</td>
-								<td className="py-3 text-right text-sm font-medium text-emerald-600 dark:text-emerald-300">
+								</TableCell>
+								<TableCell className="p-0 py-3 text-right text-sm font-medium text-emerald-600 dark:text-emerald-300">
 									{formatDate(row.predictedNext)}
-								</td>
-							</tr>
+								</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</Table>
 				<p className="mt-3 text-xs text-zinc-500 dark:text-zinc-500">
 					{t("predictionNotice")}
 				</p>

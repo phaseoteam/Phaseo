@@ -4,6 +4,7 @@ import { useTranslations } from "@/i18n/react";
 import { DisplayDate } from "@/components/display/DisplayValue";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
@@ -192,16 +193,16 @@ function AlertCard({
 // Fills whole rows in both the two- and three-column grids.
 const VISIBLE_BEFORE_MORE = 6;
 
-// Native disclosure with its marker hidden, so the chevron is the only indicator.
+// Disclosure where the chevron is the only indicator.
 function ShowMore({ label, children }: { label: string; children: ReactNode }) {
 	return (
-		<details className="group rounded-md border">
-			<summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:text-foreground [&::-webkit-details-marker]:hidden">
-				<ChevronDown aria-hidden className="size-3.5 shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+		<Collapsible className="rounded-md border">
+			<CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1.5 px-3 py-2 text-left text-xs text-muted-foreground hover:text-foreground">
+				<ChevronDown aria-hidden className="size-3.5 shrink-0 transition-transform group-data-[panel-open]:rotate-180 motion-reduce:transition-none" />
 				{label}
-			</summary>
-			<div className="grid gap-2 border-t p-2 md:grid-cols-2 xl:grid-cols-3">{children}</div>
-		</details>
+			</CollapsibleTrigger>
+			<CollapsibleContent hiddenUntilFound className="grid gap-2 border-t p-2 md:grid-cols-2 xl:grid-cols-3">{children}</CollapsibleContent>
+		</Collapsible>
 	);
 }
 

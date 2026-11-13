@@ -33,6 +33,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Popover,
 	PopoverContent,
@@ -112,38 +113,40 @@ function ColumnOption<Id extends string>({
 			style={{ transform: CSS.Transform.toString(transform), transition }}
 			className="flex items-center gap-1 rounded-md bg-popover px-1 hover:bg-muted/50"
 		>
-			<button
+			<Button
 				type="button"
+				variant="ghost"
+				size="icon-xs"
 				{...attributes}
 				{...listeners}
 				aria-label={t("realtimeCopy.reorderColumn", { label })}
-				className="touch-none cursor-grab rounded p-1 text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring active:cursor-grabbing"
+				className="size-auto touch-none cursor-grab p-1 text-muted-foreground hover:bg-transparent focus-visible:outline-2 focus-visible:outline-ring active:cursor-grabbing dark:hover:bg-transparent"
 			>
 				<GripVertical className="size-4" />
-			</button>
+			</Button>
 			<label className="flex min-h-7 flex-1 cursor-pointer items-center justify-between gap-2 text-xs">
 				{label}
-				<input
-					type="checkbox"
+				<Checkbox
 					checked={column.visible}
 					disabled={disabled}
-					onChange={onToggle}
-					className="size-4 accent-foreground"
+					onCheckedChange={() => onToggle()}
 				/>
 			</label>
-			<button
+			<Button
 				type="button"
+				variant="ghost"
+				size="icon-xs"
 				onClick={onPin}
 				aria-label={column.pinned ? t("realtimeCopy.unpinColumnLabel", { label }) : t("realtimeCopy.pinColumn", { label })}
 				title={column.pinned ? t("realtimeCopy.unpinColumn") : t("realtimeCopy.pinLeft")}
-				className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+				className="size-auto p-1 text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring"
 			>
 				{column.pinned ? (
 					<PinOff className="size-3.5" />
 				) : (
 					<Pin className="size-3.5" />
 				)}
-			</button>
+			</Button>
 		</div>
 	);
 }

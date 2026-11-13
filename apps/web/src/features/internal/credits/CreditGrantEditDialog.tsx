@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
 	buildExpirySelectionPreview,
 	buildExpiryUtcIso,
@@ -59,6 +60,8 @@ export default function CreditGrantEditDialog(props: Props) {
 	const t = useTranslations("Product.internalTools.promoCredits");
 	const formRef = useRef<HTMLFormElement>(null);
 	const [open, setOpen] = useState(false);
+	// The dialog content remounts on open, so start from the saved value each time (like defaultChecked did).
+	const [activeChecked, setActiveChecked] = useState(isActive);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isDisabling, setIsDisabling] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
@@ -145,7 +148,13 @@ export default function CreditGrantEditDialog(props: Props) {
 	}
 
 	return (
-		<Dialog open={open} onOpenChange={setOpen}>
+		<Dialog
+			open={open}
+			onOpenChange={(nextOpen) => {
+				if (nextOpen) setActiveChecked(isActive);
+				setOpen(nextOpen);
+			}}
+		>
 			<DialogTrigger asChild>
 				<Button type="button" variant="outline" size="sm">
 					{t("edit")}
@@ -232,13 +241,11 @@ export default function CreditGrantEditDialog(props: Props) {
 					</div>
 					<label className="inline-flex items-center gap-2 text-sm text-muted-foreground">
 						<input type="hidden" name="is_active" value="false" />
-						<input
-							type="checkbox"
-							name="is_active"
-							value="true"
-							defaultChecked={isActive}
-							className="h-4 w-4"
+						<Checkbox
+							checked={activeChecked}
+							onCheckedChange={(checked) => setActiveChecked(checked === true)}
 						/>
+						{activeChecked ? <input type="hidden" name="is_active" value="true" /> : null}
 						{t("active")}
 					</label>
 					{!canDelete ? (

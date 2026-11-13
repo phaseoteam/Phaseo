@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { createAPIProviderAction, updateAPIProviderAction, withTargetId } from "@/features/internal/data/actions";
@@ -52,6 +53,7 @@ export function ProviderForm({ provider, options, initialScope = "global", initi
   const [mode, setMode] = useState(provider?.residency_mode || "unknown");
   const [status, setStatus] = useState(provider?.status || "active");
   const [policy, setPolicy] = useState(provider?.prompt_training_policy || "unknown");
+  const [byokAvailable, setByokAvailable] = useState(Boolean(provider?.byok_available));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const parents = options.providers.filter((item) => item.provider_slug !== provider?.api_provider_id && item.offer_scope !== "regional");
@@ -93,7 +95,7 @@ export function ProviderForm({ provider, options, initialScope = "global", initi
         <p className="text-xs text-muted-foreground">{tx("Common.ui.pricingEditorCopy.registerTheOfferHereThenAttachItToModelsGatewayIntegrationAndCredentialsAreConfiguredSeparatelyNewOffersStartWithRoutingOff" as never)}</p>
         {provider ? <p className="text-sm text-muted-foreground">{tx("Common.ui.pricingEditorCopy.gatewayStatus", { status: provider.routing_enabled && provider.routable ? tx("Common.ui.modelEditor.advanced.enabled" as never) : tx("Common.ui.pricingEditorCopy.notEnabled" as never) })}</p> : null}
         <div className="space-y-2"><label className="text-sm font-medium">{tx("Common.ui.pricingEditorCopy.catalogStatus" as never)}</label><SearchableSelect label={tx("Common.ui.pricingEditorCopy.catalogStatus" as never)} value={status} options={[...new Set(["active", "beta", "alpha", "not_ready", "deprecated", "disabled", ...(provider?.status ? [provider.status] : [])])].map((value) => ({ value, label: ({"active":"Common.ui.modelEditor.modelStatuses.active","beta":"Common.ui.modelEditor.modelStatuses.beta","alpha":"SettingsUI.oauthAppsPage.alphaLabel","not_ready":"SettingsUI.identity.availability.not_ready","deprecated":"Common.ui.modelEditor.modelStatuses.deprecated","disabled":"Common.ui.modelEditor.capabilityStatuses.disabled"} as Record<string, string>)[value] ? tx(({"active":"Common.ui.modelEditor.modelStatuses.active","beta":"Common.ui.modelEditor.modelStatuses.beta","alpha":"SettingsUI.oauthAppsPage.alphaLabel","not_ready":"SettingsUI.identity.availability.not_ready","deprecated":"Common.ui.modelEditor.modelStatuses.deprecated","disabled":"Common.ui.modelEditor.capabilityStatuses.disabled"} as Record<string, string>)[value] as never) : value }))} onValueChange={setStatus} /><input type="hidden" name="status" value={status} /></div>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="byok_available" defaultChecked={provider?.byok_available} />{tx("Catalogue.providers.byokAvailable" as never)}</label>
+        <label className="flex items-center gap-2 text-sm"><Checkbox checked={byokAvailable} onCheckedChange={(checked) => setByokAvailable(checked === true)} />{byokAvailable ? <input type="hidden" name="byok_available" value="on" /> : null}{tx("Catalogue.providers.byokAvailable" as never)}</label>
       </section>
       <section className="space-y-4 border-t pt-5"><h2 className="flex items-center gap-2 font-medium"><FileText className="size-4 text-muted-foreground" />{tx("Common.footer.about" as never)}</h2><label className="block space-y-2 text-sm font-medium">{tx("Catalogue.models.detail.quickstart.descriptionLabel" as never)}<Textarea name="description" defaultValue={provider?.description || ""} /></label><div className="grid gap-4 sm:grid-cols-2"><label className="space-y-2 text-sm font-medium">{tx("Catalogue.modelDetail.metadata.website" as never)}<Input name="link" type="url" defaultValue={provider?.link || ""} /></label><CatalogCountryField defaultValue={provider?.country_code || ""} /><label className="space-y-2 text-sm font-medium">{tx("Product.internalTools.dataEditor.subdivisionCode" as never)}<Input name="subdivision_code" defaultValue={provider?.subdivision_code || ""} placeholder="US-CA" className="font-mono" /></label></div>
       </section>

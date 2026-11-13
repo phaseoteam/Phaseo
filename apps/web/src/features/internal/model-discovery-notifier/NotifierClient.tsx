@@ -2,6 +2,7 @@ import Link from "@/components/link";
 import { useState, useTransition } from "react";
 import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -116,10 +117,9 @@ export default function NotifierClient() {
 						</div>
 					</div>
 					<label className="flex items-center gap-2 text-sm">
-						<input
-							type="checkbox"
+						<Checkbox
 							checked={includeDefaultRoleMention}
-							onChange={(event) => setIncludeDefaultRoleMention(event.target.checked)}
+							onCheckedChange={(checked) => setIncludeDefaultRoleMention(checked === true)}
 						/>
 						<span>{t("pingModelUpdates")}</span>
 					</label>

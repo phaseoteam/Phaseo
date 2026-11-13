@@ -1214,7 +1214,7 @@ export default function PresetForm({
 								return <div key={`blocked-${providerId}`} className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
 									{provider ? <Logo id={provider.logoId} className="h-4 w-4 rounded-sm object-contain" alt={provider.name} width={16} height={16} /> : null}
 									<span className="text-sm font-medium">{provider?.name ?? providerId}</span>
-									<button type="button" className="rounded-md p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => setProviderIgnore((current) => current.filter((id) => id !== providerId))} aria-label={`Remove ${provider?.name ?? providerId}`}><X className="h-3.5 w-3.5" /></button>
+									<Button type="button" variant="ghost" size="icon-xs" className="size-auto p-0.5 text-muted-foreground" onClick={() => setProviderIgnore((current) => current.filter((id) => id !== providerId))} aria-label={`Remove ${provider?.name ?? providerId}`}><X className="h-3.5 w-3.5" /></Button>
 								</div>;
 							})}</div> : <p className="text-sm text-muted-foreground">{t("strings.phraseNoProvidersBlocked" as never)}</p>}
 						</div>

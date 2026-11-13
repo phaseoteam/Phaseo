@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ExpiryDateTimeField from "./ExpiryDateTimeField";
 import CreditGrantEditDialog from "./CreditGrantEditDialog";
 import { DisplayDateTime } from "@/components/display/DisplayValue";
@@ -163,34 +164,34 @@ export default function InternalCreditsPage() {
 					</div>
 				</CardHeader>
 				<CardContent className="overflow-x-auto">
-					<table className="w-full text-sm">
-						<thead>
-							<tr className="border-b text-left">
-								<th className="py-2 pr-4">{t("tableCode")}</th>
-								<th className="py-2 pr-4">{t("tableAmount")}</th>
-								<th className="py-2 pr-4">{t("tableUsage")}</th>
-								<th className="py-2 pr-4">{t("tableExpires")}</th>
-								<th className="py-2 pr-4">{t("tableStatus")}</th>
-								<th className="py-2 pr-4">{t("tableCreated")}</th>
-								<th className="py-2 pr-4">{t("tableNote")}</th>
-								<th className="py-2">{t("tableActions")}</th>
-							</tr>
-						</thead>
-						<tbody>
+					<Table wrapInContainer={false}>
+						<TableHeader>
+							<TableRow className="text-left hover:bg-transparent dark:hover:bg-transparent">
+								<TableHead className="h-auto py-2 pr-4 pl-0 font-bold text-foreground dark:text-foreground">{t("tableCode")}</TableHead>
+								<TableHead className="h-auto py-2 pr-4 pl-0 font-bold text-foreground dark:text-foreground">{t("tableAmount")}</TableHead>
+								<TableHead className="h-auto py-2 pr-4 pl-0 font-bold text-foreground dark:text-foreground">{t("tableUsage")}</TableHead>
+								<TableHead className="h-auto py-2 pr-4 pl-0 font-bold text-foreground dark:text-foreground">{t("tableExpires")}</TableHead>
+								<TableHead className="h-auto py-2 pr-4 pl-0 font-bold text-foreground dark:text-foreground">{t("tableStatus")}</TableHead>
+								<TableHead className="h-auto py-2 pr-4 pl-0 font-bold text-foreground dark:text-foreground">{t("tableCreated")}</TableHead>
+								<TableHead className="h-auto py-2 pr-4 pl-0 font-bold text-foreground dark:text-foreground">{t("tableNote")}</TableHead>
+								<TableHead className="h-auto py-2 px-0 font-bold text-foreground dark:text-foreground">{t("tableActions")}</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
 							{(grants ?? []).map((grant: any) => {
 								const isActive = Boolean(grant?.is_active);
 								return (
-									<tr key={String(grant.id)} className="border-b align-top">
-										<td className="py-2 pr-4 font-medium">{String(grant.code ?? "-")}</td>
-									<td className="py-2 pr-4">{formatUsdFromNanos(Number(grant.amount_nanos ?? 0), locale)}</td>
-										<td className="py-2 pr-4">
+									<TableRow key={String(grant.id)} className="align-top [&>td]:align-top">
+										<TableCell className="py-2 pr-4 pl-0 font-medium">{String(grant.code ?? "-")}</TableCell>
+									<TableCell className="py-2 pr-4 pl-0">{formatUsdFromNanos(Number(grant.amount_nanos ?? 0), locale)}</TableCell>
+										<TableCell className="py-2 pr-4 pl-0">
 											{Number(grant.redemptions_count ?? 0)} / {Number(grant.max_redemptions ?? 0)}
-										</td>
-										<td className="py-2 pr-4"><DisplayDateTime value={grant.expires_at} /></td>
-										<td className="py-2 pr-4">{isActive ? t("active") : t("inactive")}</td>
-										<td className="py-2 pr-4"><DisplayDateTime value={grant.created_at} /></td>
-										<td className="py-2 pr-4">{String(grant.note ?? "-")}</td>
-										<td className="py-2">
+										</TableCell>
+										<TableCell className="py-2 pr-4 pl-0"><DisplayDateTime value={grant.expires_at} /></TableCell>
+										<TableCell className="py-2 pr-4 pl-0">{isActive ? t("active") : t("inactive")}</TableCell>
+										<TableCell className="py-2 pr-4 pl-0"><DisplayDateTime value={grant.created_at} /></TableCell>
+										<TableCell className="py-2 pr-4 pl-0">{String(grant.note ?? "-")}</TableCell>
+										<TableCell className="px-0 py-2">
 											<CreditGrantEditDialog
 												grantId={String(grant.id)}
 												code={String(grant.code ?? "-")}
@@ -202,12 +203,12 @@ export default function InternalCreditsPage() {
 												isActive={isActive}
 												note={grant.note ? String(grant.note) : null}
 											/>
-										</td>
-									</tr>
+										</TableCell>
+									</TableRow>
 								);
 							})}
-						</tbody>
-					</table>
+						</TableBody>
+					</Table>
 				</CardContent>
 			</Card>
 		</main>

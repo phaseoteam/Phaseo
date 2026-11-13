@@ -27,6 +27,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { activateProviderAccountAction, rotateProviderCatalogWebhookAction, startProviderClaimAction, type ProviderCatalogPreview } from "@/features/settings/account/providers/actions";
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
@@ -329,10 +332,10 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 				<div className="space-y-5">
 					<fieldset className="space-y-2">
 						<legend className="text-sm font-medium">{t("identity.current.application")}</legend>
-						<div className="grid gap-2 sm:grid-cols-2">
-							<label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 p-3 text-sm has-[:checked]:border-foreground/50 has-[:checked]:bg-muted/40"><input type="radio" name="provider-application-type" value="new" checked={applicationType === "new"} onChange={() => { setApplicationType("new"); setClaim(null); }} className="mt-1 accent-foreground" /><span><span className="block font-medium">{t("identity.current.createProvider")}</span><span className="mt-1 block text-xs leading-5 text-muted-foreground">{t("identity.current.newProviderHelp")}</span></span></label>
-							<label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 p-3 text-sm has-[:checked]:border-foreground/50 has-[:checked]:bg-muted/40"><input type="radio" name="provider-application-type" value="claim" checked={applicationType === "claim"} onChange={() => { setApplicationType("claim"); setClaim(null); }} className="mt-1 accent-foreground" /><span><span className="block font-medium">{t("identity.current.claimProvider")}</span><span className="mt-1 block text-xs leading-5 text-muted-foreground">{t("identity.current.claimProviderHelp")}</span></span></label>
-						</div>
+						<RadioGroup name="provider-application-type" value={applicationType} onValueChange={(value) => { setApplicationType(value as "new" | "claim"); setClaim(null); }} className="grid gap-2 sm:grid-cols-2">
+							<label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 p-3 text-sm has-[[data-checked]]:border-foreground/50 has-[[data-checked]]:bg-muted/40"><RadioGroupItem value="new" className="mt-0.5" /><span><span className="block font-medium">{t("identity.current.createProvider")}</span><span className="mt-1 block text-xs leading-5 text-muted-foreground">{t("identity.current.newProviderHelp")}</span></span></label>
+							<label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/70 p-3 text-sm has-[[data-checked]]:border-foreground/50 has-[[data-checked]]:bg-muted/40"><RadioGroupItem value="claim" className="mt-0.5" /><span><span className="block font-medium">{t("identity.current.claimProvider")}</span><span className="mt-1 block text-xs leading-5 text-muted-foreground">{t("identity.current.claimProviderHelp")}</span></span></label>
+						</RadioGroup>
 					</fieldset>
 						<div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="provider-name">{tx("SettingsUI.identity.providerName" as never)}</Label><Input id="provider-name" value={providerName} onChange={(event) => updateName(event.target.value)} placeholder={tx("SettingsUI.identity.providerNamePlaceholder" as never)} autoComplete="organization" /></div><div className="space-y-2"><Label htmlFor="provider-slug">{applicationType === "claim" ? t("identity.current.existingSlug") : t("identity.current.newSlug")}</Label><Input id="provider-slug" value={providerSlug} onChange={(event) => { setClaim(null); setSlugTouched(true); setProviderSlug(event.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, "-")); }} placeholder="acme-inference" /><p className="text-[11px] text-muted-foreground">{tx("SettingsUI.identity.providerSlugDescription" as never)}</p></div><div className="space-y-2"><Label htmlFor="provider-website">{tx("SettingsUI.identity.website" as never)}</Label><Input id="provider-website" type="url" value={websiteUrl} onChange={(event) => { setClaim(null); setWebsiteUrl(event.target.value); }} placeholder="https://acme.example" autoComplete="url" /><p className="text-[11px] text-muted-foreground">{t("identity.current.emailHelp")}</p></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="provider-logo">{tx("SettingsUI.identity.logoUrl" as never)}<span className="font-normal text-muted-foreground">{tx("SettingsUI.broadcastControls.optional" as never)}</span></Label><Input id="provider-logo" type="url" value={logoUrl} onChange={(event) => setLogoUrl(event.target.value)} placeholder="https://acme.example/brand/logo.svg" /><p className="text-[11px] text-muted-foreground">{tx("SettingsUI.identity.logoUrlDescription" as never)}</p></div></div>
 						{applicationType === "claim" ? <div className="space-y-3 border-t border-border pt-5">{existingClaimOwner ? <p className="text-xs leading-5 text-muted-foreground">{t("identity.current.existingProofHelp")}</p> : <><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-medium">{t("identity.current.verifyOwnership")}</p><p className="mt-1 text-xs text-muted-foreground">{t("identity.current.proofHelp")}</p></div><Button type="button" size="sm" variant="outline" disabled={startingClaim || !providerSlug || !websiteUrl} onClick={() => void startClaim()}>{startingClaim ? tx("SettingsUI.identity.creatingProof" as never) : tx("SettingsUI.identity.createProof" as never)}</Button></div>{claim ? <div className="space-y-2 border-l-2 border-foreground/20 pl-3 text-xs"><p>{tx("SettingsUI.identity.publishTokenAt" as never)}</p><code className="block overflow-x-auto">{claim.verificationUrl}</code><code className="ph-no-capture block overflow-x-auto font-semibold">{claim.token}</code><p className="text-muted-foreground">{t("identity.current.proofSubmitHelp")}</p></div> : null}</>}</div> : <p className="text-xs leading-5 text-muted-foreground">{t("identity.current.existingSlugHelp")}</p>}
@@ -351,7 +354,7 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 		<div className="flex flex-col gap-3 py-6 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="size-4" /> {t("identity.current.routingHelp")}</div><Button type="button" onClick={() => void submit()} disabled={!profileReady || (catalogMode === "remote" && !preview?.valid) || submitting}>{submitting ? tx("SettingsUI.strings.Submitting…" as never) : resubmittingProviderSlug ? t("identity.current.resubmit") : t("identity.current.submit")}<Send className="ml-1 size-3.5" /></Button></div>
 		</div>
 
-		{preview?.valid ? <Card className="border-border/70"><CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-end sm:justify-between"><div className="space-y-1"><p className="text-sm font-medium">{t("identity.current.releaseDisplay")}</p><p className="max-w-2xl text-xs leading-5 text-muted-foreground">{t("identity.current.timezoneHelp")}</p></div><div className="w-full space-y-2 sm:max-w-xs"><Label htmlFor="provider-catalog-timezone">{t("identity.current.timezone")}</Label><Input id="provider-catalog-timezone" list="provider-catalog-timezones" value={displayTimeZone} onChange={(event) => setDisplayTimeZone(event.target.value)} aria-invalid={!displayTimeZoneValid} placeholder="Europe/London" /><datalist id="provider-catalog-timezones">{Array.from(new Set([browserTimeZone(), ...SUGGESTED_TIME_ZONES])).map((timeZone) => <option key={timeZone} value={timeZone} />)}</datalist>{displayTimeZoneValid ? <p className="text-[11px] text-muted-foreground">{t("identity.current.showingTimezone", { zone: effectiveDisplayTimeZone })}</p> : <p className="text-[11px] text-destructive">{t("identity.current.invalidTimezone")}</p>}</div></CardContent></Card> : null}
+		{preview?.valid ? <Card className="border-border/70"><CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-end sm:justify-between"><div className="space-y-1"><p className="text-sm font-medium">{t("identity.current.releaseDisplay")}</p><p className="max-w-2xl text-xs leading-5 text-muted-foreground">{t("identity.current.timezoneHelp")}</p></div><div className="w-full space-y-2 sm:max-w-xs"><Label htmlFor="provider-catalog-timezone">{t("identity.current.timezone")}</Label><SearchableSelect id="provider-catalog-timezone" label={t("identity.current.timezone")} value={displayTimeZone} options={Array.from(new Set([browserTimeZone(), ...SUGGESTED_TIME_ZONES, ...(displayTimeZone ? [displayTimeZone] : [])])).map((timeZone) => ({ value: timeZone, label: timeZone }))} onValueChange={setDisplayTimeZone} placeholder="Europe/London" allowCustom triggerClassName={`min-h-8${displayTimeZoneValid ? "" : " border-destructive"}`} />{displayTimeZoneValid ? <p className="text-[11px] text-muted-foreground">{t("identity.current.showingTimezone", { zone: effectiveDisplayTimeZone })}</p> : <p className="text-[11px] text-destructive">{t("identity.current.invalidTimezone")}</p>}</div></CardContent></Card> : null}
 		{preview?.valid ? <Card className="overflow-hidden border-border/70"><CardHeader className="flex flex-row items-end justify-between gap-4 border-b border-border/60"><div><CardTitle>{tx("SettingsUI.identity.catalogPreview" as never)}</CardTitle><CardDescription className="mt-1">{tx("SettingsUI.strings.phraseASampleOfWhatPhaseoReceivedFromYourURL" as never)}</CardDescription></div><span className="font-mono text-[11px] text-muted-foreground">{t(preview.truncated ? "identity.current.firstShown" : "identity.current.shown", { count: preview.truncated ? 100 : preview.models.length })}</span></CardHeader><CardContent className="p-0"><div className="grid max-h-[32rem] overflow-y-auto sm:grid-cols-2">{preview.models.map((model) => <PreviewModel key={model.id} model={model} displayTimeZone={effectiveDisplayTimeZone} />)}</div></CardContent></Card> : null}
 		</> : null}
 
@@ -372,16 +375,16 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 								: "neutral";
 
 						return (
-							<details key={revision.id} className="group" open={index === 0}>
-								<summary className="flex cursor-pointer list-none items-center gap-3 py-4 marker:hidden">
-									<ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" />
-									<div className="min-w-0 flex-1">
-										<p className="truncate text-sm font-medium">{revision.provider_slug}</p>
-										<p className="mt-0.5 text-xs text-muted-foreground">{date(revision.created_at)} · {revision.model_count ?? revision.models.length} {tx("Site.homeOpenSourceMarketing.models" as never)}</p>
-									</div>
+							<Collapsible key={revision.id} defaultOpen={index === 0}>
+								<CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-3 py-4 text-left">
+									<ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]:rotate-90" />
+									<span className="block min-w-0 flex-1">
+										<span className="block truncate text-sm font-medium">{revision.provider_slug}</span>
+										<span className="mt-0.5 block text-xs text-muted-foreground">{date(revision.created_at)} · {revision.model_count ?? revision.models.length} {tx("Site.homeOpenSourceMarketing.models" as never)}</span>
+									</span>
 									<StatusPill tone={revisionTone}>{revisionLabel}</StatusPill>
-								</summary>
-								<div className="mb-4 ml-7 overflow-hidden rounded-lg border border-border/70">
+								</CollapsibleTrigger>
+								<CollapsibleContent hiddenUntilFound className="mb-4 ml-7 overflow-hidden rounded-lg border border-border/70">
 									{revision.error_message ? <p className="border-b border-border/60 px-3 py-3 text-sm text-destructive">{localizedProviderCatalogMessage(revision.error_message, t)}</p> : null}
 									{revision.models.slice(0, 100).map((model) => (
 										<div key={`${revision.id}:${model.model_slug}`} className="flex items-start gap-3 border-b border-border/60 px-3 py-3 last:border-0">
@@ -394,8 +397,8 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 											<StatusPill tone={model.decision === "approved" ? "success" : model.decision === "pending" || model.decision === "needs_changes" ? "warning" : "neutral"}>{status("decision", model.decision)}</StatusPill>
 										</div>
 									))}
-								</div>
-							</details>
+								</CollapsibleContent>
+							</Collapsible>
 						);
 					})}
 				</div>

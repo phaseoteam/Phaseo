@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { localizedBenchmarkConfiguration } from "@/i18n/benchmark-display";
 import { artificialAnalysisChartColour, formatArtificialAnalysisScore } from "@/lib/benchmarks/artificialAnalysis";
 import type { ExplorerMetric, ExplorerPoint } from "@/lib/benchmarks/artificialAnalysisExplorer";
@@ -175,18 +176,18 @@ export default function ArtificialAnalysisExplorer({ points, initialView = "cost
 
 		<BenchmarkDisclosure title={tx("Catalogue.rankings.intelligenceValue.evaluatedConfigurations")} count={rows.length.toLocaleString(locale)}>
 			<div className="max-h-[28rem] overflow-auto">
-				<table className="w-full text-left text-sm">
-					<caption className="sr-only">{viewLabel(filters.aaView)}</caption>
-					<thead className="sticky top-0 border-b bg-muted/30 text-xs text-muted-foreground backdrop-blur">
-						<tr><th scope="col" className="px-3 py-3 font-medium">{tx("Catalogue.rankings.intelligenceValue.modelConfiguration")}</th>{metricKeys.map((key) => <th key={key} scope="col" className="px-3 py-3 text-right font-medium">{metricLabel(key)}</th>)}</tr>
-					</thead>
-					<tbody className="divide-y">
-						{rows.map((point) => <tr key={point.id}>
-							<th scope="row" className="min-w-52 px-3 py-3 font-normal"><Link className="font-medium hover:underline" href={`/models/${point.model_id}`}>{point.model_name}</Link><p className="mt-0.5 text-xs text-muted-foreground">{configuration(point)}</p></th>
-							{metricKeys.map((key) => <td key={key} className="px-3 py-3 text-right tabular-nums">{point[key] === undefined ? "—" : format(key, point[key])}</td>)}
-						</tr>)}
-					</tbody>
-				</table>
+				<Table wrapInContainer={false} className="w-full text-left text-sm">
+					<TableCaption className="sr-only">{viewLabel(filters.aaView)}</TableCaption>
+					<TableHeader className="sticky top-0 border-b bg-muted/30 text-xs text-muted-foreground backdrop-blur [&_tr]:border-0">
+						<TableRow className="hover:bg-transparent dark:hover:bg-transparent"><TableHead scope="col" className="h-auto px-3 py-3 font-medium text-inherit dark:text-inherit">{tx("Catalogue.rankings.intelligenceValue.modelConfiguration")}</TableHead>{metricKeys.map((key) => <TableHead key={key} scope="col" className="h-auto px-3 py-3 text-right font-medium text-inherit dark:text-inherit">{metricLabel(key)}</TableHead>)}</TableRow>
+					</TableHeader>
+					<TableBody className="divide-y">
+						{rows.map((point) => <TableRow key={point.id}>
+							<TableHead scope="row" className="h-auto min-w-52 px-3 py-3 font-normal text-inherit dark:text-inherit"><Link className="font-medium hover:underline" href={`/models/${point.model_id}`}>{point.model_name}</Link><p className="mt-0.5 text-xs text-muted-foreground">{configuration(point)}</p></TableHead>
+							{metricKeys.map((key) => <TableCell key={key} className="px-3 py-3 text-right tabular-nums">{point[key] === undefined ? "—" : format(key, point[key])}</TableCell>)}
+						</TableRow>)}
+					</TableBody>
+				</Table>
 			</div>
 		</BenchmarkDisclosure>
 	</section>;

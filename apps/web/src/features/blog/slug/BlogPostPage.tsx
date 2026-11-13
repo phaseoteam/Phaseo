@@ -9,6 +9,11 @@ import { ArrowLeft, ChevronDown } from "lucide-react";
 import { BlogTableOfContents } from "@/components/announcements/BlogTableOfContents";
 import { announcementMdxComponents } from "@/components/announcements/announcementMdxComponents";
 import { Badge } from "@/components/ui/badge";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { buttonVariants } from "@/components/ui/button";
 // announcements.ts reads the content folder, so the server-only paths load it lazily.
 import { isAnnouncementPublished } from "@/lib/content/announcementDates";
@@ -200,18 +205,20 @@ export function BlogPostPage() {
 							</h2>
 							<div className="mt-6 divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
 								{post.faq.map((item) => (
-									<details key={item.question} className="group">
-										<summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-base font-semibold text-zinc-950 marker:hidden dark:text-zinc-50 [&::-webkit-details-marker]:hidden">
+									<Collapsible key={item.question}>
+										<CollapsibleTrigger className="group flex w-full cursor-pointer items-center justify-between gap-4 py-4 text-left text-base font-semibold text-zinc-950 dark:text-zinc-50">
 											<span>{item.question}</span>
 											<ChevronDown
 												aria-hidden="true"
-												className="size-4 shrink-0 text-zinc-500 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none dark:text-zinc-400"
+												className="size-4 shrink-0 text-zinc-500 transition-transform duration-200 group-data-[panel-open]:rotate-180 motion-reduce:transition-none dark:text-zinc-400"
 											/>
-										</summary>
-										<p className="pb-5 text-base leading-7 text-zinc-700 dark:text-zinc-300">
-											{item.answer}
-										</p>
-									</details>
+										</CollapsibleTrigger>
+										<CollapsibleContent hiddenUntilFound>
+											<p className="pb-5 text-base leading-7 text-zinc-700 dark:text-zinc-300">
+												{item.answer}
+											</p>
+										</CollapsibleContent>
+									</Collapsible>
 								))}
 							</div>
 						</section>

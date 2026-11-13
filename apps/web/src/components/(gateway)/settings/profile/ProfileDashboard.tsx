@@ -574,15 +574,17 @@ export default function ProfileDashboard({
 							</AvatarFallback>
 						</Avatar>
 						{publicView ? null : (
-							<button
+							<Button
 								type="button"
-								className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:text-foreground disabled:cursor-wait disabled:opacity-70"
+								variant="outline"
+								size="icon-xs"
+								className="absolute -right-1 -bottom-1 text-muted-foreground shadow-sm hover:text-foreground disabled:opacity-70"
 								aria-label={avatarUploading ? labels.uploadingPhoto : labels.changePhoto}
 								disabled={avatarUploading}
 								onClick={() => avatarInputRef.current?.click()}
 							>
 								{avatarUploading ? <LoaderCircle className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
-							</button>
+							</Button>
 						)}
 						{publicView ? null : (
 							<input

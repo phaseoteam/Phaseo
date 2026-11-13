@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
 	Select,
 	SelectContent,
@@ -22,6 +23,8 @@ type PresetOption = {
 	displayName: string;
 	slug: string | null;
 };
+
+const NO_METADATA_KEY = "__none__";
 
 type PresetFeedbackFilterValues = {
 	range: "7d" | "30d" | "90d" | "custom";
@@ -80,6 +83,7 @@ export function PresetFeedbackFilters({
 	const [rating, setRating] = React.useState(filters.rating || "all");
 	const [from, setFrom] = React.useState(filters.from);
 	const [to, setTo] = React.useState(filters.to);
+	const [metadataKey, setMetadataKey] = React.useState(filters.metadataKey);
 	const isCustomRange = range === "custom";
 	const selectedBaseline = presets.find((preset) => preset.id === selectedBaselineId);
 	const hasFilters =
@@ -212,14 +216,17 @@ export function PresetFeedbackFilters({
 				<p className="mt-1 text-xs text-muted-foreground">{t("strings.phraseGroupOrFilterFeedbackUsingAnIndexedMetadataDimension" as never)}</p>
 						</div>
 						<div className="grid w-full gap-2 sm:w-72 sm:grid-cols-2">
-							<Input
+							<SearchableSelect
 								id="metadata_key"
-								name="metadata_key"
-								list="preset-feedback-metadata-keys"
-								defaultValue={filters.metadataKey}
+								label={t("strings.Metadata Cohort" as never)}
+								value={metadataKey}
+								options={[...(metadataKey ? [{ value: NO_METADATA_KEY, label: t("strings.None" as never) }] : []), ...Array.from(new Set([...metadataKeys, ...(metadataKey ? [metadataKey] : [])])).map((key) => ({ value: key, label: key }))]}
+								onValueChange={(value) => setMetadataKey(value === NO_METADATA_KEY ? "" : value)}
 								placeholder="user_tier"
-								className={controlClassName}
+								allowCustom
+								triggerClassName={cn(controlClassName, "min-h-8")}
 							/>
+							<input type="hidden" name="metadata_key" value={metadataKey} />
 							<Input
 								id="metadata_value"
 								name="metadata_value"
@@ -228,11 +235,6 @@ export function PresetFeedbackFilters({
 								className={controlClassName}
 							/>
 						</div>
-						<datalist id="preset-feedback-metadata-keys">
-							{metadataKeys.map((key) => (
-								<option key={key} value={key} />
-							))}
-						</datalist>
 					</div>
 				</div>
 

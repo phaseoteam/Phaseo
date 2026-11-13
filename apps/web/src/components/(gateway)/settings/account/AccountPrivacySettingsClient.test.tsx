@@ -82,7 +82,7 @@ it("separates route access from data handling and keeps member policies read-onl
 
 it("lets members browse model restrictions and availability without editing policy", async () => {
 	await render("access", false);
-	expect(container.querySelector("details")!.open).toBe(true);
+	expect(container.querySelector("[data-slot=collapsible-trigger]")!.getAttribute("aria-expanded")).toBe("true");
 	const modelsTab = container.querySelector<HTMLButtonElement>('[role=tab][aria-selected=false]')!;
 	expect(modelsTab.matches(":disabled")).toBe(false);
 	await act(() => modelsTab.click());
@@ -110,9 +110,10 @@ it("lets members browse model restrictions and availability without editing poli
 it("keeps member data and log controls read-only while availability filters work", async () => {
 	await render("privacy", false);
 	for (const control of container.querySelectorAll('[role=switch], [role=combobox]')) expect(isDisabled(control)).toBe(true);
-	expect(container.querySelector("details")!.open).toBe(false);
-	await act(() => container.querySelector("summary")!.click());
-	expect(container.querySelector("details")!.open).toBe(true);
+	const accessTrigger = container.querySelector<HTMLButtonElement>("[data-slot=collapsible-trigger]")!;
+	expect(accessTrigger.getAttribute("aria-expanded")).toBe("false");
+	await act(() => accessTrigger.click());
+	expect(accessTrigger.getAttribute("aria-expanded")).toBe("true");
 	const providers = [...container.querySelectorAll("button")].find((button) => button.textContent === common.ui.privacyEligibility.providers)!;
 	expect(providers.matches(":disabled")).toBe(false);
 	await act(() => providers.click());

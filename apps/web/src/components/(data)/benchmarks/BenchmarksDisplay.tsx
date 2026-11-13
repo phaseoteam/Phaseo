@@ -5,6 +5,7 @@ import { useQueryState } from "nuqs";
 import { ArrowUpRight, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
 import { artificialAnalysisMetrics } from "@/lib/benchmarks/artificialAnalysis";
 import type { BenchmarkCard } from "@/lib/fetchers/benchmarks/types";
@@ -42,7 +43,10 @@ export default function BenchmarksDisplay({ benchmarks }: { benchmarks: Benchmar
         <h2 className="text-lg font-semibold">{t("allBenchmarks")} <span className="ml-1 text-sm font-normal text-muted-foreground">{new Intl.NumberFormat(locale).format(filtered.length)}</span></h2>
         <div className="flex w-full gap-2 sm:w-auto">
           <div className="relative flex-1"><Search className="pointer-events-none absolute left-3 top-3 size-4 text-muted-foreground" /><Input aria-label={t("searchPlaceholder")} placeholder={t("searchPlaceholder")} value={search} onChange={(e) => { setSearch(e.target.value); setLimit(36); }} className="pl-9 sm:w-64" /></div>
-          <select aria-label={t("sortBenchmarks")} value={sort} onChange={(e) => setSort(e.target.value)} className="rounded-md border bg-background px-3 text-sm"><option value="coverage">{t("mostModels")}</option><option value="name">{t("nameAlphabetically")}</option></select>
+          <Select value={sort} onValueChange={(value: string) => setSort(value)}>
+            <SelectTrigger aria-label={t("sortBenchmarks")} className="shrink-0"><SelectValue>{sort === "name" ? t("nameAlphabetically") : t("mostModels")}</SelectValue></SelectTrigger>
+            <SelectContent align="end" alignItemWithTrigger={false}><SelectItem value="coverage">{t("mostModels")}</SelectItem><SelectItem value="name">{t("nameAlphabetically")}</SelectItem></SelectContent>
+          </Select>
         </div>
       </div>
       <div className="grid gap-x-8 md:grid-cols-2 xl:grid-cols-3">

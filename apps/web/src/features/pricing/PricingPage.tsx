@@ -22,6 +22,14 @@ import { getLocalizedDocsHref } from "@/lib/docs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
 	Accordion,
@@ -970,7 +978,7 @@ export function PricingPage() {
 
 				<section className="space-y-6">
 					<PricingComparisonShell>
-						<table className="w-full min-w-[940px] table-fixed text-left text-sm">
+						<Table wrapInContainer={false} className="min-w-[940px] table-fixed text-left text-sm">
 							<colgroup>
 								<col className="feature-column w-[28%]" />
 								<col className="free-column w-[24%]" />
@@ -978,11 +986,11 @@ export function PricingPage() {
 								<col className="enterprise-column w-[24%]" />
 								{COMPETITORS.map((competitor) => <col key={competitor.key} className="competitor-col hidden w-[16%]" />)}
 							</colgroup>
-							<thead className="border-b border-zinc-200/70 bg-zinc-50/80 dark:border-zinc-800/70 dark:bg-zinc-900/60">
-								<tr>
-								<th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">{t("featureColumn")}</th>
-								<th className="free-column px-4 py-3 text-center font-medium text-zinc-700 dark:text-zinc-300">{t("freeAccessColumn")}</th>
-									<th className="px-4 py-3 text-center font-bold text-foreground">
+							<TableHeader className="border-b border-zinc-200/70 bg-zinc-50/80 dark:border-zinc-800/70 dark:bg-zinc-900/60 [&_tr]:border-b-0">
+								<TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+								<TableHead className="h-auto px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">{t("featureColumn")}</TableHead>
+								<TableHead className="free-column h-auto px-4 py-3 text-center font-medium text-zinc-700 dark:text-zinc-300">{t("freeAccessColumn")}</TableHead>
+									<TableHead className="h-auto px-4 py-3 text-center font-bold text-foreground dark:text-foreground">
 										<span className="phaseo-default">{t("payg")}</span>
 										<span className="phaseo-compare hidden">
 											<span className="inline-flex items-center justify-center gap-2">
@@ -991,38 +999,38 @@ export function PricingPage() {
 												Phaseo
 											</span>
 										</span>
-									</th>
-									<th className="enterprise-column px-4 py-3 text-center font-bold text-foreground">{t(showEnterprisePreview ? "matrix.copy.enterprise" : "enterprisePreview")}</th>
+									</TableHead>
+									<TableHead className="enterprise-column h-auto px-4 py-3 text-center font-bold text-foreground dark:text-foreground">{t(showEnterprisePreview ? "matrix.copy.enterprise" : "enterprisePreview")}</TableHead>
 									{COMPETITORS.map((competitor) => (
-										<th key={competitor.key} className="competitor-cell hidden px-4 py-3 text-center font-semibold text-foreground">
+										<TableHead key={competitor.key} className="competitor-cell hidden h-auto px-4 py-3 text-center font-semibold text-foreground dark:text-foreground">
 											<a href={competitor.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 underline decoration-transparent underline-offset-4 hover:decoration-current">
 												<ProviderLogo competitor={competitor} />
 												{competitor.name}
 												<ExternalLink className="h-3 w-3" aria-hidden="true" />
 											</a>
-										</th>
+										</TableHead>
 									))}
-								</tr>
-							</thead>
-							<tbody className="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
+								</TableRow>
+							</TableHeader>
+							<TableBody className="divide-y divide-zinc-200/70 dark:divide-zinc-800/70">
 								{MATRIX_SECTIONS.map((section) => {
 									return (
 										<Fragment key={section.id}>
-										<tr
-											className="bg-zinc-50/70 dark:bg-zinc-900/40"
+										<TableRow
+											className="bg-zinc-50/70 hover:bg-zinc-50/70 dark:bg-zinc-900/40 dark:hover:bg-zinc-900/40"
 										>
-											<td
+											<TableCell
 												colSpan={4 + COMPETITORS.length}
 												className="px-4 py-3 text-base font-semibold text-foreground"
 											>
 												{translatePricingCopy(section.title, translate)}
-											</td>
-										</tr>
+											</TableCell>
+										</TableRow>
 										{section.rows.map((row) => {
 											const rowLabel = translatePricingCopy(row.feature, translate);
 											return (
-												<tr key={`${section.id}-${row.feature}`} className="h-[72px]">
-												<td className="px-4 py-3 align-middle text-foreground font-medium">
+												<TableRow key={`${section.id}-${row.feature}`} className="h-[72px] hover:bg-transparent dark:hover:bg-transparent">
+												<TableCell className="px-4 py-3 align-middle text-foreground font-medium">
 													{row.featureHref ? (
 														<Link
 														href={row.featureHref.startsWith("https://phaseo.app/docs/") ? getLocalizedDocsHref(locale, row.featureHref) : row.featureHref}
@@ -1033,29 +1041,29 @@ export function PricingPage() {
 													) : (
 														rowLabel
 													)}
-												</td>
-												<td className="free-column px-4 py-3 align-middle text-center">
+												</TableCell>
+												<TableCell className="free-column px-4 py-3 align-middle text-center">
 													<PlanCell cell={row.free} label={translate("matrix.cellLabel", { feature: rowLabel, plan: t("freeAccessColumn") })} translate={translate} values={faqMessageValues} localizeContent />
-												</td>
-											<td className={`${isBestChoice(row.feature, "phaseo", row.payg) ? "best-cell " : ""}px-4 py-3 align-middle text-center`}>
+												</TableCell>
+											<TableCell className={`${isBestChoice(row.feature, "phaseo", row.payg) ? "best-cell " : ""}px-4 py-3 align-middle text-center`}>
 												<PlanCell cell={row.payg} label={translate("matrix.cellLabel", { feature: rowLabel, plan: t("payg") })} translate={translate} values={faqMessageValues} localizeContent />
-											</td>
-											<td className="enterprise-column px-4 py-3 align-middle text-center">
+											</TableCell>
+											<TableCell className="enterprise-column px-4 py-3 align-middle text-center">
 													<PlanCell cell={row.enterprise ?? row.payg} label={translate("matrix.cellLabel", { feature: rowLabel, plan: t("matrix.copy.enterprise") })} translate={translate} values={faqMessageValues} localizeContent />
-											</td>
+											</TableCell>
 											{COMPETITORS.map((competitor) => (
-												<td key={competitor.key} className={`${isBestChoice(row.feature, competitor.key, getCompetitorCell(row.feature, competitor.key)) ? "best-cell " : ""}competitor-cell hidden px-4 py-3 align-middle text-center`}>
+												<TableCell key={competitor.key} className={`${isBestChoice(row.feature, competitor.key, getCompetitorCell(row.feature, competitor.key)) ? "best-cell " : ""}competitor-cell hidden px-4 py-3 align-middle text-center`}>
 												<PlanCell cell={getCompetitorCell(row.feature, competitor.key)} label={translate("matrix.cellLabel", { feature: rowLabel, plan: competitor.name })} translate={translate} values={faqMessageValues} localizeContent />
-												</td>
+												</TableCell>
 											))}
-												</tr>
+												</TableRow>
 											);
 										})}
 										</Fragment>
 									);
 								})}
-							</tbody>
-						</table>
+							</TableBody>
+						</Table>
 					</PricingComparisonShell>
 				</section>
 

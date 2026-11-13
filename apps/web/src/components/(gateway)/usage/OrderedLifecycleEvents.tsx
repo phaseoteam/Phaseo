@@ -1,5 +1,6 @@
 import { useTranslations } from "@/i18n/react";
-import { Route, Server, Wrench, MessageSquareText } from "lucide-react";
+import { ChevronRight, Route, Server, Wrench, MessageSquareText } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 type Event = {
 	sequence: number;
@@ -82,12 +83,14 @@ export function OrderedLifecycleEvents({ journal, toolResults, providerNames }: 
 						{event.outcome && event.outcome !== "success" ? <span className="text-[10px] text-destructive">{t("chatGaps.copyFailed" as never)}</span> : null}
 						<time dateTime={new Date(event.timestamp_ms).toISOString()} title={new Date(event.timestamp_ms).toISOString()} className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">+{event.elapsed_ms} ms</time>
 					</div>
-					{result ? <details className="ml-12 mt-2 border-l border-border pl-3">
-						<summary className="cursor-pointer text-xs text-muted-foreground">{t("trace.toolResult" as never)}</summary>
+					{result ? <Collapsible className="ml-12 mt-2 border-l border-border pl-3">
+						<CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1 text-left text-xs text-muted-foreground"><ChevronRight aria-hidden="true" className="size-3 shrink-0 transition-transform group-data-[panel-open]:rotate-90" />{t("trace.toolResult" as never)}</CollapsibleTrigger>
+						<CollapsibleContent hiddenUntilFound>
 						<div className="mt-2 text-[10px] text-muted-foreground">{t("trace.arguments" as never)}</div>
 						<pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-words text-xs">{typeof result.arguments === "string" ? result.arguments : JSON.stringify(result.arguments, null, 2)}</pre>
 						{result.output == null ? <p className="mt-3 text-xs text-muted-foreground">{t("trace.noExecutionResultWasCapturedWithThisResponse" as never)}</p> : <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs">{typeof result.output === "string" ? result.output : JSON.stringify(result.output, null, 2)}</pre>}
-					</details> : null}
+						</CollapsibleContent>
+					</Collapsible> : null}
 					{event.type === "tool.completed" && !result ? <p className="ml-12 mt-2 text-xs text-muted-foreground">{t("trace.noExecutionResultWasCapturedWithThisResponse" as never)}</p> : null}
 				</li>;
 			})}

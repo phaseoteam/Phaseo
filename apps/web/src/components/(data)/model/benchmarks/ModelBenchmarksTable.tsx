@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Link from "@/components/link";
 import { ExternalLink, ChevronDown, ChevronRight } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import type { ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
 import { isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
@@ -56,18 +57,18 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 
 	return (
 		<div className="mb-12 overflow-x-auto">
-			<table className="min-w-full overflow-hidden rounded-2xl border border-zinc-200 text-sm shadow-xs dark:border-zinc-800">
-				<thead className="bg-zinc-100 dark:bg-zinc-800">
-					<tr>
-						<th className="px-4 py-2 text-left">{t("benchmark")}</th>
-						<th className="px-4 py-2 text-left">{t("category")}</th>
-						<th className="px-4 py-2 text-left">{t("topScore")}</th>
-						<th className="px-4 py-2 text-left">{t("info")}</th>
-						<th className="px-4 py-2 text-center">{t("selfReported")}</th>
-						<th className="px-4 py-2 text-left">{t("source")}</th>
-					</tr>
-				</thead>
-				<tbody>
+			<Table wrapInContainer={false} className="min-w-full overflow-hidden rounded-2xl border border-zinc-200 text-sm shadow-xs dark:border-zinc-800">
+				<TableHeader className="bg-zinc-100 dark:bg-zinc-800 [&_tr]:border-0">
+					<TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+						<TableHead className="h-auto font-bold text-inherit dark:text-inherit px-4 py-2 text-left">{t("benchmark")}</TableHead>
+						<TableHead className="h-auto font-bold text-inherit dark:text-inherit px-4 py-2 text-left">{t("category")}</TableHead>
+						<TableHead className="h-auto font-bold text-inherit dark:text-inherit px-4 py-2 text-left">{t("topScore")}</TableHead>
+						<TableHead className="h-auto font-bold text-inherit dark:text-inherit px-4 py-2 text-left">{t("info")}</TableHead>
+						<TableHead className="h-auto font-bold text-inherit dark:text-inherit px-4 py-2 text-center">{t("selfReported")}</TableHead>
+						<TableHead className="h-auto font-bold text-inherit dark:text-inherit px-4 py-2 text-left">{t("source")}</TableHead>
+					</TableRow>
+				</TableHeader>
+				<TableBody>
 					{Object.entries(grouped)
 						.sort(([a], [b]) => a.localeCompare(b))
 						.map(([name, arr]) => {
@@ -86,14 +87,14 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 
 							return (
 								<React.Fragment key={name}>
-									<tr
+									<TableRow
 										className={`border-t border-zinc-200 dark:border-zinc-800 ${
 											hasMultiple && isOpen
 												? "rounded-t-xl"
 												: "rounded-xl"
 										}`}
 									>
-										<td className="px-4 py-2 font-semibold">
+										<TableCell className="px-4 py-2 font-semibold">
 											{hasMultiple && (
 												<button
 													type="button"
@@ -119,17 +120,17 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 													{name}
 												</span>
 											</Link>
-										</td>
-										<td className="px-4 py-2 text-left">
+										</TableCell>
+										<TableCell className="px-4 py-2 text-left">
 											{top.benchmark.category || "-"}
-										</td>
-										<td className="px-4 py-2 font-mono">
+										</TableCell>
+										<TableCell className="px-4 py-2 font-mono">
 											{getScoreDisplay(top)}
-										</td>
-										<td className="px-4 py-2 text-xs text-zinc-500 dark:text-zinc-300">
+										</TableCell>
+										<TableCell className="px-4 py-2 text-xs text-zinc-500 dark:text-zinc-300">
 											{top.other_info || "-"}
-										</td>
-										<td className="px-4 py-2 text-center">
+										</TableCell>
+										<TableCell className="px-4 py-2 text-center">
 											<span
 												className={
 													anySelfReported
@@ -139,8 +140,8 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 											>
 								{anySelfReported ? t("yes") : t("no")}
 											</span>
-										</td>
-										<td className="px-4 py-2 text-left">
+										</TableCell>
+										<TableCell className="px-4 py-2 text-left">
 											{top.source_link ? (
 												<a
 													href={top.source_link}
@@ -156,13 +157,13 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 											) : (
 												"-"
 											)}
-										</td>
-									</tr>
+										</TableCell>
+									</TableRow>
 
 									{hasMultiple &&
 										isOpen &&
 										sortedArr.slice(1).map((item, idx) => (
-											<tr
+											<TableRow
 												key={`${item.id}-${idx}`}
 												className={`border-t border-zinc-200 bg-zinc-50 text-xs dark:border-zinc-800 dark:bg-zinc-900 ${
 													idx === sortedArr.length - 2
@@ -170,17 +171,17 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 														: ""
 												}`}
 											>
-												<td
+												<TableCell
 													className="px-4 py-2 pl-8 font-mono"
 													colSpan={2}
-												></td>
-												<td className="px-4 py-2 font-mono">
+												></TableCell>
+												<TableCell className="px-4 py-2 font-mono">
 													{getScoreDisplay(item)}
-												</td>
-												<td className="px-4 py-2 text-xs text-zinc-500 dark:text-zinc-300">
+												</TableCell>
+												<TableCell className="px-4 py-2 text-xs text-zinc-500 dark:text-zinc-300">
 													{item.other_info || "-"}
-												</td>
-												<td className="px-4 py-2 text-center">
+												</TableCell>
+												<TableCell className="px-4 py-2 text-center">
 													<span
 														className={
 															item.is_self_reported
@@ -197,8 +198,8 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 									? t("yes")
 									: t("no")}
 													</span>
-												</td>
-												<td className="px-4 py-2">
+												</TableCell>
+												<TableCell className="px-4 py-2">
 													{item.source_link ? (
 														<Link
 															href={
@@ -216,14 +217,14 @@ export function ModelBenchmarksTable({ grouped }: ModelBenchmarksTableProps) {
 													) : (
 														"-"
 													)}
-												</td>
-											</tr>
+												</TableCell>
+											</TableRow>
 										))}
 								</React.Fragment>
 							);
 						})}
-				</tbody>
-			</table>
+				</TableBody>
+			</Table>
 		</div>
 	);
 }
