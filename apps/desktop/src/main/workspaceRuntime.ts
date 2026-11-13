@@ -37,7 +37,7 @@ import { validateIssueDraft, type IssueDraft } from "../shared/triage";
 import { OrchestratorMcp } from "./orchestratorMcp";
 import { QuestionDeferredError } from "./phaseoQuestionTools";
 import { CodexAdapter } from "./codexAdapter";
-import { WorkspaceStore } from "./workspaceStore";
+import { recentTurns, WorkspaceStore } from "./workspaceStore";
 import type { WorkspaceOverview } from "../shared/workspaceOverview";
 import { ClaudeAdapter } from "./claudeAdapter";
 import { AgentInputRejectedError, type AgentAdapter, type AgentCallbacks } from "./agentAdapter";
@@ -1287,7 +1287,7 @@ export class WorkspaceRuntime {
 			latest.nativeModels = catalog; this.store.saveTask(latest);
 		}
 		// Compact idle chats when you return: a large chat whose prompt cache has lapsed compacts before the new message.
-		if (command.type === "send" && !command.nativeAction && command.text.trim() !== "/compact" && !this.executions.has(command.id) && idleCompactionDue(this.store.getTask(command.id), this.store.getPreferences().threads.idleCompaction, "return")) this.store.apply({ type: "send", id: command.id, text: "/compact" });
+		if (command.type === "send" && !command.nativeAction && command.text.trim() !== "/compact" && !this.executions.has(command.id) && idleCompactionDue(this.idleView(command.id), this.store.getPreferences().threads.idleCompaction, "return")) this.store.apply({ type: "send", id: command.id, text: "/compact" });
 		const task = this.store.apply(command, initialModels);
 		this.broadcast();
 		if (command.type === "settle") this.settled(task.id);
@@ -1362,17 +1362,27 @@ export class WorkspaceRuntime {
 		}
 		this.broadcast(); return this.store.getOverview();
 	}
+	/**
+	 * What the idle compaction rules read, from the chat's latest turn: its last message and the context size its last
+	 * usage report gave. Without a report there, the size is counted over the whole conversation, as before.
+	 */
+	private idleView(id: string): Parameters<typeof idleCompactionDue>[0] {
+		const task = this.store.getTask(id), recent = recentTurns(task, 1);
+		const reported = recent.activities.some(activity => activity.type === "usage" && !activity.id.includes("autopilot:"));
+		const { harness, status, archived, nativeSessionId, queue, snoozedUntil, settledOverride } = task;
+		return reported ? { harness, status, archived, nativeSessionId, queue, snoozedUntil, settledOverride, messages: recent.messages, activities: recent.activities } : task;
+	}
 	/** Compact idle chats before the cache expires: one check, in the minute before the finished turn's prompt cache lapses. */
 	private scheduleIdleCompaction(id: string) {
 		clearTimeout(this.compactionTimers.get(id)); this.compactionTimers.delete(id);
 		if (this.closing || this.store.getPreferences().threads.idleCompaction !== "beforeCacheExpires") return;
-		let task; try { task = this.store.getTask(id); } catch { return; }
+		let task; try { task = this.idleView(id); } catch { return; }
 		const ended = lastTurnEnded(task);
 		if (ended === undefined) return;
 		const timer = setTimeout(() => {
 			this.compactionTimers.delete(id);
 			if (this.closing || this.executions.has(id)) return;
-			let latest; try { latest = this.store.getTask(id); } catch { return; }
+			let latest; try { latest = this.idleView(id); } catch { return; }
 			if (idleCompactionDue(latest, this.store.getPreferences().threads.idleCompaction, "timer")) void this.command({ type: "send", id, text: "/compact" }).catch(() => {});
 		}, Math.max(0, ended + promptCacheMs - compactBeforeExpiryMs - Date.now()));
 		timer.unref?.(); this.compactionTimers.set(id, timer);
@@ -1473,13 +1483,18 @@ export class WorkspaceRuntime {
 		task = this.store.getTask(id);
 		if (!task.queue.length) { orchestration?.close(); this.orchestrationSessions.delete(id); return; }
 		this.running.set(id, adapter);
-		const message = task.queue.shift()!;
+		// The turn starts on the chat's latest turn alone: the next timeline position comes from SQL and the new message is
+		// written after the rows already there, so starting a turn costs the same in a long chat as in a short one.
+		const latest = this.store.getTaskLatestTurn(id);
+		const message = latest.queue.shift()!;
 		// The running total of what the chat used through Phaseo starts from its history, then grows as the turn streams.
-		if (!task.usageTotals) task.usageTotals = this.store.phaseoUsageTotals(id);
-		let timelineOrder = [...task.messages, ...(task.activities ?? [])].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), task.messages.length + (task.activities?.length ?? 0)) + 1;
-		task.messages.push({ ...message, startedAt: new Date().toISOString(), timelineOrder: timelineOrder++, role: "user", ...(message.sourceTaskId ? { delivery: "subagent" as const } : {}) }); task.status = "running"; task.error = undefined;
+		if (!latest.usageTotals) latest.usageTotals = this.store.phaseoUsageTotals(id);
+		let timelineOrder = this.store.nextTimelineOrder(id, latest);
+		latest.messages.push({ ...message, startedAt: new Date().toISOString(), timelineOrder: timelineOrder++, role: "user", ...(message.sourceTaskId ? { delivery: "subagent" as const } : {}) }); latest.status = "running"; latest.error = undefined;
 		// Chats starting together (a burst of sends, a scheduled batch) share one chat-list update.
-		this.store.saveTask(task); this.broadcastSoon();
+		this.store.saveTask(latest); this.broadcastSoon();
+		// The agent gets the chat with its conversation unread: what it reads (recentTurns, or all of it) loads then.
+		task = this.store.getTask(id);
 		const project = this.store.getProjects().find(value => value.id === task.projectId);
 		const cwd = project?.directory ?? path.join(this.directory, "tasks", id);
 		// Snapshot the project before the agent edits it, so the turn's changes can be reviewed on their own.
@@ -1553,7 +1568,7 @@ export class WorkspaceRuntime {
 		asker.ask = onQuestion;
 		try {
 			mkdirSync(cwd, { recursive: true });
-			const selectedAttachments = task.harness === "phaseo" || ((task.handoffFrom || (task.harness === "cursor" && task.nativeForkFrom)) && !task.nativeSessionId) ? task.messages.flatMap(message => message.attachments ?? []) : message.attachments ?? [];
+			const selectedAttachments = task.harness === "phaseo" || ((task.handoffFrom || (task.harness === "cursor" && task.nativeForkFrom)) && !task.nativeSessionId) ? this.store.messagesWithAttachments(id).flatMap(value => value.attachments ?? []) : message.attachments ?? [];
 			if (selectedAttachments.reduce((total, attachment) => total + attachment.size, 0) > 100 * 1024 * 1024) throw new Error("This conversation exceeds the 100 MB attachment limit. Start a new task with fewer files.");
 			const attachmentIds = selectedAttachments.map(attachment => attachment.id);
 			const attachments = await Promise.all([...new Set(attachmentIds)].map(id => this.attachments.read(id)));
@@ -1642,7 +1657,7 @@ export class WorkspaceRuntime {
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
 			ended = true; if (this.turnNotes.get(id) === note) this.turnNotes.delete(id); if (background && this.backgroundWork.get(id) === background) this.backgroundWork.delete(id);
-			const finished = this.store.getTask(id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
+			const finished = this.store.getTaskTail(id, message.id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
 			turn.setAttributes({ outcome: finished.status }); turn.end(finished.status === "failed" ? finished.error ?? "The turn failed." : undefined);
 			if (checkpoint && project) void this.trackCheckpoint(this.recordCheckpoint(id, message.id, checkpoint, project.directory));
 			this.streamFlushes.delete(id);

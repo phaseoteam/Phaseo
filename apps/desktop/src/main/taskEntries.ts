@@ -148,6 +148,24 @@ export class TaskEntries {
 			?? this.statement(`SELECT ${entryColumns} FROM task_entries WHERE rowid >= ? AND rowid < ? AND id = ?`).get(base(key, 1), base(key, 1) + kindSpan, id);
 		return row ? decode(row as Row) as AgentActivity : undefined;
 	}
+	/** The id of the `nth` last user message (1 is the latest), read backwards from the end of the chat. */
+	lastUserId(key: number, nth = 1): string | undefined {
+		return (this.statement("SELECT id FROM task_entries WHERE rowid >= ? AND rowid < ? AND role = 'user' ORDER BY rowid DESC LIMIT 1 OFFSET ?").get(base(key, 0), base(key, 0) + kindSpan, nth - 1) as { id: string } | undefined)?.id;
+	}
+	/** The highest timeline position among a chat's messages and activities, without reading their data. */
+	maxTimelineOrder(key: number): number {
+		return (this.statement("SELECT max(timeline_order) AS maximum FROM task_entries WHERE rowid >= ? AND rowid < ?").get(base(key, 0), base(key, 0) + chatSpan) as { maximum: number | null }).maximum ?? 0;
+	}
+	/** The highest timeline position among the last `rows` messages and the last `rows` activities, read from the end. */
+	recentMaxTimelineOrder(key: number, rows = 200): number {
+		const latest = (kind: Kind) => (this.statement("SELECT max(timeline_order) AS maximum FROM (SELECT timeline_order FROM task_entries WHERE rowid >= ? AND rowid < ? ORDER BY rowid DESC LIMIT ?)").get(base(key, kind), base(key, kind) + kindSpan, rows) as { maximum: number | null }).maximum ?? 0;
+		return Math.max(latest(0), latest(1));
+	}
+	/** Messages that carry attachments; message data is never compressed, so the filter runs in SQL. */
+	messagesWithAttachments(key: number): Message[] {
+		const rows = this.statement(`SELECT ${entryColumns} FROM task_entries WHERE rowid >= ? AND rowid < ? AND data LIKE '%"attachments":[{%' ORDER BY rowid`).all(base(key, 0), base(key, 0) + kindSpan) as Row[];
+		return rows.map(row => decode(row)) as Message[];
+	}
 
 	/** Positions run from 0 without gaps, so the count is the last rowid's place plus one. */
 	count(key: number, kind: Kind) {
