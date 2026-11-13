@@ -17,7 +17,7 @@ export default async function DashboardPage() {
         <div>
           <h1>Phaseo Gateway Integration Workbench</h1>
           <p className="muted">
-            Complete OAuth-backed integration for control routes and generation surfaces.
+            Gateway requests run through a server-side proxy with the signed-in person&apos;s OAuth token.
           </p>
           {user?.email && <p className="muted">Signed in as: {user.email}</p>}
         </div>

@@ -6,7 +6,7 @@ description: "OAuth を使った Next.js の完全なサンプルを通じて、
 
 ユーザーが Phaseo でログインし、自分のクレジットをあなたのアプリで使えるようにします。PKCE を使う OAuth 2.1 でサーバーがアクセストークンを受け取り、サーバー側のプロキシ 1 つがすべての Gateway 呼び出しにそのトークンを付けます。完成すると、ログイン、更新されるセッションベースのトークン、モデル検出、`/responses` を使うチャットフロー、他のエンドポイント用のテスターを備えたローカルアプリができます。
 
-このサンプルは説明用です。`lib/oauth.ts` はまだ古いログイン用エンドポイントを呼び出しており、これは[実行する](#run-it)の手順 3 で修正します。また、プロキシの許可リストは製品に必要な範囲より広くなっています。
+このサンプルは Phaseo の OAuth エンドポイントを自動で検出し、戻ってきたときに `state` と `iss` を確認し、トークンを安全に更新し、ユーザーがログアウトするとキーを取り消します。
 
 同じアプリをコーディングエージェントにゼロから作らせるには、次のプロンプトを貼り付けます。
 
@@ -46,8 +46,8 @@ Verification:
 flowchart LR
   browser["ブラウザー"] -->|"ログイン"| start["app/api/auth/start"]
   start -->|"PKCE チャレンジ付きでリダイレクト"| authz["Phaseo のログインと同意"]
-  authz -->|"コード"| cb["app/auth コールバック"]
-  cb -->|"コードを交換"| sess["lib/session.ts: 暗号化されたセッション"]
+  authz -->|"コード、state、iss"| cb["app/auth/callback"]
+  cb -->|"コードを交換し、/oauth/userinfo を読み取る"| sess["lib/session.ts: 暗号化されたセッション"]
   browser -->|"/api/gateway/..."| proxy["app/api/gateway/[...surface]/route.ts"]
   proxy -->|"許可リスト、Bearer トークン、期限切れなら更新"| gw["api.phaseo.app/v1"]
 ```
@@ -56,11 +56,14 @@ flowchart LR
 
 | ファイル | 役割 |
 | --- | --- |
-| `app/page.tsx` | ログインの入口ページ |
+| `app/page.tsx` | ログインの入口ページ。ログインのエラーを表示します |
+| `app/api/auth/start/route.ts` | 認可 URL を組み立て、PKCE の verifier と state を保存します |
+| `app/auth/callback/route.ts` | `state` と `iss` を確認し、コードを交換して、`/oauth/userinfo` を読み取ります |
+| `app/api/auth/signout/route.ts` | リフレッシュトークンを取り消してから、セッションを消去します |
 | `app/dashboard/page.tsx` | 保護されたシェル |
-| `app/dashboard/GatewayWorkbench.tsx` | 制御ルートを読み込み、モデル ID を一覧表示し、`POST /responses` でチャットを実行し、他のエンドポイントをテストします |
+| `app/dashboard/GatewayWorkbench.tsx` | Gateway の状態を表示し、モデル ID を一覧表示し、`POST /responses` でチャットを実行し、他のエンドポイントをテストします |
 | `app/api/gateway/[...surface]/route.ts` | キャッチオールのプロキシ。許可リストを確認し、Bearer トークンを付け、期限切れなら更新し、本文とステータスを転送します |
-| `lib/oauth.ts` | PKCE、コードの交換、トークンの更新 |
+| `lib/oauth.ts` | ディスカバリー、PKCE、コードの交換、トークンの更新と取り消し、userinfo |
 | `lib/session.ts` | 暗号化されたセッションの保存 |
 
 ログインと Gateway 呼び出しを分けておくと、ログインの問題がモデルの問題に見えることはなく、すべてのエンドポイントがトークンを扱う 1 か所を共有できます。
@@ -81,32 +84,23 @@ npm install
 </Step>
 <Step title=".env.local を作成する">
 
-サンプルには `.env.example` がありません。コードが読み取る名前で `.env.local` を作成します。
-
-```bash .env.local
-NEXT_PUBLIC_OAUTH_CLIENT_ID=your_client_id
-OAUTH_CLIENT_SECRET=your_client_secret
-# サンプルは OAuth サーバーのベース URL をこの名前で読み取ります。
-NEXT_PUBLIC_AISTATS_URL=https://api.phaseo.app
-NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/callback
-SESSION_SECRET=a-long-random-string
-NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
+```bash
+cp .env.example .env.local
 ```
 
-`OAUTH_CLIENT_SECRET` や `SESSION_SECRET` を `NEXT_PUBLIC_` 変数に入れないでください。
+値を入力します。
 
-</Step>
-<Step title="サンプルを現在の OAuth エンドポイントに向ける">
+| 変数 | 必須 | 値 |
+| --- | --- | --- |
+| `PHASEO_OAUTH_CLIENT_ID` | はい | OAuth アプリのクライアント ID |
+| `PHASEO_OAUTH_CLIENT_SECRET` | コンフィデンシャルなアプリ | OAuth アプリのクライアントシークレット。公開アプリでは空のままにします。 |
+| `PHASEO_OAUTH_REDIRECT_URI` | はい | `http://localhost:3000/auth/callback`。登録した値と完全に一致させます |
+| `SESSION_SECRET` | はい | 32 文字以上のランダムな文字列 |
+| `PHASEO_API_URL` | いいえ | 既定値は `https://api.phaseo.app` です |
 
-`lib/oauth.ts` は `${NEXT_PUBLIC_AISTATS_URL}/auth/v1/oauth/authorize` と `/auth/v1/token` を組み立て、`openid email profile` を要求します。Phaseo の OAuth サーバーは、エンドポイントを `https://api.phaseo.app/.well-known/oauth-authorization-server` で公開しています。
+サンプルはこれらをすべてサーバー側でのみ読み取ります。クライアントシークレットやセッションシークレットを `NEXT_PUBLIC_` 変数に入れないでください。
 
-| 用途 | URL |
-| --- | --- |
-| 認可 | `https://api.phaseo.app/oauth/authorize` |
-| トークン | `https://api.phaseo.app/oauth/token` |
-| 取り消し | `https://api.phaseo.app/oauth/revoke` |
-
-`lib/oauth.ts` の 3 つの URL をこれらに変更し、トークンで Gateway を呼び出せるように `scope` に `gateway:access` を追加します。
+サンプルは、認可、トークン、取り消し、userinfo の各エンドポイントを `https://api.phaseo.app/.well-known/oauth-authorization-server` から見つけ、`openid email profile gateway:access` を要求します。`gateway:access` があると、トークンで Gateway を呼び出せます。
 
 </Step>
 <Step title="開発サーバーを起動する">
@@ -153,7 +147,8 @@ npm run dev
 
 ## 公開する前に
 
-- **許可リストを絞り込む。** `lib/gateway.ts` は、完全一致のパスに加えて `videos/`、`music/generate/`、`control/`、`internal/` 以下のすべてのパスを許可しています。製品が呼び出す完全一致のパスだけを残してください。
+- **許可リストを絞り込む。** `lib/gateway.ts` は、ワークベンチが呼び出すパスに加えて、`videos/` と `music/generate/` 以下のジョブステータスを許可しています。製品が呼び出すパスだけを残してください。
+- **更新をインスタンス間で共有する。** `lib/oauth.ts` は、並行するリクエスト間で 1 回の更新をメモリー内で共有します。サーバーインスタンスを複数実行する場合は、これを共有ストレージに移してください。そうしないと、2 つのインスタンスが同じトークンで更新し、ログインが終了することがあります。
 - **会話全体を送る。** Gateway はレスポンスを保存せず、`previous_response_id` を拒否します。以前のターンは `input` に含めて再送してください。
 - **テスターを置き換える。** ワークベンチは社内 QA 用に残し、エンドユーザー向けには目的に合わせたフローを作ってください。
 

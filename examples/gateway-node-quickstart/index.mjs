@@ -58,7 +58,10 @@ async function request(method, route, body) {
   return { status: response.status, ok: response.ok, payload };
 }
 
+const failures = [];
+
 function print(title, result) {
+  if (!result.ok) failures.push(title);
   console.log(`\n=== ${title} ===`);
   console.log(`HTTP ${result.status}`);
   if (typeof result.payload === 'string') {
@@ -98,7 +101,12 @@ async function run() {
   print('Embeddings', embeddings);
 }
 
-run().catch((error) => {
+run().then(() => {
+  if (failures.length > 0) {
+    console.error(`\nQuickstart failed: ${failures.join(', ')} did not return 2xx.`);
+    process.exit(1);
+  }
+}).catch((error) => {
   console.error('\nQuickstart failed:', error);
   process.exit(1);
 });

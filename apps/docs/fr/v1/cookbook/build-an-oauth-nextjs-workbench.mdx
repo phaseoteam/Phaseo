@@ -6,7 +6,7 @@ description: "Suivez l’exemple OAuth complet avec Next.js pas à pas pour cré
 
 Permettez aux utilisateurs de se connecter avec Phaseo et de dépenser leurs propres crédits dans votre application : OAuth 2.1 avec PKCE fournit un jeton d’accès à votre serveur, et un unique proxy côté serveur l’ajoute à chaque appel au gateway. À la fin, vous disposez d’une application locale avec connexion, des jetons stockés en session qui se renouvellent, la découverte des modèles, un flux de chat sur `/responses` et un testeur pour les autres endpoints.
 
-L’exemple est illustratif. Son fichier `lib/oauth.ts` appelle encore un ancien endpoint de connexion, que l’étape 3 de [Lancer l’application](#run-it) corrige, et la liste d’autorisation de son proxy est plus large que ce dont un produit a besoin.
+L’exemple découvre les endpoints OAuth de Phaseo, vérifie `state` et `iss` au retour, renouvelle les jetons en toute sécurité et révoque la clé quand l’utilisateur se déconnecte.
 
 Pour qu’un agent de codage crée la même application de zéro, collez ce prompt :
 
@@ -46,8 +46,8 @@ Verification:
 flowchart LR
   browser["Navigateur"] -->|"Connexion"| start["app/api/auth/start"]
   start -->|"Redirection avec le challenge PKCE"| authz["Connexion et consentement Phaseo"]
-  authz -->|"Code"| cb["Callback app/auth"]
-  cb -->|"Échange du code"| sess["lib/session.ts : session chiffrée"]
+  authz -->|"Code, state, iss"| cb["app/auth/callback"]
+  cb -->|"Échange du code, lecture de /oauth/userinfo"| sess["lib/session.ts : session chiffrée"]
   browser -->|"/api/gateway/..."| proxy["app/api/gateway/[...surface]/route.ts"]
   proxy -->|"Liste d’autorisation, jeton Bearer, renouvellement s’il a expiré"| gw["api.phaseo.app/v1"]
 ```
@@ -56,11 +56,14 @@ L’exemple se trouve dans [examples/oauth-client-nextjs](https://github.com/pha
 
 | Fichier | Rôle |
 | --- | --- |
-| `app/page.tsx` | Page d’entrée de connexion |
+| `app/page.tsx` | Page d’entrée de connexion ; affiche les erreurs de connexion |
+| `app/api/auth/start/route.ts` | Construit l’URL d’autorisation et stocke le vérificateur PKCE et le state |
+| `app/auth/callback/route.ts` | Vérifie `state` et `iss`, échange le code, lit `/oauth/userinfo` |
+| `app/api/auth/signout/route.ts` | Révoque le jeton de renouvellement, puis efface la session |
 | `app/dashboard/page.tsx` | Interface protégée |
-| `app/dashboard/GatewayWorkbench.tsx` | Charge les routes de contrôle, liste les ID de modèle, exécute le chat via `POST /responses` et teste les autres endpoints |
+| `app/dashboard/GatewayWorkbench.tsx` | Affiche l’état du Gateway, liste les ID de modèle, exécute le chat via `POST /responses` et teste les autres endpoints |
 | `app/api/gateway/[...surface]/route.ts` | Proxy générique : vérifie la liste d’autorisation, ajoute le jeton Bearer, le renouvelle s’il a expiré, transmet le corps et le statut |
-| `lib/oauth.ts` | PKCE, échange du code et renouvellement |
+| `lib/oauth.ts` | Découverte, PKCE, échange du code, renouvellement, révocation et userinfo |
 | `lib/session.ts` | Stockage chiffré de la session |
 
 Séparer la connexion des appels au gateway évite qu’un problème de connexion ressemble à un problème de modèle, et tous les endpoints partagent un seul endroit qui gère les jetons.
@@ -81,32 +84,23 @@ npm install
 </Step>
 <Step title="Créer .env.local">
 
-L’exemple ne fournit pas de `.env.example`. Créez `.env.local` avec les noms que lit le code :
-
-```bash .env.local
-NEXT_PUBLIC_OAUTH_CLIENT_ID=your_client_id
-OAUTH_CLIENT_SECRET=your_client_secret
-# L’exemple lit ce nom pour l’URL de base du serveur OAuth.
-NEXT_PUBLIC_AISTATS_URL=https://api.phaseo.app
-NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/callback
-SESSION_SECRET=a-long-random-string
-NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
+```bash
+cp .env.example .env.local
 ```
 
-Ne mettez jamais `OAUTH_CLIENT_SECRET` ni `SESSION_SECRET` dans une variable `NEXT_PUBLIC_`.
+Renseignez les valeurs :
 
-</Step>
-<Step title="Faire pointer l’exemple vers les endpoints OAuth actuels">
+| Variable | Obligatoire | Valeur |
+| --- | --- | --- |
+| `PHASEO_OAUTH_CLIENT_ID` | Oui | L’ID client de l’application OAuth |
+| `PHASEO_OAUTH_CLIENT_SECRET` | Applications confidentielles | Le secret client de l’application OAuth. Laissez-le vide pour une application publique. |
+| `PHASEO_OAUTH_REDIRECT_URI` | Oui | `http://localhost:3000/auth/callback`, exactement tel qu’enregistré |
+| `SESSION_SECRET` | Oui | Une chaîne aléatoire d’au moins 32 caractères |
+| `PHASEO_API_URL` | Non | Par défaut, `https://api.phaseo.app` |
 
-`lib/oauth.ts` construit `${NEXT_PUBLIC_AISTATS_URL}/auth/v1/oauth/authorize` et `/auth/v1/token`, et demande `openid email profile`. Le serveur OAuth de Phaseo publie ses endpoints à `https://api.phaseo.app/.well-known/oauth-authorization-server` :
+L’exemple les lit toutes uniquement côté serveur. Ne mettez jamais le secret client ni le secret de session dans une variable `NEXT_PUBLIC_`.
 
-| Usage | URL |
-| --- | --- |
-| Autorisation | `https://api.phaseo.app/oauth/authorize` |
-| Jeton | `https://api.phaseo.app/oauth/token` |
-| Révocation | `https://api.phaseo.app/oauth/revoke` |
-
-Remplacez les trois URL de `lib/oauth.ts` par celles-ci, et ajoutez `gateway:access` à `scope` pour que le jeton puisse appeler le Gateway.
+L’exemple trouve les endpoints d’autorisation, de jeton, de révocation et userinfo via `https://api.phaseo.app/.well-known/oauth-authorization-server`, et demande `openid email profile gateway:access`. `gateway:access` permet au jeton d’appeler le Gateway.
 
 </Step>
 <Step title="Démarrer le serveur de développement">
@@ -153,7 +147,8 @@ Quels que soient ses scopes, votre application ne peut ni lever cette limite ni 
 
 ## Avant la mise en production
 
-- **Réduisez la liste d’autorisation.** `lib/gateway.ts` autorise des chemins exacts ainsi que tous les chemins sous `videos/`, `music/generate/`, `control/` et `internal/`. Ne gardez que les chemins exacts que votre produit appelle.
+- **Réduisez la liste d’autorisation.** `lib/gateway.ts` autorise les chemins qu’appelle l’atelier, ainsi que le statut des tâches sous `videos/` et `music/generate/`. Ne gardez que les chemins que votre produit appelle.
+- **Partagez les renouvellements entre instances.** `lib/oauth.ts` partage en mémoire un seul renouvellement entre les requêtes parallèles. Si vous exécutez plusieurs instances du serveur, déplacez ce partage vers un stockage commun ; sinon, deux instances peuvent renouveler avec le même jeton et mettre fin à la connexion.
 - **Envoyez toute la conversation.** Le Gateway ne stocke pas les réponses et refuse `previous_response_id` ; renvoyez donc les tours précédents dans `input`.
 - **Remplacez le testeur.** Gardez l’atelier pour la QA interne et créez des parcours dédiés pour les utilisateurs finaux.
 

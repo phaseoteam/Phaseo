@@ -1,58 +1,47 @@
 /**
- * OAuth Callback Handler
- *
- * Receives authorization code from Phaseo and exchanges it for tokens
+ * OAuth callback: checks state and issuer, then exchanges the code (with the
+ * PKCE verifier) for tokens and starts the session.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { exchangeCodeForTokens, validateState } from '@/lib/oauth';
-import { storeTokens } from '@/lib/session';
+import { consumeAuthorizationResponse, exchangeCodeForTokens, fetchUserInfo } from '@/lib/oauth';
+import { startSession } from '@/lib/session';
+
+function redirectWithError(request: NextRequest, error: string, description: string) {
+  const url = new URL('/', request.url);
+  url.search = new URLSearchParams({ error, error_description: description }).toString();
+  return NextResponse.redirect(url);
+}
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
   const state = searchParams.get('state');
   const error = searchParams.get('error');
-  const errorDescription = searchParams.get('error_description');
 
-  // Handle OAuth errors
+  // The person denied consent, or the server rejected the request.
   if (error) {
-    console.error('OAuth error:', error, errorDescription);
-    return NextResponse.redirect(
-      new URL(`/?error=${error}&error_description=${errorDescription}`, request.url)
-    );
+    return redirectWithError(request, error, searchParams.get('error_description') ?? '');
   }
 
-  // Validate required parameters
   if (!code || !state) {
-    return NextResponse.redirect(
-      new URL('/?error=invalid_request&error_description=Missing code or state', request.url)
-    );
-  }
-
-  // Validate state parameter (CSRF protection)
-  if (!(await validateState(state))) {
-    return NextResponse.redirect(
-      new URL('/?error=invalid_state&error_description=State parameter mismatch', request.url)
-    );
+    return redirectWithError(request, 'invalid_request', 'Missing code or state');
   }
 
   try {
-    // Exchange authorization code for tokens
-    const tokens = await exchangeCodeForTokens(code);
+    const checked = await consumeAuthorizationResponse(state, searchParams.get('iss'));
+    if (!checked.ok) {
+      return redirectWithError(request, 'invalid_state', checked.error);
+    }
 
-    // Store tokens in encrypted session
-    await storeTokens(tokens);
+    const tokens = await exchangeCodeForTokens(code, checked.codeVerifier);
+    const userInfo = await fetchUserInfo(tokens.access_token).catch(() => null);
+    await startSession(tokens, userInfo);
 
-    // Redirect to dashboard
     return NextResponse.redirect(new URL('/dashboard', request.url));
-  } catch (error) {
-    console.error('Token exchange failed:', error);
-
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-    return NextResponse.redirect(
-      new URL(`/?error=token_exchange_failed&error_description=${encodeURIComponent(errorMessage)}`, request.url)
-    );
+  } catch (exchangeError) {
+    console.error('Token exchange failed:', exchangeError);
+    const message = exchangeError instanceof Error ? exchangeError.message : 'Unknown error';
+    return redirectWithError(request, 'token_exchange_failed', message);
   }
 }
