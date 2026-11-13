@@ -23,6 +23,8 @@ mkdirSync(join(temporary, "migrations"), { recursive: true });
 writeFileSync(join(temporary, "config.toml"), readFileSync(join(source, "config.toml"), "utf8")
 	.replace(/^project_id\s*=.*$/m, `project_id = "${projectId}"`));
 cpSync(join(source, "schemas"), join(temporary, "schemas"), { recursive: true });
+// The CLI seeds cluster roles from supabase/roles.sql into every shadow before loading schemas.
+if (existsSync(join(source, "roles.sql"))) cpSync(join(source, "roles.sql"), join(temporary, "roles.sql"));
 
 if (mode !== "bootstrap") {
 	if (!existsSync(join(baseline, "history.sha256"))) throw new Error("Missing verified replay baseline; bootstrap it in isolated CI first");

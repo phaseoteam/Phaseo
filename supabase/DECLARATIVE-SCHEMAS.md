@@ -49,6 +49,12 @@ CI runs without production credentials. Raw `supabase db schema declarative
 sync` and raw `db reset` against the repository root still encounter the
 incomplete historical chain; use the replay tooling instead.
 
+Roles are cluster objects, so schema files only grant to them. A custom role
+must also be defined in `roles.sql`, which the CLI runs in every local and
+shadow database before migrations or schemas load; the replay tooling copies
+it into its workspace. Mirror the role's forward migration there, with no
+password or `LOGIN`. Production still gets roles only from migrations.
+
 Exports use `pnpm db:schema:export` against the linked database. Review drift
 before replacing locally edited definitions. Keep `.pgdelta-export.json`, the
 CLI-generated load-order manifest, alongside the SQL files.
