@@ -44,7 +44,11 @@
     "access": "एक्सेस",
     "billing": "बिलिंग",
     "details": "विवरण",
-    "pricing": "कीमतें"
+    "pricing": "कीमतें",
+    "compareTitle": "{provider} की योजनाओं की तुलना करें",
+    "pricePerMonth": "प्रति माह कीमत",
+    "thisPlan": "यह योजना",
+    "accessVerified": "मॉडल एक्सेस आख़िरी बार {date} को जाँचा गया"
   },
   "metadata": {
     "fallbackTitle": "AI सदस्यता योजनाएँ और कीमतें | Phaseo",

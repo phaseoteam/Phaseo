@@ -1,4 +1,4 @@
-import { fetchSubscriptionCatalogue } from "@/models/subscriptions";
+import { fetchRelatedPlans, fetchSubscriptionCatalogue } from "@/models/subscriptions";
 import { Hono } from "hono";
 import { PUBLIC_LIVE_DATA_CACHE } from "@/cache/publicLiveData";
 import { getDataClient } from "@/data/supabase";
@@ -436,9 +436,11 @@ publicReferenceDataRouter.get("/subscription-plans", async (c) => {
 publicReferenceDataRouter.get("/subscription-plans/:planId", async (c) => {
 	const planId = c.req.param("planId");
 	try {
-		const [plan] = await fetchSubscriptionCatalogue(getDataClient(c.env), planId);
+		const client = getDataClient(c.env);
+		const [plan] = await fetchSubscriptionCatalogue(client, planId);
 		if (!plan) return notFound(c, "subscription_plan");
-		return withPublicCache(c.json({ subscription_plan: plan }), policy(`web-api-subscription-plan-${encodeURIComponent(planId).replace(/%/g, "")}`));
+		const related_plans = await fetchRelatedPlans(client, plan);
+		return withPublicCache(c.json({ subscription_plan: { ...plan, related_plans } }), policy(`web-api-subscription-plan-${encodeURIComponent(planId).replace(/%/g, "")}`));
 	} catch (error) {
 		console.error("[web-api/reference] subscription plan failed", { planId, error });
 		return c.json({ error: "subscription_plan_unavailable" }, 503);

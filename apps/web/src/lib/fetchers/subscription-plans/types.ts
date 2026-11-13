@@ -96,7 +96,16 @@ export interface SubscriptionPlanModel {
 	};
 }
 
+/** Another active plan from the same lab, for the plan page comparison. */
+export interface RelatedSubscriptionPlan {
+	plan_id: string;
+	name: string;
+	monthly_price_usd: number | null;
+	usage: SubscriptionPlanUsage[];
+}
+
 export interface SubscriptionPlanDetails extends SubscriptionPlanSummary {
+	related_plans?: RelatedSubscriptionPlan[];
 	allowances?: SubscriptionAllowance[];
 	features: SubscriptionPlanFeature[];
 	models: SubscriptionPlanModel[];

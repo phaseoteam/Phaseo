@@ -44,7 +44,11 @@
     "access": "访问方式",
     "billing": "计费",
     "details": "详情",
-    "pricing": "价格"
+    "pricing": "价格",
+    "compareTitle": "比较 {provider} 的方案",
+    "pricePerMonth": "每月价格",
+    "thisPlan": "当前方案",
+    "accessVerified": "模型访问信息最后核对于 {date}"
   },
   "metadata": {
     "fallbackTitle": "AI 订阅方案与价格 | Phaseo",
