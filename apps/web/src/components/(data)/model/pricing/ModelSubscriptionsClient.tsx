@@ -19,7 +19,7 @@ import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "
 
 export type { SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
 
-type SubscriptionPlanGroup = {
+export type SubscriptionPlanGroup = {
 	organisationId: string;
 	organisationName: string;
 	organisationColour: string | null;
@@ -141,6 +141,16 @@ function formatPlanPriceDisplay(price: SubscriptionPrice, formatNumber: NumberFo
 		value: formatPlanPriceValue(price, formatNumber, labels),
 		frequency: getFrequencyLabel(price.frequency, labels),
 	};
+}
+
+function PlanPrice({ price, formatNumber, labels }: { price: SubscriptionPrice; formatNumber: NumberFormatter; labels: SubscriptionLabels }) {
+	const display = formatPlanPriceDisplay(price, formatNumber, labels);
+	return (
+		<span className="inline-flex items-baseline gap-1">
+			<span className="font-semibold text-foreground">{display.value}</span>
+			{display.frequency ? <span className="text-xs text-muted-foreground">{display.frequency}</span> : null}
+		</span>
+	);
 }
 
 export function dedupeSubscriptionPlanPrices(
@@ -311,6 +321,35 @@ function getVisibleStartingPriceSortKey(plans: SubscriptionPlan[]): {
 	};
 }
 
+/** Sorts plan groups in place: the model owner first, then by cheapest visible starting price, then by name. */
+export function sortSubscriptionGroups(groups: SubscriptionPlanGroup[], ownerOrganisationId?: string | null, ownerOrganisationName?: string | null): SubscriptionPlanGroup[] {
+	return groups.sort((a, b) => {
+		const aIsOwner = isOwnerGroup(a, ownerOrganisationId, ownerOrganisationName);
+		const bIsOwner = isOwnerGroup(b, ownerOrganisationId, ownerOrganisationName);
+		if (aIsOwner !== bIsOwner) return aIsOwner ? -1 : 1;
+
+		const aKey = getVisibleStartingPriceSortKey(a.plans);
+		const bKey = getVisibleStartingPriceSortKey(b.plans);
+		if (aKey && bKey) {
+			if (aKey.currencyRank !== bKey.currencyRank) {
+				return aKey.currencyRank - bKey.currencyRank;
+			}
+			if (aKey.frequencyRank !== bKey.frequencyRank) {
+				return aKey.frequencyRank - bKey.frequencyRank;
+			}
+			if (aKey.rawPrice !== bKey.rawPrice) {
+				return aKey.rawPrice - bKey.rawPrice;
+			}
+		} else if (aKey && !bKey) {
+			return -1;
+		} else if (!aKey && bKey) {
+			return 1;
+		}
+
+		return a.organisationName.localeCompare(b.organisationName);
+	});
+}
+
 export default function ModelSubscriptionsClient({
 	subscriptionPlans,
 	ownerOrganisationId,
@@ -368,31 +407,7 @@ export default function ModelSubscriptionsClient({
 		return groups;
 	}, []);
 
-	groupedPlans.sort((a, b) => {
-		const aKey = getVisibleStartingPriceSortKey(a.plans);
-		const bKey = getVisibleStartingPriceSortKey(b.plans);
-		if (aKey && bKey) {
-			if (aKey.currencyRank !== bKey.currencyRank) {
-				return aKey.currencyRank - bKey.currencyRank;
-			}
-			if (aKey.frequencyRank !== bKey.frequencyRank) {
-				return aKey.frequencyRank - bKey.frequencyRank;
-			}
-			if (aKey.rawPrice !== bKey.rawPrice) {
-				return aKey.rawPrice - bKey.rawPrice;
-			}
-		} else if (aKey && !bKey) {
-			return -1;
-		} else if (!aKey && bKey) {
-			return 1;
-		}
-
-		const aIsOwner = isOwnerGroup(a, ownerOrganisationId, ownerOrganisationName);
-		const bIsOwner = isOwnerGroup(b, ownerOrganisationId, ownerOrganisationName);
-		if (aIsOwner !== bIsOwner) return aIsOwner ? -1 : 1;
-
-		return a.organisationName.localeCompare(b.organisationName);
-	});
+	sortSubscriptionGroups(groupedPlans, ownerOrganisationId, ownerOrganisationName);
 
 	for (const group of groupedPlans) {
 		group.plans.sort((a, b) => {
@@ -504,29 +519,19 @@ export default function ModelSubscriptionsClient({
 												{usageLine(plan) ? <p className="text-xs tabular-nums text-muted-foreground">{usageLine(plan)}</p> : null}
 											</div>
 
-											<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm sm:justify-end">
+											<div className="text-sm tabular-nums sm:text-right">
 												{sortedPrices.length > 0 ? (
-													sortedPrices.map((price, priceIndex) => {
-												const displayPrice = formatPlanPriceDisplay(price, format.number, planLabels);
-														return (
-															<span
-																key={`${plan.plan_id}:${price.frequency}:${price.currency}:${price.price}`}
-																className="inline-flex items-baseline gap-1 tabular-nums"
-															>
-																{priceIndex > 0 ? (
-																	<span className="text-muted-foreground/50">/</span>
-																) : null}
-																<span className="font-semibold text-foreground">
-																	{displayPrice.value}
-																</span>
-																{displayPrice.frequency ? (
-																	<span className="text-xs text-muted-foreground">
-																		{displayPrice.frequency}
-																	</span>
-																) : null}
-															</span>
-														);
-													})
+													<>
+														<PlanPrice price={sortedPrices[0]} formatNumber={format.number} labels={planLabels} />
+														{sortedPrices.length > 1 ? (
+															<p className="text-xs text-muted-foreground">
+																{sortedPrices.slice(1).map((price) => {
+																	const display = formatPlanPriceDisplay(price, format.number, planLabels);
+																	return display.frequency ? `${display.value} ${display.frequency}` : display.value;
+																}).join(" · ")}
+															</p>
+														) : null}
+													</>
 												) : (
 													<div className="text-sm text-muted-foreground">
 												{tEmpty("noSubscriptionPrice")}
