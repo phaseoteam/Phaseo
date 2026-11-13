@@ -823,6 +823,15 @@
 			"removeBenchmark": "बेंचमार्क प्रविष्टि {index} हटाएँ",
 			"detailsHeading": "मॉडल विवरण",
 			"linksHeading": "मॉडल लिंक",
+			"linksDescription": "हर लिंक को उस शीर्षक के साथ जोड़ें जो लोगों को दिखना चाहिए। प्रकार से वैकल्पिक आइकन और तुलना कॉलम तय होता है।",
+			"noLinks": "अभी कोई लिंक नहीं है।",
+			"addLink": "लिंक जोड़ें",
+			"linkUrl": "URL",
+			"linkTitle": "शीर्षक",
+			"linkKind": "प्रकार",
+			"moveLinkUp": "ऊपर ले जाएँ",
+			"moveLinkDown": "नीचे ले जाएँ",
+			"removeLink": "लिंक हटाएँ",
 			"detailFields": {
 				"input_context_length": {
 					"label": "इनपुट संदर्भ लंबाई",
@@ -847,12 +856,19 @@
 			},
 			"linkFields": {
 				"announcement": "घोषणा",
-				"api_reference": "API संदर्भ",
 				"model_card": "मॉडल कार्ड",
 				"paper": "शोधपत्र",
-				"playground": "प्लेग्राउंड",
+				"weights": "वेट्स",
 				"repository": "रिपॉज़िटरी",
-				"weights": "वेट्स"
+				"documentation": "दस्तावेज़",
+				"api_reference": "API संदर्भ",
+				"playground": "प्लेग्राउंड",
+				"pricing": "मूल्य",
+				"benchmark": "बेंचमार्क",
+				"website": "वेबसाइट",
+				"provider": "प्रदाता",
+				"deprecation": "बंद होने की सूचना",
+				"license": "लाइसेंस"
 			},
 			"subscriptionPlansTitle": "सदस्यता योजनाएँ",
 			"subscriptionPlansDescription": "इस मॉडल को सदस्यता योजनाओं से जोड़ें या हटाएँ।",

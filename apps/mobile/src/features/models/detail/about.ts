@@ -125,12 +125,25 @@ export function licenceUrl(model: Pick<ModelDetail, "license_url" | "model_links
   return model?.model_links?.find((link) => isLicenceLink(link) && link.url.trim())?.url.trim() ?? null;
 }
 
-/** Links other than the licence (which the About grid already shows). */
-export const genericLinks = <T extends { kind?: string | null; platform?: string | null }>(links: T[] | null | undefined) => (links ?? []).filter((link) => !isLicenceLink(link));
+/**
+ * Links other than the licence (which the About grid already shows), in their saved order, with
+ * each URL shown once even when it was saved under several kinds.
+ */
+export const genericLinks = <T extends { kind?: string | null; platform?: string | null; url?: string | null }>(links: T[] | null | undefined) => {
+  const seen = new Set<string>();
+  return (links ?? []).filter((link) => {
+    if (isLicenceLink(link)) return false;
+    const key = link.url?.trim().replace(/\/+$/, "").toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
 
 const LINK_LABELS: Record<string, string> = {
-  api_reference: "API reference", paper: "Paper", repository: "Repository", github: "Repository", weights: "Weights", huggingface: "Weights",
-  documentation: "Documentation", docs: "Documentation", website: "Website", playground: "Playground", model_card: "Model card", announcement: "Announcement", blog: "Announcement",
+  api_reference: "API reference", paper: "Paper", repository: "Repository", weights: "Weights", documentation: "Documentation",
+  website: "Website", playground: "Playground", model_card: "Model card", announcement: "Announcement", pricing: "Pricing",
+  benchmark: "Benchmark", provider: "Provider", deprecation: "Deprecation notice",
 };
 
 export function linkLabel(link: { title?: string | null; kind?: string | null; platform?: string | null }) {
