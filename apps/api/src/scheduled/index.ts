@@ -15,6 +15,7 @@ import {
 	runModelDiscoveryJob,
 } from "@/pipeline/model-discovery";
 import { runPublicModelAnnouncementCheck } from "@/pipeline/model-discovery/public-model-catalog-announcements";
+import { runExternalCatalogueSync } from "@/pipeline/external-catalogue-sync";
 import { runAsyncWebhookRetriesJob } from "@/core/async-notifications";
 import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
@@ -134,6 +135,12 @@ function isModelDiscoveryTick(event: ScheduledController): boolean {
 function isDailyRetentionBillingTick(event: ScheduledController): boolean {
 	const scheduledAt = new Date(event.scheduledTime);
 	return scheduledAt.getUTCHours() === 0 && scheduledAt.getUTCMinutes() === 10;
+}
+
+// Once a day, away from the top of the hour when most other daily jobs start.
+function isDailyExternalCatalogueSyncTick(event: ScheduledController): boolean {
+	const scheduledAt = new Date(event.scheduledTime);
+	return scheduledAt.getUTCHours() === 5 && scheduledAt.getUTCMinutes() === 23;
 }
 
 function isDailyPaymentMethodExpiryTick(event: ScheduledController): boolean {
@@ -956,6 +963,16 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 				await jobs.run("rate_limit_plan_reconcile", () => handleRateLimitPlanReconcileScheduledEvent(env), env.RATE_LIMIT_POLICIES_ENABLED === "true");
 			} catch (error) {
 				console.error("rate_limit_plans_reconcile_scheduled_failed", serializeError(error));
+			}
+		}
+		if (isDailyExternalCatalogueSyncTick(event)) {
+			configureRuntime(env);
+			try {
+				await jobs.run("external_catalogue_sync", () => runExternalCatalogueSync(), toBool(env.MODEL_DISCOVERY_ENABLED, true));
+			} catch (error) {
+				console.error("external_catalogue_sync_scheduled_failed", serializeError(error));
+			} finally {
+				clearRuntime();
 			}
 		}
 		if (isModelDiscoveryTick(event)) {
