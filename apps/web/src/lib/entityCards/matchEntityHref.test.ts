@@ -102,9 +102,9 @@ describe("entityLinkFromTarget", () => {
 		expect(entityLinkFromTarget(link(`<a id="target" href="/models/a/c">x</a>`), "/models/a/b")).toMatchObject({ id: "a/c" });
 	});
 
-	it("lets links inside a card open their own card, but keeps the opt-out", () => {
-		expect(entityLinkFromTarget(link(`<header><div data-entity-card><a id="target" href="/organisations/a">x</a></div></header>`), "/")).toMatchObject({ kind: "organisation" });
-		expect(entityLinkFromTarget(link(`<div data-entity-card><a id="target" data-no-entity-card href="/organisations/a">x</a></div>`), "/")).toBeNull();
+	it("never opens a card from a link inside a card", () => {
+		expect(entityLinkFromTarget(link(`<div data-entity-card><a id="target" href="/organisations/a">x</a></div>`), "/")).toBeNull();
+		expect(entityLinkFromTarget(link(`<header><div data-entity-card><a id="target" href="/organisations/a">x</a></div></header>`), "/")).toBeNull();
 	});
 
 	it("ignores elements that are not inside a link", () => {

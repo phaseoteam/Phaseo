@@ -187,7 +187,7 @@ describe("EntityCards", () => {
 		expect(card()?.textContent).toContain("FastInfer +4 more");
 	});
 
-	it("switches to the card of a link inside the open card, at that link's last box, instead of closing", async () => {
+	it("keeps the open card when the pointer moves onto a link inside it, and never opens that link's card", async () => {
 		render();
 		placeAt(link("model"), 200, 300);
 		pointer("pointerover", link("model"));
@@ -195,38 +195,16 @@ describe("EntityCards", () => {
 		await respond("/api/_web/entity-cards/model/acme/rocket-2", { card: MODEL });
 		const opened = card()!;
 		const inCardLink = opened.querySelector<HTMLAnchorElement>("a[href='/organisations/acme']")!;
-		placeAt(inCardLink, 220, 340);
+		expect(inCardLink).not.toBeNull();
 
-		// The organisation card is already cached: the switch shows it with no loading state.
-		pointer("pointerout", link("model"), { relatedTarget: opened });
+		pointer("pointerout", link("model"), { relatedTarget: inCardLink });
 		pointer("pointerover", inCardLink, { relatedTarget: link("model") });
-		await respond("/api/_web/entity-cards/organisation/acme", { card: ORGANISATION });
-		await advance(SWITCH_DELAY_MS);
-		// The switch replaced the card's content, so the link that is now the anchor has left the page.
-		expect(inCardLink.isConnected).toBe(false);
+		await advance(OPEN_DELAY_MS + CLOSE_DELAY_MS);
+		expect(resolvers.has("/api/_web/entity-cards/organisation/acme")).toBe(false);
+		expect(card()).toBe(opened);
+		expect(inCardLink.isConnected).toBe(true);
 		expect(card()?.hasAttribute("data-open")).toBe(true);
-		expect(card()?.textContent).toContain("Model creator since 2023");
-		expect(card()?.querySelector("[data-slot=entity-card-loading]")).toBeNull();
-		await act(async () => {
-			window.dispatchEvent(new Event("resize"));
-			await vi.advanceTimersByTimeAsync(50);
-		});
-		expect(positionOf(card()!)).toEqual({ left: "0px", top: "0px", transform: "translate(220px, 334px)" });
-
-		// An uncached card from inside the card shows the loading state, then the card.
-		const servedBy = card()!.querySelector<HTMLAnchorElement>("a[href='/api-providers/fastinfer']")!;
-		expect(servedBy).not.toBeNull();
-		pointer("pointerover", servedBy);
-		await advance(SWITCH_DELAY_MS);
-		expect(card()?.hasAttribute("data-open")).toBe(true);
-		expect(card()?.querySelector("[data-slot=entity-card-loading]")).not.toBeNull();
-		await respond("/api/_web/entity-cards/provider/fastinfer", { card: {
-			kind: "provider", id: "fastinfer", name: "FastInfer", countryCode: null, totalModels: 3, activeModels: 2,
-			dataPolicyTier: null, zeroDataRetention: null, byok: false, regions: [], popular: { items: [], more: 0 }, newest: null,
-		} });
-		expect(card()?.hasAttribute("data-open")).toBe(true);
-		expect(card()?.querySelector("[data-slot=entity-card-loading]")).toBeNull();
-		expect(card()?.textContent).toContain("FastInfer");
+		expect(card()?.textContent).toContain("Rocket 2");
 	});
 
 	it("closes 200 ms after the pointer leaves, unless it moves onto the card", async () => {
