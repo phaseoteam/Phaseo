@@ -1,8 +1,8 @@
-import ReactMarkdown, { defaultUrlTransform, type Components } from "react-markdown";
+import Markdown, { defaultUrlTransform, type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import { ScrollArea } from "./ui/scroll-area";
-import { Children, createContext, isValidElement, lazy, memo, Suspense, useContext, useEffect, useRef, useState, useMemo, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { Children, createContext, isValidElement, lazy, memo, Suspense, useContext, useEffect, useRef, useState, useMemo, useSyncExternalStore, type ReactElement, type CSSProperties, type ReactNode } from "react";
 import type { CodeToken } from "./codeHighlight";
 import { Check, Code2, Copy, Expand, ImageOff, Info, Lightbulb, MessageSquareWarning, OctagonAlert, Table2, TriangleAlert, WrapText, Workflow } from "lucide-react";
 import { useTextCopy } from "./useTextCopy";
@@ -227,5 +227,23 @@ export const MessageContent = memo(function MessageContent({ text, projectId, re
 		const lifted: PluggableList = tables.length ? [[remarkLargeTables, { tables }], ...base] : base;
 		return lineBreaks ? [...lifted, remarkLineBreaks] : lifted;
 	}, [repository, lineBreaks, tables]);
-	return <ProjectContext value={projectId}><div className="message-markdown"><ReactMarkdown remarkPlugins={plugins} components={markdownComponents} urlTransform={messageUrl}>{rendered}</ReactMarkdown></div></ProjectContext>;
+	// The parsed tree is kept per text and plugin set (parsedMarkdown), so a turn drawn again, after a chat is reopened or a
+	// page brings it back, skips parsing; its components still render as usual.
+	const key = `${repository ?? ""}\u0000${lineBreaks ? 1 : 0}\u0000${rendered}`;
+	const tree = useMemo(() => parsedMarkdown(key, () => Markdown({ remarkPlugins: plugins, components: markdownComponents, urlTransform: messageUrl, children: rendered })), [key, plugins, rendered]);
+	return <ProjectContext value={projectId}><div className="message-markdown">{tree}</div></ProjectContext>;
 });
+
+/** Parsed Markdown by text, newest last: up to 400 messages and 8 MB of their text. */
+const markdownCache = new Map<string, ReactElement>();
+let markdownCacheCharacters = 0;
+function parsedMarkdown(key: string, parse: () => ReactElement): ReactElement {
+	const cached = markdownCache.get(key);
+	if (cached) { markdownCache.delete(key); markdownCache.set(key, cached); return cached; }
+	// Markdown(…) parses now and returns the rendered elements, which are kept as they are.
+	const element = parse();
+	if (key.length > 1_000_000) return element;
+	markdownCache.set(key, element); markdownCacheCharacters += key.length;
+	for (const [old] of markdownCache) { if (markdownCache.size <= 400 && markdownCacheCharacters <= 8_000_000) break; markdownCache.delete(old); markdownCacheCharacters -= old.length; }
+	return element;
+}

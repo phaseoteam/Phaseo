@@ -224,8 +224,15 @@ const DrawAllContext = createContext(false);
 const turnHeights = new Map<string, number>();
 /** Turns this far outside the view are drawn ahead of the reader. */
 const nearViewMargin = 1500;
-/** The latest turns, drawn with the chat so it opens at its end without placeholders. */
-const eagerTurns = 6;
+/**
+ * The first turn drawn with the chat, counting back from the latest until their heights (drawn, or estimated) fill the
+ * window and a half, so a chat opens at its end with the screen full and nothing above it drawn yet.
+ */
+function eagerFrom(turns: ReturnType<typeof conversationTurns>) {
+	let height = 0, index = turns.length;
+	while (index > 0 && height < window.innerHeight * 1.5) { const turn = turns[--index]; height += turnHeights.get(turn.user?.id ?? turn.entries[0]?.value.id ?? "") ?? turnEstimate(turn.user, turn.entries); }
+	return index;
+}
 /** A turn's height before it has been drawn: a rough guess from its text, corrected once it draws. */
 function turnEstimate(user: Message | undefined, entries: TurnEntry[]) {
 	const lines = (text: string) => Math.ceil(Math.min(text.length, 40_000) / 90) + (text.match(/\n/g)?.length ?? 0) * 0.5;
@@ -263,7 +270,9 @@ function NearView({ id, eager, estimate, markers, children }: { id: string; eage
 		observer.observe(element);
 		return () => observer.disconnect();
 	}, [drawn, id]);
-	if (drawn) return <div ref={node} className="flex flex-col gap-4">{children}</div>;
+	// Drawn turns off screen skip layout and paint (content-visibility), sized by their last drawn height, so reading a
+	// size after a page loads lays out only what is on screen; they stay in the page for find, selection and anchors.
+	if (drawn) return <div ref={node} className="flex flex-col gap-4" style={{ contentVisibility: "auto", containIntrinsicSize: `auto ${Math.round(turnHeights.get(id) ?? estimate())}px` }}>{children}</div>;
 	return <div ref={node} aria-hidden style={{ height: turnHeights.get(id) ?? estimate() }}>{markers().map(marker => <span key={marker} data-conversation-id={marker} className="block h-0" />)}</div>;
 }
 
@@ -343,6 +352,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 	const activityEntries = useMemo(() => messages.page.activities ?? [], [messages.page.activities]);
 	const turns = useMemo(() => conversationTurns(messages.page.entries as Message[], activityEntries), [messages.page.entries, activityEntries]);
 	const bursts = useMemo(() => userBursts(turns), [turns]);
+	const firstEager = useMemo(() => eagerFrom(turns), [turns]);
 	const directory = useOptionalWorkspace()?.overview.projects.find(project => project.id === task.projectId)?.directory;
 	const unread = useMemo(() => firstUnread(turns, unreadSince), [turns, unreadSince]);
 	const earlierRow = useRef<HTMLButtonElement>(null), newerRow = useRef<HTMLButtonElement>(null), lastScroll = useRef(0);
@@ -448,7 +458,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 					onRewind={onRewind ? rewindTo : undefined} onRegenerate={onRegenerate && index === turns.length - 1 && !messages.page.later ? regenerate : undefined}
 					live={running && (turn.user?.id === activeTurn || (!turn.user && index === turns.length - 1 && !messages.page.later))}
 					complete={Boolean(turn.user?.completedAt) || index < turns.length - 1 || (!messages.page.later && !running)}
-					eager={!messages.page.later && index >= turns.length - eagerTurns} />)}
+					eager={!messages.page.later && index >= firstEager} />)}
 				{messages.page.later > 0 && <button ref={newerRow} type="button" disabled={messages.loading} onClick={messages.newer} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading newer messages…</> : "Load newer messages"}</button>}
 				{children}
 			</div>
