@@ -4,15 +4,16 @@ import { ChatRequestError } from "@/features/chat/transport";
 import { StreamError } from "@/features/chat/stream";
 import { requestCapabilities } from "@/features/chat/models";
 import { settingsRequestFields, type ModelSettings } from "@/features/chat/settings";
-import { runTriage, type TriageBuild, type TriageOutcome, type TriageStep } from "./agent";
+import { runTriage, type IssueDraft, type TriageBuild, type TriageOutcome, type TriageStep } from "./agent";
 import { SourceReader } from "./source";
 
 /** One triage on the phone. It lives outside the screen, so leaving the screen doesn't stop it. */
 export type TriageRun =
-  | { status: "idle" }
-  | { status: "running"; report: string; model: string; steps: TriageStep[]; live: string }
+  /** `report` is a description to edit and send again, after a run that failed or was stopped. */
+  | { status: "idle"; report?: string }
+  | { status: "running"; report: string; model: string; steps: TriageStep[]; live: string; draft: IssueDraft | null }
   | { status: "done"; report: string; model: string; steps: TriageStep[]; outcome: TriageOutcome }
-  | { status: "stopped" | "failed"; report: string; model: string; steps: TriageStep[]; error: string | null };
+  | { status: "stopped" | "failed"; report: string; model: string; steps: TriageStep[]; error: string | null; draft: IssueDraft | null };
 
 export const triageRun = createStore<TriageRun>({ status: "idle" });
 let controller: AbortController | null = null;
@@ -26,7 +27,8 @@ export async function startTriage(args: { report: string; build: TriageBuild; di
   controller = own;
   const base = { report: args.report, model: args.model };
   let steps: TriageStep[] = [];
-  triageRun.set({ status: "running", ...base, steps, live: "" });
+  let draft: IssueDraft | null = null;
+  triageRun.set({ status: "running", ...base, steps, live: "", draft });
   const update = (patch: Partial<Extract<TriageRun, { status: "running" }>>) => {
     if (controller !== own) return;
     triageRun.set((run) => (run.status === "running" ? { ...run, ...patch } : run));
@@ -49,10 +51,11 @@ export async function startTriage(args: { report: string; build: TriageBuild; di
       signal: own.signal,
       onStep: (step) => { steps = [...steps, step]; update({ steps }); },
       onText: (live) => update({ live }),
+      onDraft: (made) => { draft = made; update({ draft }); },
     });
     if (controller === own) triageRun.set({ status: "done", ...base, steps, outcome });
   } catch (error) {
-    if (controller === own) triageRun.set({ status: own.signal.aborted ? "stopped" : "failed", ...base, steps, error: own.signal.aborted ? null : problem(error) });
+    if (controller === own) triageRun.set({ status: own.signal.aborted ? "stopped" : "failed", ...base, steps, error: own.signal.aborted ? null : problem(error), draft });
   } finally {
     if (controller === own) controller = null;
   }
@@ -62,7 +65,9 @@ export function stopTriage() {
   controller?.abort();
 }
 
-/** Back to the form, after a run has ended. */
-export function clearTriage() {
-  if (triageRun.get().status !== "running") triageRun.set({ status: "idle" });
+/** Back to the form, after a run has ended; `keepReport` fills it with the last description to edit and try again. */
+export function clearTriage(keepReport = false) {
+  const run = triageRun.get();
+  if (run.status === "running") return;
+  triageRun.set(keepReport && run.status !== "idle" ? { status: "idle", report: run.report } : { status: "idle" });
 }

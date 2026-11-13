@@ -224,7 +224,7 @@ export type PhoneTriageSource = {
  */
 export async function startPhoneTriage(overview: () => WorkspaceOverview, command: (value: WorkspaceCommand) => Promise<WorkspaceOverview>, sources: PhoneModelSources, input: PhoneTriage, source: PhoneTriageSource): Promise<PhoneTriageStarted> {
 	const { projectId, directory, triage } = await source.prepare(input.build);
-	const playbook = triagePlaybookName();
+	const playbook = triagePlaybookName(new Date(), true);
 	await source.writePlaybook(directory, playbook, phoneTriagePlaybook({ build: input.build, triage, checkout: directory, device: input.device, ...input.diagnostics ? { diagnostics: input.diagnostics } : {} }));
 	const text = `Read ${mentionToken({ kind: "file", ref: playbook, label: "triage-playbook.md" })} and follow it.\n\n${input.text}`;
 	const { model, reasoningEffort, harness, accountId, agentId } = input;

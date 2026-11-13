@@ -72,7 +72,7 @@ export const issueDraftChars = 20_000;
 /** A triage chat's issue draft as the phone shows it, with File and Discard while it waits. */
 export function phoneIssueDraft(draft: IssueDraft): PhoneIssueDraft {
 	const body = cut(draft.body, issueDraftChars);
-	return { repository: draft.repository, title: draft.title, body: body.text, status: draft.status, ...draft.number ? { number: draft.number } : {}, ...draft.url ? { url: draft.url } : {}, ...body.truncated ? { truncated: true as const } : {} };
+	return { repository: draft.repository, title: draft.title, body: body.text, status: draft.status, ...draft.number ? { number: draft.number } : {}, ...draft.url ? { url: draft.url } : {}, ...body.truncated ? { truncated: true as const } : {}, ...draft.draftedAt ? { draftedAt: draft.draftedAt } : {} };
 }
 
 /** A queued message longer than this reaches the phone cut, so the phone can't edit it without losing its end. */

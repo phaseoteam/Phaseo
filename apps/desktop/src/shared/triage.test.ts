@@ -40,6 +40,9 @@ describe("triage playbook", () => {
 	it("names playbooks inside the triage folder only", () => {
 		expect(triagePlaybookName(new Date("2026-10-30T14:05:09.123Z"))).toBe(".phaseo-triage/playbook-20261030-140509.md");
 		expect(triagePlaybookPattern.test(triagePlaybookName())).toBe(true);
+		expect(triagePlaybookName(new Date("2026-10-30T14:05:09.123Z"), true)).toMatch(/^\.phaseo-triage\/playbook-20261030-140509-[0-9a-f]{8}\.md$/);
+		expect(triagePlaybookPattern.test(triagePlaybookName(new Date(), true))).toBe(true);
+		expect(triagePlaybookName(new Date(), true)).not.toBe(triagePlaybookName(new Date(), true));
 		expect(triagePlaybookPattern.test(".phaseo-triage/../../evil.md")).toBe(false);
 	});
 });

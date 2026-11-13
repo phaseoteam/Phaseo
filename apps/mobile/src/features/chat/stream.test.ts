@@ -34,6 +34,11 @@ describe("readChatCompletion", () => {
     expect(result.toolCalls).toEqual([{ id: "call_a", name: "read_file", arguments: "{\"path\":\"x\"}" }, { id: "call_1", name: "search_code", arguments: "{}" }]);
   });
 
+  it("refuses tool calls from a stream that ended before it finished", async () => {
+    const cut = packet({ choices: [{ delta: { tool_calls: [{ index: 0, id: "call_a", function: { name: "read_file", arguments: "{\"pa" } }] } }] });
+    await expect(readChatCompletion(body([cut]), { onText: () => undefined })).rejects.toMatchObject({ code: "stream_truncated" });
+  });
+
   it("surfaces a provider error sent mid-stream", async () => {
     await expect(readChatCompletion(body([packet({ choices: [{ delta: { content: "Hi" } }] }), packet({ error: { message: "Upstream overloaded" } })]), { onText: () => undefined }))
       .rejects.toMatchObject({ message: "Upstream overloaded", code: "stream_error" });

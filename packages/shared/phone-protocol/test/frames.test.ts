@@ -44,6 +44,8 @@ describe("phone frames", () => {
 		expect(parsePhoneFrame(JSON.stringify({ id: "1", type: "issue_draft", chatId: "c", action: "file", title: "edited" }))).toEqual({ id: "1", type: "issue_draft", chatId: "c", action: "file" });
 		expect(parsePhoneFrame(JSON.stringify({ id: "2", type: "issue_draft", chatId: "c", action: "discard" }))).toEqual({ id: "2", type: "issue_draft", chatId: "c", action: "discard" });
 		expect(refused(JSON.stringify({ id: "3", type: "issue_draft", chatId: "c", action: "close" })).message).toContain("action");
+		expect(parsePhoneFrame(JSON.stringify({ id: "4", type: "issue_draft", chatId: "c", action: "file", draftedAt: "2026-11-12T10:00:00.000Z" }))).toEqual({ id: "4", type: "issue_draft", chatId: "c", action: "file", draftedAt: "2026-11-12T10:00:00.000Z" });
+		expect(refused(JSON.stringify({ id: "5", type: "issue_draft", chatId: "c", action: "file", draftedAt: 5 })).message).toContain("draftedAt");
 		expect(refused(JSON.stringify({ id: "4", type: "issue_draft", action: "file" })).message).toContain("chatId");
 		expect(relayHolds({ type: "issue_draft" })).toBe(false);
 	});

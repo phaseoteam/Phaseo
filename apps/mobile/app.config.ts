@@ -87,7 +87,8 @@ function buildInfo(): { buildCommit?: string; buildSha?: string; buildDirty?: bo
     const sha = git("rev-parse HEAD");
     if (!sha) return {};
     const count = git("rev-parse --is-shallow-repository") === "true" ? Number.NaN : Number(git("rev-list --count HEAD"));
-    const dirty = git("status --porcelain --untracked-files=no") !== "";
+    // Untracked files count too (a new file a build imports), but only in the app and the shared packages it builds from.
+    const dirty = git("status --porcelain -- . ../../packages") !== "";
     return { buildCommit: sha.slice(0, 10), buildSha: sha, ...(dirty ? { buildDirty: true } : {}), builtAt: new Date().toISOString(), ...(Number.isInteger(count) && count > 0 ? { buildNumber: count } : {}) };
   } catch {
     return {};

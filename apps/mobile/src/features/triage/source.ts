@@ -103,17 +103,27 @@ export class SourceReader {
     const candidates = trees.flat().filter((entry) => entry.type === "blob" && TEXT_FILE.test(entry.path) && (entry.size ?? 0) <= SEARCH_FILE_BYTES);
     if (candidates.length > SEARCH_FILE_LIMIT) return `That covers ${candidates.length} files, more than the ${SEARCH_FILE_LIMIT} a search can read. Search a narrower folder.`;
     const matches: string[] = [];
+    const unread: string[] = [];
     let total = 0;
     await pool(candidates, 8, async (entry) => {
-      const text = await this.file(entry.path).catch(() => "");
+      let text: string;
+      try {
+        text = await this.file(entry.path);
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") throw error;
+        unread.push(entry.path);
+        return;
+      }
       text.split("\n").forEach((line, index) => {
         if (!regex.test(line)) return;
         total += 1;
         if (matches.length < MATCH_LIMIT) matches.push(`${entry.path}:${index + 1}: ${line.trim().slice(0, 200)}`);
       });
     });
-    if (!total) return `No lines match /${pattern}/i in ${paths.join(", ")}.`;
-    return `${total} matching ${total === 1 ? "line" : "lines"}${total > matches.length ? `, the first ${matches.length} shown` : ""}:\n${matches.sort().join("\n")}`;
+    if (candidates.length && unread.length === candidates.length) throw new SourceError(`None of the ${candidates.length} files could be read from GitHub, so the search found nothing either way. Try again shortly.`);
+    const missing = unread.length ? `\n\n${unread.length} of ${candidates.length} files couldn't be read from GitHub, so lines in them are missing: ${unread.slice(0, 10).join(", ")}${unread.length > 10 ? ", …" : ""}` : "";
+    if (!total) return `No lines match /${pattern}/i in ${paths.join(", ")}.${missing}`;
+    return `${total} matching ${total === 1 ? "line" : "lines"}${total > matches.length ? `, the first ${matches.length} shown` : ""}:\n${matches.sort().join("\n")}${missing}`;
   }
 
   /** The latest commits up to this one, touching `path` when given. */

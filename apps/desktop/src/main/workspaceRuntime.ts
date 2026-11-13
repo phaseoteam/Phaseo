@@ -690,9 +690,11 @@ export class WorkspaceRuntime {
 		return { saved: true as const, repository: triage.repository, message: "The draft is shown beside this chat. The person reads it and decides whether to file it; do not file it yourself. If they file it, it is linked to this chat." };
 	}
 	/** The person's choice on a drafted issue: file it (with their edits) through gh and link it to the chat, or discard it. */
-	async issueDraftAction(id: string, action: "file" | "discard", edit?: unknown): Promise<IssueDraft> {
+	async issueDraftAction(id: string, action: "file" | "discard", edit?: unknown, draftedAt?: string): Promise<IssueDraft> {
 		const task = this.store.getTask(id), draft = task.issueDraft;
 		if (!draft || draft.status !== "draft") throw new Error("This chat has no issue draft waiting.");
+		// A phone names the draft the person read; the agent may have replaced it since.
+		if (draftedAt !== undefined && draftedAt !== draft.draftedAt) throw new Error("The agent replaced this issue draft. Read the new one before filing or discarding it.");
 		if (this.filingIssues.has(id)) throw new Error("This issue is already being filed.");
 		if (action === "discard") { task.issueDraft = { ...draft, status: "discarded" }; this.store.saveTask(task); this.broadcast(); return task.issueDraft; }
 		const { title, body } = validateIssueDraft(edit ?? draft);

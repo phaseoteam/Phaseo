@@ -16,13 +16,16 @@ const TREE = [
   { path: "src/logo.png", type: "blob", size: 900 },
 ];
 
+type Reply = { ok: boolean; status: number; text(): Promise<string>; json(): Promise<unknown> };
+const failed: Reply = { ok: false, status: 500, text: async () => "", json: async () => ({}) };
+
 function fakeGitHub() {
   const calls: string[] = [];
-  const fetcher = jest.fn(async (url: string) => {
+  const fetcher = jest.fn(async (url: string): Promise<Reply> => {
     calls.push(url);
-    const reply = (status: number, body: unknown) => ({ ok: status < 400, status, text: async () => String(body), json: async () => body });
+    const reply = (status: number, body: unknown): Reply => ({ ok: status < 400, status, text: async () => String(body), json: async () => body });
     if (url.startsWith("https://api.github.com/")) {
-      if (url.includes("git/trees/")) return reply(200, { tree: TREE.map((entry) => ({ ...entry, path: entry.path.replace(/^src/, "src") })) });
+      if (url.includes("git/trees/")) return reply(200, { tree: TREE });
       if (url.includes("/commits?")) return reply(200, [{ sha: "b".repeat(40), commit: { message: "fix(mobile): a thing\n\nmore", author: { date: "2026-11-12T10:00:00Z" } } }]);
       return reply(404, {});
     }
@@ -110,6 +113,31 @@ describe("runTriage", () => {
     expect(seen).toBe("nope.ts isn't in the source at this commit.");
     expect(failed).toEqual([true]);
     expect(outcome.draft).toBeNull();
+  });
+});
+
+describe("runTriage keeps what it learned", () => {
+  it("leaves the cost unknown when a turn has no price, and hands over the draft as soon as it's made", async () => {
+    const { fetcher } = fakeGitHub();
+    const replies: Partial<CompletionResult>[] = [
+      { toolCalls: [{ id: "1", name: "draft_issue", arguments: JSON.stringify({ title: "T", body: "B" }) }], usage: { cost: 0.01 } },
+      { text: "Done.", toolCalls: [], usage: { prompt_tokens: 5 } },
+    ];
+    const send = jest.fn(async () => ({ text: "", reasoning: "", toolCalls: [], ...replies.shift() }) as CompletionResult);
+    const drafts: unknown[] = [];
+    const outcome = await runTriage({ report: "x", build: BUILD, diagnostics: "", model: "m", workspaceId: null, source: new SourceReader(SHA, fetcher), signal: new AbortController().signal, onStep: () => undefined, onText: () => undefined, onDraft: (draft) => drafts.push(draft), send: send as never });
+    expect(drafts).toEqual([{ title: "T", body: "B" }]);
+    expect(outcome.costUsd).toBeNull();
+  });
+
+  it("says which files a search couldn't read, and fails when it read none", async () => {
+    const { fetcher } = fakeGitHub();
+    const flaky = jest.fn(async (url: string): Promise<Reply> => (url.endsWith("format.ts") ? failed : fetcher(url)));
+    const found = await new SourceReader(SHA, flaky as never).search("return", ["apps/mobile"]);
+    expect(found).toContain("1 of 2 files couldn't be read from GitHub");
+    expect(found).toContain("apps/mobile/src/lib/format.ts");
+    const down = jest.fn(async (url: string): Promise<Reply> => (url.startsWith("https://raw.") ? failed : fetcher(url)));
+    await expect(new SourceReader(SHA, down as never).search("return", ["apps/mobile"])).rejects.toThrow(/None of the 2 files/);
   });
 });
 

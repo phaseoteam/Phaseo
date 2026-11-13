@@ -1,7 +1,7 @@
 import * as Device from "expo-device";
 import { useRouter } from "expo-router";
 import { Bug, Monitor } from "lucide-react-native";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Platform, ScrollView, View } from "react-native";
 import { Button, Callout, EmptyState, Header, ReadableWidth, Row, Screen, showActions, SkeletonRows, Switch, Text, TextField } from "@/components/ui";
 import { BUILD_DIRTY, BUILD_NUMBER, BUILD_SHA, BUILT_AT, deviceName, FULL_VERSION_LABEL } from "@/lib/appInfo";
@@ -46,6 +46,8 @@ function TriageForm({ client, desktopId, desktopName }: { client: DesktopClient;
   const blocker = triageBlocker(connection, desktopName);
   const slow = slowLog.list();
   const ready = connection.status === "connected" && !blocker;
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
 
   const start = async () => {
     setBusy(true); setError(null);
@@ -54,9 +56,11 @@ function TriageForm({ client, desktopId, desktopName }: { client: DesktopClient;
       const build = phoneBuild({ version: APP_VERSION, commit: BUILD_SHA, dirty: BUILD_DIRTY, buildNumber: BUILD_NUMBER, builtAt: BUILT_AT, platform: Platform.OS, osVersion: Device.osVersion ?? null, device: deviceName(), runtime: `React Native ${Object.values(Platform.constants.reactNativeVersion ?? {}).filter((part) => part != null && part !== "").join(".")}` });
       const notes = diagnostics ? triageDiagnostics(slow) : "";
       const started = await client.request("triage", { text: text.trim(), build, ...notes ? { diagnostics: notes } : {} }, { live: true, timeoutMs: TRIAGE_TIMEOUT_MS });
+      if (!mounted.current) return;
       haptic("success");
       router.replace(desktopChatHref(desktopId, started.chat.id));
     } catch (problem) {
+      if (!mounted.current) return;
       haptic("error");
       setError(problemText(problem));
       setBusy(false);
@@ -77,7 +81,7 @@ function TriageForm({ client, desktopId, desktopName }: { client: DesktopClient;
                 icon={Monitor}
                 title={desktopName}
                 subtitle="The computer that does the work"
-                onPress={() => showActions({ title: "Triage on", actions: others.map((entry) => ({ key: entry.desktopId, label: entry.desktopName, icon: Monitor, onPress: () => router.setParams({ desktopId: entry.desktopId }) })) })}
+                onPress={busy ? undefined : () => showActions({ title: "Triage on", actions: others.map((entry) => ({ key: entry.desktopId, label: entry.desktopName, icon: Monitor, onPress: () => router.setParams({ desktopId: entry.desktopId }) })) })}
                 last
               />
             </View>

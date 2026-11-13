@@ -1471,7 +1471,7 @@ app.whenReady().then(() => {
 				},
 				writePlaybook: (directory, name, content) => writeTriagePlaybook(directory, name, content),
 			})),
-			issueDraft: (chatId, action) => span("triage.issue", { action, phone: true }, () => workspaceRuntime.issueDraftAction(chatId, action)),
+			issueDraft: (chatId, action, draftedAt) => span("triage.issue", { action, phone: true }, () => workspaceRuntime.issueDraftAction(chatId, action, undefined, draftedAt)),
 			models: input => phoneModels(workspaceRuntime.store.getOverview(), phoneSources, input),
 			// A worktree's .git is a file, which existsSync also finds.
 			isRepository: directory => existsSync(path.join(directory, ".git")),

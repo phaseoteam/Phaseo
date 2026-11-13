@@ -176,10 +176,11 @@ export function fakePhoneHost() {
 			writePlaybook: async (directory, name, content) => { triage.playbooks.push({ directory, name, content }); },
 		}),
 		// As workspaceRuntime's issueDraftAction: only a waiting draft, filed as issue 17 or discarded.
-		issueDraft: async (chatId, action) => {
+		issueDraft: async (chatId, action, draftedAt) => {
 			triage.issueActions.push({ chatId, action });
 			const task = get(chatId), draft = task.issueDraft;
 			if (!draft || draft.status !== "draft") throw new Error("This chat has no issue draft waiting.");
+			if (draftedAt !== undefined && draftedAt !== draft.draftedAt) throw new Error("The agent replaced this issue draft. Read the new one before filing or discarding it.");
 			task.issueDraft = action === "discard" ? { ...draft, status: "discarded" } : { ...draft, status: "filed", number: 17, url: `https://github.com/${draft.repository}/issues/17`, filedAt: tick() };
 			touch(task); changed();
 		},

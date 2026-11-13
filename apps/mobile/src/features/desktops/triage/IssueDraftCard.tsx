@@ -30,7 +30,8 @@ export function IssueDraftCard({ client, chatId, draft, canFile, onChanged, onFa
     setBusy(action);
     haptic("press");
     try {
-      const { chat } = await client.request("issue_draft", { chatId, action }, { live: true });
+      // The draft as shown: the computer refuses if the agent has replaced it since, and the card then shows the new one.
+      const { chat } = await client.request("issue_draft", { chatId, action, ...draft.draftedAt ? { draftedAt: draft.draftedAt } : {} }, { live: true });
       haptic("success");
       onChanged(chat);
     } catch (problem) {

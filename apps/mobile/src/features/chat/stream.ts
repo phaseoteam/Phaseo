@@ -89,7 +89,7 @@ export async function readChatCompletion(body: ReadableStream<Uint8Array>, handl
       }
     }
     const toolCalls = calls.filter((call) => call && call.name).map((call, index) => ({ ...call, id: call.id || `call_${index}` }));
-    if (!finished && !text && !toolCalls.length) throw new StreamError("The answer ended before it started.", "stream_truncated", true);
+    if (!finished && (!text || toolCalls.length)) throw new StreamError("The answer ended before it started.", "stream_truncated", true);
     return { text, reasoning, usage, toolCalls };
   } finally {
     clearTimeout(timer);

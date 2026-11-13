@@ -79,7 +79,7 @@ export type PhoneHost = {
 	/** Triage of the phone app from its own source (phoneHost's startPhoneTriage), as the window's Triage a Phaseo bug. */
 	triage: (input: PhoneTriage) => Promise<PhoneTriageStarted>;
 	/** The window's File issue and Discard for a triage chat's draft (workspaceRuntime's issueDraftAction). */
-	issueDraft: (chatId: string, action: "file" | "discard") => Promise<unknown>;
+	issueDraft: (chatId: string, action: "file" | "discard", draftedAt?: string) => Promise<unknown>;
 };
 export type PhoneDevice = { id: string; name: string };
 const forbidden = () => new PhoneProtocolError("forbidden", "Allow this on the computer: Settings → Phone.");
@@ -239,7 +239,7 @@ export class PhoneSession {
 				// Filing creates an issue on GitHub in the person's name, like the pull request actions.
 				this.allowed("changes");
 				this.chatOverview(request.chatId);
-				await this.host.issueDraft(request.chatId, request.action);
+				await this.host.issueDraft(request.chatId, request.action, request.draftedAt);
 				const overview = this.chatOverview(request.chatId);
 				return okResponse(request, { chat: phoneDetail(this.host.task(request.chatId), overview, this.host.overview().projects) });
 			}

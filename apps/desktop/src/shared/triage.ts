@@ -65,10 +65,11 @@ export function validateIssueDraft(value: unknown): { title: string; body: strin
 }
 
 /** A playbook file name the main process accepts: always inside the checkout's `.phaseo-triage` folder. */
-export const triagePlaybookPattern = /^\.phaseo-triage\/playbook-\d{8}-\d{6}\.md$/;
-export function triagePlaybookName(now = new Date()) {
+export const triagePlaybookPattern = /^\.phaseo-triage\/playbook-\d{8}-\d{6}(?:-[0-9a-f]{8})?\.md$/;
+/** `unique` adds a random part, for phones: two requests for one build in the same second would otherwise share a playbook. */
+export function triagePlaybookName(now = new Date(), unique = false) {
 	const stamp = now.toISOString().replace(/\D/g, "").slice(0, 14);
-	return `.phaseo-triage/playbook-${stamp.slice(0, 8)}-${stamp.slice(8)}.md`;
+	return `.phaseo-triage/playbook-${stamp.slice(0, 8)}-${stamp.slice(8)}${unique ? `-${globalThis.crypto.randomUUID().slice(0, 8)}` : ""}.md`;
 }
 
 /** The message box without the playbook link the triage screen puts first, so what the person typed survives a retry or Cancel. */
@@ -244,7 +245,7 @@ ${recent}
 2. Fix it in this checkout with the smallest change that makes the right behaviour obvious.
 3. Prove the fix: the failing test or behaviour before and the passing one after, with the commands you ran and their output.
 4. Decide whose problem it is: a bug in Phaseo, or the person's setup (their account, the network, the computer's connection, permissions on the phone, or a third-party service being down). If it is their setup, tell them how to fix it, and stop there.
-5. If it is Phaseo's bug, draft an issue for ${triage.repository} with the draft_issue tool: a title, what happened, steps to reproduce, the version (${build.version}${build.buildNumber !== undefined ? `, build ${build.buildNumber}` : ""}, commit ${commit}), the phone and OS, the root cause and a suggested fix. Leave out anything personal: names, email addresses, paths under the home folder, tokens and the content of the person's chats. The person reads the draft on the phone or the computer and decides whether to file it. Never file it yourself: no \`gh issue create\` and no GitHub API calls that create issues. Without the draft_issue tool, put the draft at the end of your reply under "Issue draft" instead.
+5. If it is Phaseo's bug, draft an issue for ${triage.repository} with the draft_issue tool: a title, what happened, steps to reproduce, the version (${build.version}${build.buildNumber !== undefined ? `, build ${build.buildNumber}` : ""}, built from commit ${build.commit ?? "unknown"}${triage.exact ? "" : `; investigated on main at ${commit}`}), the phone and OS, the root cause and a suggested fix. Leave out anything personal: names, email addresses, paths under the home folder, tokens and the content of the person's chats. The person reads the draft on the phone or the computer and decides whether to file it. Never file it yourself: no \`gh issue create\` and no GitHub API calls that create issues. Without the draft_issue tool, put the draft at the end of your reply under "Issue draft" instead.
 6. Do not commit, push or open a pull request. Leave the fix as uncommitted changes in this checkout for the person to see.
 
 Finish with a short summary: the cause, the fix, the proof, whose problem it is, and whether you drafted an issue.

@@ -70,7 +70,7 @@ export type PhoneChatDetail = PhoneChat & {
 	issueDraft?: PhoneIssueDraft;
 };
 /** An issue a triage chat drafted for `repository`: waiting, filed (with its number and link) or discarded. */
-export type PhoneIssueDraft = { repository: string; title: string; body: string; status: "draft" | "filed" | "discarded"; number?: number; url?: string; /** The body was cut for the phone; the computer files all of it. */ truncated?: true };
+export type PhoneIssueDraft = { repository: string; title: string; body: string; status: "draft" | "filed" | "discarded"; number?: number; url?: string; /** The body was cut for the phone; the computer files all of it. */ truncated?: true; /** When the agent drafted it; issue_draft sends it back so only the draft the person read is filed. */ draftedAt?: string };
 /**
  * The phone app's own build, for triage: the computer fetches the app's source at `commit` (all 40 characters) and
  * tells the agent the rest. A build without a commit is triaged against main.
@@ -257,7 +257,7 @@ export type PhoneRequest =
 	 */
 	| { id: string; type: "triage"; text: string; build: PhoneBuild; diagnostics?: string; model?: string; reasoningEffort?: string; harness?: string; accountId?: string; agentId?: string }
 	/** From protocol 8, with the changes capability: files the chat's issue draft on GitHub, or discards it. */
-	| { id: string; type: "issue_draft"; chatId: string; action: "file" | "discard" };
+	| { id: string; type: "issue_draft"; chatId: string; action: "file" | "discard"; /** The draft the person read; the computer refuses if the agent has replaced it since. */ draftedAt?: string };
 export type PhoneFrame = PhoneRequest | { id?: string; type: "ping" } | { id?: string; type: "pong" };
 
 export type PhoneResults = {
@@ -641,7 +641,8 @@ export function parsePhoneFrame(text: string): PhoneFrame {
 		}
 		case "issue_draft": {
 			if (frame.action !== "file" && frame.action !== "discard") fail("action must be file or discard.");
-			return { id: request, type, chatId: chatId(), action: frame.action as "file" | "discard" };
+			if (frame.draftedAt !== undefined && (typeof frame.draftedAt !== "string" || !frame.draftedAt || frame.draftedAt.length > 64)) fail("draftedAt must be a short string.");
+			return { id: request, type, chatId: chatId(), action: frame.action as "file" | "discard", ...frame.draftedAt !== undefined ? { draftedAt: frame.draftedAt as string } : {} };
 		}
 		case "subscribe": {
 			const ids = frame.chatIds;

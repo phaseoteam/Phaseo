@@ -33,7 +33,7 @@ describe("triage from a phone", () => {
 		// The source is fetched at the phone's commit, not this app's.
 		expect(app.triage.fetched).toEqual([commit]);
 		const [playbook] = app.triage.playbooks;
-		expect(playbook!.name).toMatch(/^\.phaseo-triage\/playbook-\d{8}-\d{6}\.md$/);
+		expect(playbook!.name).toMatch(/^\.phaseo-triage\/playbook-\d{8}-\d{6}-[0-9a-f]{8}\.md$/);
 		expect(playbook!.content).toContain("# Triage a Phaseo mobile bug");
 		expect(playbook!.content).toContain(`Phaseo for Android 0.1.0 (build 2600), built from commit ${commit}`);
 		expect(playbook!.content).toContain("Pixel 9, Android 15");
@@ -44,7 +44,7 @@ describe("triage from a phone", () => {
 		const chatId = (answer as { result: { chat: { id: string } } }).result.chat.id;
 		const task = app.get(chatId);
 		expect(task.projectId).toBe(app.projects.find(project => project.triage)!.id);
-		expect(app.commands.find(command => command.type === "send" && command.id === chatId)).toMatchObject({ text: expect.stringMatching(/^Read @\[triage-playbook\.md\]\(file:\.phaseo-triage%2Fplaybook-\d{8}-\d{6}\.md\) and follow it\.\n\nPairing hangs on the code screen$/) });
+		expect(app.commands.find(command => command.type === "send" && command.id === chatId)).toMatchObject({ text: expect.stringMatching(/^Read @\[triage-playbook\.md\]\(file:\.phaseo-triage%2Fplaybook-\d{8}-\d{6}-[0-9a-f]{8}\.md\) and follow it\.\n\nPairing hangs on the code screen$/) });
 		expect(app.git.notes).toEqual([{ device: "Daniel's Pixel", summary: "Started triaging a bug in the phone app", projectId: task.projectId }]);
 	});
 
@@ -84,8 +84,11 @@ describe("a triage chat's issue draft on the phone", () => {
 
 	it("files the draft through the window's File issue and answers with the filed issue", async () => {
 		const { app, ask } = await drafted();
-		expect(await ask({ type: "issue_draft", chatId: "triage-1", action: "file" })).toMatchObject({ ok: true, result: { chat: { id: "triage-1", issueDraft: { status: "filed", number: 17, url: "https://github.com/phaseoteam/Phaseo/issues/17" } } } });
-		expect(app.triage.issueActions).toEqual([{ chatId: "triage-1", action: "file" }]);
+		expect(await ask({ type: "read_chat", chatId: "triage-1" })).toMatchObject({ ok: true, result: { chat: { issueDraft: { draftedAt: "2026-11-12T10:00:00.000Z" } } } });
+		// A draft the agent replaced after the person read it is not filed.
+		expect(await ask({ type: "issue_draft", chatId: "triage-1", action: "file", draftedAt: "2026-11-12T09:00:00.000Z" })).toMatchObject({ ok: false, error: { code: "rejected", message: "The agent replaced this issue draft. Read the new one before filing or discarding it." } });
+		expect(await ask({ type: "issue_draft", chatId: "triage-1", action: "file", draftedAt: "2026-11-12T10:00:00.000Z" })).toMatchObject({ ok: true, result: { chat: { id: "triage-1", issueDraft: { status: "filed", number: 17, url: "https://github.com/phaseoteam/Phaseo/issues/17" } } } });
+		expect(app.triage.issueActions).toEqual([{ chatId: "triage-1", action: "file" }, { chatId: "triage-1", action: "file" }]);
 		// A second File is the window's refusal, passed on.
 		expect(await ask({ type: "issue_draft", chatId: "triage-1", action: "file" })).toMatchObject({ ok: false, error: { code: "rejected", message: "This chat has no issue draft waiting." } });
 	});

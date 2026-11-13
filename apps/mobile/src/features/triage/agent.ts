@@ -128,11 +128,12 @@ export async function runTool(source: SourceReader, name: string, args: Record<s
   }
 }
 
-const costOf = (usage: Record<string, unknown> | undefined) => {
-  if (!usage) return 0;
-  if (typeof usage.cost === "number") return usage.cost;
+/** A turn's price, or null when the answer didn't say (then the run's total is unknown, not free). */
+const costOf = (usage: Record<string, unknown> | undefined): number | null => {
+  if (!usage) return null;
+  if (typeof usage.cost === "number" && Number.isFinite(usage.cost)) return usage.cost;
   const total = usage.pricing && typeof usage.pricing === "object" ? Number((usage.pricing as Record<string, unknown>).total_usd_str) : NaN;
-  return Number.isFinite(total) ? total : 0;
+  return Number.isFinite(total) ? total : null;
 };
 
 /**
@@ -151,13 +152,15 @@ export async function runTriage(args: {
   signal: AbortSignal;
   onStep(step: TriageStep): void;
   onText(text: string): void;
+  /** The draft as soon as draft_issue makes it, so a later failure or Stop doesn't lose it. */
+  onDraft?(draft: IssueDraft): void;
   send?: typeof streamRequestBody;
 }): Promise<TriageOutcome> {
   const send = args.send ?? streamRequestBody;
   const messages: ToolMessage[] = [{ role: "system", content: triagePrompt(args.build, args.diagnostics) }, { role: "user", content: args.report }];
   let draft: IssueDraft | null = null;
   let cost = 0;
-  let priced = false;
+  let priced = true;
   for (let turn = 1; turn <= MAX_TURNS; turn += 1) {
     const lastTurn = turn === MAX_TURNS;
     let text = "";
@@ -167,7 +170,9 @@ export async function runTriage(args: {
       signal: args.signal,
       onText: (delta) => { text += delta; args.onText(text); },
     });
-    if (result.usage) { cost += costOf(result.usage); priced = true; }
+    const turnCost = costOf(result.usage);
+    if (turnCost == null) priced = false;
+    else cost += turnCost;
     if (!result.toolCalls.length) return { summary: result.text.trim(), draft, costUsd: priced ? cost : null, turns: turn };
     args.onText("");
     messages.push({ role: "assistant", content: result.text || null, tool_calls: result.toolCalls.map((call) => ({ id: call.id, type: "function", function: { name: call.name, arguments: call.arguments || "{}" } })) });
@@ -177,7 +182,10 @@ export async function runTriage(args: {
       if (call.name === "draft_issue") {
         const title = str(input.title).trim();
         const body = str(input.body).trim();
-        draft = title && body ? { title, body } : draft;
+        if (title && body) {
+          draft = { title, body };
+          args.onDraft?.(draft);
+        }
         args.onStep({ id: call.id, ...label, failed: !(title && body) });
         messages.push({ role: "tool", tool_call_id: call.id, content: title && body ? "Drafted. The person will review it and decide whether to file it. Now finish with your short summary." : "The draft needs a title and a body." });
         continue;

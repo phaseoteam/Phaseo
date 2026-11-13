@@ -1,7 +1,7 @@
 import * as Clipboard from "expo-clipboard";
 import * as Device from "expo-device";
 import { useRouter } from "expo-router";
-import { Bot, Bug, Check, CircleAlert, Copy, ExternalLink, Monitor, RotateCcw, Square } from "lucide-react-native";
+import { Bot, Bug, Check, CircleAlert, Copy, ExternalLink, Monitor, Pencil, RotateCcw, Square } from "lucide-react-native";
 import { useState } from "react";
 import { Linking, Platform, ScrollView, View } from "react-native";
 import { Markdown } from "@/components/Markdown";
@@ -47,7 +47,11 @@ function TriageForm() {
   const desktops = useDesktops();
   const pickedDesktop = workspaceStore.use();
   const computer = workspaceDesktop(desktops, pickedDesktop) ?? desktops?.[0] ?? null;
-  const [text, setText] = useState("");
+  // After "Edit and try again", the last description comes back to edit.
+  const [text, setText] = useState(() => {
+    const run = triageRun.get();
+    return run.status === "idle" ? run.report ?? "" : "";
+  });
   const [diagnostics, setDiagnostics] = useState(true);
   const [picking, setPicking] = useState(false);
   const slow = slowLog.list();
@@ -171,12 +175,14 @@ function TriageProgress() {
             {run.outcome.costUsd != null ? <Text variant="caption" className="px-4 pt-4">{`Cost ${formatUsd(run.outcome.costUsd)} over ${run.outcome.turns} ${run.outcome.turns === 1 ? "request" : "requests"}.`}</Text> : null}
           </>
         ) : null}
+        {/* A draft made before a failure or Stop is kept. */}
+        {run.status !== "done" && run.draft ? <DraftCard draft={run.draft} /> : null}
         {run.status === "failed" ? <View className="px-4 pt-4"><Callout tone="critical" role="alert" title="Triage stopped">{run.error ?? "Something went wrong."}</Callout></View> : null}
         {run.status === "stopped" ? <Text variant="muted" className="px-4 pt-4">You stopped this triage.</Text> : null}
         <View className="gap-2 px-4 pt-6">
-          {running
-            ? <Button variant="outline" label="Stop" icon={Square} onPress={stopTriage} />
-            : <Button variant="outline" label="Triage another bug" icon={RotateCcw} onPress={clearTriage} />}
+          {running ? <Button variant="outline" label="Stop" icon={Square} onPress={stopTriage} /> : null}
+          {run.status === "failed" || run.status === "stopped" ? <Button label="Edit and try again" icon={Pencil} onPress={() => clearTriage(true)} /> : null}
+          {!running ? <Button variant="outline" label="Triage another bug" icon={RotateCcw} onPress={() => clearTriage()} /> : null}
           {running ? <Text variant="caption">You can leave this screen; it keeps going while the app is open.</Text> : null}
         </View>
       </ReadableWidth>
