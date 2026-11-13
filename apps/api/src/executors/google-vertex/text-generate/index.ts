@@ -33,6 +33,7 @@ import {
 	geminiFunctionCallId,
 	geminiReplayableAssistantParts,
 	geminiThoughtPartToIR,
+	geminiSignedTextPartsToIR,
 	irToolCallsToGeminiParts,
 	withoutEmptyGeminiTextParts,
 } from "@executors/google/shared/function-history";
@@ -804,6 +805,9 @@ export function geminiToIR(
 				const inlineData = normalizeGeminiInlineData(part);
 				if (part.thought && (part.text || part.thoughtSignature || part.thought_signature)) {
 					contentParts.push(geminiThoughtPartToIR(part, model, provider));
+				} else if ((part.thoughtSignature || part.thought_signature) && !part.functionCall && !part.inlineData && !part.inline_data) {
+					// A final text answer carries its signature on its last text part.
+					contentParts.push(...geminiSignedTextPartsToIR(part, model, provider));
 				} else if (part.text) {
 					contentParts.push({ type: "text", text: part.text });
 				} else if (inlineData?.data) {

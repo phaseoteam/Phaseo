@@ -214,6 +214,17 @@ export async function irPartsToGeminiParts(
 	const mapped: GeminiPart[] = [];
 	for (const part of parts) {
 		if (part.type === "provider_block") continue;
+		if (part.type === "reasoning_text" && part.signsText) {
+			// A final answer's signature goes back on the text part it came on.
+			if (!options.preserveReasoningAsThought || !part.thoughtSignature) continue;
+			const last = mapped[mapped.length - 1] as any;
+			if (last && typeof last.text === "string" && !last.thought && !last.thought_signature && !last.thoughtSignature) {
+				last.thought_signature = part.thoughtSignature;
+			} else {
+				mapped.push({ text: "", thought_signature: part.thoughtSignature } as GeminiPart);
+			}
+			continue;
+		}
 		mapped.push(await irPartToGeminiPart(part, options));
 	}
 	return mapped;

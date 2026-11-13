@@ -263,6 +263,13 @@ export function applyReasoningParams(args: {
 		return;
 	}
 	if (args.providerId === "alibaba-cloud") {
+		// Preserved thinking: with preserve_thinking the model reads earlier turns'
+		// reasoning_content (sent back since #3715). Off by default except on Qwen 3.8
+		// Max/Flash, so only an explicit context choice is passed on.
+		// https://www.alibabacloud.com/help/en/model-studio/deep-thinking
+		if (!("input" in args.request) && (reasoning.context === "all_turns" || reasoning.context === "current_turn")) {
+			args.request.preserve_thinking = reasoning.context === "all_turns";
+		}
 		const rawEffort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
 		const upstreamModel = String(args.providerModelSlug ?? args.ir.model ?? "").toLowerCase();
 		// glm-5.3 always thinks: it takes reasoning_effort low, high or max only,

@@ -579,7 +579,8 @@ function applySealedReasoningDetails(
 		const plain = contentParts.find((candidate): candidate is Extract<IRContentPart, { type: "reasoning_text" }> =>
 			candidate.type === "reasoning_text" && !candidate.reasoningFormat);
 		// The signed detail repeats the plain reasoning_content text, or carries none.
-		if (plain && (!part.text || part.text === plain.text)) {
+		// A Gemini signature from a text part stays its own part, after the text.
+		if (plain && !part.signsText && (!part.text || part.text === plain.text)) {
 			Object.assign(plain, { ...part, text: plain.text });
 		} else {
 			contentParts.push(part);
