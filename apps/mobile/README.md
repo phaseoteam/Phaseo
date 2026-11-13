@@ -84,6 +84,14 @@ cd android
 
 Checks: `pnpm --filter @phaseo/mobile typecheck`, `lint`, `test`, and `pnpm exec expo export --platform android` to bundle the JavaScript.
 
+**Math in replies.** The native Markdown renderer uses its existing RaTeX engine for `$...$` inline equations and `$$` display equations. It follows the app theme, leaves currency and code literal, and keeps multiline equations together while streaming and splitting long answers. Chat requests include the delimiter guidance before any custom system prompt. Enabling math changes the native binary: rebuild the development client or APK; a JavaScript-only update cannot enable it in an older build.
+
+The Android config preserves the display-math view during release shrinking. Version 1.1.1 of the Markdown library names the wrong package in its own consumer rule, so the app supplies the correct rule when generating the native project.
+
+The workspace permits `react-native-enriched-markdown`'s install script to restore its native assets. After an install with scripts disabled, run `node node_modules/react-native-enriched-markdown/postinstall.mjs` from `apps/mobile` with `INIT_CWD` set to that directory before an iOS build. On Windows, put Git's `usr/bin` at the **end** of `PATH` so `unzip` is available and Windows' `tar` still handles drive-letter paths. An Expo export verifies JavaScript bundling; native iOS rendering still needs a Mac/device build.
+
+Android builds compile `expo-sqlite` from source using Expo's autolinking setting. Its published 58.0.15 binary calls a `SharedObjectRegistry.register` signature absent from this checkout's Expo Modules v2 runtime, causing `Cannot find native module 'ExpoSQLite'` at startup. Compiling it with the app's compiler/runtime keeps those interfaces aligned.
+
 **Open source licences** (Account → Open source licences) come from `src/features/account/licences.generated.json`, written by `pnpm --filter @phaseo/mobile licences` from `pnpm licenses list --prod` and each package's licence files (identical texts are stored once; copyright lines are kept per package). `pnpm build` regenerates it, and a Jest test fails when it no longer matches the installed packages, so run the script and commit the file after changing dependencies.
 
 **Diagnostics** (Account → Diagnostics) keep the last 100 operations that took 50 ms or more (opening a chat, loading a page of it, streaming flushes, building requests, summaries) in memory only (`src/lib/diagnostics.ts`). This is separate from the perf build's spans. Nothing is sent anywhere unless the user copies or shares it.
@@ -129,4 +137,4 @@ On Android, pushes arrive on one of ten channels (`src/features/notifications/ch
 
 ## Not yet
 
-iOS builds (they need an Apple Developer account and EAS Build), push notifications from a paired computer while the app is closed, model-written chat titles, and code highlighting in answers (`enriched-markdown` code highlighting and math are off; turning them on needs its install script allowed).
+iOS builds (they need an Apple Developer account and EAS Build), push notifications from a paired computer while the app is closed, model-written chat titles, and code highlighting in answers (`enriched-markdown` code highlighting is off).

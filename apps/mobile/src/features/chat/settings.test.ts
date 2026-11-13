@@ -1,5 +1,5 @@
 import { buildRequestBody, loggableRequest } from "./request";
-import { changedSettingsCount, cleanSettings, normaliseNumberSetting, settingsRequestFields, sharedSettings, systemPromptFor } from "./settings";
+import { changedSettingsCount, cleanSettings, MATH_FORMATTING, normaliseNumberSetting, settingsRequestFields, sharedSettings, systemPromptFor } from "./settings";
 
 const routes = {
   providerIds: ["openai", "azure"],
@@ -56,14 +56,14 @@ describe("settings to the chat-completions request", () => {
     const body = buildRequestBody({ model: "phaseo/free", messages: [{ role: "user", content: "Hi" }], settings: { systemPrompt: " Answer in French. ", temperature: 0.2, maxOutputTokens: 64 } });
     expect(body).toEqual({
       model: "phaseo/free",
-      messages: [{ role: "system", content: "Answer in French." }, { role: "user", content: "Hi" }],
+      messages: [{ role: "system", content: `${MATH_FORMATTING}\n\nAnswer in French.` }, { role: "user", content: "Hi" }],
       stream: true,
       stream_options: { include_usage: true },
       temperature: 0.2,
       max_tokens: 64,
     });
-    expect(buildRequestBody({ model: "m", messages: [{ role: "user", content: "Hi" }] }).messages).toEqual([{ role: "user", content: "Hi" }]);
-    expect(systemPromptFor({ systemPrompt: "" })).toBeNull();
+    expect(buildRequestBody({ model: "m", messages: [{ role: "user", content: "Hi" }] }).messages).toEqual([{ role: "system", content: MATH_FORMATTING }, { role: "user", content: "Hi" }]);
+    expect(systemPromptFor({ systemPrompt: "" })).toBe(MATH_FORMATTING);
   });
 
   test("the debug log shortens message text and leaves out attachment data", () => {

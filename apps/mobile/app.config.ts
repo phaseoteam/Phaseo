@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import type { ExpoConfig } from "expo/config";
-import { withAndroidManifest, type ConfigPlugin } from "expo/config-plugins";
+import { withAndroidManifest, withDangerousMod, type ConfigPlugin } from "expo/config-plugins";
 
 import appJson from "./app.json";
 
@@ -63,6 +63,16 @@ const withCleartextTraffic: ConfigPlugin = (config) => withAndroidManifest(confi
   return manifest;
 });
 
+// enriched-markdown 1.1.1's consumer rule names the wrong package. Display math
+// uses reflection, so release shrinking must preserve its constructor and methods.
+const withNativeMath: ConfigPlugin = (config) => withDangerousMod(config, ["android", async (mod) => {
+  const file = path.join(mod.modRequest.platformProjectRoot, "app/proguard-rules.pro");
+  const rule = "-keep class com.swmansion.enriched.markdown.segments.MathContainerView { *; }";
+  const existing = await fs.promises.readFile(file, "utf8");
+  if (!existing.includes(rule)) await fs.promises.appendFile(file, `\n# Native display math is constructed through reflection.\n${rule}\n`);
+  return mod;
+}]);
+
 const git = (args: string) => execSync(`git ${args}`, { cwd: __dirname, stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
 
 /**
@@ -89,7 +99,7 @@ const build = buildInfo();
  * again after committing for the number to move on (see "Build number" in README.md).
  */
 const buildNumber = build.buildNumber ?? expo.android?.versionCode ?? 1;
-const base: ExpoConfig = {
+const base: ExpoConfig = withNativeMath({
   ...expo,
   ios: {
     ...expo.ios,
@@ -109,7 +119,7 @@ const base: ExpoConfig = {
     ...build,
     buildNumber,
   },
-};
+});
 
 export default perf
   ? withCleartextTraffic({

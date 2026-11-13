@@ -21,6 +21,7 @@ const FENCE = /^ {0,3}(`{3,}|~{3,})/;
 export function blockStarts(text: string, from = 0): number[] {
   const starts: number[] = [];
   let fence: string | null = null;
+  let math = false;
   let offset = from;
   let blank = false;
   let sawContent = false;
@@ -31,6 +32,9 @@ export function blockStarts(text: string, from = 0): number[] {
     const complete = newline !== -1;
     if (fence) {
       if (complete && line.trim().startsWith(fence)) fence = null;
+      blank = false;
+    } else if (math) {
+      if (complete && /(?<!\\)\$\$\s*$/.test(line)) math = false;
       blank = false;
     } else if (!line.trim()) {
       if (complete && sawContent) blank = true;
@@ -43,6 +47,7 @@ export function blockStarts(text: string, from = 0): number[] {
       const match = FENCE.exec(line);
       if (match && complete) fence = match[1]!.slice(0, 3);
       else if (match) break;
+      else if (/^ {0,3}\$\$/.test(line) && !/^ {0,3}\$\$.*\$\$\s*$/.test(line) && complete) math = true;
     }
     if (!complete) break;
     offset = newline + 1;
@@ -84,7 +89,7 @@ function pieces(block: string): string[] {
     for (let index = 0; index < rows.length; index += TABLE_PIECE_ROWS) out.push([...header, ...rows.slice(index, index + TABLE_PIECE_ROWS)].join("\n"));
     return out;
   }
-  if (!fence && !table && block.length > TEXT_PIECE_CHARS * 1.5) {
+  if (!fence && !table && !/^ {0,3}\$\$/.test(block) && block.length > TEXT_PIECE_CHARS * 1.5) {
     const out: string[] = [];
     let current = "";
     for (const line of lines) {
