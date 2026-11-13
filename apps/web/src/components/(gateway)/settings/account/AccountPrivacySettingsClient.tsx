@@ -277,7 +277,7 @@ export default function AccountPrivacySettingsClient({
 			<CollapsibleTrigger className="group flex w-full cursor-pointer items-center justify-between gap-4 text-left text-base font-semibold">
 				{tUi("privacyEligibility.title")}<ChevronDown className="size-4 shrink-0 transition-transform group-data-[panel-open]:rotate-180" />
 			</CollapsibleTrigger>
-		<CollapsibleContent keepMounted render={<section />} className="pt-5">
+		<CollapsibleContent hiddenUntilFound render={<section />} className="pt-5">
 			<div className="space-y-5">
 				<div>
 					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{tUi("privacyEligibility.workspaceDescription")}</p>

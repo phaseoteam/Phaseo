@@ -201,7 +201,7 @@ function ShowMore({ label, children }: { label: string; children: ReactNode }) {
 				<ChevronDown aria-hidden className="size-3.5 shrink-0 transition-transform group-data-[panel-open]:rotate-180 motion-reduce:transition-none" />
 				{label}
 			</CollapsibleTrigger>
-			<CollapsibleContent keepMounted className="grid gap-2 border-t p-2 md:grid-cols-2 xl:grid-cols-3">{children}</CollapsibleContent>
+			<CollapsibleContent hiddenUntilFound className="grid gap-2 border-t p-2 md:grid-cols-2 xl:grid-cols-3">{children}</CollapsibleContent>
 		</Collapsible>
 	);
 }

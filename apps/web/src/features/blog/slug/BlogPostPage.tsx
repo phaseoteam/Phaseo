@@ -213,7 +213,7 @@ export function BlogPostPage() {
 												className="size-4 shrink-0 text-zinc-500 transition-transform duration-200 group-data-[panel-open]:rotate-180 motion-reduce:transition-none dark:text-zinc-400"
 											/>
 										</CollapsibleTrigger>
-										<CollapsibleContent keepMounted>
+										<CollapsibleContent hiddenUntilFound>
 											<p className="pb-5 text-base leading-7 text-zinc-700 dark:text-zinc-300">
 												{item.answer}
 											</p>

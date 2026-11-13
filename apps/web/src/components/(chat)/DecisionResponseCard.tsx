@@ -430,7 +430,7 @@ function RawResponseFallback({ result }: { result: unknown }) {
 				<span>{tCopy("viewResponse")}</span>
 				<ChevronDown className="size-4 text-muted-foreground" />
 			</CollapsibleTrigger>
-			<CollapsibleContent keepMounted>
+			<CollapsibleContent hiddenUntilFound>
 				<pre className="mt-2 max-h-96 overflow-auto border-l border-border pl-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">
 					{result === null || result === undefined
 						? tCopy("noDecision")

@@ -225,7 +225,7 @@ function CandidateCard({
 					<ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]/candidate:rotate-180" />
 				</div>
 			</CollapsibleTrigger>
-			<CollapsibleContent keepMounted className="space-y-4 pb-3 pl-10 pt-1">
+			<CollapsibleContent hiddenUntilFound className="space-y-4 pb-3 pl-10 pt-1">
 				{isExcluded ? (
 					<TraceGroup
 						title={t("strings.Exclusion Reason")}
@@ -241,7 +241,7 @@ function CandidateCard({
 				{Object.keys(calculation).length + Object.keys(inputs).length + Object.keys(weights).length + Object.keys(recordedContext).length + Object.keys(contributions).length > 0 ? (
 					<Collapsible className="rounded-md border border-border/60 bg-muted/20 px-3 py-2">
 						<CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1 text-left text-xs text-muted-foreground"><ChevronRight aria-hidden="true" className="size-3 shrink-0 transition-transform group-data-[panel-open]:rotate-90" />{t("usageGaps.copyTechnicalDetails")}</CollapsibleTrigger>
-						<CollapsibleContent keepMounted className="mt-3 space-y-4">
+						<CollapsibleContent hiddenUntilFound className="mt-3 space-y-4">
 							{Object.keys(calculation).length > 0 ? <TraceGroup title={t("strings.Calculation")} values={calculation} /> : null}
 							{Object.keys(contributions).length > 0 ? <TraceGroup title={t("usageGaps.contributions")} values={contributions} /> : null}
 							{Object.keys(inputs).length > 0 ? <TraceGroup title={t("usageGaps.recordedInputs")} values={inputs} /> : null}
@@ -308,10 +308,10 @@ export function RoutingTracePanel({
 				</div>
 			</CollapsibleTrigger>
 
-			<CollapsibleContent keepMounted>
+			<CollapsibleContent hiddenUntilFound>
 			<Collapsible className="border-t border-border/60 py-2 text-xs text-muted-foreground">
 				<CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1 text-left"><ChevronRight aria-hidden="true" className="size-3 shrink-0 transition-transform group-data-[panel-open]:rotate-90" />{t("usageGaps.metadata")}</CollapsibleTrigger>
-				<CollapsibleContent keepMounted>
+				<CollapsibleContent hiddenUntilFound>
 				<div className="my-3 flex items-center gap-1">{algorithm}{!trace?.algorithm_version ? <MetricInfo metric="partialTrace" /> : null}</div>
 				{trace ? (
 					<MetricGrid values={{ seed: formatNumber(trace.random_seed, 0, locale), priority: String(trace.priority ?? "default"), candidatePool: formatNumber(trace.final_candidate_count, 0, locale) }} />

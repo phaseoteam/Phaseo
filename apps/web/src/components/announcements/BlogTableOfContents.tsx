@@ -144,7 +144,7 @@ export function BlogTableOfContents({ items }: BlogTableOfContentsProps) {
 							className="size-4 shrink-0 text-zinc-500 transition-transform duration-200 group-data-[panel-open]:rotate-180 motion-reduce:transition-none dark:text-zinc-400"
 						/>
 					</CollapsibleTrigger>
-					<CollapsibleContent keepMounted>
+					<CollapsibleContent hiddenUntilFound>
 						<ScrollArea
 							className="max-h-[60vh]"
 							viewportClassName="max-h-[60vh]"

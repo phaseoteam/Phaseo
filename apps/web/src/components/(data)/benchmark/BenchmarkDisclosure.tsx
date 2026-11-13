@@ -10,6 +10,6 @@ export function BenchmarkDisclosure({ id, title, count, children }: { id?: strin
 			{count !== undefined ? <span className="text-xs font-normal tabular-nums text-muted-foreground">{count}</span> : null}
 			<ChevronDown aria-hidden="true" className="size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180" />
 		</CollapsibleTrigger>
-		<CollapsibleContent keepMounted><div className="pb-6">{children}</div></CollapsibleContent>
+		<CollapsibleContent hiddenUntilFound><div className="pb-6">{children}</div></CollapsibleContent>
 	</Collapsible>;
 }

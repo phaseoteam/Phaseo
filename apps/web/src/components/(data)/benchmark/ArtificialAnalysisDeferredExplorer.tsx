@@ -12,6 +12,6 @@ export function ArtificialAnalysisDeferredExplorer({ title, points }: { title: s
 		<CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-3 py-4 text-left text-sm font-medium hover:text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
 			<span className="flex-1">{title}</span><ChevronDown aria-hidden="true" className="size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180" />
 		</CollapsibleTrigger>
-		<CollapsibleContent keepMounted>{opened ? <div className="pb-6"><Explorer points={points} initialView="intelligence" /></div> : null}</CollapsibleContent>
+		<CollapsibleContent hiddenUntilFound>{opened ? <div className="pb-6"><Explorer points={points} initialView="intelligence" /></div> : null}</CollapsibleContent>
 	</Collapsible>;
 }

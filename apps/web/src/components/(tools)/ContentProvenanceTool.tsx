@@ -277,7 +277,7 @@ export default function ContentProvenanceTool() {
 								<span>{t("rawResponse")}</span>
 								<ChevronDown className="size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180" />
 							</CollapsibleTrigger>
-							<CollapsibleContent keepMounted className="border-t bg-zinc-950 text-zinc-100">
+							<CollapsibleContent hiddenUntilFound className="border-t bg-zinc-950 text-zinc-100">
 								<pre className="max-h-96 overflow-auto p-4 font-mono text-xs leading-5">
 									<code>{JSON.stringify(result, null, 2)}</code>
 								</pre>

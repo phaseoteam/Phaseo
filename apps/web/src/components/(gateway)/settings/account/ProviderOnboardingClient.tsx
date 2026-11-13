@@ -384,7 +384,7 @@ export default function ProviderOnboardingClient({ initialData }: Props) {
 									</span>
 									<StatusPill tone={revisionTone}>{revisionLabel}</StatusPill>
 								</CollapsibleTrigger>
-								<CollapsibleContent keepMounted className="mb-4 ml-7 overflow-hidden rounded-lg border border-border/70">
+								<CollapsibleContent hiddenUntilFound className="mb-4 ml-7 overflow-hidden rounded-lg border border-border/70">
 									{revision.error_message ? <p className="border-b border-border/60 px-3 py-3 text-sm text-destructive">{localizedProviderCatalogMessage(revision.error_message, t)}</p> : null}
 									{revision.models.slice(0, 100).map((model) => (
 										<div key={`${revision.id}:${model.model_slug}`} className="flex items-start gap-3 border-b border-border/60 px-3 py-3 last:border-0">

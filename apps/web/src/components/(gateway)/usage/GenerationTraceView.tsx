@@ -430,7 +430,7 @@ function ToolCallBlock({ call, state }: { call: TraceToolCall; state: string }) 
 				<CollapsibleTrigger className="group/tool flex w-full cursor-pointer items-center justify-between gap-2 py-2 text-left text-[11px] font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
 					<span>{t("trace.arguments" as never)}</span><span className="transition-transform group-data-[panel-open]/tool:rotate-180">⌄</span>
 				</CollapsibleTrigger>
-				<CollapsibleContent keepMounted>
+				<CollapsibleContent hiddenUntilFound>
 					<pre className="max-h-64 overflow-auto border-t border-border/60 py-2.5 text-xs leading-5 whitespace-pre-wrap break-words">{stringify(call.arguments) || "{}"}</pre>
 				</CollapsibleContent>
 			</Collapsible>
@@ -683,7 +683,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 								<span className="min-w-0"><span className="block text-xs font-medium">{t("trace.requestInput" as never)}</span><span className="mt-0.5 block text-[10px] text-muted-foreground">{inputMessages.length ? inputMessages.length + " messages" : t("trace.inspectSubmittedPayload" as never)}</span></span>
 								<span className="text-xs text-muted-foreground transition-transform group-data-[panel-open]/input:rotate-180">⌄</span>
 							</CollapsibleTrigger>
-							<CollapsibleContent keepMounted className="border-t border-border/60 p-3">
+							<CollapsibleContent hiddenUntilFound className="border-t border-border/60 p-3">
 								{inputMessages.length > 0 ? <InputMessages messages={inputMessages} /> : inputPayload != null ? <p className="text-xs text-muted-foreground">{t("trace.thisRequestFormatHasNoReadableMessageListInspectTheRetainedRequestPayloadBelow" as never)}</p> : <p className="text-xs text-muted-foreground">{ioLogNotice ?? t("trace.noRequestPayloadWasRetained" as never)}</p>}
 							</CollapsibleContent>
 						</Collapsible>
@@ -790,7 +790,7 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 						{ioLogNotice ? <p className="rounded-md border border-amber-500/25 bg-amber-500/[0.06] p-3 text-xs text-amber-800 dark:text-amber-200">{ioLogNotice}</p> : null}
 						{payload ? <Collapsible className="rounded-md border border-border/60 bg-background/60">
 							<CollapsibleTrigger className="group/raw flex w-full cursor-pointer items-center justify-between gap-3 px-3.5 py-3 text-left text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span>{t("trace.inspectRetainedPayload" as never)}</span><span className="text-muted-foreground transition-transform group-data-[panel-open]/raw:rotate-180">⌄</span></CollapsibleTrigger>
-							<CollapsibleContent keepMounted className="space-y-3 border-t border-border/60 p-3">
+							<CollapsibleContent hiddenUntilFound className="space-y-3 border-t border-border/60 p-3">
 								{[
 									[t("trace.Request" as never), rawInput || t("trace.Norequestpayload" as never)],
 									[t("trace.Gatewayresponse" as never), rawGatewayResponse || t("trace.Nogatewayresponse" as never)],
