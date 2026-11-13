@@ -2490,6 +2490,7 @@
 			"serviceTierLineStyles": "Linienstile der Servicestufen",
 			"inAudience": "In {audience}",
 			"usOnlyInference": "Inferenz nur in den USA",
+			"withKeyterms": "Mit Schlüsselbegriffen",
 			"regionOnlyInference": "Inferenz nur in {region}"
 		},
 		"publicModelCopy": {

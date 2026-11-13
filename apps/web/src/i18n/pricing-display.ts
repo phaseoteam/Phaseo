@@ -5,6 +5,7 @@ export const PRICING_DISPLAY_LABEL_KEYS: Record<string, string> = {
 	"no cache": "Common.ui.pricingDisplayCopy.noCache",
 	"us-only inference": "Common.ui.pricingDisplayCopy.usOnlyInference",
 	"with audio": "Common.ui.pricingDisplayCopy.withAudio",
+	"with keyterms": "Common.ui.pricingDisplayCopy.withKeyterms",
 	"no audio": "Common.ui.pricingDisplayCopy.noAudio",
 	"provider-reported cost": "Common.ui.pricingDisplayCopy.providerreportedCost",
 	"image generation": "Common.ui.pricingDisplayCopy.imageGeneration",

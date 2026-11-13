@@ -2490,6 +2490,7 @@
 			"serviceTierLineStyles": "Estilos de línea por nivel de servicio",
 			"inAudience": "En {audience}",
 			"usOnlyInference": "Inferencia solo en EE. UU.",
+			"withKeyterms": "Con términos clave",
 			"regionOnlyInference": "Inferencia solo en {region}"
 		},
 		"publicModelCopy": {
