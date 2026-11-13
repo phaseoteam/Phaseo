@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import {
 	Dialog,
 	DialogClose,
@@ -142,8 +143,8 @@ export function DataContributionSettingsCard({ initial }: { initial: DataContrib
 								<DialogHeader><DialogTitle>{s("Create classifier")}</DialogTitle><DialogDescription>{s("phraseDefinePrivateLabelsForYourOwnDomainTheBuiltInTaskClassifierRemainsTheRecommendedBaseline")}</DialogDescription></DialogHeader>
 								<div className="space-y-4">
 									<div className="space-y-1.5"><Label htmlFor="classifier-name">{s("Name")}</Label><Input id="classifier-name" value={name} onChange={(event) => setName(event.target.value)} placeholder={t("contributionCopy.customerIntentPlaceholder")} /></div>
-									<div className="space-y-1.5"><Label htmlFor="classifier-instructions">{s("Instructions")}</Label><textarea id="classifier-instructions" className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm" value={instructions} onChange={(event) => setInstructions(event.target.value)} /></div>
-									<div className="space-y-1.5"><Label htmlFor="classifier-categories">{s("Categories (JSON)")}</Label><textarea id="classifier-categories" className="min-h-44 w-full rounded-md border bg-background px-3 py-2 font-mono text-xs" value={categories} onChange={(event) => setCategories(event.target.value)} /></div>
+									<div className="space-y-1.5"><Label htmlFor="classifier-instructions">{s("Instructions")}</Label><Textarea id="classifier-instructions" className="min-h-24" value={instructions} onChange={(event) => setInstructions(event.target.value)} /></div>
+									<div className="space-y-1.5"><Label htmlFor="classifier-categories">{s("Categories (JSON)")}</Label><Textarea id="classifier-categories" className="min-h-44 font-mono text-xs md:text-xs" value={categories} onChange={(event) => setCategories(event.target.value)} /></div>
 								</div>
 								<DialogFooter><DialogClose asChild><Button variant="outline">{s("Cancel")}</Button></DialogClose><Button disabled={pending || !name.trim()} onClick={createClassifier}>{s("Create classifier")}</Button></DialogFooter>
 							</DialogContent>

@@ -54,8 +54,12 @@ import {
 	observabilityEventsRoutes,
 	presetTestRunsRoutes,
 } from "./feedback";
+import { controlRequestBudget } from "./request-budget";
 
 export const platformRouter = new Hono<Env>();
+
+// Registered before the routes so every management request draws from the caller's budget.
+platformRouter.use("*", controlRequestBudget);
 
 platformRouter.route("/models", modelsRoutes);
 platformRouter.route("/generations", generationsRoutes);

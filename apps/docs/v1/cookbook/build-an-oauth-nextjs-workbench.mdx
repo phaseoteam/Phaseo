@@ -7,7 +7,7 @@ description: "Use the full OAuth Next.js example as a walkthrough for a signed-i
 
 Let people sign in with Phaseo and spend their own credits in your app: OAuth 2.1 with PKCE gives your server an access token, and one server-side proxy attaches it to every gateway call. When you're done you have a local app with sign-in, session-backed tokens that refresh, model discovery, a chat flow over `/responses`, and a tester for other endpoints.
 
-The sample is illustrative. Its `lib/oauth.ts` still calls an older sign-in endpoint, which step 3 of [Run it](#run-it) fixes, and its proxy allowlist is wider than a product needs.
+The sample discovers Phaseo's OAuth endpoints, checks `state` and `iss` on the way back, refreshes tokens safely and revokes the key when the person signs out.
 
 To have a coding agent build the same app from scratch, paste this prompt:
 
@@ -47,8 +47,8 @@ Verification:
 flowchart LR
   browser["Browser"] -->|"Sign in"| start["app/api/auth/start"]
   start -->|"Redirect with PKCE challenge"| authz["Phaseo sign-in and consent"]
-  authz -->|"Code"| cb["app/auth callback"]
-  cb -->|"Exchange code"| sess["lib/session.ts: encrypted session"]
+  authz -->|"Code, state, iss"| cb["app/auth/callback"]
+  cb -->|"Exchange code, read /oauth/userinfo"| sess["lib/session.ts: encrypted session"]
   browser -->|"/api/gateway/..."| proxy["app/api/gateway/[...surface]/route.ts"]
   proxy -->|"Allowlist, Bearer token, refresh if expired"| gw["api.phaseo.app/v1"]
 ```
@@ -57,11 +57,14 @@ The sample lives in [examples/oauth-client-nextjs](https://github.com/phaseoteam
 
 | File | Does |
 | --- | --- |
-| `app/page.tsx` | Sign-in entry page |
+| `app/page.tsx` | Sign-in entry page; shows sign-in errors |
+| `app/api/auth/start/route.ts` | Builds the authorize URL and stores the PKCE verifier and state |
+| `app/auth/callback/route.ts` | Checks `state` and `iss`, exchanges the code, reads `/oauth/userinfo` |
+| `app/api/auth/signout/route.ts` | Revokes the refresh token, then clears the session |
 | `app/dashboard/page.tsx` | Protected shell |
-| `app/dashboard/GatewayWorkbench.tsx` | Loads control routes, lists model IDs, runs chat over `POST /responses`, and tests other endpoints |
+| `app/dashboard/GatewayWorkbench.tsx` | Shows gateway status, lists model IDs, runs chat over `POST /responses`, and tests other endpoints |
 | `app/api/gateway/[...surface]/route.ts` | Catch-all proxy: checks the allowlist, adds the Bearer token, refreshes it when it has expired, forwards the body and status |
-| `lib/oauth.ts` | PKCE, code exchange and refresh |
+| `lib/oauth.ts` | Discovery, PKCE, code exchange, refresh, revoke and userinfo |
 | `lib/session.ts` | Encrypted session storage |
 
 Keeping sign-in separate from gateway calls means a sign-in problem never looks like a model problem, and every endpoint shares one place that handles tokens.
@@ -81,32 +84,23 @@ npm install
 </Step>
 <Step title="Create .env.local">
 
-The sample has no `.env.example`. Create `.env.local` with the names the code reads:
-
-```bash .env.local
-NEXT_PUBLIC_OAUTH_CLIENT_ID=your_client_id
-OAUTH_CLIENT_SECRET=your_client_secret
-# The sample reads this name for the OAuth server's base URL.
-NEXT_PUBLIC_AISTATS_URL=https://api.phaseo.app
-NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/callback
-SESSION_SECRET=a-long-random-string
-NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
+```bash
+cp .env.example .env.local
 ```
 
-Never put `OAUTH_CLIENT_SECRET` or `SESSION_SECRET` in a `NEXT_PUBLIC_` variable.
+Fill in the values:
 
-</Step>
-<Step title="Point the sample at the current OAuth endpoints">
+| Variable | Required | Value |
+| --- | --- | --- |
+| `PHASEO_OAUTH_CLIENT_ID` | Yes | The OAuth app's client ID |
+| `PHASEO_OAUTH_CLIENT_SECRET` | Confidential apps | The OAuth app's client secret. Leave it empty for a public app. |
+| `PHASEO_OAUTH_REDIRECT_URI` | Yes | `http://localhost:3000/auth/callback`, exactly as registered |
+| `SESSION_SECRET` | Yes | A random string of at least 32 characters |
+| `PHASEO_API_URL` | No | Defaults to `https://api.phaseo.app` |
 
-`lib/oauth.ts` builds `${NEXT_PUBLIC_AISTATS_URL}/auth/v1/oauth/authorize` and `/auth/v1/token` and asks for `openid email profile`. Phaseo's OAuth server publishes its endpoints at `https://api.phaseo.app/.well-known/oauth-authorization-server`:
+The sample reads all of them on the server only. Never put the client secret or session secret in a `NEXT_PUBLIC_` variable.
 
-| Use | URL |
-| --- | --- |
-| Authorize | `https://api.phaseo.app/oauth/authorize` |
-| Token | `https://api.phaseo.app/oauth/token` |
-| Revoke | `https://api.phaseo.app/oauth/revoke` |
-
-Change the three URLs in `lib/oauth.ts` to these, and add `gateway:access` to `scope` so the token can call the Gateway.
+The sample finds the authorize, token, revoke and userinfo endpoints from `https://api.phaseo.app/.well-known/oauth-authorization-server`, and asks for `openid email profile gateway:access`. `gateway:access` lets the token call the Gateway.
 
 </Step>
 <Step title="Start the dev server">
@@ -153,7 +147,8 @@ Whatever scopes it holds, your app can't lift that limit or get around it throug
 
 ## Before you ship it
 
-- **Trim the allowlist.** `lib/gateway.ts` allows exact paths plus every path under `videos/`, `music/generate/`, `control/` and `internal/`. Keep only the exact paths your product calls.
+- **Trim the allowlist.** `lib/gateway.ts` allows the paths the workbench calls, plus job status under `videos/` and `music/generate/`. Keep only the paths your product calls.
+- **Share refreshes across instances.** `lib/oauth.ts` shares one refresh between parallel requests in memory. If you run more than one server instance, move that to shared storage, or two instances can refresh with the same token and end the sign-in.
 - **Send the whole conversation.** The Gateway doesn't store responses and rejects `previous_response_id`, so resend earlier turns in `input`.
 - **Replace the tester.** Keep the workbench for internal QA and build purpose-made flows for end users.
 

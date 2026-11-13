@@ -1,124 +1,104 @@
-# Phaseo Gateway OAuth + Full Surface Integration (Next.js)
+# Phaseo OAuth Gateway Workbench (Next.js)
 
-This example is a complete external integration reference for Phaseo Gateway:
+A Next.js app where people sign in with Phaseo and use the Gateway with their own workspace credits:
 
-- OAuth 2.1 + PKCE login
-- Session-backed token storage and refresh
-- Unified gateway proxy for control + generation routes
-- Model discovery (`/models`)
-- Chat app powered by the Responses API
-- Endpoint tester for non-chat surfaces
+- OAuth 2.1 authorization code flow with PKCE (S256), `state` and `iss` checks
+- Endpoints discovered from `https://api.phaseo.app/.well-known/oauth-authorization-server`
+- Tokens kept server-side in an encrypted, httpOnly session cookie, refreshed and rotated automatically
+- Sign-out that revokes the app's key at Phaseo
+- One server-side proxy with an allowlist of the Gateway paths the app uses
+- Model discovery, chat over the Responses API, and an endpoint tester
 
-If you do not need OAuth, use `examples/web-chat-nextjs` for a simpler API-key chat integration.
-If you need a script-first integration, use `examples/gateway-node-quickstart`.
+If you don't need sign-in, use `examples/web-chat-nextjs` for an API-key chat app.
+For a script, use `examples/gateway-node-quickstart`.
 
-## What This Example Covers
+## How sign-in works
 
-### Control routes
+| Step | Endpoint |
+| --- | --- |
+| Discovery | `GET https://api.phaseo.app/.well-known/oauth-authorization-server` |
+| Authorize | `GET https://api.phaseo.app/oauth/authorize` with `response_type=code`, `client_id`, `redirect_uri`, `scope`, `state`, `code_challenge`, `code_challenge_method=S256` |
+| Token | `POST https://api.phaseo.app/oauth/token` (form-encoded), `grant_type=authorization_code` or `refresh_token` |
+| Who signed in | `GET https://api.phaseo.app/oauth/userinfo` |
+| Sign out | `POST https://api.phaseo.app/oauth/revoke` with the refresh token |
 
-- `GET /health`
-- `GET /models`
-- `GET /providers`
-- Any `control/*` route via the proxy allowlist
+- **Scope.** The app asks for `openid email profile gateway:access`. `gateway:access` is required for third-party apps: it lets the token call the Gateway and spend credits in the workspace the person picks on the consent screen. `openid email profile` let the app read the person's name and email from `/oauth/userinfo`.
+- **Client authentication.** A confidential app (the default) sends its secret with HTTP Basic auth (`client_secret_basic`). A public app leaves `PHASEO_OAUTH_CLIENT_SECRET` empty and relies on PKCE.
+- **Access token.** It's an opaque Gateway key, not a JWT, valid for `expires_in` seconds (7 days). Send it as `Authorization: Bearer` to `https://api.phaseo.app/v1`.
+- **Refresh.** Every refresh returns a new access token and refresh token, and the old ones stop working at once. Using a refresh token twice ends the sign-in, so `lib/oauth.ts` shares one refresh between parallel requests. That de-duplication is in memory: run one server process, or move it to shared storage.
+- **Spending limit.** The person sets a monthly limit for your app on the consent screen ($20.00 by default). Once it's spent, Gateway requests return `429` with `key_limit_exceeded`.
 
-### Generation routes
+## Register an OAuth app
 
-- `POST /chat/completions`
-- `POST /responses`
-- `POST /messages`
-- `POST /embeddings`
-- `POST /moderations`
-- `POST /audio/speech`
-- `POST /audio/transcriptions`
-- `POST /audio/translations`
-- `POST /images/generations`
-- `POST /images/edits`
-- `POST /videos`
-- `GET/DELETE /videos/{id}`
-- `POST /videos/{id}/cancel`
-- `POST /videos/{id}/download_url`
-- `GET /videos/{id}/content`
-- `POST /ocr`
-- `POST /music/generate`
-- `GET /music/generate/{id}`
+1. In Phaseo, open **Settings → OAuth Apps** and create an app (or use the [OAuth clients API](https://phaseo.app/docs/v1/api-reference/endpoint/oauth-clients-create)).
+2. Add the redirect URI `http://localhost:3000/auth/callback`. Redirect URIs must match exactly, and must use HTTPS except for `localhost`, `127.0.0.1` or `::1` callbacks during development.
+3. Keep the default scopes, which include `openid`, `profile`, `email` and `gateway:access`.
+4. Copy the client ID and, for a confidential app, the client secret. The secret is shown only when it's created or regenerated.
 
-## Architecture
-
-- `app/api/gateway/[...surface]/route.ts`
-  - Catch-all proxy route for allowed gateway surfaces
-  - Injects OAuth bearer token from session
-  - Refreshes token if expired
-  - Forwards request/response body and status
-
-- `app/dashboard/GatewayWorkbench.tsx`
-  - Fetches control route data
-  - Discovers model IDs
-  - Runs chat via `POST /responses`
-  - Includes generic endpoint tester for all other surfaces
-
-## Quick Start
-
-1. Install dependencies:
+## Run it
 
 ```bash
 cd examples/oauth-client-nextjs
 npm install
-```
-
-2. Configure env:
-
-```bash
 cp .env.example .env.local
 ```
 
-3. Fill required values in `.env.local`:
+Fill in `.env.local`:
 
-- `NEXT_PUBLIC_OAUTH_CLIENT_ID`
-- `OAUTH_CLIENT_SECRET`
-- `NEXT_PUBLIC_AISTATS_URL`
-- `NEXT_PUBLIC_REDIRECT_URI`
-- `SESSION_SECRET`
-- `NEXT_PUBLIC_GATEWAY_URL` (recommended: `https://api.phaseo.app`)
+| Variable | Required | Value |
+| --- | --- | --- |
+| `PHASEO_OAUTH_CLIENT_ID` | Yes | The OAuth app's client ID |
+| `PHASEO_OAUTH_CLIENT_SECRET` | Confidential apps | The OAuth app's client secret |
+| `PHASEO_OAUTH_REDIRECT_URI` | Yes | `http://localhost:3000/auth/callback`, exactly as registered |
+| `SESSION_SECRET` | Yes | A random string of at least 32 characters, for example from `openssl rand -base64 32` |
+| `PHASEO_API_URL` | No | Defaults to `https://api.phaseo.app`. OAuth is discovered from it and the Gateway is at `/v1` |
+| `GATEWAY_APP_TITLE` | No | Sent as `x-title` for app attribution |
+| `GATEWAY_HTTP_REFERER` | No | Sent as `http-referer` for app attribution |
 
-4. Run:
+All of these are read on the server only. Never put the client secret or session secret in a `NEXT_PUBLIC_` variable.
 
 ```bash
 npm run dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000), sign in, then use the dashboard.
+Open [http://localhost:3000](http://localhost:3000), sign in, pick a workspace on the consent screen, and use the dashboard.
 
-## Complete Chat Flow (Models API + Responses API)
+## Chat flow
 
-The chat app flow in this example is:
+1. Fetch models from `/api/gateway/models`.
+2. Send the prompt to `/api/gateway/responses` with the chosen model.
+3. Resend the whole conversation in `input` on every turn. The Gateway doesn't store responses, so it rejects `previous_response_id`.
+4. Show `output_text`, or the text parts of `output`.
 
-1. Fetch models from `/api/gateway/models`
-2. Let user choose model
-3. Send prompt to `/api/gateway/responses`
-4. Resend the whole conversation in `input` on each turn (the gateway does not store responses, so `previous_response_id` is rejected)
-5. Render `output_text` (or fallback-parsed output content)
+## Proxy allowlist
 
-## SDK Guidance (Published and Unpublished)
+`app/api/gateway/[...surface]/route.ts` forwards to `https://api.phaseo.app/v1/<path>` only for:
 
-If a language SDK is unavailable or behind the latest API behavior:
+- `health`, `models`, `providers`
+- `responses`
+- `embeddings`, `moderations`, `images/generations`, `ocr`
+- `videos` and `videos/<id>/...`, `music/generate` and `music/generate/<id>`
 
-- Keep OAuth/session logic the same
-- Call gateway REST endpoints directly through the same contract:
-  - Base: `https://api.phaseo.app/v1`
-  - Auth: `Authorization: Bearer <PHASEO_API_KEY or OAuth token>`
-- Preserve response shapes used by your app
+Everything else returns `400 invalid_surface`. Keep the list to the paths your product calls; each entry is a path the browser can reach with the person's key.
 
 ## Files
 
-- `app/page.tsx` - OAuth entry page
-- `app/dashboard/page.tsx` - protected shell
-- `app/dashboard/GatewayWorkbench.tsx` - full integration UI
-- `app/api/gateway/[...surface]/route.ts` - unified proxy
-- `lib/oauth.ts` - OAuth + PKCE + refresh
-- `lib/session.ts` - encrypted session storage
+| File | Does |
+| --- | --- |
+| `app/page.tsx` | Sign-in page; shows sign-in errors |
+| `app/api/auth/start/route.ts` | Builds the authorize URL and stores the PKCE verifier and state |
+| `app/auth/callback/route.ts` | Checks `state` and `iss`, exchanges the code, reads `/oauth/userinfo` |
+| `app/api/auth/signout/route.ts` | Revokes the refresh token, then clears the session |
+| `app/dashboard/page.tsx` | Protected shell |
+| `app/dashboard/GatewayWorkbench.tsx` | Status, model discovery, Responses chat and endpoint tester |
+| `app/api/gateway/[...surface]/route.ts` | Allowlisted Gateway proxy |
+| `app/api/chat/route.ts` | Fixed `POST /v1/chat/completions` proxy, for apps that only need chat |
+| `lib/oauth.ts` | Discovery, PKCE, code exchange, refresh, revoke, userinfo |
+| `lib/gateway.ts` | Allowlist, token refresh and request forwarding |
+| `lib/session.ts` | Encrypted session storage |
 
-## Notes
+## Before you ship it
 
-- This app is intentionally external-gateway focused.
-- It avoids internal build or codegen workflows.
-- The proxy has an allowlist for safety; extend it as needed for additional surfaces.
+- Trim the allowlist to the paths you call, and replace the endpoint tester with purpose-built flows.
+- Use HTTPS redirect URIs in production.
+- If you run more than one server instance, move the refresh de-duplication in `lib/oauth.ts` to shared storage, or a parallel refresh can end the sign-in.

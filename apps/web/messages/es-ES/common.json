@@ -823,6 +823,15 @@
 			"removeBenchmark": "Quitar evaluación {index}",
 			"detailsHeading": "Detalles del modelo",
 			"linksHeading": "Enlaces del modelo",
+			"linksDescription": "Añade cada enlace con el título que deben ver los usuarios. El tipo define el icono alternativo y la columna de comparación.",
+			"noLinks": "Todavía no hay enlaces.",
+			"addLink": "Añadir enlace",
+			"linkUrl": "URL",
+			"linkTitle": "Título",
+			"linkKind": "Tipo",
+			"moveLinkUp": "Subir",
+			"moveLinkDown": "Bajar",
+			"removeLink": "Quitar enlace",
 			"detailFields": {
 				"input_context_length": {
 					"label": "Longitud del contexto de entrada",
@@ -847,12 +856,19 @@
 			},
 			"linkFields": {
 				"announcement": "Anuncio",
-				"api_reference": "Referencia de API",
 				"model_card": "Ficha del modelo",
 				"paper": "Artículo",
-				"playground": "Entorno de pruebas",
+				"weights": "Pesos",
 				"repository": "Repositorio",
-				"weights": "Pesos"
+				"documentation": "Documentación",
+				"api_reference": "Referencia de API",
+				"playground": "Entorno de pruebas",
+				"pricing": "Precios",
+				"benchmark": "Benchmark",
+				"website": "Sitio web",
+				"provider": "Proveedor",
+				"deprecation": "Aviso de retirada",
+				"license": "Licencia"
 			},
 			"subscriptionPlansTitle": "Planes de suscripción",
 			"subscriptionPlansDescription": "Asocia o desasocia este modelo de los planes de suscripción.",
@@ -2490,6 +2506,7 @@
 			"serviceTierLineStyles": "Estilos de línea por nivel de servicio",
 			"inAudience": "En {audience}",
 			"usOnlyInference": "Inferencia solo en EE. UU.",
+			"withKeyterms": "Con términos clave",
 			"regionOnlyInference": "Inferencia solo en {region}"
 		},
 		"publicModelCopy": {

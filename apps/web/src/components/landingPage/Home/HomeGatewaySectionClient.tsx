@@ -408,14 +408,16 @@ function InlineModelCodeBlock({
 						</button>
 					))}
 				</div>
-				<button
+				<Button
 					type="button"
+					variant="outline"
+					size="sm"
 					onClick={handleCopy}
-					className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:text-zinc-100"
+					className="gap-1.5 border-zinc-200 bg-white text-xs text-zinc-600 hover:border-zinc-300 hover:bg-white hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-700 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
 				>
-					{copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+					{copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
 					{copied ? "Copied" : "Copy"}
-				</button>
+				</Button>
 			</div>
 			{!error && tokens ? (
 				<HighlightedSnippet

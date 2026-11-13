@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import {
 	Select,
@@ -189,6 +190,8 @@ function FormSection({
 		</section>
 	);
 }
+
+const RESPONSE_CACHING_DOCS_URL = "https://phaseo.app/docs/v1/cookbook/response-caching-with-presets";
 
 function SectionLinkRow({
 	title,
@@ -866,7 +869,7 @@ export default function PresetForm({
 						/>
 						<SectionLinkRow
 							title={t("presetForm.requestDefaultsTitle" as never)}
-							description={t("strings.phraseSetRoutingBehaviorResponseCachingAndPromptDefaults" as never)}
+							description={t("strings.phraseSetRoutingBehaviorAndPromptDefaults" as never)}
 							summary={requestDefaultsSummary}
 							onClick={() => setActiveView("defaults")}
 						/>
@@ -948,6 +951,22 @@ export default function PresetForm({
 						</div>
 
 						<div className="space-y-3 rounded-lg border p-4">
+							<Alert className="rounded-md">
+								<AlertDescription>
+									{t.rich("presetForm.responseCachingUnavailable", {
+										link: (chunks) => (
+											<a
+												href={RESPONSE_CACHING_DOCS_URL}
+												target="_blank"
+												rel="noreferrer"
+												className="underline underline-offset-2 hover:text-foreground"
+											>
+												{chunks}
+											</a>
+										),
+									})}
+								</AlertDescription>
+							</Alert>
 							<div className="flex items-center justify-between">
 								<div className="space-y-0.5">
 						<Label>{t("credits.Enable Response Caching" as never)}</Label>
@@ -1195,7 +1214,7 @@ export default function PresetForm({
 								return <div key={`blocked-${providerId}`} className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
 									{provider ? <Logo id={provider.logoId} className="h-4 w-4 rounded-sm object-contain" alt={provider.name} width={16} height={16} /> : null}
 									<span className="text-sm font-medium">{provider?.name ?? providerId}</span>
-									<button type="button" className="rounded-md p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => setProviderIgnore((current) => current.filter((id) => id !== providerId))} aria-label={`Remove ${provider?.name ?? providerId}`}><X className="h-3.5 w-3.5" /></button>
+									<Button type="button" variant="ghost" size="icon-xs" className="size-auto p-0.5 text-muted-foreground" onClick={() => setProviderIgnore((current) => current.filter((id) => id !== providerId))} aria-label={`Remove ${provider?.name ?? providerId}`}><X className="h-3.5 w-3.5" /></Button>
 								</div>;
 							})}</div> : <p className="text-sm text-muted-foreground">{t("strings.phraseNoProvidersBlocked" as never)}</p>}
 						</div>

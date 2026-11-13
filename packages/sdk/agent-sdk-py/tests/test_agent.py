@@ -222,3 +222,102 @@ def test_gateway_client_passes_an_api_key_function_to_the_core_client(monkeypatc
     client._client.get_current_api_key()
 
     assert seen == ["Bearer workload-token-1", "Bearer workload-token-2"]
+
+
+def test_run_and_continue_run_stop_when_override_the_definition():
+    class AnswerClient:
+        def generate(self, request):
+            return AgentModelResponse(AgentMessage("assistant", "answer"))
+
+    agent = create_agent({
+        "id": "stop-override",
+        "stop_when": lambda _state: None,
+        "human_review": lambda ctx: AgentHumanReviewRequest("Check") if not any(m.content == "ok" for m in ctx.messages) else None,
+    })
+    stop_now = lambda _state: "run_override"
+
+    paused = agent.run(input="go", client=AnswerClient())
+    resumed = agent.continue_run(run=paused, client=AnswerClient(), human_input="ok", stop_when=stop_now)
+    assert resumed.run.status == "stopped" and resumed.run.stop_reason == "run_override"
+
+    review_free = create_agent({"id": "stop-run", "stop_when": lambda _state: None})
+    stopped = review_free.run(input="go", client=AnswerClient(), stop_when=stop_now)
+    assert stopped.run.status == "stopped" and stopped.run.stop_reason == "run_override"
+
+
+def test_stop_when_ends_a_tool_loop():
+    calls = []
+
+    class LoopingClient:
+        def generate(self, request):
+            return AgentModelResponse(AgentMessage("assistant", "calling", [AgentToolCall(f"ping_{len(calls)}", "ping", {})]))
+
+    agent = create_agent({
+        "id": "looping",
+        "max_steps": 5,
+        "tools": [AgentTool("ping", lambda _input, _ctx: calls.append(1) or "pong")],
+    })
+
+    result = agent.run(input="go", client=LoopingClient(), stop_when=lambda state: "enough" if state["step_count"] >= 2 else None)
+    assert len(calls) == 2
+    assert result.run.status == "stopped" and result.run.stop_reason == "enough"
+    assert result.output == "calling"
+
+    calls.clear()
+    by_tool = agent.run(input="go", client=LoopingClient(), stop_when=lambda state: "pinged" if any(call.name == "ping" for call in state["tool_calls"]) else None)
+    assert len(calls) == 1 and by_tool.run.stop_reason == "pinged"
+
+
+def test_tool_timeout_returns_to_the_model_when_asked():
+    import threading
+
+    import pytest
+
+    class OneCallClient:
+        def __init__(self):
+            self.requests = []
+
+        def generate(self, request):
+            self.requests.append(request)
+            if len(self.requests) == 1:
+                return AgentModelResponse(AgentMessage("assistant", "", [AgentToolCall("slow_1", "slow", {})]))
+            return AgentModelResponse(AgentMessage("assistant", "recovered"))
+
+    # The tool blocks until released, so it can only finish after the timeout fires.
+    release = threading.Event()
+    slow = lambda _input, _ctx: release.wait() and "late"
+    try:
+        forgiving = create_agent({"id": "timeout", "tools": [AgentTool("slow", slow, timeout_ms=20, on_error="return-to-model")]})
+        client = OneCallClient()
+        result = forgiving.run(input="go", client=client)
+        assert result.output == "recovered"
+        tool_message = next(message for message in client.requests[1].messages if message.role == "tool")
+        assert tool_message.is_error and "timed out after 20ms" in tool_message.content
+
+        strict = create_agent({"id": "timeout-strict", "tools": [AgentTool("slow", slow, timeout_ms=20)]})
+        with pytest.raises(TimeoutError, match="timed out after 20ms"):
+            strict.run(input="go", client=OneCallClient())
+    finally:
+        release.set()
+
+
+def test_gateway_client_reads_phaseo_api_key_from_the_environment(monkeypatch):
+    import httpx
+    import pytest
+
+    from phaseo_agent import create_gateway_agent_client
+
+    seen: list[str | None] = []
+
+    def handle(self, request: httpx.Request) -> httpx.Response:
+        seen.append(request.headers.get("authorization"))
+        return httpx.Response(200, json={"data": {"id": "key_123"}}, request=request)
+
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", handle)
+    monkeypatch.setenv("PHASEO_API_KEY", "sk-from-env")
+    create_gateway_agent_client(model="openai/gpt-5-mini")._client.get_current_api_key()
+    assert seen == ["Bearer sk-from-env"]
+
+    monkeypatch.delenv("PHASEO_API_KEY")
+    with pytest.raises(ValueError, match="PHASEO_API_KEY is required"):
+        create_gateway_agent_client(model="openai/gpt-5-mini")

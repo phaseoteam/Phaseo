@@ -117,7 +117,11 @@ export function normalizeProviderModelPricing(providerId: string, modelDetails: 
 
 	switch (providerId) {
 		case "ambient":
+		case "inference":
+		case "kilo":
 		case "llmgateway":
+		case "meganova":
+		case "ofox":
 		case "orcarouter":
 		case "openrouter":
 		case "ovhcloud": {
@@ -136,6 +140,7 @@ export function normalizeProviderModelPricing(providerId: string, modelDetails: 
 		case "novita-ai":
 		case "novita":
 		case "novitaai":
+		case "jiekou":
 			return novitaPricing(model);
 		case "pioneer":
 		case "fastino":
@@ -152,6 +157,44 @@ export function normalizeProviderModelPricing(providerId: string, modelDetails: 
 				input_text_tokens: toPerMillion(model.input_price),
 				cached_read_text_tokens: toPerMillion(model.cached_price),
 				output_text_tokens: toPerMillion(model.output_price),
+			});
+		}
+		case "abacus":
+			// Per-token USD rates.
+			return fromMeters({
+				input_text_tokens: toPerMillion(model.input_token_rate),
+				cached_read_text_tokens: toPerMillion(model.cached_input_token_rate),
+				output_text_tokens: toPerMillion(model.output_token_rate),
+			});
+		case "nano-gpt": {
+			// USD per million tokens; cache rates are per thousand tokens.
+			const pricing = asRecord(model.pricing);
+			if (!pricing || (pricing.currency !== undefined && pricing.currency !== "USD")) return null;
+			const perThousand = (value: unknown) => {
+				const parsed = asNumber(value);
+				return parsed === null ? null : Math.round(parsed * 1_000 * 1_000_000_000) / 1_000_000_000;
+			};
+			return fromMeters({
+				input_text_tokens: asNumber(pricing.prompt),
+				cached_read_text_tokens: perThousand(pricing.cacheReadInputPer1kTokens),
+				cached_write_text_tokens: perThousand(pricing.cacheWriteInputPer1kTokens),
+				output_text_tokens: asNumber(pricing.completion),
+			});
+		}
+		case "crossmodel": {
+			// Micro-dollars per million tokens; only a single unconditional tier is comparable.
+			const tiers = asRecord(model.pricing)?.tiers;
+			if (!Array.isArray(tiers) || tiers.length !== 1) return null;
+			const tier = asRecord(tiers[0]);
+			const micro = (value: unknown) => {
+				const parsed = asNumber(value);
+				return parsed === null ? null : parsed / 1_000_000;
+			};
+			return fromMeters({
+				input_text_tokens: micro(tier?.input_micro_per_1m),
+				cached_read_text_tokens: micro(tier?.cache_read_micro_per_1m),
+				cached_write_text_tokens: micro(tier?.cache_creation_micro_per_1m),
+				output_text_tokens: micro(tier?.output_micro_per_1m),
 			});
 		}
 		case "zenmux": {

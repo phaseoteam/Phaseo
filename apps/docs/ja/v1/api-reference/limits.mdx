@@ -14,6 +14,7 @@ icon: "gauge"
 | [部門の予算](#department-budgets) | `key_limit_exceeded` | `department_daily_cost_budget_reached`（または `weekly`、`monthly`） | はい。`reset_at` の時点 |
 | [ブロックに設定された支出ルール](#key-limits-and-budgets) | `spend_rule_blocked` | | ブロックに `reset_at` がある場合はその時点、またはオーナーか管理者が解除したとき |
 | [レート制限ポリシー](#rate-limit-policies) | `rate_limit_exceeded` | `policy_requests_per_minute`、`policy_tokens_per_minute`、`policy_concurrent_requests`、または `policy_unavailable` | はい。`Retry-After` は秒数 |
+| [管理 API](#management-api-limits) | `rate_limit_exceeded` | `management_api_rate_limit` | はい。`Retry-After` は秒数 |
 | [プロバイダー](#provider-limits) | `upstream_error` または `provider_capacity_exhausted` | | プロバイダーの `Retry-After` に従います |
 
 これらはすべて `429` を返します。Gateway のクォータ適用が一時的に利用できない場合は、代わりに再試行の案内付きで `503` を返します。
@@ -37,6 +38,23 @@ icon: "gauge"
 どちらの制限も Gateway のリージョンをまたいで適用され、特定のユーザーとワークスペースについて引き上げることができます。ファイル操作とジョブステータスのポーリングは 1 分あたりの利用枠を使いますが、管理エンドポイントは使いません。
 
 拒否されたリクエストは、秒数の `Retry-After` 付きで `429` を返します。その時間だけ待ってから再試行してください。
+
+<span id="management-api-limits"></span>
+## 管理 API の制限
+
+`/v1/keys`、`/v1/logs`、`/v1/analytics` などの管理エンドポイントは、認証情報ごとに **1 分あたり 200 ユニット**の利用枠を共有します。管理キー、OAuth トークン、ダッシュボードのセッションはそれぞれ独自の利用枠を持ち、認証情報のないリクエストは IP アドレスごとに 1 つの利用枠を共有します。モデル、ファイル、バッチ、ジョブのエンドポイントはこの利用枠を使いません。
+
+各リクエストは、処理の重さに応じてユニットを消費します。
+
+| ユニット | リクエスト |
+| --- | --- |
+| 1 | カタログの読み取り（`/v1/models`, `/v1/pricing`, `/v1/providers`, `/v1/organisations`）、`/v1/key`、`/v1/me`、`/v1/settings` |
+| 2 | その他の読み取り（`/v1/keys`、`/v1/workspaces` など） |
+| 3 | 作成、更新、削除 |
+| 5 | ログ、生成、監査イベント、アクティビティ、フィードバック、イベントの検索 |
+| 10 | `/v1/analytics`、および外部サービスを呼び出すテスト（オブザーバビリティの送信先のテストとサンプル、分類器のテスト、プリセットのテスト実行） |
+
+`/v1/health` と CORS のプリフライトリクエストは無料です。利用枠を超えたリクエストは、`rate_limit_exceeded`、reason `management_api_rate_limit`、`Retry-After: 60` 付きで `429` を返します。計数は概算で、これらのレスポンスには `x-ratelimit-*` ヘッダーが付かないため、一括処理のスクリプトは上限まで実行せず、時間を分散させてください。
 
 <span id="key-limits-and-budgets"></span>
 ## キーの上限と予算
@@ -130,5 +148,6 @@ BYOK リクエストには、ご自身のプロバイダーアカウントの制
 - 使い切った部門の予算は、`key_limit_exceeded`、理由 `department_<interval>_cost_budget_reached`、`department_id`、`department_name`、`reset_at` 付きで `429` を返します。`Retry-After` の秒数だけ待つか、予算を引き上げます。予算の確認が利用できない場合、リクエストは許可されます。
 - ブロックする支出ルールは、`spend_rule_blocked` 付きで `429` を返します。`Retry-After` を待つか、オーナーまたは管理者にブロックの解除を依頼します。`x-phaseo-spend-warning` は、この後ブロックされる可能性があることを示します。
 - ワークスペースのレート制限ポリシーは、`rate_limit_exceeded`、`policy_id`、`limit_scope` 付きで `429` を返します。`x-ratelimit-remaining-requests` は概算です。
+- 管理エンドポイント（キー、ログ、アナリティクスなど）は、認証情報がその 1 分間の 200 ユニットを使い切ると、`rate_limit_exceeded` と reason `management_api_rate_limit` 付きで `429` を返します。重いリクエストほど多くのユニットを消費します。`Retry-After`（60）秒待ってください。
 - `Retry-After` は秒数または HTTP 日付のどちらかです。再試行をスケジュールする前に検証します。結果が不明な動画ジョブやバッチジョブは再送信せず、ステータスを確認します。
 </Visibility>

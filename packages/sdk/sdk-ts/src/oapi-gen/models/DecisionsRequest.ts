@@ -111,6 +111,10 @@ export interface DecisionsRequest {
               }
             | unknown[];
           type: "box";
+        }
+      | {
+          instructions: string;
+          type: "locate";
         };
   };
   routing?: {

@@ -38,7 +38,6 @@ export default function ChatClient() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [previousResponseId, setPreviousResponseId] = useState<string | null>(null);
 
   useEffect(() => {
     void loadModels();
@@ -64,7 +63,8 @@ export default function ChatClient() {
     if (!input.trim() || !selectedModel || loading) return;
 
     const userMessage: ChatMessage = { role: 'user', content: input.trim() };
-    setMessages((prev) => [...prev, userMessage]);
+    const conversation = [...messages, userMessage];
+    setMessages(conversation);
     setInput('');
     setLoading(true);
     setError(null);
@@ -75,8 +75,7 @@ export default function ChatClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: selectedModel,
-          input: userMessage.content,
-          previous_response_id: previousResponseId || undefined,
+          input: conversation,
         }),
       });
 
@@ -88,10 +87,6 @@ export default function ChatClient() {
 
       const text = extractResponseText(data);
       setMessages((prev) => [...prev, { role: 'assistant', content: text }]);
-
-      if (typeof data?.id === 'string' && data.id.trim()) {
-        setPreviousResponseId(data.id);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Request failed');
     } finally {
@@ -114,7 +109,6 @@ export default function ChatClient() {
           value={selectedModel}
           onChange={(event) => {
             setSelectedModel(event.target.value);
-            setPreviousResponseId(null);
             setMessages([]);
           }}
           disabled={models.length === 0}

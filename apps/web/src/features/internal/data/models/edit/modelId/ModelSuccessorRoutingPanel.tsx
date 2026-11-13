@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { localizedInternalCatalogError } from "@/i18n/internal-catalog-errors";
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
 import { WebApiError, fetchAccountWebApi } from "@/lib/web-api/client";
@@ -128,8 +130,8 @@ export default function ModelSuccessorRoutingPanel({ modelId }: { modelId: strin
 				<div className="space-y-2">
 					<label className="block space-y-1 text-xs">
 						<span className="text-muted-foreground">{t("notes")}</span>
-						<textarea
-							className="w-full rounded-md border bg-background px-2 py-1 text-sm"
+						<Textarea
+							className="min-h-0 px-2 py-1"
 							rows={2}
 							maxLength={2000}
 							value={notes}
@@ -138,7 +140,7 @@ export default function ModelSuccessorRoutingPanel({ modelId }: { modelId: strin
 					</label>
 					{hasWarnings && compatibility!.blocking.length === 0 ? (
 						<label className="flex items-center gap-2 text-xs">
-							<input type="checkbox" checked={allowWarnings} onChange={(event) => setAllowWarnings(event.target.checked)} />
+							<Checkbox checked={allowWarnings} onCheckedChange={(checked) => setAllowWarnings(checked === true)} />
 							{t("acceptWarnings")}
 						</label>
 					) : null}

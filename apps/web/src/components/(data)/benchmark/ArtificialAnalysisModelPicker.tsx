@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
-import { RotateCcw, Search } from "lucide-react";
+import { ChevronRight, RotateCcw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Logo } from "@/components/Logo";
 import { localizedBenchmarkConfiguration } from "@/i18n/benchmark-display";
 import { dashboardModelCategory, dashboardModelTier, toggleDashboardModels, type BenchmarkPickerModel } from "@/lib/benchmarks/artificialAnalysisModelPicker";
@@ -53,8 +54,8 @@ export function ArtificialAnalysisModelPicker({ models, selected, efforts, selec
 		}} className="rounded px-1.5 py-1.5 text-[11px] text-muted-foreground hover:bg-muted aria-pressed:bg-muted aria-pressed:text-foreground focus-visible:outline-2 focus-visible:outline-ring">{localizedBenchmarkConfiguration(effort, tx)}</button>)}</div></div> : null}
 		{search ? <div>{matching.map(row)}{!matching.length ? <p role="status" className="px-2 py-6 text-xs text-muted-foreground">{tx("Catalogue.rankings.noSearchMatches")}</p> : null}</div> : <>
 			{group("frontier")}{group("notable")}
-			<button type="button" aria-expanded={expanded} onClick={() => setExpanded(!expanded)} className="mb-2 w-full rounded px-2 py-2 text-left text-xs text-muted-foreground hover:bg-muted">{expanded ? t("hideOtherModels") : tx("Common.ui.benchmarkChartCopy.showAllModels")}</button>
-			{expanded ? <>{group("other")}{(["openWeights", "older"] as const).map((category) => <details key={category} className="border-t"><summary className="cursor-pointer px-2 py-3 text-xs font-medium">{t(category)}</summary>{matching.filter((model) => dashboardModelCategory(model) === category).map(row)}</details>)}</> : null}
+			<Button type="button" variant="ghost" aria-expanded={expanded} onClick={() => setExpanded(!expanded)} className="mb-2 h-auto w-full justify-start px-2 py-2 text-left text-xs font-normal text-muted-foreground aria-expanded:bg-transparent aria-expanded:text-muted-foreground aria-expanded:hover:bg-muted aria-expanded:hover:text-foreground">{expanded ? t("hideOtherModels") : tx("Common.ui.benchmarkChartCopy.showAllModels")}</Button>
+			{expanded ? <>{group("other")}{(["openWeights", "older"] as const).map((category) => <Collapsible key={category} className="border-t"><CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1 px-2 py-3 text-left text-xs font-medium"><ChevronRight aria-hidden="true" className="size-3 transition-transform group-data-[panel-open]:rotate-90" />{t(category)}</CollapsibleTrigger><CollapsibleContent hiddenUntilFound>{matching.filter((model) => dashboardModelCategory(model) === category).map(row)}</CollapsibleContent></Collapsible>)}</> : null}
 		</>}
 	</div>;
 }

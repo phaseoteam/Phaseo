@@ -11,6 +11,22 @@ const longAnswer = (bytes: number, seed = 1) => {
 const squash = (text: string) => text.replace(/\s+/g, " ").trim();
 
 describe("blocks", () => {
+  test("blank lines inside display math never freeze or split a partial equation", () => {
+    const equation = "$$\n\\begin{aligned}\na &= 1 \\\\\n\nb &= 2\n\\end{aligned}\n$$";
+    const text = `Before\n\n${equation}\n\nAfter`;
+    expect(liveBlocks(text)).toEqual({ done: ["Before", equation], live: "After" });
+    const start = text.indexOf("$$");
+    const end = text.lastIndexOf("$$") + 2;
+    for (let length = start + 1; length <= end; length += 1) {
+      expect(liveBlocks(text.slice(0, length))).toEqual({ done: ["Before"], live: text.slice(start, length) });
+    }
+    expect(markdownChunks(text, 5)).toEqual(["Before", equation, "After"]);
+  });
+
+  test("single-line math and dollar signs inside code do not capture later blocks", () => {
+    expect(liveBlocks("$$x^2$$\n\nNext")).toEqual({ done: ["$$x^2$$"], live: "Next" });
+    expect(liveBlocks("```\n$$\n```\n\nNext")).toEqual({ done: ["```\n$$\n```"], live: "Next" });
+  });
   test("end at blank lines, but not inside code fences or before indented continuations", () => {
     const text = "One\n\n```ts\nconst a = 1;\n\nconst b = 2;\n```\n\n- item\n\n  more of the item\n\nLast";
     const starts = blockStarts(text);

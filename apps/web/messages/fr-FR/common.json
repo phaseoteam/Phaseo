@@ -823,6 +823,15 @@
 			"removeBenchmark": "Supprimer l’évaluation {index}",
 			"detailsHeading": "Détails du modèle",
 			"linksHeading": "Liens du modèle",
+			"linksDescription": "Ajoutez chaque lien avec le titre que les utilisateurs doivent voir. Le type définit l'icône de secours et la colonne de comparaison.",
+			"noLinks": "Aucun lien pour l'instant.",
+			"addLink": "Ajouter un lien",
+			"linkUrl": "URL",
+			"linkTitle": "Titre",
+			"linkKind": "Type",
+			"moveLinkUp": "Monter",
+			"moveLinkDown": "Descendre",
+			"removeLink": "Supprimer le lien",
 			"detailFields": {
 				"input_context_length": {
 					"label": "Longueur du contexte d’entrée",
@@ -847,12 +856,19 @@
 			},
 			"linkFields": {
 				"announcement": "Annonce",
-				"api_reference": "Référence API",
 				"model_card": "Fiche du modèle",
 				"paper": "Article de recherche",
-				"playground": "Bac à sable",
+				"weights": "Poids",
 				"repository": "Dépôt",
-				"weights": "Poids"
+				"documentation": "Documentation",
+				"api_reference": "Référence API",
+				"playground": "Bac à sable",
+				"pricing": "Tarifs",
+				"benchmark": "Benchmark",
+				"website": "Site web",
+				"provider": "Fournisseur",
+				"deprecation": "Avis d'abandon",
+				"license": "Licence"
 			},
 			"subscriptionPlansTitle": "Offres d’abonnement",
 			"subscriptionPlansDescription": "Associer ou dissocier ce modèle des offres d’abonnement.",
@@ -2490,6 +2506,7 @@
 			"serviceTierLineStyles": "Styles de ligne par niveau de service",
 			"inAudience": "Dans {audience}",
 			"usOnlyInference": "Inférence aux États-Unis uniquement",
+			"withKeyterms": "Avec termes clés",
 			"regionOnlyInference": "Inférence uniquement en {region}"
 		},
 		"publicModelCopy": {

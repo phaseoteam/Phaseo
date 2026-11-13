@@ -27,6 +27,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
 import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { RoomSearchDialog } from "@/components/(chat)/RoomSearchDialog";
@@ -1617,20 +1625,20 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 												</div>
 											) : null}
 											<div className="max-h-[280px] overflow-auto rounded-md border border-border">
-												<table className="w-full text-xs">
-													<thead className="sticky top-0 bg-muted/60">
-														<tr>
-															<th className="px-2 py-1 text-left">#</th>
-													<th className="px-2 py-1 text-left">{t("input")}</th>
-													<th className="px-2 py-1 text-left">{t("preview")}</th>
-													<th className="px-2 py-1 text-left">{t("dims")}</th>
-														</tr>
-													</thead>
-													<tbody>
+												<Table wrapInContainer={false} className="text-xs">
+													<TableHeader className="sticky top-0 bg-muted/60 [&_tr]:border-b-0">
+														<TableRow className="border-b-0 hover:bg-transparent dark:hover:bg-transparent">
+															<TableHead className="h-auto px-2 py-1 text-left font-bold text-inherit dark:text-inherit">#</TableHead>
+															<TableHead className="h-auto px-2 py-1 text-left font-bold text-inherit dark:text-inherit">{t("input")}</TableHead>
+															<TableHead className="h-auto px-2 py-1 text-left font-bold text-inherit dark:text-inherit">{t("preview")}</TableHead>
+															<TableHead className="h-auto px-2 py-1 text-left font-bold text-inherit dark:text-inherit">{t("dims")}</TableHead>
+														</TableRow>
+													</TableHeader>
+													<TableBody>
 														{entryProjection.rows.map((row) => (
-															<tr
+															<TableRow
 																key={`${entry.id}-${row.index}`}
-																className={`cursor-pointer hover:bg-muted/40 ${
+																className={`cursor-pointer border-b-0 hover:bg-muted/40 dark:hover:bg-muted/40 ${
 																	row.index === resolvedActiveIndex ? "bg-muted/40" : ""
 																}`}
 																onClick={() =>
@@ -1640,24 +1648,24 @@ export function EmbeddingsRoom({ models }: { models: GatewaySupportedModel[] }) 
 																	}))
 																}
 															>
-																<td className="px-2 py-1">{row.index + 1}</td>
-																<td className="max-w-[280px] truncate px-2 py-1 text-muted-foreground">
+																<TableCell className="px-2 py-1">{row.index + 1}</TableCell>
+																<TableCell className="max-w-[280px] truncate px-2 py-1 text-muted-foreground">
 																	{truncateInlineText(
 																		rowLabelByIndex.get(row.index) ?? "",
 																		52,
 																	)}
-																</td>
-																<td className="px-2 py-1 font-mono">
+																</TableCell>
+																<TableCell className="px-2 py-1 font-mono">
 																	{row.vector
 																		.slice(0, 6)
 																		.map((value) => value.toFixed(4))
 																		.join(", ")}
-																</td>
-																<td className="px-2 py-1">{row.vector.length}</td>
-															</tr>
+																</TableCell>
+																<TableCell className="px-2 py-1">{row.vector.length}</TableCell>
+															</TableRow>
 														))}
-													</tbody>
-												</table>
+													</TableBody>
+												</Table>
 											</div>
 										</div>
 										<div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">

@@ -6,7 +6,9 @@ export const CONTROL_SCOPES = [
 	"presets:read", "presets:write", "presets:delete", "settings:read", "settings:write",
 	"provider_credentials:read", "provider_credentials:write", "provider_credentials:delete",
 	"private_models:read", "private_models:write", "private_models:delete",
-	"guardrails:read", "guardrails:write", "guardrails:delete", "management_keys:read", "management_keys:write", "management_keys:delete",
+	"guardrails:read", "guardrails:write", "guardrails:delete", "budgets:read", "budgets:write", "budgets:delete",
+	"rate_limits:read", "rate_limits:write", "rate_limits:delete", "classifiers:read", "classifiers:write", "classifiers:delete",
+	"spend_rules:read", "spend_rules:write", "spend_rules:delete", "management_keys:read", "management_keys:write", "management_keys:delete",
 	"oauth_clients:read", "oauth_clients:write", "oauth_clients:delete",
 ] as const;
 

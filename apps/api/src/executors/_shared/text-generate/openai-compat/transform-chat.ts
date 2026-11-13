@@ -107,9 +107,19 @@ export function irToOpenAIChat(
 				providerId === "arcee" ||
 				providerId === "arcee-ai" ||
 				providerId === "together" ||
-				providerId === "deepinfra";
+				providerId === "deepinfra" ||
+				// Fireworks: "MUST include the reasoning_content" when the last message is a tool result
+				// (https://docs.fireworks.ai/guides/reasoning). Cerebras resends history reasoning as
+				// `reasoning`. Alibaba (DashScope) keeps reasoning_content for preserved thinking and for
+				// the Kimi, GLM and DeepSeek models it serves.
+				providerId === "fireworks" ||
+				providerId === "cerebras" ||
+				providerId === "alibaba-cloud" ||
+				providerId === "alibaba";
 			if (providerSupportsAssistantReasoningContent && assistantReasoning.length > 0) {
-				if (providerId === "minimax" || providerId === "minimax-lightning") {
+				if (providerId === "cerebras") {
+					message.reasoning = assistantReasoning;
+				} else if (providerId === "minimax" || providerId === "minimax-lightning") {
 					// With reasoning_split, MiniMax returns thinking in reasoning_details
 					// and documents passing that field back unchanged in tool loops.
 					// https://platform.minimax.io/docs/guides/text-m3-function-call
@@ -569,7 +579,8 @@ function applySealedReasoningDetails(
 		const plain = contentParts.find((candidate): candidate is Extract<IRContentPart, { type: "reasoning_text" }> =>
 			candidate.type === "reasoning_text" && !candidate.reasoningFormat);
 		// The signed detail repeats the plain reasoning_content text, or carries none.
-		if (plain && (!part.text || part.text === plain.text)) {
+		// A Gemini signature from a text part stays its own part, after the text.
+		if (plain && !part.signsText && (!part.text || part.text === plain.text)) {
 			Object.assign(plain, { ...part, text: plain.text });
 		} else {
 			contentParts.push(part);

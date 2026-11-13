@@ -24,8 +24,11 @@ import {
 	geminiFunctionCallId,
 	geminiReplayableAssistantParts,
 	geminiThoughtPartToIR,
+	geminiSignedTextPartsToIR,
 	irToolCallsToGeminiParts,
 	withoutEmptyGeminiTextParts,
+	GEMINI_SKIP_THOUGHT_SIGNATURE,
+	requiresGeminiFunctionCallSignature,
 } from "../../google/shared/function-history";
 import { normalizeGoogleModelSlug, resolveGoogleModelCandidates } from "../../google/shared/model";
 import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback, applyStreamedOutputTokenFallback } from "../../google/shared/usage-fallback";
@@ -298,14 +301,16 @@ export async function irToGemini(
 				return {
 					type: "thought",
 					...(part.thoughtSignature ? { signature: part.thoughtSignature } : {}),
-					...(summaryText ? { summary: { type: "text", text: summaryText } } : {}),
+					// Interactions takes a thought summary as a list of content items.
+					...(summaryText ? { summary: [{ type: "text", text: summaryText }] } : {}),
 				};
 			};
 			// Stateless Interactions needs every model-generated step back in
 			// order, with its signature: thoughts, then output and calls.
 			// https://ai.google.dev/gemini-api/docs/interactions/function-calling
 			for (const part of replayable) {
-				if (part.type !== "reasoning_text") continue;
+				// A generateContent text signature has no Interactions step to go on.
+				if (part.type !== "reasoning_text" || part.signsText) continue;
 				if (part.beforeToolCallId && toolCallIds.has(part.beforeToolCallId)) continue;
 				input.push(thoughtStep(part));
 			}
@@ -320,6 +325,19 @@ export async function irToGemini(
 				});
 			}
 			if (Array.isArray(msg.toolCalls)) {
+				// A client that dropped reasoning sends calls with no signed thought before them,
+				// which stateless Interactions rejects (400 "Request contains an invalid argument",
+				// seen live 2026-11-13). A thought step carrying Google's skip value is accepted,
+				// as generateContent accepts it on the first functionCall.
+				// https://ai.google.dev/gemini-api/docs/thought-signatures
+				const signed = replayable.some((part) => part.type === "reasoning_text" && Boolean(part.thoughtSignature))
+					|| msg.toolCalls.some((call) => call.thoughtSignature && canReplayReasoning(
+						{ format: GOOGLE_REASONING_FORMAT, model: call.thoughtSignatureModel },
+						target,
+					));
+				if (msg.toolCalls.length > 0 && !signed && requiresGeminiFunctionCallSignature(target.model)) {
+					input.push({ type: "thought", signature: GEMINI_SKIP_THOUGHT_SIGNATURE });
+				}
 				for (const toolCall of msg.toolCalls) {
 					for (const part of replayable) {
 						if (part.type === "reasoning_text" && part.beforeToolCallId === toolCall.id) input.push(thoughtStep(part));
@@ -576,7 +594,9 @@ async function irPartsToInteractionContent(
 function geminiPartToInteractionContent(part: any): any[] {
 	if (!part || typeof part !== "object") return [];
 	if (typeof part.text === "string") {
-		return [{ type: "text", text: part.text }];
+		// Interactions rejects an empty text item ("Missing text in content of
+		// type text"); Chat clients send content: "" next to their tool calls.
+		return part.text ? [{ type: "text", text: part.text }] : [];
 	}
 
 	const inlineData = normalizeGeminiInlineData(part);
@@ -677,6 +697,9 @@ function geminiToIR(
 				if (part.thought && (part.text || part.thoughtSignature || part.thought_signature)) {
 					// Thought, with its signature tagged so it goes back only to Gemini.
 					contentParts.push(geminiThoughtPartToIR(part, model, provider));
+				} else if ((part.thoughtSignature || part.thought_signature) && !part.functionCall && !part.inlineData && !part.inline_data) {
+					// A final text answer carries its signature on its last text part.
+					contentParts.push(...geminiSignedTextPartsToIR(part, model, provider));
 				} else if (part.text) {
 					// Regular text part
 					contentParts.push({
@@ -1722,6 +1745,13 @@ export function transformStream(
 	const emittedAnnotationKeys = new Set<string>();
 	// reasoning_details entries are numbered across the whole stream, per choice.
 	const reasoningDetailIndexes = new Map<number, number>();
+	// The reasoning.text entry still open per choice: consecutive thought chunks
+	// extend one entry, as the non-streamed reply has one entry per thought part.
+	const openThoughtDetails = new Map<number, number>();
+	const thoughtTextOpen = new Map<number, boolean>();
+	// Answer text streamed so far per candidate: a signature on a text part records it,
+	// so Chat clients send it back after that text.
+	const answerTextChars = new Map<number, number>();
 
 	let created = Math.floor(Date.now() / 1000);
 	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
@@ -1783,7 +1813,7 @@ export function transformStream(
 				// Usage observers must never break the client stream.
 			}
 		}
-		const openAIChunk = encodeIRChunkToOpenAI(irChunk, reasoningDetailIndexes);
+		const openAIChunk = encodeIRChunkToOpenAI(irChunk, reasoningDetailIndexes, openThoughtDetails);
 		controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIChunk)}\n\n`));
 	};
 	const buildBaseIRChunk = (): IRStreamChunk => ({
@@ -2007,21 +2037,46 @@ export function transformStream(
 					// Thought signatures, sealed so chat clients can return them
 					// and the gateway replays them only to this Gemini model.
 					const signatureDetails: Array<Record<string, any>> = [];
-					const sealGeminiSignature = (signature: string, callId?: string) => sealReasoningState({
+					const sealGeminiSignature = (signature: string, callId?: string, onText?: { textOffset: number }) => sealReasoningState({
 						format: GOOGLE_REASONING_FORMAT,
 						kind: "signature",
 						value: signature,
 						model,
 						provider,
 						...(callId ? { callId } : {}),
+						...(onText ? { signsText: true, ...(onText.textOffset > 0 ? { textOffset: onText.textOffset } : {}) } : {}),
 					});
 
 					for (const [partIdx, part] of parts.entries()) {
 						const partSignature = part.thoughtSignature ?? part.thought_signature;
+						// Thought text goes out as reasoning_details too (as in the
+						// non-streamed reply), so clients that send back only
+						// reasoning_details keep it for the next turn.
+						if (part.thought && part.text) {
+							signatureDetails.push({
+								type: "reasoning.text",
+								text: part.text,
+								format: "unknown",
+								...(thoughtTextOpen.get(index) ? { continues: true } : {}),
+							});
+							thoughtTextOpen.set(index, true);
+						} else if (part.text || part.functionCall || part.inlineData || part.inline_data) {
+							thoughtTextOpen.set(index, false);
+						}
 						if (part.thought && typeof partSignature === "string" && partSignature && !part.functionCall) {
+							thoughtTextOpen.set(index, false);
 							signatureDetails.push({
 								type: "reasoning.encrypted",
 								data: sealGeminiSignature(partSignature),
+								format: GOOGLE_REASONING_FORMAT,
+							});
+						}
+						if (!part.thought && part.text) answerTextChars.set(index, (answerTextChars.get(index) ?? 0) + part.text.length);
+						if (!part.thought && !part.functionCall && !part.inlineData && !part.inline_data && typeof partSignature === "string" && partSignature) {
+							// A final answer signs its last text part; it goes back on that text.
+							signatureDetails.push({
+								type: "reasoning.encrypted",
+								data: sealGeminiSignature(partSignature, undefined, { textOffset: answerTextChars.get(index) ?? 0 }),
 								format: GOOGLE_REASONING_FORMAT,
 							});
 						}
@@ -2372,7 +2427,11 @@ export function transformStream(
  * index across chunks: a client that merges stream entries by index would
  * otherwise collapse every Gemini signature into one.
  */
-function encodeIRChunkToOpenAI(chunk: IRStreamChunk, reasoningDetailIndexes?: Map<number, number>): any {
+function encodeIRChunkToOpenAI(
+	chunk: IRStreamChunk,
+	reasoningDetailIndexes?: Map<number, number>,
+	openThoughtDetails?: Map<number, number>,
+): any {
 	const choices = chunk.choices.map(c => {
 		const delta: any = {};
 		if (c.delta.role) delta.role = c.delta.role;
@@ -2425,9 +2484,17 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk, reasoningDetailIndexes?: Ma
 		}
 		const reasoningDetails = (c.delta as any).reasoningDetails;
 		if (Array.isArray(reasoningDetails) && reasoningDetails.length > 0) {
-			const start = reasoningDetailIndexes?.get(c.index) ?? 0;
-			delta.reasoning_details = reasoningDetails.map((detail: Record<string, any>, offset: number) => ({ ...detail, index: start + offset }));
-			reasoningDetailIndexes?.set(c.index, start + reasoningDetails.length);
+			let next = reasoningDetailIndexes?.get(c.index) ?? 0;
+			delta.reasoning_details = reasoningDetails.map(({ continues, ...detail }: Record<string, any>) => {
+				// A thought chunk that continues the open reasoning.text entry reuses
+				// its index, so clients that merge entries by index join the text.
+				const open = openThoughtDetails?.get(c.index);
+				const index = continues && open !== undefined ? open : next++;
+				if (detail.type === "reasoning.text") openThoughtDetails?.set(c.index, index);
+				else openThoughtDetails?.delete(c.index);
+				return { ...detail, index };
+			});
+			reasoningDetailIndexes?.set(c.index, next);
 		}
 		const annotations = toChatAnnotations((c.delta as any).annotations);
 		if (annotations.length > 0) delta.annotations = annotations;

@@ -14,6 +14,7 @@ Lisez le code d’erreur et le `reason` d’un `429` pour savoir quelle limite a
 | [Budget de département](#department-budgets) | `key_limit_exceeded` | `department_daily_cost_budget_reached` (ou `weekly`, `monthly`) | Oui, à `reset_at` |
 | [Règle de dépenses réglée sur le blocage](#key-limits-and-budgets) | `spend_rule_blocked` | | À `reset_at` si le blocage en a un, ou lorsqu’un propriétaire ou un administrateur le lève |
 | [Politique de limite de débit](#rate-limit-policies) | `rate_limit_exceeded` | `policy_requests_per_minute`, `policy_tokens_per_minute`, `policy_concurrent_requests` ou `policy_unavailable` | Oui, `Retry-After` en secondes |
+| [API de gestion](#management-api-limits) | `rate_limit_exceeded` | `management_api_rate_limit` | Oui, `Retry-After` en secondes |
 | [Fournisseur](#provider-limits) | `upstream_error` ou `provider_capacity_exhausted` | | Suivez le `Retry-After` du fournisseur |
 
 Tous renvoient `429`. Si l’application des quotas de la passerelle est brièvement indisponible, la passerelle renvoie `503` avec des indications pour réessayer.
@@ -37,6 +38,23 @@ Les modèles gratuits disposent aussi par défaut d’un quota de **1 500 requ
 Les deux limites s’appliquent à toutes les régions de la passerelle et peuvent être relevées pour un utilisateur et un espace de travail donnés. Les opérations sur les fichiers et l’interrogation de l’état des tâches utilisent le quota par minute ; les endpoints de gestion ne l’utilisent pas.
 
 Une requête refusée renvoie `429` avec `Retry-After` en secondes. Attendez ce délai avant de réessayer.
+
+<span id="management-api-limits"></span>
+## Limites de l’API de gestion
+
+Les endpoints de gestion, comme `/v1/keys`, `/v1/logs` et `/v1/analytics`, partagent un quota de **200 unités par minute** pour chaque identifiant. Chaque clé de gestion, jeton OAuth et session du tableau de bord a son propre quota, et les requêtes sans identifiant en partagent un par adresse IP. Les endpoints de modèles, de fichiers, de lots et de tâches ne l’utilisent pas.
+
+Chaque requête consomme des unités selon la quantité de travail qu’elle demande :
+
+| Unités | Requêtes |
+| --- | --- |
+| 1 | Lectures du catalogue (`/v1/models`, `/v1/pricing`, `/v1/providers`, `/v1/organisations`), `/v1/key`, `/v1/me` et `/v1/settings` |
+| 2 | Autres lectures, comme `/v1/keys` et `/v1/workspaces` |
+| 3 | Création, modification ou suppression |
+| 5 | Recherches dans les journaux, les générations, les événements d’audit, l’activité, les retours et les événements |
+| 10 | `/v1/analytics`, et les tests qui appellent un service externe : tests et échantillons de destinations d’observabilité, tests de classificateurs et exécutions de test de presets |
+
+`/v1/health` et les requêtes CORS de pré-vérification sont gratuites. Une requête au-delà du quota renvoie `429` avec `rate_limit_exceeded`, le motif `management_api_rate_limit` et `Retry-After: 60`. Le décompte est approximatif et ces réponses ne contiennent pas d’en-têtes `x-ratelimit-*` : étalez donc vos scripts de masse plutôt que de les pousser jusqu’à la limite.
 
 <span id="key-limits-and-budgets"></span>
 ## Limites de clés et budgets
@@ -130,5 +148,6 @@ Règles de limite de débit pour les agents, résumant cette page :
 - Un budget de département épuisé renvoie `429` avec `key_limit_exceeded`, le motif `department_<interval>_cost_budget_reached`, `department_id`, `department_name` et `reset_at` ; attendez `Retry-After` secondes ou relevez le budget. Si la vérification du budget est indisponible, la requête est autorisée.
 - Les règles de dépenses qui bloquent renvoient `429` avec `spend_rule_blocked` ; attendez `Retry-After`, ou demandez à un propriétaire ou à un administrateur de lever le blocage. `x-phaseo-spend-warning` signifie qu’un blocage peut suivre.
 - Les politiques de limite de débit de l’espace de travail renvoient `429` avec `rate_limit_exceeded`, `policy_id` et `limit_scope`. `x-ratelimit-remaining-requests` est approximatif.
+- Les endpoints de gestion (clés, journaux, analytics, etc.) renvoient `429` avec `rate_limit_exceeded` et le motif `management_api_rate_limit` dès qu’un identifiant a utilisé ses 200 unités de la minute ; les requêtes plus lourdes consomment plus d’unités. Attendez les secondes indiquées par `Retry-After` (60).
 - `Retry-After` peut être en secondes ou une date HTTP ; validez-le avant de planifier une nouvelle tentative. Ne soumettez jamais à nouveau une tâche vidéo ou par lots ambiguë ; vérifiez plutôt son état.
 </Visibility>

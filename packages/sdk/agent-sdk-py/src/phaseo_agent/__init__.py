@@ -499,7 +499,7 @@ class GatewayAgentClient:
     ):
         if client is None:
             options = client_options or {}
-            api_key = options.get("api_key")
+            api_key = options.get("api_key") or os.getenv("PHASEO_API_KEY")
             if not api_key:
                 raise ValueError("PHASEO_API_KEY is required")
             base_url = options.get("base_url")
@@ -735,6 +735,7 @@ class Agent:
                 on_event=on_event,
                 streaming=_streaming,
                 cancel_event=_cancel_event,
+                stop_when=stop_when,
             )
             _capture_devtools(self.definition, result, started_at, "agent.run", devtools)
             if state:
@@ -823,6 +824,7 @@ class Agent:
                 on_event=on_event,
                 streaming=_streaming,
                 cancel_event=_cancel_event,
+                stop_when=stop_when,
             )
             _capture_devtools(self.definition, result, started_at, "agent.continue", devtools)
             if state:
@@ -868,14 +870,17 @@ class Agent:
                         output = completed.value
                         break
             output = _validate(current_tool.output_schema, output, "tool output")
-        except FutureTimeoutError as error:
-            future.cancel()
-            raise TimeoutError(f"Tool {call.name} timed out after {current_tool.timeout_ms}ms") from error
-        except BaseException as error:
+        except BaseException as caught:
+            error = caught
+            if isinstance(caught, FutureTimeoutError):
+                # Python cannot stop the tool's thread; the run just stops waiting for it.
+                future.cancel()
+                error = TimeoutError(f"Tool {call.name} timed out after {current_tool.timeout_ms}ms")
+                error.__cause__ = caught
             if current_tool.on_error == "return-to-model":
                 _emit(on_event, "tool.failed", run, step_index=step_index, tool_call_id=call.id, tool_name=call.name, error=str(error))
                 return AgentMessage("tool", json.dumps({"error": str(error)}), tool_call_id=call.id, name=call.name, is_error=True)
-            raise
+            raise error
         finally:
             timeout_pool.shutdown(wait=False, cancel_futures=True)
         _emit(on_event, "tool.completed", run, step_index=step_index, tool_call_id=call.id, tool_name=call.name, output=output, preliminary_results=preliminary)
@@ -896,6 +901,7 @@ class Agent:
         on_event: Optional[AgentEventHandler],
         streaming: bool = False,
         cancel_event: Optional[threading.Event] = None,
+        stop_when: Any = None,
     ) -> AgentRunResult:
         run.status = "running"
         effective_max_steps = max_steps or self.definition.max_steps or 12
@@ -903,6 +909,8 @@ class Agent:
         execution = tool_execution or self.definition.tool_execution or AgentToolExecutionConfig()
         tools_by_id = {tool.id: tool for tool in self.definition.tools}
         target_model = model or _to_preset_alias(preset) or _to_preset_alias(self.definition.preset)
+        conditions = stop_when if stop_when is not None else self.definition.stop_when
+        stop_conditions = conditions if isinstance(conditions, list) else [conditions] if conditions else []
 
         next_turn: Dict[str, Any] = dict(run.next_turn_params); run.next_turn_params = {}; loop_started = __import__("time").time()
         for step_index in range(run.step_count, effective_max_steps):
@@ -974,6 +982,10 @@ class Agent:
             run.usage.total_tokens += current_usage.total_tokens
             run.usage.cost += current_usage.cost
             _emit(on_event, "model.completed", run, step_index=step_index, attempt=step.model_attempts, request_id=response.request_id, model=step.model)
+
+            def stop_reason() -> Any:
+                state = {"step_count": run.step_count, "usage": run.usage, "tool_calls": response.message.tool_calls, "finish_reason": response.finish_reason, "elapsed_ms": (__import__("time").time() - loop_started) * 1000}
+                return next((value for condition in stop_conditions if (value := condition(state))), None)
 
             parsed_output = self.definition.parse_output(response.message.content) if self.definition.parse_output and not response.message.tool_calls else None
             if self.definition.human_review:
@@ -1049,12 +1061,16 @@ class Agent:
                     _emit(on_event, "run.waiting_for_human", run, step_index=step_index, pause=_jsonable(run.pause))
                     return AgentRunResult(run, steps, None, run.messages, run.usage)
                 step.status = "checkpointed"
+                reason = stop_reason()
+                if reason:
+                    run.status = "stopped"
+                    run.stop_reason = str(reason)
+                    run.result = response.message.content
+                    return AgentRunResult(run, steps, run.result, run.messages, run.usage)
                 _emit(on_event, "checkpoint.saved", run, step_index=step_index)
                 continue
 
-            stop_conditions = self.definition.stop_when if isinstance(self.definition.stop_when, list) else [self.definition.stop_when] if self.definition.stop_when else []
-            stop_state = {"step_count": run.step_count, "usage": run.usage, "tool_calls": response.message.tool_calls, "finish_reason": response.finish_reason, "elapsed_ms": (__import__("time").time() - loop_started) * 1000}
-            reason = next((value for condition in stop_conditions if (value := condition(stop_state))), None)
+            reason = stop_reason()
             output = parsed_output if self.definition.parse_output else response.message.content
             output = _validate(self.definition.output_schema, output, "agent output")
             if reason:

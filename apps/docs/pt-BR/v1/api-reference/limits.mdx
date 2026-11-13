@@ -14,6 +14,7 @@ Leia o código de erro e o `reason` de um `429` para saber qual limite bloqueou 
 | [Orçamento do departamento](#department-budgets) | `key_limit_exceeded` | `department_daily_cost_budget_reached` (ou `weekly`, `monthly`) | Sim, em `reset_at` |
 | [Regra de gastos configurada para bloquear](#key-limits-and-budgets) | `spend_rule_blocked` | | Em `reset_at`, quando o bloqueio tem um, ou quando um proprietário ou administrador o remove |
 | [Política de limite de taxa](#rate-limit-policies) | `rate_limit_exceeded` | `policy_requests_per_minute`, `policy_tokens_per_minute`, `policy_concurrent_requests` ou `policy_unavailable` | Sim, `Retry-After` em segundos |
+| [API de gerenciamento](#management-api-limits) | `rate_limit_exceeded` | `management_api_rate_limit` | Sim, `Retry-After` em segundos |
 | [Provedor](#provider-limits) | `upstream_error` ou `provider_capacity_exhausted` | | Siga o `Retry-After` do provedor |
 
 Todos esses retornam `429`. Se a aplicação de cotas do gateway estiver indisponível por um breve período, o gateway retorna `503` com orientação para nova tentativa.
@@ -37,6 +38,23 @@ Os modelos gratuitos também têm, por padrão, uma cota de **1.500 solicitaçõ
 Os dois limites valem em todas as regiões do gateway e podem ser aumentados para um usuário e um espaço de trabalho específicos. Operações com arquivos e consultas de status de tarefas consomem a cota por minuto; endpoints de gerenciamento não.
 
 Uma solicitação rejeitada retorna `429` com `Retry-After` em segundos. Aguarde esse tempo antes de tentar de novo.
+
+<span id="management-api-limits"></span>
+## Limites da API de gerenciamento
+
+Os endpoints de gerenciamento, como `/v1/keys`, `/v1/logs` e `/v1/analytics`, compartilham uma cota de **200 unidades por minuto** por credencial. Cada chave de gerenciamento, token OAuth e sessão do painel tem sua própria cota, e solicitações sem credencial compartilham uma por endereço IP. Endpoints de modelos, arquivos, lotes e tarefas não a consomem.
+
+Cada solicitação consome unidades de acordo com o trabalho que exige:
+
+| Unidades | Solicitações |
+| --- | --- |
+| 1 | Leituras do catálogo (`/v1/models`, `/v1/pricing`, `/v1/providers`, `/v1/organisations`), `/v1/key`, `/v1/me` e `/v1/settings` |
+| 2 | Outras leituras, como `/v1/keys` e `/v1/workspaces` |
+| 3 | Criar, atualizar ou excluir qualquer coisa |
+| 5 | Buscas em logs, gerações, eventos de auditoria, atividade, feedback e eventos |
+| 10 | `/v1/analytics` e testes que chamam um serviço externo: testes e amostras de destinos de observabilidade, testes de classificadores e execuções de teste de presets |
+
+`/v1/health` e as solicitações CORS de preflight são gratuitas. Uma solicitação acima da cota retorna `429` com `rate_limit_exceeded`, o motivo `management_api_rate_limit` e `Retry-After: 60`. A contagem é aproximada e essas respostas não trazem cabeçalhos `x-ratelimit-*`, então distribua scripts em massa ao longo do tempo em vez de levá-los até o limite.
 
 <span id="key-limits-and-budgets"></span>
 ## Limites de chaves e orçamentos
@@ -130,5 +148,6 @@ Regras de limite de taxa para agentes, resumindo esta página:
 - Um orçamento de departamento esgotado retorna `429` com `key_limit_exceeded`, o motivo `department_<interval>_cost_budget_reached`, `department_id`, `department_name` e `reset_at`; aguarde `Retry-After` segundos ou aumente o orçamento. Se a verificação do orçamento estiver indisponível, a solicitação é permitida.
 - Regras de gastos que bloqueiam retornam `429` com `spend_rule_blocked`; aguarde o `Retry-After` ou peça a um proprietário ou administrador que remova o bloqueio. `x-phaseo-spend-warning` indica que um bloqueio pode vir em seguida.
 - As políticas de limite de taxa do espaço de trabalho retornam `429` com `rate_limit_exceeded`, `policy_id` e `limit_scope`. `x-ratelimit-remaining-requests` é aproximado.
+- Endpoints de gerenciamento (chaves, logs, analytics etc.) retornam `429` com `rate_limit_exceeded` e o motivo `management_api_rate_limit` quando uma credencial usa suas 200 unidades do minuto; solicitações mais pesadas consomem mais unidades. Aguarde os segundos de `Retry-After` (60).
 - `Retry-After` pode ser em segundos ou uma data HTTP; valide-o antes de agendar uma nova tentativa. Nunca reenvie uma tarefa de vídeo ou de lote ambígua; verifique o status dela.
 </Visibility>

@@ -474,7 +474,7 @@ describe("google-vertex Gemini thinking levels", () => {
 
 	// Live Vertex probe 2026-11-12: Hydrogen answered a thinkingBudget with HTTP 400
 	// "Thinking budget is not supported for this model. Use thinking level instead."
-	it.each([[{ effort: "minimal" }, "LOW"], [{ effort: "high" }, "HIGH"], [{ effort: "xhigh" }, "HIGH"], [{ enabled: true }, "HIGH"]] as const)(
+	it.each([[{ effort: "minimal" }, "LOW"], [{ effort: "high" }, "HIGH"], [{ effort: "xhigh" }, "XHIGH"], [{ effort: "max" }, "XHIGH"], [{ enabled: true }, "HIGH"]] as const)(
 		"sends Hydrogen a thinkingLevel and no thinkingBudget for effort or enabled (%j)",
 		async (reasoning, level) => {
 			const config = await thinkingConfigFor("gemini-4-hydrogen", { ...reasoning } as any);

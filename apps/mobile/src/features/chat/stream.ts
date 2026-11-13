@@ -1,7 +1,7 @@
 /**
  * Decodes one streamed OpenAI-compatible chat completion.
  * Ported from apps/desktop/src/main/chatCompletionStream.ts (desktop 38f2abce11);
- * Chat on mobile has no tools, and reasoning deltas are kept for the "Thinking" view.
+ * Chat on mobile has no tools (triage's agent does: its tool calls are collected), and reasoning deltas are kept for the "Thinking" view.
  */
 export class StreamError extends Error {
   constructor(message: string, public code: string, public retryable: boolean) {
@@ -9,12 +9,16 @@ export class StreamError extends Error {
   }
 }
 
+type ToolCallDelta = { index?: number; id?: string; function?: { name?: string; arguments?: string } };
+/** A tool call the model made, put together from its streamed pieces. */
+export type StreamToolCall = { id: string; name: string; arguments: string };
+
 export type StreamUsage = { prompt_tokens?: number; completion_tokens?: number; cost?: number; [key: string]: unknown };
 
 type Packet = {
   error?: unknown;
   usage?: StreamUsage;
-  choices?: { index?: number; delta?: { content?: string | null; reasoning?: string | null; reasoning_content?: string | null }; finish_reason?: string | null }[];
+  choices?: { index?: number; delta?: { content?: string | null; reasoning?: string | null; reasoning_content?: string | null; tool_calls?: ToolCallDelta[] | null }; finish_reason?: string | null }[];
 };
 
 const errorText = (value: unknown): string | undefined =>
@@ -22,7 +26,7 @@ const errorText = (value: unknown): string | undefined =>
 
 export type StreamHandlers = { onText(text: string): void; onReasoning?(text: string): void };
 
-export async function readChatCompletion(body: ReadableStream<Uint8Array>, handlers: StreamHandlers, idleMs = 120_000): Promise<{ text: string; reasoning: string; usage?: StreamUsage }> {
+export async function readChatCompletion(body: ReadableStream<Uint8Array>, handlers: StreamHandlers, idleMs = 120_000): Promise<{ text: string; reasoning: string; usage?: StreamUsage; toolCalls: StreamToolCall[] }> {
   const reader = body.getReader();
   const decoder = new TextDecoder("utf-8");
   let buffer = "";
@@ -30,6 +34,7 @@ export async function readChatCompletion(body: ReadableStream<Uint8Array>, handl
   let reasoning = "";
   let finished = false;
   let usage: StreamUsage | undefined;
+  const calls: StreamToolCall[] = [];
   let stalled = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const arm = () => {
@@ -50,6 +55,13 @@ export async function readChatCompletion(body: ReadableStream<Uint8Array>, handl
       const thought = choice.delta?.reasoning ?? choice.delta?.reasoning_content;
       if (typeof thought === "string" && thought) { reasoning += thought; handlers.onReasoning?.(thought); }
       if (typeof choice.delta?.content === "string" && choice.delta.content) { text += choice.delta.content; handlers.onText(choice.delta.content); }
+      for (const part of choice.delta?.tool_calls ?? []) {
+        const at = part.index ?? calls.length;
+        const call = calls[at] ??= { id: "", name: "", arguments: "" };
+        if (part.id) call.id = part.id;
+        if (part.function?.name) call.name += part.function.name;
+        if (part.function?.arguments) call.arguments += part.function.arguments;
+      }
       if (choice.finish_reason === "length") throw new StreamError("The answer reached the model's output limit before it finished.", "max_output_tokens", false);
       if (choice.finish_reason === "content_filter") throw new StreamError("The provider's content filter stopped the answer.", "content_filter", false);
       if (choice.finish_reason) finished = true;
@@ -76,8 +88,9 @@ export async function readChatCompletion(body: ReadableStream<Uint8Array>, handl
         break;
       }
     }
-    if (!finished && !text) throw new StreamError("The answer ended before it started.", "stream_truncated", true);
-    return { text, reasoning, usage };
+    const toolCalls = calls.filter((call) => call && call.name).map((call, index) => ({ ...call, id: call.id || `call_${index}` }));
+    if (!finished && (!text || toolCalls.length)) throw new StreamError("The answer ended before it started.", "stream_truncated", true);
+    return { text, reasoning, usage, toolCalls };
   } finally {
     clearTimeout(timer);
     await reader.cancel().catch(() => undefined);

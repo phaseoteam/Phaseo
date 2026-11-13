@@ -8,8 +8,9 @@ export const NO_ENTITY_CARD_ATTRIBUTE = "data-no-entity-card";
 /**
  * Places a card would get in the way: site navigation, headers and breadcrumbs,
  * links that already open their own hover card or popover, and opted-out areas.
- * Entity cards render in `[data-entity-card]`, which is never excluded, so the
- * links inside a card open their own cards.
+ * Entity cards render in `[data-entity-card]`, which is never excluded: links in
+ * the first card open a second card beside it. Links in that second card
+ * (`[data-entity-card-nested]`) are plain links, so cards go one level deep.
  */
 const EXCLUDED_ANCESTORS = [
 	`[${NO_ENTITY_CARD_ATTRIBUTE}]`,
@@ -33,9 +34,10 @@ export type EntityLink = EntityTarget & { element: HTMLAnchorElement };
 export function entityLinkFromTarget(target: EventTarget | null, currentPath: string, origin?: string): EntityLink | null {
 	const element = target instanceof Element ? target.closest<HTMLAnchorElement>("a[href]") : null;
 	if (!element) return null;
-	const insideCard = element.closest("[data-entity-card]") !== null;
-	if (!insideCard && element.closest(EXCLUDED_ANCESTORS)) return null;
-	if (insideCard && element.closest(`[${NO_ENTITY_CARD_ATTRIBUTE}]`)) return null;
+	const card = element.closest("[data-entity-card]");
+	if (card ? card.hasAttribute("data-entity-card-nested") || element.closest(`[${NO_ENTITY_CARD_ATTRIBUTE}]`) : element.closest(EXCLUDED_ANCESTORS)) {
+		return null;
+	}
 	if (element.getAttribute("aria-current") === "page") return null;
 	const entity = matchEntityHref(element.getAttribute("href"), origin);
 	if (!entity) return null;

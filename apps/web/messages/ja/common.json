@@ -823,6 +823,15 @@
 			"removeBenchmark": "ベンチマーク項目 {index} を削除",
 			"detailsHeading": "モデルの詳細",
 			"linksHeading": "モデルのリンク",
+			"linksDescription": "表示するタイトルを付けてリンクを追加します。種類は代替アイコンと比較列に使われます。",
+			"noLinks": "リンクはまだありません。",
+			"addLink": "リンクを追加",
+			"linkUrl": "URL",
+			"linkTitle": "タイトル",
+			"linkKind": "種類",
+			"moveLinkUp": "上へ移動",
+			"moveLinkDown": "下へ移動",
+			"removeLink": "リンクを削除",
 			"detailFields": {
 				"input_context_length": {
 					"label": "入力コンテキスト長",
@@ -847,12 +856,19 @@
 			},
 			"linkFields": {
 				"announcement": "発表",
-				"api_reference": "APIリファレンス",
 				"model_card": "モデルカード",
 				"paper": "論文",
-				"playground": "プレイグラウンド",
+				"weights": "重み",
 				"repository": "リポジトリ",
-				"weights": "重み"
+				"documentation": "ドキュメント",
+				"api_reference": "APIリファレンス",
+				"playground": "プレイグラウンド",
+				"pricing": "料金",
+				"benchmark": "ベンチマーク",
+				"website": "ウェブサイト",
+				"provider": "プロバイダー",
+				"deprecation": "廃止のお知らせ",
+				"license": "ライセンス"
 			},
 			"subscriptionPlansTitle": "サブスクリプションプラン",
 			"subscriptionPlansDescription": "このモデルをサブスクリプションプランに追加または削除します。",
@@ -2490,6 +2506,7 @@
 			"serviceTierLineStyles": "サービス階層の線スタイル",
 			"inAudience": "{audience} 限定",
 			"usOnlyInference": "米国限定の推論",
+			"withKeyterms": "キーターム指定あり",
 			"regionOnlyInference": "{region}限定の推論"
 		},
 		"publicModelCopy": {

@@ -2535,6 +2535,48 @@ public sealed class DecisionInputVideo
 
 public sealed class DecisionInstructions { }
 
+public sealed class DecisionLocateAnswer
+{
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("spans")]
+	public List<Dictionary<string, object>> Spans { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class DecisionLocateQuestion
+{
+	[JsonPropertyName("instructions")]
+	public string Instructions { get; set; }
+
+	[JsonPropertyName("name")]
+	public string? Name { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class DecisionLocateSpan
+{
+	[JsonPropertyName("end")]
+	public long End { get; set; }
+
+	[JsonPropertyName("score")]
+	public double Score { get; set; }
+
+	[JsonPropertyName("start")]
+	public long Start { get; set; }
+
+	[JsonPropertyName("text")]
+	public string Text { get; set; }
+
+}
+
 public sealed class DecisionNoulQuestion
 {
 	[JsonPropertyName("criteria")]
@@ -4991,6 +5033,16 @@ public sealed class LegacyDecisionBoxQuestion
 {
 	[JsonPropertyName("instructions")]
 	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
+public sealed class LegacyDecisionLocateQuestion
+{
+	[JsonPropertyName("instructions")]
+	public string Instructions { get; set; }
 
 	[JsonPropertyName("type")]
 	public string Type { get; set; }

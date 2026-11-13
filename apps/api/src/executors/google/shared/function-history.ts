@@ -35,6 +35,9 @@ function geminiCallId(id: string | undefined, name: string): string | undefined 
 	if (typeof id !== "string" || id.length === 0 || id === name) return undefined;
 	// geminiFunctionCallId's fallback for repeated names (name_1, name_2) is not a Gemini id either.
 	if (id.startsWith(`${name}_`) && /^\d+$/.test(id.slice(name.length + 1))) return undefined;
+	// Nor is the streamed fallback (call_<requestId>_<candidate>_<n>, google-ai-studio
+	// transformStream) for a call Gemini sent without an id.
+	if (/^call_.+_\d+_\d+$/.test(id)) return undefined;
 	return id;
 }
 
@@ -173,6 +176,25 @@ export function geminiThoughtPartToIR(
 			}
 			: {}),
 	};
+}
+
+/**
+ * IR for a non-thought Gemini part (a final text answer) that carries a signature:
+ * its text, then a signature-only reasoning part that goes back on that text.
+ * https://ai.google.dev/gemini-api/docs/thought-signatures
+ */
+export function geminiSignedTextPartsToIR(
+	part: any,
+	model: string,
+	provider: string,
+): IRContentPart[] {
+	const out: IRContentPart[] = [];
+	if (typeof part?.text === "string" && part.text) out.push({ type: "text", text: part.text });
+	const signature = part?.thoughtSignature ?? part?.thought_signature;
+	if (typeof signature === "string" && signature) {
+		out.push({ ...geminiThoughtPartToIR({ thoughtSignature: signature }, model, provider), signsText: true });
+	}
+	return out;
 }
 
 /**

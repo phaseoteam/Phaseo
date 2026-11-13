@@ -1,6 +1,7 @@
 import { useTranslations } from "@/i18n/react";
 import Link from "@/components/link";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { localizePublicPath } from "@/lib/auth/localized-paths";
 import type { PublicLocale } from "@/i18n/routing";
 import { pairPath } from "./comparePairs";
@@ -147,25 +148,25 @@ export function ComparePairSummary({ locale, baseUrl, models, usage, peers, rela
 
 			<div className="space-y-3">
 				<h2 className="text-xl font-semibold tracking-tight">{t("glanceTitle", { a: a.name, b: b.name })}</h2>
-				<table className="w-full text-left text-sm">
-					<caption className="sr-only">{t("glanceCaption", { a: a.name, b: b.name })}</caption>
-					<thead className="text-xs text-muted-foreground">
-						<tr className="border-b border-border">
-							<th scope="col" className="py-2 pr-3 font-normal">{t("glanceAttribute")}</th>
-							<th scope="col" className="py-2 pr-3 font-medium text-foreground">{a.name}</th>
-							<th scope="col" className="py-2 font-medium text-foreground">{b.name}</th>
-						</tr>
-					</thead>
-					<tbody>
+				<Table wrapInContainer={false} className="w-full text-left text-sm">
+					<TableCaption className="sr-only">{t("glanceCaption", { a: a.name, b: b.name })}</TableCaption>
+					<TableHeader className="text-xs text-muted-foreground">
+						<TableRow className="border-b border-border hover:bg-transparent dark:hover:bg-transparent">
+							<TableHead scope="col" className="h-auto p-0 py-2 pr-3 font-normal text-inherit dark:text-inherit">{t("glanceAttribute")}</TableHead>
+							<TableHead scope="col" className="h-auto p-0 py-2 pr-3 font-medium text-foreground dark:text-foreground">{a.name}</TableHead>
+							<TableHead scope="col" className="h-auto p-0 py-2 font-medium text-foreground dark:text-foreground">{b.name}</TableHead>
+						</TableRow>
+					</TableHeader>
+					<TableBody className="[&_tr:last-child]:border-b">
 						{rows.map(([label, first, second]) => (
-							<tr key={label} className="border-b border-border/60">
-								<th scope="row" className="py-2 pr-3 font-normal text-muted-foreground">{label}</th>
-								<td className="py-2 pr-3 tabular-nums">{first}</td>
-								<td className="py-2 tabular-nums">{second}</td>
-							</tr>
+							<TableRow key={label} className="border-b border-border/60">
+								<TableHead scope="row" className="h-auto p-0 py-2 pr-3 font-normal text-muted-foreground dark:text-muted-foreground">{label}</TableHead>
+								<TableCell className="p-0 py-2 pr-3 tabular-nums">{first}</TableCell>
+								<TableCell className="p-0 py-2 tabular-nums">{second}</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</Table>
 				<p className="text-xs text-muted-foreground">{t("glanceNote")}</p>
 			</div>
 

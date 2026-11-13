@@ -4,6 +4,7 @@ import { Users } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { apiProviderTopAppsQuery } from "../apiProvider.queries";
 import { useLocale, useTranslations } from "@/i18n/react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DisplayCount } from "@/components/display/DisplayValue";
 import {
@@ -37,21 +38,21 @@ export default function TopApps({
 
 			{topApps.length > 0 ? (
 				<div className="overflow-x-auto">
-					<table className="w-full min-w-[640px] text-sm">
-						<thead>
-							<tr className="text-xs text-muted-foreground border-b border-border">
-								<th className="text-left font-medium py-2 px-2">{t("appLabel")}</th>
-								<th className="text-right font-medium py-2 px-2">{t("tokensLabel")}</th>
-								<th className="text-right font-medium py-2 px-2">{t("websiteLabel")}</th>
-							</tr>
-						</thead>
-						<tbody>
+					<Table wrapInContainer={false} className="w-full min-w-[640px] text-sm">
+						<TableHeader>
+							<TableRow className="text-xs text-muted-foreground border-b border-border hover:bg-transparent dark:hover:bg-transparent">
+								<TableHead className="h-auto p-0 text-inherit dark:text-inherit text-left font-medium py-2 px-2">{t("appLabel")}</TableHead>
+								<TableHead className="h-auto p-0 text-inherit dark:text-inherit text-right font-medium py-2 px-2">{t("tokensLabel")}</TableHead>
+								<TableHead className="h-auto p-0 text-inherit dark:text-inherit text-right font-medium py-2 px-2">{t("websiteLabel")}</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
 							{topApps.map((app, index) => (
-								<tr
+								<TableRow
 									key={app.app_id}
-									className="border-b border-border/60 last:border-b-0 hover:bg-muted/20"
+									className="border-b border-border/60 last:border-b-0 hover:bg-muted/20 dark:hover:bg-muted/20"
 								>
-									<td className="py-2 px-2 min-w-0">
+									<TableCell className="p-0 py-2 px-2 min-w-0">
 										<div className="flex min-w-0 items-center gap-3">
 											<span className="w-7 shrink-0 text-xs font-semibold text-muted-foreground">
 												#{index + 1}
@@ -77,11 +78,11 @@ export default function TopApps({
 												</span>
 											</Link>
 										</div>
-									</td>
-									<td className="py-2 px-2 text-right tabular-nums">
+									</TableCell>
+									<TableCell className="p-0 py-2 px-2 text-right tabular-nums">
 										<DisplayCount value={app.total_tokens} />
-									</td>
-									<td className="py-2 px-2 text-right">
+									</TableCell>
+									<TableCell className="p-0 py-2 px-2 text-right">
 										{app.url && app.url !== "about:blank" ? (
 											<a
 												href={app.url}
@@ -92,11 +93,11 @@ export default function TopApps({
 										) : (
 											<span className="text-muted-foreground text-xs">-</span>
 										)}
-									</td>
-								</tr>
+									</TableCell>
+								</TableRow>
 							))}
-						</tbody>
-					</table>
+						</TableBody>
+					</Table>
 				</div>
 			) : (
 				<Empty>

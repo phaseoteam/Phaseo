@@ -2,6 +2,8 @@ import { useId, useState } from "react";
 import { useTranslations } from "@/i18n/react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { CompareGrid, CompareRow, CompareSection, GRID_CLASS, MODEL_COLOURS, useCompareGrid, type CompareCell } from "./CompareGrid";
 import { bestIndices, doSameJob, extraBands, requestCost, tierRows, TYPICAL_REQUEST, visibleOnPhone, type Workload } from "./compareViewMath";
 import type { ComparePriceKind, CompareViewModel, CompareViewPriceRow } from "./types";
@@ -201,15 +203,16 @@ export function ComparePricing({ models, tiers }: { models: CompareViewModel[]; 
 				<p className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">{t("noPricing")}</p>
 			)}
 			{other.length && main.length ? (
-				<button
+				<Button
 					type="button"
+					variant="ghost"
 					onClick={() => setShowAll((value) => !value)}
 					aria-expanded={showAll}
-					className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+					className="gap-1.5 px-2 text-xs font-normal text-muted-foreground aria-expanded:bg-transparent aria-expanded:text-muted-foreground aria-expanded:hover:bg-muted aria-expanded:hover:text-foreground"
 				>
 					<ChevronDown aria-hidden className={cn("size-3.5 transition-transform", showAll && "rotate-180")} />
 					{showAll ? t("fewerMeters") : t("moreMeters", { count: other.length })}
-				</button>
+				</Button>
 			) : null}
 		</CompareSection>
 	);
@@ -227,7 +230,7 @@ function NumberField({ label, value, onChange, max }: { label: string; value: nu
 	return (
 		<div className="grid min-w-0 gap-1">
 			<label htmlFor={id} className="text-xs text-muted-foreground">{label}</label>
-			<input
+			<Input
 				id={id}
 				type="number"
 				inputMode="numeric"
@@ -235,7 +238,7 @@ function NumberField({ label, value, onChange, max }: { label: string; value: nu
 				max={max}
 				value={value}
 				onChange={(event) => onChange(Math.max(0, Math.min(max ?? Number.MAX_SAFE_INTEGER, Number(event.target.value) || 0)))}
-				className="h-10 w-full min-w-0 rounded-md border border-border bg-background px-3 text-sm tabular-nums sm:h-9"
+				className="w-full min-w-0 tabular-nums"
 			/>
 		</div>
 	);

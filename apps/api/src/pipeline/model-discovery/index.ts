@@ -9,8 +9,11 @@ import {
 	assertSafeDiscoverySnapshot,
 	buildProviderApiModelSnapshotDiff,
 	canonicalProviderId,
+	addedModelMaxAgeMs,
 	confirmModelRemovals,
+	providerModelCreatedAtMs,
 	removalConfirmAfterMs,
+	splitAddedModelsByAge,
 	createSharedProviderModelsFetcher,
 	computeConfiguredModelCoverageFingerprint,
 	diffModelIds,
@@ -230,6 +233,8 @@ type DiscoveryRunSummary = {
 	changesDetected: number;
 	staleModelsDeleted: number;
 	seenModels: SeenModelWriteSummary;
+	/** Newly listed models recorded but not announced because the provider created them long ago. */
+	oldAdditionsIgnored: number;
 	results: ProviderResult[];
 	changes: ProviderChange[];
 	statePersisted: boolean;
@@ -428,6 +433,7 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 		discoveryConcurrency: summary.discoveryConcurrency,
 		statePersisted: summary.statePersisted,
 		seenModels: summary.seenModels,
+		oldAdditionsIgnored: summary.oldAdditionsIgnored,
 		persistenceDeferredReason: summary.persistenceDeferredReason ?? undefined,
 		notificationFingerprint: summary.notificationFingerprint ?? undefined,
 		pricingMonitor: {
@@ -533,6 +539,8 @@ type ProviderProcessingResult = {
 	providerApiProviderWithoutPricing: boolean;
 	/** Current models whose stored row was already up to date, so no write was needed. */
 	unchangedModelCount: number;
+	/** Newly listed models not announced because the provider's `created` date is too old. */
+	oldAdditionsIgnored: string[];
 };
 
 function emptyProviderProcessingResult(result: ProviderResult): ProviderProcessingResult {
@@ -548,6 +556,7 @@ function emptyProviderProcessingResult(result: ProviderResult): ProviderProcessi
 		providerApiPricingBaselineInitialized: false,
 		providerApiProviderWithoutPricing: false,
 		unchangedModelCount: 0,
+		oldAdditionsIgnored: [],
 	};
 }
 
@@ -581,6 +590,8 @@ async function processProvider(
 	processedPayloadFingerprint: string | null,
 	/** How long a model must stay missing before its removal is confirmed. */
 	removalConfirmMs: number,
+	/** Newly listed models the provider created longer ago than this are recorded but not announced. */
+	addedMaxAgeMs = 0,
 ): Promise<ProviderProcessingResult> {
 	const requiresApiKey = !["none", "optional_bearer"].includes(provider.authStyle ?? "bearer");
 	const apiKey = resolveDiscoveryApiKey(provider);
@@ -661,7 +672,21 @@ async function processProvider(
 				currentModelIds.length,
 			);
 		}
-		const added = firstCheck === "report" ? modelIdDiff.added : [];
+		const createdAtById = new Map(
+			discoveredModels.map((model) => [model.id, providerModelCreatedAtMs(model.modelDetails, writePolicy.nowMs)]),
+		);
+		const { reported: added, ignoredOld: oldAdditionsIgnored } = splitAddedModelsByAge(
+			firstCheck === "report" ? modelIdDiff.added : [],
+			(modelId) => createdAtById.get(modelId) ?? null,
+			{ nowMs: writePolicy.nowMs, maxAgeMs: addedMaxAgeMs },
+		);
+		if (oldAdditionsIgnored.length > 0) {
+			console.log(
+				"[model-discovery] Recorded re-listed models without announcing them:",
+				provider.providerId,
+				oldAdditionsIgnored.slice(0, MAX_SUMMARY_MODEL_SAMPLES).join(", "),
+			);
+		}
 		const nowIso = new Date().toISOString();
 		const upsertRows: SeenModelUpsertRow[] = [];
 		const deleteRows: SeenModelDeleteRow[] = removed.map((modelId) => ({
@@ -704,7 +729,8 @@ async function processProvider(
 
 		let providerApiPricingChange: PricingProviderChange | null = null;
 		if (hasProviderApiSnapshotBaseline && PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(provider.providerId)) {
-			const addedModelIds = new Set(added);
+			// Ignored re-listings have no stored snapshot either, so diffing them would report a pricing change.
+			const addedModelIds = new Set([...added, ...oldAdditionsIgnored]);
 			for (const model of discoveredModels) {
 				if (addedModelIds.has(model.id)) continue;
 				const previousSnapshot = previousProviderState?.providerApiSnapshotByModelId.get(model.id) ?? {
@@ -768,6 +794,7 @@ async function processProvider(
 			providerApiProviderWithoutPricing:
 				PROVIDER_API_PRICING_WATCH_PROVIDER_IDS.has(provider.providerId) && providerModelsWithPricing === 0,
 			unchangedModelCount,
+			oldAdditionsIgnored,
 		};
 	} catch (error) {
 		return emptyProviderProcessingResult({
@@ -1090,6 +1117,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		refreshIntervalMs: seenModelRefreshIntervalMs(retentionDays),
 	};
 	const removalConfirmMs = removalConfirmAfterMs(readBindingEnv(["MODEL_DISCOVERY_REMOVAL_CONFIRM_MINUTES"]));
+	const addedMaxAgeMs = addedModelMaxAgeMs(readBindingEnv(["MODEL_DISCOVERY_ADDED_MAX_AGE_DAYS"]));
 
 	await insertRunStart(runId, args, startedAt.toISOString());
 	await closeAbandonedRuns(startedAt, runId);
@@ -1125,6 +1153,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		let providerApiModelsWithPricing = 0;
 		let providerApiPricingBaselineInitialized = false;
 		let unchangedSeenModels = 0;
+		let oldAdditionsIgnored = 0;
 		const fetchPayload = createSharedProviderModelsFetcher();
 		const providerProcessingResults = await mapWithConcurrency(
 			providers,
@@ -1138,6 +1167,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				fetchPayload,
 				processedPayloadFingerprint(provider.providerId),
 				removalConfirmMs,
+				addedMaxAgeMs,
 			),
 		);
 
@@ -1162,6 +1192,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			providerApiModelsWithPricing += processed.providerApiModelsWithPricing;
 			providerApiPricingBaselineInitialized ||= processed.providerApiPricingBaselineInitialized;
 			unchangedSeenModels += processed.unchangedModelCount;
+			oldAdditionsIgnored += processed.oldAdditionsIgnored.length;
 			if (processed.providerApiProviderWithoutPricing) {
 				providerApiProvidersWithoutPricing.add(processed.result.providerId);
 			}
@@ -1460,6 +1491,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				unchanged: unchangedSeenModels,
 				unchangedProviders: results.filter((result) => result.status === "success" && result.unchangedPayload).length,
 			},
+			oldAdditionsIgnored,
 			results,
 			changes,
 			statePersisted: !persistenceDeferredReason,
@@ -1507,6 +1539,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			changesDetected: 0,
 			staleModelsDeleted: 0,
 			seenModels: { written: 0, unchanged: 0, unchangedProviders: 0 },
+			oldAdditionsIgnored: 0,
 			results: [],
 			changes: [],
 			statePersisted: false,

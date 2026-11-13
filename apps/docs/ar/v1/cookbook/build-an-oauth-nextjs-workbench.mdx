@@ -6,7 +6,7 @@ description: "استخدم مثال OAuth الكامل مع Next.js كدليل �
 
 اسمح للمستخدمين بتسجيل الدخول باستخدام Phaseo وإنفاق أرصدتهم الخاصة في تطبيقك: يمنح OAuth 2.1 مع PKCE خادمك رمز وصول، ويُرفقه وكيل واحد من جهة الخادم بكل استدعاء للـ Gateway. في النهاية يصبح لديك تطبيق محلي فيه تسجيل دخول، ورموز محفوظة في الجلسة تتجدد، واكتشاف للنماذج، وتدفق محادثة عبر `/responses`، وأداة لاختبار نقاط النهاية الأخرى.
 
-العينة توضيحية. لا يزال الملف `lib/oauth.ts` يستدعي نقطة نهاية قديمة لتسجيل الدخول، وتصلحها الخطوة 3 من [شغّله](#run-it)، كما أن قائمة السماح في الوكيل أوسع مما يحتاجه منتج حقيقي.
+تكتشف العينة نقاط نهاية OAuth الخاصة بـ Phaseo، وتتحقق من `state` و`iss` عند العودة، وتجدّد الرموز بأمان، وتلغي المفتاح عندما يسجّل المستخدم خروجه.
 
 لتجعل وكيل برمجة ينشئ التطبيق نفسه من الصفر، الصق هذه المطالبة:
 
@@ -46,8 +46,8 @@ Verification:
 flowchart LR
   browser["المتصفح"] -->|"تسجيل الدخول"| start["app/api/auth/start"]
   start -->|"إعادة توجيه مع تحدي PKCE"| authz["تسجيل الدخول والموافقة في Phaseo"]
-  authz -->|"الرمز"| cb["app/auth callback"]
-  cb -->|"تبادل الرمز"| sess["lib/session.ts: جلسة مشفّرة"]
+  authz -->|"الرمز، state، iss"| cb["app/auth/callback"]
+  cb -->|"تبادل الرمز، قراءة /oauth/userinfo"| sess["lib/session.ts: جلسة مشفّرة"]
   browser -->|"/api/gateway/..."| proxy["app/api/gateway/[...surface]/route.ts"]
   proxy -->|"قائمة السماح، رمز Bearer، التجديد عند الانتهاء"| gw["api.phaseo.app/v1"]
 ```
@@ -56,11 +56,14 @@ flowchart LR
 
 | الملف | ما يفعله |
 | --- | --- |
-| `app/page.tsx` | صفحة الدخول لتسجيل الدخول |
+| `app/page.tsx` | صفحة الدخول لتسجيل الدخول؛ تعرض أخطاء تسجيل الدخول |
+| `app/api/auth/start/route.ts` | يبني عنوان التفويض ويخزّن مُحقِّق PKCE وقيمة state |
+| `app/auth/callback/route.ts` | يتحقق من `state` و`iss`، ويتبادل الرمز، ويقرأ `/oauth/userinfo` |
+| `app/api/auth/signout/route.ts` | يلغي رمز التجديد، ثم يمسح الجلسة |
 | `app/dashboard/page.tsx` | الهيكل المحمي |
-| `app/dashboard/GatewayWorkbench.tsx` | يحمّل مسارات التحكم، ويعرض معرّفات النماذج، ويشغّل المحادثة عبر `POST /responses`، ويختبر نقاط النهاية الأخرى |
+| `app/dashboard/GatewayWorkbench.tsx` | يعرض حالة الـ Gateway، ويعرض معرّفات النماذج، ويشغّل المحادثة عبر `POST /responses`، ويختبر نقاط النهاية الأخرى |
 | `app/api/gateway/[...surface]/route.ts` | وكيل شامل: يتحقق من قائمة السماح، ويضيف رمز Bearer، ويجدّده عند انتهاء صلاحيته، ويمرّر المحتوى والحالة |
-| `lib/oauth.ts` | PKCE وتبادل الرمز والتجديد |
+| `lib/oauth.ts` | الاكتشاف وPKCE وتبادل الرمز والتجديد والإلغاء وuserinfo |
 | `lib/session.ts` | تخزين الجلسة المشفّرة |
 
 فصل تسجيل الدخول عن استدعاءات الـ Gateway يعني أن مشكلة في تسجيل الدخول لن تبدو أبدًا كمشكلة في النموذج، وأن جميع نقاط النهاية تشترك في مكان واحد يتعامل مع الرموز.
@@ -81,32 +84,23 @@ npm install
 </Step>
 <Step title="أنشئ .env.local">
 
-لا تحتوي العينة على `.env.example`. أنشئ `.env.local` بالأسماء التي تقرؤها الشيفرة:
-
-```bash .env.local
-NEXT_PUBLIC_OAUTH_CLIENT_ID=your_client_id
-OAUTH_CLIENT_SECRET=your_client_secret
-# The sample reads this name for the OAuth server's base URL.
-NEXT_PUBLIC_AISTATS_URL=https://api.phaseo.app
-NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/callback
-SESSION_SECRET=a-long-random-string
-NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
+```bash
+cp .env.example .env.local
 ```
 
-لا تضع أبدًا `OAUTH_CLIENT_SECRET` أو `SESSION_SECRET` في متغير يبدأ بـ `NEXT_PUBLIC_`.
+املأ القيم:
 
-</Step>
-<Step title="وجّه العينة إلى نقاط نهاية OAuth الحالية">
+| المتغير | مطلوب | القيمة |
+| --- | --- | --- |
+| `PHASEO_OAUTH_CLIENT_ID` | نعم | معرّف العميل لتطبيق OAuth |
+| `PHASEO_OAUTH_CLIENT_SECRET` | التطبيقات السرية | سرّ العميل لتطبيق OAuth. اتركه فارغًا للتطبيق العام. |
+| `PHASEO_OAUTH_REDIRECT_URI` | نعم | `http://localhost:3000/auth/callback`، تمامًا كما سجّلته |
+| `SESSION_SECRET` | نعم | سلسلة عشوائية من 32 حرفًا على الأقل |
+| `PHASEO_API_URL` | لا | القيمة الافتراضية `https://api.phaseo.app` |
 
-يبني `lib/oauth.ts` العنوانين `${NEXT_PUBLIC_AISTATS_URL}/auth/v1/oauth/authorize` و`/auth/v1/token` ويطلب `openid email profile`. ينشر خادم OAuth الخاص بـ Phaseo نقاط نهايته على `https://api.phaseo.app/.well-known/oauth-authorization-server`:
+تقرأ العينة كل هذه المتغيرات على الخادم فقط. لا تضع أبدًا سرّ العميل أو سرّ الجلسة في متغير يبدأ بـ `NEXT_PUBLIC_`.
 
-| الاستخدام | العنوان |
-| --- | --- |
-| التفويض | `https://api.phaseo.app/oauth/authorize` |
-| الرمز | `https://api.phaseo.app/oauth/token` |
-| الإلغاء | `https://api.phaseo.app/oauth/revoke` |
-
-غيّر العناوين الثلاثة في `lib/oauth.ts` إلى هذه، وأضف `gateway:access` إلى `scope` ليتمكن الرمز من استدعاء الـ Gateway.
+تعثر العينة على نقاط نهاية التفويض والرمز والإلغاء وuserinfo من `https://api.phaseo.app/.well-known/oauth-authorization-server`، وتطلب `openid email profile gateway:access`. يتيح `gateway:access` للرمز استدعاء الـ Gateway.
 
 </Step>
 <Step title="شغّل خادم التطوير">
@@ -153,7 +147,8 @@ npm run dev
 
 ## قبل أن تطلقه
 
-- **قلّص قائمة السماح.** يسمح `lib/gateway.ts` بمسارات محددة إضافةً إلى كل مسار تحت `videos/` و`music/generate/` و`control/` و`internal/`. احتفظ فقط بالمسارات المحددة التي يستدعيها منتجك.
+- **قلّص قائمة السماح.** يسمح `lib/gateway.ts` بالمسارات التي تستدعيها منصة العمل، إضافةً إلى حالة المهام تحت `videos/` و`music/generate/`. احتفظ فقط بالمسارات التي يستدعيها منتجك.
+- **شارك عمليات التجديد بين النسخ.** يشارك `lib/oauth.ts` عملية تجديد واحدة بين الطلبات المتوازية في الذاكرة. إذا شغّلت أكثر من نسخة واحدة من الخادم، فانقل ذلك إلى تخزين مشترك، وإلا فقد تجدّد نسختان بالرمز نفسه وتُنهيان تسجيل الدخول.
 - **أرسل المحادثة كاملة.** لا يخزّن الـ Gateway الردود ويرفض `previous_response_id`، لذا أعِد إرسال الجولات السابقة في `input`.
 - **استبدل أداة الاختبار.** احتفظ بمنصة العمل لضمان الجودة داخليًا، وابنِ تدفقات مخصصة للمستخدمين النهائيين.
 

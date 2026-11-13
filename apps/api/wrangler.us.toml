@@ -103,3 +103,13 @@ script_name = "phaseo-gateway"
 name = "SPEND_LIMITS"
 class_name = "SpendLimitDurableObject"
 script_name = "phaseo-gateway"
+
+# Weighted per-credential budget for the management API (routes/v1/control/request-budget.ts).
+# Requests draw 1-10 units each and are refused over budget. Set CONTROL_API_RATE_LIMIT_MODE to "shadow" or "off" to stop refusing.
+[[ratelimits]]
+name = "CONTROL_API_RATE_LIMITER"
+namespace_id = "41004"
+
+[ratelimits.simple]
+limit = 200
+period = 60

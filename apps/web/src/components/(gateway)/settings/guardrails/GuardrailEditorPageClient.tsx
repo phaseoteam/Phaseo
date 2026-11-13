@@ -499,24 +499,28 @@ function SelectionCombobox(props: {
 										<span className="truncate">{group}</span>
 										{props.groupActions ? (
 											<span className="flex shrink-0 items-center gap-1">
-												<button
+												<Button
 													type="button"
+													variant="ghost"
+													size="xs"
 													disabled={allGroupSelected}
 													onMouseDown={(event) => event.preventDefault()}
 													onClick={() => props.onChange(uniqStrings([...props.selected, ...groupValues]))}
-													className="h-5 rounded-md px-1.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-35"
+													className="h-5 px-1.5 text-[11px] text-foreground disabled:opacity-35"
 												>
 										{t("guardrailsControls.all" as never)}
-												</button>
-												<button
+												</Button>
+												<Button
 													type="button"
+													variant="ghost"
+													size="xs"
 													disabled={!anyGroupSelected}
 													onMouseDown={(event) => event.preventDefault()}
 													onClick={() => props.onChange(props.selected.filter((value) => !groupValues.includes(value)))}
-													className="h-5 rounded-md px-1.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-35"
+													className="h-5 px-1.5 text-[11px] text-foreground disabled:opacity-35"
 												>
 										{t("strings.Clear" as never)}
-												</button>
+												</Button>
 											</span>
 										) : null}
 									</div>

@@ -520,9 +520,11 @@ export default function AutoTopUpClient({
 											{methods.length > 2 ? (
 												<div className="flex items-center">
 													<div className="relative">
-														<button
+														<Button
 															type="button"
-															className="grid h-12 w-12 place-items-center rounded-2xl border border-border bg-background p-3 hover:bg-muted"
+															variant="outline"
+															size="icon"
+															className="size-12 rounded-2xl p-3"
 															aria-haspopup="menu"
 															aria-label={text("morePaymentMethods")}
 														>
@@ -540,7 +542,7 @@ export default function AutoTopUpClient({
 																	d="M6 9l6 6 6-6"
 																/>
 															</svg>
-														</button>
+														</Button>
 
 														<div className="absolute left-0 z-10 mt-2 w-72 rounded-md border border-border bg-popover text-popover-foreground shadow-lg">
 															<div className="p-2">

@@ -1044,6 +1044,25 @@ pub struct DecisionInputVideo {
 
 pub type DecisionInstructions = JsonValue;
 
+pub struct DecisionLocateAnswer {
+	pub name: Option<String>,
+	pub spans: Vec<HashMap<String, String>>,
+	pub r#type: String,
+}
+
+pub struct DecisionLocateQuestion {
+	pub instructions: String,
+	pub name: Option<String>,
+	pub r#type: String,
+}
+
+pub struct DecisionLocateSpan {
+	pub end: i64,
+	pub score: f64,
+	pub start: i64,
+	pub text: String,
+}
+
 pub struct DecisionNoulQuestion {
 	pub criteria: Option<HashMap<String, String>>,
 	pub instructions: String,
@@ -2079,6 +2098,11 @@ pub struct LeakedKeyReportResponse {
 }
 
 pub struct LegacyDecisionBoxQuestion {
+	pub instructions: String,
+	pub r#type: String,
+}
+
+pub struct LegacyDecisionLocateQuestion {
 	pub instructions: String,
 	pub r#type: String,
 }

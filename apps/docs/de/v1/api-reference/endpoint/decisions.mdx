@@ -155,6 +155,7 @@ Eine Anfrage enthält höchstens 128 Fragen, außer bei `google/gemini-decision-
 | `choice` | `choices`: `value` (String oder Boolean, eindeutig) und optional `description` | `choice`, `confidence`, `probabilities` pro Wert |
 | `score` | `levels`: `label` und optional `description` | `score` (wahrscheinlichkeitsgewichteter Stufenindex), `confidence`, `probabilities` pro Stufe |
 | `box` | keine; erfordert ein Bild in `input` | `box` (`top`, `bottom`, `left`, `right`), `confidence` |
+| `locate` | keine; erfordert einen String als `input` ohne Medien | `spans`: `start`, `end`, `text`, `score` |
 
 Boolesche Auswahlwerte kommen als Booleans zurück. Ein Modell, das eine Frage ablehnt, gibt für sie `type: "refusal"` zurück. Welche Typen ein Modell unterstützt, steht unter [Ein Modell wählen](#choose-a-model).
 
@@ -166,6 +167,7 @@ Anfragen mit `state` und einer Map benannter Fragen funktionieren weiterhin und 
 
 - `state`: ein String, Objekt oder Array mit den zu bewertenden Informationen.
 - `questions`: bis zu 128 benannte Fragen, bei Modellen mit höherem Limit mehr. Jede setzt `type` auf `noul` (Ja/Nein), `choice` oder `score`, dazu `instructions`. Auswahlfragen nehmen `criteria` als Map von Option zu Beschreibung; Bewertungsfragen nehmen `criteria` als Array mit mindestens zwei Stufenbeschreibungen.
+- `locate`-Fragen verwenden nur `instructions` und erfordern einen String als `state` ohne `images`; siehe [Perplexity Decider](#liquid-d1-and-perplexity-decider).
 - `images`: bis zu vier PNG-, JPEG- oder WebP-Bilder, als `data:`-URLs oder `{ "content_type", "base64" }`-Objekte.
 - `model`: standardmäßig `typesafe/jev-1.13.0`, wenn weggelassen.
 
@@ -184,7 +186,7 @@ Prüfe die Modellverfügbarkeit, bevor du eines dieser Modelle aufrufst.
 | `cloudflare/clef-omni` | alle drei | Text, Bilder, Audio, Video | $0.15 |
 | `google/gemini-decision-1` | predicate, choice, score; bis zu 1000 pro Anfrage | Text, Bilder, Audio, Video | $0.10 |
 | `liquid-ai/d1:free`, `liquid-ai/d1` | alle drei | Siehe Modellseite | Kostenlos während des Early Access |
-| `perplexity/decider-27b` | alle drei | Text, Base64-Bilder | $0.04, einschließlich Bild-Tokens |
+| `perplexity/pplx-decider-v1.3`, `perplexity/pplx-decider-flash-v1.3` | alle drei, dazu `locate` | Text, Base64-Bilder | $0.02 / $0.01 |
 | `inception/mercury-decide` | predicate, choice, score | Text oder JSON | $0.02 (Aktion) |
 | `microsoft/microsoft-decision-1` | predicate, choice, score | Text oder JSON | $0.042 |
 | `respan/span-01:free`, `respan/span-01` | nur `noul` (älteres Format) | Gesprächsausschnitt | Kostenlos (Lite) / $0.02 |
@@ -268,9 +270,10 @@ Sende Audio als `input_audio.data` mit `format: "wav"` oder `"mp3"` oder als `in
 
 Cloudflare prüft Medienkodierung, Bildabmessungen und Cliplänge und tastet Video mit zwei Bildern pro Sekunde ab. Die Tonspur eines Videos wird verwendet, wenn jedes Video in der Anfrage eine hat. Medien-Tokens zählen zum Kontext und zur Abrechnung; Phaseo rechnet anhand der von Cloudflare gemeldeten Eingabenutzung ab und berechnet Audio oder Video nicht gesondert. Siehe den [Omni-Vertrag von Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).
 
+<span id="liquid-d1-and-perplexity-decider"></span>
 ### Liquid D1 und Perplexity Decider
 
-Liquid D1 (`liquid-ai/d1:free`, auch `liquid-ai/d1`) ist während des experimentellen Early Access kostenlos. Perplexity Decider 27B (`perplexity/decider-27b`) benötigt Perplexity-Anbieterzugangsdaten in Phaseo. Sein Bildzustand verwendet Base64-Data-URLs im PNG-, JPEG- oder WebP-Format; externe Bild-URLs werden nicht unterstützt. Bei beiden akzeptiert eine Auswahlfrage bis zu 255 Optionen und eine Bewertungsfrage bis zu 10 Stufen.
+Liquid D1 (`liquid-ai/d1:free`, auch `liquid-ai/d1`) ist während des experimentellen Early Access kostenlos. Perplexity Decider V1.3 (`perplexity/pplx-decider-v1.3` oder `perplexity/pplx-decider-latest`) und Decider Flash V1.3 (`perplexity/pplx-decider-flash-v1.3` oder `perplexity/pplx-decider-flash-latest`) benötigen Perplexity-Anbieterzugangsdaten in Phaseo. Ihr Bildzustand verwendet Base64-Data-URLs im PNG-, JPEG- oder WebP-Format; externe Bild-URLs werden nicht unterstützt. Sie beantworten außerdem `locate`-Fragen, die die Teile eines String-`input` oder -`state` zurückgeben, die zu den `instructions` passen, etwa `"email address"`. Jeder Abschnitt enthält wörtlich kopierten `text`, die Positionen `start` und `end` in Unicode-Codepunkten (`end` ist exklusiv) und einen `score`, bei dem höher sicherer bedeutet; `spans` ist leer, wenn nichts passt. Locate nimmt keine criteria und keine Bilder, Audio- oder Videodaten an und funktioniert nur bei Modellen, die es angeben; andere Modelle geben `400` zurück. Perplexity hat es mit Eingaben von bis zu 8K Tokens trainiert. Bei beiden akzeptiert eine Auswahlfrage bis zu 255 Optionen und eine Bewertungsfrage bis zu 10 Stufen.
 
 ### Inception Mercury Decide
 

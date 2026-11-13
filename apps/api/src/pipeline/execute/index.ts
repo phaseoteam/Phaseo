@@ -633,6 +633,13 @@ export async function doRequestWithIR(
 					message: `This request has ${questionCount} questions, and none of the routes available for this request accepts more than ${questionLimit}.`,
 				}, { status: 400 });
 			}
+			if (Object.values(decisions.questions ?? {}).some(question => question.type === "locate") &&
+				!decisionRoutes.some(route => route.capabilityParams?.locate === true)) {
+				return Response.json({ error: "unsupported_parameter", model: ctx.model, endpoint: ctx.endpoint,
+					request_id: ctx.requestId,
+					message: "No route for this model supports locate questions. Use a model that lists locate support, such as perplexity/pplx-decider-v1.3 or perplexity/pplx-decider-flash-v1.3.",
+				}, { status: 400 });
+			}
 			if (Object.values(decisions.questions ?? {}).some(question => question.type === "box") ||
 				decisions.providerOptions?.typesafe?.long_context === true) {
 				return Response.json({ error: "unsupported_parameter", model: ctx.model, endpoint: ctx.endpoint,

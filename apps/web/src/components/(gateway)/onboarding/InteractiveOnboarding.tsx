@@ -18,6 +18,7 @@ import {
 import { CodeBlock as HighlightedCodeBlock } from "@/components/ai-elements/code-block";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { CountryCombobox } from "@/components/ui/country-combobox";
 import { CopyButton } from "@/components/ui/copy-button";
 import { SecretRevealActions } from "@/components/(gateway)/settings/keys/SecretRevealActions";
@@ -780,11 +781,11 @@ export default function InteractiveOnboarding({
 										<label className="text-sm font-medium" htmlFor="key-name">
 											{t("keyName")}
 										</label>
-										<input
+										<Input
 											id="key-name"
 											value={keyName}
 											onChange={(event) => setKeyName(event.target.value)}
-											className="mt-2 h-10 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+											className="mt-2 w-full"
 										/>
 										<div className="flex flex-col gap-2 sm:flex-row">
 											<Button

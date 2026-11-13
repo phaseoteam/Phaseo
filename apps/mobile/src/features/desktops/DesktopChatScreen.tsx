@@ -29,6 +29,8 @@ import { readsFiles } from "./files/fileTree";
 import { readsGit } from "./git/gitState";
 import { readsCode } from "./review/diffLines";
 import { useTerminalMenu } from "./terminal/TerminalMenu";
+import { IssueDraftCard } from "./triage/IssueDraftCard";
+import { filesIssues } from "./triage/triageState";
 import { usesTerminals } from "./terminal/terminalState";
 import { desktopFilesHref, desktopGitHref, desktopPullRequestsHref, desktopReviewHref } from "./routes";
 import { useDesktop } from "./store";
@@ -183,7 +185,12 @@ function ChatView({ client, desktopId, chatId, desktopName }: { client: DesktopC
               label={model}
               onStop={() => void stop()}
               onSettings={replaceChat}
-              above={<PendingCards client={client} chatId={chatId} approvals={chat.approvals} questions={chat.questions} onSettled={settle} onStop={running ? () => void stop() : null} onFailure={reportFailure} />}
+              above={(
+                <>
+                  {chat.issueDraft ? <IssueDraftCard client={client} chatId={chatId} draft={chat.issueDraft} canFile={filesIssues(connection)} onChanged={replaceChat} onFailure={reportFailure} /> : null}
+                  <PendingCards client={client} chatId={chatId} approvals={chat.approvals} questions={chat.questions} onSettled={settle} onStop={running ? () => void stop() : null} onFailure={reportFailure} />
+                </>
+              )}
             />
           </View>
         ) : null}

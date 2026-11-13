@@ -49,6 +49,8 @@ export const LongMarkdown = memo(function LongMarkdown({ text, all = false }: { 
 	const [shown, setShown] = useState(() => initialCount(chunks));
 	const sentinel = useRef<HTMLDivElement>(null);
 	const count = all || typeof IntersectionObserver === "undefined" ? chunks.length : Math.min(shown, chunks.length), more = count < chunks.length;
+	// What streaming drew stays drawn once it ends, so a reader near the end keeps their place.
+	useEffect(() => { if (all) setShown(value => Math.max(value, chunks.length)); }, [all, chunks.length]);
 	useEffect(() => {
 		const node = sentinel.current;
 		if (!node || !more) return;

@@ -38,6 +38,9 @@ export type IRContentPart =
 		encryptedContent?: string; // OpenAI, Azure or xAI `encrypted_content`
 		reasoningId?: string; // Upstream reasoning item id (OpenAI `rs_...`)
 		beforeToolCallId?: string; // Generated after an earlier tool call, immediately before this one
+		// A Gemini signature that came on the text part just before this one (a final
+		// answer carries it there); it goes back on that text part, not as a thought.
+		signsText?: boolean;
 	}
 	| {
 		type: "image";
@@ -574,7 +577,7 @@ export type IRExtractionResponse = {
 };
 
 export type IRDecisionQuestion = {
-	type: "noul" | "choice" | "score" | "box";
+	type: "noul" | "choice" | "score" | "box" | "locate";
 	instructions: string | Record<string, any> | any[];
 	criteria?: Record<string, string | null> | string[] | { true?: string; false?: string };
 	[key: string]: any;

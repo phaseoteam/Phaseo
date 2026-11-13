@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "@/components/link";
 import { ChevronDown } from "lucide-react";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { BlogTocItem } from "@/lib/content/blogToc";
@@ -49,7 +54,7 @@ export function BlogTableOfContents({ items }: BlogTableOfContentsProps) {
 	const [activeId, setActiveId] = useState(items[0]?.id ?? "");
 	const [pastFirstHeading, setPastFirstHeading] = useState(false);
 	const desktopListRef = useRef<HTMLDivElement>(null);
-	const mobileDetailsRef = useRef<HTMLDetailsElement>(null);
+	const [mobileOpen, setMobileOpen] = useState(false);
 	const activeLabel = pastFirstHeading
 		? items.find((item) => item.id === activeId)?.label
 		: undefined;
@@ -118,11 +123,12 @@ export function BlogTableOfContents({ items }: BlogTableOfContentsProps) {
 	return (
 		<>
 			<div className="sticky top-[var(--site-header-height,3.75rem)] z-30 -mx-4 bg-white px-4 sm:-mx-6 sm:px-6 lg:hidden dark:bg-zinc-950">
-				<details
-					ref={mobileDetailsRef}
-					className="group border-y border-zinc-200 dark:border-zinc-800"
+				<Collapsible
+					open={mobileOpen}
+					onOpenChange={setMobileOpen}
+					className="border-y border-zinc-200 dark:border-zinc-800"
 				>
-					<summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-3 text-sm font-semibold text-zinc-950 marker:hidden dark:text-zinc-50 [&::-webkit-details-marker]:hidden">
+					<CollapsibleTrigger className="group flex w-full cursor-pointer items-center justify-between gap-3 py-3 text-left text-sm font-semibold text-zinc-950 dark:text-zinc-50">
 						<span className="min-w-0">
 							{activeLabel ? (
 								<>
@@ -135,29 +141,31 @@ export function BlogTableOfContents({ items }: BlogTableOfContentsProps) {
 						</span>
 						<ChevronDown
 							aria-hidden="true"
-							className="size-4 shrink-0 text-zinc-500 transition-transform duration-200 group-open:rotate-180 motion-reduce:transition-none dark:text-zinc-400"
+							className="size-4 shrink-0 text-zinc-500 transition-transform duration-200 group-data-[panel-open]:rotate-180 motion-reduce:transition-none dark:text-zinc-400"
 						/>
-					</summary>
-					<ScrollArea
-						className="max-h-[60vh]"
-						viewportClassName="max-h-[60vh]"
-					>
-						<div
-							className="pr-3 pb-4"
-							onClick={(event) => {
-								if ((event.target as HTMLElement).closest("a") && mobileDetailsRef.current) {
-									mobileDetailsRef.current.open = false;
-								}
-							}}
+					</CollapsibleTrigger>
+					<CollapsibleContent hiddenUntilFound>
+						<ScrollArea
+							className="max-h-[60vh]"
+							viewportClassName="max-h-[60vh]"
 						>
-							<TableOfContentsLinks
-								activeId={activeId}
-								items={items}
-								label={t("tableOfContents")}
-							/>
-						</div>
-					</ScrollArea>
-				</details>
+							<div
+								className="pr-3 pb-4"
+								onClick={(event) => {
+									if ((event.target as HTMLElement).closest("a")) {
+										setMobileOpen(false);
+									}
+								}}
+							>
+								<TableOfContentsLinks
+									activeId={activeId}
+									items={items}
+									label={t("tableOfContents")}
+								/>
+							</div>
+						</ScrollArea>
+					</CollapsibleContent>
+				</Collapsible>
 			</div>
 
 			<aside className="sticky top-[calc(var(--site-header-height,3.75rem)+1rem)] hidden max-h-[calc(100vh-5rem)] w-56 shrink-0 overflow-y-auto lg:block">

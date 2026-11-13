@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
-import { PanelLeft, Copy, Download } from "lucide-react";
+import { PanelLeft, Copy, Download, ChevronRight } from "lucide-react";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import { filterModelsForRoom } from "@/lib/chat/rooms";
 import { ocrText, rankedDocuments, rerankDocuments } from "@/lib/chat/documentTools";
@@ -10,6 +10,7 @@ import { RoomSdkExport } from "@/components/(chat)/RoomSdkExport";
 import { RoomWorkingIndicator } from "@/components/(chat)/RoomWorkingIndicator";
 import { RoomErrorNotice } from "./RoomErrorNotice";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useSidebar } from "@/components/ui/sidebar";
@@ -122,7 +123,7 @@ export function DocumentToolsRoom({ room, models }: { room: "ocr" | "rerank"; mo
 					</div>
 					<p className="break-all text-xs text-muted-foreground">{result.model}</p>
 					{isOcr ? <pre className="whitespace-pre-wrap break-words rounded-md border border-border p-4 font-sans text-sm">{text || t("newMainCopy.noText")}</pre> : ranked.length ? <ol className="space-y-3">{ranked.map((item, position) => <li key={`${item.index}-${position}`} className="rounded-md border border-border p-4"><div className="mb-2 flex flex-wrap justify-between gap-2 text-xs text-muted-foreground"><span>{t("newMainCopy.documentRank", {rank: position + 1, index: item.index + 1})}</span><span>{item.score === null ? t("newMainCopy.scoreUnavailable") : t("newMainCopy.score", {score: item.score.toLocaleString(locale, {minimumFractionDigits: 4, maximumFractionDigits: 4})})}</span></div><p className="whitespace-pre-wrap break-words text-sm">{item.text}</p></li>)}</ol> : <p className="text-sm text-muted-foreground">{t("newMainCopy.noRanked")}</p>}
-					<details><summary className="cursor-pointer text-sm text-muted-foreground">{t("newMainCopy.fullResponse")}</summary><pre className="mt-3 max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs">{JSON.stringify(result.raw, null, 2)}</pre></details>
+					<Collapsible><CollapsibleTrigger className="group flex cursor-pointer items-center gap-1 text-left text-sm text-muted-foreground"><ChevronRight className="size-3.5 transition-transform group-data-[panel-open]:rotate-90" aria-hidden />{t("newMainCopy.fullResponse")}</CollapsibleTrigger><CollapsibleContent hiddenUntilFound><pre className="mt-3 max-h-96 overflow-auto rounded-md bg-muted p-3 text-xs">{JSON.stringify(result.raw, null, 2)}</pre></CollapsibleContent></Collapsible>
 				</section>}
 			</div>
 		</div>

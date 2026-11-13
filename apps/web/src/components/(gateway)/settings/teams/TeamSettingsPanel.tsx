@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -393,12 +394,10 @@ function ConfirmDeleteTeam({
 				<div className="space-y-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800/60 dark:bg-amber-950 dark:text-amber-200">
 					<div><p>{t("workspace.deleteCreditsWarning", { balance: formattedBalance ?? "" })}</p><p className="mt-1">{t("workspace.deleteCreditsForfeit")}</p></div>
 					<label className="flex items-center gap-2 text-xs font-medium">
-						<input
-							type="checkbox"
-							className="h-4 w-4 rounded border-muted-foreground"
+						<Checkbox
 							checked={ackCredits}
-							onChange={(event) =>
-								setAckCredits(event.target.checked)
+							onCheckedChange={(checked) =>
+								setAckCredits(checked)
 							}
 						/>
 						{t("workspace.deleteCreditsAcknowledgement")}

@@ -10,7 +10,7 @@ import type { BranchPullRequest } from "../../shared/pullRequests";
 import type { GitWorkingStatus } from "./phoneReview";
 import { projectTree } from "../projectFileSearch";
 import { phoneFilePreview } from "./phoneFiles";
-import { phoneModels, phoneSetChat, startPhoneChat, type PhoneModelSources } from "./phoneHost";
+import { phoneModels, phoneSetChat, startPhoneChat, startPhoneTriage, type PhoneModelSources } from "./phoneHost";
 import type { PhoneHost } from "./phoneSession";
 import { TerminalService } from "../terminalService";
 import type { WorkspaceStore } from "../workspaceStore";
@@ -61,6 +61,8 @@ export function fakePhoneHost() {
 		notes: [] as { device: string; summary: string; projectId?: string }[],
 		hold: undefined as Promise<void> | undefined,
 	};
+	/** Triage from a phone: the commits it fetched source for, the playbooks written, a failure the next fetch throws, and File or Discard. */
+	const triage = { fetched: [] as (string | undefined)[], playbooks: [] as { directory: string; name: string; content: string }[], failure: undefined as string | undefined, issueActions: [] as { chatId: string; action: string }[] };
 	const step = async (kind: string, projectId: string, value?: unknown) => {
 		git.calls.push({ kind, projectId, ...value !== undefined ? { value } : {} });
 		await git.hold;
@@ -161,6 +163,27 @@ export function fakePhoneHost() {
 			await host.command({ ...create, projectId: id });
 			return [...tasks.values()].at(-1)!.id;
 		}),
+		triage: input => startPhoneTriage(overview, async command => { await host.command(command); return overview(); }, sources, input, {
+			prepare: async build => {
+				triage.fetched.push(build.commit);
+				const failure = triage.failure; triage.failure = undefined;
+				if (failure) throw new Error(failure);
+				const commit = build.commit ?? "9".repeat(40), directory = `/triage/phaseo-${commit.slice(0, 12)}`;
+				let project = projects.find(value => value.directory === directory);
+				if (!project) { project = { id: `triage-${projects.length}`, name: `Phaseo mobile ${build.version} source`, directory, createdAt: tick(), triage: { version: build.version, commit, exact: Boolean(build.commit), repository: "phaseoteam/Phaseo" } }; projects.push(project); }
+				return { projectId: project.id, directory, triage: project.triage! };
+			},
+			writePlaybook: async (directory, name, content) => { triage.playbooks.push({ directory, name, content }); },
+		}),
+		// As workspaceRuntime's issueDraftAction: only a waiting draft, filed as issue 17 or discarded.
+		issueDraft: async (chatId, action, draftedAt) => {
+			triage.issueActions.push({ chatId, action });
+			const task = get(chatId), draft = task.issueDraft;
+			if (!draft || draft.status !== "draft") throw new Error("This chat has no issue draft waiting.");
+			if (draftedAt !== undefined && draftedAt !== draft.draftedAt) throw new Error("The agent replaced this issue draft. Read the new one before filing or discarding it.");
+			task.issueDraft = action === "discard" ? { ...draft, status: "discarded" } : { ...draft, status: "filed", number: 17, url: `https://github.com/${draft.repository}/issues/17`, filedAt: tick() };
+			touch(task); changed();
+		},
 		models: input => phoneModels(overview(), sources, input),
 		// Every test project is a checkout except one in /scratch.
 		isRepository: directory => { repositoryChecks.push(directory); return !directory.startsWith("/scratch"); },
@@ -217,7 +240,7 @@ export function fakePhoneHost() {
 			return server;
 		},
 	};
-	return { host, tasks, projects, accounts, agents, sources, repositoryChecks, checkpointFiles, turnReads, gitStatuses, patches, diffReads, fileRoots, fileReads, git, commands, terminals, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
+	return { host, triage, tasks, projects,accounts, agents, sources, repositoryChecks, checkpointFiles, turnReads, gitStatuses, patches, diffReads, fileRoots, fileReads, git, commands, terminals, addTask, addMessage, get, touch, changed, overview, onChange: (listener: (overview: WorkspaceOverview) => void) => listeners.push(listener) };
 }
 
 /** A pull request as the window's pane reads it, for the phone's tests. */

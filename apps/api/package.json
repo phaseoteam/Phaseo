@@ -73,7 +73,7 @@
 	},
 	"devDependencies": {
 		"@anthropic-ai/sdk": "^0.135.0",
-		"@cloudflare/workers-types": "^4.20260523.1",
+		"@cloudflare/workers-types": "^5.20261106.1",
 		"@copilotkit/aimock": "1.45.1",
 		"@typescript/native": "catalog:",
 		"dotenv": "^17.4.2",
@@ -84,6 +84,6 @@
 		"typescript": "catalog:",
 		"typescript-eslint": "^8.58.1",
 		"vitest": "^4.1.7",
-		"wrangler": "^4.94.0"
+		"wrangler": "^4.158.0"
 	}
 }

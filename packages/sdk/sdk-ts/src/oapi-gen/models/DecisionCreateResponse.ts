@@ -45,6 +45,16 @@ export type DecisionCreateResponse =
             name: string | null;
             type: "box";
           }
+        | {
+            name: string | null;
+            spans: {
+              end: number;
+              score: number;
+              start: number;
+              text: string;
+            }[];
+            type: "locate";
+          }
       )[];
       meta?: {
         [key: string]: unknown;

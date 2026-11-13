@@ -14,6 +14,7 @@ icon: "gauge"
 | [部门预算](#department-budgets) | `key_limit_exceeded` | `department_daily_cost_budget_reached`（或 `weekly`、`monthly`） | 是，在 `reset_at` 重置 |
 | [设为阻止的支出规则](#key-limits-and-budgets) | `spend_rule_blocked` | | 如果阻止设置了 `reset_at`，则在该时间重置；或者由所有者或管理员解除 |
 | [速率限制策略](#rate-limit-policies) | `rate_limit_exceeded` | `policy_requests_per_minute`、`policy_tokens_per_minute`、`policy_concurrent_requests` 或 `policy_unavailable` | 是，`Retry-After` 以秒为单位 |
+| [管理 API](#management-api-limits) | `rate_limit_exceeded` | `management_api_rate_limit` | 是，`Retry-After` 以秒为单位 |
 | [提供商](#provider-limits) | `upstream_error` 或 `provider_capacity_exhausted` | | 遵循提供商的 `Retry-After` |
 
 以上所有情况都返回 `429`。如果 Gateway 的配额执行暂时不可用，Gateway 会改为返回 `503` 并附带重试指引。
@@ -37,6 +38,23 @@ icon: "gauge"
 这两项限制在所有 Gateway 区域之间通用，并且可以针对特定用户和工作区提高。文件操作和任务状态轮询使用每分钟配额；管理端点不使用。
 
 被拒绝的请求会返回 `429`，并附带以秒为单位的 `Retry-After`。请等待这么长时间后再重试。
+
+<span id="management-api-limits"></span>
+## 管理 API 限制
+
+`/v1/keys`、`/v1/logs` 和 `/v1/analytics` 等管理端点按凭据共享**每分钟 200 个单位**的配额。每个管理密钥、OAuth 令牌和控制台会话都有各自的配额，没有凭据的请求按 IP 地址共享一个配额。模型、文件、批处理和任务端点不使用该配额。
+
+每个请求根据其工作量消耗单位：
+
+| 单位 | 请求 |
+| --- | --- |
+| 1 | 目录读取（`/v1/models`, `/v1/pricing`, `/v1/providers`, `/v1/organisations`）、`/v1/key`、`/v1/me` 和 `/v1/settings` |
+| 2 | 其他读取，例如 `/v1/keys` 和 `/v1/workspaces` |
+| 3 | 创建、更新或删除任何内容 |
+| 5 | 搜索日志、生成记录、审计事件、活动、反馈和事件 |
+| 10 | `/v1/analytics`，以及调用外部服务的测试：可观测性目标的测试和示例、分类器测试和预设测试运行 |
+
+`/v1/health` 和 CORS 预检请求不计费。超出配额的请求会返回 `429` 和 `rate_limit_exceeded`，reason 为 `management_api_rate_limit`，并附带 `Retry-After: 60`。计数是近似值，且这些响应不带 `x-ratelimit-*` 头，因此请将批量脚本分散执行，而不是一直运行到上限。
 
 <span id="key-limits-and-budgets"></span>
 ## 密钥限制和预算
@@ -130,5 +148,6 @@ BYOK 请求使用你自己提供商账户的限制。托管请求使用共享的
 - 部门预算用完时返回 `429`，带有 `key_limit_exceeded`、reason `department_<interval>_cost_budget_reached`、`department_id`、`department_name` 和 `reset_at`；等待 `Retry-After` 秒或提高预算。如果预算检查不可用，请求会被放行。
 - 设为阻止的支出规则返回 `429` 和 `spend_rule_blocked`；等待 `Retry-After`，或请所有者或管理员解除阻止。`x-phaseo-spend-warning` 表示随后可能会被阻止。
 - 工作区速率限制策略返回 `429`，带有 `rate_limit_exceeded`、`policy_id` 和 `limit_scope`。`x-ratelimit-remaining-requests` 是近似值。
+- 管理端点（密钥、日志、分析等）在凭据用完当分钟的 200 个单位后，会返回 `429` 和 `rate_limit_exceeded`，reason 为 `management_api_rate_limit`；较重的请求消耗更多单位。请等待 `Retry-After`（60）秒。
 - `Retry-After` 可以是秒数或 HTTP 日期；在安排重试之前先校验它。切勿重新提交结果不明确的视频或批处理任务；请改为检查其状态。
 </Visibility>

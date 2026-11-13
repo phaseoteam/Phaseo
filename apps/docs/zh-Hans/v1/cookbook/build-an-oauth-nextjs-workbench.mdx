@@ -6,7 +6,7 @@ description: "以完整的 OAuth Next.js 示例为演练，构建带统一代理
 
 让用户使用 Phaseo 登录，并在你的应用中花费他们自己的额度：OAuth 2.1 配合 PKCE 为你的服务器提供访问令牌，一个服务器端代理会把它附加到每个网关调用上。完成后，你会得到一个本地应用，具备登录、基于会话且可刷新的令牌、模型发现、基于 `/responses` 的聊天流程，以及一个测试其他端点的工具。
 
-该示例仅作演示。它的 `lib/oauth.ts` 仍调用旧的登录端点，[运行](#run-it)的第 3 步会修复这个问题；它的代理允许列表也比实际产品需要的更宽。
+该示例会自动发现 Phaseo 的 OAuth 端点，在回调时检查 `state` 和 `iss`，安全地刷新令牌，并在用户退出登录时撤销密钥。
 
 要让编程智能体从零构建同样的应用，请粘贴以下提示：
 
@@ -46,8 +46,8 @@ Verification:
 flowchart LR
   browser["浏览器"] -->|"登录"| start["app/api/auth/start"]
   start -->|"带 PKCE 质询重定向"| authz["Phaseo 登录和授权同意"]
-  authz -->|"授权码"| cb["app/auth 回调"]
-  cb -->|"交换授权码"| sess["lib/session.ts：加密会话"]
+  authz -->|"授权码、state、iss"| cb["app/auth/callback"]
+  cb -->|"交换授权码，读取 /oauth/userinfo"| sess["lib/session.ts：加密会话"]
   browser -->|"/api/gateway/..."| proxy["app/api/gateway/[...surface]/route.ts"]
   proxy -->|"允许列表、Bearer 令牌、过期则刷新"| gw["api.phaseo.app/v1"]
 ```
@@ -56,11 +56,14 @@ flowchart LR
 
 | 文件 | 作用 |
 | --- | --- |
-| `app/page.tsx` | 登录入口页 |
+| `app/page.tsx` | 登录入口页；显示登录错误 |
+| `app/api/auth/start/route.ts` | 构建授权 URL，并保存 PKCE verifier 和 state |
+| `app/auth/callback/route.ts` | 检查 `state` 和 `iss`，交换授权码，读取 `/oauth/userinfo` |
+| `app/api/auth/signout/route.ts` | 撤销刷新令牌，然后清除会话 |
 | `app/dashboard/page.tsx` | 受保护的外壳页面 |
-| `app/dashboard/GatewayWorkbench.tsx` | 加载控制路由、列出模型 ID、通过 `POST /responses` 运行聊天，并测试其他端点 |
+| `app/dashboard/GatewayWorkbench.tsx` | 显示网关状态、列出模型 ID、通过 `POST /responses` 运行聊天，并测试其他端点 |
 | `app/api/gateway/[...surface]/route.ts` | 通配代理：检查允许列表、添加 Bearer 令牌、在令牌过期时刷新、转发请求体和状态 |
-| `lib/oauth.ts` | PKCE、授权码交换和刷新 |
+| `lib/oauth.ts` | 端点发现、PKCE、授权码交换、刷新、撤销和 userinfo |
 | `lib/session.ts` | 加密的会话存储 |
 
 把登录和网关调用分开，登录问题就不会看起来像模型问题，而且所有端点共用同一个处理令牌的地方。
@@ -81,32 +84,23 @@ npm install
 </Step>
 <Step title="创建 .env.local">
 
-示例中没有 `.env.example`。使用代码读取的变量名创建 `.env.local`：
-
-```bash .env.local
-NEXT_PUBLIC_OAUTH_CLIENT_ID=your_client_id
-OAUTH_CLIENT_SECRET=your_client_secret
-# The sample reads this name for the OAuth server's base URL.
-NEXT_PUBLIC_AISTATS_URL=https://api.phaseo.app
-NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/callback
-SESSION_SECRET=a-long-random-string
-NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
+```bash
+cp .env.example .env.local
 ```
 
-切勿把 `OAUTH_CLIENT_SECRET` 或 `SESSION_SECRET` 放进 `NEXT_PUBLIC_` 变量。
+填写各项值：
 
-</Step>
-<Step title="让示例指向当前的 OAuth 端点">
+| 变量 | 是否必填 | 值 |
+| --- | --- | --- |
+| `PHASEO_OAUTH_CLIENT_ID` | 是 | OAuth 应用的客户端 ID |
+| `PHASEO_OAUTH_CLIENT_SECRET` | 机密应用 | OAuth 应用的客户端密钥。公共应用请留空。 |
+| `PHASEO_OAUTH_REDIRECT_URI` | 是 | `http://localhost:3000/auth/callback`，与注册时完全一致 |
+| `SESSION_SECRET` | 是 | 至少 32 个字符的随机字符串 |
+| `PHASEO_API_URL` | 否 | 默认为 `https://api.phaseo.app` |
 
-`lib/oauth.ts` 会拼出 `${NEXT_PUBLIC_AISTATS_URL}/auth/v1/oauth/authorize` 和 `/auth/v1/token`，并请求 `openid email profile`。Phaseo 的 OAuth 服务器在 `https://api.phaseo.app/.well-known/oauth-authorization-server` 公布其端点：
+示例只在服务器端读取这些变量。切勿把客户端密钥或会话密钥放进 `NEXT_PUBLIC_` 变量。
 
-| 用途 | URL |
-| --- | --- |
-| 授权 | `https://api.phaseo.app/oauth/authorize` |
-| 令牌 | `https://api.phaseo.app/oauth/token` |
-| 撤销 | `https://api.phaseo.app/oauth/revoke` |
-
-把 `lib/oauth.ts` 中的三个 URL 改为以上地址，并在 `scope` 中加入 `gateway:access`，让令牌可以调用 Gateway。
+示例从 `https://api.phaseo.app/.well-known/oauth-authorization-server` 获取授权、令牌、撤销和 userinfo 端点，并请求 `openid email profile gateway:access`。`gateway:access` 让令牌可以调用 Gateway。
 
 </Step>
 <Step title="启动开发服务器">
@@ -153,7 +147,8 @@ npm run dev
 
 ## 上线之前
 
-- **收窄允许列表。** `lib/gateway.ts` 允许若干精确路径，以及 `videos/`、`music/generate/`、`control/` 和 `internal/` 下的所有路径。只保留你的产品实际调用的精确路径。
+- **收窄允许列表。** `lib/gateway.ts` 允许工作台调用的路径，以及 `videos/` 和 `music/generate/` 下的任务状态。只保留你的产品实际调用的路径。
+- **在实例之间共享刷新。** `lib/oauth.ts` 在内存中让并行请求共享同一次刷新。如果你运行多个服务器实例，请把它移到共享存储中，否则两个实例可能用同一个令牌刷新，从而结束这次登录。
 - **发送完整对话。** Gateway 不存储响应，并会拒绝 `previous_response_id`，因此请在 `input` 中重新发送之前的轮次。
 - **替换测试工具。** 把工作台留作内部 QA，为最终用户构建专门的流程。
 

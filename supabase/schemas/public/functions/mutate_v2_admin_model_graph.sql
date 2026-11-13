@@ -42,8 +42,12 @@ begin
   end if;
   if p_payload ? 'links' then
     delete from public.v2_model_links where model_slug=p_model_slug;
-    insert into public.v2_model_links(model_slug,link_kind,title,url,metadata)
-    select p_model_slug,coalesce(nullif(x->>'kind',''),x->>'platform'),coalesce(nullif(x->>'title',''),x->>'platform'),x->>'url',jsonb_build_object('source','admin') from jsonb_array_elements(p_payload->'links') x;
+    insert into public.v2_model_links(model_slug,link_kind,title,url,sort_order,metadata)
+    select p_model_slug,lower(trim(coalesce(nullif(x.value->>'kind',''),x.value->>'platform'))),
+      coalesce(nullif(trim(x.value->>'title'),''),nullif(x.value->>'platform',''),x.value->>'kind'),trim(x.value->>'url'),
+      (x.position*10)::integer,jsonb_build_object('source','admin')
+    from jsonb_array_elements(p_payload->'links') with ordinality x(value, position)
+    on conflict(model_slug,link_kind,url) do nothing;
   end if;
   if p_payload ? 'benchmark_results' then
     if exists(select 1 from jsonb_array_elements(p_payload->'benchmark_results') x

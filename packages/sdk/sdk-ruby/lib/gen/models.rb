@@ -1504,6 +1504,29 @@ module Phaseo
     #   @return [String, Hash{String => Object}]
     DecisionInputVideo = Struct.new(:type, :video_url, keyword_init: true)
     DecisionInstructions = Object
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] spans
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionLocateAnswer = Struct.new(:name, :spans, :type, keyword_init: true)
+    # @!attribute [rw] instructions
+    #   @return [String]
+    # @!attribute [rw] name
+    #   @return [String, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionLocateQuestion = Struct.new(:instructions, :name, :type, keyword_init: true)
+    # @!attribute [rw] end
+    #   @return [Integer]
+    # @!attribute [rw] score
+    #   @return [Float]
+    # @!attribute [rw] start
+    #   @return [Integer]
+    # @!attribute [rw] text
+    #   @return [String]
+    DecisionLocateSpan = Struct.new(:end, :score, :start, :text, keyword_init: true)
     # @!attribute [rw] criteria
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] instructions
@@ -2937,6 +2960,11 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     LegacyDecisionBoxQuestion = Struct.new(:instructions, :type, keyword_init: true)
+    # @!attribute [rw] instructions
+    #   @return [String]
+    # @!attribute [rw] type
+    #   @return [String]
+    LegacyDecisionLocateQuestion = Struct.new(:instructions, :type, keyword_init: true)
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request

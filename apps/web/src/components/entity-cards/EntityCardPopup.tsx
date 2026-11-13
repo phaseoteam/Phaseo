@@ -1,4 +1,5 @@
-// The one card the page shows, positioned against the hovered link. Loaded on
+// A card the page shows, positioned against the hovered link (the second card
+// opens beside the first, against its link's row). Loaded on
 // the first hover (see EntityCards), so Base UI's preview card and the views
 // stay out of the initial bundle.
 import { PreviewCard as PreviewCardPrimitive } from "@base-ui/react/preview-card";
@@ -9,6 +10,7 @@ import { EntityCardView } from "./EntityCardViews";
 
 export default function EntityCardPopup({
 	anchor,
+	nested = false,
 	open,
 	card,
 	onClose,
@@ -16,6 +18,8 @@ export default function EntityCardPopup({
 }: {
 	/** The link's box; kept while the card closes. */
 	anchor: PreviewCardPrimitive.Positioner.Props["anchor"];
+	/** The second card, opened from a link inside the first: it opens beside that card. */
+	nested?: boolean;
 	open: boolean;
 	/** undefined while loading. */
 	card: EntityCard | null | undefined;
@@ -27,13 +31,15 @@ export default function EntityCardPopup({
 	return (
 		<PreviewCardPrimitive.Root
 			open={open}
-			onOpenChange={(next) => !next && onClose()}
+			// Presses are handled by EntityCards, which keeps both cards open on a press
+			// inside either; Base UI would count a press in the other card as outside.
+			onOpenChange={(next, details) => !next && details.reason !== "outside-press" && onClose()}
 			onOpenChangeComplete={(next) => !next && onClosed()}
 		>
 			<PreviewCardPrimitive.Portal>
 				<PreviewCardPrimitive.Positioner
 					anchor={anchor}
-					side="bottom"
+					side={nested ? "right" : "bottom"}
 					align="start"
 					sideOffset={6}
 					collisionPadding={12}
@@ -41,6 +47,7 @@ export default function EntityCardPopup({
 				>
 					<PreviewCardPrimitive.Popup
 						data-entity-card=""
+						data-entity-card-nested={nested ? "" : undefined}
 						data-slot="entity-card"
 						className="w-80 max-w-[calc(100vw-24px)] origin-(--transform-origin) rounded-md bg-popover p-3 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/5 outline-hidden duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 motion-reduce:animate-none dark:ring-foreground/10"
 					>

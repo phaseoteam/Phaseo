@@ -5,27 +5,25 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { fetchAdminModelEditorSource } from "@/lib/fetchers/internal/adminModelEditorClient"
 import type { ModelData } from "../ModelEditDialog"
+import ModelLinksEditor, {
+  modelLinkDraftsFromRows,
+  modelLinkPayloadFromDrafts,
+  type ModelLinkDraft,
+  type ModelLinkPayload,
+} from "../ModelLinksEditor"
 
 interface DetailsTabProps {
   modelId: string
   model: ModelData
   onModelChange: (model: ModelData) => void
   onDetailsChange?: (details: ModelDetail[]) => void
-  onLinksChange?: (links: ModelLink[]) => void
+  onLinksChange?: (links: ModelLinkPayload[]) => void
 }
 
 interface ModelDetail {
   id: string
   detail_name: string
   detail_value: string
-}
-
-interface ModelLink {
-  id: string
-  platform: string
-  kind: string
-  title: string
-  url: string
 }
 
 const DETAIL_FIELDS = [
@@ -51,18 +49,7 @@ const DETAIL_FIELDS = [
   },
 ] as const
 
-const LINK_FIELDS = [
-  { key: "announcement", label: "Announcement" },
-  { key: "api_reference", label: "API reference" },
-  { key: "model_card", label: "Model card" },
-  { key: "paper", label: "Paper" },
-  { key: "playground", label: "Playground" },
-  { key: "repository", label: "Repository" },
-  { key: "weights", label: "Weights" },
-] as const
-
 type DetailFieldKey = (typeof DETAIL_FIELDS)[number]["key"]
-type LinkFieldKey = (typeof LINK_FIELDS)[number]["key"]
 
 const COMPACT_DETAIL_FIELDS = new Set<DetailFieldKey>([
   "parameter_count",
@@ -93,26 +80,6 @@ function createEmptyDetailValues(): Record<DetailFieldKey, string> {
     parameter_count: "",
     training_tokens: "",
   }
-}
-
-function createEmptyLinkValues(): Record<LinkFieldKey, string> {
-  return {
-    announcement: "",
-    api_reference: "",
-    model_card: "",
-    paper: "",
-    playground: "",
-    repository: "",
-    weights: "",
-  }
-}
-
-function getLinkFieldLabel(kind: string): string {
-  const field = LINK_FIELDS.find((linkField) => linkField.key === kind)
-  if (field) return field.label
-  return kind
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
 function FieldRow({
@@ -150,8 +117,7 @@ export default function DetailsTab({
   void onModelChange
 
   const [detailValues, setDetailValues] = useState<Record<DetailFieldKey, string>>(createEmptyDetailValues())
-  const [linkValues, setLinkValues] = useState<Record<LinkFieldKey, string>>(createEmptyLinkValues())
-  const [preservedLinks, setPreservedLinks] = useState<ModelLink[]>([])
+  const [linkDrafts, setLinkDrafts] = useState<ModelLinkDraft[]>([])
   const [loaded, setLoaded] = useState(false)
   const onDetailsChangeRef = useRef(onDetailsChange)
   const onLinksChangeRef = useRef(onLinksChange)
@@ -168,7 +134,8 @@ export default function DetailsTab({
     const fetchData = async () => {
       const source = await fetchAdminModelEditorSource(modelId)
       const detailsData = source.model?.model_details ?? []
-      const linksData = source.model?.model_links ?? []
+      // The editor source returns links beside the model (source.links), not on it.
+      const linksData = source.links ?? source.model?.model_links ?? []
 
       const nextDetails = createEmptyDetailValues()
       for (const row of detailsData ?? []) {
@@ -179,30 +146,7 @@ export default function DetailsTab({
       }
       setDetailValues(nextDetails)
 
-      const nextLinks = createEmptyLinkValues()
-      const primaryLinkKinds = new Set<LinkFieldKey>()
-      const preservedLinkRows: ModelLink[] = []
-      for (const row of linksData ?? []) {
-        const kind = (row.kind ?? row.platform ?? "").trim()
-        const url = row.url?.trim() ?? ""
-        if (!kind || !url) continue
-
-        const key = kind as LinkFieldKey
-        if (key in nextLinks && !primaryLinkKinds.has(key)) {
-          nextLinks[key] = url
-          primaryLinkKinds.add(key)
-        } else {
-          preservedLinkRows.push({
-            id: `${kind}:${url}`,
-            platform: kind,
-            kind,
-            title: row.title?.trim() || getLinkFieldLabel(kind),
-            url,
-          })
-        }
-      }
-      setLinkValues(nextLinks)
-      setPreservedLinks(preservedLinkRows)
+      setLinkDrafts(modelLinkDraftsFromRows(linksData))
       setLoaded(true)
     }
 
@@ -224,27 +168,8 @@ export default function DetailsTab({
 
   useEffect(() => {
     if (!loaded) return
-    const editableLinks: ModelLink[] = LINK_FIELDS
-      .map((field) => ({
-        id: field.key,
-        platform: field.key,
-        kind: field.key,
-        title: field.label,
-        url: linkValues[field.key].trim(),
-      }))
-      .filter((row) => row.url.length > 0)
-
-    const editableKeys = new Set(editableLinks.map((row) => `${row.kind}:${row.url}`))
-    const payload = [
-      ...editableLinks,
-      ...preservedLinks.filter((row) => {
-        const url = row.url.trim()
-        return url.length > 0 && !editableKeys.has(`${row.kind}:${url}`)
-      }),
-    ]
-
-    onLinksChangeRef.current?.(payload)
-  }, [linkValues, preservedLinks, loaded])
+    onLinksChangeRef.current?.(modelLinkPayloadFromDrafts(linkDrafts))
+  }, [linkDrafts, loaded])
 
   return (
     <div className="space-y-5">
@@ -311,21 +236,7 @@ export default function DetailsTab({
 
       <section className="rounded-lg border p-4 space-y-4">
         <div className="text-sm font-semibold">{tEditor("linksHeading")}</div>
-        {LINK_FIELDS.map((field) => (
-          <FieldRow key={field.key} label={tEditor(`linkFields.${field.key}` as never)}>
-            <Input
-              type="url"
-              value={linkValues[field.key]}
-              onChange={(event) =>
-                setLinkValues((prev) => ({
-                  ...prev,
-                  [field.key]: event.target.value,
-                }))
-              }
-              placeholder="https://..."
-            />
-          </FieldRow>
-        ))}
+        <ModelLinksEditor value={linkDrafts} onChange={setLinkDrafts} />
       </section>
     </div>
   )

@@ -1,8 +1,8 @@
 import {
 	ModelCreatorModelsSkeleton,
 	ModelOverviewSectionsSkeleton,
-} from "@/components/(data)/model/overview/ModelOverviewSections";
-import { ModelDetailShellSkeleton } from "@/components/(data)/model/ModelDetailShell";
+} from "@/components/(data)/model/overview/ModelOverviewSectionsSkeleton";
+import { ModelDetailShellSkeleton } from "@/components/(data)/model/ModelDetailShellSkeleton";
 
 export default function ModelDetailLoading() {
 	return (

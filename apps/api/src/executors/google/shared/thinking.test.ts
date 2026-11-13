@@ -87,16 +87,24 @@ describe("google thinking level support", () => {
 		expect(resolveGoogleThinkingLevelForEffort("gemini-4-carbon", "minimal")).toBe("LOW");
 	});
 
-	it("gives Gemini 4 Hydrogen low, medium and high with no minimal, and does not rewrite a budget", () => {
+	it("gives Gemini 4 Hydrogen low to xhigh with no minimal, and does not rewrite a budget", () => {
 		for (const model of ["gemini-4-hydrogen", "google/gemini-4-hydrogen"]) {
-			expect(getSupportedGoogleThinkingLevels(model)).toEqual(["LOW", "MEDIUM", "HIGH"]);
+			expect(getSupportedGoogleThinkingLevels(model)).toEqual(["LOW", "MEDIUM", "HIGH", "XHIGH"]);
 			// Not rewritten to a level: the request is forwarded and Google's explicit 400 is the signal.
 			expect(modelRejectsGoogleThinkingBudget(model)).toBe(false);
 			expect(getLowestGoogleThinkingLevel(model)).toBe("LOW");
 		}
 		expect(resolveGoogleThinkingLevelForEffort("gemini-4-hydrogen", "minimal")).toBe("LOW");
 		expect(resolveGoogleThinkingLevelForEffort("gemini-4-hydrogen", "high")).toBe("HIGH");
-		expect(resolveGoogleThinkingLevelForEffort("gemini-4-hydrogen", "xhigh")).toBe("HIGH");
+		expect(resolveGoogleThinkingLevelForEffort("gemini-4-hydrogen", "xhigh")).toBe("XHIGH");
+		expect(resolveGoogleThinkingLevelForEffort("gemini-4-hydrogen", "max")).toBe("XHIGH");
+	});
+
+	it("keeps xhigh and max at HIGH on models without an XHIGH level", () => {
+		for (const model of ["gemini-4-argon", "gemini-4-carbon", "gemini-3.7-flash", "gemini-3.1-pro-preview", "gemma-4-31b-it"]) {
+			expect(resolveGoogleThinkingLevelForEffort(model, "xhigh")).toBe("HIGH");
+			expect(resolveGoogleThinkingLevelForEffort(model, "max")).toBe("HIGH");
+		}
 	});
 
 	it("gives Gemini 3.7 Flash no minimal level", () => {

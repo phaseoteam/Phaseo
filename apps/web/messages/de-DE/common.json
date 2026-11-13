@@ -823,6 +823,15 @@
 			"removeBenchmark": "Benchmark {index} entfernen",
 			"detailsHeading": "Modelldetails",
 			"linksHeading": "Modelllinks",
+			"linksDescription": "Füge jeden Link mit dem Titel hinzu, den Nutzer sehen sollen. Die Art bestimmt das Ersatzsymbol und die Vergleichsspalte.",
+			"noLinks": "Noch keine Links.",
+			"addLink": "Link hinzufügen",
+			"linkUrl": "URL",
+			"linkTitle": "Titel",
+			"linkKind": "Art",
+			"moveLinkUp": "Nach oben",
+			"moveLinkDown": "Nach unten",
+			"removeLink": "Link entfernen",
 			"detailFields": {
 				"input_context_length": {
 					"label": "Eingabe-Kontextlänge",
@@ -847,12 +856,19 @@
 			},
 			"linkFields": {
 				"announcement": "Ankündigung",
-				"api_reference": "API-Referenz",
 				"model_card": "Modellkarte",
 				"paper": "Fachartikel",
-				"playground": "Spielwiese",
+				"weights": "Gewichte",
 				"repository": "Repository",
-				"weights": "Gewichte"
+				"documentation": "Dokumentation",
+				"api_reference": "API-Referenz",
+				"playground": "Spielwiese",
+				"pricing": "Preise",
+				"benchmark": "Benchmark",
+				"website": "Website",
+				"provider": "Anbieter",
+				"deprecation": "Einstellungshinweis",
+				"license": "Lizenz"
 			},
 			"subscriptionPlansTitle": "Abonnementpläne",
 			"subscriptionPlansDescription": "Dieses Modell zu Abonnementplänen hinzufügen oder daraus entfernen.",
@@ -2490,6 +2506,7 @@
 			"serviceTierLineStyles": "Linienstile der Servicestufen",
 			"inAudience": "In {audience}",
 			"usOnlyInference": "Inferenz nur in den USA",
+			"withKeyterms": "Mit Schlüsselbegriffen",
 			"regionOnlyInference": "Inferenz nur in {region}"
 		},
 		"publicModelCopy": {

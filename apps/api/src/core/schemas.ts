@@ -5,7 +5,7 @@
 import * as z from "zod";
 import { lazySchema } from "./lazy-schema";
 import type { Endpoint } from "./types";
-import { NativeDecisionsBodySchema, DecisionProviderOptionsSchema, DECISION_QUESTION_CEILING } from "./decisions";
+import { NativeDecisionsBodySchema, DecisionProviderOptionsSchema, DECISION_QUESTION_CEILING, LOCATE_REQUIRES_TEXT_STATE } from "./decisions";
 import { parseAsyncWebhookConfig } from "./async-notifications";
 import {
 	ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES,
@@ -1832,6 +1832,9 @@ const DecisionInstructionsSchema = lazySchema(() => z.union([
 
 const DecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
     z.object({ type: z.literal("box"), instructions: DecisionInstructionsSchema }).strict(),
+    // Perplexity ignores every member besides type and instructions; reject them
+    // here rather than silently dropping criteria the caller expected to matter.
+    z.object({ type: z.literal("locate"), instructions: z.string().min(1).max(50_000) }).strict(),
     z.object({
         type: z.literal("noul"),
         instructions: DecisionInstructionsSchema,
@@ -1900,6 +1903,11 @@ export const DecisionsSchema = lazySchema(() => z.union([OpenAIDecisionsSchema, 
         : Array.isArray(body.images) && body.images.length > 0;
     if (questions.some(question => question.type === "box") && !hasImages) {
         ctx.addIssue({ code: "custom", path: ["questions"], message: "Box questions require image input." });
+    }
+    // The native format checks its own `input`; this covers the state/map format.
+    if (!Array.isArray(body.questions) && questions.some(question => question.type === "locate") &&
+        (typeof (body as { state?: unknown }).state !== "string" || hasImages)) {
+        ctx.addIssue({ code: "custom", path: ["state"], message: LOCATE_REQUIRES_TEXT_STATE });
     }
 }));
 export type DecisionsRequest = z.infer<typeof DecisionsSchema>;

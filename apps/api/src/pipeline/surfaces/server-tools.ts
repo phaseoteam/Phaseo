@@ -1673,18 +1673,14 @@ function readDatetimeTimezones(
 	args: Record<string, unknown>,
 	fallback: string[],
 ): { timezones: string[]; tooMany: boolean } {
-	if (fallback.length > 0) {
-		return {
-			timezones: fallback.slice(0, MAX_DATETIME_TIMEZONES),
-			tooMany: false,
-		};
-	}
 	const timezones: string[] = [];
 	const ok = appendTimezoneList(timezones, args.timezones);
 	if (!ok) return { timezones: [], tooMany: true };
 	const resolved = timezones.length > 0
 		? timezones
-		: [DEFAULT_TIMEZONE];
+		: fallback.length > 0
+			? fallback
+			: [DEFAULT_TIMEZONE];
 	return { timezones: resolved.slice(0, MAX_DATETIME_TIMEZONES), tooMany: false };
 }
 
@@ -2073,15 +2069,31 @@ function parseWebSearchMaxCharacters(
 	return readPositiveIntWithFallback(raw, DEFAULT_WEB_FETCH_MAX_CHARS, MAX_WEB_FETCH_MAX_CHARS);
 }
 
+// The tool's lists are a policy: the model can narrow allowed_domains and add exclusions, never widen either.
 function resolveSearchDomains(args: Record<string, unknown>, config: ServerToolConfig): {
 	allowedDomains: string[];
 	excludedDomains: string[];
+	noAllowedOverlap: boolean;
 } {
-	const allowedDomains = readStringArray(args.allowed_domains ?? args.include_domains);
-	const excludedDomains = readStringArray(args.excluded_domains ?? args.exclude_domains);
+	const requestedAllowedDomains = readStringArray(args.allowed_domains ?? args.include_domains);
+	const configuredAllowedDomains = config.webSearchAllowedDomains ?? [];
+	const allowedDomains = configuredAllowedDomains.length === 0
+		? requestedAllowedDomains
+		: requestedAllowedDomains.length === 0
+			? configuredAllowedDomains
+			: requestedAllowedDomains.filter((requested) =>
+				configuredAllowedDomains.some((configured) =>
+					hostnameMatchesDomain(requested.replace(/^\*\./, ""), configured),
+				),
+			);
+	const excludedDomains = Array.from(new Set([
+		...(config.webSearchExcludedDomains ?? []),
+		...readStringArray(args.excluded_domains ?? args.exclude_domains),
+	]));
 	return {
-		allowedDomains: allowedDomains.length > 0 ? allowedDomains : (config.webSearchAllowedDomains ?? []),
-		excludedDomains: excludedDomains.length > 0 ? excludedDomains : (config.webSearchExcludedDomains ?? []),
+		allowedDomains,
+		excludedDomains,
+		noAllowedOverlap: configuredAllowedDomains.length > 0 && requestedAllowedDomains.length > 0 && allowedDomains.length === 0,
 	};
 }
 
@@ -2979,7 +2991,24 @@ async function executeWebSearchToolCall(
 	);
 	const searchContextSize = readWebSearchContextSize(args.search_context_size ?? config.webSearchContextSize ?? "medium");
 	const maxCharacters = parseWebSearchMaxCharacters(args, config);
-	const { allowedDomains, excludedDomains } = resolveSearchDomains(args, config);
+	const { allowedDomains, excludedDomains, noAllowedOverlap } = resolveSearchDomains(args, config);
+	if (noAllowedOverlap) {
+		return {
+			toolResult: {
+				toolCallId: call.id,
+				isError: true,
+				content: JSON.stringify({
+					error: "domains_blocked_by_domain_policy",
+					message: "allowed_domains must be within this gateway web search tool's allowed_domains",
+					allowed_domains: config.webSearchAllowedDomains ?? [],
+				}),
+			},
+			webFetchRequests: 0,
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
+			billableWebSearchRequests: 0,
+		};
+	}
 	if (engine === "tinyfish") {
 		const searchConfig = resolveTinyfishSearchConfig();
 		if (!searchConfig) {

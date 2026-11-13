@@ -11,6 +11,7 @@ import CodeBlock from "@/components/(data)/model/quickstart/CodeBlock";
 import { BASE_URL } from "./config";
 import { Server } from "lucide-react";
 import PathCell from "./PathCell";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from "@/components/link";
 
 export default function Endpoints() {
@@ -39,72 +40,72 @@ export default function Endpoints() {
 			</CardHeader>
 			<CardContent className="space-y-4">
 				<div className="rounded-lg border overflow-hidden">
-					<table className="w-full text-sm">
-						<thead>
-							<tr className="border-b bg-gradient-to-r from-primary/10 to-transparent">
-								<th className="p-3 text-left">{t("endpointMethod")}</th>
-								<th className="p-3 text-left">{t("endpointPath")}</th>
-								<th className="p-3 text-left">{t("endpointNotes")}</th>
-							</tr>
-						</thead>
-						<tbody className="[&_tr:nth-child(even)]:bg-muted/30">
-							<tr className="border-b">
-								<td className="p-3 font-mono text-xs">GET</td>
+					<Table wrapInContainer={false} className="w-full text-sm">
+						<TableHeader>
+							<TableRow className="border-b bg-gradient-to-r from-primary/10 to-transparent hover:bg-transparent dark:hover:bg-transparent">
+								<TableHead className="h-auto font-bold text-inherit dark:text-inherit p-3 text-left">{t("endpointMethod")}</TableHead>
+								<TableHead className="h-auto font-bold text-inherit dark:text-inherit p-3 text-left">{t("endpointPath")}</TableHead>
+								<TableHead className="h-auto font-bold text-inherit dark:text-inherit p-3 text-left">{t("endpointNotes")}</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody className="[&_tr:nth-child(even)]:bg-muted/30">
+							<TableRow className="border-b">
+								<TableCell className="p-3 font-mono text-xs">GET</TableCell>
 								<PathCell className="p-3 font-mono text-xs">
 									/v1/api/models
 								</PathCell>
-								<td className="p-3">
+								<TableCell className="p-3">
 									{t("modelsEndpointDescription")}
-								</td>
-							</tr>
-							<tr className="border-b">
-								<td className="p-3 font-mono text-xs">POST</td>
+								</TableCell>
+							</TableRow>
+							<TableRow className="border-b">
+								<TableCell className="p-3 font-mono text-xs">POST</TableCell>
 								<PathCell className="p-3 font-mono text-xs">
 									/v1/chat
 								</PathCell>
-								<td className="p-3">
+								<TableCell className="p-3">
 									{t("chatEndpointDescription")}
-								</td>
-							</tr>
-							<tr className="border-b">
-								<td className="p-3 font-mono text-xs">POST</td>
+								</TableCell>
+							</TableRow>
+							<TableRow className="border-b">
+								<TableCell className="p-3 font-mono text-xs">POST</TableCell>
 								<PathCell className="p-3 font-mono text-xs">
 									/v1/images
 								</PathCell>
-								<td className="p-3">
+								<TableCell className="p-3">
 									{t("imageEndpointDescription")}
-								</td>
-							</tr>
+								</TableCell>
+							</TableRow>
 
-							<tr className="border-b">
-								<td className="p-3 font-mono text-xs">POST</td>
+							<TableRow className="border-b">
+								<TableCell className="p-3 font-mono text-xs">POST</TableCell>
 								<PathCell className="p-3 font-mono text-xs">
 									/v1/video
 								</PathCell>
-								<td className="p-3">
+								<TableCell className="p-3">
 									{t("videoEndpointDescription")}
-								</td>
-							</tr>
-							<tr className="border-b">
-								<td className="p-3 font-mono text-xs">POST</td>
+								</TableCell>
+							</TableRow>
+							<TableRow className="border-b">
+								<TableCell className="p-3 font-mono text-xs">POST</TableCell>
 								<PathCell className="p-3 font-mono text-xs">
 									/v1/embeddings
 								</PathCell>
-								<td className="p-3">
+								<TableCell className="p-3">
 									{t("embeddingsEndpointDescription")}
-								</td>
-							</tr>
-							<tr>
-								<td className="p-3 font-mono text-xs">POST</td>
+								</TableCell>
+							</TableRow>
+							<TableRow>
+								<TableCell className="p-3 font-mono text-xs">POST</TableCell>
 								<PathCell className="p-3 font-mono text-xs">
 									/v1/moderation
 								</PathCell>
-								<td className="p-3">
+								<TableCell className="p-3">
 									{t("moderationEndpointDescription")}
-								</td>
-							</tr>
-						</tbody>
-					</table>
+								</TableCell>
+							</TableRow>
+						</TableBody>
+					</Table>
 				</div>
 
 				<div className="space-y-2">

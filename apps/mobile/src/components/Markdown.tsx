@@ -4,6 +4,9 @@ import { EnrichedMarkdownText, type MarkdownStyle } from "react-native-enriched-
 import { useCSSVariable } from "uniwind";
 import { perf } from "@/perf";
 import { isOpenableMarkdownLink } from "./markdownLinks";
+import { normalizeChatMarkdown } from "@phaseo/app-kit/markdown-math";
+
+const md4cFlags = { latexMath: true };
 
 /** Native markdown (GitHub flavour, for tables) styled with the app's tokens. */
 export const Markdown = memo(function Markdown({ text, streaming }: { text: string; streaming?: boolean }) {
@@ -26,13 +29,16 @@ export const Markdown = memo(function Markdown({ text, streaming }: { text: stri
       codeBlock: { fontSize: 13, lineHeight: 19, color: foreground, backgroundColor: accent, borderRadius: 8, padding: 12, marginBottom: 10 },
       table: { ...body, fontSize: 13, lineHeight: 18, headerBackgroundColor: accent, headerTextColor: foreground, borderColor: border, marginBottom: 10 },
       thematicBreak: { color: border },
+      math: { fontSize: 16, color: foreground, backgroundColor: accent, marginTop: 8, marginBottom: 10 },
+      inlineMath: { color: foreground },
     } as MarkdownStyle;
   }, [foreground, muted, border, accent, primary]);
   return (
     <EnrichedMarkdownText
-      markdown={text}
+      markdown={normalizeChatMarkdown(text)}
       markdownStyle={style}
       flavor="github"
+      md4cFlags={md4cFlags}
       streamingAnimation={streaming}
       selectable
       // The native long-press preview would open links without the scheme check below.

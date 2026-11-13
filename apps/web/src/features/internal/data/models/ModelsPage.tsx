@@ -2,6 +2,8 @@ import { Link } from "@/i18n/navigation";
 import { useSearch } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useLocale, useTranslations } from "@/i18n/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { adminCatalogListQuery } from "../catalog.functions";
 
 const PAGE_SIZE = 100;
@@ -41,16 +43,16 @@ export default function ModelsPage() {
 			</div>
 			<form className="flex flex-col gap-3 sm:flex-row" action={`/${locale}/internal/data/models`} method="get">
 				{attention ? <input type="hidden" name="attention" value={attention} /> : null}
-				<input
+				<Input
 					name="q"
 					aria-label={t("searchModelsPlaceholder")}
 					defaultValue={queryText}
 					placeholder={t("searchModelsPlaceholder")}
-					className="w-full rounded-md border px-3 py-2 text-sm sm:max-w-md"
+					className="h-9 sm:max-w-md"
 				/>
-				<button type="submit" className="rounded-md border px-3 py-2 text-sm">
+				<Button type="submit" variant="outline" className="h-9">
 					{t("search")}
-				</button>
+				</Button>
 			</form>
 			<nav aria-label={t("modelFilters")} className="flex flex-wrap gap-2 text-sm">
 				{[{ value: "", label: t("allModels") }, { value: "hidden", label: t("hidden") }, { value: "missing-organisation", label: t("missingOrganisation") }].map((filter) => {

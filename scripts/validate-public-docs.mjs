@@ -50,7 +50,8 @@ const FORBIDDEN_CONTENT = [
 	["a production service-role secret name", /\b[A-Z0-9_]*SERVICE_ROLE_KEY\b/],
 	["an internal test-token name", /\b[A-Z0-9_]*INTERNAL_TEST_TOKEN\b/],
 	["a key-pepper secret name", /\b[A-Z0-9_]*KEY_PEPPER(?:_ACTIVE)?\b/],
-	["an internal Phaseo secret name", /\bPHASEO_[A-Z0-9_]+_SECRET\b/],
+	// PHASEO_OAUTH_CLIENT_SECRET is the reader's own OAuth app secret in the OAuth sample, not a Phaseo secret.
+	["an internal Phaseo secret name", /\bPHASEO_(?!OAUTH_CLIENT_SECRET\b)[A-Z0-9_]+_SECRET\b/],
 	["a workers.dev deployment address", /https?:\/\/[^\s)`"']+\.workers\.dev\b/i],
 	["internal unit-economics language", /\bunit economics\b/i],
 	["internal margin language", /\bgross margin\b/i],

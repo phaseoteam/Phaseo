@@ -8,6 +8,7 @@ import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
 import { fetchModelPricingSources } from "@/models/pricing";
+import { MODEL_LINK_KINDS } from "@/models/modelLinkKinds";
 import { z } from "zod";
 
 const CANONICAL_SERVICE_TIERS = ["standard", "priority", "batch", "flex"] as const;
@@ -72,7 +73,7 @@ const modelGraphSchema = z.object({
 	input_types: z.string().nullable().optional(), output_types: z.string().nullable().optional(), previous_model_id: z.string().nullable().optional(), family_id: z.string().nullable().optional(),
 	replacement_model_id: z.string().nullable().optional(),
 	model_details: z.array(z.object({ detail_name: z.string().trim().min(1), detail_value: z.unknown() })).optional(),
-	links: z.array(z.object({ platform: z.string().optional(), kind: z.string().optional(), title: z.string().optional(), url: z.url() })).optional(),
+	links: z.array(z.object({ platform: z.string().optional(), kind: z.enum(MODEL_LINK_KINDS), title: z.string().trim().min(1), url: z.url() })).optional(),
 	benchmark_results: z.array(z.record(z.string(), z.unknown())).optional(), subscription_plan_models: z.array(z.record(z.string(), z.unknown())).optional(),
 	provider_models: z.array(z.record(z.string(), z.unknown())).optional(), provider_capabilities: z.array(z.record(z.string(), z.unknown())).optional(),
 }).passthrough();
@@ -645,7 +646,7 @@ accountModelsRouter.get("/:modelId/source", async (c) => {
 		const modelId = alias.data?.model_slug ?? requestedModelId;
 		const [model, links, details, notice, aliases, successors, history, pricingSource, plans, benchmarks, rowHistory] = await Promise.all([
 			client.from("v2_models").select("*,lab:v2_labs(*)").eq("model_slug", modelId).maybeSingle(),
-			client.from("v2_model_links").select("link_kind,title,url,metadata").eq("model_slug", modelId),
+			client.from("v2_model_links").select("link_kind,title,url,sort_order,metadata").eq("model_slug", modelId).order("sort_order").order("title"),
 			client.from("v2_model_details").select("detail_name,detail_value,detail_order").eq("model_slug", modelId).order("detail_order"),
 			client.from("v2_model_page_notices").select("tone,markdown").eq("model_slug", modelId).maybeSingle(),
 			client.from("v2_model_aliases").select("alias_slug,alias_type,enabled,effective_from,effective_to,metadata").eq("model_slug", modelId).order("alias_slug"),

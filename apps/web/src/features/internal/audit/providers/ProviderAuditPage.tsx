@@ -1,6 +1,12 @@
 import Link from "@/components/link";
 import { useSearch } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useTranslations } from "@/i18n/react";
 import { getTranslations } from "@/i18n/server";
 import { providerAuditQuery } from "../../internalAdmin.functions";
@@ -49,6 +55,9 @@ function formatStatus(value: string | null, notSetLabel: string): string {
 		.join(" ");
 }
 
+// Base UI Select does not handle "" as an item value, so "All" options use a sentinel.
+const ALL_SELECT_VALUE = "__all__";
+
 // The admin gate (requireInternalAdmin("/internal")) runs in the route's
 // beforeLoad; the server function re-checks it before returning audit data.
 export default function ProviderAuditPage() {
@@ -62,6 +71,9 @@ export default function ProviderAuditPage() {
 	const selectedProvider = (params.provider ?? "").trim();
 	const onlyGaps = normalizeBool(params.gaps);
 	const selectedState = normalizeStateFilter(params.state);
+	const [providerFilter, setProviderFilter] = useState(selectedProvider);
+	const [stateFilter, setStateFilter] = useState<string>(selectedState);
+	const [gapsFilter, setGapsFilter] = useState(onlyGaps);
 
 	const providerOptions = audit.providers.map((provider) => ({
 		providerId: provider.providerId,
@@ -203,43 +215,69 @@ export default function ProviderAuditPage() {
 
 			<form action="/internal/audit/providers" method="get" className="rounded-lg border p-4">
 				<div className="grid gap-3 lg:grid-cols-4">
-					<input
+					<Input
 						name="q"
 						defaultValue={params.q ?? ""}
 						placeholder={t("searchPlaceholder")}
-						className="w-full rounded-md border px-3 py-2 text-sm lg:col-span-2"
+						className="h-9 lg:col-span-2"
 					/>
-					<select
-						name="provider"
-						defaultValue={selectedProvider}
-						className="w-full rounded-md border px-3 py-2 text-sm"
-					>
-						<option value="">{t("allProviders")}</option>
-							{providerOptions.map((option) => (
-								<option key={option.providerId} value={option.providerId}>
-									{option.providerName}
-								</option>
-							))}
-						</select>
-					<select
-						name="state"
-						defaultValue={selectedState}
-						className="w-full rounded-md border px-3 py-2 text-sm"
-					>
-						<option value="">{t("allRoutabilityStates")}</option>
-						<option value="active">{t("routableNow")}</option>
-						<option value="preview">{t("previewScheduled")}</option>
-						<option value="not_routable">{t("notRoutable")}</option>
-					</select>
+					<div>
+						<Select
+							value={providerFilter || ALL_SELECT_VALUE}
+							onValueChange={(value) => setProviderFilter(value === ALL_SELECT_VALUE ? "" : value)}
+						>
+							<SelectTrigger className="h-9 w-full" aria-label={t("allProviders")}>
+								<SelectValue>
+									{providerOptions.find((option) => option.providerId === providerFilter)?.providerName ??
+										(providerFilter || t("allProviders"))}
+								</SelectValue>
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value={ALL_SELECT_VALUE}>{t("allProviders")}</SelectItem>
+								{providerOptions.map((option) => (
+									<SelectItem key={option.providerId} value={option.providerId}>
+										{option.providerName}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<input type="hidden" name="provider" value={providerFilter} />
+					</div>
+					<div>
+						<Select
+							value={stateFilter || ALL_SELECT_VALUE}
+							onValueChange={(value) => setStateFilter(value === ALL_SELECT_VALUE ? "" : value)}
+						>
+							<SelectTrigger className="h-9 w-full" aria-label={t("allRoutabilityStates")}>
+								<SelectValue>
+									{stateFilter === "active"
+										? t("routableNow")
+										: stateFilter === "preview"
+											? t("previewScheduled")
+											: stateFilter === "not_routable"
+												? t("notRoutable")
+												: t("allRoutabilityStates")}
+								</SelectValue>
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value={ALL_SELECT_VALUE}>{t("allRoutabilityStates")}</SelectItem>
+								<SelectItem value="active">{t("routableNow")}</SelectItem>
+								<SelectItem value="preview">{t("previewScheduled")}</SelectItem>
+								<SelectItem value="not_routable">{t("notRoutable")}</SelectItem>
+							</SelectContent>
+						</Select>
+						<input type="hidden" name="state" value={stateFilter} />
+					</div>
 					<label className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-						<input type="checkbox" name="gaps" value="1" defaultChecked={onlyGaps} />
+						<Checkbox checked={gapsFilter} onCheckedChange={(checked) => setGapsFilter(checked === true)} />
+						{gapsFilter ? <input type="hidden" name="gaps" value="1" /> : null}
 						{t("onlyActiveGaps")}
 					</label>
 				</div>
 				<div className="mt-3 flex flex-wrap gap-2">
-					<button type="submit" className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground hover:bg-primary/90">
+					<Button type="submit" className="h-9">
 						{t("apply")}
-					</button>
+					</Button>
 					<Link href="/internal/audit/providers" className="rounded-md border px-3 py-2 text-sm hover:bg-muted/40">
 						{t("clear")}
 					</Link>
@@ -327,37 +365,37 @@ export default function ProviderAuditPage() {
 							</div>
 						</div>
 						<div className="overflow-x-auto">
-							<table className="w-full min-w-[1120px] text-sm">
-								<thead className="bg-muted/40 text-left">
-									<tr>
-										<th className="px-3 py-2">{t("apiModelId")}</th>
-										<th className="px-3 py-2">{t("internalModelId")}</th>
-										<th className="px-3 py-2">{t("providerSlug")}</th>
-										<th className="px-3 py-2">{t("lifecycle")}</th>
-										<th className="px-3 py-2">{t("routability")}</th>
-										<th className="px-3 py-2">{t("pricingRules")}</th>
-										<th className="px-3 py-2">{t("capabilities")}</th>
-										<th className="px-3 py-2">{t("actions")}</th>
-									</tr>
-								</thead>
-								<tbody>
+							<Table wrapInContainer={false} className="min-w-[1120px]">
+								<TableHeader className="bg-muted/40 text-left [&_tr]:border-b-0">
+									<TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+										<TableHead className="h-auto px-3 py-2 font-semibold text-foreground dark:text-foreground">{t("apiModelId")}</TableHead>
+										<TableHead className="h-auto px-3 py-2 font-semibold text-foreground dark:text-foreground">{t("internalModelId")}</TableHead>
+										<TableHead className="h-auto px-3 py-2 font-semibold text-foreground dark:text-foreground">{t("providerSlug")}</TableHead>
+										<TableHead className="h-auto px-3 py-2 font-semibold text-foreground dark:text-foreground">{t("lifecycle")}</TableHead>
+										<TableHead className="h-auto px-3 py-2 font-semibold text-foreground dark:text-foreground">{t("routability")}</TableHead>
+										<TableHead className="h-auto px-3 py-2 font-semibold text-foreground dark:text-foreground">{t("pricingRules")}</TableHead>
+										<TableHead className="h-auto px-3 py-2 font-semibold text-foreground dark:text-foreground">{t("capabilities")}</TableHead>
+										<TableHead className="h-auto px-3 py-2 font-semibold text-foreground dark:text-foreground">{t("actions")}</TableHead>
+									</TableRow>
+								</TableHeader>
+								<TableBody>
 									{provider.rows.map((row) => {
 										const isGap = row.isGatewayActiveNow && !row.hasPricing;
 										return (
-											<tr key={`${provider.providerId}:${row.apiModelId}`} className={isGap ? "bg-red-50" : ""}>
-												<td className="border-t px-3 py-2 font-mono text-xs">{row.apiModelId}</td>
-												<td className="border-t px-3 py-2 font-mono text-xs">
+											<TableRow key={`${provider.providerId}:${row.apiModelId}`} className={isGap ? "border-b-0 bg-red-50" : "border-b-0"}>
+												<TableCell className="border-t px-3 py-2 font-mono text-xs">{row.apiModelId}</TableCell>
+												<TableCell className="border-t px-3 py-2 font-mono text-xs">
 													{row.internalModelId ?? "-"}
-												</td>
-												<td className="border-t px-3 py-2 font-mono text-xs">
+												</TableCell>
+												<TableCell className="border-t px-3 py-2 font-mono text-xs">
 													{row.providerModelSlug ?? "-"}
-												</td>
-												<td className="border-t px-3 py-2 text-xs">
+												</TableCell>
+												<TableCell className="border-t px-3 py-2 text-xs">
 										<div><span className="text-muted-foreground">{t("providerField")}:</span> {formatStatus(row.providerAvailabilityStatus, t("notSet"))}</div>
 										<div><span className="text-muted-foreground">{t("phaseoField")}:</span> {formatStatus(row.phaseoStatus, t("notSet"))}</div>
 										<div><span className="text-muted-foreground">{t("accessField")}:</span> {formatStatus(row.accessScope, t("notSet"))}</div>
-												</td>
-												<td className="border-t px-3 py-2">
+												</TableCell>
+												<TableCell className="border-t px-3 py-2">
 													<div className="space-y-1">
 														<span
 															className={`inline-flex rounded border px-2 py-1 text-xs ${badgeClassNameForAvailability(
@@ -370,8 +408,8 @@ export default function ProviderAuditPage() {
 											{tStates(`${row.routability.key}.description` as never)}
 														</div>
 													</div>
-												</td>
-												<td className="border-t px-3 py-2">
+												</TableCell>
+												<TableCell className="border-t px-3 py-2">
 													<div className="flex items-center gap-2">
 														<span className={row.hasPricing ? "text-green-700" : "text-red-700"}>
 															{row.pricingRulesCount}/{row.totalPricingRulesCount}
@@ -385,13 +423,13 @@ export default function ProviderAuditPage() {
 								{isGap && row.gapReason ? (
 									<div className="mt-1 text-xs text-red-700">{translateGapReason(row.gapReason)}</div>
 													) : null}
-												</td>
-												<td className="border-t px-3 py-2">
+												</TableCell>
+												<TableCell className="border-t px-3 py-2">
 													<div className="max-w-[340px] text-xs text-muted-foreground">
 														{row.capabilities.length > 0 ? row.capabilities.join(", ") : "-"}
 													</div>
-												</td>
-												<td className="border-t px-3 py-2">
+												</TableCell>
+												<TableCell className="border-t px-3 py-2">
 													<div className="flex flex-wrap gap-2">
 														<Link
 															href={`/internal/data/api-providers/${provider.providerId}/edit`}
@@ -408,12 +446,12 @@ export default function ProviderAuditPage() {
 															</Link>
 														) : null}
 													</div>
-												</td>
-											</tr>
+												</TableCell>
+											</TableRow>
 										);
 									})}
-								</tbody>
-							</table>
+								</TableBody>
+							</Table>
 						</div>
 					</section>
 				))

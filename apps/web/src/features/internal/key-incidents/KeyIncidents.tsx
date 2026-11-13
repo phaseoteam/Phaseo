@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DisplayDateTime } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
@@ -67,15 +68,21 @@ export function KeyIncidents({ incidents }: { incidents: KeyIncident[] }) {
 				<div className="grid gap-4 sm:grid-cols-2">
 					<div className="space-y-2">
 						<label htmlFor="incident-location" className="text-sm font-medium">{t("keyIncidents.platform")}</label>
-						<select id="incident-location" value={locationId} onChange={(event) => setLocationId(event.target.value)} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-							{KEY_STORAGE_CATEGORIES.map((category) => (
-								<optgroup key={category} label={t(`keyStorage.categories.${category}` as never)}>
-									{KEY_STORAGE_LOCATIONS.filter((location) => location.category === category).map((location) => (
-										<option key={location.id} value={location.id}>{nameOf(location.id)} ({location.id})</option>
-									))}
-								</optgroup>
-							))}
-						</select>
+						<Select value={locationId} onValueChange={(value) => setLocationId(value)}>
+							<SelectTrigger id="incident-location" className="h-10 w-full" aria-label={t("keyIncidents.platform")}>
+								<SelectValue>{nameOf(locationId)} ({locationId})</SelectValue>
+							</SelectTrigger>
+							<SelectContent>
+								{KEY_STORAGE_CATEGORIES.map((category) => (
+									<SelectGroup key={category}>
+										<SelectLabel>{t(`keyStorage.categories.${category}` as never)}</SelectLabel>
+										{KEY_STORAGE_LOCATIONS.filter((location) => location.category === category).map((location) => (
+											<SelectItem key={location.id} value={location.id}>{nameOf(location.id)} ({location.id})</SelectItem>
+										))}
+									</SelectGroup>
+								))}
+							</SelectContent>
+						</Select>
 					</div>
 					<div className="space-y-2">
 						<label htmlFor="incident-cutoff" className="text-sm font-medium">{t("keyIncidents.cutoff")}</label>

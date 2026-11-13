@@ -59,6 +59,10 @@ export type GatewayBindings = {
     OAUTH_STRICT_RATE_LIMITER?: RateLimit;
     OAUTH_TOKEN_RATE_LIMITER?: RateLimit;
 	REALTIME_RELAY_RATE_LIMITER?: RateLimit;
+	/** Weighted per-credential budget for the management API; see routes/v1/control/request-budget.ts. */
+	CONTROL_API_RATE_LIMITER?: RateLimit;
+	/** Unset or "enforce" (default), "shadow" or "off" for CONTROL_API_RATE_LIMITER. */
+	CONTROL_API_RATE_LIMIT_MODE?: string;
     REALTIME_RELAY?: DurableObjectNamespace;
 	PROVIDER_RATE_LIMITS?: DurableObjectNamespace;
 	CUSTOMER_RATE_LIMITS?: DurableObjectNamespace;

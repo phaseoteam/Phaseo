@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import { ArrowUpRight, Check, KeyRound, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { buildMetadata } from "@/lib/seo";
 import {
 	trustLastReviewed,
@@ -177,11 +178,11 @@ export function TrustPage() {
 							<h2 className="text-xl font-semibold tracking-tight">{t("serviceProviders")}</h2>
 							<p className="mt-2 text-sm leading-6 text-muted-foreground">{t("serviceProvidersBody")}</p>
 							<div className="mt-6 overflow-x-auto border-y border-border">
-								<table className="w-full min-w-[640px] table-fixed text-left">
+								<Table wrapInContainer={false} className="min-w-[640px] table-fixed text-left text-[length:inherit]">
 									<colgroup><col className="w-40" /><col className="w-48" /><col /></colgroup>
-									<thead><tr className="border-b border-border text-xs font-medium text-muted-foreground"><th scope="col" className="py-3 pr-4 font-medium">{copy.providerHeader}</th><th scope="col" className="py-3 pr-4 font-medium">{copy.purposeHeader}</th><th scope="col" className="py-3 font-medium">{copy.dataHeader}</th></tr></thead>
-									<tbody>{copy.providers.map((provider) => <tr key={provider.id} className="border-b border-border last:border-0"><th scope="row" className="py-4 pr-4 align-top text-sm font-medium">{provider.name}</th><td className="py-4 pr-4 align-top text-sm text-muted-foreground">{provider.purpose}</td><td className="py-4 align-top text-sm leading-6 text-muted-foreground">{provider.data}</td></tr>)}</tbody>
-								</table>
+									<TableHeader><TableRow className="border-b border-border text-xs font-medium text-muted-foreground hover:bg-transparent dark:hover:bg-transparent"><TableHead scope="col" className="h-auto px-0 py-3 pr-4 font-medium text-inherit dark:text-inherit">{copy.providerHeader}</TableHead><TableHead scope="col" className="h-auto px-0 py-3 pr-4 font-medium text-inherit dark:text-inherit">{copy.purposeHeader}</TableHead><TableHead scope="col" className="h-auto px-0 py-3 font-medium text-inherit dark:text-inherit">{copy.dataHeader}</TableHead></TableRow></TableHeader>
+									<TableBody>{copy.providers.map((provider) => <TableRow key={provider.id} className="border-b border-border last:border-0 hover:bg-transparent dark:hover:bg-transparent"><TableHead scope="row" className="h-auto px-0 py-4 pr-4 align-top text-sm font-medium text-inherit dark:text-inherit">{provider.name}</TableHead><TableCell className="p-0 py-4 pr-4 align-top text-sm text-muted-foreground">{provider.purpose}</TableCell><TableCell className="p-0 py-4 align-top text-sm leading-6 text-muted-foreground">{provider.data}</TableCell></TableRow>)}</TableBody>
+								</Table>
 							</div>
 							<p className="mt-3 text-xs leading-5 text-muted-foreground">{copy.subprocessorNoteLead}<Link href="/trust/subprocessors" className="underline underline-offset-4">{copy.scheduleText}</Link>{copy.subprocessorNoteTail}</p>
 						</section>

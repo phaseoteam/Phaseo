@@ -1,6 +1,21 @@
-import type { MiddlewareHandler } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import type { Env } from "@/env";
 import { emitLogs, randomHex, safeError, sampled, sendOtlp, telemetryConfig, telemetryEndpoint, traceContext } from "../../../packages/shared/observability/index.mjs";
+
+type RequestFailure = ReturnType<typeof safeError>;
+declare module "hono" {
+  interface ContextVariableMap {
+    platformFailure?: RequestFailure;
+  }
+}
+
+// Handled failures return a deliberate 503 and never reach Hono's error handler.
+// Attach only redacted diagnostics to the existing request event, not another log.
+export function recordSettingsFailure(c: Context, error: unknown, operation: string) {
+  try {
+    c.set("platformFailure", { ...safeError(error), error_origin: "database", error_kind: operation });
+  } catch { /* Recording must not change the response. */ }
+}
 
 // Measures response headers only. Gateway finalization owns streaming outcomes.
 export const platformObservability: MiddlewareHandler<{ Bindings: Env }> = async (c, next) => {
@@ -26,8 +41,9 @@ export const platformObservability: MiddlewareHandler<{ Bindings: Env }> = async
   const route = c.req.routePath || "unmatched";
   const status = c.res.status;
   const stream = c.res.headers.get("content-type")?.includes("text/event-stream") ?? false;
+  const failure: RequestFailure = status >= 500 ? (c.get("platformFailure") ?? (c.error ? safeError(c.error) : {})) : {};
   const event = {
-    ...(status >= 500 && c.error ? safeError(c.error) : {}),
+    ...failure,
     event_name: "web.request", method: c.req.method, route, stream,
     status_code: status, duration_ms: completed - started, signal: "response_headers",
     outcome: status >= 500 ? "error" : status >= 400 ? "rejected" : stream ? "started" : "success",
@@ -38,6 +54,7 @@ export const platformObservability: MiddlewareHandler<{ Bindings: Env }> = async
     resourceSpans: [{ resource: { attributes: [
       { key: "service.name", value: { stringValue: config.service } },
       { key: "deployment.environment.name", value: { stringValue: config.environment } },
+      ...(config.release ? [{ key: "service.version", value: { stringValue: config.release } }] : []),
     ] }, scopeSpans: [{ scope: { name: "phaseo.platform" }, spans: [{
       traceId, spanId, ...(parent ? { parentSpanId: parent.parentSpanId } : {}),
       name: `${c.req.method} ${route}`, kind: 2,
@@ -47,6 +64,8 @@ export const platformObservability: MiddlewareHandler<{ Bindings: Env }> = async
         { key: "http.route", value: { stringValue: route } },
         { key: "http.response.status_code", value: { intValue: String(status) } },
         { key: "phaseo.completion", value: { stringValue: "response_headers" } },
+        ...["error_name", "error_code", "error_origin", "error_kind"].flatMap(key =>
+          typeof failure[key] === "string" ? [{ key: `phaseo.${key}`, value: { stringValue: failure[key] } }] : []),
       ], status: { code: status >= 500 ? 2 : 1 },
     }] }] }],
   }));

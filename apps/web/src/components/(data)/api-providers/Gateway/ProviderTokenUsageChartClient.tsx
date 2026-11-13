@@ -5,6 +5,7 @@ import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesP
 import { Bar, BarChart, CartesianGrid, Tooltip as RechartsTooltip, XAxis, YAxis } from "recharts";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChartContainer } from "@/components/ui/chart";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
 	assignSeriesColours,
 	keyForSeries,
@@ -355,25 +356,25 @@ export default function ProviderTokenUsageChartClient({
 						<section id="top-models" className="scroll-mt-36 space-y-3">
 							<h3 className="text-xl font-semibold">{t("topModels")}</h3>
 							<div className="overflow-x-auto">
-								<table className="w-full min-w-[480px] text-sm">
-									<thead>
-										<tr className="border-b border-border text-xs text-muted-foreground">
-											<th className="px-2 py-2 text-left font-medium">{t("modelLabel")}</th>
-											<th className="px-2 py-2 text-right font-medium">{t("tokensLabel")}</th>
-										</tr>
-									</thead>
-									<tbody>
+								<Table wrapInContainer={false} className="w-full min-w-[480px] text-sm">
+									<TableHeader>
+										<TableRow className="border-b border-border text-xs text-muted-foreground hover:bg-transparent dark:hover:bg-transparent">
+											<TableHead className="h-auto p-0 text-inherit dark:text-inherit px-2 py-2 text-left font-medium">{t("modelLabel")}</TableHead>
+											<TableHead className="h-auto p-0 text-inherit dark:text-inherit px-2 py-2 text-right font-medium">{t("tokensLabel")}</TableHead>
+										</TableRow>
+									</TableHeader>
+									<TableBody>
 											{activeModelRows.length > 0 ? (
 												activeModelRows.map((model) => (
-													<tr
+													<TableRow
 														key={model.id}
-														className={`border-b border-border/60 last:border-b-0 hover:bg-muted/20 ${hoveredModelId === model.id ? "bg-muted/25" : ""} ${
+														className={`border-b border-border/60 last:border-b-0 hover:bg-muted/20 dark:hover:bg-muted/20 ${hoveredModelId === model.id ? "bg-muted/25" : ""} ${
 															hoveredModelId && hoveredModelId !== model.id
 																? "text-muted-foreground/65"
 																: ""
 														}`}
 													>
-														<td className="min-w-0 px-2 py-2">
+														<TableCell className="p-0 min-w-0 px-2 py-2">
 															<Link
 																href={`/models/${model.id}`}
 																prefetch={false}
@@ -385,54 +386,54 @@ export default function ProviderTokenUsageChartClient({
 															>
 																{model.label}
 															</Link>
-														</td>
-														<td
-															className={`px-2 py-2 text-right tabular-nums ${
+														</TableCell>
+														<TableCell
+															className={`p-0 px-2 py-2 text-right tabular-nums ${
 																hoveredModelId && hoveredModelId !== model.id
 																	? "text-muted-foreground/65"
 																	: "text-foreground"
 															}`}
 														>
 													{format.count(model.tokens)}
-														</td>
-													</tr>
+														</TableCell>
+													</TableRow>
 												))
 										) : (
-											<tr>
-												<td
+											<TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+												<TableCell
 													colSpan={2}
-													className="px-2 py-6 text-center text-xs text-muted-foreground"
+													className="p-0 px-2 py-6 text-center text-xs text-muted-foreground"
 												>
 													{activeBucket
 													? t("zeroTokensForDay")
 													: t("zeroTokensForPeriod")}
-												</td>
-											</tr>
+												</TableCell>
+											</TableRow>
 										)}
-									</tbody>
-								</table>
+									</TableBody>
+								</Table>
 							</div>
 						</section>
 
 						<section id="top-apps" className="scroll-mt-36 space-y-3">
 							<h3 className="text-xl font-semibold">{t("topApps")}</h3>
 							<div className="overflow-x-auto">
-								<table className="w-full min-w-[560px] text-sm">
-									<thead>
-										<tr className="border-b border-border text-xs text-muted-foreground">
-											<th className="px-2 py-2 text-left font-medium">{t("appLabel")}</th>
-											<th className="px-2 py-2 text-right font-medium">{t("tokensLabel")}</th>
-											<th className="px-2 py-2 text-right font-medium">{t("websiteLabel")}</th>
-										</tr>
-									</thead>
-									<tbody>
+								<Table wrapInContainer={false} className="w-full min-w-[560px] text-sm">
+									<TableHeader>
+										<TableRow className="border-b border-border text-xs text-muted-foreground hover:bg-transparent dark:hover:bg-transparent">
+											<TableHead className="h-auto p-0 text-inherit dark:text-inherit px-2 py-2 text-left font-medium">{t("appLabel")}</TableHead>
+											<TableHead className="h-auto p-0 text-inherit dark:text-inherit px-2 py-2 text-right font-medium">{t("tokensLabel")}</TableHead>
+											<TableHead className="h-auto p-0 text-inherit dark:text-inherit px-2 py-2 text-right font-medium">{t("websiteLabel")}</TableHead>
+										</TableRow>
+									</TableHeader>
+									<TableBody>
 										{activeAppRows.length > 0 ? (
 											activeAppRows.map((app) => (
-												<tr
+												<TableRow
 													key={app.id}
-													className="border-b border-border/60 last:border-b-0 hover:bg-muted/20"
+													className="border-b border-border/60 last:border-b-0 hover:bg-muted/20 dark:hover:bg-muted/20"
 												>
-													<td className="min-w-0 px-2 py-2">
+													<TableCell className="p-0 min-w-0 px-2 py-2">
 														<Link
 															href={`/apps/${app.id}`}
 															className="group flex min-w-0 items-center gap-2"
@@ -451,11 +452,11 @@ export default function ProviderTokenUsageChartClient({
 																{app.title}
 															</span>
 														</Link>
-													</td>
-													<td className="px-2 py-2 text-right tabular-nums">
+													</TableCell>
+													<TableCell className="p-0 px-2 py-2 text-right tabular-nums">
 												{format.count(app.tokens)}
-													</td>
-													<td className="px-2 py-2 text-right">
+													</TableCell>
+													<TableCell className="p-0 px-2 py-2 text-right">
 														{app.url && app.url !== "about:blank" ? (
 															<a
 																href={app.url}
@@ -468,23 +469,23 @@ export default function ProviderTokenUsageChartClient({
 														) : (
 															<span className="text-xs text-muted-foreground">-</span>
 														)}
-													</td>
-												</tr>
+													</TableCell>
+												</TableRow>
 											))
 										) : (
-											<tr>
-												<td
+											<TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+												<TableCell
 													colSpan={3}
-													className="px-2 py-6 text-center text-xs text-muted-foreground"
+													className="p-0 px-2 py-6 text-center text-xs text-muted-foreground"
 												>
 													{activeBucket
 													? t("zeroTokensForDay")
 													: t("zeroTokensForPeriod")}
-												</td>
-											</tr>
+												</TableCell>
+											</TableRow>
 										)}
-									</tbody>
-								</table>
+									</TableBody>
+								</Table>
 							</div>
 						</section>
 					</div>

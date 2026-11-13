@@ -17,6 +17,8 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const DEFAULT_CARD_LIMIT = 10;
@@ -433,7 +435,7 @@ export default function ModelReleaseWeekdayAnalysis({
 					{analysis.organisationStats.length > DEFAULT_CARD_LIMIT ? (
 						<div className="mt-3 flex justify-end gap-2">
 							{expandLevel < 2 && compactOrganisationLimit < analysis.organisationStats.length ? (
-								<button
+								<Button
 									type="button"
 									disabled={isPending}
 									onClick={() =>
@@ -441,19 +443,23 @@ export default function ModelReleaseWeekdayAnalysis({
 											setExpandLevel((level) => (level === 0 ? 1 : 2))
 										)
 									}
-									className="rounded-md border border-zinc-200 px-2.5 py-1 font-medium disabled:opacity-50 dark:border-zinc-700"
+									variant="outline"
+									size="sm"
+									className="px-2.5"
 								>
 										{expandLevel === 0 ? t("showMore") : t("showAll")}
-								</button>
+								</Button>
 							) : null}
 							{expandLevel > 0 ? (
-								<button
+								<Button
 									type="button"
 									onClick={() => startTransition(() => setExpandLevel(0))}
-									className="rounded-md border border-zinc-200 px-2.5 py-1 font-medium dark:border-zinc-700"
+									variant="outline"
+									size="sm"
+									className="px-2.5"
 								>
 									{t("collapse")}
-								</button>
+								</Button>
 							) : null}
 						</div>
 					) : null}
@@ -658,23 +664,25 @@ export default function ModelReleaseWeekdayAnalysis({
 					<div className="mt-4 flex justify-end gap-2">
 						<Dialog>
 							<DialogTrigger asChild>
-								<button
+								<Button
 									type="button"
-									className="rounded-md border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
+									variant="outline"
+									size="xs"
+									className="px-3 text-zinc-700 dark:text-zinc-300"
 								>
 					{t("browseOrganisations")}
-								</button>
+								</Button>
 							</DialogTrigger>
 							<DialogContent className="max-w-lg rounded-md">
 								<DialogHeader>
 									<DialogTitle>{t("browseOrganisations")}</DialogTitle>
 								</DialogHeader>
-								<input
+								<Input
 									type="search"
 									value={organisationQuery}
 									onChange={(event) => setOrganisationQuery(event.target.value)}
 								placeholder={t("searchOrganisations")}
-									className="h-9 w-full rounded-md border border-zinc-200 bg-transparent px-3 text-sm outline-none placeholder:text-zinc-500 focus:border-zinc-400 dark:border-zinc-700 dark:focus:border-zinc-500"
+									className="w-full"
 								/>
 								<p className="text-xs text-zinc-500 dark:text-zinc-400">
 									{t("organisationCount", {
@@ -693,23 +701,27 @@ export default function ModelReleaseWeekdayAnalysis({
 							</DialogContent>
 						</Dialog>
 						{expandLevel === 0 && canExpandToExpanded ? (
-							<button
+							<Button
 								type="button"
 								disabled={isPending}
 								onClick={() => startTransition(() => setExpandLevel(1))}
-								className="rounded-md border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
+								variant="outline"
+								size="xs"
+								className="px-3 text-zinc-700 dark:text-zinc-300"
 							>
 								{t("showMoreOrganisations")}
-							</button>
+							</Button>
 						) : null}
 						{expandLevel > 0 ? (
-							<button
+							<Button
 								type="button"
 								onClick={() => startTransition(() => setExpandLevel(0))}
-								className="rounded-md border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-700 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
+								variant="outline"
+								size="xs"
+								className="px-3 text-zinc-700 dark:text-zinc-300"
 							>
 								{t("collapse")}
-							</button>
+							</Button>
 						) : null}
 					</div>
 				) : null}

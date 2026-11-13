@@ -39,6 +39,7 @@ allowBuilds:
   keytar: set this to true or false
   node-pty: true
   protobufjs: set this to true or false
+  react-native-enriched-markdown: true
   puppeteer: set this to true or false
   sharp: set this to true or false
   supabase: set this to true or false
