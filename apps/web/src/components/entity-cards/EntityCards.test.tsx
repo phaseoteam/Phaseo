@@ -187,24 +187,76 @@ describe("EntityCards", () => {
 		expect(card()?.textContent).toContain("FastInfer +4 more");
 	});
 
-	it("keeps the open card when the pointer moves onto a link inside it, and never opens that link's card", async () => {
+	it("opens a second card beside the first for a link inside it, one level deep", async () => {
 		render();
 		placeAt(link("model"), 200, 300);
 		pointer("pointerover", link("model"));
 		await advance(OPEN_DELAY_MS);
 		await respond("/api/_web/entity-cards/model/acme/rocket-2", { card: MODEL });
-		const opened = card()!;
-		const inCardLink = opened.querySelector<HTMLAnchorElement>("a[href='/organisations/acme']")!;
+		const first = card()!;
+		const inCardLink = first.querySelector<HTMLAnchorElement>("a[href='/organisations/acme']")!;
 		expect(inCardLink).not.toBeNull();
 
 		pointer("pointerout", link("model"), { relatedTarget: inCardLink });
 		pointer("pointerover", inCardLink, { relatedTarget: link("model") });
+		await respond("/api/_web/entity-cards/organisation/acme", { card: ORGANISATION });
 		await advance(OPEN_DELAY_MS + CLOSE_DELAY_MS);
-		expect(resolvers.has("/api/_web/entity-cards/organisation/acme")).toBe(false);
-		expect(card()).toBe(opened);
+		const cards = () => Array.from(document.body.querySelectorAll<HTMLElement>("[data-slot=entity-card]"));
+		// The first card stays as it was, with its link on the page; the second sits beside it.
+		expect(cards()).toHaveLength(2);
+		expect(cards()[0]).toBe(first);
+		expect(first.hasAttribute("data-open")).toBe(true);
+		expect(first.textContent).toContain("Rocket 2");
 		expect(inCardLink.isConnected).toBe(true);
-		expect(card()?.hasAttribute("data-open")).toBe(true);
-		expect(card()?.textContent).toContain("Rocket 2");
+		const second = cards()[1]!;
+		expect(second.hasAttribute("data-entity-card-nested")).toBe(true);
+		expect(second.hasAttribute("data-open")).toBe(true);
+		expect(second.textContent).toContain("Model creator since 2023");
+
+		// Links inside the second card are plain: no third card, and the first two stay.
+		const nestedLink = second.querySelector<HTMLAnchorElement>("a[href='/api-providers/fastinfer']")!;
+		expect(nestedLink).not.toBeNull();
+		pointer("pointerout", inCardLink, { relatedTarget: second });
+		pointer("pointerover", second, { relatedTarget: inCardLink });
+		pointer("pointerout", second, { relatedTarget: nestedLink });
+		pointer("pointerover", nestedLink, { relatedTarget: second });
+		await advance(OPEN_DELAY_MS + CLOSE_DELAY_MS);
+		expect(resolvers.has("/api/_web/entity-cards/provider/fastinfer")).toBe(false);
+		expect(cards()).toHaveLength(2);
+		expect(cards().every((element) => element.hasAttribute("data-open"))).toBe(true);
+
+		// Back onto the first card: the second closes, the first stays.
+		pointer("pointerout", nestedLink, { relatedTarget: first });
+		pointer("pointerover", first, { relatedTarget: nestedLink });
+		await advance(CLOSE_DELAY_MS + 200);
+		expect(cards()).toHaveLength(1);
+		expect(card()).toBe(first);
+		expect(first.hasAttribute("data-open")).toBe(true);
+
+		// Leaving the first card closes it.
+		pointer("pointerout", first, { relatedTarget: document.body });
+		await advance(CLOSE_DELAY_MS + 200);
+		expect(cards().some((element) => element.hasAttribute("data-open"))).toBe(false);
+	});
+
+	it("closes both cards when the pointer leaves the second card for the page", async () => {
+		render();
+		pointer("pointerover", link("model"));
+		await advance(OPEN_DELAY_MS);
+		await respond("/api/_web/entity-cards/model/acme/rocket-2", { card: MODEL });
+		const first = card()!;
+		const inCardLink = first.querySelector<HTMLAnchorElement>("a[href='/organisations/acme']")!;
+		pointer("pointerover", inCardLink);
+		await respond("/api/_web/entity-cards/organisation/acme", { card: ORGANISATION });
+		await advance(OPEN_DELAY_MS);
+		const second = Array.from(document.body.querySelectorAll<HTMLElement>("[data-entity-card-nested]"))[0]!;
+		expect(second.hasAttribute("data-open")).toBe(true);
+
+		pointer("pointerout", inCardLink, { relatedTarget: second });
+		pointer("pointerover", second, { relatedTarget: inCardLink });
+		pointer("pointerout", second, { relatedTarget: document.body });
+		await advance(CLOSE_DELAY_MS + 200);
+		expect(document.body.querySelectorAll("[data-slot=entity-card][data-open]")).toHaveLength(0);
 	});
 
 	it("closes 200 ms after the pointer leaves, unless it moves onto the card", async () => {
