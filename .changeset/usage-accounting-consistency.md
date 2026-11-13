@@ -6,7 +6,7 @@
 
 Make usage accounting and workspace rules consistent across request paths.
 
-- Models called by the advisor, subagent and fusion tools follow the workspace policy, guardrails and data-retention rules of the request, and their `max_uses` (8) and `max_tokens` (32,000) are bounded.
+- Models called by the advisor, subagent and fusion tools follow the workspace policy, guardrails and data-retention rules of the request, and requests asking them for more than 8 uses or 32,000 tokens are rejected.
 - A completed response with no visible output is charged for the usage the provider reported; the request still returns 502.
 - Streamed requests that use server tools are charged as each round completes, and interrupted streams include an estimate of the prompt until the provider reports usage.
 - Transcriptions without a provider-reported duration are always measured from the uploaded file.

@@ -134,11 +134,15 @@ describe("estimateOpenAiSpeechToTextUsage", () => {
         expect((await estimateOpenAiSpeechToTextUsage({ file })).input_audio_tokens).toBe(2_400);
     });
 
-    it("keeps a declared WAV data size that is close to the bytes present", async () => {
-        // 50 s declared, followed by 10 s worth of trailing bytes (other chunks).
+    it("keeps the declared WAV data size when other chunks follow it", async () => {
+        // 10 s of audio followed by a metadata chunk as large as 50 s of audio.
         const bytes = wavBytes(60);
-        new DataView(bytes.buffer).setUint32(40, 50 * 32_000, true);
-        expect(await estimateAudioDurationSeconds(new File([bytes], "a.wav", { type: "audio/wav" }))).toBe(50);
+        const view = new DataView(bytes.buffer);
+        const listOffset = 44 + 10 * 32_000;
+        view.setUint32(40, 10 * 32_000, true);
+        bytes.set([0x4c, 0x49, 0x53, 0x54], listOffset);
+        view.setUint32(listOffset + 4, bytes.length - listOffset - 8, true);
+        expect(await estimateAudioDurationSeconds(new File([bytes], "a.wav", { type: "audio/wav" }))).toBe(10);
     });
 
     it("never counts a non-empty file as no audio", async () => {

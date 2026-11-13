@@ -15,6 +15,20 @@ function estimateTextTokensFromChars(chars: number): number {
     return Math.max(1, Math.ceil(chars / 4));
 }
 
+/** True when RIFF chunks starting at `offset` run to the end of the file. */
+function chunksReachEnd(view: DataView, offset: number): boolean {
+    while (offset + 8 <= view.byteLength) {
+        for (let i = 0; i < 4; i++) {
+            const code = view.getUint8(offset + i);
+            if (code < 0x20 || code > 0x7e) return false;
+        }
+        const size = view.getUint32(offset + 4, true);
+        offset += 8 + size + (size % 2);
+    }
+    // At most a pad byte may follow the last chunk.
+    return offset >= view.byteLength && offset - view.byteLength <= 1;
+}
+
 function parseWavDurationSeconds(bytes: Uint8Array): number | undefined {
     if (bytes.length < 44) return undefined;
     const isRiff =
@@ -50,8 +64,9 @@ function parseWavDurationSeconds(bytes: Uint8Array): number | undefined {
             bitsPerSample = view.getUint16(chunkDataOffset + 14, true);
         } else if (chunkId === "data") {
             const available = Math.max(0, bytes.length - chunkDataOffset);
-            // A declared size well below the bytes that follow is not trusted: count the bytes present.
-            dataSize = chunkSize < available / 2 ? available : Math.min(chunkSize, available);
+            // The declared size is used when the data chunk ends the file or is followed by
+            // well-formed chunks; otherwise the bytes present are counted.
+            dataSize = chunksReachEnd(view, chunkDataOffset + chunkSize + (chunkSize % 2)) ? Math.min(chunkSize, available) : available;
             break;
         }
 

@@ -79,6 +79,7 @@ import { resolveSvgAuthor } from "@providers/openai/endpoints/images-svg";
 import { passesWalletCreditCheck, walletCanPay } from "../before/guards";
 import { chargeCompletedServerToolRounds, priceServerToolRounds, priceServerToolSubCall, recordsServerToolAccounting } from "../after/server-tool-charges";
 import { recordProvisionalStreamCharge } from "../after/charge";
+import { BYOK_SERVICE_FEE_RATE } from "../pricing/byok-fee";
 import {
 	buildEmptyResponseDiagnostics,
 	emptyResponseMessage,
@@ -333,8 +334,9 @@ async function recordSubCallCharge(
 
 /**
  * A credit snapshot after what this request has already spent on the models its server tools
- * called: not ok once that spend has reached the snapshot's balance. Calls on the workspace's own
- * provider key cost nothing here, and a snapshot without a balance is left as it is.
+ * called: not ok once that spend has reached the snapshot's balance. Sub-model calls on the
+ * workspace's own provider key cost nothing here, image calls on it their service fee, and a
+ * snapshot without a balance is left as it is.
  */
 function creditAfterServerToolSpend<T extends { ok?: boolean; balanceNanos?: number | null }>(
 	ctx: PipelineContext,
@@ -344,7 +346,7 @@ function creditAfterServerToolSpend<T extends { ok?: boolean; balanceNanos?: num
 	const subCallNanos = (ctx.serverToolSubCallCharges ?? [])
 		.reduce((sum, charge) => sum + Math.max(0, Number(charge.totalNanos) || 0), 0);
 	const imageNanos = (ctx.meta.serverToolPricing ?? [])
-		.reduce((sum, charge) => sum + (charge.key_source === "byok" ? 0 : Math.max(0, Number(charge.total_nanos) || 0)), 0);
+		.reduce((sum, charge) => sum + Math.max(0, Number(charge.total_nanos) || 0) * (charge.key_source === "byok" ? BYOK_SERVICE_FEE_RATE : 1), 0);
 	const spentNanos = subCallNanos + imageNanos;
 	return spentNanos > 0 && spentNanos >= credit.balanceNanos ? { ...credit, ok: false } : credit;
 }
@@ -359,8 +361,7 @@ function subCallCreditDenied(
 	// Spend is measured against the balance the request was admitted on: a later read of the
 	// wallet may already include this request's own provisional charges.
 	const admitted = pre.ctx.gating?.credit;
-	const spent = creditAfterServerToolSpend(pre.ctx, admitted?.ok ? admitted : context.credit)?.ok === false;
-	const remaining = spent ? { ...context, credit: { ...context.credit, ok: false } } : context;
+	const remaining = { ...context, credit: creditAfterServerToolSpend(pre.ctx, admitted?.ok ? admitted : context.credit) };
 	if (passesWalletCreditCheck({ model, context: remaining, providers: candidates as any[], internal: pre.ctx.internal })) return null;
 	return `Insufficient credits to call ${model}. Add credits to use paid models in server tools.`;
 }

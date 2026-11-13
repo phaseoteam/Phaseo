@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { estimateDrainProgressUsage, estimateRequestInputTokens } from "./drain-progress";
+import { computeBill } from "../pricing/engine";
 
 describe("estimateDrainProgressUsage", () => {
 	const requestBody = { model: "m", messages: [{ role: "user", content: "x".repeat(2_000) }] };
@@ -7,14 +8,24 @@ describe("estimateDrainProgressUsage", () => {
 	it("estimates the prompt from the request until the provider reports input", () => {
 		// 2,000 prompt characters and 1,000 streamed characters, at 5 characters per token.
 		expect(estimateDrainProgressUsage({ usage: null, outputChars: 1_000, requestBody }))
-			.toEqual({ usage: { input_tokens: 400, output_tokens: 200 }, inputReported: false });
+			.toEqual({ usage: { input_tokens: 400, input_tokens_details: { cached_tokens: 400 }, output_tokens: 200 }, inputReported: false });
 		expect(estimateDrainProgressUsage({ usage: { output_tokens: 3 }, outputChars: 1_000, requestBody }))
-			.toEqual({ usage: { input_tokens: 400, output_tokens: 200 }, inputReported: false });
+			.toEqual({ usage: { input_tokens: 400, input_tokens_details: { cached_tokens: 400 }, output_tokens: 200 }, inputReported: false });
 	});
 
 	it("counts the prompt when nothing has streamed yet", () => {
 		expect(estimateDrainProgressUsage({ usage: null, outputChars: 0, requestBody }))
-			.toEqual({ usage: { input_tokens: 400, output_tokens: 0 }, inputReported: false });
+			.toEqual({ usage: { input_tokens: 400, input_tokens_details: { cached_tokens: 400 }, output_tokens: 0 }, inputReported: false });
+	});
+
+	it("prices the estimated prompt at the cache-read rate, or the input rate without one", () => {
+		const rule = (meter: string, price: string) => ({ pricing_plan: "standard", meter, unit: "token", unit_size: 1_000_000, price_per_unit: price, currency: "USD", match: [], priority: 100 });
+		const card = (rules: unknown[]) => ({ provider: "openai", model: "m", endpoint: "text.generate", effective_from: null, effective_to: null, currency: "USD", version: null, rules }) as any;
+		const { usage } = estimateDrainProgressUsage({ usage: null, outputChars: 0, requestBody })!;
+		const withCacheRate = computeBill(usage, card([rule("input_text_tokens", "10"), rule("cached_read_text_tokens", "1"), rule("output_text_tokens", "40")]));
+		expect(withCacheRate.pricing.total_nanos).toBe(400_000);
+		const withoutCacheRate = computeBill(usage, card([rule("input_text_tokens", "10"), rule("output_text_tokens", "40")]));
+		expect(withoutCacheRate.pricing.total_nanos).toBe(4_000_000);
 	});
 
 	it("counts only the streamed output when the request has no prompt text", () => {

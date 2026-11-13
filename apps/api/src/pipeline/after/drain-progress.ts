@@ -2,7 +2,8 @@
 // Why: The runtime may stop the drain before final usage arrives; what was generated is charged first.
 // How: Provider-reported usage where there is any, with output never below the streamed text.
 //      Until the provider reports input, the prompt is estimated from the request text, on the
-//      low side; the final settlement replaces the estimate with the reported usage.
+//      low side and at the cache-read rate; the final settlement replaces the estimate with the
+//      reported usage.
 
 // Lean low: checkpoints charge before the exact cost is known.
 const CHARS_PER_TOKEN_LOWER_BOUND = 5;
@@ -54,5 +55,14 @@ export function estimateDrainProgressUsage(args: {
 	}
 	const estimatedInputTokens = estimateRequestInputTokens(args.requestBody);
 	if (streamedOutputTokens <= 0 && estimatedInputTokens <= 0) return null;
-	return { usage: { input_tokens: estimatedInputTokens, output_tokens: streamedOutputTokens }, inputReported: false };
+	// The estimate is counted as cache reads, the lowest rate a prompt can be billed at, so the
+	// provisional charge never exceeds the final one when the prompt was served from a cache.
+	return {
+		usage: {
+			input_tokens: estimatedInputTokens,
+			...(estimatedInputTokens > 0 ? { input_tokens_details: { cached_tokens: estimatedInputTokens } } : {}),
+			output_tokens: streamedOutputTokens,
+		},
+		inputReported: false,
+	};
 }
