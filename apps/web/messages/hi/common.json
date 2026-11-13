@@ -2490,6 +2490,7 @@
 			"serviceTierLineStyles": "सेवा स्तर की रेखा शैलियाँ",
 			"inAudience": "{audience} में",
 			"usOnlyInference": "केवल अमेरिका में इन्फ़रेंस",
+			"withKeyterms": "कीटर्म के साथ",
 			"regionOnlyInference": "केवल {region} में इन्फ़रेंस"
 		},
 		"publicModelCopy": {

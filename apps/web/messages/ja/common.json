@@ -2490,6 +2490,7 @@
 			"serviceTierLineStyles": "サービス階層の線スタイル",
 			"inAudience": "{audience} 限定",
 			"usOnlyInference": "米国限定の推論",
+			"withKeyterms": "キーターム指定あり",
 			"regionOnlyInference": "{region}限定の推論"
 		},
 		"publicModelCopy": {

@@ -2490,6 +2490,7 @@
 			"serviceTierLineStyles": "Service tier line styles",
 			"inAudience": "In {audience}",
 			"usOnlyInference": "US-only inference",
+			"withKeyterms": "With keyterms",
 			"regionOnlyInference": "{region}-only inference"
 		},
 		"publicModelCopy": {

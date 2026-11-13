@@ -2490,6 +2490,7 @@
 			"serviceTierLineStyles": "服务层级线条样式",
 			"inAudience": "仅限 {audience}",
 			"usOnlyInference": "仅限美国推理",
+			"withKeyterms": "使用关键词",
 			"regionOnlyInference": "仅限{region}推理"
 		},
 		"publicModelCopy": {

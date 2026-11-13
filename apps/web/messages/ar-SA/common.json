@@ -2490,6 +2490,7 @@
 			"serviceTierLineStyles": "أنماط خطوط مستويات الخدمة",
 			"inAudience": "في {audience}",
 			"usOnlyInference": "استدلال داخل الولايات المتحدة فقط",
+			"withKeyterms": "مع المصطلحات الرئيسية",
 			"regionOnlyInference": "استدلال داخل {region} فقط"
 		},
 		"publicModelCopy": {
