@@ -42,7 +42,7 @@ Une requête refusée renvoie `429` avec `Retry-After` en secondes. Attendez ce 
 <span id="management-api-limits"></span>
 ## Limites de l’API de gestion
 
-Les endpoints de gestion, comme `/v1/keys`, `/v1/logs` et `/v1/analytics`, partagent un quota de **600 unités par minute** pour chaque identifiant. Chaque clé de gestion, jeton OAuth et session du tableau de bord a son propre quota, et les requêtes sans identifiant en partagent un par adresse IP. Les endpoints de modèles, de fichiers, de lots et de tâches ne l’utilisent pas.
+Les endpoints de gestion, comme `/v1/keys`, `/v1/logs` et `/v1/analytics`, partagent un quota de **200 unités par minute** pour chaque identifiant. Chaque clé de gestion, jeton OAuth et session du tableau de bord a son propre quota, et les requêtes sans identifiant en partagent un par adresse IP. Les endpoints de modèles, de fichiers, de lots et de tâches ne l’utilisent pas.
 
 Chaque requête consomme des unités selon la quantité de travail qu’elle demande :
 
@@ -148,6 +148,6 @@ Règles de limite de débit pour les agents, résumant cette page :
 - Un budget de département épuisé renvoie `429` avec `key_limit_exceeded`, le motif `department_<interval>_cost_budget_reached`, `department_id`, `department_name` et `reset_at` ; attendez `Retry-After` secondes ou relevez le budget. Si la vérification du budget est indisponible, la requête est autorisée.
 - Les règles de dépenses qui bloquent renvoient `429` avec `spend_rule_blocked` ; attendez `Retry-After`, ou demandez à un propriétaire ou à un administrateur de lever le blocage. `x-phaseo-spend-warning` signifie qu’un blocage peut suivre.
 - Les politiques de limite de débit de l’espace de travail renvoient `429` avec `rate_limit_exceeded`, `policy_id` et `limit_scope`. `x-ratelimit-remaining-requests` est approximatif.
-- Les endpoints de gestion (clés, journaux, analytics, etc.) renvoient `429` avec `rate_limit_exceeded` et le motif `management_api_rate_limit` dès qu’un identifiant a utilisé ses 600 unités de la minute ; les requêtes plus lourdes consomment plus d’unités. Attendez les secondes indiquées par `Retry-After` (60).
+- Les endpoints de gestion (clés, journaux, analytics, etc.) renvoient `429` avec `rate_limit_exceeded` et le motif `management_api_rate_limit` dès qu’un identifiant a utilisé ses 200 unités de la minute ; les requêtes plus lourdes consomment plus d’unités. Attendez les secondes indiquées par `Retry-After` (60).
 - `Retry-After` peut être en secondes ou une date HTTP ; validez-le avant de planifier une nouvelle tentative. Ne soumettez jamais à nouveau une tâche vidéo ou par lots ambiguë ; vérifiez plutôt son état.
 </Visibility>

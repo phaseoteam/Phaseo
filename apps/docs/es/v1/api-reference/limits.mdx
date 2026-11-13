@@ -42,7 +42,7 @@ Una solicitud rechazada devuelve `429` con `Retry-After` en segundos. Espera ese
 <span id="management-api-limits"></span>
 ## Límites de la API de administración
 
-Los endpoints de administración, como `/v1/keys`, `/v1/logs` y `/v1/analytics`, comparten una cuota de **600 unidades por minuto** por credencial. Cada clave de administración, token OAuth y sesión del panel tiene su propia cuota, y las solicitudes sin credencial comparten una por dirección IP. Los endpoints de modelos, archivos, lotes y trabajos no la usan.
+Los endpoints de administración, como `/v1/keys`, `/v1/logs` y `/v1/analytics`, comparten una cuota de **200 unidades por minuto** por credencial. Cada clave de administración, token OAuth y sesión del panel tiene su propia cuota, y las solicitudes sin credencial comparten una por dirección IP. Los endpoints de modelos, archivos, lotes y trabajos no la usan.
 
 Cada solicitud usa unidades según el trabajo que requiere:
 
@@ -148,6 +148,6 @@ Reglas de límites de solicitudes para agentes, que resumen esta página:
 - Un presupuesto de departamento agotado devuelve `429` con `key_limit_exceeded`, el motivo `department_<interval>_cost_budget_reached`, `department_id`, `department_name` y `reset_at`; espera los segundos de `Retry-After` o aumenta el presupuesto. Si la comprobación del presupuesto no está disponible, la solicitud se permite.
 - Las reglas de gasto que bloquean devuelven `429` con `spend_rule_blocked`; espera a `Retry-After` o pide a un propietario o administrador que levante el bloqueo. `x-phaseo-spend-warning` significa que puede llegar un bloqueo.
 - Las políticas de límite de velocidad del espacio de trabajo devuelven `429` con `rate_limit_exceeded`, `policy_id` y `limit_scope`. `x-ratelimit-remaining-requests` es aproximado.
-- Los endpoints de administración (claves, registros, analíticas, etc.) devuelven `429` con `rate_limit_exceeded` y el motivo `management_api_rate_limit` cuando una credencial ha usado sus 600 unidades del minuto; las solicitudes más pesadas usan más unidades. Espera los segundos de `Retry-After` (60).
+- Los endpoints de administración (claves, registros, analíticas, etc.) devuelven `429` con `rate_limit_exceeded` y el motivo `management_api_rate_limit` cuando una credencial ha usado sus 200 unidades del minuto; las solicitudes más pesadas usan más unidades. Espera los segundos de `Retry-After` (60).
 - `Retry-After` puede ser un número de segundos o una fecha HTTP; valídalo antes de programar un reintento. Nunca vuelvas a enviar un trabajo de vídeo o de lotes ambiguo; consulta su estado.
 </Visibility>
