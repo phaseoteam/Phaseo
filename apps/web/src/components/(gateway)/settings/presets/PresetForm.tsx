@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import {
 	Select,
@@ -189,6 +190,8 @@ function FormSection({
 		</section>
 	);
 }
+
+const RESPONSE_CACHING_DOCS_URL = "https://phaseo.app/docs/v1/cookbook/response-caching-with-presets";
 
 function SectionLinkRow({
 	title,
@@ -866,7 +869,7 @@ export default function PresetForm({
 						/>
 						<SectionLinkRow
 							title={t("presetForm.requestDefaultsTitle" as never)}
-							description={t("strings.phraseSetRoutingBehaviorResponseCachingAndPromptDefaults" as never)}
+							description={t("strings.phraseSetRoutingBehaviorAndPromptDefaults" as never)}
 							summary={requestDefaultsSummary}
 							onClick={() => setActiveView("defaults")}
 						/>
@@ -948,6 +951,22 @@ export default function PresetForm({
 						</div>
 
 						<div className="space-y-3 rounded-lg border p-4">
+							<Alert className="rounded-md">
+								<AlertDescription>
+									{t.rich("presetForm.responseCachingUnavailable", {
+										link: (chunks) => (
+											<a
+												href={RESPONSE_CACHING_DOCS_URL}
+												target="_blank"
+												rel="noreferrer"
+												className="underline underline-offset-2 hover:text-foreground"
+											>
+												{chunks}
+											</a>
+										),
+									})}
+								</AlertDescription>
+							</Alert>
 							<div className="flex items-center justify-between">
 								<div className="space-y-0.5">
 						<Label>{t("credits.Enable Response Caching" as never)}</Label>
