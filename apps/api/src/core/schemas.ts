@@ -663,7 +663,7 @@ const GatewayDatetimeToolSchema = lazySchema(() => z.object({
 const GatewayWebSearchToolSchema = lazySchema(() => z.object({
 	type: z.enum(["phaseo:web_search", "gateway:web_search"]),
 	parameters: z.object({
-		engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish"]).optional(),
+		engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish", "deepseek"]).optional(),
 		max_results: z.number().int().positive().max(25).optional(),
 		max_total_results: z.number().int().positive().max(100).optional(),
 		search_context_size: z.enum(["low", "medium", "high"]).optional(),
@@ -679,7 +679,7 @@ const GatewayWebSearchToolSchema = lazySchema(() => z.object({
 		language: z.string().optional(),
 		page: z.number().int().min(0).max(10).optional(),
 	}).optional(),
-	engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish"]).optional(),
+	engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish", "deepseek"]).optional(),
 	max_results: z.number().int().positive().max(25).optional(),
 	max_total_results: z.number().int().positive().max(100).optional(),
 	search_context_size: z.enum(["low", "medium", "high"]).optional(),
@@ -699,7 +699,7 @@ const GatewayWebSearchToolSchema = lazySchema(() => z.object({
 const GatewayWebFetchToolSchema = lazySchema(() => z.object({
 	type: z.enum(["phaseo:web_fetch", "gateway:web_fetch"]),
 	parameters: z.object({
-		engine: z.enum(["auto", "native", "direct", "exa", "firecrawl", "parallel"]).optional(),
+		engine: z.enum(["auto", "native", "direct", "exa", "firecrawl", "parallel", "deepseek"]).optional(),
 		max_chars: z.number().int().positive().max(100000).optional(),
 		max_content_tokens: z.number().int().positive().max(100000).optional(),
 		max_uses: z.number().int().positive().optional(),
@@ -707,7 +707,7 @@ const GatewayWebFetchToolSchema = lazySchema(() => z.object({
 		blocked_domains: z.array(z.string().min(1)).optional(),
 		excluded_domains: z.array(z.string().min(1)).optional(),
 	}).optional(),
-	engine: z.enum(["auto", "native", "direct", "exa", "firecrawl", "parallel"]).optional(),
+	engine: z.enum(["auto", "native", "direct", "exa", "firecrawl", "parallel", "deepseek"]).optional(),
 	url: z.string().url().optional(),
 	max_chars: z.number().int().positive().max(100000).optional(),
 	max_content_tokens: z.number().int().positive().max(100000).optional(),

@@ -38,7 +38,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `engine` | string | `direct` | `auto`, `native`, `direct`, `exa`, `parallel`, or `firecrawl`. See [Choose an engine](#choose-an-engine). |
+| `engine` | string | `direct` | `auto`, `native`, `direct`, `exa`, `parallel`, `firecrawl`, or `deepseek`. See [Choose an engine](#choose-an-engine). |
 | `max_chars` | integer | `12000` | Characters of page text returned to the model, up to `100000`. |
 | `max_content_tokens` | integer | None | Used instead of `max_chars` when `max_chars` is omitted. Also the size limit for `native`. |
 | `max_uses` | integer | `10` | Fetch calls per request, up to `100`. |
@@ -58,6 +58,7 @@ Each call has a `url`. The model can also send `engine`, `max_chars`, `max_conte
 | `exa` | Exa content extraction. |
 | `parallel` | Parallel Extract. |
 | `firecrawl` | Firecrawl Scrape. |
+| `deepseek` | DeepSeek Fetch, which returns the page as Markdown. |
 | `native` | Anthropic's `web_fetch_20260209` tool, on `/v1/messages` only. On other endpoints the request is rejected; use `direct` or a managed engine. |
 
 If a managed engine isn't enabled, the call returns `fetch_not_configured` to the model.
@@ -108,4 +109,4 @@ Check `truncated` before assuming the model saw the whole page. For a worked exa
 
 ## Usage and pricing
 
-Each fetch adds 1 to `usage.server_tool_use.web_fetch_requests`. Phaseo bills each managed fetch through Exa, Parallel or Firecrawl at $0.001, unless the model's price card sets its own `server_tool_web_fetch_requests` price; direct fetches are free. Fetches through paid engines need credits even when the model is free. Native fetch is billed with `native_web_fetch_requests` where the model's price card defines it.
+Each fetch adds 1 to `usage.server_tool_use.web_fetch_requests`. Phaseo bills each managed fetch through Exa, Parallel, Firecrawl or DeepSeek at $0.001, unless the model's price card sets its own `server_tool_web_fetch_requests` price; direct fetches are free. Fetches through paid engines need credits even when the model is free. Native fetch is billed with `native_web_fetch_requests` where the model's price card defines it.

@@ -38,7 +38,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | Paramètre | Type | Valeur par défaut | Description |
 | --- | --- | --- | --- |
-| `engine` | string | `direct` | `auto`, `native`, `direct`, `exa`, `parallel` ou `firecrawl`. Voir [Choisir un moteur](#choose-an-engine). |
+| `engine` | string | `direct` | `auto`, `native`, `direct`, `exa`, `parallel`, `firecrawl` ou `deepseek`. Voir [Choisir un moteur](#choose-an-engine). |
 | `max_chars` | integer | `12000` | Nombre de caractères de texte de la page renvoyés au modèle, jusqu’à `100000`. |
 | `max_content_tokens` | integer | Aucune | Utilisé à la place de `max_chars` lorsque `max_chars` est omis. C’est aussi la taille limite pour `native`. |
 | `max_uses` | integer | `10` | Appels de récupération par requête, jusqu’à `100`. |
@@ -59,6 +59,7 @@ Chaque appel contient une `url`. Le modèle peut aussi envoyer `engine`, `max_ch
 | `exa` | Extraction de contenu Exa. |
 | `parallel` | Parallel Extract. |
 | `firecrawl` | Firecrawl Scrape. |
+| `deepseek` | DeepSeek Fetch, qui renvoie la page en Markdown. |
 | `native` | L’outil `web_fetch_20260209` d’Anthropic, sur `/v1/messages` uniquement. Sur les autres endpoints, la requête est rejetée ; utilisez `direct` ou un moteur géré. |
 
 Si un moteur géré n’est pas activé, l’appel renvoie `fetch_not_configured` au modèle.
@@ -109,4 +110,4 @@ Vérifiez `truncated` avant de supposer que le modèle a vu la page entière. Po
 
 ## Utilisation et tarification
 
-Chaque récupération ajoute 1 à `usage.server_tool_use.web_fetch_requests`. Phaseo facture chaque récupération gérée via Exa, Parallel ou Firecrawl $0.001, sauf si la fiche tarifaire du modèle définit son propre prix pour `server_tool_web_fetch_requests` ; les récupérations directes sont gratuites. Les récupérations via des moteurs payants nécessitent du crédit même lorsque le modèle est gratuit. La récupération native est facturée avec `native_web_fetch_requests` lorsque la fiche tarifaire du modèle la définit.
+Chaque récupération ajoute 1 à `usage.server_tool_use.web_fetch_requests`. Phaseo facture chaque récupération gérée via Exa, Parallel, Firecrawl ou DeepSeek $0.001, sauf si la fiche tarifaire du modèle définit son propre prix pour `server_tool_web_fetch_requests` ; les récupérations directes sont gratuites. Les récupérations via des moteurs payants nécessitent du crédit même lorsque le modèle est gratuit. La récupération native est facturée avec `native_web_fetch_requests` lorsque la fiche tarifaire du modèle la définit.

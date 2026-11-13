@@ -44,7 +44,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | パラメーター | 型 | 既定値 | 説明 |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | `auto`、`native`、`exa`、`parallel`、`firecrawl`、`perplexity`、`tinyfish` のいずれか。[エンジンの選択](#choose-an-engine)を参照してください。 |
+| `engine` | string | `exa` | `auto`、`native`、`exa`、`parallel`、`firecrawl`、`perplexity`、`tinyfish`、`deepseek` のいずれか。[エンジンの選択](#choose-an-engine)を参照してください。 |
 | `max_results` | integer | `5` | 検索 1 回あたりの結果数。上限は `25` です。 |
 | `max_total_results` | integer | `25` | リクエスト内のすべての検索を合わせた結果数。上限は `100` です。`max_results` を下回ることはありません。 |
 | `max_uses` | integer | `10` | 1 リクエストあたりの検索回数。上限は `100` です。 |
@@ -63,7 +63,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | 引数 | 説明 |
 | --- | --- |
 | `user_location` | おおよその位置。Perplexity は地域検索に `user_location.country` を使い、TinyFish は国と言語を使います。 |
-| `language` | `en` などの結果の言語コード。ローカライズに対応したエンジンで使われます。 |
+| `language` | `en` などの結果の言語コード。ローカライズに対応したエンジンで使われます。 DeepSeek では、クエリに `lang:` フィルターとして追加されます。 |
 | `page` | 結果ページ `0` から `10`。TinyFish 用です。 |
 
 モデルが送信した値は、その呼び出しに限りツールの既定値を上書きします。`max_results` は引き続き `max_total_results` の残りで制限され、それを使い切ると以降の呼び出しは `max_total_results_reached` を返します。
@@ -79,11 +79,16 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `firecrawl` | 管理対象の Firecrawl 検索。 |
 | `perplexity` | Perplexity Search API。ランク付けされた結果、`search_context_size`、`user_location.country` による地域検索に対応します。 |
 | `tinyfish` | TinyFish Search。ローカライズされ、ページ分割されたランク付きの結果を返します。返すのはスニペットで、ページ全文は返しません。モデルにさらに情報が必要な場合は [`phaseo:web_fetch`](./web-fetch) を使ってください。 |
-| `native` | OpenAI の `web_search_preview` や Anthropic の `web_search_20250305` など、プロバイダー自身の Web 検索ツール。 |
+| `deepseek` | DeepSeek Search。各ページの要約を添えたランク付きの結果を返します。モデルが読むことを前提に書かれています。 |
+| `native` | OpenAI の `web_search_preview`、Anthropic の `web_search_20250305`、DeepSeek の `deepseek_web_search` など、プロバイダー自身の Web 検索ツール。 |
 
 管理エンジンが有効になっていない場合、呼び出しはモデルに `search_not_configured` を返します。
 
-`/v1/chat/completions` または `/v1/responses` で `engine: "native"` を指定すると、リクエストは Web 検索を自前で実行するプロバイダーにのみ送られます。そのモデルを提供するプロバイダーがない場合、Phaseo は代わりに既定エンジンを実行し、管理検索として課金します。`native` はツール定義でのみ指定してください。プロバイダーのツールはリクエスト送信前に選ぶ必要があるため、モデルが呼び出しで `native` を指定すると、その呼び出しは `unsupported_search_engine` を返します。
+`/v1/chat/completions` または `/v1/responses` で `engine: "native"` を指定すると、リクエストは Web 検索を自前で実行するプロバイダーにのみ送られます。そのモデルを提供するプロバイダーがない場合、Phaseo は代わりに既定エンジンを実行し、管理検索として課金します。
+
+これらのエンドポイントで Web 検索を自前で実行するプロバイダーは、OpenAI、`/v1/responses` の Azure OpenAI デプロイ、xAI、そして `deepseek/deepseek-v4.1-flash-1017` の DeepSeek です。DeepSeek が自前で検索するのは、Web 検索がリクエストの唯一のツールで、検索にドメインリストがない場合に限られます。DeepSeek の API は、そのどちらも受け付けないためです。このモデルへのそれ以外のリクエストでは、代わりに Phaseo の検索が使われ、独自のツールと併用できます。推論を有効にすると、DeepSeek は複数のステップでページを開いて読む、より深い検索を実行します。
+
+OpenAI 独自の `{ "type": "web_search" }` ツールを送った場合も、`engine: "native"` と同じように動作します。`native` はツール定義でのみ指定してください。プロバイダーのツールはリクエスト送信前に選ぶ必要があるため、モデルが呼び出しで `native` を指定すると、その呼び出しは `unsupported_search_engine` を返します。
 
 ## ドメインで絞り込む
 
@@ -101,6 +106,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 - **Perplexity** はどちらか一方のリストのみを受け付け、両方は指定できません。ドメインは最大 20 件です。除外ドメインは Perplexity の拒否リスト形式で送られます。
 - **Firecrawl** はどちらか一方のリストのみを受け付け、両方は指定できません。
 - **TinyFish** は両方を受け付け、クエリ内の `site:` と `-site:` 演算子に変換します。
+- **DeepSeek** は両方を受け付け、`site:` と `-site:` 演算子に変換します。クエリは 128 文字までに制限されているため、演算子の分の余地を確保するためにクエリが短縮されます。ドメインリストだけで上限を超える場合、呼び出しは `search_query_too_long` を返します。
 
 ## ツールが返す内容
 
@@ -122,4 +128,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-モデルの料金カードで `server_tool_web_search_requests` と `server_tool_web_search_extra_results` の料金を設定していない場合、Phaseo は管理型検索 1 回につき $0.007、最初の 10 件を超える結果 1 件につき $0.001 を課金します。失敗した検索は課金されず、TinyFish Search は公開プランで無料のため、`engine: "tinyfish"` では検索料金は加算されません。有料エンジンでの検索には、モデルが無料でもクレジットが必要です。ネイティブ検索は、モデルの料金カードで定義されている場合に `native_web_search_requests` で課金されます。
+モデルの料金カードで `server_tool_web_search_requests` と `server_tool_web_search_extra_results` の料金を設定していない場合、Phaseo は管理型検索 1 回につき $0.007、最初の 10 件を超える結果 1 件につき $0.001 を課金します。失敗した検索は課金されず、TinyFish Search は公開プランで無料のため、`engine: "tinyfish"` では検索料金は加算されません。有料エンジンでの検索には、モデルが無料でもクレジットが必要です。ネイティブ検索は、プロバイダーの公開価格で `native_web_search_requests` として課金されます。たとえば OpenAI と Anthropic では 1,000 回の検索につき $10、DeepSeek では 1,000 回につき $0.75 で、DeepSeek では結果を返した検索のみが対象です。DeepSeek は、検索中に開いた各ページも 1,000 ページにつき $0.75 で、`native_web_fetch_requests` として課金します。

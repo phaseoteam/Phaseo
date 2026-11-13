@@ -44,7 +44,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | `auto`、`native`、`exa`、`parallel`、`firecrawl`、`perplexity` 或 `tinyfish`。参见[选择引擎](#choose-an-engine)。 |
+| `engine` | string | `exa` | `auto`、`native`、`exa`、`parallel`、`firecrawl`、`perplexity`、`tinyfish` 或 `deepseek`。参见[选择引擎](#choose-an-engine)。 |
 | `max_results` | integer | `5` | 每次搜索调用的结果数，最多 `25`。 |
 | `max_total_results` | integer | `25` | 请求中所有搜索的结果总数，最多 `100`。不会低于 `max_results`。 |
 | `max_uses` | integer | `10` | 每个请求的搜索调用次数，最多 `100`。 |
@@ -63,7 +63,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | 参数 | 说明 |
 | --- | --- |
 | `user_location` | 大致位置。Perplexity 使用 `user_location.country` 进行区域搜索；TinyFish 使用国家和语言。 |
-| `language` | 结果语言代码，例如 `en`，用于支持本地化的引擎。 |
+| `language` | 结果语言代码，例如 `en`，用于支持本地化的引擎。 DeepSeek 会把它作为 `lang:` 过滤条件加入查询。 |
 | `page` | 结果页 `0` 到 `10`，用于 TinyFish。 |
 
 模型发送的值会在该次调用中替换工具的默认值。`max_results` 仍受 `max_total_results` 剩余额度的限制；用完后，后续调用会返回 `max_total_results_reached`。
@@ -79,11 +79,16 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `firecrawl` | 托管 Firecrawl 搜索。 |
 | `perplexity` | Perplexity Search API：排序结果、`search_context_size`，以及基于 `user_location.country` 的区域搜索。 |
 | `tinyfish` | TinyFish Search：本地化、分页的排序结果。它返回摘要片段，而不是完整页面文本；模型需要更多内容时，请使用 [`phaseo:web_fetch`](./web-fetch)。 |
-| `native` | 提供商自身的网页搜索工具，例如 OpenAI 的 `web_search_preview` 或 Anthropic 的 `web_search_20250305`。 |
+| `deepseek` | DeepSeek Search：附带每个页面摘要的排序结果，专为模型阅读而写。 |
+| `native` | 提供商自身的网页搜索工具，例如 OpenAI 的 `web_search_preview`、Anthropic 的 `web_search_20250305` 或 DeepSeek 的 `deepseek_web_search`。 |
 
 如果托管引擎未启用，调用会向模型返回 `search_not_configured`。
 
-在 `/v1/chat/completions` 或 `/v1/responses` 上使用 `engine: "native"` 时，请求只会发往自己运行网页搜索的提供商。如果没有这样的提供商提供该模型，Phaseo 会改用默认引擎，并按托管搜索计费。只在工具定义中设置 `native`：如果模型在调用中请求 `native`，调用会返回 `unsupported_search_engine`，因为提供商的工具必须在请求发送前选定。
+在 `/v1/chat/completions` 或 `/v1/responses` 上使用 `engine: "native"` 时，请求只会发往自己运行网页搜索的提供商。如果没有这样的提供商提供该模型，Phaseo 会改用默认引擎，并按托管搜索计费。
+
+在这些接口上自己运行网页搜索的提供商有 OpenAI、`/v1/responses` 上的 Azure OpenAI 部署、xAI，以及 `deepseek/deepseek-v4.1-flash-1017` 上的 DeepSeek。只有当网页搜索是请求中唯一的工具、且搜索没有域名列表时，DeepSeek 才会自己搜索，因为它的 API 会拒绝这两种情况。发往该模型的其他请求会改用 Phaseo 的搜索，它可以与你自己的工具一起使用。开启推理后，DeepSeek 会运行更深入的搜索，分多个步骤打开并阅读页面。
+
+发送 OpenAI 自己的 `{ "type": "web_search" }` 工具，效果与 `engine: "native"` 相同。只在工具定义中设置 `native`：如果模型在调用中请求 `native`，调用会返回 `unsupported_search_engine`，因为提供商的工具必须在请求发送前选定。
 
 ## 按域名过滤
 
@@ -101,6 +106,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 - **Perplexity** 只接受其中一个列表，不能同时使用，最多 20 个域名。排除的域名会以它的拒绝列表格式发送。
 - **Firecrawl** 只接受其中一个列表，不能同时使用。
 - **TinyFish** 两个都接受，并在查询中把它们转换为 `site:` 和 `-site:` 运算符。
+- **DeepSeek** 两个都接受，并把它们转换为 `site:` 和 `-site:` 运算符。它的查询限制为 128 个字符，因此查询会被缩短，为运算符腾出空间。如果仅域名列表就超出限制，调用会返回 `search_query_too_long`。
 
 ## 工具返回的内容
 
@@ -122,4 +128,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-除非模型价格卡为 `server_tool_web_search_requests` 和 `server_tool_web_search_extra_results` 设置了自己的价格，Phaseo 对每次托管搜索收取 $0.007，前 10 条之后的每条结果另收 $0.001。失败的搜索不计费；TinyFish Search 在其公开方案中免费，因此 `engine: "tinyfish"` 不增加搜索费用。即使模型免费，使用付费引擎搜索也需要账户有余额。如果模型价格卡定义了 `native_web_search_requests`，原生搜索按该计量项计费。
+除非模型价格卡为 `server_tool_web_search_requests` 和 `server_tool_web_search_extra_results` 设置了自己的价格，Phaseo 对每次托管搜索收取 $0.007，前 10 条之后的每条结果另收 $0.001。失败的搜索不计费；TinyFish Search 在其公开方案中免费，因此 `engine: "tinyfish"` 不增加搜索费用。即使模型免费，使用付费引擎搜索也需要账户有余额。原生搜索按提供商公布的价格以 `native_web_search_requests` 计费：例如 OpenAI 和 Anthropic 为每 1,000 次搜索 $10，DeepSeek 为每 1,000 次 $0.75，且 DeepSeek 只对返回结果的搜索计数。DeepSeek 还会对搜索期间打开的每个页面按每 1,000 个 $0.75 计费，计为 `native_web_fetch_requests`。

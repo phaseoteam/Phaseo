@@ -44,7 +44,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | पैरामीटर | प्रकार | डिफ़ॉल्ट | विवरण |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity` या `tinyfish`। देखें [इंजन चुनें](#choose-an-engine)। |
+| `engine` | string | `exa` | `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity`, `tinyfish` या `deepseek`। देखें [इंजन चुनें](#choose-an-engine)। |
 | `max_results` | integer | `5` | प्रति खोज कॉल परिणाम, अधिकतम `25`। |
 | `max_total_results` | integer | `25` | अनुरोध की सभी खोजों में कुल परिणाम, अधिकतम `100`। कभी `max_results` से कम नहीं। |
 | `max_uses` | integer | `10` | प्रति अनुरोध खोज कॉल, अधिकतम `100`। |
@@ -63,7 +63,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | आर्गुमेंट | विवरण |
 | --- | --- |
 | `user_location` | अनुमानित स्थान। Perplexity क्षेत्रीय खोज के लिए `user_location.country` उपयोग करता है; TinyFish देश और भाषा उपयोग करता है। |
-| `language` | परिणाम की भाषा का कोड, जैसे `en`, उन इंजनों के लिए जो स्थानीयकरण करते हैं। |
+| `language` | परिणाम की भाषा का कोड, जैसे `en`, उन इंजनों के लिए जो स्थानीयकरण करते हैं। DeepSeek इसे query में `lang:` फ़िल्टर के रूप में जोड़ता है। |
 | `page` | परिणाम पेज `0` से `10`, TinyFish के लिए। |
 
 मॉडल जो मान भेजता है, वे उस कॉल के लिए टूल के डिफ़ॉल्ट की जगह लेते हैं। `max_results` फिर भी `max_total_results` में बचे हिस्से तक सीमित रहता है; वह खत्म होने पर आगे की कॉल `max_total_results_reached` लौटाती हैं।
@@ -79,11 +79,16 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `firecrawl` | प्रबंधित Firecrawl खोज। |
 | `perplexity` | Perplexity Search API: रैंक किए गए परिणाम, `search_context_size`, और `user_location.country` से क्षेत्रीय खोज। |
 | `tinyfish` | TinyFish Search: स्थानीयकृत, पेज-वार रैंक किए गए परिणाम। यह स्निपेट लौटाता है, पूरा पेज टेक्स्ट नहीं; मॉडल को ज़्यादा चाहिए तो [`phaseo:web_fetch`](./web-fetch) उपयोग करें। |
-| `native` | प्रदाता का अपना वेब खोज टूल, जैसे OpenAI का `web_search_preview` या Anthropic का `web_search_20250305`। |
+| `deepseek` | DeepSeek Search: हर पेज के सारांश के साथ रैंक किए गए परिणाम, जो मॉडल के पढ़ने के लिए लिखे गए हैं। |
+| `native` | प्रदाता का अपना वेब खोज टूल, जैसे OpenAI का `web_search_preview`, Anthropic का `web_search_20250305` या DeepSeek का `deepseek_web_search`। |
 
 अगर कोई प्रबंधित इंजन सक्षम नहीं है, तो कॉल मॉडल को `search_not_configured` लौटाती है।
 
-`/v1/chat/completions` या `/v1/responses` पर `engine: "native"` के साथ अनुरोध सिर्फ़ उन प्रदाताओं को जाता है जो खुद वेब खोज चलाते हैं। अगर कोई भी प्रदाता मॉडल को सर्व नहीं करता, तो Phaseo अपना डिफ़ॉल्ट इंजन चलाता है और उसका बिल प्रबंधित खोज के रूप में बनाता है। `native` सिर्फ़ टूल परिभाषा में सेट करें: अगर मॉडल किसी कॉल में `native` मांगता है, तो कॉल `unsupported_search_engine` लौटाती है, क्योंकि प्रदाता का टूल अनुरोध भेजने से पहले चुनना होता है।
+`/v1/chat/completions` या `/v1/responses` पर `engine: "native"` के साथ अनुरोध सिर्फ़ उन प्रदाताओं को जाता है जो खुद वेब खोज चलाते हैं। अगर कोई भी प्रदाता मॉडल को सर्व नहीं करता, तो Phaseo अपना डिफ़ॉल्ट इंजन चलाता है और उसका बिल प्रबंधित खोज के रूप में बनाता है।
+
+इन एंडपॉइंट पर जो प्रदाता खुद वेब खोज चलाते हैं, वे हैं OpenAI, `/v1/responses` पर Azure OpenAI डिप्लॉयमेंट, xAI, और `deepseek/deepseek-v4.1-flash-1017` पर DeepSeek। DeepSeek खुद खोज तभी चलाता है जब वेब खोज अनुरोध का एकमात्र टूल हो और खोज में कोई डोमेन सूची न हो, क्योंकि उसका API दोनों को अस्वीकार करता है। उस मॉडल के बाकी अनुरोध इसके बजाय Phaseo की खोज इस्तेमाल करते हैं, जो आपके अपने टूल के साथ काम करती है। reasoning चालू होने पर DeepSeek ज़्यादा गहरी खोज चलाता है, जो कई चरणों में पेज खोलकर पढ़ती है।
+
+OpenAI का अपना `{ "type": "web_search" }` टूल भेजना `engine: "native"` की तरह ही काम करता है। `native` सिर्फ़ टूल परिभाषा में सेट करें: अगर मॉडल किसी कॉल में `native` मांगता है, तो कॉल `unsupported_search_engine` लौटाती है, क्योंकि प्रदाता का टूल अनुरोध भेजने से पहले चुनना होता है।
 
 ## डोमेन से फ़िल्टर करें
 
@@ -101,6 +106,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 - **Perplexity** दोनों में से एक ही सूची लेता है, दोनों नहीं, और अधिकतम 20 डोमेन। बाहर रखे गए डोमेन उसके deny-list फ़ॉर्मेट में भेजे जाते हैं।
 - **Firecrawl** दोनों में से एक ही सूची लेता है, दोनों नहीं।
 - **TinyFish** दोनों लेता है और उन्हें query में `site:` और `-site:` ऑपरेटर में बदल देता है।
+- **DeepSeek** दोनों लेता है और उन्हें `site:` और `-site:` ऑपरेटर में बदल देता है। इसकी queries 128 अक्षरों तक सीमित हैं, इसलिए ऑपरेटर के लिए जगह बनाने हेतु query छोटी कर दी जाती है। अगर अकेली डोमेन सूचियाँ ही सीमा पार कर दें, तो कॉल `search_query_too_long` लौटाती है।
 
 ## टूल क्या लौटाता है
 
@@ -122,4 +128,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-Phaseo हर managed search के लिए $0.007 लेता है, और पहले 10 के बाद हर result के लिए $0.001, जब तक मॉडल का price card `server_tool_web_search_requests` और `server_tool_web_search_extra_results` के लिए अपनी कीमतें तय न करे। असफल searches का शुल्क नहीं लगता, और TinyFish Search अपने प्रकाशित प्लान पर मुफ़्त है, इसलिए `engine: "tinyfish"` कोई search शुल्क नहीं जोड़ता। सशुल्क engines पर searches के लिए क्रेडिट चाहिए, भले ही मॉडल मुफ़्त हो। Native search का बिल `native_web_search_requests` से बनता है, जहाँ मॉडल का price card इसे तय करता है।
+Phaseo हर managed search के लिए $0.007 लेता है, और पहले 10 के बाद हर result के लिए $0.001, जब तक मॉडल का price card `server_tool_web_search_requests` और `server_tool_web_search_extra_results` के लिए अपनी कीमतें तय न करे। असफल searches का शुल्क नहीं लगता, और TinyFish Search अपने प्रकाशित प्लान पर मुफ़्त है, इसलिए `engine: "tinyfish"` कोई search शुल्क नहीं जोड़ता। सशुल्क engines पर searches के लिए क्रेडिट चाहिए, भले ही मॉडल मुफ़्त हो। Native search का बिल `native_web_search_requests` से प्रदाता की प्रकाशित कीमत पर बनता है: उदाहरण के लिए OpenAI और Anthropic पर $10 प्रति 1,000 searches, और DeepSeek पर $0.75 प्रति 1,000, जहाँ सिर्फ़ वे searches गिनी जाती हैं जो results लौटाती हैं। DeepSeek search के दौरान खोले गए हर पेज का भी $0.75 प्रति 1,000 के हिसाब से बिल बनाता है, `native_web_fetch_requests` के रूप में।

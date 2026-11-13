@@ -13327,6 +13327,7 @@ components:
                 - parallel
                 - perplexity
                 - tinyfish
+                - deepseek
             max_results:
               type: integer
               minimum: 1
@@ -13356,6 +13357,7 @@ components:
             - parallel
             - perplexity
             - tinyfish
+            - deepseek
         language:
           type: string
         page:
@@ -13433,6 +13435,7 @@ components:
             - parallel
             - perplexity
             - tinyfish
+            - deepseek
         max_results:
           type: integer
           minimum: 1
@@ -13480,6 +13483,7 @@ components:
             - exa
             - firecrawl
             - parallel
+            - deepseek
         max_uses:
           type: integer
           minimum: 1

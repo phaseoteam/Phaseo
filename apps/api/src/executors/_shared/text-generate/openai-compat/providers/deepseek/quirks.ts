@@ -6,6 +6,13 @@
 // Handles reasoning_content field in thinking mode responses
 // Documentation: https://api-docs.deepseek.com/guides/thinking_mode
 
+import {
+	DEEPSEEK_NATIVE_READ_URL_TOOL_TYPE,
+	DEEPSEEK_NATIVE_WEB_SEARCH_TOOL_TYPE,
+	isAnthropicNativeWebFetchToolType,
+	isAnthropicNativeWebSearchToolType,
+	isOpenAINativeWebSearchToolType,
+} from "@core/nativeTools";
 import type { ProviderQuirks } from "../../quirks/types";
 import { applyJsonSchemaFallback } from "../../quirks/structured";
 
@@ -46,6 +53,16 @@ export const deepseekQuirks: ProviderQuirks = {
 				: effort === "low" || effort === "max"
 					? effort
 					: "high";
+		}
+
+		const usesWebTools = mapNativeWebTools(request);
+		if (usesWebTools) {
+			// With web tools declared DeepSeek rejects a tool_choice that names one, treats
+			// "required" as "auto", and rejects logprobs
+			// (https://api-docs.deepseek.com/guides/web_tools#chat-completions-api).
+			if (request.tool_choice !== undefined && request.tool_choice !== "none") request.tool_choice = "auto";
+			delete request.logprobs;
+			delete request.top_logprobs;
 		}
 
 		if (request.thinking?.type === "enabled") {
@@ -145,9 +162,67 @@ export const deepseekQuirks: ProviderQuirks = {
 	},
 };
 
+/**
+ * Native web search reaches this executor as the hosted tool of the request's
+ * surface: OpenAI's `web_search` / `web_search_preview` (Chat, Responses) or
+ * Anthropic's `web_search_*` / `web_fetch_*` (Messages). DeepSeek runs the same
+ * thing as `deepseek_web_search` and `deepseek_read_url`, which take no options:
+ * it rejects domain filters and `user_location` with a 400, so routing only sends
+ * filter-free searches here (core/nativeTools.ts). Returns whether the request
+ * now declares a DeepSeek web tool.
+ */
+function mapNativeWebTools(request: any): boolean {
+	if (!Array.isArray(request.tools)) return false;
+	const tools: any[] = [];
+	const declared = new Set<string>();
+	for (const tool of request.tools) {
+		const type = typeof tool?.type === "string" ? tool.type : "";
+		const deepseekType = type === DEEPSEEK_NATIVE_WEB_SEARCH_TOOL_TYPE
+			|| isOpenAINativeWebSearchToolType(type)
+			|| isAnthropicNativeWebSearchToolType(type)
+			? DEEPSEEK_NATIVE_WEB_SEARCH_TOOL_TYPE
+			: type === DEEPSEEK_NATIVE_READ_URL_TOOL_TYPE || isAnthropicNativeWebFetchToolType(type)
+				? DEEPSEEK_NATIVE_READ_URL_TOOL_TYPE
+				: null;
+		if (!deepseekType) {
+			tools.push(tool);
+			continue;
+		}
+		// Declaring a web tool twice is a 400.
+		if (declared.has(deepseekType)) continue;
+		declared.add(deepseekType);
+		tools.push({ type: deepseekType });
+	}
+	if (declared.size === 0) return false;
+	request.tools = tools;
+	return true;
+}
+
+/**
+ * DeepSeek reports billed web tool calls as `server_tool_use.tool_search`,
+ * `tool_image_search` and `tool_fetch`. Its `web_search_requests` /
+ * `web_fetch_requests` count result blocks, errors included, and are not billed
+ * (https://api-docs.deepseek.com/guides/web_tools), so the billed counts replace them.
+ */
+function normalizeDeepSeekServerToolUse(usage: any): void {
+	const serverToolUse = usage.server_tool_use;
+	if (!serverToolUse || typeof serverToolUse !== "object") return;
+	const count = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : undefined);
+	const searches = count(serverToolUse.tool_search);
+	const imageSearches = count(serverToolUse.tool_image_search);
+	const fetches = count(serverToolUse.tool_fetch);
+	if (searches === undefined && imageSearches === undefined && fetches === undefined) return;
+	usage.server_tool_use = {
+		...serverToolUse,
+		web_search_requests: (searches ?? 0) + (imageSearches ?? 0),
+		web_fetch_requests: fetches ?? 0,
+	};
+}
+
 function normalizeDeepSeekUsage(response: any): void {
 	const usage = response?.usage;
 	if (!usage || typeof usage !== "object") return;
+	normalizeDeepSeekServerToolUse(usage);
 	const cacheHit = usage.prompt_cache_hit_tokens;
 	const cacheMiss = usage.prompt_cache_miss_tokens;
 	if (typeof cacheHit === "number") {
