@@ -216,7 +216,10 @@ export async function ensureWorkspaceWalletProvisioned(args: {
 
 	const customerId = await createStripeCustomer(args);
 	if (!customerId) {
-		throw new Error("Stripe customer provisioning is not configured for workspace creation");
+		// No Stripe key on this Worker. Match the web create-team flow: leave the
+		// wallet for the billing path, which creates the Stripe customer and wallet
+		// on the first checkout. Workspaces without a wallet are already supported.
+		return { workspaceId: args.workspaceId, customerId: null };
 	}
 	const payload = { workspace_id: args.workspaceId, stripe_customer_id: customerId };
 	const { error: upsertError } = await admin
