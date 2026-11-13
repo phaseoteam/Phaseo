@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/runtime/env";
 import { readBindingEnv, toBool } from "./helpers";
 import { buildPublicModelAnnouncementPayload } from "./public-model-announcement-discord";
 import { sendDiscordWebhookPayload } from "./discord-webhook";
+import { deliverPrivateModelDiscoveryMessage } from "./private-model-discovery-notifications";
 
 const PUBLIC_ANNOUNCEMENT_BATCH_SIZE = 10;
 const PUBLIC_ANNOUNCEMENT_STATE_BATCH_SIZE = 100;
@@ -11,6 +12,20 @@ const PUBLIC_ANNOUNCEMENT_CLAIM_LEASE_SECONDS = 300;
 const PUBLIC_MODEL_DISCOVERY_USERNAME = "Phaseo Public Model Discovery";
 const PUBLIC_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_light.png";
 const PUBLIC_MODELS_URL = "https://phaseo.app/models";
+/**
+ * A model only counts as news while it is new to the catalogue or newly released. On 2026-11-13 a bulk
+ * catalogue edit made 175 models public at once; all had been in the catalogue since September with release
+ * dates months old, and every one was announced. Over the 182 earlier announcements, none were both first
+ * seen and released more than 14 days before being announced, so 30 days keeps staged launches. 0 = off.
+ */
+export const DEFAULT_PUBLIC_ANNOUNCEMENT_MAX_AGE_DAYS = 30;
+/**
+ * More fresh announcements than this in one run means a bulk change rather than launches (the largest real
+ * batch so far was 13 Recraft models). They are recorded silently and listed in the private channel instead.
+ * 0 = no cap.
+ */
+export const DEFAULT_PUBLIC_ANNOUNCEMENT_MAX_PER_RUN = 25;
+const DAY_MS = 24 * 60 * 60_000;
 
 type PublicModelRow = {
 	model_slug: string | null;
@@ -19,6 +34,8 @@ type PublicModelRow = {
 	hidden: boolean | null;
 	status: string | null;
 	catalogue_status: string | null;
+	released_at?: string | null;
+	announced_at?: string | null;
 	lab?: { name?: string | null; metadata?: { colour?: string | null } | null } | null;
 };
 
@@ -52,6 +69,10 @@ export type PublicModelAnnouncementSummary = {
 	notified: number;
 	skipped: number;
 	pending: number;
+	/** Models recorded without a post because they were first seen and released too long ago. */
+	tooOld?: number;
+	/** Models recorded without a post because the run exceeded the per-run cap. */
+	overCap?: number;
 	reason?: string | null;
 	error?: string | null;
 };
@@ -65,6 +86,8 @@ function emptySummary(): PublicModelAnnouncementSummary {
 		notified: 0,
 		skipped: 0,
 		pending: 0,
+		tooOld: 0,
+		overCap: 0,
 		reason: null,
 		error: null,
 	};
@@ -119,6 +142,93 @@ function isNewlyAvailable(
 		);
 }
 
+function readNonNegativeNumber(raw: string | null | undefined, fallback: number): number {
+	const value = raw === null || raw === undefined || raw.trim() === "" ? Number.NaN : Number(raw);
+	return Number.isFinite(value) && value >= 0 ? value : fallback;
+}
+
+/**
+ * True when announcing the model now would be old news: we first saw it more than `maxAgeMs` ago and it
+ * has no release or announcement date inside that window either. A model new to the catalogue (no state
+ * row yet) is never too old, and neither is a staged model whose release date was set at launch.
+ */
+export function isTooOldToAnnounce(
+	model: Pick<PublicModelRow, "released_at" | "announced_at">,
+	firstSeenAt: string | null | undefined,
+	nowMs: number,
+	maxAgeMs: number,
+): boolean {
+	if (maxAgeMs <= 0) return false;
+	const firstSeenMs = Date.parse(firstSeenAt ?? "");
+	if (!Number.isFinite(firstSeenMs) || nowMs - firstSeenMs <= maxAgeMs) return false;
+	for (const value of [model.released_at, model.announced_at]) {
+		const ms = Date.parse(value ?? "");
+		if (Number.isFinite(ms) && nowMs - ms <= maxAgeMs) return false;
+	}
+	return true;
+}
+
+/**
+ * Records models as handled without announcing them. Rows become `announced` with `announced_at` left
+ * as it was (null for a model that was never posted), which marks them suppressed: unlike `baseline`, the
+ * legacy preview-recovery branch of `isNewlyAvailable` cannot pick them up and post them on a later run.
+ * Snapshots move to the current state. A pending row is only taken when no run holds a live claim on it.
+ */
+async function recordWithoutAnnouncing(
+	runId: string,
+	models: PublicModelRow[],
+	nowIso: string,
+	ensureRun: () => Promise<void>,
+): Promise<void> {
+	const byStatus = new Map<string, string[]>();
+	for (const model of models) {
+		const modelSlug = normalizeSlug(model.model_slug);
+		if (!modelSlug) continue;
+		const catalogueStatus = model.catalogue_status?.trim().toLowerCase() ?? "";
+		const slugs = byStatus.get(catalogueStatus) ?? [];
+		slugs.push(modelSlug);
+		byStatus.set(catalogueStatus, slugs);
+	}
+	if (byStatus.size === 0) return;
+
+	await ensureRun();
+	const supabase = getSupabaseAdmin();
+	for (const [catalogueStatus, modelSlugs] of byStatus) {
+		for (let offset = 0; offset < modelSlugs.length; offset += PUBLIC_ANNOUNCEMENT_STATE_BATCH_SIZE) {
+			const batch = modelSlugs.slice(offset, offset + PUBLIC_ANNOUNCEMENT_STATE_BATCH_SIZE);
+			const { error } = await supabase
+				.from("model_discovery_public_announcements")
+				.update({
+					status: "announced",
+					catalogue_status_snapshot: catalogueStatus || null,
+					public_visibility_snapshot: true,
+					claim_run_id: null,
+					claim_expires_at: null,
+					last_run_id: runId,
+					updated_at: nowIso,
+				})
+				.in("model_slug", batch)
+				.in("status", ["baseline", "pending", "announced"])
+				// An expired lease belongs to an interrupted run; only a live one is left alone.
+				.or(`claim_run_id.is.null,claim_expires_at.lt."${nowIso}"`);
+			if (error) throw new Error(error.message || "Failed to record unannounced public models");
+		}
+	}
+}
+
+const OVER_CAP_NOTICE_SAMPLE = 15;
+
+export function buildOverCapNotice(models: Array<{ modelSlug: string }>, maxPerRun: number): string {
+	const lines = [
+		`Public model announcements held back: ${models.length} models became public in one run, over the cap of ${maxPerRun}.`,
+		"They were recorded without a public post. This usually means a bulk catalogue edit; announce any real launches by hand.",
+		"",
+		...models.slice(0, OVER_CAP_NOTICE_SAMPLE).map((model) => `- ${model.modelSlug}`),
+	];
+	if (models.length > OVER_CAP_NOTICE_SAMPLE) lines.push(`- ...and ${models.length - OVER_CAP_NOTICE_SAMPLE} more`);
+	return lines.join("\n");
+}
+
 function modelPath(modelSlug: string): string {
 	return modelSlug
 		.split("/")
@@ -143,7 +253,7 @@ async function loadPublicModels(): Promise<PublicModelRow[]> {
 	for (let offset = 0; ; offset += PUBLIC_ANNOUNCEMENT_PAGE_SIZE) {
 		const { data, error } = await supabase
 			.from("v2_models")
-			.select("model_slug,name,lab_slug,hidden,status,catalogue_status,lab:v2_labs!v2_models_lab_slug_fkey(name,metadata)")
+			.select("model_slug,name,lab_slug,hidden,status,catalogue_status,released_at,announced_at,lab:v2_labs!v2_models_lab_slug_fkey(name,metadata)")
 			.order("model_slug", { ascending: true })
 			.range(offset, offset + PUBLIC_ANNOUNCEMENT_PAGE_SIZE - 1);
 		if (error) throw new Error(error.message || "Failed to load public model catalog");
@@ -425,12 +535,25 @@ export async function runPublicModelAnnouncementCheck(args: {
 			return summary;
 		}
 
-		const nowIso = new Date().toISOString();
+		const nowMs = Date.now();
+		const nowIso = new Date(nowMs).toISOString();
+		const maxAgeMs = readNonNegativeNumber(
+			readBindingEnv(["PUBLIC_MODEL_ANNOUNCEMENT_MAX_AGE_DAYS"]),
+			DEFAULT_PUBLIC_ANNOUNCEMENT_MAX_AGE_DAYS,
+		) * DAY_MS;
+		const maxPerRun = Math.floor(readNonNegativeNumber(
+			readBindingEnv(["PUBLIC_MODEL_ANNOUNCEMENT_MAX_PER_RUN"]),
+			DEFAULT_PUBLIC_ANNOUNCEMENT_MAX_PER_RUN,
+		));
 		const firstSeenTimes = stateRows.map((row) => Date.parse(row.first_seen_at ?? "")).filter(Number.isFinite);
 		const baselineAt = firstSeenTimes.length > 0 ? Math.min(...firstSeenTimes) : undefined;
 		const newModels: PublicModelRow[] = [];
 		const newlyAvailableModels: PublicModelRow[] = [];
 		const skippedModels: PublicModelRow[] = [];
+		// Models that would be announced but are old news: newly available or still pending, yet first seen
+		// and released outside the age window.
+		const tooOldModels: PublicModelRow[] = [];
+		const tooOldSlugs = new Set<string>();
 		for (const model of models) {
 			const modelSlug = normalizeSlug(model.model_slug);
 			if (!modelSlug || stateBySlug.has(modelSlug)) continue;
@@ -440,14 +563,25 @@ export async function runPublicModelAnnouncementCheck(args: {
 		for (const model of models) {
 			const modelSlug = normalizeSlug(model.model_slug);
 			const state = modelSlug ? stateBySlug.get(modelSlug) : undefined;
-			if (state && isNewlyAvailable(model, state, baselineAt)) newlyAvailableModels.push(model);
+			if (!modelSlug || !state) continue;
+			const newlyAvailable = isNewlyAvailable(model, state, baselineAt);
+			const stillPending = state.status === "pending" && isPublicModel(model) && isReleasedCatalogueStatus(model.catalogue_status);
+			if (!newlyAvailable && !stillPending) continue;
+			if (isTooOldToAnnounce(model, state.first_seen_at, nowMs, maxAgeMs)) {
+				tooOldModels.push(model);
+				tooOldSlugs.add(modelSlug);
+			} else if (newlyAvailable) {
+				newlyAvailableModels.push(model);
+			}
 		}
 
 		summary.detected = newModels.length + newlyAvailableModels.length;
 		summary.skipped = skippedModels.length;
+		summary.tooOld = tooOldModels.length;
 		await insertNewAnnouncementState(args.runId, [...newModels, ...skippedModels], nowIso, ensureRun);
 		await persistObservedAnnouncementState(args.runId, models, stateBySlug, nowIso, ensureRun);
 		await promoteAvailableAnnouncementState(args.runId, newlyAvailableModels, nowIso, ensureRun);
+		await recordWithoutAnnouncing(args.runId, tooOldModels, nowIso, ensureRun);
 
 		const newModelSlugs = new Set(
 			[...newModels, ...newlyAvailableModels].flatMap((model) => {
@@ -458,6 +592,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 		const pendingModels = models.flatMap((model) => {
 			const modelSlug = normalizeSlug(model.model_slug);
 			if (!modelSlug || !isPublicModel(model) || !isReleasedCatalogueStatus(model.catalogue_status)) return [];
+			if (tooOldSlugs.has(modelSlug)) return [];
 			const state = stateBySlug.get(modelSlug);
 			if (state?.status !== "pending" && !newModelSlugs.has(modelSlug)) {
 				return [];
@@ -478,6 +613,24 @@ export async function runPublicModelAnnouncementCheck(args: {
 		}
 		if (!webhookUrl) {
 			summary.reason = "missing DISCORD_WEBHOOK_NEW_MODELS_PUBLIC";
+			return summary;
+		}
+		if (maxPerRun > 0 && pendingModels.length > maxPerRun) {
+			// A bulk change, not a launch: record every model silently and tell the team privately instead.
+			const pendingSlugs = new Set(pendingModels.map((model) => model.modelSlug));
+			await recordWithoutAnnouncing(
+				args.runId,
+				models.filter((model) => pendingSlugs.has(normalizeSlug(model.model_slug) ?? "")),
+				new Date().toISOString(),
+				ensureRun,
+			);
+			summary.overCap = pendingModels.length;
+			summary.pending = 0;
+			summary.reason = `${pendingModels.length} models exceeded the per-run cap of ${maxPerRun}; recorded without announcing`;
+			const privateNotice = await deliverPrivateModelDiscoveryMessage(
+				buildOverCapNotice(pendingModels, maxPerRun),
+			).catch((error: unknown) => ({ delivered: false, skipped: false, error: error instanceof Error ? error.message : String(error) }));
+			if (privateNotice.error) console.warn("[model-discovery] Over-cap notice failed:", privateNotice.error);
 			return summary;
 		}
 

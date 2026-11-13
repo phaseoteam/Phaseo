@@ -100,6 +100,44 @@ describe("runModelDiscoveryJob", () => {
 		]);
 	});
 
+	it("records a re-listed model the provider created long ago without announcing it", async () => {
+		// Inception re-listed mercury-2 (created 2025-04-01) on 2026-11-12, after its removal was confirmed.
+		fetchMock.restore();
+		fetchMock = installFetchMock([{
+			match: () => true,
+			response: () => jsonResponse({ data: [
+				{ id: "model-a" },
+				{ id: "model-b", created: 1743465660 },
+				{ id: "model-c", created: Math.floor(Date.now() / 1000) - 3600 },
+			] }),
+		}]);
+		supabase.tables.model_discovery_seen_models = [{ provider_id: "vercel", model_id: "model-a", watch_snapshot: null, removal_pending: false }];
+
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		expect(summary.changes.find((change) => change.providerId === "vercel")).toMatchObject({ added: ["model-c"], removed: [] });
+		expect(summary.oldAdditionsIgnored).toBeGreaterThanOrEqual(1);
+		// Still stored, so the next sweep does not treat it as new again.
+		expect(upsertedSeenRows().filter((row) => row.provider_id === "vercel").map((row) => row.model_id)).toEqual(
+			expect.arrayContaining(["model-b", "model-c"]),
+		);
+	});
+
+	it("announces an old re-listing when MODEL_DISCOVERY_ADDED_MAX_AGE_DAYS is 0", async () => {
+		fetchMock.restore();
+		fetchMock = installFetchMock([{
+			match: () => true,
+			response: () => jsonResponse({ data: [{ id: "model-a" }, { id: "model-b", created: 1743465660 }] }),
+		}]);
+		supabase.bindings.MODEL_DISCOVERY_ADDED_MAX_AGE_DAYS = "0";
+		supabase.tables.model_discovery_seen_models = [{ provider_id: "vercel", model_id: "model-a", watch_snapshot: null, removal_pending: false }];
+
+		const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+		expect(summary.changes.find((change) => change.providerId === "vercel")).toMatchObject({ added: ["model-b"] });
+		expect(summary.oldAdditionsIgnored).toBe(0);
+	});
+
 	it("reports the first models of a provider that was checked recently with an empty list", async () => {
 		supabase.tables.model_discovery_provider_status = [
 			{ provider_id: "vercel", provider_name: "Vercel AI Gateway", status: "ok", model_count: 0, consecutive_failures: 0, last_success_at: new Date(Date.now() - 15 * 60_000).toISOString() },

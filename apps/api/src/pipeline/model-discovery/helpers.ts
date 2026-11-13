@@ -193,6 +193,10 @@ const DISCORD_PROVIDER_FAMILIES: Record<string, { providerId: string; providerNa
 	"anthropic-us": { providerId: "anthropic", providerName: "Anthropic" },
 	"google-vertex": { providerId: "google-vertex", providerName: "Google Vertex" },
 	"google-vertex-eu": { providerId: "google-vertex", providerName: "Google Vertex" },
+	minimax: { providerId: "minimax", providerName: "MiniMax" },
+	"minimax-lightning": { providerId: "minimax", providerName: "MiniMax" },
+	mistral: { providerId: "mistral", providerName: "Mistral" },
+	"mistral-eu": { providerId: "mistral", providerName: "Mistral" },
 	moonshotai: { providerId: "moonshotai", providerName: "Moonshot AI" },
 	"moonshotai-turbo": { providerId: "moonshotai", providerName: "Moonshot AI" },
 	"nebius-token-factory": { providerId: "nebius-token-factory", providerName: "Nebius Token Factory" },
@@ -1185,6 +1189,83 @@ export function removalConfirmAfterMs(raw: string | null | undefined): number {
 	const minutes = raw === null || raw === undefined || raw.trim() === "" ? Number.NaN : Number(raw);
 	const normalized = Number.isFinite(minutes) && minutes >= 0 ? minutes : DEFAULT_REMOVAL_CONFIRM_MINUTES;
 	return Math.min(normalized, MAX_REMOVAL_CONFIRM_MINUTES) * 60_000;
+}
+
+/**
+ * A model a provider lists that we have no stored row for is reported as new, but providers often re-list
+ * models they have had for months: a model returns after its removal was confirmed (Inception's Mercury 2
+ * came back on 2026-11-12, `created` 2025-04-01), or a CDN edge serves an old copy. When the provider's own
+ * `created` timestamp is older than this, the model is recorded but not announced. 0 turns the check off.
+ */
+export const DEFAULT_ADDED_MODEL_MAX_AGE_DAYS = 30;
+/** Earliest `created` treated as real; providers send 0 or tiny placeholders when they have no date. */
+const MIN_PLAUSIBLE_CREATED_MS = Date.UTC(2015, 0, 1);
+/** Seconds-since-epoch values stay below this until the year 5138, so larger numbers are milliseconds. */
+const MILLISECOND_TIMESTAMP_THRESHOLD = 1e11;
+
+export function addedModelMaxAgeMs(raw: string | null | undefined): number {
+	const days = raw === null || raw === undefined || raw.trim() === "" ? Number.NaN : Number(raw);
+	const normalized = Number.isFinite(days) && days >= 0 ? days : DEFAULT_ADDED_MODEL_MAX_AGE_DAYS;
+	return normalized * 24 * 60 * 60_000;
+}
+
+/**
+ * `Date.parse` rolls impossible dates over (`2025-02-30` becomes 2 March), which could make an unknown age
+ * look old. A string starting with a `YYYY-MM-DD` date must name a real day; other formats pass through.
+ */
+function isCalendarValidIsoPrefix(value: string): boolean {
+	const match = /^(\d{4})-(\d{2})-(\d{2})(?=T|\s|$)/.exec(value);
+	if (!match) return true;
+	const year = Number(match[1]);
+	const month = Number(match[2]);
+	const day = Number(match[3]);
+	if (month < 1 || month > 12 || day < 1) return false;
+	return day <= new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+/**
+ * Reads when the provider says it created a listed model (`created`, `created_at` or `createdAt`, as Unix
+ * seconds, milliseconds or an ISO date). Returns null when there is no plausible date, including values
+ * before 2015 or more than a day in the future, so an unknown age never hides a model.
+ */
+export function providerModelCreatedAtMs(details: unknown, nowMs: number): number | null {
+	const row = asRecord(details);
+	if (!row) return null;
+	for (const key of ["created", "created_at", "createdAt"]) {
+		const value = row[key];
+		let ms = Number.NaN;
+		if (typeof value === "number") {
+			ms = value < MILLISECOND_TIMESTAMP_THRESHOLD ? value * 1000 : value;
+		} else if (typeof value === "string" && value.trim()) {
+			const trimmed = value.trim();
+			if (/^\d+(\.\d+)?$/.test(trimmed)) {
+				const numeric = Number(trimmed);
+				ms = numeric < MILLISECOND_TIMESTAMP_THRESHOLD ? numeric * 1000 : numeric;
+			} else if (isCalendarValidIsoPrefix(trimmed)) {
+				ms = Date.parse(trimmed);
+			}
+		}
+		if (!Number.isFinite(ms)) continue;
+		if (ms < MIN_PLAUSIBLE_CREATED_MS || ms > nowMs + 24 * 60 * 60_000) return null;
+		return ms;
+	}
+	return null;
+}
+
+/** Splits newly listed model ids into ones to announce and ones the provider created too long ago. */
+export function splitAddedModelsByAge(
+	addedIds: string[],
+	createdAtMs: (modelId: string) => number | null,
+	policy: { nowMs: number; maxAgeMs: number },
+): { reported: string[]; ignoredOld: string[] } {
+	if (policy.maxAgeMs <= 0) return { reported: addedIds, ignoredOld: [] };
+	const reported: string[] = [];
+	const ignoredOld: string[] = [];
+	for (const modelId of addedIds) {
+		const created = createdAtMs(modelId);
+		(created !== null && policy.nowMs - created > policy.maxAgeMs ? ignoredOld : reported).push(modelId);
+	}
+	return { reported, ignoredOld };
 }
 
 export type ModelRemovalDecision = {

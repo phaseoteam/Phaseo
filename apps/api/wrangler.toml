@@ -50,6 +50,12 @@ ACCOUNT_DELETION_PURGE_ENABLED = "true"
 MODEL_DISCOVERY_RETENTION_DAYS = "7"
 # A model must be missing from a provider's /models list this long (minutes) before its removal is announced.
 MODEL_DISCOVERY_REMOVAL_CONFIRM_MINUTES = "360"
+# A newly listed model whose provider `created` date is older than this (days) is recorded but not announced. 0 = off.
+MODEL_DISCOVERY_ADDED_MAX_AGE_DAYS = "30"
+# Public announcements skip models first seen and released longer ago than this (days), and a run with more
+# fresh announcements than the cap is recorded silently and listed privately. 0 = off for either.
+PUBLIC_MODEL_ANNOUNCEMENT_MAX_AGE_DAYS = "30"
+PUBLIC_MODEL_ANNOUNCEMENT_MAX_PER_RUN = "25"
 MODEL_DISCOVERY_SHARD_SIZE = "20"
 # Run every provider check in one scheduled invocation. The watcher itself
 # uses bounded concurrency so this removes shard-to-shard notification delay.
