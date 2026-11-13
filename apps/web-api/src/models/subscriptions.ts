@@ -26,12 +26,46 @@ export function subscriptionPayload(row: Row, modelSlug?: string): Row {
 }
 
 export async function fetchSubscriptionCatalogue(client: SupabaseClient, planId?: string, modelSlug?: string, includeHidden = false) {
-	const { data, error } = await client.rpc("get_v2_subscription_catalogue", {
-		p_plan_id: planId ?? null, p_model_slug: modelSlug ?? null, p_include_hidden: includeHidden,
-	});
+	const [catalogue, usage] = await Promise.all([
+		client.rpc("get_v2_subscription_catalogue", { p_plan_id: planId ?? null, p_model_slug: modelSlug ?? null, p_include_hidden: includeHidden }),
+		fetchSubscriptionUsage(client, planId, modelSlug),
+	]);
+	const { data, error } = catalogue;
 	if (error) throw error;
 	if (!Array.isArray(data)) throw new Error("Invalid subscription catalogue payload");
-	return data.map((row) => subscriptionPayload(row, modelSlug));
+	const usageByPlan = groupUsageByPlan(usage);
+	return data.map((row) => ({ ...subscriptionPayload(row, modelSlug), usage: usageByPlan.get(String(row.plan_uuid)) ?? [] }));
+}
+
+const USAGE_FIELDS = ["model_slug", "model_name", "scenario", "monthly_price_usd", "monthly_tokens", "effective_usd_per_mtok",
+	"api_equivalent_usd_per_mtok", "share_of_api_price", "workload", "basis", "confidence", "source_name", "source_url", "measured_on", "promo_until"] as const;
+const USAGE_NUMBERS = new Set(["monthly_price_usd", "monthly_tokens", "effective_usd_per_mtok", "api_equivalent_usd_per_mtok", "share_of_api_price"]);
+
+/**
+ * Measured monthly token volume per plan and model. Usage is extra detail, so
+ * a failed read leaves plans without it instead of failing the catalogue.
+ */
+async function fetchSubscriptionUsage(client: SupabaseClient, planId?: string, modelSlug?: string): Promise<Row[]> {
+	const { data, error } = await client.rpc("get_v2_subscription_model_usage", { p_model_slug: modelSlug ?? null, p_plan_id: planId ?? null });
+	if (error || !Array.isArray(data)) {
+		console.warn("[web-api/subscriptions] usage unavailable", error?.message ?? "invalid payload");
+		return [];
+	}
+	return data;
+}
+
+export function groupUsageByPlan(rows: Row[]): Map<string, Row[]> {
+	const grouped = new Map<string, Row[]>();
+	for (const row of rows) {
+		const entry: Row = {};
+		for (const field of USAGE_FIELDS) {
+			const value = row[field] ?? null;
+			entry[field] = USAGE_NUMBERS.has(field) && value != null ? Number(value) : value;
+		}
+		const key = String(row.plan_uuid);
+		grouped.set(key, [...(grouped.get(key) ?? []), entry]);
+	}
+	return grouped;
 }
 
 /**
