@@ -144,6 +144,8 @@ export async function runTriage(args: {
   build: TriageBuild;
   diagnostics: string;
   model: string;
+  /** The model's settings as request fields (reasoning, provider, service tier, output limit), as Chat sends them. */
+  requestFields?: Record<string, unknown>;
   workspaceId: string | null;
   source: SourceReader;
   signal: AbortSignal;
@@ -160,7 +162,7 @@ export async function runTriage(args: {
     const lastTurn = turn === MAX_TURNS;
     let text = "";
     const result = await send({
-      requestBody: { model: args.model, messages, stream: true, stream_options: { include_usage: true }, ...lastTurn ? {} : { tools: TRIAGE_TOOLS, tool_choice: "auto" } },
+      requestBody: { ...args.requestFields, model: args.model, messages, stream: true, stream_options: { include_usage: true }, ...lastTurn ? {} : { tools: TRIAGE_TOOLS, tool_choice: "auto" } },
       workspaceId: args.workspaceId,
       signal: args.signal,
       onText: (delta) => { text += delta; args.onText(text); },

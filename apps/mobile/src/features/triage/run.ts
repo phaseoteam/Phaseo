@@ -2,6 +2,8 @@ import { ApiError } from "@/lib/api/http";
 import { createStore } from "@/lib/store";
 import { ChatRequestError } from "@/features/chat/transport";
 import { StreamError } from "@/features/chat/stream";
+import { requestCapabilities } from "@/features/chat/models";
+import { settingsRequestFields, type ModelSettings } from "@/features/chat/settings";
 import { runTriage, type TriageBuild, type TriageOutcome, type TriageStep } from "./agent";
 import { SourceReader } from "./source";
 
@@ -18,7 +20,7 @@ let controller: AbortController | null = null;
 const problem = (error: unknown) =>
   error instanceof ChatRequestError || error instanceof StreamError || error instanceof ApiError || error instanceof Error ? error.message : "Triage stopped with an unknown problem.";
 
-export async function startTriage(args: { report: string; build: TriageBuild; diagnostics: string; model: string; workspaceId: string | null }) {
+export async function startTriage(args: { report: string; build: TriageBuild; diagnostics: string; model: string; settings?: ModelSettings; workspaceId: string | null }) {
   controller?.abort();
   const own = new AbortController();
   controller = own;
@@ -37,8 +39,11 @@ export async function startTriage(args: { report: string; build: TriageBuild; di
       build = { ...build, unpublished: true };
       source = new SourceReader("main", undefined, own.signal);
     }
+    // The model's settings from the sheet apply as they do in Chat; its system prompt doesn't (triage brings its own).
+    const requestFields = settingsRequestFields(args.settings, await requestCapabilities(args.model, args.settings));
     const outcome = await runTriage({
       ...args,
+      requestFields,
       build,
       source,
       signal: own.signal,

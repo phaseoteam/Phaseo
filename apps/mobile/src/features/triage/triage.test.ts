@@ -83,13 +83,15 @@ describe("runTriage", () => {
       return { text: "", reasoning: "", toolCalls: [], ...replies.shift() } as CompletionResult;
     });
     const steps: string[] = [];
-    const outcome = await runTriage({ report: "Stop crashes", build: BUILD, diagnostics: "", model: "openai/gpt-x", workspaceId: "w1", source: new SourceReader(SHA, fetcher), signal: new AbortController().signal, onStep: (step) => steps.push(step.label), onText: () => undefined, send: send as never });
+    const outcome = await runTriage({ report: "Stop crashes", build: BUILD, diagnostics: "", model: "openai/gpt-x", requestFields: { reasoning: { effort: "high" }, provider: { only: ["openai"] }, model: "ignored" }, workspaceId: "w1", source: new SourceReader(SHA, fetcher), signal: new AbortController().signal, onStep: (step) => steps.push(step.label), onText: () => undefined, send: send as never });
     expect(outcome).toEqual({ summary: "The cause is runner.ts line 3.", draft: { title: "Stop throws", body: "Cause: runner.ts:3" }, costUsd: expect.closeTo(0.035, 6), turns: 3 });
     expect(steps).toEqual(["Searched for broken", "Read runner.ts", "Drafted an issue"]);
     const last = bodies[2]!.messages as { role: string; content: string; tool_call_id?: string }[];
     expect(last.filter((message) => message.role === "tool").map((message) => message.tool_call_id)).toEqual(["1", "2", "3"]);
     expect(last.find((message) => message.tool_call_id === "2")?.content).toContain("3\t  return broken;");
     expect(bodies[0]!.tools).toBeDefined();
+    expect(bodies[0]).toMatchObject({ model: "openai/gpt-x", reasoning: { effort: "high" }, provider: { only: ["openai"] } });
+    expect(bodies[2]!.reasoning).toEqual({ effort: "high" });
   });
 
   it("tells the model when a tool fails instead of stopping", async () => {

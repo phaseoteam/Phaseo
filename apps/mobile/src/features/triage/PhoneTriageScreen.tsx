@@ -59,6 +59,7 @@ function TriageForm() {
     void startTriage({
       report: text.trim(),
       model,
+      settings: settings[model],
       workspaceId,
       diagnostics: diagnostics ? triageDiagnostics(slow) : "",
       build: { app: appName(), version: APP_VERSION, buildNumber: BUILD_NUMBER, commit: BUILD_SHA && /^[0-9a-f]{40}$/i.test(BUILD_SHA) ? BUILD_SHA.toLowerCase() : null, dirty: BUILD_DIRTY, device: deviceName(), os: osName() || `${Device.osName ?? Platform.OS}` },

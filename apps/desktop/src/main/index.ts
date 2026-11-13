@@ -1024,23 +1024,23 @@ ipcMain.handle("workspace:clone-project", async (event, url: unknown) => {
 const triageBuild = (): TriageBuild => ({ version: app.getVersion(), ...buildStamp, platform: process.platform, osRelease: release(), arch: process.arch, electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, packaged: app.isPackaged });
 /** Where filed issues and offered pull requests go; PHASEO_TRIAGE_REPOSITORY points them at a test repository. */
 const triageRepository = () => /^[\w.-]+\/[\w.-]+$/.test(process.env.PHASEO_TRIAGE_REPOSITORY ?? "") ? process.env.PHASEO_TRIAGE_REPOSITORY! : triageSourceRepository;
-const triagePreparing = new Map<string, Promise<{ projectId: string }>>();
+const triagePreparing = new Map<string, Promise<{ projectId: string; commit: string; exact: boolean }>>();
 /**
  * The source at `commit` (main without one) as a triage project. A second request for the same commit while the first
  * is fetching waits for it rather than fetching again into the same folder. `name` names a new project; the window's
- * own triage renames it every time, a phone's keeps the name of a checkout the window already made.
+ * own triage renames it every time, a phone's keeps the name of a checkout the window already made. The commit and
+ * whether it is the exact build always come from this fetch, never from an earlier request into the same folder.
  */
 function prepareTriageProject(commit: string | undefined, version: string, name: string, rename: boolean) {
 	const key = commit ?? "main";
 	const pending = triagePreparing.get(key) ?? span("triage.prepare", { exact: Boolean(commit) }, async () => {
 		const checkout = await prepareTriageCheckout(path.join(app.getPath("userData"), "triage"), commit);
 		const project = workspaceRuntime.store.addProject(checkout.directory);
-		if (rename || !project.triage) {
-			project.name = name;
-			project.triage = { version, commit: checkout.commit, exact: checkout.exact, repository: triageRepository() };
-		}
+		const named = rename || !project.triage;
+		if (named) project.name = name;
+		project.triage = { version: named ? version : project.triage!.version, commit: checkout.commit, exact: checkout.exact, repository: triageRepository() };
 		workspaceRuntime.store.saveProject(project);
-		return { projectId: project.id };
+		return { projectId: project.id, commit: checkout.commit, exact: checkout.exact };
 	}).finally(() => { triagePreparing.delete(key); });
 	triagePreparing.set(key, pending);
 	return pending;
@@ -1463,11 +1463,11 @@ app.whenReady().then(() => {
 			triage: input => span("triage.phone", { exact: Boolean(input.build.commit) }, () => startPhoneTriage(() => workspaceRuntime.store.getOverview(), command => workspaceRuntime.command(command), phoneSources, input, {
 				prepare: async build => {
 					if (shutdownStarted) throw new Error("The workspace is shutting down.");
-					const { projectId } = await prepareTriageProject(build.commit, build.version, `Phaseo mobile ${build.version} source`, false);
+					const { projectId, commit, exact } = await prepareTriageProject(build.commit, build.version, `Phaseo mobile ${build.version} source`, false);
 					const workspace = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(workspace);
 					const project = workspaceRuntime.store.getProjects().find(value => value.id === projectId);
 					if (!project?.triage) throw new Error("The source was fetched but its project could not be read.");
-					return { projectId, directory: project.directory, triage: project.triage };
+					return { projectId, directory: project.directory, triage: { ...project.triage, commit, exact } };
 				},
 				writePlaybook: (directory, name, content) => writeTriagePlaybook(directory, name, content),
 			})),
