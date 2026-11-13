@@ -182,6 +182,25 @@ describe("workspace orchestration", () => {
 			try { expect(restored.getTask(id).steering?.[0].status).toBe("unconfirmed"); } finally { restored.close(); }
 		} finally { rmSync(directory, { recursive: true, force: true }); }
 	});
+	it("places a steer among the running turn's steps where it was sent", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steer-order-"));
+		let finish: (() => void) | undefined, callbacks: AgentCallbacks | undefined;
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, value) => { callbacks = value; await new Promise<void>(resolve => { finish = resolve; }); }, cancel: async () => { finish?.(); }, steer: async () => {} }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(callbacks).toBeDefined());
+			callbacks!.onActivity?.({ id: "think", type: "reasoning", title: "Reasoning", text: "Before" });
+			callbacks!.onActivity?.({ id: "read", type: "tool", title: "read_file", text: "{}", status: "completed" });
+			await runtime.command({ type: "steer", id, text: "Also check the tests" });
+			callbacks!.onActivity?.({ id: "test", type: "tool", title: "run_command", text: "{}", status: "completed" });
+			callbacks!.onDelta?.("answer", "Done");
+			finish!(); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+			const task = runtime.store.getTask(id);
+			const timeline = [...task.messages, ...task.activities ?? []].filter(item => item.timelineOrder !== undefined).sort((a, b) => a.timelineOrder! - b.timelineOrder!);
+			expect(timeline.map(item => "text" in item && "role" in item ? `${item.role}:${item.text}` : item.title)).toEqual(["user:Start", "Reasoning", "read_file", "user:Also check the tests", "run_command", "assistant:Done"]);
+			expect(new Set(timeline.map(item => item.timelineOrder)).size).toBe(timeline.length);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("persists steering before delivery and retains rejected and uncertain instructions without replay", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steering-"));
 		let finish: (() => void) | undefined;

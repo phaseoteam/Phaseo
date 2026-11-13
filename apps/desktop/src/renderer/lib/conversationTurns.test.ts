@@ -13,6 +13,19 @@ it("retains partial history and never fabricates duration", () => {
 	expect(turnDuration()).toBe("Worked");
 	expect(turnDuration({startedAt:"2026-10-05T00:00:00Z",completedAt:"2026-10-05T00:01:06Z"} as Message)).toBe("Worked for 1.1 min");
 });
+it("splits a turn where a steer was sent, each part timed on its own", () => {
+	const at = (minute: number) => `2026-11-13T10:${String(minute).padStart(2, "0")}:00.000Z`;
+	const messages = [
+		{ id: "u", role: "user", text: "Fix it", createdAt: at(0), startedAt: at(0), completedAt: at(9), timelineOrder: 1 },
+		{ id: "u:note", role: "assistant", text: "Looking", createdAt: at(1), timelineOrder: 3 },
+		{ id: "s", role: "user", text: "Also the tests", delivery: "steer", createdAt: at(4), timelineOrder: 5 },
+		{ id: "u:answer", role: "assistant", text: "Done", createdAt: at(8), timelineOrder: 7 },
+	] as Message[];
+	const activities = [{ id: "u:think", type: "reasoning", timelineOrder: 2 }, { id: "u:read", type: "tool", timelineOrder: 4 }, { id: "u:test", type: "tool", timelineOrder: 6 }] as AgentActivity[];
+	const turns = conversationTurns(messages, activities);
+	expect(turns.map(turn => [turn.id, turn.entries.map(entry => entry.value.id)])).toEqual([["u", ["u:think", "u:note", "u:read"]], ["s", ["u:test", "u:answer"]]]);
+	expect(turns.map(turn => turnDuration(turn.span))).toEqual(["Worked for 4 min", "Worked for 5 min"]);
+});
 it("stacks your back-to-back messages as one burst with one steer label", () => {
 	const messages = [
 		{ id: "a", role: "user", text: "Fix it", timelineOrder: 1 }, { id: "reply", role: "assistant", text: "On it", timelineOrder: 2 },

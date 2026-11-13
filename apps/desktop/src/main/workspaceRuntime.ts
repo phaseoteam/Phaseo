@@ -168,6 +168,8 @@ export class WorkspaceRuntime {
 	htmlPreview?: (request: HtmlPreviewRequest) => Promise<HtmlPreviewResult>;
 	/** The running turn of each chat, so a tool can add to its timeline (html_render). */
 	private readonly turnNotes = new Map<string, (activity: AgentActivity) => void>();
+	/** The running turn's next timeline position, so a steer lands among the turn's steps at the moment it was sent. */
+	private readonly turnOrders = new Map<string, () => number>();
 	/** Claude turns' background tasks, for background_wait. */
 	private readonly backgroundWork = new Map<string, BackgroundWork>();
 	/** Review guides for the agent tools; set by the app once its guide store exists. */
@@ -1328,7 +1330,8 @@ export class WorkspaceRuntime {
 		return checkpointChanges(project.directory, before);
 	}
 	private async steer(command: Extract<WorkspaceCommand, { type: "steer" }>): Promise<WorkspaceOverview> {
-		const task = this.store.getTask(command.id); const adapter = this.running.get(task.id);
+		// Only the latest turn is read and written back, so steering costs the same in a long chat as in a short one.
+		const task = this.store.getTaskLatestTurn(command.id); const adapter = this.running.get(task.id);
 		if (task.archived || !adapter?.steer || !["running", "waiting"].includes(task.status)) throw new Error("This task is not ready for live steering.");
 		if ((task.steering?.length ?? 0) >= 10) throw new Error("Resolve the outstanding steering instructions first.");
 		// A queued message leaves the queue as it is sent, so the turn ending meanwhile cannot also start it.
@@ -1337,6 +1340,9 @@ export class WorkspaceRuntime {
 		if (queued?.notice || queued?.sourceTaskId) throw new Error("Only your own queued messages can be sent into the turn.");
 		const attachments = queued ? queued.attachments : command.attachments?.map(id => { const value = this.store.getAttachment(id); if (!value || value.taskId !== task.id) throw new Error("This attachment belongs to another task or is unavailable."); return value; });
 		const message = { id: queued?.id ?? randomUUID(), text: queued?.text ?? command.text, attachments, createdAt: new Date().toISOString() };
+		// The steer takes the turn's next position now, so it shows after the steps and text the agent produced before it
+		// was sent and before what follows. A refused steer leaves an unused position, which only leaves a gap.
+		const timelineOrder = this.turnOrders.get(task.id)?.() ?? this.store.nextTimelineOrder(task.id, task);
 		if (queued) task.queue.splice(position, 1);
 		task.steering ??= []; task.steering.push({ ...message, status: "sending" }); this.store.saveTask(task); this.broadcast();
 		let sending = false;
@@ -1344,10 +1350,10 @@ export class WorkspaceRuntime {
 			const contents = await Promise.all((attachments ?? []).map(value => this.attachments.read(value.id)));
 			if (this.closing || this.running.get(task.id) !== adapter) throw new AgentInputRejectedError("The turn ended before this instruction was sent.");
 			sending = true; await adapter.steer!(message, contents);
-			const current = this.store.getTask(task.id); current.steering = current.steering?.filter(value => value.id !== message.id);
-			current.messages.push({ ...message, role: "user", delivery: "steer" }); this.store.saveTask(current);
+			const current = this.store.getTaskLatestTurn(task.id); current.steering = current.steering?.filter(value => value.id !== message.id);
+			current.messages.push({ ...message, role: "user", delivery: "steer", timelineOrder }); this.store.saveTask(current);
 		} catch (error) {
-			const current = this.store.getTask(task.id); const pending = current.steering?.find(value => value.id === message.id);
+			const current = this.store.getTaskLatestTurn(task.id); const pending = current.steering?.find(value => value.id === message.id);
 			const refused = !sending || error instanceof AgentInputRejectedError;
 			// A refused queued message goes back to its place in the queue rather than waiting for a decision.
 			if (pending && queued && refused) {
@@ -1539,6 +1545,7 @@ export class WorkspaceRuntime {
 		let ended = false;
 		const note = (activity: AgentActivity) => { if (ended) { this.appendActivity(id, message.id, activity); return; } order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); };
 		this.turnNotes.set(id, note);
+		const reserve = () => timelineOrder++; this.turnOrders.set(id, reserve);
 		const background = task.harness === "claude" ? new BackgroundWork() : undefined;
 		if (background) this.backgroundWork.set(id, background);
 		const onQuestion: NonNullable<AgentCallbacks["onQuestion"]> = (questions, request) => new Promise(resolve => {
@@ -1656,7 +1663,7 @@ export class WorkspaceRuntime {
 			if (limit) void this.readLimitReset(id).catch(() => {}).then(() => this.applyLimitRecovery(id));
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
-			ended = true; if (this.turnNotes.get(id) === note) this.turnNotes.delete(id); if (background && this.backgroundWork.get(id) === background) this.backgroundWork.delete(id);
+			ended = true; if (this.turnNotes.get(id) === note) this.turnNotes.delete(id); if (this.turnOrders.get(id) === reserve) this.turnOrders.delete(id); if (background && this.backgroundWork.get(id) === background) this.backgroundWork.delete(id);
 			const finished = this.store.getTaskTail(id, message.id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
 			turn.setAttributes({ outcome: finished.status }); turn.end(finished.status === "failed" ? finished.error ?? "The turn failed." : undefined);
 			if (checkpoint && project) void this.trackCheckpoint(this.recordCheckpoint(id, message.id, checkpoint, project.directory));

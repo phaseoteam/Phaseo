@@ -2,12 +2,22 @@ import { formatDuration } from "@phaseo/app-kit/format";
 import type { AgentActivity, Message } from "../../shared/workspace";
 import { conversationTimeline } from "./conversationTimeline";
 export type TurnEntry = ReturnType<typeof conversationTimeline>[number];
+/** When a turn's work ran. A steer splits its turn where it was sent: the part before ends as the steer arrives. */
+export type TurnSpan = { startedAt?: string; completedAt?: string };
 export function conversationTurns(messages: Message[], activities: AgentActivity[]) {
-	const turns: { id: string; user?: Message; entries: TurnEntry[] }[] = [];
+	const turns: { id: string; user?: Message; entries: TurnEntry[]; span: TurnSpan }[] = [];
 	for (const entry of conversationTimeline(messages, activities)) {
-		if (entry.kind === "message" && entry.value.role === "user") turns.push({ id: entry.value.id, user: entry.value, entries: [] });
-		else { if (!turns.length) turns.push({ id: entry.value.id, entries: [] }); turns.at(-1)!.entries.push(entry); }
+		if (entry.kind === "message" && entry.value.role === "user") turns.push({ id: entry.value.id, user: entry.value, entries: [], span: {} });
+		else { if (!turns.length) turns.push({ id: entry.value.id, entries: [], span: {} }); turns.at(-1)!.entries.push(entry); }
 	}
+	// A steer has no times of its own: its part starts when it was sent and ends when the turn it joined ended (or at the next steer).
+	let owner: Message | undefined;
+	turns.forEach((turn, index) => {
+		const user = turn.user, steer = user?.delivery === "steer";
+		if (user && !steer) owner = user;
+		const next = turns[index + 1]?.user, split = next?.delivery === "steer";
+		turn.span = { startedAt: steer ? user.createdAt : user?.startedAt, completedAt: split ? next.createdAt : steer ? owner?.completedAt : user?.completedAt };
+	});
 	return turns;
 }
 export type Burst = { previous: boolean; next: boolean; continuesSteer: boolean };
@@ -25,9 +35,9 @@ export function userBursts(turns: ReturnType<typeof conversationTurns>): (Burst 
 		return { previous, next, continuesSteer: previous && turn.user?.delivery === "steer" && turns[index - 1].user?.delivery === "steer" };
 	});
 }
-export function turnDuration(user?: Message) {
-	if (!user?.startedAt || !user.completedAt) return "Worked";
-	const milliseconds = Date.parse(user.completedAt) - Date.parse(user.startedAt);
+export function turnDuration(span?: TurnSpan) {
+	if (!span?.startedAt || !span.completedAt) return "Worked";
+	const milliseconds = Date.parse(span.completedAt) - Date.parse(span.startedAt);
 	if (!Number.isFinite(milliseconds) || milliseconds < 0) return "Worked";
 	return `Worked for ${formatDuration(milliseconds)}`;
 }
