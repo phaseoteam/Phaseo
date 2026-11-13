@@ -19,8 +19,6 @@ GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF = "activation"
 GATEWAY_ROUTING_ARCHIVE_WRITES_ENABLED = "true"
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
 RATE_LIMIT_POLICIES_ENABLED = "true"
-# Management API request budget: "off", "shadow" (count and log only) or "enforce".
-CONTROL_API_RATE_LIMIT_MODE = "enforce"
 # Spend rule alerts (sweep_spend_rules every 5 minutes). Off until launch; only the
 # worker that runs the cron jobs (phaseo-gateway) acts on it.
 SPEND_RULES_ENABLED = "false"
@@ -52,12 +50,6 @@ ACCOUNT_DELETION_PURGE_ENABLED = "true"
 MODEL_DISCOVERY_RETENTION_DAYS = "7"
 # A model must be missing from a provider's /models list this long (minutes) before its removal is announced.
 MODEL_DISCOVERY_REMOVAL_CONFIRM_MINUTES = "360"
-# A newly listed model whose provider `created` date is older than this (days) is recorded but not announced. 0 = off.
-MODEL_DISCOVERY_ADDED_MAX_AGE_DAYS = "30"
-# Public announcements skip models first seen and released longer ago than this (days), and a run with more
-# fresh announcements than the cap is recorded silently and listed privately. 0 = off for either.
-PUBLIC_MODEL_ANNOUNCEMENT_MAX_AGE_DAYS = "30"
-PUBLIC_MODEL_ANNOUNCEMENT_MAX_PER_RUN = "25"
 MODEL_DISCOVERY_SHARD_SIZE = "20"
 # Run every provider check in one scheduled invocation. The watcher itself
 # uses bounded concurrency so this removes shard-to-shard notification delay.
@@ -199,7 +191,7 @@ limit = 60
 period = 60
 
 # Weighted per-credential budget for the management API (routes/v1/control/request-budget.ts).
-# Requests draw 1-10 units each; CONTROL_API_RATE_LIMIT_MODE decides whether it refuses ("enforce") or only logs ("shadow").
+# Requests draw 1-10 units each and are refused over budget. Set CONTROL_API_RATE_LIMIT_MODE to "shadow" or "off" to stop refusing.
 [[ratelimits]]
 name = "CONTROL_API_RATE_LIMITER"
 namespace_id = "41004"

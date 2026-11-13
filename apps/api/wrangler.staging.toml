@@ -9,8 +9,6 @@ routes = [{ pattern = "api-staging.phaseo.app", custom_domain = true }]
 [vars]
 CUSTOMER_RATE_LIMITS_ENABLED = "true"
 RATE_LIMIT_POLICIES_ENABLED = "true"
-# Management API request budget: "off", "shadow" (count and log only) or "enforce".
-CONTROL_API_RATE_LIMIT_MODE = "enforce"
 # Spend rule alerts (sweep_spend_rules every 5 minutes). Off until launch; only the
 # worker that runs the cron jobs (phaseo-gateway) acts on it.
 SPEND_RULES_ENABLED = "false"
@@ -134,7 +132,7 @@ limit = 60
 period = 60
 
 # Weighted per-credential budget for the management API (routes/v1/control/request-budget.ts).
-# Requests draw 1-10 units each; CONTROL_API_RATE_LIMIT_MODE decides whether it refuses ("enforce") or only logs ("shadow").
+# Requests draw 1-10 units each and are refused over budget. Set CONTROL_API_RATE_LIMIT_MODE to "shadow" or "off" to stop refusing.
 [[ratelimits]]
 name = "CONTROL_API_RATE_LIMITER"
 namespace_id = "41004"

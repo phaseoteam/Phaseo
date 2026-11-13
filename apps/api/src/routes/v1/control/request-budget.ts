@@ -9,11 +9,13 @@
 //      The binding counts per Cloudflare location and only approximately. That
 //      suits an abuse guard; exact, per-workspace limits live in
 //      core/customer-rate-limits.ts and only cover inference.
-//      CONTROL_API_RATE_LIMIT_MODE picks the behaviour:
-//        "off" (default)  nothing is counted;
-//        "shadow"         requests are counted in the background and would-be
-//                         denials are logged, but nothing is refused;
-//        "enforce"        a request over budget gets a 429 rate_limit_exceeded.
+//      The limiter is on wherever the binding is configured. CONTROL_API_RATE_LIMIT_MODE
+//      can turn it down without removing the binding (the gateway Worker is at
+//      Cloudflare's 200 text-binding limit, so the var is left unset by default):
+//        unset or "enforce"  a request over budget gets a 429 rate_limit_exceeded;
+//        "shadow"            requests are counted in the background and would-be
+//                            denials are logged, but nothing is refused;
+//        "off"               nothing is counted.
 //      A missing binding or a binding error always lets the request through.
 import type { MiddlewareHandler } from "hono";
 import type { Env } from "@/runtime/types";
@@ -73,7 +75,7 @@ export function controlRequestCost(method: string, pathname: string): number {
 
 export function controlRateLimitMode(value: string | undefined): ControlRateLimitMode {
 	const mode = String(value ?? "").trim().toLowerCase();
-	return mode === "shadow" || mode === "enforce" ? mode : "off";
+	return mode === "shadow" || mode === "off" ? mode : "enforce";
 }
 
 /** Internal callers (web-api, jobs, cache invalidation) prove themselves with the control secret. */
