@@ -42,7 +42,7 @@ Eine abgelehnte Anfrage gibt `429` mit `Retry-After` in Sekunden zurück. Warte 
 <span id="management-api-limits"></span>
 ## Limits der Verwaltungs-API
 
-Verwaltungs-Endpunkte wie `/v1/keys`, `/v1/logs` und `/v1/analytics` teilen sich ein Kontingent von **600 Einheiten pro Minute** je Zugangsdaten. Jeder Verwaltungsschlüssel, jedes OAuth-Token und jede Dashboard-Sitzung hat ein eigenes Kontingent; Anfragen ohne Zugangsdaten teilen sich eines pro IP-Adresse. Modell-, Datei-, Batch- und Job-Endpunkte verbrauchen es nicht.
+Verwaltungs-Endpunkte wie `/v1/keys`, `/v1/logs` und `/v1/analytics` teilen sich ein Kontingent von **200 Einheiten pro Minute** je Zugangsdaten. Jeder Verwaltungsschlüssel, jedes OAuth-Token und jede Dashboard-Sitzung hat ein eigenes Kontingent; Anfragen ohne Zugangsdaten teilen sich eines pro IP-Adresse. Modell-, Datei-, Batch- und Job-Endpunkte verbrauchen es nicht.
 
 Jede Anfrage verbraucht Einheiten danach, wie viel Arbeit sie verursacht:
 
@@ -148,6 +148,6 @@ Regeln zu Ratenlimits für Agents, als Zusammenfassung dieser Seite:
 - Ein aufgebrauchtes Abteilungsbudget gibt `429` mit `key_limit_exceeded`, dem Grund `department_<interval>_cost_budget_reached`, `department_id`, `department_name` und `reset_at` zurück; warte die Sekunden aus `Retry-After` ab oder erhöhe das Budget. Ist die Budgetprüfung nicht verfügbar, wird die Anfrage zugelassen.
 - Sperrende Ausgabenregeln geben `429` mit `spend_rule_blocked` zurück; warte `Retry-After` ab oder bitte einen Owner oder Admin, die Sperre aufzuheben. `x-phaseo-spend-warning` bedeutet, dass eine Sperre folgen kann.
 - Ratenlimit-Richtlinien des Workspace geben `429` mit `rate_limit_exceeded`, `policy_id` und `limit_scope` zurück. `x-ratelimit-remaining-requests` ist ein Näherungswert.
-- Verwaltungs-Endpunkte (Schlüssel, Protokolle, Analytics usw.) geben `429` mit `rate_limit_exceeded` und dem Grund `management_api_rate_limit` zurück, sobald Zugangsdaten ihre 600 Einheiten für die Minute verbraucht haben; aufwendigere Anfragen verbrauchen mehr Einheiten. Warte die Sekunden aus `Retry-After` (60) ab.
+- Verwaltungs-Endpunkte (Schlüssel, Protokolle, Analytics usw.) geben `429` mit `rate_limit_exceeded` und dem Grund `management_api_rate_limit` zurück, sobald Zugangsdaten ihre 200 Einheiten für die Minute verbraucht haben; aufwendigere Anfragen verbrauchen mehr Einheiten. Warte die Sekunden aus `Retry-After` (60) ab.
 - `Retry-After` kann Sekunden oder ein HTTP-Datum sein; validiere den Wert, bevor du einen erneuten Versuch planst. Sende einen unklaren Video- oder Batch-Job nie erneut, sondern prüfe seinen Status.
 </Visibility>

@@ -41,7 +41,7 @@ A rejected request returns `429` with `Retry-After` in seconds. Wait that long b
 
 ## Management API limits
 
-Management endpoints, such as `/v1/keys`, `/v1/logs` and `/v1/analytics`, share an allowance of **600 units per minute** for each credential. Each management key, OAuth token and dashboard session has its own allowance, and requests without a credential share one per IP address. Model, file, batch and job endpoints don't use it.
+Management endpoints, such as `/v1/keys`, `/v1/logs` and `/v1/analytics`, share an allowance of **200 units per minute** for each credential. Each management key, OAuth token and dashboard session has its own allowance, and requests without a credential share one per IP address. Model, file, batch and job endpoints don't use it.
 
 Each request uses units according to how much work it does:
 
@@ -143,6 +143,6 @@ Rate-limit rules for agents, summarising this page:
 - A used-up department budget returns `429` with `key_limit_exceeded`, reason `department_<interval>_cost_budget_reached`, `department_id`, `department_name` and `reset_at`; wait `Retry-After` seconds or raise the budget. If the budget check is unavailable, the request is allowed.
 - Spend rules that block return `429` with `spend_rule_blocked`; wait for `Retry-After`, or ask an owner or admin to lift the block. `x-phaseo-spend-warning` means a block may follow.
 - Workspace rate limit policies return `429` with `rate_limit_exceeded`, `policy_id` and `limit_scope`. `x-ratelimit-remaining-requests` is approximate.
-- Management endpoints (keys, logs, analytics and so on) return `429` with `rate_limit_exceeded` and reason `management_api_rate_limit` once a credential has used its 600 units for the minute; heavier requests use more units. Wait `Retry-After` (60) seconds.
+- Management endpoints (keys, logs, analytics and so on) return `429` with `rate_limit_exceeded` and reason `management_api_rate_limit` once a credential has used its 200 units for the minute; heavier requests use more units. Wait `Retry-After` (60) seconds.
 - `Retry-After` can be seconds or an HTTP date; validate it before scheduling a retry. Never resubmit an ambiguous video or batch job; check its status instead.
 </Visibility>
