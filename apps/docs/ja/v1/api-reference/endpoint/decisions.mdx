@@ -155,6 +155,7 @@ print(decision["answers"])
 | `choice` | `choices`: `value`（文字列または真偽値、重複不可）と任意の `description` | `choice`、`confidence`、値ごとの `probabilities` |
 | `score` | `levels`: `label` と任意の `description` | `score`（確率で重み付けしたレベルのインデックス）、`confidence`、レベルごとの `probabilities` |
 | `box` | なし。`input` に画像が必要 | `box`（`top`、`bottom`、`left`、`right`）、`confidence` |
+| `locate` | なし。メディアを含まない文字列の `input` が必要 | `spans`（`start`、`end`、`text`、`score`） |
 
 真偽値の選択肢は真偽値として返されます。モデルが質問への回答を拒否した場合、その質問には `type: "refusal"` が返されます。モデルが対応する型は、[モデルを選ぶ](#choose-a-model)に記載しています。
 
@@ -166,6 +167,7 @@ print(decision["answers"])
 
 - `state`: 評価する情報を保持する文字列、オブジェクト、または配列。
 - `questions`: 最大 128 個の名前付きの質問（上限が高いモデルではそれ以上）。それぞれ `type` を `noul`（はい/いいえ）、`choice`、`score` のいずれかに設定し、`instructions` を指定します。choice の質問は、選択肢から説明への対応を `criteria` のマップとして受け取り、score の質問は、2 つ以上のレベルの説明を `criteria` の配列として受け取ります。
+- `locate` の質問は `instructions` だけを使い、`images` のない文字列の `state` が必要です。[Perplexity Decider](#liquid-d1-and-perplexity-decider) を参照してください。
 - `images`: 最大 4 枚の PNG、JPEG、WebP の画像。`data:` URL または `{ "content_type", "base64" }` オブジェクトで指定します。
 - `model`: 省略した場合のデフォルトは `typesafe/jev-1.13.0` です。
 
@@ -184,7 +186,7 @@ print(decision["answers"])
 | `cloudflare/clef-omni` | 3 種類すべて | テキスト、画像、音声、動画 | $0.15 |
 | `google/gemini-decision-1` | predicate、choice、score。1 リクエストあたり最大 1,000 個 | テキスト、画像、音声、動画 | $0.10 |
 | `liquid-ai/d1:free`、`liquid-ai/d1` | 3 種類すべて | モデルページを参照 | 早期アクセス期間中は無料 |
-| `perplexity/decider-27b` | 3 種類すべて | テキスト、base64 画像 | $0.04（画像トークンを含む） |
+| `perplexity/pplx-decider-v1.3`、`perplexity/pplx-decider-flash-v1.3` | 3 種類すべてと `locate` | テキスト、base64 画像 | $0.02 / $0.01 |
 | `inception/mercury-decide` | predicate、choice、score | テキストまたは JSON | $0.02（プロモーション） |
 | `microsoft/microsoft-decision-1` | predicate、choice、score | テキストまたは JSON | $0.042 |
 | `respan/span-01:free`、`respan/span-01` | `noul` のみ（従来の形式） | 会話スパン | 無料（Lite）/ $0.02 |
@@ -268,9 +270,10 @@ Clef が受け付ける質問は最大 64 個で、ID は最大 100 文字の英
 
 Cloudflare はメディアのエンコード、画像の寸法、クリップの長さを検証し、動画を 1 秒あたり 2 フレームでサンプリングします。リクエスト内のすべての動画にサウンドトラックがある場合は、動画のサウンドトラックが使われます。メディアのトークンはコンテキストと課金に計数されます。Phaseo は Cloudflare が報告する入力使用量に基づいて精算し、音声や動画に別途料金を加えることはありません。[Cloudflare の Omni のコントラクト](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json)を参照してください。
 
+<span id="liquid-d1-and-perplexity-decider"></span>
 ### Liquid D1 と Perplexity Decider
 
-Liquid D1（`liquid-ai/d1:free`、および `liquid-ai/d1`）は、実験的な早期アクセス期間中は無料です。Perplexity Decider 27B（`perplexity/decider-27b`）には、Phaseo に Perplexity のプロバイダー認証情報が必要です。画像の state には PNG、JPEG、WebP の base64 data URL を使い、リモートの画像 URL には対応していません。どちらでも、choice の質問は最大 255 個の選択肢を、score の質問は最大 10 個のレベルを受け付けます。
+Liquid D1（`liquid-ai/d1:free`、および `liquid-ai/d1`）は、実験的な早期アクセス期間中は無料です。Perplexity Decider V1.3（`perplexity/pplx-decider-v1.3`、または `perplexity/pplx-decider-latest`）と Decider Flash V1.3（`perplexity/pplx-decider-flash-v1.3`、または `perplexity/pplx-decider-flash-latest`）には、Phaseo に Perplexity のプロバイダー認証情報が必要です。画像の state には PNG、JPEG、WebP の base64 data URL を使い、リモートの画像 URL には対応していません。これらは `locate` の質問にも回答し、文字列の `input` または `state` のうち `instructions`（例: `"email address"`）に一致する部分を返します。各スパンには原文どおりの `text`、Unicode コードポイント単位の `start` と `end`（`end` は含みません）、値が大きいほど確信が高い `score` が含まれます。一致がない場合 `spans` は空です。Locate は criteria を使わず、画像・音声・動画を受け付けず、対応を明記したモデルでのみ動作します。それ以外のモデルは `400` を返します。Perplexity は最大 8K トークンの入力で学習させています。どちらでも、choice の質問は最大 255 個の選択肢を、score の質問は最大 10 個のレベルを受け付けます。
 
 ### Inception Mercury Decide
 

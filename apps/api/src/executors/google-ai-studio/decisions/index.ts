@@ -178,7 +178,7 @@ function questionBody(name: string, question: IRDecisionQuestion): Block {
 			return { type: "score", instructions, criteria };
 		}
 		default:
-			throw new DecisionRequestError("Google Decisions supports noul, choice and score questions, not box questions.");
+			throw new DecisionRequestError("Google Decisions supports noul, choice and score questions, not box or locate questions.");
 	}
 }
 

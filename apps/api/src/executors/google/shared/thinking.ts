@@ -4,7 +4,7 @@
 
 import { normalizeGoogleModelSlug } from "./model";
 
-export type GoogleThinkingLevel = "MINIMAL" | "LOW" | "MEDIUM" | "HIGH";
+export type GoogleThinkingLevel = "MINIMAL" | "LOW" | "MEDIUM" | "HIGH" | "XHIGH";
 
 const GOOGLE_DEFAULT_GEMINI3_LEVELS: GoogleThinkingLevel[] = [
 	"MINIMAL",
@@ -18,7 +18,10 @@ const GOOGLE_GEMMA4_LEVELS: GoogleThinkingLevel[] = ["MINIMAL", "HIGH"];
 // No MINIMAL: Google returns a validation error for it on these models.
 const GOOGLE_LOW_MEDIUM_HIGH_LEVELS: GoogleThinkingLevel[] = ["LOW", "MEDIUM", "HIGH"];
 
-const GOOGLE_LEVEL_ORDER: GoogleThinkingLevel[] = ["MINIMAL", "LOW", "MEDIUM", "HIGH"];
+// Gemini 4 Hydrogen only: adds XHIGH above HIGH (still no MINIMAL).
+const GOOGLE_LOW_TO_XHIGH_LEVELS: GoogleThinkingLevel[] = ["LOW", "MEDIUM", "HIGH", "XHIGH"];
+
+const GOOGLE_LEVEL_ORDER: GoogleThinkingLevel[] = ["MINIMAL", "LOW", "MEDIUM", "HIGH", "XHIGH"];
 
 const GOOGLE_GEMMA4_MODELS = new Set([
 	"gemma-4-26b-a4b",
@@ -45,9 +48,18 @@ const GOOGLE_THINKING_LEVEL_SUPPORT: Record<string, GoogleThinkingLevel[]> = {
 	// Gemini 4 Carbon has no docs page yet. A live Vertex probe on 2026-11-10 gave the same
 	// results as Argon: thinkingLevel LOW works, MINIMAL and any thinkingBudget return HTTP 400.
 	"gemini-4-carbon": GOOGLE_LOW_MEDIUM_HIGH_LEVELS,
+	// https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen: Hydrogen "rejects `minimal` with an
+	// error", defaults to high and adds an `xhigh` level. The REST enum is XHIGH
+	// (https://aistudio.google.com/api-reference/generate-content, and the Vertex Hydrogen page lists
+	// LOW, MEDIUM, HIGH, XHIGH). Efforts xhigh and max map to it.
+	"gemini-4-hydrogen": GOOGLE_LOW_TO_XHIGH_LEVELS,
 };
 
-// Models that refuse thinkingBudget and take thinkingLevel only.
+// Models that refuse thinkingBudget and take thinkingLevel only. Gemini 4 Hydrogen is deliberately not
+// listed: Vertex answers a budget with HTTP 400 "Thinking budget is not supported for this model. Use
+// thinking level instead." (live probe 2026-11-12) while the Gemini API accepts one. Rewriting a token
+// budget as a level would change the requested reasoning without a visible signal, so a budget-only
+// request is forwarded and Google's explicit error reaches the caller. Effort requests use levels.
 const GOOGLE_THINKING_BUDGET_UNSUPPORTED = ["gemini-4-argon", "gemini-4-carbon"];
 
 function normalizeModelName(model: string): string {
@@ -106,9 +118,11 @@ function effortToThinkingLevel(effort: string): GoogleThinkingLevel | undefined 
 		case "medium":
 			return "MEDIUM";
 		case "high":
+			return "HIGH";
 		case "xhigh":
 		case "max":
-			return "HIGH";
+			// Models without XHIGH fall back to their nearest level (HIGH) below.
+			return "XHIGH";
 		default:
 			return undefined;
 	}

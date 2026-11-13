@@ -14540,6 +14540,7 @@ components:
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
               - $ref: '#/components/schemas/DecisionBoxQuestion'
+              - $ref: '#/components/schemas/DecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
@@ -14589,6 +14590,25 @@ components:
         instructions:
           type: string
           maxLength: 1048576
+    DecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Trouve les parties de l’entrée qui correspondent à une description et les renvoie sous forme d’extraits littéraux. Nécessite une entrée de type chaîne sans images, audio ni vidéo, et une route qui prend en charge locate, comme Perplexity Decider V1.3.
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
+          description: Ce qu’il faut trouver, sous forme d’étiquette courte comme "email address" ou d’instruction comme "Extract the city where the job is located."
     DecisionInputMessage:
       type: object
       required:
@@ -14838,6 +14858,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
               - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -14877,6 +14898,23 @@ components:
             - box
         instructions:
           $ref: '#/components/schemas/DecisionInstructions'
+    LegacyDecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Trouve les parties de state qui correspondent à une description et les renvoie sous forme d’extraits littéraux. Nécessite un state de type chaîne sans images et une route qui prend en charge locate, comme Perplexity Decider V1.3. Pas de criteria.
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        instructions:
+          type: string
+          minLength: 1
+          maxLength: 50000
+          description: Ce qu’il faut trouver, sous forme d’étiquette courte comme "email address" ou d’instruction comme "Extract the city where the job is located."
     DecisionImage:
       type: object
       required:
@@ -14978,6 +15016,7 @@ components:
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
               - $ref: '#/components/schemas/DecisionBoxAnswer'
+              - $ref: '#/components/schemas/DecisionLocateAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -15034,6 +15073,47 @@ components:
           type: number
           minimum: 0
           maximum: 1
+    DecisionLocateAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - spans
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          nullable: true
+        spans:
+          type: array
+          description: Les parties de l’entrée qui correspondent. Vide quand rien ne correspond.
+          items:
+            $ref: '#/components/schemas/DecisionLocateSpan'
+    DecisionLocateSpan:
+      type: object
+      required:
+        - start
+        - end
+        - text
+        - score
+      properties:
+        start:
+          type: integer
+          minimum: 0
+          description: Position du premier caractère de l’extrait, comptée en points de code Unicode depuis le début de l’entrée.
+        end:
+          type: integer
+          minimum: 0
+          description: Position juste après le dernier caractère de l’extrait (exclusive).
+        text:
+          type: string
+          description: L’extrait, copié tel quel depuis l’entrée.
+        score:
+          type: number
+          description: Degré de certitude du modèle que l’extrait correspond. Plus la valeur est élevée, plus il est certain.
     DecisionPredicateAnswer:
       type: object
       required:

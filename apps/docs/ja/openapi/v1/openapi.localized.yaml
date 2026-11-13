@@ -14540,6 +14540,7 @@ components:
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
               - $ref: '#/components/schemas/DecisionBoxQuestion'
+              - $ref: '#/components/schemas/DecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
@@ -14589,6 +14590,25 @@ components:
         instructions:
           type: string
           maxLength: 1048576
+    DecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: 説明に一致する入力の部分を見つけ、原文どおりのスパンとして返します。画像・音声・動画を含まない文字列の入力と、Perplexity Decider V1.3 など locate に対応したルートが必要です。
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
+          description: 検索する対象。"email address" のような短いラベル、または "Extract the city where the job is located." のような指示で指定します。
     DecisionInputMessage:
       type: object
       required:
@@ -14838,6 +14858,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
               - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -14877,6 +14898,23 @@ components:
             - box
         instructions:
           $ref: '#/components/schemas/DecisionInstructions'
+    LegacyDecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: 説明に一致する state の部分を見つけ、原文どおりのスパンとして返します。画像を含まない文字列の state と、Perplexity Decider V1.3 など locate に対応したルートが必要です。criteria は使いません。
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        instructions:
+          type: string
+          minLength: 1
+          maxLength: 50000
+          description: 検索する対象。"email address" のような短いラベル、または "Extract the city where the job is located." のような指示で指定します。
     DecisionImage:
       type: object
       required:
@@ -14978,6 +15016,7 @@ components:
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
               - $ref: '#/components/schemas/DecisionBoxAnswer'
+              - $ref: '#/components/schemas/DecisionLocateAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -15034,6 +15073,47 @@ components:
           type: number
           minimum: 0
           maximum: 1
+    DecisionLocateAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - spans
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          nullable: true
+        spans:
+          type: array
+          description: 入力のうち一致した部分。一致がない場合は空です。
+          items:
+            $ref: '#/components/schemas/DecisionLocateSpan'
+    DecisionLocateSpan:
+      type: object
+      required:
+        - start
+        - end
+        - text
+        - score
+      properties:
+        start:
+          type: integer
+          minimum: 0
+          description: スパンの最初の文字の位置。入力の先頭から Unicode コードポイント単位で数えます。
+        end:
+          type: integer
+          minimum: 0
+          description: スパンの最後の文字の直後の位置（この位置は含みません）。
+        text:
+          type: string
+          description: 入力から原文どおりにコピーしたスパン。
+        score:
+          type: number
+          description: スパンが一致しているというモデルの確信度。値が大きいほど確信が高くなります。
     DecisionPredicateAnswer:
       type: object
       required:

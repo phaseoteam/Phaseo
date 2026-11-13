@@ -23086,6 +23086,11 @@ export type MakeDecisionParams = {
               name?: string;
               type: "box";
             }
+          | {
+              instructions: string;
+              name?: string;
+              type: "locate";
+            }
         )[];
         routing?: {
           allow_fallbacks?: boolean | null;
@@ -23236,6 +23241,10 @@ export type MakeDecisionParams = {
                     }
                   | unknown[];
                 type: "box";
+              }
+            | {
+                instructions: string;
+                type: "locate";
               };
         };
         routing?: {
@@ -23334,6 +23343,16 @@ export async function makeDecision(
             name: string | null;
             type: "box";
           }
+        | {
+            name: string | null;
+            spans: {
+              end: number;
+              score: number;
+              start: number;
+              text: string;
+            }[];
+            type: "locate";
+          }
       )[];
       meta?: {
         [key: string]: unknown;
@@ -23421,6 +23440,16 @@ export async function makeDecision(
               confidence: number | null;
               name: string | null;
               type: "box";
+            }
+          | {
+              name: string | null;
+              spans: {
+                end: number;
+                score: number;
+                start: number;
+                text: string;
+              }[];
+              type: "locate";
             }
         )[];
         meta?: {

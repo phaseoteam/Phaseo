@@ -1050,6 +1050,25 @@ public final class Models {
 	public static class DecisionInstructions {
 	}
 
+	public static class DecisionLocateAnswer {
+		public String name;
+		public java.util.List<Object> spans;
+		public Object type;
+	}
+
+	public static class DecisionLocateQuestion {
+		public String instructions;
+		public String name;
+		public Object type;
+	}
+
+	public static class DecisionLocateSpan {
+		public Integer end;
+		public Double score;
+		public Integer start;
+		public String text;
+	}
+
 	public static class DecisionNoulQuestion {
 		public Object criteria;
 		public Object instructions;
@@ -2096,6 +2115,11 @@ public final class Models {
 
 	public static class LegacyDecisionBoxQuestion {
 		public Object instructions;
+		public Object type;
+	}
+
+	public static class LegacyDecisionLocateQuestion {
+		public String instructions;
 		public Object type;
 	}
 

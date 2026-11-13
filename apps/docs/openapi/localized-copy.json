@@ -12349,6 +12349,86 @@
 			"ja": "ルールにより一部のプロバイダーが除かれた掲載モデルの数。",
 			"zh-Hans": "有多少列出的模型因规则失去了部分提供商。",
 			"ar": "عدد النماذج المدرجة التي فقدت بعض مزوّديها بسبب القواعد."
+		},
+		"Finds the parts of the input that match a description and returns them as verbatim spans. Requires string input with no images, audio or video, and a route that supports locate, such as Perplexity Decider V1.3.": {
+			"es": "Encuentra las partes de la entrada que coinciden con una descripción y las devuelve como fragmentos literales. Requiere una entrada de tipo cadena sin imágenes, audio ni vídeo, y una ruta que admita locate, como Perplexity Decider V1.3.",
+			"fr": "Trouve les parties de l’entrée qui correspondent à une description et les renvoie sous forme d’extraits littéraux. Nécessite une entrée de type chaîne sans images, audio ni vidéo, et une route qui prend en charge locate, comme Perplexity Decider V1.3.",
+			"de": "Findet die Teile der Eingabe, die zu einer Beschreibung passen, und gibt sie als wörtliche Abschnitte zurück. Erfordert eine String-Eingabe ohne Bilder, Audio oder Video und eine Route, die locate unterstützt, etwa Perplexity Decider V1.3.",
+			"pt-BR": "Encontra as partes da entrada que correspondem a uma descrição e as retorna como trechos literais. Exige entrada em string sem imagens, áudio ou vídeo, e uma rota compatível com locate, como Perplexity Decider V1.3.",
+			"hi": "इनपुट के वे हिस्से ढूँढता है जो किसी विवरण से मेल खाते हैं और उन्हें शब्दशः अंशों के रूप में लौटाता है। इसके लिए बिना इमेज, ऑडियो या वीडियो वाला स्ट्रिंग इनपुट और locate सपोर्ट करने वाला रूट चाहिए, जैसे Perplexity Decider V1.3।",
+			"ja": "説明に一致する入力の部分を見つけ、原文どおりのスパンとして返します。画像・音声・動画を含まない文字列の入力と、Perplexity Decider V1.3 など locate に対応したルートが必要です。",
+			"zh-Hans": "查找输入中与描述匹配的部分，并以原文片段的形式返回。需要不含图像、音频或视频的字符串输入，以及支持 locate 的路由，例如 Perplexity Decider V1.3。",
+			"ar": "يعثر على أجزاء المُدخل التي تطابق وصفًا ويُعيدها كمقاطع حرفية. يتطلب مُدخلًا نصيًا من نوع string بلا صور أو صوت أو فيديو، ومسارًا يدعم locate، مثل Perplexity Decider V1.3."
+		},
+		"What to find, as a short label such as \"email address\" or an instruction such as \"Extract the city where the job is located.\"": {
+			"es": "Qué buscar, como una etiqueta breve, por ejemplo \"email address\", o una instrucción, por ejemplo \"Extract the city where the job is located.\"",
+			"fr": "Ce qu’il faut trouver, sous forme d’étiquette courte comme \"email address\" ou d’instruction comme \"Extract the city where the job is located.\"",
+			"de": "Was gefunden werden soll, als kurzes Label wie \"email address\" oder als Anweisung wie \"Extract the city where the job is located.\"",
+			"pt-BR": "O que encontrar, como um rótulo curto, por exemplo \"email address\", ou uma instrução, por exemplo \"Extract the city where the job is located.\"",
+			"hi": "क्या ढूँढना है, किसी छोटे लेबल के रूप में जैसे \"email address\" या किसी निर्देश के रूप में जैसे \"Extract the city where the job is located.\"",
+			"ja": "検索する対象。\"email address\" のような短いラベル、または \"Extract the city where the job is located.\" のような指示で指定します。",
+			"zh-Hans": "要查找的内容，可以是简短标签（如 \"email address\"），也可以是指令（如 \"Extract the city where the job is located.\"）。",
+			"ar": "ما يجب العثور عليه، كتسمية قصيرة مثل \"email address\" أو كتعليمة مثل \"Extract the city where the job is located.\""
+		},
+		"Finds the parts of state that match a description and returns them as verbatim spans. Requires a string state with no images, and a route that supports locate, such as Perplexity Decider V1.3. No criteria.": {
+			"es": "Encuentra las partes de state que coinciden con una descripción y las devuelve como fragmentos literales. Requiere un state de tipo cadena sin imágenes y una ruta que admita locate, como Perplexity Decider V1.3. Sin criteria.",
+			"fr": "Trouve les parties de state qui correspondent à une description et les renvoie sous forme d’extraits littéraux. Nécessite un state de type chaîne sans images et une route qui prend en charge locate, comme Perplexity Decider V1.3. Pas de criteria.",
+			"de": "Findet die Teile von state, die zu einer Beschreibung passen, und gibt sie als wörtliche Abschnitte zurück. Erfordert einen String-state ohne Bilder und eine Route, die locate unterstützt, etwa Perplexity Decider V1.3. Keine criteria.",
+			"pt-BR": "Encontra as partes de state que correspondem a uma descrição e as retorna como trechos literais. Exige um state em string sem imagens e uma rota compatível com locate, como Perplexity Decider V1.3. Sem criteria.",
+			"hi": "state के वे हिस्से ढूँढता है जो किसी विवरण से मेल खाते हैं और उन्हें शब्दशः अंशों के रूप में लौटाता है। इसके लिए बिना इमेज वाला स्ट्रिंग state और locate सपोर्ट करने वाला रूट चाहिए, जैसे Perplexity Decider V1.3। criteria नहीं।",
+			"ja": "説明に一致する state の部分を見つけ、原文どおりのスパンとして返します。画像を含まない文字列の state と、Perplexity Decider V1.3 など locate に対応したルートが必要です。criteria は使いません。",
+			"zh-Hans": "查找 state 中与描述匹配的部分，并以原文片段的形式返回。需要不含图像的字符串 state，以及支持 locate 的路由，例如 Perplexity Decider V1.3。不使用 criteria。",
+			"ar": "يعثر على أجزاء state التي تطابق وصفًا ويُعيدها كمقاطع حرفية. يتطلب state نصيًا من نوع string بلا صور، ومسارًا يدعم locate، مثل Perplexity Decider V1.3. بدون criteria."
+		},
+		"The matching parts of the input. Empty when nothing matches.": {
+			"es": "Las partes de la entrada que coinciden. Vacío cuando nada coincide.",
+			"fr": "Les parties de l’entrée qui correspondent. Vide quand rien ne correspond.",
+			"de": "Die passenden Teile der Eingabe. Leer, wenn nichts passt.",
+			"pt-BR": "As partes da entrada que correspondem. Vazio quando nada corresponde.",
+			"hi": "इनपुट के मेल खाने वाले हिस्से। कुछ भी मेल न खाए तो खाली।",
+			"ja": "入力のうち一致した部分。一致がない場合は空です。",
+			"zh-Hans": "输入中匹配的部分。没有匹配时为空。",
+			"ar": "أجزاء المُدخل المطابقة. تكون فارغة إذا لم يطابق شيء."
+		},
+		"Offset of the first character of the span, counted in Unicode code points from the start of the input.": {
+			"es": "Posición del primer carácter del fragmento, contada en puntos de código Unicode desde el inicio de la entrada.",
+			"fr": "Position du premier caractère de l’extrait, comptée en points de code Unicode depuis le début de l’entrée.",
+			"de": "Position des ersten Zeichens des Abschnitts, gezählt in Unicode-Codepunkten ab dem Anfang der Eingabe.",
+			"pt-BR": "Posição do primeiro caractere do trecho, contada em pontos de código Unicode desde o início da entrada.",
+			"hi": "अंश के पहले अक्षर का ऑफ़सेट, इनपुट की शुरुआत से Unicode कोड पॉइंट में गिना गया।",
+			"ja": "スパンの最初の文字の位置。入力の先頭から Unicode コードポイント単位で数えます。",
+			"zh-Hans": "片段第一个字符的偏移量，从输入开头按 Unicode 码位计数。",
+			"ar": "موضع أول حرف في المقطع، محسوبًا بنقاط ترميز Unicode من بداية المُدخل."
+		},
+		"Offset just after the last character of the span (exclusive).": {
+			"es": "Posición justo después del último carácter del fragmento (exclusiva).",
+			"fr": "Position juste après le dernier caractère de l’extrait (exclusive).",
+			"de": "Position direkt nach dem letzten Zeichen des Abschnitts (exklusiv).",
+			"pt-BR": "Posição logo após o último caractere do trecho (exclusiva).",
+			"hi": "अंश के आखिरी अक्षर के ठीक बाद का ऑफ़सेट (exclusive)।",
+			"ja": "スパンの最後の文字の直後の位置（この位置は含みません）。",
+			"zh-Hans": "片段最后一个字符之后的偏移量（不含该位置）。",
+			"ar": "الموضع الذي يلي آخر حرف في المقطع مباشرة (غير شامل)."
+		},
+		"The span, copied verbatim from the input.": {
+			"es": "El fragmento, copiado literalmente de la entrada.",
+			"fr": "L’extrait, copié tel quel depuis l’entrée.",
+			"de": "Der Abschnitt, wörtlich aus der Eingabe kopiert.",
+			"pt-BR": "O trecho, copiado literalmente da entrada.",
+			"hi": "अंश, इनपुट से शब्दशः कॉपी किया गया।",
+			"ja": "入力から原文どおりにコピーしたスパン。",
+			"zh-Hans": "从输入中原样复制的片段。",
+			"ar": "المقطع، منسوخًا حرفيًا من المُدخل."
+		},
+		"How certain the model is that the span matches. Higher is more certain.": {
+			"es": "Qué tan seguro está el modelo de que el fragmento coincide. Un valor más alto indica más certeza.",
+			"fr": "Degré de certitude du modèle que l’extrait correspond. Plus la valeur est élevée, plus il est certain.",
+			"de": "Wie sicher das Modell ist, dass der Abschnitt passt. Höher bedeutet sicherer.",
+			"pt-BR": "Quão certo o modelo está de que o trecho corresponde. Quanto maior, mais certeza.",
+			"hi": "मॉडल को कितना भरोसा है कि अंश मेल खाता है। ज़्यादा मान का मतलब ज़्यादा भरोसा।",
+			"ja": "スパンが一致しているというモデルの確信度。値が大きいほど確信が高くなります。",
+			"zh-Hans": "模型对该片段匹配的确信程度。数值越高越确定。",
+			"ar": "مدى يقين النموذج بأن المقطع مطابق. القيمة الأعلى تعني يقينًا أكبر."
 		}
 	},
 	"GET /apps": {

@@ -472,6 +472,23 @@ describe("google-vertex Gemini thinking levels", () => {
 		},
 	);
 
+	// Live Vertex probe 2026-11-12: Hydrogen answered a thinkingBudget with HTTP 400
+	// "Thinking budget is not supported for this model. Use thinking level instead."
+	it.each([[{ effort: "minimal" }, "LOW"], [{ effort: "high" }, "HIGH"], [{ effort: "xhigh" }, "XHIGH"], [{ effort: "max" }, "XHIGH"], [{ enabled: true }, "HIGH"]] as const)(
+		"sends Hydrogen a thinkingLevel and no thinkingBudget for effort or enabled (%j)",
+		async (reasoning, level) => {
+			const config = await thinkingConfigFor("gemini-4-hydrogen", { ...reasoning } as any);
+			expect(config.thinkingLevel).toBe(level);
+			expect(config).not.toHaveProperty("thinkingBudget");
+		},
+	);
+
+	it("forwards a Hydrogen token budget unchanged so Google's explicit error, not a silent level, is the signal", async () => {
+		const config = await thinkingConfigFor("gemini-4-hydrogen", { maxTokens: 1024 } as any);
+		expect(config.thinkingBudget).toBe(1024);
+		expect(config).not.toHaveProperty("thinkingLevel");
+	});
+
 	it("keeps thinkingBudget for Gemini 3 models that still accept it", async () => {
 		const config = await thinkingConfigFor("gemini-3.6-flash", { maxTokens: 4096 });
 		expect(config.thinkingBudget).toBe(4096);

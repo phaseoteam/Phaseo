@@ -11,6 +11,19 @@ describe("decisions feature routing", () => {
 		expect(filterDecisionCandidatesByModalities([jev13, jev14, openai] as any, ir)).toEqual([jev14]);
 		expect(filterDecisionCandidatesByModalities([jev14] as any, { ...ir, images: [] })).toEqual([]);
 	});
+	it("routes Locate only to capabilities that declare locate", () => {
+		const decider13 = { providerId: "perplexity", inputModalities: ["text", "image"], capabilityParams: { locate: true } };
+		const decider12 = { providerId: "perplexity", inputModalities: ["text", "image"], capabilityParams: {} };
+		const declined = { ...decider12, capabilityParams: { locate: false } };
+		const text = { model: "model", state: "Email help@brewco.example", images: [], questions: {
+			email: { type: "locate" as const, instructions: "email address" },
+			defect: { type: "noul" as const, instructions: "Defect?" },
+		} };
+		expect(filterDecisionCandidatesByModalities([decider12, decider13, declined, openai] as any, text)).toEqual([decider13]);
+		expect(filterDecisionCandidatesByModalities([decider12, openai] as any, text)).toEqual([]);
+		const noLocate = { ...text, questions: { defect: text.questions.defect } };
+		expect(filterDecisionCandidatesByModalities([decider12, decider13] as any, noLocate)).toEqual([decider12, decider13]);
+	});
 	it("routes hosted image URLs only to capabilities that fetch them", () => {
 		const baseten = { providerId: "baseten", inputModalities: ["text", "image"], capabilityParams: { images: true, image_urls: true } };
 		const candidates = [jev13, openai, baseten] as any;

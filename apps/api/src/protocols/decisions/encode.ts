@@ -16,6 +16,9 @@ export function encodeDecisionsResponse(ir: IRDecisionsResponse, request?: IRDec
 		if (question.type === "box" && answer.type === "box") {
 			return { type: "box", name, box: answer.box, confidence: answer.confidence };
 		}
+		if (question.type === "locate" && answer.type === "locate") {
+			return { type: "locate", name, spans: answer.spans };
+		}
 		if (question.type === "predicate" && answer.type === "noul") {
 			return { type: "predicate", name, probability: answer.noul };
 		}

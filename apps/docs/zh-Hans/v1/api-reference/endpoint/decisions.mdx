@@ -155,6 +155,7 @@ print(decision["answers"])
 | `choice` | `choices`：`value`（字符串或布尔值，互不相同）和可选的 `description` | `choice`、`confidence`，以及每个值的 `probabilities` |
 | `score` | `levels`：`label` 和可选的 `description` | `score`（按概率加权的级别索引）、`confidence`，以及每个级别的 `probabilities` |
 | `box` | 无；`input` 中需要一张图像 | `box`（`top`、`bottom`、`left`、`right`）、`confidence` |
+| `locate` | 无；需要不含媒体的字符串 `input` | `spans`（`start`、`end`、`text`、`score`） |
 
 布尔类型的选项值会以布尔值返回。模型拒绝回答某个问题时，会为该问题返回 `type: "refusal"`。各模型支持哪些类型，见[选择模型](#choose-a-model)。
 
@@ -166,6 +167,7 @@ print(decision["answers"])
 
 - `state`：一个字符串、对象或数组，包含要评估的信息。
 - `questions`：最多 128 个命名问题，上限更高的模型可接受更多。每个问题将 `type` 设为 `noul`（是/否）、`choice` 或 `score`，并提供 `instructions`。选择题的 `criteria` 是选项到描述的映射；评分题的 `criteria` 是至少包含两个级别描述的数组。
+- `locate` 问题只使用 `instructions`，并且需要不含 `images` 的字符串 `state`；参见 [Perplexity Decider](#liquid-d1-and-perplexity-decider)。
 - `images`：最多四张 PNG、JPEG 或 WebP 图像，形式为 `data:` URL 或 `{ "content_type", "base64" }` 对象。
 - `model`：省略时默认为 `typesafe/jev-1.13.0`。
 
@@ -184,7 +186,7 @@ print(decision["answers"])
 | `cloudflare/clef-omni` | 全部三种 | 文本、图像、音频、视频 | $0.15 |
 | `google/gemini-decision-1` | predicate、choice、score；每个请求最多 1,000 个 | 文本、图像、音频、视频 | $0.10 |
 | `liquid-ai/d1:free`、`liquid-ai/d1` | 全部三种 | 见模型页面 | 抢先体验期间免费 |
-| `perplexity/decider-27b` | 全部三种 | 文本、base64 图像 | $0.04，包含图像 token |
+| `perplexity/pplx-decider-v1.3`、`perplexity/pplx-decider-flash-v1.3` | 全部三种，以及 `locate` | 文本、base64 图像 | $0.02 / $0.01 |
 | `inception/mercury-decide` | predicate、choice、score | 文本或 JSON | $0.02（促销价） |
 | `microsoft/microsoft-decision-1` | predicate、choice、score | 文本或 JSON | $0.042 |
 | `respan/span-01:free`、`respan/span-01` | 仅 `noul`（旧格式） | 对话片段 | 免费（Lite）/ $0.02 |
@@ -268,9 +270,10 @@ Clef 最多接受 64 个问题，ID 最多 100 个字母、数字、下划线、
 
 Cloudflare 会校验媒体编码、图像尺寸和片段时长，并以每秒两帧的频率对视频采样。当请求中的每个视频都有音轨时，会使用视频的音轨。媒体 token 计入上下文和计费；Phaseo 按 Cloudflare 报告的输入用量结算，不额外收取音频或视频费用。请参阅 [Cloudflare 的 Omni 契约](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json)。
 
+<span id="liquid-d1-and-perplexity-decider"></span>
 ### Liquid D1 和 Perplexity Decider
 
-Liquid D1（`liquid-ai/d1:free`，以及 `liquid-ai/d1`）在实验性抢先体验期间免费。Perplexity Decider 27B（`perplexity/decider-27b`）需要在 Phaseo 中配置 Perplexity 提供商凭据。它的图像 state 使用 PNG、JPEG 或 WebP 的 base64 data URL；不支持远程图像 URL。在这两个模型上，选择题最多接受 255 个选项，评分题最多接受 10 个级别。
+Liquid D1（`liquid-ai/d1:free`，以及 `liquid-ai/d1`）在实验性抢先体验期间免费。Perplexity Decider V1.3（`perplexity/pplx-decider-v1.3`，或 `perplexity/pplx-decider-latest`）和 Decider Flash V1.3（`perplexity/pplx-decider-flash-v1.3`，或 `perplexity/pplx-decider-flash-latest`）需要在 Phaseo 中配置 Perplexity 提供商凭据。它们的图像 state 使用 PNG、JPEG 或 WebP 的 base64 data URL；不支持远程图像 URL。它们还能回答 `locate` 问题，返回字符串 `input` 或 `state` 中与 `instructions`（例如 `"email address"`）匹配的部分。每个片段包含原样复制的 `text`、按 Unicode 码位计数的 `start` 和 `end` 偏移量（不含 `end`），以及数值越高越确定的 `score`；没有匹配时 `spans` 为空。Locate 不使用 criteria，不接受图像、音频或视频，只能在标明支持它的模型上使用；其他模型会返回 `400`。Perplexity 使用最多 8K token 的输入训练了该功能。在这两个模型上，选择题最多接受 255 个选项，评分题最多接受 10 个级别。
 
 ### Inception Mercury Decide
 

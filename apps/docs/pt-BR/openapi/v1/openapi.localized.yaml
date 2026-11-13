@@ -14540,6 +14540,7 @@ components:
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
               - $ref: '#/components/schemas/DecisionBoxQuestion'
+              - $ref: '#/components/schemas/DecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
@@ -14589,6 +14590,25 @@ components:
         instructions:
           type: string
           maxLength: 1048576
+    DecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Encontra as partes da entrada que correspondem a uma descrição e as retorna como trechos literais. Exige entrada em string sem imagens, áudio ou vídeo, e uma rota compatível com locate, como Perplexity Decider V1.3.
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
+          description: O que encontrar, como um rótulo curto, por exemplo "email address", ou uma instrução, por exemplo "Extract the city where the job is located."
     DecisionInputMessage:
       type: object
       required:
@@ -14838,6 +14858,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
               - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -14877,6 +14898,23 @@ components:
             - box
         instructions:
           $ref: '#/components/schemas/DecisionInstructions'
+    LegacyDecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Encontra as partes de state que correspondem a uma descrição e as retorna como trechos literais. Exige um state em string sem imagens e uma rota compatível com locate, como Perplexity Decider V1.3. Sem criteria.
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        instructions:
+          type: string
+          minLength: 1
+          maxLength: 50000
+          description: O que encontrar, como um rótulo curto, por exemplo "email address", ou uma instrução, por exemplo "Extract the city where the job is located."
     DecisionImage:
       type: object
       required:
@@ -14978,6 +15016,7 @@ components:
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
               - $ref: '#/components/schemas/DecisionBoxAnswer'
+              - $ref: '#/components/schemas/DecisionLocateAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -15034,6 +15073,47 @@ components:
           type: number
           minimum: 0
           maximum: 1
+    DecisionLocateAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - spans
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          nullable: true
+        spans:
+          type: array
+          description: As partes da entrada que correspondem. Vazio quando nada corresponde.
+          items:
+            $ref: '#/components/schemas/DecisionLocateSpan'
+    DecisionLocateSpan:
+      type: object
+      required:
+        - start
+        - end
+        - text
+        - score
+      properties:
+        start:
+          type: integer
+          minimum: 0
+          description: Posição do primeiro caractere do trecho, contada em pontos de código Unicode desde o início da entrada.
+        end:
+          type: integer
+          minimum: 0
+          description: Posição logo após o último caractere do trecho (exclusiva).
+        text:
+          type: string
+          description: O trecho, copiado literalmente da entrada.
+        score:
+          type: number
+          description: Quão certo o modelo está de que o trecho corresponde. Quanto maior, mais certeza.
     DecisionPredicateAnswer:
       type: object
       required:

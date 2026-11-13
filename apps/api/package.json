@@ -78,7 +78,7 @@
 		"@typescript/native": "catalog:",
 		"dotenv": "^17.4.2",
 		"eslint": "^10.13.0",
-		"music-metadata": "^11.15.0",
+		"music-metadata": "^11.16.1",
 		"openai": "^6.39.0",
 		"tsx": "^4.23.13",
 		"typescript": "catalog:",

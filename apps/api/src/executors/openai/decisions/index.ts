@@ -23,6 +23,8 @@ function questionBody(name: string, question: IRDecisionQuestion): Record<string
 	switch (question.type) {
 		case "box":
 			throw new Error("Box questions are unsupported on OpenAI Decisions routes.");
+		case "locate":
+			throw new Error("Locate questions are unsupported on OpenAI Decisions routes.");
 		case "noul":
 			return {
 				name, type: "predicate",

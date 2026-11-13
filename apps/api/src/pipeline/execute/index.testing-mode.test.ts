@@ -760,6 +760,21 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
 	});
 
+	it("rejects locate questions with a clear message when no route declares locate", async () => {
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [{ providerId: "perplexity", inputModalities: ["text", "image"], capabilityParams: {} }] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make", model: "perplexity/pplx-decider-v1.2" }), {
+			model: "perplexity/pplx-decider-v1.2", state: "Mail help@brewco.example", questions: { email: { type: "locate", instructions: "email address" } },
+		} as any, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(400);
+		expect(await (result as Response).json()).toMatchObject({
+			error: "unsupported_parameter",
+			message: expect.stringContaining("No route for this model supports locate questions."),
+		});
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
+	});
+
 	it("rejects more questions than any route accepts and names the limit", async () => {
 		const questions = Object.fromEntries(Array.from({ length: 129 }, (_, index) => [`q${index}`, { type: "noul", instructions: "Safe?" }]));
 		guardCandidatesMock.mockResolvedValue({ ok: true, value: [

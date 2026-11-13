@@ -3,9 +3,6 @@
  * Supports CSV and PDF export for tabular data
  */
 
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
-
 export interface ExportRow {
 	[key: string]: string | number | null | undefined;
 }
@@ -62,16 +59,18 @@ export function exportToCSV(data: ExportRow[], filename: string): void {
  * @param filename Name of the file to download
  * @param title Title to display on the PDF
  */
-export function exportToPDF(
+export async function exportToPDF(
 	data: ExportRow[],
 	filename: string,
 	title: string
-): void {
+): Promise<void> {
 	if (!data || data.length === 0) {
 		console.warn("No data to export");
 		return;
 	}
 
+	// jsPDF is large, so it loads only when someone exports.
+	const [{ jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
 	const doc = new jsPDF();
 
 	// Add title
