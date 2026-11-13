@@ -1,3 +1,4 @@
+-- phaseo:allow-destructive-migration reason: Adds the catalogue DELETE/TRUNCATE guard trigger to a new table; no rows are removed.
 -- Measured monthly token volume per subscription plan and model, imported from public measurement datasets.
 -- Lets the catalogue show what a model effectively costs per 1M tokens on a subscription and how that compares with API prices.
 
