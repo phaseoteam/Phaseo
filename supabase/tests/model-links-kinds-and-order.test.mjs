@@ -51,6 +51,7 @@ try {
 			('lab/a', 'source', 'Code', 'https://github.com/lab/a'),
 			('lab/a', 'release_notes', 'Changelog', 'https://example.com/changelog'),
 			('lab/a', 'mystery_kind', 'Something', 'https://example.com/other'),
+			('lab/a', 'zz_unknown_kind', 'Duplicate', 'https://example.com/other'),
 			('lab/b', 'website', 'Lab', 'https://lab.example/'),
 			('lab/b', 'official_website', 'Lab site', 'https://lab.example/'),
 			('lab/b', 'official_model_card', 'Card', 'https://lab.example/card');

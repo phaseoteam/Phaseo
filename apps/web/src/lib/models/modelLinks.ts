@@ -163,11 +163,27 @@ export function defaultModelLinkTitle(kind: ModelLinkKind): string {
 	return KIND_TITLES[kind];
 }
 
+/**
+ * The key two links must share to count as the same URL. Only the scheme and host are
+ * case-insensitive, so only they are lowercased (the URL parser does this); the path, query and
+ * fragment are kept exactly. "https://a.com" and "https://a.com/" share a key because the parser
+ * gives both the path "/".
+ */
+export function modelLinkUrlKey(url: string | null | undefined): string {
+	const trimmed = url?.trim() ?? "";
+	if (!trimmed) return "";
+	try {
+		return new URL(trimmed).href;
+	} catch {
+		return trimmed;
+	}
+}
+
 /** Keeps the first link for each URL, so one URL saved under several kinds shows once. */
 export function dedupeModelLinksByUrl<T extends { url?: string | null }>(links: T[]): T[] {
 	const seen = new Set<string>();
 	return links.filter((link) => {
-		const key = link.url?.trim().replace(/\/+$/, "").toLowerCase();
+		const key = modelLinkUrlKey(link.url);
 		if (!key || seen.has(key)) return false;
 		seen.add(key);
 		return true;

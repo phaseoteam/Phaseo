@@ -125,6 +125,17 @@ export function licenceUrl(model: Pick<ModelDetail, "license_url" | "model_links
   return model?.model_links?.find((link) => isLicenceLink(link) && link.url.trim())?.url.trim() ?? null;
 }
 
+/** Same URL key as the web model page: only the scheme and host are case-insensitive. */
+const linkUrlKey = (url: string | null | undefined) => {
+  const trimmed = url?.trim() ?? "";
+  if (!trimmed) return "";
+  try {
+    return new URL(trimmed).href;
+  } catch {
+    return trimmed;
+  }
+};
+
 /**
  * Links other than the licence (which the About grid already shows), in their saved order, with
  * each URL shown once even when it was saved under several kinds.
@@ -133,7 +144,7 @@ export const genericLinks = <T extends { kind?: string | null; platform?: string
   const seen = new Set<string>();
   return (links ?? []).filter((link) => {
     if (isLicenceLink(link)) return false;
-    const key = link.url?.trim().replace(/\/+$/, "").toLowerCase();
+    const key = linkUrlKey(link.url);
     if (!key || seen.has(key)) return false;
     seen.add(key);
     return true;

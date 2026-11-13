@@ -64,13 +64,26 @@ describe("suggestModelLinkTitle", () => {
 });
 
 describe("dedupeModelLinksByUrl", () => {
-	it("keeps the first link for each URL, ignoring case and trailing slashes", () => {
+	it("keeps the first link for each URL, ignoring case only in the scheme and host", () => {
 		const links = [
 			{ kind: "weights", url: "https://huggingface.co/Qwen/QwQ-32B" },
-			{ kind: "api_reference", url: "https://huggingface.co/qwen/qwq-32b/" },
+			{ kind: "api_reference", url: " HTTPS://HuggingFace.co/Qwen/QwQ-32B" },
+			{ kind: "website", url: "https://lab.example" },
+			{ kind: "provider", url: "https://lab.example/" },
 			{ kind: "paper", url: "https://arxiv.org/abs/1" },
 		];
-		expect(dedupeModelLinksByUrl(links).map((link) => link.kind)).toEqual(["weights", "paper"]);
+		expect(dedupeModelLinksByUrl(links).map((link) => link.kind)).toEqual(["weights", "website", "paper"]);
+	});
+
+	it("keeps links whose paths or queries differ only in case or a trailing slash", () => {
+		const links = [
+			{ kind: "website", url: "https://example.com/Model" },
+			{ kind: "website", url: "https://example.com/model" },
+			{ kind: "website", url: "https://example.com/model/" },
+			{ kind: "website", url: "https://example.com/model?v=A" },
+			{ kind: "website", url: "https://example.com/model?v=a" },
+		];
+		expect(dedupeModelLinksByUrl(links)).toHaveLength(5);
 	});
 });
 

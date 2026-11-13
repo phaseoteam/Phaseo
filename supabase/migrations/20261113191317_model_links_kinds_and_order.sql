@@ -24,7 +24,14 @@ SELECT model_slug, link_kind, url, CASE
     WHEN link_kind IN ('model', 'provider_model', 'provider_models', 'provider_endpoint', 'catalogue', 'byteplus') THEN 'provider'
     WHEN link_kind = 'official_pricing' THEN 'pricing'
     WHEN link_kind IN ('homepage', 'official_website') THEN 'website'
-    ELSE link_kind
+    WHEN link_kind IN (
+      'announcement', 'model_card', 'paper', 'weights', 'repository', 'documentation',
+      'api_reference', 'playground', 'pricing', 'benchmark', 'website', 'provider',
+      'deprecation', 'license'
+    ) THEN link_kind
+    -- Anything else becomes a website link. Mapping it here means the de-duplication below also
+    -- covers two unknown kinds that share a URL.
+    ELSE 'website'
   END AS new_kind
 FROM public.v2_model_links;
 
@@ -50,21 +57,7 @@ WHERE link.model_slug = map.model_slug
   AND link.url = map.url
   AND map.link_kind <> map.new_kind;
 
--- Kinds outside the list above are kept only if they are already valid; anything else becomes a website link.
-UPDATE public.v2_model_links
-SET link_kind = 'website', updated_at = now()
-WHERE link_kind NOT IN (
-  'announcement', 'model_card', 'paper', 'weights', 'repository', 'documentation',
-  'api_reference', 'playground', 'pricing', 'benchmark', 'website', 'provider',
-  'deprecation', 'license'
-)
-AND NOT EXISTS (
-  SELECT 1 FROM public.v2_model_links other
-  WHERE other.model_slug = v2_model_links.model_slug
-    AND other.link_kind = 'website'
-    AND other.url = v2_model_links.url
-);
-
+-- Safety net: after the mapping above every kind is in the list, so this removes nothing.
 DELETE FROM public.v2_model_links
 WHERE link_kind NOT IN (
   'announcement', 'model_card', 'paper', 'weights', 'repository', 'documentation',

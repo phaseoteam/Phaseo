@@ -18,6 +18,7 @@ import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import { Logo } from "@/components/Logo";
 import {
 	dedupeModelLinksByUrl,
+	defaultModelLinkTitle,
 	normaliseModelLinkKind,
 	type ModelLinkKind,
 } from "@/lib/models/modelLinks";
@@ -114,11 +115,14 @@ function fallbackIcon(kind: ModelLinkKind, model: ModelOverviewPage, providerLab
 
 function parseLinks(model: ModelOverviewPage): ParsedModelLink[] {
 	const raw = ((model.model_links as ModelLink[] | undefined) ?? []).filter(hasLinkUrl);
-	return dedupeModelLinksByUrl(getGenericModelLinks(raw)).map((link) => ({
-		kind: normaliseModelLinkKind(link.kind ?? link.platform, link.url),
-		title: link.title?.trim() || null,
-		url: link.url.trim(),
-	}));
+	return dedupeModelLinksByUrl(getGenericModelLinks(raw)).map((link) => {
+		const kind = normaliseModelLinkKind(link.kind ?? link.platform, link.url);
+		const title = link.title?.trim() || null;
+		// The editor stores the English kind name when a title is left blank. Treat that as no title
+		// so the translated label shows instead, for kinds that have one.
+		const isDefaultTitle = title === defaultModelLinkTitle(kind) && KIND_LABEL_KEYS[kind] !== undefined;
+		return { kind, title: isDefaultTitle ? null : title, url: link.url.trim() };
+	});
 }
 
 function getDisplayUrl(url: string) {
