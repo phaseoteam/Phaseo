@@ -9,8 +9,10 @@ import type { IRContentPart, IREffortRecord, IRToolCall } from "@core/ir";
 import type { GatewayReasoningDetail } from "@core/types";
 import {
 	ANTHROPIC_REASONING_FORMAT,
+	AZURE_OPENAI_REASONING_FORMAT,
 	GOOGLE_REASONING_FORMAT,
 	OPENAI_REASONING_FORMAT,
+	XAI_REASONING_FORMAT,
 	effortRecordFromState,
 	isReasoningFormat,
 	openReasoningState,
@@ -23,6 +25,23 @@ import {
 } from "@core/reasoning-state";
 
 export type ReasoningPart = Extract<IRContentPart, { type: "reasoning_text" }>;
+
+/**
+ * Formats whose reasoning must go back in the place the provider wrote it:
+ * Claude thinking signatures record everything before them, and OpenAI, Azure
+ * and xAI may drop a reasoning item whose preceding history changed. Gemini
+ * signatures are tied to their function call by id instead.
+ */
+const POSITIONED_REASONING_FORMATS = new Set<ReasoningFormat>([
+	ANTHROPIC_REASONING_FORMAT,
+	OPENAI_REASONING_FORMAT,
+	AZURE_OPENAI_REASONING_FORMAT,
+	XAI_REASONING_FORMAT,
+]);
+
+export function keepsReasoningPosition(format: ReasoningFormat | null | undefined): boolean {
+	return Boolean(format && POSITIONED_REASONING_FORMATS.has(format));
+}
 
 /** Where the response came from, used when a part does not name its origin. */
 export type ReasoningResponseOrigin = { provider?: string | null; model?: string | null };
@@ -229,14 +248,14 @@ export function encodeChatReasoningDetails(
 	const push = (detail: Omit<GatewayReasoningDetail, "index">) => {
 		details.push({ ...detail, index: details.length } as GatewayReasoningDetail);
 	};
-	// Chat keeps reasoning apart from tool calls, so a Claude thinking block written
+	// Chat keeps reasoning apart from tool calls, so a reasoning block written
 	// between two tool calls records the call before it, to go back in its place.
 	const callOrder = (toolCalls ?? []).map((call) => call.id);
 	// Chat also joins a reply's text into one string, so a block written after text
 	// (and before any tool call) records how much text came before it.
 	let textChars = 0;
 	const positionOf = (part: ReasoningPart): { afterCallId?: string; textOffset?: number } | undefined => {
-		if (reasoningPartFormat(part, origin) !== ANTHROPIC_REASONING_FORMAT) return undefined;
+		if (!keepsReasoningPosition(reasoningPartFormat(part, origin))) return undefined;
 		const index = part.beforeToolCallId ? callOrder.indexOf(part.beforeToolCallId) : -1;
 		if (index > 0) return { afterCallId: callOrder[index - 1] };
 		return !part.beforeToolCallId && textChars > 0 ? { textOffset: textChars } : undefined;
@@ -309,10 +328,10 @@ export function decodeChatReasoningDetails(
 	let effortRecord: IREffortRecord | undefined;
 	const textOffsets = new Map<ReasoningPart, number>();
 	if (!Array.isArray(details)) return { parts, toolSignatures, textOffsets };
-	// Put a Claude thinking block back before the tool call that followed it.
+	// Put a reasoning block back before the tool call that followed it.
 	const callOrder = [...toolCallIds];
 	const anchored = (part: ReasoningPart, state: ReasoningState): ReasoningPart => {
-		if (state.format !== ANTHROPIC_REASONING_FORMAT) return part;
+		if (!keepsReasoningPosition(state.format)) return part;
 		if (state.textOffset && !state.afterCallId) textOffsets.set(part, state.textOffset);
 		if (!state.afterCallId) return part;
 		const index = callOrder.indexOf(state.afterCallId);
@@ -362,10 +381,16 @@ export function decodeChatReasoningDetails(
 			const previous = parts[parts.length - 1];
 			if (previous && previous.reasoningFormat === state.format && !previous.encryptedContent
 				&& !previous.thoughtSignature && !previous.redactedData) {
-				Object.assign(previous, reasoningPartFromState(state, previous.text, {
+				const merged = reasoningPartFromState(state, previous.text, {
 					summary: previous.summary,
 					reasoningId: id ?? previous.reasoningId,
-				}));
+				});
+				Object.assign(previous, anchored(merged, state));
+				const offset = textOffsets.get(merged);
+				if (offset !== undefined) {
+					textOffsets.delete(merged);
+					textOffsets.set(previous, offset);
+				}
 				continue;
 			}
 		}

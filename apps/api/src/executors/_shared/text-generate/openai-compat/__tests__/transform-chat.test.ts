@@ -1136,7 +1136,7 @@ describe("irToOpenAIChat", () => {
 		expect(request.max_tokens).toBeUndefined();
 	});
 
-	it("omits stale DeepSeek reasoning_content on non-tool turns and keeps json_object response_format", () => {
+	it("keeps DeepSeek reasoning_content on non-tool turns (required when tools are present) and keeps json_object response_format", () => {
 		const request = irToOpenAIChat({
 			model: "deepseek/deepseek-chat",
 			messages: [
@@ -1159,7 +1159,8 @@ describe("irToOpenAIChat", () => {
 		} as any, "deepseek-chat", "deepseek");
 
 		expect(request.messages[0].content).toBe("answer");
-		expect(request.messages[0].reasoning_content).toBeUndefined();
+		// https://api-docs.deepseek.com/guides/thinking_mode: with tools, every earlier turn needs it; without, it is ignored.
+		expect(request.messages[0].reasoning_content).toBe("analysis");
 		expect(request.response_format).toEqual({ type: "json_object" });
 	});
 

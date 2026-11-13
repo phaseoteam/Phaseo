@@ -44,7 +44,7 @@ describe("DeepSeek quirks", () => {
 	it("maps the current V4 request contract and removes unsupported fields", () => {
 		const request: Record<string, any> = {
 			messages: [
-				{ role: "assistant", content: "done", reasoning_content: "stale" },
+				{ role: "assistant", content: "done", reasoning_content: "earlier answer" },
 				{
 					role: "assistant",
 					content: null,
@@ -72,7 +72,8 @@ describe("DeepSeek quirks", () => {
 		expect(request.parallel_tool_calls).toBeUndefined();
 		expect(request.seed).toBeUndefined();
 		expect(request.metadata).toBeUndefined();
-		expect(request.messages[0].reasoning_content).toBeUndefined();
+		// DeepSeek needs reasoning_content on every earlier turn when tools are present.
+		expect(request.messages[0].reasoning_content).toBe("earlier answer");
 		expect(request.messages[1].reasoning_content).toBe("needed for tool continuation");
 	});
 

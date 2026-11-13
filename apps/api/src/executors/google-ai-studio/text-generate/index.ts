@@ -298,7 +298,8 @@ export async function irToGemini(
 				return {
 					type: "thought",
 					...(part.thoughtSignature ? { signature: part.thoughtSignature } : {}),
-					...(summaryText ? { summary: { type: "text", text: summaryText } } : {}),
+					// Interactions takes a thought summary as a list of content items.
+					...(summaryText ? { summary: [{ type: "text", text: summaryText }] } : {}),
 				};
 			};
 			// Stateless Interactions needs every model-generated step back in
@@ -576,7 +577,9 @@ async function irPartsToInteractionContent(
 function geminiPartToInteractionContent(part: any): any[] {
 	if (!part || typeof part !== "object") return [];
 	if (typeof part.text === "string") {
-		return [{ type: "text", text: part.text }];
+		// Interactions rejects an empty text item ("Missing text in content of
+		// type text"); Chat clients send content: "" next to their tool calls.
+		return part.text ? [{ type: "text", text: part.text }] : [];
 	}
 
 	const inlineData = normalizeGeminiInlineData(part);
@@ -1722,6 +1725,10 @@ export function transformStream(
 	const emittedAnnotationKeys = new Set<string>();
 	// reasoning_details entries are numbered across the whole stream, per choice.
 	const reasoningDetailIndexes = new Map<number, number>();
+	// The reasoning.text entry still open per choice: consecutive thought chunks
+	// extend one entry, as the non-streamed reply has one entry per thought part.
+	const openThoughtDetails = new Map<number, number>();
+	const thoughtTextOpen = new Map<number, boolean>();
 
 	let created = Math.floor(Date.now() / 1000);
 	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
@@ -1783,7 +1790,7 @@ export function transformStream(
 				// Usage observers must never break the client stream.
 			}
 		}
-		const openAIChunk = encodeIRChunkToOpenAI(irChunk, reasoningDetailIndexes);
+		const openAIChunk = encodeIRChunkToOpenAI(irChunk, reasoningDetailIndexes, openThoughtDetails);
 		controller.enqueue(encoder.encode(`data: ${JSON.stringify(openAIChunk)}\n\n`));
 	};
 	const buildBaseIRChunk = (): IRStreamChunk => ({
@@ -2018,7 +2025,22 @@ export function transformStream(
 
 					for (const [partIdx, part] of parts.entries()) {
 						const partSignature = part.thoughtSignature ?? part.thought_signature;
+						// Thought text goes out as reasoning_details too (as in the
+						// non-streamed reply), so clients that send back only
+						// reasoning_details keep it for the next turn.
+						if (part.thought && part.text) {
+							signatureDetails.push({
+								type: "reasoning.text",
+								text: part.text,
+								format: "unknown",
+								...(thoughtTextOpen.get(index) ? { continues: true } : {}),
+							});
+							thoughtTextOpen.set(index, true);
+						} else if (part.text || part.functionCall || part.inlineData || part.inline_data) {
+							thoughtTextOpen.set(index, false);
+						}
 						if (part.thought && typeof partSignature === "string" && partSignature && !part.functionCall) {
+							thoughtTextOpen.set(index, false);
 							signatureDetails.push({
 								type: "reasoning.encrypted",
 								data: sealGeminiSignature(partSignature),
@@ -2372,7 +2394,11 @@ export function transformStream(
  * index across chunks: a client that merges stream entries by index would
  * otherwise collapse every Gemini signature into one.
  */
-function encodeIRChunkToOpenAI(chunk: IRStreamChunk, reasoningDetailIndexes?: Map<number, number>): any {
+function encodeIRChunkToOpenAI(
+	chunk: IRStreamChunk,
+	reasoningDetailIndexes?: Map<number, number>,
+	openThoughtDetails?: Map<number, number>,
+): any {
 	const choices = chunk.choices.map(c => {
 		const delta: any = {};
 		if (c.delta.role) delta.role = c.delta.role;
@@ -2425,9 +2451,17 @@ function encodeIRChunkToOpenAI(chunk: IRStreamChunk, reasoningDetailIndexes?: Ma
 		}
 		const reasoningDetails = (c.delta as any).reasoningDetails;
 		if (Array.isArray(reasoningDetails) && reasoningDetails.length > 0) {
-			const start = reasoningDetailIndexes?.get(c.index) ?? 0;
-			delta.reasoning_details = reasoningDetails.map((detail: Record<string, any>, offset: number) => ({ ...detail, index: start + offset }));
-			reasoningDetailIndexes?.set(c.index, start + reasoningDetails.length);
+			let next = reasoningDetailIndexes?.get(c.index) ?? 0;
+			delta.reasoning_details = reasoningDetails.map(({ continues, ...detail }: Record<string, any>) => {
+				// A thought chunk that continues the open reasoning.text entry reuses
+				// its index, so clients that merge entries by index join the text.
+				const open = openThoughtDetails?.get(c.index);
+				const index = continues && open !== undefined ? open : next++;
+				if (detail.type === "reasoning.text") openThoughtDetails?.set(c.index, index);
+				else openThoughtDetails?.delete(c.index);
+				return { ...detail, index };
+			});
+			reasoningDetailIndexes?.set(c.index, next);
 		}
 		const annotations = toChatAnnotations((c.delta as any).annotations);
 		if (annotations.length > 0) delta.annotations = annotations;

@@ -44,6 +44,8 @@ import {
 	normalizeTerminalResponsesFrames,
 	cancelledReaders,
 	readUntilFailure,
+	repairStreamedToolCalls,
+	singleFunctionToolName,
 } from "./stream-transforms";
 import {
 	adaptRequestFromUpstreamError,
@@ -1296,6 +1298,10 @@ export async function bufferStreamToIR(
 
 	finaliseChatAudio(finalResponse);
 	const isChatLikeResponse = isChatCompletionResponse(finalResponse);
+	// Same repair as the streamed path: Together gpt-oss streams later calls with an empty id and no name.
+	if (isChatLikeResponse) {
+		repairStreamedToolCalls(finalResponse, (choiceIndex, toolIndex) => `call_${args.requestId}_${choiceIndex}_${toolIndex}`, singleFunctionToolName(args.ir.tools));
+	}
 
 	// Convert to IR using appropriate transformer
 	const ir = route === "responses"

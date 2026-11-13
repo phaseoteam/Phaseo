@@ -13,7 +13,9 @@ import { isBareChatErrorFrame, readUpstreamStreamError } from "@core/stream-erro
 import { chatStreamErrorFrame } from "@core/error-object";
 import type { GatewayReasoningDetail } from "@core/types";
 import { toChatAnnotations, toResponsesAnnotations } from "@protocols/shared/citations";
+import { keepsReasoningPosition } from "@protocols/shared/reasoning";
 import {
+	ANTHROPIC_REASONING_FORMAT,
 	isSealedReasoningValue,
 	openReasoningState,
 	reasoningFormatForRoute,
@@ -195,6 +197,30 @@ function chatChunkCompletes(payload: any, choices: ChoiceProgress): boolean {
 	return Boolean(payload?.usage) && choices.finished.size > 0 && [...choices.open].every((index) => choices.finished.has(index));
 }
 
+/**
+ * The first delta of each streamed tool call must carry an id and a name. Some hosts
+ * (Together gpt-oss) send later parallel calls with neither, and a client that sends
+ * such a call back gets a 400. Fills them in with the same ids the buffered path uses.
+ */
+function repairChatToolCallDeltas(payload: any, seen: Set<string>, args: ExecutorExecuteArgs, fallbackName: string | null) {
+	for (const choice of Array.isArray(payload?.choices) ? payload.choices : []) {
+		const calls = choice?.delta?.tool_calls;
+		if (!Array.isArray(calls)) continue;
+		const choiceIndex = Number(choice.index ?? 0);
+		for (const [position, call] of calls.entries()) {
+			if (!call || typeof call !== "object") continue;
+			const toolIndex = Number(call.index ?? position);
+			const key = `${choiceIndex}:${toolIndex}`;
+			if (seen.has(key)) continue;
+			seen.add(key);
+			if (!call.id) call.id = `call_${args.requestId}_${choiceIndex}_${toolIndex}`;
+			if (!call.type) call.type = "function";
+			call.function ??= {};
+			if (!call.function.name && fallbackName) call.function.name = fallbackName;
+		}
+	}
+}
+
 export function transformChatStream(
 	stream: ReadableStream<Uint8Array>,
 	args: ExecutorExecuteArgs,
@@ -210,6 +236,8 @@ export function transformChatStream(
 			// Set at the protocol's completion boundary; a transport error after it is only teardown.
 			let upstreamCompleted = false;
 			const choices: ChoiceProgress = { open: new Set(), finished: new Set() };
+			const seenToolCalls = new Set<string>();
+			const fallbackToolName = singleFunctionToolName(args.ir.tools);
 			try {
 				while (true) {
 					const { value, done } = await readUntilFailure(reader, () => upstreamCompleted);
@@ -227,6 +255,7 @@ export function transformChatStream(
 						}
 
 						applyStreamQuirks(payload, state, args.providerId);
+						repairChatToolCallDeltas(payload, seenToolCalls, args, fallbackToolName);
 						if (chatChunkCompletes(payload, choices)) upstreamCompleted = true;
 						controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
 					}
@@ -331,6 +360,10 @@ export function transformResponsesStreamToChat(
 	const toolIndexById = new Map<string, number>();
 	let nextToolIndex = 0;
 	let nextReasoningDetailIndex = 0;
+	// Where each reasoning item sat among the text and calls already streamed, so
+	// a Chat client sending it back lets the gateway put it back in place.
+	let streamedTextChars = 0;
+	let lastStreamedCallId: string | undefined;
 
 	const ensureToolIndex = (id: string): number => {
 		const existing = toolIndexById.get(id);
@@ -443,6 +476,7 @@ export function transformResponsesStreamToChat(
 								break;
 							case "response.output_text.delta":
 								if (typeof payload?.delta === "string") {
+									streamedTextChars += payload.delta.length;
 									await emitDelta({ role: "assistant", content: payload.delta }, controller, 0, payload?.logprobs ? { logprobs: payload.logprobs } : undefined);
 								}
 								break;
@@ -478,7 +512,9 @@ export function transformResponsesStreamToChat(
 							case "response.output_item.done": {
 								const item = payload?.item;
 								if (normalizeResponsesEvent(event) === "response.output_item.done" && item?.type === "reasoning") {
-									const detail = buildReasoningDetailDelta(item, args, nextReasoningDetailIndex);
+									const detail = buildReasoningDetailDelta(item, args, nextReasoningDetailIndex, lastStreamedCallId
+										? { afterCallId: lastStreamedCallId }
+										: streamedTextChars > 0 ? { textOffset: streamedTextChars } : undefined);
 									if (detail) {
 										nextReasoningDetailIndex += 1;
 										await emitDelta({ role: "assistant", reasoning_details: [detail] }, controller, 0);
@@ -493,6 +529,7 @@ export function transformResponsesStreamToChat(
 									canonicalToolId(item?.tool_call_id) ??
 									canonicalToolId(payload?.item_id);
 								if (!canonicalId || !itemName) break;
+								lastStreamedCallId = canonicalId;
 								aliasToolId(item?.call_id, canonicalId);
 								aliasToolId(item?.id, canonicalId);
 								aliasToolId(item?.tool_call_id, canonicalId);
@@ -614,6 +651,33 @@ type ResponsesStreamChoiceState = {
 	announcedReasoning?: boolean;
 };
 
+/** The only function tool's name, when the request declares exactly one. */
+export function singleFunctionToolName(tools: Array<{ name?: string; type?: string }> | undefined): string | null {
+	const functions = (tools ?? []).filter((tool) => !tool.type || tool.type === "function");
+	return functions.length === 1 && typeof functions[0].name === "string" ? functions[0].name : null;
+}
+
+/**
+ * Gives every accumulated call an id, and a name when only one tool could have
+ * been called, matching the ids streamed to the client. A call with an empty id
+ * or no name is rejected when the client sends it back.
+ */
+export function repairStreamedToolCalls(
+	response: any,
+	fallbackId: (choiceIndex: number, toolIndex: number) => string,
+	fallbackName: string | null,
+): void {
+	for (const choice of Array.isArray(response?.choices) ? response.choices : []) {
+		const calls = choice?.message?.tool_calls;
+		if (!Array.isArray(calls)) continue;
+		calls.forEach((call: any, toolIndex: number) => {
+			if (!call || typeof call !== "object") return;
+			if (!call.id) call.id = fallbackId(Number(choice.index ?? 0), toolIndex);
+			if (call.function && !call.function.name && fallbackName) call.function.name = fallbackName;
+		});
+	}
+}
+
 export function transformChatStreamToResponses(
 	stream: ReadableStream<Uint8Array>,
 	args: ExecutorExecuteArgs,
@@ -636,6 +700,13 @@ export function transformChatStreamToResponses(
 			args.ir.toolChoice === "required");
 
 	const choiceStates = new Map<number, ResponsesStreamChoiceState>();
+	const fallbackToolName = singleFunctionToolName(args.ir.tools);
+	const fallbackToolId = (choiceIndex: number, toolIndex: number) => `call_${args.requestId}_${choiceIndex}_${toolIndex}`;
+	// Some hosts (Together gpt-oss) stream a later call with an empty id and no name.
+	const withToolName = <T extends { name: string }>(tool: T): T => {
+		if (!tool.name && fallbackToolName) tool.name = fallbackToolName;
+		return tool;
+	};
 
 	const getChoiceState = (index: number): ResponsesStreamChoiceState => {
 		let entry = choiceStates.get(index);
@@ -727,9 +798,10 @@ export function transformChatStreamToResponses(
 		toolId?: string,
 	) => {
 		let tool = entry.toolCalls.get(toolIndex);
+		if (tool && toolId && !tool.emittedAdded && tool.id === fallbackToolId(choiceIndex, toolIndex)) tool.id = toolId;
 		if (!tool) {
 			tool = {
-				id: toolId ?? `call_${args.requestId}_${choiceIndex}_${toolIndex}`,
+				id: toolId || fallbackToolId(choiceIndex, toolIndex),
 				name: "",
 				arguments: "",
 				outputIndex: nextOutputIndex++,
@@ -1050,6 +1122,10 @@ export function transformChatStreamToResponses(
 											item_id: itemId,
 											content_index: 0,
 										}, controller);
+									} else {
+										// The text is held back to parse tool calls out of it, but it was written
+										// first: keep its place ahead of later function_call items.
+										ensureMessageIndex(choiceIndex, entry);
 									}
 								}
 
@@ -1060,7 +1136,10 @@ export function transformChatStreamToResponses(
 									await emitAnnotations(choiceIndex, entry, choice.delta.annotations, controller);
 								}
 
-								const deltaReasoning = choice?.delta?.reasoning_content;
+								// gpt-oss hosts (Cerebras, Groq Chat) stream the reasoning as `reasoning`.
+								const deltaReasoning = typeof choice?.delta?.reasoning_content === "string" && choice.delta.reasoning_content.length > 0
+									? choice.delta.reasoning_content
+									: choice?.delta?.reasoning;
 								if (typeof deltaReasoning === "string" && deltaReasoning.length > 0) {
 									entry.reasoning += deltaReasoning;
 									entry.emittedReasoning = true;
@@ -1100,6 +1179,7 @@ export function transformChatStreamToResponses(
 									}
 									if (typeof toolDelta?.function?.arguments === "string") {
 										tool.arguments += toolDelta.function.arguments;
+										withToolName(tool);
 										if (!tool.emittedAdded) {
 											await closeSignedReasoningBeforeOutput(entry, controller);
 											await emitEvent("response.output_item.added", {
@@ -1131,9 +1211,12 @@ export function transformChatStreamToResponses(
 											ensureMessageIndex(choiceIndex, entry);
 										}
 									}
-									if (typeof message.reasoning_content === "string" && message.reasoning_content.length > 0) {
+									const messageReasoning = typeof message.reasoning_content === "string" && message.reasoning_content.length > 0
+										? message.reasoning_content
+										: message.reasoning;
+									if (typeof messageReasoning === "string" && messageReasoning.length > 0) {
 										if (entry.reasoning.length === 0) {
-											entry.reasoning = message.reasoning_content;
+											entry.reasoning = messageReasoning;
 											ensureReasoningIndex(choiceIndex, entry);
 										}
 									}
@@ -1144,8 +1227,9 @@ export function transformChatStreamToResponses(
 										await emitAnnotations(choiceIndex, entry, message.annotations, controller);
 									}
 									if (Array.isArray(message.tool_calls)) {
-										for (const toolCall of message.tool_calls) {
-											const toolIndex = Number(toolCall?.index ?? 0);
+										for (const [position, toolCall] of message.tool_calls.entries()) {
+											// A complete message lists its calls without an index.
+											const toolIndex = Number(toolCall?.index ?? position);
 											const tool = ensureToolCallState(choiceIndex, toolIndex, entry, toolCall?.id);
 											if (typeof toolCall?.function?.name === "string") {
 												tool.name = toolCall.function.name;
@@ -1153,6 +1237,7 @@ export function transformChatStreamToResponses(
 											if (typeof toolCall?.function?.arguments === "string") {
 												tool.arguments = toolCall.function.arguments;
 											}
+											withToolName(tool);
 											if (!tool.emittedAdded) {
 												await emitEvent("response.output_item.added", {
 													output_index: tool.outputIndex,
@@ -1231,6 +1316,7 @@ export function transformChatStreamToResponses(
 					// The final output is built first so a reasoning item's done event can
 					// carry its sealed state.
 					const final = finalResponse ? (() => {
+						repairStreamedToolCalls(finalResponse, fallbackToolId, fallbackToolName);
 						const ir = openAIChatToIR(finalResponse, args.requestId, args.ir.model, args.providerId);
 						const encoded = encodeOpenAIResponsesResponse(ir, args.requestId);
 						const output =
@@ -1251,6 +1337,7 @@ export function transformChatStreamToResponses(
 
 					for (const entry of choiceStates.values()) {
 						for (const tool of entry.toolCalls.values()) {
+							withToolName(tool);
 							if (!tool.emittedAdded) {
 								await emitEvent("response.output_item.added", {
 									output_index: tool.outputIndex,
@@ -1410,12 +1497,21 @@ function sealResponsesReasoningPayload(payload: any, args: ExecutorExecuteArgs):
  * It carries the full text with the sealed signature or encrypted content, so
  * clients that merge reasoning_details deltas by index end up with one entry.
  */
-function buildReasoningDetailDelta(item: any, args: ExecutorExecuteArgs, index: number): GatewayReasoningDetail | null {
+function buildReasoningDetailDelta(
+	item: any,
+	args: ExecutorExecuteArgs,
+	index: number,
+	streamedPosition?: { afterCallId?: string; textOffset?: number },
+): GatewayReasoningDetail | null {
 	const model = args.providerModelSlug ?? args.ir.model;
 	const raw = typeof item?.encrypted_content === "string" && item.encrypted_content ? item.encrypted_content : null;
 	if (!raw) return null;
 	const state = openReasoningState(raw, { format: reasoningFormatForRoute(args.providerId, model), kind: "encrypted" });
 	if (!state) return null;
+	// Claude streams record their own position; others take where the stream was.
+	const position = state.afterCallId || state.textOffset || state.format === ANTHROPIC_REASONING_FORMAT || !keepsReasoningPosition(state.format)
+		? { afterCallId: state.afterCallId, textOffset: state.textOffset }
+		: streamedPosition ?? {};
 	const sealed = sealReasoningState({
 		format: state.format,
 		kind: state.kind,
@@ -1423,8 +1519,8 @@ function buildReasoningDetailDelta(item: any, args: ExecutorExecuteArgs, index: 
 		model: state.model ?? model,
 		provider: state.provider ?? args.providerId,
 		...(state.callId ? { callId: state.callId } : {}),
-		...(state.afterCallId ? { afterCallId: state.afterCallId } : {}),
-		...(state.textOffset ? { textOffset: state.textOffset } : {}),
+		...(position.afterCallId ? { afterCallId: position.afterCallId } : {}),
+		...(position.textOffset ? { textOffset: position.textOffset } : {}),
 	});
 	const text = [item?.content, item?.summary]
 		.map((parts) => Array.isArray(parts) ? parts.map((part: any) => (typeof part?.text === "string" ? part.text : "")).join("") : "")

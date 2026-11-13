@@ -477,7 +477,7 @@ describe("Gemini 3 thought signatures on parallel function calls", () => {
 		const thoughts = step3.call.bodyJson.input.filter((step: any) => step.type === "thought");
 		expect(thoughts).toEqual([
 			{ type: "thought", signature: GEMINI_SIG_1 },
-			{ type: "thought", signature: GEMINI_SIG_2, summary: { type: "text", text: "Madrid too." } },
+			{ type: "thought", signature: GEMINI_SIG_2, summary: [{ type: "text", text: "Madrid too." }] },
 		]);
 	});
 });
