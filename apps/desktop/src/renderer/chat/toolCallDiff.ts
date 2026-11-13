@@ -1,3 +1,4 @@
+import { editTools } from "../../shared/activityPreview";
 import type { AgentActivity } from "../../shared/workspace";
 
 /** A path as the project knows it: relative, with forward slashes. Undefined when it lies outside the project. */
@@ -28,7 +29,6 @@ function filePatch(path: string, diff: string, kind: "add" | "delete" | "update"
 	return `diff --git a/${path} b/${target}\n--- ${kind === "add" ? "/dev/null" : `a/${path}`}\n+++ ${kind === "delete" ? "/dev/null" : `b/${target}`}\n${body.trimStart()}`;
 }
 
-const editTools = /^(?:edit_file|write_file|delete_file|Edit|MultiEdit|Write|NotebookEdit|apply_patch|fileChange)$/;
 
 /**
  * The files an edit tool call changed, project-relative, and its own patch when the agent recorded one (Codex). Phaseo's

@@ -161,10 +161,11 @@ try {
   // Activities with no turn or position stay with the latest window, newest 50.
   if (!await run(`window.phaseoDesktop.workspace.task('042').then(task=>task.activities.length===50&&task.activities[0].id==='activity-70'&&task.activities.at(-1).id==='activity-119')`)) throw new Error("Unplaced activities did not open with the latest window.");
   await wait(atLatest, "conversation opens at latest");
-  if (!await run(`${messages}[0].textContent.includes('Conversation item 075')&&${earlierMessages}?.textContent==='Load 75 earlier messages'`)) throw new Error("Conversation did not open at recent history.");
+  if (!await run(`${messages}[0].dataset.conversationId==='message:long-75'&&${earlierMessages}?.textContent==='Load 75 earlier messages'`)) throw new Error("Conversation did not open at recent history.");
   const captures = path.resolve("../../output/playwright/history-smoke"); mkdirSync(captures, { recursive: true });
   writeFileSync(path.join(captures, entry ? "packaged-conversation.png" : "conversation.png"), (await window.webContents.capturePage()).toPNG());
-  const anchorTop = await run(`(()=>{${host}.scrollTop=150;${host}.dispatchEvent(new Event('scroll'));return ${messages}.find(row=>row.textContent.includes('Conversation item 075')).getBoundingClientRect().top})()`);
+  // Turns draw as they near the view, so the position is read once the jump has settled.
+  const anchorTop = await run(`(async()=>{${host}.scrollTop=150;${host}.dispatchEvent(new Event('scroll'));for(let i=0;i<4;i++)await new Promise(resolve=>requestAnimationFrame(resolve));return ${messages}.find(row=>row.dataset.conversationId==='message:long-75').getBoundingClientRect().top})()`);
   await wait(`Boolean(${jump})`, "jump control while reading older history");
   writeFileSync(path.join(captures, entry ? "packaged-reading-history.png" : "reading-history.png"), (await window.webContents.capturePage()).toPNG());
   failNextConversation = true;
@@ -173,26 +174,26 @@ try {
   if (!await run(`${messages}.length===50`)) throw new Error("Failed paging replaced readable history.");
   await run(`Array.from(document.querySelectorAll('main [role="alert"] button')).find(button=>button.textContent==='Retry').click()`);
   await wait(`${messages}.length===100`, "older conversation page");
-  const restoredTop = await run(`${messages}.find(row=>row.textContent.includes('Conversation item 075')).getBoundingClientRect().top`);
+  const restoredTop = await run(`${messages}.find(row=>row.dataset.conversationId==='message:long-75').getBoundingClientRect().top`);
   if (Math.abs(anchorTop - restoredTop) > 1) throw new Error("Loading older messages moved the reading position: " + anchorTop + " -> " + restoredTop);
   await run(`${earlierMessages}.click()`);
-  await wait(`${messages}.length===100&&${messages}[0].textContent.includes('Résumé needle')`, "oldest conversation page");
+  await wait(`${messages}.length===100&&${messages}[0].dataset.conversationId==='message:long-0'`, "oldest conversation page");
   if (await run(`Boolean(${earlierMessages})`)) throw new Error("Oldest conversation history offers more pages.");
   // Switching chats and returning opens the chat where it was left: the message at the top of the view stays in view.
   // The id stays in the page, so no value read from it is written into the code run there.
-  const leftAt = await run(`(()=>{const view=${host}.getBoundingClientRect().top;return window.__historyLeftAt=${messages}.find(row=>row.getBoundingClientRect().bottom>=view)?.dataset.conversationId})()`);
+  const leftAt = await run(`(()=>{const view=${host}.getBoundingClientRect().top;return window.__historyLeftAt=${messages}.find(row=>!row.closest('[data-turn-placeholder]')&&row.getBoundingClientRect().bottom>=view)?.dataset.conversationId})()`);
   if (!leftAt) throw new Error("No message was in view before switching chats.");
   await run(`window.__auditOpenChat('History 043')`);
   await run(`window.__auditOpenChat('History 042')`);
   await wait(`(()=>{const row=document.querySelector('main [data-conversation-id="'+CSS.escape(window.__historyLeftAt)+'"]'),box=${host}?.getBoundingClientRect();if(!row||!box)return false;const at=row.getBoundingClientRect();return at.bottom>=box.top&&at.top<box.bottom})()&&Boolean(${jump})`, "conversation reopens where it was left");
   // Jump to latest goes back to the newest page and follows it.
   await run(`${jump}.click()`);
-  await wait(`${messages}.length===50&&${messages}[0].textContent.includes('Conversation item 075')`, "jump returns to the latest page");
+  await wait(`${messages}.length===50&&${messages}[0].dataset.conversationId==='message:long-75'`, "jump returns to the latest page");
   await wait(atLatest, "reopened conversation follows latest");
   await run(`(()=>{${host}.scrollTop=100;${host}.dispatchEvent(new Event('scroll'))})()`);
   await wait(`Boolean(${jump})`, "reading history pauses automatic following");
   await publishReply("New reply while reading history", "New activity while reading history");
-  await wait(`${messages}.length===51&&${messages}[0].textContent.includes('Conversation item 075')&&${host}.textContent.includes('New reply while reading history')`, "new reply retains the visible history boundary");
+  await wait(`${messages}.length===51&&${messages}[0].dataset.conversationId==='message:long-75'&&${host}.textContent.includes('New reply while reading history')`, "new reply retains the visible history boundary");
   if (!await run(`Math.abs(${host}.scrollTop-100)<1&&Boolean(${jump})`)) throw new Error("A live update pulled the reader away from older history.");
   await run(`${jump}.click()`);
   await wait(`${atLatest}&&!${jump}`, "jump resumes latest following");
@@ -218,7 +219,7 @@ try {
       const updateDb = await openFixtureStore(path.join(data, "workspace/workspace.sqlite"));
       try { const task = updateDb.getTask("043"); task.messages[950].text = "Updated while paging"; updateDb.saveTask(task, true); } finally { updateDb.close(); }
       await run(`window.phaseoDesktop.workspace.command({type:'update-task',id:'043',title:'History 043'})`);
-      await wait(`${messages}.some(row=>row.dataset.conversationId==='message:large-950'&&row.textContent.includes('Updated while paging'))`, "pending page refresh retains newer task data");
+      await wait(`(()=>{const row=${messages}.find(row=>row.dataset.conversationId==='message:large-950');row?.scrollIntoView({block:'center'});return Boolean(row?.closest('[data-turn-id]')?.textContent.includes('Updated while paging'))})()`, "pending page refresh retains newer task data");
     }
     await wait(`${messages}[0]?.dataset.conversationId==='message:large-${900 - index * 50}'`, "large conversation older page " + index);
     if (!await run(contiguous)) throw new Error("Older history lost order or exceeded its DOM bound.");
