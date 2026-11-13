@@ -911,7 +911,7 @@ ipcMain.handle("workspace:checkpoint-changes", (event, taskId: unknown, messageI
 ipcMain.handle("workspace:task", (event, id: unknown) => {
 	if (shutdownStarted) return;
 	if (!senderWindow(event) || typeof id !== "string" || !id || id.length > 200) throw new Error("Invalid task request.");
-	return workspaceRuntime.store.getTaskView(id);
+	return workspaceRuntime.store.getTaskView(id, workspaceRuntime.store.getPreferences().chat.historyPageSize);
 });
 ipcMain.handle("workspace:conversation-page", (event, query: unknown) => {
 	if (shutdownStarted) return;

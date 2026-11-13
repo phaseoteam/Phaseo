@@ -14,6 +14,7 @@ import { fullMessageTime, messageTime } from "../lib/messageTime";
 import { formatCost } from "../../shared/usageAmounts";
 import { cn } from "../lib/utils";
 import { MessageContent } from "../components/MessageContent";
+import { LongMarkdown } from "../components/LongMarkdown";
 import { HtmlRenderFrame } from "../components/HtmlRenderFrame";
 import { ModelLogo } from "../components/ModelLogo";
 import { useTextCopy } from "../components/useTextCopy";
@@ -146,7 +147,7 @@ function ActivityRow({ activity, live, openDiff }: { activity: AgentActivity; li
 			{file && openDiff && <button type="button" onClick={() => openDiff(file)} title={`Open ${file} in the turn's diff`} className="shrink-0 rounded-md px-1.5 py-0.5 text-xs font-medium text-muted-foreground opacity-0 group-hover/edit:opacity-100 focus-visible:opacity-100 hover:bg-muted hover:text-foreground">Open diff</button>}
 		</div>
 		{open && edits?.patch ? <ScrollArea className="mt-0.5 mb-2 ml-[15px] max-h-96 border-l border-border pl-2" viewportClassName="max-h-96"><DiffView patch={edits.patch} layout="unified" hideActions /></ScrollArea>
-			: open && <ScrollArea className="mt-0.5 mb-2 ml-[15px] max-h-72 border-l border-border" viewportClassName="max-h-72"><div data-selectable className={cn("py-0.5 pl-4", reasoning ? "text-[13px] text-muted-foreground" : "font-mono text-[11.5px] whitespace-pre-wrap")}>{reasoning ? <MessageContent text={activity.text} /> : activity.text}</div></ScrollArea>}
+			: open && <ScrollArea className="mt-0.5 mb-2 ml-[15px] max-h-72 border-l border-border" viewportClassName="max-h-72"><div data-selectable className={cn("py-0.5 pl-4", reasoning ? "text-[13px] text-muted-foreground" : "font-mono text-[11.5px] whitespace-pre-wrap")}>{reasoning ? <LongMarkdown text={activity.text} all={running} /> : activity.text}</div></ScrollArea>}
 	</div>;
 }
 
@@ -266,7 +267,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 	useEffect(() => { if (!pendingFind || compact) return; clearPendingFind(); setFind(current => ({ key: (current?.key ?? 0) + 1, focus: (current?.focus ?? 0) + 1, initial: { query: pendingFind.query, messageId: pendingFind.messageId } })); }, [pendingFind, compact]);
 	useCommand("chat.find", () => setFind(current => ({ key: current?.key ?? 0, focus: (current?.focus ?? 0) + 1, initial: current?.initial })), !compact);
 	// Message pages carry their turns' activities, so steps arrive with the messages they belong to.
-	const messages = useConversationPage(task, "messages", following, remember);
+	const messages = useConversationPage(task, "messages", following, remember, useWorkspacePreferences().chat.historyPageSize);
 	const activityEntries = useMemo(() => messages.page.activities ?? [], [messages.page.activities]);
 	const turns = useMemo(() => conversationTurns(messages.page.entries as Message[], activityEntries), [messages.page.entries, activityEntries]);
 	const bursts = useMemo(() => userBursts(turns), [turns]);

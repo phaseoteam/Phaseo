@@ -541,8 +541,9 @@ export class WorkspaceStore {
 		task.issues = links.map(unwatchedIssue);
 		this.saveTask(task, true); return true;
 	}
-	getTaskView(id: string): Task {
-		const { task, key } = this.getHead(id), page = this.entries.page(key, { taskId: id, kind: "messages", limit: 50 }, task.revision ?? 0);
+	/** A chat with its latest `limit` messages (the window opens with Settings → Chat's page size; agents reading a chat use 50). */
+	getTaskView(id: string, limit = 50): Task {
+		const { task, key } = this.getHead(id), page = this.entries.page(key, { taskId: id, kind: "messages", limit }, task.revision ?? 0);
 		task.conversationCounts = { messages: this.entries.count(key, 0), activities: this.entries.count(key, 1) };
 		task.messages = page.entries as Task["messages"]; task.activities = this.entries.turnActivities(key, page);
 		return task;

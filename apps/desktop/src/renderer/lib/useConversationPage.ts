@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { activitiesForWindow, conversationWindow, type ConversationPage, type ConversationPageQuery } from "../../shared/conversationPage";
+import { activitiesForWindow, conversationWindow, conversationWindowSize, type ConversationPage, type ConversationPageQuery } from "../../shared/conversationPage";
+import { historyPageSizes } from "../../shared/chatPreferences";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
 
 function recentPage(task: Task, kind: ConversationPage["kind"]): ConversationPage {
@@ -19,7 +20,9 @@ function windowActivities(combined: readonly Message[], window: readonly Message
 	return activitiesForWindow(window, [...byId.values()].sort((a, b) => (a.timelineOrder ?? -1) - (b.timelineOrder ?? -1)), known, { next, latest: later === 0 });
 }
 
-export function useConversationPage(task: Task, kind: ConversationPage["kind"], following: RefObject<boolean>, beforeUpdate: () => void) {
+/** `pageSize` is how many entries each load asks for (Settings → Chat); the window keeps conversationWindowSize of them. */
+export function useConversationPage(task: Task, kind: ConversationPage["kind"], following: RefObject<boolean>, beforeUpdate: () => void, pageSize: number = historyPageSizes.default) {
+	const windowSize = conversationWindowSize(pageSize), replaceLimit = Math.min(historyPageSizes.maximum, windowSize);
 	const [page, setPage] = useState(() => recentPage(task, kind));
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
@@ -46,7 +49,7 @@ export function useConversationPage(task: Task, kind: ConversationPage["kind"], 
 			const previous = current.current;
 			const total = result.earlier + result.entries.length + result.later;
 			const combined = mode === "older" ? [...result.entries, ...previous.entries] : mode === "newer" ? [...previous.entries, ...result.entries] : result.entries;
-			const entries = mode === "older" ? conversationWindow(combined, "start") : mode === "newer" ? conversationWindow(combined, "end") : result.entries;
+			const entries = mode === "older" ? conversationWindow(combined, "start", windowSize) : mode === "newer" ? conversationWindow(combined, "end", windowSize) : result.entries;
 			const earlier = mode === "newer" ? total - result.later - entries.length : result.earlier, later = total - earlier - entries.length;
 			const activities = kind === "messages" ? { activities: mode === "replace" ? result.activities ?? [] : windowActivities(combined as Message[], entries as Message[], mode === "older" ? [result.activities, previous.activities] : [previous.activities, result.activities], later) } : {};
 			apply({ ...result, entries, earlier, later, ...activities });
@@ -61,29 +64,29 @@ export function useConversationPage(task: Task, kind: ConversationPage["kind"], 
 		if (pending.current) { refreshPending.current = true; return; }
 		const previous = current.current, latest = recentPage(source.current, kind);
 		if (!force && latest.revision < previous.revision) return;
-		if (force || previous.later > 0 || previous.entries.length > latest.entries.length || (!following.current && previous.entries.length >= 100)) {
+		if (force || previous.later > 0 || previous.entries.length > latest.entries.length || (!following.current && previous.entries.length >= windowSize)) {
 			const added = Math.max(0, latest.earlier + latest.entries.length - previous.earlier - previous.entries.length - previous.later);
-			const limit = Math.min(100, Math.max(50, previous.entries.length + added));
+			const limit = Math.min(replaceLimit, Math.max(pageSize, previous.entries.length + added));
 			if (previous.entries[0]) void request({ taskId: task.id, kind, limit, ...(!following.current || previous.later > 0 ? { fromId: previous.entries[0].id } : {}) }, "replace");
 			else apply(latest);
 			return;
 		}
 		const start = previous.entries.findIndex(entry => entry.id === latest.entries[0]?.id);
 		if (start < 0) {
-			if (!following.current && previous.entries[0] && latest.entries.length) void request({ taskId: task.id, kind, limit: 100, fromId: previous.entries[0].id }, "replace");
+			if (!following.current && previous.entries[0] && latest.entries.length) void request({ taskId: task.id, kind, limit: replaceLimit, fromId: previous.entries[0].id }, "replace");
 			else apply(latest);
 			return;
 		}
-		const combined = [...previous.entries.slice(0, start), ...latest.entries], entries = conversationWindow(combined, "end");
+		const combined = [...previous.entries.slice(0, start), ...latest.entries], entries = conversationWindow(combined, "end", windowSize);
 		apply({ ...latest, entries, earlier: latest.earlier + latest.entries.length - entries.length, ...(kind === "messages" ? { activities: windowActivities(combined as Message[], entries as Message[], [previous.activities, latest.activities], 0) } : {}) });
 	}
 	useEffect(() => { refresh(); }, [task]); // Refresh the visible window as task revisions arrive.
 	return {
 		page, loading, error,
-		older: () => { if (page.entries[0]) void request({ taskId: task.id, kind, limit: 50, beforeId: page.entries[0].id }, "older"); },
-		newer: () => { if (page.entries.at(-1)) void request({ taskId: task.id, kind, limit: 50, afterId: page.entries.at(-1)!.id }, "newer"); },
+		older: () => { if (page.entries[0]) void request({ taskId: task.id, kind, limit: pageSize, beforeId: page.entries[0].id }, "older"); },
+		newer: () => { if (page.entries.at(-1)) void request({ taskId: task.id, kind, limit: pageSize, afterId: page.entries.at(-1)!.id }, "newer"); },
 		/** Loads the window that starts at an entry (find in chat steps to a match on a page not loaded). */
-		jumpTo: (id: string) => { following.current = false; void request({ taskId: task.id, kind, limit: 50, fromId: id }, "replace"); },
+		jumpTo: (id: string) => { following.current = false; void request({ taskId: task.id, kind, limit: pageSize, fromId: id }, "replace"); },
 		latest: () => { if (pending.current) return; setError(""); lastRequest.current = undefined; if (error || current.current.later > 0) apply(recentPage(source.current, kind)); },
 		retry: () => { if (lastRequest.current) void request(lastRequest.current.query, lastRequest.current.mode); },
 	};
