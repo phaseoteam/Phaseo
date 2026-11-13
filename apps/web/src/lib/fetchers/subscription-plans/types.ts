@@ -1,4 +1,7 @@
 import type { SubscriptionPrice, SubscriptionPriceComponent } from "./pricing";
+import type { SubscriptionPlanUsage } from "./usage";
+
+export type { SubscriptionPlanUsage } from "./usage";
 
 export interface SubscriptionOffer {
 	offer_uuid: string;
@@ -58,6 +61,8 @@ export interface SubscriptionPlanSummary {
 	audience?: string;
 	source_url?: string | null;
 	verified_at?: string | null;
+	/** Measured monthly tokens per model, when a public measurement covers this plan. */
+	usage?: SubscriptionPlanUsage[];
 }
 
 export interface SubscriptionPlanFeature {

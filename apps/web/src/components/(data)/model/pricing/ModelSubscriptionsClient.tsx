@@ -14,6 +14,8 @@ import type { SubscriptionPlanSummary as SubscriptionPlan } from "./subscription
 import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice, type SubscriptionPriceLabels } from "@/lib/fetchers/subscription-plans/pricing";
 import { getLogoLabel } from "@/lib/logos";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { apiMultiple, MIN_API_MULTIPLE, perMillionFractionDigits, summarizeUsage, USAGE_SOURCE_URL } from "@/lib/fetchers/subscription-plans/usage";
+import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
 
 export type { SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
 
@@ -88,7 +90,7 @@ function isNonFixedPlanFrequency(value: string | null): boolean {
 	return normalized === "usage" || normalized === "custom";
 }
 
-function toMonthlyEquivalent(price: SubscriptionPrice): number | null {
+export function toMonthlyEquivalent(price: SubscriptionPrice): number | null {
 	if (price.price == null) return null;
 	const raw = Number(price.price);
 	if (!Number.isFinite(raw) || raw < 0) return null;
@@ -108,7 +110,7 @@ function getCurrencySortRank(currency: string | null | undefined): number {
 type NumberFormatter = ReturnType<typeof useDisplayFormatters>["number"];
 
 function formatPlanPriceValue(price: SubscriptionPrice, formatNumber: NumberFormatter, labels: SubscriptionLabels): string {
-	if (price.components?.length) return formatSubscriptionPrice(price, (amount, currency) => formatNumber(amount, { style: "currency", currency, notation: "standard", maximumFractionDigits: 8 }), labels.structured ?? { custom: labels.customPricing, usage: labels.usageBased, unknown: labels.other });
+	if (price.components?.length) return formatSubscriptionPrice(price, (amount, currency) => formatNumber(amount, { style: "currency", currency, notation: "standard", ...(Number.isInteger(amount) ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : { maximumFractionDigits: 8 }) }), labels.structured ?? { custom: labels.customPricing, usage: labels.usageBased, unknown: labels.other });
 	if (price.price == null && price.frequency !== "usage" && price.frequency !== "custom") return labels.structured?.unknown ?? labels.other;
 	const normalized = normalizePlanFrequency(price.frequency);
 	if (normalized === "usage") return labels.usageBased;
@@ -212,7 +214,7 @@ export function sortSubscriptionPlanPricesForDisplay(
 	});
 }
 
-function getPlanSortKey(prices: SubscriptionPrice[]): {
+export function getPlanSortKey(prices: SubscriptionPrice[]): {
 	currencyRank: number;
 	monthlyEquivalent: number;
 	rawPrice: number;
@@ -337,6 +339,17 @@ export default function ModelSubscriptionsClient({
 		structured: localizedSubscriptionPriceLabels(locale, { custom: tLabels("customPricing"), usage: tLabels("usageBased"), unknown: status("unknown"), from: terms("starting_at"), seat: terms("seat"), introductory: terms("introductory"), firstCycle: terms("first_billing_cycle"), cycleCount: terms("number_of_cycles") }),
 	};
 	const format = useDisplayFormatters();
+	const usageMessages = getSubscriptionPlansMessagesFor(locale).usage;
+	/** "≈ $0.0063 per 1M tokens · 63× cheaper" for plans with measured usage of this model. */
+	const usageLine = (plan: SubscriptionPlan): string | null => {
+		const cheapest = summarizeUsage(plan.usage)?.cheapest;
+		if (cheapest?.effective_usd_per_mtok == null) return null;
+		const perMillion = format.number(cheapest.effective_usd_per_mtok, { style: "currency", currency: "USD", notation: "standard", ...perMillionFractionDigits(cheapest.effective_usd_per_mtok) });
+		const multiple = apiMultiple(cheapest);
+		return [formatSubscriptionPlanMessage(usageMessages.modelPage, { price: perMillion }),
+			multiple == null || multiple < MIN_API_MULTIPLE ? null : formatSubscriptionPlanMessage(usageMessages.timesCheaper, { value: format.number(multiple, { maximumFractionDigits: multiple >= 10 ? 0 : 1 }) })].filter(Boolean).join(" · ");
+	};
+	const hasUsage = subscriptionPlans.some((plan) => usageLine(plan));
 	const groupedPlans = subscriptionPlans.reduce<SubscriptionPlanGroup[]>((groups, plan) => {
 		const organisationId = plan.organisation?.organisation_id ?? plan.organisation_id;
 		const sourceOrganisationName = plan.organisation?.name?.trim();
@@ -484,10 +497,11 @@ export default function ModelSubscriptionsClient({
 											<div className="min-w-0">
 												<Link
 													href={`/subscription-plans/${plan.plan_id}`}
-													className="truncate text-sm font-medium text-foreground underline-offset-4 hover:underline"
+													className="block truncate text-sm font-medium text-foreground underline-offset-4 hover:underline"
 												>
 													{plan.name}
 												</Link>
+												{usageLine(plan) ? <p className="text-xs tabular-nums text-muted-foreground">{usageLine(plan)}</p> : null}
 											</div>
 
 											<div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm sm:justify-end">
@@ -526,7 +540,15 @@ export default function ModelSubscriptionsClient({
 						</section>
 					))}
 				</div>
-			) : (
+			) : null}
+			{groupedPlans.length > 0 && hasUsage ? (
+				<p className="text-xs leading-relaxed text-muted-foreground">
+					{usageMessages.sourceNote.split("{source}")[0]}
+					<a href={USAGE_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-foreground">real-api-pricing</a>
+					{usageMessages.sourceNote.split("{source}")[1]}
+				</p>
+			) : null}
+			{groupedPlans.length > 0 ? null : (
 				<Empty className="rounded-lg border p-8">
 					<EmptyHeader>
 						<EmptyMedia variant="icon">
