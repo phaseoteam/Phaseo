@@ -6,7 +6,7 @@ const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 const normalise = text => text.replace(/\r\n/g, '\n');
 
-const migration = normalise(await read('../migrations/20261113112400_model_links_kinds_and_order.sql'));
+const migration = normalise(await read('../migrations/20261113191317_model_links_kinds_and_order.sql'));
 const tableSchema = normalise(await read('../schemas/public/tables/v2_model_links.sql'));
 const functionSchema = normalise(await read('../schemas/public/functions/mutate_v2_admin_model_graph.sql'));
 
