@@ -79,7 +79,7 @@ export default function ChartDetailDialog({
 		if (format === "csv") {
 			exportToCSV(exportRows, filename);
 		} else {
-			exportToPDF(exportRows, filename, title);
+			void exportToPDF(exportRows, filename, title);
 		}
 	};
 

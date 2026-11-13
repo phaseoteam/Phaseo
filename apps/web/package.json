@@ -12,6 +12,7 @@
 		"dev": "vite dev --port 3100",
 		"prebuild": "node scripts/generate-docs-search.mjs",
 		"build": "vite build",
+		"check:root-bundle": "node scripts/check-root-bundle.mjs",
 		"preview": "vite preview",
 		"deploy": "wrangler deploy --config dist/server/wrangler.json",
 		"docs:search:index": "node scripts/generate-docs-search.mjs",

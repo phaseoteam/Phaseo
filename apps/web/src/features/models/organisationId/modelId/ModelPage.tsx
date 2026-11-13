@@ -7,11 +7,11 @@ import {
 	fetchFrontendModelSubscriptionPlans,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
-import ModelOverviewSections, {
-	ModelCreatorModelsSection,
+import ModelOverviewSections, { ModelCreatorModelsSection } from "@/components/(data)/model/overview/ModelOverviewSections";
+import {
 	ModelCreatorModelsSkeleton,
 	ModelOverviewSectionsSkeleton,
-} from "@/components/(data)/model/overview/ModelOverviewSections";
+} from "@/components/(data)/model/overview/ModelOverviewSectionsSkeleton";
 import ModelDetailShell from "@/components/(data)/model/ModelDetailShell";
 import { DiscordComponentEmbed } from "@/components/metadata/DiscordComponentEmbed";
 import ModelPageToc, {
