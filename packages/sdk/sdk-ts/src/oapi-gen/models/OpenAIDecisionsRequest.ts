@@ -119,6 +119,11 @@ export interface OpenAIDecisionsRequest {
         name?: string;
         type: "box";
       }
+    | {
+        instructions: string;
+        name?: string;
+        type: "locate";
+      }
   )[];
   routing?: {
     allow_fallbacks?: boolean | null;

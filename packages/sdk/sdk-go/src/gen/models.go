@@ -1727,6 +1727,25 @@ type DecisionInputVideo struct {
 
 type DecisionInstructions = interface{}
 
+type DecisionLocateAnswer struct {
+	Name *string `json:"name"`
+	Spans []map[string]interface{} `json:"spans"`
+	Type string `json:"type"`
+}
+
+type DecisionLocateQuestion struct {
+	Instructions string `json:"instructions"`
+	Name *string `json:"name,omitempty"`
+	Type string `json:"type"`
+}
+
+type DecisionLocateSpan struct {
+	End int `json:"end"`
+	Score float64 `json:"score"`
+	Start int `json:"start"`
+	Text string `json:"text"`
+}
+
 type DecisionNoulQuestion struct {
 	Criteria *map[string]interface{} `json:"criteria,omitempty"`
 	Instructions interface{} `json:"instructions"`
@@ -3503,6 +3522,11 @@ type LeakedKeyReportResponse struct {
 
 type LegacyDecisionBoxQuestion struct {
 	Instructions interface{} `json:"instructions"`
+	Type string `json:"type"`
+}
+
+type LegacyDecisionLocateQuestion struct {
+	Instructions string `json:"instructions"`
 	Type string `json:"type"`
 }
 

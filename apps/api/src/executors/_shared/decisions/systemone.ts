@@ -14,6 +14,12 @@ function isProbability(value: unknown): value is number {
 	return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
 }
 
+function validLocateSpan(span: unknown): boolean {
+	return isRecord(span) && Number.isSafeInteger(span.start) && Number.isSafeInteger(span.end) &&
+		(span.start as number) >= 0 && (span.start as number) <= (span.end as number) &&
+		typeof span.text === "string" && typeof span.score === "number" && Number.isFinite(span.score);
+}
+
 function validAnswer(answer: unknown, question: IRDecisionQuestion, allowRefusal: boolean): boolean {
 	// A provider may decline a single question without failing the request; the other answers stay valid.
 	if (allowRefusal && isRecord(answer) && answer.type === "refusal") return true;
@@ -22,6 +28,8 @@ function validAnswer(answer: unknown, question: IRDecisionQuestion, allowRefusal
 	if (!isRecord(answer) || answer.type !== question.type ||
 		(answer.confidence !== undefined && !nullBoxConfidence && !isProbability(answer.confidence))) return false;
 	if (question.type === "noul") return isProbability(answer.noul);
+	// Spans are passed through as the provider sent them; only their shape is checked.
+	if (question.type === "locate") return Array.isArray(answer.spans) && answer.spans.every(validLocateSpan);
 	if (question.type === "box") {
 		const box = answer.box;
 		return (nullBoxConfidence || isProbability(answer.confidence)) && isRecord(box) &&

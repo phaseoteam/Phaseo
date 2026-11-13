@@ -26,6 +26,12 @@ export const executor: ProviderExecutor = args => {
 	if (parts.some(invalidImage)) {
 		return invalidRequest(args, "Perplexity image state requires PNG, JPEG, or WebP base64 data URLs.");
 	}
+	// https://docs.perplexity.ai/docs/decisions/quickstart#locate-find-text-in-the-content
+	// Locate needs a string state and no images; the request schema already enforces this.
+	if (Object.values(ir.questions).some(question => question.type === "locate") &&
+		(typeof ir.state !== "string" || ir.images?.length)) {
+		return invalidRequest(args, "Perplexity locate questions require a plain string state with no images.");
+	}
 	for (const question of Object.values(ir.questions)) {
 		const count = question.criteria ? Object.keys(question.criteria).length : 0;
 		if ((question.type === "choice" && count > 255) || (question.type === "score" && count > 10)) {

@@ -1043,6 +1043,25 @@ struct DecisionInputVideo {
 
 using DecisionInstructions = std::any;
 
+struct DecisionLocateAnswer {
+	std::optional<std::string> name;
+	std::vector<std::map<std::string, std::any>> spans;
+	std::any type;
+};
+
+struct DecisionLocateQuestion {
+	std::string instructions;
+	std::string name;
+	std::any type;
+};
+
+struct DecisionLocateSpan {
+	int end;
+	double score;
+	int start;
+	std::string text;
+};
+
 struct DecisionNoulQuestion {
 	std::map<std::string, std::any> criteria;
 	std::any instructions;
@@ -2079,6 +2098,11 @@ struct LeakedKeyReportResponse {
 
 struct LegacyDecisionBoxQuestion {
 	std::any instructions;
+	std::any type;
+};
+
+struct LegacyDecisionLocateQuestion {
+	std::string instructions;
 	std::any type;
 };
 

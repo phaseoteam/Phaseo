@@ -36,6 +36,8 @@ export function filterDecisionCandidatesByModalities(
 ): ProviderCandidate[] {
 	const questionCount = options.ignoreQuestionLimit ? 0 : Object.keys(ir.questions ?? {}).length;
 	const requestsBox = Object.values(ir.questions ?? {}).some(question => question.type === "box");
+	// Locate is opt-in per route: only capabilities declaring params.locate serve it.
+	const requestsLocate = Object.values(ir.questions ?? {}).some(question => question.type === "locate");
 	const requestsLongContext = ir.providerOptions?.typesafe?.long_context === true;
 	const requestsImageUrls = (ir.images ?? []).some(image => typeof image === "string" && !/^data:/i.test(image));
 	const media = [
@@ -46,6 +48,7 @@ export function filterDecisionCandidatesByModalities(
 	return candidates.filter(candidate =>
 		questionCount <= decisionQuestionLimit(candidate) &&
 		(!requestsBox || (Boolean(ir.images?.length) && candidate.capabilityParams?.box === true)) &&
+		(!requestsLocate || candidate.capabilityParams?.locate === true) &&
 		(!requestsLongContext || (candidate.providerId === "typesafe" && candidate.capabilityParams?.long_context === true)) &&
 		(!requestsImageUrls || candidate.capabilityParams?.image_urls === true) &&
 		media.every(item => candidate.inputModalities?.includes(item.modality) && candidate.capabilityParams?.[item.parameter] === true));

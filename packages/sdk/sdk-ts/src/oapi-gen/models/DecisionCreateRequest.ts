@@ -123,6 +123,11 @@ export type DecisionCreateRequest =
             name?: string;
             type: "box";
           }
+        | {
+            instructions: string;
+            name?: string;
+            type: "locate";
+          }
       )[];
       routing?: {
         allow_fallbacks?: boolean | null;
@@ -273,6 +278,10 @@ export type DecisionCreateRequest =
                   }
                 | unknown[];
               type: "box";
+            }
+          | {
+              instructions: string;
+              type: "locate";
             };
       };
       routing?: {

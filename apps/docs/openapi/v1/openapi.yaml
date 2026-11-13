@@ -15430,6 +15430,7 @@ components:
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
               - $ref: '#/components/schemas/DecisionBoxQuestion'
+              - $ref: '#/components/schemas/DecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
@@ -15484,6 +15485,30 @@ components:
         instructions:
           type: string
           maxLength: 1048576
+    DecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: >-
+        Finds the parts of the input that match a description and returns them
+        as verbatim spans. Requires string input with no images, audio or video,
+        and a route that supports locate, such as Perplexity Decider V1.3.
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
+          description: >-
+            What to find, as a short label such as "email address" or an
+            instruction such as "Extract the city where the job is located."
     DecisionInputMessage:
       type: object
       required:
@@ -15749,6 +15774,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
               - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -15793,6 +15819,28 @@ components:
             - box
         instructions:
           $ref: '#/components/schemas/DecisionInstructions'
+    LegacyDecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: >-
+        Finds the parts of state that match a description and returns them as
+        verbatim spans. Requires a string state with no images, and a route that
+        supports locate, such as Perplexity Decider V1.3. No criteria.
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        instructions:
+          type: string
+          minLength: 1
+          maxLength: 50000
+          description: >-
+            What to find, as a short label such as "email address" or an
+            instruction such as "Extract the city where the job is located."
     DecisionImage:
       type: object
       required:
@@ -15900,6 +15948,7 @@ components:
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
               - $ref: '#/components/schemas/DecisionBoxAnswer'
+              - $ref: '#/components/schemas/DecisionLocateAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -15960,6 +16009,49 @@ components:
           type: number
           minimum: 0
           maximum: 1
+    DecisionLocateAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - spans
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          nullable: true
+        spans:
+          type: array
+          description: The matching parts of the input. Empty when nothing matches.
+          items:
+            $ref: '#/components/schemas/DecisionLocateSpan'
+    DecisionLocateSpan:
+      type: object
+      required:
+        - start
+        - end
+        - text
+        - score
+      properties:
+        start:
+          type: integer
+          minimum: 0
+          description: >-
+            Offset of the first character of the span, counted in Unicode code
+            points from the start of the input.
+        end:
+          type: integer
+          minimum: 0
+          description: Offset just after the last character of the span (exclusive).
+        text:
+          type: string
+          description: The span, copied verbatim from the input.
+        score:
+          type: number
+          description: How certain the model is that the span matches. Higher is more certain.
     DecisionPredicateAnswer:
       type: object
       required:

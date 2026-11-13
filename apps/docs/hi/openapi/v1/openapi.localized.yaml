@@ -14540,6 +14540,7 @@ components:
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
               - $ref: '#/components/schemas/DecisionBoxQuestion'
+              - $ref: '#/components/schemas/DecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
@@ -14589,6 +14590,25 @@ components:
         instructions:
           type: string
           maxLength: 1048576
+    DecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: इनपुट के वे हिस्से ढूँढता है जो किसी विवरण से मेल खाते हैं और उन्हें शब्दशः अंशों के रूप में लौटाता है। इसके लिए बिना इमेज, ऑडियो या वीडियो वाला स्ट्रिंग इनपुट और locate सपोर्ट करने वाला रूट चाहिए, जैसे Perplexity Decider V1.3।
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
+          description: क्या ढूँढना है, किसी छोटे लेबल के रूप में जैसे "email address" या किसी निर्देश के रूप में जैसे "Extract the city where the job is located."
     DecisionInputMessage:
       type: object
       required:
@@ -14838,6 +14858,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
               - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -14877,6 +14898,23 @@ components:
             - box
         instructions:
           $ref: '#/components/schemas/DecisionInstructions'
+    LegacyDecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: state के वे हिस्से ढूँढता है जो किसी विवरण से मेल खाते हैं और उन्हें शब्दशः अंशों के रूप में लौटाता है। इसके लिए बिना इमेज वाला स्ट्रिंग state और locate सपोर्ट करने वाला रूट चाहिए, जैसे Perplexity Decider V1.3। criteria नहीं।
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        instructions:
+          type: string
+          minLength: 1
+          maxLength: 50000
+          description: क्या ढूँढना है, किसी छोटे लेबल के रूप में जैसे "email address" या किसी निर्देश के रूप में जैसे "Extract the city where the job is located."
     DecisionImage:
       type: object
       required:
@@ -14978,6 +15016,7 @@ components:
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
               - $ref: '#/components/schemas/DecisionBoxAnswer'
+              - $ref: '#/components/schemas/DecisionLocateAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -15034,6 +15073,47 @@ components:
           type: number
           minimum: 0
           maximum: 1
+    DecisionLocateAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - spans
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          nullable: true
+        spans:
+          type: array
+          description: इनपुट के मेल खाने वाले हिस्से। कुछ भी मेल न खाए तो खाली।
+          items:
+            $ref: '#/components/schemas/DecisionLocateSpan'
+    DecisionLocateSpan:
+      type: object
+      required:
+        - start
+        - end
+        - text
+        - score
+      properties:
+        start:
+          type: integer
+          minimum: 0
+          description: अंश के पहले अक्षर का ऑफ़सेट, इनपुट की शुरुआत से Unicode कोड पॉइंट में गिना गया।
+        end:
+          type: integer
+          minimum: 0
+          description: अंश के आखिरी अक्षर के ठीक बाद का ऑफ़सेट (exclusive)।
+        text:
+          type: string
+          description: अंश, इनपुट से शब्दशः कॉपी किया गया।
+        score:
+          type: number
+          description: मॉडल को कितना भरोसा है कि अंश मेल खाता है। ज़्यादा मान का मतलब ज़्यादा भरोसा।
     DecisionPredicateAnswer:
       type: object
       required:
