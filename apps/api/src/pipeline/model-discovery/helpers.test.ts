@@ -577,6 +577,17 @@ describe("buildPrivateModelDiscoveryMessage", () => {
 		expect(getDiscordProviderFamilyId("nebius-token-factory-us-central-1")).toBe("nebius-token-factory");
 	});
 
+	it.each([
+		["mistral", "mistral-eu", "Mistral"],
+		["minimax", "minimax-lightning", "MiniMax"],
+	])("posts one line for %s and %s, which list identical models", (primary, twin, name) => {
+		const collapsed = collapseDiscordProviderChanges([
+			{ providerId: primary, providerName: primary, previousCount: 1, currentCount: 2, added: ["model-a"], removed: [] },
+			{ providerId: twin, providerName: twin, previousCount: 1, currentCount: 2, added: ["model-a"], removed: [] },
+		]);
+		expect(collapsed).toEqual([expect.objectContaining({ providerId: primary, providerName: name, added: ["model-a"] })]);
+	});
+
 	it("preserves pricing update counts while deduplicating visible samples", () => {
 		const message = buildPrivateModelDiscoveryMessage({
 			modelChanges: [],
