@@ -6,7 +6,14 @@ export interface WebFetchPlugin {
   allowed_domains?: string[];
   blocked_domains?: string[];
   enabled?: boolean;
-  engine?: "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+  engine?:
+    | "auto"
+    | "native"
+    | "direct"
+    | "exa"
+    | "firecrawl"
+    | "parallel"
+    | "deepseek";
   id: "web-fetch";
   max_content_tokens?: number;
   max_uses?: number;

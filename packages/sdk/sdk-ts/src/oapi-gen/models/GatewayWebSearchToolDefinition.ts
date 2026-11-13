@@ -10,7 +10,8 @@ export interface GatewayWebSearchToolDefinition {
     | "firecrawl"
     | "parallel"
     | "perplexity"
-    | "tinyfish";
+    | "tinyfish"
+    | "deepseek";
   include_highlights?: boolean;
   include_text?: boolean;
   language?: string;
@@ -24,7 +25,8 @@ export interface GatewayWebSearchToolDefinition {
       | "firecrawl"
       | "parallel"
       | "perplexity"
-      | "tinyfish";
+      | "tinyfish"
+      | "deepseek";
     include_highlights?: boolean;
     include_text?: boolean;
     language?: string;
