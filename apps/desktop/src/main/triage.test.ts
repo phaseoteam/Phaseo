@@ -67,6 +67,23 @@ describe("triage checkout", () => {
 		// A fresh profile has no triage folder yet.
 		expect(await prepareTriageCheckout(path.join(root, "fresh", "triage"), undefined, fakeGit().git)).toMatchObject({ commit: main, exact: false });
 	}));
+	it("queues a direct request and a fallback that land in the same folder, so they never run git there at once", () => withRoot(async root => {
+		// GitHub lacks the first build's commit, so it falls back to main, which the second build asks for directly.
+		const fake = fakeGit({ has: [main] });
+		let active = 0, most = 0;
+		const slow: TriageGit = async (cwd, args) => {
+			if (!cwd.endsWith("phaseo-0123456789ab")) return fake.git(cwd, args);
+			active += 1; most = Math.max(most, active);
+			try { await new Promise(resolve => setTimeout(resolve, 5)); return await fake.git(cwd, args); }
+			finally { active -= 1; }
+		};
+		const [fallback, direct] = await Promise.all([prepareTriageCheckout(root, commit, slow), prepareTriageCheckout(root, main, slow)]);
+		expect(fallback).toEqual({ directory: path.join(root, "phaseo-0123456789ab"), commit: main, exact: false });
+		expect(direct).toEqual({ directory: path.join(root, "phaseo-0123456789ab"), commit: main, exact: true });
+		expect(most).toBe(1);
+		// The second one found the first one's checkout and reused it rather than fetching again.
+		expect(fake.calls.filter(call => call === `fetch --depth 1 --no-tags origin ${main}`)).toHaveLength(1);
+	}));
 	it("reports a network failure instead of quietly using another version", () => withRoot(async root => {
 		await expect(prepareTriageCheckout(root, commit, fakeGit({ offline: true }).git)).rejects.toThrow("Could not fetch the Phaseo source: unable to access");
 		await expect(prepareTriageCheckout(root, undefined, fakeGit({ offline: true }).git)).rejects.toThrow("Could not reach phaseoteam/Phaseo on GitHub");

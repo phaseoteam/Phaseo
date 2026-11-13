@@ -129,11 +129,12 @@ export async function runTool(source: SourceReader, name: string, args: Record<s
 }
 
 /** A turn's price, or null when the answer didn't say (then the run's total is unknown, not free). */
-const costOf = (usage: Record<string, unknown> | undefined): number | null => {
+export const costOf = (usage: Record<string, unknown> | undefined): number | null => {
   if (!usage) return null;
   if (typeof usage.cost === "number" && Number.isFinite(usage.cost)) return usage.cost;
-  const total = usage.pricing && typeof usage.pricing === "object" ? Number((usage.pricing as Record<string, unknown>).total_usd_str) : NaN;
-  return Number.isFinite(total) ? total : null;
+  // Only a written-out number counts: Number(null) and Number("") would read as a known zero.
+  const text = usage.pricing && typeof usage.pricing === "object" ? (usage.pricing as Record<string, unknown>).total_usd_str : undefined;
+  return typeof text === "string" && /^\s*\d+(\.\d+)?\s*$/.test(text) ? Number(text) : null;
 };
 
 /**

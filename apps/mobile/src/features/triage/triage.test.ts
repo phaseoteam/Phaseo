@@ -1,5 +1,5 @@
 import type { CompletionResult } from "@/features/chat/transport";
-import { newIssueUrl, runTriage, stepLabel, triagePrompt, type TriageBuild } from "./agent";
+import { costOf, newIssueUrl, runTriage, stepLabel, triagePrompt, type TriageBuild } from "./agent";
 import { SourceReader } from "./source";
 
 jest.mock("@/features/chat/transport", () => ({ streamRequestBody: jest.fn() }));
@@ -138,6 +138,19 @@ describe("runTriage keeps what it learned", () => {
     expect(found).toContain("apps/mobile/src/lib/format.ts");
     const down = jest.fn(async (url: string): Promise<Reply> => (url.startsWith("https://raw.") ? failed : fetcher(url)));
     await expect(new SourceReader(SHA, down as never).search("return", ["apps/mobile"])).rejects.toThrow(/None of the 2 files/);
+  });
+});
+
+describe("costOf", () => {
+  it("knows a price only when the answer gave one", () => {
+    expect(costOf({ cost: 0.02 })).toBe(0.02);
+    expect(costOf({ pricing: { total_usd_str: "0" } })).toBe(0);
+    expect(costOf({ pricing: { total_usd_str: "0.0125" } })).toBe(0.0125);
+    expect(costOf({ pricing: { total_usd_str: null } })).toBeNull();
+    expect(costOf({ pricing: { total_usd_str: "" } })).toBeNull();
+    expect(costOf({ pricing: { total_usd_str: "n/a" } })).toBeNull();
+    expect(costOf({ prompt_tokens: 5 })).toBeNull();
+    expect(costOf(undefined)).toBeNull();
   });
 });
 
