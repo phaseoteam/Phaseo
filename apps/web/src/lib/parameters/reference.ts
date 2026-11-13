@@ -135,9 +135,9 @@ const PARAMETER_REFERENCE: Record<string, ParameterReference> = {
 	},
 	include_reasoning: {
 		type: "boolean",
-		defaultValue: "false",
+		defaultValue: "-",
 		description:
-			"Requests reasoning content or reasoning summaries in responses where supported.",
+			"Accepted for compatibility and has no effect. Reasoning is returned whenever the model produces it.",
 	},
 	reasoning_effort: {
 		type: "string",
@@ -191,6 +191,8 @@ export function getParameterReference(paramId: string): ParameterReference {
 		}
 	);
 }
+
+export const PARAMETER_REFERENCE_IDS = Object.keys(PARAMETER_REFERENCE);
 
 export function getParameterReferenceTranslationKey(paramId: string): string {
 	return Object.hasOwn(PARAMETER_REFERENCE, paramId) ? paramId : "other";
