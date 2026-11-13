@@ -24,6 +24,8 @@ type PresetOption = {
 	slug: string | null;
 };
 
+const NO_METADATA_KEY = "__none__";
+
 type PresetFeedbackFilterValues = {
 	range: "7d" | "30d" | "90d" | "custom";
 	from: string;
@@ -218,8 +220,8 @@ export function PresetFeedbackFilters({
 								id="metadata_key"
 								label={t("strings.Metadata Cohort" as never)}
 								value={metadataKey}
-								options={Array.from(new Set([...metadataKeys, ...(metadataKey ? [metadataKey] : [])])).map((key) => ({ value: key, label: key }))}
-								onValueChange={setMetadataKey}
+								options={[...(metadataKey ? [{ value: NO_METADATA_KEY, label: t("strings.None" as never) }] : []), ...Array.from(new Set([...metadataKeys, ...(metadataKey ? [metadataKey] : [])])).map((key) => ({ value: key, label: key }))]}
+								onValueChange={(value) => setMetadataKey(value === NO_METADATA_KEY ? "" : value)}
 								placeholder="user_tier"
 								allowCustom
 								triggerClassName={cn(controlClassName, "min-h-8")}
