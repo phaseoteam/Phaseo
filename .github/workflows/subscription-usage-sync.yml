@@ -1,0 +1,46 @@
+name: Subscription usage sync
+
+on:
+    schedule:
+        - cron: "17 6 * * *"
+    workflow_dispatch:
+
+concurrency:
+    group: subscription-usage-sync
+    cancel-in-progress: false
+
+permissions:
+    contents: read
+
+jobs:
+    sync:
+        if: github.ref == 'refs/heads/main'
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+              with:
+                  persist-credentials: false
+            - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
+              with:
+                  version: 10.33.0
+            - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+              with:
+                  node-version: 24
+                  cache: pnpm
+            - run: pnpm install --frozen-lockfile
+            - name: Test plan and model matching
+              run: pnpm exec tsx --test scripts/subscription-usage/core.test.ts
+            - name: Sync measured subscription usage
+              env:
+                  NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+                  PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+                  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+              run: pnpm data:sync-subscription-usage --write --report=subscription-usage-report.json
+            - name: Upload matching report
+              if: always()
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+              with:
+                  name: subscription-usage-matching
+                  path: subscription-usage-report.json
+                  if-no-files-found: ignore
