@@ -244,7 +244,7 @@ begin
     select count(*) into v_active_count
     from public.v2_pricing_skus sku
     where sku.provider_model_id = r.provider_model_id
-      and sku.operation = 'text.generate' and sku.service_tier_slug = 'standard' and sku.region is null
+      and sku.operation = 'text.generate' and coalesce(sku.service_tier_slug, 'standard') = 'standard' and sku.region is null
       and sku.effective_to is null;
 
     if v_active_count = 0 then
@@ -272,12 +272,18 @@ begin
     select sku.* into v_sku
     from public.v2_pricing_skus sku
     where sku.provider_model_id = r.provider_model_id
-      and sku.operation = 'text.generate' and sku.service_tier_slug = 'standard' and sku.region is null
+      and sku.operation = 'text.generate' and coalesce(sku.service_tier_slug, 'standard') = 'standard' and sku.region is null
       and sku.effective_to is null
     limit 1;
 
-    if v_active_count > 1 or jsonb_array_length(coalesce(v_sku.metadata->'match', '[]'::jsonb)) > 0
-       or jsonb_array_length(coalesce(v_sku.metadata->'time_windows', '[]'::jsonb)) > 0
+    if v_active_count > 1 or coalesce(v_sku.metadata->'match', 'null'::jsonb) not in ('null'::jsonb, '[]'::jsonb, '{}'::jsonb)
+       or coalesce(v_sku.metadata->'time_windows', 'null'::jsonb) not in ('null'::jsonb, '[]'::jsonb, '{}'::jsonb)
+       or exists (
+         select 1 from public.v2_pricing_sku_meters meter
+         where meter.sku_id = v_sku.sku_id
+           and (coalesce(meter.metadata->'match', 'null'::jsonb) not in ('null'::jsonb, '[]'::jsonb, '{}'::jsonb)
+             or coalesce(meter.metadata->'time_windows', 'null'::jsonb) not in ('null'::jsonb, '[]'::jsonb, '{}'::jsonb))
+       )
        or v_sku.effective_from >= p_now then
       v_prices_skipped := v_prices_skipped + 1;
       continue;

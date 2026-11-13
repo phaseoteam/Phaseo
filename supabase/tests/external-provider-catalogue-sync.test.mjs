@@ -174,6 +174,33 @@ try {
 	const repeat = await sync([{ id: 'vend/a' }, { id: 'vend/f' }, { id: 'lab/g' }, { id: 'other/h' }, { id: 'lab/i-latest' }], day(1), 'gw2');
 	assert.equal(repeat.added, 0);
 
+	// A price with no tier counts as standard (it is versioned, not duplicated), and conditions stored
+	// on a meter make the price conditional just like conditions on the price itself.
+	await db.exec(`
+		insert into public.v2_providers (provider_slug, name, status) values ('gw3', 'Gateway 3', 'external');
+		insert into public.v2_model_provider_routes (provider_model_id, model_slug, provider_slug, provider_model_slug, status, routing_enabled, phaseo_status, provider_availability_status) values
+			('gw3:lab/a', 'lab/a', 'gw3', 'lab/a', 'active', false, 'unsupported', 'available'),
+			('gw3:lab/b', 'lab/b', 'gw3', 'lab/b', 'active', false, 'unsupported', 'available');
+		insert into public.v2_route_capabilities (provider_model_id, capability_id, status) values ('gw3:lab/a', 'text.generate', 'active');
+		insert into public.v2_pricing_skus (sku_id, provider_model_id, sku_code, version, operation, status, service_tier_slug, display_name, currency, effective_from, metadata) values
+			('00000000-0000-0000-0000-0000000000a3', 'gw3:lab/a', 'untiered', 1, 'text.generate', 'active', null, 'untiered', 'USD', '2026-08-01', '{}'),
+			('00000000-0000-0000-0000-0000000000b3', 'gw3:lab/b', 'meter-tiered', 1, 'text.generate', 'active', 'standard', 'meter tiered', 'USD', '2026-08-01', '{"match": {}}');
+		insert into public.v2_pricing_sku_meters (sku_id, meter_key, modality, direction, unit, unit_quantity, price_nanos, display_label, display_unit, metadata) values
+			('00000000-0000-0000-0000-0000000000a3', 'input_text_tokens', 'text', 'input', 'token', 1000000, 1000000000, 'Input', '1000000 token', '{}'),
+			('00000000-0000-0000-0000-0000000000a3', 'output_text_tokens', 'text', 'output', 'token', 1000000, 2000000000, 'Output', '1000000 token', '{}'),
+			('00000000-0000-0000-0000-0000000000b3', 'input_text_tokens', 'text', 'input', 'token', 1000000, 1000000000, 'Input', '1000000 token', '{"match": [{"param": "input_tokens", "op": "<=", "value": 200000}]}'),
+			('00000000-0000-0000-0000-0000000000b3', 'output_text_tokens', 'text', 'output', 'token', 1000000, 2000000000, 'Output', '1000000 token', '{}');
+	`);
+	const tiers = await sync([
+		{ id: 'lab/a', meters: { input_text_tokens: 5, output_text_tokens: 6 } },
+		{ id: 'lab/b', meters: { input_text_tokens: 5, output_text_tokens: 6 } },
+	], T0, 'gw3');
+	assert.equal(tiers.prices_changed, 1);
+	assert.equal(tiers.prices_added, 0);
+	assert.equal(tiers.prices_skipped_conditional, 1);
+	assert.deepEqual(await activePrices('gw3:lab/a'), [{ sku_code: 'untiered', version: 2, usd_per_million: { input_text_tokens: 5, output_text_tokens: 6 } }]);
+	assert.deepEqual((await activePrices('gw3:lab/b')).map(price => price.version), [1]);
+
 	await assert.rejects(sync(listed, T0, 'direct'), /not an external provider/);
 	await assert.rejects(sync(listed, T0, 'missing'), /not an external provider/);
 
