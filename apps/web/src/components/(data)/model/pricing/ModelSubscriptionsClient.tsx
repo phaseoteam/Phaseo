@@ -1,6 +1,8 @@
 import Link from "@/components/link";
 import { useLocale, useTranslations } from "@/i18n/react";
-import { CreditCard } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, CreditCard } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
 	Empty,
 	EmptyDescription,
@@ -379,6 +381,8 @@ export default function ModelSubscriptionsClient({
 	};
 	const format = useDisplayFormatters();
 	const usageMessages = getSubscriptionPlansMessagesFor(locale).usage;
+	const listMessages = getSubscriptionPlansMessagesFor(locale).modelPage;
+	const [showAll, setShowAll] = useState(false);
 	/** "≈ $0.0063 per 1M tokens · 63× cheaper" for plans with measured usage of this model. */
 	const usageLine = (plan: SubscriptionPlan): string | null => {
 		const cheapest = summarizeUsage(plan.usage)?.cheapest;
@@ -432,22 +436,15 @@ export default function ModelSubscriptionsClient({
 		});
 	}
 
-	return (
-		<div className="space-y-6">
-			{showHeader ? (
-				<div className="space-y-1">
-					<h2 className="text-2xl font-semibold tracking-tight text-foreground">
-						{tLabels("subscriptions")}
-					</h2>
-					<p className="text-sm text-muted-foreground">
-						{tLabels("subscriptionsDescription")}
-					</p>
-				</div>
-			) : null}
-
-			{groupedPlans.length > 0 ? (
-				<div className="space-y-3 xl:grid xl:grid-cols-2 xl:items-start xl:gap-3 xl:space-y-0">
-					{groupedPlans.map((group) => (
+	// Show the model owner's plans in full (or the first provider when the owner sells none).
+	// With three or more providers, the rest collapse into one line each until expanded.
+	const ownerGroups = groupedPlans.filter((group) => isOwnerGroup(group, ownerOrganisationId, ownerOrganisationName));
+	const leadGroups = ownerGroups.length ? ownerGroups : groupedPlans.slice(0, 1);
+	const otherGroups = groupedPlans.filter((group) => !leadGroups.includes(group));
+	const collapsible = otherGroups.length >= 2;
+	const featuredGroups = collapsible && !showAll ? leadGroups : groupedPlans;
+	const otherPlanCount = otherGroups.reduce((count, group) => count + group.plans.length, 0);
+	const renderGroup = (group: SubscriptionPlanGroup) => (
 						<section
 							key={group.organisationId}
 							className="overflow-hidden rounded-xl border border-border bg-card"
@@ -543,7 +540,51 @@ export default function ModelSubscriptionsClient({
 								})}
 							</div>
 						</section>
-					))}
+	);
+
+	return (
+		<div className="space-y-6">
+			{showHeader ? (
+				<div className="space-y-1">
+					<h2 className="text-2xl font-semibold tracking-tight text-foreground">
+						{tLabels("subscriptions")}
+					</h2>
+					<p className="text-sm text-muted-foreground">
+						{tLabels("subscriptionsDescription")}
+					</p>
+				</div>
+			) : null}
+
+			{groupedPlans.length > 0 ? (
+				<div className={cn("space-y-3", featuredGroups.length > 1 && "xl:grid xl:grid-cols-2 xl:items-start xl:gap-3 xl:space-y-0")}>
+					{featuredGroups.map(renderGroup)}
+				</div>
+			) : null}
+			{collapsible ? (
+				<div className="space-y-2">
+					{!showAll ? (
+						<>
+							<p className="text-sm font-medium text-foreground">{formatSubscriptionPlanMessage(listMessages.otherProviders, { count: otherGroups.length })}</p>
+							<ul className="divide-y divide-border/70 overflow-hidden rounded-md border border-border/70">
+								{otherGroups.map((group) => (
+									<li key={group.organisationId}>
+										<button type="button" onClick={() => setShowAll(true)} className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/40">
+											<span className="relative size-5 shrink-0"><Logo id={group.organisationId || group.organisationName} alt="" fill sizes="20px" className="object-contain" /></span>
+											<span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{group.organisationName}</span>
+											<span className="hidden text-xs text-muted-foreground sm:inline">{tLabels("planCount", { count: group.plans.length })}</span>
+											{getStartingPriceText(group.plans, format.number, planLabels) ? (
+												<span className="shrink-0 text-xs tabular-nums text-muted-foreground">{tLabels("from")} <span className="font-medium text-foreground">{getStartingPriceText(group.plans, format.number, planLabels)}</span></span>
+											) : null}
+										</button>
+									</li>
+								))}
+							</ul>
+						</>
+					) : null}
+					<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => setShowAll((value) => !value)} aria-expanded={showAll}>
+						{showAll ? listMessages.showFewerPlans : formatSubscriptionPlanMessage(listMessages.showAllPlans, { count: otherPlanCount })}
+						<ChevronDown className={cn("size-4 transition-transform", showAll && "rotate-180")} aria-hidden="true" />
+					</Button>
 				</div>
 			) : null}
 			{groupedPlans.length > 0 && hasUsage ? (

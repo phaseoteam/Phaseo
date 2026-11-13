@@ -109,5 +109,10 @@
     "mostTokens": "最多トークン",
     "lowestCost": "100万トークンあたりの最低コスト",
     "modelPage": "100万トークンあたり約 {price}"
+  },
+  "modelPage": {
+    "otherProviders": "ほかの {count} 社のプランにも含まれています",
+    "showAllPlans": "{count} 件のプランをすべて表示",
+    "showFewerPlans": "表示を減らす"
   }
 }
