@@ -556,7 +556,7 @@ export default function ModelSubscriptionsClient({
 			) : null}
 
 			{groupedPlans.length > 0 ? (
-				<div className={cn("space-y-3", featuredGroups.length > 1 && "xl:grid xl:grid-cols-2 xl:items-start xl:gap-3 xl:space-y-0")}>
+				<div className={cn("space-y-3", featuredGroups.length > 1 && "xl:columns-2 xl:gap-3 xl:space-y-0 xl:[&>section]:mb-3 xl:[&>section]:break-inside-avoid")}>
 					{featuredGroups.map(renderGroup)}
 				</div>
 			) : null}
