@@ -236,9 +236,12 @@ function eagerFrom(turns: ReturnType<typeof conversationTurns>) {
 /** A turn's height before it has been drawn: a rough guess from its text, corrected once it draws. */
 function turnEstimate(user: Message | undefined, entries: TurnEntry[]) {
 	const lines = (text: string) => Math.ceil(Math.min(text.length, 40_000) / 90) + (text.match(/\n/g)?.length ?? 0) * 0.5;
-	let height = 64 + (user ? 48 + lines(user.text) * 22 : 0);
-	for (const entry of entries) if (entry.kind === "message") height += 24 + lines(entry.value.text) * 24;
-	return Math.max(80, Math.round(height));
+	// The person's message is a bubble; a reply adds its header, work log and actions row.
+	let height = user ? 20 + lines(user.text) * 22 : 0;
+	const replies = entries.filter(entry => entry.kind === "message");
+	if (replies.length || entries.length) height += 96;
+	for (const entry of replies) height += lines(entry.value.text) * 24;
+	return Math.max(40, Math.round(height));
 }
 
 /**
@@ -266,12 +269,13 @@ function NearView({ id, eager, estimate, markers, children }: { id: string; eage
 			return () => observer.disconnect();
 		}
 		const root = element.closest<HTMLElement>("[data-conversation-viewport]");
+		// The browser's scroll anchoring keeps the reader's place as turns above them draw at their real height.
 		const observer = new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) setNear(true); }, { root, rootMargin: `${nearViewMargin}px 0px` });
 		observer.observe(element);
 		return () => observer.disconnect();
 	}, [drawn, id]);
 	if (drawn) return <div ref={node} className="flex flex-col gap-4">{children}</div>;
-	return <div ref={node} aria-hidden style={{ height: turnHeights.get(id) ?? estimate() }}>{markers().map(marker => <span key={marker} data-conversation-id={marker} className="block h-0" />)}</div>;
+	return <div ref={node} aria-hidden data-turn-placeholder="" style={{ height: turnHeights.get(id) ?? estimate(), overflowAnchor: "none" }}>{markers().map(marker => <span key={marker} data-conversation-id={marker} className="block h-0" />)}</div>;
 }
 
 const Turn = memo(function Turn({ user, entries, usageActivities, live, complete, task, onAttachment, onBranch, onRewind, onRegenerate, compact, burst, unread, eager = false }: TurnProps) {
@@ -376,7 +380,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 		if (!element || anchor.current?.waiting) return;
 		following.current = false;
 		const top = element.getBoundingClientRect().top;
-		const visible = (selector: string) => Array.from(element.querySelectorAll<HTMLElement>(selector)).find(value => value.getBoundingClientRect().bottom >= top);
+		const visible = (selector: string) => Array.from(element.querySelectorAll<HTMLElement>(selector)).find(value => !value.closest("[data-turn-placeholder]") && value.getBoundingClientRect().bottom >= top);
 		// Messages keep their ids across pages; turn containers are regrouped as older entries arrive, so they anchor only as a fallback.
 		const entry = visible('[data-conversation-id^="message:"]') ?? visible("[data-conversation-id]");
 		anchor.current = { id: entry?.dataset.conversationId, top: entry?.getBoundingClientRect().top ?? top, scroll: element.scrollTop };
@@ -401,7 +405,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 			if (!element || compact) return;
 			if (following.current) { scrollPositions.delete(task.id); return; }
 			const view = element.getBoundingClientRect().top;
-			const entry = Array.from(element.querySelectorAll<HTMLElement>('[data-conversation-id^="message:"]')).find(value => value.getBoundingClientRect().bottom >= view);
+			const entry = Array.from(element.querySelectorAll<HTMLElement>('[data-conversation-id^="message:"]')).find(value => !value.closest("[data-turn-placeholder]") && value.getBoundingClientRect().bottom >= view);
 			if (entry?.dataset.conversationId) scrollPositions.set(task.id, { id: entry.dataset.conversationId, offset: entry.getBoundingClientRect().top - view });
 		};
 	}, []);
@@ -419,6 +423,25 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 			}
 			element.scrollTop = entry ? element.scrollTop + entry.getBoundingClientRect().top - saved.top : saved.scroll;
 			anchor.current = undefined;
+			// Turns just above the view draw over the next frames (NearView) and the browser's anchoring can leave a few pixels:
+			// the message stays where it was until the reader moves or the view follows the latest again.
+			if (entry && saved.id) {
+				// By id each frame: a placeholder's marker is replaced by the drawn message when its turn draws.
+				const target = () => element.querySelector<HTMLElement>(`[data-conversation-id="${CSS.escape(saved.id!)}"]`);
+				let frames = 0, moved = false;
+				const stop = () => { moved = true; };
+				const options = { capture: true, passive: true, once: true };
+				for (const type of ["wheel", "pointerdown", "keydown", "touchstart"]) element.addEventListener(type, stop, options);
+				const hold = () => {
+					const current = target();
+					if (moved || following.current || !current) return;
+					const drift = current.getBoundingClientRect().top - saved.top;
+					if (Math.abs(drift) >= 0.5) { element.scrollTop += drift; lastScroll.current = element.scrollTop; }
+					if (++frames < 10) requestAnimationFrame(hold);
+					else for (const type of ["wheel", "pointerdown", "keydown", "touchstart"]) element.removeEventListener(type, stop, options);
+				};
+				requestAnimationFrame(hold);
+			}
 		} else if (following.current) element.scrollTop = element.scrollHeight;
 		// Programmatic scrolling is not the reader's: it must not page further.
 		lastScroll.current = element.scrollTop;
