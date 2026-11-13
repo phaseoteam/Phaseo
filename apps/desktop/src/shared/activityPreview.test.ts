@@ -22,7 +22,7 @@ describe("activity previews", () => {
 	});
 
 	it("keeps what is short, running, an edit, a usage report or a plan", () => {
-		for (const activity of [tool({ text: "short" }), tool({ status: "running" }), tool({ title: "apply_patch" }), tool({ title: "Edit" }), tool({ type: "usage", title: "Usage" }), tool({ type: "plan", title: "Plan" }), tool({ proposed: {} })]) expect(previewActivity(activity)).toBe(activity);
+		for (const activity of [tool({ text: "short" }), tool({ status: "running" }), tool({ title: "apply_patch" }), tool({ title: "Edit" }), tool({ type: "usage", title: "Usage" }), tool({ type: "plan", title: "Plan" }), tool({ proposed: {} }), tool({ nativeAgent: { id: "agent-1", status: "completed" } })]) expect(previewActivity(activity)).toBe(activity);
 	});
 
 	it("keeps the chat's latest turn whole and returns the same array when nothing changes", () => {

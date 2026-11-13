@@ -9,10 +9,10 @@ export const editTools = /^(?:edit_file|write_file|delete_file|Edit|MultiEdit|Wr
 /**
  * An activity as the window first gets it: long tool output becomes its one-line summary, and long reasoning is left
  * out (a collapsed row shows neither), with `textLength` saying the rest loads when the row opens. Running activities,
- * edits, plans, usage reports and short text are kept whole.
+ * native agents (the Agents panel shows their result), edits, plans, usage reports and short text are kept whole.
  */
 export function previewActivity(activity: AgentActivity): AgentActivity {
-	if ((activity.type !== "tool" && activity.type !== "reasoning") || activity.status === "running" || activity.text.length <= activityPreviewFrom || activity.htmlRender || activity.proposed) return activity;
+	if ((activity.type !== "tool" && activity.type !== "reasoning") || activity.status === "running" || activity.text.length <= activityPreviewFrom || activity.htmlRender || activity.proposed || activity.nativeAgent) return activity;
 	if (activity.type === "tool" && editTools.test(activity.title)) return activity;
 	return { ...activity, text: activity.type === "reasoning" ? "" : activitySummary(activity.text).slice(0, 300), textLength: activity.text.length };
 }
