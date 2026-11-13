@@ -31,6 +31,9 @@ byteHistory.activities=Array.from({length:8},(_,index)=>({id:'byte-activity-'+in
 db.prepare("UPDATE tasks SET data=? WHERE id='044'").run(JSON.stringify(byteHistory));
 db.close();
 await storeFixtureTasks(path.join(data, "workspace", "workspace.sqlite"));
+// This audit pages 50 messages at a time (Settings → Chat → Messages per page, 25 by default), so it also covers the setting.
+const preferenceStore = await openFixtureStore(path.join(data, "workspace", "workspace.sqlite"));
+try { const preferences = preferenceStore.getPreferences(); preferenceStore.savePreferences({ ...preferences, chat: { ...preferences.chat, historyPageSize: 50 } }); } finally { preferenceStore.close(); }
 const entry = process.argv.find(value => value.startsWith("--app-entry="))?.slice("--app-entry=".length);
 const originalHandle = ipcMain.handle;
 let failNextHistory = false;
