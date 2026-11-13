@@ -270,9 +270,7 @@ function NearView({ id, eager, estimate, markers, children }: { id: string; eage
 		observer.observe(element);
 		return () => observer.disconnect();
 	}, [drawn, id]);
-	// Drawn turns off screen skip layout and paint (content-visibility), sized by their last drawn height, so reading a
-	// size after a page loads lays out only what is on screen; they stay in the page for find, selection and anchors.
-	if (drawn) return <div ref={node} className="flex flex-col gap-4" style={{ contentVisibility: "auto", containIntrinsicSize: `auto ${Math.round(turnHeights.get(id) ?? estimate())}px` }}>{children}</div>;
+	if (drawn) return <div ref={node} className="flex flex-col gap-4">{children}</div>;
 	return <div ref={node} aria-hidden style={{ height: turnHeights.get(id) ?? estimate() }}>{markers().map(marker => <span key={marker} data-conversation-id={marker} className="block h-0" />)}</div>;
 }
 
