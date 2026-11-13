@@ -54,10 +54,14 @@ type LabelKey =
 	| "playground"
 	| "modelCard"
 	| "provider"
+	| "pricing"
+	| "benchmark"
+	| "deprecation"
+	| "license"
 	| "link";
 
-/** Fallback label for a link saved without a title. Kinds without their own label use "Link". */
-const KIND_LABEL_KEYS: Partial<Record<ModelLinkKind, LabelKey>> = {
+/** Translated label for a link saved without a title, or with only the default English kind name. */
+const KIND_LABEL_KEYS: Record<ModelLinkKind, LabelKey> = {
 	announcement: "announcement",
 	model_card: "modelCard",
 	paper: "paper",
@@ -68,6 +72,10 @@ const KIND_LABEL_KEYS: Partial<Record<ModelLinkKind, LabelKey>> = {
 	playground: "playground",
 	website: "website",
 	provider: "provider",
+	pricing: "pricing",
+	benchmark: "benchmark",
+	deprecation: "deprecation",
+	license: "license",
 };
 
 function hasLinkUrl<T extends { url?: string | null }>(link: T): link is T & { url: string } {
@@ -119,8 +127,8 @@ function parseLinks(model: ModelOverviewPage): ParsedModelLink[] {
 		const kind = normaliseModelLinkKind(link.kind ?? link.platform, link.url);
 		const title = link.title?.trim() || null;
 		// The editor stores the English kind name when a title is left blank. Treat that as no title
-		// so the translated label shows instead, for kinds that have one.
-		const isDefaultTitle = title === defaultModelLinkTitle(kind) && KIND_LABEL_KEYS[kind] !== undefined;
+		// so the translated label shows instead.
+		const isDefaultTitle = title === defaultModelLinkTitle(kind);
 		return { kind, title: isDefaultTitle ? null : title, url: link.url.trim() };
 	});
 }
@@ -149,7 +157,7 @@ export default function ModelLinks({ model, showEmpty = false }: ModelLinksProps
 	return (
 		<div className="overflow-hidden rounded-lg border border-border/70 bg-card sm:grid sm:grid-cols-2 sm:gap-2 sm:overflow-visible sm:border-0 sm:bg-transparent xl:grid-cols-3">
 			{links.map((link) => {
-				const labelKey = KIND_LABEL_KEYS[link.kind] ?? "link";
+				const labelKey = KIND_LABEL_KEYS[link.kind];
 				const label = link.title ?? t(labelKey);
 				const icon = fallbackIcon(link.kind, model, providerLabel);
 				return (

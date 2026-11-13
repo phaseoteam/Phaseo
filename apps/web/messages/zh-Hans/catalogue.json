@@ -1623,7 +1623,9 @@
 			"totalDays": "共 {count} 天",
 			"modalityStructured": "结构化状态",
 			"modalityDecisions": "决策",
-			"viewLicense": "查看许可证"
+			"viewLicense": "查看许可证",
+			"pricing": "价格",
+			"benchmark": "基准测试"
 		},
 		"performance": {
 			"noTelemetry": "过去 7 天没有请求",

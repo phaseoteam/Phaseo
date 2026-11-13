@@ -111,7 +111,7 @@ export function normaliseModelLinkKind(input: unknown, url = ""): ModelLinkKind 
 	if (isModelLinkKind(value)) return value;
 	if (value === "source") return hostOf(url) === "github.com" ? "repository" : "announcement";
 	if (value === "model") return detectModelLinkKind(url) === "weights" ? "weights" : "provider";
-	return LEGACY_KIND_ALIASES[value] ?? detectModelLinkKind(url);
+	return Object.hasOwn(LEGACY_KIND_ALIASES, value) ? LEGACY_KIND_ALIASES[value] : detectModelLinkKind(url);
 }
 
 const SITE_NAMES: Record<string, string> = {

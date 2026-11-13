@@ -48,6 +48,12 @@ describe("normaliseModelLinkKind", () => {
 		expect(normaliseModelLinkKind("mystery", "https://github.com/a/b")).toBe("repository");
 		expect(normaliseModelLinkKind(undefined, "https://example.com")).toBe("website");
 	});
+
+	it("ignores inherited object properties when looking up older names", () => {
+		expect(normaliseModelLinkKind("constructor", "https://github.com/a/b")).toBe("repository");
+		expect(normaliseModelLinkKind("__proto__", "https://example.com")).toBe("website");
+		expect(normaliseModelLinkKind("toString", "https://example.com")).toBe("website");
+	});
 });
 
 describe("suggestModelLinkTitle", () => {
