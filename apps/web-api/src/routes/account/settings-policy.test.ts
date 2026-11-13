@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import app from "@/index";
+import { recordSettingsFailure } from "@/observability";
+
+vi.mock("@/observability", async importOriginal => ({
+	...await importOriginal<typeof import("@/observability")>(),
+	recordSettingsFailure: vi.fn(),
+}));
 
 const env = {
 	ENV: "development" as const,
@@ -12,7 +18,7 @@ const env = {
 	GATEWAY_API_ORIGIN: "https://gateway.example.com",
 };
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); });
 
 /**
  * A stand-in for find_member_visible_preset: the row when the caller belongs to its workspace and may see it
@@ -107,17 +113,27 @@ describe("account policy settings routes", () => {
 		});
 	});
 
-	it("fails rather than under-reporting when the inherited guardrails can't be read", async () => {
+	it.each([
+		["workspace_settings", "chat_policy_workspace"],
+		["/rpc/resolve_member_guardrails", "chat_policy_member_guardrails"],
+		["/keys?", "chat_policy_managed_key"],
+		["workspace_guardrail_assignments", "chat_policy_key_guardrails"],
+		["/workspace_guardrails?", "chat_policy_guardrail_details"],
+	])("reports a safe diagnostic and fails closed when %s cannot be read", async (failingPath, operation) => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]), { status: 200 });
 			if (url.includes("/workspaces")) return new Response(JSON.stringify([{ owner_user_id: "owner-1" }]), { status: 200 });
-			if (url.includes("/rpc/resolve_member_guardrails")) return new Response(JSON.stringify({ code: "57014", message: "timeout" }), { status: 500 });
+			if (url.includes(failingPath)) return Response.json({ code: "57014", message: "private query detail" }, { status: 500 });
+			if (url.includes("/rpc/resolve_member_guardrails")) return Response.json([{ guardrail_id: "guardrail-1" }]);
+			if (url.includes("/keys?")) return Response.json([{ id: "chat-key" }]);
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
 		const response = await app.request("https://phaseo.app/api/account/settings/chat/effective-policy?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
 		expect(response.status).toBe(503);
+		await expect(response.json()).resolves.toEqual({ error: "settings_unavailable" });
+		expect(recordSettingsFailure).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ code: "57014" }), operation);
 	});
 	it("invalidates every active key after response-healing policy changes", async () => {
 		const invalidated: string[] = [];

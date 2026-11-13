@@ -5,6 +5,7 @@ import { requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
+import { recordSettingsFailure } from "@/observability";
 import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { requireAccountWorkspace, type AccountWorkspaceContext } from "./context";
 import { purgeWorkerCacheTags } from "@/http/invalidation";
@@ -176,22 +177,38 @@ accountSettingsPolicyRouter.get("/chat/effective-policy", async (c) => {
 				.order("guardrail_id").order("source_type").order("source_id").range(from, to)),
 			context.client.from("keys").select("id").eq("workspace_id", workspaceId).eq("created_by", context.user.id).eq("name", "__chat_route_managed_key__").maybeSingle(),
 		]);
-		if (workspaceRow.error || memberRows.error || chatKeyRow.error) throw new Error("settings_unavailable");
+		for (const [operation, error] of [
+			["chat_policy_workspace", workspaceRow.error],
+			["chat_policy_member_guardrails", memberRows.error],
+			["chat_policy_managed_key", chatKeyRow.error],
+		] as const) {
+			if (error) {
+				recordSettingsFailure(c, error, operation);
+				return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+			}
+		}
 		workspaceResult = workspaceRow;
 		const keyRows = chatKeyRow.data?.id
 			? await readAllPages<{ guardrail_id: string | null }>((from, to) => context.client.from("workspace_guardrail_assignments")
 				.select("guardrail_id").eq("workspace_id", workspaceId).eq("target_type", "key").eq("target_id", chatKeyRow.data!.id)
 				.order("guardrail_id").range(from, to))
 			: { data: [], error: null };
-		if (keyRows.error) throw new Error("settings_unavailable");
+		if (keyRows.error) {
+			recordSettingsFailure(c, keyRows.error, "chat_policy_key_guardrails");
+			return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		}
 		guardrailIds = [...new Set([...memberRows.data, ...keyRows.data].map((row) => String(row.guardrail_id ?? "")).filter(Boolean))];
-	} catch {
+	} catch (error) {
+		recordSettingsFailure(c, error, "chat_policy_lookup");
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
 	const guardrailRows: unknown[] = [];
 	for (let index = 0; index < guardrailIds.length; index += 200) {
 		const batch = await context.client.from("workspace_guardrails").select("id,name,enabled,provider_restriction_mode,provider_restriction_provider_ids,model_restriction_mode,allowed_api_model_ids").eq("workspace_id", workspaceId).eq("enabled", true).in("id", guardrailIds.slice(index, index + 200));
-		if (batch.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		if (batch.error) {
+			recordSettingsFailure(c, batch.error, "chat_policy_guardrail_details");
+			return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		}
 		guardrailRows.push(...(batch.data ?? []));
 	}
 	const guardrailsResult = { data: guardrailRows };
