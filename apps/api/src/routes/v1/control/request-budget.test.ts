@@ -92,14 +92,15 @@ describe("controlRequestCost", () => {
 });
 
 describe("controlRateLimitMode", () => {
-	it("defaults to off", () => {
-		expect(controlRateLimitMode(undefined)).toBe("off");
-		expect(controlRateLimitMode("")).toBe("off");
-		expect(controlRateLimitMode("true")).toBe("off");
+	it("enforces by default", () => {
+		expect(controlRateLimitMode(undefined)).toBe("enforce");
+		expect(controlRateLimitMode("")).toBe("enforce");
+		expect(controlRateLimitMode("true")).toBe("enforce");
 	});
 
-	it("accepts shadow and enforce in any case", () => {
+	it("accepts shadow, off and enforce in any case", () => {
 		expect(controlRateLimitMode(" Shadow ")).toBe("shadow");
+		expect(controlRateLimitMode("OFF")).toBe("off");
 		expect(controlRateLimitMode("ENFORCE")).toBe("enforce");
 	});
 });
@@ -129,9 +130,16 @@ describe("controlBudgetKey", () => {
 describe("controlRequestBudget", () => {
 	it("does nothing when the mode is off", async () => {
 		const { limiter } = fakeLimiter("deny");
-		const response = await send(appWithBudget(), "/v1/analytics", { CONTROL_API_RATE_LIMITER: limiter });
+		const response = await send(appWithBudget(), "/v1/analytics", { CONTROL_API_RATE_LIMIT_MODE: "off", CONTROL_API_RATE_LIMITER: limiter });
 		expect(response.status).toBe(200);
 		expect(limiter.limit).not.toHaveBeenCalled();
+	});
+
+	it("enforces when only the binding is configured", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => undefined);
+		const { limiter } = fakeLimiter("deny");
+		const response = await send(appWithBudget(), "/v1/analytics", { CONTROL_API_RATE_LIMITER: limiter });
+		expect(response.status).toBe(429);
 	});
 
 	it("lets requests through when the binding is missing", async () => {
