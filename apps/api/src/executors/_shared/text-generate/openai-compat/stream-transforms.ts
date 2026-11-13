@@ -213,7 +213,11 @@ function repairChatToolCallDeltas(payload: any, seen: Set<string>, args: Executo
 			const key = `${choiceIndex}:${toolIndex}`;
 			if (seen.has(key)) continue;
 			seen.add(key);
-			if (!call.id) call.id = `call_${args.requestId}_${choiceIndex}_${toolIndex}`;
+			// Only a first delta without an id is repaired. A stream that sends the id first and
+			// the name in a later delta is valid and passes through unchanged, so the name is
+			// filled in only when the id is missing too (Together).
+			if (call.id) continue;
+			call.id = `call_${args.requestId}_${choiceIndex}_${toolIndex}`;
 			if (!call.type) call.type = "function";
 			call.function ??= {};
 			if (!call.function.name && fallbackName) call.function.name = fallbackName;
@@ -642,7 +646,7 @@ type ResponsesStreamChoiceState = {
 	reasoningOutputIndex?: number;
 	messageItemId?: string;
 	reasoningItemId?: string;
-	toolCalls: Map<number, { id: string; name: string; arguments: string; outputIndex: number; emittedAdded?: boolean }>;
+	toolCalls: Map<number, { id: string; name: string; arguments: string; outputIndex: number; emittedAdded?: boolean; fallbackName?: boolean }>;
 	emittedText?: boolean;
 	emittedReasoning?: boolean;
 	sawRefusal?: boolean;
@@ -703,8 +707,12 @@ export function transformChatStreamToResponses(
 	const fallbackToolName = singleFunctionToolName(args.ir.tools);
 	const fallbackToolId = (choiceIndex: number, toolIndex: number) => `call_${args.requestId}_${choiceIndex}_${toolIndex}`;
 	// Some hosts (Together gpt-oss) stream a later call with an empty id and no name.
-	const withToolName = <T extends { name: string }>(tool: T): T => {
-		if (!tool.name && fallbackToolName) tool.name = fallbackToolName;
+	// A real name arriving later replaces the fallback rather than appending to it.
+	const withToolName = <T extends { name: string; fallbackName?: boolean }>(tool: T): T => {
+		if (!tool.name && fallbackToolName) {
+			tool.name = fallbackToolName;
+			tool.fallbackName = true;
+		}
 		return tool;
 	};
 
@@ -1174,8 +1182,13 @@ export function transformChatStreamToResponses(
 								for (const toolDelta of toolDeltas) {
 									const toolIndex = Number(toolDelta?.index ?? 0);
 									const tool = ensureToolCallState(choiceIndex, toolIndex, entry, toolDelta?.id);
-									if (typeof toolDelta?.function?.name === "string") {
-										tool.name += toolDelta.function.name;
+									if (typeof toolDelta?.function?.name === "string" && toolDelta.function.name) {
+										if (tool.fallbackName) {
+											tool.name = toolDelta.function.name;
+											tool.fallbackName = false;
+										} else {
+											tool.name += toolDelta.function.name;
+										}
 									}
 									if (typeof toolDelta?.function?.arguments === "string") {
 										tool.arguments += toolDelta.function.arguments;

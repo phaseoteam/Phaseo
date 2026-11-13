@@ -12,9 +12,10 @@ vi.mock("@supabase/supabase-js", () => ({ createClient: () => ({}) }));
 beforeAll(() => setupTestRuntime());
 afterAll(() => teardownTestRuntime());
 
+const chunk = (delta: any, finish: string | null = null) => `data: ${JSON.stringify({ id: "t1", object: "chat.completion.chunk", created: 1, model: "openai/gpt-oss-120b", choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`;
+
 // Together's gpt-oss stream, as captured: the second parallel call has no id and no name.
 function togetherStream(): string {
-	const chunk = (delta: any, finish: string | null = null) => `data: ${JSON.stringify({ id: "t1", object: "chat.completion.chunk", created: 1, model: "openai/gpt-oss-120b", choices: [{ index: 0, delta, finish_reason: finish }] })}\n\n`;
 	return [
 		chunk({ role: "assistant", reasoning_content: "D1 and E2." }),
 		chunk({ tool_calls: [{ index: 0, id: "call_real", type: "function", function: { name: "lookup_shelf", arguments: "" } }] }),
@@ -25,9 +26,20 @@ function togetherStream(): string {
 	].join("");
 }
 
-async function runTogether(stream: boolean) {
+// A valid fragmented stream: the id arrives first and the name in a later delta.
+function idFirstStream(): string {
+	return [
+		chunk({ tool_calls: [{ index: 0, id: "call_a", type: "function", function: { arguments: "" } }] }),
+		chunk({ tool_calls: [{ index: 0, function: { arguments: "{\"shelf\":" } }] }),
+		chunk({ tool_calls: [{ index: 0, function: { name: "lookup_shelf", arguments: "\"D1\"}" } }] }),
+		chunk({}, "tool_calls"),
+		"data: [DONE]\n\n",
+	].join("");
+}
+
+async function runTogether(stream: boolean, protocol = "openai.chat.completions", body: () => string = togetherStream) {
 	const realFetch = globalThis.fetch;
-	globalThis.fetch = (async () => new Response(togetherStream(), { headers: { "Content-Type": "text/event-stream" } })) as any;
+	globalThis.fetch = (async () => new Response(body(), { headers: { "Content-Type": "text/event-stream" } })) as any;
 	try {
 		const ir = decodeOpenAIChatRequest({
 			model: "openai/gpt-oss-120b",
@@ -36,7 +48,7 @@ async function runTogether(stream: boolean) {
 			tools: [{ type: "function", function: { name: "lookup_shelf", parameters: { type: "object", properties: { shelf: { type: "string" } } } } }],
 		} as any);
 		return await executeTogether({
-			ir, protocol: "openai.chat.completions", endpoint: "chat.completions", requestId: "req_t", workspaceId: "w", providerId: "together",
+			ir, protocol, endpoint: protocol === "openai.responses" ? "responses" : "chat.completions", requestId: "req_t", workspaceId: "w", providerId: "together",
 			providerModelSlug: "openai/gpt-oss-120b", capability: "text.generate", byokMeta: [], pricingCard: null, meta: {},
 		} as any) as any;
 	} finally {
@@ -65,6 +77,27 @@ describe("Together gpt-oss parallel calls without an id or name", () => {
 			[0, "call_real", "lookup_shelf"],
 			[1, "call_req_t_0_1", "lookup_shelf"],
 		]);
+	});
+});
+
+describe("a valid stream that sends the call id first and its name later", () => {
+	const frames = async (protocol: string) => (await new Response((await runTogether(true, protocol, idFirstStream)).stream).text())
+		.split("\n\n").flatMap((block) => {
+			const line = block.split("\n").find((l) => l.startsWith("data: {"));
+			return line ? [JSON.parse(line.slice(6))] : [];
+		});
+
+	it("streamed Chat passes the name through once", async () => {
+		const names = (await frames("openai.chat.completions"))
+			.flatMap((frame) => frame.choices?.[0]?.delta?.tool_calls ?? [])
+			.map((call: any) => call.function?.name ?? "").join("");
+		expect(names).toBe("lookup_shelf");
+	});
+
+	it("streamed Responses names the call once", async () => {
+		const done = (await frames("openai.responses")).find((frame) => frame.type === "response.completed" || frame.response?.status === "completed");
+		const call = (done?.response?.output ?? []).find((item: any) => item.type === "function_call");
+		expect(call?.name).toBe("lookup_shelf");
 	});
 });
 
