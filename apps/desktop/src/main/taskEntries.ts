@@ -149,6 +149,11 @@ export class TaskEntries {
 	maxTimelineOrder(key: number): number {
 		return (this.statement("SELECT max(timeline_order) AS maximum FROM task_entries WHERE rowid >= ? AND rowid < ?").get(base(key, 0), base(key, 0) + chatSpan) as { maximum: number | null }).maximum ?? 0;
 	}
+	/** The highest timeline position among the last `rows` messages and the last `rows` activities, read from the end. */
+	recentMaxTimelineOrder(key: number, rows = 200): number {
+		const latest = (kind: Kind) => (this.statement("SELECT max(timeline_order) AS maximum FROM (SELECT timeline_order FROM task_entries WHERE rowid >= ? AND rowid < ? ORDER BY rowid DESC LIMIT ?)").get(base(key, kind), base(key, kind) + kindSpan, rows) as { maximum: number | null }).maximum ?? 0;
+		return Math.max(latest(0), latest(1));
+	}
 	/** Messages that carry attachments; message data is never compressed, so the filter runs in SQL. */
 	messagesWithAttachments(key: number): Message[] {
 		const rows = this.statement(`SELECT ${entryColumns} FROM task_entries WHERE rowid >= ? AND rowid < ? AND data LIKE '%"attachments":[{%' ORDER BY rowid`).all(base(key, 0), base(key, 0) + kindSpan) as Row[];

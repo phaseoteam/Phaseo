@@ -61,4 +61,14 @@ describe("reading a long chat's latest turns", () => {
 		expect(saved.messages[0].id).toBe("long-u0");
 		expect(saved.activities).toHaveLength(300);
 	}));
+
+	it("places the next message after every step when the latest message is a steer without a position", () => withStore(store => {
+		const value = chat("steered", 10);
+		// A steer joins the running turn: no position of its own, and the turn's steps stay with its first message.
+		value.messages.push({ id: "steer", role: "user", text: "Also check the tests", createdAt: created });
+		store.saveTask(value);
+		const highest = Math.max(...[...value.messages, ...value.activities!].map(item => item.timelineOrder ?? 0));
+		expect(store.getTaskLatestTurn("steered").messages.map(message => message.id)).toEqual(["steer"]);
+		expect(store.nextTimelineOrder("steered", store.getTaskLatestTurn("steered"))).toBeGreaterThan(highest);
+	}));
 });

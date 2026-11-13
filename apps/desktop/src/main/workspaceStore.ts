@@ -431,7 +431,9 @@ export class WorkspaceStore {
 	 */
 	nextTimelineOrder(id: string, latest?: Task): number {
 		const { key } = this.getHead(id), partial = latest && (latest as PartialTask)[partialEntries] ? latest : undefined;
-		const highest = partial ? [...partial.messages, ...partial.activities ?? []].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), 0) : this.entries.maxTimelineOrder(key);
+		// A steering message has no position and its turn's steps belong to the turn's first message, so the latest turn
+		// can hold none: the last rows of each kind are read too, still without reading the whole chat.
+		const highest = partial ? Math.max([...partial.messages, ...partial.activities ?? []].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), 0), this.entries.recentMaxTimelineOrder(key)) : this.entries.maxTimelineOrder(key);
 		return Math.max(highest, this.entries.count(key, 0) + this.entries.count(key, 1)) + 1;
 	}
 	/** The chat's messages that carry attachments, without reading the others. */
