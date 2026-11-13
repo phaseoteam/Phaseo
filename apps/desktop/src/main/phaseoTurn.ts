@@ -2,7 +2,7 @@ import { createAgent, defineTool } from "@phaseo/agent-sdk";
 import type { AgentEvent, AgentMessage, AgentModelClient, AgentPendingToolCall, AgentRunResult, AgentTool, AgentToolCall } from "@phaseo/agent-sdk";
 import type { AgentCallbacks } from "./agentAdapter";
 import type { ModelFacts, Task } from "../shared/workspace";
-import type { WorkspaceStore } from "./workspaceStore";
+import { recentTurns, type WorkspaceStore } from "./workspaceStore";
 import { publishPhaseoPlan } from "./phaseoPlanTools";
 import { span } from "./diagnostics/tracer";
 
@@ -37,8 +37,13 @@ export type PhaseoTurn = {
 	client: AgentModelClient;
 	tools: AgentTool[];
 	instructions: (loaded: string[]) => Promise<string>;
-	/** The conversation rebuilt from the transcript, for a fresh run. Its last message is the new input. */
-	transcript: AgentMessage[];
+	/**
+	 * The conversation rebuilt from the transcript, for a fresh run. Its last message is the new input. A function is
+	 * called only for a fresh run, so a continued run never reads a long chat's history.
+	 */
+	transcript: AgentMessage[] | (() => AgentMessage[]);
+	/** The new input alone (the transcript's last message), for a continued run; read from the transcript when absent. */
+	followUp?: () => AgentMessage[];
 	previous: AgentRunResult<unknown, string> | null;
 	context: Record<string, unknown>;
 	/** Context this turn sets over whatever the run saved, such as a newly selected skill. */
@@ -63,7 +68,9 @@ export function activityText(value: unknown) { return clip(typeof value === "str
 
 /** Whether a finished run still describes this chat: the transcript can change underneath it, through edits or another harness. */
 export function runMatchesTranscript(previous: AgentRunResult<unknown, string>, task: Task) {
-	const answer = [...task.messages].reverse().find(message => message.role === "assistant");
+	// The answer is in the turn before the new message, so the last two turns hold it. A chat whose last answer is older
+	// than that starts a fresh run, which is always right.
+	const answer = [...recentTurns(task, 2).messages].reverse().find(message => message.role === "assistant");
 	const last = [...previous.run.messages].reverse().find(message => message.role === "assistant" && typeof message.content === "string" && message.content.trim());
 	return Boolean(answer && last && answer.text.trim() === String(last.content).trim());
 }
@@ -219,13 +226,14 @@ export async function runPhaseoTurn(turn: PhaseoTurn): Promise<AgentRunResult<un
 	};
 	const options = { client: turn.client, signal, onEvent, takeMessages: () => turn.steering.splice(0), state: { load: async (id: string) => store.loadAgentRun(id) as AgentRunResult<unknown, string> | null, save: async (result: AgentRunResult<unknown, string>) => save(result) } };
 
-	const followUp = turn.transcript.slice(-1);
+	const transcript = () => typeof turn.transcript === "function" ? turn.transcript() : turn.transcript;
+	const followUp = continuing ? turn.followUp?.() ?? transcript().slice(-1) : [];
 	let pendingFollowUp: AgentMessage[] | undefined = continuing ? followUp : undefined;
 	let result = continuing?.run.pause?.pendingToolCalls?.length
 		? continuing
 		: continuing
 		? await agent.continueStream({ ...options, context: context(), run: continuing, humanMessages: followUp })
-		: await agent.stream({ ...options, context: turn.context, input: turn.input, messages: turn.transcript });
+		: await agent.stream({ ...options, context: turn.context, input: turn.input, messages: transcript() });
 	if (continuing && result !== continuing) pendingFollowUp = undefined;
 	// A steering message that arrives as the model gives its last answer starts one more round instead of being lost.
 	while (result.run.status === "waiting_for_human" || result.run.pause?.pendingToolCalls?.length || (result.run.status === "completed" && turn.steering.length)) {

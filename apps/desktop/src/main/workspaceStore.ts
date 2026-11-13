@@ -46,7 +46,19 @@ const SLOW_STORE_MS = 50;
 const partialEntries = Symbol("partial entries");
 /** On a chat from getTask: whether its conversation is still unread, so saving it writes only the header. */
 const unreadEntries = Symbol("unread entries");
-type PartialTask = Task & { [partialEntries]?: EntryOffsets; [unreadEntries]?: () => boolean };
+/** On a chat from getTask: reads its latest turns alone while the rest of its conversation is unread (see recentTurns). */
+const recentEntries = Symbol("recent entries");
+type Recent = { messages: Task["messages"]; activities: NonNullable<Task["activities"]> };
+type PartialTask = Task & { [partialEntries]?: EntryOffsets; [unreadEntries]?: () => boolean; [recentEntries]?: (turns: number) => Recent };
+
+/**
+ * The end of a chat's conversation covering at least its last `turns` turns (from the `turns`th last user message), or
+ * all of it. A chat from getTask reads only those rows while its conversation is unread, so a long chat costs no more
+ * than a short one; any other chat returns its own arrays. Callers must work with more than they asked for.
+ */
+export function recentTurns(task: Task, turns = 1): Recent {
+	return (task as PartialTask)[recentEntries]?.(turns) ?? { messages: task.messages, activities: task.activities ?? [] };
+}
 
 /** The layout this build writes. A database from another layout is set aside, not converted: there is nothing to keep. */
 const schemaVersion = 4;
@@ -390,6 +402,11 @@ export class WorkspaceStore {
 		const load = () => loaded ??= this.entries.load(key, task.revision ?? 0);
 		for (const name of ["messages", "activities"] as const) Object.defineProperty(task, name, { enumerable: true, configurable: true, get: () => load()[name], set: (value: never) => { load()[name] = value; } });
 		Object.defineProperty(task, unreadEntries, { value: () => loaded === undefined });
+		Object.defineProperty(task, recentEntries, { value: (turns: number): Recent => {
+			if (loaded) return loaded;
+			const from = this.entries.lastUserId(key, turns), tail = from ? this.entries.tail(key, from) : undefined;
+			return tail ? { messages: tail.messages, activities: tail.activities } : load();
+		} });
 		return task;
 	}
 	/**
@@ -403,6 +420,24 @@ export class WorkspaceStore {
 		(task as PartialTask)[partialEntries] = tail.offsets;
 		return task;
 	}
+	/** The chat with only its latest turn's entries (getTaskTail from its last user message), or all of a chat without one. */
+	getTaskLatestTurn(id: string): Task {
+		const from = this.entries.lastUserId(this.getHead(id).key);
+		return from ? this.getTaskTail(id, from) : this.getTask(id);
+	}
+	/**
+	 * The timeline position after every entry of the chat. Positions only grow, so given the chat's latest turn (from
+	 * getTaskLatestTurn) its entries hold the highest, as appendActivity already relies on; without one, every row is read.
+	 */
+	nextTimelineOrder(id: string, latest?: Task): number {
+		const { key } = this.getHead(id), partial = latest && (latest as PartialTask)[partialEntries] ? latest : undefined;
+		// A steering message has no position and its turn's steps belong to the turn's first message, so the latest turn
+		// can hold none: the last rows of each kind are read too, still without reading the whole chat.
+		const highest = partial ? Math.max([...partial.messages, ...partial.activities ?? []].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), 0), this.entries.recentMaxTimelineOrder(key)) : this.entries.maxTimelineOrder(key);
+		return Math.max(highest, this.entries.count(key, 0) + this.entries.count(key, 1)) + 1;
+	}
+	/** The chat's messages that carry attachments, without reading the others. */
+	messagesWithAttachments(id: string): Task["messages"] { return this.entries.messagesWithAttachments(this.getHead(id).key); }
 	/** Pages read only the rows they return, so their cost does not grow with the chat. */
 	conversationPage(value: unknown): ConversationPage {
 		const query = validateConversationPageQuery(value), { task, key } = this.getHead(query.taskId), page = this.entries.page(key, query, task.revision ?? 0);
