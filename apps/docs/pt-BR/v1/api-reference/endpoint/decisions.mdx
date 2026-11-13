@@ -155,6 +155,7 @@ Uma solicitação carrega no máximo 128 perguntas, exceto em `google/gemini-dec
 | `choice` | `choices`: `value` (string ou booleano, distintos) e `description` opcional | `choice`, `confidence`, `probabilities` por valor |
 | `score` | `levels`: `label` e `description` opcional | `score` (índice de nível ponderado pela probabilidade), `confidence`, `probabilities` por nível |
 | `box` | nenhum; precisa de uma imagem em `input` | `box` (`top`, `bottom`, `left`, `right`), `confidence` |
+| `locate` | nenhum; precisa de um `input` em string sem mídia | `spans`: `start`, `end`, `text`, `score` |
 
 Valores de escolha booleanos voltam como booleanos. Um modelo que se recusa a responder uma pergunta retorna `type: "refusal"` para ela. Os tipos que cada modelo suporta estão listados em [Escolher um modelo](#choose-a-model).
 
@@ -166,6 +167,7 @@ Solicitações com `state` e um mapa de perguntas nomeadas continuam funcionando
 
 - `state`: uma string, um objeto ou uma matriz com as informações a avaliar.
 - `questions`: até 128 perguntas nomeadas, ou mais em modelos com limite maior. Cada uma define `type` como `noul` (sim/não), `choice` ou `score`, além de `instructions`. Perguntas de escolha recebem `criteria` como um mapa de opção para descrição; perguntas de pontuação recebem `criteria` como uma matriz de pelo menos duas descrições de nível.
+- Perguntas `locate` usam apenas `instructions` e precisam de um `state` em string sem `images`; veja [Perplexity Decider](#liquid-d1-and-perplexity-decider).
 - `images`: até quatro imagens PNG, JPEG ou WebP, como URLs `data:` ou objetos `{ "content_type", "base64" }`.
 - `model`: o padrão é `typesafe/jev-1.13.0` quando omitido.
 
@@ -184,7 +186,7 @@ Verifique a disponibilidade do modelo antes de chamar qualquer um destes modelos
 | `cloudflare/clef-omni` | os três | texto, imagens, áudio, vídeo | $0.15 |
 | `google/gemini-decision-1` | predicate, choice, score; até 1000 por solicitação | texto, imagens, áudio, vídeo | $0.10 |
 | `liquid-ai/d1:free`, `liquid-ai/d1` | os três | Consulte a página do modelo | Gratuito durante o acesso antecipado |
-| `perplexity/decider-27b` | os três | texto, imagens em base64 | $0.04, incluindo tokens de imagem |
+| `perplexity/pplx-decider-v1.3`, `perplexity/pplx-decider-flash-v1.3` | os três, mais `locate` | texto, imagens em base64 | $0.02 / $0.01 |
 | `inception/mercury-decide` | predicate, choice, score | texto ou JSON | $0.02 (promoção) |
 | `microsoft/microsoft-decision-1` | predicate, choice, score | texto ou JSON | $0.042 |
 | `respan/span-01:free`, `respan/span-01` | apenas `noul` (formato antigo) | trecho de conversa | Gratuito (Lite) / $0.02 |
@@ -268,9 +270,10 @@ Envie o áudio como `input_audio.data` com `format: "wav"` ou `"mp3"`, ou como `
 
 A Cloudflare valida a codificação da mídia, as dimensões das imagens e a duração dos clipes, e amostra o vídeo a dois quadros por segundo. A trilha sonora de um vídeo é usada quando todos os vídeos da solicitação têm uma. Os tokens de mídia contam para o contexto e para a cobrança; o Phaseo faz a liquidação com base no uso de entrada informado pela Cloudflare e não adiciona cobrança separada por áudio ou vídeo. Consulte o [contrato do Omni da Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).
 
+<span id="liquid-d1-and-perplexity-decider"></span>
 ### Liquid D1 e Perplexity Decider
 
-O Liquid D1 (`liquid-ai/d1:free`, também `liquid-ai/d1`) é gratuito durante o acesso antecipado experimental. O Perplexity Decider 27B (`perplexity/decider-27b`) precisa de uma credencial de provedor da Perplexity no Phaseo. O estado de imagem dele usa URLs de dados base64 PNG, JPEG ou WebP; URLs de imagem remotas não são suportadas. Nos dois, uma pergunta de escolha aceita até 255 opções e uma pergunta de pontuação, até 10 níveis.
+O Liquid D1 (`liquid-ai/d1:free`, também `liquid-ai/d1`) é gratuito durante o acesso antecipado experimental. O Perplexity Decider V1.3 (`perplexity/pplx-decider-v1.3`, ou `perplexity/pplx-decider-latest`) e o Decider Flash V1.3 (`perplexity/pplx-decider-flash-v1.3`, ou `perplexity/pplx-decider-flash-latest`) precisam de uma credencial de provedor da Perplexity no Phaseo. O estado de imagem deles usa URLs de dados base64 PNG, JPEG ou WebP; URLs de imagem remotas não são suportadas. Eles também respondem a perguntas `locate`, que retornam as partes de um `input` ou `state` em string que correspondem às `instructions`, como `"email address"`. Cada trecho tem `text` copiado literalmente, posições `start` e `end` contadas em pontos de código Unicode (`end` é exclusiva) e um `score` em que um valor maior indica mais certeza; `spans` fica vazio quando nada corresponde. Locate não usa criteria nem aceita imagens, áudio ou vídeo, e só funciona nos modelos que o indicam; os outros retornam `400`. A Perplexity o treinou com entradas de até 8K tokens. Nos dois, uma pergunta de escolha aceita até 255 opções e uma pergunta de pontuação, até 10 níveis.
 
 ### Inception Mercury Decide
 

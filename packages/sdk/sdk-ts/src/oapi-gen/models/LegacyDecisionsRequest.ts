@@ -111,6 +111,10 @@ export interface LegacyDecisionsRequest {
               }
             | unknown[];
           type: "box";
+        }
+      | {
+          instructions: string;
+          type: "locate";
         };
   };
   routing?: {

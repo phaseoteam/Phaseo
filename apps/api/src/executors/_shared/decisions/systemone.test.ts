@@ -182,6 +182,109 @@ describe("Perplexity limits", () => {
 			expect(mock.calls).toHaveLength(0);
 		} finally { mock.restore(); }
 	});
+	// Request and answer copied from Perplexity's documented pplx-decider-v1.3 example:
+	// https://docs.perplexity.ai/docs/decisions/quickstart#locate-find-text-in-the-content
+	const locateState = "The AeroPress arrived with a cracked filter cap. I emailed help@brewco.example on Monday and nobody replied.";
+	const locateAnswers = {
+		products: { type: "locate", spans: [{ start: 4, end: 13, text: "AeroPress", score: 0.9999301433563232 }] },
+		email: { type: "locate", spans: [{ start: 59, end: 78, text: "help@brewco.example", score: 0.999974250793457 }] },
+	};
+	it("forwards locate questions and returns spans in the map format", async () => {
+		const provider = providers[2];
+		const ir = decodeDecisionsRequest(DecisionsSchema.parse({
+			model: "perplexity/pplx-decider-v1.3", state: locateState, questions: {
+				products: { type: "locate", instructions: "Every product name mentioned in the review." },
+				email: { type: "locate", instructions: "email address" },
+				defect: { type: "noul", instructions: "Does the review report a defect?" },
+			},
+		}));
+		const mock = installFetchMock([{ match: url => url === provider.url, response: jsonResponse({
+			model: "pplx-decider-v1.3", answers: { ...locateAnswers, defect: { type: "noul", noul: 0.94 } },
+			usage: { input_tokens: 80, output_tokens: 0 },
+		}) }]);
+		try {
+			const result = await resolveProviderExecutor(provider.id, "decisions.make")!(argsFor(provider, { ir, providerModelSlug: "pplx-decider-v1.3" }));
+			expect(mock.calls[0].bodyJson).toEqual({ model: "pplx-decider-v1.3", state: locateState, questions: {
+				products: { type: "locate", instructions: "Every product name mentioned in the review." },
+				email: { type: "locate", instructions: "email address" },
+				defect: { type: "noul", instructions: "Does the review report a defect?" },
+			} });
+			expect(result.upstream.status).toBe(200);
+			expect(encodeDecisionsResponse(result.ir as any, ir).answers).toMatchObject(locateAnswers);
+			expect(result.bill.usage).toMatchObject({ input_tokens: 80, output_tokens: 0 });
+		} finally { mock.restore(); }
+	});
+	it("returns locate spans in the array format, including an empty match", async () => {
+		const provider = providers[2];
+		const ir = decodeDecisionsRequest(DecisionsSchema.parse({
+			model: "perplexity/pplx-decider-v1.3", input: locateState, questions: [
+				{ type: "locate", name: "email", instructions: "email address" },
+				{ type: "locate", instructions: "phone number" },
+			],
+		}));
+		const mock = installFetchMock([{ match: url => url === provider.url, response: jsonResponse({
+			answers: { question_0: locateAnswers.email, question_1: { type: "locate", spans: [] } },
+			usage: { input_tokens: 40, output_tokens: 0 },
+		}) }]);
+		try {
+			const result = await resolveProviderExecutor(provider.id, "decisions.make")!(argsFor(provider, { ir }));
+			expect(mock.calls[0].bodyJson.questions).toEqual({
+				question_0: { type: "locate", instructions: "email address" },
+				question_1: { type: "locate", instructions: "phone number" },
+			});
+			expect(encodeDecisionsResponse(result.ir as any, ir).answers).toEqual([
+				{ type: "locate", name: "email", spans: locateAnswers.email.spans },
+				{ type: "locate", name: null, spans: [] },
+			]);
+		} finally { mock.restore(); }
+	});
+	it.each([
+		{ spans: [{ start: 9, end: 4, text: "x", score: 1 }] },
+		{ spans: [{ start: -1, end: 4, text: "x", score: 1 }] },
+		{ spans: [{ start: 0, end: 4, score: 1 }] },
+		{ spans: [{ start: 0, end: 4, text: "x", score: "high" }] },
+		{ spans: null },
+		{ noul: 0.5 },
+		{ spans: [{ start: 0, end: 500, text: "invented", score: 1 }] },
+		{ spans: [{ start: 4, end: 13, text: "French Press", score: 1 }] },
+	])("rejects a malformed locate answer as an invalid provider response: %j", async answer => {
+		const provider = providers[2];
+		const mock = installFetchMock([{ match: url => url === provider.url, response: jsonResponse({
+			answers: { email: { type: "locate", ...answer } }, usage: { input_tokens: 10, output_tokens: 0 },
+		}) }]);
+		try {
+			const args = argsFor(provider);
+			args.ir.state = locateState;
+			args.ir.questions = { email: { type: "locate", instructions: "email address" } };
+			expect((await resolveProviderExecutor(provider.id, "decisions.make")!(args)).upstream.status).toBe(502);
+		} finally { mock.restore(); }
+	});
+	it("counts locate offsets in Unicode code points, not UTF-16 units", async () => {
+		const provider = providers[2];
+		// "👍" is one code point but two UTF-16 units, so "Mail" starts at code point 2.
+		const state = "👍 Mail help@brewco.example";
+		const mock = installFetchMock([{ match: url => url === provider.url, response: jsonResponse({
+			answers: { email: { type: "locate", spans: [{ start: 7, end: 26, text: "help@brewco.example", score: 0.99 }] } },
+			usage: { input_tokens: 10, output_tokens: 0 },
+		}) }]);
+		try {
+			const args = argsFor(provider);
+			args.ir.state = state;
+			args.ir.questions = { email: { type: "locate", instructions: "email address" } };
+			expect((await resolveProviderExecutor(provider.id, "decisions.make")!(args)).upstream.status).toBe(200);
+		} finally { mock.restore(); }
+	});
+	it("rejects locate with non-string state before fetching", async () => {
+		const mock = installFetchMock([]);
+		try {
+			const args = argsFor(providers[2]);
+			args.ir.questions = { email: { type: "locate", instructions: "email address" } };
+			const result = await resolveProviderExecutor("perplexity", "decisions.make")!(args);
+			expect(result).toMatchObject({ terminal: true, localClientError: true });
+			expect(result.upstream.status).toBe(400);
+			expect(mock.calls).toHaveLength(0);
+		} finally { mock.restore(); }
+	});
 	it.each(["png", "jpeg", "webp"])("forwards %s image state and pinned provider model unchanged", async format => {
 		const provider = providers[2];
 		const state = ["What color?", { type: "image_url", image_url: { url: `data:image/${format};base64,eA==` } }];

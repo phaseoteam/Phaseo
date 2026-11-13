@@ -14540,6 +14540,7 @@ components:
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
               - $ref: '#/components/schemas/DecisionBoxQuestion'
+              - $ref: '#/components/schemas/DecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
@@ -14589,6 +14590,25 @@ components:
         instructions:
           type: string
           maxLength: 1048576
+    DecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Encuentra las partes de la entrada que coinciden con una descripción y las devuelve como fragmentos literales. Requiere una entrada de tipo cadena sin imágenes, audio ni vídeo, y una ruta que admita locate, como Perplexity Decider V1.3.
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
+          description: Qué buscar, como una etiqueta breve, por ejemplo "email address", o una instrucción, por ejemplo "Extract the city where the job is located."
     DecisionInputMessage:
       type: object
       required:
@@ -14838,6 +14858,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
               - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -14877,6 +14898,23 @@ components:
             - box
         instructions:
           $ref: '#/components/schemas/DecisionInstructions'
+    LegacyDecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Encuentra las partes de state que coinciden con una descripción y las devuelve como fragmentos literales. Requiere un state de tipo cadena sin imágenes y una ruta que admita locate, como Perplexity Decider V1.3. Sin criteria.
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        instructions:
+          type: string
+          minLength: 1
+          maxLength: 50000
+          description: Qué buscar, como una etiqueta breve, por ejemplo "email address", o una instrucción, por ejemplo "Extract the city where the job is located."
     DecisionImage:
       type: object
       required:
@@ -14978,6 +15016,7 @@ components:
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
               - $ref: '#/components/schemas/DecisionBoxAnswer'
+              - $ref: '#/components/schemas/DecisionLocateAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -15034,6 +15073,47 @@ components:
           type: number
           minimum: 0
           maximum: 1
+    DecisionLocateAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - spans
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          nullable: true
+        spans:
+          type: array
+          description: Las partes de la entrada que coinciden. Vacío cuando nada coincide.
+          items:
+            $ref: '#/components/schemas/DecisionLocateSpan'
+    DecisionLocateSpan:
+      type: object
+      required:
+        - start
+        - end
+        - text
+        - score
+      properties:
+        start:
+          type: integer
+          minimum: 0
+          description: Posición del primer carácter del fragmento, contada en puntos de código Unicode desde el inicio de la entrada.
+        end:
+          type: integer
+          minimum: 0
+          description: Posición justo después del último carácter del fragmento (exclusiva).
+        text:
+          type: string
+          description: El fragmento, copiado literalmente de la entrada.
+        score:
+          type: number
+          description: Qué tan seguro está el modelo de que el fragmento coincide. Un valor más alto indica más certeza.
     DecisionPredicateAnswer:
       type: object
       required:

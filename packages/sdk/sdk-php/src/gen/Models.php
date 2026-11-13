@@ -1841,6 +1841,38 @@ class DecisionInputVideo
 
 class DecisionInstructions { }
 
+class DecisionLocateAnswer
+{
+	/** @var string|null */
+	public $name;
+	/** @var array */
+	public $spans;
+	/** @var string */
+	public $type;
+}
+
+class DecisionLocateQuestion
+{
+	/** @var string */
+	public $instructions;
+	/** @var string|null */
+	public $name;
+	/** @var string */
+	public $type;
+}
+
+class DecisionLocateSpan
+{
+	/** @var int */
+	public $end;
+	/** @var float */
+	public $score;
+	/** @var int */
+	public $start;
+	/** @var string */
+	public $text;
+}
+
 class DecisionNoulQuestion
 {
 	/** @var array<string, mixed>|null */
@@ -3648,6 +3680,14 @@ class LeakedKeyReportResponse
 class LegacyDecisionBoxQuestion
 {
 	/** @var string|array<string, mixed>|array */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
+class LegacyDecisionLocateQuestion
+{
+	/** @var string */
 	public $instructions;
 	/** @var string */
 	public $type;

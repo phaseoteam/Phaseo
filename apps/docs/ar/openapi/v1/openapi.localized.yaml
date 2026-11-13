@@ -14540,6 +14540,7 @@ components:
               - $ref: '#/components/schemas/OpenAIDecisionChoiceQuestion'
               - $ref: '#/components/schemas/OpenAIDecisionScoreQuestion'
               - $ref: '#/components/schemas/DecisionBoxQuestion'
+              - $ref: '#/components/schemas/DecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         safety_identifier:
@@ -14589,6 +14590,25 @@ components:
         instructions:
           type: string
           maxLength: 1048576
+    DecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: يعثر على أجزاء المُدخل التي تطابق وصفًا ويُعيدها كمقاطع حرفية. يتطلب مُدخلًا نصيًا من نوع string بلا صور أو صوت أو فيديو، ومسارًا يدعم locate، مثل Perplexity Decider V1.3.
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          maxLength: 1048576
+        instructions:
+          type: string
+          maxLength: 1048576
+          description: ما يجب العثور عليه، كتسمية قصيرة مثل "email address" أو كتعليمة مثل "Extract the city where the job is located."
     DecisionInputMessage:
       type: object
       required:
@@ -14838,6 +14858,7 @@ components:
               - $ref: '#/components/schemas/DecisionChoiceQuestion'
               - $ref: '#/components/schemas/DecisionScoreQuestion'
               - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
+              - $ref: '#/components/schemas/LegacyDecisionLocateQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -14877,6 +14898,23 @@ components:
             - box
         instructions:
           $ref: '#/components/schemas/DecisionInstructions'
+    LegacyDecisionLocateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: يعثر على أجزاء state التي تطابق وصفًا ويُعيدها كمقاطع حرفية. يتطلب state نصيًا من نوع string بلا صور، ومسارًا يدعم locate، مثل Perplexity Decider V1.3. بدون criteria.
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        instructions:
+          type: string
+          minLength: 1
+          maxLength: 50000
+          description: ما يجب العثور عليه، كتسمية قصيرة مثل "email address" أو كتعليمة مثل "Extract the city where the job is located."
     DecisionImage:
       type: object
       required:
@@ -14978,6 +15016,7 @@ components:
               - $ref: '#/components/schemas/DecisionScoreAnswer'
               - $ref: '#/components/schemas/DecisionRefusalAnswer'
               - $ref: '#/components/schemas/DecisionBoxAnswer'
+              - $ref: '#/components/schemas/DecisionLocateAnswer'
         usage:
           $ref: '#/components/schemas/DecisionsUsage'
         request_id:
@@ -15034,6 +15073,47 @@ components:
           type: number
           minimum: 0
           maximum: 1
+    DecisionLocateAnswer:
+      type: object
+      required:
+        - type
+        - name
+        - spans
+      properties:
+        type:
+          type: string
+          enum:
+            - locate
+        name:
+          type: string
+          nullable: true
+        spans:
+          type: array
+          description: أجزاء المُدخل المطابقة. تكون فارغة إذا لم يطابق شيء.
+          items:
+            $ref: '#/components/schemas/DecisionLocateSpan'
+    DecisionLocateSpan:
+      type: object
+      required:
+        - start
+        - end
+        - text
+        - score
+      properties:
+        start:
+          type: integer
+          minimum: 0
+          description: موضع أول حرف في المقطع، محسوبًا بنقاط ترميز Unicode من بداية المُدخل.
+        end:
+          type: integer
+          minimum: 0
+          description: الموضع الذي يلي آخر حرف في المقطع مباشرة (غير شامل).
+        text:
+          type: string
+          description: المقطع، منسوخًا حرفيًا من المُدخل.
+        score:
+          type: number
+          description: مدى يقين النموذج بأن المقطع مطابق. القيمة الأعلى تعني يقينًا أكبر.
     DecisionPredicateAnswer:
       type: object
       required:

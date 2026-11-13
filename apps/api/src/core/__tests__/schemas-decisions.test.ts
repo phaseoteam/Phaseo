@@ -14,6 +14,23 @@ describe("DecisionsSchema", () => {
 		expect(DecisionsSchema.safeParse({ state: "Photo", images: [image], questions: { mug: { ...question, criteria: [] } } }).success).toBe(false);
 		expect(DecisionsSchema.safeParse({ state: "Text", questions: { yes: { type: "noul", instructions: "Yes?" } }, provider_options: { typesafe: { long_context: "true" } } }).success).toBe(false);
 	});
+	it("accepts Locate only against a plain string state with no images, in both formats", () => {
+		const locate = { type: "locate", instructions: "email address" };
+		const image = "data:image/png;base64,AQID";
+		const ok = (body: unknown) => DecisionsSchema.safeParse(body).success;
+		expect(ok({ model: "perplexity/pplx-decider-v1.3", state: "Mail help@brewco.example", questions: {
+			email: locate, defect: { type: "noul", instructions: "Defect?" },
+		} })).toBe(true);
+		expect(ok({ model: "perplexity/pplx-decider-v1.3", input: "Mail help@brewco.example", questions: [{ ...locate, name: "email" }] })).toBe(true);
+		expect(ok({ state: { review: "Mail" }, questions: { email: locate } })).toBe(false);
+		expect(ok({ state: ["Mail"], questions: { email: locate } })).toBe(false);
+		expect(ok({ state: "Mail", images: [image], questions: { email: locate } })).toBe(false);
+		expect(ok({ model: "m", input: [{ role: "user", content: "Mail" }], questions: [locate] })).toBe(false);
+		expect(ok({ model: "m", input: [{ role: "user", content: [{ type: "input_image", image_url: image }] }], questions: [locate] })).toBe(false);
+		expect(ok({ state: "Mail", questions: { email: { ...locate, criteria: { a: null } } } })).toBe(false);
+		expect(ok({ state: "Mail", questions: { email: { type: "locate", instructions: "" } } })).toBe(false);
+		expect(ok({ model: "m", input: "Mail", questions: [{ ...locate, choices: [] }] })).toBe(false);
+	});
 	it("accepts OpenAI predicates, boolean choices, named score levels and safety identifiers", () => {
 		expect(DecisionsSchema.safeParse({
 			model: "openai/gpt-6-luna", input: [{ role: "user", type: "message", content: "Account" }], safety_identifier: "user-1",

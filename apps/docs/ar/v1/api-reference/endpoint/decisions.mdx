@@ -155,6 +155,7 @@ print(decision["answers"])
 | `choice` | `choices`: ‏`value` (سلسلة نصية أو قيمة منطقية، مميزة) و`description` اختياري | `choice` و`confidence` و`probabilities` لكل قيمة |
 | `score` | `levels`: ‏`label` و`description` اختياري | `score` (فهرس المستوى المرجّح بالاحتمالات) و`confidence` و`probabilities` لكل مستوى |
 | `box` | لا شيء؛ يتطلب صورة في `input` | `box` (`top` و`bottom` و`left` و`right`) و`confidence` |
+| `locate` | لا شيء؛ يتطلب `input` نصيًا من نوع string بلا وسائط | `spans`: `start` و`end` و`text` و`score` |
 
 تعود قيم الخيارات المنطقية بوصفها قيمًا منطقية. يُرجع النموذج الذي يرفض الإجابة عن سؤال `type: "refusal"` له. الأنواع التي يدعمها كل نموذج مدرجة في [اختر نموذجًا](#choose-a-model).
 
@@ -166,6 +167,7 @@ print(decision["answers"])
 
 - `state`: سلسلة نصية أو كائن أو مصفوفة تحتوي المعلومات المراد تقييمها.
 - `questions`: حتى 128 سؤالًا مسمّى، أو أكثر في النماذج ذات الحد الأعلى. يضبط كل منها `type` على `noul` (نعم/لا) أو `choice` أو `score`، إضافة إلى `instructions`. تأخذ أسئلة الاختيار `criteria` بوصفها خريطة من الخيار إلى وصفه؛ وتأخذ أسئلة الدرجات `criteria` بوصفها مصفوفة من وصفين للمستويات على الأقل.
+- تستخدم أسئلة `locate` الحقل `instructions` فقط، وتتطلب `state` نصيًا من نوع string بلا `images`؛ راجع [Perplexity Decider](#liquid-d1-and-perplexity-decider).
 - `images`: حتى أربع صور PNG أو JPEG أو WebP، بوصفها عناوين `data:` أو كائنات `{ "content_type", "base64" }`.
 - `model`: القيمة الافتراضية `typesafe/jev-1.13.0` عند حذفه.
 
@@ -184,7 +186,7 @@ print(decision["answers"])
 | `cloudflare/clef-omni` | الثلاثة كلها | نص وصور وصوت وفيديو | $0.15 |
 | `google/gemini-decision-1` | predicate وchoice وscore؛ حتى 1,000 في الطلب | نص وصور وصوت وفيديو | $0.10 |
 | `liquid-ai/d1:free` و`liquid-ai/d1` | الثلاثة كلها | راجع صفحة النموذج | مجاني خلال الوصول المبكر |
-| `perplexity/decider-27b` | الثلاثة كلها | نص، وصور base64 | $0.04، شاملًا tokens الصور |
+| `perplexity/pplx-decider-v1.3`، `perplexity/pplx-decider-flash-v1.3` | الثلاثة كلها، إضافة إلى `locate` | نص، وصور base64 | $0.02 / $0.01 |
 | `inception/mercury-decide` | predicate وchoice وscore | نص أو JSON | $0.02 (عرض ترويجي) |
 | `microsoft/microsoft-decision-1` | predicate وchoice وscore | نص أو JSON | $0.042 |
 | `respan/span-01:free` و`respan/span-01` | `noul` فقط (التنسيق الأقدم) | مقطع محادثة | مجاني (Lite) / $0.02 |
@@ -268,9 +270,10 @@ tokens الإخراج مجانية في كل نموذج مدرج بسعر.
 
 يتحقق Cloudflare من ترميز الوسائط وأبعاد الصور ومدة المقاطع، ويأخذ عينات من الفيديو بمعدل إطارين في الثانية. يُستخدم صوت الفيديو عندما يكون لكل فيديو في الطلب صوت. تُحتسب tokens الوسائط ضمن السياق والفوترة؛ ويسوّي Phaseo الحساب بناءً على استخدام الإدخال الذي يبلغ عنه Cloudflare، ولا يضيف رسومًا منفصلة للصوت أو الفيديو. راجع [عقد Omni لدى Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).
 
+<span id="liquid-d1-and-perplexity-decider"></span>
 ### Liquid D1 وPerplexity Decider
 
-Liquid D1 ‏(`liquid-ai/d1:free`، وأيضًا `liquid-ai/d1`) مجاني خلال الوصول المبكر التجريبي. يحتاج Perplexity Decider 27B ‏(`perplexity/decider-27b`) إلى بيانات اعتماد مزوّد Perplexity في Phaseo. تستخدم حالة الصور لديه عناوين data URL بتنسيق base64 لصور PNG أو JPEG أو WebP؛ وعناوين الصور البعيدة غير مدعومة. في كليهما، يقبل سؤال الاختيار حتى 255 خيارًا، وسؤال الدرجات حتى 10 مستويات.
+Liquid D1 ‏(`liquid-ai/d1:free`، وأيضًا `liquid-ai/d1`) مجاني خلال الوصول المبكر التجريبي. يحتاج Perplexity Decider V1.3 ‏(`perplexity/pplx-decider-v1.3`، أو `perplexity/pplx-decider-latest`) وDecider Flash V1.3 ‏(`perplexity/pplx-decider-flash-v1.3`، أو `perplexity/pplx-decider-flash-latest`) إلى بيانات اعتماد مزوّد Perplexity في Phaseo. تستخدم حالة الصور لديهما عناوين data URL بتنسيق base64 لصور PNG أو JPEG أو WebP؛ وعناوين الصور البعيدة غير مدعومة. ويجيبان أيضًا عن أسئلة `locate`، التي تُعيد أجزاء `input` أو `state` النصي من نوع string المطابقة لـ`instructions`، مثل `"email address"`. يحتوي كل مقطع على `text` منسوخ حرفيًا، وموضعي `start` و`end` محسوبين بنقاط ترميز Unicode (`end` غير شامل)، و`score` تعني القيمة الأعلى فيه يقينًا أكبر؛ وتكون `spans` فارغة إذا لم يطابق شيء. لا يستخدم Locate أي criteria، ولا يقبل الصور أو الصوت أو الفيديو، ويعمل فقط على النماذج التي تذكر دعمه؛ وتُعيد النماذج الأخرى `400`. درّبته Perplexity على مُدخلات يصل طولها إلى 8K tokens. في كليهما، يقبل سؤال الاختيار حتى 255 خيارًا، وسؤال الدرجات حتى 10 مستويات.
 
 ### Inception Mercury Decide
 

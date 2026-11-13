@@ -86,7 +86,7 @@ export const executor: ProviderExecutor = async args => {
 		}
 		for (const question of Object.values(ir.questions)) {
 			const count = question.criteria ? Object.keys(question.criteria).length : 0;
-			if (question.type === "box" ||
+			if (question.type === "box" || question.type === "locate" ||
 				(question.type === "choice" && (count < 1 || count > 255)) ||
 				(question.type === "score" && (count < 2 || count > 10))) {
 				message = "Baseten Decisions supports predicates, 1–255 choices, or 2–10 score levels.";

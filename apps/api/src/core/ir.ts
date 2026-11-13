@@ -574,7 +574,7 @@ export type IRExtractionResponse = {
 };
 
 export type IRDecisionQuestion = {
-	type: "noul" | "choice" | "score" | "box";
+	type: "noul" | "choice" | "score" | "box" | "locate";
 	instructions: string | Record<string, any> | any[];
 	criteria?: Record<string, string | null> | string[] | { true?: string; false?: string };
 	[key: string]: any;

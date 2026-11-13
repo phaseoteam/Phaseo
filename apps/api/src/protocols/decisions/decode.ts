@@ -44,6 +44,7 @@ export function decodeDecisionsRequest(req: DecisionsRequest): IRDecisionsReques
 		const id = decisionQuestionId(index);
 		if (question.type === "predicate") return [id, { type: "noul", instructions: question.instructions }];
 		if (question.type === "box") return [id, { type: "box", instructions: question.instructions }];
+		if (question.type === "locate") return [id, { type: "locate", instructions: question.instructions }];
 		if (question.type === "choice") return [id, {
 			type: "choice", instructions: question.instructions,
 			criteria: Object.fromEntries(question.choices.map((choice, option) => [String(option),
@@ -76,6 +77,8 @@ export function decodeNativeDecisionAnswer(payload: unknown, question: NativeDec
 	if (question.type === "box") return answer.type === "box"
 		? { type: "box", box: answer.box, confidence: answer.confidence } : null;
 	if (answer.type === "box") return null;
+	if (question.type === "locate") return answer.type === "locate" ? { type: "locate", spans: answer.spans } : null;
+	if (answer.type === "locate") return null;
 	if (question.type === "predicate") {
 		return answer.type === "predicate" ? { type: "noul", noul: answer.probability } : null;
 	}

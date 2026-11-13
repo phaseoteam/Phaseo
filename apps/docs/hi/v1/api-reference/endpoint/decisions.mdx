@@ -155,6 +155,7 @@ print(decision["answers"])
 | `choice` | `choices`: `value` (string या boolean, अलग-अलग) और वैकल्पिक `description` | `choice`, `confidence`, हर मान के लिए `probabilities` |
 | `score` | `levels`: `label` और वैकल्पिक `description` | `score` (संभावना-भारित स्तर सूचकांक), `confidence`, हर स्तर के लिए `probabilities` |
 | `box` | कोई नहीं; `input` में एक इमेज चाहिए | `box` (`top`, `bottom`, `left`, `right`), `confidence` |
+| `locate` | कोई नहीं; बिना मीडिया वाला स्ट्रिंग `input` चाहिए | `spans`: `start`, `end`, `text`, `score` |
 
 Boolean विकल्प मान boolean के रूप में ही लौटते हैं। जो मॉडल किसी प्रश्न का उत्तर देने से मना करता है, वह उसके लिए `type: "refusal"` लौटाता है। कौन-सा मॉडल कौन-से प्रकार समर्थित करता है, यह [मॉडल चुनें](#choose-a-model) में सूचीबद्ध है।
 
@@ -166,6 +167,7 @@ Boolean विकल्प मान boolean के रूप में ही �
 
 - `state`: मूल्यांकन की जाने वाली जानकारी वाली string, ऑब्जेक्ट या array।
 - `questions`: अधिकतम 128 नामित प्रश्न, या अधिक सीमा वाले मॉडलों पर उससे ज़्यादा। हर प्रश्न `type` को `noul` (हां/नहीं), `choice` या `score` पर सेट करता है, साथ में `instructions`। Choice प्रश्न `criteria` को विकल्प से विवरण के मैप के रूप में लेते हैं; score प्रश्न `criteria` को कम से कम दो स्तर विवरणों की array के रूप में लेते हैं।
+- `locate` प्रश्न केवल `instructions` लेते हैं और बिना `images` वाला स्ट्रिंग `state` चाहते हैं; देखें [Perplexity Decider](#liquid-d1-and-perplexity-decider)।
 - `images`: अधिकतम चार PNG, JPEG या WebP इमेज, `data:` URL या `{ "content_type", "base64" }` ऑब्जेक्ट के रूप में।
 - `model`: न देने पर डिफ़ॉल्ट `typesafe/jev-1.13.0` होता है।
 
@@ -184,7 +186,7 @@ Boolean विकल्प मान boolean के रूप में ही �
 | `cloudflare/clef-omni` | तीनों | टेक्स्ट, इमेज, ऑडियो, वीडियो | $0.15 |
 | `google/gemini-decision-1` | predicate, choice, score; प्रति अनुरोध 1,000 तक | टेक्स्ट, इमेज, ऑडियो, वीडियो | $0.10 |
 | `liquid-ai/d1:free`, `liquid-ai/d1` | तीनों | मॉडल पेज देखें | अर्ली एक्सेस के दौरान मुफ़्त |
-| `perplexity/decider-27b` | तीनों | टेक्स्ट, base64 इमेज | $0.04, इमेज टोकन सहित |
+| `perplexity/pplx-decider-v1.3`, `perplexity/pplx-decider-flash-v1.3` | तीनों, और `locate` | टेक्स्ट, base64 इमेज | $0.02 / $0.01 |
 | `inception/mercury-decide` | predicate, choice, score | टेक्स्ट या JSON | $0.02 (प्रमोशन) |
 | `microsoft/microsoft-decision-1` | predicate, choice, score | टेक्स्ट या JSON | $0.042 |
 | `respan/span-01:free`, `respan/span-01` | सिर्फ़ `noul` (पुराना फ़ॉर्मैट) | बातचीत का अंश | मुफ़्त (Lite) / $0.02 |
@@ -268,9 +270,10 @@ Clef अधिकतम 64 प्रश्न स्वीकार करता
 
 Cloudflare मीडिया एन्कोडिंग, इमेज आयाम और क्लिप की अवधि की जांच करता है, और वीडियो को दो फ़्रेम प्रति सेकंड पर सैंपल करता है। किसी वीडियो का साउंडट्रैक तब इस्तेमाल होता है जब अनुरोध के हर वीडियो में साउंडट्रैक हो। मीडिया टोकन संदर्भ और बिलिंग में गिने जाते हैं; Phaseo Cloudflare के बताए गए इनपुट उपयोग के आधार पर हिसाब करता है और ऑडियो या वीडियो के लिए अलग शुल्क नहीं जोड़ता। [Cloudflare का Omni कॉन्ट्रैक्ट](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json) देखें।
 
+<span id="liquid-d1-and-perplexity-decider"></span>
 ### Liquid D1 और Perplexity Decider
 
-Liquid D1 (`liquid-ai/d1:free`, और `liquid-ai/d1` भी) प्रायोगिक अर्ली एक्सेस के दौरान मुफ़्त है। Perplexity Decider 27B (`perplexity/decider-27b`) के लिए Phaseo में Perplexity प्रदाता क्रेडेंशियल चाहिए। इसकी इमेज स्थिति PNG, JPEG या WebP base64 data URL इस्तेमाल करती है; रिमोट इमेज URL समर्थित नहीं हैं। दोनों पर, choice प्रश्न अधिकतम 255 विकल्प और score प्रश्न अधिकतम 10 स्तर स्वीकार करता है।
+Liquid D1 (`liquid-ai/d1:free`, और `liquid-ai/d1` भी) प्रायोगिक अर्ली एक्सेस के दौरान मुफ़्त है। Perplexity Decider V1.3 (`perplexity/pplx-decider-v1.3`, या `perplexity/pplx-decider-latest`) और Decider Flash V1.3 (`perplexity/pplx-decider-flash-v1.3`, या `perplexity/pplx-decider-flash-latest`) के लिए Phaseo में Perplexity प्रदाता क्रेडेंशियल चाहिए। इनकी इमेज स्थिति PNG, JPEG या WebP base64 data URL इस्तेमाल करती है; रिमोट इमेज URL समर्थित नहीं हैं। ये `locate` प्रश्नों का भी जवाब देते हैं, जो स्ट्रिंग `input` या `state` के वे हिस्से लौटाते हैं जो `instructions` से मेल खाते हैं, जैसे `"email address"`। हर अंश में शब्दशः कॉपी किया गया `text`, Unicode कोड पॉइंट में गिने गए `start` और `end` ऑफ़सेट (`end` exclusive है), और एक `score` होता है जिसमें ज़्यादा मान का मतलब ज़्यादा भरोसा है; कुछ भी मेल न खाए तो `spans` खाली होता है। Locate में criteria नहीं होते, यह इमेज, ऑडियो या वीडियो स्वीकार नहीं करता, और केवल उन्हीं मॉडलों पर चलता है जो इसे सूचीबद्ध करते हैं; बाकी मॉडल `400` लौटाते हैं। Perplexity ने इसे अधिकतम 8K टोकन वाले इनपुट पर प्रशिक्षित किया है। दोनों पर, choice प्रश्न अधिकतम 255 विकल्प और score प्रश्न अधिकतम 10 स्तर स्वीकार करता है।
 
 ### Inception Mercury Decide
 

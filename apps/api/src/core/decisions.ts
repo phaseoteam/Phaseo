@@ -11,6 +11,7 @@ export type DecisionInput = string | Array<{ role: "user"; type?: "message"; con
 export type NativeDecisionQuestion =
 	| { type: "predicate"; name?: string; instructions: string }
 	| { type: "box"; name?: string; instructions: string }
+	| { type: "locate"; name?: string; instructions: string }
 	| { type: "choice"; name?: string; instructions: string; choices: Array<{ value: DecisionValue; description?: string }> }
 	| { type: "score"; name?: string; instructions: string; levels: Array<{ label: string; description?: string }> };
 export type NativeDecisionRequest = {
@@ -49,6 +50,7 @@ const mediaUrl = (kind: "audio" | "video" | "image", maxLength = 24 * 1024 * 102
 export const NativeDecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
 	z.object({ ...commonQuestion(), type: z.literal("predicate") }).strict(),
 	z.object({ ...commonQuestion(), type: z.literal("box") }).strict(),
+	z.object({ ...commonQuestion(), type: z.literal("locate") }).strict(),
 	z.object({
 		...commonQuestion(), type: z.literal("choice"),
 		choices: z.array(z.object({ value, description: instructions.optional() }).strict()).min(1),
@@ -104,10 +106,28 @@ export const NativeDecisionsBodySchema = lazySchema(() => z.object({
 	const images = typeof body.input === "string" ? 0 : body.input.reduce((total, message) =>
 		total + (typeof message.content === "string" ? 0 : message.content.filter(part => part.type === "input_image").length), 0);
 	if (images > 128) ctx.addIssue({ code: "custom", path: ["input"], message: "At most 128 images are supported." });
+	if (typeof body.input !== "string" && body.questions.some(question => question.type === "locate")) {
+		ctx.addIssue({ code: "custom", path: ["input"], message: LOCATE_REQUIRES_TEXT_STATE });
+	}
 }));
 
 const probability = lazySchema(() => z.number().finite().min(0).max(1));
 const answerName = lazySchema(() => z.string().nullable());
+/**
+ * One verbatim match from a `locate` question. `start` and `end` count Unicode
+ * code points of the string state (`end` exclusive), as Perplexity documents:
+ * https://docs.perplexity.ai/docs/decisions/quickstart#locate-find-text-in-the-content
+ * `score` is unbounded; higher means more certain.
+ */
+export const LocateSpanSchema = lazySchema(() => z.object({
+	start: z.number().int().min(0), end: z.number().int().min(0), text: z.string(), score: z.number().finite(),
+}).passthrough().refine(span => span.start <= span.end, "Span start must not be after its end."));
+
+/**
+ * Locate questions return offsets into a plain-text state, so they need a
+ * string state (or string `input`) and no images, audio or video.
+ */
+export const LOCATE_REQUIRES_TEXT_STATE = "Locate questions require a plain string state (or string input) with no images, audio or video.";
 export const NativeDecisionAnswerSchema = lazySchema(() => z.discriminatedUnion("type", [
 	z.object({
 		// Null when the model gives no confidence for the box.
@@ -115,6 +135,7 @@ export const NativeDecisionAnswerSchema = lazySchema(() => z.discriminatedUnion(
 		box: z.object({ top: probability, bottom: probability, left: probability, right: probability })
 			.refine(box => box.top < box.bottom && box.left < box.right, "Box edges must be ordered."),
 	}).passthrough(),
+	z.object({ type: z.literal("locate"), name: answerName, spans: z.array(LocateSpanSchema) }).passthrough(),
 	z.object({ type: z.literal("predicate"), name: answerName, probability }).passthrough(),
 	z.object({
 		type: z.literal("choice"), name: answerName, choice: value, confidence: probability,

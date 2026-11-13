@@ -156,6 +156,7 @@ A request carries at most 128 questions, except on `google/gemini-decision-1`, w
 | `choice` | `choices`: `value` (string or boolean, distinct) and optional `description` | `choice`, `confidence`, `probabilities` per value |
 | `score` | `levels`: `label` and optional `description` | `score` (probability-weighted level index), `confidence`, `probabilities` per level |
 | `box` | none; needs an image in `input` | `box` (`top`, `bottom`, `left`, `right`), `confidence` |
+| `locate` | none; needs string `input` with no media | `spans`: `start`, `end`, `text`, `score` |
 
 Boolean choice values come back as booleans. A model that declines a question returns `type: "refusal"` for it. Which types a model supports is listed under [Choose a model](#choose-a-model).
 
@@ -167,6 +168,7 @@ Requests with `state` and a map of named questions still work and return answers
 
 - `state`: a string, object or array holding the information to evaluate.
 - `questions`: up to 128 named questions, or more on models with a higher limit. Each sets `type` to `noul` (yes/no), `choice` or `score`, plus `instructions`. Choice questions take `criteria` as a map of option to description; score questions take `criteria` as an array of at least two level descriptions.
+- `locate` questions take only `instructions` and need a string `state` with no `images`; see [Perplexity Decider](#liquid-d1-and-perplexity-decider).
 - `images`: up to four PNG, JPEG or WebP images, as `data:` URLs or `{ "content_type", "base64" }` objects.
 - `model`: defaults to `typesafe/jev-1.13.0` when omitted.
 
@@ -184,7 +186,7 @@ Check model availability before calling any of these models.
 | `cloudflare/clef-omni` | all three | text, images, audio, video | $0.15 |
 | `google/gemini-decision-1` | predicate, choice, score; up to 1,000 per request | text, images, audio, video | $0.10 |
 | `liquid-ai/d1:free`, `liquid-ai/d1` | all three | See the model page | Free during early access |
-| `perplexity/decider-27b` | all three | text, base64 images | $0.04, including image tokens |
+| `perplexity/pplx-decider-v1.3`, `perplexity/pplx-decider-flash-v1.3` | all three, plus `locate` | text, base64 images | $0.02 / $0.01 |
 | `inception/mercury-decide` | predicate, choice, score | text or JSON | $0.02 (promotion) |
 | `microsoft/microsoft-decision-1` | predicate, choice, score | text or JSON | $0.042 |
 | `respan/span-01:free`, `respan/span-01` | `noul` only (older format) | conversation span | Free (Lite) / $0.02 |
@@ -270,7 +272,7 @@ Cloudflare validates media encoding, image dimensions and clip duration, and sam
 
 ### Liquid D1 and Perplexity Decider
 
-Liquid D1 (`liquid-ai/d1:free`, also `liquid-ai/d1`) is free during experimental early access. Perplexity Decider 27B (`perplexity/decider-27b`) needs a Perplexity provider credential in Phaseo. Its image state uses PNG, JPEG or WebP base64 data URLs; remote image URLs are unsupported. On both, a choice question accepts up to 255 options and a score question up to 10 levels.
+Liquid D1 (`liquid-ai/d1:free`, also `liquid-ai/d1`) is free during experimental early access. Perplexity Decider V1.3 (`perplexity/pplx-decider-v1.3`, or `perplexity/pplx-decider-latest`) and Decider Flash V1.3 (`perplexity/pplx-decider-flash-v1.3`, or `perplexity/pplx-decider-flash-latest`) need a Perplexity provider credential in Phaseo. Their image state uses PNG, JPEG or WebP base64 data URLs; remote image URLs are unsupported. They also answer `locate` questions, which return the parts of a string `input` or `state` that match the `instructions`, such as `"email address"`. Each span has `text` copied verbatim, `start` and `end` offsets counted in Unicode code points (`end` is exclusive), and a `score` where higher is more certain; `spans` is empty when nothing matches. Locate takes no criteria, no images, audio or video, and runs on models that list it only; other models return `400`. Perplexity trained it on inputs of up to 8K tokens. On both, a choice question accepts up to 255 options and a score question up to 10 levels.
 
 ### Inception Mercury Decide
 
