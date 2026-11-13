@@ -8,6 +8,7 @@ import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatArtificialAnalysisScore, isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
 import { isEpochCapabilitiesIndex } from "@/lib/benchmarks/epoch";
 import {
@@ -143,59 +144,59 @@ export default function ModelsUsingBenchmarkClient({
 			{visibleArtificialAnalysisRows.length > 0 && rankedLeaderboard ? (
 				<div className="overflow-hidden rounded-xl border">
 					<div className="overflow-x-auto">
-						<table className="min-w-[580px] w-full text-sm">
-							<thead className="border-b bg-muted/40 text-xs text-muted-foreground">
-								<tr>
-									<th className="w-14 px-4 py-3 text-left font-medium">{tx("Site.homeQuickstart.rank" as never)}</th>
-									<th className="px-3 py-3 text-left font-medium">{tx("Common.ui.chatComposer.model" as never)}</th>
-									<th className="w-24 px-3 py-3 text-right font-medium">{tx("Common.ui.modelEditor.score" as never)}</th>
-									<th className="w-32 px-3 py-3 text-left font-medium">{tx("Common.ui.modelEditor.modelStatuses.released" as never)}</th>
-									<th className="w-14 px-3 py-3"><span className="sr-only">{tx("Common.ui.modelEditor.advanced.benchmarks.source" as never)}</span></th>
-								</tr>
-							</thead>
-							<tbody className="divide-y">
+						<Table wrapInContainer={false} className="min-w-[580px] w-full text-sm">
+							<TableHeader className="border-b bg-muted/40 text-xs text-muted-foreground [&_tr]:border-0">
+								<TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+									<TableHead className="h-auto text-inherit dark:text-inherit w-14 px-4 py-3 text-left font-medium">{tx("Site.homeQuickstart.rank" as never)}</TableHead>
+									<TableHead className="h-auto text-inherit dark:text-inherit px-3 py-3 text-left font-medium">{tx("Common.ui.chatComposer.model" as never)}</TableHead>
+									<TableHead className="h-auto text-inherit dark:text-inherit w-24 px-3 py-3 text-right font-medium">{tx("Common.ui.modelEditor.score" as never)}</TableHead>
+									<TableHead className="h-auto text-inherit dark:text-inherit w-32 px-3 py-3 text-left font-medium">{tx("Common.ui.modelEditor.modelStatuses.released" as never)}</TableHead>
+									<TableHead className="h-auto text-inherit dark:text-inherit w-14 px-3 py-3"><span className="sr-only">{tx("Common.ui.modelEditor.advanced.benchmarks.source" as never)}</span></TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody className="divide-y">
 								{visibleArtificialAnalysisRows.slice(0, limit).map(({ model, result, rank }, index) => {
 									const organisationLabel = model.organisation?.display_name || model.organisation?.name || tx("Common.status.unknown" as never);
 									const configuration = localizedBenchmarkConfiguration(configurationCode(result), tx);
-									return <tr key={result.id ?? `${model.id}-${configuration}-${index}`} className="transition-colors hover:bg-muted/25">
-											<td className="px-4 py-3 font-medium tabular-nums text-muted-foreground">{rank}</td>
-											<td className="px-3 py-3"><div className="flex items-center gap-3">
+									return <TableRow key={result.id ?? `${model.id}-${configuration}-${index}`} className="transition-colors hover:bg-muted/25 dark:hover:bg-muted/25">
+											<TableCell className="px-4 py-3 font-medium tabular-nums text-muted-foreground">{rank}</TableCell>
+											<TableCell className="px-3 py-3"><div className="flex items-center gap-3">
 												<span className="relative size-7 shrink-0 overflow-hidden rounded-md bg-muted"><Logo id={model.organisation?.organisation_id ?? model.id} alt="" fill className="object-contain p-1" /></span>
 												<div className="min-w-0"><Link href={`/models/${model.id}`} className="block truncate font-medium hover:underline">{model.name}{artificialAnalysis ? <span className="text-muted-foreground"> ({configuration})</span> : null}</Link><span className="block truncate text-xs text-muted-foreground">{organisationLabel}</span></div>
-											</div></td>
-											<td className="px-3 py-3 text-right font-semibold tabular-nums">{formatScoreDisplay(result)}{epochCapabilitiesIndex && typeof result.other_info === "string" && result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i) ? <span className="block whitespace-nowrap text-[10px] font-normal text-muted-foreground">{tx("Catalogue.benchmarks.confidenceInterval", { low: Number(result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i)?.[1]).toLocaleString(locale), high: Number(result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i)?.[2]).toLocaleString(locale) })}</span> : null}</td>
-											<td className="px-3 py-3 text-muted-foreground">{formatReportedDate(model.reported_date, locale)}</td>
-											<td className="px-3 py-3 text-right">{result.source_link ? <Button asChild variant="ghost" size="icon-sm"><a href={result.source_link} target="_blank" rel="noreferrer" aria-label={tx("Common.ui.benchmarkChartCopy.openSourceForModelConfiguration", { model: model.name, configuration })}><ExternalLink /></a></Button> : null}</td>
-										</tr>
+											</div></TableCell>
+											<TableCell className="px-3 py-3 text-right font-semibold tabular-nums">{formatScoreDisplay(result)}{epochCapabilitiesIndex && typeof result.other_info === "string" && result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i) ? <span className="block whitespace-nowrap text-[10px] font-normal text-muted-foreground">{tx("Catalogue.benchmarks.confidenceInterval", { low: Number(result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i)?.[1]).toLocaleString(locale), high: Number(result.other_info.match(/95% CI\s+([\d.]+)[–-]([\d.]+)/i)?.[2]).toLocaleString(locale) })}</span> : null}</TableCell>
+											<TableCell className="px-3 py-3 text-muted-foreground">{formatReportedDate(model.reported_date, locale)}</TableCell>
+											<TableCell className="px-3 py-3 text-right">{result.source_link ? <Button asChild variant="ghost" size="icon-sm"><a href={result.source_link} target="_blank" rel="noreferrer" aria-label={tx("Common.ui.benchmarkChartCopy.openSourceForModelConfiguration", { model: model.name, configuration })}><ExternalLink /></a></Button> : null}</TableCell>
+										</TableRow>
 									;
 								})}
-							</tbody>
-						</table>
+							</TableBody>
+						</Table>
 					</div>
 				</div>
 			) : filteredModels.length > 0 ? (
 				<div className="overflow-x-auto">
-					<table className="min-w-full overflow-hidden rounded-2xl border border-zinc-200 text-sm shadow-xs dark:border-zinc-800">
-						<thead className="bg-zinc-100 dark:bg-zinc-800">
-							<tr>
-								<th className="px-4 py-2 text-left">
+					<Table wrapInContainer={false} className="min-w-full overflow-hidden rounded-2xl border border-zinc-200 text-sm shadow-xs dark:border-zinc-800">
+						<TableHeader className="bg-zinc-100 dark:bg-zinc-800 [&_tr]:border-0">
+							<TableRow className="hover:bg-transparent dark:hover:bg-transparent">
+								<TableHead className="h-auto font-bold text-inherit dark:text-inherit px-4 py-2 text-left">
 									{t("columnOrganization")}
-								</th>
-								<th className="px-4 py-2 text-left">{t("models")}</th>
-								<th className="px-4 py-2 text-left">
+								</TableHead>
+								<TableHead className="h-auto font-bold text-inherit dark:text-inherit px-4 py-2 text-left">{t("models")}</TableHead>
+								<TableHead className="h-auto font-bold text-inherit dark:text-inherit px-4 py-2 text-left">
 									{t("columnReported")}
-								</th>
-								<th className="px-4 py-2 text-left">
+								</TableHead>
+								<TableHead className="h-auto font-bold text-inherit dark:text-inherit px-4 py-2 text-left">
 									{t("columnTopScore")}
-								</th>
-								<th className="px-4 py-2 text-left">{t("columnInfo")}</th>
-								<th className="px-4 py-2 text-center">
+								</TableHead>
+								<TableHead className="h-auto font-bold text-inherit dark:text-inherit px-4 py-2 text-left">{t("columnInfo")}</TableHead>
+								<TableHead className="h-auto font-bold text-inherit dark:text-inherit px-4 py-2 text-center">
 									{t("columnSelfReported")}
-								</th>
-								<th className="px-4 py-2 text-left">{t("columnSource")}</th>
-							</tr>
-						</thead>
-						<tbody>
+								</TableHead>
+								<TableHead className="h-auto font-bold text-inherit dark:text-inherit px-4 py-2 text-left">{t("columnSource")}</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
 							{filteredModels.slice(0, limit).map((model: any) => {
 								const sorted = sortResults(
 									model.benchmark_results || [],
@@ -236,8 +237,8 @@ export default function ModelsUsingBenchmarkClient({
 
 								return (
 									<React.Fragment key={model.id}>
-										<tr className="border-t border-zinc-200 dark:border-zinc-800">
-											<td className="px-4 py-2 text-left">
+										<TableRow className="border-t border-zinc-200 dark:border-zinc-800">
+											<TableCell className="px-4 py-2 text-left">
 												<div className="flex items-center gap-3">
 													{model.organisation
 														?.organisation_id ? (
@@ -285,9 +286,9 @@ export default function ModelsUsingBenchmarkClient({
 														</span>
 													)}
 												</div>
-											</td>
+											</TableCell>
 
-											<td className="px-4 py-2 font-semibold">
+											<TableCell className="px-4 py-2 font-semibold">
 												{hasMultiple && (
 													<button
 														type="button"
@@ -324,22 +325,22 @@ export default function ModelsUsingBenchmarkClient({
 														{model.name}
 													</span>
 												</Link>
-											</td>
-							<td className="px-4 py-2 text-left">
+											</TableCell>
+							<TableCell className="px-4 py-2 text-left">
 								{formatReportedDate(
 									model.reported_date,
 									locale
 								)}
-											</td>
-											<td className="px-4 py-2 font-mono">
+											</TableCell>
+											<TableCell className="px-4 py-2 font-mono">
 												{top
 													? formatScoreDisplay(top)
 													: "-"}
-											</td>
-											<td className="px-4 py-2 text-xs text-zinc-500 dark:text-zinc-300">
+											</TableCell>
+											<TableCell className="px-4 py-2 text-xs text-zinc-500 dark:text-zinc-300">
 												{top?.other_info || "-"}
-											</td>
-											<td className="px-4 py-2 text-center">
+											</TableCell>
+											<TableCell className="px-4 py-2 text-center">
 												<span
 													className={
 														anySelf
@@ -349,8 +350,8 @@ export default function ModelsUsingBenchmarkClient({
 												>
 									{anySelf ? t("yes") : t("no")}
 												</span>
-											</td>
-											<td className="px-4 py-2 text-left">
+											</TableCell>
+											<TableCell className="px-4 py-2 text-left">
 												{top?.source_link ? (
 													<a
 														href={top.source_link}
@@ -366,14 +367,14 @@ export default function ModelsUsingBenchmarkClient({
 												) : (
 													"-"
 												)}
-											</td>
-										</tr>
+											</TableCell>
+										</TableRow>
 
 										{hasMultiple &&
 											isOpen &&
 											extraScores.map(
 												(item: any, idx: number) => (
-													<tr
+													<TableRow
 														key={`${item.id}-${idx}`}
 														className={`border-t border-zinc-200 bg-zinc-50 text-xs dark:border-zinc-800 dark:bg-zinc-900 ${
 															idx ===
@@ -383,20 +384,20 @@ export default function ModelsUsingBenchmarkClient({
 																: ""
 														}`}
 													>
-														<td
+														<TableCell
 															className="px-4 py-2 pl-8 font-mono"
 															colSpan={3}
-														></td>
-														<td className="px-4 py-2 font-mono">
+														></TableCell>
+														<TableCell className="px-4 py-2 font-mono">
 															{formatScoreDisplay(
 																item
 															)}
-														</td>
-														<td className="px-4 py-2 text-xs text-zinc-500 dark:text-zinc-300">
+														</TableCell>
+														<TableCell className="px-4 py-2 text-xs text-zinc-500 dark:text-zinc-300">
 															{item.other_info ||
 																"-"}
-														</td>
-														<td className="px-4 py-2 text-center">
+														</TableCell>
+														<TableCell className="px-4 py-2 text-center">
 															<span
 																className={
 																	item.is_self_reported
@@ -413,8 +414,8 @@ export default function ModelsUsingBenchmarkClient({
 											? t("yes")
 											: t("no")}
 															</span>
-														</td>
-														<td className="px-4 py-2">
+														</TableCell>
+														<TableCell className="px-4 py-2">
 															{item.source_link ? (
 																<a
 																	href={
@@ -432,15 +433,15 @@ export default function ModelsUsingBenchmarkClient({
 															) : (
 																"-"
 															)}
-														</td>
-													</tr>
+														</TableCell>
+													</TableRow>
 												)
 											)}
 									</React.Fragment>
 								);
 							})}
-						</tbody>
-					</table>
+						</TableBody>
+					</Table>
 				</div>
 			) : (
 				<p className="text-muted-foreground">

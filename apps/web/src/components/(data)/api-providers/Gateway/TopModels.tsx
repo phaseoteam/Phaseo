@@ -4,6 +4,7 @@ import { Trophy } from "lucide-react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { apiProviderTopModelsQuery } from "../apiProvider.queries";
 import { useLocale, useTranslations } from "@/i18n/react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DisplayCount } from "@/components/display/DisplayValue";
 import {
 	Empty,
@@ -33,24 +34,24 @@ export default function TopModels({
 
 			{topModels.length > 0 ? (
 				<div className="overflow-x-auto">
-					<table className="w-full min-w-[640px] text-sm">
-						<thead>
-							<tr className="text-xs text-muted-foreground border-b border-border">
-								<th className="text-left font-medium py-2 px-2">{t("modelLabel")}</th>
-								<th className="text-right font-medium py-2 px-2">{t("tokensLabel")}</th>
-								<th className="text-right font-medium py-2 px-2">{t("latencyMetric")}</th>
-								<th className="text-right font-medium py-2 px-2">{t("throughputMetric")}</th>
-							</tr>
-						</thead>
-						<tbody>
+					<Table wrapInContainer={false} className="w-full min-w-[640px] text-sm">
+						<TableHeader>
+							<TableRow className="text-xs text-muted-foreground border-b border-border hover:bg-transparent dark:hover:bg-transparent">
+								<TableHead className="h-auto p-0 text-inherit dark:text-inherit text-left font-medium py-2 px-2">{t("modelLabel")}</TableHead>
+								<TableHead className="h-auto p-0 text-inherit dark:text-inherit text-right font-medium py-2 px-2">{t("tokensLabel")}</TableHead>
+								<TableHead className="h-auto p-0 text-inherit dark:text-inherit text-right font-medium py-2 px-2">{t("latencyMetric")}</TableHead>
+								<TableHead className="h-auto p-0 text-inherit dark:text-inherit text-right font-medium py-2 px-2">{t("throughputMetric")}</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
 							{topModels.map((model, index) => {
 								const rank = index + 1;
 								return (
-									<tr
+									<TableRow
 										key={model.model_id}
-										className="border-b border-border/60 last:border-b-0 hover:bg-muted/20"
+										className="border-b border-border/60 last:border-b-0 hover:bg-muted/20 dark:hover:bg-muted/20"
 									>
-										<td className="py-2 px-2 min-w-0">
+										<TableCell className="p-0 py-2 px-2 min-w-0">
 											<div className="flex min-w-0 items-center gap-3">
 												<span className="w-7 shrink-0 text-xs font-semibold text-muted-foreground">
 													#{rank}
@@ -65,25 +66,25 @@ export default function TopModels({
 													</span>
 												</Link>
 											</div>
-										</td>
-										<td className="py-2 px-2 text-right tabular-nums">
+										</TableCell>
+										<TableCell className="p-0 py-2 px-2 text-right tabular-nums">
 											<DisplayCount value={model.total_tokens ?? model.request_count} />
-										</td>
-										<td className="py-2 px-2 text-right tabular-nums">
+										</TableCell>
+										<TableCell className="p-0 py-2 px-2 text-right tabular-nums">
 											{model.median_latency_ms != null
 												? `${model.median_latency_ms} ms`
 												: "-"}
-										</td>
-										<td className="py-2 px-2 text-right tabular-nums">
+										</TableCell>
+										<TableCell className="p-0 py-2 px-2 text-right tabular-nums">
 											{model.median_throughput != null
 												? `${model.median_throughput} t/s`
 												: "-"}
-										</td>
-									</tr>
+										</TableCell>
+									</TableRow>
 								);
 							})}
-						</tbody>
-					</table>
+						</TableBody>
+					</Table>
 				</div>
 			) : (
 				<Empty>

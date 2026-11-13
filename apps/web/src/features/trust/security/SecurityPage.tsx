@@ -4,6 +4,7 @@ import type { RouteMetadataInput } from "@/lib/start/metadata";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "@/i18n/server";
 import { TrustCallout, TrustDocument, TrustSection, TrustTable } from "@/components/trust/TrustDocument";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { PublicLocale } from "@/i18n/routing";
 import { buildMetadata } from "@/lib/seo";
 
@@ -65,27 +66,27 @@ export function SecurityPage() {
 
 			<TrustSection id="flow" title={t("sections.flow")}>
 				<TrustTable>
-					<table className="w-full min-w-[720px] text-left">
-						<thead>
-							<tr className="border-b border-border text-xs text-muted-foreground">
-								<th className="py-3 pr-4 font-medium">{t("flow.stage")}</th>
-								<th className="py-3 pr-4 font-medium">{t("flow.data")}</th>
-								<th className="py-3 font-medium">{t("flow.handling")}</th>
-							</tr>
-						</thead>
-						<tbody className="align-top">
+					<Table wrapInContainer={false} className="min-w-[720px] text-left text-[length:inherit]">
+						<TableHeader>
+							<TableRow className="border-b border-border text-xs text-muted-foreground hover:bg-transparent dark:hover:bg-transparent">
+								<TableHead className="h-auto px-0 py-3 pr-4 font-medium text-inherit dark:text-inherit">{t("flow.stage")}</TableHead>
+								<TableHead className="h-auto px-0 py-3 pr-4 font-medium text-inherit dark:text-inherit">{t("flow.data")}</TableHead>
+								<TableHead className="h-auto px-0 py-3 font-medium text-inherit dark:text-inherit">{t("flow.handling")}</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody className="align-top">
 							{flowRows.map((row, index) => (
-								<tr
+								<TableRow
 									key={row.stage}
-									className={index < flowRows.length - 1 ? "border-b border-border" : undefined}
+									className={`${index < flowRows.length - 1 ? "border-b border-border" : "border-b-0"} hover:bg-transparent dark:hover:bg-transparent`}
 								>
-									<th className="py-4 pr-4 font-medium text-foreground">{row.stage}</th>
-									<td className="py-4 pr-4">{row.data}</td>
-									<td className="py-4">{row.handling}</td>
-								</tr>
+									<TableHead className="h-auto px-0 py-4 pr-4 font-medium text-foreground align-top dark:text-foreground">{row.stage}</TableHead>
+									<TableCell className="p-0 py-4 pr-4 align-top">{row.data}</TableCell>
+									<TableCell className="p-0 py-4 align-top">{row.handling}</TableCell>
+								</TableRow>
 							))}
-						</tbody>
-					</table>
+						</TableBody>
+					</Table>
 				</TrustTable>
 			</TrustSection>
 

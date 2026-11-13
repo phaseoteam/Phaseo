@@ -12,6 +12,15 @@ import {
 import { z } from "zod/v4";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { openUIFollowUp } from "./openuiHelpers";
 
 export const OpenUIActionContext = createContext<{
@@ -77,29 +86,38 @@ const DataTable = defineComponent({
     const { title, columns, rows } = data.data;
     return (
       <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full text-left text-sm">
-          <caption className="p-3 text-left font-medium">{title}</caption>
-          <thead className="bg-muted">
-            <tr>
+        <Table wrapInContainer={false} className="caption-top text-left">
+          <TableCaption className="mt-0 p-3 text-left font-medium text-inherit dark:text-inherit">
+            {title}
+          </TableCaption>
+          <TableHeader className="bg-muted">
+            <TableRow className="hover:bg-transparent dark:hover:bg-transparent">
               {columns.map((column, i) => (
-                <th key={i} scope="col" className="px-3 py-2 font-medium">
+                <TableHead
+                  key={i}
+                  scope="col"
+                  className="h-auto px-3 py-2 text-inherit dark:text-inherit"
+                >
                   {column}
-                </th>
+                </TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {rows.map((row, i) => (
-              <tr key={i} className="border-t">
+              <TableRow
+                key={i}
+                className="hover:bg-transparent dark:hover:bg-transparent"
+              >
                 {columns.map((_, j) => (
-                  <td key={j} className="px-3 py-2 align-top">
+                  <TableCell key={j} className="px-3 py-2 align-top">
                     {row[j] ?? "—"}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     );
   },

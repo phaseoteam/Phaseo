@@ -4,6 +4,7 @@ import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { testClassifier, type ClassifierTestResult } from "@/features/settings/classifiers/actions";
 import { formatUsd } from "./classifierForm";
@@ -76,20 +77,20 @@ function TestResult({ result }: { result: ClassifierTestResult }) {
 	return (
 		<div className="space-y-2">
 			{result.answered && result.labels.length ? (
-				<table className="w-full text-sm">
-					<thead className="text-left text-xs text-muted-foreground">
-						<tr><th className="py-1 pr-4 font-medium">{t("labelKey")}</th><th className="py-1 pr-4 font-medium">{t("labelValue")}</th><th className="py-1 font-medium">{t("confidence")}</th></tr>
-					</thead>
-					<tbody className="divide-y border-t">
+				<Table className="w-full text-sm">
+					<TableHeader className="text-left text-xs">
+						<TableRow className="hover:bg-transparent dark:hover:bg-transparent"><TableHead className="h-auto px-0 py-1 pr-4 text-muted-foreground dark:text-muted-foreground">{t("labelKey")}</TableHead><TableHead className="h-auto px-0 py-1 pr-4 text-muted-foreground dark:text-muted-foreground">{t("labelValue")}</TableHead><TableHead className="h-auto px-0 py-1 text-muted-foreground dark:text-muted-foreground">{t("confidence")}</TableHead></TableRow>
+					</TableHeader>
+					<TableBody>
 						{result.labels.map((label) => (
-							<tr key={`${label.key}:${label.value}`}>
-								<td className="py-1.5 pr-4 font-mono">{label.key}</td>
-								<td className="py-1.5 pr-4 font-mono">{label.value}</td>
-								<td className="py-1.5 tabular-nums">{label.confidence == null ? "–" : `${Math.round(label.confidence * 100)}%`}</td>
-							</tr>
+							<TableRow key={`${label.key}:${label.value}`}>
+								<TableCell className="p-0 py-1.5 pr-4 font-mono">{label.key}</TableCell>
+								<TableCell className="p-0 py-1.5 pr-4 font-mono">{label.value}</TableCell>
+								<TableCell className="p-0 py-1.5 tabular-nums">{label.confidence == null ? "–" : `${Math.round(label.confidence * 100)}%`}</TableCell>
+							</TableRow>
 						))}
-					</tbody>
-				</table>
+					</TableBody>
+				</Table>
 			) : <p className="text-sm text-destructive">{t("noAnswer")}</p>}
 			<p className="text-xs text-muted-foreground">{t("costLine", { cost: formatUsd(result.costUsd), model: result.model })}</p>
 		</div>

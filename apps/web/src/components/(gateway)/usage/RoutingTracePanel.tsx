@@ -1,6 +1,7 @@
-import { Check, ChevronDown, CircleHelp, CircleSlash2 } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, CircleHelp, CircleSlash2 } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Logo } from "@/components/Logo";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
@@ -186,8 +187,8 @@ function CandidateCard({
 	const width = !isExcluded && score > 0 && maxScore > 0 ? Math.max(1, Math.min(100, (score / maxScore) * 100)) : 0;
 
 	return (
-		<details className="group/candidate border-t border-border/60 first:border-t-0" open={decision.selected}>
-			<summary className="list-none cursor-pointer py-2.5 marker:hidden">
+		<Collapsible className="border-t border-border/60 first:border-t-0" defaultOpen={decision.selected}>
+			<CollapsibleTrigger className="group/candidate block w-full cursor-pointer py-2.5 text-left">
 				<div className="flex items-center gap-3">
 					<div className="w-5 shrink-0 text-xs font-medium tabular-nums text-muted-foreground">
 						{decision.rank ?? "—"}
@@ -221,10 +222,10 @@ function CandidateCard({
 						<div title={parsedScore === null ? undefined : String(parsedScore)} className="font-mono text-sm font-semibold tabular-nums">{parsedScore === null ? "—" : formatNumber(score, 3, locale)}</div>
 						<div className="text-[10px] text-muted-foreground">{t("strings.Score" as never)}</div>
 					</div>
-					<ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open/candidate:rotate-180" />
+					<ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]/candidate:rotate-180" />
 				</div>
-			</summary>
-			<div className="space-y-4 pb-3 pl-10 pt-1">
+			</CollapsibleTrigger>
+			<CollapsibleContent keepMounted className="space-y-4 pb-3 pl-10 pt-1">
 				{isExcluded ? (
 					<TraceGroup
 						title={t("strings.Exclusion Reason")}
@@ -238,19 +239,19 @@ function CandidateCard({
 				{Object.keys(normalizedFactors.active).length > 0 ? <TraceGroup title={t("usageGaps.scoreBreakdown")} values={normalizedFactors.active} /> : null}
 				{Object.keys(trace).length === 0 && Object.keys(legacyFactors.active).length > 0 ? <TraceGroup title={t("usageGaps.scoreBreakdown")} values={legacyFactors.active} /> : null}
 				{Object.keys(calculation).length + Object.keys(inputs).length + Object.keys(weights).length + Object.keys(recordedContext).length + Object.keys(contributions).length > 0 ? (
-					<details className="rounded-md border border-border/60 bg-muted/20 px-3 py-2">
-						<summary className="cursor-pointer text-xs text-muted-foreground">{t("usageGaps.copyTechnicalDetails")}</summary>
-						<div className="mt-3 space-y-4">
+					<Collapsible className="rounded-md border border-border/60 bg-muted/20 px-3 py-2">
+						<CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1 text-left text-xs text-muted-foreground"><ChevronRight aria-hidden="true" className="size-3 shrink-0 transition-transform group-data-[panel-open]:rotate-90" />{t("usageGaps.copyTechnicalDetails")}</CollapsibleTrigger>
+						<CollapsibleContent keepMounted className="mt-3 space-y-4">
 							{Object.keys(calculation).length > 0 ? <TraceGroup title={t("strings.Calculation")} values={calculation} /> : null}
 							{Object.keys(contributions).length > 0 ? <TraceGroup title={t("usageGaps.contributions")} values={contributions} /> : null}
 							{Object.keys(inputs).length > 0 ? <TraceGroup title={t("usageGaps.recordedInputs")} values={inputs} /> : null}
 							{Object.keys(weights).length > 0 ? <TraceGroup title={t("strings.Weights")} values={weights} /> : null}
 							{Object.keys(recordedContext).length > 0 ? <TraceGroup title={t("usageGaps.recordedContext")} values={recordedContext} /> : null}
-						</div>
-					</details>
+						</CollapsibleContent>
+					</Collapsible>
 				) : null}
-			</div>
-		</details>
+			</CollapsibleContent>
+		</Collapsible>
 	);
 }
 
@@ -291,8 +292,8 @@ export function RoutingTracePanel({
 		: t("routingTrace.noCandidateSelected" as never);
 
 	return (
-		<details className="group/routing mt-4 rounded-md border border-border/70 px-3 py-1">
-			<summary className="list-none cursor-pointer py-2 marker:hidden">
+		<Collapsible className="mt-4 rounded-md border border-border/70 px-3 py-1">
+			<CollapsibleTrigger className="group/routing block w-full cursor-pointer py-2 text-left">
 				<div className="flex items-center justify-between gap-4">
 					<div className="min-w-0">
 						<div className="text-sm font-medium text-foreground">{t("strings.Routing observability" as never)}</div>
@@ -302,13 +303,15 @@ export function RoutingTracePanel({
 					</div>
 					<div className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
 						<span className="rounded-sm bg-muted px-2 py-1">{({ balanced: t("usageGaps.copyBalanced"), price: t("usageGaps.copyPrice"), latency: t("usageGaps.copyLatency"), throughput: t("usageGaps.copyThroughput") } as Record<string, string>)[mode] ?? mode}</span>
-						<ChevronDown className="size-3.5 transition-transform group-open/routing:rotate-180" />
+						<ChevronDown className="size-3.5 transition-transform group-data-[panel-open]/routing:rotate-180" />
 					</div>
 				</div>
-			</summary>
+			</CollapsibleTrigger>
 
-			<details className="border-t border-border/60 py-2 text-xs text-muted-foreground">
-				<summary className="cursor-pointer">{t("usageGaps.metadata")}</summary>
+			<CollapsibleContent keepMounted>
+			<Collapsible className="border-t border-border/60 py-2 text-xs text-muted-foreground">
+				<CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1 text-left"><ChevronRight aria-hidden="true" className="size-3 shrink-0 transition-transform group-data-[panel-open]:rotate-90" />{t("usageGaps.metadata")}</CollapsibleTrigger>
+				<CollapsibleContent keepMounted>
 				<div className="my-3 flex items-center gap-1">{algorithm}{!trace?.algorithm_version ? <MetricInfo metric="partialTrace" /> : null}</div>
 				{trace ? (
 					<MetricGrid values={{ seed: formatNumber(trace.random_seed, 0, locale), priority: String(trace.priority ?? "default"), candidatePool: formatNumber(trace.final_candidate_count, 0, locale) }} />
@@ -318,12 +321,14 @@ export function RoutingTracePanel({
 						{t("strings.Selection method" as never)} <code className="text-foreground">{String(trace.selection_method)}</code>
 					</div>
 				) : null}
-			</details>
+				</CollapsibleContent>
+			</Collapsible>
 
 			<div className="mt-2 border-y border-border/60">
 				{ranked.map((decision) => <CandidateCard key={`${decision.decision_order}-${decision.provider_slug}`} decision={decision} maxScore={maxScore} providerNames={providerNames} routingMode={mode} />)}
 				{excluded.map((decision) => <CandidateCard key={`${decision.decision_order}-${decision.provider_slug}`} decision={decision} maxScore={maxScore} providerNames={providerNames} routingMode={mode} />)}
 			</div>
-		</details>
+			</CollapsibleContent>
+		</Collapsible>
 	);
 }

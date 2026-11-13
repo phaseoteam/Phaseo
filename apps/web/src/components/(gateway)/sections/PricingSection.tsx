@@ -1,6 +1,14 @@
 import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import CheckItem from "../page/CheckItem";
 
 export function PricingSection() {
@@ -47,26 +55,26 @@ const PRICING_EXAMPLES = [
 				</Card>
 
 				<div className="overflow-hidden rounded-xl border border-slate-200">
-					<table className="w-full text-left text-sm">
-						<thead className="bg-slate-50 text-slate-600 dark:bg-neutral-900 dark:text-slate-300">
-							<tr>
-								<th className="px-4 py-3 font-medium">{t("landingGaps.scenario")}</th>
-								<th className="px-4 py-3 font-medium">{t("landingGaps.copyCreditPurchaseFee")}</th>
-							</tr>
-						</thead>
-						<tbody className="divide-y divide-slate-100">
+					<Table wrapInContainer={false} className="w-full text-left text-sm">
+						<TableHeader className="bg-slate-50 text-slate-600 dark:bg-neutral-900 dark:text-slate-300">
+							<TableRow className="border-0 hover:bg-transparent dark:hover:bg-transparent">
+								<TableHead className="h-auto px-4 py-3 font-medium text-inherit dark:text-inherit">{t("landingGaps.scenario")}</TableHead>
+								<TableHead className="h-auto px-4 py-3 font-medium text-inherit dark:text-inherit">{t("landingGaps.copyCreditPurchaseFee")}</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
 							{PRICING_EXAMPLES.map((row) => (
-								<tr key={row.scenario}>
-									<td className="px-4 py-3 text-slate-700 dark:text-slate-300">
+								<TableRow key={row.scenario} className="border-slate-100 hover:bg-transparent dark:hover:bg-transparent">
+									<TableCell className="px-4 py-3 text-slate-700 dark:text-slate-300">
 										{row.scenario}
-									</td>
-									<td className="px-4 py-3 text-slate-600 dark:text-slate-400">
+									</TableCell>
+									<TableCell className="px-4 py-3 text-slate-600 dark:text-slate-400">
 										{row.gateway}
-									</td>
-								</tr>
+									</TableCell>
+								</TableRow>
 							))}
-						</tbody>
-					</table>
+						</TableBody>
+					</Table>
 				</div>
 				<p className="text-xs text-slate-500 dark:text-slate-300">
 					{t("landingGaps.reviewFee")}{" "}

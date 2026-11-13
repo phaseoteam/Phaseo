@@ -1,10 +1,11 @@
 import Link from "@/components/link";
 import type { PageMetadata } from "@/lib/seo/metadataTypes";
 import { getLocale, getTranslations } from "@/i18n/server";
-import { ArrowLeft, BadgeCheck, Box, CalendarDays, GitFork, Layers3, Route, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Box, ChevronRight, CalendarDays, GitFork, Layers3, Route, ShieldCheck, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import CopyPresetButton from "@/components/(gateway)/marketplace/CopyPresetButton";
 import { useParams, useSearch } from "@tanstack/react-router";
@@ -77,7 +78,7 @@ export default function MarketplacePresetPage() {
 
 						<section className="space-y-4"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-heading text-xl font-semibold">{t("versionHistory")}</h2><p className="mt-1 text-sm text-muted-foreground">{t("versionDescription")}</p></div></div><div className="flex flex-wrap gap-2">{versions.map((version) => <Button key={version.id} size="sm" variant={resolvedVersion?.id === version.id ? "default" : "outline"} className="rounded-md" asChild><Link href={`/gateway/marketplace/${presetId}?version=${version.version_number}`}>{version.version_label}</Link></Button>)}</div>{resolvedVersion ? <div className="flex flex-col gap-2 rounded-lg border px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between"><div><span className="font-medium">{resolvedVersion.version_label}</span>{resolvedVersion.release_notes ? <p className="mt-1 text-muted-foreground">{resolvedVersion.release_notes}</p> : <p className="mt-1 text-muted-foreground">{t("noReleaseNotes")}</p>}</div><span className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="size-3.5" /><DisplayCalendarDate value={resolvedVersion.created_at} /></span></div> : null}</section>
 
-						<details className="rounded-lg border"><summary className="cursor-pointer px-4 py-3 text-sm font-medium">{t("technicalConfiguration")}</summary><Separator /><pre className="max-h-[32rem] overflow-auto p-4 text-xs leading-5 text-muted-foreground">{JSON.stringify(config, null, 2)}</pre></details>
+						<Collapsible className="rounded-lg border"><CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1.5 px-4 py-3 text-left text-sm font-medium"><ChevronRight className="size-4 shrink-0 transition-transform group-data-[panel-open]:rotate-90" aria-hidden="true" />{t("technicalConfiguration")}</CollapsibleTrigger><CollapsibleContent keepMounted><Separator /><pre className="max-h-[32rem] overflow-auto p-4 text-xs leading-5 text-muted-foreground">{JSON.stringify(config, null, 2)}</pre></CollapsibleContent></Collapsible>
 					</div>
 
 					<aside className="space-y-4 lg:sticky lg:top-24">

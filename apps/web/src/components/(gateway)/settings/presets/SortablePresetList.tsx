@@ -41,9 +41,9 @@ function SortableRow({ item, index, isDefault, onRemove }: {
 			style={{ transform: CSS.Transform.toString(transform), transition }}
 			className={`grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] items-center gap-2 border-b px-3 py-1.5 last:border-b-0 ${isDragging ? "relative z-10 bg-background opacity-70 shadow-md" : "bg-background"}`}
 		>
-			<button type="button" className="cursor-grab touch-none rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing" aria-label={`Drag ${item.label} to reorder`} {...attributes} {...listeners}>
+			<Button type="button" variant="ghost" size="icon-xs" className="size-auto cursor-grab touch-none p-1 text-muted-foreground active:cursor-grabbing" aria-label={`Drag ${item.label} to reorder`} {...attributes} {...listeners}>
 				<GripVertical className="h-3.5 w-3.5" />
-			</button>
+			</Button>
 			<span className="inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-muted px-1 text-[11px] font-medium tabular-nums">{index + 1}</span>
 			<div className="flex min-w-0 items-center gap-2">
 				{item.icon}

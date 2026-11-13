@@ -195,14 +195,16 @@ export default function RequestLabelFilter({
 				</PopoverContent>
 			</Popover>
 			{active ? (
-				<button
+				<Button
 					type="button"
-					className="inline-flex size-8 items-center justify-center rounded-md border border-border/70 text-muted-foreground hover:bg-muted hover:text-foreground"
+					variant="outline"
+					size="icon"
+					className="border-border/70 text-muted-foreground"
 					onClick={clear}
 					aria-label={t("clearFilter")}
 				>
 					<X className="size-3.5" />
-				</button>
+				</Button>
 			) : null}
 		</div>
 	);

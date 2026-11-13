@@ -1,6 +1,14 @@
 import { useTranslations } from "@/i18n/react";
 
 import { Card } from "@/components/ui/card";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { Check, Minus } from "lucide-react";
 
 export function CompareSection() {
@@ -116,29 +124,29 @@ const COMPARISON_DATA = [
 
 				<Card className="mt-10 overflow-hidden border-zinc-200/60 shadow-sm dark:border-zinc-800/70 dark:bg-zinc-950/70">
 					<div className="overflow-x-auto">
-						<table className="w-full text-left">
-							<thead>
-								<tr className="border-b border-zinc-200 bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-900/70">
-									<th className="px-6 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-										{t("landingGaps.copyCapability")}</th>
-									<th className="px-6 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+						<Table wrapInContainer={false} className="w-full text-left text-[length:inherit]">
+							<TableHeader>
+								<TableRow className="border-b border-zinc-200 bg-zinc-50/80 hover:bg-zinc-50/80 dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:bg-zinc-900/70">
+									<TableHead className="h-auto px-6 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+										{t("landingGaps.copyCapability")}</TableHead>
+									<TableHead className="h-auto px-6 py-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
 										Phaseo Gateway
-									</th>
-									<th className="px-6 py-4 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
+									</TableHead>
+									<TableHead className="h-auto px-6 py-4 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
 										OpenRouter
-									</th>
-									<th className="px-6 py-4 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
+									</TableHead>
+									<TableHead className="h-auto px-6 py-4 text-sm font-semibold text-zinc-600 dark:text-zinc-300">
 										Vercel AI SDK
-									</th>
-								</tr>
-							</thead>
-							<tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+									</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
 								{COMPARISON_DATA.map((row) => (
-									<tr
+									<TableRow
 										key={row.capability}
-										className="transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-900/50"
+										className="border-zinc-100 transition-colors hover:bg-zinc-50/50 dark:border-zinc-800 dark:hover:bg-zinc-900/50"
 									>
-										<td className="px-6 py-4">
+										<TableCell className="px-6 py-4">
 											<div className="space-y-1">
 												<p className="font-medium text-zinc-900 dark:text-zinc-100">
 													{row.capability}
@@ -147,8 +155,8 @@ const COMPARISON_DATA = [
 													{row.description}
 												</p>
 											</div>
-										</td>
-										<td className="px-6 py-4">
+										</TableCell>
+										<TableCell className="px-6 py-4">
 											<div className="space-y-1">
 												<div className="flex items-center gap-2">
 													{row.gateway.highlight && (
@@ -168,8 +176,8 @@ const COMPARISON_DATA = [
 													{row.gateway.details}
 												</p>
 											</div>
-										</td>
-										<td className="px-6 py-4">
+										</TableCell>
+										<TableCell className="px-6 py-4">
 											<div className="space-y-1">
 												<div className="flex items-center gap-2">
 													<Minus className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
@@ -181,8 +189,8 @@ const COMPARISON_DATA = [
 													{row.openRouter.details}
 												</p>
 											</div>
-										</td>
-										<td className="px-6 py-4">
+										</TableCell>
+										<TableCell className="px-6 py-4">
 											<div className="space-y-1">
 												<div className="flex items-center gap-2">
 													<Minus className="h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
@@ -194,11 +202,11 @@ const COMPARISON_DATA = [
 													{row.vercel.details}
 												</p>
 											</div>
-										</td>
-									</tr>
+										</TableCell>
+									</TableRow>
 								))}
-							</tbody>
-						</table>
+							</TableBody>
+						</Table>
 					</div>
 				</Card>
 			</div>

@@ -1,6 +1,11 @@
 import { formatLatency } from "@phaseo/app-kit/format";
 import { useTranslations, useLocale } from "@/i18n/react";
 import { ChevronDown } from "lucide-react";
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 type RecordValue = Record<string, unknown>;
 
@@ -420,17 +425,19 @@ function DecisionAnswerView({ answer }: { answer: DecisionAnswer }) {
 function RawResponseFallback({ result }: { result: unknown }) {
 	const tCopy = useTranslations("SettingsUI.chatGaps");
 	return (
-		<details className="w-full max-w-[min(100%,46rem)]">
-			<summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1 text-sm font-medium [&::-webkit-details-marker]:hidden">
+		<Collapsible className="w-full max-w-[min(100%,46rem)]">
+			<CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between gap-3 py-1 text-left text-sm font-medium">
 				<span>{tCopy("viewResponse")}</span>
 				<ChevronDown className="size-4 text-muted-foreground" />
-			</summary>
-			<pre className="mt-2 max-h-96 overflow-auto border-l border-border pl-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">
-				{result === null || result === undefined
-					? tCopy("noDecision")
-					: JSON.stringify(result, null, 2)}
-			</pre>
-		</details>
+			</CollapsibleTrigger>
+			<CollapsibleContent keepMounted>
+				<pre className="mt-2 max-h-96 overflow-auto border-l border-border pl-3 font-mono text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">
+					{result === null || result === undefined
+						? tCopy("noDecision")
+						: JSON.stringify(result, null, 2)}
+				</pre>
+			</CollapsibleContent>
+		</Collapsible>
 	);
 }
 

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
 	Command,
 	CommandEmpty,
@@ -132,8 +133,8 @@ function NumericFilterEditor({ label, initialValue, initialMax, initialOperator,
 				))}
 			</div>
 			<div className="flex items-center gap-2">
-				<input inputMode="numeric" pattern="[0-9]*" value={value} onChange={(event) => setValue(event.target.value.replace(/\D/g, ""))} placeholder="0" aria-label={text("valueLabel", { filter: label })} className="h-9 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring" />
-				{operator === "between" ? <><span className="text-xs text-muted-foreground">{text("and")}</span><input inputMode="numeric" pattern="[0-9]*" value={max} onChange={(event) => setMax(event.target.value.replace(/\D/g, ""))} placeholder="0" aria-label={text("maximumValueLabel", { filter: label })} className="h-9 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus-visible:border-ring" /></> : null}
+				<Input inputMode="numeric" pattern="[0-9]*" value={value} onChange={(event) => setValue(event.target.value.replace(/\D/g, ""))} placeholder="0" aria-label={text("valueLabel", { filter: label })} className="min-w-0 flex-1" />
+				{operator === "between" ? <><span className="text-xs text-muted-foreground">{text("and")}</span><Input inputMode="numeric" pattern="[0-9]*" value={max} onChange={(event) => setMax(event.target.value.replace(/\D/g, ""))} placeholder="0" aria-label={text("maximumValueLabel", { filter: label })} className="min-w-0 flex-1" /></> : null}
 			</div>
 			<Button type="button" size="sm" className="w-full rounded-md" disabled={!valid} onClick={() => onApply(value, max, operator)}>{text("applyFilter")}</Button>
 		</div>
@@ -907,7 +908,7 @@ export default function UsageViewFilters({
 							) : activeChips.length > 0 ? (
 								<>
 								<button type="button" className="ml-auto px-2 text-xs text-muted-foreground hover:text-foreground" onClick={clearAll}>{text("clearAll")}</button>
-								<button type="button" className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" onClick={() => setPickerOpen(true)} aria-label={text("addAnotherFilter")}><Plus className="size-3.5" /></button>
+								<Button type="button" variant="ghost" size="icon-sm" className="text-muted-foreground" onClick={() => setPickerOpen(true)} aria-label={text("addAnotherFilter")}><Plus className="size-3.5" /></Button>
 								</>
 							) : null}
 						</div>,

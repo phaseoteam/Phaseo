@@ -28,7 +28,7 @@ test("retains diagnostic values behind collapsed technical details", () => {
     expect(html).toContain("Price");
     expect(html).toContain("Reliability");
     expect(html).toContain('title="0.812345"');
-    expect(html).toMatch(/<details(?![^>]*\bopen=)[^>]*><summary[^>]*>Technical details<\/summary>/);
+    expect(html).toMatch(/<button[^>]*aria-expanded="false"[^>]*data-slot="collapsible-trigger"[^>]*>.*?Technical details<\/button>/);
     expect(html).toContain("balanced_weighted_additive");
     expect(html.indexOf("Technical details")).toBeLessThan(html.indexOf("Base weight"));
     expect(html).toContain("Rollout multiplier");

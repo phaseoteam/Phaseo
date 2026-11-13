@@ -200,9 +200,10 @@ function SelectionDialog(props: {
 													</div>
 												</div>
 											</div>
-											<button
+											<Button
 												type="button"
-												className="rounded-md border px-2 py-1 text-xs hover:bg-muted"
+												variant="outline"
+												size="xs"
 												onClick={() => {
 													setDraft((prev) => {
 														if (prev.includes(opt.value)) {
@@ -213,7 +214,7 @@ function SelectionDialog(props: {
 												}}
 											>
 										{checked ? s("Selected") : s("Select")}
-											</button>
+											</Button>
 										</li>
 									);
 								})}
@@ -686,18 +687,22 @@ export default function PrivacySettingsClient(props: {
 							/>
 							{global.ioLoggingEnabled ? (
 								<div className="grid gap-3 rounded-lg border bg-muted/10 p-3 md:grid-cols-2">
-									<label className="space-y-1 text-sm">
+									<div className="space-y-1 text-sm">
 										<span className="font-medium">{s("Retention")}</span>
-										<select
-											className="flex h-9 w-full rounded-md border bg-background px-3 text-sm"
+										<Select
 											value={String(global.ioLoggingRetentionDays)}
-											onChange={(event) =>
-												setGlobal((prev) => ({ ...prev, ioLoggingRetentionDays: Number(event.target.value) }))
+											onValueChange={(value) =>
+												setGlobal((prev) => ({ ...prev, ioLoggingRetentionDays: Number(value) }))
 											}
 										>
-										<option value="90">{s("90 days")}</option>
-										</select>
-									</label>
+											<SelectTrigger className="w-full" aria-label={s("Retention")}>
+												<SelectValue>{global.ioLoggingRetentionDays === 90 ? s("90 days") : String(global.ioLoggingRetentionDays)}</SelectValue>
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value="90">{s("90 days")}</SelectItem>
+											</SelectContent>
+										</Select>
+									</div>
 									<ToggleRow
 										label={s("Include provider payloads")}
 										description={s("phraseAlsoRetainTheUpstreamProviderRequestAndResponse")}

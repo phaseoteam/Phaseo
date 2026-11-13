@@ -10,6 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
 	CAPABILITY_STATUS_OPTIONS,
 	MODEL_CAPABILITY_OPTIONS,
@@ -259,6 +261,63 @@ function formatSubscriptionPlanOption(
 	return detail ? `${name} (${detail})` : name;
 }
 
+// Base UI Select does not handle "" as an item value, so "" options use a sentinel.
+const NONE_SELECT_VALUE = "__none__";
+
+type FormSelectOption = { value: string; label: string };
+
+function FormSelect({
+	id,
+	value,
+	onValueChange,
+	options,
+	ariaLabel,
+	placeholder,
+	required,
+	compact,
+	className,
+}: {
+	id?: string;
+	value: string;
+	onValueChange: (value: string) => void;
+	options: FormSelectOption[];
+	ariaLabel?: string;
+	/** Shown (with no selection) while value is "" and no "" option exists. */
+	placeholder?: string;
+	required?: boolean;
+	compact?: boolean;
+	className?: string;
+}) {
+	const selected = options.find((option) => option.value === value);
+	const showPlaceholder = value === "" && !selected && placeholder !== undefined;
+	return (
+		<Select
+			value={showPlaceholder ? null : value === "" ? NONE_SELECT_VALUE : value}
+			onValueChange={(next) => onValueChange(next === NONE_SELECT_VALUE ? "" : next)}
+			required={required}
+		>
+			<SelectTrigger
+				id={id}
+				aria-label={ariaLabel}
+				className={cn("w-full", compact && "px-2 text-xs", className)}
+			>
+				<SelectValue>{showPlaceholder ? placeholder : (selected?.label ?? value)}</SelectValue>
+			</SelectTrigger>
+			<SelectContent>
+				{options.map((option) => (
+					<SelectItem
+						key={option.value || NONE_SELECT_VALUE}
+						value={option.value === "" ? NONE_SELECT_VALUE : option.value}
+						className={compact ? "text-xs" : undefined}
+					>
+						{option.label}
+					</SelectItem>
+				))}
+			</SelectContent>
+		</Select>
+	);
+}
+
 export default function NewModelForm({
 	organisations,
 	providers,
@@ -345,6 +404,11 @@ export default function NewModelForm({
 		return tPricing.has(key as never) ? tPricing(key as never) : value;
 	};
 	const [modelId, setModelId] = useState("");
+	const [organisationId, setOrganisationId] = useState("");
+	const [modelStatus, setModelStatus] = useState<string>("Released");
+	const [previousModelId, setPreviousModelId] = useState("");
+	const [replacementModelId, setReplacementModelId] = useState("");
+	const [isHidden, setIsHidden] = useState(false);
 	const { attach: formRef, isDirty, allowSavedNavigation } = useCatalogFormChanges();
 	const saved = useRef(false);
 	const [isSubmitting, setIsSubmitting] = useState(false);
@@ -427,6 +491,21 @@ export default function NewModelForm({
 			selected.has(provider.api_provider_id)
 		);
 	}, [providerRows, sortedProviders]);
+	const pricingProviderSelectOptions: FormSelectOption[] = [
+		{ value: "", label: t("versionedPricing.provider") },
+		...pricingProviderOptions.map((provider) => ({
+			value: provider.api_provider_id,
+			label: provider.api_provider_name ?? provider.api_provider_id,
+		})),
+	];
+	const pricingCapabilitySelectOptions: FormSelectOption[] = COMMON_CAPABILITIES.map((capability) => ({
+		value: capability,
+		label: capability,
+	}));
+	const pricingMeterSelectOptions: FormSelectOption[] = PRICING_METER_OPTIONS.map((meter) => ({
+		value: meter.value,
+		label: pricingMeterLabel(meter.value, meter.label),
+	}));
 	const providerNameById = useMemo(
 		() =>
 			Object.fromEntries(
@@ -738,6 +817,12 @@ export default function NewModelForm({
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+		// The organisation picker is a custom Select, so enforce the old `required` here too.
+		if (!organisationId) {
+			toast.error(t("modelCreation.selectOrganization"));
+			document.getElementById("new-model-organisation")?.focus();
+			return;
+		}
 		const formData = new FormData(event.currentTarget);
 		const promise = Promise.resolve(createAction(formData));
 
@@ -787,58 +872,72 @@ export default function NewModelForm({
 					</label>
 					<label htmlFor="new-model-organisation" className="text-sm lg:col-span-2">
 						<div className="mb-1 text-muted-foreground">{t("modelCreation.organization")}</div>
-						<select
+						<FormSelect
 							id="new-model-organisation"
-							name="organisation_id"
+							ariaLabel={t("modelCreation.organization")}
+							value={organisationId}
+							onValueChange={setOrganisationId}
 							required
-							defaultValue=""
-							className="w-full rounded-md border px-3 py-2 text-sm"
-						>
-							<option value="" disabled>
-								{t("modelCreation.selectOrganization")}
-							</option>
-							{organisations.map((org) => (
-								<option key={org.organisation_id} value={org.organisation_id}>
-									{org.name ?? org.organisation_id}
-								</option>
-							))}
-						</select>
+							placeholder={t("modelCreation.selectOrganization")}
+							options={organisations.map((org) => ({
+								value: org.organisation_id,
+								label: org.name ?? org.organisation_id,
+							}))}
+						/>
+						<input type="hidden" name="organisation_id" value={organisationId} />
 					</label>
 					<label htmlFor="new-model-status" className="text-sm">
 						<div className="mb-1 text-muted-foreground">{t("modelCreation.status")}</div>
-						<select id="new-model-status" name="status" defaultValue="Released" className="w-full rounded-md border px-3 py-2 text-sm">
-							{STATUS_OPTIONS.map((status) => (
-								<option key={status} value={status}>
-									{modelStatusLabels[status] ?? status}
-								</option>
-							))}
-						</select>
+						<FormSelect
+							id="new-model-status"
+							ariaLabel={t("modelCreation.status")}
+							value={modelStatus}
+							onValueChange={setModelStatus}
+							options={STATUS_OPTIONS.map((status) => ({
+								value: status,
+								label: modelStatusLabels[status] ?? status,
+							}))}
+						/>
+						<input type="hidden" name="status" value={modelStatus} />
 					</label>
 					<label htmlFor="new-model-previous-model" className="text-sm">
 						<div className="mb-1 text-muted-foreground">{t("modelEditor.previousModel")}</div>
-						<select id="new-model-previous-model" name="previous_model_id" className="w-full rounded-md border px-3 py-2 text-sm">
-							<option value="">{t("auditDataTable.none")}</option>
-							{previousModels.map((previousModel) => (
-								<option key={previousModel.model_id} value={previousModel.model_id}>
-									{previousModel.name ?? previousModel.model_id}
-								</option>
-							))}
-						</select>
+						<FormSelect
+							id="new-model-previous-model"
+							ariaLabel={t("modelEditor.previousModel")}
+							value={previousModelId}
+							onValueChange={setPreviousModelId}
+							options={[
+								{ value: "", label: t("auditDataTable.none") },
+								...previousModels.map((previousModel) => ({
+									value: previousModel.model_id,
+									label: previousModel.name ?? previousModel.model_id,
+								})),
+							]}
+						/>
+						<input type="hidden" name="previous_model_id" value={previousModelId} />
 					</label>
 					<label htmlFor="new-model-replacement-model" className="text-sm">
 						<div className="mb-1 text-muted-foreground">{t("modelEditor.recommendedSuccessor")}</div>
-						<select id="new-model-replacement-model" name="replacement_model_id" className="w-full rounded-md border px-3 py-2 text-sm">
-							<option value="">{t("modelEditor.none")}</option>
-							{previousModels.map((successor) => (
-								<option key={successor.model_id} value={successor.model_id}>
-									{successor.name ?? successor.model_id}
-								</option>
-							))}
-						</select>
+						<FormSelect
+							id="new-model-replacement-model"
+							ariaLabel={t("modelEditor.recommendedSuccessor")}
+							value={replacementModelId}
+							onValueChange={setReplacementModelId}
+							options={[
+								{ value: "", label: t("modelEditor.none") },
+								...previousModels.map((successor) => ({
+									value: successor.model_id,
+									label: successor.name ?? successor.model_id,
+								})),
+							]}
+						/>
+						<input type="hidden" name="replacement_model_id" value={replacementModelId} />
 						<p className="mt-1 text-xs text-muted-foreground">{t("modelEditor.recommendedSuccessorDescription")}</p>
 					</label>
 					<label className="text-sm flex items-center gap-2 self-end">
-						<input type="checkbox" name="hidden" />
+						<Checkbox checked={isHidden} onCheckedChange={(checked) => setIsHidden(checked === true)} />
+						{isHidden ? <input type="hidden" name="hidden" value="on" /> : null}
 						<span>{t("modelCreation.hidden")}</span>
 					</label>
 					<label htmlFor="new-model-release-date" className="text-sm">
@@ -1103,19 +1202,19 @@ export default function NewModelForm({
 				<div className="grid gap-3 lg:grid-cols-2">
 					<label className="text-sm">
 						<div className="mb-1 text-muted-foreground">{t("modelCreation.form.existingFamily")}</div>
-						<select
-							name="family_id"
+						<FormSelect
+							ariaLabel={t("modelCreation.form.existingFamily")}
 							value={selectedFamilyId}
-							onChange={(event) => setSelectedFamilyId(event.target.value)}
-							className="w-full rounded-md border px-3 py-2 text-sm"
-						>
-							<option value="">{t("auditDataTable.none")}</option>
-							{families.map((family) => (
-								<option key={family.family_id} value={family.family_id}>
-									{family.family_name ?? family.family_id}
-								</option>
-							))}
-						</select>
+							onValueChange={setSelectedFamilyId}
+							options={[
+								{ value: "", label: t("auditDataTable.none") },
+								...families.map((family) => ({
+									value: family.family_id,
+									label: family.family_name ?? family.family_id,
+								})),
+							]}
+						/>
+						<input type="hidden" name="family_id" value={selectedFamilyId} />
 					</label>
 					<div className="text-sm">
 						<Label htmlFor="new-family-name" className="mb-1 block text-muted-foreground">
@@ -1146,12 +1245,12 @@ export default function NewModelForm({
 						<Label htmlFor="new-family-description" className="mb-1 block text-muted-foreground">
 							{t("modelCreation.form.newFamilyDescription")}
 						</Label>
-						<textarea
+						<Textarea
 							id="new-family-description"
 							aria-label={t("modelCreation.form.newFamilyDescription")}
 							value={newFamilyDescription}
 							onChange={(event) => setNewFamilyDescription(event.target.value)}
-							className="min-h-20 w-full rounded-md border px-3 py-2 text-sm"
+							className="min-h-20"
 						/>
 					</div>
 				</div>
@@ -1282,23 +1381,22 @@ export default function NewModelForm({
 							<div className="grid gap-2 lg:grid-cols-5">
 								<label className="text-xs">
 									<div className="mb-1 text-muted-foreground">{t("versionedPricing.provider")}</div>
-									<select
+									<FormSelect
+										compact
+										ariaLabel={t("versionedPricing.provider")}
 										value={providerRow.provider_id}
-										onChange={(event) =>
+										onValueChange={(value) =>
 											setProviderRows((prev) =>
 												prev.map((row) =>
-													row.id === providerRow.id ? { ...row, provider_id: event.target.value } : row
+													row.id === providerRow.id ? { ...row, provider_id: value } : row
 												)
 											)
 										}
-										className="w-full rounded-md border px-2 py-1.5 text-xs"
-									>
-										{sortedProviders.map((provider) => (
-											<option key={provider.api_provider_id} value={provider.api_provider_id}>
-												{provider.api_provider_name ?? provider.api_provider_id}
-											</option>
-										))}
-									</select>
+										options={sortedProviders.map((provider) => ({
+											value: provider.api_provider_id,
+											label: provider.api_provider_name ?? provider.api_provider_id,
+										}))}
+									/>
 								</label>
 								<div className="text-xs">
 									<Label htmlFor={`provider-public-model-${providerRow.id}`} className="mb-1 block text-muted-foreground">
@@ -1491,9 +1589,11 @@ export default function NewModelForm({
 										<div className="grid gap-2 lg:grid-cols-4">
 											<label className="text-xs">
 												<div className="mb-1 text-muted-foreground">{t("modelCreation.form.endpoint")}</div>
-												<select
+												<FormSelect
+													compact
+													ariaLabel={t("modelCreation.form.endpoint")}
 													value={capability.capability_id}
-													onChange={(event) =>
+													onValueChange={(value) =>
 														setProviderRows((prev) =>
 															prev.map((row) =>
 																row.id === providerRow.id
@@ -1501,7 +1601,7 @@ export default function NewModelForm({
 																			...row,
 																			capabilities: row.capabilities.map((innerCapability) =>
 																				innerCapability.id === capability.id
-																					? { ...innerCapability, capability_id: event.target.value }
+																					? { ...innerCapability, capability_id: value }
 																					: innerCapability
 																			),
 																		}
@@ -1509,20 +1609,19 @@ export default function NewModelForm({
 															)
 														)
 													}
-													className="w-full rounded-md border px-2 py-1.5 text-xs"
-												>
-													{Array.from(new Set([...COMMON_CAPABILITIES, capability.capability_id])).map((endpoint) => (
-														<option key={endpoint} value={endpoint}>
-															{endpoint}
-														</option>
-													))}
-												</select>
+													options={Array.from(new Set([...COMMON_CAPABILITIES, capability.capability_id])).map((endpoint) => ({
+														value: endpoint,
+														label: endpoint,
+													}))}
+												/>
 											</label>
 											<label className="text-xs">
 												<div className="mb-1 text-muted-foreground">{t("modelCreation.status")}</div>
-												<select
+												<FormSelect
+													compact
+													ariaLabel={t("modelCreation.status")}
 													value={capability.status}
-													onChange={(event) =>
+													onValueChange={(value) =>
 														setProviderRows((prev) =>
 															prev.map((row) =>
 																row.id === providerRow.id
@@ -1532,7 +1631,7 @@ export default function NewModelForm({
 																				innerCapability.id === capability.id
 																					? {
 																							...innerCapability,
-																							status: event.target.value as CapabilityDraft["status"],
+																							status: value as CapabilityDraft["status"],
 																						}
 																					: innerCapability
 																			),
@@ -1541,14 +1640,11 @@ export default function NewModelForm({
 															)
 														)
 													}
-													className="w-full rounded-md border px-2 py-1.5 text-xs"
-												>
-													{CAPABILITY_STATUS_OPTIONS.map((status) => (
-														<option key={status} value={status}>
-															{capabilityStatusLabels[status] ?? status}
-														</option>
-													))}
-												</select>
+													options={CAPABILITY_STATUS_OPTIONS.map((status) => ({
+														value: status,
+														label: capabilityStatusLabels[status] ?? status,
+													}))}
+												/>
 											</label>
 											<div className="flex items-end justify-between gap-2">
 												<Button
@@ -1649,23 +1745,21 @@ export default function NewModelForm({
 						<div className="grid gap-2 lg:grid-cols-12">
 							<label htmlFor={`benchmark-select-${row.id}`} className="text-xs lg:col-span-5">
 								<div className="mb-1 text-muted-foreground">{t("benchmarkComparison.benchmark")}</div>
-								<select
+								<FormSelect
+									compact
 									id={`benchmark-select-${row.id}`}
+									ariaLabel={t("benchmarkComparison.benchmark")}
 									value={row.benchmark_id}
-									onChange={(event) =>
+									onValueChange={(value) =>
 										setBenchmarkRows((prev) =>
-											prev.map((inner) => (inner.id === row.id ? { ...inner, benchmark_id: event.target.value } : inner))
+											prev.map((inner) => (inner.id === row.id ? { ...inner, benchmark_id: value } : inner))
 										)
 									}
-									className="w-full rounded-md border px-2 py-1.5 text-xs"
-								>
-					<option value="">{t("benchmarkComparison.selectBenchmark")}</option>
-									{benchmarkOptions.map((option) => (
-										<option key={option.id} value={option.id}>
-											{option.name}
-										</option>
-									))}
-								</select>
+									options={[
+										{ value: "", label: t("benchmarkComparison.selectBenchmark") },
+										...benchmarkOptions.map((option) => ({ value: option.id, label: option.name })),
+									]}
+								/>
 							</label>
 							<label htmlFor={`benchmark-score-${row.id}`} className="text-xs lg:col-span-2">
 								<div className="mb-1 text-muted-foreground">{t("modelEditor.advanced.benchmarks.score")}</div>
@@ -1828,27 +1922,29 @@ export default function NewModelForm({
 									<Label htmlFor={`new-benchmark-direction-${row.id}`} className="mb-1 block text-muted-foreground">
 									{t("modelCreation.form.direction")}
 									</Label>
-									<select
+									<FormSelect
+										compact
 										id={`new-benchmark-direction-${row.id}`}
+										ariaLabel={t("modelCreation.form.direction")}
 										value={row.ascending_order}
-										onChange={(event) =>
+										onValueChange={(value) =>
 											setNewBenchmarkRows((prev) =>
 												prev.map((inner, innerIndex) =>
 													innerIndex === index
 														? {
 																...inner,
-																ascending_order: event.target.value as NewBenchmarkDraft["ascending_order"],
+																ascending_order: value as NewBenchmarkDraft["ascending_order"],
 															}
 														: inner
 												)
 											)
 										}
-										className="w-full rounded-md border px-2 py-1.5 text-xs"
-									>
-										<option value="">{t("modelCreation.form.noDirection")}</option>
-										<option value="higher">{t("modelCreation.form.higherIsBetter")}</option>
-										<option value="lower">{t("benchmarkComparison.lowerIsBetter")}</option>
-									</select>
+										options={[
+											{ value: "", label: t("modelCreation.form.noDirection") },
+											{ value: "higher", label: t("modelCreation.form.higherIsBetter") },
+											{ value: "lower", label: t("benchmarkComparison.lowerIsBetter") },
+										]}
+									/>
 								</div>
 							</div>
 							<div className="grid gap-2 lg:grid-cols-12">
@@ -1928,19 +2024,13 @@ export default function NewModelForm({
 							<div className="space-y-2">
 								{group.rows.map((row) => (
 									<div key={row.id} className="grid gap-2 rounded-md border bg-background p-2 lg:grid-cols-8">
-									<select
-										aria-label={t("versionedPricing.provider")}
+									<FormSelect
+										compact
+										ariaLabel={t("versionedPricing.provider")}
 										value={row.provider_id}
-										onChange={(event) => setPricingField(row.id, "provider_id", event.target.value)}
-										className="rounded-md border px-2 py-1.5 text-xs"
-									>
-											<option value="">{t("versionedPricing.provider")}</option>
-											{pricingProviderOptions.map((provider) => (
-												<option key={provider.api_provider_id} value={provider.api_provider_id}>
-													{provider.api_provider_name ?? provider.api_provider_id}
-												</option>
-											))}
-										</select>
+										onValueChange={(value) => setPricingField(row.id, "provider_id", value)}
+										options={pricingProviderSelectOptions}
+									/>
 									<Input
 										aria-label={t("modelEditor.publicModelId")}
 										value={row.api_model_id}
@@ -1948,30 +2038,20 @@ export default function NewModelForm({
 										placeholder="api_model_id"
 										className="h-8 text-xs"
 									/>
-									<select
-										aria-label={t("modelEditor.capability")}
+									<FormSelect
+										compact
+										ariaLabel={t("modelEditor.capability")}
 										value={row.capability_id}
-										onChange={(event) => setPricingField(row.id, "capability_id", event.target.value)}
-										className="rounded-md border px-2 py-1.5 text-xs"
-									>
-											{COMMON_CAPABILITIES.map((capability) => (
-												<option key={capability} value={capability}>
-													{capability}
-												</option>
-											))}
-										</select>
-									<select
-										aria-label={t("modelEditor.meter")}
+										onValueChange={(value) => setPricingField(row.id, "capability_id", value)}
+										options={pricingCapabilitySelectOptions}
+									/>
+									<FormSelect
+										compact
+										ariaLabel={t("modelEditor.meter")}
 										value={row.meter}
-										onChange={(event) => setPricingField(row.id, "meter", event.target.value)}
-										className="rounded-md border px-2 py-1.5 text-xs"
-									>
-											{PRICING_METER_OPTIONS.map((meter) => (
-												<option key={meter.value} value={meter.value}>
-													{pricingMeterLabel(meter.value, meter.label)}
-												</option>
-											))}
-										</select>
+										onValueChange={(value) => setPricingField(row.id, "meter", value)}
+										options={pricingMeterSelectOptions}
+									/>
 									<Input
 										aria-label={t("modelEditor.pricePerUnit")}
 										value={row.price_per_unit}
@@ -2021,19 +2101,13 @@ export default function NewModelForm({
 							<div className="text-sm font-medium">{t("modelCreation.form.unassignedProvider")}</div>
 							{groupedPricingRows.unassignedRows.map((row) => (
 								<div key={row.id} className="grid gap-2 rounded-md border bg-background p-2 lg:grid-cols-8">
-									<select
-										aria-label={t("versionedPricing.provider")}
+									<FormSelect
+										compact
+										ariaLabel={t("versionedPricing.provider")}
 										value={row.provider_id}
-										onChange={(event) => setPricingField(row.id, "provider_id", event.target.value)}
-										className="rounded-md border px-2 py-1.5 text-xs"
-									>
-										<option value="">{t("versionedPricing.provider")}</option>
-										{pricingProviderOptions.map((provider) => (
-											<option key={provider.api_provider_id} value={provider.api_provider_id}>
-												{provider.api_provider_name ?? provider.api_provider_id}
-											</option>
-										))}
-									</select>
+										onValueChange={(value) => setPricingField(row.id, "provider_id", value)}
+										options={pricingProviderSelectOptions}
+									/>
 									<Input
 										aria-label={t("modelEditor.publicModelId")}
 										value={row.api_model_id}
@@ -2041,30 +2115,20 @@ export default function NewModelForm({
 										placeholder="api_model_id"
 										className="h-8 text-xs"
 									/>
-									<select
-										aria-label={t("modelEditor.capability")}
+									<FormSelect
+										compact
+										ariaLabel={t("modelEditor.capability")}
 										value={row.capability_id}
-										onChange={(event) => setPricingField(row.id, "capability_id", event.target.value)}
-										className="rounded-md border px-2 py-1.5 text-xs"
-									>
-										{COMMON_CAPABILITIES.map((capability) => (
-											<option key={capability} value={capability}>
-												{capability}
-											</option>
-										))}
-									</select>
-									<select
-										aria-label={t("modelEditor.meter")}
+										onValueChange={(value) => setPricingField(row.id, "capability_id", value)}
+										options={pricingCapabilitySelectOptions}
+									/>
+									<FormSelect
+										compact
+										ariaLabel={t("modelEditor.meter")}
 										value={row.meter}
-										onChange={(event) => setPricingField(row.id, "meter", event.target.value)}
-										className="rounded-md border px-2 py-1.5 text-xs"
-									>
-										{PRICING_METER_OPTIONS.map((meter) => (
-											<option key={meter.value} value={meter.value}>
-												{pricingMeterLabel(meter.value, meter.label)}
-											</option>
-										))}
-									</select>
+										onValueChange={(value) => setPricingField(row.id, "meter", value)}
+										options={pricingMeterSelectOptions}
+									/>
 									<Input
 										aria-label={t("modelEditor.pricePerUnit")}
 										value={row.price_per_unit}

@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
 	Dialog,
 	DialogContent,
@@ -396,18 +397,18 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 				) : null}
 
 				<div className="overflow-x-auto rounded-md border">
-					<table className="w-full text-sm">
-						<thead className="border-b bg-muted/40 text-left text-muted-foreground">
-							<tr>
+					<Table wrapInContainer={false} className="w-full text-sm">
+						<TableHeader className="border-b bg-muted/40 text-left text-muted-foreground">
+							<TableRow className="hover:bg-transparent dark:hover:bg-transparent">
 								{canManage ? (
-									<th className="w-10 p-3">
+									<TableHead className="h-auto w-10 p-3">
 										<Checkbox
 											checked={allSelected}
 											indeterminate={selectedVisible.length > 0 && !allSelected}
 											onCheckedChange={(checked) => setSelected(checked ? new Set(visibleIds.slice(0, maxBulkKeys)) : new Set())}
 											aria-label={t("keySecurity.selectAll")}
 										/>
-									</th>
+									</TableHead>
 								) : null}
 								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.key")} sortKey="name" activeSort={sort} onSortChange={changeSort} />
 								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.owner")} sortKey="owner" activeSort={sort} onSortChange={changeSort} />
@@ -417,13 +418,13 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.storedIn")} sortKey="storedIn" activeSort={sort} onSortChange={changeSort} />
 								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.status")} sortKey="status" activeSort={sort} onSortChange={changeSort} />
 								<SortableTableHead className="h-auto p-3 font-medium text-muted-foreground" label={t("keySecurity.columns.risks")} sortKey="risks" activeSort={sort} onSortChange={changeSort} />
-							</tr>
-						</thead>
-						<tbody className="divide-y">
+							</TableRow>
+						</TableHeader>
+						<TableBody>
 							{visible.map((key) => (
-								<tr key={key.id} className={cn(selected.has(key.id) && "bg-muted/30")}>
+								<TableRow key={key.id} className={cn(selected.has(key.id) && "bg-muted/30")}>
 									{canManage ? (
-										<td className="p-3">
+										<TableCell className="p-3">
 											<Checkbox
 												checked={selected.has(key.id)}
 												onCheckedChange={(checked) => setSelected((current) => {
@@ -433,30 +434,30 @@ export default function KeySecurityClient({ data }: { data: SettingsKeySecurityI
 												})}
 												aria-label={t("keySecurity.selectKey", { name: key.name })}
 											/>
-										</td>
+										</TableCell>
 									) : null}
-									<td className="p-3">
+									<TableCell className="p-3">
 										<Link href={keyDetailHref({ name: key.name, prefix: key.prefix, workspace_id: data.workspaceId })} className="font-medium hover:underline">{key.name}</Link>
 										<div className="font-mono text-xs text-muted-foreground">{key.prefix}…</div>
-									</td>
-									<td className="p-3">
+									</TableCell>
+									<TableCell className="p-3">
 										<div>{key.owner_name ?? t("keySecurity.unknownOwner")}</div>
 										{key.owner_email ? <div className="text-xs text-muted-foreground">{key.owner_email}</div> : null}
-									</td>
-									<td className="p-3 whitespace-nowrap"><DisplayDate value={key.created_at} /></td>
-									<td className="p-3 whitespace-nowrap">{key.last_used_at ? <DisplayDate value={key.last_used_at} /> : t("keySecurity.neverUsed")}</td>
-									<td className="p-3 whitespace-nowrap">{key.expires_at ? <DisplayDate value={key.expires_at} /> : t("keySecurity.never")}</td>
-									<td className="p-3">{key.storage_locations.length ? <KeyStorageLocationList value={key.storage_locations} className="text-xs" /> : <span className="text-muted-foreground">{t("keySecurity.notSet")}</span>}</td>
-									<td className="p-3"><Tag kind={keySecurityStatus(key)} label={statusLabel[keySecurityStatus(key)]} /></td>
-									<td className="p-3">
+									</TableCell>
+									<TableCell className="p-3 whitespace-nowrap"><DisplayDate value={key.created_at} /></TableCell>
+									<TableCell className="p-3 whitespace-nowrap">{key.last_used_at ? <DisplayDate value={key.last_used_at} /> : t("keySecurity.neverUsed")}</TableCell>
+									<TableCell className="p-3 whitespace-nowrap">{key.expires_at ? <DisplayDate value={key.expires_at} /> : t("keySecurity.never")}</TableCell>
+									<TableCell className="p-3">{key.storage_locations.length ? <KeyStorageLocationList value={key.storage_locations} className="text-xs" /> : <span className="text-muted-foreground">{t("keySecurity.notSet")}</span>}</TableCell>
+									<TableCell className="p-3"><Tag kind={keySecurityStatus(key)} label={statusLabel[keySecurityStatus(key)]} /></TableCell>
+									<TableCell className="p-3">
 										<div className="flex flex-wrap gap-1">
 											{keySecurityRisks(key).map((risk) => <Tag key={risk} kind={risk} label={t(`keySecurity.risks.${risk}` as never)} />)}
 										</div>
-									</td>
-								</tr>
+									</TableCell>
+								</TableRow>
 							))}
-						</tbody>
-					</table>
+						</TableBody>
+					</Table>
 				</div>
 				{!canManage ? <p className="text-xs text-muted-foreground">{t("keySecurity.adminOnly")}</p> : null}
 			</section>

@@ -3,6 +3,7 @@ import * as React from "react";
 import { useTranslations } from "@/i18n/react";
 import { AlertCircle, CheckCircle2, Clock3, Database, GitBranch, MessageSquareText, Route, Server, Wrench, type LucideIcon } from "lucide-react";
 import { Callout } from "@/components/ui/callout";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CopyButton } from "@/components/ui/copy-button";
 import { cn } from "@/lib/utils";
 import { DetailTimingBar } from "./DetailDialogPrimitives";
@@ -425,12 +426,14 @@ function ToolCallBlock({ call, state }: { call: TraceToolCall; state: string }) 
 				{call.id ? <code className="break-all text-[10px] text-muted-foreground">{call.id}</code> : null}
 				<span className={cn("ml-auto rounded-sm border px-2 py-1 text-[10px] font-medium", state === t("chatGaps.copyFailed" as never) ? "border-rose-500/25 bg-rose-500/10 text-rose-700 dark:text-rose-300" : "border-border/70 bg-background/70 text-muted-foreground")}>{state}</span>
 			</div>
-			<details className="group/tool mt-2 border-t border-border/60">
-				<summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-2 text-[11px] font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-					<span>{t("trace.arguments" as never)}</span><span className="transition-transform group-open/tool:rotate-180">⌄</span>
-				</summary>
-				<pre className="max-h-64 overflow-auto border-t border-border/60 py-2.5 text-xs leading-5 whitespace-pre-wrap break-words">{stringify(call.arguments) || "{}"}</pre>
-			</details>
+			<Collapsible className="mt-2 border-t border-border/60">
+				<CollapsibleTrigger className="group/tool flex w-full cursor-pointer items-center justify-between gap-2 py-2 text-left text-[11px] font-medium text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+					<span>{t("trace.arguments" as never)}</span><span className="transition-transform group-data-[panel-open]/tool:rotate-180">⌄</span>
+				</CollapsibleTrigger>
+				<CollapsibleContent keepMounted>
+					<pre className="max-h-64 overflow-auto border-t border-border/60 py-2.5 text-xs leading-5 whitespace-pre-wrap break-words">{stringify(call.arguments) || "{}"}</pre>
+				</CollapsibleContent>
+			</Collapsible>
 		</div>
 	);
 }
@@ -675,15 +678,15 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 							{routingTiming?.duration != null ? <StatusPill><Clock3 className="size-3" aria-hidden="true" />{formatTraceDuration(routingTiming.duration)}</StatusPill> : <StatusPill>{t("trace.routingDurationNotRecorded" as never)}</StatusPill>}
 						</div>
 						<RoutingTracePanel trace={request.routing_trace ?? null} decisions={decisions} providerNames={providerNames} />
-						<details className="group/input border-y border-border/60">
-							<summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+						<Collapsible className="border-y border-border/60">
+							<CollapsibleTrigger className="group/input flex w-full cursor-pointer items-center justify-between gap-3 px-3.5 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
 								<span className="min-w-0"><span className="block text-xs font-medium">{t("trace.requestInput" as never)}</span><span className="mt-0.5 block text-[10px] text-muted-foreground">{inputMessages.length ? inputMessages.length + " messages" : t("trace.inspectSubmittedPayload" as never)}</span></span>
-								<span className="text-xs text-muted-foreground transition-transform group-open/input:rotate-180">⌄</span>
-							</summary>
-							<div className="border-t border-border/60 p-3">
+								<span className="text-xs text-muted-foreground transition-transform group-data-[panel-open]/input:rotate-180">⌄</span>
+							</CollapsibleTrigger>
+							<CollapsibleContent keepMounted className="border-t border-border/60 p-3">
 								{inputMessages.length > 0 ? <InputMessages messages={inputMessages} /> : inputPayload != null ? <p className="text-xs text-muted-foreground">{t("trace.thisRequestFormatHasNoReadableMessageListInspectTheRetainedRequestPayloadBelow" as never)}</p> : <p className="text-xs text-muted-foreground">{ioLogNotice ?? t("trace.noRequestPayloadWasRetained" as never)}</p>}
-							</div>
-						</details>
+							</CollapsibleContent>
+						</Collapsible>
 					</div>
 				</LifecycleStep>
 
@@ -785,9 +788,9 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 							<div><div className="text-[10px] font-medium text-muted-foreground">{t("strings.Retention" as never)}</div><div className="mt-1 text-xs font-semibold">{ioLog?.retention_until ? formatWordyDateTime(ioLog.retention_until) : t("usageGaps.copyNotRecorded" as never)}</div></div>
 						</div>
 						{ioLogNotice ? <p className="rounded-md border border-amber-500/25 bg-amber-500/[0.06] p-3 text-xs text-amber-800 dark:text-amber-200">{ioLogNotice}</p> : null}
-						{payload ? <details className="group/raw rounded-md border border-border/60 bg-background/60">
-							<summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-3 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span>{t("trace.inspectRetainedPayload" as never)}</span><span className="text-muted-foreground transition-transform group-open/raw:rotate-180">⌄</span></summary>
-							<div className="space-y-3 border-t border-border/60 p-3">
+						{payload ? <Collapsible className="rounded-md border border-border/60 bg-background/60">
+							<CollapsibleTrigger className="group/raw flex w-full cursor-pointer items-center justify-between gap-3 px-3.5 py-3 text-left text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span>{t("trace.inspectRetainedPayload" as never)}</span><span className="text-muted-foreground transition-transform group-data-[panel-open]/raw:rotate-180">⌄</span></CollapsibleTrigger>
+							<CollapsibleContent keepMounted className="space-y-3 border-t border-border/60 p-3">
 								{[
 									[t("trace.Request" as never), rawInput || t("trace.Norequestpayload" as never)],
 									[t("trace.Gatewayresponse" as never), rawGatewayResponse || t("trace.Nogatewayresponse" as never)],
@@ -804,8 +807,8 @@ export function GenerationTraceView({ request, ioLog, timelineItems, providerNam
 										<pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border/60 bg-muted/30 p-3 text-[11px] leading-5">{content}</pre>
 									</div>
 								))}
-							</div>
-						</details> : <div className="rounded-md border border-dashed border-border/70 p-4 text-xs text-muted-foreground">{ioLogNotice ?? t("trace.noRetainedIOPayloadIsAvailableForThisRequest" as never)}</div>}
+							</CollapsibleContent>
+						</Collapsible> : <div className="rounded-md border border-dashed border-border/70 p-4 text-xs text-muted-foreground">{ioLogNotice ?? t("trace.noRetainedIOPayloadIsAvailableForThisRequest" as never)}</div>}
 					</div>
 				</LifecycleStep>
 			</div>

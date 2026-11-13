@@ -257,9 +257,11 @@ function SelectionDialog(props: {
 													</div>
 												</div>
 											</div>
-											<button
+											<Button
 												type="button"
-												className="rounded-md border px-2 py-1 text-xs hover:bg-muted"
+												variant="outline"
+												size="xs"
+												className="px-2"
 												onClick={() => {
 													setDraft((prev) => {
 														if (prev.includes(opt.value)) {
@@ -270,7 +272,7 @@ function SelectionDialog(props: {
 												}}
 											>
 										{checked ? t("guardrailsControls.selected") : t("guardrailsControls.select")}
-											</button>
+											</Button>
 										</li>
 									);
 								})}

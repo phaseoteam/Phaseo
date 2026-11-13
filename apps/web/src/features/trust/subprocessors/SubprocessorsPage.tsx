@@ -4,6 +4,7 @@ import type { RouteMetadataInput } from "@/lib/start/metadata";
 import { Link } from "@/i18n/navigation";
 import { getTranslations } from "@/i18n/server";
 import { TrustCallout, TrustDocument, TrustSection, TrustTable } from "@/components/trust/TrustDocument";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { PublicLocale } from "@/i18n/routing";
 import { buildMetadata } from "@/lib/seo";
 
@@ -88,31 +89,31 @@ export function SubprocessorsPage() {
 
 			<TrustSection id="core" title={t("sections.core")}>
 				<TrustTable>
-					<table className="w-full min-w-[960px] text-left">
-						<thead>
-							<tr className="border-b border-border text-xs">
-								<th className="py-3 pr-4 font-medium">{t("headers.provider")}</th>
-								<th className="py-3 pr-4 font-medium">{t("headers.purpose")}</th>
-								<th className="py-3 pr-4 font-medium">{t("headers.data")}</th>
-								<th className="py-3 pr-4 font-medium">{t("headers.location")}</th>
-								<th className="py-3 font-medium">{t("headers.whenUsed")}</th>
-							</tr>
-						</thead>
-						<tbody className="align-top">
+					<Table wrapInContainer={false} className="min-w-[960px] text-left text-[length:inherit]">
+						<TableHeader>
+							<TableRow className="border-b border-border text-xs hover:bg-transparent dark:hover:bg-transparent">
+								<TableHead className="h-auto px-0 py-3 pr-4 font-medium text-inherit dark:text-inherit">{t("headers.provider")}</TableHead>
+								<TableHead className="h-auto px-0 py-3 pr-4 font-medium text-inherit dark:text-inherit">{t("headers.purpose")}</TableHead>
+								<TableHead className="h-auto px-0 py-3 pr-4 font-medium text-inherit dark:text-inherit">{t("headers.data")}</TableHead>
+								<TableHead className="h-auto px-0 py-3 pr-4 font-medium text-inherit dark:text-inherit">{t("headers.location")}</TableHead>
+								<TableHead className="h-auto px-0 py-3 font-medium text-inherit dark:text-inherit">{t("headers.whenUsed")}</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody className="align-top">
 							{coreProcessors.map((provider) => {
 								const copy = coreCopy[provider.id];
 								return (
-									<tr key={provider.id} className="border-b border-border last:border-0">
-										<th className="py-4 pr-4 font-medium text-foreground">{provider.name}</th>
-										<td className="py-4 pr-4">{copy.purpose}</td>
-										<td className="py-4 pr-4">{copy.data}</td>
-										<td className="py-4 pr-4">{copy.location}</td>
-										<td className="py-4">{copy.condition}</td>
-									</tr>
+									<TableRow key={provider.id} className="border-b border-border last:border-0 hover:bg-transparent dark:hover:bg-transparent">
+										<TableHead className="h-auto px-0 py-4 pr-4 font-medium text-foreground align-top dark:text-foreground">{provider.name}</TableHead>
+										<TableCell className="p-0 py-4 pr-4 align-top">{copy.purpose}</TableCell>
+										<TableCell className="p-0 py-4 pr-4 align-top">{copy.data}</TableCell>
+										<TableCell className="p-0 py-4 pr-4 align-top">{copy.location}</TableCell>
+										<TableCell className="p-0 py-4 align-top">{copy.condition}</TableCell>
+									</TableRow>
 								);
 							})}
-						</tbody>
-					</table>
+						</TableBody>
+					</Table>
 				</TrustTable>
 			</TrustSection>
 
@@ -156,27 +157,27 @@ export function SubprocessorsPage() {
 			<TrustSection id="operations" title={t("sections.operations")}>
 				<p>{t("operations.introduction")}</p>
 				<TrustTable>
-					<table className="w-full min-w-[720px] text-left">
-						<thead>
-							<tr className="border-b border-border text-xs">
-								<th className="py-3 pr-4 font-medium">{t("headers.provider")}</th>
-								<th className="py-3 pr-4 font-medium">{t("headers.role")}</th>
-								<th className="py-3 font-medium">{t("headers.data")}</th>
-							</tr>
-						</thead>
-						<tbody className="align-top">
+					<Table wrapInContainer={false} className="min-w-[720px] text-left text-[length:inherit]">
+						<TableHeader>
+							<TableRow className="border-b border-border text-xs hover:bg-transparent dark:hover:bg-transparent">
+								<TableHead className="h-auto px-0 py-3 pr-4 font-medium text-inherit dark:text-inherit">{t("headers.provider")}</TableHead>
+								<TableHead className="h-auto px-0 py-3 pr-4 font-medium text-inherit dark:text-inherit">{t("headers.role")}</TableHead>
+								<TableHead className="h-auto px-0 py-3 font-medium text-inherit dark:text-inherit">{t("headers.data")}</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody className="align-top">
 							{operationalProviders.map((provider) => {
 								const copy = operationalCopy[provider.id];
 								return (
-									<tr key={provider.id} className="border-b border-border last:border-0">
-										<th className="py-4 pr-4 font-medium text-foreground">{provider.name}</th>
-										<td className="py-4 pr-4">{copy.role}</td>
-										<td className="py-4">{copy.data}</td>
-									</tr>
+									<TableRow key={provider.id} className="border-b border-border last:border-0 hover:bg-transparent dark:hover:bg-transparent">
+										<TableHead className="h-auto px-0 py-4 pr-4 font-medium text-foreground align-top dark:text-foreground">{provider.name}</TableHead>
+										<TableCell className="p-0 py-4 pr-4 align-top">{copy.role}</TableCell>
+										<TableCell className="p-0 py-4 align-top">{copy.data}</TableCell>
+									</TableRow>
 								);
 							})}
-						</tbody>
-					</table>
+						</TableBody>
+					</Table>
 				</TrustTable>
 			</TrustSection>
 

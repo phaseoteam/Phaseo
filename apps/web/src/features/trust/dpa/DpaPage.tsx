@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
 import { TrustCallout, TrustDocument, TrustSection, TrustTable } from "@/components/trust/TrustDocument";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { buildMetadata } from "@/lib/seo";
 
 export async function getDpaMetadata({ params }: RouteMetadataInput): Promise<PageMetadata> {
@@ -192,9 +193,9 @@ export function DpaPage() {
 
 			<TrustSection id="annex-1" title={sectionTitles.annex1}>
 				<TrustTable>
-					<table className="w-full min-w-[720px] text-left"><tbody className="align-top">
-						{content.annex1.map((row, index) => <tr key={row.label} className={index < content.annex1.length - 1 ? "border-b border-border" : undefined}><th className="w-56 py-4 pr-4 font-medium text-foreground">{row.label}</th><td className="py-4">{row.value}</td></tr>)}
-					</tbody></table>
+					<Table wrapInContainer={false} className="min-w-[720px] text-left text-[length:inherit]"><TableBody className="align-top">
+						{content.annex1.map((row, index) => <TableRow key={row.label} className={`${index < content.annex1.length - 1 ? "border-b border-border" : "border-b-0"} hover:bg-transparent dark:hover:bg-transparent`}><TableHead className="h-auto w-56 px-0 py-4 pr-4 align-top font-medium text-foreground dark:text-foreground">{row.label}</TableHead><TableCell className="p-0 py-4 align-top">{row.value}</TableCell></TableRow>)}
+					</TableBody></Table>
 				</TrustTable>
 			</TrustSection>
 
@@ -231,7 +232,7 @@ export function DpaPage() {
 
 			<TrustSection id="signature" title={sectionTitles.signature}>
 				<TrustTable>
-					<table className="w-full min-w-[640px] text-left"><thead><tr className="border-b border-border"><th className="py-3 pr-8 font-medium text-foreground">{content.signature.customer}</th><th className="py-3 font-medium text-foreground">{content.signature.phaseoParty}</th></tr></thead><tbody><tr><td className="py-4 pr-8">{content.signature.customerFields.map((label) => <div key={label}>{label}: {content.signature.insertPlaceholder}</div>)}</td><td className="py-4"><div>{content.signature.phaseoNameLabel}: {content.signature.phaseoName}</div><div>{content.signature.capacityLabel}: {content.signature.capacity}</div><div>{content.signature.signatureLabel}: {content.signature.insertPlaceholder}</div><div>{content.signature.dateLabel}: {content.signature.insertPlaceholder}</div></td></tr></tbody></table>
+					<Table wrapInContainer={false} className="min-w-[640px] text-left text-[length:inherit]"><TableHeader><TableRow className="border-b border-border hover:bg-transparent dark:hover:bg-transparent"><TableHead className="h-auto px-0 py-3 pr-8 font-medium text-foreground dark:text-foreground">{content.signature.customer}</TableHead><TableHead className="h-auto px-0 py-3 font-medium text-foreground dark:text-foreground">{content.signature.phaseoParty}</TableHead></TableRow></TableHeader><TableBody><TableRow className="hover:bg-transparent dark:hover:bg-transparent"><TableCell className="p-0 py-4 pr-8">{content.signature.customerFields.map((label) => <div key={label}>{label}: {content.signature.insertPlaceholder}</div>)}</TableCell><TableCell className="p-0 py-4"><div>{content.signature.phaseoNameLabel}: {content.signature.phaseoName}</div><div>{content.signature.capacityLabel}: {content.signature.capacity}</div><div>{content.signature.signatureLabel}: {content.signature.insertPlaceholder}</div><div>{content.signature.dateLabel}: {content.signature.insertPlaceholder}</div></TableCell></TableRow></TableBody></Table>
 				</TrustTable>
 			</TrustSection>
 		</TrustDocument>

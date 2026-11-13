@@ -3,6 +3,7 @@ import * as React from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Sparkles, Hammer, Clock, Home, Info } from "lucide-react";
 import { motion } from "motion/react";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useLocale, useTranslations } from "@/i18n/react";
 
 type Action =
@@ -254,8 +255,7 @@ export default function ComingSoon({
 												? "noreferrer"
 												: undefined
 										}
-										className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm
-                               transition hover:bg-black dark:bg-white dark:text-black dark:hover:bg-zinc-100"
+										className={buttonVariants({ size: "lg", className: "shadow-sm" })}
 									>
 										{primaryAction.icon ?? (
 											<Info className="h-4 w-4" />
@@ -263,16 +263,16 @@ export default function ComingSoon({
 										{primaryAction.label}
 									</a>
 								) : (
-									<button
+									<Button
 										onClick={primaryAction.onClick}
-										className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white shadow-sm
-                               transition hover:bg-black dark:bg-white dark:text-black dark:hover:bg-zinc-100"
+										size="lg"
+										className="shadow-sm"
 									>
 										{primaryAction.icon ?? (
 											<Info className="h-4 w-4" />
 										)}
 										{primaryAction.label}
-									</button>
+									</Button>
 								))}
 
 							{secondaryAction &&
@@ -289,8 +289,7 @@ export default function ComingSoon({
 												? "noreferrer"
 												: undefined
 										}
-										className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900
-                               shadow-sm transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+										className={buttonVariants({ variant: "outline", size: "lg", className: "shadow-sm" })}
 									>
 										{secondaryAction.icon ?? (
 											<Home className="h-4 w-4" />
@@ -298,16 +297,17 @@ export default function ComingSoon({
 										{secondaryAction.label}
 									</a>
 								) : (
-									<button
+									<Button
 										onClick={secondaryAction.onClick}
-										className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900
-                               shadow-sm transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+										variant="outline"
+										size="lg"
+										className="shadow-sm"
 									>
 										{secondaryAction.icon ?? (
 											<Home className="h-4 w-4" />
 										)}
 										{secondaryAction.label}
-									</button>
+									</Button>
 								))}
 
 							{extraActions?.map((a, i) =>
@@ -323,22 +323,22 @@ export default function ComingSoon({
 												? "noreferrer"
 												: undefined
 										}
-										className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900
-                               shadow-sm transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+										className={buttonVariants({ variant: "outline", size: "lg", className: "shadow-sm" })}
 									>
 										{a.icon}
 										{a.label}
 									</a>
 								) : (
-									<button
+									<Button
 										key={i}
 										onClick={a.onClick}
-										className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-900
-                               shadow-sm transition hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+										variant="outline"
+										size="lg"
+										className="shadow-sm"
 									>
 										{a.icon}
 										{a.label}
-									</button>
+									</Button>
 								)
 							)}
 						</div>

@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { invalidateAccountQueries } from "@/lib/query/invalidation";
 import { fetchProviderCatalogAction, updateProviderCatalogAction } from "@/features/settings/account/providers/actions";
 import type { SettingsProviderOnboardingInitialData } from "@/lib/fetchers/internal/settingsTypes";
@@ -36,6 +38,6 @@ export default function ProviderIntegrationSummary({ source, canManage }: { sour
 			<div><dt className="text-muted-foreground">{t("nextSync")}</dt><dd className="mt-1">{date(source.next_poll_at)}</dd></div>
 		</dl>
 		{source.last_error ? <p role="alert" className="text-sm text-destructive">{t("syncFailed")}</p> : null}
-		<details className="border-t pt-4"><summary className="cursor-pointer text-sm font-medium">{t("webhook")}</summary><div className="pt-4">{canManage ? <ProviderWebhookSettings providerSlug={source.provider_slug} webhookUrl={source.webhookUrl} configured={source.webhookConfigured} /> : <p className="text-sm text-muted-foreground">{t("ownerOnly")}</p>}</div></details>
+		<Collapsible className="border-t pt-4"><CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1.5 text-left text-sm font-medium"><ChevronRight className="size-3.5 shrink-0 text-muted-foreground transition-transform group-data-[panel-open]:rotate-90" />{t("webhook")}</CollapsibleTrigger><CollapsibleContent keepMounted className="pt-4">{canManage ? <ProviderWebhookSettings providerSlug={source.provider_slug} webhookUrl={source.webhookUrl} configured={source.webhookConfigured} /> : <p className="text-sm text-muted-foreground">{t("ownerOnly")}</p>}</CollapsibleContent></Collapsible>
 	</section>;
 }

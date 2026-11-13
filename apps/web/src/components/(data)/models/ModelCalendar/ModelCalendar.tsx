@@ -40,6 +40,7 @@ import {
 	DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 
 const MAX_EVENTS_PER_DAY = 3;
 
@@ -474,14 +475,16 @@ export default function ModelCalendar({
 		<section className="space-y-0 text-sm">
 			<div className="mb-4 flex flex-wrap items-center justify-between gap-3">
 				<div className="flex items-center gap-2">
-					<button
+					<Button
 						type="button"
+						variant="outline"
+						size="icon-xs"
 						aria-label={t("previousMonth")}
 						onClick={() => adjustMonth(-1)}
-						className="rounded-full border border-zinc-200 p-1 text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
+						className="text-muted-foreground hover:text-foreground"
 					>
 						<ChevronLeft className="h-3.5 w-3.5" />
-					</button>
+					</Button>
 
 					<DropdownMenu>
 						<DropdownMenuTrigger className="inline-flex items-center gap-1 text-base font-semibold text-zinc-900 transition hover:text-zinc-700 dark:text-zinc-50 dark:hover:text-zinc-300">
@@ -553,30 +556,34 @@ export default function ModelCalendar({
 						</DropdownMenuContent>
 					</DropdownMenu>
 
-					<button
+					<Button
 						type="button"
+						variant="outline"
+						size="icon-xs"
 						aria-label={t("nextMonth")}
 						onClick={() => adjustMonth(1)}
-						className="rounded-full border border-zinc-200 p-1 text-zinc-500 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:text-zinc-100"
+						className="text-muted-foreground hover:text-foreground"
 					>
 						<ChevronRight className="h-3.5 w-3.5" />
-					</button>
+					</Button>
 
 					{!(
 						currentMonth.getFullYear() === now.getFullYear() &&
 						currentMonth.getMonth() === now.getMonth()
 					) && (
-						<button
+						<Button
 							type="button"
+							variant="outline"
+							size="sm"
 							onClick={() =>
 								setCurrentMonth(
 									new Date(now.getFullYear(), now.getMonth(), 1)
 								)
 							}
-							className="rounded-full border border-zinc-200 px-3 py-1 text-sm font-medium text-zinc-600 transition hover:border-zinc-300 hover:text-zinc-900 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-zinc-500 dark:hover:text-zinc-50"
+							className="text-muted-foreground hover:text-foreground"
 						>
 							{t("today")}
-						</button>
+						</Button>
 					)}
 				</div>
 

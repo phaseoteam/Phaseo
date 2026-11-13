@@ -15,6 +15,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/react";
@@ -271,17 +272,17 @@ export default function ContentProvenanceTool() {
 								</div>
 							))}
 						</div>
-						<details className="group mt-4 overflow-hidden rounded-xl border">
-							<summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset [&::-webkit-details-marker]:hidden">
+						<Collapsible className="mt-4 overflow-hidden rounded-xl border">
+							<CollapsibleTrigger className="group flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left text-sm font-medium transition-colors hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset">
 								<span>{t("rawResponse")}</span>
-								<ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
-							</summary>
-							<div className="border-t bg-zinc-950 text-zinc-100">
+								<ChevronDown className="size-4 text-muted-foreground transition-transform group-data-[panel-open]:rotate-180" />
+							</CollapsibleTrigger>
+							<CollapsibleContent keepMounted className="border-t bg-zinc-950 text-zinc-100">
 								<pre className="max-h-96 overflow-auto p-4 font-mono text-xs leading-5">
 									<code>{JSON.stringify(result, null, 2)}</code>
 								</pre>
-							</div>
-						</details>
+							</CollapsibleContent>
+						</Collapsible>
 					</CardContent>
 				</Card>
 			) : null}

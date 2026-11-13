@@ -29,6 +29,14 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 } from "@/components/ui/pagination";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
@@ -164,36 +172,36 @@ export default function EnterpriseInvoices(props: {
 					</div>
 				) : (
 					<div className="w-full overflow-x-auto">
-						<table className="w-full text-sm table-fixed border-collapse">
-							<thead>
-								<tr className="text-left text-xs text-muted-foreground">
-					<th className="py-2 pr-4 w-44">{t("invoice")}</th>
-					<th className="py-2 pr-4 w-64">{t("billingPeriod")}</th>
-					<th className="py-2 pr-4 w-32">{t("status")}</th>
-					<th className="py-2 pr-4 w-32">{t("issued")}</th>
-					<th className="py-2 pr-4 w-32">{t("due")}</th>
-					<th className="py-2 pr-4 w-36 text-right">{t("amount")}</th>
-					<th className="py-2 pl-4 w-44 text-right">{t("actions")}</th>
-								</tr>
-							</thead>
-							<tbody className="divide-y">
+						<Table wrapInContainer={false} className="w-full text-sm table-fixed border-collapse">
+							<TableHeader>
+								<TableRow className="text-left text-xs text-muted-foreground hover:bg-transparent">
+					<TableHead className="h-auto px-0 text-xs text-muted-foreground py-2 pr-4 w-44">{t("invoice")}</TableHead>
+					<TableHead className="h-auto px-0 text-xs text-muted-foreground py-2 pr-4 w-64">{t("billingPeriod")}</TableHead>
+					<TableHead className="h-auto px-0 text-xs text-muted-foreground py-2 pr-4 w-32">{t("status")}</TableHead>
+					<TableHead className="h-auto px-0 text-xs text-muted-foreground py-2 pr-4 w-32">{t("issued")}</TableHead>
+					<TableHead className="h-auto px-0 text-xs text-muted-foreground py-2 pr-4 w-32">{t("due")}</TableHead>
+					<TableHead className="h-auto px-0 text-xs text-muted-foreground py-2 pr-4 w-36 text-right">{t("amount")}</TableHead>
+					<TableHead className="h-auto px-0 text-xs text-muted-foreground py-2 pl-4 w-44 text-right">{t("actions")}</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
 								{visible.map((row) => {
 									const meta = statusMeta(row.status, (key) => t(key as never));
 									const invoiceLabel = row.stripe_invoice_number || row.stripe_invoice_id || row.id;
 									const canOpenInvoice = Boolean(row.stripe_invoice_id);
 									const isBusy = busyInvoiceId === row.stripe_invoice_id;
 									return (
-										<tr key={row.id}>
-											<td className="py-3 pr-4">
+										<TableRow key={row.id}>
+											<TableCell className="px-0 py-3 pr-4">
 												<div className="font-medium truncate" title={invoiceLabel}>{invoiceLabel}</div>
 								<div className="text-xs text-muted-foreground truncate">{row.stripe_invoice_id ?? t("internalInvoice")}</div>
-											</td>
-											<td className="py-3 pr-4">
+											</TableCell>
+											<TableCell className="px-0 py-3 pr-4">
 												<div className="truncate" title={formatPeriod(row.period_start, row.period_end)}>
 													{formatPeriod(row.period_start, row.period_end)}
 												</div>
-											</td>
-											<td className="py-3 pr-4">
+											</TableCell>
+											<TableCell className="px-0 py-3 pr-4">
 												<span
 													className={cn(
 														"inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
@@ -202,13 +210,13 @@ export default function EnterpriseInvoices(props: {
 												>
 													{meta.label}
 												</span>
-											</td>
-											<td className="py-3 pr-4 text-muted-foreground">{format.date(row.issued_at)}</td>
-											<td className="py-3 pr-4 text-muted-foreground">{format.date(row.due_at)}</td>
-											<td className="py-3 pr-4 text-right font-medium">
+											</TableCell>
+											<TableCell className="px-0 py-3 pr-4 text-muted-foreground">{format.date(row.issued_at)}</TableCell>
+											<TableCell className="px-0 py-3 pr-4 text-muted-foreground">{format.date(row.due_at)}</TableCell>
+											<TableCell className="px-0 py-3 pr-4 text-right font-medium">
 												{formatNanos(row.amount_nanos, String(row.currency ?? "USD"))}
-											</td>
-											<td className="py-3 pl-4">
+											</TableCell>
+											<TableCell className="px-0 py-3 pl-4">
 												<div className="flex items-center justify-end gap-2">
 													<Button
 														size="sm"
@@ -231,12 +239,12 @@ export default function EnterpriseInvoices(props: {
 														<ExternalLink className="ml-1 h-3.5 w-3.5" />
 													</Button>
 												</div>
-											</td>
-										</tr>
+											</TableCell>
+										</TableRow>
 									);
 								})}
-							</tbody>
-						</table>
+							</TableBody>
+						</Table>
 					</div>
 				)}
 
