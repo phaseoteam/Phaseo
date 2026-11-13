@@ -79,14 +79,17 @@ const git = (args: string) => execSync(`git ${args}`, { cwd: __dirname, stdio: [
  * Which source a build came from, for Account → About and Diagnostics: the commit, when the config was read (the app
  * build embeds this config) and the build number, which is the number of commits up to HEAD, so each build from a
  * later commit gets a higher Android versionCode and iOS build number. Builds outside a git checkout leave these
- * out, and so does a shallow clone for the count, which would be meaningless there.
+ * out, and so does a shallow clone for the count, which would be meaningless there. Triage from a computer fetches
+ * the source at the full commit (`buildSha`), and says when the build had uncommitted changes (`buildDirty`).
  */
-function buildInfo(): { buildCommit?: string; builtAt?: string; buildNumber?: number } {
+function buildInfo(): { buildCommit?: string; buildSha?: string; buildDirty?: boolean; builtAt?: string; buildNumber?: number } {
   try {
-    const commit = git("rev-parse --short=10 HEAD");
-    if (!commit) return {};
+    const sha = git("rev-parse HEAD");
+    if (!sha) return {};
     const count = git("rev-parse --is-shallow-repository") === "true" ? Number.NaN : Number(git("rev-list --count HEAD"));
-    return { buildCommit: commit, builtAt: new Date().toISOString(), ...(Number.isInteger(count) && count > 0 ? { buildNumber: count } : {}) };
+    // Untracked files count too (a new file a build imports), but only in the app and the shared packages it builds from.
+    const dirty = git("status --porcelain -- . ../../packages") !== "";
+    return { buildCommit: sha.slice(0, 10), buildSha: sha, ...(dirty ? { buildDirty: true } : {}), builtAt: new Date().toISOString(), ...(Number.isInteger(count) && count > 0 ? { buildNumber: count } : {}) };
   } catch {
     return {};
   }

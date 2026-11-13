@@ -45,8 +45,18 @@ export async function prepareTriageCheckout(root: string, commit: string | undef
 
 class MissingCommitError extends Error {}
 
-async function checkout(root: string, url: string, commit: string, git: TriageGit) {
+const checkoutsInProgress = new Map<string, Promise<string>>();
+
+/** One checkout per folder at a time, so triages that resolve to the same commit (one directly, one falling back to main) don't race on its Git index. */
+function checkout(root: string, url: string, commit: string, git: TriageGit): Promise<string> {
 	const directory = path.join(root, `phaseo-${commit.slice(0, 12)}`);
+	const current = (checkoutsInProgress.get(directory) ?? Promise.resolve("")).catch(() => "").then(() => prepareDirectory(url, commit, git, directory));
+	checkoutsInProgress.set(directory, current);
+	void current.catch(() => undefined).finally(() => { if (checkoutsInProgress.get(directory) === current) checkoutsInProgress.delete(directory); });
+	return current;
+}
+
+async function prepareDirectory(url: string, commit: string, git: TriageGit, directory: string) {
 	await mkdir(directory, { recursive: true });
 	// A checkout from an earlier triage is reused as it is, including the agent's changes; an interrupted fetch is finished.
 	if (existsSync(path.join(directory, ".git"))) {

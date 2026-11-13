@@ -1,3 +1,4 @@
+import type { PhoneBuild } from "@phaseo/phone-protocol";
 import type { TraceDiagnostics } from "./diagnostics";
 import type { WorkspaceOverview } from "./workspaceOverview";
 
@@ -64,10 +65,11 @@ export function validateIssueDraft(value: unknown): { title: string; body: strin
 }
 
 /** A playbook file name the main process accepts: always inside the checkout's `.phaseo-triage` folder. */
-export const triagePlaybookPattern = /^\.phaseo-triage\/playbook-\d{8}-\d{6}\.md$/;
-export function triagePlaybookName(now = new Date()) {
+export const triagePlaybookPattern = /^\.phaseo-triage\/playbook-\d{8}-\d{6}(?:-[0-9a-f]{8})?\.md$/;
+/** `unique` adds a random part, for phones: two requests for one build in the same second would otherwise share a playbook. */
+export function triagePlaybookName(now = new Date(), unique = false) {
 	const stamp = now.toISOString().replace(/\D/g, "").slice(0, 14);
-	return `.phaseo-triage/playbook-${stamp.slice(0, 8)}-${stamp.slice(8)}.md`;
+	return `.phaseo-triage/playbook-${stamp.slice(0, 8)}-${stamp.slice(8)}${unique ? `-${globalThis.crypto.randomUUID().slice(0, 8)}` : ""}.md`;
 }
 
 /** The message box without the playbook link the triage screen puts first, so what the person typed survives a retry or Cancel. */
@@ -173,6 +175,78 @@ ${diagnostics}
 4. Decide whose problem it is: a bug in Phaseo, or the person's setup (an account, a missing or outdated tool, the network, permissions, or a third-party service being down). If it is their setup, tell them how to fix it, and stop there.
 5. If it is Phaseo's bug, draft an issue for ${triage.repository} with the draft_issue tool: a title, what happened, steps to reproduce, the version (${build.version}, commit ${commit}), the root cause and a suggested fix. Leave out anything personal: names, email addresses, paths under the home folder, tokens and the content of the person's chats. The person reads the draft in the app and decides whether to file it. Never file it yourself: no \`gh issue create\` and no GitHub API calls that create issues. Without the draft_issue tool, put the draft at the end of your reply under "Issue draft" instead.
 ${pullRequest}
+
+Finish with a short summary: the cause, the fix, the proof, whose problem it is, and whether you drafted an issue.
+`;
+}
+
+export type PhonePlaybookInput = {
+	build: PhoneBuild;
+	triage: TriageProject;
+	checkout: string;
+	/** The phone's name as it paired, so the agent can tell the person which phone it means. */
+	device: string;
+	/** The phone's own slow operations, as it sent them; empty when it sent none. */
+	diagnostics?: string;
+};
+
+const phonePlatform = (platform: string) => ({ android: "Android", ios: "iOS" })[platform] ?? platform;
+
+/**
+ * The playbook a triage chat started from a phone points its agent at. The phone can't run an agent or a build, so the
+ * agent works on the computer, in the phone app's source at the phone build's commit, and reports back in the thread.
+ */
+export function phoneTriagePlaybook({ build, triage, checkout, device, diagnostics }: PhonePlaybookInput) {
+	const commit = triage.commit.slice(0, 12);
+	const app = `Phaseo for ${phonePlatform(build.platform)} ${build.version}${build.buildNumber !== undefined ? ` (build ${build.buildNumber})` : ""}`;
+	const source = !triage.exact
+		? `- **This checkout is not the exact build.** The phone build's commit (${build.commit ?? "unknown: the build carries no commit"}) could not be fetched from ${triageSourceRepository}, so this is main at ${commit}. Code may have changed since the person's build; say so if it matters.`
+		: `- This checkout is exactly commit ${commit} of ${triageSourceRepository}, the commit the phone app was built from.${build.dirty ? " The build was made from a working tree with uncommitted changes, so a few lines may differ." : ""}`;
+	const recent = diagnostics?.trim()
+		? `The phone sent its recent slow operations (Account → Diagnostics on the phone; kept in its memory only, newest first). Paths, names and chat text are not included:\n\n\`\`\`\n${diagnostics.trim().slice(0, 20_000)}\n\`\`\``
+		: "The phone sent no diagnostics. Account → Diagnostics on the phone lists its recent slow operations if the person can copy them.";
+	return `# Triage a Phaseo mobile bug
+
+The person ran into a problem with the Phaseo phone app and asked, from the phone ("${device}"), for you to find out why. Their description is in the message that pointed you here. They are reading this thread on the phone, so keep replies short and readable on a small screen. If the description is missing or vague, ask what they were doing, what they expected and what happened instead before you dig in.
+
+You run on their computer, not on the phone. You cannot see the phone's screen, logs or data, and you must not try to reach the phone over the network.
+
+## This build
+
+- ${app}${build.commit ? `, built from commit ${build.commit}` : ""}${build.builtAt ? ` on ${build.builtAt}` : ""}
+- ${[build.device, build.osVersion ? `${phonePlatform(build.platform)} ${build.osVersion}` : undefined, build.runtime].filter(Boolean).join(", ") || phonePlatform(build.platform)}
+${source}
+- This project is that checkout: \`${checkout}\`. The phone app is \`apps/mobile\` (Expo and React Native).
+
+## Recent diagnostics
+
+${recent}
+
+## Where things live in apps/mobile
+
+- \`app/\`: Expo Router routes. \`(app)/chat\` is Chat, \`(app)/code\` a paired computer's threads, \`(app)/models\`, \`(app)/providers\`, \`(app)/account\` the sections; \`sheets/\` and \`filters/\` are shared bottom sheets.
+- \`src/features/<feature>\`: screens and logic per feature. \`chat/\` (chats on the phone, streaming, summaries, the model sheet), \`composer/\` (the shared composer), \`desktops/\` (paired computers: \`client.ts\` and \`reach.ts\` connect, \`pairing.ts\` pairs, and \`files\`, \`git\`, \`review\`, \`pull-requests\`, \`terminal\` are the Code screens), \`models/\`, \`providers/\`, \`compare/\`, \`account/\`, \`notifications/\`.
+- \`src/components/ui\`: primitives; \`src/components/shell\`: the sidebar and navigation.
+- \`src/lib/api\`: typed clients for phaseo.app; \`src/lib/diagnostics.ts\`: the slow operation log.
+- \`packages/shared/phone-protocol\`: the frames a phone and a computer exchange. \`apps/desktop/src/main/phone\` is the computer's side of them.
+- \`apps/mobile/README.md\` describes the features and how to build. The repository's \`AGENTS.md\` files hold the rules for changing code.
+
+## Reproducing and checking
+
+- Read the code the description points to before running anything. Most phone bugs can be found in the code and shown with a Jest test.
+- Dependencies: \`pnpm install --frozen-lockfile\` at the repository root (Node 22.13 or later; it takes several minutes the first time).
+- Checks: \`pnpm --filter @phaseo/mobile typecheck\`, \`pnpm --filter @phaseo/mobile lint\`, and the tests you touch with \`pnpm --filter @phaseo/mobile exec jest <path>\`. A bug between the phone and the computer can often be shown with \`src/features/desktops/fakeDesktop.ts\` or \`apps/desktop/src/main/phone/fakePhoneHost.ts\`.
+- Do not build or install the app on the person's phone, and do not start an emulator unless they ask: a native build takes a long time and a lot of disk.
+- Where you can, write a test that fails before the fix and passes after it.
+
+## What to do
+
+1. Find the root cause. Reproduce it in a test if you can. If you cannot, point to the exact code and explain how it produces what the person saw.
+2. Fix it in this checkout with the smallest change that makes the right behaviour obvious.
+3. Prove the fix: the failing test or behaviour before and the passing one after, with the commands you ran and their output.
+4. Decide whose problem it is: a bug in Phaseo, or the person's setup (their account, the network, the computer's connection, permissions on the phone, or a third-party service being down). If it is their setup, tell them how to fix it, and stop there.
+5. If it is Phaseo's bug, draft an issue for ${triage.repository} with the draft_issue tool: a title, what happened, steps to reproduce, the version (${build.version}${build.buildNumber !== undefined ? `, build ${build.buildNumber}` : ""}, built from commit ${build.commit ?? "unknown"}${triage.exact ? "" : `; investigated on main at ${commit}`}), the phone and OS, the root cause and a suggested fix. Leave out anything personal: names, email addresses, paths under the home folder, tokens and the content of the person's chats. The person reads the draft on the phone or the computer and decides whether to file it. Never file it yourself: no \`gh issue create\` and no GitHub API calls that create issues. Without the draft_issue tool, put the draft at the end of your reply under "Issue draft" instead.
+6. Do not commit, push or open a pull request. Leave the fix as uncommitted changes in this checkout for the person to see.
 
 Finish with a short summary: the cause, the fix, the proof, whose problem it is, and whether you drafted an issue.
 `;

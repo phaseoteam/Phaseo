@@ -119,9 +119,10 @@ export class DesktopClient {
 
   /**
    * `live`: only now or never. A request made while the connection is down is refused at once instead of waiting for it,
-   * as typing in a terminal must be: keys pressed offline must not run when the computer comes back.
+   * as typing in a terminal must be: keys pressed offline must not run when the computer comes back. `timeoutMs`: how
+   * long to wait for an answer that takes the computer minutes (triage fetches the source first).
    */
-  request<T extends RequestType>(type: T, body: RequestBody<T>, options: { live?: boolean } = {}): Promise<PhoneResults[T]> {
+  request<T extends RequestType>(type: T, body: RequestBody<T>, options: { live?: boolean; timeoutMs?: number } = {}): Promise<PhoneResults[T]> {
     const frame = { ...body, type, id: `r${++this.nextId}` } as PhoneRequest;
     return new Promise<PhoneResults[T]>((resolve, reject) => {
       const state = this.state.get();
@@ -129,7 +130,7 @@ export class DesktopClient {
       if (this.stopped) { reject(new DesktopRequestError("disconnected", "Not connected to the computer.")); return; }
       if (options.live && !(this.ready && this.link)) { reject(new DesktopRequestError("disconnected", "Not connected to the computer, so nothing was sent.")); return; }
       const held = relayHolds(frame) && this.via === "connect";
-      const cancelTimer = (this.options.schedule ?? defaultSchedule)(() => this.timedOut(frame.id), this.options.requestTimeoutMs ?? 20_000);
+      const cancelTimer = (this.options.schedule ?? defaultSchedule)(() => this.timedOut(frame.id), options.timeoutMs ?? this.options.requestTimeoutMs ?? 20_000);
       this.pending.set(frame.id, { resolve: resolve as (result: unknown) => void, reject, cancelTimer, held });
       if (this.ready && this.link) this.link.send(frame);
       else this.waiting.push(frame);
