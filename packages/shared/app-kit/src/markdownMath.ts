@@ -93,13 +93,43 @@ function findInlineCodeEnd(value: string, start: number, delimiter: string) {
 	return null;
 }
 
+const codeIndent = /^(?: {4}| {0,3}\t)/;
+
+function findIndentedCodeEnd(value: string, start: number) {
+	let lineStart = start;
+	while (lineStart < value.length) {
+		const newline = value.indexOf("\n", lineStart);
+		const lineEnd = newline === -1 ? value.length : newline + 1;
+		const line = value.slice(lineStart, lineEnd);
+		if (line.trim() && !codeIndent.test(line)) break;
+		lineStart = lineEnd;
+	}
+	return lineStart;
+}
+
 export function normalizeChatMarkdown(value: string) {
 	let normalized = "";
 	let textStart = 0;
 	let index = 0;
+	let displayMath = false;
 
 	while (index < value.length) {
+		if (!displayMath && (index === 0 || value[index - 1] === "\n") && codeIndent.test(value.slice(index, index + 4))) {
+			const previousLine = value.slice(value.lastIndexOf("\n", index - 2) + 1, index);
+			// Indented code starts a block; it cannot interrupt an ordinary paragraph.
+			if (index === textStart || !previousLine.trim() || /^ {0,3}#{1,6}(?:\s|$)/.test(previousLine)) {
+				const codeEnd = findIndentedCodeEnd(value, index);
+				normalized += normalizeMathSegment(value.slice(textStart, index)) + value.slice(index, codeEnd);
+				textStart = index = codeEnd;
+				continue;
+			}
+		}
 		const character = value[index];
+		if (character === "$" && value[index + 1] === "$" && value[index - 1] !== "\\") {
+			displayMath = !displayMath;
+			index += 2;
+			continue;
+		}
 		if (character !== "`" && character !== "~") {
 			index += 1;
 			continue;
