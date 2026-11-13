@@ -245,6 +245,8 @@ describe("Perplexity limits", () => {
 		{ spans: [{ start: 0, end: 4, text: "x", score: "high" }] },
 		{ spans: null },
 		{ noul: 0.5 },
+		{ spans: [{ start: 0, end: 500, text: "invented", score: 1 }] },
+		{ spans: [{ start: 4, end: 13, text: "French Press", score: 1 }] },
 	])("rejects a malformed locate answer as an invalid provider response: %j", async answer => {
 		const provider = providers[2];
 		const mock = installFetchMock([{ match: url => url === provider.url, response: jsonResponse({
@@ -255,6 +257,21 @@ describe("Perplexity limits", () => {
 			args.ir.state = locateState;
 			args.ir.questions = { email: { type: "locate", instructions: "email address" } };
 			expect((await resolveProviderExecutor(provider.id, "decisions.make")!(args)).upstream.status).toBe(502);
+		} finally { mock.restore(); }
+	});
+	it("counts locate offsets in Unicode code points, not UTF-16 units", async () => {
+		const provider = providers[2];
+		// "👍" is one code point but two UTF-16 units, so "Mail" starts at code point 2.
+		const state = "👍 Mail help@brewco.example";
+		const mock = installFetchMock([{ match: url => url === provider.url, response: jsonResponse({
+			answers: { email: { type: "locate", spans: [{ start: 7, end: 26, text: "help@brewco.example", score: 0.99 }] } },
+			usage: { input_tokens: 10, output_tokens: 0 },
+		}) }]);
+		try {
+			const args = argsFor(provider);
+			args.ir.state = state;
+			args.ir.questions = { email: { type: "locate", instructions: "email address" } };
+			expect((await resolveProviderExecutor(provider.id, "decisions.make")!(args)).upstream.status).toBe(200);
 		} finally { mock.restore(); }
 	});
 	it("rejects locate with non-string state before fetching", async () => {

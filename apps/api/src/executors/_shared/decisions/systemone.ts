@@ -14,13 +14,18 @@ function isProbability(value: unknown): value is number {
 	return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
 }
 
-function validLocateSpan(span: unknown): boolean {
-	return isRecord(span) && Number.isSafeInteger(span.start) && Number.isSafeInteger(span.end) &&
-		(span.start as number) >= 0 && (span.start as number) <= (span.end as number) &&
-		typeof span.text === "string" && typeof span.score === "number" && Number.isFinite(span.score);
+// Perplexity documents each span as state[start:end] in Unicode code points, end exclusive:
+// https://docs.perplexity.ai/docs/decisions/quickstart#locate-find-text-in-the-content
+// A span outside the state, or whose text is not that slice, is a malformed answer.
+function validLocateSpan(span: unknown, codePoints: readonly string[]): boolean {
+	if (!isRecord(span) || !Number.isSafeInteger(span.start) || !Number.isSafeInteger(span.end) ||
+		typeof span.text !== "string" || typeof span.score !== "number" || !Number.isFinite(span.score)) return false;
+	const start = span.start as number;
+	const end = span.end as number;
+	return start >= 0 && start <= end && end <= codePoints.length && codePoints.slice(start, end).join("") === span.text;
 }
 
-function validAnswer(answer: unknown, question: IRDecisionQuestion, allowRefusal: boolean): boolean {
+function validAnswer(answer: unknown, question: IRDecisionQuestion, allowRefusal: boolean, state: unknown): boolean {
 	// A provider may decline a single question without failing the request; the other answers stay valid.
 	if (allowRefusal && isRecord(answer) && answer.type === "refusal") return true;
 	// A box answer's confidence is null when the model gives none (https://docs.typesafe.ai/api).
@@ -28,8 +33,11 @@ function validAnswer(answer: unknown, question: IRDecisionQuestion, allowRefusal
 	if (!isRecord(answer) || answer.type !== question.type ||
 		(answer.confidence !== undefined && !nullBoxConfidence && !isProbability(answer.confidence))) return false;
 	if (question.type === "noul") return isProbability(answer.noul);
-	// Spans are passed through as the provider sent them; only their shape is checked.
-	if (question.type === "locate") return Array.isArray(answer.spans) && answer.spans.every(validLocateSpan);
+	if (question.type === "locate") {
+		if (typeof state !== "string" || !Array.isArray(answer.spans)) return false;
+		const codePoints = Array.from(state);
+		return answer.spans.every(span => validLocateSpan(span, codePoints));
+	}
 	if (question.type === "box") {
 		const box = answer.box;
 		return (nullBoxConfidence || isProbability(answer.confidence)) && isRecord(box) &&
@@ -127,7 +135,7 @@ export async function completeSystemOne(
 	const answers = payload.answers;
 	const questionIds = Object.keys(ir.questions);
 	if (Object.keys(answers).length !== questionIds.length || questionIds.some(id =>
-		!Object.prototype.hasOwnProperty.call(answers, id) || !validAnswer(answers[id], ir.questions[id], options.allowRefusal === true),
+		!Object.prototype.hasOwnProperty.call(answers, id) || !validAnswer(answers[id], ir.questions[id], options.allowRefusal === true, ir.state),
 	)) return malformed(payload);
 	const inputTokens = payload.usage.input_tokens;
 	const outputTokens = payload.usage.output_tokens;
