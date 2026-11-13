@@ -141,6 +141,14 @@ export class TaskEntries {
 		return next;
 	}
 
+	/** One activity by id: through the owner index when the id names its turn (`<message id>:<step>`), otherwise by a scan. */
+	activity(key: number, id: string): AgentActivity | undefined {
+		const turn = id.slice(0, Math.max(0, id.indexOf(":")));
+		const row = (turn ? this.statement(`SELECT ${entryColumns} FROM task_entries WHERE task_key = ? AND kind = 1 AND owner = ? AND id = ?`).get(key, turn, id) : undefined)
+			?? this.statement(`SELECT ${entryColumns} FROM task_entries WHERE rowid >= ? AND rowid < ? AND id = ?`).get(base(key, 1), base(key, 1) + kindSpan, id);
+		return row ? decode(row as Row) as AgentActivity : undefined;
+	}
+
 	/** Positions run from 0 without gaps, so the count is the last rowid's place plus one. */
 	count(key: number, kind: Kind) {
 		const last = (this.statement("SELECT max(rowid) AS rowid FROM task_entries WHERE rowid >= ? AND rowid < ?").get(base(key, kind), base(key, kind) + kindSpan) as { rowid: number | null }).rowid;

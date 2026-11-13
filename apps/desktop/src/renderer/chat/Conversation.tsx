@@ -1,4 +1,4 @@
-import { activitySummary } from "../lib/activitySummary";
+import { activitySummary } from "../../shared/activitySummary";
 import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowDown, Plane, Bot, Brain, Check, ChevronRight, Circle, CircleDot, CornerDownRight, CircleSlash, Copy, FilePen, FileText, FolderSearch, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, MessagesSquare, PenLine, RotateCcw, Search, Sparkles, SquareTerminal, Wrench, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -119,10 +119,30 @@ function Elapsed({ since, className }: { since?: string; className?: string }) {
 const ProjectDirectoryContext = createContext<string | undefined>(undefined);
 
 /** `openDiff` opens the turn's diff at a file, once the turn has finished in a project that keeps snapshots. */
-function ActivityRow({ activity, live, openDiff }: { activity: AgentActivity; live: boolean; openDiff?: (path: string) => void }) {
+/**
+ * A row's text. A finished turn's long output and reasoning arrive as a preview (`textLength` set), so a long chat opens
+ * without carrying every step's output; the full text is read once, when the row is first opened.
+ */
+function useActivityText(taskId: string, activity: AgentActivity, open: boolean) {
+	const [full, setFull] = useState<{ id: string; text?: string; error?: string }>();
+	const needed = open && activity.textLength !== undefined && full?.id !== activity.id;
+	useEffect(() => {
+		if (!needed) return;
+		let active = true;
+		const read = window.phaseoDesktop?.workspace.activityText;
+		if (!read) { setFull({ id: activity.id, error: "Open the desktop application to read this step." }); return; }
+		read(taskId, activity.id).then(text => { if (active) setFull({ id: activity.id, text }); }, reason => { if (active) setFull({ id: activity.id, error: reason instanceof Error ? reason.message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/, "") : "This step could not be read." }); });
+		return () => { active = false; };
+	}, [needed, taskId, activity.id]);
+	if (activity.textLength === undefined) return { text: activity.text };
+	return full?.id === activity.id ? { text: full.text ?? "", error: full.error } : { text: "", loading: open };
+}
+
+function ActivityRow({ activity, live, openDiff, taskId }: { activity: AgentActivity; live: boolean; openDiff?: (path: string) => void; taskId: string }) {
 	const [open, setOpen] = useState(false);
 	const directory = useContext(ProjectDirectoryContext);
 	const edits = useMemo(() => toolCallEdits(activity, directory), [activity, directory]);
+	const body = useActivityText(taskId, activity, open);
 	if (activity.type === "usage") return null;
 	if (activity.type === "plan" && activity.steps?.length) return <PlanSteps activity={activity} />;
 	const reasoning = activity.type === "reasoning";
@@ -130,7 +150,7 @@ function ActivityRow({ activity, live, openDiff }: { activity: AgentActivity; li
 	const Icon = reasoning ? Brain : activity.type === "compaction" ? Layers : activity.type === "plan" ? ListChecks : toolIcon(activity.title);
 	const label = reasoning ? (running ? "Thinking" : "Thought") : activity.type === "compaction" ? (running ? "Compacting context" : "Compacted context") : toolLabels[activity.title] ?? activity.title.replaceAll("_", " ");
 	const summary = reasoning ? "" : activitySummary(activity.text);
-	const expandable = !!activity.text && (reasoning || activity.text.length > summary.length || activity.text.length > 80);
+	const expandable = activity.textLength !== undefined || (!!activity.text && (reasoning || activity.text.length > summary.length || activity.text.length > 80));
 	// An edit shows the file it changed and opens the turn's diff there; a recorded patch (Codex) shows as a diff, not JSON.
 	const files = edits?.files ?? [], file = files[0];
 	return <div className="group/edit text-[12.5px]">
@@ -147,7 +167,7 @@ function ActivityRow({ activity, live, openDiff }: { activity: AgentActivity; li
 			{file && openDiff && <button type="button" onClick={() => openDiff(file)} title={`Open ${file} in the turn's diff`} className="shrink-0 rounded-md px-1.5 py-0.5 text-xs font-medium text-muted-foreground opacity-0 group-hover/edit:opacity-100 focus-visible:opacity-100 hover:bg-muted hover:text-foreground">Open diff</button>}
 		</div>
 		{open && edits?.patch ? <ScrollArea className="mt-0.5 mb-2 ml-[15px] max-h-96 border-l border-border pl-2" viewportClassName="max-h-96"><DiffView patch={edits.patch} layout="unified" hideActions /></ScrollArea>
-			: open && <ScrollArea className="mt-0.5 mb-2 ml-[15px] max-h-72 border-l border-border" viewportClassName="max-h-72"><div data-selectable className={cn("py-0.5 pl-4", reasoning ? "text-[13px] text-muted-foreground" : "font-mono text-[11.5px] whitespace-pre-wrap")}>{reasoning ? <LongMarkdown text={activity.text} all={running} /> : activity.text}</div></ScrollArea>}
+			: open && <ScrollArea className="mt-0.5 mb-2 ml-[15px] max-h-72 border-l border-border" viewportClassName="max-h-72"><div data-selectable className={cn("py-0.5 pl-4", reasoning ? "text-[13px] text-muted-foreground" : "font-mono text-[11.5px] whitespace-pre-wrap")}>{body.loading ? <span className="inline-flex items-center gap-1.5 text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin" />Loading…</span> : body.error ? <span role="alert" className="text-destructive">{body.error}</span> : reasoning ? <LongMarkdown text={body.text} all={running} /> : body.text}</div></ScrollArea>}
 	</div>;
 }
 
@@ -172,7 +192,7 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 				{tools > 0 && <span>· {tools} {tools === 1 ? "step" : "steps"}</span>}
 			</button>
 			{open && <div className="mt-1 ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{steps.map(entry => entry.kind === "activity"
-				? <ActivityRow key={entry.value.id} activity={entry.value} live={live} openDiff={openDiff} />
+				? <ActivityRow key={entry.value.id} activity={entry.value} live={live} openDiff={openDiff} taskId={task.id} />
 				: <div key={entry.value.id} data-conversation-id={`message:${entry.value.id}`} data-selectable data-quote className="px-2 py-1 text-[13px] text-foreground/85"><MessageContent text={entry.value.text} projectId={task.projectId} repairLocalLinks /></div>)}</div>}
 		</div>
 		{!open && plan?.kind === "activity" && <PlanSteps activity={plan.value} />}
@@ -192,13 +212,62 @@ const noActivities: AgentActivity[] = [];
 function UnreadDivider() {
 	return <div role="separator" aria-label="New since your last visit" className="flex items-center gap-3 text-[11px] font-medium text-primary"><span aria-hidden className="h-px flex-1 bg-primary/40" />New since your last visit<span aria-hidden className="h-px flex-1 bg-primary/40" /></div>;
 }
-type TurnProps = { user?: Message; entries: TurnEntry[]; usageActivities: AgentActivity[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; /** Offers Regenerate on this turn's answer (the last turn of a Chat-mode chat). */ onRegenerate?: (message: Message) => void; compact?: boolean; burst?: Burst; /** Where this turn's "New since your last visit" line goes, if it has it. */ unread?: "start" | "answer" };
+type TurnProps = { user?: Message; entries: TurnEntry[]; usageActivities: AgentActivity[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; /** Offers Regenerate on this turn's answer (the last turn of a Chat-mode chat). */ onRegenerate?: (message: Message) => void; compact?: boolean; burst?: Burst; /** Where this turn's "New since your last visit" line goes, if it has it. */ unread?: "start" | "answer"; /** Drawn at once, not when it nears the view (see NearView). */ eager?: boolean };
 const sameItems = <T,>(a: readonly T[], b: readonly T[], value: (item: T) => unknown = item => item) => a.length === b.length && a.every((item, index) => value(item) === value(b[index]));
 /**
  * A turn re-renders only when its own entries or the chat fields it shows change, so loading a page of older turns
  * renders those turns alone. The callbacks are stable (see Conversation).
  */
-const Turn = memo(function Turn({ user, entries, usageActivities, live, complete, task, onAttachment, onBranch, onRewind, onRegenerate, compact, burst, unread }: TurnProps) {
+/** Find in chat searches the drawn text, so while it is open every turn is drawn. */
+const DrawAllContext = createContext(false);
+/** Drawn heights of turns this session, so a turn that is set aside again keeps its size. */
+const turnHeights = new Map<string, number>();
+/** Turns this far outside the view are drawn ahead of the reader. */
+const nearViewMargin = 1500;
+/** The latest turns, drawn with the chat so it opens at its end without placeholders. */
+const eagerTurns = 6;
+/** A turn's height before it has been drawn: a rough guess from its text, corrected once it draws. */
+function turnEstimate(user: Message | undefined, entries: TurnEntry[]) {
+	const lines = (text: string) => Math.ceil(Math.min(text.length, 40_000) / 90) + (text.match(/\n/g)?.length ?? 0) * 0.5;
+	let height = 64 + (user ? 48 + lines(user.text) * 22 : 0);
+	for (const entry of entries) if (entry.kind === "message") height += 24 + lines(entry.value.text) * 24;
+	return Math.max(80, Math.round(height));
+}
+
+/**
+ * Draws its turn once the turn comes within nearViewMargin of the view, and keeps it drawn; until then it holds the
+ * turn's place at its last drawn (or estimated) height, with empty markers carrying its ids, so restoring a scroll
+ * position, the navigation rail and paging still find it. Opening a long chat or loading a page then draws only what
+ * is near the reader. The chat's last turns and a running one draw at once (`eager`).
+ */
+function NearView({ id, eager, estimate, markers, children }: { id: string; eager: boolean; estimate: () => number; markers: () => string[]; children: ReactNode }) {
+	const drawAll = useContext(DrawAllContext);
+	const [near, setNear] = useState(eager);
+	const node = useRef<HTMLDivElement>(null);
+	const drawn = near || eager || drawAll;
+	// A drawn turn stays drawn (its open rows and selection with it), even once it is no longer among the last.
+	useLayoutEffect(() => { if (drawn && !near) setNear(true); }, [drawn, near]);
+	useEffect(() => {
+		const element = node.current;
+		if (!element) return;
+		if (!drawn && typeof IntersectionObserver === "undefined") { setNear(true); return; }
+		if (drawn) {
+			if (typeof ResizeObserver === "undefined") return;
+			// Keep its height, for when the window drops it and a page brings it back.
+			const observer = new ResizeObserver(([entry]) => { if (entry.contentRect.height) turnHeights.set(id, entry.contentRect.height); });
+			observer.observe(element);
+			return () => observer.disconnect();
+		}
+		const root = element.closest<HTMLElement>("[data-conversation-viewport]");
+		const observer = new IntersectionObserver(entries => { if (entries.some(entry => entry.isIntersecting)) setNear(true); }, { root, rootMargin: `${nearViewMargin}px 0px` });
+		observer.observe(element);
+		return () => observer.disconnect();
+	}, [drawn, id]);
+	if (drawn) return <div ref={node} className="flex flex-col gap-4">{children}</div>;
+	return <div ref={node} aria-hidden style={{ height: turnHeights.get(id) ?? estimate() }}>{markers().map(marker => <span key={marker} data-conversation-id={marker} className="block h-0" />)}</div>;
+}
+
+const Turn = memo(function Turn({ user, entries, usageActivities, live, complete, task, onAttachment, onBranch, onRewind, onRegenerate, compact, burst, unread, eager = false }: TurnProps) {
 	// Text after the last step is the answer, even while it is still streaming.
 	const latest = entries.findLast(entry => !(entry.kind === "activity" && entry.value.type === "usage"));
 	const isAnswer = (entry?: TurnEntry) => entry?.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent";
@@ -216,7 +285,9 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 	const usage = turnUsage(usageActivities), context = contextShare(usageActivities);
 	const canBranch = !["running", "waiting"].includes(task.status) && !task.archived;
 	const hasAssistant = work.length > 0 || plans.length > 0 || !!final || live;
+	const turnId = user?.id ?? entries[0]?.value.id ?? "";
 	return <div data-turn-id={user && user.delivery !== "subagent" && !user.notice ? user.id : undefined} className={cn("flex flex-col gap-4", burst?.next && "-mb-6")}>
+		<NearView id={turnId} eager={eager || live} estimate={() => turnEstimate(user, entries)} markers={() => [`turn:${turnId}`, ...user ? [`message:${user.id}`] : [], ...final?.kind === "message" ? [`message:${final.value.id}`] : []]}>
 		{unread === "start" && <UnreadDivider />}
 		{user && (user.notice ? <WatchNotice message={user} /> : user.delivery === "subagent" ? <AgentResult message={user} projectId={task.projectId} /> : <UserMessage message={user} taskId={task.id} projectId={task.projectId} onAttachment={onAttachment} onBranch={onBranch} onRewind={onRewind} canBranch={canBranch} burst={burst} compact={compact} />)}
 		{unread === "answer" && hasAssistant && <UnreadDivider />}
@@ -243,8 +314,9 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 		</div>}
 		{/* Code turns that changed files say so under the answer, with the way into the Diff pane. */}
 		{user && !live && complete && task.mode !== "chat" && task.projectId && user.checkpoint?.after && <TurnChanges taskId={task.id} projectId={task.projectId} message={user} />}
+		</NearView>
 	</div>;
-}, (a, b) => a.user === b.user && a.live === b.live && a.complete === b.complete && a.compact === b.compact
+}, (a, b) => a.user === b.user && a.live === b.live && a.complete === b.complete && a.compact === b.compact && a.eager === b.eager
 	&& a.unread === b.unread && a.burst?.previous === b.burst?.previous && a.burst?.next === b.burst?.next && a.burst?.continuesSteer === b.burst?.continuesSteer && a.onRewind === b.onRewind && a.onRegenerate === b.onRegenerate
 	&& sameItems(a.entries, b.entries, entry => entry.value) && sameItems(a.usageActivities, b.usageActivities)
 	&& a.task.id === b.task.id && a.task.status === b.task.status && a.task.archived === b.task.archived && a.task.projectId === b.task.projectId && a.task.model === b.task.model && a.task.harness === b.task.harness && a.task.mode === b.task.mode);
@@ -367,7 +439,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 	}, []);
 
 	return <div className={cn("relative min-h-0 flex-1", className)}>
-		<ProjectDirectoryContext value={directory}><FindTargetContext value={findTarget}><ScrollArea className="h-full" viewportRef={host} viewportProps={{ onScroll: update, ...{ "data-conversation-viewport": "" }, ...compact ? {} : { "data-focus-region": "", tabIndex: -1 } }}>
+		<ProjectDirectoryContext value={directory}><FindTargetContext value={findTarget}><DrawAllContext value={Boolean(find)}><ScrollArea className="h-full" viewportRef={host} viewportProps={{ onScroll: update, ...{ "data-conversation-viewport": "" }, ...compact ? {} : { "data-focus-region": "", tabIndex: -1 } }}>
 			<div ref={content} className={cn("mx-auto flex w-full flex-col gap-7 py-6", compact ? "px-4" : "max-w-[760px] px-6")}>
 				{messages.page.earlier > 0 && <button ref={earlierRow} type="button" disabled={messages.loading} onClick={messages.older} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading earlier messages…</> : `Load ${messages.page.earlier} earlier messages`}</button>}
 				{messages.error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{messages.error}<button type="button" className="ml-auto font-semibold underline" onClick={() => messages.retry()}>Retry</button></div>}
@@ -375,11 +447,12 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 				{turns.map((turn, index) => <Turn key={turn.id} user={turn.user} entries={turn.entries} usageActivities={(turn.user && usageByTurn.get(turn.user.id)) || noActivities} task={view} onAttachment={attach} onBranch={branchFrom} compact={compact} burst={bursts[index]} unread={unread?.turnId === turn.id ? unread.at : undefined}
 					onRewind={onRewind ? rewindTo : undefined} onRegenerate={onRegenerate && index === turns.length - 1 && !messages.page.later ? regenerate : undefined}
 					live={running && (turn.user?.id === activeTurn || (!turn.user && index === turns.length - 1 && !messages.page.later))}
-					complete={Boolean(turn.user?.completedAt) || index < turns.length - 1 || (!messages.page.later && !running)} />)}
+					complete={Boolean(turn.user?.completedAt) || index < turns.length - 1 || (!messages.page.later && !running)}
+					eager={!messages.page.later && index >= turns.length - eagerTurns} />)}
 				{messages.page.later > 0 && <button ref={newerRow} type="button" disabled={messages.loading} onClick={messages.newer} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading newer messages…</> : "Load newer messages"}</button>}
 				{children}
 			</div>
-		</ScrollArea></FindTargetContext></ProjectDirectoryContext>
+		</ScrollArea></DrawAllContext></FindTargetContext></ProjectDirectoryContext>
 		{find && <ChatFindBar key={find.key} taskId={task.id} revision={task.revision ?? 0} host={host} page={messages.page} target={findTarget} onTarget={setFindTarget} initial={find.initial} focusSignal={find.focus} onClose={() => setFind(undefined)}
 			loaded={id => messages.page.entries.some(entry => entry.id === id)} jump={(id, turnId) => messages.jumpTo(turnId ?? id)}
 			onScrolled={() => { following.current = false; if (host.current) lastScroll.current = host.current.scrollTop; }} />}

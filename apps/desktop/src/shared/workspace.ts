@@ -64,7 +64,8 @@ export type MessageNotice = { kind: "pull-request" | "issue" | "outside-agent" |
 export type QueuedMessage = { autopilot?: true; notice?: MessageNotice; sourceTaskId?: string; sourceTaskIds?: string[]; threadReferences?: string[]; githubReferences?: string[]; nativeAction?: NativeAction; id: string; text: string; attachments?: Attachment[]; createdAt: string };
 export type SteeringMessage = QueuedMessage & { status: "sending" | "rejected" | "unconfirmed"; error?: string };
 export type AgentActivity = { timelineOrder?: number; /** When the app first saw it running, for a live timer. */ startedAt?: string; nativeAgent?: { id: string; model?: string; status: "pending" | "running" | "completed" | "failed" | "interrupted" }; id: string; type: "tool" | "reasoning" | "plan" | "usage" | "compaction"; title: string; text: string; status?: "running" | "completed" | "failed"; steps?: PlanStep[]; explanation?: string; summary?: string; compaction?: { beforeTokens: number; afterTokens?: number; durationMs?: number }; /** A plan the agent proposed (its Markdown is the text), and what the person did with it. */ proposed?: { outcome?: "implemented" | "revised" | "declined"; feedback?: string };
-	/** A page an agent showed with html_render (its HTML is the text), shown above the reply. */ htmlRender?: HtmlRenderActivity };
+	/** A page an agent showed with html_render (its HTML is the text), shown above the reply. */ htmlRender?: HtmlRenderActivity;
+	/** Set when a window page left the text out (shared/activityPreview.ts): its full length; the row reads the text when opened. */ textLength?: number };
 /** How the person's own answer is typed: text by default, or a typed control with bounds. */
 export type AgentQuestionInput = { kind: "text" | "multiline" | "number" | "integer" | "boolean" | "email" | "uri" | "date" | "date-time"; min?: number; max?: number; minLength?: number; maxLength?: number };
 export type AgentQuestionOption = { label: string; description?: string; preview?: string; /** Sent instead of the label when set; it may be empty. */ value?: string };
@@ -252,6 +253,8 @@ export type WorkspaceApi = {
 	turnChanges: (projectId: string, from: string, to: string) => Promise<TurnFileChange[]>;
 	taskHistory: (query: TaskHistoryQuery) => Promise<TaskHistoryPage>;
 	conversationPage: (query: ConversationPageQuery) => Promise<ConversationPage>;
+	/** The full text of an activity a page left out (its textLength is set). */
+	activityText: (taskId: string, activityId: string) => Promise<string>;
 	/** Find in chat across every page of one chat. */
 	conversationFind: (query: ConversationFindQuery) => Promise<ConversationFindResult>;
 	/** Each chat's latest message containing the text, for the command palette. */

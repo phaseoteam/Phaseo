@@ -404,6 +404,14 @@ export class WorkspaceStore {
 		return task;
 	}
 	/** Pages read only the rows they return, so their cost does not grow with the chat. */
+	/** The chat's last user message, from the column saveTask keeps, so its latest turn is known without reading entries. */
+	lastUserId(id: string): string | undefined { return (this.statement("SELECT last_user_id FROM tasks WHERE id = ?").get(id) as { last_user_id: string | null } | undefined)?.last_user_id ?? undefined; }
+	/** One activity's full text, for a row whose page left it out. */
+	activityText(taskId: string, activityId: string): string {
+		const activity = this.entries.activity(this.getHead(taskId).key, activityId);
+		if (!activity) throw new Error("This step is no longer in the chat.");
+		return activity.text;
+	}
 	conversationPage(value: unknown): ConversationPage {
 		const query = validateConversationPageQuery(value), { task, key } = this.getHead(query.taskId), page = this.entries.page(key, query, task.revision ?? 0);
 		return query.kind === "activities" ? page : { ...page, activities: this.entries.turnActivities(key, page) };

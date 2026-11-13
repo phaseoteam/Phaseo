@@ -46,7 +46,8 @@ import { measureWorktree } from "./worktreeSizes";
 import { limitResetAt } from "../shared/usageLimitRecovery";
 import { validateSecretAnswer } from "../shared/secretRequests";
 import { generateCommitMessage, gitInit, publishOwners, publishRepository } from "./gitWorkflow";
-import type { Account, AccountStatus, Harness, PhaseoSignInMethod, PhaseoSignInResult } from "../shared/workspace";
+import type { Account, AccountStatus, AgentActivity, Harness, PhaseoSignInMethod, PhaseoSignInResult } from "../shared/workspace";
+import { previewActivities, previewTask } from "../shared/activityPreview";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
 import { harnessVersion } from "./harnessVersion";
@@ -911,12 +912,20 @@ ipcMain.handle("workspace:checkpoint-changes", (event, taskId: unknown, messageI
 ipcMain.handle("workspace:task", (event, id: unknown) => {
 	if (shutdownStarted) return;
 	if (!senderWindow(event) || typeof id !== "string" || !id || id.length > 200) throw new Error("Invalid task request.");
-	return workspaceRuntime.store.getTaskView(id, workspaceRuntime.store.getPreferences().chat.historyPageSize);
+	// The window gets long tool output and reasoning of finished turns as previews; a row reads the rest when opened.
+	const store = workspaceRuntime.store;
+	return previewTask(store.getTaskView(id, store.getPreferences().chat.historyPageSize), store.lastUserId(id));
 });
 ipcMain.handle("workspace:conversation-page", (event, query: unknown) => {
 	if (shutdownStarted) return;
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
-	return workspaceRuntime.store.conversationPage(query);
+	const store = workspaceRuntime.store, page = store.conversationPage(query), taskId = (query as { taskId: string }).taskId;
+	return page.kind === "activities" ? { ...page, entries: previewActivities(page.entries as AgentActivity[], store.lastUserId(taskId)) ?? [] } : { ...page, activities: previewActivities(page.activities, store.lastUserId(taskId)) };
+});
+ipcMain.handle("workspace:activity-text", (event, taskId: unknown, activityId: unknown) => {
+	if (shutdownStarted) return;
+	if (!senderWindow(event) || typeof taskId !== "string" || typeof activityId !== "string" || !taskId || !activityId || taskId.length > 200 || activityId.length > 400) throw new Error("Invalid activity request.");
+	return workspaceRuntime.store.activityText(taskId, activityId);
 });
 ipcMain.handle("workspace:conversation-find", (event, query: unknown) => {
 	if (shutdownStarted) return;
