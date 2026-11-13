@@ -151,12 +151,17 @@ export function alertRules({ lokiUid, environment = 'production', folderUid = 'p
   if (!['production', 'staging'].includes(environment)) throw new Error('Unsupported alert environment');
   const failure = count(gateway, 'gateway.request', ' | actionable="true"', ['actionable'], '10m', environment);
   const total = count(gateway, 'gateway.request', '', [], '10m', environment);
+  const webFailures = count('phaseo-web-api', 'web.request', ' | status_code >= 500', ['status_code'], '5m', environment);
+  const webTotal = count('phaseo-web-api', 'web.request', '', [], '5m', environment);
+  const serverErrors = count('phaseo-web', 'web.server_error', '', [], '5m', environment);
   const rules = [
     ['gateway-errors', 'Gateway actionable failures', `(((${failure}) / (${total})) > 0.05) and ((${total}) >= 20)`, '5m', 'At least 20 requests in 10 minutes and over 5% actionable failures.'],
     ['scheduler-missing', 'Scheduler telemetry missing', `absent_over_time(${logs('phaseo-jobs', 'job.heartbeat', [], environment)} [15m]) or vector(0)`, '5m', 'No scheduler heartbeat for 15 minutes. Check cron, bindings and Grafana delivery; quiet user traffic does not cause this alert.'],
     ['jobs-failing', 'Scheduled job failure', jobFailureExpression(environment), '0s', 'A job failed without a later completed run of the same service/job in the last 48 hours (covers daily jobs). Skipped runs do not prove recovery. Silence is not verified recovery; check scheduler telemetry and native logs.'],
     ['ops-failing', 'Settlement or operational failure', count(gateway, 'ops.failure', '', [], '5m', environment), '0s', 'An existing operational failure hook fired. Inspect request and settlement records before taking action.'],
-    ['web-errors', 'Web server failures', `(${count('phaseo-web-api', 'web.request', ' | status_code >= 500', ['status_code'], '10m', environment)}) + (${count('phaseo-web', 'web.server_error', '', [], '10m', environment)})`, '5m', 'Web API 5xx responses or captured web server errors. Check routes, release and source frames.'],
+    // Do not retain an isolated error longer than the pending period.
+    // Website exceptions have no comparable request denominator; count them separately.
+    ['web-errors', 'Web server failures', `(((${webFailures}) >= 5) and (((${webFailures}) / (${webTotal})) >= 0.01)) or ((${serverErrors}) >= 5) or vector(0)`, '5m', 'For five minutes: at least 5 Web API 5xx responses and at least 1% of Web API requests in the preceding five minutes, or at least 5 captured website server errors in that window. Isolated errors remain visible in dashboards. Check affected routes, release and source frames.'],
   ];
   return rules.map(([id, title, expr, pending, summary]) => ({
     uid: `phaseo-${id}-${environment}`, title: `Phaseo ${environment} · ${title}`, folderUID: folderUid,

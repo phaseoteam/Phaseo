@@ -121,7 +121,7 @@ Events use allowlisted JSON and the standard Loki `service_name` resource label.
 
 ## Alerts and uptime
 
-Five enabled production rules cover actionable gateway failures (>5%, at least 20 requests in ten minutes), missing scheduler telemetry, job exceptions, settlement failures and web errors. Staging rules remain paused. Quiet request traffic is healthy; a missing heartbeat is separate. Query failures use Grafana's Error state.
+Five enabled production rules cover actionable gateway failures (>5%, at least 20 requests in ten minutes), missing scheduler telemetry, job exceptions, settlement failures and web errors. Web failures require at least five API 5xx responses and a 1% API failure rate in the preceding five minutes, or five captured website exceptions in that window, continuously for five minutes. Individual errors remain visible on dashboards. The rolling count is not a count of distinct affected users. Staging rules remain paused. Quiet request traffic is healthy; a missing heartbeat is separate. Query failures use Grafana's Error state.
 
 Once telemetry and notification routing are verified, configure **Alerting > Contact points** and its notification policy, then unpause the desired rules. Provisioning does not create contacts or send messages. `--apply --enable-alerts` explicitly activates owned rules; applying without that flag pauses them again.
 

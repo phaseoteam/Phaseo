@@ -256,7 +256,7 @@
       "severity": "warning"
     },
     "annotations": {
-      "summary": "Web API 5xx responses or captured web server errors. Check routes, release and source frames."
+      "summary": "For five minutes: at least 5 Web API 5xx responses and at least 1% of Web API requests in the preceding five minutes, or at least 5 captured website server errors in that window. Isolated errors remain visible in dashboards. Check affected routes, release and source frames."
     },
     "data": [
       {
@@ -268,7 +268,7 @@
         "datasourceUid": "SET_LOKI_DATASOURCE_UID",
         "model": {
           "refId": "A",
-          "expr": "(sum(count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", status_code=\"status_code\" | __error__=\"\" | environment=\"production\" | event_name=\"web.request\" | status_code >= 500 | __error__=\"\" [10m])) or vector(0)) + (sum(count_over_time({service_name=~\"phaseo-web\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"production\" | event_name=\"web.server_error\" | __error__=\"\" [10m])) or vector(0))",
+          "expr": "(((sum(count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", status_code=\"status_code\" | __error__=\"\" | environment=\"production\" | event_name=\"web.request\" | status_code >= 500 | __error__=\"\" [5m])) or vector(0)) >= 5) and (((sum(count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", status_code=\"status_code\" | __error__=\"\" | environment=\"production\" | event_name=\"web.request\" | status_code >= 500 | __error__=\"\" [5m])) or vector(0)) / (sum(count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"production\" | event_name=\"web.request\" | __error__=\"\" [5m])) or vector(0))) >= 0.01)) or ((sum(count_over_time({service_name=~\"phaseo-web\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"production\" | event_name=\"web.server_error\" | __error__=\"\" [5m])) or vector(0)) >= 5) or vector(0)",
           "queryType": "instant",
           "instant": true,
           "range": false,
