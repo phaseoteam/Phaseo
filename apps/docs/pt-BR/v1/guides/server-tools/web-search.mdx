@@ -44,7 +44,7 @@ A mesma entrada de ferramenta funciona em `tools` em `/v1/responses` e `/v1/mess
 
 | Parâmetro | Tipo | Padrão | Descrição |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity` ou `tinyfish`. Veja [Escolha um mecanismo](#choose-an-engine). |
+| `engine` | string | `exa` | `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity`, `tinyfish` ou `deepseek`. Veja [Escolha um mecanismo](#choose-an-engine). |
 | `max_results` | inteiro | `5` | Resultados por chamada de pesquisa, até `25`. |
 | `max_total_results` | inteiro | `25` | Resultados somando todas as pesquisas da solicitação, até `100`. Nunca é menor que `max_results`. |
 | `max_uses` | inteiro | `10` | Chamadas de pesquisa por solicitação, até `100`. |
@@ -63,7 +63,7 @@ Cada chamada tem uma `query`. O modelo também pode enviar `max_results`, `engin
 | Argumento | Descrição |
 | --- | --- |
 | `user_location` | Localização aproximada. O Perplexity usa `user_location.country` para pesquisa regional; o TinyFish usa o país e o idioma. |
-| `language` | Código do idioma dos resultados, como `en`, para mecanismos que localizam. |
+| `language` | Código do idioma dos resultados, como `en`, para mecanismos que localizam. A DeepSeek o adiciona à consulta como um filtro `lang:`. |
 | `page` | Página de resultados de `0` a `10`, para o TinyFish. |
 
 Os valores que o modelo envia substituem os padrões da ferramenta naquela chamada. `max_results` continua limitado ao que resta de `max_total_results`; quando esse total se esgota, as chamadas seguintes retornam `max_total_results_reached`.
@@ -79,11 +79,16 @@ Os valores que o modelo envia substituem os padrões da ferramenta naquela chama
 | `firecrawl` | Pesquisa gerenciada do Firecrawl. |
 | `perplexity` | A Perplexity Search API: resultados ranqueados, `search_context_size` e pesquisa regional a partir de `user_location.country`. |
 | `tinyfish` | TinyFish Search: resultados ranqueados, localizados e paginados. Retorna trechos, não o texto completo da página; use [`phaseo:web_fetch`](./web-fetch) quando o modelo precisar de mais. |
-| `native` | A ferramenta de pesquisa na web do próprio provedor, como `web_search_preview` da OpenAI ou `web_search_20250305` da Anthropic. |
+| `deepseek` | DeepSeek Search: resultados ranqueados com um resumo de cada página, escrito para o modelo ler. |
+| `native` | A ferramenta de pesquisa na web do próprio provedor, como `web_search_preview` da OpenAI, `web_search_20250305` da Anthropic ou `deepseek_web_search` da DeepSeek. |
 
 Se um mecanismo gerenciado não estiver habilitado, a chamada retorna `search_not_configured` ao modelo.
 
-Com `engine: "native"` em `/v1/chat/completions` ou `/v1/responses`, a solicitação vai apenas para provedores que executam a pesquisa na web por conta própria. Se nenhum deles atender o modelo, o Phaseo executa o mecanismo padrão no lugar e cobra como pesquisa gerenciada. Defina `native` somente na definição da ferramenta: se o modelo pedir `native` em uma chamada, a chamada retorna `unsupported_search_engine`, porque a ferramenta do provedor precisa ser escolhida antes de a solicitação ser enviada.
+Com `engine: "native"` em `/v1/chat/completions` ou `/v1/responses`, a solicitação vai apenas para provedores que executam a pesquisa na web por conta própria. Se nenhum deles atender o modelo, o Phaseo executa o mecanismo padrão no lugar e cobra como pesquisa gerenciada.
+
+Os provedores que executam a pesquisa na web por conta própria nesses endpoints são a OpenAI, as implantações do Azure OpenAI em `/v1/responses`, a xAI e a DeepSeek em `deepseek/deepseek-v4.1-flash-1017`. A DeepSeek pesquisa por conta própria apenas quando a pesquisa na web é a única ferramenta da solicitação e a pesquisa não tem listas de domínios, porque a API dela rejeita ambos. As demais solicitações a esse modelo usam a pesquisa da Phaseo, que funciona junto com as suas próprias ferramentas. Com o raciocínio ativado, a DeepSeek executa uma pesquisa mais profunda, que abre e lê páginas em várias etapas.
+
+Enviar a ferramenta própria da OpenAI `{ "type": "web_search" }` funciona da mesma forma que `engine: "native"`. Defina `native` somente na definição da ferramenta: se o modelo pedir `native` em uma chamada, a chamada retorna `unsupported_search_engine`, porque a ferramenta do provedor precisa ser escolhida antes de a solicitação ser enviada.
 
 ## Filtre por domínio
 
@@ -101,6 +106,7 @@ Os mecanismos tratam as listas de formas diferentes:
 - **Perplexity** aceita uma das listas, não as duas, com até 20 domínios. Os domínios excluídos são enviados no formato de lista de bloqueio dele.
 - **Firecrawl** aceita uma das listas, não as duas.
 - **TinyFish** aceita as duas e as transforma nos operadores `site:` e `-site:` na consulta.
+- **DeepSeek** aceita as duas e as transforma nos operadores `site:` e `-site:`. As consultas dela são limitadas a 128 caracteres, então a consulta é encurtada para abrir espaço para os operadores. Se apenas as listas de domínios já passarem do limite, a chamada retorna `search_query_too_long`.
 
 ## O que a ferramenta retorna
 
@@ -122,4 +128,4 @@ Cada pesquisa soma valores em `usage.server_tool_use`:
 }
 ```
 
-A Phaseo cobra $0.007 por busca gerenciada, mais $0.001 por resultado além dos 10 primeiros, a menos que o cartão de preços do modelo defina os próprios preços de `server_tool_web_search_requests` e `server_tool_web_search_extra_results`. Buscas com falha não são cobradas, e o TinyFish Search é gratuito nos planos publicados, então `engine: "tinyfish"` não adiciona cobrança de busca. Buscas em mecanismos pagos exigem créditos mesmo quando o modelo é gratuito. A busca nativa é cobrada com `native_web_search_requests` quando o cartão de preços do modelo a define.
+A Phaseo cobra $0.007 por busca gerenciada, mais $0.001 por resultado além dos 10 primeiros, a menos que o cartão de preços do modelo defina os próprios preços de `server_tool_web_search_requests` e `server_tool_web_search_extra_results`. Buscas com falha não são cobradas, e o TinyFish Search é gratuito nos planos publicados, então `engine: "tinyfish"` não adiciona cobrança de busca. Buscas em mecanismos pagos exigem créditos mesmo quando o modelo é gratuito. A busca nativa é cobrada com `native_web_search_requests` pelo preço publicado do provedor: por exemplo, $10 por 1,000 buscas na OpenAI e na Anthropic e $0.75 por 1,000 na DeepSeek, onde só contam as buscas que retornam resultados. A DeepSeek também cobra cada página que abre durante uma busca a $0.75 por 1,000, como `native_web_fetch_requests`.

@@ -190,17 +190,67 @@ export function isOpenAIHostedToolType(value: unknown): boolean {
 const XAI_HOSTED_TOOL_TYPES = new Set<string>(["code_interpreter", "mcp"]);
 
 /**
+ * DeepSeek's built-in web tools (https://api-docs.deepseek.com/guides/web_tools).
+ * The DeepSeek executor sends a native web search as `deepseek_web_search` and a
+ * native web fetch as `deepseek_read_url`.
+ */
+export const DEEPSEEK_NATIVE_WEB_SEARCH_TOOL_TYPE = "deepseek_web_search";
+export const DEEPSEEK_NATIVE_READ_URL_TOOL_TYPE = "deepseek_read_url";
+
+/** DeepSeek serves its web tools on `deepseek-flash` (V4.1 Flash) and the legacy Flash names that alias it. */
+export function isDeepSeekWebToolModel(model: string | null | undefined): boolean {
+	const id = String(model ?? "").toLowerCase().replace(/^deepseek\//, "");
+	return /^deepseek-(?:v4(?:\.1)?-)?flash(?:$|-)/.test(id);
+}
+
+function hasDomainFilter(source: unknown): boolean {
+	if (!source || typeof source !== "object") return false;
+	const value = source as Record<string, any>;
+	const lists = [
+		value.allowed_domains, value.include_domains, value.excluded_domains,
+		value.exclude_domains, value.blocked_domains,
+		value.filters && typeof value.filters === "object" ? value.filters.allowed_domains : undefined,
+	];
+	return lists.some((list) => Array.isArray(list) && list.length > 0);
+}
+
+/**
+ * Whether DeepSeek can run this web search natively. DeepSeek rejects (400) a web
+ * tool that carries domain filters, and a request that declares any other tool
+ * beside its web tools ("other tools cannot be used together with
+ * deepseek_web_search, deepseek_read_url"). Such requests stay on the gateway's
+ * own search, which DeepSeek models can call like any function.
+ */
+export function deepSeekRunsNativeWebSearch(args: {
+	model?: string | null;
+	tool?: unknown;
+	otherToolCount?: number;
+}): boolean {
+	if (!isDeepSeekWebToolModel(args.model)) return false;
+	if ((args.otherToolCount ?? 0) > 0) return false;
+	const tool = args.tool && typeof args.tool === "object" ? args.tool as Record<string, any> : null;
+	if (tool && (hasDomainFilter(tool) || hasDomainFilter(tool.parameters))) return false;
+	return true;
+}
+
+/**
  * Whether the route sends the request to a Responses API that runs this
  * OpenAI hosted tool itself: OpenAI (both endpoints; Chat requests carrying a
  * hosted tool go to /v1/responses), Azure OpenAI deployments on /responses,
- * and xAI for web search, code interpreter and MCP. Everything else would
- * receive a tool definition its API does not define.
+ * and xAI for web search, code interpreter and MCP. DeepSeek runs web search
+ * itself on Flash, as `deepseek_web_search`, when the request allows it (see
+ * deepSeekRunsNativeWebSearch). Everything else would receive a tool
+ * definition its API does not define.
  */
 export function routeRunsOpenAIHostedTool(args: {
 	providerId: string;
 	model?: string | null;
 	endpoint: string;
 	toolType: string;
+	/** The request's tool entry, for providers whose support depends on its options. */
+	tool?: unknown;
+	/** Tools in the request other than hosted web search. */
+	otherToolCount?: number;
 }): boolean {
 	// Collapses xAI's ids (x-ai, xai and the routed spacex-ai) onto one id.
 	const providerId = normalizeProviderId(String(args.providerId ?? ""));
@@ -212,6 +262,9 @@ export function routeRunsOpenAIHostedTool(args: {
 	}
 	if (providerId === "spacex-ai") {
 		return isOpenAINativeWebSearchToolType(args.toolType) || XAI_HOSTED_TOOL_TYPES.has(args.toolType);
+	}
+	if (providerId === "deepseek") {
+		return isOpenAINativeWebSearchToolType(args.toolType) && deepSeekRunsNativeWebSearch(args);
 	}
 	return false;
 }

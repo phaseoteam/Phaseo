@@ -1582,7 +1582,7 @@ class GatewayWebFetchToolDefinition(TypedDict):
 	type: Literal["phaseo:web_fetch", "gateway:web_fetch"]
 
 class GatewayWebSearchToolDefinition(TypedDict):
-	engine: NotRequired[Literal["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish"]]
+	engine: NotRequired[Literal["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish", "deepseek"]]
 	include_highlights: NotRequired[bool]
 	include_text: NotRequired[bool]
 	language: NotRequired[str]
@@ -3634,7 +3634,7 @@ class WebFetchPlugin(TypedDict):
 	allowed_domains: NotRequired[List[str]]
 	blocked_domains: NotRequired[List[str]]
 	enabled: NotRequired[bool]
-	engine: NotRequired[Literal["auto", "native", "direct", "exa", "firecrawl", "parallel"]]
+	engine: NotRequired[Literal["auto", "native", "direct", "exa", "firecrawl", "parallel", "deepseek"]]
 	id: Literal["web-fetch"]
 	max_content_tokens: NotRequired[int]
 	max_uses: NotRequired[int]
@@ -3702,7 +3702,7 @@ class WebhookEndpointUpdateRequest(TypedDict):
 
 class WebSearchPlugin(TypedDict):
 	enabled: NotRequired[bool]
-	engine: NotRequired[Literal["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish"]]
+	engine: NotRequired[Literal["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish", "deepseek"]]
 	exclude_domains: NotRequired[List[str]]
 	id: Literal["web"]
 	include_domains: NotRequired[List[str]]

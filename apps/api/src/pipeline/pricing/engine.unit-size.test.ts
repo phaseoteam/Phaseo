@@ -419,6 +419,20 @@ describe("pricing engine unit_size handling", () => {
 		expect(priced.pricing.lines[0]).toMatchObject({ dimension: "native_web_fetch_requests", unit_price_usd: "0.000000000" });
 	});
 
+	it("bills DeepSeek native searches and page fetches at $0.75 per 1,000 each", () => {
+		const priced = computeBill(
+			{ server_tool_use: { web_search_requests: 4, web_fetch_requests: 2 } },
+			emptyCard("deepseek"),
+			{},
+			"standard",
+		);
+		expect(priced.pricing.total_nanos).toBe(4_500_000);
+		expect(priced.pricing.lines).toEqual(expect.arrayContaining([
+			expect.objectContaining({ dimension: "native_web_search_requests", quantity: 4, unit_price_usd: "0.000750000" }),
+			expect.objectContaining({ dimension: "native_web_fetch_requests", quantity: 2, unit_price_usd: "0.000750000" }),
+		]));
+	});
+
 	it("does not invent a web search price for providers without a documented one", () => {
 		const priced = computeBill({ server_tool_use: { web_search_requests: 2 } }, emptyCard("amazon-bedrock"), {}, "standard");
 		expect(priced.pricing.total_nanos).toBe(0);

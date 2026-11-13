@@ -38,7 +38,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | パラメーター | 型 | 既定値 | 説明 |
 | --- | --- | --- | --- |
-| `engine` | string | `direct` | `auto`、`native`、`direct`、`exa`、`parallel`、`firecrawl` のいずれか。[エンジンの選択](#choose-an-engine)を参照してください。 |
+| `engine` | string | `direct` | `auto`、`native`、`direct`、`exa`、`parallel`、`firecrawl`、`deepseek` のいずれか。[エンジンの選択](#choose-an-engine)を参照してください。 |
 | `max_chars` | integer | `12000` | モデルに返すページテキストの文字数。上限は `100000` です。 |
 | `max_content_tokens` | integer | なし | `max_chars` を省略したときに代わりに使われます。`native` のサイズ上限にもなります。 |
 | `max_uses` | integer | `10` | 1 リクエストあたりの取得回数。上限は `100` です。 |
@@ -59,6 +59,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `exa` | Exa のコンテンツ抽出。 |
 | `parallel` | Parallel Extract。 |
 | `firecrawl` | Firecrawl Scrape。 |
+| `deepseek` | DeepSeek Fetch。ページを Markdown で返します。 |
 | `native` | Anthropic の `web_fetch_20260209` ツール。`/v1/messages` でのみ使えます。その他のエンドポイントではリクエストが拒否されるため、`direct` または管理エンジンを使ってください。 |
 
 管理エンジンが有効になっていない場合、呼び出しはモデルに `fetch_not_configured` を返します。
@@ -109,4 +110,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## 使用量と料金
 
-取得ごとに `usage.server_tool_use.web_fetch_requests` に 1 が加算されます。モデルの料金カードで `server_tool_web_fetch_requests` の料金を設定していない場合、Phaseo は Exa、Parallel、Firecrawl 経由の管理型取得 1 回につき $0.001 を課金します。直接取得は無料です。有料エンジン経由の取得には、モデルが無料でもクレジットが必要です。ネイティブ取得は、モデルの料金カードで定義されている場合に `native_web_fetch_requests` で課金されます。
+取得ごとに `usage.server_tool_use.web_fetch_requests` に 1 が加算されます。モデルの料金カードで `server_tool_web_fetch_requests` の料金を設定していない場合、Phaseo は Exa、Parallel、Firecrawl、DeepSeek 経由の管理型取得 1 回につき $0.001 を課金します。直接取得は無料です。有料エンジン経由の取得には、モデルが無料でもクレジットが必要です。ネイティブ取得は、モデルの料金カードで定義されている場合に `native_web_fetch_requests` で課金されます。

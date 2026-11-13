@@ -30,7 +30,8 @@ export type TextGenerateTool =
         | "firecrawl"
         | "parallel"
         | "perplexity"
-        | "tinyfish";
+        | "tinyfish"
+        | "deepseek";
       include_highlights?: boolean;
       include_text?: boolean;
       language?: string;
@@ -44,7 +45,8 @@ export type TextGenerateTool =
           | "firecrawl"
           | "parallel"
           | "perplexity"
-          | "tinyfish";
+          | "tinyfish"
+          | "deepseek";
         include_highlights?: boolean;
         include_text?: boolean;
         language?: string;

@@ -38,7 +38,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | Parameter | Typ | Standardwert | Beschreibung |
 | --- | --- | --- | --- |
-| `engine` | string | `direct` | `auto`, `native`, `direct`, `exa`, `parallel` oder `firecrawl`. Siehe [Engine auswählen](#choose-an-engine). |
+| `engine` | string | `direct` | `auto`, `native`, `direct`, `exa`, `parallel`, `firecrawl` oder `deepseek`. Siehe [Engine auswählen](#choose-an-engine). |
 | `max_chars` | integer | `12000` | Zeichen Seitentext, die an das Modell zurückgehen, bis `100000`. |
 | `max_content_tokens` | integer | Keiner | Wird statt `max_chars` verwendet, wenn `max_chars` fehlt. Gilt auch als Größenlimit für `native`. |
 | `max_uses` | integer | `10` | Abrufe pro Anfrage, bis `100`. |
@@ -59,6 +59,7 @@ Jeder Aufruf enthält eine `url`. Das Modell kann außerdem `engine`, `max_chars
 | `exa` | Exa-Inhaltsextraktion. |
 | `parallel` | Parallel Extract. |
 | `firecrawl` | Firecrawl Scrape. |
+| `deepseek` | DeepSeek Fetch, das die Seite als Markdown zurückgibt. |
 | `native` | Anthropics Tool `web_fetch_20260209`, nur unter `/v1/messages`. Auf anderen Endpunkten wird die Anfrage abgelehnt; verwende `direct` oder eine verwaltete Engine. |
 
 Ist eine verwaltete Engine nicht aktiviert, gibt der Aufruf `fetch_not_configured` an das Modell zurück.
@@ -109,4 +110,4 @@ Prüfe `truncated`, bevor du annimmst, dass das Modell die ganze Seite gesehen h
 
 ## Nutzung und Preise
 
-Jeder Abruf erhöht `usage.server_tool_use.web_fetch_requests` um 1. Phaseo berechnet jeden verwalteten Abruf über Exa, Parallel oder Firecrawl mit $0.001, sofern die Preiskarte des Modells keinen eigenen Preis für `server_tool_web_fetch_requests` festlegt; direkte Abrufe sind kostenlos. Abrufe über kostenpflichtige Engines erfordern Guthaben, auch wenn das Modell kostenlos ist. Nativer Abruf wird über `native_web_fetch_requests` abgerechnet, wenn die Preiskarte des Modells dies festlegt.
+Jeder Abruf erhöht `usage.server_tool_use.web_fetch_requests` um 1. Phaseo berechnet jeden verwalteten Abruf über Exa, Parallel, Firecrawl oder DeepSeek mit $0.001, sofern die Preiskarte des Modells keinen eigenen Preis für `server_tool_web_fetch_requests` festlegt; direkte Abrufe sind kostenlos. Abrufe über kostenpflichtige Engines erfordern Guthaben, auch wenn das Modell kostenlos ist. Nativer Abruf wird über `native_web_fetch_requests` abgerechnet, wenn die Preiskarte des Modells dies festlegt.

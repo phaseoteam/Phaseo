@@ -44,7 +44,7 @@ The same tool entry works in `tools` on `/v1/responses` and `/v1/messages`.
 
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity`, or `tinyfish`. See [Choose an engine](#choose-an-engine). |
+| `engine` | string | `exa` | `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity`, `tinyfish`, or `deepseek`. See [Choose an engine](#choose-an-engine). |
 | `max_results` | integer | `5` | Results per search call, up to `25`. |
 | `max_total_results` | integer | `25` | Results across all searches in the request, up to `100`. Never lower than `max_results`. |
 | `max_uses` | integer | `10` | Search calls per request, up to `100`. |
@@ -63,7 +63,7 @@ Each call has a `query`. The model can also send `max_results`, `engine`, `searc
 | Argument | Description |
 | --- | --- |
 | `user_location` | Approximate location. Perplexity uses `user_location.country` for regional search; TinyFish uses the country and language. |
-| `language` | Result language code, such as `en`, for engines that localize. |
+| `language` | Result language code, such as `en`, for engines that localize. DeepSeek adds it to the query as a `lang:` filter. |
 | `page` | Result page `0` to `10`, for TinyFish. |
 
 Values the model sends replace the tool's defaults for that call. `max_results` is still capped by what's left of `max_total_results`; once that runs out, further calls return `max_total_results_reached`.
@@ -78,11 +78,16 @@ Values the model sends replace the tool's defaults for that call. `max_results` 
 | `firecrawl` | Managed Firecrawl search. |
 | `perplexity` | The Perplexity Search API: ranked results, `search_context_size`, and regional search from `user_location.country`. |
 | `tinyfish` | TinyFish Search: localized, paginated ranked results. It returns snippets, not full page text; use [`phaseo:web_fetch`](./web-fetch) when the model needs more. |
-| `native` | The provider's own web search tool, such as OpenAI's `web_search_preview` or Anthropic's `web_search_20250305`. |
+| `deepseek` | DeepSeek Search: ranked results with a summary of each page, written for the model to read. |
+| `native` | The provider's own web search tool, such as OpenAI's `web_search_preview`, Anthropic's `web_search_20250305`, or DeepSeek's `deepseek_web_search`. |
 
 If a managed engine isn't enabled, the call returns `search_not_configured` to the model.
 
-With `engine: "native"` on `/v1/chat/completions` or `/v1/responses`, the request goes only to providers that run web search themselves. If none serve the model, Phaseo runs its default engine instead and bills it as managed search. Set `native` in the tool definition only: if the model asks for `native` in a call, the call returns `unsupported_search_engine`, because the provider's tool has to be chosen before the request is sent.
+With `engine: "native"` on `/v1/chat/completions` or `/v1/responses`, the request goes only to providers that run web search themselves. If none serve the model, Phaseo runs its default engine instead and bills it as managed search.
+
+The providers that run web search themselves on these endpoints are OpenAI, Azure OpenAI deployments on `/v1/responses`, xAI, and DeepSeek on `deepseek/deepseek-v4.1-flash-1017`. DeepSeek searches on its own only when web search is the request's only tool and the search has no domain lists, because its API rejects both. Other requests to that model use Phaseo's search instead, which works alongside your own tools. With reasoning on, DeepSeek runs a deeper search that opens and reads pages over several steps.
+
+Sending OpenAI's own `{ "type": "web_search" }` tool works the same way as `engine: "native"`. Set `native` in the tool definition only: if the model asks for `native` in a call, the call returns `unsupported_search_engine`, because the provider's tool has to be chosen before the request is sent.
 
 ## Filter by domain
 
@@ -100,6 +105,7 @@ Engines handle the lists differently:
 - **Perplexity** takes either list, not both, and up to 20 domains. Excluded domains are sent as its deny-list format.
 - **Firecrawl** takes either list, not both.
 - **TinyFish** takes both and turns them into `site:` and `-site:` operators in the query.
+- **DeepSeek** takes both and turns them into `site:` and `-site:` operators. Its queries are limited to 128 characters, so the query is shortened to make room for the operators. If the domain lists alone exceed the limit, the call returns `search_query_too_long`.
 
 ## What the tool returns
 
@@ -121,4 +127,4 @@ Each search adds to `usage.server_tool_use`:
 }
 ```
 
-Phaseo bills each managed search at $0.007, plus $0.001 for each result past the first 10, unless the model's price card sets its own `server_tool_web_search_requests` and `server_tool_web_search_extra_results` prices. Failed searches are not billed, and TinyFish Search is free on its published plans, so `engine: "tinyfish"` adds no search charge. Searches on paid engines need credits even when the model is free. Native search is billed with `native_web_search_requests` where the model's price card defines it.
+Phaseo bills each managed search at $0.007, plus $0.001 for each result past the first 10, unless the model's price card sets its own `server_tool_web_search_requests` and `server_tool_web_search_extra_results` prices. Failed searches are not billed, and TinyFish Search is free on its published plans, so `engine: "tinyfish"` adds no search charge. Searches on paid engines need credits even when the model is free. Native search is billed with `native_web_search_requests` at the provider's published price: for example $10 per 1,000 searches on OpenAI and Anthropic, and $0.75 per 1,000 on DeepSeek, where only searches that return results count. DeepSeek also bills each page it opens during a search at $0.75 per 1,000, as `native_web_fetch_requests`.
