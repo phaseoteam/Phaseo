@@ -53,6 +53,14 @@ describe("SourceReader", () => {
     expect(calls.filter((url) => url.includes("runner.ts"))).toHaveLength(1);
   });
 
+  it("tells whether the commit is on GitHub", async () => {
+    const { fetcher } = fakeGitHub();
+    FILES["package.json"] = "{}";
+    expect(await new SourceReader(SHA, fetcher).exists()).toBe(true);
+    expect(await new SourceReader("c".repeat(40), fetcher).exists()).toBe(false);
+    delete FILES["package.json"];
+  });
+
   it("explains GitHub's limit when listings run out", async () => {
     const source = new SourceReader(SHA, async () => ({ ok: false, status: 403, text: async () => "", json: async () => ({}) }));
     await expect(source.list("apps")).rejects.toThrow(/60 folder listings an hour/);
@@ -107,6 +115,8 @@ describe("triage text", () => {
   it("names the exact commit, or says it reads main", () => {
     expect(triagePrompt(BUILD, "")).toContain(`exactly commit ${SHA}`);
     expect(triagePrompt({ ...BUILD, commit: null }, "")).toContain("you read the latest main");
+    const unpublished = triagePrompt({ ...BUILD, unpublished: true }, "");
+    expect(unpublished).toContain(`This build's commit (${SHA}) isn't on GitHub`);
     expect(triagePrompt(BUILD, "2026-11-12T10:00:00.000Z Chat list took 900 ms")).toContain("Chat list took 900 ms");
   });
 

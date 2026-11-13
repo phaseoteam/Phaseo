@@ -30,9 +30,17 @@ export async function startTriage(args: { report: string; build: TriageBuild; di
     triageRun.set((run) => (run.status === "running" ? { ...run, ...patch } : run));
   };
   try {
+    // A build from commits that were never pushed reads main, and the agent is told so.
+    let build = args.build;
+    let source = new SourceReader(build.commit ?? "main", undefined, own.signal);
+    if (build.commit && !(await source.exists())) {
+      build = { ...build, unpublished: true };
+      source = new SourceReader("main", undefined, own.signal);
+    }
     const outcome = await runTriage({
       ...args,
-      source: new SourceReader(args.build.commit ?? "main", undefined, own.signal),
+      build,
+      source,
       signal: own.signal,
       onStep: (step) => { steps = [...steps, step]; update({ steps }); },
       onText: (live) => update({ live }),

@@ -3,7 +3,7 @@ import type { StreamToolCall } from "@/features/chat/stream";
 import { DEFAULT_SEARCH_PATHS, SOURCE_REPOSITORY, SourceError, type SourceReader } from "./source";
 
 /** The build being triaged, as the prompt describes it. */
-export type TriageBuild = { app: string; version: string; buildNumber: number | null; commit: string | null; dirty: boolean; device: string; os: string };
+export type TriageBuild = { app: string; version: string; buildNumber: number | null; commit: string | null; dirty: boolean; device: string; os: string; /** The build's commit isn't on GitHub, so the source read is main. */ unpublished?: boolean };
 export type IssueDraft = { title: string; body: string };
 /** One thing the agent did, for the progress list: "Searched for useChat in apps/mobile/src". */
 export type TriageStep = { id: string; label: string; detail?: string; failed?: boolean };
@@ -44,7 +44,9 @@ export const TRIAGE_TOOLS = [
 
 export function triagePrompt(build: TriageBuild, diagnostics: string) {
   const commit = build.commit ? build.commit.slice(0, 12) : "main";
-  const source = build.commit
+  const source = build.commit && build.unpublished
+    ? `This build's commit (${build.commit}) isn't on GitHub, as it was never pushed, so you read the latest main instead. Code may differ from the build; say so if it matters.`
+    : build.commit
     ? `You read the source at exactly commit ${build.commit}, the one this build came from.${build.dirty ? " The build was made with uncommitted changes, so a few lines may differ." : ""}`
     : "This build doesn't carry its commit, so you read the latest main. Code may have changed since the build; say so if it matters.";
   return `You triage bugs in the Phaseo phone app. The person ran into a problem in the app and described it in the next message. You run inside the app on their phone and are reading the answer there, so keep replies short and readable on a small screen.

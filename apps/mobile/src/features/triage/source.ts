@@ -50,6 +50,14 @@ export class SourceReader {
     return tree;
   }
 
+  /** Whether this ref is on GitHub (a build from commits that were never pushed isn't). Reads one raw file, which GitHub's listing limit doesn't cover. */
+  async exists() {
+    const response = await this.fetcher(`https://raw.githubusercontent.com/${SOURCE_REPOSITORY}/${this.ref}/package.json`, { signal: this.signal });
+    if (response.status === 404) return false;
+    if (!response.ok) throw new SourceError(`GitHub answered ${response.status}.`);
+    return true;
+  }
+
   /** One file's text. */
   file(path: string) {
     const key = cleanPath(path);
