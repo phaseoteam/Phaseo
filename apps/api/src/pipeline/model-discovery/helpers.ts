@@ -1210,6 +1210,20 @@ export function addedModelMaxAgeMs(raw: string | null | undefined): number {
 }
 
 /**
+ * `Date.parse` rolls impossible dates over (`2025-02-30` becomes 2 March), which could make an unknown age
+ * look old. A string starting with a `YYYY-MM-DD` date must name a real day; other formats pass through.
+ */
+function isCalendarValidIsoPrefix(value: string): boolean {
+	const match = /^(\d{4})-(\d{2})-(\d{2})(?=T|\s|$)/.exec(value);
+	if (!match) return true;
+	const year = Number(match[1]);
+	const month = Number(match[2]);
+	const day = Number(match[3]);
+	if (month < 1 || month > 12 || day < 1) return false;
+	return day <= new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+/**
  * Reads when the provider says it created a listed model (`created`, `created_at` or `createdAt`, as Unix
  * seconds, milliseconds or an ISO date). Returns null when there is no plausible date, including values
  * before 2015 or more than a day in the future, so an unknown age never hides a model.
@@ -1227,7 +1241,7 @@ export function providerModelCreatedAtMs(details: unknown, nowMs: number): numbe
 			if (/^\d+(\.\d+)?$/.test(trimmed)) {
 				const numeric = Number(trimmed);
 				ms = numeric < MILLISECOND_TIMESTAMP_THRESHOLD ? numeric * 1000 : numeric;
-			} else {
+			} else if (isCalendarValidIsoPrefix(trimmed)) {
 				ms = Date.parse(trimmed);
 			}
 		}

@@ -107,6 +107,10 @@ function buildClient(
 				filters.push(["is", column, value]);
 				return query;
 			});
+			query.or = vi.fn((value: string) => {
+				filters.push(["or", "", value]);
+				return query;
+			});
 			// Awaiting a write chain resolves like PostgREST: no error.
 			query.then = (resolve: (value: { error: null }) => unknown) => resolve({ error: null });
 			return query;
@@ -160,11 +164,12 @@ describe("runPublicModelAnnouncementCheck", () => {
 		expect(summary).toMatchObject({ detected: 0, notified: 0, pending: 0, tooOld: 1, error: null });
 		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
 		expect(supabase.client.rpc).not.toHaveBeenCalled();
-		// Snapshot now says public, so the next run does not pick it up again; nothing was promoted.
+		// Marked handled (announced, no announced_at) with a public snapshot, so the next run does not pick it
+		// up again; nothing was promoted.
 		expect(supabase.updates.map((entry) => entry.values)).toEqual([
-			expect.objectContaining({ public_visibility_snapshot: true, catalogue_status_snapshot: "available" }),
-			expect.objectContaining({ status: "baseline", public_visibility_snapshot: true }),
+			expect.objectContaining({ status: "announced", public_visibility_snapshot: true, catalogue_status_snapshot: "available" }),
 		]);
+		expect(supabase.updates[0]?.values).not.toHaveProperty("announced_at");
 		expect(supabase.updates.some((entry) => (entry.values as { status?: string }).status === "pending")).toBe(false);
 	});
 
@@ -179,7 +184,7 @@ describe("runPublicModelAnnouncementCheck", () => {
 		expect(await runPublicModelAnnouncementCheck({ runId: "staged-run", notify: true })).toMatchObject({ detected: 1, notified: 1, tooOld: 0 });
 	});
 
-	it("demotes a stale pending row instead of announcing it", async () => {
+	it("takes a stale pending row only when no live claim holds it", async () => {
 		const model = { model_slug: "ibm/granite-20b", name: "Granite 20B", lab_slug: "ibm", hidden: false, status: "active", catalogue_status: "available", released_at: "2024-05-06T00:00:00Z" };
 		const supabase = buildClient([model], [
 			{ model_slug: model.model_slug, status: "pending", attempt_count: 1, first_seen_at: "2026-09-17T01:30:17Z" },
@@ -188,8 +193,12 @@ describe("runPublicModelAnnouncementCheck", () => {
 		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
 
 		expect(await runPublicModelAnnouncementCheck({ runId: "stale-pending", notify: true })).toMatchObject({ notified: 0, pending: 0, tooOld: 1 });
-		const release = supabase.updates.find((entry) => (entry.values as { status?: string }).status === "baseline");
-		expect(release?.filters).toEqual(expect.arrayContaining([["eq", "status", "pending"], ["is", "claim_run_id", null]]));
+		const release = supabase.updates.find((entry) => (entry.values as { status?: string }).status === "announced");
+		expect(release?.values).toMatchObject({ claim_run_id: null, claim_expires_at: null });
+		expect(release?.filters).toEqual(expect.arrayContaining([
+			["in", "status", ["baseline", "pending", "announced"]],
+			["or", "", `claim_run_id.is.null,claim_expires_at.lt."${NOW.toISOString()}"`],
+		]));
 		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
 	});
 
@@ -209,8 +218,30 @@ describe("runPublicModelAnnouncementCheck", () => {
 		expect(supabase.client.rpc).not.toHaveBeenCalled();
 		expect(mocks.deliverPrivateModelDiscoveryMessage).toHaveBeenCalledTimes(1);
 		expect(mocks.deliverPrivateModelDiscoveryMessage.mock.calls[0]?.[0]).toContain("4 models became public in one run");
-		// The rows inserted as pending go straight back to baseline.
-		expect(supabase.updates.at(-1)?.values).toMatchObject({ status: "baseline" });
+		// The rows inserted as pending are marked handled straight away.
+		expect(supabase.updates.at(-1)?.values).toMatchObject({ status: "announced", claim_run_id: null });
+		expect(supabase.updates.at(-1)?.values).not.toHaveProperty("announced_at");
+	});
+
+	it("does not post suppressed previews on the next scan through legacy preview recovery", async () => {
+		// Second scan after an over-cap run: rows first seen after the original baseline with a preview
+		// snapshot. As `baseline` they would match the legacy recovery branch; marked handled, they do not.
+		const previews = Array.from({ length: 2 }, (_, index) => ({
+			model_slug: `lab/preview-${index}`, name: `Preview ${index}`, lab_slug: "lab", hidden: false, status: "active", catalogue_status: "preview",
+		}));
+		const supabase = buildClient(previews, [
+			{ model_slug: "openai/existing", status: "baseline", attempt_count: 0, first_seen_at: "2026-09-17T00:00:00Z" },
+			...previews.map((model) => ({
+				model_slug: model.model_slug, status: "announced", attempt_count: 0, first_seen_at: "2026-10-19T00:00:00Z",
+				catalogue_status_snapshot: "preview", public_visibility_snapshot: true,
+			})),
+		]);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
+
+		expect(await runPublicModelAnnouncementCheck({ runId: "second-scan", notify: true })).toMatchObject({ detected: 0, notified: 0, pending: 0, overCap: 0 });
+		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
+		expect(mocks.deliverPrivateModelDiscoveryMessage).not.toHaveBeenCalled();
 	});
 
 	it("announces a batch at the cap as normal", async () => {

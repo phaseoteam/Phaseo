@@ -169,8 +169,10 @@ export function isTooOldToAnnounce(
 }
 
 /**
- * Records models as seen without announcing them: snapshots move to the current state, so they are not
- * picked up again, and a pending row (not claimed by a run) goes back to baseline.
+ * Records models as handled without announcing them. Rows become `announced` with `announced_at` left
+ * as it was (null for a model that was never posted), which marks them suppressed: unlike `baseline`, the
+ * legacy preview-recovery branch of `isNewlyAvailable` cannot pick them up and post them on a later run.
+ * Snapshots move to the current state. A pending row is only taken when no run holds a live claim on it.
  */
 async function recordWithoutAnnouncing(
 	runId: string,
@@ -194,25 +196,22 @@ async function recordWithoutAnnouncing(
 	for (const [catalogueStatus, modelSlugs] of byStatus) {
 		for (let offset = 0; offset < modelSlugs.length; offset += PUBLIC_ANNOUNCEMENT_STATE_BATCH_SIZE) {
 			const batch = modelSlugs.slice(offset, offset + PUBLIC_ANNOUNCEMENT_STATE_BATCH_SIZE);
-			const snapshot = {
-				catalogue_status_snapshot: catalogueStatus || null,
-				public_visibility_snapshot: true,
-				last_run_id: runId,
-				updated_at: nowIso,
-			};
-			const observed = await supabase
+			const { error } = await supabase
 				.from("model_discovery_public_announcements")
-				.update(snapshot)
+				.update({
+					status: "announced",
+					catalogue_status_snapshot: catalogueStatus || null,
+					public_visibility_snapshot: true,
+					claim_run_id: null,
+					claim_expires_at: null,
+					last_run_id: runId,
+					updated_at: nowIso,
+				})
 				.in("model_slug", batch)
-				.in("status", ["baseline", "announced"]);
-			if (observed.error) throw new Error(observed.error.message || "Failed to record unannounced public models");
-			const released = await supabase
-				.from("model_discovery_public_announcements")
-				.update({ ...snapshot, status: "baseline" })
-				.in("model_slug", batch)
-				.eq("status", "pending")
-				.is("claim_run_id", null);
-			if (released.error) throw new Error(released.error.message || "Failed to release unannounced public models");
+				.in("status", ["baseline", "pending", "announced"])
+				// An expired lease belongs to an interrupted run; only a live one is left alone.
+				.or(`claim_run_id.is.null,claim_expires_at.lt."${nowIso}"`);
+			if (error) throw new Error(error.message || "Failed to record unannounced public models");
 		}
 	}
 }

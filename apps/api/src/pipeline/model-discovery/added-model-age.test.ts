@@ -22,6 +22,10 @@ describe("added model age cap", () => {
 		expect(providerModelCreatedAtMs({ id: "x" }, nowMs)).toBeNull();
 		expect(providerModelCreatedAtMs({ created: 0 }, nowMs)).toBeNull();
 		expect(providerModelCreatedAtMs({ created: "not a date" }, nowMs)).toBeNull();
+		// Date.parse would roll these over to real days (2 March, 1 May) and could make them look old.
+		expect(providerModelCreatedAtMs({ created: "2025-02-30T00:00:00Z" }, nowMs)).toBeNull();
+		expect(providerModelCreatedAtMs({ created_at: "2025-04-31" }, nowMs)).toBeNull();
+		expect(providerModelCreatedAtMs({ created_at: "2024-02-29T12:00:00Z" }, nowMs)).toBe(Date.UTC(2024, 1, 29, 12));
 		expect(providerModelCreatedAtMs({ created: (nowMs + 7 * day) / 1000 }, nowMs)).toBeNull();
 		expect(providerModelCreatedAtMs(null, nowMs)).toBeNull();
 	});
