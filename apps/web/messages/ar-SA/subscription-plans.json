@@ -44,7 +44,11 @@
     "access": "الوصول",
     "billing": "الفوترة",
     "details": "التفاصيل",
-    "pricing": "الأسعار"
+    "pricing": "الأسعار",
+    "compareTitle": "قارن خطط {provider}",
+    "pricePerMonth": "السعر شهريًا",
+    "thisPlan": "هذه الخطة",
+    "accessVerified": "آخر تحقق من الوصول إلى النماذج: {date}"
   },
   "metadata": {
     "fallbackTitle": "خطط اشتراك الذكاء الاصطناعي وأسعارها | Phaseo",

@@ -3,6 +3,7 @@ import { useTranslations } from "@/i18n/react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { summarizeUsage, type SubscriptionPlanUsage } from "@/lib/fetchers/subscription-plans/usage";
 import type { SubscriptionPlanModel } from "@/lib/fetchers/subscription-plans/types";
+import { formatSubscriptionPlanMessage } from "@/i18n/subscription-plans";
 import { useSubscriptionFormat } from "./useSubscriptionFormat";
 
 type Row = { model: SubscriptionPlanModel; usage: ReturnType<typeof summarizeUsage> };
@@ -25,7 +26,9 @@ export default function SubscriptionPlanModelsTable({ models, usage, limit }: { 
 	const { messages } = format;
 	const rows = planModelRows(models, usage).slice(0, limit);
 	const hasUsage = rows.some((row) => row.usage);
+	const verified = models.map((model) => model.verified_at).filter((value): value is string => Boolean(value)).sort().at(-1);
 	return (
+		<div className="space-y-2">
 		<div className="overflow-x-auto rounded-md border border-border/70">
 			<Table aria-label={access("plan_model_access")}>
 				<TableHeader className="bg-muted/40">
@@ -58,6 +61,8 @@ export default function SubscriptionPlanModelsTable({ models, usage, limit }: { 
 					})}
 				</TableBody>
 			</Table>
+		</div>
+		{verified ? <p className="text-xs text-muted-foreground">{formatSubscriptionPlanMessage(messages.detail.accessVerified, { date: format.date(verified) })}</p> : null}
 		</div>
 	);
 }

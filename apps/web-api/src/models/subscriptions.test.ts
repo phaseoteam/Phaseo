@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchSubscriptionCatalogue, fetchSubscriptionPlansForModels, mergeOrderedPlanLists, subscriptionPayload } from "./subscriptions";
+import { fetchRelatedPlans, fetchSubscriptionCatalogue, fetchSubscriptionPlansForModels, mergeOrderedPlanLists, subscriptionPayload } from "./subscriptions";
 
 describe("structured subscription payload", () => {
 	it("preserves offer identity, composite charges, allowances and model access", () => {
@@ -73,5 +73,22 @@ describe("subscription usage", () => {
 		const plans = await fetchSubscriptionCatalogue({ rpc } as never);
 		expect(plans.map((plan) => plan.usage)).toEqual([[], []]);
 		warn.mockRestore();
+	});
+});
+
+describe("related plans", () => {
+	it("returns the lab's plans cheapest first with their standard usage", async () => {
+		const query = { select: () => query, eq: () => query, lte: () => query, or: async () => ({ data: [
+			{ plan_uuid: "ultra", plan_id: "ultra", name: "Ultra", price: 200, currency: "USD", frequency: "monthly" },
+			{ plan_uuid: "pro", plan_id: "pro", name: "Pro", price: 20, currency: "USD", frequency: "monthly" },
+			{ plan_uuid: "ent", plan_id: "ent", name: "Enterprise", price: null, currency: "USD", frequency: "custom" },
+		], error: null }) };
+		const client = { from: () => query, rpc: async () => ({ data: [
+			{ plan_uuid: "pro", lab_slug: "lab", model_slug: "lab/a", scenario: "standard", monthly_tokens: "1000" },
+			{ plan_uuid: "pro", lab_slug: "lab", model_slug: "lab/a", scenario: "off_peak", monthly_tokens: "2000" },
+			{ plan_uuid: "other", lab_slug: "other-lab", model_slug: "x/y", scenario: "standard", monthly_tokens: "5" },
+		], error: null }) };
+		const related = await fetchRelatedPlans(client as never, { organisation_id: "lab" });
+		expect(related.map((plan) => [plan.plan_id, plan.monthly_price_usd, plan.usage.length])).toEqual([["pro", 20, 1], ["ultra", 200, 0], ["ent", null, 0]]);
 	});
 });

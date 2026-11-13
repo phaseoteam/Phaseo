@@ -44,7 +44,11 @@
     "access": "アクセス",
     "billing": "請求",
     "details": "詳細",
-    "pricing": "料金"
+    "pricing": "料金",
+    "compareTitle": "{provider} のプランを比較",
+    "pricePerMonth": "月額料金",
+    "thisPlan": "このプラン",
+    "accessVerified": "モデルのアクセス状況の最終確認: {date}"
   },
   "metadata": {
     "fallbackTitle": "AIサブスクリプションプランと料金 | Phaseo",

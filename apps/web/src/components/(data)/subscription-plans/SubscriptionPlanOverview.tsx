@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import SubscriptionPlanFeaturesTable from "./SubscriptionPlanFeaturesTable";
 import SubscriptionPlanModelsTable from "./SubscriptionPlanModelsTable";
 import SubscriptionPlanUsageSection from "./SubscriptionPlanUsage";
+import SubscriptionPlanCompare from "./SubscriptionPlanCompare";
 import { formatSubscriptionPlanMessage, type SubscriptionPlansMessages } from "@/i18n/subscription-plans";
 
 const PREVIEW_FEATURES = 5;
@@ -34,6 +35,7 @@ export default function SubscriptionPlanOverview({ plan, messages }: Subscriptio
 		<div className="space-y-10">
 			<SubscriptionPlanUsageSection usage={plan.usage ?? []} />
 			<SubscriptionPlanOffers plan={plan} />
+			<SubscriptionPlanCompare planId={plan.plan_id} provider={plan.organisation?.name ?? messages.unknownProvider} plans={plan.related_plans ?? []} />
 			<SubscriptionPlanAllowances allowances={plan.allowances ?? []} />
 
 			<section id="main-features" className="scroll-mt-36 space-y-4">
