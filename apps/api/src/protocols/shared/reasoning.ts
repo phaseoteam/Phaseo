@@ -84,6 +84,7 @@ export function sealReasoningPart(
 		provider: part.reasoningProvider ?? origin?.provider ?? undefined,
 		...(position?.afterCallId ? { afterCallId: position.afterCallId } : {}),
 		...(position?.textOffset ? { textOffset: position.textOffset } : {}),
+		...(part.signsText ? { signsText: true } : {}),
 	});
 }
 
@@ -117,6 +118,7 @@ export function reasoningPartFromState(
 		...(state.model ? { reasoningModel: state.model } : {}),
 		...(state.provider ? { reasoningProvider: state.provider } : {}),
 		...(extra?.reasoningId ? { reasoningId: extra.reasoningId } : {}),
+		...(state.signsText ? { signsText: true } : {}),
 	};
 }
 
@@ -255,7 +257,8 @@ export function encodeChatReasoningDetails(
 	// (and before any tool call) records how much text came before it.
 	let textChars = 0;
 	const positionOf = (part: ReasoningPart): { afterCallId?: string; textOffset?: number } | undefined => {
-		if (!keepsReasoningPosition(reasoningPartFormat(part, origin))) return undefined;
+		// A Gemini signature from a text part goes back right after the text it came on.
+		if (!part.signsText && !keepsReasoningPosition(reasoningPartFormat(part, origin))) return undefined;
 		const index = part.beforeToolCallId ? callOrder.indexOf(part.beforeToolCallId) : -1;
 		if (index > 0) return { afterCallId: callOrder[index - 1] };
 		return !part.beforeToolCallId && textChars > 0 ? { textOffset: textChars } : undefined;
@@ -331,7 +334,7 @@ export function decodeChatReasoningDetails(
 	// Put a reasoning block back before the tool call that followed it.
 	const callOrder = [...toolCallIds];
 	const anchored = (part: ReasoningPart, state: ReasoningState): ReasoningPart => {
-		if (!keepsReasoningPosition(state.format)) return part;
+		if (!state.signsText && !keepsReasoningPosition(state.format)) return part;
 		if (state.textOffset && !state.afterCallId) textOffsets.set(part, state.textOffset);
 		if (!state.afterCallId) return part;
 		const index = callOrder.indexOf(state.afterCallId);

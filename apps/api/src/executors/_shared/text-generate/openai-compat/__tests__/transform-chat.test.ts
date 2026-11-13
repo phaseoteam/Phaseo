@@ -762,6 +762,20 @@ describe("Alibaba Cloud reasoning request contract", () => {
 
 		expect(request.enable_thinking).toBe(false);
 	});
+
+	it("passes an explicit reasoning context on as preserve_thinking, and nothing otherwise", () => {
+		const request = (context?: string) => irToOpenAIChat({
+			model: "qwen3.6-plus",
+			messages: [{ role: "user", content: [{ type: "text", text: "Plan the migration." }] }],
+			stream: false,
+			reasoning: { enabled: true, effort: "medium", ...(context ? { context } : {}) },
+		} as any, "qwen3.6-plus", "alibaba-cloud");
+
+		expect(request("all_turns").preserve_thinking).toBe(true);
+		expect(request("current_turn").preserve_thinking).toBe(false);
+		expect(request("auto")).not.toHaveProperty("preserve_thinking");
+		expect(request()).not.toHaveProperty("preserve_thinking");
+	});
 });
 
 describe("Mistral chat request contract", () => {

@@ -75,6 +75,8 @@ export type ReasoningState = {
 	 * reply's text into one string, so this is where the block goes back.
 	 */
 	textOffset?: number;
+	/** A Gemini signature that belongs on the text part before it (see IR `signsText`). */
+	signsText?: boolean;
 	/** True when the value arrived without a gateway seal. */
 	unsealed?: boolean;
 };
@@ -116,6 +118,7 @@ export function sealReasoningState(state: Omit<ReasoningState, "unsealed">): str
 	if (state.callId) header.c = state.callId;
 	if (state.afterCallId) header.a = state.afterCallId;
 	if (state.textOffset) header.o = String(state.textOffset);
+	if (state.signsText) header.t = "1";
 	return `${SEAL_PREFIX}${toBase64Url(JSON.stringify(header))}.${state.value}`;
 }
 
@@ -154,6 +157,7 @@ export function openReasoningState(
 			...(typeof header.c === "string" && header.c ? { callId: header.c } : {}),
 			...(typeof header.a === "string" && header.a ? { afterCallId: header.a } : {}),
 			...(typeof header.o === "string" && /^[1-9]\d*$/.test(header.o) ? { textOffset: Number(header.o) } : {}),
+			...(header.t === "1" ? { signsText: true } : {}),
 		};
 	}
 	if (!fallback?.format) return null;

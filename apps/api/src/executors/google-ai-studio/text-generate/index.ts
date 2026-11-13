@@ -24,8 +24,11 @@ import {
 	geminiFunctionCallId,
 	geminiReplayableAssistantParts,
 	geminiThoughtPartToIR,
+	geminiSignedTextPartsToIR,
 	irToolCallsToGeminiParts,
 	withoutEmptyGeminiTextParts,
+	GEMINI_SKIP_THOUGHT_SIGNATURE,
+	requiresGeminiFunctionCallSignature,
 } from "../../google/shared/function-history";
 import { normalizeGoogleModelSlug, resolveGoogleModelCandidates } from "../../google/shared/model";
 import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback, applyStreamedOutputTokenFallback } from "../../google/shared/usage-fallback";
@@ -306,7 +309,8 @@ export async function irToGemini(
 			// order, with its signature: thoughts, then output and calls.
 			// https://ai.google.dev/gemini-api/docs/interactions/function-calling
 			for (const part of replayable) {
-				if (part.type !== "reasoning_text") continue;
+				// A generateContent text signature has no Interactions step to go on.
+				if (part.type !== "reasoning_text" || part.signsText) continue;
 				if (part.beforeToolCallId && toolCallIds.has(part.beforeToolCallId)) continue;
 				input.push(thoughtStep(part));
 			}
@@ -321,6 +325,19 @@ export async function irToGemini(
 				});
 			}
 			if (Array.isArray(msg.toolCalls)) {
+				// A client that dropped reasoning sends calls with no signed thought before them,
+				// which stateless Interactions rejects (400 "Request contains an invalid argument",
+				// seen live 2026-11-13). A thought step carrying Google's skip value is accepted,
+				// as generateContent accepts it on the first functionCall.
+				// https://ai.google.dev/gemini-api/docs/thought-signatures
+				const signed = replayable.some((part) => part.type === "reasoning_text" && Boolean(part.thoughtSignature))
+					|| msg.toolCalls.some((call) => call.thoughtSignature && canReplayReasoning(
+						{ format: GOOGLE_REASONING_FORMAT, model: call.thoughtSignatureModel },
+						target,
+					));
+				if (msg.toolCalls.length > 0 && !signed && requiresGeminiFunctionCallSignature(target.model)) {
+					input.push({ type: "thought", signature: GEMINI_SKIP_THOUGHT_SIGNATURE });
+				}
 				for (const toolCall of msg.toolCalls) {
 					for (const part of replayable) {
 						if (part.type === "reasoning_text" && part.beforeToolCallId === toolCall.id) input.push(thoughtStep(part));
@@ -680,6 +697,9 @@ function geminiToIR(
 				if (part.thought && (part.text || part.thoughtSignature || part.thought_signature)) {
 					// Thought, with its signature tagged so it goes back only to Gemini.
 					contentParts.push(geminiThoughtPartToIR(part, model, provider));
+				} else if ((part.thoughtSignature || part.thought_signature) && !part.functionCall && !part.inlineData && !part.inline_data) {
+					// A final text answer carries its signature on its last text part.
+					contentParts.push(...geminiSignedTextPartsToIR(part, model, provider));
 				} else if (part.text) {
 					// Regular text part
 					contentParts.push({
@@ -1729,6 +1749,9 @@ export function transformStream(
 	// extend one entry, as the non-streamed reply has one entry per thought part.
 	const openThoughtDetails = new Map<number, number>();
 	const thoughtTextOpen = new Map<number, boolean>();
+	// Answer text streamed so far per candidate: a signature on a text part records it,
+	// so Chat clients send it back after that text.
+	const answerTextChars = new Map<number, number>();
 
 	let created = Math.floor(Date.now() / 1000);
 	const model = args.providerModelSlug || args.ir.model || "gemini-2.0-flash-exp";
@@ -2014,13 +2037,14 @@ export function transformStream(
 					// Thought signatures, sealed so chat clients can return them
 					// and the gateway replays them only to this Gemini model.
 					const signatureDetails: Array<Record<string, any>> = [];
-					const sealGeminiSignature = (signature: string, callId?: string) => sealReasoningState({
+					const sealGeminiSignature = (signature: string, callId?: string, onText?: { textOffset: number }) => sealReasoningState({
 						format: GOOGLE_REASONING_FORMAT,
 						kind: "signature",
 						value: signature,
 						model,
 						provider,
 						...(callId ? { callId } : {}),
+						...(onText ? { signsText: true, ...(onText.textOffset > 0 ? { textOffset: onText.textOffset } : {}) } : {}),
 					});
 
 					for (const [partIdx, part] of parts.entries()) {
@@ -2044,6 +2068,15 @@ export function transformStream(
 							signatureDetails.push({
 								type: "reasoning.encrypted",
 								data: sealGeminiSignature(partSignature),
+								format: GOOGLE_REASONING_FORMAT,
+							});
+						}
+						if (!part.thought && part.text) answerTextChars.set(index, (answerTextChars.get(index) ?? 0) + part.text.length);
+						if (!part.thought && !part.functionCall && !part.inlineData && !part.inline_data && typeof partSignature === "string" && partSignature) {
+							// A final answer signs its last text part; it goes back on that text.
+							signatureDetails.push({
+								type: "reasoning.encrypted",
+								data: sealGeminiSignature(partSignature, undefined, { textOffset: answerTextChars.get(index) ?? 0 }),
 								format: GOOGLE_REASONING_FORMAT,
 							});
 						}

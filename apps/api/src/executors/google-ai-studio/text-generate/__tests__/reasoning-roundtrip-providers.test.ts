@@ -203,7 +203,7 @@ function accumulateChat(frames: any[]) {
 // Google reasoning entry, and putting it back on the text needs its position sealed
 // (protocols/shared/reasoning.ts records position only for Claude today). Google
 // does not enforce this signature, so the cost is reasoning quality, not a 400.
-const KNOWN_GAPS = new Set(["text answer with the signature on the last text part"]);
+const KNOWN_GAPS = new Set<string>([]);
 
 for (const [shape, { parts, calls: _calls }] of Object.entries(SHAPES)) {
 	const it = KNOWN_GAPS.has(shape) ? itBase.skip : itBase;
@@ -455,5 +455,40 @@ describe("Claude on Vertex and Bedrock", () => {
 		const content = replay("claude-haiku-5-5", "anthropic", "amazon-bedrock");
 		expect(JSON.stringify(content)).not.toContain("sig-a");
 		expect(content.filter((block: any) => block.type === "thinking")).toEqual([]);
+	});
+});
+
+describe("Interactions when the client dropped reasoning", () => {
+	// Live 2026-11-13, gemini-3.1-flash-lite: function_call steps with no signed thought
+	// before them returned 400 "Request contains an invalid argument"; a thought step
+	// carrying the skip value was accepted.
+	const request = (assistant: any) => decodeOpenAIChatRequest({
+		model: "google/gemini-3.1-flash-lite",
+		tools: [{ type: "function", function: { name: "lookup", parameters: { type: "object", properties: {} } } }],
+		messages: [
+			{ role: "user", content: "Count the crates." },
+			assistant,
+			{ role: "tool", tool_call_id: "call_a", content: "4 crates" },
+			{ role: "tool", tool_call_id: "call_b", content: "5 crates" },
+		],
+	} as any);
+	const calls = [
+		{ id: "call_a", type: "function", function: { name: "lookup", arguments: "{\"shelf\":\"A1\"}" } },
+		{ id: "call_b", type: "function", function: { name: "lookup", arguments: "{\"shelf\":\"B2\"}" } },
+	];
+
+	it("puts a skip-signature thought step before the calls", async () => {
+		const body = await interactionsIrToGemini(request({ role: "assistant", content: "", tool_calls: calls }), "gemini-3.1-flash-lite");
+		expect(body.input.map((step: any) => step.type)).toEqual(["user_input", "thought", "function_call", "function_call", "function_result", "function_result"]);
+		expect(body.input[1]).toEqual({ type: "thought", signature: "skip_thought_signature_validator" });
+	});
+
+	it("adds nothing when the client sent the signed thought back", async () => {
+		const ir = request({ role: "assistant", content: "", tool_calls: calls });
+		const assistant: any = ir.messages.find((message) => message.role === "assistant");
+		assistant.content.unshift({ type: "reasoning_text", text: "Check both.", thoughtSignature: "sig-real", reasoningFormat: GOOGLE_REASONING_FORMAT, reasoningModel: "gemini-3.1-flash-lite", reasoningProvider: "google-ai-studio" });
+		const body = await interactionsIrToGemini(ir, "gemini-3.1-flash-lite");
+		expect(body.input.filter((step: any) => step.signature === "skip_thought_signature_validator")).toEqual([]);
+		expect(body.input.find((step: any) => step.type === "thought")?.signature).toBe("sig-real");
 	});
 });

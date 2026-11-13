@@ -1163,7 +1163,10 @@ export function transformChatStreamToResponses(
 								// A thought signature without a tool-call id belongs to the reasoning
 								// item, so Responses and Messages clients can return it next turn.
 								for (const detail of Array.isArray(choice?.delta?.reasoning_details) ? choice.delta.reasoning_details : []) {
-									if (detail?.type === "reasoning.encrypted" && !detail.id && typeof detail.data === "string" && detail.data) {
+									// A Gemini signature from a text part goes in its own item after the
+									// message (from the final output), not on the thought item.
+									if (detail?.type === "reasoning.encrypted" && !detail.id && typeof detail.data === "string" && detail.data
+										&& !openReasoningState(detail.data)?.signsText) {
 										entry.reasoningEncrypted = detail.data;
 										await announceReasoning(choiceIndex, entry, controller);
 									}

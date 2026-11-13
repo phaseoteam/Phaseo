@@ -179,6 +179,25 @@ export function geminiThoughtPartToIR(
 }
 
 /**
+ * IR for a non-thought Gemini part (a final text answer) that carries a signature:
+ * its text, then a signature-only reasoning part that goes back on that text.
+ * https://ai.google.dev/gemini-api/docs/thought-signatures
+ */
+export function geminiSignedTextPartsToIR(
+	part: any,
+	model: string,
+	provider: string,
+): IRContentPart[] {
+	const out: IRContentPart[] = [];
+	if (typeof part?.text === "string" && part.text) out.push({ type: "text", text: part.text });
+	const signature = part?.thoughtSignature ?? part?.thought_signature;
+	if (typeof signature === "string" && signature) {
+		out.push({ ...geminiThoughtPartToIR({ thoughtSignature: signature }, model, provider), signsText: true });
+	}
+	return out;
+}
+
+/**
  * Tool call id for a Gemini functionCall part. Gemini omits ids on older
  * models; the function name is kept for the first call and later calls with
  * the same name get a suffix so parallel calls stay distinct.
