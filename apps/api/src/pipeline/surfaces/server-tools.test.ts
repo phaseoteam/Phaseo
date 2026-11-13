@@ -92,6 +92,33 @@ describe("prepareServerToolsForTextRequest", () => {
 		expect(body).toEqual(snapshot);
 	});
 
+	it("lowers advisor and subagent max_uses and max_tokens to the sub-model limits", () => {
+		const prepare = (tools: unknown[]) => {
+			const result = prepareServerToolsForTextRequest(
+				{ model: "openai/gpt-5-nano", messages: [{ role: "user", content: "Help." }], tools },
+				"openai.chat.completions",
+			);
+			if (!result.ok) throw new Error("expected ok");
+			return result.config as any;
+		};
+		const large = prepare([
+			{ type: "phaseo:advisor", model: "example/a", max_tokens: 10_000_000, max_uses: 1_000_000 },
+			{ type: "phaseo:subagent", parameters: { model: "example/a", max_completion_tokens: 10_000_000, max_uses: 1_000_000 } },
+			{ type: "phaseo:fusion", parameters: { analysis_models: ["example/a", "example/b"], max_uses: 4, max_completion_tokens: 10_000_000 } },
+		]);
+		expect(large.advisors.phaseo_advisor).toMatchObject({ maxUses: 8, maxTokens: 32_000 });
+		expect(large.subagent).toMatchObject({ maxUses: 8, maxTokens: 32_000 });
+		expect(large.fusion).toMatchObject({ maxUses: 4, maxTokens: 32_000 });
+
+		// Values inside the limits, and the defaults, are kept.
+		const small = prepare([
+			{ type: "phaseo:advisor", model: "example/a", max_tokens: 4_000, max_uses: 3 },
+			{ type: "phaseo:subagent", parameters: { model: "example/a" } },
+		]);
+		expect(small.advisors.phaseo_advisor).toMatchObject({ maxUses: 3, maxTokens: 4_000 });
+		expect(small.subagent).toMatchObject({ maxUses: 1, maxTokens: 1_400 });
+	});
+
 	it("passes native web search tools through unchanged", () => {
 		const result = prepareServerToolsForTextRequest(
 			{

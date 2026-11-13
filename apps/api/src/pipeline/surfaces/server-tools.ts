@@ -329,6 +329,10 @@ export type ImageGenerationServerToolConfig = {
 const ADVISOR_MIN_MAX_TOKENS = 1024;
 const DEFAULT_ADVISOR_MAX_TOKENS = 1400;
 const DEFAULT_ADVISOR_MAX_USES = 1;
+// Upper bounds for the model calls a server tool makes; larger values are lowered to these.
+const ADVISOR_MAX_USES_LIMIT = 8;
+const FUSION_MAX_USES_LIMIT = 4;
+const SUB_MODEL_MAX_TOKENS_LIMIT = 32_000;
 const ADVISOR_NAME_PATTERN = /^[A-Za-z0-9 _-]{1,64}$/;
 
 export const ADVISOR_DEFAULT_INSTRUCTIONS =
@@ -802,10 +806,10 @@ function parseAdvisorToolDefaults(tool: any): AdvisorServerToolConfig | { error:
 		...(instructions ? { instructions } : {}),
 		forwardTranscript,
 		maxUses: typeof maxUses === "number"
-			? Math.max(1, Math.floor(maxUses))
+			? Math.min(ADVISOR_MAX_USES_LIMIT, Math.max(1, Math.floor(maxUses)))
 			: DEFAULT_ADVISOR_MAX_USES,
 		maxTokens: typeof maxTokens === "number"
-			? Math.max(ADVISOR_MIN_MAX_TOKENS, Math.floor(maxTokens))
+			? Math.min(SUB_MODEL_MAX_TOKENS_LIMIT, Math.max(ADVISOR_MIN_MAX_TOKENS, Math.floor(maxTokens)))
 			: DEFAULT_ADVISOR_MAX_TOKENS,
 		...(reasoning ? { reasoning } : {}),
 		...(typeof temperature === "number" ? { temperature } : {}),
@@ -1423,8 +1427,8 @@ export function prepareServerToolsForTextRequest(
 				analysisModels,
 				analystModel: toNonEmptyString(parameters.model) ?? defaultAdvisorModel ?? analysisModels[0],
 				instructions: toNonEmptyString(parameters.instructions) ?? undefined,
-				maxUses: readPositiveIntWithFallback(parameters.max_uses, 1, 4),
-				maxTokens: readPositiveIntWithFallback(parameters.max_completion_tokens, DEFAULT_ADVISOR_MAX_TOKENS, 32000),
+				maxUses: readPositiveIntWithFallback(parameters.max_uses, 1, FUSION_MAX_USES_LIMIT),
+				maxTokens: readPositiveIntWithFallback(parameters.max_completion_tokens, DEFAULT_ADVISOR_MAX_TOKENS, SUB_MODEL_MAX_TOKENS_LIMIT),
 			};
 			continue;
 		}

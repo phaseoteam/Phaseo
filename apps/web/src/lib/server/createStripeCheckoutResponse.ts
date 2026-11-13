@@ -182,6 +182,8 @@ export async function createStripeCheckoutResponse(
 
 		const session = await stripe.checkout.sessions.create({
 			mode: "payment",
+			// Top-ups are charged in TOP_UP_CURRENCY only; the webhook credits no other currency.
+			adaptive_pricing: { enabled: false },
 			payment_method_types: ["card", "link"],
 			payment_method_options: {
 				card: {
@@ -263,6 +265,8 @@ export async function createStripeCheckoutResponse(
 
 		const session = await stripe.checkout.sessions.create({
 			mode: "payment",
+			// Top-ups are charged in TOP_UP_CURRENCY only; the webhook credits no other currency.
+			adaptive_pricing: { enabled: false },
 			payment_method_types: ["card", "link"],
 			payment_method_options: {
 				card: { request_three_d_secure: "automatic" },

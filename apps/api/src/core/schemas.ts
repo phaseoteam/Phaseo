@@ -1499,6 +1499,27 @@ export const ImagesGenerationSchema = lazySchema(() => z.object({
 }).superRefine((request, ctx) => {
     validateMiniMaxImageRequest(request, ctx, { allowSubjectReference: false });
     const model = request.model.trim().toLowerCase().replace(/^openai\//, "");
+    // Same size and resolution rules as image edits for Grok Imagine Image 2.0.
+    if (model.split("/").pop() === "grok-imagine-image-2.0") {
+        const size = request.size?.toLowerCase();
+        const resolution = request.resolution?.toLowerCase();
+        if (size && resolution && size !== resolution) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["size"],
+                message: "Grok Imagine Image 2.0 size and resolution must match when both are provided",
+            });
+        }
+        for (const [field, value] of [["size", size], ["resolution", resolution]] as const) {
+            if (value && value !== "1k" && value !== "2k") {
+                ctx.addIssue({
+                    code: "custom",
+                    path: [field],
+                    message: `Grok Imagine Image 2.0 ${field} must be 1k or 2k`,
+                });
+            }
+        }
+    }
     const isGptImage = model.startsWith("gpt-image-") || model === "chatgpt-image-latest";
     if (!isGptImage) {
         for (const field of ["complexity", "frame_count", "frame_duration_ms", "svg"] as const) {

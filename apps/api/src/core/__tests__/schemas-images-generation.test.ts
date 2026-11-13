@@ -158,6 +158,32 @@ describe("OpenAI image generation schema", () => {
 		}).success).toBe(false);
 	});
 
+	it("rejects conflicting or unsupported Grok Imagine Image 2.0 size aliases", () => {
+		const base = { model: "spacex-ai/grok-imagine-image-2.0", prompt: "A lighthouse" };
+		const issues = (body: Record<string, unknown>) => {
+			const parsed = ImagesGenerationSchema.safeParse({ ...base, ...body });
+			return parsed.success ? [] : parsed.error.issues.map((issue) => issue.path.join("."));
+		};
+
+		expect(issues({ size: "1k", resolution: "2k", quality: "medium" })).toEqual(["size"]);
+		expect(issues({ size: "zz", resolution: "2k" })).toEqual(["size", "size"]);
+		expect(issues({ size: "3k" })).toEqual(["size"]);
+		expect(issues({ resolution: "4k" })).toEqual(["resolution"]);
+		expect(issues({ size: "1024x1024" })).toEqual(["size"]);
+		expect(issues({})).toEqual([]);
+		expect(issues({ size: "2K", resolution: "2k" })).toEqual([]);
+		expect(issues({ resolution: "1k", quality: "low" })).toEqual([]);
+	});
+
+	it("does not impose Grok Imagine Image 2.0 size rules on other models", () => {
+		expect(ImagesGenerationSchema.safeParse({
+			model: "spacex-ai/grok-imagine-image",
+			prompt: "A lighthouse",
+			size: "1k",
+			resolution: "2k",
+		}).success).toBe(true);
+	});
+
 	it("does not impose MiniMax dimension limits on other providers", () => {
 		expect(ImagesGenerationSchema.safeParse({
 			model: "other/image-model",
