@@ -122,6 +122,19 @@ Claude में **Settings → Connectors** खोलें, **Add custom conne
 
 किसी दूसरे MCP क्लाइंट के लिए, वही URL रिमोट Streamable HTTP सर्वर के रूप में जोड़ें। क्लाइंट को OAuth डिस्कवरी, S256 PKCE के साथ ऑथराइज़ेशन कोड, और MCP `resource` पैरामीटर सपोर्ट करना चाहिए।
 
+### अपने Phaseo CLI लॉगिन का इस्तेमाल करें
+
+अगर आप पहले से Phaseo CLI इस्तेमाल करते हैं, तो कोई लोकल एजेंट दूसरी बार साइन इन किए बिना उसके ज़रिए MCP तक पहुँच सकता है:
+
+```bash
+phaseo login
+claude mcp add --scope user phaseo -- phaseo mcp
+# or, for Codex
+codex mcp add phaseo -- phaseo mcp
+```
+
+`phaseo mcp` आपके CLI लॉगिन से MCP को stdio पर चलाता है। यह उस लॉगिन को 15 मिनट के ऐसे टोकन से बदलता है जो सिर्फ़ MCP पर काम करता है, जिसके पास कभी भी आपके लॉगिन से ज़्यादा एक्सेस नहीं होता और जो कभी भी पैसे वाले मॉडल कॉल की अनुमति नहीं देता। जब तक आप `--manage` नहीं जोड़ते, यह सिर्फ़ पढ़ सकता है। `phaseo setup codex` इसे आपके लिए Codex की Phaseo प्रोफ़ाइल में जोड़ देता है। इस तरह कनेक्ट हुआ एजेंट जब लॉग, गतिविधि या एनालिटिक्स पढ़ता है, तो नतीजे में पूरा डेटा पाने के लिए मिलती-जुलती CLI कमांड भी सुझाई जाती है।
+
 ### MCP क्या पढ़ सकता है
 
 सिर्फ़ पढ़ने वाले टूल मॉडल, प्रदाता, बेंचमार्क रैंकिंग, मूल्य और लागत अनुमान, साथ ही क्रेडिट, गतिविधि, एनालिटिक्स, अनुरोध लॉग और जनरेशन मेटाडेटा कवर करते हैं। वे कभी प्रॉम्प्ट, प्रतिक्रियाएँ या सीक्रेट मान नहीं लौटाते।
@@ -141,19 +154,21 @@ codex mcp login phaseo
 
 अगर आप पहले ही सिर्फ़-पढ़ने वाले URL से कनेक्ट कर चुके हैं, तो क्लाइंट को manage URL पर बदलें और फिर से साइन इन करें। सिर्फ़-पढ़ने वाले एक्सेस पर लौटने के लिए, सादे URL से फिर से कनेक्ट करें या **सेटिंग्स → कनेक्टेड ऐप्स** में ऐप रद्द करें।
 
-| क्षेत्र | टूल | अनुमतियाँ |
-| --- | --- | --- |
-| API कुंजियाँ | `api_keys_list`, `api_key_get`, `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete` | `keys:read`, `keys:write`, `keys:delete` |
-| बजट | `budgets_list`, `budget_create`, `budget_update`, `budget_delete` | `budgets:read`, `budgets:write`, `budgets:delete` |
-| खर्च नियम | `spend_rules_list`, `spend_rule_create`, `spend_rule_update`, `spend_rule_delete` | `spend_rules:read`, `spend_rules:write`, `spend_rules:delete` |
-| प्रदाता कुंजियाँ (BYOK) | `provider_keys_list`, `provider_key_create`, `provider_key_update`, `provider_key_delete` | `provider_credentials:read`, `provider_credentials:write`, `provider_credentials:delete` |
-| गार्डरेल | `guardrails_list`, `guardrail_get`, `guardrail_create`, `guardrail_update`, `guardrail_delete`, `guardrail_keys_set` | `guardrails:read`, `guardrails:write`, `guardrails:delete` |
-| प्रीसेट | `presets_list`, `preset_get`, `preset_create`, `preset_update`, `preset_version_publish` | `presets:read`, `presets:write` |
-| सेटिंग्स | `settings_get`, `settings_update` (रूटिंग मोड, गोपनीयता और ZDR, लॉगिंग, प्रदाता प्रतिबंध) | `settings:read`, `settings:write` |
-| वेबहुक | `webhooks_list`, `webhook_create`, `webhook_delete` | `settings:read`, `settings:write` |
-| ऑब्ज़र्वेबिलिटी डेस्टिनेशन | `observability_destinations_list`, `observability_destination_create`, `observability_destination_delete` | `settings:read`, `settings:write` |
+manage कनेक्शन नीचे दी गई हर चीज़ पढ़ सकता है, लेकिन सिर्फ़ API कुंजियाँ और वर्कस्पेस सेटिंग्स बदलता है। बजट, खर्च नियम, प्रदाता कुंजियाँ, गार्डरेल, प्रीसेट, वेबहुक और ऑब्ज़र्वेबिलिटी डेस्टिनेशन खर्च को या अनुरोध की सामग्री कहाँ जाती है, उसे नियंत्रित करते हैं, इसलिए इन्हें आप डैशबोर्ड में या मैनेजमेंट कुंजी से बदलते हैं।
 
-जो टूल कुछ बदलते या मिटाते हैं, उन पर ऐसा चिह्न लगा होता है, इसलिए जो MCP क्लाइंट इसे सपोर्ट करते हैं वे हर कॉल से पहले आपसे पूछते हैं। नई API कुंजी या वेबहुक साइनिंग सीक्रेट टूल के नतीजे में एक बार दिखता है और दोबारा नहीं दिखाया जा सकता। सहेजी गई प्रदाता कुंजियाँ और डेस्टिनेशन क्रेडेंशियल कभी नहीं लौटाए जाते।
+| क्षेत्र | पढ़ना | बदलना |
+| --- | --- | --- |
+| API कुंजियाँ | `api_keys_list`, `api_key_get` | `phaseo mcp --manage` के साथ: `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete`। दूसरे क्लाइंट नाम बदल (`api_key_update`) और हटा (`api_key_delete`) सकते हैं |
+| सेटिंग्स | `settings_get` | `settings_update`, उन बदलावों के लिए जो प्राइवेसी, लॉगिंग और प्रदाता प्रतिबंधों को वैसा ही रखते हैं या और सख़्त करते हैं |
+| बजट | `budgets_list` | डैशबोर्ड में |
+| खर्च नियम | `spend_rules_list` | डैशबोर्ड में |
+| प्रदाता कुंजियाँ (BYOK) | `provider_keys_list` | डैशबोर्ड में |
+| गार्डरेल | `guardrails_list`, `guardrail_get` | डैशबोर्ड में |
+| प्रीसेट | `presets_list`, `preset_get` | डैशबोर्ड में |
+| वेबहुक | `webhooks_list` | डैशबोर्ड में |
+| ऑब्ज़र्वेबिलिटी डेस्टिनेशन | `observability_destinations_list` | डैशबोर्ड में |
+
+कुछ बदलने या हटाने वाले टूल पर ऐसा निशान होता है, ताकि इसे सपोर्ट करने वाले MCP क्लाइंट हर कॉल से पहले आपसे पूछें। नई API कुंजी टूल के नतीजे में एक बार दिखती है और फिर दोबारा नहीं दिखाई जा सकती। सहेजी गई प्रदाता कुंजियाँ और डेस्टिनेशन के क्रेडेंशियल कभी वापस नहीं लौटाए जाते।
 
 MCP में बिलिंग, भुगतान, वर्कस्पेस, सदस्य, मैनेजमेंट-कुंजी या OAuth-ऐप के टूल नहीं हैं। उनके लिए डैशबोर्ड, CLI या Management API का उपयोग करें।
 

@@ -29,8 +29,11 @@ afterEach(async () => {
 	vi.unstubAllGlobals();
 });
 
-async function connect(scopes: string[], options: { managementAccess?: boolean } = { managementAccess: true }) {
-	const server = createServer(env, { accessToken: "upstream-token", workspaceId: "workspace_1", scopes }, options);
+type ConnectOptions = { managementAccess?: boolean; clientId?: string };
+
+// Hosted clients (ChatGPT, Claude) by default; "phaseo_cli" is a `phaseo mcp` connection.
+async function connect(scopes: string[], options: ConnectOptions = { managementAccess: true }) {
+	const server = createServer(env, { accessToken: "upstream-token", workspaceId: "workspace_1", scopes, clientId: options.clientId }, { managementAccess: options.managementAccess ?? true });
 	const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
 	connectedClients.push(client);
 	const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -39,9 +42,15 @@ async function connect(scopes: string[], options: { managementAccess?: boolean }
 	return client;
 }
 
-async function toolNames(scopes: string[], options: { managementAccess?: boolean } = { managementAccess: true }) {
+async function toolNames(scopes: string[], options: ConnectOptions = { managementAccess: true }) {
 	const client = await connect(scopes, options);
 	return (await client.listTools()).tools.map((tool) => tool.name);
+}
+
+function callDirect(name: string, input: Record<string, unknown>) {
+	const definition = management.managementTools.find((tool) => tool.name === name);
+	if (!definition) throw new Error(`No management tool ${name}`);
+	return management.callManagementTool(env, { accessToken: "upstream-token", workspaceId: "workspace_1", scopes: [] }, definition, input) as Promise<{ isError?: boolean; content: unknown; structuredContent?: Record<string, unknown> }>;
 }
 
 function stubApi(response: Response | (() => Response)) {
@@ -60,7 +69,7 @@ describe("Phaseo MCP management scope gating", () => {
 	// Claude's directory flags any tool without a title and a readOnlyHint or
 	// destructiveHint; ChatGPT's review asks for the same annotations.
 	it("gives every tool a title and a read-only or destructive annotation", async () => {
-		const client = await connect([...READ_ONLY, ...management.MCP_MANAGEMENT_SCOPES, "gateway:access"]);
+		const client = await connect([...READ_ONLY, ...management.MCP_MANAGEMENT_SCOPES, "gateway:access"], { clientId: "phaseo_cli" });
 		const { tools } = await client.listTools();
 		expect(tools.length).toBeGreaterThan(20);
 		const missing = tools
@@ -81,7 +90,7 @@ describe("Phaseo MCP management scope gating", () => {
 	});
 
 	it("exposes only the tools whose route scopes were granted", async () => {
-		const names = await toolNames([...READ_ONLY, "keys:read", "keys:write"]);
+		const names = await toolNames([...READ_ONLY, "keys:read", "keys:write"], { clientId: "phaseo_cli" });
 		expect(names.filter((name) => management.managementTools.some((tool) => tool.name === name))).toEqual([
 			"api_keys_list",
 			"api_key_get",
@@ -91,11 +100,37 @@ describe("Phaseo MCP management scope gating", () => {
 		]);
 	});
 
+	it("never offers key creation or rotation to hosted apps, which the API always refuses", async () => {
+		const names = await toolNames([...READ_ONLY, "keys:read", "keys:write", "keys:delete"]);
+		expect(names.filter((name) => management.managementTools.some((tool) => tool.name === name))).toEqual([
+			"api_keys_list",
+			"api_key_get",
+			"api_key_update",
+			"api_key_delete",
+		]);
+	});
+
+	it("never offers dashboard-only changes, to hosted apps or to `phaseo mcp`", async () => {
+		for (const clientId of [undefined, "phaseo_cli", "chatgpt_connector"]) {
+			const names = await toolNames([...READ_ONLY, ...management.MCP_MANAGEMENT_SCOPES], { clientId });
+			for (const name of management.DASHBOARD_ONLY_TOOLS) expect(names, `${clientId}: ${name}`).not.toContain(name);
+			// Their read tools stay, so the agent can still report what is set.
+			expect(names).toEqual(expect.arrayContaining(["budgets_list", "spend_rules_list", "guardrails_list", "presets_list", "webhooks_list"]));
+		}
+	});
+
+	it("names only real change tools as dashboard-only or CLI-only", () => {
+		const byName = new Map(management.managementTools.map((tool) => [tool.name, tool]));
+		for (const name of [...management.DASHBOARD_ONLY_TOOLS, ...management.CLI_ONLY_TOOLS]) {
+			expect(byName.has(name), name).toBe(true);
+			expect(byName.get(name)?.effect, name).not.toBe("read");
+		}
+	});
+
 	it("lists a write tool without its read tool when only the write scope was granted", async () => {
-		const names = await toolNames(["budgets:write"]);
-		expect(names).toEqual(expect.arrayContaining(["budget_create", "budget_update"]));
-		expect(names).not.toContain("budgets_list");
-		expect(names).not.toContain("budget_delete");
+		const names = await toolNames(["settings:write"]);
+		expect(names).toContain("settings_update");
+		expect(names).not.toContain("settings_get");
 	});
 
 	it("shows management read tools on the manage URL when the user granted only read permissions", async () => {
@@ -109,9 +144,10 @@ describe("Phaseo MCP management scope gating", () => {
 		]);
 	});
 
-	it("registers every management tool when every management scope is granted", async () => {
-		const names = await toolNames([...READ_ONLY, ...management.MCP_MANAGEMENT_SCOPES]);
-		expect(names).toEqual(expect.arrayContaining(management.managementTools.map((tool) => tool.name)));
+	it("registers every offered management tool when every management scope is granted", async () => {
+		const names = await toolNames([...READ_ONLY, ...management.MCP_MANAGEMENT_SCOPES], { clientId: "phaseo_cli" });
+		const offered = management.managementTools.filter((tool) => !management.DASHBOARD_ONLY_TOOLS.has(tool.name));
+		expect(names).toEqual(expect.arrayContaining(offered.map((tool) => tool.name)));
 	});
 
 	it("gates each tool on the scope its Management API route requires", () => {
@@ -139,9 +175,10 @@ describe("Phaseo MCP management scope gating", () => {
 	});
 
 	it("sets annotations so clients confirm changes and deletions", async () => {
-		const client = await connect([...READ_ONLY, ...management.MCP_MANAGEMENT_SCOPES]);
+		const client = await connect([...READ_ONLY, ...management.MCP_MANAGEMENT_SCOPES], { clientId: "phaseo_cli" });
 		const tools = Object.fromEntries((await client.listTools()).tools.map((tool) => [tool.name, tool]));
-		for (const definition of management.managementTools) {
+		const offered = management.managementTools.filter((tool) => !management.DASHBOARD_ONLY_TOOLS.has(tool.name));
+		for (const definition of offered) {
 			const annotations = tools[definition.name]?.annotations;
 			expect(annotations?.readOnlyHint, definition.name).toBe(definition.effect === "read");
 			expect(annotations?.destructiveHint, definition.name).toBe(definition.effect === "update" || definition.effect === "delete" || definition.sensitive === true);
@@ -151,15 +188,9 @@ describe("Phaseo MCP management scope gating", () => {
 		expect(tools.api_key_delete?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: true });
 		// Creating a key, a credential or a place the workspace's data goes can't be taken back: clients confirm it like a delete.
 		expect(tools.api_key_create?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false, openWorldHint: false });
-		expect(tools.provider_key_create?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false, openWorldHint: false });
-		// Webhooks and observability destinations send the workspace's data outside Phaseo.
-		expect(tools.webhook_create?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false, openWorldHint: true });
-		expect(tools.observability_destination_create?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false, openWorldHint: true });
-		expect(tools.budget_create?.annotations).toMatchObject({ destructiveHint: false, openWorldHint: false });
 		expect(tools.api_key_rotate?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false });
-		expect(tools.preset_version_publish?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true, idempotentHint: false });
 		expect(tools.settings_update?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: true });
-		for (const definition of management.managementTools) {
+		for (const definition of offered) {
 			const schema = tools[definition.name]?.inputSchema as { properties?: Record<string, { description?: string }> };
 			for (const [field, property] of Object.entries(schema.properties ?? {})) {
 				expect(property.description, `${definition.name}.${field}`).toBeTruthy();
@@ -174,7 +205,7 @@ describe("Phaseo MCP management request mapping", () => {
 			key: "sk-phaseo-secret",
 			data: { id: "key_1", name: "CI", prefix: "sk-phaseo-ab", key: "sk-phaseo-secret" },
 		}, { status: 201 }));
-		const client = await connect(["keys:write"]);
+		const client = await connect(["keys:write"], { clientId: "phaseo_cli" });
 		const result = await client.callTool({ name: "api_key_create", arguments: { name: "CI", limit: 25, limit_reset: "monthly" } });
 
 		expect(await sentRequest(fetchMock)).toEqual({
@@ -195,7 +226,7 @@ describe("Phaseo MCP management request mapping", () => {
 
 	it("rotates a key with the handover expiry and returns the replacement secret once", async () => {
 		const fetchMock = stubApi(Response.json({ data: { id: "key_2", key: "sk-phaseo-new" }, previous_key_expires_at: "2026-11-01T00:00:00.000Z" }));
-		const client = await connect(["keys:write"]);
+		const client = await connect(["keys:write"], { clientId: "phaseo_cli" });
 		const result = await client.callTool({ name: "api_key_rotate", arguments: { id: "key_1", previous_key_expires_at: "2026-11-01T00:00:00Z" } });
 		expect(await sentRequest(fetchMock)).toMatchObject({
 			method: "POST",
@@ -207,7 +238,7 @@ describe("Phaseo MCP management request mapping", () => {
 
 	it("expires the old key immediately when the rotation has no handover time", async () => {
 		const fetchMock = stubApi(Response.json({ data: { id: "key_2", key: "sk-phaseo-new" }, previous_key_expires_at: null }));
-		const client = await connect(["keys:write"]);
+		const client = await connect(["keys:write"], { clientId: "phaseo_cli" });
 		const before = Date.now();
 		await client.callTool({ name: "api_key_rotate", arguments: { id: "key_1" } });
 		const sent = await sentRequest(fetchMock);
@@ -232,8 +263,7 @@ describe("Phaseo MCP management request mapping", () => {
 
 	it("accepts an empty 204 response", async () => {
 		stubApi(() => new Response(null, { status: 204 }));
-		const client = await connect(["settings:write"]);
-		const result = await client.callTool({ name: "webhook_delete", arguments: { id: "wh_1" } });
+		const result = await callDirect("webhook_delete", { id: "wh_1" });
 		expect(result.isError).toBeFalsy();
 		expect(result.structuredContent).toEqual({ result: {} });
 	});
@@ -251,8 +281,7 @@ describe("Phaseo MCP management request mapping", () => {
 
 	it("replaces a guardrail's keys with PUT", async () => {
 		const fetchMock = stubApi(Response.json({ data: { key_ids: ["key_1"] } }));
-		const client = await connect(["guardrails:write"]);
-		await client.callTool({ name: "guardrail_keys_set", arguments: { id: "guard_1", key_ids: ["key_1"] } });
+		await callDirect("guardrail_keys_set", { id: "guard_1", key_ids: ["key_1"] });
 		expect(await sentRequest(fetchMock)).toMatchObject({
 			method: "PUT",
 			url: "https://api.phaseo.app/v1/guardrails/guard_1/keys",
@@ -262,8 +291,7 @@ describe("Phaseo MCP management request mapping", () => {
 
 	it("publishes a preset version", async () => {
 		const fetchMock = stubApi(Response.json({ data: { version_number: 3 } }, { status: 201 }));
-		const client = await connect(["presets:write"]);
-		await client.callTool({ name: "preset_version_publish", arguments: { id: "preset_1", release_notes: "Lower temperature" } });
+		await callDirect("preset_version_publish", { id: "preset_1", release_notes: "Lower temperature" });
 		expect(await sentRequest(fetchMock)).toMatchObject({
 			method: "POST",
 			url: "https://api.phaseo.app/v1/presets/preset_1/versions",
@@ -286,8 +314,7 @@ describe("Phaseo MCP management request mapping", () => {
 
 	it("sends a provider key on create but does not echo it", async () => {
 		const fetchMock = stubApi(Response.json({ data: { id: "byok_2", provider_id: "anthropic" } }, { status: 201 }));
-		const client = await connect(["provider_credentials:write"]);
-		const result = await client.callTool({ name: "provider_key_create", arguments: { provider: "anthropic", name: "Team", key: "sk-ant-secret", routing_mode: "fallback" } });
+		const result = await callDirect("provider_key_create", { provider: "anthropic", name: "Team", key: "sk-ant-secret", routing_mode: "fallback" });
 		expect((await sentRequest(fetchMock)).body).toEqual({ provider: "anthropic", name: "Team", key: "sk-ant-secret", routing_mode: "fallback" });
 		expect(JSON.stringify(result)).not.toContain("sk-ant-secret");
 		expect((result.structuredContent as Record<string, unknown>).oneTimeSecret).toBeUndefined();
@@ -295,8 +322,7 @@ describe("Phaseo MCP management request mapping", () => {
 
 	it("flags a new webhook's signing secret", async () => {
 		stubApi(Response.json({ id: "wh_1", url: "https://example.com/hook", signing_secret: "whsec_123" }, { status: 201 }));
-		const client = await connect(["settings:write"]);
-		const result = await client.callTool({ name: "webhook_create", arguments: { url: "https://example.com/hook", events: ["batch.completed"] } });
+		const result = await callDirect("webhook_create", { url: "https://example.com/hook", events: ["batch.completed"] });
 		const structured = result.structuredContent as { result: Record<string, unknown>; oneTimeSecret: Record<string, unknown> };
 		expect(structured.oneTimeSecret).toMatchObject({ label: "webhook signing secret", value: "whsec_123" });
 		expect(structured.result).toEqual({ id: "wh_1", url: "https://example.com/hook" });
@@ -304,20 +330,20 @@ describe("Phaseo MCP management request mapping", () => {
 
 	it("rejects invalid input before calling the API", async () => {
 		const fetchMock = stubApi(Response.json({}));
-		const client = await connect(["budgets:write"]);
-		const result = await client.callTool({ name: "budget_create", arguments: { interval: "hourly", limit: 10 } });
+		const client = await connect(["keys:write"], { clientId: "phaseo_cli" });
+		const result = await client.callTool({ name: "api_key_create", arguments: { name: "", limit: 10 } });
 		expect(result.isError).toBe(true);
 		expect(fetchMock).not.toHaveBeenCalled();
 	});
 
 	it("propagates API validation and permission errors readably", async () => {
-		stubApi(Response.json({ error: "conflict", message: "A monthly budget already exists" }, { status: 409 }));
-		const client = await connect(["budgets:write"]);
-		const conflict = await client.callTool({ name: "budget_create", arguments: { interval: "monthly", limit: 10 } });
-		expect(conflict).toMatchObject({ isError: true, content: [{ type: "text", text: "Phaseo rejected the request (HTTP 409): A monthly budget already exists" }] });
+		stubApi(Response.json({ error: "conflict", message: "A key with this name already exists" }, { status: 409 }));
+		const client = await connect(["keys:write"], { clientId: "phaseo_cli" });
+		const conflict = await client.callTool({ name: "api_key_create", arguments: { name: "CI", limit: 10 } });
+		expect(conflict).toMatchObject({ isError: true, content: [{ type: "text", text: "Phaseo rejected the request (HTTP 409): A key with this name already exists" }] });
 
 		stubApi(Response.json({ error: "forbidden", message: "Workspace role must be one of: owner, admin" }, { status: 403 }));
-		const forbidden = await client.callTool({ name: "budget_update", arguments: { id: "budget_1", limit: 5 } });
+		const forbidden = await client.callTool({ name: "api_key_update", arguments: { id: "key_1", limit: 5 } });
 		expect((forbidden.content as Array<{ text: string }>)[0]!.text).toBe(
 			"Phaseo rejected the request (HTTP 403): Workspace role must be one of: owner, admin Your workspace role or this connection's permissions do not allow this action.",
 		);
