@@ -34,3 +34,5 @@ CREATE POLICY "service_role_full_access" ON "public"."gateway_request_charges"
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_request_charges" TO "service_role";
 
 REVOKE ALL ON TABLE "public"."gateway_request_charges" FROM "anon", "authenticated";
+
+GRANT SELECT ("cost_nanos", "is_final", "request_id", "status", "workspace_id") ON TABLE "public"."gateway_request_charges" TO "gateway_smoke_reader";

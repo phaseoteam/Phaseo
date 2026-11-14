@@ -6,6 +6,7 @@ on:
             - 'supabase/schemas/**'
             - 'supabase/migrations/**'
             - 'supabase/config.toml'
+            - 'supabase/roles.sql'
             - 'supabase/baseline/**'
             - 'supabase/tests/**'
             - 'scripts/declarative-schema.mjs'
