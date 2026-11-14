@@ -409,8 +409,8 @@ describe("a streamed server-tool request is charged for completed rounds as it g
 		}));
 		mocks.buildCandidates.mockReturnValue({ candidates: [{ providerId: "anthropic", apiModelId: ADVISOR, pricingCard: advisorCard }], diagnostics: {} });
 		// Round 1 ($0.0014) is charged provisionally; round 2 asks for two advisor calls. The
-		// balance covers round 1 and one call ($0.0614), not a second ($0.1214 would be spent).
-		const admitted = { ok: true, reason: null, balanceNanos: 61_000_000 };
+		// balance covers exactly round 1 and one call ($0.0614), so the second is refused.
+		const admitted = { ok: true, reason: null, balanceNanos: 61_400_000 };
 		const result = await runToEnd(
 			[firstRound(), round({ input: 1_000, output: 100 }, { toolCalls: [advisor, advisor] }), round({ input: 1_500, output: 100 })],
 			{ tools: [...tools, { type: "phaseo:advisor", model: ADVISOR, max_uses: 4 }], stream: true, advisorUsage: { input: 12_000, output: 0 }, ctx: { gating: { key: { ok: true }, keyLimit: { ok: true }, credit: admitted } } },
