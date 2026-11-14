@@ -1,7 +1,7 @@
 {
 	"name": "@phaseo/app-kit",
 	"description": "Plain code shared by Phaseo's apps (website, desktop, mobile, Factory): logos, provider naming, gateway status, benchmark helpers, design tokens, class recipes and display formatters",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"type": "module",
 	"private": true,
 	"sideEffects": false,

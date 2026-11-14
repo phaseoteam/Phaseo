@@ -1,4 +1,4 @@
-module github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3
+module github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4
 
 go 1.23
 

@@ -1211,7 +1211,7 @@ import (
   "encoding/json"
   "fmt"
 
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4"
 )
 
 func main() {
@@ -1239,7 +1239,7 @@ import (
   "encoding/json"
   "fmt"
 
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4"
 )
 
 func main() {
@@ -1285,7 +1285,7 @@ import (
   "encoding/json"
   "fmt"
 
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4"
 )
 
 func main() {
@@ -1330,7 +1330,7 @@ import (
   "encoding/json"
   "fmt"
 
-  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4"
 )
 
 func main() {

@@ -1,5 +1,11 @@
 # @phaseo/agent-sdk-ruby
 
+## 0.3.1
+
+### Patch Changes
+
+- [#3368](https://github.com/phaseoteam/Phaseo/pull/3368) [`337499b`](https://github.com/phaseoteam/Phaseo/commit/337499ba76c0edd471fd31c2162906a1105be394) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Every SDK can now call Phaseo with a trusted workload's OIDC token instead of an API key. The Go, Java, C#, PHP, Ruby, Rust and C++ clients (and the Go, Java, C#, PHP and Rust agent SDKs) accept a credential function that is called before every request and retry, as the TypeScript and Python SDKs already do. Every SDK except C++ also includes GitHub Actions and Vercel helpers that fetch a token issued for `https://api.phaseo.app` and reuse it until a minute before it expires: `githubActionsToken()` and `vercelToken()` in TypeScript, `github_actions_token()` and `vercel_token()` in Python, and the equivalent in each language. String API keys work exactly as before.
+
 ## 0.3.0
 
 ### Minor Changes
