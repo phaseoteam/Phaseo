@@ -244,6 +244,7 @@ async function recordServerToolRoundsCheckpoint(
 		// The lines a charge kept from this checkpoint is recorded against (pricingLinesForCharge).
 		const checkpointMeta = ctx.meta as Record<string, unknown>;
 		checkpointMeta.__checkpointPricedNanos = bill.totalNanos;
+		checkpointMeta.__checkpointToolSpendNanos = serverToolSpendNanos(ctx);
 		checkpointMeta.__checkpointPricingLines = bill.pricing.lines;
 		dispatchBackground(recordProvisionalStreamCharge({ ctx, costNanos: bill.totalNanos, endpoint: ctx.endpoint }));
 	} catch (error) {
@@ -343,13 +344,21 @@ function creditAfterServerToolSpend<T extends { ok?: boolean; balanceNanos?: num
 	credit: T | null | undefined,
 ): T | null | undefined {
 	if (!credit?.ok || typeof credit.balanceNanos !== "number" || !Number.isFinite(credit.balanceNanos)) return credit;
+	// A streamed request's last provisional total covers its completed main-model rounds and the
+	// tool spend up to then; tool spend since is added on top.
+	const meta = ctx.meta as Record<string, unknown>;
+	const spentNanos = (Number(meta.__checkpointPricedNanos) || 0)
+		+ Math.max(0, serverToolSpendNanos(ctx) - (Number(meta.__checkpointToolSpendNanos) || 0));
+	return spentNanos > 0 && spentNanos >= credit.balanceNanos ? { ...credit, ok: false } : credit;
+}
+
+/** What this request's server tools have spent so far on sub-model and image calls. */
+function serverToolSpendNanos(ctx: PipelineContext): number {
 	const subCallNanos = (ctx.serverToolSubCallCharges ?? [])
 		.reduce((sum, charge) => sum + Math.max(0, Number(charge.totalNanos) || 0), 0);
 	const imageNanos = (ctx.meta.serverToolPricing ?? [])
 		.reduce((sum, charge) => sum + Math.max(0, Number(charge.total_nanos) || 0) * (charge.key_source === "byok" ? BYOK_SERVICE_FEE_RATE : 1), 0);
-	// A streamed request's provisional total also covers its completed main-model rounds.
-	const spentNanos = Math.max(subCallNanos + imageNanos, Number((ctx.meta as Record<string, unknown>).__checkpointTotalNanos) || 0);
-	return spentNanos > 0 && spentNanos >= credit.balanceNanos ? { ...credit, ok: false } : credit;
+	return subCallNanos + imageNanos;
 }
 
 /** The wallet check the main request passed, applied to the model a server tool calls. */
