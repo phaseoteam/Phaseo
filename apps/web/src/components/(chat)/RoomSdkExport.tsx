@@ -36,7 +36,7 @@ type Integration = {
 
 const clientLanguages: Array<[SdkLanguage, string, string]> = [
   ["typescript", "TypeScript", "@phaseo/sdk"], ["python", "Python", "phaseo"],
-  ["go", "Go", "sdk-go/v3"], ["csharp", "C#", "Phaseo.Sdk"],
+  ["go", "Go", "sdk-go/v4"], ["csharp", "C#", "Phaseo.Sdk"],
   ["java", "Java", "app.phaseo:phaseo-sdk"], ["php", "PHP", "phaseo/sdk"],
   ["ruby", "Ruby", "phaseo_sdk"], ["cpp", "C++", "phaseo-cpp"], ["rust", "Rust", "phaseo"],
 ];

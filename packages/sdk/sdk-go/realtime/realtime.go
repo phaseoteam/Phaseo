@@ -18,7 +18,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
-	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4"
 )
 
 // relayProtocol is echoed by the relay; clients that offer subprotocols need one selected.
