@@ -13,11 +13,13 @@ public class FilesTests
     {
         var handler = new StubHttpHandler(async (request) =>
         {
-            if (request.RequestUri?.AbsolutePath == "/files" && request.Method == HttpMethod.Post)
+            if (request.RequestUri?.AbsolutePath == "/batches/files" && request.Method == HttpMethod.Post)
             {
+                Assert.Equal("multipart/form-data", request.Content!.Headers.ContentType?.MediaType);
                 var body = await request.Content!.ReadAsStringAsync();
-                Assert.Contains("\"purpose\":\"batch\"", body);
-                Assert.Contains("\"file\":\"data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==\"", body);
+                Assert.Contains("name=\"purpose\"", body);
+                Assert.Contains("name=\"file\"; filename=\"file.json\"", body);
+                Assert.Contains("{\"test\":true}", body);
 
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
@@ -44,7 +46,7 @@ public class FilesTests
         var response = await client.UploadFile(new Dictionary<string, object>
         {
             ["purpose"] = "batch",
-            ["file"] = "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
+            ["file"] = PhaseoFile.FromBytes(Encoding.UTF8.GetBytes("{\"test\":true}"), "file.json"),
         });
 
         Assert.Equal("file_123", response!["id"]?.ToString());

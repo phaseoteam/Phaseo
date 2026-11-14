@@ -19,6 +19,40 @@ public sealed class RequestOptions
 	public CancellationToken CancellationToken { get; init; }
 }
 
+public sealed record MultipartFilePart(string Name, byte[] Content, string FileName, string ContentType);
+
+/// <summary>A multipart/form-data request body. A fresh HttpContent is built for every attempt.</summary>
+public sealed class MultipartFormBody
+{
+	private readonly List<KeyValuePair<string, string>> _fields = new();
+	private readonly List<MultipartFilePart> _files = new();
+	public IReadOnlyList<KeyValuePair<string, string>> Fields => _fields;
+	public IReadOnlyList<MultipartFilePart> Files => _files;
+	public MultipartFormBody AddField(string name, string value) { _fields.Add(new KeyValuePair<string, string>(name, value)); return this; }
+	public MultipartFormBody AddFile(string name, byte[] content, string fileName, string? contentType = null) { _files.Add(new MultipartFilePart(name, content, fileName, string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType)); return this; }
+	public HttpContent ToContent()
+	{
+		var form = new MultipartFormDataContent();
+		foreach (var field in _fields)
+		{
+			var part = new StringContent(field.Value, Encoding.UTF8);
+			part.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data") { Name = Quote(field.Key) };
+			form.Add(part);
+		}
+		foreach (var file in _files)
+		{
+			var part = new ByteArrayContent(file.Content);
+			part.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse(file.ContentType);
+			var disposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("form-data") { Name = Quote(file.Name), FileName = Quote(file.FileName) };
+			foreach (var ch in file.FileName) { if (ch > 127) { disposition.FileNameStar = file.FileName; break; } }
+			part.Headers.ContentDisposition = disposition;
+			form.Add(part);
+		}
+		return form;
+	}
+	private static string Quote(string value) => "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
+}
+
 public sealed record RequestEvent(string Method, string Url, int Attempt, string? IdempotencyKey, DateTimeOffset StartedAt);
 public sealed record ResponseEvent(RequestEvent Request, int StatusCode, string? RequestId, TimeSpan Elapsed);
 public sealed record RetryEvent(RequestEvent Request, int? StatusCode, TimeSpan Delay, Exception? Error);
@@ -108,7 +142,11 @@ public sealed class Client
 			foreach (var kvp in options.Headers) request.Headers.TryAddWithoutValidation(kvp.Key, kvp.Value);
 		}
 		if (!string.IsNullOrWhiteSpace(options?.IdempotencyKey)) request.Headers.TryAddWithoutValidation("Idempotency-Key", options.IdempotencyKey);
-		if (body != null)
+		if (body is MultipartFormBody form)
+		{
+			request.Content = form.ToContent();
+		}
+		else if (body != null)
 		{
 			var json = JsonSerializer.Serialize(body);
 			request.Content = new StringContent(json, Encoding.UTF8, "application/json");

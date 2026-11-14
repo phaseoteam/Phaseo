@@ -47,8 +47,12 @@ Catch `httpx.TransportError` for connection failures.
   resume later. Await async handle methods and use `async for` for events.
   Remote cancellation is available only for video and batch.
 - `videos.stream_content(id)` streams bytes. The sync `download_to(chunks, file)`
-  helper writes to a caller-owned binary file. Uploads accept bytes, `Path`
-  objects, open files or HTTPX file tuples through `files.create`.
+  helper writes to a caller-owned binary file.
+- File uploads (`files.create`, `upload_file`, audio transcription and
+  translation) take `{"file_name": ..., "content": ..., "content_type": ...}`,
+  bytes or a binary file object with a `filename` (an open file uses its own
+  name), a `pathlib.Path`, or an HTTPX file tuple. A plain `str` is never read
+  as a path. The content type defaults to a guess from the filename extension.
 - Sync `batches.results(id)` and async `batches.results(id)` incrementally parse
   JSONL. Match by `custom_id`; a completed batch can contain failed rows.
 - `parse_output(response, PydanticModel)` or `responses.parse(request, model)`

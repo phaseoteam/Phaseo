@@ -46,19 +46,36 @@ $prop->setValue($client, $fake);
 
 $uploaded = $client->uploadFile([
     "purpose" => "batch",
-    "file" => "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
+    "file" => ["file_name" => "file.json", "content" => "{\"test\":true}"],
 ]);
 assert_true(($uploaded["ok"] ?? null) === true, "expected upload helper to return decoded payload");
-assert_true($fake->calls[0] === [
-    "POST",
-    "/files",
-    null,
-    null,
-    [
-        "purpose" => "batch",
-        "file" => "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
-    ],
-], "expected uploadFile to call POST /files");
+[$method, $path, $query, $headers, $body] = $fake->calls[0];
+assert_true($method === "POST" && $path === "/batches/files" && $query === null, "expected uploadFile to call POST /batches/files");
+assert_true($body instanceof \Phaseo\Gen\MultipartBody, "expected uploadFile to send a multipart body");
+assert_true($body->fields() === [["purpose", "batch"]], "expected purpose form field");
+assert_true($body->files() === [["file", "{\"test\":true}", "file.json", "application/json"]], "expected file part from the file array");
+
+foreach (["data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==", __FILE__] as $plainString) {
+    try {
+        $client->uploadFile(["purpose" => "batch", "file" => $plainString]);
+        throw new RuntimeException("expected a plain string file to be rejected");
+    } catch (\InvalidArgumentException $error) {
+        assert_true(str_contains($error->getMessage(), "PhaseoFile::fromPath"), "expected the error to point at PhaseoFile::fromPath");
+    }
+}
+assert_true(count($fake->calls) === 1, "expected no request for a plain string file");
+
+$bytesWithoutName = fopen("php://memory", "r+");
+fwrite($bytesWithoutName, "{\"test\":true}");
+rewind($bytesWithoutName);
+try {
+    $client->uploadFile(["purpose" => "batch", "file" => $bytesWithoutName]);
+    throw new RuntimeException("expected a nameless stream to be rejected");
+} catch (\InvalidArgumentException $error) {
+    assert_true(str_contains($error->getMessage(), "filename"), "expected the error to ask for a filename");
+}
+fclose($bytesWithoutName);
+assert_true(count($fake->calls) === 1, "expected no request for a nameless stream");
 
 $content = $client->retrieveFileContent("file_123");
 assert_true($content === "{\"ok\":true}\n", "expected raw file content bytes");

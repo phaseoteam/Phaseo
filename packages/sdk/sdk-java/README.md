@@ -183,9 +183,31 @@ HTTP status, response body, headers, and request ID.
 The `createSpeech` wrapper expects JSON and cannot decode binary audio. Use
 `rawClient().requestBytes("POST", "/audio/speech", null, null, jsonBody)` instead.
 
-The JSON helpers `uploadFile`, `createTranscription`, `createTranslation`, and
-`createImageEdit` do not encode multipart file uploads. Use Java's standard HTTP
-client for file bytes, following the [multipart upload example](https://phaseo.app/docs/v1/sdk-reference/client/files).
+`createTranscription`, `createTranslation`, and `uploadFile` send
+multipart/form-data when the request has a `file` entry. The gateway reads the
+audio format from the filename extension, so every file needs a name:
+
+- `PhaseoFile.fromBytes(bytes, "clip.wav")`, `PhaseoFile.fromStream(stream, "clip.wav")`
+  or `PhaseoFile.fromPath(path)`, each with an optional content type;
+- a `Path` or `File`, named by its last segment;
+- a `byte[]` or `InputStream` with a `filename` entry next to `file`.
+
+A `String` is never a file, and bytes or a stream without a filename throw
+`IllegalArgumentException`. Without an explicit content type, the SDK uses the
+one for the filename extension, or `application/octet-stream`.
+
+```java
+client.createTranscription(Path.of("clip.wav"), Map.of("model", "provider/transcription-model"));
+client.createTranscription(Map.of(
+    "model", "provider/transcription-model",
+    "file", PhaseoFile.fromBytes(audioBytes, "clip.wav")
+));
+client.uploadFile(Path.of("input.jsonl"), "batch", "provider/chat-model", null);
+```
+
+A transcription with only `file_url`, `file_id`, or `s3_presigned_url` is sent
+as JSON. `uploadFile` posts to `/batches/files` with `model` and `provider` in
+the query string. `createImageEdit` does not encode multipart uploads yet.
 
 See the [Java SDK guide](https://phaseo.app/docs/v1/sdk-reference/client/overview)
 for complete examples.
