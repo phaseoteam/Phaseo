@@ -386,6 +386,21 @@ describe("a streamed server-tool request is charged for completed rounds as it g
 		expect(db.rows[0]!.cost_nanos).toBe(3_300_000);
 	});
 
+	it("counts completed main-model rounds before a later sub-model call", async () => {
+		mocks.fetchGatewayContext.mockImplementation(async () => ({
+			resolvedModel: ADVISOR, pricing: { [`anthropic:${ADVISOR}`]: advisorCard },
+			key: { ok: true }, keyLimit: { ok: true }, credit: { ok: false, reason: "insufficient_funds", balanceNanos: 0 }, teamSettings: { billingMode: "wallet" },
+		}));
+		mocks.buildCandidates.mockReturnValue({ candidates: [{ providerId: "anthropic", apiModelId: ADVISOR, pricingCard: advisorCard }], diagnostics: {} });
+		// Admitted on less than round 1 costs (1,400,000 nanos).
+		const admitted = { ok: true, reason: null, balanceNanos: 1_000_000 };
+		const result = await runToEnd(
+			[firstRound(), round({ input: 1_000, output: 100 }, { toolCalls: [advisor] }), round({ input: 1_500, output: 100 })],
+			{ tools: [...tools, { type: "phaseo:advisor", model: ADVISOR }], stream: true, ctx: { gating: { key: { ok: true }, keyLimit: { ok: true }, credit: admitted } } },
+		);
+		expect(result.subCalls).toHaveLength(0);
+	});
+
 	it("includes the model calls its tools made in the provisional charge", async () => {
 		mocks.fetchGatewayContext.mockImplementation(async () => ({
 			resolvedModel: ADVISOR, pricing: { [`anthropic:${ADVISOR}`]: advisorCard },

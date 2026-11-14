@@ -114,16 +114,16 @@ describe("estimateOpenAiSpeechToTextUsage", () => {
         const usage = await estimateOpenAiSpeechToTextUsage({ file: named, text: "transcript" });
         expect(usage).toMatchObject({ input_audio_seconds: 90, input_audio_tokens: 3_600 });
 
-        // No known format in the type or the filename: the default rate, 12 kB/s.
-        const unnamed = new File([new Uint8Array(12_000 * 90)], "lecture.wav", { type: "audio/wav" });
+        // No known format in the type or the filename: the default rate, 24 kB/s.
+        const unnamed = new File([new Uint8Array(24_000 * 90)], "lecture.wav", { type: "audio/wav" });
         expect(await estimateAudioDurationSeconds(unnamed)).toBe(90);
     });
 
     it("estimates an unrecognised type from the filename, else at the default rate", async () => {
         const bytes = new Uint8Array(48_000 * 10);
         expect(await estimateAudioDurationSeconds(new File([bytes], "a.flac", { type: "application/octet-stream" }))).toBe(20);
-        expect(await estimateAudioDurationSeconds(new File([bytes], "a.bin", { type: "application/octet-stream" }))).toBe(40);
-        expect(await estimateAudioDurationSeconds(new Blob([bytes]))).toBe(40);
+        expect(await estimateAudioDurationSeconds(new File([bytes], "a.bin", { type: "application/octet-stream" }))).toBe(20);
+        expect(await estimateAudioDurationSeconds(new Blob([bytes]))).toBe(20);
     });
 
     it("counts the bytes present when a WAV header declares far less data than follows", async () => {

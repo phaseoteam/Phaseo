@@ -87,9 +87,9 @@ function roundDurationSeconds(value: number | undefined): number | undefined {
     return Math.max(0.001, Math.round((value as number) * 1000) / 1000);
 }
 
-// Used when neither the MIME type nor the filename names a known format: the lowest rate in
-// the table below, so the duration is not under-counted.
-const DEFAULT_AUDIO_BYTES_PER_SECOND = 12_000;
+// Used when neither the MIME type nor the filename names a known format: the highest rate in
+// the table below, so an unknown file is never counted as longer than a known one of its size.
+const DEFAULT_AUDIO_BYTES_PER_SECOND = 24_000;
 
 function estimateCompressedAudioDurationSeconds(file: File | Blob, mimeType: string): number | undefined {
     const size = Number((file as any)?.size);

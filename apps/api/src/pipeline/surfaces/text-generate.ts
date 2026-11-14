@@ -347,7 +347,8 @@ function creditAfterServerToolSpend<T extends { ok?: boolean; balanceNanos?: num
 		.reduce((sum, charge) => sum + Math.max(0, Number(charge.totalNanos) || 0), 0);
 	const imageNanos = (ctx.meta.serverToolPricing ?? [])
 		.reduce((sum, charge) => sum + Math.max(0, Number(charge.total_nanos) || 0) * (charge.key_source === "byok" ? BYOK_SERVICE_FEE_RATE : 1), 0);
-	const spentNanos = subCallNanos + imageNanos;
+	// A streamed request's provisional total also covers its completed main-model rounds.
+	const spentNanos = Math.max(subCallNanos + imageNanos, Number((ctx.meta as Record<string, unknown>).__checkpointTotalNanos) || 0);
 	return spentNanos > 0 && spentNanos >= credit.balanceNanos ? { ...credit, ok: false } : credit;
 }
 
