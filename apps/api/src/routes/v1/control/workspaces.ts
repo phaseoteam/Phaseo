@@ -508,6 +508,20 @@ async function handleDeleteWorkspace(req: Request) {
 			return json({ error: "bad_request", message: "Workspaces with active API keys cannot be deleted" }, 400, { "Cache-Control": "no-store" });
 		}
 
+		// A workspace that owes money or has credits on hold is kept until the balance is settled.
+		const { data: wallet, error: walletError } = await supabase
+			.from("wallets")
+			.select("balance_nanos,reserved_nanos")
+			.eq("workspace_id", workspace.id)
+			.maybeSingle();
+		if (walletError) {
+			throw new Error(walletError.message || "Failed to read workspace wallet");
+		}
+		const walletRow = wallet as { balance_nanos?: unknown; reserved_nanos?: unknown } | null;
+		if (Number(walletRow?.balance_nanos ?? 0) < 0 || Number(walletRow?.reserved_nanos ?? 0) > 0) {
+			return json({ error: "workspace_has_outstanding_balance", message: "Workspaces with a negative balance or credits on hold cannot be deleted" }, 409, { "Cache-Control": "no-store" });
+		}
+
 		await recordWorkspaceAuditEvent(supabase, {
 			workspaceId: workspace.id,
 			actorUserId: auth.value.userId,

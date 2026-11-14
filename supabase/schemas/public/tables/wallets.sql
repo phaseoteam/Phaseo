@@ -52,12 +52,6 @@ CREATE POLICY "wallets: insert by owner once" ON "public"."wallets"
    FROM public.wallets w
   WHERE (w.workspace_id = wallets.workspace_id))))));
 
-CREATE POLICY "wallets: update settings if owner" ON "public"."wallets"
-  FOR UPDATE
-  TO "authenticated"
-  USING (public.is_team_owner(workspace_id))
-  WITH CHECK (public.is_team_owner(workspace_id));
-
 CREATE POLICY "wallets_select_own_team" ON "public"."wallets"
   FOR SELECT
   TO "authenticated"
@@ -75,19 +69,19 @@ REVOKE ALL ON TABLE "public"."wallets" FROM "authenticated";
 
 REVOKE ALL ("auto_top_up_amount") ON TABLE "public"."wallets" FROM "authenticated";
 
-GRANT INSERT ("auto_top_up_amount"), UPDATE ("auto_top_up_amount") ON TABLE "public"."wallets" TO "authenticated";
+GRANT INSERT ("auto_top_up_amount") ON TABLE "public"."wallets" TO "authenticated";
 
 REVOKE ALL ("auto_top_up_enabled") ON TABLE "public"."wallets" FROM "authenticated";
 
-GRANT INSERT ("auto_top_up_enabled"), UPDATE ("auto_top_up_enabled") ON TABLE "public"."wallets" TO "authenticated";
+GRANT INSERT ("auto_top_up_enabled") ON TABLE "public"."wallets" TO "authenticated";
 
 REVOKE ALL ("low_balance_threshold") ON TABLE "public"."wallets" FROM "authenticated";
 
-GRANT INSERT ("low_balance_threshold"), UPDATE ("low_balance_threshold") ON TABLE "public"."wallets" TO "authenticated";
+GRANT INSERT ("low_balance_threshold") ON TABLE "public"."wallets" TO "authenticated";
 
 REVOKE ALL ("updated_at") ON TABLE "public"."wallets" FROM "authenticated";
 
-GRANT INSERT ("updated_at"), UPDATE ("updated_at") ON TABLE "public"."wallets" TO "authenticated";
+GRANT INSERT ("updated_at") ON TABLE "public"."wallets" TO "authenticated";
 
 REVOKE ALL ("workspace_id") ON TABLE "public"."wallets" FROM "authenticated";
 

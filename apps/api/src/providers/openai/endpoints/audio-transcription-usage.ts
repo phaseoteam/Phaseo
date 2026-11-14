@@ -15,6 +15,20 @@ function estimateTextTokensFromChars(chars: number): number {
     return Math.max(1, Math.ceil(chars / 4));
 }
 
+/** True when RIFF chunks starting at `offset` run to the end of the file. */
+function chunksReachEnd(view: DataView, offset: number): boolean {
+    while (offset + 8 <= view.byteLength) {
+        for (let i = 0; i < 4; i++) {
+            const code = view.getUint8(offset + i);
+            if (code < 0x20 || code > 0x7e) return false;
+        }
+        const size = view.getUint32(offset + 4, true);
+        offset += 8 + size + (size % 2);
+    }
+    // At most a pad byte may follow the last chunk.
+    return offset >= view.byteLength && offset - view.byteLength <= 1;
+}
+
 function parseWavDurationSeconds(bytes: Uint8Array): number | undefined {
     if (bytes.length < 44) return undefined;
     const isRiff =
@@ -49,7 +63,10 @@ function parseWavDurationSeconds(bytes: Uint8Array): number | undefined {
             sampleRate = view.getUint32(chunkDataOffset + 4, true);
             bitsPerSample = view.getUint16(chunkDataOffset + 14, true);
         } else if (chunkId === "data") {
-            dataSize = Math.min(chunkSize, Math.max(0, bytes.length - chunkDataOffset));
+            const available = Math.max(0, bytes.length - chunkDataOffset);
+            // The declared size is used when the data chunk ends the file or is followed by
+            // well-formed chunks; otherwise the bytes present are counted.
+            dataSize = chunksReachEnd(view, chunkDataOffset + chunkSize + (chunkSize % 2)) ? Math.min(chunkSize, available) : available;
             break;
         }
 
@@ -66,8 +83,13 @@ function parseWavDurationSeconds(bytes: Uint8Array): number | undefined {
 
 function roundDurationSeconds(value: number | undefined): number | undefined {
     if (!Number.isFinite(value as number) || (value as number) <= 0) return undefined;
-    return Math.round((value as number) * 1000) / 1000;
+    // A non-empty file is never rounded down to no audio.
+    return Math.max(0.001, Math.round((value as number) * 1000) / 1000);
 }
+
+// Used when neither the MIME type nor the filename names a known format: the highest rate in
+// the table below, so an unknown file is never counted as longer than a known one of its size.
+const DEFAULT_AUDIO_BYTES_PER_SECOND = 24_000;
 
 function estimateCompressedAudioDurationSeconds(file: File | Blob, mimeType: string): number | undefined {
     const size = Number((file as any)?.size);
@@ -80,7 +102,7 @@ function estimateCompressedAudioDurationSeconds(file: File | Blob, mimeType: str
         if (normalized.includes("mp4") || normalized.includes("m4a") || normalized.includes("aac")) return 20_000;
         if (normalized.includes("ogg") || normalized.includes("opus") || normalized.includes("webm")) return 12_000;
         if (normalized.includes("flac")) return 24_000;
-        return undefined;
+        return DEFAULT_AUDIO_BYTES_PER_SECOND;
     })();
 
     if (!bytesPerSecond || !Number.isFinite(bytesPerSecond) || bytesPerSecond <= 0) {
@@ -93,18 +115,11 @@ function estimateCompressedAudioDurationSeconds(file: File | Blob, mimeType: str
 export async function estimateAudioDurationSeconds(file: File | Blob): Promise<number | undefined> {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const mimeType = String((file as any)?.type ?? "").toLowerCase();
-    if (mimeType.includes("wav") || (
-        bytes.length >= 12 &&
-        bytes[0] === 0x52 &&
-        bytes[1] === 0x49 &&
-        bytes[2] === 0x46 &&
-        bytes[3] === 0x46 &&
-        bytes[8] === 0x57 &&
-        bytes[9] === 0x41 &&
-        bytes[10] === 0x56 &&
-        bytes[11] === 0x45
-    )) {
-        return roundDurationSeconds(parseWavDurationSeconds(bytes));
+    // The WAV header is read from the bytes, whatever the declared type. Anything it cannot
+    // measure falls back to the size estimate.
+    const measured = roundDurationSeconds(parseWavDurationSeconds(bytes));
+    if (measured != null) {
+        return measured;
     }
     const estimated = roundDurationSeconds(estimateCompressedAudioDurationSeconds(file, mimeType));
     if (estimated != null) {

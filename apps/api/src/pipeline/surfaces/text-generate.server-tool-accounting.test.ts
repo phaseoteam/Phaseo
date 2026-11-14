@@ -20,6 +20,8 @@ const db = vi.hoisted(() => ({
 	/** The V2 request fact write fails (a secondary write after the gateway_requests insert). */
 	factFails: false,
 	debits: [] as Array<Record<string, any>>,
+	/** Provisional (non-final) totals of a streamed request charged in steps. */
+	provisional: [] as Array<Record<string, any>>,
 }));
 const mocks = vi.hoisted(() => ({
 	doRequestWithIR: vi.fn(),
@@ -83,6 +85,20 @@ vi.mock("../pricing/persist", async (importOriginal) => ({
 		if (db.wallet === "missing") throw { code: "P0001", message: "wallet_not_found", details: null, hint: null };
 		return { applied: true };
 	},
+	// A streamed server-tool request is charged in steps: provisional totals after its rounds, then
+	// its final total. The final settlement is the request's debit; both meet the same wallet.
+	recordRequestChargeTotal: async (args: Record<string, any>) => {
+		(args.final ? db.debits : db.provisional).push(args);
+		if (db.wallet === "fails") throw new Error("fetch failed");
+		if (db.wallet === "refuses") throw new Error("gateway_charge_not_applied:insufficient_balance");
+		if (db.wallet === "missing") throw { code: "P0001", message: "wallet_not_found", details: null, hint: null };
+		return { applied: true };
+	},
+}));
+// The policy read is faked (no rules); applyWorkspacePolicy is the real function.
+vi.mock("../before/workspacePolicy", async (importOriginal) => ({
+	...(await importOriginal<typeof import("../before/workspacePolicy")>()),
+	fetchWorkspacePolicy: async () => null,
 }));
 vi.mock("@core/spend-limits", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@core/spend-limits")>()),
@@ -310,6 +326,7 @@ describe.each([false, true])("multi-round accounting agreement (stream: %s)", (s
 		db.chargeReadFails = false;
 		db.factFails = false;
 		db.debits.length = 0;
+		db.provisional.length = 0;
 		mocks.charge.mockClear();
 		mocks.settleEnforcedSpend.mockReset();
 		mocks.settleChargedFailureSpend.mockReset();
@@ -709,8 +726,10 @@ describe.each([false, true])("multi-round accounting agreement (stream: %s)", (s
 		db.chargeReadFails = true;
 		const delivered = await accountFailure(rounds() as any, stream);
 
-		// The bill, and no confirmed charge (unreadable): never 0.
-		expectPendingCharge(delivered.row, { expected: expectedNanos, charged: null, reason: "persistence_failed" },
+		// The bill, and no confirmed charge (unreadable): never 0. A streamed request with a completed
+		// round was charged in steps, so it falls back to the provisional total sent after that round.
+		const steppedNanos = stream && !_label.startsWith("a single-round") ? 1_400_000 : null;
+		expectPendingCharge(delivered.row, { expected: expectedNanos, charged: steppedNanos, reason: "persistence_failed" },
 			!stream && !_label.startsWith("a failure"));
 	});
 

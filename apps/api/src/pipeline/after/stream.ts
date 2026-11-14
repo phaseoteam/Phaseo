@@ -457,12 +457,14 @@ export async function handleStreamResponse(
         }
     };
     // Prices a drained stream's progress: provider-reported usage where there is any, output
-    // never below the streamed text. Null when there is nothing to charge or no price card.
+    // never below the streamed text, and the prompt estimated from the request until the
+    // provider reports it. Null when there is nothing to charge or no price card.
     const priceDrainProgress = (progress: { usage: any; outputChars: number }) => {
         if (!card) return null;
         const estimated = estimateDrainProgressUsage({
             usage: authoritativeUsageForFrame() ?? progress.usage,
             outputChars: progress.outputChars,
+            requestBody: ctx.body,
         });
         if (!estimated) return null;
         const tier = ctx.teamEnrichment?.tier ?? 'basic';

@@ -86,4 +86,41 @@ describe("account teams settings route", () => {
 			teamSsoSettingsByTeam: { "workspace-1": { sso_enabled: true, sso_mode: "saml" } },
 		});
 	});
+
+	async function deleteWorkspaceWithWallet(wallet: Record<string, number> | null) {
+		const calls: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const request = input instanceof Request ? input : new Request(String(input), init);
+			const url = new URL(request.url);
+			calls.push(`${request.method} ${url.pathname}`);
+			if (url.pathname.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "owner-1" }), { status: 200 });
+			if (url.pathname.endsWith("/users")) return new Response(JSON.stringify([{ default_workspace_id: "personal-ws" }]), { status: 200 });
+			if (url.pathname.endsWith("/workspaces") && request.method === "GET") return new Response(JSON.stringify([{ owner_user_id: "owner-1" }]), { status: 200 });
+			if (url.pathname.endsWith("/wallets")) return new Response(JSON.stringify(wallet ? [wallet] : []), { status: 200 });
+			return new Response("[]", { status: 200 });
+		}));
+		const response = await app.request("https://phaseo.app/api/account/settings/teams/workspace-2", { method: "DELETE", headers: { authorization: "Bearer token" } }, env);
+		return { response, deletes: calls.filter((call) => call.startsWith("DELETE /rest/v1/")) };
+	}
+
+	it.each([
+		["a negative balance", { balance_nanos: -25_000_000_000, reserved_nanos: 0 }],
+		["credits on hold", { balance_nanos: 5_000_000_000, reserved_nanos: 20_000_000_000 }],
+	])("keeps a workspace whose wallet has %s", async (_label, wallet) => {
+		const { response, deletes } = await deleteWorkspaceWithWallet(wallet);
+		expect(response.status).toBe(409);
+		await expect(response.json()).resolves.toEqual({ error: "workspace_has_outstanding_balance" });
+		expect(deletes).toEqual([]);
+	});
+
+	it.each([
+		["no wallet", null],
+		["a zero balance", { balance_nanos: 0, reserved_nanos: 0 }],
+		["a positive balance and nothing on hold", { balance_nanos: 5_000_000_000, reserved_nanos: 0 }],
+	])("deletes a workspace with %s", async (_label, wallet) => {
+		const { response, deletes } = await deleteWorkspaceWithWallet(wallet);
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toEqual({ success: true });
+		expect(deletes).toContain("DELETE /rest/v1/workspaces");
+	});
 });
