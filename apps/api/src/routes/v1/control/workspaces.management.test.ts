@@ -272,7 +272,7 @@ describe("management workspace routes", () => {
 		});
 	});
 
-	it("returns a clear service error when Stripe provisioning is unavailable", async () => {
+	it("still creates the workspace when wallet provisioning fails", async () => {
 		state.workspaces.push(
 			{ owner_user_id: "user_1" },
 			{
@@ -285,8 +285,9 @@ describe("management workspace routes", () => {
 			},
 		);
 		state.ensureWorkspaceWalletProvisioned.mockRejectedValueOnce(
-			new Error("Stripe customer provisioning is not configured for workspace creation"),
+			new Error("Stripe customer creation failed with status 500"),
 		);
+		const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
 		const { workspacesRoutes } = await import("./workspaces");
 		const response = await workspacesRoutes.request("https://example.com/", {
@@ -295,17 +296,14 @@ describe("management workspace routes", () => {
 			body: JSON.stringify({ name: "Production", slug: "production" }),
 		});
 		const body = await response.json();
+		consoleError.mockRestore();
 
-		expect(response.status).toBe(503);
-		expect(body.error).toBe("stripe_not_configured");
-		expect(state.deletes).toEqual([
-			{ table: "workspace_settings", column: "workspace_id", value: "ws_new" },
-			{ table: "workspace_members", column: "workspace_id", value: "ws_new" },
-			{ table: "wallets", column: "workspace_id", value: "ws_new" },
-			{ table: "management_keys", column: "workspace_id", value: "ws_new" },
-			{ table: "workspaces", column: "id", value: "ws_new" },
-			{ table: "workspaces", column: "owner_user_id", value: "user_1" },
-		]);
+		expect(response.status).toBe(201);
+		expect(body.data).toMatchObject({ id: "ws_new", slug: "production" });
+		expect(state.workspaceMembersUpserts[0]).toMatchObject({ workspace_id: "ws_new", role: "owner" });
+		expect(state.workspaceSettingsUpserts[0]).toMatchObject({ workspace_id: "ws_new" });
+		expect(state.deletes).toEqual([]);
+		expect(state.auditEvents[0]).toMatchObject({ action: "workspace.created" });
 	});
 
 	it("rolls back the new workspace when post-create provisioning fails", async () => {
