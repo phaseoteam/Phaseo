@@ -360,8 +360,12 @@ function subCallCreditDenied(
 ): string | null {
 	// Spend is measured against the balance the request was admitted on: a later read of the
 	// wallet may already include this request's own provisional charges.
+	// A later read that fails is kept unless this request has recorded provisional charges of
+	// its own, which that read may already include.
 	const admitted = pre.ctx.gating?.credit;
-	const remaining = { ...context, credit: creditAfterServerToolSpend(pre.ctx, admitted?.ok ? admitted : context.credit) };
+	const ownCharges = (pre.ctx.meta as Record<string, unknown>).__chargedInSteps === true;
+	const basis = admitted?.ok && (context.credit?.ok !== false || ownCharges) ? admitted : context.credit;
+	const remaining = { ...context, credit: creditAfterServerToolSpend(pre.ctx, basis) };
 	if (passesWalletCreditCheck({ model, context: remaining, providers: candidates as any[], internal: pre.ctx.internal })) return null;
 	return `Insufficient credits to call ${model}. Add credits to use paid models in server tools.`;
 }

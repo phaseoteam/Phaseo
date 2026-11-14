@@ -302,6 +302,14 @@ describe("paid server-tool work stops once the request has used up the wallet ba
 		expect(db.debits.map((debit) => debit.cost_nanos)).toEqual([3_300_000 + 2 * 60_000_000]);
 	});
 
+	it("keeps a later wallet read that fails when the request has charged nothing itself", async () => {
+		setAdvisorContext({ ok: false, reason: "insufficient_funds", balanceNanos: 0 });
+		const admitted = { ok: true, reason: null, balanceNanos: 3 * TEN_CENTS };
+		const result = await runToEnd(threeAdvisorCalls(), { tools, advisorUsage, ctx: { gating: { key: { ok: true }, keyLimit: { ok: true }, credit: admitted } } });
+		expect(result.subCalls).toHaveLength(0);
+		expect(result.toolResults.map((toolResult) => toolResult.isError === true)).toEqual([true, true, true]);
+	});
+
 	it("measures tool spend against the balance the request was admitted on", async () => {
 		// A later wallet read already includes this request's provisional charges.
 		setAdvisorContext({ ok: true, reason: null, balanceNanos: 110_000_000 });

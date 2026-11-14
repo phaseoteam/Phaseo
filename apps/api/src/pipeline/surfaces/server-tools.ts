@@ -329,7 +329,7 @@ export type ImageGenerationServerToolConfig = {
 const ADVISOR_MIN_MAX_TOKENS = 1024;
 const DEFAULT_ADVISOR_MAX_TOKENS = 1400;
 const DEFAULT_ADVISOR_MAX_USES = 1;
-// Upper bounds for the model calls a server tool makes; larger values are lowered to these.
+// Upper bounds for the model calls a server tool makes.
 const ADVISOR_MAX_USES_LIMIT = 8;
 const FUSION_MAX_USES_LIMIT = 4;
 const SUB_MODEL_MAX_TOKENS_LIMIT = 32_000;
@@ -780,6 +780,13 @@ function parseAdvisorToolDefaults(tool: any): AdvisorServerToolConfig | { error:
 		parameters?.max_tokens ??
 		tool?.max_tokens;
 	const maxUses = parameters?.max_uses ?? tool?.max_uses;
+	// Values above the supported bounds are refused, on every protocol, rather than lowered.
+	if (typeof maxUses === "number" && maxUses > ADVISOR_MAX_USES_LIMIT) {
+		return { error: `max_uses can be at most ${ADVISOR_MAX_USES_LIMIT}.` };
+	}
+	if (typeof maxTokens === "number" && maxTokens > SUB_MODEL_MAX_TOKENS_LIMIT) {
+		return { error: `max_tokens can be at most ${SUB_MODEL_MAX_TOKENS_LIMIT}.` };
+	}
 	const instructions = toNonEmptyString(parameters?.instructions ?? tool?.instructions) ?? undefined;
 	const forwardTranscript =
 		typeof parameters?.forward_transcript === "boolean"
@@ -806,10 +813,10 @@ function parseAdvisorToolDefaults(tool: any): AdvisorServerToolConfig | { error:
 		...(instructions ? { instructions } : {}),
 		forwardTranscript,
 		maxUses: typeof maxUses === "number"
-			? Math.min(ADVISOR_MAX_USES_LIMIT, Math.max(1, Math.floor(maxUses)))
+			? Math.max(1, Math.floor(maxUses))
 			: DEFAULT_ADVISOR_MAX_USES,
 		maxTokens: typeof maxTokens === "number"
-			? Math.min(SUB_MODEL_MAX_TOKENS_LIMIT, Math.max(ADVISOR_MIN_MAX_TOKENS, Math.floor(maxTokens)))
+			? Math.max(ADVISOR_MIN_MAX_TOKENS, Math.floor(maxTokens))
 			: DEFAULT_ADVISOR_MAX_TOKENS,
 		...(reasoning ? { reasoning } : {}),
 		...(typeof temperature === "number" ? { temperature } : {}),

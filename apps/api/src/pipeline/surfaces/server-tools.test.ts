@@ -92,23 +92,22 @@ describe("prepareServerToolsForTextRequest", () => {
 		expect(body).toEqual(snapshot);
 	});
 
-	it("lowers advisor and subagent max_uses and max_tokens to the sub-model limits", () => {
+	it("refuses advisor and subagent max_uses and max_tokens above the sub-model limits", () => {
+		const request = (tools: unknown[]) => prepareServerToolsForTextRequest(
+			{ model: "openai/gpt-5-nano", messages: [{ role: "user", content: "Help." }], tools },
+			"openai.chat.completions",
+		);
 		const prepare = (tools: unknown[]) => {
-			const result = prepareServerToolsForTextRequest(
-				{ model: "openai/gpt-5-nano", messages: [{ role: "user", content: "Help." }], tools },
-				"openai.chat.completions",
-			);
+			const result = request(tools);
 			if (!result.ok) throw new Error("expected ok");
 			return result.config as any;
 		};
-		const large = prepare([
-			{ type: "phaseo:advisor", model: "example/a", max_tokens: 10_000_000, max_uses: 1_000_000 },
-			{ type: "phaseo:subagent", parameters: { model: "example/a", max_completion_tokens: 10_000_000, max_uses: 1_000_000 } },
-			{ type: "phaseo:fusion", parameters: { analysis_models: ["example/a", "example/b"], max_uses: 4, max_completion_tokens: 10_000_000 } },
-		]);
-		expect(large.advisors.phaseo_advisor).toMatchObject({ maxUses: 8, maxTokens: 32_000 });
-		expect(large.subagent).toMatchObject({ maxUses: 8, maxTokens: 32_000 });
-		expect(large.fusion).toMatchObject({ maxUses: 4, maxTokens: 32_000 });
+		expect(request([{ type: "phaseo:advisor", model: "example/a", max_uses: 9 }])).toMatchObject({ ok: false, message: "max_uses can be at most 8." });
+		expect(request([{ type: "phaseo:advisor", model: "example/a", max_tokens: 32_001 }])).toMatchObject({ ok: false, message: "max_tokens can be at most 32000." });
+		expect(request([{ type: "phaseo:subagent", parameters: { model: "example/a", max_completion_tokens: 32_001 } }])).toMatchObject({ ok: false });
+		expect(request([{ type: "phaseo:subagent", parameters: { model: "example/a", max_uses: 9 } }])).toMatchObject({ ok: false });
+		const atLimit = prepare([{ type: "phaseo:advisor", model: "example/a", max_tokens: 32_000, max_uses: 8 }]);
+		expect(atLimit.advisors.phaseo_advisor).toMatchObject({ maxUses: 8, maxTokens: 32_000 });
 
 		// Values inside the limits, and the defaults, are kept.
 		const small = prepare([
