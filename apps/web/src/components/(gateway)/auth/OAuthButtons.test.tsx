@@ -105,3 +105,42 @@ describe("OAuthButtons redirect state", () => {
 		expect(status()).toBe("");
 	});
 });
+
+describe("OAuthButtons for a browser that has signed in before", () => {
+	const rerender = async (flow: "signin" | "signup") => {
+		await act(async () => root.render(<OAuthButtons key={flow} flow={flow} onStart={onStart} onRedirectingChange={onRedirectingChange} />));
+	};
+	const returning = () => container.querySelector<HTMLButtonElement>('[role="note"] button[aria-label="providerSignIn:Google"]');
+	const lastUsedBadge = () => [...container.querySelectorAll("span")].some((span) => span.textContent === "lastUsed");
+
+	beforeEach(() => window.localStorage.setItem("phaseo:last-auth-provider", "google"));
+	afterEach(() => window.localStorage.clear());
+
+	it("marks the provider Last used on sign-in, with no sign-in offer", async () => {
+		await rerender("signin");
+		expect(lastUsedBadge()).toBe(true);
+		expect(returning()).toBeNull();
+	});
+
+	it("offers to sign in with it on sign-up instead of the badge", async () => {
+		await rerender("signup");
+		expect(lastUsedBadge()).toBe(false);
+		expect(container.querySelector('[role="note"]')!.textContent).toContain("returningPrompt");
+
+		await act(async () => returning()!.click());
+		const { data } = handleOAuthRedirect.mock.calls[0][0] as { data: FormData };
+		expect(data.get("provider")).toBe("google");
+		expect(data.get("authFlow")).toBe("signin");
+		expect(onStart).not.toHaveBeenCalled(); // not a sign-up attempt
+		expect(returning()!.getAttribute("aria-disabled")).toBe("true");
+		expect(button("Google").getAttribute("aria-disabled")).toBeNull();
+		expect(button("Google").disabled).toBe(true);
+		expect(status()).toBe("providerOpening:Google…");
+	});
+
+	it("leaves email sign-ins to the email form", async () => {
+		window.localStorage.setItem("phaseo:last-auth-provider", "email");
+		await rerender("signup");
+		expect(container.querySelector('[role="note"]')).toBeNull();
+	});
+});

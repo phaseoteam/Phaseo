@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { handleEmailSignup } from "@/features/sign-up/actions";
-import { Check, Eye, EyeOff, X } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, X } from "lucide-react";
 import { captureProductEvent } from "@/lib/productAnalytics";
 import { defaultLocale, type PublicLocale } from "@/i18n/routing";
 import { buildLocalizedAuthPath } from "@/lib/auth/localized-paths";
 import { openAuthDialog } from "../dialog/authDialogStore";
+import { ReturningUserCallout } from "../ReturningUserCallout";
 
 const SYMBOL_REGEX = /[!@#$%^&*()_+\-=[\]{};':"|<>?,./`~]/;
 const LAST_AUTH_PROVIDER_STORAGE_KEY = "phaseo:last-auth-provider";
@@ -55,6 +56,17 @@ export default function EmailPassword({
 	const [formError, setFormError] = useState<string | null>(null);
 	const [showEmailHeading, setShowEmailHeading] = useState(false);
 	const [showRequirements, setShowRequirements] = useState(false);
+	// This browser last signed in with email: offer sign-in here, by the email form.
+	// (A social provider gets the same offer under the provider buttons.)
+	const [emailLastUsed, setEmailLastUsed] = useState(false);
+
+	useEffect(() => {
+		try {
+			setEmailLastUsed(window.localStorage.getItem(LAST_AUTH_PROVIDER_STORAGE_KEY) === "email");
+		} catch {
+			setEmailLastUsed(false);
+		}
+	}, []);
 
 	const checks = useMemo<PasswordChecks>(() => {
 		return {
@@ -121,6 +133,24 @@ export default function EmailPassword({
 				</span>
 				<div className="flex-1 border-t border-border" />
 			</div>
+
+			{emailLastUsed ? (
+				<ReturningUserCallout
+					action={
+						<Button
+							type="button"
+							variant="outline"
+							className="h-8 gap-1.5 bg-background px-3"
+							// Signing in needs the password, so this moves to sign-in with the typed email
+							// carried over (in memory only), rather than promising a one-tap sign-in.
+							onClick={() => openAuthDialog({ step: "sign-in", returnUrl, email: email.trim() || undefined })}
+						>
+							<span className="text-sm">{shared("signIn")}</span>
+							<ArrowRight aria-hidden="true" className="size-4 rtl:rotate-180" />
+						</Button>
+					}
+				/>
+			) : null}
 
 			<form
 				action={async (formData) => {
