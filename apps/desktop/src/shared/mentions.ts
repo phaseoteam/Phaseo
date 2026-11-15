@@ -3,37 +3,14 @@
  * `@[label](kind:ref)`, with the ref URI-encoded. Files and chats keep a token in the sent message
  * so the message can show them as chips; attachments travel as attachment ids instead.
  */
+import { mentionToken, parseMentions } from "@phaseo/app-kit/mentions";
 import { maximumGithubReferences, parseGithubReferenceUrl } from "./issueView";
+
+// The token format and parser are shared so the website and the mobile app can draw these chips too.
+export { MENTION_KINDS, mentionPlainText, mentionToken, parseMentions, type Mention, type MentionKind, type Segment } from "@phaseo/app-kit/mentions";
 
 /** Drag data for a chat dragged from the sidebar: `{ id, title }` as JSON. */
 export const chatDragType = "application/x-phaseo-chat";
-
-/** A pull request or issue chip's ref is its GitHub URL and its label "#N title" (the composer's `#` menu). */
-export type MentionKind = "file" | "folder" | "chat" | "attachment" | "image" | "pull-request" | "issue";
-export type Mention = { kind: MentionKind; ref: string; label: string };
-export type Segment = string | Mention;
-
-const kinds = "file|folder|chat|attachment|image|pull-request|issue";
-const tokenPattern = () => new RegExp(`@\\[([^\\]\\n]*)\\]\\((${kinds}):([^)\\s]+)\\)`, "g");
-
-export function mentionToken(mention: Mention) {
-	return `@[${mention.label.replace(/[[\]\n]/g, " ")}](${mention.kind}:${encodeURIComponent(mention.ref).replace(/[()]/g, character => `%${character.charCodeAt(0).toString(16).toUpperCase()}`)})`;
-}
-
-/** Splits text into plain runs and chips. Malformed tokens stay as text. */
-export function parseMentions(text: string): Segment[] {
-	const segments: Segment[] = [];
-	let last = 0;
-	for (const match of text.matchAll(tokenPattern())) {
-		let ref: string;
-		try { ref = decodeURIComponent(match[3]); } catch { continue; }
-		if (match.index > last) segments.push(text.slice(last, match.index));
-		segments.push({ kind: match[2] as MentionKind, ref, label: match[1] });
-		last = match.index + match[0].length;
-	}
-	if (last < text.length) segments.push(text.slice(last));
-	return segments;
-}
 
 /**
  * What a draft sends: files become `@path` for the agent to open, chats keep their token (the agent
@@ -57,9 +34,4 @@ export function composeMessage(draft: string) {
 		return "";
 	}).join("").replace(/[ \t]+\n/g, "\n").trim();
 	return { text, threadReferences: threadReferences.slice(0, 10), githubReferences: githubReferences.filter(url => parseGithubReferenceUrl(url)).slice(0, maximumGithubReferences), attachments, images };
-}
-
-/** Plain text for previews and titles: chips read as their label. */
-export function mentionPlainText(text: string) {
-	return parseMentions(text).map(segment => typeof segment === "string" ? segment : segment.kind === "chat" ? `@${segment.label}` : segment.label).join("");
 }

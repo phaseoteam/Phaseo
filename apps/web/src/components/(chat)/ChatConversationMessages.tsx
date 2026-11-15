@@ -15,8 +15,7 @@ import {
 } from "@shadcn/react/message-scroller";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { formatLatency, formatUsdCost } from "@phaseo/app-kit/format";
-import { Streamdown } from "streamdown";
-import { ChatAnswerContent } from "./openui/ChatAnswerContent";
+import { ChatAnswerContent, ChatAnswerMarkdown } from "./openui/ChatAnswerContent";
 import { OPENUI_FORMAT } from "./openui/openuiHelpers";
 import { Logo } from "@/components/Logo";
 import {
@@ -96,10 +95,6 @@ import { ChatMessagesEmptyState } from "@/components/(chat)/ChatMessagesEmptySta
 import { ChatVirtualMessageList } from "@/components/(chat)/ChatVirtualMessageList";
 import { ChatSelectionToolbar } from "@/components/(chat)/ChatSelectionToolbar";
 import { markChatUserMessageRendered } from "@/components/(chat)/playground/chat-performance";
-import {
-	chatMarkdownPlugins,
-	normalizeChatMarkdown,
-} from "@/components/(chat)/chatMarkdown";
 import { getChatMessageRequestId } from "@/components/(chat)/chatMessageMetadata";
 import {
 	buildModelLink,
@@ -1161,9 +1156,7 @@ export function ChatConversationMessages({
 													key={event.id}
 													className="prose prose-sm max-w-none text-foreground dark:prose-invert prose-p:my-0"
 												>
-											<Streamdown plugins={chatMarkdownPlugins}>
-												{normalizeChatMarkdown(eventText)}
-											</Streamdown>
+											<ChatAnswerMarkdown content={eventText} />
 												</div>
 											);
 										})}

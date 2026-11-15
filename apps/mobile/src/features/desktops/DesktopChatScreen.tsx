@@ -5,7 +5,7 @@ import { memo, useCallback, useEffect, useMemo, useState, type ReactNode } from 
 import { ActivityIndicator, Linking, Pressable, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { Markdown } from "@/components/Markdown";
-import { EmptyState, ErrorState, Header, Icon, IconButton, Screen, showActions, SkeletonRows, Text, toast, useToneColor } from "@/components/ui";
+import { EmptyState, ErrorState, Header, Icon, IconButton, MentionText, Screen, showActions, SkeletonRows, Text, toast, useToneColor } from "@/components/ui";
 import { useChatModelOptions } from "@/features/chat/models";
 import type { ModelLabel } from "@/features/chat/modelSheetRows";
 import { Composer, type ComposerModel } from "@/features/composer/Composer";
@@ -206,7 +206,7 @@ const MessageRow = memo(function MessageRow({ message, streaming }: { message: P
       <View className="items-end px-4 pt-3">
         {message.delivery === "steer" ? <Text variant="caption" className="mb-1">Steered the running turn</Text> : null}
         <View className="max-w-[85%] rounded-md bg-foreground px-4 py-2.5">
-          <Text variant="body" className="text-background" selectable>{message.text}</Text>
+          <MentionText variant="body" className="text-background" tone="inverse" selectable text={message.text} />
         </View>
         {message.attachments?.length ? <Text variant="caption" className="mt-1">{message.attachments.map((file) => file.name).join(", ")}</Text> : null}
         {cut}
@@ -216,7 +216,7 @@ const MessageRow = memo(function MessageRow({ message, streaming }: { message: P
   if (message.role === "assistant") {
     return (
       <View className="px-4 pt-4">
-        {message.text ? <Markdown text={message.text} streaming={streaming} /> : streaming ? <Waiting label="Working…" /> : null}
+        {message.text ? <Markdown text={message.text} streaming={streaming} chips /> : streaming ? <Waiting label="Working…" /> : null}
         {message.notice ? <Text variant="caption" className="mt-1">{message.notice}</Text> : null}
         {cut}
       </View>
