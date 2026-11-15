@@ -159,7 +159,7 @@ export function ChatComposer({ chatId, models, settings, workspaceId, running, o
       onAttach={openAttach}
       attachments={draft.attachments}
       onRemoveAttachment={removeAttachment}
-      model={{ label, logos: models.length ? <ModelLogoStack models={models} size={18} /> : null, onPress: onModelPress }}
+      model={{ label, logos: models.length ? <ModelLogoStack models={models} size={18} bare /> : null, onPress: onModelPress }}
       send={send}
       onSend={submit}
       onStop={running ? onStop : null}

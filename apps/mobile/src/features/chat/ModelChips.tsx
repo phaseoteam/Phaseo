@@ -18,15 +18,18 @@ export function useOpenModelPicker(chatId: string | null) {
   return () => router.push({ pathname: "/sheets/[kind]", params: { kind: "chat-models", ...(chatId ? { chatId } : {}) } });
 }
 
-/** Up to three lab logos overlapping, for the composer's model button. */
-export function ModelLogoStack({ models, size = 18 }: { models: string[]; size?: number }) {
+/**
+ * Up to three lab logos overlapping. `bare` draws each logo at full size without its tile, as the composer's model
+ * button does: a tile shrinks the logo to two thirds, which is too small to read at a button's icon size.
+ */
+export function ModelLogoStack({ models, size = 18, bare }: { models: string[]; size?: number; bare?: boolean }) {
   const labels = useModelLabels();
   const shown = models.slice(0, 3);
   return (
     <View className="flex-row items-center">
       {shown.map((model, index) => (
-        <View key={model} className="rounded-[4px] bg-background p-px" style={{ marginLeft: index ? -size * 0.3 : 0, zIndex: shown.length - index }}>
-          <Logo id={labels(model).orgId} label={labels(model).orgName} size={size} />
+        <View key={model} className="rounded-[4px] bg-background p-px" style={{ marginLeft: index ? -size * (bare ? 0.2 : 0.3) : 0, zIndex: shown.length - index }}>
+          <Logo id={labels(model).orgId} label={labels(model).orgName} size={size} bare={bare} />
         </View>
       ))}
     </View>
