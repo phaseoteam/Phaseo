@@ -78,7 +78,7 @@ export function chipMarkdown(markdown: string): string {
 	return lines.map((text, index) => {
 		if (fence) {
 			const rest = insideFence(text, fence.quotes);
-			const closer = rest === undefined ? undefined : /^ {0,3}(`{3,}|~{3,})[ \t]*$/.exec(rest)?.[1];
+			const closer = rest === undefined ? undefined : /^ {0,3}(`{3,}|~{3,})[ \t]*\r?$/.exec(rest)?.[1];
 			if (closer && closer[0] === fence.marker[0] && closer.length >= fence.marker.length) fence = undefined;
 			return text;
 		}

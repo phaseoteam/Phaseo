@@ -67,6 +67,10 @@ describe("chip Markdown", () => {
 		const quoted = chipMarkdown(["> ```", "> src/a.ts", "> ```", "src/b.ts"].join("\n")).split("\n");
 		expect(quoted.slice(0, 3)).toEqual(["> ```", "> src/a.ts", "> ```"]);
 		expect(quoted[3]).toContain("phaseo-chip:");
+		// Windows line endings still close the fence.
+		const crlf = chipMarkdown(["```", "src/a.ts", "```", "After src/c.ts."].join("\r\n")).split("\r\n");
+		expect(crlf.slice(0, 3)).toEqual(["```", "src/a.ts", "```"]);
+		expect(crlf[3]).toContain("phaseo-chip:");
 	});
 
 	it("leaves text that would make an unreadable chip as text", () => {
