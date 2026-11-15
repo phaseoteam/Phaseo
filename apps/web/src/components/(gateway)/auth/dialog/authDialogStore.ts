@@ -28,6 +28,11 @@ export type AuthDialogState = {
 	errorMessage?: string;
 	/** Opened by the page URL (?auth=); removing the parameter (Back/Forward) closes it. */
 	fromUrl?: boolean;
+	/**
+	 * An email address typed on the sign-up step, carried to the sign-in step. Kept in memory
+	 * only: never in the URL or in storage.
+	 */
+	email?: string;
 };
 
 export type OpenAuthDialogOptions = Omit<Partial<AuthDialogState>, "open">;
@@ -68,14 +73,19 @@ export function currentReturnUrl(): string | undefined {
 
 export function openAuthDialog(options: OpenAuthDialogOptions = {}) {
 	const returnUrl = options.returnUrl === undefined ? currentReturnUrl() : sanitizeOrUndefined(options.returnUrl);
+	const step = options.step ?? "sign-in";
+	// A dialog the URL opened re-opens from ?auth= after each step change (AuthDialog keeps the
+	// URL in step). The email is not in the URL, so keep it while the step stays the same.
+	const keptEmail = options.fromUrl && state.open && state.step === step ? state.email : undefined;
 	setState({
 		open: true,
-		step: options.step ?? "sign-in",
+		step,
 		returnUrl,
 		notice: options.notice,
 		errorCode: options.errorCode,
 		errorMessage: options.errorMessage,
 		fromUrl: options.fromUrl,
+		email: options.email ?? keptEmail,
 	});
 }
 

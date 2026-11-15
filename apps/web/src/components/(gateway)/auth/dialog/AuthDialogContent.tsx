@@ -25,6 +25,7 @@ function SignInStep({ state, locale }: { state: AuthDialogState; locale: PublicL
 			authError={state.notice === "auth-failed" ? "auth-failed" : null}
 			errorCode={state.errorCode}
 			errorMessage={state.errorMessage}
+			initialEmail={state.email}
 			returnUrl={state.returnUrl}
 			ssoEnabled={ssoEnabled}
 			locale={locale}
