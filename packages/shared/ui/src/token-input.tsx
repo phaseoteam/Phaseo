@@ -15,6 +15,7 @@ import {
   contentToValue,
   filterSuggestions,
   findTrigger,
+  normalizeValue,
   sameValue,
   valueToContent,
   type Token,
@@ -38,6 +39,8 @@ type TokenInputProps = {
   /** An icon shown before a token's label. */
   renderTokenIcon?: (token: Token) => React.ReactNode
   maxSuggestions?: number
+  /** What screen readers hear when the menu opens; pass a translated message. */
+  formatAnnouncement?: (count: number) => string
   className?: string
   id?: string
   /** Name the field with `aria-labelledby` pointing at a visible label, or `aria-label`. */
@@ -55,6 +58,12 @@ type OpenMenu = {
   top: number
   left: number
 }
+
+const defaultAnnouncement = (count: number) =>
+  `${count} ${count === 1 ? "suggestion" : "suggestions"}. Up and Down to choose, Enter to insert.`
+
+// A trigger must follow whitespace, so a line break reads as a newline; a token reads as one object character.
+const leafText = (node: { type: { name: string } }) => (node.type.name === "hardBreak" ? "\n" : "￼")
 
 const TokenIconContext = React.createContext<TokenInputProps["renderTokenIcon"]>(undefined)
 
@@ -112,6 +121,7 @@ function TokenInput({
   onSubmit,
   renderTokenIcon,
   maxSuggestions = 8,
+  formatAnnouncement = defaultAnnouncement,
   className,
   id,
   "aria-label": ariaLabel,
@@ -121,15 +131,17 @@ function TokenInput({
   const reactId = React.useId()
   const listId = `${reactId}-suggestions`
   const containerRef = React.useRef<HTMLDivElement>(null)
-  const lastValue = React.useRef<TokenInputValue>(value ?? defaultValue)
   const [menu, setMenu] = React.useState<OpenMenu | null>(null)
   const [active, setActive] = React.useState(0)
+  // Bumped on every edit, so a controlled value that the parent didn't change is put back.
+  const [edits, setEdits] = React.useState(0)
+  const controlled = value !== undefined
   // Escape closes the menu until the query changes.
   const dismissed = React.useRef<string | null>(null)
 
-  const latest = React.useRef({ triggers, onValueChange, onSubmit, maxSuggestions, menu, active })
+  const latest = React.useRef({ triggers, onValueChange, onSubmit, maxSuggestions, menu, active, controlled })
   React.useLayoutEffect(() => {
-    latest.current = { triggers, onValueChange, onSubmit, maxSuggestions, menu, active }
+    latest.current = { triggers, onValueChange, onSubmit, maxSuggestions, menu, active, controlled }
   })
 
   const updateMenu = React.useCallback((editor: Editor) => {
@@ -141,7 +153,7 @@ function TokenInput({
       return
     }
     const { $from } = selection
-    const textBefore = $from.parent.textBetween(0, $from.parentOffset, undefined, "￼")
+    const textBefore = $from.parent.textBetween(0, $from.parentOffset, undefined, leafText)
     const match = findTrigger(textBefore, chars)
     const trigger = match && latest.current.triggers.find((candidate) => candidate.char === match.char)
     if (!match || !trigger) {
@@ -232,9 +244,8 @@ function TokenInput({
       },
     },
     onUpdate: ({ editor: instance }) => {
-      const next = contentToValue(instance.getJSON())
-      lastValue.current = next
-      latest.current.onValueChange?.(next)
+      latest.current.onValueChange?.(contentToValue(instance.getJSON()))
+      if (latest.current.controlled) setEdits((count) => count + 1)
       updateMenu(instance)
     },
     onSelectionUpdate: ({ editor: instance }) => updateMenu(instance),
@@ -254,15 +265,18 @@ function TokenInput({
     editor.view.dispatch(editor.state.tr)
   }, [editor, placeholder])
 
-  // Follow a controlled value without echoing the editor's own updates.
+  // Follow a controlled value: after the parent changes it, and after an edit the parent didn't accept.
   React.useEffect(() => {
-    if (!editor || value === undefined || sameValue(value, lastValue.current)) return
-    lastValue.current = value
+    if (!editor || value === undefined) return
+    if (sameValue(normalizeValue(value), contentToValue(editor.getJSON()))) return
     editor.commands.setContent(valueToContent(value), { emitUpdate: false })
-  }, [editor, value])
+    // The text under the caret changed, so the menu may no longer match it.
+    updateMenu(editor)
+  }, [editor, value, edits, updateMenu])
 
   React.useEffect(() => {
-    editor?.setEditable(!disabled)
+    // Without emitting an update: only the editability changed, not the value.
+    editor?.setEditable(!disabled, false)
   }, [editor, disabled])
 
   const activeId = menu ? `${listId}-${active}` : undefined
@@ -286,9 +300,7 @@ function TokenInput({
     set("aria-activedescendant", activeId)
   }, [editor, id, ariaLabel, ariaLabelledBy, ariaDescribedBy, invalid, disabled, triggers.length, menu, listId, activeId])
 
-  const announcement = menu
-    ? `${menu.items.length} ${menu.items.length === 1 ? "suggestion" : "suggestions"}. Up and Down to choose, Enter to insert.`
-    : ""
+  const announcement = menu ? formatAnnouncement(menu.items.length) : ""
 
   return (
     <TokenIconContext.Provider value={renderTokenIcon}>

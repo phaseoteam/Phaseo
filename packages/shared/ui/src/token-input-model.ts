@@ -111,6 +111,17 @@ export function tokenInputText(value: TokenInputValue): string {
   return value.map((segment) => (isToken(segment) ? segment.label : segment)).join("")
 }
 
+/** Whether two values hold the same text and tokens, field by field (so property order doesn't matter). */
 export function sameValue(a: TokenInputValue, b: TokenInputValue): boolean {
-  return JSON.stringify(a) === JSON.stringify(b)
+  if (a.length !== b.length) return false
+  return a.every((segment, index) => {
+    const other = b[index]
+    if (!isToken(segment) || !isToken(other)) return segment === other
+    return segment.type === other.type && segment.value === other.value && segment.label === other.label
+  })
+}
+
+/** A value as the editor would hold it: adjacent text merged, empty text dropped. */
+export function normalizeValue(value: TokenInputValue): TokenInputValue {
+  return contentToValue(valueToContent(value))
 }

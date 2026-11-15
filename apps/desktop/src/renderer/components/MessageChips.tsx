@@ -4,7 +4,7 @@ import type { InlineChipAccent } from "@phaseo/app-kit/ui-recipes";
 import { useOptionalWorkspace } from "../app/workspace";
 import { PULL_REQUEST_STATE_PRESENTATION } from "../views/pullRequests/presentation";
 import { knownModel } from "../chat/ModelPicker";
-import { chipCopyText, chipHref, chipLabel, messageChips, type Chip, type FileChip } from "../lib/messageChips";
+import { chipCopyText, chipHref, chipLabel, messageChips, trimTrailingSlashes, type Chip, type FileChip } from "../lib/messageChips";
 import { showToast } from "./ui/toast";
 import { richLink } from "../lib/richLink";
 import { openWebLink, type LinkClick } from "../lib/openLink";
@@ -96,7 +96,7 @@ export function FilePathChip({ file, projectId, children }: { file: FileChip; pr
 	async function open() {
 		if (!projectId || pending.current) return;
 		pending.current = true; setBusy(true); setError("");
-		try { await openProjectFile(projectId, { filename: file.kind === "folder" ? file.path.replace(/[\\/]+$/, "") || file.path : file.path, ...(file.line ? { line: file.line } : {}), ...(file.line && file.column ? { column: file.column } : {}) }); }
+		try { await openProjectFile(projectId, { filename: file.kind === "folder" ? trimTrailingSlashes(file.path) || file.path : file.path, ...(file.line ? { line: file.line } : {}), ...(file.line && file.column ? { column: file.column } : {}) }); }
 		catch (reason) { setError(String(reason).replace(/^Error: (?:Error invoking remote method '[^']+': (?:Error: )?)?/, "")); }
 		finally { pending.current = false; setBusy(false); }
 	}
@@ -116,19 +116,23 @@ const copy = (text: string, what: string) => void navigator.clipboard.writeText(
 const Mono = ({ children }: { children: ReactNode }) => <span className="font-mono text-[0.88em]">{children}</span>;
 const Said = ({ children }: { children: ReactNode }) => <span className="sr-only">{children}</span>;
 
-/** The state of a branch's pull request, when a chat has linked one. */
-function useBranchState(name: string) {
+/** The state of a branch's pull request in this repository, when a chat has linked one. */
+function useBranchState(name: string, repository: string | null | undefined) {
 	const workspace = useOptionalWorkspace();
-	for (const task of workspace?.overview.tasks ?? []) for (const link of task.pullRequests ?? []) if (link.snapshot?.head === name) return link.snapshot.state;
+	if (!name || !repository) return undefined;
+	const same = repository.toLowerCase();
+	for (const task of workspace?.overview.tasks ?? []) for (const link of task.pullRequests ?? []) if (link.snapshot?.head === name && link.repository.toLowerCase() === same) return link.snapshot.state;
 	return undefined;
 }
 
-/** A commit or branch: opens on GitHub when the chat's project is a GitHub repository, and is copied otherwise. */
-function GitChip({ chip }: { chip: Extract<Chip, { kind: "commit" | "branch" }> }) {
+/** A commit or branch: opens on GitHub when the message's project is a GitHub repository, and is copied otherwise. */
+function GitChip({ chip, projectId }: { chip: Extract<Chip, { kind: "commit" | "branch" }>; projectId?: string }) {
 	const variant = useChipVariant();
-	const repository = useProjectRepository(useLinkProject());
+	// The message's own project, so a chat from another project shown beside this one links its own repository.
+	const linkProject = useLinkProject();
+	const repository = useProjectRepository(projectId ?? linkProject);
 	const href = chipHref(chip, { repository: repository ?? undefined });
-	const merged = useBranchState(chip.kind === "branch" ? chip.name : "") === "merged" && chip.kind === "branch";
+	const merged = useBranchState(chip.kind === "branch" ? chip.name : "", repository) === "merged" && chip.kind === "branch";
 	const text = chipCopyText(chip), what = chip.kind === "commit" ? "Commit" : "Branch";
 	return <InlineChip variant={variant} accent={merged ? "done" : undefined} icon={chip.kind === "commit" ? <GitCommitHorizontal /> : <GitBranch />}
 		title={`${text}${merged ? " · merged" : ""} · ${href ? "open on GitHub" : "click to copy"}`} onClick={event => href ? openContextLink(href, event) : copy(text, what)}>
@@ -137,16 +141,18 @@ function GitChip({ chip }: { chip: Extract<Chip, { kind: "commit" | "branch" }> 
 }
 
 // A local server's state, asked of the main process (the page's security policy keeps it off localhost) once in a while per origin.
+const SERVER_CHECK_MS = 10_000;
 const serverStates = new Map<string, { at: number; up: Promise<boolean> }>();
 function serverUp(origin: string) {
 	const known = serverStates.get(origin);
-	if (known && Date.now() - known.at < 10_000) return known.up;
+	// A little under the check interval, so each chip's next check asks again rather than reading the last answer.
+	if (known && Date.now() - known.at < SERVER_CHECK_MS - 1_000) return known.up;
 	const up = window.phaseoDesktop?.browserProbe(`${origin}/`).catch(() => false) ?? Promise.resolve(false);
 	serverStates.set(origin, { at: Date.now(), up });
 	return up;
 }
 
-/** A local server: opens in the browser panel; green while it answers, grey when it doesn't. */
+/** A local server: opens in the browser panel; green while it answers, grey when it doesn't, checked again every few seconds. */
 function LocalServerChip({ href }: { href: string }) {
 	const variant = useChipVariant();
 	const [up, setUp] = useState<boolean>();
@@ -154,8 +160,11 @@ function LocalServerChip({ href }: { href: string }) {
 		let active = true;
 		let origin: string | undefined;
 		try { origin = new URL(href).origin; } catch { /* Not a URL. */ }
-		if (origin && window.phaseoDesktop) void serverUp(origin).then(value => { if (active) setUp(value); });
-		return () => { active = false; };
+		if (!origin || !window.phaseoDesktop) return;
+		const check = () => void serverUp(origin).then(value => { if (active) setUp(value); });
+		check();
+		const timer = setInterval(check, SERVER_CHECK_MS);
+		return () => { active = false; clearInterval(timer); };
 	}, [href]);
 	const state = up === undefined ? "" : up ? "Running" : "Not responding";
 	return <InlineChip variant={variant} accent={up === undefined ? undefined : up ? "open" : "draft"} href={href} icon={<AppWindow />}
@@ -168,7 +177,7 @@ export function MessageChip({ chip, projectId }: { chip: Chip; projectId?: strin
 	switch (chip.kind) {
 		case "chat": return <ChatChip id={chip.id} label={chip.label} />;
 		case "link": return <LinkChip href={chip.href} />;
-		case "commit": case "branch": return <GitChip chip={chip} />;
+		case "commit": case "branch": return <GitChip chip={chip} projectId={projectId} />;
 		case "local": return <LocalServerChip href={chip.href} />;
 		default: return <FilePathChip file={chip} projectId={projectId} />;
 	}

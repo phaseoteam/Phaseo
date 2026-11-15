@@ -2,6 +2,8 @@
 import { it, expect, beforeEach, afterEach, vi } from "vitest";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { AppIntlProvider } from "@/i18n/react";
+import { englishCommonMessages } from "@/i18n/default-messages";
 import { NumberInput } from "./number-input";
 
 let root: Root;
@@ -20,7 +22,7 @@ afterEach(() => {
 });
 
 function render(node: ReactNode) {
-	act(() => root.render(node));
+	act(() => root.render(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Common: englishCommonMessages }}>{node}</AppIntlProvider>));
 	return container.querySelector<HTMLInputElement>("[data-slot=number-input-control]")!;
 }
 
@@ -66,4 +68,11 @@ it("hides the step buttons when steppers is off", () => {
 it("marks the field invalid for styling and assistive tech", () => {
 	const input = render(<NumberInput aria-label="Budget" aria-invalid defaultValue={-1} />);
 	expect(input.getAttribute("aria-invalid")).toBe("true");
+});
+
+it("names the step buttons from the catalogue unless labels are given", () => {
+	render(<NumberInput aria-label="Seats" defaultValue={1} decrementLabel="Fewer seats" />);
+	const [decrement, increment] = container.querySelectorAll("button");
+	expect(decrement?.getAttribute("aria-label")).toBe("Fewer seats");
+	expect(increment?.getAttribute("aria-label")).toBe("Increase");
 });

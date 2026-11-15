@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { AppIntlProvider } from "@/i18n/react";
+import { englishCommonMessages } from "@/i18n/default-messages";
 import { ChatAnswerMarkdown } from "./openui/ChatAnswerContent";
 
 function render(text: string) {
-  return renderToStaticMarkup(<ChatAnswerMarkdown content={text} />);
+  return renderToStaticMarkup(
+    <AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Common: englishCommonMessages }}>
+      <ChatAnswerMarkdown content={text} />
+    </AppIntlProvider>,
+  );
 }
 
 describe("assistant answer chips", () => {
@@ -35,5 +41,18 @@ describe("assistant answer chips", () => {
     const html = render("Open `src/app.tsx`.\n\n```ts\nimport x from \"./src/app.tsx\";\n```");
     expect(html).toContain('title="src/app.tsx"');
     expect(html.match(/sr-only">, file</g)).toHaveLength(1);
+  });
+
+  it("chips a bare URL but keeps a link written with the URL as its text", () => {
+    expect(render("See https://example.com/a now.")).toContain("example.com<span class=\"sr-only\">, link</span>");
+    const written = render("See [https://example.com/a](https://example.com/a) now.");
+    expect(written).not.toContain(", link</span>");
+    expect(written).toMatch(/data-streamdown="link"[^>]*>https:\/\/example\.com\/a</);
+  });
+
+  it("labels GitHub pull requests and issues from the catalogue", () => {
+    const html = render("See https://github.com/o/r/pull/12 and https://github.com/o/r/issues/7.");
+    expect(html).toContain("PR #12<span class=\"sr-only\">, link</span>");
+    expect(html).toContain("Issue #7<span class=\"sr-only\">, link</span>");
   });
 });

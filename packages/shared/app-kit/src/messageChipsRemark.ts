@@ -1,4 +1,4 @@
-import { chipCopyText, codeChip, textChips, type Chip } from "./messageChips";
+import { chipCopyText, codeChip, isChip, textChips, type Chip } from "./messageChips";
 
 /** The few mdast fields this plugin reads, so it needs no Markdown types. */
 type MarkdownNode = { type: string; value?: string; url?: string; children?: MarkdownNode[]; data?: unknown };
@@ -10,10 +10,10 @@ export function chipNode(chip: Chip, source: string): MarkdownNode {
 	return { type: "messageChip", data: { hName: "span", hProperties: { dataChip: JSON.stringify(chip) }, hChildren: [{ type: "text", value: source }] } };
 }
 
-/** Reads a chip back from the span's `data-chip`. */
+/** Reads a chip back from the span's `data-chip`. Raw HTML in a reply can write the same attribute, so every field is checked. */
 export function parseChipAttribute(value: unknown): Chip | undefined {
-	if (typeof value !== "string") return;
-	try { const chip = JSON.parse(value) as Chip; return chip && typeof chip === "object" && typeof chip.kind === "string" ? chip : undefined; } catch { return; }
+	if (typeof value !== "string" || value.length > 16_384) return;
+	try { const chip: unknown = JSON.parse(value); return isChip(chip) ? chip : undefined; } catch { return; }
 }
 
 function transform(node: MarkdownNode) {

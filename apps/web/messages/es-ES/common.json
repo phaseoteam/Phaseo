@@ -683,6 +683,9 @@
 		"lastYear": "Último año"
 	},
 	"ui": {
+		"tokenInput": {
+			"suggestions": "{count, plural, one {# sugerencia} other {# sugerencias}}. Usa Arriba y Abajo para elegir e Intro para insertar."
+		},
 		"subscriptionCatalog": {
 			"view_plan": "Ver plan",
 			"on_login": "Al iniciar sesión",
@@ -2625,6 +2628,30 @@
 			"latency": "Latencia",
 			"agreements": "Coincidencias",
 			"uniqueInsight": "Aportación única"
+		},
+		"messageChips": {
+			"kindSuffix": ", {kind}",
+			"kinds": {
+				"file": "archivo",
+				"folder": "carpeta",
+				"link": "enlace",
+				"chat": "chat",
+				"commit": "commit",
+				"branch": "rama",
+				"local": "servidor local"
+			},
+			"chatFallback": "Chat",
+			"pullRequest": "PR #{number}",
+			"issue": "Incidencia #{number}",
+			"clickToCopy": "Haz clic para copiar",
+			"pathCopied": "Ruta copiada",
+			"commitCopied": "Commit copiado",
+			"branchCopied": "Rama copiada",
+			"copyFailed": "No se ha podido copiar"
+		},
+		"numberInput": {
+			"decrease": "Disminuir",
+			"increase": "Aumentar"
 		}
 	},
 	"deprecationNotice": {

@@ -683,6 +683,9 @@
 		"lastYear": "पिछला 1 वर्ष"
 	},
 	"ui": {
+		"tokenInput": {
+			"suggestions": "{count, plural, one {# सुझाव} other {# सुझाव}}। चुनने के लिए ऊपर और नीचे, जोड़ने के लिए Enter दबाएँ।"
+		},
 		"subscriptionCatalog": {
 			"view_plan": "प्लान देखें",
 			"on_login": "लॉगिन पर",
@@ -2625,6 +2628,30 @@
 			"latency": "विलंब",
 			"agreements": "सहमतियाँ",
 			"uniqueInsight": "अनोखी जानकारी"
+		},
+		"messageChips": {
+			"kindSuffix": ", {kind}",
+			"kinds": {
+				"file": "फ़ाइल",
+				"folder": "फ़ोल्डर",
+				"link": "लिंक",
+				"chat": "चैट",
+				"commit": "कमिट",
+				"branch": "ब्रांच",
+				"local": "लोकल सर्वर"
+			},
+			"chatFallback": "चैट",
+			"pullRequest": "PR #{number}",
+			"issue": "Issue #{number}",
+			"clickToCopy": "कॉपी करने के लिए क्लिक करें",
+			"pathCopied": "पाथ कॉपी किया गया",
+			"commitCopied": "कमिट कॉपी किया गया",
+			"branchCopied": "ब्रांच कॉपी की गई",
+			"copyFailed": "कॉपी नहीं किया जा सका"
+		},
+		"numberInput": {
+			"decrease": "घटाएँ",
+			"increase": "बढ़ाएँ"
 		}
 	},
 	"deprecationNotice": {

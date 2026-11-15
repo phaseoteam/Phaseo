@@ -2,7 +2,6 @@ import dynamic from "@/lib/dynamic";
 import { useTranslations } from "@/i18n/react";
 import type { ComponentProps } from "react";
 import { defaultRemarkPlugins, Streamdown, type StreamdownProps } from "streamdown";
-import type { Chip } from "@phaseo/app-kit/message-chips";
 import { parseChipAttribute, remarkMessageChips } from "@phaseo/app-kit/message-chips-remark";
 import { chatMarkdownPlugins, normalizeChatMarkdown } from "../chatMarkdown";
 import { MessageChip } from "../MessageChips";
@@ -31,23 +30,31 @@ const OpenUIRenderer = dynamic(
 );
 
 type RemarkPlugins = NonNullable<StreamdownProps["remarkPlugins"]>;
-type MarkdownNode = { type: string; value?: string; url?: string; children?: MarkdownNode[] };
+type MarkdownNode = { type: string; value?: string; url?: string; children?: MarkdownNode[]; position?: { start: { offset?: number } } };
 
 /**
- * GFM turns a bare URL into a link whose text is the URL; those go back to text so the chips plugin reads
- * them as link and local server chips. Links written as `[text](url)` stay links.
+ * GFM turns a bare URL (or `<url>`) into a link whose text is the URL; those go back to text so the chips plugin
+ * reads them as link and local server chips. Links written as `[text](url)` stay links, even when the text is the
+ * URL: the source shows a `[` where they start.
  */
 export function remarkBareLinksAsText() {
-  const visit = (node: MarkdownNode) => {
-    if (!node.children) return;
-    node.children = node.children.map((child) => {
-      const only = child.type === "link" && child.children?.length === 1 ? child.children[0] : undefined;
-      if (only?.type === "text" && only.value === child.url && /^https?:\/\//i.test(only.value ?? "")) return { type: "text", value: only.value };
-      if (child.type !== "code" && child.type !== "inlineCode") visit(child);
-      return child;
-    });
+  return (tree: MarkdownNode, file?: { value?: unknown }) => {
+    const source = typeof file?.value === "string" ? file.value : String(file?.value ?? "");
+    const written = (node: MarkdownNode) => {
+      const offset = node.position?.start.offset;
+      return offset !== undefined && source.charAt(offset) === "[";
+    };
+    const visit = (node: MarkdownNode) => {
+      if (!node.children) return;
+      node.children = node.children.map((child) => {
+        const only = child.type === "link" && child.children?.length === 1 ? child.children[0] : undefined;
+        if (only?.type === "text" && only.value === child.url && /^https?:\/\//i.test(only.value ?? "") && !written(child)) return { type: "text", value: only.value };
+        if (child.type !== "code" && child.type !== "inlineCode") visit(child);
+        return child;
+      });
+    };
+    visit(tree);
   };
-  return (tree: MarkdownNode) => visit(tree);
 }
 
 // Streamdown's own remark plugins, in its order, with chips last. The math plugin (chatMarkdownPlugins) is
@@ -59,25 +66,13 @@ const answerAllowedTags: StreamdownProps["allowedTags"] = { span: ["dataChip"] }
 
 /**
  * `data-chip` spans come from remarkMessageChips; other spans render unchanged. Raw HTML in an answer can
- * write the same attribute, so a chip is shown only when its fields are safe to put in a link or style.
+ * write the same attribute, so `parseChipAttribute` returns a chip only when every field is safe to use.
  */
 function AnswerSpan({ node: _node, ...props }: ComponentProps<"span"> & { node?: unknown }) {
   const { "data-chip": value, ...rest } = props as ComponentProps<"span"> & { "data-chip"?: unknown };
   const chip = parseChipAttribute(value);
-  if (chip && safeChip(chip)) return <MessageChip chip={chip} />;
+  if (chip) return <MessageChip chip={chip} />;
   return <span {...rest} />;
-}
-
-function safeChip(chip: Chip): boolean {
-  const text = (value: unknown) => typeof value === "string" && value.length > 0 && value.length <= 2048;
-  switch (chip.kind) {
-    case "link": case "local": return text(chip.href) && /^https?:\/\//i.test(chip.href);
-    case "file": case "folder": return text(chip.path);
-    case "chat": return text(chip.id) && typeof chip.label === "string";
-    case "commit": return text(chip.sha);
-    case "branch": return text(chip.name);
-    default: return false;
-  }
 }
 const answerComponents: StreamdownProps["components"] = { span: AnswerSpan };
 

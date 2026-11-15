@@ -42,6 +42,19 @@ describe("helpers", () => {
 		expect(checkStateOf(items[0], new Set(["gpt-6-cyber", "gpt-6.1-terra"]))).toBe("checked");
 	});
 
+	it("reads a branch over the leaves that toggling it changes, so a disabled leaf doesn't keep it mixed", () => {
+		expect(checkStateOf(items[1], new Set(["claude-fable-5.2"]))).toBe("checked");
+		expect(toggleChecked(items[1], ["claude-fable-5.2"])).toEqual([]);
+		expect(toggleChecked(items[1], [])).toEqual(["claude-fable-5.2"]);
+		// A disabled leaf still shows its own state.
+		expect(checkStateOf(items[1].children![1], new Set(["claude-mythos-5.2"]))).toBe("checked");
+	});
+
+	it("marks rows under a disabled branch as disabled", () => {
+		const tree: TreeNode[] = [{ id: "lab", label: "Lab", disabled: true, children: [{ id: "model", label: "Model" }] }];
+		expect(visibleRows(tree, new Set(["lab"])).map((row) => [row.node.id, row.disabled])).toEqual([["lab", true], ["model", true]]);
+	});
+
 	it("toggles every enabled leaf of a branch and leaves disabled ones alone", () => {
 		expect(toggleChecked(items[1], []).sort()).toEqual(["claude-fable-5.2"]);
 		expect(toggleChecked(items[1], ["claude-fable-5.2"])).toEqual([]);
@@ -189,5 +202,40 @@ describe("Tree", () => {
 		key(tree, " ");
 		expect(onCheckedChange).not.toHaveBeenCalled();
 		expect(item("Claude Mythos 5.2").getAttribute("aria-disabled")).toBe("true");
+	});
+
+	it("does not select or check a child of a disabled branch", () => {
+		const onCheckedChange = vi.fn();
+		const onSelectedChange = vi.fn();
+		const tree: TreeNode[] = [{ id: "lab", label: "Lab", disabled: true, children: [{ id: "model", label: "Model" }] }];
+		const element = render(<Tree aria-label="Models" items={tree} checkable defaultExpanded={["lab"]} onCheckedChange={onCheckedChange} onSelectedChange={onSelectedChange} />);
+		expect(item("Model").getAttribute("aria-disabled")).toBe("true");
+		act(() => item("Model").focus());
+		key(element, " ");
+		key(element, "Enter");
+		act(() => item("Model").querySelector<HTMLElement>("[data-slot=tree-row]")!.click());
+		act(() => item("Model").querySelector<HTMLElement>("[data-slot=tree-checkbox]")!.click());
+		expect(onCheckedChange).not.toHaveBeenCalled();
+		expect(onSelectedChange).not.toHaveBeenCalled();
+	});
+
+	it("moves focus to the parent when a controlled collapse removes the focused row", () => {
+		const element = render(<Tree aria-label="Models" items={items} expanded={["openai"]} />);
+		act(() => item("GPT-6 Cyber").focus());
+		render(<Tree aria-label="Models" items={items} expanded={[]} />);
+		expect(document.activeElement).toBe(item("OpenAI"));
+		key(element, "ArrowDown");
+		expect(document.activeElement).toBe(item("Anthropic"));
+	});
+
+	it("leaves focus alone when it was outside the tree", () => {
+		const outside = document.createElement("button");
+		document.body.appendChild(outside);
+		render(<Tree aria-label="Models" items={items} expanded={["openai"]} />);
+		act(() => item("GPT-6 Cyber").focus());
+		act(() => outside.focus());
+		render(<Tree aria-label="Models" items={items} expanded={[]} />);
+		expect(document.activeElement).toBe(outside);
+		outside.remove();
 	});
 });

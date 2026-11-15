@@ -21,6 +21,8 @@ type TreeRow<T> = {
   parentId: string | null
   posInSet: number
   setSize: number
+  /** Disabled itself or under a disabled branch. */
+  disabled: boolean
 }
 
 type TreeItemState = {
@@ -65,12 +67,14 @@ function visibleRows<T>(
   expanded: ReadonlySet<string>,
   level = 1,
   parentId: string | null = null,
-  out: TreeRow<T>[] = []
+  out: TreeRow<T>[] = [],
+  parentDisabled = false
 ): TreeRow<T>[] {
   items.forEach((node, index) => {
-    out.push({ node, level, parentId, posInSet: index + 1, setSize: items.length })
+    const disabled = parentDisabled || Boolean(node.disabled)
+    out.push({ node, level, parentId, posInSet: index + 1, setSize: items.length, disabled })
     if (node.children?.length && expanded.has(node.id)) {
-      visibleRows(node.children, expanded, level + 1, node.id, out)
+      visibleRows(node.children, expanded, level + 1, node.id, out, disabled)
     }
   })
   return out
@@ -83,8 +87,13 @@ function leafIds<T>(node: TreeNode<T>): string[] {
   return node.children.flatMap(leafIds)
 }
 
+/**
+ * A row's check state, over the same leaves that toggling it changes (its enabled leaves), so a branch whose
+ * enabled leaves are all checked reads checked. A disabled row, or one with no enabled leaves, shows all of its leaves.
+ */
 function checkStateOf<T>(node: TreeNode<T>, checked: ReadonlySet<string>): CheckState {
-  const leaves = node.children?.length ? node.children.flatMap(allLeafIds) : [node.id]
+  const enabled = leafIds(node)
+  const leaves = enabled.length ? enabled : allLeafIds(node)
   const count = leaves.filter((id) => checked.has(id)).length
   if (count === 0) return "unchecked"
   return count === leaves.length ? "checked" : "mixed"
@@ -105,6 +114,16 @@ function toggleChecked<T>(node: TreeNode<T>, checked: readonly string[]): string
     else set.add(id)
   }
   return [...set]
+}
+
+/** The ids from a root down to a node, or nothing when the node isn't in the tree. */
+function pathTo<T>(items: TreeNode<T>[], id: string): string[] | undefined {
+  for (const node of items) {
+    if (node.id === id) return [node.id]
+    const below = node.children && pathTo(node.children, id)
+    if (below) return [node.id, ...below]
+  }
+  return undefined
 }
 
 function findNode<T>(items: TreeNode<T>[], id: string): TreeNode<T> | undefined {
@@ -174,6 +193,9 @@ function Tree<T>({
     null
 
   const itemRefs = React.useRef(new Map<string, HTMLLIElement>())
+  const treeRef = React.useRef<HTMLUListElement>(null)
+  // Whether focus was in the tree after the last commit, so a row that vanishes with focus can hand it on.
+  const focusInside = React.useRef(false)
   const typeahead = React.useRef<{ text: string; timer: ReturnType<typeof setTimeout> | 0 }>({ text: "", timer: 0 })
 
   const focusRow = (id: string | undefined) => {
@@ -187,14 +209,28 @@ function Tree<T>({
     setExpandedList(open ? [...expandedList, id] : expandedList.filter((value) => value !== id))
   }
 
-  const select = (node: TreeNode<T>) => {
-    if (selectionMode === "none" || node.disabled) return
+  // When a collapse (often a controlled `expanded` change) removes the focused row, focus its nearest visible
+  // ancestor, else the first row, so the arrow keys keep working. Only when focus was in the tree and is now lost.
+  React.useLayoutEffect(() => {
+    if (focusInside.current && focusedId && !rows.some((row) => row.node.id === focusedId)) {
+      const active = document.activeElement
+      if (!active || active === document.body || !active.isConnected) {
+        const ancestors = pathTo(items, focusedId)?.slice(0, -1).reverse() ?? []
+        const target = ancestors.find((id) => rows.some((row) => row.node.id === id)) ?? rows[0]?.node.id
+        if (target) focusRow(target)
+      }
+    }
+    focusInside.current = Boolean(treeRef.current?.contains(document.activeElement))
+  })
+
+  const select = (node: TreeNode<T>, disabled = Boolean(node.disabled)) => {
+    if (selectionMode === "none" || disabled) return
     setSelected(node.id)
     onSelectedChange?.(node.id, node)
   }
 
-  const toggleCheck = (node: TreeNode<T>) => {
-    if (!checkable || node.disabled) return
+  const toggleCheck = (node: TreeNode<T>, disabled = Boolean(node.disabled)) => {
+    if (!checkable || disabled) return
     setCheckedList(toggleChecked(node, checkedList))
   }
 
@@ -231,13 +267,13 @@ function Tree<T>({
         else if (row.parentId) focusRow(row.parentId)
         break
       case "Enter":
-        if (selectionMode === "single") select(node)
-        else if (checkable) toggleCheck(node)
+        if (selectionMode === "single") select(node, row.disabled)
+        else if (checkable) toggleCheck(node, row.disabled)
         else if (isBranch) setOpen(node.id, !expanded.has(node.id))
         break
       case " ":
-        if (checkable) toggleCheck(node)
-        else select(node)
+        if (checkable) toggleCheck(node, row.disabled)
+        else select(node, row.disabled)
         break
       case "*": {
         const siblings = row.parentId ? findNode(items, row.parentId)?.children ?? [] : items
@@ -274,8 +310,10 @@ function Tree<T>({
     }
   }
 
-  const renderItems = (nodes: TreeNode<T>[], level: number): React.ReactNode =>
+  const renderItems = (nodes: TreeNode<T>[], level: number, parentDisabled = false): React.ReactNode =>
     nodes.map((node, index) => {
+      // A disabled branch disables everything under it.
+      const disabled = parentDisabled || Boolean(node.disabled)
       const isBranch = Boolean(node.children?.length)
       const isOpen = isBranch && expanded.has(node.id)
       const checkState = checkable ? checkStateOf(node, checked) : undefined
@@ -302,7 +340,7 @@ function Tree<T>({
           aria-expanded={isBranch ? isOpen : undefined}
           aria-selected={selectionMode === "single" ? state.selected : undefined}
           aria-checked={checkState === undefined ? undefined : checkState === "mixed" ? "mixed" : checkState === "checked"}
-          aria-disabled={node.disabled || undefined}
+          aria-disabled={disabled || undefined}
           tabIndex={tabStopId === node.id ? 0 : -1}
           onFocus={(event) => {
             if (event.target === event.currentTarget) setFocusedId(node.id)
@@ -312,7 +350,7 @@ function Tree<T>({
           <div
             data-slot="tree-row"
             data-selected={state.selected || undefined}
-            data-disabled={node.disabled || undefined}
+            data-disabled={disabled || undefined}
             style={{ paddingInlineStart: `${0.5 + (level - 1) * 1.25}rem` }}
             className={cn(
               "flex min-h-8 cursor-default items-center gap-1.5 rounded-md pr-2 text-sm transition-colors select-none",
@@ -322,9 +360,9 @@ function Tree<T>({
             onClick={(event) => {
               event.stopPropagation()
               focusRow(node.id)
-              if (node.disabled) return
-              if (checkable && selectionMode === "none") toggleCheck(node)
-              else select(node)
+              if (disabled) return
+              if (checkable && selectionMode === "none") toggleCheck(node, disabled)
+              else select(node, disabled)
             }}
           >
             {isBranch ? (
@@ -360,7 +398,7 @@ function Tree<T>({
                 onClick={(event) => {
                   event.stopPropagation()
                   focusRow(node.id)
-                  toggleCheck(node)
+                  toggleCheck(node, disabled)
                 }}
               >
                 {checkState === "checked" ? <CheckIcon /> : checkState === "mixed" ? <MinusIcon /> : null}
@@ -377,7 +415,7 @@ function Tree<T>({
           </div>
           {isOpen ? (
             <ul role="group" data-slot="tree-group" className="flex flex-col gap-px pt-px">
-              {renderItems(node.children ?? [], level + 1)}
+              {renderItems(node.children ?? [], level + 1, disabled)}
             </ul>
           ) : null}
         </li>
@@ -386,11 +424,21 @@ function Tree<T>({
 
   return (
     <ul
+      ref={treeRef}
       role="tree"
       data-slot="tree"
       aria-multiselectable={checkable || undefined}
       {...aria}
       onKeyDown={onKeyDown}
+      onFocus={() => {
+        focusInside.current = true
+      }}
+      onBlur={() => {
+        // After the browser has moved focus, so a row removed with focus still counts as inside.
+        queueMicrotask(() => {
+          focusInside.current = Boolean(treeRef.current?.contains(document.activeElement))
+        })
+      }}
       className={cn("flex w-full min-w-0 flex-col gap-px", className)}
     >
       {renderItems(items, 1)}

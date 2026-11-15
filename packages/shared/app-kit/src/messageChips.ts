@@ -53,13 +53,20 @@ function withPosition(value: string) {
 	return { path: value.slice(0, match.index), line: line && line <= 10_000_000 ? line : undefined, column: column && column <= 10_000_000 ? column : undefined };
 }
 
+/** The value without trailing slashes, in one pass (a `[\\/]+$` regex is quadratic on many slashes). */
+export function trimTrailingSlashes(value: string) {
+	let end = value.length;
+	while (end > 0 && (value[end - 1] === "/" || value[end - 1] === "\\")) end--;
+	return value.slice(0, end);
+}
+
 function validSegments(segments: string[]) { return segments.every(segment => segment && segmentPattern.test(segment) && (segment === "." || segment === ".." || !segment.endsWith("."))); }
 
 /** A whole string that is clearly a file or folder path, with an optional `:line[:col]` or `#L12`. */
 export function filePath(value: string): FileChip | undefined {
 	if (!value || value.length > 1024 || /\s/.test(value)) return;
 	const { path, line, column } = withPosition(value);
-	const folder = /[\\/]$/.test(path), body = path.replace(/[\\/]+$/, "");
+	const folder = /[\\/]$/.test(path), body = trimTrailingSlashes(path);
 	const chip = (): FileChip => ({ kind: folder ? "folder" : "file", path, ...(line ? { line } : {}), ...(column && line ? { column } : {}) });
 	// Windows drive paths are unambiguous.
 	if (/^[a-z]:[\\/]/i.test(body)) return body.length > 3 && validSegments(body.slice(3).split(/[\\/]/)) ? chip() : undefined;
@@ -81,7 +88,7 @@ export function filePath(value: string): FileChip | undefined {
 function mentionPath(value: string): FileChip | undefined {
 	const { path, line, column } = withPosition(value);
 	if (!/[\\/]$/.test(path) && !extension.test(path)) return;
-	if (!validSegments(path.replace(/^(?:[a-z]:)?[\\/]|[\\/]+$/gi, "").split(/[\\/]/))) return;
+	if (!validSegments(trimTrailingSlashes(path).replace(/^(?:[a-z]:)?[\\/]/i, "").split(/[\\/]/))) return;
 	return { kind: /[\\/]$/.test(path) ? "folder" : "file", path, ...(line ? { line } : {}), ...(column && line ? { column } : {}) };
 }
 
@@ -150,7 +157,7 @@ export function messageChips(text: string): ChipSegment[] {
 
 /** A file or folder's name, with its line. */
 export function fileChipLabel(chip: FileChip) {
-	const name = chip.path.replace(/[\\/]+$/, "").split(/[\\/]/).at(-1) || chip.path;
+	const name = trimTrailingSlashes(chip.path).split(/[\\/]/).at(-1) || chip.path;
 	return `${name}${chip.line ? `:${chip.line}` : ""}`;
 }
 
@@ -194,6 +201,26 @@ export function chipCopyText(chip: Chip): string {
 		case "chat": return chip.label;
 		case "commit": return chip.sha;
 		case "branch": return chip.name;
+	}
+}
+
+const chipText = (value: unknown, max = 2048): value is string => typeof value === "string" && value.length > 0 && value.length <= max;
+const chipLine = (value: unknown) => value === undefined || (Number.isInteger(value) && (value as number) > 0);
+
+/**
+ * Whether a value read back from Markdown or a link (where anyone can write it) is a chip with every field it needs.
+ * Links and local servers must be http(s), so a chip never opens another scheme.
+ */
+export function isChip(value: unknown): value is Chip {
+	if (!value || typeof value !== "object") return false;
+	const chip = value as Record<string, unknown>;
+	switch (chip.kind) {
+		case "file": case "folder": return chipText(chip.path) && chipLine(chip.line) && chipLine(chip.column);
+		case "link": case "local": return chipText(chip.href) && /^https?:\/\//i.test(chip.href);
+		case "chat": return chipText(chip.id) && typeof chip.label === "string" && chip.label.length <= 2048;
+		case "commit": return chipText(chip.sha, 64) && commitSha.test(chip.sha);
+		case "branch": return chipText(chip.name, 256);
+		default: return false;
 	}
 }
 

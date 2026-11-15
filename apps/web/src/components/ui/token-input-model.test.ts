@@ -3,6 +3,8 @@ import {
 	contentToValue,
 	filterSuggestions,
 	findTrigger,
+	normalizeValue,
+	sameValue,
 	tokenInputText,
 	valueToContent,
 	type TokenInputValue,
@@ -65,5 +67,19 @@ describe("value and editor content", () => {
 
 	it("writes tokens as their labels in plain text", () => {
 		expect(tokenInputText(["Ask ", terra, "."])).toBe("Ask GPT-6.1 Terra.");
+	});
+});
+
+describe("sameValue", () => {
+	it("compares tokens by their fields, not their property order", () => {
+		const reordered = { label: terra.label, value: terra.value, type: terra.type };
+		expect(sameValue(["Ask ", terra], ["Ask ", reordered])).toBe(true);
+		expect(sameValue(["Ask ", terra], ["Ask ", fable])).toBe(false);
+		expect(sameValue(["Ask"], ["Ask", ""])).toBe(false);
+		expect(sameValue([terra], ["GPT-6.1 Terra"])).toBe(false);
+	});
+
+	it("matches the editor's form once normalized", () => {
+		expect(normalizeValue(["a", "b", "", terra])).toEqual(["ab", terra]);
 	});
 });

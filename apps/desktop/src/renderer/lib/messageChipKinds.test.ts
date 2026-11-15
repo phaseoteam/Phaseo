@@ -44,6 +44,38 @@ describe("chip Markdown", () => {
 		expect(urls).toEqual([{ kind: "file", path: "src/usage.ts" }, { kind: "local", href: "http://localhost:5173" }]);
 	});
 
+	it("leaves every line of indented code, nested fences, display math and reference definitions alone", () => {
+		const text = [
+			"Run:", "", "    echo first", "    cat src/app.ts", "", "    ls src/b.ts", "After src/c.ts.",
+			"- Step:", "  ```", "  src/d.ts", "  ```", "> ```", "> src/e.ts", "> ```",
+			"$$", "a/b.ts", "$$",
+			"[docs]: https://example.com/docs", "Read [docs][docs].",
+		].join("\n");
+		const out = chipMarkdown(text).split("\n");
+		const chipped = out.flatMap((line, index) => line.includes("phaseo-chip:") ? [index] : []);
+		// Only the prose line after the indented block.
+		expect(chipped).toEqual([6]);
+		expect(out.filter((_, index) => index !== 6)).toEqual(text.split("\n").filter((_, index) => index !== 6));
+	});
+
+	it("reads back only chips with every field they need", () => {
+		const url = (value: unknown) => `phaseo-chip:x:${encodeURIComponent(JSON.stringify(value))}`;
+		expect(chipFromLinkUrl(url({ kind: "file", path: "src/a.ts", line: 3 }))).toEqual({ kind: "file", path: "src/a.ts", line: 3 });
+		expect(chipFromLinkUrl(url({ kind: "link", href: {} }))).toBeUndefined();
+		expect(chipFromLinkUrl(url({ kind: "link", href: "javascript:alert(1)" }))).toBeUndefined();
+		expect(chipFromLinkUrl(url({ kind: "commit", sha: "not a sha" }))).toBeUndefined();
+		expect(chipFromLinkUrl(url({ kind: "model", id: "x" }))).toBeUndefined();
+		expect(chipFromLinkUrl(url({ kind: "file", path: "a.ts", line: "1" }))).toBeUndefined();
+	});
+
+	it("stays fast on long runs that used to backtrack", () => {
+		const start = performance.now();
+		chipMarkdown(`${"@[".repeat(20_000)} ${"`".repeat(20_000)} ${"![".repeat(20_000)} ${"</a".repeat(20_000)}`);
+		textChips(`src/${"/".repeat(50_000)}x`);
+		chipLabel({ kind: "folder", path: `a${"/".repeat(50_000)}` });
+		expect(performance.now() - start).toBeLessThan(2_000);
+	});
+
 	it("keeps chat tokens as chat chips", () => {
 		const out = chipMarkdown("Ask @[Pricing plan](chat:t1).");
 		expect(out).toMatch(/^Ask \[Pricing plan\]\(phaseo-chip:chat:/);
