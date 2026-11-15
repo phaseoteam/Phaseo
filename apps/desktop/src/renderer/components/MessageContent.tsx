@@ -10,9 +10,9 @@ import { parseFileReference } from "../../shared/editors";
 import { showToast } from "./ui/toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
-import type { Chip } from "../lib/messageChips";
-import { FilePathChip, LinkChip, MessageChip } from "./MessageChips";
-import { remarkMessageChips } from "./remarkMessageChips";
+import { ChipVariantContext, FilePathChip, LinkChip, MessageChip } from "./MessageChips";
+import { parseChipAttribute, remarkMessageChips } from "./remarkMessageChips";
+import { codeChip } from "../lib/messageChips";
 import { remarkLineBreaks } from "./remarkLineBreaks";
 import { remarkPullRequestLinks } from "./remarkPullRequestLinks";
 import { remarkMathGuard, remarkRichBlocks, type AlertKind } from "./remarkRichBlocks";
@@ -43,13 +43,18 @@ function MessageLink({ href, children }: { href?: string; children?: ReactNode }
 		const file = { kind: /[\\/]$/.test(reference.filename) ? "folder" as const : "file" as const, path: reference.filename, ...(reference.line ? { line: reference.line } : {}), ...(reference.column ? { column: reference.column } : {}) };
 		return <FilePathChip file={file} projectId={projectId}>{label && label !== href && label !== reference.filename ? children : undefined}</FilePathChip>;
 	}
-	if (href && /^https?:\/\//i.test(href)) return <LinkChip href={href}>{label && bareUrl(label) !== bareUrl(href) ? children : undefined}</LinkChip>;
+	const bare = !label || bareUrl(label) === bareUrl(href ?? "");
+	// GFM links a bare `http://localhost:5173` before the chips plugin sees it; it still reads as a local server.
+	const local = href && bare ? codeChip(href) : undefined;
+	if (local?.kind === "local") return <MessageChip chip={local} projectId={projectId} />;
+	if (href && /^https?:\/\//i.test(href)) return <LinkChip href={href}>{bare ? undefined : children}</LinkChip>;
 	return <span>{children}</span>;
 }
 
 function MarkdownChip({ value }: { value: string }) {
 	const projectId = useContext(ProjectContext);
-	try { return <MessageChip chip={JSON.parse(value) as Chip} projectId={projectId} />; } catch { return null; }
+	const chip = parseChipAttribute(value);
+	return chip ? <MessageChip chip={chip} projectId={projectId} /> : null;
 }
 
 /** Web and inline images load as they are; anything else is a path in the chat's project, read through the main process. */
@@ -231,7 +236,8 @@ export const MessageContent = memo(function MessageContent({ text, projectId, re
 	// page brings it back, skips parsing; its components still render as usual.
 	const key = `${repository ?? ""}\u0000${lineBreaks ? 1 : 0}\u0000${rendered}`;
 	const tree = useMemo(() => parsedMarkdown(key, () => Markdown({ remarkPlugins: plugins, components: markdownComponents, urlTransform: messageUrl, children: rendered })), [key, plugins, rendered]);
-	return <ProjectContext value={projectId}><div className="message-markdown">{tree}</div></ProjectContext>;
+	// What people type keeps the composer chip (`lineBreaks`); replies set theirs into the text.
+	return <ProjectContext value={projectId}><ChipVariantContext value={lineBreaks ? "token" : "embedded"}><div className="message-markdown">{tree}</div></ChipVariantContext></ProjectContext>;
 });
 
 /** Parsed Markdown by text, newest last: up to 400 messages and 8 MB of their text. */

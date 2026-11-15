@@ -199,7 +199,9 @@ test("each app scans the class recipes it uses", () => {
 	// the apps, so without these @source lines the recipes' classes silently disappear.
 	for (const [file, source, recipes] of [
 		[WEB, "../../../../packages/shared/app-kit/src/ui-recipes/callout.ts", ["callout"]],
-		[MOBILE, "../../packages/shared/app-kit/src/ui-recipes", ["badge", "callout", "text"]],
+		[WEB, "../../../../packages/shared/app-kit/src/ui-recipes/inline-chip.ts", ["inline-chip"]],
+		[DESKTOP, "../../../../packages/shared/app-kit/src/ui-recipes/inline-chip.ts", ["inline-chip"]],
+		[MOBILE, "../../packages/shared/app-kit/src/ui-recipes", ["badge", "callout", "inline-chip", "text"]],
 	]) {
 		assert.ok(css(file).includes(`@source "${source}";`), `${file} needs @source "${source}";`);
 		for (const recipe of recipes) {

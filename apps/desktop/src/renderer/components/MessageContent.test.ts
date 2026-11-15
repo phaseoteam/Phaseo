@@ -55,6 +55,13 @@ describe("message chips in responses", () => {
 		expect(html).toContain("src/other.ts\n</code>");
 		expect(html).not.toContain("data-chip");
 	});
+	it("shows a bare local server URL as a local server chip, and a labelled one as a link", () => {
+		const html = render("Running at http://localhost:5173/chat, see [the app](http://localhost:5173/).");
+		expect(html).toContain("localhost:5173/chat<span class=\"sr-only\">, local server</span>");
+		expect(html).toContain(">the app<");
+		expect(html.match(/, local server/g)).toHaveLength(1);
+	});
+
 	it("leaves versions, emails and prose slashes as text", () => {
 		const html = render("Bump to 1.2.3, mail me@example.com, use and/or React/Next.js.");
 		expect(html).toBe('<div class="message-markdown"><p>Bump to 1.2.3, mail <a href="mailto:me@example.com">me@example.com</a>, use and/or React/Next.js.</p></div>'.replace('<a href="mailto:me@example.com">me@example.com</a>', "<span>me@example.com</span>"));

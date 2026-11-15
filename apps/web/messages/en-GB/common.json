@@ -683,6 +683,9 @@
 		"lastYear": "Last year"
 	},
 	"ui": {
+		"tokenInput": {
+			"suggestions": "{count, plural, one {# suggestion} other {# suggestions}}. Up and Down to choose, Enter to insert."
+		},
 		"subscriptionCatalog": {
 			"view_plan": "View plan",
 			"on_login": "On login",
@@ -2625,6 +2628,30 @@
 			"latency": "Latency",
 			"agreements": "Agreements",
 			"uniqueInsight": "Unique insight"
+		},
+		"messageChips": {
+			"kindSuffix": ", {kind}",
+			"kinds": {
+				"file": "file",
+				"folder": "folder",
+				"link": "link",
+				"chat": "chat",
+				"commit": "commit",
+				"branch": "branch",
+				"local": "local server"
+			},
+			"chatFallback": "Chat",
+			"pullRequest": "PR #{number}",
+			"issue": "Issue #{number}",
+			"clickToCopy": "Click to copy",
+			"pathCopied": "Path copied",
+			"commitCopied": "Commit copied",
+			"branchCopied": "Branch copied",
+			"copyFailed": "Could not copy that"
+		},
+		"numberInput": {
+			"decrease": "Decrease",
+			"increase": "Increase"
 		}
 	},
 	"deprecationNotice": {

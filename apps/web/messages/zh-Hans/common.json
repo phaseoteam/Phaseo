@@ -683,6 +683,9 @@
 		"lastYear": "过去 1 年"
 	},
 	"ui": {
+		"tokenInput": {
+			"suggestions": "{count, plural, other {# 条建议}}。使用上下方向键选择，按 Enter 插入。"
+		},
 		"subscriptionCatalog": {
 			"view_plan": "查看套餐",
 			"on_login": "登录时",
@@ -2625,6 +2628,30 @@
 			"latency": "延迟",
 			"agreements": "共识点",
 			"uniqueInsight": "独特见解"
+		},
+		"messageChips": {
+			"kindSuffix": "，{kind}",
+			"kinds": {
+				"file": "文件",
+				"folder": "文件夹",
+				"link": "链接",
+				"chat": "聊天",
+				"commit": "提交",
+				"branch": "分支",
+				"local": "本地服务器"
+			},
+			"chatFallback": "聊天",
+			"pullRequest": "PR #{number}",
+			"issue": "Issue #{number}",
+			"clickToCopy": "点击复制",
+			"pathCopied": "已复制路径",
+			"commitCopied": "已复制提交",
+			"branchCopied": "已复制分支",
+			"copyFailed": "无法复制"
+		},
+		"numberInput": {
+			"decrease": "减少",
+			"increase": "增加"
 		}
 	},
 	"deprecationNotice": {
