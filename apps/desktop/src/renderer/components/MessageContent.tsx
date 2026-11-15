@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 import { ChipVariantContext, FilePathChip, LinkChip, MessageChip } from "./MessageChips";
 import { parseChipAttribute, remarkMessageChips } from "./remarkMessageChips";
+import { codeChip } from "../lib/messageChips";
 import { remarkLineBreaks } from "./remarkLineBreaks";
 import { remarkPullRequestLinks } from "./remarkPullRequestLinks";
 import { remarkMathGuard, remarkRichBlocks, type AlertKind } from "./remarkRichBlocks";
@@ -42,7 +43,11 @@ function MessageLink({ href, children }: { href?: string; children?: ReactNode }
 		const file = { kind: /[\\/]$/.test(reference.filename) ? "folder" as const : "file" as const, path: reference.filename, ...(reference.line ? { line: reference.line } : {}), ...(reference.column ? { column: reference.column } : {}) };
 		return <FilePathChip file={file} projectId={projectId}>{label && label !== href && label !== reference.filename ? children : undefined}</FilePathChip>;
 	}
-	if (href && /^https?:\/\//i.test(href)) return <LinkChip href={href}>{label && bareUrl(label) !== bareUrl(href) ? children : undefined}</LinkChip>;
+	const bare = !label || bareUrl(label) === bareUrl(href ?? "");
+	// GFM links a bare `http://localhost:5173` before the chips plugin sees it; it still reads as a local server.
+	const local = href && bare ? codeChip(href) : undefined;
+	if (local?.kind === "local") return <MessageChip chip={local} projectId={projectId} />;
+	if (href && /^https?:\/\//i.test(href)) return <LinkChip href={href}>{bare ? undefined : children}</LinkChip>;
 	return <span>{children}</span>;
 }
 
