@@ -34,10 +34,14 @@ async function render(node: ReactNode) {
 	await act(async () => {
 		root.render(withIntl(node));
 	});
-	// The editor mounts after the first render (immediatelyRender is off for SSR): wait until it is in the page.
+	// The editor mounts after the first render (immediatelyRender is off for SSR): wait for it to enter the page.
 	await act(async () => {
-		await vi.waitFor(() => {
-			if (!editable()) throw new Error("The editor has not mounted yet.");
+		if (editable()) return;
+		await new Promise<void>(resolve => {
+			const observer = new MutationObserver(() => {
+				if (editable()) { observer.disconnect(); resolve(); }
+			});
+			observer.observe(container, { childList: true, subtree: true, attributes: true });
 		});
 	});
 	return editable()!;
@@ -68,11 +72,10 @@ async function focusEnd(element: HTMLElement) {
 	element.tabIndex = 0;
 	const editor = editorOf(element);
 	await act(async () => {
+		// Tiptap focuses on the next animation frame, so listen for its focus event before asking for focus.
+		const focused = new Promise<void>(resolve => editor.once("focus", () => resolve()));
 		editor.commands.focus("end", { scrollIntoView: false });
-		// Tiptap focuses on the next animation frame.
-		await vi.waitFor(() => {
-			if (!editor.isFocused) throw new Error("The editor is not focused yet.");
-		});
+		if (!editor.isFocused) await focused;
 	});
 }
 
