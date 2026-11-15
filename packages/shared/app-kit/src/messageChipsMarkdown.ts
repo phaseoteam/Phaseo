@@ -42,14 +42,26 @@ function line(text: string) {
 	return out + prose(text.slice(last));
 }
 
-/** The line after its blockquote markers and list bullets, so fences nested in either are found. */
+/** The line after its blockquote markers and list bullets, so fences nested in either are found, and how many quote levels it had. */
 function withoutContainers(text: string) {
-	let rest = text;
+	let rest = text, quotes = 0;
 	for (;;) {
 		const marker = /^[ \t]{0,3}(?:>[ \t]?|(?:[-*+]|\d{1,9}[.)])[ \t]+)/.exec(rest);
-		if (!marker) return rest;
+		if (!marker) return { inner: rest, quotes };
+		if (marker[0].includes(">")) quotes++;
 		rest = rest.slice(marker[0].length);
 	}
+}
+
+/** Inside a fence, the line after exactly the opener's quote levels; a `>` beyond those is the code's own text. */
+function insideFence(text: string, quotes: number) {
+	let rest = text;
+	for (let level = 0; level < quotes; level++) {
+		const marker = /^[ \t]{0,3}>[ \t]?/.exec(rest);
+		if (!marker) return undefined;
+		rest = rest.slice(marker[0].length);
+	}
+	return rest;
 }
 
 const indented = (text: string) => /^(?: {4}|\t)/.test(text);
@@ -62,12 +74,17 @@ const blank = (text: string) => !text.trim();
  */
 export function chipMarkdown(markdown: string): string {
 	const lines = markdown.split("\n");
-	let fence: string | undefined, math = false, code = false;
+	let fence: { marker: string; quotes: number } | undefined, math = false, code = false;
 	return lines.map((text, index) => {
-		const inner = withoutContainers(text);
+		if (fence) {
+			const rest = insideFence(text, fence.quotes);
+			const closer = rest === undefined ? undefined : /^ {0,3}(`{3,}|~{3,})[ \t]*$/.exec(rest)?.[1];
+			if (closer && closer[0] === fence.marker[0] && closer.length >= fence.marker.length) fence = undefined;
+			return text;
+		}
+		const { inner, quotes } = withoutContainers(text);
 		const opener = /^ {0,3}(`{3,}|~{3,})/.exec(inner)?.[1];
-		if (fence) { if (opener && opener[0] === fence[0] && opener.length >= fence.length && !inner.trim().slice(opener.length).trim()) fence = undefined; return text; }
-		if (opener) { fence = opener; return text; }
+		if (opener) { fence = { marker: opener, quotes }; return text; }
 		// Display math: `normalizeChatMarkdown` puts each `$$` on its own line.
 		if (inner.trim() === "$$") { math = !math; return text; }
 		if (math) return text;

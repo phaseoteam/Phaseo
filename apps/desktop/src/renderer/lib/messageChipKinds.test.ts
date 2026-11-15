@@ -58,6 +58,24 @@ describe("chip Markdown", () => {
 		expect(out.filter((_, index) => index !== 6)).toEqual(text.split("\n").filter((_, index) => index !== 6));
 	});
 
+	it("keeps a quoted fence inside a fenced example as code", () => {
+		const text = ["````md", "> ```", "> src/a.ts", "> ```", "src/b.ts", "````", "After src/c.ts."].join("\n");
+		const out = chipMarkdown(text).split("\n");
+		expect(out.slice(0, 6)).toEqual(text.split("\n").slice(0, 6));
+		expect(out[6]).toContain("phaseo-chip:");
+		// A quoted fence closes at its own quote level.
+		const quoted = chipMarkdown(["> ```", "> src/a.ts", "> ```", "src/b.ts"].join("\n")).split("\n");
+		expect(quoted.slice(0, 3)).toEqual(["> ```", "> src/a.ts", "> ```"]);
+		expect(quoted[3]).toContain("phaseo-chip:");
+	});
+
+	it("leaves text that would make an unreadable chip as text", () => {
+		const long = `https://example.com/${"a".repeat(2_100)}`;
+		expect(textChips(`See ${long} now`)).toEqual([`See ${long} now`]);
+		expect(chipMarkdown(`See ${long}`)).toBe(`See ${long}`);
+		expect(codeChip(`feat/${"x".repeat(300)}`)).toBeUndefined();
+	});
+
 	it("reads back only chips with every field they need", () => {
 		const url = (value: unknown) => `phaseo-chip:x:${encodeURIComponent(JSON.stringify(value))}`;
 		expect(chipFromLinkUrl(url({ kind: "file", path: "src/a.ts", line: 3 }))).toEqual({ kind: "file", path: "src/a.ts", line: 3 });

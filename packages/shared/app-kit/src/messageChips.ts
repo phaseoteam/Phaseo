@@ -101,8 +101,12 @@ function gitChip(value: string): Chip | undefined {
 	if (commitSha.test(value) && /\d/.test(value) && /[a-f]/.test(value)) return { kind: "commit", sha: value };
 }
 
+/** One word of prose as a chip, only when the chip reads back (`isChip`), so a chip written out is always one an app accepts. */
+const wordChip = (value: string) => readable(proseChip(value));
+const readable = (chip: Chip | undefined) => chip && isChip(chip) ? chip : undefined;
+
 /** One word of prose: a link, local server, branch, commit or path. */
-function wordChip(value: string): Chip | undefined {
+function proseChip(value: string): Chip | undefined {
 	if (localServer.test(value)) return { kind: "local", href: value };
 	if (/^https?:\/\/[^/\s]/i.test(value)) { try { new URL(value); return { kind: "link", href: value }; } catch { return; } }
 	const git = gitChip(value);
@@ -115,8 +119,8 @@ function wordChip(value: string): Chip | undefined {
 export function codeChip(value: string): Chip | undefined {
 	const code = value.trim();
 	if (!code || code.length > 1024) return;
-	if (localServer.test(code)) return { kind: "local", href: code };
-	return gitChip(code) ?? filePath(code);
+	if (localServer.test(code)) return readable({ kind: "local", href: code });
+	return readable(gitChip(code) ?? filePath(code));
 }
 
 const push = (segments: ChipSegment[], value: ChipSegment) => {
