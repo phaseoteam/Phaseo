@@ -60,6 +60,28 @@ describe("buildAgentPrompt", () => {
 		expect(imagePrompt).toContain("POST /v1/images/generations");
 	});
 
+	it("carries the selected service tier and routing sort into the request", () => {
+		const tuned = buildAgentPrompt({
+			modelId: "openai/gpt-6-astra",
+			endpointPath: "/responses",
+			serviceTier: "priority",
+			providerSort: "price",
+		});
+		expect(tuned).toContain('Send "service_tier": "priority" and "provider": {"sort": "price"} in the request body.');
+		expect(prompt).not.toContain("service_tier");
+	});
+
+	it("tells the agent about a required provider key for BYOK-only models", () => {
+		const byok = buildAgentPrompt({
+			modelId: "lg/exaone-5",
+			endpointPath: "/responses",
+			byokProviders: [{ providerId: "lg", providerName: "LG AI Research" }],
+		});
+		expect(byok).toContain("lg/exaone-5 only runs with your own LG AI Research key");
+		expect(byok).toContain("https://phaseo.app/settings/byok/lg");
+		expect(prompt).not.toContain("settings/byok");
+	});
+
 	it("falls back to a generic task for unknown endpoints", () => {
 		expect(buildAgentPrompt({ modelId: "x/y", endpointPath: "/music/generations" })).toContain(
 			"calls x/y and returns the result",
@@ -71,6 +93,9 @@ describe("docs quickstart", () => {
 	it.each(DOCS_LOCALES)("shows the same agent prompt (%s)", (localePrefix) => {
 		const mdx = readDocsQuickstart(localePrefix);
 		const expected = buildAgentPrompt({ modelId: "phaseo/free", endpointPath: "/responses" });
-		expect(mdx).toContain(`\`\`\`text Prompt wrap\n${expected}\n\`\`\``);
+		// The body is a JS template literal inside <Prompt actions={["copy", "cursor"]}>.
+		const literal = expected.replace(/\\/g, "\\\\").replace(/`/g, "\\`").replace(/\$\{/g, "\\${");
+		expect(mdx).toMatch(/<Prompt description="[^"]+" icon="bot" actions=\{\["copy", "cursor"\]\}>\n\{`/);
+		expect(mdx).toContain(`{\`${literal}\`}\n</Prompt>`);
 	});
 });

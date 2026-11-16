@@ -3,22 +3,20 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "@/i18n/react";
 import { captureProductEvent } from "@/lib/productAnalytics";
-import { buildAgentPrompt } from "./agentPrompt";
+import { type AgentPromptOptions, buildAgentPrompt } from "./agentPrompt";
 
-interface AgentPromptPanelProps {
-	modelId: string;
-	endpointPath: string | null;
+interface AgentPromptPanelProps extends AgentPromptOptions {
 	analyticsModelId: string;
 }
 
 export function AgentPromptPanel({
-	modelId,
-	endpointPath,
 	analyticsModelId,
+	...promptOptions
 }: AgentPromptPanelProps) {
 	const t = useTranslations("Catalogue.models.detail.quickstart");
 	const [copied, setCopied] = useState(false);
-	const prompt = buildAgentPrompt({ modelId, endpointPath });
+	const { endpointPath } = promptOptions;
+	const prompt = buildAgentPrompt(promptOptions);
 
 	useEffect(() => {
 		if (!copied) return;

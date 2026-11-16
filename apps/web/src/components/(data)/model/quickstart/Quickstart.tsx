@@ -1866,6 +1866,9 @@ console.log(response);`
 						<AgentPromptPanel
 							modelId={modelIdentifierInCode}
 							endpointPath={endpointPath}
+							serviceTier={shouldIncludeServiceTier ? selectedServiceTier : null}
+							providerSort={routingPreference?.routingMode ?? null}
+							byokProviders={byokOnlyProviders}
 							analyticsModelId={analyticsModelId}
 						/>
 						<p className="border-t border-border/70 pt-4 text-sm font-medium text-muted-foreground">
