@@ -3,10 +3,18 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
-const migrations = (await readdir(new URL('../migrations/', import.meta.url))).filter((file) => file.endsWith('_subscription_plan_model_usage.sql'));
-assert.equal(migrations.length, 1);
-const migration = await readFile(new URL(`../migrations/${migrations[0]}`, import.meta.url), 'utf8');
-for (const schemaFile of ['public/tables/v2_subscription_plan_model_usage.sql', 'public/functions/get_v2_subscription_monthly_prices.sql', 'public/functions/get_v2_subscription_model_usage.sql', 'public/functions/replace_v2_subscription_model_usage.sql']) {
+// The usage migration, then the one that added per_seat, applied in order.
+const migrationFiles = (await readdir(new URL('../migrations/', import.meta.url)))
+  .filter((file) => file.endsWith('_subscription_plan_model_usage.sql') || file.endsWith('_subscription_monthly_price_details.sql')).sort();
+assert.equal(migrationFiles.length, 2);
+const migrations = await Promise.all(migrationFiles.map((file) => readFile(new URL(`../migrations/${file}`, import.meta.url), 'utf8')));
+const latest = migrations[1];
+for (const schemaFile of ['public/functions/get_v2_subscription_monthly_price_details.sql', 'public/functions/get_v2_subscription_monthly_prices.sql']) {
+  const schema = await readFile(new URL(`../schemas/${schemaFile}`, import.meta.url), 'utf8');
+  assert.ok(latest.includes(schema.trim()), `${schemaFile} is copied verbatim into the latest migration`);
+}
+const migration = migrations[0];
+for (const schemaFile of ['public/tables/v2_subscription_plan_model_usage.sql', 'public/functions/get_v2_subscription_model_usage.sql', 'public/functions/replace_v2_subscription_model_usage.sql']) {
   const schema = await readFile(new URL(`../schemas/${schemaFile}`, import.meta.url), 'utf8');
   assert.ok(migration.includes(schema.trim()), `${schemaFile} is copied verbatim into the migration`);
 }
@@ -25,7 +33,7 @@ try {
     create table v2_subscription_plan_models(plan_uuid uuid not null, model_slug text not null, effective_from timestamptz not null default '-infinity', effective_to timestamptz);
     create table v2_subscription_plan_offers(offer_uuid uuid primary key, plan_uuid uuid not null, billing_interval text, billing_interval_count int not null default 1,
       currency text not null default 'USD', region_code text, effective_from timestamptz not null default '-infinity', effective_to timestamptz);
-    create table v2_subscription_offer_prices(offer_uuid uuid not null, component_key text not null default 'base', pricing_type text not null, amount numeric, phase text not null default 'standard', starts_at_cycle int not null default 1, duration_cycles int,
+    create table v2_subscription_offer_prices(offer_uuid uuid not null, component_key text not null default 'base', charge_basis text not null default 'account', pricing_type text not null, amount numeric, phase text not null default 'standard', starts_at_cycle int not null default 1, duration_cycles int,
       effective_from timestamptz not null default '-infinity', effective_to timestamptz);
     insert into v2_models values ('lab/model', 'Lab Model', false), ('lab/hidden', 'Hidden', true);
     -- Legacy price columns are historical; Max's current price lives in its offers.
@@ -56,8 +64,16 @@ try {
     insert into v2_subscription_plans(plan_uuid, plan_id, name, lab_slug) values (md5('stack')::uuid, 'stack', 'Stack', 'stacked');
     insert into v2_subscription_plan_offers(offer_uuid, plan_uuid, billing_interval) values (md5('stack-month')::uuid, md5('stack')::uuid, 'month');
     insert into v2_subscription_offer_prices(offer_uuid, component_key, pricing_type, amount, starts_at_cycle) values (md5('stack-month')::uuid, 'base', 'fixed', 50, 1), (md5('stack-month')::uuid, 'seat', 'fixed', 20, 2);
+    -- A team plan charged per seat, with a free account-level component, and one with a paid account charge too.
+    insert into v2_subscription_plans(plan_uuid, plan_id, name, lab_slug) values (md5('team')::uuid, 'team', 'Team', 'team');
+    insert into v2_subscription_plan_offers(offer_uuid, plan_uuid, billing_interval) values (md5('team-month')::uuid, md5('team')::uuid, 'month');
+    insert into v2_subscription_offer_prices(offer_uuid, component_key, charge_basis, pricing_type, amount) values (md5('team-month')::uuid, 'seat', 'seat', 'fixed', 25), (md5('team-month')::uuid, 'base', 'account', 'free', null);
+    insert into v2_subscription_plans(plan_uuid, plan_id, name, lab_slug) values (md5('mixed')::uuid, 'mixed', 'Mixed', 'mixed');
+    insert into v2_subscription_plan_offers(offer_uuid, plan_uuid, billing_interval) values (md5('mixed-month')::uuid, md5('mixed')::uuid, 'month');
+    insert into v2_subscription_offer_prices(offer_uuid, component_key, charge_basis, pricing_type, amount) values (md5('mixed-month')::uuid, 'base', 'account', 'fixed', 80), (md5('mixed-month')::uuid, 'seat', 'seat', 'fixed', 40);
   `);
   await db.exec(migration);
+  await db.exec(latest);
   await db.exec(`
     insert into v2_subscription_plan_model_usage(plan_uuid, model_slug, scenario, monthly_tokens, workload, basis, confidence, plan_price_usd, api_equivalent_usd_per_mtok, source_name, effective_from)
     values (md5('max')::uuid, 'lab/model', 'standard', 20000000000, 'measured', 'measured', 'high', 190, 0.5, 'test', now() - interval '1 day'),
@@ -77,6 +93,10 @@ try {
   assert.deepEqual(renewal.rows, [{ monthly_price_usd: 30 }], 'the renewal price is the ongoing price');
   const stacked = await db.query(`select monthly_price_usd::float from get_v2_subscription_monthly_prices('stacked')`);
   assert.deepEqual(stacked.rows, [{ monthly_price_usd: 70 }], 'charges with different keys all count');
+  const parts = async (lab) => (await db.query(`select monthly_price_usd::float as total, account_usd::float as account, seat_usd::float as seat from get_v2_subscription_monthly_price_details('${lab}')`)).rows;
+  assert.deepEqual(await parts('team'), [{ total: 25, account: 0, seat: 25 }], 'a price charged only per seat');
+  assert.deepEqual(await parts('mixed'), [{ total: 120, account: 80, seat: 40 }], 'an account charge plus a seat charge stay separate');
+  assert.deepEqual(await parts('lab'), [{ total: 200, account: 200, seat: 0 }], 'an account-only price');
 
   const byPlan = await db.query(`select plan_id from get_v2_subscription_model_usage(null, 'custom')`);
   assert.deepEqual(byPlan.rows, [{ plan_id: 'custom' }], 'filters by plan');
