@@ -270,7 +270,9 @@
 			"modalityExtraction": "抽出",
 			"usableInWorkspace": "ワークスペースで使用可能",
 			"usableInWorkspaceTitle": "{workspace} のルールで許可されたモデルのみ表示",
-			"usableSignInHint": "サインインすると、ワークスペースで許可されたモデルのみを表示できます。"
+			"usableSignInHint": "サインインすると、ワークスペースで許可されたモデルのみを表示できます。",
+			"workspaceRules": "ワークスペースのルール",
+			"workspaceRulesFrom": "ヘッダーで選択した {workspace} のルール"
 		},
 		"freeRouter": {
 			"title": "無料モデルプール",

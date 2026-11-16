@@ -270,7 +270,9 @@
 			"modalityExtraction": "Extraktion",
 			"usableInWorkspace": "In meinem Workspace nutzbar",
 			"usableInWorkspaceTitle": "Nur Modelle anzeigen, die die Regeln von {workspace} erlauben",
-			"usableSignInHint": "Melde dich an, um nur die Modelle zu sehen, die dein Workspace erlaubt."
+			"usableSignInHint": "Melde dich an, um nur die Modelle zu sehen, die dein Workspace erlaubt.",
+			"workspaceRules": "Workspace-Regeln",
+			"workspaceRulesFrom": "Von {workspace}, in der Kopfzeile ausgewählt"
 		},
 		"freeRouter": {
 			"title": "Kostenloser Modellpool",

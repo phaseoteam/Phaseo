@@ -270,7 +270,9 @@
 			"modalityExtraction": "Extraction",
 			"usableInWorkspace": "Usable in my workspace",
 			"usableInWorkspaceTitle": "Show only models {workspace}'s rules allow",
-			"usableSignInHint": "Sign in to see only the models your workspace allows."
+			"usableSignInHint": "Sign in to see only the models your workspace allows.",
+			"workspaceRules": "Workspace rules",
+			"workspaceRulesFrom": "From {workspace}, picked in the header"
 		},
 		"freeRouter": {
 			"title": "Free model pool",

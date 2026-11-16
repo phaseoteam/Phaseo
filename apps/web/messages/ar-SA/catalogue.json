@@ -270,7 +270,9 @@
 			"modalityExtraction": "الاستخراج",
 			"usableInWorkspace": "متاح في مساحة عملي",
 			"usableInWorkspaceTitle": "عرض النماذج التي تسمح بها قواعد {workspace} فقط",
-			"usableSignInHint": "سجّل الدخول لعرض النماذج التي تسمح بها مساحة عملك فقط."
+			"usableSignInHint": "سجّل الدخول لعرض النماذج التي تسمح بها مساحة عملك فقط.",
+			"workspaceRules": "قواعد مساحة العمل",
+			"workspaceRulesFrom": "من {workspace}، المختارة في الترويسة"
 		},
 		"freeRouter": {
 			"title": "مجموعة النماذج المجانية",

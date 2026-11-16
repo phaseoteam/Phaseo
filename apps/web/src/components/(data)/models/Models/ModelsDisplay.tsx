@@ -1073,7 +1073,7 @@ function ModelsDisplayContent({
 		shallow: true,
 		clearOnDefault: true,
 	});
-	const DEFAULT_OPEN_SECTIONS = ["gatewayStatus", "inputModalities"];
+	const DEFAULT_OPEN_SECTIONS = ["gatewayStatus", "workspaceRules", "inputModalities"];
 	const [openFilterSections, setOpenFilterSections] = useState<string[]>(() => [
 		...DEFAULT_OPEN_SECTIONS,
 		...(selectedTiers.length > 0 ? ["tiers"] : []),
@@ -1912,7 +1912,7 @@ function ModelsDisplayContent({
 	) : null;
 	// Shown when the header workspace's rules block some models (or the filter is already on, so it can be turned off).
 	const usableFilterRow = signedIn && (blockedModelIds.size > 0 || usableOnly) ? (
-		<div className="mt-1.5 border-t border-border/70 pt-1.5">
+		<div className="space-y-1.5">
 			<button
 				type="button"
 				onClick={() => setUsableOnly(!usableOnly)}
@@ -1931,6 +1931,11 @@ function ModelsDisplayContent({
 					{blockedModelIds.size > 0 ? usableModelCount : null}
 				</span>
 			</button>
+			{modelAccess?.workspaceName ? (
+				<p className="px-2 text-xs text-muted-foreground">
+					{tFilters("workspaceRulesFrom", { workspace: modelAccess.workspaceName })}
+				</p>
+			) : null}
 		</div>
 	) : null;
 	const toolbarFilterButtons = (
@@ -2050,9 +2055,22 @@ function ModelsDisplayContent({
 							return Archive;
 						}}
 					/>
-					{usableFilterRow}
 				</AccordionContent>
 			</AccordionItem>
+
+			{usableFilterRow ? (
+				<AccordionItem value="workspaceRules" className="border-border/70">
+					<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+						<span className="flex items-center gap-2">
+							<ShieldCheck className="h-4 w-4 text-muted-foreground" />
+							{tFilters("workspaceRules")}
+						</span>
+					</AccordionTrigger>
+					<AccordionContent className="pt-1" disableAnimation>
+						{usableFilterRow}
+					</AccordionContent>
+				</AccordionItem>
+			) : null}
 
 			<AccordionItem value="inputModalities" className="border-border/70">
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">

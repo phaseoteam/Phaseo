@@ -270,7 +270,9 @@
 			"modalityExtraction": "निष्कर्षण",
 			"usableInWorkspace": "मेरे वर्कस्पेस में उपयोग योग्य",
 			"usableInWorkspaceTitle": "केवल वे मॉडल दिखाएँ जिनकी {workspace} के नियम अनुमति देते हैं",
-			"usableSignInHint": "केवल वे मॉडल देखने के लिए साइन इन करें जिनकी आपका वर्कस्पेस अनुमति देता है।"
+			"usableSignInHint": "केवल वे मॉडल देखने के लिए साइन इन करें जिनकी आपका वर्कस्पेस अनुमति देता है।",
+			"workspaceRules": "वर्कस्पेस के नियम",
+			"workspaceRulesFrom": "{workspace} से, जिसे हेडर में चुना गया है"
 		},
 		"freeRouter": {
 			"title": "मुफ़्त मॉडल पूल",

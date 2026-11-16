@@ -270,7 +270,9 @@
 			"modalityExtraction": "提取",
 			"usableInWorkspace": "我的工作区可用",
 			"usableInWorkspaceTitle": "仅显示 {workspace} 的规则允许的模型",
-			"usableSignInHint": "登录后可仅查看你的工作区允许的模型。"
+			"usableSignInHint": "登录后可仅查看你的工作区允许的模型。",
+			"workspaceRules": "工作区规则",
+			"workspaceRulesFrom": "来自页头中选择的 {workspace}"
 		},
 		"freeRouter": {
 			"title": "免费模型池",

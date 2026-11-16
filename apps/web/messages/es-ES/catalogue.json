@@ -270,7 +270,9 @@
 			"modalityExtraction": "Extracción",
 			"usableInWorkspace": "Disponibles en mi espacio de trabajo",
 			"usableInWorkspaceTitle": "Mostrar solo los modelos que permiten las reglas de {workspace}",
-			"usableSignInHint": "Inicia sesión para ver solo los modelos que permite tu espacio de trabajo."
+			"usableSignInHint": "Inicia sesión para ver solo los modelos que permite tu espacio de trabajo.",
+			"workspaceRules": "Reglas del espacio de trabajo",
+			"workspaceRulesFrom": "De {workspace}, elegido en la cabecera"
 		},
 		"freeRouter": {
 			"title": "Grupo de modelos gratuitos",
