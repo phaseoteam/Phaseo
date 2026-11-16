@@ -989,6 +989,12 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class DecisionBoxesQuestion {
+		public Object instructions;
+		public Integer max;
+		public Object type;
+	}
+
 	public static class DecisionBoxQuestion {
 		public String instructions;
 		public String name;
@@ -1006,6 +1012,7 @@ public final class Models {
 	public static class DecisionChoiceQuestion {
 		public Object criteria;
 		public Object instructions;
+		public Boolean multiple;
 		public Object type;
 	}
 
@@ -1013,6 +1020,11 @@ public final class Models {
 	}
 
 	public static class DecisionCreateResponse {
+	}
+
+	public static class DecisionDateQuestion {
+		public Object instructions;
+		public Object type;
 	}
 
 	public static class DecisionImage {
@@ -1075,6 +1087,14 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class DecisionNumberQuestion {
+		public Object instructions;
+		public java.util.List<Double> range;
+		public Double step;
+		public Object type;
+		public String unit;
+	}
+
 	public static class DecisionPredicateAnswer {
 		public String name;
 		public Double probability;
@@ -1110,7 +1130,13 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class DecisionSpansQuestion {
+		public Object instructions;
+		public Object type;
+	}
+
 	public static class DecisionsRequest {
+		public java.util.List<String> audio;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public java.util.List<Object> images;
@@ -1139,6 +1165,11 @@ public final class Models {
 		public Integer output_tokens;
 		public Object output_tokens_details;
 		public Integer total_tokens;
+	}
+
+	public static class DecisionTextQuestion {
+		public Object instructions;
+		public Object type;
 	}
 
 	public static class DeletedResponse {
@@ -2124,6 +2155,7 @@ public final class Models {
 	}
 
 	public static class LegacyDecisionsRequest {
+		public java.util.List<String> audio;
 		public Object debug;
 		public Boolean echo_upstream_request;
 		public java.util.List<Object> images;
