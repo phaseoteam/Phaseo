@@ -2,5 +2,10 @@
   "title": "支付方式",
   "description": "管理用于购买额度、自动充值和发票的卡片。",
   "noCustomer": "请从额度页面添加支付方式，以将此工作区连接到 Stripe。",
-  "portal": "客户门户"
+  "portal": "客户门户",
+  "checkout": {
+    "productName": "Phaseo 额度",
+    "oneOffDescription": "一次性充值",
+    "saveCardDescription": "充值 · 已保存卡片用于今后充值"
+  }
 }
