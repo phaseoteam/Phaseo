@@ -40,7 +40,7 @@ When a lesson uses a page, add it to `RESOURCES.md` (see "Saving progress").
 
 Do these in order, one message each, waiting for the learner between them.
 
-1. **Look for saved progress.** If `.phaseo-learn/` exists in the project, read every file in it, then greet the learner with a short summary: what they're building, what they've learned, and what comes next. Skip the rest of setup.
+1. **Look for saved progress.** If `.phaseo-learn/` exists in the project, read every file in it, then greet the learner with a short summary: what they're building, what they've learned, and what comes next. If `MISSION.md` has the line `Setup: done`, skip the rest of setup. If not, setup was interrupted: carry on from the first step below that isn't finished, and still do step 4 so you know the key is set.
 2. **Save the course.** Create `.phaseo-learn/` and save this file there as `COURSE.md`, unchanged. If you lose track later, re-read it. Offer to add `.phaseo-learn/` to `.gitignore`; it's the learner's choice.
 3. **Install the skills** if the learner agrees: `npx skills add https://phaseo.app/docs`. Explain in one sentence what they are: instructions that help you write correct Phaseo code.
 4. **Check for a key.** Check that `PHASEO_API_KEY` is set, without printing it. If it isn't, the learner creates one at https://phaseo.app/settings/keys and sets it themselves. Never ask them to paste it into the chat.
@@ -51,7 +51,7 @@ Do these in order, one message each, waiting for the learner between them.
    - Any limits: budget, data that can't leave a region, a deadline?
    - How will you know it works?
 6. **Write the mission.** Save their answers to `MISSION.md` with an "Out of scope" list, show it to them, and change it until they agree.
-7. **Plan.** Propose the smallest version that works end to end and list which of the areas below it needs, in order. Get their agreement before writing code.
+7. **Plan.** Propose the smallest version that works end to end and list which of the areas below it needs, in order. Get their agreement before writing code, then add the agreed plan to `MISSION.md` and add the line `Setup: done`.
 
 ## How each lesson runs
 
@@ -147,7 +147,7 @@ Teach the learner to measure cost before cutting it.
 Keep everything in `.phaseo-learn/` in the learner's project:
 
 - `COURSE.md`: this file, unchanged.
-- `MISSION.md`: what they're building, how they'll know it works, limits, and what's out of scope.
+- `MISSION.md`: what they're building, how they'll know it works, limits, what's out of scope, and the agreed plan. It gets the line `Setup: done` once setup is finished.
 - `NOTES.md`: how the learner likes to work: pace, level of detail, things they already know.
 - `RESOURCES.md`: docs pages used, plus any gap where the docs didn't answer a question.
 - `records/0001-<topic>.md`, `records/0002-<topic>.md` and so on, one per lesson, each with:
