@@ -22,7 +22,6 @@ paths:
           description: Enrutamiento regional a proveedores de la UE (solo texto)
         - url: https://us.api.phaseo.app/v1
           description: Enrutamiento regional a proveedores de EE. UU. (solo texto)
-      x-beta: true
       tags:
         - Gateway
       operationId: listModels
@@ -308,7 +307,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /models/{author}/{slug}/endpoints:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listModelEndpoints
@@ -432,7 +430,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /models/me:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listTeamModels
@@ -611,7 +608,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /providers:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listProviders
@@ -671,7 +667,6 @@ paths:
                     type: string
   /generations:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getGeneration
@@ -951,7 +946,6 @@ paths:
                 type: string
   /embeddings:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createEmbedding
@@ -972,7 +966,6 @@ paths:
                 $ref: '#/components/schemas/EmbeddingsResponse'
   /moderations:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createModeration
@@ -993,7 +986,6 @@ paths:
                 $ref: '#/components/schemas/ModerationsResponse'
   /rerank:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createRerank
@@ -1035,7 +1027,6 @@ paths:
                 $ref: '#/components/schemas/DecisionCreateResponse'
   /extractions:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createExtraction
@@ -1056,7 +1047,6 @@ paths:
                 $ref: '#/components/schemas/ExtractionResponse'
   /audio/speech:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createSpeech
@@ -1078,7 +1068,6 @@ paths:
                 format: binary
   /audio/transcriptions:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createTranscription
@@ -1099,7 +1088,6 @@ paths:
                 $ref: '#/components/schemas/AudioTranscriptionResponse'
   /audio/translations:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createTranslation
@@ -1626,7 +1614,6 @@ paths:
                     additionalProperties: true
   /images/generations:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createImage
@@ -1650,7 +1637,6 @@ paths:
                 type: string
   /images/edits:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createImageEdit
@@ -1905,7 +1891,6 @@ paths:
                     type: integer
   /ocr:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createOcr
@@ -1946,7 +1931,6 @@ paths:
                 $ref: '#/components/schemas/ParseResponse'
   /music/generate:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: generateMusic
@@ -1967,7 +1951,6 @@ paths:
                 $ref: '#/components/schemas/MusicGenerateResponse'
   /music/generate/{music_id}:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getMusicGeneration
@@ -2626,7 +2609,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /analytics:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getActivityAlias
@@ -2731,7 +2713,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /analytics/export:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: exportAnalyticsCsv
@@ -2809,7 +2790,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /credits:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getCredits
@@ -2849,7 +2829,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /credits/topups:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createCreditTopup
@@ -2926,7 +2905,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /credits/topups/{id}:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getCreditTopup
@@ -2979,7 +2957,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /key:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getCurrentApiKey
@@ -3012,7 +2989,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /keys:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listApiKeys
@@ -3072,7 +3048,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createApiKey
@@ -3117,7 +3092,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /keys/{id}:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getApiKey
@@ -3156,7 +3130,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateApiKey
@@ -3207,7 +3180,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteApiKey
@@ -3247,7 +3219,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /keys/{id}/rotate:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: rotateApiKey
@@ -3280,7 +3251,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /keys/{id}/invalidate:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: invalidateApiKeyCache
@@ -3835,7 +3805,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /notifications/settings:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getWorkspaceNotificationSettings
@@ -3855,7 +3824,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       security: []
       tags:
         - Gateway
@@ -3883,7 +3851,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /apps:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listWorkspaceApps
@@ -3918,7 +3885,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /apps/{id}:
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateWorkspaceApp
@@ -3952,7 +3918,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /apps/{id}/merge:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: mergeWorkspaceApp
@@ -3986,7 +3951,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /logs:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listGatewayRequestLogs
@@ -4068,7 +4032,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /logs/{requestId}:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getGatewayRequestLog
@@ -4452,7 +4415,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /byok:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listProviderCredentials
@@ -4490,7 +4452,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createProviderCredential
@@ -4517,7 +4478,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /byok/reorder:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: reorderProviderCredentials
@@ -4551,7 +4511,6 @@ paths:
           type: string
           format: uuid
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getProviderCredential
@@ -4571,7 +4530,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateProviderCredential
@@ -4597,7 +4555,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteProviderCredential
@@ -4739,7 +4696,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /budgets:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listWorkspaceBudgets
@@ -4759,7 +4715,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createWorkspaceBudget
@@ -4793,7 +4748,6 @@ paths:
           type: string
           format: uuid
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getWorkspaceBudget
@@ -4813,7 +4767,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateWorkspaceBudget
@@ -4839,7 +4792,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteWorkspaceBudget
@@ -4860,7 +4812,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /department-budgets:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listDepartmentBudgets
@@ -4888,7 +4839,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createDepartmentBudget
@@ -4922,7 +4872,6 @@ paths:
           type: string
           format: uuid
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getDepartmentBudget
@@ -4942,7 +4891,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateDepartmentBudget
@@ -4968,7 +4916,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteDepartmentBudget
@@ -5111,7 +5058,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/policies:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listRateLimitPolicies
@@ -5149,7 +5095,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createRateLimitPolicy
@@ -5184,7 +5129,6 @@ paths:
           type: string
           format: uuid
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getRateLimitPolicy
@@ -5204,7 +5148,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateRateLimitPolicy
@@ -5230,7 +5173,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteRateLimitPolicy
@@ -5251,7 +5193,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/assignments:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listRateLimitAssignments
@@ -5302,7 +5243,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createRateLimitAssignment
@@ -5337,7 +5277,6 @@ paths:
           type: string
           format: uuid
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getRateLimitAssignment
@@ -5357,7 +5296,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateRateLimitAssignment
@@ -5383,7 +5321,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteRateLimitAssignment
@@ -5404,7 +5341,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /spend-rules:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listSpendRules
@@ -5424,7 +5360,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createSpendRule
@@ -5459,7 +5394,6 @@ paths:
           type: string
           format: uuid
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getSpendRule
@@ -5479,7 +5413,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateSpendRule
@@ -5505,7 +5438,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteSpendRule
@@ -5534,7 +5466,6 @@ paths:
           type: string
           format: uuid
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: testSpendRule
@@ -5563,7 +5494,6 @@ paths:
           type: string
           format: uuid
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: previewSpendRule
@@ -5592,7 +5522,6 @@ paths:
           type: string
           format: uuid
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listSpendRuleHistory
@@ -5632,7 +5561,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /spend-blocks:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listSpendBlocks
@@ -5678,7 +5606,6 @@ paths:
           type: string
           format: uuid
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: liftSpendBlock
@@ -5872,7 +5799,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /notifications/destinations:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listWorkspaceNotificationDestinations
@@ -5892,7 +5818,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createWorkspaceNotificationDestination
@@ -5919,7 +5844,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /notifications/destinations/{id}:
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteWorkspaceNotificationDestination
@@ -5947,7 +5871,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /notifications/destinations/test:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: testWorkspaceNotificationDestinationConfig
@@ -5974,7 +5897,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /notifications/destinations/{id}/test:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: testWorkspaceNotificationDestination
@@ -6002,7 +5924,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /notifications/destinations/{id}/rotate-secret:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: rotateWorkspaceNotificationDestinationSecret
@@ -6030,7 +5951,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listWorkspaceNotificationRoutes
@@ -6051,7 +5971,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /notifications/routes/{eventKind}:
     put:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateWorkspaceNotificationRoute
@@ -6084,7 +6003,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /data-contribution:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getDataContributionSettings
@@ -6105,7 +6023,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /data-contribution/consent:
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateDataContributionConsent
@@ -6132,7 +6049,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /data-contribution/classifiers:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createDataContributionClassifier
@@ -6161,7 +6077,6 @@ paths:
     parameters:
       - $ref: '#/components/parameters/DataContributionClassifierId'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateDataContributionClassifier
@@ -6187,7 +6102,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteDataContributionClassifier
@@ -6208,7 +6122,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /oauth-clients:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listOAuthClients
@@ -6228,7 +6141,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createOAuthClient
@@ -6257,7 +6169,6 @@ paths:
     parameters:
       - $ref: '#/components/parameters/OAuthClientId'
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getOAuthClient
@@ -6277,7 +6188,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateOAuthClient
@@ -6303,7 +6213,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteOAuthClient
@@ -6324,7 +6233,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /oauth-clients/{client_id}/regenerate-secret:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: regenerateOAuthClientSecret
@@ -6517,7 +6425,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /guardrails:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listGuardrails
@@ -6540,7 +6447,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createGuardrail
@@ -6569,7 +6475,6 @@ paths:
     parameters:
       - $ref: '#/components/parameters/GuardrailId'
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getGuardrail
@@ -6589,7 +6494,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateGuardrail
@@ -6615,7 +6519,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteGuardrail
@@ -6638,7 +6541,6 @@ paths:
     parameters:
       - $ref: '#/components/parameters/GuardrailId'
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listGuardrailKeys
@@ -6658,7 +6560,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     put:
-      x-beta: true
       tags:
         - Gateway
       operationId: replaceGuardrailKeys
@@ -6685,7 +6586,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /guardrails/{id}/keys/add:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: addGuardrailKeys
@@ -6714,7 +6614,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /guardrails/{id}/keys/remove:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: removeGuardrailKeys
@@ -6743,7 +6642,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /guardrails/{id}/members:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listGuardrailMembers
@@ -6766,7 +6664,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /guardrails/{id}/members/add:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: addGuardrailMembers
@@ -6795,7 +6692,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /guardrails/{id}/members/remove:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: removeGuardrailMembers
@@ -6824,7 +6720,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /management-keys:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listManagementKeys
@@ -6853,7 +6748,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createManagementKey
@@ -6900,7 +6794,6 @@ paths:
           type: string
           format: uuid
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getManagementKey
@@ -6932,7 +6825,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateManagementKey
@@ -6976,7 +6868,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteManagementKey
@@ -7009,7 +6900,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /activity:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getActivity
@@ -7077,7 +6967,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /audit-events:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listWorkspaceAuditEvents
@@ -7140,7 +7029,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /workspaces:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listWorkspaces
@@ -7182,7 +7070,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createWorkspace
@@ -7221,7 +7108,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /workspaces/{id}:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getWorkspace
@@ -7260,7 +7146,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateWorkspace
@@ -7311,7 +7196,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteWorkspace
@@ -7357,7 +7241,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /workspaces/{id}/members:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listWorkspaceMembers
@@ -7388,7 +7271,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /workspaces/{id}/members/add:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: addWorkspaceMembers
@@ -7435,7 +7317,6 @@ paths:
                 $ref: '#/components/schemas/WorkspaceMemberAddResponse'
   /workspaces/{id}/members/remove:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: removeWorkspaceMembers
@@ -7476,7 +7357,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /workspaces/{id}/members/{user_id}:
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateWorkspaceMemberRole
@@ -7529,7 +7409,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /workspaces/{id}/invites:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listWorkspaceInvites
@@ -7559,7 +7438,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createWorkspaceInvite
@@ -7600,7 +7478,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /workspaces/{id}/invites/{invite_id}:
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteWorkspaceInvite
@@ -7636,7 +7513,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /workspaces/{id}/join-requests:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listWorkspaceJoinRequests
@@ -7678,7 +7554,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /workspaces/{id}/join-requests/{request_id}/approve:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: approveWorkspaceJoinRequest
@@ -7714,7 +7589,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /workspaces/{id}/join-requests/{request_id}/reject:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: rejectWorkspaceJoinRequest
@@ -7750,7 +7624,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /observability/logging-policy:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getObservabilityLoggingPolicy
@@ -7770,7 +7643,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateObservabilityLoggingPolicy
@@ -7803,7 +7675,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /observability/destinations:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listObservabilityDestinations
@@ -7832,7 +7703,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createObservabilityDestination
@@ -7871,7 +7741,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /observability/destinations/{id}:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getObservabilityDestination
@@ -7899,7 +7768,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateObservabilityDestination
@@ -7939,7 +7807,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteObservabilityDestination
@@ -7968,7 +7835,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /organisations:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listOrganisations
@@ -8037,7 +7903,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /pricing/models:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listPricingModels
@@ -8066,7 +7931,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /pricing/calculate:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: calculatePricing
@@ -8126,7 +7990,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /health/providers/{provider_id}/derank:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getProviderDerankStatus
@@ -8201,7 +8064,6 @@ paths:
           description: Enrutamiento regional a proveedores de la UE (solo texto)
         - url: https://us.api.phaseo.app/v1
           description: Enrutamiento regional a proveedores de EE. UU. (solo texto)
-      x-beta: true
       tags:
         - Gateway
       operationId: getHealth
@@ -8411,7 +8273,6 @@ paths:
                     type: integer
   /music/generations:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: generateMusicAlias
@@ -8432,7 +8293,6 @@ paths:
                 $ref: '#/components/schemas/MusicGenerateResponse'
   /music/generations/{music_id}:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getMusicGenerationAlias
@@ -8920,7 +8780,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /data/models:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listDataModels
@@ -9052,7 +8911,6 @@ paths:
                     type: string
   /presets:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listPresets
@@ -9087,7 +8945,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createPreset
@@ -9120,7 +8977,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /presets/publisher:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getPresetPublisher
@@ -9134,7 +8990,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/PresetPublisherResponse'
     put:
-      x-beta: true
       tags:
         - Gateway
       operationId: updatePresetPublisher
@@ -9169,7 +9024,6 @@ paths:
     parameters:
       - $ref: '#/components/parameters/PresetId'
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getPreset
@@ -9189,7 +9043,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updatePreset
@@ -9227,7 +9080,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deletePreset
@@ -9262,7 +9114,6 @@ paths:
     parameters:
       - $ref: '#/components/parameters/PresetId'
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listPresetVersions
@@ -9282,7 +9133,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: publishPresetVersion
@@ -9323,7 +9173,6 @@ paths:
     parameters:
       - $ref: '#/components/parameters/PresetId'
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listPresetLabels
@@ -9347,7 +9196,6 @@ paths:
       - $ref: '#/components/parameters/PresetId'
       - $ref: '#/components/parameters/PresetLabel'
     put:
-      x-beta: true
       tags:
         - Gateway
       operationId: setPresetLabel
@@ -9385,7 +9233,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deletePresetLabel
@@ -9418,7 +9265,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/fork:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: forkPreset
@@ -9459,7 +9305,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /presets/{id}/upstream:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: applyPresetUpstreamVersion
@@ -9500,7 +9345,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /settings:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getWorkspaceSettings
@@ -9520,7 +9364,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateWorkspaceSettings
@@ -9553,7 +9396,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /routing/dynamic-routes:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listDynamicRoutes
@@ -9582,7 +9424,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: createDynamicRoute
@@ -9617,7 +9458,6 @@ paths:
     parameters:
       - $ref: '#/components/parameters/DynamicRouteId'
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getDynamicRoute
@@ -9637,7 +9477,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateDynamicRoute
@@ -9669,7 +9508,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: deleteDynamicRoute
@@ -9703,7 +9541,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /routing/dynamic-routes/{id}/keys:
     put:
-      x-beta: true
       tags:
         - Gateway
       operationId: replaceDynamicRouteKeys
@@ -9744,7 +9581,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /routing/dynamic-routes/{id}/versions/{version}/deploy:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: deployDynamicRouteVersion
@@ -9774,7 +9610,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /endpoints:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listEndpoints
@@ -9789,7 +9624,6 @@ paths:
                 $ref: '#/components/schemas/EndpointCatalogueResponse'
   /me:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getMe
@@ -9816,7 +9650,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /me/profile:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getMyProfile
@@ -9842,7 +9675,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: updateMyProfile
@@ -9881,7 +9713,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /me/authorized-apps:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listAuthorizedApps
@@ -9908,7 +9739,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /me/authorized-apps/{id}:
     patch:
-      x-beta: true
       tags:
         - Gateway
       operationId: reduceAuthorizedAppScopes
@@ -9948,7 +9778,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: revokeAuthorizedApp
@@ -9977,7 +9806,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /invites/accept:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: acceptWorkspaceInvite
@@ -10022,7 +9850,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /invites/requests:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listMyJoinRequests
@@ -10061,7 +9888,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/tier:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: getRateLimitTier
@@ -10088,7 +9914,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /rate-limits/tier/raise:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: raiseRateLimitTier
@@ -10174,7 +9999,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /routing/successor/replacements:
     get:
-      x-beta: true
       tags:
         - Gateway
       operationId: listSuccessorReplacements
@@ -10194,7 +10018,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     put:
-      x-beta: true
       tags:
         - Gateway
       operationId: saveSuccessorReplacement
@@ -10226,7 +10049,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
-      x-beta: true
       tags:
         - Gateway
       operationId: removeSuccessorReplacement
@@ -10266,7 +10088,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /observability/destinations/test:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: testObservabilityDestinationConfig
@@ -10299,7 +10120,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /observability/destinations/{id}/test:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: testObservabilityDestination
@@ -10328,7 +10148,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /observability/destinations/{id}/sample:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: sendObservabilityDestinationSample
@@ -10357,7 +10176,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
   /security/report-leaked-key:
     post:
-      x-beta: true
       tags:
         - Gateway
       operationId: reportLeakedKey

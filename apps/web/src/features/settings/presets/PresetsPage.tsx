@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import { getTranslations } from "@/i18n/server";
 import PresetsContent from "./PresetsContent";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Info, Plus, Store } from "lucide-react";
 import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
@@ -33,7 +32,6 @@ export default function PresetsPage() {
 			<SettingsPageHeader
 			title={t("settingsTitle")}
 				description={t("settingsDescription")}
-				meta={<Badge variant="outline">{t("betaBadge")}</Badge>}
 				actions={
 					<div className="flex flex-wrap items-center justify-end gap-2">
 						<Button asChild variant="default" size="sm" className="h-9 gap-2 rounded-md px-3">

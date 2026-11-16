@@ -6,7 +6,7 @@ description: "Run a realtime voice call through the Phaseo relay from any Phaseo
 ---
 
 <Note>
-Realtime voice is in beta and access is gated per workspace. The realtime clients are in the SDK source but not in the published packages (`3.0.0`, Rust `0.2.0`); they ship with the next release of every SDK except C++.
+Realtime voice is in [Beta](/v1/developers/feature-maturity) and is turned on per workspace on request. The realtime clients are in the SDK source but not in the published packages (`3.0.0`, Rust `0.2.0`); they ship with the next release of every SDK except C++.
 </Note>
 
 Connect to create the session (`POST /v1/audio/realtime/sessions`), open the relay WebSocket and wait for `relay.connected`. Then stream PCM16 audio in, read provider events out, and end the call to get its final bill. The relay protocol, warnings and reason codes are described in [Realtime voice sessions](/v1/guides/realtime-voice).

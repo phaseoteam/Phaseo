@@ -17,7 +17,7 @@ icon: "map"
 | 保留现有的 OpenAI 兼容集成 | [`POST /chat/completions`](./endpoint/chat-completions) |
 | 浏览模型和提供商 | [`GET /models`](./endpoint/models) 和 [`GET /providers`](./endpoint/providers) |
 | 创建音乐或管理文件 | [`POST /music/generate`](./endpoint/music-generate) 和 [`POST /files`](./endpoint/files) |
-| 生成视频（测试版） | [`POST /videos`](./endpoint/video-create) |
+| 生成视频（Alpha） | [`POST /videos`](./endpoint/video-create) |
 | 提交批处理或下载结果（测试版） | [`POST /batches`](./endpoint/batches-create) 和 [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## 基础 URL
@@ -40,7 +40,7 @@ https://api.phaseo.app/v1
 	查看规范文件
 </Card>
 
-文档和 SDK 使用同一份规范。Video、Batch 和 Decisions 端点标记为**测试版**；可能需要工作区预览访问权限。
+文档和 SDK 使用同一份规范。尚未正式发布的端点带有 **Alpha** 或 **Beta** 徽标，其中部分端点需要先为你的工作区开启。[功能成熟度](../developers/feature-maturity.mdx)介绍了各个阶段，并列出了每项功能的访问权限。
 
 ## 身份验证
 

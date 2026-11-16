@@ -4,6 +4,8 @@ title: "Update workspace SSO"
 badge: "Beta"
 openapi: "/openapi/v1/openapi.yaml PUT /identity/sso"
 ---
+This endpoint is in [Beta](../../developers/feature-maturity.mdx) and is turned on per workspace on request.
+
 <Note>Identity administration requires an owner or admin identity. Enabling SSO or SCIM and creating provisioning tokens require the identity add-on.</Note>
 
 Only the workspace owner can change single sign-on settings, because sign-ins through the identity provider are linked to the workspace's directory users.

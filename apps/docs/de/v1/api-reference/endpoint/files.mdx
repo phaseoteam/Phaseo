@@ -6,6 +6,8 @@ openapi: "/de/openapi/v1/openapi.localized.yaml POST /files"
 description: "Lade eine Datei zur Stapelverarbeitung hoch. Das Gateway speichert Eigentumsmetadaten, damit derselbe Arbeitsbereich später die Datei oder ihren Inhalt abrufen kann."
 ---
 
+Dieser Endpunkt hat den Status [Beta](../../developers/feature-maturity.mdx) und wird auf Anfrage pro Workspace freigeschaltet.
+
 Speichere die zurückgegebene `file_id` und verwende sie erneut mit:
 
 - `POST /v1/batches`

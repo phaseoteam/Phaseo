@@ -1,0 +1,51 @@
+---
+title: "Funktionsreife"
+description: "Was die Labels Alpha und Beta bedeuten, wer welche Funktion nutzen kann und in welcher Phase jede Funktion ist, die noch nicht allgemein verfügbar ist."
+icon: "flask-conical"
+---
+
+Manche Phaseo-Funktionen tragen in der Dokumentation, in der API-Referenz und im Dashboard das Label **Alpha** oder **Beta**. Das Label zeigt dir, wie ausgereift eine Funktion ist. Eine Funktion ohne Label ist allgemein verfügbar.
+
+## Phasen
+
+| Phase | Bedeutung | Was du tun solltest |
+| --- | --- | --- |
+| Alpha | Eine frühe Version. API, Verhalten oder Preise können sich stark ändern, und die Funktion kann entfernt werden. | Probiere sie aus und sag uns, was du davon hältst. Baue darauf nichts, was du nicht schnell ändern kannst. |
+| Beta | Funktioniert für den Hauptzweck. Einzelheiten können sich durch Feedback noch ändern, und Änderungen werden im [Changelog](../changelog.mdx) angekündigt. | Geeignet für Pilotprojekte und echte Workloads, die du genau beobachtest. Prüfe beim Upgrade den Changelog. |
+| Allgemein verfügbar | Vollständig unterstützt und dokumentiert. Es wird kein Label angezeigt. | Nutze sie in der Produktion. |
+| Abgekündigt | Funktioniert noch, wird aber nicht mehr empfohlen und wird entfernt. Ein Entfernungsdatum wird angezeigt, sobald eines feststeht. | Fang nicht neu damit an und steige vor dem Entfernungsdatum um. |
+
+Modelle und Anbieter haben eigene Lebenszyklus-Labels, die von diesen Phasen getrennt sind. Siehe [Modellabkündigung und -einstellung](../guides/model-retirement.mdx) und [Anbieter- und Phaseo-Status](../guides/provider-statuses.mdx).
+
+<span id="who-can-use-a-feature"></span>
+## Wer eine Funktion nutzen kann
+
+Phase und Zugang sind voneinander getrennt. Eine Beta-Funktion kann für alle offen sein, und eine Alpha-Funktion kann auf einige Workspaces beschränkt sein.
+
+- **Alle**: Jeder Workspace kann sie nutzen, im Rahmen der üblichen Rollen. Manche Einstellungen sind zum Beispiel nur für Inhaber und Admins.
+- **Auf Anfrage**: Die Funktion wird pro Workspace freigeschaltet. Bis dahin erscheint ihre Einstellungsseite nicht, und ihre API gibt einen Fehler zurück. **Einstellungen → Funktionsvorschau** zeigt, ob die Video-API und die Batch-API für deinen Workspace freigeschaltet sind. Wenn du Zugang zu einer dieser Funktionen möchtest, [kontaktiere uns](https://phaseo.app/contact).
+
+## Funktionen, die noch nicht allgemein verfügbar sind
+
+| Funktion | Phase | Zugang |
+| --- | --- | --- |
+| [Auto Routing](../guides/auto-routing.mdx) (`phaseo/auto`) | Alpha | Auf Anfrage |
+| [Video-API](../guides/async-video-and-batch.mdx) | Alpha | Auf Anfrage |
+| [Feedback zu Voreinstellungen](../guides/preset-feedback.mdx) | Alpha | Alle |
+| [Slack-Agent](../guides/slack-agent.mdx) | Alpha | Auf Anfrage |
+| [Batch-API](../guides/async-video-and-batch.mdx), mit der Files-API und den Webhook-Endpunkten | Beta | Auf Anfrage |
+| [Decisions-API](../api-reference/endpoint/decisions.mdx) | Beta | Alle |
+| [Echtzeit-Sprache](../guides/realtime-voice.mdx) | Beta | Auf Anfrage |
+| [Server-Tools](../guides/server-tools/index.mdx) | Beta | Alle |
+| [Anfrage-Klassifikatoren](../guides/request-classifiers.mdx) | Beta | Auf Anfrage |
+| [Vertrauenswürdige Workloads](./trusted-workloads.mdx) | Beta | Auf Anfrage |
+| [Private Modelle](../guides/private-models.mdx) | Beta | Alle (Inhaber und Admins) |
+| Enterprise: Single Sign-On, SCIM, Verzeichnis und Abteilungen | Beta | Auf Anfrage, mit dem Identity-Add-on |
+
+Alles andere ist allgemein verfügbar, darunter die Endpunkte für Chat Completions, Responses und Messages, Voreinstellungen, Guardrails, Budgets, BYOK, Broadcast und die Management-API.
+
+## Wie Funktionen die Phase wechseln
+
+- Eine Funktion wechselt von Alpha zu Beta oder von Beta zu allgemein verfügbar, wenn ihr Hauptzweck funktioniert und ihre API feststeht. Wir vermerken den Wechsel im [Changelog](../changelog.mdx).
+- Breaking Changes an Alpha- und Beta-Funktionen werden im Changelog angekündigt.
+- Wenn eine Funktion abgekündigt wird, steht das auf ihrer Dokumentationsseite, zusammen mit dem Entfernungsdatum, sobald eines feststeht.

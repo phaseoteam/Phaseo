@@ -1,10 +1,11 @@
 ---
 title: "Prendre une décision"
-badge: "Beta"
-tag: "Bêta"
+badge: "Bêta"
 openapi: "/fr/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "Évaluez des questions typées à partir de l’état de l’application avec les modèles de décision pris en charge."
 ---
+
+Cet endpoint est en [Bêta](../../developers/feature-maturity.mdx).
 
 Envoyez `input` et un tableau ordonné de `questions` à `POST /v1/decisions`, et recevez une réponse typée par question, avec des probabilités, dans le même ordre.
 

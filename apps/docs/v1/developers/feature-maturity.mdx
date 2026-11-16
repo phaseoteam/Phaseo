@@ -1,0 +1,51 @@
+---
+title: "Feature maturity"
+description: "What the Alpha and Beta labels mean, who can use each feature, and the current stage of every feature that isn't generally available."
+"og:image": "https://phaseo.app/og/dynamic?title=Feature%20maturity&description=What%20the%20Alpha%20and%20Beta%20labels%20mean%2C%20who%20can%20use%20each%20feature%2C%20and%20the%20current%20stage%20of%20every%20feature%20that%20isn%27t%20generally%20available.&pathname=/docs/v1/developers/feature-maturity"
+icon: "flask-conical"
+---
+
+Some Phaseo features carry an **Alpha** or **Beta** label in the docs, the API reference and the dashboard. The label tells you how settled a feature is. A feature with no label is generally available.
+
+## Stages
+
+| Stage | What it means | What to do |
+| --- | --- | --- |
+| Alpha | An early version. Its API, behavior or pricing may change a lot, and it may be removed. | Try it and tell us what you think. Don't build anything you can't change quickly on top of it. |
+| Beta | Works for its main use. Some details may still change based on feedback, and changes are announced in the [changelog](/v1/changelog). | Fine for pilots and real workloads you watch closely. Check the changelog when you upgrade. |
+| Generally available | Fully supported and documented. No label is shown. | Use it in production. |
+| Deprecated | Still works, but is no longer recommended and will be removed. A removal date is shown when one is set. | Don't start using it, and move off it before the removal date. |
+
+Models and providers have their own lifecycle labels, which are separate from these stages. See [Model retirement](/v1/guides/model-retirement) and [Provider statuses](/v1/guides/provider-statuses).
+
+## Who can use a feature
+
+Stage and access are separate. A Beta feature can be open to everyone, and an Alpha feature can be limited to some workspaces.
+
+- **Everyone**: any workspace can use it, subject to the usual roles. For example, some settings are for owners and admins only.
+- **On request**: the feature is turned on per workspace. Until it's on, its settings page doesn't appear and its API returns an error. **Settings → Feature Preview** shows whether the Video and Batch APIs are on for your workspace. To ask for access to any of these features, [contact us](https://phaseo.app/contact).
+
+## Features that aren't generally available
+
+| Feature | Stage | Access |
+| --- | --- | --- |
+| [Auto Routing](/v1/guides/auto-routing) (`phaseo/auto`) | Alpha | On request |
+| [Video API](/v1/guides/async-video-and-batch) | Alpha | On request |
+| [Preset Feedback](/v1/guides/preset-feedback) | Alpha | Everyone |
+| [Slack agent](/v1/guides/slack-agent) | Alpha | On request |
+| [Batch API](/v1/guides/async-video-and-batch), with the Files API and webhook endpoints | Beta | On request |
+| [Decisions API](/v1/api-reference/endpoint/decisions) | Beta | Everyone |
+| [Realtime voice](/v1/guides/realtime-voice) | Beta | On request |
+| [Server tools](/v1/guides/server-tools) | Beta | Everyone |
+| [Request classifiers](/v1/guides/request-classifiers) | Beta | On request |
+| [Trusted workloads](/v1/developers/trusted-workloads) | Beta | On request |
+| [Private models](/v1/guides/private-models) | Beta | Everyone (owners and admins) |
+| Enterprise: single sign-on, SCIM, directory and departments | Beta | On request, with the identity add-on |
+
+Everything else, including the chat completions, responses and messages endpoints, presets, guardrails, budgets, BYOK, Broadcast and the management API, is generally available.
+
+## How features change stage
+
+- A feature moves from Alpha to Beta, or from Beta to generally available, when its main use works and its API is settled. We note the change in the [changelog](/v1/changelog).
+- Breaking changes to Alpha and Beta features are announced in the changelog.
+- When a feature is deprecated, its docs page says so and gives the removal date when one is set.

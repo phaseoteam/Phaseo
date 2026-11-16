@@ -5,6 +5,8 @@ badge: "Beta"
 openapi: "/de/openapi/v1/openapi.localized.yaml GET /workload-identity/policies/{id}"
 description: "Ruft eine Richtlinie für vertrauenswürdige Workloads ab."
 ---
+Dieser Endpunkt hat den Status [Beta](../../developers/feature-maturity.mdx) und wird auf Anfrage pro Workspace freigeschaltet.
+
 <Note>Erfordert `keys:read` für einen Management-Schlüssel oder ein OAuth-Token oder einen Workspace-Inhaber oder -Admin. Vertrauenswürdige Workloads sind in der Beta; Workspaces ohne die Funktion erhalten `404`.</Note>
 
 Unter [Vertrauenswürdige Workloads](../../developers/trusted-workloads.mdx) erfährst du, wie Richtlinien funktionieren und wie du sie mit Terraform verwaltest.

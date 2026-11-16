@@ -7,7 +7,7 @@ description: "Track asynchronous jobs, receive webhooks, and pass provider-speci
 ---
 
 <Note>
-The Video API and Batch API are invite-only beta previews for selected workspaces. Check **Settings → Feature Preview** for availability. Access is managed per workspace; enabling a personal web preference does not grant API access. Normal model usage charges apply.
+The Video API is in Alpha and the Batch API is in Beta (see [Feature maturity](/v1/developers/feature-maturity)). Both are turned on per workspace on request. **Settings → Feature Preview** shows whether your workspace has them; a personal web preference does not grant API access. Normal model usage charges apply.
 </Note>
 
 Creating a video or a batch returns a job before the work is done. Store its `id` and `polling_url`, then wait for a webhook or poll until the job reaches a terminal state: `completed`, `failed`, `cancelled`, or `expired`. A successful create response only means the job was accepted.
@@ -23,7 +23,7 @@ flowchart TD
   terminal -->|"failed / cancelled / expired"| outcome["Handle the outcome"]
 ```
 
-Keep the polling path even when you use webhooks. During the beta, start with small requests and an API key spending limit. Reference inputs, cancellation and output retention depend on the provider and model. Save your own copy of completed outputs before they expire.
+Keep the polling path even when you use webhooks. While these APIs are in Alpha and Beta, start with small requests and an API key spending limit. Reference inputs, cancellation and output retention depend on the provider and model. Save your own copy of completed outputs before they expire.
 
 ## Receive updates
 

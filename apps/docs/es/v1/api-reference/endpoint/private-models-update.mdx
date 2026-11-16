@@ -6,4 +6,6 @@ openapi: "/es/openapi/v1/openapi.localized.yaml PATCH /private-models/{id}"
 description: "Actualiza los ajustes del endpoint o rota la credencial de solo escritura."
 ---
 
+Este endpoint está en fase [Beta](../../developers/feature-maturity.mdx).
+
 Requiere `private_models:write` y una identidad de propietario o administrador. Envía `slug` para cambiar el nombre del modelo local al espacio de trabajo; no se puede proporcionar `model_id` directamente.

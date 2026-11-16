@@ -1,11 +1,12 @@
 ---
 title: "Make a decision"
 badge: "Beta"
-tag: "Beta"
 openapi: "/openapi/v1/openapi.yaml POST /decisions"
 description: "Evaluate typed questions against application state with supported decision models."
 "og:image": "https://phaseo.app/og/dynamic?title=Make%20a%20decision&description=Evaluate%20typed%20questions%20against%20application%20state%20with%20supported%20decision%20models.&pathname=/docs/v1/api-reference/endpoint/decisions"
 ---
+
+This endpoint is in [Beta](../../developers/feature-maturity.mdx).
 
 Send `input` and an ordered array of `questions` to `POST /v1/decisions`, and get one typed answer per question, with probabilities, in the same order.
 
