@@ -5087,7 +5087,18 @@
 		"metadataTitle": "Abrechnung und Guthaben - Einstellungen",
 		"description": "Verwalte Guthaben für die Modellnutzung und Arbeitsbereichsabonnements.",
 		"modelUsageBalance": "Guthaben für Modellnutzung",
-		"cardNumber": "Kartennummer"
+		"cardNumber": "Kartennummer",
+		"sandboxTest": {
+			"title": "Stripe-Sandbox-Test",
+			"description": "Nur für Admins. Öffnet einen Stripe-Sandbox-Checkout über 10 $, der den Stripe-Sandbox-Arbeitsbereich auflädt und die Karte speichert. Nutze die Testkarte 4242 4242 4242 4242. Es fließt kein echtes Geld.",
+			"button": "Checkout testen (Sandbox)",
+			"opening": "Wird geöffnet…",
+			"notConfigured": "Die Stripe-Sandbox ist in diesem Deployment nicht eingerichtet.",
+			"failed": "Der Sandbox-Checkout konnte nicht geöffnet werden.",
+			"success": "Sandbox-Zahlung abgeschlossen. Das Guthaben landet im Stripe-Sandbox-Arbeitsbereich, sobald der Webhook eintrifft.",
+			"cancelled": "Sandbox-Checkout abgebrochen.",
+			"productName": "Phaseo-Guthaben (Sandbox-Test)"
+		}
 	},
 	"preferencesCopy": {
 		"preview": "Vorschau",

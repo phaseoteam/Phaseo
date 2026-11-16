@@ -5087,7 +5087,18 @@
 		"metadataTitle": "請求とクレジット - 設定",
 		"description": "モデル使用クレジットとワークスペースの契約を管理します。",
 		"modelUsageBalance": "モデル使用残高",
-		"cardNumber": "カード番号"
+		"cardNumber": "カード番号",
+		"sandboxTest": {
+			"title": "Stripe サンドボックステスト",
+			"description": "管理者のみ。Stripe サンドボックスで 10 ドルのチェックアウトを開き、Stripe サンドボックスのワークスペースにチャージしてカードを保存します。テストカード 4242 4242 4242 4242 を使用してください。実際のお金は動きません。",
+			"button": "チェックアウトをテスト（サンドボックス）",
+			"opening": "開いています…",
+			"notConfigured": "このデプロイでは Stripe サンドボックスが設定されていません。",
+			"failed": "サンドボックスのチェックアウトを開けませんでした。",
+			"success": "サンドボックスの支払いが完了しました。Webhook が届くと、クレジットが Stripe サンドボックスのワークスペースに追加されます。",
+			"cancelled": "サンドボックスのチェックアウトをキャンセルしました。",
+			"productName": "Phaseo クレジット（サンドボックステスト）"
+		}
 	},
 	"preferencesCopy": {
 		"preview": "プレビュー",

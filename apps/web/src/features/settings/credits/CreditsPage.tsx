@@ -3,6 +3,7 @@ import EnterpriseSubscriptionCard from "@/components/(gateway)/credits/Enterpris
 import Banner from "@/components/(gateway)/credits/Banner";
 import BuyCreditsClient from "@/components/(gateway)/credits/CreditPurchases/TopUp/BuyCreditsClient";
 import AutoTopUpClient from "@/components/(gateway)/credits/CreditPurchases/AutoTopUp/AutoTopUpClient";
+import StripeSandboxTestCard from "@/components/(gateway)/credits/StripeSandboxTestCard";
 import { PageMetadata } from "@/lib/seo/metadataTypes";
 import { getTranslations } from "@/i18n/server";
 import { useTranslations } from "@/i18n/react";
@@ -106,6 +107,8 @@ function CreditsSettingsContent() {
 					</CardContent>
 				</Card>
 			</div>
+
+			<StripeSandboxTestCard result={typeof searchParams.stripe_sandbox === "string" ? searchParams.stripe_sandbox : null} />
 		</div>
 	);
 }
