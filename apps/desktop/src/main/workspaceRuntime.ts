@@ -59,7 +59,8 @@ import { formAnswerError } from "../shared/agentForms";
 import { OpenCodeService } from "./openCodeService";
 import { CursorAdapter } from "./cursorAdapter";
 import type { ImportedConversation } from "./taskImport";
-import type { Attachment } from "../shared/workspace";
+import { finalResponse, type Attachment } from "../shared/workspace";
+import { feedFences, type FenceState } from "./markdownFences";
 import type { McpCommand, McpConnection } from "../shared/mcp";
 import type { TerminalAuthentication, TerminalAuthRequest } from "./terminalAuth";
 import { checkoutSubmodules, createGitWorktree, ownedWorktreeRoots, removeGitWorktree, worktreeRoot } from "./gitWorktrees";
@@ -322,7 +323,7 @@ export class WorkspaceRuntime {
 		if (!lastUser || this.autopilotJudged.get(id) === lastUser.id) return;
 		this.autopilotJudged.set(id, lastUser.id);
 		const ofTurn = (value: { id: string }) => value.id.startsWith(`${lastUser.id}:`);
-		const answer = task.messages.findLast(message => message.role === "assistant" && ofTurn(message))?.text ?? "";
+		const answer = finalResponse(task.messages, ofTurn) ?? "";
 		const usedTools = (task.activities ?? []).some(activity => ofTurn(activity) && activity.type === "tool" && !activity.id.includes(":autopilot:") && !activity.id.includes(":question:"));
 		const person = task.messages.findLastIndex(message => message.role === "user" && !message.notice && !message.autopilot);
 		const followUps = task.messages.slice(person + 1).filter(message => message.role === "user" && message.autopilot).length;
@@ -1310,7 +1311,9 @@ export class WorkspaceRuntime {
 		task.questions = task.questions?.filter(value => value.id !== request.id);
 		if (task.status === "waiting") task.status = hasRequests(task) ? "waiting" : "running";
 		task.activities ??= [];
-		const timelineOrder = [...task.messages, ...task.activities].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), 0) + 1;
+		// A running turn hands out its own positions, some to text not yet saved, so the record takes the turn's next one; the
+		// steer that follows then takes a later one.
+		const timelineOrder = this.turnOrders.get(id)?.reserve() ?? [...task.messages, ...task.activities].reduce((maximum, item) => Math.max(maximum, item.timelineOrder ?? 0), 0) + 1;
 		task.activities.push({ ...questionRecord(request.id, request.questions, answers), timelineOrder });
 		this.store.saveTask(task); this.broadcast();
 		const text = request.questions.flatMap(question => { const values = (Object.hasOwn(answers, question.id) ? answers[question.id] : []).filter(value => value.trim()); return values.length ? [`${question.question}\n${values.map(value => questionOptions(question).find(option => optionValue(option) === value)?.label ?? value).join(", ")}`] : []; }).join("\n\n");
@@ -1516,14 +1519,26 @@ export class WorkspaceRuntime {
 		const deltas = new Map<string, string>();
 		const eventOrder = new Map<string, number>();
 		// The entry each streamed item writes to now. An accepted steer clears it, so the item's next delta starts a new entry,
-		// placed after the steer; text buffered before the steer still flushes into the earlier entry.
-		const entries = new Map<string, string>(); let segment = 0;
+		// placed after the steer; text buffered before the steer still flushes into the earlier entry. A continuation records
+		// its item (`roots`), so the answer's final response is still the whole item (finalResponse).
+		const entries = new Map<string, string>(), roots = new Map<string, string>(); let segment = 0;
 		const entryFor = (itemId: string) => {
 			let key = entries.get(itemId);
-			if (key === undefined) { key = eventOrder.has(`message:${itemId}`) ? `${itemId}~${segment}` : itemId; entries.set(itemId, key); }
+			if (key === undefined) { key = eventOrder.has(`message:${itemId}`) ? `${itemId}~${segment}` : itemId; entries.set(itemId, key); if (key !== itemId) roots.set(key, itemId); }
 			return key;
 		};
 		const order = (key: string) => { if (!eventOrder.has(key)) eventOrder.set(key, timelineOrder++); return eventOrder.get(key)!; };
+		// A steer accepted inside a fenced code block splits the item once the block closes, so no fence spans two entries.
+		const fences = new Map<string, FenceState>(), splitting = new Set<string>();
+		const stream = (itemId: string, text: string) => {
+			const key = entryFor(itemId); let fence = fences.get(key); if (!fence) fences.set(key, fence = { line: "" });
+			const closed = feedFences(fence, text, splitting.has(itemId));
+			order(`message:${key}`); deltas.set(key, (deltas.get(key) ?? "") + (closed === undefined ? text : text.slice(0, closed)));
+			if (closed === undefined) return;
+			splitting.delete(itemId); entries.delete(itemId); fences.delete(key);
+			if (closed < text.length) stream(itemId, text.slice(closed));
+		};
+		const boundary = () => { segment++; for (const [itemId, key] of entries) if (fences.get(key)?.fence === undefined) entries.delete(itemId); else splitting.add(itemId); };
 		let activities: (AgentActivity & { append?: boolean })[] = [];
 		// A flush that costs more (a slow disk, many chats streaming, a long answer) waits longer, so streaming leaves the main process free.
 		let flushDelay = 40;
@@ -1538,7 +1553,7 @@ export class WorkspaceRuntime {
 				const messageId = `${message.id}:${itemId}`;
 				const existing = current.messages.find(value => value.id === messageId);
 				if (existing) { existing.text += text; rewritten += existing.text.length; }
-				else current.messages.push({ id: messageId, timelineOrder: order(`message:${itemId}`), text, role: "assistant", createdAt: new Date().toISOString() });
+				else current.messages.push({ id: messageId, timelineOrder: order(`message:${itemId}`), text, role: "assistant", ...(roots.has(itemId) ? { item: `${message.id}:${roots.get(itemId)}` } : {}), createdAt: new Date().toISOString() });
 			}
 			for (const activity of activities) {
 				current.activities ??= [];
@@ -1561,7 +1576,7 @@ export class WorkspaceRuntime {
 		let ended = false;
 		const note = (activity: AgentActivity) => { if (ended) { this.appendActivity(id, message.id, activity); return; } order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); };
 		this.turnNotes.set(id, note);
-		const steering = { reserve: () => timelineOrder++, boundary: () => { segment++; entries.clear(); } }; this.turnOrders.set(id, steering);
+		const steering = { reserve: () => timelineOrder++, boundary }; this.turnOrders.set(id, steering);
 		const background = task.harness === "claude" ? new BackgroundWork() : undefined;
 		if (background) this.backgroundWork.set(id, background);
 		const onQuestion: NonNullable<AgentCallbacks["onQuestion"]> = (questions, request) => new Promise(resolve => {
@@ -1612,7 +1627,7 @@ export class WorkspaceRuntime {
 				// A chat moved to a worktree mid-turn starts a new session there; the old folder's session is not kept.
 				onSession: nativeSessionId => { const current = this.store.getTask(id); if (current.nativeSessionId === nativeSessionId || current.projectId !== task.projectId) return; current.nativeSessionId = nativeSessionId; this.store.saveTask(current); this.broadcast(); },
 				onDelta: (itemId, text) => {
-					const key = entryFor(itemId); order(`message:${key}`); deltas.set(key, (deltas.get(key) ?? "") + text); scheduleFlush();
+					stream(itemId, text); scheduleFlush();
 				},
 				onActivity: note,
 				// Harnesses Phaseo doesn't bill report each response's tokens for the Usage page; a failed write costs only that.

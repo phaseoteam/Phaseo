@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { stat } from "node:fs/promises";
 import path from "node:path";
-import type { Account, Attachment, Harness, ModelOption, Task, WorkspaceCommand } from "../shared/workspace";
+import { finalResponse, type Account, type Attachment, type Harness, type ModelOption, type Task, type WorkspaceCommand } from "../shared/workspace";
 import { agentLimitMessage, type AgentCatalog, type AgentCatalogAccount, type AgentCatalogModel, type ChildWorktree, type DelegateRequest, type PendingQuestion, type LaunchRequest, type LaunchResult, type LaunchWorkspace, type ScheduledTask, type ThreadTools, waitDefaultMs, waitMaximumMs } from "../shared/orchestration";
 import { validateMissionCommand, type Mission, type MissionCommand } from "../shared/missions";
 import { tagsInUse } from "../shared/tags";
@@ -405,7 +405,7 @@ export class WorkspaceThreads {
 						const child = launched(id);
 						if (!abandoned && !this.host.isClosing() && active(child.status)) return;
 						clearTimeout(timer); this.listeners.delete(listener); signal?.removeEventListener("abort", abort);
-						resolve({ thread: summary(child), timedOut: abandoned && active(child.status), result: child.status === "completed" ? child.messages.findLast(message => message.role === "assistant")?.text.slice(0, 32000) : undefined });
+						resolve({ thread: summary(child), timedOut: abandoned && active(child.status), result: child.status === "completed" ? finalResponse(child.messages)?.slice(0, 32000) : undefined });
 					};
 					const listener = () => check(); const abort = () => check(true);
 					const timer = setTimeout(abort, timeoutMs);
@@ -576,7 +576,7 @@ export class WorkspaceThreads {
 						// Upgrade to always-wake: nobody is waiting any more, so the result is delivered as a message. Launched chats never deliver.
 						const deliveryQueued = abandoned && active(child.status) && !this.host.isClosing() && Boolean(child.delegation) && child.delegation?.kind !== "stage";
 						if (deliveryQueued && !child.delegation?.background) this.host.store.requestDelegationWake(id);
-						resolve({ thread: summary(child), timedOut: abandoned, result: child.status === "completed" ? child.messages.findLast(message => message.role === "assistant")?.text.slice(0, 32000) : undefined, ...(deliveryQueued ? { deliveryQueued } : {}), ...child.delegation && child.projectId !== parent.projectId ? childWorktree(child) : {}, ...asking.length ? { pendingQuestions: asking.map(request => request.id) } : {} });
+						resolve({ thread: summary(child), timedOut: abandoned, result: child.status === "completed" ? finalResponse(child.messages)?.slice(0, 32000) : undefined, ...(deliveryQueued ? { deliveryQueued } : {}), ...child.delegation && child.projectId !== parent.projectId ? childWorktree(child) : {}, ...asking.length ? { pendingQuestions: asking.map(request => request.id) } : {} });
 					};
 					const listener = () => check(); const abort = () => check(true);
 					const timer = setTimeout(abort, timeoutMs);

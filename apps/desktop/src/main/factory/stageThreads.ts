@@ -2,7 +2,7 @@ import path from "node:path";
 import { parseReport } from "../../shared/factory/report";
 import { stageDefinition, stageLabel } from "../../shared/factory/stages";
 import type { AgentProfile, LogLine, Run, WorkItem } from "../../shared/factory/types";
-import type { AgentActivity, Message, Task, WorkspaceCommand } from "../../shared/workspace";
+import { finalResponse, type AgentActivity, type Message, type Task, type WorkspaceCommand } from "../../shared/workspace";
 import type { WorkspaceOverview } from "../../shared/workspaceOverview";
 import type { WorkspaceStore } from "../workspaceStore";
 import { assertForkSafe, effortSettings } from "./agents";
@@ -308,7 +308,7 @@ export class StageThreads implements FactoryThreads {
 	private async finish(watch: Watch, task: Task, messages: Message[]) {
 		if (watch.ending) return;
 		watch.ending = true;
-		const last = messages.findLast((message) => message.role === "assistant")?.text;
+		const last = finalResponse(messages);
 		const used = task.usageTotals ? { tokens: task.usageTotals.tokens - watch.baseUsage.tokens, costNanos: task.usageTotals.costNanos - watch.baseUsage.costNanos } : undefined;
 		const usage: Run["usage"] = used && used.tokens > 0 ? { inputTokens: used.tokens, outputTokens: 0, costUsd: used.costNanos / 1e9 } : undefined;
 		if (watch.stopping || task.status === "interrupted") return this.end(watch, { status: "cancelled", usage });
