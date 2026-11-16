@@ -52,7 +52,7 @@ export function extractFullPublicModels(html: string, bytes: Buffer, sourceUrl: 
 }
 
 /** Decode JSON transport only. Never execute scripts downloaded from the source. */
-/** With `fullDataset`, every row with an id is a model: since 2026-11-14 AA leaves the evaluation and token fields off unscored rows. */
+/** Full datasets retain unscored AA models even when evaluation and token fields are absent. */
 export function extractPublicModels(html: string, sourceUrl: string, fetchedAt: string | null, { fullDataset = false } = {}) {
 	const records = new Map<string, unknown>();
 	let stream = "";
