@@ -314,7 +314,7 @@ export async function buildSitemap(): Promise<{ entries: SitemapEntry[]; complet
 		fetchFrontendCountrySummaries(),
 		fetchFrontendMarketplacePresets(),
 		// Indexability needs provider/pricing signals from the enriched cards.
-		fetchFrontendModels(),
+		fetchFrontendModels({ unknownProviderCountsWhenIncomplete: true }),
 		getHelpCategoryParams(),
 		getHelpArticleParams(),
 		getAnnouncementPosts(),
@@ -499,7 +499,10 @@ export async function buildSitemap(): Promise<{ entries: SitemapEntry[]; complet
 	const complete = [
 		apiProvidersResult, organisationsResult, benchmarksResult, plansResult, countriesResult,
 		marketplacePresetsResult, modelsResult, helpCategoryResult, helpArticleResult, blogPostsResult,
-	].every((result) => result.status === "fulfilled") && modelEntries.length > 0;
+	].every((result) => result.status === "fulfilled") && modelEntries.length > 0 &&
+		// Provider counts are unknown when gateway enrichment timed out; serve the
+		// sitemap without the provider gate, but do not cache it.
+		modelsForSitemap.every((model) => model.gateway_active_provider_count !== undefined);
 
 	return {
 		complete,

@@ -176,7 +176,17 @@ export function analyseModelIndexability(
 	if (NON_INDEXABLE_STATUSES.has(status)) {
 		reasons.push(`${status} model`);
 	}
-	if (!hasProviderCoverage) {
+	// Only an authoritative count can noindex a page: when provider data failed
+	// to load (both counts absent), skip this gate rather than treat it as zero.
+	// The active count wins when known, so a model whose only routes are
+	// inactive or coming soon is not treated as callable.
+	const providerDataKnown =
+		input.activeProviderCount != null || input.providerCount != null;
+	const hasCallableProvider =
+		input.activeProviderCount != null
+			? count(input.activeProviderCount) > 0
+			: count(input.providerCount) > 0;
+	if (providerDataKnown && !hasCallableProvider) {
 		reasons.push("no provider serves this model");
 	}
 	if (

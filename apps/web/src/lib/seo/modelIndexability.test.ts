@@ -99,6 +99,38 @@ describe("modelIndexability", () => {
 		expect(analysis.reasons).toContain("no provider serves this model");
 	});
 
+	it("noindexes models whose only provider routes are inactive or coming soon", () => {
+		const analysis = analyseModelIndexability({
+			modelId: "acme/rich-model",
+			name: "Rich Model",
+			organisationName: "Acme",
+			status: "active",
+			description: "Rich Model is a well documented model with pricing, benchmarks and a release date on Phaseo.",
+			providerCount: 1,
+			activeProviderCount: 0,
+			pricingRuleCount: 2,
+			benchmarkCount: 3,
+			releaseDate: "2026-06-01",
+		});
+
+		expect(analysis.indexable).toBe(false);
+		expect(analysis.reasons).toContain("no provider serves this model");
+	});
+
+	it("skips the provider gate when provider data is unavailable", () => {
+		const analysis = analyseModelIndexability({
+			modelId: "openai/gpt-5.5",
+			name: "GPT-5.5",
+			organisationName: "OpenAI",
+			status: "active",
+			benchmarkCount: 2,
+			releaseDate: "2026-06-01",
+			inputTypes: ["text"],
+		});
+
+		expect(analysis.indexable).toBe(true);
+	});
+
 	it("does not treat a catalogue update timestamp as useful page content", () => {
 		const analysis = analyseModelIndexability({
 			modelId: "qwen/qwen3-8b",

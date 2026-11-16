@@ -274,8 +274,9 @@ export async function getModelMetadata({ params }: RouteMetadataInput): Promise<
 				modelDetails: model.model_details,
 				modelLinks: model.model_links,
 				benchmarkCount: benchmarks.length,
-				providerCount,
-				activeProviderCount,
+				// A failed gateway lookup is unknown, not zero providers.
+				providerCount: gatewayMetadata ? providerCount : undefined,
+				activeProviderCount: gatewayMetadata ? activeProviderCount : undefined,
 				pricingRuleCount: pricing.flatMap((entry) => entry.pricing_rules).length,
 				contextLengths: gatewayMetadata?.providers.map((entry) => entry.context_length),
 				supportedParameters: Object.values(
