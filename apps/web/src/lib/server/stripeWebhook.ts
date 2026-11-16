@@ -616,7 +616,8 @@ export async function handleStripeWebhook(req: Request, mode: StripeWebhookMode 
     let event: Stripe.Event;
     try {
         const webhookSecret = getWebhookSecret(mode);
-        event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+        // Async only: Workers verify with Web Crypto, which has no synchronous API.
+        event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
     } catch (err: any) {
         console.error("[stripe-webhook] Signature verification failed", {
             error: err?.message ?? String(err),
@@ -908,6 +909,14 @@ export async function handleStripeWebhook(req: Request, mode: StripeWebhookMode 
 
                 const purchase = await findCreditPurchase(supabase, piId);
                 if (!purchase) {
+                    // Stripe does not order events: a top-up refund can arrive before
+                    // payment_intent.created has written its ledger row. Fail so Stripe retries,
+                    // rather than drop the refund and later credit the refunded top-up.
+                    const refundedIntent = await stripe.paymentIntents.retrieve(piId);
+                    const refundedPurpose = readPaymentIntentPurpose(refundedIntent);
+                    if (refundedPurpose && TOP_UP_PURPOSES.has(refundedPurpose)) {
+                        throw new Error(`Refund ${refund.id} for top-up ${piId} arrived before its ledger entry`);
+                    }
                     console.warn(`[stripe-webhook] ${event.type}: no matching payment ledger entry`, {
                         refundId: refund.id,
                         paymentIntentId: piId,

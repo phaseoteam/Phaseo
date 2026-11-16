@@ -9,6 +9,7 @@ const WORKSPACE = "00000000-0000-4000-8000-000000000001";
 const state = {
 	rpcCalls: [] as Array<{ name: string; args: any }>,
 	purchase: { workspace_id: WORKSPACE, amount_nanos: 19_000_000_000 } as { workspace_id: string; amount_nanos: number } | null,
+	intentMetadata: {} as Record<string, string>,
 };
 
 vi.mock("@supabase/supabase-js", () => ({
@@ -34,8 +35,8 @@ vi.mock("@supabase/supabase-js", () => ({
 
 vi.mock("@/lib/stripe", () => ({
 	getStripe: () => ({
-		webhooks: { constructEvent: (body: string) => JSON.parse(body) },
-		paymentIntents: { retrieve: async () => ({ id: "pi_1", amount: 2000, amount_received: 2000 }) },
+		webhooks: { constructEventAsync: async (body: string) => JSON.parse(body) },
+		paymentIntents: { retrieve: async () => ({ id: "pi_1", amount: 2000, amount_received: 2000, metadata: state.intentMetadata }) },
 	}),
 	isProductionDeployment: () => true,
 }));
@@ -72,6 +73,7 @@ beforeAll(() => {
 beforeEach(() => {
 	state.rpcCalls = [];
 	state.purchase = { workspace_id: WORKSPACE, amount_nanos: 19_000_000_000 };
+	state.intentMetadata = {};
 });
 
 describe("Stripe refund webhooks", () => {
@@ -105,6 +107,13 @@ describe("Stripe refund webhooks", () => {
 	it("ignores refunds of payments that did not buy credits", async () => {
 		state.purchase = null;
 		expect((await deliver("refund.updated", refund("succeeded"))).status).toBe(200);
+		expect(state.rpcCalls).toHaveLength(0);
+	});
+
+	it("asks Stripe to retry a top-up refund that arrives before the top-up's ledger entry", async () => {
+		state.purchase = null;
+		state.intentMetadata = { purpose: "top_up" };
+		expect((await deliver("refund.created", refund("pending"))).status).toBe(500);
 		expect(state.rpcCalls).toHaveLength(0);
 	});
 });
