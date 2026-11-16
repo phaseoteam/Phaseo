@@ -13,20 +13,100 @@ flowchart LR
   req -->|"401、402、429"| fix["トラブルシューティング"]
 ```
 
-<Prompt description="**コーディングエージェントを使っていますか？** 始める前にこのプロンプトを貼り付けてください。" icon="bot" actions={["copy", "cursor"]}>
-{`You are integrating this project with Phaseo Gateway.
+## コーディングエージェントで始める
 
-Before editing anything:
-- Install the Phaseo skills: npx skills add https://phaseo.app/docs
-- Read https://phaseo.app/docs/skill.md and the API reference for the endpoint you will use. If your tools support MCP, search the docs at https://phaseo.app/docs/mcp.
-- Inspect the existing provider configuration and identify the smallest safe change.
+言語を選び、このプロンプトをコーディングエージェントにコピーしてください。SDK をインストールし、エージェントに Phaseo のドキュメントを参照させ、キーをコードに含めないようにします。
 
-Rules:
-- Call https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY. Never print or commit credentials.
-- Keep the current provider and model behaviour unless I ask for a migration. Check model IDs with GET /v1/models instead of guessing them.
-- Explain the files you would change and the verification commands first.
-- Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.`}
+<Tabs>
+<Tab title="TypeScript">
+<Prompt description="コーディングエージェントにコピーしてください。" icon="bot" actions={["copy", "cursor"]}>
+{`Set up Phaseo in this TypeScript or JavaScript project. It needs Node.js 18 or newer.
+
+1. Install @phaseo/sdk with the project's package manager. If a release-age policy blocks the install, stop and ask me instead of changing it.
+2. Add a note to AGENTS.md, creating it if needed: before using Phaseo, follow the phaseo-sdk-typescript skill if it's installed, and read node_modules/@phaseo/sdk/SKILL.md. Call https://api.phaseo.app/v1 and check model IDs with GET https://api.phaseo.app/v1/models instead of guessing them.
+3. Read the API key from the PHASEO_API_KEY environment variable in server-side code only. Add PHASEO_API_KEY to the example env file without a value. Never print, commit or ship the key to a browser. If it is not set, ask me to create one at https://phaseo.app/settings/keys.
+4. If you support skills, run \`npx skills@latest add https://phaseo.app/docs --skill phaseo-sdk-typescript\`.`}
 </Prompt>
+</Tab>
+<Tab title="Python">
+<Prompt description="コーディングエージェントにコピーしてください。" icon="bot" actions={["copy", "cursor"]}>
+{`Set up Phaseo in this Python project. It needs Python 3.10 or newer.
+
+1. Install the phaseo package with the project's package manager (uv, poetry or pip). If a release-age policy blocks the install, stop and ask me instead of changing it.
+2. Add a note to AGENTS.md, creating it if needed: before using Phaseo, follow the phaseo-sdk-python skill if it's installed, and read SKILL.md inside the installed phaseo package. Call https://api.phaseo.app/v1 and check model IDs with GET https://api.phaseo.app/v1/models instead of guessing them.
+3. Read the API key from the PHASEO_API_KEY environment variable in server-side code only. Add PHASEO_API_KEY to the example env file without a value. Never print, commit or ship the key to a browser. If it is not set, ask me to create one at https://phaseo.app/settings/keys.
+4. If you support skills, run \`npx skills@latest add https://phaseo.app/docs --skill phaseo-sdk-python\`.`}
+</Prompt>
+</Tab>
+<Tab title="HTTP">
+<Prompt description="コーディングエージェントにコピーしてください。" icon="bot" actions={["copy", "cursor"]}>
+{`Set up Phaseo in this project over plain HTTP.
+
+1. Do not add an SDK. Call the HTTP API with the HTTP client the project already uses.
+2. Add a note to AGENTS.md, creating it if needed: before using Phaseo, follow the phaseo-gateway skill if it's installed, and read https://phaseo.app/docs/skill.md. Call https://api.phaseo.app/v1 and check model IDs with GET https://api.phaseo.app/v1/models instead of guessing them.
+3. Read the API key from the PHASEO_API_KEY environment variable in server-side code only. Add PHASEO_API_KEY to the example env file without a value. Never print, commit or ship the key to a browser. If it is not set, ask me to create one at https://phaseo.app/settings/keys.
+4. If you support skills, run \`npx skills@latest add https://phaseo.app/docs --skill phaseo-gateway\`.`}
+</Prompt>
+</Tab>
+<Tab title="Go">
+<Prompt description="コーディングエージェントにコピーしてください。" icon="bot" actions={["copy", "cursor"]}>
+{`Set up Phaseo in this Go project. It needs Go 1.23 or newer.
+
+1. Run \`go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3@latest\`. If a release-age policy blocks the install, stop and ask me instead of changing it.
+2. Add a note to AGENTS.md, creating it if needed: before using Phaseo, follow the phaseo-gateway skill if it's installed, and read https://phaseo.app/docs/skill.md. Call https://api.phaseo.app/v1 and check model IDs with GET https://api.phaseo.app/v1/models instead of guessing them.
+3. Read the API key from the PHASEO_API_KEY environment variable in server-side code only. Add PHASEO_API_KEY to the example env file without a value. Never print, commit or ship the key to a browser. If it is not set, ask me to create one at https://phaseo.app/settings/keys.
+4. If you support skills, run \`npx skills@latest add https://phaseo.app/docs --skill phaseo-gateway\`.`}
+</Prompt>
+</Tab>
+<Tab title="C#">
+<Prompt description="コーディングエージェントにコピーしてください。" icon="bot" actions={["copy", "cursor"]}>
+{`Set up Phaseo in this .NET project. It needs .NET 8 or newer.
+
+1. Run \`dotnet add package Phaseo.Sdk\`. If a release-age policy blocks the install, stop and ask me instead of changing it.
+2. Add a note to AGENTS.md, creating it if needed: before using Phaseo, follow the phaseo-gateway skill if it's installed, and read https://phaseo.app/docs/skill.md. Call https://api.phaseo.app/v1 and check model IDs with GET https://api.phaseo.app/v1/models instead of guessing them.
+3. Read the API key from the PHASEO_API_KEY environment variable in server-side code only. Add PHASEO_API_KEY to the example env file without a value. Never print, commit or ship the key to a browser. If it is not set, ask me to create one at https://phaseo.app/settings/keys.
+4. If you support skills, run \`npx skills@latest add https://phaseo.app/docs --skill phaseo-gateway\`.`}
+</Prompt>
+</Tab>
+<Tab title="Java">
+<Prompt description="コーディングエージェントにコピーしてください。" icon="bot" actions={["copy", "cursor"]}>
+{`Set up Phaseo in this Java project. It needs Java 17 or newer.
+
+1. Add app.phaseo:phaseo-sdk by following the Java section of https://phaseo.app/docs/v1/sdk-reference/client/installation.md. The 3.0.0 artifact on Maven Central is older than the documented API. If a release-age policy blocks the install, stop and ask me instead of changing it.
+2. Add a note to AGENTS.md, creating it if needed: before using Phaseo, follow the phaseo-gateway skill if it's installed, and read https://phaseo.app/docs/skill.md. Call https://api.phaseo.app/v1 and check model IDs with GET https://api.phaseo.app/v1/models instead of guessing them.
+3. Read the API key from the PHASEO_API_KEY environment variable in server-side code only. Add PHASEO_API_KEY to the example env file without a value. Never print, commit or ship the key to a browser. If it is not set, ask me to create one at https://phaseo.app/settings/keys.
+4. If you support skills, run \`npx skills@latest add https://phaseo.app/docs --skill phaseo-gateway\`.`}
+</Prompt>
+</Tab>
+<Tab title="PHP">
+<Prompt description="コーディングエージェントにコピーしてください。" icon="bot" actions={["copy", "cursor"]}>
+{`Set up Phaseo in this PHP project. It needs PHP 8.1 or newer.
+
+1. Run \`composer require phaseo/sdk\`. If a release-age policy blocks the install, stop and ask me instead of changing it.
+2. Add a note to AGENTS.md, creating it if needed: before using Phaseo, follow the phaseo-gateway skill if it's installed, and read https://phaseo.app/docs/skill.md. Call https://api.phaseo.app/v1 and check model IDs with GET https://api.phaseo.app/v1/models instead of guessing them.
+3. Read the API key from the PHASEO_API_KEY environment variable in server-side code only. Add PHASEO_API_KEY to the example env file without a value. Never print, commit or ship the key to a browser. If it is not set, ask me to create one at https://phaseo.app/settings/keys.
+4. If you support skills, run \`npx skills@latest add https://phaseo.app/docs --skill phaseo-gateway\`.`}
+</Prompt>
+</Tab>
+<Tab title="Ruby">
+<Prompt description="コーディングエージェントにコピーしてください。" icon="bot" actions={["copy", "cursor"]}>
+{`Set up Phaseo in this Ruby project. It needs Ruby 3.0 or newer.
+
+1. Add gem "phaseo_sdk" to the Gemfile and run bundle install. If a release-age policy blocks the install, stop and ask me instead of changing it.
+2. Add a note to AGENTS.md, creating it if needed: before using Phaseo, follow the phaseo-gateway skill if it's installed, and read https://phaseo.app/docs/skill.md. Call https://api.phaseo.app/v1 and check model IDs with GET https://api.phaseo.app/v1/models instead of guessing them.
+3. Read the API key from the PHASEO_API_KEY environment variable in server-side code only. Add PHASEO_API_KEY to the example env file without a value. Never print, commit or ship the key to a browser. If it is not set, ask me to create one at https://phaseo.app/settings/keys.
+4. If you support skills, run \`npx skills@latest add https://phaseo.app/docs --skill phaseo-gateway\`.`}
+</Prompt>
+</Tab>
+</Tabs>
+
+次に、最初のリクエストを送るようエージェントに依頼します:
+
+<Prompt description="`phaseo/free` はクレジットなしで使えます。[モデル](https://phaseo.app/models) の任意のモデル ID に置き換えられます。" icon="bot" actions={["copy", "cursor"]}>
+{`Add a server-side function that sends a prompt to phaseo/free and returns the text reply. Use Phaseo's POST /v1/responses endpoint with the client from the setup. Follow the project's existing structure, handle Phaseo error codes, and add a test that mocks the HTTP call.`}
+</Prompt>
+
+自分で設定する場合は、以下の手順に従ってください。
 
 <Visibility for="agents">
 エージェント向けクイックスタートのチェックリスト：

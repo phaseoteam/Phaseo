@@ -17,6 +17,7 @@ import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 import { resolveGatewayPath } from "./endpoint-paths";
 import { EndpointRoutesTable } from "./EndpointRoutesTable";
 import { QuickstartUsageSection } from "./QuickstartUsageSection";
+import { AgentPromptPanel } from "./AgentPromptPanel";
 import { buildJavaSdkQuickstart } from "./javaSdkQuickstart";
 import { buildEndpointRoutes, getSupportedEndpointOptions } from "./endpointRoutes";
 import {
@@ -1844,6 +1845,14 @@ console.log(response);`
 				? t("tierRequestMode", { tier: serviceTierLabel })
 				: t("standardRequestMode");
 	const requiresByok = !isModelMetadataQuickstart && byokOnlyProviders.length > 0;
+	const selectLanguageFamily = (familyId: string) => {
+		const family = availableLanguageFamilies.find(
+			(candidate) => candidate.id === familyId,
+		);
+		if (family) {
+			setSelectedLanguage(family.options[0].value);
+		}
+	};
 	const requestStep = requiresByok ? 3 : 2;
 
 	return (
@@ -1860,6 +1869,21 @@ console.log(response);`
 				</header>
 			) : null}
 			<div className="space-y-4">
+				{isModelMetadataQuickstart ? null : (
+					<>
+						<AgentPromptPanel
+							families={availableLanguageFamilies}
+							selectedFamilyId={selectedLanguageFamily?.id ?? "typescript"}
+							onSelectFamily={selectLanguageFamily}
+							modelId={modelIdentifierInCode}
+							endpointPath={endpointPath}
+							analyticsModelId={analyticsModelId}
+						/>
+						<p className="border-t border-border/70 pt-4 text-sm font-medium text-muted-foreground">
+							{t("manualSetup")}
+						</p>
+					</>
+				)}
 				<div className="space-y-3">
 					<div className="flex items-center gap-3">
 						<Badge
@@ -2033,14 +2057,7 @@ console.log(response);`
 								model_id: analyticsModelId,
 							});
 						}}
-						onSelectLanguageFamily={(familyId) => {
-							const family = availableLanguageFamilies.find(
-								(candidate) => candidate.id === familyId,
-							);
-							if (family) {
-								setSelectedLanguage(family.options[0].value);
-							}
-						}}
+						onSelectLanguageFamily={selectLanguageFamily}
 						onSelectLanguage={setSelectedLanguage}
 						onSelectServiceTier={setSelectedServiceTier}
 						onToggleStreaming={setStreamingEnabled}

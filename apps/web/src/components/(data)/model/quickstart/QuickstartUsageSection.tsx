@@ -166,7 +166,7 @@ function getLanguageOptionVisual(value: string): QuickstartVisual {
 	return { kind: "icon", icon: TerminalSquare };
 }
 
-function getLanguageFamilyVisual(familyId: string): QuickstartVisual {
+export function getLanguageFamilyVisual(familyId: string): QuickstartVisual {
 	switch (familyId) {
 		case "typescript":
 			return { kind: "logo", logoId: "typescript", alt: "TypeScript" };
@@ -222,7 +222,7 @@ function OptionVisual({ visual }: { visual: QuickstartVisual }) {
 	);
 }
 
-function OptionLabel({
+export function OptionLabel({
 	label,
 	visual,
 }: {
