@@ -14697,7 +14697,7 @@ components:
           type: array
           minItems: 1
           maxItems: 8
-          description: 以 base64 数据 URL 提供的 WAV、MP3、FLAC、M4A 或 OGG 音频片段，适用于模型能处理音频的路由，例如 Liquid d1.2。不支持远程 URL。
+          description: 以 base64 数据 URL 提供的 WAV、MP3、FLAC、M4A 或 OGG 音频片段，适用于模型能处理音频的路由，例如 Liquid d1.2。不支持远程 URL。如果该模型没有任何路由能处理音频，这些片段会被忽略。
           items:
             type: string
             pattern: ^[Dd][Aa][Tt][Aa]:[Aa][Uu][Dd][Ii][Oo]/([Ww][Aa][Vv]|[Xx]-[Ww][Aa][Vv]|[Ww][Aa][Vv][Ee]|[Mm][Pp]3|[Mm][Pp][Ee][Gg]|[Ff][Ll][Aa][Cc]|[Mm]4[Aa]|[Mm][Pp]4|[Oo][Gg][Gg]);base64,[A-Za-z0-9+/]+={0,2}$
@@ -14893,7 +14893,7 @@ components:
             nullable: true
         multiple:
           type: boolean
-          description: 返回所有适用的选项，每个选项附带各自的概率，而不是单个选择。仅限支持类型化答案的路由，例如 Liquid d1.2。
+          description: 返回所有适用的选项，每个选项附带各自的概率，而不是单个选择。优先使用支持此功能的路由（例如 Liquid d1.2）；其他路由只返回一个选择。
     DecisionScoreQuestion:
       type: object
       required:

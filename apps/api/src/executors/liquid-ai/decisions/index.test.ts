@@ -2,10 +2,11 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { ExecutorExecuteArgs } from "@executors/types";
 import type { IRDecisionsRequest } from "@core/ir";
 import { resolveProviderExecutor } from "@executors/index";
+import { completeSystemOne } from "@executors/_shared/decisions/systemone";
 import { DecisionsSchema } from "@core/schemas";
 import { decodeDecisionsRequest } from "@protocols/decisions/decode";
 import { encodeDecisionsResponse } from "@protocols/decisions/encode";
-import { filterDecisionCandidatesByModalities } from "@pipeline/execute/modalities";
+import { filterDecisionCandidatesByModalities, routeDecisionCandidates } from "@pipeline/execute/modalities";
 import type { ProviderCandidate } from "@pipeline/before/types";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../../tests/helpers/runtime";
@@ -135,12 +136,24 @@ describe("Typed-answer request validation and routing", () => {
 	])("rejects invalid typed questions: %j", questions => {
 		expect(DecisionsSchema.safeParse({ model: "liquid-ai/d1.2", state: "x", images: [PNG], questions }).success).toBe(false);
 	});
-	it("requires an image for boxes and rejects audio beside native input", () => {
+	it("requires an image for boxes", () => {
 		expect(DecisionsSchema.safeParse({ model: "m", state: "x", questions: { q: { type: "boxes", instructions: "Trees" } } }).success).toBe(false);
-		expect(DecisionsSchema.safeParse({ model: "m", input: "x", audio: [`data:audio/wav;base64,${WAV}`],
-			questions: [{ type: "predicate", instructions: "?" }] }).success).toBe(false);
-		expect(DecisionsSchema.safeParse({ model: "m", state: "x", audio: ["https://example.com/a.wav"],
-			questions: { q: { type: "noul", instructions: "?" } } }).success).toBe(false);
+	});
+	it.each([
+		["https://example.com/a.wav"],
+		"data:audio/wav;base64," + WAV,
+		[],
+		["data:audio/aac;base64," + WAV],
+		Array.from({ length: 9 }, () => "data:audio/wav;base64," + WAV),
+		{ clip: WAV },
+	])("keeps ignoring an audio field that is not 1-8 audio data URLs, as before: %j", audio => {
+		const ir = legacy({ audio, questions: { q: { type: "noul", instructions: "?" } } });
+		expect(ir.audio).toBeUndefined();
+	});
+	it("keeps ignoring an audio field beside native input, as before", () => {
+		const ir = decodeDecisionsRequest(DecisionsSchema.parse({ model: "m", input: "x", audio: ["data:audio/wav;base64," + WAV],
+			questions: [{ type: "predicate", instructions: "?" }] }));
+		expect(ir.audio).toBeUndefined();
 	});
 	it("routes typed questions only to routes that list them, and remote audio away from inline-only routes", () => {
 		const d12 = { providerId: "liquid-ai", inputModalities: ["text", "image", "audio"], capabilityParams: {
@@ -152,10 +165,41 @@ describe("Typed-answer request validation and routing", () => {
 			capabilityParams: { images: true, audio: true } } as unknown as ProviderCandidate;
 		expect(filterDecisionCandidatesByModalities([d12, d11], legacy({ questions: typedQuestions }))).toEqual([d12]);
 		const multi = legacy({ questions: { t: typedQuestions.topics } });
-		expect(filterDecisionCandidatesByModalities([d11], multi)).toEqual([]);
+		// Multi-select is a preference: routes that ignore multiple still get the question, as before.
+		expect(filterDecisionCandidatesByModalities([d11], multi)).toEqual([d11]);
+		expect(filterDecisionCandidatesByModalities([d11, d12], multi)).toEqual([d12]);
 		const plain = legacy({ questions: { q: { type: "choice", instructions: "?", criteria: { a: null } } } });
 		expect(filterDecisionCandidatesByModalities([d12, d11], plain)).toEqual([d12, d11]);
 		const remoteAudio: IRDecisionsRequest = { ...plain, audio: [{ type: "audio", source: "url", data: "https://example.com/a.wav" }] };
 		expect(filterDecisionCandidatesByModalities([d12, google], remoteAudio)).toEqual([google]);
+	});
+	it("sends state/map audio to a route that hears it, otherwise drops it as before", () => {
+		const d11 = { providerId: "liquid-ai", inputModalities: ["text", "image"], capabilityParams: { images: true } } as unknown as ProviderCandidate;
+		const d12 = { providerId: "liquid-ai", inputModalities: ["text", "image", "audio"],
+			capabilityParams: { images: true, audio: true, audio_urls: false } } as unknown as ProviderCandidate;
+		const ir = legacy({ audio: ["data:audio/wav;base64," + WAV], questions: { q: { type: "noul", instructions: "Siren?" } } });
+		expect(ir.optionalAudio).toBe(true);
+		expect(routeDecisionCandidates([d11, d12], ir)).toEqual({ candidates: [d12], dropAudio: false });
+		expect(routeDecisionCandidates([d11], ir)).toEqual({ candidates: [d11], dropAudio: true });
+		// Native input_audio was always strict: no audio route means no route.
+		const native = decodeDecisionsRequest(DecisionsSchema.parse({ model: "m", input: [{ role: "user", content: [
+			{ type: "input_audio", input_audio: { data: WAV, format: "wav" } },
+		] }], questions: [{ type: "predicate", instructions: "?" }] }));
+		expect(routeDecisionCandidates([d11], native)).toEqual({ candidates: [], dropAudio: false });
+	});
+});
+
+describe("Other System One providers keep their answer rules", () => {
+	it("accepts a single choice when a provider ignores multiple", async () => {
+		const { result } = await run(legacy({ questions: { t: typedQuestions.topics } }),
+			{ t: { type: "choice", choice: "billing", probabilities: { billing: 0.8, delivery: 0.15, login: 0.05 }, confidence: 0.7 } });
+		expect(result.upstream.status).toBe(200);
+	});
+	it("still rejects a null box unless the provider opts in (only Liquid does)", async () => {
+		const ir = legacy({ images: [PNG], questions: { s: { type: "box", instructions: "Signature?" } } });
+		const upstream = () => jsonResponse({ answers: { s: { type: "box", box: null, found: 0.1, confidence: 0.1 } }, usage: { input_tokens: 5, output_tokens: 0 } });
+		const keyInfo = { source: "gateway" as const, byokId: null };
+		expect((await completeSystemOne(argsFor(ir), upstream(), keyInfo)).upstream.status).toBe(502);
+		expect((await completeSystemOne(argsFor(ir), upstream(), keyInfo, undefined, undefined, { allowMissingBox: true })).upstream.status).toBe(200);
 	});
 });

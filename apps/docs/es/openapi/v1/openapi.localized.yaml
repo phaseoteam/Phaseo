@@ -14697,7 +14697,7 @@ components:
           type: array
           minItems: 1
           maxItems: 8
-          description: Clips de audio como URL de datos en base64 en WAV, MP3, FLAC, M4A u OGG, para rutas cuyo modelo procesa audio, como Liquid d1.2. No se admiten URL remotas.
+          description: Clips de audio como URL de datos en base64 en WAV, MP3, FLAC, M4A u OGG, para rutas cuyo modelo procesa audio, como Liquid d1.2. No se admiten URL remotas. Si ninguna ruta del modelo procesa audio, los clips se ignoran.
           items:
             type: string
             pattern: ^[Dd][Aa][Tt][Aa]:[Aa][Uu][Dd][Ii][Oo]/([Ww][Aa][Vv]|[Xx]-[Ww][Aa][Vv]|[Ww][Aa][Vv][Ee]|[Mm][Pp]3|[Mm][Pp][Ee][Gg]|[Ff][Ll][Aa][Cc]|[Mm]4[Aa]|[Mm][Pp]4|[Oo][Gg][Gg]);base64,[A-Za-z0-9+/]+={0,2}$
@@ -14893,7 +14893,7 @@ components:
             nullable: true
         multiple:
           type: boolean
-          description: Devuelve todas las opciones aplicables, cada una con su propia probabilidad, en lugar de una sola. Solo en rutas con respuestas tipadas, como Liquid d1.2.
+          description: Devuelve todas las opciones aplicables, cada una con su propia probabilidad, en lugar de una sola. Se prefieren las rutas que lo admiten, como Liquid d1.2; las demás rutas responden con una sola opción.
     DecisionScoreQuestion:
       type: object
       required:

@@ -70,9 +70,11 @@ function validMultipleChoice(answer: Record<string, unknown>, keys: string[]): b
 		keys.every(key => Object.prototype.hasOwnProperty.call(probabilities, key) && isProbability(probabilities[key]));
 }
 
-function validAnswer(answer: unknown, question: IRDecisionQuestion, allowRefusal: boolean, state: unknown): boolean {
+type AnswerRules = { allowRefusal?: boolean; allowMissingBox?: boolean };
+
+function validAnswer(answer: unknown, question: IRDecisionQuestion, options: AnswerRules, state: unknown): boolean {
 	// A provider may decline a single question without failing the request; the other answers stay valid.
-	if (allowRefusal && isRecord(answer) && answer.type === "refusal") return true;
+	if (options.allowRefusal && isRecord(answer) && answer.type === "refusal") return true;
 	// A box answer's confidence is null when the model gives none (https://docs.typesafe.ai/api).
 	const nullBoxConfidence = question.type === "box" && isRecord(answer) && answer.confidence === null;
 	if (!isRecord(answer) || answer.type !== question.type ||
@@ -87,13 +89,16 @@ function validAnswer(answer: unknown, question: IRDecisionQuestion, allowRefusal
 	}
 	if (question.type === "box") {
 		// Liquid reports a missing object as box null with `found` under 0.5.
-		if (answer.box === null) return isProbability(answer.found) && answer.found < 0.5;
+		if (answer.box === null && options.allowMissingBox) return isProbability(answer.found) && answer.found < 0.5;
 		return (nullBoxConfidence || isProbability(answer.confidence)) && validBox(answer.box);
 	}
 	const criteria = question.criteria;
 	if (!criteria) return false;
 	const keys = Object.keys(criteria);
-	if (question.type === "choice" && question.multiple === true) return validMultipleChoice(answer, keys);
+	// A route that ignores `multiple` answers with one choice, which is checked as before.
+	if (question.type === "choice" && question.multiple === true && Array.isArray(answer.choices)) {
+		return validMultipleChoice(answer, keys);
+	}
 	const probabilities = answer.probabilities;
 	if (!isRecord(probabilities) || Object.keys(probabilities).length !== keys.length ||
 		keys.some(key => !Object.prototype.hasOwnProperty.call(probabilities, key) || !isProbability(probabilities[key]))) return false;
@@ -133,7 +138,8 @@ export async function executeSystemOne(
 	args: ExecutorExecuteArgs,
 	url: string,
 	defaultModel: string,
-	options: { forwardMedia?: boolean } = {},
+	// forwardMedia: send images and audio (Liquid). allowMissingBox: accept box null with found < 0.5 (Liquid).
+	options: { forwardMedia?: boolean; allowMissingBox?: boolean } = {},
 ): Promise<ExecutorResult> {
 	const ir = args.ir as IRDecisionsRequest;
 	const keyInfo = resolveOpenAICompatKey({ ...args, forceGatewayKey: args.meta.forceGatewayKey });
@@ -152,7 +158,7 @@ export async function executeSystemOne(
 		},
 		body: JSON.stringify(body),
 	});
-	return completeSystemOne(args, upstream, keyInfo, mappedRequest);
+	return completeSystemOne(args, upstream, keyInfo, mappedRequest, undefined, { allowMissingBox: options.allowMissingBox });
 }
 
 // Validate the shared typed-answer contract independently of provider transport.
@@ -164,6 +170,8 @@ export async function completeSystemOne(
 	unwrapPayload: (payload: unknown) => unknown = payload => payload,
 	options: {
 		allowRefusal?: boolean;
+		// Accept a box answer of null with found under 0.5 as "not found" (Liquid documents it).
+		allowMissingBox?: boolean;
 		// Lets a provider turn a 200 payload that carries no answers (for example a
 		// blocked input) into its own client error instead of an invalid-response 502.
 		rejectPayload?: (payload: unknown) => Response | null;
@@ -208,7 +216,7 @@ export async function completeSystemOne(
 	const answers = payload.answers;
 	const questionIds = Object.keys(ir.questions);
 	if (Object.keys(answers).length !== questionIds.length || questionIds.some(id =>
-		!Object.prototype.hasOwnProperty.call(answers, id) || !validAnswer(answers[id], ir.questions[id], options.allowRefusal === true, ir.state),
+		!Object.prototype.hasOwnProperty.call(answers, id) || !validAnswer(answers[id], ir.questions[id], options, ir.state),
 	)) return malformed(payload);
 	const inputTokens = payload.usage.input_tokens;
 	const outputTokens = payload.usage.output_tokens;

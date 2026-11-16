@@ -114,7 +114,7 @@ import { normalizeCapability } from "@/executors";
 import { isSynchronousMediaCapability } from "@core/synchronous-media";
 import {
 	decisionQuestionLimit, filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities,
-	requiredTypedDecisionFeatures, routeServesTypedDecisionFeatures, routeUploadedFileIds,
+	requiredTypedDecisionFeatures, routeDecisionCandidates, routeServesTypedDecisionFeatures, routeUploadedFileIds,
 } from "./modalities";
 import { loadPriceCard } from "../pricing";
 import { stripUsagePricing } from "../usage";
@@ -621,7 +621,9 @@ export async function doRequestWithIR(
 	}
 	if (normalizedCapability === "decisions.make") {
 		const decisionRoutes = candidates;
-		candidates = filterDecisionCandidatesByModalities(candidates, ir as IRDecisionsRequest);
+		const routed = routeDecisionCandidates(candidates, ir as IRDecisionsRequest);
+		candidates = routed.candidates;
+		if (routed.dropAudio) delete (ir as IRDecisionsRequest).audio;
 		if (!candidates.length) {
 			const decisions = ir as IRDecisionsRequest;
 			const questionCount = Object.keys(decisions.questions ?? {}).length;

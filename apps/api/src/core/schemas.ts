@@ -1924,10 +1924,10 @@ export const LegacyDecisionsSchema = lazySchema(() => z.object({
             base64: z.string().regex(/^[A-Za-z0-9+/]+={0,2}$/),
         }),
     ])).max(4).optional(),
-    // Audio clips as base64 data URLs, for routes whose model hears audio.
-    audio: z.array(z.string().max(24 * 1024 * 1024)
-        .regex(LEGACY_DECISION_AUDIO_DATA_URL, "Use a base64 data URL in a wav, mp3, flac, m4a or ogg format."))
-        .min(1).max(8).optional(),
+    // Audio clips as base64 data URLs, for routes whose model hears audio. Older gateways
+    // ignored this field, so anything that is not 1–8 valid clips is still ignored
+    // (see decodeDecisionsRequest) rather than refused.
+    audio: z.unknown().optional(),
     questions: z.record(z.string().min(1).max(128), DecisionQuestionSchema)
         .refine((questions) => Object.keys(questions).length > 0, {
             message: "At least one decision question is required.",
@@ -1962,11 +1962,7 @@ export const DecisionsSchema = lazySchema(() => z.union([OpenAIDecisionsSchema, 
         : Array.isArray(body.images) && body.images.length > 0;
     if (questions.some(question => question.type === "box" || question.type === "boxes") && !hasImages) {
         ctx.addIssue({ code: "custom", path: ["questions"], message: "Box questions require image input." });
-    }
-    if ("input" in body && "audio" in body) {
-        ctx.addIssue({ code: "custom", path: ["audio"], message: "With input, send audio as input_audio parts." });
-    }
-    // The native format checks its own `input`; this covers the state/map format.
+    }    // The native format checks its own `input`; this covers the state/map format.
     if (!Array.isArray(body.questions) && questions.some(question => question.type === "locate") &&
         (typeof (body as { state?: unknown }).state !== "string" || hasImages)) {
         ctx.addIssue({ code: "custom", path: ["state"], message: LOCATE_REQUIRES_TEXT_STATE });

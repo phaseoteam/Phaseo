@@ -14697,7 +14697,7 @@ components:
           type: array
           minItems: 1
           maxItems: 8
-          description: Clipes de áudio como URLs de dados em base64 em WAV, MP3, FLAC, M4A ou OGG, para rotas cujo modelo processa áudio, como o Liquid d1.2. URLs remotas não são compatíveis.
+          description: Clipes de áudio como URLs de dados em base64 em WAV, MP3, FLAC, M4A ou OGG, para rotas cujo modelo processa áudio, como o Liquid d1.2. URLs remotas não são compatíveis. Quando nenhuma rota do modelo processa áudio, os clipes são ignorados.
           items:
             type: string
             pattern: ^[Dd][Aa][Tt][Aa]:[Aa][Uu][Dd][Ii][Oo]/([Ww][Aa][Vv]|[Xx]-[Ww][Aa][Vv]|[Ww][Aa][Vv][Ee]|[Mm][Pp]3|[Mm][Pp][Ee][Gg]|[Ff][Ll][Aa][Cc]|[Mm]4[Aa]|[Mm][Pp]4|[Oo][Gg][Gg]);base64,[A-Za-z0-9+/]+={0,2}$
@@ -14893,7 +14893,7 @@ components:
             nullable: true
         multiple:
           type: boolean
-          description: Retorna todas as opções aplicáveis, cada uma com sua própria probabilidade, em vez de uma única escolha. Somente em rotas com respostas tipadas, como o Liquid d1.2.
+          description: Retorna todas as opções aplicáveis, cada uma com sua própria probabilidade, em vez de uma única escolha. Rotas compatíveis, como o Liquid d1.2, têm preferência; as demais respondem com uma única escolha.
     DecisionScoreQuestion:
       type: object
       required:

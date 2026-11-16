@@ -31,14 +31,22 @@ export function decisionQuestionLimit(candidate: Pick<ProviderCandidate, "capabi
 		: DEFAULT_ROUTE_QUESTION_LIMIT;
 }
 
-/** The typed-answer features (text, number, spans, multi-select …) a request asks for. */
+/**
+ * The typed-answer features (text, number, spans, boxes …) a request needs from its route.
+ * Multi-select is left out: `multiple` used to pass through to every provider, so it is
+ * only a preference (see filterDecisionCandidatesByModalities).
+ */
 export function requiredTypedDecisionFeatures(ir: IRDecisionsRequest): TypedDecisionFeature[] {
 	const features = new Set<TypedDecisionFeature>();
 	for (const question of Object.values(ir.questions ?? {})) {
 		const feature = decisionQuestionFeature(question);
-		if (feature) features.add(feature);
+		if (feature && feature !== "multi_choice") features.add(feature);
 	}
 	return Array.from(features);
+}
+
+function requestsMultiChoice(ir: IRDecisionsRequest): boolean {
+	return Object.values(ir.questions ?? {}).some(question => decisionQuestionFeature(question) === "multi_choice");
 }
 
 /** Typed answers are opt-in per route: its capability lists them in params.question_types. */
@@ -70,7 +78,7 @@ export function filterDecisionCandidatesByModalities(
 		{ modality: "audio", parameter: "audio", requested: Boolean(ir.audio?.length) },
 		{ modality: "video", parameter: "videos", requested: Boolean(ir.videos?.length) },
 	].filter(item => item.requested);
-	return candidates.filter(candidate =>
+	const eligible = candidates.filter(candidate =>
 		questionCount <= decisionQuestionLimit(candidate) &&
 		(!requestsBox || (Boolean(ir.images?.length) && candidate.capabilityParams?.box === true)) &&
 		(!requestsLocate || candidate.capabilityParams?.locate === true) &&
@@ -79,6 +87,27 @@ export function filterDecisionCandidatesByModalities(
 		(!requestsAudioUrls || candidate.capabilityParams?.audio_urls !== false) &&
 		routeServesTypedDecisionFeatures(candidate, typedFeatures) &&
 		media.every(item => candidate.inputModalities?.includes(item.modality) && candidate.capabilityParams?.[item.parameter] === true));
+	// Prefer routes that answer multi-select; others still get the question as before.
+	if (requestsMultiChoice(ir)) {
+		const multi = eligible.filter(candidate => routeServesTypedDecisionFeatures(candidate, ["multi_choice"]));
+		if (multi.length) return multi;
+	}
+	return eligible;
+}
+
+/**
+ * Routes for a decisions request. Audio sent in the state/map format's `audio` field
+ * (`optionalAudio`) used to be ignored, so when no route hears audio the request is
+ * routed without it, as before, and `dropAudio` tells the caller to remove it.
+ */
+export function routeDecisionCandidates(
+	candidates: ProviderCandidate[],
+	ir: IRDecisionsRequest,
+): { candidates: ProviderCandidate[]; dropAudio: boolean } {
+	const routed = filterDecisionCandidatesByModalities(candidates, ir);
+	if (routed.length || !ir.optionalAudio || !ir.audio?.length) return { candidates: routed, dropAudio: false };
+	const withoutAudio = filterDecisionCandidatesByModalities(candidates, { ...ir, audio: undefined });
+	return withoutAudio.length ? { candidates: withoutAudio, dropAudio: true } : { candidates: routed, dropAudio: false };
 }
 
 type ModalityRequirements = {

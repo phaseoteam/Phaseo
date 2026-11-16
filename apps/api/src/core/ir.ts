@@ -592,6 +592,9 @@ export type IRDecisionsRequest = {
 	questions: Record<string, IRDecisionQuestion>;
 	images?: Array<string | { content_type: "image/png" | "image/jpeg" | "image/webp"; base64: string }>;
 	audio?: Array<Extract<IRContentPart, { type: "audio" }>>;
+	// Audio from the state/map format's `audio` field, which older gateways ignored:
+	// when no route hears audio the request is sent without it rather than refused.
+	optionalAudio?: boolean;
 	videos?: string[];
 	// Canonical ordered questions and multimodal evidence are retained losslessly
 	// while System One providers consume the normalized state/question map.

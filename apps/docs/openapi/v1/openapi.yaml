@@ -15619,9 +15619,7 @@ components:
           minItems: 1
           maxItems: 8
           description: >-
-            Audio clips as base64 data URLs in WAV, MP3, FLAC, M4A or OGG, for
-            routes whose model hears audio, such as Liquid d1.2. Remote URLs are
-            unsupported.
+            Audio clips as base64 data URLs in WAV, MP3, FLAC, M4A or OGG, for routes whose model hears audio, such as Liquid d1.2. Remote URLs are unsupported. When no route for the model hears audio, the clips are ignored.
           items:
             type: string
             pattern: >-
@@ -15839,8 +15837,7 @@ components:
         multiple:
           type: boolean
           description: >-
-            Returns every option that applies, each with its own probability,
-            instead of one choice. Typed-answer routes only, such as Liquid d1.2.
+            Returns every option that applies, each with its own probability, instead of one choice. Routes that support it, such as Liquid d1.2, are preferred; other routes answer with one choice.
     DecisionScoreQuestion:
       type: object
       required:
