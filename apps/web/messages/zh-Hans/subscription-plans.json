@@ -48,7 +48,7 @@
     "compareTitle": "比较 {provider} 的方案",
     "pricePerMonth": "每月价格",
     "thisPlan": "当前方案",
-    "accessVerified": "模型访问信息最后核对于 {date}"
+    "accessVerified": "此处显示的模型访问信息均于 {date} 或之后核对"
   },
   "metadata": {
     "fallbackTitle": "AI 订阅方案与价格 | Phaseo",

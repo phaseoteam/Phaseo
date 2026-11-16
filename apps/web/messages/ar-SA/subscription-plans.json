@@ -48,7 +48,7 @@
     "compareTitle": "قارن خطط {provider}",
     "pricePerMonth": "السعر شهريًا",
     "thisPlan": "هذه الخطة",
-    "accessVerified": "آخر تحقق من الوصول إلى النماذج: {date}"
+    "accessVerified": "تم التحقق من الوصول إلى النماذج المعروض هنا في {date} أو بعده"
   },
   "metadata": {
     "fallbackTitle": "خطط اشتراك الذكاء الاصطناعي وأسعارها | Phaseo",

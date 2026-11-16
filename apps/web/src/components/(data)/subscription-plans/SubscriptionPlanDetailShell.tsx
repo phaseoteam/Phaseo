@@ -26,7 +26,8 @@ function Stat({ label, value, detail }: { label: string; value: ReactNode; detai
 		<div className="min-w-0 bg-background px-4 py-3">
 			<p className="text-xs text-muted-foreground">{label}</p>
 			<p className="mt-1 truncate text-lg font-semibold tabular-nums">{value}</p>
-			{detail ? <p className="truncate text-xs text-muted-foreground">{detail}</p> : null}
+			{/* Wraps rather than truncates, so a scenario label after a long model name stays visible. */}
+			{detail ? <p className="text-xs break-words text-muted-foreground">{detail}</p> : null}
 		</div>
 	);
 }

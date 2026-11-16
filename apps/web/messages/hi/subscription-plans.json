@@ -48,7 +48,7 @@
     "compareTitle": "{provider} की योजनाओं की तुलना करें",
     "pricePerMonth": "प्रति माह कीमत",
     "thisPlan": "यह योजना",
-    "accessVerified": "मॉडल एक्सेस आख़िरी बार {date} को जाँचा गया"
+    "accessVerified": "यहाँ दिखाया गया मॉडल एक्सेस {date} को या उसके बाद जाँचा गया"
   },
   "metadata": {
     "fallbackTitle": "AI सदस्यता योजनाएँ और कीमतें | Phaseo",

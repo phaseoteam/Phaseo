@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { apiMultiple, bestPlanPerModel, isCurrentUsage, perMillionFractionDigits, summarizeUsage, type SubscriptionPlanUsage } from "./usage";
+import { apiMultiple, bestPlanPerModel, isCurrentUsage, monthlyAmountFractionDigits, perMillionFractionDigits, summarizeUsage, type SubscriptionPlanUsage } from "./usage";
 
 const row = (overrides: Partial<SubscriptionPlanUsage>): SubscriptionPlanUsage => ({
 	model_slug: "lab/model", model_name: "Model", scenario: "standard", monthly_price_usd: 200, monthly_tokens: 1e9,
@@ -56,5 +56,15 @@ describe("expired promotions", () => {
 		const regular = row("regular", 0.01, null);
 		expect(bestPlanPerModel([ended, regular]).map(({ plan }) => plan.plan_id)).toEqual(["regular"]);
 		expect(summarizeUsage(ended.usage)).toBeNull();
+	});
+});
+
+describe("monthly amount digits", () => {
+	const usd = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", ...monthlyAmountFractionDigits(value) }).format(value);
+	it("shows sub-cent amounts instead of $0.00", () => {
+		expect(usd(0.003)).toBe("$0.003");
+		expect(usd(0.01)).toBe("$0.01");
+		expect(usd(19.99)).toBe("$19.99");
+		expect(usd(20)).toBe("$20");
 	});
 });

@@ -2,7 +2,7 @@ import { useLocale, useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
 import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
-import { apiMultiple, MIN_API_MULTIPLE, perMillionFractionDigits, type SubscriptionPlanUsage } from "@/lib/fetchers/subscription-plans/usage";
+import { apiMultiple, MIN_API_MULTIPLE, monthlyAmountFractionDigits, perMillionFractionDigits, type SubscriptionPlanUsage } from "@/lib/fetchers/subscription-plans/usage";
 import { sortSubscriptionPlanPricesForDisplay } from "@/components/(data)/model/pricing/ModelSubscriptionsClient";
 
 /** Formatting shared by the subscription plan pages: prices, token counts and token value. */
@@ -26,7 +26,7 @@ export function useSubscriptionFormat() {
 		messages,
 		price: (price: SubscriptionPrice) => formatSubscriptionPrice(price, (amount, currency) => money(amount, currency, Number.isInteger(amount) ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : { maximumFractionDigits: 8 }), priceLabels),
 		/** "$20 / month" from a monthly USD amount. */
-		perMonth: (usd: number) => `${money(usd, "USD", Number.isInteger(usd) ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : usd > 0 && usd < 0.01 ? { minimumSignificantDigits: 1, maximumSignificantDigits: 2 } : { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ${priceLabels.period?.(1, "month") ?? "month"}`,
+		perMonth: (usd: number) => `${money(usd, "USD", monthlyAmountFractionDigits(usd))} / ${priceLabels.period?.(1, "month") ?? "month"}`,
 		/** The plan's first price in display order (fixed monthly USD first), or null. */
 		primaryPrice: (prices: SubscriptionPrice[] | null | undefined) => sortSubscriptionPlanPricesForDisplay(prices ?? [])[0] ?? null,
 		tokens: (value: number) => format.number(value, { notation: "compact", maximumFractionDigits: value >= 1e9 ? 1 : 0 }),

@@ -72,6 +72,13 @@ export function bestPlanPerModel<T extends { usage?: SubscriptionPlanUsage[] | n
 		|| (a.usage.effective_usd_per_mtok ?? 0) - (b.usage.effective_usd_per_mtok ?? 0));
 }
 
+/** Digits for a monthly amount: none for whole dollars, significant digits below one cent so $0.003 isn't $0.00, else cents. */
+export function monthlyAmountFractionDigits(value: number): Intl.NumberFormatOptions {
+	if (Number.isInteger(value)) return { minimumFractionDigits: 0, maximumFractionDigits: 0 };
+	if (value > 0 && value < 0.01) return { minimumSignificantDigits: 1, maximumSignificantDigits: 2 };
+	return { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+}
+
 /** Price per 1M tokens with enough precision to tell small numbers apart: $0.0063, $0.13, $2.50. */
 export function perMillionFractionDigits(value: number): Intl.NumberFormatOptions {
 	if (value >= 1) return { minimumFractionDigits: 2, maximumFractionDigits: 2 };

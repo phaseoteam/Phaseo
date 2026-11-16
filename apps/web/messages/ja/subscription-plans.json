@@ -48,7 +48,7 @@
     "compareTitle": "{provider} のプランを比較",
     "pricePerMonth": "月額料金",
     "thisPlan": "このプラン",
-    "accessVerified": "モデルのアクセス状況の最終確認: {date}"
+    "accessVerified": "ここに表示しているモデルのアクセス状況は {date} 以降に確認したものです"
   },
   "metadata": {
     "fallbackTitle": "AIサブスクリプションプランと料金 | Phaseo",
