@@ -4,7 +4,8 @@ CREATE OR REPLACE FUNCTION public.get_v2_subscription_monthly_price_details (
   RETURNS TABLE (
     plan_uuid         uuid,
     monthly_price_usd numeric,
-    per_seat          boolean
+    account_usd       numeric,
+    seat_usd          numeric
   )
   LANGUAGE sql
   STABLE
@@ -13,15 +14,17 @@ CREATE OR REPLACE FUNCTION public.get_v2_subscription_monthly_price_details (
   -- Each active plan's current monthly USD price for one account or seat: the cheapest live monthly offer
   -- whose ongoing components are all fixed amounts or free. Ongoing = not introductory, no end cycle, and
   -- for each charge (component_key) the row with the latest start, so a renewal price replaces that
-  -- charge's first-cycle price while other charges still count. per_seat is true when every paid ongoing
-  -- charge of that offer is per seat, so the amount is the price of one seat.
-  select distinct on (o.plan_uuid) o.plan_uuid, components.total, components.per_seat
+  -- charge's first-cycle price while other charges still count. account_usd and seat_usd split that total
+  -- into the charges paid once per account and the charges paid for each seat, so a page can show
+  -- "$80 + $40 / seat" instead of presenting one seat's total as the plan price.
+  select distinct on (o.plan_uuid) o.plan_uuid, components.total, components.account_total, components.seat_total
   from public.v2_subscription_plan_offers o
   join public.v2_subscription_plans plan on plan.plan_uuid = o.plan_uuid
   cross join lateral (
     select sum(case when c.pricing_type = 'free' then 0 else c.amount end) as total, count(*) as parts,
       bool_and(c.pricing_type = 'free' or (c.pricing_type = 'fixed' and c.amount is not null)) as all_fixed,
-      coalesce(bool_and(c.charge_basis = 'seat') filter (where c.pricing_type <> 'free'), false) as per_seat
+      coalesce(sum(c.amount) filter (where c.pricing_type <> 'free' and c.charge_basis = 'seat'), 0) as seat_total,
+      coalesce(sum(c.amount) filter (where c.pricing_type <> 'free' and c.charge_basis <> 'seat'), 0) as account_total
     from (
       select c.*, max(coalesce(c.starts_at_cycle, 1)) over (partition by c.component_key) as last_start
       from public.v2_subscription_offer_prices c
@@ -34,7 +37,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_subscription_monthly_price_details (
     and o.effective_from <= now() and (o.effective_to is null or o.effective_to > now())
     and plan.status = 'active' and (p_lab_slug is null or plan.lab_slug = p_lab_slug)
     and components.parts > 0 and components.all_fixed
-  order by o.plan_uuid, components.total, components.per_seat
+  order by o.plan_uuid, components.total, components.seat_total
 $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."get_v2_subscription_monthly_price_details"(text) TO PUBLIC, "anon", "authenticated";

@@ -64,10 +64,13 @@ try {
     insert into v2_subscription_plans(plan_uuid, plan_id, name, lab_slug) values (md5('stack')::uuid, 'stack', 'Stack', 'stacked');
     insert into v2_subscription_plan_offers(offer_uuid, plan_uuid, billing_interval) values (md5('stack-month')::uuid, md5('stack')::uuid, 'month');
     insert into v2_subscription_offer_prices(offer_uuid, component_key, pricing_type, amount, starts_at_cycle) values (md5('stack-month')::uuid, 'base', 'fixed', 50, 1), (md5('stack-month')::uuid, 'seat', 'fixed', 20, 2);
-    -- A team plan charged per seat, with a free account-level component.
+    -- A team plan charged per seat, with a free account-level component, and one with a paid account charge too.
     insert into v2_subscription_plans(plan_uuid, plan_id, name, lab_slug) values (md5('team')::uuid, 'team', 'Team', 'team');
     insert into v2_subscription_plan_offers(offer_uuid, plan_uuid, billing_interval) values (md5('team-month')::uuid, md5('team')::uuid, 'month');
     insert into v2_subscription_offer_prices(offer_uuid, component_key, charge_basis, pricing_type, amount) values (md5('team-month')::uuid, 'seat', 'seat', 'fixed', 25), (md5('team-month')::uuid, 'base', 'account', 'free', null);
+    insert into v2_subscription_plans(plan_uuid, plan_id, name, lab_slug) values (md5('mixed')::uuid, 'mixed', 'Mixed', 'mixed');
+    insert into v2_subscription_plan_offers(offer_uuid, plan_uuid, billing_interval) values (md5('mixed-month')::uuid, md5('mixed')::uuid, 'month');
+    insert into v2_subscription_offer_prices(offer_uuid, component_key, charge_basis, pricing_type, amount) values (md5('mixed-month')::uuid, 'base', 'account', 'fixed', 80), (md5('mixed-month')::uuid, 'seat', 'seat', 'fixed', 40);
   `);
   await db.exec(migration);
   await db.exec(latest);
@@ -90,10 +93,10 @@ try {
   assert.deepEqual(renewal.rows, [{ monthly_price_usd: 30 }], 'the renewal price is the ongoing price');
   const stacked = await db.query(`select monthly_price_usd::float from get_v2_subscription_monthly_prices('stacked')`);
   assert.deepEqual(stacked.rows, [{ monthly_price_usd: 70 }], 'charges with different keys all count');
-  const seat = await db.query(`select monthly_price_usd::float, per_seat from get_v2_subscription_monthly_price_details('team')`);
-  assert.deepEqual(seat.rows, [{ monthly_price_usd: 25, per_seat: true }], 'a price charged only per seat is marked per seat');
-  const account = await db.query(`select per_seat from get_v2_subscription_monthly_price_details('lab') union all select per_seat from get_v2_subscription_monthly_price_details('stacked')`);
-  assert.deepEqual(account.rows, [{ per_seat: false }, { per_seat: false }], 'account and mixed charges are not per seat');
+  const parts = async (lab) => (await db.query(`select monthly_price_usd::float as total, account_usd::float as account, seat_usd::float as seat from get_v2_subscription_monthly_price_details('${lab}')`)).rows;
+  assert.deepEqual(await parts('team'), [{ total: 25, account: 0, seat: 25 }], 'a price charged only per seat');
+  assert.deepEqual(await parts('mixed'), [{ total: 120, account: 80, seat: 40 }], 'an account charge plus a seat charge stay separate');
+  assert.deepEqual(await parts('lab'), [{ total: 200, account: 200, seat: 0 }], 'an account-only price');
 
   const byPlan = await db.query(`select plan_id from get_v2_subscription_model_usage(null, 'custom')`);
   assert.deepEqual(byPlan.rows, [{ plan_id: 'custom' }], 'filters by plan');

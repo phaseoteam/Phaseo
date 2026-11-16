@@ -25,9 +25,19 @@ export function useSubscriptionFormat() {
 		locale,
 		messages,
 		price: (price: SubscriptionPrice) => formatSubscriptionPrice(price, (amount, currency) => money(amount, currency, Number.isInteger(amount) ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : { maximumFractionDigits: 8 }), priceLabels),
-		/** "$20 / month" from a monthly USD amount, or "$25 / Seat / month" for a price per seat. */
-		perMonth: (usd: number, perSeat = false) =>
-			`${money(usd, "USD", monthlyAmountFractionDigits(usd))}${perSeat ? ` / ${priceLabels.seat ?? "seat"}` : ""} / ${priceLabels.period?.(1, "month") ?? "month"}`,
+		/** "$20 / month" from a monthly USD amount. */
+		perMonth: (usd: number) => `${money(usd, "USD", monthlyAmountFractionDigits(usd))} / ${priceLabels.period?.(1, "month") ?? "month"}`,
+		/**
+		 * A monthly price split into its account and per-seat parts: "$20 / month", "$25 / Seat / month",
+		 * or "$80 + $40 / Seat / month", so one seat's total never reads as the whole plan's price.
+		 */
+		monthlyCharges: (account: number, seat: number) => {
+			const amount = (usd: number) => money(usd, "USD", monthlyAmountFractionDigits(usd));
+			const month = priceLabels.period?.(1, "month") ?? "month";
+			if (seat <= 0) return `${amount(account)} / ${month}`;
+			const perSeat = `${amount(seat)} / ${priceLabels.seat ?? "seat"} / ${month}`;
+			return account > 0 ? `${amount(account)} + ${perSeat}` : perSeat;
+		},
 		/** The plan's first price in display order (fixed monthly USD first), or null. */
 		primaryPrice: (prices: SubscriptionPrice[] | null | undefined) => sortSubscriptionPlanPricesForDisplay(prices ?? [])[0] ?? null,
 		tokens: (value: number) => format.number(value, { notation: "compact", maximumFractionDigits: value >= 1e9 ? 1 : 0 }),

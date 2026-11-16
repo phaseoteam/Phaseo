@@ -36,7 +36,7 @@ export default function SubscriptionPlanCompare({ planId, provider, plans }: { p
 										{current ? <span className="font-medium">{plan.name}</span> : <Link href={`/subscription-plans/${plan.plan_id}`} className="font-medium underline decoration-transparent underline-offset-4 transition-colors hover:decoration-current">{plan.name}</Link>}
 										{current ? <span className="ml-2 text-xs text-muted-foreground">{messages.detail.thisPlan}</span> : null}
 									</TableCell>
-									<TableCell className="px-4 py-2.5 text-right tabular-nums">{plan.monthly_price_usd == null ? <span className="text-muted-foreground">—</span> : format.perMonth(plan.monthly_price_usd, plan.price_per_seat)}</TableCell>
+									<TableCell className="px-4 py-2.5 text-right tabular-nums">{plan.monthly_price_usd == null ? <span className="text-muted-foreground">—</span> : plan.seat_price_usd ? format.monthlyCharges(plan.account_price_usd ?? 0, plan.seat_price_usd) : format.perMonth(plan.monthly_price_usd)}</TableCell>
 									{hasUsage ? <TableCell className="hidden px-4 py-2.5 text-right tabular-nums sm:table-cell">{usage ? <>{format.tokens(usage.mostTokens.monthly_tokens)}<p className="truncate text-xs text-muted-foreground">{usage.mostTokens.model_name}</p></> : <span className="text-muted-foreground">—</span>}</TableCell> : null}
 									{hasUsage ? <TableCell className="px-4 py-2.5 text-right tabular-nums">{usage?.cheapest ? format.perMillion(usage.cheapest.effective_usd_per_mtok) : <span className="text-muted-foreground">—</span>}</TableCell> : null}
 								</TableRow>

@@ -76,17 +76,19 @@ export async function fetchRelatedPlans(client: SupabaseClient, plan: Row): Prom
 		return [];
 	}
 	if (prices.error) console.warn("[web-api/subscriptions] related plan prices unavailable", prices.error.message);
-	const priceByPlan = new Map<string, { amount: number; perSeat: boolean }>();
+	const priceByPlan = new Map<string, { total: number; account: number; seat: number }>();
 	for (const row of (Array.isArray(prices.data) ? prices.data : []) as Row[]) {
-		if (row.monthly_price_usd != null) priceByPlan.set(String(row.plan_uuid), { amount: Number(row.monthly_price_usd), perSeat: row.per_seat === true });
+		if (row.monthly_price_usd == null) continue;
+		priceByPlan.set(String(row.plan_uuid), { total: Number(row.monthly_price_usd), account: Number(row.account_usd ?? 0), seat: Number(row.seat_usd ?? 0) });
 	}
 	const usageByPlan = groupUsageByPlan(Array.isArray(usage.data) ? usage.data.filter((row: Row) => row.lab_slug === labSlug) : []);
 	return plans.data.map((row) => ({
 		plan_id: row.plan_id,
 		name: row.name,
-		monthly_price_usd: priceByPlan.get(String(row.plan_uuid))?.amount ?? null,
-		// The price is for one seat, so the page labels it "/ seat / month".
-		price_per_seat: priceByPlan.get(String(row.plan_uuid))?.perSeat ?? false,
+		// One account plus one seat, for sorting. The page shows the account and per-seat parts separately.
+		monthly_price_usd: priceByPlan.get(String(row.plan_uuid))?.total ?? null,
+		account_price_usd: priceByPlan.get(String(row.plan_uuid))?.account ?? null,
+		seat_price_usd: priceByPlan.get(String(row.plan_uuid))?.seat ?? null,
 		usage: (usageByPlan.get(String(row.plan_uuid)) ?? []).filter((entry) => entry.scenario === "standard"),
 	})).sort((a, b) => (a.monthly_price_usd ?? Infinity) - (b.monthly_price_usd ?? Infinity) || String(a.name).localeCompare(String(b.name)));
 }

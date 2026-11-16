@@ -85,7 +85,7 @@ describe("related plans", () => {
 			{ plan_uuid: "ent", plan_id: "ent", name: "Enterprise" },
 		];
 		const query: Record<string, unknown> = { select: () => query, eq: () => query, lte: () => query, or: async () => ({ data: planRows, error: null }) };
-		const prices = [{ plan_uuid: "ultra", monthly_price_usd: "200" }, { plan_uuid: "pro", monthly_price_usd: "25", per_seat: true }];
+		const prices = [{ plan_uuid: "ultra", monthly_price_usd: "200", account_usd: "200", seat_usd: "0" }, { plan_uuid: "pro", monthly_price_usd: "25", account_usd: "0", seat_usd: "25" }];
 		// The usage call filters by lab in the database; the mock records that filter.
 		const usageFilter = vi.fn();
 		const rpc = vi.fn((name: string) => {
@@ -99,7 +99,7 @@ describe("related plans", () => {
 		];
 		const client = { from: () => query, rpc };
 		const related = await fetchRelatedPlans(client as never, { organisation_id: "lab" });
-		expect(related.map((plan) => [plan.plan_id, plan.monthly_price_usd, plan.price_per_seat, plan.usage.length])).toEqual([["pro", 25, true, 1], ["ultra", 200, false, 0], ["ent", null, false, 0]]);
+		expect(related.map((plan) => [plan.plan_id, plan.monthly_price_usd, plan.account_price_usd, plan.seat_price_usd, plan.usage.length])).toEqual([["pro", 25, 0, 25, 1], ["ultra", 200, 200, 0, 0], ["ent", null, null, null, 0]]);
 		expect(rpc).toHaveBeenCalledWith("get_v2_subscription_monthly_price_details", { p_lab_slug: "lab" });
 		expect(usageFilter).toHaveBeenCalledWith("lab_slug", "lab");
 	});
