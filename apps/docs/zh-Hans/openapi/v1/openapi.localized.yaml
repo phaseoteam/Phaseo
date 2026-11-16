@@ -14802,7 +14802,8 @@ components:
           description: 估计的最低值和最高值，最低值在前。
         step:
           type: number
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           description: 估计值之间的间隔。它必须能整除最高值减最低值，并且需要 range。
     DecisionSpansQuestion:
       type: object

@@ -14802,7 +14802,8 @@ components:
           description: Valeurs la plus basse et la plus haute de l’estimation, la plus basse d’abord.
         step:
           type: number
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           description: Écart entre les valeurs estimées. Il doit diviser la valeur haute moins la valeur basse et nécessite range.
     DecisionSpansQuestion:
       type: object

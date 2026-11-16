@@ -14802,7 +14802,8 @@ components:
           description: Menor e maior valor da estimativa, o menor primeiro.
         step:
           type: number
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           description: Espaçamento entre os valores estimados. Deve dividir o maior menos o menor e exige range.
     DecisionSpansQuestion:
       type: object

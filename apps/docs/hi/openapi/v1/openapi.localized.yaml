@@ -14802,7 +14802,8 @@ components:
           description: अनुमान का न्यूनतम और अधिकतम मान, पहले न्यूनतम।
         step:
           type: number
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           description: अनुमानित मानों के बीच का अंतर। यह अधिकतम घटा न्यूनतम को विभाजित करना चाहिए, और इसके लिए range आवश्यक है।
     DecisionSpansQuestion:
       type: object

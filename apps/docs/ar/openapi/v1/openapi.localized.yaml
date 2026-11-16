@@ -14802,7 +14802,8 @@ components:
           description: أدنى قيمة وأعلى قيمة للتقدير، الأدنى أولًا.
         step:
           type: number
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           description: المسافة بين القيم المقدّرة. يجب أن تقسم الفرق بين الأعلى والأدنى، وتتطلب range.
     DecisionSpansQuestion:
       type: object

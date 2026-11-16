@@ -14802,7 +14802,8 @@ components:
           description: Niedrigster und höchster Wert der Schätzung, der niedrigste zuerst.
         step:
           type: number
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           description: Abstand der geschätzten Werte. Er muss die Differenz aus höchstem und niedrigstem Wert teilen und erfordert range.
     DecisionSpansQuestion:
       type: object

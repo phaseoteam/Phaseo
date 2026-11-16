@@ -14802,7 +14802,8 @@ components:
           description: 推定の最小値と最大値（最小値が先）。
         step:
           type: number
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           description: 推定値の間隔。最大値と最小値の差を割り切れる値で、range が必要です。
     DecisionSpansQuestion:
       type: object

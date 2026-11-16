@@ -15738,7 +15738,8 @@ components:
           description: Lowest and highest value of the estimate, low first.
         step:
           type: number
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           description: >-
             Spacing of the estimated values. It must divide high minus low, and
             needs range.

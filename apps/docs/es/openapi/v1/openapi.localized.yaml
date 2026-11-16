@@ -14802,7 +14802,8 @@ components:
           description: Valor más bajo y más alto de la estimación, primero el más bajo.
         step:
           type: number
-          exclusiveMinimum: 0
+          minimum: 0
+          exclusiveMinimum: true
           description: Separación entre los valores estimados. Debe dividir el máximo menos el mínimo y requiere range.
     DecisionSpansQuestion:
       type: object
