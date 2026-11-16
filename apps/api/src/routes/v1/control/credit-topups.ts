@@ -175,9 +175,8 @@ export async function hashConfirmToken(token: string): Promise<string> {
 
 function stripeSecretKey(): string | null {
 	const bindings = getBindings();
-	const live = bindings.STRIPE_SECRET_KEY?.trim();
-	if (live) return live;
-	return bindings.TEST_STRIPE_SECRET_KEY?.trim() || null;
+	// Never fall back to a test key: without the live key, top-ups are unavailable.
+	return bindings.STRIPE_SECRET_KEY?.trim() || null;
 }
 
 async function stripeGet(secretKey: string, path: string): Promise<any> {
