@@ -1,0 +1,163 @@
+---
+title: "Glosario"
+description: "Descubre en una frase qué significa un término de Phaseo, dónde se aplica y qué página lo explica en detalle."
+icon: "book-a"
+---
+
+Busca una palabra que hayas visto en el panel, en la API o en esta documentación. Cada fila da un significado en una frase, enlaza a la página que explica el término en detalle e indica dónde se aplica: API, Panel, CLI, SDK, MCP, Chat o Slack.
+
+## Cuentas y acceso
+
+| Término | Significado | Se aplica a |
+| --- | --- | --- |
+| [Administrador](./developers/management-api-keys.mdx) | Un rol del espacio de trabajo que gestiona los ajustes exclusivos de administradores, como presupuestos, reglas de gasto, guardrails y políticas de confianza, y lee el registro de auditoría. | API, Panel, CLI, MCP |
+| [Espacio de trabajo](./guides/workspaces.mdx) | Un contenedor que mantiene sus propias claves de API, ajustes de enrutamiento, preajustes, guardrails y acceso de administración separados de otros espacios de trabajo. | API, Panel, CLI |
+| [Miembro](./developers/management-api-keys.mdx) | Un rol del espacio de trabajo que usa el espacio de trabajo y puede ver sus reglas de gasto, pero no puede cambiar los ajustes exclusivos de propietarios y administradores. | API, Panel, CLI, MCP |
+| [Propietario](./developers/management-api-keys.mdx) | Un rol del espacio de trabajo que gestiona los mismos ajustes que un administrador y recibe los correos para propietarios, como los avisos de obsolescencia de modelos. | API, Panel, CLI, MCP |
+
+## Claves y autenticación
+
+| Término | Significado | Se aplica a |
+| --- | --- | --- |
+| [Alternativa de BYOK](./guides/routing-and-fallbacks.mdx#byok-considerations) | Un ajuste del espacio de trabajo que decide si una solicitud BYOK fallida puede reintentarse con créditos de Phaseo. | API, Panel |
+| [Aplicación OAuth](./guides/integrations/phaseo-cli.mdx#oauth-apps) | Una aplicación que inicia la sesión de las personas con Phaseo OAuth y actúa en su nombre dentro de los scopes y el espacio de trabajo que aprueban. | API, Panel, CLI, MCP |
+| [BYOK](./guides/routing-and-fallbacks.mdx#byok-considerations) | Bring your own key: Phaseo enruta las solicitudes con la clave de API de tu proveedor, y el proveedor factura el uso del modelo. | API, Panel |
+| [Capacidad](./developers/management-api-keys.mdx#choose-an-access-level) | Un permiso de una clave de administración o de un inicio de sesión OAuth, como `keys:write`, que decide a qué API de administración puede llamar. | API, Panel, CLI, MCP |
+| [Carga de trabajo de confianza](./developers/trusted-workloads.mdx) | Un despliegue o trabajo de CI que envía el token OIDC de corta duración de su plataforma en lugar de una clave de API, y que coincide con una política de confianza. | API, Panel |
+| [Clave de administración](./developers/management-api-keys.mdx) | Un secreto que empieza por `phaseo_v1_mk_` para API de administración como claves, preajustes y guardrails; no puede enviar solicitudes de inferencia. | API, Panel |
+| [Clave de API](./developers/authentication.mdx#choose-a-credential) | Un secreto que empieza por `phaseo_v1_sk_` y se envía como token bearer para autenticar solicitudes de modelos y de generación. | API, Panel, CLI, SDK, MCP |
+
+## Modelos y proveedores
+
+| Término | Significado | Se aplica a |
+| --- | --- | --- |
+| [Cuantización](./guides/quantization.mdx) | Guardar los pesos de un modelo en un tipo numérico más pequeño, como `FP8` o `INT4`, que responde más rápido a cambio de algo de calidad. | API, Panel, SDK |
+| [Icono de estado del proveedor](./guides/provider-statuses.mdx#status-icon) | El estado que Phaseo fija a mano para una ruta de proveedor: `Active`, `Lower priority` (solo como respaldo) o `Disabled`. | Panel |
+| [ID de modelo](./api-reference/parameters.mdx#parameter-model) | El ID que envías como `model`, como `openai/gpt-6-astra`, que aparece en el inicio rápido de cada página de modelo. | API, Panel, CLI, SDK, MCP |
+| [ID de modelo calificado por proveedor](./guides/provider-qualified-models.mdx) | Un ID de modelo con prefijo de proveedor, como `baseten:thinking-machines/inkling-small`, que se ejecuta en ese proveedor sin alternativa. | API, SDK |
+| [Longitud de contexto](./exploring/models.mdx#what-a-model-page-shows) | El tamaño de contexto que admite una ruta de proveedor para un modelo, que se muestra para cada proveedor en la página del modelo. | API, Panel |
+| [Modelo enrutable](./exploring/models.mdx#catalog-models-and-callable-models) | Un modelo con al menos una ruta de proveedor activa ahora en el Gateway; `GET /v1/models` solo lista estos de forma predeterminada. | API, Panel, MCP |
+| [Modelo privado](./guides/private-models.mdx) | Un despliegue dedicado o autoalojado compatible con OpenAI que se añade a tu espacio de trabajo y que solo tu espacio de trabajo puede ver o llamar. | API, Panel |
+| [Obsoleto (modelo)](./guides/model-retirement.mdx#how-a-model-is-retired) | El laboratorio o el proveedor ha anunciado la retirada del modelo, y sus solicitudes se siguen atendiendo con normalidad. | API, Panel |
+| [Proveedor](./developers/introduction.mdx#models-and-providers) | Una empresa que aloja un modelo y fija su disponibilidad, los parámetros admitidos, los precios y el rendimiento. | API, Panel, SDK, MCP |
+| [Retirado (modelo)](./guides/model-retirement.mdx#how-a-model-is-retired) | La fecha de retirada ya pasó; las solicitudes funcionan mientras un proveedor sirva el modelo y después fallan con `410 model_retired`. | API, Panel |
+
+## Solicitudes y respuestas
+
+| Término | Significado | Se aplica a |
+| --- | --- | --- |
+| [Caché de prompts](./guides/prompt-caching.mdx) | Mantener igual el inicio de un prompt para que el proveedor lo lea de la caché y lo facture a la tarifa de lectura de caché. | API, SDK |
+| [Esfuerzo de razonamiento](./api-reference/parameters.mdx#parameter-reasoning) | Cuánto piensa un modelo de razonamiento antes de responder, fijado con `reasoning.effort` o `reasoning_effort`, de `none` a `max`. | API, SDK |
+| [Gateway](./developers/introduction.mdx) | La API de Phaseo en `https://api.phaseo.app/v1`, que enruta cada solicitud a un proveedor que aloja el modelo. | API, SDK |
+| [ID de generación](./api-reference/endpoint/generation.mdx) | El ID de solicitud que empieza por `G-`, devuelto en `x-request-id` y en los cuerpos de error; úsalo para registros, búsquedas y soporte. | API, Panel, SDK |
+| [ID de sesión](./guides/routing-and-fallbacks.mdx#keep-a-conversation-on-one-provider) | Un `session_id` que envías para mantener las solicitudes de una conversación en un proveedor, durante hasta 24 horas de actividad. | API, Panel, SDK |
+| [Nivel de servicio](./guides/service-tiers.mdx) | Un nivel de velocidad y precio para una solicitud de texto (`standard`, `fast`, `ultrafast` o `flex`), que solo atienden los proveedores que lo ofrecen. | API, SDK |
+| [Objeto usage](./guides/prompt-caching.mdx#usage-and-pricing-fields) | El campo `usage` de una respuesta, que indica los recuentos de tokens de entrada, salida y caché de la solicitud. | API, SDK |
+| [Streaming](./guides/streaming.mdx) | Fijar `stream: true` para que el Gateway envíe la salida como server-sent events mientras el modelo la escribe. | API, SDK |
+| [Tokens](./guides/context-and-token-budgeting.mdx) | Las unidades que un modelo lee como entrada y escribe como salida; cada token añade latencia y coste. | API, Panel, SDK |
+| [Tokens de razonamiento](./guides/context-and-token-budgeting.mdx#what-counts-towards-a-request) | Tokens que un modelo de razonamiento gasta antes de responder; cuentan como salida y usan parte del límite de salida. | API, SDK |
+| [Tokens en caché](./guides/prompt-caching.mdx#usage-and-pricing-fields) | Tokens de entrada que el proveedor leyó de su caché de prompts, facturados a la tarifa de lectura de caché e indicados como `cached_tokens`. | API, SDK |
+
+## Enrutamiento
+
+| Término | Significado | Se aplica a |
+| --- | --- | --- |
+| [Alternativa de proveedor](./guides/routing-and-fallbacks.mdx) | Cuando el proveedor elegido falla, el Gateway prueba el siguiente proveedor válido para el mismo modelo. | API, SDK |
+| [Alternativas de modelo](./guides/routing-and-fallbacks.mdx#request-level-model-fallbacks) | Modelos indicados en `models`, que se prueban en orden cuando el modelo anterior termina con `429`, `500`, `502`, `503` o `504`. | API, SDK |
+| [Canales de proveedores Alpha y Beta](./guides/routing-and-fallbacks.mdx#choose-how-providers-are-ranked) | Interruptores de los ajustes de enrutamiento para que los proveedores en vista previa solo reciban tráfico si lo activas; `provider.include_alpha` permite proveedores Alpha por solicitud. | API, Panel |
+| [Enrutador gratuito](./cookbook/free-router-first-deploy.mdx) | Envía `phaseo/free` y Phaseo ejecuta la solicitud en un modelo gratuito disponible, sin necesidad de créditos. | API, SDK |
+| [Enrutamiento automático](./guides/auto-routing.mdx) | Envía `phaseo/auto` y Phaseo elige un modelo para cada solicitud a partir de la carga de trabajo, tu objetivo y tus límites de precio. | API, Panel, CLI, SDK, Slack |
+| [Enrutamiento de modelos retirados](./guides/model-retirement.mdx#route-requests-to-a-replacement-automatically) | Un ajuste opcional del espacio de trabajo que envía las solicitudes de un modelo que ningún proveedor sirve a un sustituto aprobado o elegido. | API, Panel |
+| [Enrutamiento regional](./guides/regional-routing.mdx) | Enviar solicitudes de texto a `eu.api.phaseo.app` o `us.api.phaseo.app` para usar solo rutas que se ejecutan allí. | API, SDK |
+| [Etiqueta de versión de preajuste](./guides/prompt-templates.mdx#labels) | Un nombre como `production` que apunta a una versión publicada de un preajuste; al moverla, las solicitudes avanzan o vuelven a otra versión. | API, Panel, SDK |
+| [Orden de proveedores](./guides/routing-and-fallbacks.mdx#choose-how-providers-are-ranked) | Cómo se clasifican los proveedores: `balanced` (predeterminado, coste por respuesta correcta), `price`, `latency` o `throughput`. | API, Panel, CLI, SDK |
+| [Plantilla de prompt](./guides/prompt-templates.mdx) | Mensajes de un preajuste con `{{variables}}`, para que cada solicitud envíe solo la referencia al preajuste y los valores de las variables. | API, Panel, SDK |
+| [Preajuste](./guides/presets.mdx) | Un modelo guardado con prompt de sistema, parámetros y reglas de proveedor, que quien llama usa enviando su nombre, como `@support-triage`. | API, Panel, SDK |
+| [Ruta dinámica](./guides/routing-and-fallbacks.mdx#attach-routing-rules-to-api-keys) | Un flujo versionado de reglas asociado a claves de API que puede ramificarse, repartir el tráfico, limitar el uso y cambiar de modelo. | API, Panel |
+
+## Guardrails y privacidad
+
+| Término | Significado | Se aplica a |
+| --- | --- | --- |
+| [Acción de guardrail](./cookbook/guardrails-for-api-keys.mdx) | Lo que hace una comprobación de contenido de un guardrail cuando encuentra una coincidencia: Marcar, Ocultar o Bloquear. | API, Panel |
+| [Comprobación de información sensible](./cookbook/guardrails-for-api-keys.mdx) | Una comprobación de guardrail que encuentra datos como direcciones de correo, números de teléfono y números de tarjeta antes de que la solicitud salga de Phaseo. | API, Panel |
+| [Comprobación de inyección de prompts](./cookbook/guardrails-for-api-keys.mdx) | Una comprobación de guardrail que analiza el contenido aportado por el usuario en busca de patrones habituales de inyección de prompts. | API, Panel |
+| [Guardrail](./cookbook/guardrails-for-api-keys.mdx) | Una política sobre claves de API o miembros que limita proveedores, modelos y tratamiento de datos, y analiza los prompts; no limita el gasto. | API, Panel |
+| [Registro de E/S](./guides/open-requests-in-chat.mdx#before-you-start) | Un ajuste de privacidad que guarda el prompt y la respuesta de cada solicitud, para que puedas verlos, reproducirlos o abrirlos en Chat. | API, Panel, Chat |
+| [ZDR](./cookbook/route-only-to-eu-or-zdr-providers.mdx) | Zero Data Retention: el proveedor no guarda prompts ni salidas; puedes exigirlo por solicitud, por guardrail o por espacio de trabajo. | API, Panel, CLI, SDK, MCP |
+
+## Herramientas y salidas
+
+| Término | Significado | Se aplica a |
+| --- | --- | --- |
+| [API de decisiones](./api-reference/endpoint/decisions.mdx) | `POST /v1/decisions`, que responde preguntas tipadas (`predicate`, `choice`, `score`) con probabilidades, en el orden en que se hacen. | API, SDK |
+| [Herramienta de servidor](./guides/server-tools/index.mdx) | Una herramienta `phaseo:` que Phaseo ejecuta cuando el modelo la llama, como `phaseo:web_search`, `phaseo:web_fetch`, `phaseo:datetime` o `phaseo:advisor`. | API, SDK, Chat |
+| [Llamadas a herramientas](./guides/tool-calling.mdx) | Describir tus funciones en `tools` para que el modelo devuelva una llamada que tu aplicación ejecuta y luego responda con el resultado. | API, SDK |
+| [Reparación de respuestas](./cookbook/response-healing-for-structured-json.mdx) | Un plugin que repara JSON casi válido, como JSON dentro de un bloque de Markdown, antes de que llegue a tu parser. | API, SDK |
+| [Salidas estructuradas](./guides/structured-outputs.mdx) | Enviar un JSON Schema para que el modelo devuelva JSON con esa forma en lugar de texto libre. | API, SDK |
+
+## Costes, límites y facturación
+
+| Término | Significado | Se aplica a |
+| --- | --- | --- |
+| [Alerta de gasto](./guides/spend-alerts.mdx#alert-types-and-bases) | La notificación que envía una regla de gasto cuando el gasto, una previsión, un pico o el saldo cruza su umbral. | API, Panel |
+| [Créditos](./pricing/tiers.mdx) | Saldo prepagado del espacio de trabajo que las solicitudes de pago consumen a precios de catálogo; las compras llevan una comisión del 5 % ($1 como mínimo), y los modelos `:free` no los necesitan. | API, Panel, CLI, MCP |
+| [Límite de clave](./api-reference/limits.mdx#key-limits-and-budgets) | Un tope diario, semanal o mensual de solicitudes o gasto en una clave de API, que se comprueba en cada solicitud. | API, Panel, CLI |
+| [Límite de solicitudes](./api-reference/limits.mdx#gateway-limits) | Las solicitudes por minuto permitidas a cada usuario en cada espacio de trabajo, que aumentan a medida que el espacio de trabajo se consolida. | API, CLI |
+| [Presupuesto](./api-reference/limits.mdx#key-limits-and-budgets) | Un tope de gasto del espacio de trabajo (diario, semanal, mensual o total); las solicitudes que lo superan reciben `429 key_limit_exceeded`. | API, Panel |
+| [Presupuesto de departamento](./api-reference/limits.mdx#department-budgets) | Un tope de gasto diario, semanal o mensual para las claves y las solicitudes OAuth que cuentan para un departamento. | API, Panel |
+| [Regla de gasto](./guides/spend-alerts.mdx) | Una regla que avisa cuando el gasto de un ámbito cruza un umbral y que puede bloquear más solicitudes con `429 spend_rule_blocked`. | API, Panel |
+
+## Observabilidad
+
+| Término | Significado | Se aplica a |
+| --- | --- | --- |
+| [Abrir en Chat](./guides/open-requests-in-chat.mdx) | Continúa una solicitud guardada o un turno de sesión como conversación en Chat, con el mismo modelo o con otro. | Panel, Chat |
+| [Atribución de aplicaciones](./guides/app-attribution.mdx#headers) | Encabezados como `X-App-Id`, `X-Title` y `HTTP-Referer` que agrupan el uso de una solicitud bajo una aplicación. | API, SDK |
+| [Broadcast](./guides/broadcast.mdx) | Envía una traza de cada solicitud del Gateway a una herramienta de observabilidad, un webhook, un bucket de almacenamiento o un almacén de datos, sin cambios en el código. | API, Panel |
+| [Clasificador de solicitudes](./guides/request-classifiers.mdx) | Una taxonomía y un modelo que etiquetan cada solicitud terminada, guardadas como etiquetas de solicitud por las que puedes filtrar. | API, Panel |
+| [Etiqueta de solicitud](./guides/request-labels.mdx) | Un par clave/valor, como `team=support`, enviado en el encabezado `X-Phaseo-Metadata` para filtrar el gasto y los registros. | API, SDK |
+| [Registro de auditoría](./guides/workspace-audit-log.mdx) | El registro de quién cambió claves, miembros y otros controles de administración, que solo pueden leer propietarios y administradores. | API, Panel, CLI |
+| [Registros de solicitudes](./api-reference/endpoint/logs-list.mdx) | Un registro por solicitud con su uso, latencia, coste, errores y el proveedor que la atendió. | API, Panel, CLI, MCP |
+
+## Trabajos asíncronos
+
+| Término | Significado | Se aplica a |
+| --- | --- | --- |
+| [Endpoint de webhook](./guides/async-video-and-batch.mdx#receive-updates) | Una URL del espacio de trabajo que recibe eventos de estado firmados de los trabajos de vídeo y de lote. | API, Panel |
+| [Lote](./api-reference/endpoint/batches-create.mdx) | Un trabajo de la API de lotes para grandes cargas de trabajo diferidas, en el que cada fila apunta a un modelo. | API, SDK |
+| [Trabajo asíncrono](./guides/async-video-and-batch.mdx) | Una solicitud de vídeo o de lote que devuelve un trabajo al instante; lo consultas o esperas un webhook hasta que termine. | API, SDK |
+| [Trabajo de vídeo](./guides/async-video-and-batch.mdx) | Una solicitud a la API de vídeo que devuelve un trabajo; descarga el vídeo cuando su estado sea `completed`. | API, SDK |
+
+## Enterprise
+
+| Término | Significado | Se aplica a |
+| --- | --- | --- |
+| [Complemento de identidad](./api-reference/endpoint/identity-scim-get.mdx) | El complemento del espacio de trabajo necesario para activar SSO o SCIM, crear tokens de aprovisionamiento y gestionar el directorio. | API, Panel |
+| [Departamento](./guides/spend-alerts.mdx#choose-whose-spend-counts) | Un grupo de miembros del espacio de trabajo, gestionado a mano o sincronizado desde tu directorio, al que pueden aplicarse presupuestos, límites de solicitudes y reglas de gasto. | API, Panel |
+| [Directorio](./api-reference/endpoint/identity-directory-get.mdx) | Los departamentos enterprise del espacio de trabajo y los permisos efectivos de cada miembro, gestionados por propietarios y administradores. | API, Panel |
+| [SCIM](./api-reference/endpoint/identity-scim-get.mdx) | Aprovisionamiento de miembros y departamentos del espacio de trabajo desde tu proveedor de identidad con un token de aprovisionamiento SCIM. | API, Panel |
+| [Self Serve Enterprise](./exploring/subscription-plans.mdx#enterprise-member-pricing) | Una suscripción mensual del espacio de trabajo para SSO, SCIM, gestión del directorio, departamentos y soporte prioritario por correo. | Panel |
+| [SSO](./api-reference/endpoint/identity-sso-get.mdx) | Inicio de sesión único para los miembros del espacio de trabajo mediante SAML o un proveedor OIDC personalizado. | API, Panel |
+
+## CLI, MCP, SDK y aplicaciones
+
+| Término | Significado | Se aplica a |
+| --- | --- | --- |
+| [Agente de Slack](./guides/slack-agent.mdx) | El agente de Phaseo en Slack, que responde a menciones y mensajes directos con el modelo que eligió tu espacio de trabajo. | Panel, Slack |
+| [CLI de Phaseo](./developers/cli-and-mcp.mdx#phaseo-cli) | El comando `phaseo` para crear claves, cambiar ajustes y automatizar tareas de administración desde una shell o desde CI. | CLI |
+| [Docs MCP](./guides/integrations/docs-mcp.mdx) | Un servidor MCP de solo lectura en `https://phaseo.app/docs/mcp` que permite a los asistentes de programación buscar y leer esta documentación. | MCP |
+| [MCP de Phaseo](./developers/cli-and-mcp.mdx#phaseo-mcp) | Un servidor MCP que da a los clientes de IA datos actualizados de modelos, precios, uso y espacio de trabajo, y que opcionalmente puede gestionar tu cuenta. | MCP |
+| [SDK de cliente](./sdk-reference/client/overview.mdx) | Un paquete de Phaseo para tu lenguaje con un método por endpoint del Gateway, como `@phaseo/sdk` o `phaseo`. | SDK |
+| [Skills de agente](./cookbook/coding-agents-skill-md.mdx) | Instrucciones públicas de Phaseo para agentes de programación, que cubren el Gateway, los SDK, los preajustes, el enrutamiento y las migraciones. | API, CLI, SDK |
+
+## Fases de las funciones
+
+| Término | Significado | Se aplica a |
+| --- | --- | --- |
+| [Alpha](./developers/feature-maturity.mdx) | Una función temprana que puede cambiar mucho o eliminarse. | API, Panel, CLI, SDK, MCP, Chat, Slack |
+| [Bajo solicitud](./developers/feature-maturity.mdx#who-can-use-a-feature) | Una función que se activa por espacio de trabajo; hasta entonces, su página de ajustes está oculta y su API devuelve un error. | API, Panel |
+| [Beta](./developers/feature-maturity.mdx) | Una función que sirve para su uso principal, aunque algunos detalles pueden cambiar; los cambios se anuncian en el registro de cambios. | API, Panel, CLI, SDK, MCP, Chat, Slack |
+| [Disponibilidad general](./developers/feature-maturity.mdx) | Una función estable, que se muestra sin insignia de fase. | API, Panel, CLI, SDK, MCP, Chat, Slack |
+| [Obsoleta (función)](./developers/feature-maturity.mdx) | Una función que sigue funcionando pero se eliminará; su página da la fecha de eliminación cuando se fija una. | API, Panel, CLI, SDK, MCP, Chat, Slack |
+| [Vista previa de funciones](./developers/feature-maturity.mdx#who-can-use-a-feature) | La página de ajustes que muestra si la API de vídeo y la API de lotes están activadas en tu espacio de trabajo. | Panel |

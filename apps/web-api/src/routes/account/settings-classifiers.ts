@@ -4,6 +4,7 @@ import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { ensureChatGatewayKey, resolveGatewayBaseUrlForEnvironment } from "@/chat/proxy";
+import { requestClassifiersAvailable } from "@/lib/request-classifiers-access";
 import { requireAccountWorkspace, type AccountWorkspaceContext } from "./context";
 import {
 	CLASSIFIER_COLUMNS,
@@ -65,6 +66,19 @@ async function managerContext(c: any, workspaceId: unknown) {
 	if (!context) return { response: json(c, { error: "forbidden" }, 403) } as const;
 	if (!isManager(context)) return { response: json(c, { error: "forbidden", message: "Only workspace owners and admins can manage classifiers" }, 403) } as const;
 	return { context } as const;
+}
+
+/**
+ * For saving and testing. Deleting stays open so a workspace that lost access
+ * can still clean up.
+ */
+async function writableManagerContext(c: any, workspaceId: unknown) {
+	const access = await managerContext(c, workspaceId);
+	if ("response" in access) return access;
+	if (!(await requestClassifiersAvailable(c.env, { workspaceId: access.context.workspaceId, ownerUserId: access.context.ownerUserId }))) {
+		return { response: json(c, { error: "feature_not_enabled", message: "Request classifiers aren't turned on for this workspace" }, 403) } as const;
+	}
+	return access;
 }
 
 function classifierId(c: any): string | null {
@@ -153,7 +167,7 @@ accountSettingsClassifiersRouter.get("/classifiers", async (c) => {
 
 accountSettingsClassifiersRouter.post("/classifiers", async (c) => {
 	const body = await readBody(c);
-	const access = await managerContext(c, body.workspaceId);
+	const access = await writableManagerContext(c, body.workspaceId);
 	if ("response" in access) return access.response;
 	for (const field of ["name", "model", "dimensions"] as const) {
 		if (body[field] === undefined) return badRequest(c, `${field} is required`);
@@ -174,7 +188,7 @@ accountSettingsClassifiersRouter.post("/classifiers", async (c) => {
 
 accountSettingsClassifiersRouter.put("/classifiers/:classifierId", async (c) => {
 	const body = await readBody(c);
-	const access = await managerContext(c, body.workspaceId);
+	const access = await writableManagerContext(c, body.workspaceId);
 	if ("response" in access) return access.response;
 	const id = classifierId(c);
 	if (!id) return badRequest(c, "A classifier id is required");
@@ -225,7 +239,7 @@ function sampleText(value: unknown, field: string, required: boolean): { ok: tru
  */
 accountSettingsClassifiersRouter.post("/classifiers/test", async (c) => {
 	const body = await readBody(c);
-	const access = await managerContext(c, body.workspaceId);
+	const access = await writableManagerContext(c, body.workspaceId);
 	if ("response" in access) return access.response;
 	const draft = body.classifier && typeof body.classifier === "object" ? body.classifier as Body : {};
 	if (draft.model === undefined || draft.dimensions === undefined) return badRequest(c, "classifier.model and classifier.dimensions are required");

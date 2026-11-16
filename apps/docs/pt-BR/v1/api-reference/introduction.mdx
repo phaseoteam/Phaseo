@@ -17,7 +17,7 @@ Envie todas as solicitações para `https://api.phaseo.app/v1` com sua chave em 
 | Manter uma integração existente compatível com a OpenAI | [`POST /chat/completions`](./endpoint/chat-completions) |
 | Consultar modelos e provedores | [`GET /models`](./endpoint/models) e [`GET /providers`](./endpoint/providers) |
 | Criar música ou gerenciar arquivos | [`POST /music/generate`](./endpoint/music-generate) e [`POST /files`](./endpoint/files) |
-| Gerar vídeo (Beta) | [`POST /videos`](./endpoint/video-create) |
+| Gerar vídeo (Alfa) | [`POST /videos`](./endpoint/video-create) |
 | Enviar um lote ou baixar resultados (Beta) | [`POST /batches`](./endpoint/batches-create) e [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## URL base
@@ -40,7 +40,7 @@ Importe o arquivo OpenAPI no Postman, no Hoppscotch ou em um gerador de SDK.
 	Ver o arquivo de especificação
 </Card>
 
-A documentação e os SDKs usam esta mesma especificação. Os endpoints Video, Batch e Decisions são marcados como **Beta**; pode ser necessário acesso de prévia no espaço de trabalho.
+A documentação e os SDKs usam esta mesma especificação. Endpoints que ainda não têm disponibilidade geral exibem um selo **Alfa** ou **Beta**, e alguns precisam ser ativados primeiro no seu espaço de trabalho. [Maturidade dos recursos](../developers/feature-maturity.mdx) explica as fases e mostra o acesso de cada recurso.
 
 ## Autenticação
 

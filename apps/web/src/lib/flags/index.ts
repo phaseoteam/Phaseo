@@ -104,6 +104,10 @@ export const videoApiFlag = flag<boolean>({
 	decide: () => true,
 });
 
+// The Video API itself is still gated per workspace (the gateway checks the
+// same gate on /v1/videos), so Settings → Feature Preview reads this one.
+export const videoApiAccessFlag = statsigGate(VIDEO_API_GATE);
+
 export const realtimeVoiceFlag = flag<boolean>({
 	key: REALTIME_VOICE_GATE,
 	decide: () => true,

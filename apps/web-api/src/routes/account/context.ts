@@ -12,6 +12,8 @@ export type AccountWorkspaceContext = {
 	workspaceLogoUrl: string | null;
 	role: string;
 	isOwner: boolean;
+	/** The workspace owner's user id, which workspace-wide feature gates are decided for. */
+	ownerUserId: string | null;
 };
 
 function cookieValue(request: Request, name: string): string | null {
@@ -63,5 +65,6 @@ export async function requireAccountWorkspace(args: {
 		workspaceLogoUrl: typeof workspaceResult.data?.logo_url === "string" ? workspaceResult.data.logo_url : null,
 		role: isOwner ? "admin" : String(membershipResult.data?.role ?? "member"),
 		isOwner,
+		ownerUserId: typeof workspaceResult.data?.owner_user_id === "string" ? workspaceResult.data.owner_user_id : null,
 	};
 }

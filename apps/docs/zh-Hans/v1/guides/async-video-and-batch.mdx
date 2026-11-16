@@ -6,7 +6,7 @@ description: "跟踪异步任务、接收 Webhook，并传递提供商专用的�
 ---
 
 <Note>
-Video API 和 Batch API 是仅限受邀工作区使用的 Beta 预览功能。请在**设置 → 功能预览**中查看是否可用。访问权限按工作区管理；启用个人网页偏好设置并不会授予 API 访问权限。模型使用照常计费。
+Video API 处于 Alpha 阶段，Batch API 处于 Beta 阶段（请参阅[功能成熟度](../developers/feature-maturity.mdx)）。两者都按申请为工作区开启。**设置 → 功能预览**会显示你的工作区是否已开启它们；启用个人网页偏好设置并不会授予 API 访问权限。模型使用照常计费。
 </Note>
 
 创建视频或批处理任务时，会在工作完成之前就返回一个任务。保存它的 `id` 和 `polling_url`，然后等待 Webhook 或进行轮询，直到任务进入终止状态：`completed`、`failed`、`cancelled` 或 `expired`。创建请求成功只表示任务已被接受。
@@ -22,7 +22,7 @@ flowchart TD
   terminal -->|"failed / cancelled / expired"| outcome["处理结果"]
 ```
 
-即使使用 Webhook，也请保留轮询路径。Beta 期间，请从小请求开始，并为 API 密钥设置支出上限。参考输入、取消和输出保留期取决于提供商和模型。请在已完成的输出过期之前保存你自己的副本。
+即使使用 Webhook，也请保留轮询路径。在这些 API 处于 Alpha 和 Beta 阶段期间，请从小请求开始，并为 API 密钥设置支出上限。参考输入、取消和输出保留期取决于提供商和模型。请在已完成的输出过期之前保存你自己的副本。
 
 <span id="receive-updates"></span>
 ## 接收更新

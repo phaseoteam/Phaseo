@@ -67,7 +67,9 @@
                   "v1/developers/integrating-with-the-gateway",
                   "v1/developers/cli-and-mcp",
                   "v1/developers/manage-from-an-agent",
-                  "v1/community/faq"
+                  "v1/community/faq",
+                  "v1/developers/feature-maturity",
+                  "v1/glossary"
                 ]
               },
               {
@@ -1138,7 +1140,9 @@
                   "es/v1/developers/integrating-with-the-gateway",
                   "es/v1/developers/cli-and-mcp",
                   "es/v1/developers/manage-from-an-agent",
-                  "es/v1/community/faq"
+                  "es/v1/community/faq",
+                  "es/v1/developers/feature-maturity",
+                  "es/v1/glossary"
                 ]
               },
               {
@@ -2243,7 +2247,9 @@
                   "fr/v1/developers/integrating-with-the-gateway",
                   "fr/v1/developers/cli-and-mcp",
                   "fr/v1/developers/manage-from-an-agent",
-                  "fr/v1/community/faq"
+                  "fr/v1/community/faq",
+                  "fr/v1/developers/feature-maturity",
+                  "fr/v1/glossary"
                 ]
               },
               {
@@ -3348,7 +3354,9 @@
                   "de/v1/developers/integrating-with-the-gateway",
                   "de/v1/developers/cli-and-mcp",
                   "de/v1/developers/manage-from-an-agent",
-                  "de/v1/community/faq"
+                  "de/v1/community/faq",
+                  "de/v1/developers/feature-maturity",
+                  "de/v1/glossary"
                 ]
               },
               {
@@ -4453,7 +4461,9 @@
                   "pt-BR/v1/developers/integrating-with-the-gateway",
                   "pt-BR/v1/developers/cli-and-mcp",
                   "pt-BR/v1/developers/manage-from-an-agent",
-                  "pt-BR/v1/community/faq"
+                  "pt-BR/v1/community/faq",
+                  "pt-BR/v1/developers/feature-maturity",
+                  "pt-BR/v1/glossary"
                 ]
               },
               {
@@ -5558,7 +5568,9 @@
                   "ja/v1/developers/integrating-with-the-gateway",
                   "ja/v1/developers/cli-and-mcp",
                   "ja/v1/developers/manage-from-an-agent",
-                  "ja/v1/community/faq"
+                  "ja/v1/community/faq",
+                  "ja/v1/developers/feature-maturity",
+                  "ja/v1/glossary"
                 ]
               },
               {
@@ -6663,7 +6675,9 @@
                   "zh-Hans/v1/developers/integrating-with-the-gateway",
                   "zh-Hans/v1/developers/cli-and-mcp",
                   "zh-Hans/v1/developers/manage-from-an-agent",
-                  "zh-Hans/v1/community/faq"
+                  "zh-Hans/v1/community/faq",
+                  "zh-Hans/v1/developers/feature-maturity",
+                  "zh-Hans/v1/glossary"
                 ]
               },
               {
@@ -7768,7 +7782,9 @@
                   "hi/v1/developers/integrating-with-the-gateway",
                   "hi/v1/developers/cli-and-mcp",
                   "hi/v1/developers/manage-from-an-agent",
-                  "hi/v1/community/faq"
+                  "hi/v1/community/faq",
+                  "hi/v1/developers/feature-maturity",
+                  "hi/v1/glossary"
                 ]
               },
               {
@@ -8873,7 +8889,9 @@
                   "ar/v1/developers/integrating-with-the-gateway",
                   "ar/v1/developers/cli-and-mcp",
                   "ar/v1/developers/manage-from-an-agent",
-                  "ar/v1/community/faq"
+                  "ar/v1/community/faq",
+                  "ar/v1/developers/feature-maturity",
+                  "ar/v1/glossary"
                 ]
               },
               {

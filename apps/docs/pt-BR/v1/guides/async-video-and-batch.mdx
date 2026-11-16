@@ -6,7 +6,7 @@ description: "Acompanhe trabalhos assíncronos, receba webhooks e envie opções
 ---
 
 <Note>
-A Video API e a Batch API são prévias beta disponíveis somente por convite para espaços de trabalho selecionados. Verifique a disponibilidade em **Configurações → Prévia de recursos**. O acesso é gerenciado por espaço de trabalho; ativar uma preferência pessoal na web não concede acesso à API. As cobranças normais de uso de modelos se aplicam.
+A Video API está em Alfa e a Batch API em Beta (veja [Maturidade dos recursos](../developers/feature-maturity.mdx)). As duas são ativadas por espaço de trabalho sob solicitação. **Configurações → Prévia de recursos** mostra se o seu espaço de trabalho tem acesso a elas; ativar uma preferência pessoal na web não concede acesso à API. As cobranças normais de uso de modelos se aplicam.
 </Note>
 
 Criar um vídeo ou um lote retorna um trabalho antes de o processamento terminar. Guarde o `id` e a `polling_url` dele e, depois, aguarde um webhook ou consulte até o trabalho chegar a um estado final: `completed`, `failed`, `cancelled` ou `expired`. Uma resposta de criação bem-sucedida significa apenas que o trabalho foi aceito.
@@ -22,7 +22,7 @@ flowchart TD
   terminal -->|"failed / cancelled / expired"| outcome["Tratar o resultado"]
 ```
 
-Mantenha o caminho de consulta (polling) mesmo quando usar webhooks. Durante o beta, comece com solicitações pequenas e um limite de gastos na chave de API. Entradas de referência, cancelamento e retenção das saídas dependem do provedor e do modelo. Salve a sua própria cópia das saídas concluídas antes que expirem.
+Mantenha o caminho de consulta (polling) mesmo quando usar webhooks. Enquanto essas APIs estiverem em Alfa e Beta, comece com solicitações pequenas e um limite de gastos na chave de API. Entradas de referência, cancelamento e retenção das saídas dependem do provedor e do modelo. Salve a sua própria cópia das saídas concluídas antes que expirem.
 
 <span id="receive-updates"></span>
 ## Receba atualizações

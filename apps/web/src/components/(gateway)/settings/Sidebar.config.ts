@@ -169,7 +169,6 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				href: "/settings/guardrails",
 				label: "Guardrails",
 				icon: ShieldCheck,
-				badge: "Beta",
 				match: ["/settings/guardrails"],
 			},
 			{
@@ -183,7 +182,7 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				href: "/settings/workspaces/enterprise",
 				label: "Enterprise",
 				icon: Building2,
-				badge: "Preview",
+				badge: "Beta",
 				match: ["/settings/workspaces/enterprise"],
 				children: [
 					{ href: "/settings/workspaces/enterprise", label: "Overview", exactOnly: true },
@@ -285,7 +284,7 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				href: "/settings/slack",
 				label: "Slack",
 				icon: MessagesSquare,
-				badge: "Beta",
+				badge: "Alpha",
 				match: ["/settings/slack"],
 			},
 			{
@@ -310,7 +309,6 @@ const BASE_SETTINGS_SIDEBAR: NavGroup[] = [
 				href: "/settings/presets",
 				label: "Presets",
 				icon: Workflow,
-				badge: "Beta",
 				match: ["/settings/presets"],
 				children: [
 					{ href: "/settings/presets", label: "Presets", exactOnly: true },

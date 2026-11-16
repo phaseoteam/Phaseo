@@ -63,7 +63,7 @@ describe("settings sidebar navigation", () => {
 		expect(shown.indexOf("/settings/slack")).toBe(shown.indexOf("/settings/apps") + 1);
 		const active = getActiveSettingsNav("/settings/slack", { showSlackAgent: true });
 		expect(active?.item.label).toBe("Slack");
-		expect(active?.item.badge).toBe("Beta");
+		expect(active?.item.badge).toBe("Alpha");
 		expect(active?.group.scope).toBe("workspace");
 		expect(getActiveSettingsNav("/settings/slack")?.item.label).not.toBe("Slack");
 	});

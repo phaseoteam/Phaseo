@@ -1,0 +1,164 @@
+---
+title: "Glossary"
+description: "Find what a Phaseo term means in one sentence, where it applies, and the page that covers it in full."
+"og:image": "https://phaseo.app/og/dynamic?title=Glossary&description=Find%20what%20a%20Phaseo%20term%20means%20in%20one%20sentence%2C%20where%20it%20applies%2C%20and%20the%20page%20that%20covers%20it%20in%20full.&pathname=/docs/v1/glossary"
+icon: "book-a"
+---
+
+Look up a word you met in the dashboard, the API or these docs. Each row gives a one-sentence meaning, links to the page that covers the term in full, and lists where it applies: API, Dashboard, CLI, SDK, MCP, Chat or Slack.
+
+## Accounts and access
+
+| Term | Meaning | Applies to |
+| --- | --- | --- |
+| [Admin](/v1/developers/management-api-keys) | A workspace role that manages admin-only settings, such as budgets, spend rules, guardrails and trust policies, and reads the audit log. | API, Dashboard, CLI, MCP |
+| [Member](/v1/developers/management-api-keys) | A workspace role that uses the workspace and can see its spend rules, but can't change owner- and admin-only settings. | API, Dashboard, CLI, MCP |
+| [Owner](/v1/developers/management-api-keys) | A workspace role that manages the same admin-only settings as an admin and receives owner emails, such as model deprecation alerts. | API, Dashboard, CLI, MCP |
+| [Workspace](/v1/guides/workspaces) | A container that keeps its own API keys, routing settings, presets, guardrails and admin access separate from other workspaces. | API, Dashboard, CLI |
+
+## Keys and authentication
+
+| Term | Meaning | Applies to |
+| --- | --- | --- |
+| [API key](/v1/developers/authentication#choose-a-credential) | A secret starting `phaseo_v1_sk_`, sent as a bearer token to authenticate model and generation requests. | API, Dashboard, CLI, SDK, MCP |
+| [BYOK](/v1/guides/routing-and-fallbacks#byok-considerations) | Bring your own key: Phaseo routes requests with your provider API key, and the provider bills the model usage. | API, Dashboard |
+| [BYOK fallback](/v1/guides/routing-and-fallbacks#byok-considerations) | A workspace setting that decides whether a failed BYOK request may retry on Phaseo credits. | API, Dashboard |
+| [Capability](/v1/developers/management-api-keys#choose-an-access-level) | A permission on a management key or OAuth sign-in, such as `keys:write`, that decides which administration APIs it can call. | API, Dashboard, CLI, MCP |
+| [Management key](/v1/developers/management-api-keys) | A secret starting `phaseo_v1_mk_` for administration APIs such as keys, presets and guardrails; it can't send inference requests. | API, Dashboard |
+| [OAuth app](/v1/guides/integrations/phaseo-cli#oauth-apps) | An app that signs people in with Phaseo OAuth and acts for them within the scopes and workspace they approve. | API, Dashboard, CLI, MCP |
+| [Trusted workload](/v1/developers/trusted-workloads) | A deployment or CI job that sends its platform's short-lived OIDC token instead of an API key, matched by a trust policy. | API, Dashboard |
+
+## Models and providers
+
+| Term | Meaning | Applies to |
+| --- | --- | --- |
+| [Context length](/v1/exploring/models#what-a-model-page-shows) | The context size a provider route supports for a model, shown for each provider on the model page. | API, Dashboard |
+| [Deprecated (model)](/v1/guides/model-retirement#how-a-model-is-retired) | The lab or provider has announced the model's retirement, and its requests are still served as usual. | API, Dashboard |
+| [Model ID](/v1/api-reference/parameters#parameter-model) | The ID you send as `model`, such as `openai/gpt-6-astra`, shown in the quickstart on each model page. | API, Dashboard, CLI, SDK, MCP |
+| [Private model](/v1/guides/private-models) | A dedicated or self-hosted OpenAI-compatible deployment added to your workspace, which only your workspace can see or call. | API, Dashboard |
+| [Provider](/v1/developers/introduction#models-and-providers) | A company that hosts a model and sets its availability, supported parameters, pricing and performance. | API, Dashboard, SDK, MCP |
+| [Provider status icon](/v1/guides/provider-statuses#status-icon) | The status Phaseo sets by hand for a provider route: `Active`, `Lower priority` (backup only) or `Disabled`. | Dashboard |
+| [Provider-qualified model ID](/v1/guides/provider-qualified-models) | A model ID with a provider prefix, such as `baseten:thinking-machines/inkling-small`, that runs on that provider with no fallback. | API, SDK |
+| [Quantization](/v1/guides/quantization) | Storing a model's weights in a smaller number type, such as `FP8` or `INT4`, which serves faster at some cost to quality. | API, Dashboard, SDK |
+| [Retired (model)](/v1/guides/model-retirement#how-a-model-is-retired) | The retirement date has passed; requests work while a provider serves the model, then fail with `410 model_retired`. | API, Dashboard |
+| [Routable model](/v1/exploring/models#catalog-models-and-callable-models) | A model with at least one provider route active on the Gateway now; `GET /v1/models` lists only these by default. | API, Dashboard, MCP |
+
+## Requests and responses
+
+| Term | Meaning | Applies to |
+| --- | --- | --- |
+| [Cached tokens](/v1/guides/prompt-caching#usage-and-pricing-fields) | Input tokens the provider read from its prompt cache, billed at the cache-read rate and reported as `cached_tokens`. | API, SDK |
+| [Gateway](/v1/developers/introduction) | The Phaseo API at `https://api.phaseo.app/v1`, which routes each request to a provider that hosts the model. | API, SDK |
+| [Generation ID](/v1/api-reference/endpoint/generation) | The `G-` request ID returned in `x-request-id` and error bodies; use it for logs, lookups and support. | API, Dashboard, SDK |
+| [Prompt caching](/v1/guides/prompt-caching) | Keeping the start of a prompt the same so the provider reads it from cache and bills it at the cache-read rate. | API, SDK |
+| [Reasoning effort](/v1/api-reference/parameters#parameter-reasoning) | How much a reasoning model thinks before answering, set with `reasoning.effort` or `reasoning_effort`, from `none` to `max`. | API, SDK |
+| [Reasoning tokens](/v1/guides/context-and-token-budgeting#what-counts-towards-a-request) | Tokens a reasoning model spends before it answers; they count as output and use part of the output limit. | API, SDK |
+| [Service tier](/v1/guides/service-tiers) | A speed and price tier for a text request (`standard`, `fast`, `ultrafast` or `flex`), served only by providers offering it. | API, SDK |
+| [Session ID](/v1/guides/routing-and-fallbacks#keep-a-conversation-on-one-provider) | A `session_id` you send to keep a conversation's requests on one provider, for up to 24 hours of activity. | API, Dashboard, SDK |
+| [Streaming](/v1/guides/streaming) | Setting `stream: true` so the Gateway sends output as server-sent events while the model writes it. | API, SDK |
+| [Tokens](/v1/guides/context-and-token-budgeting) | The units a model reads as input and writes as output; every token adds latency and cost. | API, Dashboard, SDK |
+| [Usage object](/v1/guides/prompt-caching#usage-and-pricing-fields) | The `usage` field in a response, which reports input, output and cache token counts for the request. | API, SDK |
+
+## Routing
+
+| Term | Meaning | Applies to |
+| --- | --- | --- |
+| [Alpha and beta provider channels](/v1/guides/routing-and-fallbacks#choose-how-providers-are-ranked) | Routing settings toggles so preview providers get traffic only when you opt in; `provider.include_alpha` allows alpha providers per request. | API, Dashboard |
+| [Auto Routing](/v1/guides/auto-routing) | Send `phaseo/auto` and Phaseo picks a model for each request from the workload, your objective and price limits. | API, Dashboard, CLI, SDK, Slack |
+| [Dynamic route](/v1/guides/routing-and-fallbacks#attach-routing-rules-to-api-keys) | A versioned flow of rules attached to API keys that can branch, split traffic, cap usage and switch models. | API, Dashboard |
+| [Free router](/v1/cookbook/free-router-first-deploy) | Send `phaseo/free` and Phaseo runs the request on an available free model, with no credits needed. | API, SDK |
+| [Model fallbacks](/v1/guides/routing-and-fallbacks#request-level-model-fallbacks) | Models listed in `models`, tried in order when the previous model ends in `429`, `500`, `502`, `503` or `504`. | API, SDK |
+| [Preset](/v1/guides/presets) | A saved model, system prompt, parameters and provider rules that callers use by sending its name, such as `@support-triage`. | API, Dashboard, SDK |
+| [Preset version label](/v1/guides/prompt-templates#labels) | A name such as `production` that points at one published preset version; moving it rolls requests forward or back. | API, Dashboard, SDK |
+| [Prompt template](/v1/guides/prompt-templates) | Preset messages with `{{variables}}`, so each request sends only the preset reference and the variable values. | API, Dashboard, SDK |
+| [Provider fallback](/v1/guides/routing-and-fallbacks) | When the chosen provider fails, the Gateway tries the next eligible provider for the same model. | API, SDK |
+| [Provider sorting](/v1/guides/routing-and-fallbacks#choose-how-providers-are-ranked) | How providers are ranked: `balanced` (default, cost per successful answer), `price`, `latency` or `throughput`. | API, Dashboard, CLI, SDK |
+| [Regional routing](/v1/guides/regional-routing) | Sending text requests to `eu.api.phaseo.app` or `us.api.phaseo.app` to use only routes that run there. | API, SDK |
+| [Retired model routing](/v1/guides/model-retirement#route-requests-to-a-replacement-automatically) | An opt-in workspace setting that sends requests for a model no provider serves to an approved or chosen replacement. | API, Dashboard |
+
+## Guardrails and privacy
+
+| Term | Meaning | Applies to |
+| --- | --- | --- |
+| [Guardrail](/v1/cookbook/guardrails-for-api-keys) | A policy on API keys or members that limits providers, models and data handling, and scans prompts; it doesn't cap spend. | API, Dashboard |
+| [Guardrail action](/v1/cookbook/guardrails-for-api-keys) | What a guardrail content check does when it matches: Flag, Redact or Block. | API, Dashboard |
+| [I/O logging](/v1/guides/open-requests-in-chat#before-you-start) | A privacy setting that stores each request's prompt and response, so you can view, replay or open it in Chat. | API, Dashboard, Chat |
+| [Prompt injection check](/v1/cookbook/guardrails-for-api-keys) | A guardrail check that scans user-supplied content for common prompt injection patterns. | API, Dashboard |
+| [Sensitive info check](/v1/cookbook/guardrails-for-api-keys) | A guardrail check that finds data such as email addresses, phone numbers and card numbers before the request leaves Phaseo. | API, Dashboard |
+| [ZDR](/v1/cookbook/route-only-to-eu-or-zdr-providers) | Zero data retention: the provider doesn't keep prompts or outputs; require it per request, per guardrail or per workspace. | API, Dashboard, CLI, SDK, MCP |
+
+## Tools and outputs
+
+| Term | Meaning | Applies to |
+| --- | --- | --- |
+| [Decisions API](/v1/api-reference/endpoint/decisions) | `POST /v1/decisions`, which answers typed questions (`predicate`, `choice`, `score`) with probabilities, in the order asked. | API, SDK |
+| [Response healing](/v1/cookbook/response-healing-for-structured-json) | A plugin that repairs almost-valid JSON, such as JSON in a Markdown fence, before it reaches your parser. | API, SDK |
+| [Server tool](/v1/guides/server-tools) | A `phaseo:` tool Phaseo runs when the model calls it, such as `phaseo:web_search`, `phaseo:web_fetch`, `phaseo:datetime` or `phaseo:advisor`. | API, SDK, Chat |
+| [Structured outputs](/v1/guides/structured-outputs) | Sending a JSON Schema so the model returns JSON in that shape instead of free text. | API, SDK |
+| [Tool calling](/v1/guides/tool-calling) | Describing your functions in `tools` so the model returns a call your app runs, then answers with the result. | API, SDK |
+
+## Cost, limits and billing
+
+| Term | Meaning | Applies to |
+| --- | --- | --- |
+| [Budget](/v1/api-reference/limits#key-limits-and-budgets) | A workspace spend ceiling (daily, weekly, monthly or lifetime); requests past it get `429 key_limit_exceeded`. | API, Dashboard |
+| [Credits](/v1/pricing/tiers) | Prepaid workspace balance that paid requests spend at catalog prices; purchases carry a 5% fee ($1 minimum), and `:free` models need none. | API, Dashboard, CLI, MCP |
+| [Department budget](/v1/api-reference/limits#department-budgets) | A daily, weekly or monthly spend ceiling on the keys and OAuth requests that count toward one department. | API, Dashboard |
+| [Key limit](/v1/api-reference/limits#key-limits-and-budgets) | A daily, weekly or monthly request or spend cap on one API key, checked on every request. | API, Dashboard, CLI |
+| [Rate limit](/v1/api-reference/limits#gateway-limits) | The requests-per-minute allowance for each user in each workspace, which rises as the workspace becomes established. | API, CLI |
+| [Spend alert](/v1/guides/spend-alerts#alert-types-and-bases) | The notification a spend rule sends when spend, a forecast, a spike or the balance crosses its threshold. | API, Dashboard |
+| [Spend rule](/v1/guides/spend-alerts) | A rule that alerts when spend for a scope crosses a threshold, and can block further requests with `429 spend_rule_blocked`. | API, Dashboard |
+
+## Observability
+
+| Term | Meaning | Applies to |
+| --- | --- | --- |
+| [App attribution](/v1/guides/app-attribution#headers) | Headers such as `X-App-Id`, `X-Title` and `HTTP-Referer` that group a request's usage under one app. | API, SDK |
+| [Audit log](/v1/guides/workspace-audit-log) | The record of who changed keys, members and other admin controls, which only owners and admins can read. | API, Dashboard, CLI |
+| [Broadcast](/v1/guides/broadcast) | Sends a trace of each gateway request to an observability tool, webhook, storage bucket or data warehouse, with no code changes. | API, Dashboard |
+| [Open in Chat](/v1/guides/open-requests-in-chat) | Continues a stored request or session turn as a conversation in Chat, with the same model or another. | Dashboard, Chat |
+| [Request classifier](/v1/guides/request-classifiers) | A taxonomy and a model that label each finished request, stored as request labels you can filter by. | API, Dashboard |
+| [Request label](/v1/guides/request-labels) | A key/value pair, such as `team=support`, sent in the `X-Phaseo-Metadata` header to filter spend and logs. | API, SDK |
+| [Request logs](/v1/api-reference/endpoint/logs-list) | A record for each request with its usage, latency, cost, errors and the provider that served it. | API, Dashboard, CLI, MCP |
+
+## Async jobs
+
+| Term | Meaning | Applies to |
+| --- | --- | --- |
+| [Async job](/v1/guides/async-video-and-batch) | A video or batch request that returns a job at once; you poll it or wait for a webhook until it finishes. | API, SDK |
+| [Batch](/v1/api-reference/endpoint/batches-create) | A Batch API job for large deferred workloads, where each row targets one model. | API, SDK |
+| [Video job](/v1/guides/async-video-and-batch) | A Video API request that returns a job; download the video once its status is `completed`. | API, SDK |
+| [Webhook endpoint](/v1/guides/async-video-and-batch#receive-updates) | A workspace URL that receives signed status events for video and batch jobs. | API, Dashboard |
+
+## Enterprise
+
+| Term | Meaning | Applies to |
+| --- | --- | --- |
+| [Department](/v1/guides/spend-alerts#choose-whose-spend-counts) | A group of workspace members, managed by hand or synced from your directory, that budgets, rate limits and spend rules can target. | API, Dashboard |
+| [Directory](/v1/api-reference/endpoint/identity-directory-get) | The workspace's enterprise departments and each member's effective entitlements, managed by owners and admins. | API, Dashboard |
+| [Identity add-on](/v1/api-reference/endpoint/identity-scim-get) | The workspace add-on needed to turn on SSO or SCIM, create provisioning tokens and manage the directory. | API, Dashboard |
+| [SCIM](/v1/api-reference/endpoint/identity-scim-get) | Provisioning workspace members and departments from your identity provider with a SCIM provisioning token. | API, Dashboard |
+| [Self Serve Enterprise](/v1/exploring/subscription-plans#enterprise-member-pricing) | A monthly workspace subscription for SSO, SCIM, directory management, departments and priority email support. | Dashboard |
+| [SSO](/v1/api-reference/endpoint/identity-sso-get) | Single sign-on for workspace members through SAML or a custom OIDC provider. | API, Dashboard |
+
+## CLI, MCP, SDKs and apps
+
+| Term | Meaning | Applies to |
+| --- | --- | --- |
+| [Agent skills](/v1/cookbook/coding-agents-skill-md) | Public Phaseo instructions for coding agents, covering the Gateway, SDKs, presets, routing and migrations. | API, CLI, SDK |
+| [Client SDK](/v1/sdk-reference/client/overview) | A Phaseo package for your language with one method per Gateway endpoint, such as `@phaseo/sdk` or `phaseo`. | SDK |
+| [Docs MCP](/v1/guides/integrations/docs-mcp) | A read-only MCP server at `https://phaseo.app/docs/mcp` that lets coding assistants search and read these docs. | MCP |
+| [Phaseo CLI](/v1/developers/cli-and-mcp#phaseo-cli) | The `phaseo` command for creating keys, changing settings and automating admin work from a shell or CI. | CLI |
+| [Phaseo MCP](/v1/developers/cli-and-mcp#phaseo-mcp) | An MCP server that gives AI clients live model, pricing, usage and workspace data, and can optionally manage your account. | MCP |
+| [Slack agent](/v1/guides/slack-agent) | The Phaseo agent in Slack, which answers mentions and direct messages with the model your workspace chose. | Dashboard, Slack |
+
+## Feature stages
+
+| Term | Meaning | Applies to |
+| --- | --- | --- |
+| [Alpha](/v1/developers/feature-maturity) | An early feature that may change a lot or be removed. | API, Dashboard, CLI, SDK, MCP, Chat, Slack |
+| [Beta](/v1/developers/feature-maturity) | A feature that works for its main use, though details may change; changes are announced in the changelog. | API, Dashboard, CLI, SDK, MCP, Chat, Slack |
+| [Deprecated (feature)](/v1/developers/feature-maturity) | A feature that still works but will be removed; its page gives the removal date when one is set. | API, Dashboard, CLI, SDK, MCP, Chat, Slack |
+| [Feature Preview](/v1/developers/feature-maturity#who-can-use-a-feature) | The settings page that shows whether the Video and Batch APIs are turned on for your workspace. | Dashboard |
+| [On request](/v1/developers/feature-maturity#who-can-use-a-feature) | A feature that is turned on per workspace; until it is, its settings page is hidden and its API returns an error. | API, Dashboard |
+| [Generally available](/v1/developers/feature-maturity) | A stable feature, shown with no stage badge. | API, Dashboard, CLI, SDK, MCP, Chat, Slack |

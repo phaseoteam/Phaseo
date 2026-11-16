@@ -1,0 +1,163 @@
+---
+title: "用語集"
+description: "Phaseo の用語の意味を 1 文で確認し、どこで使われるかと、詳しく説明しているページを見つけます。"
+icon: "book-a"
+---
+
+ダッシュボード、API、またはこのドキュメントで見かけた用語を調べられます。各行には 1 文の意味、その用語を詳しく説明しているページへのリンク、そして使われる場所（API、ダッシュボード、CLI、SDK、MCP、チャット、Slack）を示しています。
+
+## アカウントとアクセス
+
+| 用語 | 意味 | 対象 |
+| --- | --- | --- |
+| [管理者](./developers/management-api-keys.mdx) | 予算、支出ルール、ガードレール、信頼ポリシーなどの管理者専用設定を管理し、監査ログを読めるワークスペースのロールです。 | API、ダッシュボード、CLI、MCP |
+| [メンバー](./developers/management-api-keys.mdx) | ワークスペースを使い、その支出ルールを確認できますが、オーナー専用と管理者専用の設定は変更できないワークスペースのロールです。 | API、ダッシュボード、CLI、MCP |
+| [オーナー](./developers/management-api-keys.mdx) | 管理者と同じ管理者専用設定を管理し、モデル非推奨アラートなどのオーナー向けメールを受け取るワークスペースのロールです。 | API、ダッシュボード、CLI、MCP |
+| [ワークスペース](./guides/workspaces.mdx) | 独自の API キー、ルーティング設定、プリセット、ガードレール、管理者アクセスを、ほかのワークスペースと分けて保持する入れ物です。 | API、ダッシュボード、CLI |
+
+## キーと認証
+
+| 用語 | 意味 | 対象 |
+| --- | --- | --- |
+| [API キー](./developers/authentication.mdx#choose-a-credential) | `phaseo_v1_sk_` で始まるシークレットで、モデルリクエストや生成リクエストを認証するためにベアラートークンとして送信します。 | API、ダッシュボード、CLI、SDK、MCP |
+| [BYOK](./guides/routing-and-fallbacks.mdx#byok-considerations) | Bring your own key の略です。Phaseo はあなたのプロバイダー API キーでリクエストをルーティングし、モデルの使用料はプロバイダーが請求します。 | API、ダッシュボード |
+| [BYOK フォールバック](./guides/routing-and-fallbacks.mdx#byok-considerations) | 失敗した BYOK リクエストを Phaseo のクレジットで再試行してよいかを決めるワークスペース設定です。 | API、ダッシュボード |
+| [ケイパビリティ](./developers/management-api-keys.mdx#choose-an-access-level) | `keys:write` のような、管理キーまたは OAuth サインインに付与される権限で、どの管理 API を呼び出せるかを決めます。 | API、ダッシュボード、CLI、MCP |
+| [管理キー](./developers/management-api-keys.mdx) | キー、プリセット、ガードレールなどの管理 API 用の `phaseo_v1_mk_` で始まるシークレットです。推論リクエストは送信できません。 | API、ダッシュボード |
+| [OAuth アプリ](./guides/integrations/phaseo-cli.mdx#oauth-apps) | Phaseo OAuth でユーザーをサインインさせ、ユーザーが承認したスコープとワークスペースの範囲でそのユーザーに代わって動作するアプリです。 | API、ダッシュボード、CLI、MCP |
+| [信頼済みワークロード](./developers/trusted-workloads.mdx) | API キーの代わりにプラットフォームの短期間有効な OIDC トークンを送信し、信頼ポリシーと照合されるデプロイや CI ジョブです。 | API、ダッシュボード |
+
+## モデルとプロバイダー
+
+| 用語 | 意味 | 対象 |
+| --- | --- | --- |
+| [コンテキスト長](./exploring/models.mdx#what-a-model-page-shows) | プロバイダーのルートがモデルに対してサポートするコンテキストのサイズで、モデルページにプロバイダーごとに表示されます。 | API、ダッシュボード |
+| [非推奨（モデル）](./guides/model-retirement.mdx#how-a-model-is-retired) | ラボまたはプロバイダーがモデルの提供終了を発表した状態です。リクエストは引き続き通常どおり処理されます。 | API、ダッシュボード |
+| [モデル ID](./api-reference/parameters.mdx#parameter-model) | `openai/gpt-6-astra` のように `model` として送信する ID で、各モデルページのクイックスタートに表示されます。 | API、ダッシュボード、CLI、SDK、MCP |
+| [プライベートモデル](./guides/private-models.mdx) | ワークスペースに追加した専用またはセルフホストの OpenAI 互換デプロイで、あなたのワークスペースだけが参照、呼び出しできます。 | API、ダッシュボード |
+| [プロバイダー](./developers/introduction.mdx#models-and-providers) | モデルをホストし、その提供状況、サポートするパラメーター、料金、パフォーマンスを決める企業です。 | API、ダッシュボード、SDK、MCP |
+| [プロバイダーのステータスアイコン](./guides/provider-statuses.mdx#status-icon) | Phaseo がプロバイダーのルートに手動で設定するステータスで、`Active`、`Lower priority`（バックアップ専用）、`Disabled` のいずれかです。 | ダッシュボード |
+| [プロバイダー指定のモデル ID](./guides/provider-qualified-models.mdx) | `baseten:thinking-machines/inkling-small` のようにプロバイダーの接頭辞が付いたモデル ID で、フォールバックなしでそのプロバイダー上で実行されます。 | API、SDK |
+| [量子化](./guides/quantization.mdx) | モデルの重みを `FP8` や `INT4` のようなより小さい数値型で保存することです。品質を多少犠牲にして、より高速に提供できます。 | API、ダッシュボード、SDK |
+| [提供終了（モデル）](./guides/model-retirement.mdx#how-a-model-is-retired) | 提供終了日を過ぎた状態です。プロバイダーがモデルを提供している間はリクエストが動作し、その後は `410 model_retired` で失敗します。 | API、ダッシュボード |
+| [ルーティング可能なモデル](./exploring/models.mdx#catalog-models-and-callable-models) | 現在 Gateway で有効なプロバイダーのルートが少なくとも 1 つあるモデルです。`GET /v1/models` はデフォルトでこれらだけを一覧表示します。 | API、ダッシュボード、MCP |
+
+## リクエストとレスポンス
+
+| 用語 | 意味 | 対象 |
+| --- | --- | --- |
+| [キャッシュ済みトークン](./guides/prompt-caching.mdx#usage-and-pricing-fields) | プロバイダーがプロンプトキャッシュから読み込んだ入力トークンで、キャッシュ読み込み料金で課金され、`cached_tokens` として報告されます。 | API、SDK |
+| [Gateway](./developers/introduction.mdx) | `https://api.phaseo.app/v1` にある Phaseo API で、各リクエストをそのモデルをホストするプロバイダーへルーティングします。 | API、SDK |
+| [生成 ID](./api-reference/endpoint/generation.mdx) | `x-request-id` とエラー本文で返される `G-` のリクエスト ID です。ログ、検索、サポートに使います。 | API、ダッシュボード、SDK |
+| [プロンプトキャッシュ](./guides/prompt-caching.mdx) | プロンプトの先頭を同じに保つことで、プロバイダーがそれをキャッシュから読み込み、キャッシュ読み込み料金で課金されるようにすることです。 | API、SDK |
+| [推論の努力度](./api-reference/parameters.mdx#parameter-reasoning) | 推論モデルが回答する前にどれだけ考えるかで、`reasoning.effort` または `reasoning_effort` を使って `none` から `max` まで設定します。 | API、SDK |
+| [推論トークン](./guides/context-and-token-budgeting.mdx#what-counts-towards-a-request) | 推論モデルが回答する前に消費するトークンです。出力として数えられ、出力上限の一部を使います。 | API、SDK |
+| [サービスティア](./guides/service-tiers.mdx) | テキストリクエストの速度と料金の階層（`standard`、`fast`、`ultrafast`、`flex`）で、そのティアを提供するプロバイダーだけが処理します。 | API、SDK |
+| [セッション ID](./guides/routing-and-fallbacks.mdx#keep-a-conversation-on-one-provider) | 会話のリクエストを 1 つのプロバイダーにとどめるために送信する `session_id` で、最大 24 時間のアクティビティまで有効です。 | API、ダッシュボード、SDK |
+| [ストリーミング](./guides/streaming.mdx) | `stream: true` を設定して、モデルが書いている間に Gateway が出力をサーバー送信イベントとして送るようにすることです。 | API、SDK |
+| [トークン](./guides/context-and-token-budgeting.mdx) | モデルが入力として読み、出力として書く単位です。トークンが増えるほどレイテンシーとコストが増えます。 | API、ダッシュボード、SDK |
+| [usage オブジェクト](./guides/prompt-caching.mdx#usage-and-pricing-fields) | レスポンスの `usage` フィールドで、リクエストの入力、出力、キャッシュのトークン数を報告します。 | API、SDK |
+
+## ルーティング
+
+| 用語 | 意味 | 対象 |
+| --- | --- | --- |
+| [アルファとベータのプロバイダーチャンネル](./guides/routing-and-fallbacks.mdx#choose-how-providers-are-ranked) | プレビュー段階のプロバイダーに、オプトインした場合だけトラフィックを送るためのルーティング設定の切り替えです。`provider.include_alpha` を使うと、リクエストごとにアルファのプロバイダーを許可できます。 | API、ダッシュボード |
+| [自動ルーティング](./guides/auto-routing.mdx) | `phaseo/auto` を送信すると、Phaseo がワークロード、目的、料金の上限に基づいてリクエストごとにモデルを選びます。 | API、ダッシュボード、CLI、SDK、Slack |
+| [動的ルート](./guides/routing-and-fallbacks.mdx#attach-routing-rules-to-api-keys) | API キーに紐付けるバージョン管理されたルールのフローで、分岐、トラフィックの分割、使用量の上限設定、モデルの切り替えができます。 | API、ダッシュボード |
+| [無料ルーター](./cookbook/free-router-first-deploy.mdx) | `phaseo/free` を送信すると、Phaseo が利用可能な無料モデルでリクエストを実行します。クレジットは不要です。 | API、SDK |
+| [モデルフォールバック](./guides/routing-and-fallbacks.mdx#request-level-model-fallbacks) | `models` に並べたモデルで、前のモデルが `429`、`500`、`502`、`503`、`504` で終わったときに順番に試されます。 | API、SDK |
+| [プリセット](./guides/presets.mdx) | 保存されたモデル、システムプロンプト、パラメーター、プロバイダールールで、呼び出し側は `@support-triage` のようにその名前を送るだけで使えます。 | API、ダッシュボード、SDK |
+| [プリセットのバージョンラベル](./guides/prompt-templates.mdx#labels) | `production` のように、公開済みのプリセットバージョン 1 つを指す名前です。移動すると、リクエストを前のバージョンや次のバージョンに切り替えられます。 | API、ダッシュボード、SDK |
+| [プロンプトテンプレート](./guides/prompt-templates.mdx) | `{{variables}}` を含むプリセットのメッセージで、各リクエストではプリセットの参照と変数の値だけを送ります。 | API、ダッシュボード、SDK |
+| [プロバイダーフォールバック](./guides/routing-and-fallbacks.mdx) | 選ばれたプロバイダーが失敗したとき、Gateway が同じモデルで条件を満たす次のプロバイダーを試すことです。 | API、SDK |
+| [プロバイダーの並べ替え](./guides/routing-and-fallbacks.mdx#choose-how-providers-are-ranked) | プロバイダーの順位付けの方法で、`balanced`（デフォルト、成功した回答あたりのコスト）、`price`、`latency`、`throughput` があります。 | API、ダッシュボード、CLI、SDK |
+| [リージョンルーティング](./guides/regional-routing.mdx) | テキストリクエストを `eu.api.phaseo.app` または `us.api.phaseo.app` に送り、そのリージョンで動くルートだけを使うことです。 | API、SDK |
+| [提供終了モデルのルーティング](./guides/model-retirement.mdx#route-requests-to-a-replacement-automatically) | どのプロバイダーも提供していないモデルへのリクエストを、承認済みまたは選択した代替モデルへ送る、オプトインのワークスペース設定です。 | API、ダッシュボード |
+
+## ガードレールとプライバシー
+
+| 用語 | 意味 | 対象 |
+| --- | --- | --- |
+| [ガードレール](./cookbook/guardrails-for-api-keys.mdx) | API キーやメンバーに適用するポリシーで、プロバイダー、モデル、データの取り扱いを制限し、プロンプトをスキャンします。支出の上限は設定しません。 | API、ダッシュボード |
+| [ガードレールのアクション](./cookbook/guardrails-for-api-keys.mdx) | ガードレールのコンテンツチェックが一致したときの動作で、フラグ、編集（マスク）、ブロックのいずれかです。 | API、ダッシュボード |
+| [I/O ログ](./guides/open-requests-in-chat.mdx#before-you-start) | 各リクエストのプロンプトとレスポンスを保存するプライバシー設定で、表示、再実行、チャットで開くことができるようになります。 | API、ダッシュボード、チャット |
+| [プロンプトインジェクションのチェック](./cookbook/guardrails-for-api-keys.mdx) | ユーザーが提供したコンテンツに、よくあるプロンプトインジェクションのパターンがないかをスキャンするガードレールのチェックです。 | API、ダッシュボード |
+| [機密情報のチェック](./cookbook/guardrails-for-api-keys.mdx) | リクエストが Phaseo を出る前に、メールアドレス、電話番号、カード番号などのデータを見つけるガードレールのチェックです。 | API、ダッシュボード |
+| [ZDR](./cookbook/route-only-to-eu-or-zdr-providers.mdx) | ゼロデータ保持の略です。プロバイダーはプロンプトや出力を保持しません。リクエストごと、ガードレールごと、またはワークスペースごとに必須にできます。 | API、ダッシュボード、CLI、SDK、MCP |
+
+## ツールと出力
+
+| 用語 | 意味 | 対象 |
+| --- | --- | --- |
+| [Decisions API](./api-reference/endpoint/decisions.mdx) | `POST /v1/decisions` のことで、型付きの質問（`predicate`、`choice`、`score`）に、尋ねた順に確率付きで回答します。 | API、SDK |
+| [応答の修復](./cookbook/response-healing-for-structured-json.mdx) | Markdown のコードフェンス内の JSON など、ほぼ有効な JSON をパーサーに届く前に修復するプラグインです。 | API、SDK |
+| [サーバーツール](./guides/server-tools/index.mdx) | モデルが呼び出したときに Phaseo が実行する `phaseo:` ツールで、`phaseo:web_search`、`phaseo:web_fetch`、`phaseo:datetime`、`phaseo:advisor` などがあります。 | API、SDK、チャット |
+| [構造化出力](./guides/structured-outputs.mdx) | JSON Schema を送信して、モデルが自由形式のテキストではなく、その形の JSON を返すようにすることです。 | API、SDK |
+| [ツール呼び出し](./guides/tool-calling.mdx) | `tools` に関数を記述して、モデルがアプリで実行する呼び出しを返し、その結果を使って回答するようにすることです。 | API、SDK |
+
+## コスト、制限、請求
+
+| 用語 | 意味 | 対象 |
+| --- | --- | --- |
+| [予算](./api-reference/limits.mdx#key-limits-and-budgets) | ワークスペースの支出上限（日次、週次、月次、または全期間）で、上限を超えたリクエストには `429 key_limit_exceeded` が返されます。 | API、ダッシュボード |
+| [クレジット](./pricing/tiers.mdx) | 有料リクエストがカタログ価格で消費する、前払いのワークスペース残高です。購入には 5% の手数料（最低 $1）がかかり、`:free` モデルにはクレジットは不要です。 | API、ダッシュボード、CLI、MCP |
+| [部門予算](./api-reference/limits.mdx#department-budgets) | 1 つの部門に計上されるキーと OAuth リクエストに対する、日次、週次、または月次の支出上限です。 | API、ダッシュボード |
+| [キーの上限](./api-reference/limits.mdx#key-limits-and-budgets) | 1 つの API キーに対する日次、週次、または月次のリクエスト数または支出の上限で、リクエストごとに確認されます。 | API、ダッシュボード、CLI |
+| [レート制限](./api-reference/limits.mdx#gateway-limits) | 各ワークスペースのユーザーごとの 1 分あたりのリクエスト許容量で、ワークスペースの利用実績が積み上がるにつれて増えます。 | API、CLI |
+| [支出アラート](./guides/spend-alerts.mdx#alert-types-and-bases) | 支出、予測、急増、または残高がしきい値を超えたときに、支出ルールが送信する通知です。 | API、ダッシュボード |
+| [支出ルール](./guides/spend-alerts.mdx) | ある範囲の支出がしきい値を超えたときにアラートを出し、`429 spend_rule_blocked` でその後のリクエストをブロックすることもできるルールです。 | API、ダッシュボード |
+
+## オブザーバビリティ
+
+| 用語 | 意味 | 対象 |
+| --- | --- | --- |
+| [アプリの帰属情報](./guides/app-attribution.mdx#headers) | `X-App-Id`、`X-Title`、`HTTP-Referer` などのヘッダーで、リクエストの使用量を 1 つのアプリにまとめます。 | API、SDK |
+| [監査ログ](./guides/workspace-audit-log.mdx) | 誰がキー、メンバー、その他の管理設定を変更したかの記録で、オーナーと管理者だけが読めます。 | API、ダッシュボード、CLI |
+| [Broadcast](./guides/broadcast.mdx) | コードを変更せずに、各 Gateway リクエストのトレースをオブザーバビリティツール、Webhook、ストレージバケット、またはデータウェアハウスに送信します。 | API、ダッシュボード |
+| [チャットで開く](./guides/open-requests-in-chat.mdx) | 保存済みのリクエストやセッションのターンを、同じモデルまたは別のモデルでチャットの会話として続けます。 | ダッシュボード、チャット |
+| [リクエスト分類器](./guides/request-classifiers.mdx) | 完了した各リクエストにラベルを付ける分類体系とモデルで、ラベルはフィルターに使えるリクエストラベルとして保存されます。 | API、ダッシュボード |
+| [リクエストラベル](./guides/request-labels.mdx) | `team=support` のようなキーと値のペアで、`X-Phaseo-Metadata` ヘッダーで送信し、支出とログの絞り込みに使います。 | API、SDK |
+| [リクエストログ](./api-reference/endpoint/logs-list.mdx) | リクエストごとの記録で、使用量、レイテンシー、コスト、エラー、そしてリクエストを処理したプロバイダーが含まれます。 | API、ダッシュボード、CLI、MCP |
+
+## 非同期ジョブ
+
+| 用語 | 意味 | 対象 |
+| --- | --- | --- |
+| [非同期ジョブ](./guides/async-video-and-batch.mdx) | すぐにジョブを返す動画またはバッチのリクエストです。完了するまでポーリングするか、Webhook を待ちます。 | API、SDK |
+| [バッチ](./api-reference/endpoint/batches-create.mdx) | 大規模な後回し可能なワークロード向けの Batch API のジョブで、各行が 1 つのモデルを対象にします。 | API、SDK |
+| [動画ジョブ](./guides/async-video-and-batch.mdx) | ジョブを返す Video API のリクエストです。ステータスが `completed` になったら動画をダウンロードします。 | API、SDK |
+| [Webhook エンドポイント](./guides/async-video-and-batch.mdx#receive-updates) | 動画ジョブとバッチジョブの署名付きステータスイベントを受け取る、ワークスペースの URL です。 | API、ダッシュボード |
+
+## エンタープライズ
+
+| 用語 | 意味 | 対象 |
+| --- | --- | --- |
+| [部門](./guides/spend-alerts.mdx#choose-whose-spend-counts) | 手動で管理するか、ディレクトリから同期するワークスペースメンバーのグループで、予算、レート制限、支出ルールの対象にできます。 | API、ダッシュボード |
+| [ディレクトリ](./api-reference/endpoint/identity-directory-get.mdx) | ワークスペースのエンタープライズ部門と各メンバーの有効な権利で、オーナーと管理者が管理します。 | API、ダッシュボード |
+| [ID アドオン](./api-reference/endpoint/identity-scim-get.mdx) | SSO や SCIM を有効にし、プロビジョニングトークンを作成し、ディレクトリを管理するために必要なワークスペースのアドオンです。 | API、ダッシュボード |
+| [SCIM](./api-reference/endpoint/identity-scim-get.mdx) | SCIM プロビジョニングトークンを使い、ID プロバイダーからワークスペースのメンバーと部門をプロビジョニングすることです。 | API、ダッシュボード |
+| [セルフサーブ Enterprise](./exploring/subscription-plans.mdx#enterprise-member-pricing) | SSO、SCIM、ディレクトリ管理、部門、優先メールサポートを利用できる、ワークスペースの月額サブスクリプションです。 | ダッシュボード |
+| [SSO](./api-reference/endpoint/identity-sso-get.mdx) | SAML またはカスタム OIDC プロバイダーを通じた、ワークスペースメンバーのシングルサインオンです。 | API、ダッシュボード |
+
+## CLI、MCP、SDK、アプリ
+
+| 用語 | 意味 | 対象 |
+| --- | --- | --- |
+| [エージェントスキル](./cookbook/coding-agents-skill-md.mdx) | コーディングエージェント向けの公開された Phaseo の指示で、Gateway、SDK、プリセット、ルーティング、移行を扱います。 | API、CLI、SDK |
+| [クライアント SDK](./sdk-reference/client/overview.mdx) | Gateway のエンドポイントごとに 1 つのメソッドを持つ、各言語向けの Phaseo パッケージで、`@phaseo/sdk` や `phaseo` があります。 | SDK |
+| [Docs MCP](./guides/integrations/docs-mcp.mdx) | `https://phaseo.app/docs/mcp` にある読み取り専用の MCP サーバーで、コーディングアシスタントがこのドキュメントを検索して読めるようにします。 | MCP |
+| [Phaseo CLI](./developers/cli-and-mcp.mdx#phaseo-cli) | シェルや CI から、キーの作成、設定の変更、管理作業の自動化を行う `phaseo` コマンドです。 | CLI |
+| [Phaseo MCP](./developers/cli-and-mcp.mdx#phaseo-mcp) | AI クライアントにモデル、料金、使用量、ワークスペースのライブデータを提供し、必要に応じてアカウントも管理できる MCP サーバーです。 | MCP |
+| [Slack エージェント](./guides/slack-agent.mdx) | Slack 上の Phaseo エージェントで、ワークスペースが選んだモデルを使ってメンションやダイレクトメッセージに回答します。 | ダッシュボード、Slack |
+
+## 機能の段階
+
+| 用語 | 意味 | 対象 |
+| --- | --- | --- |
+| [アルファ](./developers/feature-maturity.mdx) | 大きく変わったり削除されたりする可能性がある、初期段階の機能です。 | API、ダッシュボード、CLI、SDK、MCP、チャット、Slack |
+| [ベータ](./developers/feature-maturity.mdx) | 主な用途では動作するものの、細部が変わる可能性がある機能です。変更は変更履歴でお知らせします。 | API、ダッシュボード、CLI、SDK、MCP、チャット、Slack |
+| [非推奨（機能）](./developers/feature-maturity.mdx) | まだ動作しますが、今後削除される機能です。削除日が決まっている場合は、そのページに記載されます。 | API、ダッシュボード、CLI、SDK、MCP、チャット、Slack |
+| [機能プレビュー](./developers/feature-maturity.mdx#who-can-use-a-feature) | ワークスペースで Video API と Batch API が有効かどうかを示す設定ページです。 | ダッシュボード |
+| [リクエスト制](./developers/feature-maturity.mdx#who-can-use-a-feature) | ワークスペースごとに有効化される機能です。有効になるまでは、設定ページが非表示になり、API はエラーを返します。 | API、ダッシュボード |
+| [一般提供](./developers/feature-maturity.mdx) | 段階のバッジが表示されない、安定した機能です。 | API、ダッシュボード、CLI、SDK、MCP、チャット、Slack |
