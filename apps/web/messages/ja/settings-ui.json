@@ -4359,6 +4359,7 @@
 			"timestamp": "日時",
 			"amount": "金額",
 			"reason": "理由",
+			"statusColumn": "ステータス",
 			"status": {
 				"succeeded": "成功",
 				"failed": "失敗",

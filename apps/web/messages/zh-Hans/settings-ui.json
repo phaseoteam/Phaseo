@@ -4359,6 +4359,7 @@
 			"timestamp": "时间",
 			"amount": "金额",
 			"reason": "原因",
+			"statusColumn": "状态",
 			"status": {
 				"succeeded": "成功",
 				"failed": "失败",
