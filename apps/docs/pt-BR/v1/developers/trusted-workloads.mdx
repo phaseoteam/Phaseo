@@ -5,7 +5,7 @@ icon: "fingerprint-pattern"
 ---
 
 <Note>
-Os workloads confiáveis estão em [beta](feature-maturity.mdx) e estão sendo liberados gradualmente para os espaços de trabalho. Se **Configurações → Chaves de API → Workloads confiáveis** não aparece no seu painel, seu espaço de trabalho ainda não tem o recurso.
+Os workloads confiáveis estão em [beta](./feature-maturity.mdx) e estão sendo liberados gradualmente para os espaços de trabalho. Se **Configurações → Chaves de API → Workloads confiáveis** não aparece no seu painel, seu espaço de trabalho ainda não tem o recurso.
 </Note>
 
 Envie o token OIDC de curta duração da sua plataforma como token bearer em vez de uma chave de API do Phaseo, e nada de longa duração precisa ficar nas configurações do projeto ou nos secrets de CI. As plataformas dão a cada deployment, job ou workload um token assinado que diz quem ele é, como "o deployment de produção do projeto `website`" ou "um job no projeto `4815162` do GitLab", e o token expira em poucas horas. Você informa ao Phaseo em quais workloads confiar.

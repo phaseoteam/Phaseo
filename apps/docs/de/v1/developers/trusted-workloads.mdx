@@ -5,7 +5,7 @@ icon: "fingerprint-pattern"
 ---
 
 <Note>
-Vertrauenswürdige Workloads sind in der [Beta](feature-maturity.mdx) und werden schrittweise für Workspaces freigeschaltet. Wenn **Einstellungen → API-Schlüssel → Vertrauenswürdige Workloads** in deinem Dashboard nicht erscheint, hat dein Workspace die Funktion noch nicht.
+Vertrauenswürdige Workloads sind in der [Beta](./feature-maturity.mdx) und werden schrittweise für Workspaces freigeschaltet. Wenn **Einstellungen → API-Schlüssel → Vertrauenswürdige Workloads** in deinem Dashboard nicht erscheint, hat dein Workspace die Funktion noch nicht.
 </Note>
 
 Sende das kurzlebige OIDC-Token deiner Plattform statt eines Phaseo-API-Schlüssels als Bearer-Token, dann muss nichts Langlebiges in deinen Projekteinstellungen oder CI-Secrets liegen. Plattformen geben jedem Deployment, Job oder Workload ein signiertes Token, das angibt, wer er ist, etwa „das Produktions-Deployment des Projekts `website`“ oder „ein Job im GitLab-Projekt `4815162`“, und das Token läuft innerhalb weniger Stunden ab. Du legst fest, welchen Workloads Phaseo vertraut.
