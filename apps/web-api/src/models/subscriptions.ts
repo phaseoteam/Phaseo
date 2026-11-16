@@ -69,20 +69,24 @@ export async function fetchRelatedPlans(client: SupabaseClient, plan: Row): Prom
 		// Filter to the lab in the database, before any response row limit applies.
 		client.rpc("get_v2_subscription_model_usage", { p_model_slug: null, p_plan_id: null }).eq("lab_slug", labSlug),
 		// Live monthly offer prices, aggregated in the database; the plan row's price columns are historical.
-		client.rpc("get_v2_subscription_monthly_prices", { p_lab_slug: labSlug }),
+		client.rpc("get_v2_subscription_monthly_price_details", { p_lab_slug: labSlug }),
 	]);
 	if (plans.error || !Array.isArray(plans.data)) {
 		console.warn("[web-api/subscriptions] related plans unavailable", plans.error?.message);
 		return [];
 	}
 	if (prices.error) console.warn("[web-api/subscriptions] related plan prices unavailable", prices.error.message);
-	const priceByPlan = new Map<string, number>();
-	for (const row of (Array.isArray(prices.data) ? prices.data : []) as Row[]) if (row.monthly_price_usd != null) priceByPlan.set(String(row.plan_uuid), Number(row.monthly_price_usd));
+	const priceByPlan = new Map<string, { amount: number; perSeat: boolean }>();
+	for (const row of (Array.isArray(prices.data) ? prices.data : []) as Row[]) {
+		if (row.monthly_price_usd != null) priceByPlan.set(String(row.plan_uuid), { amount: Number(row.monthly_price_usd), perSeat: row.per_seat === true });
+	}
 	const usageByPlan = groupUsageByPlan(Array.isArray(usage.data) ? usage.data.filter((row: Row) => row.lab_slug === labSlug) : []);
 	return plans.data.map((row) => ({
 		plan_id: row.plan_id,
 		name: row.name,
-		monthly_price_usd: priceByPlan.get(String(row.plan_uuid)) ?? null,
+		monthly_price_usd: priceByPlan.get(String(row.plan_uuid))?.amount ?? null,
+		// The price is for one seat, so the page labels it "/ seat / month".
+		price_per_seat: priceByPlan.get(String(row.plan_uuid))?.perSeat ?? false,
 		usage: (usageByPlan.get(String(row.plan_uuid)) ?? []).filter((entry) => entry.scenario === "standard"),
 	})).sort((a, b) => (a.monthly_price_usd ?? Infinity) - (b.monthly_price_usd ?? Infinity) || String(a.name).localeCompare(String(b.name)));
 }

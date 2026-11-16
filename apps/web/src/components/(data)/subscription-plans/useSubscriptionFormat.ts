@@ -25,8 +25,9 @@ export function useSubscriptionFormat() {
 		locale,
 		messages,
 		price: (price: SubscriptionPrice) => formatSubscriptionPrice(price, (amount, currency) => money(amount, currency, Number.isInteger(amount) ? { minimumFractionDigits: 0, maximumFractionDigits: 0 } : { maximumFractionDigits: 8 }), priceLabels),
-		/** "$20 / month" from a monthly USD amount. */
-		perMonth: (usd: number) => `${money(usd, "USD", monthlyAmountFractionDigits(usd))} / ${priceLabels.period?.(1, "month") ?? "month"}`,
+		/** "$20 / month" from a monthly USD amount, or "$25 / Seat / month" for a price per seat. */
+		perMonth: (usd: number, perSeat = false) =>
+			`${money(usd, "USD", monthlyAmountFractionDigits(usd))}${perSeat ? ` / ${priceLabels.seat ?? "seat"}` : ""} / ${priceLabels.period?.(1, "month") ?? "month"}`,
 		/** The plan's first price in display order (fixed monthly USD first), or null. */
 		primaryPrice: (prices: SubscriptionPrice[] | null | undefined) => sortSubscriptionPlanPricesForDisplay(prices ?? [])[0] ?? null,
 		tokens: (value: number) => format.number(value, { notation: "compact", maximumFractionDigits: value >= 1e9 ? 1 : 0 }),

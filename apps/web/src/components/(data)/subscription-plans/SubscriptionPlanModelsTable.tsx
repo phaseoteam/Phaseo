@@ -20,6 +20,14 @@ export function planModelRows(models: SubscriptionPlanModel[], usage: Subscripti
 			|| a.model.model.name.localeCompare(b.model.model.name));
 }
 
+/** A model's rate limit as text, or null when there isn't one: a blank string or an empty object or list. */
+export function rateLimitText(value: unknown): string | null {
+	if (value == null) return null;
+	if (typeof value === "string") return value.trim() || null;
+	if (typeof value === "object" && Object.keys(value).length === 0) return null;
+	return JSON.stringify(value);
+}
+
 export default function SubscriptionPlanModelsTable({ models, usage, limit }: { models: SubscriptionPlanModel[]; usage?: SubscriptionPlanUsage[]; limit?: number }) {
 	const access = useTranslations("Common.ui.subscriptionCatalog");
 	const format = useSubscriptionFormat();
@@ -44,6 +52,7 @@ export default function SubscriptionPlanModelsTable({ models, usage, limit }: { 
 				</TableHeader>
 				<TableBody>
 					{rows.map(({ model, usage: summary }) => {
+						const rateLimit = rateLimitText(model.rate_limit);
 						const accessText = [model.mapping_status === "example" ? access("example") : model.mapping_status === "unverified" ? access("unverified") : null, model.access_channel, model.conditions].filter(Boolean).join(" · ");
 						return (
 							<TableRow key={model.model_id}>
@@ -52,7 +61,7 @@ export default function SubscriptionPlanModelsTable({ models, usage, limit }: { 
 									{model.model.organisation_name ? <p className="text-xs text-muted-foreground">{model.model.organisation_name}</p> : null}
 									{/* Phones have no access column, so keep its qualifications under the name. */}
 									{accessText ? <p className="text-xs text-muted-foreground sm:hidden">{accessText}</p> : null}
-									{model.rate_limit ? <p className="text-xs text-muted-foreground">{formatSubscriptionPlanMessage(messages.detail.rateLimit, { limit: typeof model.rate_limit === "string" ? model.rate_limit : JSON.stringify(model.rate_limit) })}</p> : null}
+									{rateLimit ? <p className="text-xs text-muted-foreground">{formatSubscriptionPlanMessage(messages.detail.rateLimit, { limit: rateLimit })}</p> : null}
 								</TableCell>
 								<TableCell className="hidden px-4 py-3 text-sm text-muted-foreground sm:table-cell">{accessText || "—"}</TableCell>
 								{hasUsage ? <TableCell className="px-4 py-3 text-right tabular-nums">{summary ? <>{format.tokens(summary.mostTokens.monthly_tokens)}{format.scenario(summary.mostTokens.scenario) ? <p className="text-xs text-muted-foreground">{format.scenario(summary.mostTokens.scenario)}</p> : null}</> : <span className="text-muted-foreground">—</span>}</TableCell> : null}

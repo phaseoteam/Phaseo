@@ -101,6 +101,8 @@ export interface RelatedSubscriptionPlan {
 	plan_id: string;
 	name: string;
 	monthly_price_usd: number | null;
+	/** The monthly price is for one seat. */
+	price_per_seat?: boolean;
 	usage: SubscriptionPlanUsage[];
 }
 
