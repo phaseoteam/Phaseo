@@ -55,16 +55,33 @@ async function fetchSubscriptionUsage(client: SupabaseClient, planId?: string, m
 }
 
 /**
+ * A plan's current monthly USD price for one account or seat, from its live offers: the cheapest monthly
+ * offer whose standard-phase components are all fixed amounts or free. Matches get_v2_subscription_model_usage.
+ * Null when no such offer exists (custom, usage-based or non-monthly pricing).
+ */
+export function monthlyOfferPriceUsd(offers: Row[]): number | null {
+	let best: number | null = null;
+	for (const offer of offers) {
+		const components = (offer.v2_subscription_offer_prices ?? []).filter((component: Row) => component.phase === "standard");
+		const priced = (component: Row) => component.pricing_type === "free" || (component.pricing_type === "fixed" && component.amount != null);
+		if (!components.length || !components.every(priced)) continue;
+		const total = components.reduce((sum: number, component: Row) => sum + (component.pricing_type === "free" ? 0 : Number(component.amount)), 0);
+		if (best === null || total < best) best = total;
+	}
+	return best;
+}
+
+/**
  * The lab's other active plans, for the plan page's comparison table: name,
- * monthly USD price and the usage headline. Reads plan rows and usage only,
- * not the full catalogue.
+ * current monthly USD price and the usage headline. Reads plan rows, live
+ * monthly offers and usage, not the full catalogue.
  */
 export async function fetchRelatedPlans(client: SupabaseClient, plan: Row): Promise<Row[]> {
 	const labSlug = plan.organisation_id ?? plan.lab_slug;
 	if (!labSlug) return [];
 	const now = new Date().toISOString();
 	const [plans, usage] = await Promise.all([
-		client.from("v2_subscription_plans").select("plan_uuid, plan_id, name, price, currency, frequency")
+		client.from("v2_subscription_plans").select("plan_uuid, plan_id, name")
 			.eq("lab_slug", labSlug).eq("status", "active").lte("effective_from", now).or(`effective_to.is.null,effective_to.gt.${now}`),
 		client.rpc("get_v2_subscription_model_usage", { p_model_slug: null, p_plan_id: null }),
 	]);
@@ -72,11 +89,22 @@ export async function fetchRelatedPlans(client: SupabaseClient, plan: Row): Prom
 		console.warn("[web-api/subscriptions] related plans unavailable", plans.error?.message);
 		return [];
 	}
+	// Prices come from live offers; the plan row's price columns are historical.
+	const offers = plans.data.length ? await client.from("v2_subscription_plan_offers")
+		.select("plan_uuid, v2_subscription_offer_prices(pricing_type, amount, phase)")
+		.in("plan_uuid", plans.data.map((row) => row.plan_uuid))
+		.eq("billing_interval", "month").eq("billing_interval_count", 1).eq("currency", "USD").is("region_code", null)
+		.lte("effective_from", now).or(`effective_to.is.null,effective_to.gt.${now}`)
+		.lte("v2_subscription_offer_prices.effective_from", now)
+		.or(`effective_to.is.null,effective_to.gt.${now}`, { referencedTable: "v2_subscription_offer_prices" }) : { data: [], error: null };
+	if (offers.error) console.warn("[web-api/subscriptions] related plan prices unavailable", offers.error.message);
+	const offersByPlan = new Map<string, Row[]>();
+	for (const offer of (Array.isArray(offers.data) ? offers.data : []) as Row[]) offersByPlan.set(String(offer.plan_uuid), [...(offersByPlan.get(String(offer.plan_uuid)) ?? []), offer]);
 	const usageByPlan = groupUsageByPlan(Array.isArray(usage.data) ? usage.data.filter((row: Row) => row.lab_slug === labSlug) : []);
 	return plans.data.map((row) => ({
 		plan_id: row.plan_id,
 		name: row.name,
-		monthly_price_usd: row.frequency === "monthly" && row.currency === "USD" && row.price != null ? Number(row.price) : null,
+		monthly_price_usd: monthlyOfferPriceUsd(offersByPlan.get(String(row.plan_uuid)) ?? []),
 		usage: (usageByPlan.get(String(row.plan_uuid)) ?? []).filter((entry) => entry.scenario === "standard"),
 	})).sort((a, b) => (a.monthly_price_usd ?? Infinity) - (b.monthly_price_usd ?? Infinity) || String(a.name).localeCompare(String(b.name)));
 }
