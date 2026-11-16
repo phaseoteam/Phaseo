@@ -761,6 +761,8 @@
 			"selectable": "Selecionável",
 			"example": "Exemplo",
 			"unverified": "Não verificado",
+			"included": "Incluído",
+			"automatic": "Usado automaticamente",
 			"usage_other_providers": "Também incluído em planos de outros {count} provedores",
 			"usage_show_all_plans": "Mostrar todos os {count} planos",
 			"usage_show_fewer_plans": "Mostrar menos planos",

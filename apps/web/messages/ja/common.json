@@ -761,6 +761,8 @@
 			"selectable": "選択可能",
 			"example": "例",
 			"unverified": "未確認",
+			"included": "含まれる",
+			"automatic": "自動で使用",
 			"usage_other_providers": "ほかの {count} 社のプランにも含まれています",
 			"usage_show_all_plans": "{count} 件のプランをすべて表示",
 			"usage_show_fewer_plans": "表示を減らす",

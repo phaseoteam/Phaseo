@@ -761,6 +761,8 @@
 			"selectable": "可选择",
 			"example": "示例",
 			"unverified": "未核实",
+			"included": "已包含",
+			"automatic": "自动使用",
 			"usage_other_providers": "另有 {count} 家提供商的方案也包含此模型",
 			"usage_show_all_plans": "显示全部 {count} 个方案",
 			"usage_show_fewer_plans": "收起方案",
