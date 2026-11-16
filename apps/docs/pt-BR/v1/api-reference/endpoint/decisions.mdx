@@ -186,7 +186,9 @@ Verifique a disponibilidade do modelo antes de chamar qualquer um destes modelos
 | `cloudflare/clef`, `cloudflare/clef-flash` | os três | texto, até 4 imagens | $0.24 / $0.038 |
 | `cloudflare/clef-omni` | os três | texto, imagens, áudio, vídeo | $0.15 |
 | `google/gemini-decision-1` | predicate, choice, score; até 1000 por solicitação | texto, imagens, áudio, vídeo | $0.10 |
-| `liquid-ai/d1:free`, `liquid-ai/d1` | os três | Consulte a página do modelo | Gratuito durante o acesso antecipado |
+| `liquid-ai/d1:free` | os três | Consulte a página do modelo | Gratuito durante o acesso antecipado |
+| `liquid-ai/d1`, `liquid-ai/d1.1`, `liquid-ai/d1-ultra` | os três | texto, imagens | $0.02 / $0.02 / $0.042 |
+| `liquid-ai/d1.2`, `liquid-ai/d1.2-ultra` | os três, mais text, number, date, spans, boxes e múltipla escolha no formato antigo | texto, imagens, áudio | $0.02 / $0.042 |
 | `perplexity/pplx-decider-v1.3`, `perplexity/pplx-decider-flash-v1.3` | os três, mais `locate` | texto, imagens em base64 | $0.02 / $0.01 |
 | `inception/mercury-decide` | predicate, choice, score | texto ou JSON | $0.02 (promoção) |
 | `microsoft/microsoft-decision-1` | predicate, choice, score | texto ou JSON | $0.042 |
@@ -272,9 +274,40 @@ Envie o áudio como `input_audio.data` com `format: "wav"` ou `"mp3"`, ou como `
 A Cloudflare valida a codificação da mídia, as dimensões das imagens e a duração dos clipes, e amostra o vídeo a dois quadros por segundo. A trilha sonora de um vídeo é usada quando todos os vídeos da solicitação têm uma. Os tokens de mídia contam para o contexto e para a cobrança; o Phaseo faz a liquidação com base no uso de entrada informado pela Cloudflare e não adiciona cobrança separada por áudio ou vídeo. Consulte o [contrato do Omni da Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).
 
 <span id="liquid-d1-and-perplexity-decider"></span>
+### Liquid D1.2 e D1.2 Ultra
+
+`liquid-ai/d1.2` e `liquid-ai/d1.2-ultra` usam o formato de estado antigo, com até quatro imagens e até oito clipes de áudio. O campo `audio` recebe URLs `data:` em base64 (WAV, MP3, FLAC, M4A ou OGG, cada URL com até 24 MiB, cerca de 18 MiB de áudio); URLs de áudio remotas não são aceitas. Além de `noul`, `choice` e `score`, eles respondem a estes tipos de pergunta:
+
+| `type` | Campos extras | Campos da resposta |
+| --- | --- | --- |
+| `text` | nenhum | `text`, mais `span` (posições de início e fim em `state`) e `found` (0–1); `text` é `null` quando `found` fica abaixo de 0,5 |
+| `number` | `unit` opcional; `range` opcional (`[low, high]`) e `step`, que exige `range` e precisa dividi-lo exatamente | `number` e `unit`; sem `range`, também `text`, `span` e `found`; com `range`, `number` é a mediana e `interval` é `[p10, p90]` |
+| `date` | nenhum | `date` (`YYYY-MM-DD`), `text`, `span`, `found` |
+| `spans` | nenhum | `spans` (cada um com `text`, `span` e `found`), `count`, `at_least` |
+| `boxes` | `max` opcional (1–16); exige exatamente uma imagem | `boxes`, `count`, `at_least` |
+
+Com `multiple: true` em uma pergunta `choice`, a resposta traz todas as opções aplicáveis em `choices`, com `probabilities` por opção. Os demais modelos retornam `400` para esses tipos de pergunta e respondem perguntas `multiple` com uma única opção; modelos sem entrada de áudio ignoram `audio`. `liquid-ai/d1`, `liquid-ai/d1.1` e `liquid-ai/d1-ultra` aceitam texto e imagens e respondem `noul`, `choice` e `score`.
+
+```json
+{
+  "model": "liquid-ai/d1.2",
+  "state": "Order #4417 placed 2026-11-02 for 3 items, total $84.50. The parcel arrived broken and late.",
+  "questions": {
+    "total": { "type": "number", "instructions": "Order total in dollars", "unit": "USD" },
+    "placed": { "type": "date", "instructions": "When was the order placed?" },
+    "topics": {
+      "type": "choice",
+      "multiple": true,
+      "instructions": "Which problems apply?",
+      "criteria": { "damage": "Item damaged", "delay": "Late delivery", "billing": "Payment problem" }
+    }
+  }
+}
+```
+
 ### Liquid D1 e Perplexity Decider
 
-O Liquid D1 (`liquid-ai/d1:free`, também `liquid-ai/d1`) é gratuito durante o acesso antecipado experimental. O Perplexity Decider V1.3 (`perplexity/pplx-decider-v1.3`, ou `perplexity/pplx-decider-latest`) e o Decider Flash V1.3 (`perplexity/pplx-decider-flash-v1.3`, ou `perplexity/pplx-decider-flash-latest`) precisam de uma credencial de provedor da Perplexity no Phaseo. O estado de imagem deles usa URLs de dados base64 PNG, JPEG ou WebP; URLs de imagem remotas não são suportadas. Eles também respondem a perguntas `locate`, que retornam as partes de um `input` ou `state` em string que correspondem às `instructions`, como `"email address"`. Cada trecho tem `text` copiado literalmente, posições `start` e `end` contadas em pontos de código Unicode (`end` é exclusiva) e um `score` em que um valor maior indica mais certeza; `spans` fica vazio quando nada corresponde. Locate não usa criteria nem aceita imagens, áudio ou vídeo, e só funciona nos modelos que o indicam; os outros retornam `400`. A Perplexity o treinou com entradas de até 8K tokens. Nos dois, uma pergunta de escolha aceita até 255 opções e uma pergunta de pontuação, até 10 níveis.
+O Liquid D1 (`liquid-ai/d1:free`) é gratuito durante o acesso antecipado experimental. O Perplexity Decider V1.3 (`perplexity/pplx-decider-v1.3`, ou `perplexity/pplx-decider-latest`) e o Decider Flash V1.3 (`perplexity/pplx-decider-flash-v1.3`, ou `perplexity/pplx-decider-flash-latest`) precisam de uma credencial de provedor da Perplexity no Phaseo. O estado de imagem deles usa URLs de dados base64 PNG, JPEG ou WebP; URLs de imagem remotas não são suportadas. Eles também respondem a perguntas `locate`, que retornam as partes de um `input` ou `state` em string que correspondem às `instructions`, como `"email address"`. Cada trecho tem `text` copiado literalmente, posições `start` e `end` contadas em pontos de código Unicode (`end` é exclusiva) e um `score` em que um valor maior indica mais certeza; `spans` fica vazio quando nada corresponde. Locate não usa criteria nem aceita imagens, áudio ou vídeo, e só funciona nos modelos que o indicam; os outros retornam `400`. A Perplexity o treinou com entradas de até 8K tokens. Nos dois, uma pergunta de escolha aceita até 255 opções e uma pergunta de pontuação, até 10 níveis.
 
 ### Inception Mercury Decide
 
