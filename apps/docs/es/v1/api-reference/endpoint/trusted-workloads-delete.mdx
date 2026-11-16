@@ -5,6 +5,8 @@ badge: "Beta"
 openapi: "/es/openapi/v1/openapi.localized.yaml DELETE /workload-identity/policies/{id}"
 description: "Elimina una política de carga de trabajo de confianza y revoca su clave."
 ---
+Este endpoint está en fase [Beta](../../developers/feature-maturity.mdx) y se activa por espacio de trabajo bajo solicitud.
+
 <Note>Requiere `keys:delete` en una clave de administración o un token OAuth, o un propietario o administrador del espacio de trabajo. Las cargas de trabajo de confianza están en beta; los espacios de trabajo que no las tienen reciben `404`.</Note>
 
 Los tokens que coinciden se rechazan en menos de un minuto. Las solicitudes anteriores conservan su clave en los registros y el uso.

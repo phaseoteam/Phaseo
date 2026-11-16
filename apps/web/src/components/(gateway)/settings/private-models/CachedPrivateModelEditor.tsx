@@ -3,7 +3,7 @@ import { SettingsResourceQuery } from "../PrivateSettingsQuery";
 import SettingsPageHeader from "../SettingsPageHeader";
 import PrivateModelEditor from "./PrivateModelEditor";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
-import { Badge } from "@/components/ui/badge";
+import { FeatureStageBadge } from "@/components/(gateway)/settings/FeatureStageBadge";
 
 export default function CachedPrivateModelEditor({ privateModelId, catalogModels, providers }: {
 	privateModelId?: string;
@@ -17,6 +17,6 @@ export default function CachedPrivateModelEditor({ privateModelId, catalogModels
 		const model = data.models.find((item) => item.id === privateModelId);
 		if (privateModelId && !model) return <p>{t("privateModelsCopy.notFound")}</p>;
 		const mode = privateModelId ? "edit" : "create";
-		return <div className="min-w-0 w-full max-w-4xl space-y-8"><SettingsPageHeader title={model?.name ?? t("privateModelsCopy.newModel")} description={model ? t("privateModelsCopy.updateEndpoint") : t("privateModelsCopy.connectEndpoint")} meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>} actions={<ProductFeedbackButton surface="settings_private_model_editor" prompt={t("privateModelsCopy.editorFeedback")} context={{ mode }} />} /><PrivateModelEditor mode={mode} initialModel={model} workspaceNamespace={data.workspaceNamespace} catalogModels={catalogModels} providers={providers} /></div>;
+		return <div className="min-w-0 w-full max-w-4xl space-y-8"><SettingsPageHeader title={model?.name ?? t("privateModelsCopy.newModel")} description={model ? t("privateModelsCopy.updateEndpoint") : t("privateModelsCopy.connectEndpoint")} meta={<FeatureStageBadge stage="beta" />} actions={<ProductFeedbackButton surface="settings_private_model_editor" prompt={t("privateModelsCopy.editorFeedback")} context={{ mode }} />} /><PrivateModelEditor mode={mode} initialModel={model} workspaceNamespace={data.workspaceNamespace} catalogModels={catalogModels} providers={providers} /></div>;
 	}}</SettingsResourceQuery>;
 }

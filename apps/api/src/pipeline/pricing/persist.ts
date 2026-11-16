@@ -26,7 +26,7 @@ export type ChargeRpcResult = {
 };
 
 async function getStripe(): Promise<StripeRestClient> {
-    const key = process.env.STRIPE_SECRET_KEY ?? process.env.TEST_STRIPE_SECRET_KEY;
+    const key = process.env.STRIPE_SECRET_KEY?.trim();
     if (!key) throw new Error("Stripe secret key missing");
     return createStripeRestClient(key);
 }

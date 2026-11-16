@@ -1,0 +1,51 @@
+---
+title: "Maturidade dos recursos"
+description: "O que os rótulos Alfa e Beta significam, quem pode usar cada recurso e em que fase está cada recurso que ainda não tem disponibilidade geral."
+icon: "flask-conical"
+---
+
+Alguns recursos do Phaseo têm um rótulo **Alfa** ou **Beta** na documentação, na referência da API e no painel. O rótulo mostra o quanto um recurso já está consolidado. Um recurso sem rótulo tem disponibilidade geral.
+
+## Fases
+
+| Fase | O que significa | O que fazer |
+| --- | --- | --- |
+| Alfa | Uma versão inicial. A API, o comportamento ou o preço podem mudar bastante, e o recurso pode ser removido. | Experimente e diga o que você acha. Não construa sobre ele nada que você não consiga mudar rapidamente. |
+| Beta | Funciona para o uso principal. Alguns detalhes ainda podem mudar com base no feedback, e as mudanças são anunciadas no [changelog](../changelog.mdx). | Adequado para pilotos e cargas de trabalho reais que você acompanha de perto. Confira o changelog ao atualizar. |
+| Disponibilidade geral | Com suporte completo e documentado. Nenhum rótulo é exibido. | Use em produção. |
+| Descontinuado | Ainda funciona, mas não é mais recomendado e será removido. Uma data de remoção é exibida quando definida. | Não comece a usar e migre antes da data de remoção. |
+
+Modelos e provedores têm seus próprios rótulos de ciclo de vida, separados dessas fases. Veja [Descontinuação e aposentadoria de modelos](../guides/model-retirement.mdx) e [Status do provedor e do Phaseo](../guides/provider-statuses.mdx).
+
+<span id="who-can-use-a-feature"></span>
+## Quem pode usar um recurso
+
+Fase e acesso são independentes. Um recurso Beta pode estar aberto a todos, e um recurso Alfa pode estar limitado a alguns espaços de trabalho.
+
+- **Todos**: qualquer espaço de trabalho pode usar, de acordo com as funções habituais. Por exemplo, algumas configurações são só para proprietários e administradores.
+- **Sob solicitação**: o recurso é ativado por espaço de trabalho. Até ser ativado, a página de configurações dele não aparece e a API dele retorna um erro. **Configurações → Prévia de recursos** mostra se a Video API e a Batch API estão ativadas no seu espaço de trabalho. Para pedir acesso a qualquer um desses recursos, [fale com a gente](https://phaseo.app/contact).
+
+## Recursos que ainda não têm disponibilidade geral
+
+| Recurso | Fase | Acesso |
+| --- | --- | --- |
+| [Roteamento automático](../guides/auto-routing.mdx) (`phaseo/auto`) | Alfa | Sob solicitação |
+| [Video API](../guides/async-video-and-batch.mdx) | Alfa | Sob solicitação |
+| [Feedback de predefinições](../guides/preset-feedback.mdx) | Alfa | Todos |
+| [Agente do Slack](../guides/slack-agent.mdx) | Alfa | Sob solicitação |
+| [Batch API](../guides/async-video-and-batch.mdx), com a Files API e os endpoints de webhook | Beta | Sob solicitação |
+| [Decisions API](../api-reference/endpoint/decisions.mdx) | Beta | Todos |
+| [Voz em tempo real](../guides/realtime-voice.mdx) | Beta | Sob solicitação |
+| [Ferramentas de servidor](../guides/server-tools/index.mdx) | Beta | Todos |
+| [Classificadores de solicitações](../guides/request-classifiers.mdx) | Beta | Sob solicitação |
+| [Workloads confiáveis](./trusted-workloads.mdx) | Beta | Sob solicitação |
+| [Modelos privados](../guides/private-models.mdx) | Beta | Todos (proprietários e administradores) |
+| Enterprise: login único, SCIM, diretório e departamentos | Beta | Sob solicitação, com o complemento de identidade |
+
+Todo o resto tem disponibilidade geral, incluindo os endpoints Chat Completions, Responses e Messages, predefinições, guardrails, orçamentos, BYOK, Broadcast e a API de gerenciamento.
+
+## Como os recursos mudam de fase
+
+- Um recurso passa de Alfa para Beta, ou de Beta para disponibilidade geral, quando o uso principal dele funciona e a API dele está estável. Registramos a mudança no [changelog](../changelog.mdx).
+- Mudanças incompatíveis em recursos Alfa e Beta são anunciadas no changelog.
+- Quando um recurso é descontinuado, a página de documentação dele informa isso e mostra a data de remoção quando ela estiver definida.

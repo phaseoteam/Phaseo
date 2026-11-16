@@ -1,11 +1,12 @@
 ---
 title: "Make a decision"
 badge: "Beta"
-tag: "Beta"
 openapi: "/openapi/v1/openapi.yaml POST /decisions"
 description: "Evaluate typed questions against application state with supported decision models."
 "og:image": "https://phaseo.app/og/dynamic?title=Make%20a%20decision&description=Evaluate%20typed%20questions%20against%20application%20state%20with%20supported%20decision%20models.&pathname=/docs/v1/api-reference/endpoint/decisions"
 ---
+
+This endpoint is in [Beta](../../developers/feature-maturity.mdx).
 
 Send `input` and an ordered array of `questions` to `POST /v1/decisions`, and get one typed answer per question, with probabilities, in the same order.
 
@@ -185,7 +186,9 @@ Check model availability before calling any of these models.
 | `cloudflare/clef`, `cloudflare/clef-flash` | all three | text, up to 4 images | $0.24 / $0.038 |
 | `cloudflare/clef-omni` | all three | text, images, audio, video | $0.15 |
 | `google/gemini-decision-1` | predicate, choice, score; up to 1,000 per request | text, images, audio, video | $0.10 |
-| `liquid-ai/d1:free`, `liquid-ai/d1` | all three | See the model page | Free during early access |
+| `liquid-ai/d1:free` | all three | See the model page | Free during early access |
+| `liquid-ai/d1`, `liquid-ai/d1.1`, `liquid-ai/d1-ultra` | all three | text, images | $0.02 / $0.02 / $0.042 |
+| `liquid-ai/d1.2`, `liquid-ai/d1.2-ultra` | all three, plus text, number, date, spans, boxes and multi-choice in the older format | text, images, audio | $0.02 / $0.042 |
 | `perplexity/pplx-decider-v1.3`, `perplexity/pplx-decider-flash-v1.3` | all three, plus `locate` | text, base64 images | $0.02 / $0.01 |
 | `inception/mercury-decide` | predicate, choice, score | text or JSON | $0.02 (promotion) |
 | `microsoft/microsoft-decision-1` | predicate, choice, score | text or JSON | $0.042 |
@@ -270,9 +273,40 @@ Send audio as `input_audio.data` with `format: "wav"` or `"mp3"`, or as `input_a
 
 Cloudflare validates media encoding, image dimensions and clip duration, and samples video at two frames per second. A video's soundtrack is used when every video in the request has one. Media tokens count toward context and billing; Phaseo settles against Cloudflare's reported input usage and adds no separate audio or video charge. See [Cloudflare's Omni contract](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).
 
+### Liquid D1.2 and D1.2 Ultra
+
+`liquid-ai/d1.2` and `liquid-ai/d1.2-ultra` use the older state format, with up to four images and up to eight audio clips. Send `audio` as base64 data URLs (WAV, MP3, FLAC, M4A or OGG, each data URL at most 24 MiB, about 18 MiB of audio); remote audio URLs are unsupported. Besides `noul`, `choice` and `score`, they answer these question types:
+
+| `type` | Extra fields | Answer fields |
+| --- | --- | --- |
+| `text` | none | `text`, plus `span` (start and end positions in `state`) and `found` (0–1); `text` is `null` when `found` is below 0.5 |
+| `number` | optional `unit`; optional `range` (`[low, high]`) and `step`, which needs `range` and must divide it evenly | `number` and `unit`; without `range`, also `text`, `span` and `found`; with `range`, `number` is the median and `interval` is `[p10, p90]` |
+| `date` | none | `date` (`YYYY-MM-DD`), `text`, `span`, `found` |
+| `spans` | none | `spans` (each with `text`, `span` and `found`), `count`, `at_least` |
+| `boxes` | optional `max` (1–16); needs exactly one image | `boxes`, `count`, `at_least` |
+
+Set `multiple: true` on a `choice` question to get every option that applies, as `choices` plus `probabilities` per option. Other models return `400` for these question types and answer `multiple` questions with one choice; models without audio input ignore `audio`. `liquid-ai/d1`, `liquid-ai/d1.1` and `liquid-ai/d1-ultra` take text and images and answer `noul`, `choice` and `score`.
+
+```json
+{
+  "model": "liquid-ai/d1.2",
+  "state": "Order #4417 placed 2026-11-02 for 3 items, total $84.50. The parcel arrived broken and late.",
+  "questions": {
+    "total": { "type": "number", "instructions": "Order total in dollars", "unit": "USD" },
+    "placed": { "type": "date", "instructions": "When was the order placed?" },
+    "topics": {
+      "type": "choice",
+      "multiple": true,
+      "instructions": "Which problems apply?",
+      "criteria": { "damage": "Item damaged", "delay": "Late delivery", "billing": "Payment problem" }
+    }
+  }
+}
+```
+
 ### Liquid D1 and Perplexity Decider
 
-Liquid D1 (`liquid-ai/d1:free`, also `liquid-ai/d1`) is free during experimental early access. Perplexity Decider V1.3 (`perplexity/pplx-decider-v1.3`, or `perplexity/pplx-decider-latest`) and Decider Flash V1.3 (`perplexity/pplx-decider-flash-v1.3`, or `perplexity/pplx-decider-flash-latest`) need a Perplexity provider credential in Phaseo. Their image state uses PNG, JPEG or WebP base64 data URLs; remote image URLs are unsupported. They also answer `locate` questions, which return the parts of a string `input` or `state` that match the `instructions`, such as `"email address"`. Each span has `text` copied verbatim, `start` and `end` offsets counted in Unicode code points (`end` is exclusive), and a `score` where higher is more certain; `spans` is empty when nothing matches. Locate takes no criteria, no images, audio or video, and runs on models that list it only; other models return `400`. Perplexity trained it on inputs of up to 8K tokens. On both, a choice question accepts up to 255 options and a score question up to 10 levels.
+Liquid D1 (`liquid-ai/d1:free`) is free during experimental early access. Perplexity Decider V1.3 (`perplexity/pplx-decider-v1.3`, or `perplexity/pplx-decider-latest`) and Decider Flash V1.3 (`perplexity/pplx-decider-flash-v1.3`, or `perplexity/pplx-decider-flash-latest`) need a Perplexity provider credential in Phaseo. Their image state uses PNG, JPEG or WebP base64 data URLs; remote image URLs are unsupported. They also answer `locate` questions, which return the parts of a string `input` or `state` that match the `instructions`, such as `"email address"`. Each span has `text` copied verbatim, `start` and `end` offsets counted in Unicode code points (`end` is exclusive), and a `score` where higher is more certain; `spans` is empty when nothing matches. Locate takes no criteria, no images, audio or video, and runs on models that list it only; other models return `400`. Perplexity trained it on inputs of up to 8K tokens. On both, a choice question accepts up to 255 options and a score question up to 10 levels.
 
 ### Inception Mercury Decide
 

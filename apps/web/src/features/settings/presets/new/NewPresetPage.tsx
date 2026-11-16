@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Sparkles, ArrowLeft } from "lucide-react";
 import Link from "@/components/link";
 import PresetEditorContent from "../PresetEditorContent";
@@ -38,7 +37,7 @@ export default function NewPresetPage() {
 				</AlertDescription>
 			</Alert>
 
-			<SettingsPageHeader title={t("headers.newPreset")} description={t("headers.newPresetDescription")} meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>} />
+			<SettingsPageHeader title={t("headers.newPreset")} description={t("headers.newPresetDescription")} />
 
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<NewPresetContent />

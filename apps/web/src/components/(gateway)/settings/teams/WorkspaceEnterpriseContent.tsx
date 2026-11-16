@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import WorkspaceIdentitySettings from "./WorkspaceIdentitySettings";
 import WorkspaceEnterpriseDirectory from "./WorkspaceEnterpriseDirectory";
+import { FeatureStageBadge } from "@/components/(gateway)/settings/FeatureStageBadge";
 
 export type Mode = "overview" | "directory" | "departments" | "sso" | "scim";
 
@@ -49,7 +50,7 @@ function EnterpriseContent({ mode, data }: { mode: Mode; data: TeamsSettingsData
 
 	return (
 		<div className={mode === "directory" || mode === "departments" ? "min-w-0 space-y-8" : "min-w-0 w-full max-w-4xl space-y-8"}>
-			<SettingsPageHeader title={copy.title} description={copy.description} meta={mode === "directory" ? <Badge variant="secondary">{t("headers.membersCount", { count: memberCount })}</Badge> : undefined} />
+			<SettingsPageHeader title={copy.title} description={copy.description} meta={mode === "directory" ? <Badge variant="secondary">{t("headers.membersCount", { count: memberCount })}</Badge> : <FeatureStageBadge stage="beta" />} />
 			{mode === "directory" || mode === "departments" ? <WorkspaceEnterpriseDirectory
 				mode={mode}
 				workspaceId={workspaceId}

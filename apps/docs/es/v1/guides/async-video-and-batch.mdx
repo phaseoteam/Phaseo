@@ -6,7 +6,7 @@ description: "Sigue trabajos asíncronos, recibe webhooks y proporciona opciones
 ---
 
 <Note>
-La API de vídeo y la API de lotes son versiones beta preliminares, disponibles solo por invitación para espacios de trabajo seleccionados. Consulta **Ajustes → Vista previa de funciones** para comprobar la disponibilidad. El acceso se gestiona por espacio de trabajo; activar una preferencia web personal no concede acceso a la API. Se aplican los cargos habituales por uso del modelo.
+La API de vídeo está en Alpha y la API de lotes en Beta (consulta [Madurez de las funciones](../developers/feature-maturity.mdx)). Ambas se activan por espacio de trabajo bajo solicitud. **Ajustes → Vista previa de funciones** muestra si tu espacio de trabajo las tiene; activar una preferencia web personal no concede acceso a la API. Se aplican los cargos habituales por uso del modelo.
 </Note>
 
 Crear un vídeo o un lote devuelve un trabajo antes de que termine la tarea. Guarda su `id` y su `polling_url`, y después espera un webhook o consulta periódicamente hasta que el trabajo llegue a un estado final: `completed`, `failed`, `cancelled` o `expired`. Una respuesta de creación correcta solo significa que se aceptó el trabajo.
@@ -22,7 +22,7 @@ flowchart TD
   terminal -->|"failed / cancelled / expired"| outcome["Gestiona el resultado"]
 ```
 
-Mantén la consulta periódica aunque uses webhooks. Durante la beta, empieza con solicitudes pequeñas y un límite de gasto en la clave de API. Las entradas de referencia, la cancelación y la conservación de las salidas dependen del proveedor y del modelo. Guarda tu propia copia de las salidas completadas antes de que caduquen.
+Mantén la consulta periódica aunque uses webhooks. Mientras estas API estén en Alpha y Beta, empieza con solicitudes pequeñas y un límite de gasto en la clave de API. Las entradas de referencia, la cancelación y la conservación de las salidas dependen del proveedor y del modelo. Guarda tu propia copia de las salidas completadas antes de que caduquen.
 
 <span id="receive-updates"></span>
 ## Recibe actualizaciones

@@ -15,6 +15,9 @@
     "PHASEO_ENV": "production",
     // Onboarding emails through Resend (same as the previous site).
     "RESEND_ONBOARDING_AUTOMATIONS_ENABLED": "true",
+    // The "Stripe sandbox" workspace: the only wallet the admin sandbox checkout
+    // (/api/stripe/sandbox-checkout, /api/webhooks/stripe-sandbox) can credit.
+    "STRIPE_SANDBOX_WORKSPACE_ID": "909aa1dc-8286-4215-966c-ff68666cc0f0",
     // Rollout canary (src/lib/start/canary.ts): on these hosts, CANARY_PERCENT
     // of visitors are served here and the rest pass through to the previous
     // site. 0 = everyone on the previous site (fast rollback); 100 = all here.

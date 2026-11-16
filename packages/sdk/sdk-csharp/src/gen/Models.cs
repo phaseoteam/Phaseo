@@ -2418,6 +2418,19 @@ public sealed class DecisionBoxAnswer
 
 }
 
+public sealed class DecisionBoxesQuestion
+{
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("max")]
+	public long? Max { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class DecisionBoxQuestion
 {
 	[JsonPropertyName("instructions")]
@@ -2458,6 +2471,9 @@ public sealed class DecisionChoiceQuestion
 	[JsonPropertyName("instructions")]
 	public object Instructions { get; set; }
 
+	[JsonPropertyName("multiple")]
+	public bool? Multiple { get; set; }
+
 	[JsonPropertyName("type")]
 	public string Type { get; set; }
 
@@ -2466,6 +2482,16 @@ public sealed class DecisionChoiceQuestion
 public sealed class DecisionCreateRequest { }
 
 public sealed class DecisionCreateResponse { }
+
+public sealed class DecisionDateQuestion
+{
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
 
 public sealed class DecisionImage
 {
@@ -2590,6 +2616,25 @@ public sealed class DecisionNoulQuestion
 
 }
 
+public sealed class DecisionNumberQuestion
+{
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("range")]
+	public List<double>? Range { get; set; }
+
+	[JsonPropertyName("step")]
+	public double? Step { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+	[JsonPropertyName("unit")]
+	public string? Unit { get; set; }
+
+}
+
 public sealed class DecisionPredicateAnswer
 {
 	[JsonPropertyName("name")]
@@ -2665,8 +2710,21 @@ public sealed class DecisionScoreQuestion
 
 }
 
+public sealed class DecisionSpansQuestion
+{
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class DecisionsRequest
 {
+	[JsonPropertyName("audio")]
+	public List<string>? Audio { get; set; }
+
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 
@@ -2740,6 +2798,16 @@ public sealed class DecisionsUsage
 
 	[JsonPropertyName("total_tokens")]
 	public long? TotalTokens { get; set; }
+
+}
+
+public sealed class DecisionTextQuestion
+{
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
 
 }
 
@@ -5051,6 +5119,9 @@ public sealed class LegacyDecisionLocateQuestion
 
 public sealed class LegacyDecisionsRequest
 {
+	[JsonPropertyName("audio")]
+	public List<string>? Audio { get; set; }
+
 	[JsonPropertyName("debug")]
 	public Dictionary<string, object>? Debug { get; set; }
 

@@ -25,9 +25,11 @@ import {
 } from "@core/nativeTools";
 import { WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME } from "@pipeline/surfaces/server-tools";
 import type { ProviderCandidate } from "./types";
+import { requestedJsonOutputType } from "./paramCapabilities";
+import { normalizeResponseFormat } from "@protocols/shared/text-normalizers";
 
 const HOSTED_TOOL_ENDPOINTS = new Set<Endpoint>(["chat.completions", "responses"]);
-const WEB_SEARCH_ENGINES = new Set(["auto", "exa", "firecrawl", "parallel", "perplexity", "tinyfish"]);
+const WEB_SEARCH_ENGINES = new Set(["auto", "exa", "firecrawl", "parallel", "perplexity", "tinyfish", "deepseek"]);
 const SEARCH_CONTEXT_SIZES = new Set(["low", "medium", "high"]);
 const MAX_WEB_SEARCH_RESULTS = 25;
 const GATEWAY_WEB_SEARCH_TYPES = new Set(["phaseo:web_search", "gateway:web_search"]);
@@ -60,8 +62,8 @@ function domainList(value: unknown): string[] | undefined {
 /**
  * The `phaseo:web_search` equivalent of an OpenAI hosted web search tool. OpenAI's
  * fields (search_context_size, filters.allowed_domains) and the common search
- * options (engine, max_results, include/exclude domains, max_uses) carry over;
- * `user_location` does not, because our search takes the location per call.
+ * options (engine, max_results, include/exclude domains, max_uses) carry over, and
+ * so does `user_location`, which our search uses whenever the model's call gives none.
  */
 export function gatewayWebSearchToolFor(tool: Record<string, any>): Record<string, any> {
 	const parameters: Record<string, unknown> = {};
@@ -80,6 +82,7 @@ export function gatewayWebSearchToolFor(tool: Record<string, any>): Record<strin
 	if (allowed) parameters.allowed_domains = allowed;
 	const excluded = domainList(tool.excluded_domains) ?? domainList(tool.exclude_domains) ?? domainList(tool.blocked_domains);
 	if (excluded) parameters.excluded_domains = excluded;
+	if (isPlainObject(tool.user_location)) parameters.user_location = tool.user_location;
 	return Object.keys(parameters).length > 0
 		? { type: "phaseo:web_search", parameters }
 		: { type: "phaseo:web_search" };
@@ -173,6 +176,19 @@ function rewriteHostedWebSearch(body: any): any {
 	};
 }
 
+/** JSON output in any form a surface accepts, the `"json_object"` / `"json"` shorthands included. */
+function requestsJsonOutput(body: any): boolean {
+	if (requestedJsonOutputType(body) !== null) return true;
+	const format = normalizeResponseFormat(body?.response_format);
+	return format !== undefined && format.type !== "text";
+}
+
+/** Log probabilities on Chat (`logprobs`, `top_logprobs`) or Responses (`top_logprobs`, `include`). */
+function requestsLogprobs(body: any): boolean {
+	if (body?.logprobs === true || typeof body?.top_logprobs === "number") return true;
+	return Array.isArray(body?.include) && body.include.includes("message.output_text.logprobs");
+}
+
 export function resolveHostedTools(args: {
 	endpoint: Endpoint;
 	body: any;
@@ -197,11 +213,20 @@ export function resolveHostedTools(args: {
 		.filter((entry): entry is { type: string; index: number } => isOpenAIHostedToolType(entry.type));
 	if (hosted.length === 0 || args.providers.length === 0) return unchanged;
 
-	const runs = (provider: ProviderCandidate, type: string) => routeRunsOpenAIHostedTool({
+	// Some providers (DeepSeek) run web search only when it is the request's only tool,
+	// without JSON output, log probabilities or a forced tool_choice.
+	const webSearchCount = hosted.filter((entry) => isOpenAINativeWebSearchToolType(entry.type)).length;
+	const otherToolCount = (args.body.tools as any[]).length - webSearchCount;
+	const runs = (provider: ProviderCandidate, type: string, index?: number) => routeRunsOpenAIHostedTool({
 		providerId: provider.providerId,
 		model: provider.providerModelSlug ?? provider.apiModelId ?? args.model ?? null,
 		endpoint: args.endpoint,
 		toolType: type,
+		...(index !== undefined ? { tool: args.body.tools[index] } : {}),
+		otherToolCount,
+		jsonOutput: requestsJsonOutput(args.body),
+		logprobs: requestsLogprobs(args.body),
+		toolChoice: args.body.tool_choice,
 	});
 	const keep = (providers: ProviderCandidate[]) => ({
 		providers,
@@ -210,7 +235,7 @@ export function resolveHostedTools(args: {
 			.map((provider) => provider.providerId),
 	});
 
-	const runsAll = args.providers.filter((provider) => hosted.every((entry) => runs(provider, entry.type)));
+	const runsAll = args.providers.filter((provider) => hosted.every((entry) => runs(provider, entry.type, entry.index)));
 	if (runsAll.length === args.providers.length) return unchanged;
 	if (runsAll.length > 0) {
 		return { ok: true, body: args.body, ...keep(runsAll), webSearchMapped: false };
@@ -219,9 +244,9 @@ export function resolveHostedTools(args: {
 	// No candidate runs every hosted tool natively. Web search has a gateway
 	// equivalent; the other hosted tools must still run natively somewhere.
 	const others = hosted.filter((entry) => !isOpenAINativeWebSearchToolType(entry.type));
-	const runsOthers = args.providers.filter((provider) => others.every((entry) => runs(provider, entry.type)));
+	const runsOthers = args.providers.filter((provider) => others.every((entry) => runs(provider, entry.type, entry.index)));
 	if (runsOthers.length === 0) {
-		const unsupported = others.filter((entry) => !args.providers.some((provider) => runs(provider, entry.type)));
+		const unsupported = others.filter((entry) => !args.providers.some((provider) => runs(provider, entry.type, entry.index)));
 		return { ok: false, unsupportedTools: unsupported.length > 0 ? unsupported : others };
 	}
 	return {

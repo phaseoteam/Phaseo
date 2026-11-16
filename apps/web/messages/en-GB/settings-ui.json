@@ -4359,6 +4359,7 @@
 			"timestamp": "Timestamp",
 			"amount": "Amount",
 			"reason": "Reason",
+			"statusColumn": "Status",
 			"status": {
 				"succeeded": "Succeeded",
 				"failed": "Failed",
@@ -5087,7 +5088,18 @@
 		"metadataTitle": "Billing & Credits - Settings",
 		"description": "Manage model usage credits and workspace subscriptions.",
 		"modelUsageBalance": "Model usage balance",
-		"cardNumber": "Card number"
+		"cardNumber": "Card number",
+		"sandboxTest": {
+			"title": "Stripe sandbox test",
+			"description": "Admins only. Opens a Stripe sandbox checkout for $10 that tops up the Stripe sandbox workspace and saves the card. Use test card 4242 4242 4242 4242. No real money moves.",
+			"button": "Test checkout (sandbox)",
+			"opening": "Opening…",
+			"notConfigured": "The Stripe sandbox isn't configured on this deployment.",
+			"failed": "Couldn't open the sandbox checkout.",
+			"success": "Sandbox payment complete. Credits go to the Stripe sandbox workspace once the webhook arrives.",
+			"cancelled": "Sandbox checkout cancelled.",
+			"productName": "Phaseo credits (sandbox test)"
+		}
 	},
 	"preferencesCopy": {
 		"preview": "Preview",

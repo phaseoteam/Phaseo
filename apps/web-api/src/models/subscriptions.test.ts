@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchSubscriptionPlansForModels, mergeOrderedPlanLists, subscriptionPayload } from "./subscriptions";
+import { fetchRelatedPlans, fetchSubscriptionCatalogue, fetchSubscriptionPlansForModels, mergeOrderedPlanLists, subscriptionPayload } from "./subscriptions";
 
 describe("structured subscription payload", () => {
 	it("preserves offer identity, composite charges, allowances and model access", () => {
@@ -40,14 +40,67 @@ describe("subscription plans for selected models", () => {
 	});
 
 	it("reads only the selected models' plans", async () => {
-		const rpc = vi.fn(async (_name: string, args: { p_model_slug: string | null }) => ({
-			data: args.p_model_slug === "one"
+		const rpc = vi.fn(async (name: string, args: { p_model_slug: string | null }) => ({
+			data: name !== "get_v2_subscription_catalogue" ? [] : args.p_model_slug === "one"
 				? [{ plan_uuid: "shared", models: [] }, { plan_uuid: "only-one", models: [] }]
 				: [{ plan_uuid: "shared", models: [] }],
 			error: null,
 		}));
 		const plans = await fetchSubscriptionPlansForModels({ rpc } as never, ["one", "two"]);
-		expect(rpc.mock.calls.map(([, args]) => args.p_model_slug)).toEqual(["one", "two"]);
+		expect(rpc.mock.calls.filter(([name]) => name === "get_v2_subscription_catalogue").map(([, args]) => args.p_model_slug)).toEqual(["one", "two"]);
 		expect(plans.map((row) => row.plan_uuid)).toEqual(["shared", "only-one"]);
+	});
+});
+
+describe("subscription usage", () => {
+	const catalogue = [{ plan_uuid: "max", plan_id: "max", offers: [] }, { plan_uuid: "pro", plan_id: "pro", offers: [] }];
+
+	it("attaches each plan's measured usage with numbers as numbers", async () => {
+		const rpc = vi.fn(async (name: string) => name === "get_v2_subscription_catalogue"
+			? { data: catalogue, error: null }
+			: { data: [{ plan_uuid: "max", model_slug: "lab/model", model_name: "Model", scenario: "standard", monthly_tokens: "31500000000", effective_usd_per_mtok: "0.006349", share_of_api_price: null }], error: null });
+		const plans = await fetchSubscriptionCatalogue({ rpc } as never, "max");
+		expect(rpc).toHaveBeenCalledWith("get_v2_subscription_model_usage", { p_model_slug: null, p_plan_id: "max" });
+		expect(plans[0].usage).toMatchObject([{ model_slug: "lab/model", model_name: "Model", monthly_tokens: 31_500_000_000, effective_usd_per_mtok: 0.006349, share_of_api_price: null }]);
+		expect(plans[1].usage).toEqual([]);
+	});
+
+	it("still returns plans when usage cannot be read", async () => {
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		const rpc = vi.fn(async (name: string) => name === "get_v2_subscription_catalogue"
+			? { data: catalogue, error: null }
+			: { data: null, error: { message: "function does not exist" } });
+		const plans = await fetchSubscriptionCatalogue({ rpc } as never);
+		expect(plans.map((plan) => plan.usage)).toEqual([[], []]);
+		warn.mockRestore();
+	});
+});
+
+describe("related plans", () => {
+	it("returns the lab's plans cheapest first with database monthly prices and standard usage", async () => {
+		// Plan rows carry no price; prices come from the database's per-plan monthly prices.
+		const planRows = [
+			{ plan_uuid: "ultra", plan_id: "ultra", name: "Ultra" },
+			{ plan_uuid: "pro", plan_id: "pro", name: "Pro" },
+			{ plan_uuid: "ent", plan_id: "ent", name: "Enterprise" },
+		];
+		const query: Record<string, unknown> = { select: () => query, eq: () => query, lte: () => query, or: async () => ({ data: planRows, error: null }) };
+		const prices = [{ plan_uuid: "ultra", monthly_price_usd: "200", account_usd: "200", seat_usd: "0" }, { plan_uuid: "pro", monthly_price_usd: "25", account_usd: "0", seat_usd: "25" }];
+		// The usage call filters by lab in the database; the mock records that filter.
+		const usageFilter = vi.fn();
+		const rpc = vi.fn((name: string) => {
+			const result = Promise.resolve(name === "get_v2_subscription_monthly_price_details" ? { data: prices, error: null } : { data: usageRows, error: null });
+			return Object.assign(result, { eq: (column: string, value: string) => { usageFilter(column, value); return result; } });
+		});
+		const usageRows = [
+			{ plan_uuid: "pro", lab_slug: "lab", model_slug: "lab/a", scenario: "standard", monthly_tokens: "1000" },
+			{ plan_uuid: "pro", lab_slug: "lab", model_slug: "lab/a", scenario: "off_peak", monthly_tokens: "2000" },
+			{ plan_uuid: "other", lab_slug: "other-lab", model_slug: "x/y", scenario: "standard", monthly_tokens: "5" },
+		];
+		const client = { from: () => query, rpc };
+		const related = await fetchRelatedPlans(client as never, { organisation_id: "lab" });
+		expect(related.map((plan) => [plan.plan_id, plan.monthly_price_usd, plan.account_price_usd, plan.seat_price_usd, plan.usage.length])).toEqual([["pro", 25, 0, 25, 1], ["ultra", 200, 200, 0, 0], ["ent", null, null, null, 0]]);
+		expect(rpc).toHaveBeenCalledWith("get_v2_subscription_monthly_price_details", { p_lab_slug: "lab" });
+		expect(usageFilter).toHaveBeenCalledWith("lab_slug", "lab");
 	});
 });

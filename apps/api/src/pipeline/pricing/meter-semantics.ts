@@ -100,6 +100,11 @@ function documentedNativeToolPrice(provider: string, meter: PricingDimensionKey)
     if (provider === "meta") {
         return meter === "native_web_search_requests" ? "0.0025" : null;
     }
+    // DeepSeek web tools: search $0.75 per 1,000 searches, web fetch $0.75 per 1,000 fetches,
+    // each billed only when it returns a result (https://api-docs.deepseek.com/quick_start/pricing).
+    if (provider === "deepseek") {
+        return meter === "native_web_search_requests" || meter === "native_web_fetch_requests" ? "0.00075" : null;
+    }
     return null;
 }
 

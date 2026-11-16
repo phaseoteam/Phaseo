@@ -3,7 +3,7 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 import { PrivateSettingsQuery } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import SlackAgentSettingsClient from "@/components/(gateway)/settings/slack/SlackAgentSettingsClient";
 import type { SlackAgentView } from "@/components/(gateway)/settings/slack/slackAgentForm";
-import { Badge } from "@/components/ui/badge";
+import { FeatureStageBadge } from "@/components/(gateway)/settings/FeatureStageBadge";
 
 export default function SlackContent() {
 	const t = useTranslations("SettingsUI");
@@ -12,7 +12,7 @@ export default function SlackContent() {
 			<SettingsPageHeader
 				title={t("slack.title")}
 				description={t("slack.description")}
-				meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>}
+				meta={<FeatureStageBadge stage="alpha" />}
 			/>
 			<PrivateSettingsQuery<SlackAgentView> path="/api/account/settings/slack">
 				{(view) => <SlackAgentSettingsClient view={view} />}

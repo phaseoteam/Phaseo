@@ -1,0 +1,163 @@
+---
+title: "المسرد"
+description: "اعرف معنى أي مصطلح في Phaseo في جملة واحدة، وأين ينطبق، والصفحة التي تشرحه بالكامل."
+icon: "book-a"
+---
+
+ابحث عن كلمة صادفتها في لوحة التحكم أو في API أو في هذا التوثيق. يقدّم كل صف معنى المصطلح في جملة واحدة، ويربط بالصفحة التي تشرحه بالكامل، ويسرد المواضع التي ينطبق فيها: API أو لوحة التحكم أو CLI أو SDK أو MCP أو الدردشة أو Slack.
+
+## الحسابات والوصول
+
+| المصطلح | المعنى | ينطبق على |
+| --- | --- | --- |
+| [المسؤول](./developers/management-api-keys.mdx) | دور في مساحة العمل يدير الإعدادات المخصصة للمسؤولين، مثل الميزانيات وقواعد الإنفاق وضوابط الحماية وسياسات الثقة، ويقرأ سجل التدقيق. | API، لوحة التحكم، CLI، MCP |
+| [العضو](./developers/management-api-keys.mdx) | دور في مساحة العمل يستخدم مساحة العمل ويمكنه رؤية قواعد الإنفاق فيها، لكنه لا يستطيع تغيير الإعدادات المخصصة للمالكين والمسؤولين. | API، لوحة التحكم، CLI، MCP |
+| [المالك](./developers/management-api-keys.mdx) | دور في مساحة العمل يدير الإعدادات نفسها المخصصة للمسؤولين ويتلقى رسائل البريد الموجّهة إلى المالكين، مثل تنبيهات إهمال النماذج. | API، لوحة التحكم، CLI، MCP |
+| [مساحة العمل](./guides/workspaces.mdx) | حاوية تفصل مفاتيح API وإعدادات التوجيه والإعدادات المسبقة وضوابط الحماية ووصول المسؤولين الخاصة بها عن مساحات العمل الأخرى. | API، لوحة التحكم، CLI |
+
+## المفاتيح والمصادقة
+
+| المصطلح | المعنى | ينطبق على |
+| --- | --- | --- |
+| [مفتاح API](./developers/authentication.mdx#choose-a-credential) | سرّ يبدأ بـ `phaseo_v1_sk_`، يُرسل كرمز bearer لمصادقة طلبات النماذج والتوليد. | API، لوحة التحكم، CLI، SDK، MCP |
+| [BYOK](./guides/routing-and-fallbacks.mdx#byok-considerations) | استخدام مفتاحك الخاص: توجّه Phaseo الطلبات باستخدام مفتاح API الخاص بك لدى المزوّد، ويحاسبك المزوّد على استخدام النموذج. | API، لوحة التحكم |
+| [البديل الاحتياطي لـ BYOK](./guides/routing-and-fallbacks.mdx#byok-considerations) | إعداد لمساحة العمل يحدد ما إذا كان يجوز إعادة محاولة طلب BYOK فاشل باستخدام رصيد Phaseo. | API، لوحة التحكم |
+| [الصلاحية](./developers/management-api-keys.mdx#choose-an-access-level) | إذن على مفتاح إدارة أو تسجيل دخول OAuth، مثل `keys:write`، يحدد واجهات الإدارة البرمجية التي يمكنه استدعاؤها. | API، لوحة التحكم، CLI، MCP |
+| [مفتاح الإدارة](./developers/management-api-keys.mdx) | سرّ يبدأ بـ `phaseo_v1_mk_` لواجهات الإدارة البرمجية مثل المفاتيح والإعدادات المسبقة وضوابط الحماية؛ ولا يمكنه إرسال طلبات استدلال. | API، لوحة التحكم |
+| [تطبيق OAuth](./guides/integrations/phaseo-cli.mdx#oauth-apps) | تطبيق يسجّل دخول المستخدمين عبر Phaseo OAuth ويتصرف نيابةً عنهم ضمن النطاقات ومساحة العمل التي يوافقون عليها. | API، لوحة التحكم، CLI، MCP |
+| [حمل عمل موثوق](./developers/trusted-workloads.mdx) | عملية نشر أو مهمة CI ترسل رمز OIDC قصير العمر من منصتها بدلًا من مفتاح API، وتطابقه سياسة ثقة. | API، لوحة التحكم |
+
+## النماذج والمزوّدون
+
+| المصطلح | المعنى | ينطبق على |
+| --- | --- | --- |
+| [طول السياق](./exploring/models.mdx#what-a-model-page-shows) | حجم السياق الذي يدعمه مسار المزوّد لنموذج ما، ويظهر لكل مزوّد في صفحة النموذج. | API، لوحة التحكم |
+| [مهمل (نموذج)](./guides/model-retirement.mdx#how-a-model-is-retired) | أعلن المختبر أو المزوّد إيقاف النموذج، ولا تزال طلباته تُخدَم كالمعتاد. | API، لوحة التحكم |
+| [معرّف النموذج](./api-reference/parameters.mdx#parameter-model) | المعرّف الذي ترسله في `model`، مثل `openai/gpt-6-astra`، ويظهر في البدء السريع في صفحة كل نموذج. | API، لوحة التحكم، CLI، SDK، MCP |
+| [نموذج خاص](./guides/private-models.mdx) | عملية نشر مخصصة أو مستضافة ذاتيًا ومتوافقة مع OpenAI تُضاف إلى مساحة عملك، ولا يمكن لغير مساحة عملك رؤيتها أو استدعاؤها. | API، لوحة التحكم |
+| [المزوّد](./developers/introduction.mdx#models-and-providers) | شركة تستضيف نموذجًا وتحدد توفره ومعاملاته المدعومة وتسعيره وأداءه. | API، لوحة التحكم، SDK، MCP |
+| [أيقونة حالة المزوّد](./guides/provider-statuses.mdx#status-icon) | الحالة التي تضبطها Phaseo يدويًا لمسار مزوّد: `Active` أو `Lower priority` (احتياطي فقط) أو `Disabled`. | لوحة التحكم |
+| [معرّف نموذج مقيّد بمزوّد](./guides/provider-qualified-models.mdx) | معرّف نموذج ببادئة مزوّد، مثل `baseten:thinking-machines/inkling-small`، يعمل لدى ذلك المزوّد دون بديل احتياطي. | API، SDK |
+| [التكميم](./guides/quantization.mdx) | تخزين أوزان النموذج بنوع رقمي أصغر، مثل `FP8` أو `INT4`، مما يسرّع الخدمة مقابل بعض الجودة. | API، لوحة التحكم، SDK |
+| [متوقف (نموذج)](./guides/model-retirement.mdx#how-a-model-is-retired) | مضى تاريخ الإيقاف؛ تعمل الطلبات ما دام مزوّد يقدّم النموذج، ثم تفشل مع `410 model_retired`. | API، لوحة التحكم |
+| [نموذج قابل للتوجيه](./exploring/models.mdx#catalog-models-and-callable-models) | نموذج له مسار مزوّد واحد على الأقل نشط على Gateway الآن؛ ولا يسرد `GET /v1/models` افتراضيًا إلا هذه النماذج. | API، لوحة التحكم، MCP |
+
+## الطلبات والاستجابات
+
+| المصطلح | المعنى | ينطبق على |
+| --- | --- | --- |
+| [الرموز المخزّنة مؤقتًا](./guides/prompt-caching.mdx#usage-and-pricing-fields) | رموز الإدخال التي قرأها المزوّد من ذاكرة التخزين المؤقت للموجّهات، وتُحتسب بسعر القراءة من الذاكرة المؤقتة وتظهر في `cached_tokens`. | API، SDK |
+| [Gateway](./developers/introduction.mdx) | واجهة Phaseo البرمجية على `https://api.phaseo.app/v1`، التي توجّه كل طلب إلى مزوّد يستضيف النموذج. | API، SDK |
+| [معرّف التوليد](./api-reference/endpoint/generation.mdx) | معرّف الطلب الذي يبدأ بـ `G-` ويُعاد في `x-request-id` وفي نصوص الأخطاء؛ استخدمه للسجلات وعمليات البحث والدعم. | API، لوحة التحكم، SDK |
+| [التخزين المؤقت للموجّهات](./guides/prompt-caching.mdx) | إبقاء بداية الموجّه ثابتة كي يقرأها المزوّد من الذاكرة المؤقتة ويحتسبها بسعر القراءة من الذاكرة المؤقتة. | API، SDK |
+| [جهد الاستدلال](./api-reference/parameters.mdx#parameter-reasoning) | مقدار تفكير نموذج الاستدلال قبل الإجابة، ويُضبط بـ `reasoning.effort` أو `reasoning_effort`، من `none` إلى `max`. | API، SDK |
+| [رموز الاستدلال](./guides/context-and-token-budgeting.mdx#what-counts-towards-a-request) | الرموز التي ينفقها نموذج الاستدلال قبل أن يجيب؛ وتُحتسب ضمن المخرجات وتستهلك جزءًا من حد المخرجات. | API، SDK |
+| [فئة الخدمة](./guides/service-tiers.mdx) | فئة سرعة وسعر لطلب نصي (`standard` أو `fast` أو `ultrafast` أو `flex`)، لا يخدمها إلا المزوّدون الذين يقدّمونها. | API، SDK |
+| [معرّف الجلسة](./guides/routing-and-fallbacks.mdx#keep-a-conversation-on-one-provider) | قيمة `session_id` ترسلها لإبقاء طلبات المحادثة لدى مزوّد واحد، لمدة تصل إلى 24 ساعة من النشاط. | API، لوحة التحكم، SDK |
+| [البث](./guides/streaming.mdx) | ضبط `stream: true` كي يرسل Gateway المخرجات كأحداث مرسلة من الخادم أثناء كتابة النموذج لها. | API، SDK |
+| [الرموز](./guides/context-and-token-budgeting.mdx) | الوحدات التي يقرأها النموذج كمدخلات ويكتبها كمخرجات؛ وكل رمز يضيف زمن استجابة وتكلفة. | API، لوحة التحكم، SDK |
+| [كائن الاستخدام](./guides/prompt-caching.mdx#usage-and-pricing-fields) | الحقل `usage` في الاستجابة، الذي يعرض أعداد رموز الإدخال والإخراج والذاكرة المؤقتة للطلب. | API، SDK |
+
+## التوجيه
+
+| المصطلح | المعنى | ينطبق على |
+| --- | --- | --- |
+| [قناتا مزوّدي ألفا والتجريبي](./guides/routing-and-fallbacks.mdx#choose-how-providers-are-ranked) | مفاتيح في إعدادات التوجيه كي لا يحصل مزوّدو المعاينة على حركة مرور إلا عند اشتراكك؛ ويسمح `provider.include_alpha` بمزوّدي ألفا لكل طلب. | API، لوحة التحكم |
+| [التوجيه التلقائي](./guides/auto-routing.mdx) | أرسل `phaseo/auto` لتختار Phaseo نموذجًا لكل طلب بناءً على حمل العمل وهدفك وحدود السعر. | API، لوحة التحكم، CLI، SDK، Slack |
+| [المسار الديناميكي](./guides/routing-and-fallbacks.mdx#attach-routing-rules-to-api-keys) | تدفق قواعد ذو إصدارات مرتبط بمفاتيح API، يمكنه التفرع وتقسيم حركة المرور وتحديد سقف للاستخدام وتبديل النماذج. | API، لوحة التحكم |
+| [الموجّه المجاني](./cookbook/free-router-first-deploy.mdx) | أرسل `phaseo/free` لتشغّل Phaseo الطلب على نموذج مجاني متاح، دون الحاجة إلى رصيد. | API، SDK |
+| [النماذج البديلة](./guides/routing-and-fallbacks.mdx#request-level-model-fallbacks) | نماذج مدرجة في `models` تُجرَّب بالترتيب عندما ينتهي النموذج السابق بـ `429` أو `500` أو `502` أو `503` أو `504`. | API، SDK |
+| [الإعداد المسبق](./guides/presets.mdx) | نموذج وموجّه نظام ومعاملات وقواعد مزوّدين محفوظة يستخدمها المستدعون بإرسال اسمها، مثل `@support-triage`. | API، لوحة التحكم، SDK |
+| [تسمية إصدار الإعداد المسبق](./guides/prompt-templates.mdx#labels) | اسم مثل `production` يشير إلى إصدار منشور واحد من الإعداد المسبق؛ ونقله يدفع الطلبات إلى الأمام أو يعيدها إلى الخلف. | API، لوحة التحكم، SDK |
+| [قالب الموجّه](./guides/prompt-templates.mdx) | رسائل إعداد مسبق تتضمن `{{variables}}`، بحيث لا يرسل كل طلب سوى مرجع الإعداد المسبق وقيم المتغيرات. | API، لوحة التحكم، SDK |
+| [المزوّد البديل](./guides/routing-and-fallbacks.mdx) | عندما يفشل المزوّد المختار، يجرّب Gateway المزوّد المؤهل التالي للنموذج نفسه. | API، SDK |
+| [ترتيب المزوّدين](./guides/routing-and-fallbacks.mdx#choose-how-providers-are-ranked) | طريقة ترتيب المزوّدين: `balanced` (الافتراضي، التكلفة لكل إجابة ناجحة) أو `price` أو `latency` أو `throughput`. | API، لوحة التحكم، CLI، SDK |
+| [التوجيه الإقليمي](./guides/regional-routing.mdx) | إرسال الطلبات النصية إلى `eu.api.phaseo.app` أو `us.api.phaseo.app` لاستخدام المسارات التي تعمل هناك فقط. | API، SDK |
+| [توجيه النماذج المتوقفة](./guides/model-retirement.mdx#route-requests-to-a-replacement-automatically) | إعداد اختياري لمساحة العمل يرسل طلبات نموذج لا يقدّمه أي مزوّد إلى بديل معتمد أو مختار. | API، لوحة التحكم |
+
+## ضوابط الحماية والخصوصية
+
+| المصطلح | المعنى | ينطبق على |
+| --- | --- | --- |
+| [ضابط الحماية](./cookbook/guardrails-for-api-keys.mdx) | سياسة على مفاتيح API أو الأعضاء تقيّد المزوّدين والنماذج ومعالجة البيانات وتفحص الموجّهات؛ ولا تضع سقفًا للإنفاق. | API، لوحة التحكم |
+| [إجراء ضابط الحماية](./cookbook/guardrails-for-api-keys.mdx) | ما يفعله فحص المحتوى في ضابط الحماية عند وجود تطابق: الإشارة أو الحجب الجزئي أو المنع. | API، لوحة التحكم |
+| [تسجيل الإدخال والإخراج](./guides/open-requests-in-chat.mdx#before-you-start) | إعداد خصوصية يخزّن موجّه كل طلب واستجابته، لتتمكن من عرضه أو إعادة تشغيله أو فتحه في الدردشة. | API، لوحة التحكم، الدردشة |
+| [فحص حقن الموجّهات](./cookbook/guardrails-for-api-keys.mdx) | فحص في ضابط الحماية يبحث في المحتوى الذي يقدّمه المستخدم عن أنماط حقن الموجّهات الشائعة. | API، لوحة التحكم |
+| [فحص المعلومات الحساسة](./cookbook/guardrails-for-api-keys.mdx) | فحص في ضابط الحماية يعثر على بيانات مثل عناوين البريد الإلكتروني وأرقام الهواتف وأرقام البطاقات قبل أن يغادر الطلب Phaseo. | API، لوحة التحكم |
+| [ZDR](./cookbook/route-only-to-eu-or-zdr-providers.mdx) | عدم الاحتفاظ بالبيانات: لا يحتفظ المزوّد بالموجّهات أو المخرجات؛ ويمكنك اشتراطه لكل طلب أو لكل ضابط حماية أو لكل مساحة عمل. | API، لوحة التحكم، CLI، SDK، MCP |
+
+## الأدوات والمخرجات
+
+| المصطلح | المعنى | ينطبق على |
+| --- | --- | --- |
+| [Decisions API](./api-reference/endpoint/decisions.mdx) | `POST /v1/decisions`، الذي يجيب عن أسئلة محددة النوع (`predicate` و`choice` و`score`) مع احتمالات، بترتيب طرحها. | API، SDK |
+| [إصلاح الردود](./cookbook/response-healing-for-structured-json.mdx) | إضافة تصلح JSON شبه الصالح، مثل JSON داخل سياج Markdown، قبل أن يصل إلى المحلل لديك. | API، SDK |
+| [أداة الخادم](./guides/server-tools/index.mdx) | أداة `phaseo:` تشغّلها Phaseo عندما يستدعيها النموذج، مثل `phaseo:web_search` أو `phaseo:web_fetch` أو `phaseo:datetime` أو `phaseo:advisor`. | API، SDK، الدردشة |
+| [المخرجات المنظّمة](./guides/structured-outputs.mdx) | إرسال JSON Schema كي يعيد النموذج JSON بهذا الشكل بدلًا من نص حر. | API، SDK |
+| [استدعاء الأدوات](./guides/tool-calling.mdx) | وصف دوالك في `tools` كي يعيد النموذج استدعاءً يشغّله تطبيقك، ثم يجيب بالنتيجة. | API، SDK |
+
+## التكلفة والحدود والفوترة
+
+| المصطلح | المعنى | ينطبق على |
+| --- | --- | --- |
+| [الميزانية](./api-reference/limits.mdx#key-limits-and-budgets) | سقف إنفاق لمساحة العمل (يومي أو أسبوعي أو شهري أو مدى الحياة)؛ وتتلقى الطلبات التي تتجاوزه `429 key_limit_exceeded`. | API، لوحة التحكم |
+| [الرصيد](./pricing/tiers.mdx) | رصيد مدفوع مسبقًا لمساحة العمل تنفقه الطلبات المدفوعة بأسعار الكتالوج؛ وتخضع عمليات الشراء لرسوم 5% (بحد أدنى 1 دولار)، ولا تحتاج نماذج `:free` إلى أي رصيد. | API، لوحة التحكم، CLI، MCP |
+| [ميزانية القسم](./api-reference/limits.mdx#department-budgets) | سقف إنفاق يومي أو أسبوعي أو شهري على المفاتيح وطلبات OAuth التي تُحتسب لقسم واحد. | API، لوحة التحكم |
+| [حد المفتاح](./api-reference/limits.mdx#key-limits-and-budgets) | سقف يومي أو أسبوعي أو شهري للطلبات أو الإنفاق على مفتاح API واحد، يُتحقق منه في كل طلب. | API، لوحة التحكم، CLI |
+| [حد المعدل](./api-reference/limits.mdx#gateway-limits) | عدد الطلبات المسموح به في الدقيقة لكل مستخدم في كل مساحة عمل، ويرتفع مع ترسّخ مساحة العمل. | API، CLI |
+| [تنبيه الإنفاق](./guides/spend-alerts.mdx#alert-types-and-bases) | الإشعار الذي ترسله قاعدة الإنفاق عندما يتجاوز الإنفاق أو التوقع أو الارتفاع المفاجئ أو الرصيد الحد المحدد لها. | API، لوحة التحكم |
+| [قاعدة الإنفاق](./guides/spend-alerts.mdx) | قاعدة تنبّه عندما يتجاوز الإنفاق لنطاق ما حدًا معينًا، ويمكنها منع الطلبات اللاحقة مع `429 spend_rule_blocked`. | API، لوحة التحكم |
+
+## المراقبة
+
+| المصطلح | المعنى | ينطبق على |
+| --- | --- | --- |
+| [إسناد التطبيق](./guides/app-attribution.mdx#headers) | ترويسات مثل `X-App-Id` و`X-Title` و`HTTP-Referer` تجمع استخدام الطلب تحت تطبيق واحد. | API، SDK |
+| [سجل التدقيق](./guides/workspace-audit-log.mdx) | سجل من غيّر المفاتيح والأعضاء وعناصر التحكم الإدارية الأخرى، ولا يقرؤه إلا المالكون والمسؤولون. | API، لوحة التحكم، CLI |
+| [Broadcast](./guides/broadcast.mdx) | يرسل أثرًا لكل طلب عبر Gateway إلى أداة مراقبة أو ويب هوك أو حاوية تخزين أو مستودع بيانات، دون تغيير في الكود. | API، لوحة التحكم |
+| [الفتح في الدردشة](./guides/open-requests-in-chat.mdx) | يتابع طلبًا مخزّنًا أو دورًا من جلسة كمحادثة في الدردشة، بالنموذج نفسه أو بنموذج آخر. | لوحة التحكم، الدردشة |
+| [مصنِّف الطلبات](./guides/request-classifiers.mdx) | تصنيف ونموذج يضعان تسمية لكل طلب مكتمل، وتُخزَّن كتسميات طلبات يمكنك التصفية بها. | API، لوحة التحكم |
+| [تسمية الطلب](./guides/request-labels.mdx) | زوج مفتاح وقيمة، مثل `team=support`، يُرسل في الترويسة `X-Phaseo-Metadata` لتصفية الإنفاق والسجلات. | API، SDK |
+| [سجلات الطلبات](./api-reference/endpoint/logs-list.mdx) | سجل لكل طلب يتضمن استخدامه وزمن استجابته وتكلفته وأخطاءه والمزوّد الذي خدمه. | API، لوحة التحكم، CLI، MCP |
+
+## المهام غير المتزامنة
+
+| المصطلح | المعنى | ينطبق على |
+| --- | --- | --- |
+| [مهمة غير متزامنة](./guides/async-video-and-batch.mdx) | طلب فيديو أو دفعة يعيد مهمة فورًا؛ وتستعلم عنها دوريًا أو تنتظر ويب هوك حتى تنتهي. | API، SDK |
+| [الدفعة](./api-reference/endpoint/batches-create.mdx) | مهمة Batch API لأحمال العمل الكبيرة المؤجلة، يستهدف فيها كل صف نموذجًا واحدًا. | API، SDK |
+| [مهمة الفيديو](./guides/async-video-and-batch.mdx) | طلب Video API يعيد مهمة؛ نزّل الفيديو عندما تصبح حالتها `completed`. | API، SDK |
+| [نقطة نهاية الويب هوك](./guides/async-video-and-batch.mdx#receive-updates) | عنوان URL لمساحة العمل يتلقى أحداث حالة موقّعة لمهام الفيديو والدفعات. | API، لوحة التحكم |
+
+## المؤسسات
+
+| المصطلح | المعنى | ينطبق على |
+| --- | --- | --- |
+| [القسم](./guides/spend-alerts.mdx#choose-whose-spend-counts) | مجموعة من أعضاء مساحة العمل، تُدار يدويًا أو تُزامَن من دليلك، يمكن أن تستهدفها الميزانيات وحدود المعدل وقواعد الإنفاق. | API، لوحة التحكم |
+| [الدليل](./api-reference/endpoint/identity-directory-get.mdx) | أقسام المؤسسة في مساحة العمل والاستحقاقات الفعلية لكل عضو، ويديرها المالكون والمسؤولون. | API، لوحة التحكم |
+| [إضافة الهوية](./api-reference/endpoint/identity-scim-get.mdx) | إضافة مساحة العمل اللازمة لتفعيل SSO أو SCIM وإنشاء رموز التزويد وإدارة الدليل. | API، لوحة التحكم |
+| [SCIM](./api-reference/endpoint/identity-scim-get.mdx) | تزويد أعضاء مساحة العمل والأقسام من مزوّد الهوية لديك باستخدام رمز تزويد SCIM. | API، لوحة التحكم |
+| [Self Serve Enterprise](./exploring/subscription-plans.mdx#enterprise-member-pricing) | اشتراك شهري لمساحة العمل يشمل SSO وSCIM وإدارة الدليل والأقسام ودعمًا ذا أولوية عبر البريد الإلكتروني. | لوحة التحكم |
+| [SSO](./api-reference/endpoint/identity-sso-get.mdx) | تسجيل الدخول الموحّد لأعضاء مساحة العمل عبر SAML أو مزوّد OIDC مخصص. | API، لوحة التحكم |
+
+## CLI وMCP وحزم SDK والتطبيقات
+
+| المصطلح | المعنى | ينطبق على |
+| --- | --- | --- |
+| [مهارات الوكلاء](./cookbook/coding-agents-skill-md.mdx) | تعليمات Phaseo العامة لوكلاء البرمجة، وتغطي Gateway وحزم SDK والإعدادات المسبقة والتوجيه وعمليات الانتقال. | API، CLI، SDK |
+| [حزمة SDK للعميل](./sdk-reference/client/overview.mdx) | حزمة Phaseo للغتك فيها دالة واحدة لكل نقطة نهاية في Gateway، مثل `@phaseo/sdk` أو `phaseo`. | SDK |
+| [Docs MCP](./guides/integrations/docs-mcp.mdx) | خادم MCP للقراءة فقط على `https://phaseo.app/docs/mcp` يتيح لمساعدي البرمجة البحث في هذا التوثيق وقراءته. | MCP |
+| [Phaseo CLI](./developers/cli-and-mcp.mdx#phaseo-cli) | الأمر `phaseo` لإنشاء المفاتيح وتغيير الإعدادات وأتمتة الأعمال الإدارية من سطر الأوامر أو CI. | CLI |
+| [Phaseo MCP](./developers/cli-and-mcp.mdx#phaseo-mcp) | خادم MCP يمنح عملاء الذكاء الاصطناعي بيانات حية عن النماذج والأسعار والاستخدام ومساحة العمل، ويمكنه اختياريًا إدارة حسابك. | MCP |
+| [وكيل Slack](./guides/slack-agent.mdx) | وكيل Phaseo في Slack، الذي يرد على الإشارات والرسائل المباشرة بالنموذج الذي اختارته مساحة عملك. | لوحة التحكم، Slack |
+
+## مراحل الميزات
+
+| المصطلح | المعنى | ينطبق على |
+| --- | --- | --- |
+| [ألفا](./developers/feature-maturity.mdx) | ميزة مبكرة قد تتغير كثيرًا أو تُزال. | API، لوحة التحكم، CLI، SDK، MCP، الدردشة، Slack |
+| [تجريبي](./developers/feature-maturity.mdx) | ميزة تعمل في استخدامها الرئيسي، وإن كانت تفاصيلها قد تتغير؛ ويُعلن عن التغييرات في سجل التغييرات. | API، لوحة التحكم، CLI، SDK، MCP، الدردشة، Slack |
+| [مهملة (ميزة)](./developers/feature-maturity.mdx) | ميزة لا تزال تعمل لكنها ستُزال؛ وتعرض صفحتها تاريخ الإزالة عند تحديده. | API، لوحة التحكم، CLI، SDK، MCP، الدردشة، Slack |
+| [معاينة الميزات](./developers/feature-maturity.mdx#who-can-use-a-feature) | صفحة الإعدادات التي توضّح ما إذا كانت واجهتا Video API وBatch API مفعّلتين لمساحة عملك. | لوحة التحكم |
+| [عند الطلب](./developers/feature-maturity.mdx#who-can-use-a-feature) | ميزة تُفعَّل لكل مساحة عمل على حدة؛ وإلى أن تُفعَّل، تكون صفحة إعداداتها مخفية وتعيد واجهتها البرمجية خطأً. | API، لوحة التحكم |
+| [متاحة للجميع](./developers/feature-maturity.mdx) | ميزة مستقرة، تظهر دون شارة مرحلة. | API، لوحة التحكم، CLI، SDK، MCP، الدردشة، Slack |

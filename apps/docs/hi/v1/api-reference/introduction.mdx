@@ -17,7 +17,7 @@ icon: "map"
 | मौजूदा OpenAI-संगत इंटीग्रेशन बनाए रखें | [`POST /chat/completions`](./endpoint/chat-completions) |
 | मॉडल और प्रदाता देखें | [`GET /models`](./endpoint/models) और [`GET /providers`](./endpoint/providers) |
 | संगीत बनाएं या फ़ाइलें प्रबंधित करें | [`POST /music/generate`](./endpoint/music-generate) और [`POST /files`](./endpoint/files) |
-| वीडियो बनाएं (बीटा) | [`POST /videos`](./endpoint/video-create) |
+| वीडियो बनाएं (अल्फा) | [`POST /videos`](./endpoint/video-create) |
 | बैच सबमिट करें या परिणाम डाउनलोड करें (बीटा) | [`POST /batches`](./endpoint/batches-create) और [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## बेस URL
@@ -40,7 +40,7 @@ OpenAPI फ़ाइल को Postman, Hoppscotch या किसी SDK ज�
 	स्पेसिफ़िकेशन फ़ाइल देखें
 </Card>
 
-दस्तावेज़ और SDK यही स्पेसिफ़िकेशन इस्तेमाल करते हैं। Video, Batch और Decisions एंडपॉइंट पर **बीटा** लेबल है; इनके लिए वर्कस्पेस को पूर्वावलोकन पहुंच की ज़रूरत हो सकती है।
+दस्तावेज़ और SDK यही स्पेसिफ़िकेशन इस्तेमाल करते हैं। जो एंडपॉइंट आम तौर पर उपलब्ध नहीं हैं, उन पर **अल्फा** या **बीटा** बैज होता है, और कुछ को पहले आपके वर्कस्पेस के लिए चालू करना पड़ता है। [फ़ीचर की परिपक्वता](../developers/feature-maturity.mdx) में चरण समझाए गए हैं और हर फ़ीचर की पहुँच दी गई है।
 
 ## प्रमाणीकरण
 

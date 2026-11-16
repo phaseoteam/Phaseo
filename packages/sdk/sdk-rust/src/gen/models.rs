@@ -986,6 +986,12 @@ pub struct DecisionBoxAnswer {
 	pub r#type: String,
 }
 
+pub struct DecisionBoxesQuestion {
+	pub instructions: String,
+	pub max: Option<i64>,
+	pub r#type: String,
+}
+
 pub struct DecisionBoxQuestion {
 	pub instructions: String,
 	pub name: Option<String>,
@@ -1003,12 +1009,18 @@ pub struct DecisionChoiceAnswer {
 pub struct DecisionChoiceQuestion {
 	pub criteria: HashMap<String, String>,
 	pub instructions: String,
+	pub multiple: Option<bool>,
 	pub r#type: String,
 }
 
 pub type DecisionCreateRequest = JsonValue;
 
 pub type DecisionCreateResponse = JsonValue;
+
+pub struct DecisionDateQuestion {
+	pub instructions: String,
+	pub r#type: String,
+}
 
 pub struct DecisionImage {
 	pub base64: String,
@@ -1069,6 +1081,14 @@ pub struct DecisionNoulQuestion {
 	pub r#type: String,
 }
 
+pub struct DecisionNumberQuestion {
+	pub instructions: String,
+	pub range: Option<Vec<f64>>,
+	pub step: Option<f64>,
+	pub r#type: String,
+	pub unit: Option<String>,
+}
+
 pub struct DecisionPredicateAnswer {
 	pub name: Option<String>,
 	pub probability: f64,
@@ -1104,7 +1124,13 @@ pub struct DecisionScoreQuestion {
 	pub r#type: String,
 }
 
+pub struct DecisionSpansQuestion {
+	pub instructions: String,
+	pub r#type: String,
+}
+
 pub struct DecisionsRequest {
+	pub audio: Option<Vec<String>>,
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub images: Option<Vec<String>>,
@@ -1133,6 +1159,11 @@ pub struct DecisionsUsage {
 	pub output_tokens: Option<i64>,
 	pub output_tokens_details: Option<HashMap<String, String>>,
 	pub total_tokens: Option<i64>,
+}
+
+pub struct DecisionTextQuestion {
+	pub instructions: String,
+	pub r#type: String,
 }
 
 pub struct DeletedResponse {
@@ -2108,6 +2139,7 @@ pub struct LegacyDecisionLocateQuestion {
 }
 
 pub struct LegacyDecisionsRequest {
+	pub audio: Option<Vec<String>>,
 	pub debug: Option<HashMap<String, String>>,
 	pub echo_upstream_request: Option<bool>,
 	pub images: Option<Vec<String>>,

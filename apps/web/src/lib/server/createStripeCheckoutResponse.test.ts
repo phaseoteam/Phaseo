@@ -44,6 +44,7 @@ vi.mock("@/lib/automations/resend-events", () => ({ deriveFirstName: () => "", s
 vi.mock("@/lib/automations/billingDiscord", () => ({ sendBillingDiscordWebhook: async () => undefined }));
 
 import { createStripeCheckoutResponse } from "@/lib/server/createStripeCheckoutResponse";
+import { resolveCheckoutLanguage } from "@/lib/server/checkoutLanguage";
 
 describe("createStripeCheckoutResponse for API/CLI top-up requests", () => {
 	beforeAll(() => {
@@ -90,5 +91,41 @@ describe("createStripeCheckoutResponse for API/CLI top-up requests", () => {
 			adaptive_pricing: { enabled: false },
 			line_items: [{ price_data: { currency: "usd" } }],
 		});
+	});
+
+	it.each([
+		["oneoff", "One-off top-up"],
+		["pay_and_save", "Top-up · card saved for future top-ups"],
+	] as const)("names the %s line item from the catalogue and shows USD as $ for English buyers", async (kind, description) => {
+		sessions.params.length = 0;
+		await createStripeCheckoutResponse({ kind, amountPence: 2000, countryCode: "GB", originHeader: "https://phaseo.app", refererHeader: null, acceptLanguage: "en-GB,en;q=0.9" });
+
+		expect(sessions.params[0]).toMatchObject({
+			locale: "en",
+			line_items: [{ price_data: { product_data: { name: "Phaseo credits", description } } }],
+		});
+	});
+
+	it("leaves Stripe on the browser language for other buyers and uses their catalogue copy", async () => {
+		sessions.params.length = 0;
+		await createStripeCheckoutResponse({ kind: "oneoff", amountPence: 2000, countryCode: "FR", originHeader: "https://phaseo.app", refererHeader: null, acceptLanguage: "fr-FR,fr;q=0.9" });
+
+		expect(sessions.params[0]).not.toHaveProperty("locale");
+		expect(sessions.params[0]).toMatchObject({
+			line_items: [{ price_data: { product_data: { name: "Crédits Phaseo", description: "Recharge ponctuelle" } } }],
+		});
+	});
+});
+
+describe("resolveCheckoutLanguage", () => {
+	it.each([
+		[null, "en", "One-off top-up"],
+		["en-US", "en", "One-off top-up"],
+		["de-DE,de;q=0.9", undefined, "Einmalige Aufladung"],
+		["ko-KR", undefined, "One-off top-up"],
+	] as const)("%s -> Stripe locale %s", (header, stripeLocale, description) => {
+		const language = resolveCheckoutLanguage(header);
+		expect(language.stripeLocale).toBe(stripeLocale);
+		expect(language.copy.oneOffDescription).toBe(description);
 	});
 });

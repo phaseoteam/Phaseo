@@ -73,7 +73,7 @@ const paymentIntent = (type: string) => ({
 
 vi.mock("@/lib/stripe", () => ({
 	getStripe: () => ({
-		webhooks: { constructEvent: (body: string) => JSON.parse(body) },
+		webhooks: { constructEventAsync: async (body: string) => JSON.parse(body) },
 		paymentIntents: { retrieve: async () => ({ ...paymentIntent("payment_intent.succeeded"), payment_method: { id: "pm_1", type: "card" } }) },
 		paymentMethods: { attach: async () => ({}) },
 		customers: { retrieve: async () => ({ id: "cus_1", email: "owner@acme.test", name: "Owner", invoice_settings: { default_payment_method: "pm_1" } }), update: async () => ({}) },

@@ -1,0 +1,163 @@
+---
+title: "术语表"
+description: "用一句话了解某个 Phaseo 术语的含义、它适用的范围，以及完整介绍它的页面。"
+icon: "book-a"
+---
+
+查找你在控制台、API 或本文档中遇到的词语。每一行给出一句话的含义，链接到完整介绍该术语的页面，并列出它适用的范围：API、控制台、CLI、SDK、MCP、聊天或 Slack。
+
+## 账户和访问权限
+
+| 术语 | 含义 | 适用范围 |
+| --- | --- | --- |
+| [管理员](./developers/management-api-keys.mdx) | 一种工作区角色，可管理仅限管理员的设置（例如预算、支出规则、护栏和信任策略），并可查看审计日志。 | API、控制台、CLI、MCP |
+| [成员](./developers/management-api-keys.mdx) | 一种工作区角色，可使用工作区并查看其支出规则，但不能更改仅限所有者和管理员的设置。 | API、控制台、CLI、MCP |
+| [所有者](./developers/management-api-keys.mdx) | 一种工作区角色，可管理与管理员相同的仅限管理员设置，并接收发给所有者的电子邮件，例如模型弃用警报。 | API、控制台、CLI、MCP |
+| [工作区](./guides/workspaces.mdx) | 一个容器，它的 API 密钥、路由设置、预设、护栏和管理员访问权限与其他工作区相互独立。 | API、控制台、CLI |
+
+## 密钥和身份验证
+
+| 术语 | 含义 | 适用范围 |
+| --- | --- | --- |
+| [API 密钥](./developers/authentication.mdx#choose-a-credential) | 以 `phaseo_v1_sk_` 开头的密钥，作为 Bearer 令牌发送，用于验证模型请求和生成请求。 | API、控制台、CLI、SDK、MCP |
+| [BYOK](./guides/routing-and-fallbacks.mdx#byok-considerations) | 自带密钥：Phaseo 使用你的提供商 API 密钥路由请求，模型用量由提供商计费。 | API、控制台 |
+| [BYOK 回退](./guides/routing-and-fallbacks.mdx#byok-considerations) | 一项工作区设置，决定失败的 BYOK 请求是否可以使用 Phaseo 额度重试。 | API、控制台 |
+| [权限](./developers/management-api-keys.mdx#choose-an-access-level) | 管理密钥或 OAuth 登录上的一项权限，例如 `keys:write`，决定它可以调用哪些管理 API。 | API、控制台、CLI、MCP |
+| [管理密钥](./developers/management-api-keys.mdx) | 以 `phaseo_v1_mk_` 开头的密钥，用于密钥、预设和护栏等管理 API；它不能发送推理请求。 | API、控制台 |
+| [OAuth 应用](./guides/integrations/phaseo-cli.mdx#oauth-apps) | 通过 Phaseo OAuth 让用户登录的应用，并在用户批准的范围和工作区内代表用户操作。 | API、控制台、CLI、MCP |
+| [受信任的工作负载](./developers/trusted-workloads.mdx) | 发送其平台短期 OIDC 令牌而不是 API 密钥的部署或 CI 作业，由信任策略匹配。 | API、控制台 |
+
+## 模型和提供商
+
+| 术语 | 含义 | 适用范围 |
+| --- | --- | --- |
+| [上下文长度](./exploring/models.mdx#what-a-model-page-shows) | 某个提供商路由为模型支持的上下文大小，在模型页面上按提供商分别显示。 | API、控制台 |
+| [已弃用（模型）](./guides/model-retirement.mdx#how-a-model-is-retired) | 实验室或提供商已宣布该模型将停用，它的请求仍照常处理。 | API、控制台 |
+| [模型 ID](./api-reference/parameters.mdx#parameter-model) | 你作为 `model` 发送的 ID，例如 `openai/gpt-6-astra`，显示在每个模型页面的快速入门中。 | API、控制台、CLI、SDK、MCP |
+| [私有模型](./guides/private-models.mdx) | 添加到你工作区的专用或自托管 OpenAI 兼容部署，只有你的工作区可以看到或调用。 | API、控制台 |
+| [提供商](./developers/introduction.mdx#models-and-providers) | 托管模型并决定其可用性、支持的参数、定价和性能的公司。 | API、控制台、SDK、MCP |
+| [提供商状态图标](./guides/provider-statuses.mdx#status-icon) | Phaseo 为提供商路由手动设置的状态：`Active`、`Lower priority`（仅作备用）或 `Disabled`。 | 控制台 |
+| [带提供商限定的模型 ID](./guides/provider-qualified-models.mdx) | 带有提供商前缀的模型 ID，例如 `baseten:thinking-machines/inkling-small`，只在该提供商上运行，没有回退。 | API、SDK |
+| [量化](./guides/quantization.mdx) | 用更小的数值类型存储模型权重，例如 `FP8` 或 `INT4`，以一定的质量代价换取更快的服务速度。 | API、控制台、SDK |
+| [已停用（模型）](./guides/model-retirement.mdx#how-a-model-is-retired) | 停用日期已过；只要仍有提供商提供该模型，请求就能正常工作，之后会失败并返回 `410 model_retired`。 | API、控制台 |
+| [可路由模型](./exploring/models.mdx#catalog-models-and-callable-models) | 当前在 Gateway 上至少有一个活跃提供商路由的模型；`GET /v1/models` 默认只列出这些模型。 | API、控制台、MCP |
+
+## 请求和响应
+
+| 术语 | 含义 | 适用范围 |
+| --- | --- | --- |
+| [缓存 token](./guides/prompt-caching.mdx#usage-and-pricing-fields) | 提供商从提示词缓存中读取的输入 token，按缓存读取价格计费，并以 `cached_tokens` 报告。 | API、SDK |
+| [Gateway](./developers/introduction.mdx) | 位于 `https://api.phaseo.app/v1` 的 Phaseo API，它把每个请求路由到托管该模型的提供商。 | API、SDK |
+| [生成 ID](./api-reference/endpoint/generation.mdx) | 在 `x-request-id` 和错误响应体中返回的 `G-` 请求 ID；可用于日志、查询和支持。 | API、控制台、SDK |
+| [提示词缓存](./guides/prompt-caching.mdx) | 保持提示词开头部分不变，让提供商从缓存中读取它，并按缓存读取价格计费。 | API、SDK |
+| [推理强度](./api-reference/parameters.mdx#parameter-reasoning) | 推理模型在回答之前思考的程度，通过 `reasoning.effort` 或 `reasoning_effort` 设置，范围从 `none` 到 `max`。 | API、SDK |
+| [推理 token](./guides/context-and-token-budgeting.mdx#what-counts-towards-a-request) | 推理模型在回答之前消耗的 token；它们计为输出，并占用一部分输出上限。 | API、SDK |
+| [服务层级](./guides/service-tiers.mdx) | 文本请求的速度和价格层级（`standard`、`fast`、`ultrafast` 或 `flex`），只由提供该层级的提供商处理。 | API、SDK |
+| [会话 ID](./guides/routing-and-fallbacks.mdx#keep-a-conversation-on-one-provider) | 你发送的 `session_id`，用于让一段对话的请求保持在同一个提供商上，最长可持续 24 小时的活动时间。 | API、控制台、SDK |
+| [流式传输](./guides/streaming.mdx) | 设置 `stream: true`，让 Gateway 在模型生成输出的同时以服务器发送事件的形式发送输出。 | API、SDK |
+| [Token](./guides/context-and-token-budgeting.mdx) | 模型作为输入读取、作为输出写入的单位；每个 token 都会增加延迟和成本。 | API、控制台、SDK |
+| [用量对象](./guides/prompt-caching.mdx#usage-and-pricing-fields) | 响应中的 `usage` 字段，报告该请求的输入、输出和缓存 token 数量。 | API、SDK |
+
+## 路由
+
+| 术语 | 含义 | 适用范围 |
+| --- | --- | --- |
+| [Alpha 和 Beta 提供商渠道](./guides/routing-and-fallbacks.mdx#choose-how-providers-are-ranked) | 路由设置中的开关，让预览提供商只在你选择加入时才获得流量；`provider.include_alpha` 可在单个请求中允许 Alpha 提供商。 | API、控制台 |
+| [自动路由](./guides/auto-routing.mdx) | 发送 `phaseo/auto`，Phaseo 会根据工作负载、你的目标和价格上限为每个请求选择模型。 | API、控制台、CLI、SDK、Slack |
+| [动态路由](./guides/routing-and-fallbacks.mdx#attach-routing-rules-to-api-keys) | 附加到 API 密钥上的带版本规则流程，可以分支、拆分流量、限制用量和切换模型。 | API、控制台 |
+| [免费路由](./cookbook/free-router-first-deploy.mdx) | 发送 `phaseo/free`，Phaseo 会在一个可用的免费模型上运行该请求，无需额度。 | API、SDK |
+| [模型回退](./guides/routing-and-fallbacks.mdx#request-level-model-fallbacks) | 在 `models` 中列出的模型，当前一个模型以 `429`、`500`、`502`、`503` 或 `504` 结束时按顺序尝试。 | API、SDK |
+| [预设](./guides/presets.mdx) | 保存的模型、系统提示词、参数和提供商规则，调用方发送其名称（例如 `@support-triage`）即可使用。 | API、控制台、SDK |
+| [预设版本标签](./guides/prompt-templates.mdx#labels) | 一个名称，例如 `production`，指向一个已发布的预设版本；移动它即可让请求前进或回滚。 | API、控制台、SDK |
+| [提示词模板](./guides/prompt-templates.mdx) | 带有 `{{variables}}` 的预设消息，因此每个请求只需发送预设引用和变量值。 | API、控制台、SDK |
+| [提供商回退](./guides/routing-and-fallbacks.mdx) | 当所选提供商失败时，Gateway 会尝试同一模型的下一个符合条件的提供商。 | API、SDK |
+| [提供商排序](./guides/routing-and-fallbacks.mdx#choose-how-providers-are-ranked) | 提供商的排名方式：`balanced`（默认，按每个成功回答的成本）、`price`、`latency` 或 `throughput`。 | API、控制台、CLI、SDK |
+| [区域路由](./guides/regional-routing.mdx) | 把文本请求发送到 `eu.api.phaseo.app` 或 `us.api.phaseo.app`，只使用在该区域运行的路由。 | API、SDK |
+| [已停用模型路由](./guides/model-retirement.mdx#route-requests-to-a-replacement-automatically) | 一项需主动开启的工作区设置，把对已无提供商提供的模型的请求发送到经批准或你选择的替代模型。 | API、控制台 |
+
+## 护栏和隐私
+
+| 术语 | 含义 | 适用范围 |
+| --- | --- | --- |
+| [护栏](./cookbook/guardrails-for-api-keys.mdx) | 作用于 API 密钥或成员的策略，用于限制提供商、模型和数据处理方式，并扫描提示词；它不限制支出。 | API、控制台 |
+| [护栏操作](./cookbook/guardrails-for-api-keys.mdx) | 护栏内容检查命中时执行的操作：标记、脱敏或拦截。 | API、控制台 |
+| [I/O 日志](./guides/open-requests-in-chat.mdx#before-you-start) | 一项隐私设置，会保存每个请求的提示词和响应，以便你查看、重放或在聊天中打开它。 | API、控制台、聊天 |
+| [提示词注入检查](./cookbook/guardrails-for-api-keys.mdx) | 一项护栏检查，扫描用户提供的内容中常见的提示词注入模式。 | API、控制台 |
+| [敏感信息检查](./cookbook/guardrails-for-api-keys.mdx) | 一项护栏检查，在请求离开 Phaseo 之前找出电子邮件地址、电话号码和银行卡号等数据。 | API、控制台 |
+| [ZDR](./cookbook/route-only-to-eu-or-zdr-providers.mdx) | 零数据保留：提供商不保留提示词或输出；可以按请求、按护栏或按工作区要求启用。 | API、控制台、CLI、SDK、MCP |
+
+## 工具和输出
+
+| 术语 | 含义 | 适用范围 |
+| --- | --- | --- |
+| [Decisions API](./api-reference/endpoint/decisions.mdx) | `POST /v1/decisions`，按提问顺序用概率回答带类型的问题（`predicate`、`choice`、`score`）。 | API、SDK |
+| [响应修复](./cookbook/response-healing-for-structured-json.mdx) | 一个插件，在几乎有效的 JSON（例如包在 Markdown 代码块中的 JSON）到达你的解析器之前修复它。 | API、SDK |
+| [服务器工具](./guides/server-tools/index.mdx) | 模型调用时由 Phaseo 运行的 `phaseo:` 工具，例如 `phaseo:web_search`、`phaseo:web_fetch`、`phaseo:datetime` 或 `phaseo:advisor`。 | API、SDK、聊天 |
+| [结构化输出](./guides/structured-outputs.mdx) | 发送一个 JSON Schema，让模型返回该结构的 JSON，而不是自由文本。 | API、SDK |
+| [工具调用](./guides/tool-calling.mdx) | 在 `tools` 中描述你的函数，让模型返回一个由你的应用执行的调用，然后根据结果作答。 | API、SDK |
+
+## 成本、限制和计费
+
+| 术语 | 含义 | 适用范围 |
+| --- | --- | --- |
+| [预算](./api-reference/limits.mdx#key-limits-and-budgets) | 工作区的支出上限（每日、每周、每月或终身）；超出后的请求会收到 `429 key_limit_exceeded`。 | API、控制台 |
+| [额度](./pricing/tiers.mdx) | 预付的工作区余额，付费请求按目录价格消耗；购买时收取 5% 手续费（最低 $1），`:free` 模型无需额度。 | API、控制台、CLI、MCP |
+| [部门预算](./api-reference/limits.mdx#department-budgets) | 针对计入某个部门的密钥和 OAuth 请求设置的每日、每周或每月支出上限。 | API、控制台 |
+| [密钥限制](./api-reference/limits.mdx#key-limits-and-budgets) | 针对单个 API 密钥的每日、每周或每月请求数或支出上限，每个请求都会检查。 | API、控制台、CLI |
+| [速率限制](./api-reference/limits.mdx#gateway-limits) | 每个工作区中每个用户每分钟允许的请求数，随着工作区逐渐成熟而提高。 | API、CLI |
+| [支出警报](./guides/spend-alerts.mdx#alert-types-and-bases) | 当支出、预测、激增或余额越过阈值时，支出规则发送的通知。 | API、控制台 |
+| [支出规则](./guides/spend-alerts.mdx) | 当某个范围的支出越过阈值时发出警报的规则，还可以用 `429 spend_rule_blocked` 拦截后续请求。 | API、控制台 |
+
+## 可观测性
+
+| 术语 | 含义 | 适用范围 |
+| --- | --- | --- |
+| [应用归因](./guides/app-attribution.mdx#headers) | `X-App-Id`、`X-Title` 和 `HTTP-Referer` 等请求头，用于把请求的用量归到同一个应用下。 | API、SDK |
+| [审计日志](./guides/workspace-audit-log.mdx) | 记录谁更改了密钥、成员和其他管理控制项，只有所有者和管理员可以查看。 | API、控制台、CLI |
+| [Broadcast](./guides/broadcast.mdx) | 把每个 Gateway 请求的追踪数据发送到可观测性工具、Webhook、存储桶或数据仓库，无需更改代码。 | API、控制台 |
+| [在聊天中打开](./guides/open-requests-in-chat.mdx) | 把已保存的请求或会话轮次作为聊天中的对话继续，可使用同一模型或其他模型。 | 控制台、聊天 |
+| [请求分类器](./guides/request-classifiers.mdx) | 一套分类体系和一个模型，为每个已完成的请求打标签，保存为可用于筛选的请求标签。 | API、控制台 |
+| [请求标签](./guides/request-labels.mdx) | 一个键值对，例如 `team=support`，通过 `X-Phaseo-Metadata` 请求头发送，用于筛选支出和日志。 | API、SDK |
+| [请求日志](./api-reference/endpoint/logs-list.mdx) | 每个请求的记录，包括用量、延迟、成本、错误以及处理它的提供商。 | API、控制台、CLI、MCP |
+
+## 异步任务
+
+| 术语 | 含义 | 适用范围 |
+| --- | --- | --- |
+| [异步任务](./guides/async-video-and-batch.mdx) | 立即返回一个任务的视频或批处理请求；你轮询它或等待 Webhook，直到它完成。 | API、SDK |
+| [批处理](./api-reference/endpoint/batches-create.mdx) | 用于大型延迟工作负载的 Batch API 任务，其中每一行针对一个模型。 | API、SDK |
+| [视频任务](./guides/async-video-and-batch.mdx) | 返回一个任务的 Video API 请求；当其状态为 `completed` 后下载视频。 | API、SDK |
+| [Webhook 端点](./guides/async-video-and-batch.mdx#receive-updates) | 工作区的一个 URL，用于接收视频和批处理任务的已签名状态事件。 | API、控制台 |
+
+## 企业版
+
+| 术语 | 含义 | 适用范围 |
+| --- | --- | --- |
+| [部门](./guides/spend-alerts.mdx#choose-whose-spend-counts) | 一组工作区成员，可手动管理或从你的目录同步，预算、速率限制和支出规则都可以以它为目标。 | API、控制台 |
+| [目录](./api-reference/endpoint/identity-directory-get.mdx) | 工作区的企业部门以及每个成员的有效权益，由所有者和管理员管理。 | API、控制台 |
+| [身份附加组件](./api-reference/endpoint/identity-scim-get.mdx) | 开启 SSO 或 SCIM、创建预配令牌以及管理目录所需的工作区附加组件。 | API、控制台 |
+| [SCIM](./api-reference/endpoint/identity-scim-get.mdx) | 使用 SCIM 预配令牌，从你的身份提供商预配工作区成员和部门。 | API、控制台 |
+| [自助企业版](./exploring/subscription-plans.mdx#enterprise-member-pricing) | 按月订阅的工作区方案，提供 SSO、SCIM、目录管理、部门和优先电子邮件支持。 | 控制台 |
+| [SSO](./api-reference/endpoint/identity-sso-get.mdx) | 通过 SAML 或自定义 OIDC 提供商为工作区成员提供的单点登录。 | API、控制台 |
+
+## CLI、MCP、SDK 和应用
+
+| 术语 | 含义 | 适用范围 |
+| --- | --- | --- |
+| [智能体技能](./cookbook/coding-agents-skill-md.mdx) | 面向编程智能体的公开 Phaseo 说明，涵盖 Gateway、SDK、预设、路由和迁移。 | API、CLI、SDK |
+| [客户端 SDK](./sdk-reference/client/overview.mdx) | 适用于你所用语言的 Phaseo 软件包，每个 Gateway 端点对应一个方法，例如 `@phaseo/sdk` 或 `phaseo`。 | SDK |
+| [Docs MCP](./guides/integrations/docs-mcp.mdx) | 位于 `https://phaseo.app/docs/mcp` 的只读 MCP 服务器，让编程助手搜索和阅读本文档。 | MCP |
+| [Phaseo CLI](./developers/cli-and-mcp.mdx#phaseo-cli) | `phaseo` 命令，用于在 shell 或 CI 中创建密钥、更改设置和自动化管理工作。 | CLI |
+| [Phaseo MCP](./developers/cli-and-mcp.mdx#phaseo-mcp) | 一个 MCP 服务器，为 AI 客户端提供实时的模型、定价、用量和工作区数据，也可以选择用它管理你的账户。 | MCP |
+| [Slack 智能体](./guides/slack-agent.mdx) | Slack 中的 Phaseo 智能体，用你的工作区所选的模型回复提及和私信。 | 控制台、Slack |
+
+## 功能阶段
+
+| 术语 | 含义 | 适用范围 |
+| --- | --- | --- |
+| [Alpha](./developers/feature-maturity.mdx) | 早期功能，可能会大幅变化或被移除。 | API、控制台、CLI、SDK、MCP、聊天、Slack |
+| [Beta](./developers/feature-maturity.mdx) | 主要用途可以正常使用的功能，但细节可能变化；变更会在更新日志中公布。 | API、控制台、CLI、SDK、MCP、聊天、Slack |
+| [已弃用（功能）](./developers/feature-maturity.mdx) | 仍然可用但将被移除的功能；如已设定移除日期，它的页面会给出该日期。 | API、控制台、CLI、SDK、MCP、聊天、Slack |
+| [功能预览](./developers/feature-maturity.mdx#who-can-use-a-feature) | 显示你的工作区是否已开启 Video API 和 Batch API 的设置页面。 | 控制台 |
+| [按申请开通](./developers/feature-maturity.mdx#who-can-use-a-feature) | 按工作区开启的功能；开启之前，它的设置页面会隐藏，它的 API 会返回错误。 | API、控制台 |
+| [正式发布](./developers/feature-maturity.mdx) | 稳定的功能，不显示阶段徽标。 | API、控制台、CLI、SDK、MCP、聊天、Slack |

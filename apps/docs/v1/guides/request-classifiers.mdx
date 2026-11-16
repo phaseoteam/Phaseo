@@ -8,7 +8,7 @@ icon: "list-tree"
 Define a taxonomy, such as department, audience, or task type, and a model to apply it, and Phaseo labels each finished request with that model's answers. Each answer is stored as a [request label](/v1/guides/request-labels), so you filter and group logs, usage, and analytics by it exactly like labels your code sends. Use a classifier when your code doesn't know the category: who a prompt was written for, what kind of work an agent is doing, or whether a request touches a regulated topic.
 
 <Note>
-Request classifiers are in beta. Owners and admins manage them in **Settings → Classifiers** or with the `/v1/classifiers` management API, using a [management key](/v1/developers/management-api-keys) with the `classifiers:*` scopes.
+Request classifiers are in [Beta](/v1/developers/feature-maturity) and are turned on per workspace on request. Owners and admins manage them in **Settings → Classifiers** or with the `/v1/classifiers` management API, using a [management key](/v1/developers/management-api-keys) with the `classifiers:*` scopes.
 </Note>
 
 ## How a request is classified

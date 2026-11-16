@@ -7,7 +7,7 @@ icon: "list-tree"
 Définissez une taxonomie, par exemple le service, le public ou le type de tâche, ainsi qu’un modèle pour l’appliquer : Phaseo étiquette chaque requête terminée avec les réponses de ce modèle. Chaque réponse est enregistrée comme [libellé de requête](/fr/v1/guides/request-labels) ; vous filtrez et regroupez donc les journaux, l’utilisation et les analyses selon elle, exactement comme les libellés envoyés par votre code. Utilisez un classificateur lorsque votre code ne connaît pas la catégorie : à qui un prompt s’adresse, quel type de travail un agent effectue, ou si une requête touche un sujet réglementé.
 
 <Note>
-Les classificateurs de requêtes sont en bêta. Les propriétaires et les administrateurs les gèrent dans **Paramètres → Classificateurs** ou avec l’API de gestion `/v1/classifiers`, à l’aide d’une [clé de gestion](/fr/v1/developers/management-api-keys) dotée des portées `classifiers:*`.
+Les classificateurs de requêtes sont en [bêta](../developers/feature-maturity.mdx) et s’activent par espace de travail, sur demande. Les propriétaires et les administrateurs les gèrent dans **Paramètres → Classificateurs** ou avec l’API de gestion `/v1/classifiers`, à l’aide d’une [clé de gestion](/fr/v1/developers/management-api-keys) dotée des portées `classifiers:*`.
 </Note>
 
 ## Comment une requête est classée

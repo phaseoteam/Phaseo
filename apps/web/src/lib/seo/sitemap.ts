@@ -6,7 +6,6 @@ import { getAnnouncementPosts } from "@/lib/content/announcements";
 import { getMigrationPosts } from "@/lib/content/migrations";
 import {
 	fetchFrontendAPIProviders,
-	fetchFrontendComparePairs,
 	fetchFrontendBenchmarks,
 	fetchFrontendCountrySummaries,
 	fetchFrontendMarketplacePresets,
@@ -15,7 +14,6 @@ import {
 	fetchFrontendSubscriptionPlans,
 } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import { SITE_URL } from "@/lib/seo";
-import { pairPath } from "@/components/(data)/compare/comparePairs";
 import { analyseModelCardIndexability } from "@/lib/seo/modelIndexability";
 
 type ChangeFrequency = "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
@@ -308,7 +306,6 @@ export async function buildSitemap(): Promise<{ entries: SitemapEntry[]; complet
 		helpCategoryResult,
 		helpArticleResult,
 		blogPostsResult,
-		comparePairsResult,
 	] = await Promise.allSettled([
 		fetchFrontendAPIProviders(),
 		fetchFrontendOrganisations(),
@@ -317,11 +314,10 @@ export async function buildSitemap(): Promise<{ entries: SitemapEntry[]; complet
 		fetchFrontendCountrySummaries(),
 		fetchFrontendMarketplacePresets(),
 		// Indexability needs provider/pricing signals from the enriched cards.
-		fetchFrontendModels(),
+		fetchFrontendModels({ unknownProviderCountsWhenIncomplete: true }),
 		getHelpCategoryParams(),
 		getHelpArticleParams(),
 		getAnnouncementPosts(),
-		fetchFrontendComparePairs(),
 	]);
 
 	const providersForSitemap = fromSettled(
@@ -440,10 +436,8 @@ export async function buildSitemap(): Promise<{ entries: SitemapEntry[]; complet
 		),
 	];
 
-	// Only the curated head-to-head pages, and only when both models have indexable pages.
-	const comparePairItems = fromSettled(comparePairsResult, "compare pairs for sitemap", [])
-		.filter((pair) => pair.models.every((model) => indexableModelIds.has(model.id)))
-		.map((pair) => createItem(pairPath([pair.models[0].id, pair.models[1].id]), "weekly", 0.6));
+	// `/compare/a-vs-b` pages are noindex (see comparePairMetadata), so they are
+	// not listed here.
 
 	const migrationItems = getMigrationPosts().map((post) =>
 		createItem(
@@ -504,8 +498,11 @@ export async function buildSitemap(): Promise<{ entries: SitemapEntry[]; complet
 
 	const complete = [
 		apiProvidersResult, organisationsResult, benchmarksResult, plansResult, countriesResult,
-		marketplacePresetsResult, modelsResult, helpCategoryResult, helpArticleResult, blogPostsResult, comparePairsResult,
-	].every((result) => result.status === "fulfilled") && modelEntries.length > 0;
+		marketplacePresetsResult, modelsResult, helpCategoryResult, helpArticleResult, blogPostsResult,
+	].every((result) => result.status === "fulfilled") && modelEntries.length > 0 &&
+		// Provider counts are unknown when gateway enrichment timed out; serve the
+		// sitemap without the provider gate, but do not cache it.
+		modelsForSitemap.every((model) => model.gateway_active_provider_count !== undefined);
 
 	return {
 		complete,
@@ -515,7 +512,6 @@ export async function buildSitemap(): Promise<{ entries: SitemapEntry[]; complet
 			...helpArticleItems,
 			...blogItems,
 			...dynamicItems,
-			...comparePairItems,
 			...migrationItems,
 		],
 	};

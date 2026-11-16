@@ -26,12 +26,85 @@ export function subscriptionPayload(row: Row, modelSlug?: string): Row {
 }
 
 export async function fetchSubscriptionCatalogue(client: SupabaseClient, planId?: string, modelSlug?: string, includeHidden = false) {
-	const { data, error } = await client.rpc("get_v2_subscription_catalogue", {
-		p_plan_id: planId ?? null, p_model_slug: modelSlug ?? null, p_include_hidden: includeHidden,
-	});
+	const [catalogue, usage] = await Promise.all([
+		client.rpc("get_v2_subscription_catalogue", { p_plan_id: planId ?? null, p_model_slug: modelSlug ?? null, p_include_hidden: includeHidden }),
+		fetchSubscriptionUsage(client, planId, modelSlug),
+	]);
+	const { data, error } = catalogue;
 	if (error) throw error;
 	if (!Array.isArray(data)) throw new Error("Invalid subscription catalogue payload");
-	return data.map((row) => subscriptionPayload(row, modelSlug));
+	const usageByPlan = groupUsageByPlan(usage);
+	return data.map((row) => ({ ...subscriptionPayload(row, modelSlug), usage: usageByPlan.get(String(row.plan_uuid)) ?? [] }));
+}
+
+const USAGE_FIELDS = ["model_slug", "model_name", "scenario", "monthly_price_usd", "monthly_tokens", "effective_usd_per_mtok",
+	"api_equivalent_usd_per_mtok", "share_of_api_price", "workload", "basis", "confidence", "source_name", "source_url", "measured_on", "promo_until"] as const;
+const USAGE_NUMBERS = new Set(["monthly_price_usd", "monthly_tokens", "effective_usd_per_mtok", "api_equivalent_usd_per_mtok", "share_of_api_price"]);
+
+/**
+ * Measured monthly token volume per plan and model. Usage is extra detail, so
+ * a failed read leaves plans without it instead of failing the catalogue.
+ */
+async function fetchSubscriptionUsage(client: SupabaseClient, planId?: string, modelSlug?: string): Promise<Row[]> {
+	const { data, error } = await client.rpc("get_v2_subscription_model_usage", { p_model_slug: modelSlug ?? null, p_plan_id: planId ?? null });
+	if (error || !Array.isArray(data)) {
+		console.warn("[web-api/subscriptions] usage unavailable", error?.message ?? "invalid payload");
+		return [];
+	}
+	return data;
+}
+
+/**
+ * The lab's other active plans, for the plan page's comparison table: name,
+ * current monthly USD price and the usage headline. Reads plan rows, the
+ * database's per-plan monthly prices and usage, not the full catalogue.
+ */
+export async function fetchRelatedPlans(client: SupabaseClient, plan: Row): Promise<Row[]> {
+	const labSlug = plan.organisation_id ?? plan.lab_slug;
+	if (!labSlug) return [];
+	const now = new Date().toISOString();
+	const [plans, usage, prices] = await Promise.all([
+		client.from("v2_subscription_plans").select("plan_uuid, plan_id, name")
+			.eq("lab_slug", labSlug).eq("status", "active").lte("effective_from", now).or(`effective_to.is.null,effective_to.gt.${now}`),
+		// Filter to the lab in the database, before any response row limit applies.
+		client.rpc("get_v2_subscription_model_usage", { p_model_slug: null, p_plan_id: null }).eq("lab_slug", labSlug),
+		// Live monthly offer prices, aggregated in the database; the plan row's price columns are historical.
+		client.rpc("get_v2_subscription_monthly_price_details", { p_lab_slug: labSlug }),
+	]);
+	if (plans.error || !Array.isArray(plans.data)) {
+		console.warn("[web-api/subscriptions] related plans unavailable", plans.error?.message);
+		return [];
+	}
+	if (prices.error) console.warn("[web-api/subscriptions] related plan prices unavailable", prices.error.message);
+	const priceByPlan = new Map<string, { total: number; account: number; seat: number }>();
+	for (const row of (Array.isArray(prices.data) ? prices.data : []) as Row[]) {
+		if (row.monthly_price_usd == null) continue;
+		priceByPlan.set(String(row.plan_uuid), { total: Number(row.monthly_price_usd), account: Number(row.account_usd ?? 0), seat: Number(row.seat_usd ?? 0) });
+	}
+	const usageByPlan = groupUsageByPlan(Array.isArray(usage.data) ? usage.data.filter((row: Row) => row.lab_slug === labSlug) : []);
+	return plans.data.map((row) => ({
+		plan_id: row.plan_id,
+		name: row.name,
+		// One account plus one seat, for sorting. The page shows the account and per-seat parts separately.
+		monthly_price_usd: priceByPlan.get(String(row.plan_uuid))?.total ?? null,
+		account_price_usd: priceByPlan.get(String(row.plan_uuid))?.account ?? null,
+		seat_price_usd: priceByPlan.get(String(row.plan_uuid))?.seat ?? null,
+		usage: (usageByPlan.get(String(row.plan_uuid)) ?? []).filter((entry) => entry.scenario === "standard"),
+	})).sort((a, b) => (a.monthly_price_usd ?? Infinity) - (b.monthly_price_usd ?? Infinity) || String(a.name).localeCompare(String(b.name)));
+}
+
+export function groupUsageByPlan(rows: Row[]): Map<string, Row[]> {
+	const grouped = new Map<string, Row[]>();
+	for (const row of rows) {
+		const entry: Row = {};
+		for (const field of USAGE_FIELDS) {
+			const value = row[field] ?? null;
+			entry[field] = USAGE_NUMBERS.has(field) && value != null ? Number(value) : value;
+		}
+		const key = String(row.plan_uuid);
+		grouped.set(key, [...(grouped.get(key) ?? []), entry]);
+	}
+	return grouped;
 }
 
 /**

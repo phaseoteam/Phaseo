@@ -38,7 +38,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | المعامل | النوع | القيمة الافتراضية | الوصف |
 | --- | --- | --- | --- |
-| `engine` | string | `direct` | `auto` أو `native` أو `direct` أو `exa` أو `parallel` أو `firecrawl`. راجع [اختيار المحرك](#choose-an-engine). |
+| `engine` | string | `direct` | `auto` أو `native` أو `direct` أو `exa` أو `parallel` أو `firecrawl` أو `deepseek`. راجع [اختيار المحرك](#choose-an-engine). |
 | `max_chars` | integer | `12000` | عدد أحرف نص الصفحة المُعادة إلى النموذج، حتى `100000`. |
 | `max_content_tokens` | integer | لا شيء | يُستخدم بدلًا من `max_chars` عند حذف `max_chars`. وهو أيضًا حد الحجم لمحرك `native`. |
 | `max_uses` | integer | `10` | عدد استدعاءات الجلب لكل طلب، حتى `100`. |
@@ -59,6 +59,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `exa` | استخراج المحتوى من Exa. |
 | `parallel` | Parallel Extract. |
 | `firecrawl` | Firecrawl Scrape. |
+| `deepseek` | DeepSeek Fetch، الذي يعيد الصفحة بصيغة Markdown. |
 | `native` | أداة `web_fetch_20260209` من Anthropic، على `/v1/messages` فقط. على نقاط النهاية الأخرى يُرفض الطلب؛ استخدم `direct` أو محركًا مُدارًا. |
 
 إذا لم يكن المحرك المُدار مفعّلًا، يعيد الاستدعاء `fetch_not_configured` إلى النموذج.
@@ -109,4 +110,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## الاستخدام والتسعير
 
-يضيف كل جلب 1 إلى `usage.server_tool_use.web_fetch_requests`. يحاسب Phaseo كل جلب مُدار عبر Exa أو Parallel أو Firecrawl بمبلغ $0.001، ما لم تحدد بطاقة سعر النموذج سعرها الخاص لـ `server_tool_web_fetch_requests`؛ والجلب المباشر مجاني. وتتطلب عمليات الجلب عبر المحركات المدفوعة رصيدًا حتى عندما يكون النموذج مجانيًا. ويُحتسب الجلب الأصلي عبر `native_web_fetch_requests` حيث تحدده بطاقة سعر النموذج.
+يضيف كل جلب 1 إلى `usage.server_tool_use.web_fetch_requests`. يحاسب Phaseo كل جلب مُدار عبر Exa أو Parallel أو Firecrawl أو DeepSeek بمبلغ $0.001، ما لم تحدد بطاقة سعر النموذج سعرها الخاص لـ `server_tool_web_fetch_requests`؛ والجلب المباشر مجاني. وتتطلب عمليات الجلب عبر المحركات المدفوعة رصيدًا حتى عندما يكون النموذج مجانيًا. ويُحتسب الجلب الأصلي عبر `native_web_fetch_requests` حيث تحدده بطاقة سعر النموذج.

@@ -105,7 +105,12 @@ describe("resolveHostedTools", () => {
 		expect(result.ok && result.body.tools).toEqual([
 			{
 				type: "phaseo:web_search",
-				parameters: { search_context_size: "high", max_results: 4, allowed_domains: ["example.com"] },
+				parameters: {
+					search_context_size: "high",
+					max_results: 4,
+					allowed_domains: ["example.com"],
+					user_location: { type: "approximate", country: "GB" },
+				},
 			},
 			{ type: "function", name: "lookup", parameters: {} },
 		]);

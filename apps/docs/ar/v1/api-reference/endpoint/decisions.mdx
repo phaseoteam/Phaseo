@@ -1,10 +1,11 @@
 ---
 title: "اتخاذ قرار"
 badge: "تجريبي"
-tag: "تجريبي"
 openapi: "/ar/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "قيّم أسئلة ذات أنواع محددة مقابل حالة التطبيق باستخدام نماذج القرار المدعومة."
 ---
+
+نقطة النهاية هذه في [المرحلة التجريبية](../../developers/feature-maturity.mdx).
 
 أرسل `input` ومصفوفة مرتّبة من `questions` إلى `POST /v1/decisions`، واحصل على إجابة واحدة ذات نوع محدد لكل سؤال، مع الاحتمالات، وبالترتيب نفسه.
 
@@ -185,7 +186,9 @@ print(decision["answers"])
 | `cloudflare/clef` و`cloudflare/clef-flash` | الثلاثة كلها | نص، وحتى 4 صور | $0.24 / $0.038 |
 | `cloudflare/clef-omni` | الثلاثة كلها | نص وصور وصوت وفيديو | $0.15 |
 | `google/gemini-decision-1` | predicate وchoice وscore؛ حتى 1,000 في الطلب | نص وصور وصوت وفيديو | $0.10 |
-| `liquid-ai/d1:free` و`liquid-ai/d1` | الثلاثة كلها | راجع صفحة النموذج | مجاني خلال الوصول المبكر |
+| `liquid-ai/d1:free` | الثلاثة كلها | راجع صفحة النموذج | مجاني خلال الوصول المبكر |
+| `liquid-ai/d1`, `liquid-ai/d1.1`, `liquid-ai/d1-ultra` | الثلاثة كلها | نص، صور | $0.02 / $0.02 / $0.042 |
+| `liquid-ai/d1.2`, `liquid-ai/d1.2-ultra` | الثلاثة كلها، إضافةً إلى text وnumber وdate وspans وboxes والاختيار المتعدد بالتنسيق الأقدم | نص، صور، صوت | $0.02 / $0.042 |
 | `perplexity/pplx-decider-v1.3`، `perplexity/pplx-decider-flash-v1.3` | الثلاثة كلها، إضافة إلى `locate` | نص، وصور base64 | $0.02 / $0.01 |
 | `inception/mercury-decide` | predicate وchoice وscore | نص أو JSON | $0.02 (عرض ترويجي) |
 | `microsoft/microsoft-decision-1` | predicate وchoice وscore | نص أو JSON | $0.042 |
@@ -271,9 +274,40 @@ tokens الإخراج مجانية في كل نموذج مدرج بسعر.
 يتحقق Cloudflare من ترميز الوسائط وأبعاد الصور ومدة المقاطع، ويأخذ عينات من الفيديو بمعدل إطارين في الثانية. يُستخدم صوت الفيديو عندما يكون لكل فيديو في الطلب صوت. تُحتسب tokens الوسائط ضمن السياق والفوترة؛ ويسوّي Phaseo الحساب بناءً على استخدام الإدخال الذي يبلغ عنه Cloudflare، ولا يضيف رسومًا منفصلة للصوت أو الفيديو. راجع [عقد Omni لدى Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).
 
 <span id="liquid-d1-and-perplexity-decider"></span>
+### Liquid D1.2 وD1.2 Ultra
+
+يستخدم `liquid-ai/d1.2` و`liquid-ai/d1.2-ultra` تنسيق state الأقدم، مع ما يصل إلى أربع صور وثمانية مقاطع صوتية. أرسل `audio` بوصفه عناوين `data:` بترميز base64 ‏(WAV أو MP3 أو FLAC أو M4A أو OGG، بحد أقصى 24 MiB لكل عنوان، أي نحو 18 MiB من الصوت)؛ ولا تُدعم عناوين الصوت البعيدة. وإلى جانب `noul` و`choice` و`score`، يجيبان عن أنواع الأسئلة التالية:
+
+| `type` | حقول إضافية | حقول الإجابة |
+| --- | --- | --- |
+| `text` | لا شيء | `text`، مع `span` (موضعا البداية والنهاية في `state`) و`found` (0–1)؛ وتكون قيمة `text` هي `null` عندما يقل `found` عن 0.5 |
+| `number` | `unit` اختياري؛ و`range` اختياري (`[low, high]`) و`step` الذي يتطلب `range` ويجب أن يقسمه دون باقٍ | `number` و`unit`؛ ومن دون `range` تُعاد أيضًا `text` و`span` و`found`؛ ومع `range` يكون `number` هو الوسيط و`interval` هو `[p10, p90]` |
+| `date` | لا شيء | `date` ‏(`YYYY-MM-DD`)، `text`، `span`، `found` |
+| `spans` | لا شيء | `spans` (لكل منها `text` و`span` و`found`)، `count`، `at_least` |
+| `boxes` | `max` اختياري (1–16)؛ يتطلب صورة واحدة بالضبط | `boxes`، `count`، `at_least` |
+
+اضبط `multiple: true` على سؤال `choice` لتحصل على كل الخيارات المنطبقة في `choices` مع `probabilities` لكل خيار. تعيد النماذج الأخرى `400` لأنواع الأسئلة هذه وتجيب عن أسئلة `multiple` بخيار واحد؛ وتتجاهل النماذج التي لا تدعم إدخال الصوت الحقل `audio`. يقبل `liquid-ai/d1` و`liquid-ai/d1.1` و`liquid-ai/d1-ultra` النصوص والصور ويجيب عن `noul` و`choice` و`score`.
+
+```json
+{
+  "model": "liquid-ai/d1.2",
+  "state": "Order #4417 placed 2026-11-02 for 3 items, total $84.50. The parcel arrived broken and late.",
+  "questions": {
+    "total": { "type": "number", "instructions": "Order total in dollars", "unit": "USD" },
+    "placed": { "type": "date", "instructions": "When was the order placed?" },
+    "topics": {
+      "type": "choice",
+      "multiple": true,
+      "instructions": "Which problems apply?",
+      "criteria": { "damage": "Item damaged", "delay": "Late delivery", "billing": "Payment problem" }
+    }
+  }
+}
+```
+
 ### Liquid D1 وPerplexity Decider
 
-Liquid D1 ‏(`liquid-ai/d1:free`، وأيضًا `liquid-ai/d1`) مجاني خلال الوصول المبكر التجريبي. يحتاج Perplexity Decider V1.3 ‏(`perplexity/pplx-decider-v1.3`، أو `perplexity/pplx-decider-latest`) وDecider Flash V1.3 ‏(`perplexity/pplx-decider-flash-v1.3`، أو `perplexity/pplx-decider-flash-latest`) إلى بيانات اعتماد مزوّد Perplexity في Phaseo. تستخدم حالة الصور لديهما عناوين data URL بتنسيق base64 لصور PNG أو JPEG أو WebP؛ وعناوين الصور البعيدة غير مدعومة. ويجيبان أيضًا عن أسئلة `locate`، التي تُعيد أجزاء `input` أو `state` النصي من نوع string المطابقة لـ`instructions`، مثل `"email address"`. يحتوي كل مقطع على `text` منسوخ حرفيًا، وموضعي `start` و`end` محسوبين بنقاط ترميز Unicode (`end` غير شامل)، و`score` تعني القيمة الأعلى فيه يقينًا أكبر؛ وتكون `spans` فارغة إذا لم يطابق شيء. لا يستخدم Locate أي criteria، ولا يقبل الصور أو الصوت أو الفيديو، ويعمل فقط على النماذج التي تذكر دعمه؛ وتُعيد النماذج الأخرى `400`. درّبته Perplexity على مُدخلات يصل طولها إلى 8K tokens. في كليهما، يقبل سؤال الاختيار حتى 255 خيارًا، وسؤال الدرجات حتى 10 مستويات.
+Liquid D1 ‏(`liquid-ai/d1:free`) مجاني خلال الوصول المبكر التجريبي. يحتاج Perplexity Decider V1.3 ‏(`perplexity/pplx-decider-v1.3`، أو `perplexity/pplx-decider-latest`) وDecider Flash V1.3 ‏(`perplexity/pplx-decider-flash-v1.3`، أو `perplexity/pplx-decider-flash-latest`) إلى بيانات اعتماد مزوّد Perplexity في Phaseo. تستخدم حالة الصور لديهما عناوين data URL بتنسيق base64 لصور PNG أو JPEG أو WebP؛ وعناوين الصور البعيدة غير مدعومة. ويجيبان أيضًا عن أسئلة `locate`، التي تُعيد أجزاء `input` أو `state` النصي من نوع string المطابقة لـ`instructions`، مثل `"email address"`. يحتوي كل مقطع على `text` منسوخ حرفيًا، وموضعي `start` و`end` محسوبين بنقاط ترميز Unicode (`end` غير شامل)، و`score` تعني القيمة الأعلى فيه يقينًا أكبر؛ وتكون `spans` فارغة إذا لم يطابق شيء. لا يستخدم Locate أي criteria، ولا يقبل الصور أو الصوت أو الفيديو، ويعمل فقط على النماذج التي تذكر دعمه؛ وتُعيد النماذج الأخرى `400`. درّبته Perplexity على مُدخلات يصل طولها إلى 8K tokens. في كليهما، يقبل سؤال الاختيار حتى 255 خيارًا، وسؤال الدرجات حتى 10 مستويات.
 
 ### Inception Mercury Decide
 

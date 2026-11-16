@@ -438,7 +438,7 @@ async function handleSpendLimitSweepScheduledEvent(env: GatewayBindings, jobs: R
 }
 
 async function handlePaymentMethodExpiryScheduledEvent(env: GatewayBindings): Promise<void> {
-	if (!env.STRIPE_SECRET_KEY?.trim() && !env.TEST_STRIPE_SECRET_KEY?.trim()) return;
+	if (!env.STRIPE_SECRET_KEY?.trim()) return;
 	configureRuntime(env);
 	try {
 		const summary = await runPaymentMethodExpiryNotificationJob();
@@ -805,7 +805,7 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 		}
 		if (isDailyPaymentMethodExpiryTick(event)) {
 			try {
-				await jobs.run("payment_method_expiry", () => handlePaymentMethodExpiryScheduledEvent(env), Boolean(env.STRIPE_SECRET_KEY?.trim() || env.TEST_STRIPE_SECRET_KEY?.trim()));
+				await jobs.run("payment_method_expiry", () => handlePaymentMethodExpiryScheduledEvent(env), Boolean(env.STRIPE_SECRET_KEY?.trim()));
 			} catch (error) {
 				console.error("payment_method_expiry_notifications_scheduled_failed", serializeError(error));
 			}

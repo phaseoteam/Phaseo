@@ -595,7 +595,7 @@ export default function RecentTransactions({
 								<TableHead className="w-[220px]">{transactionText("timestamp")}</TableHead>
 								<TableHead className="w-[130px]">{transactionText("amount")}</TableHead>
 								<TableHead className="w-[170px]">{transactionText("reason")}</TableHead>
-								<TableHead className="w-[140px]">{transactionText("status")}</TableHead>
+								<TableHead className="w-[140px]">{transactionText("statusColumn")}</TableHead>
 								<TableHead className="w-[150px]">{transactionText("balance")}</TableHead>
 								<TableHead className="w-[120px]">{transactionText("actions")}</TableHead>
 							</TableRow>

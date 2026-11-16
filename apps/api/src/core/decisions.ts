@@ -34,6 +34,26 @@ export const DECISION_QUESTION_CEILING = 1000;
  */
 export const DEFAULT_ROUTE_QUESTION_LIMIT = 128;
 
+/**
+ * Typed answers beyond noul, choice and score that a route serves only when its
+ * capability lists them in `params.question_types` (Liquid d1.2 documents them:
+ * https://docs.liquid.ai/lfm/models/decision-models.md#typed-answers).
+ * `multi_choice` is a choice question with `multiple: true`.
+ */
+export const TYPED_DECISION_FEATURES = ["text", "number", "date", "spans", "boxes", "multi_choice"] as const;
+export type TypedDecisionFeature = typeof TYPED_DECISION_FEATURES[number];
+
+/** The typed-answer features a question needs from its route. */
+export function decisionQuestionFeature(question: { type: string; multiple?: unknown }): TypedDecisionFeature | null {
+	if (question.type === "choice") return question.multiple === true ? "multi_choice" : null;
+	return (TYPED_DECISION_FEATURES as readonly string[]).includes(question.type) ? question.type as TypedDecisionFeature : null;
+}
+
+/** A clip given as a `data:` URL (native `input_audio.url`) is inline, not remote. */
+export function isInlineAudioUrl(clip: { source: string; data: string }): boolean {
+	return clip.source === "url" && /^data:audio\//i.test(clip.data);
+}
+
 export type DecisionProviderOptions = { typesafe?: { long_context?: boolean } };
 export const DecisionProviderOptionsSchema = lazySchema(() => z.object({
 	typesafe: z.object({ long_context: z.boolean().optional() }).strict().optional(),

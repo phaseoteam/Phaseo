@@ -5,7 +5,7 @@ description: "Führe mit jedem Phaseo-SDK einen Echtzeit-Sprachanruf über das P
 ---
 
 <Note>
-Echtzeit-Sprache ist in der Beta, und der Zugriff wird pro Workspace freigeschaltet. Die Echtzeit-Clients stehen im Quellcode der SDKs, aber nicht in den veröffentlichten Paketen (`3.0.0`, Rust `0.2.0`); sie erscheinen mit dem nächsten Release jedes SDK außer C++.
+Echtzeit-Sprache ist in der [Beta](../../developers/feature-maturity.mdx), und der Zugriff wird pro Workspace freigeschaltet. Die Echtzeit-Clients stehen im Quellcode der SDKs, aber nicht in den veröffentlichten Paketen (`3.0.0`, Rust `0.2.0`); sie erscheinen mit dem nächsten Release jedes SDK außer C++.
 </Note>
 
 Verbinde dich, um die Sitzung zu erstellen (`POST /v1/audio/realtime/sessions`), den Relay-WebSocket zu öffnen und auf `relay.connected` zu warten. Streame dann PCM16-Audio hinein, lies Anbieter-Events aus und beende den Anruf, um seine endgültige Abrechnung zu erhalten. Das Relay-Protokoll, die Warnungen und die Reason-Codes sind unter [Echtzeit-Sprachsitzungen](/de/v1/guides/realtime-voice) beschrieben.

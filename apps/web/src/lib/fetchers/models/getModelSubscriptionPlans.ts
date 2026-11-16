@@ -1,8 +1,9 @@
 import type { SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
+import type { SubscriptionPlanUsage } from "@/lib/fetchers/subscription-plans/usage";
 import { fetchOptionalPublicWebApi } from "@/lib/web-api/client";
 import { fetchAdminModelSource } from "@/lib/fetchers/internal/fetchAdminModelSource";
 
-export interface SubscriptionPlan { plan_id: string; plan_uuid: string; name: string; organisation_id: string; description: string | null; link: string | null; other_info: any; created_at: string; updated_at: string; organisation: { organisation_id: string; name: string; colour: string | null }; prices: SubscriptionPrice[]; model_info: { model_info: any; rate_limit: any; other_info: any } }
+export interface SubscriptionPlan { plan_id: string; plan_uuid: string; name: string; organisation_id: string; description: string | null; link: string | null; other_info: any; created_at: string; updated_at: string; organisation: { organisation_id: string; name: string; colour: string | null }; prices: SubscriptionPrice[]; model_info: { model_info: any; rate_limit: any; other_info: any }; usage?: SubscriptionPlanUsage[] }
 
 export default async function getModelSubscriptionPlans(modelId: string, includeHidden: boolean): Promise<SubscriptionPlan[]> {
 	if (includeHidden) return (await fetchAdminModelSource(modelId)).subscriptionPlans as SubscriptionPlan[];

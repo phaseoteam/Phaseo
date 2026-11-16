@@ -1,0 +1,51 @@
+---
+title: "Maturité des fonctionnalités"
+description: "Ce que signifient les libellés Alpha et Bêta, qui peut utiliser chaque fonctionnalité, et l’étape actuelle de chaque fonctionnalité qui n’est pas encore en disponibilité générale."
+icon: "flask-conical"
+---
+
+Certaines fonctionnalités de Phaseo portent un libellé **Alpha** ou **Bêta** dans la documentation, la référence de l’API et le tableau de bord. Ce libellé indique le degré de stabilité d’une fonctionnalité. Une fonctionnalité sans libellé est en disponibilité générale.
+
+## Étapes
+
+| Étape | Signification | Que faire |
+| --- | --- | --- |
+| Alpha | Une première version. Son API, son comportement ou ses tarifs peuvent beaucoup changer, et elle peut être supprimée. | Essayez-la et dites-nous ce que vous en pensez. Ne construisez rien dessus que vous ne pourriez pas modifier rapidement. |
+| Bêta | Fonctionne pour son usage principal. Certains détails peuvent encore changer selon les retours, et les changements sont annoncés dans le [journal des modifications](../changelog.mdx). | Convient aux pilotes et aux charges de travail réelles que vous surveillez de près. Consultez le journal des modifications lors d’une mise à niveau. |
+| Disponibilité générale | Entièrement prise en charge et documentée. Aucun libellé n’est affiché. | Utilisez-la en production. |
+| Dépréciée | Fonctionne encore, mais n’est plus recommandée et sera supprimée. Une date de suppression est affichée dès qu’elle est fixée. | Ne commencez pas à l’utiliser, et abandonnez-la avant la date de suppression. |
+
+Les modèles et les fournisseurs ont leurs propres libellés de cycle de vie, distincts de ces étapes. Consultez [Dépréciation et retrait des modèles](../guides/model-retirement.mdx) et [États du fournisseur et de Phaseo](../guides/provider-statuses.mdx).
+
+<span id="who-can-use-a-feature"></span>
+## Qui peut utiliser une fonctionnalité
+
+L’étape et l’accès sont indépendants. Une fonctionnalité en Bêta peut être ouverte à tous, et une fonctionnalité en Alpha peut être limitée à certains espaces de travail.
+
+- **Tout le monde** : n’importe quel espace de travail peut l’utiliser, selon les rôles habituels. Par exemple, certains paramètres sont réservés aux propriétaires et aux administrateurs.
+- **Sur demande** : la fonctionnalité est activée par espace de travail. Tant qu’elle ne l’est pas, sa page de paramètres n’apparaît pas et son API renvoie une erreur. **Paramètres → Aperçu des fonctionnalités** indique si la Video API et la Batch API sont activées pour votre espace de travail. Pour demander l’accès à l’une de ces fonctionnalités, [contactez-nous](https://phaseo.app/contact).
+
+## Fonctionnalités qui ne sont pas en disponibilité générale
+
+| Fonctionnalité | Étape | Accès |
+| --- | --- | --- |
+| [Routage automatique](../guides/auto-routing.mdx) (`phaseo/auto`) | Alpha | Sur demande |
+| [Video API](../guides/async-video-and-batch.mdx) | Alpha | Sur demande |
+| [Commentaires sur les préréglages](../guides/preset-feedback.mdx) | Alpha | Tout le monde |
+| [Agent Slack](../guides/slack-agent.mdx) | Alpha | Sur demande |
+| [Batch API](../guides/async-video-and-batch.mdx), avec la Files API et les endpoints de webhook | Bêta | Sur demande |
+| [Decisions API](../api-reference/endpoint/decisions.mdx) | Bêta | Tout le monde |
+| [Voix en temps réel](../guides/realtime-voice.mdx) | Bêta | Sur demande |
+| [Outils serveur](../guides/server-tools/index.mdx) | Bêta | Tout le monde |
+| [Classificateurs de requêtes](../guides/request-classifiers.mdx) | Bêta | Sur demande |
+| [Workloads de confiance](./trusted-workloads.mdx) | Bêta | Sur demande |
+| [Modèles privés](../guides/private-models.mdx) | Bêta | Tout le monde (propriétaires et administrateurs) |
+| Entreprise : authentification unique, SCIM, annuaire et départements | Bêta | Sur demande, avec l’extension d’identité |
+
+Tout le reste est en disponibilité générale, y compris les endpoints Chat Completions, Responses et Messages, les préréglages, les garde-fous, les budgets, BYOK, Broadcast et l’API de gestion.
+
+## Comment une fonctionnalité change d’étape
+
+- Une fonctionnalité passe d’Alpha à Bêta, ou de Bêta à la disponibilité générale, lorsque son usage principal fonctionne et que son API est stable. Nous signalons ce changement dans le [journal des modifications](../changelog.mdx).
+- Les changements incompatibles apportés aux fonctionnalités Alpha et Bêta sont annoncés dans le journal des modifications.
+- Lorsqu’une fonctionnalité est dépréciée, sa page de documentation l’indique et donne la date de suppression dès qu’elle est fixée.

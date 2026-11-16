@@ -4359,6 +4359,7 @@
 			"timestamp": "时间",
 			"amount": "金额",
 			"reason": "原因",
+			"statusColumn": "状态",
 			"status": {
 				"succeeded": "成功",
 				"failed": "失败",
@@ -5087,7 +5088,18 @@
 		"metadataTitle": "账单与额度 - 设置",
 		"description": "管理模型使用额度和工作空间订阅。",
 		"modelUsageBalance": "模型使用余额",
-		"cardNumber": "卡号"
+		"cardNumber": "卡号",
+		"sandboxTest": {
+			"title": "Stripe 沙盒测试",
+			"description": "仅限管理员。打开一个 10 美元的 Stripe 沙盒结账，为 Stripe 沙盒工作区充值并保存卡片。请使用测试卡 4242 4242 4242 4242。不会产生真实扣款。",
+			"button": "测试结账（沙盒）",
+			"opening": "正在打开…",
+			"notConfigured": "此部署未配置 Stripe 沙盒。",
+			"failed": "无法打开沙盒结账。",
+			"success": "沙盒付款已完成。Webhook 到达后，额度将添加到 Stripe 沙盒工作区。",
+			"cancelled": "沙盒结账已取消。",
+			"productName": "Phaseo 额度（沙盒测试）"
+		}
 	},
 	"preferencesCopy": {
 		"preview": "预览",

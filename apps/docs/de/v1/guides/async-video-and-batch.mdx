@@ -6,7 +6,7 @@ description: "Verfolge asynchrone Aufträge, empfange Webhooks und übergib anbi
 ---
 
 <Note>
-Die Video API und die Batch API sind Beta-Vorschauen, die nur auf Einladung für ausgewählte Workspaces verfügbar sind. Prüfe die Verfügbarkeit unter **Einstellungen → Funktionsvorschau**. Der Zugang wird pro Workspace verwaltet; eine persönliche Web-Einstellung gewährt keinen API-Zugang. Es gelten die üblichen Gebühren für die Modellnutzung.
+Die Video API ist in der Alpha und die Batch API in der Beta (siehe [Funktionsreife](../developers/feature-maturity.mdx)). Beide werden auf Anfrage pro Workspace freigeschaltet. **Einstellungen → Funktionsvorschau** zeigt, ob dein Workspace sie hat; eine persönliche Web-Einstellung gewährt keinen API-Zugang. Es gelten die üblichen Gebühren für die Modellnutzung.
 </Note>
 
 Wenn du ein Video oder einen Batch erstellst, erhältst du einen Auftrag zurück, bevor die Arbeit erledigt ist. Speichere seine `id` und seine `polling_url` und warte dann auf einen Webhook oder frage den Status ab, bis der Auftrag einen Endzustand erreicht: `completed`, `failed`, `cancelled` oder `expired`. Eine erfolgreiche Erstellungsantwort bedeutet nur, dass der Auftrag angenommen wurde.
@@ -22,7 +22,7 @@ flowchart TD
   terminal -->|"failed / cancelled / expired"| outcome["Ergebnis behandeln"]
 ```
 
-Behalte den Polling-Pfad bei, auch wenn du Webhooks nutzt. Beginne während der Beta mit kleinen Anfragen und einem Ausgabenlimit für den API-Schlüssel. Referenzeingaben, Abbruch und Aufbewahrung der Ausgaben hängen von Anbieter und Modell ab. Speichere eine eigene Kopie abgeschlossener Ausgaben, bevor sie ablaufen.
+Behalte den Polling-Pfad bei, auch wenn du Webhooks nutzt. Solange diese APIs in der Alpha und Beta sind, beginne mit kleinen Anfragen und einem Ausgabenlimit für den API-Schlüssel. Referenzeingaben, Abbruch und Aufbewahrung der Ausgaben hängen von Anbieter und Modell ab. Speichere eine eigene Kopie abgeschlossener Ausgaben, bevor sie ablaufen.
 
 <span id="receive-updates"></span>
 ## Updates empfangen

@@ -6,6 +6,8 @@ openapi: "/pt-BR/openapi/v1/openapi.localized.yaml POST /files"
 description: "Envie um arquivo para processamento em lote. O gateway armazena metadados de propriedade para que o mesmo espaço de trabalho possa recuperar o arquivo ou seu conteúdo mais tarde."
 ---
 
+Este endpoint está em [Beta](../../developers/feature-maturity.mdx) e é ativado por espaço de trabalho, sob solicitação.
+
 Salve o `file_id` retornado e reutilize-o com:
 
 - `POST /v1/batches`

@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice } from "./pricing";
+import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, minimumPayableAmount, type SubscriptionPrice, type SubscriptionPriceComponent } from "./pricing";
 
 const monthly: SubscriptionPrice = { price: 30, currency: "USD", frequency: "monthly", billing_interval: "month", billing_interval_count: 1 };
 describe("subscription offer formatting", () => {
@@ -29,7 +29,9 @@ describe("subscription offer formatting", () => {
 		const labels = localizedSubscriptionPriceLabels("de-DE", { custom: "Individuell", usage: "Nach Nutzung", unknown: "Unbekannt", from: "Ab", seat: "Platz" });
 		const format = (amount: number, currency: string) => new Intl.NumberFormat("de-DE", { style: "currency", currency }).format(amount);
 		const value = formatSubscriptionPrice({ ...monthly, pricing_type: "starting_at", charge_basis: "seat" }, format, labels);
-		expect(value).toContain("Ab 30,00"); expect(value).toContain("Platz / 1 Monat");
+		expect(value).toContain("Ab 30,00"); expect(value).toContain("Platz / Monat");
+		const period = (locale: string, count: number) => localizedSubscriptionPriceLabels(locale, labels).period!(count, "month");
+		expect([period("en-GB", 1), period("en-GB", 3), period("ja", 1), period("zh-Hans", 1)]).toEqual(["month", "3 months", "1 か月", "1个月"]);
 		expect(formatSubscriptionPrice({ ...monthly, components: [{ component_key: "metered", pricing_type: "usage_based", amount: 0.003, charge_basis: "unit", unit: "line" }] })).toBe("$0.003 / 1 line");
 	});
 	test("keeps ongoing seat charges in both introductory and renewal cycles", () => {
@@ -49,5 +51,38 @@ describe("subscription offer formatting", () => {
 	test("does not invent a currency or subscription period for metered charges", () => {
 		expect(formatSubscriptionPrice({ ...monthly, currency: null })).toBe("30 / month");
 		expect(formatSubscriptionPrice({ ...monthly, components: [{ component_key: "overage", pricing_type: "usage_based", amount: 0.01, charge_basis: "unit", unit: "credit", unit_quantity: 1 }] })).toBe("$0.01 / 1 credit");
+	});
+});
+
+describe("minimumPayableAmount", () => {
+	const component = (amount: number | null, extra: Record<string, unknown> = {}) => ({ component_key: "c", pricing_type: "fixed", amount, charge_basis: "account", ...extra }) as SubscriptionPriceComponent;
+	const offer = (components: SubscriptionPriceComponent[], minimum_seats: number | null = null) => ({ price: components[0]?.amount ?? null, currency: "USD", frequency: "monthly", components, minimum_seats }) as SubscriptionPrice;
+
+	test("adds required seats to the account charge", () => {
+		// $80 + 2 required $40 seats = $160, so it ranks after a flat $100 plan.
+		expect(minimumPayableAmount(offer([component(80), component(40, { charge_basis: "seat" })], 2))).toBe(160);
+		expect(minimumPayableAmount(offer([component(100)]))).toBe(100);
+	});
+	test("ranks by the ongoing price, not an introductory deal", () => {
+		expect(minimumPayableAmount(offer([component(1, { phase: "introductory" }), component(30, { phase: "renewal" })]))).toBe(30);
+		// $20 for the first cycle, then $30: the ongoing price is $30, never $50.
+		expect(minimumPayableAmount(offer([component(20, { duration_cycles: 1 }), component(30, { phase: "renewal", starts_at_cycle: 2 })]))).toBe(30);
+		expect(minimumPayableAmount(offer([component(20), component(30, { phase: "renewal", starts_at_cycle: 2 })]))).toBe(30);
+		// A different charge starting later adds to the base: $50 base + $20 seat.
+		expect(minimumPayableAmount(offer([component(50, { component_key: "base" }), component(20, { component_key: "seat", starts_at_cycle: 2 })]))).toBe(70);
+		// The formatter's fixture: $1 intro, then a $30 renewal base, with a $40 seat throughout = $70.
+		expect(minimumPayableAmount(offer([
+			component(1, { component_key: "intro", phase: "introductory", duration_cycles: 1 }),
+			component(30, { component_key: "base", phase: "renewal", starts_at_cycle: 2 }),
+			component(40, { component_key: "seat", charge_basis: "seat", starts_at_cycle: 1 }),
+		]))).toBe(70);
+	});
+	test("has no ongoing price when only a deal is published", () => {
+		expect(minimumPayableAmount(offer([component(1, { phase: "introductory", duration_cycles: 1 })]))).toBeNull();
+	});
+	test("ignores optional metered extras but not unknown required charges", () => {
+		expect(minimumPayableAmount(offer([component(20), component(0.01, { pricing_type: "usage_based", charge_basis: "unit" })]))).toBe(20);
+		expect(minimumPayableAmount(offer([component(null, { pricing_type: "custom" })]))).toBeNull();
+		expect(minimumPayableAmount(offer([component(0, { pricing_type: "free" })]))).toBe(0);
 	});
 });
