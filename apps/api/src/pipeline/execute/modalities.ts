@@ -11,7 +11,9 @@ import type {
 	IREmbeddingsInputItem,
 	IRMessage,
 } from "@core/ir";
-import { DECISION_QUESTION_CEILING, DEFAULT_ROUTE_QUESTION_LIMIT } from "@core/decisions";
+import {
+	DECISION_QUESTION_CEILING, DEFAULT_ROUTE_QUESTION_LIMIT, decisionQuestionFeature, type TypedDecisionFeature,
+} from "@core/decisions";
 import type { ProviderCandidate } from "../before/types";
 
 export type Modality = "text" | "image" | "audio" | "video";
@@ -29,6 +31,26 @@ export function decisionQuestionLimit(candidate: Pick<ProviderCandidate, "capabi
 		: DEFAULT_ROUTE_QUESTION_LIMIT;
 }
 
+/** The typed-answer features (text, number, spans, multi-select …) a request asks for. */
+export function requiredTypedDecisionFeatures(ir: IRDecisionsRequest): TypedDecisionFeature[] {
+	const features = new Set<TypedDecisionFeature>();
+	for (const question of Object.values(ir.questions ?? {})) {
+		const feature = decisionQuestionFeature(question);
+		if (feature) features.add(feature);
+	}
+	return Array.from(features);
+}
+
+/** Typed answers are opt-in per route: its capability lists them in params.question_types. */
+export function routeServesTypedDecisionFeatures(
+	candidate: Pick<ProviderCandidate, "capabilityParams">,
+	features: readonly TypedDecisionFeature[],
+): boolean {
+	if (!features.length) return true;
+	const declared = candidate.capabilityParams?.question_types;
+	return Array.isArray(declared) && features.every(feature => declared.includes(feature));
+}
+
 export function filterDecisionCandidatesByModalities(
 	candidates: ProviderCandidate[],
 	ir: IRDecisionsRequest,
@@ -40,6 +62,9 @@ export function filterDecisionCandidatesByModalities(
 	const requestsLocate = Object.values(ir.questions ?? {}).some(question => question.type === "locate");
 	const requestsLongContext = ir.providerOptions?.typesafe?.long_context === true;
 	const requestsImageUrls = (ir.images ?? []).some(image => typeof image === "string" && !/^data:/i.test(image));
+	// Routes that take only inline clips declare params.audio_urls false.
+	const requestsAudioUrls = (ir.audio ?? []).some(clip => clip.source === "url");
+	const typedFeatures = requiredTypedDecisionFeatures(ir);
 	const media = [
 		{ modality: "image", parameter: "images", requested: Boolean(ir.images?.length) },
 		{ modality: "audio", parameter: "audio", requested: Boolean(ir.audio?.length) },
@@ -51,6 +76,8 @@ export function filterDecisionCandidatesByModalities(
 		(!requestsLocate || candidate.capabilityParams?.locate === true) &&
 		(!requestsLongContext || (candidate.providerId === "typesafe" && candidate.capabilityParams?.long_context === true)) &&
 		(!requestsImageUrls || candidate.capabilityParams?.image_urls === true) &&
+		(!requestsAudioUrls || candidate.capabilityParams?.audio_urls !== false) &&
+		routeServesTypedDecisionFeatures(candidate, typedFeatures) &&
 		media.every(item => candidate.inputModalities?.includes(item.modality) && candidate.capabilityParams?.[item.parameter] === true));
 }
 

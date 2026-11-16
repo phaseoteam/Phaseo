@@ -4,6 +4,17 @@ import type * as z from "zod";
 import type { IRDecisionQuestion, IRDecisionsRequest } from "@core/ir";
 import { NativeDecisionAnswerSchema, type NativeDecisionQuestion, type NativeDecisionRequest } from "@core/decisions";
 
+const AUDIO_FORMATS: Record<string, NonNullable<IRDecisionsRequest["audio"]>[number]["format"]> = {
+	wav: "wav", "x-wav": "wav", wave: "wav", mp3: "mp3", mpeg: "mp3", flac: "flac", m4a: "m4a", mp4: "m4a", ogg: "ogg",
+};
+
+// The schema has already checked the data URL against LEGACY_DECISION_AUDIO_DATA_URL.
+function decodeAudioDataUrl(url: string): NonNullable<IRDecisionsRequest["audio"]>[number] {
+	const comma = url.indexOf(",");
+	const subtype = url.slice("data:audio/".length, url.indexOf(";")).toLowerCase();
+	return { type: "audio", source: "data", data: url.slice(comma + 1), format: AUDIO_FORMATS[subtype] ?? "wav" };
+}
+
 export function decisionQuestionId(index: number): string {
 	return `question_${index}`;
 }
@@ -15,6 +26,7 @@ export function decodeDecisionsRequest(req: DecisionsRequest): IRDecisionsReques
 			model: legacy.model, state: legacy.state,
 			...(legacy.provider_options === undefined ? {} : { providerOptions: legacy.provider_options }),
 			...(legacy.images === undefined ? {} : { images: legacy.images }),
+			...(legacy.audio === undefined ? {} : { audio: legacy.audio.map(decodeAudioDataUrl) }),
 			questions: legacy.questions as IRDecisionsRequest["questions"],
 		};
 	}

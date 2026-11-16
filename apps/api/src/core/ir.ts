@@ -577,7 +577,9 @@ export type IRExtractionResponse = {
 };
 
 export type IRDecisionQuestion = {
-	type: "noul" | "choice" | "score" | "box" | "locate";
+	// text, number, date, spans and boxes (and choice with `multiple`) are typed
+	// answers only some routes serve; see decisionQuestionFeatures.
+	type: "noul" | "choice" | "score" | "box" | "locate" | "text" | "number" | "date" | "spans" | "boxes";
 	instructions: string | Record<string, any> | any[];
 	criteria?: Record<string, string | null> | string[] | { true?: string; false?: string };
 	[key: string]: any;

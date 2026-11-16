@@ -112,7 +112,10 @@ import { clearDroppedParams, recordDroppedParams } from "./unsupportedParams";
 import { preferTwelveHourCacheRoutes } from "./prompt-cache-ttl";
 import { normalizeCapability } from "@/executors";
 import { isSynchronousMediaCapability } from "@core/synchronous-media";
-import { decisionQuestionLimit, filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities, routeUploadedFileIds } from "./modalities";
+import {
+	decisionQuestionLimit, filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities,
+	requiredTypedDecisionFeatures, routeServesTypedDecisionFeatures, routeUploadedFileIds,
+} from "./modalities";
 import { loadPriceCard } from "../pricing";
 import { stripUsagePricing } from "../usage";
 import { getEffectiveRoutingHints } from "../requestRouting";
@@ -638,6 +641,13 @@ export async function doRequestWithIR(
 				return Response.json({ error: "unsupported_parameter", model: ctx.model, endpoint: ctx.endpoint,
 					request_id: ctx.requestId,
 					message: "No route for this model supports locate questions. Use a model that lists locate support, such as perplexity/pplx-decider-v1.3 or perplexity/pplx-decider-flash-v1.3.",
+				}, { status: 400 });
+			}
+			const typedFeatures = requiredTypedDecisionFeatures(decisions);
+			if (typedFeatures.length && !decisionRoutes.some(route => routeServesTypedDecisionFeatures(route, typedFeatures))) {
+				return Response.json({ error: "unsupported_parameter", model: ctx.model, endpoint: ctx.endpoint,
+					request_id: ctx.requestId,
+					message: `No route for this model answers ${typedFeatures.join(", ")} questions. Use a model that lists them, such as liquid-ai/d1.2 or liquid-ai/d1.2-ultra.`,
 				}, { status: 400 });
 			}
 			if (Object.values(decisions.questions ?? {}).some(question => question.type === "box") ||

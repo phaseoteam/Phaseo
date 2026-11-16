@@ -14677,6 +14677,11 @@ components:
               - $ref: '#/components/schemas/DecisionScoreQuestion'
               - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
               - $ref: '#/components/schemas/LegacyDecisionLocateQuestion'
+              - $ref: '#/components/schemas/DecisionTextQuestion'
+              - $ref: '#/components/schemas/DecisionNumberQuestion'
+              - $ref: '#/components/schemas/DecisionDateQuestion'
+              - $ref: '#/components/schemas/DecisionSpansQuestion'
+              - $ref: '#/components/schemas/DecisionBoxesQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -14688,6 +14693,14 @@ components:
               - type: string
                 pattern: ^[Dd][Aa][Tt][Aa]:image/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$
               - $ref: '#/components/schemas/DecisionImage'
+        audio:
+          type: array
+          minItems: 1
+          maxItems: 8
+          description: base64 डेटा URL के रूप में WAV, MP3, FLAC, M4A या OGG ऑडियो क्लिप, उन रूट के लिए जिनका मॉडल ऑडियो सुनता है, जैसे Liquid d1.2। रिमोट URL समर्थित नहीं हैं।
+          items:
+            type: string
+            pattern: ^[Dd][Aa][Tt][Aa]:[Aa][Uu][Dd][Ii][Oo]/([Ww][Aa][Vv]|[Xx]-[Ww][Aa][Vv]|[Ww][Aa][Vv][Ee]|[Mm][Pp]3|[Mm][Pp][Ee][Gg]|[Ff][Ll][Aa][Cc]|[Mm]4[Aa]|[Mm][Pp]4|[Oo][Gg][Gg]);base64,[A-Za-z0-9+/]+={0,2}$
         meta:
           type: boolean
           default: false
@@ -14733,6 +14746,97 @@ components:
           minLength: 1
           maxLength: 50000
           description: क्या ढूँढना है, किसी छोटे लेबल के रूप में जैसे "email address" या किसी निर्देश के रूप में जैसे "Extract the city where the job is located."
+    DecisionTextQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: state से एक टेक्स्ट मान पढ़ता है और उसे उसके span के साथ लौटाता है, या न मिलने पर null। केवल टाइप किए गए उत्तर वाले रूट पर, जैसे Liquid d1.2।
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionDateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: state से एक तारीख पढ़ता है और उसे उसके span के साथ ISO 8601 में लौटाता है, या न मिलने पर null। केवल टाइप किए गए उत्तर वाले रूट पर, जैसे Liquid d1.2।
+      properties:
+        type:
+          type: string
+          enum:
+            - date
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionNumberQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: state से इकाई और span के साथ एक संख्या पढ़ता है, या न मिलने पर null। range देने पर इसके बजाय एक अनुमान (माध्यिका) और उसका p10 से p90 अंतराल लौटाता है। केवल टाइप किए गए उत्तर वाले रूट पर, जैसे Liquid d1.2।
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: वह इकाई जिसमें मान पढ़ा या अनुमानित किया जाता है।
+        range:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+          description: अनुमान का न्यूनतम और अधिकतम मान, पहले न्यूनतम।
+        step:
+          type: number
+          exclusiveMinimum: 0
+          description: अनुमानित मानों के बीच का अंतर। यह अधिकतम घटा न्यूनतम को विभाजित करना चाहिए, और इसके लिए range आवश्यक है।
+    DecisionSpansQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: state में किसी प्रकार का हर अंश, जैसे हर व्यक्तिगत डेटा, उसकी स्थिति के साथ खोजता है। केवल टाइप किए गए उत्तर वाले रूट पर, जैसे Liquid d1.2।
+      properties:
+        type:
+          type: string
+          enum:
+            - spans
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionBoxesQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: एकमात्र छवि में किसी वस्तु के हर उदाहरण के चारों ओर एक बॉक्स, गिनती के साथ लौटाता है। केवल टाइप किए गए उत्तर वाले रूट पर, जैसे Liquid d1.2।
+      properties:
+        type:
+          type: string
+          enum:
+            - boxes
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        max:
+          type: integer
+          minimum: 1
+          maximum: 16
+          description: लौटाए जाने वाले अधिकतम उदाहरण, 1 से 16 तक।
     DecisionImage:
       type: object
       required:
@@ -14787,6 +14891,9 @@ components:
           additionalProperties:
             type: string
             nullable: true
+        multiple:
+          type: boolean
+          description: एक विकल्प के बजाय हर लागू विकल्प, प्रत्येक की अपनी संभावना के साथ, लौटाता है। केवल टाइप किए गए उत्तर वाले रूट पर, जैसे Liquid d1.2।
     DecisionScoreQuestion:
       type: object
       required:

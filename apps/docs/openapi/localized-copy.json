@@ -12429,6 +12429,116 @@
 			"ja": "スパンが一致しているというモデルの確信度。値が大きいほど確信が高くなります。",
 			"zh-Hans": "模型对该片段匹配的确信程度。数值越高越确定。",
 			"ar": "مدى يقين النموذج بأن المقطع مطابق. القيمة الأعلى تعني يقينًا أكبر."
+		},
+		"Audio clips as base64 data URLs in WAV, MP3, FLAC, M4A or OGG, for routes whose model hears audio, such as Liquid d1.2. Remote URLs are unsupported.": {
+			"es": "Clips de audio como URL de datos en base64 en WAV, MP3, FLAC, M4A u OGG, para rutas cuyo modelo procesa audio, como Liquid d1.2. No se admiten URL remotas.",
+			"fr": "Extraits audio sous forme d’URL de données base64 en WAV, MP3, FLAC, M4A ou OGG, pour les routes dont le modèle traite l’audio, comme Liquid d1.2. Les URL distantes ne sont pas prises en charge.",
+			"de": "Audioclips als Base64-Daten-URLs in WAV, MP3, FLAC, M4A oder OGG, für Routen, deren Modell Audio verarbeitet, etwa Liquid d1.2. Remote-URLs werden nicht unterstützt.",
+			"pt-BR": "Clipes de áudio como URLs de dados em base64 em WAV, MP3, FLAC, M4A ou OGG, para rotas cujo modelo processa áudio, como o Liquid d1.2. URLs remotas não são compatíveis.",
+			"hi": "base64 डेटा URL के रूप में WAV, MP3, FLAC, M4A या OGG ऑडियो क्लिप, उन रूट के लिए जिनका मॉडल ऑडियो सुनता है, जैसे Liquid d1.2। रिमोट URL समर्थित नहीं हैं।",
+			"ja": "WAV、MP3、FLAC、M4A、OGG 形式の base64 データ URL による音声クリップ。Liquid d1.2 など、音声を扱えるモデルのルート向けです。リモート URL には対応していません。",
+			"zh-Hans": "以 base64 数据 URL 提供的 WAV、MP3、FLAC、M4A 或 OGG 音频片段，适用于模型能处理音频的路由，例如 Liquid d1.2。不支持远程 URL。",
+			"ar": "مقاطع صوتية بصيغة عناوين URL لبيانات base64 بتنسيق WAV أو MP3 أو FLAC أو M4A أو OGG، للمسارات التي يعالج نموذجها الصوت، مثل Liquid d1.2. لا تُدعم عناوين URL البعيدة."
+		},
+		"Reads a text value from the state and returns it with its span, or null when it is not found. Typed-answer routes only, such as Liquid d1.2.": {
+			"es": "Lee un valor de texto del estado y lo devuelve con su fragmento, o null si no se encuentra. Solo en rutas con respuestas tipadas, como Liquid d1.2.",
+			"fr": "Lit une valeur texte dans l’état et la renvoie avec son extrait, ou null si elle est introuvable. Uniquement sur les routes à réponses typées, comme Liquid d1.2.",
+			"de": "Liest einen Textwert aus dem Zustand und gibt ihn mit seiner Fundstelle zurück, oder null, wenn er nicht gefunden wird. Nur auf Routen mit typisierten Antworten, etwa Liquid d1.2.",
+			"pt-BR": "Lê um valor de texto do estado e o retorna com seu trecho, ou null quando não é encontrado. Somente em rotas com respostas tipadas, como o Liquid d1.2.",
+			"hi": "state से एक टेक्स्ट मान पढ़ता है और उसे उसके span के साथ लौटाता है, या न मिलने पर null। केवल टाइप किए गए उत्तर वाले रूट पर, जैसे Liquid d1.2।",
+			"ja": "state からテキスト値を読み取り、その位置（span）とともに返します。見つからない場合は null です。Liquid d1.2 など、型付き回答に対応したルートのみ。",
+			"zh-Hans": "从 state 中读取一个文本值，并连同其片段位置一起返回；未找到时为 null。仅限支持类型化答案的路由，例如 Liquid d1.2。",
+			"ar": "يقرأ قيمة نصية من الحالة ويعيدها مع موضعها، أو null عندما لا يُعثر عليها. في المسارات ذات الإجابات المصنّفة فقط، مثل Liquid d1.2."
+		},
+		"Reads a date from the state and returns it in ISO 8601 with its span, or null when it is not found. Typed-answer routes only, such as Liquid d1.2.": {
+			"es": "Lee una fecha del estado y la devuelve en ISO 8601 con su fragmento, o null si no se encuentra. Solo en rutas con respuestas tipadas, como Liquid d1.2.",
+			"fr": "Lit une date dans l’état et la renvoie au format ISO 8601 avec son extrait, ou null si elle est introuvable. Uniquement sur les routes à réponses typées, comme Liquid d1.2.",
+			"de": "Liest ein Datum aus dem Zustand und gibt es in ISO 8601 mit seiner Fundstelle zurück, oder null, wenn es nicht gefunden wird. Nur auf Routen mit typisierten Antworten, etwa Liquid d1.2.",
+			"pt-BR": "Lê uma data do estado e a retorna em ISO 8601 com seu trecho, ou null quando não é encontrada. Somente em rotas com respostas tipadas, como o Liquid d1.2.",
+			"hi": "state से एक तारीख पढ़ता है और उसे उसके span के साथ ISO 8601 में लौटाता है, या न मिलने पर null। केवल टाइप किए गए उत्तर वाले रूट पर, जैसे Liquid d1.2।",
+			"ja": "state から日付を読み取り、その位置（span）とともに ISO 8601 形式で返します。見つからない場合は null です。Liquid d1.2 など、型付き回答に対応したルートのみ。",
+			"zh-Hans": "从 state 中读取一个日期，并以 ISO 8601 格式连同其片段位置一起返回；未找到时为 null。仅限支持类型化答案的路由，例如 Liquid d1.2。",
+			"ar": "يقرأ تاريخًا من الحالة ويعيده بتنسيق ISO 8601 مع موضعه، أو null عندما لا يُعثر عليه. في المسارات ذات الإجابات المصنّفة فقط، مثل Liquid d1.2."
+		},
+		"Reads a number from the state with its unit and span, or null when it is not found. With range, returns an estimate (the median) and its p10 to p90 interval instead. Typed-answer routes only, such as Liquid d1.2.": {
+			"es": "Lee un número del estado con su unidad y su fragmento, o null si no se encuentra. Con range, devuelve en su lugar una estimación (la mediana) y su intervalo de p10 a p90. Solo en rutas con respuestas tipadas, como Liquid d1.2.",
+			"fr": "Lit un nombre dans l’état avec son unité et son extrait, ou null s’il est introuvable. Avec range, renvoie à la place une estimation (la médiane) et son intervalle de p10 à p90. Uniquement sur les routes à réponses typées, comme Liquid d1.2.",
+			"de": "Liest eine Zahl mit Einheit und Fundstelle aus dem Zustand, oder null, wenn sie nicht gefunden wird. Mit range wird stattdessen eine Schätzung (der Median) mit ihrem Intervall von p10 bis p90 zurückgegeben. Nur auf Routen mit typisierten Antworten, etwa Liquid d1.2.",
+			"pt-BR": "Lê um número do estado com sua unidade e seu trecho, ou null quando não é encontrado. Com range, retorna em vez disso uma estimativa (a mediana) e seu intervalo de p10 a p90. Somente em rotas com respostas tipadas, como o Liquid d1.2.",
+			"hi": "state से इकाई और span के साथ एक संख्या पढ़ता है, या न मिलने पर null। range देने पर इसके बजाय एक अनुमान (माध्यिका) और उसका p10 से p90 अंतराल लौटाता है। केवल टाइप किए गए उत्तर वाले रूट पर, जैसे Liquid d1.2।",
+			"ja": "state から数値を単位と位置（span）とともに読み取ります。見つからない場合は null です。range を指定すると、代わりに推定値（中央値）と p10〜p90 の区間を返します。Liquid d1.2 など、型付き回答に対応したルートのみ。",
+			"zh-Hans": "从 state 中读取一个数字及其单位和片段位置；未找到时为 null。指定 range 时，改为返回估计值（中位数）及其 p10 到 p90 区间。仅限支持类型化答案的路由，例如 Liquid d1.2。",
+			"ar": "يقرأ رقمًا من الحالة مع وحدته وموضعه، أو null عندما لا يُعثر عليه. مع range، يعيد بدلًا من ذلك تقديرًا (الوسيط) ونطاقه من p10 إلى p90. في المسارات ذات الإجابات المصنّفة فقط، مثل Liquid d1.2."
+		},
+		"Unit the value is read or estimated in.": {
+			"es": "Unidad en la que se lee o estima el valor.",
+			"fr": "Unité dans laquelle la valeur est lue ou estimée.",
+			"de": "Einheit, in der der Wert gelesen oder geschätzt wird.",
+			"pt-BR": "Unidade em que o valor é lido ou estimado.",
+			"hi": "वह इकाई जिसमें मान पढ़ा या अनुमानित किया जाता है।",
+			"ja": "値を読み取る、または推定する際の単位。",
+			"zh-Hans": "读取或估计该值时使用的单位。",
+			"ar": "الوحدة التي تُقرأ بها القيمة أو تُقدَّر."
+		},
+		"Lowest and highest value of the estimate, low first.": {
+			"es": "Valor más bajo y más alto de la estimación, primero el más bajo.",
+			"fr": "Valeurs la plus basse et la plus haute de l’estimation, la plus basse d’abord.",
+			"de": "Niedrigster und höchster Wert der Schätzung, der niedrigste zuerst.",
+			"pt-BR": "Menor e maior valor da estimativa, o menor primeiro.",
+			"hi": "अनुमान का न्यूनतम और अधिकतम मान, पहले न्यूनतम।",
+			"ja": "推定の最小値と最大値（最小値が先）。",
+			"zh-Hans": "估计的最低值和最高值，最低值在前。",
+			"ar": "أدنى قيمة وأعلى قيمة للتقدير، الأدنى أولًا."
+		},
+		"Spacing of the estimated values. It must divide high minus low, and needs range.": {
+			"es": "Separación entre los valores estimados. Debe dividir el máximo menos el mínimo y requiere range.",
+			"fr": "Écart entre les valeurs estimées. Il doit diviser la valeur haute moins la valeur basse et nécessite range.",
+			"de": "Abstand der geschätzten Werte. Er muss die Differenz aus höchstem und niedrigstem Wert teilen und erfordert range.",
+			"pt-BR": "Espaçamento entre os valores estimados. Deve dividir o maior menos o menor e exige range.",
+			"hi": "अनुमानित मानों के बीच का अंतर। यह अधिकतम घटा न्यूनतम को विभाजित करना चाहिए, और इसके लिए range आवश्यक है।",
+			"ja": "推定値の間隔。最大値と最小値の差を割り切れる値で、range が必要です。",
+			"zh-Hans": "估计值之间的间隔。它必须能整除最高值减最低值，并且需要 range。",
+			"ar": "المسافة بين القيم المقدّرة. يجب أن تقسم الفرق بين الأعلى والأدنى، وتتطلب range."
+		},
+		"Finds every passage of a kind in the state, such as each piece of personal data, with its position. Typed-answer routes only, such as Liquid d1.2.": {
+			"es": "Encuentra cada pasaje de un tipo en el estado, como cada dato personal, con su posición. Solo en rutas con respuestas tipadas, como Liquid d1.2.",
+			"fr": "Trouve chaque passage d’un type donné dans l’état, comme chaque donnée personnelle, avec sa position. Uniquement sur les routes à réponses typées, comme Liquid d1.2.",
+			"de": "Findet jede Passage einer Art im Zustand, etwa jede personenbezogene Angabe, mit ihrer Position. Nur auf Routen mit typisierten Antworten, etwa Liquid d1.2.",
+			"pt-BR": "Encontra cada trecho de um tipo no estado, como cada dado pessoal, com sua posição. Somente em rotas com respostas tipadas, como o Liquid d1.2.",
+			"hi": "state में किसी प्रकार का हर अंश, जैसे हर व्यक्तिगत डेटा, उसकी स्थिति के साथ खोजता है। केवल टाइप किए गए उत्तर वाले रूट पर, जैसे Liquid d1.2।",
+			"ja": "state 内で、個人データなど特定の種類の箇所をすべて見つけ、その位置とともに返します。Liquid d1.2 など、型付き回答に対応したルートのみ。",
+			"zh-Hans": "在 state 中查找某一类型的每个片段（例如每项个人数据）及其位置。仅限支持类型化答案的路由，例如 Liquid d1.2。",
+			"ar": "يعثر على كل مقطع من نوع معيّن في الحالة، مثل كل معلومة شخصية، مع موضعه. في المسارات ذات الإجابات المصنّفة فقط، مثل Liquid d1.2."
+		},
+		"Returns a box around every instance of an object in the one image, with the count. Typed-answer routes only, such as Liquid d1.2.": {
+			"es": "Devuelve un recuadro alrededor de cada instancia de un objeto en la única imagen, junto con el recuento. Solo en rutas con respuestas tipadas, como Liquid d1.2.",
+			"fr": "Renvoie un cadre autour de chaque occurrence d’un objet dans l’unique image, avec leur nombre. Uniquement sur les routes à réponses typées, comme Liquid d1.2.",
+			"de": "Gibt einen Rahmen um jede Instanz eines Objekts im einzigen Bild zurück, zusammen mit der Anzahl. Nur auf Routen mit typisierten Antworten, etwa Liquid d1.2.",
+			"pt-BR": "Retorna uma caixa ao redor de cada instância de um objeto na única imagem, com a contagem. Somente em rotas com respostas tipadas, como o Liquid d1.2.",
+			"hi": "एकमात्र छवि में किसी वस्तु के हर उदाहरण के चारों ओर एक बॉक्स, गिनती के साथ लौटाता है। केवल टाइप किए गए उत्तर वाले रूट पर, जैसे Liquid d1.2।",
+			"ja": "1 枚の画像内にある対象物のすべてのインスタンスを囲むボックスを、個数とともに返します。Liquid d1.2 など、型付き回答に対応したルートのみ。",
+			"zh-Hans": "返回唯一一张图片中某物体每个实例的边框及其数量。仅限支持类型化答案的路由，例如 Liquid d1.2。",
+			"ar": "يعيد مربعًا حول كل نسخة من كائن في الصورة الوحيدة، مع العدد. في المسارات ذات الإجابات المصنّفة فقط، مثل Liquid d1.2."
+		},
+		"Most instances to return, from 1 to 16.": {
+			"es": "Número máximo de instancias que se devuelven, de 1 a 16.",
+			"fr": "Nombre maximal d’occurrences renvoyées, de 1 à 16.",
+			"de": "Höchstzahl zurückgegebener Instanzen, von 1 bis 16.",
+			"pt-BR": "Número máximo de instâncias retornadas, de 1 a 16.",
+			"hi": "लौटाए जाने वाले अधिकतम उदाहरण, 1 से 16 तक।",
+			"ja": "返すインスタンスの最大数（1〜16）。",
+			"zh-Hans": "最多返回的实例数，取值 1 到 16。",
+			"ar": "أقصى عدد من النسخ المُعادة، من 1 إلى 16."
+		},
+		"Returns every option that applies, each with its own probability, instead of one choice. Typed-answer routes only, such as Liquid d1.2.": {
+			"es": "Devuelve todas las opciones aplicables, cada una con su propia probabilidad, en lugar de una sola. Solo en rutas con respuestas tipadas, como Liquid d1.2.",
+			"fr": "Renvoie toutes les options applicables, chacune avec sa propre probabilité, au lieu d’un seul choix. Uniquement sur les routes à réponses typées, comme Liquid d1.2.",
+			"de": "Gibt jede zutreffende Option mit ihrer eigenen Wahrscheinlichkeit zurück statt einer einzigen Auswahl. Nur auf Routen mit typisierten Antworten, etwa Liquid d1.2.",
+			"pt-BR": "Retorna todas as opções aplicáveis, cada uma com sua própria probabilidade, em vez de uma única escolha. Somente em rotas com respostas tipadas, como o Liquid d1.2.",
+			"hi": "एक विकल्प के बजाय हर लागू विकल्प, प्रत्येक की अपनी संभावना के साथ, लौटाता है। केवल टाइप किए गए उत्तर वाले रूट पर, जैसे Liquid d1.2।",
+			"ja": "1 つの選択肢ではなく、該当するすべての選択肢をそれぞれの確率とともに返します。Liquid d1.2 など、型付き回答に対応したルートのみ。",
+			"zh-Hans": "返回所有适用的选项，每个选项附带各自的概率，而不是单个选择。仅限支持类型化答案的路由，例如 Liquid d1.2。",
+			"ar": "يعيد كل خيار ينطبق، ولكلٍّ احتماله الخاص، بدلًا من اختيار واحد. في المسارات ذات الإجابات المصنّفة فقط، مثل Liquid d1.2."
 		}
 	},
 	"GET /apps": {

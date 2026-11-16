@@ -1851,6 +1851,9 @@ const DecisionInstructionsSchema = lazySchema(() => z.union([
     z.array(z.any()),
 ]));
 
+/** A legacy-format audio clip: `data:audio/<format>;base64,<data>`. */
+export const LEGACY_DECISION_AUDIO_DATA_URL = /^data:audio\/(wav|x-wav|wave|mp3|mpeg|flac|m4a|mp4|ogg);base64,[A-Za-z0-9+/]+={0,2}$/i;
+
 const DecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
     z.object({ type: z.literal("box"), instructions: DecisionInstructionsSchema }).strict(),
     // Perplexity ignores every member besides type and instructions; reject them
@@ -1871,7 +1874,38 @@ const DecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
             (criteria) => Object.keys(criteria).length > 0,
             { message: "Choice questions require at least one criterion." },
         ),
+        // Every option that applies, each with its own probability (typed-answer routes only).
+        multiple: z.boolean().optional(),
     }).passthrough(),
+    // Typed answers (Liquid d1.2): read a value or every matching passage from the state.
+    z.object({ type: z.literal("text"), instructions: DecisionInstructionsSchema }).strict(),
+    z.object({ type: z.literal("date"), instructions: DecisionInstructionsSchema }).strict(),
+    z.object({ type: z.literal("spans"), instructions: DecisionInstructionsSchema }).strict(),
+    z.object({
+        type: z.literal("number"),
+        instructions: DecisionInstructionsSchema,
+        unit: z.string().min(1).max(64).optional(),
+        // With a range the answer is an estimate (median and p10/p90) rather than a read value.
+        range: z.tuple([z.number().finite(), z.number().finite()])
+            .refine(([low, high]) => low < high, { message: "range must be [low, high] with low below high." })
+            .optional(),
+        step: z.number().finite().positive().optional(),
+    }).strict().superRefine((question, ctx) => {
+        if (question.step === undefined) return;
+        if (!question.range) {
+            ctx.addIssue({ code: "custom", path: ["step"], message: "step needs a range." });
+            return;
+        }
+        const steps = (question.range[1] - question.range[0]) / question.step;
+        if (Math.abs(steps - Math.round(steps)) > 1e-9) {
+            ctx.addIssue({ code: "custom", path: ["step"], message: "step must divide high - low." });
+        }
+    }),
+    z.object({
+        type: z.literal("boxes"),
+        instructions: DecisionInstructionsSchema,
+        max: z.number().int().min(1).max(16).optional(),
+    }).strict(),
     z.object({
         type: z.literal("score"),
         instructions: DecisionInstructionsSchema,
@@ -1890,6 +1924,10 @@ export const LegacyDecisionsSchema = lazySchema(() => z.object({
             base64: z.string().regex(/^[A-Za-z0-9+/]+={0,2}$/),
         }),
     ])).max(4).optional(),
+    // Audio clips as base64 data URLs, for routes whose model hears audio.
+    audio: z.array(z.string().max(24 * 1024 * 1024)
+        .regex(LEGACY_DECISION_AUDIO_DATA_URL, "Use a base64 data URL in a wav, mp3, flac, m4a or ogg format."))
+        .min(1).max(8).optional(),
     questions: z.record(z.string().min(1).max(128), DecisionQuestionSchema)
         .refine((questions) => Object.keys(questions).length > 0, {
             message: "At least one decision question is required.",
@@ -1922,8 +1960,11 @@ export const DecisionsSchema = lazySchema(() => z.union([OpenAIDecisionsSchema, 
     const hasImages = Array.isArray(body.questions) ? typeof body.input !== "string" && Array.isArray(body.input) && body.input.some(message =>
         typeof message.content !== "string" && message.content.some(part => part.type === "input_image"))
         : Array.isArray(body.images) && body.images.length > 0;
-    if (questions.some(question => question.type === "box") && !hasImages) {
+    if (questions.some(question => question.type === "box" || question.type === "boxes") && !hasImages) {
         ctx.addIssue({ code: "custom", path: ["questions"], message: "Box questions require image input." });
+    }
+    if ("input" in body && "audio" in body) {
+        ctx.addIssue({ code: "custom", path: ["audio"], message: "With input, send audio as input_audio parts." });
     }
     // The native format checks its own `input`; this covers the state/map format.
     if (!Array.isArray(body.questions) && questions.some(question => question.type === "locate") &&

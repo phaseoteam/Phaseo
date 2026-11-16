@@ -14677,6 +14677,11 @@ components:
               - $ref: '#/components/schemas/DecisionScoreQuestion'
               - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
               - $ref: '#/components/schemas/LegacyDecisionLocateQuestion'
+              - $ref: '#/components/schemas/DecisionTextQuestion'
+              - $ref: '#/components/schemas/DecisionNumberQuestion'
+              - $ref: '#/components/schemas/DecisionDateQuestion'
+              - $ref: '#/components/schemas/DecisionSpansQuestion'
+              - $ref: '#/components/schemas/DecisionBoxesQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -14688,6 +14693,14 @@ components:
               - type: string
                 pattern: ^[Dd][Aa][Tt][Aa]:image/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$
               - $ref: '#/components/schemas/DecisionImage'
+        audio:
+          type: array
+          minItems: 1
+          maxItems: 8
+          description: 以 base64 数据 URL 提供的 WAV、MP3、FLAC、M4A 或 OGG 音频片段，适用于模型能处理音频的路由，例如 Liquid d1.2。不支持远程 URL。
+          items:
+            type: string
+            pattern: ^[Dd][Aa][Tt][Aa]:[Aa][Uu][Dd][Ii][Oo]/([Ww][Aa][Vv]|[Xx]-[Ww][Aa][Vv]|[Ww][Aa][Vv][Ee]|[Mm][Pp]3|[Mm][Pp][Ee][Gg]|[Ff][Ll][Aa][Cc]|[Mm]4[Aa]|[Mm][Pp]4|[Oo][Gg][Gg]);base64,[A-Za-z0-9+/]+={0,2}$
         meta:
           type: boolean
           default: false
@@ -14733,6 +14746,97 @@ components:
           minLength: 1
           maxLength: 50000
           description: 要查找的内容，可以是简短标签（如 "email address"），也可以是指令（如 "Extract the city where the job is located."）。
+    DecisionTextQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: 从 state 中读取一个文本值，并连同其片段位置一起返回；未找到时为 null。仅限支持类型化答案的路由，例如 Liquid d1.2。
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionDateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: 从 state 中读取一个日期，并以 ISO 8601 格式连同其片段位置一起返回；未找到时为 null。仅限支持类型化答案的路由，例如 Liquid d1.2。
+      properties:
+        type:
+          type: string
+          enum:
+            - date
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionNumberQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: 从 state 中读取一个数字及其单位和片段位置；未找到时为 null。指定 range 时，改为返回估计值（中位数）及其 p10 到 p90 区间。仅限支持类型化答案的路由，例如 Liquid d1.2。
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: 读取或估计该值时使用的单位。
+        range:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+          description: 估计的最低值和最高值，最低值在前。
+        step:
+          type: number
+          exclusiveMinimum: 0
+          description: 估计值之间的间隔。它必须能整除最高值减最低值，并且需要 range。
+    DecisionSpansQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: 在 state 中查找某一类型的每个片段（例如每项个人数据）及其位置。仅限支持类型化答案的路由，例如 Liquid d1.2。
+      properties:
+        type:
+          type: string
+          enum:
+            - spans
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionBoxesQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: 返回唯一一张图片中某物体每个实例的边框及其数量。仅限支持类型化答案的路由，例如 Liquid d1.2。
+      properties:
+        type:
+          type: string
+          enum:
+            - boxes
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        max:
+          type: integer
+          minimum: 1
+          maximum: 16
+          description: 最多返回的实例数，取值 1 到 16。
     DecisionImage:
       type: object
       required:
@@ -14787,6 +14891,9 @@ components:
           additionalProperties:
             type: string
             nullable: true
+        multiple:
+          type: boolean
+          description: 返回所有适用的选项，每个选项附带各自的概率，而不是单个选择。仅限支持类型化答案的路由，例如 Liquid d1.2。
     DecisionScoreQuestion:
       type: object
       required:

@@ -25,6 +25,51 @@ function validLocateSpan(span: unknown, codePoints: readonly string[]): boolean 
 	return start >= 0 && start <= end && end <= codePoints.length && codePoints.slice(start, end).join("") === span.text;
 }
 
+function isFiniteNumber(value: unknown): value is number {
+	return typeof value === "number" && Number.isFinite(value);
+}
+
+function validBox(box: unknown): boolean {
+	return isRecord(box) && isProbability(box.top) && isProbability(box.bottom) && isProbability(box.left) &&
+		isProbability(box.right) && box.top < box.bottom && box.left < box.right;
+}
+
+// Typed answers as Liquid documents them (https://docs.liquid.ai/lfm/models/decision-models.md#typed-answers):
+// a read value is null when `found` is under 0.5; an estimate (number with range) has a median and [p10, p90].
+// Span and passage objects are passed through unchanged; only their container shape is checked.
+function validTypedAnswer(answer: Record<string, unknown>, question: IRDecisionQuestion): boolean {
+	const found = answer.found === undefined || isProbability(answer.found);
+	switch (question.type) {
+		case "text":
+			return found && (answer.text === null || typeof answer.text === "string");
+		case "date":
+			return found && (answer.date === null || typeof answer.date === "string");
+		case "number": {
+			if (Array.isArray(question.range)) {
+				const interval = answer.interval;
+				return isFiniteNumber(answer.number) && Array.isArray(interval) && interval.length === 2 &&
+					interval.every(isFiniteNumber) && interval[0] <= interval[1];
+			}
+			return found && (answer.number === null || isFiniteNumber(answer.number));
+		}
+		case "spans":
+			return Array.isArray(answer.spans) && answer.spans.every(span => isRecord(span));
+		case "boxes":
+			return Number.isSafeInteger(answer.count) && (answer.count as number) >= 0 && Array.isArray(answer.boxes) &&
+				answer.boxes.every(item => isRecord(item) && validBox(item.box) &&
+					(item.confidence === undefined || item.confidence === null || isProbability(item.confidence)));
+		default:
+			return false;
+	}
+}
+
+function validMultipleChoice(answer: Record<string, unknown>, keys: string[]): boolean {
+	const probabilities = answer.probabilities;
+	return Array.isArray(answer.choices) && answer.choices.every(choice => typeof choice === "string" && keys.includes(choice)) &&
+		isRecord(probabilities) && Object.keys(probabilities).length === keys.length &&
+		keys.every(key => Object.prototype.hasOwnProperty.call(probabilities, key) && isProbability(probabilities[key]));
+}
+
 function validAnswer(answer: unknown, question: IRDecisionQuestion, allowRefusal: boolean, state: unknown): boolean {
 	// A provider may decline a single question without failing the request; the other answers stay valid.
 	if (allowRefusal && isRecord(answer) && answer.type === "refusal") return true;
@@ -33,20 +78,22 @@ function validAnswer(answer: unknown, question: IRDecisionQuestion, allowRefusal
 	if (!isRecord(answer) || answer.type !== question.type ||
 		(answer.confidence !== undefined && !nullBoxConfidence && !isProbability(answer.confidence))) return false;
 	if (question.type === "noul") return isProbability(answer.noul);
+	if (question.type === "text" || question.type === "number" || question.type === "date" ||
+		question.type === "spans" || question.type === "boxes") return validTypedAnswer(answer, question);
 	if (question.type === "locate") {
 		if (typeof state !== "string" || !Array.isArray(answer.spans)) return false;
 		const codePoints = Array.from(state);
 		return answer.spans.every(span => validLocateSpan(span, codePoints));
 	}
 	if (question.type === "box") {
-		const box = answer.box;
-		return (nullBoxConfidence || isProbability(answer.confidence)) && isRecord(box) &&
-			isProbability(box.top) && isProbability(box.bottom) && isProbability(box.left) && isProbability(box.right) &&
-			box.top < box.bottom && box.left < box.right;
+		// Liquid reports a missing object as box null with `found` under 0.5.
+		if (answer.box === null) return isProbability(answer.found) && answer.found < 0.5;
+		return (nullBoxConfidence || isProbability(answer.confidence)) && validBox(answer.box);
 	}
 	const criteria = question.criteria;
 	if (!criteria) return false;
 	const keys = Object.keys(criteria);
+	if (question.type === "choice" && question.multiple === true) return validMultipleChoice(answer, keys);
 	const probabilities = answer.probabilities;
 	if (!isRecord(probabilities) || Object.keys(probabilities).length !== keys.length ||
 		keys.some(key => !Object.prototype.hasOwnProperty.call(probabilities, key) || !isProbability(probabilities[key]))) return false;
@@ -60,14 +107,40 @@ function validAnswer(answer: unknown, question: IRDecisionQuestion, allowRefusal
 }
 
 // Providers use the same typed-question wire contract at different URLs.
+const AUDIO_MIME: Record<string, string> = {
+	wav: "audio/wav", mp3: "audio/mpeg", flac: "audio/flac", m4a: "audio/mp4", ogg: "audio/ogg",
+};
+
+/**
+ * Images and audio in System One's top-level `images` and `audio` arrays, as Liquid's
+ * API takes them: base64 data URLs only. Routing keeps remote media off these routes
+ * (capability params image_urls and audio_urls false).
+ */
+export function systemOneMedia(ir: IRDecisionsRequest): { images?: unknown[]; audio?: string[] } {
+	const audio = (ir.audio ?? []).map(clip => {
+		if (clip.source !== "data") throw new Error("System One audio must be inline data.");
+		const mime = AUDIO_MIME[clip.format ?? ""];
+		if (!mime) throw new Error(`Unsupported System One audio format: ${clip.format ?? "none"}.`);
+		return `data:${mime};base64,${clip.data}`;
+	});
+	return {
+		...(ir.images?.length ? { images: ir.images } : {}),
+		...(audio.length ? { audio } : {}),
+	};
+}
+
 export async function executeSystemOne(
 	args: ExecutorExecuteArgs,
 	url: string,
 	defaultModel: string,
+	options: { forwardMedia?: boolean } = {},
 ): Promise<ExecutorResult> {
 	const ir = args.ir as IRDecisionsRequest;
 	const keyInfo = resolveOpenAICompatKey({ ...args, forceGatewayKey: args.meta.forceGatewayKey });
-	const body = { model: args.providerModelSlug?.trim() || defaultModel, state: ir.state, questions: ir.questions };
+	const body = {
+		model: args.providerModelSlug?.trim() || defaultModel, state: ir.state, questions: ir.questions,
+		...(options.forwardMedia ? systemOneMedia(ir) : {}),
+	};
 	const mappedRequest = args.meta.returnUpstreamRequest || args.meta.echoUpstreamRequest
 		? JSON.stringify(body) : undefined;
 	const upstream = await fetchUpstream(args, url, {
@@ -150,7 +223,8 @@ export async function completeSystemOne(
 		upstream: new Response(rawBody, { status: upstream.status, statusText: upstream.statusText, headers: upstream.headers }),
 		ir: responseIr,
 		bill: { ...bill, usage: {
-			requests: 1, input_tokens: inputTokens, ...(ir.images?.length ? {} : { input_text_tokens: inputTokens }),
+			requests: 1, input_tokens: inputTokens,
+			...(ir.images?.length || ir.audio?.length || ir.videos?.length ? {} : { input_text_tokens: inputTokens }),
 			output_tokens: outputTokens, output_text_tokens: outputTokens, total_tokens: inputTokens + outputTokens,
 		} },
 		rawResponse: payload,

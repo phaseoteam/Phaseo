@@ -14677,6 +14677,11 @@ components:
               - $ref: '#/components/schemas/DecisionScoreQuestion'
               - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
               - $ref: '#/components/schemas/LegacyDecisionLocateQuestion'
+              - $ref: '#/components/schemas/DecisionTextQuestion'
+              - $ref: '#/components/schemas/DecisionNumberQuestion'
+              - $ref: '#/components/schemas/DecisionDateQuestion'
+              - $ref: '#/components/schemas/DecisionSpansQuestion'
+              - $ref: '#/components/schemas/DecisionBoxesQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -14688,6 +14693,14 @@ components:
               - type: string
                 pattern: ^[Dd][Aa][Tt][Aa]:image/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$
               - $ref: '#/components/schemas/DecisionImage'
+        audio:
+          type: array
+          minItems: 1
+          maxItems: 8
+          description: Clipes de áudio como URLs de dados em base64 em WAV, MP3, FLAC, M4A ou OGG, para rotas cujo modelo processa áudio, como o Liquid d1.2. URLs remotas não são compatíveis.
+          items:
+            type: string
+            pattern: ^[Dd][Aa][Tt][Aa]:[Aa][Uu][Dd][Ii][Oo]/([Ww][Aa][Vv]|[Xx]-[Ww][Aa][Vv]|[Ww][Aa][Vv][Ee]|[Mm][Pp]3|[Mm][Pp][Ee][Gg]|[Ff][Ll][Aa][Cc]|[Mm]4[Aa]|[Mm][Pp]4|[Oo][Gg][Gg]);base64,[A-Za-z0-9+/]+={0,2}$
         meta:
           type: boolean
           default: false
@@ -14733,6 +14746,97 @@ components:
           minLength: 1
           maxLength: 50000
           description: O que encontrar, como um rótulo curto, por exemplo "email address", ou uma instrução, por exemplo "Extract the city where the job is located."
+    DecisionTextQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Lê um valor de texto do estado e o retorna com seu trecho, ou null quando não é encontrado. Somente em rotas com respostas tipadas, como o Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionDateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Lê uma data do estado e a retorna em ISO 8601 com seu trecho, ou null quando não é encontrada. Somente em rotas com respostas tipadas, como o Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - date
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionNumberQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Lê um número do estado com sua unidade e seu trecho, ou null quando não é encontrado. Com range, retorna em vez disso uma estimativa (a mediana) e seu intervalo de p10 a p90. Somente em rotas com respostas tipadas, como o Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Unidade em que o valor é lido ou estimado.
+        range:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+          description: Menor e maior valor da estimativa, o menor primeiro.
+        step:
+          type: number
+          exclusiveMinimum: 0
+          description: Espaçamento entre os valores estimados. Deve dividir o maior menos o menor e exige range.
+    DecisionSpansQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Encontra cada trecho de um tipo no estado, como cada dado pessoal, com sua posição. Somente em rotas com respostas tipadas, como o Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - spans
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionBoxesQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: Retorna uma caixa ao redor de cada instância de um objeto na única imagem, com a contagem. Somente em rotas com respostas tipadas, como o Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - boxes
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        max:
+          type: integer
+          minimum: 1
+          maximum: 16
+          description: Número máximo de instâncias retornadas, de 1 a 16.
     DecisionImage:
       type: object
       required:
@@ -14787,6 +14891,9 @@ components:
           additionalProperties:
             type: string
             nullable: true
+        multiple:
+          type: boolean
+          description: Retorna todas as opções aplicáveis, cada uma com sua própria probabilidade, em vez de uma única escolha. Somente em rotas com respostas tipadas, como o Liquid d1.2.
     DecisionScoreQuestion:
       type: object
       required:
