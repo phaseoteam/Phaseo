@@ -64,16 +64,10 @@ async function main() {
 	if (!rows.length) throw new Error("No subscription usage rows matched; nothing was written.");
 	if (!process.argv.includes("--write")) { console.log("Dry run complete. Use --write to update the catalogue."); return; }
 
+	// One RPC call is one transaction: if any replacement is rejected, nothing is retired.
 	const retire = [...diff.close, ...(keepRemoved ? [] : diff.removed)];
-	for (let index = 0; index < retire.length; index += 200) {
-		const { error } = await db.from("v2_subscription_plan_model_usage").update({ effective_to: now }).is("effective_to", null).in("usage_uuid", retire.slice(index, index + 200));
-		if (error) throw error;
-	}
-	const verifiedAt = now;
-	for (let index = 0; index < diff.insert.length; index += 200) {
-		const { error } = await db.from("v2_subscription_plan_model_usage").insert(diff.insert.slice(index, index + 200).map((row) => ({ ...row, verified_at: verifiedAt, effective_from: now })));
-		if (error) throw error;
-	}
+	const { error: writeError } = await db.rpc("replace_v2_subscription_model_usage", { p_close: retire, p_insert: diff.insert, p_at: now });
+	if (writeError) throw writeError;
 	console.log("Subscription usage written.");
 }
 
