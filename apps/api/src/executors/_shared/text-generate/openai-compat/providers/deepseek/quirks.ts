@@ -121,6 +121,8 @@ export const deepseekQuirks: ProviderQuirks = {
 			const state = stateMap.get(idx) ?? { reasoningChunks: [] };
 			if (!stateMap.has(idx)) stateMap.set(idx, state);
 
+			addSourceAnnotations(choice.delta, (accumulated.citedUrls ??= new Set<string>()));
+
 			// Accumulate reasoning deltas
 			if (typeof choice.delta?.reasoning_content === "string") {
 				state.reasoningChunks.push(choice.delta.reasoning_content);
@@ -159,8 +161,41 @@ export const deepseekQuirks: ProviderQuirks = {
 
 	normalizeResponse: ({ response }) => {
 		normalizeDeepSeekUsage(response);
+		if (Array.isArray(response?.choices)) {
+			for (const choice of response.choices) addSourceAnnotations(choice?.message, new Set<string>());
+		}
 	},
 };
+
+/**
+ * DeepSeek's web tools return no `annotations` and no citation markers in the text: the
+ * pages behind an answer are only in `server_tool_calls[].calls[]`, as `sources` on a
+ * search, `page` on a read link and `action.url` on a page a deep search opened (checked
+ * live 2026-11-16). Each becomes a Chat
+ * `url_citation` without a span, so every client surface gets the sources. `seen` keeps
+ * a URL from being cited twice, across stream chunks too.
+ */
+function addSourceAnnotations(message: any, seen: Set<string>): void {
+	if (!message || !Array.isArray(message.server_tool_calls)) return;
+	const annotations: Array<Record<string, any>> = [];
+	const add = (url: unknown, title: unknown) => {
+		if (typeof url !== "string" || url.length === 0 || seen.has(url)) return;
+		seen.add(url);
+		annotations.push({
+			type: "url_citation",
+			url_citation: { url, ...(typeof title === "string" && title.length > 0 ? { title } : {}) },
+		});
+	};
+	for (const group of message.server_tool_calls) {
+		for (const call of Array.isArray(group?.calls) ? group.calls : []) {
+			for (const source of Array.isArray(call?.sources) ? call.sources : []) add(source?.url, source?.title);
+			if (call?.page) add(call.page.url, call.page.title);
+			if (call?.action?.type === "open_page") add(call.action.url, undefined);
+		}
+	}
+	if (annotations.length === 0) return;
+	message.annotations = [...(Array.isArray(message.annotations) ? message.annotations : []), ...annotations];
+}
 
 /**
  * Native web search reaches this executor as the hosted tool of the request's

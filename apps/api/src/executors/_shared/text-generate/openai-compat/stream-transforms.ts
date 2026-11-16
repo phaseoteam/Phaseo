@@ -1130,6 +1130,11 @@ export function transformChatStreamToResponses(
 											item_id: itemId,
 											content_index: 0,
 										}, controller);
+										// Citations that came before any text (DeepSeek sends its web sources
+										// first) go out once there is text for them to follow.
+										if (entry.emittedAnnotations < entry.annotations.length) {
+											await emitAnnotations(choiceIndex, entry, [], controller);
+										}
 									} else {
 										// The text is held back to parse tool calls out of it, but it was written
 										// first: keep its place ahead of later function_call items.

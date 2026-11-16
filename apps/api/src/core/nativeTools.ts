@@ -215,11 +215,11 @@ function hasDomainFilter(source: unknown): boolean {
 }
 
 /**
- * Whether DeepSeek can run this web search natively. DeepSeek rejects (400) a web
- * tool that carries domain filters, and a request that declares any other tool
- * beside its web tools ("other tools cannot be used together with
- * deepseek_web_search, deepseek_read_url"). Such requests stay on the gateway's
- * own search, which DeepSeek models can call like any function.
+ * Whether DeepSeek can run this web search natively. DeepSeek's web tools take no
+ * domain filters (they return 400), and when the request declares any other tool
+ * DeepSeek accepts it but silently drops its web tools: the model answers that it
+ * has no web access (checked live 2026-11-16). Such requests stay on the gateway's
+ * own search, which DeepSeek models call like any function.
  */
 export function deepSeekRunsNativeWebSearch(args: {
 	model?: string | null;

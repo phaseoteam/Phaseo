@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { deepseekQuirks } from "../../providers/deepseek/quirks";
+import { openAIChatToIR } from "../../transform-chat";
+import { resolveStreamForProtocol } from "../../index";
 
 function transform(request: Record<string, any>): Record<string, any> {
 	deepseekQuirks.transformRequest?.({ request, ir: { model: "deepseek/deepseek-v4.1-flash-1017" } as any });
@@ -76,5 +78,88 @@ describe("DeepSeek native web tools", () => {
 		};
 		deepseekQuirks.transformStreamChunk?.({ chunk, accumulated: {} });
 		expect(chunk.usage.server_tool_use).toMatchObject({ web_search_requests: 4, web_fetch_requests: 0 });
+	});
+});
+
+// DeepSeek returns the pages behind a web answer only in server_tool_calls; this is the
+// shape of a live response (2026-11-16), trimmed.
+const SERVER_TOOL_CALLS = [
+	{
+		index: 0,
+		reasoning_content: "Need to search.",
+		calls: [{
+			index: 0,
+			id: "srvtoolu_ds_00_a",
+			type: "deepseek_web_search",
+			kind: "deep_search",
+			action: { type: "search", queries: ["latest Node.js LTS"] },
+			status: "completed",
+			sources: [
+				{ type: "url", url: "https://nodejs.org/blog/release/v26.13.0", title: "Node.js 26.13.0 (LTS)", snippet: "LTS" },
+				{ type: "url", url: "https://nodesource.com/blog/update", title: "How to update Node.js" },
+			],
+		}],
+	},
+	{
+		index: 1,
+		reasoning_content: "",
+		calls: [
+			{ index: 0, id: "srvtoolu_ds_01_b", type: "deepseek_web_search", kind: "deep_search", action: { type: "open_page", url: "https://nodejs.org/en/about/previous-releases" }, status: "completed" },
+			{ index: 1, id: "srvtoolu_rl_00_c", type: "deepseek_read_url", kind: "read_link", action: { type: "read_link", url: "https://nodejs.org/blog/release/v26.13.0" }, status: "completed", page: { url: "https://nodejs.org/blog/release/v26.13.0", title: "Node.js 26.13.0 (LTS)" } },
+		],
+	},
+];
+const CITED = [
+	{ type: "url_citation", url: "https://nodejs.org/blog/release/v26.13.0", title: "Node.js 26.13.0 (LTS)" },
+	{ type: "url_citation", url: "https://nodesource.com/blog/update", title: "How to update Node.js" },
+	{ type: "url_citation", url: "https://nodejs.org/en/about/previous-releases" },
+];
+
+describe("DeepSeek web tool sources", () => {
+	it("cite every page a buffered answer searched, opened or read, once each", () => {
+		const ir = openAIChatToIR({
+			id: "chatcmpl-1",
+			choices: [{ index: 0, finish_reason: "stop", message: { role: "assistant", content: "Node.js 26 is the LTS line.", server_tool_calls: SERVER_TOOL_CALLS } }],
+			usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15, server_tool_use: { tool_search: 2, tool_fetch: 1, tool_image_search: 0 } },
+		}, "req_1", "deepseek-flash", "deepseek");
+		const text = ir.choices[0].message.content.find((part: any) => part.type === "text") as any;
+		expect(text.annotations).toEqual(CITED);
+	});
+
+	it.each([
+		["openai.chat.completions", "chat.completions"],
+		["openai.responses", "responses"],
+	] as const)("stream the sources to %s clients", async (protocol, endpoint) => {
+		const chunk = (delta: Record<string, unknown>, extra: Record<string, unknown> = {}) =>
+			`data: ${JSON.stringify({ id: "chatcmpl-1", object: "chat.completion.chunk", created: 1700000000, model: "deepseek-flash", choices: [{ index: 0, delta, finish_reason: null, ...extra }] })}\n\n`;
+		const body = [
+			chunk({ role: "assistant", content: "", server_tool_calls: SERVER_TOOL_CALLS }),
+			chunk({ content: "Node.js 26 is the LTS line." }),
+			chunk({}, { finish_reason: "stop" }),
+			"data: [DONE]\n\n",
+		].join("");
+		const upstream = new Response(body, { headers: { "Content-Type": "text/event-stream" } });
+		const text = await new Response(resolveStreamForProtocol(upstream, {
+			ir: { messages: [{ role: "user", content: [{ type: "text", text: "LTS?" }] }], model: "deepseek-flash", stream: true },
+			requestId: "req_1", workspaceId: "team_test", providerId: "deepseek", endpoint, protocol,
+			capability: "text.generate", byokMeta: [], pricingCard: null, meta: {},
+		} as any, "chat")).text();
+		// Responses frames name their event on the `event:` line.
+		const frames = text.split("\n\n").flatMap((block) => {
+			const data = block.split("\n").find((line) => line.startsWith("data: {"));
+			if (!data) return [];
+			const event = block.split("\n").find((line) => line.startsWith("event: "))?.slice(7);
+			const payload = JSON.parse(data.slice(6));
+			return [{ ...payload, type: payload.type ?? event }];
+		});
+		const urls = protocol === "openai.responses"
+			? frames.filter((frame) => frame.type === "response.output_text.annotation.added").map((frame) => frame.annotation.url)
+			: frames.flatMap((frame) => frame.choices ?? []).flatMap((choice: any) => choice.delta?.annotations ?? []).map((annotation: any) => annotation.url_citation.url);
+		expect(urls).toEqual(CITED.map((citation) => citation.url));
+		if (protocol === "openai.responses") {
+			const completed = frames.find((frame) => frame.type === "response.completed").response;
+			const message = completed.output.find((item: any) => item.type === "message");
+			expect(message.content[0].annotations.map((annotation: any) => annotation.url)).toEqual(CITED.map((citation) => citation.url));
+		}
 	});
 });

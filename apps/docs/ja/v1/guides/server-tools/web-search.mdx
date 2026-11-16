@@ -86,7 +86,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 `/v1/chat/completions` または `/v1/responses` で `engine: "native"` を指定すると、リクエストは Web 検索を自前で実行するプロバイダーにのみ送られます。そのモデルを提供するプロバイダーがない場合、Phaseo は代わりに既定エンジンを実行し、管理検索として課金します。
 
-これらのエンドポイントで Web 検索を自前で実行するプロバイダーは、OpenAI、`/v1/responses` の Azure OpenAI デプロイ、xAI、そして `deepseek/deepseek-v4.1-flash-1017` の DeepSeek です。DeepSeek が自前で検索するのは、Web 検索がリクエストの唯一のツールで、検索にドメインリストがない場合に限られます。DeepSeek の API は、そのどちらも受け付けないためです。このモデルへのそれ以外のリクエストでは、代わりに Phaseo の検索が使われ、独自のツールと併用できます。推論を有効にすると、DeepSeek は複数のステップでページを開いて読む、より深い検索を実行します。
+これらのエンドポイントで Web 検索を自前で実行するプロバイダーは、OpenAI、`/v1/responses` の Azure OpenAI デプロイ、xAI、そして `deepseek/deepseek-v4.1-flash-1017` の DeepSeek です。DeepSeek が自前で検索するのは、Web 検索がリクエストの唯一のツールで、検索にドメインリストがない場合に限られます。DeepSeek の API はドメインリストを受け付けず、リクエストに他のツールがあると Web 検索をオフにするためです。このモデルへのそれ以外のリクエストでは、代わりに Phaseo の検索が使われ、独自のツールと併用できます。推論を有効にすると、DeepSeek は複数のステップでページを開いて読む、より深い検索を実行します。
 
 OpenAI 独自の `{ "type": "web_search" }` ツールを送った場合も、`engine: "native"` と同じように動作します。`native` はツール定義でのみ指定してください。プロバイダーのツールはリクエスト送信前に選ぶ必要があるため、モデルが呼び出しで `native` を指定すると、その呼び出しは `unsupported_search_engine` を返します。
 
@@ -128,4 +128,4 @@ OpenAI 独自の `{ "type": "web_search" }` ツールを送った場合も、`en
 }
 ```
 
-モデルの料金カードで `server_tool_web_search_requests` と `server_tool_web_search_extra_results` の料金を設定していない場合、Phaseo は管理型検索 1 回につき $0.007、最初の 10 件を超える結果 1 件につき $0.001 を課金します。失敗した検索は課金されず、TinyFish Search は公開プランで無料のため、`engine: "tinyfish"` では検索料金は加算されません。有料エンジンでの検索には、モデルが無料でもクレジットが必要です。ネイティブ検索は、プロバイダーの公開価格で `native_web_search_requests` として課金されます。たとえば OpenAI と Anthropic では 1,000 回の検索につき $10、DeepSeek では 1,000 回につき $0.75 で、DeepSeek では結果を返した検索のみが対象です。DeepSeek は、検索中に開いた各ページも 1,000 ページにつき $0.75 で、`native_web_fetch_requests` として課金します。
+モデルの料金カードで `server_tool_web_search_requests` と `server_tool_web_search_extra_results` の料金を設定していない場合、Phaseo は管理型検索 1 回につき $0.007、最初の 10 件を超える結果 1 件につき $0.001 を課金します。失敗した検索は課金されず、TinyFish Search は公開プランで無料のため、`engine: "tinyfish"` では検索料金は加算されません。有料エンジンでの検索には、モデルが無料でもクレジットが必要です。ネイティブ検索は、プロバイダーの公開価格で `native_web_search_requests` として課金されます。たとえば OpenAI と Anthropic では 1,000 回の検索につき $10、DeepSeek では 1,000 回につき $0.75 で、DeepSeek では結果を返した検索のみが対象です。DeepSeek は、検索中に開いた各ページも 1,000 ページにつき $0.75 で、`native_web_fetch_requests` として課金します。推論を有効にすると、DeepSeek の 1 回の回答で 12 回以上検索することがあり、読み込んだ結果は入力トークンに加算されます。

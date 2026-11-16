@@ -86,7 +86,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 在 `/v1/chat/completions` 或 `/v1/responses` 上使用 `engine: "native"` 时，请求只会发往自己运行网页搜索的提供商。如果没有这样的提供商提供该模型，Phaseo 会改用默认引擎，并按托管搜索计费。
 
-在这些接口上自己运行网页搜索的提供商有 OpenAI、`/v1/responses` 上的 Azure OpenAI 部署、xAI，以及 `deepseek/deepseek-v4.1-flash-1017` 上的 DeepSeek。只有当网页搜索是请求中唯一的工具、且搜索没有域名列表时，DeepSeek 才会自己搜索，因为它的 API 会拒绝这两种情况。发往该模型的其他请求会改用 Phaseo 的搜索，它可以与你自己的工具一起使用。开启推理后，DeepSeek 会运行更深入的搜索，分多个步骤打开并阅读页面。
+在这些接口上自己运行网页搜索的提供商有 OpenAI、`/v1/responses` 上的 Azure OpenAI 部署、xAI，以及 `deepseek/deepseek-v4.1-flash-1017` 上的 DeepSeek。只有当网页搜索是请求中唯一的工具、且搜索没有域名列表时，DeepSeek 才会自己搜索，因为它的 API 会拒绝域名列表，并在请求含有其他工具时关闭网页搜索。发往该模型的其他请求会改用 Phaseo 的搜索，它可以与你自己的工具一起使用。开启推理后，DeepSeek 会运行更深入的搜索，分多个步骤打开并阅读页面。
 
 发送 OpenAI 自己的 `{ "type": "web_search" }` 工具，效果与 `engine: "native"` 相同。只在工具定义中设置 `native`：如果模型在调用中请求 `native`，调用会返回 `unsupported_search_engine`，因为提供商的工具必须在请求发送前选定。
 
@@ -128,4 +128,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-除非模型价格卡为 `server_tool_web_search_requests` 和 `server_tool_web_search_extra_results` 设置了自己的价格，Phaseo 对每次托管搜索收取 $0.007，前 10 条之后的每条结果另收 $0.001。失败的搜索不计费；TinyFish Search 在其公开方案中免费，因此 `engine: "tinyfish"` 不增加搜索费用。即使模型免费，使用付费引擎搜索也需要账户有余额。原生搜索按提供商公布的价格以 `native_web_search_requests` 计费：例如 OpenAI 和 Anthropic 为每 1,000 次搜索 $10，DeepSeek 为每 1,000 次 $0.75，且 DeepSeek 只对返回结果的搜索计数。DeepSeek 还会对搜索期间打开的每个页面按每 1,000 个 $0.75 计费，计为 `native_web_fetch_requests`。
+除非模型价格卡为 `server_tool_web_search_requests` 和 `server_tool_web_search_extra_results` 设置了自己的价格，Phaseo 对每次托管搜索收取 $0.007，前 10 条之后的每条结果另收 $0.001。失败的搜索不计费；TinyFish Search 在其公开方案中免费，因此 `engine: "tinyfish"` 不增加搜索费用。即使模型免费，使用付费引擎搜索也需要账户有余额。原生搜索按提供商公布的价格以 `native_web_search_requests` 计费：例如 OpenAI 和 Anthropic 为每 1,000 次搜索 $10，DeepSeek 为每 1,000 次 $0.75，且 DeepSeek 只对返回结果的搜索计数。DeepSeek 还会对搜索期间打开的每个页面按每 1,000 个 $0.75 计费，计为 `native_web_fetch_requests`。开启推理后，DeepSeek 的一次回答可能运行十几次或更多搜索，它读取的结果会计入输入 token。
