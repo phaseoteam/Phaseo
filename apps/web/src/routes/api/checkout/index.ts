@@ -29,6 +29,7 @@ async function handlePost(req: Request) {
 			notificationCheckoutKind: "legacy_checkout",
 			originHeader: req.headers.get("origin"),
 			refererHeader: req.headers.get("referer"),
+			acceptLanguage: req.headers.get("accept-language"),
 			requestedWorkspaceId,
 		});
 	} catch (err: any) {
