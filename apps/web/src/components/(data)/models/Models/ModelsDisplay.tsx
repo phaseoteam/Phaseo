@@ -188,7 +188,8 @@ type FilterDimension =
 	| "creators"
 	| "licenses"
 	| "weights"
-	| "years";
+	| "years"
+	| "usable";
 
 const SORT_OPTION_KEYS: Record<ModelsSortOption, string> = {
 	newest: "sortNewest",
@@ -1355,7 +1356,7 @@ function ModelsDisplayContent({
 			const exclude = options?.exclude ?? null;
 			const searchValue = deferredSearch.trim().toLowerCase();
 
-			if (usableFilterActive && blockedModelIds.has(prepared.model.model_id)) {
+			if (exclude !== "usable" && usableFilterActive && blockedModelIds.has(prepared.model.model_id)) {
 				return false;
 			}
 
@@ -1538,6 +1539,18 @@ function ModelsDisplayContent({
 	const filteredModels = useMemo(
 		() => filteredPreparedModels.map((prepared) => prepared.model),
 		[filteredPreparedModels],
+	);
+
+	const usableModelCount = useMemo(
+		() =>
+			blockedModelIds.size
+				? preparedModels.filter(
+						(prepared) =>
+							!blockedModelIds.has(prepared.model.model_id) &&
+							matchesPreparedModel(prepared, { exclude: "usable" }),
+					).length
+				: 0,
+		[blockedModelIds, matchesPreparedModel, preparedModels],
 	);
 
 	const dynamicSidebarCounts = useMemo(() => {
@@ -1898,24 +1911,31 @@ function ModelsDisplayContent({
 		</Button>
 	) : null;
 	// Shown when the header workspace's rules block some models (or the filter is already on, so it can be turned off).
-	const usableFilterButton = signedIn && (blockedModelIds.size > 0 || usableOnly) ? (
-		<Button
-			type="button"
-			size="sm"
-			variant={usableOnly ? "default" : "outline"}
-			className="h-8 gap-1.5 rounded-md"
-			onClick={() => setUsableOnly(!usableOnly)}
-			aria-pressed={usableOnly}
-			title={modelAccess?.workspaceName ? tFilters("usableInWorkspaceTitle", { workspace: modelAccess.workspaceName }) : undefined}
-		>
-			<ShieldCheck className="h-3.5 w-3.5" />
-			{tFilters("usableInWorkspace")}
-		</Button>
+	const usableFilterRow = signedIn && (blockedModelIds.size > 0 || usableOnly) ? (
+		<div className="mt-1.5 border-t border-border/70 pt-1.5">
+			<button
+				type="button"
+				onClick={() => setUsableOnly(!usableOnly)}
+				className={cn(
+					"group flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 cursor-pointer transition-colors",
+					usableOnly ? "bg-muted/45 text-foreground hover:bg-muted/55" : "hover:bg-muted/50",
+				)}
+				aria-pressed={usableOnly}
+				title={modelAccess?.workspaceName ? tFilters("usableInWorkspaceTitle", { workspace: modelAccess.workspaceName }) : undefined}
+			>
+				<span className="flex items-center gap-2 min-w-0">
+					<ShieldCheck className={cn("h-3.5 w-3.5 shrink-0", usableOnly ? "text-primary" : "text-muted-foreground")} />
+					<span className="text-sm truncate">{tFilters("usableInWorkspace")}</span>
+				</span>
+				<span className={cn("inline-flex min-w-5 shrink-0 justify-center text-[11px] tabular-nums", usableOnly ? "text-foreground" : "text-muted-foreground")}>
+					{blockedModelIds.size > 0 ? usableModelCount : null}
+				</span>
+			</button>
+		</div>
 	) : null;
 	const toolbarFilterButtons = (
 		<>
 			{privateFilterButton}
-			{usableFilterButton}
 		</>
 	);
 
@@ -2030,6 +2050,7 @@ function ModelsDisplayContent({
 							return Archive;
 						}}
 					/>
+					{usableFilterRow}
 				</AccordionContent>
 			</AccordionItem>
 
