@@ -6,4 +6,6 @@ openapi: "/fr/openapi/v1/openapi.localized.yaml POST /private-models"
 description: "Connectez un point de terminaison compatible avec OpenAI à l’espace de travail authentifié."
 ---
 
+Cet endpoint est en [Bêta](../../developers/feature-maturity.mdx).
+
 Nécessite `private_models:write` et une identité de propriétaire ou d’administrateur. Fournissez `model_reference` sous forme d’identifiant exact du modèle dans le catalogue ou de slug court propre à l’espace de travail. Phaseo attribue l’identifiant final du modèle ; `credential` est chiffré et accessible uniquement en écriture.

@@ -7,7 +7,7 @@ icon: "list-tree"
 Define una taxonomía, como departamento, público o tipo de tarea, y un modelo que la aplique, y Phaseo etiquetará cada solicitud finalizada con las respuestas de ese modelo. Cada respuesta se guarda como una [etiqueta de solicitud](/es/v1/guides/request-labels), así que puedes filtrar y agrupar registros, uso y analíticas por ella exactamente igual que con las etiquetas que envía tu código. Usa un clasificador cuando tu código no conozca la categoría: para quién se escribió un prompt, qué tipo de trabajo está haciendo un agente o si una solicitud toca un tema regulado.
 
 <Note>
-Los clasificadores de solicitudes están en beta. Los propietarios y administradores los gestionan en **Ajustes → Clasificadores** o con la API de gestión `/v1/classifiers`, usando una [clave de gestión](/es/v1/developers/management-api-keys) con los ámbitos `classifiers:*`.
+Los clasificadores de solicitudes están en [beta](../developers/feature-maturity.mdx) y se activan por espacio de trabajo bajo solicitud. Los propietarios y administradores los gestionan en **Ajustes → Clasificadores** o con la API de gestión `/v1/classifiers`, usando una [clave de gestión](/es/v1/developers/management-api-keys) con los ámbitos `classifiers:*`.
 </Note>
 
 ## Cómo se clasifica una solicitud

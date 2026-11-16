@@ -6,4 +6,6 @@ openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml PATCH /private-models/{id}"
 description: "更新端点设置或轮换仅可写入的凭据。"
 ---
 
+此端点处于 [Beta](../../developers/feature-maturity.mdx) 阶段。
+
 需要 `private_models:write` 权限以及所有者或管理员身份。提交 `slug` 可重命名工作区内的模型；不能直接提供 `model_id`。

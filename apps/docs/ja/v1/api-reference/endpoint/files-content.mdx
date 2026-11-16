@@ -5,4 +5,6 @@ sidebarTitle: "ファイル内容をダウンロード"
 openapi: "/ja/openapi/v1/openapi.localized.yaml GET /files/{file_id}/content"
 description: "認証済みワークスペースに属するファイルの内容をダウンロードします。"
 ---
+このエンドポイントは[ベータ](../../developers/feature-maturity.mdx)段階で、ワークスペースごとにリクエスト制で有効化されます。
+
 このルートは、ファイルが現在のワークスペースに属していることを確認してから、上流のファイルデータをプロキシします。

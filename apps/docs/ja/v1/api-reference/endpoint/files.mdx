@@ -6,6 +6,8 @@ openapi: "/ja/openapi/v1/openapi.localized.yaml POST /files"
 description: "バッチ処理用のファイルをアップロードします。ゲートウェイは所有者メタデータを保存するため、同じワークスペースから後でファイルやその内容を取得できます。"
 ---
 
+このエンドポイントは[ベータ](../../developers/feature-maturity.mdx)段階で、ワークスペースごとにリクエスト制で有効化されます。
+
 返された`file_id`を保存し、次のエンドポイントで再利用します。
 
 - `POST /v1/batches`

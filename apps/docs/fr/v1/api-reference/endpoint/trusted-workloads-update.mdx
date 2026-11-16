@@ -5,6 +5,8 @@ badge: "Bêta"
 openapi: "/fr/openapi/v1/openapi.localized.yaml PATCH /workload-identity/policies/{id}"
 description: "Modifie le nom, l’état, les conditions sur les claims ou la durée de vie maximale du jeton d’une règle de workload de confiance."
 ---
+Cet endpoint est en [Bêta](../../developers/feature-maturity.mdx) et s’active par espace de travail, sur demande.
+
 <Note>Nécessite `keys:write` sur une clé de gestion ou un jeton OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Les workloads de confiance sont en bêta ; les espaces de travail qui n’y ont pas accès reçoivent `404`.</Note>
 
 La plateforme, l’émetteur et le propriétaire ne peuvent pas changer. Créez plutôt une nouvelle règle. Les modifications atteignent la passerelle en moins d’une minute.

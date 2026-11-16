@@ -5,6 +5,8 @@ openapi: "/es/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "Evalúa preguntas tipadas sobre el estado de la aplicación con modelos de decisión compatibles."
 ---
 
+Este endpoint está en fase [Beta](../../developers/feature-maturity.mdx).
+
 Envía `input` y un array ordenado de `questions` a `POST /v1/decisions` y recibe una respuesta tipada por pregunta, con probabilidades, en el mismo orden.
 
 ## Toma una decisión

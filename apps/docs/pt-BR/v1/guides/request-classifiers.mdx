@@ -7,7 +7,7 @@ icon: "list-tree"
 Defina uma taxonomia, como departamento, público ou tipo de tarefa, e um modelo para aplicá-la, e o Phaseo rotula cada solicitação concluída com as respostas desse modelo. Cada resposta é armazenada como um [rótulo de solicitação](/pt-BR/v1/guides/request-labels), então você filtra e agrupa registros, uso e análises por ela exatamente como faz com os rótulos que o seu código envia. Use um classificador quando o seu código não souber a categoria: para quem um prompt foi escrito, que tipo de trabalho um agente está fazendo ou se uma solicitação envolve um tema regulado.
 
 <Note>
-Os classificadores de solicitações estão em beta. Proprietários e administradores os gerenciam em **Configurações → Classificadores** ou com a API de gerenciamento `/v1/classifiers`, usando uma [chave de gerenciamento](/pt-BR/v1/developers/management-api-keys) com os escopos `classifiers:*`.
+Os classificadores de solicitações estão em [beta](../developers/feature-maturity.mdx) e são ativados por espaço de trabalho, sob solicitação. Proprietários e administradores os gerenciam em **Configurações → Classificadores** ou com a API de gerenciamento `/v1/classifiers`, usando uma [chave de gerenciamento](/pt-BR/v1/developers/management-api-keys) com os escopos `classifiers:*`.
 </Note>
 
 ## Como uma solicitação é classificada

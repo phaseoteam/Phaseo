@@ -6,6 +6,8 @@ openapi: "/fr/openapi/v1/openapi.localized.yaml POST /files"
 description: "Téléversez un fichier pour le traiter par lots. La passerelle stocke les métadonnées de propriété afin que le même espace de travail puisse récupérer ultérieurement le fichier ou son contenu."
 ---
 
+Cet endpoint est en [Bêta](../../developers/feature-maturity.mdx) et s’active par espace de travail, sur demande.
+
 Conservez le `file_id` renvoyé et réutilisez-le avec :
 
 - `POST /v1/batches`

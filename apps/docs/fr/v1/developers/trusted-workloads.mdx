@@ -5,7 +5,7 @@ icon: "fingerprint-pattern"
 ---
 
 <Note>
-Les workloads de confiance sont en bêta et sont déployés progressivement dans les espaces de travail. Si **Paramètres → Clés API → Workloads de confiance** n’apparaît pas dans votre tableau de bord, votre espace de travail n’y a pas encore accès.
+Les workloads de confiance sont en [bêta](feature-maturity.mdx) et sont déployés progressivement dans les espaces de travail. Si **Paramètres → Clés API → Workloads de confiance** n’apparaît pas dans votre tableau de bord, votre espace de travail n’y a pas encore accès.
 </Note>
 
 Envoyez le jeton OIDC de courte durée de votre plateforme comme jeton bearer à la place d’une clé API Phaseo : aucun secret durable n’a besoin d’être stocké dans les paramètres de votre projet ni dans les secrets de CI. Les plateformes donnent à chaque déploiement, job ou workload un jeton signé qui indique qui il est, par exemple « le déploiement de production du projet `website` » ou « un job du projet GitLab `4815162` », et ce jeton expire en quelques heures. Vous indiquez à Phaseo à quels workloads faire confiance.
