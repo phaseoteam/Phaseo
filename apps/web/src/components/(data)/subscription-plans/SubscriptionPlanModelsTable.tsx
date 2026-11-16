@@ -47,6 +47,8 @@ export default function SubscriptionPlanModelsTable({ models, usage, limit }: { 
 								<TableCell className="px-4 py-3">
 									<Link href={`/models/${model.model_id}`} className="font-medium underline decoration-transparent underline-offset-4 transition-colors hover:decoration-current">{model.model.name}</Link>
 									{model.model.organisation_name ? <p className="text-xs text-muted-foreground">{model.model.organisation_name}</p> : null}
+									{/* Phones have no access column, so keep its qualifications under the name. */}
+									{accessText ? <p className="text-xs text-muted-foreground sm:hidden">{accessText}</p> : null}
 								</TableCell>
 								<TableCell className="hidden px-4 py-3 text-sm text-muted-foreground sm:table-cell">{accessText || "—"}</TableCell>
 								{hasUsage ? <TableCell className="px-4 py-3 text-right tabular-nums">{summary ? format.tokens(summary.mostTokens.monthly_tokens) : <span className="text-muted-foreground">—</span>}</TableCell> : null}

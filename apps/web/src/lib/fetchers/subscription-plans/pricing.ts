@@ -28,6 +28,21 @@ export interface SubscriptionPrice {
 	tax_treatment?: string;
 }
 
+/**
+ * The least a subscriber must pay each billing period for this offer, for ranking by price: every fixed
+ * ongoing component, with seat charges multiplied by the required seats. Introductory phases are left out
+ * so plans rank by what they cost after any first-cycle deal. Metered extras are optional and not counted.
+ * Null when a required charge has no known amount (custom or "starting at" pricing).
+ */
+export function minimumPayableAmount(price: SubscriptionPrice): number | null {
+	const components = (price.components ?? []).filter((component) => component.phase !== "introductory");
+	if (!components.length) return price.price == null || !Number.isFinite(Number(price.price)) ? null : Number(price.price);
+	const required = components.filter((component) => component.pricing_type !== "usage_based");
+	if (!required.length || required.some((component) => component.pricing_type !== "free" && (component.pricing_type !== "fixed" || component.amount == null))) return null;
+	const seats = Math.max(1, price.minimum_seats ?? 1);
+	return required.reduce((total, component) => total + (component.pricing_type === "free" ? 0 : Number(component.amount) * (component.charge_basis === "seat" ? seats : 1)), 0);
+}
+
 export interface SubscriptionPriceLabels {
 	custom: string;
 	usage: string;

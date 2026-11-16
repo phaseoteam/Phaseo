@@ -13,7 +13,7 @@ import {
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import type { SubscriptionPlanSummary as SubscriptionPlan } from "./subscriptionPlanSummary";
-import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice, type SubscriptionPriceLabels } from "@/lib/fetchers/subscription-plans/pricing";
+import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, minimumPayableAmount, type SubscriptionPrice, type SubscriptionPriceLabels } from "@/lib/fetchers/subscription-plans/pricing";
 import { getLogoLabel } from "@/lib/logos";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { apiMultiple, MIN_API_MULTIPLE, perMillionFractionDigits, summarizeUsage, USAGE_SOURCE_URL } from "@/lib/fetchers/subscription-plans/usage";
@@ -231,14 +231,17 @@ export function getPlanSortKey(prices: SubscriptionPrice[]): {
 	monthlyEquivalent: number;
 	rawPrice: number;
 } | null {
+	// Rank by the minimum payable amount (all required components and seats), not the base component alone.
 	const sorted = sortSubscriptionPlanPrices(
-		prices.filter(
-			(price) =>
-				price.price != null && Number.isFinite(Number(price.price)) &&
-				Number(price.price) >= 0 &&
-				Boolean(String(price.currency ?? "").trim()) &&
-				!isNonFixedPlanFrequency(price.frequency),
-		),
+		prices
+			.map((price) => ({ ...price, price: minimumPayableAmount(price) }))
+			.filter(
+				(price) =>
+					price.price != null && Number.isFinite(Number(price.price)) &&
+					Number(price.price) >= 0 &&
+					Boolean(String(price.currency ?? "").trim()) &&
+					!isNonFixedPlanFrequency(price.frequency),
+			),
 	);
 	const first = sorted[0];
 	if (!first) return null;

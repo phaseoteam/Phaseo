@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, type SubscriptionPrice } from "./pricing";
+import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, minimumPayableAmount, type SubscriptionPrice, type SubscriptionPriceComponent } from "./pricing";
 
 const monthly: SubscriptionPrice = { price: 30, currency: "USD", frequency: "monthly", billing_interval: "month", billing_interval_count: 1 };
 describe("subscription offer formatting", () => {
@@ -51,5 +51,24 @@ describe("subscription offer formatting", () => {
 	test("does not invent a currency or subscription period for metered charges", () => {
 		expect(formatSubscriptionPrice({ ...monthly, currency: null })).toBe("30 / month");
 		expect(formatSubscriptionPrice({ ...monthly, components: [{ component_key: "overage", pricing_type: "usage_based", amount: 0.01, charge_basis: "unit", unit: "credit", unit_quantity: 1 }] })).toBe("$0.01 / 1 credit");
+	});
+});
+
+describe("minimumPayableAmount", () => {
+	const component = (amount: number | null, extra: Record<string, unknown> = {}) => ({ component_key: "c", pricing_type: "fixed", amount, charge_basis: "account", ...extra }) as SubscriptionPriceComponent;
+	const offer = (components: SubscriptionPriceComponent[], minimum_seats: number | null = null) => ({ price: components[0]?.amount ?? null, currency: "USD", frequency: "monthly", components, minimum_seats }) as SubscriptionPrice;
+
+	test("adds required seats to the account charge", () => {
+		// $80 + 2 required $40 seats = $160, so it ranks after a flat $100 plan.
+		expect(minimumPayableAmount(offer([component(80), component(40, { charge_basis: "seat" })], 2))).toBe(160);
+		expect(minimumPayableAmount(offer([component(100)]))).toBe(100);
+	});
+	test("ranks by the ongoing price, not an introductory deal", () => {
+		expect(minimumPayableAmount(offer([component(1, { phase: "introductory" }), component(30, { phase: "renewal" })]))).toBe(30);
+	});
+	test("ignores optional metered extras but not unknown required charges", () => {
+		expect(minimumPayableAmount(offer([component(20), component(0.01, { pricing_type: "usage_based", charge_basis: "unit" })]))).toBe(20);
+		expect(minimumPayableAmount(offer([component(null, { pricing_type: "custom" })]))).toBeNull();
+		expect(minimumPayableAmount(offer([component(0, { pricing_type: "free" })]))).toBe(0);
 	});
 });
