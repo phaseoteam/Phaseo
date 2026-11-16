@@ -1818,6 +1818,7 @@ pub struct GatewayWebSearchToolDefinition {
 	pub include_text: Option<bool>,
 	pub language: Option<String>,
 	pub max_results: Option<i64>,
+	pub mode: Option<String>,
 	pub page: Option<i64>,
 	pub parameters: Option<HashMap<String, String>>,
 	pub r#type: String,

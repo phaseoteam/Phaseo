@@ -2556,6 +2556,7 @@ type GatewayWebSearchToolDefinition struct {
 	IncludeText *bool `json:"include_text,omitempty"`
 	Language *string `json:"language,omitempty"`
 	MaxResults *int `json:"max_results,omitempty"`
+	Mode *string `json:"mode,omitempty"`
 	Page *int `json:"page,omitempty"`
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
 	Type string `json:"type"`

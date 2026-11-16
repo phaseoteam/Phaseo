@@ -12411,6 +12411,9 @@ components:
                 - perplexity
                 - tinyfish
                 - deepseek
+            mode:
+              type: string
+              description: 'इंजन कैसे खोजता है। Exa: lite, auto (डिफ़ॉल्ट), deep-lite, deep, agent-minimal या agent-low। Parallel: turbo, fast, basic, advanced (डिफ़ॉल्ट), task-lite या task-base। Perplexity: standard (डिफ़ॉल्ट) या fast। बाकी इंजनों में कोई मोड नहीं है। केवल टूल पर सेट किया जाता है।'
             max_results:
               type: integer
               minimum: 1
@@ -12426,6 +12429,9 @@ components:
             include_highlights:
               type: boolean
           additionalProperties: false
+        mode:
+          type: string
+          description: 'इंजन कैसे खोजता है। Exa: lite, auto (डिफ़ॉल्ट), deep-lite, deep, agent-minimal या agent-low। Parallel: turbo, fast, basic, advanced (डिफ़ॉल्ट), task-lite या task-base। Perplexity: standard (डिफ़ॉल्ट) या fast। बाकी इंजनों में कोई मोड नहीं है। केवल टूल पर सेट किया जाता है।'
         max_results:
           type: integer
           minimum: 1

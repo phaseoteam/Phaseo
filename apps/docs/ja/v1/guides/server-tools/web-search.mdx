@@ -45,6 +45,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | パラメーター | 型 | 既定値 | 説明 |
 | --- | --- | --- | --- |
 | `engine` | string | `exa` | `auto`、`native`、`exa`、`parallel`、`firecrawl`、`perplexity`、`tinyfish`、`deepseek` のいずれか。[エンジンの選択](#choose-an-engine)を参照してください。 |
+| `mode` | string | エンジンの既定 | エンジンの検索方法: より速く、より深く、またはリサーチ実行。[モードを選ぶ](#choose-a-mode)を参照してください。 |
 | `max_results` | integer | `5` | 検索 1 回あたりの結果数。上限は `25` です。 |
 | `max_total_results` | integer | `25` | リクエスト内のすべての検索を合わせた結果数。上限は `100` です。`max_results` を下回ることはありません。 |
 | `max_uses` | integer | `10` | 1 リクエストあたりの検索回数。上限は `100` です。 |
@@ -92,6 +93,30 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 OpenAI 独自の `{ "type": "web_search" }` ツールを送った場合も、`engine: "native"` と同じように動作します。`native` はツール定義でのみ指定してください。プロバイダーのツールはリクエスト送信前に選ぶ必要があるため、モデルが呼び出しで `native` を指定すると、その呼び出しは `unsupported_search_engine` を返します。
 
+<span id="choose-a-mode"></span>
+## モードを選ぶ
+
+ツールに `mode` を設定して、そのエンジンの検索方法を選びます。モデルはこれを変更できないため、呼び出しが選んだモードより高くなることはありません。モデルが別のエンジンに切り替えた場合、そのエンジンは既定のモードで実行されます。エンジンにないモードを指定すると 400 が返ります。
+
+| エンジン | `mode` | 実行内容 | 1 回あたりの料金 |
+| --- | --- | --- | --- |
+| `exa` | `lite` | チャットや音声向けの低レイテンシ検索 | $0.004 |
+| `exa` | `auto` (既定) | バランスの取れた検索 | $0.007 |
+| `exa` | `deep-lite` | 軽量な多段階リサーチ、約 4 秒 | $0.012 |
+| `exa` | `deep` | 合成された `answer` 付きの多段階リサーチ、4〜15 秒 | $0.012 |
+| `exa` | `agent-minimal` | 最小の effort での Exa Agent リサーチ実行 | $0.012 |
+| `exa` | `agent-low` | 低い effort での Exa Agent リサーチ実行 | $0.025 |
+| `parallel` | `turbo`, `fast` | Parallel の最速の検索 | $0.001 |
+| `parallel` | `basic`, `advanced` (既定) | Parallel の高品質な検索 | $0.005 |
+| `parallel` | `task-lite` | Parallel Task のリサーチ実行、10〜60 秒 | $0.005 |
+| `parallel` | `task-base` | Parallel Task のリサーチ実行、15〜100 秒 | $0.010 |
+| `perplexity` | `standard` (既定) | Perplexity Search | $0.005 |
+| `perplexity` | `fast` | Perplexity Fast Search | $0.001 |
+
+Exa と Parallel の検索では、最初の 10 件を超える結果 1 件ごとに $0.001 もかかります。また Exa は返すコンテンツの種類ごとに 1 ページ $0.001 を請求するため、5 件の結果にハイライトとテキストを付けると $0.010 加算されます。`firecrawl`、`tinyfish`、`deepseek` にはモードがありません。
+
+リサーチモードは `answer` と、引用したページを `results` として返します。120 秒たっても終わらないリサーチ実行は `research_timeout` を返します。タイムアウトした実行、失敗した実行、クライアントが切断された実行は課金されません。
+
 ## ドメインで絞り込む
 
 回答を決まった情報源から得る必要がある場合は `allowed_domains` を、それ以外は制限のない検索から特定のサイトだけを外したい場合は `excluded_domains` を使います。
@@ -130,4 +155,4 @@ OpenAI 独自の `{ "type": "web_search" }` ツールを送った場合も、`en
 }
 ```
 
-モデルの料金カードで `server_tool_web_search_requests` と `server_tool_web_search_extra_results` の料金を設定していない場合、Phaseo は管理型検索 1 回につき $0.007、最初の 10 件を超える結果 1 件につき $0.001 を課金します。失敗した検索は課金されず、TinyFish Search は公開プランで無料のため、`engine: "tinyfish"` では検索料金は加算されません。有料エンジンでの検索には、モデルが無料でもクレジットが必要です。ネイティブ検索は、プロバイダーの公開価格で `native_web_search_requests` として課金されます。たとえば OpenAI と Anthropic では 1,000 回の検索につき $10、DeepSeek では 1,000 回につき $0.75 で、DeepSeek では結果を返した検索のみが対象です。DeepSeek は、リンク読み取りツールで URL を読み込む各ページ取得も 1,000 回につき $0.75 で、`native_web_fetch_requests` として課金します。推論を有効にすると、DeepSeek の 1 回の回答で 12 回以上検索することがあり、読み込んだ結果は入力トークンに加算されます。
+Phaseo は Exa、Parallel、Perplexity、DeepSeek での検索を、各エンジンが Phaseo に請求する金額で課金します。料金は [モードを選ぶ](#choose-a-mode) のとおりで、DeepSeek の検索は $0.00075 で、結果を返した場合のみ課金されます。Exa では、その呼び出しについて Exa が報告するコスト、報告がない場合は Exa の定価が料金になります。各料金はリクエストの `pricing_lines` に、`engine`、`mode`、`price_source` を含む 1 行として記録されます。Firecrawl の検索は $0.007、最初の 10 件を超える結果 1 件ごとに $0.001 で課金されます。失敗した検索は課金されず、TinyFish Search は公開プランで無料のため、`engine: "tinyfish"` では検索料金は加算されません。有料エンジンでの検索には、モデルが無料でもクレジットが必要です。ネイティブ検索は、プロバイダーの公開価格で `native_web_search_requests` として課金されます。たとえば OpenAI と Anthropic では 1,000 回の検索につき $10、DeepSeek では 1,000 回につき $0.75 で、DeepSeek では結果を返した検索のみが対象です。DeepSeek は、リンク読み取りツールで URL を読み込む各ページ取得も 1,000 回につき $0.75 で、`native_web_fetch_requests` として課金します。推論を有効にすると、DeepSeek の 1 回の回答で 12 回以上検索することがあり、読み込んだ結果は入力トークンに加算されます。

@@ -45,6 +45,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | पैरामीटर | प्रकार | डिफ़ॉल्ट | विवरण |
 | --- | --- | --- | --- |
 | `engine` | string | `exa` | `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity`, `tinyfish` या `deepseek`। देखें [इंजन चुनें](#choose-an-engine)। |
+| `mode` | string | इंजन का डिफ़ॉल्ट | इंजन कैसे खोजता है: तेज़, गहराई से, या रिसर्च रन के रूप में। [मोड चुनें](#choose-a-mode) देखें। |
 | `max_results` | integer | `5` | प्रति खोज कॉल परिणाम, अधिकतम `25`। |
 | `max_total_results` | integer | `25` | अनुरोध की सभी खोजों में कुल परिणाम, अधिकतम `100`। कभी `max_results` से कम नहीं। |
 | `max_uses` | integer | `10` | प्रति अनुरोध खोज कॉल, अधिकतम `100`। |
@@ -92,6 +93,30 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 OpenAI का अपना `{ "type": "web_search" }` टूल भेजना `engine: "native"` की तरह ही काम करता है। `native` सिर्फ़ टूल परिभाषा में सेट करें: अगर मॉडल किसी कॉल में `native` मांगता है, तो कॉल `unsupported_search_engine` लौटाती है, क्योंकि प्रदाता का टूल अनुरोध भेजने से पहले चुनना होता है।
 
+<span id="choose-a-mode"></span>
+## मोड चुनें
+
+टूल पर `mode` सेट करके चुनें कि उसका इंजन कैसे खोजे। मॉडल इसे बदल नहीं सकता, इसलिए कोई भी कॉल आपके चुने मोड से ज़्यादा महंगी नहीं होती। अगर मॉडल किसी दूसरे इंजन पर जाता है, तो वह इंजन अपने डिफ़ॉल्ट मोड में चलता है। जो मोड इंजन में नहीं है, वह 400 लौटाता है।
+
+| इंजन | `mode` | क्या चलता है | प्रति कॉल कीमत |
+| --- | --- | --- | --- |
+| `exa` | `lite` | चैट और वॉइस के लिए कम latency वाली खोज | $0.004 |
+| `exa` | `auto` (डिफ़ॉल्ट) | संतुलित खोज | $0.007 |
+| `exa` | `deep-lite` | हल्की बहु-चरणीय रिसर्च, लगभग 4 सेकंड | $0.012 |
+| `exa` | `deep` | संश्लेषित `answer` के साथ बहु-चरणीय रिसर्च, 4 से 15 सेकंड | $0.012 |
+| `exa` | `agent-minimal` | न्यूनतम effort पर Exa Agent रिसर्च रन | $0.012 |
+| `exa` | `agent-low` | कम effort पर Exa Agent रिसर्च रन | $0.025 |
+| `parallel` | `turbo`, `fast` | Parallel की सबसे तेज़ खोज | $0.001 |
+| `parallel` | `basic`, `advanced` (डिफ़ॉल्ट) | Parallel की बेहतर गुणवत्ता वाली खोज | $0.005 |
+| `parallel` | `task-lite` | Parallel Task रिसर्च रन, 10 से 60 सेकंड | $0.005 |
+| `parallel` | `task-base` | Parallel Task रिसर्च रन, 15 से 100 सेकंड | $0.010 |
+| `perplexity` | `standard` (डिफ़ॉल्ट) | Perplexity Search | $0.005 |
+| `perplexity` | `fast` | Perplexity Fast Search | $0.001 |
+
+Exa और Parallel की खोज में पहले 10 के बाद हर result के लिए $0.001 और लगते हैं, और Exa हर लौटाए गए content type के लिए प्रति पेज $0.001 लेता है, इसलिए 5 results पर highlights और text से $0.010 जुड़ते हैं। `firecrawl`, `tinyfish` और `deepseek` में कोई मोड नहीं है।
+
+रिसर्च मोड एक `answer` और उसमें उद्धृत पेज `results` के रूप में लौटाते हैं। जो रिसर्च रन 120 सेकंड बाद भी पूरा नहीं होता, वह `research_timeout` लौटाता है। समय सीमा पार करने वाले, असफल, या client खो देने वाले रन का शुल्क नहीं लिया जाता।
+
 ## डोमेन से फ़िल्टर करें
 
 जब उत्तर स्रोतों के एक तय सेट से ही आना चाहिए, तब `allowed_domains` उपयोग करें, और खुली खोज से कुछ खास साइटें हटाने के लिए `excluded_domains`।
@@ -130,4 +155,4 @@ OpenAI का अपना `{ "type": "web_search" }` टूल भेजना 
 }
 ```
 
-Phaseo हर managed search के लिए $0.007 लेता है, और पहले 10 के बाद हर result के लिए $0.001, जब तक मॉडल का price card `server_tool_web_search_requests` और `server_tool_web_search_extra_results` के लिए अपनी कीमतें तय न करे। असफल searches का शुल्क नहीं लगता, और TinyFish Search अपने प्रकाशित प्लान पर मुफ़्त है, इसलिए `engine: "tinyfish"` कोई search शुल्क नहीं जोड़ता। सशुल्क engines पर searches के लिए क्रेडिट चाहिए, भले ही मॉडल मुफ़्त हो। Native search का बिल `native_web_search_requests` से प्रदाता की प्रकाशित कीमत पर बनता है: उदाहरण के लिए OpenAI और Anthropic पर $10 प्रति 1,000 searches, और DeepSeek पर $0.75 प्रति 1,000, जहाँ सिर्फ़ वे searches गिनी जाती हैं जो results लौटाती हैं। DeepSeek हर page fetch का भी, यानी जब वह अपने link-reading टूल से कोई URL पढ़ता है, $0.75 प्रति 1,000 के हिसाब से बिल बनाता है, `native_web_fetch_requests` के रूप में। reasoning चालू होने पर DeepSeek का एक जवाब दर्जन भर या उससे ज़्यादा खोजें चला सकता है, और वह जो नतीजे पढ़ता है वे इनपुट टोकन में जुड़ते हैं।
+Phaseo, Exa, Parallel, Perplexity और DeepSeek पर खोजों का शुल्क उतना ही लेता है जितना हर इंजन Phaseo से लेता है: [मोड चुनें](#choose-a-mode) में दी गई कीमतें, और DeepSeek खोज के लिए $0.00075, जो केवल results लौटाने पर लिया जाता है। Exa के लिए शुल्क वह लागत है जो Exa उस कॉल के लिए बताता है, या उसकी list price जब Exa कोई लागत नहीं बताता। हर शुल्क request की `pricing_lines` में एक पंक्ति है, जिसमें उसका `engine`, `mode` और `price_source` होता है। Firecrawl खोजों का शुल्क $0.007 है, और पहले 10 के बाद हर result के लिए $0.001। असफल searches का शुल्क नहीं लगता, और TinyFish Search अपने प्रकाशित प्लान पर मुफ़्त है, इसलिए `engine: "tinyfish"` कोई search शुल्क नहीं जोड़ता। सशुल्क engines पर searches के लिए क्रेडिट चाहिए, भले ही मॉडल मुफ़्त हो। Native search का बिल `native_web_search_requests` से प्रदाता की प्रकाशित कीमत पर बनता है: उदाहरण के लिए OpenAI और Anthropic पर $10 प्रति 1,000 searches, और DeepSeek पर $0.75 प्रति 1,000, जहाँ सिर्फ़ वे searches गिनी जाती हैं जो results लौटाती हैं। DeepSeek हर page fetch का भी, यानी जब वह अपने link-reading टूल से कोई URL पढ़ता है, $0.75 प्रति 1,000 के हिसाब से बिल बनाता है, `native_web_fetch_requests` के रूप में। reasoning चालू होने पर DeepSeek का एक जवाब दर्जन भर या उससे ज़्यादा खोजें चला सकता है, और वह जो नतीजे पढ़ता है वे इनपुट टोकन में जुड़ते हैं।

@@ -12411,6 +12411,9 @@ components:
                 - perplexity
                 - tinyfish
                 - deepseek
+            mode:
+              type: string
+              description: 'طريقة بحث المحرك. Exa: ‏lite أو auto (الافتراضي) أو deep-lite أو deep أو agent-minimal أو agent-low. ‏Parallel: ‏turbo أو fast أو basic أو advanced (الافتراضي) أو task-lite أو task-base. ‏Perplexity: ‏standard (الافتراضي) أو fast. لا تملك المحركات الأخرى أوضاعًا. يُعيَّن في الأداة فقط.'
             max_results:
               type: integer
               minimum: 1
@@ -12426,6 +12429,9 @@ components:
             include_highlights:
               type: boolean
           additionalProperties: false
+        mode:
+          type: string
+          description: 'طريقة بحث المحرك. Exa: ‏lite أو auto (الافتراضي) أو deep-lite أو deep أو agent-minimal أو agent-low. ‏Parallel: ‏turbo أو fast أو basic أو advanced (الافتراضي) أو task-lite أو task-base. ‏Perplexity: ‏standard (الافتراضي) أو fast. لا تملك المحركات الأخرى أوضاعًا. يُعيَّن في الأداة فقط.'
         max_results:
           type: integer
           minimum: 1

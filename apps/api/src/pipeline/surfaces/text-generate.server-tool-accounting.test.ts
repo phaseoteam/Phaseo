@@ -358,8 +358,8 @@ describe.each([false, true])("multi-round accounting agreement (stream: %s)", (s
 
 		// Nano: 6,000 x $1 + 4,000 x $0.10 + 500 x $4 per M = $0.0084.
 		// Sonnet: 250,000 x $6 + 1,000 x $22.50 per M = $1.5225; 1,000 x $3 + 200 x $15 per M = $0.006.
-		// Search $0.007; advisor (Opus) 2,000 x $5 + 400 x $25 per M = $0.02.
-		const expected = 8_400_000 + 1_522_500_000 + 6_000_000 + 7_000_000 + 20_000_000;
+		// Search: Exa auto $0.007 + highlights on its one result $0.001; advisor (Opus) 2,000 x $5 + 400 x $25 per M = $0.02.
+		const expected = 8_400_000 + 1_522_500_000 + 6_000_000 + 8_000_000 + 20_000_000;
 		expect(result).toMatchObject({ wallet: expected, row: expected, fact: expected, spend: expected });
 		// A charged success has nothing pending.
 		expect(result.row_record.expected_cost_nanos).toBeUndefined();
@@ -417,16 +417,16 @@ describe.each([false, true])("multi-round accounting agreement (stream: %s)", (s
 		], stream);
 
 		// Before: finalization loaded the final route's card, failed, and charged nothing.
-		// Nano $0.0014 + a managed search $0.007; the final round waits for reconciliation.
-		expect(result).toMatchObject({ wallet: 8_400_000, row: 8_400_000, fact: 8_400_000, spend: 8_400_000 });
+		// Nano $0.0014 + an Exa search $0.008 (auto + highlights on one page); the final round waits for reconciliation.
+		expect(result).toMatchObject({ wallet: 9_400_000, row: 9_400_000, fact: 9_400_000, spend: 9_400_000 });
 		expect(result.row_record.success).toBe(true);
 		expect(result.row_record.detail_metadata.accounting_finalization).toMatchObject({
 			billing_status: "pending_reconciliation",
 			unpriced_rounds: [expect.objectContaining({ round: 2, provider: "novita", cause_code: "pricing_card_missing" })],
 		});
-		expect(result.row_record.expected_cost_nanos).toBe(8_400_000);
+		expect(result.row_record.expected_cost_nanos).toBe(9_400_000);
 		// The client's usage shows the same charge (the frame priced the aggregate on the missing card).
-		expect(clientPricing(result)).toMatchObject({ total_nanos: 8_400_000 });
+		expect(clientPricing(result)).toMatchObject({ total_nanos: 9_400_000 });
 	});
 
 	it("charges the round bill when the final round's card loads but cannot price it", async () => {

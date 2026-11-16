@@ -4340,6 +4340,9 @@ public sealed class GatewayWebSearchToolDefinition
 	[JsonPropertyName("max_results")]
 	public long? MaxResults { get; set; }
 
+	[JsonPropertyName("mode")]
+	public string? Mode { get; set; }
+
 	[JsonPropertyName("page")]
 	public long? Page { get; set; }
 

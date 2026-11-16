@@ -1613,6 +1613,7 @@ class GatewayWebSearchToolDefinition(TypedDict):
 	include_text: NotRequired[bool]
 	language: NotRequired[str]
 	max_results: NotRequired[int]
+	mode: NotRequired[str]
 	page: NotRequired[int]
 	parameters: NotRequired[Dict[str, Any]]
 	type: Literal["phaseo:web_search", "gateway:web_search"]

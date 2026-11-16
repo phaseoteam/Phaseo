@@ -109,4 +109,4 @@ Check `truncated` before assuming the model saw the whole page. For a worked exa
 
 ## Usage and pricing
 
-Each fetch adds 1 to `usage.server_tool_use.web_fetch_requests`. Phaseo bills each managed fetch through Exa, Parallel, Firecrawl or DeepSeek at $0.001, unless the model's price card sets its own `server_tool_web_fetch_requests` price; direct fetches are free. Fetches through paid engines need credits even when the model is free. Native fetch is billed with `native_web_fetch_requests` where the model's price card defines it.
+Each fetch adds 1 to `usage.server_tool_use.web_fetch_requests`. Phaseo bills each managed fetch at what its engine charges Phaseo: $0.001 per page on Exa (or the cost Exa reports for the call), $0.001 per URL on Parallel, and $0.00075 on DeepSeek. Firecrawl fetches are billed at $0.001. Direct fetches are free. Fetches through paid engines need credits even when the model is free. Native fetch is billed with `native_web_fetch_requests` where the model's price card defines it.

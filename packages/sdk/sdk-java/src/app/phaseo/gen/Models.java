@@ -1833,6 +1833,7 @@ public final class Models {
 		public Boolean include_text;
 		public String language;
 		public Integer max_results;
+		public String mode;
 		public Integer page;
 		public Object parameters;
 		public Object type;

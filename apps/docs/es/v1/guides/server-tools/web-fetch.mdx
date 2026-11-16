@@ -110,4 +110,4 @@ Comprueba `truncated` antes de dar por hecho que el modelo vio la página comple
 
 ## Uso y precios
 
-Cada consulta suma 1 a `usage.server_tool_use.web_fetch_requests`. Phaseo cobra cada consulta gestionada a través de Exa, Parallel, Firecrawl o DeepSeek a $0.001, salvo que la tarjeta de precios del modelo fije su propio precio para `server_tool_web_fetch_requests`; las consultas directas son gratuitas. Las consultas con motores de pago requieren saldo aunque el modelo sea gratuito. La consulta nativa se cobra con `native_web_fetch_requests` donde la tarjeta de precios del modelo lo define.
+Cada consulta suma 1 a `usage.server_tool_use.web_fetch_requests`. Phaseo cobra cada obtención gestionada por lo que su motor le cobra a Phaseo: $0.001 por página en Exa (o el costo que Exa informa para la llamada), $0.001 por URL en Parallel y $0.00075 en DeepSeek. Las obtenciones de Firecrawl se cobran a $0.001. Las obtenciones directas son gratuitas. Las consultas con motores de pago requieren saldo aunque el modelo sea gratuito. La consulta nativa se cobra con `native_web_fetch_requests` donde la tarjeta de precios del modelo lo define.

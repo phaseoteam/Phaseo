@@ -3179,6 +3179,8 @@ class GatewayWebSearchToolDefinition
 	public $language;
 	/** @var int|null */
 	public $max_results;
+	/** @var string|null */
+	public $mode;
 	/** @var int|null */
 	public $page;
 	/** @var array<string, mixed>|null */

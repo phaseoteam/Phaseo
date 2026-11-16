@@ -664,6 +664,7 @@ const GatewayWebSearchToolSchema = lazySchema(() => z.object({
 	type: z.enum(["phaseo:web_search", "gateway:web_search"]),
 	parameters: z.object({
 		engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish", "deepseek"]).optional(),
+		mode: z.string().optional(),
 		max_results: z.number().int().positive().max(25).optional(),
 		max_total_results: z.number().int().positive().max(100).optional(),
 		search_context_size: z.enum(["low", "medium", "high"]).optional(),
@@ -680,6 +681,7 @@ const GatewayWebSearchToolSchema = lazySchema(() => z.object({
 		page: z.number().int().min(0).max(10).optional(),
 	}).optional(),
 	engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish", "deepseek"]).optional(),
+	mode: z.string().optional(),
 	max_results: z.number().int().positive().max(25).optional(),
 	max_total_results: z.number().int().positive().max(100).optional(),
 	search_context_size: z.enum(["low", "medium", "high"]).optional(),

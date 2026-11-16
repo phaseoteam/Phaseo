@@ -12411,6 +12411,9 @@ components:
                 - perplexity
                 - tinyfish
                 - deepseek
+            mode:
+              type: string
+              description: 'Façon dont le moteur cherche. Exa : lite, auto (par défaut), deep-lite, deep, agent-minimal ou agent-low. Parallel : turbo, fast, basic, advanced (par défaut), task-lite ou task-base. Perplexity : standard (par défaut) ou fast. Les autres moteurs n’ont pas de mode. À définir sur l’outil uniquement.'
             max_results:
               type: integer
               minimum: 1
@@ -12426,6 +12429,9 @@ components:
             include_highlights:
               type: boolean
           additionalProperties: false
+        mode:
+          type: string
+          description: 'Façon dont le moteur cherche. Exa : lite, auto (par défaut), deep-lite, deep, agent-minimal ou agent-low. Parallel : turbo, fast, basic, advanced (par défaut), task-lite ou task-base. Perplexity : standard (par défaut) ou fast. Les autres moteurs n’ont pas de mode. À définir sur l’outil uniquement.'
         max_results:
           type: integer
           minimum: 1

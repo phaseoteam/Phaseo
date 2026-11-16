@@ -110,4 +110,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## उपयोग और मूल्य
 
-हर fetch `usage.server_tool_use.web_fetch_requests` में 1 जोड़ता है। Phaseo, Exa, Parallel, Firecrawl या DeepSeek से हर managed fetch के लिए $0.001 लेता है, जब तक मॉडल का price card `server_tool_web_fetch_requests` के लिए अपनी कीमत तय न करे; direct fetches मुफ़्त हैं। सशुल्क engines से fetches के लिए क्रेडिट चाहिए, भले ही मॉडल मुफ़्त हो। Native fetch का बिल `native_web_fetch_requests` से बनता है, जहाँ मॉडल का price card इसे तय करता है।
+हर fetch `usage.server_tool_use.web_fetch_requests` में 1 जोड़ता है। Phaseo हर managed fetch का शुल्क उतना ही लेता है जितना उसका इंजन Phaseo से लेता है: Exa पर प्रति पेज $0.001 (या वह लागत जो Exa उस कॉल के लिए बताता है), Parallel पर प्रति URL $0.001, और DeepSeek पर $0.00075। Firecrawl fetches का शुल्क $0.001 है। Direct fetches मुफ़्त हैं। सशुल्क engines से fetches के लिए क्रेडिट चाहिए, भले ही मॉडल मुफ़्त हो। Native fetch का बिल `native_web_fetch_requests` से बनता है, जहाँ मॉडल का price card इसे तय करता है।

@@ -1334,8 +1334,10 @@ describe("buildServerToolContinuation", () => {
 			expect(continuation?.usage).toEqual({
 				datetimeRequests: 0,
 				webSearchRequests: 1,
+				billableWebSearchRequests: 0,
 				webSearchResults: 2,
 				webSearchExtraResults: 0,
+				billableWebSearchExtraResults: 0,
 				webFetchRequests: 0,
 				advisorRequests: 0,
 				subagentRequests: 0,
@@ -1344,6 +1346,8 @@ describe("buildServerToolContinuation", () => {
 				imageGenerationRequests: 0,
 				applyPatchRequests: 0,
 			});
+			// auto $7 per 1,000 + text and highlights on 2 pages at $1 per 1,000 pages each.
+			expect(continuation?.searchPricing?.total_nanos).toBe(11_000_000);
 			expect(continuation?.toolResults).toHaveLength(1);
 			expect(continuation?.toolResults[0]).toMatchObject({
 				toolCallId: "call_search",

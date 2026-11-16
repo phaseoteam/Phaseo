@@ -400,6 +400,7 @@ export interface ChatCompletionsRequest {
         include_text?: boolean;
         language?: string;
         max_results?: number;
+        mode?: string;
         page?: number;
         parameters?: {
           engine?:
@@ -415,6 +416,7 @@ export interface ChatCompletionsRequest {
           include_text?: boolean;
           language?: string;
           max_results?: number;
+          mode?: string;
           page?: number;
         };
         type: "phaseo:web_search" | "gateway:web_search";
