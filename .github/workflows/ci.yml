@@ -1012,8 +1012,8 @@ jobs:
               if: always() && steps.web-changes.outputs.deploy == 'true'
               run: node --input-type=module -e "import { removeSourceMaps } from './observability/grafana/build-web.mjs'; await removeSourceMaps('apps/web/dist/client');"
 
-            # Infisical prod /web is the source of truth for the web Worker's Stripe secrets.
-            # Loaded after the build so nothing from /web is inlined into the bundle.
+            # Infisical prod /common is the source of truth for the web Worker's Stripe secrets.
+            # Loaded after the build so nothing from /common is inlined into the bundle.
             - name: Load web Worker secrets from Infisical
               if: steps.web-changes.outputs.deploy == 'true'
               uses: Infisical/secrets-action@d2e351f16c6ca20d17c85e6c992e04bdeb64e87d # v1.0.18
@@ -1022,7 +1022,7 @@ jobs:
                   identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
                   project-slug: ${{ vars.INFISICAL_PROJECT_SLUG }}
                   env-slug: prod
-                  secret-path: /web
+                  secret-path: /common
                   include-imports: false
                   recursive: false
 
@@ -1046,28 +1046,28 @@ jobs:
                   # rather than let checkout open in a Stripe sandbox.
                   case "${STRIPE_SECRET_KEY:-}" in
                     sk_live_*|rk_live_*) ;;
-                    "") echo "::error::STRIPE_SECRET_KEY is missing from Infisical prod /web. Stripe names loaded: $(env | cut -d= -f1 | grep -i stripe | tr '\n' ' ')"; exit 1 ;;
-                    *) echo "::error::STRIPE_SECRET_KEY in Infisical prod /web is not a live key (sk_live_/rk_live_)."; exit 1 ;;
+                    "") echo "::error::STRIPE_SECRET_KEY is missing from Infisical prod /common. Stripe names loaded: $(env | cut -d= -f1 | grep -i stripe | tr '\n' ' ')"; exit 1 ;;
+                    *) echo "::error::STRIPE_SECRET_KEY in Infisical prod /common is not a live key (sk_live_/rk_live_)."; exit 1 ;;
                   esac
                   case "${STRIPE_WEBHOOK_SECRET:-}" in
                     whsec_*) ;;
-                    *) echo "::error::STRIPE_WEBHOOK_SECRET in Infisical prod /web is missing or not a whsec_ signing secret."; exit 1 ;;
+                    *) echo "::error::STRIPE_WEBHOOK_SECRET in Infisical prod /common is missing or not a whsec_ signing secret."; exit 1 ;;
                   esac
-                  # Admin sandbox checkout (optional): the test-mode pair in /web, set on the Worker under
+                  # Admin sandbox checkout (optional): the test-mode pair in /common, set on the Worker under
                   # separate STRIPE_SANDBOX_* names that live checkout never reads.
                   sandbox_key="${STRIPE_SANDBOX_SECRET_KEY:-${TEST_STRIPE_SECRET_KEY:-}}"
                   sandbox_webhook="${STRIPE_SANDBOX_WEBHOOK_SECRET:-${TEST_STRIPE_WEBHOOK_SECRET:-}}"
                   case "$sandbox_key" in
                     sk_test_*|rk_test_*) ;;
                     "") ;;
-                    *) echo "::error::The Stripe sandbox key in Infisical prod /web is not a test-mode key (sk_test_/rk_test_)."; exit 1 ;;
+                    *) echo "::error::The Stripe sandbox key in Infisical prod /common is not a test-mode key (sk_test_/rk_test_)."; exit 1 ;;
                   esac
                   if [ -n "$sandbox_key" ] && [[ "$sandbox_webhook" == whsec_* ]]; then
                     export STRIPE_SANDBOX_SECRET_KEY="$sandbox_key" STRIPE_SANDBOX_WEBHOOK_SECRET="$sandbox_webhook"
                   else
                     # Overwrite, not unset: an unset secret would keep a previously deployed value live.
                     export STRIPE_SANDBOX_SECRET_KEY=disabled STRIPE_SANDBOX_WEBHOOK_SECRET=disabled
-                    echo "::warning::Admin Stripe sandbox checkout is off: Infisical prod /web needs TEST_STRIPE_SECRET_KEY (sk_test_) and TEST_STRIPE_WEBHOOK_SECRET (whsec_). Stripe names loaded: $(env | cut -d= -f1 | grep -i stripe | sort | tr '\n' ' ')"
+                    echo "::warning::Admin Stripe sandbox checkout is off: Infisical prod /common needs STRIPE_SANDBOX_SECRET_KEY (sk_test_) and STRIPE_SANDBOX_WEBHOOK_SECRET (whsec_). Stripe names loaded: $(env | cut -d= -f1 | grep -i stripe | sort | tr '\n' ' ')"
                   fi
                   secrets_file=$(mktemp)
                   trap 'rm -f "$secrets_file"' EXIT
