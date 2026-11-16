@@ -67,6 +67,12 @@ describe("DeepSeek native web search routing", () => {
 		expect(result.ok && result.body.tools[0]?.type).toBe("phaseo:web_search");
 	});
 
+	it("falls back to gateway search when phaseo:web_search caps its uses", () => {
+		const body = { model: "deepseek/deepseek-v4.1-flash-1017", messages: [], tools: [{ type: "phaseo:web_search", parameters: { engine: "native", max_uses: 2 } }] };
+		const result = resolveHostedTools({ endpoint: "chat.completions", body, providers: FLASH_ROUTES });
+		expect(result.ok && result.webSearchMapped).toBe(true);
+	});
+
 	it("falls back to gateway search when the search has a user location", () => {
 		const body = { model: "deepseek/deepseek-v4.1-flash-1017", messages: [], tools: [{ type: "web_search", user_location: { type: "approximate", country: "GB" } }] };
 		const result = resolveHostedTools({ endpoint: "chat.completions", body, providers: FLASH_ROUTES });

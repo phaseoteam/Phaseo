@@ -11,6 +11,7 @@ import {
 	DEEPSEEK_NATIVE_WEB_SEARCH_TOOL_TYPE,
 	isAnthropicNativeWebFetchToolType,
 	isAnthropicNativeWebSearchToolType,
+	isDeepSeekWebToolModel,
 	isOpenAINativeWebSearchToolType,
 	webToolNeedsOptionsDeepSeekLacks,
 } from "@core/nativeTools";
@@ -56,7 +57,7 @@ export const deepseekQuirks: ProviderQuirks = {
 					: "high";
 		}
 
-		mapNativeWebTools(request);
+		mapNativeWebTools(request, ir.model);
 
 		if (request.thinking?.type === "enabled") {
 			// DeepSeek's official agent integration notes that thinking-mode tool
@@ -219,12 +220,6 @@ function deepSeekWebToolType(tool: unknown): string | null {
 	return null;
 }
 
-/** Anthropic per-tool limits DeepSeek's option-free web tools cannot enforce. */
-function hasToolLimit(tool: unknown): boolean {
-	const value = asObject(tool);
-	return value !== null && (value.max_uses != null || value.max_content_tokens != null);
-}
-
 /**
  * Native web search reaches this executor as the hosted tool of the request's
  * surface: OpenAI's `web_search` / `web_search_preview` (Chat, Responses) or
@@ -233,7 +228,7 @@ function hasToolLimit(tool: unknown): boolean {
  *
  * Routing (core/nativeTools.ts) sends Chat and Responses requests here only when
  * DeepSeek can honour them. Anthropic tools on Messages arrive as sent, so they are
- * converted only under the same terms: every tool in the request is a web tool,
+ * converted only under the same terms: the model is Flash, every tool in the request is a web tool,
  * none carries domain lists, a location, `max_uses` or `max_content_tokens`, and
  * the request forces no tool_choice and asks for no log probabilities. Otherwise
  * the tools stay as sent and DeepSeek rejects the request, rather than running a
@@ -241,11 +236,13 @@ function hasToolLimit(tool: unknown): boolean {
  * searching at all). Each was checked live on 2026-11-16 or is documented
  * (https://api-docs.deepseek.com/guides/web_tools).
  */
-function mapNativeWebTools(request: JsonObject): void {
+function mapNativeWebTools(request: JsonObject, model: unknown): void {
 	const tools = asArray(request.tools);
 	const types = tools.map(deepSeekWebToolType);
 	if (types.length === 0 || types.some((type) => type === null)) return;
-	if (tools.some((tool) => webToolNeedsOptionsDeepSeekLacks(tool) || hasToolLimit(tool))) return;
+	// Only Flash serves DeepSeek's web tools.
+	if (!isDeepSeekWebToolModel(typeof model === "string" ? model : null)) return;
+	if (tools.some(webToolNeedsOptionsDeepSeekLacks)) return;
 	const choice = request.tool_choice;
 	if (choice !== undefined && choice !== null && choice !== "auto" && choice !== "none") return;
 	if (request.logprobs === true || request.top_logprobs != null) return;

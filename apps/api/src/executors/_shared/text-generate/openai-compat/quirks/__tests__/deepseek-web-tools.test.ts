@@ -42,6 +42,13 @@ describe("DeepSeek native web tools", () => {
 		expect(request.tools).toEqual([tool]);
 	});
 
+	it("leaves web tools as sent on a model without DeepSeek's web tools", () => {
+		const tools = [{ type: "web_search_20250305", name: "web_search" }];
+		const request = { messages: [], tools };
+		deepseekQuirks.transformRequest?.({ request, ir: { model: "deepseek/deepseek-v4-pro-0813" } as any });
+		expect(request.tools).toEqual(tools);
+	});
+
 	it("leaves web tools beside a function tool as sent, since DeepSeek would silently turn search off", () => {
 		const tools = [
 			{ type: "web_search_20250305", name: "web_search" },

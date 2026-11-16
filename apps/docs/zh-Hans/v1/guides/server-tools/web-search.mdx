@@ -128,4 +128,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-除非模型价格卡为 `server_tool_web_search_requests` 和 `server_tool_web_search_extra_results` 设置了自己的价格，Phaseo 对每次托管搜索收取 $0.007，前 10 条之后的每条结果另收 $0.001。失败的搜索不计费；TinyFish Search 在其公开方案中免费，因此 `engine: "tinyfish"` 不增加搜索费用。即使模型免费，使用付费引擎搜索也需要账户有余额。原生搜索按提供商公布的价格以 `native_web_search_requests` 计费：例如 OpenAI 和 Anthropic 为每 1,000 次搜索 $10，DeepSeek 为每 1,000 次 $0.75，且 DeepSeek 只对返回结果的搜索计数。DeepSeek 还会对搜索期间打开的每个页面按每 1,000 个 $0.75 计费，计为 `native_web_fetch_requests`。开启推理后，DeepSeek 的一次回答可能运行十几次或更多搜索，它读取的结果会计入输入 token。
+除非模型价格卡为 `server_tool_web_search_requests` 和 `server_tool_web_search_extra_results` 设置了自己的价格，Phaseo 对每次托管搜索收取 $0.007，前 10 条之后的每条结果另收 $0.001。失败的搜索不计费；TinyFish Search 在其公开方案中免费，因此 `engine: "tinyfish"` 不增加搜索费用。即使模型免费，使用付费引擎搜索也需要账户有余额。原生搜索按提供商公布的价格以 `native_web_search_requests` 计费：例如 OpenAI 和 Anthropic 为每 1,000 次搜索 $10，DeepSeek 为每 1,000 次 $0.75，且 DeepSeek 只对返回结果的搜索计数。DeepSeek 还会对每次网页抓取（用其读取链接工具读取 URL）按每 1,000 次 $0.75 计费，计为 `native_web_fetch_requests`。开启推理后，DeepSeek 的一次回答可能运行十几次或更多搜索，它读取的结果会计入输入 token。
