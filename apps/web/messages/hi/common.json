@@ -761,6 +761,8 @@
 			"selectable": "चयन योग्य",
 			"example": "उदाहरण",
 			"unverified": "असत्यापित",
+			"included": "शामिल",
+			"automatic": "अपने आप उपयोग होता है",
 			"usage_other_providers": "{count} अन्य प्रदाताओं की योजनाओं में भी शामिल",
 			"usage_show_all_plans": "सभी {count} योजनाएँ दिखाएँ",
 			"usage_show_fewer_plans": "कम योजनाएँ दिखाएँ",

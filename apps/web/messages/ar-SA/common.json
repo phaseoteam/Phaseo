@@ -761,6 +761,8 @@
 			"selectable": "قابل للاختيار",
 			"example": "مثال",
 			"unverified": "غير متحقق",
+			"included": "مضمَّن",
+			"automatic": "يُستخدم تلقائيًا",
 			"usage_other_providers": "مضمّن أيضًا في خطط {count} مزوّدين آخرين",
 			"usage_show_all_plans": "عرض كل الخطط ({count})",
 			"usage_show_fewer_plans": "عرض خطط أقل",

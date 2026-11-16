@@ -28,6 +28,21 @@ export function rateLimitText(value: unknown): string | null {
 	return JSON.stringify(value);
 }
 
+type AccessLabel = "example" | "unverified" | "included" | "automatic";
+
+/**
+ * What the access column says for a model. A checked link with no channel or conditions still says how it's
+ * offered ("Included" or "Used automatically") rather than a dash that reads as missing data.
+ */
+export function accessText(model: Pick<SubscriptionPlanModel, "mapping_status" | "access_mode" | "access_channel" | "conditions">, label: (key: AccessLabel) => string): string {
+	const status = model.mapping_status === "example" ? label("example") : model.mapping_status === "unverified" ? label("unverified") : null;
+	const parts = [status, model.access_channel, model.conditions].filter(Boolean);
+	if (parts.length) return parts.join(" · ");
+	if (model.access_mode === "selectable") return label("included");
+	if (model.access_mode === "automatic") return label("automatic");
+	return "";
+}
+
 export default function SubscriptionPlanModelsTable({ models, usage, limit }: { models: SubscriptionPlanModel[]; usage?: SubscriptionPlanUsage[]; limit?: number }) {
 	const access = useTranslations("Common.ui.subscriptionCatalog");
 	const format = useSubscriptionFormat();
@@ -53,17 +68,17 @@ export default function SubscriptionPlanModelsTable({ models, usage, limit }: { 
 				<TableBody>
 					{rows.map(({ model, usage: summary }) => {
 						const rateLimit = rateLimitText(model.rate_limit);
-						const accessText = [model.mapping_status === "example" ? access("example") : model.mapping_status === "unverified" ? access("unverified") : null, model.access_channel, model.conditions].filter(Boolean).join(" · ");
+						const accessLabel = accessText(model, (key) => access(key));
 						return (
 							<TableRow key={model.model_id}>
 								<TableCell className="px-4 py-3">
 									<Link href={`/models/${model.model_id}`} className="font-medium underline decoration-transparent underline-offset-4 transition-colors hover:decoration-current">{model.model.name}</Link>
 									{model.model.organisation_name ? <p className="text-xs text-muted-foreground">{model.model.organisation_name}</p> : null}
 									{/* Phones have no access column, so keep its qualifications under the name. */}
-									{accessText ? <p className="text-xs text-muted-foreground sm:hidden">{accessText}</p> : null}
+									{accessLabel ? <p className="text-xs text-muted-foreground sm:hidden">{accessLabel}</p> : null}
 									{rateLimit ? <p className="text-xs text-muted-foreground">{formatSubscriptionPlanMessage(messages.detail.rateLimit, { limit: rateLimit })}</p> : null}
 								</TableCell>
-								<TableCell className="hidden px-4 py-3 text-sm text-muted-foreground sm:table-cell">{accessText || "—"}</TableCell>
+								<TableCell className="hidden px-4 py-3 text-sm text-muted-foreground sm:table-cell">{accessLabel || "—"}</TableCell>
 								{hasUsage ? <TableCell className="px-4 py-3 text-right tabular-nums">{summary ? <>{format.tokens(summary.mostTokens.monthly_tokens)}{format.scenario(summary.mostTokens.scenario) ? <p className="text-xs text-muted-foreground">{format.scenario(summary.mostTokens.scenario)}</p> : null}</> : <span className="text-muted-foreground">—</span>}</TableCell> : null}
 								{hasUsage ? (
 									<TableCell className="px-4 py-3 text-right tabular-nums">
