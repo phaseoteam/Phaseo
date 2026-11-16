@@ -295,13 +295,19 @@ export function applyReasoningParams(args: {
 			}
 			return;
 		}
+		// Qwen 4 takes low, high (its default) and xhigh. Qwen 3.8 has no high
+		// level, so high maps up to xhigh there.
+		// https://docs.qwencloud.com/developer-guides/text-generation/thinking
+		const isQwen4 = /(^|\/)qwen4[.-]/.test(upstreamModel);
 		const effort = rawEffort === "minimal" || rawEffort === "low"
 			? "low"
 			: rawEffort === "medium"
-				? "medium"
-				: rawEffort === "high" || rawEffort === "xhigh" || rawEffort === "max"
-					? "xhigh"
-					: undefined;
+				? isQwen4 ? "high" : "medium"
+				: rawEffort === "high"
+					? isQwen4 ? "high" : "xhigh"
+					: rawEffort === "xhigh" || rawEffort === "max"
+						? "xhigh"
+						: undefined;
 		const disabled = reasoning.enabled === false || rawEffort === "none";
 
 		if (disabled) {
