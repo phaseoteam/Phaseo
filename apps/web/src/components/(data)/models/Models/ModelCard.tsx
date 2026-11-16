@@ -1074,7 +1074,6 @@ function ModelCardImpl({
 								)}
 							</Link>
 							{visibilityBadge("hidden sm:inline-flex")}
-							{workspaceBlockedBadge("hidden sm:inline-flex")}
 							{displayModelId ? (
 								<Tooltip>
 									<TooltipTrigger asChild>
@@ -1114,10 +1113,12 @@ function ModelCardImpl({
 						</div>
 						<div className="flex min-w-0 items-center gap-1.5">
 							{visibilityBadge("inline-flex sm:hidden", true)}
-							{workspaceBlockedBadge("inline-flex sm:hidden", true)}
 							<div className="min-w-0 truncate text-xs leading-[1.15] text-muted-foreground font-mono">
 								{displayModelId}
 							</div>
+							{/* On the id line, not beside the name: the id gives way when space is short, the name doesn't. */}
+							{workspaceBlockedBadge("hidden sm:inline-flex")}
+							{workspaceBlockedBadge("inline-flex sm:hidden", true)}
 						</div>
 					</div>
 
