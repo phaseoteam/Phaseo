@@ -182,6 +182,8 @@ export async function createStripeCheckoutResponse(
 
 		const session = await stripe.checkout.sessions.create({
 			mode: "payment",
+			// Fixed US English so USD shows as "$26.25", not "US$26.25" on en-GB browsers.
+			locale: "en",
 			// Top-ups are charged in TOP_UP_CURRENCY only; the webhook credits no other currency.
 			adaptive_pricing: { enabled: false },
 			payment_method_types: ["card", "link"],
@@ -197,7 +199,7 @@ export async function createStripeCheckoutResponse(
 					price_data: {
 						currency: TOP_UP_CURRENCY,
 						unit_amount: amountPence,
-						product_data: { name: "AI Credits top-up (one-off)" },
+						product_data: { name: "Phaseo credits", description: "One-off top-up" },
 					},
 				},
 			],
@@ -265,6 +267,8 @@ export async function createStripeCheckoutResponse(
 
 		const session = await stripe.checkout.sessions.create({
 			mode: "payment",
+			// Fixed US English so USD shows as "$26.25", not "US$26.25" on en-GB browsers.
+			locale: "en",
 			// Top-ups are charged in TOP_UP_CURRENCY only; the webhook credits no other currency.
 			adaptive_pricing: { enabled: false },
 			payment_method_types: ["card", "link"],
@@ -278,7 +282,7 @@ export async function createStripeCheckoutResponse(
 					price_data: {
 						currency: TOP_UP_CURRENCY,
 						unit_amount: amountPence,
-						product_data: { name: "AI Credits top-up (save card)" },
+						product_data: { name: "Phaseo credits", description: "Top-up · card saved for future top-ups" },
 					},
 				},
 			],
@@ -343,6 +347,7 @@ export async function createStripeCheckoutResponse(
 		console.log(`creating setup session (save_only) customerId=${customerId}`);
 		const session = await stripe.checkout.sessions.create({
 			mode: "setup",
+			locale: "en",
 			payment_method_types: ["card", "link"],
 			customer: customerId,
 			success_url: successUrl,
