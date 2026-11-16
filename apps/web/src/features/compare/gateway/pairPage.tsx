@@ -12,8 +12,10 @@ import { SITE_URL } from "@/lib/seo";
 import type { PublicLocale } from "@/i18n/routing";
 
 /**
- * `/compare/a-vs-b`: one comparison with its own indexable URL. Either order
- * renders, and both name the sorted order as canonical.
+ * `/compare/a-vs-b`: one comparison with its own shareable URL. Either order
+ * renders, and both name the sorted order as canonical. These pages are
+ * generated from the same template and data as the two model pages, so they
+ * are noindex (links still followed) and left out of the sitemap.
  */
 export async function comparePairMetadata(ids: [string, string], locale: PublicLocale): Promise<PageMetadata> {
 	const { view } = await loadComparePairData(sortPair(ids));
@@ -29,6 +31,7 @@ export async function comparePairMetadata(ids: [string, string], locale: PublicL
 		description: t("metaDescription", { a: a!.name, labA: a!.lab.name, b: b!.name, labB: b!.lab.name }),
 		keywords: [`${a!.name} vs ${b!.name}`, `${b!.name} vs ${a!.name}`, a!.name, b!.name, "AI model comparison"],
 		openGraph: { type: "website" },
+		robots: { index: false, follow: true },
 	});
 }
 
