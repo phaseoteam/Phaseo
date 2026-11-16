@@ -70,6 +70,12 @@ describe("minimumPayableAmount", () => {
 		expect(minimumPayableAmount(offer([component(20), component(30, { phase: "renewal", starts_at_cycle: 2 })]))).toBe(30);
 		// A different charge starting later adds to the base: $50 base + $20 seat.
 		expect(minimumPayableAmount(offer([component(50, { component_key: "base" }), component(20, { component_key: "seat", starts_at_cycle: 2 })]))).toBe(70);
+		// The formatter's fixture: $1 intro, then a $30 renewal base, with a $40 seat throughout = $70.
+		expect(minimumPayableAmount(offer([
+			component(1, { component_key: "intro", phase: "introductory", duration_cycles: 1 }),
+			component(30, { component_key: "base", phase: "renewal", starts_at_cycle: 2 }),
+			component(40, { component_key: "seat", charge_basis: "seat", starts_at_cycle: 1 }),
+		]))).toBe(70);
 	});
 	test("has no ongoing price when only a deal is published", () => {
 		expect(minimumPayableAmount(offer([component(1, { phase: "introductory", duration_cycles: 1 })]))).toBeNull();
