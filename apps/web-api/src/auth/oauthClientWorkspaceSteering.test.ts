@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CHAT_PRIVACY_REVIEW_VERSION } from "@/chat/privacyReview";
-import { ensureChatGatewayKey, resolveChatWorkspace } from "@/chat/proxy";
+import { resolveChatWorkspace } from "@/chat/proxy";
 import type { Env } from "@/env";
 import app from "@/index";
 import { OAUTH_CLIENT_WRITE_REFUSAL } from "./oauthClientWrites";
@@ -101,13 +101,11 @@ async function steer(token: string) {
 	];
 }
 
-/** What browser chat does with no workspace cookie: the workspace it picks, and whether the privacy notice still applies. */
+/** The workspace browser chat picks with no workspace cookie. */
 async function browserChat() {
 	const resolved = await resolveChatWorkspace(new Request("https://phaseo.app/api/chat", { headers: { authorization: `Bearer ${SESSION_TOKEN}` } }), env);
 	if ("status" in resolved) throw new Error(String(resolved.code));
-	// No key seed in this env, so a reviewed workspace stops at configuration; an unreviewed one at the notice.
-	const key = await ensureChatGatewayKey(env, resolved as Parameters<typeof ensureChatGatewayKey>[1], () => undefined);
-	return { workspaceId: resolved.workspaceId, privacyNotice: "code" in key && key.code === "chat_privacy_review_required" };
+	return { workspaceId: resolved.workspaceId };
 }
 
 describe("an app token can't steer browser chat into another workspace", () => {
@@ -116,10 +114,10 @@ describe("an app token can't steer browser chat into another workspace", () => {
 		expect(db.users[0]).toMatchObject({ default_workspace_id: OWN_WS, onboarding_state: {} });
 		expect(appMetadata).toEqual({ chat_privacy_reviews: { [OWN_WS]: CHAT_PRIVACY_REVIEW_VERSION } });
 
-		// Browser chat still uses the person's own workspace, and the other one still shows the privacy notice.
-		expect(await browserChat()).toEqual({ workspaceId: OWN_WS, privacyNotice: false });
+		// Browser chat still uses the person's own workspace, and switches only when the person changes it.
+		expect(await browserChat()).toEqual({ workspaceId: OWN_WS });
 		db.users[0]!.default_workspace_id = OTHER_WS;
-		expect(await browserChat()).toEqual({ workspaceId: OTHER_WS, privacyNotice: true });
+		expect(await browserChat()).toEqual({ workspaceId: OTHER_WS });
 	});
 
 	it.each([
@@ -153,7 +151,7 @@ describe("an app token can't steer browser chat into another workspace", () => {
 	it("lets the person's own session make the same changes", async () => {
 		for (const result of await steer(SESSION_TOKEN)) expect(result.status).toBe(200);
 		expect(db.users[0]).toMatchObject({ default_workspace_id: OTHER_WS, onboarding_state: { workspaceId: OTHER_WS } });
-		expect(await browserChat()).toEqual({ workspaceId: OTHER_WS, privacyNotice: false });
+		expect(await browserChat()).toEqual({ workspaceId: OTHER_WS });
 	});
 
 	it("still lets an app token change the name, display preferences and onboarding progress", async () => {
@@ -177,14 +175,14 @@ describe("an app token can't steer browser chat through a GET or HEAD", () => {
 		if (method === "GET") expect(await response.json()).toMatchObject({ signedIn: true, workspaceId: OTHER_WS });
 		expect(db.users[0]!.default_workspace_id).toBe(OWN_WS);
 		expect(calls.filter((call) => call.method !== "GET")).toEqual([]);
-		expect(await browserChat()).toEqual({ workspaceId: OWN_WS, privacyNotice: false });
+		expect(await browserChat()).toEqual({ workspaceId: OWN_WS });
 	});
 
 	it.each(["GET", "HEAD"] as const)("%s workspace?persist=1 still persists for the person's own session", async (method) => {
 		expect((await request(SESSION_TOKEN, method, persist)).status).toBe(200);
 		expect(db.users[0]!.default_workspace_id).toBe(OTHER_WS);
 		// Their chat then goes there, and the other workspace's notice still applies.
-		expect(await browserChat()).toEqual({ workspaceId: OTHER_WS, privacyNotice: true });
+		expect(await browserChat()).toEqual({ workspaceId: OTHER_WS });
 	});
 
 	it.each(["GET", "HEAD"] as const)("%s on browser chat routes is refused for an app token before a chat key exists", async (method) => {

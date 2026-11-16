@@ -224,12 +224,11 @@ describe("classifier test run", () => {
 		sample: { prompt: "Review this NDA clause" },
 	};
 
-	it("asks the member to review chat privacy first, as Chat does", async () => {
-		const requests = database({ role: "admin", reviewed: false });
+	it("runs for a member who never accepted the old Chat privacy review", async () => {
+		const requests = database({ role: "admin", reviewed: false, gateway: () => Response.json({ id: "resp_1", model: "google/gemini-2.5-flash-lite", cost_nanos: 42_000, output_text: JSON.stringify({ d0: { value: "legal", confidence: 0.9 } }) }) });
 		const response = await call("/classifiers/test", { method: "POST", body: JSON.stringify(testBody) });
-		expect(response.status).toBe(403);
-		expect(((await response.json()) as any).error).toBe("chat_privacy_review_required");
-		expect(requests.some((entry) => entry.url.hostname === "gateway.test")).toBe(false);
+		expect(response.status).toBe(200);
+		expect(requests.some((entry) => entry.url.hostname === "gateway.test")).toBe(true);
 	});
 
 	it("sends the gateway's classification request and returns the labels and cost", async () => {
