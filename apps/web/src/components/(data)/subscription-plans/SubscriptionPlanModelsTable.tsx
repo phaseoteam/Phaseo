@@ -26,8 +26,10 @@ export default function SubscriptionPlanModelsTable({ models, usage, limit }: { 
 	const { messages } = format;
 	const rows = planModelRows(models, usage).slice(0, limit);
 	const hasUsage = rows.some((row) => row.usage);
-	// The oldest check among the rows shown, so no row looks fresher than it is.
-	const verified = rows.map(({ model }) => model.verified_at).filter((value): value is string => Boolean(value)).sort()[0];
+	// The oldest check among the rows shown, so no row looks fresher than it is. If any shown row has no
+	// check date, the date is left out rather than implying that row was checked.
+	const checkDates = rows.map(({ model }) => model.verified_at);
+	const verified = checkDates.length && checkDates.every(Boolean) ? (checkDates as string[]).toSorted()[0] : null;
 	return (
 		<div className="space-y-2">
 		<div className="overflow-x-auto rounded-md border border-border/70">
