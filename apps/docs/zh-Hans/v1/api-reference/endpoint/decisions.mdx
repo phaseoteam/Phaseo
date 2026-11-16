@@ -186,7 +186,9 @@ print(decision["answers"])
 | `cloudflare/clef`、`cloudflare/clef-flash` | 全部三种 | 文本，最多 4 张图像 | $0.24 / $0.038 |
 | `cloudflare/clef-omni` | 全部三种 | 文本、图像、音频、视频 | $0.15 |
 | `google/gemini-decision-1` | predicate、choice、score；每个请求最多 1,000 个 | 文本、图像、音频、视频 | $0.10 |
-| `liquid-ai/d1:free`、`liquid-ai/d1` | 全部三种 | 见模型页面 | 抢先体验期间免费 |
+| `liquid-ai/d1:free` | 全部三种 | 见模型页面 | 抢先体验期间免费 |
+| `liquid-ai/d1`, `liquid-ai/d1.1`, `liquid-ai/d1-ultra` | 全部三种 | 文本、图像 | $0.02 / $0.02 / $0.042 |
+| `liquid-ai/d1.2`, `liquid-ai/d1.2-ultra` | 全部三种，旧格式下另支持 text、number、date、spans、boxes 和多选 | 文本、图像、音频 | $0.02 / $0.042 |
 | `perplexity/pplx-decider-v1.3`、`perplexity/pplx-decider-flash-v1.3` | 全部三种，以及 `locate` | 文本、base64 图像 | $0.02 / $0.01 |
 | `inception/mercury-decide` | predicate、choice、score | 文本或 JSON | $0.02（促销价） |
 | `microsoft/microsoft-decision-1` | predicate、choice、score | 文本或 JSON | $0.042 |
@@ -272,9 +274,40 @@ Clef 最多接受 64 个问题，ID 最多 100 个字母、数字、下划线、
 Cloudflare 会校验媒体编码、图像尺寸和片段时长，并以每秒两帧的频率对视频采样。当请求中的每个视频都有音轨时，会使用视频的音轨。媒体 token 计入上下文和计费；Phaseo 按 Cloudflare 报告的输入用量结算，不额外收取音频或视频费用。请参阅 [Cloudflare 的 Omni 契约](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json)。
 
 <span id="liquid-d1-and-perplexity-decider"></span>
+### Liquid D1.2 和 D1.2 Ultra
+
+`liquid-ai/d1.2` 和 `liquid-ai/d1.2-ultra` 使用旧的 state 格式，最多接受 4 张图像和 8 段音频。`audio` 以 base64 `data:` URL 发送（WAV、MP3、FLAC、M4A 或 OGG，每段最多 24 MB）；不支持远程音频 URL。除 `noul`、`choice` 和 `score` 外，它们还回答以下问题类型：
+
+| `type` | 额外字段 | 回答字段 |
+| --- | --- | --- |
+| `text` | 无 | `text`，以及 `span`（在 `state` 中的起止位置）和 `found`（0–1）；`found` 低于 0.5 时 `text` 为 `null` |
+| `number` | 可选 `unit`；可选 `range`（`[low, high]`）和 `step`，`step` 需要 `range` 且必须能整除该范围 | `number` 和 `unit`；没有 `range` 时还返回 `text`、`span` 和 `found`；有 `range` 时 `number` 为中位数，`interval` 为 `[p10, p90]` |
+| `date` | 无 | `date`（`YYYY-MM-DD`）、`text`、`span`、`found` |
+| `spans` | 无 | `spans`（每项含 `text`、`span` 和 `found`）、`count`、`at_least` |
+| `boxes` | 可选 `max`（1–16）；需要恰好一张图像 | `boxes`、`count`、`at_least` |
+
+在 `choice` 问题上设置 `multiple: true`，即可在 `choices` 中获得所有适用的选项，并附带每个选项的 `probabilities`。其他模型对这些问题类型返回 `400`，并以单个选项回答 `multiple` 问题；不支持音频输入的模型会忽略 `audio`。`liquid-ai/d1`、`liquid-ai/d1.1` 和 `liquid-ai/d1-ultra` 接受文本和图像，回答 `noul`、`choice` 和 `score`。
+
+```json
+{
+  "model": "liquid-ai/d1.2",
+  "state": "Order #4417 placed 2026-11-02 for 3 items, total $84.50. The parcel arrived broken and late.",
+  "questions": {
+    "total": { "type": "number", "instructions": "Order total in dollars", "unit": "USD" },
+    "placed": { "type": "date", "instructions": "When was the order placed?" },
+    "topics": {
+      "type": "choice",
+      "multiple": true,
+      "instructions": "Which problems apply?",
+      "criteria": { "damage": "Item damaged", "delay": "Late delivery", "billing": "Payment problem" }
+    }
+  }
+}
+```
+
 ### Liquid D1 和 Perplexity Decider
 
-Liquid D1（`liquid-ai/d1:free`，以及 `liquid-ai/d1`）在实验性抢先体验期间免费。Perplexity Decider V1.3（`perplexity/pplx-decider-v1.3`，或 `perplexity/pplx-decider-latest`）和 Decider Flash V1.3（`perplexity/pplx-decider-flash-v1.3`，或 `perplexity/pplx-decider-flash-latest`）需要在 Phaseo 中配置 Perplexity 提供商凭据。它们的图像 state 使用 PNG、JPEG 或 WebP 的 base64 data URL；不支持远程图像 URL。它们还能回答 `locate` 问题，返回字符串 `input` 或 `state` 中与 `instructions`（例如 `"email address"`）匹配的部分。每个片段包含原样复制的 `text`、按 Unicode 码位计数的 `start` 和 `end` 偏移量（不含 `end`），以及数值越高越确定的 `score`；没有匹配时 `spans` 为空。Locate 不使用 criteria，不接受图像、音频或视频，只能在标明支持它的模型上使用；其他模型会返回 `400`。Perplexity 使用最多 8K token 的输入训练了该功能。在这两个模型上，选择题最多接受 255 个选项，评分题最多接受 10 个级别。
+Liquid D1（`liquid-ai/d1:free`）在实验性抢先体验期间免费。Perplexity Decider V1.3（`perplexity/pplx-decider-v1.3`，或 `perplexity/pplx-decider-latest`）和 Decider Flash V1.3（`perplexity/pplx-decider-flash-v1.3`，或 `perplexity/pplx-decider-flash-latest`）需要在 Phaseo 中配置 Perplexity 提供商凭据。它们的图像 state 使用 PNG、JPEG 或 WebP 的 base64 data URL；不支持远程图像 URL。它们还能回答 `locate` 问题，返回字符串 `input` 或 `state` 中与 `instructions`（例如 `"email address"`）匹配的部分。每个片段包含原样复制的 `text`、按 Unicode 码位计数的 `start` 和 `end` 偏移量（不含 `end`），以及数值越高越确定的 `score`；没有匹配时 `spans` 为空。Locate 不使用 criteria，不接受图像、音频或视频，只能在标明支持它的模型上使用；其他模型会返回 `400`。Perplexity 使用最多 8K token 的输入训练了该功能。在这两个模型上，选择题最多接受 255 个选项，评分题最多接受 10 个级别。
 
 ### Inception Mercury Decide
 
