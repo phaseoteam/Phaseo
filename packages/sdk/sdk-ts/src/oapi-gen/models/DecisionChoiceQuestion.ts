@@ -8,5 +8,6 @@ export interface DecisionChoiceQuestion {
         [key: string]: unknown;
       }
     | unknown[];
+  multiple?: boolean;
   type: "choice";
 }

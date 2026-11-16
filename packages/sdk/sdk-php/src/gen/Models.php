@@ -1749,6 +1749,16 @@ class DecisionBoxAnswer
 	public $type;
 }
 
+class DecisionBoxesQuestion
+{
+	/** @var string|array<string, mixed>|array */
+	public $instructions;
+	/** @var int|null */
+	public $max;
+	/** @var string */
+	public $type;
+}
+
 class DecisionBoxQuestion
 {
 	/** @var string */
@@ -1779,6 +1789,8 @@ class DecisionChoiceQuestion
 	public $criteria;
 	/** @var string|array<string, mixed>|array */
 	public $instructions;
+	/** @var bool|null */
+	public $multiple;
 	/** @var string */
 	public $type;
 }
@@ -1786,6 +1798,14 @@ class DecisionChoiceQuestion
 class DecisionCreateRequest { }
 
 class DecisionCreateResponse { }
+
+class DecisionDateQuestion
+{
+	/** @var string|array<string, mixed>|array */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
 
 class DecisionImage
 {
@@ -1883,6 +1903,20 @@ class DecisionNoulQuestion
 	public $type;
 }
 
+class DecisionNumberQuestion
+{
+	/** @var string|array<string, mixed>|array */
+	public $instructions;
+	/** @var array|null */
+	public $range;
+	/** @var float|null */
+	public $step;
+	/** @var string */
+	public $type;
+	/** @var string|null */
+	public $unit;
+}
+
 class DecisionPredicateAnswer
 {
 	/** @var string|null */
@@ -1941,8 +1975,18 @@ class DecisionScoreQuestion
 	public $type;
 }
 
+class DecisionSpansQuestion
+{
+	/** @var string|array<string, mixed>|array */
+	public $instructions;
+	/** @var string */
+	public $type;
+}
+
 class DecisionsRequest
 {
+	/** @var array|null */
+	public $audio;
 	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */
@@ -1995,6 +2039,14 @@ class DecisionsUsage
 	public $output_tokens_details;
 	/** @var int|null */
 	public $total_tokens;
+}
+
+class DecisionTextQuestion
+{
+	/** @var string|array<string, mixed>|array */
+	public $instructions;
+	/** @var string */
+	public $type;
 }
 
 class DeletedResponse
@@ -3695,6 +3747,8 @@ class LegacyDecisionLocateQuestion
 
 class LegacyDecisionsRequest
 {
+	/** @var array|null */
+	public $audio;
 	/** @var array<string, mixed>|null */
 	public $debug;
 	/** @var bool|null */

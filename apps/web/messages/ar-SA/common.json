@@ -760,7 +760,13 @@
 			"published_limits": "الحدود المنشورة",
 			"selectable": "قابل للاختيار",
 			"example": "مثال",
-			"unverified": "غير متحقق"
+			"unverified": "غير متحقق",
+			"usage_other_providers": "مضمّن أيضًا في خطط {count} مزوّدين آخرين",
+			"usage_show_all_plans": "عرض كل الخطط ({count})",
+			"usage_show_fewer_plans": "عرض خطط أقل",
+			"usage_per_million": "≈ {price} لكل مليون رمز",
+			"usage_times_cheaper": "أرخص بـ {value}×",
+			"usage_source_note": "تأتي تقديرات الاستخدام من <link>real-api-pricing</link>، الذي يتضمن بيانات من Awesome Coding Plan ‏(CC BY 4.0). تختلف الحدود الفعلية حسب نوع العمل وطول السياق والتخزين المؤقت."
 		},
 		"openui": {
 			"title": "إجابات تفاعلية",

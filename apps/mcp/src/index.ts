@@ -741,7 +741,7 @@ function registerControlPlaneReadTools(
 				description: definition.description,
 				inputSchema: definition.inputSchema,
 				outputSchema,
-				annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+				annotations: { title: definition.title, readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 				// The credit balance renders as an inline card; the other reads stay text and data only.
 				_meta: definition.name === "credits_get"
 					? { ...oauthToolMeta(definition.scopes), ...modelCardToolMeta }
@@ -852,7 +852,7 @@ export function createServer(
 			description: "Use this when the user wants to open the Phaseo model explorer to browse, filter and compare current AI models themselves. Opens with the first page of the live catalogue. For a specific search, use models_list instead. Read-only.",
 			inputSchema: {},
 			outputSchema: { models: z.array(z.object(modelSummarySchema)) },
-			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+			annotations: { title: "Phaseo model explorer", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 			// The host launcher (ChatGPT's sidebar and thread panel, Claude's Artifacts
 			// page). Both hosts open entry-point tools fullscreen, so this lives on its
 			// own tool and models_list results stay inline.
@@ -891,7 +891,7 @@ export function createServer(
 				limit: z.number().int().min(1).max(MAX_RESULTS).default(10),
 			},
 			outputSchema: { models: z.array(z.object(modelSummarySchema)) },
-			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+			annotations: { title: "Search Phaseo models", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 			// No entry points here: hosts open entry-point tools fullscreen, even when
 			// the model calls them, which hid the inline card. open_model_explorer is
 			// the launcher.
@@ -910,7 +910,7 @@ export function createServer(
 			description: "Get live standard-tier pricing, capabilities, and structured provider-by-provider support for one Phaseo model ID. Free offers are identified separately from the lowest paid price. Read-only.",
 			inputSchema: { modelId: z.string().min(1).max(200) },
 			outputSchema: { model: z.object(modelSummarySchema) },
-			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+			annotations: { title: "Get a Phaseo model", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 			_meta: oauthToolMeta(["models:read", "pricing:read"]),
 		},
 		async ({ modelId }) => {
@@ -945,7 +945,7 @@ export function createServer(
 					entries: z.array(z.object(benchmarkEntrySchema)),
 				}),
 			},
-			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+			annotations: { title: "Rank models by benchmark", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 			_meta: oauthToolMeta(["models:read", "pricing:read"]),
 		},
 		async ({ focus, gatewayAvailableOnly, limit }) => {
@@ -1002,7 +1002,7 @@ export function createServer(
 			description: "List AI providers currently available through Phaseo. Read-only.",
 			inputSchema: {},
 			outputSchema: { providers: z.array(z.object(providerSchema)) },
-			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+			annotations: { title: "List Phaseo providers", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 			_meta: oauthToolMeta(["providers:read"]),
 		},
 		async () => {
@@ -1046,7 +1046,7 @@ export function createServer(
 					currency: z.literal("USD"),
 				}),
 			},
-			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+			annotations: { title: "Estimate a Phaseo model cost", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
 			_meta: { ...oauthToolMeta(["models:read", "pricing:read"]), ...modelCardToolMeta },
 		},
 		async ({ modelId, providerId, inputTokens, cachedInputTokens, outputTokens }) => {

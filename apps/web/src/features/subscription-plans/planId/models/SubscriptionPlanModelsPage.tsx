@@ -1,7 +1,7 @@
 import SubscriptionPlanDetailShell from "@/components/(data)/subscription-plans/SubscriptionPlanDetailShell";
-import { getTranslations } from "@/i18n/server";
 import { fetchFrontendSubscriptionPlan } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import Link from "@/components/link";
+import SubscriptionPlanModelsTable from "@/components/(data)/subscription-plans/SubscriptionPlanModelsTable";
+import { UsageSourceNote } from "@/components/(data)/subscription-plans/SubscriptionPlanUsage";
 import type { PageMetadata } from "@/lib/seo/metadataTypes";
 import { buildMetadata } from "@/lib/seo";
 import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
@@ -82,47 +82,8 @@ export default function SubscriptionPlanModelsPage() {
 		<SubscriptionPlanDetailShell planId={planId} tab="models">
 			<section className="space-y-4">
 				<h2 className="text-xl font-semibold">{access("plan_model_access")}</h2>
-					{plan.models && plan.models.length > 0 ? (
-						<div className="divide-y divide-border/70 border-y border-border/70">
-							{plan.models.map((modelInfo) => (
-								<div
-									key={modelInfo.model_id}
-									className="flex items-center justify-between px-1 py-4"
-								>
-									<div className="flex-1">
-										<Link
-											href={`/models/${modelInfo.model_id}`}
-											className="font-medium hover:text-primary transition-colors"
-										>
-											{modelInfo.model.name}
-										</Link>
-										<p className="text-xs text-muted-foreground">{[modelInfo.mapping_status === "example" ? access("example") : modelInfo.mapping_status === "unverified" ? access("unverified") : null, modelInfo.access_channel, modelInfo.conditions].filter(Boolean).join(" · ")}</p>
-										{modelInfo.model.organisation_name && (
-											<p className="text-sm text-muted-foreground">
-												{messages.detail.byOrganisation.replace("{name}", "")}
-												{
-													modelInfo.model
-														.organisation_name
-												}
-											</p>
-										)}
-										{modelInfo.rate_limit && (
-											<p className="text-xs text-muted-foreground mt-1">
-												{messages.detail.rateLimit.replace("{limit}", "")}
-												{JSON.stringify(
-													modelInfo.rate_limit
-												)}
-											</p>
-										)}
-									</div>
-								</div>
-							))}
-						</div>
-					) : (
-						<p className="text-muted-foreground">
-							{messages.detail.noModels}
-						</p>
-					)}
+				{plan.models?.length ? <SubscriptionPlanModelsTable models={plan.models} usage={plan.usage} /> : <p className="text-sm text-muted-foreground">{messages.detail.noModels}</p>}
+				{plan.usage?.length ? <UsageSourceNote /> : null}
 			</section>
 		</SubscriptionPlanDetailShell>
 	);

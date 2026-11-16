@@ -37,8 +37,6 @@ export default function SubscriptionPlansPage() {
 	const messages = getSubscriptionPlansMessages((locale && isPublicLocale(locale) ? locale : "en-GB") as PublicLocale);
 	const { data: subscriptionPlans } = useSuspenseQuery(subscriptionPlansQuery());
 
-	console.log("Fetched subscription plans:", subscriptionPlans.length);
-
 	return (
 		<main className="flex flex-col">
 			<div className="container mx-auto px-4 py-8">

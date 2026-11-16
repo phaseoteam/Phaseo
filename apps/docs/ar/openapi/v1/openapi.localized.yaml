@@ -14681,6 +14681,11 @@ components:
               - $ref: '#/components/schemas/DecisionScoreQuestion'
               - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
               - $ref: '#/components/schemas/LegacyDecisionLocateQuestion'
+              - $ref: '#/components/schemas/DecisionTextQuestion'
+              - $ref: '#/components/schemas/DecisionNumberQuestion'
+              - $ref: '#/components/schemas/DecisionDateQuestion'
+              - $ref: '#/components/schemas/DecisionSpansQuestion'
+              - $ref: '#/components/schemas/DecisionBoxesQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -14692,6 +14697,14 @@ components:
               - type: string
                 pattern: ^[Dd][Aa][Tt][Aa]:image/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$
               - $ref: '#/components/schemas/DecisionImage'
+        audio:
+          type: array
+          minItems: 1
+          maxItems: 8
+          description: مقاطع صوتية بصيغة عناوين URL لبيانات base64 بتنسيق WAV أو MP3 أو FLAC أو M4A أو OGG، للمسارات التي يعالج نموذجها الصوت، مثل Liquid d1.2. لا تُدعم عناوين URL البعيدة. إذا لم يكن أي مسار للنموذج يعالج الصوت، تُتجاهل المقاطع.
+          items:
+            type: string
+            pattern: ^[Dd][Aa][Tt][Aa]:[Aa][Uu][Dd][Ii][Oo]/([Ww][Aa][Vv]|[Xx]-[Ww][Aa][Vv]|[Ww][Aa][Vv][Ee]|[Mm][Pp]3|[Mm][Pp][Ee][Gg]|[Ff][Ll][Aa][Cc]|[Mm]4[Aa]|[Mm][Pp]4|[Oo][Gg][Gg]);base64,[A-Za-z0-9+/]+={0,2}$
         meta:
           type: boolean
           default: false
@@ -14737,6 +14750,98 @@ components:
           minLength: 1
           maxLength: 50000
           description: ما يجب العثور عليه، كتسمية قصيرة مثل "email address" أو كتعليمة مثل "Extract the city where the job is located."
+    DecisionTextQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: يقرأ قيمة نصية من الحالة ويعيدها مع موضعها، أو null عندما لا يُعثر عليها. في المسارات ذات الإجابات المصنّفة فقط، مثل Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionDateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: يقرأ تاريخًا من الحالة ويعيده بتنسيق ISO 8601 مع موضعه، أو null عندما لا يُعثر عليه. في المسارات ذات الإجابات المصنّفة فقط، مثل Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - date
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionNumberQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: يقرأ رقمًا من الحالة مع وحدته وموضعه، أو null عندما لا يُعثر عليه. مع range، يعيد بدلًا من ذلك تقديرًا (الوسيط) ونطاقه من p10 إلى p90. في المسارات ذات الإجابات المصنّفة فقط، مثل Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: الوحدة التي تُقرأ بها القيمة أو تُقدَّر.
+        range:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+          description: أدنى قيمة وأعلى قيمة للتقدير، الأدنى أولًا.
+        step:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          description: المسافة بين القيم المقدّرة. يجب أن تقسم الفرق بين الأعلى والأدنى، وتتطلب range.
+    DecisionSpansQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: يعثر على كل مقطع من نوع معيّن في الحالة، مثل كل معلومة شخصية، مع موضعه. في المسارات ذات الإجابات المصنّفة فقط، مثل Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - spans
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionBoxesQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: يعيد مربعًا حول كل نسخة من كائن في الصورة الوحيدة، مع العدد. في المسارات ذات الإجابات المصنّفة فقط، مثل Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - boxes
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        max:
+          type: integer
+          minimum: 1
+          maximum: 16
+          description: أقصى عدد من النسخ المُعادة، من 1 إلى 16.
     DecisionImage:
       type: object
       required:
@@ -14791,6 +14896,9 @@ components:
           additionalProperties:
             type: string
             nullable: true
+        multiple:
+          type: boolean
+          description: يعيد كل خيار ينطبق، ولكلٍّ احتماله الخاص، بدلًا من اختيار واحد. تُفضَّل المسارات التي تدعم ذلك، مثل Liquid d1.2؛ وتجيب المسارات الأخرى باختيار واحد.
     DecisionScoreQuestion:
       type: object
       required:

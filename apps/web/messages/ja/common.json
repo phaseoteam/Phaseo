@@ -760,7 +760,13 @@
 			"published_limits": "公開制限",
 			"selectable": "選択可能",
 			"example": "例",
-			"unverified": "未確認"
+			"unverified": "未確認",
+			"usage_other_providers": "ほかの {count} 社のプランにも含まれています",
+			"usage_show_all_plans": "{count} 件のプランをすべて表示",
+			"usage_show_fewer_plans": "表示を減らす",
+			"usage_per_million": "100万トークンあたり約 {price}",
+			"usage_times_cheaper": "{value} 倍安い",
+			"usage_source_note": "利用量の推定値は <link>real-api-pricing</link> によるもので、Awesome Coding Plan（CC BY 4.0）のデータを含みます。実際の上限は作業内容、コンテキスト長、キャッシュによって変わります。"
 		},
 		"openui": {
 			"title": "インタラクティブな回答",

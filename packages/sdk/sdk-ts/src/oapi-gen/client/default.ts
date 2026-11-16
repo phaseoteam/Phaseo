@@ -23159,6 +23159,7 @@ export type MakeDecisionParams = {
         safety_identifier?: string | null;
       }
     | {
+        audio?: string[];
         debug?: {
           enabled?: boolean;
           return_upstream_request?: boolean;
@@ -23248,6 +23249,7 @@ export type MakeDecisionParams = {
                       [key: string]: unknown;
                     }
                   | unknown[];
+                multiple?: boolean;
                 type: "choice";
               }
             | {
@@ -23272,6 +23274,55 @@ export type MakeDecisionParams = {
             | {
                 instructions: string;
                 type: "locate";
+              }
+            | {
+                instructions:
+                  | string
+                  | {
+                      [key: string]: unknown;
+                    }
+                  | unknown[];
+                type: "text";
+              }
+            | {
+                instructions:
+                  | string
+                  | {
+                      [key: string]: unknown;
+                    }
+                  | unknown[];
+                range?: number[];
+                step?: number;
+                type: "number";
+                unit?: string;
+              }
+            | {
+                instructions:
+                  | string
+                  | {
+                      [key: string]: unknown;
+                    }
+                  | unknown[];
+                type: "date";
+              }
+            | {
+                instructions:
+                  | string
+                  | {
+                      [key: string]: unknown;
+                    }
+                  | unknown[];
+                type: "spans";
+              }
+            | {
+                instructions:
+                  | string
+                  | {
+                      [key: string]: unknown;
+                    }
+                  | unknown[];
+                max?: number;
+                type: "boxes";
               };
         };
         routing?: {

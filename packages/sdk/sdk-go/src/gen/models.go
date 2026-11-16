@@ -1669,6 +1669,12 @@ type DecisionBoxAnswer struct {
 	Type string `json:"type"`
 }
 
+type DecisionBoxesQuestion struct {
+	Instructions interface{} `json:"instructions"`
+	Max *int `json:"max,omitempty"`
+	Type string `json:"type"`
+}
+
 type DecisionBoxQuestion struct {
 	Instructions string `json:"instructions"`
 	Name *string `json:"name,omitempty"`
@@ -1686,12 +1692,18 @@ type DecisionChoiceAnswer struct {
 type DecisionChoiceQuestion struct {
 	Criteria map[string]interface{} `json:"criteria"`
 	Instructions interface{} `json:"instructions"`
+	Multiple *bool `json:"multiple,omitempty"`
 	Type string `json:"type"`
 }
 
 type DecisionCreateRequest = interface{}
 
 type DecisionCreateResponse = interface{}
+
+type DecisionDateQuestion struct {
+	Instructions interface{} `json:"instructions"`
+	Type string `json:"type"`
+}
 
 type DecisionImage struct {
 	Base64 string `json:"base64"`
@@ -1752,6 +1764,14 @@ type DecisionNoulQuestion struct {
 	Type string `json:"type"`
 }
 
+type DecisionNumberQuestion struct {
+	Instructions interface{} `json:"instructions"`
+	Range *[]float64 `json:"range,omitempty"`
+	Step *float64 `json:"step,omitempty"`
+	Type string `json:"type"`
+	Unit *string `json:"unit,omitempty"`
+}
+
 type DecisionPredicateAnswer struct {
 	Name *string `json:"name"`
 	Probability float64 `json:"probability"`
@@ -1787,7 +1807,13 @@ type DecisionScoreQuestion struct {
 	Type string `json:"type"`
 }
 
+type DecisionSpansQuestion struct {
+	Instructions interface{} `json:"instructions"`
+	Type string `json:"type"`
+}
+
 type DecisionsRequest struct {
+	Audio *[]string `json:"audio,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	Images *[]interface{} `json:"images,omitempty"`
@@ -1816,6 +1842,11 @@ type DecisionsUsage struct {
 	OutputTokens *int `json:"output_tokens,omitempty"`
 	OutputTokensDetails *map[string]interface{} `json:"output_tokens_details,omitempty"`
 	TotalTokens *int `json:"total_tokens,omitempty"`
+}
+
+type DecisionTextQuestion struct {
+	Instructions interface{} `json:"instructions"`
+	Type string `json:"type"`
 }
 
 type DeletedResponse struct {
@@ -3531,6 +3562,7 @@ type LegacyDecisionLocateQuestion struct {
 }
 
 type LegacyDecisionsRequest struct {
+	Audio *[]string `json:"audio,omitempty"`
 	Debug *map[string]interface{} `json:"debug,omitempty"`
 	EchoUpstreamRequest *bool `json:"echo_upstream_request,omitempty"`
 	Images *[]interface{} `json:"images,omitempty"`
