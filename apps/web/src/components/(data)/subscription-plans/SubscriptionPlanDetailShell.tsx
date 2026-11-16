@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import Link from "@/components/link";
+import { Link } from "@/i18n/navigation";
 import { CreditCard, ExternalLink } from "lucide-react";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { useSuspenseQuery } from "@tanstack/react-query";
@@ -39,8 +39,8 @@ function PlanStats({ plan }: { plan: SubscriptionPlanDetails }) {
 	const stats = [
 		price ? <Stat key="price" label={messages.detail.price} value={format.price(price)} detail={plan.prices.length > 1 ? formatSubscriptionPlanMessage(messages.detail.billingOptionCount, { count: plan.prices.length }) : undefined} /> : null,
 		<Stat key="models" label={messages.detail.modelsIncluded} value={plan.models?.length ?? 0} />,
-		summary ? <Stat key="tokens" label={messages.usage.tokensPerMonth} value={format.tokens(summary.mostTokens.monthly_tokens)} detail={summary.mostTokens.model_name ?? summary.mostTokens.model_slug} /> : null,
-		summary?.cheapest ? <Stat key="value" label={messages.usage.lowestCost} value={format.perMillion(summary.cheapest.effective_usd_per_mtok)} detail={[summary.cheapest.model_name ?? summary.cheapest.model_slug, format.multiple(summary.cheapest)].filter(Boolean).join(" · ")} /> : null,
+		summary ? <Stat key="tokens" label={messages.usage.tokensPerMonth} value={format.tokens(summary.mostTokens.monthly_tokens)} detail={[summary.mostTokens.model_name ?? summary.mostTokens.model_slug, format.scenario(summary.mostTokens.scenario)].filter(Boolean).join(" · ")} /> : null,
+		summary?.cheapest ? <Stat key="value" label={messages.usage.lowestCost} value={format.perMillion(summary.cheapest.effective_usd_per_mtok)} detail={[summary.cheapest.model_name ?? summary.cheapest.model_slug, format.scenario(summary.cheapest.scenario), format.multiple(summary.cheapest)].filter(Boolean).join(" · ")} /> : null,
 	].filter(Boolean);
 	return (
 		<div className={cn("grid gap-px overflow-hidden rounded-md border border-border/70 bg-border/70", stats.length >= 4 ? "grid-cols-2 lg:grid-cols-4" : stats.length === 3 ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-2")}>

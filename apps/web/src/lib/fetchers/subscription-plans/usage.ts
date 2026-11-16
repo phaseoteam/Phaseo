@@ -21,6 +21,11 @@ export const USAGE_SOURCE_URL = "https://github.com/FeiZhuLulu/real-api-pricing"
 
 const usable = (row: SubscriptionPlanUsage) => row.effective_usd_per_mtok != null && Number.isFinite(row.effective_usd_per_mtok);
 
+/** False once a promotional figure's end date has passed: it no longer describes what the plan gives. */
+export function isCurrentUsage(row: Pick<SubscriptionPlanUsage, "promo_until">, today = new Date().toISOString().slice(0, 10)): boolean {
+	return !row.promo_until || row.promo_until >= today;
+}
+
 /** Standard scenarios first, then cheapest per 1M tokens, then most tokens. */
 export function sortUsage(rows: readonly SubscriptionPlanUsage[]): SubscriptionPlanUsage[] {
 	return rows.toSorted((a, b) =>
@@ -32,9 +37,10 @@ export function sortUsage(rows: readonly SubscriptionPlanUsage[]): SubscriptionP
 
 /** The plan's headline numbers: the most tokens and the lowest price per 1M tokens, both on the standard scenario when there is one. */
 export function summarizeUsage(rows: readonly SubscriptionPlanUsage[] | null | undefined): { mostTokens: SubscriptionPlanUsage; cheapest: SubscriptionPlanUsage | null } | null {
-	if (!rows?.length) return null;
-	const standard = rows.filter((row) => row.scenario === "standard");
-	const pool = standard.length ? standard : [...rows];
+	const current = rows?.filter((row) => isCurrentUsage(row)) ?? [];
+	if (!current.length) return null;
+	const standard = current.filter((row) => row.scenario === "standard");
+	const pool = standard.length ? standard : current;
 	const mostTokens = pool.toSorted((a, b) => b.monthly_tokens - a.monthly_tokens)[0];
 	const cheapest = sortUsage(pool).find(usable) ?? null;
 	return { mostTokens, cheapest };
@@ -55,7 +61,7 @@ export function bestPlanPerModel<T extends { usage?: SubscriptionPlanUsage[] | n
 	const best = new Map<string, { plan: T; usage: SubscriptionPlanUsage }>();
 	for (const plan of plans) {
 		for (const usage of plan.usage ?? []) {
-			if (usage.scenario !== "standard" || !usable(usage)) continue;
+			if (usage.scenario !== "standard" || !usable(usage) || !isCurrentUsage(usage)) continue;
 			const current = best.get(usage.model_slug);
 			if (!current || (usage.effective_usd_per_mtok ?? Infinity) < (current.usage.effective_usd_per_mtok ?? Infinity)) best.set(usage.model_slug, { plan, usage });
 		}

@@ -760,7 +760,13 @@
 			"published_limits": "Published limits",
 			"selectable": "Selectable",
 			"example": "Example",
-			"unverified": "Unverified"
+			"unverified": "Unverified",
+			"usage_other_providers": "Also included with plans from {count} other providers",
+			"usage_show_all_plans": "Show all {count} plans",
+			"usage_show_fewer_plans": "Show fewer plans",
+			"usage_per_million": "≈ {price} per 1M tokens",
+			"usage_times_cheaper": "{value}× cheaper",
+			"usage_source_note": "Usage estimates come from <link>real-api-pricing</link>, which includes data from Awesome Coding Plan (CC BY 4.0). Real limits vary with workload, context length and caching."
 		},
 		"openui": {
 			"title": "Interactive answers",

@@ -760,7 +760,13 @@
 			"published_limits": "प्रकाशित सीमाएँ",
 			"selectable": "चयन योग्य",
 			"example": "उदाहरण",
-			"unverified": "असत्यापित"
+			"unverified": "असत्यापित",
+			"usage_other_providers": "{count} अन्य प्रदाताओं की योजनाओं में भी शामिल",
+			"usage_show_all_plans": "सभी {count} योजनाएँ दिखाएँ",
+			"usage_show_fewer_plans": "कम योजनाएँ दिखाएँ",
+			"usage_per_million": "≈ {price} प्रति 10 लाख टोकन",
+			"usage_times_cheaper": "{value}× सस्ता",
+			"usage_source_note": "उपयोग के अनुमान <link>real-api-pricing</link> से हैं, जिसमें Awesome Coding Plan (CC BY 4.0) का डेटा शामिल है। असली सीमाएँ काम, कॉन्टेक्स्ट की लंबाई और कैशिंग के साथ बदलती हैं।"
 		},
 		"openui": {
 			"title": "इंटरैक्टिव जवाब",

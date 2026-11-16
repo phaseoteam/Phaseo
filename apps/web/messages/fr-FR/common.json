@@ -760,7 +760,13 @@
 			"published_limits": "Limites publiées",
 			"selectable": "Sélectionnable",
 			"example": "Exemple",
-			"unverified": "Non vérifié"
+			"unverified": "Non vérifié",
+			"usage_other_providers": "Également inclus dans les offres de {count} autres fournisseurs",
+			"usage_show_all_plans": "Afficher les {count} offres",
+			"usage_show_fewer_plans": "Afficher moins d’offres",
+			"usage_per_million": "≈ {price} par million de tokens",
+			"usage_times_cheaper": "{value}× moins cher",
+			"usage_source_note": "Les estimations d’usage proviennent de <link>real-api-pricing</link>, qui inclut des données d’Awesome Coding Plan (CC BY 4.0). Les limites réelles varient selon l’usage, la longueur du contexte et le cache."
 		},
 		"openui": {
 			"title": "Réponses interactives",

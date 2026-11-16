@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { parseAsString, parseAsStringLiteral, useQueryStates } from "nuqs";
 import { ArrowUpDown, Search } from "lucide-react";
-import Link from "@/components/link";
+import { Link } from "@/i18n/navigation";
 import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -186,7 +186,7 @@ export default function SubscriptionPlansDisplay({ plans, labels }: Subscription
 								{SORTS.filter((sort) => hasUsage || (sort !== "tokens" && sort !== "value")).map((sort) => <SelectItem key={sort} value={sort}>{sortLabels[sort]}</SelectItem>)}
 							</SelectContent>
 						</Select>
-						{hasUsage ? (
+						{hasUsage || filters.measured ? (
 							<label className="flex items-center gap-2 px-1 text-sm text-muted-foreground">
 								<Switch size="sm" checked={Boolean(filters.measured)} onCheckedChange={(checked) => void setFilters({ measured: checked ? "1" : null })} />
 								{list.measuredOnly}

@@ -760,7 +760,13 @@
 			"published_limits": "公布限制",
 			"selectable": "可选择",
 			"example": "示例",
-			"unverified": "未核实"
+			"unverified": "未核实",
+			"usage_other_providers": "另有 {count} 家提供商的方案也包含此模型",
+			"usage_show_all_plans": "显示全部 {count} 个方案",
+			"usage_show_fewer_plans": "收起方案",
+			"usage_per_million": "约每 100 万 Token {price}",
+			"usage_times_cheaper": "便宜 {value} 倍",
+			"usage_source_note": "用量估算来自 <link>real-api-pricing</link>，其中包含 Awesome Coding Plan 的数据（CC BY 4.0）。实际限额会因任务类型、上下文长度和缓存而不同。"
 		},
 		"openui": {
 			"title": "交互式回答",

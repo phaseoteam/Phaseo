@@ -2,7 +2,7 @@ import { useTranslations } from "@/i18n/react";
 import SubscriptionPlanAllowances from "./SubscriptionPlanAllowances";
 import SubscriptionPlanOffers from "./SubscriptionPlanOffers";
 import type { SubscriptionPlanDetails } from "@/lib/fetchers/subscription-plans/types";
-import Link from "@/components/link";
+import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import SubscriptionPlanFeaturesTable from "./SubscriptionPlanFeaturesTable";
 import SubscriptionPlanModelsTable from "./SubscriptionPlanModelsTable";

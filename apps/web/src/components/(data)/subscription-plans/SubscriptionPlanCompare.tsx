@@ -1,4 +1,4 @@
-import Link from "@/components/link";
+import { Link } from "@/i18n/navigation";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatSubscriptionPlanMessage } from "@/i18n/subscription-plans";
 import { summarizeUsage } from "@/lib/fetchers/subscription-plans/usage";

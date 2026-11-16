@@ -1,4 +1,4 @@
-import Link from "@/components/link";
+import { Link } from "@/i18n/navigation";
 import { useTranslations } from "@/i18n/react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { summarizeUsage, type SubscriptionPlanUsage } from "@/lib/fetchers/subscription-plans/usage";
@@ -26,7 +26,8 @@ export default function SubscriptionPlanModelsTable({ models, usage, limit }: { 
 	const { messages } = format;
 	const rows = planModelRows(models, usage).slice(0, limit);
 	const hasUsage = rows.some((row) => row.usage);
-	const verified = models.map((model) => model.verified_at).filter((value): value is string => Boolean(value)).sort().at(-1);
+	// The oldest check among the rows shown, so no row looks fresher than it is.
+	const verified = rows.map(({ model }) => model.verified_at).filter((value): value is string => Boolean(value)).sort()[0];
 	return (
 		<div className="space-y-2">
 		<div className="overflow-x-auto rounded-md border border-border/70">
@@ -49,13 +50,15 @@ export default function SubscriptionPlanModelsTable({ models, usage, limit }: { 
 									{model.model.organisation_name ? <p className="text-xs text-muted-foreground">{model.model.organisation_name}</p> : null}
 									{/* Phones have no access column, so keep its qualifications under the name. */}
 									{accessText ? <p className="text-xs text-muted-foreground sm:hidden">{accessText}</p> : null}
+									{model.rate_limit ? <p className="text-xs text-muted-foreground">{formatSubscriptionPlanMessage(messages.detail.rateLimit, { limit: typeof model.rate_limit === "string" ? model.rate_limit : JSON.stringify(model.rate_limit) })}</p> : null}
 								</TableCell>
 								<TableCell className="hidden px-4 py-3 text-sm text-muted-foreground sm:table-cell">{accessText || "—"}</TableCell>
-								{hasUsage ? <TableCell className="px-4 py-3 text-right tabular-nums">{summary ? format.tokens(summary.mostTokens.monthly_tokens) : <span className="text-muted-foreground">—</span>}</TableCell> : null}
+								{hasUsage ? <TableCell className="px-4 py-3 text-right tabular-nums">{summary ? <>{format.tokens(summary.mostTokens.monthly_tokens)}{format.scenario(summary.mostTokens.scenario) ? <p className="text-xs text-muted-foreground">{format.scenario(summary.mostTokens.scenario)}</p> : null}</> : <span className="text-muted-foreground">—</span>}</TableCell> : null}
 								{hasUsage ? (
 									<TableCell className="px-4 py-3 text-right tabular-nums">
 										{summary?.cheapest ? <span className="font-medium">{format.perMillion(summary.cheapest.effective_usd_per_mtok)}</span> : <span className="text-muted-foreground">—</span>}
 										{summary?.cheapest && format.multiple(summary.cheapest) ? <p className="text-xs text-emerald-700 dark:text-emerald-400">{format.multiple(summary.cheapest)}</p> : null}
+										{summary?.cheapest && format.scenario(summary.cheapest.scenario) ? <p className="text-xs text-muted-foreground">{format.scenario(summary.cheapest.scenario)}</p> : null}
 									</TableCell>
 								) : null}
 							</TableRow>

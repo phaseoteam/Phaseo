@@ -1,6 +1,6 @@
-import Link from "@/components/link";
+import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "@/i18n/react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +17,6 @@ import { formatSubscriptionPrice, localizedSubscriptionPriceLabels, minimumPayab
 import { getLogoLabel } from "@/lib/logos";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { apiMultiple, MIN_API_MULTIPLE, perMillionFractionDigits, summarizeUsage, USAGE_SOURCE_URL } from "@/lib/fetchers/subscription-plans/usage";
-import { formatSubscriptionPlanMessage, getSubscriptionPlansMessagesFor } from "@/i18n/subscription-plans";
 
 export type { SubscriptionPrice } from "@/lib/fetchers/subscription-plans/pricing";
 
@@ -383,17 +382,22 @@ export default function ModelSubscriptionsClient({
 		structured: localizedSubscriptionPriceLabels(locale, { custom: tLabels("customPricing"), usage: tLabels("usageBased"), unknown: status("unknown"), from: terms("starting_at"), seat: terms("seat"), introductory: terms("introductory"), firstCycle: terms("first_billing_cycle"), cycleCount: terms("number_of_cycles") }),
 	};
 	const format = useDisplayFormatters();
-	const usageMessages = getSubscriptionPlansMessagesFor(locale).usage;
-	const listMessages = getSubscriptionPlansMessagesFor(locale).modelPage;
 	const [showAll, setShowAll] = useState(false);
+	// Expanding from a provider row removes that row, so move focus to the provider's plans instead.
+	const focusGroup = useRef<string | null>(null);
+	useEffect(() => {
+		if (!showAll || focusGroup.current === null) return;
+		document.getElementById(`subscription-group-${focusGroup.current}`)?.focus();
+		focusGroup.current = null;
+	}, [showAll]);
 	/** "≈ $0.0063 per 1M tokens · 63× cheaper" for plans with measured usage of this model. */
 	const usageLine = (plan: SubscriptionPlan): string | null => {
 		const cheapest = summarizeUsage(plan.usage)?.cheapest;
 		if (cheapest?.effective_usd_per_mtok == null) return null;
 		const perMillion = format.number(cheapest.effective_usd_per_mtok, { style: "currency", currency: "USD", notation: "standard", ...perMillionFractionDigits(cheapest.effective_usd_per_mtok) });
 		const multiple = apiMultiple(cheapest);
-		return [formatSubscriptionPlanMessage(usageMessages.modelPage, { price: perMillion }),
-			multiple == null || multiple < MIN_API_MULTIPLE ? null : formatSubscriptionPlanMessage(usageMessages.timesCheaper, { value: format.number(multiple, { maximumFractionDigits: multiple >= 10 ? 0 : 1 }) })].filter(Boolean).join(" · ");
+		return [terms("usage_per_million", { price: perMillion }),
+			multiple == null || multiple < MIN_API_MULTIPLE ? null : terms("usage_times_cheaper", { value: format.number(multiple, { maximumFractionDigits: multiple >= 10 ? 0 : 1 }) })].filter(Boolean).join(" · ");
 	};
 	const hasUsage = subscriptionPlans.some((plan) => usageLine(plan));
 	const groupedPlans = subscriptionPlans.reduce<SubscriptionPlanGroup[]>((groups, plan) => {
@@ -450,7 +454,9 @@ export default function ModelSubscriptionsClient({
 	const renderGroup = (group: SubscriptionPlanGroup) => (
 						<section
 							key={group.organisationId}
-							className="overflow-hidden rounded-xl border border-border bg-card"
+							id={`subscription-group-${group.organisationId}`}
+							tabIndex={-1}
+							className="overflow-hidden rounded-xl border border-border bg-card outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						>
 							<div className="flex flex-col gap-2 border-b border-border/70 bg-muted/20 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between">
 								<div className="flex min-w-0 items-center gap-2.5">
@@ -567,11 +573,11 @@ export default function ModelSubscriptionsClient({
 				<div className="space-y-2">
 					{!showAll ? (
 						<>
-							<p className="text-sm font-medium text-foreground">{formatSubscriptionPlanMessage(listMessages.otherProviders, { count: otherGroups.length })}</p>
+							<p className="text-sm font-medium text-foreground">{terms("usage_other_providers", { count: otherGroups.length })}</p>
 							<ul className="divide-y divide-border/70 overflow-hidden rounded-md border border-border/70">
 								{otherGroups.map((group) => (
 									<li key={group.organisationId}>
-										<button type="button" onClick={() => setShowAll(true)} className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/40">
+										<button type="button" onClick={() => { focusGroup.current = group.organisationId; setShowAll(true); }} className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/40">
 											<span className="relative size-5 shrink-0"><Logo id={group.organisationId || group.organisationName} alt="" fill sizes="20px" className="object-contain" /></span>
 											<span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{group.organisationName}</span>
 											<span className="hidden text-xs text-muted-foreground sm:inline">{tLabels("planCount", { count: group.plans.length })}</span>
@@ -585,16 +591,16 @@ export default function ModelSubscriptionsClient({
 						</>
 					) : null}
 					<Button type="button" variant="outline" size="sm" className="rounded-md" onClick={() => setShowAll((value) => !value)} aria-expanded={showAll}>
-						{showAll ? listMessages.showFewerPlans : formatSubscriptionPlanMessage(listMessages.showAllPlans, { count: otherPlanCount })}
+						{showAll ? terms("usage_show_fewer_plans") : terms("usage_show_all_plans", { count: otherPlanCount })}
 						<ChevronDown className={cn("size-4 transition-transform", showAll && "rotate-180")} aria-hidden="true" />
 					</Button>
 				</div>
 			) : null}
 			{groupedPlans.length > 0 && hasUsage ? (
 				<p className="text-xs leading-relaxed text-muted-foreground">
-					{usageMessages.sourceNote.split("{source}")[0]}
-					<a href={USAGE_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-foreground">real-api-pricing</a>
-					{usageMessages.sourceNote.split("{source}")[1]}
+					{terms.rich("usage_source_note", {
+						link: (chunks) => <a href={USAGE_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-foreground">{chunks}</a>,
+					})}
 				</p>
 			) : null}
 			{groupedPlans.length > 0 ? null : (

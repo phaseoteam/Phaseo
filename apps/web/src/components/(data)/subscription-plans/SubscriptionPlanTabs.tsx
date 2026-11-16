@@ -1,5 +1,5 @@
 import React from "react";
-import Link from "@/components/link";
+import { Link } from "@/i18n/navigation";
 import { usePathname } from "@/lib/navigation";
 import { ChevronDown } from "lucide-react";
 import {

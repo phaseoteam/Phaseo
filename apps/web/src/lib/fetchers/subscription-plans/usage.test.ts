@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { apiMultiple, bestPlanPerModel, perMillionFractionDigits, summarizeUsage, type SubscriptionPlanUsage } from "./usage";
+import { apiMultiple, bestPlanPerModel, isCurrentUsage, perMillionFractionDigits, summarizeUsage, type SubscriptionPlanUsage } from "./usage";
 
 const row = (overrides: Partial<SubscriptionPlanUsage>): SubscriptionPlanUsage => ({
 	model_slug: "lab/model", model_name: "Model", scenario: "standard", monthly_price_usd: 200, monthly_tokens: 1e9,
@@ -40,5 +40,21 @@ describe("subscription usage summaries", () => {
 	it("keeps two significant digits below $1", () => {
 		const money = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", ...perMillionFractionDigits(value) }).format(value);
 		expect([money(0.006349), money(0.13), money(2.5)]).toEqual(["$0.0063", "$0.13", "$2.50"]);
+	});
+});
+
+describe("expired promotions", () => {
+	const row = (plan: string, price: number, promo_until: string | null) => ({ plan_id: plan, usage: [{ model_slug: "m", model_name: "M", scenario: "standard", monthly_price_usd: 20, monthly_tokens: 1e9, effective_usd_per_mtok: price, api_equivalent_usd_per_mtok: null, share_of_api_price: null, workload: null, basis: "measured", confidence: "high", source_name: null, source_url: null, measured_on: null, promo_until }] as SubscriptionPlanUsage[] });
+
+	it("treats a promotion as current through its end date", () => {
+		expect(isCurrentUsage({ promo_until: "2026-11-16" }, "2026-11-16")).toBe(true);
+		expect(isCurrentUsage({ promo_until: "2026-11-15" }, "2026-11-16")).toBe(false);
+		expect(isCurrentUsage({ promo_until: null }, "2026-11-16")).toBe(true);
+	});
+	it("never picks or headlines an ended promotion", () => {
+		const ended = row("promo", 0.001, "2000-01-01");
+		const regular = row("regular", 0.01, null);
+		expect(bestPlanPerModel([ended, regular]).map(({ plan }) => plan.plan_id)).toEqual(["regular"]);
+		expect(summarizeUsage(ended.usage)).toBeNull();
 	});
 });

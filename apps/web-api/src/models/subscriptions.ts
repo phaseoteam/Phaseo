@@ -66,7 +66,8 @@ export async function fetchRelatedPlans(client: SupabaseClient, plan: Row): Prom
 	const [plans, usage, prices] = await Promise.all([
 		client.from("v2_subscription_plans").select("plan_uuid, plan_id, name")
 			.eq("lab_slug", labSlug).eq("status", "active").lte("effective_from", now).or(`effective_to.is.null,effective_to.gt.${now}`),
-		client.rpc("get_v2_subscription_model_usage", { p_model_slug: null, p_plan_id: null }),
+		// Filter to the lab in the database, before any response row limit applies.
+		client.rpc("get_v2_subscription_model_usage", { p_model_slug: null, p_plan_id: null }).eq("lab_slug", labSlug),
 		// Live monthly offer prices, aggregated in the database; the plan row's price columns are historical.
 		client.rpc("get_v2_subscription_monthly_prices", { p_lab_slug: labSlug }),
 	]);
