@@ -28,6 +28,25 @@ export interface SubscriptionPrice {
 	tax_treatment?: string;
 }
 
+/**
+ * The least a subscriber must pay each billing period once any deal is over, for ranking by price. Uses the
+ * ongoing components only: not introductory, no end cycle, and for each charge (component_key) the row with
+ * the latest start, so a renewal replaces that charge's first-cycle price while other charges still count.
+ * Same rule as get_v2_subscription_monthly_prices. Seat charges count the required seats; optional metered
+ * extras aren't counted. Null when the ongoing price isn't known, e.g. custom pricing or only a deal.
+ */
+export function minimumPayableAmount(price: SubscriptionPrice): number | null {
+	const components = price.components ?? [];
+	if (!components.length) return price.price == null || !Number.isFinite(Number(price.price)) ? null : Number(price.price);
+	const openEnded = components.filter((component) => component.phase !== "introductory" && component.duration_cycles == null);
+	const latestByCharge = new Map<string, number>();
+	for (const component of openEnded) latestByCharge.set(component.component_key, Math.max(latestByCharge.get(component.component_key) ?? 1, component.starts_at_cycle ?? 1));
+	const required = openEnded.filter((component) => (component.starts_at_cycle ?? 1) === latestByCharge.get(component.component_key) && component.pricing_type !== "usage_based");
+	if (!required.length || required.some((component) => component.pricing_type !== "free" && (component.pricing_type !== "fixed" || component.amount == null))) return null;
+	const seats = Math.max(1, price.minimum_seats ?? 1);
+	return required.reduce((total, component) => total + (component.pricing_type === "free" ? 0 : Number(component.amount) * (component.charge_basis === "seat" ? seats : 1)), 0);
+}
+
 export interface SubscriptionPriceLabels {
 	custom: string;
 	usage: string;
@@ -41,9 +60,16 @@ export interface SubscriptionPriceLabels {
 }
 
 export function localizedSubscriptionPriceLabels(locale: string, labels: SubscriptionPriceLabels): SubscriptionPriceLabels {
-	return { ...labels, period: (count, interval) => new Intl.NumberFormat(locale, {
-		style: "unit", unit: interval, unitDisplay: "long",
-	}).format(count) };
+	return { ...labels, period: (count, interval) => {
+		const format = new Intl.NumberFormat(locale, { style: "unit", unit: interval, unitDisplay: "long" });
+		if (count !== 1) return format.format(count);
+		// "/ month" rather than "/ 1 month", where the language spaces the number from the unit.
+		// Japanese keeps the count ("1 か月"), and languages without the space keep it too ("1个月").
+		const parts = format.formatToParts(1);
+		const spaced = parts.some((part) => part.type === "literal" && part.value.trim() === "");
+		const unit = parts.filter((part) => part.type === "unit").map((part) => part.value).join("").trim();
+		return spaced && unit && !locale.startsWith("ja") ? unit : format.format(1);
+	} };
 }
 
 export function formatSubscriptionPrice(price: SubscriptionPrice, formatAmount = (value: number, currency: string) =>

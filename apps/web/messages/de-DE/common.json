@@ -760,7 +760,13 @@
 			"published_limits": "Veröffentlichte Limits",
 			"selectable": "Auswählbar",
 			"example": "Beispiel",
-			"unverified": "Unverifiziert"
+			"unverified": "Unverifiziert",
+			"usage_other_providers": "Auch in Plänen von {count} weiteren Anbietern enthalten",
+			"usage_show_all_plans": "Alle {count} Pläne anzeigen",
+			"usage_show_fewer_plans": "Weniger Pläne anzeigen",
+			"usage_per_million": "≈ {price} pro 1 Mio. Tokens",
+			"usage_times_cheaper": "{value}× günstiger",
+			"usage_source_note": "Die Nutzungsschätzungen stammen von <link>real-api-pricing</link>, das Daten von Awesome Coding Plan (CC BY 4.0) enthält. Echte Limits hängen von Workload, Kontextlänge und Caching ab."
 		},
 		"openui": {
 			"title": "Interaktive Antworten",
