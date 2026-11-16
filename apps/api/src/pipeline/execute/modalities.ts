@@ -96,6 +96,24 @@ export function filterDecisionCandidatesByModalities(
 }
 
 /**
+ * The decisions request as one route receives it. A choice question's `multiple` is
+ * dropped on routes that don't answer multi-select, so they get a plain choice question.
+ */
+export function decisionIrForRoute(
+	ir: IRDecisionsRequest,
+	candidate: Pick<ProviderCandidate, "capabilityParams">,
+): IRDecisionsRequest {
+	if (!Object.values(ir.questions ?? {}).some(question => "multiple" in question) ||
+		routeServesTypedDecisionFeatures(candidate, ["multi_choice"])) return ir;
+	const questions = Object.fromEntries(Object.entries(ir.questions).map(([id, question]) => {
+		if (!("multiple" in question)) return [id, question];
+		const { multiple: _multiple, ...rest } = question;
+		return [id, rest as IRDecisionsRequest["questions"][string]];
+	}));
+	return { ...ir, questions };
+}
+
+/**
  * Routes for a decisions request. Audio sent in the state/map format's `audio` field
  * (`optionalAudio`) used to be ignored, so when no route hears audio the request is
  * routed without it, as before, and `dropAudio` tells the caller to remove it.

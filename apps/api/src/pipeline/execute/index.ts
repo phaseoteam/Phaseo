@@ -113,7 +113,7 @@ import { preferTwelveHourCacheRoutes } from "./prompt-cache-ttl";
 import { normalizeCapability } from "@/executors";
 import { isSynchronousMediaCapability } from "@core/synchronous-media";
 import {
-	decisionQuestionLimit, filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities,
+	decisionIrForRoute, decisionQuestionLimit, filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities,
 	requiredTypedDecisionFeatures, routeDecisionCandidates, routeServesTypedDecisionFeatures, routeUploadedFileIds,
 } from "./modalities";
 import { loadPriceCard } from "../pricing";
@@ -1153,7 +1153,9 @@ async function attemptProviderWithIR(
 			: normalizedIr;
 		const executorIr = isTextGenerate
 			? applyUpstreamPromptCacheKey(tieredIr as IRChatRequest, candidate.providerId, upstreamPromptCacheKey)
-			: tieredIr;
+			: normalizedCapability === "decisions.make"
+				? decisionIrForRoute(tieredIr as IRDecisionsRequest, candidate)
+				: tieredIr;
 		const buildExecutorArgs = () =>
 			({
 				ir: executorIr,

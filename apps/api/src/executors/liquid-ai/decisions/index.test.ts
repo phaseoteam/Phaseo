@@ -6,7 +6,7 @@ import { completeSystemOne } from "@executors/_shared/decisions/systemone";
 import { DecisionsSchema } from "@core/schemas";
 import { decodeDecisionsRequest } from "@protocols/decisions/decode";
 import { encodeDecisionsResponse } from "@protocols/decisions/encode";
-import { filterDecisionCandidatesByModalities, routeDecisionCandidates } from "@pipeline/execute/modalities";
+import { decisionIrForRoute, filterDecisionCandidatesByModalities, routeDecisionCandidates } from "@pipeline/execute/modalities";
 import type { ProviderCandidate } from "@pipeline/before/types";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../../tests/helpers/runtime";
@@ -186,6 +186,25 @@ describe("Typed-answer request validation and routing", () => {
 			{ type: "input_audio", input_audio: { data: WAV, format: "wav" } },
 		] }], questions: [{ type: "predicate", instructions: "?" }] }));
 		expect(routeDecisionCandidates([d11], native)).toEqual({ candidates: [], dropAudio: false });
+	});
+});
+
+describe("Dropping multiple on routes without multi-select", () => {
+	const d11 = { providerId: "liquid-ai", capabilityParams: { images: true } } as unknown as ProviderCandidate;
+	const d12 = { providerId: "liquid-ai", capabilityParams: { question_types: ["multi_choice"] } } as unknown as ProviderCandidate;
+	const ir = legacy({ questions: { t: typedQuestions.topics, q: { type: "noul", instructions: "Refund?" } } });
+	it("keeps multiple for routes that answer multi-select", () => {
+		expect(decisionIrForRoute(ir, d12)).toBe(ir);
+	});
+	it("silently drops multiple for other routes and leaves the rest of the request alone", () => {
+		const routed = decisionIrForRoute(ir, d11);
+		const { multiple: _multiple, ...plainChoice } = typedQuestions.topics;
+		expect(routed.questions).toEqual({ t: plainChoice, q: { type: "noul", instructions: "Refund?" } });
+		expect(ir.questions.t).toHaveProperty("multiple", true);
+	});
+	it("returns the request unchanged when no question sets multiple", () => {
+		const plain = legacy({ questions: { q: { type: "noul", instructions: "Refund?" } } });
+		expect(decisionIrForRoute(plain, d11)).toBe(plain);
 	});
 });
 
