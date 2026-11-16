@@ -22,6 +22,7 @@ try {
     create function prevent_catalogue_removal() returns trigger language plpgsql as $$ begin raise exception 'history preserved'; end $$;
     create table v2_subscription_plans(plan_uuid uuid primary key, plan_id text not null, name text not null, lab_slug text,
       frequency text, price numeric, currency text, effective_to timestamptz);
+    create table v2_subscription_plan_models(plan_uuid uuid not null, model_slug text not null, effective_from timestamptz not null default '-infinity', effective_to timestamptz);
     create table v2_subscription_plan_offers(offer_uuid uuid primary key, plan_uuid uuid not null, billing_interval text, billing_interval_count int not null default 1,
       currency text not null default 'USD', region_code text, effective_from timestamptz not null default '-infinity', effective_to timestamptz);
     create table v2_subscription_offer_prices(offer_uuid uuid not null, pricing_type text not null, amount numeric, phase text not null default 'standard',
@@ -31,6 +32,8 @@ try {
     insert into v2_subscription_plans values
       (md5('max')::uuid, 'max', 'Max', 'lab', 'monthly', 999, 'USD', null),
       (md5('custom')::uuid, 'custom', 'Custom', 'lab', 'custom', 0, 'USD', null);
+    insert into v2_subscription_plan_models(plan_uuid, model_slug) values
+      (md5('max')::uuid, 'lab/model'), (md5('custom')::uuid, 'lab/model'), (md5('max')::uuid, 'lab/hidden');
     insert into v2_subscription_plan_offers(offer_uuid, plan_uuid, billing_interval, effective_to) values
       (md5('max-old')::uuid, md5('max')::uuid, 'month', now() - interval '1 day'),
       (md5('max-month')::uuid, md5('max')::uuid, 'month', null),
@@ -81,6 +84,12 @@ try {
   await assert.rejects(db.exec(`delete from v2_subscription_plan_model_usage`), /history preserved/);
 
   await db.exec(`insert into v2_subscription_plan_model_usage(plan_uuid, model_slug, monthly_tokens, confidence, source_name) values (md5('max')::uuid, 'lab/hidden', 1000000, 'high', 'test')`);
+  const hidden = await db.query(`select model_slug from get_v2_subscription_model_usage('lab/hidden')`);
+  assert.deepEqual(hidden.rows, [], 'the public reader never returns hidden models, even to a privileged caller');
+
+  await db.exec(`update v2_subscription_plan_models set effective_to = now() where plan_uuid = md5('custom')::uuid`);
+  const unlinked = await db.query(`select plan_id from get_v2_subscription_model_usage('lab/model') order by plan_id`);
+  assert.deepEqual(unlinked.rows, [{ plan_id: 'max' }], 'a figure disappears as soon as the model leaves the plan');
   await db.exec(`grant usage on schema public to anon; grant select on v2_models to anon; set role anon`);
   const visible = await db.query(`select distinct model_slug from v2_subscription_plan_model_usage order by 1`);
   assert.deepEqual(visible.rows, [{ model_slug: 'lab/model' }], 'hidden models and retired rows stay private');

@@ -57,3 +57,13 @@ test("leaves unchanged rows alone, replaces changed rows, retires missing rows",
 	assert.deepEqual(diff.insert.map((row) => row.model_slug), ["cursor/composer-2.5"]);
 	assert.deepEqual(diff.removed, ["old-muse"]);
 });
+
+test("replaces a row when only its note or metadata changed", () => {
+	const points = parsePoints(csv(line("chatgpt_plus::gpt-6.1-sol", "OpenAI", "gpt-6.1-sol", "20.0", "15.16")));
+	const [plus] = buildUsageRows(points, plans, slugs, planModels).rows;
+	// jsonb comes back with its keys in a different order; that alone isn't a change.
+	const reordered: CurrentRow = { ...plus, usage_uuid: "same", metadata: Object.fromEntries(Object.entries(plus.metadata).reverse()) };
+	assert.equal(diffUsage([reordered], [plus]).unchanged, 1);
+	assert.deepEqual(diffUsage([{ ...plus, usage_uuid: "old-note", note: "estimated" }], [plus]).close, ["old-note"]);
+	assert.deepEqual(diffUsage([{ ...plus, usage_uuid: "old-meta", metadata: { workload_profile: "other" } }], [plus]).close, ["old-meta"]);
+});

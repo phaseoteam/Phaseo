@@ -91,6 +91,13 @@ CREATE OR REPLACE FUNCTION public.get_v2_subscription_model_usage (
     join public.v2_models model on model.model_slug = u.model_slug
     left join monthly_offer on monthly_offer.plan_uuid = u.plan_uuid
     where u.effective_to is null
+      -- Public reader: hidden models never show, and a figure shows only while the model is live on the plan.
+      and not model.hidden
+      and exists (
+        select 1 from public.v2_subscription_plan_models link
+        where link.plan_uuid = u.plan_uuid and link.model_slug = u.model_slug
+          and link.effective_from <= now() and (link.effective_to is null or link.effective_to > now())
+      )
       and (p_model_slug is null or u.model_slug = lower(trim(p_model_slug)))
       and (p_plan_id is null or plan.plan_id = p_plan_id)
   )

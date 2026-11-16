@@ -169,8 +169,12 @@ export function buildUsageRows(points: SourcePoint[], plans: CataloguePlan[], sl
 }
 
 export type CurrentRow = UsageRow & { usage_uuid: string };
-const COMPARED: (keyof UsageRow)[] = ["monthly_tokens", "workload", "basis", "confidence", "plan_price_usd", "api_equivalent_usd_per_mtok", "source_record_id", "measured_on", "promo_until"];
-const same = (a: unknown, b: unknown) => (a === null || a === undefined ? null : typeof a === "number" || typeof b === "number" ? Number(a) : String(a)) === (b === null || b === undefined ? null : typeof a === "number" || typeof b === "number" ? Number(b) : String(b));
+const COMPARED: (keyof UsageRow)[] = ["monthly_tokens", "workload", "basis", "confidence", "plan_price_usd", "api_equivalent_usd_per_mtok", "source_record_id", "source_url", "note", "measured_on", "promo_until", "metadata"];
+/** JSON with sorted keys, so jsonb read back from the database compares equal to the row we built. */
+const stableJson = (value: unknown): string => Array.isArray(value) ? `[${value.map(stableJson).join(",")}]`
+	: value && typeof value === "object" ? `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson((value as Record<string, unknown>)[key])}`).join(",")}}`
+	: JSON.stringify(value ?? null);
+const same = (a: unknown, b: unknown) => (a && typeof a === "object") || (b && typeof b === "object") ? stableJson(a) === stableJson(b) : (a === null || a === undefined ? null : typeof a === "number" || typeof b === "number" ? Number(a) : String(a)) === (b === null || b === undefined ? null : typeof a === "number" || typeof b === "number" ? Number(b) : String(b));
 
 /**
  * Compare incoming rows with the current ones for this source. Unchanged rows are left alone so the
