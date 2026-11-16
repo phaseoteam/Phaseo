@@ -1,5 +1,6 @@
 import type { IRDecisionQuestion, IRDecisionsRequest } from "@core/ir";
 import { BodyLimitExceededError, readStreamTextWithLimit } from "@core/bounded-stream";
+import { isInlineAudioUrl } from "@core/decisions";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { resolveOpenAICompatKey } from "@providers/openai-compatible/config";
@@ -118,11 +119,13 @@ const AUDIO_MIME: Record<string, string> = {
 
 /**
  * Images and audio in System One's top-level `images` and `audio` arrays, as Liquid's
- * API takes them: base64 data URLs only. Routing keeps remote media off these routes
- * (capability params image_urls and audio_urls false).
+ * API takes them: images as data URLs or `{content_type, base64}` objects (both
+ * documented at https://docs.liquid.ai/lfm/models/d1.md#image-inputs), audio as data
+ * URLs. Routing keeps remote media off these routes (image_urls and audio_urls false).
  */
 export function systemOneMedia(ir: IRDecisionsRequest): { images?: unknown[]; audio?: string[] } {
 	const audio = (ir.audio ?? []).map(clip => {
+		if (isInlineAudioUrl(clip)) return clip.data;
 		if (clip.source !== "data") throw new Error("System One audio must be inline data.");
 		const mime = AUDIO_MIME[clip.format ?? ""];
 		if (!mime) throw new Error(`Unsupported System One audio format: ${clip.format ?? "none"}.`);
@@ -158,7 +161,11 @@ export async function executeSystemOne(
 		},
 		body: JSON.stringify(body),
 	});
-	return completeSystemOne(args, upstream, keyInfo, mappedRequest, undefined, { allowMissingBox: options.allowMissingBox });
+	// The native (input + array) response contract has no "not found" box, so a missing box
+	// is accepted only for state/map requests; native requests keep rejecting it.
+	return completeSystemOne(args, upstream, keyInfo, mappedRequest, undefined, {
+		allowMissingBox: options.allowMissingBox === true && !ir.decisionContext,
+	});
 }
 
 // Validate the shared typed-answer contract independently of provider transport.

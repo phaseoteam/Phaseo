@@ -57,6 +57,29 @@ describe("Liquid decisions media", () => {
 		expect(body.audio).toEqual([`data:audio/mpeg;base64,${WAV}`]);
 		expect(encodeDecisionsResponse(result.ir as any, ir).answers).toEqual([{ type: "predicate", name: null, probability: 0.3 }]);
 	});
+	it("treats a native input_audio data URL as inline: routes to Liquid and forwards it", async () => {
+		const dataUrl = `data:audio/wav;base64,${WAV}`;
+		const ir = decodeDecisionsRequest(DecisionsSchema.parse({ model: "liquid-ai/d1.2", input: [{ role: "user", content: [
+			{ type: "input_audio", input_audio: { url: dataUrl } },
+		] }], questions: [{ type: "predicate", instructions: "Siren?" }] }));
+		const d12 = { providerId: "liquid-ai", inputModalities: ["text", "audio"],
+			capabilityParams: { audio: true, audio_urls: false } } as unknown as ProviderCandidate;
+		expect(filterDecisionCandidatesByModalities([d12], ir)).toEqual([d12]);
+		const { body } = await run(ir, { question_0: { type: "noul", noul: 0.9 } });
+		expect(body.audio).toEqual([dataUrl]);
+	});
+	it("keeps rejecting a missing box for native requests, whose contract has no not-found box", async () => {
+		const ir = decodeDecisionsRequest(DecisionsSchema.parse({ model: "liquid-ai/d1.2", input: [{ role: "user", content: [
+			{ type: "input_image", image_url: PNG },
+		] }], questions: [{ type: "box", instructions: "Signature?" }] }));
+		const { result } = await run(ir, { question_0: { type: "box", box: null, found: 0.1, confidence: 0.1 } });
+		expect(result.upstream.status).toBe(502);
+	});
+	it("still lets Clef's image check accept a state/map request that also carries audio", () => {
+		const ir = legacy({ images: [PNG], audio: [`data:audio/wav;base64,${WAV}`],
+			questions: { q: { type: "noul", instructions: "Safe?" } } });
+		expect(DecisionsSchema.safeParse(ir).success).toBe(true);
+	});
 	it("sends no media fields on text-only requests", async () => {
 		const { body } = await run(legacy({ questions: { q: { type: "noul", instructions: "Refund?" } } }), { q: { type: "noul", noul: 0.5 } });
 		expect(body).not.toHaveProperty("images");

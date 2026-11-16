@@ -12,7 +12,7 @@ import type {
 	IRMessage,
 } from "@core/ir";
 import {
-	DECISION_QUESTION_CEILING, DEFAULT_ROUTE_QUESTION_LIMIT, decisionQuestionFeature, type TypedDecisionFeature,
+	DECISION_QUESTION_CEILING, DEFAULT_ROUTE_QUESTION_LIMIT, decisionQuestionFeature, isInlineAudioUrl, type TypedDecisionFeature,
 } from "@core/decisions";
 import type { ProviderCandidate } from "../before/types";
 
@@ -71,7 +71,7 @@ export function filterDecisionCandidatesByModalities(
 	const requestsLongContext = ir.providerOptions?.typesafe?.long_context === true;
 	const requestsImageUrls = (ir.images ?? []).some(image => typeof image === "string" && !/^data:/i.test(image));
 	// Routes that take only inline clips declare params.audio_urls false.
-	const requestsAudioUrls = (ir.audio ?? []).some(clip => clip.source === "url");
+	const requestsAudioUrls = (ir.audio ?? []).some(clip => clip.source === "url" && !isInlineAudioUrl(clip));
 	const typedFeatures = requiredTypedDecisionFeatures(ir);
 	const media = [
 		{ modality: "image", parameter: "images", requested: Boolean(ir.images?.length) },

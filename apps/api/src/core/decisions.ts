@@ -49,6 +49,11 @@ export function decisionQuestionFeature(question: { type: string; multiple?: unk
 	return (TYPED_DECISION_FEATURES as readonly string[]).includes(question.type) ? question.type as TypedDecisionFeature : null;
 }
 
+/** A clip given as a `data:` URL (native `input_audio.url`) is inline, not remote. */
+export function isInlineAudioUrl(clip: { source: string; data: string }): boolean {
+	return clip.source === "url" && /^data:audio\//i.test(clip.data);
+}
+
 export type DecisionProviderOptions = { typesafe?: { long_context?: boolean } };
 export const DecisionProviderOptionsSchema = lazySchema(() => z.object({
 	typesafe: z.object({ long_context: z.boolean().optional() }).strict().optional(),
