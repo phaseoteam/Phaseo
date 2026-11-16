@@ -546,20 +546,15 @@ function ModelCardImpl({
 	// The workspace picked in the header blocks this model (its guardrails or Settings, Privacy). Read-only here.
 	const blockedByWorkspace = useIsBlockedByWorkspace(model.model_id);
 	const blockedLabel = t("blockedByWorkspace");
-	const workspaceBlockedBadge = (display: string, iconOnly = false) =>
-		blockedByWorkspace ? (
-			<span
-				title={t("blockedByWorkspaceTitle")}
-				className={cn(
-					display,
-					"shrink-0 items-center gap-1 rounded-md border border-destructive/30 bg-destructive/5 text-[11px] font-medium leading-4 text-destructive",
-					iconOnly ? "p-0.5" : "px-1.5 py-px",
-				)}
-			>
-				<Ban className="size-3" aria-hidden="true" />
-				<span className={iconOnly ? "sr-only" : undefined}>{blockedLabel}</span>
-			</span>
-		) : null;
+	const workspaceBlockedBadge = blockedByWorkspace ? (
+		<span
+			title={t("blockedByWorkspaceTitle")}
+			className="inline-flex items-center gap-1 rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 font-medium text-destructive"
+		>
+			<Ban className="h-3.5 w-3.5" aria-hidden="true" />
+			<span>{blockedLabel}</span>
+		</span>
+	) : null;
 	const [copied, setCopied] = useState(false);
 	const routerRequests30d =
 		Number.isFinite(Number(model.router_requests_30d)) &&
@@ -1116,9 +1111,6 @@ function ModelCardImpl({
 							<div className="min-w-0 truncate text-xs leading-[1.15] text-muted-foreground font-mono">
 								{displayModelId}
 							</div>
-							{/* On the id line, not beside the name: the id gives way when space is short, the name doesn't. */}
-							{workspaceBlockedBadge("hidden sm:inline-flex")}
-							{workspaceBlockedBadge("inline-flex sm:hidden", true)}
 						</div>
 					</div>
 
@@ -1146,6 +1138,8 @@ function ModelCardImpl({
 				<div className="grid gap-2 text-xs md:grid-cols-3">
 					<ModelCardScrollRail ariaLabel={t("modelSummary")} className="md:col-span-3">
 						<div className="flex w-max min-w-full items-center gap-1.5 pb-px text-[11px] [&>*]:shrink-0">
+						{/* With Coming soon: a status chip in the summary row, so it never squeezes the name or id. */}
+						{workspaceBlockedBadge}
 						{isComingSoon ? (
 							<span className="inline-flex items-center gap-1 rounded-md border border-[#2b7fff]/30 bg-[#2b7fff]/10 px-2 py-1 font-medium text-blue-700 dark:text-blue-300">
 								<CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
