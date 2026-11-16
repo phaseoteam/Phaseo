@@ -12,6 +12,7 @@ Every page on phaseo.app is also available as Markdown. Add `.md` to the page UR
 - [Pricing](https://phaseo.app/pricing): Gateway pricing, credit fees, and cost guidance.
 - [Docs](https://phaseo.app/docs/v1): Developer documentation for the gateway and API.
 - [Docs LLM index](https://phaseo.app/llms.txt): Documentation index for AI tools and answer engines.
+- [Learn Phaseo](https://phaseo.app/learn.md): A course for coding agents. An agent that fetches it teaches the person Phaseo while building their project with them, and saves progress in `.phaseo-learn/`.
 - [OpenRouter alternative and migration guide](https://phaseo.app/migrate/openrouter): Move an OpenRouter integration to Phaseo with endpoint, API key, model mapping, streaming, validation, and rollback instructions.
 - [Phaseo vs OpenRouter](https://phaseo.app/compare/openrouter): Compare gateway routing, pricing, BYOK, model intelligence, and observability.
 
