@@ -2212,7 +2212,8 @@
 			"security": "9. 我们如何保护你的数据",
 			"thirdParties": "10. 第三方网站和服务",
 			"changes": "11. 本隐私政策的变更",
-			"contact": "12. 联系方式和投诉"
+			"contact": "12. 联系方式和投诉",
+			"advertising": "2.7 广告"
 		},
 		"termsHeadings": {
 			"serviceOverview": "1. 服务概述",
@@ -2325,6 +2326,10 @@
 				{
 					"label": "分析 Cookie",
 					"text": "用于衡量使用情况、性能和错误，例如通过 Google Analytics 或 PostHog。"
+				},
+				{
+					"label": "广告 Cookie",
+					"text": "由 Google 和其他广告供应商使用，用于在展示广告的 Phaseo 网站上投放和衡量广告、限制广告出现的频率，并在你同意的情况下对广告进行个性化。"
 				}
 			],
 			"cookieControl": "你可以在浏览器设置中管理 Cookie。阻止某些类型的 Cookie 可能影响使用体验或导致部分功能无法运行。",
@@ -2471,7 +2476,11 @@
 			"contactIntro": "如果你对本隐私政策或我们处理个人数据的方式有任何疑问，请通过以下方式联系我们：",
 			"emailLabel": "电子邮件",
 			"supportLabel": "支持",
-			"regulatorComplaint": "如果你在英国，你还有权向 Information Commissioner’s Office (ICO) 投诉；如果你在欧盟，可以向当地数据保护机构投诉。我们希望先有机会处理你的问题，因此请考虑先与我们联系。"
+			"regulatorComplaint": "如果你在英国，你还有权向 Information Commissioner’s Office (ICO) 投诉；如果你在欧盟，可以向当地数据保护机构投诉。我们希望先有机会处理你的问题，因此请考虑先与我们联系。",
+			"advertisingIntro": "部分 Phaseo 网站（包括 phaseo.app 子域名上的网站）会展示由 Google AdSense 投放的广告。我们不会在 Gateway、API 或你的账户控制台中展示广告，也不会使用你的提示词、Output 或账户数据来定向投放广告。",
+			"advertisingDetails": "包括 Google 在内的第三方供应商会使用 Cookie，根据你以前对我们网站或其他网站的访问情况投放广告。Google 使用广告 Cookie，使其及其合作伙伴能够根据你对我们网站和/或互联网上其他网站的访问情况向你投放广告。",
+			"advertisingConsent": "如果你位于英国、欧洲经济区或瑞士，我们会在使用广告 Cookie 对广告进行个性化之前，通过同意提示征求你的同意。如果你不同意，Google 仍可能展示非个性化广告，这类广告仅出于频次上限、汇总报告和防止欺诈等目的使用 Cookie 或类似技术。你可以随时通过这些页面上的同意提示链接更改你的选择。",
+			"advertisingOptOut": "你可以在 <adsSettings>Google 广告设置</adsSettings> 中停用个性化广告，或前往 <aboutAds>aboutads.info</aboutAds> 或 <yourChoices>youronlinechoices.eu</yourChoices> 停用部分第三方供应商为个性化广告使用 Cookie。Google 在 <partnerSites>Google 如何使用来自使用其服务的网站或应用的信息</partnerSites> 中说明了其如何使用这些数据。"
 		},
 		"termsBody": {
 			"operator": "本服务由 <person>Daniel Butler</person> 以 <brand>Phaseo</brand> 名义运营（“Phaseo”“我们”）。",

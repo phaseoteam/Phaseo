@@ -50,6 +50,55 @@ describe("modelIndexability", () => {
 		expect(analysis.reasons).toContain("missing canonical model id");
 	});
 
+	it("noindexes retired, draft and disabled models even with rich data", () => {
+		for (const status of ["retired", "draft", "disabled"]) {
+			const analysis = analyseModelIndexability({
+				modelId: "openai/gpt-2",
+				name: "GPT-2",
+				organisationName: "OpenAI",
+				status,
+				providerCount: 2,
+				pricingRuleCount: 2,
+				benchmarkCount: 3,
+				releaseDate: "2019-02-14",
+			});
+
+			expect(analysis.indexable).toBe(false);
+			expect(analysis.reasons).toContain(`${status} model`);
+		}
+	});
+
+	it("keeps deprecated models that a provider still serves", () => {
+		const analysis = analyseModelIndexability({
+			modelId: "openai/gpt-4.1",
+			name: "GPT-4.1",
+			organisationName: "OpenAI",
+			status: "deprecated",
+			providerCount: 1,
+			pricingRuleCount: 2,
+			releaseDate: "2025-04-14",
+		});
+
+		expect(analysis.indexable).toBe(true);
+	});
+
+	it("noindexes catalogue-only models with no provider", () => {
+		const analysis = analyseModelIndexability({
+			modelId: "meta/llama-2-7b",
+			name: "Llama 2 7B",
+			organisationName: "Meta",
+			status: "active",
+			providerCount: 0,
+			activeProviderCount: 0,
+			benchmarkCount: 4,
+			releaseDate: "2023-07-18",
+			inputTypes: ["text"],
+		});
+
+		expect(analysis.indexable).toBe(false);
+		expect(analysis.reasons).toContain("no provider serves this model");
+	});
+
 	it("does not treat a catalogue update timestamp as useful page content", () => {
 		const analysis = analyseModelIndexability({
 			modelId: "qwen/qwen3-8b",

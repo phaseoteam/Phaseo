@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslations, useLocale } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import type { PageMetadata } from "@/lib/seo/metadataTypes";
@@ -12,13 +13,21 @@ export async function getPrivacyMetadata({ params }: RouteMetadataInput): Promis
 	return buildMetadata({ title: t("privacyTitle"), description: t("privacyIntro"), path: "/privacy", keywords: ["Phaseo privacy", "privacy policy", "data processing", "API privacy"] });
 }
 
+function ExternalPolicyLink({ href, children }: { href: string; children: ReactNode }) {
+	return (
+		<a href={href} className="text-primary underline" target="_blank" rel="noopener noreferrer">
+			{children}
+		</a>
+	);
+}
+
 export function PrivacyPage() {
 	const t = useTranslations("Site.legal");
 	const locale = useLocale();
 	const lastUpdatedDate = new Intl.DateTimeFormat(locale, {
 		dateStyle: "long",
 		timeZone: "UTC",
-	}).format(new Date("2026-11-04T00:00:00Z"));
+	}).format(new Date("2026-11-16T00:00:00Z"));
 	const appliesItems = t.raw("privacyBody.appliesItems") as string[];
 	const dataItems = t.raw("privacyBody.dataItems") as Array<{ label: string; text: string }>;
 	const gatewayStorageItems = t.raw("privacyBody.gatewayStorageItems") as string[];
@@ -149,6 +158,23 @@ export function PrivacyPage() {
 				</h3>
 				<p className="mt-1 text-foreground/80">{t("privacyBody.analyticsIntro")}</p>
 				<p className="mt-1 text-foreground/80">{t("privacyBody.analyticsDetails")}</p>
+
+				<h3 className="mt-4 text-lg font-semibold text-foreground/80">
+					{t("privacyHeadings.advertising")}
+				</h3>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.advertisingIntro")}</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.advertisingDetails")}</p>
+				<p className="mt-1 text-foreground/80">{t("privacyBody.advertisingConsent")}</p>
+				<p className="mt-1 text-foreground/80">
+					{t.rich("privacyBody.advertisingOptOut", {
+						adsSettings: (chunks) => <ExternalPolicyLink href="https://adssettings.google.com">{chunks}</ExternalPolicyLink>,
+						aboutAds: (chunks) => <ExternalPolicyLink href="https://optout.aboutads.info">{chunks}</ExternalPolicyLink>,
+						yourChoices: (chunks) => <ExternalPolicyLink href="https://www.youronlinechoices.eu">{chunks}</ExternalPolicyLink>,
+						partnerSites: (chunks) => (
+							<ExternalPolicyLink href="https://policies.google.com/technologies/partner-sites">{chunks}</ExternalPolicyLink>
+						),
+					})}
+				</p>
 			</section>
 
 			<section aria-labelledby="privacy-how-we-use">

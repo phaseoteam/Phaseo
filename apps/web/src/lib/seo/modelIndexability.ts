@@ -96,6 +96,8 @@ function hasMoneyValue(value: unknown): boolean {
 	return Number.isFinite(parsed);
 }
 
+const NON_INDEXABLE_STATUSES = new Set(["retired", "draft", "disabled"]);
+
 function isValidModelId(value: unknown): boolean {
 	const parts = text(value).split("/").filter(Boolean);
 	return parts.length === 2 && parts.every((part) => part.length > 0);
@@ -166,6 +168,16 @@ export function analyseModelIndexability(
 	}
 	if (coreSignalCount < 2 && totalSignalCount < 3) {
 		reasons.push("not enough unique page data");
+	}
+	// Search engines and ad reviewers judge the site on its indexed pages, so only
+	// models people can still call through a provider stay indexed. Retired,
+	// draft and disabled models, and catalogue-only entries, render for visitors
+	// but are kept out of the index and the sitemap.
+	if (NON_INDEXABLE_STATUSES.has(status)) {
+		reasons.push(`${status} model`);
+	}
+	if (!hasProviderCoverage) {
+		reasons.push("no provider serves this model");
 	}
 	if (
 		status === "rumoured" &&
