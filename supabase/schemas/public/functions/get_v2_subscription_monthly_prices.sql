@@ -11,7 +11,8 @@ CREATE OR REPLACE FUNCTION public.get_v2_subscription_monthly_prices (
   AS $function$
   -- Each active plan's current monthly USD price for one account or seat: the cheapest live monthly offer
   -- whose ongoing components are all fixed amounts or free. Ongoing = not introductory, no end cycle, and
-  -- starting at the offer's latest such cycle (so a renewal price replaces the first-cycle price).
+  -- for each charge (component_key) the row with the latest start, so a renewal price replaces that
+  -- charge's first-cycle price while other charges still count.
   select o.plan_uuid, min(components.total)
   from public.v2_subscription_plan_offers o
   join public.v2_subscription_plans plan on plan.plan_uuid = o.plan_uuid
@@ -19,7 +20,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_subscription_monthly_prices (
     select sum(case when c.pricing_type = 'free' then 0 else c.amount end) as total, count(*) as parts,
       bool_and(c.pricing_type = 'free' or (c.pricing_type = 'fixed' and c.amount is not null)) as all_fixed
     from (
-      select c.*, max(coalesce(c.starts_at_cycle, 1)) over () as last_start
+      select c.*, max(coalesce(c.starts_at_cycle, 1)) over (partition by c.component_key) as last_start
       from public.v2_subscription_offer_prices c
       where c.offer_uuid = o.offer_uuid and c.phase <> 'introductory' and c.duration_cycles is null
         and c.effective_from <= now() and (c.effective_to is null or c.effective_to > now())

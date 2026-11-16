@@ -25,7 +25,7 @@ try {
     create table v2_subscription_plan_models(plan_uuid uuid not null, model_slug text not null, effective_from timestamptz not null default '-infinity', effective_to timestamptz);
     create table v2_subscription_plan_offers(offer_uuid uuid primary key, plan_uuid uuid not null, billing_interval text, billing_interval_count int not null default 1,
       currency text not null default 'USD', region_code text, effective_from timestamptz not null default '-infinity', effective_to timestamptz);
-    create table v2_subscription_offer_prices(offer_uuid uuid not null, pricing_type text not null, amount numeric, phase text not null default 'standard', starts_at_cycle int not null default 1, duration_cycles int,
+    create table v2_subscription_offer_prices(offer_uuid uuid not null, component_key text not null default 'base', pricing_type text not null, amount numeric, phase text not null default 'standard', starts_at_cycle int not null default 1, duration_cycles int,
       effective_from timestamptz not null default '-infinity', effective_to timestamptz);
     insert into v2_models values ('lab/model', 'Lab Model', false), ('lab/hidden', 'Hidden', true);
     -- Legacy price columns are historical; Max's current price lives in its offers.
@@ -52,6 +52,10 @@ try {
     insert into v2_subscription_plans(plan_uuid, plan_id, name, lab_slug) values (md5('renew')::uuid, 'renew', 'Renew', 'other');
     insert into v2_subscription_plan_offers(offer_uuid, plan_uuid, billing_interval) values (md5('renew-month')::uuid, md5('renew')::uuid, 'month');
     insert into v2_subscription_offer_prices(offer_uuid, pricing_type, amount, starts_at_cycle) values (md5('renew-month')::uuid, 'fixed', 20, 1), (md5('renew-month')::uuid, 'fixed', 30, 2);
+    -- A separate charge that starts later adds to the base instead of replacing it: $50 base + $20 seat.
+    insert into v2_subscription_plans(plan_uuid, plan_id, name, lab_slug) values (md5('stack')::uuid, 'stack', 'Stack', 'stacked');
+    insert into v2_subscription_plan_offers(offer_uuid, plan_uuid, billing_interval) values (md5('stack-month')::uuid, md5('stack')::uuid, 'month');
+    insert into v2_subscription_offer_prices(offer_uuid, component_key, pricing_type, amount, starts_at_cycle) values (md5('stack-month')::uuid, 'base', 'fixed', 50, 1), (md5('stack-month')::uuid, 'seat', 'fixed', 20, 2);
   `);
   await db.exec(migration);
   await db.exec(`
@@ -71,6 +75,8 @@ try {
   assert.deepEqual(monthly.rows, [{ is_max: true, monthly_price_usd: 200 }], 'monthly prices per lab, aggregated in the database');
   const renewal = await db.query(`select monthly_price_usd::float from get_v2_subscription_monthly_prices('other')`);
   assert.deepEqual(renewal.rows, [{ monthly_price_usd: 30 }], 'the renewal price is the ongoing price');
+  const stacked = await db.query(`select monthly_price_usd::float from get_v2_subscription_monthly_prices('stacked')`);
+  assert.deepEqual(stacked.rows, [{ monthly_price_usd: 70 }], 'charges with different keys all count');
 
   const byPlan = await db.query(`select plan_id from get_v2_subscription_model_usage(null, 'custom')`);
   assert.deepEqual(byPlan.rows, [{ plan_id: 'custom' }], 'filters by plan');
