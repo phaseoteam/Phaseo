@@ -19,6 +19,7 @@ async function handlePost(req: Request) {
 			kind,
 			originHeader: req.headers.get("origin"),
 			refererHeader: req.headers.get("referer"),
+			acceptLanguage: req.headers.get("accept-language"),
 			requestedWorkspaceId,
 		});
 	} catch (e: any) {

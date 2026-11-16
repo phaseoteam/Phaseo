@@ -14,6 +14,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { normaliseCountryCode } from "@/lib/countryCodes";
 import { isValidTopUpAmountPence, TOP_UP_CURRENCY } from "@/lib/server/topUpValidation";
 import { CREDIT_TOPUP_METADATA } from "@/lib/server/creditTopups";
+import { englishCheckoutLanguage, resolveCheckoutLanguage } from "@/lib/server/checkoutLanguage";
 
 type CheckoutKind = "oneoff" | "pay_and_save" | "save_only";
 type CheckoutStartedNotificationKind =
@@ -27,6 +28,8 @@ type CreateStripeCheckoutResponseArgs = {
 	originHeader: string | null;
 	refererHeader: string | null;
 	requestedWorkspaceId?: string;
+	/** The buyer's Accept-Language header; picks the Checkout language and product copy. */
+	acceptLanguage?: string | null;
 	/**
 	 * A top-up request from the API or CLI (credit_topup_requests). Bills that request's
 	 * workspace instead of the active one, tags the PaymentIntent so the webhook can mark the
@@ -101,6 +104,11 @@ export async function createStripeCheckoutResponse(
 		requestedWorkspaceId,
 		topUpRequest,
 	} = args;
+	// API/CLI top-up sessions are idempotent per request, so their params must not depend on the
+	// browser that opens them: those stay English.
+	const checkoutLanguage = topUpRequest ? englishCheckoutLanguage() : resolveCheckoutLanguage(args.acceptLanguage);
+	const checkoutCopy = checkoutLanguage.copy;
+	const checkoutLocale = checkoutLanguage.stripeLocale ? { locale: checkoutLanguage.stripeLocale } : {};
 	const configuredBaseUrl = resolveConfiguredStripeCheckoutBaseUrl(process.env);
 	if (process.env.NODE_ENV === "production" && !configuredBaseUrl) {
 		return Response.json({ error: "Checkout redirect base URL is not configured" }, { status: 503 });
@@ -182,6 +190,8 @@ export async function createStripeCheckoutResponse(
 
 		const session = await stripe.checkout.sessions.create({
 			mode: "payment",
+			// English buyers get locale "en", so USD shows as "$26.25", not "US$26.25" on en-GB browsers.
+			...checkoutLocale,
 			// Top-ups are charged in TOP_UP_CURRENCY only; the webhook credits no other currency.
 			adaptive_pricing: { enabled: false },
 			payment_method_types: ["card", "link"],
@@ -197,7 +207,7 @@ export async function createStripeCheckoutResponse(
 					price_data: {
 						currency: TOP_UP_CURRENCY,
 						unit_amount: amountPence,
-						product_data: { name: "AI Credits top-up (one-off)" },
+						product_data: { name: checkoutCopy.productName, description: checkoutCopy.oneOffDescription },
 					},
 				},
 			],
@@ -265,6 +275,8 @@ export async function createStripeCheckoutResponse(
 
 		const session = await stripe.checkout.sessions.create({
 			mode: "payment",
+			// English buyers get locale "en", so USD shows as "$26.25", not "US$26.25" on en-GB browsers.
+			...checkoutLocale,
 			// Top-ups are charged in TOP_UP_CURRENCY only; the webhook credits no other currency.
 			adaptive_pricing: { enabled: false },
 			payment_method_types: ["card", "link"],
@@ -278,7 +290,7 @@ export async function createStripeCheckoutResponse(
 					price_data: {
 						currency: TOP_UP_CURRENCY,
 						unit_amount: amountPence,
-						product_data: { name: "AI Credits top-up (save card)" },
+						product_data: { name: checkoutCopy.productName, description: checkoutCopy.saveCardDescription },
 					},
 				},
 			],
@@ -343,6 +355,7 @@ export async function createStripeCheckoutResponse(
 		console.log(`creating setup session (save_only) customerId=${customerId}`);
 		const session = await stripe.checkout.sessions.create({
 			mode: "setup",
+			...checkoutLocale,
 			payment_method_types: ["card", "link"],
 			customer: customerId,
 			success_url: successUrl,
