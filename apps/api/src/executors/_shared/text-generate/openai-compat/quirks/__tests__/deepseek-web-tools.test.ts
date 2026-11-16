@@ -14,20 +14,16 @@ describe("DeepSeek native web tools", () => {
 			messages: [{ role: "user", content: "news?" }],
 			tools: [{ type: "web_search_preview", search_context_size: "high" }],
 			tool_choice: "auto",
-			logprobs: true,
-			top_logprobs: 2,
 		});
 		expect(request.tools).toEqual([{ type: "deepseek_web_search" }]);
 		expect(request.tool_choice).toBe("auto");
-		expect(request.logprobs).toBeUndefined();
-		expect(request.top_logprobs).toBeUndefined();
 	});
 
 	it("maps Anthropic web search and web fetch, declaring each DeepSeek tool once", () => {
 		const request = transform({
 			messages: [{ role: "user", content: "read https://example.com" }],
 			tools: [
-				{ type: "web_search_20250305", name: "web_search", max_uses: 3 },
+				{ type: "web_search_20250305", name: "web_search" },
 				{ type: "web_search" },
 				{ type: "web_fetch_20260209", name: "web_fetch" },
 			],
@@ -39,9 +35,28 @@ describe("DeepSeek native web tools", () => {
 		["allowed domains", { type: "web_search_20250305", name: "web_search", allowed_domains: ["example.com"] }],
 		["blocked domains", { type: "web_fetch_20260209", name: "web_fetch", blocked_domains: ["example.com"] }],
 		["a user location", { type: "web_search_preview", user_location: { type: "approximate", country: "GB" } }],
+		["max_uses", { type: "web_search_20250305", name: "web_search", max_uses: 3 }],
+		["max_content_tokens", { type: "web_fetch_20260209", name: "web_fetch", max_content_tokens: 5000 }],
 	])("leaves a web tool with %s as sent, so DeepSeek rejects it instead of dropping the restriction", (_label, tool) => {
 		const request = transform({ messages: [], tools: [tool] });
 		expect(request.tools).toEqual([tool]);
+	});
+
+	it("leaves web tools beside a function tool as sent, since DeepSeek would silently turn search off", () => {
+		const tools = [
+			{ type: "web_search_20250305", name: "web_search" },
+			{ type: "function", function: { name: "lookup", parameters: { type: "object" } } },
+		];
+		const request = transform({ messages: [], tools });
+		expect(request.tools).toEqual(tools);
+	});
+
+	it("leaves web tools and log probabilities as sent when logprobs are asked for", () => {
+		const tools = [{ type: "web_search_preview" }];
+		const request = transform({ messages: [], tools, logprobs: true, top_logprobs: 2 });
+		expect(request.tools).toEqual(tools);
+		expect(request.logprobs).toBe(true);
+		expect(request.top_logprobs).toBe(2);
 	});
 
 	it.each([

@@ -1901,6 +1901,9 @@ function resolveDeepSeekToolsConfig(): { apiKey: string; baseUrl: string } | nul
  * `site:`, `-site:`), and the whole query, operators included, must fit in 128
  * characters. The operators are kept whole and the query is shortened to fit;
  * returns null when the operators leave no room for the query itself.
+ * Allowed domains are joined with a bare `OR`: live on 2026-11-16,
+ * `q site:a OR site:b` returned only those two domains, while the grouped
+ * `q (site:a OR site:b)` returned no results.
  */
 export function buildDeepSeekSearchQuery(
 	query: string,

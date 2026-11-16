@@ -56,18 +56,7 @@ export const deepseekQuirks: ProviderQuirks = {
 					: "high";
 		}
 
-		// DeepSeek cannot force its web tools: it rejects a tool_choice that names one and
-		// ignores "required" (checked live 2026-11-16). With a forced choice the tools stay
-		// as sent, so the request fails instead of answering without searching.
-		const choice = request.tool_choice;
-		const forcedChoice = choice !== undefined && choice !== null && choice !== "auto" && choice !== "none";
-		const usesWebTools = !forcedChoice && mapNativeWebTools(request);
-		if (usesWebTools) {
-			// DeepSeek rejects logprobs beside its web tools
-			// (https://api-docs.deepseek.com/guides/web_tools#chat-completions-api).
-			delete request.logprobs;
-			delete request.top_logprobs;
-		}
+		mapNativeWebTools(request);
 
 		if (request.thinking?.type === "enabled") {
 			// DeepSeek's official agent integration notes that thinking-mode tool
@@ -179,9 +168,20 @@ export const deepseekQuirks: ProviderQuirks = {
  * `url_citation` without a span, so every client surface gets the sources. `seen` keeps
  * a URL from being cited twice, across stream chunks too.
  */
-function addSourceAnnotations(message: any, seen: Set<string>): void {
+type JsonObject = Record<string, unknown>;
+
+function asObject(value: unknown): JsonObject | null {
+	return value !== null && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : null;
+}
+
+function asArray(value: unknown): unknown[] {
+	return Array.isArray(value) ? value : [];
+}
+
+function addSourceAnnotations(messageValue: unknown, seen: Set<string>): void {
+	const message = asObject(messageValue);
 	if (!message || !Array.isArray(message.server_tool_calls)) return;
-	const annotations: Array<Record<string, any>> = [];
+	const annotations: JsonObject[] = [];
 	const add = (url: unknown, title: unknown) => {
 		if (typeof url !== "string" || url.length === 0 || seen.has(url)) return;
 		seen.add(url);
@@ -191,54 +191,66 @@ function addSourceAnnotations(message: any, seen: Set<string>): void {
 		});
 	};
 	for (const group of message.server_tool_calls) {
-		for (const call of Array.isArray(group?.calls) ? group.calls : []) {
-			for (const source of Array.isArray(call?.sources) ? call.sources : []) add(source?.url, source?.title);
-			if (call?.page) add(call.page.url, call.page.title);
-			if (call?.action?.type === "open_page") add(call.action.url, undefined);
+		for (const callValue of asArray(asObject(group)?.calls)) {
+			const call = asObject(callValue);
+			if (!call) continue;
+			for (const sourceValue of asArray(call.sources)) {
+				const source = asObject(sourceValue);
+				if (source) add(source.url, source.title);
+			}
+			const page = asObject(call.page);
+			if (page) add(page.url, page.title);
+			const action = asObject(call.action);
+			if (action?.type === "open_page") add(action.url, undefined);
 		}
 	}
 	if (annotations.length === 0) return;
-	message.annotations = [...(Array.isArray(message.annotations) ? message.annotations : []), ...annotations];
+	message.annotations = [...asArray(message.annotations), ...annotations];
+}
+
+/** The DeepSeek web tool a native web tool becomes, or null for any other tool. */
+function deepSeekWebToolType(tool: unknown): string | null {
+	const type = asObject(tool)?.type;
+	if (typeof type !== "string") return null;
+	if (type === DEEPSEEK_NATIVE_WEB_SEARCH_TOOL_TYPE || isOpenAINativeWebSearchToolType(type) || isAnthropicNativeWebSearchToolType(type)) {
+		return DEEPSEEK_NATIVE_WEB_SEARCH_TOOL_TYPE;
+	}
+	if (type === DEEPSEEK_NATIVE_READ_URL_TOOL_TYPE || isAnthropicNativeWebFetchToolType(type)) return DEEPSEEK_NATIVE_READ_URL_TOOL_TYPE;
+	return null;
+}
+
+/** Anthropic per-tool limits DeepSeek's option-free web tools cannot enforce. */
+function hasToolLimit(tool: unknown): boolean {
+	const value = asObject(tool);
+	return value !== null && (value.max_uses != null || value.max_content_tokens != null);
 }
 
 /**
  * Native web search reaches this executor as the hosted tool of the request's
  * surface: OpenAI's `web_search` / `web_search_preview` (Chat, Responses) or
  * Anthropic's `web_search_*` / `web_fetch_*` (Messages). DeepSeek runs the same
- * thing as `deepseek_web_search` and `deepseek_read_url`, which take no options:
- * it rejects domain filters and `user_location` with a 400, so routing only sends
- * filter-free searches here (core/nativeTools.ts). Returns whether the request
- * now declares a DeepSeek web tool.
+ * thing as `deepseek_web_search` and `deepseek_read_url`, which take no options.
+ *
+ * Routing (core/nativeTools.ts) sends Chat and Responses requests here only when
+ * DeepSeek can honour them. Anthropic tools on Messages arrive as sent, so they are
+ * converted only under the same terms: every tool in the request is a web tool,
+ * none carries domain lists, a location, `max_uses` or `max_content_tokens`, and
+ * the request forces no tool_choice and asks for no log probabilities. Otherwise
+ * the tools stay as sent and DeepSeek rejects the request, rather than running a
+ * search without what the caller asked for (or, beside other tools, silently not
+ * searching at all). Each was checked live on 2026-11-16 or is documented
+ * (https://api-docs.deepseek.com/guides/web_tools).
  */
-function mapNativeWebTools(request: any): boolean {
-	if (!Array.isArray(request.tools)) return false;
-	const tools: any[] = [];
-	const declared = new Set<string>();
-	for (const tool of request.tools) {
-		const type = typeof tool?.type === "string" ? tool.type : "";
-		const deepseekType = type === DEEPSEEK_NATIVE_WEB_SEARCH_TOOL_TYPE
-			|| isOpenAINativeWebSearchToolType(type)
-			|| isAnthropicNativeWebSearchToolType(type)
-			? DEEPSEEK_NATIVE_WEB_SEARCH_TOOL_TYPE
-			: type === DEEPSEEK_NATIVE_READ_URL_TOOL_TYPE || isAnthropicNativeWebFetchToolType(type)
-				? DEEPSEEK_NATIVE_READ_URL_TOOL_TYPE
-				: null;
-		// A tool with domain lists or a user location stays as sent, so DeepSeek rejects it
-		// instead of searching without the restriction. Chat and Responses requests never
-		// get here with one (routing sends them to gateway search); Anthropic tools on
-		// Messages reach the executor as sent.
-		if (!deepseekType || webToolNeedsOptionsDeepSeekLacks(tool)) {
-			tools.push(tool);
-			continue;
-		}
-		// Declaring a web tool twice is a 400.
-		if (declared.has(deepseekType)) continue;
-		declared.add(deepseekType);
-		tools.push({ type: deepseekType });
-	}
-	if (declared.size === 0) return false;
-	request.tools = tools;
-	return true;
+function mapNativeWebTools(request: JsonObject): void {
+	const tools = asArray(request.tools);
+	const types = tools.map(deepSeekWebToolType);
+	if (types.length === 0 || types.some((type) => type === null)) return;
+	if (tools.some((tool) => webToolNeedsOptionsDeepSeekLacks(tool) || hasToolLimit(tool))) return;
+	const choice = request.tool_choice;
+	if (choice !== undefined && choice !== null && choice !== "auto" && choice !== "none") return;
+	if (request.logprobs === true || request.top_logprobs != null) return;
+	// Declaring a web tool twice is a 400.
+	request.tools = [...new Set(types as string[])].map((type) => ({ type }));
 }
 
 /**
@@ -247,9 +259,9 @@ function mapNativeWebTools(request: any): boolean {
  * `web_fetch_requests` count result blocks, errors included, and are not billed
  * (https://api-docs.deepseek.com/guides/web_tools), so the billed counts replace them.
  */
-function normalizeDeepSeekServerToolUse(usage: any): void {
-	const serverToolUse = usage.server_tool_use;
-	if (!serverToolUse || typeof serverToolUse !== "object") return;
+function normalizeDeepSeekServerToolUse(usage: JsonObject): void {
+	const serverToolUse = asObject(usage.server_tool_use);
+	if (!serverToolUse) return;
 	const count = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : undefined);
 	const searches = count(serverToolUse.tool_search);
 	const imageSearches = count(serverToolUse.tool_image_search);

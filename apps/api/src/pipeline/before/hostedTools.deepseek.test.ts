@@ -54,6 +54,10 @@ describe("DeepSeek native web search routing", () => {
 	it.each([
 		["JSON output", { response_format: { type: "json_object" } }],
 		["a JSON schema", { response_format: { type: "json_schema", json_schema: { name: "x", schema: { type: "object" } } } }],
+		["the json_object shorthand", { response_format: "json_object" }],
+		["the json shorthand", { response_format: "json" }],
+		["logprobs", { logprobs: true }],
+		["top_logprobs", { top_logprobs: 3 }],
 		["tool_choice required", { tool_choice: "required" }],
 		["a named web search tool_choice", { tool_choice: { type: "web_search" } }],
 	])("falls back to gateway search with %s, which DeepSeek's web tools cannot honour", (_label, extra) => {

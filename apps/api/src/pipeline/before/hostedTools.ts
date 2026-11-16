@@ -26,6 +26,7 @@ import {
 import { WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME } from "@pipeline/surfaces/server-tools";
 import type { ProviderCandidate } from "./types";
 import { requestedJsonOutputType } from "./paramCapabilities";
+import { normalizeResponseFormat } from "@protocols/shared/text-normalizers";
 
 const HOSTED_TOOL_ENDPOINTS = new Set<Endpoint>(["chat.completions", "responses"]);
 const WEB_SEARCH_ENGINES = new Set(["auto", "exa", "firecrawl", "parallel", "perplexity", "tinyfish", "deepseek"]);
@@ -174,6 +175,19 @@ function rewriteHostedWebSearch(body: any): any {
 	};
 }
 
+/** JSON output in any form a surface accepts, the `"json_object"` / `"json"` shorthands included. */
+function requestsJsonOutput(body: any): boolean {
+	if (requestedJsonOutputType(body) !== null) return true;
+	const format = normalizeResponseFormat(body?.response_format);
+	return format !== undefined && format.type !== "text";
+}
+
+/** Log probabilities on Chat (`logprobs`, `top_logprobs`) or Responses (`top_logprobs`, `include`). */
+function requestsLogprobs(body: any): boolean {
+	if (body?.logprobs === true || typeof body?.top_logprobs === "number") return true;
+	return Array.isArray(body?.include) && body.include.includes("message.output_text.logprobs");
+}
+
 export function resolveHostedTools(args: {
 	endpoint: Endpoint;
 	body: any;
@@ -199,7 +213,7 @@ export function resolveHostedTools(args: {
 	if (hosted.length === 0 || args.providers.length === 0) return unchanged;
 
 	// Some providers (DeepSeek) run web search only when it is the request's only tool,
-	// without JSON output or a forced tool_choice.
+	// without JSON output, log probabilities or a forced tool_choice.
 	const webSearchCount = hosted.filter((entry) => isOpenAINativeWebSearchToolType(entry.type)).length;
 	const otherToolCount = (args.body.tools as any[]).length - webSearchCount;
 	const runs = (provider: ProviderCandidate, type: string, index?: number) => routeRunsOpenAIHostedTool({
@@ -209,7 +223,8 @@ export function resolveHostedTools(args: {
 		toolType: type,
 		...(index !== undefined ? { tool: args.body.tools[index] } : {}),
 		otherToolCount,
-		jsonOutput: requestedJsonOutputType(args.body) !== null,
+		jsonOutput: requestsJsonOutput(args.body),
+		logprobs: requestsLogprobs(args.body),
 		toolChoice: args.body.tool_choice,
 	});
 	const keep = (providers: ProviderCandidate[]) => ({

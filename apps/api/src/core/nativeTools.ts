@@ -231,6 +231,7 @@ export function webToolNeedsOptionsDeepSeekLacks(tool: unknown): boolean {
  * - with any other tool declared it returns 200 but silently drops its web tools,
  *   and the model answers that it has no web access;
  * - JSON output (`response_format` other than text) is a 400;
+ * - log probabilities are a 400 beside its web tools (documented);
  * - it ignores a forced `tool_choice` ("required" or a named tool) and may answer
  *   without searching.
  * Such requests stay on the gateway's own search, which DeepSeek models call like
@@ -241,11 +242,12 @@ export function deepSeekRunsNativeWebSearch(args: {
 	tool?: unknown;
 	otherToolCount?: number;
 	jsonOutput?: boolean;
+	logprobs?: boolean;
 	toolChoice?: unknown;
 }): boolean {
 	if (!isDeepSeekWebToolModel(args.model)) return false;
 	if ((args.otherToolCount ?? 0) > 0) return false;
-	if (args.jsonOutput) return false;
+	if (args.jsonOutput || args.logprobs) return false;
 	if (args.toolChoice !== undefined && args.toolChoice !== null && args.toolChoice !== "auto" && args.toolChoice !== "none") return false;
 	return !webToolNeedsOptionsDeepSeekLacks(args.tool);
 }
@@ -270,6 +272,8 @@ export function routeRunsOpenAIHostedTool(args: {
 	otherToolCount?: number;
 	/** Whether the request asks for JSON output. */
 	jsonOutput?: boolean;
+	/** Whether the request asks for log probabilities. */
+	logprobs?: boolean;
 	/** The request's tool_choice. */
 	toolChoice?: unknown;
 }): boolean {
