@@ -447,5 +447,18 @@
     "texts": [
       "production"
     ]
+  },
+  {
+    "reason": "Name of the public dataset the subscription token figures come from (github.com/FeiZhuLulu/real-api-pricing), shown as the source link; its licence asks for credit under its own name.",
+    "files": [
+      "src/components/(data)/model/pricing/ModelSubscriptionsClient.tsx",
+      "src/components/(data)/subscription-plans/SubscriptionPlanUsage.tsx"
+    ],
+    "kinds": [
+      "jsx-text"
+    ],
+    "texts": [
+      "real-api-pricing"
+    ]
   }
 ]
