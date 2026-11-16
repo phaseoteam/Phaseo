@@ -1,10 +1,10 @@
 import { ArrowLeft } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
-import { Badge } from "@/components/ui/badge";
 import SettingsPageHeader from "../SettingsPageHeader";
 import { SettingsResourceQuery } from "../PrivateSettingsQuery";
 import ClassifierEditor from "./ClassifierEditor";
+import { FeatureStageBadge } from "@/components/(gateway)/settings/FeatureStageBadge";
 
 export default function ClassifierEditorPage({ mode, classifierId }: { mode: "create" | "edit"; classifierId?: string }) {
 	const t = useTranslations("SettingsUI");
@@ -16,7 +16,7 @@ export default function ClassifierEditorPage({ mode, classifierId }: { mode: "cr
 			<SettingsPageHeader
 				title={mode === "create" ? t("classifiers.newTitle") : t("classifiers.editTitle")}
 				description={mode === "create" ? t("classifiers.newDescription") : t("classifiers.editDescription")}
-				meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>}
+				meta={<FeatureStageBadge stage="beta" />}
 			/>
 			<SettingsResourceQuery resource="classifiers">
 				{(data) => {

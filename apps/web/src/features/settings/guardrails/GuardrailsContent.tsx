@@ -14,7 +14,6 @@ import {
 import { Shield } from "lucide-react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GuardrailAssignmentsPanel from "@/components/(gateway)/settings/guardrails/GuardrailAssignmentsPanel";
@@ -27,7 +26,6 @@ export default withSettingsResource("guardrails", function GuardrailsContent({ i
 		<SettingsPageHeader
 			title={t("headers.guardrails")}
 			description={t("headers.guardrailsDescription")}
-			meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>}
 			actions={(
 				<>
 					{initialData.canManageGuardrails ? <Button asChild type="button" className="rounded-md">
