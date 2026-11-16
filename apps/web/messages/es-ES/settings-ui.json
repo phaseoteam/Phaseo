@@ -4359,6 +4359,7 @@
 			"timestamp": "Fecha y hora",
 			"amount": "Importe",
 			"reason": "Concepto",
+			"statusColumn": "Estado",
 			"status": {
 				"succeeded": "Completado",
 				"failed": "Fallido",

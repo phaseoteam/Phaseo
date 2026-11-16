@@ -4359,6 +4359,7 @@
 			"timestamp": "Timestamp",
 			"amount": "Amount",
 			"reason": "Reason",
+			"statusColumn": "Status",
 			"status": {
 				"succeeded": "Succeeded",
 				"failed": "Failed",

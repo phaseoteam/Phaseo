@@ -4359,6 +4359,7 @@
 			"timestamp": "الوقت",
 			"amount": "المبلغ",
 			"reason": "السبب",
+			"statusColumn": "الحالة",
 			"status": {
 				"succeeded": "ناجح",
 				"failed": "فشل",

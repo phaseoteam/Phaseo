@@ -4359,6 +4359,7 @@
 			"timestamp": "समय",
 			"amount": "राशि",
 			"reason": "कारण",
+			"statusColumn": "स्थिति",
 			"status": {
 				"succeeded": "सफल",
 				"failed": "विफल",

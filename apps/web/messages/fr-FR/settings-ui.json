@@ -4359,6 +4359,7 @@
 			"timestamp": "Date et heure",
 			"amount": "Montant",
 			"reason": "Motif",
+			"statusColumn": "Statut",
 			"status": {
 				"succeeded": "Réussi",
 				"failed": "Échoué",

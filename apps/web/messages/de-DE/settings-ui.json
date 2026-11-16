@@ -4359,6 +4359,7 @@
 			"timestamp": "Zeitstempel",
 			"amount": "Betrag",
 			"reason": "Grund",
+			"statusColumn": "Status",
 			"status": {
 				"succeeded": "Erfolgreich",
 				"failed": "Fehlgeschlagen",

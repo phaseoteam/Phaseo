@@ -4359,6 +4359,7 @@
 			"timestamp": "Data e hora",
 			"amount": "Valor",
 			"reason": "Motivo",
+			"statusColumn": "Status",
 			"status": {
 				"succeeded": "Concluído",
 				"failed": "Falhou",
