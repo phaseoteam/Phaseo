@@ -13,7 +13,9 @@ export type Scenario = "standard" | "peak" | "off_peak" | "fast";
 
 /**
  * Source plan id → our plan_id. Only plans whose price and tier match one of ours 1:1 are listed;
- * resellers and regional (CN-priced) plans we don't catalogue are left out on purpose.
+ * resellers and regional (CN-priced) plans we don't catalogue are left out on purpose. The source's CN
+ * Kimi, GLM, StepFun and MiniMax figures stay out even where a global plan has the same name: the source
+ * says it never measured the global quotas. Its SuperGrok tiers predate xAI's X Subscription plans.
  */
 export const PLAN_MAP: Record<string, { planId: string; scenario: Scenario }> = {
 	chatgpt_plus: { planId: "chatgpt-plus", scenario: "standard" },
@@ -33,6 +35,9 @@ export const PLAN_MAP: Record<string, { planId: string; scenario: Scenario }> = 
 	cursor_pro_plus_composer_fast: { planId: "cursor-pro-plus", scenario: "fast" },
 	cursor_ultra_composer_fast: { planId: "cursor-ultra", scenario: "fast" },
 	cursor_ultra_fast: { planId: "cursor-ultra", scenario: "fast" },
+	// Devin Desktop is the renamed Windsurf; the source measured the same devin.ai plans at the same prices.
+	devin_pro: { planId: "windsurf-pro", scenario: "standard" },
+	devin_max: { planId: "windsurf-max", scenario: "standard" },
 	minimax_token_plus_global: { planId: "minimax-token-plus", scenario: "standard" },
 	minimax_token_max_global: { planId: "minimax-token-max", scenario: "standard" },
 	minimax_token_ultra_global: { planId: "minimax-token-ultra", scenario: "standard" },
@@ -122,8 +127,14 @@ export function modelSlugFor(point: Pick<SourcePoint, "vendor" | "model">, slugs
 
 const CONFIDENCE = new Set(["high", "medium", "low"]);
 
-/** Turn source points into rows for our catalogue, with a reason for every point left out. */
-export function buildUsageRows(points: SourcePoint[], plans: CataloguePlan[], slugs: ReadonlySet<string>) {
+export const planModelKey = (planUuid: string, modelSlug: string) => `${planUuid}|${modelSlug}`;
+
+/**
+ * Turn source points into rows for our catalogue, with a reason for every point left out.
+ * `planModels` holds planModelKey() for every live plan–model link: a model that isn't (or is no longer)
+ * offered on the plan gets no row, so retired models and unverified access never show a token figure.
+ */
+export function buildUsageRows(points: SourcePoint[], plans: CataloguePlan[], slugs: ReadonlySet<string>, planModels: ReadonlySet<string>) {
 	const planById = new Map(plans.map((plan) => [plan.plan_id, plan]));
 	const rows = new Map<string, UsageRow>();
 	const skipped: Skipped[] = [];
@@ -137,6 +148,7 @@ export function buildUsageRows(points: SourcePoint[], plans: CataloguePlan[], sl
 		if (point.unmetered || !point.monthlyTokens || point.monthlyTokens <= 0) { skipped.push({ id: point.id, reason: "no measured token volume" }); continue; }
 		const modelSlug = modelSlugFor(point, slugs);
 		if (!modelSlug) { skipped.push({ id: point.id, reason: `model ${point.vendor}/${point.model} not in catalogue` }); continue; }
+		if (!planModels.has(planModelKey(plan.plan_uuid, modelSlug))) { skipped.push({ id: point.id, reason: "model not on plan" }); continue; }
 		if (point.priceUsd !== null && plan.price !== null && plan.price > 0 && Math.abs(point.priceUsd - plan.price) / plan.price > 0.05) {
 			priceMismatches.push({ id: point.id, sourcePrice: point.priceUsd, ourPrice: plan.price });
 		}

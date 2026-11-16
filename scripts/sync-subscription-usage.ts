@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
-import { SOURCE_CSV_URL, SOURCE_NAME, buildUsageRows, diffUsage, parsePoints, type CurrentRow } from "./subscription-usage/core";
+import { SOURCE_CSV_URL, SOURCE_NAME, buildUsageRows, diffUsage, parsePoints, planModelKey, type CurrentRow } from "./subscription-usage/core";
 
 for (const file of ["apps/web/.env.local", ".env.local", ".env"]) {
 	if (existsSync(resolve(file))) loadEnvFile(resolve(file));
@@ -30,7 +30,19 @@ async function main() {
 		if ((data ?? []).length < 1000) break;
 	}
 
-	const { rows, skipped, priceMismatches } = buildUsageRows(points, (plans ?? []).map((plan) => ({ ...plan, price: plan.price === null ? null : Number(plan.price) })), slugs);
+	const now = new Date().toISOString();
+	const planModels = new Set<string>();
+	for (let offset = 0; ; offset += 1000) {
+		// Live links only; the database compares the timestamps (effective_from can be -infinity).
+		const { data, error } = await db.from("v2_subscription_plan_models").select("plan_uuid,model_slug")
+			.lte("effective_from", now).or(`effective_to.is.null,effective_to.gt.${now}`)
+			.order("plan_uuid").order("model_slug").range(offset, offset + 999);
+		if (error) throw error;
+		for (const link of data ?? []) planModels.add(planModelKey(link.plan_uuid, link.model_slug));
+		if ((data ?? []).length < 1000) break;
+	}
+
+	const { rows, skipped, priceMismatches } = buildUsageRows(points, (plans ?? []).map((plan) => ({ ...plan, price: plan.price === null ? null : Number(plan.price) })), slugs, planModels);
 	const { data: current, error: currentError } = await db.from("v2_subscription_plan_model_usage").select("*").eq("source_name", SOURCE_NAME).is("effective_to", null);
 	if (currentError) throw currentError;
 	const diff = diffUsage((current ?? []) as CurrentRow[], rows);
@@ -39,7 +51,7 @@ async function main() {
 	const keepRemoved = rows.length < Math.max(1, (current ?? []).length) * 0.5;
 
 	const report = {
-		source: SOURCE_CSV_URL, fetchedAt: new Date().toISOString(), subscriptionPoints, matched: rows.length,
+		source: SOURCE_CSV_URL, fetchedAt: now, subscriptionPoints, matched: rows.length,
 		insert: diff.insert.length, changed: diff.close.length, removed: keepRemoved ? 0 : diff.removed.length, unchanged: diff.unchanged,
 		removalsSkipped: keepRemoved && diff.removed.length > 0, priceMismatches,
 		skipped: Object.entries(skipped.reduce<Record<string, string[]>>((groups, item) => ((groups[item.reason] ??= []).push(item.id), groups), {})).map(([reason, ids]) => ({ reason, count: ids.length, ids })),
@@ -52,7 +64,6 @@ async function main() {
 	if (!rows.length) throw new Error("No subscription usage rows matched; nothing was written.");
 	if (!process.argv.includes("--write")) { console.log("Dry run complete. Use --write to update the catalogue."); return; }
 
-	const now = report.fetchedAt;
 	const retire = [...diff.close, ...(keepRemoved ? [] : diff.removed)];
 	for (let index = 0; index < retire.length; index += 200) {
 		const { error } = await db.from("v2_subscription_plan_model_usage").update({ effective_to: now }).is("effective_to", null).in("usage_uuid", retire.slice(index, index + 200));
