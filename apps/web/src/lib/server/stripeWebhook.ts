@@ -6,7 +6,7 @@ import {
 	deriveFirstName,
 	sendCreditsPurchasedEvent,
 } from "@/lib/automations/resend-events";
-import { getSandboxStripe, getStripe, readStripeSandboxWorkspaceId } from "@/lib/stripe";
+import { getSandboxStripe, getStripe, isProductionDeployment, readStripeSandboxWorkspaceId } from "@/lib/stripe";
 import { readBoundedTextBody } from "@/lib/server/boundedRequestBody";
 import { IDENTITY_ADDON_KEY } from "@/lib/billing/identityAddon";
 import { ENTERPRISE_MEMBER_OVERAGE_USD } from "@/lib/billing/enterprisePricing";
@@ -633,8 +633,9 @@ export async function handleStripeWebhook(req: Request, mode: StripeWebhookMode 
         );
     }
 
-    // The live endpoint never acts on test-mode events; the sandbox endpoint only on its own.
-    if (mode === "live" ? event.livemode === false : !sandboxEventIsAllowed(event, readStripeSandboxWorkspaceId())) {
+    // In production the live endpoint never acts on test-mode events (local dev with an sk_test_ key
+    // still does); the sandbox endpoint only acts on its own.
+    if (mode === "live" ? event.livemode === false && isProductionDeployment() : !sandboxEventIsAllowed(event, readStripeSandboxWorkspaceId())) {
         return Response.json({ ignored: true, reason: mode === "live" ? "test_mode_event" : "not_sandbox_workspace" });
     }
 
@@ -843,7 +844,8 @@ export async function handleStripeWebhook(req: Request, mode: StripeWebhookMode 
                     kind,
                     creditedAtIso,
                 };
-                if (customerIdentity.email) {
+                // Sandbox payments send no customer email automations either.
+                if (customerIdentity.email && mode === "live") {
                     try {
                         await sendCreditsPurchasedEvent({
                             email: customerIdentity.email,

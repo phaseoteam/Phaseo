@@ -8,9 +8,15 @@ import { getTranslations } from "@/i18n/server";
 /** Fixed sandbox top-up: $10, charged in the Stripe sandbox only. */
 export const SANDBOX_TOP_UP_CENTS = 1000;
 
-/** True when the admin sandbox checkout has everything it needs to run. */
+/**
+ * True when the admin sandbox checkout has everything it needs: a test-mode key, a webhook signing
+ * secret and the sandbox workspace. CI writes "disabled" to both secrets when Infisical has none,
+ * which fails these checks.
+ */
 export function isStripeSandboxConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
-	return Boolean(env.STRIPE_SANDBOX_SECRET_KEY?.trim() && env.STRIPE_SANDBOX_WEBHOOK_SECRET?.trim() && readStripeSandboxWorkspaceId(env));
+	const key = env.STRIPE_SANDBOX_SECRET_KEY?.trim() ?? "";
+	const webhook = env.STRIPE_SANDBOX_WEBHOOK_SECRET?.trim() ?? "";
+	return (key.startsWith("sk_test_") || key.startsWith("rk_test_")) && webhook.startsWith("whsec_") && Boolean(readStripeSandboxWorkspaceId(env));
 }
 
 /**

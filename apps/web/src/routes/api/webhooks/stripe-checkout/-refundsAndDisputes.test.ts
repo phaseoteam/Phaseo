@@ -37,6 +37,7 @@ vi.mock("@/lib/stripe", () => ({
 		webhooks: { constructEvent: (body: string) => JSON.parse(body) },
 		paymentIntents: { retrieve: async () => ({ id: "pi_1", amount: 2000, amount_received: 2000 }) },
 	}),
+	isProductionDeployment: () => true,
 }));
 
 vi.mock("@/lib/automations/resend-events", () => ({ deriveFirstName: () => "", sendCreditsPurchasedEvent: async () => undefined }));

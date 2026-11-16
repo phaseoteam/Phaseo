@@ -21,7 +21,8 @@ export function isLiveStripeSecretKey(key: string): boolean {
     return key.startsWith("sk_live_") || key.startsWith("rk_live_");
 }
 
-function isProductionDeployment(env: NodeJS.ProcessEnv): boolean {
+/** The production website (not local dev or a preview). */
+export function isProductionDeployment(env: NodeJS.ProcessEnv = process.env): boolean {
     return getPhaseoEnv(env) === "production" && env.NODE_ENV === "production";
 }
 

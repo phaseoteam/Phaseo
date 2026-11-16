@@ -1065,12 +1065,13 @@ jobs:
                   if [ -n "$sandbox_key" ] && [[ "$sandbox_webhook" == whsec_* ]]; then
                     export STRIPE_SANDBOX_SECRET_KEY="$sandbox_key" STRIPE_SANDBOX_WEBHOOK_SECRET="$sandbox_webhook"
                   else
-                    unset STRIPE_SANDBOX_SECRET_KEY STRIPE_SANDBOX_WEBHOOK_SECRET
-                    echo "::warning::Admin Stripe sandbox checkout stays off: Infisical prod /web needs TEST_STRIPE_SECRET_KEY (sk_test_) and TEST_STRIPE_WEBHOOK_SECRET (whsec_). Stripe names loaded: $(env | cut -d= -f1 | grep -i stripe | sort | tr '\n' ' ')"
+                    # Overwrite, not unset: an unset secret would keep a previously deployed value live.
+                    export STRIPE_SANDBOX_SECRET_KEY=disabled STRIPE_SANDBOX_WEBHOOK_SECRET=disabled
+                    echo "::warning::Admin Stripe sandbox checkout is off: Infisical prod /web needs TEST_STRIPE_SECRET_KEY (sk_test_) and TEST_STRIPE_WEBHOOK_SECRET (whsec_). Stripe names loaded: $(env | cut -d= -f1 | grep -i stripe | sort | tr '\n' ' ')"
                   fi
                   secrets_file=$(mktemp)
                   trap 'rm -f "$secrets_file"' EXIT
-                  node -e 'const s = { STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET }; if (process.env.STRIPE_SANDBOX_SECRET_KEY) Object.assign(s, { STRIPE_SANDBOX_SECRET_KEY: process.env.STRIPE_SANDBOX_SECRET_KEY, STRIPE_SANDBOX_WEBHOOK_SECRET: process.env.STRIPE_SANDBOX_WEBHOOK_SECRET }); require("node:fs").writeFileSync(process.argv[1], JSON.stringify(s))' "$secrets_file"
+                  node -e 'const e = process.env; require("node:fs").writeFileSync(process.argv[1], JSON.stringify({ STRIPE_SECRET_KEY: e.STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET: e.STRIPE_WEBHOOK_SECRET, STRIPE_SANDBOX_SECRET_KEY: e.STRIPE_SANDBOX_SECRET_KEY, STRIPE_SANDBOX_WEBHOOK_SECRET: e.STRIPE_SANDBOX_WEBHOOK_SECRET }))' "$secrets_file"
                   # The commit in the deployment message lets the next run skip unchanged deploys.
                   # Runtime vars for code that reads an env object (auth redirect origin,
                   # Stripe checkout URLs), which build-time inlining of process.env.X does
