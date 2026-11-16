@@ -440,7 +440,8 @@ describe("Slack agent install", () => {
 	it("doesn't ask for the old Chat privacy review", async () => {
 		database({ role: "admin", reviewed: false });
 		const response = await call("/slack/install", { method: "POST", body: JSON.stringify(validInstall) });
-		expect(await response.json()).not.toMatchObject({ error: "chat_privacy_review_required" });
+		expect(response.status).toBe(200);
+		expect(new URL(((await response.json()) as any).url).searchParams.get("state")).toBeTruthy();
 	});
 
 	it("installs only inside the slack_agent rollout, asked for the installer as the web app asks", async () => {
