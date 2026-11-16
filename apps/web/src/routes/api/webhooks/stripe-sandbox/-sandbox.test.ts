@@ -44,7 +44,7 @@ const paymentIntent = (workspaceId: string) => ({
 });
 
 const sandboxStripe = {
-	webhooks: { constructEvent: (body: string) => JSON.parse(body) },
+	webhooks: { constructEventAsync: async (body: string) => JSON.parse(body) },
 	paymentIntents: { retrieve: async () => ({ ...paymentIntent(SANDBOX), payment_method: { id: "pm_1", type: "card" } }) },
 	paymentMethods: { attach: async () => ({}) },
 	customers: { retrieve: async () => ({ id: "cus_sandbox", email: "admin@phaseo.test", name: "Admin", invoice_settings: { default_payment_method: "pm_1" } }), update: async () => ({}) },

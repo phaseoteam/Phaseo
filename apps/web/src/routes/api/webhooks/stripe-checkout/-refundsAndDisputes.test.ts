@@ -34,7 +34,7 @@ vi.mock("@supabase/supabase-js", () => ({
 
 vi.mock("@/lib/stripe", () => ({
 	getStripe: () => ({
-		webhooks: { constructEvent: (body: string) => JSON.parse(body) },
+		webhooks: { constructEventAsync: async (body: string) => JSON.parse(body) },
 		paymentIntents: { retrieve: async () => ({ id: "pi_1", amount: 2000, amount_received: 2000 }) },
 	}),
 	isProductionDeployment: () => true,

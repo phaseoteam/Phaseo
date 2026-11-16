@@ -616,7 +616,8 @@ export async function handleStripeWebhook(req: Request, mode: StripeWebhookMode 
     let event: Stripe.Event;
     try {
         const webhookSecret = getWebhookSecret(mode);
-        event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+        // Async only: Workers verify with Web Crypto, which has no synchronous API.
+        event = await stripe.webhooks.constructEventAsync(rawBody, signature, webhookSecret);
     } catch (err: any) {
         console.error("[stripe-webhook] Signature verification failed", {
             error: err?.message ?? String(err),
