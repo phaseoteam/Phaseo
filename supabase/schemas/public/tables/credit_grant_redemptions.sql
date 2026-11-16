@@ -2,7 +2,7 @@ CREATE TABLE "public"."credit_grant_redemptions" (
   "id"           uuid                     NOT NULL DEFAULT gen_random_uuid(),
   "grant_id"     uuid                     NOT NULL,
   "user_id"      uuid                     NOT NULL,
-  "workspace_id" uuid                     NOT NULL,
+  "workspace_id" uuid,
   "amount_nanos" bigint                   NOT NULL,
   "created_at"   timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT "credit_grant_redemptions_amount_nanos_check" CHECK ((amount_nanos > 0)),
@@ -11,7 +11,7 @@ CREATE TABLE "public"."credit_grant_redemptions" (
   CONSTRAINT "credit_grant_redemptions_pkey" PRIMARY KEY (id),
   CONSTRAINT "credit_grant_redemptions_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
   CONSTRAINT "credit_grant_redemptions_grant_id_fkey" FOREIGN KEY (grant_id) REFERENCES public.credit_grants(id) ON DELETE CASCADE,
-  CONSTRAINT "credit_grant_redemptions_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE
+  CONSTRAINT "credit_grant_redemptions_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE SET NULL
 );
 
 ALTER TABLE "public"."credit_grant_redemptions"

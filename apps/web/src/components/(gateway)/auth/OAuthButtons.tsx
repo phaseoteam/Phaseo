@@ -6,6 +6,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { handleOAuthRedirect } from "@/features/sign-in/actions";
 import { Logo } from "@/components/Logo";
 import { defaultLocale, type PublicLocale } from "@/i18n/routing";
+import { ReturningUserCallout } from "./ReturningUserCallout";
 
 export type SocialProviderId = "google" | "github" | "gitlab";
 type LastAuthProvider = SocialProviderId | "email";
@@ -32,12 +33,17 @@ const META: Record<SocialProviderId, ProviderMeta> = {
 	gitlab: { label: "GitLab", light: "/social/gitlab.svg" },
 };
 
-type Redirect = { provider: SocialProviderId; slow: boolean };
+/** `returning`: started from sign-up's "Been here before? Sign in", which signs in rather than up. */
+type Redirect = { provider: SocialProviderId; slow: boolean; returning: boolean };
 
-function ProviderLogo({ meta }: { meta: ProviderMeta }) {
+const isSocialProvider = (value: LastAuthProvider | null): value is SocialProviderId =>
+	value !== null && value !== "email";
+
+function ProviderLogo({ meta, size = 18 }: { meta: ProviderMeta; size?: 16 | 18 }) {
 	const t = useTranslations("Auth.shared");
+	const sizeClass = size === 16 ? "size-4" : "h-[18px] w-[18px]";
 	if (meta.logoId) {
-		return <Logo id={meta.logoId} width={18} height={18} className="h-[18px] w-[18px] shrink-0" />;
+		return <Logo id={meta.logoId} width={size} height={size} className={`${sizeClass} shrink-0`} />;
 	}
 	return (
 		<>
@@ -45,18 +51,18 @@ function ProviderLogo({ meta }: { meta: ProviderMeta }) {
 				<Image
 					src={meta.light}
 					alt={t("providerLogoAlt", { provider: meta.label })}
-					width={18}
-					height={18}
-					className="h-[18px] w-[18px] shrink-0 dark:hidden"
+					width={size}
+					height={size}
+					className={`${sizeClass} shrink-0 dark:hidden`}
 				/>
 			) : null}
 			{(meta.dark ?? meta.light) ? (
 				<Image
 					src={meta.dark ?? meta.light!}
 					alt={t("providerLogoAlt", { provider: meta.label })}
-					width={18}
-					height={18}
-					className="hidden h-[18px] w-[18px] shrink-0 dark:block"
+					width={size}
+					height={size}
+					className={`hidden ${sizeClass} shrink-0 dark:block`}
 				/>
 			) : null}
 		</>
@@ -72,6 +78,10 @@ function ProviderLogo({ meta }: { meta: ProviderMeta }) {
  *   for Google…" with "Try again", which cancels the attempt and unlocks everything;
  * - coming back with the browser's Back button (page restored from the back/forward
  *   cache) unlocks everything too, so nobody returns to a spinner that never stops.
+ *
+ * The provider this browser last signed in with is marked "Last used" on sign-in. On
+ * sign-up it gets "Been here before? [logo Sign in]" under the row instead, which signs
+ * straight in with that provider.
  */
 export default function OAuthButtons({
 	returnUrl,
@@ -136,7 +146,7 @@ export default function OAuthButtons({
 
 	useEffect(() => () => abortRef.current?.abort(), []);
 
-	const start = (event: FormEvent<HTMLFormElement>, provider: SocialProviderId) => {
+	const start = (event: FormEvent<HTMLFormElement>, provider: SocialProviderId, returning = false) => {
 		// Called directly rather than as a form action: a form action that never settles
 		// (the page is unloading) would queue a second attempt behind it after "Try again".
 		event.preventDefault();
@@ -146,10 +156,11 @@ export default function OAuthButtons({
 		} catch {
 			// Ignore storage failures; auth still proceeds.
 		}
-		onStart?.(provider);
+		// A returning sign-in from sign-up is not a sign-up attempt.
+		if (!returning) onStart?.(provider);
 		const controller = new AbortController();
 		abortRef.current = controller;
-		setRedirect({ provider, slow: false });
+		setRedirect({ provider, slow: false, returning });
 		handleOAuthRedirect({ data: new FormData(event.currentTarget), signal: controller.signal }).catch(() => {
 			// Couldn't reach the server (offline, request failed): offer to start again now.
 			if (!controller.signal.aborted) setRedirect((current) => (current ? { ...current, slow: true } : current));
@@ -163,13 +174,15 @@ export default function OAuthButtons({
 	};
 
 	const activeLabel = redirect ? META[redirect.provider].label : "";
+	const returningProvider = flow === "signup" && isSocialProvider(lastUsedProvider) ? lastUsedProvider : null;
+	const returningActive = redirect?.returning === true;
 
 	return (
 		<div className="flex flex-col">
 			<div className="grid grid-cols-3 gap-2.5">
 				{SOCIAL_PROVIDER_IDS.map((id) => {
 					const meta = META[id];
-					const active = redirect?.provider === id;
+					const active = redirect?.provider === id && !redirect.returning;
 					return (
 						<form key={id} onSubmit={(event) => start(event, id)}>
 							<input type="hidden" name="authFlow" value={flow} />
@@ -185,7 +198,7 @@ export default function OAuthButtons({
 								disabled={redirecting && !active}
 								aria-disabled={active || undefined}
 							>
-								{lastUsedProvider === id && !redirecting ? (
+								{flow === "signin" && lastUsedProvider === id && !redirecting ? (
 									<span className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-medium leading-none text-muted-foreground shadow-sm">
 										{t("lastUsed")}
 									</span>
@@ -199,6 +212,35 @@ export default function OAuthButtons({
 					);
 				})}
 			</div>
+
+			{returningProvider ? (
+				<ReturningUserCallout
+					className="mt-4"
+					action={
+						<form onSubmit={(event) => start(event, returningProvider, true)}>
+							<input type="hidden" name="authFlow" value="signin" />
+							<input type="hidden" name="provider" value={returningProvider} />
+							<input type="hidden" name="locale" value={locale} />
+							{returnUrl ? <input type="hidden" name="returnUrl" value={returnUrl} /> : null}
+							<Button
+								type="submit"
+								variant="outline"
+								aria-label={t("providerSignIn", { provider: META[returningProvider].label })}
+								className="h-8 gap-1.5 bg-background px-3 aria-disabled:cursor-default"
+								disabled={redirecting && !returningActive}
+								aria-disabled={returningActive || undefined}
+							>
+								{returningActive ? (
+									<Spinner aria-hidden className="size-4" />
+								) : (
+									<ProviderLogo meta={META[returningProvider]} size={16} />
+								)}
+								<span className="text-sm">{t("signIn")}</span>
+							</Button>
+						</form>
+					}
+				/>
+			) : null}
 
 			{/* Grows in under the buttons; a live region, so screen readers hear each change. */}
 			<div

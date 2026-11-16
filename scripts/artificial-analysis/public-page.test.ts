@@ -91,6 +91,17 @@ test("extracts all frontend models, including ones absent from the default page 
 	assert.equal(result.dataUrl, "https://artificialanalysis.ai/data/abc123.txt");
 	assert.throws(() => extractFullPublicModels(page, encrypt({ models: [model, model] }), source, "now"), /duplicate/);
 });
+test("keeps full-dataset rows that omit evaluation and token fields", () => {
+	const page = html(`a:${JSON.stringify({ initialModels: [model], manifest })}\n`);
+	const unscored = { id: "source-3", name: "Unscored model", slug: "unscored-model", intelligenceIndex: null, deprecated: false };
+	const result = extractFullPublicModels(page, encrypt({ models: [model, unscored] }), source, "now");
+	assert.equal(result.models.length, 2);
+	assert.equal(result.models[1].intelligenceIndex, null);
+	assert.equal(result.models[1].evaluations, null);
+	assert.equal(result.models[1].totalTokens, null);
+	// The page-selection path still ignores rows without those fields.
+	assert.equal(extractPublicModels(html(`a:${JSON.stringify([model, unscored])}\n`), source, null).models.length, 1);
+});
 test("rejects corrupt data and malformed full datasets", () => {
 	const data = encrypt({ models: [model] });
 	data[0] ^= 1;

@@ -6,7 +6,7 @@ import { describe, it, expect, beforeAll, vi } from "vitest";
 const WORKSPACE = "00000000-0000-4000-8000-000000000001";
 const REQUEST = "00000000-0000-4000-8000-0000000000aa";
 
-const sessions = { created: 0, byKey: new Map<string, { params: string; id: string }>() };
+const sessions = { created: 0, params: [] as Array<Record<string, unknown>>, byKey: new Map<string, { params: string; id: string }>() };
 
 vi.mock("@/lib/stripe", () => ({
 	getStripe: () => ({
@@ -22,6 +22,7 @@ vi.mock("@/lib/stripe", () => ({
 						return { id: previous.id, url: `https://checkout.stripe.com/c/pay/${previous.id}` };
 					}
 					sessions.created += 1;
+					sessions.params.push(params as Record<string, unknown>);
 					const id = `cs_test_${sessions.created}`;
 					if (key) sessions.byKey.set(key, { params: serialized, id });
 					return { id, url: `https://checkout.stripe.com/c/pay/${id}` };
@@ -76,5 +77,18 @@ describe("createStripeCheckoutResponse for API/CLI top-up requests", () => {
 		expect(new Set(urls)).toEqual(new Set(["https://checkout.stripe.com/c/pay/cs_test_1"]));
 		expect(sessions.created).toBe(1);
 		expect(new Set(stored)).toEqual(new Set(["cs_test_1"]));
+	});
+
+	it.each(["oneoff", "pay_and_save"] as const)("creates the %s payment session in USD with local-currency pricing turned off", async (kind) => {
+		sessions.params.length = 0;
+		const response = await createStripeCheckoutResponse({ kind, amountPence: 2000, countryCode: "GB", originHeader: "https://phaseo.app", refererHeader: null });
+
+		expect(response.status).toBe(200);
+		expect(sessions.params).toHaveLength(1);
+		expect(sessions.params[0]).toMatchObject({
+			mode: "payment",
+			adaptive_pricing: { enabled: false },
+			line_items: [{ price_data: { currency: "usd" } }],
+		});
 	});
 });

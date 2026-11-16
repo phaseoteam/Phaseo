@@ -15,9 +15,11 @@
 		"./command": "./src/command.tsx",
 		"./dialog": "./src/dialog.tsx",
 		"./dropdown-menu": "./src/dropdown-menu.tsx",
+		"./inline-chip": "./src/inline-chip.tsx",
 		"./input": "./src/input.tsx",
 		"./input-group": "./src/input-group.tsx",
 		"./kbd": "./src/kbd.tsx",
+		"./number-input": "./src/number-input.tsx",
 		"./popover": "./src/popover.tsx",
 		"./scroll-area": "./src/scroll-area.tsx",
 		"./select": "./src/select.tsx",
@@ -28,12 +30,16 @@
 		"./textarea": "./src/textarea.tsx",
 		"./toggle": "./src/toggle.tsx",
 		"./toggle-group": "./src/toggle-group.tsx",
-		"./tooltip": "./src/tooltip.tsx"
+		"./token-input": "./src/token-input.tsx",
+		"./token-input-model": "./src/token-input-model.ts",
+		"./tooltip": "./src/tooltip.tsx",
+		"./tree": "./src/tree.tsx"
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit -p tsconfig.json"
 	},
 	"dependencies": {
+		"@phaseo/app-kit": "workspace:*",
 		"clsx": "^2.1.1",
 		"tailwind-merge": "^3.6.0"
 	},
@@ -43,15 +49,55 @@
 		"cmdk": "^1.1.1",
 		"lucide-react": "^1.17.0",
 		"react": "^19.0.0",
-		"react-dom": "^19.0.0"
+		"react-dom": "^19.0.0",
+		"@tiptap/core": "^3.31.4",
+		"@tiptap/extension-document": "^3.31.4",
+		"@tiptap/extension-hard-break": "^3.31.4",
+		"@tiptap/extension-paragraph": "^3.31.4",
+		"@tiptap/extension-text": "^3.31.4",
+		"@tiptap/extensions": "^3.31.4",
+		"@tiptap/pm": "^3.31.4",
+		"@tiptap/react": "^3.31.4"
 	},
 	"peerDependenciesMeta": {
 		"cmdk": {
+			"optional": true
+		},
+		"@tiptap/core": {
+			"optional": true
+		},
+		"@tiptap/extension-document": {
+			"optional": true
+		},
+		"@tiptap/extension-hard-break": {
+			"optional": true
+		},
+		"@tiptap/extension-paragraph": {
+			"optional": true
+		},
+		"@tiptap/extension-text": {
+			"optional": true
+		},
+		"@tiptap/extensions": {
+			"optional": true
+		},
+		"@tiptap/pm": {
+			"optional": true
+		},
+		"@tiptap/react": {
 			"optional": true
 		}
 	},
 	"devDependencies": {
 		"@base-ui/react": "1.6.0",
+		"@tiptap/core": "3.31.4",
+		"@tiptap/extension-document": "3.31.4",
+		"@tiptap/extension-hard-break": "3.31.4",
+		"@tiptap/extension-paragraph": "3.31.4",
+		"@tiptap/extension-text": "3.31.4",
+		"@tiptap/extensions": "3.31.4",
+		"@tiptap/pm": "3.31.4",
+		"@tiptap/react": "3.31.4",
 		"@types/react": "19.3.0",
 		"@types/react-dom": "19.3.0",
 		"@typescript/native": "catalog:",

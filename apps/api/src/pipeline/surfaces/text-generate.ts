@@ -66,6 +66,7 @@ import type { PipelineContext, ProviderCandidate, ServerToolSubCallCharge } from
 import { presentUsageForClient } from "../after/payload";
 import { responsesRequestBody } from "../after/responses-stream-normaliser";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "../before/workspacePolicy";
+import { requestDataLimits } from "../requestRouting";
 import { decodeNonTextRequest, encodeNonTextResponse } from "./non-text";
 import { priceServerToolResult } from "./server-tool-pricing";
 import { gptImageSizeForAspectRatio, isGptImageModel } from "./image-tool-size";
@@ -76,7 +77,9 @@ import { normalizeCapability } from "@/executors";
 import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
 import { resolveSvgAuthor } from "@providers/openai/endpoints/images-svg";
 import { passesWalletCreditCheck, walletCanPay } from "../before/guards";
-import { chargeCompletedServerToolRounds, priceServerToolRounds, priceServerToolSubCall } from "../after/server-tool-charges";
+import { chargeCompletedServerToolRounds, priceServerToolRounds, priceServerToolSubCall, recordsServerToolAccounting } from "../after/server-tool-charges";
+import { recordProvisionalStreamCharge } from "../after/charge";
+import { BYOK_SERVICE_FEE_RATE } from "../pricing/byok-fee";
 import {
 	buildEmptyResponseDiagnostics,
 	emptyResponseMessage,
@@ -192,6 +195,66 @@ export async function settleBufferedUpstreamStreamFailure(
 	});
 }
 
+/**
+ * Charges the usage a provider reported for a completed answer that had no visible output, as a
+ * failed request's completed round is charged. True when there was something to account for (a
+ * charge, or a bill held for reconciliation); false when the provider reported no billable usage.
+ */
+async function chargeEmptyResponseUsage(
+	ctx: PipelineContext,
+	protocol: ReturnType<typeof detectTextProtocol>,
+	result: any,
+): Promise<boolean> {
+	const usage = (result.ir as IRChatResponse | undefined)?.usage;
+	const round = { result: { ...result, bill: { ...result.bill } }, usage };
+	try {
+		await chargeCompletedServerToolRounds({ ctx, protocol, rounds: [round], usage, toolMeters: undefined });
+	} catch (error) {
+		console.error("[gateway] empty response charge failed", {
+			requestId: ctx.requestId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return false;
+	}
+	if (!recordsServerToolAccounting(ctx.serverToolPartialCharge)) return false;
+	// The failure row and telemetry read the priced usage from the result's bill.
+	result.bill = round.result.bill;
+	return true;
+}
+
+/**
+ * Records the running total of a streamed server-tool request (completed rounds, tool meters and
+ * the model calls its tools made) as a provisional charge, like a plain stream's checkpoints.
+ * Each round is priced on its own credential, so a round on the workspace's own provider key adds only its service fee.
+ */
+async function recordServerToolRoundsCheckpoint(
+	ctx: PipelineContext,
+	protocol: ReturnType<typeof detectTextProtocol>,
+	rounds: Parameters<typeof priceServerToolRounds>[0]["rounds"],
+	metrics: Parameters<typeof attachServerToolUsageToRawUsage>[1],
+): Promise<void> {
+	try {
+		const bill = await priceServerToolRounds({
+			ctx,
+			protocol,
+			rounds,
+			toolMeters: attachServerToolUsageToRawUsage(undefined, metrics),
+		});
+		if (!bill || !(bill.totalNanos > 0)) return;
+		// The lines a charge kept from this checkpoint is recorded against (pricingLinesForCharge).
+		const checkpointMeta = ctx.meta as Record<string, unknown>;
+		checkpointMeta.__checkpointPricedNanos = bill.totalNanos;
+		checkpointMeta.__checkpointToolSpendNanos = serverToolSpendNanos(ctx);
+		checkpointMeta.__checkpointPricingLines = bill.pricing.lines;
+		dispatchBackground(recordProvisionalStreamCharge({ ctx, costNanos: bill.totalNanos, endpoint: ctx.endpoint }));
+	} catch (error) {
+		console.error("[gateway] server tool checkpoint charge failed", {
+			requestId: ctx.requestId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+	}
+}
+
 function emptyProviderResponse(
 	result: { provider?: string; upstream?: Response },
 	diagnostics: EmptyResponseDiagnostics,
@@ -270,6 +333,34 @@ async function recordSubCallCharge(
 	}
 }
 
+/**
+ * A credit snapshot after what this request has already spent on the models its server tools
+ * called: not ok once that spend has reached the snapshot's balance. Sub-model calls on the
+ * workspace's own provider key cost nothing here, image calls on it their service fee, and a
+ * snapshot without a balance is left as it is.
+ */
+function creditAfterServerToolSpend<T extends { ok?: boolean; balanceNanos?: number | null }>(
+	ctx: PipelineContext,
+	credit: T | null | undefined,
+): T | null | undefined {
+	if (!credit?.ok || typeof credit.balanceNanos !== "number" || !Number.isFinite(credit.balanceNanos)) return credit;
+	// A streamed request's last provisional total covers its completed main-model rounds and the
+	// tool spend up to then; tool spend since is added on top.
+	const meta = ctx.meta as Record<string, unknown>;
+	const spentNanos = (Number(meta.__checkpointPricedNanos) || 0)
+		+ Math.max(0, serverToolSpendNanos(ctx) - (Number(meta.__checkpointToolSpendNanos) || 0));
+	return spentNanos > 0 && spentNanos >= credit.balanceNanos ? { ...credit, ok: false } : credit;
+}
+
+/** What this request's server tools have spent so far on sub-model and image calls. */
+function serverToolSpendNanos(ctx: PipelineContext): number {
+	const subCallNanos = (ctx.serverToolSubCallCharges ?? [])
+		.reduce((sum, charge) => sum + Math.max(0, Number(charge.totalNanos) || 0), 0);
+	const imageNanos = (ctx.meta.serverToolPricing ?? [])
+		.reduce((sum, charge) => sum + Math.max(0, Number(charge.total_nanos) || 0) * (charge.key_source === "byok" ? BYOK_SERVICE_FEE_RATE : 1), 0);
+	return subCallNanos + imageNanos;
+}
+
 /** The wallet check the main request passed, applied to the model a server tool calls. */
 function subCallCreditDenied(
 	pre: PipelineRunnerArgs["pre"],
@@ -277,7 +368,15 @@ function subCallCreditDenied(
 	context: Awaited<ReturnType<typeof fetchGatewayContext>>,
 	candidates: unknown[],
 ): string | null {
-	if (passesWalletCreditCheck({ model, context, providers: candidates as any[], internal: pre.ctx.internal })) return null;
+	// Spend is measured against the balance the request was admitted on: a later read of the
+	// wallet may already include this request's own provisional charges.
+	// A later read that fails is kept unless this request has recorded provisional charges of
+	// its own, which that read may already include.
+	const admitted = pre.ctx.gating?.credit;
+	const ownCharges = (pre.ctx.meta as Record<string, unknown>).__chargedInSteps === true;
+	const basis = admitted?.ok && (context.credit?.ok !== false || ownCharges) ? admitted : context.credit;
+	const remaining = { ...context, credit: creditAfterServerToolSpend(pre.ctx, basis) };
+	if (passesWalletCreditCheck({ model, context: remaining, providers: candidates as any[], internal: pre.ctx.internal })) return null;
 	return `Insufficient credits to call ${model}. Add credits to use paid models in server tools.`;
 }
 
@@ -321,8 +420,41 @@ async function executeAdvisorModel(args: {
 			message: `No text.generate providers are available for advisor model ${args.model}.`,
 		};
 	}
+	// The key's own gates, as the before stage reads them for a request of its own. A spend-limit
+	// admission already decided the key's limits for this request.
+	if (advisorContext.key?.ok === false) {
+		return { ok: false, message: `The API key cannot call advisor model ${args.model}.` };
+	}
+	if (advisorContext.keyLimit?.ok === false && !args.pre.ctx.internal && !args.pre.ctx.spendAdmission) {
+		return { ok: false, message: `The API key has reached its limit and cannot call advisor model ${args.model}.` };
+	}
 	const advisorCreditDenied = subCallCreditDenied(args.pre, args.model, advisorContext, candidates);
 	if (advisorCreditDenied) return { ok: false, message: advisorCreditDenied };
+	// Sub-model calls follow the same workspace policy and data limits as the main model. The
+	// request's provider only/ignore lists name the main model's providers and are not carried.
+	const { only: _only, ignore: _ignore, ...parentDataLimits } = requestDataLimits(args.pre.ctx.body) ?? {};
+	let advisorPolicy: Awaited<ReturnType<typeof imageToolPolicyCandidates>>;
+	try {
+		advisorPolicy = await imageToolPolicyCandidates(
+			args.pre,
+			candidates,
+			advisorContext.resolvedModel ?? args.model,
+			{ model: args.model },
+			"Advisor model",
+		);
+	} catch (error) {
+		console.error("[gateway] server tool sub-call policy lookup failed", {
+			requestId: args.pre.ctx.requestId,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return { ok: false, message: `The workspace policy could not be loaded for advisor model ${args.model}.` };
+	}
+	if ("message" in advisorPolicy) return { ok: false, message: advisorPolicy.message };
+	const advisorDataLimits = {
+		...parentDataLimits,
+		...(advisorPolicy.policy?.privacyZdrOnly ? { require_zero_data_retention: true } : {}),
+	};
+	const advisorProviderHints = Object.keys(advisorDataLimits).length > 0 ? { provider: advisorDataLimits } : {};
 
 	const advisorInstructions = [
 		ADVISOR_DEFAULT_INSTRUCTIONS,
@@ -374,6 +506,7 @@ async function executeAdvisorModel(args: {
 			max_tokens: args.maxTokens,
 			...(typeof args.temperature === "number" ? { temperature: args.temperature } : {}),
 			...(args.reasoning ? { reasoning: args.reasoning } : {}),
+			...advisorProviderHints,
 		},
 		body: {
 			model: args.model,
@@ -384,9 +517,10 @@ async function executeAdvisorModel(args: {
 			max_tokens: args.maxTokens,
 			...(typeof args.temperature === "number" ? { temperature: args.temperature } : {}),
 			...(args.reasoning ? { reasoning: args.reasoning } : {}),
+			...advisorProviderHints,
 		},
 		stream: false,
-		providers: candidates,
+		providers: advisorPolicy.providers,
 		pricing: advisorContext.pricing,
 		gating: {
 			key: advisorContext.key,
@@ -544,11 +678,12 @@ async function imageToolPolicyCandidates(
 	candidates: ProviderCandidate[],
 	model: string,
 	body: any,
+	label = "Image model",
 ): Promise<{ ok: true; providers: ProviderCandidate[]; policy: Awaited<ReturnType<typeof fetchWorkspacePolicy>> } | { ok: false; message: string }> {
 	const policy = await fetchWorkspacePolicy({ workspaceId: pre.ctx.workspaceId, apiKeyId: pre.ctx.keyId! });
 	const result = applyWorkspacePolicy({ providers: candidates, resolvedModel: model, body, workspacePolicy: policy });
 	if (!result.ok) {
-		return { ok: false, message: `Image model "${model}" is blocked by a workspace policy or guardrail.` };
+		return { ok: false, message: `${label} "${model}" is blocked by a workspace policy or guardrail.` };
 	}
 	return { ok: true, providers: result.providers, policy };
 }
@@ -1355,7 +1490,10 @@ async function runTextGeneratePipelineInner(
 				exec.result.ir as IRChatResponse | undefined,
 			);
 			const message = emptyResponseMessage(emptyResponseDiagnostics);
-			await settleNonBillableFailure(pre.ctx, exec.result);
+			// An answer with no visible output is still charged for the usage the provider reported.
+			if (!(await chargeEmptyResponseUsage(pre.ctx, protocol, exec.result))) {
+				await settleNonBillableFailure(pre.ctx, exec.result);
+			}
 			await handleFailureAudit(
 				pre.ctx,
 				exec.result,
@@ -1542,7 +1680,7 @@ async function runTextGeneratePipelineInner(
 						},
 						remainingToolCalls: roundsExhausted ? 0 : maxServerToolCalls - serverToolCalls,
 						paidToolsAllowed: walletCanPay({
-							context: { credit: pre.ctx.gating?.credit, teamSettings: pre.ctx.teamSettings },
+							context: { credit: creditAfterServerToolSpend(pre.ctx, pre.ctx.gating?.credit), teamSettings: pre.ctx.teamSettings },
 							internal: pre.ctx.internal,
 						}),
 						signal: liveSink?.signal,
@@ -1647,6 +1785,9 @@ async function runTextGeneratePipelineInner(
 				// A tool may finish after the client disconnects. Settle its usage
 				// above, then stop before starting another model request.
 				if (liveSink?.signal.aborted) break;
+				// A streamed request is charged for its completed rounds and tool work before the
+				// next round starts; the final settlement then charges or refunds the difference.
+				if (liveSink) await recordServerToolRoundsCheckpoint(pre.ctx, protocol, completedRounds, serverToolUsageMetrics());
 
 				nextIrRequest = {
 					...nextIrRequest,
@@ -1748,6 +1889,10 @@ async function runTextGeneratePipelineInner(
 						followUpResult.ir as IRChatResponse | undefined,
 					);
 					const message = emptyResponseMessage(emptyResponseDiagnostics);
+					// The empty round is settled with the rounds before it: its reported usage is
+					// charged, and a round with no billable usage is waived by the round bill.
+					completedRounds.push(roundSnapshot(followUpResult));
+					aggregateUsage = mergeIRUsageTotals(aggregateUsage, (followUpResult.ir as IRChatResponse | undefined)?.usage);
 					await settleNonBillableFailure(pre.ctx, followUpResult);
 					await settleCompletedServerToolRounds();
 					await handleFailureAudit(

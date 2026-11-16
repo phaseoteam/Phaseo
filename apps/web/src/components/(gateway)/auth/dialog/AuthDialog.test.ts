@@ -113,6 +113,23 @@ describe("return URLs", () => {
 		expect(getAuthDialogState()).toMatchObject({ returnUrl: "/settings/keys", notice: "auth-failed" });
 	});
 
+	it("carries a typed email to sign-in, through the URL re-sync, but not into a new dialog", () => {
+		openAuthDialog({ step: "sign-up", fromUrl: true });
+		openAuthDialog({ step: "sign-in", email: "sam@example.com" });
+		expect(getAuthDialogState()).toMatchObject({ step: "sign-in", email: "sam@example.com" });
+		// AuthDialog re-opens a URL-opened dialog from ?auth=sign-in; the email is not in the URL.
+		openAuthDialog({ step: "sign-in", fromUrl: true });
+		expect(getAuthDialogState().email).toBe("sam@example.com");
+		// Another step, or a fresh open, starts without it.
+		openAuthDialog({ step: "sign-up", fromUrl: true });
+		expect(getAuthDialogState().email).toBeUndefined();
+		closeAuthDialog();
+		openAuthDialog({ step: "sign-in", email: "sam@example.com" });
+		closeAuthDialog();
+		openAuthDialog({ step: "sign-in", fromUrl: true });
+		expect(getAuthDialogState().email).toBeUndefined();
+	});
+
 	it("leaves the dialog's own parameters out of the current page", () => {
 		window.history.replaceState(null, "", "/models?tab=pricing&auth=sign-in&returnUrl=%2Fx");
 		expect(currentReturnUrl()).toBe("/models?tab=pricing");

@@ -285,14 +285,17 @@ accountSettingsTeamsRouter.delete("/teams/:workspaceId", async (c) => {
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const workspaceId = c.req.param("workspaceId");
 	const client = getDataClient(c.env);
-	const [userRow, workspace] = await Promise.all([
+	const [userRow, workspace, wallet] = await Promise.all([
 		client.from("users").select("default_workspace_id").eq("user_id", user.id).maybeSingle(),
 		client.from("workspaces").select("owner_user_id").eq("id", workspaceId).maybeSingle(),
+		client.from("wallets").select("balance_nanos,reserved_nanos").eq("workspace_id", workspaceId).maybeSingle(),
 	]);
-	if (userRow.error || workspace.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (userRow.error || workspace.error || wallet.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (userRow.data?.default_workspace_id === workspaceId) return c.json({ error: "personal_workspace" }, 409, PRIVATE_NO_STORE_HEADERS);
 	if (!workspace.data) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	if (workspace.data.owner_user_id !== user.id) return c.json({ error: "owner_required" }, 403, PRIVATE_NO_STORE_HEADERS);
+	// A workspace that owes money or has credits on hold is kept until the balance is settled.
+	if (Number(wallet.data?.balance_nanos ?? 0) < 0 || Number(wallet.data?.reserved_nanos ?? 0) > 0) return c.json({ error: "workspace_has_outstanding_balance" }, 409, PRIVATE_NO_STORE_HEADERS);
 	for (const table of ["workspace_members", "workspace_invites", "workspace_join_requests"] as const) {
 		const result = await retryTransaction(() => client.from(table).delete().eq("workspace_id", workspaceId));
 		if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);

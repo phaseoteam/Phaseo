@@ -21,6 +21,7 @@ const state = vi.hoisted(() => ({
 	workspaceSettingsUpsertError: null as { message: string } | null,
 	workspacesInserted: [] as Array<Record<string, unknown>>,
 	keyCount: 0,
+	wallet: null as Record<string, unknown> | null,
 	deletes: [] as Array<{ table: string; column: string; value: unknown }>,
 	auditEvents: [] as Array<Record<string, unknown>>,
 	userHasPaidWorkspaceAccess: vi.fn(async (_userId: string) => true),
@@ -116,7 +117,7 @@ function buildWorkspacesSupabaseMock() {
 			if (table === "workspace_members" || table === "wallets") {
 				return {
 					select: () => {
-						const membership: any = { eq: () => membership, maybeSingle: async () => ({ data: { role: "owner" }, error: null }) };
+						const membership: any = { eq: () => membership, maybeSingle: async () => ({ data: table === "wallets" ? state.wallet : { role: "owner" }, error: null }) };
 						return membership;
 					},
 					upsert: async (payload?: Record<string, unknown>) => {
@@ -208,6 +209,7 @@ describe("management workspace routes", () => {
 		state.workspaceSettingsUpsertError = null;
 		state.workspacesInserted.length = 0;
 		state.keyCount = 0;
+		state.wallet = null;
 		state.deletes.length = 0;
 		state.auditEvents.length = 0;
 		state.userHasPaidWorkspaceAccess.mockReset();
@@ -423,6 +425,61 @@ describe("management workspace routes", () => {
 		expect(response.status).toBe(400);
 		expect(body.message).toBe("Workspaces with active API keys cannot be deleted");
 		expect(state.deletes).toEqual([]);
+	});
+
+	it.each([
+		["a negative balance", { balance_nanos: -25_000_000_000, reserved_nanos: 0 }],
+		["credits on hold", { balance_nanos: 5_000_000_000, reserved_nanos: 1_000_000_000 }],
+	])("keeps a workspace whose wallet has %s", async (_label, wallet) => {
+		state.guardManagementAuthResult = {
+			ok: true,
+			value: { workspaceId: "ws_prod", apiKeyId: "mgmt_1", internal: false, authMethod: "api_key", userId: "user_1" },
+		};
+		state.workspaces.push({
+			id: "ws_prod",
+			name: "Production",
+			slug: "production",
+			owner_user_id: "user_1",
+			created_at: "2026-04-28T12:00:00Z",
+			updated_at: "2026-04-28T12:00:00Z",
+		});
+		state.users.push({ default_workspace_id: "ws_personal" });
+		state.wallet = wallet;
+
+		const { workspacesRoutes } = await import("./workspaces");
+		const response = await workspacesRoutes.request("https://example.com/ws_prod", {
+			method: "DELETE",
+		});
+		const body = await response.json();
+
+		expect(response.status).toBe(409);
+		expect(body.error).toBe("workspace_has_outstanding_balance");
+		expect(state.deletes).toEqual([]);
+	});
+
+	it("deletes a workspace whose wallet has a positive balance and nothing on hold", async () => {
+		state.guardManagementAuthResult = {
+			ok: true,
+			value: { workspaceId: "ws_prod", apiKeyId: "mgmt_1", internal: false, authMethod: "api_key", userId: "user_1" },
+		};
+		state.workspaces.push({
+			id: "ws_prod",
+			name: "Production",
+			slug: "production",
+			owner_user_id: "user_1",
+			created_at: "2026-04-28T12:00:00Z",
+			updated_at: "2026-04-28T12:00:00Z",
+		});
+		state.users.push({ default_workspace_id: "ws_personal" });
+		state.wallet = { balance_nanos: 5_000_000_000, reserved_nanos: 0 };
+
+		const { workspacesRoutes } = await import("./workspaces");
+		const response = await workspacesRoutes.request("https://example.com/ws_prod", {
+			method: "DELETE",
+		});
+
+		expect(response.status).toBe(200);
+		expect(state.deletes.at(-1)).toEqual({ table: "workspaces", column: "owner_user_id", value: "user_1" });
 	});
 
 	it("deletes a non-default workspace after dependent cleanup", async () => {

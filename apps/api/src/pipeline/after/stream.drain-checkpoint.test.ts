@@ -100,7 +100,8 @@ function controllableUpstream() {
 	};
 }
 
-function ctx(): any {
+// The default prompt is under one estimated token (5 characters), so only output is estimated.
+function ctx(prompt = "Hi"): any {
 	return {
 		requestId: "req_drain",
 		billingRequestId: "bill_drain",
@@ -111,8 +112,7 @@ function ctx(): any {
 		model: "openai/gpt-5-mini",
 		requestedModel: "openai/gpt-5-mini",
 		stream: true,
-		// 500 characters of prompt text: not estimated (a cached prompt costs less than the full rate).
-		body: { model: "openai/gpt-5-mini", stream: true, messages: [{ role: "user", content: "x".repeat(500) }] },
+		body: { model: "openai/gpt-5-mini", stream: true, messages: [{ role: "user", content: prompt }] },
 		rawBody: {},
 		meta: { requestId: "req_drain", apiKeyId: "key_drain", authMethod: "api_key" },
 		providers: [],
@@ -157,7 +157,7 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		await settle();
 		expect(charges()).toEqual([]);
 
-		// 15 s after the disconnect: no input reported yet, so only 500 chars = 100 output tokens.
+		// 15 s after the disconnect: no input reported yet, so 500 chars = 100 output tokens.
 		await vi.advanceTimersByTimeAsync(15_000);
 		await settle();
 		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 100 * 10_000]]);
@@ -180,6 +180,60 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 			["checkpoint_total", "bill_drain", 2_000_000],
 			["final_total", "bill_drain", 120 * 1_000 + 250 * 10_000],
 		]);
+	});
+
+	it("includes an estimate of the prompt at each checkpoint until the provider reports input", async () => {
+		// 5,000 prompt characters = 1,000 estimated input tokens.
+		const c = ctx("x".repeat(5_000));
+		const { upstream, reader } = await start(c);
+		upstream.text("Hello");
+		await reader.read();
+		await reader.cancel();
+		upstream.text("y".repeat(495));
+		await settle();
+		await vi.advanceTimersByTimeAsync(15_000);
+		await settle();
+		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 1_000 * 1_000 + 100 * 10_000]]);
+		expect(chargedByMeter((c.meta as any).__checkpointPricingLines)).toEqual({ [INPUT_METER_ID]: 1_000_000, [OUTPUT_METER_ID]: 1_000_000 });
+
+		// The drain finishes: the reported usage replaces the estimate.
+		upstream.finish({ prompt_tokens: 1_300, completion_tokens: 250, total_tokens: 1_550 });
+		await settle();
+		expect(charges()).toEqual([
+			["checkpoint_total", "bill_drain", 2_000_000],
+			["final_total", "bill_drain", 1_300 * 1_000 + 250 * 10_000],
+		]);
+	});
+
+	it("charges the prompt estimate at the checkpoints when nothing has streamed yet", async () => {
+		const c = ctx("x".repeat(5_000));
+		const { reader } = await start(c);
+		await reader.cancel();
+		await settle();
+		await vi.advanceTimersByTimeAsync(30_000);
+		await settle();
+		expect(charges()).toEqual([
+			["checkpoint_total", "bill_drain", 1_000_000],
+			["checkpoint_total", "bill_drain", 1_000_000],
+		]);
+		expect(chargedByMeter((c.meta as any).__checkpointPricingLines)).toEqual({ [INPUT_METER_ID]: 1_000_000 });
+	});
+
+	it("keeps the prompt estimate when the drain ends early without reported usage", async () => {
+		const c = ctx("x".repeat(5_000));
+		const { upstream, reader } = await start(c);
+		upstream.text("y".repeat(500));
+		await reader.read();
+		await reader.cancel();
+		await vi.advanceTimersByTimeAsync(15_000);
+		await settle();
+		upstream.cut();
+		await settle();
+		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 2_000_000], ["final_total", "bill_drain", 2_000_000]]);
+		const [, result, status, , , , , , , billing] = failureAuditMock.mock.calls[0];
+		expect(status).toBe(499);
+		expect(billing).toEqual({ costNanos: 2_000_000 });
+		expect(chargedByMeter(result.bill.usage.pricing.lines)).toEqual({ [INPUT_METER_ID]: 1_000_000, [OUTPUT_METER_ID]: 1_000_000 });
 	});
 
 	it("charges once, from the final usage, when the drain finishes before the first checkpoint", async () => {
