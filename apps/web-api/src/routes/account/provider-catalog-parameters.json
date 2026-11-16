@@ -255,6 +255,7 @@
     "top_n"
   ],
   "decisions.make": [
+    "audio",
     "echo_upstream_request",
     "questions",
     "routing",
