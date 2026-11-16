@@ -276,7 +276,7 @@ Cloudflare 会校验媒体编码、图像尺寸和片段时长，并以每秒两
 <span id="liquid-d1-and-perplexity-decider"></span>
 ### Liquid D1.2 和 D1.2 Ultra
 
-`liquid-ai/d1.2` 和 `liquid-ai/d1.2-ultra` 使用旧的 state 格式，最多接受 4 张图像和 8 段音频。`audio` 以 base64 `data:` URL 发送（WAV、MP3、FLAC、M4A 或 OGG，每段最多 24 MB）；不支持远程音频 URL。除 `noul`、`choice` 和 `score` 外，它们还回答以下问题类型：
+`liquid-ai/d1.2` 和 `liquid-ai/d1.2-ultra` 使用旧的 state 格式，最多接受 4 张图像和 8 段音频。`audio` 以 base64 `data:` URL 发送（WAV、MP3、FLAC、M4A 或 OGG，每个 URL 最多 24 MiB，约合 18 MiB 音频）；不支持远程音频 URL。除 `noul`、`choice` 和 `score` 外，它们还回答以下问题类型：
 
 | `type` | 额外字段 | 回答字段 |
 | --- | --- | --- |

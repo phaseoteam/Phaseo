@@ -275,7 +275,7 @@ Cloudflare validates media encoding, image dimensions and clip duration, and sam
 
 ### Liquid D1.2 and D1.2 Ultra
 
-`liquid-ai/d1.2` and `liquid-ai/d1.2-ultra` use the older state format, with up to four images and up to eight audio clips. Send `audio` as base64 data URLs (WAV, MP3, FLAC, M4A or OGG, at most 24 MB each); remote audio URLs are unsupported. Besides `noul`, `choice` and `score`, they answer these question types:
+`liquid-ai/d1.2` and `liquid-ai/d1.2-ultra` use the older state format, with up to four images and up to eight audio clips. Send `audio` as base64 data URLs (WAV, MP3, FLAC, M4A or OGG, each data URL at most 24 MiB, about 18 MiB of audio); remote audio URLs are unsupported. Besides `noul`, `choice` and `score`, they answer these question types:
 
 | `type` | Extra fields | Answer fields |
 | --- | --- | --- |

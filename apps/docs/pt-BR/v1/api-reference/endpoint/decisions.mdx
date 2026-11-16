@@ -276,7 +276,7 @@ A Cloudflare valida a codificação da mídia, as dimensões das imagens e a dur
 <span id="liquid-d1-and-perplexity-decider"></span>
 ### Liquid D1.2 e D1.2 Ultra
 
-`liquid-ai/d1.2` e `liquid-ai/d1.2-ultra` usam o formato de estado antigo, com até quatro imagens e até oito clipes de áudio. O campo `audio` recebe URLs `data:` em base64 (WAV, MP3, FLAC, M4A ou OGG, com até 24 MB cada); URLs de áudio remotas não são aceitas. Além de `noul`, `choice` e `score`, eles respondem a estes tipos de pergunta:
+`liquid-ai/d1.2` e `liquid-ai/d1.2-ultra` usam o formato de estado antigo, com até quatro imagens e até oito clipes de áudio. O campo `audio` recebe URLs `data:` em base64 (WAV, MP3, FLAC, M4A ou OGG, cada URL com até 24 MiB, cerca de 18 MiB de áudio); URLs de áudio remotas não são aceitas. Além de `noul`, `choice` e `score`, eles respondem a estes tipos de pergunta:
 
 | `type` | Campos extras | Campos da resposta |
 | --- | --- | --- |

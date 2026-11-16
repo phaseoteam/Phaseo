@@ -276,7 +276,7 @@ Cloudflare はメディアのエンコード、画像の寸法、クリップの
 <span id="liquid-d1-and-perplexity-decider"></span>
 ### Liquid D1.2 と D1.2 Ultra
 
-`liquid-ai/d1.2` と `liquid-ai/d1.2-ultra` は従来の state 形式を使い、最大 4 枚の画像と最大 8 個の音声クリップを受け付けます。`audio` は base64 の `data:` URL（WAV、MP3、FLAC、M4A、OGG、各 24 MB まで）で送ります。リモートの音声 URL は使えません。`noul`、`choice`、`score` に加えて、次の質問タイプに答えます。
+`liquid-ai/d1.2` と `liquid-ai/d1.2-ultra` は従来の state 形式を使い、最大 4 枚の画像と最大 8 個の音声クリップを受け付けます。`audio` は base64 の `data:` URL（WAV、MP3、FLAC、M4A、OGG、URL ごとに 24 MiB まで、音声データでは約 18 MiB）で送ります。リモートの音声 URL は使えません。`noul`、`choice`、`score` に加えて、次の質問タイプに答えます。
 
 | `type` | 追加フィールド | 回答フィールド |
 | --- | --- | --- |
