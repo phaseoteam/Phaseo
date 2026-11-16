@@ -165,6 +165,22 @@ describe("DeepSeek web search and fetch engine", () => {
 			status: 403,
 		});
 	});
+
+	it("treats a fetch with no page content as a failed, unbilled fetch", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => json({ title: "Empty" })));
+		const continuation = await buildServerToolContinuation(toolCallResponse("phaseo_web_fetch", { url: "https://example.com/empty" }), CONFIG);
+		expect(continuation?.usage).toMatchObject({ webFetchRequests: 0 });
+		expect(continuation?.toolResults[0]?.isError).toBe(true);
+		expect(JSON.parse(String(continuation?.toolResults[0]?.content))).toMatchObject({ error: "fetch_empty" });
+	});
+
+	it("rejects a fetch response over the size limit before parsing it", async () => {
+		const huge = JSON.stringify({ title: "Big", content: "x".repeat(3 * 1024 * 1024) });
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(huge, { status: 200, headers: { "Content-Type": "application/json" } })));
+		const continuation = await buildServerToolContinuation(toolCallResponse("phaseo_web_fetch", { url: "https://example.com/big" }), CONFIG);
+		expect(continuation?.usage).toMatchObject({ webFetchRequests: 0 });
+		expect(JSON.parse(String(continuation?.toolResults[0]?.content))).toMatchObject({ error: "fetch_response_invalid" });
+	});
 });
 
 describe("buildDeepSeekSearchQuery", () => {
@@ -178,6 +194,12 @@ describe("buildDeepSeekSearchQuery", () => {
 	it("joins allowed domains with OR and drops wildcard prefixes", () => {
 		expect(buildDeepSeekSearchQuery("ai news", ["*.example.com", "news.org"], ["spam.com"]))
 			.toBe("ai news site:example.com OR site:news.org -site:spam.com");
+	});
+
+	it("keeps the language operator whole when the query is shortened", () => {
+		const query = buildDeepSeekSearchQuery("x".repeat(128), [], [], ["en"]);
+		expect(Array.from(query ?? "").length).toBeLessThanOrEqual(128);
+		expect(query?.endsWith(" lang:en")).toBe(true);
 	});
 
 	it("returns null when the domain lists alone fill the query", () => {

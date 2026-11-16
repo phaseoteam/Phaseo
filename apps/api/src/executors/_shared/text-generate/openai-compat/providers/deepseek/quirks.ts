@@ -12,6 +12,7 @@ import {
 	isAnthropicNativeWebFetchToolType,
 	isAnthropicNativeWebSearchToolType,
 	isOpenAINativeWebSearchToolType,
+	webToolNeedsOptionsDeepSeekLacks,
 } from "@core/nativeTools";
 import type { ProviderQuirks } from "../../quirks/types";
 import { applyJsonSchemaFallback } from "../../quirks/structured";
@@ -55,12 +56,15 @@ export const deepseekQuirks: ProviderQuirks = {
 					: "high";
 		}
 
-		const usesWebTools = mapNativeWebTools(request);
+		// DeepSeek cannot force its web tools: it rejects a tool_choice that names one and
+		// ignores "required" (checked live 2026-11-16). With a forced choice the tools stay
+		// as sent, so the request fails instead of answering without searching.
+		const choice = request.tool_choice;
+		const forcedChoice = choice !== undefined && choice !== null && choice !== "auto" && choice !== "none";
+		const usesWebTools = !forcedChoice && mapNativeWebTools(request);
 		if (usesWebTools) {
-			// With web tools declared DeepSeek rejects a tool_choice that names one, treats
-			// "required" as "auto", and rejects logprobs
+			// DeepSeek rejects logprobs beside its web tools
 			// (https://api-docs.deepseek.com/guides/web_tools#chat-completions-api).
-			if (request.tool_choice !== undefined && request.tool_choice !== "none") request.tool_choice = "auto";
 			delete request.logprobs;
 			delete request.top_logprobs;
 		}
@@ -219,7 +223,11 @@ function mapNativeWebTools(request: any): boolean {
 			: type === DEEPSEEK_NATIVE_READ_URL_TOOL_TYPE || isAnthropicNativeWebFetchToolType(type)
 				? DEEPSEEK_NATIVE_READ_URL_TOOL_TYPE
 				: null;
-		if (!deepseekType) {
+		// A tool with domain lists or a user location stays as sent, so DeepSeek rejects it
+		// instead of searching without the restriction. Chat and Responses requests never
+		// get here with one (routing sends them to gateway search); Anthropic tools on
+		// Messages reach the executor as sent.
+		if (!deepseekType || webToolNeedsOptionsDeepSeekLacks(tool)) {
 			tools.push(tool);
 			continue;
 		}

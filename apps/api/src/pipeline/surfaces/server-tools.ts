@@ -55,6 +55,8 @@ const DEFAULT_DEEPSEEK_TOOLS_BASE_URL = "https://api.deepseek.com";
 // (https://api-docs.deepseek.com/guides/search).
 const DEEPSEEK_SEARCH_MAX_QUERY_CHARS = 128;
 const DEEPSEEK_SEARCH_MAX_COUNT = 50;
+// Up to 50 results, each with full page content when need_content is set.
+const DEEPSEEK_SEARCH_MAX_BODY_BYTES = 8 * 1024 * 1024;
 const DEFAULT_WEB_SEARCH_ENGINE = "exa";
 const DEFAULT_WEB_FETCH_ENGINE = "direct";
 const DEFAULT_IMAGE_GENERATION_MODEL = "openai/gpt-image-2";
@@ -1884,17 +1886,24 @@ function resolveDeepSeekToolsConfig(): { apiKey: string; baseUrl: string } | nul
 }
 
 /**
- * DeepSeek Search filters by domain with query operators (`site:`, `-site:`), and
- * the whole query, operators included, must fit in 128 characters. Returns null
- * when the domain lists leave no room for the query itself.
+ * DeepSeek Search filters by language and domain with query operators (`lang:`,
+ * `site:`, `-site:`), and the whole query, operators included, must fit in 128
+ * characters. The operators are kept whole and the query is shortened to fit;
+ * returns null when the operators leave no room for the query itself.
  */
-export function buildDeepSeekSearchQuery(query: string, allowedDomains: string[], excludedDomains: string[]): string | null {
+export function buildDeepSeekSearchQuery(
+	query: string,
+	allowedDomains: string[],
+	excludedDomains: string[],
+	languageCodes: string[] = [],
+): string | null {
 	const clean = (domains: string[]) => domains
 		.map((domain) => domain.trim().replace(/^\*\./, ""))
 		.filter(Boolean);
 	const allowed = clean(allowedDomains);
 	const excluded = clean(excludedDomains);
 	const operators = [
+		...(languageCodes.length > 0 ? [`lang:${languageCodes.join(",")}`] : []),
 		...(allowed.length > 0 ? [allowed.map((domain) => `site:${domain}`).join(" OR ")] : []),
 		...excluded.map((domain) => `-site:${domain}`),
 	].join(" ");
@@ -1932,12 +1941,11 @@ async function executeDeepSeekSearchToolCall(args: {
 		.split(",")
 		.map((code) => code.trim().toLowerCase())
 		.filter((code) => /^[a-z]{2,3}(?:-[a-z0-9]{2,8})?$/.test(code));
-	const baseQuery = languageCodes.length > 0 ? `${args.query} lang:${languageCodes.join(",")}` : args.query;
-	const searchQuery = buildDeepSeekSearchQuery(baseQuery, args.allowedDomains, args.excludedDomains);
+	const searchQuery = buildDeepSeekSearchQuery(args.query, args.allowedDomains, args.excludedDomains, languageCodes);
 	if (!searchQuery) {
 		return failed({
 			error: "search_query_too_long",
-			message: `DeepSeek Search takes at most ${DEEPSEEK_SEARCH_MAX_QUERY_CHARS} characters, domain filters included. Use fewer domains.`,
+			message: `DeepSeek Search takes at most ${DEEPSEEK_SEARCH_MAX_QUERY_CHARS} characters, language and domain filters included. Use fewer domains or languages.`,
 		});
 	}
 	try {
@@ -1954,10 +1962,11 @@ async function executeDeepSeekSearchToolCall(args: {
 			}),
 		});
 		if (!response.ok) {
-			const failureText = await response.text();
+			const { text: failureText } = await readResponseTextPrefix(response, SERVER_TOOL_DIRECT_FETCH_MAX_ERROR_BYTES);
 			return failed({ error: "search_request_failed", status: response.status, message: failureText.slice(0, 1000) });
 		}
-		const json = await response.json() as Record<string, any>;
+		const json = await readDeepSeekToolJson(response, DEEPSEEK_SEARCH_MAX_BODY_BYTES);
+		if (!json) return failed({ error: "search_response_invalid", message: "DeepSeek Search returned a response that was too large or not JSON." });
 		const rawResults = Array.isArray(json.results) ? json.results : [];
 		const results = rawResults.slice(0, args.maxResults).map((result: any) => {
 			const snippet = toNonEmptyString(result?.snippet);
@@ -2019,13 +2028,16 @@ async function executeDeepSeekFetchToolCall(args: {
 			body: JSON.stringify({ url: args.url }),
 		});
 		if (!response.ok) {
-			const failureText = await response.text();
+			const { text: failureText } = await readResponseTextPrefix(response, SERVER_TOOL_DIRECT_FETCH_MAX_ERROR_BYTES);
 			// 403: refused by DeepSeek's security policy; 404: no usable content.
 			return failed({ error: "fetch_request_failed", status: response.status, message: failureText.slice(0, 1000) });
 		}
-		const json = await response.json() as Record<string, any>;
+		const json = await readDeepSeekToolJson(response, SERVER_TOOL_DIRECT_FETCH_MAX_BODY_BYTES);
+		if (!json) return failed({ error: "fetch_response_invalid", message: "DeepSeek Fetch returned a response that was too large or not JSON." });
 		const rawText = typeof json.content === "string" ? json.content : "";
 		const text = rawText.slice(0, args.maxChars).trim();
+		// A page with no text is a failed fetch: unbilled, and the model is told so.
+		if (!text) return failed({ error: "fetch_empty", message: "DeepSeek Fetch returned no page content." });
 		return {
 			toolResult: {
 				toolCallId: args.call.id,
@@ -2148,6 +2160,21 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}
 		...init,
 		signal: AbortSignal.timeout(SERVER_TOOL_FETCH_TIMEOUT_MS),
 	});
+}
+
+/**
+ * Parses a DeepSeek tool response read through the byte limit. Returns null when
+ * the body is over the limit (a cut-off body is not valid JSON) or is not a JSON object.
+ */
+async function readDeepSeekToolJson(response: Response, maxBytes: number): Promise<Record<string, any> | null> {
+	const { text, truncated } = await readResponseTextPrefix(response, maxBytes);
+	if (truncated) return null;
+	try {
+		const parsed: unknown = JSON.parse(text);
+		return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, any> : null;
+	} catch {
+		return null;
+	}
 }
 
 // Reads up to maxBytes of the body as text, then cancels the rest.

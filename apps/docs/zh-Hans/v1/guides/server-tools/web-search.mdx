@@ -86,7 +86,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 在 `/v1/chat/completions` 或 `/v1/responses` 上使用 `engine: "native"` 时，请求只会发往自己运行网页搜索的提供商。如果没有这样的提供商提供该模型，Phaseo 会改用默认引擎，并按托管搜索计费。
 
-在这些接口上自己运行网页搜索的提供商有 OpenAI、`/v1/responses` 上的 Azure OpenAI 部署、xAI，以及 `deepseek/deepseek-v4.1-flash-1017` 上的 DeepSeek。只有当网页搜索是请求中唯一的工具、且搜索没有域名列表时，DeepSeek 才会自己搜索，因为它的 API 会拒绝域名列表，并在请求含有其他工具时关闭网页搜索。发往该模型的其他请求会改用 Phaseo 的搜索，它可以与你自己的工具一起使用。开启推理后，DeepSeek 会运行更深入的搜索，分多个步骤打开并阅读页面。
+在这些接口上自己运行网页搜索的提供商有 OpenAI、`/v1/responses` 上的 Azure OpenAI 部署、xAI，以及 `deepseek/deepseek-v4.1-flash-1017` 上的 DeepSeek。只有当网页搜索是请求中唯一的工具，且没有域名列表或用户位置、没有 JSON 输出、也没有强制指定工具的 `tool_choice` 时，DeepSeek 才会自己搜索。它的 API 会拒绝域名列表、位置和 JSON 输出，在请求含有其他工具时关闭网页搜索，也无法强制执行搜索。发往该模型的其他请求会改用 Phaseo 的搜索，它可以与你自己的工具一起使用。开启推理后，DeepSeek 会运行更深入的搜索，分多个步骤打开并阅读页面。
 
 发送 OpenAI 自己的 `{ "type": "web_search" }` 工具，效果与 `engine: "native"` 相同。只在工具定义中设置 `native`：如果模型在调用中请求 `native`，调用会返回 `unsupported_search_engine`，因为提供商的工具必须在请求发送前选定。
 

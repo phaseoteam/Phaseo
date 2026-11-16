@@ -25,6 +25,7 @@ import {
 } from "@core/nativeTools";
 import { WEB_SEARCH_SERVER_TOOL_FUNCTION_NAME } from "@pipeline/surfaces/server-tools";
 import type { ProviderCandidate } from "./types";
+import { requestedJsonOutputType } from "./paramCapabilities";
 
 const HOSTED_TOOL_ENDPOINTS = new Set<Endpoint>(["chat.completions", "responses"]);
 const WEB_SEARCH_ENGINES = new Set(["auto", "exa", "firecrawl", "parallel", "perplexity", "tinyfish", "deepseek"]);
@@ -197,7 +198,8 @@ export function resolveHostedTools(args: {
 		.filter((entry): entry is { type: string; index: number } => isOpenAIHostedToolType(entry.type));
 	if (hosted.length === 0 || args.providers.length === 0) return unchanged;
 
-	// Some providers (DeepSeek) run web search only when it is the request's only tool.
+	// Some providers (DeepSeek) run web search only when it is the request's only tool,
+	// without JSON output or a forced tool_choice.
 	const webSearchCount = hosted.filter((entry) => isOpenAINativeWebSearchToolType(entry.type)).length;
 	const otherToolCount = (args.body.tools as any[]).length - webSearchCount;
 	const runs = (provider: ProviderCandidate, type: string, index?: number) => routeRunsOpenAIHostedTool({
@@ -207,6 +209,8 @@ export function resolveHostedTools(args: {
 		toolType: type,
 		...(index !== undefined ? { tool: args.body.tools[index] } : {}),
 		otherToolCount,
+		jsonOutput: requestedJsonOutputType(args.body) !== null,
+		toolChoice: args.body.tool_choice,
 	});
 	const keep = (providers: ProviderCandidate[]) => ({
 		providers,

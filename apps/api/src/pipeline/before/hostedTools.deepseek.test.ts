@@ -51,6 +51,24 @@ describe("DeepSeek native web search routing", () => {
 		expect(result.ok && result.body.tools[0]).toEqual({ type: "phaseo:web_search" });
 	});
 
+	it.each([
+		["JSON output", { response_format: { type: "json_object" } }],
+		["a JSON schema", { response_format: { type: "json_schema", json_schema: { name: "x", schema: { type: "object" } } } }],
+		["tool_choice required", { tool_choice: "required" }],
+		["a named web search tool_choice", { tool_choice: { type: "web_search" } }],
+	])("falls back to gateway search with %s, which DeepSeek's web tools cannot honour", (_label, extra) => {
+		const body = { model: "deepseek/deepseek-v4.1-flash-1017", messages: [], tools: [{ type: "web_search" }], ...extra };
+		const result = resolveHostedTools({ endpoint: "chat.completions", body, providers: FLASH_ROUTES });
+		expect(result.ok && result.webSearchMapped).toBe(true);
+		expect(result.ok && result.body.tools[0]?.type).toBe("phaseo:web_search");
+	});
+
+	it("falls back to gateway search when the search has a user location", () => {
+		const body = { model: "deepseek/deepseek-v4.1-flash-1017", messages: [], tools: [{ type: "web_search", user_location: { type: "approximate", country: "GB" } }] };
+		const result = resolveHostedTools({ endpoint: "chat.completions", body, providers: FLASH_ROUTES });
+		expect(result.ok && result.webSearchMapped).toBe(true);
+	});
+
 	it("falls back to gateway search when the search filters domains", () => {
 		const body = {
 			model: "deepseek/deepseek-v4.1-flash-1017",

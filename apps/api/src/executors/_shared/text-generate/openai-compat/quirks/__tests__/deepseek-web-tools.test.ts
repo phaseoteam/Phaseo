@@ -12,8 +12,8 @@ describe("DeepSeek native web tools", () => {
 	it("sends OpenAI hosted web search as deepseek_web_search without its options", () => {
 		const request = transform({
 			messages: [{ role: "user", content: "news?" }],
-			tools: [{ type: "web_search_preview", search_context_size: "high", user_location: { type: "approximate", country: "GB" } }],
-			tool_choice: "required",
+			tools: [{ type: "web_search_preview", search_context_size: "high" }],
+			tool_choice: "auto",
 			logprobs: true,
 			top_logprobs: 2,
 		});
@@ -31,10 +31,27 @@ describe("DeepSeek native web tools", () => {
 				{ type: "web_search" },
 				{ type: "web_fetch_20260209", name: "web_fetch" },
 			],
-			tool_choice: { type: "tool", name: "web_search" },
 		});
 		expect(request.tools).toEqual([{ type: "deepseek_web_search" }, { type: "deepseek_read_url" }]);
-		expect(request.tool_choice).toBe("auto");
+	});
+
+	it.each([
+		["allowed domains", { type: "web_search_20250305", name: "web_search", allowed_domains: ["example.com"] }],
+		["blocked domains", { type: "web_fetch_20260209", name: "web_fetch", blocked_domains: ["example.com"] }],
+		["a user location", { type: "web_search_preview", user_location: { type: "approximate", country: "GB" } }],
+	])("leaves a web tool with %s as sent, so DeepSeek rejects it instead of dropping the restriction", (_label, tool) => {
+		const request = transform({ messages: [], tools: [tool] });
+		expect(request.tools).toEqual([tool]);
+	});
+
+	it.each([
+		["required", "required"],
+		["a named tool", { type: "tool", name: "web_search" }],
+	])("leaves web tools as sent when tool_choice is %s, which DeepSeek cannot enforce", (_label, toolChoice) => {
+		const tools = [{ type: "web_search_20250305", name: "web_search" }];
+		const request = transform({ messages: [], tools, tool_choice: toolChoice });
+		expect(request.tools).toEqual(tools);
+		expect(request.tool_choice).toEqual(toolChoice);
 	});
 
 	it("keeps tool_choice none, which turns the web tools off", () => {

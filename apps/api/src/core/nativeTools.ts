@@ -203,7 +203,7 @@ export function isDeepSeekWebToolModel(model: string | null | undefined): boolea
 	return /^deepseek-(?:v4(?:\.1)?-)?flash(?:$|-)/.test(id);
 }
 
-function hasDomainFilter(source: unknown): boolean {
+function hasUnsupportedWebOption(source: unknown): boolean {
 	if (!source || typeof source !== "object") return false;
 	const value = source as Record<string, any>;
 	const lists = [
@@ -211,26 +211,43 @@ function hasDomainFilter(source: unknown): boolean {
 		value.exclude_domains, value.blocked_domains,
 		value.filters && typeof value.filters === "object" ? value.filters.allowed_domains : undefined,
 	];
-	return lists.some((list) => Array.isArray(list) && list.length > 0);
+	if (lists.some((list) => Array.isArray(list) && list.length > 0)) return true;
+	return value.user_location != null && typeof value.user_location === "object";
 }
 
 /**
- * Whether DeepSeek can run this web search natively. DeepSeek's web tools take no
- * domain filters (they return 400), and when the request declares any other tool
- * DeepSeek accepts it but silently drops its web tools: the model answers that it
- * has no web access (checked live 2026-11-16). Such requests stay on the gateway's
- * own search, which DeepSeek models call like any function.
+ * Whether a web tool carries an option DeepSeek's option-free web tools cannot
+ * honour: domain lists or a user location (both a 400 on DeepSeek).
+ */
+export function webToolNeedsOptionsDeepSeekLacks(tool: unknown): boolean {
+	if (!tool || typeof tool !== "object") return false;
+	const value = tool as Record<string, any>;
+	return hasUnsupportedWebOption(value) || hasUnsupportedWebOption(value.parameters);
+}
+
+/**
+ * Whether DeepSeek can run this web search natively, checked live 2026-11-16:
+ * - its web tools take no domain lists or user location (400);
+ * - with any other tool declared it returns 200 but silently drops its web tools,
+ *   and the model answers that it has no web access;
+ * - JSON output (`response_format` other than text) is a 400;
+ * - it ignores a forced `tool_choice` ("required" or a named tool) and may answer
+ *   without searching.
+ * Such requests stay on the gateway's own search, which DeepSeek models call like
+ * any function and which honours all of these.
  */
 export function deepSeekRunsNativeWebSearch(args: {
 	model?: string | null;
 	tool?: unknown;
 	otherToolCount?: number;
+	jsonOutput?: boolean;
+	toolChoice?: unknown;
 }): boolean {
 	if (!isDeepSeekWebToolModel(args.model)) return false;
 	if ((args.otherToolCount ?? 0) > 0) return false;
-	const tool = args.tool && typeof args.tool === "object" ? args.tool as Record<string, any> : null;
-	if (tool && (hasDomainFilter(tool) || hasDomainFilter(tool.parameters))) return false;
-	return true;
+	if (args.jsonOutput) return false;
+	if (args.toolChoice !== undefined && args.toolChoice !== null && args.toolChoice !== "auto" && args.toolChoice !== "none") return false;
+	return !webToolNeedsOptionsDeepSeekLacks(args.tool);
 }
 
 /**
@@ -251,6 +268,10 @@ export function routeRunsOpenAIHostedTool(args: {
 	tool?: unknown;
 	/** Tools in the request other than hosted web search. */
 	otherToolCount?: number;
+	/** Whether the request asks for JSON output. */
+	jsonOutput?: boolean;
+	/** The request's tool_choice. */
+	toolChoice?: unknown;
 }): boolean {
 	// Collapses xAI's ids (x-ai, xai and the routed spacex-ai) onto one id.
 	const providerId = normalizeProviderId(String(args.providerId ?? ""));
