@@ -38,7 +38,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | Parámetro | Tipo | Predeterminado | Descripción |
 | --- | --- | --- | --- |
-| `engine` | string | `direct` | `auto`, `native`, `direct`, `exa`, `parallel` o `firecrawl`. Consulta [Elegir un motor](#choose-an-engine). |
+| `engine` | string | `direct` | `auto`, `native`, `direct`, `exa`, `parallel`, `firecrawl` o `deepseek`. Consulta [Elegir un motor](#choose-an-engine). |
 | `max_chars` | integer | `12000` | Caracteres del texto de la página que se devuelven al modelo, hasta `100000`. |
 | `max_content_tokens` | integer | Ninguno | Se usa en lugar de `max_chars` cuando se omite `max_chars`. También es el límite de tamaño para `native`. |
 | `max_uses` | integer | `10` | Llamadas de obtención por solicitud, hasta `100`. |
@@ -59,6 +59,7 @@ Cada llamada incluye una `url`. El modelo también puede enviar `engine`, `max_c
 | `exa` | Extracción de contenido de Exa. |
 | `parallel` | Parallel Extract. |
 | `firecrawl` | Firecrawl Scrape. |
+| `deepseek` | DeepSeek Fetch, que devuelve la página como Markdown. |
 | `native` | La herramienta `web_fetch_20260209` de Anthropic, solo en `/v1/messages`. En otros endpoints la solicitud se rechaza; usa `direct` o un motor gestionado. |
 
 Si un motor gestionado no está habilitado, la llamada devuelve `fetch_not_configured` al modelo.
@@ -109,4 +110,4 @@ Comprueba `truncated` antes de dar por hecho que el modelo vio la página comple
 
 ## Uso y precios
 
-Cada consulta suma 1 a `usage.server_tool_use.web_fetch_requests`. Phaseo cobra cada consulta gestionada a través de Exa, Parallel o Firecrawl a $0.001, salvo que la tarjeta de precios del modelo fije su propio precio para `server_tool_web_fetch_requests`; las consultas directas son gratuitas. Las consultas con motores de pago requieren saldo aunque el modelo sea gratuito. La consulta nativa se cobra con `native_web_fetch_requests` donde la tarjeta de precios del modelo lo define.
+Cada consulta suma 1 a `usage.server_tool_use.web_fetch_requests`. Phaseo cobra cada consulta gestionada a través de Exa, Parallel, Firecrawl o DeepSeek a $0.001, salvo que la tarjeta de precios del modelo fije su propio precio para `server_tool_web_fetch_requests`; las consultas directas son gratuitas. Las consultas con motores de pago requieren saldo aunque el modelo sea gratuito. La consulta nativa se cobra con `native_web_fetch_requests` donde la tarjeta de precios del modelo lo define.

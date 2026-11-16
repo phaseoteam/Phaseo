@@ -26,8 +26,8 @@ export function isServerToolPluginId(id: string): boolean {
 }
 
 // The engines and limits `phaseo:web_search` / `phaseo:web_fetch` accept (core/schemas.ts).
-const WEB_SEARCH_ENGINES = ["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish"];
-const WEB_FETCH_ENGINES = ["auto", "native", "direct", "exa", "firecrawl", "parallel"];
+const WEB_SEARCH_ENGINES = ["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish", "deepseek"];
+const WEB_FETCH_ENGINES = ["auto", "native", "direct", "exa", "firecrawl", "parallel", "deepseek"];
 const SEARCH_CONTEXT_SIZES = ["low", "medium", "high"];
 const MAX_WEB_SEARCH_RESULTS = 25;
 const MAX_WEB_FETCH_CHARS = 100000;

@@ -86,7 +86,8 @@ export interface AnthropicMessagesRequest {
           | "firecrawl"
           | "parallel"
           | "perplexity"
-          | "tinyfish";
+          | "tinyfish"
+          | "deepseek";
         exclude_domains?: string[];
         id: "web";
         include_domains?: string[];
@@ -99,7 +100,13 @@ export interface AnthropicMessagesRequest {
         blocked_domains?: string[];
         enabled?: boolean;
         engine?:
-          "auto" | "native" | "direct" | "exa" | "firecrawl" | "parallel";
+          | "auto"
+          | "native"
+          | "direct"
+          | "exa"
+          | "firecrawl"
+          | "parallel"
+          | "deepseek";
         id: "web-fetch";
         max_content_tokens?: number;
         max_uses?: number;
@@ -247,7 +254,8 @@ export interface AnthropicMessagesRequest {
           | "firecrawl"
           | "parallel"
           | "perplexity"
-          | "tinyfish";
+          | "tinyfish"
+          | "deepseek";
         include_highlights?: boolean;
         include_text?: boolean;
         language?: string;
@@ -261,7 +269,8 @@ export interface AnthropicMessagesRequest {
             | "firecrawl"
             | "parallel"
             | "perplexity"
-            | "tinyfish";
+            | "tinyfish"
+            | "deepseek";
           include_highlights?: boolean;
           include_text?: boolean;
           language?: string;

@@ -38,7 +38,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | पैरामीटर | प्रकार | डिफ़ॉल्ट | विवरण |
 | --- | --- | --- | --- |
-| `engine` | string | `direct` | `auto`, `native`, `direct`, `exa`, `parallel` या `firecrawl`। देखें [इंजन चुनें](#choose-an-engine)। |
+| `engine` | string | `direct` | `auto`, `native`, `direct`, `exa`, `parallel`, `firecrawl` या `deepseek`। देखें [इंजन चुनें](#choose-an-engine)। |
 | `max_chars` | integer | `12000` | मॉडल को लौटाए जाने वाले पेज टेक्स्ट के अक्षर, अधिकतम `100000`। |
 | `max_content_tokens` | integer | कोई नहीं | `max_chars` न देने पर उसकी जगह उपयोग होता है। `native` के लिए भी आकार सीमा यही है। |
 | `max_uses` | integer | `10` | प्रति अनुरोध फ़ेच कॉल, अधिकतम `100`। |
@@ -59,6 +59,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `exa` | Exa कंटेंट एक्सट्रैक्शन। |
 | `parallel` | Parallel Extract। |
 | `firecrawl` | Firecrawl Scrape। |
+| `deepseek` | DeepSeek Fetch, जो पेज को Markdown के रूप में लौटाता है। |
 | `native` | Anthropic का `web_fetch_20260209` टूल, सिर्फ़ `/v1/messages` पर। दूसरे एंडपॉइंट पर अनुरोध अस्वीकार हो जाता है; `direct` या कोई प्रबंधित इंजन उपयोग करें। |
 
 अगर कोई प्रबंधित इंजन सक्षम नहीं है, तो कॉल मॉडल को `fetch_not_configured` लौटाती है।
@@ -109,4 +110,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## उपयोग और मूल्य
 
-हर fetch `usage.server_tool_use.web_fetch_requests` में 1 जोड़ता है। Phaseo, Exa, Parallel या Firecrawl से हर managed fetch के लिए $0.001 लेता है, जब तक मॉडल का price card `server_tool_web_fetch_requests` के लिए अपनी कीमत तय न करे; direct fetches मुफ़्त हैं। सशुल्क engines से fetches के लिए क्रेडिट चाहिए, भले ही मॉडल मुफ़्त हो। Native fetch का बिल `native_web_fetch_requests` से बनता है, जहाँ मॉडल का price card इसे तय करता है।
+हर fetch `usage.server_tool_use.web_fetch_requests` में 1 जोड़ता है। Phaseo, Exa, Parallel, Firecrawl या DeepSeek से हर managed fetch के लिए $0.001 लेता है, जब तक मॉडल का price card `server_tool_web_fetch_requests` के लिए अपनी कीमत तय न करे; direct fetches मुफ़्त हैं। सशुल्क engines से fetches के लिए क्रेडिट चाहिए, भले ही मॉडल मुफ़्त हो। Native fetch का बिल `native_web_fetch_requests` से बनता है, जहाँ मॉडल का price card इसे तय करता है।

@@ -38,7 +38,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `engine` | string | `direct` | `auto`、`native`、`direct`、`exa`、`parallel` 或 `firecrawl`。参见[选择引擎](#choose-an-engine)。 |
+| `engine` | string | `direct` | `auto`、`native`、`direct`、`exa`、`parallel`、`firecrawl` 或 `deepseek`。参见[选择引擎](#choose-an-engine)。 |
 | `max_chars` | integer | `12000` | 返回给模型的页面文本字符数，最多 `100000`。 |
 | `max_content_tokens` | integer | 无 | 省略 `max_chars` 时用它代替。也是 `native` 的长度上限。 |
 | `max_uses` | integer | `10` | 每个请求的抓取调用次数，最多 `100`。 |
@@ -59,6 +59,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `exa` | Exa 内容提取。 |
 | `parallel` | Parallel Extract。 |
 | `firecrawl` | Firecrawl Scrape。 |
+| `deepseek` | DeepSeek Fetch，以 Markdown 形式返回页面。 |
 | `native` | Anthropic 的 `web_fetch_20260209` 工具，仅限 `/v1/messages`。在其他接口上请求会被拒绝；请使用 `direct` 或托管引擎。 |
 
 如果托管引擎未启用，调用会向模型返回 `fetch_not_configured`。
@@ -109,4 +110,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## 用量与价格
 
-每次抓取会使 `usage.server_tool_use.web_fetch_requests` 加 1。除非模型价格卡为 `server_tool_web_fetch_requests` 设置了自己的价格，Phaseo 对每次通过 Exa、Parallel 或 Firecrawl 的托管抓取收取 $0.001；直接抓取免费。即使模型免费，通过付费引擎抓取也需要账户有余额。如果模型价格卡定义了 `native_web_fetch_requests`，原生抓取按该计量项计费。
+每次抓取会使 `usage.server_tool_use.web_fetch_requests` 加 1。除非模型价格卡为 `server_tool_web_fetch_requests` 设置了自己的价格，Phaseo 对每次通过 Exa、Parallel、Firecrawl 或 DeepSeek 的托管抓取收取 $0.001；直接抓取免费。即使模型免费，通过付费引擎抓取也需要账户有余额。如果模型价格卡定义了 `native_web_fetch_requests`，原生抓取按该计量项计费。

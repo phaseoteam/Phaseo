@@ -11,7 +11,8 @@ export interface WebSearchPlugin {
     | "firecrawl"
     | "parallel"
     | "perplexity"
-    | "tinyfish";
+    | "tinyfish"
+    | "deepseek";
   exclude_domains?: string[];
   id: "web";
   include_domains?: string[];

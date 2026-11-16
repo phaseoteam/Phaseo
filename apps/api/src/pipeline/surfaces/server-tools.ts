@@ -50,12 +50,19 @@ const DEFAULT_PARALLEL_BASE_URL = "https://api.parallel.ai";
 const DEFAULT_FIRECRAWL_BASE_URL = "https://api.firecrawl.dev";
 const DEFAULT_PERPLEXITY_BASE_URL = "https://api.perplexity.ai";
 const DEFAULT_TINYFISH_SEARCH_BASE_URL = "https://api.search.tinyfish.ai";
+const DEFAULT_DEEPSEEK_TOOLS_BASE_URL = "https://api.deepseek.com";
+// DeepSeek Search takes a query of 1-128 characters and returns 1-50 results
+// (https://api-docs.deepseek.com/guides/search).
+const DEEPSEEK_SEARCH_MAX_QUERY_CHARS = 128;
+const DEEPSEEK_SEARCH_MAX_COUNT = 50;
+// Up to 50 results, each with full page content when need_content is set.
+const DEEPSEEK_SEARCH_MAX_BODY_BYTES = 8 * 1024 * 1024;
 const DEFAULT_WEB_SEARCH_ENGINE = "exa";
 const DEFAULT_WEB_FETCH_ENGINE = "direct";
 const DEFAULT_IMAGE_GENERATION_MODEL = "openai/gpt-image-2";
 
-const WEB_SEARCH_ENGINE_VALUES = ["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish"] as const;
-const WEB_FETCH_ENGINE_VALUES = ["auto", "native", "direct", "exa", "firecrawl", "parallel"] as const;
+const WEB_SEARCH_ENGINE_VALUES = ["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish", "deepseek"] as const;
+const WEB_FETCH_ENGINE_VALUES = ["auto", "native", "direct", "exa", "firecrawl", "parallel", "deepseek"] as const;
 
 const DATETIME_TOOL_DESCRIPTION =
 	"Get the current date and time. Optionally provide one or more IANA timezones (for example, Europe/London).";
@@ -423,6 +430,8 @@ export type ServerToolConfig = {
 	webSearchIncludeHighlights: boolean;
 	webSearchAllowedDomains?: string[];
 	webSearchExcludedDomains?: string[];
+	/** The searcher's location set on the tool (flat: country, city, region, timezone, language). */
+	webSearchUserLocation?: Record<string, unknown>;
 	webFetchEnabled: boolean;
 	webFetchEngine?: WebFetchEngine;
 	webFetchMaxChars: number;
@@ -1282,6 +1291,7 @@ export function prepareServerToolsForTextRequest(
 	let webSearchIncludeHighlights = true;
 	let webSearchAllowedDomains: string[] = [];
 	let webSearchExcludedDomains: string[] = [];
+	let webSearchUserLocation: Record<string, unknown> | undefined;
 	let nativeWebSearchRequested = false;
 	let nativeWebFetchRequested = false;
 	let advisorEnabled = false;
@@ -1352,6 +1362,10 @@ export function prepareServerToolsForTextRequest(
 			webSearchIncludeHighlights = defaults.includeHighlights;
 			webSearchAllowedDomains = defaults.allowedDomains;
 			webSearchExcludedDomains = defaults.excludedDomains;
+			const userLocation = tool.parameters?.user_location ?? tool.user_location;
+			webSearchUserLocation = userLocation && typeof userLocation === "object" && !Array.isArray(userLocation)
+				? flattenUserLocation(userLocation)
+				: undefined;
 			continue;
 		}
 
@@ -1646,6 +1660,7 @@ export function prepareServerToolsForTextRequest(
 			webSearchIncludeHighlights,
 			webSearchAllowedDomains,
 			webSearchExcludedDomains,
+			...(webSearchUserLocation ? { webSearchUserLocation } : {}),
 			webFetchEnabled,
 			webFetchEngine,
 			webFetchMaxChars,
@@ -1872,6 +1887,201 @@ function resolveTinyfishSearchConfig(): { apiKey: string; baseUrl: string } | nu
 	}
 }
 
+/**
+ * DeepSeek's Search and Fetch APIs run on the same key as its models
+ * (https://api-docs.deepseek.com/guides/search). DEEPSEEK_BASE_URL may carry the
+ * `/v1` prefix the model endpoints use; the tool paths add their own.
+ */
+function resolveDeepSeekToolsConfig(): { apiKey: string; baseUrl: string } | null {
+	try {
+		const bindings = getBindings();
+		const apiKey = String(bindings.DEEPSEEK_API_KEY ?? "").trim();
+		if (!apiKey) return null;
+		const baseUrl = String(bindings.DEEPSEEK_BASE_URL ?? DEFAULT_DEEPSEEK_TOOLS_BASE_URL).trim() || DEFAULT_DEEPSEEK_TOOLS_BASE_URL;
+		return { apiKey, baseUrl: baseUrl.replace(/\/+$/, "").replace(/\/v1$/, "") };
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * DeepSeek Search filters by language and domain with query operators (`lang:`,
+ * `site:`, `-site:`), and the whole query, operators included, must fit in 128
+ * characters. The operators are kept whole and the query is shortened to fit;
+ * returns null when the operators leave no room for the query itself.
+ * Allowed domains are joined with a bare `OR`: live on 2026-11-16,
+ * `q site:a OR site:b` returned only those two domains, while the grouped
+ * `q (site:a OR site:b)` returned no results.
+ */
+export function buildDeepSeekSearchQuery(
+	query: string,
+	allowedDomains: string[],
+	excludedDomains: string[],
+	languageCodes: string[] = [],
+): string | null {
+	const clean = (domains: string[]) => domains
+		.map((domain) => domain.trim().replace(/^\*\./, ""))
+		.filter(Boolean);
+	const allowed = clean(allowedDomains);
+	const excluded = clean(excludedDomains);
+	const operators = [
+		...(languageCodes.length > 0 ? [`lang:${languageCodes.join(",")}`] : []),
+		...(allowed.length > 0 ? [allowed.map((domain) => `site:${domain}`).join(" OR ")] : []),
+		...excluded.map((domain) => `-site:${domain}`),
+	].join(" ");
+	const trimmedQuery = query.trim().replace(/\s+/g, " ");
+	if (!operators) return Array.from(trimmedQuery).slice(0, DEEPSEEK_SEARCH_MAX_QUERY_CHARS).join("");
+	const room = DEEPSEEK_SEARCH_MAX_QUERY_CHARS - Array.from(operators).length - 1;
+	if (room <= 0) return null;
+	return `${Array.from(trimmedQuery).slice(0, room).join("").trim()} ${operators}`;
+}
+
+async function executeDeepSeekSearchToolCall(args: {
+	call: { id: string; arguments: string };
+	query: string;
+	maxResults: number;
+	includeText: boolean;
+	includeHighlights: boolean;
+	maxCharacters: number | undefined;
+	allowedDomains: string[];
+	excludedDomains: string[];
+	language: string | null;
+	searchConfig: { apiKey: string; baseUrl: string };
+}): Promise<{
+	toolResult: IRToolResult;
+	webSearchResults: number;
+	webSearchExtraResults: number;
+	billableWebSearchRequests: number;
+}> {
+	const failed = (content: Record<string, unknown>) => ({
+		toolResult: { toolCallId: args.call.id, isError: true, content: JSON.stringify({ engine: "deepseek", ...content }) },
+		webSearchResults: 0,
+		webSearchExtraResults: 0,
+		billableWebSearchRequests: 0,
+	});
+	const languageCodes = (args.language ?? "")
+		.split(",")
+		.map((code) => code.trim().toLowerCase())
+		.filter((code) => /^[a-z]{2,3}(?:-[a-z0-9]{2,8})?$/.test(code));
+	const searchQuery = buildDeepSeekSearchQuery(args.query, args.allowedDomains, args.excludedDomains, languageCodes);
+	if (!searchQuery) {
+		return failed({
+			error: "search_query_too_long",
+			message: `DeepSeek Search takes at most ${DEEPSEEK_SEARCH_MAX_QUERY_CHARS} characters, language and domain filters included. Use fewer domains or languages.`,
+		});
+	}
+	try {
+		const response = await fetchWithTimeout(`${args.searchConfig.baseUrl}/v1/tools/search`, {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${args.searchConfig.apiKey}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				query: searchQuery,
+				count: Math.min(DEEPSEEK_SEARCH_MAX_COUNT, Math.max(1, args.maxResults)),
+				need_content: args.includeText,
+			}),
+		});
+		if (!response.ok) {
+			const { text: failureText } = await readResponseTextPrefix(response, SERVER_TOOL_DIRECT_FETCH_MAX_ERROR_BYTES);
+			return failed({ error: "search_request_failed", status: response.status, message: failureText.slice(0, 1000) });
+		}
+		const json = await readDeepSeekToolJson(response, DEEPSEEK_SEARCH_MAX_BODY_BYTES);
+		if (!json) return failed({ error: "search_response_invalid", message: "DeepSeek Search returned a response that was too large or not JSON." });
+		const rawResults = Array.isArray(json.results) ? json.results : [];
+		const results = rawResults.slice(0, args.maxResults).map((result: any) => {
+			const snippet = toNonEmptyString(result?.snippet);
+			const summary = toNonEmptyString(result?.summary);
+			const content = args.includeText ? toNonEmptyString(result?.content) : null;
+			return {
+				title: toNonEmptyString(result?.title) ?? null,
+				url: toNonEmptyString(result?.url) ?? null,
+				site_name: toNonEmptyString(result?.site_name) ?? null,
+				published_date: toNonEmptyString(result?.date) ?? null,
+				snippet: snippet ?? null,
+				// DeepSeek writes `summary` (600-800 characters) for a model to read.
+				highlights: args.includeHighlights ? [summary ?? snippet].filter((entry): entry is string => Boolean(entry)) : [],
+				text: content && args.maxCharacters ? content.slice(0, args.maxCharacters) : content,
+				relevance: typeof result?.rerank_score === "number" ? result.rerank_score : null,
+			};
+		});
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				content: JSON.stringify({
+					provider: "deepseek",
+					engine: "deepseek",
+					request_id: null,
+					query: args.query,
+					search_query: searchQuery,
+					allowed_domains: args.allowedDomains,
+					excluded_domains: args.excludedDomains,
+					results,
+				}),
+			},
+			webSearchResults: results.length,
+			webSearchExtraResults: Math.max(0, results.length - 10),
+			// DeepSeek bills only searches that return results.
+			billableWebSearchRequests: rawResults.length > 0 ? 1 : 0,
+		};
+	} catch (error) {
+		return failed({ error: "search_request_error", message: error instanceof Error ? error.message : String(error) });
+	}
+}
+
+async function executeDeepSeekFetchToolCall(args: {
+	call: { id: string; arguments: string };
+	url: string;
+	maxChars: number;
+	searchConfig: { apiKey: string; baseUrl: string };
+}): Promise<{ toolResult: IRToolResult; webFetchRequests: number }> {
+	const failed = (content: Record<string, unknown>) => ({
+		toolResult: { toolCallId: args.call.id, isError: true, content: JSON.stringify({ engine: "deepseek", ...content }) },
+		webFetchRequests: 0,
+	});
+	try {
+		const response = await fetchWithTimeout(`${args.searchConfig.baseUrl}/v1/tools/fetch`, {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${args.searchConfig.apiKey}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({ url: args.url }),
+		});
+		if (!response.ok) {
+			const { text: failureText } = await readResponseTextPrefix(response, SERVER_TOOL_DIRECT_FETCH_MAX_ERROR_BYTES);
+			// 403: refused by DeepSeek's security policy; 404: no usable content.
+			return failed({ error: "fetch_request_failed", status: response.status, message: failureText.slice(0, 1000) });
+		}
+		const json = await readDeepSeekToolJson(response, SERVER_TOOL_DIRECT_FETCH_MAX_BODY_BYTES);
+		if (!json) return failed({ error: "fetch_response_invalid", message: "DeepSeek Fetch returned a response that was too large or not JSON." });
+		const rawText = typeof json.content === "string" ? json.content : "";
+		const text = rawText.slice(0, args.maxChars).trim();
+		// A page with no text is a failed fetch: unbilled, and the model is told so.
+		if (!text) return failed({ error: "fetch_empty", message: "DeepSeek Fetch returned no page content." });
+		return {
+			toolResult: {
+				toolCallId: args.call.id,
+				content: JSON.stringify({
+					provider: "deepseek",
+					engine: "deepseek",
+					url: args.url,
+					final_url: args.url,
+					title: toNonEmptyString(json.title) ?? null,
+					content_type: "text/markdown",
+					text,
+					truncated: rawText.length > text.length,
+					returned_chars: text.length,
+				}),
+			},
+			webFetchRequests: 1,
+		};
+	} catch (error) {
+		return failed({ error: "fetch_request_error", message: error instanceof Error ? error.message : String(error) });
+	}
+}
+
 function readTinyfishPage(value: unknown): number {
 	if (typeof value !== "number" || !Number.isFinite(value)) return 0;
 	return Math.max(0, Math.min(10, Math.floor(value)));
@@ -1972,6 +2182,21 @@ async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}
 		...init,
 		signal: AbortSignal.timeout(SERVER_TOOL_FETCH_TIMEOUT_MS),
 	});
+}
+
+/**
+ * Parses a DeepSeek tool response read through the byte limit. Returns null when
+ * the body is over the limit (a cut-off body is not valid JSON) or is not a JSON object.
+ */
+async function readDeepSeekToolJson(response: Response, maxBytes: number): Promise<Record<string, any> | null> {
+	const { text, truncated } = await readResponseTextPrefix(response, maxBytes);
+	if (truncated) return null;
+	try {
+		const parsed: unknown = JSON.parse(text);
+		return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, any> : null;
+	} catch {
+		return null;
+	}
 }
 
 // Reads up to maxBytes of the body as text, then cancels the rest.
@@ -2713,8 +2938,26 @@ async function executeWebFetchToolCall(
 			webFetchRequests: 0,
 		};
 	}
-	if (!paidToolsAllowed && (engine === "exa" || engine === "parallel" || engine === "firecrawl")) {
+	if (!paidToolsAllowed && (engine === "exa" || engine === "parallel" || engine === "firecrawl" || engine === "deepseek")) {
 		return { toolResult: insufficientCreditsToolResult(call.id, "web fetch", engine), webFetchRequests: 0 };
+	}
+	if (engine === "deepseek") {
+		const searchConfig = resolveDeepSeekToolsConfig();
+		if (!searchConfig) {
+			return {
+				toolResult: {
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "fetch_not_configured",
+						engine: "deepseek",
+						message: "DeepSeek web fetch is not configured",
+					}),
+				},
+				webFetchRequests: 0,
+			};
+		}
+		return executeDeepSeekFetchToolCall({ call, url, maxChars, searchConfig });
 	}
 	if (engine === "exa") {
 		const searchConfig = resolveExaSearchConfig();
@@ -2929,6 +3172,10 @@ async function executeWebSearchToolCall(
 	billableWebSearchRequests?: number;
 }> {
 	const args = parseJsonObject(call.arguments);
+	// The location set on the tool applies unless the model's call gives its own.
+	if (config.webSearchUserLocation && !(args.user_location && typeof args.user_location === "object")) {
+		args.user_location = config.webSearchUserLocation;
+	}
 	const query = parseWebSearchQuery(args);
 	if (!query) {
 		return {
@@ -3133,6 +3380,42 @@ async function executeWebSearchToolCall(
 				billableWebSearchRequests: 0,
 			};
 		}
+	}
+	if (engine === "deepseek") {
+		const searchConfig = resolveDeepSeekToolsConfig();
+		if (!searchConfig) {
+			return {
+				toolResult: {
+					toolCallId: call.id,
+					isError: true,
+					content: JSON.stringify({
+						error: "search_not_configured",
+						engine,
+						message: "DeepSeek web search is not configured",
+					}),
+				},
+				webFetchRequests: 0,
+				webSearchResults: 0,
+				webSearchExtraResults: 0,
+				billableWebSearchRequests: 0,
+			};
+		}
+		const userLocation = args.user_location && typeof args.user_location === "object"
+			? args.user_location as Record<string, unknown>
+			: {};
+		const executed = await executeDeepSeekSearchToolCall({
+			call,
+			query,
+			maxResults,
+			includeText,
+			includeHighlights,
+			maxCharacters,
+			allowedDomains,
+			excludedDomains,
+			language: toNonEmptyString(args.language ?? userLocation.language),
+			searchConfig,
+		});
+		return { ...executed, webFetchRequests: 0 };
 	}
 	if (engine === "perplexity") {
 		const searchConfig = resolvePerplexitySearchConfig();
