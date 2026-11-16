@@ -146,4 +146,13 @@ describe("summarizeMonitorRowsForModel", () => {
 		expect(summary.throughput_week).toBe(55);
 		expect(summary.latency_week).toBe(900);
 	});
+	it("keeps a provider active when a callable route sits next to a coming-soon one", () => {
+		const rows = [
+			{ endpoint: "text.generate", gatewayStatus: "deranked", provider: { id: "provider-a", name: "Provider A" } },
+			{ endpoint: "decisions.make", gatewayStatus: "coming_soon", provider: { id: "provider-a", name: "Provider A" } },
+		] as MonitorModelData[];
+		const summary = summarizeMonitorRowsForModel(rows);
+		expect(summary.gateway_provider_count).toBe(1);
+		expect(summary.gateway_active_provider_count).toBe(1);
+	});
 });

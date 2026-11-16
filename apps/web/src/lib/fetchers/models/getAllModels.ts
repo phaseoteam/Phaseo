@@ -170,13 +170,18 @@ export function summarizeMonitorRowsForModel(
         const status = normalizeGatewayStatus(row.gatewayStatus);
         const key = id || name.toLowerCase();
         const existing = providerById.get(key);
+        // The displayed status follows priority, but any callable route keeps
+        // the provider active (a deranked route next to a coming-soon one).
+        const isActive = Boolean(existing?.is_active) || ACTIVE_GATEWAY_STATUSES.has(status);
         if (!existing || statusPriority(status) < statusPriority(existing.status)) {
             providerById.set(key, {
                 id,
                 name,
                 status,
-                is_active: ACTIVE_GATEWAY_STATUSES.has(status),
+                is_active: isActive,
             });
+        } else if (isActive && !existing.is_active) {
+            existing.is_active = true;
         }
     }
 
