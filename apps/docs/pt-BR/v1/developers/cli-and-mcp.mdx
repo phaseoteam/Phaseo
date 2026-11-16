@@ -122,6 +122,19 @@ Adicione o servidor a `opencode.json` e execute `opencode mcp auth phaseo` para 
 
 Para outro cliente MCP, adicione a mesma URL como um servidor remoto Streamable HTTP. O cliente precisa suportar a descoberta OAuth, o authorization code com PKCE S256 e o parâmetro `resource` do MCP.
 
+### Use o login da CLI do Phaseo
+
+Se você já usa a CLI do Phaseo, um agente local pode acessar o MCP por meio dela sem um segundo login:
+
+```bash
+phaseo login
+claude mcp add --scope user phaseo -- phaseo mcp
+# or, for Codex
+codex mcp add phaseo -- phaseo mcp
+```
+
+`phaseo mcp` executa o MCP via stdio com o login da sua CLI. Ele troca esse login por um token de 15 minutos que só funciona no MCP, nunca tem mais acesso do que o seu login e nunca permite chamadas pagas a modelos. Ele é somente leitura, a menos que você adicione `--manage`. `phaseo setup codex` o adiciona ao perfil do Phaseo no Codex para você. Quando um agente conectado assim lê logs, atividade ou análises, o resultado também sugere o comando da CLI correspondente para os dados completos.
+
 ### O que o MCP pode ler
 
 As ferramentas somente leitura cobrem modelos, provedores, rankings de benchmarks, preços e estimativas de custo, além de créditos, atividade, análises, registros de solicitações e metadados de geração. Elas nunca retornam prompts, respostas nem valores secretos.
@@ -141,19 +154,21 @@ Ao entrar, a tela de consentimento lista cada permissão que a conexão pede, co
 
 Se você já se conectou com a URL somente leitura, mude o cliente para a URL de gerenciamento e entre de novo. Para voltar ao acesso somente leitura, conecte-se de novo com a URL simples ou revogue o aplicativo em **Configurações → Apps conectados**.
 
-| Área | Ferramentas | Permissões |
-| --- | --- | --- |
-| Chaves de API | `api_keys_list`, `api_key_get`, `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete` | `keys:read`, `keys:write`, `keys:delete` |
-| Orçamentos | `budgets_list`, `budget_create`, `budget_update`, `budget_delete` | `budgets:read`, `budgets:write`, `budgets:delete` |
-| Regras de gastos | `spend_rules_list`, `spend_rule_create`, `spend_rule_update`, `spend_rule_delete` | `spend_rules:read`, `spend_rules:write`, `spend_rules:delete` |
-| Chaves de provedor (BYOK) | `provider_keys_list`, `provider_key_create`, `provider_key_update`, `provider_key_delete` | `provider_credentials:read`, `provider_credentials:write`, `provider_credentials:delete` |
-| Guardrails | `guardrails_list`, `guardrail_get`, `guardrail_create`, `guardrail_update`, `guardrail_delete`, `guardrail_keys_set` | `guardrails:read`, `guardrails:write`, `guardrails:delete` |
-| Predefinições | `presets_list`, `preset_get`, `preset_create`, `preset_update`, `preset_version_publish` | `presets:read`, `presets:write` |
-| Configurações | `settings_get`, `settings_update` (modo de roteamento, privacidade e ZDR, registro em log, restrições de provedor) | `settings:read`, `settings:write` |
-| Webhooks | `webhooks_list`, `webhook_create`, `webhook_delete` | `settings:read`, `settings:write` |
-| Destinos de observabilidade | `observability_destinations_list`, `observability_destination_create`, `observability_destination_delete` | `settings:read`, `settings:write` |
+Uma conexão de gerenciamento lê tudo o que está abaixo, mas só altera chaves de API e configurações do espaço de trabalho. Orçamentos, regras de gastos, chaves de provedor, guardrails, predefinições, webhooks e destinos de observabilidade controlam gastos ou para onde vai o conteúdo das solicitações, então você os altera no painel ou com uma chave de gerenciamento.
 
-As ferramentas que alteram ou excluem algo são marcadas assim, então os clientes MCP que suportam isso pedem a sua confirmação antes de cada chamada. Uma nova chave de API ou um novo segredo de assinatura de webhook aparece uma única vez no resultado da ferramenta e não pode ser mostrado de novo. As chaves de provedor armazenadas e as credenciais de destinos nunca são retornadas.
+| Área | Ler | Alterar |
+| --- | --- | --- |
+| Chaves de API | `api_keys_list`, `api_key_get` | Com `phaseo mcp --manage`: `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete`. Outros clientes podem renomear (`api_key_update`) e excluir (`api_key_delete`) |
+| Configurações | `settings_get` | `settings_update`, para alterações que mantêm ou reforçam a privacidade, o registro de logs e as restrições de provedores |
+| Orçamentos | `budgets_list` | No painel |
+| Regras de gastos | `spend_rules_list` | No painel |
+| Chaves de provedor (BYOK) | `provider_keys_list` | No painel |
+| Guardrails | `guardrails_list`, `guardrail_get` | No painel |
+| Predefinições | `presets_list`, `preset_get` | No painel |
+| Webhooks | `webhooks_list` | No painel |
+| Destinos de observabilidade | `observability_destinations_list` | No painel |
+
+Ferramentas que alteram ou excluem algo são marcadas como tal, para que clientes MCP compatíveis peçam sua confirmação antes de cada chamada. Uma nova chave de API aparece uma vez no resultado da ferramenta e não pode ser mostrada de novo. Chaves de provedor armazenadas e credenciais de destinos nunca são retornadas.
 
 O MCP não tem ferramentas de cobrança, pagamento, espaço de trabalho, membros, chaves de gerenciamento nem aplicativos OAuth. Use o painel, a CLI ou a Management API para isso.
 
