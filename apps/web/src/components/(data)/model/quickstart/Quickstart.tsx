@@ -1845,14 +1845,6 @@ console.log(response);`
 				? t("tierRequestMode", { tier: serviceTierLabel })
 				: t("standardRequestMode");
 	const requiresByok = !isModelMetadataQuickstart && byokOnlyProviders.length > 0;
-	const selectLanguageFamily = (familyId: string) => {
-		const family = availableLanguageFamilies.find(
-			(candidate) => candidate.id === familyId,
-		);
-		if (family) {
-			setSelectedLanguage(family.options[0].value);
-		}
-	};
 	const requestStep = requiresByok ? 3 : 2;
 
 	return (
@@ -1872,9 +1864,6 @@ console.log(response);`
 				{isModelMetadataQuickstart ? null : (
 					<>
 						<AgentPromptPanel
-							families={availableLanguageFamilies}
-							selectedFamilyId={selectedLanguageFamily?.id ?? "typescript"}
-							onSelectFamily={selectLanguageFamily}
 							modelId={modelIdentifierInCode}
 							endpointPath={endpointPath}
 							analyticsModelId={analyticsModelId}
@@ -2057,7 +2046,14 @@ console.log(response);`
 								model_id: analyticsModelId,
 							});
 						}}
-						onSelectLanguageFamily={selectLanguageFamily}
+						onSelectLanguageFamily={(familyId) => {
+							const family = availableLanguageFamilies.find(
+								(candidate) => candidate.id === familyId,
+							);
+							if (family) {
+								setSelectedLanguage(family.options[0].value);
+							}
+						}}
 						onSelectLanguage={setSelectedLanguage}
 						onSelectServiceTier={setSelectedServiceTier}
 						onToggleStreaming={setStreamingEnabled}

@@ -63,9 +63,8 @@ export type ProductAnalyticsEventMap = {
 		surface: "model_page";
 	};
 	quickstart_agent_prompt_copied: {
-		language: string;
+		endpoint: string;
 		model_id: string;
-		prompt_kind: "setup" | "task";
 	};
 	quickstart_api_key_clicked: { model_id: string };
 	quickstart_code_copied: {
