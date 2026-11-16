@@ -467,7 +467,6 @@ export type GatewayBindings = {
     WORKSPACE_INVOICING_ENABLED?: string;
     ENTERPRISE_INVOICING_ENABLED?: string;
     STRIPE_SECRET_KEY?: string;
-    TEST_STRIPE_SECRET_KEY?: string;
     NODE_ENV?: string;
     BYOK_KMS_KEY_V1_B64?: string;
     BYOK_ACTIVE_KEY_VERSION?: string;

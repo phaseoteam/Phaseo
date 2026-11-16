@@ -152,12 +152,8 @@ async function createStripeCustomer(args: {
 	name?: string | null;
 }) {
 	const bindings = getBindings();
-	const secretKey =
-		typeof bindings.STRIPE_SECRET_KEY === "string" && bindings.STRIPE_SECRET_KEY.trim()
-			? bindings.STRIPE_SECRET_KEY.trim()
-			: typeof bindings.TEST_STRIPE_SECRET_KEY === "string" && bindings.TEST_STRIPE_SECRET_KEY.trim()
-				? bindings.TEST_STRIPE_SECRET_KEY.trim()
-				: "";
+	// Never fall back to a test key.
+	const secretKey = typeof bindings.STRIPE_SECRET_KEY === "string" ? bindings.STRIPE_SECRET_KEY.trim() : "";
 	if (!secretKey) return null;
 
 	const form = new URLSearchParams();

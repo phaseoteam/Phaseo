@@ -122,7 +122,7 @@ describe("credit top-ups API", () => {
 			email_outbox: [],
 		};
 		state.emails = { [OWNER]: "owner@acme.test", [ADMIN]: "admin@acme.test", [MEMBER]: "agent-owner@acme.test" };
-		state.bindings = { TEST_STRIPE_SECRET_KEY: "sk_test_123", PHASEO_WEB_BASE_URL: "https://phaseo.test" };
+		state.bindings = { STRIPE_SECRET_KEY: "sk_test_123", PHASEO_WEB_BASE_URL: "https://phaseo.test" };
 		stripeCustomer = { id: "cus_1", invoice_settings: { default_payment_method: { id: "pm_1", type: "card", card: { brand: "visa", last4: "4242" } } } };
 		stripeMethods = [];
 		stubStripe();
@@ -339,6 +339,13 @@ describe("credit top-ups API", () => {
 
 	it("reports billing as unavailable without a Stripe key", async () => {
 		state.bindings = {};
+		const response = await post({ amount_usd: 20 });
+		expect(response.status).toBe(503);
+		expect(await response.json()).toMatchObject({ error: "billing_unavailable" });
+	});
+
+	it("never falls back to TEST_STRIPE_SECRET_KEY", async () => {
+		state.bindings = { TEST_STRIPE_SECRET_KEY: "sk_test_123", PHASEO_WEB_BASE_URL: "https://phaseo.test" } as never;
 		const response = await post({ amount_usd: 20 });
 		expect(response.status).toBe(503);
 		expect(await response.json()).toMatchObject({ error: "billing_unavailable" });

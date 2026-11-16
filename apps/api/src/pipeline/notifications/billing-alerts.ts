@@ -9,7 +9,7 @@ type OwnerContact = {
 
 async function stripeClient(): Promise<StripeRestClient> {
 	const bindings = getBindings();
-	const key = bindings.STRIPE_SECRET_KEY ?? bindings.TEST_STRIPE_SECRET_KEY;
+	const key = bindings.STRIPE_SECRET_KEY;
 	if (!key?.trim()) throw new Error("missing_stripe_secret_key");
 	return createStripeRestClient(key);
 }
