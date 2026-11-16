@@ -1,0 +1,58 @@
+---
+title: "功能成熟度"
+description: "Alpha 和 Beta 标签的含义、每项功能谁可以使用，以及所有尚未正式发布的功能当前所处的阶段。"
+icon: "flask-conical"
+---
+
+部分 Phaseo 功能在文档、API 参考和控制台中带有 **Alpha** 或 **Beta** 标签。标签说明一项功能的稳定程度。没有标签的功能已正式发布。
+
+<span id="stages"></span>
+
+## 阶段
+
+| 阶段 | 含义 | 你应该怎么做 |
+| --- | --- | --- |
+| Alpha | 早期版本。它的 API、行为或定价可能会大幅变化，也可能被移除。 | 试用并告诉我们你的想法。不要在它之上构建任何你无法快速修改的东西。 |
+| Beta | 主要用途可以正常使用。部分细节仍可能根据反馈调整，变更会在[更新日志](../changelog.mdx)中公布。 | 适合试点项目和你会密切关注的实际工作负载。升级时请查看更新日志。 |
+| 正式发布 | 获得完整支持并有完整文档。不显示标签。 | 在生产环境中使用。 |
+| 已弃用 | 仍然可用，但不再推荐使用，并将被移除。如已设定移除日期，会显示该日期。 | 不要开始使用它，并在移除日期之前迁移出去。 |
+
+模型和提供商有各自的生命周期标签，与这些阶段相互独立。请参阅[模型弃用与停用](../guides/model-retirement.mdx)和[提供商和 Phaseo 状态](../guides/provider-statuses.mdx)。
+
+<span id="who-can-use-a-feature"></span>
+
+## 谁可以使用一项功能
+
+阶段和访问权限是两回事。Beta 功能可以向所有人开放，Alpha 功能也可以只对部分工作区开放。
+
+- **所有人**：任何工作区都可以使用，但需符合常规角色要求。例如，某些设置仅限所有者和管理员使用。
+- **按申请开通**：该功能按工作区开启。开启之前，它的设置页面不会出现，它的 API 会返回错误。**设置 → 功能预览**会显示你的工作区是否已开启 Video API 和 Batch API。如需申请其中任何功能的访问权限，请[联系我们](https://phaseo.app/contact)。
+
+<span id="features-that-arent-generally-available"></span>
+
+## 尚未正式发布的功能
+
+| 功能 | 阶段 | 访问权限 |
+| --- | --- | --- |
+| [自动路由](../guides/auto-routing.mdx)（`phaseo/auto`） | Alpha | 按申请开通 |
+| [Video API](../guides/async-video-and-batch.mdx) | Alpha | 按申请开通 |
+| [预设反馈](../guides/preset-feedback.mdx) | Alpha | 所有人 |
+| [Slack 智能体](../guides/slack-agent.mdx) | Alpha | 按申请开通 |
+| [Batch API](../guides/async-video-and-batch.mdx)，以及 Files API 和 Webhook 端点 | Beta | 按申请开通 |
+| [Decisions API](../api-reference/endpoint/decisions.mdx) | Beta | 所有人 |
+| [实时语音](../guides/realtime-voice.mdx) | Beta | 按申请开通 |
+| [服务器工具](../guides/server-tools/index.mdx) | Beta | 所有人 |
+| [请求分类器](../guides/request-classifiers.mdx) | Beta | 按申请开通 |
+| [受信任的工作负载](./trusted-workloads.mdx) | Beta | 按申请开通 |
+| [私有模型](../guides/private-models.mdx) | Beta | 所有人（所有者和管理员） |
+| 企业版：单点登录、SCIM、目录和部门 | Beta | 按申请开通，需要身份附加组件 |
+
+其他所有功能都已正式发布，包括 Chat Completions、Responses 和 Messages 端点、预设、护栏、预算、BYOK、Broadcast 以及管理 API。
+
+<span id="how-features-change-stage"></span>
+
+## 功能如何变更阶段
+
+- 当一项功能的主要用途可以正常使用、API 已经稳定时，它会从 Alpha 进入 Beta，或从 Beta 进入正式发布。我们会在[更新日志](../changelog.mdx)中注明这一变化。
+- Alpha 和 Beta 功能的破坏性变更会在更新日志中公布。
+- 当一项功能被弃用时，它的文档页面会说明这一点，并在已设定移除日期时给出该日期。

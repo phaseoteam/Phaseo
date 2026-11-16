@@ -240,6 +240,9 @@ export class FakeDesktop {
         return this.respondGit(request);
       case "list_terminals": case "open_terminal": case "attach_terminal": case "detach_terminal": case "terminal_input": case "close_terminal": case "list_servers": case "stop_server":
         return this.respondTerminal(request);
+      // Triage is the computer's own work (a fetch and an agent); the desktop's tests cover it.
+      case "triage": case "issue_draft":
+        return errorResponse(request.id, request.type, "rejected", "This test computer can't triage.") as PhoneResponse;
       case "list_projects":
         return this.protocol >= 2 ? okResponse(request, { projects: this.projects }) : errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
       case "list_chats": return okResponse(request, { chats: this.chats.filter((entry) => Boolean(entry.archived) === Boolean(request.archived)).map(({ approvals: _approvals, questions: _questions, queue: _queue, ...row }) => row) });

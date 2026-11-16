@@ -197,6 +197,21 @@ describe("text request schema validation", () => {
 		expect(parsed.success).toBe(true);
 	});
 
+	it.each([
+		["phaseo:advisor", { max_uses: 9 }],
+		["phaseo:advisor", { max_completion_tokens: 32_001 }],
+		["phaseo:subagent", { max_uses: 9 }],
+		["phaseo:subagent", { max_tokens: 32_001 }],
+	])("rejects %s parameters above the supported bounds: %o", (type, parameters) => {
+		const request = (toolParameters: Record<string, number>) => ChatCompletionsSchema.safeParse({
+			model: "gpt-4.1",
+			messages: [{ role: "user", content: "review this plan" }],
+			tools: [{ type, parameters: { model: "claude-opus-5", ...toolParameters } }],
+		});
+		expect(request(parameters).success).toBe(false);
+		expect(request({ max_uses: 8, max_tokens: 32_000 }).success).toBe(true);
+	});
+
 	it("accepts Phaseo image generation server tool on chat requests", () => {
 		const parsed = ChatCompletionsSchema.safeParse({
 			model: "gpt-4.1",

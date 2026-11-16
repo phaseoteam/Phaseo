@@ -5,6 +5,8 @@ badge: "测试版"
 openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml PATCH /workload-identity/policies/{id}"
 description: "更改受信任的工作负载策略的名称、状态、声明条件或令牌最长有效期。"
 ---
+此端点处于 [Beta](../../developers/feature-maturity.mdx) 阶段，按工作区申请开通。
+
 <Note>需要管理密钥或 OAuth 令牌具有 `keys:write` 权限，或由工作区所有者或管理员操作。受信任的工作负载目前处于 Beta 阶段，未开通的工作区会收到 `404`。</Note>
 
 平台、签发方和所有者无法更改，请改为创建新策略。更改会在一分钟内同步到网关。

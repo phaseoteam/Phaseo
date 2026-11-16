@@ -5,7 +5,7 @@ description: "Passez un appel vocal en temps réel via le relais Phaseo depuis n
 ---
 
 <Note>
-La voix en temps réel est en bêta, et l’accès est accordé espace de travail par espace de travail. Les clients temps réel sont dans la source des SDK, mais pas dans les paquets publiés (`3.0.0`, Rust `0.2.0`) ; ils arrivent avec la prochaine version de chaque SDK, sauf C++.
+La voix en temps réel est en [bêta](../../developers/feature-maturity.mdx), et l’accès est accordé espace de travail par espace de travail. Les clients temps réel sont dans la source des SDK, mais pas dans les paquets publiés (`3.0.0`, Rust `0.2.0`) ; ils arrivent avec la prochaine version de chaque SDK, sauf C++.
 </Note>
 
 Connectez-vous pour créer la session (`POST /v1/audio/realtime/sessions`), ouvrir le WebSocket du relais et attendre `relay.connected`. Envoyez ensuite l’audio PCM16 en flux, lisez les événements du fournisseur, puis terminez l’appel pour obtenir sa facture finale. Le protocole du relais, les avertissements et les codes de motif sont décrits dans [Sessions vocales en temps réel](/fr/v1/guides/realtime-voice).

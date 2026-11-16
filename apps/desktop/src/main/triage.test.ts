@@ -1,4 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type * as FsPromises from "node:fs/promises";
+
+/** Sees each folder the checkout code creates, so a test can tell when a request starts working in one. */
+const mkdirSpy = vi.hoisted(() => ({ hook: undefined as ((directory: string) => void) | undefined }));
+vi.mock("node:fs/promises", async importOriginal => {
+	const actual = await importOriginal<typeof FsPromises>();
+	return { ...actual, mkdir: (...args: Parameters<typeof actual.mkdir>) => { mkdirSpy.hook?.(String(args[0])); return actual.mkdir(...args); } };
+});
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -66,6 +74,37 @@ describe("triage checkout", () => {
 		expect(await prepareTriageCheckout(root, undefined, fakeGit().git)).toMatchObject({ commit: main, exact: false });
 		// A fresh profile has no triage folder yet.
 		expect(await prepareTriageCheckout(path.join(root, "fresh", "triage"), undefined, fakeGit().git)).toMatchObject({ commit: main, exact: false });
+	}));
+	it("queues a direct request and a fallback that land in the same folder, so they never work there at once", () => withRoot(async root => {
+		// The first build asks for main directly; GitHub lacks the second build's commit, so it falls back to main too.
+		const fake = fakeGit({ has: [main] });
+		const folder = path.join(root, "phaseo-0123456789ab");
+		// The direct request is held partway through its fetch. Meanwhile, the fallback must not start in the folder.
+		let releaseFetch!: () => void, fetchHeld!: () => void, lsRemoteDone!: () => void;
+		const gate = new Promise<void>(resolve => { releaseFetch = resolve; });
+		const holding = new Promise<void>(resolve => { fetchHeld = resolve; });
+		const fallbackResolvedMain = new Promise<void>(resolve => { lsRemoteDone = resolve; });
+		let held = false, enteredWhileHeld = false;
+		mkdirSpy.hook = directory => { if (held && path.resolve(directory) === folder) enteredWhileHeld = true; };
+		const git: TriageGit = async (cwd, args) => {
+			if (cwd === folder && args[0] === "fetch" && !held) { held = true; fetchHeld(); await gate; held = false; }
+			const answer = await fake.git(cwd, args);
+			if (args[0] === "ls-remote") lsRemoteDone();
+			return answer;
+		};
+		const direct = prepareTriageCheckout(root, main, git);
+		await holding;
+		const fallback = prepareTriageCheckout(root, commit, git);
+		// Once the fallback knows main's commit it goes straight on to the folder (no timers involved), so one turn of
+		// the event loop after that, it has either started there (without the queue) or is waiting its turn.
+		await fallbackResolvedMain;
+		await new Promise(resolve => setImmediate(resolve));
+		expect(enteredWhileHeld).toBe(false);
+		releaseFetch();
+		expect(await direct).toEqual({ directory: folder, commit: main, exact: true });
+		expect(await fallback).toEqual({ directory: folder, commit: main, exact: false });
+		// The fallback found the direct request's checkout and reused it rather than fetching again.
+		expect(fake.calls.filter(call => call === `fetch --depth 1 --no-tags origin ${main}`)).toHaveLength(1);
 	}));
 	it("reports a network failure instead of quietly using another version", () => withRoot(async root => {
 		await expect(prepareTriageCheckout(root, commit, fakeGit({ offline: true }).git)).rejects.toThrow("Could not fetch the Phaseo source: unable to access");

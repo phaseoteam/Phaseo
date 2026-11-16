@@ -5,4 +5,6 @@ badge: "Beta"
 openapi: "/es/openapi/v1/openapi.localized.yaml POST /classifiers/test"
 description: "Ejecuta una vez un clasificador guardado o un borrador sobre una solicitud y una respuesta de ejemplo."
 ---
+Este endpoint está en fase [Beta](../../developers/feature-maturity.mdx) y se activa por espacio de trabajo bajo solicitud.
+
 <Note>Este endpoint hace una solicitud facturada a un modelo con tu propia credencial, por lo que requiere un token OAuth con `classifiers:write` y `gateway:access`. No se aceptan claves de gestión.</Note>

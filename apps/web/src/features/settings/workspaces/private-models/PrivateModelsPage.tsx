@@ -3,9 +3,9 @@ import { Suspense } from "react";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
-import { Badge } from "@/components/ui/badge";
 import PrivateModelsSection from "@/features/settings/workspaces/private-models/PrivateModelsContent";
 import { getTranslations } from "@/i18n/server";
+import { FeatureStageBadge } from "@/components/(gateway)/settings/FeatureStageBadge";
 
 export async function getPrivateModelsMetadata() {
 	const t = await getTranslations("SettingsUI");
@@ -18,7 +18,7 @@ export default function PrivateModelsPage() {
 		<SettingsPageHeader
 			title={t("privateModelsCopy.privateModels")}
 			description={t("privateModelsCopy.privateModelsHelp")}
-			meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>}
+			meta={<FeatureStageBadge stage="beta" />}
 			actions={<ProductFeedbackButton surface="settings_private_models" prompt={t("privateModelsCopy.feedbackPrompt")} />}
 		/>
 		<Suspense fallback={<SettingsSectionFallback />}><PrivateModelsSection /></Suspense>

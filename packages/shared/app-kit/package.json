@@ -6,6 +6,7 @@
 	"private": true,
 	"sideEffects": false,
 	"exports": {
+		"./markdown-math": "./src/markdownMath.ts",
 		"./app-analytics": "./src/appAnalytics.ts",
 		"./logos": "./src/logos/index.ts",
 		"./provider-offers": "./src/providerOffers.ts",
@@ -13,6 +14,10 @@
 		"./benchmarks/epoch": "./src/benchmarks/epoch.ts",
 		"./theme": "./src/theme/index.ts",
 		"./theme/colour": "./src/theme/colour.ts",
+		"./mentions": "./src/mentions.ts",
+		"./message-chips": "./src/messageChips.ts",
+		"./message-chips-remark": "./src/messageChipsRemark.ts",
+		"./message-chips-markdown": "./src/messageChipsMarkdown.ts",
 		"./ui-recipes": "./src/ui-recipes/index.ts",
 		"./format": "./src/format/index.ts"
 	},

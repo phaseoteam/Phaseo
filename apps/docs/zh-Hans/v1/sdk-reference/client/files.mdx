@@ -209,7 +209,7 @@ System.out.println(new String(content, StandardCharsets.UTF_8));
 
 在 Python 中，你也可以通过 `client.files` 调用这些操作：`create(params)` 像 `upload_file` 一样上传，`list()` 列出文件，`retrieve(id)` 读取元数据，`content(id)` 读取字节。Rust 没有文件方法。
 
-<Note>文件端点处于 Beta 阶段，需要已启用的批处理提供商。</Note>
+<Note>文件端点处于 [Beta](../../developers/feature-maturity.mdx) 阶段，需要已启用的批处理提供商。</Note>
 
 ## 保存文件 ID：你无法列出文件
 

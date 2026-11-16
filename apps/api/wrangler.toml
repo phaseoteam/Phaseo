@@ -197,7 +197,7 @@ name = "CONTROL_API_RATE_LIMITER"
 namespace_id = "41004"
 
 [ratelimits.simple]
-limit = 600
+limit = 200
 period = 60
 
 # The relay runs in phaseo-realtime (wrangler.realtime.toml) so gateway deploys

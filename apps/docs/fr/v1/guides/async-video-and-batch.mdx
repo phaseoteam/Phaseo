@@ -6,7 +6,7 @@ description: "Suivez les tâches asynchrones, recevez des webhooks et transmette
 ---
 
 <Note>
-La Video API et la Batch API sont des aperçus bêta sur invitation, réservés à certains espaces de travail. Consultez **Paramètres → Aperçu des fonctionnalités** pour savoir si elles sont disponibles. L’accès est géré par espace de travail ; activer une préférence web personnelle ne donne pas accès à l’API. Les frais habituels d’utilisation des modèles s’appliquent.
+La Video API est en Alpha et la Batch API en Bêta (voir [Maturité des fonctionnalités](../developers/feature-maturity.mdx)). Les deux sont activées par espace de travail sur demande. **Paramètres → Aperçu des fonctionnalités** indique si votre espace de travail y a accès ; activer une préférence web personnelle ne donne pas accès à l’API. Les frais habituels d’utilisation des modèles s’appliquent.
 </Note>
 
 Créer une vidéo ou un lot renvoie une tâche avant que le travail soit terminé. Enregistrez son `id` et son `polling_url`, puis attendez un webhook ou interrogez l’URL jusqu’à ce que la tâche atteigne un état final : `completed`, `failed`, `cancelled` ou `expired`. Une réponse de création réussie signifie seulement que la tâche a été acceptée.
@@ -22,7 +22,7 @@ flowchart TD
   terminal -->|"failed / cancelled / expired"| outcome["Traiter le résultat"]
 ```
 
-Conservez le mécanisme d’interrogation même si vous utilisez des webhooks. Pendant la bêta, commencez par de petites requêtes et une limite de dépenses sur la clé API. Les entrées de référence, l’annulation et la conservation des sorties dépendent du fournisseur et du modèle. Enregistrez votre propre copie des sorties terminées avant leur expiration.
+Conservez le mécanisme d’interrogation même si vous utilisez des webhooks. Tant que ces API sont en Alpha et en Bêta, commencez par de petites requêtes et une limite de dépenses sur la clé API. Les entrées de référence, l’annulation et la conservation des sorties dépendent du fournisseur et du modèle. Enregistrez votre propre copie des sorties terminées avant leur expiration.
 
 <span id="receive-updates"></span>
 ## Recevoir les mises à jour

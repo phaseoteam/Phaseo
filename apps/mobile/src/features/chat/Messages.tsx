@@ -4,10 +4,11 @@ import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { ArrowRight, AudioLines, Check, ChevronDown, ChevronRight, CircleAlert, Copy, FileText, GitBranch, Info, Layers, MoreHorizontal, Pencil, RefreshCw, RotateCcw, SlidersHorizontal, WalletCards } from "lucide-react-native";
 import { createContext, memo, useContext, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, View, type GestureResponderEvent } from "react-native";
+import { ActivityIndicator, Pressable, View, type GestureResponderEvent } from "react-native";
 import { Logo } from "@/components/Logo";
 import { Markdown } from "@/components/Markdown";
 import { Button, HorizontalScroll, Icon, measureAnchor, pointAnchor, showActions, Text, toast, useToneColor, type ViewRef } from "@/components/ui";
+import { copyWithNotice } from "@/lib/clipboard";
 import { WEB_ORIGIN } from "@/lib/config";
 import { cn } from "@/lib/cn";
 import { formatUsdCost } from "@/lib/format";
@@ -35,16 +36,6 @@ export const ConversationContext = createContext<ConversationContextValue>({ cha
 export const selectedAnswers = createStore<Record<string, string>>({});
 
 const FREE_ROUTER = "phaseo/free";
-
-/**
- * Android 13 and later show their own clipboard confirmation, so the app only confirms copies on older versions; the
- * success haptic plays either way.
- */
-function copyWithNotice(text: string, what: string) {
-  void Clipboard.setStringAsync(text);
-  haptic("success");
-  if (Platform.OS !== "android" || Number(Platform.Version) < 33) toast(`Copied the ${what}.`, { tone: "success" });
-}
 
 /** Copies text and shows a check on the button for a moment, like the website's copy buttons. */
 function useCopy() {
@@ -187,7 +178,7 @@ function AnswerRow({ item }: { item: Extract<ConversationItem, { type: "answer" 
   return (
     <Pressable onLongPress={(event) => { haptic("longPress"); menu(pointAnchor(event)); }} delayLongPress={350} accessibilityHint="Long press for answer actions" className={cn("px-4", item.first && "pt-4", item.last && "pb-5", focused && "bg-accent")}>
       {item.first ? <AnswerTop message={message} header={item.header} /> : null}
-      {item.text != null ? (item.text ? <Markdown text={item.text} /> : null) : <LiveTail message={message} />}
+      {item.text != null ? (item.text ? <Markdown text={item.text} chips /> : null) : <LiveTail message={message} />}
       {item.last ? <AnswerBottom message={message} /> : null}
     </Pressable>
   );
@@ -220,7 +211,7 @@ function LiveThinking({ message }: { message: ChatMessage }) {
 function LiveTail({ message }: { message: ChatMessage }) {
   const live = useLive(message.id);
   const spinner = useToneColor("muted");
-  if (!live) return message.content ? <Markdown text={message.content} /> : null;
+  if (!live) return message.content ? <Markdown text={message.content} chips /> : null;
   const tail = live.content.slice(live.boundaries.at(-1) ?? 0);
   if (!tail) {
     if (live.boundaries.length) return null;
@@ -234,8 +225,8 @@ function LiveTail({ message }: { message: ChatMessage }) {
   const { done, live: arriving } = liveBlocks(tail);
   return (
     <>
-      {done.map((block, index) => <Markdown key={index} text={block} />)}
-      <Markdown text={arriving} streaming />
+      {done.map((block, index) => <Markdown key={index} text={block} chips />)}
+      <Markdown text={arriving} streaming chips />
     </>
   );
 }
@@ -306,7 +297,7 @@ function AnswerColumn({ message }: { message: ChatMessage }) {
   return (
     <Pressable onLongPress={(event) => { haptic("longPress"); menu(pointAnchor(event)); }} delayLongPress={350} accessibilityHint="Long press for answer actions">
       <AnswerTop message={message} header compact />
-      {streaming ? <LiveTail message={message} /> : shown ? <Markdown text={shown} /> : null}
+      {streaming ? <LiveTail message={message} /> : shown ? <Markdown text={shown} chips /> : null}
       {long ? (
         <Pressable accessibilityRole="button" onPress={() => setFull(!full)} className="mt-1 self-start rounded-md px-1 py-1 active:bg-accent">
           <Text variant="caption" className="font-semibold text-link">{full ? "Show less" : `Show the rest (${Math.round((message.content.length - shown.length) / 1024)} KB)`}</Text>

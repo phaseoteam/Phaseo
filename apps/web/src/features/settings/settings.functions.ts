@@ -96,7 +96,7 @@ export const getSettingsFlag = createServerFn({ method: "GET" })
 			modelSuccessorRedirect: () => flags.modelSuccessorRedirectFlag(),
 			requestClassifiers: () => flags.requestClassifiersFlag(),
 			slackAgent: () => flags.slackAgentSettingsEnabled(),
-			videoApi: () => flags.videoApiFlag(),
+			videoApi: () => flags.videoApiAccessFlag(),
 			webhooks: () => flags.webhookSettingsEnabled(),
 			workloadIdentity: () => flags.workloadIdentityFlag(),
 		};

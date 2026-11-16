@@ -134,7 +134,15 @@ gap, not a choice, unless you can say why.
    the announcement does not name.
 7. `v2_model_aliases`: add or move a `-latest` alias only with the user's
    approval, because moving it reroutes live traffic.
-8. Benchmarks in `v2_benchmark_results`:
+8. `v2_model_links`: one row per link the model page should show, such as
+   the announcement, model card, paper, each weights repo (one row per
+   checkpoint, for example NVFP4 and MXFP8) and the main provider pages.
+   `title` is the label people see, so write it as it should read ("Inkling-2-Small
+   on Hugging Face"). `link_kind` must be one of the fixed kinds in the
+   `v2_model_links_link_kind_check` constraint; it picks the fallback icon and
+   the comparison columns (`weights` for Hugging Face repos, not `model`).
+   `sort_order` sets the display order, lowest first, in steps of 10.
+9. Benchmarks in `v2_benchmark_results`:
    - Lab-reported scores from the launch post and system card. Reuse existing
      `v2_benchmarks` IDs so the model is comparable with other labs, and add a
      new benchmark row only for a genuinely new benchmark or version. Store
@@ -149,10 +157,10 @@ gap, not a choice, unless you can say why.
      `aa-*` rows.
    - Launch charts on lab sites are often embedded Vega-Lite data. Extract
      the exact values rather than reading numbers off images.
-9. Visibility check: confirm the model in the gateway model list (for
+10. Visibility check: confirm the model in the gateway model list (for
    example `phaseo api get models --json` shows the expected capabilities and
    endpoints) and that it is selectable in Chat, not only listed on /models.
-10. Changelog: once the model has a live route, add it to the Models section
+11. Changelog: once the model has a live route, add it to the Models section
     of the docs changelog, in all 9 languages, following `phaseo-changelog`.
     Date it by the release date, or for a catalogue-only model, by the date
     its route went live. The entry is the model link only, with no price,

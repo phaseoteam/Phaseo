@@ -9,6 +9,9 @@ const text = (value: unknown) => (typeof value === "string" && value ? value : n
 
 /** The build: the source commit it came from (set by app.config.ts when the app was built). */
 export const BUILD_COMMIT = text(extra?.buildCommit);
+/** The full commit, which triage fetches the source at, and whether the build had uncommitted changes. */
+export const BUILD_SHA = text(extra?.buildSha);
+export const BUILD_DIRTY = extra?.buildDirty === true;
 export const BUILT_AT = text(extra?.builtAt);
 /** The build number, which is also the Android versionCode: the number of commits up to the build's commit. */
 export const BUILD_NUMBER = typeof extra?.buildNumber === "number" && Number.isInteger(extra.buildNumber) ? extra.buildNumber : null;

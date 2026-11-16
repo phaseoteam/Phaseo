@@ -4,7 +4,7 @@ import { FakeDesktop } from "./fakeDesktop";
 import { makesChanges } from "./git/gitState";
 import { newThreadModel, threadModelLabel } from "./newThread";
 import { pairDesktop } from "./pairing";
-import type { PhoneChat, PhoneEntry } from "./protocol";
+import { phoneProtocolVersion, type PhoneChat, type PhoneEntry } from "./protocol";
 import { chooseTransport, type SavedDesktop } from "./reach";
 import { usesTerminals } from "./terminal/terminalState";
 
@@ -105,7 +105,7 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
 
   test("lists the computer's projects and hears when they change", async () => {
     const { desktop, client } = await connected();
-    expect(desktop.received[0]).toMatchObject({ type: "hello", protocol: 7 });
+    expect(desktop.received[0]).toMatchObject({ type: "hello", protocol: phoneProtocolVersion });
     const { projects } = await client.request("list_projects", {});
     expect(projects.map((project) => project.id)).toEqual(["p2", "p1", "p3", "w1"]);
     const changed = nextEvent(client, "projects_changed");
@@ -507,6 +507,13 @@ describe("chat state", () => {
     const detail = { ...chat("a", true, "2026-11-01T10:00:00Z"), approvals: [{ id: "x", title: "Run", description: "" }], questions: [] };
     expect(mergeDetail(detail, { ...chat("a", false, "2026-11-01T10:01:00Z"), status: "running" })).toMatchObject({ status: "running", approvals: [{ id: "x" }] });
     expect(mergeDetail(detail, { ...detail, approvals: [] }).approvals).toEqual([]);
+  });
+
+  test("keeps a triage chat's issue draft when a list row updates it, and takes the computer's next one", () => {
+    const issueDraft = { repository: "phaseoteam/Phaseo", title: "Pairing hangs", body: "Steps", status: "draft" as const };
+    const detail = { ...chat("a", false, "2026-11-01T10:00:00Z"), approvals: [], questions: [], issueDraft };
+    expect(mergeDetail(detail, { ...chat("a", false, "2026-11-01T10:01:00Z"), status: "running" }).issueDraft).toEqual(issueDraft);
+    expect(mergeDetail(detail, { ...detail, issueDraft: { ...issueDraft, status: "filed", number: 17 } }).issueDraft).toMatchObject({ status: "filed", number: 17 });
   });
 
   test("folds runs of activities and pages back from the first message", () => {

@@ -37,6 +37,7 @@ vi.mock("@/lib/stripe", () => ({
 		webhooks: { constructEvent: (body: string) => JSON.parse(body) },
 		paymentIntents: { retrieve: async () => ({ id: "pi_1", amount: 2000, amount_received: 2000 }) },
 	}),
+	isProductionDeployment: () => true,
 }));
 
 vi.mock("@/lib/automations/resend-events", () => ({ deriveFirstName: () => "", sendCreditsPurchasedEvent: async () => undefined }));
@@ -47,8 +48,8 @@ import { Route } from "./index";
 
 const POST = serverRouteHandler(Route, "POST");
 
-function deliver(type: string, object: Record<string, unknown>) {
-	const event = { id: `evt_${type}_${Math.random()}`, type, created: 1_800_000_000, data: { object } };
+function deliver(type: string, object: Record<string, unknown>, extra: Record<string, unknown> = {}) {
+	const event = { id: `evt_${type}_${Math.random()}`, type, created: 1_800_000_000, data: { object }, ...extra };
 	return POST(new Request("https://phaseo.app/api/webhooks/stripe-checkout", {
 		method: "POST",
 		headers: { "stripe-signature": "t=1,v1=test" },
@@ -93,6 +94,12 @@ describe("Stripe refund webhooks", () => {
 			p_status: "pending",
 		});
 		expect(state.rpcCalls[2].args).toMatchObject({ p_refund_id: "re_1", p_status: "succeeded" });
+	});
+
+	it("ignores test-mode events on the live endpoint", async () => {
+		const response = await deliver("refund.updated", refund("succeeded"), { livemode: false });
+		expect(await response.json()).toMatchObject({ ignored: true, reason: "test_mode_event" });
+		expect(state.rpcCalls).toHaveLength(0);
 	});
 
 	it("ignores refunds of payments that did not buy credits", async () => {

@@ -1623,7 +1623,9 @@
 			"totalDays": "{count, plural, one {# día en total} other {# días en total}}",
 			"modalityStructured": "Estado estructurado",
 			"modalityDecisions": "Decisiones",
-			"viewLicense": "Ver licencia"
+			"viewLicense": "Ver licencia",
+			"pricing": "Precios",
+			"benchmark": "Benchmark"
 		},
 		"performance": {
 			"noTelemetry": "No hay solicitudes en los últimos 7 días",

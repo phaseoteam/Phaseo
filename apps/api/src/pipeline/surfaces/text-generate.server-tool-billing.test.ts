@@ -34,6 +34,12 @@ vi.mock("../after/server-tool-charges", () => ({
 	priceServerToolSubCall: (...args: any[]) => mocks.priceServerToolSubCall(...args),
 	chargeCompletedServerToolRounds: (...args: any[]) => mocks.chargeCompletedServerToolRounds(...args),
 	priceServerToolRounds: (...args: any[]) => mocks.priceServerToolRounds(...args),
+	recordsServerToolAccounting: () => false,
+}));
+// The policy read is faked (no rules); applyWorkspacePolicy is the real function.
+vi.mock("../before/workspacePolicy", async (importOriginal) => ({
+	...(await importOriginal<typeof import("../before/workspacePolicy")>()),
+	fetchWorkspacePolicy: async () => null,
 }));
 
 import { runTextGeneratePipeline } from "./text-generate";

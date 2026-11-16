@@ -52,6 +52,7 @@ const desktopApi: PhaseoDesktopApi = {
 		task: id => ipcRenderer.invoke("workspace:task", id),
 		taskHistory: query => ipcRenderer.invoke("workspace:task-history", query),
 		conversationPage: query => ipcRenderer.invoke("workspace:conversation-page", query),
+		activityText: (taskId, activityId) => ipcRenderer.invoke("workspace:activity-text", taskId, activityId),
 		conversationFind: query => ipcRenderer.invoke("workspace:conversation-find", query),
 		searchMessages: query => ipcRenderer.invoke("workspace:search-messages", query),
 		command: command => ipcRenderer.invoke("workspace:command", command),

@@ -2212,7 +2212,8 @@
 			"security": "9. Comment nous protégeons vos données",
 			"thirdParties": "10. Sites et services tiers",
 			"changes": "11. Modifications de cette politique de confidentialité",
-			"contact": "12. Contact et réclamations"
+			"contact": "12. Contact et réclamations",
+			"advertising": "2.7 Publicité"
 		},
 		"termsHeadings": {
 			"serviceOverview": "1. Présentation du service",
@@ -2325,6 +2326,10 @@
 				{
 					"label": "Cookies d’analyse",
 					"text": "utilisés pour mesurer l’utilisation, les performances et les erreurs, par exemple avec Google Analytics ou PostHog."
+				},
+				{
+					"label": "Cookies publicitaires",
+					"text": "utilisés par Google et d’autres fournisseurs publicitaires pour diffuser et mesurer les annonces sur les sites Phaseo qui en affichent, limiter leur fréquence et, avec votre consentement, les personnaliser."
 				}
 			],
 			"cookieControl": "Vous pouvez gérer les cookies dans les paramètres de votre navigateur. Le blocage de certains types peut nuire à votre expérience ou empêcher certaines fonctionnalités de fonctionner.",
@@ -2471,7 +2476,11 @@
 			"contactIntro": "Pour toute question sur la présente Politique de confidentialité ou sur la manière dont nous traitons les données personnelles, contactez-nous :",
 			"emailLabel": "E-mail",
 			"supportLabel": "Assistance",
-			"regulatorComplaint": "Si vous êtes au Royaume-Uni, vous pouvez également déposer une plainte auprès de l’Information Commissioner’s Office (ICO), ou auprès de votre autorité locale de protection des données si vous êtes dans l’UE. Nous souhaiterions avoir la possibilité de répondre d’abord à vos préoccupations ; nous vous invitons donc à nous contacter en premier lieu."
+			"regulatorComplaint": "Si vous êtes au Royaume-Uni, vous pouvez également déposer une plainte auprès de l’Information Commissioner’s Office (ICO), ou auprès de votre autorité locale de protection des données si vous êtes dans l’UE. Nous souhaiterions avoir la possibilité de répondre d’abord à vos préoccupations ; nous vous invitons donc à nous contacter en premier lieu.",
+			"advertisingIntro": "Certains sites Phaseo, y compris des sites sur des sous-domaines de phaseo.app, affichent des annonces diffusées par Google AdSense. Nous n’affichons pas d’annonces dans le Gateway, l’API ou le tableau de bord de votre compte, et nous n’utilisons pas vos prompts, Outputs ou données de compte pour cibler des annonces.",
+			"advertisingDetails": "Des fournisseurs tiers, y compris Google, utilisent des cookies pour diffuser des annonces en fonction de vos visites précédentes sur nos sites ou sur d’autres sites. Grâce aux cookies publicitaires, Google et ses partenaires peuvent vous proposer des annonces en fonction de vos visites sur nos sites et/ou d’autres sites sur Internet.",
+			"advertisingConsent": "Si vous êtes au Royaume-Uni, dans l’EEE ou en Suisse, nous vous demandons votre consentement au moyen d’un message de consentement avant d’utiliser des cookies publicitaires pour personnaliser les annonces. Si vous refusez, Google peut toujours afficher des annonces non personnalisées, qui n’utilisent des cookies ou technologies similaires qu’à des fins telles que la limitation de la fréquence, les rapports agrégés et la prévention de la fraude. Vous pouvez modifier votre choix à tout moment depuis le lien du message de consentement sur ces pages.",
+			"advertisingOptOut": "Vous pouvez désactiver la publicité personnalisée dans les <adsSettings>paramètres des annonces Google</adsSettings>, ou refuser l’utilisation de cookies pour la publicité personnalisée par certains fournisseurs tiers sur <aboutAds>aboutads.info</aboutAds> ou <yourChoices>youronlinechoices.eu</yourChoices>. Google explique comment il utilise ces données dans <partnerSites>Comment Google utilise les informations des sites ou applications qui utilisent ses services</partnerSites>."
 		},
 		"termsBody": {
 			"operator": "Le Service est exploité par <person>Daniel Butler</person> sous le nom de <brand>Phaseo</brand> (« Phaseo », « nous », « notre » ou « nos »).",

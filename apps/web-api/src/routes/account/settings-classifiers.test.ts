@@ -36,6 +36,8 @@ type Fixture = {
 	gateway?: (request: Request) => Response | Promise<Response>;
 	/** Catalog rows for the classifier model; none means the default schema request. */
 	capabilities?: Array<{ capability_id: string; params: unknown }>;
+	/** The gateway_request_classifiers answer, when the env has a Statsig key. */
+	gate?: boolean;
 };
 
 function database(fixture: Fixture = {}) {
@@ -45,6 +47,7 @@ function database(fixture: Fixture = {}) {
 		const url = new URL(request.url);
 		const text = request.method === "GET" || request.method === "HEAD" ? "" : await request.clone().text();
 		requests.push({ url, method: request.method, body: text ? JSON.parse(text) : null, headers: request.headers });
+		if (url.hostname === "api.statsig.com") return Response.json({ value: fixture.gate === true });
 		if (url.hostname === "gateway.test") return fixture.gateway ? fixture.gateway(request) : new Response("{}", { status: 500 });
 		if (url.pathname.endsWith("/auth/v1/user")) {
 			return Response.json({
@@ -74,11 +77,11 @@ function database(fixture: Fixture = {}) {
 	return requests;
 }
 
-function call(path: string, init: RequestInit = {}) {
+function call(path: string, init: RequestInit = {}, callEnv: Record<string, unknown> = env) {
 	return app.request(`https://phaseo.app/api/account/settings${path}`, {
 		...init,
 		headers: { authorization: "Bearer fixture-token", "content-type": "application/json", ...(init.headers ?? {}) },
-	}, env, executionCtx);
+	}, callEnv, executionCtx);
 }
 
 afterEach(() => vi.unstubAllGlobals());
@@ -179,6 +182,40 @@ describe("classifier settings writes", () => {
 	});
 });
 
+describe("classifier access gate", () => {
+	const gatedEnv = { ...env, ENV: "production" as const, STATSIG_SERVER_KEY: "secret-statsig" };
+	const body = {
+		workspaceId: WORKSPACE, name: "Department", model: "google/gemini-2.5-flash-lite", dimensions: [DEPARTMENT],
+	};
+
+	it("refuses to save, change or test classifiers when the gateway would ignore them", async () => {
+		const requests = database({ role: "admin", gate: false, reviewed: true });
+		const create = await call("/classifiers", { method: "POST", body: JSON.stringify(body) }, gatedEnv);
+		expect(create.status).toBe(403);
+		expect(((await create.json()) as any).error).toBe("feature_not_enabled");
+		const update = await call(`/classifiers/${CLASSIFIER_ID}`, { method: "PUT", body: JSON.stringify({ workspaceId: WORKSPACE, enabled: false }) }, gatedEnv);
+		expect(update.status).toBe(403);
+		const test = await call("/classifiers/test", { method: "POST", body: JSON.stringify({ workspaceId: WORKSPACE, classifier: { model: body.model, dimensions: body.dimensions }, sample: { prompt: "Hi" } }) }, gatedEnv);
+		expect(test.status).toBe(403);
+		expect(requests.some((entry) => entry.method !== "GET" && entry.url.pathname.endsWith("/workspace_request_classifiers"))).toBe(false);
+		expect(requests.some((entry) => entry.url.hostname === "gateway.test")).toBe(false);
+		const gateCheck = requests.find((entry) => entry.url.hostname === "api.statsig.com")!;
+		expect(gateCheck.body).toMatchObject({ gateName: "gateway_request_classifiers", user: { userID: "owner", customIDs: { workspaceID: WORKSPACE } } });
+	});
+
+	it("still lets a workspace without access delete its classifiers", async () => {
+		database({ role: "admin", gate: false });
+		const remove = await call(`/classifiers/${CLASSIFIER_ID}`, { method: "DELETE", body: JSON.stringify({ workspaceId: WORKSPACE }) }, gatedEnv);
+		expect(remove.status).toBe(200);
+	});
+
+	it("saves classifiers when the gate passes for the workspace owner", async () => {
+		database({ role: "admin", gate: true });
+		const create = await call("/classifiers", { method: "POST", body: JSON.stringify(body) }, gatedEnv);
+		expect(create.status).toBe(201);
+	});
+});
+
 describe("classifier test run", () => {
 	const testBody = {
 		workspaceId: WORKSPACE,
@@ -187,12 +224,11 @@ describe("classifier test run", () => {
 		sample: { prompt: "Review this NDA clause" },
 	};
 
-	it("asks the member to review chat privacy first, as Chat does", async () => {
-		const requests = database({ role: "admin", reviewed: false });
+	it("runs for a member who never accepted the old Chat privacy review", async () => {
+		const requests = database({ role: "admin", reviewed: false, gateway: () => Response.json({ id: "resp_1", model: "google/gemini-2.5-flash-lite", cost_nanos: 42_000, output_text: JSON.stringify({ d0: { value: "legal", confidence: 0.9 } }) }) });
 		const response = await call("/classifiers/test", { method: "POST", body: JSON.stringify(testBody) });
-		expect(response.status).toBe(403);
-		expect(((await response.json()) as any).error).toBe("chat_privacy_review_required");
-		expect(requests.some((entry) => entry.url.hostname === "gateway.test")).toBe(false);
+		expect(response.status).toBe(200);
+		expect(requests.some((entry) => entry.url.hostname === "gateway.test")).toBe(true);
 	});
 
 	it("sends the gateway's classification request and returns the labels and cost", async () => {

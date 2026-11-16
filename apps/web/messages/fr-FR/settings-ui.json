@@ -4359,6 +4359,7 @@
 			"timestamp": "Date et heure",
 			"amount": "Montant",
 			"reason": "Motif",
+			"statusColumn": "Statut",
 			"status": {
 				"succeeded": "Réussi",
 				"failed": "Échoué",
@@ -5087,7 +5088,18 @@
 		"metadataTitle": "Facturation et crédits - Paramètres",
 		"description": "Gérez les crédits d’utilisation des modèles et les abonnements de l’espace de travail.",
 		"modelUsageBalance": "Solde d’utilisation des modèles",
-		"cardNumber": "Numéro de carte"
+		"cardNumber": "Numéro de carte",
+		"sandboxTest": {
+			"title": "Test dans le sandbox Stripe",
+			"description": "Réservé aux administrateurs. Ouvre un paiement de 10 $ dans le sandbox Stripe qui recharge l’espace de travail sandbox Stripe et enregistre la carte. Utilisez la carte de test 4242 4242 4242 4242. Aucun argent réel n’est débité.",
+			"button": "Tester le paiement (sandbox)",
+			"opening": "Ouverture…",
+			"notConfigured": "Le sandbox Stripe n’est pas configuré sur ce déploiement.",
+			"failed": "Impossible d’ouvrir le paiement sandbox.",
+			"success": "Paiement sandbox terminé. Les crédits arrivent sur l’espace de travail sandbox Stripe dès réception du webhook.",
+			"cancelled": "Paiement sandbox annulé.",
+			"productName": "Crédits Phaseo (test sandbox)"
+		}
 	},
 	"preferencesCopy": {
 		"preview": "Aperçu",

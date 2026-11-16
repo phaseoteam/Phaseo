@@ -1,0 +1,51 @@
+---
+title: "Madurez de las funciones"
+description: "Qué significan las etiquetas Alpha y Beta, quién puede usar cada función y en qué fase está cada función que aún no tiene disponibilidad general."
+icon: "flask-conical"
+---
+
+Algunas funciones de Phaseo llevan una etiqueta **Alpha** o **Beta** en la documentación, en la referencia de la API y en el panel. La etiqueta te indica lo asentada que está una función. Una función sin etiqueta tiene disponibilidad general.
+
+## Fases
+
+| Fase | Qué significa | Qué hacer |
+| --- | --- | --- |
+| Alpha | Una versión temprana. Su API, su comportamiento o su precio pueden cambiar mucho, y puede eliminarse. | Pruébala y dinos qué te parece. No construyas sobre ella nada que no puedas cambiar rápido. |
+| Beta | Funciona para su uso principal. Algunos detalles aún pueden cambiar según los comentarios, y los cambios se anuncian en el [registro de cambios](../changelog.mdx). | Adecuada para pilotos y cargas de trabajo reales que vigiles de cerca. Revisa el registro de cambios cuando actualices. |
+| Disponibilidad general | Con soporte completo y documentada. No se muestra ninguna etiqueta. | Úsala en producción. |
+| Obsoleta | Sigue funcionando, pero ya no se recomienda y se eliminará. Se muestra una fecha de eliminación cuando se fija una. | No empieces a usarla y deja de usarla antes de la fecha de eliminación. |
+
+Los modelos y los proveedores tienen sus propias etiquetas de ciclo de vida, independientes de estas fases. Consulta [Obsolescencia y retirada de modelos](../guides/model-retirement.mdx) y [Estados del proveedor y de Phaseo](../guides/provider-statuses.mdx).
+
+<span id="who-can-use-a-feature"></span>
+## Quién puede usar una función
+
+La fase y el acceso son independientes. Una función Beta puede estar abierta a todos, y una función Alpha puede estar limitada a algunos espacios de trabajo.
+
+- **Todos**: cualquier espacio de trabajo puede usarla, según los roles habituales. Por ejemplo, algunos ajustes son solo para propietarios y administradores.
+- **Bajo solicitud**: la función se activa por espacio de trabajo. Hasta que esté activada, su página de ajustes no aparece y su API devuelve un error. **Ajustes → Vista previa de funciones** muestra si la API de vídeo y la API de lotes están activadas en tu espacio de trabajo. Para pedir acceso a cualquiera de estas funciones, [contáctanos](https://phaseo.app/contact).
+
+## Funciones que aún no tienen disponibilidad general
+
+| Función | Fase | Acceso |
+| --- | --- | --- |
+| [Enrutamiento automático](../guides/auto-routing.mdx) (`phaseo/auto`) | Alpha | Bajo solicitud |
+| [API de vídeo](../guides/async-video-and-batch.mdx) | Alpha | Bajo solicitud |
+| [Comentarios sobre preajustes](../guides/preset-feedback.mdx) | Alpha | Todos |
+| [Agente de Slack](../guides/slack-agent.mdx) | Alpha | Bajo solicitud |
+| [API de lotes](../guides/async-video-and-batch.mdx), con la API de archivos y los endpoints de webhook | Beta | Bajo solicitud |
+| [API de decisiones](../api-reference/endpoint/decisions.mdx) | Beta | Todos |
+| [Voz en tiempo real](../guides/realtime-voice.mdx) | Beta | Bajo solicitud |
+| [Herramientas de servidor](../guides/server-tools/index.mdx) | Beta | Todos |
+| [Clasificadores de solicitudes](../guides/request-classifiers.mdx) | Beta | Bajo solicitud |
+| [Cargas de trabajo de confianza](./trusted-workloads.mdx) | Beta | Bajo solicitud |
+| [Modelos privados](../guides/private-models.mdx) | Beta | Todos (propietarios y administradores) |
+| Enterprise: inicio de sesión único, SCIM, directorio y departamentos | Beta | Bajo solicitud, con el complemento de identidad |
+
+Todo lo demás tiene disponibilidad general, incluidos los endpoints de Chat Completions, Responses y Messages, los preajustes, los guardrails, los presupuestos, BYOK, Broadcast y la API de administración.
+
+## Cómo cambian de fase las funciones
+
+- Una función pasa de Alpha a Beta, o de Beta a disponibilidad general, cuando su uso principal funciona y su API está asentada. Lo indicamos en el [registro de cambios](../changelog.mdx).
+- Los cambios incompatibles en funciones Alpha y Beta se anuncian en el registro de cambios.
+- Cuando una función queda obsoleta, su página de documentación lo indica y da la fecha de eliminación cuando se fija una.

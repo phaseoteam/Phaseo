@@ -5,7 +5,7 @@ icon: "fingerprint-pattern"
 ---
 
 <Note>
-Las cargas de trabajo de confianza están en beta y se están habilitando de forma gradual en los espacios de trabajo. Si **Ajustes → Claves de API → Cargas de trabajo de confianza** no aparece en tu panel, tu espacio de trabajo todavía no las tiene.
+Las cargas de trabajo de confianza están en [beta](./feature-maturity.mdx) y se están habilitando de forma gradual en los espacios de trabajo. Si **Ajustes → Claves de API → Cargas de trabajo de confianza** no aparece en tu panel, tu espacio de trabajo todavía no las tiene.
 </Note>
 
 Envía el token OIDC de corta duración de tu plataforma como token bearer en lugar de una clave de API de Phaseo, y no tendrás que guardar nada de larga duración en los ajustes del proyecto ni en los secretos de CI. Las plataformas dan a cada despliegue, job o carga de trabajo un token firmado que indica quién es, como "el despliegue de producción del proyecto `website`" o "un job del proyecto de GitLab `4815162`", y el token caduca en unas horas. Tú le indicas a Phaseo en qué cargas de trabajo confiar.

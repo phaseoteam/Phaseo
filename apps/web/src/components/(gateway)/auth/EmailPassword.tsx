@@ -31,6 +31,7 @@ export default function EmailPassword({
 	locale = defaultLocale,
 	surface = "page",
 	initialError = null,
+	initialEmail,
 	onEmailFlowChange,
 }: {
 	returnUrl?: string;
@@ -40,6 +41,8 @@ export default function EmailPassword({
 	surface?: "page" | "dialog";
 	/** A wrong-password error from the URL (/sign-in?error=auth-failed). */
 	initialError?: "auth-failed" | null;
+	/** An email typed on sign-up before switching here; the password field then takes focus. */
+	initialEmail?: string;
 	/** Called with true once an email or password is typed (the other options collapse). */
 	onEmailFlowChange?: (active: boolean) => void;
 }) {
@@ -48,8 +51,14 @@ export default function EmailPassword({
 	const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
 	const [showPassword, setShowPassword] = React.useState(false);
 	// Controlled, so a failed attempt in the dialog keeps what was typed (form actions reset uncontrolled fields).
-	const [email, setEmail] = React.useState("");
+	const [email, setEmail] = React.useState(initialEmail ?? "");
 	const [password, setPassword] = React.useState("");
+	const passwordRef = React.useRef<HTMLInputElement>(null);
+
+	// Arriving with the email already filled in: the password is all that is left to type.
+	React.useEffect(() => {
+		if (initialEmail) passwordRef.current?.focus();
+	}, [initialEmail]);
 	// Shown under the fields, and cleared as soon as either is edited.
 	const [error, setError] = React.useState<"auth-failed" | null>(initialError);
 	const emailFlowActive = email.trim().length > 0 || password.length > 0;
@@ -162,6 +171,7 @@ export default function EmailPassword({
 						<Input
 							id="password"
 							name="password"
+							ref={passwordRef}
 							type={showPassword ? "text" : "password"}
 							dir="ltr"
 							autoComplete="current-password"

@@ -27,8 +27,8 @@ export function mergeArchived(chats: PhoneChat[], chat: PhoneChat): PhoneChat[] 
  */
 export function mergeDetail(current: PhoneChatDetail, chat: PhoneChat | PhoneChatDetail): PhoneChatDetail {
   if ("approvals" in chat) return chat;
-  const { approvals, questions, queue, reasoningEffort, harness, accountId, permissionMode, pullRequests } = current;
-  return { approvals, questions, ...(queue ? { queue } : {}), ...(reasoningEffort ? { reasoningEffort } : {}), ...(harness ? { harness } : {}), ...(accountId ? { accountId } : {}), ...(permissionMode ? { permissionMode } : {}), ...(pullRequests ? { pullRequests } : {}), ...chat };
+  const { approvals, questions, queue, reasoningEffort, harness, accountId, permissionMode, pullRequests, issueDraft } = current;
+  return { approvals, questions, ...(queue ? { queue } : {}), ...(reasoningEffort ? { reasoningEffort } : {}), ...(harness ? { harness } : {}), ...(accountId ? { accountId } : {}), ...(permissionMode ? { permissionMode } : {}), ...(pullRequests ? { pullRequests } : {}), ...(issueDraft ? { issueDraft } : {}), ...chat };
 }
 
 /** An entries frame applied: changed entries replaced where they are, new ones added at the end in the order sent. */

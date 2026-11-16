@@ -1,10 +1,11 @@
 ---
 title: "判断を行う"
-badge: "Beta"
-tag: "ベータ"
+badge: "ベータ"
 openapi: "/ja/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "対応する判断モデルを使い、アプリケーションの状態に対して型付きの質問を評価します。"
 ---
+
+このエンドポイントは[ベータ](../../developers/feature-maturity.mdx)段階です。
 
 `input` と順序付きの `questions` 配列を `POST /v1/decisions` に送信すると、質問ごとに 1 つの型付きの回答が、確率とともに同じ順序で返されます。
 

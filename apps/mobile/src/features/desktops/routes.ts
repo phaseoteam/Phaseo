@@ -27,8 +27,11 @@ export const desktopPullRequestHref = (desktopId: string, projectId: string, num
 export const desktopTerminalHref = (desktopId: string, chatId: string, terminalId: string, title?: string | null) =>
   `${CODE_HREF}/${segment(desktopId)}/terminal?chatId=${segment(chatId)}&terminalId=${segment(terminalId)}${title ? `&title=${segment(title)}` : ""}` as Href;
 
+/** Triage of a bug in this app, by an agent on the computer. */
+export const desktopTriageHref = (desktopId: string) => `${CODE_HREF}/${segment(desktopId)}/triage` as Href;
+
 /** Screens under a computer that aren't threads. */
-const OTHER_SCREENS = new Set(["new", "review", "files", "git", "pull-requests", "pull-request", "terminal"]);
+const OTHER_SCREENS = new Set(["new", "review", "files", "git", "pull-requests", "pull-request", "terminal", "triage"]);
 
 /** The computer thread a path shows, for the list's selected row; null on any other screen. */
 export function desktopChatInPath(pathname: string): { desktopId: string; chatId: string } | null {

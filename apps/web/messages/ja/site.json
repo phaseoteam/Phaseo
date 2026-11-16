@@ -2212,7 +2212,8 @@
 			"security": "9. データの保護方法",
 			"thirdParties": "10. 第三者のサイトとサービス",
 			"changes": "11. プライバシーポリシーの変更",
-			"contact": "12. お問い合わせと苦情"
+			"contact": "12. お問い合わせと苦情",
+			"advertising": "2.7 広告"
 		},
 		"termsHeadings": {
 			"serviceOverview": "1. サービスの概要",
@@ -2325,6 +2326,10 @@
 				{
 					"label": "分析 Cookie",
 					"text": "Google Analytics や PostHog などを通じて、利用状況、性能、エラーを測定します。"
+				},
+				{
+					"label": "広告 Cookie",
+					"text": "Google やその他の広告ベンダーが、広告を掲載する Phaseo のウェブサイトで広告を表示・測定し、表示頻度を制限するために使用します。同意いただいた場合は、広告のパーソナライズにも使用されます。"
 				}
 			],
 			"cookieControl": "Cookie はブラウザーの設定で管理できます。一部をブロックすると、利用体験に影響したり機能が使えなくなったりする場合があります。",
@@ -2471,7 +2476,11 @@
 			"contactIntro": "本プライバシーポリシーまたは個人データの取り扱いについてご質問がある場合は、次の方法でご連絡ください。",
 			"emailLabel": "メール",
 			"supportLabel": "サポート",
-			"regulatorComplaint": "英国にお住まいの場合、Information Commissioner’s Office（ICO）に苦情を申し立てる権利もあります。EUにお住まいの場合は、現地のデータ保護当局に申し立てることができます。まずは当社が懸念に対応する機会をいただければ幸いですので、先に当社へご連絡ください。"
+			"regulatorComplaint": "英国にお住まいの場合、Information Commissioner’s Office（ICO）に苦情を申し立てる権利もあります。EUにお住まいの場合は、現地のデータ保護当局に申し立てることができます。まずは当社が懸念に対応する機会をいただければ幸いですので、先に当社へご連絡ください。",
+			"advertisingIntro": "phaseo.app のサブドメイン上のサイトを含む一部の Phaseo ウェブサイトには、Google AdSense が配信する広告が表示されます。Gateway、API、アカウントのダッシュボードには広告を表示せず、プロンプト、Output、アカウントデータを広告のターゲティングに使用することはありません。",
+			"advertisingDetails": "Google などの第三者配信事業者は Cookie を使用して、当社ウェブサイトや他のウェブサイトへの過去のアクセス情報に基づいて広告を配信します。Google が広告 Cookie を使用することにより、Google やそのパートナーは当社サイトや他のサイトへのアクセス情報に基づいて適切な広告を表示できます。",
+			"advertisingConsent": "英国、EEA、スイスにお住まいの場合は、広告 Cookie を広告のパーソナライズに使用する前に、同意メッセージで同意をお願いします。同意されない場合でも、Google はパーソナライズされていない広告を表示することがあります。その場合、Cookie や類似の技術は、フリークエンシー キャップ、集計レポート、不正防止などの目的にのみ使用されます。選択内容は、該当ページの同意メッセージのリンクからいつでも変更できます。",
+			"advertisingOptOut": "パーソナライズ広告は <adsSettings>Google の広告設定</adsSettings> で無効にできます。また、<aboutAds>aboutads.info</aboutAds> または <yourChoices>youronlinechoices.eu</yourChoices> で、一部の第三者配信事業者によるパーソナライズ広告のための Cookie の使用を無効にできます。Google によるデータの使用方法については、<partnerSites>Google のサービスを使用するサイトやアプリから収集した情報の Google による使用</partnerSites> をご覧ください。"
 		},
 		"termsBody": {
 			"operator": "本サービスは、<person>Daniel Butler</person>が<brand>Phaseo</brand>の名称で運営しています（「Phaseo」「当社」）。",

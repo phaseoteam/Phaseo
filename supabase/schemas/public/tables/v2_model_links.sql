@@ -6,6 +6,8 @@ CREATE TABLE "public"."v2_model_links" (
   "metadata"   jsonb                    NOT NULL DEFAULT '{}'::jsonb,
   "created_at" timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
+  "sort_order" integer                  NOT NULL DEFAULT 0,
+  CONSTRAINT "v2_model_links_link_kind_check" CHECK ((link_kind = ANY (ARRAY['announcement'::text, 'model_card'::text, 'paper'::text, 'weights'::text, 'repository'::text, 'documentation'::text, 'api_reference'::text, 'playground'::text, 'pricing'::text, 'benchmark'::text, 'website'::text, 'provider'::text, 'deprecation'::text, 'license'::text]))),
   CONSTRAINT "v2_model_links_pkey" PRIMARY KEY (model_slug, link_kind, url),
   CONSTRAINT "v2_model_links_model_slug_fkey" FOREIGN KEY (model_slug) REFERENCES public.v2_models(model_slug) ON DELETE CASCADE
 );

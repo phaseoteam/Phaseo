@@ -683,6 +683,9 @@
 		"lastYear": "पिछला 1 वर्ष"
 	},
 	"ui": {
+		"tokenInput": {
+			"suggestions": "{count, plural, one {# सुझाव} other {# सुझाव}}। चुनने के लिए ऊपर और नीचे, जोड़ने के लिए Enter दबाएँ।"
+		},
 		"subscriptionCatalog": {
 			"view_plan": "प्लान देखें",
 			"on_login": "लॉगिन पर",
@@ -823,6 +826,15 @@
 			"removeBenchmark": "बेंचमार्क प्रविष्टि {index} हटाएँ",
 			"detailsHeading": "मॉडल विवरण",
 			"linksHeading": "मॉडल लिंक",
+			"linksDescription": "हर लिंक को उस शीर्षक के साथ जोड़ें जो लोगों को दिखना चाहिए। प्रकार से वैकल्पिक आइकन और तुलना कॉलम तय होता है।",
+			"noLinks": "अभी कोई लिंक नहीं है।",
+			"addLink": "लिंक जोड़ें",
+			"linkUrl": "URL",
+			"linkTitle": "शीर्षक",
+			"linkKind": "प्रकार",
+			"moveLinkUp": "ऊपर ले जाएँ",
+			"moveLinkDown": "नीचे ले जाएँ",
+			"removeLink": "लिंक हटाएँ",
 			"detailFields": {
 				"input_context_length": {
 					"label": "इनपुट संदर्भ लंबाई",
@@ -847,12 +859,19 @@
 			},
 			"linkFields": {
 				"announcement": "घोषणा",
-				"api_reference": "API संदर्भ",
 				"model_card": "मॉडल कार्ड",
 				"paper": "शोधपत्र",
-				"playground": "प्लेग्राउंड",
+				"weights": "वेट्स",
 				"repository": "रिपॉज़िटरी",
-				"weights": "वेट्स"
+				"documentation": "दस्तावेज़",
+				"api_reference": "API संदर्भ",
+				"playground": "प्लेग्राउंड",
+				"pricing": "मूल्य",
+				"benchmark": "बेंचमार्क",
+				"website": "वेबसाइट",
+				"provider": "प्रदाता",
+				"deprecation": "बंद होने की सूचना",
+				"license": "लाइसेंस"
 			},
 			"subscriptionPlansTitle": "सदस्यता योजनाएँ",
 			"subscriptionPlansDescription": "इस मॉडल को सदस्यता योजनाओं से जोड़ें या हटाएँ।",
@@ -2490,6 +2509,7 @@
 			"serviceTierLineStyles": "सेवा स्तर की रेखा शैलियाँ",
 			"inAudience": "{audience} में",
 			"usOnlyInference": "केवल अमेरिका में इन्फ़रेंस",
+			"withKeyterms": "कीटर्म के साथ",
 			"regionOnlyInference": "केवल {region} में इन्फ़रेंस"
 		},
 		"publicModelCopy": {
@@ -2608,6 +2628,30 @@
 			"latency": "विलंब",
 			"agreements": "सहमतियाँ",
 			"uniqueInsight": "अनोखी जानकारी"
+		},
+		"messageChips": {
+			"kindSuffix": ", {kind}",
+			"kinds": {
+				"file": "फ़ाइल",
+				"folder": "फ़ोल्डर",
+				"link": "लिंक",
+				"chat": "चैट",
+				"commit": "कमिट",
+				"branch": "ब्रांच",
+				"local": "लोकल सर्वर"
+			},
+			"chatFallback": "चैट",
+			"pullRequest": "PR #{number}",
+			"issue": "Issue #{number}",
+			"clickToCopy": "कॉपी करने के लिए क्लिक करें",
+			"pathCopied": "पाथ कॉपी किया गया",
+			"commitCopied": "कमिट कॉपी किया गया",
+			"branchCopied": "ब्रांच कॉपी की गई",
+			"copyFailed": "कॉपी नहीं किया जा सका"
+		},
+		"numberInput": {
+			"decrease": "घटाएँ",
+			"increase": "बढ़ाएँ"
 		}
 	},
 	"deprecationNotice": {

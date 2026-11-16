@@ -5,7 +5,7 @@ import AutoRoutingContent from "./AutoRoutingContent";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
-import { Badge } from "@/components/ui/badge";
+import { FeatureStageBadge } from "@/components/(gateway)/settings/FeatureStageBadge";
 
 export async function getAutoRoutingMetadata() {
 	const t = await getTranslations("SettingsUI");
@@ -23,7 +23,7 @@ export default function AutoRoutingSettingsPage() {
 			titleKey="headers.autoRouting"
 			description="Control how phaseo/auto balances model quality, cost, and speed for this workspace."
 			descriptionKey="headers.autoRoutingDescription"
-				meta={<Badge variant="outline">{t("alphaBadge")}</Badge>}
+				meta={<FeatureStageBadge stage="alpha" />}
 				actions={
 					<ProductFeedbackButton
 						surface="settings_auto_routing"

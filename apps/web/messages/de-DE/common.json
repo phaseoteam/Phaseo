@@ -683,6 +683,9 @@
 		"lastYear": "Letztes Jahr"
 	},
 	"ui": {
+		"tokenInput": {
+			"suggestions": "{count, plural, one {# Vorschlag} other {# Vorschläge}}. Mit Pfeil nach oben und unten auswählen, mit Eingabe einfügen."
+		},
 		"subscriptionCatalog": {
 			"view_plan": "Tarif ansehen",
 			"on_login": "Bei Anmeldung",
@@ -823,6 +826,15 @@
 			"removeBenchmark": "Benchmark {index} entfernen",
 			"detailsHeading": "Modelldetails",
 			"linksHeading": "Modelllinks",
+			"linksDescription": "Füge jeden Link mit dem Titel hinzu, den Nutzer sehen sollen. Die Art bestimmt das Ersatzsymbol und die Vergleichsspalte.",
+			"noLinks": "Noch keine Links.",
+			"addLink": "Link hinzufügen",
+			"linkUrl": "URL",
+			"linkTitle": "Titel",
+			"linkKind": "Art",
+			"moveLinkUp": "Nach oben",
+			"moveLinkDown": "Nach unten",
+			"removeLink": "Link entfernen",
 			"detailFields": {
 				"input_context_length": {
 					"label": "Eingabe-Kontextlänge",
@@ -847,12 +859,19 @@
 			},
 			"linkFields": {
 				"announcement": "Ankündigung",
-				"api_reference": "API-Referenz",
 				"model_card": "Modellkarte",
 				"paper": "Fachartikel",
-				"playground": "Spielwiese",
+				"weights": "Gewichte",
 				"repository": "Repository",
-				"weights": "Gewichte"
+				"documentation": "Dokumentation",
+				"api_reference": "API-Referenz",
+				"playground": "Spielwiese",
+				"pricing": "Preise",
+				"benchmark": "Benchmark",
+				"website": "Website",
+				"provider": "Anbieter",
+				"deprecation": "Einstellungshinweis",
+				"license": "Lizenz"
 			},
 			"subscriptionPlansTitle": "Abonnementpläne",
 			"subscriptionPlansDescription": "Dieses Modell zu Abonnementplänen hinzufügen oder daraus entfernen.",
@@ -2490,6 +2509,7 @@
 			"serviceTierLineStyles": "Linienstile der Servicestufen",
 			"inAudience": "In {audience}",
 			"usOnlyInference": "Inferenz nur in den USA",
+			"withKeyterms": "Mit Schlüsselbegriffen",
 			"regionOnlyInference": "Inferenz nur in {region}"
 		},
 		"publicModelCopy": {
@@ -2608,6 +2628,30 @@
 			"latency": "Latenz",
 			"agreements": "Übereinstimmungen",
 			"uniqueInsight": "Eigene Erkenntnis"
+		},
+		"messageChips": {
+			"kindSuffix": ", {kind}",
+			"kinds": {
+				"file": "Datei",
+				"folder": "Ordner",
+				"link": "Link",
+				"chat": "Chat",
+				"commit": "Commit",
+				"branch": "Branch",
+				"local": "lokaler Server"
+			},
+			"chatFallback": "Chat",
+			"pullRequest": "PR #{number}",
+			"issue": "Issue #{number}",
+			"clickToCopy": "Zum Kopieren klicken",
+			"pathCopied": "Pfad kopiert",
+			"commitCopied": "Commit kopiert",
+			"branchCopied": "Branch kopiert",
+			"copyFailed": "Kopieren fehlgeschlagen"
+		},
+		"numberInput": {
+			"decrease": "Verringern",
+			"increase": "Erhöhen"
 		}
 	},
 	"deprecationNotice": {

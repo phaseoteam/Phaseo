@@ -1,10 +1,11 @@
 ---
 title: "作出决策"
-badge: "Beta"
-tag: "测试版"
+badge: "测试版"
 openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "使用受支持的决策模型，针对应用状态评估带类型的问题。"
 ---
+
+此端点处于 [Beta](../../developers/feature-maturity.mdx) 阶段。
 
 将 `input` 和按顺序排列的 `questions` 数组发送到 `POST /v1/decisions`，即可按相同顺序为每个问题获得一个带类型的回答及其概率。
 

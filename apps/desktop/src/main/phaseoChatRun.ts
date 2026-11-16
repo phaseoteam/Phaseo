@@ -9,7 +9,7 @@ import type { Account, ModelFacts, Task } from "../shared/workspace";
 import type { NativeAction } from "../shared/nativeActions";
 import type { AgentCallbacks } from "./agentAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
-import type { WorkspaceStore } from "./workspaceStore";
+import { recentTurns, type WorkspaceStore } from "./workspaceStore";
 import type { AttachmentContent } from "./attachments";
 import { phaseoConversationMessages } from "./attachmentPrompt";
 import { PhaseoSkills, restoredPhaseoSkill } from "./phaseoSkills";
@@ -78,7 +78,7 @@ export async function runPhaseoChat(task: Task, cwd: string, text: string, callb
  } };
  await runPhaseoTurn({
   task, input: requested ? requested.arguments : text, callbacks, signal, store, client, tools, facts: dependencies.facts, steering, streamed,
-  transcript: phaseoConversationMessages(task.messages, text, attachments, requested?.arguments), previous, labels: mcp.labels,
+  transcript: () => phaseoConversationMessages(task.messages, text, attachments, requested?.arguments), followUp: () => phaseoConversationMessages(recentTurns(task).messages, text, attachments, requested?.arguments).slice(-1), previous, labels: mcp.labels,
   context: { ...record(unfinished?.run.context), ...(nativeAction ? { phaseoSkill: { id: nativeAction.id, name: nativeAction.name } } : {}), ...(toolkit?.snapshot().length ? { phaseoModelSkills: toolkit.snapshot() } : {}) },
   overrides: () => ({ ...(nativeAction ? { phaseoSkill: { id: nativeAction.id, name: nativeAction.name } } : {}), ...(toolkit?.snapshot().length ? { phaseoModelSkills: toolkit.snapshot() } : {}) }),
   decorate: result => { const active = toolkit?.snapshot(); return active?.length ? { ...result, run: { ...result.run, context: { ...record(result.run.context), phaseoModelSkills: active } } } : result; },

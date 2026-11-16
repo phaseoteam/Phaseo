@@ -44,6 +44,7 @@ import {
 	TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { FeatureStageBadge } from "@/components/(gateway)/settings/FeatureStageBadge";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -455,7 +456,7 @@ function PresetFeedbackContent({ data, parsedFilters }: { data: SettingsResource
 					titleKey="headers.presetFeedback"
 					description={t("headers.presetFeedbackCompareDescription")}
 					descriptionKey="headers.presetFeedbackCompareDescription"
-					meta={<Badge variant="outline">{t("oauthAppsPage.alphaLabel")}</Badge>}
+					meta={<FeatureStageBadge stage="alpha" />}
 					actions={
 						<ProductFeedbackButton
 							surface="settings_preset_feedback"
@@ -509,7 +510,7 @@ function PresetFeedbackContent({ data, parsedFilters }: { data: SettingsResource
 				titleKey="headers.presetFeedback"
 				description={t("headers.presetFeedbackMeasureDescription")}
 				descriptionKey="headers.presetFeedbackMeasureDescription"
-				meta={<Badge variant="outline">{t("oauthAppsPage.alphaLabel")}</Badge>}
+				meta={<FeatureStageBadge stage="alpha" />}
 				className="sm:flex-col sm:items-stretch xl:flex-row xl:items-start"
 				actions={
 					<div className="flex flex-wrap items-center justify-start gap-2 xl:justify-end">

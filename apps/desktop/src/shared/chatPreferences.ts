@@ -15,8 +15,10 @@ export const quitConfirmations = ["hold", "working", "always", "direct"] as cons
 export type QuitConfirmation = (typeof quitConfirmations)[number];
 export const diffColourSchemes = ["red-green", "blue-orange"] as const;
 export type DiffColourScheme = (typeof diffColourSchemes)[number];
-export type ChatPreferences = { followUp: FollowUpBehaviour; richTextComposer: boolean; quitConfirmation: QuitConfirmation; diffLayout: "unified" | "split"; diffIgnoreWhitespace: boolean; diffColours: DiffColourScheme };
-export const defaultChatPreferences: ChatPreferences = { followUp: "queue", richTextComposer: true, quitConfirmation: "hold", diffLayout: "unified", diffIgnoreWhitespace: false, diffColours: "red-green" };
+/** historyPageSize: messages a chat opens with and loads at a time as you scroll back. Fewer draws each page sooner; more loads less often. */
+export const historyPageSizes = { default: 25, minimum: 10, maximum: 200 } as const;
+export type ChatPreferences = { followUp: FollowUpBehaviour; richTextComposer: boolean; quitConfirmation: QuitConfirmation; diffLayout: "unified" | "split"; diffIgnoreWhitespace: boolean; diffColours: DiffColourScheme; historyPageSize: number };
+export const defaultChatPreferences: ChatPreferences = { followUp: "queue", richTextComposer: true, quitConfirmation: "hold", diffLayout: "unified", diffIgnoreWhitespace: false, diffColours: "red-green", historyPageSize: historyPageSizes.default };
 
 /** Preferences saved before a field existed omit it, so missing fields take their defaults; a present but invalid value throws. */
 export function validateChatPreferences(value: unknown): ChatPreferences {
@@ -33,6 +35,8 @@ export function validateChatPreferences(value: unknown): ChatPreferences {
 		if (typeof entry !== "boolean") throw new Error("Invalid chat preferences.");
 		return entry;
 	};
+	const historyPageSize = input.historyPageSize ?? historyPageSizes.default;
+	if (typeof historyPageSize !== "number" || !Number.isInteger(historyPageSize) || historyPageSize < historyPageSizes.minimum || historyPageSize > historyPageSizes.maximum) throw new Error(`Messages per page must be a whole number from ${historyPageSizes.minimum} to ${historyPageSizes.maximum}.`);
 	return {
 		followUp: choice("followUp", followUpBehaviours, "Choose whether follow-ups queue or steer."),
 		richTextComposer: flag("richTextComposer"),
@@ -40,5 +44,6 @@ export function validateChatPreferences(value: unknown): ChatPreferences {
 		diffLayout: choice("diffLayout", ["unified", "split"] as const, "Choose a diff layout."),
 		diffIgnoreWhitespace: flag("diffIgnoreWhitespace"),
 		diffColours: choice("diffColours", diffColourSchemes, "Choose diff colours."),
+		historyPageSize,
 	};
 }

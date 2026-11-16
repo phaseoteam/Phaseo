@@ -99,9 +99,14 @@
   },
   "enriched-markdown": {
     "enableCodeHighlight": false,
-    "enableMath": false
+    "enableMath": true
   },
   "expo": {
+    "autolinking": {
+      "android": {
+        "buildFromSource": ["expo-sqlite"]
+      }
+    },
     "doctor": {
       "reactNativeDirectoryCheck": {
         "listUnknownPackages": false

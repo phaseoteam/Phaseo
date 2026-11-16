@@ -683,6 +683,9 @@
 		"lastYear": "Último ano"
 	},
 	"ui": {
+		"tokenInput": {
+			"suggestions": "{count, plural, one {# sugestão} other {# sugestões}}. Use Para cima e Para baixo para escolher e Enter para inserir."
+		},
 		"subscriptionCatalog": {
 			"view_plan": "Ver plano",
 			"on_login": "Ao entrar",
@@ -823,6 +826,15 @@
 			"removeBenchmark": "Remover benchmark {index}",
 			"detailsHeading": "Detalhes do modelo",
 			"linksHeading": "Links do modelo",
+			"linksDescription": "Adicione cada link com o título que as pessoas devem ver. O tipo define o ícone alternativo e a coluna de comparação.",
+			"noLinks": "Nenhum link ainda.",
+			"addLink": "Adicionar link",
+			"linkUrl": "URL",
+			"linkTitle": "Título",
+			"linkKind": "Tipo",
+			"moveLinkUp": "Mover para cima",
+			"moveLinkDown": "Mover para baixo",
+			"removeLink": "Remover link",
 			"detailFields": {
 				"input_context_length": {
 					"label": "Tamanho do contexto de entrada",
@@ -847,12 +859,19 @@
 			},
 			"linkFields": {
 				"announcement": "Anúncio",
-				"api_reference": "Referência da API",
 				"model_card": "Cartão do modelo",
 				"paper": "Artigo",
-				"playground": "Ambiente de testes",
+				"weights": "Pesos",
 				"repository": "Repositório",
-				"weights": "Pesos"
+				"documentation": "Documentação",
+				"api_reference": "Referência da API",
+				"playground": "Ambiente de testes",
+				"pricing": "Preços",
+				"benchmark": "Benchmark",
+				"website": "Site",
+				"provider": "Provedor",
+				"deprecation": "Aviso de descontinuação",
+				"license": "Licença"
 			},
 			"subscriptionPlansTitle": "Planos de assinatura",
 			"subscriptionPlansDescription": "Associe ou desassocie este modelo dos planos de assinatura.",
@@ -2490,6 +2509,7 @@
 			"serviceTierLineStyles": "Estilos de linha por nível de serviço",
 			"inAudience": "Em {audience}",
 			"usOnlyInference": "Inferência somente nos EUA",
+			"withKeyterms": "Com termos-chave",
 			"regionOnlyInference": "Inferência somente em {region}"
 		},
 		"publicModelCopy": {
@@ -2608,6 +2628,30 @@
 			"latency": "Latência",
 			"agreements": "Concordâncias",
 			"uniqueInsight": "Contribuição única"
+		},
+		"messageChips": {
+			"kindSuffix": ", {kind}",
+			"kinds": {
+				"file": "arquivo",
+				"folder": "pasta",
+				"link": "link",
+				"chat": "chat",
+				"commit": "commit",
+				"branch": "branch",
+				"local": "servidor local"
+			},
+			"chatFallback": "Chat",
+			"pullRequest": "PR #{number}",
+			"issue": "Issue #{number}",
+			"clickToCopy": "Clique para copiar",
+			"pathCopied": "Caminho copiado",
+			"commitCopied": "Commit copiado",
+			"branchCopied": "Branch copiada",
+			"copyFailed": "Não foi possível copiar"
+		},
+		"numberInput": {
+			"decrease": "Diminuir",
+			"increase": "Aumentar"
 		}
 	},
 	"deprecationNotice": {

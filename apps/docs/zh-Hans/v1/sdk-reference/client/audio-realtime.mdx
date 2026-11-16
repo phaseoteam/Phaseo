@@ -5,7 +5,7 @@ description: "在任意 Phaseo SDK 中通过 Phaseo 中继进行实时语音通�
 ---
 
 <Note>
-实时语音处于 Beta 阶段，按工作区开放访问。实时客户端已在 SDK 源码中，但尚未进入已发布的包（`3.0.0`、Rust `0.2.0`）；除 C++ 外，它们会随每个 SDK 的下个版本一起发布。
+实时语音处于 [Beta](../../developers/feature-maturity.mdx) 阶段，按工作区开放访问。实时客户端已在 SDK 源码中，但尚未进入已发布的包（`3.0.0`、Rust `0.2.0`）；除 C++ 外，它们会随每个 SDK 的下个版本一起发布。
 </Note>
 
 连接时会创建会话（`POST /v1/audio/realtime/sessions`），打开中继 WebSocket，并等待 `relay.connected`。然后把 PCM16 音频流式发送进去，读取提供商事件，最后结束通话以获取最终账单。中继协议、警告和原因代码请参阅[实时语音会话](/zh-Hans/v1/guides/realtime-voice)。

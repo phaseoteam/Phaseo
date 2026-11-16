@@ -7,7 +7,7 @@ icon: "list-tree"
 定义一套分类体系（例如部门、受众或任务类型）以及执行分类的模型，Phaseo 就会用该模型的回答为每个已完成的请求打标签。每个回答都会作为[请求标签](/zh-Hans/v1/guides/request-labels)保存，因此你可以像使用代码发送的标签一样，按它筛选和分组日志、用量和分析数据。当你的代码不知道类别时，就使用分类器：例如提示词是为谁写的、智能体正在做哪类工作，或者请求是否涉及受监管的主题。
 
 <Note>
-请求分类器目前处于 Beta 阶段。所有者和管理员可以在 **设置 → 分类器** 中管理它们，或使用 `/v1/classifiers` 管理 API，并配合具有 `classifiers:*` 权限范围的[管理密钥](/zh-Hans/v1/developers/management-api-keys)。
+请求分类器目前处于 [Beta](../developers/feature-maturity.mdx) 阶段，按工作区申请开通。所有者和管理员可以在 **设置 → 分类器** 中管理它们，或使用 `/v1/classifiers` 管理 API，并配合具有 `classifiers:*` 权限范围的[管理密钥](/zh-Hans/v1/developers/management-api-keys)。
 </Note>
 
 ## 请求如何被分类

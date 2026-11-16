@@ -449,6 +449,12 @@ export function conciseConditionLabel(conds?: Condition[] | null, pref: Conditio
         const rest = conds.filter((_, index) => index !== geoIndex);
         return rest.length ? `${conciseConditionLabel(rest, pref)} · ${geoLabel}` : geoLabel;
     }
+    // Speech-to-text keyterm prompting (ElevenLabs Scribe) has its own, higher rate.
+    const keytermIndex = conds.findIndex((x) => String(x.path ?? "").toLowerCase() === "keyterms" && x.op === "eq" && (x.value === true || x.value === "true"));
+    if (keytermIndex !== -1) {
+        const rest = conds.filter((_, index) => index !== keytermIndex);
+        return rest.length ? `${conciseConditionLabel(rest, pref)} · With keyterms` : "With keyterms";
+    }
     const picks = pref.prefer ?? ["cache_ttl", "quality", "resolution", "size"];
     for (const key of picks) {
         const c = conds.find(x => x.path?.toLowerCase().includes(key));

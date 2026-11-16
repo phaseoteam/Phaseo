@@ -17,7 +17,7 @@ icon: "map"
 | الإبقاء على تكامل موجود متوافق مع OpenAI | [`POST /chat/completions`](./endpoint/chat-completions) |
 | تصفح النماذج والمزوّدين | [`GET /models`](./endpoint/models) و[`GET /providers`](./endpoint/providers) |
 | إنشاء الموسيقى أو إدارة الملفات | [`POST /music/generate`](./endpoint/music-generate) و[`POST /files`](./endpoint/files) |
-| توليد فيديو (تجريبي) | [`POST /videos`](./endpoint/video-create) |
+| توليد فيديو (ألفا) | [`POST /videos`](./endpoint/video-create) |
 | إرسال دفعة أو تنزيل النتائج (تجريبي) | [`POST /batches`](./endpoint/batches-create) و[`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## عنوان URL الأساسي
@@ -40,7 +40,7 @@ https://api.phaseo.app/v1
 	عرض ملف المواصفات
 </Card>
 
-يستخدم التوثيق وحزم SDK هذه المواصفة نفسها. نقاط نهاية Video وBatch وDecisions موسومة بأنها **تجريبية**؛ وقد يلزم وصول معاينة لمساحة العمل.
+يستخدم التوثيق وحزم SDK هذه المواصفة نفسها. تحمل نقاط النهاية غير المتاحة للجميع بعد شارة **ألفا** أو **تجريبي**، ويجب تفعيل بعضها لمساحة عملك أولًا. توضّح صفحة [نضج الميزات](../developers/feature-maturity.mdx) المراحل وتسرد طريقة الوصول إلى كل ميزة.
 
 ## المصادقة
 

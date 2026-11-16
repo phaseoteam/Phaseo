@@ -50,5 +50,10 @@ describe("generated pricing presentation copy", () => {
 			expect(euOnlyDisplay).toContain("EU");
 			expect(euOnlyDisplay).not.toMatch(/Common\.ui\.|\{region\}/);
 			if (locale !== "en-GB") expect(euOnlyDisplay).not.toBe("EU-only inference");
+			const keyterms = conciseConditionLabel([{ op: "eq", path: "keyterms", value: true }]);
+			expect(keyterms).toBe("With keyterms");
+			const keytermsDisplay = localizedPricingDisplayLabel(keyterms, locale, t as never);
+			expect(keytermsDisplay).not.toMatch(/keyterms eq|Common\.ui\./);
+			if (locale !== "en-GB") expect(keytermsDisplay).not.toBe("With keyterms");
 	});
 });

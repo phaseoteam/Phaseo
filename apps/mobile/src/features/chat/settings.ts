@@ -115,10 +115,12 @@ export function settingsRequestFields(settings: ModelSettings | undefined, capab
   return body;
 }
 
-/** The system message that goes first in the conversation, if the model has a prompt. */
-export function systemPromptFor(settings: ModelSettings | undefined): string | null {
+export const MATH_FORMATTING = "For typeset math, use $...$ inline or $$ delimiters on separate lines for a display equation. Use valid LaTeX and escape % inside equations. Keep currency and code literal; do not wrap equations in backticks.";
+
+/** Shared by the request and its context estimate, with custom instructions last. */
+export function systemPromptFor(settings: ModelSettings | undefined): string {
   const prompt = settings?.systemPrompt?.trim();
-  return prompt ? prompt : null;
+  return prompt ? `${MATH_FORMATTING}\n\n${prompt}` : MATH_FORMATTING;
 }
 
 /** "Apply to all models": everything but the provider (as the website does) and the display name. */

@@ -8,7 +8,7 @@ icon: "messages-square"
 Ajoutez l’agent Phaseo à Slack depuis **Paramètres → Slack** : votre équipe peut alors le mentionner dans un canal ou lui écrire directement pour obtenir des réponses du modèle de votre choix. Il répond dans le fil et diffuse sa réponse au fur et à mesure qu’il l’écrit. Les propriétaires et les administrateurs choisissent qui peut l’utiliser et fixent ses limites. Vous payez un prix mensuel pour les personnes qui l’ont utilisé, et les tokens de modèle sont facturés comme toute autre requête du gateway (consultez [Administration et facturation de l’agent Slack](/fr/v1/guides/slack-agent-admin)).
 
 <Note>
-L’agent Slack est activé progressivement pour les espaces de travail. Si **Paramètres → Slack** n’apparaît pas encore dans vos paramètres, il n’est pas encore disponible pour votre espace de travail.
+L’agent Slack est en [Alpha](../developers/feature-maturity.mdx) et est activé progressivement pour les espaces de travail. Si **Paramètres → Slack** n’apparaît pas encore dans vos paramètres, il n’est pas encore disponible pour votre espace de travail.
 </Note>
 
 | Il peut | Section |
@@ -25,7 +25,6 @@ L’agent Slack est activé progressivement pour les espaces de travail. Si **Pa
 ## Avant de commencer
 
 - Vous devez être propriétaire ou administrateur de l’espace de travail Phaseo, et autorisé à ajouter des applications à votre espace de travail Slack.
-- Ouvrez **Chat** une fois et vérifiez les réglages de confidentialité de votre espace de travail. Phaseo le demande avant la première installation.
 - Ajoutez des [crédits](https://phaseo.app/settings/credits). La facturation mensuelle et les tokens de modèle de l’agent sont payés avec eux.
 
 ## Ajouter l’agent à Slack
@@ -230,7 +229,7 @@ Quelques règles pour votre propre application :
 <span id="fix-setup-problems"></span>
 ## Résoudre les problèmes de configuration
 
-Si l’installation n’aboutit pas, **Paramètres → Slack** en indique la raison. Les plus fréquentes sont une vérification de confidentialité pas encore faite (ouvrez **Chat** une fois) et un espace de travail Slack qui a déjà l’agent depuis un autre espace de travail Phaseo (désinstallez-le d’abord là-bas).
+Si l’installation n’aboutit pas, **Paramètres → Slack** en indique la raison. La plus fréquente est un espace de travail Slack qui a déjà l’agent depuis un autre espace de travail Phaseo (désinstallez-le d’abord là-bas).
 
 Si l’agent ne répond pas du tout :
 

@@ -1473,3 +1473,39 @@ describe("Alibaba glm-5.3 reasoning effort", () => {
 		expect(request.reasoning_effort).toBe("low");
 	});
 });
+
+describe("Alibaba Qwen reasoning effort", () => {
+	// https://docs.qwencloud.com/developer-guides/text-generation/thinking:
+	// qwen4-max takes low, high and xhigh; Qwen 3.8 takes low, medium and xhigh.
+	it.each([
+		["qwen4-max", "minimal", "low"],
+		["qwen4-max", "low", "low"],
+		["qwen4-max", "medium", "high"],
+		["qwen4-max", "high", "high"],
+		["qwen4-max", "xhigh", "xhigh"],
+		["qwen4-max", "max", "xhigh"],
+		["qwen3.8-max-0902", "medium", "medium"],
+		["qwen3.8-max-0902", "high", "xhigh"],
+	])("%s maps %s to %s", (model, effort, expected) => {
+		const request = irToOpenAIChat({
+			model,
+			messages: [{ role: "user", content: [{ type: "text", text: "Plan the migration." }] }],
+			stream: false,
+			reasoning: { effort },
+		} as any, model, "alibaba-cloud");
+
+		expect(request.reasoning_effort).toBe(expected);
+	});
+
+	it("turns thinking off for none on qwen4-max", () => {
+		const request = irToOpenAIChat({
+			model: "qwen4-max",
+			messages: [{ role: "user", content: [{ type: "text", text: "Hello." }] }],
+			stream: false,
+			reasoning: { effort: "none" },
+		} as any, "qwen4-max", "alibaba-cloud");
+
+		expect(request.enable_thinking).toBe(false);
+		expect(request.reasoning_effort).toBeUndefined();
+	});
+});

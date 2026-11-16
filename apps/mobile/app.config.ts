@@ -2,7 +2,7 @@ import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import type { ExpoConfig } from "expo/config";
-import { withAndroidManifest, type ConfigPlugin } from "expo/config-plugins";
+import { withAndroidManifest, withDangerousMod, type ConfigPlugin } from "expo/config-plugins";
 
 import appJson from "./app.json";
 
@@ -63,20 +63,33 @@ const withCleartextTraffic: ConfigPlugin = (config) => withAndroidManifest(confi
   return manifest;
 });
 
+// enriched-markdown 1.1.1's consumer rule names the wrong package. Display math
+// uses reflection, so release shrinking must preserve its constructor and methods.
+const withNativeMath: ConfigPlugin = (config) => withDangerousMod(config, ["android", async (mod) => {
+  const file = path.join(mod.modRequest.platformProjectRoot, "app/proguard-rules.pro");
+  const rule = "-keep class com.swmansion.enriched.markdown.segments.MathContainerView { *; }";
+  const existing = await fs.promises.readFile(file, "utf8");
+  if (!existing.includes(rule)) await fs.promises.appendFile(file, `\n# Native display math is constructed through reflection.\n${rule}\n`);
+  return mod;
+}]);
+
 const git = (args: string) => execSync(`git ${args}`, { cwd: __dirname, stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
 
 /**
  * Which source a build came from, for Account → About and Diagnostics: the commit, when the config was read (the app
  * build embeds this config) and the build number, which is the number of commits up to HEAD, so each build from a
  * later commit gets a higher Android versionCode and iOS build number. Builds outside a git checkout leave these
- * out, and so does a shallow clone for the count, which would be meaningless there.
+ * out, and so does a shallow clone for the count, which would be meaningless there. Triage from a computer fetches
+ * the source at the full commit (`buildSha`), and says when the build had uncommitted changes (`buildDirty`).
  */
-function buildInfo(): { buildCommit?: string; builtAt?: string; buildNumber?: number } {
+function buildInfo(): { buildCommit?: string; buildSha?: string; buildDirty?: boolean; builtAt?: string; buildNumber?: number } {
   try {
-    const commit = git("rev-parse --short=10 HEAD");
-    if (!commit) return {};
+    const sha = git("rev-parse HEAD");
+    if (!sha) return {};
     const count = git("rev-parse --is-shallow-repository") === "true" ? Number.NaN : Number(git("rev-list --count HEAD"));
-    return { buildCommit: commit, builtAt: new Date().toISOString(), ...(Number.isInteger(count) && count > 0 ? { buildNumber: count } : {}) };
+    // Untracked files count too (a new file a build imports), but only in the app and the shared packages it builds from.
+    const dirty = git("status --porcelain -- . ../../packages") !== "";
+    return { buildCommit: sha.slice(0, 10), buildSha: sha, ...(dirty ? { buildDirty: true } : {}), builtAt: new Date().toISOString(), ...(Number.isInteger(count) && count > 0 ? { buildNumber: count } : {}) };
   } catch {
     return {};
   }
@@ -89,7 +102,7 @@ const build = buildInfo();
  * again after committing for the number to move on (see "Build number" in README.md).
  */
 const buildNumber = build.buildNumber ?? expo.android?.versionCode ?? 1;
-const base: ExpoConfig = {
+const base: ExpoConfig = withNativeMath({
   ...expo,
   ios: {
     ...expo.ios,
@@ -109,7 +122,7 @@ const base: ExpoConfig = {
     ...build,
     buildNumber,
   },
-};
+});
 
 export default perf
   ? withCleartextTraffic({

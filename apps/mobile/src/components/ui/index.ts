@@ -2,6 +2,7 @@ export { Button, IconButton } from "./button";
 export { Callout, CALLOUT_TONES, type CalloutTone } from "./callout";
 export { Badge, Chip, ChipRow } from "./chip";
 export { Icon, useToneColor } from "./icon";
+export { InlineChip, MentionText } from "./inline-chip";
 export { SearchField, TextField } from "./input";
 export { Divider, Fact, Row, Section } from "./list";
 export { HorizontalScroll, OutsideDrawer } from "./horizontal-scroll";

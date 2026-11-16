@@ -5,9 +5,9 @@ import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHead
 import { withSettingsResource } from "@/components/(gateway)/settings/PrivateSettingsQuery";
 import ClassifiersSettingsClient from "@/components/(gateway)/settings/classifiers/ClassifiersSettingsClient";
 import type { SettingsClassifiersInitialData } from "@/lib/fetchers/internal/settingsTypes";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButton";
+import { FeatureStageBadge } from "@/components/(gateway)/settings/FeatureStageBadge";
 
 export default withSettingsResource("classifiers", function ClassifiersContent({ initialData }: { initialData: SettingsClassifiersInitialData }) {
 	const t = useTranslations("SettingsUI");
@@ -17,7 +17,7 @@ export default withSettingsResource("classifiers", function ClassifiersContent({
 			<SettingsPageHeader
 				title={t("classifiers.title")}
 				description={t("classifiers.description")}
-				meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>}
+				meta={<FeatureStageBadge stage="beta" />}
 				actions={(
 					<>
 						{initialData.workspaceId && initialData.canManageClassifiers ? (atLimit ? (

@@ -17,7 +17,7 @@ icon: "map"
 | 既存の OpenAI 互換連携を維持する | [`POST /chat/completions`](./endpoint/chat-completions) |
 | モデルとプロバイダーを確認する | [`GET /models`](./endpoint/models) と [`GET /providers`](./endpoint/providers) |
 | 音楽を作成する、またはファイルを管理する | [`POST /music/generate`](./endpoint/music-generate) と [`POST /files`](./endpoint/files) |
-| 動画を生成する（ベータ） | [`POST /videos`](./endpoint/video-create) |
+| 動画を生成する（アルファ） | [`POST /videos`](./endpoint/video-create) |
 | バッチを送信する、または結果をダウンロードする（ベータ） | [`POST /batches`](./endpoint/batches-create) と [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## ベース URL
@@ -40,7 +40,7 @@ OpenAPI ファイルを Postman、Hoppscotch、または SDK ジェネレータ�
 	仕様ファイルを表示
 </Card>
 
-ドキュメントと SDK はこの同じ仕様を使います。Video、Batch、Decisions のエンドポイントには**ベータ**のラベルが付いており、ワークスペースのプレビューアクセスが必要な場合があります。
+ドキュメントと SDK はこの同じ仕様を使います。一般提供されていないエンドポイントには **アルファ** または **ベータ** のバッジが付いており、一部は先にワークスペースで有効化する必要があります。各段階の説明と各機能のアクセスについては、[機能の成熟度](../developers/feature-maturity.mdx)を参照してください。
 
 ## 認証
 

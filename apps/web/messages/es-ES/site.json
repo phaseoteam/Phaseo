@@ -2212,7 +2212,8 @@
 			"security": "9. Cómo protegemos tus datos",
 			"thirdParties": "10. Sitios y servicios de terceros",
 			"changes": "11. Cambios en esta Política de privacidad",
-			"contact": "12. Contacto y reclamaciones"
+			"contact": "12. Contacto y reclamaciones",
+			"advertising": "2.7 Publicidad"
 		},
 		"termsHeadings": {
 			"serviceOverview": "1. Descripción del servicio",
@@ -2325,6 +2326,10 @@
 				{
 					"label": "Cookies de analítica",
 					"text": "para medir el uso, el rendimiento y los errores, por ejemplo, mediante Google Analytics o PostHog."
+				},
+				{
+					"label": "Cookies de publicidad",
+					"text": "utilizadas por Google y otros proveedores de anuncios para mostrar y medir anuncios en los sitios web de Phaseo que incluyen publicidad, limitar la frecuencia con que aparecen y, si das tu consentimiento, personalizarlos."
 				}
 			],
 			"cookieControl": "Puedes controlar las cookies en la configuración de tu navegador. Bloquear algunos tipos puede afectar a tu experiencia o impedir que funcionen ciertas funciones.",
@@ -2471,7 +2476,11 @@
 			"contactIntro": "Si tienes preguntas sobre esta Política de privacidad o sobre cómo tratamos los datos personales, puedes contactar con nosotros:",
 			"emailLabel": "Correo electrónico",
 			"supportLabel": "Soporte",
-			"regulatorComplaint": "Si estás en el Reino Unido, también puedes presentar una reclamación ante la Information Commissioner’s Office (ICO), o ante la autoridad local de protección de datos si estás en la UE. Nos gustaría tener la oportunidad de resolver tus dudas primero, así que te animamos a contactarnos antes."
+			"regulatorComplaint": "Si estás en el Reino Unido, también puedes presentar una reclamación ante la Information Commissioner’s Office (ICO), o ante la autoridad local de protección de datos si estás en la UE. Nos gustaría tener la oportunidad de resolver tus dudas primero, así que te animamos a contactarnos antes.",
+			"advertisingIntro": "Algunos sitios web de Phaseo, incluidos los sitios en subdominios de phaseo.app, muestran anuncios servidos por Google AdSense. No mostramos anuncios en el Gateway, la API ni el panel de tu cuenta, y no usamos tus prompts, Outputs ni datos de tu cuenta para orientar anuncios.",
+			"advertisingDetails": "Los proveedores externos, incluido Google, utilizan cookies para mostrar anuncios basados en tus visitas anteriores a nuestros sitios web o a otros sitios web. El uso de cookies publicitarias permite a Google y a sus socios mostrarte anuncios basados en tus visitas a nuestros sitios y/o a otros sitios de Internet.",
+			"advertisingConsent": "Si te encuentras en el Reino Unido, el EEE o Suiza, te pedimos tu consentimiento mediante un mensaje de consentimiento antes de usar cookies publicitarias para personalizar anuncios. Si no das tu consentimiento, Google puede seguir mostrando anuncios no personalizados, que usan cookies o tecnologías similares solo para fines como limitar la frecuencia, elaborar informes agregados y prevenir el fraude. Puedes cambiar tu elección en cualquier momento desde el enlace del mensaje de consentimiento en esas páginas.",
+			"advertisingOptOut": "Puedes desactivar la publicidad personalizada en la <adsSettings>configuración de anuncios de Google</adsSettings>, o desactivar el uso de cookies para publicidad personalizada por parte de algunos proveedores externos en <aboutAds>aboutads.info</aboutAds> o <yourChoices>youronlinechoices.eu</yourChoices>. Google explica cómo usa estos datos en <partnerSites>Cómo utiliza Google la información de sitios web o aplicaciones que utilizan sus servicios</partnerSites>."
 		},
 		"termsBody": {
 			"operator": "<person>Daniel Butler</person> opera el Servicio bajo el nombre de <brand>Phaseo</brand> («Phaseo», «nosotros» o «nuestro»).",

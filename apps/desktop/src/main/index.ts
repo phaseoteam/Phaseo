@@ -46,7 +46,8 @@ import { measureWorktree } from "./worktreeSizes";
 import { limitResetAt } from "../shared/usageLimitRecovery";
 import { validateSecretAnswer } from "../shared/secretRequests";
 import { generateCommitMessage, gitInit, publishOwners, publishRepository } from "./gitWorkflow";
-import type { Account, AccountStatus, Harness, PhaseoSignInMethod, PhaseoSignInResult } from "../shared/workspace";
+import type { Account, AccountStatus, AgentActivity, Harness, PhaseoSignInMethod, PhaseoSignInResult } from "../shared/workspace";
+import { previewActivities, previewTask } from "../shared/activityPreview";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { resolveNativeCommand } from "./nativeProcess";
 import { harnessVersion } from "./harnessVersion";
@@ -111,7 +112,7 @@ import { branchPullRequest, forgetBranchPullRequest } from "./branchPullRequest"
 import { createPullRequest, parsePullRequestText, pullRequestPrompt, threadWorkLog, type PullRequestContext } from "./createPullRequest";
 import { OutsideAgentsMcp } from "./outsideAgentsMcp";
 import { PhoneService, type PhaseoSignIn } from "./phone/phoneService";
-import { phoneModels, phoneSetChat, startPhoneChat, type DiscoverModels, type PhoneModelSources } from "./phone/phoneHost";
+import { phoneModels, phoneSetChat, startPhoneChat, startPhoneTriage, type DiscoverModels, type PhoneModelSources } from "./phone/phoneHost";
 import { phoneFilePreview } from "./phone/phoneFiles";
 import { codeHostSettings, configureCodeHosts, removeCodeHostToken, saveCodeHostToken, saveCustomCodeHosts } from "./codeHosts";
 import { codeHostKinds, validHostName, type CodeHostKind } from "../shared/codeHosts";
@@ -911,12 +912,20 @@ ipcMain.handle("workspace:checkpoint-changes", (event, taskId: unknown, messageI
 ipcMain.handle("workspace:task", (event, id: unknown) => {
 	if (shutdownStarted) return;
 	if (!senderWindow(event) || typeof id !== "string" || !id || id.length > 200) throw new Error("Invalid task request.");
-	return workspaceRuntime.store.getTaskView(id);
+	// The window gets long tool output and reasoning of finished turns as previews; a row reads the rest when opened.
+	const store = workspaceRuntime.store;
+	return previewTask(store.getTaskView(id, store.getPreferences().chat.historyPageSize), store.lastUserId(id));
 });
 ipcMain.handle("workspace:conversation-page", (event, query: unknown) => {
 	if (shutdownStarted) return;
 	if (!senderWindow(event)) throw new Error("Untrusted workspace request.");
-	return workspaceRuntime.store.conversationPage(query);
+	const store = workspaceRuntime.store, page = store.conversationPage(query), taskId = (query as { taskId: string }).taskId;
+	return page.kind === "activities" ? { ...page, entries: previewActivities(page.entries as AgentActivity[], store.lastUserId(taskId)) ?? [] } : { ...page, activities: previewActivities(page.activities, store.lastUserId(taskId)) };
+});
+ipcMain.handle("workspace:activity-text", (event, taskId: unknown, activityId: unknown) => {
+	if (shutdownStarted) return;
+	if (!senderWindow(event) || typeof taskId !== "string" || typeof activityId !== "string" || !taskId || !activityId || taskId.length > 200 || activityId.length > 400) throw new Error("Invalid activity request.");
+	return workspaceRuntime.store.activityText(taskId, activityId);
 });
 ipcMain.handle("workspace:conversation-find", (event, query: unknown) => {
 	if (shutdownStarted) return;
@@ -1024,21 +1033,32 @@ ipcMain.handle("workspace:clone-project", async (event, url: unknown) => {
 const triageBuild = (): TriageBuild => ({ version: app.getVersion(), ...buildStamp, platform: process.platform, osRelease: release(), arch: process.arch, electron: process.versions.electron, chrome: process.versions.chrome, node: process.versions.node, packaged: app.isPackaged });
 /** Where filed issues and offered pull requests go; PHASEO_TRIAGE_REPOSITORY points them at a test repository. */
 const triageRepository = () => /^[\w.-]+\/[\w.-]+$/.test(process.env.PHASEO_TRIAGE_REPOSITORY ?? "") ? process.env.PHASEO_TRIAGE_REPOSITORY! : triageSourceRepository;
-let triagePreparing: Promise<{ projectId: string }> | undefined;
+const triagePreparing = new Map<string, Promise<{ projectId: string; commit: string; exact: boolean }>>();
+/**
+ * The source at `commit` (main without one) as a triage project. A second request for the same commit while the first
+ * is fetching waits for it rather than fetching again into the same folder. `name` names a new project; the window's
+ * own triage renames it every time, a phone's keeps the name of a checkout the window already made. The commit and
+ * whether it is the exact build always come from this fetch, never from an earlier request into the same folder.
+ */
+function prepareTriageProject(commit: string | undefined, version: string, name: string, rename: boolean) {
+	const key = commit ?? "main";
+	const pending = triagePreparing.get(key) ?? span("triage.prepare", { exact: Boolean(commit) }, async () => {
+		const checkout = await prepareTriageCheckout(path.join(app.getPath("userData"), "triage"), commit);
+		const project = workspaceRuntime.store.addProject(checkout.directory);
+		const named = rename || !project.triage;
+		if (named) project.name = name;
+		project.triage = { version: named ? version : project.triage!.version, commit: checkout.commit, exact: checkout.exact, repository: triageRepository() };
+		workspaceRuntime.store.saveProject(project);
+		return { projectId: project.id, commit: checkout.commit, exact: checkout.exact };
+	}).finally(() => { triagePreparing.delete(key); });
+	triagePreparing.set(key, pending);
+	return pending;
+}
 // Triage: the running build's source as a project, for a Code chat that debugs the app itself.
 ipcMain.handle("workspace:triage-prepare", async (event): Promise<TriagePreparation> => {
 	if (!senderWindow(event) || shutdownStarted) throw new Error("Untrusted workspace request.");
-	// A second request while the first is fetching waits for it rather than fetching again.
-	triagePreparing ??= span("triage.prepare", { exact: Boolean(buildStamp.commit) }, async () => {
-		const checkout = await prepareTriageCheckout(path.join(app.getPath("userData"), "triage"), buildStamp.commit);
-		const project = workspaceRuntime.store.addProject(checkout.directory);
-		const { version } = triageBuild();
-		project.name = `Phaseo ${version} source`;
-		project.triage = { version, commit: checkout.commit, exact: checkout.exact, repository: triageRepository() };
-		workspaceRuntime.store.saveProject(project);
-		return { projectId: project.id };
-	}).finally(() => { triagePreparing = undefined; });
-	const { projectId } = await triagePreparing;
+	const { version } = triageBuild();
+	const { projectId } = await prepareTriageProject(buildStamp.commit, version, `Phaseo ${version} source`, true);
 	const workspace = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(workspace);
 	const triage = workspaceRuntime.store.getProjects().find(project => project.id === projectId)!.triage!;
 	return { workspace, projectId, build: triageBuild(), triage, playbook: triagePlaybookName() };
@@ -1448,6 +1468,19 @@ app.whenReady().then(() => {
 				if (shutdownStarted) throw new Error("The workspace is shutting down.");
 				return (await workspaceRuntime.startWorktreeChat(validateWorktreeChatRequest(request), create)).taskId;
 			}),
+			// The window's Triage a Phaseo bug, at the phone build's commit rather than this app's.
+			triage: input => span("triage.phone", { exact: Boolean(input.build.commit) }, () => startPhoneTriage(() => workspaceRuntime.store.getOverview(), command => workspaceRuntime.command(command), phoneSources, input, {
+				prepare: async build => {
+					if (shutdownStarted) throw new Error("The workspace is shutting down.");
+					const { projectId, commit, exact } = await prepareTriageProject(build.commit, build.version, `Phaseo mobile ${build.version} source`, false);
+					const workspace = workspaceRuntime.store.getOverview(); workspaceRuntime.onChange(workspace);
+					const project = workspaceRuntime.store.getProjects().find(value => value.id === projectId);
+					if (!project?.triage) throw new Error("The source was fetched but its project could not be read.");
+					return { projectId, directory: project.directory, triage: { ...project.triage, commit, exact } };
+				},
+				writePlaybook: (directory, name, content) => writeTriagePlaybook(directory, name, content),
+			})),
+			issueDraft: (chatId, action, draftedAt) => span("triage.issue", { action, phone: true }, () => workspaceRuntime.issueDraftAction(chatId, action, undefined, draftedAt)),
 			models: input => phoneModels(workspaceRuntime.store.getOverview(), phoneSources, input),
 			// A worktree's .git is a file, which existsSync also finds.
 			isRepository: directory => existsSync(path.join(directory, ".git")),

@@ -12,10 +12,13 @@ import type { PhoneChatMode, PhonePermissionMode } from "./protocol";
 /** The lab whose logo stands for a coding agent's own models when the computer doesn't name one. */
 const AGENT_LABS: Record<string, string> = { codex: "openai", claude: "anthropic", grok: "xai" };
 
-/** The lab logo for a thread's model: the one the computer names, a Phaseo id's prefix, or the agent's maker. */
+/**
+ * The lab logo for a thread's model in the composer: the one the computer names, a Phaseo id's prefix, or the agent's
+ * maker. Bare, at full size: a tile would shrink it to two thirds.
+ */
 export function modelLogo({ organisationId, model, harness, label, size = 18 }: { organisationId?: string | null; model: string; harness?: string | null; label: string; size?: number }) {
   const lab = organisationId ?? (model.includes("/") ? model.split("/")[0] : null) ?? (harness ? AGENT_LABS[harness] : undefined) ?? null;
-  return <Logo id={lab} label={label} size={size} />;
+  return <Logo id={lab} label={label} size={size} bare />;
 }
 
 /** The logo for a new thread's choice. */

@@ -4,7 +4,7 @@ import type { ConversationPage, ConversationPageQuery } from "../../shared/conve
 import type { GitDiffRequest, GitDiffResult, TurnFileChange } from "../../shared/gitDiff";
 import { validateCommand, type AgentActivity, type Message, type Task, type TerminalCommand, type TerminalEvent, type TerminalSession, type WorkspaceCommand } from "../../shared/workspace";
 import type { TaskOverview, WorkspaceOverview } from "../../shared/workspaceOverview";
-import type { PhoneModelsInput, PhoneNewChat, PhoneSetChat } from "./phoneHost";
+import type { PhoneModelsInput, PhoneNewChat, PhoneSetChat, PhoneTriage, PhoneTriageStarted } from "./phoneHost";
 import { attentionOf, chatListPage, phoneChat, phoneChats, phoneDetail, phoneProjects, queuedChars, readingOrder, topLevelChats, TurnChangesCache, withTurnChanges } from "./phoneChats";
 import { phoneDiff, phoneDiffFile, phoneGitStatus, type GitWorkingStatus } from "./phoneReview";
 import { phoneFileList } from "./phoneFiles";
@@ -76,6 +76,10 @@ export type PhoneHost = {
 	servers: (chatId: string) => Promise<ThreadServer[]>;
 	/** `allowed` throws if the phone lost the right to Stop while the server was looked up; it runs just before the kill. */
 	stopServer: (chatId: string, port: number, allowed: () => void) => Promise<ThreadServer>;
+	/** Triage of the phone app from its own source (phoneHost's startPhoneTriage), as the window's Triage a Phaseo bug. */
+	triage: (input: PhoneTriage) => Promise<PhoneTriageStarted>;
+	/** The window's File issue and Discard for a triage chat's draft (workspaceRuntime's issueDraftAction). */
+	issueDraft: (chatId: string, action: "file" | "discard", draftedAt?: string) => Promise<unknown>;
 };
 export type PhoneDevice = { id: string; name: string };
 const forbidden = () => new PhoneProtocolError("forbidden", "Allow this on the computer: Settings → Phone.");
@@ -220,6 +224,24 @@ export class PhoneSession {
 				const overview = this.host.overview(), task = overview.tasks.find(value => value.id === id);
 				if (!task) throw new Error("The chat was started but could not be read.");
 				return okResponse(request, { chat: phoneChat(task, overview.projects) });
+			}
+			case "triage": {
+				// It fetches the source into a new folder and runs an agent there, so it needs the same consent as a worktree.
+				this.allowed("code"); this.allowed("changes");
+				const { id: _id, type: _type, ...input } = request;
+				const started = await this.host.triage({ ...input, device: this.device.name });
+				const overview = this.host.overview(), task = overview.tasks.find(value => value.id === started.chatId);
+				if (!task) throw new Error("The triage chat was started but could not be read.");
+				this.host.fromPhone({ device: this.device.name, summary: "Started triaging a bug in the phone app", ...task.projectId ? { projectId: task.projectId } : {} });
+				return okResponse(request, { chat: phoneChat(task, overview.projects), commit: started.commit, exact: started.exact });
+			}
+			case "issue_draft": {
+				// Filing creates an issue on GitHub in the person's name, like the pull request actions.
+				this.allowed("changes");
+				this.chatOverview(request.chatId);
+				await this.host.issueDraft(request.chatId, request.action, request.draftedAt);
+				const overview = this.chatOverview(request.chatId);
+				return okResponse(request, { chat: phoneDetail(this.host.task(request.chatId), overview, this.host.overview().projects) });
 			}
 			case "list_models":
 				this.checkProject(request.projectId);

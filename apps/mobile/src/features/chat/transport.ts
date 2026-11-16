@@ -4,7 +4,7 @@ import { endTimer } from "@/lib/diagnostics";
 import { perf } from "@/perf";
 import { buildRequestBody, loggableRequest, type WireMessage } from "./request";
 import type { ModelSettings, RequestCapabilities } from "./settings";
-import { readChatCompletion, StreamError, type StreamHandlers, type StreamUsage } from "./stream";
+import { readChatCompletion, StreamError, type StreamHandlers, type StreamToolCall, type StreamUsage } from "./stream";
 
 export class ChatRequestError extends Error {
   constructor(message: string, public code: string, public status: number) {
@@ -12,7 +12,7 @@ export class ChatRequestError extends Error {
   }
 }
 
-export type CompletionResult = { text: string; reasoning: string; usage?: StreamUsage };
+export type CompletionResult = { text: string; reasoning: string; usage?: StreamUsage; toolCalls: StreamToolCall[] };
 
 /**
  * Streams an answer through phaseo.app's chat proxy, which bills the user's
@@ -30,10 +30,21 @@ export async function streamCompletion(args: { model: string; messages: WireMess
   const body = JSON.stringify({ workspaceId: args.workspaceId, requestBody });
   endTimer("Request built", started, () => `${args.model}, ${requestBody.messages.length} messages, ${Math.round(body.length / 1024)} KB`);
   perf?.log("request.body", { model: args.model, ms: Math.round((performance.now() - started) * 10) / 10, kb: Math.round(body.length / 1024), messages: requestBody.messages.length, images: requestBody.messages.reduce((sum, message) => sum + (Array.isArray(message.content) ? message.content.filter((part) => part.type === "image_url").length : 0), 0) });
+  return postCompletion({ requestBody, body, headers, standIn, signal: args.signal }, args);
+}
+
+/** Streams any chat-completions body through the same proxy (triage's agent sends tools and tool results). */
+export async function streamRequestBody(args: { requestBody: Record<string, unknown>; workspaceId: string | null; signal: AbortSignal } & StreamHandlers): Promise<CompletionResult> {
+  const headers: Record<string, string> = { ...(await authHeaders()), ...workspaceCookie(args.workspaceId), "content-type": "application/json", accept: "text/event-stream" };
+  const body = JSON.stringify({ workspaceId: args.workspaceId, requestBody: args.requestBody });
+  return postCompletion({ requestBody: args.requestBody, body, headers, standIn: null, signal: args.signal }, args);
+}
+
+async function postCompletion({ body, headers, standIn, signal }: { requestBody: unknown; body: string; headers: Record<string, string>; standIn: { origin: string } | null; signal: AbortSignal }, handlers: StreamHandlers): Promise<CompletionResult> {
   const response = await streamingFetch(standIn ? new URL("/api/chat/chat-completions", standIn.origin).toString() : buildUrl("/api/chat/chat-completions"), {
     method: "POST",
     headers,
-    signal: args.signal,
+    signal,
     body,
   });
   if (!response.ok) {
@@ -46,5 +57,5 @@ export async function streamCompletion(args: { model: string; messages: WireMess
     throw new ChatRequestError(message, code || `http_${response.status}`, response.status);
   }
   if (!response.body) throw new StreamError("No answer stream came back.", "no_stream", true);
-  return readChatCompletion(response.body as ReadableStream<Uint8Array>, args);
+  return readChatCompletion(response.body as ReadableStream<Uint8Array>, handlers);
 }

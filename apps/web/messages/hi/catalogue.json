@@ -1623,7 +1623,9 @@
 			"totalDays": "कुल {count} दिन",
 			"modalityStructured": "संरचित स्थिति",
 			"modalityDecisions": "निर्णय",
-			"viewLicense": "लाइसेंस देखें"
+			"viewLicense": "लाइसेंस देखें",
+			"pricing": "मूल्य",
+			"benchmark": "बेंचमार्क"
 		},
 		"performance": {
 			"noTelemetry": "पिछले 7 दिनों में कोई अनुरोध नहीं",

@@ -19,6 +19,7 @@ import {
 	type CapabilityStatusOption,
 } from "@/lib/models/editorOptions";
 import { normalizeHttpUrl } from "@/lib/utils/urlSafety";
+import { defaultModelLinkTitle, normaliseModelLinkKind, type ModelLinkKind } from "@/lib/models/modelLinks";
 import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 import { fetchAccountWebApi, fetchInternalWebApi } from "@/lib/web-api/client";
@@ -112,37 +113,6 @@ function normalizeModelDetailName(input: unknown): (typeof MODEL_DETAIL_NAME_OPT
 	return MODEL_DETAIL_NAME_OPTIONS.includes(value as (typeof MODEL_DETAIL_NAME_OPTIONS)[number])
 		? (value as (typeof MODEL_DETAIL_NAME_OPTIONS)[number])
 		: null;
-}
-
-function normalizeModelLinkKind(input: unknown): string | null {
-	if (typeof input !== "string") return null;
-	const value = input
-		.trim()
-		.toLowerCase()
-		.replace(/[\s-]+/g, "_")
-		.replace(/[^a-z0-9_]+/g, "")
-		.replace(/^_+|_+$/g, "");
-	if (!value) return null;
-	return value.slice(0, 80);
-}
-
-function titleForModelLinkKind(kind: string): string {
-	switch (kind) {
-		case "api_reference":
-			return "API Reference";
-		case "model_card":
-			return "Model Card";
-		default:
-			return kind
-				.replace(/[_-]+/g, " ")
-				.replace(/\b\w/g, (char) => char.toUpperCase());
-	}
-}
-
-function normalizeModelLinkTitle(input: unknown, kind: string): string {
-	if (typeof input !== "string") return titleForModelLinkKind(kind);
-	const title = input.trim();
-	return title || titleForModelLinkKind(kind);
 }
 
 function normalizeModelDetailValue(
@@ -720,17 +690,17 @@ export const createModelAction = createServerFn({ method: "POST" })
 
 		const modelLinkRows = modelLinks
 			.map((row) => {
-				const kind = normalizeModelLinkKind(row.kind ?? row.platform);
 				const url = typeof row.url === "string" ? row.url.trim() : "";
-				if (!kind || !url) return null;
+				if (!url) return null;
+				const kind = normaliseModelLinkKind(row.kind ?? row.platform, url);
 				return {
 					platform: kind,
 					kind,
-					title: normalizeModelLinkTitle(row.title, kind),
+					title: (typeof row.title === "string" && row.title.trim()) || defaultModelLinkTitle(kind),
 					url,
 				};
 			})
-			.filter((row): row is { platform: string; kind: string; title: string; url: string } => Boolean(row));
+			.filter((row): row is { platform: ModelLinkKind; kind: ModelLinkKind; title: string; url: string } => Boolean(row));
 
 			const insertedInlinePlanRows = newSubscriptionPlans
 				.map((row) => {

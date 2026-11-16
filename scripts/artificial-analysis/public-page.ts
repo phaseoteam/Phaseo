@@ -46,13 +46,14 @@ export function extractFullPublicModels(html: string, bytes: Buffer, sourceUrl: 
 	const manifest = publicDataManifest(html);
 	const models = decodePublicData(bytes, manifest.key);
 	const stream = `<script>self.__next_f.push(${JSON.stringify([1, `a:${JSON.stringify(models)}\n`]).replace(/</g, "\\u003c")})</script>`;
-	const snapshot = extractPublicModels(stream, sourceUrl, fetchedAt);
+	const snapshot = extractPublicModels(stream, sourceUrl, fetchedAt, { fullDataset: true });
 	if (snapshot.models.length !== models.length) throw new Error("Full dataset contains missing or duplicate model identities");
 	return { ...snapshot, methodologyVersions: methodologyVersions(html), sha256: createHash("sha256").update(bytes).digest("hex"), pageSha256: createHash("sha256").update(html).digest("hex"), dataUrl: new URL(manifest.path, sourceUrl).href, coverage: "full_frontend_dataset" };
 }
 
 /** Decode JSON transport only. Never execute scripts downloaded from the source. */
-export function extractPublicModels(html: string, sourceUrl: string, fetchedAt: string | null) {
+/** Full datasets retain unscored AA models even when evaluation and token fields are absent. */
+export function extractPublicModels(html: string, sourceUrl: string, fetchedAt: string | null, { fullDataset = false } = {}) {
 	const records = new Map<string, unknown>();
 	let stream = "";
 	for (const match of html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script\b[^>]*>/gi)) {
@@ -95,7 +96,7 @@ export function extractPublicModels(html: string, sourceUrl: string, fetchedAt: 
 	const models = new Map<string, JsonObject>();
 	const walk = (value: unknown) => {
 		if (!value || typeof value !== "object") return;
-		if (object(value) && Object.hasOwn(value, "intelligenceIndex") && (Object.hasOwn(value, "canonicalIntelligenceIndexTokenCount") || Object.hasOwn(value, "intelligenceIndexEvaluations"))) {
+		if (object(value) && Object.hasOwn(value, "intelligenceIndex") && (Object.hasOwn(value, "canonicalIntelligenceIndexTokenCount") || Object.hasOwn(value, "intelligenceIndexEvaluations") || (fullDataset && typeof value.id === "string"))) {
 			const row = resolve(value) as JsonObject;
 			if (typeof row.id !== "string" || !row.id || typeof row.name !== "string" || typeof row.slug !== "string" || !/^[a-zA-Z0-9._-]+$/.test(row.slug)) throw new Error("Invalid public model identity");
 			const evaluations = row.intelligenceIndexEvaluations;

@@ -6,7 +6,7 @@ icon: "fingerprint-pattern"
 ---
 
 <Note>
-Trusted workloads is in beta and is rolling out to workspaces gradually. If **Settings → API Keys → Trusted workloads** doesn't appear in your dashboard, your workspace doesn't have it yet.
+Trusted workloads is in [Beta](/v1/developers/feature-maturity) and is rolling out to workspaces gradually. If **Settings → API Keys → Trusted workloads** doesn't appear in your dashboard, your workspace doesn't have it yet.
 </Note>
 
 Send your platform's short-lived OIDC token as the bearer token instead of a Phaseo API key, and nothing long-lived has to sit in your project settings or CI secrets. Platforms give each deployment, job or workload a signed token that says who it is, such as "the `website` project's production deployment" or "a job in GitLab project `4815162`", and the token expires within hours. You tell Phaseo which workloads to trust.

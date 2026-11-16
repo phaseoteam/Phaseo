@@ -2,8 +2,12 @@ const fs=require('node:fs'),path=require('node:path'),readline=require('node:rea
 const root=process.env.PHASEO_OWNED_CLAUDE_ROOT;if(!root)throw Error('Owned fixture root required');
 const log=value=>fs.appendFileSync(path.join(root,'sdk.jsonl'),JSON.stringify({pid:process.pid,relay:Number(process.env.PHASEO_OWNED_CLAUDE_RELAY_PID),cwd:process.cwd(),profile:process.env.CLAUDE_CONFIG_DIR,catalogMode:fs.readFileSync(path.join(root,'catalog-mode'),'utf8'),hasInheritedAuth:!!process.env.ANTHROPIC_API_KEY||!!process.env.CLAUDE_CODE_OAUTH_TOKEN,...value})+'\n');
 const send=value=>process.stdout.write(JSON.stringify(value)+'\n');log({phase:'start'});
+const cli=(process.env.PHASEO_OWNED_CLAUDE_ARGS??'').split('\u0001');
+// Shell probes are ordinary CLI commands, not SDK streams. Finish even with stdin held open.
+if(cli.length===1&&cli[0]==='--version'){console.log('2.1.80 (Claude Code)');process.exit(0);}
+if(cli.length===2&&cli[0]==='auth'&&cli[1]==='status'){console.log(JSON.stringify({loggedIn:false}));process.exit(0);}
 // MCP servers the SDK configured (the relay forwards the CLI arguments), reported as connected like the native CLI.
-const cli=(process.env.PHASEO_OWNED_CLAUDE_ARGS??'').split('\u0001'),mcpConfig=cli.indexOf('--mcp-config'),mcpServers=mcpConfig<0?[]:Object.keys(JSON.parse(cli[mcpConfig+1]).mcpServers);
+const mcpConfig=cli.indexOf('--mcp-config'),mcpServers=mcpConfig<0?[]:Object.keys(JSON.parse(cli[mcpConfig+1]).mcpServers);
 const session='owned-session';const commands=()=>fs.readFileSync(path.join(root,'catalog-mode'),'utf8')==='missing'?[]:[{name:'review-native',description:'Owned native review',argumentHint:'<path>'},{name:'Research',description:'Owned skill',argumentHint:'<topic>'},{name:'usage',description:'Owned usage',argumentHint:'',aliases:['cost','stats']}];
 readline.createInterface({input:process.stdin}).on('line',line=>{const packet=JSON.parse(line);log({type:packet.type,subtype:packet.request?.subtype,text:packet.message?.content?.find?.(part=>part.type==='text')?.text});
  if(packet.type==='control_request'){if(packet.request.subtype==='initialize'&&fs.readFileSync(path.join(root,'catalog-mode'),'utf8')==='hang')return;send({type:'control_response',response:{subtype:'success',request_id:packet.request_id,response:packet.request.subtype==='initialize'?{commands:commands(),models:[],agents:[],account:{},output_style:'default',available_output_styles:[]}:packet.request.subtype==='mcp_status'?{mcpServers:mcpServers.map(name=>({name,status:'connected'}))}: {}}});return;}

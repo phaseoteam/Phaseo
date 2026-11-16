@@ -19,6 +19,10 @@ import {
 	MODEL_STATUS_OPTIONS,
 } from "@/lib/models/editorOptions";
 import { PRICING_METER_OPTIONS } from "@/lib/pricing/meters";
+import ModelLinksEditor, {
+	modelLinkPayloadFromDrafts,
+	type ModelLinkDraft,
+} from "@/components/(data)/model/edit/ModelLinksEditor";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -191,18 +195,7 @@ const MODEL_DETAIL_FIELDS = [
 	},
 ] as const;
 
-const MODEL_LINK_FIELDS = [
-	{ key: "announcement", label: "Announcement" },
-	{ key: "api_reference", label: "API reference" },
-	{ key: "model_card", label: "Model card" },
-	{ key: "paper", label: "Paper" },
-	{ key: "playground", label: "Playground" },
-	{ key: "repository", label: "Repository" },
-	{ key: "weights", label: "Weights" },
-] as const;
-
 type DetailFieldKey = (typeof MODEL_DETAIL_FIELDS)[number]["key"];
-type LinkFieldKey = (typeof MODEL_LINK_FIELDS)[number]["key"];
 
 const COMPACT_DETAIL_FIELDS = new Set<DetailFieldKey>(["parameter_count", "training_tokens"]);
 
@@ -384,15 +377,6 @@ export default function NewModelForm({
 		parameter_count: t("modelCreation.form.detailExamples.parameterCount"),
 		training_tokens: t("modelCreation.form.detailExamples.trainingTokens"),
 	};
-	const linkFieldLabels: Record<LinkFieldKey, string> = {
-		announcement: t("linkTypes.announcement"),
-		api_reference: t("linkTypes.apiReference"),
-		model_card: t("modelCreation.form.linkTypes.modelCard"),
-		paper: t("linkTypes.researchPaper"),
-		playground: t("modelCreation.form.linkTypes.playground"),
-		repository: t("modelCreation.form.linkTypes.repository"),
-		weights: t("modelCreation.form.linkTypes.weights"),
-	};
 	const pricingMeterLabel = (meter: string, fallback: string) => {
 		const key = `meters.${meter}`;
 		return tPricing.has(key as never) ? tPricing(key as never) : fallback;
@@ -435,15 +419,7 @@ export default function NewModelForm({
 		parameter_count: "",
 		training_tokens: "",
 	});
-	const [linkValues, setLinkValues] = useState<Record<LinkFieldKey, string>>({
-		announcement: "",
-		api_reference: "",
-		model_card: "",
-		paper: "",
-		playground: "",
-		repository: "",
-		weights: "",
-	});
+	const [linkDrafts, setLinkDrafts] = useState<ModelLinkDraft[]>([]);
 
 	const benchmarkOptions = useMemo(() => {
 		const merged = new Map<string, string>();
@@ -755,18 +731,7 @@ export default function NewModelForm({
 		[detailValues]
 	);
 
-	const modelLinksPayload = useMemo(
-		() =>
-			JSON.stringify(
-				MODEL_LINK_FIELDS.map((field) => ({
-					platform: field.key,
-					kind: field.key,
-					title: field.label,
-					url: linkValues[field.key].trim() || null,
-				}))
-			),
-		[linkValues]
-	);
+	const modelLinksPayload = useMemo(() => JSON.stringify(modelLinkPayloadFromDrafts(linkDrafts)), [linkDrafts]);
 
 	const providerSelected = (providerId: string) =>
 		providerRows.some((row) => row.provider_id === providerId);
@@ -1324,24 +1289,7 @@ export default function NewModelForm({
 
 					<div className="space-y-2 border-t pt-3">
 						<Label className="text-xs uppercase tracking-wide text-muted-foreground">{t("editorTabs.links")}</Label>
-						<div className="grid gap-3 lg:grid-cols-2">
-							{MODEL_LINK_FIELDS.map((field) => (
-								<label key={field.key} className="text-sm">
-									<div className="mb-1 text-muted-foreground">{linkFieldLabels[field.key]}</div>
-									<Input
-										type="url"
-										value={linkValues[field.key]}
-										onChange={(event) =>
-											setLinkValues((prev) => ({
-												...prev,
-												[field.key]: event.target.value,
-											}))
-										}
-										placeholder="https://..."
-									/>
-								</label>
-							))}
-						</div>
+						<ModelLinksEditor value={linkDrafts} onChange={setLinkDrafts} />
 					</div>
 				</div>
 			</section>

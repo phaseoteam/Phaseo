@@ -683,6 +683,9 @@
 		"lastYear": "العام الماضي"
 	},
 	"ui": {
+		"tokenInput": {
+			"suggestions": "{count, plural, zero {لا اقتراحات} one {اقتراح واحد} two {اقتراحان} few {# اقتراحات} many {# اقتراحًا} other {# اقتراح}}. استخدم السهمين لأعلى ولأسفل للاختيار، وEnter للإدراج."
+		},
 		"subscriptionCatalog": {
 			"view_plan": "عرض الخطة",
 			"on_login": "عند تسجيل الدخول",
@@ -823,6 +826,15 @@
 			"removeBenchmark": "إزالة إدخال المعيار {index}",
 			"detailsHeading": "تفاصيل النموذج",
 			"linksHeading": "روابط النموذج",
+			"linksDescription": "أضف كل رابط بالعنوان الذي يجب أن يراه الناس. يحدد النوع الأيقونة البديلة وعمود المقارنة.",
+			"noLinks": "لا توجد روابط بعد.",
+			"addLink": "إضافة رابط",
+			"linkUrl": "عنوان URL",
+			"linkTitle": "العنوان",
+			"linkKind": "النوع",
+			"moveLinkUp": "نقل لأعلى",
+			"moveLinkDown": "نقل لأسفل",
+			"removeLink": "إزالة الرابط",
 			"detailFields": {
 				"input_context_length": {
 					"label": "طول سياق الإدخال",
@@ -847,12 +859,19 @@
 			},
 			"linkFields": {
 				"announcement": "إعلان",
-				"api_reference": "مرجع API",
 				"model_card": "بطاقة النموذج",
 				"paper": "ورقة بحثية",
-				"playground": "ساحة التجربة",
+				"weights": "الأوزان",
 				"repository": "مستودع",
-				"weights": "الأوزان"
+				"documentation": "التوثيق",
+				"api_reference": "مرجع API",
+				"playground": "ساحة التجربة",
+				"pricing": "الأسعار",
+				"benchmark": "معيار الأداء",
+				"website": "الموقع",
+				"provider": "المزوّد",
+				"deprecation": "إشعار الإيقاف",
+				"license": "الترخيص"
 			},
 			"subscriptionPlansTitle": "خطط الاشتراك",
 			"subscriptionPlansDescription": "إضافة هذا النموذج إلى خطط الاشتراك أو إزالته منها.",
@@ -2490,6 +2509,7 @@
 			"serviceTierLineStyles": "أنماط خطوط مستويات الخدمة",
 			"inAudience": "في {audience}",
 			"usOnlyInference": "استدلال داخل الولايات المتحدة فقط",
+			"withKeyterms": "مع المصطلحات الرئيسية",
 			"regionOnlyInference": "استدلال داخل {region} فقط"
 		},
 		"publicModelCopy": {
@@ -2608,6 +2628,30 @@
 			"latency": "زمن الاستجابة",
 			"agreements": "نقاط الاتفاق",
 			"uniqueInsight": "رؤية فريدة"
+		},
+		"messageChips": {
+			"kindSuffix": "، {kind}",
+			"kinds": {
+				"file": "ملف",
+				"folder": "مجلد",
+				"link": "رابط",
+				"chat": "محادثة",
+				"commit": "إيداع",
+				"branch": "فرع",
+				"local": "خادم محلي"
+			},
+			"chatFallback": "محادثة",
+			"pullRequest": "طلب سحب #{number}",
+			"issue": "مشكلة #{number}",
+			"clickToCopy": "انقر للنسخ",
+			"pathCopied": "تم نسخ المسار",
+			"commitCopied": "تم نسخ الإيداع",
+			"branchCopied": "تم نسخ الفرع",
+			"copyFailed": "تعذّر النسخ"
+		},
+		"numberInput": {
+			"decrease": "تقليل",
+			"increase": "زيادة"
 		}
 	},
 	"deprecationNotice": {

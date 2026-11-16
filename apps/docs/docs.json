@@ -67,7 +67,9 @@
                   "v1/developers/integrating-with-the-gateway",
                   "v1/developers/cli-and-mcp",
                   "v1/developers/manage-from-an-agent",
-                  "v1/community/faq"
+                  "v1/community/faq",
+                  "v1/developers/feature-maturity",
+                  "v1/glossary"
                 ]
               },
               {
@@ -384,7 +386,7 @@
               {
                 "group": "Video",
                 "icon": "video",
-                "tag": "Beta",
+                "tag": "Alpha",
                 "pages": [
                   "v1/api-reference/endpoint/video-create",
                   "v1/api-reference/endpoint/video-status",
@@ -654,7 +656,7 @@
                   },
                   {
                     "group": "Feedback & Evaluations",
-                    "tag": "Beta",
+                    "tag": "Alpha",
                     "expanded": false,
                     "pages": [
                       "v1/api-reference/endpoint/feedback-create",
@@ -744,7 +746,6 @@
                   },
                   {
                     "group": "Spend Rules",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "v1/api-reference/endpoint/spend-rules-create",
@@ -761,7 +762,6 @@
                   },
                   {
                     "group": "OAuth Applications",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "v1/api-reference/endpoint/oauth-clients-create",
@@ -813,7 +813,6 @@
                   },
                   {
                     "group": "Notifications",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "v1/api-reference/endpoint/notifications-settings-get",
@@ -830,7 +829,6 @@
                   },
                   {
                     "group": "Applications",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "v1/api-reference/endpoint/apps-list",
@@ -840,7 +838,6 @@
                   },
                   {
                     "group": "Data Contribution",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "v1/api-reference/endpoint/data-contribution-get",
@@ -1138,7 +1135,9 @@
                   "es/v1/developers/integrating-with-the-gateway",
                   "es/v1/developers/cli-and-mcp",
                   "es/v1/developers/manage-from-an-agent",
-                  "es/v1/community/faq"
+                  "es/v1/community/faq",
+                  "es/v1/developers/feature-maturity",
+                  "es/v1/glossary"
                 ]
               },
               {
@@ -1455,7 +1454,7 @@
               {
                 "group": "Vídeo",
                 "icon": "video",
-                "tag": "Beta",
+                "tag": "Alpha",
                 "pages": [
                   "es/v1/api-reference/endpoint/video-create",
                   "es/v1/api-reference/endpoint/video-status",
@@ -1725,7 +1724,7 @@
                   },
                   {
                     "group": "Comentarios y evaluaciones",
-                    "tag": "Beta",
+                    "tag": "Alpha",
                     "expanded": false,
                     "pages": [
                       "es/v1/api-reference/endpoint/feedback-create",
@@ -1815,7 +1814,6 @@
                   },
                   {
                     "group": "Reglas de gasto",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "es/v1/api-reference/endpoint/spend-rules-create",
@@ -1832,7 +1830,6 @@
                   },
                   {
                     "group": "Aplicaciones OAuth",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "es/v1/api-reference/endpoint/oauth-clients-create",
@@ -1884,7 +1881,6 @@
                   },
                   {
                     "group": "Notificaciones",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "es/v1/api-reference/endpoint/notifications-settings-get",
@@ -1901,7 +1897,6 @@
                   },
                   {
                     "group": "Aplicaciones",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "es/v1/api-reference/endpoint/apps-list",
@@ -1911,7 +1906,6 @@
                   },
                   {
                     "group": "Contribución de datos",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "es/v1/api-reference/endpoint/data-contribution-get",
@@ -2243,7 +2237,9 @@
                   "fr/v1/developers/integrating-with-the-gateway",
                   "fr/v1/developers/cli-and-mcp",
                   "fr/v1/developers/manage-from-an-agent",
-                  "fr/v1/community/faq"
+                  "fr/v1/community/faq",
+                  "fr/v1/developers/feature-maturity",
+                  "fr/v1/glossary"
                 ]
               },
               {
@@ -2560,7 +2556,7 @@
               {
                 "group": "Vidéo",
                 "icon": "video",
-                "tag": "Beta",
+                "tag": "Alpha",
                 "pages": [
                   "fr/v1/api-reference/endpoint/video-create",
                   "fr/v1/api-reference/endpoint/video-status",
@@ -2830,7 +2826,7 @@
                   },
                   {
                     "group": "Retours et évaluations",
-                    "tag": "Beta",
+                    "tag": "Alpha",
                     "expanded": false,
                     "pages": [
                       "fr/v1/api-reference/endpoint/feedback-create",
@@ -2920,7 +2916,6 @@
                   },
                   {
                     "group": "Règles de dépenses",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "fr/v1/api-reference/endpoint/spend-rules-create",
@@ -2937,7 +2932,6 @@
                   },
                   {
                     "group": "Applications OAuth",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "fr/v1/api-reference/endpoint/oauth-clients-create",
@@ -2989,7 +2983,6 @@
                   },
                   {
                     "group": "Notifications",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "fr/v1/api-reference/endpoint/notifications-settings-get",
@@ -3006,7 +2999,6 @@
                   },
                   {
                     "group": "Applications",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "fr/v1/api-reference/endpoint/apps-list",
@@ -3016,7 +3008,6 @@
                   },
                   {
                     "group": "Contribution de données",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "fr/v1/api-reference/endpoint/data-contribution-get",
@@ -3348,7 +3339,9 @@
                   "de/v1/developers/integrating-with-the-gateway",
                   "de/v1/developers/cli-and-mcp",
                   "de/v1/developers/manage-from-an-agent",
-                  "de/v1/community/faq"
+                  "de/v1/community/faq",
+                  "de/v1/developers/feature-maturity",
+                  "de/v1/glossary"
                 ]
               },
               {
@@ -3665,7 +3658,7 @@
               {
                 "group": "Video",
                 "icon": "video",
-                "tag": "Beta",
+                "tag": "Alpha",
                 "pages": [
                   "de/v1/api-reference/endpoint/video-create",
                   "de/v1/api-reference/endpoint/video-status",
@@ -3935,7 +3928,7 @@
                   },
                   {
                     "group": "Feedback und Bewertungen",
-                    "tag": "Beta",
+                    "tag": "Alpha",
                     "expanded": false,
                     "pages": [
                       "de/v1/api-reference/endpoint/feedback-create",
@@ -4025,7 +4018,6 @@
                   },
                   {
                     "group": "Ausgabenregeln",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "de/v1/api-reference/endpoint/spend-rules-create",
@@ -4042,7 +4034,6 @@
                   },
                   {
                     "group": "OAuth-Anwendungen",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "de/v1/api-reference/endpoint/oauth-clients-create",
@@ -4094,7 +4085,6 @@
                   },
                   {
                     "group": "Benachrichtigungen",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "de/v1/api-reference/endpoint/notifications-settings-get",
@@ -4111,7 +4101,6 @@
                   },
                   {
                     "group": "Anwendungen",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "de/v1/api-reference/endpoint/apps-list",
@@ -4121,7 +4110,6 @@
                   },
                   {
                     "group": "Datenbeiträge",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "de/v1/api-reference/endpoint/data-contribution-get",
@@ -4453,7 +4441,9 @@
                   "pt-BR/v1/developers/integrating-with-the-gateway",
                   "pt-BR/v1/developers/cli-and-mcp",
                   "pt-BR/v1/developers/manage-from-an-agent",
-                  "pt-BR/v1/community/faq"
+                  "pt-BR/v1/community/faq",
+                  "pt-BR/v1/developers/feature-maturity",
+                  "pt-BR/v1/glossary"
                 ]
               },
               {
@@ -4770,7 +4760,7 @@
               {
                 "group": "Vídeo",
                 "icon": "video",
-                "tag": "Beta",
+                "tag": "Alpha",
                 "pages": [
                   "pt-BR/v1/api-reference/endpoint/video-create",
                   "pt-BR/v1/api-reference/endpoint/video-status",
@@ -5040,7 +5030,7 @@
                   },
                   {
                     "group": "Feedback e avaliações",
-                    "tag": "Beta",
+                    "tag": "Alpha",
                     "expanded": false,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/feedback-create",
@@ -5130,7 +5120,6 @@
                   },
                   {
                     "group": "Regras de gastos",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/spend-rules-create",
@@ -5147,7 +5136,6 @@
                   },
                   {
                     "group": "Aplicativos OAuth",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/oauth-clients-create",
@@ -5199,7 +5187,6 @@
                   },
                   {
                     "group": "Notificações",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/notifications-settings-get",
@@ -5216,7 +5203,6 @@
                   },
                   {
                     "group": "Aplicativos",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/apps-list",
@@ -5226,7 +5212,6 @@
                   },
                   {
                     "group": "Contribuição de dados",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "pt-BR/v1/api-reference/endpoint/data-contribution-get",
@@ -5558,7 +5543,9 @@
                   "ja/v1/developers/integrating-with-the-gateway",
                   "ja/v1/developers/cli-and-mcp",
                   "ja/v1/developers/manage-from-an-agent",
-                  "ja/v1/community/faq"
+                  "ja/v1/community/faq",
+                  "ja/v1/developers/feature-maturity",
+                  "ja/v1/glossary"
                 ]
               },
               {
@@ -5875,7 +5862,7 @@
               {
                 "group": "動画",
                 "icon": "video",
-                "tag": "Beta",
+                "tag": "Alpha",
                 "pages": [
                   "ja/v1/api-reference/endpoint/video-create",
                   "ja/v1/api-reference/endpoint/video-status",
@@ -6145,7 +6132,7 @@
                   },
                   {
                     "group": "フィードバックと評価",
-                    "tag": "Beta",
+                    "tag": "Alpha",
                     "expanded": false,
                     "pages": [
                       "ja/v1/api-reference/endpoint/feedback-create",
@@ -6235,7 +6222,6 @@
                   },
                   {
                     "group": "支出ルール",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "ja/v1/api-reference/endpoint/spend-rules-create",
@@ -6252,7 +6238,6 @@
                   },
                   {
                     "group": "OAuth アプリケーション",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "ja/v1/api-reference/endpoint/oauth-clients-create",
@@ -6304,7 +6289,6 @@
                   },
                   {
                     "group": "通知",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "ja/v1/api-reference/endpoint/notifications-settings-get",
@@ -6321,7 +6305,6 @@
                   },
                   {
                     "group": "アプリケーション",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "ja/v1/api-reference/endpoint/apps-list",
@@ -6331,7 +6314,6 @@
                   },
                   {
                     "group": "データへの貢献",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "ja/v1/api-reference/endpoint/data-contribution-get",
@@ -6663,7 +6645,9 @@
                   "zh-Hans/v1/developers/integrating-with-the-gateway",
                   "zh-Hans/v1/developers/cli-and-mcp",
                   "zh-Hans/v1/developers/manage-from-an-agent",
-                  "zh-Hans/v1/community/faq"
+                  "zh-Hans/v1/community/faq",
+                  "zh-Hans/v1/developers/feature-maturity",
+                  "zh-Hans/v1/glossary"
                 ]
               },
               {
@@ -6980,7 +6964,7 @@
               {
                 "group": "视频",
                 "icon": "video",
-                "tag": "Beta",
+                "tag": "Alpha",
                 "pages": [
                   "zh-Hans/v1/api-reference/endpoint/video-create",
                   "zh-Hans/v1/api-reference/endpoint/video-status",
@@ -7250,7 +7234,7 @@
                   },
                   {
                     "group": "反馈与评估",
-                    "tag": "Beta",
+                    "tag": "Alpha",
                     "expanded": false,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/feedback-create",
@@ -7340,7 +7324,6 @@
                   },
                   {
                     "group": "支出规则",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/spend-rules-create",
@@ -7357,7 +7340,6 @@
                   },
                   {
                     "group": "OAuth 应用",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/oauth-clients-create",
@@ -7409,7 +7391,6 @@
                   },
                   {
                     "group": "通知",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/notifications-settings-get",
@@ -7426,7 +7407,6 @@
                   },
                   {
                     "group": "应用",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/apps-list",
@@ -7436,7 +7416,6 @@
                   },
                   {
                     "group": "数据贡献",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "zh-Hans/v1/api-reference/endpoint/data-contribution-get",
@@ -7768,7 +7747,9 @@
                   "hi/v1/developers/integrating-with-the-gateway",
                   "hi/v1/developers/cli-and-mcp",
                   "hi/v1/developers/manage-from-an-agent",
-                  "hi/v1/community/faq"
+                  "hi/v1/community/faq",
+                  "hi/v1/developers/feature-maturity",
+                  "hi/v1/glossary"
                 ]
               },
               {
@@ -8085,7 +8066,7 @@
               {
                 "group": "वीडियो",
                 "icon": "video",
-                "tag": "Beta",
+                "tag": "Alpha",
                 "pages": [
                   "hi/v1/api-reference/endpoint/video-create",
                   "hi/v1/api-reference/endpoint/video-status",
@@ -8355,7 +8336,7 @@
                   },
                   {
                     "group": "फ़ीडबैक और मूल्यांकन",
-                    "tag": "Beta",
+                    "tag": "Alpha",
                     "expanded": false,
                     "pages": [
                       "hi/v1/api-reference/endpoint/feedback-create",
@@ -8445,7 +8426,6 @@
                   },
                   {
                     "group": "खर्च नियम",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "hi/v1/api-reference/endpoint/spend-rules-create",
@@ -8462,7 +8442,6 @@
                   },
                   {
                     "group": "OAuth ऐप्लिकेशन",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "hi/v1/api-reference/endpoint/oauth-clients-create",
@@ -8514,7 +8493,6 @@
                   },
                   {
                     "group": "सूचनाएं",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "hi/v1/api-reference/endpoint/notifications-settings-get",
@@ -8531,7 +8509,6 @@
                   },
                   {
                     "group": "ऐप्लिकेशन",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "hi/v1/api-reference/endpoint/apps-list",
@@ -8541,7 +8518,6 @@
                   },
                   {
                     "group": "डेटा योगदान",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "hi/v1/api-reference/endpoint/data-contribution-get",
@@ -8873,7 +8849,9 @@
                   "ar/v1/developers/integrating-with-the-gateway",
                   "ar/v1/developers/cli-and-mcp",
                   "ar/v1/developers/manage-from-an-agent",
-                  "ar/v1/community/faq"
+                  "ar/v1/community/faq",
+                  "ar/v1/developers/feature-maturity",
+                  "ar/v1/glossary"
                 ]
               },
               {
@@ -9190,7 +9168,7 @@
               {
                 "group": "فيديو",
                 "icon": "video",
-                "tag": "Beta",
+                "tag": "Alpha",
                 "pages": [
                   "ar/v1/api-reference/endpoint/video-create",
                   "ar/v1/api-reference/endpoint/video-status",
@@ -9460,7 +9438,7 @@
                   },
                   {
                     "group": "الملاحظات والتقييمات",
-                    "tag": "Beta",
+                    "tag": "Alpha",
                     "expanded": false,
                     "pages": [
                       "ar/v1/api-reference/endpoint/feedback-create",
@@ -9550,7 +9528,6 @@
                   },
                   {
                     "group": "قواعد الإنفاق",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "ar/v1/api-reference/endpoint/spend-rules-create",
@@ -9567,7 +9544,6 @@
                   },
                   {
                     "group": "تطبيقات OAuth",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "ar/v1/api-reference/endpoint/oauth-clients-create",
@@ -9619,7 +9595,6 @@
                   },
                   {
                     "group": "الإشعارات",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "ar/v1/api-reference/endpoint/notifications-settings-get",
@@ -9636,7 +9611,6 @@
                   },
                   {
                     "group": "التطبيقات",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "ar/v1/api-reference/endpoint/apps-list",
@@ -9646,7 +9620,6 @@
                   },
                   {
                     "group": "المساهمة بالبيانات",
-                    "tag": "Beta",
                     "expanded": false,
                     "pages": [
                       "ar/v1/api-reference/endpoint/data-contribution-get",

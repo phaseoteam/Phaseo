@@ -3,7 +3,7 @@ import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
 import { useFocusEffect, usePathname, useRouter, type Href } from "expo-router";
 import {
-  Activity, Bell, BookOpen, ChartNoAxesColumn, ExternalLink, FileText, Gauge, HardDrive, Info, KeyRound, LogOut, MessageSquareText, Monitor, Palette, Plus, Scale,
+  Activity, Bell, BookOpen, Bug, ChartNoAxesColumn, ExternalLink, FileText, Gauge, HardDrive, Info, KeyRound, LogOut, MessageSquareText, Monitor, Palette, Plus, Scale,
   Shield, ShieldAlert, ShieldCheck, Sparkles, UserX, Users, Wallet, type LucideIcon,
 } from "lucide-react-native";
 import { useCallback, useRef, useState, type ReactNode } from "react";
@@ -39,6 +39,7 @@ const ITEMS = {
   status: { href: "/account/status", title: "Status", icon: Activity },
   whatsNew: { href: "/account/whats-new", title: "What's new", icon: Sparkles },
   feedback: { href: "/account/feedback", title: "Send feedback", icon: MessageSquareText },
+  triage: { href: "/account/triage", title: "Triage a bug", icon: Bug },
   licences: { href: "/account/licences", title: "Open source licences", icon: Scale },
   diagnostics: { href: "/account/diagnostics", title: "Diagnostics", icon: Gauge },
 } as const satisfies Record<string, { href: Href; title: string; icon: LucideIcon }>;
@@ -172,6 +173,7 @@ export function AccountMenu() {
           {item("status", { trailing: status.data ? <View className="max-w-[55%] flex-row items-center gap-1.5"><StatusDot state={status.data.state} /><Text variant="muted" numberOfLines={1}>{status.data.label}</Text></View> : null })}
           {item("whatsNew")}
           {item("feedback")}
+          {item("triage", { subtitle: "An agent finds the cause in this app's source" })}
           <WebRow title="Documentation" icon={BookOpen} path="/docs" last />
         </Section>
         <Section title="About and legal">

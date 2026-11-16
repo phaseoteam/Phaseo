@@ -4,12 +4,13 @@ import { setSendKey, useSendKey } from "../chat/sendKey";
 import { shortcut } from "../lib/keybindings";
 import { Select } from "../components/Select";
 import { Switch } from "../components/ui/switch";
-import { quitConfirmations, type ChatPreferences } from "../../shared/chatPreferences";
+import { historyPageSizes, quitConfirmations, type ChatPreferences } from "../../shared/chatPreferences";
+import { cn } from "../lib/utils";
 import { usePreferences } from "./GeneralSettings";
-import { SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection } from "./SettingsLayout";
+import { SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection, settingsInput } from "./SettingsLayout";
 
 /** Search words for Settings → Chat. */
-export const chatSettingsKeywords = "chat message box composer send enter shortcut new line follow-up follow up queue steer running turn rich text markdown format hold quit ctrl+q cmd+qting bold italic plain text quit quitting confirm close window exit ask before quitting working chats";
+export const chatSettingsKeywords = "chat message box composer send enter shortcut new line follow-up follow up queue steer running turn rich text markdown format hold quit ctrl+q cmd+qting bold italic plain text quit quitting confirm close window exit ask before quitting working chats history messages per page page size scroll back load earlier long chats";
 
 /** Saves one change to the chat group, keeping the rest. */
 function useChatPreferences() {
@@ -36,6 +37,13 @@ export function ChatSettings() {
 					options={[{ value: "queue", label: "Queue (default)" }, { value: "steer", label: "Steer" }]} />} />
 			<SettingsRow title="Rich text" description="Show Markdown formatting, such as bold, headings and code, as you type: in message boxes, comments, issues, instructions and other places you write Markdown. Off keeps the text plain; the characters you type are the same either way."
 				control={<Switch aria-label="Rich text in the message box" disabled={disabled} checked={chat.richTextComposer} onCheckedChange={richTextComposer => change({ richTextComposer })} />} />
+		</SettingsSection>
+		<SettingsSection title="History" label="History">
+			<SettingsRow title="Messages per page" description={`How many messages a chat opens with, and how many more load as you scroll back. Fewer opens long chats and loads each page sooner; more loads less often. From ${historyPageSizes.minimum} to ${historyPageSizes.maximum}; ${historyPageSizes.default} by default.`}
+				control={<input type="number" min={historyPageSizes.minimum} max={historyPageSizes.maximum} step={1} aria-label="Messages per page" key={chat.historyPageSize} defaultValue={chat.historyPageSize} disabled={disabled}
+					onBlur={event => { const value = Math.round(Number(event.target.value)); if (Number.isFinite(value) && value >= historyPageSizes.minimum && value <= historyPageSizes.maximum && value !== chat.historyPageSize) change({ historyPageSize: value }); else event.target.value = String(chat.historyPageSize); }}
+					onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }}
+					className={cn(settingsInput, "w-20 text-right")} />} />
 		</SettingsSection>
 		<SettingsSection title="Quitting" label="Quitting">
 			<SettingsRow title="Protect against quitting" description={`Quitting stops chats that are still working; they continue the next time Phaseo opens (Settings → Maintenance). Holding means ${isMac() ? "⌘Q" : "Ctrl+Q"} quits only once held for a second, and other ways of quitting${isMac() ? "" : ", such as closing the last window,"} ask while chats are working.`}

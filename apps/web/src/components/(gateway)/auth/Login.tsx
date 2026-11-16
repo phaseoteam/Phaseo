@@ -25,6 +25,7 @@ export function Login({
 	Heading = "h1",
 	errorCode,
 	errorMessage,
+	initialEmail,
 }: {
 	signupNotice?: SignupNotice;
 	authError?: "auth-failed" | null;
@@ -37,6 +38,8 @@ export function Login({
 	/** An auth error from a callback (an AuthErrorCode, or the legacy message form). */
 	errorCode?: string;
 	errorMessage?: string;
+	/** An email typed on sign-up before switching here (the dialog only). */
+	initialEmail?: string;
 }) {
 	const t = useTranslations("Auth.signIn");
 	// Typing an email or password collapses the other sign-in options, as on sign-up.
@@ -124,6 +127,7 @@ export function Login({
 					locale={locale}
 					surface={surface}
 					initialError={authError}
+					initialEmail={initialEmail}
 					onEmailFlowChange={setEmailFlowActive}
 				/>
 			</div>

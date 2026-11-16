@@ -149,12 +149,18 @@ export type ProviderModelMapping = {
 export async function fetchFrontendModels(options: {
 	includeMonitorRows?: boolean;
 	includeGatewayData?: boolean;
+	/**
+	 * When gateway enrichment timed out, leave the provider counts undefined
+	 * instead of zero, so callers can tell "unknown" from "no providers".
+	 */
+	unknownProviderCountsWhenIncomplete?: boolean;
 } = {}): Promise<ModelCard[]> {
 	type ModelsResponse = {
 		models: unknown[];
 		total: number;
 		limit: number;
 		offset: number;
+		gateway_data_complete?: boolean;
 	};
 	const pageSize = 2_000;
 	const gatewayQuery = options.includeGatewayData === false ? "&include_gateway_data=false" : "";
@@ -170,7 +176,11 @@ export async function fetchFrontendModels(options: {
 			`/api/_web/models?limit=${pageSize}&offset=${offset}${gatewayQuery}`,
 		)),
 	);
-	return [firstPage, ...laterPages]
+	const pages = [firstPage, ...laterPages];
+	const providerCountsUnknown =
+		options.unknownProviderCountsWhenIncomplete === true &&
+		pages.some((page) => page.gateway_data_complete === false);
+	return pages
 		.flatMap((page) => page.models)
 		.map((raw) => {
 			const model = mapRawToModelCard(raw);
@@ -178,6 +188,9 @@ export async function fetchFrontendModels(options: {
 			return {
 				...model,
 				...summarizeMonitorRowsForModel(monitorRows),
+				...(providerCountsUnknown
+					? { gateway_provider_count: undefined, gateway_active_provider_count: undefined }
+					: {}),
 				gateway_monitor_rows: options.includeMonitorRows
 					? monitorRows
 					: undefined,

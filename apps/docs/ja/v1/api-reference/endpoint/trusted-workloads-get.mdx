@@ -5,6 +5,8 @@ badge: "ベータ"
 openapi: "/ja/openapi/v1/openapi.localized.yaml GET /workload-identity/policies/{id}"
 description: "信頼済みワークロードのポリシーを 1 件取得します。"
 ---
+このエンドポイントは[ベータ](../../developers/feature-maturity.mdx)段階で、ワークスペースごとにリクエスト制で有効化されます。
+
 <Note>管理キーまたは OAuth トークンの `keys:read`、もしくはワークスペースのオーナーまたは管理者が必要です。信頼済みワークロードはベータ版で、利用できないワークスペースには `404` が返ります。</Note>
 
 ポリシーの仕組みと Terraform での管理方法は、[信頼済みワークロード](../../developers/trusted-workloads.mdx)を参照してください。
