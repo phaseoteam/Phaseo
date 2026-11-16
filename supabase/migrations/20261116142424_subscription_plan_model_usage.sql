@@ -67,12 +67,13 @@ CREATE OR REPLACE FUNCTION public.get_v2_subscription_model_usage (
   SET search_path TO 'public'
   AS $function$
   -- The plan's current monthly USD price for one account or seat: the cheapest live monthly offer whose
-  -- standard-phase components are all fixed amounts. The source's own price is the fallback.
+  -- standard-phase components are all fixed amounts or free. The source's own price is the fallback.
   with monthly_offer as (
     select o.plan_uuid, min(components.total) as price_usd
     from public.v2_subscription_plan_offers o
     cross join lateral (
-      select sum(c.amount) as total, count(*) as parts, bool_and(c.pricing_type = 'fixed' and c.amount is not null) as all_fixed
+      select sum(case when c.pricing_type = 'free' then 0 else c.amount end) as total, count(*) as parts,
+        bool_and(c.pricing_type = 'free' or (c.pricing_type = 'fixed' and c.amount is not null)) as all_fixed
       from public.v2_subscription_offer_prices c
       where c.offer_uuid = o.offer_uuid and c.phase = 'standard'
         and c.effective_from <= now() and (c.effective_to is null or c.effective_to > now())
