@@ -91,4 +91,17 @@ describe("createStripeCheckoutResponse for API/CLI top-up requests", () => {
 			line_items: [{ price_data: { currency: "usd" } }],
 		});
 	});
+
+	it.each([
+		["oneoff", "One-off top-up"],
+		["pay_and_save", "Top-up · card saved for future top-ups"],
+	] as const)("names the %s line item from the catalogue and shows USD as $ (locale en)", async (kind, description) => {
+		sessions.params.length = 0;
+		await createStripeCheckoutResponse({ kind, amountPence: 2000, countryCode: "GB", originHeader: "https://phaseo.app", refererHeader: null });
+
+		expect(sessions.params[0]).toMatchObject({
+			locale: "en",
+			line_items: [{ price_data: { product_data: { name: "Phaseo credits", description } } }],
+		});
+	});
 });

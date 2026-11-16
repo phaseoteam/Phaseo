@@ -14,6 +14,12 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { normaliseCountryCode } from "@/lib/countryCodes";
 import { isValidTopUpAmountPence, TOP_UP_CURRENCY } from "@/lib/server/topUpValidation";
 import { CREDIT_TOPUP_METADATA } from "@/lib/server/creditTopups";
+import { getPaymentMethodsMessages } from "@/i18n/payment-methods";
+import { defaultLocale } from "@/i18n/locales";
+
+// Checkout runs with locale "en" (USD shows as "$", not "US$"), so its product copy is the
+// English catalogue entry too, keeping the page in one language.
+const CHECKOUT_COPY = getPaymentMethodsMessages(defaultLocale).checkout;
 
 type CheckoutKind = "oneoff" | "pay_and_save" | "save_only";
 type CheckoutStartedNotificationKind =
@@ -199,7 +205,7 @@ export async function createStripeCheckoutResponse(
 					price_data: {
 						currency: TOP_UP_CURRENCY,
 						unit_amount: amountPence,
-						product_data: { name: "Phaseo credits", description: "One-off top-up" },
+						product_data: { name: CHECKOUT_COPY.productName, description: CHECKOUT_COPY.oneOffDescription },
 					},
 				},
 			],
@@ -282,7 +288,7 @@ export async function createStripeCheckoutResponse(
 					price_data: {
 						currency: TOP_UP_CURRENCY,
 						unit_amount: amountPence,
-						product_data: { name: "Phaseo credits", description: "Top-up · card saved for future top-ups" },
+						product_data: { name: CHECKOUT_COPY.productName, description: CHECKOUT_COPY.saveCardDescription },
 					},
 				},
 			],
