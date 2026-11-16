@@ -54,7 +54,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `excluded_domains` | string[] | 无 | 排除这些域名。别名：`exclude_domains`。 |
 | `include_highlights` | boolean | `true` | 包含引擎的高亮内容或摘要片段。 |
 | `include_text` | boolean | `false` | 在引擎支持时包含更完整的页面文本。 |
-| `user_location` | object | 无 | 当 `engine` 为 `native` 时，传给提供商自身搜索的位置提示。 |
+| `user_location` | object | 无 | 位置提示。当 `engine` 为 `native` 时传给提供商自身的搜索；否则，在模型调用未提供位置时由 Phaseo 的搜索使用。 |
 
 ## 模型发送的内容
 

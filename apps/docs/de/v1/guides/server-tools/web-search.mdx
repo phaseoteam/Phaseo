@@ -54,7 +54,7 @@ Derselbe Tool-Eintrag funktioniert in `tools` unter `/v1/responses` und `/v1/mes
 | `excluded_domains` | string[] | Keiner | Lässt diese Domains aus. Alias: `exclude_domains`. |
 | `include_highlights` | boolean | `true` | Bezieht die Hervorhebungen oder Snippets der Engine ein. |
 | `include_text` | boolean | `false` | Bezieht ausführlicheren Seitentext ein, wenn die Engine das unterstützt. |
-| `user_location` | object | Keiner | Standorthinweis, der an die eigene Suche des Anbieters geht, wenn `engine` `native` ist. |
+| `user_location` | object | Keiner | Standorthinweis. Bei `engine` `native` geht er an die eigene Suche des Anbieters, sonst nutzt die Suche von Phaseo ihn, wenn der Aufruf des Modells keinen Standort angibt. |
 
 ## Was das Modell sendet
 

@@ -54,7 +54,7 @@ The same tool entry works in `tools` on `/v1/responses` and `/v1/messages`.
 | `excluded_domains` | string[] | None | Leave these domains out. Alias: `exclude_domains`. |
 | `include_highlights` | boolean | `true` | Include the engine's highlights or snippets. |
 | `include_text` | boolean | `false` | Include fuller page text where the engine supports it. |
-| `user_location` | object | None | Location hint passed to the provider's own search when `engine` is `native`. |
+| `user_location` | object | None | Location hint. With `engine: "native"` it goes to the provider's own search; otherwise Phaseo's search uses it whenever the model's call gives no location. |
 
 ## What the model sends
 

@@ -430,6 +430,8 @@ export type ServerToolConfig = {
 	webSearchIncludeHighlights: boolean;
 	webSearchAllowedDomains?: string[];
 	webSearchExcludedDomains?: string[];
+	/** The searcher's location set on the tool (flat: country, city, region, timezone, language). */
+	webSearchUserLocation?: Record<string, unknown>;
 	webFetchEnabled: boolean;
 	webFetchEngine?: WebFetchEngine;
 	webFetchMaxChars: number;
@@ -1289,6 +1291,7 @@ export function prepareServerToolsForTextRequest(
 	let webSearchIncludeHighlights = true;
 	let webSearchAllowedDomains: string[] = [];
 	let webSearchExcludedDomains: string[] = [];
+	let webSearchUserLocation: Record<string, unknown> | undefined;
 	let nativeWebSearchRequested = false;
 	let nativeWebFetchRequested = false;
 	let advisorEnabled = false;
@@ -1359,6 +1362,10 @@ export function prepareServerToolsForTextRequest(
 			webSearchIncludeHighlights = defaults.includeHighlights;
 			webSearchAllowedDomains = defaults.allowedDomains;
 			webSearchExcludedDomains = defaults.excludedDomains;
+			const userLocation = tool.parameters?.user_location ?? tool.user_location;
+			webSearchUserLocation = userLocation && typeof userLocation === "object" && !Array.isArray(userLocation)
+				? flattenUserLocation(userLocation)
+				: undefined;
 			continue;
 		}
 
@@ -1653,6 +1660,7 @@ export function prepareServerToolsForTextRequest(
 			webSearchIncludeHighlights,
 			webSearchAllowedDomains,
 			webSearchExcludedDomains,
+			...(webSearchUserLocation ? { webSearchUserLocation } : {}),
 			webFetchEnabled,
 			webFetchEngine,
 			webFetchMaxChars,
@@ -3164,6 +3172,10 @@ async function executeWebSearchToolCall(
 	billableWebSearchRequests?: number;
 }> {
 	const args = parseJsonObject(call.arguments);
+	// The location set on the tool applies unless the model's call gives its own.
+	if (config.webSearchUserLocation && !(args.user_location && typeof args.user_location === "object")) {
+		args.user_location = config.webSearchUserLocation;
+	}
 	const query = parseWebSearchQuery(args);
 	if (!query) {
 		return {

@@ -54,7 +54,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `excluded_domains` | string[] | कोई नहीं | इन डोमेन को बाहर रखें। उपनाम: `exclude_domains`। |
 | `include_highlights` | boolean | `true` | इंजन के हाइलाइट या स्निपेट शामिल करें। |
 | `include_text` | boolean | `false` | जहां इंजन सपोर्ट करे, वहां पेज का ज़्यादा पूरा टेक्स्ट शामिल करें। |
-| `user_location` | object | कोई नहीं | `engine` के `native` होने पर प्रदाता की अपनी खोज को भेजा जाने वाला स्थान संकेत। |
+| `user_location` | object | कोई नहीं | स्थान संकेत। `engine` के `native` होने पर यह प्रदाता की अपनी खोज को भेजा जाता है; वरना जब मॉडल की कॉल में कोई स्थान न हो, तो Phaseo की खोज इसका इस्तेमाल करती है। |
 
 ## मॉडल क्या भेजता है
 

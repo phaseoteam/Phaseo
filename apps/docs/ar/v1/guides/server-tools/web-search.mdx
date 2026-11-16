@@ -54,7 +54,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `excluded_domains` | string[] | لا شيء | استبعاد هذه النطاقات. الاسم البديل: `exclude_domains`. |
 | `include_highlights` | boolean | `true` | تضمين النقاط البارزة أو المقتطفات من المحرك. |
 | `include_text` | boolean | `false` | تضمين نص أكمل للصفحة حيث يدعمه المحرك. |
-| `user_location` | object | لا شيء | تلميح للموقع يُمرَّر إلى بحث المزوّد نفسه عندما تكون قيمة `engine` هي `native`. |
+| `user_location` | object | لا شيء | تلميح للموقع. عندما تكون قيمة `engine` هي `native` يُمرَّر إلى بحث المزوّد نفسه، وإلا يستخدمه بحث Phaseo كلما لم يحدد استدعاء النموذج موقعًا. |
 
 ## ما يرسله النموذج
 

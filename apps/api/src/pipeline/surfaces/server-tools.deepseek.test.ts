@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildDeepSeekSearchQuery, buildServerToolContinuation } from "./server-tools";
+import { buildDeepSeekSearchQuery, buildServerToolContinuation, prepareServerToolsForTextRequest } from "./server-tools";
+import { gatewayWebSearchToolFor } from "../before/hostedTools";
 
 const getBindingsMock = vi.fn();
 
@@ -164,6 +165,27 @@ describe("DeepSeek web search and fetch engine", () => {
 			engine: "deepseek",
 			status: 403,
 		});
+	});
+
+	it("keeps a hosted search's user_location when it falls back to gateway search", async () => {
+		// A native search DeepSeek cannot run (it has a location) becomes phaseo:web_search.
+		const gatewayTool = gatewayWebSearchToolFor({
+			type: "web_search",
+			user_location: { type: "approximate", approximate: { country: "DE", language: "de" } },
+		});
+		const prepared = prepareServerToolsForTextRequest({ model: "m", messages: [], tools: [gatewayTool] }, "openai.chat.completions");
+		if (!prepared.ok) throw new Error("expected ok");
+		expect(prepared.config.webSearchUserLocation).toMatchObject({ country: "DE", language: "de" });
+
+		const fetchMock = vi.fn(async () => json({ results: [] }));
+		vi.stubGlobal("fetch", fetchMock);
+		// The model's call gives no location, so the tool's applies.
+		await buildServerToolContinuation(
+			toolCallResponse("phaseo_web_search", { query: "Nachrichten", engine: "deepseek" }),
+			{ ...CONFIG, webSearchUserLocation: prepared.config.webSearchUserLocation },
+		);
+		const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+		expect(JSON.parse(String(init.body)).query).toBe("Nachrichten lang:de");
 	});
 
 	it("treats a fetch with no page content as a failed, unbilled fetch", async () => {

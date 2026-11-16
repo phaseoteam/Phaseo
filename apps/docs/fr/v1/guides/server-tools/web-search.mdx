@@ -54,7 +54,7 @@ La même entrée d’outil fonctionne dans `tools` sur `/v1/responses` et `/v1/m
 | `excluded_domains` | string[] | Aucune | Exclut ces domaines. Alias : `exclude_domains`. |
 | `include_highlights` | boolean | `true` | Inclut les passages mis en évidence ou les extraits du moteur. |
 | `include_text` | boolean | `false` | Inclut un texte de page plus complet lorsque le moteur le permet. |
-| `user_location` | object | Aucune | Indication de localisation transmise à la recherche propre du fournisseur lorsque `engine` vaut `native`. |
+| `user_location` | object | Aucune | Indication de localisation. Lorsque `engine` vaut `native`, elle est transmise à la recherche propre du fournisseur ; sinon, la recherche de Phaseo l’utilise lorsque l’appel du modèle n’indique pas de localisation. |
 
 ## Ce que le modèle envoie
 

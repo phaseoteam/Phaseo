@@ -54,7 +54,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | `excluded_domains` | string[] | なし | これらのドメインを除外します。別名: `exclude_domains`。 |
 | `include_highlights` | boolean | `true` | エンジンのハイライトまたはスニペットを含めます。 |
 | `include_text` | boolean | `false` | エンジンが対応している場合、より詳しいページ本文を含めます。 |
-| `user_location` | object | なし | `engine` が `native` のとき、プロバイダー自身の検索に渡す位置情報のヒント。 |
+| `user_location` | object | なし | 位置情報のヒント。`engine` が `native` のときはプロバイダー自身の検索に渡し、それ以外ではモデルの呼び出しに位置情報がない場合に Phaseo の検索が使います。 |
 
 ## モデルが送信する内容
 

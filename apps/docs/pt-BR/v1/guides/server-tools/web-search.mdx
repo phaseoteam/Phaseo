@@ -54,7 +54,7 @@ A mesma entrada de ferramenta funciona em `tools` em `/v1/responses` e `/v1/mess
 | `excluded_domains` | string[] | Nenhum | Deixa estes domínios de fora. Alias: `exclude_domains`. |
 | `include_highlights` | booleano | `true` | Inclui os destaques ou trechos do mecanismo. |
 | `include_text` | booleano | `false` | Inclui um texto mais completo da página quando o mecanismo oferece suporte. |
-| `user_location` | objeto | Nenhum | Indicação de localização repassada à pesquisa do próprio provedor quando `engine` é `native`. |
+| `user_location` | objeto | Nenhum | Indicação de localização. Com `engine` igual a `native`, é repassada à pesquisa do próprio provedor; caso contrário, a pesquisa da Phaseo a usa quando a chamada do modelo não informa localização. |
 
 ## O que o modelo envia
 
