@@ -6,7 +6,7 @@ const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pgli
 const migrations = (await readdir(new URL('../migrations/', import.meta.url))).filter((file) => file.endsWith('_subscription_plan_model_usage.sql'));
 assert.equal(migrations.length, 1);
 const migration = await readFile(new URL(`../migrations/${migrations[0]}`, import.meta.url), 'utf8');
-for (const schemaFile of ['public/tables/v2_subscription_plan_model_usage.sql', 'public/functions/get_v2_subscription_model_usage.sql', 'public/functions/replace_v2_subscription_model_usage.sql']) {
+for (const schemaFile of ['public/tables/v2_subscription_plan_model_usage.sql', 'public/functions/get_v2_subscription_monthly_prices.sql', 'public/functions/get_v2_subscription_model_usage.sql', 'public/functions/replace_v2_subscription_model_usage.sql']) {
   const schema = await readFile(new URL(`../schemas/${schemaFile}`, import.meta.url), 'utf8');
   assert.ok(migration.includes(schema.trim()), `${schemaFile} is copied verbatim into the migration`);
 }
@@ -21,11 +21,11 @@ try {
     create function catalogue_private.record_row_history() returns trigger language plpgsql as $$ begin return coalesce(new,old); end $$;
     create function prevent_catalogue_removal() returns trigger language plpgsql as $$ begin raise exception 'history preserved'; end $$;
     create table v2_subscription_plans(plan_uuid uuid primary key, plan_id text not null, name text not null, lab_slug text,
-      frequency text, price numeric, currency text, effective_to timestamptz);
+      frequency text, price numeric, currency text, effective_to timestamptz, status text not null default 'active');
     create table v2_subscription_plan_models(plan_uuid uuid not null, model_slug text not null, effective_from timestamptz not null default '-infinity', effective_to timestamptz);
     create table v2_subscription_plan_offers(offer_uuid uuid primary key, plan_uuid uuid not null, billing_interval text, billing_interval_count int not null default 1,
       currency text not null default 'USD', region_code text, effective_from timestamptz not null default '-infinity', effective_to timestamptz);
-    create table v2_subscription_offer_prices(offer_uuid uuid not null, pricing_type text not null, amount numeric, phase text not null default 'standard',
+    create table v2_subscription_offer_prices(offer_uuid uuid not null, pricing_type text not null, amount numeric, phase text not null default 'standard', starts_at_cycle int not null default 1, duration_cycles int,
       effective_from timestamptz not null default '-infinity', effective_to timestamptz);
     insert into v2_models values ('lab/model', 'Lab Model', false), ('lab/hidden', 'Hidden', true);
     -- Legacy price columns are historical; Max's current price lives in its offers.
@@ -45,6 +45,13 @@ try {
       (md5('max-month')::uuid, 'fixed', 200, null),
       (md5('max-year')::uuid, 'fixed', 1200, null),
       (md5('custom-quote')::uuid, 'custom', null, null);
+    -- A first-cycle-only charge and an introductory phase aren't the ongoing price.
+    insert into v2_subscription_offer_prices(offer_uuid, pricing_type, amount, duration_cycles) values (md5('max-month')::uuid, 'fixed', 1, 1);
+    insert into v2_subscription_offer_prices(offer_uuid, pricing_type, amount, phase) values (md5('max-month')::uuid, 'fixed', 2, 'introductory');
+    -- A renewal price from cycle 2 replaces the first-cycle price.
+    insert into v2_subscription_plans(plan_uuid, plan_id, name, lab_slug) values (md5('renew')::uuid, 'renew', 'Renew', 'other');
+    insert into v2_subscription_plan_offers(offer_uuid, plan_uuid, billing_interval) values (md5('renew-month')::uuid, md5('renew')::uuid, 'month');
+    insert into v2_subscription_offer_prices(offer_uuid, pricing_type, amount, starts_at_cycle) values (md5('renew-month')::uuid, 'fixed', 20, 1), (md5('renew-month')::uuid, 'fixed', 30, 2);
   `);
   await db.exec(migration);
   await db.exec(`
@@ -59,6 +66,11 @@ try {
     { plan_id: 'custom', model_name: 'Lab Model', monthly_price_usd: 30, effective_usd_per_mtok: 30, share_of_api_price: null },
     { plan_id: 'max', model_name: 'Lab Model', monthly_price_usd: 200, effective_usd_per_mtok: 0.01, share_of_api_price: 0.02 },
   ]);
+
+  const monthly = await db.query(`select plan_uuid = md5('max')::uuid as is_max, monthly_price_usd::float from get_v2_subscription_monthly_prices('lab')`);
+  assert.deepEqual(monthly.rows, [{ is_max: true, monthly_price_usd: 200 }], 'monthly prices per lab, aggregated in the database');
+  const renewal = await db.query(`select monthly_price_usd::float from get_v2_subscription_monthly_prices('other')`);
+  assert.deepEqual(renewal.rows, [{ monthly_price_usd: 30 }], 'the renewal price is the ongoing price');
 
   const byPlan = await db.query(`select plan_id from get_v2_subscription_model_usage(null, 'custom')`);
   assert.deepEqual(byPlan.rows, [{ plan_id: 'custom' }], 'filters by plan');
