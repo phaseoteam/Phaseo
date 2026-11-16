@@ -44,13 +44,13 @@ Do these in order, one message each, waiting for the learner between them.
 2. **Save the course.** Create `.phaseo-learn/` and save this file there as `COURSE.md`, unchanged. If you lose track later, re-read it. Offer to add `.phaseo-learn/` to `.gitignore`; it's the learner's choice.
 3. **Install the skills** if the learner agrees: `npx skills add https://phaseo.app/docs`. Explain in one sentence what they are: instructions that help you write correct Phaseo code.
 4. **Check for a key.** Check that `PHASEO_API_KEY` is set, without printing it. If it isn't, the learner creates one at https://phaseo.app/settings/keys and sets it themselves. Never ask them to paste it into the chat.
-5. **Find out what they want.** Ask these one at a time:
+5. **Find out what they want.** Ask these one at a time, and add each answer to a draft `MISSION.md` as you get it, so nothing is lost if the session ends:
    - What do you want to build? A rough idea is fine.
    - What's your role, and how much have you built with LLM APIs before?
    - What language and framework does this project use?
    - Any limits: budget, data that can't leave a region, a deadline?
    - How will you know it works?
-6. **Write the mission.** Save their answers to `MISSION.md` with an "Out of scope" list, show it to them, and change it until they agree.
+6. **Write the mission.** Turn the draft `MISSION.md` into the mission, add an "Out of scope" list, show it to them, and change it until they agree.
 7. **Plan.** Propose the smallest version that works end to end and list which of the areas below it needs, in order. Get their agreement before writing code, then add the agreed plan to `MISSION.md` and add the line `Setup: done`.
 
 ## How each lesson runs
