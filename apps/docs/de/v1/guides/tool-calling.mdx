@@ -58,6 +58,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 `tool_choice` erzwingt hier den Aufruf. Lass es weg oder setze `"auto"`, damit das Modell selbst entscheidet.
 
+Die API von DeepSeek kann kein Tool erzwingen, während das Modell nachdenkt. Wenn DeepSeek der Anbieter ist, schaltet ein erzwungenes `tool_choice` das Nachdenken für diese Anfrage ab, sodass die Antwort kein Reasoning enthält.
+
 Das Modell antwortet mit einem Aufruf statt mit Text:
 
 ```json

@@ -62,7 +62,7 @@ Chaque appel contient une `query`. Le modèle peut aussi envoyer `max_results`, 
 
 | Argument | Description |
 | --- | --- |
-| `user_location` | Localisation approximative. Perplexity utilise `user_location.country` pour la recherche régionale ; TinyFish utilise le pays et la langue. |
+| `user_location` | Localisation approximative. Exa et Perplexity utilisent `user_location.country` (un code à deux lettres comme `GB`) pour la recherche régionale ; TinyFish utilise le pays et la langue. |
 | `language` | Code de langue des résultats, par exemple `en`, pour les moteurs qui localisent. DeepSeek l’ajoute à la requête sous forme de filtre `lang:`. |
 | `page` | Page de résultats de `0` à `10`, pour TinyFish. |
 
@@ -87,6 +87,8 @@ Si un moteur géré n’est pas activé, l’appel renvoie `search_not_configure
 Avec `engine: "native"` sur `/v1/chat/completions` ou `/v1/responses`, la requête n’est envoyée qu’aux fournisseurs qui exécutent eux-mêmes la recherche Web. Si aucun ne sert le modèle, Phaseo exécute à la place son moteur par défaut et le facture comme une recherche gérée.
 
 Les fournisseurs qui exécutent eux-mêmes la recherche Web sur ces endpoints sont OpenAI, les déploiements Azure OpenAI sur `/v1/responses`, xAI et DeepSeek sur `deepseek/deepseek-v4.1-flash-1017`. DeepSeek ne recherche par lui-même que lorsque la recherche Web est le seul outil de la requête, sans listes de domaines ni position de l’utilisateur, sans sortie JSON et sans `tool_choice` forcé. Son API rejette les listes de domaines, la position et la sortie JSON, désactive sa recherche Web lorsque la requête contient d’autres outils et ne peut pas forcer une recherche. Les autres requêtes vers ce modèle utilisent à la place la recherche de Phaseo, qui fonctionne avec vos propres outils. Lorsque le raisonnement est activé, DeepSeek lance une recherche plus approfondie qui ouvre et lit des pages en plusieurs étapes.
+
+Les outils de recherche des fournisseurs ne peuvent pas appliquer `max_results` ni `max_total_results`, et seul celui de Claude applique `max_uses`. Une recherche native qui fixe une limite que son fournisseur ne peut pas appliquer passe par le moteur par défaut de Phaseo et est facturée comme recherche gérée.
 
 Envoyer l’outil propre à OpenAI `{ "type": "web_search" }` fonctionne comme `engine: "native"`. Définissez `native` uniquement dans la définition de l’outil : si le modèle demande `native` dans un appel, l’appel renvoie `unsupported_search_engine`, car l’outil du fournisseur doit être choisi avant l’envoi de la requête.
 

@@ -203,6 +203,19 @@ export function isDeepSeekWebToolModel(model: string | null | undefined): boolea
 	return /^deepseek-(?:v4(?:\.1)?-)?flash(?:$|-)/.test(id);
 }
 
+/**
+ * Whether a web search tool caps its results or calls with `max_results`,
+ * `max_total_results` or `max_uses`, on the tool or under `parameters`. Only
+ * Phaseo's search enforces all three; Claude's own search takes `max_uses` only.
+ */
+export function webSearchToolCapsResults(tool: unknown, options?: { nativeMaxUses?: boolean }): boolean {
+	if (!tool || typeof tool !== "object") return false;
+	const value = tool as Record<string, any>;
+	const parameters = value.parameters && typeof value.parameters === "object" ? value.parameters : {};
+	const keys = options?.nativeMaxUses ? ["max_results", "max_total_results"] : ["max_results", "max_total_results", "max_uses"];
+	return keys.some((key) => value[key] != null || parameters[key] != null);
+}
+
 function hasUnsupportedWebOption(source: unknown): boolean {
 	if (!source || typeof source !== "object") return false;
 	const value = source as Record<string, any>;
@@ -285,6 +298,9 @@ export function routeRunsOpenAIHostedTool(args: {
 	// Collapses xAI's ids (x-ai, xai and the routed spacex-ai) onto one id.
 	const providerId = normalizeProviderId(String(args.providerId ?? ""));
 	const model = String(args.model ?? "").toLowerCase();
+	// OpenAI's and xAI's search tools take no result or call caps, so a capped search
+	// runs on Phaseo's search, which enforces them.
+	if (isOpenAINativeWebSearchToolType(args.toolType) && webSearchToolCapsResults(args.tool)) return false;
 	if (providerId === "openai" || providerId === "openai-eu") return true;
 	if (providerId === "azure") {
 		// Azure also serves Claude and MAI models, which do not run on its Responses API.

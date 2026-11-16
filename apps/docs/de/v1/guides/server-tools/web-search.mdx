@@ -62,7 +62,7 @@ Jeder Aufruf enthält eine `query`. Das Modell kann außerdem `max_results`, `en
 
 | Argument | Beschreibung |
 | --- | --- |
-| `user_location` | Ungefährer Standort. Perplexity nutzt `user_location.country` für regionale Suche; TinyFish nutzt Land und Sprache. |
+| `user_location` | Ungefährer Standort. Exa und Perplexity nutzen `user_location.country` (ein zweistelliger Code wie `GB`) für regionale Suche; TinyFish nutzt Land und Sprache. |
 | `language` | Sprachcode der Ergebnisse, etwa `en`, für Engines, die lokalisieren. DeepSeek fügt ihn der Suchanfrage als `lang:`-Filter hinzu. |
 | `page` | Ergebnisseite `0` bis `10`, für TinyFish. |
 
@@ -87,6 +87,8 @@ Ist eine verwaltete Engine nicht aktiviert, gibt der Aufruf `search_not_configur
 Mit `engine: "native"` unter `/v1/chat/completions` oder `/v1/responses` geht die Anfrage nur an Anbieter, die die Websuche selbst ausführen. Bedient keiner von ihnen das Modell, führt Phaseo stattdessen seine Standard-Engine aus und rechnet sie als verwaltete Suche ab.
 
 Die Anbieter, die die Websuche an diesen Endpunkten selbst ausführen, sind OpenAI, Azure OpenAI-Deployments unter `/v1/responses`, xAI und DeepSeek bei `deepseek/deepseek-v4.1-flash-1017`. DeepSeek sucht nur dann selbst, wenn die Websuche das einzige Tool der Anfrage ist, ohne Domain-Listen oder Nutzerstandort, ohne JSON-Ausgabe und ohne erzwungenes `tool_choice`. Seine API lehnt Domain-Listen, einen Standort und JSON-Ausgabe ab, schaltet die Websuche ab, wenn die Anfrage weitere Tools enthält, und kann keine Suche erzwingen. Andere Anfragen an dieses Modell nutzen stattdessen die Suche von Phaseo, die neben deinen eigenen Tools funktioniert. Bei aktiviertem Reasoning führt DeepSeek eine tiefere Suche aus, die Seiten über mehrere Schritte öffnet und liest.
+
+Die eigenen Suchtools der Anbieter können `max_results` und `max_total_results` nicht durchsetzen, und nur das von Claude setzt `max_uses` durch. Eine native Suche mit einem Limit, das ihr Anbieter nicht durchsetzen kann, läuft stattdessen über die Standard-Engine von Phaseo und wird als verwaltete Suche abgerechnet.
 
 Das Senden von OpenAIs eigenem Tool `{ "type": "web_search" }` funktioniert genauso wie `engine: "native"`. Setze `native` nur in der Tool-Definition: Fordert das Modell `native` in einem Aufruf an, gibt der Aufruf `unsupported_search_engine` zurück, weil das Tool des Anbieters vor dem Senden der Anfrage gewählt werden muss.
 

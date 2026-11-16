@@ -59,10 +59,20 @@ export const deepseekQuirks: ProviderQuirks = {
 
 		mapNativeWebTools(request, ir.model);
 
-		if (request.thinking?.type === "enabled") {
-			// DeepSeek's official agent integration notes that thinking-mode tool
-			// requests reject tool_choice even though non-thinking Chat accepts it.
-			delete request.tool_choice;
+		const toolChoice = request.tool_choice;
+		if (toolChoice != null && toolChoice !== "auto" && toolChoice !== "none") {
+			// DeepSeek thinks by default, and in thinking mode a forced tool_choice ("required"
+			// or a named tool) is a 400 ("Thinking mode does not support this tool_choice",
+			// checked live 2026-11-16). The forced tool wins: the request runs without thinking,
+			// which Chat turns off with `thinking` and Responses with `reasoning.effort: "none"`
+			// (https://api-docs.deepseek.com/guides/thinking_mode).
+			delete request.reasoning_effort;
+			if ("input" in request) {
+				delete request.thinking;
+				request.reasoning = { effort: "none" };
+			} else {
+				request.thinking = { type: "disabled" };
+			}
 		}
 
 		for (const unsupported of [

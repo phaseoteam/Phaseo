@@ -68,13 +68,69 @@ describe("DeepSeek quirks", () => {
 		expect(request.user_id).toBe("tenant-123");
 		expect(request.user).toBeUndefined();
 		expect(request.reasoning_effort).toBe("high");
-		expect(request.tool_choice).toBeUndefined();
+		expect(request.thinking).toEqual({ type: "enabled" });
+		expect(request.tool_choice).toBe("auto");
 		expect(request.parallel_tool_calls).toBeUndefined();
 		expect(request.seed).toBeUndefined();
 		expect(request.metadata).toBeUndefined();
 		// DeepSeek needs reasoning_content on every earlier turn when tools are present.
 		expect(request.messages[0].reasoning_content).toBe("earlier answer");
 		expect(request.messages[1].reasoning_content).toBe("needed for tool continuation");
+	});
+
+	// DeepSeek thinks by default and returns 400 for a forced tool_choice in thinking mode
+	// (checked live 2026-11-16), so the forced tool is kept and thinking turned off.
+	it.each([
+		["required", "required"],
+		["a named function", { type: "function", function: { name: "lookup" } }],
+	])("keeps a forced tool_choice (%s) and turns thinking off on Chat", (_label, toolChoice) => {
+		for (const thinking of [undefined, { type: "enabled" }]) {
+			const request: Record<string, any> = {
+				messages: [{ role: "user", content: "hi" }],
+				tools: [{ type: "function", function: { name: "lookup", parameters: { type: "object" } } }],
+				tool_choice: toolChoice,
+				...(thinking ? { thinking } : {}),
+			};
+
+			deepseekQuirks.transformRequest?.({
+				request,
+				ir: { model: "deepseek-v4-pro", reasoning: { effort: "high" } } as any,
+			});
+
+			expect(request.tool_choice).toEqual(toolChoice);
+			expect(request.thinking).toEqual({ type: "disabled" });
+			expect(request.reasoning_effort).toBeUndefined();
+		}
+	});
+
+	it("turns thinking off with reasoning effort none for a forced tool on Responses", () => {
+		const request: Record<string, any> = {
+			input: [{ role: "user", content: "hi" }],
+			tools: [{ type: "function", name: "lookup", parameters: { type: "object" } }],
+			tool_choice: "required",
+			reasoning: { effort: "high" },
+			thinking: { type: "enabled" },
+		};
+
+		deepseekQuirks.transformRequest?.({ request, ir: { model: "deepseek-v4-pro" } as any });
+
+		expect(request.tool_choice).toBe("required");
+		expect(request.reasoning).toEqual({ effort: "none" });
+		expect(request.thinking).toBeUndefined();
+	});
+
+	it.each(["auto", "none"])("leaves thinking on for tool_choice %s", (toolChoice) => {
+		const request: Record<string, any> = {
+			messages: [{ role: "user", content: "hi" }],
+			tools: [{ type: "function", function: { name: "lookup", parameters: { type: "object" } } }],
+			tool_choice: toolChoice,
+			thinking: { type: "enabled" },
+		};
+
+		deepseekQuirks.transformRequest?.({ request, ir: { model: "deepseek-v4-pro" } as any });
+
+		expect(request.tool_choice).toBe(toolChoice);
+		expect(request.thinking).toEqual({ type: "enabled" });
 	});
 
 	it("normalizes DeepSeek top-level cache usage for gateway accounting", () => {

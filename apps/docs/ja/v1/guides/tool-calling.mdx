@@ -58,6 +58,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 この例の `tool_choice` は呼び出しを強制します。モデルに判断させるには、省略するか `"auto"` を設定します。
 
+DeepSeek の API は、モデルの思考中にツールを強制できません。DeepSeek がプロバイダーの場合、`tool_choice` でツールを強制するとそのリクエストでは思考がオフになり、応答に推論は含まれません。
+
 モデルはテキストの代わりに呼び出しで応答します。
 
 ```json

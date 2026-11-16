@@ -9,6 +9,7 @@ import { encodeUnifiedStreamEvent, type StreamProtocol } from "@protocols/stream
 import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/stream-events";
 import { getBindings } from "@/runtime/env";
 import { validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
+import { webSearchToolCapsResults } from "@core/nativeTools";
 
 export const DATETIME_SERVER_TOOL_TYPE = "phaseo:datetime";
 export const LEGACY_DATETIME_SERVER_TOOL_TYPE = "gateway:datetime";
@@ -449,6 +450,8 @@ export type ServerToolConfig = {
 	fusion?: FusionServerToolConfig;
 	searchModelsMaxResults?: number;
 	usageCounts?: Record<string, number>;
+	/** Search results already returned in earlier continuation rounds of this request. */
+	webSearchResultsUsed?: number;
 };
 
 type PrepareRequestResult =
@@ -710,12 +713,13 @@ function buildNativeWebSearchTool(tool: any, protocol: Protocol): any {
 	const blockedDomains =
 		parameters?.blocked_domains ?? parameters?.excluded_domains ?? parameters?.exclude_domains ??
 		tool?.blocked_domains ?? tool?.excluded_domains ?? tool?.exclude_domains;
+	const maxUses = parameters?.max_uses ?? tool?.max_uses;
 
 	if (protocol === "anthropic.messages") {
 		return {
 			type: "web_search_20250305",
 			name: toNonEmptyString(tool?.name) ?? "web_search",
-			...(typeof tool?.max_uses === "number" ? { max_uses: tool.max_uses } : {}),
+			...(typeof maxUses === "number" ? { max_uses: maxUses } : {}),
 			...(Array.isArray(allowedDomains) ? { allowed_domains: allowedDomains } : {}),
 			...(Array.isArray(blockedDomains) ? { blocked_domains: blockedDomains } : {}),
 			...(userLocation && typeof userLocation === "object" ? { user_location: flattenUserLocation(userLocation) } : {}),
@@ -1346,13 +1350,16 @@ export function prepareServerToolsForTextRequest(
 
 		if (tool.type === WEB_SEARCH_SERVER_TOOL_TYPE || tool.type === GATEWAY_WEB_SEARCH_SERVER_TOOL_TYPE) {
 			const defaults = parseWebSearchToolDefaults(tool);
-			if (defaults.engine === "native") {
+			// A provider's own search cannot enforce result caps (Claude's takes max_uses
+			// only), so a capped search runs on Phaseo's default engine instead.
+			const nativeDropsCaps = webSearchToolCapsResults(tool, { nativeMaxUses: protocol === "anthropic.messages" });
+			if (defaults.engine === "native" && !nativeDropsCaps) {
 				nativeWebSearchRequested = true;
 				filteredTools.push(buildNativeWebSearchTool(tool, protocol));
 				continue;
 			}
 			webSearchEnabled = true;
-			webSearchEngine = defaults.engine;
+			webSearchEngine = defaults.engine === "native" ? DEFAULT_WEB_SEARCH_ENGINE : defaults.engine;
 			webSearchMaxResults = defaults.maxResults;
 			webSearchMaxUses = readPositiveIntWithFallback(tool.parameters?.max_uses ?? tool.max_uses, 10, 100);
 			webSearchMaxTotalResults = defaults.maxTotalResults;
@@ -2463,6 +2470,13 @@ function extractCountryFromUserLocation(value: unknown): string | null {
 	);
 }
 
+/** A model-sent location may use OpenAI's nested `approximate` shape. */
+function flattenUserLocationValue(value: unknown): unknown {
+	return value && typeof value === "object" && !Array.isArray(value)
+		? flattenUserLocation(value as Record<string, any>)
+		: value;
+}
+
 function extractLocationStringFromUserLocation(value: unknown): string | null {
 	if (!value || typeof value !== "object") return null;
 	const location = value as Record<string, unknown>;
@@ -3529,6 +3543,9 @@ async function executeWebSearchToolCall(
 	};
 	if (allowedDomains.length > 0) exaBody.includeDomains = allowedDomains;
 	if (excludedDomains.length > 0) exaBody.excludeDomains = excludedDomains;
+	// Exa localizes by a two-letter ISO country code (https://docs.exa.ai/reference/search).
+	const exaCountry = extractCountryFromUserLocation(flattenUserLocationValue(args.user_location));
+	if (exaCountry && /^[a-z]{2}$/i.test(exaCountry)) exaBody.userLocation = exaCountry.toUpperCase();
 
 	try {
 		const response = await fetchWithTimeout(`${searchConfig.baseUrl}/search`, {
@@ -3687,7 +3704,11 @@ export async function buildServerToolContinuation(
 		searchModelsRequests: 0,
 	};
 	const usageCounts = config.usageCounts ?? (config.usageCounts = {});
-	let remainingSearchResults = config.webSearchMaxTotalResults ?? DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS;
+	// max_total_results covers the whole request, so earlier rounds' results count against it.
+	let remainingSearchResults = Math.max(
+		0,
+		(config.webSearchMaxTotalResults ?? DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS) - (config.webSearchResultsUsed ?? 0),
+	);
 	for (const call of toolCalls) {
 		// Keep usage from tools that finished before cancellation. The caller still
 		// needs to settle those costs, but must not start another tool.
@@ -3747,6 +3768,7 @@ export async function buildServerToolContinuation(
 			usage.webSearchExtraResults += Math.max(0, executed.webSearchExtraResults);
 			usage.webFetchRequests += Math.max(0, executed.webFetchRequests);
 			remainingSearchResults = Math.max(0, remainingSearchResults - Math.max(0, executed.webSearchResults));
+			config.webSearchResultsUsed = (config.webSearchResultsUsed ?? 0) + Math.max(0, executed.webSearchResults);
 			continue;
 		}
 
