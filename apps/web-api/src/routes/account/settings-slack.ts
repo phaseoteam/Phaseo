@@ -3,7 +3,6 @@ import { bodyLimit } from "hono/body-limit";
 import { hasOAuthClientToken } from "@/auth/requireUser";
 import { withSessionAuthorization } from "@/auth/sessionCookie";
 import { slackAgentMonthlyCharge, slackAgentPlanNanos } from "@/billing/slackAgentPricing";
-import { hasReviewedChatPrivacy } from "@/chat/privacyReview";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
@@ -477,11 +476,6 @@ accountSettingsSlackRouter.post("/slack/install", bodyLimit({ maxSize: 8 * 1024 
 	const parsed = parseInstallSettings(withoutWorkspaceId(body));
 	if (parsed.ok === false) return badRequest(c, parsed.message);
 	const { context } = access;
-	// The agent sends Slack conversations through the gateway, so the installer must
-	// have reviewed the workspace's privacy settings, as Chat requires.
-	if (!hasReviewedChatPrivacy(context.user.appMetadata, context.workspaceId)) {
-		return json(c, { error: "chat_privacy_review_required", message: "Review your workspace privacy settings before installing the Slack agent" }, 403);
-	}
 	if (!slackCoreConfigured(c.env)) return notConfigured(c);
 	// Settings → Slack only shows inside the rollout; installing through the API asks the same.
 	if (!(await slackAgentInstallAllowed(c.env, context.client, { userId: context.user.id, email: context.user.email, workspaceId: context.workspaceId }))) {
@@ -773,7 +767,6 @@ accountSettingsSlackRouter.get("/slack/oauth/callback", async (c) => {
 	if (!context) return fail("sign_in_required");
 	if (context.user.id !== state.user_id) return fail("session_mismatch");
 	if (!isManager(context)) return fail("forbidden");
-	if (!hasReviewedChatPrivacy(context.user.appMetadata, context.workspaceId)) return fail("chat_privacy_review_required");
 	if (!slackCoreConfigured(env)) return fail("slack_not_configured");
 
 	// A reload of this page, or a second install started in another tab, must not
