@@ -168,8 +168,11 @@ export class WorkspaceRuntime {
 	htmlPreview?: (request: HtmlPreviewRequest) => Promise<HtmlPreviewResult>;
 	/** The running turn of each chat, so a tool can add to its timeline (html_render). */
 	private readonly turnNotes = new Map<string, (activity: AgentActivity) => void>();
-	/** The running turn's next timeline position, so a steer lands among the turn's steps at the moment it was sent. */
-	private readonly turnOrders = new Map<string, () => number>();
+	/**
+	 * The running turn's steering hooks: `reserve` takes the turn's next timeline position, so a steer lands among the turn's
+	 * steps at the moment it was sent; `boundary` marks an accepted steer, so text streamed after it starts a new entry below it.
+	 */
+	private readonly turnOrders = new Map<string, { reserve: () => number; boundary: () => void }>();
 	/** Claude turns' background tasks, for background_wait. */
 	private readonly backgroundWork = new Map<string, BackgroundWork>();
 	/** Review guides for the agent tools; set by the app once its guide store exists. */
@@ -1342,7 +1345,8 @@ export class WorkspaceRuntime {
 		const message = { id: queued?.id ?? randomUUID(), text: queued?.text ?? command.text, attachments, createdAt: new Date().toISOString() };
 		// The steer takes the turn's next position now, so it shows after the steps and text the agent produced before it
 		// was sent and before what follows. A refused steer leaves an unused position, which only leaves a gap.
-		const timelineOrder = this.turnOrders.get(task.id)?.() ?? this.store.nextTimelineOrder(task.id, task);
+		const turn = this.turnOrders.get(task.id);
+		const timelineOrder = turn?.reserve() ?? this.store.nextTimelineOrder(task.id, task);
 		if (queued) task.queue.splice(position, 1);
 		task.steering ??= []; task.steering.push({ ...message, status: "sending" }); this.store.saveTask(task); this.broadcast();
 		let sending = false;
@@ -1350,6 +1354,9 @@ export class WorkspaceRuntime {
 			const contents = await Promise.all((attachments ?? []).map(value => this.attachments.read(value.id)));
 			if (this.closing || this.running.get(task.id) !== adapter) throw new AgentInputRejectedError("The turn ended before this instruction was sent.");
 			sending = true; await adapter.steer!(message, contents);
+			// Only an accepted steer splits the stream: text the agent produces from here on goes in a new entry after the steer,
+			// even when the harness keeps the same item id (Pi always streams as "assistant"; Codex can reuse ids).
+			if (turn && this.turnOrders.get(task.id) === turn) turn.boundary();
 			const current = this.store.getTaskLatestTurn(task.id); current.steering = current.steering?.filter(value => value.id !== message.id);
 			current.messages.push({ ...message, role: "user", delivery: "steer", timelineOrder }); this.store.saveTask(current);
 		} catch (error) {
@@ -1505,8 +1512,17 @@ export class WorkspaceRuntime {
 		const cwd = project?.directory ?? path.join(this.directory, "tasks", id);
 		// Snapshot the project before the agent edits it, so the turn's changes can be reviewed on their own.
 		const checkpoint = project ? this.trackCheckpoint(captureCheckpoint(project.directory)) : undefined;
+		// Keyed by entry: an item's id, or the id with a suffix once an accepted steer split its stream.
 		const deltas = new Map<string, string>();
 		const eventOrder = new Map<string, number>();
+		// The entry each streamed item writes to now. An accepted steer clears it, so the item's next delta starts a new entry,
+		// placed after the steer; text buffered before the steer still flushes into the earlier entry.
+		const entries = new Map<string, string>(); let segment = 0;
+		const entryFor = (itemId: string) => {
+			let key = entries.get(itemId);
+			if (key === undefined) { key = eventOrder.has(`message:${itemId}`) ? `${itemId}~${segment}` : itemId; entries.set(itemId, key); }
+			return key;
+		};
 		const order = (key: string) => { if (!eventOrder.has(key)) eventOrder.set(key, timelineOrder++); return eventOrder.get(key)!; };
 		let activities: (AgentActivity & { append?: boolean })[] = [];
 		// A flush that costs more (a slow disk, many chats streaming, a long answer) waits longer, so streaming leaves the main process free.
@@ -1545,7 +1561,7 @@ export class WorkspaceRuntime {
 		let ended = false;
 		const note = (activity: AgentActivity) => { if (ended) { this.appendActivity(id, message.id, activity); return; } order(`activity:${activity.id}`); activities.push(activity); scheduleFlush(); };
 		this.turnNotes.set(id, note);
-		const reserve = () => timelineOrder++; this.turnOrders.set(id, reserve);
+		const steering = { reserve: () => timelineOrder++, boundary: () => { segment++; entries.clear(); } }; this.turnOrders.set(id, steering);
 		const background = task.harness === "claude" ? new BackgroundWork() : undefined;
 		if (background) this.backgroundWork.set(id, background);
 		const onQuestion: NonNullable<AgentCallbacks["onQuestion"]> = (questions, request) => new Promise(resolve => {
@@ -1596,7 +1612,7 @@ export class WorkspaceRuntime {
 				// A chat moved to a worktree mid-turn starts a new session there; the old folder's session is not kept.
 				onSession: nativeSessionId => { const current = this.store.getTask(id); if (current.nativeSessionId === nativeSessionId || current.projectId !== task.projectId) return; current.nativeSessionId = nativeSessionId; this.store.saveTask(current); this.broadcast(); },
 				onDelta: (itemId, text) => {
-					order(`message:${itemId}`); deltas.set(itemId, (deltas.get(itemId) ?? "") + text); scheduleFlush();
+					const key = entryFor(itemId); order(`message:${key}`); deltas.set(key, (deltas.get(key) ?? "") + text); scheduleFlush();
 				},
 				onActivity: note,
 				// Harnesses Phaseo doesn't bill report each response's tokens for the Usage page; a failed write costs only that.
@@ -1663,7 +1679,7 @@ export class WorkspaceRuntime {
 			if (limit) void this.readLimitReset(id).catch(() => {}).then(() => this.applyLimitRecovery(id));
 			current.approvals = []; current.questions = keepMessageQuestions(current.questions); current.forms = []; this.store.saveTask(current);
 		} finally {
-			ended = true; if (this.turnNotes.get(id) === note) this.turnNotes.delete(id); if (this.turnOrders.get(id) === reserve) this.turnOrders.delete(id); if (background && this.backgroundWork.get(id) === background) this.backgroundWork.delete(id);
+			ended = true; if (this.turnNotes.get(id) === note) this.turnNotes.delete(id); if (this.turnOrders.get(id) === steering) this.turnOrders.delete(id); if (background && this.backgroundWork.get(id) === background) this.backgroundWork.delete(id);
 			const finished = this.store.getTaskTail(id, message.id); const input = finished.messages.find(item => item.id === message.id); if (input) { input.completedAt = new Date().toISOString(); this.store.saveTask(finished); }
 			turn.setAttributes({ outcome: finished.status }); turn.end(finished.status === "failed" ? finished.error ?? "The turn failed." : undefined);
 			if (checkpoint && project) void this.trackCheckpoint(this.recordCheckpoint(id, message.id, checkpoint, project.directory));

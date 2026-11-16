@@ -201,6 +201,26 @@ describe("workspace orchestration", () => {
 			expect(new Set(timeline.map(item => item.timelineOrder)).size).toBe(timeline.length);
 		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
+	// Pi streams every delta as "assistant" and Codex can reuse an item id, so the same id keeps streaming across a steer.
+	it.each([["accepted", true], ["refused", false]] as const)("splits same-item text at a steer only when it is %s", async (_label, accepted) => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steer-split-"));
+		let finish: (() => void) | undefined, callbacks: AgentCallbacks | undefined;
+		const steer = async () => { if (!accepted) throw new AgentInputRejectedError("The agent cannot take steering now."); };
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (_task, _cwd, _text, value) => { callbacks = value; await new Promise<void>(resolve => { finish = resolve; }); }, cancel: async () => { finish?.(); }, steer }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "pi", model: "default", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); await vi.waitFor(() => expect(callbacks).toBeDefined());
+			callbacks!.onDelta?.("assistant", "Before. ");
+			await runtime.command({ type: "steer", id, text: "Also check the tests" }).catch(() => undefined);
+			callbacks!.onDelta?.("assistant", "After.");
+			finish!(); await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("completed"));
+			const task = runtime.store.getTask(id);
+			const timeline = task.messages.filter(item => item.timelineOrder !== undefined).sort((a, b) => a.timelineOrder! - b.timelineOrder!).map(item => `${item.role}:${item.text}`);
+			expect(timeline).toEqual(accepted ? ["user:Start", "assistant:Before. ", "user:Also check the tests", "assistant:After."] : ["user:Start", "assistant:Before. After."]);
+			// The text after an accepted steer is the turn's latest entry, so the live segment (the steer's) shows it as it streams.
+			if (accepted) expect(task.messages.findLast(item => item.role === "user")?.delivery).toBe("steer");
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("persists steering before delivery and retains rejected and uncertain instructions without replay", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steering-"));
 		let finish: (() => void) | undefined;
