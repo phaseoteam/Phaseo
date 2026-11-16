@@ -642,7 +642,7 @@
 				"protectApiKey": "API キーを保護してください",
 				"protectApiKeyDescription": "API キーは秘密にしてください。クライアント側のコードに含めたり、ソース管理にコミットしたりしないでください。",
 				"agentPromptTitle": "コーディングエージェントで設定",
-				"agentPromptDescription": "このプロンプトをコーディングエージェントにコピーしてください。プロジェクトに Phaseo を設定し、このモデルに最初のリクエストを送ります。",
+				"agentPromptDescription": "このプロンプトをコーディングエージェントにコピーしてください。プロジェクトに Phaseo を設定し、このモデルに最初のリクエストを送ります。すでに Phaseo を設定している場合は、既存の設定を見直します。",
 				"copyPrompt": "プロンプトをコピー",
 				"prompt": "プロンプト",
 				"manualSetup": "または自分で設定する",

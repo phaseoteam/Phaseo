@@ -642,7 +642,7 @@
 				"protectApiKey": "Schütze deinen API-Schlüssel",
 				"protectApiKeyDescription": "Halte deinen API-Schlüssel geheim. Lege ihn niemals in clientseitigem Code offen und speichere ihn nicht in der Versionsverwaltung.",
 				"agentPromptTitle": "Mit deinem Coding-Agenten einrichten",
-				"agentPromptDescription": "Kopiere diesen Prompt in deinen Coding-Agenten. Er richtet Phaseo in deinem Projekt ein und sendet eine erste Anfrage an dieses Modell.",
+				"agentPromptDescription": "Kopiere diesen Prompt in deinen Coding-Agenten. Er richtet Phaseo in deinem Projekt ein und sendet eine erste Anfrage an dieses Modell. Ist Phaseo bereits eingerichtet, prüft er stattdessen die bestehende Einrichtung.",
 				"copyPrompt": "Prompt kopieren",
 				"prompt": "Prompt",
 				"manualSetup": "Oder selbst einrichten",

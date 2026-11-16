@@ -36,12 +36,15 @@ export function buildAgentPrompt({ modelId, endpointPath }: AgentPromptOptions):
 	);
 
 	return [
-		`Add Phaseo to this project and make a first request to ${modelId}.`,
+		`Set up Phaseo in this project and make a first request to ${modelId}. If the project already uses Phaseo, review that setup against these steps instead of starting again.`,
 		"",
-		`1. Work out the project's language and package manager, then install the official Phaseo SDK with it: @phaseo/sdk (Node.js 18+), phaseo (Python 3.10+), github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3 (Go 1.23+), Phaseo.Sdk (.NET 8+), phaseo/sdk (PHP 8.1+) or phaseo_sdk (Ruby 3.0+). For Java, follow ${INSTALL_DOCS}. If there is no SDK for the language, call ${API_BASE} with the HTTP client the project already uses. If a release-age policy blocks the install, stop and ask me instead of changing it.`,
-		`2. Before writing code, read the SKILL.md that ships with the SDK (node_modules/@phaseo/sdk/SKILL.md, or SKILL.md in the installed phaseo Python package) or, for other languages, ${DOCS}/skill.md. If you support skills, also run \`npx skills@latest add ${DOCS} --skill phaseo-gateway\`.`,
-		`3. Add a note to AGENTS.md, creating it if needed: before changing Phaseo code, read those docs, and check model IDs with GET ${API_BASE}/models instead of guessing them.`,
-		`4. Read the API key from the PHASEO_API_KEY environment variable in server-side code only. Add PHASEO_API_KEY to the example env file without a value. Never print, commit or ship the key to a browser. If it is not set, ask me to create one at ${KEYS_URL}.`,
-		`5. Add a server-side function that ${task}, using POST /v1${path}. Follow the project's existing structure, handle Phaseo error codes, and add a test that mocks the HTTP call.`,
+		`1. Check whether the project already uses Phaseo: a Phaseo SDK in its dependencies, PHASEO_API_KEY in its env files, or calls to api.phaseo.app. If it does, keep what already works, reuse the existing client, fix anything that doesn't match the steps below, and don't add a second integration.`,
+		`2. If no Phaseo SDK is installed, work out the project's language and package manager, then install the official SDK with it: @phaseo/sdk (Node.js 18+), phaseo (Python 3.10+), github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3 (Go 1.23+), Phaseo.Sdk (.NET 8+), phaseo/sdk (PHP 8.1+) or phaseo_sdk (Ruby 3.0+). For Java, follow ${INSTALL_DOCS}. If there is no SDK for the language, call ${API_BASE} with the HTTP client the project already uses. If an SDK is installed but behind the latest major version, update it and fix what the upgrade breaks. If a release-age policy blocks an install or update, stop and ask me instead of changing it.`,
+		`3. Before writing code, read the SKILL.md that ships with the SDK (node_modules/@phaseo/sdk/SKILL.md, or SKILL.md in the installed phaseo Python package) or, for other languages, ${DOCS}/skill.md. If you support skills, also run \`npx skills@latest add ${DOCS} --skill phaseo-gateway\`.`,
+		`4. Add a note to AGENTS.md, creating it or updating an existing note if needed: before changing Phaseo code, read those docs, and check model IDs with GET ${API_BASE}/models instead of guessing them.`,
+		`5. Read the API key from the PHASEO_API_KEY environment variable in server-side code only. Add PHASEO_API_KEY to the example env file without a value. Never print, commit or ship the key to a browser; if the existing code does, fix it and tell me. If the key is not set, ask me to create one at ${KEYS_URL}.`,
+		`6. If the project already calls ${modelId} through Phaseo, check that code against the docs: the model ID, the endpoint, error handling and a test. Otherwise add a server-side function that ${task}, using POST /v1${path}. Follow the project's existing structure, handle Phaseo error codes, and add a test that mocks the HTTP call.`,
+		"",
+		"When you finish, list what you added, what you changed in an existing setup, and anything I still need to do.",
 	].join("\n");
 }

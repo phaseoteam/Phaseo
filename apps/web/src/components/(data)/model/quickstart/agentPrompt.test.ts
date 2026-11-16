@@ -15,14 +15,23 @@ describe("buildAgentPrompt", () => {
 	const prompt = buildAgentPrompt({ modelId: "openai/gpt-6-astra", endpointPath: "/responses" });
 
 	it("covers setup and the first request in one numbered prompt", () => {
-		expect(prompt).toMatch(/^Add Phaseo to this project and make a first request to openai\/gpt-6-astra\./);
-		for (const step of ["1. ", "2. ", "3. ", "4. ", "5. "]) {
+		expect(prompt).toMatch(/^Set up Phaseo in this project and make a first request to openai\/gpt-6-astra\./);
+		for (const step of ["1. ", "2. ", "3. ", "4. ", "5. ", "6. "]) {
 			expect(prompt).toContain(`\n${step}`);
 		}
 	});
 
+	it("reviews an existing Phaseo setup instead of adding a second one", () => {
+		expect(prompt).toContain("If the project already uses Phaseo, review that setup");
+		expect(prompt).toContain("Check whether the project already uses Phaseo");
+		expect(prompt).toContain("don't add a second integration");
+		expect(prompt).toContain("behind the latest major version, update it");
+		expect(prompt).toContain("If the project already calls openai/gpt-6-astra through Phaseo");
+		expect(prompt).toMatch(/list what you added, what you changed in an existing setup/);
+	});
+
 	it("lets the agent pick the SDK from the project's language", () => {
-		expect(prompt).toContain("Work out the project's language and package manager");
+		expect(prompt).toContain("work out the project's language and package manager");
 		for (const sdk of ["@phaseo/sdk", "phaseo (Python", "sdk-go/v3", "Phaseo.Sdk", "phaseo/sdk (PHP", "phaseo_sdk"]) {
 			expect(prompt).toContain(sdk);
 		}

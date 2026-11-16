@@ -642,7 +642,7 @@
 				"protectApiKey": "保护 API 密钥",
 				"protectApiKeyDescription": "请妥善保管 API 密钥。不要在客户端代码中暴露，也不要提交到版本控制系统。",
 				"agentPromptTitle": "用编程智能体完成设置",
-				"agentPromptDescription": "将此提示词复制到你的编程智能体中。它会在你的项目中设置 Phaseo，并向此模型发送第一个请求。",
+				"agentPromptDescription": "将此提示词复制到你的编程智能体中。它会在你的项目中设置 Phaseo，并向此模型发送第一个请求。如果已经设置了 Phaseo，它会检查现有配置。",
 				"copyPrompt": "复制提示词",
 				"prompt": "提示词",
 				"manualSetup": "或者自行设置",

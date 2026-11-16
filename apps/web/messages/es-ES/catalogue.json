@@ -642,7 +642,7 @@
 				"protectApiKey": "Protege tu clave de API",
 				"protectApiKeyDescription": "Mantén tu clave de API en secreto. No la expongas en código del cliente ni la incluyas en el control de versiones.",
 				"agentPromptTitle": "Configúralo con tu agente de código",
-				"agentPromptDescription": "Copia este prompt en tu agente de código. Configura Phaseo en tu proyecto y hace una primera solicitud a este modelo.",
+				"agentPromptDescription": "Copia este prompt en tu agente de código. Configura Phaseo en tu proyecto y hace una primera solicitud a este modelo. Si Phaseo ya está configurado, revisa esa configuración.",
 				"copyPrompt": "Copiar prompt",
 				"prompt": "Prompt",
 				"manualSetup": "O configúralo tú mismo",
