@@ -17,6 +17,7 @@ import { capabilityToEndpoints } from "@/lib/config/capabilityToEndpoints";
 import { resolveGatewayPath } from "./endpoint-paths";
 import { EndpointRoutesTable } from "./EndpointRoutesTable";
 import { QuickstartUsageSection } from "./QuickstartUsageSection";
+import { AgentPromptPanel } from "./AgentPromptPanel";
 import { buildJavaSdkQuickstart } from "./javaSdkQuickstart";
 import { buildEndpointRoutes, getSupportedEndpointOptions } from "./endpointRoutes";
 import {
@@ -1860,6 +1861,21 @@ console.log(response);`
 				</header>
 			) : null}
 			<div className="space-y-4">
+				{isModelMetadataQuickstart ? null : (
+					<>
+						<AgentPromptPanel
+							modelId={modelIdentifierInCode}
+							endpointPath={endpointPath}
+							serviceTier={shouldIncludeServiceTier ? selectedServiceTier : null}
+							providerSort={routingPreference?.routingMode ?? null}
+							byokProviders={byokOnlyProviders}
+							analyticsModelId={analyticsModelId}
+						/>
+						<p className="border-t border-border/70 pt-4 text-sm font-medium text-muted-foreground">
+							{t("manualSetup")}
+						</p>
+					</>
+				)}
 				<div className="space-y-3">
 					<div className="flex items-center gap-3">
 						<Badge

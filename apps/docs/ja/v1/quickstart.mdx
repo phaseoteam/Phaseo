@@ -13,20 +13,24 @@ flowchart LR
   req -->|"401、402、429"| fix["トラブルシューティング"]
 ```
 
-<Prompt description="**コーディングエージェントを使っていますか？** 始める前にこのプロンプトを貼り付けてください。" icon="bot" actions={["copy", "cursor"]}>
-{`You are integrating this project with Phaseo Gateway.
+## コーディングエージェントで始める
 
-Before editing anything:
-- Install the Phaseo skills: npx skills add https://phaseo.app/docs
-- Read https://phaseo.app/docs/skill.md and the API reference for the endpoint you will use. If your tools support MCP, search the docs at https://phaseo.app/docs/mcp.
-- Inspect the existing provider configuration and identify the smallest safe change.
+このプロンプトをコーディングエージェントにコピーしてください。プロジェクトの言語を判断して SDK をインストールし、Phaseo のドキュメントを参照させ、キーをコードに含めず、最初のリクエストを送ります。プロジェクトですでに Phaseo を使っている場合は、最初からやり直さずに既存の設定を見直します。`phaseo/free` はクレジットなしで使えます。[モデル](https://phaseo.app/models) の任意のテキストモデル ID に置き換えられます。
 
-Rules:
-- Call https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY. Never print or commit credentials.
-- Keep the current provider and model behaviour unless I ask for a migration. Check model IDs with GET /v1/models instead of guessing them.
-- Explain the files you would change and the verification commands first.
-- Do not deploy, rotate keys, send external messages, or make unrelated edits without my approval.`}
+<Prompt description="**コーディングエージェント用のセットアッププロンプト。** コピーするか、Cursor で開いてください。" icon="bot" actions={["copy", "cursor"]}>
+{`Set up Phaseo in this project and make a first request to phaseo/free. If the project already uses Phaseo, review that setup against these steps instead of starting again.
+
+1. Check whether the project already uses Phaseo: a Phaseo SDK in its dependencies, PHASEO_API_KEY in its env files, or calls to api.phaseo.app. If it does, keep what already works, reuse the existing client, fix anything that doesn't match the steps below, and don't add a second integration.
+2. If no Phaseo SDK is installed, work out the project's language and package manager, then install the official SDK with it: @phaseo/sdk (Node.js 18+), phaseo (Python 3.10+), github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3 (Go 1.23+), Phaseo.Sdk (.NET 8+), phaseo/sdk (PHP 8.1+) or phaseo_sdk (Ruby 3.0+). For Java, follow https://phaseo.app/docs/v1/sdk-reference/client/installation.md. If there is no SDK for the language, call https://api.phaseo.app/v1 with the HTTP client the project already uses. If an SDK is installed but behind the latest major version, update it and fix what the upgrade breaks. If a release-age policy blocks an install or update, stop and ask me instead of changing it.
+3. Before writing code, read the SKILL.md that ships with the SDK (node_modules/@phaseo/sdk/SKILL.md, or SKILL.md in the installed phaseo Python package) or, for other languages, https://phaseo.app/docs/skill.md. If you support skills, also run \`npx skills@latest add https://phaseo.app/docs --skill phaseo-gateway\`.
+4. Add a note to AGENTS.md, creating it or updating an existing note if needed: before changing Phaseo code, read those docs, and check model IDs with GET https://api.phaseo.app/v1/models instead of guessing them.
+5. Read the API key from the PHASEO_API_KEY environment variable in server-side code only. Add PHASEO_API_KEY to the example env file without a value. Never print, commit or ship the key to a browser; if the existing code does, fix it and tell me. If the key is not set, ask me to create one at https://phaseo.app/settings/keys.
+6. If the project already calls phaseo/free through Phaseo, check that code against the docs: the model ID, the endpoint, error handling and a test. Otherwise add a server-side function that sends a prompt to phaseo/free and returns the text reply, using POST /v1/responses. Follow the project's existing structure, handle Phaseo error codes, and add a test that mocks the HTTP call.
+
+When you finish, list what you added, what you changed in an existing setup, and anything I still need to do.`}
 </Prompt>
+
+自分で設定する場合は、以下の手順に従ってください。
 
 <Visibility for="agents">
 エージェント向けクイックスタートのチェックリスト：
