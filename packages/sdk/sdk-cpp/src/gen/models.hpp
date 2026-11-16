@@ -985,6 +985,12 @@ struct DecisionBoxAnswer {
 	std::any type;
 };
 
+struct DecisionBoxesQuestion {
+	std::any instructions;
+	std::optional<int> max;
+	std::any type;
+};
+
 struct DecisionBoxQuestion {
 	std::string instructions;
 	std::string name;
@@ -1002,12 +1008,18 @@ struct DecisionChoiceAnswer {
 struct DecisionChoiceQuestion {
 	std::map<std::string, std::any> criteria;
 	std::any instructions;
+	std::optional<bool> multiple;
 	std::any type;
 };
 
 using DecisionCreateRequest = std::any;
 
 using DecisionCreateResponse = std::any;
+
+struct DecisionDateQuestion {
+	std::any instructions;
+	std::any type;
+};
 
 struct DecisionImage {
 	std::string base64;
@@ -1068,6 +1080,14 @@ struct DecisionNoulQuestion {
 	std::any type;
 };
 
+struct DecisionNumberQuestion {
+	std::any instructions;
+	std::vector<double> range;
+	std::optional<double> step;
+	std::any type;
+	std::string unit;
+};
+
 struct DecisionPredicateAnswer {
 	std::optional<std::string> name;
 	double probability;
@@ -1103,7 +1123,13 @@ struct DecisionScoreQuestion {
 	std::any type;
 };
 
+struct DecisionSpansQuestion {
+	std::any instructions;
+	std::any type;
+};
+
 struct DecisionsRequest {
+	std::vector<std::string> audio;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	std::vector<std::any> images;
@@ -1132,6 +1158,11 @@ struct DecisionsUsage {
 	std::optional<int> output_tokens;
 	std::map<std::string, std::any> output_tokens_details;
 	std::optional<int> total_tokens;
+};
+
+struct DecisionTextQuestion {
+	std::any instructions;
+	std::any type;
 };
 
 struct DeletedResponse {
@@ -2107,6 +2138,7 @@ struct LegacyDecisionLocateQuestion {
 };
 
 struct LegacyDecisionsRequest {
+	std::vector<std::string> audio;
 	std::map<std::string, std::any> debug;
 	std::optional<bool> echo_upstream_request;
 	std::vector<std::any> images;

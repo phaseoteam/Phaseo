@@ -15593,6 +15593,11 @@ components:
               - $ref: '#/components/schemas/DecisionScoreQuestion'
               - $ref: '#/components/schemas/LegacyDecisionBoxQuestion'
               - $ref: '#/components/schemas/LegacyDecisionLocateQuestion'
+              - $ref: '#/components/schemas/DecisionTextQuestion'
+              - $ref: '#/components/schemas/DecisionNumberQuestion'
+              - $ref: '#/components/schemas/DecisionDateQuestion'
+              - $ref: '#/components/schemas/DecisionSpansQuestion'
+              - $ref: '#/components/schemas/DecisionBoxesQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -15609,6 +15614,16 @@ components:
                 pattern: >-
                   ^[Dd][Aa][Tt][Aa]:image/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$
               - $ref: '#/components/schemas/DecisionImage'
+        audio:
+          type: array
+          minItems: 1
+          maxItems: 8
+          description: >-
+            Audio clips as base64 data URLs in WAV, MP3, FLAC, M4A or OGG, for routes whose model hears audio, such as Liquid d1.2. Remote URLs are unsupported. When no route for the model hears audio, the clips are ignored.
+          items:
+            type: string
+            pattern: >-
+              ^[Dd][Aa][Tt][Aa]:[Aa][Uu][Dd][Ii][Oo]/([Ww][Aa][Vv]|[Xx]-[Ww][Aa][Vv]|[Ww][Aa][Vv][Ee]|[Mm][Pp]3|[Mm][Pp][Ee][Gg]|[Ff][Ll][Aa][Cc]|[Mm]4[Aa]|[Mm][Pp]4|[Oo][Gg][Gg]);base64,[A-Za-z0-9+/]+={0,2}$
         meta:
           type: boolean
           default: false
@@ -15659,6 +15674,113 @@ components:
           description: >-
             What to find, as a short label such as "email address" or an
             instruction such as "Extract the city where the job is located."
+    DecisionTextQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: >-
+        Reads a text value from the state and returns it with its span, or null
+        when it is not found. Typed-answer routes only, such as Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - text
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionDateQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: >-
+        Reads a date from the state and returns it in ISO 8601 with its span, or
+        null when it is not found. Typed-answer routes only, such as Liquid
+        d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - date
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionNumberQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: >-
+        Reads a number from the state with its unit and span, or null when it is
+        not found. With range, returns an estimate (the median) and its p10 to
+        p90 interval instead. Typed-answer routes only, such as Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - number
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 64
+          description: Unit the value is read or estimated in.
+        range:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+          description: Lowest and highest value of the estimate, low first.
+        step:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          description: >-
+            Spacing of the estimated values. It must divide high minus low, and
+            needs range.
+    DecisionSpansQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: >-
+        Finds every passage of a kind in the state, such as each piece of
+        personal data, with its position. Typed-answer routes only, such as
+        Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - spans
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+    DecisionBoxesQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+      additionalProperties: false
+      description: >-
+        Returns a box around every instance of an object in the one image, with
+        the count. Typed-answer routes only, such as Liquid d1.2.
+      properties:
+        type:
+          type: string
+          enum:
+            - boxes
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        max:
+          type: integer
+          minimum: 1
+          maximum: 16
+          description: Most instances to return, from 1 to 16.
     DecisionImage:
       type: object
       required:
@@ -15713,6 +15835,10 @@ components:
           additionalProperties:
             type: string
             nullable: true
+        multiple:
+          type: boolean
+          description: >-
+            Returns every option that applies, each with its own probability, instead of one choice. Routes that support it, such as Liquid d1.2, are preferred; other routes answer with one choice.
     DecisionScoreQuestion:
       type: object
       required:

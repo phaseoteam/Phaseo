@@ -1443,6 +1443,13 @@ module Phaseo
     #   @return [String]
     DecisionBoxAnswer = Struct.new(:box, :confidence, :name, :type, keyword_init: true)
     # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] max
+    #   @return [Integer, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionBoxesQuestion = Struct.new(:instructions, :max, :type, keyword_init: true)
+    # @!attribute [rw] instructions
     #   @return [String]
     # @!attribute [rw] name
     #   @return [String, nil]
@@ -1464,11 +1471,18 @@ module Phaseo
     #   @return [Hash{String => Object}]
     # @!attribute [rw] instructions
     #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] multiple
+    #   @return [Boolean, nil]
     # @!attribute [rw] type
     #   @return [String]
-    DecisionChoiceQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    DecisionChoiceQuestion = Struct.new(:criteria, :instructions, :multiple, :type, keyword_init: true)
     DecisionCreateRequest = Object
     DecisionCreateResponse = Object
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionDateQuestion = Struct.new(:instructions, :type, keyword_init: true)
     # @!attribute [rw] base64
     #   @return [String]
     # @!attribute [rw] content_type
@@ -1534,6 +1548,17 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     DecisionNoulQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] range
+    #   @return [Array<Float>, nil]
+    # @!attribute [rw] step
+    #   @return [Float, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    # @!attribute [rw] unit
+    #   @return [String, nil]
+    DecisionNumberQuestion = Struct.new(:instructions, :range, :step, :type, :unit, keyword_init: true)
     # @!attribute [rw] name
     #   @return [String, nil]
     # @!attribute [rw] probability
@@ -1574,6 +1599,13 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     DecisionScoreQuestion = Struct.new(:criteria, :instructions, :type, keyword_init: true)
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionSpansQuestion = Struct.new(:instructions, :type, keyword_init: true)
+    # @!attribute [rw] audio
+    #   @return [Array<String>, nil]
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request
@@ -1598,7 +1630,7 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] state
     #   @return [String, Hash{String => Object}, Array<Object>]
-    DecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :provider_options, :questions, :routing, :state, keyword_init: true)
+    DecisionsRequest = Struct.new(:audio, :debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :provider_options, :questions, :routing, :state, keyword_init: true)
     # @!attribute [rw] answers
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] meta
@@ -1621,6 +1653,11 @@ module Phaseo
     # @!attribute [rw] total_tokens
     #   @return [Integer, nil]
     DecisionsUsage = Struct.new(:input_tokens, :input_tokens_details, :output_tokens, :output_tokens_details, :total_tokens, keyword_init: true)
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionTextQuestion = Struct.new(:instructions, :type, keyword_init: true)
     # @!attribute [rw] deleted
     #   @return [String]
     DeletedResponse = Struct.new(:deleted, keyword_init: true)
@@ -2965,6 +3002,8 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     LegacyDecisionLocateQuestion = Struct.new(:instructions, :type, keyword_init: true)
+    # @!attribute [rw] audio
+    #   @return [Array<String>, nil]
     # @!attribute [rw] debug
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] echo_upstream_request
@@ -2989,7 +3028,7 @@ module Phaseo
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] state
     #   @return [String, Hash{String => Object}, Array<Object>]
-    LegacyDecisionsRequest = Struct.new(:debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :provider_options, :questions, :routing, :state, keyword_init: true)
+    LegacyDecisionsRequest = Struct.new(:audio, :debug, :echo_upstream_request, :images, :meta, :metadata, :model, :models, :provider, :provider_options, :questions, :routing, :state, keyword_init: true)
     # @!attribute [rw] answers
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] meta

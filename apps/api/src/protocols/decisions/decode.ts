@@ -1,8 +1,32 @@
 import type { DecisionsRequest } from "@core/schemas";
-import { LegacyDecisionsSchema } from "@core/schemas";
+import { LEGACY_DECISION_AUDIO_DATA_URL, LegacyDecisionsSchema } from "@core/schemas";
 import type * as z from "zod";
 import type { IRDecisionQuestion, IRDecisionsRequest } from "@core/ir";
 import { NativeDecisionAnswerSchema, type NativeDecisionQuestion, type NativeDecisionRequest } from "@core/decisions";
+
+const AUDIO_FORMATS: Record<string, NonNullable<IRDecisionsRequest["audio"]>[number]["format"]> = {
+	wav: "wav", "x-wav": "wav", wave: "wav", mp3: "mp3", mpeg: "mp3", flac: "flac", m4a: "m4a", mp4: "m4a", ogg: "ogg",
+};
+
+function decodeAudioDataUrl(url: string): NonNullable<IRDecisionsRequest["audio"]>[number] {
+	const comma = url.indexOf(",");
+	const subtype = url.slice("data:audio/".length, url.indexOf(";")).toLowerCase();
+	return { type: "audio", source: "data", data: url.slice(comma + 1), format: AUDIO_FORMATS[subtype] ?? "wav" };
+}
+
+const MAX_LEGACY_AUDIO_CLIPS = 8;
+const MAX_LEGACY_AUDIO_URL_LENGTH = 24 * 1024 * 1024;
+
+/**
+ * The legacy `audio` field as clips, or undefined. Older gateways ignored the field, so a
+ * value that is not 1–8 base64 audio data URLs is still ignored rather than refused.
+ */
+function decodeLegacyAudio(value: unknown): NonNullable<IRDecisionsRequest["audio"]> | undefined {
+	if (!Array.isArray(value) || value.length < 1 || value.length > MAX_LEGACY_AUDIO_CLIPS) return undefined;
+	if (!value.every(clip => typeof clip === "string" && clip.length <= MAX_LEGACY_AUDIO_URL_LENGTH &&
+		LEGACY_DECISION_AUDIO_DATA_URL.test(clip))) return undefined;
+	return (value as string[]).map(decodeAudioDataUrl);
+}
 
 export function decisionQuestionId(index: number): string {
 	return `question_${index}`;
@@ -11,10 +35,12 @@ export function decisionQuestionId(index: number): string {
 export function decodeDecisionsRequest(req: DecisionsRequest): IRDecisionsRequest {
 	if (!Array.isArray(req.questions)) {
 		const legacy = req as z.infer<typeof LegacyDecisionsSchema>;
+		const audio = decodeLegacyAudio(legacy.audio);
 		return {
 			model: legacy.model, state: legacy.state,
 			...(legacy.provider_options === undefined ? {} : { providerOptions: legacy.provider_options }),
 			...(legacy.images === undefined ? {} : { images: legacy.images }),
+			...(audio ? { audio, optionalAudio: true } : {}),
 			questions: legacy.questions as IRDecisionsRequest["questions"],
 		};
 	}

@@ -11,7 +11,9 @@ import type {
 	IREmbeddingsInputItem,
 	IRMessage,
 } from "@core/ir";
-import { DECISION_QUESTION_CEILING, DEFAULT_ROUTE_QUESTION_LIMIT } from "@core/decisions";
+import {
+	DECISION_QUESTION_CEILING, DEFAULT_ROUTE_QUESTION_LIMIT, decisionQuestionFeature, isInlineAudioUrl, type TypedDecisionFeature,
+} from "@core/decisions";
 import type { ProviderCandidate } from "../before/types";
 
 export type Modality = "text" | "image" | "audio" | "video";
@@ -29,6 +31,34 @@ export function decisionQuestionLimit(candidate: Pick<ProviderCandidate, "capabi
 		: DEFAULT_ROUTE_QUESTION_LIMIT;
 }
 
+/**
+ * The typed-answer features (text, number, spans, boxes …) a request needs from its route.
+ * Multi-select is left out: `multiple` used to pass through to every provider, so it is
+ * only a preference (see filterDecisionCandidatesByModalities).
+ */
+export function requiredTypedDecisionFeatures(ir: IRDecisionsRequest): TypedDecisionFeature[] {
+	const features = new Set<TypedDecisionFeature>();
+	for (const question of Object.values(ir.questions ?? {})) {
+		const feature = decisionQuestionFeature(question);
+		if (feature && feature !== "multi_choice") features.add(feature);
+	}
+	return Array.from(features);
+}
+
+function requestsMultiChoice(ir: IRDecisionsRequest): boolean {
+	return Object.values(ir.questions ?? {}).some(question => decisionQuestionFeature(question) === "multi_choice");
+}
+
+/** Typed answers are opt-in per route: its capability lists them in params.question_types. */
+export function routeServesTypedDecisionFeatures(
+	candidate: Pick<ProviderCandidate, "capabilityParams">,
+	features: readonly TypedDecisionFeature[],
+): boolean {
+	if (!features.length) return true;
+	const declared = candidate.capabilityParams?.question_types;
+	return Array.isArray(declared) && features.every(feature => declared.includes(feature));
+}
+
 export function filterDecisionCandidatesByModalities(
 	candidates: ProviderCandidate[],
 	ir: IRDecisionsRequest,
@@ -40,18 +70,62 @@ export function filterDecisionCandidatesByModalities(
 	const requestsLocate = Object.values(ir.questions ?? {}).some(question => question.type === "locate");
 	const requestsLongContext = ir.providerOptions?.typesafe?.long_context === true;
 	const requestsImageUrls = (ir.images ?? []).some(image => typeof image === "string" && !/^data:/i.test(image));
+	// Routes that take only inline clips declare params.audio_urls false.
+	const requestsAudioUrls = (ir.audio ?? []).some(clip => clip.source === "url" && !isInlineAudioUrl(clip));
+	const typedFeatures = requiredTypedDecisionFeatures(ir);
 	const media = [
 		{ modality: "image", parameter: "images", requested: Boolean(ir.images?.length) },
 		{ modality: "audio", parameter: "audio", requested: Boolean(ir.audio?.length) },
 		{ modality: "video", parameter: "videos", requested: Boolean(ir.videos?.length) },
 	].filter(item => item.requested);
-	return candidates.filter(candidate =>
+	const eligible = candidates.filter(candidate =>
 		questionCount <= decisionQuestionLimit(candidate) &&
 		(!requestsBox || (Boolean(ir.images?.length) && candidate.capabilityParams?.box === true)) &&
 		(!requestsLocate || candidate.capabilityParams?.locate === true) &&
 		(!requestsLongContext || (candidate.providerId === "typesafe" && candidate.capabilityParams?.long_context === true)) &&
 		(!requestsImageUrls || candidate.capabilityParams?.image_urls === true) &&
+		(!requestsAudioUrls || candidate.capabilityParams?.audio_urls !== false) &&
+		routeServesTypedDecisionFeatures(candidate, typedFeatures) &&
 		media.every(item => candidate.inputModalities?.includes(item.modality) && candidate.capabilityParams?.[item.parameter] === true));
+	// Prefer routes that answer multi-select; others still get the question as before.
+	if (requestsMultiChoice(ir)) {
+		const multi = eligible.filter(candidate => routeServesTypedDecisionFeatures(candidate, ["multi_choice"]));
+		if (multi.length) return multi;
+	}
+	return eligible;
+}
+
+/**
+ * The decisions request as one route receives it. A choice question's `multiple` is
+ * dropped on routes that don't answer multi-select, so they get a plain choice question.
+ */
+export function decisionIrForRoute(
+	ir: IRDecisionsRequest,
+	candidate: Pick<ProviderCandidate, "capabilityParams">,
+): IRDecisionsRequest {
+	if (!Object.values(ir.questions ?? {}).some(question => "multiple" in question) ||
+		routeServesTypedDecisionFeatures(candidate, ["multi_choice"])) return ir;
+	const questions = Object.fromEntries(Object.entries(ir.questions).map(([id, question]) => {
+		if (!("multiple" in question)) return [id, question];
+		const { multiple: _multiple, ...rest } = question;
+		return [id, rest as IRDecisionsRequest["questions"][string]];
+	}));
+	return { ...ir, questions };
+}
+
+/**
+ * Routes for a decisions request. Audio sent in the state/map format's `audio` field
+ * (`optionalAudio`) used to be ignored, so when no route hears audio the request is
+ * routed without it, as before, and `dropAudio` tells the caller to remove it.
+ */
+export function routeDecisionCandidates(
+	candidates: ProviderCandidate[],
+	ir: IRDecisionsRequest,
+): { candidates: ProviderCandidate[]; dropAudio: boolean } {
+	const routed = filterDecisionCandidatesByModalities(candidates, ir);
+	if (routed.length || !ir.optionalAudio || !ir.audio?.length) return { candidates: routed, dropAudio: false };
+	const withoutAudio = filterDecisionCandidatesByModalities(candidates, { ...ir, audio: undefined });
+	return withoutAudio.length ? { candidates: withoutAudio, dropAudio: true } : { candidates: routed, dropAudio: false };
 }
 
 type ModalityRequirements = {

@@ -2,6 +2,7 @@
  * Legacy SDK model name retained for compatibility. New callers should use OpenAIDecisionsRequest.
  */
 export interface DecisionsRequest {
+  audio?: string[];
   debug?: {
     enabled?: boolean;
     return_upstream_request?: boolean;
@@ -91,6 +92,7 @@ export interface DecisionsRequest {
                 [key: string]: unknown;
               }
             | unknown[];
+          multiple?: boolean;
           type: "choice";
         }
       | {
@@ -115,6 +117,55 @@ export interface DecisionsRequest {
       | {
           instructions: string;
           type: "locate";
+        }
+      | {
+          instructions:
+            | string
+            | {
+                [key: string]: unknown;
+              }
+            | unknown[];
+          type: "text";
+        }
+      | {
+          instructions:
+            | string
+            | {
+                [key: string]: unknown;
+              }
+            | unknown[];
+          range?: number[];
+          step?: number;
+          type: "number";
+          unit?: string;
+        }
+      | {
+          instructions:
+            | string
+            | {
+                [key: string]: unknown;
+              }
+            | unknown[];
+          type: "date";
+        }
+      | {
+          instructions:
+            | string
+            | {
+                [key: string]: unknown;
+              }
+            | unknown[];
+          type: "spans";
+        }
+      | {
+          instructions:
+            | string
+            | {
+                [key: string]: unknown;
+              }
+            | unknown[];
+          max?: number;
+          type: "boxes";
         };
   };
   routing?: {
