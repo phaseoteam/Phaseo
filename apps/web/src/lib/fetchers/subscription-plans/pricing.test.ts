@@ -65,6 +65,12 @@ describe("minimumPayableAmount", () => {
 	});
 	test("ranks by the ongoing price, not an introductory deal", () => {
 		expect(minimumPayableAmount(offer([component(1, { phase: "introductory" }), component(30, { phase: "renewal" })]))).toBe(30);
+		// $20 for the first cycle, then $30: the ongoing price is $30, never $50.
+		expect(minimumPayableAmount(offer([component(20, { duration_cycles: 1 }), component(30, { phase: "renewal", starts_at_cycle: 2 })]))).toBe(30);
+		expect(minimumPayableAmount(offer([component(20), component(30, { phase: "renewal", starts_at_cycle: 2 })]))).toBe(30);
+	});
+	test("has no ongoing price when only a deal is published", () => {
+		expect(minimumPayableAmount(offer([component(1, { phase: "introductory", duration_cycles: 1 })]))).toBeNull();
 	});
 	test("ignores optional metered extras but not unknown required charges", () => {
 		expect(minimumPayableAmount(offer([component(20), component(0.01, { pricing_type: "usage_based", charge_basis: "unit" })]))).toBe(20);

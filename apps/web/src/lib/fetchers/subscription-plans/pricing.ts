@@ -29,15 +29,17 @@ export interface SubscriptionPrice {
 }
 
 /**
- * The least a subscriber must pay each billing period for this offer, for ranking by price: every fixed
- * ongoing component, with seat charges multiplied by the required seats. Introductory phases are left out
- * so plans rank by what they cost after any first-cycle deal. Metered extras are optional and not counted.
- * Null when a required charge has no known amount (custom or "starting at" pricing).
+ * The least a subscriber must pay each billing period once any deal is over, for ranking by price. Uses the
+ * ongoing components only: not introductory, no end cycle, and starting at the latest such cycle (so a
+ * renewal price replaces a first-cycle price). Seat charges count the required seats; optional metered
+ * extras aren't counted. Null when the ongoing price isn't known, e.g. custom pricing or only a deal.
  */
 export function minimumPayableAmount(price: SubscriptionPrice): number | null {
-	const components = (price.components ?? []).filter((component) => component.phase !== "introductory");
+	const components = price.components ?? [];
 	if (!components.length) return price.price == null || !Number.isFinite(Number(price.price)) ? null : Number(price.price);
-	const required = components.filter((component) => component.pricing_type !== "usage_based");
+	const openEnded = components.filter((component) => component.phase !== "introductory" && component.duration_cycles == null);
+	const lastStart = Math.max(...openEnded.map((component) => component.starts_at_cycle ?? 1));
+	const required = openEnded.filter((component) => (component.starts_at_cycle ?? 1) === lastStart && component.pricing_type !== "usage_based");
 	if (!required.length || required.some((component) => component.pricing_type !== "free" && (component.pricing_type !== "fixed" || component.amount == null))) return null;
 	const seats = Math.max(1, price.minimum_seats ?? 1);
 	return required.reduce((total, component) => total + (component.pricing_type === "free" ? 0 : Number(component.amount) * (component.charge_basis === "seat" ? seats : 1)), 0);

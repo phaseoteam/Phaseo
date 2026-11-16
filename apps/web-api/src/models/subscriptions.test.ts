@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fetchRelatedPlans, fetchSubscriptionCatalogue, fetchSubscriptionPlansForModels, mergeOrderedPlanLists, monthlyOfferPriceUsd, subscriptionPayload } from "./subscriptions";
+import { fetchRelatedPlans, fetchSubscriptionCatalogue, fetchSubscriptionPlansForModels, mergeOrderedPlanLists, subscriptionPayload } from "./subscriptions";
 
 describe("structured subscription payload", () => {
 	it("preserves offer identity, composite charges, allowances and model access", () => {
@@ -77,40 +77,23 @@ describe("subscription usage", () => {
 });
 
 describe("related plans", () => {
-	const fixed = (amount: number) => ({ pricing_type: "fixed", amount, phase: "standard" });
-
-	it("prices a plan from its cheapest fixed monthly offer", () => {
-		expect(monthlyOfferPriceUsd([{ v2_subscription_offer_prices: [fixed(30), { ...fixed(5), phase: "intro" }] }, { v2_subscription_offer_prices: [fixed(25)] }])).toBe(25);
-		expect(monthlyOfferPriceUsd([{ v2_subscription_offer_prices: [fixed(80), fixed(40)] }])).toBe(120);
-		expect(monthlyOfferPriceUsd([{ v2_subscription_offer_prices: [fixed(20), { pricing_type: "usage_based", amount: null, phase: "standard" }] }])).toBeNull();
-		expect(monthlyOfferPriceUsd([{ v2_subscription_offer_prices: [] }])).toBeNull();
-		expect(monthlyOfferPriceUsd([{ v2_subscription_offer_prices: [{ pricing_type: "free", amount: null, phase: "standard" }] }])).toBe(0);
-	});
-
-	it("returns the lab's plans cheapest first with live offer prices and standard usage", async () => {
-		// Plan rows carry no price; prices come from the live monthly offers.
+	it("returns the lab's plans cheapest first with database monthly prices and standard usage", async () => {
+		// Plan rows carry no price; prices come from the database's per-plan monthly prices.
 		const planRows = [
 			{ plan_uuid: "ultra", plan_id: "ultra", name: "Ultra" },
 			{ plan_uuid: "pro", plan_id: "pro", name: "Pro" },
 			{ plan_uuid: "ent", plan_id: "ent", name: "Enterprise" },
 		];
-		const offerRows = [
-			{ plan_uuid: "ultra", v2_subscription_offer_prices: [fixed(200)] },
-			{ plan_uuid: "pro", v2_subscription_offer_prices: [fixed(25)] },
-			{ plan_uuid: "ent", v2_subscription_offer_prices: [{ pricing_type: "custom", amount: null, phase: "standard" }] },
-		];
-		const queryFor = (table: string) => {
-			let ors = 0;
-			const query: Record<string, unknown> = { select: () => query, eq: () => query, lte: () => query, in: () => query, is: () => query,
-				or: () => { ors += 1; return table === "v2_subscription_plans" || ors === 2 ? Promise.resolve({ data: table === "v2_subscription_plans" ? planRows : offerRows, error: null }) : query; } };
-			return query;
-		};
-		const client = { from: queryFor, rpc: async () => ({ data: [
+		const query: Record<string, unknown> = { select: () => query, eq: () => query, lte: () => query, or: async () => ({ data: planRows, error: null }) };
+		const prices = [{ plan_uuid: "ultra", monthly_price_usd: "200" }, { plan_uuid: "pro", monthly_price_usd: "25" }];
+		const rpc = vi.fn(async (name: string) => name === "get_v2_subscription_monthly_prices" ? { data: prices, error: null } : { data: [
 			{ plan_uuid: "pro", lab_slug: "lab", model_slug: "lab/a", scenario: "standard", monthly_tokens: "1000" },
 			{ plan_uuid: "pro", lab_slug: "lab", model_slug: "lab/a", scenario: "off_peak", monthly_tokens: "2000" },
 			{ plan_uuid: "other", lab_slug: "other-lab", model_slug: "x/y", scenario: "standard", monthly_tokens: "5" },
-		], error: null }) };
+		], error: null });
+		const client = { from: () => query, rpc };
 		const related = await fetchRelatedPlans(client as never, { organisation_id: "lab" });
 		expect(related.map((plan) => [plan.plan_id, plan.monthly_price_usd, plan.usage.length])).toEqual([["pro", 25, 1], ["ultra", 200, 0], ["ent", null, 0]]);
+		expect(rpc).toHaveBeenCalledWith("get_v2_subscription_monthly_prices", { p_lab_slug: "lab" });
 	});
 });
