@@ -212,15 +212,17 @@ function hasUnsupportedWebOption(source: unknown): boolean {
 		value.filters && typeof value.filters === "object" ? value.filters.allowed_domains : undefined,
 	];
 	if (lists.some((list) => Array.isArray(list) && list.length > 0)) return true;
-	// Use and size caps: DeepSeek's tools take no options, so it would not enforce them.
+	// Use, result and size caps: DeepSeek's tools take no options, so it would not enforce them.
 	if (value.max_uses != null || value.max_content_tokens != null) return true;
+	if (value.max_results != null || value.max_total_results != null) return true;
 	return value.user_location != null && typeof value.user_location === "object";
 }
 
 /**
  * Whether a web tool carries an option DeepSeek's option-free web tools cannot
  * honour: domain lists or a user location (both a 400 on DeepSeek), or a
- * `max_uses` / `max_content_tokens` cap it would not enforce.
+ * `max_uses`, `max_results`, `max_total_results` or `max_content_tokens` cap it
+ * would not enforce.
  */
 export function webToolNeedsOptionsDeepSeekLacks(tool: unknown): boolean {
 	if (!tool || typeof tool !== "object") return false;
