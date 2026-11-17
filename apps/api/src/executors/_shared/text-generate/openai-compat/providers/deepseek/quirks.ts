@@ -73,6 +73,18 @@ export const deepseekQuirks: ProviderQuirks = {
 			} else {
 				request.thinking = { type: "disabled" };
 			}
+		} else if (currentToolTurnLacksReasoning(request)) {
+			// In thinking mode DeepSeek needs reasoning_content on the current turn's tool calls,
+			// or returns 400. A tool call made without thinking (such as a forced call above,
+			// continued by the gateway's server-tool loop with tool_choice relaxed to "auto")
+			// has none, so the rest of that turn runs without thinking too.
+			delete request.reasoning_effort;
+			if ("input" in request) {
+				delete request.thinking;
+				request.reasoning = { effort: "none" };
+			} else {
+				request.thinking = { type: "disabled" };
+			}
 		}
 
 		for (const unsupported of [
@@ -187,6 +199,21 @@ function asObject(value: unknown): JsonObject | null {
 
 function asArray(value: unknown): unknown[] {
 	return Array.isArray(value) ? value : [];
+}
+
+/** True when a tool call since the last user message carries no reasoning. */
+function currentToolTurnLacksReasoning(request: JsonObject): boolean {
+	const items = asArray("input" in request ? request.input : request.messages).map(asObject);
+	let start = items.length;
+	while (start > 0 && items[start - 1]?.role !== "user") start--;
+	const turn = items.slice(start);
+	if ("input" in request) {
+		return turn.some((item) => item?.type === "function_call")
+			&& !turn.some((item) => item?.type === "reasoning");
+	}
+	return turn.some((item) => item?.role === "assistant"
+		&& asArray(item.tool_calls).length > 0
+		&& !(typeof item.reasoning_content === "string" && item.reasoning_content.length > 0));
 }
 
 function addSourceAnnotations(messageValue: unknown, seen: Set<string>): void {

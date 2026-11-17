@@ -63,10 +63,13 @@ function domainList(value: unknown): string[] | undefined {
 /**
  * The `phaseo:web_search` equivalent of an OpenAI hosted web search tool. OpenAI's
  * fields (search_context_size, filters.allowed_domains) and the common search
- * options (engine, max_results, max_total_results, include/exclude domains, max_uses) carry over, and
- * so does `user_location`, which our search uses whenever the model's call gives none.
+ * options (engine, max_results, max_total_results, include/exclude domains, max_uses) carry over,
+ * from the tool or its `parameters`, and so does `user_location`, which our search uses whenever
+ * the model's call gives none.
  */
-export function gatewayWebSearchToolFor(tool: Record<string, any>): Record<string, any> {
+export function gatewayWebSearchToolFor(declared: Record<string, any>): Record<string, any> {
+	// `parameters` wins over the same option on the tool, as when a phaseo:web_search tool is prepared.
+	const tool = isPlainObject(declared.parameters) ? { ...declared, ...declared.parameters } : declared;
 	const parameters: Record<string, unknown> = {};
 	const contextSize = typeof tool.search_context_size === "string" ? tool.search_context_size.toLowerCase() : null;
 	if (contextSize && SEARCH_CONTEXT_SIZES.has(contextSize)) parameters.search_context_size = contextSize;

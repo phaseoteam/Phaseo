@@ -51,6 +51,7 @@ describe("resolveHostedTools", () => {
 	it.each([
 		["OpenAI", "openai", { type: "web_search", max_results: 3, max_total_results: 9 }, { max_results: 3, max_total_results: 9 }],
 		["xAI", "x-ai", { type: "web_search", max_uses: 2 }, { max_uses: 2 }],
+		["OpenAI (caps under parameters)", "openai", { type: "web_search", max_results: 8, parameters: { max_results: 3, max_total_results: 9 } }, { max_results: 3, max_total_results: 9 }],
 		["OpenAI (gateway tool)", "openai", { type: "phaseo:web_search", parameters: { engine: "native", max_results: 3 } }, { max_results: 3 }],
 	])("moves a capped search on %s to Phaseo's search, which enforces the caps", (_label, providerId, tool, caps) => {
 		const result = resolveHostedTools({
