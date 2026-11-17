@@ -7,35 +7,44 @@ import { InlineMarkdown } from "./shared";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
-/** A tick or cross in a filled circle. The circle settles in, then the stroke draws itself. */
-function AnswerMark({ kind, className }: { kind: "right" | "wrong"; className?: string }) {
+type CheckState = "empty" | "picked" | "right" | "wrong";
+
+/**
+ * The option’s selection box. Picking an option fills it and draws a tick; checking the
+ * answer turns it green (tick) or red (cross). Each new mark redraws its stroke.
+ */
+function CheckBox({ state }: { state: CheckState }) {
 	const reduce = useReducedMotion();
-	const draw = reduce
-		? { initial: { pathLength: 1, opacity: 0 }, animate: { pathLength: 1, opacity: 1 }, transition: { duration: 0.15 } }
-		: { initial: { pathLength: 0 }, animate: { pathLength: 1 }, transition: { duration: 0.24, delay: 0.1, ease: EASE_OUT } };
+	const draw = (delay = 0) =>
+		reduce
+			? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.12 } }
+			: { initial: { pathLength: 0 }, animate: { pathLength: 1 }, transition: { duration: 0.2, delay, ease: EASE_OUT } };
 	return (
-		<motion.span
+		<span
 			aria-hidden
 			className={cn(
-				"inline-flex size-5 shrink-0 items-center justify-center rounded-[5px] text-white",
-				kind === "right" ? "bg-emerald-500" : "bg-red-500",
-				className,
+				"mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[5px] border text-white",
+				"transition-[background-color,border-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
+				"peer-focus-visible:ring-3 peer-focus-visible:ring-ring/30 group-active/option:scale-95",
+				state === "empty" && "border-zinc-300 bg-transparent dark:border-zinc-600",
+				state === "picked" && "border-zinc-900 bg-zinc-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900",
+				state === "right" && "border-emerald-500 bg-emerald-500",
+				state === "wrong" && "border-red-500 bg-red-500",
 			)}
-			initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.9 }}
-			animate={{ opacity: 1, scale: 1 }}
-			transition={{ duration: 0.18, ease: EASE_OUT }}
 		>
-			<svg viewBox="0 0 16 16" className="size-3" fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round">
-				{kind === "right" ? (
-					<motion.path d="M3.5 8.5 6.5 11.5 12.5 4.5" {...draw} />
-				) : (
-					<>
-						<motion.path d="M4.5 4.5 11.5 11.5" {...draw} />
-						<motion.path d="M11.5 4.5 4.5 11.5" {...draw} transition={{ ...draw.transition, delay: reduce ? 0 : 0.2 }} />
-					</>
-				)}
-			</svg>
-		</motion.span>
+			{state === "empty" ? null : (
+				<svg key={state} viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth={2.25} strokeLinecap="round" strokeLinejoin="round">
+					{state === "wrong" ? (
+						<>
+							<motion.path d="M4.5 4.5 11.5 11.5" {...draw()} />
+							<motion.path d="M11.5 4.5 4.5 11.5" {...draw(0.12)} />
+						</>
+					) : (
+						<motion.path d="M3.5 8.5 6.5 11.5 12.5 4.5" {...draw()} />
+					)}
+				</svg>
+			)}
+		</span>
 	);
 }
 
@@ -60,7 +69,7 @@ export function LessonQuiz({ quiz }: { quiz: LearnQuiz }) {
 						<li key={option} className="list-none">
 							<label
 								className={cn(
-									"flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm leading-6 transition-colors duration-150",
+									"group/option flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm leading-6 transition-colors duration-150",
 									"border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/50",
 									selected && !checked && "border-zinc-900 dark:border-zinc-200",
 									showRight && "border-emerald-500/70 dark:border-emerald-500/60",
@@ -70,16 +79,15 @@ export function LessonQuiz({ quiz }: { quiz: LearnQuiz }) {
 								<input
 									type="radio"
 									name={name}
-									className="mt-1 accent-zinc-900 dark:accent-zinc-100"
+									className="peer sr-only"
 									checked={selected}
 									onChange={() => {
 										setPicked(index);
 										setChecked(false);
 									}}
 								/>
+								<CheckBox state={showRight ? "right" : showWrong ? "wrong" : selected ? "picked" : "empty"} />
 								<span className="flex-1"><InlineMarkdown>{option}</InlineMarkdown></span>
-								{showRight ? <AnswerMark kind="right" className="mt-0.5" /> : null}
-								{showWrong ? <AnswerMark kind="wrong" className="mt-0.5" /> : null}
 							</label>
 						</li>
 					);
