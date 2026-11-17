@@ -50,7 +50,7 @@ Siehe [Tool-Aufrufmuster](./tool-calling-patterns.mdx) zum Zurücksenden von Erg
 
 ## Einen Stream abbrechen
 
-Übergib ein `AbortSignal` (oder das Gegenstück deines HTTP-Clients) und brich ab, wenn die Person stoppt oder die Verbindung trennt. Setze eine Frist, die zur Arbeitslast passt. Ein Abbruch garantiert nicht, dass der Anbieter sofort aufhört oder dass bereits generierte Ausgabe kostenlos ist.
+Übergib ein `AbortSignal` (oder das Gegenstück deines HTTP-Clients) und brich ab, wenn die Person stoppt oder die Verbindung trennt. Setze eine Frist, die zur Arbeitslast passt. Ein Abbruch garantiert nicht, dass der Anbieter sofort aufhört oder dass bereits generierte Ausgabe kostenlos ist. Nachdem du die Verbindung getrennt hast, liest Phaseo den Stream des Anbieters weiter, um die Nutzung zu erfassen. Berechnet werden die Eingabe und die Ausgabe, die der Anbieter meldet, auch Ausgabe, die nach deinem Abbruch entstanden ist. Eine abgebrochene Anfrage ist nur dann kostenlos, wenn der Anbieter keine Ausgabe und keine abrechenbare Eingabe meldet.
 
 ## Einen unterbrochenen Stream wiederherstellen
 

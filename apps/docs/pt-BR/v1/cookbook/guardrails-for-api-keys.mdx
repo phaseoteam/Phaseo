@@ -19,6 +19,15 @@ flowchart LR
 
 As regras de privacidade do espaço de trabalho são aplicadas primeiro; um guardrail só pode restringi-las. Guardrails não limitam gastos: para isso, defina um limite na chave ou um [orçamento do espaço de trabalho](../api-reference/limits#key-limits-and-budgets).
 
+## Como os guardrails se combinam
+
+Uma solicitação pode passar por mais de um guardrail: o do espaço de trabalho, um na chave e um no membro que criou a chave. Todos contam, e o resultado mais rígido prevalece:
+
+- Um modelo ou provedor precisa ser permitido por todos os guardrails que têm uma lista de permissão.
+- As listas de bloqueio se somam.
+- A zero retenção de dados é exigida se qualquer guardrail a exigir, e o treinamento ou o registro só são permitidos se todos os guardrails permitirem.
+- As verificações de injeção de prompt e de informações sensíveis usam a ação mais forte: **Bloquear**, depois **Ocultar**, depois **Sinalizar**.
+
 ## Implante
 
 <Steps>

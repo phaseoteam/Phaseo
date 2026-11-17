@@ -88,7 +88,7 @@ Escolha o que cada modelo retorna para ver quando o Phaseo passa para o próximo
 - As entradas podem ser IDs de modelo, [IDs qualificados por provedor](./provider-qualified-models) ou predefinições como `@support`.
 - Cada tentativa é validada como uma solicitação própria (endpoint, parâmetros, modelos do espaço de trabalho, guardrails, predefinições, preços, BYOK). Uma alternativa que não consegue atender à solicitação é pulada e registrada; ela nunca substitui o erro que você receberia de outra forma. Uma tentativa idêntica a uma já feita também é pulada.
 
-**Registros e cobrança.** Cada tentativa é uma solicitação separada com o próprio registro de uso, cobrada como se as alternativas não existissem. O campo `model` da resposta indica o modelo que respondeu, e o rastro de roteamento dela lista o ID da solicitação principal, a ordem das alternativas e cada tentativa anterior.
+**Registros e cobrança.** Cada tentativa é uma solicitação separada com o próprio registro de uso, cobrada como se as alternativas não existissem. Uma tentativa que falha não custa nada, então você paga só pela tentativa que responde, pelo preço do modelo e do provedor que a atenderam. O campo `model` da resposta indica o modelo que respondeu, e o rastro de roteamento dela lista o ID da solicitação principal, a ordem das alternativas e cada tentativa anterior.
 
 **Streaming, vídeo e música.** Um stream só passa para uma alternativa antes do primeiro byte; depois disso, os erros chegam no stream. Vídeo e música só passam para uma alternativa enquanto a tarefa está sendo enviada.
 

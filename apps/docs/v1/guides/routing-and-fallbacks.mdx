@@ -87,7 +87,7 @@ Choose what each model returns to see when Phaseo moves on:
 - Entries can be model IDs, [provider-qualified IDs](./provider-qualified-models) or presets such as `@support`.
 - Each attempt is validated as its own request (endpoint, parameters, workspace models, guardrails, presets, pricing, BYOK). A fallback that can't serve the request is skipped and logged; it never replaces the error you'd otherwise get. An attempt identical to one already made is skipped too.
 
-**Logs and billing.** Each attempt is a separate request with its own usage record, billed as if fallbacks didn't exist. The response `model` field names the model that answered, and its routing trace lists the primary request ID, the fallback order and each earlier attempt.
+**Logs and billing.** Each attempt is a separate request with its own usage record, billed as if fallbacks didn't exist. An attempt that fails costs nothing, so you pay only for the attempt that answers, at the price of the model and provider that served it. The response `model` field names the model that answered, and its routing trace lists the primary request ID, the fallback order and each earlier attempt.
 
 **Streaming, video and music.** A stream falls back only before its first byte; after that, errors arrive in the stream. Video and music fall back only while the job is being submitted.
 

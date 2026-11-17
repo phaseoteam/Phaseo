@@ -88,7 +88,7 @@ Wähle, was jedes Modell zurückgibt, um zu sehen, wann Phaseo weitergeht:
 - Einträge können Modell-IDs, [anbieterqualifizierte IDs](./provider-qualified-models) oder Voreinstellungen wie `@support` sein.
 - Jeder Versuch wird als eigene Anfrage validiert (Endpunkt, Parameter, Arbeitsbereichsmodelle, Guardrails, Voreinstellungen, Preise, BYOK). Ein Fallback, der die Anfrage nicht bedienen kann, wird übersprungen und protokolliert; er ersetzt nie den Fehler, den du sonst bekommen würdest. Ein Versuch, der mit einem bereits gemachten identisch ist, wird ebenfalls übersprungen.
 
-**Protokolle und Abrechnung.** Jeder Versuch ist eine eigene Anfrage mit eigenem Nutzungsdatensatz und wird so abgerechnet, als gäbe es keine Fallbacks. Das Feld `model` der Antwort nennt das Modell, das geantwortet hat, und sein Routing-Trace listet die ID der primären Anfrage, die Fallback-Reihenfolge und jeden früheren Versuch auf.
+**Protokolle und Abrechnung.** Jeder Versuch ist eine eigene Anfrage mit eigenem Nutzungsdatensatz und wird so abgerechnet, als gäbe es keine Fallbacks. Ein fehlgeschlagener Versuch kostet nichts. Du zahlst also nur für den Versuch, der antwortet, zum Preis des Modells und Anbieters, die ihn bedient haben. Das Feld `model` der Antwort nennt das Modell, das geantwortet hat, und sein Routing-Trace listet die ID der primären Anfrage, die Fallback-Reihenfolge und jeden früheren Versuch auf.
 
 **Streaming, Video und Musik.** Ein Stream wechselt nur vor seinem ersten Byte zu einem Fallback; danach kommen Fehler im Stream an. Video und Musik wechseln nur, während der Job übermittelt wird.
 

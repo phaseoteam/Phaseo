@@ -88,6 +88,7 @@ const staticRoutes: Array<{
         { path: "/chat/embeddings", changeFrequency: "weekly", priority: 0.5 },
         { path: "/chat/decisions", changeFrequency: "weekly", priority: 0.5 },
         { path: "/help", changeFrequency: "weekly", priority: 0.6 },
+        { path: "/learn", changeFrequency: "weekly", priority: 0.6 },
         { path: "/updates/models", changeFrequency: "weekly", priority: 0.55 },
         { path: "/updates/calendar", changeFrequency: "weekly", priority: 0.55 },
         { path: "/privacy", changeFrequency: "yearly", priority: 0.3 },

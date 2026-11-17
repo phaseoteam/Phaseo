@@ -88,7 +88,7 @@ Choisissez ce que renvoie chaque modèle pour voir quand Phaseo passe au suivant
 - Les entrées peuvent être des identifiants de modèle, des [identifiants qualifiés par fournisseur](./provider-qualified-models) ou des préréglages tels que `@support`.
 - Chaque tentative est validée comme une requête à part entière (endpoint, paramètres, modèles de l’espace de travail, garde-fous, préréglages, tarification, BYOK). Un modèle de repli qui ne peut pas servir la requête est ignoré et journalisé ; il ne remplace jamais l’erreur que vous auriez reçue sinon. Une tentative identique à une tentative déjà effectuée est aussi ignorée.
 
-**Journaux et facturation.** Chaque tentative est une requête distincte avec son propre enregistrement d’utilisation, facturée comme si les solutions de repli n’existaient pas. Le champ `model` de la réponse nomme le modèle qui a répondu, et sa trace de routage liste l’identifiant de la requête principale, l’ordre de repli et chaque tentative antérieure.
+**Journaux et facturation.** Chaque tentative est une requête distincte avec son propre enregistrement d’utilisation, facturée comme si les solutions de repli n’existaient pas. Une tentative en échec ne coûte rien : vous ne payez que la tentative qui répond, au prix du modèle et du fournisseur qui l’ont servie. Le champ `model` de la réponse nomme le modèle qui a répondu, et sa trace de routage liste l’identifiant de la requête principale, l’ordre de repli et chaque tentative antérieure.
 
 **Streaming, vidéo et musique.** Un stream ne se replie qu’avant son premier octet ; ensuite, les erreurs arrivent dans le stream. La vidéo et la musique ne se replient que pendant la soumission de la tâche.
 

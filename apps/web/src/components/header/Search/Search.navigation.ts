@@ -120,6 +120,7 @@ const CURATED_NAVIGATION_ITEMS: readonly GlobalNavigationItem[] = [
 	{ id: "nav-settings-webhooks", title: "Webhooks", subtitle: "Manage event webhooks", href: "/settings/webhooks", keywords: ["events", "callbacks", "notifications"] },
 
 	{ id: "nav-help", title: "Help Centre", subtitle: "Find help and support articles", href: "/help", keywords: ["support", "guides", "questions"] },
+	{ id: "nav-learn", title: "Learn", subtitle: "Short courses on using Phaseo", href: "/learn", keywords: ["courses", "tutorial", "lessons", "guide"] },
 	{ id: "nav-blog", title: "Blog", subtitle: "Read Phaseo articles", href: "/blog", keywords: ["articles", "news"] },
 	{ id: "nav-announcements", title: "Announcements", subtitle: "Read product announcements", href: "/announcements", keywords: ["news", "releases"] },
 	{ id: "nav-methodology", title: "Methodology", subtitle: "Learn how Phaseo evaluates AI systems", href: "/methodology", keywords: ["methods", "evaluation", "research"] },
