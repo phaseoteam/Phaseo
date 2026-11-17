@@ -9,6 +9,23 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Product","api":"API & SDKs","models":"Models"}} clearLabel="Clear" />
 
+<Update label="November 17, 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- `@phaseo/cli` `0.4.0` prints lists as tables, shows input, output and cache-read prices in `phaseo pricing models`, and adds `phaseo pricing get <model>`; see [Phaseo CLI](./guides/integrations/phaseo-cli.mdx) ([#3774](https://github.com/phaseoteam/Phaseo/pull/3774), [#3780](https://github.com/phaseoteam/Phaseo/pull/3780)).
+- `@phaseo/cli` `0.4.0` adds commands for every `/v1` management route, including `spend-rules`, `budgets`, `byok`, `rate-limits` and `classifiers` ([#3312](https://github.com/phaseoteam/Phaseo/pull/3312), [#3323](https://github.com/phaseoteam/Phaseo/pull/3323)).
+- `phaseo mcp` runs the Phaseo MCP server for local agents with your `phaseo login`, read-only unless you pass `--manage` ([#3659](https://github.com/phaseoteam/Phaseo/pull/3659)).
+- Coding-agent setup, such as `phaseo codex`, asks you to approve its API key in the dashboard instead of creating it with your CLI sign-in ([#3584](https://github.com/phaseoteam/Phaseo/pull/3584)).
+- `GET /v1/pricing/models` returns each entry's `service_tier`; see [List model pricing](./api-reference/endpoint/pricing-models.mdx) ([#3774](https://github.com/phaseoteam/Phaseo/pull/3774)).
+- `GET /v1/analytics` returns provider names as Phaseo shows them, such as `Liquid AI` ([#3777](https://github.com/phaseoteam/Phaseo/pull/3777)).
+
+</div>
+
+</Update>
+
 <Update label="November 16, 2026">
 
 <div data-changelog-category="api">

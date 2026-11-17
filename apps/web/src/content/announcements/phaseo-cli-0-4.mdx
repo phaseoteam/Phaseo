@@ -1,0 +1,109 @@
+---
+title: "Phaseo CLI 0.4: tables, full prices and the whole management API in your terminal"
+shortTitle: "Phaseo CLI 0.4"
+seoTitle: "Phaseo CLI 0.4: Manage Your AI Gateway and Compare Model Prices from the Terminal"
+description: "Phaseo CLI 0.4 prints lists as tables, shows every model price and its conditions, adds commands for every management route, and runs the Phaseo MCP for local agents."
+publishedAt: 2026-11-17
+author: Phaseo Team
+category: announcements
+pinned: false
+tags:
+  - Release
+  - CLI
+  - Developers
+keywords:
+  - Phaseo CLI
+  - AI gateway CLI
+  - LLM pricing command line
+  - compare model prices
+  - MCP server for coding agents
+faq:
+  - question: "How do I update to Phaseo CLI 0.4?"
+    answer: "Run `npm install -g @phaseo/cli@latest`, or `phaseo update` if you already have the CLI. `phaseo --version` shows 0.4.0 once it's installed."
+  - question: "Do my scripts that read CLI output need to change?"
+    answer: "Scripts that use `--json` get the same JSON as before. Only the human-readable output changed, from lines of text to tables."
+  - question: "Does `phaseo mcp` let an agent spend money?"
+    answer: "No. The MCP runs with a short-lived token that can't make paid model calls. It's read-only unless you start it with `--manage`, and every tool that changes your workspace tells the agent to confirm with you first."
+draft: false
+---
+
+Phaseo CLI 0.4 is out. It makes everyday checks easier to read, shows what a model really costs, and lets you manage everything in a workspace from the terminal, not only the dashboard.
+
+Update with:
+
+```bash
+npm install -g @phaseo/cli@latest
+```
+
+## Lists are tables now
+
+Keys, workspaces, models, providers, logs, activity, analytics and every management list now print as tables with headers. Long values are shortened to fit your terminal, and money uses one format everywhere, such as `$1,234.50`.
+
+In terminals that support links, model IDs, providers and request IDs are clickable and open the matching page on Phaseo. `phaseo logs get <id>` also prints a link to the request in your dashboard.
+
+`--json` output hasn't changed, so scripts that read it keep working.
+
+## Every price, not a meter count
+
+`phaseo pricing models` used to say how many prices a route had. It now shows them: input, output and cache-read prices for each provider and service tier, plus the route's other charges.
+
+```text
+$ phaseo pricing models --model openai/gpt-6-astra --provider openai
+MODEL               PROVIDER  ENDPOINT       TIER               INPUT          OUTPUT    CACHE READ  OTHER
+openai/gpt-6-astra  openai    text.generate  batch       from $5.00/M   from $25.00/M  from $0.50/M  Cache write text (30m) from $6.25/M, +1 more
+openai/gpt-6-astra  openai    text.generate  flex        from $5.00/M   from $25.00/M  from $0.50/M  Cache write text (12h) from $12.50/M, +1 more
+openai/gpt-6-astra  openai    text.generate  priority   from $20.00/M  from $100.00/M  from $2.00/M  Cache write text (30m) from $25.00/M, +1 more
+openai/gpt-6-astra  openai    text.generate  standard   from $10.00/M   from $50.00/M  from $1.00/M  Cache write text (12h) from $25.00/M, +2 more
+openai/gpt-6-astra  openai    text.generate  ultrafast  from $60.00/M  from $300.00/M  from $6.00/M  Cache write text (30m) from $75.00/M, +1 more
+```
+
+A price marked "from" changes with the size of the prompt or the time of day. `phaseo pricing get <model>` lists every price with the condition it applies under:
+
+```text
+$ phaseo pricing get openai/gpt-6-astra --provider openai --tier standard
+GPT-6 Astra (openai/gpt-6-astra) via openai, text.generate
+METER                    PRICE  UNIT           APPLIES WHEN
+Web search               $0.01  per request    always
+Input text              $10.00  per 1M tokens  input tokens ≤ 272,000
+Cache read text          $1.00  per 1M tokens  input tokens ≤ 272,000
+Cache write text (12h)  $25.00  per 1M tokens  input tokens ≤ 272,000
+Cache write text (30m)  $12.50  per 1M tokens  input tokens ≤ 272,000
+Output text             $50.00  per 1M tokens  input tokens ≤ 272,000
+...
+```
+
+Filter with `--model`, `--provider`, `--endpoint`, `--tier` and `--limit`. The [pricing API](https://phaseo.app/docs/v1/api-reference/endpoint/pricing-models) now returns each entry's `service_tier` too, so the standard, flex and priority price lists for one route can be told apart.
+
+## The whole management API
+
+The CLI now has commands for every `/v1` management route, including:
+
+- `spend-rules`, `budgets` and `department-budgets`
+- `byok` for your own provider keys
+- `rate-limits` and `classifiers`
+- `routing`, `observability` and `notifications`
+- `private-models`, `audit-events` and `workload-identity`
+
+Commands that delete or change something important ask you to confirm first, or need `--yes` in scripts. Secrets are read from stdin or the environment, never from command arguments, so they don't end up in your shell history.
+
+If you're an owner or admin of more than one workspace, `phaseo keys` takes `--workspace <id-or-slug>`, so you can manage keys in another workspace without signing in again.
+
+## Phaseo MCP for local agents
+
+`phaseo mcp` runs the Phaseo MCP server for a local coding agent, using the account you signed in with through `phaseo login`. There's no second sign-in.
+
+The agent can look up models, prices, logs and usage. It's read-only unless you start it with `--manage`, and it can never make paid model calls. `phaseo setup codex` adds it to your Codex profile, and `phaseo setup claude-code` shows the command to add it to Claude Code.
+
+## Safer setup for coding agents
+
+`phaseo codex`, `phaseo claude-code`, `phaseo setup cline` and the other coding-agent commands now ask you to approve the API key they need in your dashboard. The approval page shows exactly what will be created: the workspace, the key name, its spending limit and when it expires. If you don't approve, nothing is created.
+
+Keys made this way expire after 90 days and have a $100 monthly spend limit. To use a key you made yourself, pass `--key-stdin`.
+
+This release also adds `phaseo fx` for the fx coding agent, and fixes setup for Hermes and for agents whose model list came up empty.
+
+## Get started
+
+- [Phaseo CLI guide](https://phaseo.app/docs/v1/guides/integrations/phaseo-cli)
+- [Full release notes](https://github.com/phaseoteam/Phaseo/blob/main/packages/cli/phaseo/CHANGELOG.md)
+- [Explore models and prices](https://phaseo.app/models)
