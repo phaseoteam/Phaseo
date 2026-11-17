@@ -19,6 +19,15 @@ flowchart LR
 
 Les règles de confidentialité de l’espace de travail s’appliquent en premier ; un garde-fou peut seulement les restreindre. Les garde-fous ne plafonnent pas les dépenses : définissez plutôt une limite sur la clé ou un [budget d’espace de travail](../api-reference/limits#key-limits-and-budgets).
 
+## Comment les garde-fous se combinent
+
+Une requête peut être soumise à plusieurs garde-fous : celui de l’espace de travail, celui de la clé et celui du membre qui a créé la clé. Tous s’appliquent, et le résultat le plus strict l’emporte :
+
+- Un modèle ou un fournisseur doit être autorisé par chaque garde-fou qui a une liste d’autorisation.
+- Les listes de blocage s’additionnent.
+- Le ZDR (Zero Data Retention) est exigé dès qu’un garde-fou l’exige, et l’entraînement ou la journalisation ne sont autorisés que si tous les garde-fous les autorisent.
+- Les contrôles d’injection de prompt et d’informations sensibles appliquent l’action la plus forte : **Bloquer**, puis **Masquer**, puis **Signaler**.
+
 ## Déployer le garde-fou
 
 <Steps>

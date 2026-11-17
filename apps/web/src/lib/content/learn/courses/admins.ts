@@ -96,6 +96,51 @@ To replace a key, select **Rotate**. Phaseo creates a replacement with the same 
 			updated: "2026-11-17",
 		},
 		{
+			slug: "bring-your-own-keys",
+			title: "Bring your own provider keys",
+			summary:
+				"Add your own provider accounts' keys so Phaseo routes requests with them, and decide when Phaseo's own provider keys may take over.",
+			minutes: 8,
+			body: `With **bring your own key (BYOK)**, you give Phaseo an API key from your own account with a provider. Phaseo still routes and logs the request, but it calls the provider with your key, and **your provider bills the model usage** directly. Your provider account's quotas, rate limits, data policy and model access apply, not Phaseo's shared capacity.
+
+Owners and admins add keys in **Settings → Bring Your Own Key**. Pick the provider, select **Set provider key** and paste the key. Phaseo encrypts it (AES-256-GCM), binds it to the workspace and provider, and never shows it again. Scope each key to the models and API keys that need it, rather than leaving it on all of them, and use **Test** to try it in Chat. Every change to a provider key is recorded in the workspace audit log.
+
+Each provider key is one of two kinds, and you can drag keys to change their order:
+
+- **Prioritized**: Phaseo tries these first, from top to bottom.
+- **Fallback**: these take over only when Phaseo's own route can't complete the request.
+
+If a prioritized key fails, the workspace's **BYOK fallback** setting decides whether the request may retry on Phaseo's own provider keys, paid from your credits. It's on by default. Turn it off if usage must only ever run through your own provider accounts. Batch jobs currently use Phaseo's keys, not yours.
+
+**What Phaseo charges:** no service fee for the first 250,000 completed BYOK requests per workspace each UTC month, then 2.5% of what the request would have cost at provider prices. The fee comes from your credits, so keep at least $1 available, which also covers any fallback to Phaseo's keys. The page shows this month's BYOK requests and how many fee-free ones remain.`,
+			quiz: {
+				question:
+					"Your workspace has a prioritized OpenAI key and BYOK fallback is turned off. The provider rejects a request made with your key. What happens?",
+				options: [
+					"Phaseo retries on its own provider keys and charges your credits.",
+					"Phaseo charges a 2.5% fee and retries with the same key.",
+					"The request isn't retried on Phaseo's keys, because fallback is off.",
+				],
+				answer: 2,
+				explanation:
+					"BYOK fallback decides whether a failed request on a prioritized key may retry on Phaseo's own provider keys. With it off, usage only runs through your own provider accounts.",
+			},
+			scenario: {
+				prompt:
+					"Your company already has a committed-spend contract with a provider, and finance wants that usage billed there, not to Phaseo credits. Your team sends about 400,000 requests a month. How do you set it up, and what will Phaseo still charge?",
+				answer:
+					"Add the provider key as a prioritized key in Settings → Bring Your Own Key, scoped to the models and API keys that should use it. Turn BYOK fallback off if no usage may go through Phaseo's keys. The provider bills the model usage. Phaseo charges nothing for the first 250,000 completed BYOK requests that month, then 2.5% of the provider-equivalent cost for the rest, paid from credits, so keep a small balance.",
+			},
+			takeaway:
+				"BYOK sends requests through your own provider accounts; the fallback setting decides whether Phaseo's keys can step in when yours fail.",
+			links: [
+				{ label: "BYOK considerations", href: `${DOCS}/guides/routing-and-fallbacks#byok-considerations` },
+				{ label: "Plans and BYOK fees", href: `${DOCS}/exploring/subscription-plans` },
+				{ label: "Bring Your Own Key", href: "/settings/byok" },
+			],
+			updated: "2026-11-17",
+		},
+		{
 			slug: "budgets-and-spend-rules",
 			title: "Budgets and spend rules",
 			summary:

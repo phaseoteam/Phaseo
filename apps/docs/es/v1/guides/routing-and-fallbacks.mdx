@@ -88,7 +88,7 @@ Elige qué devuelve cada modelo para ver cuándo pasa Phaseo al siguiente:
 - Las entradas pueden ser ID de modelo, [ID calificados por proveedor](./provider-qualified-models) o preajustes como `@support`.
 - Cada intento se valida como una solicitud independiente (endpoint, parámetros, modelos del espacio de trabajo, guardrails, preajustes, precios, BYOK). Una alternativa que no puede atender la solicitud se omite y se registra; nunca sustituye al error que recibirías en otro caso. Un intento idéntico a uno ya realizado también se omite.
 
-**Registros y facturación.** Cada intento es una solicitud independiente con su propio registro de uso, facturada como si las alternativas no existieran. El campo `model` de la respuesta nombra el modelo que respondió, y su traza de enrutamiento enumera el ID de la solicitud principal, el orden de las alternativas y cada intento anterior.
+**Registros y facturación.** Cada intento es una solicitud independiente con su propio registro de uso, facturada como si las alternativas no existieran. Un intento que falla no cuesta nada, así que solo pagas el intento que responde, al precio del modelo y el proveedor que lo atendieron. El campo `model` de la respuesta nombra el modelo que respondió, y su traza de enrutamiento enumera el ID de la solicitud principal, el orden de las alternativas y cada intento anterior.
 
 **Streaming, vídeo y música.** Un stream solo recurre a una alternativa antes de su primer byte; después, los errores llegan dentro del stream. El vídeo y la música solo recurren a una alternativa mientras se envía el trabajo.
 

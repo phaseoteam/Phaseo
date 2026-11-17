@@ -1,7 +1,8 @@
 import { useId, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";
-import type { LearnQuiz, LearnScenario } from "@/lib/content/learn";
+import { useTranslations } from "@/i18n/react";
+import type { LearnQuiz, LearnScenario } from "@/lib/content/learn/outline";
 import { cn } from "@/lib/utils";
 import { InlineMarkdown } from "./shared";
 
@@ -60,11 +61,12 @@ export function LessonQuiz({ quiz }: { quiz: LearnQuiz }) {
 	const [picked, setPicked] = useState<number | null>(null);
 	const [checked, setChecked] = useState(false);
 	const correct = checked && picked === quiz.answer;
+	const t = useTranslations("Content.learn");
 
 	return (
 		<section aria-labelledby={`${name}-title`} className="mt-10">
 			<h2 id={`${name}-title`} className="text-xl font-semibold tracking-tight">
-				Check your understanding
+				{t("checkUnderstanding")}
 			</h2>
 			<p className="mt-3 text-[15px] leading-7 text-zinc-800 dark:text-zinc-200"><InlineMarkdown>{quiz.question}</InlineMarkdown></p>
 			<ul className="mt-4 space-y-2">
@@ -73,7 +75,7 @@ export function LessonQuiz({ quiz }: { quiz: LearnQuiz }) {
 					const showRight = checked && index === quiz.answer;
 					const showWrong = checked && selected && index !== quiz.answer;
 					return (
-						<li key={option} className="list-none">
+						<li key={index} className="list-none">
 							<label
 								className={cn(
 									"group/option flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm leading-6 transition-colors duration-150",
@@ -101,7 +103,7 @@ export function LessonQuiz({ quiz }: { quiz: LearnQuiz }) {
 				})}
 			</ul>
 			<Button className="mt-4" disabled={picked === null || checked} onClick={() => setChecked(true)}>
-				Check answer
+				{t("checkAnswer")}
 			</Button>
 			<div role="status" aria-live="polite">
 				{checked ? (
@@ -112,7 +114,7 @@ export function LessonQuiz({ quiz }: { quiz: LearnQuiz }) {
 						transition={{ duration: 0.2, ease: EASE_OUT }}
 					>
 						<span className={cn("font-medium", correct ? "text-emerald-700 dark:text-emerald-400" : "text-red-700 dark:text-red-400")}>
-							{correct ? "That’s right. " : "Not quite. "}
+							{correct ? t("correct") : t("incorrect")}{" "}
 						</span>
 						<span className="text-zinc-700 dark:text-zinc-300">
 							<InlineMarkdown>{quiz.explanation}</InlineMarkdown>
@@ -125,14 +127,15 @@ export function LessonQuiz({ quiz }: { quiz: LearnQuiz }) {
 }
 
 export function LessonScenario({ scenario }: { scenario: LearnScenario }) {
+	const t = useTranslations("Content.learn");
 	return (
 		<section className="mt-10">
-			<h2 className="text-xl font-semibold tracking-tight">Apply it</h2>
+			<h2 className="text-xl font-semibold tracking-tight">{t("applyIt")}</h2>
 			<p className="mt-3 text-[15px] leading-7 text-zinc-800 dark:text-zinc-200"><InlineMarkdown>{scenario.prompt}</InlineMarkdown></p>
 			<details className="group mt-4 rounded-md border border-zinc-200 dark:border-zinc-800">
 				<summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium select-none [&::-webkit-details-marker]:hidden">
-					<span className="group-open:hidden">Show the answer</span>
-					<span className="hidden group-open:inline">Hide the answer</span>
+					<span className="group-open:hidden">{t("showAnswer")}</span>
+					<span className="hidden group-open:inline">{t("hideAnswer")}</span>
 				</summary>
 				<p className="border-t border-zinc-200 px-4 py-3 text-[15px] leading-7 text-zinc-700 dark:border-zinc-800 dark:text-zinc-300">
 					<InlineMarkdown>{scenario.answer}</InlineMarkdown>

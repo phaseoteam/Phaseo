@@ -19,6 +19,15 @@ flowchart LR
 
 Die Datenschutzregeln des Workspace gelten zuerst; eine Guardrail kann sie nur weiter einschränken. Guardrails begrenzen keine Ausgaben: Setze dafür ein Limit für den Schlüssel oder ein [Workspace-Budget](../api-reference/limits#key-limits-and-budgets).
 
+## Wie Guardrails zusammenwirken
+
+Für eine Anfrage können mehrere Guardrails gelten: die des Workspace, eine am Schlüssel und eine am Mitglied, das den Schlüssel erstellt hat. Alle zählen, und das strengste Ergebnis gewinnt:
+
+- Ein Modell oder Anbieter muss von jeder Guardrail mit einer Zulassungsliste erlaubt sein.
+- Sperrlisten werden addiert.
+- Zero Data Retention ist Pflicht, sobald eine Guardrail sie verlangt. Training oder Protokollierung ist nur erlaubt, wenn jede Guardrail es erlaubt.
+- Prüfungen auf Prompt-Injection und sensible Daten nehmen die stärkste Aktion: **Blockieren**, dann **Schwärzen**, dann **Markieren**.
+
 ## Einführen
 
 <Steps>

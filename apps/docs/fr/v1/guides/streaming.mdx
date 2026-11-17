@@ -50,7 +50,7 @@ Consultez les [modèles d’appel d’outils](./tool-calling-patterns.mdx) pour 
 
 ## Annuler un flux
 
-Passez un `AbortSignal` (ou l’équivalent de votre client HTTP) et annulez quand l’utilisateur arrête ou se déconnecte. Fixez une échéance adaptée à la charge de travail. L’annulation ne garantit ni que le fournisseur s’arrête immédiatement, ni que la sortie déjà générée est gratuite.
+Passez un `AbortSignal` (ou l’équivalent de votre client HTTP) et annulez quand l’utilisateur arrête ou se déconnecte. Fixez une échéance adaptée à la charge de travail. L’annulation ne garantit ni que le fournisseur s’arrête immédiatement, ni que la sortie déjà générée est gratuite. Après votre déconnexion, Phaseo continue de lire le flux du fournisseur pour enregistrer l’utilisation. Vous payez l’entrée et la sortie que le fournisseur déclare, y compris la sortie générée après votre départ. Une requête annulée n’est gratuite que si le fournisseur ne déclare aucune sortie et aucune entrée facturable.
 
 ## Récupérer un flux interrompu
 

@@ -4,7 +4,7 @@ export const foundationsCourse: LearnCourse = {
 	slug: "what-is-phaseo",
 	title: "What is Phaseo?",
 	summary:
-		"Learn what Phaseo does, set up your account and first API key, and find the dashboard pages you will use most.",
+		"Learn what Phaseo does, set up your account and first API key, find the dashboard pages you will use most, and choose a model.",
 	level: "beginner",
 	format: "No code",
 	prerequisites: [],
@@ -181,6 +181,61 @@ Treat it like a password. Read it from \`PHASEO_API_KEY\` in server-side code. N
 				{
 					label: "Key limits and budgets",
 					href: "https://phaseo.app/docs/v1/api-reference/limits",
+				},
+			],
+			updated: "2026-11-17",
+		},
+		{
+			slug: "choose-a-model",
+			title: "Choose a model",
+			summary:
+				"Use the Models list, model pages and Compare to find a few candidates, then test them on your own examples before you commit.",
+			minutes: 8,
+			body: `Start on **Models** (\`/models\`). By default it shows only models that are **Active on Gateway**, so everything you see can be called. Narrow the list with filters for **Endpoints** (such as text generation or embeddings), **Input and output modalities** (text, image, audio, video), **Features** (such as tool calling or reasoning) and **Year**. When you're signed in, **Usable in my workspace** hides models your workspace's rules block. You can sort by newest, most popular, price, context length, throughput or latency.
+
+**Open a model to see what it offers.** Its page shows only the sections it has data for:
+
+- **Providers**: each provider route with its status, context length, price, uptime, data policy and supported parameters.
+- **Pricing**: every meter in USD. Text prices are per 1 million tokens, with input and output listed separately, plus cached input where a provider offers it.
+- **Performance** and **Uptime**: latency, throughput and availability measured on Gateway traffic, when there is enough of it.
+- **Benchmarks**, **About** (release dates, licence, family) and a quickstart with the model ID to send.
+
+**Shortlist two or three models.** **Compare** (\`/compare\`) puts them side by side on price, benchmark scores, context and features, and the **Pricing calculator** (\`/tools/pricing-calculator\`) estimates the cost of a typical request. Benchmarks and speed charts are a starting point, not a verdict. Test the shortlist on real examples from your own work: short, typical and long ones. Try the cheapest, fastest candidate first, and only move up to a pricier model if its answers aren't good enough. For a first test with no credits, send \`phaseo/free\`, which runs your request on an available free model (up to 1,500 free-model requests per user per UTC day).
+
+**Models don't last forever.** Labs deprecate and retire models as newer ones arrive. A retired model keeps working while any provider still serves it, then requests fail with \`410 model_retired\`. The model page shows its deprecation and retirement dates and the suggested replacement. Phaseo puts a notice on your dashboard when a model your workspace used in the last 90 days retires within 90 days, and **Settings → Usage → Alerts** lists every affected model. Test the replacement before you switch, because newer models can answer the same prompt differently.`,
+			quiz: {
+				question:
+					"Two models look similar on the Models list. One costs a quarter of the price of the other. What should you do first?",
+				options: [
+					"Pick the pricier one, because a higher price means better answers.",
+					"Pick whichever has the higher benchmark score, without testing.",
+					"Test the cheaper one on real examples from your work, and move up only if its answers aren't good enough.",
+				],
+				answer: 2,
+				explanation:
+					"Price and benchmark scores help you shortlist, but they don't prove how a model does on your prompts. Testing the cheaper model on your own examples first tells you whether you need to pay more.",
+			},
+			scenario: {
+				prompt:
+					"A dashboard notice says a model your support bot uses retires in 30 days. What do you do?",
+				answer:
+					"Open Settings → Usage → Alerts to see the affected model, its dates and the suggested replacement. Check the replacement's model page for its price, context length and supported parameters, then test it on real support questions. Once you're happy, change the model ID in your app or preset before no provider serves the old model and requests start failing with 410.",
+			},
+			takeaway:
+				"Shortlist with the catalogue, decide with your own examples, and start with the cheapest model that does the job.",
+			links: [
+				{ label: "Models", href: "/models" },
+				{
+					label: "Exploring models",
+					href: "https://phaseo.app/docs/v1/exploring/models",
+				},
+				{
+					label: "Pricing and performance",
+					href: "https://phaseo.app/docs/v1/exploring/pricing-performance",
+				},
+				{
+					label: "Model retirement",
+					href: "https://phaseo.app/docs/v1/guides/model-retirement",
 				},
 			],
 			updated: "2026-11-17",

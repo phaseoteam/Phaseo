@@ -50,7 +50,7 @@ Veja os [padrões de chamadas de ferramentas](./tool-calling-patterns.mdx) para 
 
 ## Cancelar um stream
 
-Passe um `AbortSignal` (ou o equivalente do seu cliente HTTP) e cancele quando o usuário parar ou se desconectar. Defina um prazo adequado à carga de trabalho. Cancelar não garante que o provedor pare na hora, nem que a saída que ele já gerou seja gratuita.
+Passe um `AbortSignal` (ou o equivalente do seu cliente HTTP) e cancele quando o usuário parar ou se desconectar. Defina um prazo adequado à carga de trabalho. Cancelar não garante que o provedor pare na hora, nem que a saída que ele já gerou seja gratuita. Depois que você se desconecta, o Phaseo continua lendo o stream do provedor para registrar o uso. Você paga pela entrada e pela saída que o provedor informar, incluindo a saída gerada depois que você saiu. Uma solicitação cancelada só é gratuita quando o provedor não informa nenhuma saída nem entrada cobrável.
 
 ## Recuperar-se de um stream interrompido
 
