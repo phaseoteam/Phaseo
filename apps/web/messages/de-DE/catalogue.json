@@ -3460,6 +3460,12 @@
 			}
 		},
 		"tierLabel": "Tarif {tier}",
+		"serviceTierProviderName": "{name} ist der Name dieses Anbieters für seinen Tarif {tier}.",
+		"serviceTierProviderNameFaster": "{name} ist der Name dieses Anbieters für seinen Tarif {tier}, einen schnelleren Endpunkt für dieses Modell.",
+		"serviceTierExplicit": "{tier} muss in deiner Anfrage ausdrücklich ausgewählt werden oder über eine eigene Route für diesen Tarif laufen. Er wird nicht automatisch gewählt.",
+		"serviceTierExplicitFollowUp": "Er muss in deiner Anfrage ausdrücklich ausgewählt werden oder über eine eigene Route für diesen Tarif laufen. Er wird nicht automatisch gewählt.",
+		"serviceTierBatch": "Batch wird nicht für normale Anfragen verwendet. Sende Anfragen über die Batch-API, um diesen Tarif zu nutzen.",
+		"serviceTierInfo": "Informationen zum Tarif {tier}",
 		"endsOn": "Endet am {date}",
 		"providerStatuses": "Anbieterstatus",
 		"byokMeta": "Dein Anbieterschlüssel",

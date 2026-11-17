@@ -1,5 +1,6 @@
 import type { ProviderInfo } from "@/lib/fetchers/models/getModelPricing";
 import { formatProviderOfferDisplayName } from "@/lib/providers/providerOffers";
+import { getProviderServiceTierLabel } from "./providerServiceTierLabel";
 import { normalizeGatewayStatusValue, type CanonicalGatewayStatus } from "./providerGatewayStatus";
 
 export function getProviderListingCategory(provider: ProviderInfo, status: CanonicalGatewayStatus): "routable" | "preview" | "inactive" | "external" {
@@ -21,7 +22,7 @@ export function getProviderRoutePresentation(provider: ProviderInfo, plan = "sta
     });
     if (region) name = name.replace(/\s*\((?:EU|US)\)$/i, "");
     const tier = plan !== "standard" && plan !== "free"
-        ? plan === "priority" ? "Fast" : plan.replace(/[_-]+/g, " ").replace(/\b\w/g, character => character.toUpperCase())
+        ? getProviderServiceTierLabel(provider.service_tier_labels, plan) ?? (plan === "priority" ? "Fast" : plan.replace(/[_-]+/g, " ").replace(/\b\w/g, character => character.toUpperCase()))
         : null;
     return { name, region, tier };
 }

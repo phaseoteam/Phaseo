@@ -3460,6 +3460,12 @@
 			}
 		},
 		"tierLabel": "Nível {tier}",
+		"serviceTierProviderName": "{name} é o nome que este provedor dá ao nível {tier}.",
+		"serviceTierProviderNameFaster": "{name} é o nome que este provedor dá ao nível {tier}, um endpoint mais rápido para este modelo.",
+		"serviceTierExplicit": "{tier} precisa ser selecionado explicitamente na sua solicitação ou usado por uma rota dedicada a este nível. Ele não é selecionado automaticamente.",
+		"serviceTierExplicitFollowUp": "Ele precisa ser selecionado explicitamente na sua solicitação ou usado por uma rota dedicada a este nível. Não é selecionado automaticamente.",
+		"serviceTierBatch": "Batch não é usado em solicitações comuns. Envie solicitações pela API Batch para usar este nível.",
+		"serviceTierInfo": "Informações do nível de serviço {tier}",
 		"endsOn": "Termina em {date}",
 		"providerStatuses": "Status dos provedores",
 		"byokMeta": "Sua chave do provedor",

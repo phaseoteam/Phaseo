@@ -191,6 +191,8 @@ type AssistantMessageFooterProps = {
 	metadataProviderLabel: string | null;
 	metadataRequestId?: string | null;
 	metadataServiceTier: string | null;
+	/** The serving provider's own name for the tier, e.g. "Highspeed". */
+	metadataServiceTierLabel?: string | null;
 	inputTokens?: number | string | null;
 	outputSpeedTps: number | null;
 	sentAtLabel: string | null;
@@ -219,6 +221,7 @@ export function AssistantMessageFooter({
 	metadataProviderLabel,
 	metadataRequestId = null,
 	metadataServiceTier,
+	metadataServiceTierLabel = null,
 	inputTokens,
 	outputSpeedTps,
 	sentAtLabel,
@@ -357,7 +360,7 @@ export function AssistantMessageFooter({
 									</MetadataRow>
 									<MetadataRow label={t("serviceTier")}>
 										<NumericValue>
-											{formatServiceTierLabel(metadataServiceTier, { standard: t("serviceTiers.standard"), priority: t("serviceTiers.priority"), flex: t("serviceTiers.flex"), batch: t("serviceTiers.batch") })}
+											{metadataServiceTierLabel ?? formatServiceTierLabel(metadataServiceTier, { standard: t("serviceTiers.standard"), priority: t("serviceTiers.priority"), flex: t("serviceTiers.flex"), batch: t("serviceTiers.batch") })}
 										</NumericValue>
 									</MetadataRow>
 								</div>

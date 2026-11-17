@@ -3460,6 +3460,12 @@
 			}
 		},
 		"tierLabel": "{tier} ティア",
+		"serviceTierProviderName": "{name} は、このプロバイダーにおける {tier} ティアの名称です。",
+		"serviceTierProviderNameFaster": "{name} は、このプロバイダーにおける {tier} ティアの名称で、このモデルのより高速なエンドポイントです。",
+		"serviceTierExplicit": "{tier} は、リクエストで明示的に選択するか、このティア専用のルートを使う必要があります。自動では選択されません。",
+		"serviceTierExplicitFollowUp": "リクエストで明示的に選択するか、このティア専用のルートを使う必要があります。自動では選択されません。",
+		"serviceTierBatch": "Batch は通常のリクエストには使われません。このティアを使うには Batch API からリクエストを送信してください。",
+		"serviceTierInfo": "{tier} サービスティアの情報",
 		"endsOn": "{date} に終了",
 		"providerStatuses": "プロバイダーのステータス",
 		"byokMeta": "お客様のプロバイダーキー",

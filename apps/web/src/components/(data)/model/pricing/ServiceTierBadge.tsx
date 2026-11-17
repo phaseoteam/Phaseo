@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { useTranslations } from "@/i18n/react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
 import { cn } from "@/lib/utils";
@@ -22,23 +23,48 @@ const SERVICE_TIER_LABELS: Record<string, string> = {
 	free: "Free",
 };
 
+/** The badge text and its tooltip. When the provider uses its own name, the tooltip says which of our tiers it is. */
+type TierCopy = (key: "serviceTierProviderName" | "serviceTierProviderNameFaster" | "serviceTierExplicit" | "serviceTierExplicitFollowUp" | "serviceTierBatch", values?: Record<string, string>) => string;
+
+export function getServiceTierBadgeText(plan: string, providerLabel: string | null | undefined, t: TierCopy): { label: string; tooltip: string } {
+	const normalizedPlan = String(plan ?? "").trim().toLowerCase() || "standard";
+	const visualPlan = normalizedPlan === "fast" ? "priority" : normalizedPlan;
+	const genericLabel =
+		SERVICE_TIER_LABELS[normalizedPlan] ??
+		normalizedPlan.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+	const ownLabel = providerLabel?.trim() || null;
+	const label = ownLabel || genericLabel;
+	const note =
+		ownLabel && ownLabel.toLowerCase() !== genericLabel.toLowerCase()
+			? t(visualPlan === "priority" ? "serviceTierProviderNameFaster" : "serviceTierProviderName", { name: ownLabel, tier: genericLabel })
+			: null;
+	const rest = normalizedPlan === "batch"
+		? t("serviceTierBatch")
+		: note
+			? t("serviceTierExplicitFollowUp")
+			: t("serviceTierExplicit", { tier: label });
+	return { label, tooltip: note ? `${note} ${rest}` : rest };
+}
+
 export function ServiceTierBadge({
 	plan,
+	label: labelOverride,
 	className,
 	showTooltip = true,
 }: {
 	plan: string;
+	/** Provider-specific tier name, e.g. "Highspeed"; falls back to the generic name. */
+	label?: string | null;
 	className?: string;
 	showTooltip?: boolean;
 }) {
+	const tCard = useTranslations("Catalogue.hoverCards");
 	const normalizedPlan = String(plan ?? "").trim().toLowerCase() || "standard";
 	if (normalizedPlan === "standard") return null;
 
 	const visualPlan = normalizedPlan === "fast" ? "priority" : normalizedPlan;
 	const tier = getTierFilterMeta(visualPlan);
-	const label =
-		SERVICE_TIER_LABELS[normalizedPlan] ??
-		normalizedPlan.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+	const { label, tooltip } = getServiceTierBadgeText(normalizedPlan, labelOverride, (key, values) => tCard(key as never, values as never));
 	const badge = (
 		<Badge
 			variant="secondary"
@@ -54,16 +80,13 @@ export function ServiceTierBadge({
 	);
 
 	if (!showTooltip || !isSelectableServiceTier(visualPlan)) return badge;
-	const tooltip = normalizedPlan === "batch"
-		? "Batch is not used for ordinary requests. Submit requests through the Batch API to use this tier."
-		: `${label} requires explicit selection in your request or a route dedicated to this tier. It is not selected automatically.`;
 
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
 				<span
 					tabIndex={0}
-					aria-label={`${label} service tier information`}
+					aria-label={tCard("serviceTierInfo" as never, { tier: label } as never)}
 					className="inline-flex cursor-help rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					onClick={(event) => event.stopPropagation()}
 					onKeyDown={(event) => {

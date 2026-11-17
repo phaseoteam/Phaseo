@@ -1,6 +1,7 @@
 import type { ProviderInfo } from "@/lib/fetchers/models/getModelPricing";
 import { getProviderRoutePresentation, isSelectableServiceTier } from "./providerRoutePresentation";
 import { ServiceTierBadge } from "./ServiceTierBadge";
+import { getProviderServiceTierLabel } from "./providerServiceTierLabel";
 
 export function ProviderRouteName({ provider, plan = "standard", nameOverride, showTierHelp = false }: { provider: ProviderInfo; plan?: string; nameOverride?: string; showTierHelp?: boolean }) {
     const { name, region } = getProviderRoutePresentation(provider, plan, nameOverride);
@@ -9,6 +10,7 @@ export function ProviderRouteName({ provider, plan = "standard", nameOverride, s
             <span className="inline-flex min-w-0"><span className="max-sm:truncate">{name}</span>{region ? <span className="shrink-0">&nbsp;({region.toUpperCase()})</span> : null}</span>
             <ServiceTierBadge
                 plan={plan}
+                label={getProviderServiceTierLabel(provider.service_tier_labels, plan)}
                 showTooltip={showTierHelp && isSelectableServiceTier(plan)}
             />
         </span>

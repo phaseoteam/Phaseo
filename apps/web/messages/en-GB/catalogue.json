@@ -3460,6 +3460,12 @@
 			}
 		},
 		"tierLabel": "{tier} tier",
+		"serviceTierProviderName": "{name} is this provider's name for its {tier} tier.",
+		"serviceTierProviderNameFaster": "{name} is this provider's name for its {tier} tier, a faster endpoint for this model.",
+		"serviceTierExplicit": "{tier} requires explicit selection in your request or a route dedicated to this tier. It is not selected automatically.",
+		"serviceTierExplicitFollowUp": "It requires explicit selection in your request or a route dedicated to this tier. It is not selected automatically.",
+		"serviceTierBatch": "Batch is not used for ordinary requests. Submit requests through the Batch API to use this tier.",
+		"serviceTierInfo": "{tier} service tier information",
 		"endsOn": "Ends {date}",
 		"providerStatuses": "Provider statuses",
 		"byokMeta": "Your provider key",

@@ -188,6 +188,8 @@ export interface ProviderInfo {
     privacy_policy_url?: string | null;
     terms_of_service_url?: string | null;
     service_tier_data_policies?: Record<string, ProviderModelDataPolicy> | null;
+    /** Provider-specific tier names, e.g. { priority: "Highspeed" }. */
+    service_tier_labels?: Record<string, string> | null;
 }
 
 export interface ProviderPricing {
@@ -524,6 +526,8 @@ export default async function getModelPricing(
                         row.data_api_providers?.terms_of_service_url ?? null,
                     service_tier_data_policies:
                         row.data_api_providers?.service_tier_data_policies ?? null,
+                    service_tier_labels:
+                        row.data_api_providers?.service_tier_labels ?? null,
                 },
                 provider_models: [],
                 pricing_rules: [],

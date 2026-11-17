@@ -278,6 +278,13 @@ export function useChatModelCatalog(args: {
 			new Map(providerOptions.map((provider) => [provider.id, provider.name])),
 		[providerOptions],
 	);
+	const serviceTierLabelsByProviderId = useMemo(() => {
+		const map = new Map<string, Record<string, string>>();
+		for (const model of selectableModels) {
+			if (model.serviceTierLabels && !map.has(model.providerId)) map.set(model.providerId, model.serviceTierLabels);
+		}
+		return map;
+	}, [selectableModels]);
 	const getSupportedProviderIdsForModel = useCallback(
 		(modelId: string) =>
 			availableProviderIdsByModelId.get(
@@ -492,6 +499,7 @@ export function useChatModelCatalog(args: {
 		modelCapabilitiesById,
 		providerOptions,
 		providerNameById,
+		serviceTierLabelsByProviderId,
 		getSupportedProviderIdsForModel,
 		isProviderSupportedForModel,
 		resolveRequestModelIdForProvider,

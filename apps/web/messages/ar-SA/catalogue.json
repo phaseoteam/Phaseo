@@ -3460,6 +3460,12 @@
 			}
 		},
 		"tierLabel": "فئة {tier}",
+		"serviceTierProviderName": "{name} هو الاسم الذي يطلقه هذا المزوّد على فئة {tier}.",
+		"serviceTierProviderNameFaster": "{name} هو الاسم الذي يطلقه هذا المزوّد على فئة {tier}، وهي نقطة نهاية أسرع لهذا النموذج.",
+		"serviceTierExplicit": "يجب اختيار {tier} صراحةً في طلبك أو استخدام مسار مخصّص لهذه الفئة. لا يتم اختيارها تلقائيًا.",
+		"serviceTierExplicitFollowUp": "يجب اختيارها صراحةً في طلبك أو استخدام مسار مخصّص لهذه الفئة. لا يتم اختيارها تلقائيًا.",
+		"serviceTierBatch": "لا تُستخدم Batch للطلبات العادية. أرسل الطلبات عبر Batch API لاستخدام هذه الفئة.",
+		"serviceTierInfo": "معلومات فئة الخدمة {tier}",
 		"endsOn": "ينتهي في {date}",
 		"providerStatuses": "حالات المزوّدين",
 		"byokMeta": "مفتاح المزوّد الخاص بك",

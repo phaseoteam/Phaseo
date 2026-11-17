@@ -96,6 +96,7 @@ import { ChatVirtualMessageList } from "@/components/(chat)/ChatVirtualMessageLi
 import { ChatSelectionToolbar } from "@/components/(chat)/ChatSelectionToolbar";
 import { markChatUserMessageRendered } from "@/components/(chat)/playground/chat-performance";
 import { getChatMessageRequestId } from "@/components/(chat)/chatMessageMetadata";
+import { getProviderServiceTierLabel } from "@/components/(data)/model/pricing/providerServiceTierLabel";
 import {
 	buildModelLink,
 	ensureVariants,
@@ -520,6 +521,11 @@ export function ChatConversationMessages({
 		metadataMessage?.providerName?.trim() || null;
 	const metadataProviderLabel =
 		formatProviderIdLabel(metadataProviderId) ?? messageProviderLabel;
+	// The reply came from one provider, so it can use that provider's own tier name.
+	const metadataServiceTierLabel =
+		metadataMessage?.providerId && metadataMessage.providerId === metadataProviderId
+			? getProviderServiceTierLabel(metadataMessage.providerServiceTierLabels, metadataServiceTier)
+			: null;
 	const messages = activeThread?.messages ?? EMPTY_MESSAGES;
 	const effectiveResponseLayout: ChatResponseLayout =
 		responseLayout === "side-by-side" && modelOrderIds.length < 2
@@ -1364,6 +1370,7 @@ export function ChatConversationMessages({
 										metadataProviderLabel={metadataProviderLabel}
 										metadataRequestId={metadataRequestId}
 										metadataServiceTier={metadataServiceTier}
+										metadataServiceTierLabel={metadataServiceTierLabel}
 										sentAtLabel={sentAtLabel}
 										onBranch={() => onBranchAssistant(message.id)}
 										onCopy={() => {
@@ -1746,6 +1753,7 @@ export function ChatConversationMessages({
 		metadataProviderLabel,
 		metadataRequestId,
 		metadataServiceTier,
+		metadataServiceTierLabel,
 		onMetadataOpenIdChange,
 		responseLayout,
 		modelOrderIds,

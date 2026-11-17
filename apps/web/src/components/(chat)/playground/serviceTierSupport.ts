@@ -1,9 +1,12 @@
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
 import type { ChatServiceTier } from "@/lib/indexeddb/chats";
+import { getProviderServiceTierLabel } from "@/components/(data)/model/pricing/providerServiceTierLabel";
 
 export type ServiceTierSupport = {
 	supportedValues: ChatServiceTier[];
 	defaultValue?: ChatServiceTier;
+	/** Set only when exactly one provider can serve the request: its own tier names, e.g. { priority: "Highspeed" }. */
+	labels?: Record<string, string>;
 };
 
 export type ServiceTierOption = {
@@ -238,7 +241,7 @@ export function getModelServiceTierSupport(args: {
 }): ServiceTierSupport | null {
 	const providerId = args.providerId?.trim();
 	const requestModelId = args.requestModelId?.trim();
-	const routeSupports = args.models
+	const routes = args.models
 		.filter((model) => {
 			const matchesModel =
 				model.selectorModelId === args.modelId ||
@@ -251,10 +254,16 @@ export function getModelServiceTierSupport(args: {
 				return false;
 			}
 			return !requestModelId || model.modelId === requestModelId;
-		})
+		});
+	const routeSupports = routes
 		.map(getModelRouteServiceTierSupport)
 		.filter((support): support is ServiceTierSupport => Boolean(support));
-	return intersectSupports(routeSupports);
+	const support = intersectSupports(routeSupports);
+	// Several providers may serve the request, and they name tiers differently,
+	// so only a single provider's own names replace the generic ones.
+	const providerIds = new Set(routes.map((model) => model.providerId));
+	const labels = providerIds.size === 1 ? routes.find((model) => model.serviceTierLabels)?.serviceTierLabels : null;
+	return support && labels ? { ...support, labels } : support;
 }
 
 export function getServiceTierOptions(
@@ -264,7 +273,12 @@ export function getServiceTierOptions(
 		return SERVICE_TIER_OPTIONS.filter((option) => option.value === "standard");
 	}
 	const supported = new Set(support.supportedValues);
-	return SERVICE_TIER_OPTIONS.filter((option) => supported.has(option.value));
+	return SERVICE_TIER_OPTIONS
+		.filter((option) => supported.has(option.value))
+		.map((option) => {
+			const label = getProviderServiceTierLabel(support.labels, option.value);
+			return label ? { ...option, label } : option;
+		});
 }
 
 export function resolveChatServiceTier(
