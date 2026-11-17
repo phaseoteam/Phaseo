@@ -86,6 +86,7 @@ describe("analyticsRoutes", () => {
 					provider_model_id: "openai:gpt-test",
 					provider_slug: "openai",
 				}], error: null });
+				if (table === "v2_providers") return queryResult({ data: [{ provider_slug: "openai", name: "OpenAI" }], error: null });
 				throw new Error(`unexpected table: ${table}`);
 			}),
 		});
@@ -172,6 +173,7 @@ describe("analyticsRoutes", () => {
 					return queryResult(factQueries === 1 ? { data: [], error: null, count: 1 } : { data: [{ occurred_at: `${yesterday}T12:00:00.000Z`, endpoint: "responses", requested_model_slug: "=cmd", routed_model_slug: "=cmd", provider_model_id: "provider:model", cost_nanos: 1, byok: false, success: true, v2_request_usage: [] }], error: null });
 				}
 				if (table === "v2_model_provider_routes") return queryResult({ data: [{ provider_model_id: "provider:model", provider_slug: "provider" }], error: null });
+				if (table === "v2_providers") return queryResult({ data: [], error: null });
 				throw new Error(`unexpected table: ${table}`);
 			}),
 		});
@@ -182,6 +184,32 @@ describe("analyticsRoutes", () => {
 		expect(response.headers.get("content-type")).toContain("text/csv");
 		expect(csv).toContain("model_permaslug");
 		expect(csv).toContain("'=cmd");
+	});
+
+	it("names providers from the catalogue and falls back to the slug", async () => {
+		const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+		const fact = (providerModelId: string) => ({ occurred_at: `${yesterday}T12:00:00.000Z`, endpoint: "chat/completions", requested_model_slug: "liquid-ai/lfm", routed_model_slug: "liquid-ai/lfm", provider_model_id: providerModelId, cost_nanos: 1, byok: false, success: true, v2_request_usage: [] });
+		const run = async (providers: { data: unknown[]; error: unknown }) => {
+			let factQueries = 0;
+			getSupabaseAdminMock.mockReturnValue({
+				from: vi.fn((table: string) => {
+					if (table === "v2_request_facts") {
+						factQueries += 1;
+						return queryResult(factQueries === 1 ? { data: [], error: null, count: 2 } : { data: [fact("liquid-ai:lfm"), fact("some-new-host:lfm")], error: null });
+					}
+					if (table === "v2_model_provider_routes") return queryResult({ data: [{ provider_model_id: "liquid-ai:lfm", provider_slug: "liquid-ai" }], error: null });
+					if (table === "v2_providers") return queryResult(providers);
+					throw new Error(`unexpected table: ${table}`);
+				}),
+			});
+			const response = await analyticsRoutes.request("https://example.com/");
+			expect(response.status).toBe(200);
+			const body = await response.json() as { data: Array<{ provider_name: string }> };
+			return body.data.map((row) => row.provider_name).sort();
+		};
+
+		await expect(run({ data: [{ provider_slug: "liquid-ai", name: "Liquid AI" }], error: null })).resolves.toEqual(["Liquid AI", "Some New Host"]);
+		await expect(run({ data: [], error: { message: "boom" } })).resolves.toEqual(["Liquid Ai", "Some New Host"]);
 	});
 
 	it("fails closed when a raw analytics range exceeds the row cap", async () => {
