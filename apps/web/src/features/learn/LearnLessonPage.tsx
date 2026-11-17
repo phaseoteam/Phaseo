@@ -210,7 +210,7 @@ export function LearnLessonPage() {
 								<span className="mt-1 font-medium">{next.title}</span>
 							</Link>
 						) : (
-							<Link href="/learn" className={cn(navCard, "text-end sm:col-start-2")}>
+							<Link href="/learn" onClick={() => setDone(ref, true)} className={cn(navCard, "text-end sm:col-start-2")}>
 								<span className="inline-flex items-center justify-end gap-1 text-xs text-zinc-500">
 									{t("courseComplete")} <ArrowRight className="size-3.5 rtl:rotate-180" />
 								</span>
