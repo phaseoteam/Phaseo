@@ -45,6 +45,7 @@ La même entrée d’outil fonctionne dans `tools` sur `/v1/responses` et `/v1/m
 | Paramètre | Type | Valeur par défaut | Description |
 | --- | --- | --- | --- |
 | `engine` | string | `exa` | `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity`, `tinyfish` ou `deepseek`. Voir [Choisir un moteur](#choose-an-engine). |
+| `mode` | string | Valeur par défaut du moteur | Façon dont le moteur cherche : plus vite, plus en profondeur ou avec une exécution de recherche approfondie. Voir [Choisir un mode](#choose-a-mode). |
 | `max_results` | integer | `5` | Résultats par appel de recherche, jusqu’à `25`. |
 | `max_total_results` | integer | `25` | Résultats sur l’ensemble des recherches de la requête, jusqu’à `100`. Jamais inférieur à `max_results`. |
 | `max_uses` | integer | `10` | Appels de recherche par requête, jusqu’à `100`. |
@@ -92,6 +93,30 @@ Les outils de recherche des fournisseurs ne peuvent pas appliquer `max_results` 
 
 Envoyer l’outil propre à OpenAI `{ "type": "web_search" }` fonctionne comme `engine: "native"`. Définissez `native` uniquement dans la définition de l’outil : si le modèle demande `native` dans un appel, l’appel renvoie `unsupported_search_engine`, car l’outil du fournisseur doit être choisi avant l’envoi de la requête.
 
+<span id="choose-a-mode"></span>
+## Choisir un mode
+
+Définissez `mode` sur l’outil pour choisir comment son moteur cherche. Le modèle ne peut pas le modifier : un appel ne coûte donc jamais plus que le mode choisi. Si le modèle passe à un autre moteur, celui-ci s’exécute dans son mode par défaut. Un mode que le moteur ne propose pas renvoie une 400.
+
+| Moteur | `mode` | Ce qui s’exécute | Prix par appel |
+| --- | --- | --- | --- |
+| `exa` | `lite` | Recherche à faible latence pour le chat et la voix | $0.004 |
+| `exa` | `auto` (par défaut) | Recherche équilibrée | $0.007 |
+| `exa` | `deep-lite` | Recherche légère en plusieurs étapes, environ 4 secondes | $0.012 |
+| `exa` | `deep` | Recherche en plusieurs étapes avec une `answer` synthétisée, de 4 à 15 secondes | $0.012 |
+| `exa` | `agent-minimal` | Une exécution de recherche Exa Agent à effort minimal | $0.012 |
+| `exa` | `agent-low` | Une exécution de recherche Exa Agent à effort faible | $0.025 |
+| `parallel` | `turbo`, `fast` | La recherche la plus rapide de Parallel | $0.001 |
+| `parallel` | `basic`, `advanced` (par défaut) | La recherche de meilleure qualité de Parallel | $0.005 |
+| `parallel` | `task-lite` | Une exécution de recherche Parallel Task, de 10 à 60 secondes | $0.005 |
+| `parallel` | `task-base` | Une exécution de recherche Parallel Task, de 15 à 100 secondes | $0.010 |
+| `perplexity` | `standard` (par défaut) | Perplexity Search | $0.005 |
+| `perplexity` | `fast` | Perplexity Fast Search | $0.001 |
+
+Les recherches Exa et Parallel coûtent aussi $0.001 par résultat au-delà des 10 premiers, et Exa facture $0.001 par page pour chaque type de contenu renvoyé : extraits et texte sur 5 résultats ajoutent donc $0.010. `firecrawl`, `tinyfish` et `deepseek` n’ont pas de modes.
+
+Les modes de recherche approfondie renvoient une `answer` et les pages qu’elle cite dans `results`. Une exécution qui n’est pas terminée après 120 secondes renvoie `research_timeout`. Les exécutions qui expirent, échouent ou perdent leur client ne sont pas facturées. Les modes de recherche approfondie ne peuvent pas être limités à des domaines : un outil de recherche avec `allowed_domains` ou `excluded_domains` renvoie une erreur 400. Le moteur `native` n’a pas de mode.
+
 ## Filtrer par domaine
 
 Utilisez `allowed_domains` lorsque la réponse doit provenir d’un ensemble fixe de sources, et `excluded_domains` pour écarter certains sites d’une recherche autrement ouverte.
@@ -130,4 +155,4 @@ Chaque recherche s’ajoute à `usage.server_tool_use` :
 }
 ```
 
-Phaseo facture chaque recherche gérée $0.007, plus $0.001 par résultat au-delà des 10 premiers, sauf si la fiche tarifaire du modèle définit ses propres prix pour `server_tool_web_search_requests` et `server_tool_web_search_extra_results`. Les recherches qui échouent ne sont pas facturées, et TinyFish Search est gratuit sur ses offres publiées : `engine: "tinyfish"` n’ajoute donc aucun coût de recherche. Les recherches sur des moteurs payants nécessitent du crédit même lorsque le modèle est gratuit. La recherche native est facturée avec `native_web_search_requests` au prix publié par le fournisseur : par exemple $10 pour 1,000 recherches chez OpenAI et Anthropic, et $0.75 pour 1,000 chez DeepSeek, où seules les recherches qui renvoient des résultats comptent. DeepSeek facture aussi chaque récupération de page, où il lit une URL avec son outil de lecture de liens, à $0.75 pour 1,000, sous la forme de `native_web_fetch_requests`. Lorsque le raisonnement est activé, une seule réponse de DeepSeek peut lancer une douzaine de recherches ou plus, et les résultats qu’il lit s’ajoutent aux tokens d’entrée.
+Phaseo facture les recherches sur Exa, Parallel, Perplexity et DeepSeek au prix que chaque moteur facture à Phaseo : les prix de [Choisir un mode](#choose-a-mode), et $0.00075 pour une recherche DeepSeek, facturée uniquement si elle renvoie des résultats. Pour Exa, le montant est le coût qu’Exa indique pour l’appel, ou son prix catalogue quand Exa n’en indique aucun. Chaque montant est une ligne dans les `pricing_lines` de la requête, avec son `engine`, son `mode` et son `price_source`. Les recherches Firecrawl sont facturées $0.007, plus $0.001 par résultat au-delà des 10 premiers. Les recherches qui échouent ne sont pas facturées, et TinyFish Search est gratuit sur ses offres publiées : `engine: "tinyfish"` n’ajoute donc aucun coût de recherche. Les recherches sur des moteurs payants nécessitent du crédit même lorsque le modèle est gratuit. La recherche native est facturée avec `native_web_search_requests` au prix publié par le fournisseur : par exemple $10 pour 1,000 recherches chez OpenAI et Anthropic, et $0.75 pour 1,000 chez DeepSeek, où seules les recherches qui renvoient des résultats comptent. DeepSeek facture aussi chaque récupération de page, où il lit une URL avec son outil de lecture de liens, à $0.75 pour 1,000, sous la forme de `native_web_fetch_requests`. Lorsque le raisonnement est activé, une seule réponse de DeepSeek peut lancer une douzaine de recherches ou plus, et les résultats qu’il lit s’ajoutent aux tokens d’entrée.

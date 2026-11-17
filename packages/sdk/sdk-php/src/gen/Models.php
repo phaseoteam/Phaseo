@@ -3179,6 +3179,8 @@ class GatewayWebSearchToolDefinition
 	public $language;
 	/** @var int|null */
 	public $max_results;
+	/** @var string|null */
+	public $mode;
 	/** @var int|null */
 	public $page;
 	/** @var array<string, mixed>|null */
@@ -7357,6 +7359,8 @@ class WebSearchPlugin
 	public $max_results;
 	/** @var int|null */
 	public $max_uses;
+	/** @var string|null */
+	public $mode;
 	/** @var string|null */
 	public $search_context_size;
 }

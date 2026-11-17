@@ -109,10 +109,11 @@ function documentedNativeToolPrice(provider: string, meter: PricingDimensionKey)
 }
 
 /**
- * USD per unit for Phaseo's own web search and fetch (`phaseo:web_search`, `phaseo:web_fetch`),
- * which run on Phaseo's search keys whatever model the request uses. The usage meters do not
- * record which engine ran, so each meter carries the most expensive configured engine's public
- * list price (read 2026-11-04):
+ * USD per unit for Phaseo's own web search and fetch (`phaseo:web_search`, `phaseo:web_fetch`)
+ * that are not priced per call. Exa, Parallel, Perplexity and DeepSeek calls carry their
+ * provider's own cost (pipeline/surfaces/search-pricing.ts) and stay off these meters; Firecrawl,
+ * billed in plan credits whose dollar rate is not set yet, still uses them. The rates are the
+ * most expensive configured engine's public list price (read 2026-11-04):
  * - Search request (10 results included): Exa auto/fast $7 per 1,000; Parallel $5 per 1,000;
  *   Perplexity Search $5 per 1,000; Firecrawl 2 credits per 10 results (~$2 per 1,000 on
  *   Standard). Exa: https://exa.ai/pricing, Parallel: https://parallel.ai/pricing, Perplexity:

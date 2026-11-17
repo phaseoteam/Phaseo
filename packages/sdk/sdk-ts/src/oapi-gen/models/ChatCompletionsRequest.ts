@@ -169,6 +169,7 @@ export interface ChatCompletionsRequest {
         include_domains?: string[];
         max_results?: number;
         max_uses?: number;
+        mode?: string;
         search_context_size?: "low" | "medium" | "high";
       }
     | {
@@ -400,6 +401,7 @@ export interface ChatCompletionsRequest {
         include_text?: boolean;
         language?: string;
         max_results?: number;
+        mode?: string;
         page?: number;
         parameters?: {
           engine?:
@@ -415,6 +417,7 @@ export interface ChatCompletionsRequest {
           include_text?: boolean;
           language?: string;
           max_results?: number;
+          mode?: string;
           page?: number;
         };
         type: "phaseo:web_search" | "gateway:web_search";

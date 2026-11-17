@@ -52,7 +52,7 @@ describe("billable managed web tool meters", () => {
 		expect(raw?.server_tool_web_search_requests).toBe(0);
 	});
 
-	it("bills a completed Exa search", async () => {
+	it("bills a completed Exa search at Exa's list price, off the flat meter", async () => {
 		getBindingsMock.mockReturnValue({ EXA_API_KEY: "exa_test_key", EXA_BASE_URL: "https://api.exa.ai" });
 		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
 			requestId: "exa_req",
@@ -64,7 +64,13 @@ describe("billable managed web tool meters", () => {
 		);
 
 		const raw = attachServerToolUsageToRawUsage({}, continuation!.usage);
-		expect(raw?.server_tool_web_search_requests).toBe(1);
+		expect(raw?.server_tool_use.web_search_requests).toBe(1);
+		expect(raw?.server_tool_web_search_requests).toBe(0);
+		// auto $7 per 1,000 searches + highlights on 1 page at $1 per 1,000 pages.
+		expect(continuation?.searchPricing).toMatchObject({ total_nanos: 8_000_000, key_source: "gateway" });
+		expect(continuation?.searchPricing?.lines).toEqual([
+			expect.objectContaining({ engine: "exa", mode: "auto", line_nanos: 8_000_000, price_source: "list_price" }),
+		]);
 	});
 
 	it("does not bill a direct fetch, which runs on the Worker", async () => {

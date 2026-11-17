@@ -1000,6 +1000,7 @@ export type CreateAnthropicMessageParams = {
           include_domains?: string[];
           max_results?: number;
           max_uses?: number;
+          mode?: string;
           search_context_size?: "low" | "medium" | "high";
         }
       | {
@@ -1167,6 +1168,7 @@ export type CreateAnthropicMessageParams = {
           include_text?: boolean;
           language?: string;
           max_results?: number;
+          mode?: string;
           page?: number;
           parameters?: {
             engine?:
@@ -1182,6 +1184,7 @@ export type CreateAnthropicMessageParams = {
             include_text?: boolean;
             language?: string;
             max_results?: number;
+            mode?: string;
             page?: number;
           };
           type: "phaseo:web_search" | "gateway:web_search";
@@ -2348,6 +2351,7 @@ export type CreateChatCompletionParams = {
           include_domains?: string[];
           max_results?: number;
           max_uses?: number;
+          mode?: string;
           search_context_size?: "low" | "medium" | "high";
         }
       | {
@@ -2579,6 +2583,7 @@ export type CreateChatCompletionParams = {
           include_text?: boolean;
           language?: string;
           max_results?: number;
+          mode?: string;
           page?: number;
           parameters?: {
             engine?:
@@ -2594,6 +2599,7 @@ export type CreateChatCompletionParams = {
             include_text?: boolean;
             language?: string;
             max_results?: number;
+            mode?: string;
             page?: number;
           };
           type: "phaseo:web_search" | "gateway:web_search";
@@ -6466,6 +6472,7 @@ export type CreateResponseParams = {
           include_domains?: string[];
           max_results?: number;
           max_uses?: number;
+          mode?: string;
           search_context_size?: "low" | "medium" | "high";
         }
       | {
@@ -6662,6 +6669,7 @@ export type CreateResponseParams = {
           include_text?: boolean;
           language?: string;
           max_results?: number;
+          mode?: string;
           page?: number;
           parameters?: {
             engine?:
@@ -6677,6 +6685,7 @@ export type CreateResponseParams = {
             include_text?: boolean;
             language?: string;
             max_results?: number;
+            mode?: string;
             page?: number;
           };
           type: "phaseo:web_search" | "gateway:web_search";

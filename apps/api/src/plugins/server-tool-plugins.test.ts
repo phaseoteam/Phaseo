@@ -170,7 +170,7 @@ describe("plugin-driven web search billing", () => {
 			}],
 		} as any, prepared.config);
 		const usage = attachServerToolUsageToRawUsage({ prompt_tokens: 10 }, continuation!.usage);
-		return { prepared, usage, bill: computeBill(usage, searchCard, {}, "standard") };
+		return { prepared, usage, bill: computeBill(usage, searchCard, {}, "standard"), searchPricing: continuation!.searchPricing };
 	}
 
 	it("prepares, meters and prices exactly like a phaseo:web_search tool", async () => {
@@ -186,8 +186,10 @@ describe("plugin-driven web search billing", () => {
 
 		expect(viaPlugin.prepared).toEqual(viaTool.prepared);
 		expect(viaPlugin.usage).toEqual(viaTool.usage);
-		expect(viaPlugin.usage).toMatchObject({ server_tool_web_search_requests: 1 });
-		expect(viaPlugin.bill.pricing.total_nanos).toBe(5_000_000);
+		// Exa searches are charged per call at Exa's price, so the flat meter stays at zero.
+		expect(viaPlugin.usage).toMatchObject({ server_tool_web_search_requests: 0, server_tool_use: { web_search_requests: 1 } });
+		expect(viaPlugin.searchPricing?.total_nanos).toBeGreaterThan(0);
+		expect(viaPlugin.searchPricing).toEqual(viaTool.searchPricing);
 		expect(viaPlugin.bill.pricing).toEqual(viaTool.bill.pricing);
 	});
 });

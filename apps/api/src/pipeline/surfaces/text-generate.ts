@@ -1541,6 +1541,7 @@ async function runTextGeneratePipelineInner(
 			let serverToolCalls = 0;
 			let billableWebSearchRequests: number | undefined;
 			let billableWebFetchRequests: number | undefined;
+			let billableWebSearchExtraResults: number | undefined;
 			const serverToolUsage = {
 				datetimeRequests: 0,
 				webSearchRequests: 0,
@@ -1572,6 +1573,7 @@ async function runTextGeneratePipelineInner(
 				...serverToolUsage,
 				...(billableWebSearchRequests === undefined ? {} : { billableWebSearchRequests }),
 				...(billableWebFetchRequests === undefined ? {} : { billableWebFetchRequests }),
+				...(billableWebSearchExtraResults === undefined ? {} : { billableWebSearchExtraResults }),
 			});
 			// Completed rounds, the searches and fetches they ran and the model calls their tools
 			// made were all paid for upstream; an error after them must not make them free.
@@ -1683,7 +1685,8 @@ async function runTextGeneratePipelineInner(
 							context: { credit: creditAfterServerToolSpend(pre.ctx, pre.ctx.gating?.credit), teamSettings: pre.ctx.teamSettings },
 							internal: pre.ctx.internal,
 						}),
-						signal: liveSink?.signal,
+						// A buffered request has no live sink; its own signal marks a client disconnect.
+						signal: liveSink?.signal ?? req.signal,
 					},
 				);
 				if (!continuation) break;
@@ -1729,7 +1732,14 @@ async function runTextGeneratePipelineInner(
 					billableWebSearchRequests += continuation.usage.webSearchRequests ?? 0;
 				}
 				serverToolUsage.webSearchResults += continuation.usage.webSearchResults ?? 0;
+				const extraResultsBefore = serverToolUsage.webSearchExtraResults;
 				serverToolUsage.webSearchExtraResults += continuation.usage.webSearchExtraResults ?? 0;
+				if (typeof continuation.usage.billableWebSearchExtraResults === "number") {
+					billableWebSearchExtraResults =
+						(billableWebSearchExtraResults ?? extraResultsBefore) + continuation.usage.billableWebSearchExtraResults;
+				} else if (billableWebSearchExtraResults !== undefined) {
+					billableWebSearchExtraResults += continuation.usage.webSearchExtraResults ?? 0;
+				}
 				const webFetchRequestsBefore = serverToolUsage.webFetchRequests;
 				serverToolUsage.webFetchRequests += continuation.usage.webFetchRequests ?? 0;
 				if (typeof continuation.usage.billableWebFetchRequests === "number") {
@@ -1770,6 +1780,14 @@ async function runTextGeneratePipelineInner(
 					pre.ctx.meta.serverToolPricing = [
 						...(pre.ctx.meta.serverToolPricing ?? []),
 						...continuation.imageGenerationPricing,
+					];
+				}
+				// Paid searches and fetches, at what each provider bills Phaseo (search-pricing.ts).
+				// Authorized internal tests carry no customer charge, as for the tool images.
+				if (continuation.searchPricing && !(pre.ctx.testingMode && !pre.ctx.billableInternalTesting)) {
+					pre.ctx.meta.serverToolPricing = [
+						...(pre.ctx.meta.serverToolPricing ?? []),
+						continuation.searchPricing,
 					];
 				}
 				searchObservability = mergeSearchObservability(

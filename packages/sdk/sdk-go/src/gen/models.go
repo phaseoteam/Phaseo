@@ -2556,6 +2556,7 @@ type GatewayWebSearchToolDefinition struct {
 	IncludeText *bool `json:"include_text,omitempty"`
 	Language *string `json:"language,omitempty"`
 	MaxResults *int `json:"max_results,omitempty"`
+	Mode *string `json:"mode,omitempty"`
 	Page *int `json:"page,omitempty"`
 	Parameters *map[string]interface{} `json:"parameters,omitempty"`
 	Type string `json:"type"`
@@ -5870,6 +5871,7 @@ type WebSearchPlugin struct {
 	IncludeDomains *[]string `json:"include_domains,omitempty"`
 	MaxResults *int `json:"max_results,omitempty"`
 	MaxUses *int `json:"max_uses,omitempty"`
+	Mode *string `json:"mode,omitempty"`
 	SearchContextSize *string `json:"search_context_size,omitempty"`
 }
 

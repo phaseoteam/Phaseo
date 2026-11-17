@@ -45,6 +45,7 @@ La misma entrada de herramienta funciona en `tools` en `/v1/responses` y `/v1/me
 | Parámetro | Tipo | Predeterminado | Descripción |
 | --- | --- | --- | --- |
 | `engine` | string | `exa` | `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity`, `tinyfish` o `deepseek`. Consulta [Elegir un motor](#choose-an-engine). |
+| `mode` | string | Predeterminado del motor | Cómo busca el motor: más rápido, más a fondo o con una ejecución de investigación. Consulta [Elegir un modo](#choose-a-mode). |
 | `max_results` | integer | `5` | Resultados por llamada de búsqueda, hasta `25`. |
 | `max_total_results` | integer | `25` | Resultados de todas las búsquedas de la solicitud, hasta `100`. Nunca es inferior a `max_results`. |
 | `max_uses` | integer | `10` | Llamadas de búsqueda por solicitud, hasta `100`. |
@@ -92,6 +93,30 @@ Las herramientas de búsqueda propias de los proveedores no pueden aplicar `max_
 
 Enviar la herramienta propia de OpenAI `{ "type": "web_search" }` funciona igual que `engine: "native"`. Define `native` solo en la definición de la herramienta: si el modelo pide `native` en una llamada, la llamada devuelve `unsupported_search_engine`, porque la herramienta del proveedor debe elegirse antes de enviar la solicitud.
 
+<span id="choose-a-mode"></span>
+## Elegir un modo
+
+Define `mode` en la herramienta para elegir cómo busca su motor. El modelo no puede cambiarlo, así que una llamada nunca cuesta más que el modo que elegiste. Si el modelo cambia a otro motor, ese motor usa su modo predeterminado. Un modo que el motor no tiene devuelve un 400.
+
+| Motor | `mode` | Qué se ejecuta | Precio por llamada |
+| --- | --- | --- | --- |
+| `exa` | `lite` | Búsqueda de baja latencia para chat y voz | $0.004 |
+| `exa` | `auto` (predeterminado) | Búsqueda equilibrada | $0.007 |
+| `exa` | `deep-lite` | Investigación ligera en varios pasos, unos 4 segundos | $0.012 |
+| `exa` | `deep` | Investigación en varios pasos con una `answer` sintetizada, de 4 a 15 segundos | $0.012 |
+| `exa` | `agent-minimal` | Una ejecución de investigación de Exa Agent con esfuerzo mínimo | $0.012 |
+| `exa` | `agent-low` | Una ejecución de investigación de Exa Agent con esfuerzo bajo | $0.025 |
+| `parallel` | `turbo`, `fast` | La búsqueda más rápida de Parallel | $0.001 |
+| `parallel` | `basic`, `advanced` (predeterminado) | La búsqueda de mayor calidad de Parallel | $0.005 |
+| `parallel` | `task-lite` | Una ejecución de investigación de Parallel Task, de 10 a 60 segundos | $0.005 |
+| `parallel` | `task-base` | Una ejecución de investigación de Parallel Task, de 15 a 100 segundos | $0.010 |
+| `perplexity` | `standard` (predeterminado) | Perplexity Search | $0.005 |
+| `perplexity` | `fast` | Perplexity Fast Search | $0.001 |
+
+Las búsquedas de Exa y Parallel también cuestan $0.001 por cada resultado después de los 10 primeros, y Exa cobra $0.001 por página por cada tipo de contenido que devuelve, así que fragmentos destacados y texto en 5 resultados suman $0.010. `firecrawl`, `tinyfish` y `deepseek` no tienen modos.
+
+Los modos de investigación devuelven una `answer` y las páginas que cita como `results`. Una ejecución de investigación que no ha terminado tras 120 segundos devuelve `research_timeout`. Las ejecuciones que agotan el tiempo, fallan o pierden su cliente no se cobran. Los modos de investigación no se pueden limitar a dominios, así que una herramienta de investigación con `allowed_domains` o `excluded_domains` devuelve un 400. El motor `native` no tiene modos.
+
 ## Filtrar por dominio
 
 Usa `allowed_domains` cuando la respuesta deba proceder de un conjunto fijo de fuentes, y `excluded_domains` para quitar sitios concretos de una búsqueda por lo demás abierta.
@@ -130,4 +155,4 @@ Cada búsqueda suma a `usage.server_tool_use`:
 }
 ```
 
-Phaseo cobra cada búsqueda gestionada a $0.007, más $0.001 por cada resultado después de los 10 primeros, salvo que la tarjeta de precios del modelo fije sus propios precios para `server_tool_web_search_requests` y `server_tool_web_search_extra_results`. Las búsquedas fallidas no se cobran, y TinyFish Search es gratuito en sus planes publicados, así que `engine: "tinyfish"` no añade cargo de búsqueda. Las búsquedas con motores de pago requieren saldo aunque el modelo sea gratuito. La búsqueda nativa se cobra con `native_web_search_requests` al precio publicado del proveedor: por ejemplo, $10 por 1,000 búsquedas en OpenAI y Anthropic, y $0.75 por 1,000 en DeepSeek, donde solo cuentan las búsquedas que devuelven resultados. DeepSeek también cobra cada lectura de página, en la que lee una URL con su herramienta de lectura de enlaces, a $0.75 por 1,000, como `native_web_fetch_requests`. Con el razonamiento activado, una sola respuesta de DeepSeek puede ejecutar una docena de búsquedas o más, y los resultados que lee se suman a los tokens de entrada.
+Phaseo cobra las búsquedas en Exa, Parallel, Perplexity y DeepSeek por lo que cada motor le cobra a Phaseo: los precios de [Elegir un modo](#choose-a-mode), y $0.00075 por una búsqueda de DeepSeek, que solo se cobra si devuelve resultados. En Exa, el cargo es el costo que Exa informa para la llamada, o su precio de lista cuando Exa no informa ninguno. Cada cargo es una línea en las `pricing_lines` de la solicitud con su `engine`, `mode` y `price_source`. Las búsquedas de Firecrawl se cobran a $0.007, más $0.001 por cada resultado después de los 10 primeros. Las búsquedas fallidas no se cobran, y TinyFish Search es gratuito en sus planes publicados, así que `engine: "tinyfish"` no añade cargo de búsqueda. Las búsquedas con motores de pago requieren saldo aunque el modelo sea gratuito. La búsqueda nativa se cobra con `native_web_search_requests` al precio publicado del proveedor: por ejemplo, $10 por 1,000 búsquedas en OpenAI y Anthropic, y $0.75 por 1,000 en DeepSeek, donde solo cuentan las búsquedas que devuelven resultados. DeepSeek también cobra cada lectura de página, en la que lee una URL con su herramienta de lectura de enlaces, a $0.75 por 1,000, como `native_web_fetch_requests`. Con el razonamiento activado, una sola respuesta de DeepSeek puede ejecutar una docena de búsquedas o más, y los resultados que lee se suman a los tokens de entrada.

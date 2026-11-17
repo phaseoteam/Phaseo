@@ -12539,6 +12539,16 @@
 			"ja": "1 つの選択肢ではなく、該当するすべての選択肢をそれぞれの確率とともに返します。Liquid d1.2 など対応するルートが優先され、その他のルートは 1 つの選択肢で回答します。",
 			"zh-Hans": "返回所有适用的选项，每个选项附带各自的概率，而不是单个选择。优先使用支持此功能的路由（例如 Liquid d1.2）；其他路由只返回一个选择。",
 			"ar": "يعيد كل خيار ينطبق، ولكلٍّ احتماله الخاص، بدلًا من اختيار واحد. تُفضَّل المسارات التي تدعم ذلك، مثل Liquid d1.2؛ وتجيب المسارات الأخرى باختيار واحد."
+		},
+		"How the engine searches. Exa: lite, auto (default), deep-lite, deep, agent-minimal or agent-low. Parallel: turbo, fast, basic, advanced (default), task-lite or task-base. Perplexity: standard (default) or fast. Other engines take no mode. Set on the tool only.": {
+			"es": "Cómo busca el motor. Exa: lite, auto (predeterminado), deep-lite, deep, agent-minimal o agent-low. Parallel: turbo, fast, basic, advanced (predeterminado), task-lite o task-base. Perplexity: standard (predeterminado) o fast. Los demás motores no tienen modos. Se define solo en la herramienta.",
+			"fr": "Façon dont le moteur cherche. Exa : lite, auto (par défaut), deep-lite, deep, agent-minimal ou agent-low. Parallel : turbo, fast, basic, advanced (par défaut), task-lite ou task-base. Perplexity : standard (par défaut) ou fast. Les autres moteurs n’ont pas de mode. À définir sur l’outil uniquement.",
+			"de": "Wie die Engine sucht. Exa: lite, auto (Standard), deep-lite, deep, agent-minimal oder agent-low. Parallel: turbo, fast, basic, advanced (Standard), task-lite oder task-base. Perplexity: standard (Standard) oder fast. Andere Engines haben keinen Modus. Nur im Tool festlegbar.",
+			"pt-BR": "Como o mecanismo pesquisa. Exa: lite, auto (padrão), deep-lite, deep, agent-minimal ou agent-low. Parallel: turbo, fast, basic, advanced (padrão), task-lite ou task-base. Perplexity: standard (padrão) ou fast. Os outros mecanismos não têm modos. Definido só na ferramenta.",
+			"hi": "इंजन कैसे खोजता है। Exa: lite, auto (डिफ़ॉल्ट), deep-lite, deep, agent-minimal या agent-low। Parallel: turbo, fast, basic, advanced (डिफ़ॉल्ट), task-lite या task-base। Perplexity: standard (डिफ़ॉल्ट) या fast। बाकी इंजनों में कोई मोड नहीं है। केवल टूल पर सेट किया जाता है।",
+			"ja": "エンジンの検索方法。Exa: lite、auto (既定)、deep-lite、deep、agent-minimal、agent-low。Parallel: turbo、fast、basic、advanced (既定)、task-lite、task-base。Perplexity: standard (既定)、fast。その他のエンジンにはモードはありません。ツールでのみ設定できます。",
+			"zh-Hans": "引擎的搜索方式。Exa：lite、auto（默认）、deep-lite、deep、agent-minimal 或 agent-low。Parallel：turbo、fast、basic、advanced（默认）、task-lite 或 task-base。Perplexity：standard（默认）或 fast。其他引擎没有模式。只能在工具上设置。",
+			"ar": "طريقة بحث المحرك. Exa: ‏lite أو auto (الافتراضي) أو deep-lite أو deep أو agent-minimal أو agent-low. ‏Parallel: ‏turbo أو fast أو basic أو advanced (الافتراضي) أو task-lite أو task-base. ‏Perplexity: ‏standard (الافتراضي) أو fast. لا تملك المحركات الأخرى أوضاعًا. يُعيَّن في الأداة فقط."
 		}
 	},
 	"GET /apps": {

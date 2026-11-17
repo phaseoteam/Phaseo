@@ -1817,6 +1817,7 @@ struct GatewayWebSearchToolDefinition {
 	std::optional<bool> include_text;
 	std::string language;
 	std::optional<int> max_results;
+	std::string mode;
 	std::optional<int> page;
 	std::map<std::string, std::any> parameters;
 	std::any type;
@@ -4186,6 +4187,7 @@ struct WebSearchPlugin {
 	std::vector<std::string> include_domains;
 	std::optional<int> max_results;
 	std::optional<int> max_uses;
+	std::string mode;
 	std::any search_context_size;
 };
 

@@ -312,10 +312,14 @@ describe("server tools bill their model calls and completed rounds", () => {
 
 		expect(response.status).toBe(502);
 		expect(mocks.chargeCompletedServerToolRounds).toHaveBeenCalledOnce();
-		const billedSearches = mocks.chargeCompletedServerToolRounds.mock.calls[0]![0].toolMeters.server_tool_web_search_requests;
-		// Eight follow-up turns: eight searches ran, and all eight are billed.
+		const charged = mocks.chargeCompletedServerToolRounds.mock.calls[0]![0];
+		// Eight follow-up turns: eight searches ran, and all eight are billed, each at Exa's
+		// price ($0.007 auto + $0.001 highlights on its one page) rather than the flat meter.
 		expect(fetchMock).toHaveBeenCalledTimes(8);
-		expect(billedSearches).toBe(8);
+		expect(charged.toolMeters.server_tool_web_search_requests).toBe(0);
+		const searchCharges = (charged.ctx.meta.serverToolPricing ?? []).filter((charge: any) => charge.component === "web_search");
+		expect(searchCharges).toHaveLength(8);
+		expect(searchCharges.reduce((sum: number, charge: any) => sum + charge.total_nanos, 0)).toBe(8 * 8_000_000);
 	});
 });
 

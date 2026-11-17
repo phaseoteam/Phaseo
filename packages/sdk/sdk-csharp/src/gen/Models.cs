@@ -4340,6 +4340,9 @@ public sealed class GatewayWebSearchToolDefinition
 	[JsonPropertyName("max_results")]
 	public long? MaxResults { get; set; }
 
+	[JsonPropertyName("mode")]
+	public string? Mode { get; set; }
+
 	[JsonPropertyName("page")]
 	public long? Page { get; set; }
 
@@ -10073,6 +10076,9 @@ public sealed class WebSearchPlugin
 
 	[JsonPropertyName("max_uses")]
 	public long? MaxUses { get; set; }
+
+	[JsonPropertyName("mode")]
+	public string? Mode { get; set; }
 
 	[JsonPropertyName("search_context_size")]
 	public string? SearchContextSize { get; set; }

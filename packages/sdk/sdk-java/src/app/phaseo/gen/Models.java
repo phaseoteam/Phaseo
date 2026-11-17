@@ -1833,6 +1833,7 @@ public final class Models {
 		public Boolean include_text;
 		public String language;
 		public Integer max_results;
+		public String mode;
 		public Integer page;
 		public Object parameters;
 		public Object type;
@@ -4229,6 +4230,7 @@ public final class Models {
 		public java.util.List<String> include_domains;
 		public Integer max_results;
 		public Integer max_uses;
+		public String mode;
 		public Object search_context_size;
 	}
 

@@ -110,4 +110,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## 用量与价格
 
-每次抓取会使 `usage.server_tool_use.web_fetch_requests` 加 1。除非模型价格卡为 `server_tool_web_fetch_requests` 设置了自己的价格，Phaseo 对每次通过 Exa、Parallel、Firecrawl 或 DeepSeek 的托管抓取收取 $0.001；直接抓取免费。即使模型免费，通过付费引擎抓取也需要账户有余额。如果模型价格卡定义了 `native_web_fetch_requests`，原生抓取按该计量项计费。
+每次抓取会使 `usage.server_tool_use.web_fetch_requests` 加 1。Phaseo 按各引擎向 Phaseo 收取的费用对每次托管抓取计费：Exa 每页 $0.001（或 Exa 为该次调用报告的成本），Parallel 每个 URL $0.001，DeepSeek $0.00075。Firecrawl 抓取按 $0.001 计费。直接抓取免费。即使模型免费，通过付费引擎抓取也需要账户有余额。如果模型价格卡定义了 `native_web_fetch_requests`，原生抓取按该计量项计费。

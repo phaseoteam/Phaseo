@@ -45,6 +45,7 @@ The same tool entry works in `tools` on `/v1/responses` and `/v1/messages`.
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | `engine` | string | `exa` | `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity`, `tinyfish`, or `deepseek`. See [Choose an engine](#choose-an-engine). |
+| `mode` | string | Engine default | How the engine searches: faster, deeper, or a research run. See [Choose a mode](#choose-a-mode). |
 | `max_results` | integer | `5` | Results per search call, up to `25`. |
 | `max_total_results` | integer | `25` | Results across all searches in the request, up to `100`. Never lower than `max_results`. |
 | `max_uses` | integer | `10` | Search calls per request, up to `100`. |
@@ -91,6 +92,29 @@ The providers' own search tools can't enforce `max_results` or `max_total_result
 
 Sending OpenAI's own `{ "type": "web_search" }` tool works the same way as `engine: "native"`. Set `native` in the tool definition only: if the model asks for `native` in a call, the call returns `unsupported_search_engine`, because the provider's tool has to be chosen before the request is sent.
 
+## Choose a mode
+
+Set `mode` on the tool to choose how its engine searches. The model can't change it, so a call never costs more than the mode you chose. If the model switches to another engine, that engine runs in its default mode. A mode the engine doesn't have returns a 400.
+
+| Engine | `mode` | What runs | Price per call |
+| --- | --- | --- | --- |
+| `exa` | `lite` | Low-latency search for chat and voice | $0.004 |
+| `exa` | `auto` (default) | Balanced search | $0.007 |
+| `exa` | `deep-lite` | Light multi-step research, about 4 seconds | $0.012 |
+| `exa` | `deep` | Multi-step research with a synthesized `answer`, 4 to 15 seconds | $0.012 |
+| `exa` | `agent-minimal` | An Exa Agent research run at minimal effort | $0.012 |
+| `exa` | `agent-low` | An Exa Agent research run at low effort | $0.025 |
+| `parallel` | `turbo`, `fast` | Parallel's fastest search | $0.001 |
+| `parallel` | `basic`, `advanced` (default) | Parallel's higher-quality search | $0.005 |
+| `parallel` | `task-lite` | A Parallel Task research run, 10 to 60 seconds | $0.005 |
+| `parallel` | `task-base` | A Parallel Task research run, 15 to 100 seconds | $0.010 |
+| `perplexity` | `standard` (default) | Perplexity Search | $0.005 |
+| `perplexity` | `fast` | Perplexity Fast Search | $0.001 |
+
+Exa and Parallel searches also cost $0.001 for each result past the first 10, and Exa charges $0.001 per page for each content type it returns, so highlights and text on 5 results add $0.010. `firecrawl`, `tinyfish` and `deepseek` have no modes.
+
+Research modes return an `answer` and the pages it cites as `results`. A research run that hasn't finished after 120 seconds returns `research_timeout`. Runs that time out, fail, or lose their client aren't charged. Research modes can't be limited to domains, so a research tool with `allowed_domains` or `excluded_domains` returns a 400. The `native` engine takes no mode.
+
 ## Filter by domain
 
 Use `allowed_domains` when the answer must come from a fixed set of sources, and `excluded_domains` to drop specific sites from an otherwise open search.
@@ -129,4 +153,4 @@ Each search adds to `usage.server_tool_use`:
 }
 ```
 
-Phaseo bills each managed search at $0.007, plus $0.001 for each result past the first 10, unless the model's price card sets its own `server_tool_web_search_requests` and `server_tool_web_search_extra_results` prices. Failed searches are not billed, and TinyFish Search is free on its published plans, so `engine: "tinyfish"` adds no search charge. Searches on paid engines need credits even when the model is free. Native search is billed with `native_web_search_requests` at the provider's published price: for example $10 per 1,000 searches on OpenAI and Anthropic, and $0.75 per 1,000 on DeepSeek, where only searches that return results count. DeepSeek also bills each page fetch, where it reads a URL with its read-link tool, at $0.75 per 1,000, as `native_web_fetch_requests`. With reasoning on, one DeepSeek answer can run a dozen or more searches, and the results it reads add to the input tokens.
+Phaseo bills searches on Exa, Parallel, Perplexity and DeepSeek at what each engine charges Phaseo: the prices in [Choose a mode](#choose-a-mode), and $0.00075 for a DeepSeek search, billed only when it returns results. For Exa, the charge is the cost Exa reports for the call, or its list price when Exa reports none. Each charge is a line in the request's `pricing_lines` with its `engine`, `mode` and `price_source`. Firecrawl searches are billed at $0.007, plus $0.001 for each result past the first 10. Failed searches are not billed, and TinyFish Search is free on its published plans, so `engine: "tinyfish"` adds no search charge. Searches on paid engines need credits even when the model is free. Native search is billed with `native_web_search_requests` at the provider's published price: for example $10 per 1,000 searches on OpenAI and Anthropic, and $0.75 per 1,000 on DeepSeek, where only searches that return results count. DeepSeek also bills each page fetch, where it reads a URL with its read-link tool, at $0.75 per 1,000, as `native_web_fetch_requests`. With reasoning on, one DeepSeek answer can run a dozen or more searches, and the results it reads add to the input tokens.

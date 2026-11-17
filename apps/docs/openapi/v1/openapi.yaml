@@ -13146,6 +13146,13 @@ components:
                 - perplexity
                 - tinyfish
                 - deepseek
+            mode:
+              type: string
+              description: >
+                How the engine searches. Exa: lite, auto (default), deep-lite, deep,
+                agent-minimal or agent-low. Parallel: turbo, fast, basic, advanced
+                (default), task-lite or task-base. Perplexity: standard (default) or
+                fast. Other engines take no mode. Set on the tool only.
             max_results:
               type: integer
               minimum: 1
@@ -13161,6 +13168,13 @@ components:
             include_highlights:
               type: boolean
           additionalProperties: false
+        mode:
+          type: string
+          description: >
+            How the engine searches. Exa: lite, auto (default), deep-lite, deep,
+            agent-minimal or agent-low. Parallel: turbo, fast, basic, advanced
+            (default), task-lite or task-base. Perplexity: standard (default) or
+            fast. Other engines take no mode. Set on the tool only.
         max_results:
           type: integer
           minimum: 1
@@ -13254,6 +13268,13 @@ components:
             - perplexity
             - tinyfish
             - deepseek
+        mode:
+          type: string
+          description: >
+            How the engine searches. Exa: lite, auto (default), deep-lite, deep,
+            agent-minimal or agent-low. Parallel: turbo, fast, basic, advanced
+            (default), task-lite or task-base. Perplexity: standard (default) or
+            fast. Other engines take no mode. Set on the tool only.
         max_results:
           type: integer
           minimum: 1

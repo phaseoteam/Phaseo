@@ -45,6 +45,7 @@ A mesma entrada de ferramenta funciona em `tools` em `/v1/responses` e `/v1/mess
 | Parâmetro | Tipo | Padrão | Descrição |
 | --- | --- | --- | --- |
 | `engine` | string | `exa` | `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity`, `tinyfish` ou `deepseek`. Veja [Escolha um mecanismo](#choose-an-engine). |
+| `mode` | string | Padrão do mecanismo | Como o mecanismo pesquisa: mais rápido, mais a fundo ou com uma execução de pesquisa aprofundada. Veja [Escolha um modo](#choose-a-mode). |
 | `max_results` | inteiro | `5` | Resultados por chamada de pesquisa, até `25`. |
 | `max_total_results` | inteiro | `25` | Resultados somando todas as pesquisas da solicitação, até `100`. Nunca é menor que `max_results`. |
 | `max_uses` | inteiro | `10` | Chamadas de pesquisa por solicitação, até `100`. |
@@ -92,6 +93,30 @@ As ferramentas de pesquisa dos próprios provedores não aplicam `max_results` n
 
 Enviar a ferramenta própria da OpenAI `{ "type": "web_search" }` funciona da mesma forma que `engine: "native"`. Defina `native` somente na definição da ferramenta: se o modelo pedir `native` em uma chamada, a chamada retorna `unsupported_search_engine`, porque a ferramenta do provedor precisa ser escolhida antes de a solicitação ser enviada.
 
+<span id="choose-a-mode"></span>
+## Escolha um modo
+
+Defina `mode` na ferramenta para escolher como o mecanismo dela pesquisa. O modelo não pode mudá-lo, então uma chamada nunca custa mais do que o modo escolhido. Se o modelo trocar de mecanismo, esse mecanismo roda no modo padrão. Um modo que o mecanismo não tem retorna 400.
+
+| Mecanismo | `mode` | O que roda | Preço por chamada |
+| --- | --- | --- | --- |
+| `exa` | `lite` | Pesquisa de baixa latência para chat e voz | $0.004 |
+| `exa` | `auto` (padrão) | Pesquisa equilibrada | $0.007 |
+| `exa` | `deep-lite` | Pesquisa leve em várias etapas, cerca de 4 segundos | $0.012 |
+| `exa` | `deep` | Pesquisa em várias etapas com uma `answer` sintetizada, de 4 a 15 segundos | $0.012 |
+| `exa` | `agent-minimal` | Uma execução de pesquisa do Exa Agent com esforço mínimo | $0.012 |
+| `exa` | `agent-low` | Uma execução de pesquisa do Exa Agent com esforço baixo | $0.025 |
+| `parallel` | `turbo`, `fast` | A pesquisa mais rápida do Parallel | $0.001 |
+| `parallel` | `basic`, `advanced` (padrão) | A pesquisa de maior qualidade do Parallel | $0.005 |
+| `parallel` | `task-lite` | Uma execução de pesquisa do Parallel Task, de 10 a 60 segundos | $0.005 |
+| `parallel` | `task-base` | Uma execução de pesquisa do Parallel Task, de 15 a 100 segundos | $0.010 |
+| `perplexity` | `standard` (padrão) | Perplexity Search | $0.005 |
+| `perplexity` | `fast` | Perplexity Fast Search | $0.001 |
+
+Pesquisas no Exa e no Parallel também custam $0.001 por resultado depois dos 10 primeiros, e o Exa cobra $0.001 por página para cada tipo de conteúdo que retorna, então destaques e texto em 5 resultados somam $0.010. `firecrawl`, `tinyfish` e `deepseek` não têm modos.
+
+Modos de pesquisa aprofundada retornam uma `answer` e as páginas citadas em `results`. Uma execução que não termina em 120 segundos retorna `research_timeout`. Execuções que expiram, falham ou perdem o cliente não são cobradas. Modos de pesquisa aprofundada não podem ser limitados a domínios, então uma ferramenta de pesquisa com `allowed_domains` ou `excluded_domains` retorna 400. O mecanismo `native` não tem modos.
+
 ## Filtre por domínio
 
 Use `allowed_domains` quando a resposta precisar vir de um conjunto fixo de fontes, e `excluded_domains` para tirar sites específicos de uma pesquisa aberta.
@@ -130,4 +155,4 @@ Cada pesquisa soma valores em `usage.server_tool_use`:
 }
 ```
 
-A Phaseo cobra $0.007 por busca gerenciada, mais $0.001 por resultado além dos 10 primeiros, a menos que o cartão de preços do modelo defina os próprios preços de `server_tool_web_search_requests` e `server_tool_web_search_extra_results`. Buscas com falha não são cobradas, e o TinyFish Search é gratuito nos planos publicados, então `engine: "tinyfish"` não adiciona cobrança de busca. Buscas em mecanismos pagos exigem créditos mesmo quando o modelo é gratuito. A busca nativa é cobrada com `native_web_search_requests` pelo preço publicado do provedor: por exemplo, $10 por 1,000 buscas na OpenAI e na Anthropic e $0.75 por 1,000 na DeepSeek, onde só contam as buscas que retornam resultados. A DeepSeek também cobra cada leitura de página, em que lê uma URL com a ferramenta de leitura de links, a $0.75 por 1,000, como `native_web_fetch_requests`. Com o raciocínio ativado, uma única resposta da DeepSeek pode executar uma dúzia de buscas ou mais, e os resultados lidos somam-se aos tokens de entrada.
+O Phaseo cobra pesquisas no Exa, Parallel, Perplexity e DeepSeek pelo que cada mecanismo cobra do Phaseo: os preços em [Escolha um modo](#choose-a-mode), e $0.00075 por pesquisa do DeepSeek, cobrada só quando retorna resultados. No Exa, a cobrança é o custo que o Exa informa para a chamada, ou o preço de tabela quando o Exa não informa nenhum. Cada cobrança é uma linha nas `pricing_lines` da requisição, com `engine`, `mode` e `price_source`. Pesquisas no Firecrawl custam $0.007, mais $0.001 por resultado depois dos 10 primeiros. Buscas com falha não são cobradas, e o TinyFish Search é gratuito nos planos publicados, então `engine: "tinyfish"` não adiciona cobrança de busca. Buscas em mecanismos pagos exigem créditos mesmo quando o modelo é gratuito. A busca nativa é cobrada com `native_web_search_requests` pelo preço publicado do provedor: por exemplo, $10 por 1,000 buscas na OpenAI e na Anthropic e $0.75 por 1,000 na DeepSeek, onde só contam as buscas que retornam resultados. A DeepSeek também cobra cada leitura de página, em que lê uma URL com a ferramenta de leitura de links, a $0.75 por 1,000, como `native_web_fetch_requests`. Com o raciocínio ativado, uma única resposta da DeepSeek pode executar uma dúzia de buscas ou mais, e os resultados lidos somam-se aos tokens de entrada.

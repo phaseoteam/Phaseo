@@ -72,6 +72,12 @@ const WEB_SEARCH_OPTIONS = {
 		check: (value: unknown) => typeof value === "string" && WEB_SEARCH_ENGINES.includes(value.trim().toLowerCase()),
 		expected: `one of ${WEB_SEARCH_ENGINES.join(", ")}`,
 	},
+	// Which modes an engine takes is checked where the tool is prepared (server-tools.ts).
+	mode: {
+		target: "mode",
+		check: (value: unknown) => typeof value === "string" && value.trim().length > 0,
+		expected: "a search mode such as deep or fast",
+	},
 	max_results: {
 		target: "max_results",
 		check: (value: unknown) => isPositiveInteger(value, MAX_WEB_SEARCH_RESULTS),

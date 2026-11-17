@@ -86,12 +86,14 @@ describe("DeepSeek web search and fetch engine", () => {
 			count: 3,
 			need_content: false,
 		});
+		// DeepSeek's $0.75 per 1,000 searches is charged per call, not on the flat meter.
 		expect(continuation?.usage).toMatchObject({
 			webSearchRequests: 1,
-			billableWebSearchRequests: 1,
+			billableWebSearchRequests: 0,
 			webSearchResults: 1,
 			webSearchExtraResults: 0,
 		});
+		expect(continuation?.searchPricing?.total_nanos).toBe(750_000);
 		const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
 		expect(parsed).toMatchObject({
 			provider: "deepseek",

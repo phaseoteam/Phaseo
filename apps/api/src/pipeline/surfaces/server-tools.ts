@@ -10,6 +10,22 @@ import { extractUnifiedStreamEvents, type UnifiedStreamEvent } from "../after/st
 import { getBindings } from "@/runtime/env";
 import { validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
 import { webSearchToolCapsResults } from "@core/nativeTools";
+import {
+	DEFAULT_WEB_SEARCH_MODE,
+	deepSeekToolCharge,
+	EXA_RESEARCH_MODES,
+	exaAgentCharge,
+	exaContentsCharge,
+	exaSearchCharge,
+	PARALLEL_RESEARCH_MODES,
+	parallelExtractCharge,
+	parallelSearchCharge,
+	parallelTaskCharge,
+	perplexitySearchCharge,
+	searchChargesToPricing,
+	WEB_SEARCH_MODES,
+	type SearchCharge,
+} from "./search-pricing";
 
 export const DATETIME_SERVER_TOOL_TYPE = "phaseo:datetime";
 export const LEGACY_DATETIME_SERVER_TOOL_TYPE = "gateway:datetime";
@@ -41,6 +57,17 @@ const MAX_WEB_SEARCH_MAX_TOTAL_RESULTS = 100;
 const DEFAULT_WEB_FETCH_MAX_CHARS = 12000;
 const MAX_WEB_FETCH_MAX_CHARS = 100000;
 const SERVER_TOOL_FETCH_TIMEOUT_MS = 15000;
+// Exa deep search takes 4–15 s (https://exa.ai/pricing), past the default limit.
+const DEEP_SEARCH_TIMEOUT_MS = 45_000;
+// Research modes (Exa Agent minimal/low, Parallel Task lite/base) take 10–100 s. Past this
+// the run is abandoned and not charged to the customer.
+const RESEARCH_TIMEOUT_MS = 120_000;
+const RESEARCH_POLL_INTERVAL_MS = 2_000;
+// Neither research API takes a source allowlist or blocklist we have confirmed, and an
+// answer synthesized from a blocked source cannot be filtered afterwards.
+const RESEARCH_DOMAINS_UNSUPPORTED = "Research modes (agent-minimal, agent-low, task-lite, task-base) cannot be limited to allowed or excluded domains; remove the domain filters or use a search mode.";
+const isResearchMode = (mode: string) =>
+	(EXA_RESEARCH_MODES as readonly string[]).includes(mode) || (PARALLEL_RESEARCH_MODES as readonly string[]).includes(mode);
 const SERVER_TOOL_DIRECT_FETCH_MAX_REDIRECTS = 5;
 // Direct web fetch reads at most this much of a page; the rest is dropped and
 // the result is marked truncated, since the tool only returns maxChars anyway.
@@ -424,6 +451,8 @@ export type ServerToolConfig = {
 	webSearchEngine?: WebSearchEngine;
 	webSearchMaxResults: number;
 	webSearchMaxUses?: number;
+	/** The tool's search mode for its own engine (see search-pricing WEB_SEARCH_MODES). */
+	webSearchMode?: string;
 	webSearchMaxTotalResults?: number;
 	webSearchContextSize?: WebSearchContextSize;
 	webSearchMaxCharacters?: number;
@@ -471,6 +500,8 @@ export type ServerToolExecutionMetrics = {
 	billableWebSearchRequests?: number;
 	webSearchResults: number;
 	webSearchExtraResults: number;
+	/** Extra results billed on the flat meter; a search priced per call carries its own. Defaults to webSearchExtraResults. */
+	billableWebSearchExtraResults?: number;
 	webFetchRequests: number;
 	/** Fetches that cost Phaseo money; direct fetches are free. Defaults to webFetchRequests. */
 	billableWebFetchRequests?: number;
@@ -491,6 +522,8 @@ export type ServerToolContinuation = {
 	advisorUsage?: IRUsage;
 	/** Each tool image priced on its own model's card, added to the request total by the after stage. */
 	imageGenerationPricing?: ServerToolPricing[];
+	/** This round's paid searches and fetches at what each provider bills Phaseo, added the same way. */
+	searchPricing?: ServerToolPricing;
 };
 
 export type AdvisorExecutionResult = {
@@ -1288,6 +1321,7 @@ export function prepareServerToolsForTextRequest(
 	let webSearchEngine: WebSearchEngine = DEFAULT_WEB_SEARCH_ENGINE;
 	let webSearchMaxResults = DEFAULT_WEB_SEARCH_MAX_RESULTS;
 	let webSearchMaxUses: number | undefined;
+	let webSearchMode: string | undefined;
 	let webSearchMaxTotalResults = DEFAULT_WEB_SEARCH_MAX_TOTAL_RESULTS;
 	let webSearchContextSize: WebSearchContextSize = "medium";
 	let webSearchMaxCharacters: number | undefined;
@@ -1353,6 +1387,10 @@ export function prepareServerToolsForTextRequest(
 			// A provider's own search cannot enforce result caps (Claude's takes max_uses
 			// only), so a capped search runs on Phaseo's default engine instead.
 			const nativeDropsCaps = webSearchToolCapsResults(tool, { nativeMaxUses: protocol === "anthropic.messages" });
+			const requestedMode = tool.parameters?.mode ?? tool.mode;
+			if (defaults.engine === "native" && requestedMode != null) {
+				return { ok: false, message: 'Web search engine "native" has no modes; remove "mode" or choose a Phaseo engine.' };
+			}
 			if (defaults.engine === "native" && !nativeDropsCaps) {
 				nativeWebSearchRequested = true;
 				filteredTools.push(buildNativeWebSearchTool(tool, protocol));
@@ -1360,6 +1398,20 @@ export function prepareServerToolsForTextRequest(
 			}
 			webSearchEnabled = true;
 			webSearchEngine = defaults.engine === "native" ? DEFAULT_WEB_SEARCH_ENGINE : defaults.engine;
+			if (requestedMode != null) {
+				const modeEngine = webSearchEngine === "auto" ? DEFAULT_WEB_SEARCH_ENGINE : webSearchEngine;
+				const modes = WEB_SEARCH_MODES[modeEngine] ?? [];
+				const mode = typeof requestedMode === "string" ? requestedMode.trim().toLowerCase() : "";
+				if (!modes.includes(mode)) {
+					return {
+						ok: false,
+						message: modes.length > 0
+							? `Web search mode "${String(requestedMode)}" is not available for engine "${modeEngine}". Use one of: ${modes.join(", ")}.`
+							: `Web search engine "${modeEngine}" has no modes; remove "mode".`,
+					};
+				}
+				webSearchMode = mode;
+			}
 			webSearchMaxResults = defaults.maxResults;
 			webSearchMaxUses = readPositiveIntWithFallback(tool.parameters?.max_uses ?? tool.max_uses, 10, 100);
 			webSearchMaxTotalResults = defaults.maxTotalResults;
@@ -1369,6 +1421,9 @@ export function prepareServerToolsForTextRequest(
 			webSearchIncludeHighlights = defaults.includeHighlights;
 			webSearchAllowedDomains = defaults.allowedDomains;
 			webSearchExcludedDomains = defaults.excludedDomains;
+			if (webSearchMode && isResearchMode(webSearchMode) && (webSearchAllowedDomains.length > 0 || webSearchExcludedDomains.length > 0)) {
+				return { ok: false, message: RESEARCH_DOMAINS_UNSUPPORTED };
+			}
 			const userLocation = tool.parameters?.user_location ?? tool.user_location;
 			webSearchUserLocation = userLocation && typeof userLocation === "object" && !Array.isArray(userLocation)
 				? flattenUserLocation(userLocation)
@@ -1660,6 +1715,7 @@ export function prepareServerToolsForTextRequest(
 			webSearchEngine,
 			webSearchMaxResults,
 			webSearchMaxUses,
+			...(webSearchMode ? { webSearchMode } : {}),
 			webSearchMaxTotalResults,
 			webSearchContextSize,
 			webSearchMaxCharacters,
@@ -2184,10 +2240,15 @@ function isUrlAllowedByDomainPolicy(
 
 // The timeout signal stays armed after the headers arrive, so it also bounds
 // the time spent reading the body.
-async function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+async function fetchWithTimeout(
+	input: RequestInfo | URL,
+	init: RequestInit = {},
+	options: { timeoutMs?: number; signal?: AbortSignal } = {},
+): Promise<Response> {
+	const timeout = AbortSignal.timeout(options.timeoutMs ?? SERVER_TOOL_FETCH_TIMEOUT_MS);
 	return fetch(input, {
 		...init,
-		signal: AbortSignal.timeout(SERVER_TOOL_FETCH_TIMEOUT_MS),
+		signal: options.signal ? AbortSignal.any([timeout, options.signal]) : timeout,
 	});
 }
 
@@ -2394,7 +2455,7 @@ async function executeExaFetchToolCall(args: {
 	url: string;
 	maxChars: number;
 	searchConfig: { apiKey: string; baseUrl: string };
-}): Promise<{ toolResult: IRToolResult; webFetchRequests: number }> {
+}): Promise<{ toolResult: IRToolResult; webFetchRequests: number; charge?: SearchCharge }> {
 	try {
 		const response = await fetchWithTimeout(`${args.searchConfig.baseUrl}/contents`, {
 			method: "POST",
@@ -2443,6 +2504,7 @@ async function executeExaFetchToolCall(args: {
 				}),
 			},
 			webFetchRequests: 1,
+			charge: exaContentsCharge(1, json.costDollars),
 		};
 	} catch (error) {
 		return {
@@ -2493,6 +2555,7 @@ function extractLocationStringFromUserLocation(value: unknown): string | null {
 async function executeParallelSearchToolCall(args: {
 	call: { id: string; arguments: string };
 	query: string;
+	mode: string;
 	maxResults: number;
 	searchContextSize: WebSearchContextSize;
 	maxCharacters?: number;
@@ -2500,7 +2563,7 @@ async function executeParallelSearchToolCall(args: {
 	excludedDomains: string[];
 	userLocation?: unknown;
 	searchConfig: { apiKey: string; baseUrl: string };
-}): Promise<{ toolResult: IRToolResult; webSearchResults: number; webSearchExtraResults: number }> {
+}): Promise<{ toolResult: IRToolResult; webSearchResults: number; webSearchExtraResults: number; charge?: SearchCharge }> {
 	const advancedSettings: Record<string, unknown> = {
 		max_results: args.maxResults,
 	};
@@ -2524,6 +2587,7 @@ async function executeParallelSearchToolCall(args: {
 			body: JSON.stringify({
 				objective: args.query,
 				search_queries: [args.query],
+				mode: args.mode,
 				advanced_settings: advancedSettings,
 			}),
 		});
@@ -2567,6 +2631,7 @@ async function executeParallelSearchToolCall(args: {
 				content: JSON.stringify({
 					provider: "parallel",
 					engine: "parallel",
+					mode: args.mode,
 					request_id: toNonEmptyString(json.search_id) ?? null,
 					query: args.query,
 					search_context_size: args.searchContextSize,
@@ -2577,6 +2642,8 @@ async function executeParallelSearchToolCall(args: {
 			},
 			webSearchResults,
 			webSearchExtraResults: Math.max(0, webSearchResults - 10),
+			// Parallel bills the results it returned, not the ones kept here.
+			charge: parallelSearchCharge(args.mode, rawResults.length),
 		};
 	} catch (error) {
 		return {
@@ -2900,11 +2967,227 @@ function insufficientCreditsToolResult(callId: string, tool: "web search" | "web
 	};
 }
 
+type ResearchToolOutcome = {
+	toolResult: IRToolResult;
+	webSearchResults: number;
+	webSearchExtraResults: number;
+	billableWebSearchRequests: number;
+	charge?: SearchCharge;
+};
+
+function researchFailed(callId: string, engine: string, mode: string, content: Record<string, unknown>): ResearchToolOutcome {
+	return {
+		toolResult: { toolCallId: callId, isError: true, content: JSON.stringify({ engine, mode, ...content }) },
+		webSearchResults: 0,
+		webSearchExtraResults: 0,
+		billableWebSearchRequests: 0,
+	};
+}
+
+function waitForPoll(ms: number, signal?: AbortSignal): Promise<void> {
+	return new Promise((resolve) => {
+		const timer = setTimeout(resolve, ms);
+		signal?.addEventListener("abort", () => {
+			clearTimeout(timer);
+			resolve();
+		}, { once: true });
+	});
+}
+
+/** Cited pages in a research answer: every object with a `url` string, in order, once each. */
+function collectCitedPages(value: unknown, pages: Array<{ title: string | null; url: string; highlights: string[] }> = [], depth = 0): typeof pages {
+	if (depth > 5 || !value || typeof value !== "object") return pages;
+	if (Array.isArray(value)) {
+		for (const entry of value) collectCitedPages(entry, pages, depth + 1);
+		return pages;
+	}
+	const record = value as Record<string, unknown>;
+	const url = toNonEmptyString(record.url);
+	if (url && !pages.some((page) => page.url === url)) {
+		const excerpts = Array.isArray(record.excerpts) ? record.excerpts.filter((entry): entry is string => typeof entry === "string") : [];
+		pages.push({ title: toNonEmptyString(record.title) ?? null, url, highlights: excerpts });
+	}
+	for (const [key, nested] of Object.entries(record)) {
+		if (key !== "url" && nested && typeof nested === "object") collectCitedPages(nested, pages, depth + 1);
+	}
+	return pages;
+}
+
+function researchResult(args: {
+	callId: string;
+	engine: string;
+	mode: string;
+	query: string;
+	runId: string | null;
+	answer: string | null;
+	pages: Array<{ title: string | null; url: string; highlights: string[] }>;
+	maxResults: number;
+	charge: SearchCharge;
+}): ResearchToolOutcome {
+	const results = args.pages.slice(0, args.maxResults).map((page) => ({ ...page, text: null }));
+	return {
+		toolResult: {
+			toolCallId: args.callId,
+			content: JSON.stringify({
+				provider: args.engine,
+				engine: args.engine,
+				mode: args.mode,
+				request_id: args.runId,
+				query: args.query,
+				answer: args.answer,
+				results,
+			}),
+		},
+		webSearchResults: results.length,
+		webSearchExtraResults: 0,
+		billableWebSearchRequests: 0,
+		charge: args.charge,
+	};
+}
+
+/**
+ * Exa Agent at a fixed effort (https://docs.exa.ai/reference/agent): create a run, then poll it.
+ * A run that fails, is cancelled, outlasts RESEARCH_TIMEOUT_MS or loses its client is not
+ * charged to the customer.
+ */
+async function executeExaAgentToolCall(args: {
+	call: { id: string; arguments: string };
+	query: string;
+	mode: "agent-minimal" | "agent-low";
+	maxResults: number;
+	searchConfig: { apiKey: string; baseUrl: string };
+	signal?: AbortSignal;
+}): Promise<ResearchToolOutcome> {
+	const failed = (content: Record<string, unknown>) => researchFailed(args.call.id, "exa", args.mode, content);
+	const deadline = Date.now() + RESEARCH_TIMEOUT_MS;
+	const untilDeadline = () => Math.max(1, Math.min(SERVER_TOOL_FETCH_TIMEOUT_MS, deadline - Date.now()));
+	const timedOut = (runId?: string) => ({ error: "research_timeout", ...(runId ? { run_id: runId } : {}), message: `Exa research did not finish within ${RESEARCH_TIMEOUT_MS / 1000} seconds.` });
+	const headers = { "Content-Type": "application/json", "x-api-key": args.searchConfig.apiKey };
+	try {
+		const created = await fetchWithTimeout(`${args.searchConfig.baseUrl}/agent/runs`, {
+			method: "POST",
+			headers,
+			body: JSON.stringify({ query: args.query, effort: args.mode.slice("agent-".length) }),
+		}, { timeoutMs: untilDeadline(), signal: args.signal });
+		if (!created.ok) {
+			return failed({ error: "research_request_failed", status: created.status, message: (await created.text()).slice(0, 1000) });
+		}
+		let run = await created.json() as Record<string, any>;
+		const runId = toNonEmptyString(run.id);
+		if (!runId) return failed({ error: "research_response_invalid", message: "Exa returned no run id." });
+		for (let polls = 0; run.status !== "completed" && run.status !== "failed" && run.status !== "cancelled"; polls += 1) {
+			if (args.signal?.aborted) return failed({ error: "research_cancelled", run_id: runId });
+			const wait = polls === 0 ? 0 : RESEARCH_POLL_INTERVAL_MS;
+			if (Date.now() + wait >= deadline) {
+				return failed(timedOut(runId));
+			}
+			if (wait > 0) await waitForPoll(wait, args.signal);
+			if (args.signal?.aborted) return failed({ error: "research_cancelled", run_id: runId });
+			const polled = await fetchWithTimeout(`${args.searchConfig.baseUrl}/agent/runs/${encodeURIComponent(runId)}`, {
+				method: "GET",
+				headers,
+			}, { timeoutMs: untilDeadline(), signal: args.signal });
+			if (!polled.ok) return failed({ error: "research_request_failed", status: polled.status, run_id: runId });
+			run = await polled.json() as Record<string, any>;
+		}
+		if (run.status !== "completed") {
+			return failed({ error: "research_failed", run_id: runId, status: run.status, message: toNonEmptyString(run.error?.message) ?? null });
+		}
+		if (Date.now() >= deadline) return failed(timedOut(runId));
+		return researchResult({
+			callId: args.call.id,
+			engine: "exa",
+			mode: args.mode,
+			query: args.query,
+			runId,
+			answer: toNonEmptyString(run.output?.text) ?? null,
+			pages: collectCitedPages(run.output?.grounding),
+			maxResults: args.maxResults,
+			charge: exaAgentCharge(args.mode, run.costDollars),
+		});
+	} catch (error) {
+		if (args.signal?.aborted) return failed({ error: "research_cancelled" });
+		if (Date.now() >= deadline) return failed(timedOut());
+		return failed({ error: "research_request_error", message: error instanceof Error ? error.message : String(error) });
+	}
+}
+
+/**
+ * Parallel Task API with a text answer (https://docs.parallel.ai/api-reference/tasks): create a
+ * run, then wait on its result endpoint, which blocks until the run ends (408 while it is still
+ * active). Parallel bills completed runs only; a run that fails, outlasts RESEARCH_TIMEOUT_MS or
+ * loses its client is not charged to the customer.
+ */
+async function executeParallelTaskToolCall(args: {
+	call: { id: string; arguments: string };
+	query: string;
+	mode: "task-lite" | "task-base";
+	maxResults: number;
+	searchConfig: { apiKey: string; baseUrl: string };
+	signal?: AbortSignal;
+}): Promise<ResearchToolOutcome> {
+	const failed = (content: Record<string, unknown>) => researchFailed(args.call.id, "parallel", args.mode, content);
+	const deadline = Date.now() + RESEARCH_TIMEOUT_MS;
+	const timedOut = (runId?: string) => ({ error: "research_timeout", ...(runId ? { run_id: runId } : {}), message: `Parallel research did not finish within ${RESEARCH_TIMEOUT_MS / 1000} seconds.` });
+	const headers = { "Content-Type": "application/json", "x-api-key": args.searchConfig.apiKey };
+	try {
+		const created = await fetchWithTimeout(`${args.searchConfig.baseUrl}/v1/tasks/runs`, {
+			method: "POST",
+			headers,
+			body: JSON.stringify({
+				input: args.query,
+				processor: args.mode.slice("task-".length),
+				task_spec: { output_schema: { type: "text" } },
+			}),
+		}, { timeoutMs: Math.max(1, Math.min(SERVER_TOOL_FETCH_TIMEOUT_MS, deadline - Date.now())), signal: args.signal });
+		if (!created.ok) {
+			return failed({ error: "research_request_failed", status: created.status, message: (await created.text()).slice(0, 1000) });
+		}
+		const runId = toNonEmptyString((await created.json() as Record<string, any>).run_id);
+		if (!runId) return failed({ error: "research_response_invalid", message: "Parallel returned no run id." });
+		for (;;) {
+			const remainingSeconds = Math.floor((deadline - Date.now()) / 1000);
+			if (args.signal?.aborted) return failed({ error: "research_cancelled", run_id: runId });
+			if (remainingSeconds <= 0) {
+				return failed(timedOut(runId));
+			}
+			const response = await fetchWithTimeout(
+				`${args.searchConfig.baseUrl}/v1/tasks/runs/${encodeURIComponent(runId)}/result?timeout=${remainingSeconds}`,
+				{ method: "GET", headers },
+				{ timeoutMs: Math.max(1, deadline - Date.now()), signal: args.signal },
+			);
+			if (response.status === 408) continue;
+			if (!response.ok) return failed({ error: "research_failed", status: response.status, run_id: runId });
+			const json = await response.json() as Record<string, any>;
+			if (json.run?.status && json.run.status !== "completed") {
+				return failed({ error: "research_failed", run_id: runId, status: json.run.status });
+			}
+			if (Date.now() >= deadline) return failed(timedOut(runId));
+			const content = json.output?.content;
+			return researchResult({
+				callId: args.call.id,
+				engine: "parallel",
+				mode: args.mode,
+				query: args.query,
+				runId,
+				answer: typeof content === "string" ? content : content != null ? JSON.stringify(content) : null,
+				pages: collectCitedPages(json.output?.basis),
+				maxResults: args.maxResults,
+				charge: parallelTaskCharge(args.mode),
+			});
+		}
+	} catch (error) {
+		if (args.signal?.aborted) return failed({ error: "research_cancelled" });
+		if (Date.now() >= deadline) return failed(timedOut());
+		return failed({ error: "research_request_error", message: error instanceof Error ? error.message : String(error) });
+	}
+}
+
 async function executeWebFetchToolCall(
 	call: { id: string; arguments: string },
 	config: ServerToolConfig,
 	paidToolsAllowed = true,
-): Promise<{ toolResult: IRToolResult; webFetchRequests: number; billableWebFetchRequests?: number }> {
+): Promise<{ toolResult: IRToolResult; webFetchRequests: number; billableWebFetchRequests?: number; charge?: SearchCharge }> {
 	const args = parseJsonObject(call.arguments);
 	const url = parseWebFetchUrl(args);
 	if (!url) {
@@ -2971,7 +3254,8 @@ async function executeWebFetchToolCall(
 				webFetchRequests: 0,
 			};
 		}
-		return executeDeepSeekFetchToolCall({ call, url, maxChars, searchConfig });
+		const executed = await executeDeepSeekFetchToolCall({ call, url, maxChars, searchConfig });
+		return executed.webFetchRequests > 0 ? { ...executed, charge: deepSeekToolCharge("fetch") } : executed;
 	}
 	if (engine === "exa") {
 		const searchConfig = resolveExaSearchConfig();
@@ -3007,7 +3291,8 @@ async function executeWebFetchToolCall(
 				webFetchRequests: 0,
 			};
 		}
-		return executeParallelFetchToolCall({ call, url, maxChars, searchConfig });
+		const executed = await executeParallelFetchToolCall({ call, url, maxChars, searchConfig });
+		return executed.webFetchRequests > 0 ? { ...executed, charge: parallelExtractCharge(1) } : executed;
 	}
 	if (engine === "firecrawl") {
 		const searchConfig = resolveFirecrawlSearchConfig();
@@ -3178,12 +3463,15 @@ async function executeWebSearchToolCall(
 	config: ServerToolConfig,
 	remainingResults: number,
 	paidToolsAllowed = true,
+	signal?: AbortSignal,
 ): Promise<{
 	toolResult: IRToolResult;
 	webFetchRequests: number;
 	webSearchResults: number;
 	webSearchExtraResults: number;
 	billableWebSearchRequests?: number;
+	/** What this call cost Phaseo, for engines priced per call (not Firecrawl, TinyFish). */
+	charge?: SearchCharge;
 }> {
 	const args = parseJsonObject(call.arguments);
 	// The location set on the tool applies unless the model's call gives its own.
@@ -3264,6 +3552,10 @@ async function executeWebSearchToolCall(
 	const searchContextSize = readWebSearchContextSize(args.search_context_size ?? config.webSearchContextSize ?? "medium");
 	const maxCharacters = parseWebSearchMaxCharacters(args, config);
 	const { allowedDomains, excludedDomains, noAllowedOverlap } = resolveSearchDomains(args, config);
+	// The tool's mode applies to its own engine; an engine the model picks instead runs its default.
+	const toolEngine = config.webSearchEngine === "auto" || !config.webSearchEngine ? DEFAULT_WEB_SEARCH_ENGINE : config.webSearchEngine;
+	const runEngine = engine === "auto" ? DEFAULT_WEB_SEARCH_ENGINE : engine;
+	const mode = (runEngine === toolEngine ? config.webSearchMode : undefined) ?? DEFAULT_WEB_SEARCH_MODE[runEngine] ?? null;
 	if (noAllowedOverlap) {
 		return {
 			toolResult: {
@@ -3274,6 +3566,19 @@ async function executeWebSearchToolCall(
 					message: "allowed_domains must be within this gateway web search tool's allowed_domains",
 					allowed_domains: config.webSearchAllowedDomains ?? [],
 				}),
+			},
+			webFetchRequests: 0,
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
+			billableWebSearchRequests: 0,
+		};
+	}
+	if (mode && isResearchMode(mode) && (allowedDomains.length > 0 || excludedDomains.length > 0)) {
+		return {
+			toolResult: {
+				toolCallId: call.id,
+				isError: true,
+				content: JSON.stringify({ error: "domains_unsupported_for_research", mode, message: RESEARCH_DOMAINS_UNSUPPORTED }),
 			},
 			webFetchRequests: 0,
 			webSearchResults: 0,
@@ -3429,7 +3734,11 @@ async function executeWebSearchToolCall(
 			language: toNonEmptyString(args.language ?? userLocation.language),
 			searchConfig,
 		});
-		return { ...executed, webFetchRequests: 0 };
+		return {
+			...executed,
+			webFetchRequests: 0,
+			...(executed.billableWebSearchRequests > 0 ? { charge: deepSeekToolCharge("search") } : {}),
+		};
 	}
 	if (engine === "perplexity") {
 		const searchConfig = resolvePerplexitySearchConfig();
@@ -3437,11 +3746,13 @@ async function executeWebSearchToolCall(
 		try {
 			const country = args.user_location && typeof args.user_location === "object" ? toNonEmptyString((args.user_location as Record<string, unknown>).country) : null;
 			const domainFilter = allowedDomains.length ? allowedDomains : excludedDomains.map((domain) => `-${domain}`);
-			const response = await fetchWithTimeout(`${searchConfig.baseUrl}/search`, { method: "POST", headers: { Authorization: `Bearer ${searchConfig.apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ query, max_results: Math.min(20, maxResults), search_context_size: searchContextSize, ...(domainFilter.length ? { search_domain_filter: domainFilter } : {}), ...(country ? { country: country.toUpperCase() } : {}) }) });
+			const perplexityMode = mode ?? "standard";
+			const response = await fetchWithTimeout(`${searchConfig.baseUrl}/search`, { method: "POST", headers: { Authorization: `Bearer ${searchConfig.apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ query, max_results: Math.min(20, maxResults), search_context_size: searchContextSize, ...(perplexityMode === "fast" ? { search_type: "fast" } : {}), ...(domainFilter.length ? { search_domain_filter: domainFilter } : {}), ...(country ? { country: country.toUpperCase() } : {}) }) });
 			if (!response.ok) return { toolResult: { toolCallId: call.id, isError: true, content: JSON.stringify({ error: "search_request_failed", status: response.status }) }, webFetchRequests: 0, webSearchResults: 0, webSearchExtraResults: 0 };
 			const json = await response.json() as Record<string, any>;
 			const results = (Array.isArray(json.results) ? json.results : []).slice(0, maxResults).map((result: any) => ({ title: toNonEmptyString(result.title), url: toNonEmptyString(result.url), snippet: toNonEmptyString(result.snippet), published_date: toNonEmptyString(result.date), last_updated: toNonEmptyString(result.last_updated) }));
-			return { toolResult: { toolCallId: call.id, content: JSON.stringify({ provider: "perplexity", engine, request_id: toNonEmptyString(json.id), query, results }) }, webFetchRequests: 0, webSearchResults: results.length, webSearchExtraResults: Math.max(0, results.length - 10) };
+			// Perplexity bills every successful request, empty results included.
+			return { toolResult: { toolCallId: call.id, content: JSON.stringify({ provider: "perplexity", engine, mode: perplexityMode, request_id: toNonEmptyString(json.id), query, results }) }, webFetchRequests: 0, webSearchResults: results.length, webSearchExtraResults: Math.max(0, results.length - 10), charge: perplexitySearchCharge(perplexityMode) };
 		} catch (error) {
 			return { toolResult: { toolCallId: call.id, isError: true, content: JSON.stringify({ error: "search_request_error", message: error instanceof Error ? error.message : String(error) }) }, webFetchRequests: 0, webSearchResults: 0, webSearchExtraResults: 0 };
 		}
@@ -3465,9 +3776,16 @@ async function executeWebSearchToolCall(
 				webSearchExtraResults: 0,
 			};
 		}
+		if (mode === "task-lite" || mode === "task-base") {
+			return {
+				...await executeParallelTaskToolCall({ call, query, mode, maxResults, searchConfig: parallelConfig, signal }),
+				webFetchRequests: 0,
+			};
+		}
 		const executed = await executeParallelSearchToolCall({
 			call,
 			query,
+			mode: mode ?? "advanced",
 			maxResults,
 			searchContextSize,
 			maxCharacters,
@@ -3534,10 +3852,17 @@ async function executeWebSearchToolCall(
 			webSearchExtraResults: 0,
 		};
 	}
+	if (mode === "agent-minimal" || mode === "agent-low") {
+		return {
+			...await executeExaAgentToolCall({ call, query, mode, maxResults, searchConfig, signal }),
+			webFetchRequests: 0,
+		};
+	}
+	const exaMode = mode ?? "auto";
 	const contents = buildExaContentsForSearch({ includeText, includeHighlights, searchContextSize, maxCharacters });
 	const exaBody: Record<string, unknown> = {
 		query,
-		type: "auto",
+		type: exaMode,
 		numResults: maxResults,
 		contents,
 	};
@@ -3555,7 +3880,7 @@ async function executeWebSearchToolCall(
 				"x-api-key": searchConfig.apiKey,
 			},
 			body: JSON.stringify(exaBody),
-		});
+		}, { timeoutMs: exaMode.startsWith("deep") ? DEEP_SEARCH_TIMEOUT_MS : undefined });
 
 		if (!response.ok) {
 			const failureText = await response.text();
@@ -3589,6 +3914,8 @@ async function executeWebSearchToolCall(
 			summary: toNonEmptyString(result?.summary) ?? null,
 		}));
 		const webSearchResults = normalizedResults.length;
+		// Deep search synthesizes an answer in `output.content`.
+		const answer = toNonEmptyString(json.output?.content);
 
 		return {
 			toolResult: {
@@ -3596,18 +3923,26 @@ async function executeWebSearchToolCall(
 				content: JSON.stringify({
 					provider: engine === "auto" ? "exa" : engine,
 					engine: "exa",
+					mode: exaMode,
 					request_id: toNonEmptyString(json.requestId) ?? null,
 					search_type: toNonEmptyString(json.searchType) ?? null,
 					query,
 					search_context_size: searchContextSize,
 					allowed_domains: allowedDomains,
 					excluded_domains: excludedDomains,
+					...(answer ? { answer } : {}),
 					results: normalizedResults,
 				}),
 			},
 			webFetchRequests: 0,
 			webSearchResults,
 			webSearchExtraResults: Math.max(0, webSearchResults - 10),
+			charge: exaSearchCharge({
+				mode: exaMode,
+				results: results.length,
+				contentTypes: Object.keys(contents).length,
+				costDollars: json.costDollars,
+			}),
 		};
 	} catch (error) {
 		return {
@@ -3690,6 +4025,7 @@ export async function buildServerToolContinuation(
 	const toolResults: IRToolResult[] = [];
 	let advisorUsage: IRUsage | undefined;
 	const imageGenerationPricing: ServerToolPricing[] = [];
+	const searchCharges: SearchCharge[] = [];
 	const usage: ServerToolExecutionMetrics = {
 		datetimeRequests: 0,
 		webSearchRequests: 0,
@@ -3752,12 +4088,18 @@ export async function buildServerToolContinuation(
 				config,
 				remainingSearchResults,
 				options?.paidToolsAllowed !== false,
+				options?.signal,
 			);
 			toolResults.push(executed.toolResult);
 			const webSearchRequestsBefore = usage.webSearchRequests;
+			const extraResultsBefore = usage.webSearchExtraResults;
 			usage.webSearchRequests += 1;
+			// A search priced per call is charged at its provider's cost (searchCharges) and
+			// stays off the flat meters.
+			const charge = executed.toolResult.isError ? undefined : executed.charge;
+			if (charge) searchCharges.push(charge);
 			// A search that failed or never reached a provider costs Phaseo nothing.
-			const billableSearches = executed.toolResult.isError ? 0 : executed.billableWebSearchRequests;
+			const billableSearches = executed.toolResult.isError || charge ? 0 : executed.billableWebSearchRequests;
 			if (typeof billableSearches === "number") {
 				usage.billableWebSearchRequests =
 					(usage.billableWebSearchRequests ?? webSearchRequestsBefore) + Math.max(0, billableSearches);
@@ -3766,6 +4108,11 @@ export async function buildServerToolContinuation(
 			}
 			usage.webSearchResults += Math.max(0, executed.webSearchResults);
 			usage.webSearchExtraResults += Math.max(0, executed.webSearchExtraResults);
+			if (charge) {
+				usage.billableWebSearchExtraResults = usage.billableWebSearchExtraResults ?? extraResultsBefore;
+			} else if (usage.billableWebSearchExtraResults !== undefined) {
+				usage.billableWebSearchExtraResults += Math.max(0, executed.webSearchExtraResults);
+			}
 			usage.webFetchRequests += Math.max(0, executed.webFetchRequests);
 			remainingSearchResults = Math.max(0, remainingSearchResults - Math.max(0, executed.webSearchResults));
 			config.webSearchResultsUsed = (config.webSearchResultsUsed ?? 0) + Math.max(0, executed.webSearchResults);
@@ -3787,9 +4134,12 @@ export async function buildServerToolContinuation(
 			toolResults.push(executed.toolResult);
 			const webFetchRequestsBefore = usage.webFetchRequests;
 			usage.webFetchRequests += Math.max(0, executed.webFetchRequests);
-			if (typeof executed.billableWebFetchRequests === "number") {
+			const fetchCharge = executed.toolResult.isError ? undefined : executed.charge;
+			if (fetchCharge) searchCharges.push(fetchCharge);
+			const billableFetches = fetchCharge ? 0 : executed.billableWebFetchRequests;
+			if (typeof billableFetches === "number") {
 				usage.billableWebFetchRequests =
-					(usage.billableWebFetchRequests ?? webFetchRequestsBefore) + Math.max(0, executed.billableWebFetchRequests);
+					(usage.billableWebFetchRequests ?? webFetchRequestsBefore) + Math.max(0, billableFetches);
 			} else if (usage.billableWebFetchRequests !== undefined) {
 				usage.billableWebFetchRequests += Math.max(0, executed.webFetchRequests);
 			}
@@ -4070,6 +4420,7 @@ export async function buildServerToolContinuation(
 		}
 	}
 
+	const searchPricing = searchChargesToPricing(searchCharges);
 	return {
 		assistantMessage: {
 			role: "assistant",
@@ -4092,6 +4443,7 @@ export async function buildServerToolContinuation(
 		usage,
 		advisorUsage,
 		...(imageGenerationPricing.length > 0 ? { imageGenerationPricing } : {}),
+		...(searchPricing ? { searchPricing } : {}),
 	};
 }
 
@@ -4293,7 +4645,7 @@ export function attachServerToolUsageToRawUsage(
 	base.server_tool_web_search_requests =
 		(Number(base.server_tool_web_search_requests ?? 0) || 0) + Math.max(0, args.billableWebSearchRequests ?? args.webSearchRequests);
 	base.server_tool_web_search_extra_results =
-		(Number(base.server_tool_web_search_extra_results ?? 0) || 0) + Math.max(0, args.webSearchExtraResults);
+		(Number(base.server_tool_web_search_extra_results ?? 0) || 0) + Math.max(0, args.billableWebSearchExtraResults ?? args.webSearchExtraResults);
 	base.server_tool_web_fetch_requests =
 		(Number(base.server_tool_web_fetch_requests ?? 0) || 0) + Math.max(0, args.billableWebFetchRequests ?? args.webFetchRequests);
 	base.server_tool_advisor_requests =

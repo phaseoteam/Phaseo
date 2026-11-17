@@ -12411,6 +12411,9 @@ components:
                 - perplexity
                 - tinyfish
                 - deepseek
+            mode:
+              type: string
+              description: 'Como o mecanismo pesquisa. Exa: lite, auto (padrão), deep-lite, deep, agent-minimal ou agent-low. Parallel: turbo, fast, basic, advanced (padrão), task-lite ou task-base. Perplexity: standard (padrão) ou fast. Os outros mecanismos não têm modos. Definido só na ferramenta.'
             max_results:
               type: integer
               minimum: 1
@@ -12426,6 +12429,9 @@ components:
             include_highlights:
               type: boolean
           additionalProperties: false
+        mode:
+          type: string
+          description: 'Como o mecanismo pesquisa. Exa: lite, auto (padrão), deep-lite, deep, agent-minimal ou agent-low. Parallel: turbo, fast, basic, advanced (padrão), task-lite ou task-base. Perplexity: standard (padrão) ou fast. Os outros mecanismos não têm modos. Definido só na ferramenta.'
         max_results:
           type: integer
           minimum: 1
@@ -12511,6 +12517,9 @@ components:
             - perplexity
             - tinyfish
             - deepseek
+        mode:
+          type: string
+          description: 'Como o mecanismo pesquisa. Exa: lite, auto (padrão), deep-lite, deep, agent-minimal ou agent-low. Parallel: turbo, fast, basic, advanced (padrão), task-lite ou task-base. Perplexity: standard (padrão) ou fast. Os outros mecanismos não têm modos. Definido só na ferramenta.'
         max_results:
           type: integer
           minimum: 1

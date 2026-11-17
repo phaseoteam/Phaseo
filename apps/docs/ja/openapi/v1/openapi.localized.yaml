@@ -12411,6 +12411,9 @@ components:
                 - perplexity
                 - tinyfish
                 - deepseek
+            mode:
+              type: string
+              description: 'エンジンの検索方法。Exa: lite、auto (既定)、deep-lite、deep、agent-minimal、agent-low。Parallel: turbo、fast、basic、advanced (既定)、task-lite、task-base。Perplexity: standard (既定)、fast。その他のエンジンにはモードはありません。ツールでのみ設定できます。'
             max_results:
               type: integer
               minimum: 1
@@ -12426,6 +12429,9 @@ components:
             include_highlights:
               type: boolean
           additionalProperties: false
+        mode:
+          type: string
+          description: 'エンジンの検索方法。Exa: lite、auto (既定)、deep-lite、deep、agent-minimal、agent-low。Parallel: turbo、fast、basic、advanced (既定)、task-lite、task-base。Perplexity: standard (既定)、fast。その他のエンジンにはモードはありません。ツールでのみ設定できます。'
         max_results:
           type: integer
           minimum: 1
@@ -12511,6 +12517,9 @@ components:
             - perplexity
             - tinyfish
             - deepseek
+        mode:
+          type: string
+          description: 'エンジンの検索方法。Exa: lite、auto (既定)、deep-lite、deep、agent-minimal、agent-low。Parallel: turbo、fast、basic、advanced (既定)、task-lite、task-base。Perplexity: standard (既定)、fast。その他のエンジンにはモードはありません。ツールでのみ設定できます。'
         max_results:
           type: integer
           minimum: 1

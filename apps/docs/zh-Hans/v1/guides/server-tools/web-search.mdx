@@ -45,6 +45,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | 参数 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `engine` | string | `exa` | `auto`、`native`、`exa`、`parallel`、`firecrawl`、`perplexity`、`tinyfish` 或 `deepseek`。参见[选择引擎](#choose-an-engine)。 |
+| `mode` | string | 引擎默认值 | 引擎的搜索方式：更快、更深入，或一次研究运行。参见[选择模式](#choose-a-mode)。 |
 | `max_results` | integer | `5` | 每次搜索调用的结果数，最多 `25`。 |
 | `max_total_results` | integer | `25` | 请求中所有搜索的结果总数，最多 `100`。不会低于 `max_results`。 |
 | `max_uses` | integer | `10` | 每个请求的搜索调用次数，最多 `100`。 |
@@ -92,6 +93,30 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 发送 OpenAI 自己的 `{ "type": "web_search" }` 工具，效果与 `engine: "native"` 相同。只在工具定义中设置 `native`：如果模型在调用中请求 `native`，调用会返回 `unsupported_search_engine`，因为提供商的工具必须在请求发送前选定。
 
+<span id="choose-a-mode"></span>
+## 选择模式
+
+在工具上设置 `mode`，选择其引擎的搜索方式。模型无法更改它，因此每次调用的费用都不会超过你选择的模式。如果模型切换到另一个引擎，该引擎以默认模式运行。引擎不支持的模式会返回 400。
+
+| 引擎 | `mode` | 运行内容 | 每次调用价格 |
+| --- | --- | --- | --- |
+| `exa` | `lite` | 面向聊天和语音的低延迟搜索 | $0.004 |
+| `exa` | `auto` (默认) | 均衡搜索 | $0.007 |
+| `exa` | `deep-lite` | 轻量多步研究，约 4 秒 | $0.012 |
+| `exa` | `deep` | 带合成 `answer` 的多步研究，4 到 15 秒 | $0.012 |
+| `exa` | `agent-minimal` | 最低 effort 的 Exa Agent 研究运行 | $0.012 |
+| `exa` | `agent-low` | 低 effort 的 Exa Agent 研究运行 | $0.025 |
+| `parallel` | `turbo`, `fast` | Parallel 最快的搜索 | $0.001 |
+| `parallel` | `basic`, `advanced` (默认) | Parallel 更高质量的搜索 | $0.005 |
+| `parallel` | `task-lite` | Parallel Task 研究运行，10 到 60 秒 | $0.005 |
+| `parallel` | `task-base` | Parallel Task 研究运行，15 到 100 秒 | $0.010 |
+| `perplexity` | `standard` (默认) | Perplexity Search | $0.005 |
+| `perplexity` | `fast` | Perplexity Fast Search | $0.001 |
+
+Exa 和 Parallel 的搜索在前 10 条之后每条结果另收 $0.001，Exa 还会按返回的每种内容类型每页收取 $0.001，因此在 5 条结果上返回高亮和文本会增加 $0.010。`firecrawl`、`tinyfish` 和 `deepseek` 没有模式。
+
+研究模式返回一个 `answer`，以及它引用的页面（作为 `results`）。120 秒后仍未完成的研究运行返回 `research_timeout`。超时、失败或客户端断开的运行不收费。研究模式不能限定域名，因此带有 `allowed_domains` 或 `excluded_domains` 的研究工具会返回 400。`native` 引擎没有模式。
+
 ## 按域名过滤
 
 当答案必须来自一组固定来源时，使用 `allowed_domains`；要在开放搜索中去掉特定网站时，使用 `excluded_domains`。
@@ -130,4 +155,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-除非模型价格卡为 `server_tool_web_search_requests` 和 `server_tool_web_search_extra_results` 设置了自己的价格，Phaseo 对每次托管搜索收取 $0.007，前 10 条之后的每条结果另收 $0.001。失败的搜索不计费；TinyFish Search 在其公开方案中免费，因此 `engine: "tinyfish"` 不增加搜索费用。即使模型免费，使用付费引擎搜索也需要账户有余额。原生搜索按提供商公布的价格以 `native_web_search_requests` 计费：例如 OpenAI 和 Anthropic 为每 1,000 次搜索 $10，DeepSeek 为每 1,000 次 $0.75，且 DeepSeek 只对返回结果的搜索计数。DeepSeek 还会对每次网页抓取（用其读取链接工具读取 URL）按每 1,000 次 $0.75 计费，计为 `native_web_fetch_requests`。开启推理后，DeepSeek 的一次回答可能运行十几次或更多搜索，它读取的结果会计入输入 token。
+Phaseo 按各引擎向 Phaseo 收取的费用对 Exa、Parallel、Perplexity 和 DeepSeek 上的搜索计费：价格见[选择模式](#choose-a-mode)，DeepSeek 搜索为 $0.00075，仅在返回结果时计费。对于 Exa，费用是 Exa 为该次调用报告的成本，Exa 未报告时则按其标价。每笔费用都是请求 `pricing_lines` 中的一行，包含其 `engine`、`mode` 和 `price_source`。Firecrawl 搜索按 $0.007 计费，前 10 条之后每条结果另收 $0.001。失败的搜索不计费；TinyFish Search 在其公开方案中免费，因此 `engine: "tinyfish"` 不增加搜索费用。即使模型免费，使用付费引擎搜索也需要账户有余额。原生搜索按提供商公布的价格以 `native_web_search_requests` 计费：例如 OpenAI 和 Anthropic 为每 1,000 次搜索 $10，DeepSeek 为每 1,000 次 $0.75，且 DeepSeek 只对返回结果的搜索计数。DeepSeek 还会对每次网页抓取（用其读取链接工具读取 URL）按每 1,000 次 $0.75 计费，计为 `native_web_fetch_requests`。开启推理后，DeepSeek 的一次回答可能运行十几次或更多搜索，它读取的结果会计入输入 token。
