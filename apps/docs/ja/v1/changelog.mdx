@@ -8,6 +8,23 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"製品","api":"API と SDK","models":"モデル"}} clearLabel="クリア" />
 
+<Update label="2026年11月17日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- `@phaseo/cli` `0.4.0` は一覧を表形式で表示し、`phaseo pricing models` で入力・出力・キャッシュ読み取りの料金を示し、`phaseo pricing get <model>` を追加します。詳しくは [Phaseo CLI](./guides/integrations/phaseo-cli.mdx) ([#3774](https://github.com/phaseoteam/Phaseo/pull/3774), [#3780](https://github.com/phaseoteam/Phaseo/pull/3780))。
+- `@phaseo/cli` `0.4.0` は、`spend-rules`、`budgets`、`byok`、`rate-limits`、`classifiers` を含むすべての `/v1` 管理ルートのコマンドを追加します ([#3312](https://github.com/phaseoteam/Phaseo/pull/3312), [#3323](https://github.com/phaseoteam/Phaseo/pull/3323))。
+- `phaseo mcp` は `phaseo login` のアカウントでローカルエージェント向けに Phaseo MCP サーバーを起動します。`--manage` を指定しない限り読み取り専用です ([#3659](https://github.com/phaseoteam/Phaseo/pull/3659))。
+- `phaseo codex` などのコーディングエージェントのセットアップでは、CLI のサインインでキーを作成する代わりに、ダッシュボードで API キーを承認するよう求めます ([#3584](https://github.com/phaseoteam/Phaseo/pull/3584))。
+- `GET /v1/pricing/models` は各項目の `service_tier` を返します。詳しくは [モデルの料金を一覧表示](./api-reference/endpoint/pricing-models.mdx) ([#3774](https://github.com/phaseoteam/Phaseo/pull/3774))。
+- `GET /v1/analytics` は、`Liquid AI` のように Phaseo の表示どおりのプロバイダー名を返します ([#3777](https://github.com/phaseoteam/Phaseo/pull/3777))。
+
+</div>
+
+</Update>
+
 <Update label="2026年11月16日">
 
 <div data-changelog-category="api">

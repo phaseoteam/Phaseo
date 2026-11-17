@@ -8,6 +8,23 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"产品","api":"API 与 SDK","models":"模型"}} clearLabel="清除" />
 
+<Update label="2026年11月17日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `@phaseo/cli` `0.4.0` 以表格显示列表，在 `phaseo pricing models` 中显示输入、输出和缓存读取价格，并新增 `phaseo pricing get <model>`；参见 [Phaseo CLI](./guides/integrations/phaseo-cli.mdx) ([#3774](https://github.com/phaseoteam/Phaseo/pull/3774), [#3780](https://github.com/phaseoteam/Phaseo/pull/3780))。
+- `@phaseo/cli` `0.4.0` 为所有 `/v1` 管理路由新增命令，包括 `spend-rules`、`budgets`、`byok`、`rate-limits` 和 `classifiers` ([#3312](https://github.com/phaseoteam/Phaseo/pull/3312), [#3323](https://github.com/phaseoteam/Phaseo/pull/3323))。
+- `phaseo mcp` 使用你的 `phaseo login` 为本地智能体运行 Phaseo MCP 服务器，除非传入 `--manage`，否则为只读 ([#3659](https://github.com/phaseoteam/Phaseo/pull/3659))。
+- `phaseo codex` 等编程智能体的设置会请你在控制台中批准其 API 密钥，而不是用你的 CLI 登录直接创建 ([#3584](https://github.com/phaseoteam/Phaseo/pull/3584))。
+- `GET /v1/pricing/models` 返回每个条目的 `service_tier`；参见 [列出模型定价](./api-reference/endpoint/pricing-models.mdx) ([#3774](https://github.com/phaseoteam/Phaseo/pull/3774))。
+- `GET /v1/analytics` 按 Phaseo 显示的方式返回供应商名称，例如 `Liquid AI` ([#3777](https://github.com/phaseoteam/Phaseo/pull/3777))。
+
+</div>
+
+</Update>
+
 <Update label="2026年11月16日">
 
 <div data-changelog-category="api">
