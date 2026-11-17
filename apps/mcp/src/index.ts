@@ -157,7 +157,7 @@ const controlPlaneReadTools: ReadToolDefinition[] = [
 	{
 		name: "logs_list",
 		title: "List Phaseo request logs",
-		description: "Search request logs by time, status, provider, model, endpoint, request, key, session, or error code. Read-only.",
+		description: "Search request logs by time, status, provider, model, endpoint, request, key, session, or error code. Read-only. API reference: https://phaseo.app/docs/v1/api-reference/endpoint/logs-list",
 		scopes: ["activity:read"],
 		inputSchema: {
 			since: z.string().max(50).optional(), from: z.string().datetime().optional(), to: z.string().datetime().optional(),
@@ -849,7 +849,7 @@ export function createServer(
 		{
 			title: "Phaseo model explorer",
 			icons: [{ src: modelExplorerIcon, mimeType: "image/svg+xml", sizes: ["20x20"] }],
-			description: "Use this when the user wants to open the Phaseo model explorer to browse, filter and compare current AI models themselves. Opens with the first page of the live catalogue. For a specific search, use models_list instead. Read-only.",
+			description: "Open an interactive explorer for browsing, filtering, and comparing current AI models. The explorer opens with the first page of the live catalogue. Read-only.",
 			inputSchema: {},
 			outputSchema: { models: z.array(z.object(modelSummarySchema)) },
 			annotations: { title: "Phaseo model explorer", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -874,7 +874,7 @@ export function createServer(
 		{
 			title: "Search Phaseo models",
 			icons: [{ src: modelExplorerIcon, mimeType: "image/svg+xml", sizes: ["20x20"] }],
-			description: "Use this when the user wants to find or compare current AI models, including the cheapest paid standard-tier price and provider-by-provider pricing. A free provider is reported explicitly and never presented as if every provider were free. Filters and sorts the live Phaseo catalogue by input and output type, required request parameters (for example tools, response_format or reasoning), context window, release date, lifecycle and price; it does not measure model quality. With requiredParameters, prices and providers come only from offers that support every listed parameter. releasedAfter leaves out models whose release date Phaseo does not know. Read-only.",
+			description: "Search the live AI model catalogue and compare the cheapest paid standard-tier price and provider-by-provider pricing. A free provider is reported explicitly and never presented as if every provider were free. Filters and sorts the live Phaseo catalogue by input and output type, required request parameters (for example tools, response_format or reasoning), context window, release date, lifecycle and price; it does not measure model quality. With requiredParameters, prices and providers come only from offers that support every listed parameter. releasedAfter leaves out models whose release date Phaseo does not know. Read-only.",
 			inputSchema: {
 				query: z.string().max(200).optional(),
 				provider: z.string().max(100).optional(),
@@ -929,7 +929,7 @@ export function createServer(
 		"benchmark_rankings",
 		{
 			title: "Rank models by benchmark",
-			description: "Use this when the user asks for the best current general, coding, or agentic AI models. Returns a named third-party benchmark ranking and Phaseo Gateway availability without changing the benchmark order. The cost-efficiency focus reports benchmark evaluation cost, not inference token price; use models_list for the cheapest inference model. Read-only.",
+			description: "Return a named third-party AI model benchmark ranking for general, coding, agentic, or cost-efficiency workloads, with Phaseo Gateway availability. Rankings preserve the benchmark order. Cost-efficiency results report benchmark evaluation cost rather than inference token prices. Read-only.",
 			inputSchema: {
 				focus: z.enum(["general", "coding", "agentic", "cost_efficiency"]).default("general"),
 				gatewayAvailableOnly: z.boolean().default(false),
