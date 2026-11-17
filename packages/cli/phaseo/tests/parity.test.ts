@@ -150,7 +150,7 @@ test("help covers every command and its groups", () => {
 });
 
 test("human output", () => {
-	assert.equal(renderParityResult("routing successors list", { data: [{ model: "openai/gpt-4", successor: null, updated_at: "x" }] }), "openai/gpt-4 -> never\n");
+	assert.equal(renderParityResult("routing successors list", { data: [{ model: "openai/gpt-4", successor: null, updated_at: "x" }] }), "NAME          SUCCESSOR\nopenai/gpt-4  never\n");
 	assert.equal(renderParityResult("authorized-apps list", { data: [] }), "No results.\n");
 	assert.equal(renderParityResult("profile get", { data: { display_name: "Ada", obfuscate_info: false } }), "display name: Ada\nobfuscate info: false\n");
 	assert.equal(renderParityResult("invites accept", { data: { id: "req_1", status: "pending" } }), "Asked to join the workspace.\nID: req_1\n");

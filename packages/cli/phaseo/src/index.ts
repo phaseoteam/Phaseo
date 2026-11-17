@@ -23,7 +23,9 @@ import {
 import { PHASEO_MCP_URL, createMcpTokenSource, exchangeCliTokenForMcp, mcpEndpoint, mcpScopes, runMcpBridge } from "./mcp.js";
 import { clearSession, readSession, writeSession } from "./session.js";
 import { openUrl, prefersDeviceCodeByEnvironment } from "./browser.js";
-import { printError, printJson, sanitizeTerminalText, terminalUi, type TerminalOptions } from "./output.js";
+import { printError, printJson, renderTable, sanitizeTerminalText, terminalUi, type TableColumn, type TerminalOptions } from "./output.js";
+import { filterPricingRoutes, renderPricingDetails, renderPricingTable } from "./pricing.js";
+import { keysPageUrl, modelPageUrl, providerPageUrl, requestPageUrl } from "./links.js";
 import { CLI_VERSION } from "./generated/meta.js";
 import { createDoctorReport, detectInstalledPackageManager, type DoctorReport, type PackageManager } from "./installation.js";
 import { getVersionInfo, removeCommandFor, updateCommandFor, updateInvocationFor } from "./release.js";
@@ -208,6 +210,8 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"",
 			"Environment:",
 			"  PHASEO_API_URL  Override API root, defaults to https://api.phaseo.app",
+			"  PHASEO_WEB_URL  Web app that table links open, defaults to https://phaseo.app",
+			"  NO_HYPERLINKS   Print plain text instead of clickable links; FORCE_HYPERLINK=1 turns links on",
 			"  PHASEO_ALLOW_CUSTOM_API_URL=1  Allow login to an API root other than api.phaseo.app or loopback (same as --allow-custom-api-url)",
 		],
 	},
@@ -393,11 +397,13 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"endpoints list": { usage: ["phaseo endpoints list [--json]"] },
 	pricing: {
 		usage: [
-			"phaseo pricing models [--json]",
+			"phaseo pricing models [--model <text>] [--provider <id>] [--endpoint <id>] [--tier <tier>] [--limit <n>] [--details] [--json]",
+			"phaseo pricing get <model> [--provider <id>] [--endpoint <id>] [--tier <tier>] [--json]",
 			"phaseo pricing calculate --provider <provider> --model <model> --endpoint <endpoint> --usage-json <json>",
 		],
 	},
-	"pricing models": { usage: ["phaseo pricing models [--json]"] },
+	"pricing models": { usage: ["phaseo pricing models [--model <text>] [--provider <id>] [--endpoint <id>] [--tier <tier>] [--limit <n>] [--details] [--json]"] },
+	"pricing get": { usage: ["phaseo pricing get <model> [--provider <id>] [--endpoint <id>] [--tier <tier>] [--json]"] },
 	"pricing calculate": { usage: ["phaseo pricing calculate --provider <provider> --model <model> --endpoint <endpoint> --usage-json <json>"] },
 	credits: {
 		usage: [
@@ -428,8 +434,8 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	},
 	"logs list": { usage: ["phaseo logs list [--since <15m|1h|7d>] [--from <iso>] [--to <iso>] [--status <success|error|2xx|4xx|5xx|code>] [--provider <id>] [--model <id>] [--endpoint <path>] [--request-id <id>] [--key-id <id>] [--session-id <id>] [--error-code <code>] [--workspace <id>] [--limit <n>] [--offset <n>] [--json]"] },
 	"logs get": { usage: ["phaseo logs get <request-id> [--workspace <id>] [--json]"] },
-	analytics: { usage: ["phaseo analytics get [--date YYYY-MM-DD] [--json]"] },
-	"analytics get": { usage: ["phaseo analytics get [--date YYYY-MM-DD] [--json]"] },
+	analytics: { usage: ["phaseo analytics get [--date YYYY-MM-DD] [--limit <n>] [--offset <n>] [--json]"] },
+	"analytics get": { usage: ["phaseo analytics get [--date YYYY-MM-DD] [--limit <n>] [--offset <n>] [--json]"] },
 	generation: { usage: ["phaseo generation get --id <request-id> [--json]"] },
 	"generation get": { usage: ["phaseo generation get --id <request-id> [--json]"] },
 	webhooks: {
@@ -710,6 +716,43 @@ export function renderList(items: any[], render: (item: any) => string): string 
 
 function printList(items: any[], render: (item: any) => string): void {
 	process.stdout.write(renderList(items, render));
+}
+
+function printTable(items: any[], columns: TableColumn<any>[]): void {
+	process.stdout.write(renderTable(items, columns));
+}
+
+/** "2026-11-16 21:41:37" in UTC, for table cells. */
+export function formatTimestamp(value: unknown): string {
+	if (typeof value !== "string" || !value) return "-";
+	const date = new Date(value);
+	if (Number.isNaN(date.getTime())) return value;
+	return date.toISOString().replace("T", " ").slice(0, 19);
+}
+
+/** "$12.50" style money for table cells; amounts under a cent keep three significant digits. */
+export function formatUsd(value: unknown): string {
+	if (value === null || value === undefined || value === "") return "-";
+	const amount = Number(value);
+	if (!Number.isFinite(amount)) return "-";
+	if (amount === 0) return "$0.00";
+	const digits = Math.abs(amount) >= 0.01 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumSignificantDigits: 3 };
+	return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", ...digits }).format(amount);
+}
+
+function formatCount(value: unknown): string {
+	if (value === null || value === undefined || value === "") return "-";
+	const amount = Number(value);
+	return Number.isFinite(amount) ? new Intl.NumberFormat("en-US").format(amount) : "-";
+}
+
+function formatLatency(value: unknown): string {
+	return value === null || value === undefined ? "-" : `${formatCount(value)} ms`;
+}
+
+function keyLimit(key: any): string {
+	if (key.limit === null || key.limit === undefined) return "none";
+	return `${formatUsd(key.limit)}${key.limit_reset ? ` ${key.limit_reset}` : ""}`;
 }
 
 function countRenderedLines(text: string): number {
@@ -1257,7 +1300,15 @@ async function listKeys(flags: Record<string, string | boolean>) {
 		include_disabled: flagBool(flags, "include-disabled") || undefined,
 	}));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (key) => `${key.disabled ? "paused" : "active"} ${key.name ?? key.id} ${key.id} ${key.prefix ?? ""}`.trim());
+	printTable(body.data ?? [], [
+		{ header: "STATUS", value: (key) => key.disabled ? "paused" : key.status ?? "active" },
+		{ header: "NAME", value: (key) => key.name ?? key.label, shrink: true, link: () => keysPageUrl() },
+		{ header: "PREFIX", value: (key) => key.prefix },
+		{ header: "LIMIT", value: keyLimit, align: "right" },
+		{ header: "USED", value: (key) => formatUsd(key.usage), align: "right" },
+		{ header: "LAST USED (UTC)", value: (key) => formatTimestamp(key.last_used_at) },
+		{ header: "ID", value: (key) => key.id },
+	]);
 }
 
 async function createKey(flags: Record<string, string | boolean>) {
@@ -1329,7 +1380,12 @@ async function currentKey(flags: Record<string, string | boolean>) {
 async function listWorkspaces(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/workspaces", { limit: flagString(flags, "limit"), offset: flagString(flags, "offset") }));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (workspace) => `${workspace.name ?? workspace.id} ${workspace.slug ?? ""} ${workspace.id}`.trim());
+	printTable(body.data ?? [], [
+		{ header: "NAME", value: (workspace) => workspace.name, shrink: true },
+		{ header: "SLUG", value: (workspace) => workspace.slug, shrink: true },
+		{ header: "CREATED", value: (workspace) => formatTimestamp(workspace.created_at).slice(0, 10) },
+		{ header: "ID", value: (workspace) => workspace.id },
+	]);
 }
 
 async function createWorkspace(flags: Record<string, string | boolean>) {
@@ -1368,7 +1424,11 @@ async function listWorkspaceMembers(id: string | undefined, flags: Record<string
 	if (!id) throw new Error("Workspace id or slug is required");
 	const body = await request(`/workspaces/${encodeURIComponent(id)}/members`);
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (member) => `${member.role ?? "member"} ${member.user_id}`);
+	printTable(body.data ?? [], [
+		{ header: "ROLE", value: (member) => member.role ?? "member" },
+		{ header: "NAME", value: (member) => member.display_name ?? member.email, shrink: true },
+		{ header: "USER ID", value: (member) => member.user_id },
+	]);
 }
 
 async function addWorkspaceMembers(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1418,7 +1478,11 @@ function buildPresetConfig(flags: Record<string, string | boolean>): Record<stri
 async function listPresets(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/presets", { limit: flagString(flags, "limit"), offset: flagString(flags, "offset"), visibility: flagString(flags, "visibility") }));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (preset) => `${preset.name ?? preset.id} ${preset.visibility ?? "team"} ${preset.id}`);
+	printTable(body.data ?? [], [
+		{ header: "NAME", value: (preset) => preset.name, shrink: true },
+		{ header: "VISIBILITY", value: (preset) => preset.visibility ?? "team" },
+		{ header: "ID", value: (preset) => preset.id },
+	]);
 }
 
 async function createPreset(flags: Record<string, string | boolean>) {
@@ -1549,7 +1613,11 @@ async function deleteDataClassifier(id: string | undefined, flags: Record<string
 async function listGuardrails(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/guardrails", { limit: flagString(flags, "limit"), offset: flagString(flags, "offset") }));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (guardrail) => `${guardrail.enabled === false ? "off" : "on"} ${guardrail.name ?? guardrail.id} ${guardrail.id}`);
+	printTable(body.data ?? [], [
+		{ header: "STATUS", value: (guardrail) => guardrail.enabled === false ? "off" : "on" },
+		{ header: "NAME", value: (guardrail) => guardrail.name, shrink: true },
+		{ header: "ID", value: (guardrail) => guardrail.id },
+	]);
 }
 
 async function createGuardrail(flags: Record<string, string | boolean>) {
@@ -1603,7 +1671,10 @@ async function listGuardrailKeys(id: string | undefined, flags: Record<string, s
 	if (!id) throw new Error("Guardrail id is required");
 	const body = await request(`/guardrails/${encodeURIComponent(id)}/keys`);
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (assignment) => `${assignment.name ?? assignment.prefix ?? assignment.key_id} ${assignment.key_id}`);
+	printTable(body.data ?? [], [
+		{ header: "KEY", value: (assignment) => assignment.name ?? assignment.prefix, shrink: true },
+		{ header: "KEY ID", value: (assignment) => assignment.key_id },
+	]);
 }
 
 async function addGuardrailKeys(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1640,7 +1711,11 @@ async function listGuardrailMembers(id: string | undefined, flags: Record<string
 	if (!id) throw new Error("Guardrail id is required");
 	const body = await request(`/guardrails/${encodeURIComponent(id)}/members`);
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (assignment) => `${assignment.display_name ?? assignment.user_id} ${assignment.role ?? "member"} ${assignment.user_id}`);
+	printTable(body.data ?? [], [
+		{ header: "NAME", value: (assignment) => assignment.display_name, shrink: true },
+		{ header: "ROLE", value: (assignment) => assignment.role ?? "member" },
+		{ header: "USER ID", value: (assignment) => assignment.user_id },
+	]);
 }
 
 async function addGuardrailMembers(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1690,7 +1765,10 @@ function buildOauthClientPayload(flags: Record<string, string | boolean>) {
 async function listOauthClients(flags: Record<string, string | boolean>) {
 	const body = await request("/oauth-clients");
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (client) => `${client.name ?? client.client_id} ${client.client_id}`);
+	printTable(body.data ?? [], [
+		{ header: "NAME", value: (client) => client.name, shrink: true },
+		{ header: "CLIENT ID", value: (client) => client.client_id },
+	]);
 }
 
 async function createOauthClient(flags: Record<string, string | boolean>) {
@@ -1739,7 +1817,12 @@ async function regenerateOauthClientSecret(id: string | undefined, flags: Record
 async function listManagementKeys(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/management-keys", { limit: flagString(flags, "limit"), offset: flagString(flags, "offset") }));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (key) => `${key.status ?? "unknown"} ${key.name ?? key.id} ${key.id} ${key.prefix ?? ""}`.trim());
+	printTable(body.data ?? [], [
+		{ header: "STATUS", value: (key) => key.status ?? "unknown" },
+		{ header: "NAME", value: (key) => key.name, shrink: true },
+		{ header: "PREFIX", value: (key) => key.prefix },
+		{ header: "ID", value: (key) => key.id },
+	]);
 }
 
 async function createManagementKey(flags: Record<string, string | boolean>) {
@@ -1801,7 +1884,30 @@ export function buildModelsListPath(flags: Record<string, string | boolean>): st
 async function listModels(flags: Record<string, string | boolean>) {
 	const body = await request(buildModelsListPath(flags));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.models ?? [], renderModelListItem);
+	process.stdout.write(renderModelTable(body.models ?? []));
+}
+
+function isPrivateModel(model: any): boolean {
+	const offers = Array.isArray(model.offers) ? model.offers : [];
+	return offers.length > 0 && offers.every((offer: any) => offer?.provider?.id === "private-model");
+}
+
+export function renderModelTable(models: any[], options: { maxWidth?: number; color?: boolean } = {}): string {
+	const modalities = (list: unknown) => Array.isArray(list) && list.length ? list.join(", ") : "-";
+	const columns: TableColumn<any>[] = [
+		// Private workspace models have no public catalogue page.
+		{ header: "MODEL", value: (model) => model.id, shrink: true, link: (model) => isPrivateModel(model) ? undefined : modelPageUrl(model.id) },
+		{ header: "NAME", value: (model) => model.name, shrink: true },
+		{ header: "STATUS", value: (model) => model.availability?.status ?? model.lifecycle?.status },
+		{ header: "PROVIDERS", value: (model) => model.availability?.active_provider_count ?? 0, align: "right" },
+		{ header: "INPUT", value: (model) => modalities(model.modalities?.input), shrink: true },
+		{ header: "OUTPUT", value: (model) => modalities(model.modalities?.output), shrink: true },
+	];
+	// Only show context when the API returned it for at least one model.
+	if (models.some((model) => model.limits?.input_tokens)) {
+		columns.push({ header: "CONTEXT", value: (model) => model.limits?.input_tokens ? formatCount(model.limits.input_tokens) : "-", align: "right" });
+	}
+	return renderTable(models, columns, options);
 }
 
 function terminalValue(value: unknown, fallback = "unknown"): string {
@@ -1827,7 +1933,10 @@ export function renderModelDetails(model: any): string {
 async function listProviders(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/providers", { limit: flagString(flags, "limit"), offset: flagString(flags, "offset") }));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.providers ?? [], (provider) => `${provider.api_provider_id} ${provider.api_provider_name ?? ""}`.trim());
+	printTable(body.providers ?? [], [
+		{ header: "PROVIDER", value: (provider) => provider.api_provider_id, link: (provider) => providerPageUrl(provider.api_provider_id) },
+		{ header: "NAME", value: (provider) => provider.api_provider_name, shrink: true },
+	]);
 }
 
 async function getModel(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1856,7 +1965,10 @@ async function listOrganisations(flags: Record<string, string | boolean>) {
 		offset: flagString(flags, "offset"),
 	}));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.organisations ?? [], (organisation) => `${organisation.organisation_id} ${organisation.name ?? ""}`.trim());
+	printTable(body.organisations ?? [], [
+		{ header: "ORGANISATION", value: (organisation) => organisation.organisation_id },
+		{ header: "NAME", value: (organisation) => organisation.name, shrink: true },
+	]);
 }
 
 async function listEndpoints(flags: Record<string, string | boolean>) {
@@ -1865,10 +1977,38 @@ async function listEndpoints(flags: Record<string, string | boolean>) {
 	printList(body.endpoints ?? [], (endpoint) => String(endpoint));
 }
 
+function pricingFilters(flags: Record<string, string | boolean>, model?: string) {
+	return { model: model ?? flagString(flags, "model"), provider: flagString(flags, "provider"), endpoint: flagString(flags, "endpoint"), tier: flagString(flags, "tier"), preferExactModel: model !== undefined };
+}
+
+function applyLimit<T>(items: T[], flags: Record<string, string | boolean>): T[] {
+	const limit = flagNumber(flags, "limit");
+	return limit && limit > 0 ? items.slice(0, limit) : items;
+}
+
+const PRICE_TIERS_NOTE = '\n"from" prices change with prompt size or time of day. Run `phaseo pricing get <model>` to see every price.\n';
+
 async function pricingModels(flags: Record<string, string | boolean>) {
 	const body = await request("/pricing/models");
-	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.models ?? [], (model) => `${model.provider}/${model.model} ${model.endpoint} ${model.meters?.length ?? 0} meters`);
+	const routes = applyLimit(filterPricingRoutes(body.models ?? [], pricingFilters(flags)), flags);
+	if (flagBool(flags, "json")) return printJson({ ...body, models: routes });
+	if (flagBool(flags, "details")) {
+		process.stdout.write(renderPricingDetails(routes));
+		return;
+	}
+	const table = renderPricingTable(routes);
+	// Cells are sanitised in renderTable; writing directly keeps the hyperlink escape codes.
+	process.stdout.write(table);
+	if (table.includes(" from $")) process.stdout.write(PRICE_TIERS_NOTE);
+}
+
+async function pricingGet(model: string | undefined, flags: Record<string, string | boolean>) {
+	if (!model) throw new Error("Usage: phaseo pricing get <model> [--provider <id>] [--endpoint <id>] [--tier <tier>] [--json]");
+	const body = await request("/pricing/models");
+	const routes = filterPricingRoutes(body.models ?? [], pricingFilters(flags, model));
+	if (flagBool(flags, "json")) return printJson({ ...body, models: routes });
+	if (!routes.length) throw new Error(`No prices found for ${model}. Search with: phaseo pricing models --model <text>`);
+	process.stdout.write(renderPricingDetails(routes));
 }
 
 async function pricingCalculate(flags: Record<string, string | boolean>) {
@@ -1891,7 +2031,7 @@ async function pricingCalculate(flags: Record<string, string | boolean>) {
 async function creditsGet(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/credits", { workspace_id: flagString(flags, "workspace") }));
 	if (flagBool(flags, "json")) return printJson(body);
-	writeServerText(`Available: ${formatMoneyFromNanos(body.credits?.available_nanos)}\nReserved: ${formatMoneyFromNanos(body.credits?.reserved_nanos)}\n30d requests: ${body.credits?.thirty_day_requests ?? 0}\n`);
+	writeServerText(`Available: ${formatUsd(Number(body.credits?.available_nanos ?? 0) / 1e9)}\nReserved: ${formatUsd(Number(body.credits?.reserved_nanos ?? 0) / 1e9)}\nRequests (30 days): ${formatCount(body.credits?.thirty_day_requests ?? 0)}\n`);
 }
 
 const TOPUP_POLL_INTERVAL_MS = 5_000;
@@ -1903,11 +2043,6 @@ export function parseTopupAmountFlag(raw: string | undefined): number {
 	const amount = Number(raw.replace(/^\$/, ""));
 	if (!Number.isFinite(amount) || amount <= 0) throw new Error("--amount must be a positive number of US dollars, for example 20 or 12.50");
 	return amount;
-}
-
-function formatUsd(value: unknown): string {
-	const amount = Number(value);
-	return (Number.isFinite(amount) ? amount : 0).toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export function renderTopup(topup: any): string {
@@ -2025,7 +2160,15 @@ async function activityList(flags: Record<string, string | boolean>) {
 		offset: flagString(flags, "offset"),
 	}));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.activity ?? [], (item) => `${item.timestamp} ${item.model} ${item.provider} ${item.cost_cents ?? 0}c ${item.request_id}`);
+	printTable(body.activity ?? [], [
+		{ header: "TIME (UTC)", value: (item) => formatTimestamp(item.timestamp) },
+		{ header: "MODEL", value: (item) => item.model, shrink: true, link: (item) => modelPageUrl(item.model) },
+		{ header: "PROVIDER", value: (item) => item.provider, shrink: true, link: (item) => providerPageUrl(item.provider) },
+		{ header: "ENDPOINT", value: (item) => item.endpoint },
+		{ header: "COST", value: (item) => formatUsd(Number(item.cost_cents ?? 0) / 100), align: "right" },
+		{ header: "LATENCY", value: (item) => formatLatency(item.latency_ms), align: "right" },
+		{ header: "REQUEST ID", value: (item) => item.request_id, link: (item) => requestPageUrl(item.request_id, flagString(flags, "workspace")) },
+	]);
 }
 
 export function buildLogsListPath(flags: Record<string, string | boolean>): string {
@@ -2050,10 +2193,17 @@ export function buildLogsListPath(flags: Record<string, string | boolean>): stri
 async function logsList(flags: Record<string, string | boolean>) {
 	const body = await request(buildLogsListPath(flags));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (item) => {
-		const status = item.status_code ?? (item.success ? "success" : "error");
-		return `${item.created_at} ${status} ${item.model_id ?? "unknown"} ${item.provider ?? "unknown"} ${item.latency_ms ?? 0}ms ${item.request_id}`;
-	});
+	printTable(body.data ?? [], [
+		{ header: "TIME (UTC)", value: (item) => formatTimestamp(item.created_at) },
+		{ header: "STATUS", value: (item) => item.status_code ?? (item.success ? "success" : "error"), align: "right" },
+		{ header: "MODEL", value: (item) => item.model_id, shrink: true, link: (item) => modelPageUrl(item.model_id) },
+		{ header: "PROVIDER", value: (item) => item.provider, shrink: true, link: (item) => providerPageUrl(item.provider) },
+		{ header: "ENDPOINT", value: (item) => item.endpoint },
+		{ header: "LATENCY", value: (item) => formatLatency(item.latency_ms), align: "right" },
+		{ header: "COST", value: (item) => item.cost_nanos === null || item.cost_nanos === undefined ? "-" : formatUsd(Number(item.cost_nanos) / 1e9), align: "right" },
+		{ header: "ERROR", value: (item) => item.error_code, shrink: true },
+		{ header: "REQUEST ID", value: (item) => item.request_id, link: (item) => requestPageUrl(item.request_id, flagString(flags, "workspace")) },
+	]);
 }
 
 async function logsGet(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -2064,13 +2214,26 @@ async function logsGet(id: string | undefined, flags: Record<string, string | bo
 	if (flagBool(flags, "json")) return printJson(body);
 	const item = body.data ?? {};
 	const errorMessage = item.error_message ? ` - ${sanitizeTerminalText(String(item.error_message))}` : "";
-	writeServerText(`${item.request_id ?? id}\nStatus: ${item.status_code ?? (item.success ? "success" : "error")}\nModel: ${item.model_id ?? "unknown"}\nProvider: ${item.provider ?? "unknown"}\nEndpoint: ${item.endpoint ?? "unknown"}\nLatency: ${item.latency_ms ?? 0}ms\nError: ${item.error_code ?? "none"}${errorMessage}\n`);
+	writeServerText(`${item.request_id ?? id}\nStatus: ${item.status_code ?? (item.success ? "success" : "error")}\nModel: ${item.model_id ?? "unknown"}\nProvider: ${item.provider ?? "unknown"}\nEndpoint: ${item.endpoint ?? "unknown"}\nLatency: ${item.latency_ms ?? 0}ms\nError: ${item.error_code ?? "none"}${errorMessage}\nDashboard: ${requestPageUrl(item.request_id ?? id, flagString(flags, "workspace"))}\n`);
 }
 
 async function analyticsGet(flags: Record<string, string | boolean>) {
-	const body = await request(appendQuery("/analytics", { workspace_id: flagString(flags, "workspace"), date: flagString(flags, "date") }));
+	const body = await request(appendQuery("/analytics", {
+		workspace_id: flagString(flags, "workspace"),
+		date: flagString(flags, "date"),
+		limit: flagString(flags, "limit"),
+		offset: flagString(flags, "offset"),
+	}));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (item) => `${item.date} ${item.model_permaslug} ${item.provider_name} ${item.requests} req $${item.usage}`);
+	printTable(body.data ?? [], [
+		{ header: "DATE", value: (item) => item.date },
+		{ header: "MODEL", value: (item) => item.model_permaslug ?? item.model, shrink: true, link: (item) => modelPageUrl(item.model_permaslug ?? item.model) },
+		{ header: "PROVIDER", value: (item) => item.provider_name, shrink: true },
+		{ header: "REQUESTS", value: (item) => formatCount(item.requests), align: "right" },
+		{ header: "INPUT TOKENS", value: (item) => formatCount(item.prompt_tokens), align: "right" },
+		{ header: "OUTPUT TOKENS", value: (item) => formatCount(item.completion_tokens), align: "right" },
+		{ header: "COST", value: (item) => formatUsd(item.usage), align: "right" },
+	]);
 }
 
 async function generationGet(flags: Record<string, string | boolean>) {
@@ -2088,7 +2251,12 @@ async function listWebhooks(flags: Record<string, string | boolean>) {
 		include_deleted: flagBool(flags, "include-deleted") || undefined,
 	}));
 	if (flagBool(flags, "json")) return printJson(body);
-	printList(body.data ?? [], (endpoint) => `${endpoint.status ?? "unknown"} ${endpoint.name ?? endpoint.id} ${endpoint.url ?? ""} ${endpoint.id}`.trim());
+	printTable(body.data ?? [], [
+		{ header: "STATUS", value: (endpoint) => endpoint.status ?? "unknown" },
+		{ header: "NAME", value: (endpoint) => endpoint.name, shrink: true },
+		{ header: "URL", value: (endpoint) => endpoint.url, shrink: true },
+		{ header: "ID", value: (endpoint) => endpoint.id },
+	]);
 }
 
 function renderWebhookSecret(secret: unknown, showSecret: boolean): string {
@@ -2295,6 +2463,7 @@ async function main() {
 		else if (first === "organisations" && second === "list") action = listOrganisations(parsed.flags);
 		else if (first === "endpoints" && second === "list") action = listEndpoints(parsed.flags);
 		else if (first === "pricing" && second === "models") action = pricingModels(parsed.flags);
+		else if (first === "pricing" && second === "get") action = pricingGet(parsed.command[2], parsed.flags);
 		else if (first === "pricing" && second === "calculate") action = pricingCalculate(parsed.flags);
 		else if (first === "credits" && second === "get") action = creditsGet(parsed.flags);
 		else if (first === "credits" && second === "add") action = creditsAdd(parsed.flags);

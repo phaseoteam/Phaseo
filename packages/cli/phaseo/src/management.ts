@@ -1,5 +1,5 @@
 import { appendQuery, flagBool, flagNumber, flagString, parseCsvFlag, parseJsonFlag, resolveWorkspaceFlag, type Flags } from "./flags.js";
-import { sanitizeTerminalText } from "./output.js";
+import { renderTable, sanitizeTerminalText, type TableColumn, type TableOptions } from "./output.js";
 
 // Dedicated commands for the /v1 management routes. Each entry maps CLI
 // arguments to one API request so request building stays testable without
@@ -1223,6 +1223,39 @@ export function renderManagementRow(item: any): string {
 	return parts.length ? parts.map(text).join(" ") : text(JSON.stringify(item));
 }
 
+function rowState(item: any): unknown {
+	return typeof item.status === "string" ? item.status : typeof item.enabled === "boolean" ? (item.enabled ? "on" : "off") : undefined;
+}
+
+function rowLabel(item: any): unknown {
+	return item.name ?? item.title ?? item.label ?? item.handle ?? item.email ?? item.slug ?? item.event_name ?? item.action ?? item.version_label ?? item.version;
+}
+
+function rowId(item: any): unknown {
+	return item.id ?? item.key_id ?? item.user_id ?? item.request_id;
+}
+
+function rowTime(item: any): unknown {
+	const value = item.created_at ?? item.occurred_at ?? item.timestamp;
+	if (typeof value !== "string") return undefined;
+	const date = new Date(value);
+	return Number.isNaN(date.getTime()) ? value : date.toISOString().replace("T", " ").slice(0, 19);
+}
+
+/** Lists of records print as a table with whichever of status, name, time and ID the records have. */
+export function renderManagementTable(items: unknown[], options: TableOptions = {}): string {
+	if (!items.length) return "No results.\n";
+	if (!items.every((item) => item && typeof item === "object" && !Array.isArray(item))) return `${items.map(renderManagementRow).join("\n")}\n`;
+	const columns: TableColumn<any>[] = [];
+	const has = (pick: (item: any) => unknown) => items.some((item) => { const value = pick(item); return value !== undefined && value !== null && value !== ""; });
+	if (has(rowState)) columns.push({ header: "STATUS", value: rowState });
+	if (has(rowLabel)) columns.push({ header: "NAME", value: rowLabel, shrink: true });
+	if (has(rowTime)) columns.push({ header: "CREATED (UTC)", value: rowTime });
+	if (has(rowId)) columns.push({ header: "ID", value: rowId });
+	if (!columns.length) return `${items.map(renderManagementRow).join("\n")}\n`;
+	return renderTable(items, columns, options);
+}
+
 function humanize(key: string): string {
 	const words = key.replace(/_/g, " ");
 	return words.charAt(0).toUpperCase() + words.slice(1);
@@ -1261,7 +1294,7 @@ export function renderManagementResult(key: string, body: any, flags: Flags): st
 	const showSecret = flagBool(flags, "show-secret");
 	if (spec.output === "list") {
 		const items = listItems(body);
-		if (items) return items.length ? `${items.map(renderManagementRow).join("\n")}\n` : "No results.\n";
+		if (items) return renderManagementTable(items);
 	}
 	const data = body && typeof body === "object" && body.data && typeof body.data === "object" && !Array.isArray(body.data) ? body.data : body;
 	// Some routes return one-time secrets beside `data` (for example workspace invite tokens).

@@ -76,6 +76,10 @@ All commands support `--help`, and most commands support `--json` for agent-frie
 
 Phaseo uses colour, visual status markers, and ephemeral spinners for long-running setup work in an interactive terminal. Spinners write to `stderr` and clear themselves when each operation completes. Non-TTY `stderr` and `TERM=dumb` disable animation; `NO_COLOR` disables colour. `--json` always emits decoration-free structured output suitable for agents and automation. Set `FORCE_COLOR=1` to retain colour when a terminal wrapper does not expose TTY support.
 
+Lists print as tables with a header row. In a terminal, long names are shortened with `…` so each row fits the window; piped output keeps every value in full. Use `--json` for the complete records.
+
+In terminals that support clickable links (Windows Terminal, the VS Code terminal, iTerm2, WezTerm, Kitty, Ghostty and GNOME Terminal, for example), model IDs, providers and request IDs open their Phaseo pages, and key names open the API keys page. Other terminals and piped output get plain text. Set `NO_HYPERLINKS=1` to turn links off, `FORCE_HYPERLINK=1` to turn them on, and `PHASEO_WEB_URL` to point them at another deployment.
+
 ## Common Commands
 
 ```bash
@@ -105,7 +109,8 @@ phaseo models get openai/gpt-5
 phaseo providers list
 phaseo organisations list
 phaseo endpoints list
-phaseo pricing models
+phaseo pricing models --model gpt-6
+phaseo pricing get openai/gpt-6-luna
 phaseo credits get
 phaseo credits add --amount 20          # needs: phaseo login --scopes billing:write
 phaseo credits topups get <id>

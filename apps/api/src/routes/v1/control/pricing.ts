@@ -17,6 +17,8 @@ type PricingModel = {
     provider: string;
     model: string;
     endpoint: string;
+    /** Provider service tier (standard, flex, priority, ...). A route can have one price list per tier. */
+    service_tier: string;
     display_name?: string;
     meters: Array<{
         meter: string;
@@ -99,6 +101,7 @@ async function handlePricingModels(req: Request) {
                     provider: route.provider_slug,
                     model: route.model_slug,
                     endpoint: capabilityId,
+                    service_tier: sku.service_tier_slug || "standard",
                     display_name: model.name,
                     meters: [],
                 });
@@ -124,7 +127,8 @@ async function handlePricingModels(req: Request) {
         pricingModels.sort((a, b) => {
             if (a.provider !== b.provider) return a.provider.localeCompare(b.provider);
             if (a.model !== b.model) return a.model.localeCompare(b.model);
-            return a.endpoint.localeCompare(b.endpoint);
+            if (a.endpoint !== b.endpoint) return a.endpoint.localeCompare(b.endpoint);
+            return a.service_tier.localeCompare(b.service_tier);
         });
 
         const cacheOptions = {

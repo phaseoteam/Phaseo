@@ -93,7 +93,7 @@ describe("pricingRoutes", () => {
 		expect(response.status).toBe(200);
 		expect(body.ok).toBe(true);
 		expect(body.models).toEqual([
-			expect.objectContaining({ model: "openai/gpt-test", meters: [expect.objectContaining({ meter: "input_tokens" })] }),
+			expect.objectContaining({ model: "openai/gpt-test", service_tier: "standard", meters: [expect.objectContaining({ meter: "input_tokens" })] }),
 		]);
 		expect(pricingQuery.or).toHaveBeenCalledOnce();
 		expect(pricingQuery.or).toHaveBeenCalledWith(expect.stringMatching(
