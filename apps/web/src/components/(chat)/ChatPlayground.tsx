@@ -1150,12 +1150,13 @@ function ChatPlaygroundContent({
 						message.providerName ??
 						orgNameById[orgId] ??
 						formatOrgLabel(orgId),
+					// Names belong to the provider that served this reply. Never keep an
+					// earlier provider's names after a retry on another provider.
 					providerServiceTierLabels:
-						(resolvedProviderId
-							? serviceTierLabelsByProviderId.get(resolvedProviderId)
-							: null) ??
-						message.providerServiceTierLabels ??
-						null,
+						(resolvedProviderId ? serviceTierLabelsByProviderId.get(resolvedProviderId) : null) ??
+						(!resolvedProviderId || resolvedProviderId === message.providerId
+							? (message.providerServiceTierLabels ?? null)
+							: null),
 					content: activeVariant?.content ?? message.content,
 					variants,
 					activeVariantIndex: activeIndex,
