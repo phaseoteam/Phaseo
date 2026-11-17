@@ -416,7 +416,7 @@ export type WorkspaceApi = {
 	createOutsideAgentToken: (request: { name: string; access: OutsideAgentAccess }) => Promise<CreatedOutsideAgentToken>;
 	revokeOutsideAgentToken: (id: string) => Promise<OutsideAgentSettings>;
 	onOutsideAgentsChanged: (listener: (settings: OutsideAgentSettings) => void) => () => void;
-	/** Settings → Phone: phone access, its addresses, paired phones and Phaseo Connect. */
+	/** Settings → Remote access: phone access, its addresses, paired phones and Phaseo Connect. */
 	phone: () => Promise<PhoneState>;
 	updatePhone: (update: PhoneSettingsUpdate) => Promise<PhoneState>;
 	pairPhone: () => Promise<PhonePairingView>;

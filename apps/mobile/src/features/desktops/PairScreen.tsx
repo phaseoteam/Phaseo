@@ -22,7 +22,7 @@ const nameOf = (text: string): { name?: string; error?: string } => {
 };
 
 /**
- * Pairs with Phaseo on a computer: scan the code from its Settings → Phone, open its phaseo://pair link, or paste the
+ * Pairs with Phaseo on a computer: scan the code from its Settings → Remote access, open its phaseo://pair link, or paste the
  * link. A link that opened the app starts pairing at once.
  */
 export function PairScreen({ link }: { link?: string }) {
@@ -78,7 +78,7 @@ export function PairScreen({ link }: { link?: string }) {
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="pb-16">
           {pairing ? <LoadingState label={`Pairing with ${pairing}…`} /> : (
             <>
-              <Text variant="muted" className="px-4">On the computer, open Phaseo, then Settings → Phone. Turn on Allow phone access and choose Pair a phone.</Text>
+              <Text variant="muted" className="px-4">On the computer, open Phaseo, then Settings → Remote access. Turn on Allow phone access and choose Pair a phone.</Text>
               {error ? <Callout tone="critical" role="alert" title="Couldn't pair" className="mx-4 mt-4">{error}</Callout> : null}
               <Section title="Scan the code">
                 <View className="mx-4 aspect-square overflow-hidden rounded-md border border-border bg-muted">

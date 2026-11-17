@@ -46,9 +46,9 @@ Settings ▸ Outside agents turns on the local MCP server for agents you run you
 revokes tokens. A new token is shown once, with a command that adds it to Claude Code. See
 [Outside agents](orchestration-v2.md#outside-agents).
 
-## Phone
+## Remote access
 
-Settings ▸ Phone lets the Phaseo phone app use this computer. It is off by default; with it off nothing listens and
+Settings ▸ Remote access lets the Phaseo phone app use this computer. It is off by default; with it off nothing listens and
 Phaseo Connect is disconnected.
 
 - **Addresses.** The phone server listens on port 47917, only on the addresses turned on: this Wi-Fi (off by default),

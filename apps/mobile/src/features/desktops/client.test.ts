@@ -124,7 +124,7 @@ describe.each(["direct", "connect"] as const)("over %s", (via) => {
     desktop.emit({ type: "access", capabilities: [] });
     await access;
     expect(client.state.get()).toMatchObject({ status: "connected", capabilities: [] });
-    await expect(client.request("git_status", { projectId: "p1" })).rejects.toMatchObject({ code: "forbidden", message: "Allow this on the computer: Settings → Phone." });
+    await expect(client.request("git_status", { projectId: "p1" })).rejects.toMatchObject({ code: "forbidden", message: "Allow this on the computer: Settings → Remote access." });
     client.stop();
   });
 

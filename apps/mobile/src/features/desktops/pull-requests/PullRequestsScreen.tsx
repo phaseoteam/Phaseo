@@ -39,7 +39,7 @@ function PullRequests({ client, desktopId, initialProject, desktopName }: { clie
   const projectId = picked ?? choices[0]?.id ?? null;
   const { allowed, repository, rows, error, loading, reload, more, limitReached } = usePullRequests(client, projectId);
 
-  const body = !allowed ? <EmptyState className="flex-1" icon={ShieldOff} title="Reading code is off for this phone" body="Turn on Read code for this phone on the computer, in Settings → Phone." />
+  const body = !allowed ? <EmptyState className="flex-1" icon={ShieldOff} title="Reading code is off for this phone" body="Turn on Read code for this phone on the computer, in Settings → Remote access." />
     : projects && !choices.length ? <EmptyState className="flex-1" icon={GitPullRequest} title="No repositories" body="None of this computer's projects is a git checkout." />
     : error && !rows ? <ErrorState className="flex-1" error={new Error(error.message)} onRetry={reload} />
     : !rows ? <SkeletonRows count={6} />

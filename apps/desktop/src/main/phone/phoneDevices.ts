@@ -12,7 +12,7 @@ const readAccess = (value: unknown): PhoneAccess => {
 };
 /** The capabilities a phone is told it has, in the protocol's order. */
 export const capabilitiesOf = (access: PhoneAccess): PhoneCapability[] => phoneCapabilities.filter(capability => access[capability]);
-/** Settings → Phone as kept on disk. Tokens are kept only as hashes; the identity key is in the credential vault. */
+/** Settings → Remote access as kept on disk. Tokens are kept only as hashes; the identity key is in the credential vault. */
 export type PhoneSettings = { enabled: boolean; port: number; addresses: Record<PhoneAddressKind, boolean>; desktopId: string; tailscaleServe: boolean; connect: boolean; devices: PhoneDeviceRecord[];
 	/** Phones and pairing codes removed while the relay couldn't be told, sent again until it confirms (see ConnectClient). */
 	relayRemovals?: string[];

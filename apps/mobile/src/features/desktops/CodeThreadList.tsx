@@ -53,7 +53,7 @@ export function PairPrompt() {
     <View className="items-center gap-2 px-8 py-12">
       <View className="mb-1"><Icon icon={Monitor} tone="muted" size={28} /></View>
       <Text variant="heading" className="text-center">Pair a computer</Text>
-      <Text variant="muted" className="text-center">Use your threads on Phaseo for desktop from this phone. On the computer, open Settings → Phone, turn on Allow phone access and choose Pair a phone.</Text>
+      <Text variant="muted" className="text-center">Use your threads on Phaseo for desktop from this phone. On the computer, open Settings → Remote access, turn on Allow phone access and choose Pair a phone.</Text>
       <View className="mt-3 flex-row flex-wrap justify-center gap-2">
         <Button label="Scan the code" icon={Camera} variant="outline" size="sm" onPress={() => router.push("/pair")} />
         <Button label="Paste the link" icon={ClipboardPaste} variant="outline" size="sm" onPress={() => void paste()} />

@@ -181,7 +181,7 @@ export type Relay = Awaited<ReturnType<typeof startRelay>>;
 
 /**
  * A desktop signed in to the relay, wired as its phone service wires the Connect client, with one chat. showPairingCode
- * does what Settings → Phone does for the QR code: makes a code and lets its pairing sign-in through the relay.
+ * does what Settings → Remote access does for the QR code: makes a code and lets its pairing sign-in through the relay.
  */
 export async function startDesktop(relay: Relay) {
 	const app = fakePhoneHost();

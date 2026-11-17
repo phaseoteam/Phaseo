@@ -121,7 +121,7 @@ function TerminalView({ client, desktopId, chatId, terminalId, title }: { client
     />
   );
   if (!allowed || error?.code === "forbidden") {
-    return <Screen>{header}<ConnectionNotice client={client} /><EmptyState className="flex-1" icon={ShieldOff} title="Terminals are off for this phone" body="Turn on Use terminals for this phone on the computer, in Settings → Phone." /></Screen>;
+    return <Screen>{header}<ConnectionNotice client={client} /><EmptyState className="flex-1" icon={ShieldOff} title="Terminals are off for this phone" body="Turn on Use terminals for this phone on the computer, in Settings → Remote access." /></Screen>;
   }
   return (
     <Screen>

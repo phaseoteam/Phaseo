@@ -76,7 +76,7 @@ function PullRequest({ client, projectId, number }: { client: DesktopClient; pro
   };
 
   const title = view ? view.title : `#${number}`;
-  const body = !allowed ? <EmptyState className="flex-1" icon={ShieldOff} title="Reading code is off for this phone" body="Turn on Read code for this phone on the computer, in Settings → Phone." />
+  const body = !allowed ? <EmptyState className="flex-1" icon={ShieldOff} title="Reading code is off for this phone" body="Turn on Read code for this phone on the computer, in Settings → Remote access." />
     : error && !view ? <ErrorState className="flex-1" error={new Error(error.message)} onRetry={reload} />
     : !view ? <SkeletonRows count={6} />
     : segment === "files" ? <Files client={client} projectId={projectId} view={view} />
@@ -92,7 +92,7 @@ function PullRequest({ client, projectId, number }: { client: DesktopClient; pro
         </View>
         <Progress running={running} error={failed} spinner={spinner} onDismiss={clearError} />
         {writes && view.state !== "merged" ? <Actions view={view} busy={Boolean(running)} onMerge={() => { const method = defaultMergeMethod(view); if (method) void merge(method); }} onPickMethod={pickMethod} onReview={() => setReviewing(true)} onClose={() => void close()} /> : null}
-        {!writes ? <Callout className="mx-4 mt-3" title="Making changes is off for this phone">Turn on Make changes for this phone on the computer, in Settings → Phone, to review, merge or close from here.</Callout> : null}
+        {!writes ? <Callout className="mx-4 mt-3" title="Making changes is off for this phone">Turn on Make changes for this phone on the computer, in Settings → Remote access, to review, merge or close from here.</Callout> : null}
         <Section title="Checks" description={checkSummary(view.checkRuns)}>
           {view.checkRuns.map((check, index) => <CheckRow key={`${check.name}:${index}`} check={check} last={index === view.checkRuns.length - 1} />)}
         </Section>

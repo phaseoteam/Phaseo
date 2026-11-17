@@ -1,5 +1,5 @@
 /**
- * Settings → Phone: what the window shows of phone access and Phaseo Connect. The server itself lives in
+ * Settings → Remote access: what the window shows of phone access and Phaseo Connect. The server itself lives in
  * src/main/phone; the frames a phone speaks are in @phaseo/phone-protocol.
  */
 export type PhoneAddressKind = "lan" | "tailscale-ip" | "tailscale-https";
@@ -12,7 +12,7 @@ export type PhoneAddress = {
 	note?: string;
 };
 /**
- * What one paired phone may do beyond its threads, switched per phone in Settings → Phone. Reading code is on unless
+ * What one paired phone may do beyond its threads, switched per phone in Settings → Remote access. Reading code is on unless
  * turned off; making changes and terminals stay off until turned on.
  */
 export type PhoneAccess = { code: boolean; changes: boolean; terminal: boolean };

@@ -43,7 +43,7 @@ function useAddToMessage(desktopId: string, target: FilesTarget) {
 }
 
 function OffNotice() {
-  return <EmptyState className="flex-1" icon={ShieldOff} title="Reading code is off for this phone" body="Turn on Read code for this phone on the computer, in Settings → Phone." />;
+  return <EmptyState className="flex-1" icon={ShieldOff} title="Reading code is off for this phone" body="Turn on Read code for this phone on the computer, in Settings → Remote access." />;
 }
 
 function Tree({ client, desktopId, target, where }: { client: DesktopClient; desktopId: string; target: FilesTarget; where: string | null }) {

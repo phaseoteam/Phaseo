@@ -108,7 +108,7 @@ export function directTransport({ url, keys, openSocket }: { url: string; keys: 
 
 const notEntitled: Record<string, string> = {
   payment_required: "Payment due. Phaseo Connect is off for this computer until its workspace's charge is paid on phaseo.app.",
-  connect_off: "Phaseo Connect is off for this computer. Turn it on in Settings → Phone on the computer.",
+  connect_off: "Phaseo Connect is off for this computer. Turn it on in Settings → Remote access on the computer.",
 };
 
 export type RelayCredentials = PairedKeys & { relayUrl: string; desktopId: string; relayToken: string };

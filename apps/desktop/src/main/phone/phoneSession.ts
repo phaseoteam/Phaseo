@@ -82,7 +82,7 @@ export type PhoneHost = {
 	issueDraft: (chatId: string, action: "file" | "discard", draftedAt?: string) => Promise<unknown>;
 };
 export type PhoneDevice = { id: string; name: string };
-const forbidden = () => new PhoneProtocolError("forbidden", "Allow this on the computer: Settings → Phone.");
+const forbidden = () => new PhoneProtocolError("forbidden", "Allow this on the computer: Settings → Remote access.");
 export type Attention = { chatId: string; kind: AttentionKind; summary: string };
 
 const signature = (value: unknown) => createHash("sha1").update(JSON.stringify(value)).digest("base64");
@@ -638,7 +638,7 @@ export class PhoneHub {
 	private projectsKey?: string;
 	private readonly turnChanges: TurnChangesCache;
 	onAttention?: (event: Attention, connected: ReadonlySet<string>) => void;
-	/** Each paired phone's capabilities, read on every request (PhoneService sets it from Settings → Phone). */
+	/** Each paired phone's capabilities, read on every request (PhoneService sets it from Settings → Remote access). */
 	capabilitiesOf: (deviceId: string) => readonly PhoneCapability[] = () => [];
 	constructor(private readonly host: PhoneHost, private readonly now: () => number = Date.now) {
 		const overview = host.overview();

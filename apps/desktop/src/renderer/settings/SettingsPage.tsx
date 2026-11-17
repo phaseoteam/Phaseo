@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Activity, ArrowLeft, FileDiff, FolderTree, GitBranch, Globe, ListTodo, MessageSquare, Wrench, Bell, Bot, Cable, CircleDot, FlaskConical, FolderGit2, GitMerge, GitPullRequest, Keyboard, Gauge, NotebookPen, Palette, Plug, RefreshCw, Search, SlidersHorizontal, Smartphone, UserRound } from "lucide-react";
+import { Activity, ArrowLeft, FileDiff, FolderTree, GitBranch, Globe, ListTodo, MessageSquare, Wrench, Bell, Bot, Cable, CircleDot, FlaskConical, FolderGit2, GitMerge, GitPullRequest, Keyboard, Gauge, NotebookPen, Palette, Plug, MonitorSmartphone, RefreshCw, Search, SlidersHorizontal, UserRound } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { KeyboardShortcuts } from "./KeyboardShortcuts";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -46,7 +46,7 @@ const groups: { label: string; pages: Entry[] }[] = [
 	{ label: "Integrations", pages: [
 		{ id: "agents", label: "Agents", icon: <Bot />, keywords: "codex claude code opencode pi cursor grok acp install update version health check check interval sign-in status models refresh how often" },
 		{ id: "mcp", label: "MCP servers", icon: <Plug />, keywords: "tools model context protocol connections" },
-		{ id: "phone", label: "Phone", icon: <Smartphone />, keywords: "mobile phone app pair qr code tailscale wi-fi lan remote access phaseo connect relay devices" },
+		{ id: "phone", label: "Remote access", icon: <MonitorSmartphone />, keywords: "phone mobile app pair qr code tailscale wi-fi lan remote access phaseo connect relay devices" },
 		{ id: "outside-agents", label: "Outside agents", icon: <Cable />, keywords: "mcp server claude code codex terminal token local loopback external agents drive chats" },
 		{ id: "code-hosts", label: "Code hosts", icon: <GitMerge />, keywords: "gitlab forgejo gitea codeberg bitbucket azure devops glab tea az token merge requests pull requests self-hosted server" },
 	] },
