@@ -141,8 +141,7 @@ zone_name = "phaseo.app"
 pattern = "phaseo.app/api/internal/*"
 zone_name = "phaseo.app"
 
+# Cloudflare Workers Logs are off. Grafana still receives this Worker's logs and
+# traces through its own OTLP export (src/observability.ts).
 [observability]
-[observability.logs]
-enabled = true
-head_sampling_rate = 1
-invocation_logs = true
+enabled = false
