@@ -55,6 +55,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_pricing (
         'data_policy_contract_mode', null,
         'data_policy_contract_notes', null,
         'service_tier_data_policies', null,
+        'service_tier_labels', null,
         'user_identifier_policy', null,
         'user_identifier_notes', null,
         'privacy_policy_url', null,
@@ -97,7 +98,19 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_pricing (
           on route.provider_model_id = sku.provider_model_id
       ), '[]'::jsonb)
     )
-  else marked.payload end
+  when jsonb_typeof(marked.payload->'provider') is distinct from 'object' then marked.payload
+  else marked.payload || jsonb_build_object(
+    'provider', (marked.payload->'provider') || jsonb_build_object(
+      'service_tier_labels', (
+        select case
+          when jsonb_typeof(provider.metadata->'service_tier_labels') = 'object'
+            then provider.metadata->'service_tier_labels'
+        end
+        from public.v2_providers provider
+        where provider.provider_slug = marked.payload->'provider'->>'api_provider_id'
+      )
+    )
+  ) end
   from marked;
 $function$;
 
