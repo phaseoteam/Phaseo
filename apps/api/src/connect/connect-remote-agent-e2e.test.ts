@@ -148,7 +148,7 @@ describe("an app linked through mcp.phaseo.app, end to end", () => {
 		});
 		// The relay has forwarded the replay to the desktop.
 		await context.relay.processed.until(entry => entry.sender === agentId && context.relay.processed.items.indexOf(entry) >= before);
-		replayer.close(1000);
+		await new Promise(resolve => { replayer.on("close", resolve); replayer.close(1000); });
 		// A fresh request reaches the desktop after the replay on the same connection, so by its answer the replay was handled: dropped.
 		expect(await context.call({ action: "tool", name: "send_thread", arguments: { id: "chat-1", text: "Again" } })).toMatchObject({ ok: true });
 		expect(context.send.mock.calls.map(call => (call as unknown[])[1])).toEqual(["Ship it", "Again"]);
