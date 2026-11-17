@@ -59,6 +59,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 `tool_choice` here forces the call. Leave it out, or set `"auto"`, to let the model decide.
 
+DeepSeek's API can't force a tool while the model thinks. When DeepSeek is the provider, a forced `tool_choice` turns thinking off for that request, so the reply has no reasoning.
+
 The model replies with a call instead of text:
 
 ```json

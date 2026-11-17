@@ -32,6 +32,7 @@ const HOSTED_TOOL_ENDPOINTS = new Set<Endpoint>(["chat.completions", "responses"
 const WEB_SEARCH_ENGINES = new Set(["auto", "exa", "firecrawl", "parallel", "perplexity", "tinyfish", "deepseek"]);
 const SEARCH_CONTEXT_SIZES = new Set(["low", "medium", "high"]);
 const MAX_WEB_SEARCH_RESULTS = 25;
+const MAX_WEB_SEARCH_MAX_TOTAL_RESULTS = 100;
 const GATEWAY_WEB_SEARCH_TYPES = new Set(["phaseo:web_search", "gateway:web_search"]);
 
 export type HostedToolResolution =
@@ -62,10 +63,13 @@ function domainList(value: unknown): string[] | undefined {
 /**
  * The `phaseo:web_search` equivalent of an OpenAI hosted web search tool. OpenAI's
  * fields (search_context_size, filters.allowed_domains) and the common search
- * options (engine, max_results, include/exclude domains, max_uses) carry over, and
- * so does `user_location`, which our search uses whenever the model's call gives none.
+ * options (engine, max_results, max_total_results, include/exclude domains, max_uses) carry over,
+ * from the tool or its `parameters`, and so does `user_location`, which our search uses whenever
+ * the model's call gives none.
  */
-export function gatewayWebSearchToolFor(tool: Record<string, any>): Record<string, any> {
+export function gatewayWebSearchToolFor(declared: Record<string, any>): Record<string, any> {
+	// `parameters` wins over the same option on the tool, as when a phaseo:web_search tool is prepared.
+	const tool = isPlainObject(declared.parameters) ? { ...declared, ...declared.parameters } : declared;
 	const parameters: Record<string, unknown> = {};
 	const contextSize = typeof tool.search_context_size === "string" ? tool.search_context_size.toLowerCase() : null;
 	if (contextSize && SEARCH_CONTEXT_SIZES.has(contextSize)) parameters.search_context_size = contextSize;
@@ -74,6 +78,13 @@ export function gatewayWebSearchToolFor(tool: Record<string, any>): Record<strin
 	if (engine && WEB_SEARCH_ENGINES.has(engine)) parameters.engine = engine;
 	if (Number.isInteger(tool.max_results) && tool.max_results > 0 && tool.max_results <= MAX_WEB_SEARCH_RESULTS) {
 		parameters.max_results = tool.max_results;
+	}
+	if (
+		Number.isInteger(tool.max_total_results) &&
+		tool.max_total_results > 0 &&
+		tool.max_total_results <= MAX_WEB_SEARCH_MAX_TOTAL_RESULTS
+	) {
+		parameters.max_total_results = tool.max_total_results;
 	}
 	if (Number.isInteger(tool.max_uses) && tool.max_uses > 0) parameters.max_uses = tool.max_uses;
 	const allowed = domainList(isPlainObject(tool.filters) ? tool.filters.allowed_domains : undefined)

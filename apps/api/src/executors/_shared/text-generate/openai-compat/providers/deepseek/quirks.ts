@@ -59,10 +59,32 @@ export const deepseekQuirks: ProviderQuirks = {
 
 		mapNativeWebTools(request, ir.model);
 
-		if (request.thinking?.type === "enabled") {
-			// DeepSeek's official agent integration notes that thinking-mode tool
-			// requests reject tool_choice even though non-thinking Chat accepts it.
-			delete request.tool_choice;
+		const toolChoice = request.tool_choice;
+		if (toolChoice != null && toolChoice !== "auto" && toolChoice !== "none") {
+			// DeepSeek thinks by default, and in thinking mode a forced tool_choice ("required"
+			// or a named tool) is a 400 ("Thinking mode does not support this tool_choice",
+			// checked live 2026-11-16). The forced tool wins: the request runs without thinking,
+			// which Chat turns off with `thinking` and Responses with `reasoning.effort: "none"`
+			// (https://api-docs.deepseek.com/guides/thinking_mode).
+			delete request.reasoning_effort;
+			if ("input" in request) {
+				delete request.thinking;
+				request.reasoning = { effort: "none" };
+			} else {
+				request.thinking = { type: "disabled" };
+			}
+		} else if (currentToolTurnLacksReasoning(request)) {
+			// In thinking mode DeepSeek needs reasoning_content on the current turn's tool calls,
+			// or returns 400. A tool call made without thinking (such as a forced call above,
+			// continued by the gateway's server-tool loop with tool_choice relaxed to "auto")
+			// has none, so the rest of that turn runs without thinking too.
+			delete request.reasoning_effort;
+			if ("input" in request) {
+				delete request.thinking;
+				request.reasoning = { effort: "none" };
+			} else {
+				request.thinking = { type: "disabled" };
+			}
 		}
 
 		for (const unsupported of [
@@ -177,6 +199,21 @@ function asObject(value: unknown): JsonObject | null {
 
 function asArray(value: unknown): unknown[] {
 	return Array.isArray(value) ? value : [];
+}
+
+/** True when a tool call since the last user message carries no reasoning. */
+function currentToolTurnLacksReasoning(request: JsonObject): boolean {
+	const items = asArray("input" in request ? request.input : request.messages).map(asObject);
+	let start = items.length;
+	while (start > 0 && items[start - 1]?.role !== "user") start--;
+	const turn = items.slice(start);
+	if ("input" in request) {
+		return turn.some((item) => item?.type === "function_call")
+			&& !turn.some((item) => item?.type === "reasoning");
+	}
+	return turn.some((item) => item?.role === "assistant"
+		&& asArray(item.tool_calls).length > 0
+		&& !(typeof item.reasoning_content === "string" && item.reasoning_content.length > 0));
 }
 
 function addSourceAnnotations(messageValue: unknown, seen: Set<string>): void {

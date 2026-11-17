@@ -62,7 +62,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | 引数 | 説明 |
 | --- | --- |
-| `user_location` | おおよその位置。Perplexity は地域検索に `user_location.country` を使い、TinyFish は国と言語を使います。 |
+| `user_location` | おおよその位置。Exa と Perplexity は地域検索に `user_location.country`（`GB` のような 2 文字のコード）を使い、TinyFish は国と言語を使います。 |
 | `language` | `en` などの結果の言語コード。ローカライズに対応したエンジンで使われます。 DeepSeek では、クエリに `lang:` フィルターとして追加されます。 |
 | `page` | 結果ページ `0` から `10`。TinyFish 用です。 |
 
@@ -87,6 +87,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 `/v1/chat/completions` または `/v1/responses` で `engine: "native"` を指定すると、リクエストは Web 検索を自前で実行するプロバイダーにのみ送られます。そのモデルを提供するプロバイダーがない場合、Phaseo は代わりに既定エンジンを実行し、管理検索として課金します。
 
 これらのエンドポイントで Web 検索を自前で実行するプロバイダーは、OpenAI、`/v1/responses` の Azure OpenAI デプロイ、xAI、そして `deepseek/deepseek-v4.1-flash-1017` の DeepSeek です。DeepSeek が自前で検索するのは、Web 検索がリクエストの唯一のツールで、ドメインリストやユーザーの位置情報がなく、JSON 出力も、ツールを強制する `tool_choice` もない場合に限られます。DeepSeek の API はドメインリスト、位置情報、JSON 出力を受け付けず、リクエストに他のツールがあると Web 検索をオフにし、検索を強制することもできないためです。このモデルへのそれ以外のリクエストでは、代わりに Phaseo の検索が使われ、独自のツールと併用できます。推論を有効にすると、DeepSeek は複数のステップでページを開いて読む、より深い検索を実行します。
+
+プロバイダー独自の検索ツールは `max_results` と `max_total_results` を適用できず、`max_uses` を適用できるのは Claude のツールだけです。プロバイダーが適用できない上限を指定したネイティブ検索は、代わりに Phaseo の既定のエンジンで実行され、マネージド検索として課金されます。
 
 OpenAI 独自の `{ "type": "web_search" }` ツールを送った場合も、`engine: "native"` と同じように動作します。`native` はツール定義でのみ指定してください。プロバイダーのツールはリクエスト送信前に選ぶ必要があるため、モデルが呼び出しで `native` を指定すると、その呼び出しは `unsupported_search_engine` を返します。
 

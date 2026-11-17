@@ -361,6 +361,37 @@ describe("prepareServerToolsForTextRequest", () => {
 		expect(result.body.tools[0].user_location).toEqual({ type: "approximate", city: "London", country: "GB" });
 	});
 
+	it("keeps max_uses on Claude's native search, which enforces it", () => {
+		const result = prepareServerToolsForTextRequest(
+			{
+				model: "anthropic/claude-sonnet-5",
+				tools: [{ type: "phaseo:web_search", parameters: { engine: "native", max_uses: 2 } }],
+			},
+			"anthropic.messages",
+		);
+		if (!result.ok) throw new Error("Expected prepareServerToolsForTextRequest to succeed");
+		expect(result.config.webSearchEnabled).toBe(false);
+		expect(result.body.tools[0]).toMatchObject({ type: "web_search_20250305", max_uses: 2 });
+	});
+
+	it("runs a native search with result caps on Phaseo's search, since Claude's cannot enforce them", () => {
+		const result = prepareServerToolsForTextRequest(
+			{
+				model: "anthropic/claude-sonnet-5",
+				tools: [{ type: "phaseo:web_search", parameters: { engine: "native", max_results: 3, max_total_results: 6 } }],
+			},
+			"anthropic.messages",
+		);
+		if (!result.ok) throw new Error("Expected prepareServerToolsForTextRequest to succeed");
+		expect(result.config).toMatchObject({
+			webSearchEnabled: true,
+			webSearchEngine: "exa",
+			webSearchMaxResults: 3,
+			webSearchMaxTotalResults: 6,
+		});
+		expect(result.body.tools.some((tool: any) => tool.type === "web_search_20250305")).toBe(false);
+	});
+
 	it("rewrites Phaseo web fetch into a callable function tool", () => {
 		const result = prepareServerToolsForTextRequest(
 			{
@@ -835,6 +866,86 @@ describe("buildServerToolContinuation", () => {
 		expect(continuation?.serverToolCallCount).toBe(2);
 		expect(continuation?.toolResults).toEqual([]);
 		expect(continuation?.usage.datetimeRequests).toBe(0);
+	});
+
+	const exaResults = (count: number) => new Response(
+		JSON.stringify({
+			requestId: "exa_req",
+			results: Array.from({ length: count }, (_, index) => ({ title: `Result ${index}`, url: `https://example.com/${index}` })),
+		}),
+		{ status: 200, headers: { "Content-Type": "application/json" } },
+	);
+	const searchRound = (id: string, args: Record<string, unknown>) => ({
+		choices: [{
+			message: {
+				role: "assistant",
+				content: [],
+				toolCalls: [{ id, name: "phaseo_web_search", arguments: JSON.stringify(args) }],
+			},
+			finishReason: "tool_calls",
+		}],
+	}) as any;
+	const searchConfig = (overrides: Record<string, unknown> = {}) => ({
+		enabled: true,
+		datetimeDefaultTimezones: ["UTC"],
+		webSearchEnabled: true,
+		webSearchMaxResults: 5,
+		webSearchIncludeText: false,
+		webSearchIncludeHighlights: true,
+		webFetchEnabled: false,
+		webFetchMaxChars: 12000,
+		...overrides,
+	});
+
+	it("enforces max_total_results across continuation rounds", async () => {
+		const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+			const body = JSON.parse(String(init?.body));
+			return exaResults(body.numResults);
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		try {
+			const config = searchConfig({ webSearchMaxTotalResults: 8 });
+			const first = await buildServerToolContinuation(searchRound("call_1", { query: "one", max_results: 5 }), config);
+			const second = await buildServerToolContinuation(searchRound("call_2", { query: "two", max_results: 5 }), config);
+			const third = await buildServerToolContinuation(searchRound("call_3", { query: "three", max_results: 5 }), config);
+
+			expect(first?.usage.webSearchResults).toBe(5);
+			expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body)).numResults).toBe(3);
+			expect(second?.usage.webSearchResults).toBe(3);
+			expect(fetchMock).toHaveBeenCalledTimes(2);
+			expect(third?.usage.webSearchResults).toBe(0);
+			expect(JSON.parse(String(third?.toolResults[0]?.content))).toMatchObject({ error: "max_total_results_reached" });
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it.each([
+		["the tool's location", {}, { webSearchUserLocation: { type: "approximate", country: "gb", city: "London" } }, "GB"],
+		["the model's nested location", { user_location: { type: "approximate", approximate: { country: "DE" } } }, {}, "DE"],
+	])("sends Exa %s as a country code", async (_label, args, overrides, expected) => {
+		const fetchMock = vi.fn(async () => exaResults(1));
+		vi.stubGlobal("fetch", fetchMock);
+		try {
+			await buildServerToolContinuation(searchRound("call_loc", { query: "weather", ...args }), searchConfig(overrides));
+			expect(JSON.parse(String((fetchMock.mock.calls[0] as any)?.[1]?.body)).userLocation).toBe(expected);
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("sends Exa no location when the country is not a two-letter code", async () => {
+		const fetchMock = vi.fn(async () => exaResults(1));
+		vi.stubGlobal("fetch", fetchMock);
+		try {
+			await buildServerToolContinuation(
+				searchRound("call_loc", { query: "weather", user_location: { country: "United Kingdom" } }),
+				searchConfig(),
+			);
+			expect(JSON.parse(String((fetchMock.mock.calls[0] as any)?.[1]?.body))).not.toHaveProperty("userLocation");
+		} finally {
+			vi.unstubAllGlobals();
+		}
 	});
 
 	it("returns datetime results for multiple timezones", async () => {

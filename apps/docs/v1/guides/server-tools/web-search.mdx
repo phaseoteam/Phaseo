@@ -62,7 +62,7 @@ Each call has a `query`. The model can also send `max_results`, `engine`, `searc
 
 | Argument | Description |
 | --- | --- |
-| `user_location` | Approximate location. Perplexity uses `user_location.country` for regional search; TinyFish uses the country and language. |
+| `user_location` | Approximate location. Exa and Perplexity use `user_location.country` (a two-letter code such as `GB`) for regional search; TinyFish uses the country and language. |
 | `language` | Result language code, such as `en`, for engines that localize. DeepSeek adds it to the query as a `lang:` filter. |
 | `page` | Result page `0` to `10`, for TinyFish. |
 
@@ -86,6 +86,8 @@ If a managed engine isn't enabled, the call returns `search_not_configured` to t
 With `engine: "native"` on `/v1/chat/completions` or `/v1/responses`, the request goes only to providers that run web search themselves. If none serve the model, Phaseo runs its default engine instead and bills it as managed search.
 
 The providers that run web search themselves on these endpoints are OpenAI, Azure OpenAI deployments on `/v1/responses`, xAI, and DeepSeek on `deepseek/deepseek-v4.1-flash-1017`. DeepSeek searches on its own only when web search is the request's only tool, with no domain lists or user location, no JSON output and no forced `tool_choice`. Its API rejects domain lists, a location and JSON output, turns its web search off when the request has other tools, and cannot force a search. Other requests to that model use Phaseo's search instead, which works alongside your own tools. With reasoning on, DeepSeek runs a deeper search that opens and reads pages over several steps.
+
+The providers' own search tools can't enforce `max_results` or `max_total_results`, and only Claude's enforces `max_uses`. A native search that sets a limit its provider can't enforce runs on Phaseo's default engine instead and is billed as managed search.
 
 Sending OpenAI's own `{ "type": "web_search" }` tool works the same way as `engine: "native"`. Set `native` in the tool definition only: if the model asks for `native` in a call, the call returns `unsupported_search_engine`, because the provider's tool has to be chosen before the request is sent.
 

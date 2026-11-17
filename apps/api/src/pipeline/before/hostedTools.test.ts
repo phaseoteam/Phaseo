@@ -48,6 +48,32 @@ describe("resolveHostedTools", () => {
 		expect(claude.ok && claude.webSearchMapped).toBe(true);
 	});
 
+	it.each([
+		["OpenAI", "openai", { type: "web_search", max_results: 3, max_total_results: 9 }, { max_results: 3, max_total_results: 9 }],
+		["xAI", "x-ai", { type: "web_search", max_uses: 2 }, { max_uses: 2 }],
+		["OpenAI (caps under parameters)", "openai", { type: "web_search", max_results: 8, parameters: { max_results: 3, max_total_results: 9 } }, { max_results: 3, max_total_results: 9 }],
+		["OpenAI (gateway tool)", "openai", { type: "phaseo:web_search", parameters: { engine: "native", max_results: 3 } }, { max_results: 3 }],
+	])("moves a capped search on %s to Phaseo's search, which enforces the caps", (_label, providerId, tool, caps) => {
+		const result = resolveHostedTools({
+			endpoint: "responses",
+			body: { model: "openai/gpt-5", input: "hi", tools: [tool] },
+			providers: [candidate(providerId)],
+		});
+		if (!result.ok) throw new Error("expected ok");
+		expect(result.webSearchMapped).toBe(true);
+		expect(result.providers.map((p) => p.providerId)).toEqual([providerId]);
+		expect(result.body.tools).toEqual([{ type: "phaseo:web_search", parameters: caps }]);
+	});
+
+	it("keeps an uncapped search native on OpenAI", () => {
+		const result = resolveHostedTools({
+			endpoint: "responses",
+			body: { model: "openai/gpt-5", input: "hi", tools: [{ type: "web_search", search_context_size: "low" }] },
+			providers: [candidate("openai")],
+		});
+		expect(result.ok && result.webSearchMapped).toBe(false);
+	});
+
 	it("lets xAI run web search, code interpreter and MCP, but not shell", () => {
 		const ok = resolveHostedTools({
 			endpoint: "responses",
@@ -143,7 +169,7 @@ describe("resolveHostedTools with native-engine gateway search", () => {
 		const added = applyServerToolPlugins({
 			endpoint: "responses",
 			body: { model: "m", input: "news?" },
-			plugins,
+			plugins: normalizeGatewayPlugins([{ id: "web", engine: "native" }]),
 		});
 		if (!added.ok) throw new Error("expected ok");
 		const result = resolveHostedTools({
@@ -158,6 +184,20 @@ describe("resolveHostedTools with native-engine gateway search", () => {
 			droppedProviderIds: ["google-ai-studio"],
 			webSearchMapped: false,
 		});
+	});
+
+	it("runs a native-engine search with max_results on our own search, which enforces it", () => {
+		const added = applyServerToolPlugins({ endpoint: "responses", body: { model: "m", input: "news?" }, plugins });
+		if (!added.ok) throw new Error("expected ok");
+		const result = resolveHostedTools({
+			endpoint: "responses",
+			body: added.body,
+			providers: [candidate("openai"), candidate("google-ai-studio")],
+		});
+		if (!result.ok) throw new Error("expected ok");
+		expect(result.webSearchMapped).toBe(true);
+		expect(result.providers.map((p) => p.providerId)).toEqual(["openai", "google-ai-studio"]);
+		expect(result.body.tools).toEqual([{ type: "phaseo:web_search", parameters: { max_results: 3 } }]);
 	});
 
 	it("falls back to our own search when no provider has native search", () => {

@@ -62,7 +62,7 @@ Cada chamada tem uma `query`. O modelo também pode enviar `max_results`, `engin
 
 | Argumento | Descrição |
 | --- | --- |
-| `user_location` | Localização aproximada. O Perplexity usa `user_location.country` para pesquisa regional; o TinyFish usa o país e o idioma. |
+| `user_location` | Localização aproximada. O Exa e o Perplexity usam `user_location.country` (um código de duas letras, como `GB`) para pesquisa regional; o TinyFish usa o país e o idioma. |
 | `language` | Código do idioma dos resultados, como `en`, para mecanismos que localizam. A DeepSeek o adiciona à consulta como um filtro `lang:`. |
 | `page` | Página de resultados de `0` a `10`, para o TinyFish. |
 
@@ -87,6 +87,8 @@ Se um mecanismo gerenciado não estiver habilitado, a chamada retorna `search_no
 Com `engine: "native"` em `/v1/chat/completions` ou `/v1/responses`, a solicitação vai apenas para provedores que executam a pesquisa na web por conta própria. Se nenhum deles atender o modelo, o Phaseo executa o mecanismo padrão no lugar e cobra como pesquisa gerenciada.
 
 Os provedores que executam a pesquisa na web por conta própria nesses endpoints são a OpenAI, as implantações do Azure OpenAI em `/v1/responses`, a xAI e a DeepSeek em `deepseek/deepseek-v4.1-flash-1017`. A DeepSeek pesquisa por conta própria apenas quando a pesquisa na web é a única ferramenta da solicitação, sem listas de domínios nem localização do usuário, sem saída JSON e sem um `tool_choice` forçado. A API dela rejeita listas de domínios, localização e saída JSON, desativa a pesquisa na web quando a solicitação tem outras ferramentas e não consegue forçar uma pesquisa. As demais solicitações a esse modelo usam a pesquisa da Phaseo, que funciona junto com as suas próprias ferramentas. Com o raciocínio ativado, a DeepSeek executa uma pesquisa mais profunda, que abre e lê páginas em várias etapas.
+
+As ferramentas de pesquisa dos próprios provedores não aplicam `max_results` nem `max_total_results`, e só a do Claude aplica `max_uses`. Uma pesquisa nativa que define um limite que o provedor não consegue aplicar roda no mecanismo padrão do Phaseo e é cobrada como pesquisa gerenciada.
 
 Enviar a ferramenta própria da OpenAI `{ "type": "web_search" }` funciona da mesma forma que `engine: "native"`. Defina `native` somente na definição da ferramenta: se o modelo pedir `native` em uma chamada, a chamada retorna `unsupported_search_engine`, porque a ferramenta do provedor precisa ser escolhida antes de a solicitação ser enviada.
 

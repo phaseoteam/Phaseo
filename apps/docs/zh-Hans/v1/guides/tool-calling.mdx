@@ -58,6 +58,8 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 这里的 `tool_choice` 强制模型调用该工具。省略它，或设为 `"auto"`，就由模型决定。
 
+DeepSeek 的 API 无法在模型思考时强制调用工具。当提供商是 DeepSeek 时，强制的 `tool_choice` 会关闭该请求的思考，因此回复中没有推理内容。
+
 模型会以调用而不是文本来回复：
 
 ```json
