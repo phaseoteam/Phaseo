@@ -28,6 +28,11 @@ export function getPricingProviderVariantLabels(args: {
 
 	pushSourceId(args.displayProvider.provider.api_provider_id);
 	for (const model of args.displayProvider.provider_models) {
+		// A retired or removed route no longer offers anything, so its provider's
+		// offer (e.g. a discontinued "turbo" offer) should not label the card.
+		const routeStatus = String(model.routing_status ?? "").trim().toLowerCase();
+		const availability = String(model.provider_availability_status ?? "").trim().toLowerCase();
+		if (routeStatus === "retired" || availability === "removed") continue;
 		pushSourceId(model.api_provider_id);
 	}
 	for (const rule of args.displayProvider.pricing_rules) {

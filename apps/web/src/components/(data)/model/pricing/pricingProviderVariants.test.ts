@@ -201,4 +201,34 @@ describe("getPricingProviderVariantLabels", () => {
 			}),
 		).toEqual([]);
 	});
+
+	test("ignores the offer of a provider whose only route is retired", () => {
+		const moonshotModel = (id: string, providerId: string, extra = {}) => ({
+			id,
+			api_provider_id: providerId,
+			model_id: "moonshotai/kimi-k2.7-code",
+			endpoint: "text.generate",
+			is_active_gateway: false,
+			input_modalities: "text",
+			output_modalities: "text",
+			...extra,
+		});
+		const moonshot = makeProviderPricing({
+			provider: { api_provider_id: "moonshotai", api_provider_name: "Moonshot AI", provider_family_id: "moonshotai", offer_label: null, offer_scope: "global" },
+			provider_models: [
+				moonshotModel("pm-1", "moonshotai"),
+				moonshotModel("pm-2", "moonshotai-turbo", { routing_status: "retired", provider_availability_status: "removed" }),
+			],
+			pricing_rules: [],
+		});
+		const turbo = makeProviderPricing({
+			provider: { api_provider_id: "moonshotai-turbo", api_provider_name: "Moonshot AI Turbo", provider_family_id: "moonshotai", offer_label: "priority", offer_scope: "specialized" },
+			provider_models: [],
+			pricing_rules: [],
+		});
+
+		expect(getPricingProviderVariantLabels({ displayProvider: moonshot, sourceProviders: [moonshot, turbo] })).toEqual([]);
+		const live = { ...moonshot, provider_models: [moonshotModel("pm-1", "moonshotai"), moonshotModel("pm-2", "moonshotai-turbo")] };
+		expect(getPricingProviderVariantLabels({ displayProvider: live, sourceProviders: [live, turbo] })).toHaveLength(2);
+	});
 });
