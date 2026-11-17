@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
-import { applyModelAccess, hiddenModelsMatching, isCatalogueModelBlocked, isProviderAllowed, type ModelAccess } from "./modelAccess";
+import { applyModelAccess, hiddenModelsMatching, isCatalogueModelBlocked, isProviderAllowed, threadUsesHiddenModel, type ModelAccess } from "./modelAccess";
 
 const access = (overrides: Partial<ModelAccess> = {}): ModelAccess => ({
 	workspaceId: "workspace-1",
@@ -83,5 +83,19 @@ describe("isCatalogueModelBlocked (/models)", () => {
 		expect(isCatalogueModelBlocked(access(), { model_id: "catalogue-only", gateway_api_model_ids: [] })).toBe(false);
 		expect(isCatalogueModelBlocked(access({ restricted: false }), { model_id: "openai/gpt-x" })).toBe(false);
 		expect(isCatalogueModelBlocked(null, { model_id: "openai/gpt-x" })).toBe(false);
+	});
+});
+
+describe("threadUsesHiddenModel (saved chats aren't moved off hidden models)", () => {
+	const thread = (modelId: string, providerId: string | null = null, compareModelIds: string[] = []) => ({ modelId, settings: { providerId, compareModelIds } });
+	it("flags a chat whose primary or compare model is hidden, or whose provider is turned off", () => {
+		expect(threadUsesHiddenModel(access(), thread("openai/gpt-x"))).toBe(true);
+		expect(threadUsesHiddenModel(access(), thread("meta/llama", null, ["google/gemini-y-pro"]))).toBe(true);
+		expect(threadUsesHiddenModel(access(), thread("anthropic/claude-z", "bedrock"))).toBe(true);
+	});
+	it("leaves other chats to the usual availability check", () => {
+		expect(threadUsesHiddenModel(access(), thread("anthropic/claude-z", "anthropic"))).toBe(false);
+		expect(threadUsesHiddenModel(access(), thread("meta/llama"))).toBe(false);
+		expect(threadUsesHiddenModel(null, thread("openai/gpt-x"))).toBe(false);
 	});
 });

@@ -58,6 +58,23 @@ export function applyModelAccess(models: GatewaySupportedModel[], access: ModelA
 	});
 }
 
+/**
+ * Whether a saved chat uses a model (or a provider) the rules leave out. Such chats are left as saved rather than moved
+ * to another model: the model is gone from the picker because of this workspace's rules, not because it was retired,
+ * and the same chat opened under another workspace should still have it.
+ */
+export function threadUsesHiddenModel(
+	access: ModelAccess | null | undefined,
+	thread: { modelId?: string | null; settings: { providerId?: string | null; compareModelIds?: string[] | null } },
+): boolean {
+	if (!access?.restricted) return false;
+	const hidden = hiddenModelIdSet(access);
+	const modelIds = [thread.modelId, ...(thread.settings.compareModelIds ?? [])].filter((id): id is string => Boolean(id));
+	if (modelIds.some((id) => hidden.has(id))) return true;
+	const providerId = thread.settings.providerId;
+	return Boolean(thread.modelId && providerId && !isProviderAllowed(access, [thread.modelId], providerId));
+}
+
 const normalise = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
 /** Hidden models matching a search (every word in the id or name), to say why a search finds nothing. */

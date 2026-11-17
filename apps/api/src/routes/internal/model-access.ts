@@ -44,7 +44,10 @@ async function isWorkspaceMember(workspaceId: string, userId: string): Promise<b
 	return Boolean(membership.data) || workspace.data?.owner_user_id === userId;
 }
 
-/** The member's active Chat key in this workspace (web-api creates it on their first Chat send), if any. */
+/**
+ * The member's active Chat key in this workspace (web-api creates it on their first Chat send), if any. Newest first:
+ * the key comes from a seed, and after the seed changes web-api makes and uses a new one, leaving older keys active.
+ */
 async function chatKeyId(workspaceId: string, userId: string): Promise<string | null> {
 	const { data, error } = await getSupabaseAdmin()
 		.from("keys")
@@ -53,7 +56,7 @@ async function chatKeyId(workspaceId: string, userId: string): Promise<string | 
 		.eq("created_by", userId)
 		.eq("name", CHAT_MANAGED_KEY_NAME)
 		.eq("status", "active")
-		.order("created_at", { ascending: true })
+		.order("created_at", { ascending: false })
 		.limit(1);
 	if (error) throw new Error(`chat_key_lookup_failed:${error.message}`);
 	const id = String((data as Array<{ id?: unknown }> | null)?.[0]?.id ?? "").trim();

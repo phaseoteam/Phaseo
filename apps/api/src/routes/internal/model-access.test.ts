@@ -10,13 +10,13 @@ const queries: Array<{ table: string; filters: Array<[string, unknown]> }> = [];
 
 /** A PostgREST-ish builder: every filter chains, and the query resolves to the table's canned result. */
 function builder(table: keyof TableRows) {
-	const record = { table, filters: [] as Array<[string, unknown]> };
+	const record = { table, filters: [] as Array<[string, unknown]>, order: [] as unknown[] };
 	queries.push(record);
 	const result = () => ({ data: tables[table], error: null });
 	const chain: any = {
 		select: () => chain,
 		eq: (column: string, value: unknown) => { record.filters.push([column, value]); return chain; },
-		order: () => chain,
+		order: (...args: unknown[]) => { record.order.push(args); return chain; },
 		limit: () => chain,
 		maybeSingle: async () => result(),
 		then: (resolve: (value: unknown) => unknown, reject: (error: unknown) => unknown) => Promise.resolve(result()).then(resolve, reject),
@@ -128,6 +128,8 @@ describe("GET /internal/model-access", () => {
 		expect(keyQuery?.filters).toEqual(expect.arrayContaining([
 			["workspace_id", WORKSPACE], ["created_by", USER], ["name", "__chat_route_managed_key__"], ["status", "active"],
 		]));
+		// Newest first: after the key seed changes, Chat uses the key made from the new seed.
+		expect(keyQuery?.order).toEqual([["created_at", { ascending: false }]]);
 	});
 
 	it("skips the catalogue when no rule restricts models", async () => {
