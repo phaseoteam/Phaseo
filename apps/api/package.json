@@ -9,7 +9,7 @@
 		"build:jobs": "pnpm exec wrangler deploy --dry-run --config wrangler.jobs.toml",
 		"build:realtime": "pnpm exec wrangler deploy --dry-run --config wrangler.realtime.toml",
 		"build:connect": "pnpm exec wrangler deploy --dry-run --config wrangler.connect.toml",
-		"build:regional":"pnpm exec wrangler deploy --dry-run --config wrangler.eu.toml && pnpm exec wrangler deploy --dry-run --config wrangler.us.toml",
+		"build:regional": "pnpm exec wrangler deploy --dry-run --config wrangler.eu.toml && pnpm exec wrangler deploy --dry-run --config wrangler.us.toml",
 		"deploy:eu": "pnpm exec wrangler deploy --config wrangler.eu.toml",
 		"deploy:us": "pnpm exec wrangler deploy --config wrangler.us.toml",
 		"start": "npx wrangler dev",
@@ -57,6 +57,7 @@
 		"simulate:providers:executor": "vitest run --config tools/provider-simulator/vitest.config.ts tools/provider-simulator/simulate.sim.ts"
 	},
 	"dependencies": {
+		"@noble/curves": "1.9.7",
 		"@phaseo/phone-protocol": "workspace:*",
 		"@streamparser/json": "0.0.26",
 		"@supabase/auth-js": "2.110.3",

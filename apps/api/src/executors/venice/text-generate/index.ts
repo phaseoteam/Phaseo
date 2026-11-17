@@ -7,6 +7,7 @@ import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
 import { executeOpenAIWire } from "@executors/_shared/text-generate/openai-compat";
 import { buildTextExecutor, cherryPickIRParams } from "@executors/_shared/text-generate/shared";
 import type { ProviderExecutor } from "../../types";
+import { withVeniceE2EE } from "./e2ee";
 
 export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChatRequest {
 	return cherryPickIRParams(ir, args.capabilityParams);
@@ -14,10 +15,10 @@ export function preprocess(ir: IRChatRequest, args: ExecutorExecuteArgs): IRChat
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	if (args.providerId === "venice-e2ee") {
-		// E2EE is not a provider alias: it requires attestation verification,
-		// secp256k1 key agreement, encrypted messages, mandatory streaming, and
-		// response-chunk decryption. Never fall through to the plaintext adapter.
-		throw new Error("venice_e2ee_encryption_not_implemented");
+		// E2EE is not a provider alias: the prompt is encrypted for the attested
+		// enclave and the streamed answer decrypted here, on Chat Completions only.
+		// It never falls through to the plaintext adapter.
+		return executeOpenAIWire(withVeniceE2EE(args), { transientRetries: 1, forceChat: true });
 	}
 	return executeOpenAIWire(args, { transientRetries: 1 });
 }
