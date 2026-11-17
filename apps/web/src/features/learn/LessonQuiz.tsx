@@ -6,6 +6,9 @@ import { cn } from "@/lib/utils";
 import { InlineMarkdown } from "./shared";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+// Strokes draw on screen, so they use the even in-out curve: a front-loaded ease-out finishes
+// almost the whole stroke in the first frames and reads as no animation at all.
+const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
 
 type CheckState = "empty" | "picked" | "right" | "wrong";
 
@@ -18,14 +21,18 @@ function CheckBox({ state }: { state: CheckState }) {
 	const draw = (delay = 0) =>
 		reduce
 			? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.12 } }
-			: { initial: { pathLength: 0 }, animate: { pathLength: 1 }, transition: { duration: 0.2, delay, ease: EASE_OUT } };
+			: { initial: { pathLength: 0 }, animate: { pathLength: 1 }, transition: { duration: 0.3, delay: 0.06 + delay, ease: EASE_IN_OUT } };
 	return (
-		<span
+		<motion.span
+			key={state === "empty" ? "empty" : state}
 			aria-hidden
+			initial={reduce || state === "empty" ? false : { scale: 0.85 }}
+			animate={{ scale: 1 }}
+			transition={{ duration: 0.2, ease: EASE_OUT }}
 			className={cn(
 				"mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[5px] border text-white",
-				"transition-[background-color,border-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
-				"peer-focus-visible:ring-3 peer-focus-visible:ring-ring/30 group-active/option:scale-95",
+				"transition-[background-color,border-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)]",
+				"peer-focus-visible:ring-3 peer-focus-visible:ring-ring/30",
 				state === "empty" && "border-zinc-300 bg-transparent dark:border-zinc-600",
 				state === "picked" && "border-zinc-900 bg-zinc-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900",
 				state === "right" && "border-emerald-500 bg-emerald-500",
@@ -37,14 +44,14 @@ function CheckBox({ state }: { state: CheckState }) {
 					{state === "wrong" ? (
 						<>
 							<motion.path d="M4.5 4.5 11.5 11.5" {...draw()} />
-							<motion.path d="M11.5 4.5 4.5 11.5" {...draw(0.12)} />
+							<motion.path d="M11.5 4.5 4.5 11.5" {...draw(0.16)} />
 						</>
 					) : (
 						<motion.path d="M3.5 8.5 6.5 11.5 12.5 4.5" {...draw()} />
 					)}
 				</svg>
 			)}
-		</span>
+		</motion.span>
 	);
 }
 
