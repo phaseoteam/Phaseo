@@ -421,6 +421,9 @@ export type WorkspaceApi = {
 	updatePhone: (update: PhoneSettingsUpdate) => Promise<PhoneState>;
 	pairPhone: () => Promise<PhonePairingView>;
 	removePhone: (id: string) => Promise<PhoneState>;
+	/** A one-time link for an AI app to drive chats over Phaseo Connect, with this access (Settings → Outside agents). */
+	linkRemoteAgent: (access: OutsideAgentAccess) => Promise<{ link: string; expiresAt: string }>;
+	removeRemoteAgent: (id: string) => Promise<PhoneState>;
 	/** Switches what one paired phone may do beyond its threads. */
 	setPhoneAccess: (id: string, access: Partial<PhoneAccess>) => Promise<PhoneState>;
 	setupPhoneHttps: () => Promise<PhoneState>;

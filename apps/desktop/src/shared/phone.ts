@@ -1,3 +1,5 @@
+import type { OutsideAgentAccess } from "./outsideAgents";
+
 /**
  * Settings → Phone: what the window shows of phone access and Phaseo Connect. The server itself lives in
  * src/main/phone; the frames a phone speaks are in @phaseo/phone-protocol.
@@ -22,6 +24,8 @@ export const phoneAccessLabels: Record<keyof PhoneAccess, { title: string; descr
 	changes: { title: "Make changes", description: "Commit, push, pull and switch branches, start threads in new worktrees, and create, merge, review and comment on pull requests. Needs Read code. The window notes each change a phone makes." },
 	terminal: { title: "Use terminals", description: "Open terminals in a thread's folder and type in them, run project scripts, and stop servers a thread started. Needs Read code. The window names the phone on each terminal it's in." },
 };
+/** An AI app linked through mcp.phaseo.app and Phaseo Connect (Settings → Outside agents). */
+export type RemoteAgentView = { id: string; name: string; access: OutsideAgentAccess; pairedAt: string; lastSeenAt?: string };
 export type PhoneDeviceView = { id: string; name: string; pairedAt: string; lastSeenAt?: string; connected: boolean; access: PhoneAccess };
 /** Where Phaseo Connect stands. payment-due: switched off until an unpaid month is taken from credits. */
 export type ConnectStatus = "off" | "signed-out" | "checking" | "connecting" | "connected" | "payment-due" | "error";
@@ -47,6 +51,8 @@ export type PhoneState = {
 	addresses: PhoneAddress[];
 	tailscale: { installed: boolean; /** The tailnet allows HTTPS certificates; null when the CLI doesn't say. */ httpsAvailable: boolean | null; serving: boolean; dnsName?: string };
 	devices: PhoneDeviceView[];
+	/** Apps linked over Phaseo Connect; they appear in Settings → Outside agents, not with the phones. */
+	agents: RemoteAgentView[];
 	connect: ConnectView;
 };
 /** A pairing code to show: the phaseo://pair link and the QR code of it, one character per module ("1" dark). */

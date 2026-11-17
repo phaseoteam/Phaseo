@@ -4,10 +4,13 @@ import { connectRelayUrl, encodePairingLink, generateKeyPair, publicKeyOf, token
 import { phoneAddressLabels, validatePhoneAccessUpdate, validatePhoneSettingsUpdate, type ConnectView, type PhoneAddress, type PhoneAddressKind, type PhonePairingView, type PhoneState } from "../../shared/phone";
 import { formatSpend } from "../../shared/usageAmounts";
 import type { WorkspaceOverview } from "../../shared/workspaceOverview";
+import type { OutsideAgentAccess } from "../../shared/outsideAgents";
+import type { ThreadTools } from "../../shared/orchestration";
 import { connectBillingClient, type ConnectBilling, type ConnectBillingClient } from "./connectBilling";
 import { ConnectClient, type ConnectClientState } from "./connectClient";
 import { capabilitiesOf, PhonePairing, PhoneSettingsFile, type DeviceStore } from "./phoneDevices";
 import { PhoneServer } from "./phoneServer";
+import { remoteAgentRequests } from "./remoteAgents";
 import { PhoneHub, type PhoneHost } from "./phoneSession";
 import { bindHosts, detectAddresses, disableTailscaleServe, ensureTailscaleServe, probeHttps, readTailscaleStatus, runCommand, tailscaleHttpsUrl, type DetectedAddresses, type NetworkInterfaces, type RunCommand } from "./tailscale";
 
@@ -25,6 +28,8 @@ export type PhoneServicePorts = {
 	relayUrl?: string;
 	billing?: (signIn: PhaseoSignIn) => ConnectBillingClient;
 	store?: DeviceStore;
+	/** The outside-agent thread tools for an app linked over Connect; without it, linked apps get no answers. */
+	agentTools?: (agent: { id: string; name: string; access: OutsideAgentAccess }) => Partial<ThreadTools>;
 };
 
 const identitySecret = "phone-identity";
@@ -123,6 +128,7 @@ export class PhoneService {
 			...settings.enabled && this.serverErrors.length ? { error: this.serverErrors.join(" ") } : settings.enabled && !this.hosts.length ? { error: "None of the chosen addresses exist on this computer right now." } : {},
 			addresses,
 			tailscale: { installed: Boolean(this.detected.status), httpsAvailable: this.detected.status?.httpsServeEnabled ?? null, serving: settings.tailscaleServe, ...this.detected.status?.magicDnsName ? { dnsName: this.detected.status.magicDnsName } : {} },
+			agents: this.pairing.agents().map(agent => ({ id: agent.id, name: agent.name, access: agent.access, pairedAt: agent.pairedAt, ...agent.lastSeenAt ? { lastSeenAt: agent.lastSeenAt } : {} })),
 			devices: settings.devices.map(device => ({ id: device.id, name: device.name, pairedAt: device.pairedAt, ...device.lastSeenAt ? { lastSeenAt: device.lastSeenAt } : {}, connected: connected.has(device.id), access: device.access })),
 			connect: this.connectView(),
 		};
@@ -179,6 +185,25 @@ export class PhoneService {
 		const modules = toQR(link), size = Math.round(Math.sqrt(modules.length));
 		return { link, qr: { size, modules: Array.from(modules, value => value ? "1" : "0").join("") }, expiresAt: code.expiresAt };
 	}
+	/**
+	 * A link for an AI app (through mcp.phaseo.app) to drive this computer's chats with this access. Only over
+	 * Phaseo Connect, so it carries no direct addresses; it works once, for ten minutes, like a phone's code.
+	 */
+	async pairAgent(access: unknown): Promise<{ link: string; expiresAt: string }> {
+		if (access !== "read" && access !== "start") throw new Error("Choose what the app may do.");
+		const settings = this.store.value;
+		if (!settings.enabled || this.connectState.status !== "connected") throw new Error("Apps reach this computer through Phaseo Connect. Turn on phone access and Phaseo Connect in Settings → Phone first.");
+		const identity = await this.loadIdentity();
+		const code = this.pairing.create({ agent: access });
+		this.connect?.registerDevice(code.relay.deviceId, tokenHash(code.relay.relayToken));
+		const link = encodePairingLink({ v: 1, desktopId: settings.desktopId, desktopName: this.ports.host.desktopName().slice(0, 100), pairingCode: code.pairingCode, desktopPublicKey: identity.publicKey, direct: [], connect: { relayUrl: this.relayUrl(), desktopId: settings.desktopId } });
+		return { link, expiresAt: code.expiresAt };
+	}
+	removeAgent(id: unknown) {
+		if (typeof id !== "string") throw new Error("Invalid app.");
+		this.pairing.removeAgent(id);
+		return this.state();
+	}
 	setDeviceAccess(id: unknown, access: unknown) {
 		const update = validatePhoneAccessUpdate(id, access);
 		this.pairing.setAccess(update.id, update.access);
@@ -228,6 +253,8 @@ export class PhoneService {
 		const client: ConnectClient = this.connect = new ConnectClient({
 			relayUrl: this.relayUrl(), desktopId: settings.desktopId, desktopName: this.ports.host.desktopName, privateKey: identity.privateKey,
 			gatewayKey: () => signIn!.gatewayKey(), devices: () => this.store.value.devices, pairing: this.pairing, hub: this.hub,
+			agents: () => this.pairing.agents(),
+			...this.ports.agentTools ? { agentRequest: remoteAgentRequests({ tools: this.ports.agentTools, desktopName: this.ports.host.desktopName, remove: agentId => this.pairing.removeAgent(agentId) }) } : {},
 			pendingRemovals: () => this.store.value.relayRemovals ?? [],
 			onRemovalConfirmed: deviceId => { const pending = this.store.value.relayRemovals ?? []; if (pending.includes(deviceId)) this.store.save({ relayRemovals: pending.filter(id => id !== deviceId) }); },
 			onState: state => {

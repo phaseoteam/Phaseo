@@ -347,7 +347,7 @@ export class WorkspaceThreads {
 		// Stands in for the calling chat where the shared helpers expect one; it is never stored and has no project or account.
 		const ceiling = { id: caller, harness: "phaseo", model: "default", mode: "code", permissionMode: "supervised" } as Task;
 		const writable = () => {
-			if (agent.access !== "start") throw new Error("This token is read only. Make one that can start chats in Phaseo's Settings, Outside agents.");
+			if (agent.access !== "start") throw new Error("This agent is read only. In Phaseo's Settings, Outside agents, give it a token or link that can start chats.");
 			if (this.host.isClosing()) throw new Error("The workspace is shutting down.");
 		};
 		const notice = (summary: string) => ({ kind: "outside-agent" as const, summary, outcome: "updated" as const });

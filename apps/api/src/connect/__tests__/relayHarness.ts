@@ -13,7 +13,7 @@ import { ConnectRoom, CONNECT_KEY_HASH_HEADER, CONNECT_ROLE_HEADER, CONNECT_WORK
 import { sqlStorage } from "./sqlStorage";
 import { ConnectClient, type ConnectClientState } from "../../../../desktop/src/main/phone/connectClient";
 import { fakePhoneHost } from "../../../../desktop/src/main/phone/fakePhoneHost";
-import { PhonePairing, type PhoneSettings } from "../../../../desktop/src/main/phone/phoneDevices";
+import { PhonePairing, type AgentDeviceRecord, type PhoneSettings } from "../../../../desktop/src/main/phone/phoneDevices";
 import { PhoneServer } from "../../../../desktop/src/main/phone/phoneServer";
 import { PhoneHub } from "../../../../desktop/src/main/phone/phoneSession";
 
@@ -183,7 +183,7 @@ export type Relay = Awaited<ReturnType<typeof startRelay>>;
  * A desktop signed in to the relay, wired as its phone service wires the Connect client, with one chat. showPairingCode
  * does what Settings → Phone does for the QR code: makes a code and lets its pairing sign-in through the relay.
  */
-export async function startDesktop(relay: Relay) {
+export async function startDesktop(relay: Relay, options: { agentRequest?: (agent: AgentDeviceRecord, text: string) => Promise<Record<string, unknown> | undefined> } = {}) {
 	const app = fakePhoneHost();
 	app.addTask({ id: "chat-1", title: "Release notes", messages: [{ id: "u1", role: "user", text: "Draft them", createdAt: "2026-11-01T09:00:00.000Z" }] });
 	const desktopKeys = generateKeyPair(), desktopId = randomUUID();
@@ -192,7 +192,8 @@ export async function startDesktop(relay: Relay) {
 	const pairing = new PhonePairing(store), hub = new PhoneHub(app.host);
 	app.onChange(overview => hub.overviewChanged(overview));
 	const states = inbox<ConnectClientState>();
-	const client = new ConnectClient({ relayUrl: relay.url, desktopId, desktopName: () => "Test PC", privateKey: desktopKeys.privateKey, gatewayKey: async () => GATEWAY_KEY, devices: () => store.value.devices, pairing, hub, onState: state => states.push(state), backoff: () => 0 });
+	const client = new ConnectClient({ relayUrl: relay.url, desktopId, desktopName: () => "Test PC", privateKey: desktopKeys.privateKey, gatewayKey: async () => GATEWAY_KEY, devices: () => store.value.devices, pairing, hub, onState: state => states.push(state), backoff: () => 0,
+		agents: () => pairing.agents(), ...options.agentRequest ? { agentRequest: options.agentRequest } : {} });
 	pairing.onPaired = device => client.registerDevice(device.id, device.relayTokenHash);
 	pairing.onRemoved = deviceId => { hub.closeDevice(deviceId); client.removeDevice(deviceId); };
 	pairing.onCodeExpired = relayDeviceId => client.removeDevice(relayDeviceId);
@@ -200,8 +201,9 @@ export async function startDesktop(relay: Relay) {
 	client.start();
 	await states.until(state => state.status === "connected");
 	const registered = (deviceId: string) => relay.processed.until(entry => entry.sender === "desktop" && entry.frame.type === "register_device" && entry.frame.deviceId === deviceId);
-	async function showPairingCode() {
-		const code = pairing.create();
+	/** Settings → Phone's QR code, or with `agent` Settings → Outside agents' link for an app. */
+	async function showPairingCode(agent?: "read" | "start") {
+		const code = pairing.create(agent ? { agent } : {});
 		client.registerDevice(code.relay.deviceId, tokenHash(code.relay.relayToken));
 		await registered(code.relay.deviceId);
 		return code;
