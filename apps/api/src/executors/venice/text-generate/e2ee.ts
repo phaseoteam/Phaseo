@@ -1,23 +1,32 @@
 // Purpose: Venice end-to-end encryption (E2EE) for `e2ee-*` models served through the `venice-e2ee` provider.
-// Why: Venice relays only ciphertext to an attested TEE when the client encrypts the prompt. Without this the
-//      route could not run at all (the adapter refused it), and a plaintext call would silently lose the guarantee.
+// Why: Venice relays only ciphertext to an attested TEE when the client encrypts the conversation. Without this
+//      the route could not run at all (the adapter refused it), and a plaintext call would lose the guarantee.
 // How: Wraps the executor's upstream fetch. For the provider call only it
 //      1. fetches the model's TEE attestation with a fresh 32-byte nonce and requires `verified: true`, a matching
-//         nonce and a signing key (cached per model for a few minutes),
-//      2. encrypts every `system`/`user` message for the enclave (secp256k1 ECDH -> HKDF-SHA256 -> AES-256-GCM),
+//         nonce, no debug flag and a signing key (cached per model for a few minutes),
+//      2. encrypts the content of every system, developer, user, assistant and tool message for the enclave
+//         (secp256k1 ECDH -> HKDF-SHA256 -> AES-256-GCM),
 //      3. sends Venice's `X-Venice-TEE-*` headers with a per-request ephemeral client key, and
-//      4. returns a response whose encrypted content chunks are decrypted before the shared OpenAI parser reads them.
+//      4. returns a response whose encrypted chunks are decrypted before the shared OpenAI parser reads them.
 // Protocol: https://docs.venice.ai/guides/features/tee-e2ee-models.md (fetched 2026-11-17).
+// Behaviour checked against Venice's live enclave on 2026-11-17 (e2ee-qwen-2-5-7b-p, e2ee-glm-5-3-flash):
+//   - plaintext assistant content -> 400 "E2EE decryption failed"; encrypted -> decrypted and used.
+//   - plaintext tool content -> 400 "Encrypted field is not valid hex"; encrypted -> decrypted and used.
+//   - tool-call `arguments` are NOT decrypted by the enclave (the model sees the hex), so they stay plaintext,
+//     like the tool definitions Venice documents as unencrypted.
 
 import { secp256k1 } from "@noble/curves/secp256k1";
-import type { ExecutorExecuteArgs, ExecutorUpstreamTiming } from "@executors/types";
+import type { ExecutorExecuteArgs, ExecutorResult, ExecutorUpstreamTiming } from "@executors/types";
 
 const HKDF_INFO = new TextEncoder().encode("ecdsa_encryption");
 /** ephemeral public key (65) + AES-GCM nonce (12) + tag (16) bytes, hex encoded. */
 const MIN_ENCRYPTED_HEX_LENGTH = 186;
 const ATTESTATION_TTL_MS = 5 * 60 * 1000;
 const ATTESTATION_TIMEOUT_MS = 10_000;
-const ENCRYPTED_ROLES = new Set(["system", "user", "developer"]);
+/** Roles whose `content` Venice's enclave decrypts. A developer turn is sent as system. */
+const ENCRYPTED_ROLES = new Set(["system", "developer", "user", "assistant", "tool"]);
+/** Reasoning echoed back in history is not part of Venice's encrypted fields, so it is not sent. */
+const UNENCRYPTED_HISTORY_FIELDS = ["reasoning_content", "reasoning", "reasoning_details"] as const;
 
 export class VeniceE2EEError extends Error {
 	constructor(code: string, detail?: string) {
@@ -26,12 +35,33 @@ export class VeniceE2EEError extends Error {
 	}
 }
 
+type JsonObject = Record<string, unknown>;
+
+type ChatMessage = JsonObject & { role?: unknown; content?: unknown };
+
+type ChatBody = JsonObject & { model?: unknown; messages?: unknown; stream?: unknown };
+
+type Attestation = {
+	verified?: unknown;
+	nonce?: unknown;
+	signing_key?: unknown;
+	signing_public_key?: unknown;
+	debug?: unknown;
+	debug_mode?: unknown;
+	tdx_debug?: unknown;
+	is_debug?: unknown;
+};
+
 type CachedModelKey = { modelPublicKeyHex: string; expiresAt: number };
 const attestedKeys = new Map<string, CachedModelKey>();
 
 /** Test hook: forget cached attestations. */
 export function resetVeniceE2EEAttestationCache(): void {
 	attestedKeys.clear();
+}
+
+function isObject(value: unknown): value is JsonObject {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function bytesToHex(bytes: Uint8Array): string {
@@ -118,37 +148,50 @@ export async function decryptFromModel(
 	}
 }
 
-function messageText(message: any): string {
-	const content = message?.content;
+/** Text of a message's content. Parts are concatenated as written, with no separator added. */
+function messageText(content: unknown): string {
 	if (typeof content === "string") return content;
 	if (content == null) return "";
 	if (Array.isArray(content)) {
-		const parts: string[] = [];
+		let text = "";
 		for (const part of content) {
-			if (typeof part === "string") parts.push(part);
-			else if (part?.type === "text" && typeof part.text === "string") parts.push(part.text);
-			else throw new VeniceE2EEError("venice_e2ee_unsupported_content", `E2EE carries text only, got ${String(part?.type ?? "unknown")}`);
+			if (typeof part === "string") text += part;
+			else if (isObject(part) && part.type === "text" && typeof part.text === "string") text += part.text;
+			else throw new VeniceE2EEError("venice_e2ee_unsupported_content", `E2EE carries text only, got ${isObject(part) ? String(part.type ?? "unknown") : typeof part}`);
 		}
-		return parts.join("\n");
+		return text;
 	}
 	throw new VeniceE2EEError("venice_e2ee_unsupported_content");
 }
 
-/** Encrypts every system, developer and user message. Venice rejects plaintext in those roles once E2EE headers are sent. */
-export async function encryptChatMessages(body: Record<string, any>, modelPublicKey: Uint8Array): Promise<Record<string, any>> {
+async function encryptMessage(message: ChatMessage, modelPublicKey: Uint8Array): Promise<ChatMessage> {
+	const role = String(message.role ?? "");
+	if (!ENCRYPTED_ROLES.has(role)) {
+		throw new VeniceE2EEError("venice_e2ee_unsupported_content", `cannot encrypt a ${role || "role-less"} message`);
+	}
+	const next: ChatMessage = { ...message, role: role === "developer" ? "system" : role };
+	for (const field of UNENCRYPTED_HISTORY_FIELDS) delete next[field];
+	// An assistant tool-call turn may carry no content; Venice accepts it omitted, and encrypting nothing would
+	// invent an empty answer. Every other role always has content to encrypt.
+	if (role === "assistant" && (message.content === null || message.content === undefined)) {
+		delete next.content;
+		return next;
+	}
+	next.content = await encryptForModel(messageText(message.content), modelPublicKey);
+	return next;
+}
+
+/**
+ * Encrypts the content of every message. Venice's enclave decrypts system, user, assistant and tool content and
+ * rejects plaintext in those fields once the E2EE headers are sent. Tool definitions and tool-call arguments stay
+ * plaintext because the enclave does not decrypt them.
+ */
+export async function encryptChatMessages(body: ChatBody, modelPublicKey: Uint8Array): Promise<ChatBody> {
 	const messages = Array.isArray(body.messages) ? body.messages : [];
-	const encrypted = [] as any[];
+	const encrypted: ChatMessage[] = [];
 	for (const message of messages) {
-		if (!ENCRYPTED_ROLES.has(String(message?.role))) {
-			encrypted.push(message);
-			continue;
-		}
-		encrypted.push({
-			...message,
-			// Venice's enclave decrypts `system` and `user`; a developer turn is sent as system so it is never plaintext.
-			role: message.role === "developer" ? "system" : message.role,
-			content: await encryptForModel(messageText(message), modelPublicKey),
-		});
+		if (!isObject(message)) throw new VeniceE2EEError("venice_e2ee_unsupported_content");
+		encrypted.push(await encryptMessage(message, modelPublicKey));
 	}
 	return { ...body, messages: encrypted, stream: true };
 }
@@ -163,8 +206,8 @@ function attestationUrl(chatUrl: string, model: string, nonce: string): string {
 	return `${base}/tee/attestation?model=${encodeURIComponent(model)}&nonce=${nonce}`;
 }
 
-function attestationDeclaresDebug(attestation: any): boolean {
-	return [attestation?.debug, attestation?.debug_mode, attestation?.tdx_debug, attestation?.is_debug].some((value) => value === true);
+function attestationDeclaresDebug(attestation: Attestation): boolean {
+	return [attestation.debug, attestation.debug_mode, attestation.tdx_debug, attestation.is_debug].some((value) => value === true);
 }
 
 /** Fetches and checks the model's attestation, returning the enclave public key as Venice sent it. */
@@ -187,35 +230,38 @@ export async function fetchAttestedModelKey(input: {
 		signal: AbortSignal.timeout(ATTESTATION_TIMEOUT_MS),
 	});
 	if (!response.ok) throw new VeniceE2EEError("venice_e2ee_attestation_failed", `HTTP ${response.status}`);
-	const attestation: any = await response.json().catch(() => null);
-	if (attestation?.verified !== true) throw new VeniceE2EEError("venice_e2ee_attestation_failed", "not verified");
-	if (String(attestation?.nonce ?? "").toLowerCase() !== nonce) throw new VeniceE2EEError("venice_e2ee_attestation_failed", "nonce mismatch");
+	const parsed: unknown = await response.json().catch(() => null);
+	const attestation: Attestation = isObject(parsed) ? parsed : {};
+	if (attestation.verified !== true) throw new VeniceE2EEError("venice_e2ee_attestation_failed", "not verified");
+	if (String(attestation.nonce ?? "").toLowerCase() !== nonce) throw new VeniceE2EEError("venice_e2ee_attestation_failed", "nonce mismatch");
 	if (attestationDeclaresDebug(attestation)) throw new VeniceE2EEError("venice_e2ee_attestation_failed", "debug enclave");
-	const modelPublicKeyHex = attestation?.signing_key ?? attestation?.signing_public_key;
+	const modelPublicKeyHex = attestation.signing_key ?? attestation.signing_public_key;
 	if (typeof modelPublicKeyHex !== "string" || !modelPublicKeyHex) throw new VeniceE2EEError("venice_e2ee_attestation_failed", "no signing key");
 	normalizePublicKey(modelPublicKeyHex);
 	attestedKeys.set(cacheKey, { modelPublicKeyHex, expiresAt: now + ATTESTATION_TTL_MS });
 	return modelPublicKeyHex;
 }
 
-async function decryptChoiceFields(payload: any, clientPrivateKey: Uint8Array, keyCache: Map<string, CryptoKey>): Promise<boolean> {
+async function decryptField(holder: unknown, field: string, clientPrivateKey: Uint8Array, keyCache: Map<string, CryptoKey>): Promise<boolean> {
+	if (!isObject(holder) || !looksEncrypted(holder[field])) return false;
+	const plain = await decryptFromModel(holder[field] as string, clientPrivateKey, keyCache);
+	if (plain === null) return false;
+	holder[field] = plain;
+	return true;
+}
+
+async function decryptChoiceFields(payload: unknown, clientPrivateKey: Uint8Array, keyCache: Map<string, CryptoKey>): Promise<boolean> {
+	if (!isObject(payload) || !Array.isArray(payload.choices)) return false;
 	let changed = false;
-	const decryptField = async (holder: any, field: string) => {
-		if (!holder || !looksEncrypted(holder[field])) return;
-		const plain = await decryptFromModel(holder[field], clientPrivateKey, keyCache);
-		if (plain !== null) {
-			holder[field] = plain;
-			changed = true;
-		}
-	};
-	for (const choice of Array.isArray(payload?.choices) ? payload.choices : []) {
-		for (const holder of [choice?.delta, choice?.message]) {
-			if (!holder) continue;
-			await decryptField(holder, "content");
-			await decryptField(holder, "reasoning_content");
-			await decryptField(holder, "reasoning");
+	for (const choice of payload.choices) {
+		if (!isObject(choice)) continue;
+		for (const holder of [choice.delta, choice.message]) {
+			if (!isObject(holder)) continue;
+			for (const field of ["content", "reasoning_content", "reasoning"]) {
+				changed = (await decryptField(holder, field, clientPrivateKey, keyCache)) || changed;
+			}
 			for (const call of Array.isArray(holder.tool_calls) ? holder.tool_calls : []) {
-				await decryptField(call?.function, "arguments");
+				if (isObject(call)) changed = (await decryptField(call.function, "arguments", clientPrivateKey, keyCache)) || changed;
 			}
 		}
 	}
@@ -226,22 +272,21 @@ async function decryptChoiceFields(payload: any, clientPrivateKey: Uint8Array, k
 export function decryptingResponse(response: Response, clientPrivateKey: Uint8Array): Response {
 	const keyCache = new Map<string, CryptoKey>();
 	const contentType = response.headers.get("content-type") ?? "";
-	if (!response.body) return response;
+	const upstreamBody = response.body;
+	if (!upstreamBody) return response;
 
 	if (!contentType.includes("text/event-stream")) {
-		const body = (async () => {
-			const text = await response.text();
-			try {
-				const json = JSON.parse(text);
-				await decryptChoiceFields(json, clientPrivateKey, keyCache);
-				return JSON.stringify(json);
-			} catch {
-				return text;
-			}
-		})();
 		const stream = new ReadableStream<Uint8Array>({
 			async start(controller) {
-				controller.enqueue(new TextEncoder().encode(await body));
+				const text = await response.text();
+				let out = text;
+				try {
+					const json: unknown = JSON.parse(text);
+					if (await decryptChoiceFields(json, clientPrivateKey, keyCache)) out = JSON.stringify(json);
+				} catch {
+					// Not JSON: pass through unchanged.
+				}
+				controller.enqueue(new TextEncoder().encode(out));
 				controller.close();
 			},
 		});
@@ -256,9 +301,10 @@ export function decryptingResponse(response: Response, clientPrivateKey: Uint8Ar
 		const data = line.slice(5).trimStart();
 		if (!data || data === "[DONE]") return line;
 		try {
-			const json = JSON.parse(data);
+			const json: unknown = JSON.parse(data);
 			return (await decryptChoiceFields(json, clientPrivateKey, keyCache)) ? `data: ${JSON.stringify(json)}` : line;
 		} catch {
+			// A malformed event is passed through for the shared parser to handle as it would any provider's.
 			return line;
 		}
 	};
@@ -268,30 +314,42 @@ export function decryptingResponse(response: Response, clientPrivateKey: Uint8Ar
 			const lines = buffered.split("\n");
 			buffered = lines.pop() ?? "";
 			const out: string[] = [];
-			for (const line of lines) out.push(await rewriteLine(line.replace(/\r$/, "")));
+			for (const line of lines) {
+				const carriage = line.endsWith("\r");
+				const rewritten = await rewriteLine(carriage ? line.slice(0, -1) : line);
+				out.push(carriage ? `${rewritten}\r` : rewritten);
+			}
 			if (out.length > 0) controller.enqueue(encoder.encode(`${out.join("\n")}\n`));
 		},
 		async flush(controller) {
 			buffered += decoder.decode();
-			if (buffered) controller.enqueue(encoder.encode(await rewriteLine(buffered.replace(/\r$/, ""))));
+			if (buffered) controller.enqueue(encoder.encode(await rewriteLine(buffered)));
 		},
 	});
-	return new Response(response.body.pipeThrough(transform), {
+	// pipeThrough propagates a downstream cancel to the upstream body, so the provider connection closes.
+	return new Response(upstreamBody.pipeThrough(transform), {
 		status: response.status,
 		statusText: response.statusText,
 		headers: response.headers,
 	});
 }
 
-function readHeader(headers: HeadersInit | undefined, name: string): string | null {
-	return new Headers(headers ?? {}).get(name);
-}
+/** Executor args whose provider fetch runs Venice's E2EE protocol, plus the mapping back to tracked responses. */
+export type VeniceE2EEExecution = {
+	args: ExecutorExecuteArgs;
+	/**
+	 * Replaces a decrypting response in the executor result with the response the pipeline's upstream tracker
+	 * recorded, so selected dispatch and header timing (which exclude the attestation preflight) still resolve.
+	 * The stream or IR was already read from the decrypting response.
+	 */
+	restoreTrackedUpstream: (result: ExecutorResult) => ExecutorResult;
+};
 
 /**
- * Returns executor args whose provider fetch runs Venice's E2EE protocol. Attestation calls are recorded as
- * preflight fetches; timing lookups on the decrypting response resolve to the original upstream response.
+ * Wraps the executor's upstream fetch with Venice's E2EE protocol. Attestation calls are recorded as preflight
+ * fetches; timing lookups on the decrypting response resolve to the original upstream response.
  */
-export function withVeniceE2EE(args: ExecutorExecuteArgs): ExecutorExecuteArgs {
+export function withVeniceE2EE(args: ExecutorExecuteArgs): VeniceE2EEExecution {
 	const base = args.upstreamTiming;
 	const baseFetch: ExecutorUpstreamTiming["fetch"] = base
 		? base.fetch
@@ -302,8 +360,10 @@ export function withVeniceE2EE(args: ExecutorExecuteArgs): ExecutorExecuteArgs {
 		if (phase !== "provider") return baseFetch(input, init, phase);
 		const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
 		if (typeof init?.body !== "string") throw new VeniceE2EEError("venice_e2ee_unsupported_request");
-		const body = JSON.parse(init.body);
-		const authorization = readHeader(init.headers, "authorization");
+		const parsed: unknown = JSON.parse(init.body);
+		if (!isObject(parsed)) throw new VeniceE2EEError("venice_e2ee_unsupported_request");
+		const body: ChatBody = parsed;
+		const authorization = new Headers(init.headers ?? {}).get("authorization");
 		if (!authorization) throw new VeniceE2EEError("venice_e2ee_missing_credentials");
 
 		const modelPublicKeyHex = await fetchAttestedModelKey({
@@ -329,10 +389,16 @@ export function withVeniceE2EE(args: ExecutorExecuteArgs): ExecutorExecuteArgs {
 	};
 
 	return {
-		...args,
-		upstreamTiming: {
-			fetch,
-			timingFor: (response) => base?.timingFor(originals.get(response) ?? response),
+		args: {
+			...args,
+			upstreamTiming: {
+				fetch,
+				timingFor: (response) => base?.timingFor(originals.get(response) ?? response),
+			},
+		},
+		restoreTrackedUpstream: (result) => {
+			const original = result.upstream ? originals.get(result.upstream) : undefined;
+			return original ? { ...result, upstream: original } as ExecutorResult : result;
 		},
 	};
 }

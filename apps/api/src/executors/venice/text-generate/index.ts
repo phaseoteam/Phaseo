@@ -18,7 +18,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		// E2EE is not a provider alias: the prompt is encrypted for the attested
 		// enclave and the streamed answer decrypted here, on Chat Completions only.
 		// It never falls through to the plaintext adapter.
-		return executeOpenAIWire(withVeniceE2EE(args), { transientRetries: 1, forceChat: true });
+		const e2ee = withVeniceE2EE(args);
+		const result = await executeOpenAIWire(e2ee.args, { transientRetries: 1, forceChat: true });
+		return e2ee.restoreTrackedUpstream(result);
 	}
 	return executeOpenAIWire(args, { transientRetries: 1 });
 }

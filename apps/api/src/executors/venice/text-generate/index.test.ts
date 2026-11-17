@@ -4,6 +4,7 @@ import type { ExecutorExecuteArgs } from "@executors/types";
 import { executor } from "./index";
 import {
 	decryptFromModel,
+	decryptingResponse,
 	encryptForModel,
 	encryptChatMessages,
 	fetchAttestedModelKey,
@@ -191,22 +192,38 @@ describe("Venice E2EE executor", () => {
 });
 
 describe("Venice E2EE message encryption", () => {
-	it("encrypts system, developer and user turns and leaves assistant and tool turns", async () => {
+	type Msg = { role: string; content?: string; tool_calls?: Array<{ function: { arguments: string } }>; reasoning_content?: string };
+
+	it("encrypts the content of every turn, including assistant answers and tool results", async () => {
 		const enclave = fakeEnclave();
 		const body = await encryptChatMessages({
 			model: "e2ee-glm-5-3-p",
 			messages: [
 				{ role: "developer", content: "Be brief." },
 				{ role: "user", content: "hi" },
-				{ role: "assistant", content: "hello" },
+				{ role: "assistant", content: "hello", reasoning_content: "private chain of thought" },
+				{ role: "assistant", content: null, tool_calls: [{ id: "c1", type: "function", function: { name: "f", arguments: "{\"q\":1}" } }] },
 				{ role: "tool", tool_call_id: "c1", content: "42" },
 			],
 		}, normalizePublicKey(enclave.modelPublicKeyHex));
-		expect(body.messages.map((m: any) => m.role)).toEqual(["system", "user", "assistant", "tool"]);
-		expect(await decryptFromModel(body.messages[0].content, enclave.modelPrivateKey)).toBe("Be brief.");
-		expect(await decryptFromModel(body.messages[1].content, enclave.modelPrivateKey)).toBe("hi");
-		expect(body.messages[2].content).toBe("hello");
-		expect(body.messages[3].content).toBe("42");
+		const messages = body.messages as Msg[];
+		expect(messages.map((m) => m.role)).toEqual(["system", "user", "assistant", "assistant", "tool"]);
+		const plain = await Promise.all([0, 1, 2, 4].map((i) => decryptFromModel(messages[i]!.content!, enclave.modelPrivateKey)));
+		expect(plain).toEqual(["Be brief.", "hi", "hello", "42"]);
+		// Reasoning echoed in history is not an encrypted field, so it is not sent at all.
+		expect(messages[2]).not.toHaveProperty("reasoning_content");
+		// A tool-call turn without content stays without content; Venice does not decrypt tool-call arguments.
+		expect(messages[3]).not.toHaveProperty("content");
+		expect(messages[3]!.tool_calls![0]!.function.arguments).toBe("{\"q\":1}");
+		expect(JSON.stringify(body)).not.toMatch(/hello|Be brief|private chain/);
+	});
+
+	it("joins consecutive text parts exactly as written", async () => {
+		const enclave = fakeEnclave();
+		const body = await encryptChatMessages({
+			messages: [{ role: "user", content: [{ type: "text", text: "pass" }, { type: "text", text: "word" }] }],
+		}, normalizePublicKey(enclave.modelPublicKeyHex));
+		expect(await decryptFromModel((body.messages as Msg[])[0]!.content!, enclave.modelPrivateKey)).toBe("password");
 	});
 
 	it("rejects non-text parts instead of sending them in the clear", async () => {
@@ -216,10 +233,118 @@ describe("Venice E2EE message encryption", () => {
 		}, normalizePublicKey(enclave.modelPublicKeyHex))).rejects.toThrow(/venice_e2ee_unsupported_content/);
 	});
 
+	it("refuses an unknown role instead of sending its content in the clear", async () => {
+		const enclave = fakeEnclave();
+		await expect(encryptChatMessages({ messages: [{ role: "function", content: "x" }] }, normalizePublicKey(enclave.modelPublicKeyHex)))
+			.rejects.toThrow(/venice_e2ee_unsupported_content/);
+	});
+
 	it("leaves hex-looking text that is not ciphertext for this client unchanged", async () => {
 		const other = fakeEnclave();
 		const notOurs = await encryptForModel("secret", normalizePublicKey(other.modelPublicKeyHex));
 		expect(await decryptFromModel(notOurs, secp256k1.utils.randomPrivateKey())).toBeNull();
 		expect(await decryptFromModel("deadbeef", other.modelPrivateKey)).toBeNull();
+	});
+});
+
+describe("Venice E2EE stream decryption", () => {
+	function streamOf(chunks: Uint8Array[], onCancel?: (reason: unknown) => void): ReadableStream<Uint8Array> {
+		let i = 0;
+		return new ReadableStream<Uint8Array>({
+			pull(controller) {
+				if (i < chunks.length) controller.enqueue(chunks[i++]!);
+				else controller.close();
+			},
+			cancel(reason) {
+				onCancel?.(reason);
+			},
+		});
+	}
+
+	async function readAll(response: Response): Promise<string> {
+		return await response.text();
+	}
+
+	it("decrypts events split across arbitrary byte boundaries, including inside a UTF-8 character", async () => {
+		const client = secp256k1.utils.randomPrivateKey();
+		const clientPublic = secp256k1.getPublicKey(client, false);
+		const events = [
+			{ choices: [{ index: 0, delta: { content: await encryptForModel("Grüße ", clientPublic) } }] },
+			{ choices: [{ index: 0, delta: { content: await encryptForModel("aus Paris", clientPublic) }, finish_reason: "stop" }] },
+		];
+		const text = `${events.map((e) => `data: ${JSON.stringify(e)}\r\n\r\n`).join("")}data: [DONE]\r\n\r\n`;
+		const bytes = new TextEncoder().encode(text);
+		// 7-byte slices split lines, JSON and (on the second event's plaintext replacement) multi-byte characters.
+		const chunks: Uint8Array[] = [];
+		for (let i = 0; i < bytes.length; i += 7) chunks.push(bytes.slice(i, i + 7));
+		const upstream = new Response(streamOf(chunks), { headers: { "Content-Type": "text/event-stream" } });
+		const out = await readAll(decryptingResponse(upstream, client));
+		const contents = out.split("\n")
+			.filter((line) => line.startsWith("data: {"))
+			.map((line) => JSON.parse(line.slice(6)).choices[0].delta.content);
+		expect(contents.join("")).toBe("Grüße aus Paris");
+		expect(out).toContain("data: [DONE]\r");
+		expect(out).toContain("\r\n\r\n");
+	});
+
+	it("passes malformed events through unchanged", async () => {
+		const client = secp256k1.utils.randomPrivateKey();
+		const body = "data: {not json\n\nevent: ping\n\ndata: [DONE]\n\n";
+		const upstream = new Response(streamOf([new TextEncoder().encode(body)]), { headers: { "Content-Type": "text/event-stream" } });
+		expect(await readAll(decryptingResponse(upstream, client))).toBe(body);
+	});
+
+	it("cancels the upstream body when the caller cancels", async () => {
+		const client = secp256k1.utils.randomPrivateKey();
+		let cancelled = false;
+		const never = new ReadableStream<Uint8Array>({
+			start(controller) {
+				controller.enqueue(new TextEncoder().encode("data: {\"choices\":[]}\n\n"));
+			},
+			cancel() {
+				cancelled = true;
+			},
+		});
+		const upstream = new Response(never, { headers: { "Content-Type": "text/event-stream" } });
+		const reader = decryptingResponse(upstream, client).body!.getReader();
+		await reader.read();
+		await reader.cancel("client went away");
+		// The pipe forwards the cancel to its source asynchronously.
+		for (let i = 0; i < 10 && !cancelled; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(cancelled).toBe(true);
+	});
+});
+
+describe("Venice E2EE pipeline timing", () => {
+	it("returns the tracked upstream response so selected dispatch timing excludes the attestation", async () => {
+		resetVeniceE2EEAttestationCache();
+		const enclave = fakeEnclave();
+		const tracked = new Map<Response, { dispatchAtMs: number; phase: string }>();
+		let lastUrl = "";
+		let lastHeaders = new Headers();
+		const trackerFetch = async (input: RequestInfo | URL, init?: RequestInit, phase = "provider") => {
+			lastUrl = String(input);
+			lastHeaders = new Headers(init?.headers ?? {});
+			let response: Response;
+			if (lastUrl.includes("/tee/attestation")) {
+				const nonce = new URL(lastUrl).searchParams.get("nonce");
+				response = new Response(JSON.stringify({ verified: true, nonce, signing_key: enclave.modelPublicKeyHex }), { headers: { "Content-Type": "application/json" } });
+			} else {
+				const clientPublic = normalizePublicKey(lastHeaders.get("x-venice-tee-client-pub-key")!);
+				response = await sse([
+					{ id: "c", object: "chat.completion.chunk", choices: [{ index: 0, delta: { content: await encryptForModel("ok", clientPublic) }, finish_reason: "stop" }] },
+					{ id: "c", object: "chat.completion.chunk", choices: [], usage: { prompt_tokens: 3, completion_tokens: 1, total_tokens: 4 } },
+				]);
+			}
+			tracked.set(response, { dispatchAtMs: phase === "provider" ? 2_000 : 1_000, phase });
+			return response;
+		};
+		const args = {
+			...buildArgs(false),
+			upstreamTiming: { fetch: trackerFetch, timingFor: (r: Response) => tracked.get(r) as any },
+		} as ExecutorExecuteArgs;
+		const result = await executor(args);
+		expect(result.kind).toBe("completed");
+		expect(tracked.get(result.upstream)).toEqual({ dispatchAtMs: 2_000, phase: "provider" });
 	});
 });
