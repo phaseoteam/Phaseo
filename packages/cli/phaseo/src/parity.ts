@@ -1,6 +1,6 @@
 import { compact, flagBool, flagString, type Flags } from "./flags.js";
 import { confirmDestructive, type ManagementDeps, type ManagementInput, type ManagementMethod, type ManagementRequest } from "./management.js";
-import { sanitizeTerminalText } from "./output.js";
+import { renderTable, sanitizeTerminalText, type TableColumn } from "./output.js";
 
 // Commands for the /v1 routes that replaced dashboard-only settings: the rate
 // limit tier, joining workspaces, auto-routing, successor replacements,
@@ -348,10 +348,22 @@ function renderRow(item: any): string {
 	return parts.filter((part) => part !== undefined && part !== null && part !== "").map(text).join(" ");
 }
 
+function renderParityTable(items: any[]): string {
+	if (!items.every((item) => item && typeof item === "object")) return `${items.map(renderRow).join("\n")}\n`;
+	const columns: TableColumn<any>[] = [];
+	const has = (field: (item: any) => unknown) => items.some((item) => field(item) !== undefined && field(item) !== null && field(item) !== "");
+	const label = (item: any) => item.app_name ?? item.workspace_name ?? item.model;
+	if (has((item) => item.status)) columns.push({ header: "STATUS", value: (item) => item.status });
+	if (has(label)) columns.push({ header: "NAME", value: label, shrink: true });
+	if (items.some((item) => item.successor !== undefined)) columns.push({ header: "SUCCESSOR", value: (item) => item.successor ?? "never", shrink: true });
+	if (has((item) => item.id ?? item.client_id)) columns.push({ header: "ID", value: (item) => item.id ?? item.client_id });
+	return columns.length ? renderTable(items, columns) : `${items.map(renderRow).join("\n")}\n`;
+}
+
 export function renderParityResult(key: string, body: any): string {
 	const spec = COMMANDS[key];
 	const data = body && typeof body === "object" && "data" in body ? body.data : body;
-	if (spec.output === "list" && Array.isArray(data)) return data.length ? `${data.map(renderRow).join("\n")}\n` : "No results.\n";
+	if (spec.output === "list" && Array.isArray(data)) return data.length ? renderParityTable(data) : "No results.\n";
 	if (spec.output === "action") {
 		const record = data && typeof data === "object" && !Array.isArray(data) ? data : {};
 		return `${spec.done ?? "Done"}.${record.id ? `\nID: ${text(record.id)}` : ""}\n`;

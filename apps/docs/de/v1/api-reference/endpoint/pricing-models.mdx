@@ -5,7 +5,8 @@ openapi: "/de/openapi/v1/openapi.localized.yaml GET /pricing/models"
 description: "Die aktuell aktiven, über das Gateway verfügbaren Preiskarten des Katalogs auflisten."
 ---
 
-- `models`: ein Eintrag pro sichtbarer Kombination aus Anbieter, Modell und Endpunkt
+- `models`: ein Eintrag pro sichtbarer Kombination aus Anbieter, Modell, Endpunkt und Service-Tier
+- `service_tier`: der Service-Tier des Anbieters, für den die Preise des Eintrags gelten, etwa `standard`, `flex` oder `priority`
 - `meters`: die aktiven Abrechnungsposten für diesen Eintrag, einschließlich Einheit, Einheitengröße, Währung und Preis pro Einheit
 - `display_name`: der sichtbare öffentliche Modellname, wenn die Preisregel einem kanonischen öffentlichen Modell zugeordnet ist
 

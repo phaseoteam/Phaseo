@@ -5,7 +5,8 @@ openapi: "/fr/openapi/v1/openapi.localized.yaml GET /pricing/models"
 description: "Lister les fiches tarifaires actuellement actives du catalogue exposées par la passerelle."
 ---
 
-- `models` : une entrée par combinaison visible de fournisseur, modèle et point de terminaison
+- `models` : une entrée par combinaison visible de fournisseur, modèle, point de terminaison et niveau de service
+- `service_tier` : le niveau de service du fournisseur auquel s’appliquent les prix de l’entrée, par exemple `standard`, `flex` ou `priority`
 - `meters` : les lignes de mesure actives de cette entrée, avec l’unité, sa taille, la devise et le prix unitaire
 - `display_name` : le nom public visible du modèle lorsque la règle tarifaire correspond à un modèle public canonique
 

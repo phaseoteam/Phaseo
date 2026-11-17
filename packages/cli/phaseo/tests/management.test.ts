@@ -385,7 +385,7 @@ test("human output hides one-time secrets unless --show-secret is passed", () =>
 test("renders list and detail output for terminals", () => {
 	assert.equal(
 		renderManagementResult("byok list", { data: [{ id: "c1", name: "Prod", enabled: true }, { id: "c2", name: "Backup\u001b[31m", enabled: false }] }, {}),
-		"on Prod c1\noff Backup [31m c2\n",
+		"STATUS  NAME         ID\non      Prod         c1\noff     Backup [31m  c2\n",
 	);
 	assert.equal(renderManagementResult("budgets list", { data: [] }, {}), "No results.\n");
 	assert.equal(
