@@ -294,6 +294,26 @@ async function loadProviderNames(providerModelIds: string[]): Promise<Map<string
     return names;
 }
 
+// Display names come from the provider catalogue so analytics matches the website.
+// A failed lookup only costs the nicer label, so fall back to the slug-derived name.
+async function loadProviderDisplayNames(providerSlugs: string[]): Promise<Map<string, string>> {
+	const names = new Map<string, string>();
+	if (providerSlugs.length === 0) return names;
+	const supabase = getSupabaseAdmin();
+	for (let offset = 0; offset < providerSlugs.length; offset += 200) {
+		const { data, error } = await supabase
+			.from("v2_providers")
+			.select("provider_slug,name")
+			.in("provider_slug", providerSlugs.slice(offset, offset + 200));
+		if (error) return names;
+		for (const row of data ?? []) {
+			const name = typeof row.name === "string" ? row.name.trim() : "";
+			if (row.provider_slug && name) names.set(row.provider_slug, name);
+		}
+	}
+	return names;
+}
+
 function meterQuantity(row: AnalyticsFactRow, keys: string[]): number {
     const wanted = new Set(keys);
     return (row.v2_request_usage ?? []).reduce((total, meter) => {
@@ -369,6 +389,8 @@ async function handleAnalytics(req: Request, options: { exportRequest?: boolean 
 			.map((row) => row.provider_model_id)
 			.filter((value): value is string => Boolean(value))));
 		const providerNames = await loadProviderNames(providerModelIds);
+		const providerSlugs = new Set(providerModelIds.map((id) => providerNames.get(id) ?? id.split(":", 1)[0] ?? ""));
+		const providerDisplayNames = await loadProviderDisplayNames(Array.from(providerSlugs).filter(Boolean));
 		const grouped = new Map<string, {
 			date: string;
 			model: string;
@@ -395,7 +417,7 @@ async function handleAnalytics(req: Request, options: { exportRequest?: boolean 
 				model: toModelDisplay(modelPermaslug),
 				model_permaslug: modelPermaslug,
 				endpoint_id: endpointId,
-				provider_name: toProviderName(providerId),
+				provider_name: providerDisplayNames.get(providerId) ?? toProviderName(providerId),
 				usage: 0,
 				byok_usage_inference: 0,
 				requests: 0,
