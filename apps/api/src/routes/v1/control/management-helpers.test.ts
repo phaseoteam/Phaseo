@@ -9,9 +9,12 @@ const state = vi.hoisted(() => ({
 	managementKeyQueryCalls: [] as Array<{ method: string; args: unknown[] }>,
 	workspaceMembershipRows: [] as any[],
 	creditLedgerCount: 0,
+	walletUpserts: [] as Array<Record<string, unknown>>,
 	bindings: {
 		WORKSPACE_KEY_LIMIT: "5",
 		NON_ENTERPRISE_KEY_LIMIT: undefined as string | undefined,
+		STRIPE_SECRET_KEY: undefined as string | undefined,
+		TEST_STRIPE_SECRET_KEY: undefined as string | undefined,
 	},
 }));
 
@@ -76,6 +79,20 @@ function buildSupabaseMock() {
 							}),
 						}),
 					}),
+				};
+			}
+
+			if (table === "wallets") {
+				return {
+					select: () => ({
+						eq: () => ({
+							maybeSingle: async () => ({ data: null, error: null }),
+						}),
+					}),
+					upsert: async (payload: Record<string, unknown>) => {
+						state.walletUpserts.push(payload);
+						return { error: null };
+					},
 				};
 			}
 
@@ -159,5 +176,20 @@ describe("management helpers", () => {
 		const result = await userHasPaidWorkspaceAccess("user_1");
 
 		expect(result).toBe(true);
+	});
+
+	it("skips wallet provisioning without a Stripe key instead of failing", async () => {
+		state.walletUpserts = [];
+		state.bindings.STRIPE_SECRET_KEY = undefined;
+		state.bindings.TEST_STRIPE_SECRET_KEY = undefined;
+		const fetchSpy = vi.spyOn(globalThis, "fetch");
+
+		const { ensureWorkspaceWalletProvisioned } = await import("./management-helpers");
+		const result = await ensureWorkspaceWalletProvisioned({ workspaceId: "ws_new", userId: "user_1" });
+
+		expect(result).toEqual({ workspaceId: "ws_new", customerId: null });
+		expect(fetchSpy).not.toHaveBeenCalled();
+		expect(state.walletUpserts).toEqual([]);
+		fetchSpy.mockRestore();
 	});
 });

@@ -215,13 +215,6 @@ async function handleListWorkspaces(req: Request) {
 		);
 	} catch (error: any) {
 		const message = String(error?.message ?? error);
-		if (message.includes("Stripe customer provisioning is not configured")) {
-			return json(
-				{ error: "stripe_not_configured", message },
-				503,
-				{ "Cache-Control": "no-store" },
-			);
-		}
 		return json({ error: "failed", message }, 500, { "Cache-Control": "no-store" });
 	}
 }
@@ -320,10 +313,6 @@ async function handleCreateWorkspace(req: Request) {
 					{ onConflict: "workspace_id,user_id", ignoreDuplicates: true },
 				));
 			assertSupabaseWrite(memberResult, "Failed to create workspace owner membership");
-			await ensureWorkspaceWalletProvisioned({
-				workspaceId,
-				userId: ownerUserId,
-			});
 			const settingsResult = await supabase
 				.from("workspace_settings")
 				.upsert({ workspace_id: workspaceId, routing_mode: "balanced" }, { onConflict: "workspace_id", ignoreDuplicates: false });
@@ -337,6 +326,20 @@ async function handleCreateWorkspace(req: Request) {
 				throw new Error(`${originalMessage}; rollback_failed: ${cleanupMessage}`);
 			}
 			throw error;
+		}
+		// The wallet (Stripe customer) is optional at creation time, as in the web
+		// create-team flow: billing creates it on the first checkout. Never fail or
+		// roll back a created workspace because Stripe is unavailable.
+		try {
+			await ensureWorkspaceWalletProvisioned({
+				workspaceId,
+				userId: ownerUserId,
+			});
+		} catch (walletError) {
+			console.error("[workspaces.create] wallet provisioning deferred", {
+				workspaceId,
+				error: String((walletError as any)?.message ?? walletError),
+			});
 		}
 		await recordWorkspaceAuditEvent(supabase, {
 			workspaceId,
@@ -352,13 +355,6 @@ async function handleCreateWorkspace(req: Request) {
 		return json({ data: formatWorkspace(data as WorkspaceRow) }, 201, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		const message = String(error?.message ?? error);
-		if (message.includes("Stripe customer provisioning is not configured")) {
-			return json(
-				{ error: "stripe_not_configured", message },
-				503,
-				{ "Cache-Control": "no-store" },
-			);
-		}
 		return json({ error: "failed", message }, 500, { "Cache-Control": "no-store" });
 	}
 }
