@@ -27,11 +27,24 @@ export function getPricingProviderVariantLabels(args: {
 	};
 
 	pushSourceId(args.displayProvider.provider.api_provider_id);
+	// A retired or removed route no longer offers anything, so a provider whose
+	// routes here are all retired (e.g. a discontinued "turbo" offer) must not
+	// label the card, whether it shows up through a route or a pricing rule.
+	const liveIds = new Set<string>();
+	const retiredIds = new Set<string>();
 	for (const model of args.displayProvider.provider_models) {
-		pushSourceId(model.api_provider_id);
+		const id = String(model.api_provider_id ?? "").trim();
+		const routeStatus = String(model.routing_status ?? "").trim().toLowerCase();
+		const availability = String(model.provider_availability_status ?? "").trim().toLowerCase();
+		(routeStatus === "retired" || availability === "removed" ? retiredIds : liveIds).add(id);
+	}
+	const isRetiredOnly = (id: string) => retiredIds.has(id) && !liveIds.has(id);
+	for (const model of args.displayProvider.provider_models) {
+		if (!isRetiredOnly(String(model.api_provider_id ?? "").trim())) pushSourceId(model.api_provider_id);
 	}
 	for (const rule of args.displayProvider.pricing_rules) {
-		pushSourceId(extractProviderIdFromModelKey(rule.model_key));
+		const id = extractProviderIdFromModelKey(rule.model_key);
+		if (!isRetiredOnly(id)) pushSourceId(id);
 	}
 
 	const labels: string[] = [];

@@ -201,4 +201,53 @@ describe("getPricingProviderVariantLabels", () => {
 			}),
 		).toEqual([]);
 	});
+
+	test("ignores the offer of a provider whose only route is retired", () => {
+		const moonshotModel = (id: string, providerId: string, extra = {}) => ({
+			id,
+			api_provider_id: providerId,
+			model_id: "moonshotai/kimi-k2.7-code",
+			endpoint: "text.generate",
+			is_active_gateway: false,
+			input_modalities: "text",
+			output_modalities: "text",
+			...extra,
+		});
+		const moonshot = makeProviderPricing({
+			provider: { api_provider_id: "moonshotai", api_provider_name: "Moonshot AI", provider_family_id: "moonshotai", offer_label: null, offer_scope: "global" },
+			provider_models: [
+				moonshotModel("pm-1", "moonshotai"),
+				moonshotModel("pm-2", "moonshotai-turbo", { routing_status: "retired", provider_availability_status: "removed" }),
+			],
+			pricing_rules: [],
+		});
+		const turbo = makeProviderPricing({
+			provider: { api_provider_id: "moonshotai-turbo", api_provider_name: "Moonshot AI Turbo", provider_family_id: "moonshotai", offer_label: "priority", offer_scope: "specialized" },
+			provider_models: [],
+			pricing_rules: [],
+		});
+
+		expect(getPricingProviderVariantLabels({ displayProvider: moonshot, sourceProviders: [moonshot, turbo] })).toEqual([]);
+		const live = { ...moonshot, provider_models: [moonshotModel("pm-1", "moonshotai"), moonshotModel("pm-2", "moonshotai-turbo")] };
+		expect(getPricingProviderVariantLabels({ displayProvider: live, sourceProviders: [live, turbo] })).toHaveLength(2);
+	});
+
+	test("ignores a retired provider's offer even when it still has pricing rules", () => {
+		const base = makeProviderPricing({});
+		const display = makeProviderPricing({
+			provider_models: [
+				...base.provider_models,
+				{ ...base.provider_models[0], id: "pm-2", api_provider_id: "anthropic-us", routing_status: "retired" },
+			],
+			pricing_rules: [
+				...base.pricing_rules,
+				{ ...base.pricing_rules[0], id: "rule-2", model_key: "anthropic-us:anthropic/claude-opus-5:text.generate" },
+			],
+		});
+		const anthropicUs = makeProviderPricing({
+			provider: { api_provider_id: "anthropic-us", api_provider_name: "Anthropic", provider_family_id: "anthropic", offer_label: "US", offer_scope: "regional" },
+		});
+
+		expect(getPricingProviderVariantLabels({ displayProvider: display, sourceProviders: [display, anthropicUs] })).toEqual([]);
+	});
 });
