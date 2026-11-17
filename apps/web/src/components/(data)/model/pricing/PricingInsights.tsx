@@ -503,8 +503,8 @@ function formatPricingPlanLabel(plan: string, tx: PricingCopyTranslator): string
 }
 
 /** A row belongs to one provider, so it can use that provider's own tier name. */
-function formatRowPlanLabel(row: Pick<EffectiveRow, "pricingPlan" | "tierLabels">, tx: PricingCopyTranslator): string {
-	return getProviderServiceTierLabel(row.tierLabels, row.pricingPlan) ?? formatRowPlanLabel(row, tx);
+export function formatRowPlanLabel(row: Pick<EffectiveRow, "pricingPlan" | "tierLabels">, tx: PricingCopyTranslator): string {
+	return getProviderServiceTierLabel(row.tierLabels, row.pricingPlan) ?? formatPricingPlanLabel(row.pricingPlan, tx);
 }
 
 function PricingLineTypeIcon({ plan, color }: { plan: string; color: string }) {

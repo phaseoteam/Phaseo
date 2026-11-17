@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { getProviderServiceTierLabel } from "./providerServiceTierLabel";
 import { getProviderRoutePresentation } from "./providerRoutePresentation";
 import { getServiceTierBadgeText } from "./ServiceTierBadge";
+import { formatRowPlanLabel } from "./PricingInsights";
+import enCatalogue from "../../../../../messages/en-GB/catalogue.json";
+
+const hoverCards = (enCatalogue as unknown as { hoverCards: Record<string, string> }).hoverCards;
+const enCopy = (key: string, values: Record<string, string> = {}) =>
+	hoverCards[key].replace(/\{(\w+)\}/g, (_, name: string) => values[name] ?? `{${name}}`);
 import type { ProviderInfo } from "@/lib/fetchers/models/getModelPricing";
 
 describe("getProviderServiceTierLabel", () => {
@@ -34,7 +40,7 @@ describe("getProviderRoutePresentation", () => {
 
 describe("getServiceTierBadgeText", () => {
 	it("explains a provider's own name for the Fast tier", () => {
-		const { label, tooltip } = getServiceTierBadgeText("priority", "Highspeed");
+		const { label, tooltip } = getServiceTierBadgeText("priority", "Highspeed", enCopy);
 		expect(label).toBe("Highspeed");
 		expect(tooltip).toBe(
 			"Highspeed is this provider's name for its Fast tier, a faster endpoint for this model. It requires explicit selection in your request or a route dedicated to this tier. It is not selected automatically.",
@@ -43,8 +49,21 @@ describe("getServiceTierBadgeText", () => {
 
 	it("keeps the plain tooltip when there is no provider name or it matches ours", () => {
 		const expected = "Fast requires explicit selection in your request or a route dedicated to this tier. It is not selected automatically.";
-		expect(getServiceTierBadgeText("priority").tooltip).toBe(expected);
-		expect(getServiceTierBadgeText("priority", "Fast").tooltip).toBe(expected);
-		expect(getServiceTierBadgeText("priority", "  ").label).toBe("Fast");
+		expect(getServiceTierBadgeText("priority", null, enCopy).tooltip).toBe(expected);
+		expect(getServiceTierBadgeText("priority", "Fast", enCopy).tooltip).toBe(expected);
+		expect(getServiceTierBadgeText("priority", "  ", enCopy).label).toBe("Fast");
+	});
+});
+
+describe("formatRowPlanLabel", () => {
+	const tx = ((key: string) => (key.endsWith("tierFast") ? "Fast" : key.endsWith("tierStandard") ? "Standard" : key)) as never;
+
+	it("uses the provider's own name when there is one", () => {
+		expect(formatRowPlanLabel({ pricingPlan: "priority", tierLabels: { priority: "Highspeed" } }, tx)).toBe("Highspeed");
+	});
+
+	it("falls back to the generic name without a provider name", () => {
+		expect(formatRowPlanLabel({ pricingPlan: "priority", tierLabels: null }, tx)).toBe("Fast");
+		expect(formatRowPlanLabel({ pricingPlan: "standard", tierLabels: { priority: "Highspeed" } }, tx)).toBe("Standard");
 	});
 });

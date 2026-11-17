@@ -3460,6 +3460,12 @@
 			}
 		},
 		"tierLabel": "{tier}层级",
+		"serviceTierProviderName": "{name} 是该提供商对其 {tier} 层级的称呼。",
+		"serviceTierProviderNameFaster": "{name} 是该提供商对其 {tier} 层级的称呼，即该模型的更快端点。",
+		"serviceTierExplicit": "{tier} 需要在请求中明确选择，或使用专用于此层级的路由。不会自动选择。",
+		"serviceTierExplicitFollowUp": "需要在请求中明确选择，或使用专用于此层级的路由。不会自动选择。",
+		"serviceTierBatch": "Batch 不用于普通请求。请通过 Batch API 提交请求以使用此层级。",
+		"serviceTierInfo": "{tier} 服务层级信息",
 		"endsOn": "{date} 结束",
 		"providerStatuses": "提供商状态",
 		"byokMeta": "你的提供商密钥",
