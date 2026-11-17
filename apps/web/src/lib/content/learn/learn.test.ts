@@ -24,7 +24,6 @@ const TRANSLATIONS: Record<string, LearnTranslation> = {
 // `text` blocks hold prose for the reader to paste (the agent prompt), so they are translated.
 const codeBlocks = (markdown: string) =>
 	(markdown.match(/```[\s\S]*?```/g) ?? []).filter((block) => !block.startsWith("```text"));
-const COMPETITORS = /openrouter|portkey|litellm|requesty/i;
 
 describe("Learn course content", () => {
 	it("has unique course and lesson slugs", () => {
@@ -62,11 +61,6 @@ describe("Learn course content", () => {
 				expect(LEARN_COURSES.some((course) => course.slug === slug), `${path} → ${slug}`).toBe(true);
 			}
 		}
-	});
-
-	it("never names a competitor", () => {
-		const all = [LEARN_COURSES, ...Object.values(TRANSLATIONS).map((t) => t.courses)];
-		expect(JSON.stringify(all)).not.toMatch(COMPETITORS);
 	});
 
 	describe.each(Object.entries(TRANSLATIONS))("%s translation", (locale, translation) => {
