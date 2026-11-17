@@ -35,7 +35,8 @@ import { ButtonGroup } from "@/components/ui/button-group";
 import TeamSwitcher from "./TeamSwitcher";
 import { SwapTeam } from "@/lib/workspace/actions";
 import { postClientAuthSignOut } from "@/lib/fetchers/internal/postClientAuthSignOut";
-import { useTheme } from "@/components/theme/ThemeProvider";
+import { useThemeChoice } from "@/components/theme/useThemeChoice";
+import { VICE_THEME_LABEL, ViceThemeIcon } from "@/components/theme/ViceThemeIcon";
 import { toast } from "sonner";
 import {
 	DropdownMenu,
@@ -93,16 +94,13 @@ export default function HeaderClient({
 	const tTheme = useTranslations("Common.theme");
 	const tDock = useTranslations("Common.ui.actionDockCopy");
 	const isPublicDataPage = isPublicDataPathname(pathname);
-	const { theme, setTheme } = useTheme();
 	const { isHydrated: displayPreferencesHydrated, setPreferences } = useDisplayPreferences();
-	const currentTheme =
-		theme === "light" || theme === "dark" || theme === "system"
-			? theme
-			: "system";
+	const { current: currentTheme, modes: themeModes, choose: chooseTheme } = useThemeChoice();
 	const themeMeta = {
 		light: { label: tTheme("light"), icon: Sun },
 		dark: { label: tTheme("dark"), icon: Moon },
 		system: { label: tTheme("system"), icon: Monitor },
+		vice: { label: VICE_THEME_LABEL, icon: ViceThemeIcon },
 	} as const;
 	const { isOpen: supportIsOpen } = getSupportAvailability();
 	const supportDotClasses = supportIsOpen
@@ -244,7 +242,7 @@ export default function HeaderClient({
 								aria-label={tTheme("mode")}
 								className="inline-flex w-full items-center justify-center gap-1 rounded-md bg-zinc-100 p-0.5 dark:bg-zinc-900"
 							>
-								{(["light", "dark", "system"] as const).map((mode) => {
+								{themeModes.map((mode) => {
 									const Icon = themeMeta[mode].icon;
 									const selected = currentTheme === mode;
 									return (
@@ -254,7 +252,7 @@ export default function HeaderClient({
 											role="radio"
 											aria-checked={selected}
 											aria-label={tTheme("set", { theme: themeMeta[mode].label })}
-											onClick={() => setTheme(mode)}
+											onClick={() => chooseTheme(mode)}
 											className={cn(
 												"relative flex h-8 flex-1 items-center justify-center rounded-md text-zinc-500 transition-colors",
 												"hover:bg-white hover:text-zinc-950 dark:hover:bg-zinc-800 dark:hover:text-zinc-50",
@@ -467,7 +465,7 @@ export default function HeaderClient({
 										aria-label={tTheme("mode")}
 										className="inline-flex w-full items-center justify-center gap-1 rounded-lg bg-muted/60 p-0.5"
 									>
-										{(["light", "dark", "system"] as const).map((mode) => {
+										{themeModes.map((mode) => {
 											const Icon = themeMeta[mode].icon;
 											const selected = currentTheme === mode;
 											return (
@@ -477,7 +475,7 @@ export default function HeaderClient({
 													role="radio"
 													aria-checked={selected}
 													aria-label={tTheme("set", { theme: themeMeta[mode].label })}
-													onClick={() => setTheme(mode)}
+													onClick={() => chooseTheme(mode)}
 													className={cn(
 														"relative flex h-7 flex-1 items-center justify-center rounded-md text-muted-foreground transition-colors",
 														"hover:bg-background hover:text-foreground",
@@ -521,7 +519,7 @@ export default function HeaderClient({
 									aria-label={tTheme("mode")}
 									className="inline-flex w-full items-center justify-center gap-1 rounded-lg bg-muted/60 p-0.5"
 								>
-									{(["light", "dark", "system"] as const).map((mode) => {
+									{themeModes.map((mode) => {
 										const Icon = themeMeta[mode].icon;
 										const selected = currentTheme === mode;
 										return (
@@ -531,7 +529,7 @@ export default function HeaderClient({
 												role="radio"
 												aria-checked={selected}
 											aria-label={tTheme("set", { theme: themeMeta[mode].label })}
-												onClick={() => setTheme(mode)}
+												onClick={() => chooseTheme(mode)}
 												className={cn(
 													"relative flex h-7 flex-1 items-center justify-center rounded-md text-muted-foreground transition-colors",
 													"hover:bg-background hover:text-foreground",

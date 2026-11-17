@@ -68,6 +68,28 @@ export default function Header() {
 							style={{ width: "auto" }}
 							priority
 						/>
+						{/* Shown instead of the two above only while the Vice theme is on
+						    (styles/special-theme-vice.css). Lazy, so other visitors never fetch it. */}
+						<Image
+							src="/wordmark_vice_light.svg"
+							alt="Phaseo"
+							width={154}
+							height={37}
+							data-vice-wordmark="light"
+							className="hidden h-[var(--site-header-logo-height,2.5rem)] w-auto select-none max-[22rem]:h-3.5 max-[19.375rem]:h-3"
+							style={{ width: "auto" }}
+							loading="lazy"
+						/>
+						<Image
+							src="/wordmark_vice_dark.svg"
+							alt="Phaseo"
+							width={154}
+							height={37}
+							data-vice-wordmark="dark"
+							className="hidden h-[var(--site-header-logo-height,2.5rem)] w-auto select-none max-[22rem]:h-3.5 max-[19.375rem]:h-3"
+							style={{ width: "auto" }}
+							loading="lazy"
+						/>
 					</IntentLink>
 				</BrandMenu>
 				<div className="hidden h-[var(--site-header-divider-height,1.5rem)] w-px bg-zinc-200/70 dark:bg-zinc-800 lg:block" />

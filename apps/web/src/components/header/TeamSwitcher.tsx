@@ -34,7 +34,8 @@ import { CurrentUserAvatar } from "../ui/current-user-avatar";
 import { cn } from "@/lib/utils";
 import { getLondonInfo, getSupportAvailability } from "@/lib/support/schedule";
 import { toast } from "sonner";
-import { useTheme } from "@/components/theme/ThemeProvider";
+import { useThemeChoice } from "@/components/theme/useThemeChoice";
+import { VICE_THEME_LABEL, ViceThemeIcon } from "@/components/theme/ViceThemeIcon";
 import { ProductFeedbackDialog } from "@/components/feedback/ProductFeedbackButton";
 import { isPublicDataPathname } from "@/lib/publicDataRoutes";
 import { clearAccountQueryScope } from "@/lib/query/invalidation";
@@ -65,7 +66,6 @@ export default function TeamSwitcher({
 	const queryClient = useQueryClient();
 	const pathname = usePathname();
 	const isPublicDataPage = isPublicDataPathname(pathname);
-	const { theme, setTheme } = useTheme();
 
 	const getInitialTeamId = (initial?: string) => {
 		if (initial) return initial;
@@ -80,14 +80,12 @@ export default function TeamSwitcher({
 	const canUseActionDock = providerMode || userRole?.toLocaleLowerCase() === "admin";
 	const actionDockEnabled = useActionDockEnabled(user?.id);
 
-	const currentTheme =
-		theme === "light" || theme === "dark" || theme === "system"
-			? theme
-			: "system";
+	const { current: currentTheme, modes: themeModes, choose: chooseTheme } = useThemeChoice();
 	const themeMeta = {
 		light: { icon: Sun },
 		dark: { icon: Moon },
 		system: { icon: Monitor },
+		vice: { icon: ViceThemeIcon },
 	} as const;
 	const { isOpen: supportIsOpen, minutesUntilNextWindow } =
 		getSupportAvailability();
@@ -208,7 +206,7 @@ export default function TeamSwitcher({
 							aria-label={tUi("theme.mode")}
 								className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg bg-muted/60 p-0.5"
 							>
-								{(["light", "dark", "system"] as const).map((mode) => {
+								{themeModes.map((mode) => {
 									const Icon = themeMeta[mode].icon;
 									const selected = currentTheme === mode;
 									return (
@@ -217,8 +215,8 @@ export default function TeamSwitcher({
 											type="button"
 											role="radio"
 											aria-checked={selected}
-											aria-label={tUi("theme.setMode", { theme: tUi(`theme.${mode}`) })}
-											onClick={() => setTheme(mode)}
+											aria-label={tUi("theme.setMode", { theme: mode === "vice" ? VICE_THEME_LABEL : tUi(`theme.${mode}`) })}
+											onClick={() => chooseTheme(mode)}
 											className={cn(
 												"relative flex h-7 flex-1 items-center justify-center rounded-md text-muted-foreground transition-colors",
 												"hover:bg-background hover:text-foreground",
@@ -226,7 +224,7 @@ export default function TeamSwitcher({
 													? "bg-background text-foreground shadow-xs"
 													: "bg-transparent"
 											)}
-											title={tUi(`theme.${mode}`)}
+											title={mode === "vice" ? VICE_THEME_LABEL : tUi(`theme.${mode}`)}
 										>
 											<Icon className="h-4 w-4" />
 										</button>

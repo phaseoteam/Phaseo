@@ -4,6 +4,8 @@
 @import "shadcn/tailwind.css";
 /* The palettes, status colours and radius, generated from packages/shared/app-kit/src/theme/tokens.ts. */
 @import "./theme-tokens.generated.css";
+/* Time-boxed launch themes; inert unless <html data-special-theme> is set. */
+@import "./special-theme-vice.css";
 
 @custom-variant dark (&:is(.dark *));
 
