@@ -1052,5 +1052,14 @@ export const executor: ProviderExecutor = async (execArgs: ExecutorExecuteArgs) 
 		execArgs.capabilityParams,
 	);
 	const processed = cherryPickIRParams(normalized, execArgs.capabilityParams);
-	return executeOpenAIProvider({ ...execArgs, ir: processed });
+	// A Pro alias routes to the base model, so reasoning.mode is its only Pro signal. The
+	// allowlist rebuilds `reasoning` from listed leaves and may omit "mode"; re-apply it so a
+	// Pro alias never silently runs as the base model.
+	const isProAlias = isOpenAIProviderOffer(execArgs.providerId) &&
+		(normalizeOpenAIProModelSlug(execArgs.providerModelSlug ?? null).proMode ||
+			normalizeOpenAIProModelSlug((execArgs.ir as IRChatRequest).model).proMode);
+	const ir = isProAlias && processed.reasoning?.mode !== "pro"
+		? { ...processed, reasoning: { ...(processed.reasoning ?? {}), mode: "pro" as const } }
+		: processed;
+	return executeOpenAIProvider({ ...execArgs, ir });
 };
