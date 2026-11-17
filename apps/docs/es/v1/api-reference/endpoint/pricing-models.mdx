@@ -5,7 +5,8 @@ openapi: "/es/openapi/v1/openapi.localized.yaml GET /pricing/models"
 description: "Listar las tarjetas de precios del catálogo que están activas y disponibles a través de la pasarela."
 ---
 
-- `models`: una entrada por cada combinación visible de proveedor, modelo y endpoint
+- `models`: una entrada por cada combinación visible de proveedor, modelo, endpoint y nivel de servicio
+- `service_tier`: el nivel de servicio del proveedor al que se aplican los precios de la entrada, como `standard`, `flex` o `priority`
 - `meters`: las líneas de medición activas de esa entrada, incluidas la unidad, su tamaño, la moneda y el precio por unidad
 - `display_name`: el nombre público visible del modelo cuando la regla de precios se asigna a un modelo público canónico
 
