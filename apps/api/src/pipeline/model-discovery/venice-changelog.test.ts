@@ -1,9 +1,11 @@
 import { readFileSync } from "node:fs";
+import { buildPrivateModelDiscoveryMessage, buildPrivateVeniceChangelogMessages, computePrivateModelDiscoveryFingerprint, type PrivateModelDiscoveryNotification } from "./private-model-discovery-notifications";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import {
 	buildVeniceChangelogDiscordSection,
+	buildVeniceChangelogMessages,
 	matchVeniceChangelogEntry,
 	parseVeniceChangelog,
 	runVeniceChangelogCheck,
@@ -279,5 +281,91 @@ describe("runVeniceChangelogCheck", () => {
 	it("fails loudly when the page no longer parses", async () => {
 		await expect(runVeniceChangelogCheck({ previous: undefined, fetchMarkdown: async () => "<html></html>", loadRoutes: async () => [] }))
 			.rejects.toThrow(/no model entries/);
+	});
+});
+
+describe("review fixes", () => {
+	function entry(overrides: Partial<VeniceChangelogEntry>): VeniceChangelogEntry {
+		return { date: "2026-11-09", kind: "removed", modelId: "m", modelName: "M", removalDate: null, replacementId: null, detail: "", ...overrides };
+	}
+
+	it("rejects impossible calendar dates", () => {
+		const parsed = parseVeniceChangelog([
+			"**February 30, 2026**",
+			"**Deprecated**",
+			"* Ghost: `ghost-model`, removed on February 30, 2026",
+			"**November 1, 2026**",
+			"**Deprecated**",
+			"* Real: `real-model`, removed on February 30, 2027",
+		].join("\n"));
+		// The impossible day heading opens no section; the impossible removal date is not invented.
+		expect(parsed.map((e) => e.modelId)).toEqual(["real-model"]);
+		expect(parsed[0]!.removalDate).toBeNull();
+	});
+
+	it("treats Venice adding a model again as superseding its earlier removal", () => {
+		const routes = [route("venice:x/mercury", "mercury-2")];
+		const { items } = selectVeniceChangelogItems({
+			entries: [
+				entry({ kind: "removed", modelId: "mercury-2", date: "2026-11-09" }),
+				entry({ kind: "added", modelId: "mercury-2", date: "2026-11-20" }),
+			],
+			seenKeys: new Set(),
+			routes,
+		});
+		expect(items.find((item) => item.entry.kind === "removed")?.actions).toEqual([]);
+	});
+
+	function summaryWith(count: number) {
+		const routes = Array.from({ length: count }, (_, i) => route(`venice:x/model-${i}`, `model-${i}`));
+		const entries = Array.from({ length: count }, (_, i) => entry({ kind: "removed", modelId: `model-${i}`, replacementId: `replacement-model-with-a-long-name-${i}` }));
+		const { items } = selectVeniceChangelogItems({ entries, seenKeys: new Set(), routes });
+		return { enabled: true, executed: true, baselineInitialized: false, unchanged: false, entriesParsed: count, newEntries: count, items, updatesDetected: items.length };
+	}
+
+	it("names every actionable entry across messages that each fit the limit", () => {
+		const messages = buildVeniceChangelogMessages(summaryWith(40), 1_900);
+		expect(messages.length).toBeGreaterThan(1);
+		for (const message of messages) expect(message.length).toBeLessThanOrEqual(1_900);
+		const joined = messages.join("\n");
+		for (let i = 0; i < 40; i += 1) expect(joined).toContain(`\`model-${i}\``);
+		expect(joined).not.toContain("more needing action");
+		expect(joined).not.toContain("[truncated]");
+	});
+
+	function notification(overrides: Partial<PrivateModelDiscoveryNotification>): PrivateModelDiscoveryNotification {
+		const emptyPricing = { enabled: true, executed: true, updatesDetected: 0, providerChanges: [] } as never;
+		return {
+			modelChanges: [],
+			pricing: emptyPricing,
+			providerApiPricing: emptyPricing,
+			pricingTable: { enabled: true, executed: true, updatesDetected: 0, sources: [], errors: [] } as never,
+			configuredModelCoverage: { updatesDetected: 0, providerChanges: [] } as never,
+			...overrides,
+		};
+	}
+
+	it("sends Venice actions apart from a main alert that fills its own budget", () => {
+		const bigModelChange = { providerId: "p", providerName: "P", added: Array.from({ length: 300 }, (_, i) => `new-model-${i}`), removed: [] } as never;
+		const input = notification({ modelChanges: [bigModelChange], veniceChangelog: summaryWith(3) });
+		expect(buildPrivateModelDiscoveryMessage(input)).not.toContain("Venice changelog");
+		const venice = buildPrivateVeniceChangelogMessages(input).join("\n");
+		for (let i = 0; i < 3; i += 1) expect(venice).toContain(`\`model-${i}\``);
+	});
+
+	it("fingerprints the untruncated content, including the Venice section", async () => {
+		// 25 providers x 8 long names is far past the 1,900-character cut; only the last provider differs.
+		const changes = (last: string) => Array.from({ length: 25 }, (_, p) => ({
+			providerId: `provider-${p}`,
+			providerName: `Provider ${p}`,
+			added: Array.from({ length: 8 }, (_, i) => (p === 24 && i === 0 ? last : `organisation/a-fairly-long-model-name-${p}-${i}`)),
+			removed: [],
+		})) as never;
+		expect(buildPrivateModelDiscoveryMessage(notification({ modelChanges: changes("tail-a") }))).toBe(buildPrivateModelDiscoveryMessage(notification({ modelChanges: changes("tail-b") })));
+		const a = await computePrivateModelDiscoveryFingerprint(notification({ modelChanges: changes("tail-a") }));
+		const b = await computePrivateModelDiscoveryFingerprint(notification({ modelChanges: changes("tail-b") }));
+		expect(a).not.toBe(b);
+		const withVenice = await computePrivateModelDiscoveryFingerprint(notification({ modelChanges: changes("tail-a"), veniceChangelog: summaryWith(1) }));
+		expect(withVenice).not.toBe(a);
 	});
 });

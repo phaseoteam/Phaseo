@@ -13,7 +13,11 @@ import {
 	type ProviderChange,
 } from "./helpers";
 import { sendSlackWebhookMessage } from "./slack";
-import { buildVeniceChangelogDiscordSection, type VeniceChangelogMonitorSummary } from "./venice-changelog";
+import {
+	buildVeniceChangelogDiscordSection,
+	buildVeniceChangelogMessages,
+	type VeniceChangelogMonitorSummary,
+} from "./venice-changelog";
 
 const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
 const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
@@ -38,30 +42,45 @@ export type PrivateModelDiscoveryNotification = {
 	veniceChangelog?: VeniceChangelogMonitorSummary;
 };
 
-export function buildPrivateModelDiscoveryMessage(args: PrivateModelDiscoveryNotification): string {
+/** The main alert's sections in full, before any truncation. The Venice changelog is sent separately. */
+function buildPrivateModelDiscoveryText(args: PrivateModelDiscoveryNotification): string {
 	const sections: string[] = [];
 	const modelSection = buildModelDiscordSection(args.modelChanges);
-	// Dated lifecycle actions go right after model changes so message truncation drops pricing samples first.
-	const veniceChangelogSection = args.veniceChangelog ? buildVeniceChangelogDiscordSection(args.veniceChangelog) : "";
 	const pricingSection = buildPricingDiscordSection(args.pricing);
 	const providerApiPricingSection = buildProviderApiPricingDiscordSection(args.providerApiPricing);
 	const pricingTableSection = buildPricingTableDiscordSection(args.pricingTable);
 	if (modelSection) sections.push(modelSection);
-	if (veniceChangelogSection) sections.push(veniceChangelogSection);
 	if (pricingSection) sections.push(pricingSection);
 	if (providerApiPricingSection) sections.push(providerApiPricingSection);
 	if (pricingTableSection) sections.push(pricingTableSection);
-	const text = sections.join("\n\n").trim();
+	return sections.join("\n\n").trim();
+}
+
+export function buildPrivateModelDiscoveryMessage(args: PrivateModelDiscoveryNotification): string {
+	const text = buildPrivateModelDiscoveryText(args);
 	if (text.length <= 1900) return text;
 	return `${text.slice(0, 1888)}\n...[truncated]`;
 }
 
+/**
+ * Venice changelog actions are delivered in their own messages, split on whole lines, so they are never cut by
+ * the main alert's size and every entry recorded as seen was named in a delivered message.
+ */
+export function buildPrivateVeniceChangelogMessages(args: PrivateModelDiscoveryNotification): string[] {
+	return args.veniceChangelog ? buildVeniceChangelogMessages(args.veniceChangelog, MAX_DISCORD_MESSAGE_LENGTH) : [];
+}
+
+/**
+ * Duplicate-delivery key. It hashes the full, untruncated content (main sections and Venice lines), so a
+ * change past the truncation point, or a new Venice entry alongside an unchanged main alert, still counts.
+ */
 export async function computePrivateModelDiscoveryFingerprint(
 	args: PrivateModelDiscoveryNotification,
 ): Promise<string | null> {
-	const message = buildPrivateModelDiscoveryMessage(args).trim();
-	if (!message) return null;
-	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(message));
+	const veniceSection = args.veniceChangelog ? buildVeniceChangelogDiscordSection(args.veniceChangelog) : "";
+	const content = [buildPrivateModelDiscoveryText(args), veniceSection].filter(Boolean).join("\n\n").trim();
+	if (!content) return null;
+	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content));
 	return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
@@ -73,7 +92,21 @@ export async function sendPrivateModelDiscoveryNotification(
 	if (!hasDiscordNotifiableChanges(args)) {
 		return { delivered: false, skipped: true, reason: "no notifiable changes" };
 	}
-	return deliverPrivateModelDiscoveryMessage(appendReviewQueueLink(buildPrivateModelDiscoveryMessage(args)));
+	const results: PrivateDeliveryResult[] = [];
+	const main = buildPrivateModelDiscoveryMessage(args);
+	if (main) results.push(await deliverPrivateModelDiscoveryMessage(appendReviewQueueLink(main)));
+	// Each part must reach a destination; a part that fails everywhere throws, so the run defers saving
+	// the changelog's seen entries and reports them again next time.
+	for (const message of buildPrivateVeniceChangelogMessages(args)) {
+		results.push(await deliverPrivateModelDiscoveryMessage(message));
+	}
+	if (results.length === 0) return { delivered: false, skipped: true, reason: "empty Discord message" };
+	const notDelivered = results.find((result) => !result.delivered);
+	if (notDelivered) return notDelivered;
+	const errors = results.map((result) => result.error).filter(Boolean);
+	return errors.length > 0
+		? { delivered: true, skipped: false, reason: "partial notification delivery", error: errors.join("; ") }
+		: { delivered: true, skipped: false };
 }
 
 /** Sends an operator message to the private Discord and optional Slack destinations. */

@@ -50,10 +50,14 @@ const MODEL_BULLET = /^[*-]\s+(?:\[([^\]]+)\]\([^)]*\)|([^:`*[\]]+?)):\s*(`.*)$/
 const REMOVAL_DATE = /removed on ([A-Za-z]+) (\d{1,2}), (\d{4})/i;
 const REPLACEMENT = /use `([^`]+)` instead/i;
 
+/** ISO date for a written date, or null for an impossible one such as February 30. */
 function isoDate(month: string, day: string, year: string): string | null {
 	const monthNumber = MONTHS[month.toLowerCase()];
 	const dayNumber = Number(day);
-	if (!monthNumber || !Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 31) return null;
+	const yearNumber = Number(year);
+	if (!monthNumber || !Number.isInteger(dayNumber) || !Number.isInteger(yearNumber) || dayNumber < 1) return null;
+	const parsed = new Date(Date.UTC(yearNumber, monthNumber - 1, dayNumber));
+	if (parsed.getUTCFullYear() !== yearNumber || parsed.getUTCMonth() !== monthNumber - 1 || parsed.getUTCDate() !== dayNumber) return null;
 	return `${year}-${String(monthNumber).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`;
 }
 
@@ -285,12 +289,21 @@ export function selectVeniceChangelogItems(args: {
 		? args.entries.filter((entry) => !args.seenKeys!.has(veniceChangelogEntryKey(entry)))
 		: args.entries;
 	const latest = latestLifecycleEntries(args.entries);
+	// Venice re-listing a model after deprecating or removing it supersedes that lifecycle entry.
+	const latestAdded = new Map<string, string>();
+	for (const entry of args.entries) {
+		if (entry.kind !== "added") continue;
+		const id = entry.modelId.toLowerCase();
+		if (entry.date > (latestAdded.get(id) ?? "")) latestAdded.set(id, entry.date);
+	}
 	const items = fresh
 		.map((entry) => {
 			const item = matchVeniceChangelogEntry(entry, args.routes);
-			// A deprecation later cancelled, re-dated or followed by the removal asks for nothing itself.
+			const id = entry.modelId.toLowerCase();
+			// A deprecation later cancelled, re-dated or followed by the removal asks for nothing itself,
+			// and neither does a deprecation or removal followed by Venice adding the model again.
 			const superseded = LIFECYCLE_PRIORITY[entry.kind] !== undefined
-				&& latest.get(entry.modelId.toLowerCase()) !== entry;
+				&& (latest.get(id) !== entry || (latestAdded.get(id) ?? "") > entry.date);
 			return superseded ? { ...item, actions: [] } : item;
 		})
 		.filter((item) => args.seenKeys !== null || (BASELINE_KINDS.has(item.entry.kind) && item.actions.length > 0));
@@ -309,11 +322,20 @@ const KIND_LABELS: Record<VeniceChangelogKind, string> = {
 	price_change: "price change",
 	removal_cancelled: "removal cancelled",
 };
-const MAX_ACTION_LINES = 12;
-const MAX_INFO_IDS = 15;
+/** Longest single line, so any one line always fits a chat message with room for a part header. */
+const MAX_LINE_LENGTH = 1_700;
+const INFO_IDS_PER_LINE = 20;
 
-export function buildVeniceChangelogDiscordSection(summary: VeniceChangelogMonitorSummary): string {
-	if (summary.updatesDetected === 0 || summary.items.length === 0) return "";
+function clampLine(line: string): string {
+	return line.length <= MAX_LINE_LENGTH ? line : `${line.slice(0, MAX_LINE_LENGTH - 15)} ...[shortened]`;
+}
+
+/**
+ * Every reported item as its own line (informational ids grouped a few per line). Nothing is capped or
+ * dropped: every entry whose key is saved as seen is named in what gets delivered.
+ */
+export function buildVeniceChangelogDiscordLines(summary: VeniceChangelogMonitorSummary): string[] {
+	if (summary.updatesDetected === 0 || summary.items.length === 0) return [];
 	const actionable = summary.items.filter((item) => item.actions.length > 0);
 	const informational = summary.items.filter((item) => item.actions.length === 0);
 	const count = summary.items.length;
@@ -323,20 +345,43 @@ export function buildVeniceChangelogDiscordSection(summary: VeniceChangelogMonit
 	const lines: string[] = [
 		`Venice changelog: ${count} ${noun}, ${actionable.length} need${actionable.length === 1 ? "s" : ""} action (${VENICE_CHANGELOG_PAGE_URL}).`,
 	];
-	for (const item of actionable.slice(0, MAX_ACTION_LINES)) {
+	for (const item of actionable) {
 		const { entry } = item;
 		const removal = entry.removalDate && entry.kind !== "price_change" ? `, removal ${entry.removalDate}` : "";
-		lines.push(`- ${entry.date} ${KIND_LABELS[entry.kind]} \`${entry.modelId}\`${removal}: ${item.actions.join("; ")}`);
+		lines.push(clampLine(`- ${entry.date} ${KIND_LABELS[entry.kind]} \`${entry.modelId}\`${removal}: ${item.actions.join("; ")}`));
 	}
-	if (actionable.length > MAX_ACTION_LINES) {
-		lines.push(`- ...and ${actionable.length - MAX_ACTION_LINES} more needing action`);
+	for (let i = 0; i < informational.length; i += INFO_IDS_PER_LINE) {
+		const ids = informational.slice(i, i + INFO_IDS_PER_LINE).map((item) => `${KIND_LABELS[item.entry.kind]} ${item.entry.modelId}`);
+		lines.push(clampLine(`${i === 0 ? "No route change needed" : "No route change needed (cont.)"}: ${ids.join(", ")}`));
 	}
-	if (informational.length > 0) {
-		const ids = informational.slice(0, MAX_INFO_IDS).map((item) => `${KIND_LABELS[item.entry.kind]} ${item.entry.modelId}`);
-		const more = informational.length > MAX_INFO_IDS ? `, +${informational.length - MAX_INFO_IDS} more` : "";
-		lines.push(`No route change needed: ${ids.join(", ")}${more}`);
+	return lines;
+}
+
+export function buildVeniceChangelogDiscordSection(summary: VeniceChangelogMonitorSummary): string {
+	return buildVeniceChangelogDiscordLines(summary).join("\n").trim();
+}
+
+/** Splits the Venice lines into messages of at most `maxLength` characters, never splitting a line. */
+export function buildVeniceChangelogMessages(summary: VeniceChangelogMonitorSummary, maxLength: number): string[] {
+	const lines = buildVeniceChangelogDiscordLines(summary);
+	if (lines.length === 0) return [];
+	const budget = maxLength - 24; // room for a "(part n/m)" header
+	const chunks: string[][] = [];
+	let current: string[] = [];
+	let size = 0;
+	for (const line of lines) {
+		const added = line.length + (current.length > 0 ? 1 : 0);
+		if (current.length > 0 && size + added > budget) {
+			chunks.push(current);
+			current = [];
+			size = 0;
+		}
+		current.push(line);
+		size += line.length + (current.length > 1 ? 1 : 0);
 	}
-	return lines.join("\n").trim();
+	if (current.length > 0) chunks.push(current);
+	if (chunks.length === 1) return [chunks[0]!.join("\n")];
+	return chunks.map((chunk, index) => `(part ${index + 1}/${chunks.length})\n${chunk.join("\n")}`);
 }
 
 export async function sha256Hex(value: string): Promise<string> {
