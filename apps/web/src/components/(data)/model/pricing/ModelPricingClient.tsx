@@ -611,7 +611,13 @@ function ProviderServiceTierInfoIcons({
 	const format = useDisplayFormatters();
 	const providerModels = getProviderModelScopeForPlan(provider, plan);
 	const planKey = getPricingPlanTranslationKey(plan);
-	const planLabel = getProviderServiceTierLabel(provider.provider.service_tier_labels, plan) ?? (planKey ? tQuickstart(planKey as never) : formatServiceTierLabel(plan));
+	const genericPlanLabel = planKey ? tQuickstart(planKey as never) : formatServiceTierLabel(plan);
+	const providerPlanLabel = getProviderServiceTierLabel(provider.provider.service_tier_labels, plan);
+	// "Highspeed (Fast)": the provider's own name, then ours for the same tier.
+	const planLabel =
+		providerPlanLabel && providerPlanLabel.toLowerCase() !== genericPlanLabel.toLowerCase()
+			? `${providerPlanLabel} (${genericPlanLabel})`
+			: (providerPlanLabel ?? genericPlanLabel);
 	const endsOn = getEarliestEffectiveTo(providerModels, pricingTimeMs);
 	const statusKey = chooseGatewayStatus(
 		providerModels.map((providerModel) =>

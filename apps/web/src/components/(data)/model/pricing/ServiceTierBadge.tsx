@@ -22,6 +22,25 @@ const SERVICE_TIER_LABELS: Record<string, string> = {
 	free: "Free",
 };
 
+/** The badge text and its tooltip. When the provider uses its own name, the tooltip says which of our tiers it is. */
+export function getServiceTierBadgeText(plan: string, providerLabel?: string | null): { label: string; tooltip: string } {
+	const normalizedPlan = String(plan ?? "").trim().toLowerCase() || "standard";
+	const visualPlan = normalizedPlan === "fast" ? "priority" : normalizedPlan;
+	const genericLabel =
+		SERVICE_TIER_LABELS[normalizedPlan] ??
+		normalizedPlan.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+	const ownLabel = providerLabel?.trim() || null;
+	const label = ownLabel || genericLabel;
+	const note =
+		ownLabel && ownLabel.toLowerCase() !== genericLabel.toLowerCase()
+			? `${ownLabel} is this provider's name for its ${genericLabel} tier${visualPlan === "priority" ? ", a faster endpoint for this model" : ""}. `
+			: "";
+	const tooltip = normalizedPlan === "batch"
+		? `${note}Batch is not used for ordinary requests. Submit requests through the Batch API to use this tier.`
+		: `${note}${note ? "It" : label} requires explicit selection in your request or a route dedicated to this tier. It is not selected automatically.`;
+	return { label, tooltip };
+}
+
 export function ServiceTierBadge({
 	plan,
 	label: labelOverride,
@@ -39,10 +58,7 @@ export function ServiceTierBadge({
 
 	const visualPlan = normalizedPlan === "fast" ? "priority" : normalizedPlan;
 	const tier = getTierFilterMeta(visualPlan);
-	const label =
-		labelOverride?.trim() ||
-		(SERVICE_TIER_LABELS[normalizedPlan] ??
-		normalizedPlan.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()));
+	const { label, tooltip } = getServiceTierBadgeText(normalizedPlan, labelOverride);
 	const badge = (
 		<Badge
 			variant="secondary"
@@ -58,9 +74,6 @@ export function ServiceTierBadge({
 	);
 
 	if (!showTooltip || !isSelectableServiceTier(visualPlan)) return badge;
-	const tooltip = normalizedPlan === "batch"
-		? "Batch is not used for ordinary requests. Submit requests through the Batch API to use this tier."
-		: `${label} requires explicit selection in your request or a route dedicated to this tier. It is not selected automatically.`;
 
 	return (
 		<Tooltip>
