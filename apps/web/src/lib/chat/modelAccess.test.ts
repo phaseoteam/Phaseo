@@ -95,6 +95,7 @@ describe("threadUsesHiddenModel (saved chats aren't moved off hidden models)", (
 	});
 	it("leaves other chats to the usual availability check", () => {
 		expect(threadUsesHiddenModel(access(), thread("anthropic/claude-z", "anthropic"))).toBe(false);
+		expect(threadUsesHiddenModel(access(), thread("anthropic/claude-z", "auto"))).toBe(false);
 		expect(threadUsesHiddenModel(access(), thread("meta/llama"))).toBe(false);
 		expect(threadUsesHiddenModel(null, thread("openai/gpt-x"))).toBe(false);
 	});

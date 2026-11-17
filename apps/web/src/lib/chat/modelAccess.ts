@@ -71,8 +71,9 @@ export function threadUsesHiddenModel(
 	const hidden = hiddenModelIdSet(access);
 	const modelIds = [thread.modelId, ...(thread.settings.compareModelIds ?? [])].filter((id): id is string => Boolean(id));
 	if (modelIds.some((id) => hidden.has(id))) return true;
+	// "auto" lets the gateway pick among the providers the rules allow, so it's never the blocked part.
 	const providerId = thread.settings.providerId;
-	return Boolean(thread.modelId && providerId && !isProviderAllowed(access, [thread.modelId], providerId));
+	return Boolean(thread.modelId && providerId && providerId !== "auto" && !isProviderAllowed(access, [thread.modelId], providerId));
 }
 
 const normalise = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
