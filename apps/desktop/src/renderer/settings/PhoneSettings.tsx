@@ -33,7 +33,7 @@ function connectStatus(connect: ConnectView) {
 	}
 }
 
-/** Settings ▸ Phone: lets the Phaseo phone app use this computer, directly on the same network or through Phaseo Connect. */
+/** Settings ▸ Remote access: lets the Phaseo phone app use this computer, directly on the same network or through Phaseo Connect. */
 export function PhoneSettings() {
 	const api = window.phaseoDesktop?.workspace;
 	const [state, setState] = useState<PhoneState>();
