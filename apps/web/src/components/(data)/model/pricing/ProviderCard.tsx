@@ -89,6 +89,7 @@ import { ProviderLiveRoutingIndicator, useLiveRouting } from "./ProviderLiveRout
 import { Logo } from "@/components/Logo";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSelect";
+import { getProviderServiceTierLabel } from "@/components/(data)/model/pricing/providerServiceTierLabel";
 import {
 	getProviderModelScopeForPlan,
 	getProviderPlanComparisonBase,
@@ -2476,13 +2477,13 @@ export default function ProviderCard({
 			? formatDiscountTimeRemaining(soonestDiscountEnd, discountCountdownLabels)
 			: null;
 	const selectedPlanTranslationKey = getPricingPlanTranslationKey(selectedPlan);
-	const selectedPlanLabel = selectedPlanTranslationKey
+	const selectedPlanLabel = getProviderServiceTierLabel(provider.provider.service_tier_labels, selectedPlan) ?? (selectedPlanTranslationKey
 		? tQuickstart(selectedPlanTranslationKey as never)
-		: selectedPlan ? selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1) : selectedPlan;
+		: selectedPlan ? selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1) : selectedPlan);
 	const tablePlanTranslationKey = getPricingPlanTranslationKey(tablePlan);
-	const tablePlanLabel = tablePlanTranslationKey
+	const tablePlanLabel = getProviderServiceTierLabel(provider.provider.service_tier_labels, tablePlan) ?? (tablePlanTranslationKey
 		? tQuickstart(tablePlanTranslationKey as never)
-		: tablePlan ? tablePlan.charAt(0).toUpperCase() + tablePlan.slice(1) : null;
+		: tablePlan ? tablePlan.charAt(0).toUpperCase() + tablePlan.slice(1) : null);
 	const selectedPlanTheme = getPlanTheme(selectedPlan);
 	const tablePlanTheme = getPlanTheme(tablePlan);
 	const selectedPlanPriceClass = selectedPlan === "free" ? "text-foreground" : selectedPlanTheme.accent;
@@ -3535,6 +3536,7 @@ export default function ProviderCard({
 										onChange={selectServiceTier}
 										plans={availablePlans}
 										planMetaLabels={planMultiplierLabels}
+										planLabels={provider.provider.service_tier_labels}
 										compact
 									/>
 								</div>

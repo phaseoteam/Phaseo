@@ -131,6 +131,7 @@ import ModelPercentileSelect, {
 	type ModelPercentile,
 } from "@/components/(data)/models/ModelPercentileSelect";
 import { publishProviderView } from "@/components/(data)/model/pricing/providerViewSync";
+import { getProviderServiceTierLabel } from "@/components/(data)/model/pricing/providerServiceTierLabel";
 import {
 	MOBILE_NAME_CELL,
 	MOBILE_ROW,
@@ -610,7 +611,7 @@ function ProviderServiceTierInfoIcons({
 	const format = useDisplayFormatters();
 	const providerModels = getProviderModelScopeForPlan(provider, plan);
 	const planKey = getPricingPlanTranslationKey(plan);
-	const planLabel = planKey ? tQuickstart(planKey as never) : formatServiceTierLabel(plan);
+	const planLabel = getProviderServiceTierLabel(provider.provider.service_tier_labels, plan) ?? (planKey ? tQuickstart(planKey as never) : formatServiceTierLabel(plan));
 	const endsOn = getEarliestEffectiveTo(providerModels, pricingTimeMs);
 	const statusKey = chooseGatewayStatus(
 		providerModels.map((providerModel) =>
@@ -728,7 +729,7 @@ function ProviderServiceTierRow({
 			role="button"
 			tabIndex={0}
 			aria-pressed={isActive}
-			aria-label={`Open ${providerName} ${formatServiceTierLabel(plan)} service tier`}
+			aria-label={`Open ${providerName} ${getProviderServiceTierLabel(provider.provider.service_tier_labels, plan) ?? formatServiceTierLabel(plan)} service tier`}
 			onClick={openTier}
 			onKeyDown={(event) => {
 				if (event.key !== "Enter" && event.key !== " ") return;

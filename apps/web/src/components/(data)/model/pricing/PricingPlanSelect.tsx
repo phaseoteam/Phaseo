@@ -9,12 +9,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { getProviderServiceTierLabel } from "./providerServiceTierLabel";
 
 export default function PricingPlanSelect({
 	value,
 	onChange,
 	plans,
 	planMetaLabels = {},
+	planLabels,
 	compact = false,
 	variant = "tabs",
 }: {
@@ -22,11 +24,15 @@ export default function PricingPlanSelect({
 	onChange: (p: string) => void;
 	plans: string[];
 	planMetaLabels?: Record<string, string | null | undefined>;
+	/** One provider's own tier names, e.g. { priority: "Highspeed" }. Leave unset when the picker spans providers. */
+	planLabels?: Record<string, string> | null;
 	compact?: boolean;
 	variant?: "tabs" | "dropdown";
 }) {
 	const t = useTranslations("Catalogue.models.detail.quickstart");
 	const labelForPlan = (plan: string) => {
+		const providerLabel = getProviderServiceTierLabel(planLabels, plan);
+		if (providerLabel) return providerLabel;
 		switch (plan) {
 			case "standard":
 				return t("tierStandard");

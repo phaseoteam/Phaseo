@@ -165,6 +165,7 @@ export async function fetchModelPricingSources(
 				data_policy_contract_mode: provider.data_policy_contract_mode,
 				data_policy_contract_notes: providerMetadata.data_policy_contract_notes ?? null,
 				service_tier_data_policies: providerMetadata.service_tier_data_policies ?? null,
+				service_tier_labels: serviceTierLabels(providerMetadata.service_tier_labels),
 				residency_source_url: providerMetadata.residency_source_url ?? null,
 				residency_notes: providerMetadata.residency_notes ?? null,
 				privacy_policy_url: providerMetadata.privacy_policy_url ?? null,
@@ -215,6 +216,16 @@ export async function fetchModelPricingSources(
 
 function id(value: unknown): string {
 	return String(value ?? "").trim();
+}
+
+/** Provider-specific tier names, e.g. { priority: "Highspeed" }; drops anything that is not a non-empty string. */
+export function serviceTierLabels(value: unknown): Record<string, string> | null {
+	const row = asRow(value);
+	if (!row) return null;
+	const labels = Object.fromEntries(Object.entries(row)
+		.filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].trim().length > 0)
+		.map(([plan, label]) => [plan.trim().toLowerCase(), label.trim()]));
+	return Object.keys(labels).length ? labels : null;
 }
 
 function asRow(value: unknown): Row | null {
@@ -270,6 +281,7 @@ function providerInfo(providerId: string, provider: Row | null) {
 		data_policy_contract_mode: provider?.data_policy_contract_mode ?? null,
 		data_policy_contract_notes: provider?.data_policy_contract_notes ?? null,
 		service_tier_data_policies: provider?.service_tier_data_policies ?? null,
+		service_tier_labels: serviceTierLabels(provider?.service_tier_labels),
 		user_identifier_policy: provider?.user_identifier_policy ?? null,
 		user_identifier_notes: provider?.user_identifier_notes ?? null,
 		privacy_policy_url: provider?.privacy_policy_url ?? null,

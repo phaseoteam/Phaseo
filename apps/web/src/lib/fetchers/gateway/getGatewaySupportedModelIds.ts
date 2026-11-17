@@ -10,6 +10,8 @@ export type GatewaySupportedModel = {
 	capabilities: string[];
 	capabilityParamsById?: CapabilityParamsById;
 	serviceTiers?: string[];
+	/** This provider's own tier names, e.g. { priority: "Highspeed" }. */
+	serviceTierLabels?: Record<string, string> | null;
 	inputModalities?: string[];
 	outputModalities?: string[];
 	effectiveFrom: string | null;

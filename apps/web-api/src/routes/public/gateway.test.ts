@@ -62,14 +62,15 @@ describe("public gateway catalogue", () => {
 				{ sku_id: "sku-1", meter_key: "output_text_tokens", unit_quantity: 1_000_000, price_nanos: 8_000_000_000 },
 				{ sku_id: "sku-flex", meter_key: "input_text_tokens", unit_quantity: 1_000_000, price_nanos: 1_000_000_000 },
 			]), { status: 200 });
-			if (url.includes("v2_providers")) return new Response(JSON.stringify([{ api_provider_id: "openai", api_provider_name: "OpenAI" }]), { status: 200 });
+			if (url.includes("v2_providers")) return new Response(JSON.stringify([{ api_provider_id: "openai", api_provider_name: "OpenAI", service_tier_labels: { priority: "Highspeed", flex: "" } }]), { status: 200 });
 			if (url.includes("v2_labs")) return new Response(JSON.stringify([{ lab_slug: "openai", name: "OpenAI" }]), { status: 200 });
 			return new Response(JSON.stringify([{ model_id: "openai/gpt-test", name: "GPT Test", status: "Available", organisation_id: "openai" }]), { status: 200 });
 		}));
 		const response = await app.request("https://phaseo.app/api/_web/gateway/models", {}, env);
 		expect(response.status).toBe(200);
-		const catalogue = await response.clone().json() as { models: Array<{ serviceTiers: string[] }> };
+		const catalogue = await response.clone().json() as { models: Array<{ serviceTiers: string[]; serviceTierLabels: Record<string, string> | null }> };
 		expect(catalogue.models[0].serviceTiers).toEqual(["flex", "priority", "standard"]);
+		expect(catalogue.models[0].serviceTierLabels).toEqual({ priority: "Highspeed" });
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		expect(response.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(response.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models");

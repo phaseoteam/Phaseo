@@ -89,6 +89,7 @@ import {
 } from "@/lib/providers/providerOffers";
 import { cn } from "@/lib/utils";
 import { ServiceTierBadge } from "@/components/(data)/model/pricing/ServiceTierBadge";
+import { getProviderServiceTierLabel } from "@/components/(data)/model/pricing/providerServiceTierLabel";
 import {
 	getPricingHistoryTimestamps,
 	pricingHistoryToCsv,
@@ -155,6 +156,8 @@ type EffectiveRow = {
 	color: string;
 	pricingPlan: string;
 	availablePlans: string[];
+	/** Provider-specific tier names, e.g. { priority: "Highspeed" }. */
+	tierLabels: Record<string, string> | null;
 	isExternal: boolean;
 	effectiveUsageEligible: boolean;
 	inputPricePer1M: number | null;
@@ -499,6 +502,11 @@ function formatPricingPlanLabel(plan: string, tx: PricingCopyTranslator): string
 	return key ? tx(key as never) : plan;
 }
 
+/** A row belongs to one provider, so it can use that provider's own tier name. */
+function formatRowPlanLabel(row: Pick<EffectiveRow, "pricingPlan" | "tierLabels">, tx: PricingCopyTranslator): string {
+	return getProviderServiceTierLabel(row.tierLabels, row.pricingPlan) ?? formatRowPlanLabel(row, tx);
+}
+
 function PricingLineTypeIcon({ plan, color }: { plan: string; color: string }) {
 	return (
 		<svg width="24" height="8" viewBox="0 0 24 8" aria-hidden="true" focusable="false">
@@ -516,11 +524,11 @@ function PricingLineTypeIcon({ plan, color }: { plan: string; color: string }) {
 	);
 }
 
-function PricingTierLabel({ providerName, plan }: { providerName: string; plan: string }) {
+function PricingTierLabel({ providerName, plan, label }: { providerName: string; plan: string; label?: string | null }) {
 	return (
 		<span className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground max-sm:whitespace-normal">
 			<span>{providerName}</span>
-			<ServiceTierBadge plan={plan} />
+			<ServiceTierBadge plan={plan} label={label} />
 		</span>
 	);
 }
@@ -645,7 +653,7 @@ function buildPricingHistoryState(args: {
 	const seriesByProviderPlan = new Map<string, string>();
 	const lineDasharrayBySeries = new Map<string, string | undefined>();
 	for (const row of args.rows) {
-		const seriesLabel = `${row.providerName} (${formatPricingPlanLabel(row.pricingPlan, args.tx)})`;
+		const seriesLabel = `${row.providerName} (${formatRowPlanLabel(row, args.tx)})`;
 		providerNameBySeries.set(row.seriesKey, seriesLabel);
 		chartConfig[row.seriesKey] = { label: seriesLabel, color: row.color };
 		rulesBySeries.set(row.seriesKey, []);
@@ -1092,6 +1100,7 @@ export default function PricingInsights({
 				color: pricingProviderColours.get(providerId) ?? "oklch(0.58 0.19 255)",
 				pricingPlan: selectedProviderPlan,
 				availablePlans: providerPlans,
+				tierLabels: provider.provider.service_tier_labels ?? null,
 				isExternal: normalizeGatewayStatusValue(provider.provider.status) === "external",
 				effectiveUsageEligible: observedUsageWithTokens !== null,
 				inputPricePer1M:
@@ -1706,7 +1715,7 @@ export default function PricingInsights({
 													toggleSeries(row);
 												}}
 												aria-pressed={isMainSeriesVisible}
-												aria-label={t("seriesVisibility", { action: formatAction(isMainSeriesVisible), provider: row.providerName, plan: formatPricingPlanLabel(row.pricingPlan, tx) })}
+												aria-label={t("seriesVisibility", { action: formatAction(isMainSeriesVisible), provider: row.providerName, plan: formatRowPlanLabel(row, tx) })}
 											className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isMainSeriesVisible && "opacity-35")}
 											>
 												<PricingLineTypeIcon plan={row.pricingPlan} color={row.color} />
@@ -1734,7 +1743,7 @@ export default function PricingInsights({
 																{row.providerName}
 															</span>
 														</Link>
-										<ServiceTierBadge plan={row.pricingPlan} />
+										<ServiceTierBadge plan={row.pricingPlan} label={getProviderServiceTierLabel(row.tierLabels, row.pricingPlan)} />
 										{row.isExternal ? <ExternalProviderBadge /> : null}
 										{additionalTierRows.length > 0 ? <Button
 											type="button"
@@ -1817,10 +1826,10 @@ export default function PricingInsights({
 										>
 						<TableCell className={cn("px-3 py-1.5", MOBILE_NAME_CELL)}>
 						<div className="flex items-center gap-2">
-											<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan, tx) }) : t("tierUnavailable", { provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan, tx) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
+											<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatRowPlanLabel(tierRow, tx) }) : t("tierUnavailable", { provider: row.providerName, plan: formatRowPlanLabel(tierRow, tx) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
 									<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
 								</button>
-								<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />
+								<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} label={getProviderServiceTierLabel(tierRow.tierLabels, tierRow.pricingPlan)} />
 							</div>
 						</TableCell>
 										<TableCell data-label={t("table.effectiveIn")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>{formatUsd(tierRow.inputPricePer1M)}</TableCell>
@@ -1895,7 +1904,7 @@ export default function PricingInsights({
 													<span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-primary" />
 												) : null}
 												<span className="inline-flex items-center gap-2 font-medium">
-							<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(row); }} aria-pressed={isMainSeriesVisible} aria-label={t("seriesVisibility", { action: formatAction(isMainSeriesVisible), provider: row.providerName, plan: formatPricingPlanLabel(row.pricingPlan, tx) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isMainSeriesVisible && "opacity-35")}>
+							<button type="button" onClick={(event) => { event.stopPropagation(); toggleSeries(row); }} aria-pressed={isMainSeriesVisible} aria-label={t("seriesVisibility", { action: formatAction(isMainSeriesVisible), provider: row.providerName, plan: formatRowPlanLabel(row, tx) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !isMainSeriesVisible && "opacity-35")}>
 								<PricingLineTypeIcon plan={row.pricingPlan} color={row.color} />
 											</button>
 											<span className="inline-flex items-center gap-2.5">
@@ -1906,7 +1915,7 @@ export default function PricingInsights({
 												</span>
 												{row.providerName}
 											</span>
-										<ServiceTierBadge plan={row.pricingPlan} />
+										<ServiceTierBadge plan={row.pricingPlan} label={getProviderServiceTierLabel(row.tierLabels, row.pricingPlan)} />
 										{row.isExternal ? <ExternalProviderBadge /> : null}
 							{additionalTierRows.length > 0 ? <Button type="button" variant="ghost" size="icon" onClick={(event) => { event.stopPropagation(); toggleProviderExpanded(row.providerId); }} aria-expanded={isExpanded} aria-label={isExpanded ? t("collapseTier", { provider: row.providerName }) : t("expandTier", { provider: row.providerName })} className="size-7 shrink-0 rounded-md text-muted-foreground aria-expanded:!bg-transparent aria-expanded:text-muted-foreground hover:text-foreground hover:aria-expanded:!bg-transparent">
 														<ChevronDown className={cn("size-3.5 transition-transform", !isExpanded && "-rotate-90")} />
@@ -1939,10 +1948,10 @@ export default function PricingInsights({
 												>
 							<TableCell>
 								<div className="flex items-center gap-2">
-															<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan, tx) }) : t("tierUnavailable", { provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan, tx) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
+															<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatRowPlanLabel(tierRow, tx) }) : t("tierUnavailable", { provider: row.providerName, plan: formatRowPlanLabel(tierRow, tx) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
 										<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
 									</button>
-									<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />
+									<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} label={getProviderServiceTierLabel(tierRow.tierLabels, tierRow.pricingPlan)} />
 								</div>
 							</TableCell>
 												<TableCell className="text-left font-medium tabular-nums">{formatUsd(tierRow.inputPricePer1M)}</TableCell>

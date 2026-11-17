@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { composeModelPricing, fetchModelPricingSources, publicPricingRouteIdentity } from "@/models/pricing";
+import { composeModelPricing, fetchModelPricingSources, publicPricingRouteIdentity, serviceTierLabels } from "@/models/pricing";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -193,4 +193,13 @@ describe("composeModelPricing", () => {
 		}]);
 		expect(providers[0]?.pricing_rules).toMatchObject([{ id: "rule-1", pricing_plan: "free", price_per_unit: 0, modality: "text", direction: "input", display_label: "Prompt tokens", display_unit: "1M tokens" }]);
 	});
+
+describe("serviceTierLabels", () => {
+	it("keeps non-empty string labels with normalised tier keys", () => {
+		expect(serviceTierLabels({ Priority: " Highspeed ", flex: "", batch: 3, ultrafast: "Ultrafast" })).toEqual({ priority: "Highspeed", ultrafast: "Ultrafast" });
+		expect(serviceTierLabels(null)).toBeNull();
+		expect(serviceTierLabels(["Highspeed"])).toBeNull();
+		expect(serviceTierLabels({ flex: " " })).toBeNull();
+	});
+});
 });

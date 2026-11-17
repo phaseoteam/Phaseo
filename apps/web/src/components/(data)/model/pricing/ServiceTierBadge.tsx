@@ -24,10 +24,13 @@ const SERVICE_TIER_LABELS: Record<string, string> = {
 
 export function ServiceTierBadge({
 	plan,
+	label: labelOverride,
 	className,
 	showTooltip = true,
 }: {
 	plan: string;
+	/** Provider-specific tier name, e.g. "Highspeed"; falls back to the generic name. */
+	label?: string | null;
 	className?: string;
 	showTooltip?: boolean;
 }) {
@@ -37,8 +40,9 @@ export function ServiceTierBadge({
 	const visualPlan = normalizedPlan === "fast" ? "priority" : normalizedPlan;
 	const tier = getTierFilterMeta(visualPlan);
 	const label =
-		SERVICE_TIER_LABELS[normalizedPlan] ??
-		normalizedPlan.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+		labelOverride?.trim() ||
+		(SERVICE_TIER_LABELS[normalizedPlan] ??
+		normalizedPlan.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()));
 	const badge = (
 		<Badge
 			variant="secondary"

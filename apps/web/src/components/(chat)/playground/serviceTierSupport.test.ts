@@ -141,4 +141,15 @@ describe("chat service tier support", () => {
 		expect(() => assertChatServiceTierSupported(resolveChatServiceTier(undefined), null)).not.toThrow();
 		expect(() => assertChatServiceTierSupported("priority", null)).toThrow();
 	});
+	it("uses a single provider's own tier names and keeps generic names across providers", () => {
+		const moonshot = { ...gatewayModel("moonshotai/kimi-k3.1", { "text.generate": [] }), providerId: "moonshotai", serviceTiers: ["standard", "priority"], serviceTierLabels: { priority: "Highspeed" } };
+		const baseten = { ...gatewayModel("moonshotai/kimi-k3.1", { "text.generate": [] }), providerId: "baseten", serviceTiers: ["standard", "priority"], serviceTierLabels: { priority: "Ultrafast" } };
+		const labelsFor = (models: GatewaySupportedModel[], providerId?: string) =>
+			getServiceTierOptions(getModelServiceTierSupport({ models, modelId: moonshot.modelId, providerId })).map((option) => option.label);
+
+		expect(labelsFor([moonshot])).toEqual(["Standard", "Highspeed"]);
+		expect(labelsFor([moonshot, baseten])).toEqual(["Standard", "Fast"]);
+		expect(labelsFor([moonshot, baseten], "auto")).toEqual(["Standard", "Fast"]);
+		expect(labelsFor([moonshot, baseten], "baseten")).toEqual(["Standard", "Ultrafast"]);
+	});
 });

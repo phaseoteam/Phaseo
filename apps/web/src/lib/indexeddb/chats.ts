@@ -18,6 +18,8 @@ export type ChatMessage = {
     modelId?: string;
     providerId?: string;
     providerName?: string | null;
+    /** The serving provider's own tier names, e.g. { priority: "Highspeed" }. */
+    providerServiceTierLabels?: Record<string, string> | null;
     variants?: ChatMessageVariant[];
     activeVariantIndex?: number;
     usage?: Record<string, unknown> | null;

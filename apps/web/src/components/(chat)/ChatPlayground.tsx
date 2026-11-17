@@ -568,6 +568,7 @@ function ChatPlaygroundContent({
 		modelCapabilitiesById,
 		providerOptions,
 		providerNameById,
+		serviceTierLabelsByProviderId,
 		getSupportedProviderIdsForModel,
 		isProviderSupportedForModel,
 		resolveRequestModelIdForProvider,
@@ -1149,6 +1150,12 @@ function ChatPlaygroundContent({
 						message.providerName ??
 						orgNameById[orgId] ??
 						formatOrgLabel(orgId),
+					providerServiceTierLabels:
+						(resolvedProviderId
+							? serviceTierLabelsByProviderId.get(resolvedProviderId)
+							: null) ??
+						message.providerServiceTierLabels ??
+						null,
 					content: activeVariant?.content ?? message.content,
 					variants,
 					activeVariantIndex: activeIndex,
@@ -1157,7 +1164,7 @@ function ChatPlaygroundContent({
 				};
 			});
 		},
-		[applyMessageUpdate, orgNameById, providerNameById],
+		[applyMessageUpdate, orgNameById, providerNameById, serviceTierLabelsByProviderId],
 	);
 
 	const handleSaveSettings = useCallback(() => {
