@@ -13,6 +13,7 @@ import {
 	type ProviderChange,
 } from "./helpers";
 import { sendSlackWebhookMessage } from "./slack";
+import { buildVeniceChangelogDiscordSection, type VeniceChangelogMonitorSummary } from "./venice-changelog";
 
 const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
 const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
@@ -33,15 +34,20 @@ export type PrivateModelDiscoveryNotification = {
 	providerApiPricing: ProviderApiPricingMonitorSummary;
 	pricingTable: PricingTableMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
+	/** Hourly Venice changelog lifecycle check; absent on runs that did not check it. */
+	veniceChangelog?: VeniceChangelogMonitorSummary;
 };
 
 export function buildPrivateModelDiscoveryMessage(args: PrivateModelDiscoveryNotification): string {
 	const sections: string[] = [];
 	const modelSection = buildModelDiscordSection(args.modelChanges);
+	// Dated lifecycle actions go right after model changes so message truncation drops pricing samples first.
+	const veniceChangelogSection = args.veniceChangelog ? buildVeniceChangelogDiscordSection(args.veniceChangelog) : "";
 	const pricingSection = buildPricingDiscordSection(args.pricing);
 	const providerApiPricingSection = buildProviderApiPricingDiscordSection(args.providerApiPricing);
 	const pricingTableSection = buildPricingTableDiscordSection(args.pricingTable);
 	if (modelSection) sections.push(modelSection);
+	if (veniceChangelogSection) sections.push(veniceChangelogSection);
 	if (pricingSection) sections.push(pricingSection);
 	if (providerApiPricingSection) sections.push(providerApiPricingSection);
 	if (pricingTableSection) sections.push(pricingTableSection);

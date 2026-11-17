@@ -43,6 +43,13 @@ import {
 } from "./private-model-discovery-notifications";
 import { fetchPricingTableSnapshots, hasPricingSourceChanged, type PricingTableSnapshot } from "./pricing-tables";
 import {
+	emptyVeniceChangelogSummary,
+	runVeniceChangelogCheck,
+	VENICE_CHANGELOG_STATE_ID,
+	type VeniceChangelogCheckResult,
+	type VeniceChangelogMonitorSummary,
+} from "./venice-changelog";
+import {
 	seenModelRefreshIntervalMs,
 	shouldWriteSeenModel,
 	storedModelsAreCurrent,
@@ -242,6 +249,7 @@ type DiscoveryRunSummary = {
 	pricingMonitor: PricingMonitorSummary;
 	providerApiPricingMonitor: ProviderApiPricingMonitorSummary;
 	pricingTableMonitor: PricingTableMonitorSummary;
+	veniceChangelogMonitor: VeniceChangelogMonitorSummary;
 	configuredModelCoverageMonitor: ConfiguredModelCoverageMonitorSummary;
 	reviewQueue: ModelDiscoveryReviewQueueSummary;
 	publicModelAnnouncements: PublicModelAnnouncementSummary;
@@ -455,6 +463,16 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 			updatesDetected: summary.pricingTableMonitor.updatesDetected,
 			errorsCount: summary.pricingTableMonitor.errors.length,
 			error: summary.pricingTableMonitor.error ?? undefined,
+		},
+		veniceChangelogMonitor: {
+			executed: summary.veniceChangelogMonitor.executed,
+			baselineInitialized: summary.veniceChangelogMonitor.baselineInitialized,
+			unchanged: summary.veniceChangelogMonitor.unchanged,
+			entriesParsed: summary.veniceChangelogMonitor.entriesParsed,
+			newEntries: summary.veniceChangelogMonitor.newEntries,
+			updatesDetected: summary.veniceChangelogMonitor.updatesDetected,
+			actionsNeeded: summary.veniceChangelogMonitor.items.filter((item) => item.actions.length > 0).length,
+			error: summary.veniceChangelogMonitor.error ?? undefined,
 		},
 		configuredModelCoverageMonitor: {
 			executed: summary.configuredModelCoverageMonitor.executed,
@@ -1272,6 +1290,9 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			fingerprint: null,
 		};
 
+		const veniceChangelogMonitor = emptyVeniceChangelogSummary(pricingPageExecuted);
+		let veniceChangelogStateToSave: VeniceChangelogCheckResult["stateToSave"] = null;
+		let pricingPageStates: Awaited<ReturnType<typeof loadPricingPageStates>> | null = null;
 		let pricingPageSnapshotsToSave: PricingTableSnapshot[] = [];
 		if (pricingExecuted) {
 			try {
@@ -1286,6 +1307,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			pricingTableMonitor.executed = true;
 			try {
 				const previousPages = await loadPricingPageStates();
+				pricingPageStates = previousPages;
 				const previousContentByProvider = new Map(
 					Array.from(previousPages.values(), (row) => [row.provider_id, row.content_lines] as const)
 				);
@@ -1312,6 +1334,19 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				const reason = error instanceof Error ? error.message : String(error);
 				pricingTableMonitor.error = reason;
 				console.error("[model-discovery] Pricing table monitor failed:", reason);
+			}
+			// Venice's changelog carries removal dates and cancelled removals that `/models` never shows.
+			// It shares the pricing pages' hourly cadence and state table (one row, seen entry keys as content).
+			try {
+				const states = pricingPageStates ?? await loadPricingPageStates();
+				const result = await runVeniceChangelogCheck({ previous: states.get(VENICE_CHANGELOG_STATE_ID) });
+				Object.assign(veniceChangelogMonitor, result.summary);
+				veniceChangelogStateToSave = result.stateToSave;
+			} catch (error) {
+				const reason = error instanceof Error ? error.message : String(error);
+				veniceChangelogMonitor.executed = true;
+				veniceChangelogMonitor.error = reason;
+				console.error("[model-discovery] Venice changelog monitor failed:", reason);
 			}
 		}
 		const providerChanges = Array.from(providerApiPricingChangesByProvider.values())
@@ -1401,6 +1436,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			providerApiPricing: providerApiPricingMonitor,
 			pricingTable: pricingTableMonitor,
 			configuredModelCoverage: configuredModelCoverageNotificationSummary,
+			veniceChangelog: veniceChangelogMonitor,
 		};
 		const hasNotifiableChanges = hasDiscordNotifiableChanges(notificationInput);
 		if (shouldNotify && hasNotifiableChanges) {
@@ -1448,6 +1484,9 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			await deleteRemovedModels(deleteRows);
 			if (pricingPageSnapshotsToSave.length > 0) {
 				await savePricingPageStates(pricingPageSnapshotsToSave);
+			}
+			if (veniceChangelogStateToSave) {
+				await savePricingPageStates([veniceChangelogStateToSave]);
 			}
 			if (shouldPrune) {
 				staleModelsDeleted = await pruneOldRows(staleCutoff);
@@ -1499,6 +1538,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			pricingMonitor,
 			providerApiPricingMonitor,
 			pricingTableMonitor,
+			veniceChangelogMonitor,
 			configuredModelCoverageMonitor,
 			reviewQueue,
 			publicModelAnnouncements,
@@ -1514,6 +1554,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			Boolean(summary.providerApiPricingMonitor.error) ||
 			Boolean(summary.pricingTableMonitor.error) ||
 			summary.pricingTableMonitor.errors.length > 0 ||
+			Boolean(summary.veniceChangelogMonitor.error) ||
 			Boolean(summary.configuredModelCoverageMonitor.error) ||
 			Boolean(summary.reviewQueue.error) ||
 			Boolean(summary.publicModelAnnouncements.error) ||
@@ -1573,6 +1614,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				sources: [],
 				errors: [],
 			},
+			veniceChangelogMonitor: emptyVeniceChangelogSummary(pricingPageExecuted),
 			configuredModelCoverageMonitor: {
 				enabled: true,
 				executed: false,

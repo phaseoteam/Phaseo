@@ -1849,11 +1849,13 @@ export function hasDiscordNotifiableChanges(args: {
 	providerApiPricing: ProviderApiPricingMonitorSummary;
 	pricingTable: PricingTableMonitorSummary;
 	configuredModelCoverage: ConfiguredModelCoverageMonitorSummary;
+	veniceChangelog?: { updatesDetected: number };
 }): boolean {
 	return args.modelChanges.some((change) => change.added.length > 0 || change.removed.length > 0)
 		|| args.pricing.updatesDetected > 0
 		|| args.providerApiPricing.updatesDetected > 0
 		|| args.pricingTable.updatesDetected > 0
+		|| (args.veniceChangelog?.updatesDetected ?? 0) > 0
 	;
 }
 

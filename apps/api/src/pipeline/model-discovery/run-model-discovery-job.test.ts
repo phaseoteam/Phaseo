@@ -381,4 +381,71 @@ describe("runModelDiscoveryJob", () => {
 			expect(second.changes.find((change) => change.providerId === "vercel")).toMatchObject({ removed: ["model-gone"] });
 		});
 	});
+
+	describe("Venice changelog lifecycle source", () => {
+		const changelog = [
+			"**November 10, 2026**",
+			"",
+			"**Deprecated**",
+			"",
+			"* [Gemma 4 Uncensored](https://docs.venice.ai/models/gemma-4-uncensored.md): `gemma-4-uncensored`, removed on November 18, 2026; use `google-gemma-4-26b-a4b-it` instead",
+		].join("\n");
+
+		beforeEach(() => {
+			supabase.bindings = {};
+			supabase.tables.v2_model_provider_routes = [{
+				provider_model_id: "venice:venice/gemma-4-uncensored",
+				provider_slug: "venice",
+				provider_model_slug: "gemma-4-uncensored",
+				status: "active",
+				effective_to: null,
+			}];
+			fetchMock.restore();
+			fetchMock = installFetchMock([
+				{ match: (url) => url === "https://docs.venice.ai/changelog.md", response: () => new Response(changelog) },
+				{ match: () => true, response: () => jsonResponse({ data: [{ id: "model-a" }] }) },
+			]);
+		});
+
+		const pageStateWrites = () => writes("model_discovery_pricing_pages", "upsert")
+			.flatMap((call) => call.args[0] as Array<{ provider_id: string; fingerprint: string; content_lines: string[] }>);
+
+		it("reports open removal dates on the hourly sweep and stores the entries it saw", async () => {
+			const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+			expect(summary.veniceChangelogMonitor).toMatchObject({ executed: true, baselineInitialized: true, updatesDetected: 1 });
+			expect(summary.veniceChangelogMonitor.items[0].actions).toEqual([
+				"set effective_to 2026-11-18 on venice:venice/gemma-4-uncensored; Venice suggests `google-gemma-4-26b-a4b-it`",
+			]);
+			expect(pageStateWrites().filter((row) => row.provider_id === "venice-changelog")).toEqual([
+				expect.objectContaining({ content_lines: ["2026-11-10|deprecated|gemma-4-uncensored|2026-11-18>google-gemma-4-26b-a4b-it"] }),
+			]);
+			// Reporting only: no route is written.
+			expect(supabase.calls.filter((call) => call.table === "v2_model_provider_routes")).toEqual([]);
+		});
+
+		it("does nothing more while the changelog entries are unchanged", async () => {
+			await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+			supabase.tables.model_discovery_pricing_pages = pageStateWrites();
+			supabase.calls = [];
+
+			const second = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+
+			expect(second.veniceChangelogMonitor).toMatchObject({ unchanged: true, updatesDetected: 0 });
+			expect(pageStateWrites().filter((row) => row.provider_id === "venice-changelog")).toEqual([]);
+		});
+
+		it("is skipped off the top of the hour", async () => {
+			const summary = await runModelDiscoveryJob({
+				trigger: "scheduled",
+				source: "test",
+				scheduledAtIso: "2026-11-17T10:10:00.000Z",
+				notify: false,
+				prune: false,
+			});
+
+			expect(summary.veniceChangelogMonitor.executed).toBe(false);
+			expect(fetchMock.calls.some((call) => call.url === "https://docs.venice.ai/changelog.md")).toBe(false);
+		});
+	});
 });
