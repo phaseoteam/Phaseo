@@ -141,7 +141,7 @@ jobs:
               if: steps.cli-npm-release.outputs.should_publish == 'true'
               shell: bash
               run: |
-                  mapfile -t artifacts < <(find cli-package -maxdepth 1 -type f -name '*.tgz' -print)
+                  mapfile -t artifacts < <(find ./cli-package -maxdepth 1 -type f -name '*.tgz' -print)
                   if [[ ${#artifacts[@]} -ne 1 ]]; then
                     echo "::error::Expected exactly one CLI package artifact, found ${#artifacts[@]}"
                     exit 1
