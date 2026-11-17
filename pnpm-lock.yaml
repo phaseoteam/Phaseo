@@ -137,6 +137,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@noble/curves':
+        specifier: 1.9.7
+        version: 1.9.7
       '@phaseo/phone-protocol':
         specifier: workspace:*
         version: link:../../packages/shared/phone-protocol
