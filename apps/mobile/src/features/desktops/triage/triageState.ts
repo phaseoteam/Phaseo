@@ -6,7 +6,7 @@ import type { PhoneBuild } from "../protocol";
 export function triageBlocker(state: ConnectionState, desktopName: string): string | null {
   if (state.status !== "connected") return null;
   if (state.protocol < 8) return `Update Phaseo on ${desktopName} to triage from this phone.`;
-  if (!state.capabilities.includes("code") || !state.capabilities.includes("changes")) return `Allow Read code and Make changes for this phone on ${desktopName}: Settings → Phone.`;
+  if (!state.capabilities.includes("code") || !state.capabilities.includes("changes")) return `Allow Read code and Make changes for this phone on ${desktopName}: Settings → Remote access.`;
   return null;
 }
 export const triages = (state: ConnectionState) => state.status === "connected" && triageBlocker(state, "") === null;

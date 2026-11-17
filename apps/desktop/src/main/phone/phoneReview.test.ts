@@ -47,7 +47,7 @@ describe("phone review", () => {
 	it("refuses git and diffs without the code capability, and lists the capability in hello from protocol 4", async () => {
 		const { ask, app } = connected([]);
 		app.gitStatuses.set("p1", { files: [], branch: "main", hasRemote: false });
-		expect(await ask({ type: "git_status", projectId: "p1" })).toMatchObject({ ok: false, error: { code: "forbidden", message: "Allow this on the computer: Settings → Phone." } });
+		expect(await ask({ type: "git_status", projectId: "p1" })).toMatchObject({ ok: false, error: { code: "forbidden", message: "Allow this on the computer: Settings → Remote access." } });
 		expect(await ask({ type: "read_diff", scope: "uncommitted", projectId: "p1" })).toMatchObject({ ok: false, error: { code: "forbidden" } });
 		expect(app.diffReads).toEqual([]);
 		const allowed = connected(["code"]);

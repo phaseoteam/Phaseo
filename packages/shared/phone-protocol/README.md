@@ -41,7 +41,7 @@ From version 3 a phone organises threads, changes their settings and edits their
 
 ## Capabilities and review
 
-From version 4 each paired phone has three switches on the computer, in Settings → Phone: `code` (on unless turned off, also for phones paired earlier), `changes` and `terminal` (off until turned on). `hello` lists the ones that are on; a phone below 4 is told none, since none of its frames needs one. When the person flips a switch, the computer sends `{ type: "access", capabilities }` to that phone's connections at once, and it checks every request against the switches as they are then. A request without its capability is refused with `forbidden` ("Allow this on the computer: Settings → Phone").
+From version 4 each paired phone has three switches on the computer, in Settings → Remote access: `code` (on unless turned off, also for phones paired earlier), `changes` and `terminal` (off until turned on). `hello` lists the ones that are on; a phone below 4 is told none, since none of its frames needs one. When the person flips a switch, the computer sends `{ type: "access", capabilities }` to that phone's connections at once, and it checks every request against the switches as they are then. A request without its capability is refused with `forbidden` ("Allow this on the computer: Settings → Remote access").
 
 With `code`:
 

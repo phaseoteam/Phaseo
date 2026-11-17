@@ -43,7 +43,7 @@ describe("phone terminals", () => {
 			{ type: "terminal_input", terminalId: id, data: "ls\r" }, { type: "close_terminal", terminalId: id },
 			{ type: "list_servers", chatId: "c1" }, { type: "stop_server", chatId: "c1", port: 5173 },
 		];
-		for (const request of requests) expect(await ask(request)).toMatchObject({ ok: false, error: { code: "forbidden", message: "Allow this on the computer: Settings → Phone." } });
+		for (const request of requests) expect(await ask(request)).toMatchObject({ ok: false, error: { code: "forbidden", message: "Allow this on the computer: Settings → Remote access." } });
 		allow(["terminal"]);
 		for (const request of requests) expect(await ask(request)).toMatchObject({ ok: false, error: { code: "forbidden" } });
 		expect(app.terminals.ptys).toHaveLength(1);

@@ -222,7 +222,7 @@ export class FakeDesktop {
       }
       case "git_status": case "read_diff": case "read_diff_file": {
         if (this.protocol < 4) return errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
-        if (!this.capabilities.includes("code")) return errorResponse(request.id, request.type, "forbidden", "Allow this on the computer: Settings → Phone.") as PhoneResponse;
+        if (!this.capabilities.includes("code")) return errorResponse(request.id, request.type, "forbidden", "Allow this on the computer: Settings → Remote access.") as PhoneResponse;
         if (request.type === "git_status") return okResponse(request, { ...this.git, ...(request.pullRequest && this.protocol >= 6 ? { pullRequest: null } : {}) });
         if (request.type === "read_diff") return okResponse(request, this.diff);
         const file = this.diff.files.find((entry) => entry.path === request.path);
@@ -230,7 +230,7 @@ export class FakeDesktop {
       }
       case "list_files": case "read_file": {
         if (this.protocol < 5) return errorResponse(request.id, request.type, "invalid_frame", "Unknown frame type.") as PhoneResponse;
-        if (!this.capabilities.includes("code")) return errorResponse(request.id, request.type, "forbidden", "Allow this on the computer: Settings → Phone.") as PhoneResponse;
+        if (!this.capabilities.includes("code")) return errorResponse(request.id, request.type, "forbidden", "Allow this on the computer: Settings → Remote access.") as PhoneResponse;
         if (request.type === "read_file") return this.files[request.path] ? okResponse(request, this.files[request.path]!) : errorResponse(request.id, request.type, "not_found", "That file isn't in this project any more.") as PhoneResponse;
         const paths = Object.keys(this.files), prefix = request.directory ? `${request.directory}/` : "";
         const names = request.query !== undefined ? paths.filter((path) => path.includes(request.query!)) : [...new Set(paths.filter((path) => path.startsWith(prefix)).map((path) => prefix + path.slice(prefix.length).split("/")[0]))];
@@ -304,7 +304,7 @@ export class FakeDesktop {
     const refuse = (code: "invalid_frame" | "forbidden" | "rejected" | "not_found", message: string) => errorResponse(request.id, request.type, code, message) as PhoneResponse;
     if (this.protocol < 6) return refuse("invalid_frame", "Unknown frame type.");
     const writes = request.type === "git_action" || request.type === "commit_message" || request.type === "create_pull_request" || request.type === "pr_action";
-    if (!this.capabilities.includes("code") || (writes && !this.capabilities.includes("changes"))) return refuse("forbidden", "Allow this on the computer: Settings → Phone.");
+    if (!this.capabilities.includes("code") || (writes && !this.capabilities.includes("changes"))) return refuse("forbidden", "Allow this on the computer: Settings → Remote access.");
     switch (request.type) {
       case "list_branches": return okResponse(request, this.branches);
       case "commit_message": return okResponse(request, { message: "Fix the usage total" });
@@ -335,7 +335,7 @@ export class FakeDesktop {
     const refuse = (code: "invalid_frame" | "forbidden" | "rejected" | "not_found", message: string) => errorResponse(request.id, request.type, code, message) as PhoneResponse;
     if (this.protocol < 7) return refuse("invalid_frame", "Unknown frame type.");
     if (request.type === "detach_terminal") { this.watching.delete(request.terminalId); return okResponse(request, { terminalId: request.terminalId }); }
-    if (!this.capabilities.includes("code") || !this.capabilities.includes("terminal")) return refuse("forbidden", "Allow this on the computer: Settings → Phone.");
+    if (!this.capabilities.includes("code") || !this.capabilities.includes("terminal")) return refuse("forbidden", "Allow this on the computer: Settings → Remote access.");
     switch (request.type) {
       case "list_terminals": return okResponse(request, { terminals: this.terminals.filter((terminal) => terminal.chatId === request.chatId), scripts: [{ id: "dev", name: "Dev server", command: "pnpm dev" }] });
       case "open_terminal": {

@@ -58,7 +58,7 @@ export function PhoneSettings() {
 	if (!api) return null;
 	const connect = state?.connect, tailscale = state?.tailscale;
 	const pair = () => void run(async () => { setPairing(await api.pairPhone()); return undefined; });
-	return <SettingsPageLayout title="Phone" description="Use Phaseo on this computer from the Phaseo phone app: read and answer chats, approve actions and start new ones. On the same Wi-Fi or your Tailscale network it's free; Phaseo Connect works from anywhere.">
+	return <SettingsPageLayout title="Remote access" description="Reach Phaseo on this computer from somewhere else. Paired phones can read and answer chats, approve actions and start new ones. On the same Wi-Fi or your Tailscale network it's free; Phaseo Connect works from anywhere.">
 		{error && <SettingsNote role="alert" tone="error" className="px-0.5 py-0">{error}</SettingsNote>}
 		<SettingsSection title="Phone access">
 			<SettingsRow title="Allow phone access" description={!state ? "Checking…" : !state.enabled ? "Off. Nothing listens and Phaseo Connect is disconnected until you turn it on." : state.error ?? (state.running ? `On, on port ${state.port}. Paired phones can connect on the addresses below.` : "Starting…")}

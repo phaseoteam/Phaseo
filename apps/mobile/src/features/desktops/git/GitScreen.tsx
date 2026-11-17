@@ -73,7 +73,7 @@ function Git({ client, desktopId, projectId, chatId, where }: { client: DesktopC
   const title = "Git";
   const subtitle = where ?? status?.branch ?? null;
   if (!allowed || error?.code === "forbidden") {
-    return <Screen><Header back title={title} subtitle={subtitle} /><ConnectionNotice client={client} /><EmptyState className="flex-1" icon={ShieldOff} title="Reading code is off for this phone" body="Turn on Read code for this phone on the computer, in Settings → Phone." /></Screen>;
+    return <Screen><Header back title={title} subtitle={subtitle} /><ConnectionNotice client={client} /><EmptyState className="flex-1" icon={ShieldOff} title="Reading code is off for this phone" body="Turn on Read code for this phone on the computer, in Settings → Remote access." /></Screen>;
   }
   const body = error && !status ? <ErrorState className="flex-1" error={new Error(error.message)} onRetry={reload} />
     : !status ? <SkeletonRows count={5} />
@@ -83,7 +83,7 @@ function Git({ client, desktopId, projectId, chatId, where }: { client: DesktopC
         <Row icon={GitBranch} title={status.branch || "Not on a branch"} subtitle={upstreamLabel(status)} value={changedLabel(status.files.length)} onPress={writes ? openBranches : undefined} />
         <Progress running={running} error={failed} spinner={spinner} onDismiss={clearError} />
         {!writes ? (
-          <Callout className="mx-4 mt-4" title="Making changes is off for this phone">Turn on Make changes for this phone on the computer, in Settings → Phone, to commit, push and work on pull requests from here.</Callout>
+          <Callout className="mx-4 mt-4" title="Making changes is off for this phone">Turn on Make changes for this phone on the computer, in Settings → Remote access, to commit, push and work on pull requests from here.</Callout>
         ) : (
           <>
             <Section title="Commit" description={status.files.length ? "Commits what's staged on the computer, or every change when nothing is." : "Nothing to commit."}>

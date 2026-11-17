@@ -111,7 +111,7 @@ function Review({ client, desktopId, chatId, initialScope, messageId }: { client
 
   const subtitle = scope === "branch" && diff?.headRef ? (diff.baseRef ? `${diff.headRef} against ${diff.baseRef}` : `${diff.headRef}, no base branch found`) : chat?.title ?? null;
   const body = !allowed || error?.code === "forbidden" ? (
-    <EmptyState className="flex-1" icon={ShieldOff} title="Reading code is off for this phone" body="Turn on Read code for this phone on the computer, in Settings → Phone." />
+    <EmptyState className="flex-1" icon={ShieldOff} title="Reading code is off for this phone" body="Turn on Read code for this phone on the computer, in Settings → Remote access." />
   ) : error?.code === "not_found" ? (
     <EmptyState className="flex-1" icon={FileDiff} title="Nothing to compare" body={error.message} />
   ) : error ? (

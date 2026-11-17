@@ -1,6 +1,6 @@
 /**
  * Phaseo Connect's billing state, from the website's account routes the desktop already signs in to (Bearer: the
- * Phaseo login's access token). The relay checks entitlement itself; this is what Settings → Phone shows and switches.
+ * Phaseo login's access token). The relay checks entitlement itself; this is what Settings → Remote access shows and switches.
  * The server counts the days and amounts in SQL (apps/web-api/src/routes/account/settings-connect.ts).
  *
  *   GET {root}/api/account/settings/connect?workspaceId=…              → { connect }

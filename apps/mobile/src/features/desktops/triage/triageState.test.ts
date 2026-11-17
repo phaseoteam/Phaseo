@@ -6,7 +6,7 @@ const connected = (protocol: number, capabilities: ("code" | "changes" | "termin
 describe("triage from the phone", () => {
   test("needs a computer from protocol 8 that allows Read code and Make changes", () => {
     expect(triageBlocker(connected(7, ["code", "changes"]), "Studio PC")).toBe("Update Phaseo on Studio PC to triage from this phone.");
-    expect(triageBlocker(connected(8, ["code"]), "Studio PC")).toBe("Allow Read code and Make changes for this phone on Studio PC: Settings → Phone.");
+    expect(triageBlocker(connected(8, ["code"]), "Studio PC")).toBe("Allow Read code and Make changes for this phone on Studio PC: Settings → Remote access.");
     expect(triageBlocker(connected(8, ["changes"]), "Studio PC")).toContain("Allow Read code and Make changes");
     expect(triageBlocker(connected(8, ["code", "changes"]), "Studio PC")).toBeNull();
     expect(triages(connected(8, ["code", "changes"]))).toBe(true);

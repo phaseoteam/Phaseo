@@ -33,7 +33,7 @@ describe("phone git and pull requests", () => {
 			{ type: "pr_action", projectId: "p1", number: 7, headOid: head, action: { type: "merge", method: "squash" } },
 			{ type: "new_chat", projectId: "p1", text: "Try it", mode: "code", workspace: { kind: "worktree", base: "main" } },
 		];
-		for (const request of writes) expect(await ask(request)).toMatchObject({ ok: false, error: { code: "forbidden", message: "Allow this on the computer: Settings → Phone." } });
+		for (const request of writes) expect(await ask(request)).toMatchObject({ ok: false, error: { code: "forbidden", message: "Allow this on the computer: Settings → Remote access." } });
 		// Make changes without Read code isn't enough: every change answers with the code as it is after.
 		allow(["changes"]);
 		for (const request of writes) expect(await ask(request)).toMatchObject({ ok: false, error: { code: "forbidden" } });

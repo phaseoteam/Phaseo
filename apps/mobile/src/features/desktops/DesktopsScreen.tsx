@@ -18,7 +18,7 @@ export function DesktopsScreen() {
           className="flex-1"
           icon={Monitor}
           title="No computers yet"
-          body="Use your chats on Phaseo for desktop from this phone. On the computer, open Settings → Phone, turn on Allow phone access, choose Pair a phone and scan the code."
+          body="Use your chats on Phaseo for desktop from this phone. On the computer, open Settings → Remote access, turn on Allow phone access, choose Pair a phone and scan the code."
           action="Pair a computer"
           onAction={() => router.push("/pair")}
         />
@@ -42,7 +42,7 @@ function DesktopRow({ desktop, last }: { desktop: SavedDesktop; last: boolean })
   const remove = async () => {
     const ok = await confirm({
       title: `Remove ${desktop.desktopName}?`,
-      body: "This phone forgets the computer and its keys. To stop the computer accepting this phone, remove it there too, in Settings → Phone.",
+      body: "This phone forgets the computer and its keys. To stop the computer accepting this phone, remove it there too, in Settings → Remote access.",
       confirmLabel: "Remove",
       destructive: true,
     });

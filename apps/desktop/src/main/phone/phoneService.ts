@@ -31,7 +31,7 @@ const identitySecret = "phone-identity";
 const refreshMs = 120_000;
 
 /**
- * Settings → Phone in the main process: the phone server on the chosen addresses, pairing, the paired phones, Tailscale
+ * Settings → Remote access in the main process: the phone server on the chosen addresses, pairing, the paired phones, Tailscale
  * HTTPS and Phaseo Connect. With phone access off nothing listens and Connect is disconnected.
  */
 export class PhoneService {
