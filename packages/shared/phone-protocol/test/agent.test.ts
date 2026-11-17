@@ -81,6 +81,22 @@ it("never sends a link's one-time code once the caller was told linking timed ou
 	} finally { vi.useRealTimers(); }
 });
 
+it("ignores a pairing answer that won't open, and still times out", async () => {
+	vi.useFakeTimers();
+	try {
+		const connect: RemoteAgentConnector = async (_url, _token, events) => {
+			// Someone without the key answers: an envelope that can't be opened.
+			queueMicrotask(() => events.message(JSON.stringify({ to: "pair-x", from: "desktop", seq: 1, nonce: "A".repeat(32), ciphertext: "B".repeat(64) })));
+			return { send: () => {}, close: () => {} };
+		};
+		const link = encodePairingLink({ v: 1, desktopId: "desktop-0123456789ab", desktopName: "Studio PC", pairingCode: generateKeyPair().publicKey, desktopPublicKey: desktop.publicKey, direct: [], connect: { relayUrl: "wss://relay.test", desktopId: "desktop-0123456789ab" } });
+		const linking = linkRemoteAgent(link, { relayUrl: "wss://relay.test", deviceName: "Assistant", connect, timeoutMs: 1000 });
+		const failed = expect(linking).rejects.toMatchObject({ code: "timeout" });
+		await vi.advanceTimersByTimeAsync(1001);
+		await failed;
+	} finally { vi.useRealTimers(); }
+});
+
 describe("a remote agent session", () => {
 	it("signs in as the linked device and gets the desktop's answer", async () => {
 		const relay = fakeRelay({ online: true, reply: request => ({ ok: true, result: { echoed: request.name } }) });
