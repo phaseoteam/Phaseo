@@ -56,8 +56,12 @@ export function buildPrivateModelDiscoveryMessage(args: PrivateModelDiscoveryNot
 	return `${text.slice(0, 1888)}\n...[truncated]`;
 }
 
+/** A configured review URL longer than this would crowd out the alert, so the default link is used instead. */
+const MAX_REVIEW_URL_LENGTH = 300;
+
 function reviewQueueSuffix(): string {
-	const reviewUrl = readBindingEnv(["MODEL_DISCOVERY_REVIEW_URL"]) ?? DEFAULT_MODEL_DISCOVERY_REVIEW_URL;
+	const configured = readBindingEnv(["MODEL_DISCOVERY_REVIEW_URL"]);
+	const reviewUrl = configured && configured.length <= MAX_REVIEW_URL_LENGTH ? configured : DEFAULT_MODEL_DISCOVERY_REVIEW_URL;
 	return `\n\nReview queue: ${reviewUrl}`;
 }
 

@@ -66,6 +66,21 @@ describe("private alert delivery across destinations", () => {
 		await expect(sendPrivateModelDiscoveryNotification(longAlert())).rejects.toThrow(/No destination received every part/);
 	});
 
+	it("falls back to the default review link when the configured one would exhaust the message budget", async () => {
+		teardownTestRuntime();
+		setupRuntimeFromEnv({
+			DISCORD_WEBHOOK_URL: "https://discord.example/webhook",
+			MODEL_DISCOVERY_REVIEW_URL: `https://review.example/${"x".repeat(1_860)}`,
+		} as never);
+		discord.mockResolvedValue(undefined);
+		const result = await sendPrivateModelDiscoveryNotification(longAlert());
+		expect(result.delivered).toBe(true);
+		const sent = discord.mock.calls.map(([args]) => args.message);
+		for (const message of sent) expect(message.length).toBeLessThanOrEqual(1_900);
+		expect(sent.at(-1)).toContain("Review queue: https://phaseo.app/settings/internal/model-discovery");
+		expect(sent.join("\n")).toContain("organisation/a-fairly-long-model-name-24-0");
+	});
+
 	it("counts delivery when one destination got every part, and reports the other's failure", async () => {
 		discord.mockResolvedValue(undefined);
 		slack.mockRejectedValue(new Error("slack down"));
