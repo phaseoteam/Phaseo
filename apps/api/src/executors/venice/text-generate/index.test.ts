@@ -296,22 +296,24 @@ describe("Venice E2EE stream decryption", () => {
 
 	it("cancels the upstream body when the caller cancels", async () => {
 		const client = secp256k1.utils.randomPrivateKey();
-		let cancelled = false;
+		let markCancelled!: (reason: unknown) => void;
+		const upstreamCancelled = new Promise<unknown>((resolve) => {
+			markCancelled = resolve;
+		});
 		const never = new ReadableStream<Uint8Array>({
 			start(controller) {
 				controller.enqueue(new TextEncoder().encode("data: {\"choices\":[]}\n\n"));
 			},
-			cancel() {
-				cancelled = true;
+			cancel(reason) {
+				markCancelled(reason);
 			},
 		});
 		const upstream = new Response(never, { headers: { "Content-Type": "text/event-stream" } });
 		const reader = decryptingResponse(upstream, client).body!.getReader();
 		await reader.read();
 		await reader.cancel("client went away");
-		// The pipe forwards the cancel to its source asynchronously.
-		for (let i = 0; i < 10 && !cancelled; i += 1) await new Promise((resolve) => setTimeout(resolve, 0));
-		expect(cancelled).toBe(true);
+		// The pipe forwards the cancel to its source asynchronously; the test hangs (and times out) if it never does.
+		await expect(upstreamCancelled).resolves.toBe("client went away");
 	});
 });
 
