@@ -21,7 +21,9 @@ const TRANSLATIONS: Record<string, LearnTranslation> = {
 	"zh-Hans": zhHans,
 };
 
-const codeBlocks = (markdown: string) => markdown.match(/```[\s\S]*?```/g) ?? [];
+// `text` blocks hold prose for the reader to paste (the agent prompt), so they are translated.
+const codeBlocks = (markdown: string) =>
+	(markdown.match(/```[\s\S]*?```/g) ?? []).filter((block) => !block.startsWith("```text"));
 const COMPETITORS = /openrouter|portkey|litellm|requesty/i;
 
 describe("Learn course content", () => {

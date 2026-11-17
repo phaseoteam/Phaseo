@@ -469,6 +469,7 @@
 		"pickPath": "Choisir un parcours",
 		"agentTitle": "Apprendre dans votre agent de programmation",
 		"agentBody": "Collez ce texte dans Claude Code, Codex, Cursor ou tout agent capable de récupérer des URL. Il vous apprend Phaseo pendant que vous construisez ensemble votre propre projet, et enregistre votre progression dans le projet.",
+		"agentPrompt": "Récupère https://phaseo.app/learn.md et suis ses instructions. Apprends-moi Phaseo pendant que nous construisons quelque chose dont j’ai vraiment besoin.",
 		"copyPrompt": "Copier le prompt",
 		"readCourseFile": "Lire le fichier du cours",
 		"pathsHeading": "Parcours",

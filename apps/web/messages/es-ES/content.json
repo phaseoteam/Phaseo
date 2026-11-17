@@ -7,6 +7,7 @@
 		"pickPath": "Elige una ruta",
 		"agentTitle": "Aprende en tu agente de programación",
 		"agentBody": "Pega esto en Claude Code, Codex, Cursor o cualquier agente que pueda abrir URL. Te enseña Phaseo mientras creáis juntos tu propio proyecto y guarda tu progreso en el proyecto.",
+		"agentPrompt": "Abre https://phaseo.app/learn.md y sigue sus instrucciones. Enséñame Phaseo mientras construimos algo que de verdad necesito.",
 		"copyPrompt": "Copiar instrucción",
 		"readCourseFile": "Leer el archivo del curso",
 		"pathsHeading": "Rutas",

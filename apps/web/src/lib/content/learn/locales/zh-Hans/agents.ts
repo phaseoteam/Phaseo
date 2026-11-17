@@ -80,7 +80,7 @@ claude mcp add --transport http phaseo https://mcp.phaseo.app/mcp
 			body: `\`https://phaseo.app/learn.md\` 是一门为你的编程智能体编写的课程。把下面这段话粘贴到 Claude Code、Codex、Cursor 或任何能获取 URL 的智能体中：
 
 \`\`\`text
-Fetch https://phaseo.app/learn.md and follow it. Teach me Phaseo while we build something I actually need.
+获取 https://phaseo.app/learn.md 并按其中的说明操作。在我们一起构建我真正需要的东西时，教我使用 Phaseo。
 \`\`\`
 
 **接下来会发生什么。** 智能体会问你想构建什么、你的经验、你使用的语言和框架、预算或区域等限制，以及你如何判断它能正常工作。它会把这些整理成一份任务说明，然后提出一个能端到端运行的最小版本。你同意计划之后，它才会开始写代码。

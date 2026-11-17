@@ -469,6 +469,7 @@
 		"pickPath": "パスを選ぶ",
 		"agentTitle": "コーディングエージェントで学ぶ",
 		"agentBody": "これを Claude Code、Codex、Cursor など、URL を取得できるエージェントに貼り付けてください。自分のプロジェクトを一緒に作りながら Phaseo を教えてくれ、進捗はプロジェクト内に保存されます。",
+		"agentPrompt": "https://phaseo.app/learn.md を取得して、その指示に従ってください。私が本当に必要としているものを一緒に作りながら、Phaseo を教えてください。",
 		"copyPrompt": "プロンプトをコピー",
 		"readCourseFile": "コースファイルを読む",
 		"pathsHeading": "パス",

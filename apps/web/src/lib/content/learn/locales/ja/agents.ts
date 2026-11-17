@@ -85,7 +85,7 @@ Claude Code または Codex では、Phaseo プラグインが両方の MCP サ�
 			body: `\`https://phaseo.app/learn.md\` は、コーディングエージェント向けに書かれたコースです。これを Claude Code、Codex、Cursor など、URL を取得できるエージェントに貼り付けてください。
 
 \`\`\`text
-Fetch https://phaseo.app/learn.md and follow it. Teach me Phaseo while we build something I actually need.
+https://phaseo.app/learn.md を取得して、その指示に従ってください。私が本当に必要としているものを一緒に作りながら、Phaseo を教えてください。
 \`\`\`
 
 **この後の流れ。** エージェントは、何を作りたいか、あなたの経験、言語とフレームワーク、予算や地域などの制約、そして動いたとどう判断するかを尋ねます。それをミッションとしてまとめ、端から端まで動く最小のバージョンを提案します。コードを書く前に、あなたが計画に同意します。

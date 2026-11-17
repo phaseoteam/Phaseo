@@ -5,7 +5,7 @@ import { Link } from "@/i18n/navigation";
 import { useTranslations } from "@/i18n/react";
 import { getTranslations } from "@/i18n/server";
 import type { PublicLocale } from "@/i18n/routing";
-import { LEARN_AGENT_PROMPT, courseMinutes, lessonHref, pathMinutes } from "@/lib/content/learn/outline";
+import { courseMinutes, lessonHref, pathMinutes } from "@/lib/content/learn/outline";
 import type { PageMetadata } from "@/lib/seo/metadataTypes";
 import type { RouteMetadataInput } from "@/lib/start/metadata";
 import { buildMetadata } from "@/lib/seo";
@@ -26,6 +26,8 @@ export async function getLearnMetadata({ params }: RouteMetadataInput): Promise<
 
 export function LearnHubPage() {
 	const t = useTranslations("Content.learn");
+	// The prompt is in the reader’s language, so the agent teaches in it too (learn.md says to).
+	const agentPrompt = t("agentPrompt");
 	const outline = useLearnOutline();
 	const formatMinutes = useFormatMinutes();
 	const { done } = useLearnProgress();
@@ -59,9 +61,9 @@ export function LearnHubPage() {
 						{t("agentTitle")}
 					</div>
 					<p className="mt-2 text-sm leading-6 text-zinc-700 dark:text-zinc-300">{t("agentBody")}</p>
-					<div dir="ltr" className="mt-3 flex items-start gap-2 rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950">
-						<code className="flex-1 text-[13px] leading-5 break-words">{LEARN_AGENT_PROMPT}</code>
-						<CopyButton content={LEARN_AGENT_PROMPT} variant="ghost" size="sm" aria-label={t("copyPrompt")} className="mt-0.5" />
+					<div className="mt-3 flex items-start gap-2 rounded-md border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-950">
+						<p dir="auto" className="flex-1 text-sm leading-6 break-words text-zinc-800 dark:text-zinc-200">{agentPrompt}</p>
+						<CopyButton content={agentPrompt} variant="ghost" size="sm" aria-label={t("copyPrompt")} className="mt-0.5" />
 					</div>
 					<a href="/learn.md" className="mt-3 inline-flex items-center gap-1 text-sm text-blue-600 hover:underline dark:text-blue-400">
 						{t("readCourseFile")}

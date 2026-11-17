@@ -85,7 +85,7 @@ No Claude Code ou no Codex, o plugin do Phaseo instala os dois servidores MCP e 
 			body: `\`https://phaseo.app/learn.md\` é um curso escrito para o seu agente de programação. Cole isto no Claude Code, no Codex, no Cursor ou em qualquer agente que consiga buscar URLs:
 
 \`\`\`text
-Fetch https://phaseo.app/learn.md and follow it. Teach me Phaseo while we build something I actually need.
+Busque https://phaseo.app/learn.md e siga as instruções. Me ensine Phaseo enquanto construímos algo de que eu realmente preciso.
 \`\`\`
 
 **O que acontece em seguida.** O agente pergunta o que você quer construir, qual é a sua experiência, sua linguagem e seu framework, se há limites como orçamento ou região, e como você vai saber que funciona. Ele registra isso como uma missão e propõe a menor versão que funcione de ponta a ponta. Você aprova o plano antes que ele escreva qualquer código.

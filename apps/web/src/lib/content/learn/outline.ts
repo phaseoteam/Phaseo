@@ -3,10 +3,6 @@ import type { LearnCourse, LearnLesson, LearnPath } from "./types";
 
 export type * from "./types";
 
-/** The prompt a learner pastes into a coding agent to start the agent-taught course. */
-export const LEARN_AGENT_PROMPT =
-	"Fetch https://phaseo.app/learn.md and follow it. Teach me Phaseo while we build something I actually need.";
-
 // --- Outline: everything but lesson bodies, small enough for every page. ---
 
 export type LearnLessonOutline = Pick<LearnLesson, "slug" | "title" | "summary" | "minutes" | "stage">;

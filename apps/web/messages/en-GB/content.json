@@ -469,6 +469,7 @@
 		"pickPath": "Pick a path",
 		"agentTitle": "Learn in your coding agent",
 		"agentBody": "Paste this into Claude Code, Codex, Cursor or any agent that can fetch URLs. It teaches you Phaseo while you build your own project together, and saves your progress in the project.",
+		"agentPrompt": "Fetch https://phaseo.app/learn.md and follow it. Teach me Phaseo while we build something I actually need.",
 		"copyPrompt": "Copy prompt",
 		"readCourseFile": "Read the course file",
 		"pathsHeading": "Paths",

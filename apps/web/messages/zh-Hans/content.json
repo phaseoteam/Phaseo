@@ -469,6 +469,7 @@
 		"pickPath": "选择学习路径",
 		"agentTitle": "在编程智能体中学习",
 		"agentBody": "把这段内容粘贴到 Claude Code、Codex、Cursor 或任何能获取 URL 的智能体中。它会在和你一起构建项目的同时教你使用 Phaseo，并把你的进度保存在项目中。",
+		"agentPrompt": "获取 https://phaseo.app/learn.md 并按其中的说明操作。在我们一起构建我真正需要的东西时，教我使用 Phaseo。",
 		"copyPrompt": "复制提示词",
 		"readCourseFile": "阅读课程文件",
 		"pathsHeading": "学习路径",

@@ -85,7 +85,7 @@ claude mcp add --transport http phaseo https://mcp.phaseo.app/mcp
 			body: `الملف \`https://phaseo.app/learn.md\` دورة مكتوبة لوكيل البرمجة. الصق هذا في Claude Code أو Codex أو Cursor أو أي وكيل يمكنه جلب عناوين URL:
 
 \`\`\`text
-Fetch https://phaseo.app/learn.md and follow it. Teach me Phaseo while we build something I actually need.
+اجلب https://phaseo.app/learn.md واتبع تعليماته. علّمني Phaseo بينما نبني معًا شيئًا أحتاجه فعلًا.
 \`\`\`
 
 **ما الذي يحدث بعد ذلك.** يسألك الوكيل عمّا تريد بناءه، وعن خبرتك، ولغتك وإطار العمل، وأي قيود مثل الميزانية أو المنطقة، وكيف ستعرف أنه يعمل. يكتب ذلك كمهمة، ثم يقترح أصغر نسخة تعمل من البداية إلى النهاية. توافق على الخطة قبل أن يكتب أي كود.

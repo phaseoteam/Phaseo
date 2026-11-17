@@ -469,6 +469,7 @@
 		"pickPath": "اختر مسارًا",
 		"agentTitle": "تعلّم داخل وكيل البرمجة",
 		"agentBody": "الصق هذا في Claude Code أو Codex أو Cursor أو أي وكيل يمكنه جلب عناوين URL. سيعلّمك Phaseo بينما تبنيان مشروعك معًا، ويحفظ تقدّمك داخل المشروع.",
+		"agentPrompt": "اجلب https://phaseo.app/learn.md واتبع تعليماته. علّمني Phaseo بينما نبني معًا شيئًا أحتاجه فعلًا.",
 		"copyPrompt": "انسخ التعليمات",
 		"readCourseFile": "اقرأ ملف الدورة",
 		"pathsHeading": "المسارات",
