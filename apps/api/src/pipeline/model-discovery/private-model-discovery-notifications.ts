@@ -96,7 +96,14 @@ export async function computePrivateModelDiscoveryFingerprint(
 	return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-export type PrivateDeliveryResult = { delivered: boolean; skipped: boolean; reason?: string | null; error?: string | null };
+export type PrivateDeliveryResult = {
+	delivered: boolean;
+	skipped: boolean;
+	reason?: string | null;
+	error?: string | null;
+	/** Destinations that received this message. */
+	channels?: string[];
+};
 
 export async function sendPrivateModelDiscoveryNotification(
 	args: PrivateModelDiscoveryNotification,
@@ -105,18 +112,25 @@ export async function sendPrivateModelDiscoveryNotification(
 		return { delivered: false, skipped: true, reason: "no notifiable changes" };
 	}
 	const results: PrivateDeliveryResult[] = [];
-	// Each part must reach a destination; a part that fails everywhere throws, so the run defers saving
-	// pricing-page and changelog state and reports the changes again next time.
+	// A part that fails everywhere throws, so the run defers saving pricing-page and changelog state and
+	// reports the changes again next time.
 	for (const message of [...buildPrivateModelDiscoveryMessages(args), ...buildPrivateVeniceChangelogMessages(args)]) {
 		results.push(await deliverPrivateModelDiscoveryMessage(message));
 	}
 	if (results.length === 0) return { delivered: false, skipped: true, reason: "empty Discord message" };
 	const notDelivered = results.find((result) => !result.delivered);
 	if (notDelivered) return notDelivered;
+	// At least one destination must hold the whole alert: Discord receiving part 1 and Slack part 2 is not delivery.
+	const complete = results
+		.map((result) => new Set(result.channels ?? []))
+		.reduce((common, channels) => new Set([...common].filter((channel) => channels.has(channel))));
 	const errors = results.map((result) => result.error).filter(Boolean);
+	if (complete.size === 0) {
+		throw new Error(`No destination received every part of the alert: ${errors.join("; ") || "parts split across destinations"}`);
+	}
 	return errors.length > 0
-		? { delivered: true, skipped: false, reason: "partial notification delivery", error: errors.join("; ") }
-		: { delivered: true, skipped: false };
+		? { delivered: true, skipped: false, reason: "partial notification delivery", error: errors.join("; "), channels: [...complete] }
+		: { delivered: true, skipped: false, channels: [...complete] };
 }
 
 /** Sends an operator message to the private Discord and optional Slack destinations. */
@@ -159,7 +173,7 @@ export async function deliverPrivateModelDiscoveryMessage(message: string): Prom
 	if (failures.length > 0) {
 		const error = failures.join("; ");
 		console.warn("[model-discovery] Partial notification delivery (" + deliveredChannels.join(", ") + "): " + error);
-		return { delivered: true, skipped: false, reason: "partial notification delivery", error };
+		return { delivered: true, skipped: false, reason: "partial notification delivery", error, channels: deliveredChannels };
 	}
-	return { delivered: true, skipped: false };
+	return { delivered: true, skipped: false, channels: deliveredChannels };
 }
