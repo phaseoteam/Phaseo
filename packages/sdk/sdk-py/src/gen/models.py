@@ -3736,6 +3736,7 @@ class WebSearchPlugin(TypedDict):
 	include_domains: NotRequired[List[str]]
 	max_results: NotRequired[int]
 	max_uses: NotRequired[int]
+	mode: NotRequired[str]
 	search_context_size: NotRequired[Literal["low", "medium", "high"]]
 
 class WorkloadIdentityPolicy(TypedDict):

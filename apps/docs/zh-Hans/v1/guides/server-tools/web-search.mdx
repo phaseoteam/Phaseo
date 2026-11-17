@@ -115,7 +115,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 Exa 和 Parallel 的搜索在前 10 条之后每条结果另收 $0.001，Exa 还会按返回的每种内容类型每页收取 $0.001，因此在 5 条结果上返回高亮和文本会增加 $0.010。`firecrawl`、`tinyfish` 和 `deepseek` 没有模式。
 
-研究模式返回一个 `answer`，以及它引用的页面（作为 `results`）。120 秒后仍未完成的研究运行返回 `research_timeout`。超时、失败或客户端断开的运行不收费。
+研究模式返回一个 `answer`，以及它引用的页面（作为 `results`）。120 秒后仍未完成的研究运行返回 `research_timeout`。超时、失败或客户端断开的运行不收费。研究模式不能限定域名，因此带有 `allowed_domains` 或 `excluded_domains` 的研究工具会返回 400。`native` 引擎没有模式。
 
 ## 按域名过滤
 

@@ -12517,6 +12517,9 @@ components:
             - perplexity
             - tinyfish
             - deepseek
+        mode:
+          type: string
+          description: 'Cómo busca el motor. Exa: lite, auto (predeterminado), deep-lite, deep, agent-minimal o agent-low. Parallel: turbo, fast, basic, advanced (predeterminado), task-lite o task-base. Perplexity: standard (predeterminado) o fast. Los demás motores no tienen modos. Se define solo en la herramienta.'
         max_results:
           type: integer
           minimum: 1

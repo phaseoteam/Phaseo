@@ -7360,6 +7360,8 @@ class WebSearchPlugin
 	/** @var int|null */
 	public $max_uses;
 	/** @var string|null */
+	public $mode;
+	/** @var string|null */
 	public $search_context_size;
 }
 

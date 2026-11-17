@@ -115,7 +115,7 @@ Setze `mode` im Tool, um festzulegen, wie seine Engine sucht. Das Modell kann de
 
 Suchen über Exa und Parallel kosten außerdem $0.001 für jedes Ergebnis nach den ersten 10, und Exa berechnet $0.001 pro Seite für jeden zurückgegebenen Inhaltstyp, sodass Highlights und Text bei 5 Ergebnissen $0.010 hinzufügen. `firecrawl`, `tinyfish` und `deepseek` haben keine Modi.
 
-Recherchemodi liefern eine `answer` und die zitierten Seiten als `results`. Ein Recherchelauf, der nach 120 Sekunden nicht fertig ist, liefert `research_timeout`. Läufe, die ablaufen, fehlschlagen oder ihren Client verlieren, werden nicht berechnet.
+Recherchemodi liefern eine `answer` und die zitierten Seiten als `results`. Ein Recherchelauf, der nach 120 Sekunden nicht fertig ist, liefert `research_timeout`. Läufe, die ablaufen, fehlschlagen oder ihren Client verlieren, werden nicht berechnet. Recherchemodi lassen sich nicht auf Domains beschränken; ein Recherche-Tool mit `allowed_domains` oder `excluded_domains` liefert daher 400. Die Engine `native` hat keinen Modus.
 
 ## Nach Domain filtern
 

@@ -115,7 +115,7 @@ Defina `mode` na ferramenta para escolher como o mecanismo dela pesquisa. O mode
 
 Pesquisas no Exa e no Parallel também custam $0.001 por resultado depois dos 10 primeiros, e o Exa cobra $0.001 por página para cada tipo de conteúdo que retorna, então destaques e texto em 5 resultados somam $0.010. `firecrawl`, `tinyfish` e `deepseek` não têm modos.
 
-Modos de pesquisa aprofundada retornam uma `answer` e as páginas citadas em `results`. Uma execução que não termina em 120 segundos retorna `research_timeout`. Execuções que expiram, falham ou perdem o cliente não são cobradas.
+Modos de pesquisa aprofundada retornam uma `answer` e as páginas citadas em `results`. Uma execução que não termina em 120 segundos retorna `research_timeout`. Execuções que expiram, falham ou perdem o cliente não são cobradas. Modos de pesquisa aprofundada não podem ser limitados a domínios, então uma ferramenta de pesquisa com `allowed_domains` ou `excluded_domains` retorna 400. O mecanismo `native` não tem modos.
 
 ## Filtre por domínio
 

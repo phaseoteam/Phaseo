@@ -5871,6 +5871,7 @@ type WebSearchPlugin struct {
 	IncludeDomains *[]string `json:"include_domains,omitempty"`
 	MaxResults *int `json:"max_results,omitempty"`
 	MaxUses *int `json:"max_uses,omitempty"`
+	Mode *string `json:"mode,omitempty"`
 	SearchContextSize *string `json:"search_context_size,omitempty"`
 }
 

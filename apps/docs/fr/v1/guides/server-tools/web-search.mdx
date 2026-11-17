@@ -115,7 +115,7 @@ Définissez `mode` sur l’outil pour choisir comment son moteur cherche. Le mod
 
 Les recherches Exa et Parallel coûtent aussi $0.001 par résultat au-delà des 10 premiers, et Exa facture $0.001 par page pour chaque type de contenu renvoyé : extraits et texte sur 5 résultats ajoutent donc $0.010. `firecrawl`, `tinyfish` et `deepseek` n’ont pas de modes.
 
-Les modes de recherche approfondie renvoient une `answer` et les pages qu’elle cite dans `results`. Une exécution qui n’est pas terminée après 120 secondes renvoie `research_timeout`. Les exécutions qui expirent, échouent ou perdent leur client ne sont pas facturées.
+Les modes de recherche approfondie renvoient une `answer` et les pages qu’elle cite dans `results`. Une exécution qui n’est pas terminée après 120 secondes renvoie `research_timeout`. Les exécutions qui expirent, échouent ou perdent leur client ne sont pas facturées. Les modes de recherche approfondie ne peuvent pas être limités à des domaines : un outil de recherche avec `allowed_domains` ou `excluded_domains` renvoie une erreur 400. Le moteur `native` n’a pas de mode.
 
 ## Filtrer par domaine
 

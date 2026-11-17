@@ -115,7 +115,7 @@ Define `mode` en la herramienta para elegir cómo busca su motor. El modelo no p
 
 Las búsquedas de Exa y Parallel también cuestan $0.001 por cada resultado después de los 10 primeros, y Exa cobra $0.001 por página por cada tipo de contenido que devuelve, así que fragmentos destacados y texto en 5 resultados suman $0.010. `firecrawl`, `tinyfish` y `deepseek` no tienen modos.
 
-Los modos de investigación devuelven una `answer` y las páginas que cita como `results`. Una ejecución de investigación que no ha terminado tras 120 segundos devuelve `research_timeout`. Las ejecuciones que agotan el tiempo, fallan o pierden su cliente no se cobran.
+Los modos de investigación devuelven una `answer` y las páginas que cita como `results`. Una ejecución de investigación que no ha terminado tras 120 segundos devuelve `research_timeout`. Las ejecuciones que agotan el tiempo, fallan o pierden su cliente no se cobran. Los modos de investigación no se pueden limitar a dominios, así que una herramienta de investigación con `allowed_domains` o `excluded_domains` devuelve un 400. El motor `native` no tiene modos.
 
 ## Filtrar por dominio
 

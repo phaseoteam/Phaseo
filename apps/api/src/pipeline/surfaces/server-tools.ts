@@ -13,9 +13,11 @@ import { webSearchToolCapsResults } from "@core/nativeTools";
 import {
 	DEFAULT_WEB_SEARCH_MODE,
 	deepSeekToolCharge,
+	EXA_RESEARCH_MODES,
 	exaAgentCharge,
 	exaContentsCharge,
 	exaSearchCharge,
+	PARALLEL_RESEARCH_MODES,
 	parallelExtractCharge,
 	parallelSearchCharge,
 	parallelTaskCharge,
@@ -61,6 +63,11 @@ const DEEP_SEARCH_TIMEOUT_MS = 45_000;
 // the run is abandoned and not charged to the customer.
 const RESEARCH_TIMEOUT_MS = 120_000;
 const RESEARCH_POLL_INTERVAL_MS = 2_000;
+// Neither research API takes a source allowlist or blocklist we have confirmed, and an
+// answer synthesized from a blocked source cannot be filtered afterwards.
+const RESEARCH_DOMAINS_UNSUPPORTED = "Research modes (agent-minimal, agent-low, task-lite, task-base) cannot be limited to allowed or excluded domains; remove the domain filters or use a search mode.";
+const isResearchMode = (mode: string) =>
+	(EXA_RESEARCH_MODES as readonly string[]).includes(mode) || (PARALLEL_RESEARCH_MODES as readonly string[]).includes(mode);
 const SERVER_TOOL_DIRECT_FETCH_MAX_REDIRECTS = 5;
 // Direct web fetch reads at most this much of a page; the rest is dropped and
 // the result is marked truncated, since the tool only returns maxChars anyway.
@@ -1380,6 +1387,10 @@ export function prepareServerToolsForTextRequest(
 			// A provider's own search cannot enforce result caps (Claude's takes max_uses
 			// only), so a capped search runs on Phaseo's default engine instead.
 			const nativeDropsCaps = webSearchToolCapsResults(tool, { nativeMaxUses: protocol === "anthropic.messages" });
+			const requestedMode = tool.parameters?.mode ?? tool.mode;
+			if (defaults.engine === "native" && requestedMode != null) {
+				return { ok: false, message: 'Web search engine "native" has no modes; remove "mode" or choose a Phaseo engine.' };
+			}
 			if (defaults.engine === "native" && !nativeDropsCaps) {
 				nativeWebSearchRequested = true;
 				filteredTools.push(buildNativeWebSearchTool(tool, protocol));
@@ -1387,7 +1398,6 @@ export function prepareServerToolsForTextRequest(
 			}
 			webSearchEnabled = true;
 			webSearchEngine = defaults.engine === "native" ? DEFAULT_WEB_SEARCH_ENGINE : defaults.engine;
-			const requestedMode = tool.parameters?.mode ?? tool.mode;
 			if (requestedMode != null) {
 				const modeEngine = webSearchEngine === "auto" ? DEFAULT_WEB_SEARCH_ENGINE : webSearchEngine;
 				const modes = WEB_SEARCH_MODES[modeEngine] ?? [];
@@ -1411,6 +1421,9 @@ export function prepareServerToolsForTextRequest(
 			webSearchIncludeHighlights = defaults.includeHighlights;
 			webSearchAllowedDomains = defaults.allowedDomains;
 			webSearchExcludedDomains = defaults.excludedDomains;
+			if (webSearchMode && isResearchMode(webSearchMode) && (webSearchAllowedDomains.length > 0 || webSearchExcludedDomains.length > 0)) {
+				return { ok: false, message: RESEARCH_DOMAINS_UNSUPPORTED };
+			}
 			const userLocation = tool.parameters?.user_location ?? tool.user_location;
 			webSearchUserLocation = userLocation && typeof userLocation === "object" && !Array.isArray(userLocation)
 				? flattenUserLocation(userLocation)
@@ -3047,13 +3060,15 @@ async function executeExaAgentToolCall(args: {
 }): Promise<ResearchToolOutcome> {
 	const failed = (content: Record<string, unknown>) => researchFailed(args.call.id, "exa", args.mode, content);
 	const deadline = Date.now() + RESEARCH_TIMEOUT_MS;
+	const untilDeadline = () => Math.max(1, Math.min(SERVER_TOOL_FETCH_TIMEOUT_MS, deadline - Date.now()));
+	const timedOut = (runId?: string) => ({ error: "research_timeout", ...(runId ? { run_id: runId } : {}), message: `Exa research did not finish within ${RESEARCH_TIMEOUT_MS / 1000} seconds.` });
 	const headers = { "Content-Type": "application/json", "x-api-key": args.searchConfig.apiKey };
 	try {
 		const created = await fetchWithTimeout(`${args.searchConfig.baseUrl}/agent/runs`, {
 			method: "POST",
 			headers,
 			body: JSON.stringify({ query: args.query, effort: args.mode.slice("agent-".length) }),
-		}, { signal: args.signal });
+		}, { timeoutMs: untilDeadline(), signal: args.signal });
 		if (!created.ok) {
 			return failed({ error: "research_request_failed", status: created.status, message: (await created.text()).slice(0, 1000) });
 		}
@@ -3064,20 +3079,21 @@ async function executeExaAgentToolCall(args: {
 			if (args.signal?.aborted) return failed({ error: "research_cancelled", run_id: runId });
 			const wait = polls === 0 ? 0 : RESEARCH_POLL_INTERVAL_MS;
 			if (Date.now() + wait >= deadline) {
-				return failed({ error: "research_timeout", run_id: runId, message: `Exa research did not finish within ${RESEARCH_TIMEOUT_MS / 1000} seconds.` });
+				return failed(timedOut(runId));
 			}
 			if (wait > 0) await waitForPoll(wait, args.signal);
 			if (args.signal?.aborted) return failed({ error: "research_cancelled", run_id: runId });
 			const polled = await fetchWithTimeout(`${args.searchConfig.baseUrl}/agent/runs/${encodeURIComponent(runId)}`, {
 				method: "GET",
 				headers,
-			}, { signal: args.signal });
+			}, { timeoutMs: untilDeadline(), signal: args.signal });
 			if (!polled.ok) return failed({ error: "research_request_failed", status: polled.status, run_id: runId });
 			run = await polled.json() as Record<string, any>;
 		}
 		if (run.status !== "completed") {
 			return failed({ error: "research_failed", run_id: runId, status: run.status, message: toNonEmptyString(run.error?.message) ?? null });
 		}
+		if (Date.now() >= deadline) return failed(timedOut(runId));
 		return researchResult({
 			callId: args.call.id,
 			engine: "exa",
@@ -3091,6 +3107,7 @@ async function executeExaAgentToolCall(args: {
 		});
 	} catch (error) {
 		if (args.signal?.aborted) return failed({ error: "research_cancelled" });
+		if (Date.now() >= deadline) return failed(timedOut());
 		return failed({ error: "research_request_error", message: error instanceof Error ? error.message : String(error) });
 	}
 }
@@ -3111,6 +3128,7 @@ async function executeParallelTaskToolCall(args: {
 }): Promise<ResearchToolOutcome> {
 	const failed = (content: Record<string, unknown>) => researchFailed(args.call.id, "parallel", args.mode, content);
 	const deadline = Date.now() + RESEARCH_TIMEOUT_MS;
+	const timedOut = (runId?: string) => ({ error: "research_timeout", ...(runId ? { run_id: runId } : {}), message: `Parallel research did not finish within ${RESEARCH_TIMEOUT_MS / 1000} seconds.` });
 	const headers = { "Content-Type": "application/json", "x-api-key": args.searchConfig.apiKey };
 	try {
 		const created = await fetchWithTimeout(`${args.searchConfig.baseUrl}/v1/tasks/runs`, {
@@ -3121,7 +3139,7 @@ async function executeParallelTaskToolCall(args: {
 				processor: args.mode.slice("task-".length),
 				task_spec: { output_schema: { type: "text" } },
 			}),
-		}, { signal: args.signal });
+		}, { timeoutMs: Math.max(1, Math.min(SERVER_TOOL_FETCH_TIMEOUT_MS, deadline - Date.now())), signal: args.signal });
 		if (!created.ok) {
 			return failed({ error: "research_request_failed", status: created.status, message: (await created.text()).slice(0, 1000) });
 		}
@@ -3131,12 +3149,12 @@ async function executeParallelTaskToolCall(args: {
 			const remainingSeconds = Math.floor((deadline - Date.now()) / 1000);
 			if (args.signal?.aborted) return failed({ error: "research_cancelled", run_id: runId });
 			if (remainingSeconds <= 0) {
-				return failed({ error: "research_timeout", run_id: runId, message: `Parallel research did not finish within ${RESEARCH_TIMEOUT_MS / 1000} seconds.` });
+				return failed(timedOut(runId));
 			}
 			const response = await fetchWithTimeout(
 				`${args.searchConfig.baseUrl}/v1/tasks/runs/${encodeURIComponent(runId)}/result?timeout=${remainingSeconds}`,
 				{ method: "GET", headers },
-				{ timeoutMs: (remainingSeconds + 5) * 1000, signal: args.signal },
+				{ timeoutMs: Math.max(1, deadline - Date.now()), signal: args.signal },
 			);
 			if (response.status === 408) continue;
 			if (!response.ok) return failed({ error: "research_failed", status: response.status, run_id: runId });
@@ -3144,6 +3162,7 @@ async function executeParallelTaskToolCall(args: {
 			if (json.run?.status && json.run.status !== "completed") {
 				return failed({ error: "research_failed", run_id: runId, status: json.run.status });
 			}
+			if (Date.now() >= deadline) return failed(timedOut(runId));
 			const content = json.output?.content;
 			return researchResult({
 				callId: args.call.id,
@@ -3159,6 +3178,7 @@ async function executeParallelTaskToolCall(args: {
 		}
 	} catch (error) {
 		if (args.signal?.aborted) return failed({ error: "research_cancelled" });
+		if (Date.now() >= deadline) return failed(timedOut());
 		return failed({ error: "research_request_error", message: error instanceof Error ? error.message : String(error) });
 	}
 }
@@ -3546,6 +3566,19 @@ async function executeWebSearchToolCall(
 					message: "allowed_domains must be within this gateway web search tool's allowed_domains",
 					allowed_domains: config.webSearchAllowedDomains ?? [],
 				}),
+			},
+			webFetchRequests: 0,
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
+			billableWebSearchRequests: 0,
+		};
+	}
+	if (mode && isResearchMode(mode) && (allowedDomains.length > 0 || excludedDomains.length > 0)) {
+		return {
+			toolResult: {
+				toolCallId: call.id,
+				isError: true,
+				content: JSON.stringify({ error: "domains_unsupported_for_research", mode, message: RESEARCH_DOMAINS_UNSUPPORTED }),
 			},
 			webFetchRequests: 0,
 			webSearchResults: 0,

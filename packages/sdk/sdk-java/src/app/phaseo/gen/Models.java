@@ -4230,6 +4230,7 @@ public final class Models {
 		public java.util.List<String> include_domains;
 		public Integer max_results;
 		public Integer max_uses;
+		public String mode;
 		public Object search_context_size;
 	}
 

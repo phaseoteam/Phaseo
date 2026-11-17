@@ -5937,9 +5937,11 @@ module Phaseo
     #   @return [Integer, nil]
     # @!attribute [rw] max_uses
     #   @return [Integer, nil]
+    # @!attribute [rw] mode
+    #   @return [String, nil]
     # @!attribute [rw] search_context_size
     #   @return [String, nil]
-    WebSearchPlugin = Struct.new(:enabled, :engine, :exclude_domains, :id, :include_domains, :max_results, :max_uses, :search_context_size, keyword_init: true)
+    WebSearchPlugin = Struct.new(:enabled, :engine, :exclude_domains, :id, :include_domains, :max_results, :max_uses, :mode, :search_context_size, keyword_init: true)
     # @!attribute [rw] audience
     #   @return [String]
     # @!attribute [rw] claim_conditions

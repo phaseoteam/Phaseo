@@ -1685,7 +1685,8 @@ async function runTextGeneratePipelineInner(
 							context: { credit: creditAfterServerToolSpend(pre.ctx, pre.ctx.gating?.credit), teamSettings: pre.ctx.teamSettings },
 							internal: pre.ctx.internal,
 						}),
-						signal: liveSink?.signal,
+						// A buffered request has no live sink; its own signal marks a client disconnect.
+						signal: liveSink?.signal ?? req.signal,
 					},
 				);
 				if (!continuation) break;

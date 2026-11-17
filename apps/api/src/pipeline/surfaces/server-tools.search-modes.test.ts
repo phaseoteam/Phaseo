@@ -228,6 +228,69 @@ describe("research modes", () => {
 		expect(continuation?.searchPricing).toBeUndefined();
 	});
 
+	it.each([
+		["exa", "agent-low", (init?: RequestInit) => init?.method === "POST"
+			? json({ id: "run_1", status: "queued" })
+			: json({ id: "run_1", status: "completed", output: { text: "Late." }, costDollars: { total: 0.025 } })],
+		["parallel", "task-lite", (init?: RequestInit) => init?.method === "POST"
+			? json({ run_id: "trun_1", status: "queued" }, 202)
+			: json({ run: { run_id: "trun_1", status: "completed" }, output: { type: "text", content: "Late." } })],
+	] as const)("does not charge a %s run that completes after the time limit", async (engine, mode, respond) => {
+		const start = Date.now();
+		const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {
+			// The completed result arrives once the 120-second limit has passed.
+			if (init?.method !== "POST") vi.spyOn(Date, "now").mockReturnValue(start + 125_000);
+			return respond(init);
+		});
+		vi.stubGlobal("fetch", fetchMock);
+
+		const continuation = await buildServerToolContinuation(searchRound(), prepared({ engine, mode }));
+
+		expect(JSON.parse(String(continuation?.toolResults[0]?.content))).toMatchObject({ error: "research_timeout" });
+		expect(continuation?.searchPricing).toBeUndefined();
+	});
+
+	it.each([
+		{ allowed_domains: ["nature.com"] },
+		{ excluded_domains: ["spam.example"] },
+	])("rejects a research tool limited to domains (%o), which research cannot enforce", (domains) => {
+		for (const mode of ["agent-low", "task-base"]) {
+			const engine = mode.startsWith("agent") ? "exa" : "parallel";
+			const result = prepareServerToolsForTextRequest(
+				{ model: "openai/gpt-5-nano", messages: [], tools: [{ type: "phaseo:web_search", parameters: { engine, mode, ...domains } }] },
+				"openai.chat.completions",
+			);
+			expect(result.ok).toBe(false);
+			if (!result.ok) expect(result.message).toContain("cannot be limited to allowed or excluded domains");
+		}
+	});
+
+	it("refuses domains the model passes to a research run, before starting it", async () => {
+		const fetchMock = vi.fn();
+		vi.stubGlobal("fetch", fetchMock);
+
+		const continuation = await buildServerToolContinuation(
+			searchRound({ query: "phaseo", excluded_domains: ["spam.example"] }),
+			prepared({ engine: "parallel", mode: "task-base" }),
+		);
+
+		expect(fetchMock).not.toHaveBeenCalled();
+		expect(JSON.parse(String(continuation?.toolResults[0]?.content))).toMatchObject({ error: "domains_unsupported_for_research" });
+		expect(continuation?.searchPricing).toBeUndefined();
+	});
+
+	it.each([
+		{ parameters: { engine: "native", mode: "deep" } },
+		{ engine: "native", mode: "agent-low" },
+	])("rejects a mode on the provider's own search (%o)", (tool) => {
+		const result = prepareServerToolsForTextRequest(
+			{ model: "openai/gpt-5-nano", messages: [], tools: [{ type: "phaseo:web_search", ...tool }] },
+			"openai.chat.completions",
+		);
+		expect(result.ok).toBe(false);
+		if (!result.ok) expect(result.message).toContain('"native" has no modes');
+	});
+
 	it("stops a research run when the client disconnects, without charging it", async () => {
 		const controller = new AbortController();
 		const fetchMock = vi.fn(async (_url: string, init?: RequestInit) => {

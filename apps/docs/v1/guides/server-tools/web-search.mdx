@@ -113,7 +113,7 @@ Set `mode` on the tool to choose how its engine searches. The model can't change
 
 Exa and Parallel searches also cost $0.001 for each result past the first 10, and Exa charges $0.001 per page for each content type it returns, so highlights and text on 5 results add $0.010. `firecrawl`, `tinyfish` and `deepseek` have no modes.
 
-Research modes return an `answer` and the pages it cites as `results`. A research run that hasn't finished after 120 seconds returns `research_timeout`. Runs that time out, fail, or lose their client aren't charged.
+Research modes return an `answer` and the pages it cites as `results`. A research run that hasn't finished after 120 seconds returns `research_timeout`. Runs that time out, fail, or lose their client aren't charged. Research modes can't be limited to domains, so a research tool with `allowed_domains` or `excluded_domains` returns a 400. The `native` engine takes no mode.
 
 ## Filter by domain
 

@@ -1000,6 +1000,7 @@ export type CreateAnthropicMessageParams = {
           include_domains?: string[];
           max_results?: number;
           max_uses?: number;
+          mode?: string;
           search_context_size?: "low" | "medium" | "high";
         }
       | {
@@ -2350,6 +2351,7 @@ export type CreateChatCompletionParams = {
           include_domains?: string[];
           max_results?: number;
           max_uses?: number;
+          mode?: string;
           search_context_size?: "low" | "medium" | "high";
         }
       | {
@@ -6470,6 +6472,7 @@ export type CreateResponseParams = {
           include_domains?: string[];
           max_results?: number;
           max_uses?: number;
+          mode?: string;
           search_context_size?: "low" | "medium" | "high";
         }
       | {

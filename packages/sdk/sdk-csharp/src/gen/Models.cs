@@ -10077,6 +10077,9 @@ public sealed class WebSearchPlugin
 	[JsonPropertyName("max_uses")]
 	public long? MaxUses { get; set; }
 
+	[JsonPropertyName("mode")]
+	public string? Mode { get; set; }
+
 	[JsonPropertyName("search_context_size")]
 	public string? SearchContextSize { get; set; }
 

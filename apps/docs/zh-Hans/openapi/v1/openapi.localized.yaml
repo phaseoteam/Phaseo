@@ -12517,6 +12517,9 @@ components:
             - perplexity
             - tinyfish
             - deepseek
+        mode:
+          type: string
+          description: 引擎的搜索方式。Exa：lite、auto（默认）、deep-lite、deep、agent-minimal 或 agent-low。Parallel：turbo、fast、basic、advanced（默认）、task-lite 或 task-base。Perplexity：standard（默认）或 fast。其他引擎没有模式。只能在工具上设置。
         max_results:
           type: integer
           minimum: 1

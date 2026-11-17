@@ -169,6 +169,7 @@ export interface ChatCompletionsRequest {
         include_domains?: string[];
         max_results?: number;
         max_uses?: number;
+        mode?: string;
         search_context_size?: "low" | "medium" | "high";
       }
     | {
