@@ -155,9 +155,13 @@ gap, not a choice, unless you can say why.
 
      Also search by name (for example `alias_slug ilike '%terra%'`), because
      the `previous_model_slug` link can be missing or skip a tier.
-   - **Move each `-latest` alias as part of the launch.** A `-latest` alias
-     (slug ends in `-latest`, `alias_type` `stable` or `preview`) must point
-     at the newest public model in its line. Once the new model is public,
+   - **Move each rolling `-latest` alias as part of the launch.** A rolling
+     `-latest` alias has a slug that ends in `-latest` and names no version
+     or date, and an `alias_type` of `stable`, `preview` or `public`.
+     `public` is the default type for aliases made through the admin UI,
+     `mutate_v2_admin_model_aliases` and the account API, so most rolling
+     aliases have it. A rolling alias must point at the newest public model
+     in its line. Once the new model is public,
      move the alias in the same session as the launch, without waiting to be
      asked. The new model counts as public when `status = 'active'`,
      `hidden = false`, `catalogue_status = 'available'`, and at least one
@@ -241,18 +245,27 @@ select alias_slug, alias_type from v2_model_aliases
 where model_slug = '<model>' and enabled;
 ```
 
-- **`-latest` aliases:** move each one to the newest public model in its
-  line, or to the model's `replacement_model_slug`, using the guarded update
-  in checklist item 7. Confirm the target first: it must have an active,
-  routing-enabled route. If no served target exists, ask the user whether to
-  disable the alias.
-- **Pinned aliases** (version, legacy, provider): leave them on the model.
-  The gateway's successor redirect handles requests once the model is
-  unserved.
-- **Never leave an enabled `-latest` alias on a model with no live route.**
+Use the definitions in checklist item 7 to sort these into rolling and
+pinned aliases. A slug that ends in `-latest` but names a version, such as
+`openai/gpt-5.2-chat-latest`, is pinned.
+
+- **Rolling `-latest` aliases:** move each one to the newest public model in
+  its line, or to the model's `replacement_model_slug`, using the guarded
+  update in checklist item 7. Confirm the target first: it must have an
+  active, routing-enabled route. If no served target exists, ask the user
+  whether to disable the alias.
+- **Pinned aliases:** leave them on the model, because callers chose that
+  version. Once the model is unserved, requests through a pinned alias fail
+  unless the gateway's successor redirect applies. That only happens when the
+  caller's workspace has turned redirect on (it is off by default), the
+  replacement is approved, the 72-hour grace period has passed, and the
+  workspace's price policy allows the replacement. List every pinned alias
+  left on an unserved model in the completion report, so the user can decide
+  whether to disable it.
+- **Never leave an enabled rolling alias on a model with no live route.**
   Callers get an error instead of the current model. A deprecated model that
-  is still served can keep its alias until it stops being served, but tell
-  the user it is there.
+  is still served can keep its rolling alias until it stops being served, but
+  tell the user the alias is there.
 
 ## Validation
 
