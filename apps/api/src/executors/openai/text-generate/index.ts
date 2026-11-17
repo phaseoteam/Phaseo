@@ -85,7 +85,12 @@ const OPENAI_REASONING_EFFORT_SUPPORT: Record<string, Set<ReasoningEffort>> = {
 	// https://developers.openai.com/api/docs/models/gpt-6.1-terra
 	"gpt-6.1-terra": new Set(["none", "low", "medium", "high", "xhigh", "max"]),
 	"gpt-6.1-terra-pro": new Set(["low", "medium", "high", "xhigh", "max"]),
-	"o1": new Set(["low", "medium", "high"]),
+	// https://developers.openai.com/api/docs/guides/reasoning: GPT-6.2 rejects "none".
+	"gpt-6.2-astra": new Set(["low", "medium", "high", "xhigh", "max"]),
+	"gpt-6.2-astra-pro": new Set(["low", "medium", "high", "xhigh", "max"]),
+	"gpt-6.2-sol": new Set(["low", "medium", "high", "xhigh", "max"]),
+	"gpt-6.2-sol-pro": new Set(["low", "medium", "high", "xhigh", "max"]),
+	"o1":new Set(["low", "medium", "high"]),
 	"o1-preview": new Set(["low", "medium", "high"]),
 	"o1-mini": new Set(["low", "medium", "high"]),
 	"o3-mini": new Set(["low", "medium", "high"]),
@@ -459,7 +464,7 @@ function normalizeOpenAIProModelSlug(model?: string | null): {
 } {
 	const normalized = normalizeModelName(model);
 	if (!normalized) return { model: model ?? null, proMode: false };
-	const match = normalized.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-(?:sol|luna|astra)|gpt-6\.1-(?:sol|terra))-pro$/i);
+	const match = normalized.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-(?:sol|luna|astra)|gpt-6\.1-(?:sol|terra)|gpt-6\.2-(?:sol|astra))-pro$/i);
 	if (!match) return { model: model ?? null, proMode: false };
 	return { model: match[1].toLowerCase(), proMode: true };
 }
@@ -1047,5 +1052,14 @@ export const executor: ProviderExecutor = async (execArgs: ExecutorExecuteArgs) 
 		execArgs.capabilityParams,
 	);
 	const processed = cherryPickIRParams(normalized, execArgs.capabilityParams);
-	return executeOpenAIProvider({ ...execArgs, ir: processed });
+	// A Pro alias routes to the base model, so reasoning.mode is its only Pro signal. The
+	// allowlist rebuilds `reasoning` from listed leaves and may omit "mode"; re-apply it so a
+	// Pro alias never silently runs as the base model.
+	const isProAlias = isOpenAIProviderOffer(execArgs.providerId) &&
+		(normalizeOpenAIProModelSlug(execArgs.providerModelSlug ?? null).proMode ||
+			normalizeOpenAIProModelSlug((execArgs.ir as IRChatRequest).model).proMode);
+	const ir = isProAlias && processed.reasoning?.mode !== "pro"
+		? { ...processed, reasoning: { ...(processed.reasoning ?? {}), mode: "pro" as const } }
+		: processed;
+	return executeOpenAIProvider({ ...execArgs, ir });
 };
