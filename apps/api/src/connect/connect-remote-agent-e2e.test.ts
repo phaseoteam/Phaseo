@@ -49,7 +49,13 @@ describe("an app linked through mcp.phaseo.app, end to end", () => {
 		const send = vi.fn(async () => {});
 		const tools = vi.fn((): Partial<ThreadTools> => ({ list, send, read: id => ({ thread: { id, title: "Release notes" }, messages: [{ role: "user", text: "Draft them" }] }) as never }));
 		let desktopRef: Awaited<ReturnType<typeof startDesktop>> | undefined;
-		const agentRequest = remoteAgentRequests({ tools, desktopName: () => "Test PC", remove: id => desktopRef!.pairing.removeAgent(id) });
+		const answer = remoteAgentRequests({ tools, desktopName: () => "Test PC", remove: id => desktopRef!.pairing.removeAgent(id) });
+		/** While set, the desktop turns down hello, as one busy or closing right after pairing would fail to answer it. */
+		const busy = { hello: false };
+		const agentRequest: typeof answer = async (agent, text) => {
+			const request = JSON.parse(text) as { id: string; type: string };
+			return busy.hello && request.type === "agent_hello" ? { id: request.id, type: request.type, ok: false, error: { message: "Busy." } } : answer(agent, text);
+		};
 		const desktop = desktopRef = await startDesktop(relay, { agentRequest }); cleanup.push(() => desktop.stop());
 		desktop.pairing.onRemoved = id => { desktop.hub.closeDevice(id); desktop.client.removeDevice(id); };
 		const { values, state } = memoryState();
@@ -60,8 +66,29 @@ describe("an app linked through mcp.phaseo.app, end to end", () => {
 			const code = await desktop.showPairingCode(access);
 			return encodePairingLink({ v: 1, desktopId: desktop.desktopId, desktopName: "Test PC", pairingCode: code.pairingCode, desktopPublicKey: desktop.desktopKeys.publicKey, direct: [], connect: { relayUrl: relay.url, desktopId: desktop.desktopId } });
 		};
-		return { relay, desktop, links, values, call, makeLink, list, send, tools };
+		return { relay, desktop, links, values, call, makeLink, list, send, tools, busy };
 	}
+
+	it("reports a link saved before the desktop answers as linked, and it works", async () => {
+		const context = await setup();
+		context.busy.hello = true;
+		expect(await context.call({ action: "link", link: await context.makeLink("read"), deviceName: "Assistant" })).toEqual({ ok: true, result: { desktopName: "Test PC", pending: true } });
+		expect(context.values.has("link")).toBe(true);
+		context.busy.hello = false;
+		expect(await context.call({ action: "tool", name: "list_threads", arguments: {} })).toMatchObject({ ok: true });
+	});
+
+	it("keeps calls on the stored link when two links overlap", async () => {
+		const context = await setup();
+		const [first, second] = [await context.makeLink("read"), await context.makeLink("read")];
+		const linked = await Promise.all([context.call({ action: "link", link: first, deviceName: "First" }), context.call({ action: "link", link: second, deviceName: "Second" })]);
+		expect(linked.map(entry => entry.ok)).toEqual([true, true]);
+		expect(await context.call({ action: "tool", name: "list_threads", arguments: {} })).toMatchObject({ ok: true });
+		// The desktop ran the tool for whichever link this side kept, not the one it replaced.
+		const stored = context.values.get("link") as { deviceId: string };
+		const keptName = context.desktop.pairing.agent(stored.deviceId)!.name;
+		expect(context.tools.mock.calls.at(-1)![0]).toMatchObject({ name: keptName });
+	});
 
 	it("links with a one-time link and runs the desktop's tools, with the relay seeing only ciphertext", async () => {
 		const context = await setup();
