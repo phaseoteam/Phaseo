@@ -1,6 +1,5 @@
 ---
 "@phaseo/gateway-api": minor
-"@phaseo/cli": minor
 "@phaseo/web": minor
 "@phaseo/docs": patch
 "@phaseo/sdk": minor

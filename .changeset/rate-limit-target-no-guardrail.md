@@ -3,7 +3,6 @@
 "@phaseo/sdk": major
 "@phaseo/py-sdk": major
 "@phaseo/go-sdk": major
-"@phaseo/cli": patch
 "@phaseo/mcp": patch
 "@phaseo/web": patch
 ---

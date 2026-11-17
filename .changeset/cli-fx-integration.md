@@ -1,5 +1,4 @@
 ---
-"@phaseo/cli": minor
 "@phaseo/docs": patch
 ---
 
