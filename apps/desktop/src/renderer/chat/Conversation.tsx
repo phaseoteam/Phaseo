@@ -6,7 +6,7 @@ import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task } from "../../shared/workspace";
 import { useConversationPage } from "../lib/useConversationPage";
 import type { ConversationPage } from "../../shared/conversationPage";
-import { conversationTurns, firstUnread, turnDuration, userBursts, type Burst, type TurnEntry } from "../lib/conversationTurns";
+import { conversationTurns, firstUnread, turnDuration, userBursts, type Burst, type TurnEntry, type TurnSpan } from "../lib/conversationTurns";
 import { elapsedLabel, useNow } from "../lib/elapsed";
 import { contextShare, turnUsage } from "../lib/turnUsage";
 import { formatRoundedCount } from "@phaseo/app-kit/format";
@@ -171,7 +171,7 @@ function ActivityRow({ activity, live, openDiff, taskId }: { activity: AgentActi
 	</div>;
 }
 
-function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]; user?: Message; live: boolean; complete: boolean; task: Task }) {
+function WorkLog({ entries, user, span, live, complete, task }: { entries: TurnEntry[]; user?: Message; span: TurnSpan; live: boolean; complete: boolean; task: Task }) {
 	const [opened, setOpen] = useState(live);
 	const openDiff = user?.checkpoint?.after && !live && task.mode !== "chat" && task.projectId ? (path: string) => openTurnDiff({ taskId: task.id, messageId: user.id, path }) : undefined;
 	useEffect(() => { setOpen(live); }, [live]);
@@ -182,13 +182,13 @@ function WorkLog({ entries, user, live, complete, task }: { entries: TurnEntry[]
 	const tools = entries.filter(entry => entry.kind === "activity" && entry.value.type === "tool").length;
 	const plan = entries.find(entry => entry.kind === "activity" && entry.value.type === "plan" && entry.value.steps?.length);
 	const onlyReasoning = steps.every(entry => entry.kind === "activity" && entry.value.type === "reasoning");
-	const title = live || !complete ? "Working" : onlyReasoning ? turnDuration(user).replace("Worked", "Thought") : turnDuration(user);
+	const title = live || !complete ? "Working" : onlyReasoning ? turnDuration(span).replace("Worked", "Thought") : turnDuration(span);
 	return <div className="flex flex-col gap-1">
 		<div>
 			<button type="button" onClick={() => setOpen(value => !value)} aria-expanded={open} className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground hover:text-foreground">
 				{live ? <LoaderCircle className="size-3.5 animate-spin text-primary" /> : <ChevronRight className={cn("size-3.5 transition-transform", open && "rotate-90")} />}
 				<span className={cn("font-medium", live && "animate-pulse")}>{title}</span>
-				{live && <Elapsed since={user?.startedAt} />}
+				{live && <Elapsed since={span.startedAt} />}
 				{tools > 0 && <span>· {tools} {tools === 1 ? "step" : "steps"}</span>}
 			</button>
 			{open && <div className="mt-1 ml-[7px] flex flex-col gap-0.5 border-l border-border pl-1.5">{steps.map(entry => entry.kind === "activity"
@@ -212,7 +212,7 @@ const noActivities: AgentActivity[] = [];
 function UnreadDivider() {
 	return <div role="separator" aria-label="New since your last visit" className="flex items-center gap-3 text-[11px] font-medium text-primary"><span aria-hidden className="h-px flex-1 bg-primary/40" />New since your last visit<span aria-hidden className="h-px flex-1 bg-primary/40" /></div>;
 }
-type TurnProps = { user?: Message; entries: TurnEntry[]; usageActivities: AgentActivity[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; /** Offers Regenerate on this turn's answer (the last turn of a Chat-mode chat). */ onRegenerate?: (message: Message) => void; compact?: boolean; burst?: Burst; /** Where this turn's "New since your last visit" line goes, if it has it. */ unread?: "start" | "answer"; /** Drawn at once, not when it nears the view (see NearView). */ eager?: boolean };
+type TurnProps = { user?: Message; span: TurnSpan; entries: TurnEntry[]; usageActivities: AgentActivity[]; live: boolean; complete: boolean; task: Task; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; /** Offers Regenerate on this turn's answer (the last turn of a Chat-mode chat). */ onRegenerate?: (message: Message) => void; compact?: boolean; burst?: Burst; /** Where this turn's "New since your last visit" line goes, if it has it. */ unread?: "start" | "answer"; /** Drawn at once, not when it nears the view (see NearView). */ eager?: boolean };
 const sameItems = <T,>(a: readonly T[], b: readonly T[], value: (item: T) => unknown = item => item) => a.length === b.length && a.every((item, index) => value(item) === value(b[index]));
 /**
  * A turn re-renders only when its own entries or the chat fields it shows change, so loading a page of older turns
@@ -278,7 +278,7 @@ function NearView({ id, eager, estimate, markers, children }: { id: string; eage
 	return <div ref={node} aria-hidden data-turn-placeholder="" style={{ height: turnHeights.get(id) ?? estimate(), overflowAnchor: "none" }}>{markers().map(marker => <span key={marker} data-conversation-id={marker} className="block h-0" />)}</div>;
 }
 
-const Turn = memo(function Turn({ user, entries, usageActivities, live, complete, task, onAttachment, onBranch, onRewind, onRegenerate, compact, burst, unread, eager = false }: TurnProps) {
+const Turn = memo(function Turn({ user, span, entries, usageActivities, live, complete, task, onAttachment, onBranch, onRewind, onRegenerate, compact, burst, unread, eager = false }: TurnProps) {
 	// Text after the last step is the answer, even while it is still streaming.
 	const latest = entries.findLast(entry => !(entry.kind === "activity" && entry.value.type === "usage"));
 	const isAnswer = (entry?: TurnEntry) => entry?.kind === "message" && entry.value.role === "assistant" && entry.value.delivery !== "subagent";
@@ -305,12 +305,12 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 		{hasAssistant && <div data-conversation-id={`turn:${user?.id ?? entries[0]?.value.id}`} className="group/turn flex flex-col gap-3">
 			{/* Messages are headings, so a screen reader's heading keys move between them. */}
 			{compact ? <h3 className="sr-only">{task.model === "default" ? harnessNames[task.harness] : modelLabel(task.model)} replied</h3> : <AssistantHeader task={task} />}
-			<WorkLog entries={work} user={user} live={live} complete={complete} task={task} />
+			<WorkLog entries={work} user={user} span={span} live={live} complete={complete} task={task} />
 			{plans.map(plan => <ProposedPlan key={plan.id} markdown={plan.text} projectId={task.projectId} status={plan.proposed?.outcome ? planOutcomes[plan.proposed.outcome] : undefined}>
 				{plan.proposed?.feedback && <p data-selectable className="mt-2 border-l-2 border-border pl-3 text-[13px] whitespace-pre-wrap text-muted-foreground">{plan.proposed.feedback}</p>}
 			</ProposedPlan>)}
 			{pages.map(page => <HtmlRenderFrame key={page.id} html={page.html} render={page.render} />)}
-			{live && !finalText && !work.some(entry => entry.kind === "message" || entry.value.type !== "usage") && <div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin text-primary" /><span className="animate-pulse font-medium">Working</span><Elapsed since={user?.startedAt} /></div>}
+			{live && !finalText && !work.some(entry => entry.kind === "message" || entry.value.type !== "usage") && <div className="flex items-center gap-1.5 py-1 text-[13px] text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin text-primary" /><span className="animate-pulse font-medium">Working</span><Elapsed since={span.startedAt} /></div>}
 			{delegated.map(entry => <details key={entry.value.id} className="rounded-xl border border-border px-3 py-2 text-[13px]"><summary className="cursor-pointer font-medium text-muted-foreground">Agent result</summary><MessageContent text={entry.value.text} projectId={task.projectId} /></details>)}
 			{final?.kind === "message" && finalText && <div data-selectable data-quote data-conversation-id={`message:${final.value.id}`} className="text-[14px] leading-relaxed"><MessageContent text={finalText} projectId={task.projectId} repairLocalLinks /></div>}
 			{final?.kind === "message" && !live && <div className="-ml-1.5 flex items-center gap-0.5 opacity-60 transition-opacity group-hover/turn:opacity-100">
@@ -327,7 +327,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 		{user && !live && complete && task.mode !== "chat" && task.projectId && user.checkpoint?.after && <TurnChanges taskId={task.id} projectId={task.projectId} message={user} />}
 		</NearView>
 	</div>;
-}, (a, b) => a.user === b.user && a.live === b.live && a.complete === b.complete && a.compact === b.compact && a.eager === b.eager
+}, (a, b) => a.user === b.user && a.span.startedAt === b.span.startedAt && a.span.completedAt === b.span.completedAt && a.live === b.live && a.complete === b.complete && a.compact === b.compact && a.eager === b.eager
 	&& a.unread === b.unread && a.burst?.previous === b.burst?.previous && a.burst?.next === b.burst?.next && a.burst?.continuesSteer === b.burst?.continuesSteer && a.onRewind === b.onRewind && a.onRegenerate === b.onRegenerate
 	&& sameItems(a.entries, b.entries, entry => entry.value) && sameItems(a.usageActivities, b.usageActivities)
 	&& a.task.id === b.task.id && a.task.status === b.task.status && a.task.archived === b.task.archived && a.task.projectId === b.task.projectId && a.task.model === b.task.model && a.task.harness === b.task.harness && a.task.mode === b.task.mode);
@@ -475,7 +475,7 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 				{messages.page.earlier > 0 && <button ref={earlierRow} type="button" disabled={messages.loading} onClick={messages.older} className="flex items-center gap-1.5 self-center px-3 py-1 text-xs text-muted-foreground hover:text-foreground">{messages.loading ? <><LoaderCircle className="size-3.5 animate-spin" />Loading earlier messages…</> : `Load ${messages.page.earlier} earlier messages`}</button>}
 				{messages.error && <div role="alert" className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">{messages.error}<button type="button" className="ml-auto font-semibold underline" onClick={() => messages.retry()}>Retry</button></div>}
 				{messages.loading && !messages.page.entries.length && <p className="text-center text-xs text-muted-foreground">Loading messages…</p>}
-				{turns.map((turn, index) => <Turn key={turn.id} user={turn.user} entries={turn.entries} usageActivities={(turn.user && usageByTurn.get(turn.user.id)) || noActivities} task={view} onAttachment={attach} onBranch={branchFrom} compact={compact} burst={bursts[index]} unread={unread?.turnId === turn.id ? unread.at : undefined}
+				{turns.map((turn, index) => <Turn key={turn.id} user={turn.user} span={turn.span} entries={turn.entries} usageActivities={(turn.user && usageByTurn.get(turn.user.id)) || noActivities} task={view} onAttachment={attach} onBranch={branchFrom} compact={compact} burst={bursts[index]} unread={unread?.turnId === turn.id ? unread.at : undefined}
 					onRewind={onRewind ? rewindTo : undefined} onRegenerate={onRegenerate && index === turns.length - 1 && !messages.page.later ? regenerate : undefined}
 					live={running && (turn.user?.id === activeTurn || (!turn.user && index === turns.length - 1 && !messages.page.later))}
 					complete={Boolean(turn.user?.completedAt) || index < turns.length - 1 || (!messages.page.later && !running)}

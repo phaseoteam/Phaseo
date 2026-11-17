@@ -62,6 +62,30 @@ describe("scoped desktop orchestration", () => {
 			expect(runtime.store.getTask(child.id).messages).toEqual(expect.arrayContaining([expect.objectContaining({ delivery: "steer", text: "Focus on tests" })]));
 		} finally { finish(); await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
+	it("returns and delivers a delegated child's whole answer when a steer split it", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-child-steer-result-"));
+		let release: (() => void) | undefined, begin!: (callbacks: AgentCallbacks) => void;
+		const started = new Promise<AgentCallbacks>(resolve => { begin = resolve; });
+		// Only the child holds its turn; the parent's wake (after the delivery) ends at once.
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async (task, _cwd, _text, callbacks) => { if (!task.delegation) return; begin(callbacks); await new Promise<void>(resolve => { release = resolve; }); }, steer: async () => {}, cancel: async () => { release?.(); } }));
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "owned", mode: "code" }); const parentId = state.tasks[0].id;
+			const tools = runtime.threadTools(parentId);
+			const child = await tools.delegate({ requestId: "steered", title: "Review", prompt: "Inspect", background: true });
+			const callbacks = await started;
+			callbacks.onDelta("answer", "The failing tests are A and B. Fix A by ");
+			await tools.steer!(child.id, "Keep it short");
+			callbacks.onDelta("answer", "updating its fixture.");
+			const waited = tools.wait(child.id, 60_000); release!();
+			expect((await waited).result).toBe("The failing tests are A and B. Fix A by updating its fixture.");
+			// The answer is stored as two entries around the steer; the result is both of them.
+			const timeline = runtime.store.getTask(child.id).messages.toSorted((a, b) => a.timelineOrder! - b.timelineOrder!);
+			expect(timeline.map(message => `${message.role}:${message.delivery ?? ""}`)).toEqual(["user:", "assistant:", "user:steer", "assistant:"]);
+			// The delivery was written to the parent by the store's trigger as the child completed.
+			const delivered = runtime.store.getTask(parentId);
+			expect([...delivered.queue, ...delivered.messages].map(message => message.text).join("\n")).toContain("The failing tests are A and B. Fix A by updating its fixture.\n</untrusted_content>");
+		} finally { release?.(); await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
 	it("manages owned child titles and queues without granting access to other chats", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-child-controls-"));
 		const runtime = new WorkspaceRuntime(directory, () => ({ run: async () => {}, cancel: async () => {} }));

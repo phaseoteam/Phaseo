@@ -2,12 +2,26 @@ import { describe, expect, it, vi } from "vitest";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { Task } from "../shared/workspace";
+import { finalResponse, type Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { WorkspaceStore } from "./workspaceStore";
 import { AgentInputRejectedError } from "./agentAdapter";
 import { SecretVault } from "./secretVault";
+
+/** A fake agent whose turn runs until `finish`; `started` resolves with the turn's callbacks once it begins. */
+function heldAgent(steer?: AgentAdapter["steer"]) {
+	let release: (() => void) | undefined, begin!: (callbacks: AgentCallbacks) => void;
+	const started = new Promise<AgentCallbacks>(resolve => { begin = resolve; });
+	const adapter: AgentAdapter = { run: async (_task, _cwd, _text, callbacks) => { begin(callbacks); await new Promise<void>(resolve => { release = resolve; }); }, cancel: async () => { release?.(); }, ...(steer ? { steer } : {}) };
+	return { adapter, started, finish: () => release?.() };
+}
+/** Resolves when the runtime reports the chat at `status`, as a turn's end does. */
+function reaches(runtime: WorkspaceRuntime, id: string, status: Task["status"]) {
+	return new Promise<void>(resolve => { const previous = runtime.onChange; runtime.onChange = overview => { previous(overview); if (overview.tasks.some(task => task.id === id && task.status === status)) resolve(); }; });
+}
+/** The chat's messages in timeline order, as role:text. */
+const transcript = (task: Task) => task.messages.filter(item => item.timelineOrder !== undefined).sort((a, b) => a.timelineOrder! - b.timelineOrder!).map(item => `${item.role}:${item.text}`);
 
 describe("workspace orchestration", () => {
 	it("persists first-observed text and activity order despite batching and updates", async () => {
@@ -181,6 +195,81 @@ describe("workspace orchestration", () => {
 			const restored = new WorkspaceStore(path.join(directory, "workspace.sqlite"));
 			try { expect(restored.getTask(id).steering?.[0].status).toBe("unconfirmed"); } finally { restored.close(); }
 		} finally { rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("places a steer among the running turn's steps where it was sent", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steer-order-"));
+		const agent = heldAgent(async () => {});
+		const runtime = new WorkspaceRuntime(directory, () => agent.adapter);
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); const callbacks = await agent.started;
+			callbacks.onActivity?.({ id: "think", type: "reasoning", title: "Reasoning", text: "Before" });
+			callbacks.onActivity?.({ id: "read", type: "tool", title: "read_file", text: "{}", status: "completed" });
+			await runtime.command({ type: "steer", id, text: "Also check the tests" });
+			callbacks.onActivity?.({ id: "test", type: "tool", title: "run_command", text: "{}", status: "completed" });
+			callbacks.onDelta("answer", "Done");
+			const completed = reaches(runtime, id, "completed"); agent.finish(); await completed;
+			const task = runtime.store.getTask(id);
+			const timeline = [...task.messages, ...task.activities ?? []].filter(item => item.timelineOrder !== undefined).sort((a, b) => a.timelineOrder! - b.timelineOrder!);
+			expect(timeline.map(item => "text" in item && "role" in item ? `${item.role}:${item.text}` : item.title)).toEqual(["user:Start", "Reasoning", "read_file", "user:Also check the tests", "run_command", "assistant:Done"]);
+			expect(new Set(timeline.map(item => item.timelineOrder)).size).toBe(timeline.length);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	// Pi streams every delta as "assistant" and Codex can reuse an item id, so the same id keeps streaming across a steer.
+	it.each([["accepted", true], ["refused", false]] as const)("splits same-item text at a steer only when it is %s", async (_label, accepted) => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steer-split-"));
+		const agent = heldAgent(async () => { if (!accepted) throw new AgentInputRejectedError("The agent cannot take steering now."); });
+		const runtime = new WorkspaceRuntime(directory, () => agent.adapter);
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "pi", model: "default", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); const callbacks = await agent.started;
+			callbacks.onDelta("assistant", "Before. ");
+			await runtime.command({ type: "steer", id, text: "Also check the tests" }).catch(() => undefined);
+			callbacks.onDelta("assistant", "After.");
+			const completed = reaches(runtime, id, "completed"); agent.finish(); await completed;
+			const task = runtime.store.getTask(id);
+			expect(transcript(task)).toEqual(accepted ? ["user:Start", "assistant:Before. ", "user:Also check the tests", "assistant:After."] : ["user:Start", "assistant:Before. After."]);
+			// The text after an accepted steer is the turn's latest entry, so the live segment (the steer's) shows it as it streams.
+			if (accepted) expect(task.messages.findLast(item => item.role === "user")?.delivery).toBe("steer");
+			// The two entries are still one answer to whatever reads the final response.
+			expect(finalResponse(task.messages)).toBe("Before. After.");
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("splits at a steer sent inside a code block only once the block closes", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steer-fence-"));
+		const agent = heldAgent(async () => {});
+		const runtime = new WorkspaceRuntime(directory, () => agent.adapter);
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "pi", model: "default", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); const callbacks = await agent.started;
+			callbacks.onDelta("assistant", "Use this:\n```ts\nconst a = 1;\n");
+			await runtime.command({ type: "steer", id, text: "Also check the tests" });
+			callbacks.onDelta("assistant", "const b = 2;\n``");
+			callbacks.onDelta("assistant", "`\nThen run the tests.");
+			const completed = reaches(runtime, id, "completed"); agent.finish(); await completed;
+			const task = runtime.store.getTask(id);
+			expect(transcript(task)).toEqual(["user:Start", "assistant:Use this:\n```ts\nconst a = 1;\nconst b = 2;\n```\n", "user:Also check the tests", "assistant:Then run the tests."]);
+			expect(finalResponse(task.messages)).toBe("Use this:\n```ts\nconst a = 1;\nconst b = 2;\n```\nThen run the tests.");
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("gives a question answered by message during a running turn its own place before the steer", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steer-question-"));
+		const agent = heldAgent(async () => {});
+		const runtime = new WorkspaceRuntime(directory, () => agent.adapter);
+		try {
+			const state = await runtime.command({ type: "create-task", harness: "codex", model: "default", mode: "code" }); const id = state.tasks[0].id;
+			await runtime.command({ type: "send", id, text: "Start" }); const callbacks = await agent.started;
+			expect(await callbacks.onQuestion!([{ id: "0", header: "Question", question: "Which colour?", options: [{ label: "Blue" }] }], { responseMode: "message" })).toEqual({});
+			// Text the turn has placed but not yet saved holds the next position.
+			callbacks.onDelta("answer", "Waiting for the colour.");
+			const request = runtime.store.getTask(id).questions![0];
+			await runtime.command({ type: "answer", id, requestId: request.id, answers: { "0": ["Blue"] } });
+			const completed = reaches(runtime, id, "completed"); agent.finish(); await completed;
+			const task = runtime.store.getTask(id);
+			const timeline = [...task.messages, ...task.activities ?? []].sort((a, b) => a.timelineOrder! - b.timelineOrder!);
+			expect(timeline.map(item => "role" in item ? `${item.role}:${item.text}` : item.title)).toEqual(["user:Start", "assistant:Waiting for the colour.", "Question answered", "user:Which colour?\nBlue"]);
+			expect(new Set(timeline.map(item => item.timelineOrder)).size).toBe(timeline.length);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 	it("persists steering before delivery and retains rejected and uncertain instructions without replay", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-steering-"));
