@@ -16,6 +16,7 @@ import { sendSlackWebhookMessage } from "./slack";
 import {
 	buildVeniceChangelogDiscordSection,
 	buildVeniceChangelogMessages,
+	splitLinesIntoMessages,
 	type VeniceChangelogMonitorSummary,
 } from "./venice-changelog";
 
@@ -23,14 +24,6 @@ const PRIVATE_MODEL_DISCOVERY_USERNAME = "Phaseo Private Model Discovery";
 const PRIVATE_MODEL_DISCOVERY_AVATAR_URL = "https://phaseo.app/png_logo_dark.png";
 const DEFAULT_MODEL_DISCOVERY_REVIEW_URL = "https://phaseo.app/settings/internal/model-discovery";
 const MAX_DISCORD_MESSAGE_LENGTH = 1_900;
-
-function appendReviewQueueLink(message: string): string {
-	const reviewUrl = readBindingEnv(["MODEL_DISCOVERY_REVIEW_URL"]) ?? DEFAULT_MODEL_DISCOVERY_REVIEW_URL;
-	const suffix = `\n\nReview queue: ${reviewUrl}`;
-	const available = Math.max(0, MAX_DISCORD_MESSAGE_LENGTH - suffix.length);
-	const base = message.length <= available ? message : `${message.slice(0, Math.max(0, available - 16))}\n...[truncated]`;
-	return `${base}${suffix}`;
-}
 
 export type PrivateModelDiscoveryNotification = {
 	modelChanges: ProviderChange[];
@@ -56,10 +49,29 @@ function buildPrivateModelDiscoveryText(args: PrivateModelDiscoveryNotification)
 	return sections.join("\n\n").trim();
 }
 
+/** Single-message preview of the main alert, cut at the chat limit. Delivery uses the split messages below. */
 export function buildPrivateModelDiscoveryMessage(args: PrivateModelDiscoveryNotification): string {
 	const text = buildPrivateModelDiscoveryText(args);
 	if (text.length <= 1900) return text;
 	return `${text.slice(0, 1888)}\n...[truncated]`;
+}
+
+function reviewQueueSuffix(): string {
+	const reviewUrl = readBindingEnv(["MODEL_DISCOVERY_REVIEW_URL"]) ?? DEFAULT_MODEL_DISCOVERY_REVIEW_URL;
+	return `\n\nReview queue: ${reviewUrl}`;
+}
+
+/**
+ * The main alert as one or more messages, split on lines with nothing truncated, the review-queue link on
+ * the last part. Pricing-page state is saved after delivery, so every change it records must be shown.
+ */
+export function buildPrivateModelDiscoveryMessages(args: PrivateModelDiscoveryNotification): string[] {
+	const text = buildPrivateModelDiscoveryText(args);
+	if (!text) return [];
+	const suffix = reviewQueueSuffix();
+	const parts = splitLinesIntoMessages(text.split("\n"), MAX_DISCORD_MESSAGE_LENGTH - suffix.length);
+	parts[parts.length - 1] = `${parts[parts.length - 1]}${suffix}`;
+	return parts;
 }
 
 /**
@@ -93,11 +105,9 @@ export async function sendPrivateModelDiscoveryNotification(
 		return { delivered: false, skipped: true, reason: "no notifiable changes" };
 	}
 	const results: PrivateDeliveryResult[] = [];
-	const main = buildPrivateModelDiscoveryMessage(args);
-	if (main) results.push(await deliverPrivateModelDiscoveryMessage(appendReviewQueueLink(main)));
 	// Each part must reach a destination; a part that fails everywhere throws, so the run defers saving
-	// the changelog's seen entries and reports them again next time.
-	for (const message of buildPrivateVeniceChangelogMessages(args)) {
+	// pricing-page and changelog state and reports the changes again next time.
+	for (const message of [...buildPrivateModelDiscoveryMessages(args), ...buildPrivateVeniceChangelogMessages(args)]) {
 		results.push(await deliverPrivateModelDiscoveryMessage(message));
 	}
 	if (results.length === 0) return { delivered: false, skipped: true, reason: "empty Discord message" };

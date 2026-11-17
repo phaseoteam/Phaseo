@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
-import { buildPrivateModelDiscoveryMessage, buildPrivateVeniceChangelogMessages, computePrivateModelDiscoveryFingerprint, type PrivateModelDiscoveryNotification } from "./private-model-discovery-notifications";
+import { buildPrivateModelDiscoveryMessage, buildPrivateModelDiscoveryMessages, buildPrivateVeniceChangelogMessages, computePrivateModelDiscoveryFingerprint, type PrivateModelDiscoveryNotification } from "./private-model-discovery-notifications";
+import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../tests/helpers/runtime";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
@@ -368,4 +369,57 @@ describe("review fixes", () => {
 		const withVenice = await computePrivateModelDiscoveryFingerprint(notification({ modelChanges: changes("tail-a"), veniceChangelog: summaryWith(1) }));
 		expect(withVenice).not.toBe(a);
 	});
+
+	it("keeps the end-date review of a cancelled removal even after the model is listed again", () => {
+		const routes = [route("venice:x/v3", "deepseek-v3.2", { effective_to: "2026-10-28T00:00:00Z" })];
+		const { items } = selectVeniceChangelogItems({
+			entries: [
+				entry({ kind: "removal_cancelled", modelId: "deepseek-v3.2", date: "2026-10-22" }),
+				entry({ kind: "added", modelId: "deepseek-v3.2", date: "2026-11-01" }),
+			],
+			seenKeys: new Set(),
+			routes,
+		});
+		expect(items.find((item) => item.entry.kind === "removal_cancelled")?.actions).toEqual([
+			"review effective_to 2026-10-28 on venice:x/v3 (Venice cancelled the removal)",
+		]);
+	});
+
+	it("wraps lines longer than a message instead of dropping their contents", () => {
+		const detail = Array.from({ length: 400 }, (_, i) => `price-${i}`).join(" ");
+		const routes = [route("venice:x/big", "big-model")];
+		const { items } = selectVeniceChangelogItems({
+			entries: [entry({ kind: "price_change", modelId: "big-model", detail })],
+			seenKeys: new Set(),
+			routes,
+		});
+		const summary = { enabled: true, executed: true, baselineInitialized: false, unchanged: false, entriesParsed: 1, newEntries: 1, items, updatesDetected: 1 };
+		const messages = buildVeniceChangelogMessages(summary, 1_900);
+		expect(messages.length).toBeGreaterThan(1);
+		for (const message of messages) expect(message.length).toBeLessThanOrEqual(1_900);
+		const words = messages.join(" ").split(/\s+/);
+		for (let i = 0; i < 400; i += 1) expect(words).toContain(`price-${i}`);
+	});
+
+	it("splits a long main alert so a change past the first message is still delivered", () => {
+		const changes = Array.from({ length: 25 }, (_, p) => ({
+			providerId: `provider-${p}`,
+			providerName: `Provider ${p}`,
+			added: Array.from({ length: 8 }, (_, i) => (p === 24 && i === 0 ? "the-last-change" : `organisation/a-fairly-long-model-name-${p}-${i}`)),
+			removed: [],
+		})) as never;
+		setupRuntimeFromEnv({} as never);
+		let messages: string[];
+		try {
+			messages = buildPrivateModelDiscoveryMessages(notification({ modelChanges: changes }));
+		} finally {
+			teardownTestRuntime();
+		}
+		expect(messages.length).toBeGreaterThan(1);
+		for (const message of messages) expect(message.length).toBeLessThanOrEqual(1_900);
+		expect(messages.join("\n")).toContain("the-last-change");
+		expect(messages.join("\n")).not.toContain("[truncated]");
+		expect(messages.at(-1)).toContain("Review queue:");
+	});
+
 });

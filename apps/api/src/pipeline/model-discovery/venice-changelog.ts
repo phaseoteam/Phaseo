@@ -302,8 +302,9 @@ export function selectVeniceChangelogItems(args: {
 			const id = entry.modelId.toLowerCase();
 			// A deprecation later cancelled, re-dated or followed by the removal asks for nothing itself,
 			// and neither does a deprecation or removal followed by Venice adding the model again.
-			const superseded = LIFECYCLE_PRIORITY[entry.kind] !== undefined
-				&& (latest.get(id) !== entry || (latestAdded.get(id) ?? "") > entry.date);
+			// A cancelled removal is never superseded by a re-listing: its end-date review still applies.
+			const relisted = (entry.kind === "deprecated" || entry.kind === "removed") && (latestAdded.get(id) ?? "") > entry.date;
+			const superseded = LIFECYCLE_PRIORITY[entry.kind] !== undefined && (latest.get(id) !== entry || relisted);
 			return superseded ? { ...item, actions: [] } : item;
 		})
 		.filter((item) => args.seenKeys !== null || (BASELINE_KINDS.has(item.entry.kind) && item.actions.length > 0));
@@ -322,13 +323,10 @@ const KIND_LABELS: Record<VeniceChangelogKind, string> = {
 	price_change: "price change",
 	removal_cancelled: "removal cancelled",
 };
-/** Longest single line, so any one line always fits a chat message with room for a part header. */
-const MAX_LINE_LENGTH = 1_700;
 const INFO_IDS_PER_LINE = 20;
-
-function clampLine(line: string): string {
-	return line.length <= MAX_LINE_LENGTH ? line : `${line.slice(0, MAX_LINE_LENGTH - 15)} ...[shortened]`;
-}
+/** Room left in each message for a "(part n/m)" header. */
+const PART_HEADER_ROOM = 24;
+const CONTINUATION_PREFIX = "  ↳ ";
 
 /**
  * Every reported item as its own line (informational ids grouped a few per line). Nothing is capped or
@@ -348,11 +346,11 @@ export function buildVeniceChangelogDiscordLines(summary: VeniceChangelogMonitor
 	for (const item of actionable) {
 		const { entry } = item;
 		const removal = entry.removalDate && entry.kind !== "price_change" ? `, removal ${entry.removalDate}` : "";
-		lines.push(clampLine(`- ${entry.date} ${KIND_LABELS[entry.kind]} \`${entry.modelId}\`${removal}: ${item.actions.join("; ")}`));
+		lines.push(`- ${entry.date} ${KIND_LABELS[entry.kind]} \`${entry.modelId}\`${removal}: ${item.actions.join("; ")}`);
 	}
 	for (let i = 0; i < informational.length; i += INFO_IDS_PER_LINE) {
 		const ids = informational.slice(i, i + INFO_IDS_PER_LINE).map((item) => `${KIND_LABELS[item.entry.kind]} ${item.entry.modelId}`);
-		lines.push(clampLine(`${i === 0 ? "No route change needed" : "No route change needed (cont.)"}: ${ids.join(", ")}`));
+		lines.push(`${i === 0 ? "No route change needed" : "No route change needed (cont.)"}: ${ids.join(", ")}`);
 	}
 	return lines;
 }
@@ -361,27 +359,57 @@ export function buildVeniceChangelogDiscordSection(summary: VeniceChangelogMonit
 	return buildVeniceChangelogDiscordLines(summary).join("\n").trim();
 }
 
-/** Splits the Venice lines into messages of at most `maxLength` characters, never splitting a line. */
-export function buildVeniceChangelogMessages(summary: VeniceChangelogMonitorSummary, maxLength: number): string[] {
-	const lines = buildVeniceChangelogDiscordLines(summary);
+/** Breaks a line longer than `width` into pieces, preferring spaces, keeping every character. */
+function wrapLine(line: string, width: number): string[] {
+	if (line.length <= width) return [line];
+	const pieces: string[] = [];
+	let rest = line;
+	let first = true;
+	while (rest.length > 0) {
+		const room = first ? width : width - CONTINUATION_PREFIX.length;
+		if (rest.length <= room) {
+			pieces.push(first ? rest : CONTINUATION_PREFIX + rest);
+			break;
+		}
+		const space = rest.lastIndexOf(" ", room);
+		const cut = space > room / 2 ? space + 1 : room;
+		const piece = rest.slice(0, cut);
+		pieces.push(first ? piece : CONTINUATION_PREFIX + piece);
+		rest = rest.slice(cut);
+		first = false;
+	}
+	return pieces;
+}
+
+/**
+ * Splits text lines into chat messages of at most `maxLength` characters without dropping anything. Lines are
+ * kept whole where they fit; a line longer than a message is wrapped onto continuation lines.
+ */
+export function splitLinesIntoMessages(lines: string[], maxLength: number): string[] {
 	if (lines.length === 0) return [];
-	const budget = maxLength - 24; // room for a "(part n/m)" header
+	const budget = maxLength - PART_HEADER_ROOM;
+	const pieces = lines.flatMap((line) => wrapLine(line, budget));
 	const chunks: string[][] = [];
 	let current: string[] = [];
 	let size = 0;
-	for (const line of lines) {
-		const added = line.length + (current.length > 0 ? 1 : 0);
+	for (const piece of pieces) {
+		const added = piece.length + (current.length > 0 ? 1 : 0);
 		if (current.length > 0 && size + added > budget) {
 			chunks.push(current);
 			current = [];
 			size = 0;
 		}
-		current.push(line);
-		size += line.length + (current.length > 1 ? 1 : 0);
+		size += piece.length + (current.length > 0 ? 1 : 0);
+		current.push(piece);
 	}
 	if (current.length > 0) chunks.push(current);
 	if (chunks.length === 1) return [chunks[0]!.join("\n")];
 	return chunks.map((chunk, index) => `(part ${index + 1}/${chunks.length})\n${chunk.join("\n")}`);
+}
+
+/** The Venice lines as messages of at most `maxLength` characters. */
+export function buildVeniceChangelogMessages(summary: VeniceChangelogMonitorSummary, maxLength: number): string[] {
+	return splitLinesIntoMessages(buildVeniceChangelogDiscordLines(summary), maxLength);
 }
 
 export async function sha256Hex(value: string): Promise<string> {
