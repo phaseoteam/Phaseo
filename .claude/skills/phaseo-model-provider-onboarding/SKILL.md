@@ -132,8 +132,72 @@ gap, not a choice, unless you can say why.
 6. `v2_subscription_plan_models`: add the consumer plans the lab's
    announcement names (e.g. ChatGPT Plus/Pro, Claude Pro/Max). Leave out plans
    the announcement does not name.
-7. `v2_model_aliases`: add or move a `-latest` alias only with the user's
-   approval, because moving it reroutes live traffic.
+7. `v2_model_aliases`: **check on every launch.** Aliases point at the
+   *older* model, so comparing the two models' rows side by side never shows
+   a gap here. Skipping this step left `openai/gpt-terra-latest` on GPT-5.6
+   Terra for three weeks after GPT-6.1 Terra launched.
+   - **Find the aliases.** List enabled aliases on any model the new one
+     replaces, walking `previous_model_slug` back from the new model:
+
+     ```sql
+     with recursive line as (
+       select previous_model_slug as slug, 1 as depth
+       from v2_models where model_slug = '<new-model>'
+       union all
+       select m.previous_model_slug, l.depth + 1
+       from line l join v2_models m on m.model_slug = l.slug
+       where l.depth < 6 and m.previous_model_slug is not null
+     )
+     select a.alias_slug, a.model_slug, a.alias_type
+     from v2_model_aliases a join line l on l.slug = a.model_slug
+     where a.enabled;
+     ```
+
+     Also search by name (for example `alias_slug ilike '%terra%'`), because
+     the `previous_model_slug` link can be missing or skip a tier.
+   - **Move each `-latest` alias as part of the launch.** A `-latest` alias
+     (slug ends in `-latest`, `alias_type` `stable` or `preview`) must point
+     at the newest public model in its line. Once the new model is public,
+     move the alias in the same session as the launch, without waiting to be
+     asked. The new model counts as public when `status = 'active'`,
+     `hidden = false`, `catalogue_status = 'available'`, and at least one
+     route has `status = 'active'` and `routing_enabled = true`. Move it
+     after the visibility check in step 10.
+   - **Ask the user first, instead of moving, when:**
+     - the new model is preview, limited access, hidden, or not yet
+       routable. For a staged hidden model, move the alias when the model is
+       flipped live, not when it is staged;
+     - its standard input or output price is more than 2× the old target's;
+     - it drops an input or output modality, or a capability, that the old
+       target had;
+     - it is a different tier rather than the next version of the same one,
+       for example a Pro model replacing a non-Pro model, or a Flash alias
+       whose `previous_model_slug` chain leads to a renamed line.
+
+     Moving an alias reroutes live traffic for every caller that uses it, so
+     state the old and new targets when you ask.
+   - **Never move pinned aliases.** Dated, versioned, legacy and provider
+     aliases keep their target: `alias_type` `version`, `legacy`, `provider`
+     or `v2-canonical`, and any slug that names a version or date, even if it
+     ends in `-latest` (for example `openai/gpt-5.2-chat-latest` or
+     `qwen/qwen3.8-max-2026-09-02`).
+   - **No `-latest` alias for the line yet:** add one if the lab publishes
+     that alias name. Otherwise, ask the user.
+   - **Move with a guarded update** that matches the old target, so a rerun
+     or a concurrent change does nothing:
+
+     ```sql
+     update v2_model_aliases
+     set model_slug = '<new-model>', updated_at = now()
+     where alias_slug = '<alias>' and model_slug = '<old-model>'
+       and enabled
+     returning alias_slug, model_slug;
+     ```
+
+     If no row comes back, the alias changed after you read it. Re-read it
+     before trying again.
+   - **Report it.** In the completion report, list every alias you moved,
+     left in place, or asked about, with the reason for each.
 8. `v2_model_links`: one row per link the model page should show, such as
    the announcement, model card, paper, each weights repo (one row per
    checkpoint, for example NVFP4 and MXFP8) and the main provider pages.
@@ -167,6 +231,29 @@ gap, not a choice, unless you can say why.
     limits or lineage.
     Deprecations and retirements never get a changelog entry.
 
+## Deprecating or retiring a model
+
+Before you set a model to `deprecated` or `retired`, or disable its last
+live route, list the enabled aliases that still point at it:
+
+```sql
+select alias_slug, alias_type from v2_model_aliases
+where model_slug = '<model>' and enabled;
+```
+
+- **`-latest` aliases:** move each one to the newest public model in its
+  line, or to the model's `replacement_model_slug`, using the guarded update
+  in checklist item 7. Confirm the target first: it must have an active,
+  routing-enabled route. If no served target exists, ask the user whether to
+  disable the alias.
+- **Pinned aliases** (version, legacy, provider): leave them on the model.
+  The gateway's successor redirect handles requests once the model is
+  unserved.
+- **Never leave an enabled `-latest` alias on a model with no live route.**
+  Callers get an error instead of the current model. A deprecated model that
+  is still served can keep its alias until it stops being served, but tell
+  the user it is there.
+
 ## Validation
 
 For data-only work, Supabase readback is the primary validation. Query the
@@ -186,6 +273,8 @@ Return a concise report containing:
 - Supabase project, tables and rows changed, plus any code/docs files changed;
 - evidence sources and any unverified assumptions;
 - lifecycle, access, capability, executor, and pricing decisions;
+- aliases moved (old → new target), left in place, or waiting on the user,
+  with the reason for each;
 - Supabase readback and any code validation results;
 - known limitations, rollout flags, or follow-up work.
 
