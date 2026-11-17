@@ -171,8 +171,13 @@ export function registerDesktopTools(server: McpServer, env: DesktopEnv, user: A
 		}, async (args: Record<string, unknown>) => {
 			try { return text(await callLink(env, user, { action: "tool", name: spec.name, arguments: args ?? {} })); }
 			catch (error) {
-				// A change that timed out may still finish on the desktop; its requestId makes a retry find the same chat.
-				if (writes && error instanceof Error && /didn't answer within/.test(error.message)) return failure(new Error(`${error.message} It may still have run there: retry with the same requestId, which finds the same chat rather than starting another.`));
+				// A change that timed out may still finish on the desktop. A launch's requestId makes a retry find the same chat;
+				// a message has no such key, so the app checks the chat before sending it again.
+				if (writes && error instanceof Error && /didn't answer within/.test(error.message)) {
+					return failure(new Error(`${error.message} It may still have run there: ${spec.name === "send_thread"
+						? "read the chat with read_thread before sending the message again."
+						: "retry with the same requestId, which finds the same chat rather than starting another."}`));
+				}
 				return failure(error);
 			}
 		});

@@ -74,6 +74,18 @@ describe("Phaseo Desktop tools on mcp.phaseo.app", () => {
 		expect(calls).toEqual([]);
 	});
 
+	it("after a timed-out change, says how to retry without doing it twice", async () => {
+		const { namespace } = links(() => ({ ok: false, error: "Studio PC didn't answer within 60 seconds." }));
+		const client = await connect({ desktopAccess: true, DESKTOP_LINKS: namespace });
+		const sent = await client.callTool({ name: "send_thread", arguments: { id: "chat-1", text: "Ship it" } });
+		expect(textOf(sent)).toMatch(/read_thread before sending the message again\.$/);
+		expect(textOf(sent)).not.toMatch(/requestId/);
+		const launched = await client.callTool({ name: "launch_thread", arguments: { requestId: "r1", title: "Fix", prompt: "Fix it", harness: "codex", model: "m" } });
+		expect(textOf(launched)).toMatch(/retry with the same requestId/);
+		const read = await client.callTool({ name: "list_threads", arguments: {} });
+		expect(textOf(read)).toBe("Studio PC didn't answer within 60 seconds.");
+	});
+
 	it("says what to do when nothing is linked or links aren't set up", async () => {
 		const { namespace } = links(() => ({ ok: false, error: "No Phaseo desktop is linked. In Phaseo Desktop, open Settings → Outside agents…" }));
 		const unlinked = await (await connect({ desktopAccess: true, DESKTOP_LINKS: namespace })).callTool({ name: "list_threads", arguments: {} });
