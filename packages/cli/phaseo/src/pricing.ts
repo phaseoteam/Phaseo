@@ -1,7 +1,8 @@
 import { renderTable, sanitizeTerminalText, type TableOptions } from "./output.js";
 import { modelPageUrl, providerPageUrl } from "./links.js";
 
-export type PricingCondition = { op?: string; path?: string; value?: unknown; or_group?: number; and_index?: number };
+/** Some catalogue rows spell a condition `{ key | field, operator }` instead of `{ path, op }`; the pricing engine reads both. */
+export type PricingCondition = { op?: string; operator?: string; path?: string; key?: string; field?: string; value?: unknown; or_group?: number; and_index?: number };
 export type PricingTimeWindow = { label?: string; start_time?: string; end_time?: string; timezone?: string; days_of_week?: string[]; price_per_unit?: string | number | null };
 export type PricingMeter = {
 	meter: string;
@@ -95,9 +96,24 @@ function isTiered(entries: PricingMeter[]): boolean {
 	return entries.length > 1 || entries.some((entry) => (entry.conditions?.length ?? 0) > 0 || (entry.time_windows?.length ?? 0) > 0);
 }
 
-function lowestPrice(entries: PricingMeter[]): number {
-	const prices = entries.flatMap((entry) => [Number(entry.price_per_unit), ...(entry.time_windows ?? []).filter((window) => window.price_per_unit !== null && window.price_per_unit !== undefined && window.price_per_unit !== "").map((window) => Number(window.price_per_unit))]);
-	return Math.min(...prices.filter((price) => Number.isFinite(price)));
+/** The cheapest price across tiers and time windows, compared per single unit and kept with its own unit. */
+function lowestPrice(entries: PricingMeter[]): { price: number; meter: PricingMeter } {
+	let best = { price: Number.NaN, meter: entries[0] };
+	let bestPerUnit = Number.POSITIVE_INFINITY;
+	for (const entry of entries) {
+		const windowPrices = (entry.time_windows ?? [])
+			.filter((window) => window.price_per_unit !== null && window.price_per_unit !== undefined && window.price_per_unit !== "")
+			.map((window) => Number(window.price_per_unit));
+		for (const price of [Number(entry.price_per_unit), ...windowPrices]) {
+			if (!Number.isFinite(price)) continue;
+			const perUnit = price / (entry.unit_size || 1);
+			if (perUnit < bestPerUnit) {
+				bestPerUnit = perUnit;
+				best = { price, meter: entry };
+			}
+		}
+	}
+	return best;
 }
 
 function groupMeters(route: PricingRoute): Map<string, PricingMeter[]> {
@@ -115,7 +131,8 @@ function priceCell(groups: Map<string, PricingMeter[]>, names: string[]): string
 	for (const name of names) {
 		const entries = groups.get(name);
 		if (!entries?.length) continue;
-		const text = `${formatPrice(lowestPrice(entries), entries[0].currency)}${shortUnit(entries[0])}`;
+		const lowest = lowestPrice(entries);
+		const text = `${formatPrice(lowest.price, lowest.meter.currency)}${shortUnit(lowest.meter)}`;
 		return isTiered(entries) ? `from ${text}` : text;
 	}
 	return "-";
@@ -128,7 +145,8 @@ function isPassThrough(entries: PricingMeter[]): boolean {
 
 function otherPart(name: string, entries: PricingMeter[]): string {
 	if (isPassThrough(entries)) return `Provider cost ×${Number(entries[0].price_per_unit)}`;
-	const text = `${meterLabel(name)} ${formatPrice(lowestPrice(entries), entries[0].currency)}${shortUnit(entries[0])}`;
+	const lowest = lowestPrice(entries);
+	const text = `${meterLabel(name)} ${formatPrice(lowest.price, lowest.meter.currency)}${shortUnit(lowest.meter)}`;
 	return isTiered(entries) ? `${meterLabel(name)} from ${text.slice(meterLabel(name).length + 1)}` : text;
 }
 
@@ -178,24 +196,36 @@ export function renderPricingTable(routes: PricingRoute[], options: TableOptions
 	], options);
 }
 
-const OPS: Record<string, string> = { lt: "<", lte: "≤", gt: ">", gte: "≥", eq: "=", neq: "≠" };
+const OPS: Record<string, string> = { lt: "<", lte: "≤", gt: ">", gte: "≥", eq: "=", ne: "≠", neq: "≠", in: "in", not_in: "not in" };
 
 function formatConditionValue(value: unknown): string {
 	return typeof value === "number" ? new Intl.NumberFormat("en-US").format(value) : String(value);
 }
 
-/** "input tokens ≤ 256,000". Conditions in the same or_group are ANDed; groups are ORed. */
+function formatCondition(condition: PricingCondition): string {
+	const path = String(condition.path ?? condition.field ?? condition.key ?? "value").replace(/_/g, " ");
+	const op = condition.op ?? condition.operator;
+	if (op === "exists") return `${path} is set`;
+	if (op === "not_exists") return `${path} is not set`;
+	const value = Array.isArray(condition.value) ? condition.value.map(formatConditionValue).join(", ") : formatConditionValue(condition.value);
+	return `${path} ${OPS[op ?? ""] ?? op ?? "?"} ${value}`;
+}
+
+/**
+ * "input tokens ≤ 256,000". As in the pricing engine: without explicit or_groups every condition must hold;
+ * with them, conditions without a group join group 1, each group is ANDed and groups are ORed.
+ */
 export function formatConditions(conditions: PricingCondition[] = []): string {
 	if (!conditions.length) return "";
 	const groups = new Map<number, PricingCondition[]>();
 	for (const condition of conditions) {
-		const key = condition.or_group ?? 0;
+		const key = typeof condition.or_group === "number" ? condition.or_group : 1;
 		groups.set(key, [...(groups.get(key) ?? []), condition]);
 	}
 	return [...groups.values()]
 		.map((group) => group
 			.sort((a, b) => (a.and_index ?? 0) - (b.and_index ?? 0))
-			.map((condition) => `${String(condition.path ?? "value").replace(/_/g, " ")} ${OPS[condition.op ?? ""] ?? condition.op ?? "?"} ${formatConditionValue(condition.value)}`)
+			.map(formatCondition)
 			.join(" and "))
 		.join(" or ");
 }

@@ -145,6 +145,28 @@ test("time windows show weekdays and keep the meter price when they have none", 
 	assert.match(renderPricingTable([route], { color: false }), /from \$0\.50\/M/);
 });
 
+test("conditions read like the pricing engine evaluates them", () => {
+	// Legacy { key, operator } rows (Upstage document-parse enhanced mode).
+	assert.equal(formatConditions([{ key: "mode", operator: "eq", value: "enhanced" }]), "mode = enhanced");
+	// Ungrouped conditions join explicit group 1, so they are ANDed with it, not alternatives.
+	assert.equal(
+		formatConditions([{ op: "eq", path: "tier", value: "pro" }, { op: "gt", path: "input_tokens", value: 1000, or_group: 1 }, { op: "lte", path: "input_tokens", value: 10, or_group: 2 }]),
+		"tier = pro and input tokens > 1,000 or input tokens ≤ 10",
+	);
+});
+
+test("price summaries keep the unit of the cheapest entry", () => {
+	const route: PricingRoute = {
+		provider: "p", model: "a/b", endpoint: "text.generate",
+		meters: [
+			{ meter: "input_text_tokens", unit: "token", unit_size: 1e6, price_per_unit: "1", conditions: [{ op: "lte", path: "input_tokens", value: 100 }] },
+			{ meter: "input_text_tokens", unit: "token", unit_size: 1e3, price_per_unit: "0.002", conditions: [{ op: "gt", path: "input_tokens", value: 100 }] },
+		],
+	};
+	// $1/M is cheaper per token than $0.002/K ($2/M).
+	assert.match(renderPricingTable([route], { color: false }), /from \$1\.00\/M/);
+});
+
 test("pricing get prefers the exact model over longer names", () => {
 	const routes: PricingRoute[] = [
 		{ provider: "openai", model: "openai/gpt-6-luna", endpoint: "text.generate", meters: [] },
