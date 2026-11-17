@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils";
 import { getLondonInfo, getSupportAvailability } from "@/lib/support/schedule";
 import { toast } from "sonner";
 import { useThemeChoice } from "@/components/theme/useThemeChoice";
-import { VICE_THEME_LABEL, ViceThemeIcon } from "@/components/theme/ViceThemeIcon";
+import { ViceThemeIcon } from "@/components/theme/ViceThemeIcon";
 import { ProductFeedbackDialog } from "@/components/feedback/ProductFeedbackButton";
 import { isPublicDataPathname } from "@/lib/publicDataRoutes";
 import { clearAccountQueryScope } from "@/lib/query/invalidation";
@@ -62,6 +62,7 @@ export default function TeamSwitcher({
 }: TeamSwitcherProps) {
 	const tNav = useTranslations("Common.nav");
 	const tUi = useTranslations("Common.ui");
+	const tTheme = useTranslations("Common.theme");
 	const router = useRouter();
 	const queryClient = useQueryClient();
 	const pathname = usePathname();
@@ -215,7 +216,7 @@ export default function TeamSwitcher({
 											type="button"
 											role="radio"
 											aria-checked={selected}
-											aria-label={tUi("theme.setMode", { theme: mode === "vice" ? VICE_THEME_LABEL : tUi(`theme.${mode}`) })}
+											aria-label={tUi("theme.setMode", { theme: mode === "vice" ? tTheme("vice") : tUi(`theme.${mode}`) })}
 											onClick={() => chooseTheme(mode)}
 											className={cn(
 												"relative flex h-7 flex-1 items-center justify-center rounded-md text-muted-foreground transition-colors",
@@ -224,7 +225,7 @@ export default function TeamSwitcher({
 													? "bg-background text-foreground shadow-xs"
 													: "bg-transparent"
 											)}
-											title={mode === "vice" ? VICE_THEME_LABEL : tUi(`theme.${mode}`)}
+											title={mode === "vice" ? tTheme("vice") : tUi(`theme.${mode}`)}
 										>
 											<Icon className="h-4 w-4" />
 										</button>

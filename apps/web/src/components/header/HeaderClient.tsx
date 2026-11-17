@@ -36,7 +36,7 @@ import TeamSwitcher from "./TeamSwitcher";
 import { SwapTeam } from "@/lib/workspace/actions";
 import { postClientAuthSignOut } from "@/lib/fetchers/internal/postClientAuthSignOut";
 import { useThemeChoice } from "@/components/theme/useThemeChoice";
-import { VICE_THEME_LABEL, ViceThemeIcon } from "@/components/theme/ViceThemeIcon";
+import { ViceThemeIcon } from "@/components/theme/ViceThemeIcon";
 import { toast } from "sonner";
 import {
 	DropdownMenu,
@@ -100,7 +100,7 @@ export default function HeaderClient({
 		light: { label: tTheme("light"), icon: Sun },
 		dark: { label: tTheme("dark"), icon: Moon },
 		system: { label: tTheme("system"), icon: Monitor },
-		vice: { label: VICE_THEME_LABEL, icon: ViceThemeIcon },
+		vice: { label: tTheme("vice"), icon: ViceThemeIcon },
 	} as const;
 	const { isOpen: supportIsOpen } = getSupportAvailability();
 	const supportDotClasses = supportIsOpen

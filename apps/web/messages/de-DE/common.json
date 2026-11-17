@@ -368,6 +368,7 @@
 		"light": "Hell",
 		"dark": "Dunkel",
 		"system": "System",
+		"vice": "Vice",
 		"use": "{theme}-Darstellung verwenden",
 		"set": "Darstellung festlegen: {theme}",
 		"toggle": "Darstellung wechseln"

@@ -368,6 +368,7 @@
 		"light": "Claro",
 		"dark": "Escuro",
 		"system": "Sistema",
+		"vice": "Vice",
 		"use": "Usar o tema {theme}",
 		"set": "Definir tema: {theme}",
 		"toggle": "Alternar tema"

@@ -6,10 +6,11 @@ import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useThemeChoice, type ThemeChoice } from "@/components/theme/useThemeChoice";
-import { VICE_THEME_LABEL, ViceThemeIcon } from "@/components/theme/ViceThemeIcon";
+import { ViceThemeIcon } from "@/components/theme/ViceThemeIcon";
 
 export function ThemeToggle() {
-	const { resolvedTheme, setTheme } = useTheme();
+	const { resolvedTheme } = useTheme();
+	const { choose } = useThemeChoice();
 	const t = useTranslations("Common.theme");
 	const isDark = resolvedTheme === "dark";
 
@@ -18,7 +19,7 @@ export function ThemeToggle() {
 			type="button"
 			variant="outline"
 			size="icon"
-			onClick={() => setTheme(isDark ? "light" : "dark")}
+			onClick={() => choose(isDark ? "light" : "dark")}
 			className="
 				h-9 w-9 rounded-full
 				flex items-center justify-center
@@ -78,7 +79,7 @@ export function ThemeSelector({
 		system: t("system"),
 		light: t("light"),
 		dark: t("dark"),
-		vice: VICE_THEME_LABEL,
+		vice: t("vice"),
 	};
 	const iconByTheme: Record<ThemeChoice, React.ComponentType<{ className?: string }>> = {
 		light: Sun,

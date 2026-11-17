@@ -25,5 +25,3 @@ export function ViceThemeIcon({ className }: { className?: string }) {
 		</svg>
 	);
 }
-
-export const VICE_THEME_LABEL = "Vice";

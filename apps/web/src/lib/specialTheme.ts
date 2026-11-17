@@ -15,6 +15,8 @@
 //   ?special-theme=off    force it off
 //   ?special-theme=reset  back to the calendar
 
+import { serializeJsonLd } from "@/components/seo/JsonLdScript";
+
 export type SpecialThemeId = "vice";
 
 export type SpecialThemeWindow = {
@@ -79,13 +81,15 @@ export function resolveSpecialTheme({
 	return { available, active: available && choice === "on" ? available : null };
 }
 
-const windowsJson = JSON.stringify(SPECIAL_THEMES.map(({ id, startsAt, endsAt }) => [id, Date.parse(startsAt), Date.parse(endsAt)]));
+// Values go into an inline <script>, so they are escaped for HTML as well as JS.
+const literal = serializeJsonLd;
+const windowsJson = literal(SPECIAL_THEMES.map(({ id, startsAt, endsAt }) => [id, Date.parse(startsAt), Date.parse(endsAt)]));
 
 /**
  * Runs in <head> before the body paints. Mirrors resolveSpecialTheme and also
  * applies the ?special-theme= query parameter to the tab override.
  */
-export const SPECIAL_THEME_INITIALIZATION_SCRIPT = `(()=>{try{const W=${windowsJson},A=${JSON.stringify(SPECIAL_THEME_ATTRIBUTE)},V=${JSON.stringify(SPECIAL_THEME_AVAILABLE_ATTRIBUTE)},S=${JSON.stringify(SPECIAL_THEME_PREVIEW_KEY)},C=${JSON.stringify(SPECIAL_THEME_CHOICE_KEY)},q=new URLSearchParams(location.search).get(${JSON.stringify(SPECIAL_THEME_QUERY_PARAM)});let s=null,c=null;try{if(q==="reset"){sessionStorage.removeItem(S);localStorage.removeItem(C)}else if(q==="off"||W.some(w=>w[0]===q))sessionStorage.setItem(S,q);s=sessionStorage.getItem(S);c=localStorage.getItem(C)}catch{s=q}const n=Date.now();let v=null,p=false;if(s!=="off"){const f=W.find(w=>w[0]===s);if(f){v=f[0];p=true}else{const w=W.find(w=>n>=w[1]&&n<w[2]);if(w)v=w[0]}}const d=document.documentElement;if(v)d.setAttribute(V,v);else d.removeAttribute(V);if(v&&(p?c!=="off":c==="on"))d.setAttribute(A,v);else d.removeAttribute(A)}catch{}})();`;
+export const SPECIAL_THEME_INITIALIZATION_SCRIPT = `(()=>{try{const W=${windowsJson},A=${literal(SPECIAL_THEME_ATTRIBUTE)},V=${literal(SPECIAL_THEME_AVAILABLE_ATTRIBUTE)},S=${literal(SPECIAL_THEME_PREVIEW_KEY)},C=${literal(SPECIAL_THEME_CHOICE_KEY)},q=new URLSearchParams(location.search).get(${literal(SPECIAL_THEME_QUERY_PARAM)});let s=null,c=null;try{if(q==="reset"){sessionStorage.removeItem(S);localStorage.removeItem(C)}else if(q==="off"||W.some(w=>w[0]===q))sessionStorage.setItem(S,q);s=sessionStorage.getItem(S);c=localStorage.getItem(C)}catch{s=q}const n=Date.now();let v=null,p=false;if(s!=="off"){const f=W.find(w=>w[0]===s);if(f){v=f[0];p=true}else{const w=W.find(w=>n>=w[1]&&n<w[2]);if(w)v=w[0]}}const d=document.documentElement;if(v)d.setAttribute(V,v);else d.removeAttribute(V);if(v&&(p?c!=="off":c==="on"))d.setAttribute(A,v);else d.removeAttribute(A)}catch{}})();`;
 
 /** Turns the offered special theme on or off and remembers the choice. */
 export function setSpecialThemeActive(active: boolean) {

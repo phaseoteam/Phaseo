@@ -116,4 +116,10 @@ describe("SPECIAL_THEME_INITIALIZATION_SCRIPT", () => {
 		expect(reset.session.size).toBe(0);
 		expect(reset.local.size).toBe(0);
 	});
+
+	it("is safe to inline in a <script> tag", () => {
+		// Nothing in it may close the tag or open an HTML comment.
+		expect(SPECIAL_THEME_INITIALIZATION_SCRIPT).not.toContain("</");
+		expect(SPECIAL_THEME_INITIALIZATION_SCRIPT).not.toContain("<!--");
+	});
 });

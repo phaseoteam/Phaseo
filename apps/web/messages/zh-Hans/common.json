@@ -368,6 +368,7 @@
 		"light": "浅色",
 		"dark": "深色",
 		"system": "跟随系统",
+		"vice": "Vice",
 		"use": "使用{theme}主题",
 		"set": "设置主题：{theme}",
 		"toggle": "切换主题"

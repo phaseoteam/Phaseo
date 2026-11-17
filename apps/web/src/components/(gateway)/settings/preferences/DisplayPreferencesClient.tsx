@@ -2,7 +2,7 @@ import * as React from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Check, Loader2, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
 import { useThemeChoice } from "@/components/theme/useThemeChoice";
-import { VICE_THEME_LABEL, ViceThemeIcon } from "@/components/theme/ViceThemeIcon";
+import { ViceThemeIcon } from "@/components/theme/ViceThemeIcon";
 import { toast } from "sonner";
 import {
 	PALETTE_SWATCHES,
@@ -244,6 +244,7 @@ function PalettePicker<T extends string>({
 
 function AppearanceModePicker() {
 	const t = useTranslations("SettingsUI");
+	const tTheme = useTranslations("Common.theme");
 	const { current: selected, special, choose } = useThemeChoice();
 	const modes = special
 		? [...APPEARANCE_MODES, { value: special, labelKey: null, icon: ViceThemeIcon }]
@@ -264,7 +265,7 @@ function AppearanceModePicker() {
 						className={`flex h-10 items-center justify-center gap-1.5 rounded-md border px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${active ? "border-primary/70 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground"}`}
 					>
 						<Icon className="size-3.5 shrink-0" aria-hidden="true" />
-						<span className="truncate">{mode.labelKey ? t(`preferencesCopy.${mode.labelKey}`) : VICE_THEME_LABEL}</span>
+						<span className="truncate">{mode.labelKey ? t(`preferencesCopy.${mode.labelKey}`) : tTheme("vice")}</span>
 					</button>
 				);
 			})}
