@@ -87,7 +87,7 @@ export class DesktopLinks {
 			if (call.action === "unlink") {
 				// Tell the desktop when it's there; forget the link here either way.
 				const told = await session.request({ type: "agent_unlink" }, 15_000).then(() => true, () => false);
-				await this.forget();
+				await this.forget(link.deviceId);
 				return { unlinked: true, desktopRemoved: told };
 			}
 			return await session.request({ type: "agent_tool", name: call.name, arguments: call.arguments }, remoteAgentToolMs(call.name, call.arguments));
@@ -170,7 +170,11 @@ export function registerDesktopTools(server: McpServer, env: DesktopEnv, user: A
 			annotations: { title: spec.name.replace(/_/g, " "), readOnlyHint: !writes && spec.name !== "wait_thread", destructiveHint: false, idempotentHint: !writes, openWorldHint: true },
 		}, async (args: Record<string, unknown>) => {
 			try { return text(await callLink(env, user, { action: "tool", name: spec.name, arguments: args ?? {} })); }
-			catch (error) { return failure(error); }
+			catch (error) {
+				// A change that timed out may still finish on the desktop; its requestId makes a retry find the same chat.
+				if (writes && error instanceof Error && /didn't answer within/.test(error.message)) return failure(new Error(`${error.message} It may still have run there: retry with the same requestId, which finds the same chat rather than starting another.`));
+				return failure(error);
+			}
 		});
 	}
 }

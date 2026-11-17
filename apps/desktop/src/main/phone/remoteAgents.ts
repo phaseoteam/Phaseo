@@ -30,7 +30,7 @@ export function remoteAgentRequests(ports: RemoteAgentPorts) {
 		}
 		const answer = (result: unknown) => {
 			const reply = { id: request.id, type: request.type, ok: true, result };
-			return JSON.stringify(reply).length > answerBytes ? refuse("The answer is too large to send. Ask for less, for example a narrower search.") : reply;
+			return Buffer.byteLength(JSON.stringify(reply), "utf8") > answerBytes ? refuse("The answer is too large to send. Ask for less, for example a narrower search.") : reply;
 		};
 		const refuse = (message: string) => ({ id: request.id, type: request.type, ok: false, error: { message } });
 		const tools = outsideAgentToolset(ports.tools({ id: agent.id, name: agent.name, access: agent.access }), agent.access);

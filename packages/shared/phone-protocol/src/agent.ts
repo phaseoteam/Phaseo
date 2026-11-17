@@ -92,7 +92,7 @@ export class RemoteAgentSession {
 			if (reply.ok === false) throw new RemoteAgentError("rejected", reply.error.message);
 			return reply.result;
 		} finally {
-			if (!this.pending.size) { this.idle = setTimeout(() => this.close(), this.options.idleMs ?? 60_000); (this.idle as { unref?: () => void }).unref?.(); }
+			if (!this.pending.size) { clearTimeout(this.idle); this.idle = setTimeout(() => this.close(), this.options.idleMs ?? 60_000); (this.idle as { unref?: () => void }).unref?.(); }
 		}
 	}
 	close() {
@@ -180,7 +180,13 @@ export async function linkRemoteAgent(link: string, options: { relayUrl: string;
 				message: text => {
 					const frame = parseRelayFrame(text);
 					if (!frame) return;
-					if ("ciphertext" in frame) { try { finish(() => resolve(JSON.parse(channel.open(frame)) as Record<string, unknown>)); } catch { /* not for us */ } return; }
+					if ("ciphertext" in frame) {
+						// Only an answer that opens settles the pairing; anything else leaves the timeout running.
+						let answer: Record<string, unknown>;
+						try { answer = JSON.parse(channel.open(frame)) as Record<string, unknown>; } catch { return; }
+						finish(() => resolve(answer));
+						return;
+					}
 					if ("type" in frame && frame.type === "desktop_offline") finish(() => reject(new RemoteAgentError("offline", offlineMessage(payload.desktopName))));
 					if ("type" in frame && frame.type === "desktop_online") { online = true; pair(); }
 				},

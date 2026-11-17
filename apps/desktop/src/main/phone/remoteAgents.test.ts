@@ -132,8 +132,11 @@ describe("remote agent requests", () => {
 		} finally { vi.useRealTimers(); }
 	});
 
-	it("refuses an answer too large for one frame", async () => {
-		const answer = remoteAgentRequests({ tools: () => ({ list: () => [{ id: "c1", title: "x".repeat(1_100_000), harness: "codex" as const, model: "m", status: "idle" as const }] }), desktopName: () => "PC", remove: () => {} });
-		expect(await answer(agent("read"), JSON.stringify({ id: "big", type: "agent_tool", name: "list_threads", arguments: {} }))).toMatchObject({ ok: false, error: { message: expect.stringMatching(/too large/) } });
+	it("refuses an answer too large for one frame, counting bytes rather than characters", async () => {
+		// 400,000 CJK characters are 1.2 MB of UTF-8, past the 1 MiB frame, though fewer than a million characters.
+		for (const title of ["x".repeat(1_100_000), "文".repeat(400_000)]) {
+			const answer = remoteAgentRequests({ tools: () => ({ list: () => [{ id: "c1", title, harness: "codex" as const, model: "m", status: "idle" as const }] }), desktopName: () => "PC", remove: () => {} });
+			expect(await answer(agent("read"), JSON.stringify({ id: "big", type: "agent_tool", name: "list_threads", arguments: {} }))).toMatchObject({ ok: false, error: { message: expect.stringMatching(/too large/) } });
+		}
 	});
 });
