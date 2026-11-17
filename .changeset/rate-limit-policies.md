@@ -9,7 +9,6 @@
 "@phaseo/ruby-sdk": minor
 "@phaseo/rust-sdk": minor
 "@phaseo/sdk": minor
-"@phaseo/cli": patch
 "@phaseo/docs": patch
 "@phaseo/web": patch
 "@phaseo/web-api": patch
