@@ -20,6 +20,15 @@ flowchart LR
 
 Workspace privacy rules apply first; a guardrail can only narrow them. Guardrails don't cap spend: set a limit on the key or a [workspace budget](../api-reference/limits#key-limits-and-budgets) instead.
 
+## How guardrails combine
+
+A request can meet more than one guardrail: the workspace's, one on the key, and one on the member who created the key. All of them count, and the strictest result wins:
+
+- A model or provider must be allowed by every guardrail that has an allow list.
+- Block lists add up.
+- Zero data retention is required if any guardrail requires it, and training or logging is allowed only if every guardrail allows it.
+- Prompt injection and sensitive info checks take the strongest action: **Block**, then **Redact**, then **Flag**.
+
 ## Roll it out
 
 <Steps>

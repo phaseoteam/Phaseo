@@ -51,7 +51,7 @@ See [tool-calling patterns](./tool-calling-patterns.mdx) for sending results bac
 
 ## Cancel a stream
 
-Pass an `AbortSignal` (or your HTTP client's equivalent) and abort when the user stops or disconnects. Set a deadline that fits the workload. Cancelling doesn't guarantee the provider stops at once, or that output it already generated is free.
+Pass an `AbortSignal` (or your HTTP client's equivalent) and abort when the user stops or disconnects. Set a deadline that fits the workload. Cancelling doesn't guarantee the provider stops at once, or that output it already generated is free. After you disconnect, Phaseo keeps reading the provider's stream so it can record usage. You're charged for the input and for the output the provider reports, including output generated after you left. A cancelled request is free only when the provider reports no output and no billable input.
 
 ## Recover from an interrupted stream
 

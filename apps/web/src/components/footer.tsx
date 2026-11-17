@@ -40,6 +40,7 @@ const developerLinks = [
 const resourceLinks = [
 	{ href: "/compare", label: "Compare" },
 	{ href: "/migrate", label: "Migration Guides" },
+	{ href: "/learn", label: "Learn" },
 	{ href: "/methodology", label: "Methodology" },
 	{ href: "/blog", label: "Blog" },
 ];
@@ -106,6 +107,7 @@ const FOOTER_LABEL_KEYS = {
 	SDKs: "sdks",
 	Compare: "compare",
 	"Migration Guides": "migrationGuides",
+	Learn: "learn",
 	Methodology: "methodology",
 	Blog: "blog",
 	About: "about",
