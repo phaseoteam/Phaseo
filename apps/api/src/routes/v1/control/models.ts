@@ -25,6 +25,7 @@ import { normalizeParameterSpecs } from "@core/model-parameters";
 import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { normalizeGatewayRoutingRegion } from "@pipeline/before/deployment-region";
 import { fetchMemberWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
+import type { WorkspacePolicy } from "@pipeline/before/types";
 import { modelAccessSummary, modelsForPolicy, type PolicyRouteFacts } from "./models.policy";
 
 type LifecycleStatus = "active" | "deprecated" | "retired" | null;
@@ -819,6 +820,173 @@ async function fetchWorkspacePrivateCatalogue(args: {
     });
 }
 
+/** What one listing asks the catalogue for (GET /v1/models filters, or none for a whole-catalogue check). */
+export type ModelListingQuery = {
+    modelIds: string[];
+    endpoints: string[];
+    statuses: string[];
+    providerIds: string[];
+    providerStatuses: string[];
+    providerRoutingStatuses: string[];
+    modelRoutingStatuses: string[];
+    capabilityStatuses: string[];
+    providerAvailabilityStatuses: string[];
+    providerAvailabilityReasons: string[];
+    organisationIds: string[];
+    inputTypes: string[];
+    outputTypes: string[];
+    params: string[];
+    availability: AvailabilityMode;
+    includeParameterSpecs: boolean;
+    gatewayRegion: ReturnType<typeof normalizeGatewayRoutingRegion>;
+};
+
+/** The whole active catalogue, unfiltered: what a workspace member's model access is worked out over. */
+export function wholeCatalogueQuery(gatewayRegion: ModelListingQuery["gatewayRegion"]): ModelListingQuery {
+    return {
+        modelIds: [], endpoints: [], statuses: [], providerIds: [], providerStatuses: [], providerRoutingStatuses: [],
+        modelRoutingStatuses: [], capabilityStatuses: [], providerAvailabilityStatuses: [], providerAvailabilityReasons: [],
+        organisationIds: [], inputTypes: [], outputTypes: [], params: [], availability: "active",
+        includeParameterSpecs: false, gatewayRegion,
+    };
+}
+
+/**
+ * The models a workspace lists (the shared catalogue, the Free router as the key would get it, and the workspace's
+ * private models), and what a policy permits of them. Shared by GET /v1/models(/me) and the web's model access
+ * check (/internal/model-access), so both filter the same list the same way. Without a key (`apiKeyId` null) the
+ * Free router is left out: which models it serves depends on the key.
+ */
+export async function loadModelListing(
+    owner: { workspaceId: string; apiKeyId: string | null },
+    query: ModelListingQuery,
+    policyInput: WorkspacePolicy | Promise<WorkspacePolicy> | null,
+): Promise<{ listed: PhaseoModel[]; permitted: PhaseoModel[]; policy: WorkspacePolicy | null }> {
+    const {
+        modelIds, endpoints, statuses, providerIds, providerStatuses, providerRoutingStatuses, modelRoutingStatuses,
+        capabilityStatuses, providerAvailabilityStatuses, providerAvailabilityReasons, organisationIds, inputTypes,
+        outputTypes, params, includeParameterSpecs, gatewayRegion,
+    } = query;
+    const availabilityMode = query.availability;
+    // A rejected policy read must not go unhandled while the catalogue loads; it is awaited (and thrown) below.
+    const policyPromise = Promise.resolve(policyInput);
+    policyPromise.catch(() => undefined);
+    let prefetchedFreeContext: Awaited<ReturnType<typeof fetchGatewayContext>> | null | undefined;
+    let catalogueModelIds = modelIds;
+    let freeRouterModelIds: string[] = [];
+    if (owner.apiKeyId && modelIds.includes(FREE_ROUTER_MODEL_ID) && canIncludeFreeRouter(endpoints)) {
+        try {
+            prefetchedFreeContext = await fetchGatewayContext({
+                workspaceId: owner.workspaceId,
+                apiKeyId: owner.apiKeyId,
+                model: FREE_ROUTER_MODEL_ID,
+                endpoint: "text.generate",
+            });
+            catalogueModelIds = modelIds.filter((modelId) => modelId !== FREE_ROUTER_MODEL_ID);
+            freeRouterModelIds = Array.from(new Set(
+                prefetchedFreeContext.providers
+                    .map((provider) => String(provider.apiModelId ?? "").trim())
+                    .filter(Boolean)
+            )).slice(0, MAX_EXACT_MODEL_IDS);
+        } catch {
+            prefetchedFreeContext = null;
+            catalogueModelIds = modelIds.filter((modelId) => modelId !== FREE_ROUTER_MODEL_ID);
+        }
+    }
+    const catalogueArgs = {
+        modelIds: catalogueModelIds,
+        endpoints,
+        statuses,
+        providerIds,
+        providerStatuses,
+        providerRoutingStatuses,
+        modelRoutingStatuses,
+        capabilityStatuses,
+        providerAvailabilityStatuses,
+        providerAvailabilityReasons,
+        organisationIds,
+        inputTypes,
+        outputTypes,
+        params,
+        availability: availabilityMode,
+			...(gatewayRegion ? { region: gatewayRegion, textOnly: true } : {}),
+		};
+    const catalogue = await fetchCatalogue(catalogueArgs);
+    if (freeRouterModelIds.length) {
+        const freeRouterCatalogue = await fetchCatalogue({
+            ...catalogueArgs,
+            modelIds: freeRouterModelIds,
+        });
+        const knownModelIds = new Set(catalogue.map((model) => model.model_id));
+        catalogue.push(...freeRouterCatalogue.filter((model) => !knownModelIds.has(model.model_id)));
+    }
+    const freeRouter = owner.apiKeyId === null ? null : await buildFreeRouterCatalogueModel({
+        workspaceId: owner.workspaceId,
+        apiKeyId: owner.apiKeyId,
+        endpoints,
+        catalogue,
+        freeContext: prefetchedFreeContext,
+    });
+    const freeRouterModel = freeRouter?.model ?? null;
+    const enrichedCatalogue =
+        freeRouterModel && !catalogue.some((model) => model.model_id === freeRouterModel.model_id)
+            ? [freeRouterModel, ...catalogue]
+            : catalogue;
+    const replacementByPreviousModel = buildReplacementByPreviousModel(enrichedCatalogue);
+    const variantsByBaseModel = buildModelVariants(enrichedCatalogue);
+    const publicModels = enrichedCatalogue
+        .filter((model) => !modelIds.length || modelIds.includes(model.model_id))
+        .map((model) =>
+            toPhaseoModel(
+                model,
+                model.replacement_model_id ?? replacementByPreviousModel.get(model.model_id) ?? null,
+                variantsByBaseModel.get(model.base_model_id || model.model_id) ?? {},
+					gatewayRegion !== null,
+                includeParameterSpecs,
+            )
+        );
+    const privateModels = await fetchWorkspacePrivateCatalogue({
+        workspaceId: owner.workspaceId,
+        endpoints,
+        modelIds,
+        providerIds,
+        organisationIds,
+        inputTypes,
+        outputTypes,
+    });
+    const privateByModelId = new Map(privateModels.map((model) => [model.id, model]));
+    const mergedPublicModels = publicModels.map((model) => {
+        const privateModel = privateByModelId.get(model.id);
+        if (!privateModel) return model;
+        privateByModelId.delete(model.id);
+        return {
+            ...model,
+            offers: [...model.offers, ...privateModel.offers],
+            availability: {
+                ...model.availability,
+                provider_count: model.availability.provider_count + privateModel.availability.provider_count,
+                active_provider_count: model.availability.active_provider_count + privateModel.availability.active_provider_count,
+            },
+        };
+    });
+    const listed = [...privateByModelId.values(), ...mergedPublicModels] as PhaseoModel[];
+    const policy = await policyPromise;
+    // What the request pipeline checks per route, which the listing doesn't show: the Free router's concrete
+    // models and data facts, and each text route's id (its effective data policy is read by it).
+    const routeFacts = new Map<string, Map<string, PolicyRouteFacts>>();
+    if (policy) {
+        for (const model of enrichedCatalogue) {
+            if (model.model_id === FREE_ROUTER_MODEL_ID && freeRouter) { routeFacts.set(model.model_id, freeRouter.routes); continue; }
+            routeFacts.set(model.model_id, new Map(model.providers.map((provider) => {
+                const routeId = provider.route_id_by_endpoint?.["text.generate"];
+                return [provider.api_provider_id, routeId ? { routeId } : {}];
+            })));
+        }
+    }
+    const permitted = policy ? await modelsForPolicy(listed, policy, routeFacts) : listed;
+    return { listed, permitted, policy };
+}
+
 export function handleModels(req: Request) {
     return listModels(req, "shared");
 }
@@ -983,126 +1151,38 @@ async function listModels(req: Request, scope: "shared" | "me") {
     }
 
     try {
-        let prefetchedFreeContext: Awaited<ReturnType<typeof fetchGatewayContext>> | null | undefined;
-        let catalogueModelIds = modelIds;
-        let freeRouterModelIds: string[] = [];
-        if (modelIds.includes(FREE_ROUTER_MODEL_ID) && canIncludeFreeRouter(endpoints)) {
-            try {
-                prefetchedFreeContext = await fetchGatewayContext({
-                    workspaceId: auth.value.workspaceId,
-                    apiKeyId: auth.value.apiKeyId,
-                    model: FREE_ROUTER_MODEL_ID,
-                    endpoint: "text.generate",
-                });
-                catalogueModelIds = modelIds.filter((modelId) => modelId !== FREE_ROUTER_MODEL_ID);
-                freeRouterModelIds = Array.from(new Set(
-                    prefetchedFreeContext.providers
-                        .map((provider) => String(provider.apiModelId ?? "").trim())
-                        .filter(Boolean)
-                )).slice(0, MAX_EXACT_MODEL_IDS);
-            } catch {
-                prefetchedFreeContext = null;
-                catalogueModelIds = modelIds.filter((modelId) => modelId !== FREE_ROUTER_MODEL_ID);
-            }
-        }
-        const catalogueArgs = {
-            modelIds: catalogueModelIds,
-            endpoints,
-            statuses,
-            providerIds,
-            providerStatuses,
-            providerRoutingStatuses,
-            modelRoutingStatuses,
-            capabilityStatuses,
-            providerAvailabilityStatuses,
-            providerAvailabilityReasons,
-            organisationIds,
-            inputTypes,
-            outputTypes,
-            params,
-            availability: availabilityMode,
-			...(gatewayRegion ? { region: gatewayRegion, textOnly: true } : {}),
-		};
-        const catalogue = await fetchCatalogue(catalogueArgs);
-        if (freeRouterModelIds.length) {
-            const freeRouterCatalogue = await fetchCatalogue({
-                ...catalogueArgs,
-                modelIds: freeRouterModelIds,
-            });
-            const knownModelIds = new Set(catalogue.map((model) => model.model_id));
-            catalogue.push(...freeRouterCatalogue.filter((model) => !knownModelIds.has(model.model_id)));
-        }
-        const freeRouter = await buildFreeRouterCatalogueModel({
-            workspaceId: auth.value.workspaceId,
-            apiKeyId: auth.value.apiKeyId,
-            endpoints,
-            catalogue,
-            freeContext: prefetchedFreeContext,
-        });
-        const freeRouterModel = freeRouter?.model ?? null;
-        const enrichedCatalogue =
-            freeRouterModel && !catalogue.some((model) => model.model_id === freeRouterModel.model_id)
-                ? [freeRouterModel, ...catalogue]
-                : catalogue;
-        const replacementByPreviousModel = buildReplacementByPreviousModel(enrichedCatalogue);
-        const variantsByBaseModel = buildModelVariants(enrichedCatalogue);
-        const publicModels = enrichedCatalogue
-            .filter((model) => !modelIds.length || modelIds.includes(model.model_id))
-            .map((model) =>
-                toPhaseoModel(
-                    model,
-                    model.replacement_model_id ?? replacementByPreviousModel.get(model.model_id) ?? null,
-                    variantsByBaseModel.get(model.base_model_id || model.model_id) ?? {},
-					gatewayRegion !== null,
-                    includeParameterSpecs,
-                )
-            );
-        const privateModels = await fetchWorkspacePrivateCatalogue({
-            workspaceId: auth.value.workspaceId,
-            endpoints,
-            modelIds,
-            providerIds,
-            organisationIds,
-            inputTypes,
-            outputTypes,
-        });
-        const privateByModelId = new Map(privateModels.map((model) => [model.id, model]));
-        const mergedPublicModels = publicModels.map((model) => {
-            const privateModel = privateByModelId.get(model.id);
-            if (!privateModel) return model;
-            privateByModelId.delete(model.id);
-            return {
-                ...model,
-                offers: [...model.offers, ...privateModel.offers],
-                availability: {
-                    ...model.availability,
-                    provider_count: model.availability.provider_count + privateModel.availability.provider_count,
-                    active_provider_count: model.availability.active_provider_count + privateModel.availability.active_provider_count,
-                },
-            };
-        });
-        const listed = [...privateByModelId.values(), ...mergedPublicModels] as PhaseoModel[];
-        // Filtered before search and paging, so totals and pages count only what the key may use.
+        // The key's rules, read alongside the catalogue; the listing is filtered before search and paging, so totals
+        // and pages count only what the key may use.
         const policy = scope !== "me"
             ? null
             : oauthUserId
-                ? await fetchMemberWorkspacePolicy({ workspaceId: auth.value.workspaceId, userId: oauthUserId })
-                : await fetchWorkspacePolicy({ workspaceId: auth.value.workspaceId, apiKeyId: auth.value.apiKeyId });
-        // What the request pipeline checks per route, which the listing doesn't show: the Free router's concrete
-        // models and data facts, and each text route's id (its effective data policy is read by it).
-        const routeFacts = new Map<string, Map<string, PolicyRouteFacts>>();
-        if (policy) {
-            for (const model of enrichedCatalogue) {
-                if (model.model_id === FREE_ROUTER_MODEL_ID && freeRouter) { routeFacts.set(model.model_id, freeRouter.routes); continue; }
-                routeFacts.set(model.model_id, new Map(model.providers.map((provider) => {
-                    const routeId = provider.route_id_by_endpoint?.["text.generate"];
-                    return [provider.api_provider_id, routeId ? { routeId } : {}];
-                })));
-            }
-        }
-        const permitted = policy ? await modelsForPolicy(listed, policy, routeFacts) : listed;
+                ? fetchMemberWorkspacePolicy({ workspaceId: auth.value.workspaceId, userId: oauthUserId })
+                : fetchWorkspacePolicy({ workspaceId: auth.value.workspaceId, apiKeyId: auth.value.apiKeyId });
+        const { listed, permitted, policy: appliedPolicy } = await loadModelListing(
+            { workspaceId: auth.value.workspaceId, apiKeyId: auth.value.apiKeyId },
+            {
+                modelIds,
+                endpoints,
+                statuses,
+                providerIds,
+                providerStatuses,
+                providerRoutingStatuses,
+                modelRoutingStatuses,
+                capabilityStatuses,
+                providerAvailabilityStatuses,
+                providerAvailabilityReasons,
+                organisationIds,
+                inputTypes,
+                outputTypes,
+                params,
+                availability: availabilityMode,
+                includeParameterSpecs,
+                gatewayRegion,
+            },
+            policy,
+        );
         // What the key's rules leave out of this listing (before search), so apps can say why a model is missing.
-        const access = policy ? modelAccessSummary(listed, permitted, policy) : undefined;
+        const access = appliedPolicy ? modelAccessSummary(listed, permitted, appliedPolicy) : undefined;
         const models = filterAndSortModels(
             permitted,
             {

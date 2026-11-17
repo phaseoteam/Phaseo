@@ -638,7 +638,13 @@
 			"comingSoonGroup": "قريبًا · {month}",
 			"removeModel": "إزالة {model}",
 			"addToFavorites": "إضافة {model} إلى المفضلة",
-			"removeFromFavorites": "إزالة {model} من المفضلة"
+			"removeFromFavorites": "إزالة {model} من المفضلة",
+			"hiddenByRules": "{count, plural, zero {لا توجد نماذج مخفية} one {نموذج واحد مخفي} two {نموذجان مخفيان} few {# نماذج مخفية} many {# نموذجًا مخفيًا} other {# نموذج مخفي}} بموجب قواعد {workspace}.",
+			"hiddenAndLimitedByRules": "{count, plural, zero {لا توجد نماذج مخفية} one {نموذج واحد مخفي} two {نموذجان مخفيان} few {# نماذج مخفية} many {# نموذجًا مخفيًا} other {# نموذج مخفي}} بموجب قواعد {workspace}، وبعض المزوّدين متوقفون لنماذج أخرى.",
+			"limitedByRules": "توقف قواعد {workspace} بعض المزوّدين لـ {count, plural, zero {لا نماذج} one {نموذج واحد} two {نموذجين} few {# نماذج} many {# نموذجًا} other {# نموذج}}.",
+			"hiddenModelMatch": "{model} مخفي بموجب قواعد مساحة العمل.",
+			"hiddenModelMatches": "{count, plural, zero {لا توجد نماذج مطابقة مخفية} one {نموذج مطابق واحد مخفي} two {نموذجان مطابقان مخفيان} few {# نماذج مطابقة مخفية} many {# نموذجًا مطابقًا مخفيًا} other {# نموذج مطابق مخفي}} بموجب قواعد مساحة العمل.",
+			"viewRules": "عرض القواعد"
 		},
 		"dataControls": {
 			"exportChats": "تصدير المحادثات",

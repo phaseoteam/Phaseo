@@ -267,7 +267,12 @@
 			"capabilityTextGeneration": "Génération de texte",
 			"modalityDecisions": "Décisions",
 			"modalityClassification": "Classification",
-			"modalityExtraction": "Extraction"
+			"modalityExtraction": "Extraction",
+			"usableInWorkspace": "Utilisables dans mon espace de travail",
+			"usableInWorkspaceTitle": "Afficher uniquement les modèles autorisés par les règles de {workspace}",
+			"usableSignInHint": "Connectez-vous pour ne voir que les modèles autorisés par votre espace de travail.",
+			"workspaceRules": "Règles de l’espace de travail",
+			"workspaceRulesFrom": "De {workspace}, choisi dans l’en-tête"
 		},
 		"freeRouter": {
 			"title": "Pool de modèles gratuits",
@@ -1036,7 +1041,9 @@
 		"features": "Fonctionnalités",
 		"included": "Inclus",
 		"notIncluded": "Non inclus",
-		"learnMore": "En savoir plus"
+		"learnMore": "En savoir plus",
+		"blockedByWorkspace": "Bloqué par votre espace de travail",
+		"blockedByWorkspaceTitle": "Les règles de votre espace de travail (garde-fous ou paramètres de confidentialité) n'autorisent pas ce modèle."
 	},
 	"modelDetail": {
 		"providerTable": {

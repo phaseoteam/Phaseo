@@ -47,4 +47,19 @@ describe("browser-loaded chat catalogue", () => {
 		expect(props.promptParam).toBe("draft prompt");
 		client.clear();
 	});
+	it("leaves out what the header workspace's rules hide, and keeps everything when the rules aren't known", () => {
+		const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+		client.setQueryData(webQueryKeys.public.chatGatewayModels(), [model("test/allowed"), model("test/hidden"), model("test/limited", "blocked-provider"), model("test/limited", "allowed-provider")]);
+		const render = (modelAccess: Parameters<typeof ChatPlaygroundCatalog>[0]["modelAccess"]) => {
+			vi.mocked(ChatPlayground).mockClear();
+			renderToStaticMarkup(<QueryClientProvider client={client}><ChatPlaygroundCatalog previewModels={[]} internalModels={[]} effectivePolicy={null} modelAccess={modelAccess} /></QueryClientProvider>);
+			return vi.mocked(ChatPlayground).mock.calls[0][0].models.map((entry) => `${entry.modelId}@${entry.providerId}`);
+		};
+		expect(render({
+			workspaceId: "workspace", workspaceName: "Acme", source: "chat_key", restricted: true, hiddenModelCount: 1, limitedModelCount: 1,
+			hiddenModels: [{ id: "test/hidden", name: "Hidden" }], limitedModels: { "test/limited": ["allowed-provider"] },
+		})).toEqual(["test/allowed@public", "test/limited@allowed-provider"]);
+		expect(render(null)).toHaveLength(4);
+		client.clear();
+	});
 });

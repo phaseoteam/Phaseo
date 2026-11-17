@@ -16,6 +16,7 @@ import {
 	Copy,
 	BadgeAlert,
 	CalendarClock,
+	Ban,
 	EyeOff,
 	LockKeyhole,
 } from "lucide-react";
@@ -72,6 +73,7 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useIsBlockedByWorkspace } from "./CatalogueModelAccessContext";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const MODALITY_DISPLAY_ORDER = [
@@ -541,6 +543,18 @@ function ModelCardImpl({
 				<span className={iconOnly ? "sr-only" : undefined}>{visibilityLabel}</span>
 			</span>
 		) : null;
+	// The workspace picked in the header blocks this model (its guardrails or Settings, Privacy). Read-only here.
+	const blockedByWorkspace = useIsBlockedByWorkspace(model.model_id);
+	const blockedLabel = t("blockedByWorkspace");
+	const workspaceBlockedBadge = blockedByWorkspace ? (
+		<span
+			title={t("blockedByWorkspaceTitle")}
+			className="inline-flex items-center gap-1 rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1 font-medium text-destructive"
+		>
+			<Ban className="h-3.5 w-3.5" aria-hidden="true" />
+			<span>{blockedLabel}</span>
+		</span>
+	) : null;
 	const [copied, setCopied] = useState(false);
 	const routerRequests30d =
 		Number.isFinite(Number(model.router_requests_30d)) &&
@@ -1124,6 +1138,8 @@ function ModelCardImpl({
 				<div className="grid gap-2 text-xs md:grid-cols-3">
 					<ModelCardScrollRail ariaLabel={t("modelSummary")} className="md:col-span-3">
 						<div className="flex w-max min-w-full items-center gap-1.5 pb-px text-[11px] [&>*]:shrink-0">
+						{/* With Coming soon: a status chip in the summary row, so it never squeezes the name or id. */}
+						{workspaceBlockedBadge}
 						{isComingSoon ? (
 							<span className="inline-flex items-center gap-1 rounded-md border border-[#2b7fff]/30 bg-[#2b7fff]/10 px-2 py-1 font-medium text-blue-700 dark:text-blue-300">
 								<CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />

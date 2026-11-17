@@ -8,21 +8,26 @@ import { webQueryKeys } from "@/lib/query/queryKeys";
 const loadChatPlaygroundAccountData = createServerFn({ method: "GET", strict: { output: false } })
 	.validator((input: { opensLoggedRequest?: boolean } | undefined) => ({ opensLoggedRequest: input?.opensLoggedRequest === true }))
 	.handler(async ({ data }) => {
-		const [{ fetchChatEffectivePolicy }, { fetchServerProviderCatalogPreviews }, { fetchServerAdminChatModels }, { getServerAccountContext }] = await Promise.all([
+		const [{ fetchChatEffectivePolicy }, { fetchModelAccess }, { fetchServerProviderCatalogPreviews }, { fetchServerAdminChatModels }, { getServerAccountContext }] = await Promise.all([
 			import("@/lib/fetchers/internal/fetchChatEffectivePolicy"),
+			import("@/lib/fetchers/internal/fetchModelAccess"),
 			import("@/lib/fetchers/internal/fetchServerProviderCatalogPreviews"),
 			import("@/lib/fetchers/internal/fetchServerAdminChatModels"),
 			import("@/lib/fetchers/internal/serverAccountContext"),
 		]);
 		// Opening a logged request compares its workspace with the one Chat bills.
-		const [effectivePolicy, providerPreviews, internalModels, accountContext] = await Promise.all([
+		// The picker lists only the models the header's workspace lets this member use (modelAccess). If that check
+		// fails, it lists everything with the allow/block-list badges (effectivePolicy); the gateway still enforces.
+		const [effectivePolicy, modelAccess, providerPreviews, internalModels, accountContext] = await Promise.all([
 			fetchChatEffectivePolicy().catch(() => null),
+			fetchModelAccess().catch(() => null),
 			fetchServerProviderCatalogPreviews(),
 			fetchServerAdminChatModels(),
 			data.opensLoggedRequest ? getServerAccountContext().catch(() => null) : null,
 		]);
 		return {
 			effectivePolicy,
+			modelAccess,
 			providerPreviews,
 			internalModels,
 			activeWorkspaceId: accountContext?.workspaceId ?? null,

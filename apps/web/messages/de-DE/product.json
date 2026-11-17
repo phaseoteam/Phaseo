@@ -638,7 +638,13 @@
 			"comingSoonGroup": "Demnächst verfügbar · {month}",
 			"removeModel": "{model} entfernen",
 			"addToFavorites": "{model} zu Favoriten hinzufügen",
-			"removeFromFavorites": "{model} aus Favoriten entfernen"
+			"removeFromFavorites": "{model} aus Favoriten entfernen",
+			"hiddenByRules": "{count, plural, one {# Modell ist} other {# Modelle sind}} durch die Regeln von {workspace} ausgeblendet.",
+			"hiddenAndLimitedByRules": "{count, plural, one {# Modell ist} other {# Modelle sind}} durch die Regeln von {workspace} ausgeblendet, und für andere sind einige Anbieter deaktiviert.",
+			"limitedByRules": "Die Regeln von {workspace} deaktivieren einige Anbieter für {count, plural, one {# Modell} other {# Modelle}}.",
+			"hiddenModelMatch": "{model} ist durch die Regeln deines Workspace ausgeblendet.",
+			"hiddenModelMatches": "{count, plural, one {# passendes Modell ist} other {# passende Modelle sind}} durch die Regeln deines Workspace ausgeblendet.",
+			"viewRules": "Regeln ansehen"
 		},
 		"dataControls": {
 			"exportChats": "Chats exportieren",

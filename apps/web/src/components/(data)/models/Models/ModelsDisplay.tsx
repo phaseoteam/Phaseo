@@ -11,6 +11,10 @@ import { usePathname, useSearchParams } from "@/lib/navigation";
 import { useTranslations } from "@/i18n/react";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
+import { CatalogueModelAccessContext } from "./CatalogueModelAccessContext";
+import { useQuery } from "@tanstack/react-query";
+import { catalogueModelAccessQuery } from "@/components/(data)/catalogueViewer.functions";
+import { hiddenModelIdSet, isCatalogueModelBlocked } from "@/lib/chat/modelAccess";
 import {
 	OUTPUT_MODALITY_DISPLAY_ORDER,
 	normalizeModalityFilterValue,
@@ -20,6 +24,7 @@ import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesP
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
 import { resolveDefaultGatewayStatuses } from "@/lib/models/defaultGatewayStatuses";
 import { Logo } from "@/components/Logo";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
 	Search,
@@ -61,6 +66,7 @@ import {
 	Scale,
 	ScrollText,
 	PackageOpen,
+	ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -142,6 +148,8 @@ function weightsOptionsFromLicenses(licenseOptions: OptionCount[]): OptionCount[
 interface ModelsDisplayProps {
 	modelsPageData: ModelsPageData;
 	showPrimaryHeader?: boolean;
+	/** Signed in: offers the "Usable in my workspace" filter and tags models the header workspace's rules block. */
+	signedIn?: boolean;
 }
 
 type PreparedModel = {
@@ -876,11 +884,13 @@ function sortOutputModalityOptions(options: OptionCount[]): OptionCount[] {
 export default function ModelsDisplay({
 	modelsPageData,
 	showPrimaryHeader = true,
+	signedIn = false,
 }: ModelsDisplayProps) {
 	return (
 		<ModelsDisplayContent
 			modelsPageData={modelsPageData}
 			showPrimaryHeader={showPrimaryHeader}
+			signedIn={signedIn}
 		/>
 	);
 }
@@ -888,9 +898,11 @@ export default function ModelsDisplay({
 function ModelsDisplayContent({
 	modelsPageData,
 	showPrimaryHeader = true,
+	signedIn,
 }: {
 	modelsPageData: ModelsPageData;
 	showPrimaryHeader?: boolean;
+	signedIn: boolean;
 }) {
 	const format = useDisplayFormatters();
 	const { models, facets } = modelsPageData;
@@ -1061,7 +1073,7 @@ function ModelsDisplayContent({
 		shallow: true,
 		clearOnDefault: true,
 	});
-	const DEFAULT_OPEN_SECTIONS = ["gatewayStatus", "inputModalities"];
+	const DEFAULT_OPEN_SECTIONS = ["gatewayStatus", "workspaceRules", "inputModalities"];
 	const [openFilterSections, setOpenFilterSections] = useState<string[]>(() => [
 		...DEFAULT_OPEN_SECTIONS,
 		...(selectedTiers.length > 0 ? ["tiers"] : []),
@@ -1163,6 +1175,23 @@ function ModelsDisplayContent({
 	const selectedSort = normalizeSortOption(sort);
 	const hasPrivateModels = models.some((model) => model.gateway_tiers?.includes("private"));
 	const privateOnly = selectedTiers.includes("private");
+	// "Usable in my workspace" (?usable=1): an opt-in filter for signed-in viewers, by the rules of the workspace picked
+	// in the header. The page itself is the same for everyone; only this filter and the row tags are per viewer.
+	const [usableOnly, setUsableOnly] = useQueryState("usable", {
+		defaultValue: false,
+		parse: (value) => value === "1",
+		serialize: (value) => (value ? "1" : ""),
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const modelAccessQuery = useQuery({ ...catalogueModelAccessQuery(), enabled: signedIn });
+	const modelAccess = signedIn ? modelAccessQuery.data ?? null : null;
+	const blockedModelIds = useMemo(() => {
+		const hidden = hiddenModelIdSet(modelAccess);
+		return new Set(hidden.size ? models.filter((model) => isCatalogueModelBlocked(modelAccess, model, hidden)).map((model) => model.model_id) : []);
+	}, [modelAccess, models]);
+	// Applied only once the rules are known; until then (or if they can't be read) nothing is hidden.
+	const usableFilterActive = usableOnly && blockedModelIds.size > 0;
 	const [showMobileFilterFab, setShowMobileFilterFab] = useState(false);
 	const [isMobileViewport, setIsMobileViewport] = useState(false);
 	const [sidebarCountsReady, setSidebarCountsReady] = useState(false);
@@ -1232,7 +1261,8 @@ function ModelsDisplayContent({
 		selectedLicenseTypes.length +
 		selectedLicenses.length +
 		selectedWeights.length +
-		selectedYears.length;
+		selectedYears.length +
+		(usableOnly && signedIn ? 1 : 0);
 
 	const selectedContextStopIndex = getClosestStopIndex(selectedContextMin);
 
@@ -1325,6 +1355,10 @@ function ModelsDisplayContent({
 		): boolean => {
 			const exclude = options?.exclude ?? null;
 			const searchValue = deferredSearch.trim().toLowerCase();
+
+			if (usableFilterActive && blockedModelIds.has(prepared.model.model_id)) {
+				return false;
+			}
 
 			if (
 				exclude !== "statuses" &&
@@ -1452,6 +1486,8 @@ function ModelsDisplayContent({
 			selectedRegions,
 			selectedSupportedParameters,
 			selectedYears,
+			usableFilterActive,
+			blockedModelIds,
 		],
 	);
 
@@ -1676,6 +1712,7 @@ function ModelsDisplayContent({
 		setSelectedLicenseTypes([]);
 		setSelectedWeights([]);
 		setSelectedYears([]);
+		setUsableOnly(false);
 	};
 
 	const resetResultsView = () => {
@@ -1810,6 +1847,7 @@ function ModelsDisplayContent({
 		...selectedInputModalities.map((value) => ({ key: `input-${value}`, label: tFilters("filterInput", { value: translateModality(value) }), onRemove: () => setSelectedInputModalities(without(selectedInputModalities, value)) })),
 		...selectedOutputModalities.map((value) => ({ key: `output-${value}`, label: tFilters("filterOutput", { value: translateModality(value) }), onRemove: () => setSelectedOutputModalities(without(selectedOutputModalities, value)) })),
 		...selectedTiers.map((value) => ({ key: `tier-${value}`, label: tFilters("filterTier", { value: translateTier(value) }), onRemove: () => setSelectedTiers(without(selectedTiers, value)) })),
+		...(usableOnly && signedIn ? [{ key: "usable", label: tFilters("usableInWorkspace"), onRemove: () => setUsableOnly(false) }] : []),
 		...(selectedContextMin > 0 ? [{ key: "context", label: tFilters("filterContext", { value: formatContextStop(selectedContextMin) }), onRemove: () => setSelectedContextMin(0) }] : []),
 		...selectedSupportedParameters.map((value) => ({ key: `parameter-${value}`, label: tFilters("filterParameter", { value: toTitleCase(value) }), onRemove: () => setSelectedSupportedParameters(without(selectedSupportedParameters, value)) })),
 		...selectedProviders.map((value) => ({ key: `provider-${value}`, label: tFilters("filterProvider", { value }), onRemove: () => setSelectedProviders(without(selectedProviders, value)) })),
@@ -1860,6 +1898,31 @@ function ModelsDisplayContent({
 			{tFilters("tierPrivate")}
 		</Button>
 	) : null;
+	// Shown when the header workspace's rules block some models (or the filter is already on, so it can be turned off).
+	const usableFilterRow = signedIn && (blockedModelIds.size > 0 || usableOnly) ? (
+		<div className="space-y-1.5">
+			<label
+				className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-muted/50"
+				title={modelAccess?.workspaceName ? tFilters("usableInWorkspaceTitle", { workspace: modelAccess.workspaceName }) : undefined}
+			>
+				<Checkbox
+					checked={usableOnly}
+					onCheckedChange={(checked) => setUsableOnly(checked === true)}
+				/>
+				<span className="min-w-0 truncate text-sm">{tFilters("usableInWorkspace")}</span>
+			</label>
+			{modelAccess?.workspaceName ? (
+				<p className="px-2 text-xs text-muted-foreground">
+					{tFilters("workspaceRulesFrom", { workspace: modelAccess.workspaceName })}
+				</p>
+			) : null}
+		</div>
+	) : null;
+	const toolbarFilterButtons = (
+		<>
+			{privateFilterButton}
+		</>
+	);
 
 	const viewSwitcherItemClass = (active: boolean, isFirst = false) =>
 		cn(
@@ -1974,6 +2037,20 @@ function ModelsDisplayContent({
 					/>
 				</AccordionContent>
 			</AccordionItem>
+
+			{usableFilterRow ? (
+				<AccordionItem value="workspaceRules" className="border-border/70">
+					<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+						<span className="flex items-center gap-2">
+							<ShieldCheck className="h-4 w-4 text-muted-foreground" />
+							{tFilters("workspaceRules")}
+						</span>
+					</AccordionTrigger>
+					<AccordionContent className="pt-1" disableAnimation>
+						{usableFilterRow}
+					</AccordionContent>
+				</AccordionItem>
+			) : null}
 
 			<AccordionItem value="inputModalities" className="border-border/70">
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
@@ -2288,7 +2365,7 @@ function ModelsDisplayContent({
 
 						<div className="flex items-center gap-2">
 							{sortSelect("h-8 min-w-0 rounded-md bg-background text-sm")}
-							{privateFilterButton}
+							{toolbarFilterButtons}
 							{filterButton()}
 							{showPrimaryHeader ? viewSwitcher : null}
 						</div>
@@ -2336,7 +2413,7 @@ function ModelsDisplayContent({
 									{sortSelect(
 										"h-8 w-[12.5rem] rounded-md bg-background text-sm 2xl:w-[13.5rem]",
 									)}
-									{privateFilterButton}
+									{toolbarFilterButtons}
 									{showPrimaryHeader ? viewSwitcher : null}
 								</div>
 							</div>
@@ -2350,7 +2427,7 @@ function ModelsDisplayContent({
 									<div />
 								)}
 								<div className="flex shrink-0 items-center justify-end gap-2">
-									{privateFilterButton}
+									{toolbarFilterButtons}
 									{filterButton()}
 									{showPrimaryHeader ? viewSwitcher : null}
 								</div>
@@ -2388,14 +2465,19 @@ function ModelsDisplayContent({
 					</div>
 
 					<ActiveModelFilters filters={activeFilters} onClear={resetFilters} />
+					{usableOnly && !signedIn ? (
+						<p className="mt-2 text-xs text-muted-foreground" role="note">{tFilters("usableSignInHint")}</p>
+					) : null}
 				</div>
 
 				<div className="w-full px-4 pt-1 pb-5 lg:px-8 lg:pt-1 lg:pb-6">
 					{filteredModels.length > 0 ? (
-						<ModelsGrid
-							filteredModels={filteredModels}
-							showOrganisationPrefix
-						/>
+						<CatalogueModelAccessContext.Provider value={blockedModelIds}>
+							<ModelsGrid
+								filteredModels={filteredModels}
+								showOrganisationPrefix
+							/>
+						</CatalogueModelAccessContext.Provider>
 					) : (
 						<ModelsEmptyState
 							hasActiveQuery={hasActiveResultsQuery}

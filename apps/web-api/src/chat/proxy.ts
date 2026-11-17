@@ -83,8 +83,12 @@ export async function resolveChatWorkspace(request: Request, env: Env) {
 	if (profile.error || memberships.error || owned.error) return { status: 503, code: "workspace_unavailable", message: "Unable to resolve a workspace for chat" };
 	const accessible = new Set([...(memberships.data ?? []).map((row) => String(row.workspace_id ?? "")), ...(owned.data ?? []).map((row) => String(row.id ?? ""))].filter(Boolean));
 	const requested = cookieValue(request, "activeWorkspaceId").trim();
+	// Chat runs in the workspace picked in the header. If that one can't be used (the user left it, or it was
+	// deleted), say so rather than quietly sending under another workspace's rules and billing.
+	if (requested && !accessible.has(requested)) return { status: 409, code: "active_workspace_unavailable", message: "The workspace picked in the header is not available. Pick another workspace to use chat" };
 	const fallback = String(profile.data?.default_workspace_id ?? "").trim();
-	const workspaceId = (requested && accessible.has(requested) ? requested : "") || (fallback && accessible.has(fallback) ? fallback : "") || [...accessible][0] || "";
+	// No workspace picked yet (the session normally sets the default one): the default, else the first available.
+	const workspaceId = requested || (fallback && accessible.has(fallback) ? fallback : "") || [...accessible][0] || "";
 	if (!workspaceId) return { status: 403, code: "no_workspace_membership", message: "A workspace is required to use chat" };
 	return { user, client, workspaceId };
 }

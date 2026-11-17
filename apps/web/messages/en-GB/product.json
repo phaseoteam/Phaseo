@@ -638,7 +638,13 @@
 			"comingSoonGroup": "Coming soon · {month}",
 			"removeModel": "Remove {model}",
 			"addToFavorites": "Add {model} to favourites",
-			"removeFromFavorites": "Remove {model} from favourites"
+			"removeFromFavorites": "Remove {model} from favourites",
+			"hiddenByRules": "{count, plural, one {# model is} other {# models are}} hidden by {workspace}'s rules.",
+			"hiddenAndLimitedByRules": "{count, plural, one {# model is} other {# models are}} hidden by {workspace}'s rules, and some providers are turned off for others.",
+			"limitedByRules": "{workspace}'s rules turn off some providers for {count, plural, one {# model} other {# models}}.",
+			"hiddenModelMatch": "{model} is hidden by your workspace's rules.",
+			"hiddenModelMatches": "{count, plural, one {# matching model is} other {# matching models are}} hidden by your workspace's rules.",
+			"viewRules": "View rules"
 		},
 		"dataControls": {
 			"exportChats": "Export chats",

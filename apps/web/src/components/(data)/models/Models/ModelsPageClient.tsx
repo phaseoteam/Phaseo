@@ -92,5 +92,5 @@ function ModelsPageDataClient({
 	if (query.error && !query.data) throw query.error;
 	if (!displayData) return <ModelsPageSkeleton title={title} />;
 
-	return <ModelsDisplay modelsPageData={displayData} />;
+	return <ModelsDisplay modelsPageData={displayData} signedIn={hasAuthenticatedAccountQueryScope(scope)} />;
 }

@@ -120,6 +120,8 @@ import { ChatShortcutHelpDialog } from "@/components/(chat)/ChatShortcutReferenc
 import { getChatPayloadRequestId } from "@/components/(chat)/chatMessageMetadata";
 import { replayInputPrefix } from "@/components/(chat)/chatLogImport";
 import { ChatLogImportDialog } from "@/components/(chat)/ChatLogImportDialog";
+import { useChatModelAccess } from "@/components/(chat)/ChatModelAccessContext";
+import { threadUsesHiddenModel } from "@/lib/chat/modelAccess";
 import {
 	combineReasoningEffortSupports,
 	filterReasoningEffortOptions,
@@ -2805,6 +2807,7 @@ function ChatPlaygroundContent({
 		},
 		[],
 	);
+	const modelAccess = useChatModelAccess();
 	const normalizeThreadForAvailableModels = useCallback(
 		(thread: ChatThread): { thread: ChatThread; changed: boolean } => {
 			if (!thread.modelId) return { thread, changed: false };
@@ -2978,8 +2981,11 @@ function ChatPlaygroundContent({
 		if (!threads.length || !selectableModels.length) return;
 		let cancelled = false;
 		(async () => {
+			// Chats on a model this workspace's rules hide stay as saved: moving them would lose their settings for good.
 			const normalizedThreads = threads.map((thread) =>
-				normalizeThreadForAvailableModels(thread),
+				threadUsesHiddenModel(modelAccess, thread)
+					? { thread, changed: false }
+					: normalizeThreadForAvailableModels(thread),
 			);
 			const changedThreads = normalizedThreads
 				.filter((result) => result.changed)
@@ -2994,7 +3000,7 @@ function ChatPlaygroundContent({
 		return () => {
 			cancelled = true;
 		};
-	}, [normalizeThreadForAvailableModels, selectableModels.length, threads]);
+	}, [modelAccess, normalizeThreadForAvailableModels, selectableModels.length, threads]);
 
 	const handleSend = useCallback(
 		async (payload: ChatSendPayload) => {

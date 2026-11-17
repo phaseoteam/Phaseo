@@ -638,7 +638,13 @@
 			"comingSoonGroup": "即将推出 · {month}",
 			"removeModel": "移除 {model}",
 			"addToFavorites": "将 {model} 添加到收藏",
-			"removeFromFavorites": "将 {model} 从收藏中移除"
+			"removeFromFavorites": "将 {model} 从收藏中移除",
+			"hiddenByRules": "{workspace} 的规则隐藏了 {count, plural, other {# 个模型}}。",
+			"hiddenAndLimitedByRules": "{workspace} 的规则隐藏了 {count, plural, other {# 个模型}}，并为其他模型关闭了部分提供商。",
+			"limitedByRules": "{workspace} 的规则为 {count, plural, other {# 个模型}}关闭了部分提供商。",
+			"hiddenModelMatch": "{model} 已被你的工作区规则隐藏。",
+			"hiddenModelMatches": "{count, plural, other {# 个匹配的模型}}已被你的工作区规则隐藏。",
+			"viewRules": "查看规则"
 		},
 		"dataControls": {
 			"exportChats": "导出聊天记录",

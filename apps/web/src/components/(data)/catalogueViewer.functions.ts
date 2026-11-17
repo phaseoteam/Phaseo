@@ -6,6 +6,8 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import type { InternalAuthStatus } from "@/lib/fetchers/internal/authTypes";
+import { webQueryKeys } from "@/lib/query/queryKeys";
+import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
 
 const catalogueViewerRoot = ["phaseo-web", "catalogue-viewer"] as const;
 
@@ -65,4 +67,21 @@ export const catalogueAccountQueryScopeQuery = () =>
 	queryOptions({
 		queryKey: [...catalogueViewerRoot, "account-query-scope"] as const,
 		queryFn: () => getCatalogueAccountQueryScope(),
+	});
+
+const getCatalogueModelAccess = createServerFn({ method: "GET" }).handler(async () => {
+	const { fetchModelAccess } = await import("@/lib/fetchers/internal/fetchModelAccess");
+	return fetchModelAccess();
+});
+
+/**
+ * `fetchModelAccess()`: which models the header's workspace lets the signed-in member use (null when signed out).
+ * Under the account key root, so saving guardrails or privacy settings (invalidateAccountQueries) refetches it;
+ * switching workspace in the header refetches every query. Errors propagate, so a failed check isn't read as "nothing hidden".
+ */
+export const catalogueModelAccessQuery = () =>
+	queryOptions({
+		queryKey: [...webQueryKeys.account.all(), "model-access"] as const,
+		queryFn: () => getCatalogueModelAccess(),
+		...WEB_QUERY_POLICIES.private,
 	});
