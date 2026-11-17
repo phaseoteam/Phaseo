@@ -20,6 +20,7 @@ import { HISTORY_PRIVACY_SCRIPT } from "@/lib/query/historyPrivacyScript";
 import SiteNoticeSlot from "@/components/site-notice/SiteNoticeSlot";
 import { TailwindIndicator } from "@/components/tailwind-indicator";
 import { THEME_INITIALIZATION_SCRIPT, ThemeProvider } from "@/components/theme/ThemeProvider";
+import { SPECIAL_THEME_INITIALIZATION_SCRIPT } from "@/lib/specialTheme";
 import ThemeAwareFavicon from "@/components/ThemeAwareFavicon";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -75,6 +76,7 @@ export function RootDocument({
 				<script id="history-privacy" dangerouslySetInnerHTML={{ __html: HISTORY_PRIVACY_SCRIPT }} />
 				<script dangerouslySetInnerHTML={{ __html: THEME_INITIALIZATION_SCRIPT }} />
 				<script dangerouslySetInnerHTML={{ __html: APPEARANCE_INITIALIZATION_SCRIPT }} />
+				<script dangerouslySetInnerHTML={{ __html: SPECIAL_THEME_INITIALIZATION_SCRIPT }} />
 				{/* The theme client mutates this exact link as the colour scheme changes. */}
 				<link
 					id="phaseo-favicon"

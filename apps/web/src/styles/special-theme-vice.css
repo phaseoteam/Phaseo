@@ -1,0 +1,279 @@
+/*
+  "Vice" launch-week theme (GTA VI release, 18–20 Nov 2026). Active only while
+  <html data-special-theme="vice"> is set; see lib/specialTheme.ts.
+
+  Direction: dusk over the water. The site keeps its own layout, type and
+  components; what changes is the light it sits in.
+    - Neutrals move onto a quiet indigo ramp (night) or blush stucco (day).
+      Body copy stays close to grey so it reads like the normal site.
+    - Flamingo pink is the one loud colour (primary). Lagoon teal is its cool
+      counterpart (links, focus, info). Gold only appears inside the sunset.
+    - One sunset gradient, gold > coral > pink > violet, always running the
+      same way. It is used on the hero title, primary buttons and the thin
+      "value" marks (active tab line, progress, slider). Nowhere else.
+    - One soft dusk wash at the top of marketing pages. No glows, grids or bars.
+    - Display type only on large marketing titles. Data titles (model names
+      and the like) keep the site font and their own casing.
+
+  Selectors use html:root[...] so they outrank the account palettes
+  (:root.dark[data-dark-palette=...]) and the custom accent blocks in globals.css.
+  Everything is sRGB hex, so rounded borders don't pick up oklch specks.
+*/
+
+/* ---------- Night (dark): indigo dusk, flamingo neon ---------- */
+html:root.dark[data-special-theme="vice"] {
+	--vice-pink: #f976b0;
+	--vice-teal: #6ebdc5;
+	--vice-ink: #1a0a1f;
+	/* Sunset for text and thin marks. */
+	--vice-sunset: linear-gradient(100deg, #ffd36e 0%, #ff8f6b 30%, #f976b0 62%, #b48cf2 100%);
+	/* Sunset for filled buttons: no yellow, so dark labels sit on an even tone. */
+	--vice-sunset-fill: linear-gradient(100deg, #ffa878 0%, #f976b0 55%, #d77be8 100%);
+	--vice-on-fill: #1a0a1f;
+	--vice-wash: linear-gradient(180deg, #1c112f 0rem, #130e25 14rem, #0d0c1a 34rem);
+
+	--background: #0d0c1a;
+	--foreground: #f6f3fb;
+	--card: #131326;
+	--card-foreground: #f6f3fb;
+	--popover: #18182d;
+	--popover-foreground: #f6f3fb;
+	--secondary: #1f1f38;
+	--secondary-foreground: #f6f3fb;
+	--muted: #18182d;
+	--muted-foreground: #a8a3c7;
+	/* Hover and selected rows warm up to plum instead of going grey. */
+	--accent: #2b1a38;
+	--accent-foreground: #ffe6f2;
+	--border: #272646;
+	--input: #34335a;
+	--sidebar: #0b0a17;
+	--sidebar-foreground: #f6f3fb;
+	--sidebar-accent: #2b1a38;
+	--sidebar-accent-foreground: #ffe6f2;
+	--sidebar-border: #272646;
+	--info: #6ebdc5;
+
+	--primary: #f976b0;
+	--primary-foreground: #1a0a1f;
+	--ring: #6ebdc5;
+	--sidebar-primary: #f976b0;
+	--sidebar-primary-foreground: #1a0a1f;
+	--sidebar-ring: #6ebdc5;
+	--chart-1: #f976b0;
+	--chart-2: #ff8f6b;
+	--chart-3: #ffd36e;
+	--chart-4: #6ebdc5;
+	--chart-5: #9b89f5;
+	--chart-axis-color: #a8a3c7;
+
+	/* Most pages paint with zinc: an indigo ramp, kept low in chroma so text
+	   set in zinc-300/400 reads as grey, not purple. */
+	--color-zinc-50: #f6f3fb;
+	--color-zinc-100: #e7e3f3;
+	--color-zinc-200: #cdc8e0;
+	--color-zinc-300: #b4b0c9;
+	--color-zinc-400: #9792b0;
+	--color-zinc-500: #807b9c;
+	--color-zinc-600: #57527a;
+	--color-zinc-700: #38365d;
+	--color-zinc-800: #1f1f38;
+	--color-zinc-900: #131326;
+	--color-zinc-950: #0d0c1a;
+}
+
+/* ---------- Day (light): blush stucco, flamingo and lagoon ---------- */
+html:root[data-special-theme="vice"]:not(.dark) {
+	--vice-pink: #cf2f74;
+	--vice-teal: #0f6f78;
+	--vice-ink: #17122b;
+	/* The same sunset, deepened until every stop holds 3:1 on the page. */
+	--vice-sunset: linear-gradient(100deg, #e0582a 0%, #dc3a6a 35%, #c42d8e 65%, #7446cf 100%);
+	--vice-sunset-fill: linear-gradient(100deg, #d13363 0%, #c62f85 55%, #8a3fc2 100%);
+	--vice-on-fill: #ffffff;
+	--vice-wash: linear-gradient(180deg, #ffe9ee 0rem, #fef2f4 14rem, #fdf9fb 34rem);
+
+	--background: #fdf9fb;
+	--foreground: #17122b;
+	--card: #ffffff;
+	--card-foreground: #17122b;
+	--popover: #ffffff;
+	--popover-foreground: #17122b;
+	--secondary: #f5eef4;
+	--secondary-foreground: #2d2947;
+	--muted: #f6f0f5;
+	--muted-foreground: #625a7c;
+	/* Hover and selected rows cool down to lagoon: pink and aqua, side by side. */
+	--accent: #e2f4f2;
+	--accent-foreground: #114a50;
+	--border: #ecdfe9;
+	--input: #dccbd9;
+	--sidebar: #fbf5f8;
+	--sidebar-foreground: #17122b;
+	--sidebar-accent: #e2f4f2;
+	--sidebar-accent-foreground: #114a50;
+	--sidebar-border: #ecdfe9;
+	--info: #0f6f78;
+
+	--primary: #cf2f74;
+	--primary-foreground: #ffffff;
+	--ring: #1f7f88;
+	--sidebar-primary: #cf2f74;
+	--sidebar-primary-foreground: #ffffff;
+	--sidebar-ring: #1f7f88;
+	--chart-1: #cf2f74;
+	--chart-2: #e0582a;
+	--chart-3: #d49a1a;
+	--chart-4: #1f7f88;
+	--chart-5: #7446cf;
+	--chart-axis-color: #625a7c;
+
+	--color-zinc-50: #fbf7fa;
+	--color-zinc-100: #f5eef4;
+	--color-zinc-200: #ecdfe9;
+	--color-zinc-300: #d6c8d6;
+	--color-zinc-400: #9c92ad;
+	--color-zinc-500: #71698d;
+	--color-zinc-600: #5b5377;
+	--color-zinc-700: #433d60;
+	--color-zinc-800: #2d2947;
+	--color-zinc-900: #1e1a33;
+	--color-zinc-950: #120e22;
+}
+
+/* Slate, neutral and gray follow zinc, so stray utilities stay in the family. */
+html:root[data-special-theme="vice"] {
+	--color-slate-50: var(--color-zinc-50);
+	--color-slate-100: var(--color-zinc-100);
+	--color-slate-200: var(--color-zinc-200);
+	--color-slate-300: var(--color-zinc-300);
+	--color-slate-400: var(--color-zinc-400);
+	--color-slate-500: var(--color-zinc-500);
+	--color-slate-600: var(--color-zinc-600);
+	--color-slate-700: var(--color-zinc-700);
+	--color-slate-800: var(--color-zinc-800);
+	--color-slate-900: var(--color-zinc-900);
+	--color-slate-950: var(--color-zinc-950);
+	--color-neutral-50: var(--color-zinc-50);
+	--color-neutral-100: var(--color-zinc-100);
+	--color-neutral-200: var(--color-zinc-200);
+	--color-neutral-300: var(--color-zinc-300);
+	--color-neutral-400: var(--color-zinc-400);
+	--color-neutral-500: var(--color-zinc-500);
+	--color-neutral-600: var(--color-zinc-600);
+	--color-neutral-700: var(--color-zinc-700);
+	--color-neutral-800: var(--color-zinc-800);
+	--color-neutral-900: var(--color-zinc-900);
+	--color-neutral-950: var(--color-zinc-950);
+	--color-gray-200: var(--color-zinc-200);
+	scrollbar-color: color-mix(in srgb, var(--vice-pink) 40%, transparent) transparent;
+}
+
+html:root[data-special-theme="vice"] ::selection {
+	background: color-mix(in srgb, var(--vice-pink) 32%, transparent);
+	color: inherit;
+}
+
+/* ---------- Dusk wash ---------- */
+
+/* Pages that open with a large marketing title (see the selector below) sit
+   under a faint dusk sky that fades into the flat page colour. It scrolls away
+   with the page; it is not fixed. App pages (models, settings, chat) are left
+   flat: their panels paint their own backgrounds and the wash showed through
+   the gaps as patches. */
+html:root[data-special-theme="vice"] body:has(main h1:is([class*="text-4xl"], [class*="text-5xl"], [class*="text-6xl"], [class*="text-7xl"])) {
+	background-image: var(--vice-wash);
+	background-repeat: no-repeat;
+	background-size: 100% 34rem;
+}
+
+/* ---------- Display type: large marketing titles only ---------- */
+
+/* Big Shoulders Display, SIL OFL; see public/fonts. The file only downloads
+   while the theme is on, because nothing else uses it. */
+@font-face {
+	font-family: "Vice Display";
+	src: url("/fonts/big-shoulders-display-latin-wght.woff2") format("woff2-variations");
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}
+
+/* Only titles set at text-4xl and up (home, landing and marketing pages).
+   Page and model titles (text-xl to text-3xl) keep the site font and casing:
+   uppercasing "GPT-4o" or squeezing a 24px title into a condensed face reads
+   as a bug, not a theme. */
+html:root[data-special-theme="vice"] main h1:is([class*="text-4xl"], [class*="text-5xl"], [class*="text-6xl"], [class*="text-7xl"]) {
+	font-family: "Vice Display", var(--font-heading), sans-serif;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.035em;
+	line-height: 1;
+	color: var(--vice-pink);
+}
+
+@supports ((background-clip: text) or (-webkit-background-clip: text)) {
+	html:root[data-special-theme="vice"] main h1:is([class*="text-4xl"], [class*="text-5xl"], [class*="text-6xl"], [class*="text-7xl"]) {
+		background-image: var(--vice-sunset);
+		-webkit-background-clip: text;
+		background-clip: text;
+		-webkit-text-fill-color: transparent;
+		/* Keeps descenders and accents inside the painted box. */
+		padding-block: 0.06em;
+	}
+}
+
+/* ---------- Sunset fills ---------- */
+
+/* Primary buttons: the sunset, left to right, flat (no hotspot). */
+html:root[data-special-theme="vice"] [data-slot="button"].bg-primary {
+	background-image: var(--vice-sunset-fill);
+	color: var(--vice-on-fill);
+}
+
+html:root[data-special-theme="vice"] [data-slot="button"].bg-primary:hover {
+	filter: brightness(1.07);
+}
+
+/* Thin "how much / which one" marks pick up the same sunset. */
+html:root[data-special-theme="vice"] :is([data-slot="progress-indicator"], [data-slot="slider-range"]).bg-primary {
+	background-image: var(--vice-sunset);
+}
+
+html:root[data-special-theme="vice"] [data-slot="tabs-trigger"]::after {
+	background-image: var(--vice-sunset);
+}
+
+/* ---------- Wordmark ---------- */
+
+/* The header and sign-in wordmark swap to the Vice version: the same letters
+   with a dusk gradient, faint palms inside and a deep-violet outline. The
+   brand menu downloads keep the normal wordmark. */
+html:root[data-special-theme="vice"] img[src$="/wordmark_light.svg"]:has(~ img[data-vice-wordmark]),
+html:root[data-special-theme="vice"] img[src$="/wordmark_dark.svg"]:has(~ img[data-vice-wordmark]) {
+	display: none;
+}
+
+/* A brighter sky on dark and a deeper one on light, so it reads at 20px. */
+html:root.dark[data-special-theme="vice"] img[data-vice-wordmark="dark"],
+html:root[data-special-theme="vice"]:not(.dark) img[data-vice-wordmark="light"] {
+	display: block;
+	/* The outline and palm crowns take up ~20% of the file's height; scale it up so the
+	   letters match the normal wordmark's size. Transform, so the header
+	   layout doesn't move. */
+	transform: scale(1.24);
+	transform-origin: left center;
+}
+
+/* Room for the scaled-up width, so it doesn't crowd the nav after it. */
+html:root[data-special-theme="vice"] header img[data-vice-wordmark] {
+	margin-right: 1rem;
+}
+
+/* ---------- Links ---------- */
+
+/* Inline links in running text pick up lagoon teal. */
+html:root[data-special-theme="vice"] main :is(p, li) > a:not([class*="bg-"]) {
+	color: var(--vice-teal);
+	text-decoration-color: color-mix(in srgb, var(--vice-teal) 45%, transparent);
+}

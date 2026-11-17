@@ -368,6 +368,7 @@
 		"light": "Clair",
 		"dark": "Sombre",
 		"system": "Système",
+		"vice": "Vice",
 		"use": "Utiliser le thème {theme}",
 		"set": "Définir le thème : {theme}",
 		"toggle": "Changer de thème"

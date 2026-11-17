@@ -368,6 +368,7 @@
 		"light": "ライト",
 		"dark": "ダーク",
 		"system": "システム",
+		"vice": "Vice",
 		"use": "{theme}テーマを使用",
 		"set": "テーマを設定: {theme}",
 		"toggle": "テーマを切り替え"

@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useTheme } from "@/components/theme/ThemeProvider";
+import { useThemeChoice } from "@/components/theme/useThemeChoice";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -722,7 +723,9 @@ export default function Search({
 	const router = useRouter();
 	const shortcutLabel = useSearchShortcutLabel();
 	const pathname = usePathname() ?? "/";
-	const { resolvedTheme, setTheme } = useTheme();
+	const { resolvedTheme } = useTheme();
+	// Through the pickers' own setter, so a base mode also turns a special theme off.
+	const { choose: chooseTheme } = useThemeChoice();
 	const navigationItems = useMemo(() => getGlobalNavigationItems(capabilities), [capabilities]);
 	const navigationSearchIndex = useMemo(() => createSearchIndex(navigationItems), [navigationItems]);
 	// Actions can open gated pages too, such as creating a classifier.
@@ -910,16 +913,16 @@ export default function Search({
 					}
 					break;
 				case "theme-dark":
-					setTheme("dark");
+					chooseTheme("dark");
 					break;
 				case "theme-light":
-					setTheme("light");
+					chooseTheme("light");
 					break;
 				case "theme-system":
-					setTheme("system");
+					chooseTheme("system");
 					break;
 				case "theme-toggle":
-					setTheme(resolvedTheme === "dark" ? "light" : "dark");
+					chooseTheme(resolvedTheme === "dark" ? "light" : "dark");
 					break;
 			}
 			setOpen(false);
@@ -964,7 +967,7 @@ export default function Search({
 			writeRecentItems(addRecentItem(currentItems, item)),
 		);
 		router.push(item.href);
-	}, [locale, queryClient, resolvedTheme, router, scope, setTheme, t]);
+	}, [chooseTheme, locale, queryClient, resolvedTheme, router, scope, t]);
 
 	const handleTogglePin = useCallback((item: SearchableItem) => {
 		setPinnedItems((currentItems) => {

@@ -5,9 +5,12 @@ import { useTheme } from "@/components/theme/ThemeProvider";
 import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useThemeChoice, type ThemeChoice } from "@/components/theme/useThemeChoice";
+import { ViceThemeIcon } from "@/components/theme/ViceThemeIcon";
 
 export function ThemeToggle() {
-	const { resolvedTheme, setTheme } = useTheme();
+	const { resolvedTheme } = useTheme();
+	const { choose } = useThemeChoice();
 	const t = useTranslations("Common.theme");
 	const isDark = resolvedTheme === "dark";
 
@@ -16,7 +19,7 @@ export function ThemeToggle() {
 			type="button"
 			variant="outline"
 			size="icon"
-			onClick={() => setTheme(isDark ? "light" : "dark")}
+			onClick={() => choose(isDark ? "light" : "dark")}
 			className="
 				h-9 w-9 rounded-full
 				flex items-center justify-center
@@ -53,7 +56,7 @@ export function ThemeSelector({
 	labelSize: _labelSize = "xs",
 	showSelectedLabel = true,
 }: ThemeSelectorProps = {}) {
-	const { theme, setTheme } = useTheme();
+	const { current, modes, choose } = useThemeChoice();
 	const t = useTranslations("Common.theme");
 	const reduceMotion = useReducedMotion();
 	const [mounted, setMounted] = React.useState(false);
@@ -68,23 +71,21 @@ export function ThemeSelector({
 		};
 	}, []);
 
-	const normalizedTheme =
-		mounted && (theme === "light" || theme === "dark" || theme === "system")
-			? theme
-			: "system";
-	const order = ["system", "light", "dark"] as const;
-	const labels: Record<(typeof order)[number], string> = {
+	const normalizedTheme: ThemeChoice = mounted ? current : "system";
+	const order: ThemeChoice[] = mounted
+		? (["system", "light", "dark", ...modes.filter((mode) => mode === "vice")] as ThemeChoice[])
+		: ["system", "light", "dark"];
+	const labels: Record<ThemeChoice, string> = {
 		system: t("system"),
 		light: t("light"),
 		dark: t("dark"),
+		vice: t("vice"),
 	};
-	const iconByTheme: Record<
-		(typeof order)[number],
-		React.ComponentType<{ className?: string }>
-	> = {
+	const iconByTheme: Record<ThemeChoice, React.ComponentType<{ className?: string }>> = {
 		light: Sun,
 		dark: Moon,
 		system: Monitor,
+		vice: ViceThemeIcon,
 	};
 	const springTransition = reduceMotion
 		? { duration: 0 }
@@ -122,7 +123,7 @@ export function ThemeSelector({
 							aria-checked={active}
 							aria-label={t("use", { theme: labels[themeOption] })}
 							onClick={() => {
-								setTheme(themeOption);
+								choose(themeOption);
 								if (showSelectedLabel) {
 									revealLabel();
 								}

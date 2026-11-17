@@ -368,6 +368,7 @@
 		"light": "Light",
 		"dark": "Dark",
 		"system": "System",
+		"vice": "Vice",
 		"use": "Use {theme} theme",
 		"set": "Set theme: {theme}",
 		"toggle": "Toggle theme"
