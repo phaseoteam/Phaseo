@@ -489,6 +489,16 @@ describe("google-vertex Gemini thinking levels", () => {
 		expect(config).not.toHaveProperty("thinkingLevel");
 	});
 
+	// Live Vertex probe 2026-11-18: Neon accepts LOW to XHIGH and rejects MINIMAL and any thinkingBudget.
+	it.each([[{ effort: "minimal" }, "LOW"], [{ effort: "low" }, "LOW"], [{ effort: "xhigh" }, "XHIGH"], [{ enabled: true }, "HIGH"]] as const)(
+		"sends Neon a thinkingLevel and no thinkingBudget for effort or enabled (%j)",
+		async (reasoning, level) => {
+			const config = await thinkingConfigFor("gemini-4-neon", { ...reasoning } as any);
+			expect(config.thinkingLevel).toBe(level);
+			expect(config).not.toHaveProperty("thinkingBudget");
+		},
+	);
+
 	it("keeps thinkingBudget for Gemini 3 models that still accept it", async () => {
 		const config = await thinkingConfigFor("gemini-3.6-flash", { maxTokens: 4096 });
 		expect(config.thinkingBudget).toBe(4096);

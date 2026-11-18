@@ -18,7 +18,7 @@ const GOOGLE_GEMMA4_LEVELS: GoogleThinkingLevel[] = ["MINIMAL", "HIGH"];
 // No MINIMAL: Google returns a validation error for it on these models.
 const GOOGLE_LOW_MEDIUM_HIGH_LEVELS: GoogleThinkingLevel[] = ["LOW", "MEDIUM", "HIGH"];
 
-// Gemini 4 Hydrogen only: adds XHIGH above HIGH (still no MINIMAL).
+// Gemini 4 Hydrogen and Neon: adds XHIGH above HIGH (still no MINIMAL).
 const GOOGLE_LOW_TO_XHIGH_LEVELS: GoogleThinkingLevel[] = ["LOW", "MEDIUM", "HIGH", "XHIGH"];
 
 const GOOGLE_LEVEL_ORDER: GoogleThinkingLevel[] = ["MINIMAL", "LOW", "MEDIUM", "HIGH", "XHIGH"];
@@ -53,10 +53,14 @@ const GOOGLE_THINKING_LEVEL_SUPPORT: Record<string, GoogleThinkingLevel[]> = {
 	// (https://aistudio.google.com/api-reference/generate-content, and the Vertex Hydrogen page lists
 	// LOW, MEDIUM, HIGH, XHIGH). Efforts xhigh and max map to it.
 	"gemini-4-hydrogen": GOOGLE_LOW_TO_XHIGH_LEVELS,
+	// https://aistudio.google.com/docs/whats-new-gemini-4-neon: levels low, medium, high (default) and
+	// xhigh; minimal returns an error. A live Vertex probe on 2026-11-18 matched: LOW to XHIGH work,
+	// MINIMAL and any thinkingBudget return HTTP 400.
+	"gemini-4-neon": GOOGLE_LOW_TO_XHIGH_LEVELS,
 };
 
-// Models that refuse thinkingBudget and take thinkingLevel only. Gemini 4 Hydrogen is deliberately not
-// listed: Vertex answers a budget with HTTP 400 "Thinking budget is not supported for this model. Use
+// Models that refuse thinkingBudget and take thinkingLevel only. Gemini 4 Hydrogen and Neon are
+// deliberately not listed: Vertex answers a budget with HTTP 400 "Thinking budget is not supported for this model. Use
 // thinking level instead." (live probe 2026-11-12) while the Gemini API accepts one. Rewriting a token
 // budget as a level would change the requested reasoning without a visible signal, so a budget-only
 // request is forwarded and Google's explicit error reaches the caller. Effort requests use levels.

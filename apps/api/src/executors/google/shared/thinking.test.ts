@@ -100,6 +100,18 @@ describe("google thinking level support", () => {
 		expect(resolveGoogleThinkingLevelForEffort("gemini-4-hydrogen", "max")).toBe("XHIGH");
 	});
 
+	it("gives Gemini 4 Neon low to xhigh with no minimal, and does not rewrite a budget", () => {
+		for (const model of ["gemini-4-neon", "google/gemini-4-neon"]) {
+			expect(getSupportedGoogleThinkingLevels(model)).toEqual(["LOW", "MEDIUM", "HIGH", "XHIGH"]);
+			expect(modelRejectsGoogleThinkingBudget(model)).toBe(false);
+			expect(getLowestGoogleThinkingLevel(model)).toBe("LOW");
+		}
+		expect(resolveGoogleThinkingLevelForEffort("gemini-4-neon", "minimal")).toBe("LOW");
+		expect(resolveGoogleThinkingLevelForEffort("gemini-4-neon", "medium")).toBe("MEDIUM");
+		expect(resolveGoogleThinkingLevelForEffort("gemini-4-neon", "xhigh")).toBe("XHIGH");
+		expect(resolveGoogleThinkingLevelForEffort("gemini-4-neon", "max")).toBe("XHIGH");
+	});
+
 	it("keeps xhigh and max at HIGH on models without an XHIGH level", () => {
 		for (const model of ["gemini-4-argon", "gemini-4-carbon", "gemini-3.7-flash", "gemini-3.1-pro-preview", "gemma-4-31b-it"]) {
 			expect(resolveGoogleThinkingLevelForEffort(model, "xhigh")).toBe("HIGH");
