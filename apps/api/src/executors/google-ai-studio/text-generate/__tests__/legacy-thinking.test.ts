@@ -86,3 +86,38 @@ describe("google-ai-studio generateContent seed", () => {
 		expect(config.seed).toBe(42);
 	});
 });
+
+// https://aistudio.google.com/docs/whats-new-gemini-4-neon: low, medium, high (default) and xhigh;
+// minimal is an error. A token budget is forwarded unchanged so Google decides, not a silent level.
+describe("google-ai-studio Gemini 4 Neon and Hydrogen thinking", () => {
+	it.each([
+		["minimal", "LOW"],
+		["medium", "MEDIUM"],
+		["xhigh", "XHIGH"],
+		["max", "XHIGH"],
+	])("maps Neon effort %s to thinkingLevel %s", async (effort, level) => {
+		const config = await generationConfigFor("gemini-4-neon", { reasoning: { effort: effort as any } });
+		expect(config.thinkingConfig.thinkingLevel).toBe(level);
+		expect(config.thinkingConfig).not.toHaveProperty("thinkingBudget");
+	});
+
+	it.each(["gemini-4-neon", "gemini-4-hydrogen"])("forwards a positive or zero %s budget unchanged", async (model) => {
+		for (const maxTokens of [1024, 0]) {
+			const config = await generationConfigFor(model, { reasoning: { maxTokens } });
+			expect(config.thinkingConfig.thinkingBudget).toBe(maxTokens);
+			expect(config.thinkingConfig).not.toHaveProperty("thinkingLevel");
+		}
+	});
+
+	it("uses the effort, not the budget, when both are set", async () => {
+		const config = await generationConfigFor("gemini-4-neon", { reasoning: { effort: "low", maxTokens: 1024 } });
+		expect(config.thinkingConfig.thinkingLevel).toBe("LOW");
+		expect(config.thinkingConfig).not.toHaveProperty("thinkingBudget");
+	});
+
+	it("sends HIGH for a bare enable and LOW when disabled", async () => {
+		expect((await generationConfigFor("gemini-4-neon", { reasoning: { enabled: true } })).thinkingConfig.thinkingLevel).toBe("HIGH");
+		expect((await generationConfigFor("gemini-4-neon", { reasoning: { enabled: false } })).thinkingConfig)
+			.toEqual({ includeThoughts: false, thinkingLevel: "LOW" });
+	});
+});

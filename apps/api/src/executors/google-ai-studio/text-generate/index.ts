@@ -35,6 +35,7 @@ import { applyGoogleOutputTokenFallback, applyOpenAIUsageFallback, applyStreamed
 import {
 	getDefaultGoogleThinkingLevel,
 	getLowestGoogleThinkingLevel,
+	modelRejectsGoogleThinkingBudget,
 	modelSupportsGoogleThinkingLevels,
 	resolveGoogleThinkingLevelForEffort,
 } from "../../google/shared/thinking";
@@ -197,7 +198,14 @@ async function irToLegacyGemini(
 					? ir.reasoning?.includeThoughts ?? true
 					: false,
 		};
-		if (supportsThinkingLevel) {
+		// An explicit token budget with no effort is forwarded unchanged, as on Vertex, unless the
+		// model rejects budgets (Argon, Carbon). Google then accepts it or returns an explicit 400;
+		// rewriting it as a level would drop the caller's limit without a signal.
+		const forwardBudget = !explicitlyDisabled
+			&& !ir.reasoning?.effort
+			&& ir.reasoning?.maxTokens !== undefined
+			&& !modelRejectsGoogleThinkingBudget(modelName ?? "");
+		if (supportsThinkingLevel && !forwardBudget) {
 			const requestedLevel = explicitlyDisabled
 				? getLowestGoogleThinkingLevel(modelName ?? "")
 				: resolveGoogleThinkingLevelForEffort(modelName ?? "", ir.reasoning?.effort)
