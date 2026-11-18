@@ -58,6 +58,15 @@ describe("Cloudflare extraction contract", () => {
       if (failure === "wrong-type") expect(result.bill.usage?.input_tokens).toBe(655);
     } finally { mock.restore(); }
   });
+  it("routes Clairic Flash with its own short model name", async () => {
+    const mock = installFetchMock([{ match: url => url.endsWith("/ai/run/@cf/cloudflare/clairic-flash"), response: jsonResponse({ success: true, result: { ...payload(), model: "clairic-flash" } }) }]);
+    try {
+      const result = await execute({ ...args(), providerModelSlug: "@cf/cloudflare/clairic-flash" });
+      expect(result.upstream.status).toBe(200);
+      expect(mock.calls[0].bodyJson).toMatchObject({ model: "clairic-flash", state: request.input });
+      expect(result.bill.usage).toMatchObject({ input_tokens: 655, output_tokens: 0 });
+    } finally { mock.restore(); }
+  });
   it("rejects unsupported models before fetching", async () => {
     const mock = installFetchMock([]);
     try { expect((await execute({ ...args(), providerModelSlug: "@cf/cloudflare/clef" })).upstream.status).toBe(400); expect(mock.calls).toHaveLength(0); }

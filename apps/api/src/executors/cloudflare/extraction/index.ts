@@ -6,9 +6,14 @@ import type { Bill, ProviderExecutor } from "@executors/types";
 import { readStreamTextWithLimit } from "@core/bounded-stream";
 import { runCloudflareModel, unwrapCloudflareResult } from "../shared";
 
+// Workers AI route slug -> short name Cloudflare expects in the request body (it rejects the full id there for Clef).
+const CLAIRIC_MODELS: Record<string, string> = {
+  "@cf/cloudflare/clairic": "clairic",
+  "@cf/cloudflare/clairic-flash": "clairic-flash",
+};
 const tokenCount = lazySchema(() => z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER));
 const payloadSchema = lazySchema(() => z.object({
-  model: z.enum(["clairic", "@cf/cloudflare/clairic"]),
+  model: z.enum(["clairic", "@cf/cloudflare/clairic", "clairic-flash", "@cf/cloudflare/clairic-flash"]),
   answers: z.unknown(), truncated: z.boolean(),
   usage: z.object({ input_tokens: tokenCount, output_tokens: z.literal(0),
     state_tokens: tokenCount.optional(), image_tokens: tokenCount.optional(), schema_tokens: tokenCount.optional(), passes: tokenCount.optional() }),
@@ -18,12 +23,13 @@ export const executor: ProviderExecutor = async args => {
   const ir = args.ir as IRExtractionRequest;
   const images = ir.images?.map(image => ({ content_type: image.contentType, base64: image.base64 }));
   const checked = ExtractionsSchema.safeParse({ model: ir.model, input: ir.sourceText, fields: ir.fields, images, reference_date: ir.referenceDate });
-  if (!checked.success || args.providerModelSlug !== "@cf/cloudflare/clairic") {
+  const upstreamModel = Object.hasOwn(CLAIRIC_MODELS, args.providerModelSlug) ? CLAIRIC_MODELS[args.providerModelSlug] : undefined;
+  if (!checked.success || !upstreamModel) {
     return { kind: "completed", terminal: true, localClientError: true,
-      upstream: Response.json({ error: "unsupported_extraction_request", message: "Select Clairic and supply a valid extraction request." }, { status: 400 }),
+      upstream: Response.json({ error: "unsupported_extraction_request", message: "Select a Clairic model and supply a valid extraction request." }, { status: 400 }),
       bill: { cost_cents: 0, currency: "USD" } };
   }
-  const body = JSON.stringify({ model: "clairic", state: ir.sourceText, fields: ir.fields,
+  const body = JSON.stringify({ model: upstreamModel, state: ir.sourceText, fields: ir.fields,
     ...(images?.length ? { images } : {}),
     ...(ir.referenceDate ? { reference_date: ir.referenceDate } : {}),
   });
