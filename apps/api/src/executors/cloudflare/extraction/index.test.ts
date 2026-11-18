@@ -67,6 +67,11 @@ describe("Cloudflare extraction contract", () => {
       expect(result.bill.usage).toMatchObject({ input_tokens: 655, output_tokens: 0 });
     } finally { mock.restore(); }
   });
+  it("accepts the documented clairic-27b response model name", async () => {
+    const mock = installFetchMock([{ match: () => true, response: jsonResponse({ success: true, result: { ...payload(), model: "clairic-27b" } }) }]);
+    try { expect((await execute(args())).upstream.status).toBe(200); }
+    finally { mock.restore(); }
+  });
   it("rejects unsupported models before fetching", async () => {
     const mock = installFetchMock([]);
     try { expect((await execute({ ...args(), providerModelSlug: "@cf/cloudflare/clef" })).upstream.status).toBe(400); expect(mock.calls).toHaveLength(0); }

@@ -13,7 +13,8 @@ const CLAIRIC_MODELS: Record<string, string> = {
 };
 const tokenCount = lazySchema(() => z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER));
 const payloadSchema = lazySchema(() => z.object({
-  model: z.enum(["clairic", "@cf/cloudflare/clairic", "clairic-flash", "@cf/cloudflare/clairic-flash"]),
+  // Informational only: Cloudflare's docs disagree on the echoed name (e.g. "clairic" vs "clairic-27b").
+  model: z.string().optional(),
   answers: z.unknown(), truncated: z.boolean(),
   usage: z.object({ input_tokens: tokenCount, output_tokens: z.literal(0),
     state_tokens: tokenCount.optional(), image_tokens: tokenCount.optional(), schema_tokens: tokenCount.optional(), passes: tokenCount.optional() }),
