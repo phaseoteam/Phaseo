@@ -605,6 +605,10 @@ export async function doRequestWithIR(
 		candidates = candidates.filter(candidate => candidate.inputModalities?.includes("image") && candidate.capabilityParams?.images === true);
 		if (!candidates.length) return Response.json({ error: "unsupported_parameter", message: "No extraction route supports image input.", request_id: ctx.requestId }, { status: 400 });
 	}
+	if (normalizedCapability === "extraction.extract" && (ir as IRExtractionRequest).documents?.length) {
+		candidates = candidates.filter(candidate => candidate.inputModalities?.includes("file") && candidate.capabilityParams?.documents === true);
+		if (!candidates.length) return Response.json({ error: "unsupported_parameter", message: "No extraction route supports document input.", request_id: ctx.requestId }, { status: 400 });
+	}
 	if (normalizedCapability === "decisions.make" && (ir as IRDecisionsRequest).decisionContext) {
 		const native = (ir as IRDecisionsRequest).decisionContext!;
 		const requestsImageDetail = typeof native.input !== "string" && native.input.some(message =>

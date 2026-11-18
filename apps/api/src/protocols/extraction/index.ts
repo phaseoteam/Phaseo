@@ -4,6 +4,7 @@ import type { IRExtractionRequest, IRExtractionResponse } from "@core/ir";
 export function decodeExtractionRequest(body: ExtractionRequest): IRExtractionRequest {
   return { model: body.model, sourceText: body.input, fields: body.fields,
     images: body.images?.map(image => ({ contentType: image.content_type, base64: image.base64 })),
+    documents: body.documents?.map(document => ({ contentType: document.content_type, base64: document.base64 })),
     referenceDate: body.reference_date };
 }
 export function encodeExtractionResponse(ir: IRExtractionResponse) {

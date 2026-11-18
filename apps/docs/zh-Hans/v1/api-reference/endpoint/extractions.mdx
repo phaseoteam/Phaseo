@@ -62,7 +62,7 @@ print(result["answers"]["total"]["value"])
 
 数字和时长支持 `integer` 和 `decimals`（0–6）。时长接受 `seconds`、`minutes`、`hours`、`days`、`weeks`、`months` 或 `years`。如果解释不完整的日期取决于某个特定年份，请设置 `reference_date`。
 
-图像输入使用 `{ content_type, base64 }` 对象：最多四张 PNG/JPEG/WebP 图像，解码后每张不超过 4 MiB，合计不超过 8 MiB。请求大小上限为 16 MiB。不支持远程 URL、PDF、音频、视频、估算、预测和流式传输。
+图像输入使用 `{ content_type, base64 }` 对象：最多四张 PNG/JPEG/WebP 图像，解码后每张不超过 4 MiB，合计不超过 8 MiB。PDF 放在 `documents` 中，使用 `{ content_type: "application/pdf", base64 }` 对象，每个不超过 4 MiB。图像和渲染后的 PDF 页面合计不得超过四个，图像和 PDF 共享 8 MiB 的上限。加密的 PDF 会被拒绝。请求大小上限为 16 MiB。不支持远程 URL、音频、视频、估算、预测和流式传输。
 
 ## 读取答案
 

@@ -18,22 +18,36 @@ export const ExtractionImageSchema = lazySchema(() => z.object({
   content_type: z.enum(["image/png", "image/jpeg", "image/webp"]),
   base64: z.string().max(4 * Math.ceil(4 * 1024 * 1024 / 3)).regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/),
 }).strict());
+export const ExtractionDocumentSchema = lazySchema(() => z.object({
+  content_type: z.literal("application/pdf"),
+  base64: z.string().max(4 * Math.ceil(4 * 1024 * 1024 / 3)).regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/),
+}).strict());
+const decodedBytes = (base64: string) => base64.length * 3 / 4 - (base64.endsWith("==") ? 2 : base64.endsWith("=") ? 1 : 0);
 export const ExtractionsSchema = lazySchema(() => z.object({
   model: z.string().min(1).max(256),
   input: z.string().max(32768).refine(value => Array.from(value).length <= 16384, "Source text exceeds 16,384 characters."),
   fields: z.record(z.string().regex(/^[A-Za-z_][A-Za-z0-9_.-]{0,63}$/), ExtractionFieldSchema)
     .refine(fields => Object.keys(fields).length >= 1 && Object.keys(fields).length <= 64, "Supply 1–64 fields."),
   images: z.array(ExtractionImageSchema).max(4).optional(),
+  documents: z.array(ExtractionDocumentSchema).max(4).optional(),
   reference_date: z.iso.date().optional(),
 }).strict().superRefine((body, ctx) => {
-  if (!body.input.trim() && !body.images?.length) ctx.addIssue({ code: "custom", path: ["input"], message: "Supply text or images." });
+  const images = body.images ?? [], documents = body.documents ?? [];
+  if (!body.input.trim() && !images.length && !documents.length) ctx.addIssue({ code: "custom", path: ["input"], message: "Supply text, images or documents." });
+  // Every PDF renders at least one page, and rendered pages plus images may not exceed 4 (the page count is checked upstream).
+  if (images.length + documents.length > 4) ctx.addIssue({ code: "custom", path: ["documents"], message: "Images plus document pages may not exceed 4." });
   let bytes = 0;
-  for (const image of body.images ?? []) {
-    const size = image.base64.length * 3 / 4 - (image.base64.endsWith("==") ? 2 : image.base64.endsWith("=") ? 1 : 0);
-    bytes += size;
-    if (!size || size > 4 * 1024 * 1024) ctx.addIssue({ code: "custom", path: ["images"], message: "Images must contain 1 byte–4 MiB of decoded data." });
+  for (const [path, items] of [["images", images], ["documents", documents]] as const) {
+    for (const item of items) {
+      const size = decodedBytes(item.base64);
+      bytes += size;
+      if (!size || size > 4 * 1024 * 1024) ctx.addIssue({ code: "custom", path: [path], message: `Each item in ${path} must contain 1 byte–4 MiB of decoded data.` });
+    }
   }
-  if (bytes > 8 * 1024 * 1024) ctx.addIssue({ code: "custom", path: ["images"], message: "Images exceed 8 MiB decoded." });
+  for (const document of documents) {
+    if (!document.base64.startsWith("JVBERi")) ctx.addIssue({ code: "custom", path: ["documents"], message: "Documents must be PDF files." });
+  }
+  if (bytes > 8 * 1024 * 1024) ctx.addIssue({ code: "custom", path: [documents.length ? "documents" : "images"], message: "Images and documents exceed 8 MiB decoded." });
 }));
 export type ExtractionRequest = z.infer<typeof ExtractionsSchema>;
 export type ExtractionField = z.infer<typeof ExtractionFieldSchema>;

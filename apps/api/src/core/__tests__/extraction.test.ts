@@ -36,4 +36,18 @@ describe("typed extraction validation", () => {
     expect(ExtractionsSchema.safeParse({ ...request, fields: Object.fromEntries(Array.from({ length: 65 }, (_, i) => [`field_${i}`, { type: "text" }])) }).success).toBe(false);
     expect(ExtractionsSchema.safeParse({ ...request, images: Array(5).fill(request.images[0]) }).success).toBe(false);
   });
+  it("accepts PDF-only input and enforces document limits", () => {
+    const pdf = { content_type: "application/pdf", base64: "JVBERi0xLjQK" }; // "%PDF-1.4\n"
+    const request = { model: "cloudflare/clairic", input: "", fields: { x: { type: "text" } }, documents: [pdf] };
+    expect(ExtractionsSchema.safeParse(request).success).toBe(true);
+    expect(ExtractionsSchema.safeParse({ ...request, documents: [{ ...pdf, content_type: "image/png" }] }).success).toBe(false);
+    expect(ExtractionsSchema.safeParse({ ...request, documents: [{ ...pdf, base64: "AQID" }] }).success).toBe(false);
+    expect(ExtractionsSchema.safeParse({ ...request, documents: ["data:application/pdf;base64,JVBERi0xLjQK"] }).success).toBe(false);
+    expect(ExtractionsSchema.safeParse({ ...request, documents: [{ ...pdf, url: "https://example.com/a.pdf" }] }).success).toBe(false);
+    expect(ExtractionsSchema.safeParse({ ...request, documents: Array(5).fill(pdf) }).success).toBe(false);
+    expect(ExtractionsSchema.safeParse({ ...request, documents: [pdf, pdf], images: Array(3).fill({ content_type: "image/png", base64: "AQID" }) }).success).toBe(false);
+    expect(ExtractionsSchema.safeParse({ ...request, documents: [pdf, pdf], images: Array(2).fill({ content_type: "image/png", base64: "AQID" }) }).success).toBe(true);
+    const big = "A".repeat(4 * Math.ceil(3 * 1024 * 1024 / 3));
+    expect(ExtractionsSchema.safeParse({ ...request, documents: [{ ...pdf, base64: `JVBERi${big.slice(6)}` }, { ...pdf, base64: `JVBERi${big.slice(6)}` }, { ...pdf, base64: `JVBERi${big.slice(6)}` }] }).success).toBe(false);
+  });
 });

@@ -1,4 +1,8 @@
 export interface ExtractionRequest {
+  documents?: {
+    base64: string;
+    content_type: "application/pdf";
+  }[];
   fields: {
     [key: string]:
       | {

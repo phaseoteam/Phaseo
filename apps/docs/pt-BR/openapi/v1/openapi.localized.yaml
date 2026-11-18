@@ -14042,7 +14042,7 @@ components:
         input:
           type: string
           maxLength: 16384
-          description: Texto de origem. Pode ficar vazio quando imagens são fornecidas.
+          description: Texto de origem. Pode ficar vazio quando imagens ou documentos são fornecidos.
         fields:
           type: object
           minProperties: 1
@@ -14056,6 +14056,12 @@ components:
           description: Imagens PNG, JPEG ou WebP incorporadas; 4 MiB por imagem e 8 MiB no total após a decodificação.
           items:
             $ref: '#/components/schemas/ExtractionImage'
+        documents:
+          type: array
+          maxItems: 4
+          description: Documentos PDF incorporados; 4 MiB por documento. Imagens e páginas de PDF renderizadas não podem passar de 4 no total, e imagens e documentos compartilham o limite de 8 MiB após a decodificação.
+          items:
+            $ref: '#/components/schemas/ExtractionDocument'
         reference_date:
           type: string
           format: date
@@ -14077,6 +14083,21 @@ components:
           type: string
           maxLength: 5592408
           description: Bytes da imagem codificados em Base64, sem prefixo de URL de dados.
+    ExtractionDocument:
+      type: object
+      additionalProperties: false
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - application/pdf
+        base64:
+          type: string
+          maxLength: 5592408
+          description: Bytes do PDF codificados em Base64, sem prefixo de URL de dados.
     ExtractionField:
       oneOf:
         - $ref: '#/components/schemas/ExtractionTextField'

@@ -70,8 +70,11 @@ Zahlen und Zeitdauern unterstützen `integer` und `decimals` (0–6). Zeitdauern
 `reference_date`, wenn die Deutung unvollständiger Datumsangaben von einem bestimmten Jahr abhängt.
 
 Bildeingaben verwenden `{ content_type, base64 }`-Objekte: höchstens vier PNG-/JPEG-/WebP-Bilder,
-jeweils 4 MiB und zusammen 8 MiB nach dem Dekodieren. Das Anfragelimit liegt bei 16 MiB.
-Externe URLs, PDFs, Audio, Video, Schätzungen, Prognosen und Streaming werden nicht unterstützt.
+jeweils 4 MiB und zusammen 8 MiB nach dem Dekodieren. PDFs gehören als
+`{ content_type: "application/pdf", base64 }`-Objekte in `documents`, jeweils 4 MiB. Bilder und
+gerenderte PDF-Seiten dürfen zusammen höchstens vier sein, und Bilder und PDFs teilen sich das Limit von 8 MiB.
+Verschlüsselte PDFs werden abgelehnt. Das Anfragelimit liegt bei 16 MiB.
+Externe URLs, Audio, Video, Schätzungen, Prognosen und Streaming werden nicht unterstützt.
 
 ## Antworten lesen
 

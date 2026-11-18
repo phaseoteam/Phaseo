@@ -14042,7 +14042,7 @@ components:
         input:
           type: string
           maxLength: 16384
-          description: Quelltext. Darf leer sein, wenn Bilder übergeben werden.
+          description: Quelltext. Darf leer sein, wenn Bilder oder Dokumente übergeben werden.
         fields:
           type: object
           minProperties: 1
@@ -14056,6 +14056,12 @@ components:
           description: Eingebettete PNG-, JPEG- oder WebP-Bilder; nach dem Dekodieren 4 MiB pro Bild und insgesamt 8 MiB.
           items:
             $ref: '#/components/schemas/ExtractionImage'
+        documents:
+          type: array
+          maxItems: 4
+          description: Eingebettete PDF-Dokumente; 4 MiB pro Dokument. Bilder und gerenderte PDF-Seiten dürfen zusammen höchstens 4 sein, und Bilder und Dokumente teilen sich das Limit von 8 MiB nach dem Dekodieren.
+          items:
+            $ref: '#/components/schemas/ExtractionDocument'
         reference_date:
           type: string
           format: date
@@ -14077,6 +14083,21 @@ components:
           type: string
           maxLength: 5592408
           description: Base64-kodierte Bilddaten ohne Daten-URL-Präfix.
+    ExtractionDocument:
+      type: object
+      additionalProperties: false
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - application/pdf
+        base64:
+          type: string
+          maxLength: 5592408
+          description: Base64-kodierte PDF-Daten ohne Daten-URL-Präfix.
     ExtractionField:
       oneOf:
         - $ref: '#/components/schemas/ExtractionTextField'

@@ -62,7 +62,7 @@ print(result["answers"]["total"]["value"])
 
 数値と期間は `integer` と `decimals`（0〜6）に対応しています。期間は `seconds`、`minutes`、`hours`、`days`、`weeks`、`months`、`years` を受け付けます。不完全な日付の解釈が特定の年に依存する場合は、`reference_date` を設定してください。
 
-画像の入力には `{ content_type, base64 }` オブジェクトを使います。PNG/JPEG/WebP の画像を最大 4 枚まで、デコード後に 1 枚あたり 4 MiB、合計 8 MiB まで指定できます。リクエストの上限は 16 MiB です。リモート URL、PDF、音声、動画、推定、予測、ストリーミングには対応していません。
+画像の入力には `{ content_type, base64 }` オブジェクトを使います。PNG/JPEG/WebP の画像を最大 4 枚まで、デコード後に 1 枚あたり 4 MiB、合計 8 MiB まで指定できます。PDF は `documents` に `{ content_type: "application/pdf", base64 }` オブジェクトとして指定し、1 件あたり 4 MiB までです。画像とレンダリングされた PDF ページは合わせて 4 つまでで、画像と PDF は 8 MiB の上限を共有します。暗号化された PDF は拒否されます。リクエストの上限は 16 MiB です。リモート URL、音声、動画、推定、予測、ストリーミングには対応していません。
 
 ## 回答を読む
 

@@ -71,8 +71,11 @@ Numbers and durations support `integer` and `decimals` (0–6). Durations accept
 `reference_date` when interpreting incomplete dates depends on a specific year.
 
 Image inputs use `{ content_type, base64 }` objects: at most four PNG/JPEG/WebP
-images, 4 MiB each and 8 MiB combined after decoding. The request limit is 16 MiB.
-Remote URLs, PDFs, audio, video, estimates, forecasts and streaming are unsupported.
+images, 4 MiB each and 8 MiB combined after decoding. PDFs go in `documents` as
+`{ content_type: "application/pdf", base64 }` objects, 4 MiB each. Images and
+rendered PDF pages together may not exceed four, and images and PDFs share the
+8 MiB limit. Encrypted PDFs are rejected. The request limit is 16 MiB. Remote URLs,
+audio, video, estimates, forecasts and streaming are unsupported.
 
 ## Read answers
 

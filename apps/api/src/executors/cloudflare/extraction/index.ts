@@ -24,7 +24,8 @@ const payloadSchema = lazySchema(() => z.object({
 export const executor: ProviderExecutor = async args => {
   const ir = args.ir as IRExtractionRequest;
   const images = ir.images?.map(image => ({ content_type: image.contentType, base64: image.base64 }));
-  const checked = ExtractionsSchema.safeParse({ model: ir.model, input: ir.sourceText, fields: ir.fields, images, reference_date: ir.referenceDate });
+  const documents = ir.documents?.map(document => ({ content_type: document.contentType, base64: document.base64 }));
+  const checked = ExtractionsSchema.safeParse({ model: ir.model, input: ir.sourceText, fields: ir.fields, images, documents, reference_date: ir.referenceDate });
   const upstreamModel = Object.hasOwn(CLAIRIC_MODELS, args.providerModelSlug) ? CLAIRIC_MODELS[args.providerModelSlug] : undefined;
   if (!checked.success || !upstreamModel) {
     return { kind: "completed", terminal: true, localClientError: true,
@@ -33,6 +34,7 @@ export const executor: ProviderExecutor = async args => {
   }
   const body = JSON.stringify({ model: upstreamModel, state: ir.sourceText, fields: ir.fields,
     ...(images?.length ? { images } : {}),
+    ...(documents?.length ? { documents } : {}),
     ...(ir.referenceDate ? { reference_date: ir.referenceDate } : {}),
   });
   const { response, keySource, byokKeyId } = await runCloudflareModel(args, body, "application/json");

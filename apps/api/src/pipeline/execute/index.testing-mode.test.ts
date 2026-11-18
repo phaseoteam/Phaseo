@@ -170,6 +170,17 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
 	});
 
+	it("rejects extraction documents before dispatch when the route lacks document capability", async () => {
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [{ providerId: "cloudflare", inputModalities: ["text", "image"], capabilityParams: { images: true } }] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "extractions", capability: "extraction.extract" }), {
+			model: "cloudflare/clairic", sourceText: "", fields: { x: { type: "text" } }, documents: [{ contentType: "application/pdf", base64: "JVBERi0xLjQK" }],
+		}, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(400);
+		expect(await (result as Response).json()).toMatchObject({ error: "unsupported_parameter", message: "No extraction route supports document input." });
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+	});
+
 	it("returns a customer free quota denial before dispatch or provider fallback", async () => {
 		const pricingCard = { currency: "USD", rules: [{ pricing_plan: "free", price_per_unit: "0", currency: "USD" }] };
 		const candidates = ["first", "second"].map(providerId => ({ providerId, pricingCard, byokMeta: [], providerModelSlug: "model", capabilityParams: {} }));

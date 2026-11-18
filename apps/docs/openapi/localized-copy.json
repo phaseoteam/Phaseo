@@ -12559,6 +12559,36 @@
 			"ja": "プロバイダーが報告する、デコードされたフィールド値の出力トークン数。出力トークンは課金されません。",
 			"zh-Hans": "提供商报告的已解码字段值的输出令牌数。输出令牌不计费。",
 			"ar": "رموز الإخراج لقيم الحقول المفكوكة، كما أبلغ عنها المزوّد. لا تُحتسب رموز الإخراج في الفاتورة."
+		},
+		"Source text. May be empty when images or documents are supplied.": {
+			"es": "Texto de origen. Puede estar vacío si se proporcionan imágenes o documentos.",
+			"fr": "Texte source. Peut être vide si des images ou des documents sont fournis.",
+			"de": "Quelltext. Darf leer sein, wenn Bilder oder Dokumente übergeben werden.",
+			"pt-BR": "Texto de origem. Pode ficar vazio quando imagens ou documentos são fornecidos.",
+			"hi": "स्रोत टेक्स्ट। इमेज या दस्तावेज़ दिए जाने पर खाली हो सकता है।",
+			"ja": "入力元のテキスト。画像またはドキュメントを指定する場合は空にできます。",
+			"zh-Hans": "源文本。提供图像或文档时可以为空。",
+			"ar": "النص المصدر. يمكن أن يكون فارغاً عند توفير صور أو مستندات."
+		},
+		"Embedded PDF documents; 4 MiB each. Images and rendered PDF pages together may not exceed 4, and images and documents share the 8 MiB decoded limit.": {
+			"es": "Documentos PDF integrados; 4 MiB por documento. Las imágenes y las páginas PDF renderizadas no pueden superar 4 en total, y las imágenes y los documentos comparten el límite de 8 MiB una vez decodificados.",
+			"fr": "Documents PDF intégrés ; 4 MiB par document. Les images et les pages PDF rendues ne peuvent pas dépasser 4 au total, et les images et documents partagent la limite de 8 MiB après décodage.",
+			"de": "Eingebettete PDF-Dokumente; 4 MiB pro Dokument. Bilder und gerenderte PDF-Seiten dürfen zusammen höchstens 4 sein, und Bilder und Dokumente teilen sich das Limit von 8 MiB nach dem Dekodieren.",
+			"pt-BR": "Documentos PDF incorporados; 4 MiB por documento. Imagens e páginas de PDF renderizadas não podem passar de 4 no total, e imagens e documentos compartilham o limite de 8 MiB após a decodificação.",
+			"hi": "एम्बेड किए गए PDF दस्तावेज़; प्रति दस्तावेज़ 4 MiB। इमेज और रेंडर किए गए PDF पेज मिलाकर 4 से अधिक नहीं हो सकते, और इमेज व दस्तावेज़ डिकोड करने के बाद 8 MiB की सीमा साझा करते हैं।",
+			"ja": "埋め込みのPDFドキュメント。1件あたり4 MiBまで。画像とレンダリングされたPDFページは合わせて4つまでで、画像とドキュメントはデコード後の8 MiBの上限を共有します。",
+			"zh-Hans": "嵌入式 PDF 文档；每个最多 4 MiB。图像和渲染后的 PDF 页面合计不得超过 4 个，图像和文档共享解码后 8 MiB 的上限。",
+			"ar": "مستندات PDF مضمّنة؛ 4 MiB لكل مستند. لا يمكن أن يتجاوز مجموع الصور وصفحات PDF المعروضة 4، وتتشارك الصور والمستندات حد 8 MiB بعد فك الترميز."
+		},
+		"Base64-encoded PDF bytes, without a data URL prefix.": {
+			"es": "Bytes de PDF codificados en Base64, sin prefijo de URL de datos.",
+			"fr": "Octets PDF encodés en Base64, sans préfixe d’URL de données.",
+			"de": "Base64-kodierte PDF-Daten ohne Daten-URL-Präfix.",
+			"pt-BR": "Bytes do PDF codificados em Base64, sem prefixo de URL de dados.",
+			"hi": "Base64 में एन्कोड किए गए PDF बाइट, डेटा URL प्रीफ़िक्स के बिना।",
+			"ja": "データURLの接頭辞を付けない、Base64エンコードされたPDFバイト列。",
+			"zh-Hans": "Base64 编码的 PDF 字节，不带数据 URL 前缀。",
+			"ar": "بايتات PDF بترميز Base64، دون بادئة رابط بيانات."
 		}
 	},
 	"GET /apps": {

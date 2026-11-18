@@ -1467,6 +1467,11 @@ public final class Models {
 		public Object type;
 	}
 
+	public static class ExtractionDocument {
+		public String base64;
+		public Object content_type;
+	}
+
 	public static class ExtractionDurationField {
 		public Integer decimals;
 		public String instructions;
@@ -1512,6 +1517,7 @@ public final class Models {
 	}
 
 	public static class ExtractionRequest {
+		public java.util.List<Object> documents;
 		public Object fields;
 		public java.util.List<Object> images;
 		public String input;
