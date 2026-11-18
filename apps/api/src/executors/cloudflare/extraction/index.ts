@@ -16,7 +16,8 @@ const payloadSchema = lazySchema(() => z.object({
   // Informational only: Cloudflare's docs disagree on the echoed name (e.g. "clairic" vs "clairic-27b").
   model: z.string().optional(),
   answers: z.unknown(), truncated: z.boolean(),
-  usage: z.object({ input_tokens: tokenCount, output_tokens: z.literal(0),
+  // Since the 2026-11-18 refresh Clairic decodes field values, so output_tokens > 0. Cloudflare does not bill them.
+  usage: z.object({ input_tokens: tokenCount, output_tokens: tokenCount,
     state_tokens: tokenCount.optional(), image_tokens: tokenCount.optional(), schema_tokens: tokenCount.optional(), passes: tokenCount.optional() }),
 }));
 
@@ -46,12 +47,13 @@ export const executor: ProviderExecutor = async args => {
     if (envelope?.success === false) throw new Error("Cloudflare extraction failed");
     payload = unwrapCloudflareResult(envelope);
     const parsed = payloadSchema.parse(payload);
-    const usage = { input_tokens: parsed.usage.input_tokens, output_tokens: 0, total_tokens: parsed.usage.input_tokens, requests: 1 };
+    const { input_tokens, output_tokens } = parsed.usage;
+    const usage = { input_tokens, output_tokens, total_tokens: input_tokens + output_tokens, requests: 1 };
     // Preserve billed aggregate usage even when semantic answer validation fails.
     common.bill = { ...bill, usage };
     const answers = validateExtractionAnswers(ir.fields, parsed.answers);
     const result: IRExtractionResponse = { model: ir.model, answers, truncated: parsed.truncated,
-      usage: { inputTokens: usage.input_tokens, outputTokens: 0, totalTokens: usage.total_tokens } };
+      usage: { inputTokens: input_tokens, outputTokens: output_tokens, totalTokens: usage.total_tokens } };
     return { ...common, upstream: new Response(rawBody, { status: response.status, headers: response.headers }), ir: result, rawResponse: payload };
   } catch {
     return { ...common, terminal: true,

@@ -67,10 +67,24 @@ describe("Cloudflare extraction contract", () => {
       expect(result.bill.usage).toMatchObject({ input_tokens: 655, output_tokens: 0 });
     } finally { mock.restore(); }
   });
-  it("accepts the documented clairic-27b response model name", async () => {
-    const mock = installFetchMock([{ match: () => true, response: jsonResponse({ success: true, result: { ...payload(), model: "clairic-27b" } }) }]);
-    try { expect((await execute(args())).upstream.status).toBe(200); }
-    finally { mock.restore(); }
+  it("accepts the refreshed 27B Clairic response (live shape 2026-11-18: clairic-27b, output tokens, decoder metadata)", async () => {
+    const live = { model: "clairic-27b", truncated: false,
+      answers: {
+        total: { type: "number", value: 1080, valid: true, complete: true, decoder: "parallel-ar-json-scalar-v1", tokens: 6, raw: "1080", span: [15, 19],
+          p_null: 0.0002, p_null_method: "ar_first_token_null_probability", confidence: 0.9986, log_probability: -0.0014, confidence_method: "ar_sequence_probability" },
+        po: { type: "text", value: null, valid: true, complete: true, decoder: "parallel-ar-json-scalar-v1", tokens: 2, raw: "null", span: null,
+          p_null: 0.97, p_null_method: "ar_first_token_null_probability", confidence: 0.97, confidence_method: "ar_sequence_probability" } },
+      usage: { state_tokens: 57, image_tokens: 0, schema_tokens: 1561, input_tokens: 2188, output_tokens: 40, passes: 12 } };
+    const mock = installFetchMock([{ match: () => true, response: jsonResponse({ success: true, result: live, errors: [], messages: [] }) }]);
+    try {
+      const result = await execute(args());
+      expect(result.upstream.status).toBe(200);
+      expect(result.bill.usage).toMatchObject({ input_tokens: 2188, output_tokens: 40, total_tokens: 2228 });
+      if (result.kind !== "completed") throw new Error("Expected completed");
+      const response = encodeExtractionResponse(result.ir as import("@core/ir").IRExtractionResponse);
+      expect(response.answers.total).toEqual({ type: "number", value: 1080, confidence: 0.9986, p_null: 0.0002 });
+      expect(response.usage).toEqual({ input_tokens: 2188, output_tokens: 40, total_tokens: 2228 });
+    } finally { mock.restore(); }
   });
   it("rejects unsupported models before fetching", async () => {
     const mock = installFetchMock([]);
