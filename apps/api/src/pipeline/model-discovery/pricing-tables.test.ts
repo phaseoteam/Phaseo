@@ -155,7 +155,14 @@ describe("fetchPricingTableSnapshots price-content fingerprints", () => {
 	});
 
 	it("normalizes spacing and case in price values", () => {
-		expect(extractPriceValues("<p>Input $ 2.50 / 1M tokens</p><script>var p = '$9'</script>")).toEqual(["$2.50/1m"]);
+		expect(extractPriceValues("<p>Input $ 2.50 / 1M Tokens for input</p><script>var p = '$9'</script>")).toEqual(["$2.50/1mtokens"]);
+	});
+
+	it("keeps whole amounts and their denominators", () => {
+		expect(extractPriceValues("<p>Price $1,200 per month</p>")).toEqual(["$1,200permonth"]);
+		expect(extractPriceValues("<p>Price $1,200 per month</p>")).not.toEqual(extractPriceValues("<p>Price $1,800 per month</p>"));
+		expect(extractPriceValues("<p>$2 per million tokens</p>")).not.toEqual(extractPriceValues("<p>$2 per thousand tokens</p>"));
+		expect(extractPriceValues("<p>$12.50 $10.00 Reserved capacity available.</p>")).toEqual(["$12.50", "$10.00"]);
 	});
 });
 

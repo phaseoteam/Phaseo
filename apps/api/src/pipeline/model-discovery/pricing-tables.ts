@@ -81,10 +81,21 @@ export function hasPricingSourceChanged(
 	return previous.fingerprint !== current.fingerprint;
 }
 
-/** Every price value on the page, in page order, normalized so spacing and case never count as a change. */
+/**
+ * A whole rate: the full amount (thousands separators included) and, when written, its denominator,
+ * such as "/1M tokens" or "per million tokens". Text after that is ignored.
+ */
+const PRICE_RATE_PATTERN = new RegExp(
+	String.raw`(?:\$|¥|€)\s*(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?`
+	+ String.raw`(?:\s*(?:\/|per\b)\s*[a-z0-9.,]+`
+	+ String.raw`(?:\s+(?:tokens?|input|output|searche?s?|requests?|images?|characters?|seconds?|minutes?|hours?|pages?|units?|calls?)\b)?)?`,
+	"gi",
+);
+
+/** Every rate on the page, in page order, normalized so spacing and case never count as a change. */
 export function extractPriceValues(html: string): string[] {
 	const content = tableText(html.replace(NON_CONTENT_PATTERN, " "));
-	return Array.from(content.matchAll(PRICE_VALUE_PATTERN), (match) => match[0].replace(/\s+/g, "").toLowerCase());
+	return Array.from(content.matchAll(PRICE_RATE_PATTERN), (match) => match[0].replace(/\s+/g, "").toLowerCase());
 }
 
 export function pricingContentLines(text: string): string[] {
