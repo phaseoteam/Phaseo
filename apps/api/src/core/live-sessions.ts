@@ -1,5 +1,6 @@
 // GPT Live protocol and billing for playground and API sessions. Rates are snapshotted at session creation.
 // https://developers.openai.com/api/docs/models/gpt-live-1
+// https://developers.openai.com/api/docs/guides/voice-latency-cost?api=live#voice-session-costs
 import { computeBill } from "@pipeline/pricing/engine";
 import { matchesConditions } from "@pipeline/pricing/conditions";
 import { loadPriceCard } from "@pipeline/pricing/loader";
@@ -9,17 +10,15 @@ import { liveBackendSettingsSchema, type LiveBackendSettings } from "./live-sett
 export { LIVE_VOICES, LIVE_MAX_OUTPUT_TOKENS } from "./live-settings";
 
 export const LIVE_MODEL = "openai/gpt-live-1";
+export const LIVE_MODELS = [LIVE_MODEL, "openai/gpt-live-1.1"] as const;
+export type LiveModel = typeof LIVE_MODELS[number];
 export const LIVE_BACKENDS = ["openai/gpt-5.6-luna", "openai/gpt-5.6-terra"] as const;
-export const LIVE_PRICE_CARD: PriceCard = {
-	provider: "openai", model: LIVE_MODEL, endpoint: "audio.live", currency: "USD",
-	effective_from: null, effective_to: null, version: "openai-live-2026-09-10",
-	rules: [{ pricing_plan: "standard", meter: "audio_seconds", unit: "minute",
-		unit_size: 60, price_per_unit: "0.05", currency: "USD", match: [], priority: 1 }],
-};
 
-export const LIVE_SEARCH_PRICE_CARD: PriceCard = { ...LIVE_PRICE_CARD, model: "web_search", endpoint: "text.generate",
-	version: "openai-web-search-2026-09-10", rules: [{ pricing_plan: "standard", meter: "native_web_search_requests",
+export const LIVE_SEARCH_PRICE_CARD: PriceCard = { provider: "openai", model: "web_search", endpoint: "text.generate",
+	currency: "USD", effective_from: null, effective_to: null, version: "openai-web-search-2026-09-10", rules: [{ pricing_plan: "standard", meter: "native_web_search_requests",
 		unit: "request", unit_size: 1, price_per_unit: "0.01", currency: "USD", match: [], priority: 1 }] };
+// voiceCard is the Live model's audio.realtime card from the catalogue. Sessions created before
+// that hold a fixed card on the audio_seconds meter (unit_size 60), and still settle on it.
 export type LiveConfig = { backendModel: string; voiceCard: PriceCard; backendCard: PriceCard;
 	settings?: LiveBackendSettings; searchCard?: PriceCard };
 export type LiveResponseUsage = { id: string; status: string; usage: Record<string, unknown>;
@@ -29,6 +28,9 @@ export type LiveUsage = {
 	live_started?: boolean;
 	live_final?: boolean;
 	live_seconds?: number;
+	// Standby has its own rate. Only WebRTC sessions with a wake policy have it, so the
+	// relay's WebSocket sessions never report it today.
+	live_standby_seconds?: number;
 	live_responses?: LiveResponseUsage[];
 	live_pending_responses?: string[];
 	live_billing_error?: string;
@@ -38,22 +40,39 @@ export type LiveUsage = {
 	live_function_call_ids?: string[];
 };
 
+/** The canonical Live model for an ID given with or without the openai/ prefix. */
+export function liveModelId(model: string | undefined | null): LiveModel | null {
+	const trimmed = model?.trim();
+	if (!trimmed) return null;
+	const canonical = trimmed.startsWith("openai/") ? trimmed : `openai/${trimmed}`;
+	return (LIVE_MODELS as readonly string[]).includes(canonical) ? canonical as LiveModel : null;
+}
+
 export function isLiveModel(model: string | undefined | null): boolean {
-	return model === LIVE_MODEL || model === "gpt-live-1";
+	return liveModelId(model) !== null;
 }
 
 // Live has its own model and data policy; never inherit a backend's allowlist or ZDR eligibility.
-export function livePolicyCandidates(candidates: ProviderCandidate[]): ProviderCandidate[] {
+export function livePolicyCandidates(candidates: ProviderCandidate[], model: string = LIVE_MODEL): ProviderCandidate[] {
+	const liveModel = liveModelId(model) ?? LIVE_MODEL;
 	return candidates.filter((candidate) => candidate.providerId === "openai").map((candidate) => ({
-		...candidate, apiModelId: LIVE_MODEL, providerModelSlug: "gpt-live-1", pricingCard: LIVE_PRICE_CARD,
+		...candidate, apiModelId: liveModel, providerModelSlug: liveModel.replace(/^openai\//, ""), pricingCard: null,
 		zeroDataRetention: false, dataPolicyTier: "unknown", dataPolicyConfidence: "unknown",
 		promptTrainingPolicy: "unknown", effectiveDataPolicy: undefined,
 	}));
 }
 
-export async function createLiveConfig(backendModel: string, requestedSettings?: unknown): Promise<LiveConfig> {
+export async function createLiveConfig(liveModel: string, backendModel: string, requestedSettings?: unknown): Promise<LiveConfig> {
+	const model = liveModelId(liveModel);
+	if (!model) throw new Error("live_model_not_supported");
 	if (!LIVE_BACKENDS.includes(backendModel as typeof LIVE_BACKENDS[number])) throw new Error("live_backend_not_supported");
 	const settings = liveBackendSettingsSchema.parse(requestedSettings ?? {});
+	// Only active time is required up front: WebSocket sessions never report standby, and a
+	// standby charge with no rule fails pricing and keeps the hold rather than going free.
+	const voiceCard = await loadPriceCard("openai", model, "audio.realtime");
+	if (!voiceCard?.rules.some((rule) => rule.meter === "audio_minutes" && rule.pricing_plan === "standard")) {
+		throw new Error("live_price_card_missing");
+	}
 	const backendCard = await loadPriceCard("openai", backendModel, "text.generate");
 	// Include default prices for a provider's documented tier fallback, but never
 	// substitute standard prices for a requested tier that has no price card.
@@ -62,7 +81,7 @@ export async function createLiveConfig(backendModel: string, requestedSettings?:
 			(meter) => backendCard.rules.some((rule) => rule.meter === meter && rule.pricing_plan === plan),
 		)) throw new Error("live_backend_price_card_missing");
 	}
-	return { backendModel, voiceCard: LIVE_PRICE_CARD, backendCard: backendCard!, settings, searchCard: LIVE_SEARCH_PRICE_CARD };
+	return { backendModel, voiceCard, backendCard: backendCard!, settings, searchCard: LIVE_SEARCH_PRICE_CARD };
 }
 
 export function liveConfig(metadata: Record<string, unknown> | null | undefined): LiveConfig {
@@ -73,10 +92,12 @@ export function liveConfig(metadata: Record<string, unknown> | null | undefined)
 	return config;
 }
 
-export function liveStartEvent(config: LiveConfig, voice: string, instructions?: string) {
+export function liveStartEvent(config: LiveConfig, voice: string, instructions?: string, model: string = LIVE_MODEL) {
 	const settings = liveBackendSettingsSchema.parse(config.settings ?? {});
+	const liveModel = liveModelId(model);
+	if (!liveModel) throw new Error("live_model_not_supported");
 	return { type: "session.start", session: {
-		model: "gpt-live-1", instructions, store: false,
+		model: liveModel.replace(/^openai\//, ""), instructions, store: false,
 		audio: { format: { type: "audio/pcm", rate: 24000 }, output: { voice } },
 		delegation: { type: "responses", responses: {
 			model: config.backendModel.replace(/^openai\//, ""),
@@ -105,6 +126,12 @@ export function ingestLiveUsage(current: LiveUsage, event: Record<string, any>):
 		if (!finite(event.usage?.seconds)) throw new Error("live_authoritative_usage_invalid");
 		if (event.usage.seconds < (current.live_seconds ?? 0)) throw new Error("live_authoritative_usage_regressed");
 		next.live_seconds = event.usage.seconds;
+		const standby = event.usage.standby_seconds;
+		if (standby != null) {
+			if (!finite(standby)) throw new Error("live_authoritative_usage_invalid");
+			if (standby < (current.live_standby_seconds ?? 0)) throw new Error("live_authoritative_usage_regressed");
+			next.live_standby_seconds = standby;
+		}
 		if (event.type === "session.closed") next.live_final = true;
 	}
 	const responses = current.live_responses ?? [];
@@ -205,7 +232,8 @@ export function assertLiveFinalUsage(usage: LiveUsage) {
 }
 
 export function liveUsageMeters(usage: LiveUsage): Record<string, number> {
-	const totals: Record<string, number> = { audio_seconds: usage.live_seconds ?? 0 };
+	const totals: Record<string, number> = { audio_seconds: usage.live_seconds ?? 0,
+		...(usage.live_standby_seconds ? { standby_audio_minutes: usage.live_standby_seconds / 60 } : {}) };
 	for (const response of usage.live_responses ?? []) {
 		for (const meter of ["input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m", "cached_write_text_tokens_12h", "output_text_tokens", "input_tokens", "output_tokens", "output_reasoning_tokens"]) {
 			totals[meter] = (totals[meter] ?? 0) + Number(response.usage[meter] ?? 0);
@@ -213,6 +241,15 @@ export function liveUsageMeters(usage: LiveUsage): Record<string, number> {
 	}
 	totals.native_web_search_requests = usage.live_tool_calls?.length ?? 0;
 	return totals;
+}
+
+// Seconds as unrounded minutes, as for other per-minute realtime meters. Snapshots taken
+// before Live was priced from the catalogue use audio_seconds and keep it.
+function liveVoiceMeters(usage: LiveUsage, card: PriceCard): Record<string, number> {
+	const standby = { standby_audio_minutes: (usage.live_standby_seconds ?? 0) / 60 };
+	const seconds = usage.live_seconds ?? 0;
+	if (card.rules.some((rule) => rule.meter === "audio_seconds")) return { audio_seconds: seconds, ...standby };
+	return { audio_minutes: seconds / 60, ...standby };
 }
 
 export function priceLiveUsage(usage: LiveUsage, config: LiveConfig): Record<string, unknown> {
@@ -226,16 +263,16 @@ export function priceLiveUsage(usage: LiveUsage, config: LiveConfig): Record<str
 			&& matchesConditions(rule.match, { ...meters, endpoint: card.endpoint, service_tier: tier }))) throw new Error("live_search_price_snapshot_missing");
 		const result = computeBill(meters, tierCard, { endpoint: card.endpoint, service_tier: tier }, "standard");
 		const pricing = result.pricing as { total_nanos: number; lines: Record<string, unknown>[] };
-		for (const meter of ["audio_seconds", "input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m", "cached_write_text_tokens_12h", "output_text_tokens", "native_web_search_requests"]) {
+		for (const meter of ["audio_seconds", "audio_minutes", "standby_audio_minutes", "input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m", "cached_write_text_tokens_12h", "output_text_tokens", "native_web_search_requests"]) {
 			if (Number(meters[meter] ?? 0) > 0 && !pricing.lines.some((line) => line.dimension === meter)) {
 				throw new Error(`live_pricing_rule_missing:${meter}`);
 			}
 		}
 		return pricing;
 	};
-	const voice = price({ audio_seconds: usage.live_seconds ?? 0 }, config.voiceCard);
+	const voice = price(liveVoiceMeters(usage, config.voiceCard), config.voiceCard);
 	let backendNanos = 0;
-	const lines = voice.lines.map((line) => ({ ...line, model: LIVE_MODEL, component: "voice" }));
+	const lines = voice.lines.map((line) => ({ ...line, model: config.voiceCard.model, component: "voice" }));
 	for (const response of usage.live_responses ?? []) {
 		if (response.model && response.model.replace(/^openai\//, "") !== config.backendModel.replace(/^openai\//, "")) throw new Error("live_response_model_mismatch");
 		const tier = response.service_tier ?? config.settings?.service_tier ?? "default";

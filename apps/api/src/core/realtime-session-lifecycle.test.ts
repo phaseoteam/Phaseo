@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { RealtimeRelayDurableObject, validateRealtimeAudioIngress } from "./realtime-relay-durable-object";
 import { computeRealtimeFundingPosition, REALTIME_MAX_OVERDRAFT_NANOS, realtimeUnheldCostNanos } from "./realtime-sessions";
 import { classifyRealtimeEnd, REALTIME_END_REASONS } from "./realtime-session-events";
-import { LIVE_PRICE_CARD, type LiveConfig } from "./live-sessions";
+import { type LiveConfig } from "./live-sessions";
+import { LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
 
 const mocks = vi.hoisted(() => ({
 	settleRealtimeSession: vi.fn(async () => ({
@@ -31,10 +32,10 @@ vi.mock("@core/realtime-sessions", async (importOriginal) => ({
 const OPEN = 1;
 const MINUTE = 60_000;
 
-const liveConfig: LiveConfig = { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_PRICE_CARD,
-	backendCard: { ...LIVE_PRICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules: [
+const liveConfig: LiveConfig = { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_VOICE_CARD,
+	backendCard: { ...LIVE_VOICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules: [
 		["input_text_tokens", "1"], ["output_text_tokens", "10"],
-	].map(([meter, price]) => ({ ...LIVE_PRICE_CARD.rules[0], meter: meter as any, unit: "token", unit_size: 1_000_000, price_per_unit: price })) } };
+	].map(([meter, price]) => ({ ...LIVE_VOICE_CARD.rules[0], meter: meter as any, unit: "token", unit_size: 1_000_000, price_per_unit: price })) } };
 
 function fakeStorage() {
 	const data = new Map<string, unknown>();

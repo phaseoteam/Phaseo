@@ -1098,8 +1098,10 @@ export function MeterRateRows({
 	const t = useTranslations("Catalogue.modelDetail.sections");
 	const tMeters = useTranslations("Catalogue.modelDetail.pricing.meters");
 	if (!rows.length) return null;
+	// A session billed at separate active and standby rates names both by session state.
+	const hasStandby = rows.some((row) => row.meter.trim() === "standby_audio_minutes");
 	const formatMeterName = (meter: string) => {
-		const key = meter.trim();
+		const key = hasStandby && meter.trim() === "audio_minutes" ? "active_audio_minutes" : meter.trim();
 		if (tMeters.has(key as never)) return tMeters(key as never);
 		return key;
 	};

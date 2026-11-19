@@ -1,13 +1,14 @@
 import { expect, it, vi } from "vitest";
 import { quoteRealtimeRecovery, refreshRealtimeBillingReviews, syncRealtimeBillingReviewSummaries } from "./realtime-billing-review";
-import { ingestLiveUsage, LIVE_PRICE_CARD, LIVE_SEARCH_PRICE_CARD, type LiveUsage } from "./live-sessions";
+import { ingestLiveUsage, LIVE_SEARCH_PRICE_CARD, type LiveUsage } from "./live-sessions";
+import { LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
 const mocks = vi.hoisted(() => ({ db: null as any }));
 vi.mock("@/runtime/env", () => ({ getSupabaseAdmin: () => mocks.db }));
-const metadata = { live: { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_PRICE_CARD,
+const metadata = { live: { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_VOICE_CARD,
 	settings: { web_search: true }, searchCard: LIVE_SEARCH_PRICE_CARD,
-	backendCard: { ...LIVE_PRICE_CARD, endpoint: "text.generate", rules: [
+	backendCard: { ...LIVE_VOICE_CARD, endpoint: "text.generate", rules: [
 		["input_text_tokens", "1"], ["output_text_tokens", "2"], ["cached_read_text_tokens", "0.1"], ["cached_write_text_tokens", "1"],
-	].map(([meter, price]) => ({ ...LIVE_PRICE_CARD.rules[0], meter, unit_size: 1e6, price_per_unit: price })) } } };
+	].map(([meter, price]) => ({ ...LIVE_VOICE_CARD.rules[0], meter, unit_size: 1e6, price_per_unit: price })) } } };
 const quote = (usage: LiveUsage) => quoteRealtimeRecovery("openai/gpt-live-1", usage, metadata);
 const completed = () => ingestLiveUsage({ live_started: true, live_seconds: 9 }, { type: "response.event", delegation_id: "del_1",
 	event: { type: "response.completed", response: { id: "resp_1", model: "gpt-5.6-luna", service_tier: "default",

@@ -54,6 +54,7 @@ export type PricingDimensionKey =
     | "output_video_tokens"
     | "audio_minutes"
     | "audio_seconds"
+    | "standby_audio_minutes"
     | "input_text_messages"
     | "output_image"
     | "output_video"

@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { settleRealtimeSession } from "./realtime-sessions";
-import { LIVE_PRICE_CARD, LIVE_SEARCH_PRICE_CARD, ingestLiveUsage } from "./live-sessions";
+import { LIVE_SEARCH_PRICE_CARD, ingestLiveUsage } from "./live-sessions";
+import { LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
 import { liveBackendSettingsSchema } from "./live-settings";
 
 const state = vi.hoisted(() => ({ row: {} as any, rpc: vi.fn(), rollup: vi.fn() }));
@@ -18,11 +19,11 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	state.row = { session_id: "rt_test", key_id: "key", workspace_id: "workspace", status: "connected",
 		model_id: "openai/gpt-live-1", provider: "openai", started_at: "2026-09-10", reserved_nanos: 5e9,
-		metadata: { live: { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_PRICE_CARD,
-			backendCard: { ...LIVE_PRICE_CARD, endpoint: "text.generate", rules: [
-				{ ...LIVE_PRICE_CARD.rules[0], meter: "input_text_tokens", unit_size: 1e6, price_per_unit: "1" },
-				{ ...LIVE_PRICE_CARD.rules[0], meter: "cached_read_text_tokens", unit_size: 1e6, price_per_unit: "0.1" },
-				{ ...LIVE_PRICE_CARD.rules[0], meter: "output_text_tokens", unit_size: 1e6, price_per_unit: "10" },
+		metadata: { live: { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_VOICE_CARD,
+			backendCard: { ...LIVE_VOICE_CARD, endpoint: "text.generate", rules: [
+				{ ...LIVE_VOICE_CARD.rules[0], meter: "input_text_tokens", unit_size: 1e6, price_per_unit: "1" },
+				{ ...LIVE_VOICE_CARD.rules[0], meter: "cached_read_text_tokens", unit_size: 1e6, price_per_unit: "0.1" },
+				{ ...LIVE_VOICE_CARD.rules[0], meter: "output_text_tokens", unit_size: 1e6, price_per_unit: "10" },
 			] } } } };
 	state.rpc.mockImplementation(async (name, args) => {
 		expect(name).toBe("gateway_realtime_settle_once");

@@ -531,6 +531,13 @@ const GPT_LIVE_MODEL: RealtimeModel = {
 	voices: LIVE_VOICE_OPTIONS,
 	transport: "WebSocket", billing: "Live duration + backend tokens",
 };
+// Offered once the gateway lists it, so the room never shows a Live model that can't start.
+const GPT_LIVE_1_1_MODEL: RealtimeModel = {
+	...GPT_LIVE_MODEL, id: "openai:gpt-live-1.1", label: "OpenAI GPT Live 1.1",
+	model: "openai/gpt-live-1.1", releaseDate: "2026-10-15T00:00:00",
+};
+const GPT_LIVE_MODEL_IDS = new Set([GPT_LIVE_MODEL.id, GPT_LIVE_1_1_MODEL.id]);
+const isGptLiveModel = (model: Pick<RealtimeModel, "id"> | null | undefined) => Boolean(model && GPT_LIVE_MODEL_IDS.has(model.id));
 
 const BUDGET_CLOSING_INSTRUCTIONS =
 	"The realtime session budget is almost exhausted. Briefly tell the user that this voice session is ending, finish the current thought, and do not ask a follow-up question.";
@@ -1432,7 +1439,9 @@ function buildRealtimeModels(
 		seen.add(model.id);
 		return true;
 	});
-	return [GPT_LIVE_MODEL, ...deduped.filter((model) => !model.model.endsWith("gpt-live-1"))].sort(compareRealtimeModelsByRelease);
+	const isLiveListing = (model: RealtimeModel) => /(^|\/)gpt-live-1(\.1)?$/.test(model.model);
+	const liveModels = [GPT_LIVE_MODEL, ...(deduped.some((model) => model.model.endsWith("gpt-live-1.1")) ? [GPT_LIVE_1_1_MODEL] : [])];
+	return [...liveModels, ...deduped.filter((model) => !isLiveListing(model))].sort(compareRealtimeModelsByRelease);
 }
 
 type RealtimeRoomProps = {
@@ -1649,7 +1658,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const showRichPersonaOrb = orbMode === "persona";
 	const showOrb = orbMode !== "off";
 	const defaultSystemPrompt = useMemo(
-		() => selectedModel?.id === GPT_LIVE_MODEL.id
+		() => isGptLiveModel(selectedModel)
 			? `You are a helpful voice assistant. Speak naturally and concisely. Backchannel policy: Use moderate listening acknowledgments. Interruption policy: Stop speaking and listen when interrupted. Delegation policy: Delegate requests requiring careful reasoning${liveSettings.web_search ? " or current information from web search" : ""} to the backend. Do not delegate greetings or simple clarifications. Wait for backend results before reporting them. The backend can reason${liveSettings.web_search ? " and search the web" : ", but has no external tools"}; it cannot perform external actions.`
 			: getDefaultRealtimeSystemPrompt(selectedModel),
 		[selectedModel, liveSettings.web_search],
@@ -2521,7 +2530,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		if (!selectedModel) {
 			throw new Error(t("chooseRealtimeModel"));
 		}
-		const live = selectedModel.id === GPT_LIVE_MODEL.id;
+		const live = isGptLiveModel(selectedModel);
 		if (live && (!Number.isInteger(liveSettings.max_output_tokens) || liveSettings.max_output_tokens < 16 || liveSettings.max_output_tokens > 32768)) {
 			throw new Error(tCopy("backendLimitError"));
 		}
@@ -3093,7 +3102,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		]);
 		setTranscript([]);
 		const attempt = ++startupAttemptRef.current;
-		liveSessionRef.current = selectedModel.id === GPT_LIVE_MODEL.id;
+		liveSessionRef.current = isGptLiveModel(selectedModel);
 		outputAudioSeenRef.current = false;
 
 		try {
@@ -3120,7 +3129,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				addDiagnosticLog("Session startup cancelled before provider connection", { sessionId: session.session_id ?? session.id });
 				return;
 			}
-			liveSessionRef.current = selectedModel?.id === GPT_LIVE_MODEL.id;
+			liveSessionRef.current = isGptLiveModel(selectedModel);
 			setBillingApi(liveSessionRef.current ? "live" : "realtime");
 			setLiveUsage(null);
 			currentSessionIdRef.current = session.session_id ?? session.id ?? null;
@@ -3251,7 +3260,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				</div>
 			</header>
 
-			{selectedModel?.id === GPT_LIVE_MODEL.id && (
+			{isGptLiveModel(selectedModel) && (
 				<div className="flex shrink-0 flex-wrap items-center gap-3 border-b px-4 py-2 text-sm">
 					<span>{tCopy("backendModel")}</span>
 					<Select disabled={sessionActive} value={liveBackendModel} onValueChange={setLiveBackendModel}>
@@ -3337,10 +3346,10 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 									</StatCard>
 								</div>
 
-								{selectedModel?.id === GPT_LIVE_MODEL.id && <p className="text-sm text-muted-foreground">
+								{isGptLiveModel(selectedModel) && <p className="text-sm text-muted-foreground">
 									{tCopy("livePrice", { voice: new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "voice").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.voice_nanos ?? 0) / 1e9), backend: new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "backend").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.backend_nanos ?? 0) / 1e9), tools: new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 4, maximumFractionDigits: 4 }).format((ledger?.pricing_lines?.filter((line) => line.component === "tool").reduce((sum, line) => sum + (line.line_nanos ?? 0), 0) ?? liveUsage?.tool_nanos ?? 0) / 1e9) })}
 								</p>}
-								{selectedModel?.id === GPT_LIVE_MODEL.id && <LiveUsageDetails usage={liveUsage || ledger?.usage ? { ...ledger?.usage, ...liveUsage?.usage } : undefined} pending={liveUsage?.pending_response_count} />}
+								{isGptLiveModel(selectedModel) && <LiveUsageDetails usage={liveUsage || ledger?.usage ? { ...ledger?.usage, ...liveUsage?.usage } : undefined} pending={liveUsage?.pending_response_count} />}
 								{billingSessionId && <p className="text-sm text-muted-foreground">
 									{billingReadFailed ? tCopy("billingUnavailable") + " " : !ledger || ((status === "ended" || status === "error") && ledger.final_cost_nanos == null && ledger.status !== "billing_unresolved") ? tCopy("finalizingBilling") + " " : ""}
 									{ledger?.status === "billing_unresolved" ? tCopy("reviewBilling") + " " : ""}
@@ -3430,7 +3439,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 												{model.label.replace(`${model.providerLabel} `, "")}
 											</p>
 											<p className="mt-2 text-xs text-muted-foreground">
-												{model.id === GPT_LIVE_MODEL.id ? tCopy("liveBillingMeter") : billingLabel(model.provider, model.providerLabel, (key, values) => t(key as never, values as never))} / {t("realtimeVoicesCount", { count: model.voices.length })}
+												{isGptLiveModel(model) ? tCopy("liveBillingMeter") : billingLabel(model.provider, model.providerLabel, (key, values) => t(key as never, values as never))} / {t("realtimeVoicesCount", { count: model.voices.length })}
 											</p>
 										</button>
 									))}
@@ -3550,7 +3559,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			</section>
 
 			<RealtimeSettingsDialog
-				liveSettings={selectedModel?.id === GPT_LIVE_MODEL.id ? liveSettings : undefined}
+				liveSettings={isGptLiveModel(selectedModel) ? liveSettings : undefined}
 				onLiveSettingsChange={setLiveSettings}
 				open={settingsOpen}
 				onOpenChange={setSettingsOpen}

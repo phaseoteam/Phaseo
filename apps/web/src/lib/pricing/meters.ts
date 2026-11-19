@@ -30,6 +30,7 @@ const CORE_PRICING_METER_VALUES = [
   "output_audio_seconds",
   "audio_minutes",
   "audio_seconds",
+  "standby_audio_minutes",
   "cached_write_text_tokens",
   "cached_write_text_tokens_5m",
   "cached_write_text_tokens_1h",

@@ -73,9 +73,24 @@ it("names the Chat gate when Chat sessions are closed", async () => {
 	expect(mocks.create).not.toHaveBeenCalled();
 });
 
-it("points GPT Live requests on the Realtime endpoint at the Live endpoint", async () => {
-	const response = await post({ model: "openai/gpt-live-1", provider: "openai" }, false);
+it.each(["openai/gpt-live-1", "gpt-live-1.1", "openai/gpt-live-1.1"])("points %s on the Realtime endpoint at the Live endpoint", async (model) => {
+	const response = await post({ model, provider: "openai" }, false);
 	expect(await response.json()).toMatchObject({ reason: "live_sessions_endpoint_required" });
+	expect(mocks.create).not.toHaveBeenCalled();
+});
+
+it.each(["gpt-live-1.1", "openai/gpt-live-1.1"])("creates GPT Live 1.1 sessions from %s", async (model) => {
+	mocks.auth.apiKeyKid = "ordinary-key";
+	expect((await post({ model, provider: "openai" })).status).toBe(201);
+	expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ model: "openai/gpt-live-1.1", liveBackendModel: "openai/gpt-5.6-luna" }));
+});
+
+it("explains a Live model with no published price", async () => {
+	mocks.auth.apiKeyKid = "ordinary-key";
+	mocks.create.mockRejectedValueOnce(new Error("live_price_card_missing"));
+	const response = await post({ model: "openai/gpt-live-1.1", provider: "openai" });
+	expect(response.status).toBe(400);
+	expect(await response.json()).toMatchObject({ reason: "live_price_card_missing" });
 });
 
 it("rejects ordinary keys even when they claim to be a playground user", async () => {

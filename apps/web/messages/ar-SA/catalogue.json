@@ -1241,6 +1241,8 @@
 				"output_audio_seconds": "ثواني الصوت للإخراج",
 				"audio_minutes": "دقائق الصوت",
 				"audio_seconds": "ثواني الصوت",
+				"standby_audio_minutes": "جلسة الاستعداد",
+				"active_audio_minutes": "جلسة نشطة",
 				"cached_write_text_tokens_5m": "رموز كتابة النص في الذاكرة المؤقتة (مدة 5 دقائق)",
 				"cached_write_text_tokens_1h": "رموز كتابة النص في الذاكرة المؤقتة (مدة ساعة)",
 				"cached_write_text_tokens_30m": "رموز كتابة النص في الذاكرة المؤقتة (مدة 30 دقيقة)",

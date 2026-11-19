@@ -1,16 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-import { LIVE_PRICE_CARD, LIVE_SEARCH_PRICE_CARD, assertLiveFinalUsage, createLiveConfig, ingestLiveUsage, liveStartEvent, liveUsageMeters, priceLiveUsage, type LiveConfig, type LiveUsage } from "./live-sessions";
+import { LIVE_SEARCH_PRICE_CARD, assertLiveFinalUsage, createLiveConfig, ingestLiveUsage, liveStartEvent, liveUsageMeters, priceLiveUsage, type LiveConfig, type LiveUsage } from "./live-sessions";
+import { LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
 import { LIVE_VOICES, liveBackendSettingsSchema } from "./live-settings";
 import { loadPriceCard } from "@pipeline/pricing/loader";
 
 vi.mock("@pipeline/pricing/loader", () => ({ loadPriceCard: vi.fn() }));
+// createLiveConfig loads the Live model's own voice card, then the backend's.
+const loadCards = (backend: unknown) => vi.mocked(loadPriceCard).mockImplementation(async (_provider, _model, endpoint) =>
+	(endpoint === "audio.realtime" ? LIVE_VOICE_CARD : backend) as any);
 const settings = liveBackendSettingsSchema.parse({ web_search: true, service_tier: "priority" });
-const card = { ...LIVE_PRICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules:
+const card = { ...LIVE_VOICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules:
 	["standard", "priority", "flex"].flatMap((plan) => ["input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m", "output_text_tokens"].map((meter) => ({
-		...LIVE_PRICE_CARD.rules[0], meter: meter as any, pricing_plan: plan, unit_size: 1e6,
+		...LIVE_VOICE_CARD.rules[0], meter: meter as any, pricing_plan: plan, unit_size: 1e6,
 		price_per_unit: plan === "priority" ? "2" : plan === "flex" ? "0.5" : "1",
 	}))) };
-const config: LiveConfig = { backendModel: card.model, voiceCard: LIVE_PRICE_CARD, backendCard: card, settings, searchCard: LIVE_SEARCH_PRICE_CARD };
+const config: LiveConfig = { backendModel: card.model, voiceCard: LIVE_VOICE_CARD, backendCard: card, settings, searchCard: LIVE_SEARCH_PRICE_CARD };
 const delegate = (id = "d1", responseId = "r1") => ({ type: "session.delegation.created", delegation: { id, target: "responses", response_id: responseId } });
 const terminal = (id = "r1", delegationId = "d1", tier = "priority") => ({ type: "response.event", delegation_id: delegationId, event: { type: "response.completed", response: {
 	id, model: "gpt-5.6-luna", service_tier: tier, output: [], usage: { input_tokens: 1000, output_tokens: 200, total_tokens: 1200,
@@ -34,19 +38,19 @@ describe("Live delegation configuration", () => {
 		expect(liveBackendSettingsSchema.safeParse(input).success).toBe(false);
 	});
 	it("requires explicit requested-tier pricing and snapshots settings before provider work", async () => {
-		vi.mocked(loadPriceCard).mockResolvedValue({ ...card, rules: card.rules.filter((rule) => rule.pricing_plan === "standard") });
-		await expect(createLiveConfig(config.backendModel, settings)).rejects.toThrow("price_card_missing");
-		vi.mocked(loadPriceCard).mockResolvedValue(card);
-		const snapshot = await createLiveConfig(config.backendModel, settings);
+		loadCards({ ...card, rules: card.rules.filter((rule) => rule.pricing_plan === "standard") });
+		await expect(createLiveConfig("openai/gpt-live-1", config.backendModel, settings)).rejects.toThrow("live_backend_price_card_missing");
+		loadCards(card);
+		const snapshot = await createLiveConfig("openai/gpt-live-1", config.backendModel, settings);
 		expect(snapshot.settings).toEqual(settings);
 		expect(snapshot.searchCard).toEqual(LIVE_SEARCH_PRICE_CARD);
 	});
 	it("starts on OpenAI's cards that price 30-minute and 12-hour cache writes separately, and bills each", async () => {
 		// The shape of the openai GPT-5.6 cards since 2026-10-21: no single cache-write row.
 		const rules = ["input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m", "cached_write_text_tokens_12h", "output_text_tokens"]
-			.map((meter, index) => ({ ...LIVE_PRICE_CARD.rules[0], meter: meter as any, unit_size: 1e6, price_per_unit: ["1", "0.1", "1.25", "2.5", "10"][index] }));
-		vi.mocked(loadPriceCard).mockResolvedValue({ ...card, rules });
-		const live = await createLiveConfig(config.backendModel, {});
+			.map((meter, index) => ({ ...LIVE_VOICE_CARD.rules[0], meter: meter as any, unit_size: 1e6, price_per_unit: ["1", "0.1", "1.25", "2.5", "10"][index] }));
+		loadCards({ ...card, rules });
+		const live = await createLiveConfig("openai/gpt-live-1", config.backendModel, {});
 		const reported = terminal("r1", "d1", "default");
 		Object.assign(reported.event.response.usage.input_tokens_details, { cache_write_tokens_details: { ttl_30m_tokens: 150, ttl_12h_tokens: 50 } });
 		const usage = ingestLiveUsage(ingestLiveUsage({}, delegate()), reported);

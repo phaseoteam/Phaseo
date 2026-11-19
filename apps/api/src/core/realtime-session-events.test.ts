@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PriceCard, PriceRule } from "@pipeline/pricing/types";
-import { LIVE_PRICE_CARD, LIVE_SEARCH_PRICE_CARD, priceLiveUsage, type LiveConfig } from "./live-sessions";
+import { LIVE_SEARCH_PRICE_CARD, priceLiveUsage, type LiveConfig } from "./live-sessions";
+import { LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
 import { liveBackendSettingsSchema } from "./live-settings";
 import { buildSessionEndedEvent } from "./realtime-session-events";
 import { normalizeRealtimeUsage, priceRealtimeUsage, realtimeBilledMeters, type RealtimeProvider } from "./realtime-sessions";
@@ -33,7 +34,7 @@ const live = { live_started: true, live_final: true, live_seconds: 11, live_pend
 		usage: { input_text_tokens: 129, cached_read_text_tokens: 0, cached_write_text_tokens_30m: 5041, output_text_tokens: 526,
 			input_tokens: 5170, output_tokens: 526, output_reasoning_tokens: 395 } }],
 	live_tool_calls: [{ id: "ws_1", response_id: "resp_1", delegation_id: "d1", done: true }, { id: "ws_2", response_id: "resp_1", delegation_id: "d1", done: true }] };
-const liveConfig: LiveConfig = { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_PRICE_CARD, searchCard: LIVE_SEARCH_PRICE_CARD,
+const liveConfig: LiveConfig = { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_VOICE_CARD, searchCard: LIVE_SEARCH_PRICE_CARD,
 	settings: liveBackendSettingsSchema.parse({ web_search: true }),
 	backendCard: { ...card(["input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m", "cached_write_text_tokens_12h", "output_text_tokens"], "openai/gpt-5.6-luna"), endpoint: "text.generate" } };
 

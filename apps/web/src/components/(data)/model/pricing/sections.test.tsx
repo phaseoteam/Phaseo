@@ -62,4 +62,26 @@ describe("MeterRateRows", () => {
 		expect(html).toContain(t("Common.ui.requestBuilder.high" as never));
 		expect(html).not.toContain("Usage rates");
 	});
+
+	it.each(locales)("names GPT Live's active and standby session rates in %s", (locale) => {
+		const messages = Object.fromEntries([["Common", "common"], ["Catalogue", "catalogue"]].map(([namespace, file]) => [namespace, JSON.parse(fs.readFileSync(path.resolve(process.cwd(), "messages", locale, `${file}.json`), "utf8"))]));
+		const t = createTranslator({ locale, messages });
+		const row = { unit: "minute" as const, unitQuantity: 1, unitLabel: "Per minute" };
+		const html = renderToStaticMarkup(
+			<AppIntlProvider locale={locale} timeZone="UTC" messages={messages}><MeterRateRows rows={[
+				{ ...row, meter: "audio_minutes", price: 0.05 },
+				{ ...row, meter: "standby_audio_minutes", price: 0.02 },
+			]} /></AppIntlProvider>,
+		);
+
+		expect(html).toContain(t("Catalogue.modelDetail.pricing.meters.active_audio_minutes" as never));
+		expect(html).toContain(t("Catalogue.modelDetail.pricing.meters.standby_audio_minutes" as never));
+		expect(html).not.toContain(t("Catalogue.modelDetail.pricing.meters.audio_minutes" as never));
+		expect(html).toContain("$0.05");
+		expect(html).toContain("$0.02");
+		if (locale === "en-GB") {
+			expect(html).toContain("Active session");
+			expect(html).toContain("Standby session");
+		}
+	});
 });

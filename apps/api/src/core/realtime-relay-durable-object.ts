@@ -771,7 +771,7 @@ export class RealtimeRelayDurableObject {
 			const key = resolveOpenAIKey();
 			if (!key) throw new Error("openai_key_missing");
 			if (this.isLive) {
-				const start = liveStartEvent(liveConfig(this.session.metadata), voice ?? "marin", instructions);
+				const start = liveStartEvent(liveConfig(this.session.metadata), voice ?? "marin", instructions, this.session.model_id);
 				this.upstream = await connectWebSocket("wss://api.openai.com/v1/live/sessions",
 					{ headers: await openAIRealtimeHeaders(key, this.session) });
 				if (this.settled || this.clientGoneHandled) { this.closeUpstream("client_gone_before_live_start"); return; }

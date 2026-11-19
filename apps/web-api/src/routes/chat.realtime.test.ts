@@ -87,6 +87,18 @@ it("uses the separate Live API with trusted Chat identity and the selected backe
 		protocols: ["statsync-realtime", "rtsec.rtsec_test"] });
 });
 
+it.each([["gpt-live-1.1", 200], ["openai/gpt-live-1.1", 200], ["gpt-live-1-mini", 400], ["openai/gpt-realtime-2.1", 400]])(
+	"forwards only GPT Live models to the Live API (%s)", async (model, status) => {
+		const fetchMock = vi.fn(async () => Response.json({ clientSecret: "rtsec_test", connect: { url: "/v1/live/sessions/rt_test/relay" } }));
+		vi.stubGlobal("fetch", fetchMock);
+		const response = await chatRouter.request("https://phaseo.app/live/session", {
+			method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ provider: "openai", model }),
+		}, { ENV: "development", PHASEO_GATEWAY_URL: "https://api.phaseo.app/v1" });
+		expect(response.status).toBe(status);
+		if (status === 200) expect(JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string).model).toBe("openai/gpt-live-1.1");
+		else expect(fetchMock).not.toHaveBeenCalled();
+	});
+
 it("rejects an arbitrary Live backend before contacting the gateway", async () => {
 	const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
 	const response = await chatRouter.request("https://phaseo.app/live/session", {

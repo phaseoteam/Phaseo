@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { LIVE_PRICE_CARD, LIVE_SEARCH_PRICE_CARD, assertLiveFinalUsage, createLiveConfig, ingestLiveUsage, liveStartEvent, priceLiveUsage, type LiveConfig } from "./live-sessions";
+import { LIVE_SEARCH_PRICE_CARD, assertLiveFinalUsage, createLiveConfig, ingestLiveUsage, liveStartEvent, priceLiveUsage, type LiveConfig } from "./live-sessions";
+import { LEGACY_LIVE_VOICE_CARD, LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
+import { loadPriceCard } from "@pipeline/pricing/loader";
 import { liveBackendSettingsSchema } from "./live-settings";
 import { RealtimeRelayDurableObject } from "./realtime-relay-durable-object";
 import { createLiveSessionSchema, createRealtimeSessionSchema } from "@/routes/v1/data/realtime-sessions";
@@ -7,10 +9,10 @@ import { createLiveSessionSchema, createRealtimeSessionSchema } from "@/routes/v
 vi.mock("@/runtime/env", () => ({ configureRuntime: vi.fn() }));
 vi.mock("@pipeline/pricing/loader", () => ({ loadPriceCard: vi.fn(async () => null) }));
 
-const config: LiveConfig = { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_PRICE_CARD,
-	backendCard: { ...LIVE_PRICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules: [
+const config: LiveConfig = { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_VOICE_CARD,
+	backendCard: { ...LIVE_VOICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules: [
 		["input_text_tokens", "1"], ["cached_read_text_tokens", "0.1"], ["cached_write_text_tokens_30m", "1.25"], ["output_text_tokens", "10"],
-	].map(([meter, price]) => ({ ...LIVE_PRICE_CARD.rules[0], meter: meter as any, unit: "token", unit_size: 1_000_000, price_per_unit: price })) } };
+	].map(([meter, price]) => ({ ...LIVE_VOICE_CARD.rules[0], meter: meter as any, unit: "token", unit_size: 1_000_000, price_per_unit: price })) } };
 const terminal = (type = "response.completed", id = "resp_1") => ({ type: "response.event", event: { type, response: {
 	id, usage: { input_tokens: 1000, input_tokens_details: { cached_tokens: 400 }, output_tokens: 500,
 		output_tokens_details: { reasoning_tokens: 200 } },
@@ -75,7 +77,7 @@ describe("Live billing", () => {
 		expect(() => ingestLiveUsage({}, { type: "session.closed", usage: {} })).toThrow("usage_invalid");
 		expect(() => ingestLiveUsage({ live_seconds: 10 }, { type: "session.closed", usage: { seconds: 9 } })).toThrow("usage_regressed");
 		expect(() => ingestLiveUsage({}, { type: "response.event", event: { type: "response.failed", response: { id: "r", usage: null } } })).toThrow("authoritative_usage_missing");
-		await expect(createLiveConfig(config.backendModel)).rejects.toThrow("price_card_missing");
+		await expect(createLiveConfig("openai/gpt-live-1", config.backendModel)).rejects.toThrow("live_price_card_missing");
 	});
 	it("configures only the selected backend, bounded output, standard tier and no unmetered tools", () => {
 		expect(liveStartEvent(config, "marin").session).toMatchObject({ model: "gpt-live-1",
@@ -102,6 +104,68 @@ describe("Live billing", () => {
 			provider: "google-ai-studio",
 			thinking_level: "high",
 		}).success).toBe(true);
+	});
+});
+
+describe("Live voice pricing from the catalogue", () => {
+	const withCards = (voice: unknown) => vi.mocked(loadPriceCard).mockImplementation(async (_provider, _model, endpoint) =>
+		(endpoint === "audio.realtime" ? voice : config.backendCard) as any);
+	afterEach(() => { vi.mocked(loadPriceCard).mockReset(); vi.mocked(loadPriceCard).mockResolvedValue(null); });
+
+	it("snapshots each Live model's own audio.realtime card", async () => {
+		const card11 = { ...LIVE_VOICE_CARD, model: "openai/gpt-live-1.1" };
+		withCards(card11);
+		const live = await createLiveConfig("gpt-live-1.1", config.backendModel);
+		expect(vi.mocked(loadPriceCard)).toHaveBeenCalledWith("openai", "openai/gpt-live-1.1", "audio.realtime");
+		expect(live.voiceCard).toEqual(card11);
+		const bill = priceLiveUsage({ live_seconds: 90 }, live) as any;
+		expect(bill.live_voice_nanos).toBe(75_000_000);
+		expect(bill.pricing.lines).toEqual([expect.objectContaining({ dimension: "audio_minutes", model: "openai/gpt-live-1.1", component: "voice" })]);
+	});
+	it("refuses to start without an active-minute price, and never for a model that isn't Live", async () => {
+		withCards({ ...LIVE_VOICE_CARD, rules: LIVE_VOICE_CARD.rules.filter((rule) => rule.meter !== "audio_minutes") });
+		await expect(createLiveConfig("openai/gpt-live-1", config.backendModel)).rejects.toThrow("live_price_card_missing");
+		withCards(LIVE_VOICE_CARD);
+		await expect(createLiveConfig("openai/gpt-realtime-2.1", config.backendModel)).rejects.toThrow("live_model_not_supported");
+	});
+	it("starts without a standby price, and fails pricing rather than billing standby free", async () => {
+		const activeOnly = { ...LIVE_VOICE_CARD, rules: LIVE_VOICE_CARD.rules.filter((rule) => rule.meter === "audio_minutes") };
+		withCards(activeOnly);
+		const live = await createLiveConfig("openai/gpt-live-1", config.backendModel);
+		expect((priceLiveUsage({ live_seconds: 60 }, live) as any).live_voice_nanos).toBe(50_000_000);
+		expect(() => priceLiveUsage({ live_seconds: 60, live_standby_seconds: 30 }, live)).toThrow("live_pricing_rule_missing:standby_audio_minutes");
+	});
+	it("bills reported standby seconds at the standby rate", () => {
+		let usage = ingestLiveUsage({ live_started: true }, { type: "session.usage.updated", usage: { seconds: 60, standby_seconds: 30 } });
+		usage = ingestLiveUsage(usage, { type: "session.closed", usage: { seconds: 120, standby_seconds: 90 } });
+		expect(usage).toMatchObject({ live_seconds: 120, live_standby_seconds: 90 });
+		const bill = priceLiveUsage(usage, config) as any;
+		// 2 active minutes at $0.05 and 1.5 standby minutes at $0.02.
+		expect(bill.live_voice_nanos).toBe(130_000_000);
+		expect(bill.pricing.lines.map((line: any) => line.dimension)).toEqual(["audio_minutes", "standby_audio_minutes"]);
+		expect(() => ingestLiveUsage(usage, { type: "session.closed", usage: { seconds: 120, standby_seconds: 60 } })).toThrow("usage_regressed");
+		expect(() => ingestLiveUsage(usage, { type: "session.closed", usage: { seconds: 120, standby_seconds: -1 } })).toThrow("usage_invalid");
+	});
+	it.each([[45.8, 38_166_667], [60, 50_000_000], [1, 833_333], [0, 0]])(
+		"settles a session snapshotted before catalogue pricing at the same rate (%s s)", (seconds, nanos) => {
+			const legacy = { ...config, voiceCard: LEGACY_LIVE_VOICE_CARD };
+			const bill = priceLiveUsage({ live_seconds: seconds }, legacy) as any;
+			expect(bill.live_voice_nanos).toBe(nanos);
+			expect(bill.live_voice_nanos).toBe((priceLiveUsage({ live_seconds: seconds }, config) as any).live_voice_nanos);
+			if (seconds) expect(bill.pricing.lines[0]).toMatchObject({ dimension: "audio_seconds", component: "voice" });
+		});
+	it("sends the session's own Live model upstream", () => {
+		expect(liveStartEvent(config, "marin", undefined, "openai/gpt-live-1.1").session.model).toBe("gpt-live-1.1");
+		expect(liveStartEvent(config, "marin").session.model).toBe("gpt-live-1");
+		expect(() => liveStartEvent(config, "marin", undefined, "openai/gpt-realtime-2.1")).toThrow("live_model_not_supported");
+	});
+	it("accepts both Live models on /v1/live/sessions and nothing else", () => {
+		for (const model of ["openai/gpt-live-1", "gpt-live-1", "openai/gpt-live-1.1", "gpt-live-1.1"]) {
+			expect(createLiveSessionSchema.safeParse({ model, provider: "openai" }).success).toBe(true);
+		}
+		for (const model of ["openai/gpt-live-1-mini", "openai/gpt-live-2", "openai/gpt-realtime-2.1"]) {
+			expect(createLiveSessionSchema.safeParse({ model, provider: "openai" }).success).toBe(false);
+		}
 	});
 });
 

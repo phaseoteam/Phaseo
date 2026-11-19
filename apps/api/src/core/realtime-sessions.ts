@@ -1098,7 +1098,7 @@ async function evaluateActiveRealtimePolicy(
 	if (!policyResult.ok) {
 		return { ok: false, reason: "realtime_workspace_policy_blocked", spendLimit: false };
 	}
-	if (live && !applyWorkspacePolicy({ providers: livePolicyCandidates(candidates), resolvedModel: session.model_id,
+	if (live && !applyWorkspacePolicy({ providers: livePolicyCandidates(candidates, session.model_id), resolvedModel: session.model_id,
 		body: { model: session.model_id, provider }, workspacePolicy }).ok) {
 		return { ok: false, reason: "realtime_workspace_policy_blocked", spendLimit: false };
 	}
@@ -1155,7 +1155,7 @@ export async function createRealtimeSession(args: {
 		throw new Error("live_session_invalid");
 	}
 	if (live && !LIVE_VOICES.includes(voice as typeof LIVE_VOICES[number])) throw new Error("live_voice_not_supported");
-	const liveSettings = live ? await createLiveConfig(args.liveBackendModel!, args.liveBackendSettings) : null;
+	const liveSettings = live ? await createLiveConfig(modelId, args.liveBackendModel!, args.liveBackendSettings) : null;
 	const priceCard = live ? null : await requireRealtimePriceCard(provider, modelId);
 
 	const supabase = getSupabaseAdmin();
