@@ -14325,8 +14325,8 @@ components:
           description: Total de tokens de entrada de todas as passagens, informado pelo provedor.
         output_tokens:
           type: integer
-          enum:
-            - 0
+          minimum: 0
+          description: Tokens de saída dos valores de campo decodificados, informados pelo provedor. Tokens de saída não são cobrados.
         total_tokens:
           type: integer
           minimum: 0

@@ -15219,8 +15219,8 @@ components:
           description: Provider-reported aggregate input tokens across all passes.
         output_tokens:
           type: integer
-          enum:
-            - 0
+          minimum: 0
+          description: Provider-reported output tokens for decoded field values. Output tokens are not billed.
         total_tokens:
           type: integer
           minimum: 0

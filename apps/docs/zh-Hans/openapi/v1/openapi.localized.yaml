@@ -14325,8 +14325,8 @@ components:
           description: 提供商报告的所有处理轮次的输入令牌总数。
         output_tokens:
           type: integer
-          enum:
-            - 0
+          minimum: 0
+          description: 提供商报告的已解码字段值的输出令牌数。输出令牌不计费。
         total_tokens:
           type: integer
           minimum: 0

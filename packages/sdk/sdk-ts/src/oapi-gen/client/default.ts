@@ -3956,7 +3956,7 @@ export async function createExtraction(
   truncated: boolean;
   usage: {
     input_tokens: number;
-    output_tokens: 0;
+    output_tokens: number;
     total_tokens: number;
   };
 }> {
@@ -3987,7 +3987,7 @@ export async function createExtraction(
     truncated: boolean;
     usage: {
       input_tokens: number;
-      output_tokens: 0;
+      output_tokens: number;
       total_tokens: number;
     };
   }>({

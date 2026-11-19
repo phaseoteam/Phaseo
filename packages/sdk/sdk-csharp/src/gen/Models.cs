@@ -3664,7 +3664,7 @@ public sealed class ExtractionUsage
 	public long InputTokens { get; set; }
 
 	[JsonPropertyName("output_tokens")]
-	public string OutputTokens { get; set; }
+	public long OutputTokens { get; set; }
 
 	[JsonPropertyName("total_tokens")]
 	public long TotalTokens { get; set; }
