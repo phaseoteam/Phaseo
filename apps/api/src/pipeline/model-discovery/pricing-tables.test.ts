@@ -4,7 +4,10 @@ import {
 	extractMdxPricingText,
 	extractPriceContentText,
 	extractPricingTableText,
+	extractPriceValues,
+	fetchPricingTableSnapshots,
 	hasPricingSourceChanged,
+	PRICE_VALUES_FINGERPRINT_PREFIX,
 	PRICING_TABLE_SOURCES,
 	pricingContentLines,
 } from "./pricing-tables";
@@ -115,6 +118,44 @@ describe("hasPricingSourceChanged", () => {
 	it("detects changed rates on the same source", () => {
 		expect(hasPricingSourceChanged({ source_url: "api", fingerprint: "old" }, { sourceUrl: "api", fingerprint: "new" })).toBe(true);
 		expect(hasPricingSourceChanged({ source_url: "api", fingerprint: "same" }, { sourceUrl: "api", fingerprint: "same" })).toBe(false);
+	});
+
+	it("re-baselines instead of alerting when the fingerprint scheme changes", () => {
+		const priceValues = `${PRICE_VALUES_FINGERPRINT_PREFIX}abc`;
+		expect(hasPricingSourceChanged({ source_url: "api", fingerprint: "old-content-hash" }, { sourceUrl: "api", fingerprint: priceValues })).toBe(false);
+		expect(hasPricingSourceChanged({ source_url: "api", fingerprint: priceValues }, { sourceUrl: "api", fingerprint: `${PRICE_VALUES_FINGERPRINT_PREFIX}def` })).toBe(true);
+	});
+});
+
+describe("fetchPricingTableSnapshots price-content fingerprints", () => {
+	// Shape of cohere.com/pricing on 2026-11-19: the sentence after the GPU table came and went between fetches.
+	const gpuTable = "<table><tr><td>H100 80GB</td><td>$6.25</td><td>$4.25</td></tr><tr><td>GB200 192GB</td><td>$12.50</td><td>$10.00</td></tr></table>";
+	const withNote = `<main><h2>Hourly Price</h2>${gpuTable}<p><strong>Reserved capacity available. </strong>Please contact sales.</p></main>`;
+	const withoutNote = `<main><h2>Hourly Price</h2>${gpuTable}</main>`;
+
+	async function cohereFingerprint(html: string): Promise<string> {
+		const request = (async () => new Response(html)) as unknown as typeof fetch;
+		const { snapshots } = await fetchPricingTableSnapshots(new Map(), request);
+		const cohere = snapshots.find((snapshot) => snapshot.providerId === "cohere");
+		if (!cohere) throw new Error("cohere snapshot missing");
+		return cohere.fingerprint;
+	}
+
+	it("ignores copy changes around unchanged Cohere prices", async () => {
+		const before = await cohereFingerprint(withNote);
+		expect(before.startsWith(PRICE_VALUES_FINGERPRINT_PREFIX)).toBe(true);
+		expect(await cohereFingerprint(withoutNote)).toBe(before);
+		expect(await cohereFingerprint(withNote.replace("<main>", "<main><p>New hero copy</p>"))).toBe(before);
+	});
+
+	it("still detects a changed or swapped Cohere price", async () => {
+		const before = await cohereFingerprint(withNote);
+		expect(await cohereFingerprint(withNote.replace("$12.50", "$11.50"))).not.toBe(before);
+		expect(await cohereFingerprint(withNote.replace("$6.25</td><td>$4.25", "$4.25</td><td>$6.25"))).not.toBe(before);
+	});
+
+	it("normalizes spacing and case in price values", () => {
+		expect(extractPriceValues("<p>Input $ 2.50 / 1M tokens</p><script>var p = '$9'</script>")).toEqual(["$2.50/1m"]);
 	});
 });
 
