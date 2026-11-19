@@ -179,6 +179,7 @@
     "models/ExtractionAnswer.ts",
     "models/ExtractionDateField.ts",
     "models/ExtractionDatetimeField.ts",
+    "models/ExtractionDocument.ts",
     "models/ExtractionDurationField.ts",
     "models/ExtractionField.ts",
     "models/ExtractionImage.ts",

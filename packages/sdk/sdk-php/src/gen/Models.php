@@ -2555,6 +2555,14 @@ class ExtractionDatetimeField
 	public $type;
 }
 
+class ExtractionDocument
+{
+	/** @var string */
+	public $base64;
+	/** @var string */
+	public $content_type;
+}
+
 class ExtractionDurationField
 {
 	/** @var int|null */
@@ -2629,6 +2637,8 @@ class ExtractionNumberField
 
 class ExtractionRequest
 {
+	/** @var array|null */
+	public $documents;
 	/** @var array<string, mixed> */
 	public $fields;
 	/** @var array|null */

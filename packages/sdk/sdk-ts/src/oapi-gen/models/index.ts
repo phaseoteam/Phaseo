@@ -174,6 +174,7 @@ export type { ErrorUpstreamError } from "./ErrorUpstreamError.js";
 export type { ExtractionAnswer } from "./ExtractionAnswer.js";
 export type { ExtractionDateField } from "./ExtractionDateField.js";
 export type { ExtractionDatetimeField } from "./ExtractionDatetimeField.js";
+export type { ExtractionDocument } from "./ExtractionDocument.js";
 export type { ExtractionDurationField } from "./ExtractionDurationField.js";
 export type { ExtractionField } from "./ExtractionField.js";
 export type { ExtractionImage } from "./ExtractionImage.js";

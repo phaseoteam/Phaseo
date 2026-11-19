@@ -3869,6 +3869,10 @@ export type CreateExtractionParams = {
   query?: Record<string, never>;
   headers?: Record<string, never>;
   body?: {
+    documents?: {
+      base64: string;
+      content_type: "application/pdf";
+    }[];
     fields: {
       [key: string]:
         | {

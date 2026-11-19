@@ -566,6 +566,7 @@ export type IRExtractionRequest = {
   sourceText: string;
   fields: Record<string, import("./extraction").ExtractionField>;
   images?: Array<{ contentType: "image/png" | "image/jpeg" | "image/webp"; base64: string }>;
+  documents?: Array<{ contentType: "application/pdf"; base64: string }>;
   referenceDate?: string;
   rawRequest?: unknown;
 };

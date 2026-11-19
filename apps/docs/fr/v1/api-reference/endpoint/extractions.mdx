@@ -70,8 +70,10 @@ Les nombres et les durées prennent en charge `integer` et `decimals` (0–6). L
 `reference_date` lorsque l’interprétation de dates incomplètes dépend d’une année précise.
 
 Les entrées image utilisent des objets `{ content_type, base64 }` : au plus quatre images PNG/JPEG/WebP,
-de 4 MiB chacune et de 8 MiB au total après décodage. La limite de la requête est de 16 MiB.
-Les URL distantes, les PDF, l’audio, la vidéo, les estimations, les prévisions et le streaming ne sont pas pris en charge.
+de 4 MiB chacune et de 8 MiB au total après décodage. Les PDF se placent dans `documents` sous forme d’objets
+`{ content_type: "application/pdf", base64 }`, de 4 MiB chacun. Les images et les pages PDF rendues ne peuvent pas
+dépasser quatre au total, et les images et les PDF partagent la limite de 8 MiB. Les PDF chiffrés sont refusés.
+La limite de la requête est de 16 MiB. Les URL distantes, l’audio, la vidéo, les estimations, les prévisions et le streaming ne sont pas pris en charge.
 
 ## Lire les réponses
 
