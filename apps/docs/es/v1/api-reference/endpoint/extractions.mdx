@@ -85,6 +85,6 @@ tu carga de trabajo. Una lista vacía válida es distinta de una solicitud falli
 vuelve a enviar una entrada más corta antes de confiar en que esté completa. No se exponen los desplazamientos de texto ni las conjeturas sin procesar.
 Los cálculos aritméticos complejos deben hacerse en el código de la aplicación.
 
-Los informes de uso agregan `input_tokens` de todas las pasadas del proveedor. Los tokens de salida son
-cero. Usa los precios que devuelve el gateway en lugar de estimar el coste a partir de la longitud del origen
+Los informes de uso agregan `input_tokens` de todas las pasadas del proveedor. Los tokens de salida se
+informan, pero no se facturan. Usa los precios que devuelve el gateway en lugar de estimar el coste a partir de la longitud del origen
 o de multiplicar el uso por el número de campos.

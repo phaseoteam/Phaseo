@@ -14325,8 +14325,8 @@ components:
           description: Vom Anbieter gemeldete Summe der Eingabetokens über alle Durchläufe.
         output_tokens:
           type: integer
-          enum:
-            - 0
+          minimum: 0
+          description: Vom Anbieter gemeldete Ausgabetokens für dekodierte Feldwerte. Ausgabetokens werden nicht berechnet.
         total_tokens:
           type: integer
           minimum: 0

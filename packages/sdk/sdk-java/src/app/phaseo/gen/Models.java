@@ -1545,7 +1545,7 @@ public final class Models {
 
 	public static class ExtractionUsage {
 		public Integer input_tokens;
-		public Object output_tokens;
+		public Integer output_tokens;
 		public Integer total_tokens;
 	}
 

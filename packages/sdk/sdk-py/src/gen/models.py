@@ -1359,7 +1359,7 @@ class ExtractionTimeField(TypedDict):
 
 class ExtractionUsage(TypedDict):
 	input_tokens: int
-	output_tokens: Literal[0]
+	output_tokens: int
 	total_tokens: int
 
 class FileContentPart(TypedDict):

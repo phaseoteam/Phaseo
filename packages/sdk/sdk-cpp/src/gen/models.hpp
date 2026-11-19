@@ -1535,7 +1535,7 @@ struct ExtractionTimeField {
 
 struct ExtractionUsage {
 	int input_tokens;
-	std::any output_tokens;
+	int output_tokens;
 	int total_tokens;
 };
 

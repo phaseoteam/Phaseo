@@ -14325,8 +14325,8 @@ components:
           description: सभी पास के कुल इनपुट टोकन, जैसा प्रदाता ने बताया है।
         output_tokens:
           type: integer
-          enum:
-            - 0
+          minimum: 0
+          description: डिकोड किए गए फ़ील्ड मानों के आउटपुट टोकन, जैसा प्रदाता ने बताया है। आउटपुट टोकन का शुल्क नहीं लिया जाता।
         total_tokens:
           type: integer
           minimum: 0

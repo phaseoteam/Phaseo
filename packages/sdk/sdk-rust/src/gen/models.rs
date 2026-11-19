@@ -1536,7 +1536,7 @@ pub struct ExtractionTimeField {
 
 pub struct ExtractionUsage {
 	pub input_tokens: i64,
-	pub output_tokens: String,
+	pub output_tokens: i64,
 	pub total_tokens: i64,
 }
 

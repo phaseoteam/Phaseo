@@ -2685,7 +2685,7 @@ class ExtractionUsage
 {
 	/** @var int */
 	public $input_tokens;
-	/** @var string */
+	/** @var int */
 	public $output_tokens;
 	/** @var int */
 	public $total_tokens;

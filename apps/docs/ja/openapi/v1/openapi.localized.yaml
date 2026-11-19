@@ -14325,8 +14325,8 @@ components:
           description: プロバイダーが報告する、全パスの合計入力トークン数。
         output_tokens:
           type: integer
-          enum:
-            - 0
+          minimum: 0
+          description: プロバイダーが報告する、デコードされたフィールド値の出力トークン数。出力トークンは課金されません。
         total_tokens:
           type: integer
           minimum: 0

@@ -14325,8 +14325,8 @@ components:
           description: إجمالي رموز الإدخال عبر جميع التمريرات، كما أبلغ عنه المزوّد.
         output_tokens:
           type: integer
-          enum:
-            - 0
+          minimum: 0
+          description: رموز الإخراج لقيم الحقول المفكوكة، كما أبلغ عنها المزوّد. لا تُحتسب رموز الإخراج في الفاتورة.
         total_tokens:
           type: integer
           minimum: 0

@@ -2143,7 +2143,7 @@ module Phaseo
     # @!attribute [rw] input_tokens
     #   @return [Integer]
     # @!attribute [rw] output_tokens
-    #   @return [String]
+    #   @return [Integer]
     # @!attribute [rw] total_tokens
     #   @return [Integer]
     ExtractionUsage = Struct.new(:input_tokens, :output_tokens, :total_tokens, keyword_init: true)

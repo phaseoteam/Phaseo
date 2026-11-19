@@ -6,11 +6,18 @@ import type { Bill, ProviderExecutor } from "@executors/types";
 import { readStreamTextWithLimit } from "@core/bounded-stream";
 import { runCloudflareModel, unwrapCloudflareResult } from "../shared";
 
+// Workers AI route slug -> short name Cloudflare expects in the request body (it rejects the full id there for Clef).
+const CLAIRIC_MODELS: Record<string, string> = {
+  "@cf/cloudflare/clairic": "clairic",
+  "@cf/cloudflare/clairic-flash": "clairic-flash",
+};
 const tokenCount = lazySchema(() => z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER));
 const payloadSchema = lazySchema(() => z.object({
-  model: z.enum(["clairic", "@cf/cloudflare/clairic"]),
+  // Informational only: Cloudflare's docs disagree on the echoed name (e.g. "clairic" vs "clairic-27b").
+  model: z.string().optional(),
   answers: z.unknown(), truncated: z.boolean(),
-  usage: z.object({ input_tokens: tokenCount, output_tokens: z.literal(0),
+  // Since the 2026-11-18 refresh Clairic decodes field values, so output_tokens > 0. Cloudflare does not bill them.
+  usage: z.object({ input_tokens: tokenCount, output_tokens: tokenCount,
     state_tokens: tokenCount.optional(), image_tokens: tokenCount.optional(), schema_tokens: tokenCount.optional(), passes: tokenCount.optional() }),
 }));
 
@@ -18,12 +25,13 @@ export const executor: ProviderExecutor = async args => {
   const ir = args.ir as IRExtractionRequest;
   const images = ir.images?.map(image => ({ content_type: image.contentType, base64: image.base64 }));
   const checked = ExtractionsSchema.safeParse({ model: ir.model, input: ir.sourceText, fields: ir.fields, images, reference_date: ir.referenceDate });
-  if (!checked.success || args.providerModelSlug !== "@cf/cloudflare/clairic") {
+  const upstreamModel = Object.hasOwn(CLAIRIC_MODELS, args.providerModelSlug) ? CLAIRIC_MODELS[args.providerModelSlug] : undefined;
+  if (!checked.success || !upstreamModel) {
     return { kind: "completed", terminal: true, localClientError: true,
-      upstream: Response.json({ error: "unsupported_extraction_request", message: "Select Clairic and supply a valid extraction request." }, { status: 400 }),
+      upstream: Response.json({ error: "unsupported_extraction_request", message: "Select a Clairic model and supply a valid extraction request." }, { status: 400 }),
       bill: { cost_cents: 0, currency: "USD" } };
   }
-  const body = JSON.stringify({ model: "clairic", state: ir.sourceText, fields: ir.fields,
+  const body = JSON.stringify({ model: upstreamModel, state: ir.sourceText, fields: ir.fields,
     ...(images?.length ? { images } : {}),
     ...(ir.referenceDate ? { reference_date: ir.referenceDate } : {}),
   });
@@ -39,12 +47,13 @@ export const executor: ProviderExecutor = async args => {
     if (envelope?.success === false) throw new Error("Cloudflare extraction failed");
     payload = unwrapCloudflareResult(envelope);
     const parsed = payloadSchema.parse(payload);
-    const usage = { input_tokens: parsed.usage.input_tokens, output_tokens: 0, total_tokens: parsed.usage.input_tokens, requests: 1 };
+    const { input_tokens, output_tokens } = parsed.usage;
+    const usage = { input_tokens, output_tokens, total_tokens: input_tokens + output_tokens, requests: 1 };
     // Preserve billed aggregate usage even when semantic answer validation fails.
     common.bill = { ...bill, usage };
     const answers = validateExtractionAnswers(ir.fields, parsed.answers);
     const result: IRExtractionResponse = { model: ir.model, answers, truncated: parsed.truncated,
-      usage: { inputTokens: usage.input_tokens, outputTokens: 0, totalTokens: usage.total_tokens } };
+      usage: { inputTokens: input_tokens, outputTokens: output_tokens, totalTokens: usage.total_tokens } };
     return { ...common, upstream: new Response(rawBody, { status: response.status, headers: response.headers }), ir: result, rawResponse: payload };
   } catch {
     return { ...common, terminal: true,

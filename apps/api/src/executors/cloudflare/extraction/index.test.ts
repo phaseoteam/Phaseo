@@ -58,6 +58,34 @@ describe("Cloudflare extraction contract", () => {
       if (failure === "wrong-type") expect(result.bill.usage?.input_tokens).toBe(655);
     } finally { mock.restore(); }
   });
+  it("routes Clairic Flash with its own short model name", async () => {
+    const mock = installFetchMock([{ match: url => url.endsWith("/ai/run/@cf/cloudflare/clairic-flash"), response: jsonResponse({ success: true, result: { ...payload(), model: "clairic-flash" } }) }]);
+    try {
+      const result = await execute({ ...args(), providerModelSlug: "@cf/cloudflare/clairic-flash" });
+      expect(result.upstream.status).toBe(200);
+      expect(mock.calls[0].bodyJson).toMatchObject({ model: "clairic-flash", state: request.input });
+      expect(result.bill.usage).toMatchObject({ input_tokens: 655, output_tokens: 0 });
+    } finally { mock.restore(); }
+  });
+  it("accepts the refreshed 27B Clairic response (live shape 2026-11-18: clairic-27b, output tokens, decoder metadata)", async () => {
+    const live = { model: "clairic-27b", truncated: false,
+      answers: {
+        total: { type: "number", value: 1080, valid: true, complete: true, decoder: "parallel-ar-json-scalar-v1", tokens: 6, raw: "1080", span: [15, 19],
+          p_null: 0.0002, p_null_method: "ar_first_token_null_probability", confidence: 0.9986, log_probability: -0.0014, confidence_method: "ar_sequence_probability" },
+        po: { type: "text", value: null, valid: true, complete: true, decoder: "parallel-ar-json-scalar-v1", tokens: 2, raw: "null", span: null,
+          p_null: 0.97, p_null_method: "ar_first_token_null_probability", confidence: 0.97, confidence_method: "ar_sequence_probability" } },
+      usage: { state_tokens: 57, image_tokens: 0, schema_tokens: 1561, input_tokens: 2188, output_tokens: 40, passes: 12 } };
+    const mock = installFetchMock([{ match: () => true, response: jsonResponse({ success: true, result: live, errors: [], messages: [] }) }]);
+    try {
+      const result = await execute(args());
+      expect(result.upstream.status).toBe(200);
+      expect(result.bill.usage).toMatchObject({ input_tokens: 2188, output_tokens: 40, total_tokens: 2228 });
+      if (result.kind !== "completed") throw new Error("Expected completed");
+      const response = encodeExtractionResponse(result.ir as import("@core/ir").IRExtractionResponse);
+      expect(response.answers.total).toEqual({ type: "number", value: 1080, confidence: 0.9986, p_null: 0.0002 });
+      expect(response.usage).toEqual({ input_tokens: 2188, output_tokens: 40, total_tokens: 2228 });
+    } finally { mock.restore(); }
+  });
   it("rejects unsupported models before fetching", async () => {
     const mock = installFetchMock([]);
     try { expect((await execute({ ...args(), providerModelSlug: "@cf/cloudflare/clef" })).upstream.status).toBe(400); expect(mock.calls).toHaveLength(0); }
