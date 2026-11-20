@@ -57,7 +57,7 @@
 		"@statsig/react-bindings": "^3.33.5",
 		"@statsig/session-replay": "^3.33.5",
 		"@statsig/web-analytics": "^3.33.5",
-		"@streamdown/math": "^1.0.2",
+		"@streamdown/math": "^1.0.3",
 		"@stripe/react-stripe-js": "^6.3.0",
 		"@stripe/stripe-js": "^9.7.0",
 		"@supabase/ssr": "^0.12.7",
