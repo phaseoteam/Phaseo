@@ -2843,9 +2843,8 @@ export class RealtimeRelayDurableObject {
 		if (!force && now - this.lastUsageCheckpointAt < RELAY_USAGE_CHECKPOINT_INTERVAL_MS) return;
 		this.lastUsageCheckpointAt = now;
 		// Sideband event ids go with the usage they produced, so a replay after a restart is skipped.
-		await this.state.storage.put(this.webrtc
-			? { [STORAGE_USAGE]: this.usage, [STORAGE_LIVE_EVENT_IDS]: this.liveSeenEventIds }
-			: { [STORAGE_USAGE]: this.usage });
+		if (this.webrtc) await this.state.storage.put({ [STORAGE_USAGE]: this.usage, [STORAGE_LIVE_EVENT_IDS]: this.liveSeenEventIds });
+		else await this.state.storage.put(STORAGE_USAGE, this.usage);
 	}
 
 	private async persistProviderState() {
