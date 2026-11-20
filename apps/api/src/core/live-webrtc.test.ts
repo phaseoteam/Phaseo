@@ -10,7 +10,7 @@ import {
 	liveWebRTCCreateBody,
 	parseLiveWebRTCCreateResponse,
 } from "./live-webrtc";
-import { LIVE_WEBRTC_HANGUP_AFTER_MS, LIVE_WEBRTC_HEARTBEAT_MS, RealtimeRelayDurableObject } from "./realtime-relay-durable-object";
+import { LIVE_HANGUP_RETRY_MS, LIVE_WEBRTC_HANGUP_AFTER_MS, LIVE_WEBRTC_HEARTBEAT_MS, RealtimeRelayDurableObject } from "./realtime-relay-durable-object";
 import { createLiveSessionSchema } from "@/routes/v1/data/realtime-sessions";
 
 const mocks = vi.hoisted(() => ({
@@ -71,7 +71,8 @@ class FakeSocket {
 	drop() { this.readyState = 3; for (const listener of this.listeners.close ?? []) listener({ code: 1006 }); }
 }
 
-type OpenAIMock = { create: any[]; hangups: string[]; sockets: FakeSocket[]; createResponse: () => Response; attachFails: boolean };
+type OpenAIMock = { create: any[]; hangups: string[]; sockets: FakeSocket[]; createResponse: () => Response; attachFails: boolean;
+	attachHangs: boolean; hangupResponse: () => Response | Promise<Response> };
 let openai: OpenAIMock;
 
 function sessionRow(overrides: Record<string, unknown> = {}) {
@@ -90,7 +91,8 @@ function relay() {
 			else for (const [entry, item] of Object.entries(key)) data.set(entry, structuredClone(item));
 		}),
 		get: vi.fn(async (key: string) => structuredClone(data.get(key))),
-		setAlarm: vi.fn(async () => undefined),
+		delete: vi.fn(async (key: string) => data.delete(key)),
+		setAlarm: vi.fn(async (_at: number) => undefined),
 		deleteAll: vi.fn(async () => data.clear()),
 		deleteAlarm: vi.fn(async () => undefined),
 	};
@@ -112,7 +114,8 @@ function start(object: any, standby: unknown = { wake_policy: { type: "speech" }
 }
 
 beforeEach(() => {
-	openai = { create: [], hangups: [], sockets: [], attachFails: false,
+	openai = { create: [], hangups: [], sockets: [], attachFails: false, attachHangs: false,
+		hangupResponse: () => new Response("{}", { status: 200 }),
 		createResponse: () => Response.json({ session: { id: "live_test" }, transport: { type: "webrtc", sdp: ANSWER } }, { status: 201 }) };
 	mocks.claim.mockImplementation(async () => sessionRow());
 	mocks.connected.mockImplementation(async () => sessionRow({ status: "connected" }));
@@ -126,6 +129,7 @@ beforeEach(() => {
 			return openai.createResponse();
 		}
 		if (url === "https://api.openai.com/v1/live/sessions/live_test/attach") {
+			if (openai.attachHangs) return new Promise(() => undefined);
 			if (openai.attachFails) return { status: 404, text: async () => "session not found" };
 			const socket = new FakeSocket();
 			openai.sockets.push(socket);
@@ -133,7 +137,7 @@ beforeEach(() => {
 		}
 		if (url === "https://api.openai.com/v1/live/sessions/live_test/hangup") {
 			openai.hangups.push(url);
-			return new Response("{}", { status: 200 });
+			return openai.hangupResponse();
 		}
 		throw new Error(`unexpected fetch ${url}`);
 	}));
@@ -411,5 +415,174 @@ describe("GPT Live WebRTC relay", () => {
 		openai.sockets[0].emit(closed("close_requested"));
 		await settled();
 		expect(mocks.settle).toHaveBeenCalledWith(expect.objectContaining({ status: "completed", disconnectReason: "client_requested_end" }));
+	});
+
+	it("bounds a stalled sideband attach by the reattach budget, then hangs up and reviews the bill", async () => {
+		vi.useFakeTimers();
+		vi.spyOn(console, "error").mockImplementation(() => undefined);
+		const { object, settled } = relay();
+		await start(object);
+		await vi.advanceTimersByTimeAsync(0);
+		await settled();
+		openai.sockets[0].emit(usage1);
+		await settled();
+		// The upgrade never answers.
+		openai.attachHangs = true;
+		openai.sockets[0].drop();
+		await vi.advanceTimersByTimeAsync(16_000);
+		await settled();
+		expect(openai.hangups).toHaveLength(1);
+		expect(mocks.unresolved).toHaveBeenCalledWith(expect.objectContaining({ reason: "live_sideband_lost" }));
+		expect(object.settled).toBe(true);
+	});
+
+	it("keeps retrying an unconfirmed hangup from the alarm after the bill goes to review", async () => {
+		vi.useFakeTimers();
+		vi.spyOn(console, "error").mockImplementation(() => undefined);
+		const first = relay();
+		await start(first.object);
+		await vi.advanceTimersByTimeAsync(0);
+		await first.settled();
+		openai.sockets[0].emit(usage1);
+		await first.settled();
+		openai.hangupResponse = () => new Response("upstream", { status: 503 });
+		openai.attachFails = true;
+		openai.sockets[0].drop();
+		await vi.advanceTimersByTimeAsync(20_000);
+		await first.settled();
+		expect(mocks.unresolved).toHaveBeenCalledOnce();
+		const hangupsBefore = openai.hangups.length;
+		expect(hangupsBefore).toBeGreaterThanOrEqual(1);
+		// Billing review is recorded, but the hangup retry survives it.
+		expect(first.data.get("live_hangup")).toMatchObject({ billing_done: true, last_status: "503" });
+		expect(first.data.get("live_session_id")).toBe("live_test");
+		expect(first.storage.deleteAlarm).not.toHaveBeenCalled();
+		const scheduled = first.storage.setAlarm.mock.calls.at(-1)![0] as number;
+		expect(scheduled).toBe((first.data.get("live_hangup") as any).next_at_ms);
+		// A fresh instance (eviction) runs the retries.
+		const second = relay();
+		for (const [key, value] of first.data) second.data.set(key, value);
+		// Before the backoff is up, nothing is sent.
+		await second.object.alarm();
+		expect(openai.hangups).toHaveLength(hangupsBefore);
+		const outcomes: Array<[() => Response | Promise<Response>, string | null]> = [
+			[() => new Response("upstream", { status: 503 }), "503"],
+			[() => Promise.reject(Object.assign(new Error("The operation timed out."), { name: "TimeoutError" })), "timeout"],
+			[() => new Response("slow down", { status: 429 }), "429"],
+			[() => new Response("{}", { status: 200 }), null],
+		];
+		for (const [response, status] of outcomes) {
+			openai.hangupResponse = response;
+			vi.setSystemTime(Date.now() + LIVE_HANGUP_RETRY_MS.at(-1)!);
+			await second.object.alarm();
+			if (status) {
+				expect(second.data.get("live_hangup")).toMatchObject({ billing_done: true, last_status: status });
+				expect(second.storage.deleteAlarm).not.toHaveBeenCalled();
+			}
+		}
+		expect(openai.hangups).toHaveLength(hangupsBefore + 4);
+		expect(second.data.size).toBe(0);
+		expect(second.storage.deleteAlarm).toHaveBeenCalled();
+		expect(mocks.unresolved).toHaveBeenCalledOnce();
+		expect(mocks.settle).not.toHaveBeenCalled();
+	});
+
+	it("treats a hangup for a session OpenAI no longer has as confirmed", async () => {
+		vi.useFakeTimers();
+		vi.spyOn(console, "error").mockImplementation(() => undefined);
+		const { object, data, storage, settled } = relay();
+		await start(object);
+		await vi.advanceTimersByTimeAsync(0);
+		await settled();
+		openai.hangupResponse = () => new Response("not found", { status: 404 });
+		openai.attachFails = true;
+		openai.sockets[0].drop();
+		await vi.advanceTimersByTimeAsync(20_000);
+		await settled();
+		expect(mocks.unresolved).toHaveBeenCalledOnce();
+		expect(data.size).toBe(0);
+		expect(storage.deleteAlarm).toHaveBeenCalled();
+	});
+
+	it("sends the bill to review when the sideband was away longer than OpenAI's replay", async () => {
+		vi.useFakeTimers();
+		vi.spyOn(console, "error").mockImplementation(() => undefined);
+		const { object, settled } = relay();
+		await start(object);
+		await vi.advanceTimersByTimeAsync(0);
+		await settled();
+		openai.sockets[0].emit(usage1);
+		await settled();
+		openai.attachFails = true;
+		openai.sockets[0].drop();
+		await vi.advanceTimersByTimeAsync(7_000);
+		openai.attachFails = false;
+		await vi.advanceTimersByTimeAsync(1_000);
+		await settled();
+		expect(openai.sockets).toHaveLength(2);
+		expect(object.usage.live_sideband_gap_ms).toBeGreaterThanOrEqual(7_000);
+		openai.sockets[1].emit(closed("remote_hangup"));
+		await settled();
+		expect(mocks.settle).not.toHaveBeenCalled();
+		expect(mocks.unresolved).toHaveBeenCalledWith(expect.objectContaining({ reason: "live_sideband_continuity_gap",
+			usage: expect.objectContaining({ live_seconds: 22, live_final: true }) }));
+		// The call had already ended at OpenAI: no hangup needed.
+		expect(openai.hangups).toHaveLength(0);
+	});
+
+	it("settles normally after a reattach inside the replay window", async () => {
+		vi.useFakeTimers();
+		const { object, settled } = relay();
+		await start(object);
+		await vi.advanceTimersByTimeAsync(0);
+		await settled();
+		openai.attachFails = true;
+		openai.sockets[0].drop();
+		await vi.advanceTimersByTimeAsync(200);
+		openai.attachFails = false;
+		await vi.advanceTimersByTimeAsync(300);
+		await settled();
+		expect(openai.sockets).toHaveLength(2);
+		expect(object.usage.live_sideband_gap_ms).toBeUndefined();
+		openai.sockets[1].emit(closed("remote_hangup"));
+		await settled();
+		expect(mocks.unresolved).not.toHaveBeenCalled();
+		expect(mocks.settle).toHaveBeenCalledWith(expect.objectContaining({ status: "completed", disconnectReason: "client_requested_end" }));
+	});
+
+	it("sees a sideband gap across a relay restart from the stored last sighting", async () => {
+		vi.useFakeTimers();
+		vi.spyOn(console, "error").mockImplementation(() => undefined);
+		const first = relay();
+		await start(first.object);
+		await vi.advanceTimersByTimeAsync(0);
+		await first.settled();
+		// The old instance dies; the next alarm only wakes a fresh one 7 s later.
+		vi.setSystemTime(Date.now() + 7_000);
+		const second = relay();
+		for (const [key, value] of first.data) second.data.set(key, value);
+		mocks.getRow.mockImplementation(async () => sessionRow({ status: "connected" }));
+		await second.object.alarm();
+		await second.settled();
+		expect(second.object.upstream).toBe(openai.sockets[1]);
+		expect(second.object.usage.live_sideband_gap_ms).toBeGreaterThanOrEqual(7_000);
+	});
+
+	it("keeps heartbeats spaced after the duration cap while session.closed is withheld", async () => {
+		const { object, storage, settled } = relay();
+		await start(object);
+		await settled();
+		object.deadlineMs = Date.now() - 1;
+		await object.alarm();
+		expect(openai.sockets[0].sent).toEqual([{ type: "session.close" }]);
+		for (let beat = 0; beat < 3; beat += 1) {
+			await object.alarm();
+			const next = storage.setAlarm.mock.calls.at(-1)![0] as number;
+			expect(next - Date.now()).toBeGreaterThan(LIVE_WEBRTC_HEARTBEAT_MS - 100);
+		}
+		expect(mocks.settle).not.toHaveBeenCalled();
+		openai.sockets[0].emit(closed("close_requested"));
+		await settled();
+		expect(mocks.settle).toHaveBeenCalledWith(expect.objectContaining({ status: "expired", disconnectReason: "realtime_max_duration" }));
 	});
 });

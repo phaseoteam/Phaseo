@@ -39,8 +39,15 @@ class FakePeerConnection extends FakeTarget {
 	close() { this.closed = true; }
 }
 
-const track = { kind: "audio" };
-const stream = { getAudioTracks: () => [track] } as unknown as MediaStream;
+const track = { kind: "audio", stop: vi.fn() };
+const stream = { getAudioTracks: () => [track], getTracks: () => [track] } as unknown as MediaStream;
+
+function microphone() {
+	const ownTrack = { kind: "audio", stopped: false, stop() { this.stopped = true; } };
+	const ownStream = { getAudioTracks: () => [ownTrack], getTracks: () => [ownTrack] };
+	vi.stubGlobal("navigator", { mediaDevices: { getUserMedia: vi.fn(async () => ownStream) } });
+	return ownTrack;
+}
 const audioElement = {} as HTMLAudioElement;
 
 describe("connectLiveWebRTC", () => {
@@ -71,5 +78,44 @@ describe("connectLiveWebRTC", () => {
 			createSession: async () => ({ id: "rt_test", connect: { transport: "websocket", url: "/v1/live/sessions/rt_test/relay" } }) }))
 			.rejects.toThrow("no WebRTC answer");
 		expect(pc.closed).toBe(true);
+		expect(track.stop).not.toHaveBeenCalled();
+	});
+
+	test("stops the microphone it opened when setup fails, including peer creation", async () => {
+		const ownTrack = microphone();
+		const pc = new FakePeerConnection();
+		await expect(connectLiveWebRTC({ audioElement, peerConnection: pc as unknown as RTCPeerConnection,
+			createSession: async () => { throw new Error("server said no"); } })).rejects.toThrow("server said no");
+		expect(ownTrack.stopped).toBe(true);
+		expect(pc.closed).toBe(true);
+
+		const second = microphone();
+		vi.stubGlobal("RTCPeerConnection", class { constructor() { throw new Error("no WebRTC here"); } });
+		await expect(connectLiveWebRTC({ audioElement, createSession: vi.fn() })).rejects.toThrow("no WebRTC here");
+		expect(second.stopped).toBe(true);
+		vi.unstubAllGlobals();
+	});
+
+	test("stops the microphone it opened on close, never a stream the caller passed", async () => {
+		const ownTrack = microphone();
+		const pc = new FakePeerConnection();
+		const createSession = async () => ({ id: "rt_test", transport: { type: "webrtc", sdp: "v=0\r\nanswer" } });
+		const connection = await connectLiveWebRTC({ audioElement, createSession, peerConnection: pc as unknown as RTCPeerConnection });
+		vi.useFakeTimers();
+		connection.close();
+		expect(ownTrack.stopped).toBe(true);
+		vi.advanceTimersByTime(1_000);
+		expect(pc.closed).toBe(true);
+		vi.useRealTimers();
+		vi.unstubAllGlobals();
+
+		const callerPc = new FakePeerConnection();
+		const callers = await connectLiveWebRTC({ stream, audioElement, createSession, peerConnection: callerPc as unknown as RTCPeerConnection });
+		vi.useFakeTimers();
+		callers.close();
+		vi.advanceTimersByTime(1_000);
+		expect(callerPc.closed).toBe(true);
+		expect(track.stop).not.toHaveBeenCalled();
+		vi.useRealTimers();
 	});
 });

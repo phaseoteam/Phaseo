@@ -17,7 +17,7 @@ export type LiveWebRTCConnectOptions = {
    * Your API key never reaches the browser.
    */
   createSession: (sdpOffer: string) => Promise<LiveWebRTCSessionInfo>;
-  /** Microphone stream. Default: `getUserMedia({ audio: true })`. */
+  /** Microphone stream. Default: `getUserMedia({ audio: true })`, stopped when the call fails or closes. A stream you pass is never stopped. */
   stream?: MediaStream;
   /** Peer connection to use. Default: a new `RTCPeerConnection()`. */
   peerConnection?: RTCPeerConnection;
@@ -36,7 +36,7 @@ export type LiveWebRTCConnection = {
   peerConnection: RTCPeerConnection;
   dataChannel: RTCDataChannel;
   stream: MediaStream;
-  /** Ends the call with `session.close` on the data channel, then closes the peer connection. */
+  /** Ends the call with `session.close` on the data channel, then closes the peer connection (and stops a microphone this helper opened). */
   close: () => void;
 };
 
@@ -56,47 +56,67 @@ function waitForIceGathering(pc: RTCPeerConnection, timeoutMs: number): Promise<
  * `GET /v1/live/sessions/{id}`, which your server can poll.
  */
 export async function connectLiveWebRTC(options: LiveWebRTCConnectOptions): Promise<LiveWebRTCConnection> {
+  // A microphone this helper opened is stopped when the call fails or ends; a stream the caller
+  // passed in is theirs and is never stopped here.
+  const ownsStream = !options.stream;
   const stream = options.stream ?? await navigator.mediaDevices.getUserMedia({ audio: true });
-  const pc = options.peerConnection ?? new RTCPeerConnection();
-  for (const track of stream.getAudioTracks()) pc.addTrack(track, stream);
-  const audio = options.audioElement ?? (typeof Audio === "function" ? new Audio() : null);
-  if (audio) audio.autoplay = true;
-  pc.addEventListener("track", (event) => {
-    if (audio) audio.srcObject = event.streams[0] ?? null;
-  });
-  const dataChannel = pc.createDataChannel("oai-events");
-  dataChannel.addEventListener("message", (message) => {
-    try {
-      const event = JSON.parse(String(message.data));
-      if (event && typeof event.type === "string") options.onEvent?.(event);
-    } catch {
-      // Not JSON: nothing to report.
+  const stopOwnStream = () => {
+    if (!ownsStream) return;
+    for (const track of stream.getTracks()) {
+      try { track.stop(); } catch { /* already stopped */ }
     }
-  });
-  const close = () => {
-    if (dataChannel.readyState === "open") dataChannel.send(JSON.stringify({ type: "session.close" }));
-    setTimeout(() => { dataChannel.close(); pc.close(); }, dataChannel.readyState === "open" ? 1_000 : 0);
+  };
+  let pc: RTCPeerConnection | null = null;
+  let dataChannel: RTCDataChannel | null = null;
+  const teardown = () => {
+    try { dataChannel?.close(); } catch { /* already closed */ }
+    try { pc?.close(); } catch { /* already closed */ }
+    stopOwnStream();
   };
   try {
-    await pc.setLocalDescription(await pc.createOffer());
-    await waitForIceGathering(pc, options.iceGatheringTimeoutMs ?? 2_000);
-    const session = await options.createSession(pc.localDescription?.sdp ?? "");
+    const peer = options.peerConnection ?? new RTCPeerConnection();
+    pc = peer;
+    for (const track of stream.getAudioTracks()) peer.addTrack(track, stream);
+    const audio = options.audioElement ?? (typeof Audio === "function" ? new Audio() : null);
+    if (audio) audio.autoplay = true;
+    peer.addEventListener("track", (event) => {
+      if (audio) audio.srcObject = event.streams[0] ?? null;
+    });
+    const channel = peer.createDataChannel("oai-events");
+    dataChannel = channel;
+    channel.addEventListener("message", (message) => {
+      try {
+        const event = JSON.parse(String(message.data));
+        if (event && typeof event.type === "string") options.onEvent?.(event);
+      } catch {
+        // Not JSON: nothing to report.
+      }
+    });
+    const close = () => {
+      const open = channel.readyState === "open";
+      if (open) channel.send(JSON.stringify({ type: "session.close" }));
+      // The microphone stops at once; the peer connection stays a moment for session.close to go out.
+      stopOwnStream();
+      setTimeout(teardown, open ? 1_000 : 0);
+    };
+    await peer.setLocalDescription(await peer.createOffer());
+    await waitForIceGathering(peer, options.iceGatheringTimeoutMs ?? 2_000);
+    const session = await options.createSession(peer.localDescription?.sdp ?? "");
     const answer = session.transport?.sdp;
     if (session.transport?.type !== "webrtc" || typeof answer !== "string") {
       throw new Error("The session response has no WebRTC answer (transport.sdp)");
     }
-    await pc.setRemoteDescription({ type: "answer", sdp: answer });
+    await peer.setRemoteDescription({ type: "answer", sdp: answer });
     const timeoutMs = options.connectTimeoutMs ?? 10_000;
-    if (dataChannel.readyState !== "open") {
+    if (channel.readyState !== "open") {
       await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error(`GPT Live WebRTC did not connect within ${timeoutMs} ms`)), timeoutMs);
-        dataChannel.addEventListener("open", () => { clearTimeout(timer); resolve(); }, { once: true });
+        channel.addEventListener("open", () => { clearTimeout(timer); resolve(); }, { once: true });
       });
     }
-    return { session, peerConnection: pc, dataChannel, stream, close };
+    return { session, peerConnection: peer, dataChannel: channel, stream, close };
   } catch (error) {
-    dataChannel.close();
-    pc.close();
+    teardown();
     throw error;
   }
 }
