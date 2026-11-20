@@ -117,3 +117,25 @@ it("settles a review whose evidence is complete, and leaves the rest to an admin
 	// The usage changed after it was quoted: the stale quote is not charged.
 	expect((await run({ complete: true }, false)).map(([name]) => name)).toEqual(["gateway_realtime_review_evidence"]);
 });
+
+it("keeps a WebRTC review with a sideband gap open: confirmed usage is a lower bound, never auto-settled", async () => {
+	// Final voice usage, nothing pending, but the sideband was away 7 s: a delegated response may be missing.
+	const usage: LiveUsage = { ...completed(), live_final: true, live_seconds: 22, live_pending_responses: [], live_tool_calls: [],
+		live_sideband_gap_ms: 7_000 };
+	const lowerBound = quote(usage);
+	expect(lowerBound.complete).toBe(false);
+	expect(lowerBound.costNanos).toBe(quote({ ...usage, live_sideband_gap_ms: undefined }).costNanos);
+	expect(lowerBound.costNanos).toBeGreaterThan(0);
+	expect(quote({ ...usage, live_sideband_gap_ms: 0 }).complete).toBe(true);
+	const rpc = vi.fn(async () => ({ data: true, error: null }));
+	const query: any = { then: (resolve: any) => resolve({ data: [{ session_id: "rt_gap" }], error: null }),
+		single: async () => ({ data: { session_id: "rt_gap", workspace_id: "workspace", model_id: "openai/gpt-live-1",
+			status: "billing_unresolved", usage, metadata }, error: null }) };
+	for (const method of ["select", "eq", "lte", "order", "limit"]) query[method] = () => query;
+	mocks.db = { from: () => query, rpc };
+	expect(await refreshRealtimeBillingReviews()).toBe(1);
+	// Evidence is stored as an incomplete lower bound (for capture_confirmed by an admin); nothing settles.
+	expect(rpc.mock.calls.map((call: unknown[]) => call[0])).toEqual(["gateway_realtime_review_evidence"]);
+	expect(rpc.mock.calls[0]).toMatchObject(["gateway_realtime_review_evidence", { p_session_id: "rt_gap",
+		p_cost_nanos: lowerBound.costNanos, p_complete: false, p_error: null }]);
+});

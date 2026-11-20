@@ -159,9 +159,6 @@ export const REALTIME_ESTIMATE_AUDIO_TOKENS_PER_SECOND: Record<"openai" | "googl
 };
 
 type RelayUsageAggregate = LiveUsage & {
-	// GPT Live over WebRTC: the longest sideband gap past OpenAI's replay window. Events in it
-	// (a whole delegated response) may never have been seen, so the bill goes to review.
-	live_sideband_gap_ms?: number;
 	input_text_tokens?: number;
 	output_text_tokens?: number;
 	input_audio_tokens?: number;
@@ -3264,7 +3261,10 @@ export class RealtimeRelayDurableObject {
 		this.noteEnd(reason);
 		if (this.isLive) {
 			try { assertLiveFinalUsage(this.usage); }
-			catch {
+			catch (error) {
+				// A sideband gap past OpenAI's replay may hide a delegated response: the usage is only
+				// a lower bound, which the review captures while an admin decides the rest.
+				const gap = error instanceof Error && error.message === "live_sideband_continuity_gap";
 				const needsDrain = this.usage.live_started && (!this.usage.live_final
 					|| this.usage.live_pending_responses?.length
 					|| this.usage.live_tool_calls?.some((call) => !call.done));
@@ -3274,11 +3274,7 @@ export class RealtimeRelayDurableObject {
 				if (needsDrain && (this.upstream?.readyState === WebSocket.OPEN || this.webrtc) && !this.liveClosing) {
 					await this.requestLiveClose(status, reason); return false;
 				}
-				return this.markBillingUnresolved("live_authoritative_usage_pending");
-			}
-			// The sideband was away longer than its replay: delegated responses may be missing.
-			if (this.webrtc && toNumber(this.usage.live_sideband_gap_ms) > 0) {
-				return this.markBillingUnresolved("live_sideband_continuity_gap");
+				return this.markBillingUnresolved(gap ? "live_sideband_continuity_gap" : "live_authoritative_usage_pending");
 			}
 		}
 		const provider = providerFromSession(this.session);
