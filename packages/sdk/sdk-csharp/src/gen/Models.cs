@@ -3492,6 +3492,16 @@ public sealed class ExtractionDatetimeField
 
 }
 
+public sealed class ExtractionDocument
+{
+	[JsonPropertyName("base64")]
+	public string Base64 { get; set; }
+
+	[JsonPropertyName("content_type")]
+	public string ContentType { get; set; }
+
+}
+
 public sealed class ExtractionDurationField
 {
 	[JsonPropertyName("decimals")]
@@ -3589,6 +3599,9 @@ public sealed class ExtractionNumberField
 
 public sealed class ExtractionRequest
 {
+	[JsonPropertyName("documents")]
+	public List<Dictionary<string, object>>? Documents { get; set; }
+
 	[JsonPropertyName("fields")]
 	public Dictionary<string, object> Fields { get; set; }
 

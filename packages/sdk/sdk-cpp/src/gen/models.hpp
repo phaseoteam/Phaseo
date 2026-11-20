@@ -1458,6 +1458,11 @@ struct ExtractionDatetimeField {
 	std::any type;
 };
 
+struct ExtractionDocument {
+	std::string base64;
+	std::any content_type;
+};
+
 struct ExtractionDurationField {
 	std::optional<int> decimals;
 	std::string instructions;
@@ -1502,6 +1507,7 @@ struct ExtractionNumberField {
 };
 
 struct ExtractionRequest {
+	std::vector<std::map<std::string, std::any>> documents;
 	std::map<std::string, std::any> fields;
 	std::vector<std::map<std::string, std::any>> images;
 	std::string input;

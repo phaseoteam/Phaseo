@@ -2048,6 +2048,11 @@ module Phaseo
     # @!attribute [rw] type
     #   @return [String]
     ExtractionDatetimeField = Struct.new(:instructions, :type, keyword_init: true)
+    # @!attribute [rw] base64
+    #   @return [String]
+    # @!attribute [rw] content_type
+    #   @return [String]
+    ExtractionDocument = Struct.new(:base64, :content_type, keyword_init: true)
     # @!attribute [rw] decimals
     #   @return [Integer, nil]
     # @!attribute [rw] instructions
@@ -2101,6 +2106,8 @@ module Phaseo
     # @!attribute [rw] unit
     #   @return [String, nil]
     ExtractionNumberField = Struct.new(:decimals, :instructions, :integer, :type, :unit, keyword_init: true)
+    # @!attribute [rw] documents
+    #   @return [Array<Hash{String => Object}>, nil]
     # @!attribute [rw] fields
     #   @return [Hash{String => Object}]
     # @!attribute [rw] images
@@ -2111,7 +2118,7 @@ module Phaseo
     #   @return [String]
     # @!attribute [rw] reference_date
     #   @return [String, nil]
-    ExtractionRequest = Struct.new(:fields, :images, :input, :model, :reference_date, keyword_init: true)
+    ExtractionRequest = Struct.new(:documents, :fields, :images, :input, :model, :reference_date, keyword_init: true)
     # @!attribute [rw] answers
     #   @return [Hash{String => Object}]
     # @!attribute [rw] model

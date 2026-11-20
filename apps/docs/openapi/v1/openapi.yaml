@@ -14935,7 +14935,7 @@ components:
         input:
           type: string
           maxLength: 16384
-          description: Source text. May be empty when images are supplied.
+          description: Source text. May be empty when images or documents are supplied.
         fields:
           type: object
           minProperties: 1
@@ -14951,6 +14951,15 @@ components:
             decoded.
           items:
             $ref: '#/components/schemas/ExtractionImage'
+        documents:
+          type: array
+          maxItems: 4
+          description: >-
+            Embedded PDF documents; 4 MiB each. Images and rendered PDF pages
+            together may not exceed 4, and images and documents share the 8 MiB
+            decoded limit.
+          items:
+            $ref: '#/components/schemas/ExtractionDocument'
         reference_date:
           type: string
           format: date
@@ -14972,6 +14981,21 @@ components:
           type: string
           maxLength: 5592408
           description: Base64-encoded image bytes, without a data URL prefix.
+    ExtractionDocument:
+      type: object
+      additionalProperties: false
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - application/pdf
+        base64:
+          type: string
+          maxLength: 5592408
+          description: Base64-encoded PDF bytes, without a data URL prefix.
     ExtractionField:
       oneOf:
         - $ref: '#/components/schemas/ExtractionTextField'

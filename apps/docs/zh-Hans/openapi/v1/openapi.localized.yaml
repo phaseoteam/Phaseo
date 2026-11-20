@@ -14043,7 +14043,7 @@ components:
         input:
           type: string
           maxLength: 16384
-          description: 源文本。提供图像时可以为空。
+          description: 源文本。提供图像或文档时可以为空。
         fields:
           type: object
           minProperties: 1
@@ -14057,6 +14057,12 @@ components:
           description: 嵌入式 PNG、JPEG 或 WebP 图像；解码后每张最多 4 MiB，合计最多 8 MiB。
           items:
             $ref: '#/components/schemas/ExtractionImage'
+        documents:
+          type: array
+          maxItems: 4
+          description: 嵌入式 PDF 文档；每个最多 4 MiB。图像和渲染后的 PDF 页面合计不得超过 4 个，图像和文档共享解码后 8 MiB 的上限。
+          items:
+            $ref: '#/components/schemas/ExtractionDocument'
         reference_date:
           type: string
           format: date
@@ -14078,6 +14084,21 @@ components:
           type: string
           maxLength: 5592408
           description: Base64 编码的图像字节，不带数据 URL 前缀。
+    ExtractionDocument:
+      type: object
+      additionalProperties: false
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - application/pdf
+        base64:
+          type: string
+          maxLength: 5592408
+          description: Base64 编码的 PDF 字节，不带数据 URL 前缀。
     ExtractionField:
       oneOf:
         - $ref: '#/components/schemas/ExtractionTextField'

@@ -14043,7 +14043,7 @@ components:
         input:
           type: string
           maxLength: 16384
-          description: النص المصدر. يمكن أن يكون فارغاً عند توفير صور.
+          description: النص المصدر. يمكن أن يكون فارغاً عند توفير صور أو مستندات.
         fields:
           type: object
           minProperties: 1
@@ -14057,6 +14057,12 @@ components:
           description: صور PNG أو JPEG أو WebP مضمّنة؛ 4 MiB لكل صورة و8 MiB إجمالاً بعد فك الترميز.
           items:
             $ref: '#/components/schemas/ExtractionImage'
+        documents:
+          type: array
+          maxItems: 4
+          description: مستندات PDF مضمّنة؛ 4 MiB لكل مستند. لا يمكن أن يتجاوز مجموع الصور وصفحات PDF المعروضة 4، وتتشارك الصور والمستندات حد 8 MiB بعد فك الترميز.
+          items:
+            $ref: '#/components/schemas/ExtractionDocument'
         reference_date:
           type: string
           format: date
@@ -14078,6 +14084,21 @@ components:
           type: string
           maxLength: 5592408
           description: بايتات صورة بترميز Base64، دون بادئة رابط بيانات.
+    ExtractionDocument:
+      type: object
+      additionalProperties: false
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - application/pdf
+        base64:
+          type: string
+          maxLength: 5592408
+          description: بايتات PDF بترميز Base64، دون بادئة رابط بيانات.
     ExtractionField:
       oneOf:
         - $ref: '#/components/schemas/ExtractionTextField'

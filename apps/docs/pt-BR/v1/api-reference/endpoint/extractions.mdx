@@ -70,8 +70,10 @@ Números e durações aceitam `integer` e `decimals` (0–6). Durações aceitam
 `reference_date` quando a interpretação de datas incompletas depender de um ano específico.
 
 Entradas de imagem usam objetos `{ content_type, base64 }`: no máximo quatro imagens PNG/JPEG/WebP,
-4 MiB cada e 8 MiB no total após a decodificação. O limite da solicitação é 16 MiB.
-URLs remotas, PDFs, áudio, vídeo, estimativas, previsões e streaming não são suportados.
+4 MiB cada e 8 MiB no total após a decodificação. PDFs vão em `documents` como objetos
+`{ content_type: "application/pdf", base64 }`, com 4 MiB cada. Imagens e páginas de PDF renderizadas não podem
+passar de quatro no total, e imagens e PDFs compartilham o limite de 8 MiB. PDFs criptografados são rejeitados.
+O limite da solicitação é 16 MiB. URLs remotas, áudio, vídeo, estimativas, previsões e streaming não são suportados.
 
 ## Ler as respostas
 

@@ -1459,6 +1459,11 @@ pub struct ExtractionDatetimeField {
 	pub r#type: String,
 }
 
+pub struct ExtractionDocument {
+	pub base64: String,
+	pub content_type: String,
+}
+
 pub struct ExtractionDurationField {
 	pub decimals: Option<i64>,
 	pub instructions: Option<String>,
@@ -1503,6 +1508,7 @@ pub struct ExtractionNumberField {
 }
 
 pub struct ExtractionRequest {
+	pub documents: Option<Vec<HashMap<String, String>>>,
 	pub fields: HashMap<String, String>,
 	pub images: Option<Vec<HashMap<String, String>>>,
 	pub input: String,

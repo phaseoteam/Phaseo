@@ -2149,6 +2149,11 @@ type ExtractionDatetimeField struct {
 	Type string `json:"type"`
 }
 
+type ExtractionDocument struct {
+	Base64 string `json:"base64"`
+	ContentType string `json:"content_type"`
+}
+
 type ExtractionDurationField struct {
 	Decimals *int `json:"decimals,omitempty"`
 	Instructions *string `json:"instructions,omitempty"`
@@ -2193,6 +2198,7 @@ type ExtractionNumberField struct {
 }
 
 type ExtractionRequest struct {
+	Documents *[]map[string]interface{} `json:"documents,omitempty"`
 	Fields map[string]interface{} `json:"fields"`
 	Images *[]map[string]interface{} `json:"images,omitempty"`
 	Input string `json:"input"`

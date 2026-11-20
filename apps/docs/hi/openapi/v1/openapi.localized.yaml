@@ -14043,7 +14043,7 @@ components:
         input:
           type: string
           maxLength: 16384
-          description: स्रोत टेक्स्ट। इमेज दिए जाने पर खाली हो सकता है।
+          description: स्रोत टेक्स्ट। इमेज या दस्तावेज़ दिए जाने पर खाली हो सकता है।
         fields:
           type: object
           minProperties: 1
@@ -14057,6 +14057,12 @@ components:
           description: एम्बेड की गई PNG, JPEG या WebP इमेज; डिकोड करने के बाद प्रति इमेज 4 MiB और कुल 8 MiB।
           items:
             $ref: '#/components/schemas/ExtractionImage'
+        documents:
+          type: array
+          maxItems: 4
+          description: एम्बेड किए गए PDF दस्तावेज़; प्रति दस्तावेज़ 4 MiB। इमेज और रेंडर किए गए PDF पेज मिलाकर 4 से अधिक नहीं हो सकते, और इमेज व दस्तावेज़ डिकोड करने के बाद 8 MiB की सीमा साझा करते हैं।
+          items:
+            $ref: '#/components/schemas/ExtractionDocument'
         reference_date:
           type: string
           format: date
@@ -14078,6 +14084,21 @@ components:
           type: string
           maxLength: 5592408
           description: Base64 में एन्कोड किए गए इमेज बाइट, डेटा URL प्रीफ़िक्स के बिना।
+    ExtractionDocument:
+      type: object
+      additionalProperties: false
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - application/pdf
+        base64:
+          type: string
+          maxLength: 5592408
+          description: Base64 में एन्कोड किए गए PDF बाइट, डेटा URL प्रीफ़िक्स के बिना।
     ExtractionField:
       oneOf:
         - $ref: '#/components/schemas/ExtractionTextField'

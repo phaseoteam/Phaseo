@@ -86,6 +86,16 @@ describe("Cloudflare extraction contract", () => {
       expect(response.usage).toEqual({ input_tokens: 2188, output_tokens: 40, total_tokens: 2228 });
     } finally { mock.restore(); }
   });
+  it("forwards embedded PDFs as Cloudflare documents", async () => {
+    const mock = installFetchMock([{ match: () => true, response: jsonResponse(payload()) }]);
+    try {
+      const requestArgs = args();
+      requestArgs.ir = decodeExtractionRequest(ExtractionsSchema.parse({ ...request, input: "", documents: [{ content_type: "application/pdf", base64: "JVBERi0xLjQK" }] }));
+      expect((await execute(requestArgs)).upstream.status).toBe(200);
+      expect(mock.calls[0].bodyJson).toMatchObject({ state: "", documents: [{ content_type: "application/pdf", base64: "JVBERi0xLjQK" }] });
+      expect(mock.calls[0].bodyJson).not.toHaveProperty("images");
+    } finally { mock.restore(); }
+  });
   it("rejects unsupported models before fetching", async () => {
     const mock = installFetchMock([]);
     try { expect((await execute({ ...args(), providerModelSlug: "@cf/cloudflare/clef" })).upstream.status).toBe(400); expect(mock.calls).toHaveLength(0); }

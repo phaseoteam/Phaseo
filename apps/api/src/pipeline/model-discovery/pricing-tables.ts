@@ -58,12 +58,44 @@ const MAX_PRICING_SAMPLES = 6;
 const MAX_STORED_CONTENT_LINES = 120;
 const MAX_STORED_CONTENT_LINE_CHARS = 240;
 
+/**
+ * Prefix of fingerprints that hash a page's price values only. Marketing pages ("price-content")
+ * change copy around their prices often: Cohere's pricing page added and dropped one sentence after
+ * its GPU table, which moved every 300-character snippet and fired an alert almost hourly with no
+ * price change. Only the prices, in page order, decide whether such a page changed.
+ */
+export const PRICE_VALUES_FINGERPRINT_PREFIX = "price-values:v1:";
+
+function fingerprintScheme(fingerprint: string): string {
+	return fingerprint.startsWith(PRICE_VALUES_FINGERPRINT_PREFIX) ? PRICE_VALUES_FINGERPRINT_PREFIX : "content";
+}
+
 export function hasPricingSourceChanged(
 	previous: { source_url: string; fingerprint: string } | undefined,
 	current: { sourceUrl: string; fingerprint: string },
 ): boolean {
 	// A replacement source needs its own baseline; unrelated pages are not a pricing diff.
-	return Boolean(previous && previous.source_url === current.sourceUrl && previous.fingerprint !== current.fingerprint);
+	if (!previous || previous.source_url !== current.sourceUrl) return false;
+	// A fingerprint from another scheme is not comparable: re-baseline instead of alerting once per page.
+	if (fingerprintScheme(previous.fingerprint) !== fingerprintScheme(current.fingerprint)) return false;
+	return previous.fingerprint !== current.fingerprint;
+}
+
+/**
+ * A whole rate: the full amount (thousands separators included) and, when written, its denominator,
+ * such as "/1M tokens" or "per million tokens". Text after that is ignored.
+ */
+const PRICE_RATE_PATTERN = new RegExp(
+	String.raw`(?:\$|¥|€)\s*(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?`
+	+ String.raw`(?:\s*(?:\/|per\b)\s*[a-z0-9.,]+`
+	+ String.raw`(?:\s+(?:tokens?|input|output|searche?s?|requests?|images?|characters?|seconds?|minutes?|hours?|pages?|units?|calls?)\b)?)?`,
+	"gi",
+);
+
+/** Every rate on the page, in page order, normalized so spacing and case never count as a change. */
+export function extractPriceValues(html: string): string[] {
+	const content = tableText(html.replace(NON_CONTENT_PATTERN, " "));
+	return Array.from(content.matchAll(PRICE_RATE_PATTERN), (match) => match[0].replace(/\s+/g, "").toLowerCase());
 }
 
 export function pricingContentLines(text: string): string[] {
@@ -165,8 +197,12 @@ export async function fetchPricingTableSnapshots(
 				signal: AbortSignal.timeout(30_000),
 			});
 			if (!response.ok) throw new Error(`${source.providerName} pricing table returned HTTP ${response.status}`);
-			const { text, tableCount } = extractPricingSourceText(await response.text(), source.extraction);
+			const body = await response.text();
+			const { text, tableCount } = extractPricingSourceText(body, source.extraction);
 			if (!text) throw new Error(`${source.providerName} pricing table did not contain price-bearing HTML tables`);
+			const fingerprint = source.extraction === "price-content"
+				? `${PRICE_VALUES_FINGERPRINT_PREFIX}${await sha256(extractPriceValues(body).join("\n"))}`
+				: await sha256(text);
 			const contentLines = pricingContentLines(text);
 			const { added, removed } = diffPricingTableContent(
 				previousContentByProvider.get(source.providerId) ?? null,
@@ -174,7 +210,7 @@ export async function fetchPricingTableSnapshots(
 			);
 			return {
 				...source,
-				fingerprint: await sha256(text),
+				fingerprint,
 				tableCount,
 				pricingSamples: extractPricingSamples(text),
 				contentLines,

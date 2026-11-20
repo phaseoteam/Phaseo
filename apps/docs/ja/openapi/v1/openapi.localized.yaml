@@ -14043,7 +14043,7 @@ components:
         input:
           type: string
           maxLength: 16384
-          description: 入力元のテキスト。画像を指定する場合は空にできます。
+          description: 入力元のテキスト。画像またはドキュメントを指定する場合は空にできます。
         fields:
           type: object
           minProperties: 1
@@ -14057,6 +14057,12 @@ components:
           description: 埋め込みのPNG、JPEG、WebP画像。デコード後に1枚あたり4 MiB、合計8 MiBまで。
           items:
             $ref: '#/components/schemas/ExtractionImage'
+        documents:
+          type: array
+          maxItems: 4
+          description: 埋め込みのPDFドキュメント。1件あたり4 MiBまで。画像とレンダリングされたPDFページは合わせて4つまでで、画像とドキュメントはデコード後の8 MiBの上限を共有します。
+          items:
+            $ref: '#/components/schemas/ExtractionDocument'
         reference_date:
           type: string
           format: date
@@ -14078,6 +14084,21 @@ components:
           type: string
           maxLength: 5592408
           description: データURLの接頭辞を付けない、Base64エンコードされた画像バイト列。
+    ExtractionDocument:
+      type: object
+      additionalProperties: false
+      required:
+        - content_type
+        - base64
+      properties:
+        content_type:
+          type: string
+          enum:
+            - application/pdf
+        base64:
+          type: string
+          maxLength: 5592408
+          description: データURLの接頭辞を付けない、Base64エンコードされたPDFバイト列。
     ExtractionField:
       oneOf:
         - $ref: '#/components/schemas/ExtractionTextField'
