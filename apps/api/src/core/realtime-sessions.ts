@@ -13,7 +13,7 @@ import { fetchGatewayContext } from "@pipeline/before/context";
 import { buildProviderCandidatesWithDiagnostics } from "@pipeline/before/utils";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { enqueueAsyncGenAiOtlpExport } from "@observability/otlp-export";
-import { isLiveModel, liveConfig, createLiveConfig, priceLiveUsage, assertLiveFinalUsage, livePolicyCandidates, liveUsageMeters, liveVoiceCard, LIVE_VOICES, type LiveUsage } from "./live-sessions";
+import { isLiveModel, liveConfig, createLiveConfig, priceLiveUsage, assertLiveFinalUsage, livePolicyCandidates, liveVoiceCard, withLiveUsageMeters, LIVE_VOICES, type LiveUsage } from "./live-sessions";
 import {
 	ELEVENLABS_DEFAULT_VOICE,
 	ELEVENLABS_PROVIDER,
@@ -778,20 +778,13 @@ function modalityTokens(details: unknown, modality: string): number {
 	}, 0);
 }
 
-// Live meters are derived from the live_* fields every time; a standby meter stored by an earlier
-// normalization must not survive when this session's card bills paused time as active.
-function normalizedLiveSource(rawUsage: Record<string, unknown>, metadata?: Record<string, unknown> | null) {
-	const { standby_audio_minutes: _stale, ...rest } = rawUsage;
-	return { ...rest, ...liveUsageMeters(rawUsage as LiveUsage, liveVoiceCard(metadata)) };
-}
-
 /**
  * Canonical usage for storage and reporting. For GPT Live, pass the session's metadata so the
  * voice meters match what its snapshotted card bills (see liveUsageMeters).
  */
 export function normalizeRealtimeUsage(rawUsage: Record<string, unknown>, metadata?: Record<string, unknown> | null): Record<string, unknown> {
 	const source = rawUsage && typeof rawUsage === "object"
-		? (rawUsage.live_started === true ? normalizedLiveSource(rawUsage, metadata) : { ...rawUsage }) as any : {};
+		? (rawUsage.live_started === true ? withLiveUsageMeters(rawUsage, liveVoiceCard(metadata)) : { ...rawUsage }) as any : {};
 	const usageMetadata = source.usageMetadata && typeof source.usageMetadata === "object"
 		? source.usageMetadata as any
 		: source;

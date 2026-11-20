@@ -39,6 +39,19 @@ it("includes completed search calls, excluding unknown pending tool cost", () =>
 	expect(quote(usage)).toMatchObject({ costNanos: 17595000, complete: false });
 	expect(quote(usage).billableUsage.native_web_search_requests).toBe(1);
 });
+it("drops a stored standby meter when the session's card bills paused time as active", () => {
+	// Usage stored by an earlier normalization still carries 11 s of standby.
+	const stored = { live_started: true, live_final: true, live_seconds: 22, live_active_seconds: 11, live_paused_seconds: 11,
+		audio_seconds: 11, audio_minutes: 11 / 60, standby_audio_minutes: 11 / 60 } as LiveUsage;
+	const activeOnly = { ...metadata, live: { ...metadata.live, voiceCard: { ...LIVE_VOICE_CARD,
+		rules: LIVE_VOICE_CARD.rules.filter((rule) => rule.meter === "audio_minutes") } } };
+	const recovery = quoteRealtimeRecovery("openai/gpt-live-1", stored, activeOnly);
+	expect(recovery.lines).toEqual([expect.objectContaining({ dimension: "audio_minutes", quantity: 22 / 60 })]);
+	expect(recovery.billableUsage).toMatchObject({ audio_seconds: 22, live_active_seconds: 11, live_paused_seconds: 11 });
+	expect(recovery.billableUsage).not.toHaveProperty("standby_audio_minutes");
+	// A standby-priced card puts the right value back.
+	expect(quote(stored).billableUsage).toMatchObject({ audio_seconds: 11, standby_audio_minutes: 11 / 60 });
+});
 it("fails closed on conflicts, duplicates and invalid counters", () => {
 	expect(() => quote({ live_started: true, live_billing_error: "conflict" })).toThrow("conflicting_evidence");
 	for (const seconds of [-1, Infinity, NaN]) expect(() => quote({ live_started: true, live_seconds: seconds })).toThrow("seconds_invalid");

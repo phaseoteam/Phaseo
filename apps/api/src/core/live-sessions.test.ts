@@ -209,6 +209,15 @@ describe("Live voice pricing from the catalogue", () => {
 		expect(bill.live_voice_nanos).toBe(18_333_333);
 		expect(liveUsageMeters(ingestAll(realSplit), priorityStandby)).not.toHaveProperty("standby_audio_minutes");
 	});
+	it("picks the active meter from standard-plan rules only", () => {
+		// A priority-plan audio_seconds rule must not move standard active time off audio_minutes,
+		// which price() would then find no standard rule for.
+		const card = { ...LIVE_VOICE_CARD, rules: [...LIVE_VOICE_CARD.rules,
+			{ ...LEGACY_LIVE_VOICE_CARD.rules[0], pricing_plan: "priority" }] };
+		const bill = priceLiveUsage(ingestAll(realSplit), { ...config, voiceCard: card }) as any;
+		expect(bill.pricing.lines.map((line: any) => line.dimension)).toEqual(["audio_minutes", "standby_audio_minutes"]);
+		expect(bill.live_voice_nanos).toBe(12_833_334);
+	});
 	it("bills a stale split as active once a later event has no split", () => {
 		const usage = ingestAll([realSplit[1], { type: "session.closed", usage: { seconds: 60 } }]);
 		expect(usage).not.toHaveProperty("live_active_seconds");
