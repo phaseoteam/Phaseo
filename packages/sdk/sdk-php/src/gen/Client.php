@@ -14,6 +14,30 @@ class Response
 	public static function header(array $headers, string $name): ?string { foreach ($headers as $key => $value) if (strcasecmp((string) $key, $name) === 0) return is_array($value) ? ($value[0] ?? null) : (string) $value; return null; }
 }
 
+/** A multipart/form-data request body; encoded fresh for every attempt. */
+class MultipartBody
+{
+	private array $fields = [];
+	private array $files = [];
+	private string $boundary;
+	public function __construct(?string $boundary = null) { $this->boundary = $boundary ?? "phaseo-" . bin2hex(random_bytes(16)); }
+	public function addField(string $name, string $value): self { $this->fields[] = [$name, $value]; return $this; }
+	public function addFile(string $name, string $content, string $filename, ?string $contentType = null): self { $this->files[] = [$name, $content, $filename, ($contentType === null || $contentType === "") ? "application/octet-stream" : $contentType]; return $this; }
+	/** @return list<array{0: string, 1: string}> */
+	public function fields(): array { return $this->fields; }
+	/** @return list<array{0: string, 1: string, 2: string, 3: string}> name, content, filename, content type */
+	public function files(): array { return $this->files; }
+	public function contentType(): string { return "multipart/form-data; boundary=" . $this->boundary; }
+	public function encode(): string
+	{
+		$out = "";
+		foreach ($this->fields as [$name, $value]) $out .= "--" . $this->boundary . "\r\nContent-Disposition: form-data; name=\"" . self::escape($name) . "\"\r\n\r\n" . $value . "\r\n";
+		foreach ($this->files as [$name, $content, $filename, $type]) $out .= "--" . $this->boundary . "\r\nContent-Disposition: form-data; name=\"" . self::escape($name) . "\"; filename=\"" . self::escape($filename) . "\"\r\nContent-Type: " . $type . "\r\n\r\n" . $content . "\r\n";
+		return $out . "--" . $this->boundary . "--\r\n";
+	}
+	private static function escape(string $value): string { return str_replace(["\"", "\r", "\n"], ["%22", "%0D", "%0A"], $value); }
+}
+
 class RequestException extends \RuntimeException
 {
 	private int $statusCode;
@@ -111,7 +135,8 @@ class Client
 			$mergedHeaders = array_merge($this->headers, $headers ?? [], $options["headers"] ?? []);
 			if (is_string($options["idempotency_key"] ?? null) && trim($options["idempotency_key"]) !== "") $mergedHeaders["Idempotency-Key"] = $options["idempotency_key"];
 			$headerLines = []; foreach ($mergedHeaders as $key => $value) $headerLines[] = $key . ": " . $value;
-			if ($body !== null) { $payload = json_encode($body, JSON_THROW_ON_ERROR); $headerLines[] = "Content-Type: application/json"; curl_setopt($ch, CURLOPT_POSTFIELDS, $payload); }
+			if ($body instanceof MultipartBody) { $headerLines[] = "Content-Type: " . $body->contentType(); curl_setopt($ch, CURLOPT_POSTFIELDS, $body->encode()); }
+			elseif ($body !== null) { $payload = json_encode($body, JSON_THROW_ON_ERROR); $headerLines[] = "Content-Type: application/json"; curl_setopt($ch, CURLOPT_POSTFIELDS, $payload); }
 			if (!empty($headerLines)) curl_setopt($ch, CURLOPT_HTTPHEADER, $headerLines);
 			$event = ["method" => $method, "url" => $url, "attempt" => $attempt, "idempotency_key" => $options["idempotency_key"] ?? null, "started_at" => microtime(true)];
 			if ($this->onRequest !== null) ($this->onRequest)($event);
@@ -146,8 +171,8 @@ class Client
 		$merged = array_merge($this->headers, $headers ?? [], ["Accept" => "text/event-stream"]);
 		$lines = [];
 		foreach ($merged as $key => $value) $lines[] = $key . ": " . $value;
-		$payload = $body === null ? null : json_encode($body, JSON_THROW_ON_ERROR);
-		if ($payload !== null) $lines[] = "Content-Type: application/json";
+		$payload = $body === null ? null : ($body instanceof MultipartBody ? $body->encode() : json_encode($body, JSON_THROW_ON_ERROR));
+		if ($payload !== null) $lines[] = "Content-Type: " . ($body instanceof MultipartBody ? $body->contentType() : "application/json");
 		$options = ["http" => ["method" => strtoupper($method), "header" => implode("\r\n", $lines), "content" => $payload ?? "", "ignore_errors" => true], "ssl" => ["verify_peer" => $this->verifyTls, "verify_peer_name" => $this->verifyTls]];
 		if ($this->verifyTls && $this->caBundlePath !== null) $options["ssl"]["cafile"] = $this->caBundlePath;
 		$stream = @fopen($url, "rb", false, stream_context_create($options));

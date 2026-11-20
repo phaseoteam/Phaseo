@@ -316,3 +316,78 @@ export function toFile(input: Blob | BufferSource | string, name = "upload", typ
   const content = ArrayBuffer.isView(input) ? new Uint8Array(input.buffer, input.byteOffset, input.byteLength).slice() : input;
   return new File([content], name, { type: input instanceof Blob && input.type ? input.type : type });
 }
+
+/**
+ * A file to upload, with its name. The gateway reads an audio file's format from the
+ * name's extension, so the name is required. `contentType` defaults to one taken from
+ * that extension.
+ */
+export type UploadFileInput = File | { fileName: string; content: Blob | BufferSource | string; contentType?: string };
+
+const UPLOAD_CONTENT_TYPES: Record<string, string> = {
+  flac: "audio/flac",
+  m4a: "audio/mp4",
+  mp3: "audio/mpeg",
+  mp4: "audio/mp4",
+  mpeg: "audio/mpeg",
+  mpga: "audio/mpeg",
+  ogg: "audio/ogg",
+  wav: "audio/wav",
+  webm: "audio/webm",
+  jsonl: "application/jsonl",
+  json: "application/json",
+};
+
+export function contentTypeForFileName(fileName: string): string {
+  const extension = fileName.toLowerCase().split(".").pop() ?? "";
+  return (fileName.includes(".") && UPLOAD_CONTENT_TYPES[extension]) || "application/octet-stream";
+}
+
+function isNamedFileObject(value: unknown): value is { fileName: unknown; content: unknown; contentType?: unknown } {
+  return Boolean(value) && typeof value === "object" && "fileName" in (value as object) && "content" in (value as object);
+}
+
+/** Turns an upload file into a named `File`. Strings and unnamed bytes are rejected. */
+export function toUploadFile(input: unknown, field = "file"): File {
+  if (typeof File !== "undefined" && input instanceof File) {
+    if (!input.name.trim()) throw new TypeError(`"${field}" needs a file name, such as "clip.mp3"; the gateway reads the format from its extension.`);
+    return input;
+  }
+  if (isNamedFileObject(input)) {
+    const { fileName, content, contentType } = input;
+    if (typeof fileName !== "string" || !fileName.trim()) {
+      throw new TypeError(`"${field}.fileName" must be a file name, such as "clip.mp3"; the gateway reads the format from its extension.`);
+    }
+    return toFile(content as Blob | BufferSource | string, fileName, typeof contentType === "string" && contentType ? contentType : contentTypeForFileName(fileName));
+  }
+  throw new TypeError(`"${field}" must be a File or { fileName, content, contentType? }, not ${typeof input === "string" ? "a string" : "unnamed data"}.`);
+}
+
+// Form fields the gateway parses from JSON text; other arrays repeat the field per item.
+const JSON_FORM_FIELDS = new Set(["provider", "debug", "include", "timestamp_granularities", "chunking_strategy", "languages", "keywords", "context_bias", "input_reference", "models"]);
+
+function formText(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return String(value);
+  return JSON.stringify(value);
+}
+
+/**
+ * Builds the multipart body for an audio request that carries a `file`, or returns
+ * `undefined` when it has none (for example a transcription that only sets `file_url`).
+ */
+export function audioFormData(body: Record<string, unknown>): FormData | undefined {
+  if (body.file === undefined || body.file === null) return undefined;
+  const form = new FormData();
+  for (const [key, value] of Object.entries(body)) {
+    if (value === undefined || value === null) continue;
+    if (key === "file") {
+      form.append("file", toUploadFile(value));
+    } else if (Array.isArray(value) && !JSON_FORM_FIELDS.has(key)) {
+      for (const item of value) form.append(key, formText(item));
+    } else {
+      form.append(key, formText(value));
+    }
+  }
+  return form;
+}

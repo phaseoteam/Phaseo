@@ -507,7 +507,17 @@ public class Phaseo {
 		);
 	}
 
+	/**
+	 * Transcribes audio. When {@code request} is a Map with a "file" entry, sends multipart/form-data.
+	 * The file is a {@link PhaseoFile}, a {@link java.nio.file.Path} or {@link java.io.File} (named by
+	 * its basename), or a {@code byte[]} or {@link java.io.InputStream} with a "filename" entry; the
+	 * filename's extension tells the gateway the audio format. "content_type" is optional. A String
+	 * file throws {@link IllegalArgumentException}. Without "file", sends JSON, for "file_url",
+	 * "file_id" or "s3_presigned_url" requests.
+	 */
 	public JsonNode createTranscription(Object request) throws IOException, InterruptedException {
+		Map<String, Object> fields = fileFields(request);
+		if (fields != null) return sendAudio("audio.transcriptions", "/audio/transcriptions", fields);
 		return withLifecycleAndTelemetry(
 			"audio.transcriptions",
 			request,
@@ -516,13 +526,57 @@ public class Phaseo {
 		);
 	}
 
+	/** Transcribes the audio file at {@code file} as multipart/form-data; {@code params} are form fields such as "model". */
+	public JsonNode createTranscription(java.nio.file.Path file, Map<String, ?> params) throws IOException, InterruptedException {
+		return createTranscription(withFile(file, params));
+	}
+
+	/**
+	 * Translates audio to English. The gateway requires a "file" entry, sent as multipart/form-data
+	 * and given in the same forms as for {@link #createTranscription(Object)}.
+	 */
 	public JsonNode createTranslation(Object request) throws IOException, InterruptedException {
+		Map<String, Object> fields = fileFields(request);
+		if (fields != null) return sendAudio("audio.translations", "/audio/translations", fields);
 		return withLifecycleAndTelemetry(
 			"audio.translations",
 			request,
 			true,
 			() -> parse(Operations.createTranslation(rawClient, null, null, null, stringify(request)))
 		);
+	}
+
+	/** Translates the audio file at {@code file} as multipart/form-data; {@code params} are form fields such as "model". */
+	public JsonNode createTranslation(java.nio.file.Path file, Map<String, ?> params) throws IOException, InterruptedException {
+		return createTranslation(withFile(file, params));
+	}
+
+	private JsonNode sendAudio(String endpoint, String path, Map<String, Object> fields) throws IOException, InterruptedException {
+		Client.RawBody body = Multipart.fileBody(fields);
+		Map<String, Object> telemetryPayload = new java.util.LinkedHashMap<>(fields);
+		telemetryPayload.put("file", "[File]");
+		return withLifecycleAndTelemetry(
+			endpoint,
+			telemetryPayload,
+			true,
+			() -> parse(rawClient.requestRaw("POST", path, null, null, body))
+		);
+	}
+
+	/** Returns a String-keyed copy of {@code request} when it is a Map with a non-null "file" entry, else null. */
+	private static Map<String, Object> fileFields(Object request) {
+		if (!(request instanceof Map)) return null;
+		Map<String, Object> fields = new java.util.LinkedHashMap<>();
+		for (Map.Entry<?, ?> entry : ((Map<?, ?>) request).entrySet()) fields.put(String.valueOf(entry.getKey()), entry.getValue());
+		return fields.get("file") != null ? fields : null;
+	}
+
+	private static Map<String, Object> withFile(Object file, Map<String, ?> params) {
+		if (file == null) throw new IllegalArgumentException("file is required");
+		Map<String, Object> fields = new java.util.LinkedHashMap<>();
+		if (params != null) fields.putAll(params);
+		fields.put("file", file);
+		return fields;
 	}
 
 	public JsonNode createBatch(Object request) throws IOException, InterruptedException {
@@ -760,13 +814,47 @@ public class Phaseo {
 		);
 	}
 
+	/**
+	 * Uploads a batch input file as multipart/form-data to /batches/files. {@code request} is a Map with
+	 * "file" (a {@link PhaseoFile}, Path, File, or a {@code byte[]} or InputStream with a "filename"
+	 * entry; never a String) and optional "purpose" (form field), "content_type" (the part's type),
+	 * and "model" / "provider" (sent in the query string).
+	 */
 	public JsonNode uploadFile(Object request) throws IOException, InterruptedException {
+		Map<String, Object> fields = fileFields(request);
+		if (fields == null) throw new IllegalArgumentException("uploadFile needs a Map with a \"file\" entry (PhaseoFile, Path, File, byte[] or InputStream)");
+		Map<String, String> query = new java.util.LinkedHashMap<>();
+		for (String key : new String[] { "model", "provider" }) {
+			Object value = fields.remove(key);
+			if (value != null && !value.toString().isBlank()) query.put(key, value.toString());
+		}
+		Client.RawBody body = Multipart.fileBody(fields);
+		Map<String, Object> telemetryPayload = new java.util.LinkedHashMap<>(fields);
+		telemetryPayload.remove("filename");
+		telemetryPayload.remove("content_type");
+		telemetryPayload.putAll(query);
+		telemetryPayload.put("file", "[File]");
 		return withLifecycleAndTelemetry(
 			"files.upload",
-			request,
+			telemetryPayload,
 			false,
-			() -> parse(Operations.uploadFile(rawClient, null, null, null, stringify(request)))
+			() -> parse(rawClient.requestRaw("POST", "/batches/files", query.isEmpty() ? null : query, null, body))
 		);
+	}
+
+	/** Uploads the file at {@code file} with {@code purpose} (for example "batch"). */
+	public JsonNode uploadFile(java.nio.file.Path file, String purpose) throws IOException, InterruptedException {
+		return uploadFile(file, purpose, null, null);
+	}
+
+	/** Uploads the file at {@code file}; {@code model} and {@code provider} (either may be null) go in the query string. */
+	public JsonNode uploadFile(java.nio.file.Path file, String purpose, String model, String provider) throws IOException, InterruptedException {
+		Map<String, Object> request = new java.util.LinkedHashMap<>();
+		request.put("file", file);
+		if (purpose != null) request.put("purpose", purpose);
+		if (model != null) request.put("model", model);
+		if (provider != null) request.put("provider", provider);
+		return uploadFile(request);
 	}
 
 	public JsonNode healthz() throws IOException, InterruptedException {

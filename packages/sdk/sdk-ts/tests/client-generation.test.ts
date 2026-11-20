@@ -33,7 +33,7 @@ describe("Phaseo generation lookup helper", () => {
       fetchImpl,
     });
 
-    const response = await client.getGeneration("gen_123") as any;
+    const response = await client.getGeneration("gen_123");
 
     expect(response.request_id).toBe("gen_123");
     expect(response.replay_supported).toBe(true);

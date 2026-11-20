@@ -14,6 +14,7 @@ import type {
   ChatMessage,
   DataModel,
   FileResponse as FileObject,
+  GenerationResponse,
   ImagesEditRequest,
   ImagesEditResponse,
   ImagesGenerationRequest,
@@ -58,7 +59,10 @@ import {
   checkCapabilities,
   checkParameterSupport,
   toFile,
+  toUploadFile,
+  audioFormData,
   type OutputSchema,
+  type UploadFileInput,
   type CapabilityRequirements,
   type ModelCapabilities,
   type ParameterSupportOptions,
@@ -102,9 +106,10 @@ import { createAndWaitForJob, waitForJob, type JobWaitOptions } from "./jobs.js"
 export { JobFailedError, JobTimeoutError, JobCancelledError, type JobWaitOptions, type JobKind } from "./jobs.js";
 
 export type KnownModelId = GeneratedKnownModelId;
-export { parseOutput, outputText, collectStream, checkCapabilities, checkParameterSupport, batchResults, matchBatchResult, downloadTo, toFile, StructuredOutputError, StreamResponseError } from "./helpers.js";
+export { parseOutput, outputText, collectStream, checkCapabilities, checkParameterSupport, batchResults, matchBatchResult, downloadTo, toFile, toUploadFile, StructuredOutputError, StreamResponseError } from "./helpers.js";
 export type {
   OutputSchema,
+  UploadFileInput,
   CapabilityRequirements,
   CapabilityCheck,
   BatchResult,
@@ -1462,7 +1467,8 @@ export class Phaseo {
 
   async uploadFile(params: {
     purpose?: string;
-    file: Blob | File | BufferSource | string;
+    /** A `File` or `{ fileName, content, contentType? }`. Blobs, bytes and strings still work with `filename`. */
+    file: UploadFileInput | Blob | BufferSource | string;
     filename?: string;
     contentType?: string;
     model?: string;
@@ -1472,7 +1478,12 @@ export class Phaseo {
       "files.upload",
       async () => {
         const form = new FormData();
-        form.append("file", toFile(params.file, params.filename, params.contentType));
+        form.append(
+          "file",
+          isUploadFileObject(params.file)
+            ? toUploadFile(params.file)
+            : toFile(params.file as Blob | BufferSource | string, params.filename, params.contentType)
+        );
         if (params.purpose) {
           form.append("purpose", params.purpose);
         }
@@ -1701,32 +1712,46 @@ export class Phaseo {
     );
   }
 
+  /**
+   * Put the audio under `file` as a `File` or `{ fileName, content, contentType? }` to send a
+   * multipart upload. Without `file` the request is sent as JSON (for example `file_url`).
+   */
   generateTranscription(body: AudioTranscriptionRequest | Record<string, unknown>): Promise<AudioTranscriptionResponse> {
     return this.withLifecycleGuard(
       body,
       () => this.telemetry.wrap(
         "audio.transcriptions",
-        () => ops.createTranscription(this.client, { body: body as AudioTranscriptionRequest }),
-        () => body
+        () => {
+          const form = audioFormData(body as Record<string, unknown>);
+          return ops.createTranscription(this.client, { body: (form ?? body) as AudioTranscriptionRequest });
+        },
+        () => redactUploadFile(body)
       )
     );
   }
 
+  /**
+   * Put the audio under `file` as a `File` or `{ fileName, content, contentType? }` to send a
+   * multipart upload. Without `file` the request is sent as JSON (for example `file_url`).
+   */
   generateTranslation(body: AudioTranslationRequest | Record<string, unknown>): Promise<AudioTranslationResponse> {
     return this.withLifecycleGuard(
       body,
       () => this.telemetry.wrap(
         "audio.translations",
-        () => ops.createTranslation(this.client, { body: body as AudioTranslationRequest }),
-        () => body
+        () => {
+          const form = audioFormData(body as Record<string, unknown>);
+          return ops.createTranslation(this.client, { body: (form ?? body) as AudioTranslationRequest });
+        },
+        () => redactUploadFile(body)
       )
     );
   }
 
-  async getGeneration(id: string): Promise<unknown> {
+  async getGeneration(id: string): Promise<GenerationResponse> {
     return this.telemetry.wrap(
       "generations.retrieve",
-      () => ops.getGeneration(this.client, { query: { id } as any }),
+      () => ops.getGeneration(this.client, { query: { id } }),
       () => ({ id }),
       extractGatewayMetadata
     );
@@ -2215,4 +2240,13 @@ function parseDateMs(value: string | null): number | null {
   if (!value) return null;
   const parsed = Date.parse(value);
   return Number.isNaN(parsed) ? null : parsed;
+}
+
+function isUploadFileObject(value: unknown): value is UploadFileInput {
+  return Boolean(value) && typeof value === "object" && "fileName" in (value as object) && "content" in (value as object);
+}
+
+function redactUploadFile(body: unknown): unknown {
+  if (!body || typeof body !== "object" || !("file" in body)) return body;
+  return { ...(body as Record<string, unknown>), file: "[File]" };
 }

@@ -185,7 +185,17 @@ async function syncCsharpTelemetryVersion(version: string): Promise<void> {
     /new TelemetryRecorder\(devtools,\s*"([^"]+)"\)/m,
     () => `new TelemetryRecorder(devtools, "${version}")`,
   );
-  if (updated) {
+  const constructorDefaultUpdated = await replaceInFile(
+    clientPath,
+    /string clientSourceVersion = "([^"]+)"\)\s*: this\(/m,
+    (match) => match[0].replace(`"${match[1]}"`, `"${version}"`),
+  );
+  const providerDefaultUpdated = await replaceInFile(
+    clientPath,
+    /FromApiKeyProvider\([\s\S]*?string clientSourceVersion = "([^"]+)"\)/m,
+    (match) => match[0].replace(`"${match[1]}"`, `"${version}"`),
+  );
+  if (updated || constructorDefaultUpdated || providerDefaultUpdated) {
     console.log(`[sdk-sync] Updated C# telemetry version to ${version}`);
   } else {
     console.log("[sdk-sync] C# telemetry version already up to date");
@@ -213,7 +223,12 @@ async function syncPhpTelemetryVersion(version: string): Promise<void> {
     /new TelemetryRecorder\(\$devtools,\s*"([^"]+)"\)/m,
     () => `new TelemetryRecorder($devtools, "${version}")`,
   );
-  if (updated) {
+  const defaultUpdated = await replaceInFile(
+    indexPath,
+    /string \$clientSourceVersion = "([^"]+)"/m,
+    () => `string $clientSourceVersion = "${version}"`,
+  );
+  if (updated || defaultUpdated) {
     console.log(`[sdk-sync] Updated PHP telemetry version to ${version}`);
   } else {
     console.log("[sdk-sync] PHP telemetry version already up to date");

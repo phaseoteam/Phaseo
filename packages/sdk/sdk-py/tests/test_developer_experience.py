@@ -425,6 +425,8 @@ def test_async_image_edits_use_multipart_and_preserve_file_ownership(tmp_path):
         parts = list(message.iter_parts())
         images = [part for part in parts if part.get_param("name", header="content-disposition") == "image"]
         assert [part.get_payload(decode=True) for part in images] == [b"image-bytes", b"other-bytes"]
+        # Unnamed image bytes keep the field name as their filename instead of raising.
+        assert [part.get_filename() for part in images] == ["image.png", "image"]
         fields = {part.get_param("name", header="content-disposition"): part.get_payload(decode=True) for part in parts}
         assert fields["mask"] == b"mask-bytes"
         assert fields["n"] == b"2"
