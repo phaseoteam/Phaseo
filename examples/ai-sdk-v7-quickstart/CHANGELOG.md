@@ -1,5 +1,12 @@
 # phaseo-ai-sdk-v7-quickstart
 
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [[`5661723`](https://github.com/phaseoteam/Phaseo/commit/56617233cbf8b7e80130ab72c99336763752acf7)]:
+  - @phaseo/ai-sdk-provider@2.0.1
+
 ## 1.0.1
 
 ### Patch Changes

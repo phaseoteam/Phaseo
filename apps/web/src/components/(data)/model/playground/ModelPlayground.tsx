@@ -1329,14 +1329,14 @@ print(response)`,
 			category: "Phaseo SDK",
 			lang: "go",
 			installCommand:
-				"go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3@latest",
+				"go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4@latest",
 			code: `package main
 
 import (
     "context"
     "encoding/json"
     "fmt"
-    phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+    phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4"
 )
 
 func main() {

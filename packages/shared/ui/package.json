@@ -1,7 +1,7 @@
 {
 	"name": "@phaseo/ui",
 	"description": "React DOM components shared by Phaseo's website, desktop app and Phaseo Factory",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"type": "module",
 	"private": true,
 	"sideEffects": false,
