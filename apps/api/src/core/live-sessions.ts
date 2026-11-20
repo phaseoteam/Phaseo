@@ -241,10 +241,13 @@ export function assertLiveFinalUsage(usage: LiveUsage) {
 	if (usage.live_tool_calls?.some((call) => !call.done)) throw new Error("live_tool_authoritative_usage_pending");
 }
 
-export function liveUsageMeters(usage: LiveUsage): Record<string, number> {
-	const { active, paused } = liveSecondsSplit(usage);
+// Reported usage, matching what priceLiveUsage bills with the session's voice card: without a
+// standard standby price, paused time is reported inside the active meter. Without a card, the
+// split is reported as OpenAI gave it. The raw split stays in the live_* fields.
+export function liveUsageMeters(usage: LiveUsage, voiceCard?: PriceCard | null): Record<string, number> {
+	const { active, standby } = liveBilledSeconds(usage, voiceCard ? hasStandbyPrice(voiceCard) : true);
 	const totals: Record<string, number> = { audio_seconds: active, audio_minutes: active / 60,
-		...(paused ? { standby_audio_minutes: paused / 60 } : {}) };
+		...(standby ? { standby_audio_minutes: standby / 60 } : {}) };
 	for (const response of usage.live_responses ?? []) {
 		for (const meter of ["input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m", "cached_write_text_tokens_12h", "output_text_tokens", "input_tokens", "output_tokens", "output_reasoning_tokens"]) {
 			totals[meter] = (totals[meter] ?? 0) + Number(response.usage[meter] ?? 0);
@@ -267,12 +270,30 @@ function liveSecondsSplit(usage: LiveUsage): { active: number; paused: number } 
 // standby price (including snapshots taken before Live was priced from the catalogue, on
 // audio_seconds) bills paused time at the active rate: never free, never a failed settlement.
 function liveVoiceMeters(usage: LiveUsage, card: PriceCard): Record<string, number> {
-	const { active, paused } = liveSecondsSplit(usage);
-	const hasStandby = card.rules.some((rule) => rule.meter === "standby_audio_minutes");
-	const activeSeconds = hasStandby ? active : active + paused;
+	const hasStandby = hasStandbyPrice(card);
+	const { active, standby: paused } = liveBilledSeconds(usage, hasStandby);
 	const standby = hasStandby ? { standby_audio_minutes: paused / 60 } : {};
-	if (card.rules.some((rule) => rule.meter === "audio_seconds")) return { audio_seconds: activeSeconds, ...standby };
-	return { audio_minutes: activeSeconds / 60, ...standby };
+	if (card.rules.some((rule) => rule.meter === "audio_seconds")) return { audio_seconds: active, ...standby };
+	return { audio_minutes: active / 60, ...standby };
+}
+
+// Only the standard plan is priced for voice, so only its standby rule counts.
+function hasStandbyPrice(card: PriceCard): boolean {
+	return card.rules.some((rule) => rule.meter === "standby_audio_minutes" && rule.pricing_plan === "standard");
+}
+
+// Seconds billed as active and as standby. Without a standby price, all of OpenAI's total is
+// active (not active + paused, which may be up to a second short of it).
+function liveBilledSeconds(usage: LiveUsage, hasStandby: boolean): { active: number; standby: number } {
+	if (!hasStandby) return { active: usage.live_seconds ?? 0, standby: 0 };
+	const { active, paused } = liveSecondsSplit(usage);
+	return { active, standby: paused };
+}
+
+/** The voice card snapshotted on a Live session, if there is one. */
+export function liveVoiceCard(metadata: Record<string, unknown> | null | undefined): PriceCard | null {
+	const card = (metadata?.live as Partial<LiveConfig> | undefined)?.voiceCard;
+	return card && Array.isArray(card.rules) ? card : null;
 }
 
 export function priceLiveUsage(usage: LiveUsage, config: LiveConfig): Record<string, unknown> {

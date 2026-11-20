@@ -184,6 +184,38 @@ describe("Live voice pricing from the catalogue", () => {
 		const legacy = priceLiveUsage(ingestAll(realSplit), { ...config, voiceCard: LEGACY_LIVE_VOICE_CARD }) as any;
 		expect(legacy.live_voice_nanos).toBe(18_333_333);
 		expect(legacy.pricing.lines).toEqual([expect.objectContaining({ dimension: "audio_seconds", quantity: 22 })]);
+		// Reported usage matches: paused time inside the active meter, no standby meter, raw split kept.
+		for (const card of [activeOnly, LEGACY_LIVE_VOICE_CARD]) {
+			const meters = liveUsageMeters(ingestAll(realSplit), card);
+			expect(meters).toMatchObject({ audio_seconds: 22, audio_minutes: 22 / 60 });
+			expect(meters).not.toHaveProperty("standby_audio_minutes");
+		}
+		expect(ingestAll(realSplit)).toMatchObject({ live_active_seconds: 11, live_paused_seconds: 11 });
+	});
+	it("bills OpenAI's total, not active + paused, when a card has no standby price and the split is a second short", () => {
+		// The split is accepted within a second of rounding, so 12 + 10 can stand for 23 s.
+		const usage = ingestAll([{ type: "session.closed", usage: { active_seconds: 12, paused_seconds: 10, seconds: 23 } }]);
+		expect(usage).toMatchObject({ live_active_seconds: 12, live_paused_seconds: 10 });
+		const legacy = priceLiveUsage(usage, { ...config, voiceCard: LEGACY_LIVE_VOICE_CARD }) as any;
+		expect(legacy.pricing.lines).toEqual([expect.objectContaining({ dimension: "audio_seconds", quantity: 23 })]);
+		expect(legacy.live_voice_nanos).toBe((priceLiveUsage({ live_seconds: 23 }, { ...config, voiceCard: LEGACY_LIVE_VOICE_CARD }) as any).live_voice_nanos);
+		expect(liveUsageMeters(usage, LEGACY_LIVE_VOICE_CARD)).toMatchObject({ audio_seconds: 23 });
+	});
+	it("only counts a standard-plan standby price", () => {
+		const priorityStandby = { ...LIVE_VOICE_CARD, rules: LIVE_VOICE_CARD.rules.map((rule) =>
+			rule.meter === "standby_audio_minutes" ? { ...rule, pricing_plan: "priority" } : rule) };
+		const bill = priceLiveUsage(ingestAll(realSplit), { ...config, voiceCard: priorityStandby }) as any;
+		expect(bill.pricing.lines.map((line: any) => [line.dimension, line.quantity])).toEqual([["audio_minutes", 22 / 60]]);
+		expect(bill.live_voice_nanos).toBe(18_333_333);
+		expect(liveUsageMeters(ingestAll(realSplit), priorityStandby)).not.toHaveProperty("standby_audio_minutes");
+	});
+	it("bills a stale split as active once a later event has no split", () => {
+		const usage = ingestAll([realSplit[1], { type: "session.closed", usage: { seconds: 60 } }]);
+		expect(usage).not.toHaveProperty("live_active_seconds");
+		expect(usage).not.toHaveProperty("live_paused_seconds");
+		expect((priceLiveUsage(usage, config) as any).pricing.lines.map((line: any) => [line.dimension, line.quantity]))
+			.toEqual([["audio_minutes", 1]]);
+		expect(liveUsageMeters(usage, config.voiceCard)).not.toHaveProperty("standby_audio_minutes");
 	});
 	it.each([[45.8, 38_166_667], [60, 50_000_000], [1, 833_333], [0, 0]])(
 		"settles a session snapshotted before catalogue pricing at the same rate (%s s)", (seconds, nanos) => {
