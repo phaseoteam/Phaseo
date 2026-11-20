@@ -31,22 +31,16 @@ beforeEach(() => setupRuntimeFromEnv({ BASETEN_API_KEY: "baseten-test" }));
 afterEach(teardownTestRuntime);
 
 describe("Baseten Decisions", () => {
-	it("rejects oversized string state before contacting Baseten", async () => {
-		const mock = installFetchMock([]);
-		try {
-			const result = await executor(argsFor({ state: "x".repeat(50_001) }));
-			expect(result).toMatchObject({ terminal: true, localClientError: true });
-			expect(result.upstream.status).toBe(400);
-			expect(mock.calls).toHaveLength(0);
-		} finally { mock.restore(); }
-	});
-	it.each(["x".repeat(50_000), "😀".repeat(25_001)])("uses code points for the state character boundary", async state => {
+	it("leaves state length limits to Baseten, which sets them per model", async () => {
+		const state = "x".repeat(200_000);
 		const mock = installFetchMock([{ match: () => true,
-			response: jsonResponse({ answers: { billing: { type: "noul", noul: 0.9 } }, usage: { input_tokens: 10, output_tokens: 1 } }),
+			response: jsonResponse({ answers: { billing: { type: "noul", noul: 0.9 } }, usage: { input_tokens: 50_000, output_tokens: 1 } }),
 		}]);
 		try {
-			expect((await executor(argsFor({ state }))).upstream.status).toBe(200);
+			const result = await executor({ ...argsFor({ state }), providerModelSlug: "decision-models/baseten-bison-latest" });
+			expect(result.upstream.status).toBe(200);
 			expect(mock.calls).toHaveLength(1);
+			expect(mock.calls[0].bodyJson).toMatchObject({ model: "decision-models/baseten-bison-latest", state });
 		} finally { mock.restore(); }
 	});
 	it.each([
@@ -91,6 +85,8 @@ describe("Baseten Decisions", () => {
 		["baselabs/elephant-1", "decision-models/baseten-elephant-9b-latest"],
 		["baselabs/mammoth-1", "decision-models/baseten-mammoth-27b-latest"],
 		["baselabs/joey-1", "decision-models/baseten-joey-2b-latest"],
+		["baselabs/bison-1", "decision-models/baseten-bison-latest"],
+		["baselabs/groundhog-1", "decision-models/baseten-groundhog-latest"],
 	])("maps %s through the Decisions IR and preserves usage", async (model, providerModelSlug) => {
 		const ir = decodeDecisionsRequest(DecisionsSchema.parse({ model, input: "Duplicate charge", questions: [
 			{ type: "predicate", instructions: "Billing?" },
@@ -210,10 +206,10 @@ describe("Baseten Decisions", () => {
 			expect(mock.calls).toHaveLength(0);
 		} finally { mock.restore(); }
 	});
-	it("does not substitute an unknown upstream model", async () => {
+	it("does not substitute a missing upstream model", async () => {
 		const mock = installFetchMock([]);
 		try {
-			for (const providerModelSlug of [undefined, "unknown"]) {
+			for (const providerModelSlug of [undefined, "", "  "]) {
 				expect((await executor({ ...argsFor(), providerModelSlug })).upstream.status).toBe(400);
 			}
 			expect(mock.calls).toHaveLength(0);
