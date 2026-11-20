@@ -153,7 +153,7 @@ namespace PhaseoSdk
             _enableDeprecationWarnings = enableDeprecationWarnings;
             _warningsAsErrors = warningsAsErrors;
             _logger = logger;
-            _telemetry = new TelemetryRecorder(devtools, "3.0.0");
+            _telemetry = new TelemetryRecorder(devtools, "4.0.0");
             _lifecycleResolver = lifecycleResolver ?? FetchModelLifecycleAsync;
             AsyncJobs = new AsyncJobsResource(this);
             Realtime = new RealtimeResource(_client, _basePath);

@@ -1,7 +1,7 @@
 {
 	"name": "@phaseo/phone-protocol",
 	"description": "What the desktop app and the phone app say to each other: frames, pairing and end-to-end envelopes, for direct connections and Phaseo Connect",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"type": "module",
 	"private": true,
 	"sideEffects": false,

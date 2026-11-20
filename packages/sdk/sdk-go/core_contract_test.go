@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/src/gen"
+	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4/src/gen"
 )
 
 func TestGeneratedTransportCoreContract(t *testing.T) {

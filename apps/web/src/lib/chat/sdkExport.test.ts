@@ -235,7 +235,7 @@ test("shell-quotes custom cURL base URLs and avoids Ruby interpolation", () => {
 
 test.each([
   ["sdk-typescript", "@phaseo/sdk"], ["sdk-python", "from phaseo import AsyncPhaseo"],
-  ["sdk-go", "sdk-go/v3"], ["sdk-csharp", "using PhaseoSdk"],
+  ["sdk-go", "sdk-go/v4"], ["sdk-csharp", "using PhaseoSdk"],
   ["sdk-java", "app.phaseo.sdk.Phaseo"], ["sdk-php", "Phaseo\\Sdk\\Phaseo"],
   ["sdk-ruby", "require \"phaseo_sdk\""], ["sdk-cpp", "phaseo::gen::CreateResponse"],
   ["sdk-rust", "use phaseo::Phaseo"],

@@ -1,5 +1,11 @@
 # @phaseo/ai-sdk-provider
 
+## 2.0.1
+
+### Patch Changes
+
+- [#3409](https://github.com/phaseoteam/Phaseo/pull/3409) [`5661723`](https://github.com/phaseoteam/Phaseo/commit/56617233cbf8b7e80130ab72c99336763752acf7) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Streaming Chat Completions requests to OpenAI models that set `reasoning_effort` and `stream_options.include_usage` (as the OpenAI SDK and the AI SDK do) no longer fail with HTTP 400 `unknown_parameter`. The AI SDK provider no longer sends `tool_choice` on requests without tools, which OpenAI models rejected with HTTP 400; this fixes plain `generateText` calls and agent frameworks that make tool-less calls, such as context compaction.
+
 ## 2.0.0
 
 ### Major Changes
