@@ -262,6 +262,13 @@ export function liveUsageMeters(usage: LiveUsage, voiceCard?: PriceCard | null):
 	return totals;
 }
 
+// Stored usage with its voice meters rebuilt from the live_* fields. A standby meter from an
+// earlier rebuild is dropped first, so it can't survive on a card that bills paused time as active.
+export function withLiveUsageMeters<T extends Record<string, unknown>>(usage: T, voiceCard?: PriceCard | null): Omit<T, "standby_audio_minutes"> & Record<string, number> {
+	const { standby_audio_minutes: _stale, ...rest } = usage;
+	return { ...rest, ...liveUsageMeters(usage as LiveUsage, voiceCard) };
+}
+
 // Active and paused seconds. The split never bills more than OpenAI's total, and without a
 // usable split all of the total is active.
 function liveSecondsSplit(usage: LiveUsage): { active: number; paused: number } {
@@ -278,7 +285,8 @@ function liveVoiceMeters(usage: LiveUsage, card: PriceCard): Record<string, numb
 	const hasStandby = hasStandbyPrice(card);
 	const { active, standby: paused } = liveBilledSeconds(usage, hasStandby);
 	const standby = hasStandby ? { standby_audio_minutes: paused / 60 } : {};
-	if (card.rules.some((rule) => rule.meter === "audio_seconds")) return { audio_seconds: active, ...standby };
+	// price() keeps only standard-plan rules, so pick the active meter from those.
+	if (card.rules.some((rule) => rule.meter === "audio_seconds" && rule.pricing_plan === "standard")) return { audio_seconds: active, ...standby };
 	return { audio_minutes: active / 60, ...standby };
 }
 
