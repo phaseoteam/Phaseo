@@ -79,7 +79,7 @@
   },
   "devDependencies": {
     "@types/jest": "29.5.14",
-    "@types/node": "^26.1.2",
+    "@types/node": "^26.6.6",
     "@types/react": "19.2.18",
     "@typescript/native": "catalog:",
     "eslint": "^9.39.5",

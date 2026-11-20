@@ -45,7 +45,7 @@
     "@ai-sdk/provider-utils": "^5.0.70"
   },
   "devDependencies": {
-    "@types/node": "^26.1.2",
+    "@types/node": "^26.6.6",
     "@typescript/native": "catalog:",
     "@vitest/coverage-v8": "^4.1.10",
     "ai": "^7.0.41",

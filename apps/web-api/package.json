@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260523.1",
-    "@types/node": "^26.1.2",
+    "@types/node": "^26.6.6",
     "@typescript/native": "catalog:",
     "eslint": "^10.13.0",
     "typescript": "catalog:",
