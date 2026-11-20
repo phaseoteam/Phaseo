@@ -79,6 +79,17 @@ import {
 } from "./elevenlabs-scribe-realtime";
 import { isLiveModel, liveConfig, liveStartEvent, ingestLiveUsage, assertLiveFinalUsage, priceLiveUsage, liveUsageMeters, type LiveUsage } from "./live-sessions";
 import {
+	LIVE_SESSIONS_URL,
+	isLiveSidebandAudioEvent,
+	liveHangupUrl,
+	liveSdpOfferError,
+	liveSidebandUrl,
+	liveWebRTCCloseReason,
+	liveWebRTCCreateBody,
+	parseLiveWebRTCCreateResponse,
+	type LiveStandbyOptions,
+} from "./live-webrtc";
+import {
 	buildSessionEndedEvent,
 	buildSessionWarningEvent,
 	classifyRealtimeEnd,
@@ -236,6 +247,41 @@ const STORAGE_SETTLEMENT_ATTEMPTS = "settlement_attempts";
 const STORAGE_CLAIMED_AT = "claimed_at_ms";
 const STORAGE_DEADLINE = "deadline_ms";
 const STORAGE_PROVIDER_COST_SINCE = "provider_cost_since_ms";
+// GPT Live over WebRTC: the transport, OpenAI's session id (never sent to the client), sideband
+// event ids already ingested, warnings for GET /v1/live/sessions/{id}, standby state and the
+// deadline for final usage after a close.
+const STORAGE_LIVE_TRANSPORT = "live_transport";
+const STORAGE_LIVE_SESSION_ID = "live_session_id";
+const STORAGE_LIVE_EVENT_IDS = "live_event_ids";
+const STORAGE_LIVE_WARNINGS = "live_warnings";
+const STORAGE_LIVE_STANDBY = "live_standby";
+const STORAGE_LIVE_DRAIN_DEADLINE = "live_drain_deadline_ms";
+// The last time the sideband was known attached (its replay covers only the 3 s before an attach),
+// and a REST hangup that OpenAI has not confirmed yet, retried from the alarm.
+const STORAGE_LIVE_SIDEBAND_SEEN = "live_sideband_seen_ms";
+const STORAGE_LIVE_HANGUP = "live_hangup";
+// The browser's media goes straight to OpenAI, so a phaseo-realtime deploy only cuts the
+// sideband. The heartbeat wakes a fresh instance soon enough to reattach inside the sideband's
+// 3 s replay, and checks the duration cap, policy and holds on quiet calls.
+export const LIVE_WEBRTC_HEARTBEAT_MS = 2_000;
+export const LIVE_SIDEBAND_RETRY_MS = [0, 250, 500, 1_000, 2_000, 4_000, 4_000, 4_000] as const;
+// Past this the call is hung up: nothing can bill it any more without its usage.
+export const LIVE_SIDEBAND_REATTACH_BUDGET_MS = 15_000;
+// session.close normally ends a call in under a second; then the REST hangup is sent too.
+export const LIVE_WEBRTC_HANGUP_AFTER_MS = 5_000;
+const LIVE_WEBRTC_CREATE_TIMEOUT_MS = 15_000;
+// OpenAI replays the 3 s before an attach; a longer gap (less a margin for clocks and network)
+// may have lost events.
+export const LIVE_SIDEBAND_REPLAY_SAFE_MS = 2_500;
+const LIVE_SIDEBAND_SEEN_PERSIST_MS = 500;
+// An unconfirmed hangup is retried with backoff until OpenAI confirms it, or until the session is
+// well past OpenAI's own duration cap (it has ended by then whatever happened here).
+export const LIVE_HANGUP_RETRY_MS = [5_000, 15_000, 30_000, 60_000, 120_000, 300_000] as const;
+const LIVE_HANGUP_GIVE_UP_AFTER_DEADLINE_MS = 10 * 60_000;
+const LIVE_HANGUP_TIMEOUT_MS = 5_000;
+type LiveHangupState = { attempts: number; next_at_ms: number; last_status: string; billing_done?: boolean };
+const LIVE_MAX_SEEN_EVENT_IDS = 512;
+const LIVE_MAX_WARNINGS = 20;
 // ElevenLabs reports a conversation's charge after the call, usually within
 // seconds. Settlement waits for it this long (holds stay in place), retrying
 // every 30 s for the first 10 minutes and every 10 minutes after that. A
@@ -473,14 +519,39 @@ export function googleUsageToAggregate(current: RelayUsageAggregate, usage: Reco
 	return addTokenUsage(current, googleUsageSnapshot(usage));
 }
 
-async function connectWebSocket(url: string, init?: RequestInit): Promise<WebSocket> {
-	const response = await fetch(wsUrlToFetchUrl(url), {
+async function connectWebSocket(url: string, init?: RequestInit, timeoutMs?: number): Promise<WebSocket> {
+	// A bounded attempt aborts the upgrade and also stops waiting for it (a fetch that ignores
+	// the signal still can't hold the caller past its budget).
+	const controller = timeoutMs != null ? new AbortController() : null;
+	let timer: ReturnType<typeof setTimeout> | null = null;
+	const request = fetch(wsUrlToFetchUrl(url), {
 		...(init ?? {}),
+		...(controller ? { signal: controller.signal } : {}),
 		headers: {
 			...(init?.headers ?? {}),
 			Upgrade: "websocket",
 		},
 	});
+	let response: Response;
+	try {
+		response = controller
+			? await Promise.race([request, new Promise<never>((_, reject) => {
+				timer = setTimeout(() => {
+					controller.abort();
+					reject(new Error(`realtime_relay_upstream_timeout_${timeoutMs}ms`));
+				}, Math.max(1, timeoutMs ?? 0));
+			})])
+			: await request;
+	} finally {
+		if (timer != null) clearTimeout(timer);
+	}
+	if (controller) {
+		// A late upgrade after the timeout is closed, not leaked.
+		void request.then((late) => {
+			if (!controller.signal.aborted) return;
+			try { (late as Response & { webSocket?: WebSocket }).webSocket?.close(1000, "realtime_relay_attach_timeout"); } catch { /* not open */ }
+		}, () => undefined);
+	}
 	const socket = (response as Response & { webSocket?: WebSocket }).webSocket;
 	if (response.status !== 101 || !socket) {
 		const body = await response.text().catch(() => "");
@@ -632,6 +703,21 @@ export class RealtimeRelayDurableObject {
 	private scribeOutstandingCommits = 0;
 	private scribeFinishing = false;
 	private scribeDoneSent = false;
+	// GPT Live over WebRTC: the browser holds the media; this object holds the sideband.
+	private webrtc = false;
+	private liveSessionId: string | null = null;
+	private sidebandAttach: Promise<boolean> | null = null;
+	private liveSeenEventIds: string[] = [];
+	private liveWarnings: Record<string, unknown>[] = [];
+	private liveStandby: boolean | null = null;
+	private liveDrainDeadlineMs = 0;
+	private liveHangupDone = false;
+	// An unconfirmed REST hangup: retried from the alarm until OpenAI confirms it.
+	private liveHangup: LiveHangupState | null = null;
+	private liveFinalTimer: number | null = null;
+	// When the sideband was last known attached, and when that was last persisted.
+	private liveSidebandSeenMs = 0;
+	private liveSidebandSeenPersistedMs = 0;
 
 	private get isLive() { return isLiveModel(this.session?.model_id); }
 	private get isScribe() { return !!this.session && providerFromSession(this.session) === ELEVENLABS_SCRIBE_REALTIME_PROVIDER; }
@@ -652,6 +738,18 @@ export class RealtimeRelayDurableObject {
 				return new Response("forbidden", { status: 403 });
 			}
 			return this.reconcile(url.pathname.split("/").filter(Boolean).at(-1) ?? "");
+		}
+		const liveRoute = /^\/internal\/live-(webrtc|close|status)(?:\/([^/]+))?$/.exec(url.pathname);
+		if (liveRoute) {
+			// Only the gateway Worker reaches these, with the same internal token as reconciliation.
+			if (request.headers.get("x-realtime-reconcile-token") !== await realtimeReconciliationToken()) {
+				return new Response("forbidden", { status: 403 });
+			}
+			const [, action, sessionId = ""] = liveRoute;
+			if (action === "webrtc" && request.method === "POST") return this.startLiveWebRTC(request);
+			if (action === "close" && request.method === "POST") return this.closeLiveWebRTC(sessionId);
+			if (action === "status" && request.method === "GET") return this.liveWebRTCStatus(sessionId);
+			return new Response("not found", { status: 404 });
 		}
 		if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
 			return new Response("websocket required", { status: 426 });
@@ -747,6 +845,410 @@ export class RealtimeRelayDurableObject {
 			webSocket: client,
 			headers: responseProtocol ? { "Sec-WebSocket-Protocol": responseProtocol } : undefined,
 		});
+	}
+
+	/**
+	 * GPT Live over WebRTC: claims the session, creates it at OpenAI with our key and the
+	 * caller's SDP offer, and returns OpenAI's SDP answer. The browser then sends media to
+	 * OpenAI directly, and this object follows the call on the sideband instead of relaying it.
+	 * A create that fails or never answers bills nothing and releases the hold.
+	 */
+	private async startLiveWebRTC(request: Request): Promise<Response> {
+		const fail = (status: number, code: string, message?: string) => Response.json({ error: code, ...(message ? { message } : {}) }, { status });
+		const body = await request.json().catch(() => null) as { session_id?: unknown; token?: unknown; sdp?: unknown; standby?: LiveStandbyOptions } | null;
+		const sessionId = typeof body?.session_id === "string" ? body.session_id : "";
+		const token = typeof body?.token === "string" ? body.token : "";
+		const sdp = typeof body?.sdp === "string" ? body.sdp : "";
+		if (!sessionId || !isRealtimeRelaySecret(token) || liveSdpOfferError(sdp)) return fail(400, "live_webrtc_request_invalid");
+		if (this.session || await this.state.storage.get<string>(STORAGE_SESSION_ID)) return fail(409, "realtime_relay_already_connected");
+		try {
+			this.session = await claimRealtimeSessionForRelay({ sessionId, token });
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? error);
+			const status = /realtime_session_not_found|realtime_relay_forbidden/.test(message) ? 401
+				: /realtime_relay_already_connected|realtime_relay_claim_empty/.test(message) ? 409
+				: /realtime_session_expired/.test(message) ? 410 : 502;
+			return fail(status, status === 502 ? "realtime_session_claim_failed" : message.match(/realtime_[a-z_]+/)?.[0] ?? "realtime_session_claim_failed");
+		}
+		this.webrtc = true;
+		this.startClock();
+		await this.state.storage.put({
+			[STORAGE_SESSION_ID]: this.session.session_id,
+			[STORAGE_PROVIDER_STATE]: this.providerState,
+			[STORAGE_CLAIMED_AT]: this.claimedAtMs,
+			[STORAGE_DEADLINE]: this.deadlineMs,
+			[STORAGE_LIVE_TRANSPORT]: "webrtc",
+		});
+		const key = resolveOpenAIKey();
+		let createBody: ReturnType<typeof liveWebRTCCreateBody>;
+		try {
+			if (!this.isLive) throw new Error("live_model_not_supported");
+			if (!key) throw new Error("openai_key_missing");
+			const instructions = metadataRecord(this.session).instructions;
+			createBody = liveWebRTCCreateBody({ config: liveConfig(this.session.metadata), voice: this.session.voice ?? "marin",
+				instructions: typeof instructions === "string" ? instructions : undefined, model: this.session.model_id, standby: body?.standby, sdp });
+		} catch (error) {
+			console.error("live_webrtc_config_failed", { sessionId, error: error instanceof Error ? error.message : String(error) });
+			await this.settle("cancelled", "live_webrtc_config_failed");
+			return fail(502, "realtime_provider_not_configured");
+		}
+		// As on the WebSocket path, a start that may have reached OpenAI must keep the hold.
+		this.usage.live_started = true;
+		await this.checkpointUsage(true);
+		let response: Response | null = null;
+		let payload: unknown = null;
+		try {
+			response = await fetch(LIVE_SESSIONS_URL, {
+				method: "POST",
+				headers: { ...await openAIRealtimeHeaders(key, this.session) as Record<string, string>, "Content-Type": "application/json" },
+				body: JSON.stringify(createBody),
+				signal: AbortSignal.timeout(LIVE_WEBRTC_CREATE_TIMEOUT_MS),
+			});
+			payload = await response.json().catch(() => null);
+		} catch (error) {
+			console.error("live_webrtc_create_failed", { sessionId, error: error instanceof Error ? error.message : String(error) });
+		}
+		const created = response?.ok ? parseLiveWebRTCCreateResponse(payload) : null;
+		if (!created) {
+			const createdId = (payload as { session?: { id?: unknown } } | null)?.session?.id;
+			if (response?.ok && typeof createdId === "string" && /^[\w-]{1,128}$/.test(createdId)) {
+				// Created but unusable: end it at once; whatever it billed goes to review.
+				this.liveSessionId = createdId;
+				await this.hangupLive();
+				await this.markBillingUnresolved("live_webrtc_create_response_invalid");
+				return fail(502, "live_webrtc_create_failed");
+			}
+			// OpenAI created nothing (or never answered), so nothing is billed.
+			this.usage.live_started = false;
+			await this.checkpointUsage(true);
+			await this.settle("cancelled", "live_webrtc_create_failed");
+			const providerMessage = (payload as { error?: { message?: unknown } } | null)?.error?.message;
+			if (response && response.status >= 400 && response.status < 500 && response.status !== 401 && response.status !== 403) {
+				return fail(400, "live_webrtc_offer_rejected", typeof providerMessage === "string" ? providerMessage.slice(0, 300) : undefined);
+			}
+			return fail(502, "live_webrtc_create_failed");
+		}
+		this.liveSessionId = created.liveSessionId;
+		this.providerSetupComplete = true;
+		// The call starts now: the first attach must land inside the replay window too.
+		this.liveSidebandSeenMs = this.liveSidebandSeenPersistedMs = Date.now();
+		await this.state.storage.put({ [STORAGE_LIVE_SESSION_ID]: created.liveSessionId, [STORAGE_USAGE]: this.usage,
+			[STORAGE_LIVE_SIDEBAND_SEEN]: this.liveSidebandSeenMs });
+		try {
+			this.session = await markRealtimeSessionConnected({
+				auth: authForSession(this.session, `live_webrtc_started:${this.session.session_id}`), sessionId: this.session.session_id,
+				providerSessionId: created.liveSessionId, expiresAt: new Date(this.deadlineMs).toISOString(),
+			});
+		} catch (error) {
+			console.error("live_webrtc_persist_failed", { sessionId, error });
+			await this.hangupLive();
+			await this.markBillingUnresolved("live_webrtc_persist_failed");
+			return fail(502, "live_webrtc_create_failed");
+		}
+		await this.scheduleWebRTCAlarm();
+		// Attached in the background, inside the sideband's 3 s replay; the answer goes back now.
+		this.state.waitUntil(this.ensureSideband());
+		this.scheduleDurationWarnings();
+		this.schedulePolicyRecheck();
+		return Response.json({ sdp: created.sdp, session: this.session }, { status: 201 });
+	}
+
+	/** POST /v1/live/sessions/{id}/close for a WebRTC call: the same close as a client session.end. */
+	private async closeLiveWebRTC(sessionId: string): Promise<Response> {
+		const stored = await this.state.storage.get<string>(STORAGE_SESSION_ID);
+		if (!stored || stored !== sessionId || await this.liveBillingDone()) return Response.json({ error: "realtime_session_not_active" }, { status: 409 });
+		await this.restoreStateIfEvicted(sessionId);
+		if (!this.webrtc) return Response.json({ error: "live_webrtc_session_required" }, { status: 409 });
+		if (!this.settled && !this.settling && !this.end) {
+			this.end = { reason: "client_requested", initiatedBy: "client" };
+			this.queueUpstreamEvent(() => this.requestLiveClose("completed", "client_requested_end"));
+			await this.upstreamEvents;
+		}
+		return Response.json({ status: this.settled ? "ended" : "ending" }, { status: 202 });
+	}
+
+	/** Phaseo's own events for a WebRTC call, which cannot travel on OpenAI's data channel. */
+	private async liveWebRTCStatus(sessionId: string): Promise<Response> {
+		const stored = await this.state.storage.get<string>(STORAGE_SESSION_ID);
+		if (!stored || stored !== sessionId || await this.liveBillingDone()) return Response.json({ active: false });
+		await this.restoreStateIfEvicted(sessionId);
+		return Response.json({
+			active: !this.settled,
+			standby: this.liveStandby,
+			sideband: this.upstream?.readyState === WebSocket.OPEN ? "attached" : "reattaching",
+			warnings: this.liveWarnings,
+		});
+	}
+
+	/** One sideband attach (or reattach) in flight at a time; resolves true once attached. */
+	private ensureSideband(): Promise<boolean> {
+		if (this.upstream?.readyState === WebSocket.OPEN) return Promise.resolve(true);
+		this.sidebandAttach ??= this.reattachSideband().finally(() => { this.sidebandAttach = null; });
+		return this.sidebandAttach;
+	}
+
+	private async reattachSideband(): Promise<boolean> {
+		const startedAt = Date.now();
+		for (const delay of LIVE_SIDEBAND_RETRY_MS) {
+			if (this.settled || !this.liveSessionId) return false;
+			if (delay) await new Promise((resolve) => setTimeout(resolve, Math.min(delay, Math.max(0, LIVE_SIDEBAND_REATTACH_BUDGET_MS - (Date.now() - startedAt)))));
+			if (this.settled) return false;
+			// Each attempt gets only what is left of the budget, so a stalled upgrade still ends in a hangup.
+			const remaining = LIVE_SIDEBAND_REATTACH_BUDGET_MS - (Date.now() - startedAt);
+			if (remaining <= 0) break;
+			if (await this.attachSideband(remaining)) return true;
+			if (Date.now() - startedAt >= LIVE_SIDEBAND_REATTACH_BUDGET_MS) break;
+		}
+		if (!this.settled) this.queueUpstreamEvent(() => this.endLiveWithoutSideband("live_sideband_lost"));
+		return false;
+	}
+
+	private async attachSideband(timeoutMs = LIVE_SIDEBAND_REATTACH_BUDGET_MS): Promise<boolean> {
+		if (!this.session || !this.liveSessionId) return false;
+		const key = resolveOpenAIKey();
+		if (!key) return false;
+		let socket: WebSocket;
+		try {
+			socket = await connectWebSocket(liveSidebandUrl(this.liveSessionId), { headers: await openAIRealtimeHeaders(key, this.session) }, timeoutMs);
+		} catch (error) {
+			console.warn("live_sideband_attach_failed", { sessionId: this.session.session_id, error: error instanceof Error ? error.message : String(error) });
+			return false;
+		}
+		if (this.settled) {
+			try { socket.close(1000, "realtime_relay_settled"); } catch { /* already closed */ }
+			return false;
+		}
+		await this.noteSidebandAttached();
+		this.upstream = socket;
+		socket.addEventListener("message", (event) => {
+			this.queueUpstreamEvent(() => this.handleUpstreamMessage(event.data, socket));
+		});
+		const lost = () => this.queueUpstreamEvent(() => this.handleSidebandLost(socket));
+		socket.addEventListener("close", lost);
+		socket.addEventListener("error", lost);
+		// A close requested while the sideband was down goes out now.
+		if (this.liveClosing) this.sendUpstream({ type: "session.close" });
+		return true;
+	}
+
+	/** The sideband dropped (network or a relay deploy); the call itself goes on in the browser. */
+	private async handleSidebandLost(socket: WebSocket) {
+		if (socket !== this.upstream || this.settled) return;
+		this.upstream = null;
+		console.warn("live_sideband_lost", { sessionId: this.session?.session_id });
+		// The gap to the next attach counts from here.
+		await this.noteSidebandSeen(true);
+		this.state.waitUntil(this.ensureSideband());
+	}
+
+	/** Records that the sideband is (or just was) attached; persisted at most every 500 ms. */
+	private async noteSidebandSeen(force = false) {
+		if (!this.webrtc) return;
+		const now = Date.now();
+		this.liveSidebandSeenMs = now;
+		if (!force && now - this.liveSidebandSeenPersistedMs < LIVE_SIDEBAND_SEEN_PERSIST_MS) return;
+		this.liveSidebandSeenPersistedMs = now;
+		await this.state.storage.put(STORAGE_LIVE_SIDEBAND_SEEN, now);
+	}
+
+	/**
+	 * An attach replays only the 3 s before it. After a longer gap (a slow reattach or a relay
+	 * restart) events may be missing, a whole delegated response among them, so the bill goes
+	 * to review instead of settling from what was seen. Voice seconds come from session.closed
+	 * and are complete either way.
+	 */
+	private async noteSidebandAttached() {
+		const lastSeen = this.liveSidebandSeenMs || ((await this.state.storage.get<number>(STORAGE_LIVE_SIDEBAND_SEEN)) ?? 0);
+		const gapMs = lastSeen > 0 ? Date.now() - lastSeen : 0;
+		if (gapMs > LIVE_SIDEBAND_REPLAY_SAFE_MS && !this.usage.live_final) {
+			this.usage.live_sideband_gap_ms = Math.max(toNumber(this.usage.live_sideband_gap_ms), gapMs);
+			console.warn("live_sideband_continuity_gap", { sessionId: this.session?.session_id, gapMs });
+			await this.checkpointUsage(true);
+		}
+		await this.noteSidebandSeen(true);
+	}
+
+	/** The sideband can't be reattached: hang up so nothing runs unbilled, then settle or review. */
+	private async endLiveWithoutSideband(reason: string) {
+		if (this.settled || this.settling || this.upstream?.readyState === WebSocket.OPEN) return;
+		this.noteEnd(reason);
+		await this.hangupLive();
+		if (this.liveUsageComplete()) {
+			const pending = await this.state.storage.get<PendingSettlement>(STORAGE_PENDING_SETTLEMENT);
+			await this.settle(pending?.status ?? "completed", pending?.reason ?? reason);
+			return;
+		}
+		await this.markBillingUnresolved(reason);
+	}
+
+	/**
+	 * REST hangup: ends the OpenAI session without a socket. Safe to repeat. Only a 2xx, or a
+	 * 404/409/410 for a session that is already gone, confirms it; anything else (429, 5xx, a
+	 * timeout, a network error) leaves a retry in storage for the alarm, with backoff, so a
+	 * still-running billable call is never abandoned.
+	 */
+	private async hangupLive(): Promise<boolean> {
+		if (this.liveHangupDone) return true;
+		if (!this.liveSessionId) return false;
+		const key = resolveOpenAIKey();
+		let status = "openai_key_missing";
+		if (key) {
+			try {
+				const response = await fetch(liveHangupUrl(this.liveSessionId), {
+					method: "POST",
+					headers: this.session ? await openAIRealtimeHeaders(key, this.session) : { Authorization: `Bearer ${key}` },
+					signal: AbortSignal.timeout(LIVE_HANGUP_TIMEOUT_MS),
+				});
+				status = String(response.status);
+				this.liveHangupDone = response.ok || response.status === 404 || response.status === 409 || response.status === 410;
+				if (!response.ok) console.warn("live_webrtc_hangup_status", { sessionId: this.session?.session_id, status: response.status });
+			} catch (error) {
+				status = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError") ? "timeout" : "network_error";
+				console.error("live_webrtc_hangup_failed", { sessionId: this.session?.session_id, error: error instanceof Error ? error.message : String(error) });
+			}
+		}
+		if (this.liveHangupDone) {
+			if (this.liveHangup) {
+				this.liveHangup = null;
+				await this.state.storage.delete(STORAGE_LIVE_HANGUP);
+			}
+			return true;
+		}
+		const attempts = (this.liveHangup?.attempts ?? 0) + 1;
+		this.liveHangup = {
+			attempts,
+			next_at_ms: Date.now() + LIVE_HANGUP_RETRY_MS[Math.min(attempts - 1, LIVE_HANGUP_RETRY_MS.length - 1)],
+			last_status: status,
+			...(this.liveHangup?.billing_done ? { billing_done: true } : {}),
+		};
+		await this.state.storage.put(STORAGE_LIVE_HANGUP, this.liveHangup);
+		return false;
+	}
+
+	/** Whether billing is recorded and only an unconfirmed hangup is left here. */
+	private async liveBillingDone(): Promise<boolean> {
+		const hangup = this.liveHangup ?? (await this.state.storage.get<LiveHangupState>(STORAGE_LIVE_HANGUP)) ?? null;
+		return hangup?.billing_done === true;
+	}
+
+	/**
+	 * Clears this object once the bill is recorded (settled or under review). A WebRTC call whose
+	 * hangup OpenAI hasn't confirmed keeps just enough to retry it from the alarm.
+	 */
+	private async clearStorageAfterBilling() {
+		const hangup = this.webrtc && !this.liveHangupDone && !this.usage.live_final && this.liveSessionId && this.session
+			? this.liveHangup : null;
+		await this.state.storage.deleteAll();
+		if (!hangup) {
+			await this.state.storage.deleteAlarm();
+			return;
+		}
+		this.liveHangup = { ...hangup, billing_done: true };
+		await this.state.storage.put({
+			[STORAGE_SESSION_ID]: this.session!.session_id,
+			[STORAGE_LIVE_TRANSPORT]: "webrtc",
+			[STORAGE_LIVE_SESSION_ID]: this.liveSessionId!,
+			[STORAGE_DEADLINE]: this.deadlineMs,
+			[STORAGE_LIVE_HANGUP]: this.liveHangup,
+		});
+		await this.state.storage.setAlarm(Math.max(Date.now(), this.liveHangup.next_at_ms));
+	}
+
+	/** The alarm after billing: retry the hangup until OpenAI confirms it. */
+	private async retryLiveHangup(state: LiveHangupState) {
+		this.settled = true;
+		this.webrtc = true;
+		this.liveHangup = state;
+		this.liveSessionId ??= (await this.state.storage.get<string>(STORAGE_LIVE_SESSION_ID)) ?? null;
+		this.deadlineMs = (await this.state.storage.get<number>(STORAGE_DEADLINE)) ?? this.deadlineMs;
+		if (Date.now() < state.next_at_ms) {
+			await this.state.storage.setAlarm(state.next_at_ms);
+			return;
+		}
+		const done = await this.hangupLive();
+		const abandoned = !done && this.deadlineMs > 0 && Date.now() > this.deadlineMs + LIVE_HANGUP_GIVE_UP_AFTER_DEADLINE_MS;
+		if (done || abandoned) {
+			// Past OpenAI's own duration cap the session is over whatever the hangup says.
+			if (abandoned) console.error("live_webrtc_hangup_abandoned", { liveSessionId: this.liveSessionId, attempts: this.liveHangup?.attempts });
+			await this.state.storage.deleteAll();
+			await this.state.storage.deleteAlarm();
+			return;
+		}
+		await this.state.storage.setAlarm(this.liveHangup!.next_at_ms);
+	}
+
+	private liveUsageComplete(): boolean {
+		return this.usage.live_final === true && !this.usage.live_pending_responses?.length
+			&& !this.usage.live_tool_calls?.some((call) => !call.done);
+	}
+
+	/**
+	 * Next heartbeat: the duration cap, a final-usage deadline or a hangup retry if sooner. Once
+	 * the call is ending, the (passed) duration cap no longer counts, so alarms stay spaced.
+	 */
+	private async scheduleWebRTCAlarm() {
+		const now = Date.now();
+		const ending = this.liveClosing || this.settling || this.end != null;
+		const deadlines = [ending ? 0 : this.deadlineMs, this.liveDrainDeadlineMs, this.liveHangup?.next_at_ms ?? 0].filter((value) => value > 0);
+		await this.state.storage.setAlarm(Math.max(now, Math.min(now + LIVE_WEBRTC_HEARTBEAT_MS, ...deadlines)));
+	}
+
+	private async webrtcAlarm(sessionId: string) {
+		const hangup = this.liveHangup ?? (await this.state.storage.get<LiveHangupState>(STORAGE_LIVE_HANGUP)) ?? null;
+		if (hangup?.billing_done) {
+			await this.retryLiveHangup(hangup);
+			return;
+		}
+		await this.restoreStateIfEvicted(sessionId);
+		if (this.settled) return;
+		if (this.liveHangup && !this.liveHangupDone && Date.now() >= this.liveHangup.next_at_ms) await this.hangupLive();
+		if (this.upstream?.readyState === WebSocket.OPEN) await this.noteSidebandSeen();
+		const pending = this.pendingSettlement ?? (await this.state.storage.get<PendingSettlement>(STORAGE_PENDING_SETTLEMENT)) ?? null;
+		const now = Date.now();
+		if (pending?.phase === "settle") {
+			// A settlement retry: the call is already over.
+			await this.settle(pending.status, pending.reason);
+			return;
+		}
+		if (pending && this.liveDrainDeadlineMs > 0 && now >= this.liveDrainDeadlineMs) {
+			this.queueUpstreamEvent(async () => { await this.hangupLive(); await this.settle(pending.status, "live_final_usage_timeout"); });
+			await this.upstreamEvents;
+			return;
+		}
+		if (!pending && !this.liveClosing && !this.end) {
+			if (this.deadlineMs > 0 && now >= this.deadlineMs) {
+				await this.forceAuthoritativeUsage("expired", "realtime_max_duration");
+			} else {
+				this.warnDurationApproaching(now);
+				// A quiet call still gets its key, workspace, funds and holds rechecked.
+				if (now - this.lastUsagePersistAt >= RELAY_POLICY_RECHECK_INTERVAL_MS) {
+					await this.persistUsage().catch((error) => console.error("realtime_relay_policy_recheck_failed", error));
+				}
+			}
+		}
+		if (this.settled) return;
+		if (this.upstream?.readyState !== WebSocket.OPEN) this.state.waitUntil(this.ensureSideband());
+		await this.scheduleWebRTCAlarm();
+	}
+
+	/** max_duration_approaching from the heartbeat, so it survives a relay restart. */
+	private warnDurationApproaching(now: number) {
+		if (this.deadlineMs <= 0) return;
+		for (const seconds of REALTIME_DURATION_WARNING_SECONDS) {
+			const remaining = this.deadlineMs - now;
+			if (remaining > seconds * 1000 || remaining <= 0) continue;
+			this.warnOnce("max_duration_approaching", String(seconds),
+				"The call reaches the provider's maximum session length soon and will then end.",
+				{ seconds_remaining: Math.max(0, Math.round(remaining / 1000)), expires_at: new Date(this.deadlineMs).toISOString() });
+		}
+	}
+
+	/** session.warning goes to the client socket, and for WebRTC calls to the status endpoint. */
+	private emitWarning(event: ReturnType<typeof buildSessionWarningEvent>) {
+		this.sendClient(event);
+		if (!this.webrtc) return;
+		this.liveWarnings = [...this.liveWarnings, { ...event, at: new Date().toISOString() }].slice(-LIVE_MAX_WARNINGS);
+		this.state.waitUntil(this.state.storage.put(STORAGE_LIVE_WARNINGS, { warnings: this.liveWarnings, sent: [...this.warningsSent] }));
 	}
 
 	/** The provider's session cap starts when the relay claims the session. */
@@ -1572,9 +2074,21 @@ export class RealtimeRelayDurableObject {
 		const text = await parseMessageData(raw);
 		if (!text) return;
 		this.lastActivityAt = Date.now();
+		// Any sideband frame (reflected audio included) shows it is still attached.
+		if (this.webrtc && socket && socket === this.upstream) await this.noteSidebandSeen();
 		// Bounds the billed duration of an xAI session if this object is evicted.
 		if (this.upstream && this.usage.provider_connected_at_ms) this.usage.provider_last_seen_ms = this.lastActivityAt;
 		const event = parseJson(text);
+		if (this.webrtc && event) {
+			// The sideband reflects the call's audio (never needed here) and replays its last 3 s
+			// on every attach; replayed events keep their event_id and are ingested once.
+			if (isLiveSidebandAudioEvent(getStringField(event, "type"))) return;
+			const eventId = getStringField(event, "event_id");
+			if (eventId) {
+				if (this.liveSeenEventIds.includes(eventId)) return;
+				this.liveSeenEventIds = [...this.liveSeenEventIds, eventId].slice(-LIVE_MAX_SEEN_EVENT_IDS);
+			}
+		}
 		// A replaced or abandoned connection has nothing left to say: resumption only
 		// starts between turns, so its late frames are stale duplicates.
 		if (socket && socket !== this.upstream && socket !== this.resumeSocket) return;
@@ -1620,7 +2134,13 @@ export class RealtimeRelayDurableObject {
 			if (type === "session.closed") this.liveCloseReason = getStringField(event, "reason");
 			if (LIVE_BILLING_EVENT_TYPES.has(type)) await this.checkpointUsage(true);
 			forward();
-			if (type === "session.started") {
+			if (this.webrtc && (type === "session.paused" || type === "session.resumed")) {
+				this.liveStandby = type === "session.paused";
+				await this.state.storage.put(STORAGE_LIVE_STANDBY, this.liveStandby);
+			}
+			// A WebRTC session is marked connected when OpenAI creates it.
+			if (type === "session.started" && this.webrtc) this.providerSetupComplete = true;
+			else if (type === "session.started") {
 				this.providerSetupComplete = true;
 				this.session = await markRealtimeSessionConnected({
 					auth: authForSession(this.session, `live_started:${this.session.session_id}`), sessionId: this.session.session_id,
@@ -1629,7 +2149,17 @@ export class RealtimeRelayDurableObject {
 				});
 				if (this.liveClosing) this.sendUpstream({ type: "session.close" });
 			}
-			if (type === "error") { await this.requestLiveClose("failed", "live_provider_error"); return; }
+			if (type === "error") {
+				// On WebRTC the sideband also mirrors errors for events the browser sent on its data
+				// channel (recorded 2026-11-20: a bad session.update gave invalid_request_error). The
+				// browser's mistake must not end the call; OpenAI sends session.closed if it ends it.
+				if (this.webrtc) {
+					const error = getRecordField(event, "error") ?? {};
+					console.warn("live_webrtc_error_event", { sessionId: this.session.session_id, type: getStringField(error, "type"), code: getStringField(error, "code") });
+					return;
+				}
+				await this.requestLiveClose("failed", "live_provider_error"); return;
+			}
 			if (LIVE_BILLING_EVENT_TYPES.has(type)) {
 				if (type !== "response.event" || getRecordField(event, "event")?.response
 					|| getRecordField(event, "event")?.type === "response.output_item.done") {
@@ -1642,12 +2172,14 @@ export class RealtimeRelayDurableObject {
 						pending_response_count: this.usage.live_pending_responses?.length ?? 0 });
 				}
 			}
-			if (this.usage.live_final && !this.usage.live_pending_responses?.length && !this.usage.live_tool_calls?.some((call) => !call.done)) {
+			if (this.liveUsageComplete()) {
 				const pending = await this.state.storage.get<PendingSettlement>(STORAGE_PENDING_SETTLEMENT);
 				// GPT Live expires a session that gets no audio for about 30 s
 				// (recorded 2026-10-22: session.closed reason "expired" at 30.5 s).
+				// On WebRTC the browser ends the call itself (data channel close or hangup).
 				await this.settle(pending?.status ?? "completed", pending?.reason
-					?? (this.liveCloseReason === "expired" ? "live_session_expired" : "live_session_closed"));
+					?? (this.webrtc ? liveWebRTCCloseReason(this.liveCloseReason)
+						: this.liveCloseReason === "expired" ? "live_session_expired" : "live_session_closed"));
 			}
 			return;
 		}
@@ -2307,7 +2839,9 @@ export class RealtimeRelayDurableObject {
 		const now = Date.now();
 		if (!force && now - this.lastUsageCheckpointAt < RELAY_USAGE_CHECKPOINT_INTERVAL_MS) return;
 		this.lastUsageCheckpointAt = now;
-		await this.state.storage.put(STORAGE_USAGE, this.usage);
+		// Sideband event ids go with the usage they produced, so a replay after a restart is skipped.
+		if (this.webrtc) await this.state.storage.put({ [STORAGE_USAGE]: this.usage, [STORAGE_LIVE_EVENT_IDS]: this.liveSeenEventIds });
+		else await this.state.storage.put(STORAGE_USAGE, this.usage);
 	}
 
 	private async persistProviderState() {
@@ -2356,6 +2890,8 @@ export class RealtimeRelayDurableObject {
 		this.session = updated;
 		if (["completed", "failed", "cancelled", "expired"].includes(updated.status)) {
 			this.acceptingAudio = false;
+			// A WebRTC call doesn't end with our sockets: hang it up at OpenAI too.
+			if (this.webrtc) await this.hangupLive();
 			this.closeSockets("realtime_session_terminal");
 			return;
 		}
@@ -2490,7 +3026,7 @@ export class RealtimeRelayDurableObject {
 		const key = `${code}:${threshold}`;
 		if (this.warningsSent.has(key)) return;
 		this.warningsSent.add(key);
-		this.sendClient(buildSessionWarningEvent(code, message, extra));
+		this.emitWarning(buildSessionWarningEvent(code, message, extra));
 	}
 
 	/**
@@ -2507,7 +3043,7 @@ export class RealtimeRelayDurableObject {
 		this.policyBlockReason = reason;
 		if (this.policyGraceTimer != null) return;
 		const endsAt = Date.now() + RELAY_POLICY_GRACE_MS;
-		this.sendClient(buildSessionWarningEvent("policy_blocked",
+		this.emitWarning(buildSessionWarningEvent("policy_blocked",
 			reason.includes("provider_not_available")
 				? "This provider is no longer allowed for the workspace. The call ends soon unless the change is undone."
 				: "A workspace policy now blocks this call. The call ends soon unless the change is undone.",
@@ -2537,7 +3073,7 @@ export class RealtimeRelayDurableObject {
 		this.policyGraceTimer = null;
 		this.policyGraceExpired = false;
 		this.policyBlockReason = null;
-		this.sendClient(buildSessionWarningEvent("policy_blocked",
+		this.emitWarning(buildSessionWarningEvent("policy_blocked",
 			"The policy change was undone. The call continues.", { status: "cleared" }));
 	}
 
@@ -2656,6 +3192,10 @@ export class RealtimeRelayDurableObject {
 			clearTimeout(this.drainTimer);
 			this.drainTimer = null;
 		}
+		if (this.liveFinalTimer != null) {
+			clearTimeout(this.liveFinalTimer);
+			this.liveFinalTimer = null;
+		}
 		if (this.idleTimer != null) {
 			clearTimeout(this.idleTimer);
 			this.idleTimer = null;
@@ -2721,16 +3261,20 @@ export class RealtimeRelayDurableObject {
 		this.noteEnd(reason);
 		if (this.isLive) {
 			try { assertLiveFinalUsage(this.usage); }
-			catch {
+			catch (error) {
+				// A sideband gap past OpenAI's replay may hide a delegated response: the usage is only
+				// a lower bound, which the review captures while an admin decides the rest.
+				const gap = error instanceof Error && error.message === "live_sideband_continuity_gap";
 				const needsDrain = this.usage.live_started && (!this.usage.live_final
 					|| this.usage.live_pending_responses?.length
 					|| this.usage.live_tool_calls?.some((call) => !call.done));
 				// A complete but invalid snapshot cannot be repaired by closing again.
-				// Avoid recursing through requestLiveClose() back into settlement.
-				if (needsDrain && this.upstream?.readyState === WebSocket.OPEN && !this.liveClosing) {
+				// Avoid recursing through requestLiveClose() back into settlement. A WebRTC call
+				// can still be closed without its sideband (hangup, then reattach for the usage).
+				if (needsDrain && (this.upstream?.readyState === WebSocket.OPEN || this.webrtc) && !this.liveClosing) {
 					await this.requestLiveClose(status, reason); return false;
 				}
-				return this.markBillingUnresolved("live_authoritative_usage_pending");
+				return this.markBillingUnresolved(gap ? "live_sideband_continuity_gap" : "live_authoritative_usage_pending");
 			}
 		}
 		const provider = providerFromSession(this.session);
@@ -2791,8 +3335,7 @@ export class RealtimeRelayDurableObject {
 			this.settled = true;
 			// Successful sessions have no Durable Object state worth retaining.
 			// Clearing all storage also lets Cloudflare clean up the stored object.
-			await this.state.storage.deleteAll();
-			await this.state.storage.deleteAlarm();
+			await this.clearStorageAfterBilling();
 			console.info("realtime_relay_settled", {
 				sessionId: this.session.session_id,
 				status,
@@ -2836,6 +3379,8 @@ export class RealtimeRelayDurableObject {
 		if (!this.session) return false;
 		this.acceptingAudio = false;
 		this.clearTimers();
+		// Never leave a WebRTC call running once nothing is watching its usage.
+		if (this.webrtc && !this.usage.live_final) await this.hangupLive();
 		await this.state.storage.put({
 			[STORAGE_SESSION_ID]: this.session.session_id,
 			[STORAGE_USAGE]: this.usage,
@@ -2856,9 +3401,9 @@ export class RealtimeRelayDurableObject {
 			});
 			this.settled = true;
 			// The authoritative unresolved record now lives in Supabase and this
-			// terminal session is not retried through the Durable Object.
-			await this.state.storage.deleteAll();
-			await this.state.storage.deleteAlarm();
+			// terminal session is not retried through the Durable Object (only an
+			// unconfirmed WebRTC hangup is).
+			await this.clearStorageAfterBilling();
 			this.noteEnd(reason);
 			this.sendSessionEnded("unresolved");
 			this.closeSockets("realtime_billing_unresolved");
@@ -2901,11 +3446,32 @@ export class RealtimeRelayDurableObject {
 		this.pendingSettlement = (await this.state.storage.get<PendingSettlement>(STORAGE_PENDING_SETTLEMENT)) ?? null;
 		this.claimedAtMs = (await this.state.storage.get<number>(STORAGE_CLAIMED_AT)) ?? this.claimedAtMs;
 		this.deadlineMs = (await this.state.storage.get<number>(STORAGE_DEADLINE)) ?? this.deadlineMs;
+		this.webrtc = (await this.state.storage.get<string>(STORAGE_LIVE_TRANSPORT)) === "webrtc";
+		if (this.webrtc) {
+			// The call outlived the old instance; only the sideband needs reattaching.
+			this.liveSessionId = (await this.state.storage.get<string>(STORAGE_LIVE_SESSION_ID)) ?? null;
+			this.providerSetupComplete = this.liveSessionId != null;
+			this.liveSeenEventIds = (await this.state.storage.get<string[]>(STORAGE_LIVE_EVENT_IDS)) ?? [];
+			const warnings = await this.state.storage.get<{ warnings: Record<string, unknown>[]; sent: string[] }>(STORAGE_LIVE_WARNINGS);
+			this.liveWarnings = warnings?.warnings ?? [];
+			this.warningsSent = new Set(warnings?.sent ?? []);
+			this.liveStandby = (await this.state.storage.get<boolean>(STORAGE_LIVE_STANDBY)) ?? null;
+			this.liveDrainDeadlineMs = (await this.state.storage.get<number>(STORAGE_LIVE_DRAIN_DEADLINE)) ?? 0;
+			this.liveHangup = (await this.state.storage.get<LiveHangupState>(STORAGE_LIVE_HANGUP)) ?? null;
+			// The last persisted sighting: the gap to the next attach counts from there.
+			this.liveSidebandSeenMs = this.liveSidebandSeenPersistedMs = (await this.state.storage.get<number>(STORAGE_LIVE_SIDEBAND_SEEN)) ?? 0;
+			this.liveClosing = this.pendingSettlement?.phase === "authoritative";
+		}
 	}
 
 	async alarm() {
 		const sessionId = await this.state.storage.get<string>(STORAGE_SESSION_ID);
 		if (!sessionId) return;
+		// A WebRTC call's alarm is mostly a heartbeat; it ends the call only at a deadline.
+		if (this.webrtc || (await this.state.storage.get<string>(STORAGE_LIVE_TRANSPORT)) === "webrtc") {
+			await this.webrtcAlarm(sessionId);
+			return;
+		}
 		// Every alarm ends the session (expiry, drain backup, settlement retry):
 		// stop accepting audio before anything else.
 		this.acceptingAudio = false;
@@ -2929,6 +3495,11 @@ export class RealtimeRelayDurableObject {
 	}
 
 	private isHealthy(): boolean {
+		// A WebRTC call has no client socket here; its sideband is attached or being reattached.
+		if (this.webrtc) {
+			return !this.settled && !this.settling && !this.liveClosing
+				&& (this.upstream?.readyState === WebSocket.OPEN || this.sidebandAttach != null);
+		}
 		return !this.settled
 			&& !this.settling
 			&& !this.pendingSettlement
@@ -2946,6 +3517,12 @@ export class RealtimeRelayDurableObject {
 		// A connected session with recent traffic is not stuck: leave it alone.
 		if (this.session?.session_id === sessionId && this.isHealthy()) {
 			return Response.json({ active: true, settled: false, healthy: true });
+		}
+		if (this.webrtc || (await this.state.storage.get<string>(STORAGE_LIVE_TRANSPORT)) === "webrtc") {
+			// The browser may still be talking to OpenAI: run the heartbeat (reattach, deadlines)
+			// rather than settle from stored usage. It ends the call itself when it can't recover.
+			await this.webrtcAlarm(sessionId);
+			return Response.json({ active: true, settled: this.settled, healthy: !this.settled });
 		}
 		this.acceptingAudio = false;
 		await this.restoreStateIfEvicted(sessionId);
@@ -2999,10 +3576,10 @@ export class RealtimeRelayDurableObject {
 	private async requestLiveClose(status: PendingSettlement["status"], reason: string) {
 		if (this.settled || this.liveClosing) return;
 		this.noteEnd(reason);
-		if (!this.usage.live_started || (this.usage.live_final && !this.usage.live_pending_responses?.length && !this.usage.live_tool_calls?.some((call) => !call.done))) {
+		if (!this.usage.live_started || this.liveUsageComplete()) {
 			await this.settle(status, reason); return;
 		}
-		if (this.upstream?.readyState !== WebSocket.OPEN) {
+		if (this.upstream?.readyState !== WebSocket.OPEN && !this.webrtc) {
 			await this.markBillingUnresolved("live_socket_closed_without_final_usage"); return;
 		}
 		this.liveClosing = true;
@@ -3010,6 +3587,27 @@ export class RealtimeRelayDurableObject {
 		this.clearTimers();
 		await this.state.storage.put(STORAGE_PENDING_SETTLEMENT, { status, reason, phase: "authoritative" } satisfies PendingSettlement);
 		await this.checkpointUsage(true);
+		if (this.webrtc) {
+			// session.close on the sideband, then the REST hangup as a safety net, then settle
+			// from session.closed (or, past the deadline, from the last usage under review).
+			this.liveDrainDeadlineMs = Date.now() + RELAY_DRAIN_TIMEOUT_MS;
+			await this.state.storage.put(STORAGE_LIVE_DRAIN_DEADLINE, this.liveDrainDeadlineMs);
+			await this.scheduleWebRTCAlarm();
+			if (this.upstream?.readyState === WebSocket.OPEN) this.sendUpstream({ type: "session.close" });
+			else {
+				await this.hangupLive();
+				this.state.waitUntil(this.ensureSideband());
+			}
+			this.drainTimer = setTimeout(() => {
+				this.drainTimer = null;
+				this.queueUpstreamEvent(async () => { if (!this.settled) await this.hangupLive(); });
+			}, LIVE_WEBRTC_HANGUP_AFTER_MS) as unknown as number;
+			this.liveFinalTimer = setTimeout(() => {
+				this.liveFinalTimer = null;
+				this.queueUpstreamEvent(async () => { await this.settle(status, "live_final_usage_timeout"); });
+			}, RELAY_DRAIN_TIMEOUT_MS) as unknown as number;
+			return;
+		}
 		await this.state.storage.setAlarm(Date.now() + RELAY_DRAIN_TIMEOUT_MS);
 		if (this.providerSetupComplete) this.sendUpstream({ type: "session.close" });
 		this.drainTimer = setTimeout(() => {

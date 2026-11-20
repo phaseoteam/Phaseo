@@ -101,6 +101,43 @@ curl https://api.phaseo.app/v1/live/sessions \
 
 تُحتسب مكالمة GPT Live لكل ثانية من الصوت ($0.05 للدقيقة، من `usage.seconds` الخاص بـ GPT Live) إضافة إلى tokens النموذج الخلفي لكل استجابة، بما في ذلك الردود بعد نتائج الأدوات. ينهي GPT Live صلاحية الجلسة التي لا تتلقى صوتًا لمدة 30 ثانية تقريبًا، فتنتهي المكالمة بالسبب `provider_idle_timeout`. استمر في بث صوت الميكروفون، بما في ذلك الصمت.
 
+### GPT Live عبر WebRTC مع وضع الاستعداد
+
+في المتصفح، يمكن تشغيل GPT Live عبر WebRTC أيضًا. يذهب صوت المتصفح مباشرة إلى OpenAI بدل المرور عبر المرحّل، مما يزيل قفزة، ويمكن أن تنتظر المكالمة في وضع الاستعداد، وهو أقل تكلفة من الوقت النشط. يُفعَّل WebRTC لكل مساحة عمل عند الطلب؛ وحتى ذلك الحين يفشل طلب الإنشاء بالرمز `live_webrtc_feature_flag_disabled`.
+
+أنشئ اتصال نظير يتضمن الميكروفون وقناة بيانات باسم `oai-events`، وأرسل عرض SDP الخاص به إلى خادمك. ينشئ خادمك الجلسة باستخدام `transport`، ويعيد إجابة SDP إلى المتصفح:
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-live-1.1",
+    "provider": "openai",
+    "transport": { "type": "webrtc", "sdp": "<SDP offer from the browser>" },
+    "wake_policy": { "type": "speech" },
+    "idle_timeout_s": 30
+  }'
+```
+
+تتضمن الاستجابة `id` الجلسة و`transport.sdp`، وهي إجابة SDP من OpenAI. لا يوجد `client_secret` ولا عنوان URL للمرحّل. طبّق الإجابة في المتصفح:
+
+```js
+await pc.setRemoteDescription({ type: "answer", sdp: session.transport.sdp });
+```
+
+تتولى `connectLiveWebRTC({ createSession })` في TypeScript SDK جانب المتصفح نيابة عنك: فهي تضيف الميكروفون، وتنشئ قناة البيانات، وترسل العرض عبر الدالة `createSession` الخاصة بك، وتطبّق الإجابة.
+
+يتطلب وضع الاستعداد `wake_policy`. تنتظر الجلسة الكلام قبل أن تبدأ الاستدلال، ومع `idle_timeout_s` (من 5 إلى 60 ثانية) تعود إلى وضع الاستعداد بعد مرور تلك المدة دون كلام. ترسل قناة البيانات عندها `session.paused`. أبقِ مسار الميكروفون يعمل أثناء وضع الاستعداد. يُحتسب الوقت في وضع الاستعداد بسعر $0.02 للدقيقة والوقت النشط بسعر $0.05 للدقيقة، وكلاهما لكل ثانية، استنادًا إلى تقسيم OpenAI نفسها للمكالمة إلى ثوانٍ نشطة وثوانٍ متوقفة مؤقتًا. بدون `wake_policy`، تُحتسب المكالمة كلها وقتًا نشطًا.
+
+تحمل قناة البيانات أحداث OpenAI، مثل النصوص المفرّغة و`session.paused`. يمكن للمتصفح أن يرسل عليها `session.close` و`session.input_audio.mute` و`session.input_audio.unmute`؛ وترفض OpenAI أحداث العميل الأخرى، لذا لا يستطيع المتصفح تغيير نموذج الجلسة أو النموذج الخلفي أو الأدوات. لا يمكن لأحداث Phaseo الخاصة استخدام قناة بيانات OpenAI، لذا اقرأها من `GET /v1/live/sessions/{id}`: فهو يعيد حالة الجلسة، و`standby`، وأحداث `session.warning` الخاصة بها في `warnings`، و`ended`، وهو حدث `session.ended` نفسه الموجود على المرحّل بعد انتهاء المكالمة. لإنهاء مكالمة لم تُفتح قناة بياناتها قط، استدعِ `POST /v1/live/sessions/{id}/close`.
+
+يتابع Phaseo المكالمة على الاتصال من جهة الخادم لدى OpenAI وينهيها هناك عند إبطال المفتاح، أو عندما تحظرها سياسة، أو عند نفاد الرصيد، أو عند بلوغها 25 دقيقة. أدوات الدوال غير مدعومة عبر WebRTC بعد؛ استخدم مرحّل WebSocket لها. يعمل البحث على الويب في كليهما.
+
+<Note>
+مع WebRTC، يصل صوت المستخدم النهائي وعنوان IP الخاص به إلى OpenAI مباشرة، لا عبر Phaseo.
+</Note>
+
 ### جلسات ElevenLabs Realtime
 
 يأتي ElevenLabs Realtime في نموذجين: `eleven-labs/eleven-realtime-v1-mini`، وهو الافتراضي الأسرع والأرخص، و`eleven-labs/eleven-realtime-v1-max`، الذي يستدل قبل أن يجيب ويناسب التعليمات المعقدة واستخدام الأدوات متعدد الخطوات. يستخدم كلاهما طلب الإنشاء والمرحّل نفسيهما كما في OpenAI، بصوت 24 kHz. يتصل Phaseo بـ ElevenLabs بمفتاحه الخاص؛ ولا يرى العميل الخاص بك سوى المرحّل.

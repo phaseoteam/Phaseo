@@ -9980,16 +9980,6 @@
 			"zh-Hans": "创建 GPT Live 会话",
 			"ar": "إنشاء جلسة GPT Live"
 		},
-		"Creates a metered GPT Live voice session, which delegates reasoning to a Responses backend model, and returns relay connection details. Function tools run on your client: the relay forwards each `function_call` and accepts its `function_call_output` followed by `response.create`.": {
-			"es": "Crea una sesión de voz de GPT Live con medición de uso, que delega el razonamiento en un modelo de backend de Responses, y devuelve los datos de conexión del relé. Las herramientas de función se ejecutan en tu cliente: el relé reenvía cada `function_call` y acepta su `function_call_output` seguido de `response.create`.",
-			"fr": "Crée une session vocale GPT Live avec comptabilisation de l’usage, qui délègue le raisonnement à un modèle backend Responses, et renvoie les informations de connexion du relais. Les outils de fonction s’exécutent sur votre client : le relais transmet chaque `function_call` et accepte son `function_call_output` suivi de `response.create`.",
-			"de": "Erstellt eine GPT-Live-Sprachsitzung mit Nutzungsabrechnung, die das Schlussfolgern an ein Responses-Backend-Modell delegiert, und gibt die Verbindungsdaten des Relays zurück. Funktionstools laufen auf Ihrem Client: Das Relay leitet jeden `function_call` weiter und nimmt dessen `function_call_output` gefolgt von `response.create` an.",
-			"pt-BR": "Cria uma sessão de voz do GPT Live com medição de uso, que delega o raciocínio a um modelo de backend do Responses, e retorna os dados de conexão do relay. As ferramentas de função são executadas no seu cliente: o relay encaminha cada `function_call` e aceita o `function_call_output` correspondente seguido de `response.create`.",
-			"hi": "उपयोग मापन के साथ GPT Live वॉइस सत्र बनाता है, जो तर्क का काम Responses बैकएंड मॉडल को सौंपता है, और रिले कनेक्शन विवरण लौटाता है। फ़ंक्शन टूल आपके क्लाइंट पर चलते हैं: रिले हर `function_call` आगे भेजता है और उसका `function_call_output` और उसके बाद `response.create` स्वीकार करता है।",
-			"ja": "使用量を計測する GPT Live 音声セッションを作成し、中継接続の詳細を返します。推論は Responses のバックエンドモデルに委任されます。関数ツールはクライアント側で実行されます。中継は各 `function_call` を転送し、その `function_call_output` と続く `response.create` を受け付けます。",
-			"zh-Hans": "创建计量的 GPT Live 语音会话，将推理委托给 Responses 后端模型，并返回中继连接信息。函数工具在你的客户端运行：中继转发每个 `function_call`，并接受其 `function_call_output`，随后接受 `response.create`。",
-			"ar": "ينشئ جلسة صوتية من GPT Live مع احتساب الاستخدام، تفوّض الاستدلال إلى نموذج خلفي من Responses، ويعرض تفاصيل اتصال الترحيل. تعمل أدوات الدوال على عميلك: يمرّر الترحيل كل `function_call` ويقبل `function_call_output` الخاص به متبوعًا بـ `response.create`."
-		},
 		"Client-executed function tools, with unique names.": {
 			"es": "Herramientas de función que ejecuta el cliente, con nombres únicos.",
 			"fr": "Outils de fonction exécutés par le client, avec des noms uniques.",
@@ -12589,6 +12579,166 @@
 			"ja": "データURLの接頭辞を付けない、Base64エンコードされたPDFバイト列。",
 			"zh-Hans": "Base64 编码的 PDF 字节，不带数据 URL 前缀。",
 			"ar": "بايتات PDF بترميز Base64، دون بادئة رابط بيانات."
+		},
+		"Creates a metered GPT Live voice session, which delegates reasoning to a Responses backend model. With the default WebSocket transport it returns relay connection details, and function tools run on your client: the relay forwards each `function_call` and accepts its `function_call_output` followed by `response.create`. With the WebRTC transport, send your peer connection's SDP offer and apply the SDP answer that comes back; audio then goes directly to OpenAI, and standby is available. Function tools are not supported with WebRTC yet.": {
+			"es": "Crea una sesión de voz de GPT Live con medición de uso, que delega el razonamiento en un modelo de backend de Responses. Con el transporte WebSocket predeterminado, devuelve los datos de conexión del relé, y las herramientas de función se ejecutan en tu cliente: el relé reenvía cada `function_call` y acepta su `function_call_output` seguido de `response.create`. Con el transporte WebRTC, envía la oferta SDP de tu conexión entre pares y aplica la respuesta SDP que recibes; el audio va entonces directamente a OpenAI y el modo de espera está disponible. Las herramientas de función todavía no son compatibles con WebRTC.",
+			"fr": "Crée une session vocale GPT Live avec comptabilisation de l’usage, qui délègue le raisonnement à un modèle backend Responses. Avec le transport WebSocket par défaut, elle renvoie les informations de connexion du relais, et les outils de fonction s’exécutent sur votre client : le relais transmet chaque `function_call` et accepte son `function_call_output` suivi de `response.create`. Avec le transport WebRTC, envoyez l’offre SDP de votre connexion pair à pair et appliquez la réponse SDP renvoyée ; l’audio passe alors directement par OpenAI et la mise en veille est disponible. Les outils de fonction ne sont pas encore pris en charge avec WebRTC.",
+			"de": "Erstellt eine abgerechnete GPT-Live-Sprachsitzung, die das Schlussfolgern an ein Responses-Backend-Modell delegiert. Mit dem standardmäßigen WebSocket-Transport gibt sie die Relay-Verbindungsdaten zurück, und Funktionstools laufen auf Ihrem Client: Das Relay leitet jeden `function_call` weiter und nimmt dessen `function_call_output` gefolgt von `response.create` an. Mit dem WebRTC-Transport senden Sie das SDP-Angebot Ihrer Peer-Verbindung und wenden die zurückgegebene SDP-Antwort an; das Audio geht dann direkt an OpenAI, und der Bereitschaftsmodus ist verfügbar. Funktionstools werden mit WebRTC noch nicht unterstützt.",
+			"pt-BR": "Cria uma sessão de voz do GPT Live com medição de uso, que delega o raciocínio a um modelo de backend do Responses. Com o transporte WebSocket padrão, retorna os dados de conexão do relay, e as ferramentas de função são executadas no seu cliente: o relay encaminha cada `function_call` e aceita o `function_call_output` correspondente seguido de `response.create`. Com o transporte WebRTC, envie a oferta SDP da sua conexão ponto a ponto e aplique a resposta SDP retornada; o áudio passa a ir diretamente para a OpenAI, e o modo de espera fica disponível. As ferramentas de função ainda não são compatíveis com WebRTC.",
+			"hi": "मापे गए उपयोग वाला GPT Live वॉइस सत्र बनाता है, जो तर्क का काम Responses बैकएंड मॉडल को सौंपता है। डिफ़ॉल्ट WebSocket ट्रांसपोर्ट के साथ यह रिले कनेक्शन विवरण लौटाता है, और फ़ंक्शन टूल आपके क्लाइंट पर चलते हैं: रिले हर `function_call` आगे भेजता है और उसका `function_call_output` और फिर `response.create` स्वीकार करता है। WebRTC ट्रांसपोर्ट के साथ, अपने पीयर कनेक्शन का SDP ऑफ़र भेजें और लौटा SDP उत्तर लागू करें; तब ऑडियो सीधे OpenAI को जाता है, और स्टैंडबाय उपलब्ध होता है। WebRTC के साथ फ़ंक्शन टूल अभी समर्थित नहीं हैं।",
+			"ja": "使用量が計測される GPT Live 音声セッションを作成し、推論を Responses バックエンドモデルに委任します。既定の WebSocket トランスポートではリレー接続情報を返し、関数ツールはクライアントで実行されます。リレーは各 `function_call` を転送し、その `function_call_output` と続く `response.create` を受け付けます。WebRTC トランスポートでは、ピア接続の SDP オファーを送信し、返された SDP アンサーを適用します。音声は OpenAI に直接送られ、スタンバイを利用できます。WebRTC では関数ツールはまだサポートされていません。",
+			"zh-Hans": "创建按用量计费的 GPT Live 语音会话，并将推理委托给 Responses 后端模型。使用默认的 WebSocket 传输时，返回中继连接信息，函数工具在你的客户端运行：中继会转发每个 `function_call`，并接受其 `function_call_output`，随后是 `response.create`。使用 WebRTC 传输时，发送对等连接的 SDP 提议并应用返回的 SDP 应答；音频随后直接发送到 OpenAI，并可使用待机。WebRTC 暂不支持函数工具。",
+			"ar": "ينشئ جلسة صوتية من GPT Live مع قياس الاستخدام، تفوّض الاستدلال إلى نموذج خلفي من Responses. مع نقل WebSocket الافتراضي تُرجع بيانات الاتصال بالمرحّل، وتعمل أدوات الدوال على عميلك: يمرّر المرحّل كل `function_call` ويقبل `function_call_output` الخاص به متبوعًا بـ `response.create`. مع نقل WebRTC، أرسل عرض SDP من اتصال النظير وطبّق إجابة SDP المُرجعة؛ يذهب الصوت حينها مباشرة إلى OpenAI ويتوفر وضع الاستعداد. أدوات الدوال غير مدعومة مع WebRTC بعد."
+		},
+		"How the client connects. `websocket` (the default) uses the Phaseo relay. `webrtc` takes your peer connection's SDP offer, at most 64 KB, and returns the SDP answer.": {
+			"es": "Cómo se conecta el cliente. `websocket` (el predeterminado) usa el relé de Phaseo. `webrtc` recibe la oferta SDP de tu conexión entre pares, de 64 KB como máximo, y devuelve la respuesta SDP.",
+			"fr": "Mode de connexion du client. `websocket` (par défaut) utilise le relais Phaseo. `webrtc` reçoit l’offre SDP de votre connexion pair à pair, de 64 Ko au maximum, et renvoie la réponse SDP.",
+			"de": "Wie sich der Client verbindet. `websocket` (Standard) nutzt das Phaseo-Relay. `webrtc` nimmt das SDP-Angebot Ihrer Peer-Verbindung (höchstens 64 KB) entgegen und gibt die SDP-Antwort zurück.",
+			"pt-BR": "Como o cliente se conecta. `websocket` (o padrão) usa o relay da Phaseo. `webrtc` recebe a oferta SDP da sua conexão ponto a ponto, com no máximo 64 KB, e retorna a resposta SDP.",
+			"hi": "क्लाइंट कैसे कनेक्ट होता है। `websocket` (डिफ़ॉल्ट) Phaseo रिले का उपयोग करता है। `webrtc` आपके पीयर कनेक्शन का SDP ऑफ़र (अधिकतम 64 KB) लेता है और SDP उत्तर लौटाता है।",
+			"ja": "クライアントの接続方法です。`websocket`（既定）は Phaseo のリレーを使います。`webrtc` はピア接続の SDP オファー（最大 64 KB）を受け取り、SDP アンサーを返します。",
+			"zh-Hans": "客户端的连接方式。`websocket`（默认）使用 Phaseo 中继。`webrtc` 接收对等连接的 SDP 提议（最多 64 KB），并返回 SDP 应答。",
+			"ar": "طريقة اتصال العميل. يستخدم `websocket` (الافتراضي) مرحّل Phaseo. يأخذ `webrtc` عرض SDP من اتصال النظير، بحد أقصى 64 كيلوبايت، ويُرجع إجابة SDP."
+		},
+		"The SDP offer from `RTCPeerConnection`, after ICE gathering.": {
+			"es": "La oferta SDP de `RTCPeerConnection`, una vez terminada la recopilación de ICE.",
+			"fr": "L’offre SDP de `RTCPeerConnection`, une fois la collecte ICE terminée.",
+			"de": "Das SDP-Angebot von `RTCPeerConnection` nach dem ICE-Gathering.",
+			"pt-BR": "A oferta SDP do `RTCPeerConnection`, depois da coleta de ICE.",
+			"hi": "ICE एकत्रण के बाद `RTCPeerConnection` से मिला SDP ऑफ़र।",
+			"ja": "ICE 収集後の `RTCPeerConnection` の SDP オファーです。",
+			"zh-Hans": "ICE 收集完成后来自 `RTCPeerConnection` 的 SDP 提议。",
+			"ar": "عرض SDP من `RTCPeerConnection` بعد اكتمال جمع ICE."
+		},
+		"WebRTC only. Waits for speech before inference starts and bills the waiting time at the lower standby rate.": {
+			"es": "Solo WebRTC. Espera a que se hable antes de iniciar la inferencia y factura el tiempo de espera a la tarifa reducida de espera.",
+			"fr": "WebRTC uniquement. Attend la parole avant de lancer l’inférence et facture le temps d’attente au tarif réduit de veille.",
+			"de": "Nur WebRTC. Wartet auf Sprache, bevor die Inferenz startet, und rechnet die Wartezeit zum niedrigeren Bereitschaftstarif ab.",
+			"pt-BR": "Somente WebRTC. Espera alguém falar antes de iniciar a inferência e cobra o tempo de espera pela tarifa menor de espera.",
+			"hi": "केवल WebRTC। इन्फ़रेंस शुरू होने से पहले बोलने की प्रतीक्षा करता है और प्रतीक्षा के समय का बिल कम स्टैंडबाय दर पर बनाता है।",
+			"ja": "WebRTC のみ。推論の開始前に発話を待ち、待機時間は安いスタンバイ料金で課金されます。",
+			"zh-Hans": "仅限 WebRTC。在推理开始前等待语音，等待时间按较低的待机费率计费。",
+			"ar": "لـ WebRTC فقط. ينتظر الكلام قبل بدء الاستدلال ويحتسب وقت الانتظار بسعر الاستعداد الأقل."
+		},
+		"How much evidence of speech wakes the session, from 0 to 1. The default is 0.5.": {
+			"es": "Cuánta evidencia de voz despierta la sesión, de 0 a 1. El valor predeterminado es 0,5.",
+			"fr": "Le niveau de preuve de parole qui réveille la session, de 0 à 1. La valeur par défaut est 0,5.",
+			"de": "Wie viel Sprachevidenz die Sitzung aufweckt, von 0 bis 1. Der Standardwert ist 0,5.",
+			"pt-BR": "Quanta evidência de fala desperta a sessão, de 0 a 1. O padrão é 0,5.",
+			"hi": "सत्र को जगाने के लिए बोलने का कितना प्रमाण चाहिए, 0 से 1 तक। डिफ़ॉल्ट 0.5 है।",
+			"ja": "セッションを起こすのに必要な発話の確からしさで、0 から 1 の値です。既定値は 0.5 です。",
+			"zh-Hans": "唤醒会话所需的语音证据强度，取值 0 到 1。默认值为 0.5。",
+			"ar": "مقدار دليل الكلام الذي يوقظ الجلسة، من 0 إلى 1. القيمة الافتراضية 0.5."
+		},
+		"WebRTC only. Returns to standby after this many seconds without speech. Needs `wake_policy`.": {
+			"es": "Solo WebRTC. Vuelve al modo de espera tras estos segundos sin voz. Necesita `wake_policy`.",
+			"fr": "WebRTC uniquement. Repasse en veille après ce nombre de secondes sans parole. Nécessite `wake_policy`.",
+			"de": "Nur WebRTC. Kehrt nach so vielen Sekunden ohne Sprache in die Bereitschaft zurück. Erfordert `wake_policy`.",
+			"pt-BR": "Somente WebRTC. Volta ao modo de espera depois desse número de segundos sem fala. Exige `wake_policy`.",
+			"hi": "केवल WebRTC। इतने सेकंड तक कोई बोल न आने पर स्टैंडबाय में लौटता है। इसके लिए `wake_policy` ज़रूरी है।",
+			"ja": "WebRTC のみ。発話がないままこの秒数が過ぎるとスタンバイに戻ります。`wake_policy` が必要です。",
+			"zh-Hans": "仅限 WebRTC。无语音达到该秒数后返回待机。需要 `wake_policy`。",
+			"ar": "لـ WebRTC فقط. يعود إلى وضع الاستعداد بعد هذا العدد من الثواني دون كلام. يتطلب `wake_policy`."
+		},
+		"WebRTC sessions only: the SDP answer to apply with `setRemoteDescription`.": {
+			"es": "Solo en sesiones WebRTC: la respuesta SDP que debes aplicar con `setRemoteDescription`.",
+			"fr": "Sessions WebRTC uniquement : la réponse SDP à appliquer avec `setRemoteDescription`.",
+			"de": "Nur bei WebRTC-Sitzungen: die SDP-Antwort, die Sie mit `setRemoteDescription` anwenden.",
+			"pt-BR": "Somente em sessões WebRTC: a resposta SDP a aplicar com `setRemoteDescription`.",
+			"hi": "केवल WebRTC सत्रों में: `setRemoteDescription` से लागू करने वाला SDP उत्तर।",
+			"ja": "WebRTC セッションのみ：`setRemoteDescription` で適用する SDP アンサーです。",
+			"zh-Hans": "仅限 WebRTC 会话：使用 `setRemoteDescription` 应用的 SDP 应答。",
+			"ar": "لجلسات WebRTC فقط: إجابة SDP التي تطبّقها باستخدام `setRemoteDescription`."
+		},
+		"Get GPT Live session": {
+			"es": "Obtener sesión de GPT Live",
+			"fr": "Obtenir une session GPT Live",
+			"de": "GPT-Live-Sitzung abrufen",
+			"pt-BR": "Obter sessão do GPT Live",
+			"hi": "GPT Live सत्र प्राप्त करें",
+			"ja": "GPT Live セッションを取得",
+			"zh-Hans": "获取 GPT Live 会话",
+			"ar": "الحصول على جلسة GPT Live"
+		},
+		"Returns a GPT Live session's status, standby state and Phaseo warnings, and the `session.ended` event with the bill once the session has ended. WebRTC clients read Phaseo's events here, because they can't use OpenAI's data channel.": {
+			"es": "Devuelve el estado de una sesión de GPT Live, si está en espera y las advertencias de Phaseo, y el evento `session.ended` con la factura cuando la sesión termina. Los clientes WebRTC leen aquí los eventos de Phaseo, porque no pueden usar el canal de datos de OpenAI.",
+			"fr": "Renvoie l’état d’une session GPT Live, son état de veille et les avertissements de Phaseo, puis l’événement `session.ended` avec la facture une fois la session terminée. Les clients WebRTC lisent ici les événements de Phaseo, car ils ne peuvent pas utiliser le canal de données d’OpenAI.",
+			"de": "Gibt den Status einer GPT-Live-Sitzung, ihren Bereitschaftszustand und die Warnungen von Phaseo zurück sowie nach dem Ende der Sitzung das Ereignis `session.ended` mit der Abrechnung. WebRTC-Clients lesen die Phaseo-Ereignisse hier, weil sie den Datenkanal von OpenAI nicht nutzen können.",
+			"pt-BR": "Retorna o status de uma sessão do GPT Live, o estado de espera e os avisos da Phaseo, e o evento `session.ended` com a cobrança quando a sessão termina. Clientes WebRTC leem os eventos da Phaseo aqui, porque não podem usar o canal de dados da OpenAI.",
+			"hi": "GPT Live सत्र की स्थिति, स्टैंडबाय स्थिति और Phaseo की चेतावनियाँ लौटाता है, और सत्र समाप्त होने पर बिल के साथ `session.ended` इवेंट। WebRTC क्लाइंट Phaseo के इवेंट यहाँ पढ़ते हैं, क्योंकि वे OpenAI के डेटा चैनल का उपयोग नहीं कर सकते।",
+			"ja": "GPT Live セッションの状態、スタンバイ状態、Phaseo の警告を返し、セッション終了後は請求額を含む `session.ended` イベントを返します。WebRTC クライアントは OpenAI のデータチャネルを使えないため、Phaseo のイベントをここで読み取ります。",
+			"zh-Hans": "返回 GPT Live 会话的状态、待机状态和 Phaseo 警告，并在会话结束后返回带账单的 `session.ended` 事件。WebRTC 客户端无法使用 OpenAI 的数据通道，因此在这里读取 Phaseo 的事件。",
+			"ar": "يُرجع حالة جلسة GPT Live وحالة الاستعداد وتحذيرات Phaseo، وحدث `session.ended` مع الفاتورة بعد انتهاء الجلسة. يقرأ عملاء WebRTC أحداث Phaseo هنا، لأنهم لا يستطيعون استخدام قناة بيانات OpenAI."
+		},
+		"GPT Live session": {
+			"es": "Sesión de GPT Live",
+			"fr": "Session GPT Live",
+			"de": "GPT-Live-Sitzung",
+			"pt-BR": "Sessão do GPT Live",
+			"hi": "GPT Live सत्र",
+			"ja": "GPT Live セッション",
+			"zh-Hans": "GPT Live 会话",
+			"ar": "جلسة GPT Live"
+		},
+		"True while a WebRTC session is in standby. Null when it isn't known or the session has ended.": {
+			"es": "Verdadero mientras una sesión WebRTC está en espera. Nulo cuando no se sabe o la sesión ha terminado.",
+			"fr": "Vrai lorsqu’une session WebRTC est en veille. Nul lorsque l’état est inconnu ou que la session est terminée.",
+			"de": "True, solange eine WebRTC-Sitzung in Bereitschaft ist. Null, wenn es nicht bekannt ist oder die Sitzung beendet ist.",
+			"pt-BR": "Verdadeiro enquanto uma sessão WebRTC está em espera. Nulo quando não se sabe ou a sessão terminou.",
+			"hi": "जब WebRTC सत्र स्टैंडबाय में हो तब true। जानकारी न होने पर या सत्र समाप्त होने पर null।",
+			"ja": "WebRTC セッションがスタンバイ中の間は true です。不明な場合やセッション終了後は null です。",
+			"zh-Hans": "WebRTC 会话处于待机时为 true。未知或会话已结束时为 null。",
+			"ar": "صحيح أثناء وجود جلسة WebRTC في وضع الاستعداد. فارغ عندما يكون غير معروف أو بعد انتهاء الجلسة."
+		},
+		"The `session.warning` events sent during the session.": {
+			"es": "Los eventos `session.warning` enviados durante la sesión.",
+			"fr": "Les événements `session.warning` envoyés pendant la session.",
+			"de": "Die während der Sitzung gesendeten `session.warning`-Ereignisse.",
+			"pt-BR": "Os eventos `session.warning` enviados durante a sessão.",
+			"hi": "सत्र के दौरान भेजे गए `session.warning` इवेंट।",
+			"ja": "セッション中に送信された `session.warning` イベントです。",
+			"zh-Hans": "会话期间发送的 `session.warning` 事件。",
+			"ar": "أحداث `session.warning` المُرسلة أثناء الجلسة."
+		},
+		"The `session.ended` event once the session has ended, otherwise null.": {
+			"es": "El evento `session.ended` cuando la sesión ha terminado; si no, nulo.",
+			"fr": "L’événement `session.ended` une fois la session terminée, sinon nul.",
+			"de": "Das Ereignis `session.ended` nach dem Ende der Sitzung, sonst null.",
+			"pt-BR": "O evento `session.ended` quando a sessão termina; caso contrário, nulo.",
+			"hi": "सत्र समाप्त होने पर `session.ended` इवेंट, अन्यथा null।",
+			"ja": "セッション終了後は `session.ended` イベント、それ以外は null です。",
+			"zh-Hans": "会话结束后为 `session.ended` 事件，否则为 null。",
+			"ar": "حدث `session.ended` بعد انتهاء الجلسة، وإلا فهو فارغ."
+		},
+		"End GPT Live WebRTC session": {
+			"es": "Finalizar sesión WebRTC de GPT Live",
+			"fr": "Terminer une session WebRTC GPT Live",
+			"de": "GPT-Live-WebRTC-Sitzung beenden",
+			"pt-BR": "Encerrar sessão WebRTC do GPT Live",
+			"hi": "GPT Live WebRTC सत्र समाप्त करें",
+			"ja": "GPT Live の WebRTC セッションを終了",
+			"zh-Hans": "结束 GPT Live WebRTC 会话",
+			"ar": "إنهاء جلسة WebRTC من GPT Live"
+		},
+		"Ends a WebRTC session through Phaseo, for clients whose data channel isn't open. The final bill follows on `GET /v1/live/sessions/{session_id}`.": {
+			"es": "Finaliza una sesión WebRTC a través de Phaseo, para clientes cuyo canal de datos no está abierto. La factura final se obtiene con `GET /v1/live/sessions/{session_id}`.",
+			"fr": "Termine une session WebRTC via Phaseo, pour les clients dont le canal de données n’est pas ouvert. La facture finale est ensuite disponible avec `GET /v1/live/sessions/{session_id}`.",
+			"de": "Beendet eine WebRTC-Sitzung über Phaseo, für Clients, deren Datenkanal nicht geöffnet ist. Die endgültige Abrechnung folgt über `GET /v1/live/sessions/{session_id}`.",
+			"pt-BR": "Encerra uma sessão WebRTC pela Phaseo, para clientes cujo canal de dados não está aberto. A cobrança final fica disponível em `GET /v1/live/sessions/{session_id}`.",
+			"hi": "उन क्लाइंट के लिए Phaseo के माध्यम से WebRTC सत्र समाप्त करता है जिनका डेटा चैनल खुला नहीं है। अंतिम बिल `GET /v1/live/sessions/{session_id}` पर मिलता है।",
+			"ja": "データチャネルが開いていないクライアント向けに、Phaseo 経由で WebRTC セッションを終了します。最終的な請求額は `GET /v1/live/sessions/{session_id}` で確認できます。",
+			"zh-Hans": "为数据通道未打开的客户端通过 Phaseo 结束 WebRTC 会话。最终账单可通过 `GET /v1/live/sessions/{session_id}` 获取。",
+			"ar": "ينهي جلسة WebRTC عبر Phaseo، للعملاء الذين لم تُفتح قناة البيانات لديهم. تتوفر الفاتورة النهائية لاحقًا عبر `GET /v1/live/sessions/{session_id}`."
+		},
+		"GPT Live session ending": {
+			"es": "La sesión de GPT Live está finalizando",
+			"fr": "La session GPT Live se termine",
+			"de": "GPT-Live-Sitzung wird beendet",
+			"pt-BR": "A sessão do GPT Live está sendo encerrada",
+			"hi": "GPT Live सत्र समाप्त हो रहा है",
+			"ja": "GPT Live セッションを終了しています",
+			"zh-Hans": "GPT Live 会话正在结束",
+			"ar": "جلسة GPT Live قيد الإنهاء"
 		}
 	},
 	"GET /apps": {

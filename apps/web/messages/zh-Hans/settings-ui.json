@@ -6041,6 +6041,7 @@
 		"selectModelStart": "选择模型以开始",
 		"realtimeSettingsContent": "实时设置内容",
 		"livePrice": "每分钟 0.05 美元，另加后端 token 费用。语音：{voice}。后端：{backend}。工具：{tools}。",
+		"personaStandby": "待机",
 		"billingUnavailable": "计费状态不可用，显示的金额可能已过期。",
 		"finalizingBilling": "正在完成计费。",
 		"reviewBilling": "最终使用量等待计费审核，剩余预留金额将保留。",

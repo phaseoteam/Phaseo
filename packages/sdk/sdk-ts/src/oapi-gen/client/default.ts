@@ -904,6 +904,75 @@ export async function cancelVideoAlias(
   });
 }
 
+export type CloseLiveSessionParams = {
+  path: {
+    session_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Ends a WebRTC session through Phaseo, for clients whose data channel isn't open. The final bill follows on `GET /v1/live/sessions/{session_id}`.
+ */
+export async function closeLiveSession(
+  client: Client,
+  args: CloseLiveSessionParams,
+): Promise<{
+  billing?: {
+    [key: string]: unknown;
+  };
+  ended?: {
+    [key: string]: unknown;
+  } | null;
+  expires_at?: string | null;
+  id?: string;
+  model?: string;
+  session_id?: string;
+  standby?: boolean | null;
+  status?: string;
+  transport?: {
+    type?: "websocket" | "webrtc";
+  };
+  warnings?: {
+    [key: string]: unknown;
+  }[];
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["session_id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/live/sessions/${encodeURIComponent(String(path["session_id"]))}/close`;
+  return client.request<{
+    billing?: {
+      [key: string]: unknown;
+    };
+    ended?: {
+      [key: string]: unknown;
+    } | null;
+    expires_at?: string | null;
+    id?: string;
+    model?: string;
+    session_id?: string;
+    standby?: boolean | null;
+    status?: string;
+    transport?: {
+      type?: "websocket" | "webrtc";
+    };
+    warnings?: {
+      [key: string]: unknown;
+    }[];
+    [key: string]: unknown;
+  }>({
+    method: "POST",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
 export type CreateAnthropicMessageParams = {
   path?: Record<string, never>;
   query?: Record<string, never>;
@@ -4530,6 +4599,7 @@ export type CreateLiveSessionParams = {
       verbosity?: "low" | "medium" | "high";
       web_search?: boolean;
     };
+    idle_timeout_s?: number;
     instructions?: string;
     metadata?: {
       [key: string]: unknown;
@@ -4537,6 +4607,10 @@ export type CreateLiveSessionParams = {
     model: "openai/gpt-live-1" | "openai/gpt-live-1.1";
     provider: "openai";
     source?: "api" | "chat";
+    transport?: {
+      sdp?: string;
+      type: "websocket" | "webrtc";
+    };
     type?: "live";
     voice?:
       | "alloy"
@@ -4561,11 +4635,15 @@ export type CreateLiveSessionParams = {
       | "verse"
       | "vesper"
       | "willow";
+    wake_policy?: {
+      type: "speech";
+      vad_threshold?: number;
+    };
   };
 };
 
 /**
- * Creates a metered GPT Live voice session, which delegates reasoning to a Responses backend model, and returns relay connection details. Function tools run on your client: the relay forwards each `function_call` and accepts its `function_call_output` followed by `response.create`.
+ * Creates a metered GPT Live voice session, which delegates reasoning to a Responses backend model. With the default WebSocket transport it returns relay connection details, and function tools run on your client: the relay forwards each `function_call` and accepts its `function_call_output` followed by `response.create`. With the WebRTC transport, send your peer connection's SDP offer and apply the SDP answer that comes back; audio then goes directly to OpenAI, and standby is available. Function tools are not supported with WebRTC yet.
  */
 export async function createLiveSession(
   client: Client,
@@ -4590,6 +4668,10 @@ export async function createLiveSession(
   provider_model?: string;
   session_id?: string;
   status?: string;
+  transport?: {
+    sdp?: string;
+    type?: "webrtc";
+  };
   voice?: string | null;
   [key: string]: unknown;
 }> {
@@ -4615,6 +4697,10 @@ export async function createLiveSession(
     provider_model?: string;
     session_id?: string;
     status?: string;
+    transport?: {
+      sdp?: string;
+      type?: "webrtc";
+    };
     voice?: string | null;
     [key: string]: unknown;
   }>({
@@ -11719,6 +11805,75 @@ export async function getHealth(
   const resolvedPath = "/health";
   return client.request<{
     status?: string;
+  }>({
+    method: "GET",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type GetLiveSessionParams = {
+  path: {
+    session_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: never;
+};
+
+/**
+ * Returns a GPT Live session's status, standby state and Phaseo warnings, and the `session.ended` event with the bill once the session has ended. WebRTC clients read Phaseo's events here, because they can't use OpenAI's data channel.
+ */
+export async function getLiveSession(
+  client: Client,
+  args: GetLiveSessionParams,
+): Promise<{
+  billing?: {
+    [key: string]: unknown;
+  };
+  ended?: {
+    [key: string]: unknown;
+  } | null;
+  expires_at?: string | null;
+  id?: string;
+  model?: string;
+  session_id?: string;
+  standby?: boolean | null;
+  status?: string;
+  transport?: {
+    type?: "websocket" | "webrtc";
+  };
+  warnings?: {
+    [key: string]: unknown;
+  }[];
+  [key: string]: unknown;
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["session_id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/live/sessions/${encodeURIComponent(String(path["session_id"]))}`;
+  return client.request<{
+    billing?: {
+      [key: string]: unknown;
+    };
+    ended?: {
+      [key: string]: unknown;
+    } | null;
+    expires_at?: string | null;
+    id?: string;
+    model?: string;
+    session_id?: string;
+    standby?: boolean | null;
+    status?: string;
+    transport?: {
+      type?: "websocket" | "webrtc";
+    };
+    warnings?: {
+      [key: string]: unknown;
+    }[];
+    [key: string]: unknown;
   }>({
     method: "GET",
     path: resolvedPath,

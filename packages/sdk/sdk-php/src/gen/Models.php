@@ -3809,6 +3809,30 @@ class ListFilesResponse
 	public $object;
 }
 
+class LiveSessionStatus
+{
+	/** @var array<string, mixed>|null */
+	public $billing;
+	/** @var array<string, mixed>|null */
+	public $ended;
+	/** @var string|null */
+	public $expires_at;
+	/** @var string|null */
+	public $id;
+	/** @var string|null */
+	public $model;
+	/** @var string|null */
+	public $session_id;
+	/** @var bool|null */
+	public $standby;
+	/** @var string|null */
+	public $status;
+	/** @var array<string, mixed>|null */
+	public $transport;
+	/** @var array|null */
+	public $warnings;
+}
+
 class ManagementKeyCollectionResponse
 {
 	/** @var array */

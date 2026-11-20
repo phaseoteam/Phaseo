@@ -101,6 +101,43 @@ curl https://api.phaseo.app/v1/live/sessions \
 
 GPT Live の通話は、音声の秒数（GPT Live 自身の `usage.seconds` に基づき 1 分あたり $0.05）に加え、ツール結果の後の返答を含むすべての応答でのバックエンドモデルのトークンで課金されます。GPT Live は約 30 秒間音声を受信しないセッションを期限切れにし、通話は `provider_idle_timeout` で終了します。無音を含め、マイクの音声をストリーミングし続けてください。
 
+### WebRTC とスタンバイによる GPT Live
+
+ブラウザでは、GPT Live を WebRTC 経由で実行することもできます。ブラウザの音声はリレーを通らずに OpenAI へ直接届くため経由点が 1 つ減り、通話はアクティブ時間より安いスタンバイ状態で待機できます。WebRTC はリクエストに応じてワークスペースごとに有効化されます。有効になるまでは、作成リクエストが `live_webrtc_feature_flag_disabled` で失敗します。
+
+マイクと `oai-events` という名前のデータチャネルを持つピア接続を作成し、その SDP オファーをサーバーに送ります。サーバーは `transport` を指定してセッションを作成し、SDP アンサーをブラウザに返します。
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-live-1.1",
+    "provider": "openai",
+    "transport": { "type": "webrtc", "sdp": "<SDP offer from the browser>" },
+    "wake_policy": { "type": "speech" },
+    "idle_timeout_s": 30
+  }'
+```
+
+レスポンスには、セッションの `id` と、OpenAI の SDP アンサーである `transport.sdp` が含まれます。`client_secret` やリレーの URL はありません。ブラウザでアンサーを適用します。
+
+```js
+await pc.setRemoteDescription({ type: "answer", sdp: session.transport.sdp });
+```
+
+TypeScript SDK の `connectLiveWebRTC({ createSession })` がブラウザ側の処理を代わりに行います。マイクを追加し、データチャネルを作成し、`createSession` 関数を通じてオファーを送り、アンサーを適用します。
+
+スタンバイには `wake_policy` が必要です。セッションは発話を待ってから推論を開始し、`idle_timeout_s`（5〜60 秒）を指定すると、その時間発話がなければスタンバイに戻ります。そのときデータチャネルは `session.paused` を送ります。スタンバイ中もマイクのトラックは動かしたままにしてください。スタンバイ中の時間は 1 分あたり $0.02、アクティブ時間は 1 分あたり $0.05 で、どちらも OpenAI 自身による通話のアクティブ秒数と一時停止秒数の内訳に基づき秒単位で課金されます。`wake_policy` がない場合、通話全体がアクティブ時間として課金されます。
+
+データチャネルは、文字起こしや `session.paused` などの OpenAI のイベントを運びます。ブラウザはこのチャネルで `session.close`、`session.input_audio.mute`、`session.input_audio.unmute` を送れます。OpenAI はそれ以外のクライアントイベントを拒否するため、ブラウザがセッションのモデル、バックエンド、ツールを変更することはできません。Phaseo 独自のイベントは OpenAI のデータチャネルを使えないため、`GET /v1/live/sessions/{id}` で読み取ります。このエンドポイントは、セッションのステータス、`standby`、`warnings` に入った `session.warning` イベント、そして通話終了後にはリレーと同じ `session.ended` イベントである `ended` を返します。データチャネルが一度も開かなかった通話を終了するには、`POST /v1/live/sessions/{id}/close` を呼び出します。
+
+Phaseo は OpenAI のサーバー側接続で通話を追跡し、キーが失効したとき、ポリシーでブロックされたとき、残高がなくなったとき、または 25 分に達したときに、そこで通話を終了します。関数ツールはまだ WebRTC ではサポートされていないため、WebSocket リレーを使ってください。Web 検索はどちらでも使えます。
+
+<Note>
+WebRTC では、エンドユーザーの音声と IP アドレスは Phaseo を経由せず、OpenAI に直接届きます。
+</Note>
+
 ### ElevenLabs Realtime セッション
 
 ElevenLabs Realtime には 2 つのモデルがあります。高速で安価な既定の `eleven-labs/eleven-realtime-v1-mini` と、回答前に推論し、複雑な指示や複数ステップのツール使用に向いた `eleven-labs/eleven-realtime-v1-max` です。どちらも OpenAI と同じ作成リクエストとリレーを使い、音声は 24 kHz です。Phaseo は自社のキーで ElevenLabs に接続し、クライアントに見えるのはリレーだけです。

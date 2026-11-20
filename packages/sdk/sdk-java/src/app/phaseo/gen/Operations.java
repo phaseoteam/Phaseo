@@ -65,6 +65,11 @@ public final class Operations {
 		return client.request("POST", resolvedPath, query, headers, body);
 	}
 
+	public static Object closeLiveSession(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/live/sessions/" + pathSegment(path != null && path.containsKey("session_id") ? path.get("session_id") : "") + "/close";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object createAnthropicMessage(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/messages";
 		return client.request("POST", resolvedPath, query, headers, body);
@@ -552,6 +557,11 @@ public final class Operations {
 
 	public static Object getHealth(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/health";
+		return client.request("GET", resolvedPath, query, headers, body);
+	}
+
+	public static Object getLiveSession(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/live/sessions/" + pathSegment(path != null && path.containsKey("session_id") ? path.get("session_id") : "");
 		return client.request("GET", resolvedPath, query, headers, body);
 	}
 

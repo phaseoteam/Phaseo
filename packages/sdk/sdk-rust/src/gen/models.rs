@@ -2174,6 +2174,19 @@ pub struct ListFilesResponse {
 	pub object: Option<String>,
 }
 
+pub struct LiveSessionStatus {
+	pub billing: Option<HashMap<String, String>>,
+	pub ended: Option<Option<HashMap<String, String>>>,
+	pub expires_at: Option<Option<String>>,
+	pub id: Option<String>,
+	pub model: Option<String>,
+	pub session_id: Option<String>,
+	pub standby: Option<Option<bool>>,
+	pub status: Option<String>,
+	pub transport: Option<HashMap<String, String>>,
+	pub warnings: Option<Vec<HashMap<String, String>>>,
+}
+
 pub struct ManagementKeyCollectionResponse {
 	pub data: Vec<HashMap<String, String>>,
 }

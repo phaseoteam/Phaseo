@@ -102,6 +102,43 @@ The relay accepts a `function_call_output` only for a call the backend made, onc
 
 A GPT Live call is billed per second of voice ($0.05 per minute, from GPT Live's own `usage.seconds`) plus the backend model's tokens for every response, including the replies after tool results. GPT Live expires a session that receives no audio for about 30 seconds, which ends the call with `provider_idle_timeout`. Keep streaming microphone audio, silence included.
 
+### GPT Live over WebRTC with standby
+
+In a browser, GPT Live can also run over WebRTC. The browser's audio goes straight to OpenAI instead of through the relay, which removes a hop, and the call can wait in standby, which costs less than active time. WebRTC is turned on per workspace on request; until then the create request fails with `live_webrtc_feature_flag_disabled`.
+
+Create a peer connection with the microphone and a data channel named `oai-events`, and send its SDP offer to your server. Your server creates the session with `transport`, and returns the SDP answer to the browser:
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-live-1.1",
+    "provider": "openai",
+    "transport": { "type": "webrtc", "sdp": "<SDP offer from the browser>" },
+    "wake_policy": { "type": "speech" },
+    "idle_timeout_s": 30
+  }'
+```
+
+The response has the session `id` and `transport.sdp`, OpenAI's SDP answer. There is no `client_secret` or relay URL. Apply the answer in the browser:
+
+```js
+await pc.setRemoteDescription({ type: "answer", sdp: session.transport.sdp });
+```
+
+The TypeScript SDK's `connectLiveWebRTC({ createSession })` does the browser side for you: it adds the microphone, creates the data channel, sends the offer through your `createSession` function and applies the answer.
+
+Standby needs `wake_policy`. The session waits for speech before it starts inference, and with `idle_timeout_s` (5 to 60 seconds) it goes back to standby after that long without speech. The data channel then sends `session.paused`. Keep the microphone track running during standby. Time in standby is billed at $0.02 per minute and active time at $0.05 per minute, both per second, from OpenAI's own split of the call into active and paused seconds. Without `wake_policy`, the whole call is billed as active time.
+
+The data channel carries OpenAI's events, such as transcripts and `session.paused`. The browser can send `session.close`, `session.input_audio.mute` and `session.input_audio.unmute` on it; OpenAI refuses other client events, so the browser can't change the session's model, backend or tools. Phaseo's own events can't use OpenAI's data channel, so read them from `GET /v1/live/sessions/{id}`: it returns the session's status, `standby`, its `session.warning` events in `warnings`, and `ended`, the same `session.ended` event as on the relay once the call is over. To end a call whose data channel never opened, call `POST /v1/live/sessions/{id}/close`.
+
+Phaseo follows the call on OpenAI's server-side connection and ends it there when the key is revoked, a policy blocks it, the funds run out or it reaches 25 minutes. Function tools aren't supported over WebRTC yet; use the WebSocket relay for them. Web search works on both.
+
+<Note>
+With WebRTC, the end user's audio and IP address reach OpenAI directly, not through Phaseo.
+</Note>
+
 ### ElevenLabs Realtime sessions
 
 ElevenLabs Realtime comes in two models: `eleven-labs/eleven-realtime-v1-mini`, the faster and cheaper default, and `eleven-labs/eleven-realtime-v1-max`, which reasons before it answers and suits complex instructions and multi-step tool use. Both use the same create request and relay as OpenAI, with 24 kHz audio. Phaseo connects to ElevenLabs with its own key; your client only ever sees the relay.

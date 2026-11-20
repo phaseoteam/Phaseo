@@ -3054,6 +3054,27 @@ module Phaseo
     # @!attribute [rw] object
     #   @return [String, nil]
     ListFilesResponse = Struct.new(:data, :object, keyword_init: true)
+    # @!attribute [rw] billing
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] ended
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] expires_at
+    #   @return [String, nil]
+    # @!attribute [rw] id
+    #   @return [String, nil]
+    # @!attribute [rw] model
+    #   @return [String, nil]
+    # @!attribute [rw] session_id
+    #   @return [String, nil]
+    # @!attribute [rw] standby
+    #   @return [Boolean, nil]
+    # @!attribute [rw] status
+    #   @return [String, nil]
+    # @!attribute [rw] transport
+    #   @return [Hash{String => Object}, nil]
+    # @!attribute [rw] warnings
+    #   @return [Array<Hash{String => Object}>, nil]
+    LiveSessionStatus = Struct.new(:billing, :ended, :expires_at, :id, :model, :session_id, :standby, :status, :transport, :warnings, keyword_init: true)
     # @!attribute [rw] data
     #   @return [Array<Hash{String => Object}>]
     ManagementKeyCollectionResponse = Struct.new(:data, keyword_init: true)

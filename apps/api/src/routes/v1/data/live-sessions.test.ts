@@ -1,17 +1,20 @@
 import { createHash } from "node:crypto";
-import { beforeEach, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { liveSessionsRoutes, realtimeSessionsRoutes } from "./realtime-sessions";
 import { LIVE_VOICES } from "@core/live-settings";
 
 const mocks = vi.hoisted(() => ({ auth: {} as any, create: vi.fn(), context: vi.fn(), policy: null as any, cache: undefined as any,
-	openGates: new Set(["chat", "api"]) }));
+	openGates: new Set(["chat", "api", "webrtc"]), relayFetch: vi.fn(), row: null as any }));
 vi.mock("../../utils", () => ({ withRuntime: (handler: any) => (c: any) => handler(c.req.raw) }));
-vi.mock("@/runtime/env", () => ({ getBindings: () => ({ CHAT_ROUTE_KEY_SEED: "test-seed", GATEWAY_CACHE: mocks.cache }) }));
+vi.mock("@/runtime/env", () => ({ getBindings: () => ({ CHAT_ROUTE_KEY_SEED: "test-seed", GATEWAY_CACHE: mocks.cache, GATEWAY_CONTROL_SECRET: "control",
+	REALTIME_RELAY: { idFromName: (name: string) => name, get: (id: string) => ({ fetch: (request: Request) => mocks.relayFetch(id, request) }) } }) }));
 vi.mock("@pipeline/before/guards", () => ({ guardAuth: async () => ({ ok: true, value: mocks.auth }),
 	guardJson: async (req: Request) => ({ ok: true, value: await req.json() }), guardContext: mocks.context }));
 vi.mock("@core/feature-flags", () => ({
 	isRealtimeVoiceAccessEnabled: async (_auth: unknown, _bindings: unknown, source: "api" | "chat" = "api") => mocks.openGates.has(source),
 	getRealtimeVoiceFeatureGateName: (_bindings: unknown, source: "api" | "chat" = "api") => source === "chat" ? "chat_realtime_voice" : "gateway_realtime_voice",
+	isLiveWebRTCAccessEnabled: async () => mocks.openGates.has("webrtc"),
+	getLiveWebRTCFeatureGateName: () => "live_webrtc",
 }));
 vi.mock("@pipeline/before/workspacePolicy", async (original) => ({
 	...await original<typeof import("@pipeline/before/workspacePolicy")>(), fetchWorkspacePolicy: async () => mocks.policy,
@@ -19,9 +22,13 @@ vi.mock("@pipeline/before/workspacePolicy", async (original) => ({
 vi.mock("@core/realtime-sessions", async (original) => ({
 	...await original<typeof import("@core/realtime-sessions")>(), createRealtimeSession: mocks.create,
 	publicRealtimeSessionPayload: (created: unknown) => created,
+	getRealtimeSessionForInternal: async () => { if (!mocks.row) throw new Error("realtime_session_not_found"); return mocks.row; },
 }));
 
 const userId = "11111111-1111-4111-8111-111111111111";
+const SESSION = "rt_01jabcdefghjkmnpqrstvwxyz0";
+const OFFER = "v=0\r\no=- 1 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n";
+const ANSWER = "v=0\r\no=- 3 4 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n";
 const workspaceId = "6108396e-0e12-425d-91ff-a02d39a346e0";
 const request = { source: "chat", model: "openai/gpt-live-1", provider: "openai", metadata: { userId } };
 function post(body: unknown, live = true) {
@@ -30,14 +37,16 @@ function post(body: unknown, live = true) {
 	});
 }
 beforeEach(() => {
-	vi.clearAllMocks(); mocks.policy = null; mocks.cache = undefined; mocks.openGates = new Set(["chat", "api"]);
+	vi.clearAllMocks(); mocks.policy = null; mocks.cache = undefined; mocks.openGates = new Set(["chat", "api", "webrtc"]); mocks.row = null;
 	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 	mocks.auth = { workspaceId, apiKeyId: "key", requestId: "request", authMethod: "api_key",
 		apiKeyKid: Array.from(createHash("sha256").update(`test-seed:kid:${workspaceId}:${userId}:0`).digest())
 			.map((byte) => alphabet[byte % 62]).join("").slice(0, 12) };
 	mocks.context.mockResolvedValue({ ok: true, value: { resolvedModel: "openai/gpt-5.6-luna",
 		providers: [{ providerId: "openai", apiModelId: "openai/gpt-5.6-luna" }], context: {} } });
-	mocks.create.mockResolvedValue({ id: "rt_created" });
+	mocks.create.mockResolvedValue({ id: "rt_created", session: { session_id: SESSION, status: "created" }, clientSecret: "rtsec_secret",
+		connect: { transport: "websocket", url: `/v1/live/sessions/${SESSION}/relay` } });
+	mocks.relayFetch.mockImplementation(async () => Response.json({ sdp: ANSWER, session: { session_id: SESSION, status: "connected" } }, { status: 201 }));
 });
 
 it("uses the separate Live route and validates backend availability before reserving credit", async () => {
@@ -158,4 +167,95 @@ it("starts sessions when the maintenance switch is off or can't be read", async 
 	mocks.cache = { get: vi.fn(async () => { throw new Error("kv unavailable"); }) };
 	const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
 	try { expect((await post(request)).status).toBe(201); } finally { error.mockRestore(); }
+});
+
+const webrtcRequest = { model: "openai/gpt-live-1.1", provider: "openai", transport: { type: "webrtc", sdp: OFFER },
+	wake_policy: { type: "speech" }, idle_timeout_s: 30 };
+
+describe("GPT Live over WebRTC", () => {
+	beforeEach(() => { mocks.auth.apiKeyKid = "ordinary-key"; });
+
+	it("returns the SDP answer and our session id, never a relay secret or URL", async () => {
+		const response = await post(webrtcRequest);
+		expect(response.status).toBe(201);
+		const body = await response.json() as any;
+		expect(body).toMatchObject({ transport: { type: "webrtc", sdp: ANSWER }, session: { session_id: SESSION, status: "connected" } });
+		expect(JSON.stringify(body)).not.toContain("rtsec_");
+		expect(body).not.toHaveProperty("connect");
+		expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ model: "openai/gpt-live-1.1", liveTransport: "webrtc", relay: true }));
+		const [id, request] = mocks.relayFetch.mock.calls[0] as [string, Request];
+		expect(id).toBe(SESSION);
+		expect(new URL(request.url).pathname).toBe("/internal/live-webrtc");
+		expect(request.headers.get("x-realtime-reconcile-token")).toMatch(/^[0-9a-f]{64}$/);
+		expect(await request.json()).toEqual({ session_id: SESSION, token: "rtsec_secret", sdp: OFFER,
+			standby: { wake_policy: { type: "speech" }, idle_timeout_s: 30 } });
+	});
+
+	it("keeps WebSocket the default and unchanged", async () => {
+		const response = await post({ model: "openai/gpt-live-1", provider: "openai" });
+		expect(await response.json()).toMatchObject({ clientSecret: "rtsec_secret", connect: { transport: "websocket" } });
+		expect(mocks.create).toHaveBeenCalledWith(expect.objectContaining({ liveTransport: "websocket" }));
+		expect(mocks.relayFetch).not.toHaveBeenCalled();
+	});
+
+	it("names the gate when WebRTC is closed, before reserving credit", async () => {
+		mocks.openGates = new Set(["chat", "api"]);
+		const response = await post(webrtcRequest);
+		expect(response.status).toBe(401);
+		expect(await response.json()).toMatchObject({ reason: "live_webrtc_feature_flag_disabled", feature_gate: "live_webrtc" });
+		expect(mocks.create).not.toHaveBeenCalled();
+		// The WebSocket transport is unaffected by the WebRTC gate.
+		expect((await post({ model: "openai/gpt-live-1", provider: "openai" })).status).toBe(201);
+	});
+
+	it.each([
+		[{ ...webrtcRequest, transport: { type: "websocket" } }, "validation_error"],
+		[{ model: "openai/gpt-live-1", provider: "openai", idle_timeout_s: 30 }, "validation_error"],
+		[{ ...webrtcRequest, transport: { type: "webrtc", sdp: "not sdp" } }, "live_webrtc_sdp_invalid"],
+		[{ ...webrtcRequest, backend_settings: { tools: [{ type: "function", name: "get_time" }] } }, "live_webrtc_function_tools_not_supported"],
+	])("rejects %j before reserving credit", async (body, reason) => {
+		const response = await post(body);
+		expect(response.status).toBe(400);
+		const payload = await response.json() as any;
+		expect(JSON.stringify(payload)).toContain(`"${reason}"`);
+		expect(mocks.create).not.toHaveBeenCalled();
+	});
+
+	it("accepts web search over WebRTC", async () => {
+		expect((await post({ ...webrtcRequest, backend_settings: { web_search: true } })).status).toBe(201);
+	});
+
+	it("passes the provider's offer rejection back as a validation error", async () => {
+		mocks.relayFetch.mockImplementation(async () => Response.json({ error: "live_webrtc_offer_rejected", message: "Invalid SDP offer." }, { status: 400 }));
+		const response = await post(webrtcRequest);
+		expect(response.status).toBe(400);
+		expect(await response.json()).toMatchObject({ reason: "live_webrtc_offer_rejected", message: "Invalid SDP offer." });
+	});
+
+	it("reports state, warnings and the final bill on GET, to the owning key only", async () => {
+		mocks.row = { session_id: SESSION, workspace_id: workspaceId, key_id: "key", model_id: "openai/gpt-live-1.1",
+			status: "connected", metadata: { live_transport: "webrtc" }, usage: {}, started_at: new Date().toISOString() };
+		mocks.relayFetch.mockImplementation(async () => Response.json({ active: true, standby: true,
+			warnings: [{ type: "session.warning", code: "funds_low" }] }));
+		const get = () => liveSessionsRoutes.request(`https://test/${SESSION}`);
+		const live = await (await get()).json() as any;
+		expect(live).toMatchObject({ transport: { type: "webrtc" }, standby: true, warnings: [{ code: "funds_low" }], ended: null });
+		mocks.row = { ...mocks.row, status: "completed", final_cost_nanos: 12_833_334, disconnect_reason: "client_requested_end",
+			connected_at: "2026-11-20T10:00:00.000Z", ended_at: "2026-11-20T10:00:41.000Z",
+			usage: { live_started: true, live_seconds: 22, live_active_seconds: 11, live_paused_seconds: 11, live_final: true } };
+		const ended = await (await get()).json() as any;
+		expect(ended.ended).toMatchObject({ type: "session.ended", reason: "client_requested", billing_status: "settled", duration_seconds: 41,
+			cost: { total_nanos: 12_833_334 }, usage: { standby_audio_minutes: 11 / 60 } });
+		mocks.auth.apiKeyId = "another-key";
+		expect((await get()).status).toBe(404);
+	});
+
+	it("closes a WebRTC call through the relay", async () => {
+		mocks.row = { session_id: SESSION, workspace_id: workspaceId, key_id: "key", model_id: "openai/gpt-live-1.1",
+			status: "connected", metadata: { live_transport: "webrtc" }, usage: {}, started_at: new Date().toISOString() };
+		mocks.relayFetch.mockImplementation(async () => Response.json({ status: "ending" }, { status: 202 }));
+		const response = await liveSessionsRoutes.request(`https://test/${SESSION}/close`, { method: "POST" });
+		expect(response.status).toBe(202);
+		expect(new URL((mocks.relayFetch.mock.calls[0] as [string, Request])[1].url).pathname).toBe(`/internal/live-close/${SESSION}`);
+	});
 });

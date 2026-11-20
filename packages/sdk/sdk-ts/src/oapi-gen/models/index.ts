@@ -262,6 +262,7 @@ export type { LegacyDecisionLocateQuestion } from "./LegacyDecisionLocateQuestio
 export type { LegacyDecisionsRequest } from "./LegacyDecisionsRequest.js";
 export type { LegacyDecisionsResponse } from "./LegacyDecisionsResponse.js";
 export type { ListFilesResponse } from "./ListFilesResponse.js";
+export type { LiveSessionStatus } from "./LiveSessionStatus.js";
 export type { ManagementKeyCollectionResponse } from "./ManagementKeyCollectionResponse.js";
 export type { ManagementKeyCreateRequest } from "./ManagementKeyCreateRequest.js";
 export type { ManagementKeyCreateResponse } from "./ManagementKeyCreateResponse.js";

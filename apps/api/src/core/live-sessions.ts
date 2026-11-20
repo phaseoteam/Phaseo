@@ -38,6 +38,9 @@ export type LiveUsage = {
 	live_responses?: LiveResponseUsage[];
 	live_pending_responses?: string[];
 	live_billing_error?: string;
+	// WebRTC: the longest sideband gap past OpenAI's 3 s replay. Events in it (a whole delegated
+	// response) may never have been seen, so the usage is never complete, only a lower bound.
+	live_sideband_gap_ms?: number;
 	live_delegations?: Record<string, string>;
 	live_tool_calls?: LiveToolCall[];
 	// Client-executed function calls the backend made; only these may receive an output.
@@ -239,6 +242,8 @@ export function assertLiveFinalUsage(usage: LiveUsage) {
 	if (usage.live_started && (!usage.live_final || !finite(usage.live_seconds))) throw new Error("live_authoritative_usage_pending");
 	if (usage.live_pending_responses?.length) throw new Error("live_response_authoritative_usage_pending");
 	if (usage.live_tool_calls?.some((call) => !call.done)) throw new Error("live_tool_authoritative_usage_pending");
+	// Checked last: a drain for pending work still runs first. No later event can fill the gap.
+	if (typeof usage.live_sideband_gap_ms === "number" && usage.live_sideband_gap_ms > 0) throw new Error("live_sideband_continuity_gap");
 }
 
 // Reported usage, matching what priceLiveUsage bills with the session's voice card: without a

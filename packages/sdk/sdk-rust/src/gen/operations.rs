@@ -70,6 +70,11 @@ pub fn cancelVideoAlias<T: Transport>(client: &Client<T>, path: &HashMap<String,
 	client.request("POST", &resolved_path, body)
 }
 
+pub fn closeLiveSession<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/live/sessions/{}/close", path_segment(path.get("session_id").map(String::as_str).unwrap_or_default())?);
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn createAnthropicMessage<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/messages");
 	client.request("POST", &resolved_path, body)
@@ -557,6 +562,11 @@ pub fn getGuardrail<T: Transport>(client: &Client<T>, path: &HashMap<String, Str
 
 pub fn getHealth<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = String::from("/health");
+	client.request("GET", &resolved_path, body)
+}
+
+pub fn getLiveSession<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/live/sessions/{}", path_segment(path.get("session_id").map(String::as_str).unwrap_or_default())?);
 	client.request("GET", &resolved_path, body)
 }
 

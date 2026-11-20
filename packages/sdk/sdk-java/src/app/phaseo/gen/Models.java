@@ -2190,6 +2190,19 @@ public final class Models {
 		public String object;
 	}
 
+	public static class LiveSessionStatus {
+		public Object billing;
+		public Object ended;
+		public String expires_at;
+		public String id;
+		public String model;
+		public String session_id;
+		public Boolean standby;
+		public String status;
+		public Object transport;
+		public java.util.List<Object> warnings;
+	}
+
 	public static class ManagementKeyCollectionResponse {
 		public java.util.List<Object> data;
 	}

@@ -6041,6 +6041,7 @@
 		"selectModelStart": "Selecione um modelo para iniciar",
 		"realtimeSettingsContent": "Conteúdo das configurações em tempo real",
 		"livePrice": "US$ 0,05/minuto mais tokens do backend. Voz: {voice}. Backend: {backend}. Ferramentas: {tools}.",
+		"personaStandby": "Em espera",
 		"billingUnavailable": "O status de faturamento está indisponível; os valores exibidos podem estar desatualizados.",
 		"finalizingBilling": "Finalizando o faturamento.",
 		"reviewBilling": "O uso final aguarda revisão de faturamento. A reserva restante é mantida.",

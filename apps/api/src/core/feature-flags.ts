@@ -10,6 +10,7 @@ const DEFAULT_BATCH_API_GATE = "gateway_batch_api";
 const DEFAULT_VIDEO_API_GATE = "gateway_video_api";
 const DEFAULT_REALTIME_VOICE_GATE = "gateway_realtime_voice";
 const DEFAULT_CHAT_REALTIME_VOICE_GATE = "chat_realtime_voice";
+const DEFAULT_LIVE_WEBRTC_GATE = "live_webrtc";
 const DEFAULT_GATEWAY_IO_LOGGING_GATE = "gateway_io_logging";
 const DEFAULT_DATA_CONTRIBUTION_GATE = "gateway_data_contribution";
 const DEFAULT_AUTO_ROUTING_GATE = "gateway_auto_routing";
@@ -93,6 +94,12 @@ export function getRealtimeVoiceFeatureGateName(
 	return source === "chat"
 		? normalizeText(bindings.STATSIG_CHAT_REALTIME_VOICE_GATE) ?? DEFAULT_CHAT_REALTIME_VOICE_GATE
 		: normalizeText(bindings.STATSIG_REALTIME_VOICE_GATE) ?? DEFAULT_REALTIME_VOICE_GATE;
+}
+
+// One gate for GPT Live over WebRTC on both the API and the playground; the realtime
+// voice gates above still decide whether a caller can use Live at all.
+export function getLiveWebRTCFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
+	return normalizeText(bindings.STATSIG_LIVE_WEBRTC_GATE) ?? DEFAULT_LIVE_WEBRTC_GATE;
 }
 
 export function getGatewayIoLoggingFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
@@ -292,6 +299,21 @@ export async function isRealtimeVoiceAccessEnabled(
 		userId: auth.userId,
 		internal: auth.internal,
 		surface: source === "chat" ? "chat_realtime_voice" : "gateway_realtime_voice",
+	}, bindings);
+}
+
+export async function isLiveWebRTCAccessEnabled(
+	auth: AuthSuccess,
+	bindings: Partial<GatewayBindings> = getBindings(),
+): Promise<boolean> {
+	return isStatsigGateEnabled(getLiveWebRTCFeatureGateName(bindings), {
+		workspaceId: auth.workspaceId,
+		apiKeyId: auth.apiKeyId,
+		apiKeyRef: auth.apiKeyRef,
+		apiKeyKid: auth.apiKeyKid,
+		userId: auth.userId,
+		internal: auth.internal,
+		surface: "live_webrtc",
 	}, bindings);
 }
 

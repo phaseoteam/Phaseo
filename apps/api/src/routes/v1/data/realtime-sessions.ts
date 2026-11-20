@@ -14,19 +14,34 @@ import { err, json } from "@pipeline/before/http";
 import { readRealtimeMaintenance, realtimeMaintenanceResponse } from "@core/realtime-maintenance";
 import { hasRequestModelFallbacksField } from "@pipeline/before/requestModelFallbacks";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
-import { getRealtimeVoiceFeatureGateName, isRealtimeVoiceAccessEnabled } from "@core/feature-flags";
+import {
+	getLiveWebRTCFeatureGateName,
+	getRealtimeVoiceFeatureGateName,
+	isLiveWebRTCAccessEnabled,
+	isRealtimeVoiceAccessEnabled,
+} from "@core/feature-flags";
 import { withRuntime } from "../../utils";
 import { LIVE_BACKENDS, LIVE_MODELS, LIVE_VOICES, isLiveModel, liveModelId, livePolicyCandidates } from "@core/live-sessions";
 import { liveBackendSettingsSchema } from "@core/live-settings";
+import { LIVE_IDLE_TIMEOUT_MAX_S, LIVE_IDLE_TIMEOUT_MIN_S, LIVE_WEBRTC_MAX_SDP_BYTES, liveSdpOfferError, type LiveStandbyOptions } from "@core/live-webrtc";
+import {
+	buildSessionEndedEvent,
+	classifyRealtimeEnd,
+	type RealtimeBillingStatus,
+} from "@core/realtime-session-events";
 import {
 	createRealtimeSession,
 	extendRealtimeSessionHold,
+	getRealtimeSessionForInternal,
 	isRealtimeRelaySecret,
 	markRealtimeSessionConnected,
+	normalizeRealtimeUsage,
 	publicRealtimeSessionPayload,
+	realtimeReconciliationToken,
 	settleRealtimeSession,
 	updateRealtimeSessionUsage,
 	type RealtimeAuthContext,
+	type RealtimeSessionRow,
 } from "@core/realtime-sessions";
 
 type RouteAuthValue = {
@@ -134,7 +149,25 @@ export const createLiveSessionSchema = realtimeSessionBaseSchema.omit({ thinking
 	voice: z.enum(LIVE_VOICES).default("marin"), source: z.enum(["api", "chat"]).optional(),
 	backend_model: z.enum(LIVE_BACKENDS).default(LIVE_BACKENDS[0]),
 	backend_settings: liveBackendSettingsSchema.optional(),
-}).strict();
+	// WebSocket (the default) goes through the relay; WebRTC sends the browser's SDP offer.
+	transport: z.discriminatedUnion("type", [
+		z.object({ type: z.literal("websocket") }).strict(),
+		z.object({ type: z.literal("webrtc"), sdp: z.string().min(1).max(LIVE_WEBRTC_MAX_SDP_BYTES) }).strict(),
+	]).optional(),
+	// Standby (WebRTC only): wait for speech before inference, and pause again after idle_timeout_s.
+	wake_policy: z.object({ type: z.literal("speech"), vad_threshold: z.number().min(0).max(1).optional() }).strict().optional(),
+	idle_timeout_s: z.number().int().min(LIVE_IDLE_TIMEOUT_MIN_S).max(LIVE_IDLE_TIMEOUT_MAX_S).optional(),
+}).strict().superRefine((value, context) => {
+	const webrtc = value.transport?.type === "webrtc";
+	for (const field of ["wake_policy", "idle_timeout_s"] as const) {
+		if (value[field] !== undefined && !webrtc) {
+			context.addIssue({ code: "custom", path: [field], message: `${field} is only supported with transport type webrtc` });
+		}
+	}
+	if (value.idle_timeout_s !== undefined && !value.wake_policy) {
+		context.addIssue({ code: "custom", path: ["idle_timeout_s"], message: "idle_timeout_s needs a wake_policy" });
+	}
+});
 
 function toAuthContext(value: RouteAuthValue): RealtimeAuthContext {
 	return {
@@ -398,6 +431,23 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			workspace_id: auth.value.workspaceId,
 		});
 	}
+	const webrtc = "transport" in parsed.data && parsed.data.transport?.type === "webrtc" ? parsed.data.transport : null;
+	if (webrtc) {
+		const sdpError = liveSdpOfferError(webrtc.sdp);
+		if (sdpError) {
+			return err("validation_error", { reason: sdpError,
+				message: "transport.sdp must be the browser's SDP offer with an audio track (at most 64 KB).",
+				request_id: auth.value.requestId, workspace_id: auth.value.workspaceId });
+		}
+		// Client-executed function calls are answered over the relay's WebSocket, which a
+		// WebRTC call doesn't have. Web search runs on the backend and works on both.
+		const settings = "backend_settings" in parsed.data ? parsed.data.backend_settings : undefined;
+		if (settings?.tools?.length) {
+			return err("validation_error", { reason: "live_webrtc_function_tools_not_supported",
+				message: "Function tools are not supported with transport type webrtc yet. Use the websocket transport, or remove backend_settings.tools.",
+				request_id: auth.value.requestId, workspace_id: auth.value.workspaceId });
+		}
+	}
 	if (!live && isLiveModel(parsed.data.model)) {
 		return err("unsupported_model_or_endpoint", { reason: "live_sessions_endpoint_required",
 			message: "GPT Live sessions are created with POST /v1/live/sessions.",
@@ -434,6 +484,15 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 		return err("unauthorised", {
 			reason: "realtime_voice_feature_flag_disabled",
 			feature_gate: getRealtimeVoiceFeatureGateName(undefined, source),
+			request_id: auth.value.requestId,
+			workspace_id: auth.value.workspaceId,
+		});
+	}
+	if (webrtc && !await isLiveWebRTCAccessEnabled({ ok: true, ...auth.value, userId: trustedUserId })) {
+		return err("unauthorised", {
+			reason: "live_webrtc_feature_flag_disabled",
+			message: "WebRTC for GPT Live isn't enabled for this account yet. Omit transport to use the WebSocket relay.",
+			feature_gate: getLiveWebRTCFeatureGateName(),
 			request_id: auth.value.requestId,
 			workspace_id: auth.value.workspaceId,
 		});
@@ -518,12 +577,155 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 				req.headers.get("tracestate"),
 			),
 			relay: true,
+			...(live ? { liveTransport: webrtc ? "webrtc" as const : "websocket" as const } : {}),
 		});
+		if (webrtc) {
+			const standby: LiveStandbyOptions = {
+				...("wake_policy" in parsed.data && parsed.data.wake_policy ? { wake_policy: parsed.data.wake_policy } : {}),
+				...("idle_timeout_s" in parsed.data && parsed.data.idle_timeout_s != null ? { idle_timeout_s: parsed.data.idle_timeout_s } : {}),
+			};
+			return await startLiveWebRTCSession(created, webrtc.sdp, standby, auth.value.requestId, auth.value.workspaceId);
+		}
 		return json(publicRealtimeSessionPayload(created), 201);
 	} catch (error) {
 		return responseForError(error, auth.value.requestId, auth.value.workspaceId);
 	}
 }
+
+function liveRelayStub(sessionId: string): DurableObjectStub | null {
+	const binding = getBindings().REALTIME_RELAY;
+	return binding ? binding.get(binding.idFromName(sessionId)) : null;
+}
+
+async function liveRelayRequest(sessionId: string, path: string, init: RequestInit = {}): Promise<Response> {
+	const stub = liveRelayStub(sessionId);
+	if (!stub) throw new Error("realtime_relay_not_configured");
+	return stub.fetch(new Request(`https://realtime.internal/internal/${path}`, {
+		...init,
+		headers: { ...(init.headers as Record<string, string> | undefined), "x-realtime-reconcile-token": await realtimeReconciliationToken() },
+	}));
+}
+
+/**
+ * Hands the caller's SDP offer to the relay, which creates the OpenAI session with our key and
+ * keeps its sideband. The relay secret stays server-side: a WebRTC caller never gets a relay
+ * URL, a client secret or OpenAI's session id, only the SDP answer and our rt_ id.
+ */
+async function startLiveWebRTCSession(
+	created: Awaited<ReturnType<typeof createRealtimeSession>>,
+	sdp: string,
+	standby: LiveStandbyOptions,
+	requestId: string,
+	workspaceId: string,
+): Promise<Response> {
+	const sessionId = created.session.session_id;
+	let response: Response;
+	try {
+		response = await liveRelayRequest(sessionId, "live-webrtc", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ session_id: sessionId, token: created.clientSecret, sdp, standby }),
+		});
+	} catch (error) {
+		// The session was never claimed; the reconciliation job releases its hold at $0.
+		console.error("live_webrtc_relay_unavailable", { sessionId, error });
+		return err("upstream_error", { reason: "live_webrtc_relay_unavailable", request_id: requestId, workspace_id: workspaceId });
+	}
+	const payload = await response.json().catch(() => null) as { sdp?: unknown; session?: RealtimeSessionRow; error?: string; message?: string } | null;
+	if (response.status !== 201 || typeof payload?.sdp !== "string") {
+		if (payload?.error === "live_webrtc_offer_rejected") {
+			return err("validation_error", { reason: payload.error, message: payload.message ?? "OpenAI rejected the SDP offer.",
+				request_id: requestId, workspace_id: workspaceId });
+		}
+		return err("upstream_error", { reason: payload?.error ?? "live_webrtc_create_failed", request_id: requestId, workspace_id: workspaceId });
+	}
+	return json({
+		...publicRealtimeSessionPayload({ session: payload.session ?? created.session }),
+		transport: { type: "webrtc", sdp: payload.sdp },
+	}, 201);
+}
+
+function liveSessionOwned(session: RealtimeSessionRow, auth: RouteAuthValue): boolean {
+	return session.workspace_id === auth.workspaceId && isLiveModel(session.model_id)
+		&& (auth.internal === true || !session.key_id || session.key_id === auth.apiKeyId);
+}
+
+const TERMINAL_STATUSES = ["completed", "failed", "cancelled", "expired", "billing_unresolved"];
+
+/**
+ * A Live session's state, warnings and, once it has ended, the same session.ended a WebSocket
+ * client receives. WebRTC clients poll this: Phaseo's events can't use OpenAI's data channel.
+ */
+export function liveSessionStatusPayload(session: RealtimeSessionRow, relay: { standby?: boolean | null; warnings?: unknown[] } | null) {
+	const transport = session.metadata?.live_transport === "webrtc" ? "webrtc" : "websocket";
+	const terminal = TERMINAL_STATUSES.includes(session.status);
+	const billingStatus: RealtimeBillingStatus = session.status === "billing_unresolved" ? "unresolved"
+		: session.final_cost_nanos == null ? "pending" : "settled";
+	const startedAt = Date.parse(session.connected_at ?? session.started_at);
+	const endedAt = Date.parse(session.ended_at ?? "");
+	return {
+		...publicRealtimeSessionPayload({ session }),
+		transport: { type: transport },
+		standby: terminal ? null : relay?.standby ?? null,
+		warnings: relay?.warnings ?? [],
+		ended: terminal ? buildSessionEndedEvent({
+			sessionId: session.session_id,
+			end: classifyRealtimeEnd(session.disconnect_reason ?? ""),
+			durationSeconds: Number.isFinite(startedAt) && Number.isFinite(endedAt) ? Math.max(0, (endedAt - startedAt) / 1000) : 0,
+			usage: normalizeRealtimeUsage(session.usage ?? {}),
+			costNanos: Number(session.final_cost_nanos ?? session.estimated_cost_nanos ?? 0) || 0,
+			estimated: billingStatus !== "settled",
+			estimateBasis: billingStatus === "settled" ? null : "running_estimate",
+			billingStatus,
+		}) : null,
+	};
+}
+
+liveSessionsRoutes.get("/:sessionId", withRuntime(async (req) => {
+	const auth = await guardAuth(req);
+	if (auth.ok !== true) return auth.response;
+	const sessionId = new URL(req.url).pathname.split("/").filter(Boolean).at(-1) ?? "";
+	const notFound = () => err("not_found", { reason: "realtime_session_not_found", request_id: auth.value.requestId, workspace_id: auth.value.workspaceId });
+	if (!isRealtimeSessionId(sessionId)) return notFound();
+	try {
+		const session = await getRealtimeSessionForInternal(sessionId);
+		if (!liveSessionOwned(session, auth.value)) return notFound();
+		let relay: { standby?: boolean | null; warnings?: unknown[] } | null = null;
+		if (session.metadata?.live_transport === "webrtc" && !TERMINAL_STATUSES.includes(session.status)) {
+			relay = await liveRelayRequest(sessionId, `live-status/${sessionId}`, { method: "GET" })
+				.then((response) => response.ok ? response.json() as Promise<typeof relay> : null)
+				.catch((error) => { console.error("live_webrtc_status_unavailable", { sessionId, error }); return null; });
+		}
+		return json(liveSessionStatusPayload(session, relay));
+	} catch (error) {
+		if (error instanceof Error && error.message === "realtime_session_not_found") return notFound();
+		return responseForError(error, auth.value.requestId, auth.value.workspaceId);
+	}
+}));
+
+// Ends a WebRTC call through the gateway, for a client whose data channel is not open.
+liveSessionsRoutes.post("/:sessionId/close", withRuntime(async (req) => {
+	const auth = await guardAuth(req);
+	if (auth.ok !== true) return auth.response;
+	const sessionId = sessionIdFromPath(req, "close");
+	const notFound = () => err("not_found", { reason: "realtime_session_not_found", request_id: auth.value.requestId, workspace_id: auth.value.workspaceId });
+	if (!isRealtimeSessionId(sessionId)) return notFound();
+	try {
+		const session = await getRealtimeSessionForInternal(sessionId);
+		if (!liveSessionOwned(session, auth.value)) return notFound();
+		if (session.metadata?.live_transport !== "webrtc") {
+			return err("validation_error", { reason: "live_webrtc_session_required",
+				message: "WebSocket sessions end with session.end on the relay socket.", request_id: auth.value.requestId, workspace_id: auth.value.workspaceId });
+		}
+		if (!TERMINAL_STATUSES.includes(session.status)) {
+			const response = await liveRelayRequest(sessionId, `live-close/${sessionId}`, { method: "POST" });
+			if (!response.ok && response.status !== 409) throw new Error(`live_webrtc_close_http_${response.status}`);
+		}
+		return json(liveSessionStatusPayload(await getRealtimeSessionForInternal(sessionId), null), 202);
+	} catch (error) {
+		return responseForError(error, auth.value.requestId, auth.value.workspaceId);
+	}
+}));
 realtimeSessionsRoutes.post("/", withRuntime((req) => createSessionRequest(req)));
 liveSessionsRoutes.post("/", withRuntime((req) => createSessionRequest(req, true)));
 

@@ -1203,7 +1203,7 @@ paths:
         - Gateway
       operationId: createLiveSession
       summary: Criar uma sessão do GPT Live
-      description: 'Cria uma sessão de voz do GPT Live com medição de uso, que delega o raciocínio a um modelo de backend do Responses, e retorna os dados de conexão do relay. As ferramentas de função são executadas no seu cliente: o relay encaminha cada `function_call` e aceita o `function_call_output` correspondente seguido de `response.create`.'
+      description: 'Cria uma sessão de voz do GPT Live com medição de uso, que delega o raciocínio a um modelo de backend do Responses. Com o transporte WebSocket padrão, retorna os dados de conexão do relay, e as ferramentas de função são executadas no seu cliente: o relay encaminha cada `function_call` e aceita o `function_call_output` correspondente seguido de `response.create`. Com o transporte WebRTC, envie a oferta SDP da sua conexão ponto a ponto e aplique a resposta SDP retornada; o áudio passa a ir diretamente para a OpenAI, e o modo de espera fica disponível. As ferramentas de função ainda não são compatíveis com WebRTC.'
       requestBody:
         required: true
         content:
@@ -1350,6 +1350,44 @@ paths:
                     parallel_tool_calls:
                       type: boolean
                       default: true
+                transport:
+                  type: object
+                  description: Como o cliente se conecta. `websocket` (o padrão) usa o relay da Phaseo. `webrtc` recebe a oferta SDP da sua conexão ponto a ponto, com no máximo 64 KB, e retorna a resposta SDP.
+                  additionalProperties: false
+                  required:
+                    - type
+                  properties:
+                    type:
+                      type: string
+                      default: websocket
+                      enum:
+                        - websocket
+                        - webrtc
+                    sdp:
+                      type: string
+                      maxLength: 65536
+                      description: A oferta SDP do `RTCPeerConnection`, depois da coleta de ICE.
+                wake_policy:
+                  type: object
+                  description: Somente WebRTC. Espera alguém falar antes de iniciar a inferência e cobra o tempo de espera pela tarifa menor de espera.
+                  additionalProperties: false
+                  required:
+                    - type
+                  properties:
+                    type:
+                      type: string
+                      enum:
+                        - speech
+                    vad_threshold:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      description: Quanta evidência de fala desperta a sessão, de 0 a 1. O padrão é 0,5.
+                idle_timeout_s:
+                  type: integer
+                  minimum: 5
+                  maximum: 60
+                  description: Somente WebRTC. Volta ao modo de espera depois desse número de segundos sem fala. Exige `wake_policy`.
       responses:
         '201':
           description: Sessão do GPT Live criada
@@ -1398,9 +1436,61 @@ paths:
                         type: string
                       url:
                         type: string
+                  transport:
+                    type: object
+                    description: 'Somente em sessões WebRTC: a resposta SDP a aplicar com `setRemoteDescription`.'
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                          - webrtc
+                      sdp:
+                        type: string
                   billing:
                     type: object
                     additionalProperties: true
+  /live/sessions/{session_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getLiveSession
+      summary: Obter sessão do GPT Live
+      description: Retorna o status de uma sessão do GPT Live, o estado de espera e os avisos da Phaseo, e o evento `session.ended` com a cobrança quando a sessão termina. Clientes WebRTC leem os eventos da Phaseo aqui, porque não podem usar o canal de dados da OpenAI.
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sessão do GPT Live
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveSessionStatus'
+  /live/sessions/{session_id}/close:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: closeLiveSession
+      summary: Encerrar sessão WebRTC do GPT Live
+      description: Encerra uma sessão WebRTC pela Phaseo, para clientes cujo canal de dados não está aberto. A cobrança final fica disponível em `GET /v1/live/sessions/{session_id}`.
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: A sessão do GPT Live está sendo encerrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveSessionStatus'
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true
@@ -10377,6 +10467,48 @@ components:
         type: string
         format: uuid
   schemas:
+    LiveSessionStatus:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: string
+        session_id:
+          type: string
+        model:
+          type: string
+        status:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        transport:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - websocket
+                - webrtc
+        standby:
+          type: boolean
+          nullable: true
+          description: Verdadeiro enquanto uma sessão WebRTC está em espera. Nulo quando não se sabe ou a sessão terminou.
+        warnings:
+          type: array
+          description: Os eventos `session.warning` enviados durante a sessão.
+          items:
+            type: object
+            additionalProperties: true
+        ended:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: O evento `session.ended` quando a sessão termina; caso contrário, nulo.
+        billing:
+          type: object
+          additionalProperties: true
     MeResponse:
       type: object
       required:

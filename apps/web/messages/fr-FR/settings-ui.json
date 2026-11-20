@@ -6041,6 +6041,7 @@
 		"selectModelStart": "Sélectionnez un modèle pour démarrer",
 		"realtimeSettingsContent": "Contenu des paramètres en temps réel",
 		"livePrice": "0,05 USD/minute plus les jetons du backend. Voix : {voice}. Backend : {backend}. Outils : {tools}.",
+		"personaStandby": "En veille",
 		"billingUnavailable": "L’état de facturation est indisponible ; les montants affichés peuvent être obsolètes.",
 		"finalizingBilling": "Finalisation de la facturation.",
 		"reviewBilling": "L’utilisation finale attend une revue de facturation. La retenue restante est conservée.",

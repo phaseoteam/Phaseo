@@ -1203,7 +1203,7 @@ paths:
         - Gateway
       operationId: createLiveSession
       summary: GPT Live सत्र बनाएँ
-      description: 'उपयोग मापन के साथ GPT Live वॉइस सत्र बनाता है, जो तर्क का काम Responses बैकएंड मॉडल को सौंपता है, और रिले कनेक्शन विवरण लौटाता है। फ़ंक्शन टूल आपके क्लाइंट पर चलते हैं: रिले हर `function_call` आगे भेजता है और उसका `function_call_output` और उसके बाद `response.create` स्वीकार करता है।'
+      description: 'मापे गए उपयोग वाला GPT Live वॉइस सत्र बनाता है, जो तर्क का काम Responses बैकएंड मॉडल को सौंपता है। डिफ़ॉल्ट WebSocket ट्रांसपोर्ट के साथ यह रिले कनेक्शन विवरण लौटाता है, और फ़ंक्शन टूल आपके क्लाइंट पर चलते हैं: रिले हर `function_call` आगे भेजता है और उसका `function_call_output` और फिर `response.create` स्वीकार करता है। WebRTC ट्रांसपोर्ट के साथ, अपने पीयर कनेक्शन का SDP ऑफ़र भेजें और लौटा SDP उत्तर लागू करें; तब ऑडियो सीधे OpenAI को जाता है, और स्टैंडबाय उपलब्ध होता है। WebRTC के साथ फ़ंक्शन टूल अभी समर्थित नहीं हैं।'
       requestBody:
         required: true
         content:
@@ -1350,6 +1350,44 @@ paths:
                     parallel_tool_calls:
                       type: boolean
                       default: true
+                transport:
+                  type: object
+                  description: क्लाइंट कैसे कनेक्ट होता है। `websocket` (डिफ़ॉल्ट) Phaseo रिले का उपयोग करता है। `webrtc` आपके पीयर कनेक्शन का SDP ऑफ़र (अधिकतम 64 KB) लेता है और SDP उत्तर लौटाता है।
+                  additionalProperties: false
+                  required:
+                    - type
+                  properties:
+                    type:
+                      type: string
+                      default: websocket
+                      enum:
+                        - websocket
+                        - webrtc
+                    sdp:
+                      type: string
+                      maxLength: 65536
+                      description: ICE एकत्रण के बाद `RTCPeerConnection` से मिला SDP ऑफ़र।
+                wake_policy:
+                  type: object
+                  description: केवल WebRTC। इन्फ़रेंस शुरू होने से पहले बोलने की प्रतीक्षा करता है और प्रतीक्षा के समय का बिल कम स्टैंडबाय दर पर बनाता है।
+                  additionalProperties: false
+                  required:
+                    - type
+                  properties:
+                    type:
+                      type: string
+                      enum:
+                        - speech
+                    vad_threshold:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      description: सत्र को जगाने के लिए बोलने का कितना प्रमाण चाहिए, 0 से 1 तक। डिफ़ॉल्ट 0.5 है।
+                idle_timeout_s:
+                  type: integer
+                  minimum: 5
+                  maximum: 60
+                  description: केवल WebRTC। इतने सेकंड तक कोई बोल न आने पर स्टैंडबाय में लौटता है। इसके लिए `wake_policy` ज़रूरी है।
       responses:
         '201':
           description: GPT Live सत्र बनाया गया
@@ -1398,9 +1436,61 @@ paths:
                         type: string
                       url:
                         type: string
+                  transport:
+                    type: object
+                    description: 'केवल WebRTC सत्रों में: `setRemoteDescription` से लागू करने वाला SDP उत्तर।'
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                          - webrtc
+                      sdp:
+                        type: string
                   billing:
                     type: object
                     additionalProperties: true
+  /live/sessions/{session_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getLiveSession
+      summary: GPT Live सत्र प्राप्त करें
+      description: GPT Live सत्र की स्थिति, स्टैंडबाय स्थिति और Phaseo की चेतावनियाँ लौटाता है, और सत्र समाप्त होने पर बिल के साथ `session.ended` इवेंट। WebRTC क्लाइंट Phaseo के इवेंट यहाँ पढ़ते हैं, क्योंकि वे OpenAI के डेटा चैनल का उपयोग नहीं कर सकते।
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: GPT Live सत्र
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveSessionStatus'
+  /live/sessions/{session_id}/close:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: closeLiveSession
+      summary: GPT Live WebRTC सत्र समाप्त करें
+      description: उन क्लाइंट के लिए Phaseo के माध्यम से WebRTC सत्र समाप्त करता है जिनका डेटा चैनल खुला नहीं है। अंतिम बिल `GET /v1/live/sessions/{session_id}` पर मिलता है।
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: GPT Live सत्र समाप्त हो रहा है
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveSessionStatus'
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true
@@ -10377,6 +10467,48 @@ components:
         type: string
         format: uuid
   schemas:
+    LiveSessionStatus:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: string
+        session_id:
+          type: string
+        model:
+          type: string
+        status:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        transport:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - websocket
+                - webrtc
+        standby:
+          type: boolean
+          nullable: true
+          description: जब WebRTC सत्र स्टैंडबाय में हो तब true। जानकारी न होने पर या सत्र समाप्त होने पर null।
+        warnings:
+          type: array
+          description: सत्र के दौरान भेजे गए `session.warning` इवेंट।
+          items:
+            type: object
+            additionalProperties: true
+        ended:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: सत्र समाप्त होने पर `session.ended` इवेंट, अन्यथा null।
+        billing:
+          type: object
+          additionalProperties: true
     MeResponse:
       type: object
       required:

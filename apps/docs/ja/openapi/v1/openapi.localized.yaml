@@ -1203,7 +1203,7 @@ paths:
         - Gateway
       operationId: createLiveSession
       summary: GPT Live セッションを作成
-      description: 使用量を計測する GPT Live 音声セッションを作成し、中継接続の詳細を返します。推論は Responses のバックエンドモデルに委任されます。関数ツールはクライアント側で実行されます。中継は各 `function_call` を転送し、その `function_call_output` と続く `response.create` を受け付けます。
+      description: 使用量が計測される GPT Live 音声セッションを作成し、推論を Responses バックエンドモデルに委任します。既定の WebSocket トランスポートではリレー接続情報を返し、関数ツールはクライアントで実行されます。リレーは各 `function_call` を転送し、その `function_call_output` と続く `response.create` を受け付けます。WebRTC トランスポートでは、ピア接続の SDP オファーを送信し、返された SDP アンサーを適用します。音声は OpenAI に直接送られ、スタンバイを利用できます。WebRTC では関数ツールはまだサポートされていません。
       requestBody:
         required: true
         content:
@@ -1350,6 +1350,44 @@ paths:
                     parallel_tool_calls:
                       type: boolean
                       default: true
+                transport:
+                  type: object
+                  description: クライアントの接続方法です。`websocket`（既定）は Phaseo のリレーを使います。`webrtc` はピア接続の SDP オファー（最大 64 KB）を受け取り、SDP アンサーを返します。
+                  additionalProperties: false
+                  required:
+                    - type
+                  properties:
+                    type:
+                      type: string
+                      default: websocket
+                      enum:
+                        - websocket
+                        - webrtc
+                    sdp:
+                      type: string
+                      maxLength: 65536
+                      description: ICE 収集後の `RTCPeerConnection` の SDP オファーです。
+                wake_policy:
+                  type: object
+                  description: WebRTC のみ。推論の開始前に発話を待ち、待機時間は安いスタンバイ料金で課金されます。
+                  additionalProperties: false
+                  required:
+                    - type
+                  properties:
+                    type:
+                      type: string
+                      enum:
+                        - speech
+                    vad_threshold:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      description: セッションを起こすのに必要な発話の確からしさで、0 から 1 の値です。既定値は 0.5 です。
+                idle_timeout_s:
+                  type: integer
+                  minimum: 5
+                  maximum: 60
+                  description: WebRTC のみ。発話がないままこの秒数が過ぎるとスタンバイに戻ります。`wake_policy` が必要です。
       responses:
         '201':
           description: GPT Live セッションが作成されました
@@ -1398,9 +1436,61 @@ paths:
                         type: string
                       url:
                         type: string
+                  transport:
+                    type: object
+                    description: WebRTC セッションのみ：`setRemoteDescription` で適用する SDP アンサーです。
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                          - webrtc
+                      sdp:
+                        type: string
                   billing:
                     type: object
                     additionalProperties: true
+  /live/sessions/{session_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getLiveSession
+      summary: GPT Live セッションを取得
+      description: GPT Live セッションの状態、スタンバイ状態、Phaseo の警告を返し、セッション終了後は請求額を含む `session.ended` イベントを返します。WebRTC クライアントは OpenAI のデータチャネルを使えないため、Phaseo のイベントをここで読み取ります。
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: GPT Live セッション
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveSessionStatus'
+  /live/sessions/{session_id}/close:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: closeLiveSession
+      summary: GPT Live の WebRTC セッションを終了
+      description: データチャネルが開いていないクライアント向けに、Phaseo 経由で WebRTC セッションを終了します。最終的な請求額は `GET /v1/live/sessions/{session_id}` で確認できます。
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: GPT Live セッションを終了しています
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveSessionStatus'
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true
@@ -10377,6 +10467,48 @@ components:
         type: string
         format: uuid
   schemas:
+    LiveSessionStatus:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: string
+        session_id:
+          type: string
+        model:
+          type: string
+        status:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        transport:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - websocket
+                - webrtc
+        standby:
+          type: boolean
+          nullable: true
+          description: WebRTC セッションがスタンバイ中の間は true です。不明な場合やセッション終了後は null です。
+        warnings:
+          type: array
+          description: セッション中に送信された `session.warning` イベントです。
+          items:
+            type: object
+            additionalProperties: true
+        ended:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: セッション終了後は `session.ended` イベント、それ以外は null です。
+        billing:
+          type: object
+          additionalProperties: true
     MeResponse:
       type: object
       required:

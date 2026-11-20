@@ -6041,6 +6041,7 @@
 		"selectModelStart": "Zum Starten ein Modell wählen",
 		"realtimeSettingsContent": "Inhalt der Echtzeiteinstellungen",
 		"livePrice": "0,05 USD/Minute sowie Backend-Token. Sprache: {voice}. Backend: {backend}. Tools: {tools}.",
+		"personaStandby": "Bereitschaft",
 		"billingUnavailable": "Abrechnungsstatus nicht verfügbar; angezeigte Beträge könnten veraltet sein.",
 		"finalizingBilling": "Abrechnung wird abgeschlossen.",
 		"reviewBilling": "Endgültige Nutzung wartet auf Abrechnungsprüfung. Die verbleibende Reservierung wird beibehalten.",
