@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { LIVE_SEARCH_PRICE_CARD, assertLiveFinalUsage, createLiveConfig, ingestLiveUsage, liveStartEvent, priceLiveUsage, type LiveConfig } from "./live-sessions";
+import { LIVE_SEARCH_PRICE_CARD, assertLiveFinalUsage, createLiveConfig, ingestLiveUsage, liveStartEvent, liveUsageMeters, priceLiveUsage, type LiveConfig, type LiveUsage } from "./live-sessions";
 import { LEGACY_LIVE_VOICE_CARD, LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
 import { loadPriceCard } from "@pipeline/pricing/loader";
 import { liveBackendSettingsSchema } from "./live-settings";
@@ -128,23 +128,62 @@ describe("Live voice pricing from the catalogue", () => {
 		withCards(LIVE_VOICE_CARD);
 		await expect(createLiveConfig("openai/gpt-realtime-2.1", config.backendModel)).rejects.toThrow("live_model_not_supported");
 	});
-	it("starts without a standby price, and fails pricing rather than billing standby free", async () => {
+	// OpenAI's split from a live WebRTC session on 2026-11-20 (gpt-live-1.1): active time
+	// dropped from 14 to 11 s between updates while the total kept rising.
+	const realSplit = [
+		{ type: "session.usage.updated", usage: { active_seconds: 14, paused_seconds: 1, seconds: 15 } },
+		{ type: "session.usage.updated", usage: { active_seconds: 11, paused_seconds: 7, seconds: 18 } },
+		{ type: "session.closed", usage: { active_seconds: 11, paused_seconds: 11, seconds: 22 } },
+	];
+	const ingestAll = (events: Record<string, unknown>[]) => events.reduce((usage, event) => ingestLiveUsage(usage, event), { live_started: true } as LiveUsage);
+
+	it("bills OpenAI's final active and paused split, accepting a drop in active time", () => {
+		const usage = ingestAll(realSplit);
+		expect(usage).toMatchObject({ live_seconds: 22, live_active_seconds: 11, live_paused_seconds: 11, live_final: true });
+		expect(() => assertLiveFinalUsage(usage)).not.toThrow();
+		const bill = priceLiveUsage(usage, config) as any;
+		// 11/60 × $0.05 active and 11/60 × $0.02 standby.
+		expect(bill.pricing.lines.map((line: any) => [line.dimension, line.line_nanos])).toEqual([
+			["audio_minutes", 9_166_667], ["standby_audio_minutes", 3_666_667]]);
+		expect(bill.live_voice_nanos).toBe(12_833_334);
+		expect(liveUsageMeters(usage)).toMatchObject({ audio_seconds: 11, audio_minutes: 11 / 60, standby_audio_minutes: 11 / 60 });
+	});
+	it("prices the running estimate from the latest split, as holds use it", () => {
+		const midCall = ingestAll(realSplit.slice(0, 2));
+		expect((priceLiveUsage(midCall, config) as any).live_voice_nanos)
+			.toBe((priceLiveUsage({ live_seconds: 11 }, config) as any).live_voice_nanos + 2_333_333);
+		expect(() => ingestAll([...realSplit, { type: "session.usage.updated", usage: { active_seconds: 30, paused_seconds: 0, seconds: 21 } }]))
+			.toThrow("usage_regressed");
+	});
+	it.each([
+		["a split that doesn't add up", { active_seconds: 5, paused_seconds: 11, seconds: 22 }, "active 5 + paused 11 != seconds 22"],
+		["half a split", { paused_seconds: 11, seconds: 22 }, "incomplete split"],
+		["a negative split", { active_seconds: -1, paused_seconds: 23, seconds: 22 }, "incomplete split"],
+	])("bills all seconds as active for %s and records why", (_name, final, reason) => {
+		const usage = ingestAll([...realSplit.slice(0, 2), { type: "session.closed", usage: final }]);
+		expect(usage).toMatchObject({ live_seconds: 22, live_usage_split_ignored: reason });
+		expect(usage.live_active_seconds).toBeUndefined();
+		expect((priceLiveUsage(usage, config) as any).live_voice_nanos).toBe(18_333_333);
+	});
+	it("bills all seconds as active without a split, as WebSocket sessions may report", () => {
+		const usage = ingestAll([{ type: "session.closed", usage: { seconds: 22 } }]);
+		expect(usage.live_usage_split_ignored).toBeUndefined();
+		expect((priceLiveUsage(usage, config) as any).live_voice_nanos).toBe(18_333_333);
+	});
+	it("allows a second of rounding but never bills more than OpenAI's total", () => {
+		const usage = ingestAll([{ type: "session.closed", usage: { active_seconds: 12, paused_seconds: 11, seconds: 22 } }]);
+		expect(usage).toMatchObject({ live_active_seconds: 12, live_paused_seconds: 11 });
+		// 12 s active and the remaining 10 s standby.
+		expect((priceLiveUsage(usage, config) as any).live_voice_nanos).toBe(10_000_000 + 3_333_333);
+	});
+	it("bills paused time at the active rate on a card without a standby price", async () => {
 		const activeOnly = { ...LIVE_VOICE_CARD, rules: LIVE_VOICE_CARD.rules.filter((rule) => rule.meter === "audio_minutes") };
 		withCards(activeOnly);
 		const live = await createLiveConfig("openai/gpt-live-1", config.backendModel);
-		expect((priceLiveUsage({ live_seconds: 60 }, live) as any).live_voice_nanos).toBe(50_000_000);
-		expect(() => priceLiveUsage({ live_seconds: 60, live_standby_seconds: 30 }, live)).toThrow("live_pricing_rule_missing:standby_audio_minutes");
-	});
-	it("bills reported standby seconds at the standby rate", () => {
-		let usage = ingestLiveUsage({ live_started: true }, { type: "session.usage.updated", usage: { seconds: 60, standby_seconds: 30 } });
-		usage = ingestLiveUsage(usage, { type: "session.closed", usage: { seconds: 120, standby_seconds: 90 } });
-		expect(usage).toMatchObject({ live_seconds: 120, live_standby_seconds: 90 });
-		const bill = priceLiveUsage(usage, config) as any;
-		// 2 active minutes at $0.05 and 1.5 standby minutes at $0.02.
-		expect(bill.live_voice_nanos).toBe(130_000_000);
-		expect(bill.pricing.lines.map((line: any) => line.dimension)).toEqual(["audio_minutes", "standby_audio_minutes"]);
-		expect(() => ingestLiveUsage(usage, { type: "session.closed", usage: { seconds: 120, standby_seconds: 60 } })).toThrow("usage_regressed");
-		expect(() => ingestLiveUsage(usage, { type: "session.closed", usage: { seconds: 120, standby_seconds: -1 } })).toThrow("usage_invalid");
+		expect((priceLiveUsage(ingestAll(realSplit), live) as any).live_voice_nanos).toBe(18_333_333);
+		const legacy = priceLiveUsage(ingestAll(realSplit), { ...config, voiceCard: LEGACY_LIVE_VOICE_CARD }) as any;
+		expect(legacy.live_voice_nanos).toBe(18_333_333);
+		expect(legacy.pricing.lines).toEqual([expect.objectContaining({ dimension: "audio_seconds", quantity: 22 })]);
 	});
 	it.each([[45.8, 38_166_667], [60, 50_000_000], [1, 833_333], [0, 0]])(
 		"settles a session snapshotted before catalogue pricing at the same rate (%s s)", (seconds, nanos) => {

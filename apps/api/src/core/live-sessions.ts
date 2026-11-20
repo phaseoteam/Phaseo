@@ -28,9 +28,13 @@ export type LiveUsage = {
 	live_started?: boolean;
 	live_final?: boolean;
 	live_seconds?: number;
-	// Standby has its own rate. Only WebRTC sessions with a wake policy have it, so the
-	// relay's WebSocket sessions never report it today.
-	live_standby_seconds?: number;
+	// OpenAI's split of live_seconds into active and paused (standby) time. Paused time only
+	// accrues on WebRTC sessions with a wake policy. Absent when an event doesn't carry a
+	// consistent split; then all of live_seconds is billed as active.
+	live_active_seconds?: number;
+	live_paused_seconds?: number;
+	// Why the latest split was ignored, for billing review.
+	live_usage_split_ignored?: string;
 	live_responses?: LiveResponseUsage[];
 	live_pending_responses?: string[];
 	live_billing_error?: string;
@@ -67,8 +71,7 @@ export async function createLiveConfig(liveModel: string, backendModel: string, 
 	if (!model) throw new Error("live_model_not_supported");
 	if (!LIVE_BACKENDS.includes(backendModel as typeof LIVE_BACKENDS[number])) throw new Error("live_backend_not_supported");
 	const settings = liveBackendSettingsSchema.parse(requestedSettings ?? {});
-	// Only active time is required up front: WebSocket sessions never report standby, and a
-	// standby charge with no rule fails pricing and keeps the hold rather than going free.
+	// Only active time is required up front: without a standby price, paused time is billed as active.
 	const voiceCard = await loadPriceCard("openai", model, "audio.realtime");
 	if (!voiceCard?.rules.some((rule) => rule.meter === "audio_minutes" && rule.pricing_plan === "standard")) {
 		throw new Error("live_price_card_missing");
@@ -118,6 +121,9 @@ function finite(value: unknown): value is number {
 	return typeof value === "number" && Number.isFinite(value) && value >= 0;
 }
 
+// OpenAI reports whole seconds, so allow for rounding between the split and the total.
+const LIVE_SPLIT_TOLERANCE_SECONDS = 1;
+
 // Return a new snapshot so usage and response IDs can be checkpointed atomically.
 export function ingestLiveUsage(current: LiveUsage, event: Record<string, any>): LiveUsage {
 	const next = { ...current };
@@ -126,12 +132,16 @@ export function ingestLiveUsage(current: LiveUsage, event: Record<string, any>):
 		if (!finite(event.usage?.seconds)) throw new Error("live_authoritative_usage_invalid");
 		if (event.usage.seconds < (current.live_seconds ?? 0)) throw new Error("live_authoritative_usage_regressed");
 		next.live_seconds = event.usage.seconds;
-		const standby = event.usage.standby_seconds;
-		if (standby != null) {
-			if (!finite(standby)) throw new Error("live_authoritative_usage_invalid");
-			if (standby < (current.live_standby_seconds ?? 0)) throw new Error("live_authoritative_usage_regressed");
-			next.live_standby_seconds = standby;
-		}
+		// The split is not monotonic (active_seconds can drop between updates, as OpenAI credits
+		// back initialization time), so the latest event wins; session.closed is final.
+		delete next.live_active_seconds; delete next.live_paused_seconds; delete next.live_usage_split_ignored;
+		const { active_seconds: active, paused_seconds: paused } = event.usage;
+		if (finite(active) && finite(paused)) {
+			if (Math.abs(active + paused - event.usage.seconds) <= LIVE_SPLIT_TOLERANCE_SECONDS) {
+				next.live_active_seconds = active;
+				next.live_paused_seconds = paused;
+			} else next.live_usage_split_ignored = `active ${active} + paused ${paused} != seconds ${event.usage.seconds}`;
+		} else if (active != null || paused != null) next.live_usage_split_ignored = "incomplete split";
 		if (event.type === "session.closed") next.live_final = true;
 	}
 	const responses = current.live_responses ?? [];
@@ -232,8 +242,9 @@ export function assertLiveFinalUsage(usage: LiveUsage) {
 }
 
 export function liveUsageMeters(usage: LiveUsage): Record<string, number> {
-	const totals: Record<string, number> = { audio_seconds: usage.live_seconds ?? 0,
-		...(usage.live_standby_seconds ? { standby_audio_minutes: usage.live_standby_seconds / 60 } : {}) };
+	const { active, paused } = liveSecondsSplit(usage);
+	const totals: Record<string, number> = { audio_seconds: active, audio_minutes: active / 60,
+		...(paused ? { standby_audio_minutes: paused / 60 } : {}) };
 	for (const response of usage.live_responses ?? []) {
 		for (const meter of ["input_text_tokens", "cached_read_text_tokens", "cached_write_text_tokens_30m", "cached_write_text_tokens_12h", "output_text_tokens", "input_tokens", "output_tokens", "output_reasoning_tokens"]) {
 			totals[meter] = (totals[meter] ?? 0) + Number(response.usage[meter] ?? 0);
@@ -243,13 +254,25 @@ export function liveUsageMeters(usage: LiveUsage): Record<string, number> {
 	return totals;
 }
 
-// Seconds as unrounded minutes, as for other per-minute realtime meters. Snapshots taken
-// before Live was priced from the catalogue use audio_seconds and keep it.
-function liveVoiceMeters(usage: LiveUsage, card: PriceCard): Record<string, number> {
-	const standby = { standby_audio_minutes: (usage.live_standby_seconds ?? 0) / 60 };
+// Active and paused seconds. The split never bills more than OpenAI's total, and without a
+// usable split all of the total is active.
+function liveSecondsSplit(usage: LiveUsage): { active: number; paused: number } {
 	const seconds = usage.live_seconds ?? 0;
-	if (card.rules.some((rule) => rule.meter === "audio_seconds")) return { audio_seconds: seconds, ...standby };
-	return { audio_minutes: seconds / 60, ...standby };
+	if (!finite(usage.live_active_seconds) || !finite(usage.live_paused_seconds)) return { active: seconds, paused: 0 };
+	const active = Math.min(usage.live_active_seconds, seconds);
+	return { active, paused: Math.min(usage.live_paused_seconds, seconds - active) };
+}
+
+// Seconds as unrounded minutes, as for other per-minute realtime meters. A card without a
+// standby price (including snapshots taken before Live was priced from the catalogue, on
+// audio_seconds) bills paused time at the active rate: never free, never a failed settlement.
+function liveVoiceMeters(usage: LiveUsage, card: PriceCard): Record<string, number> {
+	const { active, paused } = liveSecondsSplit(usage);
+	const hasStandby = card.rules.some((rule) => rule.meter === "standby_audio_minutes");
+	const activeSeconds = hasStandby ? active : active + paused;
+	const standby = hasStandby ? { standby_audio_minutes: paused / 60 } : {};
+	if (card.rules.some((rule) => rule.meter === "audio_seconds")) return { audio_seconds: activeSeconds, ...standby };
+	return { audio_minutes: activeSeconds / 60, ...standby };
 }
 
 export function priceLiveUsage(usage: LiveUsage, config: LiveConfig): Record<string, unknown> {
