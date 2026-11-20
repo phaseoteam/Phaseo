@@ -13,7 +13,7 @@ import { fetchGatewayContext } from "@pipeline/before/context";
 import { buildProviderCandidatesWithDiagnostics } from "@pipeline/before/utils";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { enqueueAsyncGenAiOtlpExport } from "@observability/otlp-export";
-import { isLiveModel, liveConfig, createLiveConfig, priceLiveUsage, assertLiveFinalUsage, livePolicyCandidates, liveUsageMeters, LIVE_VOICES, type LiveUsage } from "./live-sessions";
+import { isLiveModel, liveConfig, createLiveConfig, priceLiveUsage, assertLiveFinalUsage, livePolicyCandidates, liveUsageMeters, liveVoiceCard, LIVE_VOICES, type LiveUsage } from "./live-sessions";
 import {
 	ELEVENLABS_DEFAULT_VOICE,
 	ELEVENLABS_PROVIDER,
@@ -778,9 +778,20 @@ function modalityTokens(details: unknown, modality: string): number {
 	}, 0);
 }
 
-export function normalizeRealtimeUsage(rawUsage: Record<string, unknown>): Record<string, unknown> {
+// Live meters are derived from the live_* fields every time; a standby meter stored by an earlier
+// normalization must not survive when this session's card bills paused time as active.
+function normalizedLiveSource(rawUsage: Record<string, unknown>, metadata?: Record<string, unknown> | null) {
+	const { standby_audio_minutes: _stale, ...rest } = rawUsage;
+	return { ...rest, ...liveUsageMeters(rawUsage as LiveUsage, liveVoiceCard(metadata)) };
+}
+
+/**
+ * Canonical usage for storage and reporting. For GPT Live, pass the session's metadata so the
+ * voice meters match what its snapshotted card bills (see liveUsageMeters).
+ */
+export function normalizeRealtimeUsage(rawUsage: Record<string, unknown>, metadata?: Record<string, unknown> | null): Record<string, unknown> {
 	const source = rawUsage && typeof rawUsage === "object"
-		? { ...rawUsage, ...(rawUsage.live_started === true ? liveUsageMeters(rawUsage) : {}) } as any : {};
+		? (rawUsage.live_started === true ? normalizedLiveSource(rawUsage, metadata) : { ...rawUsage }) as any : {};
 	const usageMetadata = source.usageMetadata && typeof source.usageMetadata === "object"
 		? source.usageMetadata as any
 		: source;
@@ -1437,7 +1448,7 @@ export async function updateRealtimeSessionUsage(args: {
 	}
 	const provider = providerFromModel(session.model_id, session.provider);
 	if (!provider) throw new Error("realtime_provider_required");
-	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? session.usage ?? {});
+	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? session.usage ?? {}, session.metadata);
 	const pricedUsage = isLiveModel(session.model_id)
 		? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
 		: priceRealtimeUsage(normalizedUsage, await realtimeSessionPriceCard(provider, session), provider);
@@ -1574,8 +1585,8 @@ export async function markRealtimeSessionBillingUnresolved(args: {
 	reason: string;
 	session?: Pick<RealtimeSessionRow, "model_id" | "provider" | "metadata"> | null;
 }): Promise<RealtimeSessionRow> {
-	const usage = normalizeRealtimeUsage(args.usage);
 	const session = args.session ?? await getRealtimeSessionForInternal(args.sessionId).catch(() => null);
+	const usage = normalizeRealtimeUsage(args.usage, session?.metadata);
 	const confirmedCostNanos = session
 		? await realtimeConfirmedCostNanos({
 			modelId: session.model_id,
@@ -1649,7 +1660,7 @@ export async function settleRealtimeSession(args: {
 	}
 	const provider = providerFromModel(session.model_id, session.provider);
 	if (!provider) throw new Error("realtime_provider_required");
-	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? {});
+	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? {}, session.metadata);
 	const live = isLiveModel(session.model_id);
 	const pricedUsage = live ? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
 		: priceRealtimeUsage(normalizedUsage, await realtimeSessionPriceCard(provider, session), provider);

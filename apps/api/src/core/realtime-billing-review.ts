@@ -36,7 +36,7 @@ export function quoteRealtimeRecovery(model: string, usage: LiveUsage, metadata:
 	const priced = priceLiveUsage(confirmed, liveConfig(metadata));
 	const pricing = priced.pricing as { total_nanos: number; lines: Record<string, unknown>[] };
 	if (!Number.isSafeInteger(pricing.total_nanos) || pricing.total_nanos < 0) throw new Error("recovery_cost_invalid");
-	return { costNanos: pricing.total_nanos, lines: pricing.lines, complete, billableUsage: { ...confirmed, ...liveUsageMeters(confirmed) } };
+	return { costNanos: pricing.total_nanos, lines: pricing.lines, complete, billableUsage: { ...confirmed, ...liveUsageMeters(confirmed, liveConfig(metadata).voiceCard) } };
 }
 
 type RecoveryQuote = { costNanos: number; lines: Record<string, unknown>[] | unknown[]; complete: boolean; billableUsage: Record<string, unknown> };

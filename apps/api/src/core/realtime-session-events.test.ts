@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { PriceCard, PriceRule } from "@pipeline/pricing/types";
 import { LIVE_SEARCH_PRICE_CARD, priceLiveUsage, type LiveConfig } from "./live-sessions";
-import { LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
+import { LEGACY_LIVE_VOICE_CARD, LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
 import { liveBackendSettingsSchema } from "./live-settings";
 import { buildSessionEndedEvent } from "./realtime-session-events";
 import { normalizeRealtimeUsage, priceRealtimeUsage, realtimeBilledMeters, type RealtimeProvider } from "./realtime-sessions";
@@ -43,7 +43,8 @@ function billedQuantities(priced: Record<string, unknown>) {
 	const totals: Record<string, number> = {};
 	for (const line of (priced.pricing as { lines: Array<{ dimension: string; quantity: number }> }).lines) {
 		if (!(Number(line.quantity) > 0)) continue;
-		const minutes = /(^|_)audio_minutes$/.test(line.dimension);
+		// Standby is reported in minutes on its own meter.
+		const minutes = /(^|_)audio_minutes$/.test(line.dimension) && line.dimension !== "standby_audio_minutes";
 		const key = minutes ? "audio_seconds" : line.dimension;
 		totals[key] = (totals[key] ?? 0) + Number(line.quantity) * (minutes ? 60 : 1);
 	}
@@ -67,5 +68,26 @@ describe("session.ended usage", () => {
 		const billed = billedQuantities(priceLiveUsage(normalized, liveConfig));
 		expect(billed).toMatchObject({ audio_seconds: 11, cached_write_text_tokens_30m: 5041, native_web_search_requests: 2 });
 		expect(ended(normalized)).toEqual(billed);
+	});
+
+	// OpenAI's final split on a 22 s WebRTC call: 11 s active, 11 s paused.
+	const split = { ...live, live_seconds: 22, live_active_seconds: 11, live_paused_seconds: 11 };
+	const activeOnlyCard: PriceCard = { ...LIVE_VOICE_CARD, rules: LIVE_VOICE_CARD.rules.filter((rule) => rule.meter === "audio_minutes") };
+	it.each([
+		["a catalogue card with standby", LIVE_VOICE_CARD, { audio_seconds: 11, standby_audio_minutes: 11 / 60 }],
+		["a catalogue card without standby", activeOnlyCard, { audio_seconds: 22 }],
+		["a legacy audio_seconds snapshot", LEGACY_LIVE_VOICE_CARD, { audio_seconds: 22 }],
+	])("reports GPT Live voice as billed with %s", (_name, voiceCard, voice) => {
+		const config = { ...liveConfig, voiceCard };
+		const normalized = normalizeRealtimeUsage(split, { live: config });
+		const billed = billedQuantities(priceLiveUsage(normalized, config));
+		expect(billed).toMatchObject(voice);
+		expect(ended(normalized)).toEqual(billed);
+		if (voiceCard === LIVE_VOICE_CARD) expect(normalized).toMatchObject({ audio_seconds: 11, standby_audio_minutes: 11 / 60 });
+		else expect(normalized).not.toHaveProperty("standby_audio_minutes");
+		// The raw provider split is kept either way.
+		expect(normalized).toMatchObject({ live_active_seconds: 11, live_paused_seconds: 11 });
+		// Re-normalizing stored usage with the session's card drops a stale standby meter.
+		expect(normalizeRealtimeUsage({ ...split, standby_audio_minutes: 11 / 60 }, { live: config })).toEqual(normalized);
 	});
 });

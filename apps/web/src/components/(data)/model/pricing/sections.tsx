@@ -1099,7 +1099,14 @@ export function MeterRateRows({
 	const tMeters = useTranslations("Catalogue.modelDetail.pricing.meters");
 	if (!rows.length) return null;
 	// A session billed at separate active and standby rates names both by session state.
-	const hasStandby = rows.some((row) => row.meter.trim() === "standby_audio_minutes");
+	const isStandby = (row: ProviderSections["otherRules"][number]) => row.meter.trim() === "standby_audio_minutes";
+	const hasStandby = rows.some(isStandby);
+	// Rule order comes from the catalogue query, so put the standby rate right after the active one.
+	const activeIndex = rows.findLastIndex((row) => row.meter.trim() === "audio_minutes");
+	const ordered = hasStandby && activeIndex >= 0
+		? [...rows.slice(0, activeIndex + 1).filter((row) => !isStandby(row)), ...rows.filter(isStandby),
+			...rows.slice(activeIndex + 1).filter((row) => !isStandby(row))]
+		: rows;
 	const formatMeterName = (meter: string) => {
 		const key = hasStandby && meter.trim() === "audio_minutes" ? "active_audio_minutes" : meter.trim();
 		if (tMeters.has(key as never)) return tMeters(key as never);
@@ -1119,7 +1126,7 @@ export function MeterRateRows({
 
 	return (
 		<div className="space-y-2">
-			{rows.map((row, index) => {
+			{ordered.map((row, index) => {
 				const conditions = formatConditions(row.conditions);
 				return (
 					<div
