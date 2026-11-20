@@ -122,3 +122,56 @@ it.each(["realtime", "live"])("scopes %s billing reads to the Chat user, workspa
 	query.maybeSingle.mockResolvedValue({ data: null, error: null });
 	expect((await chatRouter.request("https://phaseo.app/realtime/session/rt_01jz8h3j3f4q5r6s7t8v9w0xyz", {}, {} as any)).status).toBe(404);
 });
+
+const OFFER = "v=0\r\no=- 1 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n";
+const ANSWER = "v=0\r\no=- 3 4 IN IP4 0.0.0.0\r\ns=-\r\nt=0 0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n";
+const liveWebRTC = (fetchMock: ReturnType<typeof vi.fn>, extra: Record<string, unknown> = {}) => {
+	vi.stubGlobal("fetch", fetchMock);
+	return chatRouter.request("https://phaseo.app/live/session", {
+		method: "POST", headers: { "content-type": "application/json" },
+		body: JSON.stringify({ provider: "openai", model: "gpt-live-1.1", transport: "webrtc", sdp: OFFER, ...extra }),
+	}, { ENV: "development", PHASEO_GATEWAY_URL: "https://api.phaseo.app/v1" });
+};
+
+it("sends the playground's WebRTC offer with standby and returns the SDP answer", async () => {
+	const fetchMock = vi.fn(async () => Response.json({ id: "rt_test", status: "connected", transport: { type: "webrtc", sdp: ANSWER } }, { status: 201 }));
+	const response = await liveWebRTC(fetchMock);
+	expect(response.status).toBe(200);
+	expect(JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)).toMatchObject({
+		model: "openai/gpt-live-1.1", transport: { type: "webrtc", sdp: OFFER }, wake_policy: { type: "speech" }, idle_timeout_s: 30, source: "chat" });
+	expect((await response.json() as any).connect).toEqual({ transport: "webrtc", sdp: ANSWER, standby: true });
+});
+
+it("falls back to the WebSocket relay when the WebRTC gate is closed", async () => {
+	const fetchMock = vi.fn()
+		.mockResolvedValueOnce(Response.json({ error: "unauthorised", reason: "live_webrtc_feature_flag_disabled" }, { status: 401 }))
+		.mockResolvedValueOnce(Response.json({ clientSecret: "rtsec_test", connect: { url: "/v1/live/sessions/rt_test/relay" } }, { status: 201 }));
+	const response = await liveWebRTC(fetchMock);
+	expect(response.status).toBe(200);
+	const second = JSON.parse((fetchMock.mock.calls[1] as unknown as [string, RequestInit])[1].body as string);
+	expect(second).not.toHaveProperty("transport");
+	expect(second).not.toHaveProperty("wake_policy");
+	expect(await response.json()).toMatchObject({ webrtc_unavailable: true, connect: { transport: "websocket", url: "wss://api.phaseo.app/v1/live/sessions/rt_test/relay" } });
+});
+
+it("passes other WebRTC refusals through without retrying", async () => {
+	const fetchMock = vi.fn(async () => Response.json({ error: "unauthorised", reason: "realtime_voice_feature_flag_disabled" }, { status: 401 }));
+	const response = await liveWebRTC(fetchMock);
+	expect(response.status).toBe(401);
+	expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
+it("rejects a malformed WebRTC offer before contacting the gateway", async () => {
+	const fetchMock = vi.fn();
+	expect((await liveWebRTC(fetchMock, { sdp: "not sdp" })).status).toBe(400);
+	expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it("closes a WebRTC Live call through the gateway", async () => {
+	const fetchMock = vi.fn(async () => Response.json({ status: "ending" }, { status: 202 }));
+	vi.stubGlobal("fetch", fetchMock);
+	const response = await chatRouter.request("https://phaseo.app/live/session/rt_01jz8h3j3f4q5r6s7t8v9w0xyz/close", { method: "POST" },
+		{ ENV: "development", PHASEO_GATEWAY_URL: "https://api.phaseo.app/v1" });
+	expect(response.status).toBe(202);
+	expect((fetchMock.mock.calls[0] as unknown as [string])[0]).toBe("https://api.phaseo.app/v1/live/sessions/rt_01jz8h3j3f4q5r6s7t8v9w0xyz/close");
+});

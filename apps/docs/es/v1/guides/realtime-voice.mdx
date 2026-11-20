@@ -101,6 +101,43 @@ El relay solo acepta un `function_call_output` para una llamada que hizo el back
 
 Una llamada de GPT Live se factura por segundo de voz ($0.05 por minuto, a partir del propio `usage.seconds` de GPT Live) más los tokens del modelo backend de cada respuesta, incluidas las respuestas posteriores a los resultados de herramientas. GPT Live hace caducar una sesión que no recibe audio durante unos 30 segundos, lo que termina la llamada con `provider_idle_timeout`. Sigue transmitiendo el audio del micrófono, incluidos los silencios.
 
+### GPT Live por WebRTC con espera
+
+En un navegador, GPT Live también puede funcionar por WebRTC. El audio del navegador va directamente a OpenAI en lugar de pasar por el relay, lo que elimina un salto, y la llamada puede quedar en espera, que cuesta menos que el tiempo activo. WebRTC se activa por espacio de trabajo bajo petición; hasta entonces, la solicitud de creación falla con `live_webrtc_feature_flag_disabled`.
+
+Crea una conexión peer con el micrófono y un canal de datos llamado `oai-events`, y envía su oferta SDP a tu servidor. Tu servidor crea la sesión con `transport` y devuelve la respuesta SDP al navegador:
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-live-1.1",
+    "provider": "openai",
+    "transport": { "type": "webrtc", "sdp": "<SDP offer from the browser>" },
+    "wake_policy": { "type": "speech" },
+    "idle_timeout_s": 30
+  }'
+```
+
+La respuesta incluye el `id` de la sesión y `transport.sdp`, la respuesta SDP de OpenAI. No hay `client_secret` ni URL del relay. Aplica la respuesta en el navegador:
+
+```js
+await pc.setRemoteDescription({ type: "answer", sdp: session.transport.sdp });
+```
+
+`connectLiveWebRTC({ createSession })` del TypeScript SDK se encarga del lado del navegador por ti: añade el micrófono, crea el canal de datos, envía la oferta a través de tu función `createSession` y aplica la respuesta.
+
+La espera necesita `wake_policy`. La sesión espera a que alguien hable antes de empezar la inferencia y, con `idle_timeout_s` (de 5 a 60 segundos), vuelve a la espera tras ese tiempo sin voz. El canal de datos envía entonces `session.paused`. Mantén activa la pista del micrófono durante la espera. El tiempo en espera se factura a $0.02 por minuto y el tiempo activo a $0.05 por minuto, ambos por segundo, según el propio reparto de OpenAI de la llamada en segundos activos y en pausa. Sin `wake_policy`, toda la llamada se factura como tiempo activo.
+
+El canal de datos transporta los eventos de OpenAI, como las transcripciones y `session.paused`. El navegador puede enviar por él `session.close`, `session.input_audio.mute` y `session.input_audio.unmute`; OpenAI rechaza los demás eventos del cliente, así que el navegador no puede cambiar el modelo, el backend ni las herramientas de la sesión. Los eventos propios de Phaseo no pueden usar el canal de datos de OpenAI, así que léelos con `GET /v1/live/sessions/{id}`: devuelve el estado de la sesión, `standby`, sus eventos `session.warning` en `warnings` y `ended`, el mismo evento `session.ended` que en el relay una vez terminada la llamada. Para terminar una llamada cuyo canal de datos nunca llegó a abrirse, llama a `POST /v1/live/sessions/{id}/close`.
+
+Phaseo sigue la llamada en la conexión del lado del servidor de OpenAI y la termina allí cuando se revoca la clave, una política la bloquea, se agotan los fondos o llega a 25 minutos. Las herramientas de función aún no son compatibles con WebRTC; usa el relay WebSocket para ellas. La búsqueda web funciona en ambos.
+
+<Note>
+Con WebRTC, el audio y la dirección IP del usuario final llegan directamente a OpenAI, sin pasar por Phaseo.
+</Note>
+
 ### Sesiones de ElevenLabs Realtime
 
 ElevenLabs Realtime tiene dos modelos: `eleven-labs/eleven-realtime-v1-mini`, el predeterminado, más rápido y barato, y `eleven-labs/eleven-realtime-v1-max`, que razona antes de responder y es adecuado para instrucciones complejas y el uso de herramientas en varios pasos. Ambos usan la misma solicitud de creación y el mismo relay que OpenAI, con audio a 24 kHz. Phaseo se conecta a ElevenLabs con su propia clave; tu cliente solo ve el relay.

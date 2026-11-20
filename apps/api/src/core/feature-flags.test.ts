@@ -10,6 +10,7 @@ import {
 	getWorkloadIdentityFeatureGateName,
 	getVideoApiFeatureGateName,
 	getRealtimeVoiceFeatureGateName,
+	getLiveWebRTCFeatureGateName,
 	isBatchApiAccessEnabled,
 	isVideoApiAccessEnabled,
 	isGatewayIoLoggingFeatureEnabled,
@@ -60,6 +61,8 @@ describe("batch API feature gate", () => {
 		expect(getRealtimeVoiceFeatureGateName({})).toBe("gateway_realtime_voice");
 		expect(getRealtimeVoiceFeatureGateName({}, "chat")).toBe("chat_realtime_voice");
 		expect(getRealtimeVoiceFeatureGateName({ STATSIG_CHAT_REALTIME_VOICE_GATE: "custom_chat_gate" }, "chat")).toBe("custom_chat_gate");
+		expect(getLiveWebRTCFeatureGateName({})).toBe("live_webrtc");
+		expect(getLiveWebRTCFeatureGateName({ STATSIG_LIVE_WEBRTC_GATE: "custom_webrtc_gate" })).toBe("custom_webrtc_gate");
 		expect(getGatewayIoLoggingFeatureGateName({ STATSIG_GATEWAY_IO_LOGGING_GATE: "custom_io_gate" })).toBe("custom_io_gate");
 		expect(getGatewayIoLoggingFeatureGateName({})).toBe("gateway_io_logging");
 		expect(getDataContributionFeatureGateName({ STATSIG_DATA_CONTRIBUTION_GATE: "custom_contribution_gate" })).toBe("custom_contribution_gate");

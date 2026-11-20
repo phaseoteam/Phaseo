@@ -3597,6 +3597,19 @@ type ListFilesResponse struct {
 	Object *string `json:"object,omitempty"`
 }
 
+type LiveSessionStatus struct {
+	Billing *map[string]interface{} `json:"billing,omitempty"`
+	Ended *map[string]interface{} `json:"ended,omitempty"`
+	ExpiresAt *string `json:"expires_at,omitempty"`
+	Id *string `json:"id,omitempty"`
+	Model *string `json:"model,omitempty"`
+	SessionId *string `json:"session_id,omitempty"`
+	Standby *bool `json:"standby,omitempty"`
+	Status *string `json:"status,omitempty"`
+	Transport *map[string]interface{} `json:"transport,omitempty"`
+	Warnings *[]map[string]interface{} `json:"warnings,omitempty"`
+}
+
 type ManagementKeyCollectionResponse struct {
 	Data []map[string]interface{} `json:"data"`
 }

@@ -192,8 +192,28 @@ type RealtimeSessionResponse = {
 		transport: "webrtc" | "websocket";
 		url: string;
 		protocols?: string[];
+		/** GPT Live over WebRTC: OpenAI's SDP answer, created by the gateway with the playground's offer. */
+		sdp?: string;
+		standby?: boolean;
 	};
+	/** The live_webrtc gate is closed for this user, so the session uses the WebSocket relay. */
+	webrtc_unavailable?: boolean;
 };
+
+// A WebRTC call that hasn't connected by then falls back to the WebSocket relay.
+const LIVE_WEBRTC_CONNECT_TIMEOUT_MS = 5_000;
+// The offer is sent once ICE gathering finishes, or after this long with the candidates so far.
+const LIVE_WEBRTC_ICE_GATHER_MS = 2_000;
+
+async function waitForIceGathering(pc: RTCPeerConnection): Promise<void> {
+	if (pc.iceGatheringState === "complete") return;
+	await new Promise<void>((resolve) => {
+		const done = () => { window.clearTimeout(timer); pc.removeEventListener("icegatheringstatechange", check); resolve(); };
+		const check = () => { if (pc.iceGatheringState === "complete") done(); };
+		const timer = window.setTimeout(done, LIVE_WEBRTC_ICE_GATHER_MS);
+		pc.addEventListener("icegatheringstatechange", check);
+	});
+}
 
 type RealtimeUsage = {
 	input_token_details?: {
@@ -1495,6 +1515,8 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	>("normal");
 	const [billingSessionId, setBillingSessionId] = useState<string | null>(null);
 	const [billingReadFailed, setBillingReadFailed] = useState(false);
+	// GPT Live over WebRTC: kept after the call ends, so the final bill from the ledger shows as the cost.
+	const liveWebRTCSessionIdRef = useRef<string | null>(null);
 	const [ledger, setLedger] = useState<{ status: string; reserved_nanos: number; captured_nanos: number; released_nanos: number; estimated_cost_nanos: number; final_cost_nanos: number | null; pricing_lines?: Array<{ component?: string; line_nanos?: number }>; usage?: LiveUsageView } | null>(null);
 	useEffect(() => {
 		if (!billingSessionId) return;
@@ -1516,6 +1538,11 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		void poll();
 		return () => { controller.abort(); clearTimeout(timer); };
 	}, [billingApi, billingSessionId, status]);
+	// A WebRTC call has no relay socket for live usage: its cost is the gateway's running estimate.
+	useEffect(() => {
+		if (!ledger || !billingSessionId || billingSessionId !== liveWebRTCSessionIdRef.current) return;
+		setActualCostUsd(Number(ledger.final_cost_nanos ?? ledger.estimated_cost_nanos ?? 0) / 1e9);
+	}, [billingSessionId, ledger]);
 	const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
 	const [diagnosticLogs, setDiagnosticLogs] = useState<RealtimeDiagnosticLog[]>(
 		[],
@@ -1564,6 +1591,11 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const usageAggregateRef = useRef<RealtimeUsageAggregate>({});
 	const relaySessionRef = useRef(false);
 	const liveSessionRef = useRef(false);
+	// GPT Live over WebRTC: media goes straight to OpenAI and the gateway bills from its sideband.
+	const liveWebRTCRef = useRef(false);
+	// Once WebRTC is unavailable (gate closed, or it didn't connect), this tab uses the relay.
+	const liveWebRTCUnavailableRef = useRef(false);
+	const [liveStandby, setLiveStandby] = useState(false);
 
 	useEffect(() => {
 		try {
@@ -1845,6 +1877,8 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			googleUserTranscriptIdRef.current = null;
 			googleAssistantTranscriptIdRef.current = null;
 			relaySessionRef.current = false;
+			liveWebRTCRef.current = false;
+			setLiveStandby(false);
 			setIsFinishing(false);
 			currentSessionIdRef.current = null;
 			if (updateStatus) {
@@ -1892,6 +1926,14 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				return;
 			}
 
+			if (liveWebRTCRef.current && dataChannelRef.current?.readyState === "open") {
+				// The data channel may end the call; session.closed then stops the room.
+				pendingStopStatusRef.current = terminalStatus;
+				setIsFinishing(true);
+				dataChannelRef.current.send(JSON.stringify({ type: "session.close" }));
+				if (providerDrainTimerRef.current == null) providerDrainTimerRef.current = window.setTimeout(() => stopSession(true, terminalStatus), 10_000);
+				return;
+			}
 			stopInputCapture();
 			if (liveSessionRef.current && webSocketRef.current?.readyState === WebSocket.OPEN) {
 				pendingStopStatusRef.current = terminalStatus;
@@ -2158,6 +2200,13 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				return;
 			}
 			if (liveSessionRef.current) {
+				// Standby (WebRTC): paused until the user speaks again. OpenAI doesn't always send
+				// session.resumed, so new speech or a reply also means the call is active again.
+				if (type === "session.paused") { setLiveStandby(true); setPersonaState("listening"); return; }
+				if (type === "session.resumed" || type === "session.input_transcript.delta" || type === "session.output_transcript.delta") setLiveStandby(false);
+				// Over WebRTC the reply plays from the media track, so transcripts drive the persona.
+				if (liveWebRTCRef.current && type === "session.output_transcript.delta") setPersonaState("speaking");
+				if (liveWebRTCRef.current && type === "session.input_transcript.delta") setPersonaState("listening");
 				if (type === "session.output_audio.delta") { playPcm16Audio(getStringField(event, "delta")); setPersonaState("speaking"); return; }
 				if (type === "session.input_transcript.delta" || type === "session.output_transcript.delta") {
 					const role = type === "session.input_transcript.delta" ? "user" : "assistant";
@@ -2526,7 +2575,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		],
 	);
 
-	const createSession = useCallback(async () => {
+	const createSession = useCallback(async (webrtcOffer?: string) => {
 		if (!selectedModel) {
 			throw new Error(t("chooseRealtimeModel"));
 		}
@@ -2543,6 +2592,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				voice: selectedVoice?.id ?? selectedModel.defaultVoice,
 				instructions: realtimeSystemPrompt,
 				...(live ? { backend_model: liveBackendModel, backend_settings: liveSettings } : {}),
+				...(live && webrtcOffer ? { transport: "webrtc", sdp: webrtcOffer } : {}),
 				...(usesGoogleExtendedThinking
 					? { thinkingLevel: googleThinkingLevel }
 					: {}),
@@ -2630,6 +2680,74 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			realtimeSystemPrompt,
 		],
 	);
+
+	/**
+	 * GPT Live over WebRTC with standby: the gateway creates the session with this offer and
+	 * returns OpenAI's answer. Returns the session and whether the call connected; a relay
+	 * session comes back instead when WebRTC isn't enabled for the user.
+	 */
+	const startLiveWebRTC = useCallback(async (): Promise<{ session: RealtimeSessionResponse; connected: boolean }> => {
+		const stream = await ensureMicrophoneAccess();
+		const pc = new RTCPeerConnection();
+		peerConnectionRef.current = pc;
+		stream.getAudioTracks().forEach((track) => pc.addTrack(track, stream));
+		pc.ontrack = (event) => {
+			if (remoteAudioRef.current) {
+				remoteAudioRef.current.srcObject = event.streams[0] ?? null;
+				void remoteAudioRef.current.play().catch(() => undefined);
+			}
+		};
+		const dc = pc.createDataChannel("oai-events");
+		dataChannelRef.current = dc;
+		dc.onmessage = (message) => {
+			void parseRealtimeEvent(message).then((event) => {
+				if (event && dataChannelRef.current === dc) handleRealtimeEvent(event, "openai");
+			});
+		};
+		const closePeer = () => {
+			dc.close();
+			pc.close();
+			if (dataChannelRef.current === dc) dataChannelRef.current = null;
+			if (peerConnectionRef.current === pc) peerConnectionRef.current = null;
+		};
+		await pc.setLocalDescription(await pc.createOffer());
+		await waitForIceGathering(pc);
+		let session: RealtimeSessionResponse;
+		try {
+			session = await createSession(pc.localDescription?.sdp ?? "");
+		} catch (error) {
+			closePeer();
+			throw error;
+		}
+		if (session.connect.transport !== "webrtc" || !session.connect.sdp) {
+			closePeer();
+			if (session.webrtc_unavailable) liveWebRTCUnavailableRef.current = true;
+			return { session, connected: false };
+		}
+		const connected = await pc.setRemoteDescription({ type: "answer", sdp: session.connect.sdp })
+			.then(() => new Promise<boolean>((resolve) => {
+				if (dc.readyState === "open") { resolve(true); return; }
+				const timer = window.setTimeout(() => resolve(false), LIVE_WEBRTC_CONNECT_TIMEOUT_MS);
+				dc.addEventListener("open", () => { window.clearTimeout(timer); resolve(true); }, { once: true });
+				pc.addEventListener("connectionstatechange", () => {
+					if (pc.connectionState === "failed") { window.clearTimeout(timer); resolve(false); }
+				});
+			}))
+			.catch(() => false);
+		if (!connected) {
+			closePeer();
+			liveWebRTCUnavailableRef.current = true;
+			// End the gateway session at once so its hold is released.
+			const sessionId = session.session_id ?? session.id;
+			if (sessionId) void fetchChatWebApi(`/api/chat/live/session/${encodeURIComponent(sessionId)}/close`, { method: "POST" }).catch(() => undefined);
+			return { session, connected: false };
+		}
+		pc.addEventListener("connectionstatechange", () => {
+			// The gateway hears about a lost call from OpenAI and settles it; the room just ends.
+			if (pc.connectionState === "failed" && peerConnectionRef.current === pc) stopSession(true, "cancelled");
+		});
+		return { session, connected: true };
+	}, [createSession, ensureMicrophoneAccess, handleRealtimeEvent, stopSession]);
 
 	const startPcmInputStream = useCallback(
 		async (
@@ -3123,10 +3241,44 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 			} else await ensureMicrophoneAccess();
 			if (attempt !== startupAttemptRef.current) return;
 			addDiagnosticLog("Microphone access granted");
-			const session = await createSession();
+			// GPT Live tries WebRTC with standby first, and uses the relay when it isn't available.
+			let session: RealtimeSessionResponse | null = null;
+			let webrtcConnected = false;
+			if (liveSessionRef.current && typeof RTCPeerConnection !== "undefined" && !liveWebRTCUnavailableRef.current) {
+				const webrtc = await startLiveWebRTC();
+				webrtcConnected = webrtc.connected;
+				if (webrtc.connected || webrtc.session.connect.transport !== "webrtc") session = webrtc.session;
+				else addDiagnosticLog("WebRTC did not connect; using the WebSocket relay", { timeoutMs: LIVE_WEBRTC_CONNECT_TIMEOUT_MS }, "warning");
+				if (webrtc.session.webrtc_unavailable) addDiagnosticLog("WebRTC is not enabled for this account; using the WebSocket relay");
+			}
+			if (attempt === startupAttemptRef.current && !session) session = await createSession();
+			if (!session) return;
 			if (attempt !== startupAttemptRef.current) {
 				// Never open a provider socket after cancellation. The gateway expires unused reservations.
 				addDiagnosticLog("Session startup cancelled before provider connection", { sessionId: session.session_id ?? session.id });
+				const sessionId = session.session_id ?? session.id;
+				if (webrtcConnected && sessionId) {
+					stopSession(false);
+					void fetchChatWebApi(`/api/chat/live/session/${encodeURIComponent(sessionId)}/close`, { method: "POST" }).catch(() => undefined);
+				}
+				return;
+			}
+			if (webrtcConnected) {
+				liveWebRTCRef.current = true;
+				// The gateway owns billing from OpenAI's sideband, as it does for the relay.
+				relaySessionRef.current = true;
+				liveWebRTCSessionIdRef.current = session.session_id ?? session.id ?? null;
+				setBillingApi("live");
+				setLiveUsage(null);
+				currentSessionIdRef.current = session.session_id ?? session.id ?? null;
+				setSessionBilling(session.billing ?? null);
+				setBillingSessionId(session.session_id ?? session.id ?? null);
+				addDiagnosticLog("Session created", { sessionId: session.session_id ?? session.id, provider: session.provider,
+					model: session.model, voice: session.voice, transport: "webrtc", standby: session.connect.standby === true,
+					reservationUsd: session.billing?.reservationUsd });
+				setStatus("connected");
+				setPersonaState("listening");
+				setStartedAt(Date.now());
 				return;
 			}
 			liveSessionRef.current = isGptLiveModel(selectedModel);
@@ -3168,6 +3320,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 		createSession,
 		addDiagnosticLog,
 		startGoogle,
+		startLiveWebRTC,
 		startOpenAI,
 		startRelay,
 		startXAI,
@@ -3183,7 +3336,9 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const personaLabel =
 		personaState === "asleep"
 			? t("personaAsleep")
-			: personaState === "listening"
+			: liveStandby && personaState === "listening"
+				? tCopy("personaStandby")
+				: personaState === "listening"
 				? t("personaListening")
 				: personaState === "thinking"
 					? t("personaThinking")

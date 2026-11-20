@@ -2,7 +2,7 @@
   "version": 1,
   "locales": {
     "ar": {
-      "@openapi": "2bdf7f8dde6167a54261e8b9f226b7be40850b8b08c233b1223dd86ff9d848d0",
+      "@openapi": "55df44793c2d52e5ffced906feb7a8fd44811872a3625fc6089951b30897a87c",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "0f86bb44664d65fd2e4d9226374a86cb3d8db896330214f4579bb0e1f197ddeb",
       "api-reference/endpoint/analytics-export.mdx": "555606ddf7c893ff04e753c4c0bc08ad736b7e2a20bdaec96f7e758e0312c9c9",
@@ -386,7 +386,7 @@
       "guides/provider-qualified-models.mdx": "73e1e12275b916546abb7aab3d937cc4776a97114463a6deb9d9a164ed619116",
       "guides/provider-statuses.mdx": "4ffd47b3b35ace686ebc81cea3bcfdd68ecda7a371205f74a9e4ed7da762af30",
       "guides/quantization.mdx": "e60ba072b9b6c251ff6a6d6717281e901b09a23ab2383dfac42d533306dd7bf8",
-      "guides/realtime-voice.mdx": "18ccf22d21013fafa818a2f98a8bcb2207bcb932f58c5d553c911d9bce66593f",
+      "guides/realtime-voice.mdx": "349bb8529bed3d7871aaeaf9604b02d99cb8863153bc31247be1efe1840f2de6",
       "guides/reasoning-effort.mdx": "2f9c03ebf8612e954c7ae7777cfa08a7fa06e4304e13e3bfc7c3ff842aad1340",
       "guides/regional-routing.mdx": "6b43d5748bd76daec5f41a1100852c873140e61e21e47c6260398d7184b3236c",
       "guides/request-classifiers.mdx": "9f38757f523aa71a0afb41a8f885ef29e066811d3bfe99158655a6a8f2453dcc",
@@ -495,7 +495,7 @@
       "sdk-reference/sdk/tool-calling/index.mdx": "dd949690d4787afcf7d062b98d57bd96e0f020fb873f47cd66b84b16e19a6f9f"
     },
     "de": {
-      "@openapi": "2bdf7f8dde6167a54261e8b9f226b7be40850b8b08c233b1223dd86ff9d848d0",
+      "@openapi": "55df44793c2d52e5ffced906feb7a8fd44811872a3625fc6089951b30897a87c",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "0f86bb44664d65fd2e4d9226374a86cb3d8db896330214f4579bb0e1f197ddeb",
       "api-reference/endpoint/analytics-export.mdx": "555606ddf7c893ff04e753c4c0bc08ad736b7e2a20bdaec96f7e758e0312c9c9",
@@ -879,7 +879,7 @@
       "guides/provider-qualified-models.mdx": "73e1e12275b916546abb7aab3d937cc4776a97114463a6deb9d9a164ed619116",
       "guides/provider-statuses.mdx": "4ffd47b3b35ace686ebc81cea3bcfdd68ecda7a371205f74a9e4ed7da762af30",
       "guides/quantization.mdx": "e60ba072b9b6c251ff6a6d6717281e901b09a23ab2383dfac42d533306dd7bf8",
-      "guides/realtime-voice.mdx": "18ccf22d21013fafa818a2f98a8bcb2207bcb932f58c5d553c911d9bce66593f",
+      "guides/realtime-voice.mdx": "349bb8529bed3d7871aaeaf9604b02d99cb8863153bc31247be1efe1840f2de6",
       "guides/reasoning-effort.mdx": "2f9c03ebf8612e954c7ae7777cfa08a7fa06e4304e13e3bfc7c3ff842aad1340",
       "guides/regional-routing.mdx": "6b43d5748bd76daec5f41a1100852c873140e61e21e47c6260398d7184b3236c",
       "guides/request-classifiers.mdx": "9f38757f523aa71a0afb41a8f885ef29e066811d3bfe99158655a6a8f2453dcc",
@@ -988,7 +988,7 @@
       "sdk-reference/sdk/tool-calling/index.mdx": "dd949690d4787afcf7d062b98d57bd96e0f020fb873f47cd66b84b16e19a6f9f"
     },
     "es": {
-      "@openapi": "2bdf7f8dde6167a54261e8b9f226b7be40850b8b08c233b1223dd86ff9d848d0",
+      "@openapi": "55df44793c2d52e5ffced906feb7a8fd44811872a3625fc6089951b30897a87c",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "0f86bb44664d65fd2e4d9226374a86cb3d8db896330214f4579bb0e1f197ddeb",
       "api-reference/endpoint/analytics-export.mdx": "555606ddf7c893ff04e753c4c0bc08ad736b7e2a20bdaec96f7e758e0312c9c9",
@@ -1372,7 +1372,7 @@
       "guides/provider-qualified-models.mdx": "73e1e12275b916546abb7aab3d937cc4776a97114463a6deb9d9a164ed619116",
       "guides/provider-statuses.mdx": "4ffd47b3b35ace686ebc81cea3bcfdd68ecda7a371205f74a9e4ed7da762af30",
       "guides/quantization.mdx": "e60ba072b9b6c251ff6a6d6717281e901b09a23ab2383dfac42d533306dd7bf8",
-      "guides/realtime-voice.mdx": "18ccf22d21013fafa818a2f98a8bcb2207bcb932f58c5d553c911d9bce66593f",
+      "guides/realtime-voice.mdx": "349bb8529bed3d7871aaeaf9604b02d99cb8863153bc31247be1efe1840f2de6",
       "guides/reasoning-effort.mdx": "2f9c03ebf8612e954c7ae7777cfa08a7fa06e4304e13e3bfc7c3ff842aad1340",
       "guides/regional-routing.mdx": "6b43d5748bd76daec5f41a1100852c873140e61e21e47c6260398d7184b3236c",
       "guides/request-classifiers.mdx": "9f38757f523aa71a0afb41a8f885ef29e066811d3bfe99158655a6a8f2453dcc",
@@ -1481,7 +1481,7 @@
       "sdk-reference/sdk/tool-calling/index.mdx": "dd949690d4787afcf7d062b98d57bd96e0f020fb873f47cd66b84b16e19a6f9f"
     },
     "fr": {
-      "@openapi": "2bdf7f8dde6167a54261e8b9f226b7be40850b8b08c233b1223dd86ff9d848d0",
+      "@openapi": "55df44793c2d52e5ffced906feb7a8fd44811872a3625fc6089951b30897a87c",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "0f86bb44664d65fd2e4d9226374a86cb3d8db896330214f4579bb0e1f197ddeb",
       "api-reference/endpoint/analytics-export.mdx": "555606ddf7c893ff04e753c4c0bc08ad736b7e2a20bdaec96f7e758e0312c9c9",
@@ -1865,7 +1865,7 @@
       "guides/provider-qualified-models.mdx": "73e1e12275b916546abb7aab3d937cc4776a97114463a6deb9d9a164ed619116",
       "guides/provider-statuses.mdx": "4ffd47b3b35ace686ebc81cea3bcfdd68ecda7a371205f74a9e4ed7da762af30",
       "guides/quantization.mdx": "e60ba072b9b6c251ff6a6d6717281e901b09a23ab2383dfac42d533306dd7bf8",
-      "guides/realtime-voice.mdx": "18ccf22d21013fafa818a2f98a8bcb2207bcb932f58c5d553c911d9bce66593f",
+      "guides/realtime-voice.mdx": "349bb8529bed3d7871aaeaf9604b02d99cb8863153bc31247be1efe1840f2de6",
       "guides/reasoning-effort.mdx": "2f9c03ebf8612e954c7ae7777cfa08a7fa06e4304e13e3bfc7c3ff842aad1340",
       "guides/regional-routing.mdx": "6b43d5748bd76daec5f41a1100852c873140e61e21e47c6260398d7184b3236c",
       "guides/request-classifiers.mdx": "9f38757f523aa71a0afb41a8f885ef29e066811d3bfe99158655a6a8f2453dcc",
@@ -1974,7 +1974,7 @@
       "sdk-reference/sdk/tool-calling/index.mdx": "dd949690d4787afcf7d062b98d57bd96e0f020fb873f47cd66b84b16e19a6f9f"
     },
     "hi": {
-      "@openapi": "2bdf7f8dde6167a54261e8b9f226b7be40850b8b08c233b1223dd86ff9d848d0",
+      "@openapi": "55df44793c2d52e5ffced906feb7a8fd44811872a3625fc6089951b30897a87c",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "0f86bb44664d65fd2e4d9226374a86cb3d8db896330214f4579bb0e1f197ddeb",
       "api-reference/endpoint/analytics-export.mdx": "555606ddf7c893ff04e753c4c0bc08ad736b7e2a20bdaec96f7e758e0312c9c9",
@@ -2358,7 +2358,7 @@
       "guides/provider-qualified-models.mdx": "73e1e12275b916546abb7aab3d937cc4776a97114463a6deb9d9a164ed619116",
       "guides/provider-statuses.mdx": "4ffd47b3b35ace686ebc81cea3bcfdd68ecda7a371205f74a9e4ed7da762af30",
       "guides/quantization.mdx": "e60ba072b9b6c251ff6a6d6717281e901b09a23ab2383dfac42d533306dd7bf8",
-      "guides/realtime-voice.mdx": "18ccf22d21013fafa818a2f98a8bcb2207bcb932f58c5d553c911d9bce66593f",
+      "guides/realtime-voice.mdx": "349bb8529bed3d7871aaeaf9604b02d99cb8863153bc31247be1efe1840f2de6",
       "guides/reasoning-effort.mdx": "2f9c03ebf8612e954c7ae7777cfa08a7fa06e4304e13e3bfc7c3ff842aad1340",
       "guides/regional-routing.mdx": "6b43d5748bd76daec5f41a1100852c873140e61e21e47c6260398d7184b3236c",
       "guides/request-classifiers.mdx": "9f38757f523aa71a0afb41a8f885ef29e066811d3bfe99158655a6a8f2453dcc",
@@ -2467,7 +2467,7 @@
       "sdk-reference/sdk/tool-calling/index.mdx": "dd949690d4787afcf7d062b98d57bd96e0f020fb873f47cd66b84b16e19a6f9f"
     },
     "ja": {
-      "@openapi": "2bdf7f8dde6167a54261e8b9f226b7be40850b8b08c233b1223dd86ff9d848d0",
+      "@openapi": "55df44793c2d52e5ffced906feb7a8fd44811872a3625fc6089951b30897a87c",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "0f86bb44664d65fd2e4d9226374a86cb3d8db896330214f4579bb0e1f197ddeb",
       "api-reference/endpoint/analytics-export.mdx": "555606ddf7c893ff04e753c4c0bc08ad736b7e2a20bdaec96f7e758e0312c9c9",
@@ -2851,7 +2851,7 @@
       "guides/provider-qualified-models.mdx": "73e1e12275b916546abb7aab3d937cc4776a97114463a6deb9d9a164ed619116",
       "guides/provider-statuses.mdx": "4ffd47b3b35ace686ebc81cea3bcfdd68ecda7a371205f74a9e4ed7da762af30",
       "guides/quantization.mdx": "e60ba072b9b6c251ff6a6d6717281e901b09a23ab2383dfac42d533306dd7bf8",
-      "guides/realtime-voice.mdx": "18ccf22d21013fafa818a2f98a8bcb2207bcb932f58c5d553c911d9bce66593f",
+      "guides/realtime-voice.mdx": "349bb8529bed3d7871aaeaf9604b02d99cb8863153bc31247be1efe1840f2de6",
       "guides/reasoning-effort.mdx": "2f9c03ebf8612e954c7ae7777cfa08a7fa06e4304e13e3bfc7c3ff842aad1340",
       "guides/regional-routing.mdx": "6b43d5748bd76daec5f41a1100852c873140e61e21e47c6260398d7184b3236c",
       "guides/request-classifiers.mdx": "9f38757f523aa71a0afb41a8f885ef29e066811d3bfe99158655a6a8f2453dcc",
@@ -2960,7 +2960,7 @@
       "sdk-reference/sdk/tool-calling/index.mdx": "dd949690d4787afcf7d062b98d57bd96e0f020fb873f47cd66b84b16e19a6f9f"
     },
     "pt-BR": {
-      "@openapi": "2bdf7f8dde6167a54261e8b9f226b7be40850b8b08c233b1223dd86ff9d848d0",
+      "@openapi": "55df44793c2d52e5ffced906feb7a8fd44811872a3625fc6089951b30897a87c",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "0f86bb44664d65fd2e4d9226374a86cb3d8db896330214f4579bb0e1f197ddeb",
       "api-reference/endpoint/analytics-export.mdx": "555606ddf7c893ff04e753c4c0bc08ad736b7e2a20bdaec96f7e758e0312c9c9",
@@ -3344,7 +3344,7 @@
       "guides/provider-qualified-models.mdx": "73e1e12275b916546abb7aab3d937cc4776a97114463a6deb9d9a164ed619116",
       "guides/provider-statuses.mdx": "4ffd47b3b35ace686ebc81cea3bcfdd68ecda7a371205f74a9e4ed7da762af30",
       "guides/quantization.mdx": "e60ba072b9b6c251ff6a6d6717281e901b09a23ab2383dfac42d533306dd7bf8",
-      "guides/realtime-voice.mdx": "18ccf22d21013fafa818a2f98a8bcb2207bcb932f58c5d553c911d9bce66593f",
+      "guides/realtime-voice.mdx": "349bb8529bed3d7871aaeaf9604b02d99cb8863153bc31247be1efe1840f2de6",
       "guides/reasoning-effort.mdx": "2f9c03ebf8612e954c7ae7777cfa08a7fa06e4304e13e3bfc7c3ff842aad1340",
       "guides/regional-routing.mdx": "6b43d5748bd76daec5f41a1100852c873140e61e21e47c6260398d7184b3236c",
       "guides/request-classifiers.mdx": "9f38757f523aa71a0afb41a8f885ef29e066811d3bfe99158655a6a8f2453dcc",
@@ -3453,7 +3453,7 @@
       "sdk-reference/sdk/tool-calling/index.mdx": "dd949690d4787afcf7d062b98d57bd96e0f020fb873f47cd66b84b16e19a6f9f"
     },
     "zh-Hans": {
-      "@openapi": "2bdf7f8dde6167a54261e8b9f226b7be40850b8b08c233b1223dd86ff9d848d0",
+      "@openapi": "55df44793c2d52e5ffced906feb7a8fd44811872a3625fc6089951b30897a87c",
       "api-reference/authentication.mdx": "829b24a10ffef966d795c4703007154ccd02dfe0592807ea21bf30eb3f5e4a22",
       "api-reference/endpoint/activity.mdx": "0f86bb44664d65fd2e4d9226374a86cb3d8db896330214f4579bb0e1f197ddeb",
       "api-reference/endpoint/analytics-export.mdx": "555606ddf7c893ff04e753c4c0bc08ad736b7e2a20bdaec96f7e758e0312c9c9",
@@ -3837,7 +3837,7 @@
       "guides/provider-qualified-models.mdx": "73e1e12275b916546abb7aab3d937cc4776a97114463a6deb9d9a164ed619116",
       "guides/provider-statuses.mdx": "4ffd47b3b35ace686ebc81cea3bcfdd68ecda7a371205f74a9e4ed7da762af30",
       "guides/quantization.mdx": "e60ba072b9b6c251ff6a6d6717281e901b09a23ab2383dfac42d533306dd7bf8",
-      "guides/realtime-voice.mdx": "18ccf22d21013fafa818a2f98a8bcb2207bcb932f58c5d553c911d9bce66593f",
+      "guides/realtime-voice.mdx": "349bb8529bed3d7871aaeaf9604b02d99cb8863153bc31247be1efe1840f2de6",
       "guides/reasoning-effort.mdx": "2f9c03ebf8612e954c7ae7777cfa08a7fa06e4304e13e3bfc7c3ff842aad1340",
       "guides/regional-routing.mdx": "6b43d5748bd76daec5f41a1100852c873140e61e21e47c6260398d7184b3236c",
       "guides/request-classifiers.mdx": "9f38757f523aa71a0afb41a8f885ef29e066811d3bfe99158655a6a8f2453dcc",

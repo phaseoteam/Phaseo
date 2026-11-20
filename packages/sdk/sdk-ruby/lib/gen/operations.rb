@@ -79,6 +79,13 @@ module Phaseo
         client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.closeLiveSession(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["session_id"].to_s)
+        resolved_path = "/live/sessions/#{URI.encode_uri_component(path["session_id"].to_s)}/close"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.createAnthropicMessage(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/messages"
@@ -708,6 +715,13 @@ module Phaseo
       def self.getHealth(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         resolved_path = "/health"
+        client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
+      def self.getLiveSession(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["session_id"].to_s)
+        resolved_path = "/live/sessions/#{URI.encode_uri_component(path["session_id"].to_s)}"
         client.request(method: "GET", path: resolved_path, query: query, headers: headers, body: body)
       end
 

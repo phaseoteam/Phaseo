@@ -5205,6 +5205,40 @@ public sealed class ListFilesResponse
 
 }
 
+public sealed class LiveSessionStatus
+{
+	[JsonPropertyName("billing")]
+	public Dictionary<string, object>? Billing { get; set; }
+
+	[JsonPropertyName("ended")]
+	public Dictionary<string, object>? Ended { get; set; }
+
+	[JsonPropertyName("expires_at")]
+	public string? ExpiresAt { get; set; }
+
+	[JsonPropertyName("id")]
+	public string? Id { get; set; }
+
+	[JsonPropertyName("model")]
+	public string? Model { get; set; }
+
+	[JsonPropertyName("session_id")]
+	public string? SessionId { get; set; }
+
+	[JsonPropertyName("standby")]
+	public bool? Standby { get; set; }
+
+	[JsonPropertyName("status")]
+	public string? Status { get; set; }
+
+	[JsonPropertyName("transport")]
+	public Dictionary<string, object>? Transport { get; set; }
+
+	[JsonPropertyName("warnings")]
+	public List<Dictionary<string, object>>? Warnings { get; set; }
+
+}
+
 public sealed class ManagementKeyCollectionResponse
 {
 	[JsonPropertyName("data")]

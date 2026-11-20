@@ -6041,6 +6041,7 @@
 		"selectModelStart": "開始するモデルを選択",
 		"realtimeSettingsContent": "リアルタイム設定の内容",
 		"livePrice": "1 分あたり 0.05 米ドルとバックエンドトークンの費用。音声：{voice}。バックエンド：{backend}。ツール：{tools}。",
+		"personaStandby": "スタンバイ",
 		"billingUnavailable": "請求状況を取得できません。表示されている金額は古い可能性があります。",
 		"finalizingBilling": "請求を確定中です。",
 		"reviewBilling": "最終使用量は請求の確認待ちです。残りの仮押さえは維持されます。",

@@ -1128,6 +1128,8 @@ export async function createRealtimeSession(args: {
 	relay?: boolean;
 	liveBackendModel?: string;
 	liveBackendSettings?: unknown;
+	/** GPT Live only: "webrtc" sessions are started by the relay with the caller's SDP offer. */
+	liveTransport?: "websocket" | "webrtc";
 }): Promise<{
 	session: RealtimeSessionRow;
 	clientSecret: string;
@@ -1182,6 +1184,7 @@ export async function createRealtimeSession(args: {
 	const sessionMetadata = {
 		...(args.metadata ?? {}),
 		live: liveSettings,
+		...(live ? { live_transport: args.liveTransport ?? "websocket" } : {}),
 		// Rates are fixed for the call, like GPT Live's (see realtimeSessionPriceCard).
 		price_card: priceCard,
 		...(useRelay

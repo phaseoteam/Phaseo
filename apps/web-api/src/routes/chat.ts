@@ -14,6 +14,9 @@ import { oauthClientWriteRefused } from "@/auth/oauthClientWrites";
 import { hasOAuthClientToken, requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 
+// Playground standby: back to the lower standby rate after this long without speech.
+const LIVE_PLAYGROUND_IDLE_TIMEOUT_S = 30;
+
 type AudioAction = "speech" | "transcription" | "translation" | "music";
 const AUDIO_PATHS: Record<AudioAction, string> = { speech: "/audio/speech", transcription: "/audio/transcriptions", translation: "/audio/translations", music: "/music/generations" };
 const POST_PATHS = { text: "/responses", playground: "/responses", "chat-completions": "/chat/completions", messages: "/messages", embeddings: "/embeddings", image: "/images/generations", moderation: "/moderations", decisions: "/decisions", ocr: "/ocr", rerank: "/rerank" } as const;
@@ -176,33 +179,59 @@ for (const path of ["/realtime/session", "/live/session"]) {
 		});
 		if (!baseUrl) return realtimeError(500, "gateway_not_configured", "Realtime gateway is not configured.");
 
+		// GPT Live over WebRTC: the browser's SDP offer, with standby so idle time bills at the lower rate.
+		const sdp = live && body.transport === "webrtc" && typeof body.sdp === "string" ? body.sdp : null;
+		if (sdp != null && (sdp.length > 64 * 1024 || !sdp.startsWith("v=0"))) {
+			return realtimeError(400, "invalid_live_webrtc_offer", "Invalid WebRTC offer.");
+		}
+		const standby = sdp != null && body.standby !== false;
+		const createUpstream = (webrtc: boolean) => fetch(`${baseUrl}/${live ? "live" : "realtime"}/sessions`, {
+			method: "POST",
+			headers: {
+				...CANONICAL_CHAT_APP_HEADERS,
+				...sanitizeAppHeaders(body.appHeaders),
+				Authorization: `Bearer ${auth.apiKey}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				provider,
+				model: normalizeRealtimeModel(provider, model),
+				...(live ? { backend_model: backendModel } : {}),
+				...(live && body.backend_settings !== undefined ? { backend_settings: body.backend_settings } : {}),
+				...(voice ? { voice } : {}),
+				...(instructions ? { instructions } : {}),
+				...(thinkingLevel ? { thinking_level: thinkingLevel } : {}),
+				...(webrtc ? { transport: { type: "webrtc", sdp },
+					...(standby ? { wake_policy: { type: "speech" }, idle_timeout_s: LIVE_PLAYGROUND_IDLE_TIMEOUT_S } : {}) } : {}),
+				source: "chat",
+				metadata: { feature: "chat_realtime_voice", userId: auth.userId, workspaceId: auth.workspaceId },
+			}),
+		});
+
 		let upstream: Response;
+		let webrtcUnavailable = false;
 		try {
-			upstream = await fetch(`${baseUrl}/${live ? "live" : "realtime"}/sessions`, {
-				method: "POST",
-				headers: {
-					...CANONICAL_CHAT_APP_HEADERS,
-					...sanitizeAppHeaders(body.appHeaders),
-					Authorization: `Bearer ${auth.apiKey}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					provider,
-					model: normalizeRealtimeModel(provider, model),
-					...(live ? { backend_model: backendModel } : {}),
-					...(live && body.backend_settings !== undefined ? { backend_settings: body.backend_settings } : {}),
-					...(voice ? { voice } : {}),
-					...(instructions ? { instructions } : {}),
-					...(thinkingLevel ? { thinking_level: thinkingLevel } : {}),
-					source: "chat",
-					metadata: { feature: "chat_realtime_voice", userId: auth.userId, workspaceId: auth.workspaceId },
-				}),
-			});
+			upstream = await createUpstream(sdp != null);
+			if (sdp != null && upstream.status === 401) {
+				// The live_webrtc gate is closed for this user: the call goes through the relay instead.
+				const refused = await upstream.clone().json<Record<string, any>>().catch(() => null);
+				if (refused?.reason === "live_webrtc_feature_flag_disabled") {
+					webrtcUnavailable = true;
+					upstream = await createUpstream(false);
+				}
+			}
 		} catch {
 			return realtimeError(502, "gateway_unreachable", "The realtime gateway is temporarily unavailable.");
 		}
 
 		const payload = await upstream.json<Record<string, any>>().catch(() => null);
+		if (upstream.ok && payload && sdp != null && !webrtcUnavailable) {
+			const answer = payload.transport?.type === "webrtc" ? payload.transport.sdp : null;
+			if (typeof answer !== "string" || !answer.startsWith("v=0")) {
+				return realtimeError(502, "invalid_live_webrtc_response", "The realtime gateway did not return a WebRTC answer.");
+			}
+			return c.json({ ...payload, provider, connect: { transport: "webrtc", sdp: answer, standby } }, 200, PRIVATE_NO_STORE_HEADERS);
+		}
 		if (!upstream.ok || !payload) {
 			return new Response(JSON.stringify(payload ?? { error: "realtime_session_failed" }), {
 				status: upstream.status,
@@ -223,9 +252,33 @@ for (const path of ["/realtime/session", "/live/session"]) {
 				url: realtimeWebSocketUrl(baseUrl, String(connect.url)),
 				protocols: ["statsync-realtime", `rtsec.${clientSecret}`],
 			},
+			...(webrtcUnavailable ? { webrtc_unavailable: true } : {}),
 		}, 200, PRIVATE_NO_STORE_HEADERS);
 	});
 }
+
+// Ends a WebRTC Live call whose data channel never opened (the playground then falls back to WebSocket).
+chatRouter.post("/live/session/:sessionId/close", async (c) => {
+	const auth = await resolveGatewayKeys(c.req.raw, c.env, waitUntil(c));
+	if (!("apiKey" in auth)) return realtimeError(auth.status, auth.code, auth.message);
+	const sessionId = c.req.param("sessionId");
+	if (!/^rt_[0-9a-hjkmnp-tv-z]{26}$/.test(sessionId)) return realtimeError(400, "invalid_session_id", "Invalid realtime session.");
+	const baseUrl = resolveGatewayBaseUrlForEnvironment({
+		configuredBaseUrl: c.env.AI_STATS_GATEWAY_URL ?? c.env.PHASEO_GATEWAY_URL,
+		stagingBaseUrl: c.env.STAGING_GATEWAY_BASE_URL,
+		environment: c.env.ENV,
+	});
+	if (!baseUrl) return realtimeError(500, "gateway_not_configured", "Realtime gateway is not configured.");
+	try {
+		const upstream = await fetch(`${baseUrl}/live/sessions/${encodeURIComponent(sessionId)}/close`, {
+			method: "POST",
+			headers: { ...CANONICAL_CHAT_APP_HEADERS, Authorization: `Bearer ${auth.apiKey}` },
+		});
+		return new Response(await upstream.text(), { status: upstream.status, headers: { "Content-Type": "application/json", ...PRIVATE_NO_STORE_HEADERS } });
+	} catch {
+		return realtimeError(502, "gateway_unreachable", "The realtime gateway is temporarily unavailable.");
+	}
+});
 
 chatRouter.get("/audio", async (c) => {
 	if ((c.req.query("action") ?? "music") !== "music") return c.json({ error: "Polling is only supported for music action." }, 400, PRIVATE_NO_STORE_HEADERS);

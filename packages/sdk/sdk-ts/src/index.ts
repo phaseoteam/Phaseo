@@ -82,6 +82,12 @@ export {
   type RealtimeWebSocket,
   type RealtimeWebSocketConstructor,
 } from "./realtime.js";
+export {
+  connectLiveWebRTC,
+  type LiveWebRTCConnectOptions,
+  type LiveWebRTCConnection,
+  type LiveWebRTCSessionInfo,
+} from "./live-webrtc.js";
 export { paginateItems, paginatePages, type Page, type PageFetcher, type PageOptions } from "./pagination.js";
 export { PhaseoHttpError, type RawResponse } from "./runtime/client.js";
 export type { ApiKeyProvider } from "./runtime/auth.js";

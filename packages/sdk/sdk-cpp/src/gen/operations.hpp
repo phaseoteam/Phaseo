@@ -70,6 +70,11 @@ inline Response CancelVideoAlias(Client& client, const std::map<std::string, std
 	return client.request("POST", resolved_path, body);
 }
 
+inline Response CloseLiveSession(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/live/sessions/" + path_segment(path.count("session_id") ? path.at("session_id") : std::string{}) + "/close";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response CreateAnthropicMessage(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/messages";
 	return client.request("POST", resolved_path, body);
@@ -557,6 +562,11 @@ inline Response GetGuardrail(Client& client, const std::map<std::string, std::st
 
 inline Response GetHealth(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/health";
+	return client.request("GET", resolved_path, body);
+}
+
+inline Response GetLiveSession(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/live/sessions/" + path_segment(path.count("session_id") ? path.at("session_id") : std::string{});
 	return client.request("GET", resolved_path, body);
 }
 

@@ -178,6 +178,22 @@ func CancelVideoAlias(client *Client, path map[string]string, query map[string]s
 	return out, nil
 }
 
+func CloseLiveSession(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["session_id"] == "." || path["session_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/live/sessions/" + url.PathEscape(path["session_id"]) + "/close"
+	data, err := client.Request("POST", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
 func CreateAnthropicMessage(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/messages"
 	data, err := client.Request("POST", resolvedPath, query, headers, body)
@@ -1674,6 +1690,22 @@ func GetGuardrail(client *Client, path map[string]string, query map[string]strin
 
 func GetHealth(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
 	resolvedPath := "/health"
+	data, err := client.Request("GET", resolvedPath, query, headers, body)
+	if err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	var out map[string]interface{}
+	if err := DecodeJSON(data, &out); err != nil {
+		var zero map[string]interface{}
+		return zero, err
+	}
+	return out, nil
+}
+
+func GetLiveSession(client *Client, path map[string]string, query map[string]string, headers map[string]string, body any) (map[string]interface{}, error) {
+	if path["session_id"] == "." || path["session_id"] == ".." { var zero map[string]interface{}; return zero, errors.New("Dot segments are not valid path parameters") }
+	resolvedPath := "/live/sessions/" + url.PathEscape(path["session_id"])
 	data, err := client.Request("GET", resolvedPath, query, headers, body)
 	if err != nil {
 		var zero map[string]interface{}

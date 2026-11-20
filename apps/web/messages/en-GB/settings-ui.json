@@ -6041,6 +6041,7 @@
 		"selectModelStart": "Select a model to start",
 		"realtimeSettingsContent": "Realtime settings content",
 		"livePrice": "$0.05/minute plus backend tokens. Voice: {voice}. Backend: {backend}. Tools: {tools}.",
+		"personaStandby": "Standby",
 		"billingUnavailable": "Billing status is unavailable; displayed amounts may be out of date.",
 		"finalizingBilling": "Finalizing billing.",
 		"reviewBilling": "Final usage is pending billing review. The remaining hold is retained.",

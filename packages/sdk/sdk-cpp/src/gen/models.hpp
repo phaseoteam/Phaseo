@@ -2173,6 +2173,19 @@ struct ListFilesResponse {
 	std::string object;
 };
 
+struct LiveSessionStatus {
+	std::map<std::string, std::any> billing;
+	std::optional<std::map<std::string, std::any>> ended;
+	std::optional<std::string> expires_at;
+	std::string id;
+	std::string model;
+	std::string session_id;
+	std::optional<bool> standby;
+	std::string status;
+	std::map<std::string, std::any> transport;
+	std::vector<std::map<std::string, std::any>> warnings;
+};
+
 struct ManagementKeyCollectionResponse {
 	std::vector<std::map<std::string, std::any>> data;
 };

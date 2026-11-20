@@ -1203,7 +1203,7 @@ paths:
         - Gateway
       operationId: createLiveSession
       summary: 创建 GPT Live 会话
-      description: 创建计量的 GPT Live 语音会话，将推理委托给 Responses 后端模型，并返回中继连接信息。函数工具在你的客户端运行：中继转发每个 `function_call`，并接受其 `function_call_output`，随后接受 `response.create`。
+      description: 创建按用量计费的 GPT Live 语音会话，并将推理委托给 Responses 后端模型。使用默认的 WebSocket 传输时，返回中继连接信息，函数工具在你的客户端运行：中继会转发每个 `function_call`，并接受其 `function_call_output`，随后是 `response.create`。使用 WebRTC 传输时，发送对等连接的 SDP 提议并应用返回的 SDP 应答；音频随后直接发送到 OpenAI，并可使用待机。WebRTC 暂不支持函数工具。
       requestBody:
         required: true
         content:
@@ -1350,6 +1350,44 @@ paths:
                     parallel_tool_calls:
                       type: boolean
                       default: true
+                transport:
+                  type: object
+                  description: 客户端的连接方式。`websocket`（默认）使用 Phaseo 中继。`webrtc` 接收对等连接的 SDP 提议（最多 64 KB），并返回 SDP 应答。
+                  additionalProperties: false
+                  required:
+                    - type
+                  properties:
+                    type:
+                      type: string
+                      default: websocket
+                      enum:
+                        - websocket
+                        - webrtc
+                    sdp:
+                      type: string
+                      maxLength: 65536
+                      description: ICE 收集完成后来自 `RTCPeerConnection` 的 SDP 提议。
+                wake_policy:
+                  type: object
+                  description: 仅限 WebRTC。在推理开始前等待语音，等待时间按较低的待机费率计费。
+                  additionalProperties: false
+                  required:
+                    - type
+                  properties:
+                    type:
+                      type: string
+                      enum:
+                        - speech
+                    vad_threshold:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      description: 唤醒会话所需的语音证据强度，取值 0 到 1。默认值为 0.5。
+                idle_timeout_s:
+                  type: integer
+                  minimum: 5
+                  maximum: 60
+                  description: 仅限 WebRTC。无语音达到该秒数后返回待机。需要 `wake_policy`。
       responses:
         '201':
           description: 已创建 GPT Live 会话
@@ -1398,9 +1436,61 @@ paths:
                         type: string
                       url:
                         type: string
+                  transport:
+                    type: object
+                    description: 仅限 WebRTC 会话：使用 `setRemoteDescription` 应用的 SDP 应答。
+                    properties:
+                      type:
+                        type: string
+                        enum:
+                          - webrtc
+                      sdp:
+                        type: string
                   billing:
                     type: object
                     additionalProperties: true
+  /live/sessions/{session_id}:
+    get:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: getLiveSession
+      summary: 获取 GPT Live 会话
+      description: 返回 GPT Live 会话的状态、待机状态和 Phaseo 警告，并在会话结束后返回带账单的 `session.ended` 事件。WebRTC 客户端无法使用 OpenAI 的数据通道，因此在这里读取 Phaseo 的事件。
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: GPT Live 会话
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveSessionStatus'
+  /live/sessions/{session_id}/close:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: closeLiveSession
+      summary: 结束 GPT Live WebRTC 会话
+      description: 为数据通道未打开的客户端通过 Phaseo 结束 WebRTC 会话。最终账单可通过 `GET /v1/live/sessions/{session_id}` 获取。
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '202':
+          description: GPT Live 会话正在结束
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LiveSessionStatus'
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true
@@ -10377,6 +10467,48 @@ components:
         type: string
         format: uuid
   schemas:
+    LiveSessionStatus:
+      type: object
+      additionalProperties: true
+      properties:
+        id:
+          type: string
+        session_id:
+          type: string
+        model:
+          type: string
+        status:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        transport:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+                - websocket
+                - webrtc
+        standby:
+          type: boolean
+          nullable: true
+          description: WebRTC 会话处于待机时为 true。未知或会话已结束时为 null。
+        warnings:
+          type: array
+          description: 会话期间发送的 `session.warning` 事件。
+          items:
+            type: object
+            additionalProperties: true
+        ended:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: 会话结束后为 `session.ended` 事件，否则为 null。
+        billing:
+          type: object
+          additionalProperties: true
     MeResponse:
       type: object
       required:
