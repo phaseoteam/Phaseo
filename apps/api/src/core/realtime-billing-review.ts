@@ -1,6 +1,6 @@
 import { getSupabaseAdmin } from "@/runtime/env";
 import { syncWorkspaceUsageRollupForRequest } from "@core/workspace-usage-rollups";
-import { assertLiveFinalUsage, ingestLiveUsage, isLiveModel, liveConfig, liveUsageMeters, priceLiveUsage, type LiveUsage } from "./live-sessions";
+import { assertLiveFinalUsage, ingestLiveUsage, isLiveModel, liveConfig, priceLiveUsage, withLiveUsageMeters, type LiveUsage } from "./live-sessions";
 
 // Re-price only provider evidence, never elapsed wall time or a client's estimate.
 export function quoteRealtimeRecovery(model: string, usage: LiveUsage, metadata: Record<string, unknown>) {
@@ -36,7 +36,7 @@ export function quoteRealtimeRecovery(model: string, usage: LiveUsage, metadata:
 	const priced = priceLiveUsage(confirmed, liveConfig(metadata));
 	const pricing = priced.pricing as { total_nanos: number; lines: Record<string, unknown>[] };
 	if (!Number.isSafeInteger(pricing.total_nanos) || pricing.total_nanos < 0) throw new Error("recovery_cost_invalid");
-	return { costNanos: pricing.total_nanos, lines: pricing.lines, complete, billableUsage: { ...confirmed, ...liveUsageMeters(confirmed) } };
+	return { costNanos: pricing.total_nanos, lines: pricing.lines, complete, billableUsage: withLiveUsageMeters(confirmed, liveConfig(metadata).voiceCard) };
 }
 
 type RecoveryQuote = { costNanos: number; lines: Record<string, unknown>[] | unknown[]; complete: boolean; billableUsage: Record<string, unknown> };

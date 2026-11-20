@@ -4534,7 +4534,7 @@ export type CreateLiveSessionParams = {
     metadata?: {
       [key: string]: unknown;
     };
-    model: "openai/gpt-live-1";
+    model: "openai/gpt-live-1" | "openai/gpt-live-1.1";
     provider: "openai";
     source?: "api" | "chat";
     type?: "live";

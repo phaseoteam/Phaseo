@@ -91,6 +91,7 @@ const USAGE_METERS = [
 	"cached_write_audio_tokens",
 	"cached_write_image_tokens",
 	"audio_seconds",
+	"standby_audio_minutes",
 	"native_web_search_requests",
 ] as const;
 

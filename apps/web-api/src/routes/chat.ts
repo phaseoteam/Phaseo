@@ -161,8 +161,8 @@ for (const path of ["/realtime/session", "/live/session"]) {
 		) {
 			return realtimeError(400, "invalid_realtime_session_request", "Invalid realtime session request.");
 		}
-		if (live && (provider !== "openai" || !["gpt-live-1", "openai/gpt-live-1"].includes(model))) {
-			return realtimeError(400, "invalid_live_model", "Select GPT Live 1 for a Live session.");
+		if (live && (provider !== "openai" || !["gpt-live-1", "gpt-live-1.1"].includes(model.replace(/^openai\//, "")))) {
+			return realtimeError(400, "invalid_live_model", "Select GPT Live 1 or GPT Live 1.1 for a Live session.");
 		}
 		const backendModel = body.backend_model ?? "openai/gpt-5.6-luna";
 		if (live && !["openai/gpt-5.6-luna", "openai/gpt-5.6-terra"].includes(backendModel)) {

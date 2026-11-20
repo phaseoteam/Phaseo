@@ -771,7 +771,7 @@ export class RealtimeRelayDurableObject {
 			const key = resolveOpenAIKey();
 			if (!key) throw new Error("openai_key_missing");
 			if (this.isLive) {
-				const start = liveStartEvent(liveConfig(this.session.metadata), voice ?? "marin", instructions);
+				const start = liveStartEvent(liveConfig(this.session.metadata), voice ?? "marin", instructions, this.session.model_id);
 				this.upstream = await connectWebSocket("wss://api.openai.com/v1/live/sessions",
 					{ headers: await openAIRealtimeHeaders(key, this.session) });
 				if (this.settled || this.clientGoneHandled) { this.closeUpstream("client_gone_before_live_start"); return; }
@@ -1614,7 +1614,9 @@ export class RealtimeRelayDurableObject {
 		const provider = providerFromSession(this.session);
 		const type = getStringField(event, "type");
 		if (this.isLive) {
-			this.usage = { ...this.usage, ...ingestLiveUsage(this.usage, event) };
+			// ingestLiveUsage copies the current usage and deletes a split the latest event doesn't
+			// carry; merging it back over this.usage would resurrect the stale split.
+			this.usage = ingestLiveUsage(this.usage, event);
 			if (type === "session.closed") this.liveCloseReason = getStringField(event, "reason");
 			if (LIVE_BILLING_EVENT_TYPES.has(type)) await this.checkpointUsage(true);
 			forward();
@@ -1635,7 +1637,7 @@ export class RealtimeRelayDurableObject {
 					const priced = priceLiveUsage(this.usage, liveConfig(this.session.metadata));
 					this.sendClient({ type: "relay.live_usage", seconds: this.usage.live_seconds ?? 0,
 						voice_nanos: priced.live_voice_nanos, backend_nanos: priced.live_backend_nanos,
-						tool_nanos: priced.live_tool_nanos, usage: liveUsageMeters(this.usage),
+						tool_nanos: priced.live_tool_nanos, usage: liveUsageMeters(this.usage, liveConfig(this.session.metadata).voiceCard),
 						response_count: this.usage.live_responses?.length ?? 0,
 						pending_response_count: this.usage.live_pending_responses?.length ?? 0 });
 				}
@@ -3041,7 +3043,7 @@ export class RealtimeRelayDurableObject {
 		if (this.endedSent || !this.session) return;
 		this.endedSent = true;
 		const end = this.end ?? { reason: "gateway_error", initiatedBy: "gateway" } satisfies RealtimeEnd;
-		const usage = normalizeRealtimeUsage(this.usage as Record<string, unknown>);
+		const usage = normalizeRealtimeUsage(this.usage as Record<string, unknown>, this.session.metadata);
 		const settled = billingStatus === "settled" && bill != null;
 		this.sendClient(buildSessionEndedEvent({
 			sessionId: this.session.session_id,

@@ -260,6 +260,7 @@ const PRICING_METER_PRIORITY = [
 	"output_audio_minutes",
 	"audio_seconds",
 	"audio_minutes",
+	"standby_audio_minutes",
 	"input_video_tokens",
 	"output_video_tokens",
 	"input_video_seconds",

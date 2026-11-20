@@ -16,7 +16,7 @@ import { hasRequestModelFallbacksField } from "@pipeline/before/requestModelFall
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { getRealtimeVoiceFeatureGateName, isRealtimeVoiceAccessEnabled } from "@core/feature-flags";
 import { withRuntime } from "../../utils";
-import { LIVE_BACKENDS, LIVE_MODEL, LIVE_VOICES, isLiveModel, livePolicyCandidates } from "@core/live-sessions";
+import { LIVE_BACKENDS, LIVE_MODELS, LIVE_VOICES, isLiveModel, liveModelId, livePolicyCandidates } from "@core/live-sessions";
 import { liveBackendSettingsSchema } from "@core/live-settings";
 import {
 	createRealtimeSession,
@@ -128,7 +128,9 @@ const finalizeSessionSchema = z.object({
 export const realtimeSessionsRoutes = new Hono<Env>();
 export const liveSessionsRoutes = new Hono<Env>();
 export const createLiveSessionSchema = realtimeSessionBaseSchema.omit({ thinking_level: true }).extend({
-	type: z.literal("live").optional(), model: z.literal(LIVE_MODEL), provider: z.literal("openai"),
+	type: z.literal("live").optional(),
+	model: z.enum([...LIVE_MODELS, ...LIVE_MODELS.map((model) => model.replace(/^openai\//, ""))] as [string, ...string[]]),
+	provider: z.literal("openai"),
 	voice: z.enum(LIVE_VOICES).default("marin"), source: z.enum(["api", "chat"]).optional(),
 	backend_model: z.enum(LIVE_BACKENDS).default(LIVE_BACKENDS[0]),
 	backend_settings: liveBackendSettingsSchema.optional(),
@@ -210,6 +212,10 @@ export function responseForError(error: unknown, requestId?: string, workspaceId
 		return err("key_limit_exceeded", { reason: "realtime_billing_review_required",
 			message: "Realtime access is paused while a previous session's billing is reviewed. Please contact support.",
 			request_id: requestId, workspace_id: workspaceId });
+	}
+	if (message === "live_price_card_missing") {
+		return err("unsupported_model_or_endpoint", { reason: message,
+			message: "This GPT Live model has no published price yet, so a session can't start.", request_id: requestId, workspace_id: workspaceId });
 	}
 	if (message === "live_backend_price_card_missing") {
 		return err("unsupported_model_or_endpoint", { reason: message,
@@ -398,6 +404,7 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			request_id: auth.value.requestId, workspace_id: auth.value.workspaceId });
 	}
 	const backendModel = "backend_model" in parsed.data ? String(parsed.data.backend_model) : undefined;
+	const liveModel = live ? liveModelId(parsed.data.model) : null;
 	const context = await guardContext({
 		workspaceId: auth.value.workspaceId,
 		apiKeyId: auth.value.apiKeyId,
@@ -465,8 +472,8 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			workspace_id: auth.value.workspaceId,
 		});
 	}
-	if (live && !applyWorkspacePolicy({ providers: livePolicyCandidates(context.value.providers), resolvedModel: LIVE_MODEL,
-		body: { model: LIVE_MODEL, provider: "openai" }, workspacePolicy }).ok) {
+	if (liveModel && !applyWorkspacePolicy({ providers: livePolicyCandidates(context.value.providers, liveModel), resolvedModel: liveModel,
+		body: { model: liveModel, provider: "openai" }, workspacePolicy }).ok) {
 		return err("guardrail_blocked", { reason: "workspace_model_not_allowed" });
 	}
 	const selectedProvider = requestedProvider ?? policyResult.providers[0]?.providerId ?? null;
@@ -497,7 +504,7 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 				...toAuthContext(auth.value),
 				userId: trustedUserId,
 			},
-			model: live ? LIVE_MODEL : resolvedModel,
+			model: liveModel ?? resolvedModel,
 			liveBackendModel: backendModel,
 			liveBackendSettings: "backend_settings" in parsed.data ? parsed.data.backend_settings : undefined,
 			provider: selectedProvider,

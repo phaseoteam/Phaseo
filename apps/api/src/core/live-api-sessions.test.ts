@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import recording from "./__fixtures__/realtime/gpt-live-function-call.json";
-import { LIVE_PRICE_CARD, liveStartEvent, priceLiveUsage, type LiveConfig } from "./live-sessions";
+import { liveStartEvent, priceLiveUsage, type LiveConfig } from "./live-sessions";
+import { LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
 import { liveBackendSettingsSchema } from "./live-settings";
 import { RealtimeRelayDurableObject } from "./realtime-relay-durable-object";
 import { classifyRealtimeEnd } from "./realtime-session-events";
@@ -27,11 +28,11 @@ const getTime = { type: "function" as const, name: "get_time", description: "Ret
 	parameters: { type: "object", properties: {}, additionalProperties: false } };
 const config: LiveConfig = {
 	backendModel: "openai/gpt-5.6-luna",
-	voiceCard: LIVE_PRICE_CARD,
+	voiceCard: LIVE_VOICE_CARD,
 	settings: liveBackendSettingsSchema.parse({ tools: [getTime], parallel_tool_calls: false }),
-	backendCard: { ...LIVE_PRICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules: [
+	backendCard: { ...LIVE_VOICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules: [
 		["input_text_tokens", "1"], ["cached_read_text_tokens", "0.1"], ["cached_write_text_tokens_30m", "1.25"], ["output_text_tokens", "10"],
-	].map(([meter, price]) => ({ ...LIVE_PRICE_CARD.rules[0], meter: meter as any, unit: "token", unit_size: 1_000_000, price_per_unit: price })) },
+	].map(([meter, price]) => ({ ...LIVE_VOICE_CARD.rules[0], meter: meter as any, unit: "token", unit_size: 1_000_000, price_per_unit: price })) },
 };
 
 function relay() {

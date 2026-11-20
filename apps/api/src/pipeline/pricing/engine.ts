@@ -26,7 +26,7 @@ const KNOWN_METERS = new Set<string>([
     "output_tokens",
     "output_text_tokens", "output_reasoning_tokens", "output_image_tokens", "output_audio_minutes", "output_audio_seconds", "output_audio_tokens", "output_video_tokens",
     "output_image", "output_video", "output_video_seconds", "output_video_frames",
-    "audio_minutes", "audio_seconds",
+    "audio_minutes", "audio_seconds", "standby_audio_minutes",
     "implicit_cached_input_text_tokens",
     "cached_write_text_tokens", "cached_write_text_tokens_5m", "cached_write_text_tokens_1h",
     "cached_write_image_tokens", "cached_write_audio_tokens", "cached_write_video_tokens",

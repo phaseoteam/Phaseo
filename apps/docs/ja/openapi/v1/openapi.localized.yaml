@@ -1223,6 +1223,7 @@ paths:
                   type: string
                   enum:
                     - openai/gpt-live-1
+                    - openai/gpt-live-1.1
                 provider:
                   type: string
                   enum:

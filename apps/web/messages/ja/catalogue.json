@@ -1241,6 +1241,8 @@
 				"output_audio_seconds": "出力音声の秒数",
 				"audio_minutes": "音声の分数",
 				"audio_seconds": "音声の秒数",
+				"standby_audio_minutes": "スタンバイ中のセッション",
+				"active_audio_minutes": "アクティブなセッション",
 				"cached_write_text_tokens_5m": "テキストキャッシュ書き込みトークン数（TTL 5分）",
 				"cached_write_text_tokens_1h": "テキストキャッシュ書き込みトークン数（TTL 1時間）",
 				"cached_write_text_tokens_30m": "テキストキャッシュ書き込みトークン数（TTL 30分）",

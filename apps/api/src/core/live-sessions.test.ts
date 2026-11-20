@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { LIVE_PRICE_CARD, LIVE_SEARCH_PRICE_CARD, assertLiveFinalUsage, createLiveConfig, ingestLiveUsage, liveStartEvent, priceLiveUsage, type LiveConfig } from "./live-sessions";
+import { LIVE_SEARCH_PRICE_CARD, assertLiveFinalUsage, createLiveConfig, ingestLiveUsage, liveStartEvent, liveUsageMeters, priceLiveUsage, type LiveConfig, type LiveUsage } from "./live-sessions";
+import { LEGACY_LIVE_VOICE_CARD, LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
+import { loadPriceCard } from "@pipeline/pricing/loader";
 import { liveBackendSettingsSchema } from "./live-settings";
 import { RealtimeRelayDurableObject } from "./realtime-relay-durable-object";
 import { createLiveSessionSchema, createRealtimeSessionSchema } from "@/routes/v1/data/realtime-sessions";
@@ -7,10 +9,10 @@ import { createLiveSessionSchema, createRealtimeSessionSchema } from "@/routes/v
 vi.mock("@/runtime/env", () => ({ configureRuntime: vi.fn() }));
 vi.mock("@pipeline/pricing/loader", () => ({ loadPriceCard: vi.fn(async () => null) }));
 
-const config: LiveConfig = { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_PRICE_CARD,
-	backendCard: { ...LIVE_PRICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules: [
+const config: LiveConfig = { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_VOICE_CARD,
+	backendCard: { ...LIVE_VOICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules: [
 		["input_text_tokens", "1"], ["cached_read_text_tokens", "0.1"], ["cached_write_text_tokens_30m", "1.25"], ["output_text_tokens", "10"],
-	].map(([meter, price]) => ({ ...LIVE_PRICE_CARD.rules[0], meter: meter as any, unit: "token", unit_size: 1_000_000, price_per_unit: price })) } };
+	].map(([meter, price]) => ({ ...LIVE_VOICE_CARD.rules[0], meter: meter as any, unit: "token", unit_size: 1_000_000, price_per_unit: price })) } };
 const terminal = (type = "response.completed", id = "resp_1") => ({ type: "response.event", event: { type, response: {
 	id, usage: { input_tokens: 1000, input_tokens_details: { cached_tokens: 400 }, output_tokens: 500,
 		output_tokens_details: { reasoning_tokens: 200 } },
@@ -75,7 +77,7 @@ describe("Live billing", () => {
 		expect(() => ingestLiveUsage({}, { type: "session.closed", usage: {} })).toThrow("usage_invalid");
 		expect(() => ingestLiveUsage({ live_seconds: 10 }, { type: "session.closed", usage: { seconds: 9 } })).toThrow("usage_regressed");
 		expect(() => ingestLiveUsage({}, { type: "response.event", event: { type: "response.failed", response: { id: "r", usage: null } } })).toThrow("authoritative_usage_missing");
-		await expect(createLiveConfig(config.backendModel)).rejects.toThrow("price_card_missing");
+		await expect(createLiveConfig("openai/gpt-live-1", config.backendModel)).rejects.toThrow("live_price_card_missing");
 	});
 	it("configures only the selected backend, bounded output, standard tier and no unmetered tools", () => {
 		expect(liveStartEvent(config, "marin").session).toMatchObject({ model: "gpt-live-1",
@@ -102,6 +104,148 @@ describe("Live billing", () => {
 			provider: "google-ai-studio",
 			thinking_level: "high",
 		}).success).toBe(true);
+	});
+});
+
+describe("Live voice pricing from the catalogue", () => {
+	const withCards = (voice: unknown) => vi.mocked(loadPriceCard).mockImplementation(async (_provider, _model, endpoint) =>
+		(endpoint === "audio.realtime" ? voice : config.backendCard) as any);
+	afterEach(() => { vi.mocked(loadPriceCard).mockReset(); vi.mocked(loadPriceCard).mockResolvedValue(null); });
+
+	it("snapshots each Live model's own audio.realtime card", async () => {
+		const card11 = { ...LIVE_VOICE_CARD, model: "openai/gpt-live-1.1" };
+		withCards(card11);
+		const live = await createLiveConfig("gpt-live-1.1", config.backendModel);
+		expect(vi.mocked(loadPriceCard)).toHaveBeenCalledWith("openai", "openai/gpt-live-1.1", "audio.realtime");
+		expect(live.voiceCard).toEqual(card11);
+		const bill = priceLiveUsage({ live_seconds: 90 }, live) as any;
+		expect(bill.live_voice_nanos).toBe(75_000_000);
+		expect(bill.pricing.lines).toEqual([expect.objectContaining({ dimension: "audio_minutes", model: "openai/gpt-live-1.1", component: "voice" })]);
+	});
+	it("refuses to start without an active-minute price, and never for a model that isn't Live", async () => {
+		withCards({ ...LIVE_VOICE_CARD, rules: LIVE_VOICE_CARD.rules.filter((rule) => rule.meter !== "audio_minutes") });
+		await expect(createLiveConfig("openai/gpt-live-1", config.backendModel)).rejects.toThrow("live_price_card_missing");
+		withCards(LIVE_VOICE_CARD);
+		await expect(createLiveConfig("openai/gpt-realtime-2.1", config.backendModel)).rejects.toThrow("live_model_not_supported");
+	});
+	// OpenAI's split from a live WebRTC session on 2026-11-20 (gpt-live-1.1): active time
+	// dropped from 14 to 11 s between updates while the total kept rising.
+	const realSplit = [
+		{ type: "session.usage.updated", usage: { active_seconds: 14, paused_seconds: 1, seconds: 15 } },
+		{ type: "session.usage.updated", usage: { active_seconds: 11, paused_seconds: 7, seconds: 18 } },
+		{ type: "session.closed", usage: { active_seconds: 11, paused_seconds: 11, seconds: 22 } },
+	];
+	const ingestAll = (events: Record<string, unknown>[]) => events.reduce((usage, event) => ingestLiveUsage(usage, event), { live_started: true } as LiveUsage);
+
+	it("bills OpenAI's final active and paused split, accepting a drop in active time", () => {
+		const usage = ingestAll(realSplit);
+		expect(usage).toMatchObject({ live_seconds: 22, live_active_seconds: 11, live_paused_seconds: 11, live_final: true });
+		expect(() => assertLiveFinalUsage(usage)).not.toThrow();
+		const bill = priceLiveUsage(usage, config) as any;
+		// 11/60 × $0.05 active and 11/60 × $0.02 standby.
+		expect(bill.pricing.lines.map((line: any) => [line.dimension, line.line_nanos])).toEqual([
+			["audio_minutes", 9_166_667], ["standby_audio_minutes", 3_666_667]]);
+		expect(bill.live_voice_nanos).toBe(12_833_334);
+		expect(liveUsageMeters(usage)).toMatchObject({ audio_seconds: 11, audio_minutes: 11 / 60, standby_audio_minutes: 11 / 60 });
+	});
+	it("prices the running estimate from the latest split, as holds use it", () => {
+		const midCall = ingestAll(realSplit.slice(0, 2));
+		expect((priceLiveUsage(midCall, config) as any).live_voice_nanos)
+			.toBe((priceLiveUsage({ live_seconds: 11 }, config) as any).live_voice_nanos + 2_333_333);
+		expect(() => ingestAll([...realSplit, { type: "session.usage.updated", usage: { active_seconds: 30, paused_seconds: 0, seconds: 21 } }]))
+			.toThrow("usage_regressed");
+	});
+	it.each([
+		["a split that doesn't add up", { active_seconds: 5, paused_seconds: 11, seconds: 22 }, "active 5 + paused 11 != seconds 22"],
+		["half a split", { paused_seconds: 11, seconds: 22 }, "incomplete split"],
+		["a negative split", { active_seconds: -1, paused_seconds: 23, seconds: 22 }, "incomplete split"],
+	])("bills all seconds as active for %s and records why", (_name, final, reason) => {
+		const usage = ingestAll([...realSplit.slice(0, 2), { type: "session.closed", usage: final }]);
+		expect(usage).toMatchObject({ live_seconds: 22, live_usage_split_ignored: reason });
+		expect(usage.live_active_seconds).toBeUndefined();
+		expect((priceLiveUsage(usage, config) as any).live_voice_nanos).toBe(18_333_333);
+	});
+	it("bills all seconds as active without a split, as WebSocket sessions may report", () => {
+		const usage = ingestAll([{ type: "session.closed", usage: { seconds: 22 } }]);
+		expect(usage.live_usage_split_ignored).toBeUndefined();
+		expect((priceLiveUsage(usage, config) as any).live_voice_nanos).toBe(18_333_333);
+	});
+	it("allows a second of rounding but never bills more than OpenAI's total", () => {
+		const usage = ingestAll([{ type: "session.closed", usage: { active_seconds: 12, paused_seconds: 11, seconds: 22 } }]);
+		expect(usage).toMatchObject({ live_active_seconds: 12, live_paused_seconds: 11 });
+		// 12 s active and the remaining 10 s standby.
+		expect((priceLiveUsage(usage, config) as any).live_voice_nanos).toBe(10_000_000 + 3_333_333);
+	});
+	it("bills paused time at the active rate on a card without a standby price", async () => {
+		const activeOnly = { ...LIVE_VOICE_CARD, rules: LIVE_VOICE_CARD.rules.filter((rule) => rule.meter === "audio_minutes") };
+		withCards(activeOnly);
+		const live = await createLiveConfig("openai/gpt-live-1", config.backendModel);
+		expect((priceLiveUsage(ingestAll(realSplit), live) as any).live_voice_nanos).toBe(18_333_333);
+		const legacy = priceLiveUsage(ingestAll(realSplit), { ...config, voiceCard: LEGACY_LIVE_VOICE_CARD }) as any;
+		expect(legacy.live_voice_nanos).toBe(18_333_333);
+		expect(legacy.pricing.lines).toEqual([expect.objectContaining({ dimension: "audio_seconds", quantity: 22 })]);
+		// Reported usage matches: paused time inside the active meter, no standby meter, raw split kept.
+		for (const card of [activeOnly, LEGACY_LIVE_VOICE_CARD]) {
+			const meters = liveUsageMeters(ingestAll(realSplit), card);
+			expect(meters).toMatchObject({ audio_seconds: 22, audio_minutes: 22 / 60 });
+			expect(meters).not.toHaveProperty("standby_audio_minutes");
+		}
+		expect(ingestAll(realSplit)).toMatchObject({ live_active_seconds: 11, live_paused_seconds: 11 });
+	});
+	it("bills OpenAI's total, not active + paused, when a card has no standby price and the split is a second short", () => {
+		// The split is accepted within a second of rounding, so 12 + 10 can stand for 23 s.
+		const usage = ingestAll([{ type: "session.closed", usage: { active_seconds: 12, paused_seconds: 10, seconds: 23 } }]);
+		expect(usage).toMatchObject({ live_active_seconds: 12, live_paused_seconds: 10 });
+		const legacy = priceLiveUsage(usage, { ...config, voiceCard: LEGACY_LIVE_VOICE_CARD }) as any;
+		expect(legacy.pricing.lines).toEqual([expect.objectContaining({ dimension: "audio_seconds", quantity: 23 })]);
+		expect(legacy.live_voice_nanos).toBe((priceLiveUsage({ live_seconds: 23 }, { ...config, voiceCard: LEGACY_LIVE_VOICE_CARD }) as any).live_voice_nanos);
+		expect(liveUsageMeters(usage, LEGACY_LIVE_VOICE_CARD)).toMatchObject({ audio_seconds: 23 });
+	});
+	it("only counts a standard-plan standby price", () => {
+		const priorityStandby = { ...LIVE_VOICE_CARD, rules: LIVE_VOICE_CARD.rules.map((rule) =>
+			rule.meter === "standby_audio_minutes" ? { ...rule, pricing_plan: "priority" } : rule) };
+		const bill = priceLiveUsage(ingestAll(realSplit), { ...config, voiceCard: priorityStandby }) as any;
+		expect(bill.pricing.lines.map((line: any) => [line.dimension, line.quantity])).toEqual([["audio_minutes", 22 / 60]]);
+		expect(bill.live_voice_nanos).toBe(18_333_333);
+		expect(liveUsageMeters(ingestAll(realSplit), priorityStandby)).not.toHaveProperty("standby_audio_minutes");
+	});
+	it("picks the active meter from standard-plan rules only", () => {
+		// A priority-plan audio_seconds rule must not move standard active time off audio_minutes,
+		// which price() would then find no standard rule for.
+		const card = { ...LIVE_VOICE_CARD, rules: [...LIVE_VOICE_CARD.rules,
+			{ ...LEGACY_LIVE_VOICE_CARD.rules[0], pricing_plan: "priority" }] };
+		const bill = priceLiveUsage(ingestAll(realSplit), { ...config, voiceCard: card }) as any;
+		expect(bill.pricing.lines.map((line: any) => line.dimension)).toEqual(["audio_minutes", "standby_audio_minutes"]);
+		expect(bill.live_voice_nanos).toBe(12_833_334);
+	});
+	it("bills a stale split as active once a later event has no split", () => {
+		const usage = ingestAll([realSplit[1], { type: "session.closed", usage: { seconds: 60 } }]);
+		expect(usage).not.toHaveProperty("live_active_seconds");
+		expect(usage).not.toHaveProperty("live_paused_seconds");
+		expect((priceLiveUsage(usage, config) as any).pricing.lines.map((line: any) => [line.dimension, line.quantity]))
+			.toEqual([["audio_minutes", 1]]);
+		expect(liveUsageMeters(usage, config.voiceCard)).not.toHaveProperty("standby_audio_minutes");
+	});
+	it.each([[45.8, 38_166_667], [60, 50_000_000], [1, 833_333], [0, 0]])(
+		"settles a session snapshotted before catalogue pricing at the same rate (%s s)", (seconds, nanos) => {
+			const legacy = { ...config, voiceCard: LEGACY_LIVE_VOICE_CARD };
+			const bill = priceLiveUsage({ live_seconds: seconds }, legacy) as any;
+			expect(bill.live_voice_nanos).toBe(nanos);
+			expect(bill.live_voice_nanos).toBe((priceLiveUsage({ live_seconds: seconds }, config) as any).live_voice_nanos);
+			if (seconds) expect(bill.pricing.lines[0]).toMatchObject({ dimension: "audio_seconds", component: "voice" });
+		});
+	it("sends the session's own Live model upstream", () => {
+		expect(liveStartEvent(config, "marin", undefined, "openai/gpt-live-1.1").session.model).toBe("gpt-live-1.1");
+		expect(liveStartEvent(config, "marin").session.model).toBe("gpt-live-1");
+		expect(() => liveStartEvent(config, "marin", undefined, "openai/gpt-realtime-2.1")).toThrow("live_model_not_supported");
+	});
+	it("accepts both Live models on /v1/live/sessions and nothing else", () => {
+		for (const model of ["openai/gpt-live-1", "gpt-live-1", "openai/gpt-live-1.1", "gpt-live-1.1"]) {
+			expect(createLiveSessionSchema.safeParse({ model, provider: "openai" }).success).toBe(true);
+		}
+		for (const model of ["openai/gpt-live-1-mini", "openai/gpt-live-2", "openai/gpt-realtime-2.1"]) {
+			expect(createLiveSessionSchema.safeParse({ model, provider: "openai" }).success).toBe(false);
+		}
 	});
 });
 

@@ -1,6 +1,7 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { settleRealtimeSession } from "./realtime-sessions";
-import { LIVE_PRICE_CARD, LIVE_SEARCH_PRICE_CARD, ingestLiveUsage } from "./live-sessions";
+import { LIVE_SEARCH_PRICE_CARD, ingestLiveUsage } from "./live-sessions";
+import { LEGACY_LIVE_VOICE_CARD, LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
 import { liveBackendSettingsSchema } from "./live-settings";
 
 const state = vi.hoisted(() => ({ row: {} as any, rpc: vi.fn(), rollup: vi.fn() }));
@@ -18,11 +19,11 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	state.row = { session_id: "rt_test", key_id: "key", workspace_id: "workspace", status: "connected",
 		model_id: "openai/gpt-live-1", provider: "openai", started_at: "2026-09-10", reserved_nanos: 5e9,
-		metadata: { live: { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_PRICE_CARD,
-			backendCard: { ...LIVE_PRICE_CARD, endpoint: "text.generate", rules: [
-				{ ...LIVE_PRICE_CARD.rules[0], meter: "input_text_tokens", unit_size: 1e6, price_per_unit: "1" },
-				{ ...LIVE_PRICE_CARD.rules[0], meter: "cached_read_text_tokens", unit_size: 1e6, price_per_unit: "0.1" },
-				{ ...LIVE_PRICE_CARD.rules[0], meter: "output_text_tokens", unit_size: 1e6, price_per_unit: "10" },
+		metadata: { live: { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_VOICE_CARD,
+			backendCard: { ...LIVE_VOICE_CARD, endpoint: "text.generate", rules: [
+				{ ...LIVE_VOICE_CARD.rules[0], meter: "input_text_tokens", unit_size: 1e6, price_per_unit: "1" },
+				{ ...LIVE_VOICE_CARD.rules[0], meter: "cached_read_text_tokens", unit_size: 1e6, price_per_unit: "0.1" },
+				{ ...LIVE_VOICE_CARD.rules[0], meter: "output_text_tokens", unit_size: 1e6, price_per_unit: "10" },
 			] } } } };
 	state.rpc.mockImplementation(async (name, args) => {
 		expect(name).toBe("gateway_realtime_settle_once");
@@ -46,6 +47,26 @@ it("captures voice and backend charges atomically, releases the remainder and do
 	const retry = await settleRealtimeSession({ auth, sessionId: "rt_test", usage });
 	expect(retry.settlement.already_applied).toBe(true);
 	expect(state.rpc).toHaveBeenCalledTimes(1);
+});
+
+it.each([
+	["a catalogue card without standby", { ...LIVE_VOICE_CARD, rules: LIVE_VOICE_CARD.rules.filter((rule) => rule.meter === "audio_minutes") }, "audio_minutes"],
+	["a legacy audio_seconds snapshot", LEGACY_LIVE_VOICE_CARD, "audio_seconds"],
+])("stores paused time inside the active meter for %s, as it was billed", async (_name, voiceCard, dimension) => {
+	state.row.metadata.live.voiceCard = voiceCard;
+	const usage = ingestLiveUsage({ live_started: true }, { type: "session.closed", usage: { active_seconds: 11, paused_seconds: 11, seconds: 22 } });
+	await settleRealtimeSession({ auth, sessionId: "rt_test", usage });
+	expect(state.row.captured_nanos).toBe(18_333_333);
+	expect(state.row.pricing_lines).toEqual([expect.objectContaining({ dimension })]);
+	expect(state.row.usage).toMatchObject({ audio_seconds: 22, live_active_seconds: 11, live_paused_seconds: 11 });
+	expect(state.row.usage).not.toHaveProperty("standby_audio_minutes");
+});
+
+it("stores the standby split as billed on a card with a standby price", async () => {
+	const usage = ingestLiveUsage({ live_started: true }, { type: "session.closed", usage: { active_seconds: 11, paused_seconds: 11, seconds: 22 } });
+	await settleRealtimeSession({ auth, sessionId: "rt_test", usage });
+	expect(state.row.captured_nanos).toBe(12_833_334);
+	expect(state.row.usage).toMatchObject({ audio_seconds: 11, standby_audio_minutes: 11 / 60 });
 });
 
 it("does not invoke wallet settlement when the provider's final usage is absent", async () => {

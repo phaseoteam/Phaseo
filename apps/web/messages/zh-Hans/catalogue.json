@@ -1241,6 +1241,8 @@
 				"output_audio_seconds": "输出音频秒数",
 				"audio_minutes": "音频分钟数",
 				"audio_seconds": "音频秒数",
+				"standby_audio_minutes": "待机会话",
+				"active_audio_minutes": "活跃会话",
 				"cached_write_text_tokens_5m": "文本缓存写入 token 数（5 分钟 TTL）",
 				"cached_write_text_tokens_1h": "文本缓存写入 token 数（1 小时 TTL）",
 				"cached_write_text_tokens_30m": "文本缓存写入 token 数（30 分钟 TTL）",

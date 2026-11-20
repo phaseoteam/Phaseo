@@ -13,7 +13,7 @@ import { fetchGatewayContext } from "@pipeline/before/context";
 import { buildProviderCandidatesWithDiagnostics } from "@pipeline/before/utils";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { enqueueAsyncGenAiOtlpExport } from "@observability/otlp-export";
-import { isLiveModel, liveConfig, createLiveConfig, priceLiveUsage, assertLiveFinalUsage, livePolicyCandidates, liveUsageMeters, LIVE_VOICES, type LiveUsage } from "./live-sessions";
+import { isLiveModel, liveConfig, createLiveConfig, priceLiveUsage, assertLiveFinalUsage, livePolicyCandidates, liveVoiceCard, withLiveUsageMeters, LIVE_VOICES, type LiveUsage } from "./live-sessions";
 import {
 	ELEVENLABS_DEFAULT_VOICE,
 	ELEVENLABS_PROVIDER,
@@ -778,9 +778,13 @@ function modalityTokens(details: unknown, modality: string): number {
 	}, 0);
 }
 
-export function normalizeRealtimeUsage(rawUsage: Record<string, unknown>): Record<string, unknown> {
+/**
+ * Canonical usage for storage and reporting. For GPT Live, pass the session's metadata so the
+ * voice meters match what its snapshotted card bills (see liveUsageMeters).
+ */
+export function normalizeRealtimeUsage(rawUsage: Record<string, unknown>, metadata?: Record<string, unknown> | null): Record<string, unknown> {
 	const source = rawUsage && typeof rawUsage === "object"
-		? { ...rawUsage, ...(rawUsage.live_started === true ? liveUsageMeters(rawUsage) : {}) } as any : {};
+		? (rawUsage.live_started === true ? withLiveUsageMeters(rawUsage, liveVoiceCard(metadata)) : { ...rawUsage }) as any : {};
 	const usageMetadata = source.usageMetadata && typeof source.usageMetadata === "object"
 		? source.usageMetadata as any
 		: source;
@@ -1098,7 +1102,7 @@ async function evaluateActiveRealtimePolicy(
 	if (!policyResult.ok) {
 		return { ok: false, reason: "realtime_workspace_policy_blocked", spendLimit: false };
 	}
-	if (live && !applyWorkspacePolicy({ providers: livePolicyCandidates(candidates), resolvedModel: session.model_id,
+	if (live && !applyWorkspacePolicy({ providers: livePolicyCandidates(candidates, session.model_id), resolvedModel: session.model_id,
 		body: { model: session.model_id, provider }, workspacePolicy }).ok) {
 		return { ok: false, reason: "realtime_workspace_policy_blocked", spendLimit: false };
 	}
@@ -1155,7 +1159,7 @@ export async function createRealtimeSession(args: {
 		throw new Error("live_session_invalid");
 	}
 	if (live && !LIVE_VOICES.includes(voice as typeof LIVE_VOICES[number])) throw new Error("live_voice_not_supported");
-	const liveSettings = live ? await createLiveConfig(args.liveBackendModel!, args.liveBackendSettings) : null;
+	const liveSettings = live ? await createLiveConfig(modelId, args.liveBackendModel!, args.liveBackendSettings) : null;
 	const priceCard = live ? null : await requireRealtimePriceCard(provider, modelId);
 
 	const supabase = getSupabaseAdmin();
@@ -1434,7 +1438,7 @@ export async function updateRealtimeSessionUsage(args: {
 	}
 	const provider = providerFromModel(session.model_id, session.provider);
 	if (!provider) throw new Error("realtime_provider_required");
-	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? session.usage ?? {});
+	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? session.usage ?? {}, session.metadata);
 	const pricedUsage = isLiveModel(session.model_id)
 		? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
 		: priceRealtimeUsage(normalizedUsage, await realtimeSessionPriceCard(provider, session), provider);
@@ -1571,8 +1575,8 @@ export async function markRealtimeSessionBillingUnresolved(args: {
 	reason: string;
 	session?: Pick<RealtimeSessionRow, "model_id" | "provider" | "metadata"> | null;
 }): Promise<RealtimeSessionRow> {
-	const usage = normalizeRealtimeUsage(args.usage);
 	const session = args.session ?? await getRealtimeSessionForInternal(args.sessionId).catch(() => null);
+	const usage = normalizeRealtimeUsage(args.usage, session?.metadata);
 	const confirmedCostNanos = session
 		? await realtimeConfirmedCostNanos({
 			modelId: session.model_id,
@@ -1646,7 +1650,7 @@ export async function settleRealtimeSession(args: {
 	}
 	const provider = providerFromModel(session.model_id, session.provider);
 	if (!provider) throw new Error("realtime_provider_required");
-	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? {});
+	const normalizedUsage = normalizeRealtimeUsage(args.usage ?? {}, session.metadata);
 	const live = isLiveModel(session.model_id);
 	const pricedUsage = live ? priceLiveUsage(normalizedUsage, liveConfig(session.metadata))
 		: priceRealtimeUsage(normalizedUsage, await realtimeSessionPriceCard(provider, session), provider);

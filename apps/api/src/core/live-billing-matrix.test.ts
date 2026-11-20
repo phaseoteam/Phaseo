@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { LIVE_PRICE_CARD, LIVE_SEARCH_PRICE_CARD, assertLiveFinalUsage, ingestLiveUsage, priceLiveUsage, type LiveConfig, type LiveUsage } from "./live-sessions";
+import { LIVE_SEARCH_PRICE_CARD, assertLiveFinalUsage, ingestLiveUsage, priceLiveUsage, type LiveConfig, type LiveUsage } from "./live-sessions";
+import { LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
 import { liveBackendSettingsSchema } from "./live-settings";
 
 vi.mock("@pipeline/pricing/loader", () => ({ loadPriceCard: vi.fn() }));
@@ -7,13 +8,13 @@ vi.mock("@pipeline/pricing/loader", () => ({ loadPriceCard: vi.fn() }));
 // Synthetic fixture rates, not a claim about current catalog pricing. The oracle
 // uses integer nanodollars and does not call the production pricing engine.
 const config: LiveConfig = {
-	backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_PRICE_CARD, searchCard: LIVE_SEARCH_PRICE_CARD,
+	backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_VOICE_CARD, searchCard: LIVE_SEARCH_PRICE_CARD,
 	settings: liveBackendSettingsSchema.parse({ web_search: true }),
-	backendCard: { ...LIVE_PRICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules:
+	backendCard: { ...LIVE_VOICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules:
 		["standard", "priority", "flex"].flatMap((plan) => [
 			["input_text_tokens", 0.2], ["cached_read_text_tokens", 0.02],
 			["cached_write_text_tokens_30m", 0.25], ["output_text_tokens", 1.2],
-		].map(([meter, rate]) => ({ ...LIVE_PRICE_CARD.rules[0], meter: meter as "input_text_tokens",
+		].map(([meter, rate]) => ({ ...LIVE_VOICE_CARD.rules[0], meter: meter as "input_text_tokens",
 			pricing_plan: plan, unit: "token", unit_size: 1e6,
 			price_per_unit: String(Number(rate) * (plan === "priority" ? 2 : plan === "flex" ? 0.5 : 1)),
 		}))) },

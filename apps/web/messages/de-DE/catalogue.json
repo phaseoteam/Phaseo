@@ -1241,6 +1241,8 @@
 				"output_audio_seconds": "Ausgabe-Audiosekunden",
 				"audio_minutes": "Audiominuten",
 				"audio_seconds": "Audiosekunden",
+				"standby_audio_minutes": "Standby-Sitzung",
+				"active_audio_minutes": "Aktive Sitzung",
 				"cached_write_text_tokens_5m": "In den Textcache geschriebene Tokens (5 Min. TTL)",
 				"cached_write_text_tokens_1h": "In den Textcache geschriebene Tokens (1 Std. TTL)",
 				"cached_write_text_tokens_30m": "In den Textcache geschriebene Tokens (30 Min. TTL)",

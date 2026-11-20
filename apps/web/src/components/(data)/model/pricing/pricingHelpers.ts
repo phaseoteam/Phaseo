@@ -1884,6 +1884,8 @@ export function getProviderTablePriceCandidates(
     }
 
     const fallbackRules = (sections.otherRules ?? [])
+        // A discounted standby rate only applies while a session is paused, so it never stands for the model's price.
+        .filter((row) => !row.meter.startsWith("standby_"))
         .map((row, index) => ({
             row,
             index,

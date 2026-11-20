@@ -1241,6 +1241,8 @@
 				"output_audio_seconds": "Secondes audio en sortie",
 				"audio_minutes": "Minutes audio",
 				"audio_seconds": "Secondes audio",
+				"standby_audio_minutes": "Session en veille",
+				"active_audio_minutes": "Session active",
 				"cached_write_text_tokens_5m": "Jetons texte écrits dans le cache (TTL de 5 min)",
 				"cached_write_text_tokens_1h": "Jetons texte écrits dans le cache (TTL de 1 h)",
 				"cached_write_text_tokens_30m": "Jetons texte écrits dans le cache (TTL de 30 min)",

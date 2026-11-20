@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { RealtimeRelayDurableObject, validateRealtimeAudioIngress } from "./realtime-relay-durable-object";
 import { computeRealtimeFundingPosition, REALTIME_MAX_OVERDRAFT_NANOS, realtimeUnheldCostNanos } from "./realtime-sessions";
 import { classifyRealtimeEnd, REALTIME_END_REASONS } from "./realtime-session-events";
-import { LIVE_PRICE_CARD, type LiveConfig } from "./live-sessions";
+import { type LiveConfig } from "./live-sessions";
+import { LIVE_VOICE_CARD } from "./__fixtures__/live-price-cards";
 
 const mocks = vi.hoisted(() => ({
 	settleRealtimeSession: vi.fn(async () => ({
@@ -31,10 +32,10 @@ vi.mock("@core/realtime-sessions", async (importOriginal) => ({
 const OPEN = 1;
 const MINUTE = 60_000;
 
-const liveConfig: LiveConfig = { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_PRICE_CARD,
-	backendCard: { ...LIVE_PRICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules: [
+const liveConfig: LiveConfig = { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_VOICE_CARD,
+	backendCard: { ...LIVE_VOICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules: [
 		["input_text_tokens", "1"], ["output_text_tokens", "10"],
-	].map(([meter, price]) => ({ ...LIVE_PRICE_CARD.rules[0], meter: meter as any, unit: "token", unit_size: 1_000_000, price_per_unit: price })) } };
+	].map(([meter, price]) => ({ ...LIVE_VOICE_CARD.rules[0], meter: meter as any, unit: "token", unit_size: 1_000_000, price_per_unit: price })) } };
 
 function fakeStorage() {
 	const data = new Map<string, unknown>();
@@ -195,6 +196,27 @@ describe("client session.end", () => {
 		await providerEvent(object, { type: "session.closed", usage: { seconds: 42 } });
 		expect(mocks.settleRealtimeSession).toHaveBeenCalledOnce();
 		expect(ended(object)).toMatchObject({ reason: "client_requested", initiated_by: "client", usage: { audio_seconds: 42 } });
+	});
+
+	it("GPT Live: drops an earlier active/paused split when session.closed carries none, billing all seconds as active", async () => {
+		vi.useFakeTimers();
+		const { object, storage } = relay("openai", { source: "chat", model: "openai/gpt-live-1", live: true });
+		object.usage = { live_started: true };
+		await providerEvent(object, { type: "session.usage.updated", usage: { active_seconds: 11, paused_seconds: 7, seconds: 18 } });
+		expect(sentOfType(object, "relay.live_usage").at(-1).usage).toMatchObject({ audio_seconds: 11, standby_audio_minutes: 7 / 60 });
+		await clientMessage(object, { type: "session.end" });
+		await providerEvent(object, { type: "session.closed", usage: { seconds: 60 } });
+		expect(object.usage.live_active_seconds).toBeUndefined();
+		expect(object.usage.live_paused_seconds).toBeUndefined();
+		// The checkpoint written for session.closed (storage is cleared once settled).
+		const checkpoint = storage.put.mock.calls.filter(([key]) => key === "usage").at(-1)?.[1] as any;
+		expect(checkpoint).toMatchObject({ live_seconds: 60, live_final: true });
+		expect(checkpoint).not.toHaveProperty("live_active_seconds");
+		const settled = (mocks.settleRealtimeSession.mock.calls as any[])[0][0].usage;
+		expect(settled).toMatchObject({ live_seconds: 60, live_final: true });
+		expect(settled).not.toHaveProperty("live_paused_seconds");
+		expect(ended(object).usage).toMatchObject({ audio_seconds: 60 });
+		expect(ended(object).usage).not.toHaveProperty("standby_audio_minutes");
 	});
 
 	it("is idempotent", async () => {
