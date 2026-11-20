@@ -129,6 +129,7 @@ import { executor as siliconflowText } from "./siliconflow/text-generate";
 import { executor as siliconflowDecisions } from "./siliconflow/systemone";
 import { executor as stepfunText } from "./stepfun/text-generate";
 import { executor as veniceText } from "./venice/text-generate";
+import { executor as veniceDecisions } from "./venice/decisions";
 import { executor as weightsAndBiasesText } from "./weights-and-biases/text-generate";
 import { executor as metaText } from "./meta/text-generate";
 import { executor as ovhcloudText } from "./ovhcloud/text-generate";
@@ -521,7 +522,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	parallel: {
 		"decisions.make": parallelDecisions,
 	},
-	venice: { "text.generate": veniceText },
+	venice: { "text.generate": veniceText, "decisions.make": veniceDecisions },
 	"venice-e2ee": { "text.generate": veniceText },
 	voyage: { embeddings: openaiEmbeddings, rerank: openaiRerank },
 	voyageai: { embeddings: openaiEmbeddings, rerank: openaiRerank },
