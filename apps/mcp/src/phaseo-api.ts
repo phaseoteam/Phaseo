@@ -1,4 +1,7 @@
-export type PhaseoEnv = Omit<Cloudflare.Env, "INFERENCE_RUNS"> & {
+export type PhaseoEnv = Omit<Cloudflare.Env, "INFERENCE_RUNS" | "DESKTOP_LINKS"> & {
+	// Optional so tests and preview deploys without it still answer; desktop tools then say links aren't configured.
+	DESKTOP_LINKS?: DurableObjectNamespace;
+	PHASEO_CONNECT_RELAY_URL?: string;
 	INFERENCE_RUNS?: DurableObjectNamespace;
 	PHASEO_MCP_RESOURCE_SERVER_SECRET: string;
 	OPENAI_APPS_CHALLENGE_TOKEN?: string;
