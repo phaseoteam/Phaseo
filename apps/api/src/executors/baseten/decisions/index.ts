@@ -4,11 +4,8 @@ import type { ExecutorExecuteArgs, ProviderExecutor } from "@executors/types";
 import { executeSystemOne } from "@executors/_shared/decisions/systemone";
 import { openAICompatUrl } from "@providers/openai-compatible/config";
 
-const models = new Set([
-	"decision-models/baseten-elephant-9b-latest",
-	"decision-models/baseten-mammoth-27b-latest",
-	"decision-models/baseten-joey-2b-latest",
-]);
+// The catalogue route decides which Base Labs models exist; Baseten enforces
+// each model's own input limits and returns them as 422 validation errors.
 const imageUrl = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/i;
 // Baseten fetches HTTPS images itself, but only from S3, Cloud Storage, and Azure Blob Storage.
 const imageHosts = /(^|\.)(s3([.-][a-z0-9]+)*\.amazonaws\.com|storage\.googleapis\.com|blob\.core\.windows\.net)$/;
@@ -58,8 +55,8 @@ export const executor: ProviderExecutor = async args => {
 	const generationControls = ["temperature", "top_p", "max_tokens", "max_output_tokens", "max_completion_tokens", "reasoning", "reasoning_effort"];
 	let message: string | undefined;
 	let state = ir.state;
-	if (!model || !models.has(model)) {
-		message = "Baseten Decisions requires a configured Elephant-1, Mammoth-1, or Joey-1 upstream model.";
+	if (!model) {
+		message = "Baseten Decisions requires a configured upstream model.";
 	} else if (ir.audio?.length || ir.videos?.length ||
 		parts.some(part => part && typeof part === "object" && part.type === "image_url") ||
 		raw?.stream === true || raw?.tools != null || raw?.tool_choice != null ||
@@ -73,17 +70,6 @@ export const executor: ProviderExecutor = async args => {
 		else state = result;
 	}
 	if (!message) {
-		// Baseten counts Unicode code points, rather than UTF-16 code units.
-		if (typeof ir.state === "string" && ir.state.length > 50_000) {
-			let characters = 0;
-			for (let index = 0; index < ir.state.length; index++) {
-				if (ir.state.codePointAt(index)! > 0xffff) index++;
-				if (++characters > 50_000) {
-					message = "Baseten Decisions state must not exceed 50,000 characters.";
-					break;
-				}
-			}
-		}
 		for (const question of Object.values(ir.questions)) {
 			const count = question.criteria ? Object.keys(question.criteria).length : 0;
 			if (question.type === "box" || question.type === "locate" ||
