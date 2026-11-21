@@ -1732,7 +1732,6 @@ export class RealtimeRelayDurableObject {
 		if (!callId || typeof body?.output !== "string" || (body.create_response !== undefined && typeof body.create_response !== "boolean")) {
 			return refuse(400, "live_function_output_invalid");
 		}
-		if (this.upstream?.readyState !== WebSocket.OPEN) return refuse(503, "live_sideband_reattaching");
 		await this.restoreLiveToolAnswers();
 		// The app may have seen the call on the data channel before the sideband delivered it here.
 		for (const waitUntil = Date.now() + LIVE_TOOL_CALL_WAIT_MS;
@@ -1740,6 +1739,8 @@ export class RealtimeRelayDurableObject {
 			await new Promise((resolve) => setTimeout(resolve, LIVE_TOOL_CALL_POLL_MS));
 			await this.upstreamEvents;
 		}
+		// Checked right before sending: a send on a closed sideband is dropped, and the call must stay answerable.
+		if (this.upstream?.readyState !== WebSocket.OPEN) return refuse(503, "live_sideband_reattaching");
 		const reason = this.applyLiveToolEvent({ type: "response.item.create", item: { type: "function_call_output", call_id: callId, output: body.output } })
 			?? (body.create_response === false ? null : this.applyLiveToolEvent({ type: "response.create" }));
 		await this.state.storage.put(STORAGE_LIVE_TOOL_ANSWERS, { answered: [...this.liveAnsweredCalls], pending: this.liveToolOutputsPending });

@@ -467,6 +467,21 @@ describe("GPT Live WebRTC relay", () => {
 			expect(openai.sockets[0].sent[0]).toMatchObject({ item: { call_id: "call_late" } });
 		});
 
+		it("leaves the call answerable when the sideband drops while waiting for it", async () => {
+			const { object, settled, data } = relay();
+			await start(object);
+			await settled();
+			openai.attachHangs = true;
+			const pending = output(object, { call_id: "call_1", output: "ok" });
+			setTimeout(() => { openai.sockets[0].emit(functionCall("call_1")); openai.sockets[0].drop(); }, 150);
+			const response = await pending;
+			expect(response.status).toBe(503);
+			expect(await response.json()).toEqual({ error: "live_sideband_reattaching" });
+			expect(openai.sockets[0].sent).toEqual([]);
+			expect(object.liveAnsweredCalls.has("call_1")).toBe(false);
+			expect(data.get("live_tool_answers")).toBeUndefined();
+		});
+
 		it("refuses an output for a call the backend never made", async () => {
 			const { object, settled } = relay();
 			await start(object);
