@@ -48,7 +48,13 @@ describe("OpenAI-compatible providers added 2026-11-21", () => {
 			} as unknown as ExecutorExecuteArgs);
 			expect(mock.calls[0].bodyJson).toMatchObject({ model: upstreamModel, stream: true });
 			expect(result.kind).toBe("completed");
-			if (result.kind === "completed") expect(result.bill.usage).toMatchObject({ input_tokens: 7, output_tokens: 2 });
+			if (result.kind === "completed") {
+				expect(result.bill.usage).toMatchObject({ input_tokens: 7, output_tokens: 2 });
+				expect(result.ir?.choices[0]).toMatchObject({
+					finishReason: "stop",
+					message: { content: [expect.objectContaining({ type: "text", text: "ok" })] },
+				});
+			}
 		} finally {
 			mock.restore();
 		}
