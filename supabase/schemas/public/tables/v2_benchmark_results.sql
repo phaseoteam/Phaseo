@@ -14,9 +14,20 @@ CREATE TABLE "public"."v2_benchmark_results" (
   "created_at"       timestamp with time zone,
   "updated_at"       timestamp with time zone,
   "effective_to"     timestamp with time zone,
+  "source_id"          text,
+  "source_model_label" text,
+  "effort"             text,
+  "harness"            text,
+  "ci_low"             numeric,
+  "ci_high"            numeric,
+  "cost_usd"           numeric,
+  "duration_seconds"   numeric,
+  "output_tokens"      bigint,
+  "observed_on"        date,
   CONSTRAINT "v2_benchmark_results_pkey" PRIMARY KEY (result_id),
   CONSTRAINT "v2_benchmark_results_benchmark_id_fkey" FOREIGN KEY (benchmark_id) REFERENCES public.v2_benchmarks(benchmark_id) ON DELETE CASCADE,
-  CONSTRAINT "v2_benchmark_results_model_slug_fkey" FOREIGN KEY (model_slug) REFERENCES public.v2_models(model_slug) ON DELETE CASCADE
+  CONSTRAINT "v2_benchmark_results_model_slug_fkey" FOREIGN KEY (model_slug) REFERENCES public.v2_models(model_slug) ON DELETE CASCADE,
+  CONSTRAINT "v2_benchmark_results_source_id_fkey" FOREIGN KEY (source_id) REFERENCES public.v2_benchmark_sources(source_id)
 );
 
 ALTER TABLE "public"."v2_benchmark_results"
@@ -26,14 +37,29 @@ CREATE INDEX v2_benchmark_results_model_idx ON public.v2_benchmark_results USING
 
 CREATE INDEX v2_benchmark_results_rank_idx ON public.v2_benchmark_results USING btree (benchmark_id, rank, model_slug);
 
+CREATE INDEX v2_benchmark_results_source_idx ON public.v2_benchmark_results USING btree (source_id, benchmark_id)
+  WHERE (source_id IS NOT NULL);
+
 CREATE TRIGGER catalogue_no_removal
-  BEFORE DELETE OR TRUNCATE ON public.v2_benchmark_results
+  BEFORE DELETE ON public.v2_benchmark_results
+  FOR EACH ROW
+  EXECUTE FUNCTION public.prevent_curated_benchmark_result_removal();
+
+CREATE TRIGGER catalogue_no_truncate
+  BEFORE TRUNCATE ON public.v2_benchmark_results
   FOR EACH STATEMENT
   EXECUTE FUNCTION public.prevent_catalogue_removal();
 
 CREATE TRIGGER catalogue_row_history
-  AFTER INSERT OR DELETE OR UPDATE ON public.v2_benchmark_results
+  AFTER INSERT OR UPDATE ON public.v2_benchmark_results
   FOR EACH ROW
+  WHEN ((new.source_id IS NULL))
+  EXECUTE FUNCTION catalogue_private.record_row_history();
+
+CREATE TRIGGER catalogue_row_history_delete
+  AFTER DELETE ON public.v2_benchmark_results
+  FOR EACH ROW
+  WHEN ((old.source_id IS NULL))
   EXECUTE FUNCTION catalogue_private.record_row_history();
 
 CREATE TRIGGER routing_catalogue_changed
