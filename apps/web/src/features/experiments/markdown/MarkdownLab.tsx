@@ -10,6 +10,7 @@ import { normalizeChatMarkdown } from "@/components/(chat)/chatMarkdown";
 /** `words-plain` is Words without chips or preprocessing, to separate Words' own cost from the chip layer. */
 type MarkdownEngine = "streamdown" | "words" | "words-plain";
 import { markdownFixtures, type MarkdownFixture } from "./fixtures";
+import { useTranslations } from "@/i18n/react";
 
 type BenchResult = {
 	engine: MarkdownEngine;
@@ -40,9 +41,10 @@ const heap = () => (performance as Performance & { memory?: { usedJSHeapSize: nu
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
 function Pane({ engine, text, streaming, onRender, paneRef }: { engine: MarkdownEngine; text: string; streaming: boolean; onRender?: (ms: number) => void; paneRef?: React.Ref<HTMLDivElement> }) {
+	const t = useTranslations("Common.ui.markdownLab");
 	return (
 		<section className="min-w-0 rounded-md border p-4" data-engine={engine}>
-			<h2 className="mb-3 text-xs font-medium text-muted-foreground">{engine === "words" ? "Words (@pierre/words)" : engine === "words-plain" ? "Words, no chips" : "Streamdown (current)"}</h2>
+			<h2 className="mb-3 text-xs font-medium text-muted-foreground">{engine === "words" ? t("paneWords") : engine === "words-plain" ? t("wordsPlain") : t("paneStreamdown")}</h2>
 			<div ref={paneRef} className="text-sm" data-md-output={engine}>
 				<Profiler id={engine} onRender={(_id, _phase, actual) => onRender?.(actual)}>
 					{engine === "words-plain" ? <WordsMarkdown isStreaming={streaming}>{text}</WordsMarkdown> : <ChatAnswerMarkdown engine={engine} content={text} isStreaming={streaming} />}
@@ -53,6 +55,7 @@ function Pane({ engine, text, streaming, onRender, paneRef }: { engine: Markdown
 }
 
 export function MarkdownLab() {
+	const t = useTranslations("Common.ui.markdownLab");
 	const [fixture, setFixture] = useState<MarkdownFixture>("codeReview");
 	const [chunk, setChunk] = useState(256);
 	const [layout, setLayout] = useState<"both" | MarkdownEngine>("both");
@@ -114,23 +117,23 @@ export function MarkdownLab() {
 	return (
 		<main className="mx-auto max-w-7xl space-y-6 p-6">
 			<header className="space-y-2">
-				<h1 className="text-xl font-semibold">Markdown renderer lab</h1>
-				<p className="text-sm text-muted-foreground">Chat answers rendered by Streamdown (current) and Words. Chat itself switches with <code>?md=words</code> or <code>?md=streamdown</code>.</p>
+				<h1 className="text-xl font-semibold">{t("title")}</h1>
+				<p className="text-sm text-muted-foreground">{t("description")} <code>?md=words</code>, <code>?md=streamdown</code></p>
 				<div className="flex flex-wrap items-center gap-3 text-sm">
-					<label className="flex items-center gap-2">Fixture
+					<label className="flex items-center gap-2">{t("fixture")}
 						<select className="rounded-md border bg-background px-2 py-1" value={fixture} onChange={(event) => setFixture(event.target.value as MarkdownFixture)}>
 							{Object.keys(markdownFixtures).map((name) => <option key={name} value={name}>{name}</option>)}
 						</select>
 					</label>
-					<label className="flex items-center gap-2">Show
+					<label className="flex items-center gap-2">{t("show")}
 						<select className="rounded-md border bg-background px-2 py-1" value={layout} onChange={(event) => setLayout(event.target.value as typeof layout)}>
-							<option value="both">Both</option><option value="streamdown">Streamdown</option><option value="words">Words</option><option value="words-plain">Words, no chips</option>
+							<option value="both">{t("both")}</option><option value="streamdown">{t("streamdown")}</option><option value="words">{t("words")}</option><option value="words-plain">{t("wordsPlain")}</option>
 						</select>
 					</label>
-					<label className="flex items-center gap-2">Chunk
+					<label className="flex items-center gap-2">{t("chunk")}
 						<input className="w-20 rounded-md border bg-background px-2 py-1" type="number" min={1} value={chunk} onChange={(event) => setChunk(Number(event.target.value) || 256)} />
 					</label>
-					{engines.map((engine) => <button key={engine} type="button" className="rounded-md border px-3 py-1" onClick={() => void run(engine, fixture, chunk)}>Stream with {engine}</button>)}
+					{engines.map((engine) => <button key={engine} type="button" className="rounded-md border px-3 py-1" onClick={() => void run(engine, fixture, chunk)}>{t("streamWith", { engine })}</button>)}
 				</div>
 			</header>
 

@@ -2663,6 +2663,28 @@
 		"numberInput": {
 			"decrease": "تقليل",
 			"increase": "زيادة"
+		},
+		"wordsMarkdown": {
+			"downloadFile": "تنزيل الملف",
+			"copied": "تم النسخ",
+			"copyCode": "نسخ الرمز",
+			"copyTable": "نسخ الجدول",
+			"downloadCsv": "تنزيل الجدول بتنسيق CSV",
+			"details": "التفاصيل"
+		},
+		"markdownLab": {
+			"title": "مختبر عرض Markdown",
+			"description": "إجابات الدردشة معروضة بواسطة Streamdown (الحالي) وWords. بدّل الدردشة نفسها باستخدام معامل الرابط md:",
+			"fixture": "مثال",
+			"show": "عرض",
+			"both": "كلاهما",
+			"wordsPlain": "Words، بدون شارات",
+			"chunk": "حجم الجزء",
+			"streamWith": "البث باستخدام {engine}",
+			"paneStreamdown": "Streamdown (الحالي)",
+			"paneWords": "Words (@pierre/words)",
+			"streamdown": "Streamdown",
+			"words": "Words"
 		}
 	},
 	"deprecationNotice": {

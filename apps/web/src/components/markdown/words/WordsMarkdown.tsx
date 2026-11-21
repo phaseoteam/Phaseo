@@ -14,6 +14,7 @@ import { CHIP_LINK_SCHEME, chipFromLinkUrl } from "@phaseo/app-kit/message-chips
 import { createMarkdownPrefixCache } from "@phaseo/app-kit/markdown-prefix-cache";
 import { splitDetails, type MarkdownPart } from "@phaseo/app-kit/markdown-details";
 import type { Chip } from "@phaseo/app-kit/message-chips";
+import { useTranslations } from "@/i18n/react";
 // words.css imports Words' own styles.css into a layer under these rules.
 import "./words.css";
 
@@ -149,11 +150,12 @@ function ActionButton({ label, onClick, children }: { label: string; onClick: ()
 
 /** Streamdown's code actions: Download and Copy, as icons. Mermaid diagrams copy and download their source. */
 function CodeActions({ block }: { block: HTMLElement }) {
+	const t = useTranslations("Common.ui.wordsMarkdown");
 	const { copied, copy } = useCopied();
 	const language = block.dataset.language || "text";
 	return <>
-		<ActionButton label="Download file" onClick={() => download(`file.${EXTENSIONS[language] ?? language}`, codeOf(block))}><DownloadIcon size={14} /></ActionButton>
-		<ActionButton label={copied ? "Copied" : "Copy code"} onClick={() => copy(codeOf(block))}>{copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}</ActionButton>
+		<ActionButton label={t("downloadFile")} onClick={() => download(`file.${EXTENSIONS[language] ?? language}`, codeOf(block))}><DownloadIcon size={14} /></ActionButton>
+		<ActionButton label={copied ? t("copied") : t("copyCode")} onClick={() => copy(codeOf(block))}>{copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}</ActionButton>
 	</>;
 }
 
@@ -169,10 +171,11 @@ const csvTable = (rows: string[][]) => rows.map((row) => row.map((cell) => /[",\
 
 /** Streamdown's table actions: Copy (as Markdown) and Download (as CSV). */
 function TableActions({ frame }: { frame: HTMLElement }) {
+	const t = useTranslations("Common.ui.wordsMarkdown");
 	const { copied, copy } = useCopied();
 	return <>
-		<ActionButton label={copied ? "Copied" : "Copy table"} onClick={() => copy(markdownTable(tableRows(frame)))}>{copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}</ActionButton>
-		<ActionButton label="Download table as CSV" onClick={() => download("table.csv", csvTable(tableRows(frame)), "text/csv")}><DownloadIcon size={14} /></ActionButton>
+		<ActionButton label={copied ? t("copied") : t("copyTable")} onClick={() => copy(markdownTable(tableRows(frame)))}>{copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}</ActionButton>
+		<ActionButton label={t("downloadCsv")} onClick={() => download("table.csv", csvTable(tableRows(frame)), "text/csv")}><DownloadIcon size={14} /></ActionButton>
 	</>;
 }
 
@@ -186,13 +189,14 @@ type PartsProps = { parts: MarkdownPart[]; path: string; streaming: boolean; pre
 
 /** Markdown parts in order; `<details>` blocks become real `<details>` elements around their own parts. */
 function Parts({ parts, path, streaming, prepared, ...shared }: PartsProps) {
+	const t = useTranslations("Common.ui.wordsMarkdown");
 	return parts.map((part, index) => {
 		const key = `${path}${index}`;
 		// Only the text still arriving animates: the last part, and inside it the last part again.
 		const live = streaming && index === parts.length - 1;
 		if (part.kind === "details") return (
 			<details key={key} className="words-details" open={part.open || undefined}>
-				<summary>{part.summary || "Details"}</summary>
+				<summary>{part.summary || t("details")}</summary>
 				<Parts parts={part.parts} path={`${key}.`} streaming={live && !part.complete} prepared={prepared} {...shared} />
 			</details>
 		);

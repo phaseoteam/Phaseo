@@ -2663,6 +2663,28 @@
 		"numberInput": {
 			"decrease": "Decrease",
 			"increase": "Increase"
+		},
+		"wordsMarkdown": {
+			"downloadFile": "Download file",
+			"copied": "Copied",
+			"copyCode": "Copy code",
+			"copyTable": "Copy table",
+			"downloadCsv": "Download table as CSV",
+			"details": "Details"
+		},
+		"markdownLab": {
+			"title": "Markdown renderer lab",
+			"description": "Chat answers drawn by Streamdown (current) and Words. Switch chat itself with the md URL parameter:",
+			"fixture": "Fixture",
+			"show": "Show",
+			"both": "Both",
+			"wordsPlain": "Words, no chips",
+			"chunk": "Chunk size",
+			"streamWith": "Stream with {engine}",
+			"paneStreamdown": "Streamdown (current)",
+			"paneWords": "Words (@pierre/words)",
+			"streamdown": "Streamdown",
+			"words": "Words"
 		}
 	},
 	"deprecationNotice": {

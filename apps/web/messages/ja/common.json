@@ -2663,6 +2663,28 @@
 		"numberInput": {
 			"decrease": "減らす",
 			"increase": "増やす"
+		},
+		"wordsMarkdown": {
+			"downloadFile": "ファイルをダウンロード",
+			"copied": "コピーしました",
+			"copyCode": "コードをコピー",
+			"copyTable": "表をコピー",
+			"downloadCsv": "表を CSV でダウンロード",
+			"details": "詳細"
+		},
+		"markdownLab": {
+			"title": "Markdown レンダラー ラボ",
+			"description": "Streamdown（現行）と Words で表示したチャットの回答です。チャット自体は URL パラメーター md で切り替えます:",
+			"fixture": "サンプル",
+			"show": "表示",
+			"both": "両方",
+			"wordsPlain": "Words（チップなし）",
+			"chunk": "チャンクサイズ",
+			"streamWith": "{engine} でストリーミング",
+			"paneStreamdown": "Streamdown（現行）",
+			"paneWords": "Words (@pierre/words)",
+			"streamdown": "Streamdown",
+			"words": "Words"
 		}
 	},
 	"deprecationNotice": {
