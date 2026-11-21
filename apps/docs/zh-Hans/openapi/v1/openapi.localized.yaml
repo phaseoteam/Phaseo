@@ -1203,7 +1203,7 @@ paths:
         - Gateway
       operationId: createLiveSession
       summary: 创建 GPT Live 会话
-      description: 创建按用量计费的 GPT Live 语音会话，并将推理委托给 Responses 后端模型。使用默认的 WebSocket 传输时，返回中继连接信息，函数工具在你的客户端运行：中继会转发每个 `function_call`，并接受其 `function_call_output`，随后是 `response.create`。使用 WebRTC 传输时，发送对等连接的 SDP 提议并应用返回的 SDP 应答；音频随后直接发送到 OpenAI，并可使用待机。WebRTC 暂不支持函数工具。
+      description: 创建按用量计费的 GPT Live 语音会话，并将推理委托给 Responses 后端模型。使用默认的 WebSocket 传输时，返回中继连接信息，函数工具在你的客户端运行：中继会转发每个 `function_call`，并接受其 `function_call_output`，随后是 `response.create`。使用 WebRTC 传输时，发送对等连接的 SDP 提议并应用返回的 SDP 应答；音频随后直接发送到 OpenAI，并可使用待机。此时函数工具的结果发送到 `POST /v1/live/sessions/{session_id}/function_call_output`。
       requestBody:
         required: true
         content:
@@ -1491,6 +1491,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LiveSessionStatus'
+  /live/sessions/{session_id}/function_call_output:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: sendLiveFunctionCallOutput
+      summary: 发送 GPT Live 函数结果
+      description: 为 WebRTC 会话返回函数工具的结果。浏览器的数据通道无法发送工具事件，因此由你的服务器把每个输出发送到这里，再由 Phaseo 传给通话。Phaseo 只接受针对后端发起的调用的输出，每个调用一次。默认情况下，它随后会请求后端回复；当后端同时发起多个调用时，请在除最后一个之外的每个输出上将 `create_response` 设为 false。
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - call_id
+                - output
+              properties:
+                call_id:
+                  type: string
+                  description: 后端 `function_call` 项的 `call_id`。
+                output:
+                  type: string
+                  maxLength: 65536
+                  description: 函数的结果，最大 64 KB。
+                create_response:
+                  type: boolean
+                  default: true
+                  description: 在此输出之后请求后端回复。如果同一轮次还有更多输出要发送，请将其设为 false。
+      responses:
+        '202':
+          description: 输出已发送到通话
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - accepted
+                  call_id:
+                    type: string
+                  response_requested:
+                    type: boolean
+        '404':
+          description: 会话不存在，或后端没有发起过此 `call_id` 的调用
+        '409':
+          description: 该调用已有输出、会话已结束，或 Phaseo 正在重新连接到通话，可以重试该请求
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true

@@ -77,7 +77,7 @@ import {
 	mergeElevenLabsScribeSessionUpdate,
 	type ElevenLabsScribeSettings,
 } from "./elevenlabs-scribe-realtime";
-import { isLiveModel, liveConfig, liveStartEvent, ingestLiveUsage, assertLiveFinalUsage, priceLiveUsage, liveUsageMeters, type LiveUsage } from "./live-sessions";
+import { isLiveModel, liveConfig, liveStartEvent, ingestLiveUsage, assertLiveFinalUsage, priceLiveUsage, liveUsageMeters, LIVE_MAX_FUNCTION_OUTPUT_BYTES, type LiveUsage } from "./live-sessions";
 import {
 	LIVE_SESSIONS_URL,
 	isLiveSidebandAudioEvent,
@@ -131,8 +131,6 @@ const GOOGLE_RESUME_MAX_ATTEMPTS = 2;
 // Client audio held while the relay switches connections (~0.3 s recorded).
 // Anything beyond this is dropped, never billed.
 const GOOGLE_RESUME_AUDIO_BUFFER_MS = 5_000;
-// A GPT Live function result returned by the client (fits the 96 KB message cap).
-const LIVE_MAX_FUNCTION_OUTPUT_BYTES = 64 * 1024;
 // Server VAD keeps this much audio before detected speech in the committed buffer.
 const OPENAI_VAD_PREFIX_PADDING_MS = 300;
 // After this many failed settlement attempts the session moves to billing
@@ -260,6 +258,13 @@ const STORAGE_LIVE_DRAIN_DEADLINE = "live_drain_deadline_ms";
 // and a REST hangup that OpenAI has not confirmed yet, retried from the alarm.
 const STORAGE_LIVE_SIDEBAND_SEEN = "live_sideband_seen_ms";
 const STORAGE_LIVE_HANGUP = "live_hangup";
+// WebRTC function tools: the calls already answered and the outputs waiting for a response.create.
+// A WebRTC call outlives an evicted instance, so a call can't be answered twice across one.
+const STORAGE_LIVE_TOOL_ANSWERS = "live_tool_answers";
+// A function_call_output can reach Phaseo (from the app, which saw the call on the data channel)
+// a moment before the sideband delivers the same call; wait this long for it before refusing.
+export const LIVE_TOOL_CALL_WAIT_MS = 3_000;
+const LIVE_TOOL_CALL_POLL_MS = 100;
 // The browser's media goes straight to OpenAI, so a phaseo-realtime deploy only cuts the
 // sideband. The heartbeat wakes a fresh instance soon enough to reattach inside the sideband's
 // 3 s replay, and checks the duration cap, policy and holds on quiet calls.
@@ -739,7 +744,7 @@ export class RealtimeRelayDurableObject {
 			}
 			return this.reconcile(url.pathname.split("/").filter(Boolean).at(-1) ?? "");
 		}
-		const liveRoute = /^\/internal\/live-(webrtc|close|status)(?:\/([^/]+))?$/.exec(url.pathname);
+		const liveRoute = /^\/internal\/live-(webrtc|close|status|tool-output)(?:\/([^/]+))?$/.exec(url.pathname);
 		if (liveRoute) {
 			// Only the gateway Worker reaches these, with the same internal token as reconciliation.
 			if (request.headers.get("x-realtime-reconcile-token") !== await realtimeReconciliationToken()) {
@@ -749,6 +754,7 @@ export class RealtimeRelayDurableObject {
 			if (action === "webrtc" && request.method === "POST") return this.startLiveWebRTC(request);
 			if (action === "close" && request.method === "POST") return this.closeLiveWebRTC(sessionId);
 			if (action === "status" && request.method === "GET") return this.liveWebRTCStatus(sessionId);
+			if (action === "tool-output" && request.method === "POST") return this.liveWebRTCToolOutput(sessionId, request);
 			return new Response("not found", { status: 404 });
 		}
 		if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
@@ -1673,40 +1679,84 @@ export class RealtimeRelayDurableObject {
 	 * the backend's usage like any other response.
 	 */
 	private forwardLiveToolEvent(message: Record<string, unknown>) {
-		const reject = (reason: string) => this.sendClient({ type: "relay.client_event_rejected", event_type: message.type, reason });
+		const reason = this.applyLiveToolEvent(message);
+		if (reason) this.sendClient({ type: "relay.client_event_rejected", event_type: message.type, reason });
+	}
+
+	/**
+	 * Checks one tool event (a function_call_output or the response.create after it) and sends it
+	 * upstream: the relay's provider socket, or the sideband on a WebRTC call. Returns why it was
+	 * refused, or null once sent.
+	 */
+	private applyLiveToolEvent(message: Record<string, unknown>): string | null {
 		if (!this.acceptingAudio || !this.providerSetupComplete || this.liveClosing || this.end) {
-			reject("realtime_session_not_accepting_input");
-			return;
+			return "realtime_session_not_accepting_input";
 		}
 		const eventId = typeof message.event_id === "string" && /^[\w.:-]{1,64}$/.test(message.event_id) ? message.event_id : undefined;
 		if (message.type === "response.item.create") {
 			const item = message.item && typeof message.item === "object" ? message.item as Record<string, unknown> : {};
 			const callId = getStringField(item, "call_id");
 			if (item.type !== "function_call_output" || !callId || !this.usage.live_function_call_ids?.includes(callId)) {
-				reject("live_function_call_unknown");
-				return;
+				return "live_function_call_unknown";
 			}
-			if (this.liveAnsweredCalls.has(callId)) {
-				reject("live_function_call_already_answered");
-				return;
-			}
+			if (this.liveAnsweredCalls.has(callId)) return "live_function_call_already_answered";
 			const output = item.output;
 			if (typeof output !== "string" || new TextEncoder().encode(output).byteLength > LIVE_MAX_FUNCTION_OUTPUT_BYTES) {
-				reject("live_function_output_invalid");
-				return;
+				return "live_function_output_invalid";
 			}
 			this.liveAnsweredCalls.add(callId);
 			this.liveToolOutputsPending += 1;
 			this.sendUpstream({ type: "response.item.create", ...(eventId ? { event_id: eventId } : {}),
 				item: { type: "function_call_output", call_id: callId, output } });
-			return;
+			return null;
 		}
-		if (this.liveToolOutputsPending <= 0) {
-			reject("live_response_create_requires_tool_output");
-			return;
-		}
+		if (this.liveToolOutputsPending <= 0) return "live_response_create_requires_tool_output";
 		this.liveToolOutputsPending = 0;
 		this.sendUpstream({ type: "response.create", ...(eventId ? { event_id: eventId } : {}) });
+		return null;
+	}
+
+	/**
+	 * POST /v1/live/sessions/{id}/function_call_output for a WebRTC call. The browser's data channel
+	 * can't send tool events (only close and mute), so the app's server posts each output here and
+	 * this object sends it on the sideband, with the same checks as the WebSocket relay.
+	 */
+	private async liveWebRTCToolOutput(sessionId: string, request: Request): Promise<Response> {
+		const refuse = (status: number, error: string) => Response.json({ error }, { status });
+		const stored = await this.state.storage.get<string>(STORAGE_SESSION_ID);
+		if (!stored || stored !== sessionId || await this.liveBillingDone()) return refuse(409, "realtime_session_not_active");
+		await this.restoreStateIfEvicted(sessionId);
+		if (!this.webrtc) return refuse(409, "live_webrtc_session_required");
+		const body = await request.json().catch(() => null) as { call_id?: unknown; output?: unknown; create_response?: unknown } | null;
+		const callId = typeof body?.call_id === "string" ? body.call_id : "";
+		if (!callId || typeof body?.output !== "string" || (body.create_response !== undefined && typeof body.create_response !== "boolean")) {
+			return refuse(400, "live_function_output_invalid");
+		}
+		if (this.upstream?.readyState !== WebSocket.OPEN) return refuse(503, "live_sideband_reattaching");
+		await this.restoreLiveToolAnswers();
+		// The app may have seen the call on the data channel before the sideband delivered it here.
+		for (const waitUntil = Date.now() + LIVE_TOOL_CALL_WAIT_MS;
+			!this.usage.live_function_call_ids?.includes(callId) && Date.now() < waitUntil && !this.settled;) {
+			await new Promise((resolve) => setTimeout(resolve, LIVE_TOOL_CALL_POLL_MS));
+			await this.upstreamEvents;
+		}
+		const reason = this.applyLiveToolEvent({ type: "response.item.create", item: { type: "function_call_output", call_id: callId, output: body.output } })
+			?? (body.create_response === false ? null : this.applyLiveToolEvent({ type: "response.create" }));
+		await this.state.storage.put(STORAGE_LIVE_TOOL_ANSWERS, { answered: [...this.liveAnsweredCalls], pending: this.liveToolOutputsPending });
+		if (!reason) return Response.json({ status: "accepted", response_requested: body.create_response !== false }, { status: 202 });
+		const status = reason === "live_function_call_unknown" ? 404
+			: reason === "live_function_output_invalid" ? 400 : 409;
+		return refuse(status, reason);
+	}
+
+	/** The answered calls survive an eviction on a WebRTC call; a fresh instance reloads them once. */
+	private liveToolAnswersLoad: Promise<void> | null = null;
+	private restoreLiveToolAnswers(): Promise<void> {
+		this.liveToolAnswersLoad ??= this.state.storage.get<{ answered: string[]; pending: number }>(STORAGE_LIVE_TOOL_ANSWERS).then((saved) => {
+			for (const callId of saved?.answered ?? []) this.liveAnsweredCalls.add(callId);
+			if (saved && this.liveToolOutputsPending === 0) this.liveToolOutputsPending = saved.pending;
+		});
+		return this.liveToolAnswersLoad;
 	}
 
 	/**

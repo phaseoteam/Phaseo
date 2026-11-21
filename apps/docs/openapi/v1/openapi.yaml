@@ -1245,7 +1245,8 @@ paths:
         `function_call_output` followed by `response.create`. With the WebRTC
         transport, send your peer connection's SDP offer and apply the SDP
         answer that comes back; audio then goes directly to OpenAI, and standby
-        is available. Function tools are not supported with WebRTC yet.
+        is available. Function tool results then go to `POST
+        /v1/live/sessions/{session_id}/function_call_output`.
       requestBody:
         required: true
         content:
@@ -1551,6 +1552,72 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LiveSessionStatus'
+  /live/sessions/{session_id}/function_call_output:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: sendLiveFunctionCallOutput
+      summary: Send GPT Live function result
+      description: >-
+        Returns a function tool's result for a WebRTC session. The browser's
+        data channel can't send tool events, so your server sends each output
+        here and Phaseo passes it to the call. Phaseo accepts an output only
+        for a call the backend made, once per call. By default it then asks
+        the backend for its reply; set `create_response` to false on every
+        output but the last when the backend made several calls at once.
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - call_id
+                - output
+              properties:
+                call_id:
+                  type: string
+                  description: The `call_id` of the backend's `function_call` item.
+                output:
+                  type: string
+                  maxLength: 65536
+                  description: The function's result, at most 64 KB.
+                create_response:
+                  type: boolean
+                  default: true
+                  description: >-
+                    Ask the backend for its reply after this output. Set it to
+                    false while more outputs for the same turn are coming.
+      responses:
+        '202':
+          description: Output sent to the call
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - accepted
+                  call_id:
+                    type: string
+                  response_requested:
+                    type: boolean
+        '404':
+          description: No such session, or the backend made no call with this `call_id`
+        '409':
+          description: >-
+            The call already has an output, the session has ended, or Phaseo
+            is reconnecting to the call and the request can be retried
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true

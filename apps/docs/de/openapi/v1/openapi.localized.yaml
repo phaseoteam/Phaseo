@@ -1203,7 +1203,7 @@ paths:
         - Gateway
       operationId: createLiveSession
       summary: GPT-Live-Sitzung erstellen
-      description: 'Erstellt eine abgerechnete GPT-Live-Sprachsitzung, die das Schlussfolgern an ein Responses-Backend-Modell delegiert. Mit dem standardmäßigen WebSocket-Transport gibt sie die Relay-Verbindungsdaten zurück, und Funktionstools laufen auf Ihrem Client: Das Relay leitet jeden `function_call` weiter und nimmt dessen `function_call_output` gefolgt von `response.create` an. Mit dem WebRTC-Transport senden Sie das SDP-Angebot Ihrer Peer-Verbindung und wenden die zurückgegebene SDP-Antwort an; das Audio geht dann direkt an OpenAI, und der Bereitschaftsmodus ist verfügbar. Funktionstools werden mit WebRTC noch nicht unterstützt.'
+      description: 'Erstellt eine abgerechnete GPT-Live-Sprachsitzung, die das Schlussfolgern an ein Responses-Backend-Modell delegiert. Mit dem standardmäßigen WebSocket-Transport gibt sie die Relay-Verbindungsdaten zurück, und Funktionstools laufen auf Ihrem Client: Das Relay leitet jeden `function_call` weiter und nimmt dessen `function_call_output` gefolgt von `response.create` an. Mit dem WebRTC-Transport senden Sie das SDP-Angebot Ihrer Peer-Verbindung und wenden die zurückgegebene SDP-Antwort an; das Audio geht dann direkt an OpenAI, und der Bereitschaftsmodus ist verfügbar. Ergebnisse von Funktionstools gehen dann an `POST /v1/live/sessions/{session_id}/function_call_output`.'
       requestBody:
         required: true
         content:
@@ -1491,6 +1491,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LiveSessionStatus'
+  /live/sessions/{session_id}/function_call_output:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: sendLiveFunctionCallOutput
+      summary: GPT-Live-Funktionsergebnis senden
+      description: Gibt das Ergebnis eines Funktions-Tools für eine WebRTC-Sitzung zurück. Der Datenkanal des Browsers kann keine Tool-Events senden, daher sendet dein Server jeden Output hierher, und Phaseo übergibt ihn an den Anruf. Phaseo akzeptiert einen Output nur für einen Aufruf, den das Backend gemacht hat, einmal pro Aufruf. Standardmäßig fordert es danach die Antwort des Backends an; setze `create_response` bei jedem Output außer dem letzten auf false, wenn das Backend mehrere Aufrufe gleichzeitig gemacht hat.
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - call_id
+                - output
+              properties:
+                call_id:
+                  type: string
+                  description: Die `call_id` des `function_call`-Elements des Backends.
+                output:
+                  type: string
+                  maxLength: 65536
+                  description: Das Ergebnis der Funktion, höchstens 64 KB.
+                create_response:
+                  type: boolean
+                  default: true
+                  description: Fordert nach diesem Output die Antwort des Backends an. Setze es auf false, solange weitere Outputs für denselben Turn folgen.
+      responses:
+        '202':
+          description: Output an den Anruf gesendet
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - accepted
+                  call_id:
+                    type: string
+                  response_requested:
+                    type: boolean
+        '404':
+          description: Keine solche Sitzung, oder das Backend hat keinen Aufruf mit dieser `call_id` gemacht
+        '409':
+          description: Der Aufruf hat bereits einen Output, die Sitzung ist beendet, oder Phaseo verbindet sich gerade wieder mit dem Anruf und die Anfrage kann wiederholt werden
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true

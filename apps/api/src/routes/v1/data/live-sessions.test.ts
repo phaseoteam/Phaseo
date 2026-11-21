@@ -212,7 +212,6 @@ describe("GPT Live over WebRTC", () => {
 		[{ ...webrtcRequest, transport: { type: "websocket" } }, "validation_error"],
 		[{ model: "openai/gpt-live-1", provider: "openai", idle_timeout_s: 30 }, "validation_error"],
 		[{ ...webrtcRequest, transport: { type: "webrtc", sdp: "not sdp" } }, "live_webrtc_sdp_invalid"],
-		[{ ...webrtcRequest, backend_settings: { tools: [{ type: "function", name: "get_time" }] } }, "live_webrtc_function_tools_not_supported"],
 	])("rejects %j before reserving credit", async (body, reason) => {
 		const response = await post(body);
 		expect(response.status).toBe(400);
@@ -221,8 +220,12 @@ describe("GPT Live over WebRTC", () => {
 		expect(mocks.create).not.toHaveBeenCalled();
 	});
 
-	it("accepts web search over WebRTC", async () => {
+	it("accepts web search and function tools over WebRTC", async () => {
 		expect((await post({ ...webrtcRequest, backend_settings: { web_search: true } })).status).toBe(201);
+		const tools = [{ type: "function", name: "get_time", parameters: { type: "object", properties: {} } }];
+		expect((await post({ ...webrtcRequest, backend_settings: { tools } })).status).toBe(201);
+		expect(mocks.create).toHaveBeenLastCalledWith(expect.objectContaining({ liveTransport: "webrtc",
+			liveBackendSettings: expect.objectContaining({ tools }) }));
 	});
 
 	it("passes the provider's offer rejection back as a validation error", async () => {
@@ -257,5 +260,57 @@ describe("GPT Live over WebRTC", () => {
 		const response = await liveSessionsRoutes.request(`https://test/${SESSION}/close`, { method: "POST" });
 		expect(response.status).toBe(202);
 		expect(new URL((mocks.relayFetch.mock.calls[0] as [string, Request])[1].url).pathname).toBe(`/internal/live-close/${SESSION}`);
+	});
+
+	describe("function_call_output", () => {
+		const webrtcRow = () => ({ session_id: SESSION, workspace_id: workspaceId, key_id: "key", model_id: "openai/gpt-live-1.1",
+			status: "connected", metadata: { live_transport: "webrtc" }, usage: {}, started_at: new Date().toISOString() });
+		const send = (body: unknown) => liveSessionsRoutes.request(`https://test/${SESSION}/function_call_output`, {
+			method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
+		it("forwards the output to the relay, which sends it on the sideband", async () => {
+			mocks.row = webrtcRow();
+			mocks.relayFetch.mockImplementation(async () => Response.json({ status: "accepted", response_requested: true }, { status: 202 }));
+			const response = await send({ call_id: "call_1", output: "{\"code\":\"PELICAN-42\"}" });
+			expect(response.status).toBe(202);
+			expect(await response.json()).toEqual({ status: "accepted", call_id: "call_1", response_requested: true });
+			const [id, request] = mocks.relayFetch.mock.calls[0] as [string, Request];
+			expect(id).toBe(SESSION);
+			expect(new URL(request.url).pathname).toBe(`/internal/live-tool-output/${SESSION}`);
+			expect(request.headers.get("x-realtime-reconcile-token")).toMatch(/^[0-9a-f]{64}$/);
+			expect(await request.json()).toEqual({ call_id: "call_1", output: "{\"code\":\"PELICAN-42\"}" });
+		});
+
+		it.each([
+			["live_function_call_unknown", 404],
+			["live_function_call_already_answered", 409],
+			["realtime_session_not_accepting_input", 409],
+			["live_sideband_reattaching", 409],
+		])("explains the relay refusal %s", async (reason, status) => {
+			mocks.row = webrtcRow();
+			mocks.relayFetch.mockImplementation(async () => Response.json({ error: reason }, { status: 409 }));
+			const response = await send({ call_id: "call_1", output: "ok" });
+			expect(response.status).toBe(status);
+			expect(await response.json()).toMatchObject({ reason, message: expect.any(String) });
+		});
+
+		it("refuses bad bodies, other keys, WebSocket sessions and ended calls without reaching the relay", async () => {
+			mocks.row = webrtcRow();
+			for (const body of [{ call_id: "call_1" }, { call_id: "", output: "x" }, { call_id: "call_1", output: 1 },
+				{ call_id: "call_1", output: "x", create_response: "yes" }, { call_id: "call_1", output: "x", extra: true },
+				{ call_id: "call_1", output: "é".repeat(40 * 1024) }]) {
+				expect((await send(body)).status, JSON.stringify(body).slice(0, 80)).toBe(400);
+			}
+			mocks.auth.apiKeyId = "another-key";
+			expect((await send({ call_id: "call_1", output: "x" })).status).toBe(404);
+			mocks.auth.apiKeyId = "key";
+			mocks.row = { ...webrtcRow(), metadata: { live_transport: "websocket" } };
+			expect(await (await send({ call_id: "call_1", output: "x" })).json()).toMatchObject({ reason: "live_webrtc_session_required" });
+			mocks.row = { ...webrtcRow(), status: "completed" };
+			const ended = await send({ call_id: "call_1", output: "x" });
+			expect(ended.status).toBe(409);
+			expect(await ended.json()).toMatchObject({ reason: "realtime_session_not_active" });
+			expect(mocks.relayFetch).not.toHaveBeenCalled();
+		});
 	});
 });

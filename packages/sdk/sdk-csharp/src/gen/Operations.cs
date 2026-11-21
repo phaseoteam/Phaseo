@@ -3004,6 +3004,19 @@ public static class Operations
 		return client.SendAsync<Dictionary<string, object>>("PUT", resolvedPath, query, headers, body);
 	}
 
+	public static Task<Dictionary<string, object>?> SendLiveFunctionCallOutputAsync(
+		Client client,
+		Dictionary<string, string>? path = null,
+		Dictionary<string, string>? query = null,
+		Dictionary<string, string>? headers = null,
+		object? body = null
+	)
+	{
+		if (path != null && path.TryGetValue("session_id", out var segment0) && (segment0 == "." || segment0 == "..")) throw new ArgumentException("Dot segments are not valid path parameters");
+		var resolvedPath = "/live/sessions/" + Uri.EscapeDataString(path != null && path.ContainsKey("session_id") ? path["session_id"] : "") + "/function_call_output";
+		return client.SendAsync<Dictionary<string, object>>("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Task<Dictionary<string, object>?> SendObservabilityDestinationSampleAsync(
 		Client client,
 		Dictionary<string, string>? path = null,

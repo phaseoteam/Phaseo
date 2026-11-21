@@ -12580,15 +12580,15 @@
 			"zh-Hans": "Base64 编码的 PDF 字节，不带数据 URL 前缀。",
 			"ar": "بايتات PDF بترميز Base64، دون بادئة رابط بيانات."
 		},
-		"Creates a metered GPT Live voice session, which delegates reasoning to a Responses backend model. With the default WebSocket transport it returns relay connection details, and function tools run on your client: the relay forwards each `function_call` and accepts its `function_call_output` followed by `response.create`. With the WebRTC transport, send your peer connection's SDP offer and apply the SDP answer that comes back; audio then goes directly to OpenAI, and standby is available. Function tools are not supported with WebRTC yet.": {
-			"es": "Crea una sesión de voz de GPT Live con medición de uso, que delega el razonamiento en un modelo de backend de Responses. Con el transporte WebSocket predeterminado, devuelve los datos de conexión del relé, y las herramientas de función se ejecutan en tu cliente: el relé reenvía cada `function_call` y acepta su `function_call_output` seguido de `response.create`. Con el transporte WebRTC, envía la oferta SDP de tu conexión entre pares y aplica la respuesta SDP que recibes; el audio va entonces directamente a OpenAI y el modo de espera está disponible. Las herramientas de función todavía no son compatibles con WebRTC.",
-			"fr": "Crée une session vocale GPT Live avec comptabilisation de l’usage, qui délègue le raisonnement à un modèle backend Responses. Avec le transport WebSocket par défaut, elle renvoie les informations de connexion du relais, et les outils de fonction s’exécutent sur votre client : le relais transmet chaque `function_call` et accepte son `function_call_output` suivi de `response.create`. Avec le transport WebRTC, envoyez l’offre SDP de votre connexion pair à pair et appliquez la réponse SDP renvoyée ; l’audio passe alors directement par OpenAI et la mise en veille est disponible. Les outils de fonction ne sont pas encore pris en charge avec WebRTC.",
-			"de": "Erstellt eine abgerechnete GPT-Live-Sprachsitzung, die das Schlussfolgern an ein Responses-Backend-Modell delegiert. Mit dem standardmäßigen WebSocket-Transport gibt sie die Relay-Verbindungsdaten zurück, und Funktionstools laufen auf Ihrem Client: Das Relay leitet jeden `function_call` weiter und nimmt dessen `function_call_output` gefolgt von `response.create` an. Mit dem WebRTC-Transport senden Sie das SDP-Angebot Ihrer Peer-Verbindung und wenden die zurückgegebene SDP-Antwort an; das Audio geht dann direkt an OpenAI, und der Bereitschaftsmodus ist verfügbar. Funktionstools werden mit WebRTC noch nicht unterstützt.",
-			"pt-BR": "Cria uma sessão de voz do GPT Live com medição de uso, que delega o raciocínio a um modelo de backend do Responses. Com o transporte WebSocket padrão, retorna os dados de conexão do relay, e as ferramentas de função são executadas no seu cliente: o relay encaminha cada `function_call` e aceita o `function_call_output` correspondente seguido de `response.create`. Com o transporte WebRTC, envie a oferta SDP da sua conexão ponto a ponto e aplique a resposta SDP retornada; o áudio passa a ir diretamente para a OpenAI, e o modo de espera fica disponível. As ferramentas de função ainda não são compatíveis com WebRTC.",
-			"hi": "मापे गए उपयोग वाला GPT Live वॉइस सत्र बनाता है, जो तर्क का काम Responses बैकएंड मॉडल को सौंपता है। डिफ़ॉल्ट WebSocket ट्रांसपोर्ट के साथ यह रिले कनेक्शन विवरण लौटाता है, और फ़ंक्शन टूल आपके क्लाइंट पर चलते हैं: रिले हर `function_call` आगे भेजता है और उसका `function_call_output` और फिर `response.create` स्वीकार करता है। WebRTC ट्रांसपोर्ट के साथ, अपने पीयर कनेक्शन का SDP ऑफ़र भेजें और लौटा SDP उत्तर लागू करें; तब ऑडियो सीधे OpenAI को जाता है, और स्टैंडबाय उपलब्ध होता है। WebRTC के साथ फ़ंक्शन टूल अभी समर्थित नहीं हैं।",
-			"ja": "使用量が計測される GPT Live 音声セッションを作成し、推論を Responses バックエンドモデルに委任します。既定の WebSocket トランスポートではリレー接続情報を返し、関数ツールはクライアントで実行されます。リレーは各 `function_call` を転送し、その `function_call_output` と続く `response.create` を受け付けます。WebRTC トランスポートでは、ピア接続の SDP オファーを送信し、返された SDP アンサーを適用します。音声は OpenAI に直接送られ、スタンバイを利用できます。WebRTC では関数ツールはまだサポートされていません。",
-			"zh-Hans": "创建按用量计费的 GPT Live 语音会话，并将推理委托给 Responses 后端模型。使用默认的 WebSocket 传输时，返回中继连接信息，函数工具在你的客户端运行：中继会转发每个 `function_call`，并接受其 `function_call_output`，随后是 `response.create`。使用 WebRTC 传输时，发送对等连接的 SDP 提议并应用返回的 SDP 应答；音频随后直接发送到 OpenAI，并可使用待机。WebRTC 暂不支持函数工具。",
-			"ar": "ينشئ جلسة صوتية من GPT Live مع قياس الاستخدام، تفوّض الاستدلال إلى نموذج خلفي من Responses. مع نقل WebSocket الافتراضي تُرجع بيانات الاتصال بالمرحّل، وتعمل أدوات الدوال على عميلك: يمرّر المرحّل كل `function_call` ويقبل `function_call_output` الخاص به متبوعًا بـ `response.create`. مع نقل WebRTC، أرسل عرض SDP من اتصال النظير وطبّق إجابة SDP المُرجعة؛ يذهب الصوت حينها مباشرة إلى OpenAI ويتوفر وضع الاستعداد. أدوات الدوال غير مدعومة مع WebRTC بعد."
+		"Creates a metered GPT Live voice session, which delegates reasoning to a Responses backend model. With the default WebSocket transport it returns relay connection details, and function tools run on your client: the relay forwards each `function_call` and accepts its `function_call_output` followed by `response.create`. With the WebRTC transport, send your peer connection's SDP offer and apply the SDP answer that comes back; audio then goes directly to OpenAI, and standby is available. Function tool results then go to `POST /v1/live/sessions/{session_id}/function_call_output`.": {
+			"es": "Crea una sesión de voz de GPT Live con medición de uso, que delega el razonamiento en un modelo de backend de Responses. Con el transporte WebSocket predeterminado, devuelve los datos de conexión del relé, y las herramientas de función se ejecutan en tu cliente: el relé reenvía cada `function_call` y acepta su `function_call_output` seguido de `response.create`. Con el transporte WebRTC, envía la oferta SDP de tu conexión entre pares y aplica la respuesta SDP que recibes; el audio va entonces directamente a OpenAI y el modo de espera está disponible. Los resultados de las herramientas de función se envían entonces a `POST /v1/live/sessions/{session_id}/function_call_output`.",
+			"fr": "Crée une session vocale GPT Live avec comptabilisation de l’usage, qui délègue le raisonnement à un modèle backend Responses. Avec le transport WebSocket par défaut, elle renvoie les informations de connexion du relais, et les outils de fonction s’exécutent sur votre client : le relais transmet chaque `function_call` et accepte son `function_call_output` suivi de `response.create`. Avec le transport WebRTC, envoyez l’offre SDP de votre connexion pair à pair et appliquez la réponse SDP renvoyée ; l’audio passe alors directement par OpenAI et la mise en veille est disponible. Les résultats des outils de fonction sont alors envoyés à `POST /v1/live/sessions/{session_id}/function_call_output`.",
+			"de": "Erstellt eine abgerechnete GPT-Live-Sprachsitzung, die das Schlussfolgern an ein Responses-Backend-Modell delegiert. Mit dem standardmäßigen WebSocket-Transport gibt sie die Relay-Verbindungsdaten zurück, und Funktionstools laufen auf Ihrem Client: Das Relay leitet jeden `function_call` weiter und nimmt dessen `function_call_output` gefolgt von `response.create` an. Mit dem WebRTC-Transport senden Sie das SDP-Angebot Ihrer Peer-Verbindung und wenden die zurückgegebene SDP-Antwort an; das Audio geht dann direkt an OpenAI, und der Bereitschaftsmodus ist verfügbar. Ergebnisse von Funktionstools gehen dann an `POST /v1/live/sessions/{session_id}/function_call_output`.",
+			"pt-BR": "Cria uma sessão de voz do GPT Live com medição de uso, que delega o raciocínio a um modelo de backend do Responses. Com o transporte WebSocket padrão, retorna os dados de conexão do relay, e as ferramentas de função são executadas no seu cliente: o relay encaminha cada `function_call` e aceita o `function_call_output` correspondente seguido de `response.create`. Com o transporte WebRTC, envie a oferta SDP da sua conexão ponto a ponto e aplique a resposta SDP retornada; o áudio passa a ir diretamente para a OpenAI, e o modo de espera fica disponível. Os resultados das ferramentas de função são então enviados para `POST /v1/live/sessions/{session_id}/function_call_output`.",
+			"hi": "मापे गए उपयोग वाला GPT Live वॉइस सत्र बनाता है, जो तर्क का काम Responses बैकएंड मॉडल को सौंपता है। डिफ़ॉल्ट WebSocket ट्रांसपोर्ट के साथ यह रिले कनेक्शन विवरण लौटाता है, और फ़ंक्शन टूल आपके क्लाइंट पर चलते हैं: रिले हर `function_call` आगे भेजता है और उसका `function_call_output` और फिर `response.create` स्वीकार करता है। WebRTC ट्रांसपोर्ट के साथ, अपने पीयर कनेक्शन का SDP ऑफ़र भेजें और लौटा SDP उत्तर लागू करें; तब ऑडियो सीधे OpenAI को जाता है, और स्टैंडबाय उपलब्ध होता है। तब फ़ंक्शन टूल के परिणाम `POST /v1/live/sessions/{session_id}/function_call_output` पर भेजे जाते हैं।",
+			"ja": "使用量が計測される GPT Live 音声セッションを作成し、推論を Responses バックエンドモデルに委任します。既定の WebSocket トランスポートではリレー接続情報を返し、関数ツールはクライアントで実行されます。リレーは各 `function_call` を転送し、その `function_call_output` と続く `response.create` を受け付けます。WebRTC トランスポートでは、ピア接続の SDP オファーを送信し、返された SDP アンサーを適用します。音声は OpenAI に直接送られ、スタンバイを利用できます。その場合、関数ツールの結果は `POST /v1/live/sessions/{session_id}/function_call_output` に送信します。",
+			"zh-Hans": "创建按用量计费的 GPT Live 语音会话，并将推理委托给 Responses 后端模型。使用默认的 WebSocket 传输时，返回中继连接信息，函数工具在你的客户端运行：中继会转发每个 `function_call`，并接受其 `function_call_output`，随后是 `response.create`。使用 WebRTC 传输时，发送对等连接的 SDP 提议并应用返回的 SDP 应答；音频随后直接发送到 OpenAI，并可使用待机。此时函数工具的结果发送到 `POST /v1/live/sessions/{session_id}/function_call_output`。",
+			"ar": "ينشئ جلسة صوتية من GPT Live مع قياس الاستخدام، تفوّض الاستدلال إلى نموذج خلفي من Responses. مع نقل WebSocket الافتراضي تُرجع بيانات الاتصال بالمرحّل، وتعمل أدوات الدوال على عميلك: يمرّر المرحّل كل `function_call` ويقبل `function_call_output` الخاص به متبوعًا بـ `response.create`. مع نقل WebRTC، أرسل عرض SDP من اتصال النظير وطبّق إجابة SDP المُرجعة؛ يذهب الصوت حينها مباشرة إلى OpenAI ويتوفر وضع الاستعداد. تُرسل نتائج أدوات الدوال حينها إلى `POST /v1/live/sessions/{session_id}/function_call_output`."
 		},
 		"How the client connects. `websocket` (the default) uses the Phaseo relay. `webrtc` takes your peer connection's SDP offer, at most 64 KB, and returns the SDP answer.": {
 			"es": "Cómo se conecta el cliente. `websocket` (el predeterminado) usa el relé de Phaseo. `webrtc` recibe la oferta SDP de tu conexión entre pares, de 64 KB como máximo, y devuelve la respuesta SDP.",
@@ -12709,6 +12709,86 @@
 			"ja": "セッション終了後は `session.ended` イベント、それ以外は null です。",
 			"zh-Hans": "会话结束后为 `session.ended` 事件，否则为 null。",
 			"ar": "حدث `session.ended` بعد انتهاء الجلسة، وإلا فهو فارغ."
+		},
+		"Send GPT Live function result": {
+			"es": "Enviar resultado de función de GPT Live",
+			"fr": "Envoyer un résultat de fonction GPT Live",
+			"de": "GPT-Live-Funktionsergebnis senden",
+			"pt-BR": "Enviar resultado de função do GPT Live",
+			"hi": "GPT Live फ़ंक्शन परिणाम भेजें",
+			"ja": "GPT Live の関数結果を送信",
+			"zh-Hans": "发送 GPT Live 函数结果",
+			"ar": "إرسال نتيجة دالة GPT Live"
+		},
+		"Returns a function tool's result for a WebRTC session. The browser's data channel can't send tool events, so your server sends each output here and Phaseo passes it to the call. Phaseo accepts an output only for a call the backend made, once per call. By default it then asks the backend for its reply; set `create_response` to false on every output but the last when the backend made several calls at once.": {
+			"es": "Devuelve el resultado de una herramienta de función para una sesión WebRTC. El canal de datos del navegador no puede enviar eventos de herramientas, así que tu servidor envía cada salida aquí y Phaseo la pasa a la llamada. Phaseo solo acepta una salida para una llamada que hizo el backend, una vez por llamada. De forma predeterminada, después pide la respuesta al backend; establece `create_response` en false en todas las salidas menos la última cuando el backend hizo varias llamadas a la vez.",
+			"fr": "Renvoie le résultat d’un outil de fonction pour une session WebRTC. Le canal de données du navigateur ne peut pas envoyer d’événements d’outil : votre serveur envoie donc chaque sortie ici et Phaseo la transmet à l’appel. Phaseo n’accepte une sortie que pour un appel effectué par le backend, une fois par appel. Par défaut, il demande ensuite sa réponse au backend ; définissez `create_response` sur false pour chaque sortie sauf la dernière lorsque le backend a effectué plusieurs appels à la fois.",
+			"de": "Gibt das Ergebnis eines Funktions-Tools für eine WebRTC-Sitzung zurück. Der Datenkanal des Browsers kann keine Tool-Events senden, daher sendet dein Server jeden Output hierher, und Phaseo übergibt ihn an den Anruf. Phaseo akzeptiert einen Output nur für einen Aufruf, den das Backend gemacht hat, einmal pro Aufruf. Standardmäßig fordert es danach die Antwort des Backends an; setze `create_response` bei jedem Output außer dem letzten auf false, wenn das Backend mehrere Aufrufe gleichzeitig gemacht hat.",
+			"pt-BR": "Retorna o resultado de uma ferramenta de função para uma sessão WebRTC. O canal de dados do navegador não consegue enviar eventos de ferramenta, então seu servidor envia cada saída aqui e a Phaseo a repassa para a chamada. A Phaseo só aceita uma saída para uma chamada feita pelo backend, uma vez por chamada. Por padrão, ela depois pede a resposta ao backend; defina `create_response` como false em todas as saídas, menos na última, quando o backend fizer várias chamadas ao mesmo tempo.",
+			"hi": "WebRTC सत्र के लिए किसी फ़ंक्शन टूल का परिणाम लौटाता है। ब्राउज़र का डेटा चैनल टूल इवेंट नहीं भेज सकता, इसलिए आपका सर्वर हर आउटपुट यहाँ भेजता है और Phaseo उसे कॉल तक पहुँचाता है। Phaseo आउटपुट सिर्फ़ उसी कॉल के लिए स्वीकार करता है जो बैकएंड ने की हो, हर कॉल के लिए एक बार। डिफ़ॉल्ट रूप से वह इसके बाद बैकएंड से उसका जवाब माँगता है; जब बैकएंड ने एक साथ कई कॉल की हों, तो आखिरी आउटपुट को छोड़कर हर आउटपुट पर `create_response` को false सेट करें।",
+			"ja": "WebRTC セッションの関数ツールの結果を返します。ブラウザのデータチャネルではツールイベントを送れないため、サーバーが各出力をここに送り、Phaseo がそれを通話に渡します。Phaseo が出力を受け付けるのは、バックエンドが行った呼び出しに対してだけで、呼び出しごとに 1 回です。デフォルトでは、その後バックエンドに応答を求めます。バックエンドが一度に複数の呼び出しを行った場合は、最後以外のすべての出力で `create_response` を false に設定してください。",
+			"zh-Hans": "为 WebRTC 会话返回函数工具的结果。浏览器的数据通道无法发送工具事件，因此由你的服务器把每个输出发送到这里，再由 Phaseo 传给通话。Phaseo 只接受针对后端发起的调用的输出，每个调用一次。默认情况下，它随后会请求后端回复；当后端同时发起多个调用时，请在除最后一个之外的每个输出上将 `create_response` 设为 false。",
+			"ar": "يعيد نتيجة أداة دالة لجلسة WebRTC. لا تستطيع قناة البيانات في المتصفح إرسال أحداث الأدوات، لذا يرسل الخادم الخاص بك كل مخرج إلى هنا ويمرّره Phaseo إلى المكالمة. لا يقبل Phaseo مخرجًا إلا لاستدعاء أجراه النموذج الخلفي، مرة واحدة لكل استدعاء. افتراضيًا، يطلب بعد ذلك من النموذج الخلفي رده؛ اضبط `create_response` على false في كل مخرج ما عدا الأخير عندما يجري النموذج الخلفي عدة استدعاءات في وقت واحد."
+		},
+		"The `call_id` of the backend's `function_call` item.": {
+			"es": "El `call_id` del elemento `function_call` del backend.",
+			"fr": "Le `call_id` de l’élément `function_call` du backend.",
+			"de": "Die `call_id` des `function_call`-Elements des Backends.",
+			"pt-BR": "O `call_id` do item `function_call` do backend.",
+			"hi": "बैकएंड के `function_call` आइटम का `call_id`।",
+			"ja": "バックエンドの `function_call` アイテムの `call_id`。",
+			"zh-Hans": "后端 `function_call` 项的 `call_id`。",
+			"ar": "قيمة `call_id` لعنصر `function_call` من النموذج الخلفي."
+		},
+		"The function's result, at most 64 KB.": {
+			"es": "El resultado de la función, como máximo 64 KB.",
+			"fr": "Le résultat de la fonction, 64 Ko au maximum.",
+			"de": "Das Ergebnis der Funktion, höchstens 64 KB.",
+			"pt-BR": "O resultado da função, com no máximo 64 KB.",
+			"hi": "फ़ंक्शन का परिणाम, अधिकतम 64 KB।",
+			"ja": "関数の結果。最大 64 KB。",
+			"zh-Hans": "函数的结果，最大 64 KB。",
+			"ar": "نتيجة الدالة، بحد أقصى 64 KB."
+		},
+		"Ask the backend for its reply after this output. Set it to false while more outputs for the same turn are coming.": {
+			"es": "Pide la respuesta al backend después de esta salida. Establécelo en false mientras falten más salidas para el mismo turno.",
+			"fr": "Demande sa réponse au backend après cette sortie. Définissez-le sur false tant que d’autres sorties pour le même tour sont à venir.",
+			"de": "Fordert nach diesem Output die Antwort des Backends an. Setze es auf false, solange weitere Outputs für denselben Turn folgen.",
+			"pt-BR": "Pede a resposta ao backend depois desta saída. Defina como false enquanto houver mais saídas a caminho para o mesmo turno.",
+			"hi": "इस आउटपुट के बाद बैकएंड से उसका जवाब माँगें। जब तक उसी टर्न के और आउटपुट आने बाकी हों, इसे false सेट करें।",
+			"ja": "この出力の後にバックエンドに応答を求めます。同じターンの出力がまだ続く間は false に設定してください。",
+			"zh-Hans": "在此输出之后请求后端回复。如果同一轮次还有更多输出要发送，请将其设为 false。",
+			"ar": "يطلب من النموذج الخلفي رده بعد هذا المخرج. اضبطه على false ما دامت مخرجات أخرى للدور نفسه قادمة."
+		},
+		"Output sent to the call": {
+			"es": "Salida enviada a la llamada",
+			"fr": "Sortie envoyée à l’appel",
+			"de": "Output an den Anruf gesendet",
+			"pt-BR": "Saída enviada para a chamada",
+			"hi": "आउटपुट कॉल को भेजा गया",
+			"ja": "出力を通話に送信しました",
+			"zh-Hans": "输出已发送到通话",
+			"ar": "أُرسل المخرج إلى المكالمة"
+		},
+		"No such session, or the backend made no call with this `call_id`": {
+			"es": "No existe la sesión, o el backend no hizo ninguna llamada con este `call_id`",
+			"fr": "Session introuvable, ou le backend n’a effectué aucun appel avec ce `call_id`",
+			"de": "Keine solche Sitzung, oder das Backend hat keinen Aufruf mit dieser `call_id` gemacht",
+			"pt-BR": "A sessão não existe, ou o backend não fez nenhuma chamada com este `call_id`",
+			"hi": "ऐसा कोई सत्र नहीं है, या बैकएंड ने इस `call_id` के साथ कोई कॉल नहीं की",
+			"ja": "セッションが存在しないか、バックエンドがこの `call_id` の呼び出しを行っていません",
+			"zh-Hans": "会话不存在，或后端没有发起过此 `call_id` 的调用",
+			"ar": "لا توجد جلسة كهذه، أو لم يُجرِ النموذج الخلفي أي استدعاء بقيمة `call_id` هذه"
+		},
+		"The call already has an output, the session has ended, or Phaseo is reconnecting to the call and the request can be retried": {
+			"es": "La llamada ya tiene una salida, la sesión terminó, o Phaseo se está reconectando a la llamada y la solicitud se puede reintentar",
+			"fr": "L’appel a déjà une sortie, la session est terminée, ou Phaseo se reconnecte à l’appel et la requête peut être réessayée",
+			"de": "Der Aufruf hat bereits einen Output, die Sitzung ist beendet, oder Phaseo verbindet sich gerade wieder mit dem Anruf und die Anfrage kann wiederholt werden",
+			"pt-BR": "A chamada já tem uma saída, a sessão foi encerrada, ou a Phaseo está se reconectando à chamada e a solicitação pode ser repetida",
+			"hi": "कॉल का आउटपुट पहले ही आ चुका है, सत्र समाप्त हो गया है, या Phaseo कॉल से दोबारा कनेक्ट हो रहा है और अनुरोध फिर से भेजा जा सकता है",
+			"ja": "呼び出しにはすでに出力があるか、セッションが終了しているか、Phaseo が通話に再接続中のためリクエストを再試行できます",
+			"zh-Hans": "该调用已有输出、会话已结束，或 Phaseo 正在重新连接到通话，可以重试该请求",
+			"ar": "للاستدعاء مخرج بالفعل، أو انتهت الجلسة، أو أن Phaseo يعيد الاتصال بالمكالمة ويمكن إعادة محاولة الطلب"
 		},
 		"End GPT Live WebRTC session": {
 			"es": "Finalizar sesión WebRTC de GPT Live",

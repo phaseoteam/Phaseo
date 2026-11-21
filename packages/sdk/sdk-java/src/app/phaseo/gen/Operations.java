@@ -1210,6 +1210,11 @@ public final class Operations {
 		return client.request("PUT", resolvedPath, query, headers, body);
 	}
 
+	public static Object sendLiveFunctionCallOutput(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
+		String resolvedPath = "/live/sessions/" + pathSegment(path != null && path.containsKey("session_id") ? path.get("session_id") : "") + "/function_call_output";
+		return client.request("POST", resolvedPath, query, headers, body);
+	}
+
 	public static Object sendObservabilityDestinationSample(Client client, Map<String, String> path, Map<String, String> query, Map<String, String> headers, String body) throws IOException, InterruptedException {
 		String resolvedPath = "/observability/destinations/" + pathSegment(path != null && path.containsKey("id") ? path.get("id") : "") + "/sample";
 		return client.request("POST", resolvedPath, query, headers, body);

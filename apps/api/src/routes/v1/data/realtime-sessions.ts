@@ -21,7 +21,7 @@ import {
 	isRealtimeVoiceAccessEnabled,
 } from "@core/feature-flags";
 import { withRuntime } from "../../utils";
-import { LIVE_BACKENDS, LIVE_MODELS, LIVE_VOICES, isLiveModel, liveModelId, livePolicyCandidates } from "@core/live-sessions";
+import { LIVE_BACKENDS, LIVE_MAX_FUNCTION_OUTPUT_BYTES, LIVE_MODELS, LIVE_VOICES, isLiveModel, liveModelId, livePolicyCandidates } from "@core/live-sessions";
 import { liveBackendSettingsSchema } from "@core/live-settings";
 import { LIVE_IDLE_TIMEOUT_MAX_S, LIVE_IDLE_TIMEOUT_MIN_S, LIVE_WEBRTC_MAX_SDP_BYTES, liveSdpOfferError, type LiveStandbyOptions } from "@core/live-webrtc";
 import {
@@ -439,14 +439,8 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 				message: "transport.sdp must be the browser's SDP offer with an audio track (at most 64 KB).",
 				request_id: auth.value.requestId, workspace_id: auth.value.workspaceId });
 		}
-		// Client-executed function calls are answered over the relay's WebSocket, which a
-		// WebRTC call doesn't have. Web search runs on the backend and works on both.
-		const settings = "backend_settings" in parsed.data ? parsed.data.backend_settings : undefined;
-		if (settings?.tools?.length) {
-			return err("validation_error", { reason: "live_webrtc_function_tools_not_supported",
-				message: "Function tools are not supported with transport type webrtc yet. Use the websocket transport, or remove backend_settings.tools.",
-				request_id: auth.value.requestId, workspace_id: auth.value.workspaceId });
-		}
+		// Function tools work too: their outputs come back through
+		// POST /v1/live/sessions/{id}/function_call_output, not the browser's data channel.
 	}
 	if (!live && isLiveModel(parsed.data.model)) {
 		return err("unsupported_model_or_endpoint", { reason: "live_sessions_endpoint_required",
@@ -726,6 +720,66 @@ liveSessionsRoutes.post("/:sessionId/close", withRuntime(async (req) => {
 		return responseForError(error, auth.value.requestId, auth.value.workspaceId);
 	}
 }));
+// A function tool's result on a WebRTC call. The browser's data channel can only end or mute the
+// call, so the app's server sends each output here; Phaseo forwards it on the sideband.
+export const liveFunctionCallOutputSchema = z.object({
+	call_id: z.string().min(1).max(128),
+	output: z.string().max(LIVE_MAX_FUNCTION_OUTPUT_BYTES),
+	// false while more outputs for the same turn are coming; the last one asks for the reply.
+	create_response: z.boolean().optional(),
+}).strict();
+
+const LIVE_TOOL_OUTPUT_ERRORS: Record<string, { code: "not_found" | "not_ready" | "validation_error"; message: string }> = {
+	live_function_call_unknown: { code: "not_found", message: "The backend made no function call with this call_id in this session." },
+	live_function_call_already_answered: { code: "not_ready", message: "This function call already has an output." },
+	live_function_output_invalid: { code: "validation_error", message: "output must be a string of at most 64 KB." },
+	realtime_session_not_accepting_input: { code: "not_ready", message: "The session is ending and accepts no more input." },
+	realtime_session_not_active: { code: "not_ready", message: "The session has ended." },
+	live_sideband_reattaching: { code: "not_ready", message: "Phaseo is reconnecting to the call. Retry in a second." },
+};
+
+liveSessionsRoutes.post("/:sessionId/function_call_output", withRuntime(async (req) => {
+	const auth = await guardAuth(req);
+	if (auth.ok !== true) return auth.response;
+	const sessionId = sessionIdFromPath(req, "function_call_output");
+	const ids = { request_id: auth.value.requestId, workspace_id: auth.value.workspaceId };
+	const notFound = () => err("not_found", { reason: "realtime_session_not_found", ...ids });
+	if (!isRealtimeSessionId(sessionId)) return notFound();
+	const body = await guardJson(req, auth.value.workspaceId, auth.value.requestId);
+	if (body.ok !== true) return body.response;
+	const parsed = liveFunctionCallOutputSchema.safeParse(body.value);
+	if (!parsed.success) return err("validation_error", { details: parsed.error.flatten(), ...ids });
+	if (new TextEncoder().encode(parsed.data.output).byteLength > LIVE_MAX_FUNCTION_OUTPUT_BYTES) {
+		return err("validation_error", { reason: "live_function_output_invalid", message: LIVE_TOOL_OUTPUT_ERRORS.live_function_output_invalid.message, ...ids });
+	}
+	try {
+		const session = await getRealtimeSessionForInternal(sessionId);
+		if (!liveSessionOwned(session, auth.value)) return notFound();
+		if (session.metadata?.live_transport !== "webrtc") {
+			return err("validation_error", { reason: "live_webrtc_session_required",
+				message: "On the WebSocket relay, send function_call_output as a response.item.create event.", ...ids });
+		}
+		if (TERMINAL_STATUSES.includes(session.status)) {
+			return err("not_ready", { reason: "realtime_session_not_active", message: LIVE_TOOL_OUTPUT_ERRORS.realtime_session_not_active.message, ...ids });
+		}
+		const response = await liveRelayRequest(sessionId, `live-tool-output/${sessionId}`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(parsed.data),
+		});
+		const payload = await response.json().catch(() => null) as { error?: string; status?: string; response_requested?: boolean } | null;
+		if (response.status === 202) {
+			return json({ status: "accepted", call_id: parsed.data.call_id, response_requested: payload?.response_requested ?? parsed.data.create_response !== false }, 202);
+		}
+		const known = payload?.error ? LIVE_TOOL_OUTPUT_ERRORS[payload.error] : undefined;
+		if (!known) throw new Error(`live_webrtc_tool_output_http_${response.status}`);
+		return err(known.code, { reason: payload!.error, message: known.message, ...ids });
+	} catch (error) {
+		if (error instanceof Error && error.message === "realtime_session_not_found") return notFound();
+		return responseForError(error, auth.value.requestId, auth.value.workspaceId);
+	}
+}));
+
 realtimeSessionsRoutes.post("/", withRuntime((req) => createSessionRequest(req)));
 liveSessionsRoutes.post("/", withRuntime((req) => createSessionRequest(req, true)));
 

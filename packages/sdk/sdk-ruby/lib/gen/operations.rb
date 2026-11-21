@@ -1561,6 +1561,13 @@ module Phaseo
         client.request(method: "PUT", path: resolved_path, query: query, headers: headers, body: body)
       end
 
+      def self.sendLiveFunctionCallOutput(client, path: nil, query: nil, headers: nil, body: nil)
+        path ||= {}
+        raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["session_id"].to_s)
+        resolved_path = "/live/sessions/#{URI.encode_uri_component(path["session_id"].to_s)}/function_call_output"
+        client.request(method: "POST", path: resolved_path, query: query, headers: headers, body: body)
+      end
+
       def self.sendObservabilityDestinationSample(client, path: nil, query: nil, headers: nil, body: nil)
         path ||= {}
         raise ArgumentError, "Dot segments are not valid path parameters" if [".", ".."].include?(path["id"].to_s)

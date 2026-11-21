@@ -1215,6 +1215,11 @@ inline Response SaveSuccessorReplacement(Client& client, const std::map<std::str
 	return client.request("PUT", resolved_path, body);
 }
 
+inline Response SendLiveFunctionCallOutput(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
+	const std::string resolved_path = "/live/sessions/" + path_segment(path.count("session_id") ? path.at("session_id") : std::string{}) + "/function_call_output";
+	return client.request("POST", resolved_path, body);
+}
+
 inline Response SendObservabilityDestinationSample(Client& client, const std::map<std::string, std::string>& path = {}, const std::string& body = "") {
 	const std::string resolved_path = "/observability/destinations/" + path_segment(path.count("id") ? path.at("id") : std::string{}) + "/sample";
 	return client.request("POST", resolved_path, body);

@@ -1203,7 +1203,7 @@ paths:
         - Gateway
       operationId: createLiveSession
       summary: إنشاء جلسة GPT Live
-      description: 'ينشئ جلسة صوتية من GPT Live مع قياس الاستخدام، تفوّض الاستدلال إلى نموذج خلفي من Responses. مع نقل WebSocket الافتراضي تُرجع بيانات الاتصال بالمرحّل، وتعمل أدوات الدوال على عميلك: يمرّر المرحّل كل `function_call` ويقبل `function_call_output` الخاص به متبوعًا بـ `response.create`. مع نقل WebRTC، أرسل عرض SDP من اتصال النظير وطبّق إجابة SDP المُرجعة؛ يذهب الصوت حينها مباشرة إلى OpenAI ويتوفر وضع الاستعداد. أدوات الدوال غير مدعومة مع WebRTC بعد.'
+      description: 'ينشئ جلسة صوتية من GPT Live مع قياس الاستخدام، تفوّض الاستدلال إلى نموذج خلفي من Responses. مع نقل WebSocket الافتراضي تُرجع بيانات الاتصال بالمرحّل، وتعمل أدوات الدوال على عميلك: يمرّر المرحّل كل `function_call` ويقبل `function_call_output` الخاص به متبوعًا بـ `response.create`. مع نقل WebRTC، أرسل عرض SDP من اتصال النظير وطبّق إجابة SDP المُرجعة؛ يذهب الصوت حينها مباشرة إلى OpenAI ويتوفر وضع الاستعداد. تُرسل نتائج أدوات الدوال حينها إلى `POST /v1/live/sessions/{session_id}/function_call_output`.'
       requestBody:
         required: true
         content:
@@ -1491,6 +1491,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LiveSessionStatus'
+  /live/sessions/{session_id}/function_call_output:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: sendLiveFunctionCallOutput
+      summary: إرسال نتيجة دالة GPT Live
+      description: يعيد نتيجة أداة دالة لجلسة WebRTC. لا تستطيع قناة البيانات في المتصفح إرسال أحداث الأدوات، لذا يرسل الخادم الخاص بك كل مخرج إلى هنا ويمرّره Phaseo إلى المكالمة. لا يقبل Phaseo مخرجًا إلا لاستدعاء أجراه النموذج الخلفي، مرة واحدة لكل استدعاء. افتراضيًا، يطلب بعد ذلك من النموذج الخلفي رده؛ اضبط `create_response` على false في كل مخرج ما عدا الأخير عندما يجري النموذج الخلفي عدة استدعاءات في وقت واحد.
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - call_id
+                - output
+              properties:
+                call_id:
+                  type: string
+                  description: قيمة `call_id` لعنصر `function_call` من النموذج الخلفي.
+                output:
+                  type: string
+                  maxLength: 65536
+                  description: نتيجة الدالة، بحد أقصى 64 KB.
+                create_response:
+                  type: boolean
+                  default: true
+                  description: يطلب من النموذج الخلفي رده بعد هذا المخرج. اضبطه على false ما دامت مخرجات أخرى للدور نفسه قادمة.
+      responses:
+        '202':
+          description: أُرسل المخرج إلى المكالمة
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - accepted
+                  call_id:
+                    type: string
+                  response_requested:
+                    type: boolean
+        '404':
+          description: لا توجد جلسة كهذه، أو لم يُجرِ النموذج الخلفي أي استدعاء بقيمة `call_id` هذه
+        '409':
+          description: للاستدعاء مخرج بالفعل، أو انتهت الجلسة، أو أن Phaseo يعيد الاتصال بالمكالمة ويمكن إعادة محاولة الطلب
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true
