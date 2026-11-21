@@ -186,7 +186,7 @@ for (const path of ["/realtime/session", "/live/session"]) {
 		}
 		// Over WebRTC, function results go back through POST /v1/live/sessions/{id}/function_call_output
 		// with the issuing key, which this proxy doesn't expose. Calls with function tools use the relay,
-		// where the browser answers them on its own socket.
+		// where the browser answers them on its own socket. Not flagged webrtc_unavailable: later calls without tools still use WebRTC.
 		const functionTools = Array.isArray(body.backend_settings?.tools) && body.backend_settings.tools.length > 0;
 		const sdp = functionTools ? null : offer;
 		const standby = sdp != null && body.standby !== false;
@@ -214,7 +214,7 @@ for (const path of ["/realtime/session", "/live/session"]) {
 		});
 
 		let upstream: Response;
-		let webrtcUnavailable = offer != null && sdp == null;
+		let webrtcUnavailable = false;
 		try {
 			upstream = await createUpstream(sdp != null);
 			if (sdp != null && upstream.status === 401) {

@@ -163,7 +163,10 @@ it("keeps calls with function tools on the WebSocket relay, which can carry thei
 	const sent = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
 	expect(sent).not.toHaveProperty("transport");
 	expect(sent.backend_settings).toEqual({ tools });
-	expect(await response.json()).toMatchObject({ webrtc_unavailable: true, connect: { transport: "websocket" } });
+	const payload = await response.json() as Record<string, unknown>;
+	expect(payload).toMatchObject({ connect: { transport: "websocket" } });
+	// Not flagged: the playground still tries WebRTC for later calls without tools.
+	expect(payload).not.toHaveProperty("webrtc_unavailable");
 });
 
 it("passes other WebRTC refusals through without retrying", async () => {
