@@ -113,7 +113,20 @@ const PROVIDER_OVERRIDES: Record<string, ProviderOverride> = {
 		providerName: "Doubleword",
 		apiKeyEnv: ["DOUBLEWORD_API_KEY"],
 	},
+	// io.net lists models without a key, so a missing key no longer skips it.
+	"io-net": { providerName: "IO.net", authStyle: "optional_bearer" },
 	ionrouter: { providerName: "IonRouter" },
+	dekallm: { providerName: "DekaLLM" },
+	kt: { providerName: "KT Token Factory" },
+	// Public list; gateway-served rows are filtered out in shouldIncludeDiscoveredModel.
+	"prime-intellect": { providerName: "Prime Intellect", authStyle: "optional_bearer" },
+	river: { providerName: "River" },
+	tenstorrent: {
+		providerName: "Tenstorrent",
+		// /v1/models needs a key; this public feed lists the same models with prices.
+		modelsEndpoint: "https://console.tenstorrent.com/v1/openrouter/models",
+		authStyle: "none",
+	},
 	"liquid-ai": { providerName: "Liquid AI", disabled: true },
 	moonshotai: { providerName: "Moonshot AI", apiKeyEnv: ["MOONSHOT_AI_API_KEY"] },
 	mara: { providerName: "MARA" },

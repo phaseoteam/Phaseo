@@ -139,6 +139,16 @@ export type GatewayBindings = {
     AKASHML_BASE_URL?: string;
     PRIMALABS_API_KEY?: string;
     PRIMALABS_BASE_URL?: string;
+    PRIME_INTELLECT_API_KEY?: string;
+    PRIME_INTELLECT_BASE_URL?: string;
+    TENSTORRENT_API_KEY?: string;
+    TENSTORRENT_BASE_URL?: string;
+    KT_TOKEN_FACTORY_API_KEY?: string;
+    KT_TOKEN_FACTORY_BASE_URL?: string;
+    DEKALLM_API_KEY?: string;
+    DEKALLM_BASE_URL?: string;
+    RIVER_API_KEY?: string;
+    RIVER_BASE_URL?: string;
     LG_EXAONE_PLATFORM?: string;
     LG_EXAONE_BASE_URL?: string;
     ALIBABA_CLOUD_API_KEY?: string;
