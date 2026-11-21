@@ -27,7 +27,7 @@ describe("chat answers drawn by Words", () => {
 		expect(chips(html)).toHaveLength(1);
 		expect(html).toContain("$5 and $10");
 		// Highlighting splits code into token spans; its text stays literal, with no chip inside.
-		expect(html.replace(/<[^>]*>/g, "")).toContain("import x from \"apps/web/src/a.ts\";");
+		expect(html.split(/<[^>]*>/).join("")).toContain("import x from \"apps/web/src/a.ts\";");
 	});
 
 	it("draws maths as SVG and keeps code literal", () => {

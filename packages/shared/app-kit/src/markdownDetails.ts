@@ -9,7 +9,7 @@ export type MarkdownPart =
 	| { kind: "markdown"; text: string }
 	| { kind: "details"; summary: string; open: boolean; complete: boolean; parts: MarkdownPart[] };
 
-const OPEN = /^ {0,3}<details(\s[^>]*)?>[ \t]*(.*)$/i;
+const OPEN = /^ {0,3}<details(\s[^>]*)?>(.*)$/i;
 const CLOSE = /^ {0,3}<\/details\s*>(.*)$/i;
 const FENCE = /^ {0,3}(?:>[ \t]?)*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?(`{3,}|~{3,})/;
 /** A tag still arriving at the end of a stream (`<det`, `</deta`), hidden until it is whole. */
@@ -17,7 +17,9 @@ const PARTIAL_TAG = /^ {0,3}<\/?(?:d(?:e(?:t(?:a(?:i(?:l(?:s(?:\s[^>]*)?)?)?)?)?
 
 const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: "\"", apos: "'", nbsp: " " };
 function plainText(html: string) {
-	return html.replace(/<[^>]*>/g, "").replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, name: string) => {
+	// One pass: tags drop and entities decode together, so decoded text is never read again as markup.
+	return html.replace(/<[^>]*>|&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, name?: string) => {
+		if (!name) return "";
 		if (name[0] === "#") {
 			const code = name[1] === "x" || name[1] === "X" ? Number.parseInt(name.slice(2), 16) : Number(name.slice(1));
 			return Number.isInteger(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity;
@@ -80,7 +82,7 @@ export function splitDetails(markdown: string): MarkdownPart[] {
 			top.parts.push(block);
 			const level: Open = { parts: block.parts, text: [], block };
 			stack.push(level);
-			let rest = open[2] ?? "";
+			let rest = (open[2] ?? "").replace(/^[ \t]+/, "");
 			const summary = /^\s*<summary(\s[^>]*)?>/i.exec(rest);
 			if (summary) {
 				level.summary = [];

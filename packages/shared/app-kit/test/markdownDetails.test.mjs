@@ -49,3 +49,9 @@ test("a stray closing tag outside a block is left alone", () => {
 		{ kind: "details", summary: "", open: false, complete: false, parts: [{ kind: "markdown", text: "b" }] },
 	]);
 });
+
+test("a summary drops tags but keeps escaped angle brackets as text", () => {
+	const [block] = splitDetails("<details>\t\t<summary>Use <b>&lt;b&gt;</b> &amp; &#x3c;i&#62;</summary>\n\nbody\n\n</details>");
+	assert.equal(block.kind, "details");
+	assert.equal(block.summary, "Use <b> & <i>");
+});

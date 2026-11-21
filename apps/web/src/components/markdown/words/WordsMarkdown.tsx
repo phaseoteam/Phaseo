@@ -164,7 +164,7 @@ function tableRows(frame: HTMLElement) {
 	return Array.from(frame.querySelectorAll("table tr"), (row) => Array.from(row.querySelectorAll("th, td"), cellText));
 }
 const markdownTable = (rows: string[][]) => rows.map((row, index) => {
-	const line = `| ${row.map((cell) => cell.replace(/\|/g, "\\|")).join(" | ")} |`;
+	const line = `| ${row.map((cell) => cell.replace(/[\\|]/g, "\\$&")).join(" | ")} |`;
 	return index === 0 ? `${line}\n|${row.map(() => " --- ").join("|")}|` : line;
 }).join("\n");
 const csvTable = (rows: string[][]) => rows.map((row) => row.map((cell) => /[",\n]/.test(cell) ? `"${cell.replace(/"/g, "\"\"")}"` : cell).join(",")).join("\n");

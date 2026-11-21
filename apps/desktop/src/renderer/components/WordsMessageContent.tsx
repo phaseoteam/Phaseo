@@ -36,7 +36,9 @@ function urlTransform(url: string, key: "href" | "src") {
 }
 const local = (value: string) => value.startsWith(LOCAL_PATH) ? decodeURIComponent(value.slice(LOCAL_PATH.length)) : value;
 const attribute = (html: string, name: string) => new RegExp(`\\s${name}="([^"]*)"`).exec(html)?.[1]?.replace(/&quot;/g, "\"").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
-const textOf = (html: string) => html.replace(/<[^>]*>/g, "").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, "\"").replace(/&amp;/g, "&");
+// One pass: tags drop and entities decode together, so decoded text is never read again as markup.
+const TEXT_ENTITIES: Record<string, string> = { "&lt;": "<", "&gt;": ">", "&quot;": "\"", "&amp;": "&" };
+const textOf = (html: string) => html.replace(/<[^>]*>|&(?:lt|gt|quot|amp);/g, match => TEXT_ENTITIES[match] ?? "");
 const data = (fields: Record<string, string>) => Object.entries(fields).map(([name, value]) => ` data-${name}="${escapeHtml(value)}"`).join("");
 
 const components: Components = {
