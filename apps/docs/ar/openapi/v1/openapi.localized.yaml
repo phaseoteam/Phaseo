@@ -1518,6 +1518,8 @@ paths:
               properties:
                 call_id:
                   type: string
+                  minLength: 1
+                  maxLength: 128
                   description: قيمة `call_id` لعنصر `function_call` من النموذج الخلفي.
                 output:
                   type: string

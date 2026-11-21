@@ -1518,6 +1518,8 @@ paths:
               properties:
                 call_id:
                   type: string
+                  minLength: 1
+                  maxLength: 128
                   description: バックエンドの `function_call` アイテムの `call_id`。
                 output:
                   type: string

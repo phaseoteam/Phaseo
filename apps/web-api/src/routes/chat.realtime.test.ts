@@ -154,6 +154,18 @@ it("falls back to the WebSocket relay when the WebRTC gate is closed", async () 
 	expect(await response.json()).toMatchObject({ webrtc_unavailable: true, connect: { transport: "websocket", url: "wss://api.phaseo.app/v1/live/sessions/rt_test/relay" } });
 });
 
+it("keeps calls with function tools on the WebSocket relay, which can carry their results", async () => {
+	const fetchMock = vi.fn(async () => Response.json({ clientSecret: "rtsec_test", connect: { url: "/v1/live/sessions/rt_test/relay" } }, { status: 201 }));
+	const tools = [{ type: "function", name: "get_time", parameters: { type: "object", properties: {} } }];
+	const response = await liveWebRTC(fetchMock, { backend_settings: { tools } });
+	expect(response.status).toBe(200);
+	expect(fetchMock).toHaveBeenCalledTimes(1);
+	const sent = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string);
+	expect(sent).not.toHaveProperty("transport");
+	expect(sent.backend_settings).toEqual({ tools });
+	expect(await response.json()).toMatchObject({ webrtc_unavailable: true, connect: { transport: "websocket" } });
+});
+
 it("passes other WebRTC refusals through without retrying", async () => {
 	const fetchMock = vi.fn(async () => Response.json({ error: "unauthorised", reason: "realtime_voice_feature_flag_disabled" }, { status: 401 }));
 	const response = await liveWebRTC(fetchMock);

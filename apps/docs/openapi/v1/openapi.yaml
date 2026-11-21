@@ -1585,6 +1585,8 @@ paths:
               properties:
                 call_id:
                   type: string
+                  minLength: 1
+                  maxLength: 128
                   description: The `call_id` of the backend's `function_call` item.
                 output:
                   type: string

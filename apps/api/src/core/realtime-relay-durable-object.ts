@@ -1734,10 +1734,10 @@ export class RealtimeRelayDurableObject {
 		}
 		await this.restoreLiveToolAnswers();
 		// The app may have seen the call on the data channel before the sideband delivered it here.
+		// Sideband events update this.usage as they arrive, so the wait is bounded by time alone.
 		for (const waitUntil = Date.now() + LIVE_TOOL_CALL_WAIT_MS;
 			!this.usage.live_function_call_ids?.includes(callId) && Date.now() < waitUntil && !this.settled;) {
 			await new Promise((resolve) => setTimeout(resolve, LIVE_TOOL_CALL_POLL_MS));
-			await this.upstreamEvents;
 		}
 		// Checked right before sending: a send on a closed sideband is dropped, and the call must stay answerable.
 		if (this.upstream?.readyState !== WebSocket.OPEN) return refuse(503, "live_sideband_reattaching");

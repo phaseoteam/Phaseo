@@ -461,8 +461,13 @@ describe("GPT Live WebRTC relay", () => {
 			const { object, settled } = relay();
 			await start(object);
 			await settled();
-			const pending = output(object, { call_id: "call_late", output: "ok" });
-			setTimeout(() => openai.sockets[0].emit(functionCall("call_late")), 250);
+			vi.useFakeTimers();
+			let done = false;
+			const pending = output(object, { call_id: "call_late", output: "ok" }).finally(() => { done = true; });
+			await vi.advanceTimersByTimeAsync(300);
+			expect(done).toBe(false);
+			openai.sockets[0].emit(functionCall("call_late"));
+			await vi.advanceTimersByTimeAsync(200);
 			expect((await pending).status).toBe(202);
 			expect(openai.sockets[0].sent[0]).toMatchObject({ item: { call_id: "call_late" } });
 		});
@@ -472,8 +477,12 @@ describe("GPT Live WebRTC relay", () => {
 			await start(object);
 			await settled();
 			openai.attachHangs = true;
+			vi.useFakeTimers();
 			const pending = output(object, { call_id: "call_1", output: "ok" });
-			setTimeout(() => { openai.sockets[0].emit(functionCall("call_1")); openai.sockets[0].drop(); }, 150);
+			await vi.advanceTimersByTimeAsync(300);
+			openai.sockets[0].emit(functionCall("call_1"));
+			openai.sockets[0].drop();
+			await vi.advanceTimersByTimeAsync(200);
 			const response = await pending;
 			expect(response.status).toBe(503);
 			expect(await response.json()).toEqual({ error: "live_sideband_reattaching" });
@@ -482,17 +491,21 @@ describe("GPT Live WebRTC relay", () => {
 			expect(data.get("live_tool_answers")).toBeUndefined();
 		});
 
-		it("refuses an output for a call the backend never made", async () => {
+		it("refuses an output for a call the backend never made, after the wait", async () => {
 			const { object, settled } = relay();
 			await start(object);
 			await settled();
-			const startedAt = Date.now();
-			const response = await output(object, { call_id: "call_made_up", output: "x" });
+			vi.useFakeTimers();
+			let done = false;
+			const pending = output(object, { call_id: "call_made_up", output: "x" }).finally(() => { done = true; });
+			await vi.advanceTimersByTimeAsync(LIVE_TOOL_CALL_WAIT_MS - 200);
+			expect(done).toBe(false);
+			await vi.advanceTimersByTimeAsync(400);
+			const response = await pending;
 			expect(response.status).toBe(404);
 			expect(await response.json()).toEqual({ error: "live_function_call_unknown" });
-			expect(Date.now() - startedAt).toBeGreaterThanOrEqual(LIVE_TOOL_CALL_WAIT_MS - 50);
 			expect(openai.sockets[0].sent).toEqual([]);
-		}, 10_000);
+		});
 
 		it("refuses while the sideband is reattaching, and for a WebSocket session", async () => {
 			const { object, settled } = relay();

@@ -180,10 +180,15 @@ for (const path of ["/realtime/session", "/live/session"]) {
 		if (!baseUrl) return realtimeError(500, "gateway_not_configured", "Realtime gateway is not configured.");
 
 		// GPT Live over WebRTC: the browser's SDP offer, with standby so idle time bills at the lower rate.
-		const sdp = live && body.transport === "webrtc" && typeof body.sdp === "string" ? body.sdp : null;
-		if (sdp != null && (sdp.length > 64 * 1024 || !sdp.startsWith("v=0"))) {
+		const offer = live && body.transport === "webrtc" && typeof body.sdp === "string" ? body.sdp : null;
+		if (offer != null && (offer.length > 64 * 1024 || !offer.startsWith("v=0"))) {
 			return realtimeError(400, "invalid_live_webrtc_offer", "Invalid WebRTC offer.");
 		}
+		// Over WebRTC, function results go back through POST /v1/live/sessions/{id}/function_call_output
+		// with the issuing key, which this proxy doesn't expose. Calls with function tools use the relay,
+		// where the browser answers them on its own socket.
+		const functionTools = Array.isArray(body.backend_settings?.tools) && body.backend_settings.tools.length > 0;
+		const sdp = functionTools ? null : offer;
 		const standby = sdp != null && body.standby !== false;
 		const createUpstream = (webrtc: boolean) => fetch(`${baseUrl}/${live ? "live" : "realtime"}/sessions`, {
 			method: "POST",
@@ -209,7 +214,7 @@ for (const path of ["/realtime/session", "/live/session"]) {
 		});
 
 		let upstream: Response;
-		let webrtcUnavailable = false;
+		let webrtcUnavailable = offer != null && sdp == null;
 		try {
 			upstream = await createUpstream(sdp != null);
 			if (sdp != null && upstream.status === 401) {
