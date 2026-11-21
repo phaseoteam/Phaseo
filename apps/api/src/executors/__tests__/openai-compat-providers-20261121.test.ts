@@ -18,6 +18,42 @@ beforeAll(() => setupRuntimeFromEnv(Object.fromEntries(PROVIDERS.map(([providerI
 afterAll(teardownTestRuntime);
 
 describe("OpenAI-compatible providers added 2026-11-21", () => {
+	it.each(PROVIDERS)("%s reads the upstream SSE stream and its final usage event", async (providerId, _env, url, upstreamModel) => {
+		const executor = resolveProviderExecutor(providerId, "text.generate");
+		const chunk = (body: Record<string, unknown>) => `data: ${JSON.stringify({ id: `chat_${providerId}`, object: "chat.completion.chunk", model: upstreamModel, ...body })}\n\n`;
+		const mock = installFetchMock([{
+			match: (requestUrl) => requestUrl === url,
+			response: new Response([
+				chunk({ choices: [{ index: 0, delta: { role: "assistant" }, finish_reason: null }] }),
+				chunk({ choices: [{ index: 0, delta: { content: "ok" }, finish_reason: null }] }),
+				chunk({ choices: [{ index: 0, delta: {}, finish_reason: "stop" }] }),
+				chunk({ choices: [], usage: { prompt_tokens: 7, completion_tokens: 2, total_tokens: 9 } }),
+				"data: [DONE]\n\n",
+			].join(""), { status: 200, headers: { "Content-Type": "text/event-stream" } }),
+		}]);
+		try {
+			const result = await executor!({
+				ir: { model: "test/model", stream: false, messages: [{ role: "user", content: [{ type: "text", text: "hi" }] }] } as IRChatRequest,
+				requestId: `req_sse_${providerId}`,
+				workspaceId: "workspace_test",
+				providerId,
+				providerModelSlug: upstreamModel,
+				endpoint: "chat.completions",
+				protocol: "openai.chat.completions",
+				capability: "text.generate",
+				capabilityParams: { params: ["max_tokens"] },
+				byokMeta: [],
+				pricingCard: { rules: [] },
+				meta: {},
+			} as unknown as ExecutorExecuteArgs);
+			expect(mock.calls[0].bodyJson).toMatchObject({ model: upstreamModel, stream: true });
+			expect(result.kind).toBe("completed");
+			if (result.kind === "completed") expect(result.bill.usage).toMatchObject({ input_tokens: 7, output_tokens: 2 });
+		} finally {
+			mock.restore();
+		}
+	});
+
 	it.each(PROVIDERS)("%s calls its chat endpoint with its own key", async (providerId, _env, url, upstreamModel) => {
 		const executor = resolveProviderExecutor(providerId, "text.generate");
 		expect(executor).toBeTruthy();

@@ -1,6 +1,7 @@
 // Purpose: Executor for river / text-generate.
 // Why: Keeps the river OpenAI-compatible gateway route provider-local.
-// How: Uses the shared OpenAI wire executor and standard IR parameter handling.
+// How: Uses the shared OpenAI wire executor and standard IR parameter handling;
+// responses and streams pass through unchanged.
 
 import type { IRChatRequest } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
@@ -16,17 +17,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	return executeOpenAIWire(args);
 }
 
-export function postprocess(ir: any): any {
-	return ir;
-}
-
-export function transformStream(stream: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
-	return stream;
-}
-
 export const executor: ProviderExecutor = buildTextExecutor({
 	preprocess,
 	execute,
-	postprocess,
-	transformStream,
+	postprocess: <T>(ir: T): T => ir,
+	transformStream: (stream: ReadableStream<Uint8Array>) => stream,
 });
