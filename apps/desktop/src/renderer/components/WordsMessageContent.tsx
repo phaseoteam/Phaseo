@@ -36,9 +36,11 @@ function urlTransform(url: string, key: "href" | "src") {
 }
 const local = (value: string) => value.startsWith(LOCAL_PATH) ? decodeURIComponent(value.slice(LOCAL_PATH.length)) : value;
 const attribute = (html: string, name: string) => new RegExp(`\\s${name}="([^"]*)"`).exec(html)?.[1]?.replace(/&quot;/g, "\"").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
-// One pass: tags drop and entities decode together, so decoded text is never read again as markup.
+/** Tags removed until none are left; the result is plain text, escaped again wherever it goes back into HTML. */
+const stripTags = (html: string) => { let text = html, previous; do { previous = text; text = text.replace(/<[^>]*>/g, ""); } while (text !== previous); return text; };
 const TEXT_ENTITIES: Record<string, string> = { "&lt;": "<", "&gt;": ">", "&quot;": "\"", "&amp;": "&" };
-const textOf = (html: string) => html.replace(/<[^>]*>|&(?:lt|gt|quot|amp);/g, match => TEXT_ENTITIES[match] ?? "");
+// Entities decode in one pass after the tags are gone, so `&amp;lt;` stays `&lt;`.
+const textOf = (html: string) => stripTags(html).replace(/&(?:lt|gt|quot|amp);/g, match => TEXT_ENTITIES[match] ?? match);
 const data = (fields: Record<string, string>) => Object.entries(fields).map(([name, value]) => ` data-${name}="${escapeHtml(value)}"`).join("");
 
 const components: Components = {

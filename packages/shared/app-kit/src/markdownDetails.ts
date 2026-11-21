@@ -16,10 +16,15 @@ const FENCE = /^ {0,3}(?:>[ \t]?)*(?:(?:[-*+]|\d{1,9}[.)])[ \t]+)?(`{3,}|~{3,})/
 const PARTIAL_TAG = /^ {0,3}<\/?(?:d(?:e(?:t(?:a(?:i(?:l(?:s(?:\s[^>]*)?)?)?)?)?)?)?)?$/i;
 
 const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: "\"", apos: "'", nbsp: " " };
+/** Tags removed until none are left; the summary is shown as plain text, never as HTML. */
+function stripTags(html: string) {
+	let text = html, previous;
+	do { previous = text; text = text.replace(/<[^>]*>/g, ""); } while (text !== previous);
+	return text;
+}
 function plainText(html: string) {
-	// One pass: tags drop and entities decode together, so decoded text is never read again as markup.
-	return html.replace(/<[^>]*>|&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, name?: string) => {
-		if (!name) return "";
+	// Entities decode in one pass after the tags are gone, so `&amp;lt;` stays `&lt;`.
+	return stripTags(html).replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, name: string) => {
 		if (name[0] === "#") {
 			const code = name[1] === "x" || name[1] === "X" ? Number.parseInt(name.slice(2), 16) : Number(name.slice(1));
 			return Number.isInteger(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : entity;
