@@ -1,8 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { createMarkdownPrefixCache, lastCleanBreak } from "../src/markdownPrefixCache.ts";
-import { chipMarkdown } from "../src/messageChipsMarkdown.ts";
-import { normalizeChatMarkdown } from "../src/markdownMath.ts";
+import { register } from "node:module";
+
+// App-kit sources import siblings without an extension (bundlers resolve them); plain Node needs the ".ts" added.
+register("data:text/javascript," + encodeURIComponent(`
+export async function resolve(specifier, context, next) {
+	try { return await next(specifier, context); }
+	catch (error) { if (error?.code === "ERR_MODULE_NOT_FOUND" && specifier.startsWith(".") && !/\.[cm]?[jt]s$/.test(specifier)) return next(specifier + ".ts", context); throw error; }
+}`));
+const { createMarkdownPrefixCache, lastCleanBreak } = await import("../src/markdownPrefixCache.ts");
+const { chipMarkdown } = await import("../src/messageChipsMarkdown.ts");
+const { normalizeChatMarkdown } = await import("../src/markdownMath.ts");
 
 const transform = markdown => chipMarkdown(normalizeChatMarkdown(markdown));
 const fence = "```";

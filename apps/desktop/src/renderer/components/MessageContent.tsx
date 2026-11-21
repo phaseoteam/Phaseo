@@ -21,11 +21,12 @@ import type { PluggableList } from "unified";
 import { tableCsv, tableMarkdown, tableRows } from "./markdownTable";
 import { extractLargeTables, remarkLargeTables } from "./largeTables";
 import { useMarkdownEngine } from "./markdownEngine";
-import { WordsMessageContent } from "./WordsMessageContent";
 import { ImageViewer, type GalleryImage } from "./ImageViewer";
 
 const MathTypeset = lazy(() => import("./MathTypeset"));
 const MermaidDiagram = lazy(() => import("./MermaidDiagram"));
+// Words (and its Wasm) loads only when the experiment is switched on, so it adds nothing to startup.
+const WordsMessageContent = lazy(() => import("./WordsMessageContent").then(module => ({ default: module.WordsMessageContent })));
 
 export const ProjectContext = createContext<string | undefined>(undefined);
 
@@ -228,7 +229,7 @@ const markdownPlugins: PluggableList = [mathPlugin, remarkMathGuard, remarkGfm, 
  */
 export const MessageContent = memo(function MessageContent(props: { text: string; projectId?: string; repairLocalLinks?: boolean; repository?: string; lineBreaks?: boolean; streaming?: boolean }) {
 	const engine = useMarkdownEngine();
-	return engine === "words" ? <WordsMessageContent {...props} /> : <ReactMarkdownMessageContent {...props} />;
+	return engine === "words" ? <Suspense fallback={<ReactMarkdownMessageContent {...props} />}><WordsMessageContent {...props} /></Suspense> : <ReactMarkdownMessageContent {...props} />;
 });
 
 export function ReactMarkdownMessageContent({ text, projectId, repairLocalLinks = false, repository, lineBreaks = false }: { text: string; projectId?: string; repairLocalLinks?: boolean; repository?: string; lineBreaks?: boolean }) {
