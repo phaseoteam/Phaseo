@@ -21,6 +21,8 @@ import {
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react";
 import { createContext, memo, useContext, useEffect, useState } from "react";
 import { Streamdown } from "streamdown";
+import { useMarkdownEngine } from "@/components/markdown/words/markdownEngine";
+import { WordsMarkdown } from "@/components/markdown/words/WordsMarkdown";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
   from: UIMessage["role"];
@@ -308,15 +310,15 @@ export const MessageBranchPage = ({
 
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
+function MessageResponseMarkdown({ className, ...props }: MessageResponseProps) {
+  const engine = useMarkdownEngine();
+  if (engine === "words" && typeof props.children === "string") return <WordsMarkdown className={cn("size-full", className)} isStreaming={props.isAnimating}>{props.children}</WordsMarkdown>;
+  return <Streamdown className={cn("size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0", className)} {...props} />;
+}
+
 export const MessageResponse = memo(
   ({ className, ...props }: MessageResponseProps) => (
-    <Streamdown
-      className={cn(
-        "size-full [&>*:first-child]:mt-0 [&>*:last-child]:mb-0",
-        className
-      )}
-      {...props}
-    />
+    <MessageResponseMarkdown className={className} {...props} />
   ),
   (prevProps, nextProps) => prevProps.children === nextProps.children
 );

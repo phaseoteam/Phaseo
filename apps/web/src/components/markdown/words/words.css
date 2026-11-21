@@ -1,0 +1,96 @@
+/*
+ * Words output inside chat, matching Streamdown (the reference: its Tailwind classes are noted beside each rule).
+ * Words' own styles.css sits in a layer, so these unlayered rules always win and can keep a low specificity.
+ */
+@import "@pierre/words/styles.css" layer(words);
+
+.words-markdown {
+	font-size: inherit;
+	line-height: inherit;
+	overflow-wrap: anywhere;
+}
+/* Streamdown spaces only top-level blocks (space-y-4); text nested in lists and quotes has no margins. */
+.words-markdown :where(p, ul, ol, blockquote, table) { margin-block: 0; }
+.words-markdown > :where(*) { margin-block: 0 1rem; }
+.words-markdown :where([data-markdown="code-block"], .words-table-frame, blockquote) { margin-block: 1rem; }
+/* Parts (split around <details>) follow one another like blocks of one document: only the outer edges lose margins. */
+.words-parts > :first-child, .words-parts > :first-child > :first-child { margin-top: 0; }
+.words-parts > :last-child, .words-parts > :last-child > :last-child { margin-bottom: 0; }
+/* mt-6 mb-2 font-semibold text-3xl … text-sm */
+.words-markdown :is(h1, h2, h3, h4, h5, h6) { font-weight: 600; line-height: 1.3; letter-spacing: normal; margin-block: 1.5rem 0.5rem; }
+.words-markdown h1 { font-size: 1.875rem; line-height: 2.25rem; }
+.words-markdown h2 { font-size: 1.5rem; line-height: 2rem; }
+.words-markdown h3 { font-size: 1.25rem; line-height: 1.75rem; }
+.words-markdown h4 { font-size: 1.125rem; line-height: 1.75rem; }
+.words-markdown h5 { font-size: 1rem; }
+.words-markdown h6 { font-size: 0.875rem; }
+/* list-inside list-disc whitespace-normal; li py-1 [&>p]:inline */
+.words-markdown :is(ul, ol) { padding-inline-start: 0; list-style-position: inside; white-space: normal; }
+.words-markdown ul { list-style-type: disc; }
+.words-markdown ol { list-style-type: decimal; }
+.words-markdown li :is(ul, ol) { padding-inline-start: 1.5rem; margin-block: 0; }
+.words-markdown li { padding-block: 0.25rem; }
+.words-markdown li > p { display: inline; }
+.words-markdown li > input[type="checkbox"] { margin-inline-end: 0.4em; vertical-align: middle; }
+.words-markdown a[href] { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+/* A link whose URL Words refused (javascript:, data:, …) keeps only its text. */
+.words-markdown a:not([href]) { color: inherit; text-decoration: none; }
+/* my-4 border-muted-foreground/30 border-l-4 pl-4 text-muted-foreground italic */
+.words-markdown blockquote { border-inline-start: 4px solid color-mix(in oklab, var(--muted-foreground) 30%, transparent); padding-inline-start: 1rem; color: var(--muted-foreground); font-style: italic; opacity: 1; }
+/* rounded bg-muted px-1.5 py-0.5 font-mono text-sm */
+.words-markdown :not(pre) > code { font-family: var(--font-mono, ui-monospace, monospace); font-size: 0.875rem; padding: 0.125rem 0.375rem; border-radius: 0.25rem; background: var(--muted); }
+/* my-6 border-border */
+.words-markdown hr { border: 0; border-top: 1px solid var(--border); margin-block: 1.5rem; }
+.words-markdown img { max-width: 100%; border-radius: 0.5rem; }
+.words-chip { display: inline; }
+
+/* Code blocks: group my-4 flex flex-col gap-2 rounded-xl border bg-sidebar p-2; the code sits in a rounded-md border bg-background panel. */
+.words-markdown [data-markdown="code-block"] { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.5rem; border: 1px solid var(--border); border-radius: calc(var(--radius) + 4px); background: var(--sidebar); overflow: visible; }
+/* flex h-8 items-center text-muted-foreground text-xs; the language is ml-1 font-mono lowercase */
+.words-markdown [data-markdown="code-header"] { display: flex; align-items: center; justify-content: space-between; height: 2rem; padding: 0; border: 0; color: var(--muted-foreground); font: 0.75rem/1rem var(--font-mono, ui-monospace, monospace); }
+.words-markdown [data-markdown="code-header"] > span:first-child { margin-inline-start: 0.25rem; text-transform: lowercase; }
+.words-markdown [data-markdown="code-header"] > span:last-child { display: flex; align-items: center; gap: 0.5rem; }
+.words-markdown [data-markdown="code-block"] pre,
+.words-markdown [data-markdown="mermaid"] { border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); background: var(--background); }
+.words-markdown [data-markdown="code-block"] pre { padding: 1rem; font: 0.875rem/1.25rem var(--font-mono, ui-monospace, monospace); max-height: none; }
+.words-markdown [data-markdown="line-numbers"] { opacity: 1; color: var(--muted-foreground); }
+/* @pierre/highlights writes each token's dark colour as --hls-dark; the app switches theme with .dark. */
+.dark .words-markdown [data-markdown="code-block"] span[style*="--hls-dark"] { color: var(--hls-dark) !important; }
+
+/* rounded-md p-1 text-muted-foreground transition-all hover:bg-muted hover:text-foreground */
+.words-action { display: inline-flex; align-items: center; justify-content: center; padding: 0.25rem; border-radius: 0.375rem; color: var(--muted-foreground); cursor: pointer; transition: background-color 150ms, color 150ms; }
+.words-action:hover { background: var(--muted); color: var(--foreground); }
+.words-action:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.words-portal-host { display: contents; }
+
+/* Tables: my-4 flex flex-col gap-2 rounded-lg border bg-sidebar p-2, actions on the right, the table in a bordered panel. */
+.words-table-frame { display: flex; flex-direction: column; gap: 0.5rem; padding: 0.5rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--sidebar); }
+.words-table-actions { display: flex; justify-content: flex-end; gap: 0.25rem; }
+.words-table { overflow-x: auto; max-width: 100%; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); background: var(--background); }
+.words-table table { display: table; border-collapse: collapse; width: 100%; margin: 0; font-size: 0.875rem; }
+.words-markdown .words-table :is(th, td) { border: 0; padding: 0.5rem 1rem; text-align: start; overflow-wrap: normal; }
+/* thead bg-muted/80; rows divide-y; th whitespace-nowrap font-semibold */
+.words-markdown .words-table thead { background: color-mix(in oklab, var(--muted) 80%, transparent); }
+.words-markdown .words-table th { font-weight: 600; white-space: nowrap; }
+.words-markdown .words-table tr + tr, .words-markdown .words-table tbody tr { border-top: 1px solid var(--border); }
+
+/* Diagrams: Pele's CSS variables, from the app's tokens. */
+.words-markdown svg.pele {
+	--pele-bg: var(--background);
+	--pele-fg: var(--foreground);
+	--pele-muted: var(--muted-foreground);
+	--pele-line: var(--muted-foreground);
+	--pele-surface: var(--card, var(--background));
+	--pele-surface-alt: var(--muted);
+	--pele-border: var(--border);
+	--pele-accent: var(--primary);
+	--pele-radius: 6px;
+}
+.words-markdown [data-markdown="mermaid"] { padding: 1rem; overflow-x: auto; }
+.words-markdown [data-markdown="mermaid"] > svg { display: block; margin-inline: auto; }
+
+/* <details> from the model: the summary is a disclosure row, the body is indented Markdown. */
+.words-parts > details, .words-details details { margin-block: 0 1rem; }
+.words-details > summary { width: fit-content; cursor: pointer; }
+.words-details[open] > summary { margin-bottom: 0.5rem; }
+.words-details > :not(summary) { margin-inline-start: 1.25rem; }

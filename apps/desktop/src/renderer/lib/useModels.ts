@@ -5,6 +5,7 @@ import { BACKGROUND_REFRESH_MS } from "./useBackgroundRefresh";
 import { providerHealthMs } from "./providerHealth";
 
 const PHASEO_POLL_MS = 5 * 60 * 1000;
+const noModels: ModelOption[] = [];
 const modelsKey = (harness: Harness, accountId?: string, projectId?: string) => ["workspace-models", harness, accountId ?? "", projectId ?? ""];
 
 /** Re-read a catalog after a refresh; the main process caches Phaseo's on disk and refreshes it in the background. */
@@ -44,7 +45,8 @@ export function useModels(harness: Harness, accountId?: string, projectId?: stri
 		if (!available) return;
 		return api!.onModelsChange(change => { if (change.harness === harness && (change.accountId ?? "") === (accountId ?? "")) void revalidateModels(harness, accountId); });
 	}, [api, available, harness, accountId]);
-	const models = available ? data ?? [] : fallback ?? [];
+	// One shared empty list: a fresh [] each render would change every effect that depends on it (the picker's catalogs looped).
+	const models = available ? data ?? noModels : fallback ?? noModels;
 	return {
 		models,
 		loading: available && data === undefined && !error,

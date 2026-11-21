@@ -6,6 +6,9 @@ import { parseChipAttribute, remarkMessageChips } from "@phaseo/app-kit/message-
 import { chatMarkdownPlugins, normalizeChatMarkdown } from "../chatMarkdown";
 import { MessageChip } from "../MessageChips";
 import { getOpenUISource } from "./openuiHelpers";
+import { chipMarkdown } from "@phaseo/app-kit/message-chips-markdown";
+import { useMarkdownEngine, type MarkdownEngine } from "@/components/markdown/words/markdownEngine";
+import { WordsMarkdown } from "@/components/markdown/words/WordsMarkdown";
 import { disableOpenUIAutoDevtools } from "./loadOpenUI";
 import type { ChatOpenUIRendererProps } from "./ChatOpenUIRenderer";
 
@@ -77,7 +80,13 @@ function AnswerSpan({ node: _node, ...props }: ComponentProps<"span"> & { node?:
 const answerComponents: StreamdownProps["components"] = { span: AnswerSpan };
 
 /** An assistant answer's Markdown, with reply chips for paths, links, commits, branches and local servers. */
-export function ChatAnswerMarkdown({ content }: { content: string }) {
+const prepareAnswer = (markdown: string) => chipMarkdown(normalizeChatMarkdown(markdown));
+const renderAnswerChip = (chip: Parameters<typeof MessageChip>[0]["chip"]) => <MessageChip chip={chip} />;
+
+export function ChatAnswerMarkdown({ content, isStreaming = false, engine: forced }: { content: string; isStreaming?: boolean; engine?: MarkdownEngine }) {
+  const preferred = useMarkdownEngine();
+  const engine = forced ?? preferred;
+  if (engine === "words") return <WordsMarkdown isStreaming={isStreaming} renderChip={renderAnswerChip} prepare={prepareAnswer}>{content}</WordsMarkdown>;
   return (
     <Streamdown plugins={chatMarkdownPlugins} remarkPlugins={answerRemarkPlugins} components={answerComponents} allowedTags={answerAllowedTags}>
       {normalizeChatMarkdown(content)}
@@ -102,5 +111,5 @@ export function ChatAnswerContent({
     /^\s*(?:r|ro|roo|root\s*)$/.test(content)
   )
     return null;
-  return <ChatAnswerMarkdown content={content} />;
+  return <ChatAnswerMarkdown content={content} isStreaming={props.isStreaming} />;
 }

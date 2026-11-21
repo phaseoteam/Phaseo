@@ -10,7 +10,14 @@ import { BrainIcon, ChevronDownIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { createContext, memo, useContext, useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
+import { useMarkdownEngine } from "@/components/markdown/words/markdownEngine";
+import { WordsMarkdown } from "@/components/markdown/words/WordsMarkdown";
 import { Shimmer } from "./shimmer";
+
+function ReasoningMarkdown({ children }: { children: string }) {
+  const engine = useMarkdownEngine();
+  return engine === "words" ? <WordsMarkdown>{children}</WordsMarkdown> : <Streamdown>{children}</Streamdown>;
+}
 
 type ReasoningContextValue = {
   isStreaming: boolean;
@@ -177,7 +184,7 @@ export const ReasoningContent = memo(
       )}
       {...collapsibleProps}
     >
-      <Streamdown>{children}</Streamdown>
+      <ReasoningMarkdown>{children}</ReasoningMarkdown>
     </CollapsibleContent>
   )
 );

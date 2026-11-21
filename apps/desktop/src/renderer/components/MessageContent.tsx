@@ -20,12 +20,14 @@ import { repairFileLinks } from "./repairFileLinks";
 import type { PluggableList } from "unified";
 import { tableCsv, tableMarkdown, tableRows } from "./markdownTable";
 import { extractLargeTables, remarkLargeTables } from "./largeTables";
+import { useMarkdownEngine } from "./markdownEngine";
+import { WordsMessageContent } from "./WordsMessageContent";
 import { ImageViewer, type GalleryImage } from "./ImageViewer";
 
 const MathTypeset = lazy(() => import("./MathTypeset"));
 const MermaidDiagram = lazy(() => import("./MermaidDiagram"));
 
-const ProjectContext = createContext<string | undefined>(undefined);
+export const ProjectContext = createContext<string | undefined>(undefined);
 
 const nodeText = (node: ReactNode): string => typeof node === "string" || typeof node === "number" ? String(node) : Array.isArray(node) ? node.map(nodeText).join("") : isValidElement<{ children?: ReactNode }>(node) ? nodeText(node.props.children) : "";
 const bareUrl = (value: string) => value.replace(/^https?:\/\//i, "").replace(/\/$/, "");
@@ -35,7 +37,7 @@ const watchTheme = (listener: () => void) => { const observer = new MutationObse
 const useDark = () => useSyncExternalStore(watchTheme, () => document.documentElement.classList.contains("dark"), () => false);
 
 /** Markdown links as chips; link text that differs from the destination becomes the chip's label. */
-function MessageLink({ href, children }: { href?: string; children?: ReactNode }) {
+export function MessageLink({ href, children }: { href?: string; children?: ReactNode }) {
 	const projectId = useContext(ProjectContext);
 	const reference = href ? parseFileReference(href) : undefined;
 	const label = nodeText(children);
@@ -61,7 +63,7 @@ function MarkdownChip({ value }: { value: string }) {
 export const imageSource = (src: string) => /^(https:|data:image\/)/i.test(src) ? { kind: "direct" as const, src } : /^[a-z][a-z0-9+.-]*:/i.test(src) && !/^file:/i.test(src) && !/^[a-z]:[\\/]/i.test(src) ? undefined : { kind: "project" as const, path: decodeURI(src.replace(/^file:\/\/\/?/i, "").replace(/[?#].*$/, "")) };
 
 /** Images in a reply open in the viewer, which steps through every image in the same message. */
-function MessageImage({ src, alt }: { src?: string; alt?: string }) {
+export function MessageImage({ src, alt }: { src?: string; alt?: string }) {
 	const projectId = useContext(ProjectContext);
 	const source = src ? imageSource(src) : undefined;
 	const [local, setLocal] = useState<{ path: string; src?: string; error?: string }>();
@@ -167,7 +169,7 @@ function MermaidBlock({ text, children }: { text: string; children: ReactNode })
 	</>;
 }
 
-const alerts: Record<AlertKind, { label: string; Icon: typeof Info }> = {
+export const messageAlerts: Record<AlertKind, { label: string; Icon: typeof Info }> = {
 	note: { label: "Note", Icon: Info }, tip: { label: "Tip", Icon: Lightbulb }, important: { label: "Important", Icon: MessageSquareWarning },
 	warning: { label: "Warning", Icon: TriangleAlert }, caution: { label: "Caution", Icon: OctagonAlert },
 };
@@ -207,7 +209,7 @@ const markdownComponents: Components = {
 		table: ({ children }) => <MessageTable>{children}</MessageTable>,
 		// GitHub's alerts, in the app's callout style: a tinted box with the kind's icon and name.
 		blockquote: props => {
-			const kind = (props as Record<string, unknown>)["data-alert"] as AlertKind | undefined, alert = kind ? alerts[kind] : undefined;
+			const kind = (props as Record<string, unknown>)["data-alert"] as AlertKind | undefined, alert = kind ? messageAlerts[kind] : undefined;
 			if (!alert) return <blockquote>{props.children}</blockquote>;
 			return <div role="note" className="message-alert" data-alert={kind}><p className="message-alert-title" data-find-ignore><alert.Icon aria-hidden className="size-4" />{alert.label}</p>{props.children}</div>;
 		},
@@ -224,7 +226,12 @@ const markdownPlugins: PluggableList = [mathPlugin, remarkMathGuard, remarkGfm, 
  * `lineBreaks` keeps each typed newline, for what people write.
  * Memoised: a long chat re-renders on every streamed update, and parsing Markdown is most of the cost of each message.
  */
-export const MessageContent = memo(function MessageContent({ text, projectId, repairLocalLinks = false, repository, lineBreaks = false }: { text: string; projectId?: string; repairLocalLinks?: boolean; repository?: string; lineBreaks?: boolean }) {
+export const MessageContent = memo(function MessageContent(props: { text: string; projectId?: string; repairLocalLinks?: boolean; repository?: string; lineBreaks?: boolean; streaming?: boolean }) {
+	const engine = useMarkdownEngine();
+	return engine === "words" ? <WordsMessageContent {...props} /> : <ReactMarkdownMessageContent {...props} />;
+});
+
+export function ReactMarkdownMessageContent({ text, projectId, repairLocalLinks = false, repository, lineBreaks = false }: { text: string; projectId?: string; repairLocalLinks?: boolean; repository?: string; lineBreaks?: boolean }) {
 	// Long tables are lifted out and parsed in pieces (largeTables.ts); remarkLargeTables puts them back before any other plugin.
 	const { text: rendered, tables } = useMemo(() => extractLargeTables(repairLocalLinks ? repairFileLinks(text) : text), [text, repairLocalLinks]);
 	const plugins = useMemo((): PluggableList => {
@@ -238,7 +245,7 @@ export const MessageContent = memo(function MessageContent({ text, projectId, re
 	const tree = useMemo(() => parsedMarkdown(key, () => Markdown({ remarkPlugins: plugins, components: markdownComponents, urlTransform: messageUrl, children: rendered })), [key, plugins, rendered]);
 	// What people type keeps the composer chip (`lineBreaks`); replies set theirs into the text.
 	return <ProjectContext value={projectId}><ChipVariantContext value={lineBreaks ? "token" : "embedded"}><div className="message-markdown">{tree}</div></ChipVariantContext></ProjectContext>;
-});
+}
 
 /** Parsed Markdown by text, newest last: up to 400 messages and 8 MB of their text. */
 const markdownCache = new Map<string, ReactElement>();
