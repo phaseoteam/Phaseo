@@ -13,15 +13,18 @@ const engines: MarkdownEngine[] = ["react-markdown", "words"];
 const heap = () => (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize;
 const nextFrame = () => new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
 
-function Body({ engine, text, streaming }: { engine: MarkdownEngine; text: string; streaming: boolean }) {
-	return engine === "words" ? <WordsMessageContent text={text} streaming={streaming} repairLocalLinks /> : <ReactMarkdownMessageContent text={text} repairLocalLinks />;
+// The pull request fixture is drawn as a comment on this repository, so `#123` and commits link into it.
+const repositoryFor = (fixture: MarkdownFixture) => fixture === "pullRequest" ? "phaseoteam/Phaseo" : undefined;
+
+function Body({ engine, text, streaming, repository }: { engine: MarkdownEngine; text: string; streaming: boolean; repository?: string }) {
+	return engine === "words" ? <WordsMessageContent text={text} streaming={streaming} repairLocalLinks repository={repository} /> : <ReactMarkdownMessageContent text={text} repairLocalLinks repository={repository} />;
 }
 
-function Pane({ engine, text, streaming, onRender }: { engine: MarkdownEngine; text: string; streaming: boolean; onRender?: (ms: number) => void }) {
+function Pane({ engine, text, streaming, repository, onRender }: { engine: MarkdownEngine; text: string; streaming: boolean; repository?: string; onRender?: (ms: number) => void }) {
 	return <section className="min-w-0 rounded-md border border-border p-4" data-engine={engine}>
 		<h2 className="mb-3 text-xs font-medium text-muted-foreground">{engine === "words" ? "Words (@pierre/words)" : "react-markdown (current)"}</h2>
 		<div data-selectable className="text-[14px] leading-relaxed" data-md-output={engine}>
-			<Profiler id={engine} onRender={(_id, _phase, actual) => onRender?.(actual)}><Body engine={engine} text={text} streaming={streaming} /></Profiler>
+			<Profiler id={engine} onRender={(_id, _phase, actual) => onRender?.(actual)}><Body engine={engine} text={text} streaming={streaming} repository={repository} /></Profiler>
 		</div>
 	</section>;
 }
@@ -79,8 +82,8 @@ export function MarkdownLab() {
 			<button type="button" className="rounded-md border border-border px-3 py-1" onClick={() => setDark(value => !value)}>{dark ? "Light" : "Dark"}</button>
 			{engines.map(engine => <button key={engine} type="button" className="rounded-md border border-border px-3 py-1" onClick={() => void run(engine, fixture, chunk)}>Stream with {engine}</button>)}
 		</header>
-		{bench && <div ref={benchRef}><Pane engine={bench.engine} text={bench.text} streaming={bench.streaming} onRender={ms => { reactMs.current += ms; }} /></div>}
+		{bench && <div ref={benchRef}><Pane engine={bench.engine} text={bench.text} streaming={bench.streaming} repository={repositoryFor(fixture)} onRender={ms => { reactMs.current += ms; }} /></div>}
 		{results.length > 0 && <table className="w-full text-xs" data-md-results><tbody>{results.map((result, index) => <tr key={index}>{Object.values(result).map((value, cell) => <td key={cell} className="border border-border px-2 py-1">{String(value)}</td>)}</tr>)}</tbody></table>}
-		{!bench && <div className="grid grid-cols-2 gap-4">{engines.map(engine => <Pane key={engine} engine={engine} text={markdownFixtures[fixture]} streaming={false} />)}</div>}
+		{!bench && <div className="grid grid-cols-2 gap-4">{engines.map(engine => <Pane key={engine} engine={engine} text={markdownFixtures[fixture]} streaming={false} repository={repositoryFor(fixture)} />)}</div>}
 	</main>;
 }

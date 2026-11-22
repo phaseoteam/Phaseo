@@ -181,7 +181,42 @@ function longAnswer() {
 	return parts.join("\n");
 }
 
+/** Every chip kind, in prose, lists, a table, an alert and `<details>`, beside code that must stay text. */
+const chips = `Here's what changed on \`feat/web-chips\` at commit a1b2c3d4e5:
+
+- Edited apps/web/src/components/markdown/words/WordsMarkdown.tsx:42
+- Moved the helpers into packages/shared/app-kit/src/
+- New test: \`apps/web/src/components/markdown/words/wordsChatChips.client.test.tsx\`
+- Branch fix/desktop-pr-links-20261122 is pushed
+- Earlier discussion: @[Words rollout plan](chat:demo-words-plan)
+
+Docs are at https://phaseo.app/docs and the dev server is on http://localhost:3100/experiments/markdown.
+
+| File | Change |
+| --- | --- |
+| apps/desktop/src/renderer/components/WordsMessageContent.tsx | Video hook |
+| packages/shared/app-kit/src/messageChipsMarkdown.ts | Links option |
+
+> [!NOTE]
+> The chip in this note, apps/web/src/index.ts, renders too.
+
+<details>
+<summary>Full file list</summary>
+
+- apps/web/src/components/ai-elements/message.tsx
+- Branch spike/pierre-words-20261118 at 01b131107d
+
+</details>
+
+Code stays literal:
+
+${fence}ts
+import { WordsMarkdown } from "apps/web/src/components/markdown/words/WordsMarkdown";
+${fence}
+`;
+
 export const markdownFixtures = {
+	chips,
 	codeReview,
 	maths,
 	mermaid,

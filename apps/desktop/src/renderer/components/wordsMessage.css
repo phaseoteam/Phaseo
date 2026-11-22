@@ -13,7 +13,8 @@
 .words-message .message-table-scroll { overflow-x: auto; max-width: 100%; }
 .words-message [data-portal] { display: contents; }
 .words-message .words-portal-host { display: contents; }
-.words-message .message-table-scroll table { width: max-content; min-width: 100%; }
+/* As wide as its content, like react-markdown's tables; a wider one scrolls. */
+.words-message .message-table-scroll table { width: max-content; }
 .words-message a:not([href]) { color: inherit; text-decoration: none; }
 
 /* Code blocks, as .message-code-block. */

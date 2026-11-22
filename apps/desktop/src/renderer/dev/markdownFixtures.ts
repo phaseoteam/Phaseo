@@ -181,7 +181,53 @@ function longAnswer() {
 	return parts.join("\n");
 }
 
+/** Every chip kind, in prose, lists, a table, an alert and `<details>`, beside code that must stay text. */
+const chips = `Here's what changed on \`feat/web-chips\` at commit a1b2c3d4e5:
+
+- Edited apps/web/src/components/markdown/words/WordsMarkdown.tsx:42
+- Moved the helpers into packages/shared/app-kit/src/
+- New test: \`apps/web/src/components/markdown/words/wordsChatChips.client.test.tsx\`
+- Branch fix/desktop-pr-links-20261122 is pushed
+- Earlier discussion: @[Words rollout plan](chat:demo-words-plan)
+
+Docs are at https://phaseo.app/docs and the dev server is on http://localhost:3100/experiments/markdown.
+
+| File | Change |
+| --- | --- |
+| apps/desktop/src/renderer/components/WordsMessageContent.tsx | Video hook |
+| packages/shared/app-kit/src/messageChipsMarkdown.ts | Links option |
+
+> [!NOTE]
+> The chip in this note, apps/web/src/index.ts, renders too.
+
+<details>
+<summary>Full file list</summary>
+
+- apps/web/src/components/ai-elements/message.tsx
+- Branch spike/pierre-words-20261118 at 01b131107d
+
+</details>
+
+Code stays literal:
+
+${fence}ts
+import { WordsMarkdown } from "apps/web/src/components/markdown/words/WordsMarkdown";
+${fence}
+`;
+
+/** A pull request comment (drawn with a repository): references, a full commit SHA, a lone video upload, and chips. */
+const pullRequest = `Fixes #3801 and follows up on #3799 (not a#12 or #12b).
+
+Landed in 9153398a4bccced59b1a00340a29f8a35d43faef, and \`#3800\` in code stays text, as does [#5](https://example.com).
+
+Touches apps/desktop/src/renderer/components/WordsMessageContent.tsx on spike/pierre-words-20261118.
+
+https://github.com/user-attachments/assets/0f3c8a1e-1234-4abc-9def-0123456789ab
+`;
+
 export const markdownFixtures = {
+	chips,
+	pullRequest,
 	codeReview,
 	maths,
 	mermaid,
