@@ -130,6 +130,8 @@ TypeScript SDK 的 `connectLiveWebRTC({ createSession })` 会替你处理浏览�
 
 待机需要 `wake_policy`。会话会等到有语音时才开始推理；设置 `idle_timeout_s`（5 到 60 秒）后，会话在这么长时间没有语音后回到待机。此时数据通道会发送 `session.paused`。待机期间请保持麦克风音轨运行。待机时间按每分钟 $0.02 计费，活跃时间按每分钟 $0.05 计费，两者都按秒计算，依据 OpenAI 自己对通话活跃秒数和暂停秒数的划分。没有 `wake_policy` 时，整个通话都按活跃时间计费。
 
+每个 WebRTC 会话至少按 15 秒活跃时间计费（$0.0125）。OpenAI 在创建会话时计费这 15 秒，并将其计入通话本身的时长，因此更长的通话不会产生额外费用。浏览器始终没有连接的会话同样按这 15 秒计费，并会在约 30 秒后自行结束。请在用户准备好说话时再创建会话，并尽量减少重新连接：每个新会话都从这 15 秒开始计费。
+
 数据通道传送 OpenAI 的事件，例如转录和 `session.paused`。浏览器可以通过它发送 `session.close`、`session.input_audio.mute` 和 `session.input_audio.unmute`；OpenAI 会拒绝其他客户端事件，因此浏览器无法更改会话的模型、后端或工具。Phaseo 自己的事件无法使用 OpenAI 的数据通道，因此请通过 `GET /v1/live/sessions/{id}` 读取：它返回会话状态、`standby`、`warnings` 中的 `session.warning` 事件，以及通话结束后的 `ended`，即与中继上相同的 `session.ended` 事件。要结束数据通道从未打开的通话，请调用 `POST /v1/live/sessions/{id}/close`。
 
 Phaseo 在 OpenAI 的服务器端连接上跟踪通话，并在密钥被吊销、策略阻止、余额用尽或通话达到 25 分钟时在那里结束通话。
