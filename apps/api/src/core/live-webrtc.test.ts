@@ -10,7 +10,7 @@ import {
 	liveWebRTCCreateBody,
 	parseLiveWebRTCCreateResponse,
 } from "./live-webrtc";
-import { LIVE_HANGUP_RETRY_MS, LIVE_WEBRTC_HANGUP_AFTER_MS, LIVE_WEBRTC_HEARTBEAT_MS, RealtimeRelayDurableObject } from "./realtime-relay-durable-object";
+import { LIVE_HANGUP_RETRY_MS, LIVE_TOOL_CALL_WAIT_MS, LIVE_WEBRTC_HANGUP_AFTER_MS, LIVE_WEBRTC_HEARTBEAT_MS, RealtimeRelayDurableObject } from "./realtime-relay-durable-object";
 import { createLiveSessionSchema } from "@/routes/v1/data/realtime-sessions";
 
 const mocks = vi.hoisted(() => ({
@@ -415,6 +415,132 @@ describe("GPT Live WebRTC relay", () => {
 		openai.sockets[0].emit(closed("close_requested"));
 		await settled();
 		expect(mocks.settle).toHaveBeenCalledWith(expect.objectContaining({ status: "completed", disconnectReason: "client_requested_end" }));
+	});
+
+	describe("function tools", () => {
+		// The backend's call as the 2026-11-21 live test delivered it on the sideband (no response id).
+		const functionCall = (callId: string) => ({ event_id: `event_fc_${callId}`, type: "response.event", delegation_id: "item_delegation",
+			event: { type: "response.output_item.done", sequence_number: 12, output_index: 1,
+				item: { type: "function_call", id: `fc_${callId}`, call_id: callId, name: "lookup_code", arguments: "{\"topic\":\"pelicans\"}", status: "completed" } } });
+		const output = (object: any, body: Record<string, unknown>) => object.fetch(new Request(`https://realtime.internal/internal/live-tool-output/${SESSION_ID}`, {
+			method: "POST", headers: { "x-realtime-reconcile-token": "internal-token", "Content-Type": "application/json" }, body: JSON.stringify(body) }));
+
+		it("sends an output for the backend's call on the sideband, then asks for the reply, once per call", async () => {
+			const { object, settled } = relay();
+			await start(object);
+			await settled();
+			openai.sockets[0].emit(functionCall("call_1"));
+			await settled();
+			const response = await output(object, { call_id: "call_1", output: "{\"code\":\"PELICAN-42\"}" });
+			expect(response.status).toBe(202);
+			expect(await response.json()).toEqual({ status: "accepted", response_requested: true });
+			expect(openai.sockets[0].sent).toEqual([
+				{ type: "response.item.create", item: { type: "function_call_output", call_id: "call_1", output: "{\"code\":\"PELICAN-42\"}" } },
+				{ type: "response.create" },
+			]);
+			const again = await output(object, { call_id: "call_1", output: "again" });
+			expect(again.status).toBe(409);
+			expect(await again.json()).toEqual({ error: "live_function_call_already_answered" });
+			expect(openai.sockets[0].sent).toHaveLength(2);
+		});
+
+		it("holds the reply until the last of several outputs", async () => {
+			const { object, settled } = relay();
+			await start(object);
+			await settled();
+			openai.sockets[0].emit(functionCall("call_1"));
+			openai.sockets[0].emit(functionCall("call_2"));
+			await settled();
+			expect((await output(object, { call_id: "call_1", output: "a", create_response: false })).status).toBe(202);
+			expect(openai.sockets[0].sent.map((event) => event.type)).toEqual(["response.item.create"]);
+			expect((await output(object, { call_id: "call_2", output: "b" })).status).toBe(202);
+			expect(openai.sockets[0].sent.map((event) => event.type)).toEqual(["response.item.create", "response.item.create", "response.create"]);
+		});
+
+		it("waits for a call the sideband delivers just after the output", async () => {
+			const { object, settled } = relay();
+			await start(object);
+			await settled();
+			vi.useFakeTimers();
+			let done = false;
+			const pending = output(object, { call_id: "call_late", output: "ok" }).finally(() => { done = true; });
+			await vi.advanceTimersByTimeAsync(300);
+			expect(done).toBe(false);
+			openai.sockets[0].emit(functionCall("call_late"));
+			await vi.advanceTimersByTimeAsync(200);
+			expect((await pending).status).toBe(202);
+			expect(openai.sockets[0].sent[0]).toMatchObject({ item: { call_id: "call_late" } });
+		});
+
+		it("leaves the call answerable when the sideband drops while waiting for it", async () => {
+			const { object, settled, data } = relay();
+			await start(object);
+			await settled();
+			openai.attachHangs = true;
+			vi.useFakeTimers();
+			const pending = output(object, { call_id: "call_1", output: "ok" });
+			await vi.advanceTimersByTimeAsync(300);
+			openai.sockets[0].emit(functionCall("call_1"));
+			openai.sockets[0].drop();
+			await vi.advanceTimersByTimeAsync(200);
+			const response = await pending;
+			expect(response.status).toBe(503);
+			expect(await response.json()).toEqual({ error: "live_sideband_reattaching" });
+			expect(openai.sockets[0].sent).toEqual([]);
+			expect(object.liveAnsweredCalls.has("call_1")).toBe(false);
+			expect(data.get("live_tool_answers")).toBeUndefined();
+		});
+
+		it("refuses an output for a call the backend never made, after the wait", async () => {
+			const { object, settled } = relay();
+			await start(object);
+			await settled();
+			vi.useFakeTimers();
+			let done = false;
+			const pending = output(object, { call_id: "call_made_up", output: "x" }).finally(() => { done = true; });
+			await vi.advanceTimersByTimeAsync(LIVE_TOOL_CALL_WAIT_MS - 200);
+			expect(done).toBe(false);
+			await vi.advanceTimersByTimeAsync(400);
+			const response = await pending;
+			expect(response.status).toBe(404);
+			expect(await response.json()).toEqual({ error: "live_function_call_unknown" });
+			expect(openai.sockets[0].sent).toEqual([]);
+		});
+
+		it("refuses while the sideband is reattaching, and for a WebSocket session", async () => {
+			const { object, settled } = relay();
+			await start(object);
+			await settled();
+			openai.sockets[0].emit(functionCall("call_1"));
+			await settled();
+			openai.attachHangs = true;
+			openai.sockets[0].drop();
+			const response = await output(object, { call_id: "call_1", output: "x" });
+			expect(response.status).toBe(503);
+			expect(await response.json()).toEqual({ error: "live_sideband_reattaching" });
+			const websocket = relay();
+			websocket.data.set("session_id", SESSION_ID);
+			mocks.getRow.mockImplementation(async () => sessionRow({ status: "connected", metadata: { live: config } }));
+			expect(await (await output(websocket.object, { call_id: "call_1", output: "x" })).json()).toEqual({ error: "live_webrtc_session_required" });
+		});
+
+		it("remembers answered calls across a relay restart", async () => {
+			const first = relay();
+			await start(first.object);
+			await first.settled();
+			openai.sockets[0].emit(functionCall("call_1"));
+			await first.settled();
+			expect((await output(first.object, { call_id: "call_1", output: "a", create_response: false })).status).toBe(202);
+			await first.object.checkpointUsage(true);
+			const second = relay();
+			for (const [key, value] of first.data) second.data.set(key, value);
+			mocks.getRow.mockImplementation(async () => sessionRow({ status: "connected" }));
+			await second.object.alarm();
+			await second.settled();
+			const again = await output(second.object, { call_id: "call_1", output: "b" });
+			expect(await again.json()).toEqual({ error: "live_function_call_already_answered" });
+			expect(openai.sockets[1].sent).toEqual([]);
+		});
 	});
 
 	it("bounds a stalled sideband attach by the reattach budget, then hangs up and reviews the bill", async () => {

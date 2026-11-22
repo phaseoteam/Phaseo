@@ -1203,7 +1203,7 @@ paths:
         - Gateway
       operationId: createLiveSession
       summary: Créer une session GPT Live
-      description: 'Crée une session vocale GPT Live avec comptabilisation de l’usage, qui délègue le raisonnement à un modèle backend Responses. Avec le transport WebSocket par défaut, elle renvoie les informations de connexion du relais, et les outils de fonction s’exécutent sur votre client : le relais transmet chaque `function_call` et accepte son `function_call_output` suivi de `response.create`. Avec le transport WebRTC, envoyez l’offre SDP de votre connexion pair à pair et appliquez la réponse SDP renvoyée ; l’audio passe alors directement par OpenAI et la mise en veille est disponible. Les outils de fonction ne sont pas encore pris en charge avec WebRTC.'
+      description: 'Crée une session vocale GPT Live avec comptabilisation de l’usage, qui délègue le raisonnement à un modèle backend Responses. Avec le transport WebSocket par défaut, elle renvoie les informations de connexion du relais, et les outils de fonction s’exécutent sur votre client : le relais transmet chaque `function_call` et accepte son `function_call_output` suivi de `response.create`. Avec le transport WebRTC, envoyez l’offre SDP de votre connexion pair à pair et appliquez la réponse SDP renvoyée ; l’audio passe alors directement par OpenAI et la mise en veille est disponible. Les résultats des outils de fonction sont alors envoyés à `POST /v1/live/sessions/{session_id}/function_call_output`.'
       requestBody:
         required: true
         content:
@@ -1491,6 +1491,64 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LiveSessionStatus'
+  /live/sessions/{session_id}/function_call_output:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: sendLiveFunctionCallOutput
+      summary: Envoyer un résultat de fonction GPT Live
+      description: 'Renvoie le résultat d’un outil de fonction pour une session WebRTC. Le canal de données du navigateur ne peut pas envoyer d’événements d’outil : votre serveur envoie donc chaque sortie ici et Phaseo la transmet à l’appel. Phaseo n’accepte une sortie que pour un appel effectué par le backend, une fois par appel. Par défaut, il demande ensuite sa réponse au backend ; définissez `create_response` sur false pour chaque sortie sauf la dernière lorsque le backend a effectué plusieurs appels à la fois.'
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - call_id
+                - output
+              properties:
+                call_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                  description: Le `call_id` de l’élément `function_call` du backend.
+                output:
+                  type: string
+                  maxLength: 65536
+                  description: Le résultat de la fonction, 64 Ko au maximum.
+                create_response:
+                  type: boolean
+                  default: true
+                  description: Demande sa réponse au backend après cette sortie. Définissez-le sur false tant que d’autres sorties pour le même tour sont à venir.
+      responses:
+        '202':
+          description: Sortie envoyée à l’appel
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - accepted
+                  call_id:
+                    type: string
+                  response_requested:
+                    type: boolean
+        '404':
+          description: Session introuvable, ou le backend n’a effectué aucun appel avec ce `call_id`
+        '409':
+          description: L’appel a déjà une sortie, la session est terminée, ou Phaseo se reconnecte à l’appel et la requête peut être réessayée
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true

@@ -1203,7 +1203,7 @@ paths:
         - Gateway
       operationId: createLiveSession
       summary: Criar uma sessão do GPT Live
-      description: 'Cria uma sessão de voz do GPT Live com medição de uso, que delega o raciocínio a um modelo de backend do Responses. Com o transporte WebSocket padrão, retorna os dados de conexão do relay, e as ferramentas de função são executadas no seu cliente: o relay encaminha cada `function_call` e aceita o `function_call_output` correspondente seguido de `response.create`. Com o transporte WebRTC, envie a oferta SDP da sua conexão ponto a ponto e aplique a resposta SDP retornada; o áudio passa a ir diretamente para a OpenAI, e o modo de espera fica disponível. As ferramentas de função ainda não são compatíveis com WebRTC.'
+      description: 'Cria uma sessão de voz do GPT Live com medição de uso, que delega o raciocínio a um modelo de backend do Responses. Com o transporte WebSocket padrão, retorna os dados de conexão do relay, e as ferramentas de função são executadas no seu cliente: o relay encaminha cada `function_call` e aceita o `function_call_output` correspondente seguido de `response.create`. Com o transporte WebRTC, envie a oferta SDP da sua conexão ponto a ponto e aplique a resposta SDP retornada; o áudio passa a ir diretamente para a OpenAI, e o modo de espera fica disponível. Os resultados das ferramentas de função são então enviados para `POST /v1/live/sessions/{session_id}/function_call_output`.'
       requestBody:
         required: true
         content:
@@ -1491,6 +1491,64 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LiveSessionStatus'
+  /live/sessions/{session_id}/function_call_output:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: sendLiveFunctionCallOutput
+      summary: Enviar resultado de função do GPT Live
+      description: Retorna o resultado de uma ferramenta de função para uma sessão WebRTC. O canal de dados do navegador não consegue enviar eventos de ferramenta, então seu servidor envia cada saída aqui e a Phaseo a repassa para a chamada. A Phaseo só aceita uma saída para uma chamada feita pelo backend, uma vez por chamada. Por padrão, ela depois pede a resposta ao backend; defina `create_response` como false em todas as saídas, menos na última, quando o backend fizer várias chamadas ao mesmo tempo.
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - call_id
+                - output
+              properties:
+                call_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                  description: O `call_id` do item `function_call` do backend.
+                output:
+                  type: string
+                  maxLength: 65536
+                  description: O resultado da função, com no máximo 64 KB.
+                create_response:
+                  type: boolean
+                  default: true
+                  description: Pede a resposta ao backend depois desta saída. Defina como false enquanto houver mais saídas a caminho para o mesmo turno.
+      responses:
+        '202':
+          description: Saída enviada para a chamada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - accepted
+                  call_id:
+                    type: string
+                  response_requested:
+                    type: boolean
+        '404':
+          description: A sessão não existe, ou o backend não fez nenhuma chamada com este `call_id`
+        '409':
+          description: A chamada já tem uma saída, a sessão foi encerrada, ou a Phaseo está se reconectando à chamada e a solicitação pode ser repetida
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true

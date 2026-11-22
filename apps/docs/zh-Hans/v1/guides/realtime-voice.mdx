@@ -132,7 +132,18 @@ TypeScript SDK 的 `connectLiveWebRTC({ createSession })` 会替你处理浏览�
 
 数据通道传送 OpenAI 的事件，例如转录和 `session.paused`。浏览器可以通过它发送 `session.close`、`session.input_audio.mute` 和 `session.input_audio.unmute`；OpenAI 会拒绝其他客户端事件，因此浏览器无法更改会话的模型、后端或工具。Phaseo 自己的事件无法使用 OpenAI 的数据通道，因此请通过 `GET /v1/live/sessions/{id}` 读取：它返回会话状态、`standby`、`warnings` 中的 `session.warning` 事件，以及通话结束后的 `ended`，即与中继上相同的 `session.ended` 事件。要结束数据通道从未打开的通话，请调用 `POST /v1/live/sessions/{id}/close`。
 
-Phaseo 在 OpenAI 的服务器端连接上跟踪通话，并在密钥被吊销、策略阻止、余额用尽或通话达到 25 分钟时在那里结束通话。WebRTC 暂不支持函数工具；需要函数工具时请使用 WebSocket 中继。网页搜索在两者上都可用。
+Phaseo 在 OpenAI 的服务器端连接上跟踪通话，并在密钥被吊销、策略阻止、余额用尽或通话达到 25 分钟时在那里结束通话。
+
+函数工具也可以通过 WebRTC 使用，配置同样是 `backend_settings.tools`。后端的 `function_call` 会通过数据通道到达，但浏览器无法在那里回复它。请把调用转交给你的服务器，执行与上文相同的检查，然后从服务器发送结果：
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions/$SESSION_ID/function_call_output \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "call_id": "call_63hZ...", "output": "{\"utc\":\"2026-10-22T09:42:48Z\"}" }'
+```
+
+Phaseo 会通过其服务器端连接把输出传给通话，然后请求后端回复。当后端同时发起多个调用时，请在除最后一个之外的每个输出上设置 `"create_response": false`。与中继相同的限制同样适用：只接受针对后端发起的调用的输出，每个调用一次，最大 64 KB。带有 `live_sideband_reattaching` 的 `409` 表示 Phaseo 正在重新连接到通话；请在一秒后重试。网页搜索在两种传输方式上都可用。
 
 <Note>
 使用 WebRTC 时，最终用户的音频和 IP 地址会直接到达 OpenAI，而不经过 Phaseo。

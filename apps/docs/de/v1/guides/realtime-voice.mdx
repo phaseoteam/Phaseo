@@ -132,7 +132,18 @@ Standby erfordert `wake_policy`. Die Sitzung wartet auf Sprache, bevor sie mit d
 
 Der Datenkanal überträgt die Events von OpenAI, etwa Transkripte und `session.paused`. Der Browser kann darüber `session.close`, `session.input_audio.mute` und `session.input_audio.unmute` senden; andere Client-Events lehnt OpenAI ab, sodass der Browser Modell, Backend oder Tools der Sitzung nicht ändern kann. Die eigenen Events von Phaseo können den Datenkanal von OpenAI nicht nutzen. Lies sie deshalb über `GET /v1/live/sessions/{id}`: Es liefert den Status der Sitzung, `standby`, ihre `session.warning`-Events in `warnings` und `ended`, dasselbe `session.ended`-Event wie beim Relay, sobald der Anruf vorbei ist. Um einen Anruf zu beenden, dessen Datenkanal sich nie geöffnet hat, rufe `POST /v1/live/sessions/{id}/close` auf.
 
-Phaseo verfolgt den Anruf über die serverseitige Verbindung von OpenAI und beendet ihn dort, wenn der Schlüssel widerrufen wird, eine Richtlinie ihn blockiert, das Guthaben aufgebraucht ist oder er 25 Minuten erreicht. Funktions-Tools werden über WebRTC noch nicht unterstützt; verwende dafür das WebSocket-Relay. Die Websuche funktioniert bei beiden.
+Phaseo verfolgt den Anruf über die serverseitige Verbindung von OpenAI und beendet ihn dort, wenn der Schlüssel widerrufen wird, eine Richtlinie ihn blockiert, das Guthaben aufgebraucht ist oder er 25 Minuten erreicht.
+
+Funktions-Tools funktionieren auch über WebRTC, mit denselben `backend_settings.tools`. Der `function_call` des Backends kommt über den Datenkanal an, aber der Browser kann ihn dort nicht beantworten. Gib den Aufruf an deinen Server weiter, führe dieselben Prüfungen wie oben durch und sende das Ergebnis von deinem Server:
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions/$SESSION_ID/function_call_output \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "call_id": "call_63hZ...", "output": "{\"utc\":\"2026-10-22T09:42:48Z\"}" }'
+```
+
+Phaseo übergibt den Output über seine serverseitige Verbindung an den Anruf und fordert dann die Antwort des Backends an. Wenn das Backend mehrere Aufrufe gleichzeitig macht, setze `"create_response": false` bei jedem Output außer dem letzten. Es gelten dieselben Grenzen wie beim Relay: Ein Output wird nur für einen Aufruf akzeptiert, den das Backend gemacht hat, einmal pro Aufruf und bis zu 64 KB. Ein `409` mit `live_sideband_reattaching` bedeutet, dass Phaseo sich gerade wieder mit dem Anruf verbindet; versuche es nach einer Sekunde erneut. Die Websuche funktioniert bei beiden Transporten.
 
 <Note>
 Bei WebRTC gelangen das Audio und die IP-Adresse des Endnutzers direkt zu OpenAI, nicht über Phaseo.

@@ -1215,6 +1215,11 @@ pub fn saveSuccessorReplacement<T: Transport>(client: &Client<T>, path: &HashMap
 	client.request("PUT", &resolved_path, body)
 }
 
+pub fn sendLiveFunctionCallOutput<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
+	let resolved_path = format!("/live/sessions/{}/function_call_output", path_segment(path.get("session_id").map(String::as_str).unwrap_or_default())?);
+	client.request("POST", &resolved_path, body)
+}
+
 pub fn sendObservabilityDestinationSample<T: Transport>(client: &Client<T>, path: &HashMap<String, String>, body: Option<&str>) -> Result<Response, String> {
 	let resolved_path = format!("/observability/destinations/{}/sample", path_segment(path.get("id").map(String::as_str).unwrap_or_default())?);
 	client.request("POST", &resolved_path, body)

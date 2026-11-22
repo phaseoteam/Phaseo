@@ -132,7 +132,18 @@ La mise en veille nécessite `wake_policy`. La session attend la parole avant de
 
 Le canal de données transporte les événements d’OpenAI, comme les transcriptions et `session.paused`. Le navigateur peut y envoyer `session.close`, `session.input_audio.mute` et `session.input_audio.unmute` ; OpenAI refuse les autres événements client, si bien que le navigateur ne peut pas changer le modèle, le backend ni les outils de la session. Les événements propres à Phaseo ne peuvent pas emprunter le canal de données d’OpenAI : lisez-les donc avec `GET /v1/live/sessions/{id}`, qui renvoie le statut de la session, `standby`, ses événements `session.warning` dans `warnings`, et `ended`, le même événement `session.ended` que sur le relais une fois l’appel terminé. Pour terminer un appel dont le canal de données ne s’est jamais ouvert, appelez `POST /v1/live/sessions/{id}/close`.
 
-Phaseo suit l’appel sur la connexion côté serveur d’OpenAI et l’y termine lorsque la clé est révoquée, qu’une règle le bloque, que les fonds sont épuisés ou qu’il atteint 25 minutes. Les outils de fonction ne sont pas encore pris en charge via WebRTC ; utilisez le relais WebSocket pour ceux-ci. La recherche web fonctionne avec les deux.
+Phaseo suit l’appel sur la connexion côté serveur d’OpenAI et l’y termine lorsque la clé est révoquée, qu’une règle le bloque, que les fonds sont épuisés ou qu’il atteint 25 minutes.
+
+Les outils de fonction fonctionnent aussi via WebRTC, avec les mêmes `backend_settings.tools`. Le `function_call` du backend arrive sur le canal de données, mais le navigateur ne peut pas y répondre sur ce canal. Transmettez l’appel à votre serveur, effectuez les mêmes vérifications que ci-dessus et envoyez le résultat depuis votre serveur :
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions/$SESSION_ID/function_call_output \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "call_id": "call_63hZ...", "output": "{\"utc\":\"2026-10-22T09:42:48Z\"}" }'
+```
+
+Phaseo transmet la sortie à l’appel sur sa connexion côté serveur, puis demande sa réponse au backend. Lorsque le backend effectue plusieurs appels à la fois, définissez `"create_response": false` sur chaque sortie sauf la dernière. Les mêmes limites que sur le relais s’appliquent : une sortie n’est acceptée que pour un appel effectué par le backend, une fois par appel et jusqu’à 64 Ko. Un `409` avec `live_sideband_reattaching` signifie que Phaseo est en train de se reconnecter à l’appel ; réessayez au bout d’une seconde. La recherche web fonctionne avec les deux transports.
 
 <Note>
 Avec WebRTC, l’audio et l’adresse IP de l’utilisateur final parviennent directement à OpenAI, sans passer par Phaseo.

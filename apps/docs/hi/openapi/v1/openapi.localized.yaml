@@ -1203,7 +1203,7 @@ paths:
         - Gateway
       operationId: createLiveSession
       summary: GPT Live सत्र बनाएँ
-      description: 'मापे गए उपयोग वाला GPT Live वॉइस सत्र बनाता है, जो तर्क का काम Responses बैकएंड मॉडल को सौंपता है। डिफ़ॉल्ट WebSocket ट्रांसपोर्ट के साथ यह रिले कनेक्शन विवरण लौटाता है, और फ़ंक्शन टूल आपके क्लाइंट पर चलते हैं: रिले हर `function_call` आगे भेजता है और उसका `function_call_output` और फिर `response.create` स्वीकार करता है। WebRTC ट्रांसपोर्ट के साथ, अपने पीयर कनेक्शन का SDP ऑफ़र भेजें और लौटा SDP उत्तर लागू करें; तब ऑडियो सीधे OpenAI को जाता है, और स्टैंडबाय उपलब्ध होता है। WebRTC के साथ फ़ंक्शन टूल अभी समर्थित नहीं हैं।'
+      description: 'मापे गए उपयोग वाला GPT Live वॉइस सत्र बनाता है, जो तर्क का काम Responses बैकएंड मॉडल को सौंपता है। डिफ़ॉल्ट WebSocket ट्रांसपोर्ट के साथ यह रिले कनेक्शन विवरण लौटाता है, और फ़ंक्शन टूल आपके क्लाइंट पर चलते हैं: रिले हर `function_call` आगे भेजता है और उसका `function_call_output` और फिर `response.create` स्वीकार करता है। WebRTC ट्रांसपोर्ट के साथ, अपने पीयर कनेक्शन का SDP ऑफ़र भेजें और लौटा SDP उत्तर लागू करें; तब ऑडियो सीधे OpenAI को जाता है, और स्टैंडबाय उपलब्ध होता है। तब फ़ंक्शन टूल के परिणाम `POST /v1/live/sessions/{session_id}/function_call_output` पर भेजे जाते हैं।'
       requestBody:
         required: true
         content:
@@ -1491,6 +1491,64 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LiveSessionStatus'
+  /live/sessions/{session_id}/function_call_output:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: sendLiveFunctionCallOutput
+      summary: GPT Live फ़ंक्शन परिणाम भेजें
+      description: WebRTC सत्र के लिए किसी फ़ंक्शन टूल का परिणाम लौटाता है। ब्राउज़र का डेटा चैनल टूल इवेंट नहीं भेज सकता, इसलिए आपका सर्वर हर आउटपुट यहाँ भेजता है और Phaseo उसे कॉल तक पहुँचाता है। Phaseo आउटपुट सिर्फ़ उसी कॉल के लिए स्वीकार करता है जो बैकएंड ने की हो, हर कॉल के लिए एक बार। डिफ़ॉल्ट रूप से वह इसके बाद बैकएंड से उसका जवाब माँगता है; जब बैकएंड ने एक साथ कई कॉल की हों, तो आखिरी आउटपुट को छोड़कर हर आउटपुट पर `create_response` को false सेट करें।
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - call_id
+                - output
+              properties:
+                call_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                  description: बैकएंड के `function_call` आइटम का `call_id`।
+                output:
+                  type: string
+                  maxLength: 65536
+                  description: फ़ंक्शन का परिणाम, अधिकतम 64 KB।
+                create_response:
+                  type: boolean
+                  default: true
+                  description: इस आउटपुट के बाद बैकएंड से उसका जवाब माँगें। जब तक उसी टर्न के और आउटपुट आने बाकी हों, इसे false सेट करें।
+      responses:
+        '202':
+          description: आउटपुट कॉल को भेजा गया
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - accepted
+                  call_id:
+                    type: string
+                  response_requested:
+                    type: boolean
+        '404':
+          description: ऐसा कोई सत्र नहीं है, या बैकएंड ने इस `call_id` के साथ कोई कॉल नहीं की
+        '409':
+          description: कॉल का आउटपुट पहले ही आ चुका है, सत्र समाप्त हो गया है, या Phaseo कॉल से दोबारा कनेक्ट हो रहा है और अनुरोध फिर से भेजा जा सकता है
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true

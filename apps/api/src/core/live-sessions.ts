@@ -13,6 +13,9 @@ export const LIVE_MODEL = "openai/gpt-live-1";
 export const LIVE_MODELS = [LIVE_MODEL, "openai/gpt-live-1.1"] as const;
 export type LiveModel = typeof LIVE_MODELS[number];
 export const LIVE_BACKENDS = ["openai/gpt-5.6-luna", "openai/gpt-5.6-terra"] as const;
+// A function result returned by the client: on the relay (within its 96 KB message cap) or, on
+// WebRTC, through POST /v1/live/sessions/{id}/function_call_output.
+export const LIVE_MAX_FUNCTION_OUTPUT_BYTES = 64 * 1024;
 
 export const LIVE_SEARCH_PRICE_CARD: PriceCard = { provider: "openai", model: "web_search", endpoint: "text.generate",
 	currency: "USD", effective_from: null, effective_to: null, version: "openai-web-search-2026-09-10", rules: [{ pricing_plan: "standard", meter: "native_web_search_requests",

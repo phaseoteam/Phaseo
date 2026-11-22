@@ -1203,7 +1203,7 @@ paths:
         - Gateway
       operationId: createLiveSession
       summary: GPT Live セッションを作成
-      description: 使用量が計測される GPT Live 音声セッションを作成し、推論を Responses バックエンドモデルに委任します。既定の WebSocket トランスポートではリレー接続情報を返し、関数ツールはクライアントで実行されます。リレーは各 `function_call` を転送し、その `function_call_output` と続く `response.create` を受け付けます。WebRTC トランスポートでは、ピア接続の SDP オファーを送信し、返された SDP アンサーを適用します。音声は OpenAI に直接送られ、スタンバイを利用できます。WebRTC では関数ツールはまだサポートされていません。
+      description: 使用量が計測される GPT Live 音声セッションを作成し、推論を Responses バックエンドモデルに委任します。既定の WebSocket トランスポートではリレー接続情報を返し、関数ツールはクライアントで実行されます。リレーは各 `function_call` を転送し、その `function_call_output` と続く `response.create` を受け付けます。WebRTC トランスポートでは、ピア接続の SDP オファーを送信し、返された SDP アンサーを適用します。音声は OpenAI に直接送られ、スタンバイを利用できます。その場合、関数ツールの結果は `POST /v1/live/sessions/{session_id}/function_call_output` に送信します。
       requestBody:
         required: true
         content:
@@ -1491,6 +1491,64 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LiveSessionStatus'
+  /live/sessions/{session_id}/function_call_output:
+    post:
+      x-beta: true
+      tags:
+        - Gateway
+      operationId: sendLiveFunctionCallOutput
+      summary: GPT Live の関数結果を送信
+      description: WebRTC セッションの関数ツールの結果を返します。ブラウザのデータチャネルではツールイベントを送れないため、サーバーが各出力をここに送り、Phaseo がそれを通話に渡します。Phaseo が出力を受け付けるのは、バックエンドが行った呼び出しに対してだけで、呼び出しごとに 1 回です。デフォルトでは、その後バックエンドに応答を求めます。バックエンドが一度に複数の呼び出しを行った場合は、最後以外のすべての出力で `create_response` を false に設定してください。
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - call_id
+                - output
+              properties:
+                call_id:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+                  description: バックエンドの `function_call` アイテムの `call_id`。
+                output:
+                  type: string
+                  maxLength: 65536
+                  description: 関数の結果。最大 64 KB。
+                create_response:
+                  type: boolean
+                  default: true
+                  description: この出力の後にバックエンドに応答を求めます。同じターンの出力がまだ続く間は false に設定してください。
+      responses:
+        '202':
+          description: 出力を通話に送信しました
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - accepted
+                  call_id:
+                    type: string
+                  response_requested:
+                    type: boolean
+        '404':
+          description: セッションが存在しないか、バックエンドがこの `call_id` の呼び出しを行っていません
+        '409':
+          description: 呼び出しにはすでに出力があるか、セッションが終了しているか、Phaseo が通話に再接続中のためリクエストを再試行できます
   /audio/realtime/sessions/{session_id}/relay:
     get:
       x-beta: true

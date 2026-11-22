@@ -132,7 +132,18 @@ TypeScript SDK の `connectLiveWebRTC({ createSession })` がブラウザ側の�
 
 データチャネルは、文字起こしや `session.paused` などの OpenAI のイベントを運びます。ブラウザはこのチャネルで `session.close`、`session.input_audio.mute`、`session.input_audio.unmute` を送れます。OpenAI はそれ以外のクライアントイベントを拒否するため、ブラウザがセッションのモデル、バックエンド、ツールを変更することはできません。Phaseo 独自のイベントは OpenAI のデータチャネルを使えないため、`GET /v1/live/sessions/{id}` で読み取ります。このエンドポイントは、セッションのステータス、`standby`、`warnings` に入った `session.warning` イベント、そして通話終了後にはリレーと同じ `session.ended` イベントである `ended` を返します。データチャネルが一度も開かなかった通話を終了するには、`POST /v1/live/sessions/{id}/close` を呼び出します。
 
-Phaseo は OpenAI のサーバー側接続で通話を追跡し、キーが失効したとき、ポリシーでブロックされたとき、残高がなくなったとき、または 25 分に達したときに、そこで通話を終了します。関数ツールはまだ WebRTC ではサポートされていないため、WebSocket リレーを使ってください。Web 検索はどちらでも使えます。
+Phaseo は OpenAI のサーバー側接続で通話を追跡し、キーが失効したとき、ポリシーでブロックされたとき、残高がなくなったとき、または 25 分に達したときに、そこで通話を終了します。
+
+関数ツールは WebRTC でも、同じ `backend_settings.tools` で使えます。バックエンドの `function_call` はデータチャネルに届きますが、ブラウザはそこで応答できません。呼び出しをサーバーに渡し、上記と同じチェックを行ってから、サーバーから結果を送ってください。
+
+```bash
+curl https://api.phaseo.app/v1/live/sessions/$SESSION_ID/function_call_output \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "call_id": "call_63hZ...", "output": "{\"utc\":\"2026-10-22T09:42:48Z\"}" }'
+```
+
+Phaseo はサーバー側接続で出力を通話に渡し、続けてバックエンドに応答を求めます。バックエンドが一度に複数の呼び出しを行った場合は、最後以外のすべての出力で `"create_response": false` を設定してください。リレーと同じ制限が適用されます。出力を受け付けるのは、バックエンドが行った呼び出しに対してだけで、呼び出しごとに 1 回、最大 64 KB までです。`live_sideband_reattaching` を含む `409` は、Phaseo が通話に再接続中であることを示します。1 秒後に再試行してください。Web 検索はどちらのトランスポートでも使えます。
 
 <Note>
 WebRTC では、エンドユーザーの音声と IP アドレスは Phaseo を経由せず、OpenAI に直接届きます。

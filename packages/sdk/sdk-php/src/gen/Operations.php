@@ -1801,6 +1801,14 @@ function saveSuccessorReplacement(Client $client, ?array $path = null, ?array $q
 	return $client->request("PUT", $resolvedPath, $query, $headers, $body);
 }
 
+function sendLiveFunctionCallOutput(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
+{
+	$path = $path ?? [];
+	if (in_array((string)($path["session_id"] ?? ""), [".", ".."], true)) throw new \InvalidArgumentException("Dot segments are not valid path parameters");
+	$resolvedPath = "/live/sessions/" . rawurlencode((string)($path["session_id"] ?? "")) . "/function_call_output";
+	return $client->request("POST", $resolvedPath, $query, $headers, $body);
+}
+
 function sendObservabilityDestinationSample(Client $client, ?array $path = null, ?array $query = null, ?array $headers = null, $body = null)
 {
 	$path = $path ?? [];

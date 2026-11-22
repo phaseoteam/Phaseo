@@ -4643,7 +4643,7 @@ export type CreateLiveSessionParams = {
 };
 
 /**
- * Creates a metered GPT Live voice session, which delegates reasoning to a Responses backend model. With the default WebSocket transport it returns relay connection details, and function tools run on your client: the relay forwards each `function_call` and accepts its `function_call_output` followed by `response.create`. With the WebRTC transport, send your peer connection's SDP offer and apply the SDP answer that comes back; audio then goes directly to OpenAI, and standby is available. Function tools are not supported with WebRTC yet.
+ * Creates a metered GPT Live voice session, which delegates reasoning to a Responses backend model. With the default WebSocket transport it returns relay connection details, and function tools run on your client: the relay forwards each `function_call` and accepts its `function_call_output` followed by `response.create`. With the WebRTC transport, send your peer connection's SDP offer and apply the SDP answer that comes back; audio then goes directly to OpenAI, and standby is available. Function tool results then go to `POST /v1/live/sessions/{session_id}/function_call_output`.
  */
 export async function createLiveSession(
   client: Client,
@@ -25801,6 +25801,47 @@ export async function saveSuccessorReplacement(
     };
   }>({
     method: "PUT",
+    path: resolvedPath,
+    query,
+    headers,
+    body,
+  });
+}
+
+export type SendLiveFunctionCallOutputParams = {
+  path: {
+    session_id: string;
+  };
+  query?: Record<string, never>;
+  headers?: Record<string, never>;
+  body?: {
+    call_id: string;
+    create_response?: boolean;
+    output: string;
+  };
+};
+
+/**
+ * Returns a function tool's result for a WebRTC session. The browser's data channel can't send tool events, so your server sends each output here and Phaseo passes it to the call. Phaseo accepts an output only for a call the backend made, once per call. By default it then asks the backend for its reply; set `create_response` to false on every output but the last when the backend made several calls at once.
+ */
+export async function sendLiveFunctionCallOutput(
+  client: Client,
+  args: SendLiveFunctionCallOutputParams,
+): Promise<{
+  call_id?: string;
+  response_requested?: boolean;
+  status?: "accepted";
+}> {
+  const { path, query, headers, body } = args;
+  if ([".", ".."].includes(String(path?.["session_id"])))
+    throw new Error("Dot segments are not valid path parameters");
+  const resolvedPath = `/live/sessions/${encodeURIComponent(String(path["session_id"]))}/function_call_output`;
+  return client.request<{
+    call_id?: string;
+    response_requested?: boolean;
+    status?: "accepted";
+  }>({
+    method: "POST",
     path: resolvedPath,
     query,
     headers,
