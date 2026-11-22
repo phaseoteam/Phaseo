@@ -33,7 +33,9 @@ export function parseZapierModule(source: string): ZapierBoard | null {
 /** "Claude Fable 5.2 (default fallbacks, Max)" → label + effort; combinations of two models are skipped. */
 export function zapierObservations(board: ZapierBoard): SourceObservation[] {
 	return board.rows.flatMap((row) => {
-		const inside = row.label.match(/\(([^)]*)\)\s*$/)?.[1];
+		// Footnote markers ("§", "*") trail some labels.
+		const text = row.label.replace(/[§†‡*]+\s*$/, "").trim();
+		const inside = text.match(/\(([^)]*)\)\s*$/)?.[1];
 		const parts = inside?.split(",").map((part) => part.trim()) ?? [];
 		// "(with Opus 5 Fallback)" means a second model finished refused steps: not one model's result.
 		if (parts.some((part) => /^with\b/i.test(part))) return [];
@@ -41,7 +43,7 @@ export function zapierObservations(board: ZapierBoard): SourceObservation[] {
 		const settings = parts.filter((part) => !/fallback/i.test(part)).map((part) => part.toLowerCase().replace(/^x-?high$/, "xhigh"));
 		const effort = settings.find((part) => ["none", "minimal", "low", "medium", "high", "xhigh", "max"].includes(part)) ?? settings[0];
 		const fallbacks = parts.some((part) => /fallback/i.test(part));
-		const label = inside ? row.label.slice(0, row.label.lastIndexOf("(")).trim() : row.label;
+		const label = inside ? text.slice(0, text.lastIndexOf("(")).trim() : text;
 		return [{
 			benchmarkId: "automationbench",
 			label,

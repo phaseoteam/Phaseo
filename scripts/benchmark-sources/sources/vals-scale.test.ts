@@ -163,10 +163,10 @@ describe("Snorkel Agents' Last Exam", () => {
 
 describe("Zapier AutomationBench", () => {
 	it("reads the table from a Framer module and skips two-model rows", () => {
-		const module = "var j,M;function x(){j=`1.0.6`,M=[[1,`Gemini 4 Neon (XHigh)`,`56.32%`,`$1.69`],[2,`Claude Fable 5.2 (default fallbacks, Max)`,`51.45%`,`$4.64`],[3,`Gemini 4 Argon (High)`,`51.29%`,`$1.70*`],[4,`Claude Sonnet 5.5 (default fallbacks, Between tools)`,`18.57%`,`$0.04‡`],[5,`Claude Fable 5.1 (with Opus 5 Fallback)`,`31.4%`,`$3.10`],[6,`Mistral Large 4`,`9.1%`,``]]}";
+		const module = "var j,M;function x(){j=`1.0.6`,M=[[1,`Gemini 4 Neon (XHigh)`,`56.32%`,`$1.69`],[2,`Claude Fable 5.2 (default fallbacks, Max)`,`51.45%`,`$4.64`],[3,`Gemini 4 Argon (High)`,`51.29%`,`$1.70*`],[4,`Claude Sonnet 5.5 (default fallbacks, Between tools)`,`18.57%`,`$0.04‡`],[5,`Claude Fable 5.1 (with Opus 5 Fallback)`,`31.4%`,`$3.10`],[6,`Mistral Large 4`,`9.1%`,``],[7,`Claude Haiku 5.5 (default fallbacks, Low)§`,`8.2%`,`$0.10`]]}";
 		const board = parseZapierModule(module)!;
 		assert.equal(board.version, "1.0.6");
-		assert.equal(board.rows.length, 6);
+		assert.equal(board.rows.length, 7);
 		assert.equal(parseZapierModule("var a=[1,2,3]"), null);
 		const rows = zapierObservations(board);
 		assert.deepEqual(rows.map((row) => [row.label, row.effort, row.value, row.costUsd]), [
@@ -175,6 +175,7 @@ describe("Zapier AutomationBench", () => {
 			["Gemini 4 Argon", "high", 51.29, 1.7],
 			["Claude Sonnet 5.5", "between tools", 18.57, 0.04],
 			["Mistral Large 4", undefined, 9.1, undefined],
+			["Claude Haiku 5.5", "low", 8.2, 0.1],
 		]);
 		assert.match(rows[1].note!, /default fallback/);
 	});
