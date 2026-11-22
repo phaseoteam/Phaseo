@@ -21,9 +21,15 @@ const link = (chip: Chip, label = chipLabel(chip)) => `[${escapeLabel(label)}]($
 // so a long run of `@[`, backticks, `![` or `</a` cannot make matching slow.
 const protectedSpans = /(@\[[^\]\n]{0,500}\]\(chat:[^)\s]{1,500}\))|(`{1,8})([^`\n]{1,2000}?)\2|!?\[[^\]\n]{0,500}\]\([^)\n]{0,2000}\)|!?\[[^\]\n]{0,500}\]\[[^\]\n]{0,500}\]|<https?:\/\/[^>\s]{1,2000}>|<\/?[a-z][^>\n]{0,500}>|\$\$[^$\n]{1,2000}\$\$|\$[^$\n]{1,2000}\$/gi;
 
-function line(text: string) {
+/** Plain links found in prose before chips are, such as `#123` in a pull request comment. */
+export type ProseLinks = (text: string) => Array<string | { label: string; url: string }>;
+
+const chipped = (value: string) => textChips(value).map(segment => typeof segment === "string" ? segment : link(segment)).join("");
+const plainLink = (label: string, url: string) => `[${escapeLabel(label)}](${url.replace(/\(/g, "%28").replace(/\)/g, "%29").replace(/\s/g, encodeURIComponent)})`;
+
+function line(text: string, links?: ProseLinks) {
 	let out = "", last = 0;
-	const prose = (value: string) => textChips(value).map(segment => typeof segment === "string" ? segment : link(segment)).join("");
+	const prose = (value: string) => links ? links(value).map(piece => typeof piece === "string" ? chipped(piece) : plainLink(piece.label, piece.url)).join("") : chipped(value);
 	for (const match of text.matchAll(protectedSpans)) {
 		const index = match.index ?? 0;
 		out += prose(text.slice(last, index));
@@ -70,9 +76,9 @@ const blank = (text: string) => !text.trim();
 /**
  * Markdown with chips written as `phaseo-chip:` links, for a renderer that styles links by URL. Fenced and indented
  * code (also inside lists and quotes), display math, reference definitions, existing links, images, HTML and inline
- * math stay as they are.
+ * math stay as they are. `links` turns parts of the remaining prose into plain links first.
  */
-export function chipMarkdown(markdown: string): string {
+export function chipMarkdown(markdown: string, links?: ProseLinks): string {
 	const lines = markdown.split("\n");
 	let fence: { marker: string; quotes: number } | undefined, math = false, code = false;
 	return lines.map((text, index) => {
@@ -94,6 +100,6 @@ export function chipMarkdown(markdown: string): string {
 		if (indented(text) && (index === 0 || blank(lines[index - 1] ?? ""))) { code = true; return text; }
 		// Reference definitions (`[docs]: https://…`) keep their destination.
 		if (/^ {0,3}\[[^\]\n]{1,999}\]:/.test(text)) return text;
-		return line(text);
+		return line(text, links);
 	}).join("\n");
 }

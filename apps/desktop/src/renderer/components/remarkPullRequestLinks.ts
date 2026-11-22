@@ -7,6 +7,27 @@ const SKIPPED = new Set(["link", "linkReference", "code", "inlineCode", "html", 
 /** GitHub's own upload links for a video dropped into a comment: on a line of their own they play inline. */
 const VIDEO = /^https:\/\/github\.com\/(?:user-attachments\/assets\/[0-9a-f-]{36}|[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/assets\/\d+\/[0-9a-f-]{36})$/iu;
 export const isGitHubVideoUpload = (url: string) => VIDEO.test(url);
+const VIDEO_IN_TEXT = new RegExp(`${VIDEO.source.slice(1, -1)}(?![\\w/-])`, "giu");
+
+/**
+ * The same links for renderers that take Markdown text (Words, through `chipMarkdown`): `#123` and commit SHAs, and
+ * GitHub video uploads kept as plain links rather than chips, so a lone one can play.
+ */
+export function pullRequestProseLinks(repository: string) {
+	const repositoryUrl = `https://github.com/${repository}`;
+	const references = (value: string) => autolinkText(value, repositoryUrl).map(node => node.type === "link" ? { label: node.children?.[0]?.value ?? "", url: node.url ?? "" } : node.value ?? "");
+	return (value: string) => {
+		const pieces: Array<string | { label: string; url: string }> = [];
+		let last = 0;
+		for (const match of value.matchAll(VIDEO_IN_TEXT)) {
+			const index = match.index ?? 0;
+			pieces.push(...references(value.slice(last, index)), { label: match[0], url: match[0] });
+			last = index + match[0].length;
+		}
+		pieces.push(...references(value.slice(last)));
+		return pieces.filter(piece => piece !== "");
+	};
+}
 
 /** `#123` and full commit SHAs in plain text become links into the repository, the way GitHub renders them. */
 export function autolinkText(value: string, repositoryUrl: string): MarkdownNode[] {

@@ -44,3 +44,10 @@ test("never breaks inside a fence or display math", () => {
 	assert.equal(lastCleanBreak("$$\na\n\nb\n"), -1);
 	assert.equal(lastCleanBreak("a\n\nb"), 3);
 });
+
+test("chipMarkdown turns prose into plain links before chips, outside code and links", () => {
+	const links = text => text.split(/(#\d+)/).map(piece => /^#\d+$/.test(piece) ? { label: piece, url: `https://github.com/o/r/issues/${piece.slice(1)}` } : piece);
+	assert.equal(chipMarkdown("Fixes #3 and `#4` [#5](https://x)", links), "Fixes [#3](https://github.com/o/r/issues/3) and `#4` [#5](https://x)");
+	assert.equal(chipMarkdown("```\n#6\n```", links), "```\n#6\n```");
+	assert.equal(chipMarkdown("odd", () => [{ label: "a]b", url: "https://x/(y)" }]), String.raw`[a\]b](https://x/%28y%29)`);
+});

@@ -17,6 +17,7 @@ import { MessageImage, MessageLink, ProjectContext, messageAlerts } from "./Mess
 import { ImageViewer } from "./ImageViewer";
 import { parseFileReference } from "../../shared/editors";
 import { repairFileLinks } from "./repairFileLinks";
+import { isGitHubVideoUpload, pullRequestProseLinks } from "./remarkPullRequestLinks";
 import { tableCsv, tableMarkdown, tableRows } from "./markdownTable";
 import { showToast } from "./ui/toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
@@ -65,6 +66,19 @@ const components: Components = {
 		const rest = html.slice(match[0].length).replace(/<\/blockquote>\s*$/, "");
 		const body = rest.startsWith("</p>") ? rest.slice(4) : `<p>${rest}`;
 		return `<div role="note" class="message-alert" data-alert="${kind}"><p class="message-alert-title" data-find-ignore><span${data({ portal: "alert-icon", kind })}></span>${messageAlerts[kind].label}</p>${body}</div>`;
+	},
+};
+
+/**
+ * In pull request comments, a paragraph holding only a GitHub video upload link plays it, as GitHub does. Hooks run
+ * inside out, so the link is already the `a` hook's placeholder.
+ */
+export const pullRequestComponents: Components = {
+	...components,
+	p: html => {
+		const match = /^<p\b[^>]*>\s*(<span data-portal="link"[^>]*><\/span>)\s*<\/p>\s*$/.exec(html);
+		const href = match ? attribute(match[1], "data-href") : undefined;
+		return href && isGitHubVideoUpload(href) ? `<div${data({ portal: "video", src: href })}></div>` : html;
 	},
 };
 
@@ -154,6 +168,7 @@ function portalFor({ fields, anchor, host }: Target, projectId: string | undefin
 		case "chip": { try { return <MessageChip chip={JSON.parse(fields.chip ?? "") as Chip} projectId={projectId} />; } catch { return null; } }
 		case "link": return <MessageLink href={fields.href}>{fields.label || undefined}</MessageLink>;
 		case "image": return <MessageImage src={fields.src} alt={fields.alt} />;
+		case "video": return <video src={fields.src} controls preload="metadata" className="pr-comment-video" />;
 		case "table-copy": return <TableCopy anchor={anchor} />;
 		case "alert-icon": { const alert = messageAlerts[fields.kind as AlertKind]; return alert ? <alert.Icon aria-hidden className="size-4" /> : null; }
 		default: return null;
@@ -220,34 +235,37 @@ function hardLineBreaks(text: string) {
 }
 
 /** Markdown parts in order; `<details>` blocks become real `<details>` elements around their own parts. */
-function Parts({ parts, path, streaming, prepared }: { parts: MarkdownPart[]; path: string; streaming: boolean; prepared: (path: string, markdown: string) => string }) {
+function Parts({ parts, path, streaming, prepared, hooks }: { parts: MarkdownPart[]; path: string; streaming: boolean; prepared: (path: string, markdown: string) => string; hooks: Components }) {
 	return parts.map((part, index) => {
 		const key = `${path}${index}`;
 		// Only the text still arriving animates: the last part, and inside it the last part again.
 		const live = streaming && index === parts.length - 1;
 		if (part.kind === "details") return <details key={key} className="message-details" open={part.open || undefined}>
 			<summary>{part.summary || "Details"}</summary>
-			<Parts parts={part.parts} path={`${key}.`} streaming={live && !part.complete} prepared={prepared} />
+			<Parts parts={part.parts} path={`${key}.`} streaming={live && !part.complete} prepared={prepared} hooks={hooks} />
 		</details>;
-		return <Markdown key={key} isAnimating={live} math plugins={plugins} components={components} urlTransform={urlTransform} lineNumbers={false} controls={false}>{prepared(key, part.text)}</Markdown>;
+		return <Markdown key={key} isAnimating={live} math plugins={plugins} components={hooks}urlTransform={urlTransform} lineNumbers={false} controls={false}>{prepared(key, part.text)}</Markdown>;
 	});
 }
 
 /** MessageContent drawn by Words. Chips, links, images, table copy and alert icons are the same React components, mounted into Words' HTML. */
-export function WordsMessageContent({ text, projectId, repairLocalLinks = false, lineBreaks = false, streaming = false }: { text: string; projectId?: string; repairLocalLinks?: boolean; repository?: string; lineBreaks?: boolean; streaming?: boolean }) {
+export function WordsMessageContent({ text, projectId, repairLocalLinks = false, repository, lineBreaks = false, streaming = false }: { text: string; projectId?: string; repairLocalLinks?: boolean; repository?: string; lineBreaks?: boolean; streaming?: boolean }) {
 	const root = useRef<HTMLDivElement>(null);
 	const targets = usePortalTargets(root);
 	const parts = useMemo(() => splitDetails(repairLocalLinks ? repairFileLinks(text) : text), [text, repairLocalLinks]);
+	// `repository` links `#123` and commit SHAs into it and plays GitHub video uploads, as pull request comments do.
+	const links = useMemo(() => repository ? pullRequestProseLinks(repository) : undefined, [repository]);
 	// One prefix cache per part: streamed text grows, and only a part's unfinished end is prepared again.
 	const caches = useRef(new Map<string, (markdown: string) => string>());
 	const prepared = (path: string, markdown: string) => {
-		let cache = caches.current.get(path);
-		if (!cache) { cache = createMarkdownPrefixCache(value => chipMarkdown(lineBreaks ? hardLineBreaks(value) : value)); caches.current.set(path, cache); }
+		const key = `${repository ?? ""}\u0000${path}`;
+		let cache = caches.current.get(key);
+		if (!cache) { cache = createMarkdownPrefixCache(value => chipMarkdown(lineBreaks ? hardLineBreaks(value) : value, links)); caches.current.set(key, cache); }
 		return cache(markdown);
 	};
 	return <ProjectContext value={projectId}><ChipVariantContext value={lineBreaks ? "token" : "embedded"}>
 		<div ref={root} className="message-markdown words-message">
-			<Parts parts={parts} path="" streaming={streaming} prepared={prepared} />
+			<Parts parts={parts} path="" streaming={streaming} prepared={prepared} hooks={repository ? pullRequestComponents : components} />
 			{targets.map(target => <Portal key={target.key} target={target} projectId={projectId} />)}
 		</div>
 	</ChipVariantContext></ProjectContext>;
