@@ -21,6 +21,11 @@ async function mount(text: string, isStreaming = false) {
 		</AppIntlProvider>,
 	);
 	await act(async () => { draw(text, isStreaming); });
+	// Words loads lazily (Streamdown shows meanwhile); wait until its root is in place.
+	for (let tries = 0; tries < 200 && !container.querySelector('[data-markdown="root"]'); tries++) {
+		await act(async () => { await new Promise(resolve => setTimeout(resolve, 25)); });
+	}
+	expect(container.querySelector('[data-markdown="root"]')).not.toBeNull();
 	// Words patches the DOM after render; portals mount on the next effect pass.
 	await act(async () => { await new Promise(resolve => setTimeout(resolve, 50)); });
 	return { container, update: async (value: string, streaming: boolean) => { await act(async () => { draw(value, streaming); }); await act(async () => { await new Promise(resolve => setTimeout(resolve, 50)); }); } };

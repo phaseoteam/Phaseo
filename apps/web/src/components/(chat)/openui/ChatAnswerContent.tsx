@@ -8,7 +8,7 @@ import { MessageChip } from "../MessageChips";
 import { getOpenUISource } from "./openuiHelpers";
 import { chipMarkdown } from "@phaseo/app-kit/message-chips-markdown";
 import { useMarkdownEngine, type MarkdownEngine } from "@/components/markdown/words/markdownEngine";
-import { WordsMarkdown } from "@/components/markdown/words/WordsMarkdown";
+import { LazyWordsMarkdown } from "@/components/markdown/words/LazyWordsMarkdown";
 import { disableOpenUIAutoDevtools } from "./loadOpenUI";
 import type { ChatOpenUIRendererProps } from "./ChatOpenUIRenderer";
 
@@ -86,12 +86,13 @@ const renderAnswerChip = (chip: Parameters<typeof MessageChip>[0]["chip"]) => <M
 export function ChatAnswerMarkdown({ content, isStreaming = false, engine: forced }: { content: string; isStreaming?: boolean; engine?: MarkdownEngine }) {
   const preferred = useMarkdownEngine();
   const engine = forced ?? preferred;
-  if (engine === "words") return <WordsMarkdown isStreaming={isStreaming} renderChip={renderAnswerChip} prepare={prepareAnswer}>{content}</WordsMarkdown>;
-  return (
+  const streamdown = (
     <Streamdown plugins={chatMarkdownPlugins} remarkPlugins={answerRemarkPlugins} components={answerComponents} allowedTags={answerAllowedTags}>
       {normalizeChatMarkdown(content)}
     </Streamdown>
   );
+  if (engine === "words") return <LazyWordsMarkdown fallback={streamdown} isStreaming={isStreaming} renderChip={renderAnswerChip} prepare={prepareAnswer}>{content}</LazyWordsMarkdown>;
+  return streamdown;
 }
 
 export function ChatAnswerContent({
