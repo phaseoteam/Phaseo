@@ -7,7 +7,7 @@ import { createMermaidPlugin } from "@pierre/words/mermaid";
 import githubLight from "@pierre/highlights/themes/github-light";
 import githubDark from "@pierre/highlights/themes/github-dark";
 import { render as renderMermaid } from "pele";
-import { CheckIcon, CopyIcon, DownloadIcon } from "lucide-react";
+import { CheckIcon, ChevronRightIcon, CopyIcon, DownloadIcon } from "lucide-react";
 import { memo, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { CHIP_LINK_SCHEME, chipFromLinkUrl } from "@phaseo/app-kit/message-chips-markdown";
@@ -196,7 +196,7 @@ function Parts({ parts, path, streaming, prepared, ...shared }: PartsProps) {
 		const live = streaming && index === parts.length - 1;
 		if (part.kind === "details") return (
 			<details key={key} className="words-details" open={part.open || undefined}>
-				<summary>{part.summary || t("details")}</summary>
+				<summary><ChevronRightIcon aria-hidden className="words-details-chevron" />{part.summary || t("details")}</summary>
 				<Parts parts={part.parts} path={`${key}.`} streaming={live && !part.complete} prepared={prepared} {...shared} />
 			</details>
 		);

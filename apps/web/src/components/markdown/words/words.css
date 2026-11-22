@@ -92,6 +92,12 @@
 
 /* <details> from the model: the summary is a disclosure row, the body is indented Markdown. */
 .words-parts > details, .words-details details { margin-block: 0 1rem; }
-.words-details > summary { width: fit-content; cursor: pointer; }
+/* A Lucide chevron in place of the browser's triangle; it turns down when open. 14px + 6px gap = the body's indent. */
+.words-details > summary { display: flex; align-items: center; gap: 0.375rem; width: fit-content; cursor: pointer; list-style: none; }
+.words-details > summary::-webkit-details-marker { display: none; }
+.words-details > summary::marker { content: ""; }
+.words-details-chevron { flex-shrink: 0; width: 0.875rem; height: 0.875rem; color: var(--muted-foreground); transition: rotate 150ms ease-out; }
+.words-details[open] > summary > .words-details-chevron { rotate: 90deg; }
+@media (prefers-reduced-motion: reduce) { .words-details-chevron { transition: none; } }
 .words-details[open] > summary { margin-bottom: 0.5rem; }
 .words-details > :not(summary) { margin-inline-start: 1.25rem; }

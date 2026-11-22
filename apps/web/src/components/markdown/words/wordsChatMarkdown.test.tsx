@@ -43,7 +43,7 @@ describe("chat answers drawn by Words", () => {
 
 	it("draws <details> blocks with their summary, and chips inside them", async () => {
 		const html = await render("Intro\n\n<details>\n<summary>Full <b>log</b> for `src/a.ts`</summary>\n\nSee apps/web/src/index.ts\n\n</details>\n\nAfter");
-		expect(html).toMatch(/<details[^>]*><summary>Full log for `src\/a.ts`<\/summary>/);
+		expect(html).toMatch(/<details[^>]*><summary><svg[^>]*words-details-chevron[^>]*>[\s\S]*?<\/svg>Full log for `src\/a.ts`<\/summary>/);
 		expect(chips(html).map(chip => chip.kind)).toEqual(["file"]);
 		expect(html).not.toContain("&lt;details");
 	});
