@@ -5,12 +5,13 @@ type JsonObject = Record<string, unknown>;
 const object = (value: unknown): value is JsonObject => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 const methodologyVersions = (html: string) => [...new Set([...html.matchAll(/(?:Intelligence Index|Current version:)[\s\S]{0,30}?v(\d+\.\d+(?:\.\d+)?)/g)].map((match) => match[1]))];
 
-export function publicDataManifest(html: string) {
+/** The data file of the component that owns `ownerKey`: `initialModels` on model and evaluation pages, `initialRows` on the providers board. */
+export function publicDataManifest(html: string, ownerKey = "initialModels") {
 	const stream = [...html.matchAll(/<script\b[^>]*>self\.__next_f\.push\((\[1,[\s\S]*?\])\)\s*;?<\/script\b[^>]*>/gi)].map((match) => JSON.parse(match[1])[1]).join("");
 	const manifests: Array<{ path: string; key: string }> = [];
 	const walk = (value: unknown) => {
 		if (!value || typeof value !== "object") return;
-		if (object(value) && Object.hasOwn(value, "initialModels") && object(value.manifest)) {
+		if (object(value) && Object.hasOwn(value, ownerKey) && object(value.manifest)) {
 			const { path, key } = value.manifest;
 			if (typeof path !== "string" || !/^\/data\/[a-f\d]+\.txt$/.test(path) || typeof key !== "string" || !/^[a-f\d]{64}$/.test(key)) throw new Error("Invalid public model manifest");
 			manifests.push({ path, key });
@@ -29,15 +30,20 @@ export function publicDataManifest(html: string) {
 	return unique[0];
 }
 
-/** Same public data decoding used by AA's unauthenticated browser client. */
-export function decodePublicData(bytes: Buffer, keyHex: string) {
+/** Same public data decoding used by AA's unauthenticated browser client: AES-256-GCM, then gzip, then JSON. */
+export function decryptPublicData(bytes: Uint8Array, keyHex: string): unknown {
 	if (!/^[a-f\d]{64}$/.test(keyHex) || bytes.length < 17) throw new Error("Invalid public dataset envelope");
+	const body = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 	const key = Buffer.from(keyHex, "hex");
 	const iv = createHash("sha256").update(key).digest().subarray(0, 12);
 	const decipher = createDecipheriv("aes-256-gcm", key, iv);
-	decipher.setAuthTag(bytes.subarray(-16));
-	const compressed = Buffer.concat([decipher.update(bytes.subarray(0, -16)), decipher.final()]);
-	const data: unknown = JSON.parse(gunzipSync(compressed, { maxOutputLength: 50_000_000 }).toString("utf8"));
+	decipher.setAuthTag(body.subarray(-16));
+	const compressed = Buffer.concat([decipher.update(body.subarray(0, -16)), decipher.final()]);
+	return JSON.parse(gunzipSync(compressed, { maxOutputLength: 50_000_000 }).toString("utf8"));
+}
+
+export function decodePublicData(bytes: Buffer, keyHex: string) {
+	const data = decryptPublicData(bytes, keyHex);
 	if (!object(data) || !Array.isArray(data.models) || !data.models.length) throw new Error("Full model dataset is empty or malformed");
 	return data.models;
 }

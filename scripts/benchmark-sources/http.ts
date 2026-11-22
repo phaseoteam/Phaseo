@@ -34,4 +34,7 @@ export const httpContext: SourceContext = {
 	async fetchJson(url, init) {
 		return (await request(url, { ...init, headers: { accept: "application/json", ...(init?.headers ?? {}) } })).json();
 	},
+	async fetchBytes(url, init) {
+		return new Uint8Array(await (await request(url, init)).arrayBuffer());
+	},
 };
