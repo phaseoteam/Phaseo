@@ -3,7 +3,7 @@ import type { BenchmarkDefinition, BenchmarkSource, SourceObservation } from "..
 /**
  * Jake Boggs' benchmark dashboard republishes ~140 leaderboards as one JSON file, each row linking to the board it came
  * from. Only the boards listed here are read from it: boards whose publisher another source reads directly (Artificial
- * Analysis, Epoch, Vals, Scale, MathArena, Terminal-Bench, OSWorld, ARC Prize, WeirdML, Andon Labs, ClockBench, …) are
+ * Analysis, Epoch, Vals, Scale, MathArena, Terminal-Bench, OSWorld, ARC Prize, WeirdML, Andon Labs, ClockBench, Remote Labor Index via Scale, …) are
  * left out so no score is stored twice, and so are boards read from Benchmark Heaven or a first-party file in this repo.
  */
 const DATA = "https://boggs.tech/data/benchmark-dashboard.json";
@@ -49,7 +49,6 @@ const BOARDS: Board[] = [
 	{ boggsId: "cadbench", id: "cadbench", name: "CADBench", url: "https://www.seldon.global/blog/cadbench", publisher: "Seldon", category: "agents", higherIsBetter: true, ...pct, description: "The model produces CAD designs that a verifier checks. Mean verifier score." },
 	{ boggsId: "cheatbench", id: "cheatbench", name: "CheatBench", url: "https://www.cheatbench.ai/", publisher: "CheatBench", category: "safety", higherIsBetter: false, ...pct, description: "A coding agent gets tasks where cheating is possible. Share of runs with a cheating attempt; lower is better." },
 	{ boggsId: "game-arena", id: "kaggle-game-arena", name: "Kaggle Game Arena", url: "https://www.kaggle.com/benchmarks/kaggle/game-arena/versions/1", publisher: "Kaggle", category: "reasoning", type: "numerical", unit: "rating", higherIsBetter: true, scale: "raw", description: "Models play strategic games against each other on Kaggle. Pooled Bradley-Terry rating across the games." },
-	{ boggsId: "remote-labor-index", id: "remote-labor-index", name: "Remote Labor Index", url: "https://www.remotelabor.ai/", publisher: "Center for AI Safety", category: "agents", higherIsBetter: true, ...pct, description: "An agent completes real paid remote-work projects. Automation rate: share of projects delivered at an acceptable standard." },
 	{ boggsId: "job-bench", id: "jobbench", name: "JobBench", url: "https://job-bench.github.io/", publisher: "JobBench", category: "agents", higherIsBetter: true, ...pct, description: "An agent completes job tasks in the OpenCode harness. Weighted score." },
 	{ boggsId: "perception-bench", id: "perceptionbench", name: "PerceptionBench", url: "https://www.kimi.com/blog/perception-bench", publisher: "Moonshot AI", category: "multimodal", higherIsBetter: true, ...pct, description: "Atomic visual-perception questions about images. Overall accuracy." },
 	{ boggsId: "maze-bench", id: "maze-bench", name: "MazeBench", url: "https://mazebench.com/leaderboard/ai", publisher: "MazeBench", category: "agents", higherIsBetter: true, ...pct, description: "An agent explores ASCII mazes with tools to collect gems. Share of the 100 gems collected." },
