@@ -1507,6 +1507,8 @@ export type PricingPageStateRow = {
 	source_url: string;
 	fingerprint: string;
 	content_lines: string[];
+	/** Earlier fingerprints, newest first, so a page switching back to one of them is not reported again. */
+	recent_fingerprints: string[];
 };
 
 export function parsePricingPageStateRows(rows: unknown[]): Map<string, PricingPageStateRow> {
@@ -1523,6 +1525,9 @@ export function parsePricingPageStateRows(rows: unknown[]): Map<string, PricingP
 			content_lines: asArray(record?.content_lines).filter(
 				(line): line is string => typeof line === "string" && line.trim().length > 0
 			),
+			recent_fingerprints: asArray(record?.recent_fingerprints).filter(
+				(value): value is string => typeof value === "string" && value.trim().length > 0
+			),
 		});
 	}
 	return byProvider;
@@ -1532,13 +1537,20 @@ export async function loadPricingPageStates(): Promise<Map<string, PricingPageSt
 	const supabase = getSupabaseAdmin();
 	const { data, error } = await supabase
 		.from("model_discovery_pricing_pages")
-		.select("provider_id,source_url,fingerprint,content_lines");
+		.select("provider_id,source_url,fingerprint,content_lines,recent_fingerprints");
 	if (error) throw new Error(error.message || "Failed to load pricing page state");
 	return parsePricingPageStateRows((data ?? []) as unknown[]);
 }
 
 export async function savePricingPageStates(
-	snapshots: Array<{ providerId: string; sourceUrl: string; fingerprint: string; contentLines: string[] }>
+	snapshots: Array<{
+		providerId: string;
+		sourceUrl: string;
+		fingerprint: string;
+		contentLines: string[];
+		/** Omitted to leave the stored history unchanged. */
+		recentFingerprints?: string[];
+	}>
 ): Promise<void> {
 	if (snapshots.length === 0) return;
 	const supabase = getSupabaseAdmin();
@@ -1547,6 +1559,7 @@ export async function savePricingPageStates(
 		source_url: snapshot.sourceUrl,
 		fingerprint: snapshot.fingerprint,
 		content_lines: snapshot.contentLines,
+		...(snapshot.recentFingerprints ? { recent_fingerprints: snapshot.recentFingerprints } : {}),
 		updated_at: new Date().toISOString(),
 	}));
 	const { error } = await supabase

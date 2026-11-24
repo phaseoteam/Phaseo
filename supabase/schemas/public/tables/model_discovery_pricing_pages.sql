@@ -4,8 +4,11 @@ CREATE TABLE "public"."model_discovery_pricing_pages" (
   "fingerprint"   text                     NOT NULL,
   "content_lines" jsonb                    NOT NULL DEFAULT '[]'::jsonb,
   "updated_at"    timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
+  "recent_fingerprints" jsonb             NOT NULL DEFAULT '[]'::jsonb,
   CONSTRAINT "model_discovery_pricing_pages_pkey" PRIMARY KEY (provider_id)
 );
+
+COMMENT ON COLUMN "public"."model_discovery_pricing_pages"."recent_fingerprints" IS 'Fingerprints this page had before the current one, newest first, capped by the model watcher. A page that returns to one of them is not reported as a pricing change.';
 
 ALTER TABLE "public"."model_discovery_pricing_pages"
   ENABLE ROW LEVEL SECURITY;

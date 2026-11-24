@@ -41,7 +41,12 @@ import {
 	computePrivateModelDiscoveryFingerprint,
 	sendPrivateModelDiscoveryNotification,
 } from "./private-model-discovery-notifications";
-import { fetchPricingTableSnapshots, hasPricingSourceChanged, type PricingTableSnapshot } from "./pricing-tables";
+import {
+	fetchPricingTableSnapshots,
+	hasPricingSourceChanged,
+	nextRecentFingerprints,
+	type PricingTableSnapshot,
+} from "./pricing-tables";
 import {
 	emptyVeniceChangelogSummary,
 	runVeniceChangelogCheck,
@@ -1293,7 +1298,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 		const veniceChangelogMonitor = emptyVeniceChangelogSummary(pricingPageExecuted);
 		let veniceChangelogStateToSave: VeniceChangelogCheckResult["stateToSave"] = null;
 		let pricingPageStates: Awaited<ReturnType<typeof loadPricingPageStates>> | null = null;
-		let pricingPageSnapshotsToSave: PricingTableSnapshot[] = [];
+		let pricingPageSnapshotsToSave: Array<PricingTableSnapshot & { recentFingerprints: string[] }> = [];
 		if (pricingExecuted) {
 			try {
 				pricingMonitor = await runPricingMonitorCheck();
@@ -1326,9 +1331,11 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 				// State is persisted only after notifications succeed so a delivery
 				// failure never silently swallows a pricing-page change. Unchanged
 				// pages keep their row; only new or changed sources are written.
-				pricingPageSnapshotsToSave = sources.filter((source) => {
+				// Each written row keeps the fingerprints it replaced, so switching back to one is not reported.
+				pricingPageSnapshotsToSave = sources.flatMap((source) => {
 					const previous = previousPages.get(canonicalProviderId(source.providerId));
-					return previous?.source_url !== source.sourceUrl || previous.fingerprint !== source.fingerprint;
+					if (previous?.source_url === source.sourceUrl && previous.fingerprint === source.fingerprint) return [];
+					return [{ ...source, recentFingerprints: nextRecentFingerprints(previous, source) }];
 				});
 			} catch (error) {
 				const reason = error instanceof Error ? error.message : String(error);
