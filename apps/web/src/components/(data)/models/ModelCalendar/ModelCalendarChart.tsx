@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import type {
@@ -10,7 +10,6 @@ import {
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
-	DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Link from "@/components/link";
@@ -181,6 +180,12 @@ export default function ModelCalendarChart({
 		}));
 	}, [events, format, now, monthsWindow, calendarT]);
 
+	const [openSegment, setOpenSegment] = useState<{ entryKey: string; type: EventType } | null>(null);
+	const openEntry = openSegment ? chartData.find((entry) => entry.key === openSegment.entryKey) : undefined;
+	const openDetails = openSegment && openEntry
+		? { entry: openEntry, type: openSegment.type, modelsInfo: openEntry.modelList[openSegment.type] }
+		: null;
+
 	return (
 		<section className="space-y-4 py-6">
 			<div className="border-t border-zinc-200 pt-5 dark:border-zinc-800">
@@ -209,100 +214,111 @@ export default function ModelCalendarChart({
 						</div>
 					))}
 				</div>
-				<div className="space-y-2">
+				<div className="space-y-3">
 					{chartData.map((entry) => (
-						<div
-							key={entry.key}
-							className="flex items-center gap-3 text-[11px] text-zinc-500 dark:text-zinc-400"
-						>
-							<span className="w-[70px] font-semibold text-zinc-700 dark:text-zinc-200">
-								{entry.label}
-							</span>
-							<div className="flex-1 overflow-hidden rounded-full bg-white/80 dark:bg-zinc-900/80">
-								<div className="flex h-6">
+						<div key={entry.key} className="space-y-1">
+							<div className="flex items-center gap-3 text-[11px] text-zinc-500 dark:text-zinc-400">
+								<span className="w-[70px] font-semibold text-zinc-700 dark:text-zinc-200">
+									{entry.label}
+								</span>
+								{/* Segments stay proportional to their counts. They open the
+								    month's list on click; the count buttons below are the
+								    keyboard and screen reader equivalent at a 24px size. */}
+								<div aria-hidden="true" className="flex-1 overflow-hidden rounded-full bg-white/80 dark:bg-zinc-900/80">
+									<div className="flex h-4">
+										{STACKED_TYPES.map((type) => {
+											const count = entry.counts[type] ?? 0;
+											if (count === 0 || entry.total === 0) return null;
+											return (
+												<div
+													key={type}
+													className={cn("h-full cursor-pointer transition-opacity hover:opacity-80", TYPE_COLORS[type])}
+													style={{ width: `${(count / entry.total) * 100}%` }}
+													onClick={() => setOpenSegment({ entryKey: entry.key, type })}
+												/>
+											);
+										})}
+									</div>
+								</div>
+								<span className="w-8 text-right font-semibold text-zinc-700 dark:text-zinc-200">
+									{entry.total}
+								</span>
+							</div>
+							{entry.total > 0 ? (
+								<div className="flex flex-wrap gap-1 pl-[82px]">
 									{STACKED_TYPES.map((type) => {
 										const count = entry.counts[type] ?? 0;
 										if (count === 0) return null;
-										const width =
-											entry.total === 0
-												? 0
-												: (count / entry.total) * 100;
-										const modelsInfo =
-											entry.modelList[type];
 										return (
-											<Dialog
-												key={`${entry.key}-${type}`}
+											<button
+												key={type}
+												type="button"
+												className="inline-flex h-6 min-w-6 items-center gap-1.5 rounded-md px-1.5 text-[11px] font-medium text-zinc-600 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-zinc-300 dark:hover:bg-zinc-800"
+												aria-label={t("typeCount", {
+													type: eventTypeLabels[type],
+													count: new Intl.NumberFormat(locale).format(count),
+												})}
+												onClick={() => setOpenSegment({ entryKey: entry.key, type })}
 											>
-												<DialogTrigger asChild>
-													<button
-														type="button"
-														className={cn(
-															"h-full cursor-pointer transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white",
-															TYPE_COLORS[type]
-														)}
-														// Grow by share, but never narrower than
-														// a 24px target (WCAG 2.5.8).
-														style={{
-															flex: `${width} 1 0%`,
-															minWidth: "1.5rem",
-														}}
-										aria-label={t("typeCount", {
-											type: eventTypeLabels[type],
-											count: new Intl.NumberFormat(locale).format(count),
-										})}
-													/>
-												</DialogTrigger>
-												<DialogContent className="max-w-lg rounded-md">
-													<DialogHeader>
-														<DialogTitle>
-											{t("eventsInMonth", {
-												type: eventTypeLabels[type],
-												month: entry.label,
-												count: new Intl.NumberFormat(locale).format(modelsInfo.total),
-											})}
-														</DialogTitle>
-													</DialogHeader>
-													<ScrollArea className="max-h-[420px] pr-3">
-														<div className="divide-y divide-zinc-200 dark:divide-zinc-800">
-															{modelsInfo.models.map((model) => (
-																<Link
-																	key={model.id}
-																	href={`/models/${model.id}`}
-																	className="flex items-center gap-3 py-2.5"
-																>
-																	<span className="relative flex size-8 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-																		<Logo
-																			id={model.organisationId}
-																			alt={model.organisationName}
-																			fill
-																			className="object-contain p-1.5"
-																		/>
-																	</span>
-																	<span className="min-w-0">
-																		<span className="block truncate text-sm font-medium hover:underline">
-																			{model.name}
-																		</span>
-																		<span className="block truncate text-xs text-zinc-500 dark:text-zinc-400">
-																			{model.organisationName}
-																		</span>
-																	</span>
-																</Link>
-															))}
-														</div>
-													</ScrollArea>
-												</DialogContent>
-											</Dialog>
+												<span aria-hidden="true" className={cn("h-2 w-2 rounded-full", TYPE_COLORS[type])} />
+												{new Intl.NumberFormat(locale).format(count)}
+											</button>
 										);
 									})}
 								</div>
-							</div>
-							<span className="w-8 text-right font-semibold text-zinc-700 dark:text-zinc-200">
-								{entry.total}
-							</span>
+							) : null}
 						</div>
 					))}
 				</div>
 			</div>
+			<Dialog
+				open={openDetails !== null}
+				onOpenChange={(open) => {
+					if (!open) setOpenSegment(null);
+				}}
+			>
+				{openDetails ? (
+					<DialogContent className="max-w-lg rounded-md">
+						<DialogHeader>
+							<DialogTitle>
+								{t("eventsInMonth", {
+									type: eventTypeLabels[openDetails.type],
+									month: openDetails.entry.label,
+									count: new Intl.NumberFormat(locale).format(openDetails.modelsInfo.total),
+								})}
+							</DialogTitle>
+						</DialogHeader>
+						<ScrollArea className="max-h-[420px] pr-3">
+							<div className="divide-y divide-zinc-200 dark:divide-zinc-800">
+								{openDetails.modelsInfo.models.map((model) => (
+									<Link
+										key={model.id}
+										href={`/models/${model.id}`}
+										className="flex items-center gap-3 py-2.5"
+									>
+										<span className="relative flex size-8 shrink-0 items-center justify-center rounded-md border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+											<Logo
+												id={model.organisationId}
+												alt={model.organisationName}
+												fill
+												className="object-contain p-1.5"
+											/>
+										</span>
+										<span className="min-w-0">
+											<span className="block truncate text-sm font-medium hover:underline">
+												{model.name}
+											</span>
+											<span className="block truncate text-xs text-zinc-500 dark:text-zinc-400">
+												{model.organisationName}
+											</span>
+										</span>
+									</Link>
+								))}
+							</div>
+						</ScrollArea>
+					</DialogContent>
+				) : null}
+			</Dialog>
 		</section>
 	);
 }

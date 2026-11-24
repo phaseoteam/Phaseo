@@ -62,18 +62,26 @@ function ChartContainer({
   // name (WCAG 4.1.2). Use the chart's own title, then this container's
   // aria-label, then the nearest heading before it, then the first few series.
   const [headingName, setHeadingName] = React.useState<string | null>(null)
-  // Read the heading once the container is in the document.
+  // Read the heading once the container is in the document, and again
+  // whenever the heading's text changes (for example when a metric switches).
   const containerRef = React.useCallback((container: HTMLDivElement | null) => {
     if (ariaLabel || !container) return
     // The closest heading that comes before the chart, searching outwards.
-    let text: string | undefined
-    for (let scope = container.parentElement; scope && !text; scope = scope.parentElement) {
-      const headings = [...scope.querySelectorAll("h1, h2, h3, h4, h5, [data-slot='card-title']")].filter(
-        (heading) => heading.compareDocumentPosition(container) & Node.DOCUMENT_POSITION_FOLLOWING,
-      )
-      text = headings.at(-1)?.textContent?.trim() || undefined
+    let heading: Element | undefined
+    for (let scope = container.parentElement; scope && !heading; scope = scope.parentElement) {
+      heading = [...scope.querySelectorAll("h1, h2, h3, h4, h5, [data-slot='card-title']")]
+        .filter((candidate) => candidate.compareDocumentPosition(container) & Node.DOCUMENT_POSITION_FOLLOWING)
+        .at(-1)
     }
-    setHeadingName(text ? text.slice(0, 120) : null)
+    const read = () => {
+      const text = heading?.textContent?.trim()
+      setHeadingName(text ? text.slice(0, 120) : null)
+    }
+    read()
+    if (!heading) return
+    const observer = new MutationObserver(read)
+    observer.observe(heading, { childList: true, characterData: true, subtree: true })
+    return () => observer.disconnect()
   }, [ariaLabel])
   const seriesLabels = Object.values(config)
     .map((entry) => (typeof entry.label === "string" ? entry.label : null))

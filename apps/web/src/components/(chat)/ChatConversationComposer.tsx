@@ -1941,7 +1941,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					<label className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
 						<Switch
 							size="sm"
-							aria-label={toolEnabled ? tUi("chatComposer.enabled") : tUi("chatComposer.disabled")}
+							aria-label={toolLabel}
 							checked={toolEnabled}
 							onCheckedChange={(checked) => setServerToolEnabled(toolType, checked)}
 						/>

@@ -52,7 +52,7 @@ export function OpenUIExperiment() {
     return () => window.clearTimeout(timer);
   }, [streamed, isStreaming, example.content]);
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-10">
+    <main id="main-content" tabIndex={-1} className="mx-auto max-w-3xl space-y-6 px-4 py-10 outline-none">
       <header>
         <p className="mb-2 text-xs text-muted-foreground">
           {t("localLabel")}
@@ -123,6 +123,6 @@ export function OpenUIExperiment() {
           <p className="whitespace-pre-wrap text-sm">{submitted}</p>
         </section>
       )}
-    </div>
+    </main>
   );
 }
