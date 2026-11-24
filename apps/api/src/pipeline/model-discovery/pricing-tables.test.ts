@@ -7,7 +7,9 @@ import {
 	extractPriceValues,
 	fetchPricingTableSnapshots,
 	hasPricingSourceChanged,
+	nextRecentFingerprints,
 	PRICE_VALUES_FINGERPRINT_PREFIX,
+	RECENT_FINGERPRINT_LIMIT,
 	PRICING_TABLE_SOURCES,
 	pricingContentLines,
 } from "./pricing-tables";
@@ -124,6 +126,29 @@ describe("hasPricingSourceChanged", () => {
 		const priceValues = `${PRICE_VALUES_FINGERPRINT_PREFIX}abc`;
 		expect(hasPricingSourceChanged({ source_url: "api", fingerprint: "old-content-hash" }, { sourceUrl: "api", fingerprint: priceValues })).toBe(false);
 		expect(hasPricingSourceChanged({ source_url: "api", fingerprint: priceValues }, { sourceUrl: "api", fingerprint: `${PRICE_VALUES_FINGERPRINT_PREFIX}def` })).toBe(true);
+	});
+
+	it("does not report a page returning to a version it had recently", () => {
+		const previous = { source_url: "api", fingerprint: "b", recent_fingerprints: ["a"] };
+		expect(hasPricingSourceChanged(previous, { sourceUrl: "api", fingerprint: "a" })).toBe(false);
+		expect(hasPricingSourceChanged(previous, { sourceUrl: "api", fingerprint: "c" })).toBe(true);
+	});
+});
+
+describe("nextRecentFingerprints", () => {
+	it("keeps replaced fingerprints newest first, without the current one or duplicates", () => {
+		const previous = { source_url: "api", fingerprint: "b", recent_fingerprints: ["a", "c"] };
+		expect(nextRecentFingerprints(previous, { sourceUrl: "api", fingerprint: "a" })).toEqual(["b", "c"]);
+		expect(nextRecentFingerprints(previous, { sourceUrl: "api", fingerprint: "d" })).toEqual(["b", "a", "c"]);
+	});
+
+	it("starts empty for a new source and caps the history", () => {
+		expect(nextRecentFingerprints(undefined, { sourceUrl: "api", fingerprint: "a" })).toEqual([]);
+		expect(nextRecentFingerprints({ source_url: "old", fingerprint: "b" }, { sourceUrl: "api", fingerprint: "a" })).toEqual([]);
+		const long = Array.from({ length: 20 }, (_, index) => `f${index}`);
+		const next = nextRecentFingerprints({ source_url: "api", fingerprint: "x", recent_fingerprints: long }, { sourceUrl: "api", fingerprint: "y" });
+		expect(next).toHaveLength(RECENT_FINGERPRINT_LIMIT);
+		expect(next[0]).toBe("x");
 	});
 });
 

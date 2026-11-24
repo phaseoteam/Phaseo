@@ -448,4 +448,53 @@ describe("runModelDiscoveryJob", () => {
 			expect(fetchMock.calls.some((call) => call.url === "https://docs.venice.ai/changelog.md")).toBe(false);
 		});
 	});
+
+	describe("pricing page served in two versions", () => {
+		let cohereHtml = "";
+		const versionA = "<main><h2>Hourly Price</h2><table><tr><td>H100</td><td>$6.25</td></tr></table></main>";
+		const versionB = "<main><h2>Hourly Price</h2><table><tr><td>H100</td><td>$5.75</td></tr></table></main>";
+		const versionC = "<main><h2>Hourly Price</h2><table><tr><td>H100</td><td>$4.50</td></tr></table></main>";
+
+		beforeEach(() => {
+			supabase.bindings = {};
+			fetchMock.restore();
+			fetchMock = installFetchMock([
+				{ match: (url) => url === "https://cohere.com/pricing", response: () => new Response(cohereHtml) },
+				{ match: () => true, response: () => jsonResponse({ data: [{ id: "model-a" }] }) },
+			]);
+		});
+
+		const cohereRow = () => (supabase.tables.model_discovery_pricing_pages ?? [])
+			.find((row) => row.provider_id === "cohere") as { fingerprint: string; recent_fingerprints: string[] } | undefined;
+
+		async function sweep(html: string) {
+			cohereHtml = html;
+			supabase.calls = [];
+			const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+			// Carry the saved rows into the next sweep, as the database would.
+			const saved = writes("model_discovery_pricing_pages", "upsert")
+				.flatMap((call) => call.args[0] as Array<Record<string, unknown> & { provider_id: string }>);
+			const kept = (supabase.tables.model_discovery_pricing_pages ?? [])
+				.filter((row) => !saved.some((write) => write.provider_id === row.provider_id));
+			supabase.tables.model_discovery_pricing_pages = [...kept, ...saved];
+			const cohereChanged = summary.pricingTableMonitor.providerChanges.some((source) => source.providerId === "cohere");
+			return { cohereChanged, fingerprint: cohereRow()?.fingerprint };
+		}
+
+		it("reports a new version once and stays quiet when the page switches between known versions", async () => {
+			const first = await sweep(versionA);
+			expect(first.cohereChanged).toBe(false);
+
+			const second = await sweep(versionB);
+			expect(second.cohereChanged).toBe(true);
+			expect(cohereRow()?.recent_fingerprints).toEqual([first.fingerprint]);
+
+			expect((await sweep(versionA)).cohereChanged).toBe(false);
+			expect(cohereRow()).toMatchObject({ fingerprint: first.fingerprint, recent_fingerprints: [second.fingerprint] });
+			expect((await sweep(versionB)).cohereChanged).toBe(false);
+
+			// A price not seen before is still reported.
+			expect((await sweep(versionC)).cohereChanged).toBe(true);
+		});
+	});
 });

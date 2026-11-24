@@ -70,15 +70,36 @@ function fingerprintScheme(fingerprint: string): string {
 	return fingerprint.startsWith(PRICE_VALUES_FINGERPRINT_PREFIX) ? PRICE_VALUES_FINGERPRINT_PREFIX : "content";
 }
 
+/**
+ * How many earlier fingerprints a page remembers. Some pages are served in more than one version at
+ * once: from the watcher's Cloudflare Worker, Cohere's pricing page alternated between two versions
+ * every few hours, which alerted on every switch. A page that returns to a version seen recently is
+ * not reported again.
+ */
+export const RECENT_FINGERPRINT_LIMIT = 8;
+
 export function hasPricingSourceChanged(
-	previous: { source_url: string; fingerprint: string } | undefined,
+	previous: { source_url: string; fingerprint: string; recent_fingerprints?: string[] } | undefined,
 	current: { sourceUrl: string; fingerprint: string },
 ): boolean {
 	// A replacement source needs its own baseline; unrelated pages are not a pricing diff.
 	if (!previous || previous.source_url !== current.sourceUrl) return false;
 	// A fingerprint from another scheme is not comparable: re-baseline instead of alerting once per page.
 	if (fingerprintScheme(previous.fingerprint) !== fingerprintScheme(current.fingerprint)) return false;
-	return previous.fingerprint !== current.fingerprint;
+	if (previous.fingerprint === current.fingerprint) return false;
+	return !(previous.recent_fingerprints ?? []).includes(current.fingerprint);
+}
+
+/** Earlier fingerprints to keep after a page moves to `currentFingerprint`, newest first. */
+export function nextRecentFingerprints(
+	previous: { source_url: string; fingerprint: string; recent_fingerprints?: string[] } | undefined,
+	current: { sourceUrl: string; fingerprint: string },
+): string[] {
+	if (!previous || previous.source_url !== current.sourceUrl) return [];
+	const history = [previous.fingerprint, ...(previous.recent_fingerprints ?? [])];
+	return Array.from(new Set(history))
+		.filter((fingerprint) => fingerprint !== current.fingerprint)
+		.slice(0, RECENT_FINGERPRINT_LIMIT);
 }
 
 /**
