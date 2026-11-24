@@ -104,7 +104,7 @@ export function CompareRow({
 		<div role="row" className={cn(GRID_CLASS, "border-b border-border/60 py-2 text-sm transition-colors hover:bg-muted/30 sm:items-baseline sm:py-3")}>
 			<div role="rowheader" className="col-span-2 pb-1 text-xs text-muted-foreground sm:col-span-1 sm:px-3 sm:pb-0 sm:text-sm">
 				{label}
-				{labelSub ? <span className="mt-0.5 block text-xs text-muted-foreground/80">{labelSub}</span> : null}
+				{labelSub ? <span className="mt-0.5 block text-xs text-muted-foreground">{labelSub}</span> : null}
 			</div>
 			{cells.map((cell, index) => {
 				const best = highlightBest && cell.best;

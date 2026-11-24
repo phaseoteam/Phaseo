@@ -129,8 +129,8 @@ export default function APIProviderCard({ api_provider }: Props) {
 				<div className="space-y-1">{renderModalityRow(t("input"), inputModalities)}{renderModalityRow(t("output"), outputModalities)}</div>
 
 				<div className="mt-auto grid grid-cols-2 gap-3 text-xs">
-					<div><div className="text-[10px] tracking-wide text-muted-foreground/80">{t("dailyTokens")}</div><div className="text-sm font-medium tabular-nums text-foreground/80">{formatTokens(dailyTokens)}</div></div>
-					<div><div className="text-[10px] tracking-wide text-muted-foreground/80">{t("monthlyTokens")}</div><div className="text-sm font-medium tabular-nums text-foreground/80">{formatTokens(monthlyTokens)}</div></div>
+					<div><div className="text-[10px] tracking-wide text-muted-foreground">{t("dailyTokens")}</div><div className="text-sm font-medium tabular-nums text-foreground/80">{formatTokens(dailyTokens)}</div></div>
+					<div><div className="text-[10px] tracking-wide text-muted-foreground">{t("monthlyTokens")}</div><div className="text-sm font-medium tabular-nums text-foreground/80">{formatTokens(monthlyTokens)}</div></div>
 				</div>
 			</div>
 		</div>

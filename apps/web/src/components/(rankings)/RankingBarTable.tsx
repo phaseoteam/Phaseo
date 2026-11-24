@@ -56,7 +56,7 @@ export function RankingBarTable({
 								{modelHref ? (
 									<Link
 										href={modelHref}
-										className="block truncate text-sm font-medium underline decoration-transparent underline-offset-2 hover:decoration-current"
+										className="block truncate text-sm leading-6 font-medium underline decoration-transparent underline-offset-2 hover:decoration-current"
 									>
 										{entry.model_name}
 									</Link>
@@ -66,7 +66,7 @@ export function RankingBarTable({
 								{providerId ? (
 									<Link
 										href={`/api-providers/${encodeURIComponent(providerId)}`}
-										className="block truncate text-xs text-muted-foreground underline decoration-transparent underline-offset-2 hover:decoration-current"
+										className="block truncate text-xs leading-6 text-muted-foreground underline decoration-transparent underline-offset-2 hover:decoration-current"
 									>
 										{entry.provider_name ?? providerId}
 									</Link>

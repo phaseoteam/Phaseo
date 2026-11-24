@@ -37,7 +37,7 @@ export function EmptyLeaderboardPreview({
 									key={rank}
 									className="grid min-h-16 grid-cols-[2.25rem_2rem_minmax(0,1fr)_auto] items-center gap-3 py-2"
 								>
-									<div className="text-base tabular-nums text-muted-foreground/70">
+									<div className="text-base tabular-nums text-muted-foreground">
 										{rank}.
 									</div>
 									<div className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-200/80 bg-transparent dark:border-zinc-800">
@@ -72,7 +72,7 @@ export function EmptyLeaderboardPreview({
 			<div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-6 text-center">
 				<div className="max-w-md">
 					<div className="text-sm font-medium text-foreground/75">{title}</div>
-					<p className="mt-1 text-sm leading-5 text-muted-foreground/85">
+					<p className="mt-1 text-sm leading-5 text-muted-foreground">
 						{description}
 					</p>
 				</div>

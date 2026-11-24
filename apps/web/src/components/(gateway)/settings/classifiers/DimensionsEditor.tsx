@@ -105,8 +105,8 @@ function DimensionRow({ dimension, index, count, problem, disabled, onChange, on
 				</div>
 			</div>
 			<div className="flex flex-wrap gap-x-6 gap-y-2">
-				<label className="flex items-center gap-2 text-sm"><Switch checked={dimension.multiple} disabled={disabled} onCheckedChange={(multiple) => onChange({ multiple })} />{t("multiple")}</label>
-				<label className="flex items-center gap-2 text-sm"><Switch checked={dimension.allowOther} disabled={disabled} onCheckedChange={(allowOther) => onChange({ allowOther })} />{t("allowOther")}</label>
+				<label className="flex items-center gap-2 text-sm"><Switch aria-label={t("multiple")} checked={dimension.multiple} disabled={disabled} onCheckedChange={(multiple) => onChange({ multiple })} />{t("multiple")}</label>
+				<label className="flex items-center gap-2 text-sm"><Switch aria-label={t("allowOther")} checked={dimension.allowOther} disabled={disabled} onCheckedChange={(allowOther) => onChange({ allowOther })} />{t("allowOther")}</label>
 			</div>
 			<div className="space-y-2">
 				<div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,3fr)_96px] gap-2 text-xs font-medium text-muted-foreground sm:grid">

@@ -689,7 +689,7 @@ function ObservabilityVisual() {
 								</div>
 								<div className="flex items-center justify-end self-center text-right">
 									<span
-										className={`inline-flex rounded-full px-1.5 py-0.5 text-[8px] font-semibold leading-none ${request.statusTone}`}
+										className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none ${request.statusTone}`}
 									>
 										{request.status}
 									</span>

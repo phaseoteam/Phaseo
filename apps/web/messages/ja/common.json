@@ -32,7 +32,8 @@
 		"releaseAnnouncement": "Phaseo Gateway のご紹介",
 		"newRelease": "新バージョン",
 		"readDocs": "ドキュメントを読む",
-		"manageCatalog": "カタログを管理"
+		"manageCatalog": "カタログを管理",
+		"skipToContent": "コンテンツへスキップ"
 	},
 	"footer": {
 		"models": "モデル",

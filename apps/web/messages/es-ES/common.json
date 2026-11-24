@@ -32,7 +32,8 @@
 		"releaseAnnouncement": "Presentamos Phaseo Gateway",
 		"newRelease": "Nueva versión",
 		"readDocs": "Leer la documentación",
-		"manageCatalog": "Gestionar catálogo"
+		"manageCatalog": "Gestionar catálogo",
+		"skipToContent": "Saltar al contenido"
 	},
 	"footer": {
 		"models": "Modelos",

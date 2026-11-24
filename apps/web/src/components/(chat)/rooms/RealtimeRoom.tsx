@@ -3350,7 +3350,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 	const canStartSession = Boolean(selectedModel) && !sessionActive;
 
 	return (
-		<main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+		<div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
 			<header className="border-b border-border px-3 py-3 md:px-5">
 				<div className="flex flex-wrap items-center justify-between gap-2">
 					<div className="flex min-w-0 items-center gap-1">
@@ -3740,7 +3740,7 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 				}
 			/>
 			<audio ref={remoteAudioRef} autoPlay className="hidden" />
-		</main>
+		</div>
 	);
 }
 

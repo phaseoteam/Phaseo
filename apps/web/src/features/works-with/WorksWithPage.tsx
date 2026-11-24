@@ -157,16 +157,16 @@ export function WorksWithPage() {
 				</div>
 			)}
 
-			<Card id="contributing" className="border-zinc-200/80 bg-white">
+			<Card id="contributing" className="border-zinc-200/80 dark:border-zinc-800">
 				<CardHeader>
 					<CardTitle>{t("contributing")}</CardTitle>
 					<CardDescription>
 						{t("contributingDescription")}
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="space-y-6 text-sm text-zinc-700">
+				<CardContent className="space-y-6 text-sm text-zinc-700 dark:text-zinc-300">
 					<div className="space-y-3">
-						<h3 className="text-base font-semibold text-zinc-900">{t("requirements")}</h3>
+						<h3 className="text-base font-semibold text-foreground">{t("requirements")}</h3>
 						<ul className="list-disc space-y-1 pl-5">
 							<li>{t("requirementModelAccess")}</li>
 							<li>{t("requirementBringOwnKey")}</li>
@@ -176,7 +176,7 @@ export function WorksWithPage() {
 					</div>
 
 					<div className="space-y-3">
-						<h3 className="text-base font-semibold text-zinc-900">{t("howToSubmit")}</h3>
+						<h3 className="text-base font-semibold text-foreground">{t("howToSubmit")}</h3>
 						<ol className="list-decimal space-y-2 pl-5">
 							<li><a href="https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">{t("openDataRequest")}</a> {t("forYourApp")}</li>
 							<li>{t("includeAppDetails")}</li>
@@ -186,7 +186,7 @@ export function WorksWithPage() {
 					</div>
 
 					<div className="space-y-2">
-						<h3 className="text-base font-semibold text-zinc-900">{t("validTags")}</h3>
+						<h3 className="text-base font-semibold text-foreground">{t("validTags")}</h3>
 						<div className="flex flex-wrap gap-2">
 							{Object.entries(tagLabels).map(([tag, label]) => (
 								<Badge key={tag} variant="outline">
@@ -197,7 +197,7 @@ export function WorksWithPage() {
 					</div>
 
 					<div className="space-y-2">
-						<h3 className="text-base font-semibold text-zinc-900">{t("questions")}</h3>
+						<h3 className="text-base font-semibold text-foreground">{t("questions")}</h3>
 						<p>
 							{t("questionHelp")}
 						</p>

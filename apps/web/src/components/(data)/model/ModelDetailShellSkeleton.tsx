@@ -7,7 +7,7 @@ export function ModelDetailShellSkeleton({
 	children: ReactNode;
 }) {
 	return (
-		<main className="flex flex-col">
+		<div className="flex flex-col">
 			<div className="container mx-auto px-4 py-8">
 				<div className="mb-5 flex w-full flex-col items-center justify-between gap-2 md:flex-row md:items-start md:gap-0">
 					<div className="flex flex-col items-center gap-4 md:flex-row">
@@ -33,6 +33,6 @@ export function ModelDetailShellSkeleton({
 
 				<div className="mt-6 min-h-full">{children}</div>
 			</div>
-		</main>
+		</div>
 	);
 }

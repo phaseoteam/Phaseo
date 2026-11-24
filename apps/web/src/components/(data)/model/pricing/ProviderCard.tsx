@@ -2697,25 +2697,16 @@ export default function ProviderCard({
 	const summaryActive = isSummaryActive ?? expanded;
 	const handleSummaryRowClick = (event: React.MouseEvent<HTMLTableRowElement>) => {
 		const interactiveTarget = (event.target as HTMLElement).closest(
-			"a, button, input, select, textarea, [role='button']",
+			"a, button:not([data-row-toggle]), input, select, textarea, [role='button']",
 		);
 		if (interactiveTarget && interactiveTarget !== event.currentTarget) return;
-		toggleExpanded();
-	};
-	const handleSummaryRowKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>) => {
-		if (event.key !== "Enter" && event.key !== " ") return;
-		const interactiveTarget = (event.target as HTMLElement).closest(
-			"a, button, input, select, textarea, [role='button']",
-		);
-		if (interactiveTarget && interactiveTarget !== event.currentTarget) return;
-		event.preventDefault();
 		toggleExpanded();
 	};
 	const handleSummaryRowPointerDownCapture = (
 		event: React.PointerEvent<HTMLTableRowElement>,
 	) => {
 		const interactiveTarget = (event.target as HTMLElement).closest(
-			"a, button, input, select, textarea, [role='button']",
+			"a, button:not([data-row-toggle]), input, select, textarea, [role='button']",
 		);
 		if (interactiveTarget && interactiveTarget !== event.currentTarget) return;
 		const currentOpenProviderId = window[PROVIDER_INSPECTOR_STATE_KEY] ?? null;
@@ -3217,15 +3208,13 @@ export default function ProviderCard({
 
 	return (
 		<>
+			{/* The whole row toggles the inspector for pointer users. Keyboard and
+			    screen reader users get the logo button, because the row also holds
+			    links and help buttons that cannot sit inside a button (WCAG 4.1.2). */}
 			<TableRow
-				role="button"
-				tabIndex={0}
-				aria-pressed={summaryActive}
-				aria-expanded={expanded}
 				data-provider-inspector-open={expanded ? "true" : undefined}
 				onPointerDownCapture={handleSummaryRowPointerDownCapture}
 				onClick={handleSummaryRowClick}
-				onKeyDown={handleSummaryRowKeyDown}
 				className={cn(
 					"group cursor-pointer hover:bg-zinc-50/70 dark:hover:bg-zinc-900/30",
 					isLastVisible && "border-b-0",
@@ -3258,7 +3247,7 @@ export default function ProviderCard({
 									{ provider: displayName },
 								)}
 								onClick={onToggleServiceTiers}
-								className={cn("size-5 text-muted-foreground hover:bg-muted/60 aria-expanded:bg-transparent aria-expanded:text-muted-foreground aria-expanded:hover:bg-muted/60 aria-expanded:hover:text-foreground", TAP_TARGET_20)}
+								className={cn("size-6 text-muted-foreground hover:bg-muted/60 aria-expanded:bg-transparent aria-expanded:text-muted-foreground aria-expanded:hover:bg-muted/60 aria-expanded:hover:text-foreground", TAP_TARGET_20)}
 							>
 								<ChevronDown className={cn("size-3 transition-transform", !serviceTiersExpanded && "-rotate-90")} aria-hidden="true" />
 							</Button>
@@ -3268,17 +3257,24 @@ export default function ProviderCard({
 							<div
 								className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground max-sm:min-w-0 max-sm:flex-1 max-sm:basis-0"
 							>
-								<div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover:border-zinc-300 dark:border-zinc-800 dark:group-hover:border-zinc-700">
-									<div className="relative h-3.5 w-3.5">
+								<button
+									type="button"
+									data-row-toggle=""
+									aria-expanded={expanded}
+									aria-pressed={summaryActive}
+									aria-label={tProvider("showProviderDetails", { provider: displayName })}
+									className="relative flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover:border-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-zinc-800 dark:group-hover:border-zinc-700"
+								>
+									<span className="relative h-3.5 w-3.5">
 										<Logo
 											id={logoProviderId}
-											alt={`${displayName} logo`}
+											alt=""
 											className="object-contain"
 											fill
 											sizes="18px"
 										/>
-									</div>
-								</div>
+									</span>
+								</button>
 								<span className="inline-flex items-baseline gap-1 whitespace-nowrap max-sm:min-w-0">
 									<span className="font-semibold text-foreground max-sm:truncate">
 										<ProviderRouteName provider={provider.provider} plan={tablePlan} nameOverride={formattedDisplayName} />

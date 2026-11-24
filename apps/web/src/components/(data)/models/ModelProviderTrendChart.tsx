@@ -609,6 +609,7 @@ export default function ModelProviderTrendChart({
 				>
 				<ResponsiveContainer width="100%" height="100%" initialDimension={chartExportSize}>
 					<LineChart
+						title={title}
 						data={chartData}
 						margin={detailed
 							? { top: 8, right: 18, left: 24, bottom: 28 }

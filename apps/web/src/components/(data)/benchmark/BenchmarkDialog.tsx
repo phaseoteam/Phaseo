@@ -115,6 +115,7 @@ export function BenchmarkDialog({
 				<div className="w-full h-[500px] mt-4 overflow-visible">
 					<ResponsiveContainer width="100%" height="100%">
 						<BarChart
+							title={benchmarkName}
 							data={topModels}
 							layout="horizontal"
 							margin={{

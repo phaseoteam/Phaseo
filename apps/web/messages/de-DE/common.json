@@ -32,7 +32,8 @@
 		"releaseAnnouncement": "Phaseo Gateway ist da",
 		"newRelease": "Neue Version",
 		"readDocs": "Dokumentation lesen",
-		"manageCatalog": "Katalog verwalten"
+		"manageCatalog": "Katalog verwalten",
+		"skipToContent": "Zum Inhalt springen"
 	},
 	"footer": {
 		"models": "Modelle",

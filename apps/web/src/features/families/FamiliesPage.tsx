@@ -105,12 +105,12 @@ function FamiliesFallback() {
 
 export default function FamiliesPage() {
 	return (
-		<main className="flex min-h-screen flex-col">
+		<div className="flex min-h-screen flex-col">
 			<div className="container mx-auto px-4 py-8">
 				<Suspense fallback={<FamiliesFallback />}>
 					<FamiliesSection />
 				</Suspense>
 			</div>
-		</main>
+		</div>
 	);
 }

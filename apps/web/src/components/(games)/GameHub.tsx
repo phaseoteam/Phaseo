@@ -28,7 +28,7 @@ const ICONS: Record<GameKey, React.ComponentType<{ className?: string }>> = {
 export function GameHub() {
 	const t = useTranslations("Product.games");
   return (
-    <main className="min-h-screen bg-background px-4 py-12 sm:py-16">
+    <div className="min-h-screen bg-background px-4 py-12 sm:py-16">
       <div className="mx-auto max-w-5xl [&_[data-slot=button]]:rounded-lg">
         <div className="mb-10 w-full">
           <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
@@ -71,6 +71,6 @@ export function GameHub() {
           })}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

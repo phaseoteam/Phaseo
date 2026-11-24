@@ -217,7 +217,7 @@ export default function ClassifierEditor({ classifier, keys, apps }: {
 				</div>
 				<label className="flex items-start justify-between gap-4">
 					<span><span className="block text-sm font-medium">{t("fields.enabled")}</span><span className="block text-xs text-muted-foreground">{t("fields.enabledDescription")}</span></span>
-					<Switch checked={draft.enabled} disabled={busy} onCheckedChange={(enabled) => set("enabled", enabled)} />
+					<Switch aria-label={t("fields.enabled")} checked={draft.enabled} disabled={busy} onCheckedChange={(enabled) => set("enabled", enabled)} />
 				</label>
 			</Section>
 
@@ -263,7 +263,7 @@ export default function ClassifierEditor({ classifier, keys, apps }: {
 				</div>
 				<label className="flex items-start justify-between gap-4">
 					<span><span className="block text-sm font-medium">{t("sampling.includeResponse")}</span><span className="block text-xs text-muted-foreground">{t("sampling.includeResponseHelp")}</span></span>
-					<Switch checked={draft.includeResponse} disabled={busy} onCheckedChange={(includeResponse) => set("includeResponse", includeResponse)} />
+					<Switch aria-label={t("sampling.includeResponse")} checked={draft.includeResponse} disabled={busy} onCheckedChange={(includeResponse) => set("includeResponse", includeResponse)} />
 				</label>
 			</Section>
 

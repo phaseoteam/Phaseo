@@ -1881,11 +1881,11 @@ export function AudioRoom({
 	) => {
 		if (items.length === 0) return null;
 		return (
-			<div>
+			<li className="list-none">
 				<p className="px-2 pb-2 pt-3 text-xs font-semibold uppercase text-muted-foreground">
 					{label}
 				</p>
-				{items.map((conversation) => (
+				<ul className="flex w-full min-w-0 flex-col">{items.map((conversation) => (
 					<SidebarMenuItem key={conversation.id} className="mb-1 w-full overflow-hidden last:mb-0">
 						<SidebarMenuButton
 							className="rounded-md"
@@ -1900,7 +1900,7 @@ export function AudioRoom({
 							</span>
 						</SidebarMenuButton>
 						<DropdownMenu>
-							<DropdownMenuTrigger render={<SidebarMenuAction showOnHover />}>
+							<DropdownMenuTrigger render={<SidebarMenuAction showOnHover aria-label={`Open actions for ${conversation.title}`} />}>
 
 									<MoreHorizontal className="h-4 w-4" />
 
@@ -1937,8 +1937,8 @@ export function AudioRoom({
 							</DropdownMenuContent>
 						</DropdownMenu>
 					</SidebarMenuItem>
-				))}
-			</div>
+				))}</ul>
+			</li>
 		);
 	};
 
@@ -2160,7 +2160,7 @@ aria-label={sidebarState === "expanded" ? t("collapseSidebar") : t("openSidebar"
 				</div>
 			</header>
 
-			<main className="flex min-h-0 flex-1 flex-col overflow-auto overscroll-contain px-4 py-5 md:px-6">
+			<div className="flex min-h-0 flex-1 flex-col overflow-auto overscroll-contain px-4 py-5 md:px-6">
 				<div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5">
 					{activeEntries.length === 0 ? (
 						<RoomEmptyState
@@ -2463,7 +2463,7 @@ aria-label={sidebarState === "expanded" ? t("collapseSidebar") : t("openSidebar"
 						})
 					)}
 				</div>
-			</main>
+			</div>
 
 			<RoomComposerFooter>
 				<div className="mx-auto w-full max-w-3xl">

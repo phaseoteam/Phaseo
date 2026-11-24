@@ -23,10 +23,10 @@ export default function NewBroadcastDestinationPage() {
 	if (!destination) notFound();
 
 	return (
-		<main className="min-w-0 w-full max-w-4xl space-y-8">
+		<div className="min-w-0 w-full max-w-4xl space-y-8">
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<BroadcastDestinationContent destination={destination} />
 			</Suspense>
-		</main>
+		</div>
 	);
 }

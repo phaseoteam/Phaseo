@@ -193,15 +193,14 @@ export default function SettingsSidebar({ children, workspaceName, ...options }:
 		if (item.children?.length) {
 			const sectionOpen = isSearching || (openSections[item.href] ?? active);
 			return (
+				<SidebarMenuItem key={`${heading || "group"}-${item.href}`}>
 				<Collapsible
-					key={`${heading || "group"}-${item.href}`}
 					onOpenChange={(open) => {
 						setOpenSections((current) => ({ ...current, [item.href]: open }));
 					}}
 					open={sectionOpen}
 					className="group/collapsible"
 				>
-					<SidebarMenuItem>
 						<CollapsibleTrigger asChild>
 							<SidebarMenuButton
 								isActive={false}
@@ -249,8 +248,8 @@ export default function SettingsSidebar({ children, workspaceName, ...options }:
 								})}
 							</SidebarMenuSub>
 						</CollapsibleContent>
-					</SidebarMenuItem>
 				</Collapsible>
+				</SidebarMenuItem>
 			);
 		}
 

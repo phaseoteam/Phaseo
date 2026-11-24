@@ -22,5 +22,5 @@ function ProviderTable() {
 }
 
 export default function ApiProvidersTablePage() {
-	return <main className="flex min-h-0 flex-1 flex-col"><Suspense fallback={<Skeleton className="m-6 h-[32rem] rounded-md" />}><ProviderTable /></Suspense></main>;
+	return <div className="flex min-h-0 flex-1 flex-col"><Suspense fallback={<Skeleton className="m-6 h-[32rem] rounded-md" />}><ProviderTable /></Suspense></div>;
 }

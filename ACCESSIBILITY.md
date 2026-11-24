@@ -17,32 +17,37 @@ The gateway API has no user interface of its own, but its error messages and doc
 
 We aim to meet [WCAG 2.2](https://www.w3.org/TR/WCAG22/) Level AA across the web app and documentation, and the equivalent platform guidelines in the desktop and mobile apps.
 
-We have not yet had an independent accessibility audit, and our own review found barriers (listed below), so we do not claim conformance with WCAG or any other standard today.
+We have not had an independent accessibility audit, so we do not claim conformance with WCAG or any other standard.
 
 ## What we do today
 
 - Interactive controls in the web app are built on [Base UI](https://base-ui.com) primitives, which provide keyboard support, focus management, and ARIA semantics for menus, dialogs, popovers, and similar components.
-- Many animations respect the `prefers-reduced-motion` setting.
-- The web app has both light and dark themes.
+- Every page in the web app has a "Skip to content" link and a single main content area. The documentation has its own skip link.
+- Animations follow the operating system's reduced motion setting.
+- The web app has light and dark themes, and we check text contrast in both.
 
-## Known barriers
+## Our November 2026 review
 
-In November 2026 we ran an automated and keyboard review of the web app against WCAG 2.2 AA. It found these barriers, which we are working through:
+In November 2026 we reviewed 54 page types in the web app and documentation against WCAG 2.2 AA. We used automated checks (axe-core) in light and dark themes, a keyboard walk through each page, and a check at 320 pixels wide. We fixed what it found:
 
-- **Colour contrast.** Some secondary text, status labels, and tags fall below the required contrast, in both light and dark themes.
-- **Focus visibility.** Some expandable sections, such as filters and FAQs, do not show where keyboard focus is.
-- **Cookie banner.** On a first visit, the cookie banner can cover links that receive keyboard focus.
-- **No skip link.** The web app has no "Skip to content" link, so keyboard users must tab through the header on every page. The documentation has one.
-- **Structure and labels.** Some sidebar navigation lists are not structured as lists, and a few controls (some dropdowns, a switch, and progress bars) have no accessible name.
-- **Small targets.** Some small buttons and closely spaced links are below the 24 by 24 pixel minimum.
-- **Narrow screens.** A few pages scroll sideways at 320 pixels wide.
+- Low-contrast secondary text, status labels, and tags, in both themes
+- Expandable sections, such as filters and FAQs, that did not show keyboard focus
+- A cookie banner that could cover links receiving keyboard focus
+- The missing "Skip to content" link, and pages with more than one main area
+- Sidebar lists that were not structured as lists, and controls with no accessible name (some dropdowns, switches, action buttons, and progress bars)
+- Table rows that acted as buttons while containing other links and buttons
+- Buttons and links smaller than 24 by 24 pixels
+- Pages that scrolled sideways at 320 pixels wide
+- Garbled characters in some benchmark names
 
-We also have not yet:
+## Known gaps
 
-- Run accessibility checks in CI, so regressions can ship unnoticed.
+Automated checks find only part of what affects real users. We have not yet:
+
 - Tested systematically with screen readers (such as NVDA, JAWS, VoiceOver, or TalkBack) or with voice control. In particular, responses that stream into Chat may not be announced well.
+- Reviewed menus, dialogs, and forms in their opened and error states.
 - Reviewed the desktop and mobile apps.
-- Applied `prefers-reduced-motion` to every animation.
+- Added accessibility checks to CI, so regressions can ship unnoticed.
 
 If you hit one of these, or anything else, please report it. Reports from real use help us decide what to fix first.
 

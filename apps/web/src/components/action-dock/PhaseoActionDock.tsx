@@ -727,7 +727,7 @@ export function PhaseoActionDock({ userId, userRole, providerMode = false }: Act
 													>
 														<Icon className={cn("size-4 text-muted-foreground", action.id === "refresh-page-data" && isRefreshingPageData && "motion-safe:animate-spin")} />
 														<span className="min-w-0 flex-1 truncate text-left">{action.label}</span>
-														<ChevronRight className="ml-auto size-3.5 text-muted-foreground/70" />
+														<ChevronRight className="ml-auto size-3.5 text-muted-foreground" />
 													</Button>
 												);
 											})}

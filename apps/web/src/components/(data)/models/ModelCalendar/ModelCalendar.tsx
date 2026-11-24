@@ -276,7 +276,7 @@ export default function ModelCalendar({
 					"flex min-h-28 flex-col border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-950",
 					cell.inCurrentMonth
 						? "border-zinc-200 dark:border-zinc-800"
-						: "opacity-60 dark:opacity-50",
+						: "bg-zinc-50 dark:bg-zinc-900",
 					isToday && "border-zinc-900 dark:border-zinc-100"
 				)}
 			>
@@ -285,7 +285,7 @@ export default function ModelCalendar({
 						className={cn(
 							"text-lg font-semibold",
 							!cell.inCurrentMonth
-								? "text-zinc-400 dark:text-zinc-500"
+								? "text-zinc-500 dark:text-zinc-400"
 								: "text-zinc-900 dark:text-zinc-50"
 						)}
 					>
@@ -593,7 +593,7 @@ export default function ModelCalendar({
 			</div>
 
 			<div className="overflow-hidden rounded-md border border-zinc-200 bg-zinc-200 dark:border-zinc-800 dark:bg-zinc-800">
-				<div className="hidden grid-cols-7 px-2 py-3 text-xs font-medium text-zinc-500 dark:text-zinc-400 lg:grid">
+				<div className="hidden grid-cols-7 px-2 py-3 text-xs font-medium text-zinc-600 dark:text-zinc-400 lg:grid">
 					{weekdayLabels.map((label) => (
 						<span key={`weekday-${label}`} className="text-center">
 							{label}

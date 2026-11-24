@@ -511,9 +511,9 @@ function SearchBrowseRow({
 				) : null}
 				{onTogglePin ? <span aria-hidden="true" className="size-6 shrink-0" /> : null}
 				{item.external ? (
-					<ExternalLink className="size-3.5 shrink-0 text-muted-foreground/70" />
+					<ExternalLink className="size-3.5 shrink-0 text-muted-foreground" />
 				) : (
-					<ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground/70" />
+					<ArrowUpRight className="size-3.5 shrink-0 text-muted-foreground" />
 				)}
 			</button>
 			{onTogglePin ? (

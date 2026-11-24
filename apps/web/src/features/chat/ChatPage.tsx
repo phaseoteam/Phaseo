@@ -3,6 +3,7 @@ import { useSearch } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import type { PageMetadata } from "@/lib/seo/metadataTypes";
 import { getTranslations } from "@/i18n/server";
+import { useTranslations } from "@/i18n/react";
 import type { StringSearch } from "@/lib/start/search";
 import { buildMetadata } from "@/lib/seo";
 import ChatPlaygroundShell from "@/components/(chat)/ChatPlaygroundShell";
@@ -16,10 +17,15 @@ export async function getChatMetadata(): Promise<PageMetadata> {
 }
 
 export default function ChatPage() {
+	const t = useTranslations("Product.chat");
 	return (
-		<Suspense fallback={<ChatPlaygroundShell />}>
-			<ChatPlaygroundContent />
-		</Suspense>
+		<>
+			{/* Chat has no visible page title; this gives screen readers one. */}
+			<h1 className="sr-only">{t("title")}</h1>
+			<Suspense fallback={<ChatPlaygroundShell />}>
+				<ChatPlaygroundContent />
+			</Suspense>
+		</>
 	);
 }
 

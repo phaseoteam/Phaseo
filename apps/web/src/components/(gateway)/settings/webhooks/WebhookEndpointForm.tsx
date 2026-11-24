@@ -120,7 +120,7 @@ export default function WebhookEndpointForm({
 						placeholder={t("webhookFormCopy.namePlaceholder")}
 						maxLength={120}
 						required
-						className="block w-full min-w-0 bg-transparent py-1 text-3xl font-semibold leading-tight tracking-tight outline-none placeholder:text-muted-foreground/70"
+						className="block w-full min-w-0 bg-transparent py-1 text-3xl font-semibold leading-tight tracking-tight outline-none placeholder:text-muted-foreground"
 					/>
 					<p className="mt-1 text-sm text-muted-foreground">{t("webhookFormCopy.intro")}</p>
 				</div>

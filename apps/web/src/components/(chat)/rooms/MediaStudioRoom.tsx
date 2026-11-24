@@ -1910,7 +1910,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 				</div>
 				</header>
 
-			<main className="flex min-h-0 flex-1 flex-col overflow-auto overscroll-contain px-4 py-5 md:px-6">
+			<div className="flex min-h-0 flex-1 flex-col overflow-auto overscroll-contain px-4 py-5 md:px-6">
 				{hasPendingEntries ? (
 					<div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-300/60 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-200">
 						<CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
@@ -2247,7 +2247,7 @@ export function MediaStudioRoom({ roomId, models }: MediaStudioRoomProps) {
 						{t("mediaStudio.videoEmptyState")}
 					</div>
 				)}
-			</main>
+			</div>
 
 			<RoomComposerFooter>
 				<div className="mx-auto w-full max-w-3xl space-y-2">

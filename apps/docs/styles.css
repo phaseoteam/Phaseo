@@ -688,3 +688,24 @@ html[lang="ar"] #content-area .prose li:not(.not-prose li)::before {
 .ph-ec-verdict-topLevel { background: var(--x-warn-soft); }
 .ph-ec-note { margin: 0.5rem 0 0; color: var(--x-muted); font-size: 0.75rem; }
 @media (max-width: 720px) { .ph-ec-turns { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+/* Accessibility: text contrast (WCAG 1.4.3). Mintlify's defaults put a few
+   secondary labels below 4.5:1 on our backgrounds. */
+html:not(.dark) a.text-gray-950\/50 {
+  color: rgb(3 7 18 / 0.72);
+}
+html.dark a.dark\:text-white\/50 {
+  color: rgb(255 255 255 / 0.72);
+}
+html:not(.dark) a[href*="mintlify.com"] {
+  color: #5f6368;
+}
+html.dark a[href*="mintlify.com"] {
+  color: #a1a5a8;
+}
+html:not(.dark) [role="tab"][aria-selected="false"] > [class*="peer/title"] {
+  color: #4f5355;
+}
+html:not(.dark) .text-green-700 {
+  color: #166534;
+}

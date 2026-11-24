@@ -25,7 +25,7 @@ export default function BenchmarkDetailShell({
 	const tChart = useTranslations("Common.ui.benchmarkChartCopy");
 	if (!benchmark) {
 		return (
-			<main className="flex min-h-screen flex-col">
+			<div className="flex min-h-screen flex-col">
 				<div className="container mx-auto px-4 py-8">
 					<div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center md:p-8">
 						<p className="text-base font-medium">
@@ -60,18 +60,18 @@ export default function BenchmarkDetailShell({
 						</div>
 					</div>
 				</div>
-			</main>
+			</div>
 		);
 	}
 	const artificialAnalysis = isArtificialAnalysisBenchmark(benchmark.id);
 	const epochCapabilitiesIndex = isEpochCapabilitiesIndex(benchmark.id);
 	const displayName = artificialAnalysis ? "Artificial Analysis" : epochCapabilitiesIndex ? "Epoch AI" : benchmark.name ?? benchmark.id;
 
-	if (artificialAnalysis) return <main className="flex min-w-0 flex-col"><div className="flex h-14 items-center justify-between gap-4 px-4 lg:px-6"><div className="flex items-center gap-2.5"><ArtificialAnalysisLogo size={22} /><h1 className="text-sm font-semibold tracking-tight">Artificial Analysis</h1></div><BenchmarkEditButton benchmarkId={benchmark.id} compactMobile /></div>{children}</main>;
-	if (epochCapabilitiesIndex) return <main className="flex min-w-0 flex-col"><div className="flex h-14 items-center justify-between gap-4 px-4 lg:px-6"><h1 className="flex items-center gap-3 text-sm font-semibold"><Image src="/benchmarks/epoch-ai.svg" alt="Epoch AI" width={116} height={22} className="h-[22px] w-auto dark:hidden" /><Image src="/benchmarks/epoch-ai_dark.svg" alt="Epoch AI" width={116} height={22} className="hidden h-[22px] w-auto dark:block" /></h1><BenchmarkEditButton benchmarkId={benchmark.id} compactMobile /></div>{children}</main>;
+	if (artificialAnalysis) return <div className="flex min-w-0 flex-col"><div className="flex h-14 items-center justify-between gap-4 px-4 lg:px-6"><div className="flex items-center gap-2.5"><ArtificialAnalysisLogo size={22} /><h1 className="text-sm font-semibold tracking-tight">Artificial Analysis</h1></div><BenchmarkEditButton benchmarkId={benchmark.id} compactMobile /></div>{children}</div>;
+	if (epochCapabilitiesIndex) return <div className="flex min-w-0 flex-col"><div className="flex h-14 items-center justify-between gap-4 px-4 lg:px-6"><h1 className="flex items-center gap-3 text-sm font-semibold"><Image src="/benchmarks/epoch-ai.svg" alt="Epoch AI" width={116} height={22} className="h-[22px] w-auto dark:hidden" /><Image src="/benchmarks/epoch-ai_dark.svg" alt="Epoch AI" width={116} height={22} className="hidden h-[22px] w-auto dark:block" /></h1><BenchmarkEditButton benchmarkId={benchmark.id} compactMobile /></div>{children}</div>;
 
 	return (
-		<main className="flex flex-col">
+		<div className="flex flex-col">
 			<EntityStickyHeader kind="benchmark" id={benchmark.suite?.id ?? benchmark.id} name={displayName} observeId="benchmark-detail-primary-header" baseHref={`/benchmarks/${benchmark.suite?.id ?? benchmark.id}`} navigation={[]} brandLogo={epochCapabilitiesIndex ? { light: "/benchmarks/epoch-ai.svg", dark: "/benchmarks/epoch-ai_dark.svg", width: 150, height: 26 } : undefined} />
 			<div className="container mx-auto px-4 py-6 md:py-8">
 				<div id="benchmark-detail-primary-header" className="mb-6 flex w-full items-start justify-between gap-4">
@@ -90,6 +90,6 @@ export default function BenchmarkDetailShell({
 				</div>
 				<div className="mt-6 min-h-full">{tocItems.length ? <div className="flex flex-col gap-6 lg:flex-row lg:items-start"><ModelPageToc items={tocItems} className="lg:h-full lg:w-40 lg:shrink-0 xl:w-44" /><div className="min-w-0 flex-1">{children}</div></div> : children}</div>
 			</div>
-		</main>
+		</div>
 	);
 }

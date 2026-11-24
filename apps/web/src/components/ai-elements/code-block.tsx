@@ -59,12 +59,12 @@ export async function highlightCode(
   return await Promise.all([
     codeToHtml(code, {
       lang: language,
-      theme: "one-light",
+      theme: "github-light-default",
       transformers,
     }),
     codeToHtml(code, {
       lang: language,
-      theme: "one-dark-pro",
+      theme: "github-dark-default",
       transformers,
     }),
   ]);

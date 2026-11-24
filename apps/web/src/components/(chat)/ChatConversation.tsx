@@ -923,7 +923,7 @@ export function ChatConversation({
 	);
 
 	return (
-		<main
+		<div
 			className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
 			onDragEnter={handleFileDragEnter}
 			onDragOver={handleFileDragOver}
@@ -1098,6 +1098,6 @@ export function ChatConversation({
 			/>
 
 			{/* Metadata now handled via per-message popovers */}
-		</main>
+		</div>
 	);
 }

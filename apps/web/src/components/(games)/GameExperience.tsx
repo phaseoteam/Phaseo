@@ -73,7 +73,7 @@ function GameHowTo({ game }: { game: GameKey }) {
           <span>{t("answerDirection")}</span>
         </div>
       ) : null}
-      <p className="mt-3 text-xs text-muted-foreground/75">
+      <p className="mt-3 text-xs text-muted-foreground">
         {t("inspiredBy")}
       </p>
     </aside>
@@ -99,7 +99,7 @@ function GameScaffold({
       }).format(new Date(date.length === 10 ? `${date}T00:00:00Z` : date))
     : t("today");
   return (
-    <main className="min-h-screen bg-background px-4 py-8 sm:py-12">
+    <div className="min-h-screen bg-background px-4 py-8 sm:py-12">
       <div className="mx-auto max-w-6xl [&_[data-slot=button]]:rounded-lg">
         <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <Button asChild variant="ghost" className="rounded-lg">
@@ -137,7 +137,7 @@ function GameScaffold({
         {children}
         <GameHowTo game={game} />
       </div>
-    </main>
+    </div>
   );
 }
 

@@ -24,7 +24,7 @@ export default function OnboardingPage() {
 	const t = useTranslations("Product.interactiveOnboarding");
 	const settingsT = useTranslations("SettingsUI.strings");
 	const { data: page } = useSuspenseQuery(onboardingPageQuery());
-	if (!page.accountAvailable) return <main className="container mx-auto max-w-xl px-4 py-16"><h1 className="text-xl font-semibold">{t("accountUnavailable")}</h1><p className="mt-2 text-sm text-muted-foreground">{t("accountVerificationFailed")}</p><Link className="mt-5 inline-flex text-sm font-medium underline underline-offset-4" href="/onboarding">{t("retryAccount")}</Link></main>;
+	if (!page.accountAvailable) return <div className="container mx-auto max-w-xl px-4 py-16"><h1 className="text-xl font-semibold">{t("accountUnavailable")}</h1><p className="mt-2 text-sm text-muted-foreground">{t("accountVerificationFailed")}</p><Link className="mt-5 inline-flex text-sm font-medium underline underline-offset-4" href="/onboarding">{t("retryAccount")}</Link></div>;
 	const onboarding = page.onboarding;
 	const userRow = onboarding.user;
 	const workspaceRows = onboarding.workspaces;

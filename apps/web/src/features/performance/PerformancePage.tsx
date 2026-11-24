@@ -89,7 +89,7 @@ export function PerformancePage() {
 	const t = useTranslations("Catalogue.performance");
 	const translate = (key: string) => t(key as never);
 	return (
-		<main className="min-h-screen overflow-hidden bg-background">
+		<div className="min-h-screen overflow-hidden bg-background">
 			<ShowFooterStyle />
 			<section className="relative border-b border-border/70">
 				<div
@@ -233,7 +233,7 @@ export function PerformancePage() {
 					<Button className="rounded-md" size="lg" asChild><Link href="/compare">{t("openComparison")} <ArrowRight /></Link></Button>
 				</div>
 			</section>
-		</main>
+		</div>
 	);
 }
 

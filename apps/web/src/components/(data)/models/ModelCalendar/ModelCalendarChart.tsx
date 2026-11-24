@@ -219,7 +219,7 @@ export default function ModelCalendarChart({
 								{entry.label}
 							</span>
 							<div className="flex-1 overflow-hidden rounded-full bg-white/80 dark:bg-zinc-900/80">
-								<div className="flex h-4">
+								<div className="flex h-6">
 									{STACKED_TYPES.map((type) => {
 										const count = entry.counts[type] ?? 0;
 										if (count === 0) return null;
@@ -240,8 +240,11 @@ export default function ModelCalendarChart({
 															"h-full cursor-pointer transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white",
 															TYPE_COLORS[type]
 														)}
+														// Grow by share, but never narrower than
+														// a 24px target (WCAG 2.5.8).
 														style={{
-															width: `${width}%`,
+															flex: `${width} 1 0%`,
+															minWidth: "1.5rem",
 														}}
 										aria-label={t("typeCount", {
 											type: eventTypeLabels[type],

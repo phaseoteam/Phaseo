@@ -32,7 +32,8 @@
 		"releaseAnnouncement": "Introducing Phaseo Gateway",
 		"newRelease": "New release",
 		"readDocs": "Read the docs",
-		"manageCatalog": "Manage catalog"
+		"manageCatalog": "Manage catalog",
+		"skipToContent": "Skip to content"
 	},
 	"footer": {
 		"models": "Models",

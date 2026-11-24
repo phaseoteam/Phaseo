@@ -402,7 +402,7 @@ export function PresetPromptTemplateEditor({
 									</SelectContent>
 								</Select>
 								<label className="flex items-center gap-2 text-xs text-muted-foreground">
-									<Switch checked={spec.required === true} onCheckedChange={(required) => updateVariable(name, spec, { required })} />
+									<Switch aria-label={t("presetTemplate.required")} checked={spec.required === true} onCheckedChange={(required) => updateVariable(name, spec, { required })} />
 									{t("presetTemplate.required")}
 								</label>
 							</div>

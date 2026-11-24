@@ -9,8 +9,8 @@ import {
 } from "shiki";
 import { transformerColorizedBrackets } from "@shikijs/colorized-brackets";
 
-const LIGHT = "github-light" as const;
-const DARK = "github-dark" as const;
+const LIGHT = "github-light-default" as const;
+const DARK = "github-dark-default" as const;
 
 export type ShikiLang =
     | "bash"

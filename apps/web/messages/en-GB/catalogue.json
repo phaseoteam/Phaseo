@@ -1107,7 +1107,8 @@
 				"external": "Listed from an external catalogue; not routable through Phaseo."
 			},
 			"noPricingForSelectedTier": "Pricing is not available for the selected tier on this provider.",
-			"comingSoonTierPricingDescription": "This provider is not live for the selected tier yet. Pricing will appear once availability starts."
+			"comingSoonTierPricingDescription": "This provider is not live for the selected tier yet. Pricing will appear once availability starts.",
+			"showProviderDetails": "Show {provider} details"
 		},
 		"pricing": {
 			"effective": "Effective",

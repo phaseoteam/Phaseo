@@ -53,7 +53,7 @@ export default function USvsChinaCard({
 			</CardHeader>
 			<CardContent className="h-48">
 				<ResponsiveContainer width="100%" height="100%">
-					<LineChart data={data}>
+					<LineChart title={tCopy("copy091")} data={data}>
 						<XAxis dataKey="date" hide />
 						<YAxis hide />
 						<Tooltip

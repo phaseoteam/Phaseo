@@ -555,7 +555,7 @@ export default function ConsentForm({
 														<div className="text-xs text-muted-foreground mt-1">
 															{localizedPermission.description}
 														</div>
-														<div className="mt-1 font-mono text-[11px] text-muted-foreground/80">
+														<div className="mt-1 font-mono text-[11px] text-muted-foreground">
 															{scopeInfo.scope}
 														</div>
 													</div>

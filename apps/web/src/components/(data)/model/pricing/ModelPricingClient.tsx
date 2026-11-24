@@ -731,19 +731,13 @@ function ProviderServiceTierRow({
 	};
 
 	return (
+		// The whole row opens the tier for pointer users. Keyboard and screen
+		// reader users get one real button, because the row also contains links
+		// and help buttons that cannot sit inside a button (WCAG 4.1.2).
 		<TableRow
-			role="button"
-			tabIndex={0}
-			aria-pressed={isActive}
-			aria-label={`Open ${providerName} ${getProviderServiceTierLabel(provider.provider.service_tier_labels, plan) ?? formatServiceTierLabel(plan)} service tier`}
 			onClick={openTier}
-			onKeyDown={(event) => {
-				if (event.key !== "Enter" && event.key !== " ") return;
-				event.preventDefault();
-				openTier();
-			}}
 			className={cn(
-				"group cursor-pointer hover:bg-zinc-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring dark:hover:bg-zinc-900/30",
+				"group cursor-pointer hover:bg-zinc-50/70 dark:hover:bg-zinc-900/30",
 				isActive && "bg-primary/[0.06]",
 				MOBILE_ROW,
 			)}
@@ -751,19 +745,28 @@ function ProviderServiceTierRow({
 			<TableCell className={cn("relative min-w-[280px] py-1 pl-3 pr-2", MOBILE_NAME_CELL)}>
 				{isActive ? <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-primary" /> : null}
 				<div className="flex items-center gap-1.5 whitespace-nowrap">
-					{showDisclosureGutter ? <span aria-hidden="true" className="size-5 shrink-0 max-sm:hidden" /> : null}
+					{showDisclosureGutter ? <span aria-hidden="true" className="size-6 shrink-0 max-sm:hidden" /> : null}
 					<span className="inline-flex w-max shrink-0 items-center gap-2.5 font-semibold text-foreground max-sm:w-auto max-sm:shrink max-sm:flex-wrap">
-						<span className="relative flex size-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover:border-zinc-300 dark:border-zinc-800 dark:group-hover:border-zinc-700">
+						<button
+							type="button"
+							aria-pressed={isActive}
+							aria-label={`Open ${providerName} ${getProviderServiceTierLabel(provider.provider.service_tier_labels, plan) ?? formatServiceTierLabel(plan)} service tier`}
+							onClick={(event) => {
+								event.stopPropagation();
+								openTier();
+							}}
+							className="relative flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover:border-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:border-zinc-800 dark:group-hover:border-zinc-700"
+						>
 							<span className="relative size-3.5">
 								<Logo
 									id={logoProviderId}
-									alt={`${providerName} logo`}
+									alt=""
 									className="object-contain"
 									fill
 									sizes="18px"
 								/>
 							</span>
-						</span>
+						</button>
 						<ProviderRouteName provider={provider.provider} plan={plan} showTierHelp />
 						<ProviderServiceTierInfoIcons provider={provider} plan={plan} pricingTimeMs={pricingTimeMs} />
 						{discountBadge ? (

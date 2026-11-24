@@ -1107,7 +1107,8 @@
 				"external": "外部カタログに掲載されています。Phaseo 経由ではルーティングできません。"
 			},
 			"noPricingForSelectedTier": "このプロバイダーでは選択したティアの料金を利用できません。",
-			"comingSoonTierPricingDescription": "選択したティアでは、このプロバイダーはまだ利用できません。利用開始後に料金が表示されます。"
+			"comingSoonTierPricingDescription": "選択したティアでは、このプロバイダーはまだ利用できません。利用開始後に料金が表示されます。",
+			"showProviderDetails": "{provider} の詳細を表示"
 		},
 		"pricing": {
 			"effective": "実効",

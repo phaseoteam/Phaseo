@@ -81,7 +81,7 @@ export function SwitchField({ label, help, checked, disabled, onChange }: { labe
 	return (
 		<label className="flex items-start justify-between gap-4">
 			<span><span className="block text-sm font-medium">{label}</span><span className="block text-xs text-muted-foreground">{help}</span></span>
-			<Switch checked={checked} disabled={disabled} onCheckedChange={onChange} />
+			<Switch aria-label={label} checked={checked} disabled={disabled} onCheckedChange={onChange} />
 		</label>
 	);
 }

@@ -92,7 +92,7 @@ export default function ComparisonPage() {
 	}).format(new Date("2026-08-12T00:00:00Z"));
 
 	return (
-		<main className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
+		<div className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
 			<section className="max-w-4xl border-b border-border pb-12">
 				<p className="text-sm font-medium text-muted-foreground">{t("eyebrow")}</p>
 				<h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">{t("title", { name: comparison.name })}</h1>
@@ -124,6 +124,6 @@ export default function ComparisonPage() {
 					{Object.values(comparisons).filter((item) => item.slug !== comparison.slug).map((item) => <Link key={item.slug} className="underline underline-offset-4" href={`/compare/${item.slug}`}>{t("title", { name: item.name })}</Link>)}
 				</div>
 			</nav>
-		</main>
+		</div>
 	);
 }

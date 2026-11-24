@@ -128,7 +128,7 @@ export function MigrationPostView({
 					{post.validationSteps.map((step) => (
 						<li key={step}>
 							{step.trimStart().startsWith("curl ") ? (
-								<code className="rounded bg-muted px-1.5 py-0.5 text-xs text-foreground">
+								<code className="rounded bg-muted px-1.5 py-0.5 text-xs text-foreground [overflow-wrap:anywhere]">
 									{step}
 								</code>
 							) : (

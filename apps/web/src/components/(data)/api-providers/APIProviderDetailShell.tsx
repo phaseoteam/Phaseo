@@ -46,7 +46,7 @@ export default function APIProviderDetailShell({
 	if (!header) {
 		notFound();
 		return (
-			<main className="flex min-h-screen flex-col">
+			<div className="flex min-h-screen flex-col">
 				<div className="container mx-auto px-4 py-8">
 					<div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center md:p-8">
 						<div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
@@ -84,13 +84,13 @@ export default function APIProviderDetailShell({
 						</div>
 					</div>
 				</div>
-			</main>
+			</div>
 		);
 	}
 	const location = formatLocation(header.country_code, header.subdivision_code, locale);
 
 	return (
-		<main className="flex flex-col">
+		<div className="flex flex-col">
 			<EntityStickyHeader kind="provider" id={apiProviderId} name={header.api_provider_name} observeId="provider-detail-primary-header" baseHref={`/api-providers/${apiProviderId}`} navigation={[]} />
 			<div className="container mx-auto px-4 py-6 md:py-8">
 				<WorkspacePolicyNotice kind="provider" id={apiProviderId} />
@@ -140,6 +140,6 @@ export default function APIProviderDetailShell({
 				</div>
 				<div className="mt-6 min-h-full">{tocItems.length ? <div className="flex flex-col gap-6 lg:flex-row lg:items-start"><ModelPageToc items={tocItems} className="lg:h-full lg:w-40 lg:shrink-0 xl:w-44" /><div className="min-w-0 flex-1">{children}</div></div> : children}</div>
 			</div>
-		</main>
+		</div>
 	);
 }

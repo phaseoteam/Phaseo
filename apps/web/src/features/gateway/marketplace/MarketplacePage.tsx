@@ -31,7 +31,7 @@ export default function MarketplacePage() {
 	const ranked = [...matching].sort((a, b) => b.descendantCount - a.descendantCount || b.forkCount - a.forkCount || Date.parse(b.created_at) - Date.parse(a.created_at));
 
 	return (
-		<main className="min-h-screen bg-background">
+		<div className="min-h-screen bg-background">
 			<section className="border-b border-border/70">
 				<div className="mx-auto max-w-7xl px-5 py-6 sm:px-8 lg:py-7">
 					<div className="space-y-4">
@@ -55,7 +55,7 @@ export default function MarketplacePage() {
 					{ranked.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{ranked.map((preset) => <PresetProduct key={preset.id} preset={preset} t={t} />)}</div> : <EmptyState query={query} t={t} />}
 				</section>
 			</div>
-		</main>
+		</div>
 	);
 }
 

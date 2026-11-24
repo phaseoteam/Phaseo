@@ -38,7 +38,7 @@ export default function UpdatesCalendarPage() {
 	);
 
 	return (
-		<main className="flex min-h-screen flex-col">
+		<div className="flex min-h-screen flex-col">
 			<div className="container mx-auto flex flex-1 flex-col">
 				<ModelCalendar
 					events={events}
@@ -47,6 +47,6 @@ export default function UpdatesCalendarPage() {
 					}
 				/>
 			</div>
-		</main>
+		</div>
 	);
 }

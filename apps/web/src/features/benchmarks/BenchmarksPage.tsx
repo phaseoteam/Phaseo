@@ -40,12 +40,12 @@ function BenchmarksFallback() {
 
 export default function BenchmarksPage() {
 	return (
-		<main className="flex min-h-screen flex-col">
+		<div className="flex min-h-screen flex-col">
 			<div className="container mx-auto px-4 py-8">
 				<Suspense fallback={<BenchmarksFallback />}>
 					<BenchmarksSection />
 				</Suspense>
 			</div>
-		</main>
+		</div>
 	);
 }

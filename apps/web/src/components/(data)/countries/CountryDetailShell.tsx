@@ -26,7 +26,7 @@ export default function CountryDetailShell({
 	const hasFlag = flagIso.length === 2;
 
 	return (
-		<main className="flex flex-col">
+		<div className="flex flex-col">
 			<EntityStickyHeader kind="country" id={isoLabel} name={countryName} observeId="country-detail-primary-header" baseHref={`/countries/${isoLabel.toLowerCase()}`} navigation={[]} />
 			<div className="container mx-auto px-4 py-8">
 				<div id="country-detail-primary-header" className="mb-5 flex w-full flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -56,6 +56,6 @@ export default function CountryDetailShell({
 				</div>
 				<div className="mt-6 min-h-full">{tocItems.length ? <div className="flex flex-col gap-6 lg:flex-row lg:items-start"><ModelPageToc items={tocItems} className="lg:h-full lg:w-40 lg:shrink-0 xl:w-44" /><div className="min-w-0 flex-1">{children}</div></div> : children}</div>
 			</div>
-		</main>
+		</div>
 	);
 }

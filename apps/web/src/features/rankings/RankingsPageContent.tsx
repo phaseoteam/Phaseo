@@ -142,7 +142,7 @@ export default function RankingsPageContent({
 						items={tocItems}
 						className="lg:h-full lg:w-max lg:shrink-0"
 					/>
-					<main className="min-w-0 flex-1 space-y-16">
+					<div className="min-w-0 flex-1 space-y-16">
                     <Suspense fallback={<ListSkeleton />}>
                         <ModalityLeaderboardsServer modality={modality} />
                     </Suspense>
@@ -251,7 +251,7 @@ export default function RankingsPageContent({
                     </>
                     ) : null}
 
-					</main>
+					</div>
 				</div>
             </div>
         </div>

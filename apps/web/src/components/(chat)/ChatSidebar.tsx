@@ -414,7 +414,7 @@ export function ChatSidebar({
 											);
 										})}
 										{canShowMoreTags ? (
-											<div className="flex justify-center pt-0.5">
+											<li className="flex justify-center pt-0.5">
 												<Button
 													type="button"
 													variant="ghost"
@@ -426,7 +426,7 @@ export function ChatSidebar({
 												>
 									{tCalendar("showMore")}
 												</Button>
-											</div>
+											</li>
 										) : null}
 									</SidebarMenu>
 								</CollapsibleContent>
@@ -488,15 +488,20 @@ export function ChatSidebar({
 							</div>
 						) : null}
 						<SidebarGroupContent className="overflow-hidden">
-							<SidebarMenu>
+							<div
+								data-sidebar="menu-groups"
+								className="flex w-full min-w-0 flex-col gap-0.5"
+							>
 								{groupedThreads.pinned.length > 0 && (
 									<div className="pb-1">
 										<p className="px-3 pb-1.5 pt-2 text-xs font-semibold text-muted-foreground">
 							{tSearch("pinned")}
 										</p>
-										{groupedThreads.pinned.map((thread) =>
-											renderThreadItem(thread, true),
-										)}
+										<SidebarMenu className="gap-0">
+											{groupedThreads.pinned.map((thread) =>
+												renderThreadItem(thread, true),
+											)}
+										</SidebarMenu>
 									</div>
 								)}
 								{dateThreadGroups.map((group) => (
@@ -504,9 +509,11 @@ export function ChatSidebar({
 										<ThreadDateHeading>
 											{group.label}
 										</ThreadDateHeading>
-										{group.threads.map((thread) =>
-											renderThreadItem(thread),
-										)}
+										<SidebarMenu className="gap-0">
+											{group.threads.map((thread) =>
+												renderThreadItem(thread),
+											)}
+										</SidebarMenu>
 									</div>
 								))}
 								{threads.length === 0 && (
@@ -514,7 +521,7 @@ export function ChatSidebar({
 										{activeTagId ? tAuditCopy("Common.ui.auditCopy.noChatsWithTag") : tAuditCopy("SettingsUI.chatGaps.noChats")}
 									</p>
 								)}
-							</SidebarMenu>
+							</div>
 						</SidebarGroupContent>
 					</SidebarGroup>
 				</ScrollArea>

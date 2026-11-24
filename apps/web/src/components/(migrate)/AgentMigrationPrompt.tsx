@@ -77,7 +77,7 @@ export function AgentMigrationPrompt() {
 				keepScrollbarMounted
 				viewportClassName="p-4"
 			>
-				<pre className="whitespace-pre-wrap text-sm leading-6 text-foreground">
+				<pre className="whitespace-pre-wrap text-sm leading-6 text-foreground [overflow-wrap:anywhere]">
 					<code>{OPENROUTER_AGENT_PROMPT}</code>
 				</pre>
 			</ScrollArea>

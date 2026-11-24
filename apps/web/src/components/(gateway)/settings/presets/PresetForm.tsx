@@ -763,7 +763,7 @@ export default function PresetForm({
 									value={name}
 									onChange={handleNameChange}
 				placeholder={t("credits.Concise Support Assistant" as never)}
-									className="block w-full min-w-0 bg-transparent py-1 text-3xl font-semibold leading-tight tracking-tight outline-none placeholder:text-muted-foreground/70"
+									className="block w-full min-w-0 bg-transparent py-1 text-3xl font-semibold leading-tight tracking-tight outline-none placeholder:text-muted-foreground"
 								/>
 								<div className="flex min-w-0 items-center gap-1 font-mono text-sm text-muted-foreground focus-within:text-foreground">
 									<span aria-hidden="true">@</span>
@@ -773,7 +773,7 @@ export default function PresetForm({
 										value={slug}
 										onChange={handleSlugChange}
 				placeholder={t("credits.concise-support-assistant" as never)}
-										className="min-w-0 flex-1 bg-transparent py-1 font-mono text-sm outline-none placeholder:text-muted-foreground/60"
+										className="min-w-0 flex-1 bg-transparent py-1 font-mono text-sm outline-none placeholder:text-muted-foreground"
 									/>
 								</div>
 							</div>
@@ -791,7 +791,7 @@ export default function PresetForm({
 								value={description}
 								onChange={(e) => setDescription(e.target.value)}
 				placeholder={t("credits.When should this preset be used?" as never)}
-								className="min-h-0 h-10 resize-none overflow-hidden border-0 bg-transparent px-0 py-2 text-base text-muted-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0"
+								className="min-h-0 h-10 resize-none overflow-hidden border-0 bg-transparent px-0 py-2 text-base text-muted-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0"
 							/>
 						</div>
 					</div>

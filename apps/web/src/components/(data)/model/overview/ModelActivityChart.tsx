@@ -336,7 +336,7 @@ export default function ModelActivityChart({
 							value={mode}
 							onValueChange={(value) => setModeParam(value as ActivityMode)}
 						>
-							<SelectTrigger className="h-8 w-[140px] rounded-lg text-xs">
+							<SelectTrigger aria-label={t("metric")} className="h-8 w-[140px] rounded-lg text-xs">
 								<SelectValue placeholder={t("metric")}>
 									{mode === "requests" ? t("requests") : t("tokens")}
 								</SelectValue>

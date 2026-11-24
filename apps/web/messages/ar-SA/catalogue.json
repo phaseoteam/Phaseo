@@ -1107,7 +1107,8 @@
 				"external": "مدرج من كتالوج خارجي؛ لا يمكن توجيهه عبر Phaseo."
 			},
 			"noPricingForSelectedTier": "لا يتوفر تسعير لهذه الفئة على هذا المزوّد.",
-			"comingSoonTierPricingDescription": "هذا المزوّد غير متاح لهذه الفئة بعد. سيظهر التسعير عند بدء الإتاحة."
+			"comingSoonTierPricingDescription": "هذا المزوّد غير متاح لهذه الفئة بعد. سيظهر التسعير عند بدء الإتاحة.",
+			"showProviderDetails": "عرض تفاصيل {provider}"
 		},
 		"pricing": {
 			"effective": "الفعلي",

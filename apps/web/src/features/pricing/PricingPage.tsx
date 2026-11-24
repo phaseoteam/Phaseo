@@ -836,7 +836,7 @@ export function PricingPage() {
 		}).format(1),
 	};
 	return (
-		<main className="relative min-h-screen overflow-hidden">
+		<div className="relative min-h-screen overflow-hidden">
 			<div className="container mx-auto max-w-7xl px-4 py-12 sm:py-16">
 				<section className="space-y-7">
 					<h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
@@ -955,17 +955,19 @@ export function PricingPage() {
 						].map((item) => {
 							const Icon = item.icon;
 							return (
-								<div key={item.term} className="flex gap-4 py-5 lg:px-6 lg:first:pl-0 lg:last:pr-0">
-									<Icon className="mt-0.5 h-5 w-5 shrink-0 text-foreground" aria-hidden="true" />
-									<div>
-									<dt className="text-sm font-semibold text-foreground">{item.term}</dt>
-									<dd className="mt-2 text-sm leading-6 text-muted-foreground">
+								// A <dl> allows one <div> around each dt/dd pair, so the
+								// icon sits inside the <dt> instead of a wrapper column.
+								<div key={item.term} className="py-5 lg:px-6 lg:first:pl-0 lg:last:pr-0">
+									<dt className="flex items-start gap-4 text-sm font-semibold text-foreground">
+										<Icon className="mt-0.5 h-5 w-5 shrink-0 text-foreground" aria-hidden="true" />
+										<span className="pt-0.5">{item.term}</span>
+									</dt>
+									<dd className="mt-2 pl-9 text-sm leading-6 text-muted-foreground">
 										<span className="font-medium text-foreground">
 											{item.value}{/[.!?。！？؟۔।]$/u.test(item.value) ? "" : "."}
 										</span>{" "}
-											{item.detail}
-										</dd>
-									</div>
+										{item.detail}
+									</dd>
 								</div>
 							);
 						})}
@@ -1127,6 +1129,6 @@ export function PricingPage() {
 					</Card>
 				</section>
 			</div>
-		</main>
+		</div>
 	);
 }

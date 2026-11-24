@@ -32,7 +32,7 @@ export default function ExperimentsPage() {
 	return (
 		<>
 			<ShowFooterStyle />
-			<main className="container mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-10">
+			<div className="container mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-10">
 				<div className="mb-8 space-y-2">
 					<div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-600 dark:border-zinc-800 dark:text-zinc-300">
 						<FlaskConical className="h-3.5 w-3.5" />
@@ -78,7 +78,7 @@ export default function ExperimentsPage() {
 						</CardContent>
 					</Card>
 				</div>
-			</main>
+			</div>
 		</>
 	);
 }

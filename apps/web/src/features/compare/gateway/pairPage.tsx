@@ -44,7 +44,7 @@ export function ComparePairPage({ ids, locale }: { ids: [string, string]; locale
 	if (ordered.length !== 2) notFound();
 	const models = ordered as [typeof ordered[number], typeof ordered[number]];
 	return (
-		<main className="flex min-h-screen flex-col">
+		<div className="flex min-h-screen flex-col">
 			<section className="w-full">
 				<ComparePairDashboard
 					selectedOptions={models.map(toCompareModelOption)}
@@ -54,6 +54,6 @@ export function ComparePairPage({ ids, locale }: { ids: [string, string]; locale
 				/>
 			</section>
 			<ComparePairSummary locale={locale} baseUrl={SITE_URL} models={models} usage={usage} peers={view.peers ?? []} related={related} />
-		</main>
+		</div>
 	);
 }

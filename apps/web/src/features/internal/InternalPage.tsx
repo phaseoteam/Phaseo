@@ -17,7 +17,7 @@ export default function InternalPage() {
 	const t = useTranslations("Product.internalTools");
 
 	return (
-		<main className="flex min-h-screen flex-col">
+		<div className="flex min-h-screen flex-col">
 			<div className="container mx-auto px-4 py-8">
 				<div className="mb-8">
 					<h1 className="text-3xl font-bold mb-2">{t("homeTitle")}</h1>
@@ -27,6 +27,6 @@ export default function InternalPage() {
 				</div>
 				<InternalToolsGrid />
 			</div>
-		</main>
+		</div>
 	);
 }

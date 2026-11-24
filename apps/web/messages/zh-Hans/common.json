@@ -32,7 +32,8 @@
 		"releaseAnnouncement": "Phaseo Gateway 现已推出",
 		"newRelease": "新版本",
 		"readDocs": "阅读文档",
-		"manageCatalog": "管理目录"
+		"manageCatalog": "管理目录",
+		"skipToContent": "跳到内容"
 	},
 	"footer": {
 		"models": "模型",

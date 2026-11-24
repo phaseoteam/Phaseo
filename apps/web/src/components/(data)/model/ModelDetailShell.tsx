@@ -209,7 +209,7 @@ export default function ModelDetailShell({
 	}
 
 	return (
-		<main className="flex flex-col">
+		<div className="flex flex-col">
 			<Suspense fallback={null}>
 				<ModelStickyHeaderContent modelId={modelId} chatModelId={chatModelId} organisationId={header.organisation_id} organisationName={header.organisation.name} modelName={header.name} canChat={canChat} canCompare={canCompare} organisationHref={organisationHref} gatewayMetadata={gatewayMetadata} showUnreleased={showUnreleased} isDecisionsModel={isDecisionsModel} />
 			</Suspense>
@@ -306,6 +306,6 @@ export default function ModelDetailShell({
 					<div className="mt-6 min-h-full">{children}</div>
 				</ModelChartShareProvider>
 			</div>
-		</main>
+		</div>
 	);
 }

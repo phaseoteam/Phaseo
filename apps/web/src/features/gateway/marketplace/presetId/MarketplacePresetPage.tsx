@@ -41,7 +41,7 @@ export default function MarketplacePresetPage() {
 			marketplaceAuthStatusQuery(),
 		],
 	});
-	if (!detail) return <main className="mx-auto min-h-[60vh] max-w-6xl px-5 py-12 sm:px-8"><Link href="/gateway/marketplace" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />{t("backToMarketplace")}</Link><div className="mt-8 rounded-lg border border-dashed p-12 text-center"><h1 className="font-heading text-2xl font-semibold">{t("presetNotAvailable")}</h1><p className="mt-2 text-sm text-muted-foreground">{t("privatePresetDescription")}</p></div></main>;
+	if (!detail) return <div className="mx-auto min-h-[60vh] max-w-6xl px-5 py-12 sm:px-8"><Link href="/gateway/marketplace" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" />{t("backToMarketplace")}</Link><div className="mt-8 rounded-lg border border-dashed p-12 text-center"><h1 className="font-heading text-2xl font-semibold">{t("presetNotAvailable")}</h1><p className="mt-2 text-sm text-muted-foreground">{t("privatePresetDescription")}</p></div></div>;
 
 	const { preset, sourcePreset, versions } = detail;
 	const resolvedVersion = versions.find((version) => version.version_number === requestedVersion) ?? versions[0];
@@ -50,7 +50,7 @@ export default function MarketplacePresetPage() {
 	const providers = Array.isArray(config.provider?.order) ? config.provider.order.map(String) : Array.isArray(config.only_providers) ? config.only_providers.map(String) : [];
 
 	return (
-		<main className="min-h-screen bg-background">
+		<div className="min-h-screen bg-background">
 			<div className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:py-12">
 				<Button asChild variant="ghost" size="sm" className="rounded-md"><Link href="/gateway/marketplace"><ArrowLeft className="size-4" />{t("backToMarketplace")}</Link></Button>
 
@@ -91,7 +91,7 @@ export default function MarketplacePresetPage() {
 					</aside>
 				</div>
 			</div>
-		</main>
+		</div>
 	);
 }
 

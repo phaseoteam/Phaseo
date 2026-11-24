@@ -20,7 +20,7 @@ export function InlineInfoTooltip({
 				<button
 					type="button"
 					aria-label={label}
-					className="inline-flex h-4 w-4 items-center justify-center rounded-sm text-muted-foreground/70 transition-colors hover:text-muted-foreground"
+					className="inline-flex h-4 w-4 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-muted-foreground"
 				>
 					<CircleHelp className="h-3.5 w-3.5" />
 				</button>

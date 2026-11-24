@@ -32,7 +32,8 @@
 		"releaseAnnouncement": "Phaseo Gateway पेश है",
 		"newRelease": "नई रिलीज़",
 		"readDocs": "दस्तावेज़ पढ़ें",
-		"manageCatalog": "कैटलॉग प्रबंधित करें"
+		"manageCatalog": "कैटलॉग प्रबंधित करें",
+		"skipToContent": "सामग्री पर जाएं"
 	},
 	"footer": {
 		"models": "मॉडल",

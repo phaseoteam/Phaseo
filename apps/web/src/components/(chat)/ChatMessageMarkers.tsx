@@ -99,7 +99,7 @@ export function ChatMessageMarkers({
 		<div className="flex flex-col items-center gap-1 px-1 py-2">
 			{separatorLabel ? (
 				<Marker
-					className="min-h-6 justify-center px-1 text-[11px] font-medium tracking-wide text-muted-foreground/70"
+					className="min-h-6 justify-center px-1 text-[11px] font-medium tracking-wide text-muted-foreground"
 				>
 					<MarkerContent>{separatorLabel}</MarkerContent>
 				</Marker>
@@ -110,7 +110,7 @@ export function ChatMessageMarkers({
 						variant="separator"
 						key={`${messageId}-${marker.id}`}
 						title={marker.title}
-						className="min-h-6 px-1 text-[11px] font-medium tracking-wide text-muted-foreground/80"
+						className="min-h-6 px-1 text-[11px] font-medium tracking-wide text-muted-foreground"
 					>
 						<MarkerIcon className="size-3.5">{marker.icon}</MarkerIcon>
 						<MarkerContent>{marker.label}</MarkerContent>

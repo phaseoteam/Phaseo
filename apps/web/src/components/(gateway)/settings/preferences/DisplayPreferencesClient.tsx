@@ -140,7 +140,7 @@ function PreferenceRow({
 				{children}
 				{preview ? (
 					<div className="flex items-baseline justify-between gap-4 px-1 text-xs">
-						<span className="font-medium text-muted-foreground/70">{t("preferencesCopy.preview")}</span>
+						<span className="font-medium text-muted-foreground">{t("preferencesCopy.preview")}</span>
 						<span className="truncate text-right font-medium tabular-nums text-foreground/80">{preview}</span>
 					</div>
 				) : null}

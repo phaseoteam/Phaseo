@@ -188,7 +188,7 @@ export default function SubscriptionPlansDisplay({ plans, labels }: Subscription
 						</Select>
 						{hasUsage || filters.measured ? (
 							<label className="flex items-center gap-2 px-1 text-sm text-muted-foreground">
-								<Switch size="sm" checked={Boolean(filters.measured)} onCheckedChange={(checked) => void setFilters({ measured: checked ? "1" : null })} />
+								<Switch size="sm" aria-label={list.measuredOnly} checked={Boolean(filters.measured)} onCheckedChange={(checked) => void setFilters({ measured: checked ? "1" : null })} />
 								{list.measuredOnly}
 							</label>
 						) : null}
