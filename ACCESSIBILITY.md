@@ -17,7 +17,7 @@ The gateway API has no user interface of its own, but its error messages and doc
 
 We aim to meet [WCAG 2.2](https://www.w3.org/TR/WCAG22/) Level AA across the web app and documentation, and the equivalent platform guidelines in the desktop and mobile apps.
 
-We have not yet carried out a formal accessibility audit, so we do not claim conformance with WCAG or any other standard today.
+We have not yet had an independent accessibility audit, and our own review found barriers (listed below), so we do not claim conformance with WCAG or any other standard today.
 
 ## What we do today
 
@@ -27,13 +27,22 @@ We have not yet carried out a formal accessibility audit, so we do not claim con
 
 ## Known barriers
 
-We are honest about what we have not done yet:
+In November 2026 we ran an automated and keyboard review of the web app against WCAG 2.2 AA. It found these barriers, which we are working through:
 
-- **No automated accessibility checks.** Accessibility is not tested in CI, so regressions can ship unnoticed.
-- **No assistive technology testing.** We have not systematically tested with screen readers (such as NVDA, JAWS, VoiceOver, or TalkBack) or with voice control.
-- **Data-heavy pages.** Charts, large comparison tables, and pricing tables may not yet have complete text alternatives or table semantics.
-- **Streaming output.** Responses that stream into Chat may not be announced well by screen readers.
-- **Reduced motion.** Not every animation honours `prefers-reduced-motion` yet.
+- **Colour contrast.** Some secondary text, status labels, and tags fall below the required contrast, in both light and dark themes.
+- **Focus visibility.** Some expandable sections, such as filters and FAQs, do not show where keyboard focus is.
+- **Cookie banner.** On a first visit, the cookie banner can cover links that receive keyboard focus.
+- **No skip link.** The web app has no "Skip to content" link, so keyboard users must tab through the header on every page. The documentation has one.
+- **Structure and labels.** Some sidebar navigation lists are not structured as lists, and a few controls (some dropdowns, a switch, and progress bars) have no accessible name.
+- **Small targets.** Some small buttons and closely spaced links are below the 24 by 24 pixel minimum.
+- **Narrow screens.** A few pages scroll sideways at 320 pixels wide.
+
+We also have not yet:
+
+- Run accessibility checks in CI, so regressions can ship unnoticed.
+- Tested systematically with screen readers (such as NVDA, JAWS, VoiceOver, or TalkBack) or with voice control. In particular, responses that stream into Chat may not be announced well.
+- Reviewed the desktop and mobile apps.
+- Applied `prefers-reduced-motion` to every animation.
 
 If you hit one of these, or anything else, please report it. Reports from real use help us decide what to fix first.
 
