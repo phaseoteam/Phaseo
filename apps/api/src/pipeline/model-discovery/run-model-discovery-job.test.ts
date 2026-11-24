@@ -510,7 +510,7 @@ describe("runModelDiscoveryJob", () => {
 			discordStatus = 500;
 			expect((await sweep(versionB, true)).cohereChanged).toBe(true);
 			expect(discordCalls().length).toBeGreaterThan(0);
-			expect(cohereRow()).toMatchObject({ fingerprint: first.fingerprint });
+			expect(cohereRow()).toMatchObject({ fingerprint: first.fingerprint, recent_fingerprints: [] });
 
 			discordStatus = 204;
 			const delivered = discordCalls().length;
