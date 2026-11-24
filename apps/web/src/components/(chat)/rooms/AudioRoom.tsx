@@ -1900,7 +1900,7 @@ export function AudioRoom({
 							</span>
 						</SidebarMenuButton>
 						<DropdownMenu>
-							<DropdownMenuTrigger render={<SidebarMenuAction showOnHover aria-label={`Open actions for ${conversation.title}`} />}>
+							<DropdownMenuTrigger render={<SidebarMenuAction showOnHover aria-label={tCopy("openChatActions", { title: conversation.title })} />}>
 
 									<MoreHorizontal className="h-4 w-4" />
 

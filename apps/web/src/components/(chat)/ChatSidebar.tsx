@@ -265,7 +265,7 @@ export function ChatSidebar({
 				<DropdownMenu>
 					<DropdownMenuTrigger render={<SidebarMenuAction
 							showOnHover
-							aria-label={`Open actions for ${thread.title}`} />}>
+							aria-label={tAuditCopy("SettingsUI.chatGaps.openChatActions", { title: thread.title })} />}>
 
 							<MoreHorizontal className="h-4 w-4" />
 
