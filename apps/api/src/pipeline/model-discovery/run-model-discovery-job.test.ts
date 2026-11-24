@@ -451,15 +451,20 @@ describe("runModelDiscoveryJob", () => {
 
 	describe("pricing page served in two versions", () => {
 		let cohereHtml = "";
+		let discordStatus = 204;
+		const discordWebhook = "https://discord.test/webhook";
 		const versionA = "<main><h2>Hourly Price</h2><table><tr><td>H100</td><td>$6.25</td></tr></table></main>";
 		const versionB = "<main><h2>Hourly Price</h2><table><tr><td>H100</td><td>$5.75</td></tr></table></main>";
 		const versionC = "<main><h2>Hourly Price</h2><table><tr><td>H100</td><td>$4.50</td></tr></table></main>";
 
 		beforeEach(() => {
 			supabase.bindings = {};
+			discordStatus = 204;
 			fetchMock.restore();
 			fetchMock = installFetchMock([
 				{ match: (url) => url === "https://cohere.com/pricing", response: () => new Response(cohereHtml) },
+				// Discord accepts by default; a test sets 500 to fail delivery.
+				{ match: (url) => url.startsWith(discordWebhook), response: () => new Response(null, { status: discordStatus }) },
 				{ match: () => true, response: () => jsonResponse({ data: [{ id: "model-a" }] }) },
 			]);
 		});
@@ -467,10 +472,10 @@ describe("runModelDiscoveryJob", () => {
 		const cohereRow = () => (supabase.tables.model_discovery_pricing_pages ?? [])
 			.find((row) => row.provider_id === "cohere") as { fingerprint: string; recent_fingerprints: string[] } | undefined;
 
-		async function sweep(html: string) {
+		async function sweep(html: string, notify = false) {
 			cohereHtml = html;
 			supabase.calls = [];
-			const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify: false, prune: false });
+			const summary = await runModelDiscoveryJob({ trigger: "manual", source: "test", notify, prune: false });
 			// Carry the saved rows into the next sweep, as the database would.
 			const saved = writes("model_discovery_pricing_pages", "upsert")
 				.flatMap((call) => call.args[0] as Array<Record<string, unknown> & { provider_id: string }>);
@@ -495,6 +500,25 @@ describe("runModelDiscoveryJob", () => {
 
 			// A price not seen before is still reported.
 			expect((await sweep(versionC)).cohereChanged).toBe(true);
+		});
+
+		it("keeps the history unchanged until the alert for a new version is delivered", async () => {
+			const first = await sweep(versionA);
+			supabase.bindings = { DISCORD_WEBHOOK_URL: discordWebhook };
+			const discordCalls = () => fetchMock.calls.filter((call) => call.url.startsWith(discordWebhook));
+
+			discordStatus = 500;
+			expect((await sweep(versionB, true)).cohereChanged).toBe(true);
+			expect(discordCalls().length).toBeGreaterThan(0);
+			expect(cohereRow()).toMatchObject({ fingerprint: first.fingerprint });
+
+			discordStatus = 204;
+			const delivered = discordCalls().length;
+			const second = await sweep(versionB, true);
+			expect(second.cohereChanged).toBe(true);
+			expect(discordCalls().length).toBeGreaterThan(delivered);
+			expect(cohereRow()).toMatchObject({ fingerprint: second.fingerprint, recent_fingerprints: [first.fingerprint] });
+			expect(second.fingerprint).not.toBe(first.fingerprint);
 		});
 	});
 });
