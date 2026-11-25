@@ -384,6 +384,26 @@ describe("buildProviderSections", () => {
 		]);
 	});
 
+	test("keeps the billing quantity for a bulk-priced named request unit", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0],
+			id: "rerank-bulk",
+			meter: "requests",
+			unit: "request",
+			unit_size: 1000,
+			price_per_unit: 2,
+			display_unit: "search units",
+			match: [],
+		}];
+
+		const columns = buildProviderTablePriceColumns([buildProviderSections(provider, "standard")]);
+
+		expect(columns).toEqual([
+			expect.objectContaining({ usage: true, unitLabel: "Per 1,000 search units" }),
+		]);
+	});
+
 	test("keeps a per-request fee out of the columns when the route also has token prices", () => {
 		const provider = makeProviderPricing();
 		const base = provider.pricing_rules[0]!;

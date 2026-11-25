@@ -306,6 +306,20 @@ export function formatPricingHistoryUnitLabel(
         ?? `USD per ${quantity.toLocaleString()} ${normalizedUnit}${quantity === 1 ? "" : "s"}`;
 }
 
+/**
+ * Label for a request meter whose display unit names another unit ("1 search unit", "search units").
+ * A billing quantity above one stays in the label, so a bulk price is never read as a single-unit rate.
+ */
+function namedRequestUnitLabel(displayUnit: string, unitSize?: number | null): string {
+    const text = displayUnit.trim();
+    if (/^per\s/i.test(text)) return text;
+    const match = text.match(/^([0-9][0-9,.]*)\s+(.+)$/);
+    const size = Number(unitSize ?? 1);
+    const quantity = match ? Number(match[1]!.replace(/,/g, "")) : Number.isFinite(size) && size > 1 ? size : 1;
+    const name = match ? match[2]! : text;
+    return quantity > 1 ? `Per ${quantity.toLocaleString("en-US")} ${name}` : `Per ${name}`;
+}
+
 function requestUnitLabel(unitSize?: number | null) {
     const size = Number(unitSize ?? 1);
     if (!Number.isFinite(size) || size <= 1) return "Per request";
@@ -1499,7 +1513,7 @@ export function buildProviderSections(
                 // Some request meters count another unit (Cohere rerank bills search units of up to
                 // 100 documents); a display unit that names it wins over "per request".
                 unitLabel: r.display_unit && !/request/i.test(r.display_unit)
-                    ? (/^per\s/i.test(r.display_unit) ? r.display_unit : `Per ${r.display_unit.trim().replace(/^1\s+/, "")}`)
+                    ? namedRequestUnitLabel(r.display_unit, unitSize)
                     : requestUnitLabel(unitSize),
                 unitSize,
                 basePer1M: null,
