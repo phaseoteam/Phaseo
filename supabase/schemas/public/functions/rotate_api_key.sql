@@ -11,7 +11,7 @@ CREATE OR REPLACE FUNCTION public.rotate_api_key (
 )
   RETURNS jsonb
   LANGUAGE plpgsql
-  SECURITY INVOKER
+  SECURITY DEFINER
   SET search_path TO ''
   AS $function$
 -- Replaces an API key with a new secret in one transaction. The replacement gets the old key's
@@ -26,6 +26,10 @@ CREATE OR REPLACE FUNCTION public.rotate_api_key (
 -- references public.keys holds history or cannot apply to a rotated key; the list, with reasons,
 -- is in supabase/tests/rotate-api-key.test.mjs, which fails when a new table references keys.
 -- p_expire_previous sets the old key's expires_at to p_previous_expires_at (NULL means never).
+-- The workspace is queued for a gateway publication, which republishes its rate limit plan: the
+-- keys table has no INSERT publication trigger, so a copied department link would otherwise wait
+-- for an unrelated change. Runs as definer because only postgres may queue publications; callers
+-- are limited to the service role by the grants below.
 declare
   v_old public.keys%rowtype;
   v_new_id uuid;
@@ -129,6 +133,8 @@ begin
     where id = p_key_id
       and workspace_id = p_workspace_id;
   end if;
+
+  perform private.enqueue_gateway_workspace_publication(p_workspace_id);
 
   return jsonb_build_object(
     'replacement_key_id', v_new_id,

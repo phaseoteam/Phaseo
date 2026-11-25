@@ -7,7 +7,8 @@
 // * the replacement gets the key settings, guardrails, destinations, dynamic route and key spend
 //   rules (with their notification destinations), and the old key keeps its own links;
 // * the old key's expiry is set only when asked; a failure part-way leaves nothing behind;
-// * other workspaces' keys, deleted keys and workload identity keys are refused; service role only.
+// * other workspaces' keys, deleted keys and workload identity keys are refused; service role only;
+// * a rotation queues one gateway publication (keys has no INSERT publication trigger).
 // Install @electric-sql/pglite@0.5.8 in a temporary directory and set PGLITE_MODULE to its
 // dist/index.js file URL. Run: node supabase/tests/rotate-api-key.test.mjs
 import assert from 'node:assert/strict';
@@ -104,10 +105,15 @@ const rotate = (workspaceId, keyId, { name = 'rotated', expire = false, expiresA
   ).then((result) => result.rows[0].result);
 };
 const keyCount = async () => Number((await rows('select count(*)::int n from public.keys'))[0].n);
+const publications = async () => (await rows('select workspace_id from private.test_publications')).map((row) => row.workspace_id);
 
 try {
   await db.exec(`
     create role anon; create role authenticated; create role service_role bypassrls;
+    create schema private;
+    create table private.test_publications (workspace_id uuid not null);
+    create function private.enqueue_gateway_workspace_publication(p_workspace_id uuid) returns void
+      language sql as $$ insert into private.test_publications values (p_workspace_id) $$;
     create table public.workspaces (id uuid primary key);
     create table public.users (user_id uuid primary key);
     create table public.workspace_departments (id uuid not null, workspace_id uuid not null, primary key (id), unique (id, workspace_id));
@@ -198,6 +204,7 @@ try {
   const result = await rotate(W1, K1, { name: '  prod (rotated)  ' });
   const NEW = result.replacement_key_id;
   assert.deepEqual(result.carried, { guardrails: 2, rate_guardrails: 1, destinations: 2, dynamic_routes: 1, spend_rules: 1, department: true });
+  assert.deepEqual(await publications(), [W1], 'the workspace is queued for a gateway publication, which republishes its rate limit plan');
   const [replacement] = await rows('select * from public.keys where id = $1', [NEW]);
   assert.equal(replacement.name, 'prod (rotated)');
   assert.equal(replacement.hash, `hash_${secret}`);
@@ -247,10 +254,11 @@ try {
     begin raise exception 'simulated failure'; end $$;
     create trigger fail_spend_copy before insert on public.workspace_spend_rules for each row execute function public.fail_spend_copy();
   `);
-  const before = { keys: await keyCount(), guardrails: (await rows('select count(*)::int n from public.key_guardrails'))[0].n };
+  const before = { keys: await keyCount(), guardrails: (await rows('select count(*)::int n from public.key_guardrails'))[0].n, publications: (await publications()).length };
   await assert.rejects(rotate(W1, K1, { expire: true, expiresAt: '2020-01-01T00:00:00Z' }), /simulated failure/);
   assert.equal(await keyCount(), before.keys, 'no replacement key is left behind');
   assert.equal((await rows('select count(*)::int n from public.key_guardrails'))[0].n, before.guardrails, 'no guardrail is copied');
+  assert.equal((await publications()).length, before.publications, 'no publication is queued');
   assert.equal((await rows('select expires_at from public.keys where id = $1', [K1]))[0].expires_at.toISOString(), '2030-01-01T00:00:00.000Z', 'the old key is not expired');
   await db.exec('drop trigger fail_spend_copy on public.workspace_spend_rules');
 
@@ -261,6 +269,7 @@ try {
   await assert.rejects(rotate(W1, KWORKLOAD), /key_not_rotatable/);
   await assert.rejects(rotate(W1, K1, { name: '   ' }), /api_key_name_required/);
   assert.equal(await keyCount(), count, 'refused rotations create no key');
+  assert.equal((await publications()).length, before.publications, 'refused rotations queue no publication');
 
   // ---- Service role only.
   const grants = await rows(`select has_function_privilege('anon', p.oid, 'execute') anon, has_function_privilege('authenticated', p.oid, 'execute') authenticated,
