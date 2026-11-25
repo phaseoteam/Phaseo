@@ -19,13 +19,15 @@ export const DEFAULT_CONFIG = path.join(here, 'live-scan.config.json');
 const IMPACT_ORDER = ['critical', 'serious', 'moderate', 'minor'];
 
 // An exception matches on rule id plus a substring of the node's selector (`target`) and/or its HTML
-// (`html`, for elements whose ids are generated). `path` and `theme` narrow it; every entry needs a `reason`.
+// (`html`, for elements whose ids are generated). `path` (exact), `pathPrefix` and `theme` narrow it;
+// every entry needs a `reason`.
 export function matchException(exceptions, { rule, path: pagePath, theme, target, html }) {
   return exceptions.find(
     (e) =>
       e.rule === rule &&
       (e.target !== undefined || e.html !== undefined) &&
       (e.path === undefined || e.path === pagePath) &&
+      (e.pathPrefix === undefined || pagePath.startsWith(e.pathPrefix)) &&
       (e.theme === undefined || e.theme === theme) &&
       (e.target === undefined || target.includes(e.target)) &&
       (e.html === undefined || html.includes(e.html)),
@@ -130,16 +132,16 @@ export function renderSummary(report, outcome) {
   }
   out.push('## Pages', '', '| Page | Light | Dark |', '| --- | --- | --- |');
   for (const p of report.pages) {
-    const count = (t) => (p.error ? 'error' : p.themes[t] ? String(p.themes[t].violations.reduce((n, v) => n + v.nodes.length, 0)) : '');
+    const count = (t) => (p.themes[t] ? String(p.themes[t].violations.reduce((n, v) => n + v.nodes.length, 0)) : p.error ? 'error' : '');
     out.push(`| ${code(p.path)} | ${count('light')} | ${count('dark')} |`);
   }
   out.push('', 'Counts are elements with any violation, including moderate and minor. Pages behind sign-in are not scanned.', '');
   return out.join('\n');
 }
 
-async function scanPage(context, AxeBuilder, baseUrl, entry, config) {
+// Fills rec.themes as each theme finishes, so a failure in a later theme keeps earlier results.
+async function scanPage(context, AxeBuilder, baseUrl, entry, config, rec) {
   const page = await context.newPage();
-  const rec = { path: entry.path, name: entry.name, themes: {} };
   try {
     for (const theme of config.themes) {
       await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
@@ -147,6 +149,9 @@ async function scanPage(context, AxeBuilder, baseUrl, entry, config) {
       const status = response?.status() ?? 0;
       if (status >= 400) throw new Error(`HTTP ${status}`);
       await page.waitForLoadState('load', { timeout: 15000 }).catch(() => {});
+      // Some entries (the sign-in and sign-up dialogs) render client-side on top of another page.
+      // Without this wait, a dialog that never opens would pass as a clean scan of the page underneath.
+      if (entry.waitFor) await page.locator(entry.waitFor).first().waitFor({ state: 'visible', timeout: 20000 });
       // Let client data and theme classes settle; reduced motion keeps transitions from skewing contrast.
       await page.waitForTimeout(2500);
       const result = await new AxeBuilder({ page }).withTags(config.tags).analyze();
@@ -173,7 +178,6 @@ async function scanPage(context, AxeBuilder, baseUrl, entry, config) {
   } finally {
     await page.close();
   }
-  return rec;
 }
 
 async function main() {
@@ -211,14 +215,16 @@ async function main() {
     while (next < entries.length) {
       const i = next++;
       const entry = entries[i];
-      let rec;
-      // One retry: a single slow response from the live site should not fail the night.
+      const rec = { path: entry.path, name: entry.name, themes: {} };
+      // One retry: a single slow response from the live site should not fail the night. Themes that
+      // finished on either attempt are kept, so their findings still reach the report.
       for (let attempt = 1; attempt <= 2; attempt++) {
         try {
-          rec = await scanPage(context, AxeBuilder, baseUrl, entry, config);
+          await scanPage(context, AxeBuilder, baseUrl, entry, config, rec);
+          delete rec.error;
           break;
         } catch (error) {
-          rec = { path: entry.path, name: entry.name, themes: {}, error: String(error?.message ?? error).split('\n')[0] };
+          rec.error = String(error?.message ?? error).split('\n')[0];
         }
       }
       pages[i] = rec;

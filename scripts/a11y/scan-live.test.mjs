@@ -36,6 +36,27 @@ test('exceptions match rule plus selector or HTML, narrowed by path and theme', 
   assert.equal(matchException([{ rule: 'color-contrast', reason: 'too broad' }], { ...base, rule: 'color-contrast', path: '/' }), undefined);
 });
 
+test('pathPrefix keeps an exception to one section of the site', () => {
+  const exceptions = [{ rule: 'label-content-name-mismatch', pathPrefix: '/docs/', html: 'class="card', reason: 'Mintlify' }];
+  const row = { rule: 'label-content-name-mismatch', theme: 'light', target: '.card', html: '<div class="card block">' };
+  assert.equal(matchException(exceptions, { ...row, path: '/docs/v1/quickstart' })?.reason, 'Mintlify');
+  assert.equal(matchException(exceptions, { ...row, path: '/models' }), undefined);
+});
+
+test('a page that errored in one theme still reports the theme that finished', () => {
+  const pages = [
+    {
+      path: '/models',
+      error: 'Timeout',
+      themes: { light: { violations: [{ id: 'color-contrast', impact: 'serious', help: 'h', helpUrl: 'u', nodes: [node('.a')] }] } },
+    },
+  ];
+  const out = classify(pages);
+  assert.equal(out.failing.length, 1);
+  const md = renderSummary({ baseUrl: 'https://phaseo.app', finishedAt: 'now', axeVersion: '4.14.0', tags: ['wcag2aa'], themes: ['light', 'dark'], pages }, out);
+  assert.match(md, /\| `\/models` \| 1 \| error \|/);
+});
+
 test('exempt nodes do not fail and unused exceptions are listed', () => {
   const exceptions = [
     { rule: 'color-contrast', target: '#loading', reason: 'disabled while loading' },
@@ -68,4 +89,6 @@ test('committed config is well formed', async () => {
   for (const e of config.exceptions) {
     assert.ok(e.rule && e.reason && (e.target || e.html), JSON.stringify(e));
   }
+  // Pages that render a dialog client-side must wait for it, or a missing dialog scans as clean.
+  for (const p of config.pages.filter((p) => p.path.includes('auth='))) assert.ok(p.waitFor, p.path);
 });

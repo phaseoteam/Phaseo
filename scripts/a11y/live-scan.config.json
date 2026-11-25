@@ -5,8 +5,8 @@
   "failOn": ["critical", "serious"],
   "pages": [
     { "path": "/", "name": "Home" },
-    { "path": "/?auth=sign-in", "name": "Sign-in dialog" },
-    { "path": "/?auth=sign-up", "name": "Sign-up dialog" },
+    { "path": "/?auth=sign-in", "name": "Sign-in dialog", "waitFor": "[role=dialog] input[type=email]" },
+    { "path": "/?auth=sign-up", "name": "Sign-up dialog", "waitFor": "[role=dialog] input[type=email]" },
     { "path": "/models", "name": "Models list" },
     { "path": "/models/anthropic/claude-fable-5.2", "name": "Model page" },
     { "path": "/compare", "name": "Compare" },
@@ -17,6 +17,7 @@
     { "path": "/organisations/openai", "name": "Organisation page" },
     { "path": "/api-providers", "name": "Providers" },
     { "path": "/api-providers/openai", "name": "Provider page" },
+    { "path": "/api-providers/compare", "name": "Provider comparison" },
     { "path": "/benchmarks", "name": "Benchmarks" },
     { "path": "/benchmarks/2-bench-retail", "name": "Benchmark page" },
     { "path": "/families", "name": "Model families" },
@@ -34,6 +35,7 @@
     { "path": "/learn", "name": "Learn" },
     { "path": "/help", "name": "Help centre" },
     { "path": "/help/billing-and-credits", "name": "Help category" },
+    { "path": "/help/billing-and-credits/download-invoices", "name": "Help article" },
     { "path": "/tools", "name": "Tools" },
     { "path": "/tools/pricing-calculator", "name": "Pricing calculator" },
     { "path": "/migrate", "name": "Migrate" },
@@ -52,6 +54,7 @@
   "exceptions": [
     {
       "rule": "label-content-name-mismatch",
+      "pathPrefix": "/docs/",
       "html": "<div class=\"card block font-norm",
       "reason": "Mintlify renders docs cards as role=link named by the card title, which is visible text; axe flags the description text beside it. The markup comes from Mintlify, not this repo."
     }
