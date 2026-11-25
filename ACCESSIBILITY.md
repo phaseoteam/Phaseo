@@ -50,7 +50,7 @@ Automated checks find only part of what affects real users. We have not yet:
 - Reviewed menus, dialogs, and forms in their opened and error states.
 - Reviewed the desktop and mobile apps.
 - Provided captions or transcripts for audio and video that models generate in Chat and the model playground, or that people attach in Chat. The prompt, and any text reply, is shown next to the player, but it doesn't describe what you hear.
-- Checked whole pages before they ship. The nightly scan only covers public pages, after they are live, so a regression can reach users for up to a day. Pages behind sign-in, such as Chat, settings and the dashboard, are not scanned automatically at all.
+- Checked whole pages before they ship. The nightly scan only covers public pages, after changes are live, and only finds what automated checks can detect. Pages behind sign-in, such as Chat, settings and the dashboard, are not scanned automatically at all.
 
 If you hit one of these, or anything else, please report it. Reports from real use help us decide what to fix first.
 

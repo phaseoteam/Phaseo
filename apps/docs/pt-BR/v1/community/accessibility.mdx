@@ -28,7 +28,7 @@ Em novembro de 2026, verificamos 54 tipos de página com base nas WCAG 2.2 AA us
 - Leitores de tela (NVDA, JAWS, VoiceOver, TalkBack) e controle por voz. Respostas transmitidas em streaming no Chat podem não ser anunciadas corretamente.
 - Menus, caixas de diálogo e formulários abertos e em estado de erro.
 - Os apps para desktop e celular.
-- Verificações automáticas das páginas que exigem login, como o Chat e as configurações. Uma varredura noturna verifica as páginas públicas do site em produção, incluindo o contraste, então um problema nelas pode ficar no ar por até um dia antes de percebermos.
+- Verificações automáticas das páginas que exigem login, como o Chat e as configurações. Uma varredura noturna verifica as páginas públicas do site em produção com o axe-core, incluindo o contraste. Ela roda depois que as mudanças já estão no ar e só encontra o que verificações automáticas conseguem detectar.
 
 ## Contribuir com mudanças acessíveis
 

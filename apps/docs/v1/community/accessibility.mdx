@@ -29,7 +29,7 @@ In November 2026 we checked 54 page types against WCAG 2.2 AA with axe-core in l
 - Screen readers (NVDA, JAWS, VoiceOver, TalkBack) and voice control. Responses that stream into Chat may not be announced well.
 - Menus, dialogs and forms in their opened and error states.
 - The desktop and mobile apps.
-- Automated checks of pages behind sign-in, such as Chat and settings. A nightly scan checks public pages on the live site, including contrast, so a problem there can be live for up to a day before we see it.
+- Automated checks of pages behind sign-in, such as Chat and settings. A nightly scan checks public pages on the live site with axe-core, including contrast. It runs after changes are live, and it only finds what automated checks can detect.
 
 ## Contribute accessible changes
 
