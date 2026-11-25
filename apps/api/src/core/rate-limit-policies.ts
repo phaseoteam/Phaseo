@@ -359,32 +359,6 @@ export async function reconcileRateLimitPlans(): Promise<{ workspaces: number; p
 	};
 }
 
-/**
- * Copies a rotated key's rate guardrails to its replacement. Returns whether
- * any was copied; throws if they could not be read or written. Written to
- * key_guardrails, which workspace_guardrail_assignments is copied from.
- */
-export async function copyKeyRateLimitAssignment(args: {
-	workspaceId: string;
-	fromKeyId: string;
-	toKeyId: string;
-	createdBy: string | null;
-}): Promise<boolean> {
-	const supabase = getSupabaseAdmin();
-	const { data, error } = await supabase.from("workspace_guardrail_assignments").select("guardrail_id,workspace_guardrails!inner(kind)")
-		.eq("workspace_id", args.workspaceId).eq("target_type", "key").eq("target_id", args.fromKeyId)
-		.eq("workspace_guardrails.kind", "rate");
-	if (error) throw new Error(error.message || "Failed to read the key's rate guardrails");
-	const guardrailIds = [...new Set(((data ?? []) as Array<{ guardrail_id: string }>).map((row) => row.guardrail_id))];
-	if (!guardrailIds.length) return false;
-	const { error: insertError } = await supabase.from("key_guardrails").upsert(
-		guardrailIds.map((guardrailId) => ({ key_id: args.toKeyId, guardrail_id: guardrailId })),
-		{ onConflict: "key_id,guardrail_id", ignoreDuplicates: true },
-	);
-	if (insertError) throw new Error(insertError.message || "Failed to copy the key's rate guardrails");
-	return true;
-}
-
 /** The workspace's published plan, or null when it has none. Never throws (fails open). */
 export async function readRateLimitPlan(workspaceId: string): Promise<RateLimitPlan | null> {
 	try {

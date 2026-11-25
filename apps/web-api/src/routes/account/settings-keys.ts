@@ -96,17 +96,35 @@ async function enforceKeyLimit(context: NonNullable<Awaited<ReturnType<typeof re
 	if ((countResult.count ?? 0) >= limit) throw new Error("key_limit_reached");
 }
 
-export async function invalidateGatewayKey(env: Env, keyId: string) {
+export async function invalidateGatewayKey(env: Env, keyId: string, options: { publishRateLimits?: boolean } = {}) {
 	const key = env.PHASEO_MANAGEMENT_KEY ?? env.PHASEO_CONTROL_KEY;
 	try {
 		if (!key || !env.PHASEO_CONTROL_SECRET) throw new Error("missing_control_configuration");
-		const response = await fetch(`${(env.GATEWAY_API_ORIGIN ?? "http://localhost:8787").replace(/\/$/, "")}/v1/keys/${encodeURIComponent(keyId)}/invalidate`, { method: "POST", signal: AbortSignal.timeout(10_000), headers: { authorization: `Bearer ${key}`, "x-control-secret": env.PHASEO_CONTROL_SECRET } });
+		const query = options.publishRateLimits ? "?publish=rate-limits" : "";
+		const response = await fetch(`${(env.GATEWAY_API_ORIGIN ?? "http://localhost:8787").replace(/\/$/, "")}/v1/keys/${encodeURIComponent(keyId)}/invalidate${query}`, { method: "POST", signal: AbortSignal.timeout(10_000), headers: { authorization: `Bearer ${key}`, "x-control-secret": env.PHASEO_CONTROL_SECRET } });
 		if (!response.ok) throw new Error(`control_status_${response.status}`);
 		return true;
 	} catch {
 		console.error("[key-policy] gateway invalidation failed", { keyId });
 		return false;
 	}
+}
+
+export type KeyRotationCarried = { guardrails: number; destinations: number; dynamicRoutes: number; spendRules: number; department: boolean };
+
+/** Reads public.rotate_api_key's result: the replacement's id and what was copied to it. */
+export function parseKeyRotation(value: unknown): { id: string; rateGuardrails: number; carried: KeyRotationCarried } | null {
+	const row: unknown = Array.isArray(value) ? value[0] : value;
+	if (!row || typeof row !== "object") return null;
+	const { replacement_key_id: id, carried: rawCarried } = row as { replacement_key_id?: unknown; carried?: unknown };
+	if (typeof id !== "string" || !id) return null;
+	const carried: Record<string, unknown> = rawCarried && typeof rawCarried === "object" ? rawCarried as Record<string, unknown> : {};
+	const count = (field: string) => Math.max(0, Number(carried[field]) || 0);
+	return {
+		id,
+		rateGuardrails: count("rate_guardrails"),
+		carried: { guardrails: count("guardrails"), destinations: count("destinations"), dynamicRoutes: count("dynamic_routes"), spendRules: count("spend_rules"), department: carried.department === true },
+	};
 }
 
 export const accountSettingsKeysRouter = new Hono<{ Bindings: Env }>();
@@ -290,11 +308,31 @@ accountSettingsKeysRouter.post("/keys/:keyId/rotate", async (c) => {
 	if (loaded.key.key_kind === "workload_identity") return c.json({ error: "key_not_rotatable" }, 409, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({})); let expires: string | null | undefined; try { expires = optionalExpiry(body.previousKeyExpiresAt); } catch { return c.json({ error: "invalid_expiry" }, 400, PRIVATE_NO_STORE_HEADERS); }
 	const key = generateKey("sk"); const newName = typeof body.newName === "string" && body.newName.trim() ? body.newName.trim() : `${loaded.key.name} (rotated)`;
-	const inserted = await loaded.context.client.from("keys").insert({ workspace_id: loaded.context.workspaceId, name: newName, kid: key.kid, hash: await hmac(c.env, key.secret), prefix: key.prefix, status: "active", scopes: loaded.key.scopes ?? "[]", ip_allowlist: loaded.key.ip_allowlist ?? [], storage_locations: loaded.key.storage_locations ?? [], created_by: loaded.user.id, daily_limit_requests: nonNegative(loaded.key.daily_limit_requests), weekly_limit_requests: nonNegative(loaded.key.weekly_limit_requests), monthly_limit_requests: nonNegative(loaded.key.monthly_limit_requests), daily_limit_cost_nanos: nonNegative(loaded.key.daily_limit_cost_nanos), weekly_limit_cost_nanos: nonNegative(loaded.key.weekly_limit_cost_nanos), monthly_limit_cost_nanos: nonNegative(loaded.key.monthly_limit_cost_nanos), soft_blocked: Boolean(loaded.key.soft_blocked) }).select("id").maybeSingle();
-	if (inserted.error || !inserted.data?.id) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
-	if (expires !== undefined) { let updated = await loaded.context.client.from("keys").update({ expires_at: expires }).eq("id", loaded.key.id); if (updated.error && missingExpiry(updated.error)) updated = { error: null } as any; if (updated.error) { await loaded.context.client.from("keys").delete().eq("id", inserted.data.id); return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); } c.executionCtx.waitUntil(invalidateGatewayKey(c.env, loaded.key.id)); }
-	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action: "api_key.rotated", targetType: "api_key", targetId: loaded.key.id, targetName: loaded.key.name, metadata: { replacementKeyId: inserted.data.id, replacementKeyName: newName, previousKeyExpiresAt: expires ?? null }, requestId: requestId(c) });
-	return c.json({ id: inserted.data.id, plaintext: key.plaintext, prefix: key.prefix, previousKeyExpiresAt: expires ?? null }, 200, PRIVATE_NO_STORE_HEADERS);
+	// One transaction creates the replacement and copies everything that points at the old key
+	// (settings, guardrails, destinations, dynamic route, key spend rules), then sets the old key's
+	// expiry. The old key keeps its own links until it expires. The function also queues a gateway
+	// publication; rate guardrails and the department link are published here as well, before the
+	// secret is returned, so the replacement can't be used ahead of its rate limits.
+	const rotated = await loaded.context.client.rpc("rotate_api_key", {
+		p_workspace_id: loaded.context.workspaceId, p_key_id: loaded.key.id, p_name: newName,
+		p_kid: key.kid, p_hash: await hmac(c.env, key.secret), p_prefix: key.prefix, p_created_by: loaded.user.id,
+		p_expire_previous: expires !== undefined, p_previous_expires_at: expires ?? null,
+	});
+	if (rotated.error) {
+		const message = String(rotated.error.message ?? "");
+		if (message.includes("spend_rule_limit_reached")) return c.json({ error: "spend_rule_limit_reached" }, 409, PRIVATE_NO_STORE_HEADERS);
+		if (message.includes("key_not_rotatable")) return c.json({ error: "key_not_rotatable" }, 409, PRIVATE_NO_STORE_HEADERS);
+		if (message.includes("api_key_not_found")) return c.json({ error: "key_deleted" }, 409, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+	const rotation = parseKeyRotation(rotated.data);
+	if (!rotation) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	// If this fails (it logs), the queued publication still applies the limits within about a minute;
+	// failing here would lose the secret of a key that already exists.
+	if (rotation.rateGuardrails > 0 || rotation.carried.department) await invalidateGatewayKey(c.env, rotation.id, { publishRateLimits: true });
+	if (expires !== undefined) c.executionCtx.waitUntil(invalidateGatewayKey(c.env, loaded.key.id));
+	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action: "api_key.rotated", targetType: "api_key", targetId: loaded.key.id, targetName: loaded.key.name, metadata: { replacementKeyId: rotation.id, replacementKeyName: newName, previousKeyExpiresAt: expires ?? null, carried: rotation.carried }, requestId: requestId(c) });
+	return c.json({ id: rotation.id, plaintext: key.plaintext, prefix: key.prefix, previousKeyExpiresAt: expires ?? null, carried: rotation.carried }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsKeysRouter.delete("/keys/:keyId", async (c) => {
@@ -305,6 +343,9 @@ accountSettingsKeysRouter.delete("/keys/:keyId", async (c) => {
 	// trigger on keys still refreshes the gateway within about a minute, so the delete doesn't wait.
 	c.executionCtx.waitUntil(invalidateGatewayKey(c.env, loaded.key.id)); // logs its own failures
 	for (const table of ["key_guardrails", "broadcast_destination_keys"] as const) { const links = await loaded.context.client.from(table).delete().eq("key_id", loaded.key.id); if (links.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); }
+	// The key row stays as a tombstone, so its spend rules would keep counting toward the workspace's 50.
+	const retiredRules = await loaded.context.client.from("workspace_spend_rules").update({ deleted_at: new Date().toISOString() }).eq("workspace_id", loaded.context.workspaceId).eq("scope_type", "key").eq("scope_id", loaded.key.id).is("deleted_at", null);
+	if (retiredRules.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action: "api_key.deleted", targetType: "api_key", targetId: loaded.key.id, targetName: loaded.key.name, metadata: { prefix: loaded.key.prefix ?? null }, requestId: requestId(c) });
 	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });

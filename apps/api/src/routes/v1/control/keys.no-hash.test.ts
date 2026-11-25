@@ -54,12 +54,12 @@ vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: vi.fn(async ()
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({ KEY_PEPPER_ACTIVE: "pepper", PHASEO_CONTROL_SECRET: "control" }),
 	getCache: () => ({ delete: vi.fn(async () => undefined), get: vi.fn(async () => null), put: vi.fn(async () => undefined) }),
-	getSupabaseAdmin: () => ({ from: (table: string) => query(table), rpc: vi.fn(async () => ({ data: [], error: null })) }),
+	getSupabaseAdmin: () => ({ from: (table: string) => query(table), rpc: vi.fn(async (name: string) => ({ data: name === "rotate_api_key" ? { replacement_key_id: KEY_ID, carried: {} } : [], error: null })) }),
 }));
 vi.mock("@/core/kv", () => ({ setKeyVersion: vi.fn(async () => 1) }));
 vi.mock("@/lib/audit/workspaceAudit", () => ({ recordWorkspaceAuditEvent: vi.fn(async () => true) }));
 vi.mock("@/pipeline/before/privateModelCache", () => ({ invalidatePrivateRoutes: vi.fn(async () => undefined) }));
-vi.mock("@core/rate-limit-policies", () => ({ copyKeyRateLimitAssignment: vi.fn(async () => false), publishRateLimitPlan: vi.fn(async () => true) }));
+vi.mock("@core/rate-limit-policies", () => ({ publishRateLimitPlan: vi.fn(async () => true) }));
 vi.mock("./management-helpers", async (importOriginal) => ({
 	...(await importOriginal<typeof import("./management-helpers")>()),
 	enforceWorkspaceKeyLimit: vi.fn(async () => undefined),

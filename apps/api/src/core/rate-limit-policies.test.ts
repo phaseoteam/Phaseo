@@ -87,7 +87,7 @@ vi.mock("@core/customer-rate-limit-tiers", () => ({ readCustomerLimits: vi.fn() 
 import { __resetTieredCacheForTests } from "./tiered-cache";
 import { __resetCustomerQuotaStateForTests, CONCURRENCY_LEASE_TTL_MS, createConcurrencyLeases, releaseConcurrencyAfter } from "./customer-rate-limits";
 import {
-	applicableRateLimits, buildRateLimitPlan, chargeRateLimitPolicyTokens, copyKeyRateLimitAssignment, guardRateLimitPolicies, publishRateLimitPlan, reconcileRateLimitPlans,
+	applicableRateLimits, buildRateLimitPlan, chargeRateLimitPolicyTokens, guardRateLimitPolicies, publishRateLimitPlan, reconcileRateLimitPlans,
 	rateLimitPlanKey, rateLimitPolicyHeaders, readRateLimitPlan, rejectedByRateLimitPolicy, withRateLimitPolicyHeaders,
 	type RateLimitPlan,
 } from "./rate-limit-policies";
@@ -346,20 +346,6 @@ describe("rate limit plan publication", () => {
 		__resetTieredCacheForTests();
 		mocks.failGet = true;
 		expect(await readRateLimitPlan(WS)).toBeNull();
-	});
-
-	it("copies a rotated key's rate guardrails to its replacement", async () => {
-		mocks.tables.workspace_guardrail_assignments = [
-			{ ...level(STRICT, "key", "old"), workspace_guardrails: { kind: "rate" } },
-			{ ...level(LOOSE, "key", "old"), workspace_guardrails: { kind: "rate" } },
-		];
-		expect(await copyKeyRateLimitAssignment({ workspaceId: WS, fromKeyId: "old", toKeyId: "new", createdBy: "admin" })).toBe(true);
-		expect(mocks.inserts).toEqual([{ table: "key_guardrails", payload: [
-			{ key_id: "new", guardrail_id: STRICT },
-			{ key_id: "new", guardrail_id: LOOSE },
-		] }]);
-		expect(await copyKeyRateLimitAssignment({ workspaceId: WS, fromKeyId: "unassigned", toKeyId: "new", createdBy: null })).toBe(false);
-		expect(mocks.inserts).toHaveLength(1);
 	});
 });
 
