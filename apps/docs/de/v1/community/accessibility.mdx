@@ -1,0 +1,35 @@
+---
+title: "Barrierefreiheit"
+description: "Melde eine Barriere in Phaseo und sieh, was wir getestet haben und was noch nicht."
+icon: "accessibility"
+---
+
+Wenn sich etwas in Phaseo mit Tastatur, Screenreader, Vergrößerung, Sprachsteuerung oder anderen Hilfstechnologien nur schwer oder gar nicht bedienen lässt, sag uns Bescheid. Wir bestätigen Meldungen innerhalb von 5 Werktagen.
+
+## Eine Barriere melden
+
+Nutze den Weg, der für dich am besten passt:
+
+- **GitHub:** Eröffne einen [Fehlerbericht](https://github.com/phaseoteam/Phaseo/issues/new?template=bug.yml), dessen Titel mit `Accessibility:` beginnt.
+- **E-Mail:** Schreib an `support@phaseo.app` mit einem Betreff, der mit `Accessibility:` beginnt. Nutze E-Mail, wenn du nicht öffentlich posten möchtest oder wenn GitHub für dich schwer zu bedienen ist.
+
+Gib die Seite, den Bildschirm oder den Befehl an, wo es passiert ist, was du tun wolltest, und deinen Browser oder deine App, dein Betriebssystem und deine Hilfstechnologie. Du musst nicht wissen, welche Richtlinie betroffen ist. Eine einfache Beschreibung reicht.
+
+Barrieren, die eine Aufgabe komplett verhindern, etwa das Anmelden, Bezahlen oder Senden einer Anfrage, behandeln wir als Fehler mit hoher Priorität.
+
+## Was wir anstreben
+
+Wir wollen [WCAG 2.2](https://www.w3.org/TR/WCAG22/) Stufe AA in der Web-App und in dieser Dokumentation erfüllen, und in der Desktop- und Mobile-App die entsprechenden Plattformrichtlinien. Es gab noch kein unabhängiges Audit, daher beanspruchen wir keine Konformität.
+
+Im November 2026 haben wir 54 Seitentypen gegen WCAG 2.2 AA geprüft, mit axe-core im hellen und dunklen Design, einem Tastaturdurchgang durch jede Seite und einer Prüfung bei 320 Pixeln Breite, und die gefundenen Probleme behoben.
+
+## Was wir noch nicht getestet haben
+
+- Screenreader (NVDA, JAWS, VoiceOver, TalkBack) und Sprachsteuerung. Antworten, die in Chat gestreamt werden, werden möglicherweise nicht gut angesagt.
+- Menüs, Dialoge und Formulare im geöffneten Zustand und mit Fehlermeldungen.
+- Die Desktop- und Mobile-App.
+- Automatische Barrierefreiheitsprüfungen in der CI, sodass Rückschritte unbemerkt ausgeliefert werden können.
+
+## Barrierefreie Änderungen beitragen
+
+Pull Requests, die Code der Benutzeroberfläche ändern, folgen der Checkliste im [Abschnitt „Contributing“ von `ACCESSIBILITY.md`](https://github.com/phaseoteam/Phaseo/blob/main/ACCESSIBILITY.md#contributing): Bedienung per Tastatur mit sichtbarem Fokus, zugängliche Namen für Symbole und reine Symbol-Schaltflächen, Kontrast in beiden Designs geprüft und Unterstützung für reduzierte Bewegung. Die vollständige Erklärung, einschließlich der unterstützten Browser, steht in [`ACCESSIBILITY.md`](https://github.com/phaseoteam/Phaseo/blob/main/ACCESSIBILITY.md).

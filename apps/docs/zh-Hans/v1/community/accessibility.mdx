@@ -1,0 +1,35 @@
+---
+title: "无障碍"
+description: "报告 Phaseo 中的无障碍障碍，并了解我们已测试和尚未测试的内容。"
+icon: "accessibility"
+---
+
+如果 Phaseo 中的某些功能在使用键盘、屏幕阅读器、放大工具、语音控制或其他辅助技术时难以使用或无法使用，请告诉我们。我们会在 5 个工作日内确认收到报告。
+
+## 报告障碍
+
+请选择适合你的方式：
+
+- **GitHub：** 提交一个[错误报告](https://github.com/phaseoteam/Phaseo/issues/new?template=bug.yml)，标题以 `Accessibility:` 开头。
+- **电子邮件：** 发送邮件至 `support@phaseo.app`，主题以 `Accessibility:` 开头。如果你不想公开发布，或者 GitHub 对你来说难以使用，请使用电子邮件。
+
+请说明问题出现的页面、界面或命令，你当时想做什么，以及你使用的浏览器或应用、操作系统和辅助技术。你不需要知道涉及哪条准则，简单描述即可。
+
+完全阻碍某项任务的障碍（例如无法登录、付款或发送请求）会作为高优先级错误处理。
+
+## 我们的目标
+
+我们的目标是在 Web 应用和本文档中达到 [WCAG 2.2](https://www.w3.org/TR/WCAG22/) AA 级，并在桌面应用和移动应用中达到各平台的同等准则。我们尚未进行独立审核，因此不声明符合任何标准。
+
+2026 年 11 月，我们按照 WCAG 2.2 AA 检查了 54 种页面类型：在浅色和深色主题下使用 axe-core 检查，逐页进行键盘操作，并在 320 像素宽度下检查，然后修复了发现的问题。
+
+## 尚未测试的内容
+
+- 屏幕阅读器（NVDA、JAWS、VoiceOver、TalkBack）和语音控制。以流式方式显示在 Chat 中的回复可能无法被正确朗读。
+- 处于打开状态和错误状态的菜单、对话框和表单。
+- 桌面应用和移动应用。
+- CI 中的自动无障碍检查，因此回归问题可能在无人察觉的情况下发布。
+
+## 贡献无障碍的改动
+
+修改用户界面代码的拉取请求需遵循 [`ACCESSIBILITY.md` 贡献部分](https://github.com/phaseoteam/Phaseo/blob/main/ACCESSIBILITY.md#contributing)中的检查清单：可通过键盘操作并显示可见焦点，为图标和仅含图标的按钮提供无障碍名称，在两种主题下检查对比度，并支持减少动态效果。包括支持的浏览器在内的完整声明请见 [`ACCESSIBILITY.md`](https://github.com/phaseoteam/Phaseo/blob/main/ACCESSIBILITY.md)。

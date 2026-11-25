@@ -1,0 +1,35 @@
+---
+title: "Accessibilité"
+description: "Signalez un obstacle d’accessibilité dans Phaseo et découvrez ce que nous avons testé ou non."
+icon: "accessibility"
+---
+
+Si une partie de Phaseo est difficile ou impossible à utiliser au clavier, avec un lecteur d’écran, un agrandisseur, la commande vocale ou une autre technologie d’assistance, dites-le-nous. Nous accusons réception des signalements sous 5 jours ouvrés.
+
+## Signaler un obstacle
+
+Choisissez le moyen qui vous convient :
+
+- **GitHub :** ouvrez un [rapport de bug](https://github.com/phaseoteam/Phaseo/issues/new?template=bug.yml) dont le titre commence par `Accessibility:`.
+- **E-mail :** écrivez à `support@phaseo.app` avec un objet qui commence par `Accessibility:`. Utilisez l’e-mail si vous préférez ne pas publier votre signalement ou si GitHub est difficile à utiliser pour vous.
+
+Indiquez la page, l’écran ou la commande concernés, ce que vous essayiez de faire, ainsi que votre navigateur ou application, votre système d’exploitation et votre technologie d’assistance. Inutile de savoir quel critère est en cause. Une description simple suffit.
+
+Les obstacles qui empêchent complètement une tâche, comme se connecter, payer ou envoyer une requête, sont traités comme des bugs prioritaires.
+
+## Notre objectif
+
+Nous visons le niveau AA des [WCAG 2.2](https://www.w3.org/TR/WCAG22/) dans l’application web et dans cette documentation, et les recommandations équivalentes de chaque plateforme dans les applications de bureau et mobile. Nous n’avons pas fait réaliser d’audit indépendant, nous ne revendiquons donc aucune conformité.
+
+En novembre 2026, nous avons vérifié 54 types de pages selon les WCAG 2.2 AA avec axe-core en thème clair et sombre, un parcours au clavier de chaque page et un contrôle à 320 pixels de large, puis corrigé ce que nous avons trouvé.
+
+## Ce que nous n’avons pas encore testé
+
+- Les lecteurs d’écran (NVDA, JAWS, VoiceOver, TalkBack) et la commande vocale. Les réponses diffusées en continu dans Chat peuvent être mal annoncées.
+- Les menus, boîtes de dialogue et formulaires ouverts et en état d’erreur.
+- Les applications de bureau et mobile.
+- Les contrôles d’accessibilité automatiques en CI. Des régressions peuvent donc passer inaperçues.
+
+## Contribuer des modifications accessibles
+
+Les pull requests qui modifient le code de l’interface suivent la liste de contrôle de la [section « Contributing » de `ACCESSIBILITY.md`](https://github.com/phaseoteam/Phaseo/blob/main/ACCESSIBILITY.md#contributing) : accès au clavier avec un focus visible, noms accessibles pour les icônes et les boutons composés uniquement d’une icône, contraste vérifié dans les deux thèmes et prise en charge de la réduction des animations. La déclaration complète, y compris les navigateurs pris en charge, se trouve dans [`ACCESSIBILITY.md`](https://github.com/phaseoteam/Phaseo/blob/main/ACCESSIBILITY.md).

@@ -344,7 +344,8 @@
                       "v1/contributing/editing-an-organisation"
                     ]
                   },
-                  "v1/community/code-of-conduct"
+                  "v1/community/code-of-conduct",
+                  "v1/community/accessibility"
                 ]
               }
             ]
@@ -1412,7 +1413,8 @@
                       "es/v1/contributing/editing-an-organisation"
                     ]
                   },
-                  "es/v1/community/code-of-conduct"
+                  "es/v1/community/code-of-conduct",
+                  "es/v1/community/accessibility"
                 ]
               }
             ]
@@ -2514,7 +2516,8 @@
                       "fr/v1/contributing/editing-an-organisation"
                     ]
                   },
-                  "fr/v1/community/code-of-conduct"
+                  "fr/v1/community/code-of-conduct",
+                  "fr/v1/community/accessibility"
                 ]
               }
             ]
@@ -3616,7 +3619,8 @@
                       "de/v1/contributing/editing-an-organisation"
                     ]
                   },
-                  "de/v1/community/code-of-conduct"
+                  "de/v1/community/code-of-conduct",
+                  "de/v1/community/accessibility"
                 ]
               }
             ]
@@ -4718,7 +4722,8 @@
                       "pt-BR/v1/contributing/editing-an-organisation"
                     ]
                   },
-                  "pt-BR/v1/community/code-of-conduct"
+                  "pt-BR/v1/community/code-of-conduct",
+                  "pt-BR/v1/community/accessibility"
                 ]
               }
             ]
@@ -5820,7 +5825,8 @@
                       "ja/v1/contributing/editing-an-organisation"
                     ]
                   },
-                  "ja/v1/community/code-of-conduct"
+                  "ja/v1/community/code-of-conduct",
+                  "ja/v1/community/accessibility"
                 ]
               }
             ]
@@ -6922,7 +6928,8 @@
                       "zh-Hans/v1/contributing/editing-an-organisation"
                     ]
                   },
-                  "zh-Hans/v1/community/code-of-conduct"
+                  "zh-Hans/v1/community/code-of-conduct",
+                  "zh-Hans/v1/community/accessibility"
                 ]
               }
             ]
@@ -8024,7 +8031,8 @@
                       "hi/v1/contributing/editing-an-organisation"
                     ]
                   },
-                  "hi/v1/community/code-of-conduct"
+                  "hi/v1/community/code-of-conduct",
+                  "hi/v1/community/accessibility"
                 ]
               }
             ]
@@ -9126,7 +9134,8 @@
                       "ar/v1/contributing/editing-an-organisation"
                     ]
                   },
-                  "ar/v1/community/code-of-conduct"
+                  "ar/v1/community/code-of-conduct",
+                  "ar/v1/community/accessibility"
                 ]
               }
             ]

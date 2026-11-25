@@ -1,0 +1,36 @@
+---
+title: "Accessibility"
+description: "Report an accessibility barrier in Phaseo, and see what we have and have not tested."
+"og:image": "https://phaseo.app/og/dynamic?title=Accessibility&description=Report%20an%20accessibility%20barrier%20in%20Phaseo%2C%20and%20see%20what%20we%20have%20and%20have%20not%20tested.&pathname=/docs/v1/community/accessibility"
+icon: "accessibility"
+---
+
+If something in Phaseo is hard or impossible to use with a keyboard, screen reader, magnification, voice control or other assistive technology, tell us. We acknowledge reports within 5 business days.
+
+## Report a barrier
+
+Use whichever route suits you:
+
+- **GitHub:** open a [bug report](https://github.com/phaseoteam/Phaseo/issues/new?template=bug.yml) with a title that starts with `Accessibility:`.
+- **Email:** write to `support@phaseo.app` with a subject that starts with `Accessibility:`. Use email if you would rather not post publicly, or if GitHub is hard for you to use.
+
+Include the page, screen or command where it happened, what you were trying to do, and your browser or app, operating system and assistive technology. You don't need to know which guideline is involved. A plain description is enough.
+
+Barriers that block a task completely, such as signing in, paying or sending a request, are high-priority bugs.
+
+## What we aim for
+
+We aim to meet [WCAG 2.2](https://www.w3.org/TR/WCAG22/) Level AA in the web app and these docs, and the equivalent platform guidelines in the desktop and mobile apps. We have not had an independent audit, so we don't claim conformance.
+
+In November 2026 we checked 54 page types against WCAG 2.2 AA with axe-core in light and dark themes, a keyboard walk through each page, and a check at 320 pixels wide, and fixed what we found.
+
+## What we have not tested yet
+
+- Screen readers (NVDA, JAWS, VoiceOver, TalkBack) and voice control. Responses that stream into Chat may not be announced well.
+- Menus, dialogs and forms in their opened and error states.
+- The desktop and mobile apps.
+- Automated accessibility checks in CI, so regressions can ship unnoticed.
+
+## Contribute accessible changes
+
+Pull requests that change user interface code follow the checklist in the [contributing section of `ACCESSIBILITY.md`](https://github.com/phaseoteam/Phaseo/blob/main/ACCESSIBILITY.md#contributing): keyboard access with visible focus, accessible names for icons and icon-only buttons, contrast checked in both themes, and support for reduced motion. The full statement, including supported browsers, is in [`ACCESSIBILITY.md`](https://github.com/phaseoteam/Phaseo/blob/main/ACCESSIBILITY.md).
