@@ -7,7 +7,7 @@
     { "path": "/", "name": "Home" },
     { "path": "/?auth=sign-in", "name": "Sign-in dialog", "waitFor": "[role=dialog] input[type=email]" },
     { "path": "/?auth=sign-up", "name": "Sign-up dialog", "waitFor": "[role=dialog] input[type=email]" },
-    { "path": "/models", "name": "Models list" },
+    { "path": "/models", "name": "Models list", "waitFor": "main a[href^=\"/models/\"]:not([href=\"/models/table\"])" },
     { "path": "/models/anthropic/claude-fable-5.2", "name": "Model page" },
     { "path": "/compare", "name": "Compare" },
     { "path": "/compare/openrouter", "name": "Gateway comparison" },
