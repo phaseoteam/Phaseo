@@ -79,19 +79,16 @@ export function classify(pages, { exceptions = [], failOn = ['critical', 'seriou
 const cell = (s, max = Infinity) =>
   String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, max).replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
 // Selectors and HTML. A Markdown code span would keep the backslash escapes literally and break
-// selectors such as `.md\:hidden`, so this uses an HTML <code> element with entity-encoded text:
-// GitHub shows it exactly as axe reported it, and `|` as &#124; can't split the table cell.
+// selectors such as `.md\:hidden`, and GitHub still parses Markdown between raw <code> tags, so
+// every ASCII punctuation character is entity-encoded: nothing inside can become emphasis, a link,
+// a tag or a table delimiter, and GitHub shows the text exactly as axe reported it.
 const code = (s, max = Infinity) =>
   '<code>' +
   String(s ?? '')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, max)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\|/g, '&#124;')
-    .replace(/\\/g, '&#92;') +
+    .replace(/[!-/:-@[-`{-~]/g, (c) => `&#${c.charCodeAt(0)};`) +
   '</code>';
 
 function nodeTable(rows) {

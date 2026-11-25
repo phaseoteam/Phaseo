@@ -54,7 +54,7 @@ test('a page that errored in one theme still reports the theme that finished', (
   const out = classify(pages);
   assert.equal(out.failing.length, 1);
   const md = renderSummary({ baseUrl: 'https://phaseo.app', finishedAt: 'now', axeVersion: '4.14.0', tags: ['wcag2aa'], themes: ['light', 'dark'], pages }, out);
-  assert.ok(md.includes('| <code>/models</code> | 1 | error |'), md);
+  assert.ok(md.includes('| <code>&#47;models</code> | 1 | error |'), md);
 });
 
 test('the retry keeps the light scan from the first attempt when the second fails earlier', async () => {
@@ -105,19 +105,19 @@ test('summary names page, theme, rule and element, and escapes table pipes', () 
   const report = { baseUrl: 'https://phaseo.app', finishedAt: 'now', axeVersion: '4.14.0', tags: ['wcag2aa'], themes: ['light', 'dark'], pages };
   const md = renderSummary(report, classify(pages));
   assert.match(md, /1 serious or critical problem found/);
-  assert.ok(
-    md.includes('| <code>/a&#124;b</code> | light | [color-contrast](https://x) | serious | <code>#n</code> <code>&lt;p&gt;a&#124;b&lt;/p&gt;</code> |'),
-    md,
-  );
+  const codesIn = (text) => [...text.matchAll(/<code>(.*?)<\/code>/g)].map((m) => m[1]);
+  const decode = (t) => t.replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
+  assert.match(md, /\| <code>[^|]*<\/code> \| light \| \[color-contrast\]\(https:\/\/x\) \| serious \| <code>[^|]*<\/code> <code>[^|]*<\/code> \|/);
+  assert.deepEqual(codesIn(md).slice(0, 3).map(decode), ['/a|b', '#n', '<p>a|b</p>']);
   // Selectors keep their CSS escapes exactly: GitHub decodes the entities inside <code> and shows the
-  // original text, and no raw pipe or backslash reaches the table parser.
-  const escaped = [page('/', [{ id: 'color-contrast', impact: 'serious', help: 'h', helpUrl: 'https://x', nodes: [node('.md\\:hidden', '<p>a\\|b</p>')] }])];
+  // original text. No raw punctuation is left, so nothing inside can be read as Markdown (emphasis,
+  // links), HTML, or a table delimiter.
+  const tricky = ['.md\\:hidden', '<p>a\\|b</p>', 'div[data-x="*a*"] > a', '<em>_b_ `c` [d](e)</em>'];
+  const escaped = [page('/', [{ id: 'color-contrast', impact: 'serious', help: 'h', helpUrl: 'https://x', nodes: [node(tricky[0], tricky[1]), node(tricky[2], tricky[3])] }])];
   const escapedMd = renderSummary({ ...report, pages: escaped }, classify(escaped));
-  const codes = [...escapedMd.matchAll(/<code>(.*?)<\/code>/g)].map((m) => m[1]);
-  const decode = (t) => t.replace(/&#124;/g, '|').replace(/&#92;/g, '\\').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-  assert.ok(codes.map(decode).includes('.md\\:hidden'), escapedMd);
-  assert.ok(codes.map(decode).includes('<p>a\\|b</p>'), escapedMd);
-  assert.ok(codes.every((t) => !t.includes('|') && !t.includes('\\')), escapedMd);
+  const codes = codesIn(escapedMd);
+  for (const t of tricky) assert.ok(codes.map(decode).includes(t), t);
+  assert.ok(codes.every((t) => !/[!-/:-@[-`{-~]/.test(t.replace(/&#\d+;/g, ''))), escapedMd);
   // Plain text cells still escape a backslash before a pipe, so the pipe can't end the cell.
   const errorMd = renderSummary({ ...report, pages: [{ path: '/x', themes: {}, error: 'bad a\\|b' }] }, classify([]));
   assert.ok(errorMd.includes('| bad a\\\\\\|b |'), errorMd);
