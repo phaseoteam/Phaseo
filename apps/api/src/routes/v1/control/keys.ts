@@ -1194,6 +1194,11 @@ async function handleInvalidateKey(req: Request) {
 		// Key-level: drop this isolate's copy only. Private-model edits bump the workspace version through
 		// the trigger on workspace_private_models, and a bump here would clear every cached context.
 		await invalidatePrivateRoutes(data.workspace_id, { bumpVersion: false });
+		// Asked for by a dashboard rotation, so the replacement's copied rate guardrails apply before
+		// its secret is shown rather than when the publication outbox next drains.
+		if (url.searchParams.get("publish") === "rate-limits" && !await publishRateLimitPlan(data.workspace_id)) {
+			return json({ ok: false, error: "rate_limit_plan_publish_failed" }, 503, { "Cache-Control": "no-store" });
+		}
 		if (auth.ok) await auditApiKey(auth.value, "api_key.cache_invalidated", { id: data.id, name: null, prefix: null });
 
 		return json(

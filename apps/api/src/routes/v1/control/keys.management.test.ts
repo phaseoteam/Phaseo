@@ -1299,6 +1299,27 @@ describe("management key routes", () => {
 		expect(state.setKeyVersion).toHaveBeenCalledWith("kid", "kid_legacy", expect.any(Number));
         // Key-level: drops this isolate's copy without clearing the whole workspace.
         expect(state.invalidated).toHaveBeenCalledWith("ws_legacy", { bumpVersion: false });
+		expect(state.publishRateLimitPlan).not.toHaveBeenCalled();
+	});
+
+	it("publishes the rate limit plan when a dashboard rotation asks for it", async () => {
+		state.bindings = { PHASEO_CONTROL_SECRET: "secret", PHASEO_CONTROL_KEY: "control-key", KEY_PEPPER_ACTIVE: "pepper" };
+		state.guardManagementAuthResult = { ok: false, response: json({ error: "unauthorized" }, 401) };
+		const { keysRoutes } = await import("./keys");
+		const invalidate = () => keysRoutes.request("https://example.com/key_new/invalidate?publish=rate-limits", {
+			method: "POST",
+			headers: { authorization: "Bearer control-key", "x-control-secret": "secret" },
+		});
+
+		state.keyRows.push({ id: "key_new", kid: "kid_new", workspace_id: "ws_1", status: "active" });
+		expect((await invalidate()).status).toBe(200);
+		expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
+
+		state.keyRows.push({ id: "key_new", kid: "kid_new", workspace_id: "ws_1", status: "active" });
+		state.publishRateLimitPlan.mockResolvedValueOnce(false);
+		const failed = await invalidate();
+		expect(failed.status).toBe(503);
+		expect(await failed.json()).toMatchObject({ error: "rate_limit_plan_publish_failed" });
 	});
 
 	it("allows scoped management auth to invalidate without a shared control secret", async () => {

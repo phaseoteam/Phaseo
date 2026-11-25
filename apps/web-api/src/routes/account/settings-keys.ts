@@ -96,11 +96,12 @@ async function enforceKeyLimit(context: NonNullable<Awaited<ReturnType<typeof re
 	if ((countResult.count ?? 0) >= limit) throw new Error("key_limit_reached");
 }
 
-export async function invalidateGatewayKey(env: Env, keyId: string) {
+export async function invalidateGatewayKey(env: Env, keyId: string, options: { publishRateLimits?: boolean } = {}) {
 	const key = env.PHASEO_MANAGEMENT_KEY ?? env.PHASEO_CONTROL_KEY;
 	try {
 		if (!key || !env.PHASEO_CONTROL_SECRET) throw new Error("missing_control_configuration");
-		const response = await fetch(`${(env.GATEWAY_API_ORIGIN ?? "http://localhost:8787").replace(/\/$/, "")}/v1/keys/${encodeURIComponent(keyId)}/invalidate`, { method: "POST", signal: AbortSignal.timeout(10_000), headers: { authorization: `Bearer ${key}`, "x-control-secret": env.PHASEO_CONTROL_SECRET } });
+		const query = options.publishRateLimits ? "?publish=rate-limits" : "";
+		const response = await fetch(`${(env.GATEWAY_API_ORIGIN ?? "http://localhost:8787").replace(/\/$/, "")}/v1/keys/${encodeURIComponent(keyId)}/invalidate${query}`, { method: "POST", signal: AbortSignal.timeout(10_000), headers: { authorization: `Bearer ${key}`, "x-control-secret": env.PHASEO_CONTROL_SECRET } });
 		if (!response.ok) throw new Error(`control_status_${response.status}`);
 		return true;
 	} catch {
@@ -112,13 +113,14 @@ export async function invalidateGatewayKey(env: Env, keyId: string) {
 export type KeyRotationCarried = { guardrails: number; destinations: number; dynamicRoutes: number; spendRules: number; department: boolean };
 
 /** Reads public.rotate_api_key's result: the replacement's id and what was copied to it. */
-export function parseKeyRotation(value: unknown): { id: string; carried: KeyRotationCarried } | null {
+export function parseKeyRotation(value: unknown): { id: string; rateGuardrails: number; carried: KeyRotationCarried } | null {
 	const row = (Array.isArray(value) ? value[0] : value) as Record<string, any> | null | undefined;
 	if (typeof row?.replacement_key_id !== "string" || !row.replacement_key_id) return null;
 	const carried = (row.carried ?? {}) as Record<string, unknown>;
 	const count = (field: string) => Math.max(0, Number(carried[field]) || 0);
 	return {
 		id: row.replacement_key_id,
+		rateGuardrails: count("rate_guardrails"),
 		carried: { guardrails: count("guardrails"), destinations: count("destinations"), dynamicRoutes: count("dynamic_routes"), spendRules: count("spend_rules"), department: carried.department === true },
 	};
 }
@@ -306,8 +308,9 @@ accountSettingsKeysRouter.post("/keys/:keyId/rotate", async (c) => {
 	const key = generateKey("sk"); const newName = typeof body.newName === "string" && body.newName.trim() ? body.newName.trim() : `${loaded.key.name} (rotated)`;
 	// One transaction creates the replacement and copies everything that points at the old key
 	// (settings, guardrails, destinations, dynamic route, key spend rules), then sets the old key's
-	// expiry. The old key keeps its own links until it expires. Copied guardrails and the department
-	// link queue a gateway republish through the tables' publication triggers.
+	// expiry. The old key keeps its own links until it expires. The function also queues a gateway
+	// publication; rate guardrails and the department link are published here as well, before the
+	// secret is returned, so the replacement can't be used ahead of its rate limits.
 	const rotated = await loaded.context.client.rpc("rotate_api_key", {
 		p_workspace_id: loaded.context.workspaceId, p_key_id: loaded.key.id, p_name: newName,
 		p_kid: key.kid, p_hash: await hmac(c.env, key.secret), p_prefix: key.prefix, p_created_by: loaded.user.id,
@@ -322,6 +325,9 @@ accountSettingsKeysRouter.post("/keys/:keyId/rotate", async (c) => {
 	}
 	const rotation = parseKeyRotation(rotated.data);
 	if (!rotation) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	// If this fails (it logs), the queued publication still applies the limits within about a minute;
+	// failing here would lose the secret of a key that already exists.
+	if (rotation.rateGuardrails > 0 || rotation.carried.department) await invalidateGatewayKey(c.env, rotation.id, { publishRateLimits: true });
 	if (expires !== undefined) c.executionCtx.waitUntil(invalidateGatewayKey(c.env, loaded.key.id));
 	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action: "api_key.rotated", targetType: "api_key", targetId: loaded.key.id, targetName: loaded.key.name, metadata: { replacementKeyId: rotation.id, replacementKeyName: newName, previousKeyExpiresAt: expires ?? null, carried: rotation.carried }, requestId: requestId(c) });
 	return c.json({ id: rotation.id, plaintext: key.plaintext, prefix: key.prefix, previousKeyExpiresAt: expires ?? null, carried: rotation.carried }, 200, PRIVATE_NO_STORE_HEADERS);

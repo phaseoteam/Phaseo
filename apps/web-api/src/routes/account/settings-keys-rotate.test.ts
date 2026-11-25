@@ -66,16 +66,35 @@ describe("rotating a key from settings", () => {
 		expect(String(body.plaintext)).not.toContain(String(args.p_hash));
 		expect(mocks.insert).not.toHaveBeenCalled();
 		expect(mocks.update).not.toHaveBeenCalled();
+		// The replacement's rate guardrails were published before the secret was returned.
+		expect(mocks.fetch).toHaveBeenCalledWith(expect.stringMatching(/\/v1\/keys\/key-2\/invalidate\?publish=rate-limits$/), expect.anything());
 		// The old key's new expiry reaches the gateway.
 		await Promise.all(waited);
-		expect(mocks.fetch).toHaveBeenCalledWith(expect.stringContaining("/v1/keys/key-1/invalidate"), expect.anything());
+		expect(mocks.fetch).toHaveBeenCalledWith(expect.stringMatching(/\/v1\/keys\/key-1\/invalidate$/), expect.anything());
 		expect(mocks.audit).toHaveBeenCalledWith(mocks.client, expect.objectContaining({
 			action: "api_key.rotated",
 			metadata: expect.objectContaining({ replacementKeyId: "key-2", carried: expect.objectContaining({ guardrails: 3 }) }),
 		}));
 	});
 
+	it("still returns the new secret when publishing the rate limits fails", async () => {
+		mocks.fetch.mockResolvedValueOnce(new Response("{}", { status: 503 }));
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		const response = await rotate({});
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({ id: "key-2" });
+		expect(mocks.fetch).toHaveBeenCalledWith(expect.stringContaining("/v1/keys/key-2/invalidate?publish=rate-limits"), expect.anything());
+	});
+
+	it("skips the publish call when no rate guardrail or department was copied", async () => {
+		mocks.rpcResult.value = { data: { replacement_key_id: "key-2", carried: { ...carried, rate_guardrails: 0, department: false } }, error: null };
+		expect((await rotate({})).status).toBe(200);
+		await Promise.all(waited);
+		expect(mocks.fetch).not.toHaveBeenCalled();
+	});
+
 	it("leaves the old key's expiry alone when none is given", async () => {
+		mocks.rpcResult.value = { data: { replacement_key_id: "key-2", carried: { ...carried, rate_guardrails: 0, department: false } }, error: null };
 		expect((await rotate({})).status).toBe(200);
 		expect(mocks.rpc.mock.calls[0][1]).toMatchObject({ p_name: "Production (rotated)", p_expire_previous: false, p_previous_expires_at: null });
 		await Promise.all(waited);
@@ -103,7 +122,7 @@ describe("rotating a key from settings", () => {
 		expect(parseKeyRotation(null)).toBeNull();
 		expect(parseKeyRotation({ carried })).toBeNull();
 		expect(parseKeyRotation([{ replacement_key_id: "key-2" }])).toEqual({
-			id: "key-2", carried: { guardrails: 0, destinations: 0, dynamicRoutes: 0, spendRules: 0, department: false },
+			id: "key-2", rateGuardrails: 0, carried: { guardrails: 0, destinations: 0, dynamicRoutes: 0, spendRules: 0, department: false },
 		});
 	});
 });
