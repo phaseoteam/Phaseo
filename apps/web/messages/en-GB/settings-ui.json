@@ -285,7 +285,7 @@
 		"rotateCarriedDynamicRoute": "Dynamic route",
 		"rotateCarriedSpendRules": "{count, plural, one {# spend rule} other {# spend rules}}",
 		"rotateCarriedDepartment": "Department",
-		"rotateSpendRuleLimit": "This key's spend rules can't be copied, because the workspace would pass its limit of 50 spend rules. Delete a spend rule, then rotate again.",
+		"rotateSpendRuleLimit": "This key's spend rules can't be copied, because the workspace would pass its limit of 50 spend rules. Delete enough spend rules to make room for all of this key's rules, then rotate again.",
 		"storeThisKeyNow": "Store this key now. It will not be shown again.",
 		"rotatedKeyDefaultName": "Phaseo rotated API key",
 		"dailyRequests": "Daily requests",

@@ -285,7 +285,7 @@
 		"rotateCarriedDynamicRoute": "動的ルート",
 		"rotateCarriedSpendRules": "{count, plural, other {# 件の支出ルール}}",
 		"rotateCarriedDepartment": "部門",
-		"rotateSpendRuleLimit": "ワークスペースの支出ルールの上限 (50 件) を超えるため、このキーの支出ルールをコピーできません。支出ルールを 1 つ削除してから、もう一度ローテーションしてください。",
+		"rotateSpendRuleLimit": "ワークスペースの支出ルールの上限 (50 件) を超えるため、このキーの支出ルールをコピーできません。このキーのルールがすべて収まるだけ支出ルールを削除してから、もう一度ローテーションしてください。",
 		"storeThisKeyNow": "このキーを今すぐ保存してください。再表示はできません。",
 		"rotatedKeyDefaultName": "Phaseo のローテーション済み API キー",
 		"dailyRequests": "1日のリクエスト数",

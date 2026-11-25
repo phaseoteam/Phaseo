@@ -285,7 +285,7 @@
 		"rotateCarriedDynamicRoute": "Ruta dinámica",
 		"rotateCarriedSpendRules": "{count, plural, one {# regla de gasto} other {# reglas de gasto}}",
 		"rotateCarriedDepartment": "Departamento",
-		"rotateSpendRuleLimit": "No se pueden copiar las reglas de gasto de esta clave porque el espacio de trabajo superaría su límite de 50 reglas de gasto. Elimina una regla de gasto y vuelve a rotarla.",
+		"rotateSpendRuleLimit": "No se pueden copiar las reglas de gasto de esta clave porque el espacio de trabajo superaría su límite de 50 reglas de gasto. Elimina suficientes reglas de gasto para que quepan todas las reglas de esta clave y vuelve a rotarla.",
 		"storeThisKeyNow": "Guarda esta clave ahora. No volverá a mostrarse.",
 		"rotatedKeyDefaultName": "Clave de API renovada de Phaseo",
 		"dailyRequests": "Solicitudes diarias",

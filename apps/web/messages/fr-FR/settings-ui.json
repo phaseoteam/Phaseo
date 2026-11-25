@@ -285,7 +285,7 @@
 		"rotateCarriedDynamicRoute": "Route dynamique",
 		"rotateCarriedSpendRules": "{count, plural, one {# règle de dépenses} other {# règles de dépenses}}",
 		"rotateCarriedDepartment": "Service",
-		"rotateSpendRuleLimit": "Les règles de dépenses de cette clé ne peuvent pas être copiées, car l’espace de travail dépasserait sa limite de 50 règles de dépenses. Supprimez une règle de dépenses, puis relancez la rotation.",
+		"rotateSpendRuleLimit": "Les règles de dépenses de cette clé ne peuvent pas être copiées, car l’espace de travail dépasserait sa limite de 50 règles de dépenses. Supprimez assez de règles de dépenses pour faire de la place à toutes les règles de cette clé, puis relancez la rotation.",
 		"storeThisKeyNow": "Enregistrez cette clé maintenant. Elle ne sera plus affichée.",
 		"rotatedKeyDefaultName": "Clé API renouvelée Phaseo",
 		"dailyRequests": "Requêtes quotidiennes",

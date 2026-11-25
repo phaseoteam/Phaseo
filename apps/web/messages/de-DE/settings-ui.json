@@ -285,7 +285,7 @@
 		"rotateCarriedDynamicRoute": "Dynamische Route",
 		"rotateCarriedSpendRules": "{count, plural, one {# Ausgaberegel} other {# Ausgaberegeln}}",
 		"rotateCarriedDepartment": "Abteilung",
-		"rotateSpendRuleLimit": "Die Ausgaberegeln dieses Schlüssels können nicht kopiert werden, weil der Workspace sonst sein Limit von 50 Ausgaberegeln überschreiten würde. Lösche eine Ausgaberegel und rotiere dann erneut.",
+		"rotateSpendRuleLimit": "Die Ausgaberegeln dieses Schlüssels können nicht kopiert werden, weil der Workspace sonst sein Limit von 50 Ausgaberegeln überschreiten würde. Lösche so viele Ausgaberegeln, dass alle Regeln dieses Schlüssels Platz haben, und rotiere dann erneut.",
 		"storeThisKeyNow": "Speichere diesen Schlüssel jetzt. Er wird nicht erneut angezeigt.",
 		"rotatedKeyDefaultName": "Rotierter Phaseo API-Schlüssel",
 		"dailyRequests": "Tägliche Anfragen",

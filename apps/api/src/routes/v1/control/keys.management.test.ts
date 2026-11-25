@@ -1282,7 +1282,8 @@ describe("management key routes", () => {
 
 	it("undoes the rotation when the replacement can't be read back, so no secret is lost", async () => {
 		state.workspaceRows.push({ owner_user_id: "user_1" });
-		state.keyRows.push({ id: "key_old", workspace_id: "ws_1", kid: "kid_old", name: "Primary Key", prefix: "old_prefix", status: "active", scopes: "[]", soft_blocked: false, expires_at: "2030-01-01T00:00:00.000Z" });
+		state.keyRows.push({ id: "key_old", workspace_id: "ws_1", kid: "kid_old", name: "Primary Key", prefix: "old_prefix", status: "active", scopes: "[]", soft_blocked: false, expires_at: "2029-01-01T00:00:00.000Z" });
+		state.rotateResult = { data: { ...rotation(), previous_expires_at: "2030-01-01T00:00:00.000Z" }, error: null };
 		vi.spyOn(console, "error").mockImplementation(() => {});
 		const { keysRoutes } = await import("./keys");
 		const response = await keysRoutes.request("https://example.com/key_old/rotate", {
@@ -1297,7 +1298,9 @@ describe("management key routes", () => {
 
 	it("restores the old key's expiry and removes the replacement when the cache can't be cleared", async () => {
 		pushRotationRows();
-		state.keyRows[0].expires_at = "2030-01-01T00:00:00.000Z";
+		state.keyRows[0].expires_at = "2029-01-01T00:00:00.000Z";
+		// The function read the expiry under its row lock; that value, not the route's earlier read, is restored.
+		state.rotateResult = { data: { ...rotation(), previous_expires_at: "2030-01-01T00:00:00.000Z" }, error: null };
 		vi.spyOn(console, "error").mockImplementation(() => {});
 		state.setKeyVersion.mockRejectedValueOnce(new Error("kv down"));
 		const { keysRoutes } = await import("./keys");
@@ -1354,6 +1357,18 @@ describe("management key routes", () => {
 		});
 		expect(response.status).toBe(200);
 		expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
+	});
+
+	it("ignores the publish option when the control secret is wrong", async () => {
+		state.bindings = { PHASEO_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" };
+		state.keyRows.push({ id: "key_new", kid: "kid_new", workspace_id: "ws_1", status: "active" });
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_new/invalidate?publish=rate-limits", {
+			method: "POST",
+			headers: { authorization: "Bearer management-key", "x-control-secret": "not-the-secret" },
+		});
+		expect(response.status).toBe(200);
+		expect(state.publishRateLimitPlan).not.toHaveBeenCalled();
 	});
 
 	it("ignores the publish option from public management callers", async () => {

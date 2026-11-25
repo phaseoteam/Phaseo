@@ -1019,15 +1019,17 @@ async function handleDeleteKey(req: Request) {
 
 type RotationCarried = { guardrails: number; rate_guardrails: number; destinations: number; dynamic_routes: number; spend_rules: number; department: boolean };
 
-function parseRotationResult(value: unknown): { replacementKeyId: string; carried: RotationCarried } | null {
+function parseRotationResult(value: unknown): { replacementKeyId: string; previousExpiresAt: string | null; carried: RotationCarried } | null {
 	const row: unknown = Array.isArray(value) ? value[0] : value;
 	if (!row || typeof row !== "object") return null;
-	const { replacement_key_id: replacementKeyId, carried: rawCarried } = row as { replacement_key_id?: unknown; carried?: unknown };
+	const { replacement_key_id: replacementKeyId, previous_expires_at: previousExpiresAt, carried: rawCarried } = row as { replacement_key_id?: unknown; previous_expires_at?: unknown; carried?: unknown };
 	if (typeof replacementKeyId !== "string" || !replacementKeyId) return null;
 	const carried: Record<string, unknown> = rawCarried && typeof rawCarried === "object" ? rawCarried as Record<string, unknown> : {};
 	const count = (field: string) => Math.max(0, Number(carried[field]) || 0);
 	return {
 		replacementKeyId,
+		// The old key's expiry as the function read it under its row lock, for undoing the rotation.
+		previousExpiresAt: typeof previousExpiresAt === "string" ? previousExpiresAt : null,
 		carried: {
 			guardrails: count("guardrails"), rate_guardrails: count("rate_guardrails"), destinations: count("destinations"),
 			dynamic_routes: count("dynamic_routes"), spend_rules: count("spend_rules"), department: carried.department === true,
@@ -1120,7 +1122,7 @@ async function handleRotateKey(req: Request) {
 			const [deleteReplacement, restorePrevious] = await Promise.all([
 				supabase.from("keys").delete().eq("id", result.replacementKeyId),
 				previousExpiry.value !== undefined
-					? supabase.from("keys").update({ expires_at: existing.expires_at ?? null }).eq("id", existing.id).eq("workspace_id", workspaceId)
+					? supabase.from("keys").update({ expires_at: result.previousExpiresAt }).eq("id", existing.id).eq("workspace_id", workspaceId)
 					: Promise.resolve({ error: null }),
 			]);
 			if (deleteReplacement.error || restorePrevious.error) throw new Error("API key rotation rollback failed");
