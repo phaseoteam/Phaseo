@@ -1006,6 +1006,9 @@ async function handleDeleteKey(req: Request) {
 
 		await supabase.from("key_guardrails").delete().eq("key_id", existing.id);
 		await supabase.from("broadcast_destination_keys").delete().eq("key_id", existing.id);
+		// The key row stays as a tombstone, so its spend rules would keep counting toward the workspace's 50.
+		await supabase.from("workspace_spend_rules").update({ deleted_at: new Date().toISOString() })
+			.eq("workspace_id", workspaceId).eq("scope_type", "key").eq("scope_id", existing.id).is("deleted_at", null);
 		await auditApiKey({ ...auth.value, workspaceId }, "api_key.deleted", existing as KeyRow);
 
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
@@ -1017,10 +1020,11 @@ async function handleDeleteKey(req: Request) {
 type RotationCarried = { guardrails: number; rate_guardrails: number; destinations: number; dynamic_routes: number; spend_rules: number; department: boolean };
 
 function parseRotationResult(value: unknown): { replacementKeyId: string; carried: RotationCarried } | null {
-	const row = (Array.isArray(value) ? value[0] : value) as Record<string, any> | null | undefined;
-	const replacementKeyId = row?.replacement_key_id;
+	const row: unknown = Array.isArray(value) ? value[0] : value;
+	if (!row || typeof row !== "object") return null;
+	const { replacement_key_id: replacementKeyId, carried: rawCarried } = row as { replacement_key_id?: unknown; carried?: unknown };
 	if (typeof replacementKeyId !== "string" || !replacementKeyId) return null;
-	const carried = (row?.carried ?? {}) as Record<string, unknown>;
+	const carried: Record<string, unknown> = rawCarried && typeof rawCarried === "object" ? rawCarried as Record<string, unknown> : {};
 	const count = (field: string) => Math.max(0, Number(carried[field]) || 0);
 	return {
 		replacementKeyId,
@@ -1202,8 +1206,9 @@ async function handleInvalidateKey(req: Request) {
 		// the trigger on workspace_private_models, and a bump here would clear every cached context.
 		await invalidatePrivateRoutes(data.workspace_id, { bumpVersion: false });
 		// Asked for by a dashboard rotation, so the replacement's copied rate guardrails apply before
-		// its secret is shown rather than when the publication outbox next drains.
-		if (url.searchParams.get("publish") === "rate-limits" && !await publishRateLimitPlan(data.workspace_id)) {
+		// its secret is shown rather than when the publication outbox next drains. Internal: only the
+		// dashboard's control-secret calls get it, so it is not part of the public API.
+		if (!auth.ok && url.searchParams.get("publish") === "rate-limits" && !await publishRateLimitPlan(data.workspace_id)) {
 			return json({ ok: false, error: "rate_limit_plan_publish_failed" }, 503, { "Cache-Control": "no-store" });
 		}
 		if (auth.ok) await auditApiKey(auth.value, "api_key.cache_invalidated", { id: data.id, name: null, prefix: null });

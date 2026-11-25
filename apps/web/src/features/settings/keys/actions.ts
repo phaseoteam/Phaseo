@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { serverAction, serverMutation } from "@/lib/serverFn/actionMiddleware";
-import { fetchAccountWebApi } from "@/lib/web-api/client";
+import { fetchAccountWebApi, WebApiError } from "@/lib/web-api/client";
 import { getServerAccountContext } from "@/lib/fetchers/internal/serverAccountContext";
 
 export type KeyLimitPayload = {
@@ -39,8 +39,13 @@ export const rotateApiKeyAction = createServerFn({ method: "POST" })
 	.validator((input: RotateApiKeyInput) => input)
 	.handler(async ({ data: input }) => {
 		if (!input?.id) throw new Error("Missing id");
-		const result = await fetchAccountWebApi<{ id?: string; plaintext: string; prefix: string; previousKeyExpiresAt: string | null; carried?: KeyRotationCarried }>(`/api/account/settings/keys/${encodeURIComponent(input.id)}/rotate`, await token(), { method: "POST", body: JSON.stringify(input) });
-		return result;
+		try {
+			return await fetchAccountWebApi<{ id?: string; plaintext: string; prefix: string; previousKeyExpiresAt: string | null; carried?: KeyRotationCarried }>(`/api/account/settings/keys/${encodeURIComponent(input.id)}/rotate`, await token(), { method: "POST", body: JSON.stringify(input) });
+		} catch (error) {
+			// Server action errors are masked, so the one refusal the dialog explains is returned.
+			if (error instanceof WebApiError && error.code === "spend_rule_limit_reached") return { error: "spend_rule_limit_reached" as const };
+			throw error;
+		}
 	});
 
 export const deleteApiKeyAction = createServerFn({ method: "POST" })

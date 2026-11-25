@@ -130,16 +130,17 @@ export default function RotateKeyItem({
 				newName: newName.trim(),
 				previousKeyExpiresAt: expiresAtIso,
 			} });
+			if ("error" in result) {
+				toast.error(t("keys.rotateSpendRuleLimit"), { id: toastId });
+				return;
+			}
 			setNewPlaintext(result?.plaintext ?? null);
 			setCarried(result?.carried ?? null);
 			void invalidateSettings();
 			setOldExpiryApplied(result?.previousKeyExpiresAt ?? expiresAtIso);
 			toast.success(t("keys.rotated"), { id: toastId });
 		} catch (error) {
-			const message = String((error as { message?: unknown })?.message ?? "").includes("spend_rule_limit_reached")
-				? t("keys.rotateSpendRuleLimit")
-				: localizedSettingsError(error, t, "Action failed", t("keys.failedRotate"));
-			toast.error(message, { id: toastId });
+			toast.error(localizedSettingsError(error, t, "Action failed", t("keys.failedRotate")), { id: toastId });
 		} finally {
 			setLoading(false);
 		}

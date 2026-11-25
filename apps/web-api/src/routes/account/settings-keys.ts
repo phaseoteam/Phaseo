@@ -114,12 +114,14 @@ export type KeyRotationCarried = { guardrails: number; destinations: number; dyn
 
 /** Reads public.rotate_api_key's result: the replacement's id and what was copied to it. */
 export function parseKeyRotation(value: unknown): { id: string; rateGuardrails: number; carried: KeyRotationCarried } | null {
-	const row = (Array.isArray(value) ? value[0] : value) as Record<string, any> | null | undefined;
-	if (typeof row?.replacement_key_id !== "string" || !row.replacement_key_id) return null;
-	const carried = (row.carried ?? {}) as Record<string, unknown>;
+	const row: unknown = Array.isArray(value) ? value[0] : value;
+	if (!row || typeof row !== "object") return null;
+	const { replacement_key_id: id, carried: rawCarried } = row as { replacement_key_id?: unknown; carried?: unknown };
+	if (typeof id !== "string" || !id) return null;
+	const carried: Record<string, unknown> = rawCarried && typeof rawCarried === "object" ? rawCarried as Record<string, unknown> : {};
 	const count = (field: string) => Math.max(0, Number(carried[field]) || 0);
 	return {
-		id: row.replacement_key_id,
+		id,
 		rateGuardrails: count("rate_guardrails"),
 		carried: { guardrails: count("guardrails"), destinations: count("destinations"), dynamicRoutes: count("dynamic_routes"), spendRules: count("spend_rules"), department: carried.department === true },
 	};
@@ -341,6 +343,9 @@ accountSettingsKeysRouter.delete("/keys/:keyId", async (c) => {
 	// trigger on keys still refreshes the gateway within about a minute, so the delete doesn't wait.
 	c.executionCtx.waitUntil(invalidateGatewayKey(c.env, loaded.key.id)); // logs its own failures
 	for (const table of ["key_guardrails", "broadcast_destination_keys"] as const) { const links = await loaded.context.client.from(table).delete().eq("key_id", loaded.key.id); if (links.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); }
+	// The key row stays as a tombstone, so its spend rules would keep counting toward the workspace's 50.
+	const retiredRules = await loaded.context.client.from("workspace_spend_rules").update({ deleted_at: new Date().toISOString() }).eq("workspace_id", loaded.context.workspaceId).eq("scope_type", "key").eq("scope_id", loaded.key.id).is("deleted_at", null);
+	if (retiredRules.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
 	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action: "api_key.deleted", targetType: "api_key", targetId: loaded.key.id, targetName: loaded.key.name, metadata: { prefix: loaded.key.prefix ?? null }, requestId: requestId(c) });
 	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });

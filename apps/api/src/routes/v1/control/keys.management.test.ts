@@ -37,6 +37,7 @@ const state = vi.hoisted(() => ({
 	}),
 	setKeyVersion: vi.fn(async () => undefined),
 	rotateCalls: [] as Array<Record<string, unknown>>,
+	spendRuleRetirements: [] as Array<{ payload: Record<string, unknown>; filters: Array<{ column: string; value: unknown }> }>,
 	rotateResult: { data: null, error: null } as { data: unknown; error: { message: string } | null },
 	publishRateLimitPlan: vi.fn(async (_workspaceId: string) => true),
 	deletedKeyIds: [] as unknown[],
@@ -71,8 +72,22 @@ function buildKeysSupabaseMock() {
 			return state.rotateResult;
 		},
 		from(table: string) {
-			if (table !== "keys" && table !== "workspaces" && table !== "workspace_members" && table !== "workspace_departments" && table !== "key_guardrails" && table !== "broadcast_destination_keys") {
+			if (table !== "keys" && table !== "workspaces" && table !== "workspace_members" && table !== "workspace_departments" && table !== "key_guardrails" && table !== "broadcast_destination_keys" && table !== "workspace_spend_rules") {
 				throw new Error(`Unexpected table: ${table}`);
+			}
+
+			if (table === "workspace_spend_rules") {
+				return {
+					update: (payload: Record<string, unknown>) => {
+						const filters: Array<{ column: string; value: unknown }> = [];
+						state.spendRuleRetirements.push({ payload, filters });
+						const chain: any = {
+							eq: (column: string, value: unknown) => { filters.push({ column, value }); return chain; },
+							is: async (column: string, value: unknown) => { filters.push({ column, value }); return { error: null }; },
+						};
+						return chain;
+					},
+				};
 			}
 
 			if (table === "key_guardrails" || table === "broadcast_destination_keys") {
@@ -243,6 +258,7 @@ describe("management key routes", () => {
 		state.nameFilters.length = 0;
 		state.setKeyVersion.mockClear();
 		state.rotateCalls.length = 0;
+		state.spendRuleRetirements.length = 0;
 		state.rotateResult = { data: rotation(), error: null };
 		state.publishRateLimitPlan.mockClear();
 		state.deletedKeyIds.length = 0;
@@ -1127,6 +1143,16 @@ describe("management key routes", () => {
 			{ table: "key_guardrails", column: "key_id", value: "key_1" },
 			{ table: "broadcast_destination_keys", column: "key_id", value: "key_1" },
 		]);
+		// Its spend rules stop counting toward the workspace's limit.
+		expect(state.spendRuleRetirements).toEqual([{
+			payload: { deleted_at: expect.any(String) },
+			filters: [
+				{ column: "workspace_id", value: "ws_1" },
+				{ column: "scope_type", value: "key" },
+				{ column: "scope_id", value: "key_1" },
+				{ column: "deleted_at", value: null },
+			],
+		}]);
 	});
 
 	it("rotates a key while preserving limits and expiring the previous key", async () => {

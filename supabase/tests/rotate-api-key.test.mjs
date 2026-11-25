@@ -172,6 +172,14 @@ try {
       foreign key (rule_id, workspace_id) references public.workspace_spend_rules(id, workspace_id) on delete cascade
     );
   `);
+  // The real spend rule CHECK constraints and 50-rule cap, so fixtures and copies are rules prod accepts.
+  const spendRulesSql = await readFile(new URL('workspace_spend_rules.sql', tablesDir), 'utf8');
+  const checks = [...spendRulesSql.matchAll(/^\s*CONSTRAINT "(\w+)" (CHECK .*?),?$/gm)];
+  assert(checks.length >= 20, 'spend rule CHECK constraints parsed');
+  for (const [, name, check] of checks) await db.exec(`alter table public.workspace_spend_rules add constraint ${name} ${check}`);
+  await db.exec(await read('../schemas/public/functions/enforce_workspace_spend_rule_limit.sql'));
+  await db.exec(`create trigger workspace_spend_rules_enforce_limit before insert or update of workspace_id, deleted_at on public.workspace_spend_rules
+    for each row execute function public.enforce_workspace_spend_rule_limit()`);
   await db.exec(migration);
   await db.exec(`
     insert into public.workspaces values ('${W1}'), ('${W2}');
@@ -193,9 +201,10 @@ try {
     insert into public.gateway_dynamic_routes values ('${ROUTE}');
     insert into public.gateway_dynamic_route_keys (route_id, key_id, attached_by) values ('${ROUTE}', '${K1}', '${U1}');
     insert into public.workspace_spend_rules (id, workspace_id, name, metric, scope_type, scope_id, period, base_kind, base_ref, threshold_percents, action, block_at_percent, created_by)
-      values ('${RULE}', '${W1}', 'prod key budget', 'spend', 'key', '${K1}', 'month', 'key_limit', 'monthly', '{50,90}', 'block', 120, '${U1}'),
-             ('${RULE_DELETED}', '${W1}', 'old rule', 'spend', 'key', '${K1}', 'month', null, null, '{80}', 'notify', 110, '${U1}'),
-             ('${RULE_OTHER_KEY}', '${W1}', 'plain key', 'spend', 'key', '${KPLAIN}', 'month', null, null, '{80}', 'notify', 110, '${U1}');
+      values ('${RULE}', '${W1}', 'prod key budget', 'budget_percent', 'key', '${K1}', 'month', 'key_limit', 'monthly', '{50,90}', 'block', 120, '${U1}');
+    insert into public.workspace_spend_rules (id, workspace_id, name, metric, scope_type, scope_id, period, threshold_amount_nanos, action, created_by)
+      values ('${RULE_DELETED}', '${W1}', 'old rule', 'spend', 'key', '${K1}', 'month', 1000000000, 'notify', '${U1}'),
+             ('${RULE_OTHER_KEY}', '${W1}', 'plain key', 'spend', 'key', '${KPLAIN}', 'month', 1000000000, 'notify', '${U1}');
     update public.workspace_spend_rules set deleted_at = now() where id = '${RULE_DELETED}';
     insert into public.workspace_spend_rule_destinations values ('${RULE}', '${NOTIFY}', '${W1}', now());
   `);
@@ -270,6 +279,19 @@ try {
   await assert.rejects(rotate(W1, K1, { name: '   ' }), /api_key_name_required/);
   assert.equal(await keyCount(), count, 'refused rotations create no key');
   assert.equal((await publications()).length, before.publications, 'refused rotations queue no publication');
+
+  // ---- At the workspace's 50 spend rules, copying a key's rule is refused and nothing is written.
+  await db.exec(`
+    insert into public.workspace_spend_rules (workspace_id, name, metric, scope_type, scope_id, period, threshold_amount_nanos, created_by)
+      values ('${W2}', 'other key rule', 'spend', 'key', '${KFOREIGN}', 'month', 1000000000, '${U1}');
+    insert into public.workspace_spend_rules (workspace_id, name, metric, period, threshold_amount_nanos, created_by)
+      select '${W2}', 'filler ' || n, 'spend', 'month', 1000000000, '${U1}' from generate_series(1, 49) n;
+  `);
+  const fullBefore = { keys: await keyCount(), publications: (await publications()).length };
+  await assert.rejects(rotate(W2, KFOREIGN, { expire: true, expiresAt: '2020-01-01T00:00:00Z' }), /spend_rule_limit_reached/);
+  assert.equal(await keyCount(), fullBefore.keys, 'no replacement key at the cap');
+  assert.equal((await publications()).length, fullBefore.publications, 'no publication at the cap');
+  assert.equal((await rows('select expires_at from public.keys where id = $1', [KFOREIGN]))[0].expires_at, null, 'the old key is not expired at the cap');
 
   // ---- Service role only.
   const grants = await rows(`select has_function_privilege('anon', p.oid, 'execute') anon, has_function_privilege('authenticated', p.oid, 'execute') authenticated,
