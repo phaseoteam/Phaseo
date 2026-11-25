@@ -304,6 +304,35 @@ describe("buildProviderSections", () => {
 		expect(buildProviderTablePriceSummary(sections, "input")).toMatchObject({ primary: { price: 0.05, unitLabel: "Per minute" }, secondary: null });
 	});
 
+	test("shows a per-minute session price with no input/output split as a Usage column", () => {
+		const provider = makeProviderPricing();
+		provider.provider_models = [{
+			...provider.provider_models[0],
+			id: "openai:openai/gpt-live-1.1:audio.realtime",
+			model_id: "openai/gpt-live-1.1",
+			endpoint: "audio.realtime",
+			input_modalities: "text,audio",
+			output_modalities: "text,audio",
+		}];
+		// Matches the live payload: modality audio, no direction.
+		const rule = { ...provider.pricing_rules[0], model_key: "openai:openai/gpt-live-1.1:audio.realtime", unit: "minute", unit_size: 1, match: [], modality: "audio", direction: null };
+		provider.pricing_rules = [
+			{ ...rule, id: "live-active", meter: "audio_minutes", price_per_unit: 0.05 },
+			{ ...rule, id: "live-standby", meter: "standby_audio_minutes", price_per_unit: 0.02 },
+		];
+
+		const sections = buildProviderSections(provider, "standard");
+		const columns = buildProviderTablePriceColumns([sections]);
+
+		expect(columns).toEqual([
+			expect.objectContaining({ direction: "input", modality: "audio", label: "Usage", unitLabel: "Per minute", headerUnitLabel: "$/min" }),
+		]);
+		expect(buildProviderTablePriceSummaryForColumn(sections, columns[0]!)).toMatchObject({
+			primary: { price: 0.05, unitLabel: "Per minute" },
+			secondary: null,
+		});
+	});
+
 	test("uses duration pricing as the base summary for audio models", () => {
 		const provider = makeProviderPricing();
 		provider.provider_models = [{

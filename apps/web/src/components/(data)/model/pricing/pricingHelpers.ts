@@ -167,6 +167,8 @@ export type ProviderTablePriceCandidate = {
     label: string;
     modality: Modality;
     isPrimary: boolean;
+    /** A time-billed price with no input/output split, shown in a "Usage" column. */
+    isUsage?: boolean;
     price: number;
     formattedPrice: string;
     unitLabel: string;
@@ -1569,6 +1571,7 @@ function createTablePriceCandidate(args: {
     label: string;
     modality: Modality;
     isPrimary?: boolean;
+    isUsage?: boolean;
     price: number;
     unitLabel: string;
     unit?: UnitClass;
@@ -1585,6 +1588,7 @@ function createTablePriceCandidate(args: {
         label: args.label,
         modality: args.modality,
         isPrimary: args.isPrimary ?? true,
+        ...(args.isUsage ? { isUsage: true } : {}),
         price: normalizedRate.price,
         formattedPrice:
             normalizedRate.formattedPrice ??
@@ -1895,22 +1899,31 @@ export function getProviderTablePriceCandidates(
             parsed.dir === direction ||
             (direction === "input" && parsed.dir === "other"),
         )
-        .map(({ row, index, parsed }) =>
-            createTablePriceCandidate({
+        .map(({ row, index, parsed }) => {
+            // Time-billed prices with no input/output split (such as a voice session billed per
+            // minute) are the model's headline price, so they get their own "Usage" column.
+            const isUsage =
+                direction === "input" &&
+                parsed.dir === "other" &&
+                parsed.mod !== "other" &&
+                (parsed.unit === "minute" || parsed.unit === "second");
+            return createTablePriceCandidate({
                 key: `${direction}-usage-${index}`,
                 label: parsed.mod === "other" ? "usage" : parsed.mod,
                 modality: parsed.mod,
                 isPrimary:
-                    parsed.dir === direction &&
-                    parsed.mod !== "other" &&
-                    parsed.unit !== "call" &&
-                    parsed.unit !== "usd",
+                    isUsage ||
+                    (parsed.dir === direction &&
+                        parsed.mod !== "other" &&
+                        parsed.unit !== "call" &&
+                        parsed.unit !== "usd"),
+                isUsage,
                 price: row.price,
                 unitLabel: row.unitLabel,
                 unit: row.unit,
                 unitQuantity: row.unitQuantity,
-            }),
-        );
+            });
+        });
     sortTablePriceCandidates(fallbackRules);
     candidates.push(...fallbackRules);
 
@@ -2008,12 +2021,14 @@ export function buildProviderTablePriceColumns(
     const showModality = visibleModalities.size > 1;
 
     let columns: ProviderTablePriceColumn[] = PROVIDER_TABLE_PRICE_DIRECTIONS.flatMap((direction) => {
-        const columnKeys = new Map<string, { modality: Modality; unitLabel: string }>();
+        const columnKeys = new Map<string, { modality: Modality; unitLabel: string; usageOnly: boolean }>();
         for (const candidate of candidatesByDirection.get(direction) ?? []) {
             const key = `${candidate.modality}:${candidate.unitLabel}`;
+            const isUsage = candidate.isUsage === true;
             columnKeys.set(key, {
                 modality: candidate.modality,
                 unitLabel: candidate.unitLabel,
+                usageOnly: (columnKeys.get(key)?.usageOnly ?? true) && isUsage,
             });
         }
         return Array.from(columnKeys.values())
@@ -2030,10 +2045,12 @@ export function buildProviderTablePriceColumns(
                 }
                 return left.unitLabel.localeCompare(right.unitLabel);
             })
-            .map(({ modality, unitLabel }) => ({
+            .map(({ modality, unitLabel, usageOnly }) => ({
                 key: `${direction}:${modality}:${unitLabel}`,
                 direction,
-                label: showModality
+                label: usageOnly
+                    ? (showModality ? `${modalityLabel(modality) ?? ""} Usage`.trim() : "Usage")
+                    : showModality
                     ? `${modalityLabel(modality) ?? "Usage"} ${PROVIDER_TABLE_PRICE_DIRECTION_LABELS[direction]}`
                     : PROVIDER_TABLE_PRICE_DIRECTION_LABELS[direction],
                 unitLabel,
