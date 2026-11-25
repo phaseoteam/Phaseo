@@ -18,7 +18,7 @@ import { canTargetOtherWorkspace, internalServerError, rejectThirdPartyOAuthAppC
 import { MANAGED_KEY_NAMES_FILTER, enforceWorkspaceKeyLimit, isManagedKeyName, isUsableWorkspaceKey } from "./management-helpers";
 
 const RESERVED_KEY_NAME = { error: "bad_request", message: "This key name is reserved for keys Phaseo manages" } as const;
-import { copyKeyRateLimitAssignment, publishRateLimitPlan } from "@core/rate-limit-policies";
+import { publishRateLimitPlan } from "@core/rate-limit-policies";
 import { parseKeyStorageLocations } from "@core/key-storage-locations";
 import { keyIpAllowlistSchema } from "@core/key-ip-allowlist";
 
@@ -1014,6 +1014,35 @@ async function handleDeleteKey(req: Request) {
 	}
 }
 
+type RotationCarried = { guardrails: number; rate_guardrails: number; destinations: number; dynamic_routes: number; spend_rules: number; department: boolean };
+
+function parseRotationResult(value: unknown): { replacementKeyId: string; carried: RotationCarried } | null {
+	const row = (Array.isArray(value) ? value[0] : value) as Record<string, any> | null | undefined;
+	const replacementKeyId = row?.replacement_key_id;
+	if (typeof replacementKeyId !== "string" || !replacementKeyId) return null;
+	const carried = (row?.carried ?? {}) as Record<string, unknown>;
+	const count = (field: string) => Math.max(0, Number(carried[field]) || 0);
+	return {
+		replacementKeyId,
+		carried: {
+			guardrails: count("guardrails"), rate_guardrails: count("rate_guardrails"), destinations: count("destinations"),
+			dynamic_routes: count("dynamic_routes"), spend_rules: count("spend_rules"), department: carried.department === true,
+		},
+	};
+}
+
+/** Maps rotate_api_key's own refusals to responses; anything else is a server error. */
+function rotationRefusal(error: { message?: string | null }): Response | null {
+	const message = String(error.message ?? "");
+	const headers = { "Cache-Control": "no-store" };
+	if (message.includes("api_key_not_found")) return json({ error: "not_found", message: "API key not found" }, 404, headers);
+	if (message.includes("key_not_rotatable")) return json({ error: "key_not_rotatable", message: "Workload identity keys have no secret to rotate." }, 409, headers);
+	if (message.includes("spend_rule_limit_reached")) {
+		return json({ error: "spend_rule_limit_reached", message: "This key has spend rules, and copying them to the replacement would pass the workspace's limit of 50 spend rules. Delete a spend rule, then rotate again." }, 409, headers);
+	}
+	return null;
+}
+
 async function handleRotateKey(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return (auth as GuardErr).response;
@@ -1065,37 +1094,26 @@ async function handleRotateKey(req: Request) {
 		const name = typeof body.name === "string" && body.name.trim() ? body.name.trim() : `${existing.name} (rotated)`;
 		if (isManagedKeyName(name)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
 		const creatorUserId = auth.value.userId ?? await resolveWorkspaceOwnerUserId(workspaceId);
-		const { data: replacement, error: insertError } = await supabase.from("keys").insert({
-			workspace_id: workspaceId, name, kid: generated.kid,
-			hash: await hmacSecret(generated.secret, pepper), prefix: generated.prefix,
-			status: "active", scopes: existing.scopes ?? "[]", created_by: creatorUserId,
-			soft_blocked: Boolean(existing.soft_blocked),
-			ip_allowlist: existing.ip_allowlist ?? [],
-			storage_locations: existing.storage_locations ?? [],
-			daily_limit_requests: existing.daily_limit_requests ?? 0,
-			weekly_limit_requests: existing.weekly_limit_requests ?? 0,
-			monthly_limit_requests: existing.monthly_limit_requests ?? 0,
-			daily_limit_cost_nanos: existing.daily_limit_cost_nanos ?? 0,
-			weekly_limit_cost_nanos: existing.weekly_limit_cost_nanos ?? 0,
-			monthly_limit_cost_nanos: existing.monthly_limit_cost_nanos ?? 0,
-			department_id: existing.department_id ?? null,
-		}).select(KEY_COLUMNS).maybeSingle();
-		if (insertError || !replacement) throw new Error(insertError?.message || "Failed to rotate API key");
-		// The replacement keeps the old key's rate limit policy. Without it, rotating
-		// would lift the limit, so a failed copy undoes the rotation (deleting the
-		// replacement also removes any copied assignment).
-		let rateLimitCopied = false;
-		try {
-			rateLimitCopied = await copyKeyRateLimitAssignment({
-				workspaceId: workspaceId, fromKeyId: existing.id, toKeyId: replacement.id, createdBy: auth.value.userId ?? null,
-			});
-		} catch (copyError) {
-			await supabase.from("keys").delete().eq("id", replacement.id);
-			throw copyError;
+		// One transaction creates the replacement and copies everything that points at the old key
+		// (settings, guardrails, destinations, dynamic route, key spend rules), then sets the old
+		// key's expiry. The old key keeps its own links until it expires.
+		const { data: rotation, error: rotateError } = await supabase.rpc("rotate_api_key", {
+			p_workspace_id: workspaceId, p_key_id: existing.id, p_name: name,
+			p_kid: generated.kid, p_hash: await hmacSecret(generated.secret, pepper), p_prefix: generated.prefix,
+			p_created_by: creatorUserId,
+			p_expire_previous: previousExpiry.value !== undefined, p_previous_expires_at: previousExpiry.value ?? null,
+		});
+		if (rotateError) {
+			const refused = rotationRefusal(rotateError);
+			if (refused) return refused;
+			throw new Error(rotateError.message || "Failed to rotate API key");
 		}
+		const result = parseRotationResult(rotation);
+		if (!result) throw new Error("Failed to rotate API key");
+		const { data: replacement, error: replacementError } = await supabase.from("keys").select(KEY_COLUMNS)
+			.eq("id", result.replacementKeyId).eq("workspace_id", workspaceId).maybeSingle();
+		if (replacementError || !replacement) throw new Error(replacementError?.message || "Failed to read the replacement API key");
 		if (previousExpiry.value !== undefined) {
-			const { error: expiryError } = await supabase.from("keys").update({ expires_at: previousExpiry.value }).eq("id", existing.id).eq("workspace_id", workspaceId);
-			if (expiryError) { await supabase.from("keys").delete().eq("id", replacement.id); throw new Error(expiryError.message || "Failed to expire previous API key"); }
 			try {
 				await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
 			} catch (invalidationError) {
@@ -1107,9 +1125,9 @@ async function handleRotateKey(req: Request) {
 				throw invalidationError;
 			}
 		}
-		// The replacement also keeps the old key's department link.
-		if (rateLimitCopied || existing.department_id) await publishRateLimitPlan(workspaceId);
-		await auditApiKey({ ...auth.value, workspaceId }, "api_key.rotated", existing as KeyRow, { replacement_key_id: replacement.id, replacement_key_name: name, previous_key_expires_at: previousExpiry.value ?? null });
+		// Rate guardrails and the department link both feed the workspace's rate limit plan.
+		if (result.carried.rate_guardrails > 0 || result.carried.department) await publishRateLimitPlan(workspaceId);
+		await auditApiKey({ ...auth.value, workspaceId }, "api_key.rotated", existing as KeyRow, { replacement_key_id: replacement.id, replacement_key_name: name, previous_key_expires_at: previousExpiry.value ?? null, carried: result.carried });
 		return json({ data: { ...formatApiKey(replacement as KeyRow), key: generated.plaintext }, previous_key_expires_at: previousExpiry.value ?? null }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) { return internalServerError("keys.rotate", error); }
 }

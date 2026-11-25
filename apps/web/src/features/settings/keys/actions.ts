@@ -31,12 +31,15 @@ export const updateApiKeyAction = createServerFn({ method: "POST" })
 		return result;
 	});
 
+/** What a rotation copied from the old key to its replacement. */
+export type KeyRotationCarried = { guardrails: number; destinations: number; dynamicRoutes: number; spendRules: number; department: boolean };
+
 export const rotateApiKeyAction = createServerFn({ method: "POST" })
 	.middleware([serverMutation])
 	.validator((input: RotateApiKeyInput) => input)
 	.handler(async ({ data: input }) => {
 		if (!input?.id) throw new Error("Missing id");
-		const result = await fetchAccountWebApi<{ id?: string; plaintext: string; prefix: string; previousKeyExpiresAt: string | null }>(`/api/account/settings/keys/${encodeURIComponent(input.id)}/rotate`, await token(), { method: "POST", body: JSON.stringify(input) });
+		const result = await fetchAccountWebApi<{ id?: string; plaintext: string; prefix: string; previousKeyExpiresAt: string | null; carried?: KeyRotationCarried }>(`/api/account/settings/keys/${encodeURIComponent(input.id)}/rotate`, await token(), { method: "POST", body: JSON.stringify(input) });
 		return result;
 	});
 

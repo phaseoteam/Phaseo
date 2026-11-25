@@ -9,12 +9,14 @@ const mocks = vi.hoisted(() => {
     const keyRow = { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: key, error: null }) }) }), update, insert };
     // enforceKeyLimit: workspace tier, then a count of active keys.
     const countQuery: any = { eq: () => countQuery, or: () => countQuery, neq: () => countQuery, then: (resolve: (value: unknown) => void) => resolve({ count: 0, error: null }) };
+    const rpc = vi.fn(async () => ({ data: { replacement_key_id: "key-2", carried: {} }, error: null }));
     const client = {
+        rpc,
         from: vi.fn((table: string) => table === "workspaces"
             ? { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { tier: "basic" }, error: null }) }) }) }
             : { ...keyRow, select: (columns: string, options?: unknown) => options ? countQuery : keyRow.select() }),
     };
-    return { key, client, update, insert, audit: vi.fn() };
+    return { key, client, update, insert, rpc, audit: vi.fn() };
 });
 
 vi.mock("@/auth/requireUser", () => ({ requireUser: async () => ({ id: "user-1" }) }));
@@ -83,9 +85,10 @@ describe("key storage locations", () => {
         }
     });
 
-    it("gives a rotated key the same locations", async () => {
+    it("rotates through the database function, which copies the locations", async () => {
         expect((await request("POST", "/keys/key-1/rotate", {})).status).toBe(200);
-        expect(mocks.insert).toHaveBeenCalledWith(expect.objectContaining({ storage_locations: ["railway"] }));
+        expect(mocks.rpc).toHaveBeenCalledWith("rotate_api_key", expect.objectContaining({ p_key_id: "key-1" }));
+        expect(mocks.insert).not.toHaveBeenCalled();
     });
 
     it("refuses to rotate a workload identity key", async () => {
@@ -95,6 +98,7 @@ describe("key storage locations", () => {
             expect(response.status).toBe(409);
             expect(await response.json()).toEqual({ error: "key_not_rotatable" });
             expect(mocks.insert).not.toHaveBeenCalled();
+            expect(mocks.rpc).not.toHaveBeenCalled();
         } finally {
             delete (mocks.key as Record<string, unknown>).key_kind;
         }

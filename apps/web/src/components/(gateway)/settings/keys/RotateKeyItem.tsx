@@ -27,7 +27,7 @@ import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useLocale } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { rotateApiKeyAction } from "@/features/settings/keys/actions";
+import { rotateApiKeyAction, type KeyRotationCarried } from "@/features/settings/keys/actions";
 import { SecretRevealActions } from "./SecretRevealActions";
 
 type ExpiryMode = "immediate" | "1h" | "24h" | "7d" | "custom" | "never";
@@ -72,6 +72,7 @@ export default function RotateKeyItem({
 	const [customExpiry, setCustomExpiry] = useState("");
 	const [newPlaintext, setNewPlaintext] = useState<string | null>(null);
 	const [oldExpiryApplied, setOldExpiryApplied] = useState<string | null>(null);
+	const [carried, setCarried] = useState<KeyRotationCarried | null>(null);
 
 	const canSubmit = useMemo(() => {
 		if (!newName.trim()) return false;
@@ -86,7 +87,21 @@ export default function RotateKeyItem({
 		setCustomExpiry("");
 		setNewPlaintext(null);
 		setOldExpiryApplied(null);
+		setCarried(null);
 	};
+
+	// What the replacement got from this key, listed after a rotation.
+	const carriedItems = useMemo(() => {
+		if (!carried) return [];
+		return [
+			t("keys.rotateCarriedSettings"),
+			carried.guardrails > 0 ? t("keys.rotateCarriedGuardrails", { count: carried.guardrails }) : null,
+			carried.destinations > 0 ? t("keys.rotateCarriedDestinations", { count: carried.destinations }) : null,
+			carried.dynamicRoutes > 0 ? t("keys.rotateCarriedDynamicRoute") : null,
+			carried.spendRules > 0 ? t("keys.rotateCarriedSpendRules", { count: carried.spendRules }) : null,
+			carried.department ? t("keys.rotateCarriedDepartment") : null,
+		].filter((item): item is string => Boolean(item));
+	}, [carried, t]);
 
 	const onRotate = async (e?: React.FormEvent) => {
 		e?.preventDefault();
@@ -116,11 +131,14 @@ export default function RotateKeyItem({
 				previousKeyExpiresAt: expiresAtIso,
 			} });
 			setNewPlaintext(result?.plaintext ?? null);
+			setCarried(result?.carried ?? null);
 			void invalidateSettings();
 			setOldExpiryApplied(result?.previousKeyExpiresAt ?? expiresAtIso);
 			toast.success(t("keys.rotated"), { id: toastId });
 		} catch (error) {
-			const message = localizedSettingsError(error, t, "Action failed", t("keys.failedRotate"));
+			const message = String((error as { message?: unknown })?.message ?? "").includes("spend_rule_limit_reached")
+				? t("keys.rotateSpendRuleLimit")
+				: localizedSettingsError(error, t, "Action failed", t("keys.failedRotate"));
 			toast.error(message, { id: toastId });
 		} finally {
 			setLoading(false);
@@ -199,8 +217,9 @@ export default function RotateKeyItem({
 							</div>
 						) : null}
 
-						<div className="text-xs text-muted-foreground">
-							{t("keys.updateClientsBeforeExpiry")}
+						<div className="space-y-1 text-xs text-muted-foreground">
+							<p>{t("keys.rotateCarriesOver")}</p>
+							<p>{t("keys.updateClientsBeforeExpiry")}</p>
 						</div>
 
 						<DialogFooter>
@@ -222,6 +241,14 @@ export default function RotateKeyItem({
 						<div className="text-sm text-muted-foreground">
 							{t("keys.previousKeyExpiry")}: {oldExpiryApplied ? format.dateTime(oldExpiryApplied) : t("labels.never")}
 						</div>
+						{carriedItems.length ? (
+							<div className="space-y-1 text-sm">
+								<div className="font-medium">{t("keys.rotateCarriedTitle")}</div>
+								<ul className="list-disc space-y-0.5 pl-5 text-muted-foreground">
+									{carriedItems.map((item) => <li key={item}>{item}</li>)}
+								</ul>
+							</div>
+						) : null}
 						<div className="text-sm text-muted-foreground font-semibold">
 							{t("keys.storeThisKeyNow")}
 						</div>

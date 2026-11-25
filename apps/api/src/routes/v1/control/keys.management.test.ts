@@ -36,7 +36,8 @@ const state = vi.hoisted(() => ({
 		return new Date(String(key.expires_at)).getTime() > Date.now();
 	}),
 	setKeyVersion: vi.fn(async () => undefined),
-	copyRateLimit: vi.fn(async (_args: Record<string, unknown>) => false),
+	rotateCalls: [] as Array<Record<string, unknown>>,
+	rotateResult: { data: null, error: null } as { data: unknown; error: { message: string } | null },
 	publishRateLimitPlan: vi.fn(async (_workspaceId: string) => true),
 	deletedKeyIds: [] as unknown[],
     cacheDelete: vi.fn(async (_key: string) => undefined),
@@ -54,9 +55,21 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 	});
 }
 
+function rotation(carried: Record<string, unknown> = {}) {
+	return {
+		replacement_key_id: "key_new",
+		previous_expires_at: null,
+		carried: { guardrails: 0, rate_guardrails: 0, destinations: 0, dynamic_routes: 0, spend_rules: 0, department: false, ...carried },
+	};
+}
+
 function buildKeysSupabaseMock() {
 	return {
-		rpc: async () => ({ data: state.keyUsageRows, error: null }),
+		rpc: async (name: string, args: Record<string, unknown>) => {
+			if (name !== "rotate_api_key") return { data: state.keyUsageRows, error: null };
+			state.rotateCalls.push(args);
+			return state.rotateResult;
+		},
 		from(table: string) {
 			if (table !== "keys" && table !== "workspaces" && table !== "workspace_members" && table !== "workspace_departments" && table !== "key_guardrails" && table !== "broadcast_destination_keys") {
 				throw new Error(`Unexpected table: ${table}`);
@@ -196,7 +209,6 @@ vi.mock("@/lib/audit/workspaceAudit", () => ({
 }));
 
 vi.mock("@core/rate-limit-policies", () => ({
-	copyKeyRateLimitAssignment: state.copyRateLimit,
 	publishRateLimitPlan: state.publishRateLimitPlan,
 }));
 
@@ -230,7 +242,8 @@ describe("management key routes", () => {
 		state.deleteFilters.length = 0;
 		state.nameFilters.length = 0;
 		state.setKeyVersion.mockClear();
-		state.copyRateLimit.mockReset().mockResolvedValue(false);
+		state.rotateCalls.length = 0;
+		state.rotateResult = { data: rotation(), error: null };
 		state.publishRateLimitPlan.mockClear();
 		state.deletedKeyIds.length = 0;
 		state.bindings = { PHASEO_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" };
@@ -1153,13 +1166,18 @@ describe("management key routes", () => {
 		const body = await response.json();
 
 		expect(response.status).toBe(200);
-		expect(state.insertPayloads[0]).toMatchObject({
-			workspace_id: "ws_1",
-			name: "Replacement",
-			daily_limit_requests: 10,
-			monthly_limit_cost_nanos: 5_000_000_000,
-		});
-		expect(state.updatePayloads[0]).toEqual({ expires_at: "2026-09-01T00:00:00.000Z" });
+		// One database call creates the replacement, copies its links and expires the old key.
+		expect(state.rotateCalls).toEqual([expect.objectContaining({
+			p_workspace_id: "ws_1",
+			p_key_id: "key_old",
+			p_name: "Replacement",
+			p_kid: "kid_123",
+			p_prefix: "phaseo_v1_sk_kid_123",
+			p_expire_previous: true,
+			p_previous_expires_at: "2026-09-01T00:00:00.000Z",
+		})]);
+		expect(state.insertPayloads).toEqual([]);
+		expect(state.updatePayloads).toEqual([]);
 		expect(body).toMatchObject({
 			data: { id: "key_new", key: "phaseo_v1_sk_kid_123_secret_123", limit: 5 },
 			previous_key_expires_at: "2026-09-01T00:00:00.000Z",
@@ -1184,44 +1202,71 @@ describe("management key routes", () => {
 		);
 	}
 
-	it("copies the rotated key's rate limit policy to the replacement and republishes", async () => {
+	it("republishes the rate limit plan when rate guardrails were carried over", async () => {
 		pushRotationRows();
-		state.copyRateLimit.mockResolvedValue(true);
+		state.rotateResult = { data: rotation({ guardrails: 3, rate_guardrails: 1 }), error: null };
 		const { keysRoutes } = await import("./keys");
 		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
 		expect(response.status).toBe(200);
-		expect(state.copyRateLimit).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "ws_1", fromKeyId: "key_old", toKeyId: "key_new" }));
+		expect(state.rotateCalls[0]).toMatchObject({ p_key_id: "key_old", p_name: "Primary Key (rotated)", p_expire_previous: false, p_previous_expires_at: null });
 		expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
 		expect(state.deletedKeyIds).toEqual([]);
 	});
 
 	it("republishes when the rotated key is linked to a department", async () => {
 		pushRotationRows();
-		state.keyRows[0].department_id = "dept_1";
+		state.rotateResult = { data: rotation({ department: true }), error: null };
 		const { keysRoutes } = await import("./keys");
 		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
 		expect(response.status).toBe(200);
 		expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
 	});
 
-	it("does not republish when the rotated key had no rate limit policy", async () => {
+	it("does not republish when only other guardrails were carried over", async () => {
 		pushRotationRows();
+		state.rotateResult = { data: rotation({ guardrails: 2, destinations: 1, spend_rules: 1 }), error: null };
 		const { keysRoutes } = await import("./keys");
 		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
 		expect(response.status).toBe(200);
 		expect(state.publishRateLimitPlan).not.toHaveBeenCalled();
 	});
 
-	it("undoes the rotation when the rate limit policy cannot be copied", async () => {
+	it("fails without leaving a replacement when the database rotation fails", async () => {
 		pushRotationRows();
 		vi.spyOn(console, "error").mockImplementation(() => {});
-		state.copyRateLimit.mockRejectedValue(new Error("copy failed"));
+		state.rotateResult = { data: null, error: { message: "copy failed" } };
 		const { keysRoutes } = await import("./keys");
 		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
 		expect(response.status).toBe(500);
-		expect(state.deletedKeyIds).toEqual(["key_new"]);
+		// The function runs in one transaction, so there is nothing to undo here.
+		expect(state.deletedKeyIds).toEqual([]);
 		expect(state.updatePayloads).toEqual([]);
 		expect(state.publishRateLimitPlan).not.toHaveBeenCalled();
+	});
+
+	it("explains when copying the key's spend rules would pass the workspace limit", async () => {
+		pushRotationRows();
+		state.rotateResult = { data: null, error: { message: "spend_rule_limit_reached" } };
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_old/rotate", { method: "POST" });
+		expect(response.status).toBe(409);
+		expect(await response.json()).toMatchObject({ error: "spend_rule_limit_reached" });
+	});
+
+	it("restores the old key's expiry and removes the replacement when the cache can't be cleared", async () => {
+		pushRotationRows();
+		state.keyRows[0].expires_at = "2030-01-01T00:00:00.000Z";
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		state.setKeyVersion.mockRejectedValueOnce(new Error("kv down"));
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_old/rotate", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ previous_key_expires_at: "2026-09-01T00:00:00Z" }),
+		});
+		expect(response.status).toBe(500);
+		expect(state.deletedKeyIds).toEqual(["key_new"]);
+		expect(state.updatePayloads).toEqual([{ expires_at: "2030-01-01T00:00:00.000Z" }]);
 	});
 
 	it("accepts legacy control bindings while invalidating a cached key", async () => {
