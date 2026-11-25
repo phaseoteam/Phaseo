@@ -556,7 +556,7 @@ const MobileKeyRow = memo(function MobileKeyRow({ k, selected, toggleKeySelectio
 							aria-label={meta.label}
 							className={`h-4 w-4 shrink-0 ${meta.className}`}
 						/>
-						<Link href={keyDetailHref(k)} className="font-medium truncate hover:underline">{k.name}</Link>
+						<Link href={keyDetailHref(k)} title={String(k.name ?? "")} className="min-w-0 font-medium truncate hover:underline">{k.name}</Link>
 				</div>
 				<div className="mt-1 font-mono text-[11px] text-muted-foreground truncate">
 					{formatKeyReference(k.prefix)}
@@ -653,7 +653,7 @@ const DesktopKeyRow = memo(function DesktopKeyRow({ k, selected, toggleKeySelect
 							</TooltipContent>
 						</Tooltip>
 						<div className="min-w-0">
-						<Link href={keyDetailHref(k)} className="font-medium truncate hover:underline">{k.name}</Link>
+						<Link href={keyDetailHref(k)} title={String(k.name ?? "")} className="block font-medium truncate hover:underline">{k.name}</Link>
 						<div className="font-mono text-xs text-muted-foreground truncate">
 							{formatKeyReference(k.prefix)}
 						</div>
