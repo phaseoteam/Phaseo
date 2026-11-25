@@ -22,9 +22,11 @@ vi.mock("@core/schemas", () => ({
 	schemaFor: vi.fn(() => null),
 }));
 
-vi.mock("@/runtime/env", () => ({
-	getBindings: () => ({ ENV: "test" }),
-}));
+vi.mock("@/runtime/env", () => {
+	// Hidden tier-sibling lookups find no rows.
+	const query: any = { select: () => query, eq: () => query, in: () => query, or: () => query, then: (resolve: (value: unknown) => unknown) => resolve({ data: [], error: null }) };
+	return { getBindings: () => ({ ENV: "test" }), getSupabaseAdmin: () => ({ from: () => query }) };
+});
 
 vi.mock("./guards", () => ({
 	guardAuth: (...args: any[]) => guardAuthMock(...args),
@@ -1158,5 +1160,77 @@ describe("beforeRequest pricing loss-prevention", () => {
 			keyword: "unsupported_hosted_tool",
 			params: { tool: "code_interpreter", model: "openai/gpt-4.1-mini" },
 		})]);
+	});
+
+	// Anthropic removes Fast Mode from Claude Opus 4.8 on 2026-11-30
+	// (https://platform.claude.com/docs/en/build-with-claude/fast-mode#availability).
+	describe("Claude Opus 4.8 Fast Mode removal", () => {
+		const model = "anthropic/claude-opus-4.8";
+		const rule = (pricing_plan: string, meter: string, price_per_unit: string) => ({
+			pricing_plan, meter, unit: "token", unit_size: 1_000_000, price_per_unit, currency: "USD", match: [], priority: 100,
+		});
+		const anthropicProvider = () => ({
+			...providerWithPricingRules(1),
+			providerId: "anthropic",
+			apiModelId: model,
+			providerModelSlug: "claude-opus-4-8",
+			pricingCard: {
+				provider: "anthropic", model, endpoint: "text.generate", effective_from: null, effective_to: null, currency: "USD", version: null,
+				rules: [
+					rule("standard", "input_text_tokens", "5"), rule("standard", "output_text_tokens", "25"),
+					rule("priority", "input_text_tokens", "10"), rule("priority", "output_text_tokens", "50"),
+					rule("batch", "input_text_tokens", "2.5"), rule("batch", "output_text_tokens", "12.5"),
+				],
+			},
+		});
+		const send = async (body: Record<string, unknown>, now: string) => {
+			vi.useFakeTimers({ toFake: ["Date"] });
+			vi.setSystemTime(new Date(now));
+			guardJsonMock.mockResolvedValue({ ok: true, value: body });
+			guardZodMock.mockReturnValue({ ok: true, value: body });
+			guardModelMock.mockReturnValue({ ok: true, value: { body, model, stream: false } });
+			const provider = anthropicProvider();
+			guardContextMock.mockResolvedValue({ ok: true, value: {
+				context: {
+					pricing: { anthropic: provider.pricingCard },
+					key: { ok: true, reason: null, resetAt: null },
+					keyLimit: { ok: true, reason: null, resetAt: null },
+					credit: { ok: true, reason: null, resetAt: null },
+					teamSettings: { billingMode: "wallet" },
+				},
+				providers: [provider],
+				resolvedModel: model,
+				candidateDiagnostics: { totalProviders: 1, supportsEndpointCount: 1, droppedUnsupportedEndpoint: [], droppedMissingAdapter: [], candidateCount: 1 },
+			} });
+			const req = new Request("https://gateway.local/v1/chat/completions", {
+				method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body),
+			});
+			try {
+				return await beforeRequest(req, "chat.completions", new Timer(), null);
+			} finally {
+				vi.useRealTimers();
+			}
+		};
+		const messages = [{ role: "user", content: "hi" }];
+
+		it("refuses an explicit fast request before any provider call from the cutoff", async () => {
+			const result = await send({ model, messages, service_tier: "fast" }, "2026-11-30T00:00:00Z");
+			expect(result.ok).toBe(false);
+			if (result.ok) return;
+			expect(result.response.status).toBe(400);
+			const payload = await result.response.json();
+			expect(payload.error).toMatchObject({ code: "unsupported_model_or_endpoint", metadata: { reason: "service_tier_not_supported" } });
+			expect(payload.service_tier_routing.droppedProviders).toEqual([
+				{ providerId: "anthropic", apiModelId: model, providerModelSlug: "claude-opus-4-8", reason: "service_tier_priority_retired" },
+			]);
+		});
+
+		it("still routes fast before the cutoff and standard after it", async () => {
+			const before = await send({ model, messages, service_tier: "fast" }, "2026-11-29T23:59:59Z");
+			expect(before.ok).toBe(true);
+			const standard = await send({ model, messages }, "2026-11-30T00:00:00Z");
+			expect(standard.ok).toBe(true);
+			if (standard.ok) expect(standard.ctx.providers.map((provider: any) => provider.providerModelSlug)).toEqual(["claude-opus-4-8"]);
+		});
 	});
 });

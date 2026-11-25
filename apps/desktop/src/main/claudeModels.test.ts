@@ -50,6 +50,16 @@ describe("claude run options", () => {
 		expect(claudeRunOptions("claude-opus-4-7", { effort: "xhigh" })).toMatchObject({ effort: "max" });
 	});
 
+	it("no longer offers Fast Mode on Opus 4.8 and stops a saved Fast Mode turn", () => {
+		const opus48 = claudeModelsFor(aliases, "2.1.296").find(model => model.id === "claude-opus-4-8");
+		expect(opus48?.options?.map(option => option.id)).toEqual(["effort"]);
+		expect(claudeRunOptions("claude-opus-4-8", { effort: "high" })).toEqual({ model: "claude-opus-4-8", effort: "high", settings: undefined, promptPrefix: "" });
+		expect(claudeRunOptions("claude-opus-4-8", { fastMode: false })).toMatchObject({ settings: undefined });
+		expect(() => claudeRunOptions("claude-opus-4-8", { effort: "high", fastMode: true })).toThrow("Fast Mode is no longer available for Claude Opus 4.8");
+		expect(claudeRunOptions("claude-opus-5-5", { fastMode: true })).toMatchObject({ settings: { fastMode: true } });
+		expect(claudeRunOptions("claude-opus-5", { fastMode: true })).toMatchObject({ settings: { fastMode: true } });
+	});
+
 	it("ignores settings the model does not offer", () => {
 		expect(claudeRunOptions("claude-sonnet-5-5", { effort: "ultracode", fastMode: true })).toEqual({ model: "claude-sonnet-5-5", effort: undefined, settings: undefined, promptPrefix: "" });
 		expect(claudeRunOptions("claude-haiku-4-5", { thinking: true })).toEqual({ model: "claude-haiku-4-5", effort: undefined, settings: { alwaysThinkingEnabled: true }, promptPrefix: "" });

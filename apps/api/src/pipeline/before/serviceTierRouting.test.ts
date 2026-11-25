@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PriceCard } from "../pricing/types";
 import { applyServiceTierRouting } from "./serviceTierRouting";
 
@@ -962,5 +962,60 @@ describe("applyServiceTierRouting", () => {
         expect(result.candidates).toHaveLength(1);
         expect(result.diagnostics.droppedProviders).toEqual([]);
         expect(loadPriceCardMock).not.toHaveBeenCalled();
+    });
+});
+
+// Anthropic removes Fast Mode from Claude Opus 4.8 on the Claude API on 2026-11-30
+// (https://platform.claude.com/docs/en/build-with-claude/fast-mode#availability).
+describe("Claude Opus 4.8 Fast Mode removal", () => {
+    const model = "anthropic/claude-opus-4.8";
+    const anthropicCandidate = (providerId: string, providerModelSlug = "claude-opus-4-8") => makeCandidate({
+        providerId, apiModelId: model, providerModelSlug,
+        pricingCard: makeCard({ provider: providerId, model, plans: ["standard", "priority", "batch"] }),
+    });
+    const route = (candidates: any[], service_tier?: string) => applyServiceTierRouting({
+        candidates, body: service_tier ? { service_tier } : {}, capability: "text.generate",
+    });
+
+    beforeEach(() => {
+        queryState.providerRows = [];
+        queryState.capabilityRows = [];
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it.each(["fast", "priority"])("still routes %s before the cutoff", async (tier) => {
+        vi.useFakeTimers({ toFake: ["Date"] });
+        vi.setSystemTime(new Date("2026-11-29T23:59:59Z"));
+        const candidate = anthropicCandidate("anthropic");
+        const result = await route([candidate], tier);
+        expect(result.candidates).toEqual([candidate]);
+    });
+
+    it.each(["fast", "priority"])("rejects %s on the direct Claude API routes from the cutoff instead of serving standard", async (tier) => {
+        vi.useFakeTimers({ toFake: ["Date"] });
+        vi.setSystemTime(new Date("2026-11-30T00:00:00Z"));
+        const result = await route([anthropicCandidate("anthropic"), anthropicCandidate("anthropic-us")], tier);
+        expect(result.candidates).toEqual([]);
+        expect(result.diagnostics.droppedProviders).toEqual([
+            { providerId: "anthropic", apiModelId: model, providerModelSlug: "claude-opus-4-8", reason: "service_tier_priority_retired" },
+            { providerId: "anthropic-us", apiModelId: model, providerModelSlug: "claude-opus-4-8", reason: "service_tier_priority_retired" },
+        ]);
+        expect(result.diagnostics.remappedProviders).toEqual([]);
+    });
+
+    it("keeps standard and omitted tiers, other Claude models and other providers after the cutoff", async () => {
+        vi.useFakeTimers({ toFake: ["Date"] });
+        vi.setSystemTime(new Date("2026-12-01T00:00:00Z"));
+        const opus48 = anthropicCandidate("anthropic");
+        expect((await route([opus48], "standard")).candidates).toEqual([opus48]);
+        expect((await route([opus48])).candidates).toEqual([opus48]);
+
+        const opus55 = makeCandidate({ providerId: "anthropic", apiModelId: "anthropic/claude-opus-5.5", providerModelSlug: "claude-opus-5-5",
+            pricingCard: makeCard({ provider: "anthropic", model: "anthropic/claude-opus-5.5", plans: ["standard", "priority"] }) });
+        const reseller = makeCandidate({ providerId: "openrouter", apiModelId: model, providerModelSlug: model,
+            pricingCard: makeCard({ provider: "openrouter", model, plans: ["standard", "priority"] }) });
+        expect((await route([opus55, reseller], "fast")).candidates).toEqual([opus55, reseller]);
     });
 });

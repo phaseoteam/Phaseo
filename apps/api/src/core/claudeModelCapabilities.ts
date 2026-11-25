@@ -24,6 +24,28 @@ export function claudeModelWithoutForcedToolChoice(model: string | null | undefi
 	return `${family} 5.${match[2]}`;
 }
 
+// Anthropic removes Fast Mode from Claude Opus 4.8 on the Claude API on 30 November 2026;
+// after that, `speed: "fast"` on `claude-opus-4-8` is an error
+// (https://platform.claude.com/docs/en/build-with-claude/fast-mode#availability).
+// No hour is published, so the cutoff is the start of that day in UTC.
+export const CLAUDE_OPUS_4_8_FAST_MODE_REMOVED_AT = Date.parse("2026-11-30T00:00:00Z");
+
+// Routes whose executor sends Phaseo `fast`/`priority` to the Claude API as `speed: "fast"`.
+const CLAUDE_API_FAST_MODE_PROVIDERS = new Set(["anthropic", "anthropic-us"]);
+
+/** True when a route can no longer serve Fast Mode because Anthropic removed it for that model. */
+export function isClaudeFastModeRemoved(
+	providerId: string | null | undefined,
+	providerModelSlug: string | null | undefined,
+	nowMs = Date.now(),
+): boolean {
+	return (
+		nowMs >= CLAUDE_OPUS_4_8_FAST_MODE_REMOVED_AT &&
+		CLAUDE_API_FAST_MODE_PROVIDERS.has(String(providerId ?? "").trim().toLowerCase()) &&
+		normalizeClaudeModelId(providerModelSlug) === "claude-opus-4-8"
+	);
+}
+
 export function usesClaudeAdaptiveThinkingControls(model: string | null | undefined): boolean {
 	const normalized = normalizeClaudeModelId(model);
 	if (!normalized) return false;

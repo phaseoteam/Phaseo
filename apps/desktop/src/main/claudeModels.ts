@@ -9,7 +9,7 @@ const profiles: Record<string, Profile> = {
 	"fable-5": { effort: all, defaultEffort: "medium", contextWindow: "1m", effortMap: { ultracode: "xhigh", ultrathink: null } },
 	"opus-5-5": { effort: all, defaultEffort: "medium", fastMode: true, contextWindow: "1m", effortMap: { ultracode: "xhigh", ultrathink: null } },
 	"opus-5": { effort: all, defaultEffort: "high", fastMode: true, contextWindow: "1m", effortMap: { ultracode: "xhigh", ultrathink: null } },
-	"opus-4-8": { effort: all, defaultEffort: "high", fastMode: true, effortMap: { ultracode: "xhigh", ultrathink: null } },
+	"opus-4-8": { effort: all, defaultEffort: "high", effortMap: { ultracode: "xhigh", ultrathink: null } },
 	"opus-4-7": { effort: ["low", "medium", "high", "xhigh", "max", "ultrathink"], defaultEffort: "xhigh", fastMode: true, effortMap: { xhigh: "max", ultrathink: null } },
 	"opus-4-6": { effort: ["low", "medium", "high", "max", "ultrathink"], defaultEffort: "high", fastMode: true, contextWindow: "1m", effortMap: { ultrathink: null } },
 	"opus-4-5": { effort: ["low", "medium", "high", "max"], defaultEffort: "high", fastMode: true },
@@ -96,6 +96,10 @@ export function claudeModelsFor(aliases: ClaudeAlias[], installedVersion?: strin
 
 /** How the chosen settings reach Claude Code: SDK `effort`, a `[1m]` model suffix, session `settings`, and Ultrathink as a prompt prefix. */
 export function claudeRunOptions(model: string, values: ModelOptionValues | undefined) {
+	// Anthropic removes Fast Mode from Opus 4.8 on 30 November 2026
+	// (https://platform.claude.com/docs/en/build-with-claude/fast-mode#availability). A saved choice stops
+	// the turn: dropping it would run at standard speed without saying so. Changing model clears it.
+	if (model === "claude-opus-4-8" && values?.fastMode === true) throw new Error("Fast Mode is no longer available for Claude Opus 4.8. Choose another model, or Claude Opus 5.5 to keep Fast Mode.");
 	const profile = profileFor(model);
 	// Models newer than the manifest offered the settings Claude Code reported; accept its standard ones.
 	const options = descriptors(profile ?? { effort: ["low", "medium", "high", "xhigh", "max"], fastMode: true });

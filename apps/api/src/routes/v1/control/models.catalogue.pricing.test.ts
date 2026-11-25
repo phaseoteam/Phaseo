@@ -95,6 +95,20 @@ describe("deriveOfferServiceTiers", () => {
         expect(deriveOfferServiceTiers({ providerId: "openai", skuTiers: ["batch"], capabilityParams: {} })).toEqual([]);
     });
 
+    // https://platform.claude.com/docs/en/build-with-claude/fast-mode#availability
+    it("stops listing priority for direct Claude Opus 4.8 from the Fast Mode removal date", () => {
+        const before = Date.parse("2026-11-29T23:59:59Z");
+        const after = Date.parse("2026-11-30T00:00:00Z");
+        const tiers = (providerId: string, providerModelSlug: string, nowMs: number) => deriveOfferServiceTiers({
+            providerId, providerModelSlug, skuTiers: ["standard", "priority", "batch"], capabilityParams: {}, nowMs,
+        });
+        expect(tiers("anthropic", "claude-opus-4-8", before)).toEqual(["priority", "standard"]);
+        expect(tiers("anthropic", "claude-opus-4-8", after)).toEqual(["standard"]);
+        expect(tiers("anthropic-us", "claude-opus-4-8", after)).toEqual(["standard"]);
+        expect(tiers("anthropic", "claude-opus-5-5", after)).toEqual(["priority", "standard"]);
+        expect(tiers("openrouter", "anthropic/claude-opus-4.8", after)).toEqual(["priority", "standard"]);
+    });
+
     it("hides Mistral priority unless the route declares a service_tier parameter", () => {
         for (const providerId of ["mistral", "mistral-eu"]) {
             expect(deriveOfferServiceTiers({
