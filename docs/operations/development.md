@@ -69,9 +69,9 @@ Worktrees share the main clone's object store. Never run `git fetch --depth=<n>`
 
 ## What CI covers
 
-[CI](../../.github/workflows/ci.yml) runs repository checks (shared registry copies, skills, a few catalogue and SQL tests, and type-checks for desktop, mobile and perf-upstream), OpenAPI lint, SDK generation for all nine languages, SDK package builds, lifecycle and Agent SDK tests, the CLI package and the Devtools build. The Apps jobs cover the gateway (`validate:api`, which is ESLint, `tsc` and a Wrangler dry run, plus one Vitest file, the provider simulator tests and the pricing simulator), docs validation, the web app (localisation checks, a full `pnpm --filter @phaseo/web build`, `pnpm --filter @phaseo/web typecheck` and three Vitest files), and the Web API, MCP and Slack agent Workers (lint or type-check, tests and a dry-run build). The gateway AIMock matrix is its own job. Migrations get policy checks and the declarative schema workflow, and desktop changes get the "Desktop workspace" workflow.
+[CI](../../.github/workflows/ci.yml) runs repository checks (shared registry copies, skills, a few catalogue and SQL tests, and type-checks for desktop, mobile and perf-upstream), OpenAPI lint, SDK generation for all nine languages, SDK package builds, lifecycle and Agent SDK tests, the CLI package and the Devtools build. The Apps jobs cover the gateway (`validate:api`, which is oxlint, `tsc` and a Wrangler dry run, plus one Vitest file, the provider simulator tests and the pricing simulator), docs validation, the web app (localisation checks, a full `pnpm --filter @phaseo/web build`, `pnpm --filter @phaseo/web typecheck` and three Vitest files), and the Web API, MCP and Slack agent Workers (lint or type-check, tests and a dry-run build). The gateway AIMock matrix is its own job. Migrations get policy checks and the declarative schema workflow, and desktop changes get the "Desktop workspace" workflow.
 
-CI does not run most gateway unit tests: it runs one of 816 gateway `src` test files. It does run the whole web Vitest suite and web ESLint, but no Playwright. The TypeScript and Python SDK test suites (`pnpm test:sdk-ts`, `pnpm test:sdk-py`) do not run in CI either. Run the tests for the code you touched. Do not run the repo-wide `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test:all` or `pnpm precommit`.
+CI does not run most gateway unit tests: it runs one of 816 gateway `src` test files. It does run the whole web Vitest suite and web oxlint, but no Playwright. The TypeScript and Python SDK test suites (`pnpm test:sdk-ts`, `pnpm test:sdk-py`) do not run in CI either. Run the tests for the code you touched. Do not run the repo-wide `pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test:all` or `pnpm precommit`.
 
 ## Run scoped checks
 
@@ -86,13 +86,13 @@ pnpm --filter @phaseo/gateway-api lint
 - Always pass a path under `src`. A bare `vitest run`, which `pnpm --filter @phaseo/gateway-api test` is, also collects `tests/integration/*.live.spec.ts`, which call real providers, and the slow executor matrix.
 - AIMock runs `tests/aimock` against recorded provider contracts. `--provider` and `--scenario` take comma-separated lists. Never pass `--record`; recording contacts live providers.
 - `pnpm test:provider-contracts` tests the in-process provider mock in `packages/testing/provider-mock`. Its [README](../../packages/testing/provider-mock/README.md) shows how to fault an upstream call in a test.
-- `lint` runs ESLint and `tsc`.
+- `lint` runs oxlint and `tsc`.
 
 ### Web app and Web API
 
 ```sh
 pnpm --filter @phaseo/web test --runTestsByPath <file>...
-pnpm --filter @phaseo/web exec eslint <file>...
+pnpm --filter @phaseo/web lint
 pnpm --filter @phaseo/web validate:i18n
 pnpm --filter @phaseo/web exec playwright test tests/e2e/<spec> --project=chromium
 pnpm --filter @phaseo/web-api test

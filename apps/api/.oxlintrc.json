@@ -1,0 +1,95 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "plugins": [],
+  // phaseo/no-zod-named-z: oxlint's no-restricted-imports would also flag the
+  // allowed `import * as z`, so this check is a small local rule.
+  "jsPlugins": ["./lint/phaseo-rules.mjs"],
+  "categories": {
+    "correctness": "off"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": [
+    "dist/**",
+    "build/**",
+    ".wrangler/**",
+    "node_modules/**",
+    "coverage/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "**/*.{ts,tsx,mts,cts}"
+      ],
+      "rules": {
+        "max-lines": [
+          "warn",
+          {
+            "max": 1000,
+            "skipBlankLines": true,
+            "skipComments": true
+          }
+        ],
+        // Every Worker bundles everything it imports into one script that is parsed on each cold start.
+        "phaseo/no-zod-named-z": "error",
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@supabase/supabase-js",
+                "allowTypeImports": true,
+                "message": "Use createClient from @/runtime/supabase-client. supabase-js also bundles storage, realtime and functions clients the gateway never uses."
+              },
+              {
+                "name": "stripe",
+                "allowTypeImports": true,
+                "message": "Use @/lib/stripe/rest. The Stripe SDK is ~780 KiB for a handful of calls."
+              },
+              {
+                "name": "music-metadata",
+                "message": "Use @/lib/audio/duration. music-metadata and file-type add ~440 KiB."
+              }
+            ]
+          }
+        ]
+      },
+      "plugins": [
+        "typescript"
+      ]
+    },
+    {
+      "files": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "tests/**",
+        "scripts/**",
+        "tools/**"
+      ],
+      // Not bundled into a Worker: tests, local scripts and tools.
+      "rules": {
+        "phaseo/no-zod-named-z": "off",
+        "no-restricted-imports": "off"
+      },
+      "plugins": [
+        "typescript"
+      ]
+    },
+    {
+      "files": [
+        "**/*.{js,jsx,mjs,cjs}"
+      ],
+      "rules": {
+        "max-lines": [
+          "warn",
+          {
+            "max": 1000,
+            "skipBlankLines": true,
+            "skipComments": true
+          }
+        ]
+      }
+    }
+  ]
+}

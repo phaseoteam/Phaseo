@@ -13,7 +13,7 @@
 		"deploy:eu": "pnpm exec wrangler deploy --config wrangler.eu.toml",
 		"deploy:us": "pnpm exec wrangler deploy --config wrangler.us.toml",
 		"start": "npx wrangler dev",
-		"lint": "eslint . && pnpm run typecheck",
+		"lint": "oxlint . && pnpm run typecheck",
 		"typecheck": "tsc --noEmit",
 		"simulate:pricing": "tsx scripts/pricing-simulator.tsx --all",
 		"simulate:pricing:test": "tsx scripts/test-pricing/pricing-simulator-harness.ts",
@@ -78,12 +78,10 @@
 		"@copilotkit/aimock": "1.45.1",
 		"@typescript/native": "catalog:",
 		"dotenv": "^17.4.2",
-		"eslint": "^10.13.0",
 		"music-metadata": "^11.16.1",
 		"openai": "^6.39.0",
 		"tsx": "^4.23.13",
 		"typescript": "catalog:",
-		"typescript-eslint": "^8.58.1",
 		"vitest": "^4.1.7",
 		"wrangler": "^4.158.0"
 	}

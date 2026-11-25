@@ -155,6 +155,10 @@ export function VirtualizedModelCatalog<T>({
 							) : row.type === "separator" ? (
 								<div className="my-1 h-px bg-border/50" />
 							) : (
+								// Options follow the aria-activedescendant pattern: focus stays on the
+								// search input, which handles the arrow keys and Enter, so the options
+								// themselves take no focus or key events.
+								// eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus
 								<div
 									id={getVirtualizedModelCatalogItemId(
 										getItemKey(row.item),

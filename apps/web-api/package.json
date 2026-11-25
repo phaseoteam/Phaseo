@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler dev --port 8788",
     "build": "wrangler deploy --dry-run --env=\"\"",
-    "lint": "eslint src && pnpm run typecheck",
+    "lint": "oxlint src && pnpm run typecheck",
     "pretypecheck": "pnpm --filter @phaseo/sdk build && node ../../scripts/generate-provider-catalog-parameters.mjs --check",
     "smoke:production": "node scripts/smoke-production.mjs",
     "typecheck": "tsc --noEmit",
@@ -28,9 +28,7 @@
     "@cloudflare/workers-types": "^4.20260523.1",
     "@types/node": "^26.1.2",
     "@typescript/native": "catalog:",
-    "eslint": "^10.13.0",
     "typescript": "catalog:",
-    "typescript-eslint": "8.58.1",
     "vitest": "^4.1.7",
     "wrangler": "^4.118.0"
   }

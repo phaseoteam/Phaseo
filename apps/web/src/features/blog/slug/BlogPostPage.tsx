@@ -181,7 +181,7 @@ export function BlogPostPage() {
 						<div className="mx-auto flex max-w-2xl justify-center">
 							<img
 								src={post.coverImage}
-								alt={`${post.title} cover image`}
+								alt={post.title}
 								className="h-auto max-h-[320px] max-w-full rounded-lg object-contain"
 							/>
 						</div>

@@ -46,8 +46,8 @@ The [development guide](./docs/operations/development.md) covers prerequisites, 
 
 Run the checks for the packages you changed, and make sure they pass. Do not run the whole monorepo's checks at once. CI runs only part of the test suites (see [What CI covers](./docs/operations/development.md#what-ci-covers)), so your local run is often the only one for the code you touched.
 
-- **Gateway API:** `pnpm --filter @phaseo/gateway-api exec vitest run src/<area>` and `pnpm --filter @phaseo/gateway-api lint` (ESLint and typecheck).
-- **Web app:** `pnpm --filter @phaseo/web test --runTestsByPath <files>`, `pnpm --filter @phaseo/web typecheck`, ESLint on the files you changed, and `pnpm --filter @phaseo/web validate:i18n` when you change interface copy.
+- **Gateway API:** `pnpm --filter @phaseo/gateway-api exec vitest run src/<area>` and `pnpm --filter @phaseo/gateway-api lint` (oxlint and typecheck).
+- **Web app:** `pnpm --filter @phaseo/web test --runTestsByPath <files>`, `pnpm --filter @phaseo/web typecheck`, `pnpm --filter @phaseo/web lint` (oxlint), and `pnpm --filter @phaseo/web validate:i18n` when you change interface copy.
 - **Database:** `pnpm db:schema:check` and the relevant SQL tests (see [supabase/AGENTS.md](./supabase/AGENTS.md)).
 - **API contract and SDKs:** edit `apps/docs/openapi/v1/openapi.yaml`, run `pnpm openapi:gen`, commit the regenerated SDK directories (CI fails if they differ from the spec), and run the tests for the SDKs you touched (`pnpm test:sdk-<language>`).
 - **Docs:** `pnpm docs:links` and `pnpm docs:build`.

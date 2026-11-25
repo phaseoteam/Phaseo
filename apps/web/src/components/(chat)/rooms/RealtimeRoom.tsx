@@ -1204,7 +1204,7 @@ function RealtimeVoiceSelector({
 					<button
 						key={voice.id}
 						type="button"
-						aria-selected={selected}
+						aria-pressed={selected}
 						className={cn(
 							"flex w-full items-center gap-3 rounded-md px-3 py-2 text-left outline-none transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50",
 							selected && "bg-muted",

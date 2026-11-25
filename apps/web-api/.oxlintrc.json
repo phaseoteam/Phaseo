@@ -1,0 +1,34 @@
+{
+  "$schema": "../../node_modules/oxlint/configuration_schema.json",
+  "plugins": [],
+  "categories": {
+    "correctness": "off"
+  },
+  "env": {
+    "builtin": true
+  },
+  "ignorePatterns": [
+    "dist/**",
+    "build/**",
+    ".wrangler/**",
+    "node_modules/**",
+    "coverage/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "**/*.{ts,tsx,mts,cts}"
+      ],
+      "rules": {
+        "max-lines": [
+          "warn",
+          {
+            "max": 1000,
+            "skipBlankLines": true,
+            "skipComments": true
+          }
+        ]
+      }
+    }
+  ]
+}

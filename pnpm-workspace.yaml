@@ -7,7 +7,8 @@ packages:
 # - "@typescript/native" is TypeScript 7. Its `tsc` bin is the compiler for
 #   every typecheck and build script, and the one Node scripts resolve.
 # - "typescript" is TypeScript 6 (@typescript/typescript6, bin `tsc6`) for
-#   tools that import the JS API: typescript-eslint, apps/web scripts and
+#   tools that import the JS API: typescript-eslint (only apps/mobile's Expo
+#   ESLint config now; the other apps lint with oxlint), apps/web scripts and
 #   tests, scripts/check-sdk-room-examples.mjs. TS 7.0 ships no JS API and
 #   typescript-eslint 8 peers typescript <6.1. Next.js would type-check with
 #   this package's `tsc6`, so apps/web runs `tsc` before `next build` instead.
