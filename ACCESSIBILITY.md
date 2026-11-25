@@ -26,6 +26,7 @@ We have not had an independent accessibility audit, so we do not claim conforman
 - Animations follow the operating system's reduced motion setting.
 - The web app's lint checks component code for common accessibility mistakes, such as images without alt text, invalid ARIA attributes, unlabelled form fields, or click handlers that cannot be reached from the keyboard. A mistake fails the pull request.
 - The web app has light and dark themes, and we check text contrast in both.
+- Every night, an automated check (axe-core, against WCAG 2.2 AA) scans a set of public pages on the live site at phaseo.app in both themes, including colour contrast. Serious and critical problems fail the check, so we see them the next morning. The pages and the few known exceptions, each with its reason, are listed in `scripts/a11y/live-scan.config.json`.
 
 ## Our November 2026 review
 
@@ -49,7 +50,7 @@ Automated checks find only part of what affects real users. We have not yet:
 - Reviewed menus, dialogs, and forms in their opened and error states.
 - Reviewed the desktop and mobile apps.
 - Provided captions or transcripts for audio and video that models generate in Chat and the model playground, or that people attach in Chat. The prompt, and any text reply, is shown next to the player, but it doesn't describe what you hear.
-- Added whole-page accessibility checks, such as contrast, to CI. The lint catches common mistakes in component code, but other regressions can still ship unnoticed.
+- Checked whole pages before they ship. The nightly scan only covers public pages, after changes are live, and only finds what automated checks can detect. Pages behind sign-in, such as Chat, settings and the dashboard, are not scanned automatically at all.
 
 If you hit one of these, or anything else, please report it. Reports from real use help us decide what to fix first.
 
