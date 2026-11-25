@@ -131,11 +131,10 @@ describe("ChartContainer", () => {
 			</section>,
 		);
 		expect(probeTitle()).toBe("Latency");
-		await act(async () => {
+		act(() => {
 			container.querySelector("h3")!.textContent = "Throughput";
-			await new Promise((resolve) => setTimeout(resolve, 0));
 		});
-		expect(probeTitle()).toBe("Throughput");
+		await vi.waitFor(() => expect(probeTitle()).toBe("Throughput"));
 	});
 
 	it("names a chart nested in its own ResponsiveContainer and caps series names", () => {
@@ -175,5 +174,22 @@ describe("ModelCalendarChart", () => {
 
 		act(() => buttons[1]!.click());
 		expect(document.querySelector("[role=dialog]")?.textContent).toContain("eventsInMonth");
+	});
+
+	it("returns focus to the matching count button when a dialog opened from a bar closes", async () => {
+		render(<ModelCalendarChart events={[event("released-1", "Released"), event("retired-1", "Retired")]} monthsWindow={1} />);
+		const retiredButton = [...container.querySelectorAll<HTMLButtonElement>("button")][1]!;
+		const retiredBar = container.querySelectorAll<HTMLElement>("[aria-hidden=true] .flex > div")[1]!;
+
+		act(() => retiredBar.click());
+		const dialog = await vi.waitFor(() => {
+			const element = document.querySelector<HTMLElement>("[role=dialog]");
+			expect(element).not.toBeNull();
+			return element!;
+		});
+		act(() => {
+			dialog.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+		});
+		await vi.waitFor(() => expect(document.activeElement).toBe(retiredButton));
 	});
 });

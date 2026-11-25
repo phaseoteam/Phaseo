@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import type {
@@ -180,7 +180,18 @@ export default function ModelCalendarChart({
 		}));
 	}, [events, format, now, monthsWindow, calendarT]);
 
+	// The last opened segment stays set while the dialog closes, so its content
+	// can animate out. Closing returns focus to that segment's count button,
+	// even when the dialog was opened by clicking a bar.
 	const [openSegment, setOpenSegment] = useState<{ entryKey: string; type: EventType } | null>(null);
+	const [dialogOpen, setDialogOpen] = useState(false);
+	const countButtons = useRef(new Map<string, HTMLButtonElement>());
+	const returnFocus = useRef<HTMLButtonElement | null>(null);
+	const openSegmentList = (entryKey: string, type: EventType) => {
+		returnFocus.current = countButtons.current.get(`${entryKey}:${type}`) ?? null;
+		setOpenSegment({ entryKey, type });
+		setDialogOpen(true);
+	};
 	const openEntry = openSegment ? chartData.find((entry) => entry.key === openSegment.entryKey) : undefined;
 	const openDetails = openSegment && openEntry
 		? { entry: openEntry, type: openSegment.type, modelsInfo: openEntry.modelList[openSegment.type] }
@@ -234,7 +245,7 @@ export default function ModelCalendarChart({
 													key={type}
 													className={cn("h-full cursor-pointer transition-opacity hover:opacity-80", TYPE_COLORS[type])}
 													style={{ width: `${(count / entry.total) * 100}%` }}
-													onClick={() => setOpenSegment({ entryKey: entry.key, type })}
+													onClick={() => openSegmentList(entry.key, type)}
 												/>
 											);
 										})}
@@ -252,13 +263,18 @@ export default function ModelCalendarChart({
 										return (
 											<button
 												key={type}
+												ref={(node) => {
+													const buttonKey = `${entry.key}:${type}`;
+													if (node) countButtons.current.set(buttonKey, node);
+													else countButtons.current.delete(buttonKey);
+												}}
 												type="button"
 												className="inline-flex h-6 min-w-6 items-center gap-1.5 rounded-md px-1.5 text-[11px] font-medium text-zinc-600 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-zinc-300 dark:hover:bg-zinc-800"
 												aria-label={t("typeCount", {
 													type: eventTypeLabels[type],
 													count: new Intl.NumberFormat(locale).format(count),
 												})}
-												onClick={() => setOpenSegment({ entryKey: entry.key, type })}
+												onClick={() => openSegmentList(entry.key, type)}
 											>
 												<span aria-hidden="true" className={cn("h-2 w-2 rounded-full", TYPE_COLORS[type])} />
 												{new Intl.NumberFormat(locale).format(count)}
@@ -272,13 +288,11 @@ export default function ModelCalendarChart({
 				</div>
 			</div>
 			<Dialog
-				open={openDetails !== null}
-				onOpenChange={(open) => {
-					if (!open) setOpenSegment(null);
-				}}
+				open={dialogOpen && openDetails !== null}
+				onOpenChange={setDialogOpen}
 			>
 				{openDetails ? (
-					<DialogContent className="max-w-lg rounded-md">
+					<DialogContent className="max-w-lg rounded-md" finalFocus={returnFocus}>
 						<DialogHeader>
 							<DialogTitle>
 								{t("eventsInMonth", {
