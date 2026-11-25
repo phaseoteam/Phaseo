@@ -1206,9 +1206,12 @@ async function handleInvalidateKey(req: Request) {
 		// the trigger on workspace_private_models, and a bump here would clear every cached context.
 		await invalidatePrivateRoutes(data.workspace_id, { bumpVersion: false });
 		// Asked for by a dashboard rotation, so the replacement's copied rate guardrails apply before
-		// its secret is shown rather than when the publication outbox next drains. Internal: only the
-		// dashboard's control-secret calls get it, so it is not part of the public API.
-		if (!auth.ok && url.searchParams.get("publish") === "rate-limits" && !await publishRateLimitPlan(data.workspace_id)) {
+		// its secret is shown rather than when the publication outbox next drains. Internal: only calls
+		// carrying the control secret (the dashboard's web API, whichever key it authenticates with)
+		// get it, so it is not part of the public API.
+		const providedControlSecret = req.headers.get("x-control-secret")?.trim() ?? "";
+		const internalCaller = Boolean(providedControlSecret) && getInvalidateControlSecrets(bindings).some((candidate) => timingSafeEqual(providedControlSecret, candidate));
+		if (internalCaller && url.searchParams.get("publish") === "rate-limits" && !await publishRateLimitPlan(data.workspace_id)) {
 			return json({ ok: false, error: "rate_limit_plan_publish_failed" }, 503, { "Cache-Control": "no-store" });
 		}
 		if (auth.ok) await auditApiKey(auth.value, "api_key.cache_invalidated", { id: data.id, name: null, prefix: null });

@@ -81,7 +81,8 @@ function buildKeysSupabaseMock() {
 					update: (payload: Record<string, unknown>) => {
 						const filters: Array<{ column: string; value: unknown }> = [];
 						state.spendRuleRetirements.push({ payload, filters });
-						const chain: any = {
+						type Chain = { eq: (column: string, value: unknown) => Chain; is: (column: string, value: unknown) => Promise<{ error: null }> };
+						const chain: Chain = {
 							eq: (column: string, value: unknown) => { filters.push({ column, value }); return chain; },
 							is: async (column: string, value: unknown) => { filters.push({ column, value }); return { error: null }; },
 						};
@@ -1340,6 +1341,27 @@ describe("management key routes", () => {
 		expect(state.setKeyVersion).toHaveBeenCalledWith("kid", "kid_legacy", expect.any(Number));
         // Key-level: drops this isolate's copy without clearing the whole workspace.
         expect(state.invalidated).toHaveBeenCalledWith("ws_legacy", { bumpVersion: false });
+		expect(state.publishRateLimitPlan).not.toHaveBeenCalled();
+	});
+
+	it("publishes for the dashboard when it authenticates with a management key plus the control secret", async () => {
+		state.bindings = { PHASEO_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" };
+		state.keyRows.push({ id: "key_new", kid: "kid_new", workspace_id: "ws_1", status: "active" });
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_new/invalidate?publish=rate-limits", {
+			method: "POST",
+			headers: { authorization: "Bearer management-key", "x-control-secret": "secret" },
+		});
+		expect(response.status).toBe(200);
+		expect(state.publishRateLimitPlan).toHaveBeenCalledWith("ws_1");
+	});
+
+	it("ignores the publish option from public management callers", async () => {
+		state.bindings = { PHASEO_CONTROL_SECRET: "secret", KEY_PEPPER_ACTIVE: "pepper" };
+		state.keyRows.push({ id: "key_new", kid: "kid_new", workspace_id: "ws_1", status: "active" });
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_new/invalidate?publish=rate-limits", { method: "POST", headers: { authorization: "Bearer management-key" } });
+		expect(response.status).toBe(200);
 		expect(state.publishRateLimitPlan).not.toHaveBeenCalled();
 	});
 
