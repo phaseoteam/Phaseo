@@ -24,6 +24,7 @@ We have not had an independent accessibility audit, so we do not claim conforman
 - Interactive controls in the web app are built on [Base UI](https://base-ui.com) primitives, which provide keyboard support, focus management, and ARIA semantics for menus, dialogs, popovers, and similar components.
 - Every page in the web app has a "Skip to content" link and a single main content area. The documentation has its own skip link.
 - Animations follow the operating system's reduced motion setting.
+- The web app's lint checks component code for common accessibility mistakes, such as images without alt text or invalid ARIA attributes, and fails the pull request when it finds one.
 - The web app has light and dark themes, and we check text contrast in both.
 
 ## Our November 2026 review
@@ -47,7 +48,7 @@ Automated checks find only part of what affects real users. We have not yet:
 - Tested systematically with screen readers (such as NVDA, JAWS, VoiceOver, or TalkBack) or with voice control. In particular, responses that stream into Chat may not be announced well.
 - Reviewed menus, dialogs, and forms in their opened and error states.
 - Reviewed the desktop and mobile apps.
-- Added accessibility checks to CI, so regressions can ship unnoticed.
+- Added whole-page accessibility checks, such as contrast, to CI. The lint catches common mistakes in component code, but other regressions can still ship unnoticed.
 
 If you hit one of these, or anything else, please report it. Reports from real use help us decide what to fix first.
 

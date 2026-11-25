@@ -1159,7 +1159,7 @@ function RealtimeModelSelector({
 	);
 }
 
-function RealtimeVoiceSelector({
+export function RealtimeVoiceSelector({
 	voices,
 	selectedVoiceId,
 	onSelectVoice,

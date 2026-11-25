@@ -14,6 +14,10 @@
     "release/**"
   ],
   "rules": {
+    // Both are in eslint:recommended, which the ESLint config used. oxlint
+    // still lists them as nursery rules, so the converter left them out.
+    "no-undef": "error",
+    "no-useless-assignment": "error",
     "constructor-super": "error",
     "for-direction": "error",
     "getter-return": "error",
@@ -103,6 +107,8 @@
         "**/*.cts"
       ],
       "rules": {
+        // TypeScript already checks names.
+        "no-undef": "off",
         "constructor-super": "off",
         "getter-return": "off",
         "no-class-assign": "off",
