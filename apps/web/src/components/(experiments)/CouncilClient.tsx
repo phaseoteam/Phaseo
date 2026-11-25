@@ -34,6 +34,7 @@ import { RoomSearchDialog } from "@/components/(chat)/RoomSearchDialog";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
 import {
 	getNextVirtualizedModelCatalogItemKey,
+	keepSearchTextKeys,
 	useVirtualizedModelCatalogInput,
 	VirtualizedModelCatalog,
 } from "@/components/(chat)/VirtualizedModelCatalog";
@@ -713,6 +714,7 @@ function ModelSearchSelect(props: {
 						onKeyDown={(event) => {
 							// Enter and the arrow keys confirm and move between IME candidates (Japanese, Chinese); leave them to the IME.
 							if (event.nativeEvent.isComposing || event.keyCode === 229) return;
+							if (keepSearchTextKeys(event)) return;
 							if (event.key === "Enter") {
 								if (activeOption) {
 									event.preventDefault();

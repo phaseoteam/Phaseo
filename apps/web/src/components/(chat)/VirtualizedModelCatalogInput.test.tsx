@@ -15,6 +15,7 @@ vi.mock("@/i18n/react", () => ({
 import {
 	getNextVirtualizedModelCatalogItemKey,
 	getVirtualizedModelCatalogItemId,
+	keepSearchTextKeys,
 	useVirtualizedModelCatalogInput,
 	VirtualizedModelCatalog,
 } from "./VirtualizedModelCatalog";
@@ -130,6 +131,41 @@ describe("VirtualizedModelCatalog with the input hook", () => {
 		act(() => root.render(<PickerWithCatalog models={[]} />));
 		expect(controlled()?.getAttribute("role")).toBe("status");
 		expect(controlled()?.textContent).toBe("noModelsFound");
+	});
+});
+
+describe("keepSearchTextKeys", () => {
+	function keydown(key: string, shiftKey = false) {
+		const event = new KeyboardEvent("keydown", { key, shiftKey, bubbles: true, cancelable: true });
+		act(() => {
+			input().dispatchEvent(event);
+		});
+		return event;
+	}
+
+	it("cmdk cancels Home and End on its own, which is why the pickers need this", () => {
+		act(() =>
+			root.render(
+				<Command shouldFilter={false}>
+					<Command.Input />
+				</Command>,
+			),
+		);
+		expect(keydown("Home").defaultPrevented).toBe(true);
+	});
+
+	it("leaves Home, End and their Shift variants to the search field", () => {
+		act(() =>
+			root.render(
+				<Command shouldFilter={false}>
+					<Command.Input onKeyDown={(event) => keepSearchTextKeys(event)} />
+				</Command>,
+			),
+		);
+		expect(keydown("Home").defaultPrevented).toBe(false);
+		expect(keydown("End").defaultPrevented).toBe(false);
+		expect(keydown("Home", true).defaultPrevented).toBe(false);
+		expect(keydown("End", true).defaultPrevented).toBe(false);
 	});
 });
 

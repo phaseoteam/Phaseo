@@ -74,6 +74,7 @@ import { ChatShortcutReference } from "@/components/(chat)/ChatShortcutReference
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	getNextVirtualizedModelCatalogItemKey,
+	keepSearchTextKeys,
 	useVirtualizedModelCatalogInput,
 	VirtualizedModelCatalog,
 	type VirtualizedModelCatalogSection,
@@ -1491,6 +1492,7 @@ export function ChatHeader({
 	const handleModelSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
 		// Enter and the arrow keys confirm and move between IME candidates (Japanese, Chinese); leave them to the IME.
 		if (event.nativeEvent.isComposing || event.keyCode === 229) return;
+		if (keepSearchTextKeys(event)) return;
 		if (hasModelSearchValue || selectableBrowseModelOptions.length === 0) {
 			return;
 		}

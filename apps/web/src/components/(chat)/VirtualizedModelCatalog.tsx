@@ -76,6 +76,21 @@ export function getNextVirtualizedModelCatalogItemKey(
 }
 
 /**
+ * Keeps Home and End (with or without Shift) for moving the cursor and selecting text in the
+ * search field. cmdk's Command cancels both keys to move its own selection, even when its list
+ * is empty, so the picker stops them reaching it without calling preventDefault. Returns true when
+ * it handled the key, so the caller can stop there.
+ */
+export function keepSearchTextKeys(event: {
+	key: string;
+	stopPropagation: () => void;
+}): boolean {
+	if (event.key !== "Home" && event.key !== "End") return false;
+	event.stopPropagation();
+	return true;
+}
+
+/**
  * Points a cmdk search input at the virtualised listbox.
  *
  * cmdk's input spreads our props first and then writes its own

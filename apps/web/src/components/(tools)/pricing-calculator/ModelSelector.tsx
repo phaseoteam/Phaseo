@@ -8,6 +8,7 @@ import {
 } from "@/components/ai-elements/model-selector";
 import {
 	getNextVirtualizedModelCatalogItemKey,
+	keepSearchTextKeys,
 	useVirtualizedModelCatalogInput,
 	VirtualizedModelCatalog,
 } from "@/components/(chat)/VirtualizedModelCatalog";
@@ -359,6 +360,7 @@ export function ModelSelector({
 							onKeyDown={(event) => {
 								// Enter and the arrow keys confirm and move between IME candidates (Japanese, Chinese); leave them to the IME.
 								if (event.nativeEvent.isComposing || event.keyCode === 229) return;
+								if (keepSearchTextKeys(event)) return;
 								if (event.key === "Enter") {
 									if (visibleActiveModelId && !loadingModelSet.has(visibleActiveModelId)) {
 										event.preventDefault();
