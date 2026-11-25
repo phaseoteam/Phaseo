@@ -131,10 +131,11 @@ describe("ChartContainer", () => {
 			</section>,
 		);
 		expect(probeTitle()).toBe("Latency");
-		act(() => {
+		// The heading observer's callback is a microtask, which an async act flushes.
+		await act(async () => {
 			container.querySelector("h3")!.textContent = "Throughput";
 		});
-		await vi.waitFor(() => expect(probeTitle()).toBe("Throughput"));
+		expect(probeTitle()).toBe("Throughput");
 	});
 
 	it("names a chart nested in its own ResponsiveContainer and caps series names", () => {
@@ -182,14 +183,16 @@ describe("ModelCalendarChart", () => {
 		const retiredBar = container.querySelectorAll<HTMLElement>("[aria-hidden=true] .flex > div")[1]!;
 
 		act(() => retiredBar.click());
-		const dialog = await vi.waitFor(() => {
-			const element = document.querySelector<HTMLElement>("[role=dialog]");
-			expect(element).not.toBeNull();
-			return element!;
+		const dialog = document.querySelector<HTMLElement>("[role=dialog]")!;
+		expect(dialog).not.toBeNull();
+
+		const focused = new Promise<void>((resolve) => {
+			retiredButton.addEventListener("focus", () => resolve(), { once: true });
 		});
-		act(() => {
+		await act(async () => {
 			dialog.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+			await focused;
 		});
-		await vi.waitFor(() => expect(document.activeElement).toBe(retiredButton));
+		expect(document.activeElement).toBe(retiredButton);
 	});
 });
