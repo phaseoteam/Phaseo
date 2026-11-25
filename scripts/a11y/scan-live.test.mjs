@@ -138,3 +138,12 @@ test('committed config is well formed', async () => {
   // Pages that render a dialog client-side must wait for it, or a missing dialog scans as clean.
   for (const p of config.pages.filter((p) => p.path.includes('auth='))) assert.ok(p.waitFor, p.path);
 });
+
+test('the models list waits for model links, which its loading skeleton never renders', async () => {
+  const config = JSON.parse(await readFile(DEFAULT_CONFIG, 'utf8'));
+  const models = config.pages.find((p) => p.path === '/models');
+  assert.match(models?.waitFor ?? '', /a\[href\^="\/models\/"\]/);
+  // If the skeleton ever gains a link, the wait could pass before the list has loaded.
+  const skeleton = await readFile(new URL('../../apps/web/src/components/(data)/models/Models/ModelsPageSkeleton.tsx', import.meta.url), 'utf8');
+  assert.doesNotMatch(skeleton, /<a\b|<Link\b|href=/);
+});
