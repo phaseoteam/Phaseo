@@ -1489,6 +1489,8 @@ export function ChatHeader({
 		[setModelCatalogInput],
 	);
 	const handleModelSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+		// Enter and the arrow keys confirm and move between IME candidates (Japanese, Chinese); leave them to the IME.
+		if (event.nativeEvent.isComposing || event.keyCode === 229) return;
 		if (hasModelSearchValue || selectableBrowseModelOptions.length === 0) {
 			return;
 		}

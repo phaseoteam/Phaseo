@@ -54,6 +54,19 @@ describe("ColorPicker keyboard support", () => {
 		expect(onChange).toHaveBeenLastCalledWith("#ff0000");
 	});
 
+	it("keeps small hue steps on a muted colour, and End reaches 360", () => {
+		const onChange = vi.fn();
+		act(() => root.render(<ColorPicker value="#806f6f" onChange={onChange} />));
+		const hue = slider("hue");
+		for (let i = 0; i < 5; i += 1) press(hue, "ArrowRight");
+		expect(hue.getAttribute("aria-valuenow")).toBe("5");
+
+		press(hue, "End");
+		expect(hue.getAttribute("aria-valuenow")).toBe("360");
+		press(hue, "Home");
+		expect(hue.getAttribute("aria-valuenow")).toBe("0");
+	});
+
 	it("changes saturation and brightness from the keyboard", () => {
 		const onChange = vi.fn();
 		act(() => root.render(<ColorPicker value="#ff0000" onChange={onChange} />));

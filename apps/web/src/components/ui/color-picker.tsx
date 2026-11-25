@@ -320,7 +320,15 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 	);
 	const currentHexRef = React.useRef(currentHex);
 	const rgb = hexToRgb(currentHex) ?? FALLBACK_RGB;
-	const hsv = rgbToHsv(rgb);
+	// The exact slider position from the last slider change. Hex rounds each channel, so deriving the
+	// position from hex alone would swallow small steps on muted colours and turn 360° back into 0°.
+	// It only applies while the colour is still the one it produced.
+	const [sliderHsv, setSliderHsv] = React.useState<{
+		hex: string;
+		hsv: HsvColor;
+	} | null>(null);
+	const hsv =
+		sliderHsv && sliderHsv.hex === currentHex ? sliderHsv.hsv : rgbToHsv(rgb);
 	const hsl = rgbToHsl(rgb);
 	const oklch = rgbToOklch(rgb);
 	const hexValue = rgbToHex(hsvToRgb(hsv));
@@ -356,6 +364,7 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 
 	const commitHsv = (nextHsv: HsvColor, save = false) => {
 		const nextHex = rgbToHex(hsvToRgb(nextHsv));
+		setSliderHsv({ hex: nextHex, hsv: nextHsv });
 
 		if (save) {
 			commitColor(nextHex);

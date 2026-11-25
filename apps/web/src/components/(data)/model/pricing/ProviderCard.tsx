@@ -733,7 +733,11 @@ function ProviderHourlyPerformance({
 		const pointLabel = hasPerformanceMetricValue(activeMetric, metricValue)
 			? formatPerformanceMetricValue(activeMetric, metricValue, locale, tx)
 			: tx("Catalogue.modelDetail.performance.noData" as never);
-		return `${new Date(point.start).toLocaleString(locale, { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC: ${metricTooltipLabel}: ${pointLabel}`;
+		// The same date and hour range the visible period shows, since the chart can span several days.
+		const period =
+			formatPerformancePointPeriod(point, locale) ??
+			`${new Date(point.start).toLocaleString(locale, { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC`;
+		return `${period}: ${metricTooltipLabel}: ${pointLabel}`;
 	};
 	const hoveredIndex = hoveredPoint
 		? points.findIndex((point) => point.start === hoveredPoint.start)

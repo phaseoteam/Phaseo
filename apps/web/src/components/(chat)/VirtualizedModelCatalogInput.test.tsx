@@ -2,14 +2,21 @@
 // The model pickers keep focus on a cmdk search input and reach the virtualised
 // options through aria-activedescendant. cmdk writes its own aria-activedescendant
 // and aria-controls over the input's props, so the hook sets them on the element.
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Command } from "cmdk";
+
+vi.mock("@/i18n/react", () => ({
+	useTranslations: () => (key: string) => key,
+	useLocale: () => "en-GB",
+}));
+
 import {
 	getNextVirtualizedModelCatalogItemKey,
 	getVirtualizedModelCatalogItemId,
 	useVirtualizedModelCatalogInput,
+	VirtualizedModelCatalog,
 } from "./VirtualizedModelCatalog";
 
 let root: Root;
@@ -88,6 +95,44 @@ describe("useVirtualizedModelCatalogInput", () => {
 	});
 });
 
+function PickerWithCatalog({ models }: { models: string[] }) {
+	const setInput = useVirtualizedModelCatalogInput({
+		enabled: true,
+		activeItemKey: models[0] ?? null,
+		listboxId: "catalog-listbox",
+	});
+	return (
+		<Command shouldFilter={false}>
+			<Command.Input ref={setInput} />
+			<VirtualizedModelCatalog
+				sections={[{ key: "all", heading: "All", items: models }]}
+				getItemKey={(model) => model}
+				activeItemKey={models[0] ?? null}
+				isItemDisabled={() => false}
+				onActiveItemChange={() => undefined}
+				onSelectItem={() => undefined}
+				renderItem={(model) => model}
+				listboxId="catalog-listbox"
+			/>
+		</Command>
+	);
+}
+
+describe("VirtualizedModelCatalog with the input hook", () => {
+	const controlled = () => document.getElementById(input().getAttribute("aria-controls") ?? "");
+
+	it("points aria-controls at the rendered listbox", () => {
+		act(() => root.render(<PickerWithCatalog models={["openai/gpt-5", "anthropic/claude-opus-5"]} />));
+		expect(controlled()?.getAttribute("role")).toBe("listbox");
+	});
+
+	it("keeps aria-controls pointing at an element, announced as status, when nothing matches", () => {
+		act(() => root.render(<PickerWithCatalog models={[]} />));
+		expect(controlled()?.getAttribute("role")).toBe("status");
+		expect(controlled()?.textContent).toBe("noModelsFound");
+	});
+});
+
 describe("getNextVirtualizedModelCatalogItemKey", () => {
 	const keys = ["a", "b", "c"];
 
@@ -98,9 +143,9 @@ describe("getNextVirtualizedModelCatalogItemKey", () => {
 		expect(getNextVirtualizedModelCatalogItemKey(keys, "a", "ArrowUp")).toBe("a");
 	});
 
-	it("jumps with Home and End, and starts at the top with no active option", () => {
-		expect(getNextVirtualizedModelCatalogItemKey(keys, "b", "Home")).toBe("a");
-		expect(getNextVirtualizedModelCatalogItemKey(keys, "b", "End")).toBe("c");
+	it("leaves Home and End to the search field, and starts at the top with no active option", () => {
+		expect(getNextVirtualizedModelCatalogItemKey(keys, "b", "Home")).toBeNull();
+		expect(getNextVirtualizedModelCatalogItemKey(keys, "b", "End")).toBeNull();
 		expect(getNextVirtualizedModelCatalogItemKey(keys, null, "ArrowDown")).toBe("a");
 	});
 

@@ -357,6 +357,8 @@ export function ModelSelector({
 								setActiveModelId(null);
 							}}
 							onKeyDown={(event) => {
+								// Enter and the arrow keys confirm and move between IME candidates (Japanese, Chinese); leave them to the IME.
+								if (event.nativeEvent.isComposing || event.keyCode === 229) return;
 								if (event.key === "Enter") {
 									if (visibleActiveModelId && !loadingModelSet.has(visibleActiveModelId)) {
 										event.preventDefault();

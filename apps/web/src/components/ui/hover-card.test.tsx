@@ -123,3 +123,23 @@ it("leaves a mouse click to the surrounding click handler", () => {
 	});
 	expect(onRowClick).toHaveBeenCalledTimes(1);
 });
+
+it("keeps Enter or Space on the trigger from firing the surrounding click handler", () => {
+	const onRowClick = vi.fn();
+	renderCard(
+		// Stands in for a clickable table row; the hover card trigger is the keyboard target.
+		// oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+		<div onClick={onRowClick}>
+			<HoverCard>
+				<HoverCardTrigger render={<button type="button" />}>Trigger</HoverCardTrigger>
+				<HoverCardContent>Card</HoverCardContent>
+			</HoverCard>
+		</div>,
+	);
+	const trigger = container.querySelector<HTMLElement>("[data-slot=hover-card-trigger]")!;
+	// Keyboard activation fires a click with detail 0 and no pointerdown before it.
+	act(() => {
+		trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 0 }));
+	});
+	expect(onRowClick).not.toHaveBeenCalled();
+});

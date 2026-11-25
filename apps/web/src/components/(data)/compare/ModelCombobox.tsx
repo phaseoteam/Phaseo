@@ -403,9 +403,7 @@ export default function ModelCombobox({
 				: event.key === "ArrowUp" ? Math.max(index - 1, 0)
 					: event.key === "PageDown" ? Math.min(index + 10, selectable.length - 1)
 						: event.key === "PageUp" ? Math.max(index - 10, 0)
-							: event.key === "Home" ? 0
-								: event.key === "End" ? selectable.length - 1
-									: null;
+							: null;
 		if (event.key === "Enter") {
 			if (resolvedActiveId) {
 				event.preventDefault();

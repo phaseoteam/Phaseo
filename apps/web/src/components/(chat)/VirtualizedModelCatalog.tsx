@@ -54,8 +54,9 @@ export function getVirtualizedModelCatalogItemId(itemKey: string): string {
 }
 
 /**
- * Moves the active option for ArrowUp, ArrowDown, Home and End.
- * Returns null for any other key, so the caller leaves the event alone.
+ * Moves the active option for ArrowUp and ArrowDown. Returns null for any other key, so the caller
+ * leaves the event alone: Home, End and their Shift variants move the cursor and select text in the
+ * search field, as in the WAI-ARIA editable combobox pattern.
  */
 export function getNextVirtualizedModelCatalogItemKey(
 	itemKeys: string[],
@@ -69,10 +70,6 @@ export function getNextVirtualizedModelCatalogItemKey(
 			return itemKeys[Math.min(currentIndex + 1, itemKeys.length - 1)] ?? null;
 		case "ArrowUp":
 			return itemKeys[Math.max(currentIndex - 1, 0)] ?? null;
-		case "Home":
-			return itemKeys[0] ?? null;
-		case "End":
-			return itemKeys[itemKeys.length - 1] ?? null;
 		default:
 			return null;
 	}
@@ -191,8 +188,10 @@ export function VirtualizedModelCatalog<T>({
 	}, [activeRowIndex, virtualizer]);
 
 	if (rows.length === 0) {
+		// Keeps the listbox id, so the search input's aria-controls still points at something, and
+		// announces that nothing matched.
 		return (
-			<div className="py-6 text-center text-sm">
+			<div id={listboxId} role="status" className="py-6 text-center text-sm">
 				{emptyContent ?? t("noModelsFound")}
 			</div>
 		);
