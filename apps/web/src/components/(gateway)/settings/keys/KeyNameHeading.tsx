@@ -34,9 +34,12 @@ export function KeyNameHeading({ k, canManage }: { k: KeyDetailData["key"]; canM
 		} catch (error) { toast.error(error instanceof Error ? error.message : t("keyDetail.renameFailed")); }
 		finally { setSaving(false); }
 	}
+	// The form only catches Escape bubbling up from its own field and buttons.
+	// oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
 	if (editing) return <form onSubmit={save} className="flex flex-wrap items-center gap-2" onKeyDown={(event) => {
 		if (event.key === "Escape" && !saving) { event.preventDefault(); cancel(); }
 	}}>
+		{/* oxlint-disable-next-line jsx-a11y/no-autofocus -- the field replaces the Rename button the user just pressed, so focus moves into it */}
 		<Input autoFocus aria-label={t("keys.keyName")} value={name} onChange={(event) => setName(event.target.value)} disabled={saving} className="w-64 max-w-full text-xl font-semibold" />
 		<Button size="sm" type="submit" disabled={saving}>{saving ? t("labels.saving") : t("labels.save")}</Button>
 		<Button size="sm" variant="ghost" type="button" onClick={cancel} disabled={saving}>{t("labels.cancel")}</Button>

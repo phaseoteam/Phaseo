@@ -1,5 +1,5 @@
 import { Link } from "@/i18n/navigation";
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import { ArrowLeft, ArrowUpRight, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Callout } from "@/components/ui/callout";
@@ -47,11 +47,14 @@ export function TrustDocument({
 	);
 }
 
+const TrustSectionHeadingContext = createContext<string | undefined>(undefined);
+
 export function TrustSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+	const headingId = `${id}-heading`;
 	return (
 		<section id={id} className="scroll-mt-24 space-y-3">
-			<h2 className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
-			{children}
+			<h2 id={headingId} className="text-xl font-semibold tracking-tight text-foreground">{title}</h2>
+			<TrustSectionHeadingContext.Provider value={headingId}>{children}</TrustSectionHeadingContext.Provider>
 		</section>
 	);
 }
@@ -60,6 +63,18 @@ export function TrustCallout({ title, children }: { title: string; children: Rea
 	return <Callout tone="warning" title={title}>{children}</Callout>;
 }
 
+// Focusable so keyboard users can scroll a wide table sideways (WCAG 2.1.1),
+// and named by its section heading.
 export function TrustTable({ children }: { children: ReactNode }) {
-	return <div className="overflow-x-auto border-y border-border">{children}</div>;
+	const headingId = useContext(TrustSectionHeadingContext);
+	return (
+		<div
+			role="region"
+			aria-labelledby={headingId}
+			tabIndex={0}
+			className="overflow-x-auto border-y border-border outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+		>
+			{children}
+		</div>
+	);
 }

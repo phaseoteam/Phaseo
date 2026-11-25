@@ -325,7 +325,6 @@ export function PresetVersionLabels({
 							<Input
 								id="preset-new-label"
 								value={newLabel}
-								autoFocus
 								className="font-mono"
 								autoComplete="off"
 								onChange={(event) => setNewLabel(event.target.value)}
@@ -483,10 +482,10 @@ function VersionRow({
 					{isDefault ? (
 						<Tooltip>
 							<TooltipTrigger asChild>
-								<span tabIndex={0} className="inline-flex items-center gap-1 rounded-md">
+								<button type="button" className="inline-flex items-center gap-1 rounded-md">
 									<Badge variant="secondary">{t("presetVersions.defaultBadge")}<Info className="h-3 w-3" aria-hidden="true" /></Badge>
 									<span className="sr-only">{t("presetVersions.defaultHelp")}</span>
-								</span>
+								</button>
 							</TooltipTrigger>
 							<TooltipContent side="top">{t("presetVersions.defaultHelp")}</TooltipContent>
 						</Tooltip>

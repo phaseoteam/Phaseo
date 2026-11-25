@@ -1470,22 +1470,28 @@ export default function PricingInsights({
 						</SelectContent>
 					</Select>
 					<div className="ml-auto flex flex-wrap items-center gap-1.5 max-sm:w-full">
-						<div className="inline-flex h-8 rounded-md border bg-background p-0.5 max-sm:h-10 max-sm:flex-1" aria-label={t("historyRange")}>
-							{RANGE_OPTIONS.map((range) => (
+						<div role="group" className="inline-flex h-8 rounded-md border bg-background p-0.5 max-sm:h-10 max-sm:flex-1" aria-label={t("historyRange")}>
+							{RANGE_OPTIONS.map((range) => {
+								const longLabel = range === "7d" ? t("ranges.week") : range === "30d" ? t("ranges.month") : range === "90d" ? t("ranges.quarter") : range === "1y" ? t("ranges.year") : t("all");
+								const shortLabel = range === "7d" ? t("rangesShort.week") : range === "30d" ? t("rangesShort.month") : range === "90d" ? t("rangesShort.quarter") : range === "1y" ? t("rangesShort.year") : t("all");
+								return (
 								<button
 									key={range}
 									type="button"
-									aria-label={range === "7d" ? t("ranges.week") : range === "30d" ? t("ranges.month") : range === "90d" ? t("ranges.quarter") : range === "1y" ? t("ranges.year") : t("all")}
-									title={range === "7d" ? t("ranges.week") : range === "30d" ? t("ranges.month") : range === "90d" ? t("ranges.quarter") : range === "1y" ? t("ranges.year") : t("all")}
+									// The visible abbreviation comes first, so speech input can say "1W" (WCAG 2.5.3).
+									aria-label={shortLabel === longLabel ? undefined : `${shortLabel}, ${longLabel}`}
+									aria-pressed={!customPricingRange && pricingRange === range}
+									title={longLabel}
 									onClick={() => {
 										setCustomPricingRange(undefined);
 										setPricingRange(range);
 									}}
 									className={cn("rounded-[5px] px-2 text-xs font-medium transition-colors max-sm:flex-1", !customPricingRange && pricingRange === range ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
 								>
-									{range === "7d" ? t("rangesShort.week") : range === "30d" ? t("rangesShort.month") : range === "90d" ? t("rangesShort.quarter") : range === "1y" ? t("rangesShort.year") : t("all")}
+									{shortLabel}
 								</button>
-							))}
+								);
+							})}
 						</div>
 						<Popover
 							open={openCalendarSurface === (expanded ? "expanded" : "base")}

@@ -186,7 +186,6 @@ export function WorkspaceCombobox({
 						onValueChange={setSearch}
 						placeholder={t("searchAll")}
 						aria-label={t("searchAll")}
-						autoFocus
 					/>
 					<ScrollArea
 						style={{ height: `min(60vh, 24rem, ${scrollAreaHeight}px)` }}

@@ -212,7 +212,6 @@ export default function GuardrailCreateWizard(props: {
 								value={props.form.name}
 								onChange={(event) => { const name = event.target.value; props.onFormChange((form) => ({ ...form, name })); }}
 								placeholder={t("namePlaceholder")}
-								autoFocus
 							/>
 						</div>
 						<div className="space-y-2">

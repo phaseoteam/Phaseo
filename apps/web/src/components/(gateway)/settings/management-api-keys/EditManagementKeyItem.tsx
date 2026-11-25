@@ -134,13 +134,11 @@ export default function EditManagementKeyItem({
 		<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
 			{trigger ? (
 				<DropdownMenuItem render={<div
-						role="button"
-						tabIndex={0}
-						className="w-full text-left flex items-center gap-2"
-						onClick={(e) => {
-							e.preventDefault();
-							setTimeout(() => setDialogOpen(true), 0);
-						}} />}>
+						className="w-full text-left flex items-center gap-2" />}
+					onClick={(e) => {
+						e.preventDefault();
+						setTimeout(() => setDialogOpen(true), 0);
+					}}>
 
 						<Edit2 className="mr-2" />
 						{t("labels.edit")}

@@ -17,10 +17,16 @@ import type { PublicLocale } from "@/i18n/routing";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 
 const markdownComponents: Components = {
-	h2: (props) => (
-		<h2 className="mt-10 text-2xl font-semibold tracking-tight" {...props} />
+	h2: ({ children, ...props }) => (
+		<h2 className="mt-10 text-2xl font-semibold tracking-tight" {...props}>
+			{children}
+		</h2>
 	),
-	h3: (props) => <h3 className="mt-8 text-xl font-semibold tracking-tight" {...props} />,
+	h3: ({ children, ...props }) => (
+		<h3 className="mt-8 text-xl font-semibold tracking-tight" {...props}>
+			{children}
+		</h3>
+	),
 	p: (props) => (
 		<p className="mt-4 text-sm leading-7 text-zinc-700 dark:text-zinc-300" {...props} />
 	),
@@ -36,7 +42,7 @@ const markdownComponents: Components = {
 			{...props}
 		/>
 	),
-	a: (props) => {
+	a: ({ children, ...props }) => {
 		const href = props.href;
 		const isExternal = typeof href === "string" && href.startsWith("http");
 		return (
@@ -45,7 +51,9 @@ const markdownComponents: Components = {
 				className="text-blue-600 underline-offset-4 underline decoration-transparent hover:decoration-current transition-colors duration-200 dark:text-blue-400"
 				target={isExternal ? "_blank" : undefined}
 				rel={isExternal ? "noreferrer noopener" : undefined}
-			/>
+			>
+				{children}
+			</a>
 		);
 	},
 	code: (props) => (

@@ -303,7 +303,6 @@ function DepartmentBudgetForm({
 						inputMode="decimal"
 						min="0"
 						step="any"
-						autoFocus={Boolean(existing)}
 						required
 						value={value}
 						aria-invalid={error ? true : undefined}

@@ -60,7 +60,6 @@ export function ModelSearchDropdown({
         <Button
           type="button"
           variant="outline"
-          role="combobox"
           aria-expanded={open}
           disabled={disabled}
           className={cn(
@@ -106,8 +105,8 @@ export function ModelSearchDropdown({
         )}
       >
         <Command>
+          {/* The popover moves focus to this, its first field, when it opens. */}
           <CommandInput
-            autoFocus
             placeholder={searchPlaceholder ?? t("searchModels")}
           />
           <ScrollArea

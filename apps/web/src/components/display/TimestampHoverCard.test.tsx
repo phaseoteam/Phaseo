@@ -126,4 +126,25 @@ describe("TimestampHoverCard", () => {
 		expect(trigger).toBeNull();
 		expect(container.textContent).toBe("-");
 	});
+
+	it("keeps keyboard activation away from a clickable row, and lets mouse clicks through", () => {
+		const onRowClick = vi.fn();
+		const trigger = render(
+			// Stands in for a log table row that opens its details on click.
+			// oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+			<div onClick={onRowClick}>
+				<TimestampHoverCard value="2026-11-10T11:00:00.000Z">1h ago</TimestampHoverCard>
+			</div>,
+		)!;
+		// Enter or Space on a button fires a click with detail 0.
+		act(() => {
+			trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 0 }));
+		});
+		expect(onRowClick).not.toHaveBeenCalled();
+
+		act(() => {
+			trigger.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 }));
+		});
+		expect(onRowClick).toHaveBeenCalledTimes(1);
+	});
 });

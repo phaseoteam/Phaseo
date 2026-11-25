@@ -60,8 +60,8 @@ function ManagementDialogMenuItem({
 }) {
 	return (
 		<DropdownMenuItem variant={variant} render={<div
-				className="flex w-full items-center gap-2 text-left"
-				onClick={onOpen} />}>
+				className="flex w-full items-center gap-2 text-left" />}
+			onClick={onOpen}>
 
 				<Icon className="mr-2 h-4 w-4" />
 				<span>{label}</span>

@@ -709,3 +709,9 @@ html:not(.dark) [role="tab"][aria-selected="false"] > [class*="peer/title"] {
 html:not(.dark) .text-green-700 {
   color: #166534;
 }
+
+/* Mermaid's dark theme draws edge labels in #ccc on #585858 (4.43:1). Lighten the text to about 5.6:1 for
+   WCAG 1.4.3. Mermaid scopes its own styles to the diagram's id, so this needs !important to win. */
+:is(html.dark, html[data-theme="dark"]) .edgeLabel :is(p, span) {
+  color: #e5e5e5 !important;
+}

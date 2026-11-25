@@ -3268,7 +3268,6 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 										<Search className="h-3.5 w-3.5 shrink-0" />
 										<Input
 											ref={slashSearchInputRef}
-											autoFocus
 											value={commandSearch}
 											onChange={(event) =>
 												setCommandSearch(event.target.value)

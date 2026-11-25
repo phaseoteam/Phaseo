@@ -91,6 +91,10 @@ function HoverCardTrigger({
         event.preventDefault()
         event.stopPropagation()
         toggle()
+      } else if (toggle && !isLink && pointerType.current === "" && event.detail === 0) {
+        // Enter or Space on a button trigger: focus already shows the card, so keep the
+        // click from also firing a parent row's click handler.
+        event.stopPropagation()
       }
       pointerType.current = ""
     },

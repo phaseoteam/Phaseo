@@ -215,6 +215,7 @@ function RuleCombobox(props: {
 				<Button
 					type="button"
 					variant="outline"
+					// oxlint-disable-next-line jsx-a11y/role-has-required-aria-props -- Base UI's PopoverTrigger adds aria-controls (the popup id) and aria-haspopup=dialog
 					role="combobox"
 					aria-expanded={open}
 					aria-label={selected ? `${props.placeholder}: ${selected.label}` : props.placeholder}
@@ -297,6 +298,7 @@ function KeyMultiCombobox(props: {
 				if (!next) setQuery("");
 			}}>
 				<PopoverTrigger asChild>
+					{/* oxlint-disable-next-line jsx-a11y/role-has-required-aria-props -- Base UI's PopoverTrigger adds aria-controls (the popup id) and aria-haspopup=dialog */}
 					<Button variant="outline" role="combobox" aria-expanded={open} className="h-10 w-full justify-between rounded-md px-3 font-normal">
 						<span className={props.selected.length ? "text-foreground" : "text-muted-foreground"}>
 							{props.selected.length ? t("broadcastControls.selectedKeys", { count: props.selected.length }) : t("broadcastControls.selectApiKeys")}

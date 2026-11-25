@@ -559,6 +559,7 @@ function Sparkline({
 	}
 
 	return (
+		// oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions -- onClick only swallows the click that follows a touch scrub so the surrounding card does not open; the value is in aria-label
 		<svg
 			viewBox={`0 0 ${width} ${height}`}
 			role="img"

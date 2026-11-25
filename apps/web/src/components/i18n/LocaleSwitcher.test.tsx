@@ -9,6 +9,7 @@ vi.mock("@/i18n/navigation", () => ({
 		locale,
 		href,
 		prefetch,
+		children,
 		...props
 	}: AnchorHTMLAttributes<HTMLAnchorElement> & {
 		locale: string;
@@ -16,7 +17,11 @@ vi.mock("@/i18n/navigation", () => ({
 		prefetch?: boolean;
 	}) => {
 		void prefetch;
-		return <a {...props} href={`/${locale}${href}`} />;
+		return (
+			<a {...props} href={`/${locale}${href}`}>
+				{children}
+			</a>
+		);
 	},
 }));
 

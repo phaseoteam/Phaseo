@@ -37,6 +37,7 @@ export default function InvestigateGeneration() {
 		Map<string, ProviderMetadataEntry>
 	>(new Map());
 	const [detailOpen, setDetailOpen] = React.useState(false);
+	const requestIdInputRef = React.useRef<HTMLInputElement>(null);
 	const lookupCacheRef = React.useRef(
 		new Map<string, InvestigateGenerationResult>(),
 	);
@@ -106,7 +107,7 @@ export default function InvestigateGeneration() {
 			</Button>
 
 			<ProviderInspectorSheet open={open} onOpenChange={setOpen}>
-				<ProviderInspectorSheetContent className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[44vw] lg:!w-[40vw] xl:!w-[36vw] 2xl:!w-[32vw] data-[side=right]:sm:max-w-none">
+				<ProviderInspectorSheetContent className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[44vw] lg:!w-[40vw] xl:!w-[36vw] 2xl:!w-[32vw] data-[side=right]:sm:max-w-none" initialFocus={requestIdInputRef}>
 					<ProviderInspectorSheetHeader className="border-b border-border/70 px-5 py-4 pr-14 sm:px-6 sm:py-5">
 						<ProviderInspectorSheetTitle>{t("strings.Investigate generation" as never)}</ProviderInspectorSheetTitle>
 						<ProviderInspectorSheetDescription>
@@ -120,7 +121,7 @@ export default function InvestigateGeneration() {
 								value={id}
 								onChange={(e) => setId(e.target.value)}
 								className="rounded-md"
-								autoFocus
+								ref={requestIdInputRef}
 							/>
 							<Button type="submit" className="rounded-md" disabled={loading}>
 								{loading ? t("strings.phraseLoading" as never) : t("strings.Lookup" as never)}

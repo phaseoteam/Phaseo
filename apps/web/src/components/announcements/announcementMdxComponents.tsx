@@ -54,13 +54,19 @@ function AnnouncementCallout({
 	);
 }
 
-function AnnouncementLink({ href, ...props }: ComponentPropsWithoutRef<"a">) {
+function AnnouncementLink({
+	href,
+	children,
+	...props
+}: ComponentPropsWithoutRef<"a">) {
 	if (!href) {
 		return (
 			<a
 				{...props}
 				className="font-medium text-sky-700 underline decoration-sky-400/40 underline-offset-4 transition hover:decoration-sky-500 dark:text-sky-300"
-			/>
+			>
+				{children}
+			</a>
 		);
 	}
 
@@ -70,7 +76,7 @@ function AnnouncementLink({ href, ...props }: ComponentPropsWithoutRef<"a">) {
 				href={href}
 				className="font-medium text-sky-700 underline decoration-sky-400/40 underline-offset-4 transition hover:decoration-sky-500 dark:text-sky-300"
 			>
-				{props.children}
+				{children}
 			</Link>
 		);
 	}
@@ -84,7 +90,9 @@ function AnnouncementLink({ href, ...props }: ComponentPropsWithoutRef<"a">) {
 			className="font-medium text-sky-700 underline decoration-sky-400/40 underline-offset-4 transition hover:decoration-sky-500 dark:text-sky-300"
 			target={isExternal ? "_blank" : undefined}
 			rel={isExternal ? "noopener noreferrer" : undefined}
-		/>
+		>
+			{children}
+		</a>
 	);
 }
 
@@ -125,23 +133,29 @@ function CodeBlock({ className, ...props }: ComponentPropsWithoutRef<"pre">) {
 }
 
 export const announcementMdxComponents = {
-	h1: (props: ComponentPropsWithoutRef<"h1">) => (
+	h1: ({ children, ...props }: ComponentPropsWithoutRef<"h1">) => (
 		<h1
 			className="mt-8 text-3xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 md:text-4xl"
 			{...props}
-		/>
+		>
+			{children}
+		</h1>
 	),
-	h2: (props: ComponentPropsWithoutRef<"h2">) => (
+	h2: ({ children, ...props }: ComponentPropsWithoutRef<"h2">) => (
 		<h2
 			className="mt-10 scroll-mt-24 text-2xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50"
 			{...props}
-		/>
+		>
+			{children}
+		</h2>
 	),
-	h3: (props: ComponentPropsWithoutRef<"h3">) => (
+	h3: ({ children, ...props }: ComponentPropsWithoutRef<"h3">) => (
 		<h3
 			className="mt-8 scroll-mt-24 text-xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50"
 			{...props}
-		/>
+		>
+			{children}
+		</h3>
 	),
 	p: (props: ComponentPropsWithoutRef<"p">) => (
 		<p

@@ -2708,6 +2708,8 @@ export default function ModelPlayground({
 					<div className="min-h-[440px] border-black/15 md:border-l md:pl-6 dark:border-white/20">
 						{audioResponseUrl ? (
 							<div className="space-y-4">
+								{/* Model-generated audio has no caption track to offer. This is a known gap, listed in ACCESSIBILITY.md. */}
+								{/* oxlint-disable-next-line jsx-a11y/media-has-caption */}
 								<audio
 									controls
 									src={audioResponseUrl}
@@ -2832,6 +2834,8 @@ export default function ModelPlayground({
 							<div className="space-y-4">
 								{safeVideoResponseUrls.map((url, index) => (
 									<div key={`${url}-${index}`} className="space-y-2">
+										{/* Model-generated video has no caption track to offer. This is a known gap, listed in ACCESSIBILITY.md. */}
+										{/* oxlint-disable-next-line jsx-a11y/media-has-caption */}
 										<video
 											controls
 											src={url}

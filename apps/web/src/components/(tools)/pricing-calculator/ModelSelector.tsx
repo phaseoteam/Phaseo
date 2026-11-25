@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import {
 	ModelSelector as ModelPicker,
@@ -6,7 +6,12 @@ import {
 	ModelSelectorInput,
 	ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
-import { VirtualizedModelCatalog } from "@/components/(chat)/VirtualizedModelCatalog";
+import {
+	getNextVirtualizedModelCatalogItemKey,
+	keepSearchTextKeys,
+	useVirtualizedModelCatalogInput,
+	VirtualizedModelCatalog,
+} from "@/components/(chat)/VirtualizedModelCatalog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -267,6 +272,21 @@ export function ModelSelector({
 		? activeModelId
 		: filteredModels[0]?.modelId ?? null;
 
+	const searchInputRef = useRef<HTMLInputElement | null>(null);
+	const listboxId = useId();
+	const setCatalogInput = useVirtualizedModelCatalogInput({
+		enabled: open,
+		activeItemKey: visibleActiveModelId,
+		listboxId,
+	});
+	const setSearchInput = useCallback(
+		(input: HTMLInputElement | null) => {
+			searchInputRef.current = input;
+			setCatalogInput(input);
+		},
+		[setCatalogInput],
+	);
+
 	const getEndpointOptions = (modelId: string) =>
 		Array.from(selectionOptions.get(modelId)?.keys() ?? []).sort(comparePricingEndpoints);
 	const getProviderOptions = (modelId: string, endpoint: string) =>
@@ -327,8 +347,10 @@ export function ModelSelector({
 						title={t("selectModelsDialogTitle")}
 						className="w-[min(94vw,920px)] max-w-3xl"
 						commandProps={{ shouldFilter: false }}
+						initialFocus={searchInputRef}
 					>
 						<ModelSelectorInput
+							ref={setSearchInput}
 							placeholder={t("modelSearchPlaceholder")}
 							value={query}
 							onValueChange={(value) => {
@@ -336,22 +358,26 @@ export function ModelSelector({
 								setActiveModelId(null);
 							}}
 							onKeyDown={(event) => {
-								if (filteredModels.length === 0) return;
-								const currentIndex = filteredModels.findIndex(
-									(model) => model.modelId === visibleActiveModelId
+								// Enter and the arrow keys confirm and move between IME candidates (Japanese, Chinese); leave them to the IME.
+								if (event.nativeEvent.isComposing || event.keyCode === 229) return;
+								if (keepSearchTextKeys(event)) return;
+								if (event.key === "Enter") {
+									if (visibleActiveModelId && !loadingModelSet.has(visibleActiveModelId)) {
+										event.preventDefault();
+										event.stopPropagation();
+										onAddModel(visibleActiveModelId);
+									}
+									return;
+								}
+								const nextModelId = getNextVirtualizedModelCatalogItemKey(
+									filteredModels.map((model) => model.modelId),
+									visibleActiveModelId,
+									event.key,
 								);
-								if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-									event.preventDefault();
-									const direction = event.key === "ArrowDown" ? 1 : -1;
-									const nextIndex = currentIndex < 0
-										? 0
-										: (currentIndex + direction + filteredModels.length) % filteredModels.length;
-									setActiveModelId(filteredModels[nextIndex]?.modelId ?? null);
-								}
-								if (event.key === "Enter" && visibleActiveModelId) {
-									event.preventDefault();
-									onAddModel(visibleActiveModelId);
-								}
+								if (!nextModelId) return;
+								event.preventDefault();
+								event.stopPropagation();
+								setActiveModelId(nextModelId);
 							}}
 						/>
 						<div className="flex items-center justify-between border-b px-4 py-2 text-xs text-muted-foreground">
@@ -369,6 +395,7 @@ export function ModelSelector({
 							isItemDisabled={(model) => loadingModelSet.has(model.modelId)}
 							onActiveItemChange={setActiveModelId}
 							onSelectItem={(model) => onAddModel(model.modelId)}
+							listboxId={listboxId}
 							estimateItemSize={64}
 							emptyContent={t("noModelsFound")}
 							renderItem={(model) => {

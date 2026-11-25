@@ -295,7 +295,7 @@ export default function ModelPerformanceDashboard({
 								variant="outline"
 								size="sm"
 								className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-lg px-3 text-xs sm:flex-none"
-								aria-label={t("selectTimeRange")}
+								aria-label={`${selectedRangeDays}D, ${t("selectTimeRange")}`}
 							>
 								<CalendarDays className="size-3.5" />
 								{selectedRangeDays}D
@@ -332,7 +332,7 @@ export default function ModelPerformanceDashboard({
 												size="sm"
 										className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-lg px-3 text-xs sm:w-auto sm:flex-none"
 												aria-busy={isLoadingRegion}
-												aria-label={t("filterByLocation")}
+												aria-label={`${regionLabel}, ${t("filterByLocation")}`}
 											>
 												{isLoadingRegion ? (
 													<Loader2 className="size-3.5 animate-spin" />

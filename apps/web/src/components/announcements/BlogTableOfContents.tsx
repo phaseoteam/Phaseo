@@ -19,10 +19,12 @@ function TableOfContentsLinks({
 	activeId,
 	items,
 	label,
+	onNavigate,
 }: {
 	activeId: string;
 	items: BlogTocItem[];
 	label: string;
+	onNavigate?: () => void;
 }) {
 	return (
 		<nav aria-label={label}>
@@ -34,6 +36,7 @@ function TableOfContentsLinks({
 							aria-current={item.id === activeId ? "location" : undefined}
 							data-active={item.id === activeId ? "true" : "false"}
 							data-blog-toc-id={item.id}
+							onClick={onNavigate}
 							className={cn(
 								"block border-l-2 border-transparent py-1.5 text-sm leading-5 text-zinc-500 transition-colors data-[active=true]:font-medium data-[active=true]:text-zinc-950 dark:text-zinc-400 dark:data-[active=true]:text-zinc-50",
 								item.level === 3 ? "pl-5 text-xs" : "pl-3",
@@ -149,18 +152,12 @@ export function BlogTableOfContents({ items }: BlogTableOfContentsProps) {
 							className="max-h-[60vh]"
 							viewportClassName="max-h-[60vh]"
 						>
-							<div
-								className="pr-3 pb-4"
-								onClick={(event) => {
-									if ((event.target as HTMLElement).closest("a")) {
-										setMobileOpen(false);
-									}
-								}}
-							>
+							<div className="pr-3 pb-4">
 								<TableOfContentsLinks
 									activeId={activeId}
 									items={items}
 									label={t("tableOfContents")}
+									onNavigate={() => setMobileOpen(false)}
 								/>
 							</div>
 						</ScrollArea>
