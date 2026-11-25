@@ -91,6 +91,29 @@ describe("ColorPicker keyboard support", () => {
 		expect(hue.getAttribute("aria-valuenow")).toBe("5");
 	});
 
+	it("keeps a hue dragged on grey after release, so raising saturation gives that hue", () => {
+		const onChange = vi.fn();
+		act(() => root.render(<ColorPicker value="#808080" onChange={onChange} />));
+		const hue = slider("hue");
+		// jsdom has no layout or pointer capture: give the slider a 360px width, so x maps to degrees.
+		hue.getBoundingClientRect = () => ({ left: 0, top: 0, width: 360, height: 16, right: 360, bottom: 16, x: 0, y: 0, toJSON: () => ({}) });
+		hue.setPointerCapture = () => undefined;
+		act(() => {
+			hue.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, clientX: 120, clientY: 8 }));
+		});
+		expect(hue.getAttribute("aria-valuenow")).toBe("120");
+		act(() => {
+			hue.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, clientX: 120, clientY: 8 }));
+		});
+		expect(onChange).toHaveBeenLastCalledWith("#808080");
+		expect(hue.getAttribute("aria-valuenow")).toBe("120");
+
+		press(slider("saturationBrightness"), "ArrowRight", true);
+		const [r, g, b] = (onChange.mock.lastCall![0] as string).match(/[0-9a-f]{2}/g)!.map((h) => parseInt(h, 16));
+		expect(g).toBeGreaterThan(r);
+		expect(g).toBeGreaterThan(b);
+	});
+
 	it("changes saturation and brightness from the keyboard", () => {
 		const onChange = vi.fn();
 		act(() => root.render(<ColorPicker value="#ff0000" onChange={onChange} />));
