@@ -189,10 +189,11 @@ describe("ModelCalendarChart", () => {
 		const focused = new Promise<void>((resolve) => {
 			retiredButton.addEventListener("focus", () => resolve(), { once: true });
 		});
+		// Let act flush the close first; Base UI restores focus while cleaning up.
 		await act(async () => {
 			dialog.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-			await focused;
 		});
+		await focused;
 		expect(document.activeElement).toBe(retiredButton);
 	});
 });
