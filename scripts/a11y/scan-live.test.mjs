@@ -75,6 +75,9 @@ test('summary names page, theme, rule and element, and escapes table pipes', () 
   const md = renderSummary(report, classify(pages));
   assert.match(md, /1 serious or critical problem found/);
   assert.match(md, /\| `\/a\\\|b` \| light \| \[color-contrast\]\(https:\/\/x\) \| serious \| `#n` `<p>a\\\|b<\/p>` \|/);
+  // A backslash before a pipe must not cancel the pipe's escape and split the cell.
+  const slashed = [page('/', [{ id: 'color-contrast', impact: 'serious', help: 'h', helpUrl: 'https://x', nodes: [node('#n', '<p>a\\|b</p>')] }])];
+  assert.match(renderSummary({ ...report, pages: slashed }, classify(slashed)), /`<p>a\\\\\\\|b<\/p>`/);
   const errored = renderSummary({ ...report, pages: [{ path: '/x', themes: {}, error: 'HTTP 500' }] }, classify([]));
   assert.match(errored, /Some pages could not be scanned/);
 });

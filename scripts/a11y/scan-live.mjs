@@ -74,7 +74,8 @@ export function classify(pages, { exceptions = [], failOn = ['critical', 'seriou
   return { failing, reported, exempt, unusedExceptions: exceptions.filter((e) => !used.has(e)) };
 }
 
-const cell = (s) => String(s ?? '').replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim();
+// Escapes backslashes first, so a `\` already in the HTML can't turn the pipe escape into a cell break.
+const cell = (s) => String(s ?? '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim();
 const code = (s) => '`' + cell(s).replace(/`/g, "'") + '`';
 
 function nodeTable(rows) {
