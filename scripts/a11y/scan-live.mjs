@@ -140,6 +140,23 @@ export function renderSummary(report, outcome) {
   return out.join('\n');
 }
 
+// One retry: a single slow response from the live site should not fail the night. `scanOnce` fills
+// rec.themes as each theme finishes, and themes that finished on either attempt are kept, so their
+// findings still reach the report even when another theme fails both times.
+export async function scanWithRetry(entry, scanOnce, attempts = 2) {
+  const rec = { path: entry.path, name: entry.name, themes: {} };
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      await scanOnce(rec);
+      delete rec.error;
+      break;
+    } catch (error) {
+      rec.error = String(error?.message ?? error).split('\n')[0];
+    }
+  }
+  return rec;
+}
+
 // Fills rec.themes as each theme finishes, so a failure in a later theme keeps earlier results.
 async function scanPage(context, AxeBuilder, baseUrl, entry, config, rec) {
   const page = await context.newPage();
@@ -216,18 +233,7 @@ async function main() {
     while (next < entries.length) {
       const i = next++;
       const entry = entries[i];
-      const rec = { path: entry.path, name: entry.name, themes: {} };
-      // One retry: a single slow response from the live site should not fail the night. Themes that
-      // finished on either attempt are kept, so their findings still reach the report.
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        try {
-          await scanPage(context, AxeBuilder, baseUrl, entry, config, rec);
-          delete rec.error;
-          break;
-        } catch (error) {
-          rec.error = String(error?.message ?? error).split('\n')[0];
-        }
-      }
+      const rec = await scanWithRetry(entry, (r) => scanPage(context, AxeBuilder, baseUrl, entry, config, r));
       pages[i] = rec;
       const counts = config.themes.map((t) => rec.themes[t]?.violations.reduce((n, v) => n + v.nodes.length, 0) ?? '-').join('/');
       console.log(`${rec.error ? 'ERROR' : 'ok   '} ${entry.path} ${rec.error ?? counts}`);

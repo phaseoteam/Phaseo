@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
-import { DEFAULT_CONFIG, classify, matchException, renderSummary } from './scan-live.mjs';
+import { DEFAULT_CONFIG, classify, matchException, renderSummary, scanWithRetry } from './scan-live.mjs';
 
 const node = (target, html = '<button>') => ({ target, html, summary: 'Fix any of the following: something' });
 const page = (path, violations) => ({ path, themes: { light: { violations }, dark: { violations: [] } } });
@@ -55,6 +55,30 @@ test('a page that errored in one theme still reports the theme that finished', (
   assert.equal(out.failing.length, 1);
   const md = renderSummary({ baseUrl: 'https://phaseo.app', finishedAt: 'now', axeVersion: '4.14.0', tags: ['wcag2aa'], themes: ['light', 'dark'], pages }, out);
   assert.match(md, /\| `\/models` \| 1 \| error \|/);
+});
+
+test('the retry keeps a finished light scan when dark fails on every attempt', async () => {
+  let calls = 0;
+  const rec = await scanWithRetry({ path: '/models', name: 'Models' }, async (r) => {
+    calls += 1;
+    r.themes.light = { violations: [] };
+    throw new Error('dark: Timeout 45000ms exceeded\nstack');
+  });
+  assert.equal(calls, 2);
+  assert.deepEqual(Object.keys(rec.themes), ['light']);
+  assert.equal(rec.error, 'dark: Timeout 45000ms exceeded');
+});
+
+test('the retry clears the error when the second attempt succeeds', async () => {
+  let calls = 0;
+  const rec = await scanWithRetry({ path: '/', name: 'Home' }, async (r) => {
+    calls += 1;
+    if (calls === 1) throw new Error('HTTP 502');
+    r.themes.light = { violations: [] };
+    r.themes.dark = { violations: [] };
+  });
+  assert.equal(rec.error, undefined);
+  assert.deepEqual(Object.keys(rec.themes), ['light', 'dark']);
 });
 
 test('exempt nodes do not fail and unused exceptions are listed', () => {
