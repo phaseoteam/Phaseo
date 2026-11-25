@@ -210,7 +210,7 @@
     // lint, so new problems block the pull request. A disable comment must say
     // why the code is already accessible (for example, which control is the
     // keyboard path), or point to a known gap that ACCESSIBILITY.md lists
-    // publicly (today only captions for generated media). Never use one to
+    // publicly (today only captions for generated and attached media). Never use one to
     // hide a gap that isn't listed there.
     {
       "files": [

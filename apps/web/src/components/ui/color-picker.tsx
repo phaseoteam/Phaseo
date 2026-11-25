@@ -368,6 +368,14 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 		[onChange],
 	);
 
+	// Saves the colour when a slider drag ends, keeping the exact slider position: on grey the hex
+	// can't hold the hue, so dropping it here would turn the chosen hue back into 0°.
+	const commitSliderColor = () => {
+		const saved = sliderHsv;
+		commitColor(currentHexRef.current);
+		if (saved && saved.hex === currentHexRef.current) setSliderHsv(saved);
+	};
+
 	const commitHsv = (nextHsv: HsvColor, save = false) => {
 		const nextHex = rgbToHex(hsvToRgb(nextHsv));
 
@@ -544,8 +552,8 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 						handleSaturationValuePointer(event);
 					}
 				}}
-				onPointerUp={() => commitColor()}
-				onPointerCancel={() => commitColor()}
+				onPointerUp={commitSliderColor}
+				onPointerCancel={commitSliderColor}
 			>
 				<div className="absolute inset-0 bg-gradient-to-r from-white to-transparent" />
 				<div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
@@ -577,8 +585,8 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 							handleHuePointer(event);
 						}
 					}}
-					onPointerUp={() => commitColor()}
-					onPointerCancel={() => commitColor()}
+					onPointerUp={commitSliderColor}
+					onPointerCancel={commitSliderColor}
 				>
 					<span
 						className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.35)]"

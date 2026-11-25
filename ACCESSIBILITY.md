@@ -48,7 +48,7 @@ Automated checks find only part of what affects real users. We have not yet:
 - Tested systematically with screen readers (such as NVDA, JAWS, VoiceOver, or TalkBack) or with voice control. In particular, responses that stream into Chat may not be announced well.
 - Reviewed menus, dialogs, and forms in their opened and error states.
 - Reviewed the desktop and mobile apps.
-- Provided captions or transcripts for audio and video that models generate in Chat and the model playground. The prompt, and any text reply, is shown next to the player, but it doesn't describe what you hear.
+- Provided captions or transcripts for audio and video that models generate in Chat and the model playground, or that people attach in Chat. The prompt, and any text reply, is shown next to the player, but it doesn't describe what you hear.
 - Added whole-page accessibility checks, such as contrast, to CI. The lint catches common mistakes in component code, but other regressions can still ship unnoticed.
 
 If you hit one of these, or anything else, please report it. Reports from real use help us decide what to fix first.

@@ -80,6 +80,17 @@ describe("ColorPicker keyboard support", () => {
 		expect(slider("hue").getAttribute("aria-valuenow")).toBe("0");
 	});
 
+	it("keeps the chosen hue on grey when a slider drag is released", () => {
+		const onChange = vi.fn();
+		act(() => root.render(<ColorPicker value="#808080" onChange={onChange} />));
+		const hue = slider("hue");
+		for (let i = 0; i < 5; i += 1) press(hue, "ArrowRight");
+		act(() => {
+			hue.dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
+		});
+		expect(hue.getAttribute("aria-valuenow")).toBe("5");
+	});
+
 	it("changes saturation and brightness from the keyboard", () => {
 		const onChange = vi.fn();
 		act(() => root.render(<ColorPicker value="#ff0000" onChange={onChange} />));
