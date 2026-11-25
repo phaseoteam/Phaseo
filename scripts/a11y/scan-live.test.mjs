@@ -54,19 +54,26 @@ test('a page that errored in one theme still reports the theme that finished', (
   const out = classify(pages);
   assert.equal(out.failing.length, 1);
   const md = renderSummary({ baseUrl: 'https://phaseo.app', finishedAt: 'now', axeVersion: '4.14.0', tags: ['wcag2aa'], themes: ['light', 'dark'], pages }, out);
-  assert.match(md, /\| `\/models` \| 1 \| error \|/);
+  assert.ok(md.includes('| <code>/models</code> | 1 | error |'), md);
 });
 
-test('the retry keeps a finished light scan when dark fails on every attempt', async () => {
+test('the retry keeps the light scan from the first attempt when the second fails earlier', async () => {
   let calls = 0;
+  const lightFindings = { violations: [{ id: 'color-contrast', impact: 'serious', help: 'h', helpUrl: 'u', nodes: [node('.a')] }] };
   const rec = await scanWithRetry({ path: '/models', name: 'Models' }, async (r) => {
     calls += 1;
-    r.themes.light = { violations: [] };
-    throw new Error('dark: Timeout 45000ms exceeded\nstack');
+    // Only the first attempt gets as far as finishing light; the second fails before any theme.
+    if (calls === 1) {
+      r.themes.light = lightFindings;
+      throw new Error('dark: Timeout 45000ms exceeded\nstack');
+    }
+    throw new Error('HTTP 502');
   });
   assert.equal(calls, 2);
-  assert.deepEqual(Object.keys(rec.themes), ['light']);
-  assert.equal(rec.error, 'dark: Timeout 45000ms exceeded');
+  assert.equal(rec.themes.light, lightFindings);
+  assert.equal(rec.themes.dark, undefined);
+  assert.equal(rec.error, 'HTTP 502');
+  assert.equal(classify([rec]).failing.length, 1);
 });
 
 test('the retry clears the error when the second attempt succeeds', async () => {
@@ -98,10 +105,22 @@ test('summary names page, theme, rule and element, and escapes table pipes', () 
   const report = { baseUrl: 'https://phaseo.app', finishedAt: 'now', axeVersion: '4.14.0', tags: ['wcag2aa'], themes: ['light', 'dark'], pages };
   const md = renderSummary(report, classify(pages));
   assert.match(md, /1 serious or critical problem found/);
-  assert.match(md, /\| `\/a\\\|b` \| light \| \[color-contrast\]\(https:\/\/x\) \| serious \| `#n` `<p>a\\\|b<\/p>` \|/);
-  // A backslash before a pipe must not cancel the pipe's escape and split the cell.
-  const slashed = [page('/', [{ id: 'color-contrast', impact: 'serious', help: 'h', helpUrl: 'https://x', nodes: [node('#n', '<p>a\\|b</p>')] }])];
-  assert.match(renderSummary({ ...report, pages: slashed }, classify(slashed)), /`<p>a\\\\\\\|b<\/p>`/);
+  assert.ok(
+    md.includes('| <code>/a&#124;b</code> | light | [color-contrast](https://x) | serious | <code>#n</code> <code>&lt;p&gt;a&#124;b&lt;/p&gt;</code> |'),
+    md,
+  );
+  // Selectors keep their CSS escapes exactly: GitHub decodes the entities inside <code> and shows the
+  // original text, and no raw pipe or backslash reaches the table parser.
+  const escaped = [page('/', [{ id: 'color-contrast', impact: 'serious', help: 'h', helpUrl: 'https://x', nodes: [node('.md\\:hidden', '<p>a\\|b</p>')] }])];
+  const escapedMd = renderSummary({ ...report, pages: escaped }, classify(escaped));
+  const codes = [...escapedMd.matchAll(/<code>(.*?)<\/code>/g)].map((m) => m[1]);
+  const decode = (t) => t.replace(/&#124;/g, '|').replace(/&#92;/g, '\\').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  assert.ok(codes.map(decode).includes('.md\\:hidden'), escapedMd);
+  assert.ok(codes.map(decode).includes('<p>a\\|b</p>'), escapedMd);
+  assert.ok(codes.every((t) => !t.includes('|') && !t.includes('\\')), escapedMd);
+  // Plain text cells still escape a backslash before a pipe, so the pipe can't end the cell.
+  const errorMd = renderSummary({ ...report, pages: [{ path: '/x', themes: {}, error: 'bad a\\|b' }] }, classify([]));
+  assert.ok(errorMd.includes('| bad a\\\\\\|b |'), errorMd);
   const errored = renderSummary({ ...report, pages: [{ path: '/x', themes: {}, error: 'HTTP 500' }] }, classify([]));
   assert.match(errored, /Some pages could not be scanned/);
 });

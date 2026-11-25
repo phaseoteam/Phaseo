@@ -74,15 +74,31 @@ export function classify(pages, { exceptions = [], failOn = ['critical', 'seriou
   return { failing, reported, exempt, unusedExceptions: exceptions.filter((e) => !used.has(e)) };
 }
 
-// Escapes backslashes first, so a `\` already in the HTML can't turn the pipe escape into a cell break.
-const cell = (s) => String(s ?? '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\s+/g, ' ').trim();
-const code = (s) => '`' + cell(s).replace(/`/g, "'") + '`';
+// Plain table text. Cuts to `max` before escaping, so a cut can't split an escape. Backslashes are
+// escaped first, so a `\` already in the text can't turn the pipe escape into a cell break.
+const cell = (s, max = Infinity) =>
+  String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, max).replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
+// Selectors and HTML. A Markdown code span would keep the backslash escapes literally and break
+// selectors such as `.md\:hidden`, so this uses an HTML <code> element with entity-encoded text:
+// GitHub shows it exactly as axe reported it, and `|` as &#124; can't split the table cell.
+const code = (s, max = Infinity) =>
+  '<code>' +
+  String(s ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\|/g, '&#124;')
+    .replace(/\\/g, '&#92;') +
+  '</code>';
 
 function nodeTable(rows) {
   const lines = ['| Page | Theme | Rule | Impact | Element | Problem |', '| --- | --- | --- | --- | --- | --- |'];
   for (const r of rows) {
     lines.push(
-      `| ${code(r.path)} | ${r.theme} | [${r.rule}](${r.helpUrl}) | ${r.impact} | ${code(r.target.slice(0, 120))} ${code(r.html.slice(0, 140))} | ${cell(r.summary).slice(0, 220)} |`,
+      `| ${code(r.path)} | ${r.theme} | [${r.rule}](${r.helpUrl}) | ${r.impact} | ${code(r.target, 120)} ${code(r.html, 140)} | ${cell(r.summary, 220)} |`,
     );
   }
   return lines.join('\n');
@@ -106,7 +122,7 @@ export function renderSummary(report, outcome) {
   ];
   if (errored.length) {
     out.push('## Pages that could not be scanned', '', '| Page | Error |', '| --- | --- |');
-    for (const p of errored) out.push(`| ${code(p.path)} | ${cell(p.error).slice(0, 300)} |`);
+    for (const p of errored) out.push(`| ${code(p.path)} | ${cell(p.error, 300)} |`);
     out.push('');
   }
   if (failing.length) out.push('## Serious and critical', '', nodeTable(failing), '');
@@ -123,12 +139,12 @@ export function renderSummary(report, outcome) {
   }
   if (exempt.length) {
     out.push('## Skipped by exception', '', '| Page | Theme | Rule | Element | Reason |', '| --- | --- | --- | --- | --- |');
-    for (const r of exempt) out.push(`| ${code(r.path)} | ${r.theme} | ${r.rule} | ${code(r.target)} ${code(r.html.slice(0, 140))} | ${cell(r.reason)} |`);
+    for (const r of exempt) out.push(`| ${code(r.path)} | ${r.theme} | ${r.rule} | ${code(r.target)} ${code(r.html, 140)} | ${cell(r.reason)} |`);
     out.push('');
   }
   if (unusedExceptions.length) {
     out.push('## Exceptions that matched nothing', '', 'Remove these from `scripts/a11y/live-scan.config.json` if the problem is gone.', '');
-    for (const e of unusedExceptions) out.push(`- ${e.rule} on ${code(e.path ?? 'any page')}: ${code(e.target ?? e.html)}`);
+    for (const e of unusedExceptions) out.push(`- ${e.rule} on ${code(e.path ?? (e.pathPrefix ? `${e.pathPrefix}*` : 'any page'))}: ${code(e.target ?? e.html)}`);
     out.push('');
   }
   out.push('## Pages', '', '| Page | Light | Dark |', '| --- | --- | --- |');
@@ -143,9 +159,9 @@ export function renderSummary(report, outcome) {
 // One retry: a single slow response from the live site should not fail the night. `scanOnce` fills
 // rec.themes as each theme finishes, and themes that finished on either attempt are kept, so their
 // findings still reach the report even when another theme fails both times.
-export async function scanWithRetry(entry, scanOnce, attempts = 2) {
+export async function scanWithRetry(entry, scanOnce) {
   const rec = { path: entry.path, name: entry.name, themes: {} };
-  for (let attempt = 1; attempt <= attempts; attempt++) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       await scanOnce(rec);
       delete rec.error;
