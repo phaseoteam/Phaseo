@@ -115,8 +115,8 @@ function KeyDialogMenuItem({
 }) {
 	return (
 		<DropdownMenuItem variant={variant} className="rounded-xl" render={<div
-				className="flex w-full items-center gap-2 text-left"
-				onClick={onOpen} />}>
+				className="flex w-full items-center gap-2 text-left" />}
+			onClick={onOpen}>
 
 				<Icon className="mr-2 h-4 w-4" />
 				<span>{label}</span>
@@ -410,11 +410,10 @@ const LimitPillStack = memo(function LimitPillStack({
 				return (
 					<HoverCard key={window.label} openDelay={120} closeDelay={100}>
 						<HoverCardTrigger asChild>
-							<div
-								tabIndex={0}
-								role="group"
+							<button
+								type="button"
 								aria-label={meterLabel}
-								className={`flex h-6 min-w-0 cursor-help items-center gap-1.5 rounded-md border px-1.5 text-[11px] leading-none outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${pillClass}`}
+								className={`flex h-6 min-w-0 cursor-help items-center gap-1.5 rounded-md border px-1.5 text-left text-[11px] leading-none outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${pillClass}`}
 							>
 								<span className="w-3 shrink-0 font-medium">{window.label}</span>
 								<LimitRadial pct={clamped} projectedPct={projectedPct} tone={tone} />
@@ -424,7 +423,7 @@ const LimitPillStack = memo(function LimitPillStack({
 										<span className="font-normal opacity-75"> → {projectedValue}</span>
 									) : null}
 								</span>
-							</div>
+							</button>
 						</HoverCardTrigger>
 						<HoverCardContent align="start" className="w-64">
 							<HoverCardBody>

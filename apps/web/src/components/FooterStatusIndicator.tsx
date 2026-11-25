@@ -234,6 +234,8 @@ export function FooterStatusIndicator() {
 	const hasComponents = groupedComponents.length > 0;
 
 	return (
+		// Opens the status popover while the pointer or focus is on the status link inside, and Escape closes it; the link is the keyboard target.
+		// oxlint-disable-next-line jsx-a11y/no-static-element-interactions
 		<span
 			className="group/status relative inline-flex after:absolute after:bottom-full after:left-0 after:h-4 after:w-[min(88vw,24rem)] after:content-['']"
 			onPointerEnter={openPopover}

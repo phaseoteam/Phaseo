@@ -1209,10 +1209,10 @@ export function MonitorDataTable({
 						<Fragment key={operation.capability}>
 							<HoverCard>
 								<HoverCardTrigger asChild>
-									<span role="img" tabIndex={0} aria-label={label}
+									<button type="button" aria-label={label}
 										className={cn(MODEL_ICON_BADGE_CLASS_NAME, "size-4 rounded-sm", tone.badgeClassName)}>
 										<Icon aria-hidden className={cn("h-2.5 w-2.5", tone.iconClassName)} />
-									</span>
+									</button>
 								</HoverCardTrigger>
 								<HoverCardContent align="center" className="w-auto max-w-60">
 									<HoverCardHeader icon={<Icon aria-hidden className={tone.iconClassName} />} title={label} />

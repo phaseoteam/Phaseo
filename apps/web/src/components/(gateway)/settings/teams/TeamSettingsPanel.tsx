@@ -387,7 +387,6 @@ function ConfirmDeleteTeam({
 					placeholder={t("workspace.typeDeleteWorkspacePrompt", { phrase })}
 					value={text}
 					onChange={(event) => setText(event.target.value)}
-					autoFocus
 				/>
 			</div>
 			{hasCredits ? (

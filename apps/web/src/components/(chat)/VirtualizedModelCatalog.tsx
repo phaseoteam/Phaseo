@@ -1,5 +1,6 @@
 import {
 	useEffect,
+	useLayoutEffect,
 	useMemo,
 	useState,
 	type MouseEvent,
@@ -50,6 +51,83 @@ export function buildVirtualizedModelCatalogRows<T>(
 
 export function getVirtualizedModelCatalogItemId(itemKey: string): string {
 	return `chat-model-option-${itemKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
+/**
+ * Moves the active option for ArrowUp, ArrowDown, Home and End.
+ * Returns null for any other key, so the caller leaves the event alone.
+ */
+export function getNextVirtualizedModelCatalogItemKey(
+	itemKeys: string[],
+	activeItemKey: string | null,
+	key: string,
+): string | null {
+	if (itemKeys.length === 0) return null;
+	const currentIndex = activeItemKey ? itemKeys.indexOf(activeItemKey) : -1;
+	switch (key) {
+		case "ArrowDown":
+			return itemKeys[Math.min(currentIndex + 1, itemKeys.length - 1)] ?? null;
+		case "ArrowUp":
+			return itemKeys[Math.max(currentIndex - 1, 0)] ?? null;
+		case "Home":
+			return itemKeys[0] ?? null;
+		case "End":
+			return itemKeys[itemKeys.length - 1] ?? null;
+		default:
+			return null;
+	}
+}
+
+/**
+ * Points a cmdk search input at the virtualised listbox.
+ *
+ * cmdk's input spreads our props first and then writes its own
+ * `aria-activedescendant` (its selected cmdk item, which is undefined here
+ * because the virtualised options aren't cmdk items) and `aria-controls` (its
+ * own list, which isn't rendered). Props can't win, so this sets the DOM
+ * attributes after each commit. React leaves them alone because cmdk's values
+ * don't change while the catalogue is showing. Only attributes this hook set
+ * are undone, so cmdk's own values take over again when `enabled` turns off.
+ *
+ * Returns a stable callback ref for the input. It tracks the element in state,
+ * so the attributes are applied even when a dialog mounts the input late.
+ */
+export function useVirtualizedModelCatalogInput({
+	enabled,
+	activeItemKey,
+	listboxId,
+}: {
+	enabled: boolean;
+	activeItemKey: string | null;
+	listboxId: string;
+}): (input: HTMLInputElement | null) => void {
+	const [input, setInput] = useState<HTMLInputElement | null>(null);
+	useLayoutEffect(() => {
+		if (!enabled || !input) return;
+		const previousControls = input.getAttribute("aria-controls");
+		const activeDescendant = activeItemKey
+			? getVirtualizedModelCatalogItemId(activeItemKey)
+			: null;
+		input.setAttribute("aria-controls", listboxId);
+		if (activeDescendant) {
+			input.setAttribute("aria-activedescendant", activeDescendant);
+		} else {
+			input.removeAttribute("aria-activedescendant");
+		}
+		return () => {
+			if (input.getAttribute("aria-controls") === listboxId) {
+				if (previousControls === null) input.removeAttribute("aria-controls");
+				else input.setAttribute("aria-controls", previousControls);
+			}
+			if (
+				activeDescendant &&
+				input.getAttribute("aria-activedescendant") === activeDescendant
+			) {
+				input.removeAttribute("aria-activedescendant");
+			}
+		};
+	}, [activeItemKey, enabled, input, listboxId]);
+	return setInput;
 }
 
 type VirtualizedModelCatalogProps<T> = {
@@ -155,6 +233,8 @@ export function VirtualizedModelCatalog<T>({
 							) : row.type === "separator" ? (
 								<div className="my-1 h-px bg-border/50" />
 							) : (
+								// Focus stays on the search input; every consumer moves through the options with the keyboard via aria-activedescendant.
+								// oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus
 								<div
 									id={getVirtualizedModelCatalogItemId(
 										getItemKey(row.item),

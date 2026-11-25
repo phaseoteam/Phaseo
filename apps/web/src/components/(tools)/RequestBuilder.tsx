@@ -287,8 +287,8 @@ print(response.json()["choices"][0]["message"]["content"])`;
 							>
 								<PopoverTrigger asChild>
 									<Button
+										id="model"
 										variant="outline"
-										role="combobox"
 										aria-expanded={modelPickerOpen}
 										className="w-full justify-between"
 									>

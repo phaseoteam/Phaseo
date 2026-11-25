@@ -125,7 +125,8 @@ export default function OrganisationLinks({
 								href={safeUrl}
 								target="_blank"
 								rel="noopener noreferrer"
-								aria-label={t("visitPlatformPage", { name: organisation.name, platform: platformLabel })}
+								// Named by the visible platform and address (WCAG 2.5.3); the description adds whose page it is.
+								title={t("visitPlatformPage", { name: organisation.name, platform: platformLabel })}
 								className="group grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-3 border-b border-border/70 px-3 py-3 transition-colors last:border-b-0 hover:bg-muted/35 sm:rounded-lg sm:border sm:bg-card sm:last:border-b sm:hover:bg-muted/30"
 							>
 								<div className="flex size-8 items-center justify-center rounded-md border border-border/70 bg-muted/20 text-muted-foreground">

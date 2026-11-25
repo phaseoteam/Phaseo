@@ -80,6 +80,7 @@ export function ResetPasswordStep({ Heading }: { Heading: ElementType }) {
 						onChange={(event) => setPassword(event.target.value)}
 						placeholder={t("newPasswordPlaceholder")}
 						disabled={loading}
+						// oxlint-disable-next-line jsx-a11y/no-autofocus -- steps load lazily and swap in place inside the open sign-in dialog, so its initialFocus cannot reach this field
 						autoFocus
 					/>
 					{password ? <PasswordStrengthIndicator password={password} /> : null}

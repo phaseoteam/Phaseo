@@ -43,6 +43,7 @@ export function CountryCombobox({
 	const [open, setOpen] = React.useState(false);
 	const searchInputRef = React.useRef<HTMLInputElement>(null);
 	const listViewportRef = React.useRef<HTMLDivElement>(null);
+	const popupId = React.useId();
 	const selected = COUNTRY_OPTIONS.find((country) => country.code === value);
 	const selectedName = selected
 		? displayNames.of(selected.code) ?? selected.name
@@ -77,6 +78,7 @@ export function CountryCombobox({
 					variant="outline"
 					role="combobox"
 					aria-expanded={open}
+					aria-controls={open ? popupId : undefined}
 					aria-label={t("selectCountry")}
 					disabled={disabled}
 					className={cn("h-10 w-full justify-between rounded-md px-3 font-normal", className)}
@@ -100,6 +102,7 @@ export function CountryCombobox({
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent
+				id={popupId}
 				align="start"
 				initialFocus={false}
 				className="w-[var(--anchor-width)] min-w-72 gap-0 rounded-xl p-1"

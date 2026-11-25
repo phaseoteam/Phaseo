@@ -224,6 +224,39 @@ function SectionLinkRow({
 	);
 }
 
+/** A labelled group of p50/p75/p90/p99 number inputs, so each input is announced with its group title. */
+function PercentileThresholdFields({
+	title,
+	description,
+	placeholder,
+	fields,
+}: {
+	title: string;
+	description: string;
+	placeholder: string;
+	fields: { label: string; value: string; onChange: (value: string) => void }[];
+}) {
+	const id = React.useId();
+	return (
+		<div role="group" aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`} className="space-y-3 rounded-lg border p-4">
+			<div className="space-y-1">
+				<p id={`${id}-title`} className="text-sm leading-none font-medium">{title}</p>
+				<p id={`${id}-description`} className="text-xs text-muted-foreground">
+					{description}
+				</p>
+			</div>
+			<div className="grid gap-4 sm:grid-cols-2">
+				{fields.map((field) => (
+					<div key={field.label} className="space-y-2">
+						<Label htmlFor={`${id}-${field.label}`}>{field.label}</Label>
+						<Input id={`${id}-${field.label}`} type="number" min="0" value={field.value} onChange={(e) => field.onChange(e.target.value)} placeholder={placeholder} />
+					</div>
+				))}
+			</div>
+		</div>
+	);
+}
+
 export default function PresetForm({
 	models,
 	providers,
@@ -288,6 +321,10 @@ export default function PresetForm({
 	const [providerIgnore, setProviderIgnore] = useState<string[]>(Array.isArray(initialProvider.ignore) ? initialProvider.ignore : Array.isArray(initialConfig.ignore_providers) ? initialConfig.ignore_providers : []);
 	const [showProviderPicker, setShowProviderPicker] = useState(false);
 	const [showBlockedProviderPicker, setShowBlockedProviderPicker] = useState(false);
+	// Each picker popover focuses its search field on open (PopoverContent initialFocus).
+	const modelSearchInputRef = React.useRef<HTMLInputElement>(null);
+	const providerSearchInputRef = React.useRef<HTMLInputElement>(null);
+	const blockedProviderSearchInputRef = React.useRef<HTMLInputElement>(null);
 	const [maxPricePrompt, setMaxPricePrompt] = useState(asInputValue(initialProvider.max_price?.prompt));
 	const [maxPriceCompletion, setMaxPriceCompletion] = useState(asInputValue(initialProvider.max_price?.completion));
 	const [throughputP50, setThroughputP50] = useState(asInputValue(initialProvider.preferred_min_throughput?.p50));
@@ -833,8 +870,8 @@ export default function PresetForm({
 							<div className="flex items-center gap-2">
 								<Popover open={showModelPicker} onOpenChange={setShowModelPicker}>
 									<PopoverTrigger asChild><Button type="button" variant="outline" size="sm" className="rounded-md"><Plus className="mr-2 h-4 w-4" />{t("credits.Add Model" as never)}</Button></PopoverTrigger>
-									<PopoverContent align="end" className="w-[min(92vw,440px)] gap-0 overflow-hidden rounded-md p-0">
-										<div className="relative border-b p-2"><Search className="absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input autoFocus value={modelSearch} onChange={(event) => setModelSearch(event.target.value)} placeholder={t("strings.phraseSearchModels" as never)} className="rounded-md pl-9" /></div>
+									<PopoverContent align="end" className="w-[min(92vw,440px)] gap-0 overflow-hidden rounded-md p-0" initialFocus={modelSearchInputRef}>
+										<div className="relative border-b p-2"><Search className="absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input ref={modelSearchInputRef} value={modelSearch} onChange={(event) => setModelSearch(event.target.value)} placeholder={t("strings.phraseSearchModels" as never)} className="rounded-md pl-9" /></div>
 										<ScrollArea className="h-80">
 											{filteredModels.length ? filteredModels.map((model) => {
 												const orgInfo = getModelOrgInfo(model.model_id);
@@ -1160,8 +1197,8 @@ export default function PresetForm({
 										<PopoverTrigger asChild>
 													<Button type="button" variant="outline" size="sm" className="rounded-md"><Plus className="mr-2 h-4 w-4" />{t("strings.Select Providers" as never)}</Button>
 										</PopoverTrigger>
-										<PopoverContent align="end" className="w-[min(92vw,400px)] gap-0 overflow-hidden rounded-md p-0">
-													<div className="relative border-b p-2"><Search className="absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input autoFocus value={providerSearch} onChange={(event) => setProviderSearch(event.target.value)} placeholder={t("strings.phraseSearchProviders" as never)} className="rounded-md pl-9" /></div>
+										<PopoverContent align="end" className="w-[min(92vw,400px)] gap-0 overflow-hidden rounded-md p-0" initialFocus={providerSearchInputRef}>
+													<div className="relative border-b p-2"><Search className="absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input ref={providerSearchInputRef} value={providerSearch} onChange={(event) => setProviderSearch(event.target.value)} placeholder={t("strings.phraseSearchProviders" as never)} className="rounded-md pl-9" /></div>
 											<ScrollArea className="h-72">
 												{filteredProviders.length ? filteredProviders.map((provider) => {
 													const isSelected = providerOrder.includes(provider.id);
@@ -1194,8 +1231,8 @@ export default function PresetForm({
 								<div><div className="text-sm font-medium">{t("strings.Blocked Providers" as never)}</div><p className="mt-1 text-xs text-muted-foreground">{t("strings.phraseTheseProvidersWillNeverBeUsedEvenIfTheySupportTheSelectedModel" as never)}</p></div>
 								<Popover open={showBlockedProviderPicker} onOpenChange={setShowBlockedProviderPicker}>
 								<PopoverTrigger asChild><Button type="button" variant="outline" size="sm" className="rounded-md"><Plus className="mr-2 h-4 w-4" />{t("strings.Select Providers" as never)}</Button></PopoverTrigger>
-									<PopoverContent align="end" className="w-[min(92vw,400px)] gap-0 overflow-hidden rounded-md p-0">
-										<div className="relative border-b p-2"><Search className="absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input autoFocus value={blockedProviderSearch} onChange={(event) => setBlockedProviderSearch(event.target.value)} placeholder={t("strings.phraseSearchProviders" as never)} className="rounded-md pl-9" /></div>
+									<PopoverContent align="end" className="w-[min(92vw,400px)] gap-0 overflow-hidden rounded-md p-0" initialFocus={blockedProviderSearchInputRef}>
+										<div className="relative border-b p-2"><Search className="absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input ref={blockedProviderSearchInputRef} value={blockedProviderSearch} onChange={(event) => setBlockedProviderSearch(event.target.value)} placeholder={t("strings.phraseSearchProviders" as never)} className="rounded-md pl-9" /></div>
 										<ScrollArea className="h-72">
 											{filteredBlockedProviders.map((provider) => {
 												const isBlocked = providerIgnore.includes(provider.id);
@@ -1314,59 +1351,29 @@ export default function PresetForm({
 								</div>
 							</div>
 
-							<div className="space-y-3 rounded-lg border p-4">
-								<div className="space-y-1">
-									<Label>{t("strings.Preferred Minimum Throughput" as never)}</Label>
-									<p className="text-xs text-muted-foreground">
-										{t("strings.phrasePreferredMinimumThroughputInTokensPerSecondEndpointsBelowTheseThresholdsMayStillBeUsedButAreDeprioritizedInRouting" as never)}
-									</p>
-								</div>
-								<div className="grid gap-4 sm:grid-cols-2">
-									<div className="space-y-2">
-										<Label>p50</Label>
-										<Input type="number" min="0" value={throughputP50} onChange={(e) => setThroughputP50(e.target.value)} placeholder={numberExamplePlaceholder("100")} />
-									</div>
-									<div className="space-y-2">
-										<Label>p75</Label>
-										<Input type="number" min="0" value={throughputP75} onChange={(e) => setThroughputP75(e.target.value)} placeholder={numberExamplePlaceholder("100")} />
-									</div>
-									<div className="space-y-2">
-										<Label>p90</Label>
-										<Input type="number" min="0" value={throughputP90} onChange={(e) => setThroughputP90(e.target.value)} placeholder={numberExamplePlaceholder("100")} />
-									</div>
-									<div className="space-y-2">
-										<Label>p99</Label>
-										<Input type="number" min="0" value={throughputP99} onChange={(e) => setThroughputP99(e.target.value)} placeholder={numberExamplePlaceholder("100")} />
-									</div>
-								</div>
-							</div>
+							<PercentileThresholdFields
+								title={t("strings.Preferred Minimum Throughput" as never)}
+								description={t("strings.phrasePreferredMinimumThroughputInTokensPerSecondEndpointsBelowTheseThresholdsMayStillBeUsedButAreDeprioritizedInRouting" as never)}
+								placeholder={numberExamplePlaceholder("100")}
+								fields={[
+									{ label: "p50", value: throughputP50, onChange: setThroughputP50 },
+									{ label: "p75", value: throughputP75, onChange: setThroughputP75 },
+									{ label: "p90", value: throughputP90, onChange: setThroughputP90 },
+									{ label: "p99", value: throughputP99, onChange: setThroughputP99 },
+								]}
+							/>
 
-							<div className="space-y-3 rounded-lg border p-4">
-								<div className="space-y-1">
-									<Label>{t("strings.Preferred Maximum Latency" as never)}</Label>
-									<p className="text-xs text-muted-foreground">
-										{t("strings.phrasePreferredMaximumLatencyInSecondsEndpointsAboveTheseThresholdsMayStillBeUsedButAreDeprioritizedInRouting" as never)}
-									</p>
-								</div>
-								<div className="grid gap-4 sm:grid-cols-2">
-									<div className="space-y-2">
-										<Label>p50</Label>
-										<Input type="number" min="0" value={latencyP50} onChange={(e) => setLatencyP50(e.target.value)} placeholder={numberExamplePlaceholder("5")} />
-									</div>
-									<div className="space-y-2">
-										<Label>p75</Label>
-										<Input type="number" min="0" value={latencyP75} onChange={(e) => setLatencyP75(e.target.value)} placeholder={numberExamplePlaceholder("5")} />
-									</div>
-									<div className="space-y-2">
-										<Label>p90</Label>
-										<Input type="number" min="0" value={latencyP90} onChange={(e) => setLatencyP90(e.target.value)} placeholder={numberExamplePlaceholder("5")} />
-									</div>
-									<div className="space-y-2">
-										<Label>p99</Label>
-										<Input type="number" min="0" value={latencyP99} onChange={(e) => setLatencyP99(e.target.value)} placeholder={numberExamplePlaceholder("5")} />
-									</div>
-								</div>
-							</div>
+							<PercentileThresholdFields
+								title={t("strings.Preferred Maximum Latency" as never)}
+								description={t("strings.phrasePreferredMaximumLatencyInSecondsEndpointsAboveTheseThresholdsMayStillBeUsedButAreDeprioritizedInRouting" as never)}
+								placeholder={numberExamplePlaceholder("5")}
+								fields={[
+									{ label: "p50", value: latencyP50, onChange: setLatencyP50 },
+									{ label: "p75", value: latencyP75, onChange: setLatencyP75 },
+									{ label: "p90", value: latencyP90, onChange: setLatencyP90 },
+									{ label: "p99", value: latencyP99, onChange: setLatencyP99 },
+								]}
+							/>
 						</div>
 					</FormSection>
 				</div>

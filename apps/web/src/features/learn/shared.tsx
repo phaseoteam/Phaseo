@@ -32,7 +32,7 @@ function useMarkdownComponents(): { block: Components; inline: Components } {
 		const code: Components["code"] = (props) => (
 			<code className="rounded-[4px] bg-zinc-100 px-1.5 py-0.5 text-[13px] dark:bg-zinc-800" {...props} />
 		);
-		const a: Components["a"] = ({ href, ...props }) => {
+		const a: Components["a"] = ({ href, children, ...props }) => {
 			const external = typeof href === "string" && href.startsWith("http");
 			return (
 				<a
@@ -41,12 +41,22 @@ function useMarkdownComponents(): { block: Components; inline: Components } {
 					className="text-blue-600 underline decoration-transparent underline-offset-4 transition-colors hover:decoration-current dark:text-blue-400"
 					target={external ? "_blank" : undefined}
 					rel={external ? "noreferrer noopener" : undefined}
-				/>
+				>
+					{children}
+				</a>
 			);
 		};
 		const block: Components = {
-			h2: (props) => <h2 className="mt-8 text-xl font-semibold tracking-tight" {...props} />,
-			h3: (props) => <h3 className="mt-6 text-lg font-semibold tracking-tight" {...props} />,
+			h2: ({ children, ...props }) => (
+				<h2 className="mt-8 text-xl font-semibold tracking-tight" {...props}>
+					{children}
+				</h2>
+			),
+			h3: ({ children, ...props }) => (
+				<h3 className="mt-6 text-lg font-semibold tracking-tight" {...props}>
+					{children}
+				</h3>
+			),
 			p: (props) => <p className="mt-4 text-[15px] leading-7 text-zinc-700 dark:text-zinc-300" {...props} />,
 			ul: (props) => <ul className="mt-4 list-disc space-y-2 pl-6 text-[15px] leading-7 text-zinc-700 dark:text-zinc-300 rtl:pr-6 rtl:pl-0" {...props} />,
 			ol: (props) => <ol className="mt-4 list-decimal space-y-2 pl-6 text-[15px] leading-7 text-zinc-700 dark:text-zinc-300 rtl:pr-6 rtl:pl-0" {...props} />,
@@ -99,6 +109,8 @@ export function StageBadge({ stage, link = true }: { stage: "alpha" | "beta"; li
 		<Badge
 			variant="outline"
 			className="rounded-[4px]"
+			// Badge renders its children inside this anchor.
+			// oxlint-disable-next-line jsx-a11y/anchor-has-content
 			render={link ? <a href={getLocalizedDocsHref(locale, FEATURE_MATURITY_URL)} target="_blank" rel="noreferrer" /> : undefined}
 		>
 			{stage === "alpha" ? t("stageAlpha") : t("stageBeta")}

@@ -38,6 +38,8 @@ export function ModelAdminDockPanel({
 			<div className="relative">
 				<Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 				<Input
+					// This view replaces the dock's action list when the user picks "Find a model to edit", so its search field takes focus.
+					// oxlint-disable-next-line jsx-a11y/no-autofocus
 					autoFocus
 					value={search}
 					onChange={(event) => setSearch(event.target.value)}

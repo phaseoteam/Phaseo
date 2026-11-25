@@ -286,7 +286,6 @@ export function PasskeyManager({ hasPassword }: { hasPassword: boolean }) {
 										value={currentPassword}
 										onChange={(event) => setCurrentPassword(event.target.value)}
 										disabled={pending}
-										autoFocus
 									/>
 								</div>
 							) : (

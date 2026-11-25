@@ -4,9 +4,9 @@ export function GroupedInputPrice({ price, modalities }: { price: string; modali
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<span tabIndex={0} aria-label={`${price} per 1M input tokens: ${modalities}`} className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+				<button type="button" aria-label={`${price} per 1M input tokens: ${modalities}`} className="cursor-help rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
 					{price}
-				</span>
+				</button>
 			</TooltipTrigger>
 			<TooltipContent>{modalities}</TooltipContent>
 		</Tooltip>

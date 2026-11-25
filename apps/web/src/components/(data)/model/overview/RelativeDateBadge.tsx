@@ -78,9 +78,9 @@ export default function RelativeDateBadge({
 	return (
 		<HoverCard>
 			<HoverCardTrigger asChild>
-				<span
+				<button
+					type="button"
 					suppressHydrationWarning
-					tabIndex={0}
 					className={cn(
 						"inline-flex cursor-help items-center text-[11px] font-medium leading-4",
 						toneClassNames[relativeDate.tone],
@@ -88,7 +88,7 @@ export default function RelativeDateBadge({
 					)}
 				>
 					{relativeLabel}
-				</span>
+				</button>
 			</HoverCardTrigger>
 			<HoverCardContent align="end" className="w-64 space-y-2.5">
 				<HoverCardHeader title={detailedLabel} meta={[format.calendarDate(date)]} />

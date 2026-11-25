@@ -51,10 +51,10 @@ export function ModelCapabilityIcons({ endpoints }: { endpoints: readonly string
 			const capabilityLabel = label(capability);
 			return <HoverCard key={capability} openDelay={160} closeDelay={80}>
 				<HoverCardTrigger asChild>
-					<span role="img" tabIndex={0} aria-label={capabilityLabel}
+					<button type="button" aria-label={capabilityLabel}
 						className={cn(MODEL_ICON_BADGE_CLASS_NAME, tone.badgeClassName)}>
 						<Icon aria-hidden className={cn("h-3.5 w-3.5", tone.iconClassName)} />
-					</span>
+					</button>
 				</HoverCardTrigger>
 				<HoverCardContent align="center" side="top" className="w-auto p-3 text-xs font-semibold text-foreground">{capabilityLabel}</HoverCardContent>
 			</HoverCard>;

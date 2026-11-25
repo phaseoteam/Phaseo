@@ -240,6 +240,7 @@ function ownershipProofLabel(provider: InternalProviderApplication): string {
 							</div>
 							{reasonTarget ? <div className="rounded-lg border border-border/70 bg-muted/20 p-3">
 								<Label htmlFor={reviewReasonId} className="text-xs">{t("current.decisionReason", { decision: statusLabel(reasonTarget.decision) })}</Label>
+								{/* oxlint-disable-next-line jsx-a11y/no-autofocus -- the field appears only after the reviewer picks a decision that needs a reason, so focus moves into it */}
 								<div className="mt-2 flex flex-col gap-2 sm:flex-row"><Input id={reviewReasonId} autoFocus value={reasons[key] ?? ""} onChange={(event) => setReasons((current) => ({ ...current, [key]: event.target.value }))} placeholder={t("current.shortReason")} className="text-sm" /><Button type="button" size="sm" onClick={() => void decideProvider(provider.provider_slug, reasonTarget.decision)} disabled={saving === key || !reasons[key]?.trim()}>{t("current.saveDecision")}</Button><Button type="button" size="sm" variant="ghost" onClick={() => setProviderReasonTarget(null)} disabled={saving === key}>{tx("Common.ui.modelEditor.cancel" as never)}</Button></div>
 							</div> : null}
 						</CardContent>

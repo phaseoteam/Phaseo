@@ -175,9 +175,9 @@ export function TrustPage() {
 						</section>
 
 						<section id="providers" className="scroll-mt-24">
-							<h2 className="text-xl font-semibold tracking-tight">{t("serviceProviders")}</h2>
+							<h2 id="providers-heading" className="text-xl font-semibold tracking-tight">{t("serviceProviders")}</h2>
 							<p className="mt-2 text-sm leading-6 text-muted-foreground">{t("serviceProvidersBody")}</p>
-							<div className="mt-6 overflow-x-auto border-y border-border">
+							<div role="region" aria-labelledby="providers-heading" tabIndex={0} className="mt-6 overflow-x-auto border-y border-border outline-none focus-visible:ring-2 focus-visible:ring-ring/50">
 								<Table wrapInContainer={false} className="min-w-[640px] table-fixed text-left text-[length:inherit]">
 									<colgroup><col className="w-40" /><col className="w-48" /><col /></colgroup>
 									<TableHeader><TableRow className="border-b border-border text-xs font-medium text-muted-foreground hover:bg-transparent dark:hover:bg-transparent"><TableHead scope="col" className="h-auto px-0 py-3 pr-4 font-medium text-inherit dark:text-inherit">{copy.providerHeader}</TableHead><TableHead scope="col" className="h-auto px-0 py-3 pr-4 font-medium text-inherit dark:text-inherit">{copy.purposeHeader}</TableHead><TableHead scope="col" className="h-auto px-0 py-3 font-medium text-inherit dark:text-inherit">{copy.dataHeader}</TableHead></TableRow></TableHeader>

@@ -84,6 +84,8 @@ export default function APIProviderCard({ api_provider }: Props) {
 	);
 
 	return (
+		// The whole card is a mouse shortcut to the provider page; the provider link inside is the keyboard path.
+		// oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
 		<div
 			className="group h-full w-full min-w-0 cursor-pointer bg-background py-4 transition-colors hover:bg-muted/20 md:py-5"
 			style={rowStyle}

@@ -1,5 +1,5 @@
 import { chatLocalStorage } from "@/lib/chat/userStorage";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useRouter } from "@/lib/navigation";
 import { useLocale, useTranslations } from "@/i18n/react";
@@ -32,7 +32,11 @@ import { useInitialChatAuth } from "@/components/(chat)/ChatAuthProvider";
 import { RoomWorkingIndicator } from "@/components/(chat)/RoomWorkingIndicator";
 import { RoomSearchDialog } from "@/components/(chat)/RoomSearchDialog";
 import { RoomModelSelector } from "@/components/(chat)/RoomModelSelector";
-import { VirtualizedModelCatalog } from "@/components/(chat)/VirtualizedModelCatalog";
+import {
+	getNextVirtualizedModelCatalogItemKey,
+	useVirtualizedModelCatalogInput,
+	VirtualizedModelCatalog,
+} from "@/components/(chat)/VirtualizedModelCatalog";
 import {
 	compareByReleaseDateDesc,
 	getDefaultFavoriteModelIds,
@@ -641,13 +645,38 @@ function ModelSearchSelect(props: {
 		})),
 		[getReleaseDate, otherOptions],
 	);
+	const catalogSections = searchValue
+		? [{ key: "results", heading: t("results"), items: filteredOptions }]
+		: [
+			{ key: "favorites", heading: t("favourites"), items: favoriteOptions },
+			...groupedOptions,
+		];
+	const catalogKeys = catalogSections.flatMap((section) => section.items);
+	// The highlighted option starts on the chosen model, or the first one, and follows the arrow keys and the mouse.
+	const [highlightedOption, setHighlightedOption] = useState<string | null>(null);
+	const activeOption = highlightedOption && catalogKeys.includes(highlightedOption)
+		? highlightedOption
+		: catalogKeys.includes(value)
+			? value
+			: catalogKeys[0] ?? null;
+	const listboxId = useId();
+	const setCatalogInput = useVirtualizedModelCatalogInput({
+		enabled: open,
+		activeItemKey: activeOption,
+		listboxId,
+	});
+	const selectOption = (option: string) => {
+		onSelect(option);
+		setOpen(false);
+		setSearchValue("");
+		setHighlightedOption(null);
+	};
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
 				<Button
 					type="button"
 					variant="ghost"
-					role="combobox"
 					className={cn(
 						"h-7 min-w-[220px] justify-between px-1 text-xs font-normal",
 						!showChevron && "min-w-0 justify-start px-0",
@@ -673,7 +702,34 @@ function ModelSearchSelect(props: {
 			</PopoverTrigger>
 			<PopoverContent align="start" className="w-[min(92vw,460px)] rounded-md p-0">
 				<Command>
-					<CommandInput placeholder={t("searchModels")} value={searchValue} onValueChange={setSearchValue} />
+					<CommandInput
+						ref={setCatalogInput}
+						placeholder={t("searchModels")}
+						value={searchValue}
+						onValueChange={(nextValue) => {
+							setSearchValue(nextValue);
+							setHighlightedOption(null);
+						}}
+						onKeyDown={(event) => {
+							if (event.key === "Enter") {
+								if (activeOption) {
+									event.preventDefault();
+									event.stopPropagation();
+									selectOption(activeOption);
+								}
+								return;
+							}
+							const nextOption = getNextVirtualizedModelCatalogItemKey(
+								catalogKeys,
+								activeOption,
+								event.key,
+							);
+							if (!nextOption) return;
+							event.preventDefault();
+							event.stopPropagation();
+							setHighlightedOption(nextOption);
+						}}
+					/>
 					<div className="flex items-center gap-1 border-b border-border px-3 py-2">
 						{(["free", "new"] as const).map((filter) => (
 							<Button
@@ -698,21 +754,13 @@ function ModelSearchSelect(props: {
 						))}
 					</div>
 					<VirtualizedModelCatalog
-						sections={searchValue
-							? [{ key: "results", heading: t("results"), items: filteredOptions }]
-							: [
-								{ key: "favorites", heading: t("favourites"), items: favoriteOptions },
-								...groupedOptions,
-							]}
+						sections={catalogSections}
 						getItemKey={(option) => option}
-						activeItemKey={value || null}
+						activeItemKey={activeOption}
 						isItemDisabled={() => false}
-						onActiveItemChange={() => undefined}
-						onSelectItem={(option) => {
-							onSelect(option);
-							setOpen(false);
-							setSearchValue("");
-						}}
+						onActiveItemChange={setHighlightedOption}
+						onSelectItem={selectOption}
+						listboxId={listboxId}
 						renderItem={(option) => (
 							<>
 									<span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-border bg-background">
@@ -2557,12 +2605,12 @@ export default function CouncilClient({
 													return (
 													<HoverCard key={`fused-${modelId}-${index}`} openDelay={150} closeDelay={80}>
 														<HoverCardTrigger asChild>
-															<span
+															<button
+																type="button"
 														className={cn(
 															"inline-flex h-5 w-5 cursor-help items-center justify-center rounded-md border border-border bg-background outline-none transition-transform hover:z-10 hover:-translate-y-0.5 hover:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/50",
 															index > 0 ? "-ml-1.5" : "",
 														)}
-															tabIndex={0}
 															aria-label={tCards("sourceDetails", { model: getLabel(modelId) })}
 														>
 															<Logo
@@ -2572,7 +2620,7 @@ export default function CouncilClient({
 																height={10}
 																className="h-2.5 w-2.5 rounded-none object-contain"
 															/>
-															</span>
+															</button>
 														</HoverCardTrigger>
 														<HoverCardContent side="top" align="end" className="w-72">
 															<HoverCardBody>

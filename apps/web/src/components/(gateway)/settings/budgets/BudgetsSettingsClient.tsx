@@ -300,7 +300,6 @@ function BudgetForm({ editing, onDone }: { editing: Editing; onDone: () => void 
 					inputMode="decimal"
 					min="0"
 					step="any"
-					autoFocus
 					required
 					value={value}
 					aria-invalid={error ? true : undefined}

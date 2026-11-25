@@ -70,10 +70,10 @@ export default function DeleteKeyItem({
 		<Dialog open={open} onOpenChange={setOpen}>
 			{trigger ? (
 				<DropdownMenuItem variant="destructive" render={<div
-						className="w-full text-left flex items-center gap-2"
-						onClick={() => {
-							setTimeout(() => setOpen(true), 0);
-						}} />}>
+						className="w-full text-left flex items-center gap-2" />}
+					onClick={() => {
+						setTimeout(() => setOpen(true), 0);
+					}}>
 
 						<Trash2 className="mr-2" />
 						{t("labels.delete")}

@@ -703,6 +703,8 @@ function ProviderHourlyPerformance({
 }) {
 	const tx = useTranslations();
 	const locale = useLocale();
+	// True while the chart has keyboard focus, so the live region reads out the hour the arrow keys land on.
+	const [chartFocused, setChartFocused] = useState(false);
 	const points = (runtimeStats?.performanceHourly3d ?? []).slice(-hours);
 	const categories = Object.entries(runtimeStats?.errorCategoryCounts3d ?? {})
 		.filter(([, count]) => count > 0)
@@ -726,6 +728,32 @@ function ProviderHourlyPerformance({
 	);
 	if (!hasHourlyPerformance && categories.length === 0 && rateLimitedPct == null) return null;
 
+	const describePoint = (point: ProviderPerformancePoint) => {
+		const metricValue = getPerformanceMetricValue(activeMetric, point);
+		const pointLabel = hasPerformanceMetricValue(activeMetric, metricValue)
+			? formatPerformanceMetricValue(activeMetric, metricValue, locale, tx)
+			: tx("Catalogue.modelDetail.performance.noData" as never);
+		return `${new Date(point.start).toLocaleString(locale, { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC: ${metricTooltipLabel}: ${pointLabel}`;
+	};
+	const hoveredIndex = hoveredPoint
+		? points.findIndex((point) => point.start === hoveredPoint.start)
+		: -1;
+	// One tab stop for the whole chart; the arrow keys, Home and End step through the hours.
+	const handleChartKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+		const lastIndex = points.length - 1;
+		const currentIndex = hoveredIndex < 0 ? lastIndex : hoveredIndex;
+		const nextIndex =
+			event.key === "ArrowLeft" || event.key === "ArrowDown" ? Math.max(0, currentIndex - 1)
+			: event.key === "ArrowRight" || event.key === "ArrowUp" ? Math.min(lastIndex, currentIndex + 1)
+			: event.key === "Home" ? 0
+			: event.key === "End" ? lastIndex
+			: null;
+		const nextPoint = nextIndex == null ? undefined : points[nextIndex];
+		if (!nextPoint) return;
+		event.preventDefault();
+		onPointHover(nextPoint);
+	};
+
 	return (
 		<div className="space-y-3 py-3">
 			{hasHourlyPerformance ? (
@@ -735,19 +763,30 @@ function ProviderHourlyPerformance({
 							{performancePeriod}
 						</p>
 					) : null}
+					{/* A chart image keyboard users can focus and step through with the arrow keys; the live region below reads out each hour. */}
+					{/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
 					<div
-						className="grid h-8 grid-flow-col auto-cols-fr items-end gap-0.5"
+						className="grid h-8 grid-flow-col auto-cols-fr items-end gap-0.5 rounded-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						role="img"
 						aria-label={tx("Common.ui.providerCardCopy.metricOverTheLastHoursHours", { metric: metricLabel, hours })}
+						// oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+						tabIndex={0}
+						onKeyDown={handleChartKeyDown}
+						onFocus={() => {
+							setChartFocused(true);
+							const lastPoint = points[points.length - 1];
+							if (!hoveredPoint && lastPoint) onPointHover(lastPoint);
+						}}
+						onBlur={() => {
+							setChartFocused(false);
+							onPointLeave();
+						}}
 						onPointerLeave={onPointLeave}
 					>
 						{points.map((point, index) => {
 							const metricValue = getPerformanceMetricValue(activeMetric, point);
 							const hasData = hasPerformanceMetricValue(activeMetric, metricValue);
 							const numericMetricValue = metricValue ?? 0;
-							const pointLabel = hasData
-								? formatPerformanceMetricValue(activeMetric, metricValue, locale, tx)
-								: tx("Catalogue.modelDetail.performance.noData" as never);
 							const barClassName = !hasData
 								? "bg-muted-foreground/30"
 								: activeMetric === "uptime" && numericMetricValue > 99
@@ -773,17 +812,17 @@ function ProviderHourlyPerformance({
 										"min-w-0 self-end transition-[height,background-color] duration-150 motion-reduce:transition-none",
 										edgeRadiusClassName,
 										barClassName,
+										index === hoveredIndex && chartFocused && "ring-1 ring-foreground",
 									)}
 									style={{ height: barHeight }}
-									tabIndex={0}
-									aria-label={`${new Date(point.start).toLocaleString(locale, { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })} UTC: ${metricTooltipLabel}: ${pointLabel}`}
 									onPointerEnter={() => onPointHover(point)}
-									onFocus={() => onPointHover(point)}
-									onBlur={onPointLeave}
 								/>
 							);
 						})}
 					</div>
+					<span className="sr-only" aria-live="polite">
+						{chartFocused && hoveredPoint ? describePoint(hoveredPoint) : ""}
+					</span>
 					{activeMetric === "uptime" ? (
 						<UptimeKey className="mt-2 justify-center text-[11px]" />
 					) : null}

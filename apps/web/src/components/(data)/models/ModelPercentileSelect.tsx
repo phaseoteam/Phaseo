@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { BarChart3, Loader2 } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ export default function ModelPercentileSelect({
 }) {
 	const tPerformance = useTranslations("Catalogue.modelDetail.performance");
 	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
+	const comingSoonId = useId();
 	const selector = (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
@@ -48,7 +50,7 @@ export default function ModelPercentileSelect({
 					variant="outline"
 					size="sm"
 					className={cn("h-8 gap-2 rounded-md px-3 text-xs", className)}
-					aria-label={ariaLabel ?? tPerformance("selectPercentile")}
+					aria-label={`${formatModelPercentile(value)}, ${ariaLabel ?? tPerformance("selectPercentile")}`}
 					title={disabled ? tQuickstart("comingSoon") : undefined}
 					disabled={disabled || isLoading}
 				>
@@ -87,12 +89,26 @@ export default function ModelPercentileSelect({
 
 	if (!disabled) return selector;
 
+	// A disabled button can't take focus, so keyboard users could never reach the
+	// "coming soon" tooltip. This one stays focusable but does nothing.
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<span className="inline-flex" tabIndex={0}>
-					{selector}
-				</span>
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					className={cn("h-8 cursor-not-allowed gap-2 rounded-md px-3 text-xs opacity-50", className)}
+					aria-label={`${formatModelPercentile(value)}, ${ariaLabel ?? tPerformance("selectPercentile")}`}
+					aria-describedby={comingSoonId}
+					aria-disabled="true"
+				>
+					<BarChart3 className="size-3.5" />
+					{formatModelPercentile(value)}
+					<span id={comingSoonId} className="sr-only">
+						{tQuickstart("comingSoon")}
+					</span>
+				</Button>
 			</TooltipTrigger>
 		<TooltipContent>{tQuickstart("comingSoon")}</TooltipContent>
 		</Tooltip>

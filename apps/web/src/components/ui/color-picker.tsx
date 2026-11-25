@@ -436,6 +436,70 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 		});
 	};
 
+	// Arrow keys move the saturation/brightness handle by 1% (10% with Shift);
+	// Page Up/Down change brightness by 10%.
+	const handleSaturationValueKey = (
+		event: React.KeyboardEvent<HTMLDivElement>,
+	) => {
+		const step = event.shiftKey ? 0.1 : 0.01;
+		const next = { ...hsv };
+		switch (event.key) {
+			case "ArrowLeft":
+				next.s = clamp(hsv.s - step, 0, 1);
+				break;
+			case "ArrowRight":
+				next.s = clamp(hsv.s + step, 0, 1);
+				break;
+			case "ArrowDown":
+				next.v = clamp(hsv.v - step, 0, 1);
+				break;
+			case "ArrowUp":
+				next.v = clamp(hsv.v + step, 0, 1);
+				break;
+			case "PageDown":
+				next.v = clamp(hsv.v - 0.1, 0, 1);
+				break;
+			case "PageUp":
+				next.v = clamp(hsv.v + 0.1, 0, 1);
+				break;
+			default:
+				return;
+		}
+		event.preventDefault();
+		commitHsv(next, true);
+	};
+
+	const handleHueKey = (event: React.KeyboardEvent<HTMLDivElement>) => {
+		const step = event.shiftKey ? 10 : 1;
+		let h = hsv.h;
+		switch (event.key) {
+			case "ArrowLeft":
+			case "ArrowDown":
+				h -= step;
+				break;
+			case "ArrowRight":
+			case "ArrowUp":
+				h += step;
+				break;
+			case "PageDown":
+				h -= 10;
+				break;
+			case "PageUp":
+				h += 10;
+				break;
+			case "Home":
+				h = 0;
+				break;
+			case "End":
+				h = 360;
+				break;
+			default:
+				return;
+		}
+		event.preventDefault();
+		commitHsv({ ...hsv, h: clamp(h, 0, 360) }, true);
+	};
+
 	const handleHuePointer = (event: React.PointerEvent<HTMLDivElement>) => {
 		event.currentTarget.setPointerCapture(event.pointerId);
 		commitHsv({
@@ -449,11 +513,15 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 			<div
 				role="slider"
 				aria-label={t("saturationBrightness")}
+				aria-valuemin={0}
+				aria-valuemax={100}
+				aria-valuenow={Math.round(hsv.s * 100)}
 				aria-valuetext={t("colorSaturationBrightness", {
 					saturation: Math.round(hsv.s * 100),
 					brightness: Math.round(hsv.v * 100),
 				})}
 				tabIndex={0}
+				onKeyDown={handleSaturationValueKey}
 				className="relative h-36 cursor-crosshair overflow-hidden rounded-xl border border-border shadow-inner outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
 				style={{ backgroundColor: hueColor }}
 				onPointerDown={handleSaturationValuePointer}
@@ -483,6 +551,7 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 					aria-valuemax={360}
 					aria-valuenow={Math.round(hsv.h)}
 					tabIndex={0}
+					onKeyDown={handleHueKey}
 					className="relative h-4 flex-1 cursor-ew-resize rounded-full border border-border outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
 					style={{
 						background:

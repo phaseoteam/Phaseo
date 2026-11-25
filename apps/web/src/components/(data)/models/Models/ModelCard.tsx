@@ -1014,6 +1014,8 @@ function ModelCardImpl({
 	};
 
 	return (
+		// The whole card is a mouse shortcut to the model page; the model links inside are the keyboard path.
+		// oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
 		<div
 			className={cn(
 				"group h-full cursor-pointer py-4 transition-colors hover:bg-muted/20 md:py-5",
@@ -1394,9 +1396,9 @@ function ModelCardImpl({
 									size="sm"
 									variant="ghost"
 									className="hidden h-8 px-2 tabular-nums text-muted-foreground md:inline-flex"
-									aria-label={weeklyUsage.label}
 								>
 									{weeklyUsageValue}
+									<span className="sr-only"> {weeklyUsage.label}</span>
 								</Button>
 							</TooltipTrigger>
 							<TooltipContent side="top">{weeklyUsage.label}</TooltipContent>
@@ -1409,9 +1411,9 @@ function ModelCardImpl({
 									size="sm"
 									variant="ghost"
 									className="h-8 px-2 tabular-nums text-muted-foreground md:hidden"
-									aria-label={weeklyUsage.label}
 								>
 									{weeklyUsageValue}
+									<span className="sr-only"> {weeklyUsage.label}</span>
 								</Button>
 							</PopoverTrigger>
 							<PopoverContent

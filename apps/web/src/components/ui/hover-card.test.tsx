@@ -86,6 +86,8 @@ it("prefers a delay given on the trigger", () => {
 it("opens on a touch tap without firing the surrounding click handler", () => {
 	const onRowClick = vi.fn();
 	renderCard(
+		// Stands in for a clickable table row; the hover card trigger is the keyboard target.
+		// oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
 		<div onClick={onRowClick}>
 			<HoverCard>
 				<HoverCardTrigger>Trigger</HoverCardTrigger>
@@ -105,6 +107,8 @@ it("opens on a touch tap without firing the surrounding click handler", () => {
 it("leaves a mouse click to the surrounding click handler", () => {
 	const onRowClick = vi.fn();
 	renderCard(
+		// Stands in for a clickable table row; the hover card trigger is the keyboard target.
+		// oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
 		<div onClick={onRowClick}>
 			<HoverCard>
 				<HoverCardTrigger>Trigger</HoverCardTrigger>

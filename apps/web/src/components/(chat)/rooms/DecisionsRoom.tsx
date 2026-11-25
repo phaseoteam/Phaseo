@@ -197,6 +197,11 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 	const [metadataOpenRunId, setMetadataOpenRunId] = useState<string | null>(null);
 	const [editingRunId, setEditingRunId] = useState<string | null>(null);
 	const [editingValue, setEditingValue] = useState("");
+	const editingTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+	// Editing a prompt opens a textarea in place of the message; move focus into it.
+	useEffect(() => {
+		if (editingRunId) editingTextareaRef.current?.focus();
+	}, [editingRunId]);
 	const [error, setError] = useState<string | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const scrollViewportRef = useRef<HTMLDivElement | null>(null);
@@ -889,7 +894,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 														{editingRunId === run.id ? (
 															<div className="grid gap-3">
 																<Textarea
-																	autoFocus
+																	ref={editingTextareaRef}
 																	value={editingValue}
 																	onChange={(event) => setEditingValue(event.target.value)}
 																	onKeyDown={(event) => {

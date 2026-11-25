@@ -1693,7 +1693,7 @@ export default function ModelPricingClient({
                         "group inline-flex w-full items-center gap-1.5 text-left text-xs font-medium transition-colors hover:text-foreground justify-start",
                         isActive ? "text-foreground" : "text-muted-foreground"
                     )}
-                    aria-label={tProvider("sortBy", { metric: label })}
+                    aria-label={`${label}${subLabel ? ` ${subLabel}` : ""}, ${tProvider("sortBy", { metric: label })}`}
                 >
                     {labelNode}
                     {icon}
@@ -1709,7 +1709,7 @@ export default function ModelPricingClient({
                     "group inline-flex w-full items-center justify-end gap-1.5 text-right text-xs font-medium transition-colors hover:text-foreground",
                     isActive ? "text-foreground" : "text-muted-foreground"
                 )}
-                aria-label={tProvider("sortBy", { metric: label })}
+                aria-label={`${label}${subLabel ? ` ${subLabel}` : ""}, ${tProvider("sortBy", { metric: label })}`}
             >
                 {icon}
                 {labelNode}

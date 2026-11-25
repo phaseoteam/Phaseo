@@ -63,7 +63,8 @@ describe("MonitorDataTable", () => {
 	});
 
 	it("shows capabilities as icons with accessible names instead of words", () => {
-		expect(html).toContain('role="img" tabindex="0" aria-label="Text generation"');
+		// A real button, so keyboard users can focus it to open the hover card.
+		expect(html).toContain('<button type="button" aria-label="Text generation"');
 		expect(html).toContain('aria-label="Batch"');
 		expect(html).not.toMatch(/>Text generation</);
 		// The only "Batch" text is the Tier column's badge.

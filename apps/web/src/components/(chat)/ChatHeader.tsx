@@ -8,6 +8,7 @@ import { useChatModelAccess } from "@/components/(chat)/ChatModelAccessContext";
 import {
 	useCallback,
 	useEffect,
+	useId,
 	useMemo,
 	useRef,
 	useState,
@@ -72,7 +73,8 @@ import { sdkRequestFromTextThread } from "@/components/(chat)/chatSdkRequest";
 import { ChatShortcutReference } from "@/components/(chat)/ChatShortcutReference";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
-	getVirtualizedModelCatalogItemId,
+	getNextVirtualizedModelCatalogItemKey,
+	useVirtualizedModelCatalogInput,
 	VirtualizedModelCatalog,
 	type VirtualizedModelCatalogSection,
 } from "@/components/(chat)/VirtualizedModelCatalog";
@@ -413,6 +415,7 @@ export function ChatHeader({
 		null,
 	);
 	const modelSearchInputRef = useRef<HTMLInputElement | null>(null);
+	const modelCatalogListboxId = useId();
 	const modelPickerModifierClickRef = useRef<{
 		modelId: string;
 		keepPickerOpen: boolean;
@@ -1473,46 +1476,39 @@ export function ChatHeader({
 			)}
 		</>
 	);
+	const setModelCatalogInput = useVirtualizedModelCatalogInput({
+		enabled: modelPickerOpen && !hasModelSearchValue,
+		activeItemKey: resolvedActiveBrowseModelId,
+		listboxId: modelCatalogListboxId,
+	});
+	const setModelSearchInput = useCallback(
+		(input: HTMLInputElement | null) => {
+			modelSearchInputRef.current = input;
+			setModelCatalogInput(input);
+		},
+		[setModelCatalogInput],
+	);
 	const handleModelSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
 		if (hasModelSearchValue || selectableBrowseModelOptions.length === 0) {
 			return;
 		}
-		const currentIndex = Math.max(
-			0,
-			selectableBrowseModelOptions.findIndex(
-				(option) => option.modelId === resolvedActiveBrowseModelId,
-			),
-		);
-		let nextIndex = currentIndex;
-		switch (event.key) {
-			case "ArrowDown":
-				nextIndex = Math.min(
-					currentIndex + 1,
-					selectableBrowseModelOptions.length - 1,
-				);
-				break;
-			case "ArrowUp":
-				nextIndex = Math.max(currentIndex - 1, 0);
-				break;
-			case "Home":
-				nextIndex = 0;
-				break;
-			case "End":
-				nextIndex = selectableBrowseModelOptions.length - 1;
-				break;
-			case "Enter":
-				if (resolvedActiveBrowseModelId) {
-					event.preventDefault();
-					event.stopPropagation();
-					handleModelSelect(resolvedActiveBrowseModelId);
-				}
-				return;
-			default:
-				return;
+		if (event.key === "Enter") {
+			if (resolvedActiveBrowseModelId) {
+				event.preventDefault();
+				event.stopPropagation();
+				handleModelSelect(resolvedActiveBrowseModelId);
+			}
+			return;
 		}
+		const nextModelId = getNextVirtualizedModelCatalogItemKey(
+			selectableBrowseModelOptions.map((option) => option.modelId),
+			resolvedActiveBrowseModelId,
+			event.key,
+		);
+		if (!nextModelId) return;
 		event.preventDefault();
 		event.stopPropagation();
-		setActiveBrowseModelId(selectableBrowseModelOptions[nextIndex]?.modelId ?? null);
+		setActiveBrowseModelId(nextModelId);
 	};
 
 	return (
@@ -1578,22 +1574,15 @@ export function ChatHeader({
 						title={tChat("selectModel")}
 						className="w-[min(92vw,560px)] max-w-none sm:max-w-none"
 						commandProps={{ shouldFilter: false }}
+						initialFocus={modelSearchInputRef}
 					>
 					<ModelSelectorInput
-							ref={modelSearchInputRef}
+							ref={setModelSearchInput}
 							data-chat-model-selector-search="true"
-							autoFocus
 							placeholder={tUi("accessibility.searchModels")}
 							value={modelSearchValue}
 							onValueChange={setModelSearchValue}
 							onKeyDown={handleModelSearchKeyDown}
-							aria-activedescendant={
-								hasModelSearchValue || !resolvedActiveBrowseModelId
-									? undefined
-									: getVirtualizedModelCatalogItemId(
-											resolvedActiveBrowseModelId,
-										)
-							}
 					/>
 					{modelAccessNotice ? (
 						<p role="note" className="flex items-start gap-2 border-b px-4 py-2 text-xs text-muted-foreground">
@@ -1698,6 +1687,7 @@ export function ChatHeader({
 									)
 								}
 								onActiveItemChange={setActiveBrowseModelId}
+								listboxId={modelCatalogListboxId}
 								onSelectItem={(option, event) =>
 									handleModelSelect(
 										option.modelId,

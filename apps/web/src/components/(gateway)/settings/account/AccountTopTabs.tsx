@@ -59,6 +59,7 @@ export default function AccountTopTabs() {
 	}, [activeHref, setIndicatorToHref]);
 
 	return (
+		// oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- onMouseLeave only moves the decorative underline back to the active tab; the links are the controls
 		<nav
 			ref={containerRef}
 			className="relative flex gap-4 border-b border-border"

@@ -40,7 +40,8 @@ describe("UsageEntityLink", () => {
 	it("is a plain catalogue link that the site-wide entity card recognises, and does not open the row", () => {
 		const onRowClick = vi.fn();
 		act(() => root.render(
-			<div onClick={onRowClick}>
+			// Stands in for a clickable table row; the handler only records whether the link click bubbled.
+			<div role="presentation" onClick={onRowClick}>
 				<UsageEntityLink href="/models/anthropic/claude-fable-5-2">Claude Fable 5.2</UsageEntityLink>
 			</div>,
 		));

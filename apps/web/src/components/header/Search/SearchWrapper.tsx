@@ -56,14 +56,14 @@ export function SearchWrapper({ className, capabilities, accountQueryScope, isAd
 				className={cn(
 					"relative flex h-9 w-full min-w-0 items-center justify-start rounded-lg border border-border bg-background pl-8 pr-2 text-left text-sm text-muted-foreground shadow-none transition-[border-color,color,background-color] hover:bg-accent hover:text-accent-foreground max-[25rem]:justify-center max-[25rem]:px-0 lg:pl-9 lg:pr-14",
 				)}
-				aria-label={t("openPalette")}
+				aria-keyshortcuts="Control+K Meta+K"
 			>
 				<SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground max-[25rem]:left-1/2 max-[25rem]:-translate-x-1/2 lg:left-3" />
-				<span className="min-w-0 flex-1 truncate font-medium max-[25rem]:hidden">
+				<span className="min-w-0 flex-1 truncate font-medium max-[25rem]:sr-only">
 					<span className="xl:hidden">{t("search")}</span>
 					<span className="hidden whitespace-nowrap xl:inline">{t("search")} Phaseo</span>
 				</span>
-				<span className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground lg:inline-flex">
+				<span aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded-md border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground lg:inline-flex">
 					{shortcutLabel}
 				</span>
 			</button>

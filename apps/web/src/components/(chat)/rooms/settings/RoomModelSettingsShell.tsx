@@ -219,7 +219,6 @@ export function RoomModelSettingsShell({
 										<Button
 											type="button"
 											variant="outline"
-											role="combobox"
 											aria-expanded={modelPickerOpen}
 											className="justify-between gap-2"
 											disabled={modelChoices.length === 0}

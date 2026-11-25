@@ -84,8 +84,8 @@ export function ServiceTierBadge({
 	return (
 		<Tooltip>
 			<TooltipTrigger asChild>
-				<span
-					tabIndex={0}
+				<button
+					type="button"
 					aria-label={tCard("serviceTierInfo" as never, { tier: label } as never)}
 					className="inline-flex cursor-help rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 					onClick={(event) => event.stopPropagation()}
@@ -94,7 +94,7 @@ export function ServiceTierBadge({
 					}}
 				>
 					{badge}
-				</span>
+				</button>
 			</TooltipTrigger>
 			<TooltipContent className="max-w-64 whitespace-normal leading-relaxed">
 				{tooltip}

@@ -143,6 +143,8 @@ export function ArtificialAnalysisDashboardChart({ title, rows, value: metricVal
  }), 58, size.width - 4);
  }, [columns, unit, points, groups, modelIds, groupModels, size.width, size.height, lower, upper, locale]);
 	const axis = { fontSize: 11, fill: "var(--muted-foreground)" };
+	// Escape from any focused control inside the chart closes the inspection card.
+	// oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
 	return <section ref={regionRef} className="min-w-0" aria-label={title} onKeyDown={(event) => { if (event.key === "Escape") { inspection.clear(); event.stopPropagation(); } }}>
 		<div className="mb-3 flex flex-wrap items-center justify-between gap-3">
 			<h3 className="text-base font-semibold tracking-tight">{title}</h3>

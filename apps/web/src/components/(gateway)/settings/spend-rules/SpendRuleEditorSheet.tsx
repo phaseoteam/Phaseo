@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode, type Ref } from "react";
 import { Plus, Send, X } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
@@ -91,10 +91,12 @@ export function SpendRuleEditorSheet({ target, onClose, data, destinations }: {
 	destinations: NotificationDestination[];
 }) {
 	const identity = target ? (target.mode === "edit" ? `edit:${target.rule.id}:${target.rule.updated_at}` : `create:${target.key}`) : "closed";
+	// A new rule starts with its name field focused; editing leaves focus where it was (the inspector is non-modal).
+	const nameInputRef = useRef<HTMLInputElement>(null);
 	return (
 		<ProviderInspectorSheet open={target !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
-			<ProviderInspectorSheetContent className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[50vw] lg:!w-[48vw] xl:!w-[44vw] 2xl:!w-[42vw] data-[side=right]:sm:max-w-none">
-				{target ? <SpendRuleEditorForm key={identity} target={target} onClose={onClose} data={data} destinations={destinations} /> : null}
+			<ProviderInspectorSheetContent className="!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[50vw] lg:!w-[48vw] xl:!w-[44vw] 2xl:!w-[42vw] data-[side=right]:sm:max-w-none" initialFocus={target?.mode === "create" ? nameInputRef : false}>
+				{target ? <SpendRuleEditorForm key={identity} target={target} onClose={onClose} data={data} destinations={destinations} nameInputRef={nameInputRef} /> : null}
 			</ProviderInspectorSheetContent>
 		</ProviderInspectorSheet>
 	);
@@ -128,11 +130,12 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 	);
 }
 
-function SpendRuleEditorForm({ target, onClose, data, destinations }: {
+function SpendRuleEditorForm({ target, onClose, data, destinations, nameInputRef }: {
 	target: SpendRuleEditorTarget;
 	onClose: () => void;
 	data: SettingsSpendAlertsData;
 	destinations: NotificationDestination[];
+	nameInputRef?: Ref<HTMLInputElement>;
 }) {
 	const t = useTranslations("SettingsUI.spendAlerts");
 	const write = useSettingsWrite();
@@ -250,7 +253,7 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 					<fieldset disabled={!canManage || saving} className="min-w-0">
 						<Section title={t("editor.sectionAlert")}>
 							<Field label={t("editor.name")} htmlFor="spend-rule-name" error={issueText("name")}>
-								<Input id="spend-rule-name" className="rounded-md" value={draft.name} maxLength={100} placeholder={t("editor.namePlaceholder")} onChange={(event) => update({ name: event.target.value })} autoFocus={!rule} />
+								<Input id="spend-rule-name" className="rounded-md" value={draft.name} maxLength={100} placeholder={t("editor.namePlaceholder")} onChange={(event) => update({ name: event.target.value })} ref={nameInputRef} />
 							</Field>
 							<Field label={t("editor.type")} htmlFor="spend-rule-metric" help={t(`metricHelp.${draft.metric}`)}>
 								<Select disabled={!canManage} value={draft.metric} onValueChange={(value) => setDraft((current) => withMetric(current, value as SpendRuleDraft["metric"]))}>
@@ -545,7 +548,7 @@ function SpendRuleEditorForm({ target, onClose, data, destinations }: {
 						</AlertDialogHeader>
 						<div className="my-4 space-y-1.5">
 							<Label htmlFor="spend-rule-confirm-block">{t("confirmBlock.label", { name: draft.name.trim() })}</Label>
-							<Input id="spend-rule-confirm-block" className="rounded-md" value={confirmText} autoComplete="off" autoFocus onChange={(event) => setConfirmText(event.target.value)} />
+							<Input id="spend-rule-confirm-block" className="rounded-md" value={confirmText} autoComplete="off" onChange={(event) => setConfirmText(event.target.value)} />
 						</div>
 						<AlertDialogFooter>
 							<AlertDialogCancel type="button" className="rounded-md">{t("delete.cancel")}</AlertDialogCancel>
