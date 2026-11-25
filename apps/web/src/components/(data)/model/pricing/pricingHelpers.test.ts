@@ -304,6 +304,119 @@ describe("buildProviderSections", () => {
 		expect(buildProviderTablePriceSummary(sections, "input")).toMatchObject({ primary: { price: 0.05, unitLabel: "Per minute" }, secondary: null });
 	});
 
+	test("shows a per-minute session price with no input/output split as a Usage column", () => {
+		const provider = makeProviderPricing();
+		provider.provider_models = [{
+			...provider.provider_models[0],
+			id: "openai:openai/gpt-live-1.1:audio.realtime",
+			model_id: "openai/gpt-live-1.1",
+			endpoint: "audio.realtime",
+			input_modalities: "text,audio",
+			output_modalities: "text,audio",
+		}];
+		// Matches the live payload: modality audio, no direction.
+		const rule = { ...provider.pricing_rules[0], model_key: "openai:openai/gpt-live-1.1:audio.realtime", unit: "minute", unit_size: 1, match: [], modality: "audio", direction: null };
+		provider.pricing_rules = [
+			{ ...rule, id: "live-active", meter: "audio_minutes", price_per_unit: 0.05 },
+			{ ...rule, id: "live-standby", meter: "standby_audio_minutes", price_per_unit: 0.02 },
+		];
+
+		const sections = buildProviderSections(provider, "standard");
+		const columns = buildProviderTablePriceColumns([sections]);
+
+		expect(columns).toEqual([
+			expect.objectContaining({ direction: "input", modality: "audio", label: "Usage", unitLabel: "Per minute", headerUnitLabel: "$/min" }),
+		]);
+		expect(buildProviderTablePriceSummaryForColumn(sections, columns[0]!)).toMatchObject({
+			primary: { price: 0.05, unitLabel: "Per minute" },
+			secondary: null,
+		});
+	});
+
+	test("shows a per-request price as a Usage column when the route has no other price", () => {
+		const provider = makeProviderPricing();
+		provider.provider_models = [{
+			...provider.provider_models[0],
+			id: "cohere:cohere/rerank-v3.5:text.rerank",
+			model_id: "cohere/rerank-v3.5",
+			endpoint: "text.rerank",
+		}];
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0],
+			id: "rerank-request",
+			model_key: "cohere:cohere/rerank-v3.5:text.rerank",
+			meter: "requests",
+			unit: "request",
+			unit_size: 1,
+			price_per_unit: 0.002,
+			match: [],
+		}];
+
+		const sections = buildProviderSections(provider, "standard");
+		const columns = buildProviderTablePriceColumns([sections]);
+
+		expect(columns).toEqual([
+			expect.objectContaining({ direction: "input", label: "Usage", headerUnitLabel: "$/request" }),
+		]);
+		expect(buildProviderTablePriceSummaryForColumn(sections, columns[0]!)).toMatchObject({
+			primary: { price: 0.002 },
+		});
+	});
+
+	test("labels a request meter with its display unit when it counts something else", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0],
+			id: "rerank-search-unit",
+			meter: "requests",
+			unit: "request",
+			unit_size: 1,
+			price_per_unit: 0.002,
+			display_unit: "1 search unit",
+			match: [],
+		}];
+
+		const sections = buildProviderSections(provider, "standard");
+		const columns = buildProviderTablePriceColumns([sections]);
+
+		expect(columns).toEqual([
+			expect.objectContaining({ usage: true, unitLabel: "Per search unit", headerUnitLabel: "$/search unit" }),
+		]);
+	});
+
+	test("keeps the billing quantity for a bulk-priced named request unit", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0],
+			id: "rerank-bulk",
+			meter: "requests",
+			unit: "request",
+			unit_size: 1000,
+			price_per_unit: 2,
+			display_unit: "search units",
+			match: [],
+		}];
+
+		const columns = buildProviderTablePriceColumns([buildProviderSections(provider, "standard")]);
+
+		expect(columns).toEqual([
+			expect.objectContaining({ usage: true, unitLabel: "Per 1,000 search units" }),
+		]);
+	});
+
+	test("keeps a per-request fee out of the columns when the route also has token prices", () => {
+		const provider = makeProviderPricing();
+		const base = provider.pricing_rules[0]!;
+		provider.pricing_rules = [
+			{ ...base, id: "tokens-in", meter: "input_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 1, match: [] },
+			{ ...base, id: "fee", meter: "requests", unit: "request", unit_size: 1, price_per_unit: 0.01, match: [] },
+		];
+
+		const columns = buildProviderTablePriceColumns([buildProviderSections(provider, "standard")]);
+
+		expect(columns.map((column) => column.label)).toEqual(["Input"]);
+	});
+
 	test("uses duration pricing as the base summary for audio models", () => {
 		const provider = makeProviderPricing();
 		provider.provider_models = [{

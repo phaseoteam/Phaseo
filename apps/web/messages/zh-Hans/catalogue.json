@@ -1057,6 +1057,7 @@
 			"sortBy": "按{metric}对提供商排序",
 			"sortButton": "排序",
 			"sortDefault": "默认顺序",
+			"usagePriceColumn": "用量",
 			"provider": "提供商",
 			"inputPerMillion": "输入价格 $/M",
 			"outputPerMillion": "输出价格 $/M",
