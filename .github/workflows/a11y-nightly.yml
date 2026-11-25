@@ -1,0 +1,95 @@
+name: Accessibility scan (live site)
+
+# Every night, scans public pages of the live site with axe-core for WCAG 2.2 AA in light and dark themes.
+# The page list and known exceptions live in scripts/a11y/live-scan.config.json. Serious and critical
+# problems fail the run; moderate and minor ones are listed in the summary. Pages behind sign-in are not
+# scanned: that needs a test account secret and is a follow-up.
+# A change to the scanner runs it once on the pull request, where only a broken scan (not a finding) fails.
+on:
+    schedule:
+        - cron: "47 4 * * *"
+    pull_request:
+        paths:
+            - "scripts/a11y/**"
+            - ".github/workflows/a11y-nightly.yml"
+    workflow_dispatch:
+        inputs:
+            base_url:
+                description: Site to scan (defaults to the base URL in scripts/a11y/live-scan.config.json)
+                type: string
+                default: ""
+
+permissions:
+    contents: read
+
+concurrency:
+    group: a11y-nightly-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+    # Exact versions, each older than the 7-day minimum release age the workspace uses.
+    # playwright matches apps/web's @playwright/test; playwright-core is pinned so @axe-core/playwright
+    # does not pull a newer one, and axe-core is pinned so the rules only change when we bump it.
+    PLAYWRIGHT_VERSION: 1.62.1
+    AXE_CORE_VERSION: 4.14.0
+    AXE_PLAYWRIGHT_VERSION: 4.14.0
+
+jobs:
+    scan:
+        if: github.repository == 'phaseoteam/Phaseo'
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+              with:
+                  persist-credentials: false
+            - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+              with:
+                  node-version: "24"
+            - name: Test scanner
+              run: node --test scripts/a11y/scan-live.test.mjs
+            - name: Install Playwright and axe-core
+              run: |
+                  npm install --prefix "$RUNNER_TEMP/a11y-deps" --ignore-scripts --no-audit --no-fund --save-exact \
+                    "playwright@$PLAYWRIGHT_VERSION" "playwright-core@$PLAYWRIGHT_VERSION" \
+                    "axe-core@$AXE_CORE_VERSION" "@axe-core/playwright@$AXE_PLAYWRIGHT_VERSION"
+                  "$RUNNER_TEMP/a11y-deps/node_modules/.bin/playwright" install --with-deps chromium
+            - name: Scan
+              id: scan
+              env:
+                  A11Y_DEPS_DIR: ${{ runner.temp }}/a11y-deps
+                  A11Y_BASE_URL: ${{ inputs.base_url }}
+                  OUT_DIR: ${{ runner.temp }}/a11y-results
+              run: |
+                  set +e
+                  node scripts/a11y/scan-live.mjs --out "$OUT_DIR"
+                  code=$?
+                  echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+                  if [ -f "$OUT_DIR/summary.md" ]; then cat "$OUT_DIR/summary.md" >> "$GITHUB_STEP_SUMMARY"; fi
+                  # 1 = serious or critical findings, 2 = a page could not be scanned, 3 or anything else = the scanner broke.
+                  if [ "$code" != 0 ] && [ "$code" != 1 ] && [ "$code" != 2 ]; then exit "$code"; fi
+            - name: Upload results
+              if: always()
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+              with:
+                  name: a11y-live-${{ github.run_id }}
+                  path: ${{ runner.temp }}/a11y-results/
+                  retention-days: 30
+                  if-no-files-found: warn
+            - name: Fail on findings
+              if: steps.scan.outputs.exit_code != '0'
+              env:
+                  EXIT_CODE: ${{ steps.scan.outputs.exit_code }}
+                  EVENT_NAME: ${{ github.event_name }}
+              run: |
+                  if [ "$EXIT_CODE" = 2 ]; then
+                    echo "::error::Some pages could not be scanned. See the job summary."
+                    exit 1
+                  fi
+                  # On a pull request the live site is not built from the branch, so findings are reported, not failed.
+                  if [ "$EVENT_NAME" = pull_request ]; then
+                    echo "::warning::The live site has serious or critical accessibility problems. See the job summary."
+                    exit 0
+                  fi
+                  echo "::error::Serious or critical accessibility problems on the live site. See the job summary."
+                  exit 1
