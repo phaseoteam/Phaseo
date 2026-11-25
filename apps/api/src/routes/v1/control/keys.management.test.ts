@@ -1253,6 +1253,21 @@ describe("management key routes", () => {
 		expect(await response.json()).toMatchObject({ error: "spend_rule_limit_reached" });
 	});
 
+	it("undoes the rotation when the replacement can't be read back, so no secret is lost", async () => {
+		state.workspaceRows.push({ owner_user_id: "user_1" });
+		state.keyRows.push({ id: "key_old", workspace_id: "ws_1", kid: "kid_old", name: "Primary Key", prefix: "old_prefix", status: "active", scopes: "[]", soft_blocked: false, expires_at: "2030-01-01T00:00:00.000Z" });
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		const { keysRoutes } = await import("./keys");
+		const response = await keysRoutes.request("https://example.com/key_old/rotate", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ previous_key_expires_at: "2026-09-01T00:00:00Z" }),
+		});
+		expect(response.status).toBe(500);
+		expect(state.deletedKeyIds).toEqual(["key_new"]);
+		expect(state.updatePayloads).toEqual([{ expires_at: "2030-01-01T00:00:00.000Z" }]);
+	});
+
 	it("restores the old key's expiry and removes the replacement when the cache can't be cleared", async () => {
 		pushRotationRows();
 		state.keyRows[0].expires_at = "2030-01-01T00:00:00.000Z";

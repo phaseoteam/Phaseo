@@ -1110,19 +1110,26 @@ async function handleRotateKey(req: Request) {
 		}
 		const result = parseRotationResult(rotation);
 		if (!result) throw new Error("Failed to rotate API key");
+		// The rotation is committed. If the caller can't be given the new secret, undo it: remove the
+		// replacement (its copied links go with it) and give the old key back its expiry.
+		const undoRotation = async (cause: unknown): Promise<never> => {
+			const [deleteReplacement, restorePrevious] = await Promise.all([
+				supabase.from("keys").delete().eq("id", result.replacementKeyId),
+				previousExpiry.value !== undefined
+					? supabase.from("keys").update({ expires_at: existing.expires_at ?? null }).eq("id", existing.id).eq("workspace_id", workspaceId)
+					: Promise.resolve({ error: null }),
+			]);
+			if (deleteReplacement.error || restorePrevious.error) throw new Error("API key rotation rollback failed");
+			throw cause;
+		};
 		const { data: replacement, error: replacementError } = await supabase.from("keys").select(KEY_COLUMNS)
 			.eq("id", result.replacementKeyId).eq("workspace_id", workspaceId).maybeSingle();
-		if (replacementError || !replacement) throw new Error(replacementError?.message || "Failed to read the replacement API key");
+		if (replacementError || !replacement) return await undoRotation(new Error(replacementError?.message || "Failed to read the replacement API key"));
 		if (previousExpiry.value !== undefined) {
 			try {
 				await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
 			} catch (invalidationError) {
-				const [deleteReplacement, restorePrevious] = await Promise.all([
-					supabase.from("keys").delete().eq("id", replacement.id),
-					supabase.from("keys").update({ expires_at: existing.expires_at ?? null }).eq("id", existing.id).eq("workspace_id", workspaceId),
-				]);
-				if (deleteReplacement.error || restorePrevious.error) throw new Error("API key rotation rollback failed after cache invalidation error");
-				throw invalidationError;
+				await undoRotation(invalidationError);
 			}
 		}
 		// Rate guardrails and the department link both feed the workspace's rate limit plan.
