@@ -8,7 +8,6 @@ import type { ProviderCandidate } from "./types";
 import { routeOutputTokenLimit } from "@core/route-token-limits";
 import { parseRouteAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { resolveEffectiveDataPolicy } from "./dataPolicy";
-import { isClaudeFastModeRemoved } from "@core/claudeModelCapabilities";
 
 type ServiceTierPlan = "standard" | "priority" | "ultrafast" | "batch" | "flex";
 
@@ -522,17 +521,6 @@ export async function applyServiceTierRouting(args: {
                 apiModelId: candidate.apiModelId ?? null,
                 providerModelSlug: candidate.providerModelSlug ?? null,
                 reason: "service_tier_ultrafast_required",
-            });
-            continue;
-        }
-        // Anthropic rejects `speed: "fast"` here, so refuse before execution even
-        // while the catalogue still prices the Fast Mode SKU.
-        if (requestedPlan === "priority" && isClaudeFastModeRemoved(candidate.providerId, candidate.providerModelSlug)) {
-            droppedProviders.push({
-                providerId: candidate.providerId,
-                apiModelId: candidate.apiModelId ?? null,
-                providerModelSlug: candidate.providerModelSlug ?? null,
-                reason: "service_tier_priority_retired",
             });
             continue;
         }

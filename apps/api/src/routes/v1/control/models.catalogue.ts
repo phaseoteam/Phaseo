@@ -5,7 +5,6 @@
 import { getSupabaseAdmin } from "@/runtime/env";
 import { tieredRead } from "@core/tiered-cache";
 import { readProviderCatalogTier } from "@core/serviceTiers";
-import { isClaudeFastModeRemoved } from "@core/claudeModelCapabilities";
 import type { Endpoint } from "@core/types";
 import {
     normalizeCapabilityStatus,
@@ -150,17 +149,14 @@ const EXPLICIT_ONLY_PRICING_PLANS = new Set(["priority", "ultrafast", "flex", "b
  * - standard: no executable SKUs, or at least one outside the explicit-only plans;
  * - priority, ultrafast, flex: an executable SKU priced on that plan;
  * - Mistral priority also needs a `service_tier`/`serviceTier` route capability param;
- * - no priority on a Claude route whose Fast Mode Anthropic removed (`isClaudeFastModeRemoved`);
  * - a route catalogued as one tier (`params.service_tier.provider_catalog`) offers only that tier.
  * Hidden `-fast`/`-flex`/`-ultrafast` sibling routes are not considered.
  * Returns tiers in alphabetical order.
  */
 export function deriveOfferServiceTiers(args: {
     providerId: string | null | undefined;
-    providerModelSlug?: string | null;
     skuTiers: Iterable<string> | null | undefined;
     capabilityParams: unknown;
-    nowMs?: number;
 }): OfferServiceTier[] {
     const skuTiers = new Set(Array.from(args.skuTiers ?? [], normalizePricingPlan));
     const params = args.capabilityParams && typeof args.capabilityParams === "object" && !Array.isArray(args.capabilityParams)
@@ -186,7 +182,6 @@ export function deriveOfferServiceTiers(args: {
     if ((providerId === "mistral" || providerId === "mistral-eu") && !("service_tier" in params || "serviceTier" in params)) {
         tiers.delete("priority");
     }
-    if (isClaudeFastModeRemoved(providerId, args.providerModelSlug, args.nowMs)) tiers.delete("priority");
     return Array.from(tiers).sort((a, b) => a.localeCompare(b));
 }
 
@@ -1818,7 +1813,6 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
                     route_id: typeof cap.provider_api_model_id === "string" ? cap.provider_api_model_id : null,
                     service_tiers: deriveOfferServiceTiers({
                         providerId: row.source_provider_id ?? row.provider_id,
-                        providerModelSlug: row.provider_model_slug,
                         skuTiers: skuTiersByRouteOperation.get(
                             routeOperationKey(row.provider_api_model_id, cap.capability_id),
                         ),
