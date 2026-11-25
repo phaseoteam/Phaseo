@@ -785,7 +785,11 @@ function ProviderHourlyPerformance({
 							setChartFocused(false);
 							onPointLeave();
 						}}
-						onPointerLeave={onPointLeave}
+						// While the chart has keyboard focus, the selected hour stays put when the pointer
+						// leaves, so the arrow keys continue from it.
+						onPointerLeave={() => {
+							if (!chartFocused) onPointLeave();
+						}}
 					>
 						{points.map((point, index) => {
 							const metricValue = getPerformanceMetricValue(activeMetric, point);
