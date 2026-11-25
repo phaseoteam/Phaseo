@@ -333,6 +333,49 @@ describe("buildProviderSections", () => {
 		});
 	});
 
+	test("shows a per-request price as a Usage column when the route has no other price", () => {
+		const provider = makeProviderPricing();
+		provider.provider_models = [{
+			...provider.provider_models[0],
+			id: "cohere:cohere/rerank-v3.5:text.rerank",
+			model_id: "cohere/rerank-v3.5",
+			endpoint: "text.rerank",
+		}];
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0],
+			id: "rerank-request",
+			model_key: "cohere:cohere/rerank-v3.5:text.rerank",
+			meter: "requests",
+			unit: "request",
+			unit_size: 1,
+			price_per_unit: 0.002,
+			match: [],
+		}];
+
+		const sections = buildProviderSections(provider, "standard");
+		const columns = buildProviderTablePriceColumns([sections]);
+
+		expect(columns).toEqual([
+			expect.objectContaining({ direction: "input", label: "Usage", headerUnitLabel: "$/request" }),
+		]);
+		expect(buildProviderTablePriceSummaryForColumn(sections, columns[0]!)).toMatchObject({
+			primary: { price: 0.002 },
+		});
+	});
+
+	test("keeps a per-request fee out of the columns when the route also has token prices", () => {
+		const provider = makeProviderPricing();
+		const base = provider.pricing_rules[0]!;
+		provider.pricing_rules = [
+			{ ...base, id: "tokens-in", meter: "input_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 1, match: [] },
+			{ ...base, id: "fee", meter: "requests", unit: "request", unit_size: 1, price_per_unit: 0.01, match: [] },
+		];
+
+		const columns = buildProviderTablePriceColumns([buildProviderSections(provider, "standard")]);
+
+		expect(columns.map((column) => column.label)).toEqual(["Input"]);
+	});
+
 	test("uses duration pricing as the base summary for audio models", () => {
 		const provider = makeProviderPricing();
 		provider.provider_models = [{

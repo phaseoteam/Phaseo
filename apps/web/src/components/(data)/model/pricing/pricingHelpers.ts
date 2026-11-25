@@ -1736,6 +1736,7 @@ function getBaseTokenTier(tiers?: TokenTier[] | null): TokenTier | null {
 export function getProviderTablePriceCandidates(
     sections: ProviderSections,
     direction: ProviderTablePriceDirection,
+    options: { skipRequestFallback?: boolean } = {},
 ): ProviderTablePriceCandidate[] {
     const candidates: ProviderTablePriceCandidate[] = [];
     const pushTokenCandidate = (
@@ -1928,14 +1929,24 @@ export function getProviderTablePriceCandidates(
     candidates.push(...fallbackRules);
 
     if (direction === "input") {
-        const requestCandidates = (sections.requests ?? [])
-            .filter((tier) => tier.isCurrent)
+        const currentRequests = (sections.requests ?? []).filter((tier) => tier.isCurrent);
+        // A per-request price is the headline price only when the route has no other price to show
+        // (rerankers, music clips, Decisions): it then fills the "Usage" column instead of nothing.
+        const requestOnly =
+            !options.skipRequestFallback &&
+            currentRequests.length > 0 &&
+            PROVIDER_TABLE_PRICE_DIRECTIONS.every((other) =>
+                !getProviderTablePriceCandidates(sections, other, { skipRequestFallback: true })
+                    .some((candidate) => candidate.isPrimary),
+            );
+        const requestCandidates = currentRequests
             .map((tier, index) =>
                 createTablePriceCandidate({
                     key: `input-request-${index}`,
                     label: "request",
                     modality: "other",
-                    isPrimary: false,
+                    isPrimary: requestOnly,
+                    isUsage: requestOnly,
                     price: tier.price,
                     unitLabel: tier.unitLabel ?? "Per request",
                     unit: "call",
