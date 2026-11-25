@@ -1489,9 +1489,10 @@ export default function ModelPricingClient({
 		);
 		return buildProviderTablePriceColumns(sectionsByOffering).map((column) => ({
 			...column,
+			label: column.usage ? tProvider("usagePriceColumn") : column.label,
 			sort: `price:${column.key}` as PriceColumnSortOption,
 		}));
-	}, [visibleOfferings, pricingTimeMs]);
+	}, [visibleOfferings, pricingTimeMs, tProvider]);
 	const providerTableMinWidth = 696 + visiblePriceColumns.length * 112;
     const providerTableViewportRef = useRef<HTMLDivElement>(null);
     const [providerTableOverflows, setProviderTableOverflows] = useState<boolean | null>(null);

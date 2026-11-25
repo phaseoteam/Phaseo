@@ -1057,6 +1057,7 @@
 			"sortBy": "Ordenar proveedores por {metric}",
 			"sortButton": "Ordenar",
 			"sortDefault": "Orden predeterminado",
+			"usagePriceColumn": "Uso",
 			"provider": "Proveedor",
 			"inputPerMillion": "Entrada $/M",
 			"outputPerMillion": "Salida $/M",

@@ -1496,7 +1496,11 @@ export function buildProviderSections(
                 price,
                 label,
                 meter: r.meter ?? null,
-                unitLabel: requestUnitLabel(unitSize),
+                // Some request meters count another unit (Cohere rerank bills search units of up to
+                // 100 documents); a display unit that names it wins over "per request".
+                unitLabel: r.display_unit && !/request/i.test(r.display_unit)
+                    ? (/^per\s/i.test(r.display_unit) ? r.display_unit : `Per ${r.display_unit.trim().replace(/^1\s+/, "")}`)
+                    : requestUnitLabel(unitSize),
                 unitSize,
                 basePer1M: null,
                 basePrice: displayBasePrice,
@@ -1716,6 +1720,8 @@ export type ProviderTablePriceColumn = {
     key: string;
     direction: ProviderTablePriceDirection;
     modality: Modality;
+    /** A "Usage" column: time-billed session prices, or the per-unit price of a route with no other price. */
+    usage?: boolean;
     label: string;
     unitLabel: string;
     headerUnitLabel: string;
@@ -1949,7 +1955,8 @@ export function getProviderTablePriceCandidates(
                     isUsage: requestOnly,
                     price: tier.price,
                     unitLabel: tier.unitLabel ?? "Per request",
-                    unit: "call",
+                    // Only a true per-request label normalises to "Per request"; keep a named unit such as "search unit".
+                    unit: /request/i.test(tier.unitLabel ?? "request") ? "call" : undefined,
                     unitQuantity: tier.unitSize,
                 }),
             );
@@ -2059,8 +2066,10 @@ export function buildProviderTablePriceColumns(
             .map(({ modality, unitLabel, usageOnly }) => ({
                 key: `${direction}:${modality}:${unitLabel}`,
                 direction,
+                ...(usageOnly ? { usage: true } : {}),
+                // The page replaces a usage column's label with the translated "Usage" message.
                 label: usageOnly
-                    ? (showModality ? `${modalityLabel(modality) ?? ""} Usage`.trim() : "Usage")
+                    ? "Usage"
                     : showModality
                     ? `${modalityLabel(modality) ?? "Usage"} ${PROVIDER_TABLE_PRICE_DIRECTION_LABELS[direction]}`
                     : PROVIDER_TABLE_PRICE_DIRECTION_LABELS[direction],

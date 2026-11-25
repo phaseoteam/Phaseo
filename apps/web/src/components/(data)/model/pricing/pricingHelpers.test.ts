@@ -363,6 +363,27 @@ describe("buildProviderSections", () => {
 		});
 	});
 
+	test("labels a request meter with its display unit when it counts something else", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0],
+			id: "rerank-search-unit",
+			meter: "requests",
+			unit: "request",
+			unit_size: 1,
+			price_per_unit: 0.002,
+			display_unit: "1 search unit",
+			match: [],
+		}];
+
+		const sections = buildProviderSections(provider, "standard");
+		const columns = buildProviderTablePriceColumns([sections]);
+
+		expect(columns).toEqual([
+			expect.objectContaining({ usage: true, unitLabel: "Per search unit", headerUnitLabel: "$/search unit" }),
+		]);
+	});
+
 	test("keeps a per-request fee out of the columns when the route also has token prices", () => {
 		const provider = makeProviderPricing();
 		const base = provider.pricing_rules[0]!;
