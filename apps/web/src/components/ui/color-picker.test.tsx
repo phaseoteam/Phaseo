@@ -67,6 +67,19 @@ describe("ColorPicker keyboard support", () => {
 		expect(hue.getAttribute("aria-valuenow")).toBe("0");
 	});
 
+	it("drops the saved hue when the colour changes from outside, even back to the same hex", () => {
+		const onChange = vi.fn();
+		act(() => root.render(<ColorPicker value="#808080" onChange={onChange} />));
+		const hue = slider("hue");
+		// On grey, the hue changes nothing in the hex, so only the saved position holds it.
+		for (let i = 0; i < 5; i += 1) press(hue, "ArrowRight");
+		expect(hue.getAttribute("aria-valuenow")).toBe("5");
+
+		act(() => root.render(<ColorPicker value="#ff0000" onChange={onChange} />));
+		act(() => root.render(<ColorPicker value="#808080" onChange={onChange} />));
+		expect(slider("hue").getAttribute("aria-valuenow")).toBe("0");
+	});
+
 	it("changes saturation and brightness from the keyboard", () => {
 		const onChange = vi.fn();
 		act(() => root.render(<ColorPicker value="#ff0000" onChange={onChange} />));

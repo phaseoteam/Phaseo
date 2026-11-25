@@ -344,19 +344,25 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 	React.useEffect(() => {
 		const normalizedValue = normalizeColorValue(value);
 
+		// A colour from outside (not the echo of our own change) drops the saved slider position.
+		if (normalizedValue !== currentHexRef.current) setSliderHsv(null);
 		currentHexRef.current = normalizedValue;
 		setCurrentHex(normalizedValue);
 	}, [value]);
 
+	// Typed values and the other colour fields drop the saved slider position, so it can't come back
+	// later just because the same hex is entered again. commitHsv sets it again after calling these.
 	const updateLocalColor = React.useCallback((nextHex: string) => {
 		currentHexRef.current = nextHex;
 		setCurrentHex(nextHex);
+		setSliderHsv(null);
 	}, []);
 
 	const commitColor = React.useCallback(
 		(nextHex = currentHexRef.current) => {
 			currentHexRef.current = nextHex;
 			setCurrentHex(nextHex);
+			setSliderHsv(null);
 			onChange(nextHex);
 		},
 		[onChange],
@@ -364,14 +370,13 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 
 	const commitHsv = (nextHsv: HsvColor, save = false) => {
 		const nextHex = rgbToHex(hsvToRgb(nextHsv));
-		setSliderHsv({ hex: nextHex, hsv: nextHsv });
 
 		if (save) {
 			commitColor(nextHex);
-			return;
+		} else {
+			updateLocalColor(nextHex);
 		}
-
-		updateLocalColor(nextHex);
+		setSliderHsv({ hex: nextHex, hsv: nextHsv });
 	};
 
 	const commitRgbComponent = (component: keyof RgbColor, value: string) => {
