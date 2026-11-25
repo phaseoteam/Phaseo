@@ -88,7 +88,7 @@ export function DocumentToolsRoom({ room, models }: { room: "ocr" | "rerank"; mo
 		URL.revokeObjectURL(url);
 	}
 
-	return <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+	return <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
 		<header className="flex min-h-[57px] shrink-0 flex-wrap items-center gap-2 border-b border-border px-4 py-2 md:px-6">
 			<Button variant="ghost" size="icon" onClick={toggleSidebar} aria-label={t("newMainCopy.toggleSidebar")}><PanelLeft className="size-4" /></Button>
 			<h1 className="text-sm font-medium">{title}</h1>
@@ -127,5 +127,5 @@ export function DocumentToolsRoom({ room, models }: { room: "ocr" | "rerank"; mo
 				</section>}
 			</div>
 		</div>
-	</main>;
+	</div>;
 }

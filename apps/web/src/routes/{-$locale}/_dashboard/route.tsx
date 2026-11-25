@@ -20,7 +20,7 @@ function DashboardFrame() {
 				<ModelDeprecationNoticeSlot />
 			</Suspense>
 			<Header />
-			<main className="flex-1 min-h-0 flex flex-col">
+			<main id="main-content" tabIndex={-1} className="flex-1 min-h-0 flex flex-col outline-none">
 				<Outlet />
 			</main>
 			<PublicDataFeedbackGate />

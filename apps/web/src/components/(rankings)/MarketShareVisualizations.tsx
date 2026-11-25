@@ -48,7 +48,7 @@ export function MarketShareVisualizations({
     return (
         <Card className="p-4">
             <ResponsiveContainer width="100%" height={350}>
-                <PieChart>
+                <PieChart title={t("marketShare")}>
                     <Pie
                         data={chartData}
                         dataKey="value"

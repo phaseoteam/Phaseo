@@ -804,7 +804,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 				</div>
 			</header>
 
-			<main className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-5 md:px-6">
+			<div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-5 md:px-6">
 				<div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-5">
 					{activeRuns.length === 0 ? (
 						<RoomEmptyState
@@ -1004,7 +1004,7 @@ export function DecisionsRoom({ models }: { models: GatewaySupportedModel[] }) {
 						</MessageScroller.Provider>
 					)}
 				</div>
-			</main>
+			</div>
 
 			<RoomComposerFooter>
 				<div className="mx-auto w-full max-w-3xl">

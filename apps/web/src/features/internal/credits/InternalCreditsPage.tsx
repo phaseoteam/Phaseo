@@ -85,7 +85,7 @@ export default function InternalCreditsPage() {
 	}
 
 	return (
-		<main className="container mx-auto px-4 py-8 space-y-6">
+		<div className="container mx-auto px-4 py-8 space-y-6">
 			<div>
 				<h1 className="text-3xl font-bold mb-2">{t("title")}</h1>
 				<p className="text-muted-foreground">
@@ -211,6 +211,6 @@ export default function InternalCreditsPage() {
 					</Table>
 				</CardContent>
 			</Card>
-		</main>
+		</div>
 	);
 }

@@ -17,7 +17,7 @@ export default function SlackAgentPage() {
 	const offset = Math.min(100_000, Math.max(0, Math.floor(Number(params.offset) || 0)));
 	const { data } = useSuspenseQuery(slackAgentInstallationsQuery(offset));
 	const month = format.dateTime(new Date(`${data.period_start}T00:00:00Z`), { month: "long", year: "numeric", timeZone: "UTC" });
-	return <main className="container mx-auto space-y-6 px-4 py-8">
+	return <div className="container mx-auto space-y-6 px-4 py-8">
 		<header className="space-y-2">
 			<h1 className="text-2xl font-semibold">{t("slackAgentInstallations.title")}</h1>
 			<p className="text-sm text-muted-foreground">{t("slackAgentInstallations.description", { month })}</p>
@@ -29,5 +29,5 @@ export default function SlackAgentPage() {
 			{offset > 0 && <Link href={`?offset=${Math.max(0, offset - data.page_size)}`}>{t("slackAgentInstallations.previous")}</Link>}
 			{offset + data.page_size < data.total && <Link href={`?offset=${offset + data.page_size}`}>{t("slackAgentInstallations.next")}</Link>}
 		</nav>
-	</main>;
+	</div>;
 }

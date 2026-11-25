@@ -140,6 +140,64 @@
 		--dot-bg: #161616;
 		--dot-color: #848282;
 	}
+	/* Long identifiers and URLs in inline code wrap instead of forcing
+	   sideways scrolling on narrow screens (WCAG 1.4.10 Reflow). */
+	:not(pre) > code {
+		overflow-wrap: anywhere;
+	}
+	/* While the cookie banner is open it sets --cookie-banner-space, so the
+	   end of the page can scroll clear of it (WCAG 2.4.11). */
+	body::after {
+		content: "";
+		display: block;
+		height: var(--cookie-banner-space, 0px);
+	}
+}
+
+/* Text contrast (WCAG 1.4.3). Several palette shades used for status and
+   secondary text fall below 4.5:1 on our backgrounds. Rather than restyle every
+   use, text in those shades is mapped to the nearest shade that passes. Light
+   mode darkens; dark mode lightens shades that have no explicit dark: colour.
+   Elements with their own hover colour keep it while hovered. Prefer a
+   passing shade in new code so these rules stay a safety net. */
+:root:not(.dark) :is(.text-emerald-500, .text-emerald-600):is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(50.8% 0.118 165.612); }
+:root:not(.dark) :is(.text-green-500, .text-green-600):is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(52.7% 0.154 150.069); }
+:root:not(.dark) :is(.text-amber-500, .text-amber-600):is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(55.5% 0.163 48.998); }
+:root:not(.dark) :is(.text-orange-500, .text-orange-600):is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(55.3% 0.195 38.402); }
+:root:not(.dark) :is(.text-yellow-500, .text-yellow-600):is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(55.4% 0.135 66.442); }
+:root:not(.dark) :is(.text-red-500, .text-red-600):is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(50.5% 0.213 27.518); }
+:root:not(.dark) :is(.text-sky-500, .text-sky-600):is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(50% 0.134 242.749); }
+:root:not(.dark) .text-blue-500:is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(54.6% 0.245 262.881); }
+:root:not(.dark) .text-zinc-400:is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(55.2% 0.016 285.938); }
+:root:not(.dark) .text-gray-400:is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(55.1% 0.027 264.364); }
+:root:not(.dark) .text-neutral-400:is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(55.6% 0 0); }
+.dark :is(.text-blue-600, .text-blue-700):not([class*="dark:text-"]):is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(70.7% 0.165 254.624); }
+.dark :is(.text-zinc-500, .text-zinc-600):not([class*="dark:text-"]):is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(70.5% 0.015 286.067); }
+.dark :is(.text-gray-500, .text-gray-600):not([class*="dark:text-"]):is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(70.7% 0.022 261.325); }
+.dark :is(.text-red-600, .text-red-700):not([class*="dark:text-"]):is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(70.4% 0.191 22.216); }
+.dark :is(.dark\:text-zinc-500, .dark\:text-zinc-600):is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: oklch(70.5% 0.015 286.067); }
+/* The accent is tuned for white text on accent buttons, so as text on a dark
+   background it needs lightening. This also covers custom accents. */
+.dark .text-primary:not([class*="dark:text-"]):is(:not([class*="hover:text-"]), :not(:hover, .group:hover *)) { color: color-mix(in oklab, var(--primary) 62%, white); }
+
+/* Recharts makes charts focusable for keyboard tooltips; show where focus is.
+   Unlayered so it beats the outline-hidden utility on chart containers. */
+.recharts-surface:focus-visible {
+	outline: 2px solid var(--ring);
+	outline-offset: 2px;
+}
+
+/* Honour the operating system's reduced-motion setting for CSS animations and
+   transitions. Loading spinners keep turning so progress stays visible. */
+@media (prefers-reduced-motion: reduce) {
+	*:not(.animate-spin),
+	*:not(.animate-spin)::before,
+	*:not(.animate-spin)::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+		scroll-behavior: auto !important;
+	}
 }
 
 @utility text-balance {

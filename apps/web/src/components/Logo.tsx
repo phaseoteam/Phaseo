@@ -35,11 +35,14 @@ function DefaultLogoFallback({
 
 	return (
 		<span
-			role="img"
-			aria-label={label}
+			// An empty label means the logo is decorative (the name is shown next
+			// to it), so hide it instead of exposing an unnamed image.
+			{...(label.trim()
+				? { role: "img", "aria-label": label }
+				: { "aria-hidden": true })}
 			className={[
 				fill ? "absolute inset-0 flex" : "inline-flex",
-				"items-center justify-center text-muted-foreground/80",
+				"items-center justify-center text-muted-foreground",
 				className,
 			]
 				.filter(Boolean)

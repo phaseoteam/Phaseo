@@ -16,7 +16,7 @@ export default function RealtimeBillingPage() {
 	const state = params.state === "resolved" ? "resolved" : "open";
 	const offset = Math.min(10000, Math.max(0, Math.floor(Number(params.offset) || 0)));
 	const { data } = useSuspenseQuery(realtimeBillingReviewsQuery(state, offset));
-	return <main className="container mx-auto space-y-6 px-4 py-8">
+	return <div className="container mx-auto space-y-6 px-4 py-8">
 		<header className="space-y-2"><h1 className="text-2xl font-semibold">{t("realtimeCopy.billingReview")}</h1>
 			<p className="text-sm text-muted-foreground">{t("realtimeCopy.billingReviewHelp")}</p></header>
 		<nav aria-label={t("realtimeCopy.reviewStatus")} className="flex gap-4 text-sm">
@@ -28,5 +28,5 @@ export default function RealtimeBillingPage() {
 			{offset > 0 && <Link href={`?state=${state}&offset=${Math.max(0, offset - 50)}`}>{t("realtimeCopy.copyPrevious")}</Link>}
 			{offset + 50 < data.total && <Link href={`?state=${state}&offset=${offset + 50}`}>{t("realtimeCopy.copyNext")}</Link>}
 		</nav>
-	</main>;
+	</div>;
 }

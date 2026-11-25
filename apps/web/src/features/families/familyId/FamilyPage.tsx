@@ -148,7 +148,7 @@ export default function FamilyPage() {
 	};
 
 	return (
-		<main className="min-h-screen">
+		<div className="min-h-screen">
 			<EntityStickyHeader kind="family" id={familyId} name={family.family_name} observeId="family-detail-primary-header" baseHref={`/families/${familyId}`} navigation={[]} />
 			<div className="container mx-auto px-4 py-7 md:py-9">
 				<Link
@@ -302,6 +302,6 @@ export default function FamilyPage() {
 					</div>
 				</div>
 			</div>
-		</main>
+		</div>
 	);
 }

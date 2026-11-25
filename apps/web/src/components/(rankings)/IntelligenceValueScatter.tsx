@@ -14,7 +14,7 @@ export default function IntelligenceValueScatter({ entries }: { entries: PublicI
 		<figcaption className="mb-4 px-3 text-xs text-muted-foreground">{tValue("scatterCaption")}</figcaption>
 		<div className="h-80 w-full" role="img" aria-label={tValue("scatterAria")}>
 			<ResponsiveContainer width="100%" height="100%">
-				<ScatterChart margin={{ top: 10, right: 20, bottom: 25, left: 15 }}>
+				<ScatterChart accessibilityLayer={false} margin={{ top: 10, right: 20, bottom: 25, left: 15 }}>
 					<CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
 					<XAxis type="number" dataKey="intelligence_score" name={t("Catalogue.rankings.benchmarkMetrics.intelligence")} domain={[0, "auto"]} tick={{ fontSize: 11 }} tickFormatter={(value: number) => new Intl.NumberFormat(locale).format(value)} label={{ value: tValue("intelligenceScore"), position: "bottom", offset: 5 }} />
 					<YAxis type="number" dataKey="evaluation_cost" name={t("Catalogue.rankings.benchmarkMetrics.cost")} domain={[0, "auto"]} tickFormatter={(value: number) => formatArtificialAnalysisScore("aa-intelligence-index-cost-v4", value, locale)} tick={{ fontSize: 11 }} width={75} label={{ value: tValue("evaluationCostUsd"), angle: -90, position: "insideLeft", offset: -5, style: { textAnchor: "middle" } }} />

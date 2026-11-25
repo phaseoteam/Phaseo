@@ -46,7 +46,7 @@ export function ModelMetricInfo({
 						type="button"
 						aria-label={`About ${label}`}
 						className={cn(
-							"relative inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground/70 transition-colors after:absolute after:-inset-3.5 after:content-[''] hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+							"relative inline-flex size-4 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors after:absolute after:-inset-3.5 after:content-[''] hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
 							triggerClassName,
 						)}
 					>

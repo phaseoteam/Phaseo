@@ -2753,7 +2753,7 @@ function DetailRows({
 						{item.description ? (
 							<Tooltip>
 								<TooltipTrigger asChild>
-									<button type="button" className="inline-flex shrink-0 text-muted-foreground/70 hover:text-foreground" aria-label={aboutLabel(item.label)}>
+									<button type="button" className="inline-flex shrink-0 text-muted-foreground hover:text-foreground" aria-label={aboutLabel(item.label)}>
 										<Info className="size-3" />
 									</button>
 								</TooltipTrigger>

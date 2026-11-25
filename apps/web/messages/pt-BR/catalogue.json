@@ -1107,7 +1107,8 @@
 				"external": "Listado em um catálogo externo; não pode ser roteado pelo Phaseo."
 			},
 			"noPricingForSelectedTier": "Não há preços disponíveis para o nível selecionado neste provedor.",
-			"comingSoonTierPricingDescription": "Este provedor ainda não está disponível para o nível selecionado. Os preços aparecerão quando a disponibilidade começar."
+			"comingSoonTierPricingDescription": "Este provedor ainda não está disponível para o nível selecionado. Os preços aparecerão quando a disponibilidade começar.",
+			"showProviderDetails": "Mostrar detalhes de {provider}"
 		},
 		"pricing": {
 			"effective": "Efetivo",

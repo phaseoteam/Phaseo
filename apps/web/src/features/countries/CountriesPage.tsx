@@ -24,7 +24,7 @@ export default function CountriesPage() {
 	const t = useTranslations("Catalogue.countries");
 
 	return (
-		<main className="flex min-h-screen flex-col">
+		<div className="flex min-h-screen flex-col">
 			<div className="container mx-auto px-4 py-8 space-y-6">
 				<header className="space-y-2">
 					<div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
@@ -36,6 +36,6 @@ export default function CountriesPage() {
 
 				<CountriesGrid countries={countries} />
 			</div>
-		</main>
+		</div>
 	);
 }

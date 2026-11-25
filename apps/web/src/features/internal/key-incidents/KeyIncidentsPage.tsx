@@ -11,11 +11,11 @@ export async function getKeyIncidentsMetadata() { const t = await getTranslation
 export default function KeyIncidentsPage() {
 	const t = useTranslations("SettingsUI");
 	const { data } = useSuspenseQuery(keyIncidentsQuery());
-	return <main className="container mx-auto max-w-4xl space-y-6 px-4 py-8">
+	return <div className="container mx-auto max-w-4xl space-y-6 px-4 py-8">
 		<header className="space-y-2">
 			<h1 className="text-2xl font-semibold">{t("keyIncidents.title")}</h1>
 			<p className="text-sm text-muted-foreground">{t("keyIncidents.description")}</p>
 		</header>
 		<KeyIncidents incidents={data.incidents} />
-	</main>;
+	</div>;
 }

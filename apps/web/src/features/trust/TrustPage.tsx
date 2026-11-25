@@ -117,7 +117,7 @@ export function TrustPage() {
 		["disclosure", t("responsibleDisclosure")],
 	] as const;
 	return (
-		<main className="min-h-screen bg-background">
+		<div className="min-h-screen bg-background">
 			<div className="mx-auto w-full max-w-[1120px] px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
 				<header className="border-b border-border pb-10">
 					<div className="flex items-center gap-2 text-sm font-medium text-foreground"><ShieldCheck className="size-4" /> {t("phaseoTrustCentre")}</div>
@@ -217,6 +217,6 @@ export function TrustPage() {
 					<span className="inline-flex items-center gap-1.5"><Check className="size-3.5" /> {t("reviewedEvidence")}</span>
 				</footer>
 			</div>
-		</main>
+		</div>
 	);
 }

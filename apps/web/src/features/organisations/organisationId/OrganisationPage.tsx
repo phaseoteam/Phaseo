@@ -130,7 +130,7 @@ export default function OrganisationPage() {
 	if (!organisation) {
 		notFound();
 		return (
-			<main className="flex min-h-screen flex-col">
+			<div className="flex min-h-screen flex-col">
 				<div className="container mx-auto px-4 py-8">
 					<div className="rounded-lg border border-dashed p-6 md:p-8 text-center bg-muted/30">
 						<div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
@@ -168,7 +168,7 @@ export default function OrganisationPage() {
 						</div>
 					</div>
 				</div>
-			</main>
+			</div>
 		);
 	}
 

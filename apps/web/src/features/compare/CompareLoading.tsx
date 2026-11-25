@@ -1,7 +1,7 @@
 /** Mirrors the compare layout: title, model bar, then the grouped table. */
 export default function Loading() {
 	return (
-		<main className="flex min-h-screen flex-col">
+		<div className="flex min-h-screen flex-col">
 			<div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-6 sm:py-8">
 				<div className="space-y-3">
 					<div className="h-3 w-40 animate-pulse rounded-md bg-muted/60" />
@@ -24,6 +24,6 @@ export default function Loading() {
 					))}
 				</div>
 			</div>
-		</main>
+		</div>
 	);
 }

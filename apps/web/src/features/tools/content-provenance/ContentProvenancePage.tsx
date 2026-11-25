@@ -17,13 +17,13 @@ export async function getContentProvenanceMetadata(): Promise<PageMetadata> {
 export function ContentProvenancePage() {
 	const t = useTranslations("Product.tools.provenance");
 	return (
-		<main className="min-h-screen">
+		<div className="min-h-screen">
 			<div className="container mx-auto px-4 py-8 sm:py-12">
 				<div className="mx-auto max-w-5xl">
 					<ToolPageHeader title={t("checkFile")} description={t("description")} />
 				</div>
 				<ContentProvenanceTool />
 			</div>
-		</main>
+		</div>
 	);
 }

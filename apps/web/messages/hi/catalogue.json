@@ -1107,7 +1107,8 @@
 				"external": "बाहरी कैटलॉग में सूचीबद्ध; Phaseo के माध्यम से रूट नहीं किया जा सकता।"
 			},
 			"noPricingForSelectedTier": "इस प्रदाता पर चुने गए स्तर के लिए मूल्य उपलब्ध नहीं हैं।",
-			"comingSoonTierPricingDescription": "यह प्रदाता अभी चुने गए स्तर के लिए उपलब्ध नहीं है। उपलब्धता शुरू होने पर मूल्य दिखाई देंगे।"
+			"comingSoonTierPricingDescription": "यह प्रदाता अभी चुने गए स्तर के लिए उपलब्ध नहीं है। उपलब्धता शुरू होने पर मूल्य दिखाई देंगे।",
+			"showProviderDetails": "{provider} का विवरण दिखाएं"
 		},
 		"pricing": {
 			"effective": "प्रभावी",

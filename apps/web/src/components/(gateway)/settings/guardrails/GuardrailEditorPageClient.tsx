@@ -2447,7 +2447,7 @@ export default function GuardrailEditorPageClient(props: {
 							value={form.name}
 							onChange={(e) => set("name", e.target.value)}
 							placeholder={t("strings.New Guardrail" as never)}
-							className="h-auto rounded-none border-0 bg-transparent px-0 py-0 text-4xl font-semibold leading-tight tracking-tight shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 md:text-3xl"
+							className="h-auto rounded-none border-0 bg-transparent px-0 py-0 text-4xl font-semibold leading-tight tracking-tight shadow-none placeholder:text-muted-foreground focus-visible:ring-0 md:text-3xl"
 						/>
 					</div>
 					<div className="flex flex-wrap items-center gap-2">
@@ -2473,7 +2473,7 @@ export default function GuardrailEditorPageClient(props: {
 									value={form.description}
 									onChange={(e) => set("description", e.target.value)}
 									placeholder={t("strings.Who is this for? What does it restrict?" as never)}
-									className="min-h-0 h-10 resize-none overflow-hidden rounded-none border-0 bg-transparent px-0 py-2 text-base text-muted-foreground shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0"
+									className="min-h-0 h-10 resize-none overflow-hidden rounded-none border-0 bg-transparent px-0 py-2 text-base text-muted-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-0"
 								/>
 							</div>
 							<div className="space-y-4 border-t pt-5">

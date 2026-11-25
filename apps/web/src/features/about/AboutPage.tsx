@@ -128,7 +128,7 @@ const builtFor = [
 
 
 	return (
-		<main className="relative min-h-screen overflow-hidden">
+		<div className="relative min-h-screen overflow-hidden">
 			<div className="mx-4 px-2 py-12 sm:mx-6 sm:px-0 sm:py-16 lg:mx-8 xl:mx-10 2xl:mx-auto 2xl:max-w-[1460px]">
 				<section className="space-y-7">
 					<h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
@@ -298,6 +298,6 @@ const builtFor = [
 					</div>
 				</section>
 			</div>
-		</main>
+		</div>
 	);
 }

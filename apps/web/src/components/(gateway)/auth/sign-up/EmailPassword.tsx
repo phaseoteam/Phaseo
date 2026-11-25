@@ -126,7 +126,7 @@ export default function EmailPassword({
 				<span
 					className={`inline-block px-2 text-sm transition-all duration-500 ease-out ${showEmailHeading
 						? "text-foreground font-semibold tracking-[0.02em] opacity-100 translate-y-0"
-						: "text-muted-foreground font-normal tracking-normal opacity-90 -translate-y-0.5"
+						: "text-muted-foreground font-normal tracking-normal -translate-y-0.5"
 					}`}
 				>
 					{showEmailHeading ? t("emailHeading") : t("emailDivider")}

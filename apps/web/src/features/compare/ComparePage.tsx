@@ -65,12 +65,12 @@ function ComparePageContent() {
 
 export default function ComparePage() {
 	return (
-		<main className="flex min-h-screen flex-col">
+		<div className="flex min-h-screen flex-col">
 			<section className="w-full">
 				<Suspense fallback={<CompareDashboardFallback />}>
 					<ComparePageContent />
 				</Suspense>
 			</section>
-		</main>
+		</div>
 	);
 }

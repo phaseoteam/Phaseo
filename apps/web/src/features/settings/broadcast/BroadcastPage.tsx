@@ -14,7 +14,7 @@ export async function getBroadcastMetadata() {
 export default function BroadcastSettingsPage() {
 	const t = useTranslations("SettingsUI");
 	return (
-		<main className="min-w-0 space-y-8">
+		<div className="min-w-0 space-y-8">
 			<SettingsPageHeader title={t("headers.broadcast")} actions={<ProductFeedbackButton
 						surface="settings_broadcast"
 						prompt={t("headers.feedbackBroadcastPrompt")}
@@ -22,6 +22,6 @@ export default function BroadcastSettingsPage() {
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<BroadcastSettingsContent />
 			</Suspense>
-		</main>
+		</div>
 	);
 }

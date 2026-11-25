@@ -25,7 +25,7 @@ import {
 
 function PreviewClientFrame({ preview, policyNotice }: { preview: AuthenticatedProviderCatalogPreview; policyNotice?: ReactNode }) {
 	return (
-		<main className="flex flex-col">
+		<div className="flex flex-col">
 			<ModelStickyHeader
 				modelId={preview.model_id}
 				organisationId={preview.provider_slug}
@@ -79,7 +79,7 @@ function PreviewClientFrame({ preview, policyNotice }: { preview: AuthenticatedP
 					<ProviderCatalogPreviewContent preview={preview} />
 				</div>
 			</div>
-		</main>
+		</div>
 	);
 }
 
@@ -112,16 +112,16 @@ export default function ProviderCatalogPreviewDetailClient({
 	if (preview) return <PreviewClientFrame preview={preview} policyNotice={policyNotice} />;
 	if (query.error) {
 		return (
-			<main className="flex flex-1 items-center justify-center px-4 py-24">
+			<div className="flex flex-1 items-center justify-center px-4 py-24">
 				<p className="text-sm text-muted-foreground">{tx("Common.ui.publicModelCopy.modelDetailsRetry")}</p>
-			</main>
+			</div>
 		);
 	}
 	if (query.isPending && query.isFetching && !initialPreview) {
 		return (
-			<main className="flex flex-1 items-center justify-center px-4 py-24">
+			<div className="flex flex-1 items-center justify-center px-4 py-24">
 				<p className="text-sm text-muted-foreground">{tx("Common.ui.publicModelCopy.loadingModelDetails")}</p>
-			</main>
+			</div>
 		);
 	}
 

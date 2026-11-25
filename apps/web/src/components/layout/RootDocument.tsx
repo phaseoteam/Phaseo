@@ -2,6 +2,7 @@ import { Suspense, useEffect, type ReactNode } from "react";
 import { HeadContent, Scripts } from "@tanstack/react-router";
 import { useMessages } from "@/i18n/react";
 import { DirectionProvider } from "@base-ui/react/direction-provider";
+import { MotionConfig } from "motion/react";
 import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 import { fullMessagesUrl, RootIntlProvider } from "@/i18n/RootIntlProvider";
 import {
@@ -12,6 +13,7 @@ import { ProductAnalyticsGaBridge } from "@/components/analytics/ProductAnalytic
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import AdminDeveloperMenuLauncher from "@/components/developer-menu/AdminDeveloperMenuLauncher";
 import { EntityCards } from "@/components/entity-cards/EntityCards";
+import { SkipLink } from "@/components/layout/SkipLink";
 import { AuthDialog } from "@/components/(gateway)/auth/dialog/AuthDialog";
 import { WebQueryProvider } from "@/components/providers/WebQueryProvider";
 import { DisplayPreferencesProvider } from "@/components/providers/DisplayPreferencesProvider";
@@ -91,6 +93,9 @@ export function RootDocument({
 			<body className="min-h-screen h-full bg-background antialiased">
 				<RootIntlProvider locale={locale}>
 				<DirectionProvider direction={direction}>
+				{/* Motion animations follow the visitor's reduced-motion setting. */}
+				<MotionConfig reducedMotion="user">
+				<SkipLink />
 				<RootCookieConsent />
 				<ProductAnalyticsGaBridge />
 				<ConsoleEasterEgg />
@@ -120,6 +125,7 @@ export function RootDocument({
 					</DisplayPreferencesProvider>
 				</ThemeProvider>
 				</CatalogNavigationGuardProvider>
+				</MotionConfig>
 				</DirectionProvider>
 				</RootIntlProvider>
 				<Scripts />

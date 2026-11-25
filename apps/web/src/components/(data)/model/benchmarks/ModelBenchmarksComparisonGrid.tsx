@@ -502,6 +502,7 @@ export function ModelBenchmarksComparisonGrid({
 								height={chartHeight}
 							>
 								<BarChart
+									title={selectedComparison?.benchmarkName}
 									data={rows}
 									layout="vertical"
 									margin={chartMargin}

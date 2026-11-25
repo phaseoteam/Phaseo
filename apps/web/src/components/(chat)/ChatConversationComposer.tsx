@@ -1941,6 +1941,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 					<label className="flex shrink-0 items-center gap-2 text-[11px] text-muted-foreground">
 						<Switch
 							size="sm"
+							aria-label={toolLabel}
 							checked={toolEnabled}
 							onCheckedChange={(checked) => setServerToolEnabled(toolType, checked)}
 						/>
@@ -2058,6 +2059,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								<span>{tUi("chatComposer.highlights")}</span>
 								<Switch
 									size="sm"
+									aria-label={tUi("chatComposer.highlights")}
 									checked={webSearchConfig.includeHighlights !== false}
 									onCheckedChange={(includeHighlights) =>
 										updateWebSearchConfig({ includeHighlights })
@@ -2068,6 +2070,7 @@ export function ChatConversationComposer(props: ChatConversationComposerProps) {
 								<span>{tUi("chatComposer.fullText")}</span>
 								<Switch
 									size="sm"
+									aria-label={tUi("chatComposer.fullText")}
 									checked={webSearchConfig.includeText === true}
 									onCheckedChange={(includeText) =>
 										updateWebSearchConfig({ includeText })

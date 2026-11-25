@@ -16,7 +16,7 @@ export function PriceCardRowList({ rows }: { rows: ReadonlyArray<DescribedPriceC
 					<dt className="min-w-0 text-muted-foreground">
 						<span className="block">{row.label}</span>
 						{row.note ? (
-							<span className="block text-[11px] leading-snug text-muted-foreground/80">{row.note}</span>
+							<span className="block text-[11px] leading-snug text-muted-foreground">{row.note}</span>
 						) : null}
 					</dt>
 					<dd className="whitespace-nowrap text-right font-medium tabular-nums text-foreground">

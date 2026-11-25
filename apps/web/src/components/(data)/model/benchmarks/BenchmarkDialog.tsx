@@ -270,6 +270,7 @@ export function BenchmarkDialog({
 					{rows.length ? (
 						<ResponsiveContainer width="100%" height="100%">
 							<BarChart
+								title={benchmarkName}
 								data={rows}
 								layout="vertical"
 								margin={chartMargin}

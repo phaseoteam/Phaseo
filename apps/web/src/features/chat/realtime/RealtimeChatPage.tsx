@@ -29,7 +29,7 @@ export async function getRealtimeChatMetadata(): Promise<PageMetadata> {
 
 function RealtimeFlagDisabled({ copy }: { copy: RealtimePageCopy }) {
 	return (
-		<main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+		<div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
 			<header className="flex h-[57px] shrink-0 items-center justify-between border-b border-border px-4 md:px-6">
 				<div className="flex min-w-0 items-center gap-2">
 					<h1 className="truncate text-sm font-medium">{copy.title}</h1>
@@ -46,13 +46,13 @@ function RealtimeFlagDisabled({ copy }: { copy: RealtimePageCopy }) {
 					</p>
 				</div>
 			</section>
-		</main>
+		</div>
 	);
 }
 
 function RealtimeRoomLoading({ copy }: { copy: RealtimePageCopy }) {
 	return (
-		<main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
+		<div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
 			<header className="flex h-[57px] shrink-0 items-center justify-between border-b border-border px-4 md:px-6">
 				<div className="flex min-w-0 items-center gap-2">
 					<h1 className="truncate text-sm font-medium">{copy.title}</h1>
@@ -64,7 +64,7 @@ function RealtimeRoomLoading({ copy }: { copy: RealtimePageCopy }) {
 			<section className="flex min-h-0 flex-1 items-center justify-center px-4">
 				<div className="h-7 w-48 animate-pulse rounded-md bg-muted" />
 			</section>
-		</main>
+		</div>
 	);
 }
 

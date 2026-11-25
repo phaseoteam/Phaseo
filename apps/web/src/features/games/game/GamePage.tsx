@@ -37,11 +37,11 @@ export default function GamePage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-screen px-4 py-12">
+        <div className="min-h-screen px-4 py-12">
           <div className="mx-auto max-w-6xl animate-pulse text-sm text-muted-foreground">
             {t("preparing")}
           </div>
-        </main>
+        </div>
       }
     >
       <GamePageContent />

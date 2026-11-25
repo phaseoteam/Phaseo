@@ -40,12 +40,12 @@ function OrganisationsFallback() {
 
 export default function OrganisationsPage() {
 	return (
-		<main className="flex flex-col">
+		<div className="flex flex-col">
 			<div className="container mx-auto px-4 py-8">
 				<Suspense fallback={<OrganisationsFallback />}>
 					<OrganisationsSection />
 				</Suspense>
 			</div>
-		</main>
+		</div>
 	);
 }

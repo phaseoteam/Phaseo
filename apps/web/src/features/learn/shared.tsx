@@ -107,11 +107,13 @@ export function StageBadge({ stage, link = true }: { stage: "alpha" | "beta"; li
 }
 
 export function ProgressBar({ done, total, className }: { done: number; total: number; className?: string }) {
+	const t = useTranslations("Content.learn");
 	const percent = total > 0 ? Math.round((done / total) * 100) : 0;
 	return (
 		<div
 			className={cn("h-1.5 w-full overflow-hidden rounded-[2px] bg-zinc-200 dark:bg-zinc-800", className)}
 			role="progressbar"
+			aria-label={t("lessonsComplete", { done, total })}
 			aria-valuemin={0}
 			aria-valuemax={total}
 			aria-valuenow={done}

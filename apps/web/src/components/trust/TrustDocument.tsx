@@ -19,7 +19,7 @@ export function TrustDocument({
 }) {
 	const t = useTranslations("Site.trust");
 	return (
-		<main className="min-h-screen bg-background">
+		<div className="min-h-screen bg-background">
 			<div className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
 				<Link href="/trust" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
 					<ArrowLeft className="size-4" /> {t("trustCentre")}
@@ -43,7 +43,7 @@ export function TrustDocument({
 					<a href="mailto:privacy@phaseo.app" className="inline-flex items-center gap-1 hover:text-foreground">{t("privacyQuestions")} <ArrowUpRight className="size-3.5" /></a>
 				</footer>
 			</div>
-		</main>
+		</div>
 	);
 }
 

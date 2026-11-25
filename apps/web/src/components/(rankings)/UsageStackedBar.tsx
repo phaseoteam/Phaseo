@@ -808,7 +808,7 @@ export function UsageStackedBar(props: UsageStackedBarProps) {
 													<div className="text-xs text-muted-foreground lg:text-sm">
 														<Link
 														href={`/organisations/${encodeURIComponent(organisationId)}`}
-															className="underline underline-offset-2 hover:text-foreground"
+															className="inline-flex min-h-6 items-center underline underline-offset-2 hover:text-foreground"
 													>
 															{t("usageByOrganisation", { name: organisationName ?? organisationId ?? modelName })}
 														</Link>

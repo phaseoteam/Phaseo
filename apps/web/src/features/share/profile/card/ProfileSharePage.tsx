@@ -48,7 +48,7 @@ function ProfileSharePageContent() {
 	const t = useTranslations("Site.profileShare")
 
 	return (
-		<div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.08),transparent_28%),linear-gradient(180deg,#fcfcfd_0%,#f7f7fb_100%)] px-4 py-8 sm:px-6 lg:px-10">
+		<main id="main-content" tabIndex={-1} className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.08),transparent_28%),linear-gradient(180deg,#fcfcfd_0%,#f7f7fb_100%)] px-4 py-8 sm:px-6 lg:px-10 outline-none">
 			<div className="mx-auto max-w-4xl space-y-6">
 				<div className="space-y-2">
 					<p className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-400">
@@ -89,7 +89,7 @@ function ProfileSharePageContent() {
 					</Button>
 				</div>
 			</div>
-		</div>
+		</main>
 	)
 }
 

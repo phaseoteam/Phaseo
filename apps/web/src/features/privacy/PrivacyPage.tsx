@@ -41,9 +41,9 @@ export function PrivacyPage() {
 	const retentionDetails = t.raw("privacyBody.retentionDetails") as string[];
 	const rightsItems = t.raw("privacyBody.rightsItems") as Array<{ label: string; text: string }>;
 	return (
-		<main className="container mx-auto space-y-8 px-4 py-10 text-sm leading-relaxed text-muted-foreground">
+		<main id="main-content" tabIndex={-1} className="outline-none container mx-auto space-y-8 px-4 py-10 text-sm leading-relaxed text-muted-foreground">
 			<header className="space-y-3">
-				<p className="text-xs text-muted-foreground/80">
+				<p className="text-xs text-muted-foreground">
 					{t("lastUpdated", { date: lastUpdatedDate })}
 				</p>
 				<h1 className="text-3xl font-semibold text-foreground">

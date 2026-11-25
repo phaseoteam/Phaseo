@@ -44,6 +44,7 @@ function ChartContainer({
   children,
   config,
   initialDimension = INITIAL_DIMENSION,
+  "aria-label": ariaLabel,
   ...props
 }: React.ComponentProps<"div"> & {
   config: ChartConfig
@@ -57,10 +58,52 @@ function ChartContainer({
 }) {
   const uniqueId = React.useId()
   const chartId = `chart-${id ?? uniqueId.replace(/:/g, "")}`
+  // Recharts makes the chart focusable for keyboard tooltips, so it needs a
+  // name (WCAG 4.1.2). Use the chart's own title, then this container's
+  // aria-label, then the nearest heading before it, then the first few series.
+  const [headingName, setHeadingName] = React.useState<string | null>(null)
+  // Read the heading once the container is in the document, and again
+  // whenever the heading's text changes (for example when a metric switches).
+  const containerRef = React.useCallback((container: HTMLDivElement | null) => {
+    if (ariaLabel || !container) return
+    // The closest heading that comes before the chart, searching outwards.
+    let heading: Element | undefined
+    for (let scope = container.parentElement; scope && !heading; scope = scope.parentElement) {
+      heading = [...scope.querySelectorAll("h1, h2, h3, h4, h5, [data-slot='card-title']")]
+        .filter((candidate) => candidate.compareDocumentPosition(container) & Node.DOCUMENT_POSITION_FOLLOWING)
+        .at(-1)
+    }
+    const read = () => {
+      const text = heading?.textContent?.trim()
+      setHeadingName(text ? text.slice(0, 120) : null)
+    }
+    read()
+    if (!heading) return
+    const observer = new MutationObserver(read)
+    observer.observe(heading, { childList: true, characterData: true, subtree: true })
+    return () => observer.disconnect()
+  }, [ariaLabel])
+  const seriesLabels = Object.values(config)
+    .map((entry) => (typeof entry.label === "string" ? entry.label : null))
+    .filter((label): label is string => Boolean(label))
+  const seriesName = seriesLabels.length
+    ? seriesLabels.slice(0, 3).join(", ") + (seriesLabels.length > 3 ? ", …" : "")
+    : undefined
+  const chartTitle = ariaLabel ?? headingName ?? seriesName
+  const nameChart = (node: React.ReactNode): React.ReactNode => {
+    if (!chartTitle || !React.isValidElement<{ title?: string; children?: React.ReactNode }>(node)) return node
+    // Some charts add their own ResponsiveContainer; name the chart inside it.
+    if (node.type === RechartsPrimitive.ResponsiveContainer) {
+      return React.cloneElement(node, { children: nameChart(node.props.children) })
+    }
+    return node.props.title ? node : React.cloneElement(node, { title: chartTitle })
+  }
+  const namedChildren = nameChart(children) as typeof children
 
   return (
     <ChartContext.Provider value={{ config }}>
       <div
+        ref={containerRef}
         data-slot="chart"
         data-chart={chartId}
         className={cn(
@@ -73,7 +116,7 @@ function ChartContainer({
         <RechartsPrimitive.ResponsiveContainer
           initialDimension={initialDimension}
         >
-          {children}
+          {namedChildren}
         </RechartsPrimitive.ResponsiveContainer>
       </div>
     </ChartContext.Provider>

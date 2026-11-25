@@ -604,13 +604,13 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 					<div className="mt-5 border-t px-2 pt-4 text-xs leading-5 text-muted-foreground"><Braces className="mb-2 size-4" />{rs("canvasHint")}</div>
 				</aside>
 
-				<main className="relative min-h-0 min-w-0 bg-background">
+				<div className="relative min-h-0 min-w-0 bg-background">
 					<div className="absolute left-4 top-4 z-10 rounded-lg border bg-background/95 px-3 py-2 text-xs shadow-sm backdrop-blur"><span className="font-medium">{rs("dragToPan")}</span><span className="text-muted-foreground"> · {rs("zoomHint")}</span></div>
 					<Button size="icon-sm" variant="outline" className="absolute right-4 top-4 z-10 bg-background" onClick={() => setInspectorOpen((open) => !open)} aria-label={inspectorOpen ? rs("closeInspector") : rs("openInspector")}>{inspectorOpen ? <PanelRightClose className="size-4" /> : <PanelRightOpen className="size-4" />}</Button>
 					<ReactFlow nodes={flowNodes} edges={flowEdges} nodeTypes={nodeTypes} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onConnect={onConnect} onInit={setFlowInstance} onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={dropPaletteNode} onNodeClick={(_, node) => { setSelectedNodeId(node.id); setInspectorOpen(true); }} onPaneClick={() => { setSelectedNodeId(null); setInspectorOpen(false); }} fitView fitViewOptions={{ padding: 0.25, minZoom: 0.65, maxZoom: 1 }} minZoom={0.4} maxZoom={1.6} panOnDrag selectionOnDrag={false} zoomOnDoubleClick={false} deleteKeyCode={["Backspace", "Delete"]}>
 						<Background gap={22} size={1} color="var(--border)" /><Controls position="bottom-left" /><MiniMap position="bottom-right" pannable zoomable className="!border !bg-background/90" maskColor="color-mix(in srgb, var(--background) 72%, transparent)" />
 					</ReactFlow>
-				</main>
+				</div>
 
 				{inspectorOpen ? <aside className="w-[360px] overflow-y-auto border-l">{selectedNode ? <NodeInspector node={selectedNode} providers={initialData.providers} update={(data) => updateNode(selectedNode.id, data)} remove={() => removeNode(selectedNode.id)} /> : <div className="p-6 text-sm text-muted-foreground">{rs("selectNode")}</div>}</aside> : null}
 			</div>

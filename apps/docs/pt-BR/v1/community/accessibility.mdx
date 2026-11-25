@@ -1,0 +1,35 @@
+---
+title: "Acessibilidade"
+description: "Relate uma barreira de acessibilidade na Phaseo e veja o que já testamos e o que ainda não."
+icon: "accessibility"
+---
+
+Se algo na Phaseo for difícil ou impossível de usar com teclado, leitor de tela, ampliação, controle por voz ou outra tecnologia assistiva, avise a gente. Procuramos confirmar o recebimento dos relatos em até 5 dias úteis.
+
+## Relatar uma barreira
+
+Use o canal que for melhor para você:
+
+- **GitHub:** abra um [relatório de bug](https://github.com/phaseoteam/Phaseo/issues/new?template=bug.yml) com um título que comece com `Accessibility:`.
+- **E-mail:** escreva para `support@phaseo.app` com um assunto que comece com `Accessibility:`. Use o e-mail se preferir não publicar o relato ou se o GitHub for difícil de usar para você.
+
+Informe a página, tela ou comando onde aconteceu, o que você estava tentando fazer, e seu navegador ou app, sistema operacional e tecnologia assistiva. Você não precisa saber qual diretriz está envolvida. Uma descrição simples basta.
+
+Barreiras que impedem totalmente uma tarefa, como entrar, pagar ou enviar uma requisição, são tratadas como bugs de alta prioridade.
+
+## Nosso objetivo
+
+Nosso objetivo é atender ao nível AA das [WCAG 2.2](https://www.w3.org/TR/WCAG22/) no app web e nesta documentação, e às diretrizes equivalentes de cada plataforma nos apps para desktop e celular. Ainda não passamos por uma auditoria independente, então não declaramos conformidade.
+
+Em novembro de 2026, verificamos 54 tipos de página com base nas WCAG 2.2 AA usando o axe-core nos temas claro e escuro, uma navegação por teclado em cada página e uma verificação com 320 pixels de largura, e corrigimos o que encontramos.
+
+## O que ainda não testamos
+
+- Leitores de tela (NVDA, JAWS, VoiceOver, TalkBack) e controle por voz. Respostas transmitidas em streaming no Chat podem não ser anunciadas corretamente.
+- Menus, caixas de diálogo e formulários abertos e em estado de erro.
+- Os apps para desktop e celular.
+- Verificações automáticas de acessibilidade na CI, por isso regressões podem ser publicadas sem que ninguém perceba.
+
+## Contribuir com mudanças acessíveis
+
+Pull requests que alteram código da interface seguem a checklist da [seção de contribuição do `ACCESSIBILITY.md`](https://github.com/phaseoteam/Phaseo/blob/main/ACCESSIBILITY.md#contributing): acesso por teclado com foco visível, nomes acessíveis para ícones e botões só com ícone, contraste verificado nos dois temas e suporte a movimento reduzido. A declaração completa, incluindo os navegadores compatíveis, está em [`ACCESSIBILITY.md`](https://github.com/phaseoteam/Phaseo/blob/main/ACCESSIBILITY.md).

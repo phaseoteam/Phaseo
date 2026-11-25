@@ -42,6 +42,7 @@ export default function ByokFallbackToggle({
 	return (
 		<label className="flex items-center gap-3 text-sm">
 			<Switch
+				aria-label={s("Try fallback BYOK keys after managed providers")}
 				checked={enabled}
 				disabled={saving}
 				onCheckedChange={handleChange}

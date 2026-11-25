@@ -48,7 +48,7 @@ export default function OpenVsClosedCard({
 			</CardHeader>
 			<CardContent className="h-48">
 				<ResponsiveContainer width="100%" height="100%">
-					<AreaChart data={data} stackOffset="expand">
+					<AreaChart title={tCopy("copy085")} data={data} stackOffset="expand">
 						<XAxis dataKey="date" hide />
 						<YAxis hide />
 						<Tooltip

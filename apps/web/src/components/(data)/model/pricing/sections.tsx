@@ -859,7 +859,7 @@ export function InputsSection({
 									comparisonAccent,
 								)}
 								<span className="text-xs text-muted-foreground">{l(label)}</span>
-								{hasSingleUnit ? null : <span className="text-xs text-muted-foreground/80">({item.unit})</span>}
+								{hasSingleUnit ? null : <span className="text-xs text-muted-foreground">({item.unit})</span>}
 							</div>
 						</div>
 					);
@@ -1068,10 +1068,10 @@ export function UpcomingPricingSection({
 								</span>
 								<span className="truncate text-xs text-muted-foreground">{l(label)}</span>
 							</div>
-							<div className="text-xs text-muted-foreground/90">
+							<div className="text-xs text-muted-foreground">
 								<span>{effectiveDate ?? "--"}</span>
 								{row.currentPrice != null ? (
-									<span className="text-muted-foreground/80"> · {t("was")} {fmtUSD(row.currentPrice)}</span>
+									<span className="text-muted-foreground"> · {t("was")} {fmtUSD(row.currentPrice)}</span>
 								) : null}
 							</div>
 						</div>

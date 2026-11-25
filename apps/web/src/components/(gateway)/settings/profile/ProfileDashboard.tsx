@@ -320,7 +320,7 @@ function ActivityHeatmap({
 				viewportClassName="pb-3"
 			>
 				<div className="min-w-[44rem]">
-					<div className="ml-5 grid grid-cols-[repeat(53,1fr)] gap-1 text-[10px] text-muted-foreground/70">
+					<div className="ml-5 grid grid-cols-[repeat(53,1fr)] gap-1 text-[10px] text-muted-foreground">
 						{Array.from({ length: 53 }).map((_, weekIndex) => {
 							const label =
 								monthLabels.find(

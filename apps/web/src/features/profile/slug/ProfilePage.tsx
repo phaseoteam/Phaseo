@@ -26,7 +26,7 @@ function PublicProfileShell({
 }) {
 	const t = useTranslations("Site.profile");
 	return (
-		<div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.08),transparent_28%),linear-gradient(180deg,#fcfcfd_0%,#f7f7fb_100%)] px-4 py-8 sm:px-6 lg:px-10">
+		<main id="main-content" tabIndex={-1} className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.08),transparent_28%),linear-gradient(180deg,#fcfcfd_0%,#f7f7fb_100%)] px-4 py-8 sm:px-6 lg:px-10 outline-none">
 			<div className="mx-auto max-w-7xl space-y-6">
 				<div className="flex items-center justify-between gap-4">
 					<div>
@@ -41,7 +41,7 @@ function PublicProfileShell({
 
 				{children}
 			</div>
-		</div>
+		</main>
 	)
 }
 

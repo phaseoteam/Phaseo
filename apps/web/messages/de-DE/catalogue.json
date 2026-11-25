@@ -1107,7 +1107,8 @@
 				"external": "In einem externen Katalog gelistet; über Phaseo nicht routbar."
 			},
 			"noPricingForSelectedTier": "Für diese Stufe ist bei diesem Anbieter keine Preisangabe verfügbar.",
-			"comingSoonTierPricingDescription": "Dieser Anbieter ist für die ausgewählte Stufe noch nicht verfügbar. Preise werden angezeigt, sobald die Verfügbarkeit beginnt."
+			"comingSoonTierPricingDescription": "Dieser Anbieter ist für die ausgewählte Stufe noch nicht verfügbar. Preise werden angezeigt, sobald die Verfügbarkeit beginnt.",
+			"showProviderDetails": "Details zu {provider} anzeigen"
 		},
 		"pricing": {
 			"effective": "Effektiv",

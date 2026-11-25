@@ -534,7 +534,7 @@ export function ContactClient({
 				</div>
 			</header>
 
-			<main id="support-form" className="scroll-mt-24 space-y-8 py-8">
+			<div id="support-form" className="scroll-mt-24 space-y-8 py-8">
 				<section aria-labelledby="support-router-title" className="space-y-5">
 					<div>
 						<p className="mb-2 text-xs font-medium text-muted-foreground">
@@ -554,7 +554,7 @@ export function ContactClient({
 									void setIssueParam(value);
 								}}
 							>
-								<SelectTrigger className="h-11 w-full rounded-md px-4">
+								<SelectTrigger aria-labelledby={localizedSelectedIssue ? undefined : "support-router-title"} className="h-11 w-full rounded-md px-4">
 									{localizedSelectedIssue ? (
 										<span>{localizedSelectedIssue.label}</span>
 									) : (
@@ -682,7 +682,7 @@ export function ContactClient({
 				</section>
 					</>
 				) : null}
-			</main>
+			</div>
 			</div>
 		</TooltipProvider>
 	);

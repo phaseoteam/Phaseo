@@ -38,10 +38,10 @@ export default function SubscriptionPlansPage() {
 	const { data: subscriptionPlans } = useSuspenseQuery(subscriptionPlansQuery());
 
 	return (
-		<main className="flex flex-col">
+		<div className="flex flex-col">
 			<div className="container mx-auto px-4 py-8">
 				<SubscriptionPlansDisplay plans={subscriptionPlans} labels={messages} />
 			</div>
-		</main>
+		</div>
 	);
 }

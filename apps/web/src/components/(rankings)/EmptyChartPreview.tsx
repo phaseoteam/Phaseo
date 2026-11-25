@@ -44,7 +44,7 @@ export function EmptyChartPreview({
 			<div className="pointer-events-none absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-center px-6 text-center">
 				<div className="max-w-md">
 					<div className="text-sm font-medium text-foreground/75">{title}</div>
-					<p className="mt-1 text-sm leading-5 text-muted-foreground/85">
+					<p className="mt-1 text-sm leading-5 text-muted-foreground">
 						{description}
 					</p>
 				</div>

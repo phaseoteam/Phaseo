@@ -1107,7 +1107,8 @@
 				"external": "列在外部目录中；无法通过 Phaseo 路由。"
 			},
 			"noPricingForSelectedTier": "此提供商暂未提供所选层级的价格。",
-			"comingSoonTierPricingDescription": "此提供商暂未开放所选层级。开放后会显示价格。"
+			"comingSoonTierPricingDescription": "此提供商暂未开放所选层级。开放后会显示价格。",
+			"showProviderDetails": "显示 {provider} 详情"
 		},
 		"pricing": {
 			"effective": "实际",

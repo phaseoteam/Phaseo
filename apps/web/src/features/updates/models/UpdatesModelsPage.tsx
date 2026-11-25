@@ -35,7 +35,7 @@ export default function UpdatesModelsPage() {
 		useSuspenseQuery(modelUpdatesQuery(4));
 
 	return (
-		<main className="flex min-h-screen flex-col">
+		<div className="flex min-h-screen flex-col">
 			<div className="container mx-auto flex flex-1">
 				<div className="flex-1">
 					<ModelUpdatesPage
@@ -44,6 +44,6 @@ export default function UpdatesModelsPage() {
 					/>
 				</div>
 			</div>
-		</main>
+		</div>
 	);
 }

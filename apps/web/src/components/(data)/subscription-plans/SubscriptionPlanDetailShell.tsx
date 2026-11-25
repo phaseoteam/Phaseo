@@ -61,7 +61,7 @@ export default function SubscriptionPlanDetailShell({
 
 	if (!plan) {
 		return (
-			<main className="flex min-h-screen flex-col">
+			<div className="flex min-h-screen flex-col">
 				<div className="container mx-auto px-4 py-8">
 					<Empty className="rounded-md border bg-muted/30">
 						<EmptyHeader>
@@ -71,7 +71,7 @@ export default function SubscriptionPlanDetailShell({
 						</EmptyHeader>
 					</Empty>
 				</div>
-			</main>
+			</div>
 		);
 	}
 
@@ -85,7 +85,7 @@ export default function SubscriptionPlanDetailShell({
 	const planUrl = plan.link ?? plan.offers?.find((offer) => offer.purchase_url)?.purchase_url ?? null;
 
 	return (
-		<main className="flex flex-col">
+		<div className="flex flex-col">
 			<EntityStickyHeader kind="subscription" id={organisationId} name={plan.name} observeId="subscription-detail-primary-header" baseHref={baseHref} navigation={navigation.map(({ label, href }) => ({ label, href }))} />
 			<div className="container mx-auto px-4 py-6 md:py-8">
 				<div id="subscription-detail-primary-header" className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -126,6 +126,6 @@ export default function SubscriptionPlanDetailShell({
 				</nav>
 				<div className="mt-6 min-h-full">{tocItems.length ? <div className="flex flex-col gap-6 lg:flex-row lg:items-start"><ModelPageToc items={tocItems} className="lg:h-full lg:w-40 lg:shrink-0 xl:w-44" /><div className="min-w-0 flex-1">{children}</div></div> : children}</div>
 			</div>
-		</main>
+		</div>
 	);
 }

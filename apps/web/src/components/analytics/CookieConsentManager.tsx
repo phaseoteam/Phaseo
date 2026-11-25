@@ -1,6 +1,6 @@
 import { IntentLink as Link } from "@/components/navigation/IntentLink"
 import Script from "@/components/script"
-import { useEffect, useState } from "react"
+import { useEffect, useId, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   ANALYTICS_CONSENT_EVENT,
@@ -89,6 +89,37 @@ export function CookieConsentManager({
     applyGaConsent(consent ?? "denied", gaMeasurementId)
   }, [consent, gaMeasurementId])
 
+  // While the banner is open, reserve room for it at the bottom of the page so
+  // focused elements scroll clear of it instead of sitting underneath
+  // (WCAG 2.4.11 Focus Not Obscured).
+  const bannerRef = useRef<HTMLDivElement>(null)
+  const bannerTitleId = useId()
+  const bannerOpen = consent === null
+  useEffect(() => {
+    const banner = bannerRef.current
+    if (!bannerOpen || !banner) return
+    const root = document.documentElement
+    const previousScrollPadding = root.style.scrollPaddingBottom
+    // The body is fixed at 100% height, so padding on it adds no scroll room;
+    // globals.css turns this variable into a spacer after the page content.
+    const reserve = () => {
+      const offset = window.innerHeight - banner.getBoundingClientRect().top
+      const space = `${Math.max(0, Math.ceil(offset)) + 16}px`
+      root.style.scrollPaddingBottom = space
+      root.style.setProperty("--cookie-banner-space", space)
+    }
+    reserve()
+    const observer = new ResizeObserver(reserve)
+    observer.observe(banner)
+    window.addEventListener("resize", reserve)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", reserve)
+      root.style.scrollPaddingBottom = previousScrollPadding
+      root.style.removeProperty("--cookie-banner-space")
+    }
+  }, [bannerOpen])
+
   useEffect(() => {
     if (!feedback) return
     const timeoutId = window.setTimeout(() => setFeedback(null), 3500)
@@ -156,9 +187,14 @@ export function CookieConsentManager({
         </>
       ) : null}
 
-      {consent === null ? (
-        <div className="fixed bottom-4 left-4 right-4 z-[100] w-auto rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl sm:bottom-5 sm:left-auto sm:right-5 sm:w-[480px] sm:max-w-[calc(100vw-2.5rem)] dark:border-zinc-800 dark:bg-zinc-950">
-          <p className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+      {bannerOpen ? (
+        <div
+          ref={bannerRef}
+          role="region"
+          aria-labelledby={bannerTitleId}
+          className="fixed bottom-4 left-4 right-4 z-[100] w-auto rounded-2xl border border-zinc-200 bg-white p-5 shadow-2xl sm:bottom-5 sm:left-auto sm:right-5 sm:w-[480px] sm:max-w-[calc(100vw-2.5rem)] dark:border-zinc-800 dark:bg-zinc-950"
+        >
+          <p id={bannerTitleId} className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
             {copy.title}
           </p>
           <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">

@@ -111,10 +111,9 @@ export default function CountryDetailPage() {
 					</div>
 					<div className="px-4 py-5">
 						<div className="flex items-center justify-between">
-							<p
-								className="text-sm font-semibold"
-								style={{ color: latestAccent }}
-							>
+							{/* Organisation colours can be too dark or light to read as text,
+							    so the accent stays on the logo border only. */}
+							<p className="text-sm font-semibold text-foreground">
 								{t("latestModel")}
 							</p>
 							{latestModel?.primary_date ? (
@@ -152,7 +151,7 @@ export default function CountryDetailPage() {
 									<div className="flex flex-col">
 										<Link
 											href={`/models/${latestModel.model_id}`}
-											className="text-lg font-semibold leading-tight text-[inherit]"
+											className="inline-flex min-h-6 items-center text-lg font-semibold leading-tight text-[inherit]"
 										>
 											<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 												{latestModel.name}
@@ -161,7 +160,7 @@ export default function CountryDetailPage() {
 										{latestModel.organisation_id && (
 											<Link
 												href={`/organisations/${latestModel.organisation_id}`}
-												className="text-sm font-medium text-muted-foreground hover:text-foreground"
+												className="inline-flex min-h-6 items-center text-sm font-medium text-muted-foreground hover:text-foreground"
 											>
 												<span className="relative underline decoration-transparent hover:decoration-current transition-colors duration-200">
 													{latestModel.organisation_name ??

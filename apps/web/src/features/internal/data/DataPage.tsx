@@ -32,7 +32,7 @@ export default function SettingsInternalPage() {
 	const routeCoverage = overview.routes.total > 0 ? Math.round((overview.routes.routable / overview.routes.total) * 100) : 0;
 
 	return (
-		<main className="container mx-auto max-w-7xl space-y-8 py-8 lg:py-10">
+		<div className="container mx-auto max-w-7xl space-y-8 py-8 lg:py-10">
 			<header className="flex flex-col gap-5 border-b pb-7 lg:flex-row lg:items-end lg:justify-between">
 				<div className="max-w-2xl">
 					<div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground"><Database className="size-3.5" />{o("catalogOperations")}</div>
@@ -76,6 +76,6 @@ export default function SettingsInternalPage() {
 					<div className="rounded-xl border border-dashed p-5"><div className="flex items-center gap-2"><Landmark className="size-4 text-muted-foreground" /><h2 className="text-sm font-medium">{o("publishing")}</h2></div><p className="mt-2 text-xs leading-5 text-muted-foreground">{o("publishingDescription")}</p></div>
 				</aside>
 			</div>
-		</main>
+		</div>
 	);
 }

@@ -160,14 +160,14 @@ const MODALITY_TONES: Record<string, ModalityTone> = {
 	},
 	file: {
 		badgeClassName:
-			"border-[#CBE48C] bg-[#F7FDEB] text-[#6A8B19] dark:border-[#6B8A2F] dark:bg-[#202A10] dark:text-[#D8F39C]",
-		iconClassName: "text-[#86AF21] dark:text-[#CAEC86]",
+			"border-[#CBE48C] bg-[#F7FDEB] text-[#4D6B0F] dark:border-[#6B8A2F] dark:bg-[#202A10] dark:text-[#D8F39C]",
+		iconClassName: "text-[#4D6B0F] dark:text-[#CAEC86]",
 		ghostIconHoverClassName:
-			"group-hover:text-[#86AF21] dark:group-hover:text-[#CAEC86]",
+			"group-hover:text-[#4D6B0F] dark:group-hover:text-[#CAEC86]",
 		sidebarIconHoverClassName:
-			"group-hover:border-[#CBE48C] group-hover:bg-[#F7FDEB] group-hover:text-[#86AF21] dark:group-hover:border-[#6B8A2F] dark:group-hover:bg-[#202A10] dark:group-hover:text-[#CAEC86]",
+			"group-hover:border-[#CBE48C] group-hover:bg-[#F7FDEB] group-hover:text-[#4D6B0F] dark:group-hover:border-[#6B8A2F] dark:group-hover:bg-[#202A10] dark:group-hover:text-[#CAEC86]",
 		sidebarIconSelectedClassName:
-			"border-[#CBE48C] bg-[#F7FDEB] text-[#86AF21] dark:border-[#6B8A2F] dark:bg-[#202A10] dark:text-[#CAEC86]",
+			"border-[#CBE48C] bg-[#F7FDEB] text-[#4D6B0F] dark:border-[#6B8A2F] dark:bg-[#202A10] dark:text-[#CAEC86]",
 	},
 	moderations: {
 		badgeClassName:
