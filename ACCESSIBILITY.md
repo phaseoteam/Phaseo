@@ -24,7 +24,7 @@ We have not had an independent accessibility audit, so we do not claim conforman
 - Interactive controls in the web app are built on [Base UI](https://base-ui.com) primitives, which provide keyboard support, focus management, and ARIA semantics for menus, dialogs, popovers, and similar components.
 - Every page in the web app has a "Skip to content" link and a single main content area. The documentation has its own skip link.
 - Animations follow the operating system's reduced motion setting.
-- The web app's lint checks component code for common accessibility mistakes. Some, such as images without alt text or invalid ARIA attributes, fail the pull request. Others are reported as warnings until we have fixed the existing cases.
+- The web app's lint checks component code for common accessibility mistakes, such as images without alt text, invalid ARIA attributes, unlabelled form fields, or click handlers that cannot be reached from the keyboard. A mistake fails the pull request.
 - The web app has light and dark themes, and we check text contrast in both.
 - Every night, an automated check (axe-core, against WCAG 2.2 AA) scans a set of public pages on the live site at phaseo.app in both themes, including colour contrast. Serious and critical problems fail the check, so we see them the next morning. The pages and the few known exceptions, each with its reason, are listed in `scripts/a11y/live-scan.config.json`.
 
@@ -49,6 +49,7 @@ Automated checks find only part of what affects real users. We have not yet:
 - Tested systematically with screen readers (such as NVDA, JAWS, VoiceOver, or TalkBack) or with voice control. In particular, responses that stream into Chat may not be announced well.
 - Reviewed menus, dialogs, and forms in their opened and error states.
 - Reviewed the desktop and mobile apps.
+- Provided captions or transcripts for audio and video that models generate in Chat and the model playground, or that people attach in Chat. The prompt, and any text reply, is shown next to the player, but it doesn't describe what you hear.
 - Checked whole pages before they ship. The nightly scan only covers public pages, after they are live, so a regression can reach users for up to a day. Pages behind sign-in, such as Chat, settings and the dashboard, are not scanned automatically at all.
 
 If you hit one of these, or anything else, please report it. Reports from real use help us decide what to fix first.

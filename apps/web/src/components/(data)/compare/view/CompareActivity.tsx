@@ -52,9 +52,12 @@ function ActivityChart({ days, label }: { days: CompareActivityDay[]; label: str
 		<div className="space-y-1">
 			<div className="flex items-start gap-1.5">
 				<span className="w-9 shrink-0 text-right text-[10px] leading-none text-muted-foreground tabular-nums">{byRequests ? format.tokens(max) : format.compactTokens(max)}</span>
+				{/* A chart image keyboard users can focus and step through with the arrow keys; the selected day is read out from the live region below. */}
+				{/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
 				<div
 					role="img"
 					aria-label={label}
+					// oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
 					tabIndex={0}
 					onKeyDown={onKeyDown}
 					onFocus={() => setActive((current) => current ?? days.length - 1)}

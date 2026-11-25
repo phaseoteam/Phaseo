@@ -241,6 +241,8 @@ export default function ModelCalendarChart({
 											const count = entry.counts[type] ?? 0;
 											if (count === 0 || entry.total === 0) return null;
 											return (
+												// Inside an aria-hidden bar; the count buttons below are the keyboard and screen reader equivalent.
+												// oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
 												<div
 													key={type}
 													className={cn("h-full cursor-pointer transition-opacity hover:opacity-80", TYPE_COLORS[type])}

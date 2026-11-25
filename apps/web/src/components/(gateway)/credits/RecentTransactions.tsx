@@ -680,12 +680,12 @@ export default function RecentTransactions({
 												{after !== null ? (
 													<HoverCard>
 														<HoverCardTrigger asChild>
-															<span
-																tabIndex={0}
+															<button
+																type="button"
 																className="cursor-help rounded-sm font-medium tabular-nums underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
 															>
 																{formatNanos(after, currency, preferences)}
-															</span>
+															</button>
 														</HoverCardTrigger>
 														<HoverCardContent align="start" className="w-64">
 															<HoverCardBody>

@@ -136,6 +136,7 @@ export function GatewayModelCombobox({ value, onChange, options, excludedIds = [
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
 			<PopoverTrigger asChild>
+				{/* oxlint-disable-next-line jsx-a11y/role-has-required-aria-props -- Base UI's PopoverTrigger adds aria-controls (the popup id) and aria-haspopup=dialog */}
 				<Button variant="outline" role="combobox" aria-label={ariaLabel} aria-expanded={open} className="h-auto min-h-10 w-full justify-between gap-2 px-3 py-2 font-normal">
 					<span className="flex min-w-0 flex-1 items-center gap-2.5 text-left">{selected ? <Logo id={selected.organisationId} alt={selected.organisationName} width={20} height={20} className="size-5 shrink-0 object-contain" /> : null}<span className="min-w-0">{value ? <><span className="block truncate text-sm font-medium text-foreground">{selected?.organisationName ? `${selected.organisationName}: ` : ""}{selected?.label ?? value}</span>{selected ? <span className="block truncate text-[11px] text-muted-foreground">{selected.id}</span> : null}</> : <span className="text-muted-foreground">{t("chooseModel")}</span>}</span></span>
 					<ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />

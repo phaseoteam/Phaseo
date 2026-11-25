@@ -498,6 +498,9 @@ const MediaPlayerRoot = React.forwardRef<HTMLDivElement, MediaPlayerRootProps>(
 					{hasCustomChildren ? (
 						children
 					) : (
+						// Plays model-generated or user-uploaded media, which has no caption track to offer.
+						// This is a known gap, listed in ACCESSIBILITY.md.
+						// oxlint-disable-next-line jsx-a11y/media-has-caption
 						<video
 							src={src}
 							poster={poster}
@@ -528,6 +531,9 @@ const MediaPlayerVideo = React.forwardRef<
 >(function MediaPlayerVideo({ className, ...props }, ref) {
 	const { setMediaElement, setMediaKind } = useMediaPlayer();
 	return (
+		// Callers pass <source>/<track> children through props. Generated and uploaded media
+		// has no caption track to offer; this is a known gap, listed in ACCESSIBILITY.md.
+		// oxlint-disable-next-line jsx-a11y/media-has-caption
 		<video
 			ref={mergeRefs(ref, (node) => setMediaElement(node))}
 			playsInline
@@ -548,6 +554,9 @@ const MediaPlayerAudio = React.forwardRef<
 >(function MediaPlayerAudio({ className, ...props }, ref) {
 	const { setMediaElement, setMediaKind } = useMediaPlayer();
 	return (
+		// Callers pass <source>/<track> children through props. Generated and uploaded audio
+		// has no caption track to offer; this is a known gap, listed in ACCESSIBILITY.md.
+		// oxlint-disable-next-line jsx-a11y/media-has-caption
 		<audio
 			ref={mergeRefs(ref, (node) => {
 				setMediaKind("audio");

@@ -987,16 +987,16 @@ export default function RequestDetailDialog({
 								)}
 								<HoverCard openDelay={100} closeDelay={100}>
 									<HoverCardTrigger asChild>
-									<span
-										tabIndex={0}
-										aria-label={tCards("attemptOf", { number: attemptNumber, total: attempts.length })}
+									<button
+										type="button"
+										aria-label={`${statusTone.label}, ${tCards("attemptOf", { number: attemptNumber, total: attempts.length })}`}
 										className={cn(
 											"inline-flex shrink-0 cursor-help items-center justify-center rounded-sm border px-1.5 py-0.5 font-mono text-[10px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
 											statusTone.badgeClass,
 										)}
 									>
 										{statusTone.label}
-									</span>
+									</button>
 									</HoverCardTrigger>
 									<HoverCardContent align="start" sideOffset={8} className="w-72">
 										<HoverCardBody>

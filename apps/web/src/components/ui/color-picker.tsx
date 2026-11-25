@@ -320,7 +320,15 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 	);
 	const currentHexRef = React.useRef(currentHex);
 	const rgb = hexToRgb(currentHex) ?? FALLBACK_RGB;
-	const hsv = rgbToHsv(rgb);
+	// The exact slider position from the last slider change. Hex rounds each channel, so deriving the
+	// position from hex alone would swallow small steps on muted colours and turn 360° back into 0°.
+	// It only applies while the colour is still the one it produced.
+	const [sliderHsv, setSliderHsv] = React.useState<{
+		hex: string;
+		hsv: HsvColor;
+	} | null>(null);
+	const hsv =
+		sliderHsv && sliderHsv.hex === currentHex ? sliderHsv.hsv : rgbToHsv(rgb);
 	const hsl = rgbToHsl(rgb);
 	const oklch = rgbToOklch(rgb);
 	const hexValue = rgbToHex(hsvToRgb(hsv));
@@ -336,33 +344,47 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 	React.useEffect(() => {
 		const normalizedValue = normalizeColorValue(value);
 
+		// A colour from outside (not the echo of our own change) drops the saved slider position.
+		if (normalizedValue !== currentHexRef.current) setSliderHsv(null);
 		currentHexRef.current = normalizedValue;
 		setCurrentHex(normalizedValue);
 	}, [value]);
 
+	// Typed values and the other colour fields drop the saved slider position, so it can't come back
+	// later just because the same hex is entered again. commitHsv sets it again after calling these.
 	const updateLocalColor = React.useCallback((nextHex: string) => {
 		currentHexRef.current = nextHex;
 		setCurrentHex(nextHex);
+		setSliderHsv(null);
 	}, []);
 
 	const commitColor = React.useCallback(
 		(nextHex = currentHexRef.current) => {
 			currentHexRef.current = nextHex;
 			setCurrentHex(nextHex);
+			setSliderHsv(null);
 			onChange(nextHex);
 		},
 		[onChange],
 	);
+
+	// Saves the colour when a slider drag ends, keeping the exact slider position: on grey the hex
+	// can't hold the hue, so dropping it here would turn the chosen hue back into 0°.
+	const commitSliderColor = () => {
+		const saved = sliderHsv;
+		commitColor(currentHexRef.current);
+		if (saved && saved.hex === currentHexRef.current) setSliderHsv(saved);
+	};
 
 	const commitHsv = (nextHsv: HsvColor, save = false) => {
 		const nextHex = rgbToHex(hsvToRgb(nextHsv));
 
 		if (save) {
 			commitColor(nextHex);
-			return;
+		} else {
+			updateLocalColor(nextHex);
 		}
-
-		updateLocalColor(nextHex);
+		setSliderHsv({ hex: nextHex, hsv: nextHsv });
 	};
 
 	const commitRgbComponent = (component: keyof RgbColor, value: string) => {
@@ -436,6 +458,70 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 		});
 	};
 
+	// Arrow keys move the saturation/brightness handle by 1% (10% with Shift);
+	// Page Up/Down change brightness by 10%.
+	const handleSaturationValueKey = (
+		event: React.KeyboardEvent<HTMLDivElement>,
+	) => {
+		const step = event.shiftKey ? 0.1 : 0.01;
+		const next = { ...hsv };
+		switch (event.key) {
+			case "ArrowLeft":
+				next.s = clamp(hsv.s - step, 0, 1);
+				break;
+			case "ArrowRight":
+				next.s = clamp(hsv.s + step, 0, 1);
+				break;
+			case "ArrowDown":
+				next.v = clamp(hsv.v - step, 0, 1);
+				break;
+			case "ArrowUp":
+				next.v = clamp(hsv.v + step, 0, 1);
+				break;
+			case "PageDown":
+				next.v = clamp(hsv.v - 0.1, 0, 1);
+				break;
+			case "PageUp":
+				next.v = clamp(hsv.v + 0.1, 0, 1);
+				break;
+			default:
+				return;
+		}
+		event.preventDefault();
+		commitHsv(next, true);
+	};
+
+	const handleHueKey = (event: React.KeyboardEvent<HTMLDivElement>) => {
+		const step = event.shiftKey ? 10 : 1;
+		let h = hsv.h;
+		switch (event.key) {
+			case "ArrowLeft":
+			case "ArrowDown":
+				h -= step;
+				break;
+			case "ArrowRight":
+			case "ArrowUp":
+				h += step;
+				break;
+			case "PageDown":
+				h -= 10;
+				break;
+			case "PageUp":
+				h += 10;
+				break;
+			case "Home":
+				h = 0;
+				break;
+			case "End":
+				h = 360;
+				break;
+			default:
+				return;
+		}
+		event.preventDefault();
+		commitHsv({ ...hsv, h: clamp(h, 0, 360) }, true);
+	};
+
 	const handleHuePointer = (event: React.PointerEvent<HTMLDivElement>) => {
 		event.currentTarget.setPointerCapture(event.pointerId);
 		commitHsv({
@@ -449,11 +535,15 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 			<div
 				role="slider"
 				aria-label={t("saturationBrightness")}
+				aria-valuemin={0}
+				aria-valuemax={100}
+				aria-valuenow={Math.round(hsv.s * 100)}
 				aria-valuetext={t("colorSaturationBrightness", {
 					saturation: Math.round(hsv.s * 100),
 					brightness: Math.round(hsv.v * 100),
 				})}
 				tabIndex={0}
+				onKeyDown={handleSaturationValueKey}
 				className="relative h-36 cursor-crosshair overflow-hidden rounded-xl border border-border shadow-inner outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
 				style={{ backgroundColor: hueColor }}
 				onPointerDown={handleSaturationValuePointer}
@@ -462,8 +552,8 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 						handleSaturationValuePointer(event);
 					}
 				}}
-				onPointerUp={() => commitColor()}
-				onPointerCancel={() => commitColor()}
+				onPointerUp={commitSliderColor}
+				onPointerCancel={commitSliderColor}
 			>
 				<div className="absolute inset-0 bg-gradient-to-r from-white to-transparent" />
 				<div className="absolute inset-0 bg-gradient-to-t from-black to-transparent" />
@@ -483,6 +573,7 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 					aria-valuemax={360}
 					aria-valuenow={Math.round(hsv.h)}
 					tabIndex={0}
+					onKeyDown={handleHueKey}
 					className="relative h-4 flex-1 cursor-ew-resize rounded-full border border-border outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
 					style={{
 						background:
@@ -494,8 +585,8 @@ function ColorPicker({ value, onChange, className }: ColorPickerProps) {
 							handleHuePointer(event);
 						}
 					}}
-					onPointerUp={() => commitColor()}
-					onPointerCancel={() => commitColor()}
+					onPointerUp={commitSliderColor}
+					onPointerCancel={commitSliderColor}
 				>
 					<span
 						className="absolute top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.35)]"

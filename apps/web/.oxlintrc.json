@@ -206,8 +206,12 @@
         "typescript/no-require-imports": "off"
       }
     },
-    // Accessibility (WCAG 2.2 AA, see ACCESSIBILITY.md). Rules the code already
-    // passes fail the lint, so new problems block the pull request.
+    // Accessibility (WCAG 2.2 AA, see ACCESSIBILITY.md). Every rule fails the
+    // lint, so new problems block the pull request. A disable comment must say
+    // why the code is already accessible (for example, which control is the
+    // keyboard path), or point to a known gap that ACCESSIBILITY.md lists
+    // publicly (today only captions for generated and attached media). Never use one to
+    // hide a gap that isn't listed there.
     {
       "files": [
         "**/*.tsx"
@@ -234,21 +238,39 @@
         "jsx-a11y/role-supports-aria-props": "error",
         "jsx-a11y/scope": "error",
         "jsx-a11y/tabindex-no-positive": "error",
-        // These still have existing findings. Fix them, then raise each to "error".
-        "jsx-a11y/no-autofocus": "warn",
-        // VirtualizedModelCatalog options are reached through aria-activedescendant
-        // in ChatHeader and the compare combobox, but not yet in the pricing
-        // calculator (cmdk owns that attribute) or Council (no keyboard navigation).
-        "jsx-a11y/interactive-supports-focus": "warn",
-        "jsx-a11y/label-has-associated-control": "warn",
-        "jsx-a11y/no-noninteractive-tabindex": "warn",
-        "jsx-a11y/click-events-have-key-events": "warn",
-        "jsx-a11y/no-static-element-interactions": "warn",
-        "jsx-a11y/role-has-required-aria-props": "warn",
-        "jsx-a11y/heading-has-content": "warn",
-        "jsx-a11y/no-noninteractive-element-interactions": "warn",
-        "jsx-a11y/anchor-has-content": "warn",
-        "jsx-a11y/media-has-caption": "warn"
+        "jsx-a11y/no-autofocus": "error",
+        "jsx-a11y/interactive-supports-focus": "error",
+        // Base UI links a wrapping <label> to these controls itself.
+        "jsx-a11y/label-has-associated-control": [
+          "error",
+          {
+            "controlComponents": [
+              "Checkbox",
+              "Switch",
+              "RadioGroupItem"
+            ],
+            "depth": 4
+          }
+        ],
+        // A scrollable area needs tabIndex={0} so keyboard users can scroll it
+        // (WCAG 2.1.1). Give it role="region" and an accessible name.
+        "jsx-a11y/no-noninteractive-tabindex": [
+          "error",
+          {
+            "roles": [
+              "tabpanel",
+              "region"
+            ],
+            "tags": []
+          }
+        ],
+        "jsx-a11y/click-events-have-key-events": "error",
+        "jsx-a11y/no-static-element-interactions": "error",
+        "jsx-a11y/role-has-required-aria-props": "error",
+        "jsx-a11y/heading-has-content": "error",
+        "jsx-a11y/no-noninteractive-element-interactions": "error",
+        "jsx-a11y/anchor-has-content": "error",
+        "jsx-a11y/media-has-caption": "error"
       }
     }
   ],

@@ -205,7 +205,6 @@ function ModelBadge({
 			<PopoverTrigger asChild>
 				<button
 					type="button"
-					role="combobox"
 					aria-expanded={open}
 					className="mx-0.5 inline-flex translate-y-[-1px] items-center gap-1.5 rounded-full border border-zinc-300 bg-white px-2.5 py-0.5 align-middle text-[12px] font-semibold leading-5 text-zinc-900 shadow-[0_1px_2px_rgba(15,23,42,0.08)] transition-colors hover:border-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-zinc-600"
 				>

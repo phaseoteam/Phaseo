@@ -16,6 +16,7 @@ import {
 } from "@/components/ai-elements/model-selector";
 import {
 	getVirtualizedModelCatalogItemId,
+	keepSearchTextKeys,
 	VirtualizedModelCatalog,
 	type VirtualizedModelCatalogSection,
 } from "@/components/(chat)/VirtualizedModelCatalog";
@@ -393,9 +394,11 @@ export default function ModelCombobox({
 	};
 
 	const listboxId = React.useId();
+	const searchInputRef = React.useRef<HTMLInputElement | null>(null);
 	const onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
 		// Enter and the arrow keys confirm and move between IME candidates (Japanese, Chinese); leave them to the IME.
-		if (event.nativeEvent.isComposing || event.keyCode === 229 || !selectable.length) return;
+		if (event.nativeEvent.isComposing || event.keyCode === 229) return;
+		if (keepSearchTextKeys(event) || !selectable.length) return;
 		const index = Math.max(0, selectable.findIndex((model) => model.id === resolvedActiveId));
 		const next =
 			event.key === "ArrowDown" ? Math.min(index + 1, selectable.length - 1)
@@ -484,12 +487,13 @@ export default function ModelCombobox({
 				title={t("pickerTitle")}
 				className="top-[8vh] w-[min(92vw,600px)] max-w-none translate-y-0 rounded-md sm:top-[12vh] sm:max-w-none"
 				commandProps={{ shouldFilter: false }}
+				initialFocus={searchInputRef}
 			>
 				{/* A plain input, not cmdk's: cmdk sets its own aria-activedescendant and aria-controls over ours, and the virtualised options aren't cmdk items. */}
 				<div className="p-1 pb-0">
 					<InputGroup className="h-8! bg-input/50">
 						<input
-							autoFocus
+							ref={searchInputRef}
 							type="text"
 							role="combobox"
 							aria-expanded

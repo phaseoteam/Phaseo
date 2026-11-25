@@ -1057,6 +1057,7 @@
 			"sortBy": "ترتيب المزوّدين حسب {metric}",
 			"sortButton": "ترتيب",
 			"sortDefault": "الترتيب الافتراضي",
+			"usagePriceColumn": "الاستخدام",
 			"provider": "المزوّد",
 			"inputPerMillion": "الإدخال $/M",
 			"outputPerMillion": "الإخراج $/M",

@@ -4,6 +4,9 @@ import { cn } from "@/lib/utils"
 
 function Label({ className, ...props }: React.ComponentProps<"label">) {
   return (
+    // Callers pass htmlFor or wrap the control; .oxlintrc.json maps <Label> to
+    // <label>, so every call site is checked by this rule instead.
+    // oxlint-disable-next-line jsx-a11y/label-has-associated-control
     <label
       data-slot="label"
       className={cn(

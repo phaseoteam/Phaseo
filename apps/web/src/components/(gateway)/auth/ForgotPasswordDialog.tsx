@@ -22,7 +22,8 @@ interface ForgotPasswordContentProps {
 	loading: boolean;
 	success: boolean;
 	readOnly?: boolean;
-	autoFocus?: boolean;
+	/** The dialog passes this to its `initialFocus`, so the email field takes focus on open. */
+	emailInputRef?: React.Ref<HTMLInputElement>;
 	titleId?: string;
 	descriptionId?: string;
 	onEmailChange: (email: string) => void;
@@ -36,7 +37,7 @@ export function ForgotPasswordContent({
 	loading,
 	success,
 	readOnly = false,
-	autoFocus = false,
+	emailInputRef,
 	titleId,
 	descriptionId,
 	onEmailChange,
@@ -81,7 +82,7 @@ export function ForgotPasswordContent({
 						placeholder={t("emailPlaceholder")}
 						value={email}
 						onChange={(event) => onEmailChange(event.target.value)}
-						autoFocus={autoFocus}
+						ref={emailInputRef}
 						readOnly={readOnly}
 						disabled={loading}
 					/>
@@ -160,6 +161,7 @@ export function ForgotPasswordDialog({
 	const [success, setSuccess] = React.useState(false);
 	const titleId = React.useId();
 	const descriptionId = React.useId();
+	const emailInputRef = React.useRef<HTMLInputElement>(null);
 
 	React.useEffect(() => {
 		if (!open) {
@@ -199,12 +201,13 @@ export function ForgotPasswordDialog({
 				aria-labelledby={titleId}
 				aria-describedby={descriptionId}
 				showCloseButton={false}
+				initialFocus={emailInputRef}
 			>
 				<ForgotPasswordContent
 					email={email}
 					loading={loading}
 					success={success}
-					autoFocus
+					emailInputRef={emailInputRef}
 					titleId={titleId}
 					descriptionId={descriptionId}
 					onEmailChange={setEmail}

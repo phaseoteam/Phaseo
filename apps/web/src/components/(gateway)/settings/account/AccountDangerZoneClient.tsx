@@ -107,7 +107,6 @@ function ConfirmDelete({
 						placeholder={s('Type "DELETE" to confirm')}
 					value={text}
 					onChange={(e) => setText(e.target.value)}
-					autoFocus
 				/>
 			</div>
 			<div className="grid gap-2">

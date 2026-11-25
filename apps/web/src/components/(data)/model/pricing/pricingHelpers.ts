@@ -167,6 +167,8 @@ export type ProviderTablePriceCandidate = {
     label: string;
     modality: Modality;
     isPrimary: boolean;
+    /** A time-billed price with no input/output split, shown in a "Usage" column. */
+    isUsage?: boolean;
     price: number;
     formattedPrice: string;
     unitLabel: string;
@@ -302,6 +304,20 @@ export function formatPricingHistoryUnitLabel(
     const quantity = Number(unitSize) > 0 ? Number(unitSize) : 1;
     return labels[normalizedUnit]
         ?? `USD per ${quantity.toLocaleString()} ${normalizedUnit}${quantity === 1 ? "" : "s"}`;
+}
+
+/**
+ * Label for a request meter whose display unit names another unit ("1 search unit", "search units").
+ * A billing quantity above one stays in the label, so a bulk price is never read as a single-unit rate.
+ */
+function namedRequestUnitLabel(displayUnit: string, unitSize?: number | null): string {
+    const text = displayUnit.trim();
+    if (/^per\s/i.test(text)) return text;
+    const match = text.match(/^([0-9][0-9,.]*)\s+(.+)$/);
+    const size = Number(unitSize ?? 1);
+    const quantity = match ? Number(match[1]!.replace(/,/g, "")) : Number.isFinite(size) && size > 1 ? size : 1;
+    const name = match ? match[2]! : text;
+    return quantity > 1 ? `Per ${quantity.toLocaleString("en-US")} ${name}` : `Per ${name}`;
 }
 
 function requestUnitLabel(unitSize?: number | null) {
@@ -1494,7 +1510,11 @@ export function buildProviderSections(
                 price,
                 label,
                 meter: r.meter ?? null,
-                unitLabel: requestUnitLabel(unitSize),
+                // Some request meters count another unit (Cohere rerank bills search units of up to
+                // 100 documents); a display unit that names it wins over "per request".
+                unitLabel: r.display_unit && !/request/i.test(r.display_unit)
+                    ? namedRequestUnitLabel(r.display_unit, unitSize)
+                    : requestUnitLabel(unitSize),
                 unitSize,
                 basePer1M: null,
                 basePrice: displayBasePrice,
@@ -1569,6 +1589,7 @@ function createTablePriceCandidate(args: {
     label: string;
     modality: Modality;
     isPrimary?: boolean;
+    isUsage?: boolean;
     price: number;
     unitLabel: string;
     unit?: UnitClass;
@@ -1585,6 +1606,7 @@ function createTablePriceCandidate(args: {
         label: args.label,
         modality: args.modality,
         isPrimary: args.isPrimary ?? true,
+        ...(args.isUsage ? { isUsage: true } : {}),
         price: normalizedRate.price,
         formattedPrice:
             normalizedRate.formattedPrice ??
@@ -1712,6 +1734,8 @@ export type ProviderTablePriceColumn = {
     key: string;
     direction: ProviderTablePriceDirection;
     modality: Modality;
+    /** A "Usage" column: time-billed session prices, or the per-unit price of a route with no other price. */
+    usage?: boolean;
     label: string;
     unitLabel: string;
     headerUnitLabel: string;
@@ -1732,6 +1756,7 @@ function getBaseTokenTier(tiers?: TokenTier[] | null): TokenTier | null {
 export function getProviderTablePriceCandidates(
     sections: ProviderSections,
     direction: ProviderTablePriceDirection,
+    options: { skipRequestFallback?: boolean } = {},
 ): ProviderTablePriceCandidate[] {
     const candidates: ProviderTablePriceCandidate[] = [];
     const pushTokenCandidate = (
@@ -1895,37 +1920,57 @@ export function getProviderTablePriceCandidates(
             parsed.dir === direction ||
             (direction === "input" && parsed.dir === "other"),
         )
-        .map(({ row, index, parsed }) =>
-            createTablePriceCandidate({
+        .map(({ row, index, parsed }) => {
+            // Time-billed prices with no input/output split (such as a voice session billed per
+            // minute) are the model's headline price, so they get their own "Usage" column.
+            const isUsage =
+                direction === "input" &&
+                parsed.dir === "other" &&
+                parsed.mod !== "other" &&
+                (parsed.unit === "minute" || parsed.unit === "second");
+            return createTablePriceCandidate({
                 key: `${direction}-usage-${index}`,
                 label: parsed.mod === "other" ? "usage" : parsed.mod,
                 modality: parsed.mod,
                 isPrimary:
-                    parsed.dir === direction &&
-                    parsed.mod !== "other" &&
-                    parsed.unit !== "call" &&
-                    parsed.unit !== "usd",
+                    isUsage ||
+                    (parsed.dir === direction &&
+                        parsed.mod !== "other" &&
+                        parsed.unit !== "call" &&
+                        parsed.unit !== "usd"),
+                isUsage,
                 price: row.price,
                 unitLabel: row.unitLabel,
                 unit: row.unit,
                 unitQuantity: row.unitQuantity,
-            }),
-        );
+            });
+        });
     sortTablePriceCandidates(fallbackRules);
     candidates.push(...fallbackRules);
 
     if (direction === "input") {
-        const requestCandidates = (sections.requests ?? [])
-            .filter((tier) => tier.isCurrent)
+        const currentRequests = (sections.requests ?? []).filter((tier) => tier.isCurrent);
+        // A per-request price is the headline price only when the route has no other price to show
+        // (rerankers, music clips, Decisions): it then fills the "Usage" column instead of nothing.
+        const requestOnly =
+            !options.skipRequestFallback &&
+            currentRequests.length > 0 &&
+            PROVIDER_TABLE_PRICE_DIRECTIONS.every((other) =>
+                !getProviderTablePriceCandidates(sections, other, { skipRequestFallback: true })
+                    .some((candidate) => candidate.isPrimary),
+            );
+        const requestCandidates = currentRequests
             .map((tier, index) =>
                 createTablePriceCandidate({
                     key: `input-request-${index}`,
                     label: "request",
                     modality: "other",
-                    isPrimary: false,
+                    isPrimary: requestOnly,
+                    isUsage: requestOnly,
                     price: tier.price,
                     unitLabel: tier.unitLabel ?? "Per request",
-                    unit: "call",
+                    // Only a true per-request label normalises to "Per request"; keep a named unit such as "search unit".
+                    unit: /request/i.test(tier.unitLabel ?? "request") ? "call" : undefined,
                     unitQuantity: tier.unitSize,
                 }),
             );
@@ -2008,12 +2053,14 @@ export function buildProviderTablePriceColumns(
     const showModality = visibleModalities.size > 1;
 
     let columns: ProviderTablePriceColumn[] = PROVIDER_TABLE_PRICE_DIRECTIONS.flatMap((direction) => {
-        const columnKeys = new Map<string, { modality: Modality; unitLabel: string }>();
+        const columnKeys = new Map<string, { modality: Modality; unitLabel: string; usageOnly: boolean }>();
         for (const candidate of candidatesByDirection.get(direction) ?? []) {
             const key = `${candidate.modality}:${candidate.unitLabel}`;
+            const isUsage = candidate.isUsage === true;
             columnKeys.set(key, {
                 modality: candidate.modality,
                 unitLabel: candidate.unitLabel,
+                usageOnly: (columnKeys.get(key)?.usageOnly ?? true) && isUsage,
             });
         }
         return Array.from(columnKeys.values())
@@ -2030,10 +2077,14 @@ export function buildProviderTablePriceColumns(
                 }
                 return left.unitLabel.localeCompare(right.unitLabel);
             })
-            .map(({ modality, unitLabel }) => ({
+            .map(({ modality, unitLabel, usageOnly }) => ({
                 key: `${direction}:${modality}:${unitLabel}`,
                 direction,
-                label: showModality
+                ...(usageOnly ? { usage: true } : {}),
+                // The page replaces a usage column's label with the translated "Usage" message.
+                label: usageOnly
+                    ? "Usage"
+                    : showModality
                     ? `${modalityLabel(modality) ?? "Usage"} ${PROVIDER_TABLE_PRICE_DIRECTION_LABELS[direction]}`
                     : PROVIDER_TABLE_PRICE_DIRECTION_LABELS[direction],
                 unitLabel,

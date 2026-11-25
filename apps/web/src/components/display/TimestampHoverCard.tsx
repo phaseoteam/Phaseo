@@ -79,15 +79,15 @@ export function TimestampHoverCard(props: TimestampHoverCardProps) {
 				{asChild ? (
 					(children as React.ReactElement)
 				) : (
-					<span
-						tabIndex={0}
+					<button
+						type="button"
 						className={cn(
-							"cursor-help rounded-sm underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+							"cursor-help rounded-sm text-left underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
 							triggerClassName,
 						)}
 					>
 						{children}
-					</span>
+					</button>
 				)}
 			</HoverCardTrigger>
 			<HoverCardContent align={align} side={side} className="w-auto min-w-56 max-w-[min(86vw,320px)]">

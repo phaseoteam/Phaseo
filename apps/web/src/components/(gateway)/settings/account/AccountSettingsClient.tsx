@@ -84,6 +84,7 @@ function WorkspaceCombobox({
 					id="defaultTeam"
 					type="button"
 					variant="outline"
+					// oxlint-disable-next-line jsx-a11y/role-has-required-aria-props -- Base UI's PopoverTrigger adds aria-controls (the popup id) and aria-haspopup=dialog
 					role="combobox"
 					aria-expanded={open}
 				aria-label={s("Default workspace")}

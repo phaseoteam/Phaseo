@@ -41,6 +41,14 @@ export function SprintGame({ puzzle }: { puzzle: SprintPuzzle }) {
   const [guess, setGuess] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const finishingRef = useRef(false);
+  const guessInputRef = useRef<HTMLInputElement | null>(null);
+  // Set by the Start button, so the guess field takes focus when the player starts, not on page load.
+  const focusGuessOnStartRef = useRef(false);
+  useEffect(() => {
+    if (state.startedAt == null || !focusGuessOnStartRef.current) return;
+    focusGuessOnStartRef.current = false;
+    guessInputRef.current?.focus();
+  }, [state.startedAt]);
   const save = useCallback(
     (next: SprintState) => {
       setState(next);
@@ -106,6 +114,7 @@ export function SprintGame({ puzzle }: { puzzle: SprintPuzzle }) {
               className="w-full rounded-lg"
               onClick={() => {
                 const next = { ...state, startedAt: Date.now() };
+                focusGuessOnStartRef.current = true;
                 setNow(Date.now());
                 save(next);
               }}
@@ -136,7 +145,7 @@ export function SprintGame({ puzzle }: { puzzle: SprintPuzzle }) {
                 value={guess}
                 onChange={(event) => setGuess(event.target.value)}
                 disabled={state.finished}
-                autoFocus
+                ref={guessInputRef}
                 placeholder={t("modelNamePlaceholder")}
                 className="h-10 rounded-lg"
               />

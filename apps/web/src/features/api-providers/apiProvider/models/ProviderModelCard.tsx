@@ -263,6 +263,7 @@ export function ProviderModelCard({
 	};
 
 	return (
+		// oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- pointer shortcut; the Details button is the keyboard path
 		<div
 			data-selected={selected ? "true" : undefined}
 			onClick={openFromCard}

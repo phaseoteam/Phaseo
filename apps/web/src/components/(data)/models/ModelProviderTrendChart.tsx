@@ -869,6 +869,8 @@ export default function ModelProviderTrendChart({
 								opacity: isDimmed ? 0.35 : 1,
 								transform: isActive ? "translateX(2px)" : "translateX(0)",
 							}}
+							// Focusable so keyboard users can highlight this provider's line in the chart, as hovering does; the row's text already carries its values.
+							// oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
 							tabIndex={0}
 							onMouseEnter={() => setHoveredSeriesKey(provider.seriesKey)}
 							onMouseLeave={() => setHoveredSeriesKey(null)}

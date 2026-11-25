@@ -1,6 +1,6 @@
 import { useTranslations } from "@/i18n/react";
 
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 import { ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -51,7 +51,8 @@ export function SearchableSelect({
 	const resolvedPlaceholder = placeholder ?? t("searchableSelectCopy.select");
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
-	const selected = options.find((option) => option.value === value);
+	const popupId = useId();
+	const selected =options.find((option) => option.value === value);
 	const choose = (next: string) => {
 		onValueChange(next);
 		setOpen(false);
@@ -105,6 +106,7 @@ export function SearchableSelect({
 					role="combobox"
 					aria-label={label}
 					aria-expanded={open}
+					aria-controls={open ? popupId : undefined}
 					disabled={disabled}
 					className={cn("min-h-11 w-full justify-between font-normal", triggerClassName)}
 				>
@@ -117,7 +119,7 @@ export function SearchableSelect({
 					<ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
 				</Button>
 			</PopoverTrigger>
-			<PopoverContent align="start" className="w-[var(--anchor-width)] max-w-[calc(100vw-2rem)] gap-0 p-1">
+			<PopoverContent id={popupId} align="start" className="w-[var(--anchor-width)] max-w-[calc(100vw-2rem)] gap-0 p-1">
 				<Command
 					filter={(optionValue, search, keywords) => {
 						const text = [optionValue, ...(keywords ?? [])].join(" ").toLowerCase();

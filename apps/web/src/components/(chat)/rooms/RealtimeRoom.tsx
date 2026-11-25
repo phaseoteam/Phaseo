@@ -3739,6 +3739,8 @@ export function RealtimeRoom({ models = [] }: RealtimeRoomProps) {
 					setDisplaySettings((current) => ({ ...current, thinkingLevel }))
 				}
 			/>
+			{/* Plays the live model voice; the room shows the conversation transcript as text. */}
+			{/* oxlint-disable-next-line jsx-a11y/media-has-caption */}
 			<audio ref={remoteAudioRef} autoPlay className="hidden" />
 		</div>
 	);
