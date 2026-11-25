@@ -30,7 +30,7 @@ function resolveSrc(src: ImageProps["src"]): { src: string; width?: number; heig
 }
 
 const Image = forwardRef<HTMLImageElement, ImageProps>(function Image(
-	{ src, width, height, fill, sizes, quality: _quality, priority, preload, loading, placeholder: _placeholder, blurDataURL: _blur, unoptimized: _unoptimized, overrideSrc, loader, onLoadingComplete, style, onLoad, ...rest },
+	{ src, alt, width, height, fill, sizes, quality: _quality, priority, preload, loading, placeholder: _placeholder, blurDataURL: _blur, unoptimized: _unoptimized, overrideSrc, loader, onLoadingComplete, style, onLoad, ...rest },
 	ref,
 ) {
 	const resolved = resolveSrc(src);
@@ -43,6 +43,7 @@ const Image = forwardRef<HTMLImageElement, ImageProps>(function Image(
 		<img
 			ref={ref}
 			src={finalSrc}
+			alt={alt}
 			width={w}
 			height={h}
 			sizes={sizes}

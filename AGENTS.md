@@ -31,7 +31,7 @@ I care more about knowing why a change was made and what it actually achieved th
 - Install: `pnpm install` (Node ^22.19.0 or >=24).
 - Dev servers: `pnpm dev` to run everything, or scope with `pnpm --filter @phaseo/web dev`, `pnpm --filter @phaseo/gateway-api dev`, `pnpm --filter @phaseo/docs dev`.
 - Quality gates: `pnpm lint`, `pnpm typecheck`, `pnpm build`. Run the scoped equivalents for the packages you changed, not the whole monorepo (see Verifying).
-- TypeScript: `tsc` is TypeScript 7 (`@typescript/native`); the `typescript` package is the TypeScript 6 API (`@typescript/typescript6`, bin `tsc6`) kept for typescript-eslint and scripts that import the compiler. Both come from the `catalog:` in `pnpm-workspace.yaml`. tsconfigs can't use `baseUrl`, `ignoreDeprecations` or `moduleResolution: node`.
+- TypeScript: `tsc` is TypeScript 7 (`@typescript/native`); the `typescript` package is the TypeScript 6 API (`@typescript/typescript6`, bin `tsc6`) kept for typescript-eslint (mobile's Expo ESLint config) and scripts that import the compiler. Both come from the `catalog:` in `pnpm-workspace.yaml`. tsconfigs can't use `baseUrl`, `ignoreDeprecations` or `moduleResolution: node`.
 - Docs: `pnpm docs:links` then `pnpm docs:build`.
 - Tests: `pnpm --filter @phaseo/web test`; Python SDK via `pnpm test:sdk-py` (`python -m pytest packages/sdk/sdk-py/tests`); TS SDK local compatibility suite via `pnpm --filter @phaseo/sdk test` and optional live smoke checks via `pnpm --filter @phaseo/sdk test:smoke` (full `pnpm test` runs the TS SDK local suite plus pytest).
 
@@ -85,7 +85,7 @@ The most common defect here is a change that works on the path you tested and is
 - Do not run monorepo-wide checks (`pnpm lint`, `pnpm typecheck`, `pnpm build`, `pnpm test:all`) unless asked; they exhaust the shared machine.
 - Do not rely on CI to run your tests. It runs only a small part of the suites:
   - `apps/api`: CI runs lint, typecheck, a Wrangler dry-run build, the AIMock matrix, the provider simulator tests, and one of about 800 unit-test files. Run the unit tests for the directories you touched yourself: `pnpm --filter @phaseo/gateway-api exec vitest run src/<area>`.
-  - `apps/web`: CI runs the i18n checks, a full production build, typecheck, ESLint and the whole Vitest suite. Run the tests for the area you touched before pushing anyway; a CI failure costs a round trip.
+  - `apps/web`: CI runs the i18n checks, a full production build, typecheck, oxlint and the whole Vitest suite. Run the tests for the area you touched before pushing anyway; a CI failure costs a round trip.
   - TypeScript and Python SDKs: CI builds and packs them but does not run their tests. Run `pnpm test:sdk-ts` or `pnpm test:sdk-py`.
   - `apps/web-api`, `apps/mcp`, `apps/slack`, the other seven SDKs' lifecycle tests, all agent SDK tests, and the docs checks do run in full.
 - Some unit tests already fail on `main`, especially on Windows. Before blaming your change for a failure, run the same test against `origin/main`.

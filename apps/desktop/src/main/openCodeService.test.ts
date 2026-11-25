@@ -59,7 +59,7 @@ describe("OpenCode service lifecycle", () => {
 		const service = new OpenCodeService(root, async () => ({ executable: "fixture", prefix: [], version: "2.0.22" }));
 		try {
 			const isolated = await service.isolated(new AbortController().signal); expect(isolated.endpoint).toEqual(own);
-			const state = (mocks.spawn.mock.lastCall?.[2] as { env: { XDG_STATE_HOME: string } }).env.XDG_STATE_HOME;
+			const state = (mocks.spawn.mock.lastCall![2] as { env: { XDG_STATE_HOME: string } }).env.XDG_STATE_HOME;
 			expect(path.dirname(state)).toBe(path.join(root, "native", "opencode", "turns")); expect(mocks.spawn.mock.lastCall?.[1]).toEqual(["serve", "--service", "--hostname", "127.0.0.1", "--port", "0"]);
 			await isolated.close(); expect(child.kill).toHaveBeenCalled(); expect(mocks.stop).toHaveBeenCalledWith({ file: path.join(state, "opencode", "service.json") });
 			expect(existsSync(state)).toBe(false);
@@ -69,7 +69,7 @@ describe("OpenCode service lifecycle", () => {
 		const root = mkdtempSync(path.join(tmpdir(), "phaseo-service-untrusted-")); fixture();
 		mocks.discover.mockImplementation(async (options?: { file?: string }) => options?.file?.includes(path.join("opencode", "turns")) ? { url: "http://localhost:5000" } : null);
 		const service = new OpenCodeService(root, async () => ({ executable: "fixture", prefix: [], version: "2.0.22" }));
-		const env = () => (mocks.spawn.mock.lastCall?.[2] as { env: Record<string, string | undefined> }).env;
+		const env = () => (mocks.spawn.mock.lastCall![2] as { env: Record<string, string | undefined> }).env;
 		try {
 			await (await service.isolated(new AbortController().signal, { ignoreProjectConfig: true })).close();
 			expect(env().OPENCODE_DISABLE_PROJECT_CONFIG).toBe("1");

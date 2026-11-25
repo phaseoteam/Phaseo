@@ -3,11 +3,14 @@ import type { Task, TaskStatus } from "../../shared/workspace";
 /** What a screen reader hears about the open chat: its state, and the request waiting on the person, if any. */
 export type AnnouncementSnapshot = { status: TaskStatus; approval?: string; input?: string };
 
-export const snapshotOf = (task: Pick<Task, "status" | "approvals" | "questions" | "forms">): AnnouncementSnapshot => ({
-	status: task.status,
-	...(task.approvals?.[0] ? { approval: task.approvals[0].id } : {}),
-	...(task.questions?.[0] ?? task.forms?.[0] ? { input: (task.questions?.[0] ?? task.forms?.[0])!.id } : {}),
-});
+export const snapshotOf = (task: Pick<Task, "status" | "approvals" | "questions" | "forms">): AnnouncementSnapshot => {
+	const input = task.questions?.[0] ?? task.forms?.[0];
+	return {
+		status: task.status,
+		...(task.approvals?.[0] ? { approval: task.approvals[0].id } : {}),
+		...(input ? { input: input.id } : {}),
+	};
+};
 
 const busy = (status: TaskStatus) => status === "running" || status === "waiting";
 const endings: Partial<Record<TaskStatus, string>> = { completed: "Done", idle: "Done", failed: "Failed", interrupted: "Stopped", limited: "Usage limit reached" };

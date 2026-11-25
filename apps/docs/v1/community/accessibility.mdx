@@ -29,7 +29,7 @@ In November 2026 we checked 54 page types against WCAG 2.2 AA with axe-core in l
 - Screen readers (NVDA, JAWS, VoiceOver, TalkBack) and voice control. Responses that stream into Chat may not be announced well.
 - Menus, dialogs and forms in their opened and error states.
 - The desktop and mobile apps.
-- Automated accessibility checks in CI, so regressions can ship unnoticed.
+- Automated checks of whole pages in CI, such as contrast. The lint catches common accessibility mistakes in component code, but other regressions can still ship unnoticed.
 
 ## Contribute accessible changes
 
