@@ -157,7 +157,7 @@
 		"@changesets/changelog-github": "^1.0.1",
 		"@changesets/cli": "^3.0.2",
 		"@electric-sql/pglite": "0.5.8",
-		"@stoplight/spectral-cli": "^6.17.0",
+		"@stoplight/spectral-cli": "^6.17.1",
 		"ajv": "^8.20.0",
 		"dotenv-cli": "^11.0.0",
 		"js-yaml": "^4.2.0",
@@ -167,7 +167,7 @@
 		"rimraf": "^6.0.0",
 		"supabase": "^2.89.1",
 		"tsx": "^4.23.13",
-		"turbo": "^2.10.8"
+		"turbo": "^2.11.10"
 	},
 	"pnpm": {
 		"overrides": {
