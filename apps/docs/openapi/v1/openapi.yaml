@@ -15875,6 +15875,7 @@ components:
               - $ref: '#/components/schemas/DecisionDateQuestion'
               - $ref: '#/components/schemas/DecisionSpansQuestion'
               - $ref: '#/components/schemas/DecisionBoxesQuestion'
+              - $ref: '#/components/schemas/DecisionRankingQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -16058,6 +16059,34 @@ components:
           minimum: 1
           maximum: 16
           description: Most instances to return, from 1 to 16.
+    DecisionRankingQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      additionalProperties: false
+      description: >-
+        Orders the options, best first, or returns only the best top_k. Every
+        decision model answers it. The answer lists the ranked option keys and
+        the probability that each option is the best one.
+      properties:
+        type:
+          type: string
+          enum:
+            - ranking
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        criteria:
+          type: object
+          minProperties: 2
+          additionalProperties:
+            type: string
+            nullable: true
+        top_k:
+          type: integer
+          minimum: 1
+          description: Returns only the best top_k options. At most the number of criteria.
     DecisionImage:
       type: object
       required:

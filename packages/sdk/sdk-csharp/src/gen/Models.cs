@@ -2668,6 +2668,22 @@ public sealed class DecisionProviderOptions
 
 }
 
+public sealed class DecisionRankingQuestion
+{
+	[JsonPropertyName("criteria")]
+	public Dictionary<string, object> Criteria { get; set; }
+
+	[JsonPropertyName("instructions")]
+	public object Instructions { get; set; }
+
+	[JsonPropertyName("top_k")]
+	public long? TopK { get; set; }
+
+	[JsonPropertyName("type")]
+	public string Type { get; set; }
+
+}
+
 public sealed class DecisionRefusalAnswer
 {
 	[JsonPropertyName("name")]

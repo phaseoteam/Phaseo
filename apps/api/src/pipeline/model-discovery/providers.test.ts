@@ -45,7 +45,6 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		expect(providerIds.has("arcee")).toBe(false);
 		expect(providerIds.has("atlas-cloud")).toBe(false);
 		expect(providerIds.has("liquid")).toBe(false);
-		expect(providerIds.has("liquid-ai")).toBe(false);
 		expect(providerIds.has("moonshot-ai")).toBe(false);
 		expect(providerIds.has("novitaai")).toBe(false);
 		expect(providerIds.has("voyage")).toBe(false);
@@ -99,6 +98,17 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		expect(empiriolabs[0]).toMatchObject({
 			modelsEndpoint: "https://api.empiriolabs.ai/v1/models",
 			authStyle: "none",
+		});
+	});
+
+	it("watches Liquid AI's decision models list with the gateway key", () => {
+		const liquid = MODEL_DISCOVERY_PROVIDERS.filter((provider) => provider.providerId === "liquid-ai");
+
+		expect(liquid).toHaveLength(1);
+		expect(liquid[0]).toMatchObject({
+			modelsEndpoint: "https://api.liquid.ai/decisions/v1/models",
+			apiKeyEnv: ["LIQUID_AI_API_KEY"],
+			authStyle: "bearer",
 		});
 	});
 

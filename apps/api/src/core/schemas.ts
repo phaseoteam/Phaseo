@@ -1879,6 +1879,20 @@ const DecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
         // Every option that applies, each with its own probability (typed-answer routes only).
         multiple: z.boolean().optional(),
     }).passthrough(),
+    // Every option ordered best first, or the best top_k. Any decision model answers it.
+    z.object({
+        type: z.literal("ranking"),
+        instructions: DecisionInstructionsSchema,
+        criteria: z.record(z.string(), z.string().nullable()).refine(
+            (criteria) => Object.keys(criteria).length >= 2,
+            { message: "Ranking questions require at least two criteria." },
+        ),
+        top_k: z.number().int().min(1).optional(),
+    }).strict().superRefine((question, ctx) => {
+        if (question.top_k !== undefined && question.top_k > Object.keys(question.criteria).length) {
+            ctx.addIssue({ code: "custom", path: ["top_k"], message: "top_k cannot exceed the number of criteria." });
+        }
+    }),
     // Typed answers (Liquid d1.2): read a value or every matching passage from the state.
     z.object({ type: z.literal("text"), instructions: DecisionInstructionsSchema }).strict(),
     z.object({ type: z.literal("date"), instructions: DecisionInstructionsSchema }).strict(),

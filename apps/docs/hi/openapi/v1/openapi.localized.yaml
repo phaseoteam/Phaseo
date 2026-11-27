@@ -14907,6 +14907,7 @@ components:
               - $ref: '#/components/schemas/DecisionDateQuestion'
               - $ref: '#/components/schemas/DecisionSpansQuestion'
               - $ref: '#/components/schemas/DecisionBoxesQuestion'
+              - $ref: '#/components/schemas/DecisionRankingQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -15063,6 +15064,31 @@ components:
           minimum: 1
           maximum: 16
           description: लौटाए जाने वाले अधिकतम उदाहरण, 1 से 16 तक।
+    DecisionRankingQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      additionalProperties: false
+      description: विकल्पों को सबसे अच्छे से शुरू करके क्रम में लगाता है, या केवल सबसे अच्छे top_k लौटाता है। हर डिसीज़न मॉडल इसका उत्तर देता है। उत्तर में क्रमबद्ध विकल्पों की कुंजियाँ और हर विकल्प के सबसे अच्छा होने की संभावना होती है।
+      properties:
+        type:
+          type: string
+          enum:
+            - ranking
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        criteria:
+          type: object
+          minProperties: 2
+          additionalProperties:
+            type: string
+            nullable: true
+        top_k:
+          type: integer
+          minimum: 1
+          description: केवल सबसे अच्छे top_k विकल्प लौटाता है। अधिकतम मानदंडों की संख्या जितने।
     DecisionImage:
       type: object
       required:

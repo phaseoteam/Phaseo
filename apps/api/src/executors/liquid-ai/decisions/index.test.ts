@@ -231,6 +231,53 @@ describe("Dropping multiple on routes without multi-select", () => {
 	});
 });
 
+describe("Ranking questions", () => {
+	const anyRoute = { providerId: "liquid-ai", capabilityParams: { images: true } } as unknown as ProviderCandidate;
+	const criteria = { email: "Email support", phone: "Phone call", chat: "Live chat", none: "No follow-up" };
+	const probabilities = { email: 0.2, phone: 0.5, chat: 0.2, none: 0.1 };
+
+	it("asks the route a choice question and returns every option ranked by probability", async () => {
+		const ir = legacy({ questions: {
+			best: { type: "ranking", instructions: "Best follow-up first", criteria },
+			refund: { type: "noul", instructions: "Refund?" },
+		} });
+		const routed = decisionIrForRoute(ir, anyRoute);
+		expect(routed.questions.best).toEqual({ type: "choice", instructions: "Best follow-up first", criteria });
+		expect(ir.questions.best).toHaveProperty("type", "ranking");
+		const { result, body } = await run(routed, {
+			best: { type: "choice", choice: "phone", confidence: 0.5, probabilities },
+			refund: { type: "noul", noul: 0.9 },
+		});
+		expect(body.questions.best).toEqual({ type: "choice", instructions: "Best follow-up first", criteria });
+		expect(encodeDecisionsResponse(result.ir as any, ir).answers).toEqual({
+			// email and chat tie at 0.2: the caller's option order breaks the tie.
+			best: { type: "ranking", ranking: ["phone", "email", "chat", "none"], probabilities },
+			refund: { type: "noul", noul: 0.9 },
+		});
+	});
+	it("keeps only the top k", async () => {
+		const ir = legacy({ questions: { best: { type: "ranking", instructions: "Best first", criteria, top_k: 2 } } });
+		const { result } = await run(decisionIrForRoute(ir, anyRoute), {
+			best: { type: "choice", choice: "phone", confidence: 0.5, probabilities },
+		});
+		expect(encodeDecisionsResponse(result.ir as any, ir).answers.best).toEqual({
+			type: "ranking", ranking: ["phone", "email"], probabilities,
+		});
+	});
+	it.each([
+		{ type: "ranking", instructions: "?", criteria: { a: "A" } },
+		{ type: "ranking", instructions: "?", criteria: { a: "A", b: "B" }, top_k: 3 },
+		{ type: "ranking", instructions: "?", criteria: { a: "A", b: "B" }, top_k: 0 },
+		{ type: "ranking", instructions: "?", criteria: { a: "A", b: "B" }, multiple: true },
+	])("rejects invalid ranking questions: %j", q => {
+		expect(DecisionsSchema.safeParse({ model: "liquid-ai/d1.2", state: "x", questions: { q } }).success).toBe(false);
+	});
+	it("routes ranking questions to every decision route", () => {
+		const ir = legacy({ questions: { best: { type: "ranking", instructions: "?", criteria } } });
+		expect(filterDecisionCandidatesByModalities([anyRoute], ir)).toEqual([anyRoute]);
+	});
+});
+
 describe("Other System One providers keep their answer rules", () => {
 	it("accepts a single choice when a provider ignores multiple", async () => {
 		const { result } = await run(legacy({ questions: { t: typedQuestions.topics } }),

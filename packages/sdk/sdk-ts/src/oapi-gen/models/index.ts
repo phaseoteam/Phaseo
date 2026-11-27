@@ -126,6 +126,7 @@ export type { DecisionNumberQuestion } from "./DecisionNumberQuestion.js";
 export type { DecisionPredicateAnswer } from "./DecisionPredicateAnswer.js";
 export type { DecisionPredicateQuestion } from "./DecisionPredicateQuestion.js";
 export type { DecisionProviderOptions } from "./DecisionProviderOptions.js";
+export type { DecisionRankingQuestion } from "./DecisionRankingQuestion.js";
 export type { DecisionRefusalAnswer } from "./DecisionRefusalAnswer.js";
 export type { DecisionScoreAnswer } from "./DecisionScoreAnswer.js";
 export type { DecisionScoreQuestion } from "./DecisionScoreQuestion.js";

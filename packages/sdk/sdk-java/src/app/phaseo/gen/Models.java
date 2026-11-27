@@ -1111,6 +1111,13 @@ public final class Models {
 		public Object typesafe;
 	}
 
+	public static class DecisionRankingQuestion {
+		public Object criteria;
+		public Object instructions;
+		public Integer top_k;
+		public Object type;
+	}
+
 	public static class DecisionRefusalAnswer {
 		public String name;
 		public Object type;

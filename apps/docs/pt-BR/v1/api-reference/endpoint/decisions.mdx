@@ -175,6 +175,35 @@ Solicitações com `state` e um mapa de perguntas nomeadas continuam funcionando
 As respostas usam as mesmas chaves de `questions`. Respostas `choice` incluem a opção selecionada, as probabilidades e a confiança; respostas `noul` incluem uma probabilidade de 0 a 1; respostas `score` incluem uma pontuação ponderada pela probabilidade, uma legenda, as probabilidades e a confiança.
 
 <span id="choose-a-model"></span>
+### Ordenar opções
+
+Uma pergunta `ranking` ordena as opções de `criteria`, da melhor para a pior. Ela recebe `criteria` (pelo menos duas opções) e um `top_k` opcional que retorna apenas as `top_k` melhores. Qualquer modelo que responda perguntas `choice` também a responde: a Phaseo pergunta ao modelo qual opção é a melhor e ordena as opções pelas probabilidades. A resposta traz `ranking`, as chaves das opções em ordem, e `probabilities`, a probabilidade de cada opção ser a melhor. Opções com a mesma probabilidade mantêm a ordem de `criteria`. Uma pergunta de ranking é cobrada como uma pergunta de escolha. O ranking só funciona no formato de estado antigo.
+
+```json
+{
+  "model": "liquid-ai/d1.2-ultra",
+  "state": "Customer on the free plan, wrote in twice this week about a failed export, prefers not to be called.",
+  "questions": {
+    "follow_up": {
+      "type": "ranking",
+      "instructions": "Best way to follow up, best first",
+      "criteria": { "email": "Email", "phone": "Phone call", "chat": "Live chat", "none": "No follow-up" },
+      "top_k": 2
+    }
+  }
+}
+```
+
+```json
+{
+  "follow_up": {
+    "type": "ranking",
+    "ranking": ["email", "chat"],
+    "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+  }
+}
+```
+
 ## Escolher um modelo
 
 Verifique a disponibilidade do modelo antes de chamar qualquer um destes modelos.

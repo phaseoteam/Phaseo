@@ -175,6 +175,35 @@ print(decision["answers"])
 回答使用与 `questions` 相同的键。`choice` 回答包含所选选项、概率和置信度；`noul` 回答包含一个 0–1 的概率；`score` 回答包含按概率加权的分数、图例、概率和置信度。
 
 <span id="choose-a-model"></span>
+### 为选项排序
+
+`ranking` 问题会把 `criteria` 中的选项按从好到差排序。它接受 `criteria`（至少两个选项）和可选的 `top_k`，后者只返回最好的 `top_k` 个。所有能回答 `choice` 问题的模型都能回答它：Phaseo 询问模型哪个选项最好，并按各选项的概率排序。回答包含 `ranking`（按顺序排列的选项键）和 `probabilities`（每个选项是最佳选项的概率）。概率相同的选项保持其在 `criteria` 中的顺序。ranking 问题按 choice 问题计费。排序仅适用于旧的 state 格式。
+
+```json
+{
+  "model": "liquid-ai/d1.2-ultra",
+  "state": "Customer on the free plan, wrote in twice this week about a failed export, prefers not to be called.",
+  "questions": {
+    "follow_up": {
+      "type": "ranking",
+      "instructions": "Best way to follow up, best first",
+      "criteria": { "email": "Email", "phone": "Phone call", "chat": "Live chat", "none": "No follow-up" },
+      "top_k": 2
+    }
+  }
+}
+```
+
+```json
+{
+  "follow_up": {
+    "type": "ranking",
+    "ranking": ["email", "chat"],
+    "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+  }
+}
+```
+
 ## 选择模型
 
 调用以下任何模型之前，请先检查模型可用性。

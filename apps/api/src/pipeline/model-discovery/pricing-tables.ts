@@ -36,6 +36,7 @@ export const PRICING_TABLE_SOURCES: PricingTableSource[] = [
 	{ providerId: "deepseek", providerName: "DeepSeek", sourceUrl: "https://api-docs.deepseek.com/quick_start/pricing" },
 	{ providerId: "fireworks", providerName: "Fireworks", sourceUrl: "https://docs.fireworks.ai/serverless/pricing" },
 	{ providerId: "google-ai-studio", providerName: "Google AI Studio", sourceUrl: "https://ai.google.dev/gemini-api/docs/pricing" },
+	{ providerId: "liquid-ai", providerName: "Liquid AI", sourceUrl: "https://www.liquid.ai/pricing", extraction: "price-content" },
 	{ providerId: "mistral", providerName: "Mistral", sourceUrl: "https://docs.mistral.ai/inference/pricing" },
 	{ providerId: "moonshotai", providerName: "Moonshot AI", sourceUrl: "https://platform.kimi.ai/docs/pricing/chat-k26.md", extraction: "mdx" },
 	{ providerId: "openai", providerName: "OpenAI", sourceUrl: "https://developers.openai.com/api/docs/pricing" },

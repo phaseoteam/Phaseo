@@ -131,6 +131,7 @@
     "models/DecisionPredicateAnswer.ts",
     "models/DecisionPredicateQuestion.ts",
     "models/DecisionProviderOptions.ts",
+    "models/DecisionRankingQuestion.ts",
     "models/DecisionRefusalAnswer.ts",
     "models/DecisionScoreAnswer.ts",
     "models/DecisionScoreQuestion.ts",

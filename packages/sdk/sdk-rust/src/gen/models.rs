@@ -1105,6 +1105,13 @@ pub struct DecisionProviderOptions {
 	pub typesafe: Option<HashMap<String, String>>,
 }
 
+pub struct DecisionRankingQuestion {
+	pub criteria: HashMap<String, String>,
+	pub instructions: String,
+	pub top_k: Option<i64>,
+	pub r#type: String,
+}
+
 pub struct DecisionRefusalAnswer {
 	pub name: Option<String>,
 	pub r#type: String,

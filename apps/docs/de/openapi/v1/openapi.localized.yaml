@@ -14907,6 +14907,7 @@ components:
               - $ref: '#/components/schemas/DecisionDateQuestion'
               - $ref: '#/components/schemas/DecisionSpansQuestion'
               - $ref: '#/components/schemas/DecisionBoxesQuestion'
+              - $ref: '#/components/schemas/DecisionRankingQuestion'
         provider_options:
           $ref: '#/components/schemas/DecisionProviderOptions'
         images:
@@ -15063,6 +15064,31 @@ components:
           minimum: 1
           maximum: 16
           description: Höchstzahl zurückgegebener Instanzen, von 1 bis 16.
+    DecisionRankingQuestion:
+      type: object
+      required:
+        - type
+        - instructions
+        - criteria
+      additionalProperties: false
+      description: Ordnet die Optionen, die beste zuerst, oder gibt nur die besten top_k zurück. Jedes Entscheidungsmodell beantwortet sie. Die Antwort listet die Schlüssel der geordneten Optionen und die Wahrscheinlichkeit, dass jede Option die beste ist.
+      properties:
+        type:
+          type: string
+          enum:
+            - ranking
+        instructions:
+          $ref: '#/components/schemas/DecisionInstructions'
+        criteria:
+          type: object
+          minProperties: 2
+          additionalProperties:
+            type: string
+            nullable: true
+        top_k:
+          type: integer
+          minimum: 1
+          description: Gibt nur die besten top_k Optionen zurück. Höchstens die Anzahl der Kriterien.
     DecisionImage:
       type: object
       required:

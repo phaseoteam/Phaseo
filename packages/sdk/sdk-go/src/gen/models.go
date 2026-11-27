@@ -1788,6 +1788,13 @@ type DecisionProviderOptions struct {
 	Typesafe *map[string]interface{} `json:"typesafe,omitempty"`
 }
 
+type DecisionRankingQuestion struct {
+	Criteria map[string]interface{} `json:"criteria"`
+	Instructions interface{} `json:"instructions"`
+	TopK *int `json:"top_k,omitempty"`
+	Type string `json:"type"`
+}
+
 type DecisionRefusalAnswer struct {
 	Name *string `json:"name"`
 	Type string `json:"type"`

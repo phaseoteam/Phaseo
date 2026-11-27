@@ -1943,6 +1943,18 @@ class DecisionProviderOptions
 	public $typesafe;
 }
 
+class DecisionRankingQuestion
+{
+	/** @var array<string, mixed> */
+	public $criteria;
+	/** @var string|array<string, mixed>|array */
+	public $instructions;
+	/** @var int|null */
+	public $top_k;
+	/** @var string */
+	public $type;
+}
+
 class DecisionRefusalAnswer
 {
 	/** @var string|null */

@@ -175,6 +175,35 @@ print(decision["answers"])
 تستخدم الإجابات المفاتيح نفسها الموجودة في `questions`. تتضمن إجابات `choice` الخيار المحدد والاحتمالات والثقة؛ وتتضمن إجابات `noul` احتمالًا بين 0 و1؛ وتتضمن إجابات `score` درجة مرجّحة بالاحتمالات ومفتاحًا للمستويات واحتمالات وثقة.
 
 <span id="choose-a-model"></span>
+### رتّب الخيارات
+
+يرتب سؤال `ranking` خيارات `criteria` من الأفضل إلى الأسوأ. يأخذ `criteria` (خياران على الأقل) و`top_k` اختياريًا يُعيد أفضل `top_k` فقط. يجيب عنه كل نموذج يجيب عن أسئلة `choice`: تسأل Phaseo النموذج عن الخيار الأفضل وترتب الخيارات حسب احتمالاتها. تحتوي الإجابة على `ranking`، وهي مفاتيح الخيارات بالترتيب، و`probabilities`، وهي احتمال أن يكون كل خيار هو الأفضل. تحافظ الخيارات المتساوية في الاحتمال على ترتيبها في `criteria`. يُحاسَب سؤال الترتيب مثل سؤال الاختيار. يعمل الترتيب في تنسيق state الأقدم فقط.
+
+```json
+{
+  "model": "liquid-ai/d1.2-ultra",
+  "state": "Customer on the free plan, wrote in twice this week about a failed export, prefers not to be called.",
+  "questions": {
+    "follow_up": {
+      "type": "ranking",
+      "instructions": "Best way to follow up, best first",
+      "criteria": { "email": "Email", "phone": "Phone call", "chat": "Live chat", "none": "No follow-up" },
+      "top_k": 2
+    }
+  }
+}
+```
+
+```json
+{
+  "follow_up": {
+    "type": "ranking",
+    "ranking": ["email", "chat"],
+    "probabilities": { "email": 0.71, "phone": 0.04, "chat": 0.22, "none": 0.03 }
+  }
+}
+```
+
 ## اختر نموذجًا
 
 تحقق من توفر النموذج قبل استدعاء أي من هذه النماذج.

@@ -12,7 +12,8 @@ import type {
 	IRMessage,
 } from "@core/ir";
 import {
-	DECISION_QUESTION_CEILING, DEFAULT_ROUTE_QUESTION_LIMIT, decisionQuestionFeature, isInlineAudioUrl, type TypedDecisionFeature,
+	DECISION_QUESTION_CEILING, DEFAULT_ROUTE_QUESTION_LIMIT, decisionQuestionFeature, isInlineAudioUrl, isRankingQuestion,
+	rankingQuestionAsChoice, type TypedDecisionFeature,
 } from "@core/decisions";
 import type { ProviderCandidate } from "../before/types";
 
@@ -96,17 +97,22 @@ export function filterDecisionCandidatesByModalities(
 }
 
 /**
- * The decisions request as one route receives it. A choice question's `multiple` is
- * dropped on routes that don't answer multi-select, so they get a plain choice question.
+ * The decisions request as one route receives it. A ranking question is asked as a
+ * choice question (the answer is ranked afterwards; see rankingAnswerFromChoice), and a
+ * choice question's `multiple` is dropped on routes that don't answer multi-select, so
+ * they get a plain choice question.
  */
 export function decisionIrForRoute(
 	ir: IRDecisionsRequest,
 	candidate: Pick<ProviderCandidate, "capabilityParams">,
 ): IRDecisionsRequest {
-	if (!Object.values(ir.questions ?? {}).some(question => "multiple" in question) ||
-		routeServesTypedDecisionFeatures(candidate, ["multi_choice"])) return ir;
+	const questionList = Object.values(ir.questions ?? {});
+	const stripMultiple = questionList.some(question => "multiple" in question) &&
+		!routeServesTypedDecisionFeatures(candidate, ["multi_choice"]);
+	if (!stripMultiple && !questionList.some(isRankingQuestion)) return ir;
 	const questions = Object.fromEntries(Object.entries(ir.questions).map(([id, question]) => {
-		if (!("multiple" in question)) return [id, question];
+		if (isRankingQuestion(question)) return [id, rankingQuestionAsChoice(question)];
+		if (!stripMultiple || !("multiple" in question)) return [id, question];
 		const { multiple: _multiple, ...rest } = question;
 		return [id, rest as IRDecisionsRequest["questions"][string]];
 	}));

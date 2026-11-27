@@ -1576,6 +1576,15 @@ module Phaseo
     # @!attribute [rw] typesafe
     #   @return [Hash{String => Object}, nil]
     DecisionProviderOptions = Struct.new(:typesafe, keyword_init: true)
+    # @!attribute [rw] criteria
+    #   @return [Hash{String => Object}]
+    # @!attribute [rw] instructions
+    #   @return [String, Hash{String => Object}, Array<Object>]
+    # @!attribute [rw] top_k
+    #   @return [Integer, nil]
+    # @!attribute [rw] type
+    #   @return [String]
+    DecisionRankingQuestion = Struct.new(:criteria, :instructions, :top_k, :type, keyword_init: true)
     # @!attribute [rw] name
     #   @return [String, nil]
     # @!attribute [rw] type
