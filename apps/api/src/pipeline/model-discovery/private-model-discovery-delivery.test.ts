@@ -6,6 +6,11 @@ const slack = vi.fn<(url: string, message: string) => Promise<void>>();
 
 vi.mock("./discord-webhook", () => ({ sendDiscordTextMessage: (args: { message: string }) => discord(args) }));
 vi.mock("./slack", () => ({ sendSlackWebhookMessage: (url: string, message: string) => slack(url, message) }));
+const t3 = vi.fn<(event: { event: string; text: string; runId: string | null; id: string | null }) => Promise<{ sent: boolean }>>();
+vi.mock("./t3-webhook", async (importOriginal) => ({
+	...(await importOriginal<typeof import("./t3-webhook")>()),
+	forwardToT3Webhook: (event: never) => t3(event),
+}));
 
 const { sendPrivateModelDiscoveryNotification } = await import("./private-model-discovery-notifications");
 
@@ -34,6 +39,8 @@ describe("private alert delivery across destinations", () => {
 		} as never);
 		discord.mockReset();
 		slack.mockReset();
+		t3.mockReset();
+		t3.mockResolvedValue({ sent: true });
 	});
 	afterEach(() => teardownTestRuntime());
 
@@ -87,5 +94,34 @@ describe("private alert delivery across destinations", () => {
 		const result = await sendPrivateModelDiscoveryNotification(longAlert());
 		expect(result).toMatchObject({ delivered: true, reason: "partial notification delivery", channels: ["Discord"] });
 		expect(discord.mock.calls.length).toBeGreaterThan(1);
+	});
+
+	it("forwards the whole alert to T3 once, after delivery", async () => {
+		discord.mockResolvedValue(undefined);
+		slack.mockResolvedValue(undefined);
+		await sendPrivateModelDiscoveryNotification(longAlert(), { runId: "run-1", source: "cloudflare_cron" });
+		expect(t3).toHaveBeenCalledTimes(1);
+		const [event] = t3.mock.calls[0];
+		expect(event).toMatchObject({ event: "model_discovery.changes", runId: "run-1" });
+		expect(event.id).toMatch(/^[0-9a-f]{64}$/);
+		// One untruncated text, even though Discord needed several messages.
+		expect(event.text).toContain("organisation/a-fairly-long-model-name-0-0");
+		expect(event.text).toContain("organisation/a-fairly-long-model-name-24-7");
+	});
+
+	it("does not forward to T3 when the alert was not delivered", async () => {
+		discord.mockRejectedValue(new Error("discord down"));
+		slack.mockRejectedValue(new Error("slack down"));
+		await expect(sendPrivateModelDiscoveryNotification(longAlert())).rejects.toThrow();
+		expect(t3).not.toHaveBeenCalled();
+	});
+
+	it("keeps the delivery result when T3 fails", async () => {
+		discord.mockResolvedValue(undefined);
+		slack.mockResolvedValue(undefined);
+		t3.mockResolvedValue({ sent: false, error: "HTTP 500" } as never);
+		const result = await sendPrivateModelDiscoveryNotification(longAlert());
+		expect(result).toMatchObject({ delivered: true, skipped: false });
+		expect(result.error).toBeUndefined();
 	});
 });

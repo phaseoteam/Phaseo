@@ -13,6 +13,7 @@ import {
 	type ProviderChange,
 } from "./helpers";
 import { sendSlackWebhookMessage } from "./slack";
+import { buildT3ModelDiscoveryEvent, forwardToT3Webhook } from "./t3-webhook";
 import {
 	buildVeniceChangelogDiscordSection,
 	buildVeniceChangelogMessages,
@@ -86,6 +87,12 @@ export function buildPrivateVeniceChangelogMessages(args: PrivateModelDiscoveryN
 	return args.veniceChangelog ? buildVeniceChangelogMessages(args.veniceChangelog, MAX_DISCORD_MESSAGE_LENGTH) : [];
 }
 
+/** The whole alert, main sections plus Venice lines, untruncated. */
+function buildFullPrivateAlertText(args: PrivateModelDiscoveryNotification): string {
+	const veniceSection = args.veniceChangelog ? buildVeniceChangelogDiscordSection(args.veniceChangelog) : "";
+	return [buildPrivateModelDiscoveryText(args), veniceSection].filter(Boolean).join("\n\n").trim();
+}
+
 /**
  * Duplicate-delivery key. It hashes the full, untruncated content (main sections and Venice lines), so a
  * change past the truncation point, or a new Venice entry alongside an unchanged main alert, still counts.
@@ -93,8 +100,7 @@ export function buildPrivateVeniceChangelogMessages(args: PrivateModelDiscoveryN
 export async function computePrivateModelDiscoveryFingerprint(
 	args: PrivateModelDiscoveryNotification,
 ): Promise<string | null> {
-	const veniceSection = args.veniceChangelog ? buildVeniceChangelogDiscordSection(args.veniceChangelog) : "";
-	const content = [buildPrivateModelDiscoveryText(args), veniceSection].filter(Boolean).join("\n\n").trim();
+	const content = buildFullPrivateAlertText(args);
 	if (!content) return null;
 	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(content));
 	return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
@@ -109,9 +115,30 @@ export type PrivateDeliveryResult = {
 	channels?: string[];
 };
 
+export type PrivateNotificationContext = { runId?: string | null; source?: string | null };
+
 export async function sendPrivateModelDiscoveryNotification(
 	args: PrivateModelDiscoveryNotification,
+	context: PrivateNotificationContext = {},
 ): Promise<PrivateDeliveryResult> {
+	const result = await deliverPrivateModelDiscoveryAlert(args);
+	// Forward only once the alert is delivered: an undelivered alert is re-sent next sweep, and T3 should see it once.
+	if (result.delivered && !result.skipped) {
+		await forwardToT3Webhook(
+			buildT3ModelDiscoveryEvent({
+				event: "model_discovery.changes",
+				id: await computePrivateModelDiscoveryFingerprint(args),
+				runId: context.runId,
+				source: context.source,
+				text: buildFullPrivateAlertText(args),
+				data: args,
+			}),
+		);
+	}
+	return result;
+}
+
+async function deliverPrivateModelDiscoveryAlert(args: PrivateModelDiscoveryNotification): Promise<PrivateDeliveryResult> {
 	if (!hasDiscordNotifiableChanges(args)) {
 		return { delivered: false, skipped: true, reason: "no notifiable changes" };
 	}

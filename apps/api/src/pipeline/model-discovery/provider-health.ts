@@ -6,6 +6,7 @@
 
 import { getSupabaseAdmin } from "@/runtime/env";
 import { deliverPrivateModelDiscoveryMessage } from "./private-model-discovery-notifications";
+import { buildT3ModelDiscoveryEvent, forwardToT3Webhook } from "./t3-webhook";
 
 export type ProviderCheckStatus = "ok" | "skipped" | "error";
 
@@ -301,6 +302,9 @@ export async function runProviderHealthCheck(args: {
 				deliveryError ??= delivery.error ?? null;
 				// A skipped delivery (no webhook configured) is not an error; it simply retries next sweep.
 				if (!delivery.delivered) break;
+				await forwardToT3Webhook(
+					buildT3ModelDiscoveryEvent({ event: "model_discovery.provider_health", runId: args.runId, text: batch.text }),
+				);
 				for (const { row } of batch.alerts.failing) row.alerted_at = nowIso;
 				for (const { row } of batch.alerts.recovered) row.alerted_at = null;
 				for (const { row } of batch.alerts.stoppedChecking) {

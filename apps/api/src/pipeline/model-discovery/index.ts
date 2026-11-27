@@ -1463,7 +1463,10 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 					notificationSummary = { delivered: true, skipped: true, reason: "duplicate notification fingerprint" };
 					console.log("[model-discovery] Discord notification skipped: duplicate notification fingerprint");
 				} else {
-					notificationSummary = await sendPrivateModelDiscoveryNotification(notificationInput);
+					notificationSummary = await sendPrivateModelDiscoveryNotification(notificationInput, {
+						runId,
+						source: args.source,
+					});
 					notificationError = notificationSummary.error ?? null;
 					if (!notificationSummary.delivered) notificationFingerprint = null;
 				}
