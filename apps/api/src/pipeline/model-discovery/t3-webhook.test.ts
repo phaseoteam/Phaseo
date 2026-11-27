@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setupRuntimeFromEnv, teardownTestRuntime } from "../../../tests/helpers/runtime";
-import { buildT3ModelDiscoveryEvent, forwardToT3Webhook, readT3WebhookUrl } from "./t3-webhook";
+import { T3_WEBHOOK_URL_KV_KEY, buildT3ModelDiscoveryEvent, forwardToT3Webhook, readT3WebhookUrl } from "./t3-webhook";
 
 const event = () => buildT3ModelDiscoveryEvent({ event: "model_discovery.changes", text: "z-ai: added glm-5.4", now: new Date(0) });
 
@@ -10,7 +10,7 @@ describe("T3 webhook forwarding", () => {
 	it("does nothing without a configured https URL", async () => {
 		setupRuntimeFromEnv({ MODEL_DISCOVERY_T3_WEBHOOK_URL: "http://insecure.example/hook" } as never);
 		const request = vi.fn();
-		expect(readT3WebhookUrl()).toBeNull();
+		expect(await readT3WebhookUrl()).toBeNull();
 		expect(await forwardToT3Webhook(event(), request as never)).toEqual({ sent: false });
 		expect(request).not.toHaveBeenCalled();
 	});
@@ -42,6 +42,20 @@ describe("T3 webhook forwarding", () => {
 			});
 			expect(await forwardToT3Webhook(event(), request as never)).toEqual({ sent: false, error: "offline" });
 		});
+	});
+
+	it("falls back to the KV key when no binding is set", async () => {
+		const get = vi.fn(async () => " https://t3.example/hooks/from-kv ");
+		setupRuntimeFromEnv({ GATEWAY_CACHE: { get } } as never);
+		expect(await readT3WebhookUrl()).toBe("https://t3.example/hooks/from-kv");
+		expect(get).toHaveBeenCalledWith(T3_WEBHOOK_URL_KV_KEY);
+	});
+
+	it("prefers the binding over KV", async () => {
+		const get = vi.fn(async () => "https://t3.example/hooks/from-kv");
+		setupRuntimeFromEnv({ MODEL_DISCOVERY_T3_WEBHOOK_URL: "https://t3.example/hooks/env", GATEWAY_CACHE: { get } } as never);
+		expect(await readT3WebhookUrl()).toBe("https://t3.example/hooks/env");
+		expect(get).not.toHaveBeenCalled();
 	});
 
 	it("drops structured data that is too large but keeps the text", () => {

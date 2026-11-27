@@ -1,9 +1,15 @@
 // Forwards private watcher alerts to a T3 Code webhook-triggered task, where an agent thread checks and acts on
 // each change. Best effort only: Discord and Slack remain the delivery of record, so a T3 failure is logged and
 // never defers saving watcher state or re-sends the alert.
+import { getBindings } from "@/runtime/env";
 import { readBindingEnv } from "./helpers";
 
 const T3_WEBHOOK_TIMEOUT_MS = 15_000;
+/**
+ * KV fallback for the URL. phaseo-gateway is at Cloudflare's 200 text-binding limit, so the URL can live in
+ * GATEWAY_CACHE under this key instead of a secret: `wrangler kv key put <key> <url> --binding GATEWAY_CACHE --remote`.
+ */
+export const T3_WEBHOOK_URL_KV_KEY = "model-discovery/t3-webhook-url/v1";
 /** Structured data is dropped above this size; the full alert text is always sent. */
 const MAX_T3_DATA_BYTES = 200_000;
 
@@ -24,8 +30,20 @@ export type T3ModelDiscoveryEvent = {
 
 export type T3ForwardResult = { sent: boolean; error?: string | null };
 
-export function readT3WebhookUrl(): string | null {
-	const raw = readBindingEnv(["MODEL_DISCOVERY_T3_WEBHOOK_URL"]);
+async function readKvWebhookUrl(): Promise<string | null> {
+	try {
+		const kv = (getBindings() as unknown as { GATEWAY_CACHE?: KVNamespace }).GATEWAY_CACHE;
+		const value = kv ? await kv.get(T3_WEBHOOK_URL_KV_KEY) : null;
+		return value?.trim() || null;
+	} catch (error) {
+		console.warn("[model-discovery] T3 webhook URL not readable from KV:", error instanceof Error ? error.message : String(error));
+		return null;
+	}
+}
+
+/** The env binding wins; otherwise the KV key. Only https URLs are used. */
+export async function readT3WebhookUrl(): Promise<string | null> {
+	const raw = readBindingEnv(["MODEL_DISCOVERY_T3_WEBHOOK_URL"]) ?? (await readKvWebhookUrl());
 	if (!raw) return null;
 	try {
 		const parsed = new URL(raw);
@@ -65,7 +83,7 @@ export async function forwardToT3Webhook(
 	event: T3ModelDiscoveryEvent,
 	request: typeof fetch = fetch,
 ): Promise<T3ForwardResult> {
-	const webhookUrl = readT3WebhookUrl();
+	const webhookUrl = await readT3WebhookUrl();
 	if (!webhookUrl || !event.text.trim()) return { sent: false };
 	try {
 		const response = await request(webhookUrl, {
