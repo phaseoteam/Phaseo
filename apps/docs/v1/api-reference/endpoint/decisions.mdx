@@ -177,7 +177,7 @@ Answers use the same keys as `questions`. `choice` answers include the selected 
 
 ### Rank options
 
-A `ranking` question puts its `criteria` options in order, best first. It takes `criteria` (at least two options) and an optional `top_k` that returns only the best `top_k`. Every model that answers `choice` questions answers it: Phaseo asks the model which option is best and orders the options by their probabilities. The answer has `ranking`, the option keys in order, and `probabilities`, the probability that each option is the best one. Options with the same probability keep their order in `criteria`. A ranking question is billed like a choice question. Ranking works in the older state format only.
+A `ranking` question puts its `criteria` options in order, best first. It takes `criteria` (at least two options) and an optional `top_k` that returns only the best `top_k`. Every model that answers `choice` questions answers it: Phaseo asks the model which option is best and orders the options by their probabilities. The answer has `ranking`, the option keys in order, and `probabilities`, the probability that each option is the best one. Options with the same probability keep their order in `criteria`. A ranking question is billed like a choice question. Ranking works in the older state format only. Together Tev returns a label without probabilities, so it can't answer ranking questions.
 
 ```json
 {

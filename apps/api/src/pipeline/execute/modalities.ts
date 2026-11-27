@@ -60,6 +60,14 @@ export function routeServesTypedDecisionFeatures(
 	return Array.isArray(declared) && features.every(feature => declared.includes(feature));
 }
 
+/**
+ * Whether a route answers choice questions with a probability per option. Routes that
+ * return only a label (Together Tev) declare params.choice_probabilities false.
+ */
+export function routeGivesChoiceProbabilities(candidate: Pick<ProviderCandidate, "capabilityParams">): boolean {
+	return candidate.capabilityParams?.choice_probabilities !== false;
+}
+
 export function filterDecisionCandidatesByModalities(
 	candidates: ProviderCandidate[],
 	ir: IRDecisionsRequest,
@@ -74,6 +82,8 @@ export function filterDecisionCandidatesByModalities(
 	// Routes that take only inline clips declare params.audio_urls false.
 	const requestsAudioUrls = (ir.audio ?? []).some(clip => clip.source === "url" && !isInlineAudioUrl(clip));
 	const typedFeatures = requiredTypedDecisionFeatures(ir);
+	// A ranking is built from choice probabilities, so label-only routes can't answer it.
+	const requestsRanking = Object.values(ir.questions ?? {}).some(isRankingQuestion);
 	const media = [
 		{ modality: "image", parameter: "images", requested: Boolean(ir.images?.length) },
 		{ modality: "audio", parameter: "audio", requested: Boolean(ir.audio?.length) },
@@ -87,6 +97,7 @@ export function filterDecisionCandidatesByModalities(
 		(!requestsImageUrls || candidate.capabilityParams?.image_urls === true) &&
 		(!requestsAudioUrls || candidate.capabilityParams?.audio_urls !== false) &&
 		routeServesTypedDecisionFeatures(candidate, typedFeatures) &&
+		(!requestsRanking || routeGivesChoiceProbabilities(candidate)) &&
 		media.every(item => candidate.inputModalities?.includes(item.modality) && candidate.capabilityParams?.[item.parameter] === true));
 	// Prefer routes that answer multi-select; others still get the question as before.
 	if (requestsMultiChoice(ir)) {

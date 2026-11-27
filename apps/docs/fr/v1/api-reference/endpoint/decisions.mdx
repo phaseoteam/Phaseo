@@ -177,7 +177,7 @@ Les réponses utilisent les mêmes clés que `questions`. Les réponses `choice`
 <span id="choose-a-model"></span>
 ### Classer des options
 
-Une question `ranking` classe les options de `criteria`, de la meilleure à la moins bonne. Elle prend `criteria` (au moins deux options) et un `top_k` facultatif qui ne renvoie que les `top_k` meilleures. Tout modèle qui répond aux questions `choice` y répond : Phaseo demande au modèle quelle option est la meilleure et classe les options selon leurs probabilités. La réponse contient `ranking`, les clés des options dans l’ordre, et `probabilities`, la probabilité que chaque option soit la meilleure. Les options de même probabilité gardent leur ordre dans `criteria`. Une question de classement est facturée comme une question de choix. Le classement ne fonctionne qu’avec l’ancien format `state`.
+Une question `ranking` classe les options de `criteria`, de la meilleure à la moins bonne. Elle prend `criteria` (au moins deux options) et un `top_k` facultatif qui ne renvoie que les `top_k` meilleures. Tout modèle qui répond aux questions `choice` y répond : Phaseo demande au modèle quelle option est la meilleure et classe les options selon leurs probabilités. La réponse contient `ranking`, les clés des options dans l’ordre, et `probabilities`, la probabilité que chaque option soit la meilleure. Les options de même probabilité gardent leur ordre dans `criteria`. Une question de classement est facturée comme une question de choix. Le classement ne fonctionne qu’avec l’ancien format `state`. Together Tev renvoie une étiquette sans probabilités et ne peut donc pas répondre aux questions de classement.
 
 ```json
 {

@@ -177,7 +177,7 @@ Las respuestas usan las mismas claves que `questions`. Las respuestas `choice` i
 <span id="choose-a-model"></span>
 ### Ordenar opciones
 
-Una pregunta `ranking` ordena las opciones de `criteria`, de la mejor a la peor. Recibe `criteria` (al menos dos opciones) y un `top_k` opcional que devuelve solo las `top_k` mejores. La responde cualquier modelo que responda preguntas `choice`: Phaseo pregunta al modelo cuál es la mejor opción y ordena las opciones según sus probabilidades. La respuesta incluye `ranking`, las claves de las opciones en orden, y `probabilities`, la probabilidad de que cada opción sea la mejor. Las opciones con la misma probabilidad conservan su orden en `criteria`. Una pregunta de ranking se factura como una pregunta de elección. El ranking solo funciona con el formato de estado antiguo.
+Una pregunta `ranking` ordena las opciones de `criteria`, de la mejor a la peor. Recibe `criteria` (al menos dos opciones) y un `top_k` opcional que devuelve solo las `top_k` mejores. La responde cualquier modelo que responda preguntas `choice`: Phaseo pregunta al modelo cuál es la mejor opción y ordena las opciones según sus probabilidades. La respuesta incluye `ranking`, las claves de las opciones en orden, y `probabilities`, la probabilidad de que cada opción sea la mejor. Las opciones con la misma probabilidad conservan su orden en `criteria`. Una pregunta de ranking se factura como una pregunta de elección. El ranking solo funciona con el formato de estado antiguo. Together Tev devuelve una etiqueta sin probabilidades, así que no puede responder preguntas de ranking.
 
 ```json
 {

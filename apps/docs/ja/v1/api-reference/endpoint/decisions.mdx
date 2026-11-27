@@ -177,7 +177,7 @@ print(decision["answers"])
 <span id="choose-a-model"></span>
 ### 選択肢を順位付けする
 
-`ranking` の質問は、`criteria` の選択肢を良い順に並べます。`criteria`（2 つ以上の選択肢）と、上位 `top_k` 件だけを返す任意の `top_k` を指定します。`choice` の質問に回答できるモデルはすべて回答できます。Phaseo はどの選択肢が最良かをモデルに尋ね、その確率の順に選択肢を並べます。回答には、選択肢のキーを順に並べた `ranking` と、各選択肢が最良である確率を示す `probabilities` が含まれます。確率が同じ選択肢は `criteria` の順序を保ちます。ranking の質問は choice の質問と同じように課金されます。ranking は従来の state 形式でのみ使えます。
+`ranking` の質問は、`criteria` の選択肢を良い順に並べます。`criteria`（2 つ以上の選択肢）と、上位 `top_k` 件だけを返す任意の `top_k` を指定します。`choice` の質問に回答できるモデルはすべて回答できます。Phaseo はどの選択肢が最良かをモデルに尋ね、その確率の順に選択肢を並べます。回答には、選択肢のキーを順に並べた `ranking` と、各選択肢が最良である確率を示す `probabilities` が含まれます。確率が同じ選択肢は `criteria` の順序を保ちます。ranking の質問は choice の質問と同じように課金されます。ranking は従来の state 形式でのみ使えます。Together Tev は確率なしでラベルだけを返すため、ranking の質問には回答できません。
 
 ```json
 {

@@ -177,7 +177,7 @@ Antworten verwenden dieselben Schlüssel wie `questions`. `choice`-Antworten ent
 <span id="choose-a-model"></span>
 ### Optionen ordnen
 
-Eine `ranking`-Frage ordnet die Optionen in `criteria`, die beste zuerst. Sie nimmt `criteria` (mindestens zwei Optionen) und ein optionales `top_k`, das nur die besten `top_k` zurückgibt. Jedes Modell, das `choice`-Fragen beantwortet, beantwortet auch sie: Phaseo fragt das Modell, welche Option die beste ist, und ordnet die Optionen nach ihren Wahrscheinlichkeiten. Die Antwort enthält `ranking`, die Schlüssel der Optionen in Reihenfolge, und `probabilities`, die Wahrscheinlichkeit, dass jede Option die beste ist. Optionen mit gleicher Wahrscheinlichkeit behalten ihre Reihenfolge aus `criteria`. Eine Ranking-Frage wird wie eine Auswahlfrage abgerechnet. Ranking funktioniert nur im älteren state-Format.
+Eine `ranking`-Frage ordnet die Optionen in `criteria`, die beste zuerst. Sie nimmt `criteria` (mindestens zwei Optionen) und ein optionales `top_k`, das nur die besten `top_k` zurückgibt. Jedes Modell, das `choice`-Fragen beantwortet, beantwortet auch sie: Phaseo fragt das Modell, welche Option die beste ist, und ordnet die Optionen nach ihren Wahrscheinlichkeiten. Die Antwort enthält `ranking`, die Schlüssel der Optionen in Reihenfolge, und `probabilities`, die Wahrscheinlichkeit, dass jede Option die beste ist. Optionen mit gleicher Wahrscheinlichkeit behalten ihre Reihenfolge aus `criteria`. Eine Ranking-Frage wird wie eine Auswahlfrage abgerechnet. Ranking funktioniert nur im älteren state-Format. Together Tev gibt nur ein Label ohne Wahrscheinlichkeiten zurück und kann deshalb keine Ranking-Fragen beantworten.
 
 ```json
 {

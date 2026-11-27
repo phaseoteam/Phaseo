@@ -272,9 +272,13 @@ describe("Ranking questions", () => {
 	])("rejects invalid ranking questions: %j", q => {
 		expect(DecisionsSchema.safeParse({ model: "liquid-ai/d1.2", state: "x", questions: { q } }).success).toBe(false);
 	});
-	it("routes ranking questions to every decision route", () => {
+	it("routes ranking questions to every route that gives choice probabilities", () => {
+		const tev = { providerId: "together", capabilityParams: { choice_probabilities: false } } as unknown as ProviderCandidate;
 		const ir = legacy({ questions: { best: { type: "ranking", instructions: "?", criteria } } });
-		expect(filterDecisionCandidatesByModalities([anyRoute], ir)).toEqual([anyRoute]);
+		expect(filterDecisionCandidatesByModalities([anyRoute, tev], ir)).toEqual([anyRoute]);
+		// Label-only routes still serve plain choice questions.
+		const choice = legacy({ questions: { best: { type: "choice", instructions: "?", criteria } } });
+		expect(filterDecisionCandidatesByModalities([anyRoute, tev], choice)).toEqual([anyRoute, tev]);
 	});
 });
 
