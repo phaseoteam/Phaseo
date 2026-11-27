@@ -3,23 +3,29 @@ export const PROGRESS_INDEX_URL = "https://artificialanalysis.ai/trends";
 // Fixed by the methodology: o3-mini (high) scores 220 and GPT-5.5 (xhigh) 320.
 const ANCHORS = [["076f2674-bc4b-4925-be59-50832eb8c090", 220], ["1f054429-397e-4fdb-9e71-67bc92c1735e", 320]] as const;
 
-type TrendsModel = { id?: unknown; name?: unknown; score?: unknown };
+type TrendsModel = { id?: unknown; name?: unknown; progressIndex?: unknown; score?: unknown };
 export type ProgressIndexRow = { sourceId: string; name: string; score: number; modelSlug: string; variant: string | null };
 
-/** Trends rows carry the Progress Index as `score`; refuse the payload if the scale anchors moved. */
+/** A trends row's Progress Index: `progressIndex` since AA's 2026-11-26 payload, `score` before it. */
+function progressScore(model: TrendsModel | undefined) {
+	return model?.progressIndex !== undefined ? model.progressIndex : model?.score;
+}
+
+/** Refuse the payload if the scale anchors moved. */
 export function progressIndexRows(models: TrendsModel[], owners: Map<string, string>, variants: Map<string, string | null>) {
 	const byId = new Map(models.flatMap((model) => typeof model.id === "string" ? [[model.id, model]] : []));
 	for (const [id, expected] of ANCHORS) {
-		const score = byId.get(id)?.score;
+		const score = progressScore(byId.get(id));
 		if (typeof score !== "number" || Math.abs(score - expected) > 0.01) throw new Error(`Progress Index anchor ${id} is ${String(score)}, expected ${expected}; the trends payload may have changed`);
 	}
 	const rows: ProgressIndexRow[] = [];
 	let scored = 0;
 	for (const model of byId.values()) {
-		if (typeof model.score !== "number" || !Number.isFinite(model.score)) continue;
+		const score = progressScore(model);
+		if (typeof score !== "number" || !Number.isFinite(score)) continue;
 		scored++;
 		const modelSlug = owners.get(model.id as string);
-		if (modelSlug) rows.push({ sourceId: model.id as string, name: typeof model.name === "string" ? model.name : String(model.id), score: model.score, modelSlug, variant: variants.get(model.id as string) ?? null });
+		if (modelSlug) rows.push({ sourceId: model.id as string, name: typeof model.name === "string" ? model.name : String(model.id), score, modelSlug, variant: variants.get(model.id as string) ?? null });
 	}
 	return { rows: rows.sort((a, b) => b.score - a.score), scored };
 }

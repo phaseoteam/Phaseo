@@ -15,6 +15,14 @@ test("keeps matched configurations with their variant, highest first", () => {
 	assert.deepEqual(rows.map((row) => [row.modelSlug, row.variant, row.score]), [["lab/model", "max", 350.5], ["lab/model", "low", 325]]);
 });
 
+test("reads the progressIndex field AA has published since 2026-11-26", () => {
+	const current = [...anchors.map(({ score, ...model }) => ({ ...model, progressIndex: score })), { id: "a", name: "Model (Max)", progressIndex: 359.1, intelligenceIndex: 80 }, { id: "b", name: "Unscored", progressIndex: null }];
+	const { rows, scored } = progressIndexRows(current, new Map([["a", "lab/model"], ["b", "lab/model"]]), new Map([["a", "max"]]));
+	assert.equal(scored, 3);
+	assert.deepEqual(rows.map((row) => [row.modelSlug, row.variant, row.score]), [["lab/model", "max", 359.1]]);
+	assert.throws(() => progressIndexRows([{ id: anchors[0].id, progressIndex: 221 }, anchors[1]], new Map(), new Map()), /anchor/);
+});
+
 test("refuses a payload whose scale anchors moved", () => {
 	assert.throws(() => progressIndexRows([anchors[0], { ...anchors[1], score: 57 }], new Map(), new Map()), /anchor/);
 	assert.throws(() => progressIndexRows([anchors[0]], new Map(), new Map()), /anchor/);
