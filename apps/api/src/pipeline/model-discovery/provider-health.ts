@@ -63,6 +63,8 @@ export type ProviderHealthSummary = {
 	checked: number;
 	failing: number;
 	alertsSent: number;
+	/** Text of the alerts delivered this sweep, kept on the run row so alerts can be audited later. */
+	alertText?: string | null;
 	error?: string | null;
 };
 
@@ -292,6 +294,7 @@ export async function runProviderHealthCheck(args: {
 	);
 	const alerts = selectProviderHealthAlerts(previousById, rows, now);
 	let alertsSent = 0;
+	const deliveredTexts: string[] = [];
 	let deliveryError: string | null = null;
 
 	if (args.notify && hasProviderHealthAlerts(alerts)) {
@@ -302,6 +305,7 @@ export async function runProviderHealthCheck(args: {
 				deliveryError ??= delivery.error ?? null;
 				// A skipped delivery (no webhook configured) is not an error; it simply retries next sweep.
 				if (!delivery.delivered) break;
+				deliveredTexts.push(batch.text);
 				await forwardToT3Webhook(
 					buildT3ModelDiscoveryEvent({ event: "model_discovery.provider_health", runId: args.runId, text: batch.text }),
 				);
@@ -329,6 +333,7 @@ export async function runProviderHealthCheck(args: {
 		checked: rows.length,
 		failing: rows.filter((row) => row.status === "error").length,
 		alertsSent,
+		alertText: deliveredTexts.length > 0 ? deliveredTexts.join("\n\n") : null,
 		error: deliveryError ? `Provider health alert not delivered: ${deliveryError}` : null,
 	};
 }

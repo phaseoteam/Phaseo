@@ -22,6 +22,8 @@ The private and public Discord webhooks are separate bindings: `DISCORD_WEBHOOK_
 
 An optional T3 Code webhook URL (https) also receives each private alert as JSON (`t3-webhook.ts`): `event` is `model_discovery.changes` or `model_discovery.provider_health`, with the full untruncated `text`, the alert fingerprint as `id`, the run id and source, and the structured change data as `data` (null above 200 KB). It is sent only after Discord or Slack delivered the alert, so a re-sent alert reaches it once, and it is best effort: a T3 failure is logged and never defers saving watcher state. The URL comes from the `MODEL_DISCOVERY_T3_WEBHOOK_URL` binding or, because `phaseo-gateway` is at Cloudflare's 200 text-binding limit, from the `GATEWAY_CACHE` KV key `model-discovery/t3-webhook-url/v1`. It feeds a T3 Code webhook task whose thread checks each change and updates the catalogue.
 
+Each run that delivers an alert stores what it sent in `model_discovery_runs.summary.alert` (`changes` and/or `providerHealth`, each capped at 20,000 characters). Runs with an alert are kept for 60 days instead of the usual 5, so false positives can be counted over weeks; the T3 thread records its verdict for that alert under `summary.alert.review`.
+
 ## Age and volume limits
 
 Both workflows only announce news. A model that has been around for a while is recorded as seen but not posted:

@@ -88,7 +88,7 @@ export function buildPrivateVeniceChangelogMessages(args: PrivateModelDiscoveryN
 }
 
 /** The whole alert, main sections plus Venice lines, untruncated. */
-function buildFullPrivateAlertText(args: PrivateModelDiscoveryNotification): string {
+export function buildFullPrivateAlertText(args: PrivateModelDiscoveryNotification): string {
 	const veniceSection = args.veniceChangelog ? buildVeniceChangelogDiscordSection(args.veniceChangelog) : "";
 	return [buildPrivateModelDiscoveryText(args), veniceSection].filter(Boolean).join("\n\n").trim();
 }
