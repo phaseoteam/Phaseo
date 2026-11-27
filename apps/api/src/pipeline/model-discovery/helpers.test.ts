@@ -473,6 +473,19 @@ describe("extractDiscoveredModels", () => {
 		});
 	});
 
+	it("keeps only Prime Intellect's self-hosted models, not resold gateway ones", () => {
+		const models = extractDiscoveredModels("prime-intellect", {
+			object: "list",
+			data: [
+				{ id: "anthropic/claude-fable-5", serving: "gateway" },
+				{ id: "thinkingmachines/inkling-2-mini", serving: "hosted" },
+				{ id: "qwen/qwen3.8-27b" },
+			],
+		});
+
+		expect(models.map((model) => model.id).sort()).toEqual(["qwen/qwen3.8-27b", "thinkingmachines/inkling-2-mini"]);
+	});
+
 	it("keeps AtlasCloud text models now that its /models omits categories", () => {
 		const models = extractDiscoveredModels("atlascloud", {
 			code: 200,

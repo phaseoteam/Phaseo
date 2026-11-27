@@ -68,6 +68,11 @@ import { executor as perplexityDecisions } from "./perplexity/decisions";
 import { executor as ai21Text } from "./ai21/text-generate";
 import { executor as akashmlText } from "./akashml/text-generate";
 import { executor as primalabsText } from "./primalabs/text-generate";
+import { executor as primeIntellectText } from "./prime-intellect/text-generate";
+import { executor as tenstorrentText } from "./tenstorrent/text-generate";
+import { executor as ktText } from "./kt/text-generate";
+import { executor as dekallmText } from "./dekallm/text-generate";
+import { executor as riverText } from "./river/text-generate";
 import { executor as lgText } from "./lg/text-generate";
 import { executor as arceeText } from "./arcee/text-generate";
 import { executor as alibabaCloudText } from "./alibaba-cloud/text-generate";
@@ -274,6 +279,21 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	primalabs: {
 		"text.generate": primalabsText,
+	},
+	"prime-intellect": {
+		"text.generate": primeIntellectText,
+	},
+	tenstorrent: {
+		"text.generate": tenstorrentText,
+	},
+	kt: {
+		"text.generate": ktText,
+	},
+	dekallm: {
+		"text.generate": dekallmText,
+	},
+	river: {
+		"text.generate": riverText,
 	},
 	akashml: {
 		"text.generate": akashmlText,

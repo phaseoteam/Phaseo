@@ -135,6 +135,24 @@ describe("MODEL_DISCOVERY_PROVIDERS", () => {
 		expect(providers.get("together")).toMatchObject({
 			modelsEndpoint: "https://api.together.ai/v1/models",
 		});
+		expect(providers.get("io-net")).toMatchObject({
+			baseUrl: "https://api.intelligence.io.solutions/api/v1",
+			authStyle: "optional_bearer",
+		});
+		expect(providers.get("prime-intellect")).toMatchObject({
+			providerName: "Prime Intellect",
+			baseUrl: "https://api.pinference.ai",
+			pathPrefix: "/api/v1",
+			apiKeyEnv: ["PRIME_INTELLECT_API_KEY"],
+			authStyle: "optional_bearer",
+		});
+		expect(providers.get("tenstorrent")).toMatchObject({
+			modelsEndpoint: "https://console.tenstorrent.com/v1/openrouter/models",
+			authStyle: "none",
+		});
+		for (const [providerId, apiKeyEnv] of [["kt", "KT_TOKEN_FACTORY_API_KEY"], ["dekallm", "DEKALLM_API_KEY"], ["river", "RIVER_API_KEY"]]) {
+			expect(providers.get(providerId), providerId).toMatchObject({ apiKeyEnv: [apiKeyEnv], authStyle: "bearer" });
+		}
 		expect(providers.get("typesafe")).toMatchObject({
 			providerName: "TypeSafe",
 			modelsEndpoint: "https://api.typesafe.ai/v1/models",

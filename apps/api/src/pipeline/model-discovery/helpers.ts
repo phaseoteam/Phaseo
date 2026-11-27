@@ -829,6 +829,11 @@ export function shouldIncludeDiscoveredModel(providerId: string, row: Record<str
 	if (providerId === "clarifai") {
 		return typeof row.model_type_id === "string" && row.model_type_id.trim().toLowerCase() === "text-to-text";
 	}
+	if (providerId === "prime-intellect") {
+		// Prime Intellect's list also resells other APIs' models (serving: "gateway"); only
+		// the models it hosts itself are its own routes.
+		return row.serving !== "gateway";
+	}
 	return true;
 }
 

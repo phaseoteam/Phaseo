@@ -6,6 +6,11 @@ import { ARCEE_OPENAI_COMPAT_CONFIGS } from "../arcee/config";
 import { AI21_OPENAI_COMPAT_CONFIGS } from "../ai21/config";
 import { AKASHML_OPENAI_COMPAT_CONFIGS } from "../akashml/config";
 import { PRIMALABS_OPENAI_COMPAT_CONFIGS } from "../primalabs/config";
+import { PRIME_INTELLECT_OPENAI_COMPAT_CONFIGS } from "../prime-intellect/config";
+import { TENSTORRENT_OPENAI_COMPAT_CONFIGS } from "../tenstorrent/config";
+import { KT_OPENAI_COMPAT_CONFIGS } from "../kt/config";
+import { DEKALLM_OPENAI_COMPAT_CONFIGS } from "../dekallm/config";
+import { RIVER_OPENAI_COMPAT_CONFIGS } from "../river/config";
 import { LG_OPENAI_COMPAT_CONFIGS } from "../lg/config";
 import { AMAZON_BEDROCK_OPENAI_COMPAT_CONFIGS } from "../amazon-bedrock/config";
 import { BASETEN_OPENAI_COMPAT_CONFIGS } from "../baseten/config";
@@ -94,6 +99,11 @@ export const OPENAI_COMPAT_CONFIG = {
 	...AI21_OPENAI_COMPAT_CONFIGS,
 	...AKASHML_OPENAI_COMPAT_CONFIGS,
 	...PRIMALABS_OPENAI_COMPAT_CONFIGS,
+	...PRIME_INTELLECT_OPENAI_COMPAT_CONFIGS,
+	...TENSTORRENT_OPENAI_COMPAT_CONFIGS,
+	...KT_OPENAI_COMPAT_CONFIGS,
+	...DEKALLM_OPENAI_COMPAT_CONFIGS,
+	...RIVER_OPENAI_COMPAT_CONFIGS,
 	...LG_OPENAI_COMPAT_CONFIGS,
 	...AMAZON_BEDROCK_OPENAI_COMPAT_CONFIGS,
 	...BASETEN_OPENAI_COMPAT_CONFIGS,
