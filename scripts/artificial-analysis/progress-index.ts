@@ -6,7 +6,7 @@ const ANCHORS = [["076f2674-bc4b-4925-be59-50832eb8c090", 220], ["1f054429-397e-
 type TrendsModel = { id?: unknown; name?: unknown; progressIndex?: unknown; score?: unknown };
 export type ProgressIndexRow = { sourceId: string; name: string; score: number; modelSlug: string; variant: string | null };
 
-/** A trends row's Progress Index: `progressIndex` since AA's 2026-11-26 payload, `score` before it. */
+/** A trends row's Progress Index, from `progressIndex` or the older `score` field. An explicit null means unscored, not missing. */
 function progressScore(model: TrendsModel | undefined) {
 	return model?.progressIndex !== undefined ? model.progressIndex : model?.score;
 }
