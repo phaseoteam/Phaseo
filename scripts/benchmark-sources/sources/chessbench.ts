@@ -32,7 +32,7 @@ export function parseChessbench(data: Data): SourceObservation[] {
 			ciLow: typeof setup.deviation === "number" ? setup.rating - 1.96 * setup.deviation : undefined,
 			ciHigh: typeof setup.deviation === "number" ? setup.rating + 1.96 * setup.deviation : undefined,
 			costUsd: setup.avgCost ?? undefined,
-			outputTokens: setup.avgOutputTokens ? Math.round(setup.avgOutputTokens) : undefined,
+			outputTokens: setup.avgOutputTokens || undefined,
 			note: setup.games ? `${setup.games} games` : undefined,
 			observedOn,
 			url: model.url,

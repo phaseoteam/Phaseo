@@ -78,7 +78,7 @@ export const slopalytics: BenchmarkSource = {
 			type: "percentage",
 			higherIsBetter: true,
 			unit: "%",
-			description: `Share of completed turns in T3 Code, the coding-agent app, that ran on each model, ${WINDOW}. Each day counts equally; heavy users' runaway days are excluded.`,
+			description: `Share of finished turns in T3 Code, the coding-agent app, that ran on each model, ${WINDOW}. A turn counts however it ended, including failed and interrupted turns. Each day counts equally; heavy users' runaway days are excluded.`,
 		},
 		{
 			id: "t3-code-minutes-per-turn",

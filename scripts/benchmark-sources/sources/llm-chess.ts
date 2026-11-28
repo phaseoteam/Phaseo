@@ -15,17 +15,19 @@ export function parseLlmChess(js: string): SourceObservation[] {
 		// The board leaves Elo empty for players with no anchored games or a 100% win/loss record.
 		if (value === null || !row.Player) return [];
 		const margin = parseNumber(row.elo_moe_95);
-		// "@q4_k_m", "@bf16": the quantisation a local model ran at.
-		const [label, quantisation] = row.Player.split("@");
+		// Everything after "@" is the run's configuration: the quantisation a local model ran at ("@q4_k_m", "@bf16")
+		// and/or PGN mode ("o4-mini-low@PGN", "gemma-3-4b-it@iq4_qs@PGN"). Each is its own row on the board.
+		const [label, ...settings] = row.Player.split("@");
 		return [{
 			benchmarkId: "llm-chess",
 			label: label.trim(),
+			config: settings.map((setting) => setting.trim()).filter(Boolean).join(", ") || undefined,
 			value,
 			ciLow: margin !== null ? value - margin : undefined,
 			ciHigh: margin !== null ? value + margin : undefined,
 			costUsd: parseNumber(row.average_game_cost) || undefined,
 			durationSeconds: parseNumber(row.average_time_per_game_seconds) ?? undefined,
-			note: [quantisation ? `quantisation ${quantisation}` : null, row.total_games ? `${row.total_games} games` : null].filter(Boolean).join(", ") || undefined,
+			note: row.total_games ? `${row.total_games} games` : undefined,
 		}];
 	});
 }

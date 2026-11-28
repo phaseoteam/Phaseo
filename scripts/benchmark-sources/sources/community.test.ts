@@ -9,7 +9,7 @@ import { parseChessbench } from "./chessbench";
 import { parseClockbench } from "./clockbench";
 import { parseClutterbench } from "./clutterbench";
 import { parseDubesorChess } from "./dubesor-chess";
-import { duelLabEffort, parseDuelLab } from "./duellab";
+import { duelLabConfig, duelLabEffort, parseDuelLab } from "./duellab";
 import { gamefeel, gamefeelIds, parseGamefeel } from "./gamefeel";
 import { parseHearingbench } from "./hearingbench";
 import { parseKhalilbench } from "./khalilbench";
@@ -56,11 +56,18 @@ describe("chess boards", () => {
 	});
 
 	it("reads LLM Chess's embedded CSV and skips players without an anchored Elo", () => {
-		const js = "const data = `\nPlayer,total_games,average_game_cost,average_time_per_game_seconds,elo,elo_moe_95\nqwen3.8-27b@q4_k_m,30,0.0,100.5,-557.7,248.6\ngpt-6-astra-high,20,1.5,200,1210,90\nrandom-guy,10,0,1,,\n`;";
+		const js = "const data = `\nPlayer,total_games,average_game_cost,average_time_per_game_seconds,elo,elo_moe_95\nqwen3.8-27b@q4_k_m,30,0.0,100.5,-557.7,248.6\ngpt-6-astra-high,20,1.5,200,1210,90\nrandom-guy,10,0,1,,\no4-mini-low,40,0.1,60,104.115,30\no4-mini-low@PGN,40,0.1,60,109.893,30\ngemma-3-4b-it@iq4_qs@PGN,10,0,30,-800,100\n`;";
 		const rows = parseLlmChess(js);
-		assert.deepEqual(rows.map((row) => [row.label, row.value]), [["qwen3.8-27b", -557.7], ["gpt-6-astra-high", 1210]]);
+		assert.deepEqual(rows.map((row) => [row.label, row.config, row.value]), [
+			["qwen3.8-27b", "q4_k_m", -557.7],
+			["gpt-6-astra-high", undefined, 1210],
+			// PGN and plain runs of one model are separate configurations, not one collapsed row.
+			["o4-mini-low", undefined, 104.115],
+			["o4-mini-low", "PGN", 109.893],
+			["gemma-3-4b-it", "iq4_qs, PGN", -800],
+		]);
 		assert.equal(rows[0].costUsd, undefined);
-		assert.match(rows[0].note!, /quantisation q4_k_m/);
+		assert.equal(rows[0].note, "30 games");
 		assert.equal(rows[1].ciHigh, 1300);
 	});
 
@@ -83,7 +90,7 @@ describe("chess boards", () => {
 		});
 		assert.equal(rows.length, 1);
 		assert.equal(rows[0].effort, "medium");
-		assert.equal(rows[0].outputTokens, 11855);
+		assert.equal(rows[0].outputTokens, 11854.7);
 		assert.equal(rows[0].observedOn, "2026-10-26");
 	});
 });
@@ -97,10 +104,21 @@ describe("games and 3D boards", () => {
 			"track,full_freedom/mixed,provisional,New Model,High,80,,",
 			"track,overall/models,ranked,Claude Fable 5.2,Overall Models,95,,",
 			"game,full_freedom/mixed,not_applicable,Claude Fable 5.2,XHigh,70,,",
+			"track,full_freedom/mixed,ranked,Claude Opus 4.5,Thinking field omitted,46.373762,,",
+			"track,full_freedom/mixed,ranked,Claude Opus 4.5,Historical thinking-budget setting,42.625605,,",
 		].join("\n");
 		const rows = parseDuelLab(csv);
-		assert.deepEqual(rows.map((row) => [row.label, row.effort, row.value]), [["Claude Fable 5.2", "xhigh", 99.394217], ["Pareto 26.10", undefined, 90]]);
-		assert.equal(rows[1].note, "Reasoning controls unavailable");
+		assert.deepEqual(rows.map((row) => [row.label, row.effort, row.config, row.value]), [
+			["Claude Fable 5.2", "xhigh", undefined, 99.394217],
+			["Pareto 26.10", undefined, "Reasoning controls unavailable", 90],
+			// Two ranked settings of one model without an effort level stay apart.
+			["Claude Opus 4.5", undefined, "Thinking field omitted", 46.373762],
+			["Claude Opus 4.5", undefined, "Historical thinking-budget setting", 42.625605],
+		]);
+		assert.equal(duelLabConfig("Medium (historical request variant 2)", "medium"), "historical request variant 2");
+		assert.equal(duelLabConfig("High effort + 32,000 thinking tokens", "high"), "32,000 thinking tokens");
+		assert.equal(duelLabConfig("XHigh", "xhigh"), undefined);
+		assert.equal(duelLabConfig("Default", undefined), undefined);
 		assert.equal(duelLabEffort("Reasoning disabled (historical request variant 2)"), "none");
 		assert.equal(duelLabEffort("High effort + 32,000 thinking tokens"), "high");
 		assert.equal(duelLabEffort("Enabled"), undefined);
@@ -222,10 +240,15 @@ describe("other boards", () => {
 			{ category: "code", reportDate: "2026-12", tableIndex: 0, csv: "data/code/2026-12.csv" },
 		], "logic");
 		assert.equal(latest.reportDate, "2026-11");
-		const csv = '"模型","极限分数","中位分数","平均耗时(秒)"\n"GPT-6 Astra (xhigh)","89.81","86.35","419"\n"Opus 5.5 (xhigh ~Estimated)","74.69","71.08","295"\n';
+		const csv = '"模型","极限分数","中位分数","平均耗时(秒)"\n"GPT-6 Astra (xhigh)","89.81","86.35","419"\n"Opus 5.5 (xhigh ~Estimated)","74.69","71.08","295"\n"Opus 5.5 (xhigh w/ refuse)","67.20","63.59","301"\n';
 		const rows = parseLlm2014Logic(csv, "2026-11");
-		assert.deepEqual(rows.map((row) => [row.label, row.value]), [["GPT-6 Astra (xhigh)", 89.81], ["Claude Opus 5.5 (xhigh)", 74.69]]);
-		assert.equal(rows[1].note, "median 71.08, estimated by the author");
+		// The measured run with refusals and the author's estimate are separate configurations of the same xhigh setting.
+		assert.deepEqual(rows.map((row) => [row.label, row.config, row.value]), [
+			["GPT-6 Astra (xhigh)", undefined, 89.81],
+			["Claude Opus 5.5 (xhigh)", "estimated by the author", 74.69],
+			["Claude Opus 5.5 (xhigh)", "w/ refuse", 67.2],
+		]);
+		assert.equal(rows[1].note, "median 71.08");
 		assert.equal(rows[0].observedOn, "2026-11-01");
 	});
 

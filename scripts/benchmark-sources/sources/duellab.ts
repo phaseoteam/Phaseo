@@ -14,6 +14,19 @@ export function duelLabEffort(level: string): string | undefined {
 	return word?.[1];
 }
 
+/**
+ * The part of a reasoning setting that isn't an effort level, so two settings of one model stay apart:
+ * "Thinking field omitted" and "Historical thinking-budget setting" as given, "(historical request variant 2)" and
+ * "+ 32,000 thinking tokens" without the effort word. A plain "Default" is the provider default, which is no config.
+ */
+export function duelLabConfig(level: string, effort: string | undefined): string | undefined {
+	const text = level.trim();
+	if (!text) return undefined;
+	if (!effort) return /^default$/i.test(text) ? undefined : text;
+	const extra = [text.match(/\(([^()]+)\)/)?.[1], text.match(/\+\s*(.+)$/)?.[1]].filter(Boolean).map((part) => part!.trim());
+	return extra.length ? extra.join(", ") : undefined;
+}
+
 export function parseDuelLab(csv: string): SourceObservation[] {
 	const rows = parseCsv(csv);
 	if (!rows.length || !("track_id" in rows[0]) || !("score" in rows[0])) throw new Error("DuelLab format changed: expected track_id and score columns.");
@@ -27,9 +40,9 @@ export function parseDuelLab(csv: string): SourceObservation[] {
 			benchmarkId: "duellab-gamebench-2",
 			label: row.model_display_name,
 			effort,
+			config: duelLabConfig(level, effort),
 			value,
 			costUsd: parseNumber(row.codegen_cost_usd_mean) ?? undefined,
-			note: !effort && level ? level : undefined,
 			observedOn: row.last_measured_at?.slice(0, 10) || undefined,
 		}];
 	});

@@ -27,16 +27,19 @@ export function parseLlm2014Logic(csv: string, reportDate: string): SourceObserv
 	return rows.flatMap((row): SourceObservation[] => {
 		const value = parseNumber(row[BEST]);
 		if (value === null || !row[MODEL]) return [];
-		// "Opus 5.5 (xhigh ~Estimated)": the author marks estimated rows inside the effort bracket.
+		// The author marks two runs of one setting inside the effort bracket: "Opus 5.5 (xhigh w/ refuse)" is the measured
+		// run with refusals counted, "Opus 5.5 (xhigh ~Estimated)" the author's estimate. Both stay, as separate configs.
 		const estimated = /~\s*estimated/i.test(row[MODEL]);
-		const label = row[MODEL].replace(/\s*~\s*estimated/i, "").replace(/\(\s*\)/, "").trim();
+		const refuse = /\bw\/\s*refuse\b/i.test(row[MODEL]);
+		const label = row[MODEL].replace(/\s*~\s*estimated/i, "").replace(/\s*\bw\/\s*refuse\b/i, "").replace(/\(\s*\)/, "").trim();
 		const median = parseNumber(row[MEDIAN]);
 		return [{
 			benchmarkId: "llm2014-logic",
 			label: withClaudePrefix(label),
+			config: [refuse ? "w/ refuse" : null, estimated ? "estimated by the author" : null].filter(Boolean).join(", ") || undefined,
 			value,
 			durationSeconds: parseNumber(row[SECONDS]) ?? undefined,
-			note: [median !== null ? `median ${median}` : null, estimated ? "estimated by the author" : null].filter(Boolean).join(", ") || undefined,
+			note: median !== null ? `median ${median}` : undefined,
 			observedOn: `${reportDate}-01`,
 		}];
 	});
