@@ -12,6 +12,8 @@ import { isArtificialAnalysisBenchmark, isArtificialAnalysisProgressIndex, type 
 import { isEpochCapabilitiesIndex, selectEpochLeaderboardEntries } from "@/lib/benchmarks/epoch";
 import { ArtificialAnalysisBenchmarks } from "./ArtificialAnalysisBenchmarks";
 import { EpochCapabilitiesIndex } from "./EpochCapabilitiesIndex";
+import { ModelBenchmarkProfile } from "./ModelBenchmarkProfile";
+import type { ProfileRow } from "@/lib/benchmarks/boardResults";
 
 type Props = {
 	highlightCards: ModelBenchmarkHighlight[];
@@ -23,6 +25,8 @@ type Props = {
 	modelId?: string;
 	modelName?: string;
 	mode?: "summary" | "full";
+	/** Every result with server-side ranks; when present it replaces the highlight grid. */
+	profile?: ProfileRow[];
 };
 
 export default function ModelBenchmarks({
@@ -34,6 +38,7 @@ export default function ModelBenchmarks({
 	modelId,
 	modelName,
 	mode = "full",
+	profile = [],
 }: Props) {
 	const t = useTranslations("Catalogue.models.detail.benchmarkGrid");
 	const showFull = mode === "full";
@@ -50,6 +55,29 @@ export default function ModelBenchmarks({
 			{t("noHighlights")}
 		</Card>
 	);
+
+	const dashboards = <>
+		<ArtificialAnalysisBenchmarks highlights={highlightCards} results={benchmarkResults} rankSummaries={rankSummaries} loadRankings modelId={modelId} modelName={modelName} />
+		<EpochCapabilitiesIndex highlights={highlightCards} ranking={epochRanking ? { ...epochRanking, entries: selectEpochLeaderboardEntries(epochRanking.entries, modelId) } : undefined} modelId={modelId} />
+	</>;
+
+	if (profile.length) {
+		return (
+			<div className="space-y-8">
+				<ModelBenchmarkProfile rows={profile} />
+				{hasKeyBenchmark ? (
+					<section aria-label={t("dashboardCharts")}>
+						<Accordion className="border-t" type="single">
+							<AccordionItem value="dashboards" className="border-0">
+								<AccordionTrigger className="py-4 text-lg font-semibold hover:no-underline">{t("dashboardCharts")}</AccordionTrigger>
+								<AccordionContent className="space-y-8 pt-1">{dashboards}</AccordionContent>
+							</AccordionItem>
+						</Accordion>
+					</section>
+				) : null}
+			</div>
+		);
+	}
 
 	return (
 		<div className="space-y-8">

@@ -46,6 +46,7 @@ import {
 	modelAppsSectionQuery,
 	modelBenchmarkHighlightsSectionQuery,
 	modelBenchmarkIdentitySectionQuery,
+	modelBenchmarkProfileSectionQuery,
 	modelBenchmarkRanksSectionQuery,
 	modelBenchmarkResultsSectionQuery,
 	modelCreatorModelsSectionQuery,
@@ -561,6 +562,7 @@ export function ModelBenchmarksSection({
 		{ data: pendingApiRelease },
 		{ data: epochConfidenceIntervals },
 		{ data: modelHeader },
+		{ data: benchmarkProfile },
 	] = useSuspenseQueries({
 		queries: [
 			modelBenchmarkHighlightsSectionQuery(modelId, includeHidden),
@@ -570,6 +572,7 @@ export function ModelBenchmarksSection({
 			modelPendingApiReleaseSectionQuery(modelId, includeHidden),
 			epochConfidenceIntervalsSectionQuery(),
 			modelBenchmarkIdentitySectionQuery(queryClient, modelId, includeHidden),
+			modelBenchmarkProfileSectionQuery(modelId, includeHidden),
 		],
 	});
 	const epochRanking = benchmarkRanks?.epoch ? {
@@ -602,6 +605,7 @@ export function ModelBenchmarksSection({
 					modelId={modelId}
 					modelName={modelHeader?.name}
 					mode="summary"
+					profile={benchmarkProfile}
 				/>
 			) : (
 				<div className="space-y-3">

@@ -272,3 +272,30 @@ describe("composeCompareView benchmarks", () => {
 		expect(parseConfidenceInterval("no interval")).toBeNull();
 	});
 });
+
+describe("composeCompareView benchmarks from scraped leaderboards", () => {
+	const benchmark = { id: "gpqa-diamond-vals", name: "GPQA Diamond (Vals)", category: "science", ascending_order: true, type: "percentage" };
+	const scraped = {
+		models: [
+			{ model_id: "lab/a", name: "A", benchmark_results: [
+				{ benchmark_id: benchmark.id, score: 84, is_self_reported: false, source_id: "vals-gpqa", effort: "high", other_info: "measured on the creator's API", benchmark },
+				{ benchmark_id: benchmark.id, score: 88, is_self_reported: true, benchmark },
+			] },
+			{ model_id: "lab/b", name: "B", benchmark_results: [{ benchmark_id: benchmark.id, score: 80, is_self_reported: false, source_id: "vals-gpqa", harness: "Claude Code", benchmark }] },
+		],
+		providerRows: [],
+		pricingRows: [],
+		modelPlans: [],
+		plans: [],
+	} as unknown as ComparisonSources;
+	const result = composeCompareView(["lab/a", "lab/b"], scraped, NOW).benchmarks[0];
+
+	it("keeps a board with one developer claim among independent results independent", () => {
+		expect(result.source).toBe("independent");
+	});
+
+	it("reads effort and harness from their columns rather than the note", () => {
+		expect(result.results["lab/a"].find((item) => !item.selfReported)).toMatchObject({ variant: "high", effort: "high" });
+		expect(result.results["lab/b"][0].variant).toBe("Claude Code");
+	});
+});

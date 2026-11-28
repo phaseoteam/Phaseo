@@ -27,6 +27,12 @@ describe("cache scopes", () => {
 		}
 	});
 
+	it("refreshes every model's benchmark profile with one model's details, since ranks compare models", () => {
+		const info = resolveCacheScope("model-info", "openai/gpt-5");
+		expect(info.tags).toContain("web-api-model-benchmarks");
+		expect(resolveCacheScope("model-providers", "openai/gpt-5").tags).not.toContain("web-api-model-benchmarks");
+	});
+
 	it("invalidates the main and gateway model lists together", () => {
 		const result = resolveCacheScope("catalogue");
 		expect(result.tags).toEqual(expect.arrayContaining(["web-api-models", "web-api-gateway-models"]));

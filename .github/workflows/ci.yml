@@ -242,6 +242,7 @@ jobs:
                   node supabase/tests/pricing-promotion-budgets.test.mjs
                   node supabase/tests/provider-service-tier-labels.test.mjs
                   node --test supabase/tests/benchmark-sources.test.mjs
+                  node --test supabase/tests/benchmark-reader-functions.test.mjs
                   pnpm exec tsx --test "scripts/benchmark-sources/**/*.test.ts"
                   node scripts/tests/workspace-provisioning.mjs
                   pnpm exec tsx apps/web/scripts/catalogue/enumSnapshot.test.ts

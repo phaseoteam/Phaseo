@@ -1,6 +1,6 @@
 import BenchmarksDisplay from "@/components/(data)/benchmarks/BenchmarksDisplay";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { benchmarksQuery } from "./page.queries";
+import { useSuspenseQueries } from "@tanstack/react-query";
+import { benchmarkDirectoryQuery, benchmarksQuery } from "./page.queries";
 import type { PageMetadata } from "@/lib/seo/metadataTypes";
 import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,8 +20,8 @@ export async function getBenchmarksMetadata(): Promise<PageMetadata> {
 }
 
 function BenchmarksSection() {
-	const { data: benchmarks } = useSuspenseQuery(benchmarksQuery());
-	return <BenchmarksDisplay benchmarks={benchmarks} />;
+	const [{ data: benchmarks }, { data: directory }] = useSuspenseQueries({ queries: [benchmarksQuery(), benchmarkDirectoryQuery()] });
+	return <BenchmarksDisplay benchmarks={benchmarks} directory={directory} />;
 }
 
 function BenchmarksFallback() {
@@ -31,7 +31,7 @@ function BenchmarksFallback() {
 			<Skeleton className="h-11 w-full" />
 			<div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
 				{Array.from({ length: 6 }).map((_, index) => (
-					<Skeleton key={index} className="h-40 w-full rounded-xl" />
+					<Skeleton key={index} className="h-40 w-full rounded-md" />
 				))}
 			</div>
 		</div>

@@ -244,15 +244,25 @@ describe("public reference-data routes", () => {
 		});
 	});
 
-	it("returns a benchmark detail payload without hidden model results", async () => {
+	it("returns a benchmark detail payload without results for models that are not public", async () => {
+		const lab = { lab_slug: "openai", name: "OpenAI", metadata: { colour: "#000" } };
+		const slugs = ["openai/gpt-test", "openai/hidden", "openai/draft", "openai/future", "openai/stealth"];
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);
-			if (url.includes("v2_benchmark_results")) return new Response(JSON.stringify([{
-				result_id: "visible", model_slug: "openai/gpt-test", benchmark_id: "mmlu", score: 88, is_self_reported: false,
-			}]), { status: 200 });
-			if (url.includes("v2_models")) return new Response(JSON.stringify([{
-				model_slug: "openai/gpt-test", name: "GPT Test", hidden: false, lab_slug: "openai", lab: { lab_slug: "openai", name: "OpenAI", metadata: { colour: "#000" } },
-			}]), { status: 200 });
+			if (url.includes("v2_benchmark_results")) return new Response(JSON.stringify(slugs.map((model_slug) => ({
+				result_id: model_slug === "openai/gpt-test" ? "visible" : model_slug, model_slug, benchmark_id: "mmlu", score: 88, is_self_reported: false,
+			}))), { status: 200 });
+			if (url.includes("v2_model_provider_routes")) {
+				expect(url).toContain("is_stealth=eq.true");
+				return new Response(JSON.stringify([{ model_slug: "openai/stealth" }]), { status: 200 });
+			}
+			if (url.includes("v2_models")) return new Response(JSON.stringify([
+				{ model_slug: "openai/gpt-test", name: "GPT Test", hidden: false, status: "active", lab_slug: "openai", lab },
+				{ model_slug: "openai/hidden", name: "Hidden", hidden: true, status: "active", lab_slug: "openai", lab },
+				{ model_slug: "openai/draft", name: "Draft", hidden: false, status: "draft", lab_slug: "openai", lab },
+				{ model_slug: "openai/future", name: "Future", hidden: false, status: "active", released_at: "2999-01-01T00:00:00Z", lab_slug: "openai", lab },
+				{ model_slug: "openai/stealth", name: "Stealth", hidden: false, status: "active", lab_slug: "openai", lab },
+			]), { status: 200 });
 			return new Response(JSON.stringify([{
 			benchmark_id: "mmlu",
 			name: "MMLU",
@@ -272,15 +282,10 @@ describe("public reference-data routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cache-tag")).toContain("web-api-benchmark-mmlu");
-		await expect(response.json()).resolves.toMatchObject({
-			benchmark: {
-				id: "mmlu",
-				results: [{
-					id: "visible",
-					model: { organisation: { organisation_id: "openai" } },
-				}],
-			},
-		});
+		const body = await response.json() as { benchmark: { id: string; results: Array<{ id: string; model: { organisation: { organisation_id: string } } }> } };
+		expect(body.benchmark.id).toBe("mmlu");
+		expect(body.benchmark.results.map((result) => result.id)).toEqual(["visible"]);
+		expect(body.benchmark.results[0].model.organisation.organisation_id).toBe("openai");
 	});
 
 	it("reuses the compact database-backed catalogue for country models", async () => {

@@ -127,12 +127,14 @@ const DEFINITIONS: Record<CacheScopeId, CacheScopeDefinition> = {
 	"model-info": {
 		id: "model-info",
 		label: "Model details",
-		description: "Refresh one model's identity, About, benchmarks, timeline, notice, and subscriptions.",
+		description: "Refresh one model's identity, About, benchmarks, timeline, notice, and subscriptions. Also refreshes every model's benchmark section, since benchmark ranks compare models.",
 		targetLabel: "Model ID",
 		targetRequired: true,
 		affectsSearch: false,
 		danger: "normal",
-		tags: [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-models-v2"],
+		// Benchmark profiles rank each model against the others, so one model's change can move every
+		// model's rank. Purging the shared benchmark tag costs a re-fetch of each profile on next view.
+		tags: [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-models-v2", "web-api-model-benchmarks"],
 	},
 	"model-providers": {
 		id: "model-providers",

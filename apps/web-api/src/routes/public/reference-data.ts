@@ -6,6 +6,33 @@ import type { Env } from "@/env";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
 import { fetchModelsPageCatalogue } from "@/models/page-catalogue";
 import { AA_METRICS, ARTIFICIAL_ANALYSIS_ID, artificialAnalysisCatalogue, fetchArtificialAnalysisCoverage } from "@/benchmarks/artificial-analysis-catalogue";
+import { mapDirectoryRows } from "@/benchmarks/reader";
+
+/** Result columns the benchmark page reads; scraped results carry effort, harness, interval, cost and timing. */
+const BENCHMARK_RESULT_COLUMNS = "result_id,model_slug,score,score_numeric,is_self_reported,other_info,source_link,created_at,updated_at,rank,variant,result_key,source_id,source_model_label,effort,harness,config,ci_low,ci_high,cost_usd,duration_seconds,output_tokens,observed_on";
+
+/** Statuses that keep a model off public pages; mirrors catalog_model_is_public in the database. */
+const NON_PUBLIC_MODEL_STATUSES = new Set(["disabled", "not_ready", "coming_soon", "testing", "draft", "pending"]);
+
+/**
+ * Whether a model may appear on public pages: not hidden, not in a pre-release status, released, and not
+ * served through a stealth route. The service-role client bypasses row security, so readers apply it here.
+ */
+function isPublicCatalogueModel(model: { hidden?: boolean | null; status?: string | null; released_at?: string | null }, stealth: boolean, now = Date.now()): boolean {
+	if (model.hidden !== false || stealth) return false;
+	if (model.status && NON_PUBLIC_MODEL_STATUSES.has(model.status)) return false;
+	if (model.released_at) {
+		const released = new Date(model.released_at).getTime();
+		if (Number.isFinite(released) && released > now) return false;
+	}
+	return true;
+}
+
+function finiteOrNull(value: unknown): number | null {
+	if (value == null || value === "") return null;
+	const parsed = typeof value === "number" ? value : Number(value);
+	return Number.isFinite(parsed) ? parsed : null;
+}
 
 const REFERENCE_CACHE: PublicCachePolicy = {
 	edgeTtlSeconds: 24 * 60 * 60,
@@ -191,6 +218,19 @@ publicReferenceDataRouter.get("/benchmarks", async (c) => {
 	}
 });
 
+/** Every benchmark with public results, aggregated in the database for the benchmarks index. */
+publicReferenceDataRouter.get("/benchmark-directory", async (c) => {
+	try {
+		const { data, error } = await getDataClient(c.env).rpc("get_benchmark_directory");
+		if (error) throw error;
+		const benchmarks = mapDirectoryRows((data ?? []) as Array<Record<string, unknown>>);
+		return withPublicCache(c.json({ benchmarks }), { ...policy("web-api-benchmarks"), ...PUBLIC_LIVE_DATA_CACHE });
+	} catch (error) {
+		console.error("[web-api/reference] benchmark directory failed", error);
+		return c.json({ error: "benchmark_directory_unavailable" }, 503);
+	}
+});
+
 publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 	const benchmarkId = c.req.param("benchmarkId");
 	try {
@@ -221,20 +261,20 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 				// One MVCC snapshot for all four measures. Nested rows avoid a combined
 				// PostgREST row cap truncating a later metric in the comparison.
 				const { data, error } = await client.from("v2_benchmarks")
-					.select("benchmark_id,results:v2_benchmark_results(result_id,model_slug,score,is_self_reported,other_info,source_link,created_at,updated_at,rank,variant,result_key,source_id)")
+					.select(`benchmark_id,results:v2_benchmark_results(${BENCHMARK_RESULT_COLUMNS})`)
 					.in("benchmark_id", comparisonMetrics.map((metric) => metric.id))
 					.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`, { referencedTable: "results" });
 				return { error, data: (data ?? []).flatMap((row) => row.results.map((result) => ({ ...result, benchmark_id: row.benchmark_id }))) };
 			}
 			return client.from("v2_benchmark_results")
-				.select("benchmark_id,result_id,model_slug,score,is_self_reported,other_info,source_link,created_at,updated_at,rank,variant,result_key,source_id")
+				.select(`benchmark_id,${BENCHMARK_RESULT_COLUMNS}`)
 				.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
 				.eq("benchmark_id", resolvedId)
 				.order("rank", { ascending: true, nullsFirst: false });
 		};
 		const [benchmarkResult, resultsResult] = await Promise.all([
 			client.from("v2_benchmarks")
-				.select("benchmark_id,name,category,ascending_order,total_models,link,benchmark_type")
+				.select("benchmark_id,name,category,ascending_order,total_models,link,benchmark_type,source_id,description,unit")
 				.eq("benchmark_id", resolvedId)
 				.maybeSingle(),
 			fetchResults(),
@@ -244,16 +284,36 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 		const data = benchmarkResult.data;
 		if (!data) return notFound(c, "benchmark");
 		const modelSlugs = [...new Set((resultsResult.data ?? []).map((row) => row.model_slug).filter(Boolean))];
-		const modelsResult = modelSlugs.length > 0
-			? await client.from("v2_models")
-				.select("model_slug,name,released_at,announced_at,lab_slug,hidden,lab:v2_labs!v2_models_lab_slug_fkey(lab_slug,name,metadata)")
-				.in("model_slug", modelSlugs)
-			: { data: [], error: null };
+		const sourceIds = [...new Set([data.source_id, ...(resultsResult.data ?? []).map((row) => row.source_id)].filter((id): id is string => typeof id === "string" && id.length > 0))];
+		const [modelsResult, stealthResult, sourcesResult] = await Promise.all([
+			modelSlugs.length > 0
+				? client.from("v2_models")
+					.select("model_slug,name,released_at,announced_at,lab_slug,hidden,status,lab:v2_labs!v2_models_lab_slug_fkey(lab_slug,name,metadata)")
+					.in("model_slug", modelSlugs)
+				: Promise.resolve({ data: [], error: null }),
+			modelSlugs.length > 0
+				? client.from("v2_model_provider_routes").select("model_slug").eq("is_stealth", true).in("model_slug", modelSlugs)
+				: Promise.resolve({ data: [], error: null }),
+			sourceIds.length > 0
+				? client.from("v2_benchmark_sources").select("source_id,name,publisher,url,attribution,last_success_at").in("source_id", sourceIds)
+				: Promise.resolve({ data: [], error: null }),
+		]);
 		if (modelsResult.error) throw modelsResult.error;
+		if (stealthResult.error) throw stealthResult.error;
+		if (sourcesResult.error) throw sourcesResult.error;
+		const stealthSlugs = new Set(((stealthResult.data ?? []) as Array<{ model_slug: string }>).map((route) => route.model_slug));
+		const sources = ((sourcesResult.data ?? []) as Array<Record<string, unknown>>).map((source) => ({
+			id: String(source.source_id),
+			name: String(source.name ?? source.source_id),
+			publisher: typeof source.publisher === "string" ? source.publisher : null,
+			url: typeof source.url === "string" ? source.url : null,
+			attribution: typeof source.attribution === "string" ? source.attribution : null,
+			last_success_at: typeof source.last_success_at === "string" ? source.last_success_at : null,
+		}));
 		const modelsBySlug = new Map((modelsResult.data ?? []).map((model) => [model.model_slug, model]));
 		const results = (resultsResult.data ?? []).flatMap((result) => {
 			const model = modelsBySlug.get(result.model_slug);
-			if (!model || model.hidden) return [];
+			if (!model || !isPublicCatalogueModel(model, stealthSlugs.has(model.model_slug))) return [];
 			const labRow = Array.isArray(model.lab) ? model.lab[0] : model.lab;
 			const organisation = labRow ? labOrganisation(labRow) : null;
 			return [{
@@ -269,7 +329,18 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 				created_at: result.created_at ?? null,
 				updated_at: result.updated_at ?? null,
 				rank: result.rank ?? null,
+				score_numeric: finiteOrNull(result.score_numeric),
 				source_id: result.source_id ?? null,
+				source_model_label: result.source_model_label ?? null,
+				effort: result.effort ?? null,
+				harness: result.harness ?? null,
+				config: result.config ?? null,
+				ci_low: finiteOrNull(result.ci_low),
+				ci_high: finiteOrNull(result.ci_high),
+				cost_usd: finiteOrNull(result.cost_usd),
+				duration_seconds: finiteOrNull(result.duration_seconds),
+				output_tokens: finiteOrNull(result.output_tokens),
+				observed_on: result.observed_on ?? null,
 				model: {
 					model_id: model.model_slug,
 					name: model.name ?? null,
@@ -296,6 +367,10 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 				total_models: data.total_models ?? null,
 				link: data.link ?? null,
 				type: data.benchmark_type ?? null,
+				source_id: data.source_id ?? null,
+				description: data.description ?? null,
+				unit: data.unit ?? null,
+				sources,
 				results: results.filter((result) => result.benchmark_id === resolvedId),
 			},
 		}), benchmarkId === ARTIFICIAL_ANALYSIS_ID
