@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { normalizeCategory, type BenchmarkCategory } from "@/lib/benchmarks/boardResults";
+import { directoryCategories, normalizeCategory, type BenchmarkCategory } from "@/lib/benchmarks/boardResults";
 import type { BenchmarkDirectoryEntry } from "@/lib/fetchers/benchmarks/types";
 import { cn } from "@/lib/utils";
 
@@ -54,12 +54,7 @@ export function BenchmarksDirectory({ entries }: { entries: BenchmarkDirectoryEn
 	const query = search.trim().toLocaleLowerCase();
 	const matchesText = (entry: (typeof withCategory)[number]) => !query || `${entry.name} ${entry.id} ${entry.sourceName ?? ""} ${entry.publisher ?? ""}`.toLocaleLowerCase().includes(query);
 	const inScope = withCategory.filter((entry) => matchesText(entry) && (!source || entry.sourceId === source));
-	const categories = useMemo(() => {
-		const counts = new Map<BenchmarkCategory, number>();
-		for (const entry of inScope) counts.set(entry.categoryKey, (counts.get(entry.categoryKey) ?? 0) + 1);
-		return [...counts.entries()].sort((a, b) => (a[0] === "other" ? 1 : b[0] === "other" ? -1 : b[1] - a[1]));
-	}, [inScope]);
-	const category = categories.some(([key]) => key === categoryParam) ? (categoryParam as BenchmarkCategory) : null;
+	const { category, counts: categories } = directoryCategories(inScope.map((entry) => entry.categoryKey), categoryParam);
 	const filtered = inScope
 		.filter((entry) => !category || entry.categoryKey === category)
 		.sort((a, b) => {

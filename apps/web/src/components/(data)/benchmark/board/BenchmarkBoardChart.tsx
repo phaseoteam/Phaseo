@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CartesianGrid, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
-import { formatBenchmarkValue, formatUsd, type BenchmarkScale, type LeaderboardEntry } from "@/lib/benchmarks/boardResults";
+import { formatBenchmarkValue, formatUsd, utcDateFormat, type BenchmarkScale, type LeaderboardEntry } from "@/lib/benchmarks/boardResults";
 import { cn } from "@/lib/utils";
 
 type Point = { x: number; y: number; name: string; colour: string; top: boolean };
@@ -50,7 +50,8 @@ export function BenchmarkBoardChart({ entries, scale, axes }: { entries: Leaderb
 		if (x == null || !Number.isFinite(x) || (axis === "cost" && x <= 0)) return [];
 		return [{ x, y: row.score!, name: row.modelName, colour: row.organisationColour || NEUTRAL, top: topIds.has(row.modelId) }];
 	});
-	const dateFormat = new Intl.DateTimeFormat(locale, { month: "short", year: "numeric" });
+	// Ticks and release dates are UTC midnights; local formatting would show the previous month west of UTC.
+	const dateFormat = utcDateFormat(locale, { month: "short", year: "numeric" });
 	const formatX = (value: number) => (axis === "cost" ? formatUsd(value) : dateFormat.format(new Date(value)));
 	const formatY = (value: number) => formatBenchmarkValue(value, scale, locale);
 

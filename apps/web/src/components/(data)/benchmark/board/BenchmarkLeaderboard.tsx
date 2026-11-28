@@ -33,6 +33,17 @@ export function SelfReportedBadge({ className }: { className?: string }) {
 	return <span title={t("selfReportedHelp")} className={cn("inline-flex shrink-0 items-center rounded-[4px] border border-amber-500/40 bg-amber-500/10 px-1.5 py-px text-[11px] font-medium text-amber-700 dark:text-amber-300", className)}>{t("selfReported")}</span>;
 }
 
+/** Evaluation notes from hand-entered results (harness, shots, qualifications). Clamped; click to read in full. */
+export function ResultNote({ note, className }: { note?: string | null; className?: string }) {
+	const [open, setOpen] = useState(false);
+	if (!note) return null;
+	return (
+		<button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)} className={cn("mt-1 block w-full text-left text-xs font-normal text-muted-foreground hover:text-foreground", !open && "line-clamp-2", className)}>
+			{note}
+		</button>
+	);
+}
+
 /** Leaderboard for one benchmark: one row per model at its best configuration, the rest expandable. */
 export function BenchmarkLeaderboard({ rows, scale }: { rows: BoardRow[]; scale: BenchmarkScale }) {
 	const t = useTranslations("Catalogue.benchmarks.board");
@@ -136,6 +147,7 @@ export function BenchmarkLeaderboard({ rows, scale }: { rows: BoardRow[]; scale:
 															<ChevronDown className={cn("size-3 transition-transform", open && "rotate-180")} />
 														</button>
 													) : null}
+													<ResultNote note={entry.best.note} className="max-w-80" />
 												</div>
 											</div>
 										</TableCell>
@@ -146,6 +158,7 @@ export function BenchmarkLeaderboard({ rows, scale }: { rows: BoardRow[]; scale:
 											<TableCell />
 											<TableCell className="pl-[2.875rem] text-sm text-muted-foreground">
 												<span className="flex items-center gap-2">{[other.effort ? effortLabel(other.effort) : null, other.harness, other.config].filter(Boolean).join(", ") || t("defaultConfiguration")}{other.selfReported ? <SelfReportedBadge /> : null}</span>
+												<ResultNote note={other.note} className="max-w-80" />
 											</TableCell>
 											{cells(other)}
 										</TableRow>

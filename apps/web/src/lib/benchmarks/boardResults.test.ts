@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
 	boardColumns,
 	buildLeaderboard,
+	benchmarkFreshness,
 	buildProfile,
 	chartAxes,
+	citationLabel,
 	comparableScore,
+	directoryCategories,
 	formatBenchmarkValue,
 	formatInterval,
 	groupByCategory,
@@ -14,6 +17,7 @@ import {
 	sortEfforts,
 	topPercent,
 	unitKind,
+	utcDateFormat,
 	type BoardRow,
 	type ProfileRow,
 } from "./boardResults";
@@ -182,5 +186,47 @@ describe("helpers", () => {
 		expect(sortEfforts(["high", "max", "custom", "low", "high"])).toEqual(["low", "high", "max", "custom"]);
 		expect(topPercent(3, 150)).toBe(2);
 		expect(topPercent(1, 1)).toBeNull();
+	});
+});
+
+describe("directoryCategories", () => {
+	it("keeps the selected category when the other filters leave it empty", () => {
+		const { category, counts } = directoryCategories(["general", "general", "other"], "code");
+		expect(category).toBe("code");
+		expect(counts).toEqual([["general", 2], ["code", 0], ["other", 1]]);
+	});
+
+	it("ignores unknown categories", () => {
+		expect(directoryCategories(["general"], "not-a-category").category).toBeNull();
+		expect(directoryCategories(["general"], "").category).toBeNull();
+	});
+});
+
+describe("benchmarkFreshness", () => {
+	it("prefers the source sync over later observations and edits, like the benchmarks index", () => {
+		expect(benchmarkFreshness("2026-11-20T00:00:00Z", ["2026-11-25"], ["2026-11-27T00:00:00Z"])?.toISOString()).toBe("2026-11-20T00:00:00.000Z");
+	});
+
+	it("falls back to the newest observation, then the newest edit", () => {
+		expect(benchmarkFreshness(null, ["2026-11-22", "2026-11-25", null], ["2026-11-27T00:00:00Z"])?.toISOString()).toBe("2026-11-25T00:00:00.000Z");
+		expect(benchmarkFreshness(undefined, [], ["2026-11-01T00:00:00Z", "bad"])?.toISOString()).toBe("2026-11-01T00:00:00.000Z");
+		expect(benchmarkFreshness(null, [], [])).toBeNull();
+	});
+});
+
+describe("citationLabel", () => {
+	it("uses the source, else the link host", () => {
+		expect(citationLabel("Publisher", "https://example.com/report")).toBe("Publisher");
+		expect(citationLabel(undefined, "https://www.example.com/launch")).toBe("example.com");
+		expect(citationLabel(undefined, "not a url")).toBeNull();
+		expect(citationLabel(undefined, undefined)).toBeNull();
+	});
+});
+
+describe("utcDateFormat", () => {
+	it("keeps UTC month ticks in their month in any time zone", () => {
+		const format = utcDateFormat("en-US", { month: "short", year: "numeric" });
+		expect(format.resolvedOptions().timeZone).toBe("UTC");
+		expect(format.format(new Date(Date.UTC(2026, 2, 1)))).toBe("Mar 2026");
 	});
 });

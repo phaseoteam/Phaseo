@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SelfReportedBadge } from "@/components/(data)/benchmark/board/BenchmarkLeaderboard";
+import { ResultNote, SelfReportedBadge } from "@/components/(data)/benchmark/board/BenchmarkLeaderboard";
 import {
 	buildProfile,
+	citationLabel,
 	formatBenchmarkValue,
 	groupByCategory,
 	headlineIndexes,
@@ -74,17 +75,6 @@ export function ModelBenchmarkIndexes({ benchmarks }: { benchmarks: ProfileBench
 	);
 }
 
-/** Evaluation notes from hand-entered results (harness, shots, qualifications). Clamped; click to read in full. */
-function ResultNote({ note }: { note?: string }) {
-	const [open, setOpen] = useState(false);
-	if (!note) return null;
-	return (
-		<button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)} className={cn("mt-1 block w-full text-left text-xs text-muted-foreground hover:text-foreground", !open && "line-clamp-2")}>
-			{note}
-		</button>
-	);
-}
-
 function ProfileResultRow({ item }: { item: ProfileBenchmark }) {
 	const t = useTranslations("Catalogue.benchmarks.profile");
 	const boardT = useTranslations("Catalogue.benchmarks.board");
@@ -92,8 +82,9 @@ function ProfileResultRow({ item }: { item: ProfileBenchmark }) {
 	const locale = useLocale();
 	const [open, setOpen] = useState(false);
 	const primaryConfig = configurationLabel(item.primary, tx);
-	const source = item.primary.publisher ?? item.primary.sourceName;
 	const sourceHref = item.primary.link ?? item.primary.sourceUrl;
+	// A curated result can link its report without a registered source; cite the linked site then.
+	const source = citationLabel(item.primary.publisher ?? item.primary.sourceName, sourceHref);
 	return (
 		<li className="border-b py-3">
 			<div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1fr)_7rem_9rem]">

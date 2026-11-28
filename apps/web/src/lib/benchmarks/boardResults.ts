@@ -462,3 +462,55 @@ export function normalizeCategory(raw: string | null | undefined): BenchmarkCate
 	if (alias) return alias;
 	return (BENCHMARK_CATEGORIES as readonly string[]).includes(key) ? (key as BenchmarkCategory) : "other";
 }
+
+/**
+ * The directory's category filter. The URL's category stays selected even when search or the source
+ * filter leaves it no matches, so the filters combine instead of the category silently resetting.
+ * Unknown categories fall back to all.
+ */
+export function directoryCategories(keys: BenchmarkCategory[], categoryParam: string | null | undefined): { category: BenchmarkCategory | null; counts: Array<[BenchmarkCategory, number]> } {
+	const category = categoryParam && (BENCHMARK_CATEGORIES as readonly string[]).includes(categoryParam) ? (categoryParam as BenchmarkCategory) : null;
+	const counts = new Map<BenchmarkCategory, number>();
+	for (const key of keys) counts.set(key, (counts.get(key) ?? 0) + 1);
+	if (category && !counts.has(category)) counts.set(category, 0);
+	return {
+		category,
+		counts: [...counts.entries()].sort((a, b) => (a[0] === "other" ? 1 : b[0] === "other" ? -1 : b[1] - a[1])),
+	};
+}
+
+// ---------------------------------------------------------------------------------------------
+// Freshness, citations and dates
+
+function latestOf(values: Array<string | null | undefined>): Date | null {
+	return values.reduce<Date | null>((latest, value) => {
+		if (!value) return latest;
+		const parsed = new Date(value);
+		if (Number.isNaN(parsed.getTime())) return latest;
+		return !latest || parsed > latest ? parsed : latest;
+	}, null);
+}
+
+/**
+ * When a benchmark was last updated, the same rule as the benchmarks index: the source's last
+ * successful sync, else the newest observation, else the newest row edit.
+ */
+export function benchmarkFreshness(sourceSync: string | null | undefined, observed: Array<string | null | undefined>, edited: Array<string | null | undefined>): Date | null {
+	return latestOf([sourceSync]) ?? latestOf(observed) ?? latestOf(edited);
+}
+
+/** The text for a result's citation: its source, else the linked site's host. */
+export function citationLabel(source: string | null | undefined, href: string | null | undefined): string | null {
+	if (source) return source;
+	if (!href) return null;
+	try {
+		return new URL(href).hostname.replace(/^www\./, "") || null;
+	} catch {
+		return null;
+	}
+}
+
+/** Calendar dates and month ticks are UTC midnights, so they're formatted in UTC to keep the day and month. */
+export function utcDateFormat(locale: string, options: Intl.DateTimeFormatOptions) {
+	return new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" });
+}

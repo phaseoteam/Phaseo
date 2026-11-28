@@ -3,18 +3,9 @@ import { ArrowUpRight } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Callout } from "@/components/ui/callout";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
-import { buildLeaderboard, chartAxes, normalizeCategory, toBoardRows, unitKind, unitLabel } from "@/lib/benchmarks/boardResults";
+import { benchmarkFreshness, buildLeaderboard, chartAxes, normalizeCategory, toBoardRows, unitKind, unitLabel, utcDateFormat } from "@/lib/benchmarks/boardResults";
 import { BenchmarkBoardChart } from "./BenchmarkBoardChart";
 import { BenchmarkLeaderboard } from "./BenchmarkLeaderboard";
-
-function latestDate(values: Array<string | null | undefined>): Date | null {
-	return values.reduce<Date | null>((latest, value) => {
-		if (!value) return latest;
-		const parsed = new Date(value);
-		if (Number.isNaN(parsed.getTime())) return latest;
-		return !latest || parsed > latest ? parsed : latest;
-	}, null);
-}
 
 /** The benchmark page for any leaderboard that isn't one of the dedicated dashboards. */
 export function BenchmarkBoard({ benchmark }: { benchmark: BenchmarkPage }) {
@@ -28,7 +19,7 @@ export function BenchmarkBoard({ benchmark }: { benchmark: BenchmarkPage }) {
 	const sources = benchmark.sources ?? [];
 	const source = sources.find((item) => item.id === benchmark.source_id)
 		?? [...sources].sort((a, b) => rows.filter((row) => row.sourceId === b.id).length - rows.filter((row) => row.sourceId === a.id).length)[0];
-	const updated = latestDate([source?.last_success_at, ...rows.map((row) => row.observedOn), ...benchmark.results.map((result) => result.updated_at ?? result.created_at)]);
+	const updated = benchmarkFreshness(source?.last_success_at, rows.map((row) => row.observedOn), benchmark.results.map((result) => result.updated_at ?? result.created_at));
 	const category = normalizeCategory(benchmark.category);
 	const kind = unitKind(scale);
 	const label = unitLabel(scale);
@@ -38,7 +29,7 @@ export function BenchmarkBoard({ benchmark }: { benchmark: BenchmarkPage }) {
 		{ label: t("direction"), value: <>{higherIsBetter ? t("higherIsBetter") : t("lowerIsBetter")}{unitText ? <span className="text-muted-foreground"> ({unitText})</span> : null}</> },
 		{ label: t("category"), value: categoryT(category) },
 		{ label: t("models"), value: new Intl.NumberFormat(locale).format(entries.length) },
-		{ label: t("lastUpdated"), value: updated ? new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" }).format(updated) : "—" },
+		{ label: t("lastUpdated"), value: updated ? utcDateFormat(locale, { day: "numeric", month: "short", year: "numeric" }).format(updated) : "—" },
 	];
 
 	return (
