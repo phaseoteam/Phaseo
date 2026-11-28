@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
-	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
-	"github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/realtime"
+	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4"
+	"github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4/realtime"
 )
 
 var endedEvent = map[string]any{

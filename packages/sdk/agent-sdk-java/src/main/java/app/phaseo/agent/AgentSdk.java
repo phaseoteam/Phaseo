@@ -135,7 +135,7 @@ public final class AgentSdk {
     if (client == null) {
       String baseUrl = options.baseUrl() == null ? "https://api.phaseo.app/v1" : options.baseUrl();
       if (options.apiKeyProvider() != null) {
-        client = Phaseo.withApiKeyProvider(options.apiKeyProvider(), baseUrl, "phaseo-agent-java", "0.3.0");
+        client = Phaseo.withApiKeyProvider(options.apiKeyProvider(), baseUrl, "phaseo-agent-java", "0.4.0");
       } else {
         String key = first(options.apiKey(), System.getenv("PHASEO_API_KEY"));
         if (key == null) throw new IllegalArgumentException("PHASEO_API_KEY is required");

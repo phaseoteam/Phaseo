@@ -32,7 +32,7 @@ describe("buildAgentPrompt", () => {
 
 	it("lets the agent pick the SDK from the project's language", () => {
 		expect(prompt).toContain("work out the project's language and package manager");
-		for (const sdk of ["@phaseo/sdk", "phaseo (Python", "sdk-go/v3", "Phaseo.Sdk", "phaseo/sdk (PHP", "phaseo_sdk"]) {
+		for (const sdk of ["@phaseo/sdk", "phaseo (Python", "sdk-go/v4", "Phaseo.Sdk", "phaseo/sdk (PHP", "phaseo_sdk"]) {
 			expect(prompt).toContain(sdk);
 		}
 		expect(prompt).toContain("node_modules/@phaseo/sdk/SKILL.md");

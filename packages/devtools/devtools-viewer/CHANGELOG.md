@@ -1,5 +1,13 @@
 # @phaseo/devtools-viewer
 
+## 0.2.4
+
+### Patch Changes
+
+- [#2711](https://github.com/phaseoteam/Phaseo/pull/2711) [`2a84658`](https://github.com/phaseoteam/Phaseo/commit/2a84658993c7477296c1ac4461d59044d3c732dc) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Update vulnerable runtime and tooling dependencies to patched releases, including Hono, Electron, Jackson, Guzzle, and shared dependency overrides.
+
+- [#3786](https://github.com/phaseoteam/Phaseo/pull/3786) [`8bcc136`](https://github.com/phaseoteam/Phaseo/commit/8bcc1363ca909947dca42650f774c43b5849751b) Thanks [@DanielButler1](https://github.com/DanielButler1)! - Update Hono to 4.13.19, @hono/node-server to 2.1.9 and basic-ftp to 6.2.6 for security fixes, including a router case where wildcard middleware could be skipped.
+
 ## 0.2.3
 
 ### Patch Changes
