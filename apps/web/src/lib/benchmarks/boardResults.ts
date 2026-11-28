@@ -57,8 +57,15 @@ function fixed(value: number, locale: string, maximumFractionDigits: number, min
 
 export function formatUsd(value: number) {
 	const magnitude = Math.abs(value);
-	const digits = magnitude === 0 ? 2 : magnitude < 0.01 ? 4 : magnitude < 1 ? 3 : 2;
-	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: Math.min(digits, 2), maximumFractionDigits: digits }).format(value);
+	// Sub-cent costs keep two significant digits, so $0.00001 and $0.00002 stay distinct instead of rounding to $0.00.
+	if (magnitude > 0 && magnitude < 0.01) return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", maximumSignificantDigits: 2 }).format(value);
+	const digits = magnitude === 0 ? 2 : magnitude < 1 ? 3 : 2;
+	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: digits }).format(value);
+}
+
+/** A percentage given in points (57.3 for 57.3%), with the locale's percent sign and spacing. */
+export function formatPercent(value: number, locale: string, maximumFractionDigits: number) {
+	return new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits }).format(value / 100);
 }
 
 export function formatDuration(seconds: number, locale: string) {
@@ -74,7 +81,7 @@ export function formatTokenCount(value: number, locale: string) {
 /** A score in the benchmark's unit: 57.3%, 0.43%, 1,526, $0.781, 1.93 s, 33.7K. */
 export function formatBenchmarkValue(value: number, scale: Pick<BenchmarkScale, "unit" | "type">, locale: string): string {
 	switch (unitKind(scale)) {
-		case "percent": return `${fixed(value, locale, Math.abs(value) < 1 && value !== 0 ? 2 : 1)}%`;
+		case "percent": return formatPercent(value, locale, Math.abs(value) < 1 && value !== 0 ? 2 : 1);
 		case "elo": return fixed(value, locale, 0);
 		case "usd": return formatUsd(value);
 		case "gbp": return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 2 }).format(value);
@@ -91,8 +98,9 @@ export function formatBenchmarkValue(value: number, scale: Pick<BenchmarkScale, 
 export function formatInterval(low: number | null | undefined, high: number | null | undefined, scale: Pick<BenchmarkScale, "unit" | "type">, locale: string): string | null {
 	if (low == null || high == null) return null;
 	const kind = unitKind(scale);
-	const format = (value: number) => kind === "percent" ? fixed(value, locale, 1) : kind === "elo" ? fixed(value, locale, 0) : formatBenchmarkValue(value, scale, locale);
-	return `${format(low)}–${format(high)}${kind === "percent" ? "%" : ""}`;
+	// Each bound carries its own percent sign: locales differ on its position and spacing, so it can't be shared.
+	const format = (value: number) => kind === "percent" ? formatPercent(value, locale, 1) : kind === "elo" ? fixed(value, locale, 0) : formatBenchmarkValue(value, scale, locale);
+	return `${format(low)}–${format(high)}`;
 }
 
 function parseLooseNumber(value: unknown): number | null {
@@ -268,6 +276,31 @@ export function chartAxes(rows: BoardRow[]): Array<"release" | "cost"> {
 	return axes;
 }
 
+/** The chart axis to show: the reader's choice while the board still offers it, else cost, else release date. */
+export function activeChartAxis(axes: Array<"release" | "cost">, selected: "release" | "cost" | null): "release" | "cost" {
+	if (selected && axes.includes(selected)) return selected;
+	return axes.includes("cost") ? "cost" : axes[0] ?? "release";
+}
+
+/**
+ * Whether to offer the effort filter: when there is a choice (two named efforts, or one beside
+ * untagged rows), and always while a filter is active so "All efforts" stays reachable.
+ */
+export function showEffortFilter(efforts: string[], hasUntagged: boolean, active: string | null | undefined) {
+	return Boolean(active) || efforts.length > 1 || (efforts.length === 1 && hasUntagged);
+}
+
+/**
+ * The board's outbound link. A registered source URL opens that source under its name; otherwise
+ * the benchmark's own page opens under a generic label, so the label never names a publisher the
+ * link doesn't go to.
+ */
+export function boardSourceLink(benchmarkLink: string | null | undefined, source: { url?: string | null; publisher?: string | null; name?: string | null } | null | undefined): { href: string; sourceName: string | null } | null {
+	if (source?.url) return { href: source.url, sourceName: source.publisher ?? source.name ?? null };
+	if (benchmarkLink) return { href: benchmarkLink, sourceName: null };
+	return null;
+}
+
 // ---------------------------------------------------------------------------------------------
 // Model profile (model page)
 
@@ -329,6 +362,11 @@ function bestProfileRow(rows: ProfileRow[], higherIsBetter: boolean): ProfileRow
 
 export function profileEfforts(rows: ProfileRow[]): string[] {
 	return sortEfforts(rows.flatMap((row) => { const effort = rowEffort(row); return effort && !row.selfReported ? [effort] : []; }));
+}
+
+/** The effort to filter by: the reader's last choice while the current rows still offer it, else none (best effort). */
+export function activeEffort(efforts: string[], selected: string | null | undefined): string | null {
+	return selected && efforts.includes(selected) ? selected : null;
 }
 
 /**

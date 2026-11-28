@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResultNote, SelfReportedBadge } from "@/components/(data)/benchmark/board/BenchmarkLeaderboard";
 import {
+	activeEffort,
 	buildProfile,
 	citationLabel,
 	formatBenchmarkValue,
+	formatInterval,
 	groupByCategory,
 	headlineIndexes,
 	profileEfforts,
@@ -85,6 +87,7 @@ function ProfileResultRow({ item }: { item: ProfileBenchmark }) {
 	const sourceHref = item.primary.link ?? item.primary.sourceUrl;
 	// A curated result can link its report without a registered source; cite the linked site then.
 	const source = citationLabel(item.primary.publisher ?? item.primary.sourceName, sourceHref);
+	const interval = item.primary.score == null ? null : formatInterval(item.primary.ciLow, item.primary.ciHigh, item.scale, locale);
 	return (
 		<li className="border-b py-3">
 			<div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1fr)_7rem_9rem]">
@@ -102,6 +105,7 @@ function ProfileResultRow({ item }: { item: ProfileBenchmark }) {
 				</div>
 				<div className="text-right">
 					<span className="text-sm font-semibold tabular-nums">{item.primary.score == null ? item.primary.scoreText ?? "—" : formatBenchmarkValue(item.primary.score, item.scale, locale)}</span>
+					{interval ? <span className="block text-[11px] tabular-nums text-muted-foreground">{interval}</span> : null}
 				</div>
 				<div className="col-span-2 text-xs sm:col-span-1 sm:text-right"><RankText rank={item.rank} total={item.rankedModels} /></div>
 			</div>
@@ -158,9 +162,11 @@ function CategoryGroup({ category, items, expandAll }: { category: string; items
 export function ModelBenchmarkProfile({ rows }: { rows: ProfileRow[] }) {
 	const t = useTranslations("Catalogue.benchmarks.profile");
 	const tx = useTranslations();
-	const [effort, setEffort] = useState<string | null>(null);
+	const [selectedEffort, setEffort] = useState<string | null>(null);
 	const [query, setQuery] = useState("");
 	const efforts = useMemo(() => profileEfforts(rows), [rows]);
+	// New rows may not offer the last choice; fall back to best effort rather than filtering everything out.
+	const effort = activeEffort(efforts, selectedEffort);
 	const all = useMemo(() => buildProfile(rows), [rows]);
 	const benchmarks = useMemo(() => (effort ? buildProfile(rows, effort) : all), [rows, effort, all]);
 	const normalizedQuery = query.trim().toLocaleLowerCase();

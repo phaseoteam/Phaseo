@@ -90,7 +90,7 @@ export function BenchmarksDirectory({ entries }: { entries: BenchmarkDirectoryEn
 						<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 						<Input aria-label={t("searchPlaceholder")} placeholder={t("searchPlaceholder")} value={search} onChange={(event) => { void setSearch(event.target.value); reset(); }} className="pl-9" />
 					</div>
-					{sources.length > 1 ? (
+					{sources.length > 1 || source ? (
 						<Select value={source ?? ALL} onValueChange={(value: string) => { void setSource(value === ALL ? null : value); reset(); }}>
 							<SelectTrigger aria-label={t("directory.source")} className="w-44 shrink-0"><SelectValue>{source ? sources.find((item) => item.id === source)?.label : t("directory.allSources")}</SelectValue></SelectTrigger>
 							<SelectContent align="end" alignItemWithTrigger={false} className="max-h-80">

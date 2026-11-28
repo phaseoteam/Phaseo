@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+	activeChartAxis,
+	activeEffort,
 	boardColumns,
+	boardSourceLink,
+	formatUsd,
+	showEffortFilter,
 	buildLeaderboard,
 	benchmarkFreshness,
 	buildProfile,
@@ -44,8 +49,24 @@ describe("formatBenchmarkValue", () => {
 
 	it("formats intervals", () => {
 		expect(formatInterval(1516.9, 1536.2, { unit: "Elo" }, locale)).toBe("1,517–1,536");
-		expect(formatInterval(93.4, 97.5, { unit: "%" }, locale)).toBe("93.4–97.5%");
+		expect(formatInterval(93.4, 97.5, { unit: "%" }, locale)).toBe("93.4%–97.5%");
 		expect(formatInterval(null, 2, { unit: "%" }, locale)).toBeNull();
+	});
+
+	it("formats percentages with the locale's sign and spacing", () => {
+		expect(formatBenchmarkValue(57.345, { unit: "%" }, "fr-FR")).toBe(new Intl.NumberFormat("fr-FR", { style: "percent", maximumFractionDigits: 1 }).format(0.57345));
+		expect(formatBenchmarkValue(57.345, { unit: "%" }, "fr-FR")).toMatch(/^57,3\s%$/u);
+		expect(formatBenchmarkValue(57.3, { unit: "%" }, "tr-TR")).toBe("%57,3");
+		expect(formatInterval(93.4, 97.5, { unit: "%" }, "tr-TR")).toBe("%93,4–%97,5");
+	});
+
+	it("keeps sub-cent costs distinct", () => {
+		expect([0.00001, 0.00002, 0.00003].map(formatUsd)).toEqual(["$0.00001", "$0.00002", "$0.00003"]);
+		expect(formatUsd(0.000123)).toBe("$0.00012");
+		expect(formatUsd(0)).toBe("$0.00");
+		expect(formatUsd(0.05)).toBe("$0.05");
+		const ticks = [0.00001, 0.00002, 0.00005, 0.0001].map(formatUsd);
+		expect(new Set(ticks).size).toBe(ticks.length);
 	});
 
 	it("classifies units", () => {
@@ -102,6 +123,26 @@ describe("buildLeaderboard", () => {
 		expect(chartAxes(rows)).toEqual([]);
 		expect(chartAxes([1, 2, 3].map((n) => row({ score: n, costUsd: n, releaseDate: "2026-01-01" })))).toEqual(["release", "cost"]);
 	});
+
+	it("falls back to an axis the board still has", () => {
+		expect(activeChartAxis(["release", "cost"], null)).toBe("cost");
+		expect(activeChartAxis(["release", "cost"], "release")).toBe("release");
+		expect(activeChartAxis(["release"], "cost")).toBe("release");
+	});
+
+	it("keeps the effort filter reachable", () => {
+		expect(showEffortFilter(["high"], true, "high")).toBe(true);
+		expect(showEffortFilter(["high"], true, null)).toBe(true);
+		expect(showEffortFilter(["high"], false, null)).toBe(false);
+		expect(showEffortFilter(["low", "high"], false, null)).toBe(true);
+		expect(showEffortFilter([], true, null)).toBe(false);
+	});
+
+	it("labels the outbound link with the site it opens", () => {
+		expect(boardSourceLink("https://bench.example/paper", { url: "https://evals.example", publisher: "Evals" })).toEqual({ href: "https://evals.example", sourceName: "Evals" });
+		expect(boardSourceLink("https://bench.example/paper", { url: null, publisher: "Evals" })).toEqual({ href: "https://bench.example/paper", sourceName: null });
+		expect(boardSourceLink(null, undefined)).toBeNull();
+	});
 });
 
 function profile(overrides: Partial<ProfileRow>): ProfileRow {
@@ -133,6 +174,12 @@ describe("buildProfile", () => {
 		expect(low.map((item) => item.benchmarkId).sort()).toEqual(["gpqa", "lmarena-text", "swe"]);
 		expect(buildProfile(rows, "max").map((item) => item.benchmarkId).sort()).toEqual(["lmarena-text", "swe"]);
 		expect(profileEfforts(rows)).toEqual(["low", "high"]);
+	});
+
+	it("drops a selected effort the current rows no longer offer", () => {
+		expect(activeEffort(["low", "high"], "high")).toBe("high");
+		expect(activeEffort(["low"], "high")).toBeNull();
+		expect(activeEffort(["low"], null)).toBeNull();
 	});
 
 	it("drops the best-configuration rank when an effort filter shows another configuration", () => {

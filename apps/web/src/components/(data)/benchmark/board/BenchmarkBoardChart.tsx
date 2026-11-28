@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CartesianGrid, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
-import { formatBenchmarkValue, formatUsd, utcDateFormat, type BenchmarkScale, type LeaderboardEntry } from "@/lib/benchmarks/boardResults";
+import { activeChartAxis, formatBenchmarkValue, formatUsd, utcDateFormat, type BenchmarkScale, type LeaderboardEntry } from "@/lib/benchmarks/boardResults";
 import { cn } from "@/lib/utils";
 
 type Point = { x: number; y: number; name: string; colour: string; top: boolean };
@@ -41,7 +41,9 @@ export function chartTicks(axis: "release" | "cost", values: number[]): number[]
 export function BenchmarkBoardChart({ entries, scale, axes }: { entries: LeaderboardEntry[]; scale: BenchmarkScale; axes: Array<"release" | "cost"> }) {
 	const t = useTranslations("Catalogue.benchmarks.board");
 	const locale = useLocale();
-	const [axis, setAxis] = useState<"release" | "cost">(axes.includes("cost") ? "cost" : axes[0]);
+	// The page stays mounted across benchmarks, so the stored choice can name an axis the new board lacks.
+	const [selectedAxis, setAxis] = useState<"release" | "cost" | null>(null);
+	const axis = activeChartAxis(axes, selectedAxis);
 	const ranked = entries.filter((entry) => entry.best.score != null);
 	const topIds = new Set(ranked.slice(0, 10).map((entry) => entry.best.modelId));
 	const points: Point[] = ranked.flatMap((entry) => {

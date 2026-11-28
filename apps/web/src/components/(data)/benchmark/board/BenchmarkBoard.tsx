@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { Callout } from "@/components/ui/callout";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
-import { benchmarkFreshness, buildLeaderboard, chartAxes, normalizeCategory, toBoardRows, unitKind, unitLabel, utcDateFormat } from "@/lib/benchmarks/boardResults";
+import { benchmarkFreshness, boardSourceLink, buildLeaderboard, chartAxes, normalizeCategory, toBoardRows, unitKind, unitLabel, utcDateFormat } from "@/lib/benchmarks/boardResults";
 import { BenchmarkBoardChart } from "./BenchmarkBoardChart";
 import { BenchmarkLeaderboard } from "./BenchmarkLeaderboard";
 
@@ -19,6 +19,7 @@ export function BenchmarkBoard({ benchmark }: { benchmark: BenchmarkPage }) {
 	const sources = benchmark.sources ?? [];
 	const source = sources.find((item) => item.id === benchmark.source_id)
 		?? [...sources].sort((a, b) => rows.filter((row) => row.sourceId === b.id).length - rows.filter((row) => row.sourceId === a.id).length)[0];
+	const outbound = boardSourceLink(benchmark.link, source);
 	const updated = benchmarkFreshness(source?.last_success_at, rows.map((row) => row.observedOn), benchmark.results.map((result) => result.updated_at ?? result.created_at));
 	const category = normalizeCategory(benchmark.category);
 	const kind = unitKind(scale);
@@ -44,13 +45,15 @@ export function BenchmarkBoard({ benchmark }: { benchmark: BenchmarkPage }) {
 						</div>
 					))}
 				</dl>
-				{source || benchmark.link ? (
+				{source || outbound ? (
 					<div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-xs text-muted-foreground">
 						<p>{source?.attribution ?? (source ? t("dataFrom", { publisher: source.publisher ?? source.name }) : null)}</p>
-						<a href={benchmark.link ?? source?.url ?? "#"} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-foreground hover:underline">
-							{source ? t("openSourceNamed", { source: source.publisher ?? source.name }) : t("openSource")}
-							<ArrowUpRight className="size-3.5" />
-						</a>
+						{outbound ? (
+							<a href={outbound.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-medium text-foreground hover:underline">
+								{outbound.sourceName ? t("openSourceNamed", { source: outbound.sourceName }) : t("openSource")}
+								<ArrowUpRight className="size-3.5" />
+							</a>
+						) : null}
 					</div>
 				) : null}
 			</section>

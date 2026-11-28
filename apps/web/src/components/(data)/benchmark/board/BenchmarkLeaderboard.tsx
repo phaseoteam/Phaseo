@@ -18,6 +18,7 @@ import {
 	formatInterval,
 	formatTokenCount,
 	formatUsd,
+	showEffortFilter,
 	sortEfforts,
 	unitLabel,
 	type BenchmarkScale,
@@ -96,7 +97,7 @@ export function BenchmarkLeaderboard({ rows, scale }: { rows: BoardRow[]; scale:
 						<Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
 						<Input aria-label={t("searchModels")} placeholder={t("searchModels")} value={query} onChange={(event) => { setQuery(event.target.value); setLimit(PAGE_SIZE); }} className="pl-9" />
 					</div>
-					{efforts.length > 1 ? (
+					{showEffortFilter(efforts, rows.some((row) => !row.effort), effort) ? (
 						<Select value={effort ?? ALL} onValueChange={(value: string) => { void setEffortParam(value === ALL ? null : value); setLimit(PAGE_SIZE); }}>
 							<SelectTrigger aria-label={t("effortFilter")} className="w-40 shrink-0"><SelectValue>{effort ? effortLabel(effort) : t("allEfforts")}</SelectValue></SelectTrigger>
 							<SelectContent align="end" alignItemWithTrigger={false}>
