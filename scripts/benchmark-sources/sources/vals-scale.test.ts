@@ -197,7 +197,7 @@ describe("Ramp Labs", () => {
 		const csv = [
 			"key,result_key,instance_id,model,harness,agent_status,agent_elapsed,agent_completion_tokens,agent_reasoning_tokens,agent_cost_usd,eval_status,resolved,timestamp",
 			"a,a,ramp__task-1,openai/gpt-6.2-astra-high,codex,done,100,1000,500,0.5,done,true,2026-11-18T10:00:00Z",
-			"b,b,ramp__task-2,openai/gpt-6.2-astra-high,codex,done,300,3000,0,1.5,done,false,2026-11-19T10:00:00Z",
+			"b,b,ramp__task-2,openai/gpt-6.2-astra-high,codex,done,300,3001,0,1.5,done,false,2026-11-19T10:00:00Z",
 			"c,c,ramp__task-1,anthropic/claude-opus-5-5-high,claude-code,failed,50,,,,done,0,2026-11-17T10:00:00Z",
 			"d,d,ramp__task-1,anthropic/claude-fable-5-2-max,claude-code,done,90,30618,13565,0.9,done,true,2026-11-17T10:00:00Z",
 		].join("\n");
@@ -207,8 +207,8 @@ describe("Ramp Labs", () => {
 			["claude-opus-5-5", "high", "claude-code", 0],
 			["claude-fable-5-2", "max", "claude-code", 100],
 		]);
-		// Output tokens are the completion count alone, which already includes reasoning tokens.
-		assert.deepEqual([rows[0].costUsd, rows[0].durationSeconds, rows[0].outputTokens, rows[0].observedOn], [1, 200, 2000, "2026-11-19"]);
+		// Output tokens are the completion count alone, which already includes reasoning tokens, and the mean is not rounded.
+		assert.deepEqual([rows[0].costUsd, rows[0].durationSeconds, rows[0].outputTokens, rows[0].observedOn], [1, 200, 2000.5, "2026-11-19"]);
 		assert.equal(rows[2].outputTokens, 30618);
 		assert.throws(() => parseRampSwe("ramp-swe-bench-v2", "a,b\n1,2"), /format changed/);
 	});
