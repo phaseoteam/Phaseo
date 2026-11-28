@@ -89,7 +89,8 @@ export function parseEpochRuns(csv: string, tasks: Task[]): SourceObservation[] 
 		const error = parseNumber(row.stderr);
 		// The run's effort comes from its model id. The display name can leave it out, and "Unique display name" can
 		// name a different one ("GPT-5 mini (medium)" for the _low id); an explicit effort outranks the label's.
-		const { label, config } = epochLabel(row["Display name"] || row["Unique display name"] || row.model);
+		// A bare model id as the label drops its effort suffix ("_32K"), which is kept as the effort instead.
+		const { label, config } = epochLabel(row["Display name"] || row["Unique display name"] || (epochEffort(row.model) ? row.model.slice(0, row.model.lastIndexOf("_")) : row.model));
 		const effort = epochEffort(row.model);
 		return [{
 			benchmarkId: byTask.get(row.task)!.id,

@@ -67,7 +67,7 @@ describe("Epoch AI", () => {
 			["GLM-5.2", "max", 80],
 			["GLM-5.2", "none", 60],
 			["GPT-5 mini (low)", "low", 70],
-			["claude-haiku-4-5-20251001_32K", "32k thinking", 65],
+			["claude-haiku-4-5-20251001", "32k thinking", 65],
 			["GPT-4o", undefined, 50],
 		]);
 		assert.equal(epochEffort("gpt-5.2-pro-2025-12-11_xhigh"), "xhigh");
