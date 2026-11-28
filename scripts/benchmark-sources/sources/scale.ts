@@ -57,7 +57,8 @@ export function parseScaleBoard(board: ScaleBoard, html: string, definitions: Ma
 		if (!entries) throw new Error(`Scale ${board.slug}: tab "${key}" not found (have ${[...tables.keys()].map((k) => k || "(none)").join(", ")}).`);
 		const definition = definitions.get(benchmarkId)!;
 		return entries.flatMap((entry): SourceObservation[] => {
-			if (typeof entry.model !== "string" || typeof entry.score !== "number" || !Number.isFinite(entry.score)) return [];
+			// Scale shows deprecated entries for reference without a rank; they stay out of the ranked import.
+			if (entry.deprecated || typeof entry.model !== "string" || typeof entry.score !== "number" || !Number.isFinite(entry.score)) return [];
 			const { label, harness, effort } = splitScaleLabel(entry.model);
 			const ci = typeof entry.confidenceInterval_upper === "number" && entry.confidenceInterval_upper > 0 ? entry.confidenceInterval_upper : undefined;
 			const note = entry.contaminationMessage?.trim();

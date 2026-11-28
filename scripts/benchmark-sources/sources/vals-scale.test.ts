@@ -49,7 +49,7 @@ describe("Vals AI", () => {
 		assert.equal(opus.effort, "max");
 		assert.equal(opus.costUsd, 0.5);
 		assert.equal(opus.durationSeconds, 30);
-		assert.equal(opus.outputTokens, 1200);
+		assert.equal(opus.outputTokens, 1200.4);
 		assert.ok(Math.abs(opus.ciLow! - 55.54) < 1e-9 && Math.abs(opus.ciHigh! - 59.46) < 1e-9);
 		assert.equal(opus.observedOn, "2026-11-19");
 		assert.equal(opus.url, "https://www.vals.ai/benchmarks/demo_bench");
@@ -108,6 +108,17 @@ describe("Scale Labs", () => {
 		const [hle] = parseScaleBoard({ slug: "hle", variants: { "": "demo-single" } }, single, definitions);
 		assert.equal(hle.note, "Potential contamination warning");
 		assert.throws(() => parseScaleBoard({ slug: "hle", variants: { full: "demo-full" } }, single, definitions), /tab "full" not found/);
+	});
+
+	it("skips deprecated entries even when they outscore active ones", () => {
+		const definitions = new Map([["distressbench", { id: "distressbench", name: "DistressBench", url: "https://labs.scale.com/leaderboard/distressbench", category: "safety", type: "percentage" as const, higherIsBetter: true, description: "" }]]);
+		const entries = [
+			{ model: "DeepSeek V4 Pro", score: 69.19, confidenceInterval_upper: 0, deprecated: true },
+			{ model: "Claude Opus 5", score: 61.4, confidenceInterval_upper: 0, deprecated: false },
+		];
+		const html = flightPage(`1c:["$","div",null,{"children":["$","$L1e",null,{"entries":${JSON.stringify(entries)}}]}]`);
+		const rows = parseScaleBoard({ slug: "distressbench", variants: { "": "distressbench" } }, html, definitions);
+		assert.deepEqual(rows.map((row) => [row.label, row.value]), [["Claude Opus 5", 61.4]]);
 	});
 });
 
@@ -188,13 +199,17 @@ describe("Ramp Labs", () => {
 			"a,a,ramp__task-1,openai/gpt-6.2-astra-high,codex,done,100,1000,500,0.5,done,true,2026-11-18T10:00:00Z",
 			"b,b,ramp__task-2,openai/gpt-6.2-astra-high,codex,done,300,3000,0,1.5,done,false,2026-11-19T10:00:00Z",
 			"c,c,ramp__task-1,anthropic/claude-opus-5-5-high,claude-code,failed,50,,,,done,0,2026-11-17T10:00:00Z",
+			"d,d,ramp__task-1,anthropic/claude-fable-5-2-max,claude-code,done,90,30618,13565,0.9,done,true,2026-11-17T10:00:00Z",
 		].join("\n");
 		const rows = parseRampSwe("ramp-swe-bench-v2", csv);
 		assert.deepEqual(rows.map((row) => [row.label, row.effort, row.harness, row.value]), [
 			["gpt-6.2-astra", "high", "codex", 50],
 			["claude-opus-5-5", "high", "claude-code", 0],
+			["claude-fable-5-2", "max", "claude-code", 100],
 		]);
-		assert.deepEqual([rows[0].costUsd, rows[0].durationSeconds, rows[0].outputTokens, rows[0].observedOn], [1, 200, 2250, "2026-11-19"]);
+		// Output tokens are the completion count alone, which already includes reasoning tokens.
+		assert.deepEqual([rows[0].costUsd, rows[0].durationSeconds, rows[0].outputTokens, rows[0].observedOn], [1, 200, 2000, "2026-11-19"]);
+		assert.equal(rows[2].outputTokens, 30618);
 		assert.throws(() => parseRampSwe("ramp-swe-bench-v2", "a,b\n1,2"), /format changed/);
 	});
 

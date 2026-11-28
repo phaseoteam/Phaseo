@@ -29,7 +29,8 @@ export function parseRampSwe(benchmarkId: string, csv: string): SourceObservatio
 			resolved: resolved || previous?.resolved === true,
 			cost: parseNumber(row.agent_cost_usd) ?? previous?.cost,
 			seconds: parseNumber(row.agent_elapsed) ?? previous?.seconds,
-			tokens: (parseNumber(row.agent_completion_tokens) ?? 0) + (parseNumber(row.agent_reasoning_tokens) ?? 0) || previous?.tokens,
+			// Ramp's completion count already includes reasoning tokens; its dashboard reports it alone as output tokens.
+			tokens: parseNumber(row.agent_completion_tokens) ?? previous?.tokens,
 		});
 		if (row.timestamp > run.latest) run.latest = row.timestamp;
 		runs.set(key, run);
@@ -42,7 +43,6 @@ export function parseRampSwe(benchmarkId: string, csv: string): SourceObservatio
 		const tasks = [...run.tasks.values()];
 		const name = run.model.split("/").pop()!;
 		const effort = name.match(EFFORT)?.[1];
-		const tokens = mean(tasks.map((task) => task.tokens));
 		return {
 			benchmarkId,
 			label: effort ? name.slice(0, -effort.length - 1) : name,
@@ -51,7 +51,7 @@ export function parseRampSwe(benchmarkId: string, csv: string): SourceObservatio
 			value: (100 * tasks.filter((task) => task.resolved).length) / tasks.length,
 			costUsd: mean(tasks.map((task) => task.cost)),
 			durationSeconds: mean(tasks.map((task) => task.seconds)),
-			outputTokens: tokens !== undefined ? Math.round(tokens) : undefined,
+			outputTokens: mean(tasks.map((task) => task.tokens)),
 			observedOn: /^\d{4}-\d{2}-\d{2}/.test(run.latest) ? run.latest.slice(0, 10) : undefined,
 			note: `${tasks.length} tasks`,
 		};

@@ -101,7 +101,7 @@ export function parseValsView(board: ValsBoard, view: ValsView, definitions: Ben
 				ciHigh: stderr !== undefined && stderr > 0 ? value + 1.96 * stderr : undefined,
 				costUsd: finite(record.cost_per_test),
 				durationSeconds: finite(record.latency),
-				outputTokens: finite(record.avg_output_tokens) !== undefined ? Math.round(record.avg_output_tokens!) : undefined,
+				outputTokens: finite(record.avg_output_tokens),
 				observedOn,
 				url: definition.url,
 			}];
