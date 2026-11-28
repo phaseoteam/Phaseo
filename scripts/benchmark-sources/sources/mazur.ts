@@ -50,8 +50,8 @@ export function parseMazurBoard(board: Pick<Board, "id" | "after" | "column" | "
 		const label = cleanMarkdownLabel(row[labelKey]);
 		const value = parseNumber(row[valueKey].replace(/[*_]/g, ""));
 		if (!label || value === null || NON_MODEL.test(label)) return [];
-		// Intervals are written "4.223 to 4.379" or "1595-1619".
-		const ci = ciKey ? row[ciKey].replace(/[*_]/g, "").match(/(-?[\d.]+)\s*(?:to|-|–)\s*(-?[\d.]+)/) : null;
+		// Intervals are written "4.223 to 4.379", "1595-1619" or "2,035–2,316".
+		const ci = ciKey ? row[ciKey].replace(/[*_,]/g, "").match(/(-?[\d.]+)\s*(?:to|-|–)\s*(-?[\d.]+)/) : null;
 		return [{ benchmarkId: board.id, label, value, ciLow: ci ? Number(ci[1]) : undefined, ciHigh: ci ? Number(ci[2]) : undefined }];
 	});
 }
@@ -65,7 +65,7 @@ const BOARDS: Board[] = [
 	{ repo: "nyt-connections", branch: "master", id: "nyt-connections", name: "NYT Connections (extended)", url: repo("nyt-connections"), category: "reasoning", type: "percentage", unit: "%", higherIsBetter: true, column: /^Score/i, description: "The model solves NYT Connections word-grouping puzzles, extended with extra trick words. Share of groups solved." },
 	{ repo: "generalization", id: "thematic-generalisation-v2", name: "Thematic Generalization Benchmark v2", url: repo("generalization"), category: "reasoning", type: "percentage", unit: "%", higherIsBetter: true, after: /^###\s+Cross-family hard-subset leaderboard/i, column: /^Top-1 Accuracy/i, description: "From a few examples and anti-examples, the model infers a hidden theme and picks the one candidate that fits it. Top-1 accuracy on the cross-family hard subset." },
 	{ repo: "step_game", id: "step-game", name: "Multi-Agent Step Race", url: repo("step_game"), category: "reasoning", type: "numerical", unit: "TrueSkill", higherIsBetter: true, after: /^##\s+LLM Step-Game Leaderboard/i, column: /^mu$/i, description: "Models race to a finish line by secretly choosing steps of 1, 3 or 5, where colliding choices cancel; they can talk and bluff between rounds. TrueSkill rating (μ)." },
-	{ repo: "buyout_game", id: "buyout-game", name: "Buyout Game", url: repo("buyout_game"), category: "reasoning", type: "numerical", unit: "rating", higherIsBetter: true, after: /^##\s+Main Leaderboard/i, column: /^BT$/i, description: "Eight models play a money-driven elimination game with bargaining, transfers and hostile takeovers. Bradley-Terry rating." },
+	{ repo: "buyout_game", id: "buyout-game", name: "Buyout Game", url: repo("buyout_game"), category: "reasoning", type: "numerical", unit: "rating", higherIsBetter: true, after: /^##\s+Main Leaderboard/i, column: /^BT( rating)?$/i, ciColumn: /^95% rating interval$/i, description: "Eight models play a money-driven elimination game with bargaining, transfers and hostile takeovers. Bradley-Terry rating." },
 	{ repo: "debate", id: "llm-debate", name: "LLM Debate Benchmark", url: repo("debate"), category: "reasoning", type: "numerical", unit: "rating", higherIsBetter: true, after: /^##\s+Bradley-Terry leaderboard/i, column: /^BT$/i, description: "Models debate each other over several turns with sides swapped between matches, and LLM judges pick the winner. Bradley-Terry rating." },
 	{ repo: "pact", id: "pact-negotiation", name: "PACT", url: repo("pact"), category: "reasoning", type: "numerical", unit: "rating", higherIsBetter: true, column: /^PACT Bilateral Rating$/i, ciColumn: /^Rating 95% CI$/i, description: "Two models bargain as buyer and seller over 20 rounds of a negotiation. PACT bilateral rating with a 95% interval." },
 	{ repo: "persuasion", id: "llm-persuasion", name: "LLM Persuasion Benchmark", url: repo("persuasion"), category: "communication", type: "numerical", unit: "points", higherIsBetter: true, after: /^##\s+Main Leaderboard/i, column: /^Average Persuasion Strength$/i, description: "Over several turns, one model tries to change another model's stated position. Average persuasion strength." },

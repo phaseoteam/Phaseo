@@ -33,10 +33,12 @@ const BOARDS: Array<BenchmarkDefinition & { mercorId: string; defaultPass: strin
 export function parseMercorApex(page: Page): SourceObservation[] {
 	const boards = page?.props?.pageProps?.benchmarks;
 	if (!Array.isArray(boards)) throw new Error("Mercor APEX format changed: expected props.pageProps.benchmarks[].");
+	if (!BOARDS.some((definition) => boards.some((candidate) => candidate.benchmarkId === definition.mercorId))) throw new Error("Mercor APEX format changed: none of the known boards is listed.");
 	const observations: SourceObservation[] = [];
 	for (const definition of BOARDS) {
+		// A board Mercor stops listing (ACE in November 2026) yields no rows; the sync keeps its stored results and warns.
 		const board = boards.find((candidate) => candidate.benchmarkId === definition.mercorId);
-		if (!board) throw new Error(`Mercor APEX format changed: board ${definition.mercorId} is missing.`);
+		if (!board) continue;
 		const pass = board.availablePasses?.[0]?.value ?? definition.defaultPass;
 		const harnessLabels = new Map((board.availableHarnesses ?? []).map((harness) => [harness.value, harness.label]));
 		for (const row of board.globalLeaderboard ?? []) {

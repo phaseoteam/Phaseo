@@ -38,7 +38,8 @@ export function parseUgi(csv: string): SourceObservation[] {
 		const observedOn = isoDate(row["Test Date"]);
 		return MEASURES.flatMap((measure) => {
 			const value = parseNumber(row[measure.column]);
-			return value === null ? [] : [{ benchmarkId: measure.id, label, effort, value, observedOn, url: row["Model Link"] || undefined }];
+			// `Model Link` is the model card, not evidence for the score; the benchmark's leaderboard link is the citation.
+			return value === null ? [] : [{ benchmarkId: measure.id, label, effort, value, observedOn }];
 		});
 	});
 }

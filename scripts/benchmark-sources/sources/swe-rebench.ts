@@ -12,18 +12,22 @@ const PAGE = "https://swe-rebench.com/";
 type Stats = { resolvedRate: number; sem?: number; instanceCosts?: number };
 type Item = { modelName: string; agentVersion?: string; meta?: { instance_type?: string }; rangeStats: { all?: Record<string, Stats> } };
 
+const isModel = (item: Item) => item.meta?.instance_type === "model";
+
 export function headlineWindow(items: Item[]): string | null {
-	const keys = items.flatMap((item) => Object.keys(item.rangeStats.all ?? {}));
+	// Only plain models decide the window; agent products are not read, so they must not hold it open or narrow it.
+	const models = items.filter(isModel);
+	const keys = models.flatMap((item) => Object.keys(item.rangeStats.all ?? {}));
 	const end = Math.max(...keys.map((key) => Number(key.split(":")[1])).filter(Number.isFinite));
 	if (!Number.isFinite(end)) return null;
-	const models = (start: number) => items.filter((item) => item.rangeStats.all?.[`${start}:${end}`]).length;
 	const starts = [...new Set(keys.filter((key) => Number(key.split(":")[1]) === end).map((key) => Number(key.split(":")[0])))].filter((start) => start < end).sort((a, b) => b - a);
 	if (!starts.length) return null;
-	const newest = models(starts[0]);
-	// Widen the window while no model drops out.
+	const inWindow = (item: Item, start: number) => Boolean(item.rangeStats.all?.[`${start}:${end}`]);
+	const newest = models.filter((item) => inWindow(item, starts[0]));
+	// Widen the window while every model evaluated on the newest issues is still in it.
 	let chosen = starts[0];
 	for (const start of starts) {
-		if (models(start) < newest) break;
+		if (!newest.every((item) => inWindow(item, start))) break;
 		chosen = start;
 	}
 	return `${chosen}:${end}`;
@@ -36,7 +40,7 @@ export function parseSweRebench(items: Item[]): SourceObservation[] {
 	const [from, to] = window.split(":").map((value) => new Date(Number(value)).toISOString().slice(0, 10));
 	return items.flatMap((item) => {
 		const stats = item.rangeStats.all?.[window];
-		if (!stats || item.meta?.instance_type !== "model" || !Number.isFinite(stats.resolvedRate)) return [];
+		if (!stats || !isModel(item) ||!Number.isFinite(stats.resolvedRate)) return [];
 		const ci = typeof stats.sem === "number" && stats.sem > 0 ? 1.96 * stats.sem : null;
 		return [{
 			benchmarkId: "swe-rebench",

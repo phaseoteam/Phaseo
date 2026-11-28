@@ -14,6 +14,7 @@ type Observation = {
 	value: number;
 	unit?: string;
 	basis?: string;
+	protocol?: string | null;
 	subject: { name: string; variant?: string | null; harness?: string | null };
 	source?: { url?: string; published_at?: string | null; retrieved_at?: string | null };
 };
@@ -75,17 +76,29 @@ const SNAPSHOT = /^snapshot-(\d{4}-\d{2}-\d{2})$/;
  * Benchmark Heaven writes the setting into the name: "gpt-6-astra · Codex · max", "Fable 5.1 [claude code · max]",
  * "google/gemini-3.7-flash@reasoning=high". Returns the model part with the effort split out.
  */
-export function splitHeavenLabel(name: string, harness?: string | null): { label: string; effort?: string } {
+export function splitHeavenLabel(name: string, harness?: string | null): { label: string; effort?: string; config?: string } {
 	let effort: string | undefined;
+	let config: string | undefined;
 	let text = name.trim();
 	const at = text.match(/@reasoning=([a-z-]+)$/i);
-	if (at) { effort = EFFORT_WORDS[at[1].toLowerCase()]; text = text.slice(0, at.index).trim(); }
+	if (at) {
+		const setting = at[1].toLowerCase();
+		effort = EFFORT_WORDS[setting];
+		// "@reasoning=enabled" is a setting, not an effort level; keep it so it isn't merged with the default run.
+		if (!effort) config = `reasoning ${setting}`;
+		text = text.slice(0, at.index).trim();
+	}
 	const bracket = text.match(/\s*\[([^\]]*·[^\]]*)\]\s*$/);
 	const parts = (bracket ? [text.slice(0, bracket.index), ...bracket[1].split("·")] : text.split("·")).map((part) => part.trim()).filter(Boolean);
 	const model = parts.shift() ?? text;
 	// The other parts are the effort and the harness; the observation carries the harness separately.
 	for (const part of parts) effort ??= EFFORT_WORDS[part.toLowerCase()];
-	return { label: model, effort };
+	return config ? { label: model, effort, config } : { label: model, effort };
+}
+
+/** Some boards publish several configurations per model (LongBench v2 "with CoT" / "without CoT"); the source row names it. */
+export function protocolConfig(protocol: unknown): string | undefined {
+	return typeof protocol === "string" ? protocol.match(/"configuration":"([^"]+)"/)?.[1]?.trim() || undefined : undefined;
 }
 
 export function parseBenchmarkHeaven(dataset: BenchmarkHeavenDataset): SourceObservation[] {
@@ -108,7 +121,7 @@ export function parseBenchmarkHeaven(dataset: BenchmarkHeavenDataset): SourceObs
 	for (const observation of all) {
 		const board = boardByRegistry.get(observation.benchmark_id);
 		if (!board || observation.basis === "self_reported" || !Number.isFinite(observation.value)) continue;
-		const { label: rawLabel, effort: labelEffort } = splitHeavenLabel(observation.subject.name, observation.subject.harness);
+		const { label: rawLabel, effort: labelEffort, config: labelConfig } = splitHeavenLabel(observation.subject.name, observation.subject.harness);
 		const label = board.cleanLabel ? board.cleanLabel(rawLabel) : rawLabel;
 		if (!label || NON_MODEL.test(label)) continue;
 		const variant = observation.subject.variant?.toLowerCase().trim();
@@ -119,6 +132,7 @@ export function parseBenchmarkHeaven(dataset: BenchmarkHeavenDataset): SourceObs
 			label,
 			effort: (variant && EFFORT_WORDS[variant]) || labelEffort,
 			harness: observation.subject.harness?.trim() || undefined,
+			config: protocolConfig(observation.protocol) ?? labelConfig,
 			value: fraction ? observation.value * 100 : observation.value,
 			observedOn: (observation.source?.published_at || observation.source?.retrieved_at || dataset.generated_at)?.slice(0, 10),
 			url: sourceUrl && !/benchmarkheaven|mintapis/.test(sourceUrl) ? sourceUrl : undefined,

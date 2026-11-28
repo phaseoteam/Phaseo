@@ -75,6 +75,31 @@ describe("Benchmark Heaven", () => {
 		]);
 		assert.equal(rows[2].harness, "BrowserUse 0.13.7");
 	});
+	it("keeps reasoning settings and published configurations apart", () => {
+		assert.deepEqual(splitHeavenLabel("qwen/qwen3.7-flash@reasoning=enabled"), { label: "qwen/qwen3.7-flash", effort: undefined, config: "reasoning enabled" });
+		// LongBench v2 lists the same model with and without chain of thought; the source row names the column.
+		const longbench = (value: number, configuration: string, column: number) => ({
+			benchmark_id: "longbench::2", value, unit: "percent", basis: "measured",
+			protocol: `LongBench 2; 503 questions; overall without CoT (column 5) and with CoT (column 6) are separate observations, never merged.; source row: {"cells":[],"configuration":"${configuration}","value_column":${column}}`,
+			subject: { name: "Qwen3-235B-A22B-Instruct-2507 Alibaba" },
+		});
+		const rows = parseBenchmarkHeaven({
+			benchmark_results: {
+				observations: [
+					longbench(46.7, "without CoT", 5),
+					longbench(58.3, "with CoT", 6),
+					{ benchmark_id: "context-arena-mrcr-v2::8-needle", value: 81.2, unit: "percent", basis: "measured", subject: { name: "qwen/qwen3.7-flash@reasoning=enabled" } },
+					{ benchmark_id: "context-arena-mrcr-v2::8-needle", value: 60.1, unit: "percent", basis: "measured", subject: { name: "qwen/qwen3.7-flash" } },
+				],
+			},
+		});
+		assert.deepEqual(rows.map((row) => [row.benchmarkId, row.label, row.config, row.value]), [
+			["longbench-v2", "Qwen3-235B-A22B-Instruct-2507", "without CoT", 46.7],
+			["longbench-v2", "Qwen3-235B-A22B-Instruct-2507", "with CoT", 58.3],
+			["context-arena-mrcr-v2-8-needle", "qwen/qwen3.7-flash", "reasoning enabled", 81.2],
+			["context-arena-mrcr-v2-8-needle", "qwen/qwen3.7-flash", undefined, 60.1],
+		]);
+	});
 });
 
 describe("EQ-Bench", () => {
@@ -126,6 +151,8 @@ describe("UGI", () => {
 		assert.equal(rows.length, 7);
 		assert.deepEqual(rows.slice(0, 4).map((row) => [row.benchmarkId, row.value]), [["ugi", 56.55], ["ugi-willingness", 3.2], ["ugi-natint", 48.87], ["ugi-writing", 52.5]]);
 		assert.equal(rows[0].observedOn, "2025-09-06");
+		// The model card is not evidence for the score; the leaderboard link is used instead.
+		assert.ok(rows.every((row) => row.url === undefined));
 	});
 });
 
@@ -139,6 +166,15 @@ describe("SWE-rebench", () => {
 	];
 	it("widens the newest window while every model is still in it", () => {
 		assert.equal(headlineWindow(items), window("2026-05-15", "2026-07-01"));
+	});
+	it("stops widening when a model drops out, even if an agent fills its place", () => {
+		// The old count-based check saw two entries in both windows and widened past Fable 5.
+		const swapped = [
+			{ modelName: "GLM-5.2 [high]", meta: { instance_type: "model" }, rangeStats: { all: { [window("2026-06-15", "2026-07-01")]: { resolvedRate: 42 }, [window("2026-05-15", "2026-07-01")]: { resolvedRate: 40 } } } },
+			{ modelName: "Fable 5 [high]", meta: { instance_type: "model" }, rangeStats: { all: { [window("2026-06-15", "2026-07-01")]: { resolvedRate: 52 } } } },
+			{ modelName: "Claude Code", meta: { instance_type: "agent" }, rangeStats: { all: { [window("2026-05-15", "2026-07-01")]: { resolvedRate: 60 } } } },
+		];
+		assert.equal(headlineWindow(swapped), window("2026-06-15", "2026-07-01"));
 	});
 	it("reads plain models in that window", () => {
 		const rows = parseSweRebench(items);
@@ -167,6 +203,12 @@ describe("Mazur", () => {
 		assert.deepEqual(rows, [
 			{ benchmarkId: "creative-story-writing", label: "GPT-6.2 Astra (high)", value: 4.302, ciLow: 4.223, ciHigh: 4.379 },
 			{ benchmarkId: "creative-story-writing", label: "Qwen 4 Max (high)", value: 3.548, ciLow: 3.469, ciHigh: 3.625 },
+		]);
+	});
+	it("reads intervals with thousands separators", () => {
+		const buyout = ["## Main Leaderboard", "", "| Rank | Model | BT rating | 95% rating interval | Games |", "| ---: | --- | ---: | ---: | ---: |", "| 1 | Gemini 4 Neon (high) | 2175.7 | 2,035–2,316 | 52 |"].join("\n");
+		assert.deepEqual(parseMazurBoard({ id: "buyout-game", after: /^##\s+Main Leaderboard/i, column: /^BT( rating)?$/i, ciColumn: /^95% rating interval$/i }, buyout), [
+			{ benchmarkId: "buyout-game", label: "Gemini 4 Neon (high)", value: 2175.7, ciLow: 2035, ciHigh: 2316 },
 		]);
 	});
 	it("fails loudly when the column disappears", () => {
@@ -201,6 +243,12 @@ describe("Mercor APEX", () => {
 			["owe-bench", "Claude Opus 5.5", "max", undefined, 41.6],
 		]);
 		assert.ok(Math.abs((rows[0].ciLow ?? 0) - 52.8) < 1e-9);
+	});
+	it("skips a board Mercor stops listing, but fails when none is left", () => {
+		const withoutAce = { props: { pageProps: { benchmarks: page.props.pageProps.benchmarks.filter((entry) => entry.benchmarkId !== "ace") } } };
+		const rows = parseMercorApex(withoutAce as unknown as Parameters<typeof parseMercorApex>[0]);
+		assert.ok(rows.length === 4 && rows.every((entry) => entry.benchmarkId !== "mercor-ace"));
+		assert.throws(() => parseMercorApex({ props: { pageProps: { benchmarks: [] } } }), /format changed/);
 	});
 });
 
