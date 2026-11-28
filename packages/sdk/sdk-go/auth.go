@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 
-	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/src/gen"
+	gen "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4/src/gen"
 )
 
 // APIKeyProvider returns the credential for one request: an API key, or a short-lived token
