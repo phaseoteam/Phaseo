@@ -64,5 +64,7 @@ export const SOURCES: BenchmarkSource[] = [
 	agiPilled,
 	llm2014,
 	slopalytics,
+	artificialAnalysis,
+	lmarena,
+	designArena,
 ];
-export const SOURCES: BenchmarkSource[] = [arcPrize, weirdml, artificialAnalysis, lmarena, designArena];
