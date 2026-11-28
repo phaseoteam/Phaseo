@@ -25,6 +25,20 @@ const descriptions: Record<string, string> = {
 	wait_thread: "Wait for a chat you started to finish and return its last answer. A timeout does not stop the chat; wait again later.",
 };
 
+/** One tool an outside or remote agent may call: its name, description for that agent, input schema and runner. */
+export type OutsideAgentTool = { name: string; description: string; inputSchema: { type: "object" }; execute: (args: Record<string, unknown>, signal: AbortSignal) => Promise<unknown> };
+/**
+ * The tools an agent with this access gets, worded for an agent that has no chat of its own. The local MCP server and
+ * links over Phaseo Connect (phone/remoteAgents.ts) both use this, so the two can't drift apart.
+ */
+export function outsideAgentToolset(tools: Partial<ThreadTools>, access: OutsideAgentAccess): OutsideAgentTool[] {
+	const allowed = outsideAgentTools[access];
+	return threadTools(tools as ThreadTools).filter(tool => allowed.includes(tool.id)).map(tool => ({
+		name: tool.id, description: descriptions[tool.id] ?? tool.description, inputSchema: tool.parameters as { type: "object" },
+		execute: (args, signal) => tool.execute(args, signal),
+	}));
+}
+
 const hash = (token: string) => createHash("sha256").update(token).digest("hex");
 const loopback = (address?: string) => address === "127.0.0.1" || address === "::ffff:127.0.0.1";
 
@@ -95,17 +109,17 @@ export class OutsideAgentsMcp {
 		// Last use is kept to the minute so a busy agent doesn't rewrite the file on every call.
 		if (used && (!used.lastUsedAt || this.now().getTime() - Date.parse(used.lastUsedAt) > 60_000)) { used.lastUsedAt = this.now().toISOString(); this.save(); }
 		const allowed = outsideAgentTools[token.access];
-		const tools = threadTools(this.ports.tools({ id: token.id, name: token.name, access: token.access }) as ThreadTools).filter(tool => allowed.includes(tool.id));
+		const tools = outsideAgentToolset(this.ports.tools({ id: token.id, name: token.name, access: token.access }), token.access);
 		const { Server, StreamableHTTPServerTransport, CallToolRequestSchema, ListToolsRequestSchema } = loadedMcpServerSdk() ?? await mcpServerSdk();
 		const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
 		const mcp = new Server({ name: "phaseo", version: "1.0.0" }, { capabilities: { tools: {} } });
 		const disconnected = new AbortController(); response.on("close", () => disconnected.abort());
-		mcp.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: tools.map(tool => ({ name: tool.id, description: descriptions[tool.id] ?? tool.description, inputSchema: tool.parameters as { type: "object" } })) }));
+		mcp.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: tools.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })) }));
 		mcp.setRequestHandler(CallToolRequestSchema, async ({ params }, extra) => {
 			try {
 				// A token revoked mid-session stops working at its next call.
 				if (!this.stored.tokens.some(entry => entry.id === token.id)) throw new Error("This token was revoked.");
-				const tool = tools.find(value => value.id === params.name);
+				const tool = tools.find(value => value.name === params.name);
 				if (!tool) throw new Error(`Unknown tool. This token can use: ${allowed.join(", ")}.`);
 				return { content: toolContent(await tool.execute(params.arguments ?? {}, AbortSignal.any([disconnected.signal, extra.signal]))) };
 			} catch (error) { return { isError: true, content: [{ type: "text" as const, text: error instanceof Error ? error.message : "The tool failed." }] }; }

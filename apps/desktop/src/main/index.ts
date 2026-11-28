@@ -747,6 +747,8 @@ ipcMain.handle("workspace:phone", event => { if (!senderWindow(event) || !phoneS
 ipcMain.handle("workspace:phone-update", (event, value: unknown) => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.update(value); });
 ipcMain.handle("workspace:phone-pair", event => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.pair(); });
 ipcMain.handle("workspace:phone-remove", (event, id: unknown) => { if (!senderWindow(event) || !phoneService) throw new Error("Invalid request."); return phoneService.removeDevice(id); });
+ipcMain.handle("workspace:remote-agent-link", (event, access: unknown) => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.pairAgent(access); });
+ipcMain.handle("workspace:remote-agent-remove", (event, id: unknown) => { if (!senderWindow(event) || !phoneService) throw new Error("Invalid request."); return phoneService.removeAgent(id); });
 ipcMain.handle("workspace:phone-access", (event, id: unknown, access: unknown) => { if (!senderWindow(event) || !phoneService) throw new Error("Invalid request."); return phoneService.setDeviceAccess(id, access); });
 ipcMain.handle("workspace:phone-https", event => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.setupHttps(); });
 ipcMain.handle("workspace:phone-connect", (event, enabled: unknown) => { if (!senderWindow(event) || !phoneService || shutdownStarted) throw new Error("Invalid request."); return phoneService.setConnect(enabled); });
@@ -1458,6 +1460,8 @@ app.whenReady().then(() => {
 	const phoneSources: PhoneModelSources = { discover: phoneDiscover, localHarnesses: () => connectedLocalHarnesses(), remembered: () => rememberedModels, permissionOf: id => workspaceRuntime.store.getTask(id).permissionMode };
 	phoneService = new PhoneService({
 		directory: workspaceDirectory, vault: { get: id => vault.get(id), set: (id, value) => vault.set(id, value) }, phaseo: phoneSignIn,
+		// Apps linked over Connect get exactly what an outside agent on this computer gets with the same access.
+		agentTools: agent => workspaceRuntime.outsideThreadTools(agent),
 		changed: state => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:phone-changed", state); },
 		host: {
 			desktopName: () => hostname(), appVersion: app.getVersion(),

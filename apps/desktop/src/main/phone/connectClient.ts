@@ -1,6 +1,6 @@
 import WebSocket from "ws";
 import { EnvelopeChannel, parseRelayFrame, readFrameObject, relayCloseCodes, relayDesktopAddress, relayDesktopUrl, relayHolds, relayPairingPrefix, sharedKey, type DesktopFrame, type Envelope, type RelayDesktopFrame, type RelayOutbound, type RelayRefusal } from "@phaseo/phone-protocol";
-import type { PhoneDeviceRecord, PhonePairing } from "./phoneDevices";
+import type { AgentDeviceRecord, PhoneDeviceRecord, PhonePairing } from "./phoneDevices";
 import type { PhoneHub, PhoneSession } from "./phoneSession";
 
 /** Why the relay turned this computer away; each stops reconnecting until the person acts. */
@@ -15,6 +15,9 @@ export type ConnectClientPorts = {
 	/** The signed-in Phaseo gateway key the relay checks. */
 	gatewayKey: () => Promise<string>;
 	devices: () => PhoneDeviceRecord[];
+	/** Apps linked over Connect (Settings → Outside agents), and what answers their requests (remoteAgents.ts). */
+	agents?: () => AgentDeviceRecord[];
+	agentRequest?: (agent: AgentDeviceRecord, text: string) => Promise<Record<string, unknown> | undefined>;
 	/** Devices the relay must forget: sent on every connect until it confirms, then passed to onRemovalConfirmed. */
 	pendingRemovals?: () => readonly string[];
 	onRemovalConfirmed?: (deviceId: string) => void;
@@ -103,7 +106,7 @@ export class ConnectClient {
 			openedAt = Date.now();
 			// Removals first: a phone removed while this computer was offline loses relay access before anything else is sent.
 			for (const deviceId of this.ports.pendingRemovals?.() ?? []) this.write({ id: `${removalPrefix}${deviceId}`, type: "remove_device", deviceId });
-			for (const device of this.ports.devices()) this.registerDevice(device.id, device.relayTokenHash);
+			for (const device of [...this.ports.devices(), ...this.ports.agents?.() ?? []]) this.registerDevice(device.id, device.relayTokenHash);
 			for (const code of this.ports.pairing.relayCodes()) this.registerDevice(code.deviceId, code.relayTokenHash);
 			this.setState({ status: "connected" });
 		});
@@ -158,7 +161,7 @@ export class ConnectClient {
 		if (envelope.to !== relayDesktopAddress) return;
 		if (envelope.from.startsWith(relayPairingPrefix)) { this.pair(envelope); return; }
 		const device = this.ports.devices().find(value => value.id === envelope.from);
-		if (!device) return;
+		if (!device) { this.receiveAgent(envelope); return; }
 		let text: string;
 		try { text = this.channel(device).open(envelope); } catch { return; }
 		this.ports.pairing.seen(device.id);
@@ -172,6 +175,21 @@ export class ConnectClient {
 		void session.receive(text);
 	}
 
+	/** An app's request: no phone session, only the outside-agent tools its link allows. */
+	private receiveAgent(envelope: Envelope) {
+		const agent = this.ports.agents?.().find(value => value.id === envelope.from);
+		if (!agent || !this.ports.agentRequest) return;
+		let text: string;
+		try { text = this.channel(agent).open(envelope); } catch { return; }
+		// The channel's replay check starts over on each connection; this one is kept on disk.
+		if (!this.ports.pairing.acceptAgentSeq(agent.id, envelope.seq)) return;
+		this.ports.pairing.seen(agent.id);
+		void this.ports.agentRequest(agent, text).then(reply => {
+			// Still linked when the answer is ready: a removed app hears nothing more.
+			if (reply && this.ports.agents?.().some(value => value.id === agent.id)) this.sendTo(agent, reply);
+		});
+	}
+
 	/** A pair frame over the relay: the phone isn't paired yet, so its key travels beside the envelope. */
 	private pair(envelope: Envelope) {
 		const publicKey = envelope.senderPublicKey;
@@ -182,7 +200,7 @@ export class ConnectClient {
 		const id = typeof request.id === "string" ? request.id.slice(0, 64) : "pair";
 		try {
 			if (request.type !== "pair" || request.devicePublicKey !== publicKey) throw new Error("Invalid pairing request.");
-			const { device, result } = this.ports.pairing.redeem(request);
+			const { device, result } = this.ports.pairing.redeem(request, { overRelay: true });
 			this.sendTo(peer, { id, type: "pair", ok: true, result: { ...result, desktopName: this.ports.desktopName() } });
 			this.registerDevice(device.id, device.relayTokenHash);
 		} catch (error) {

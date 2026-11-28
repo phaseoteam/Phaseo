@@ -4,3 +4,4 @@ export * from "./pairing";
 export * from "./envelope";
 export * from "./relay";
 export * from "./direct";
+export * from "./agent";

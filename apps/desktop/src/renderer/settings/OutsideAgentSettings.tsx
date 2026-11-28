@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Copy, Trash2 } from "lucide-react";
-import { claudeCodeCommand, outsideAgentAccessLabels, type OutsideAgentAccess, type OutsideAgentSettings as Settings } from "../../shared/outsideAgents";
+import { claudeCodeCommand, outsideAgentAccessLabels, remoteAgentConnectorUrl, remoteAgentLinkMessage, type OutsideAgentAccess, type OutsideAgentSettings as Settings } from "../../shared/outsideAgents";
+import type { PhoneState } from "../../shared/phone";
 import { Switch } from "../components/ui/switch";
 import { showToast } from "../components/ui/toast";
 import { errorText } from "../app/workspace";
@@ -54,5 +55,51 @@ export function OutsideAgentSettings() {
 				<SettingsButton type="submit" variant="primary" disabled={busy || !name.trim()}>Make token</SettingsButton>
 			</form>
 		</SettingsSection>
+		<RemoteAgents />
 	</SettingsPageLayout>;
+}
+
+/**
+ * AI apps outside this computer, through mcp.phaseo.app. They reach it over Phaseo Connect, so this needs
+ * phone access and Connect on (Settings → Phone). Each link names what the app may do and can be removed here.
+ */
+function RemoteAgents() {
+	const api = window.phaseoDesktop?.workspace;
+	const [state, setState] = useState<PhoneState>();
+	const [error, setError] = useState<string>();
+	const [access, setAccess] = useState<OutsideAgentAccess>("read");
+	const [link, setLink] = useState<{ link: string; expiresAt: string; access: OutsideAgentAccess; linked: number }>();
+	const [busy, setBusy] = useState(false);
+	useEffect(() => {
+		if (!api) return;
+		void api.phone().then(setState, reason => setError(errorText(reason)));
+		return api.onPhoneChanged(setState);
+	}, [api]);
+	// The app used the link: it shows in the list now, so the message goes.
+	const linkedNow = state?.agents.length ?? 0;
+	useEffect(() => { if (link && linkedNow > link.linked) setLink(undefined); }, [link, linkedNow]);
+	const run = async (work: () => Promise<void>) => {
+		if (busy) return; setBusy(true);
+		try { await work(); setError(undefined); } catch (reason) { setError(errorText(reason)); } finally { setBusy(false); }
+	};
+	if (!api) return null;
+	const ready = state?.enabled && state.connect.status === "connected";
+	return <SettingsSection title="Apps through Phaseo" description={<>Let an AI app that supports MCP connectors use these chats from anywhere. In the app, add the connector <code className="font-mono">{remoteAgentConnectorUrl}</code> and sign in with Phaseo, then make a link here and send it to the app. It reaches this computer through Phaseo Connect, and gets the same tools as a token with the same access.</>}>
+		{error && <SettingsNote role="alert" tone="error">{error}</SettingsNote>}
+		{state && !ready && <SettingsNote>Turn on phone access and Phaseo Connect in Settings → Phone to link an app.</SettingsNote>}
+		{link && <div className="flex flex-col gap-2 px-4 py-3.5">
+			<p role="status" className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">Send this to the app in a chat.</span> The link works once, until {new Date(link.expiresAt).toLocaleTimeString()}, and lets the app {link.access === "start" ? "read, start and message chats" : "list and read chats"}.</p>
+			<div className="flex items-center gap-2">
+				<code className="min-w-0 flex-1 truncate rounded-md bg-muted px-2 py-1.5 font-mono text-xs">{remoteAgentLinkMessage(link.link)}</code>
+				<SettingsButton onClick={() => copy(remoteAgentLinkMessage(link.link), "Message")}><Copy />Copy message</SettingsButton>
+			</div>
+		</div>}
+		{state?.agents.map(agent => <SettingsRow key={agent.id} title={agent.name} description={`${outsideAgentAccessLabels[agent.access]}. Linked ${new Date(agent.pairedAt).toLocaleDateString()}${agent.lastSeenAt ? `, last used ${new Date(agent.lastSeenAt).toLocaleString()}` : ", not used yet"}.`}
+			control={<SettingsButton variant="danger" disabled={busy} onClick={() => void run(async () => setState(await api.removeRemoteAgent(agent.id)))}><Trash2 />Remove</SettingsButton>} />)}
+		{state && !state.agents.length && !link && <SettingsNote>No apps linked yet.</SettingsNote>}
+		<div className="flex items-end gap-3 px-4 py-3.5">
+			<SettingsField label="Can"><select value={access} onChange={event => setAccess(event.target.value as OutsideAgentAccess)} className={settingsInput}><option value="read">{outsideAgentAccessLabels.read}</option><option value="start">{outsideAgentAccessLabels.start}</option></select></SettingsField>
+			<SettingsButton variant="primary" disabled={busy || !ready} onClick={() => void run(async () => setLink({ ...await api.linkRemoteAgent(access), access, linked: state?.agents.length ?? 0 }))}>Make link</SettingsButton>
+		</div>
+	</SettingsSection>;
 }

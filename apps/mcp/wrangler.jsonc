@@ -6,8 +6,11 @@
   "compatibility_date": "2026-07-26",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
-  "durable_objects": { "bindings": [{ "name": "INFERENCE_RUNS", "class_name": "InferenceRunReceipt" }] },
-  "migrations": [{ "tag": "inference-receipts-v1", "new_sqlite_classes": ["InferenceRunReceipt"] }],
+  "durable_objects": { "bindings": [{ "name": "INFERENCE_RUNS", "class_name": "InferenceRunReceipt" }, { "name": "DESKTOP_LINKS", "class_name": "DesktopLinks" }] },
+  "migrations": [
+    { "tag": "inference-receipts-v1", "new_sqlite_classes": ["InferenceRunReceipt"] },
+    { "tag": "desktop-links-v1", "new_sqlite_classes": ["DesktopLinks"] }
+  ],
   "secrets": {
     "required": ["PHASEO_MCP_RESOURCE_SERVER_SECRET"]
   },
@@ -24,7 +27,7 @@
     "production": {
       "name": "phaseo-mcp",
       "workers_dev": false,
-      "durable_objects": { "bindings": [{ "name": "INFERENCE_RUNS", "class_name": "InferenceRunReceipt" }] },
+      "durable_objects": { "bindings": [{ "name": "INFERENCE_RUNS", "class_name": "InferenceRunReceipt" }, { "name": "DESKTOP_LINKS", "class_name": "DesktopLinks" }] },
       "secrets": {
         "required": ["PHASEO_MCP_RESOURCE_SERVER_SECRET"]
       },
