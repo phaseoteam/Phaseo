@@ -1,23 +1,31 @@
 import type { BenchmarkSource } from "../types";
 import { agiPilled } from "./agi-pilled";
+import { aider } from "./aider";
 import { arcPrize } from "./arc-prize";
 import { artificialAnalysis } from "./artificial-analysis";
+import { benchmarkHeaven } from "./benchmarkheaven";
 import { boardbench } from "./boardbench";
+import { boggs } from "./boggs";
 import { bsbench } from "./bsbench";
 import { bughunt } from "./bughunt";
 import { chessLlmBenchmark } from "./chess-llm-benchmark";
 import { chessbench } from "./chessbench";
 import { clockbench } from "./clockbench";
 import { clutterbench } from "./clutterbench";
+import { companyAgentBench } from "./company-agent-bench";
 import { designArena } from "./design-arena";
 import { dubesorChess } from "./dubesor-chess";
 import { duellab } from "./duellab";
+import { eqbench } from "./eqbench";
 import { gamefeel } from "./gamefeel";
 import { hearingbench } from "./hearingbench";
 import { khalilbench } from "./khalilbench";
+import { livebench } from "./livebench";
 import { llmChess } from "./llm-chess";
 import { llm2014 } from "./llm2014";
 import { lmarena } from "./lmarena";
+import { mazur } from "./mazur";
+import { mercorApex } from "./mercor-apex";
 import { minebench } from "./minebench";
 import { openttd } from "./openttd";
 import { rampAccountingBench, rampSwebench } from "./ramp";
@@ -25,11 +33,14 @@ import { scale } from "./scale";
 import { slopalytics } from "./slopalytics";
 import { snorkelAle } from "./snorkel";
 import { surge } from "./surge";
+import { sweRebench } from "./swe-rebench";
 import { threejsEval } from "./threejseval";
+import { ugi } from "./ugi";
 import { VALS_SOURCES } from "./vals";
 import { voxelbench } from "./voxelbench";
 import { websitebench } from "./websitebench";
 import { weirdml } from "./weirdml";
+import { wojakBench3d } from "./wojak-bench-3d";
 import { zapier } from "./zapier";
 
 /** Every scheduled leaderboard. Add a source here and it runs in the daily sync. */
@@ -67,4 +78,15 @@ export const SOURCES: BenchmarkSource[] = [
 	artificialAnalysis,
 	lmarena,
 	designArena,
+	boggs,
+	benchmarkHeaven,
+	eqbench,
+	aider,
+	livebench,
+	ugi,
+	sweRebench,
+	mazur,
+	mercorApex,
+	companyAgentBench,
+	wojakBench3d,
 ];
