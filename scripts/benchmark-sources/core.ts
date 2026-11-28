@@ -187,3 +187,17 @@ export function protectedBenchmarks(rows: Array<{ benchmark_id: string }>, store
 		return [];
 	}).sort((a, b) => a.benchmarkId.localeCompare(b.benchmarkId));
 }
+
+/**
+ * Whether a write run may go ahead. Protected benchmarks keep their stored rows, so they stay out of the source-wide
+ * replacement check; a run where every stored board is protected has nothing to replace and is refused, so its
+ * archive can't replace a good one from earlier that day.
+ */
+export function runDecision(source: BenchmarkSource, observations: number, rows: Array<{ benchmark_id: string }>, stored: Array<{ benchmark_id: string }>) {
+	const warnings = protectedBenchmarks(rows, stored);
+	const kept = new Set(warnings.map((warning) => warning.benchmarkId));
+	const replacing = rows.filter((row) => !kept.has(row.benchmark_id)).length;
+	const refusal = refusalReason(source, observations, replacing, stored.filter((row) => !kept.has(row.benchmark_id)).length)
+		?? (kept.size && !replacing ? "every benchmark returned too few results; kept all stored results" : null);
+	return { warnings, kept, refusal };
+}

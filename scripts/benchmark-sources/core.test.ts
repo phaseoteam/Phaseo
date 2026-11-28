@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildRows, protectedBenchmarks, refusalReason, stableUuid } from "./core";
+import { buildRows, protectedBenchmarks, refusalReason, runDecision, stableUuid } from "./core";
 import { ModelMatcher, splitEffort } from "./match";
 import { htmlText, jsonAfter, nextFlight, parseCsv, parseNumber } from "./parse";
 import { parseArcVersion } from "./sources/arc-prize";
@@ -206,6 +206,25 @@ describe("protectedBenchmarks", () => {
 		assert.deepEqual(protectedBenchmarks(rowsFor("a", 0), rowsFor("a", 1)).map((item) => item.incoming), [0]);
 		assert.deepEqual(protectedBenchmarks(rowsFor("a", 5), rowsFor("a", 10)), []);
 		assert.deepEqual(protectedBenchmarks(rowsFor("new", 3), []), []);
+	});
+});
+
+describe("runDecision", () => {
+	const rowsFor = (benchmark_id: string, count: number) => Array.from({ length: count }, () => ({ benchmark_id }));
+	it("refuses a rerun where every stored board is protected, so it can't replace a good archive", () => {
+		const stored = [...rowsFor("weirdml-v2", 100), ...rowsFor("weirdml-v3", 60)];
+		const decision = runDecision({ ...source, minRows: 50 }, 100, [...rowsFor("weirdml-v2", 20), ...rowsFor("weirdml-v3", 10)], stored);
+		assert.match(decision.refusal ?? "", /every benchmark returned too few results/);
+		assert.deepEqual([...decision.kept].sort(), ["weirdml-v2", "weirdml-v3"]);
+	});
+	it("lets healthy boards sync when one missing board holds most stored results", () => {
+		const stored = [...rowsFor("big", 300), ...rowsFor("small", 40)];
+		const decision = runDecision({ ...source, minRows: 10 }, 45, rowsFor("small", 41), stored);
+		assert.equal(decision.refusal, null);
+		assert.deepEqual([...decision.kept], ["big"]);
+	});
+	it("still refuses a run below the source's healthy row count", () => {
+		assert.match(runDecision({ ...source, minRows: 100 }, 20, rowsFor("a", 20), []).refusal ?? "", /fewer than the 100/);
 	});
 });
 

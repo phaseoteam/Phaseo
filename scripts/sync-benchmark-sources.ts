@@ -14,7 +14,7 @@ import { dirname, resolve } from "node:path";
 import { loadEnvFile } from "node:process";
 import { gzipSync } from "node:zlib";
 import { createAdminClient } from "../apps/web/src/utils/supabase/admin";
-import { buildRows, protectedBenchmarks, refusalReason, type BuildReport, type ProtectedBenchmark } from "./benchmark-sources/core";
+import { buildRows, runDecision, type BuildReport, type ProtectedBenchmark } from "./benchmark-sources/core";
 import { httpContext } from "./benchmark-sources/http";
 import { ModelMatcher, type CatalogueAlias, type CatalogueModel, type ModelPin } from "./benchmark-sources/match";
 import { SOURCES } from "./benchmark-sources/sources";
@@ -139,13 +139,8 @@ async function syncSource(db: Db, matcher: ModelMatcher, source: BenchmarkSource
 	const stored = write
 		? await pages<{ result_id: string; benchmark_id: string }>((from, to) => db.from("v2_benchmark_results").select("result_id,benchmark_id").eq("source_id", source.id).order("result_id").range(from, to))
 		: [];
-	// Protected benchmarks keep their stored rows, so they don't count toward the source-wide replacement check.
-	const warnings = protectedBenchmarks(rows, stored);
-	const kept = new Set(warnings.map((warning) => warning.benchmarkId));
-	const refusal = refusalReason(source, observations.length, rows.filter((row) => !kept.has(row.benchmark_id)).length, stored.filter((row) => !kept.has(row.benchmark_id)).length);
-	if (refusal) return { sourceId: source.id, status: "refused", error: refusal, build: report, observations };
-	// Nothing left to replace: a run whose every stored board is protected is refused, so its archive can't replace a good one.
-	if (kept.size && !rows.some((row) => !kept.has(row.benchmark_id))) return { sourceId: source.id, status: "refused", error: "every benchmark returned too few results; kept all stored results", build: report, warnings, observations };
+	const { warnings, kept, refusal } = runDecision(source, observations.length, rows, stored);
+	if (refusal) return { sourceId: source.id, status: "refused", error: refusal, build: report, warnings, observations };
 	if (!write) return { sourceId: source.id, status: "ok", build: report, warnings, observations };
 
 	// A protected benchmark keeps its stored rows untouched: no replacement, no removal, no new count.
