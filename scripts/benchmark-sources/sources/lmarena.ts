@@ -66,7 +66,10 @@ const VISION_CATEGORIES: Record<string, [string, string]> = {
 	humor: ["Humor", "humorous prompts"],
 	ocr: ["OCR", "reading text in images"],
 };
-const AGENT_CATEGORIES = { code: ["Coding", "coding tasks"], chat: ["Chat", "conversational tasks"], work: ["Work", "knowledge-work tasks"] } satisfies Record<string, [string, string]>;
+/** Arena's factuality toggle on the Text and Search boards (arena.ai/blog/factuality-in-arena). */
+const FACTUALITY = "Arena splits each answer into atomic claims that can be checked on the web, has search agents verify them, and folds that factuality signal into the score at a 25% weight next to the votes.";
+const factualityBoard = (what: string) => (slice: Slice) => `People compare two anonymous models' answers ${what} and vote for the better one${slice.about ? `; this slice covers ${slice.about}` : ""}. ${FACTUALITY} Factuality-weighted Arena score with its confidence interval.`;
+const AGENT_CATEGORIES ={ code: ["Coding", "coding tasks"], chat: ["Chat", "conversational tasks"], work: ["Work", "knowledge-work tasks"] } satisfies Record<string, [string, string]>;
 const AGENT_PAGE = "https://arena.ai/resources/agent-arena-signals";
 const overall = (id: string, name: string): Slice => ({ category: "overall", id, name, about: "" });
 const agentIndex = (prefix: string, name: string, overallName: string): Slice[] => [overall(prefix, overallName), ...sliced(prefix, name, AGENT_CATEGORIES)];
@@ -88,6 +91,8 @@ export const ARENA_BOARDS: Board[] = [
 	},
 	{ config: "document_style_control", page: `${SITE}/document`, metric: "rating", benchmarkCategory: "long_context", slices: [overall("lmarena-document", "LMArena Document")], describe: voteBoard("about an uploaded document") },
 	{ config: "search_style_control", page: `${SITE}/search`, metric: "rating", benchmarkCategory: "grounding", slices: [overall("lmarena-search", "LMArena Search")], describe: voteBoard("that use web search") },
+	{ config: "text_factuality", page: `${SITE}/text`, metric: "rating", benchmarkCategory: "hallucinations", slices: [overall("lmarena-text-factuality", "LMArena Text (factuality)"), ...sliced("lmarena-text-factuality", "LMArena Text (factuality)", TEXT_CATEGORIES)], describe: factualityBoard("to the same text prompt") },
+	{ config: "search_factuality", page: `${SITE}/search`, metric: "rating", benchmarkCategory: "hallucinations", slices: [overall("lmarena-search-factuality", "LMArena Search (factuality)")], describe: factualityBoard("that use web search") },
 	{ config: "agent", page: `${SITE}/agent`, metric: "ips", benchmarkCategory: "agents", slices: [overall("agentarena-net-improvement", "AgentArena (Net Improvement)")], describe: agentText("this is Agent Arena's aggregate across task completion, praise vs complaint, steerability and bash reliability.", IPS_SCALE) },
 	{ config: "agent_capability", page: `${SITE}/agent`, metric: "index", benchmarkCategory: "agents", slices: agentIndex("agentarena-index", "Agent Arena Index", "Agent Arena Index"), describe: agentText("the Agent Arena Index combines the Task Completion, Praise vs Complaint, Steerability and Bash Reliability signals.", INDEX_SCALE) },
 	{ config: "agent_task_outcome", page: `${SITE}/agent`, metric: "index", benchmarkCategory: "agents", slices: agentIndex("agentarena-task-outcome-index", "Agent Arena Task Outcome Index", "Agent Arena Task Outcome Index"), describe: agentText("the Task Outcome Index combines task completion with praise vs complaint from users.", INDEX_SCALE) },
@@ -200,7 +205,7 @@ export const lmarena: BenchmarkSource = {
 	publisher: "Arena",
 	url: SITE,
 	attribution: "Arena (arena.ai), lmarena-ai/leaderboard-dataset, CC BY 4.0",
-	minRows: 8600,
+	minRows: 11200,
 	benchmarks: ARENA_BOARDS.flatMap((board) => board.slices.map((slice) => definition(board, slice))),
 	async fetch(ctx) {
 		const observations: SourceObservation[] = [];

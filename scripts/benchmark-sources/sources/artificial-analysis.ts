@@ -39,7 +39,8 @@ type Measure = Omit<BenchmarkDefinition, "url" | "type" | "unit"> & {
 	/** "share" values are 0–1 and stored as percentages; "number" values are stored as published. */
 	scale: "share" | "number";
 	unit?: string;
-	read(row: AaConfig): Reading | number | null | undefined;
+	/** `creator` is the lab's own endpoint behind the config's headline speed and latency, when it can be verified. */
+	read(row: AaConfig, creator?: AaEndpoint): Reading | number | null | undefined;
 };
 
 const num = (value: unknown): number | undefined => (typeof value === "number" && Number.isFinite(value) ? value : undefined);
@@ -52,13 +53,46 @@ const elo = (name: string, interval: (row: AaConfig) => [unknown, unknown]) => (
 	const [low, high] = interval(row);
 	return { value, ciLow: num(low), ciHigh: num(high) };
 };
-/** Speed, latency and price only where AA measured the lab's own API, not a median across hosts. */
-const firstParty = (read: (row: AaConfig) => number | undefined, source: "performanceDataSource" | "priceDataSource") => (row: AaConfig): Reading | undefined => {
-	const origin = row[source];
+/** Price only where AA priced the lab's own API, not a median across hosts. */
+const firstPartyPrice = (read: (row: AaConfig) => number | undefined) => (row: AaConfig): Reading | undefined => {
+	const origin = row.priceDataSource;
 	const value = read(row);
 	if (origin?.type !== "firstParty" || value === undefined) return undefined;
 	return { value, note: origin.providerName ? `measured on ${origin.providerName}'s API` : undefined };
 };
+/** Speed and latency only where the endpoint they were measured on is verifiably the lab's own (see creatorEndpoint). */
+const firstPartyPerformance = (read: (row: AaConfig) => number | undefined) => (row: AaConfig, creator?: AaEndpoint): Reading | undefined => {
+	const value = read(row);
+	if (!creator || value === undefined) return undefined;
+	return { value, note: `measured on ${creator.host?.name}'s API` };
+};
+
+const words = (name?: string) => (name ?? "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+/**
+ * Whether an endpoint host is the model creator's own platform: the same name ("Z AI" and "Zai"), or the creator's
+ * name followed by a product ("Amazon" → "Amazon Bedrock", "Alibaba" → "Alibaba Cloud", "Microsoft" → "Microsoft
+ * Azure"). A different company ("IBM" and "DeepInfra") is not.
+ */
+export function hostedByCreator(provider?: string, host?: string): boolean {
+	const [creator, platform] = [words(provider), words(host)];
+	if (!creator.length || !platform.length) return false;
+	return creator.join("") === platform.join("") || creator.every((word, index) => platform[index] === word);
+}
+
+/**
+ * The lab's own endpoint behind a config's headline speed and latency. AA tags those figures "firstParty" with the
+ * creator's name, and the providers board lists every host per release, so the endpoint is the one on that release
+ * whose speed and latency are the headline figures. When that endpoint isn't unique, or its host isn't the creator's
+ * (AA has tagged a DeepInfra endpoint as IBM's), there is no creator measurement.
+ */
+export function creatorEndpoint(row: AaConfig, endpoints: AaEndpoint[]): AaEndpoint | undefined {
+	const source = row.performanceDataSource;
+	const speed = num(row.headline?.outputSpeed);
+	const latency = num(row.headline?.timeToFirstToken);
+	if (source?.type !== "firstParty" || speed === undefined || latency === undefined || !row.release?.slug) return undefined;
+	const matches = endpoints.filter((endpoint) => endpoint.model?.release?.slug === row.release!.slug && endpoint.performance?.outputSpeed === speed && endpoint.performance?.timeToFirstToken === latency);
+	return matches.length === 1 && hostedByCreator(source.providerName, matches[0].host?.name) ? matches[0] : undefined;
+}
 
 const share = (id: string, name: string, page: string, category: string, fieldName: string, description: string, higherIsBetter = true): Measure =>
 	({ id, name, page, category, description, higherIsBetter, dataset: "evals", scale: "share", read: field(fieldName) });
@@ -144,9 +178,9 @@ const MEASURES: Measure[] = [
 	// Cost, speed and reliability on the lab's own API
 	{ id: "aa-intelligence-index-cost-per-task-v5", name: "Artificial Analysis Intelligence Index cost per task", page: ev("artificial-analysis-intelligence-index"), category: "cost", dataset: "models", scale: "number", unit: "USD", higherIsBetter: false, read: (row) => num(at(row, "intelligenceIndexCostPerTask", "cost", "total")), description: "Average cost in US dollars of one task while running the Intelligence Index v5 evaluations. Lower is better." },
 	{ id: "aa-intelligence-index-time-per-task-v5", name: "Artificial Analysis Intelligence Index time per task", page: ev("artificial-analysis-intelligence-index"), category: "speed", dataset: "models", scale: "number", unit: "s", higherIsBetter: false, read: field("intelligenceIndexTimePerTask"), description: "Average time in seconds to complete one task while running the Intelligence Index v5 evaluations. Lower is better." },
-	{ id: "aa-output-speed", name: "Output speed (Artificial Analysis)", page: `${SITE}/leaderboards/models`, category: "speed", dataset: "models", scale: "number", unit: "tokens/s", higherIsBetter: true, read: firstParty((row) => num(at(row, "headline", "outputSpeed")), "performanceDataSource"), description: "Output tokens per second once the first token arrives, measured by Artificial Analysis on the model creator's own API." },
-	{ id: "aa-ttft", name: "Time to first token (Artificial Analysis)", page: `${SITE}/leaderboards/models`, category: "speed", dataset: "models", scale: "number", unit: "s", higherIsBetter: false, read: firstParty((row) => num(at(row, "headline", "timeToFirstToken")), "performanceDataSource"), description: "Seconds until the first token arrives, measured by Artificial Analysis on the model creator's own API. Lower is better." },
-	{ id: "aa-blended-price", name: "Blended price (Artificial Analysis)", page: `${SITE}/leaderboards/models`, category: "cost", dataset: "models", scale: "number", unit: "USD/1M tokens", higherIsBetter: false, read: firstParty(field("price1mBlended0To3To1"), "priceDataSource"), description: "Price in US dollars per million tokens on the model creator's own API, blending input and output prices 3:1. Lower is better." },
+	{ id: "aa-output-speed", name: "Output speed (Artificial Analysis)", page: `${SITE}/leaderboards/models`, category: "speed", dataset: "models", scale: "number", unit: "tokens/s", higherIsBetter: true, read: firstPartyPerformance((row) => num(at(row, "headline", "outputSpeed"))), description: "Output tokens per second once the first token arrives, measured by Artificial Analysis on the model creator's own API." },
+	{ id: "aa-ttft", name: "Time to first token (Artificial Analysis)", page: `${SITE}/leaderboards/models`, category: "speed", dataset: "models", scale: "number", unit: "s", higherIsBetter: false, read: firstPartyPerformance((row) => num(at(row, "headline", "timeToFirstToken"))), description: "Seconds until the first token arrives, measured by Artificial Analysis on the model creator's own API. Lower is better." },
+	{ id: "aa-blended-price", name: "Blended price (Artificial Analysis)", page: `${SITE}/leaderboards/models`, category: "cost", dataset: "models", scale: "number", unit: "USD/1M tokens", higherIsBetter: false, read: firstPartyPrice(field("price1mBlended0To3To1")), description: "Price in US dollars per million tokens on the model creator's own API, blending input and output prices 3:1. Lower is better." },
 ];
 
 const ERROR_RATE: BenchmarkDefinition = {
@@ -182,13 +216,15 @@ export function aaLabel(row: AaConfig): { label: string; effort?: string } {
 	return { label, effort: row.effort?.slug || undefined };
 }
 
-export function parseAaConfigs(rows: AaConfig[], dataset: Measure["dataset"], measures: Measure[] = MEASURES): SourceObservation[] {
+/** `endpoints` is the providers board, used to verify the creator's own endpoint for speed and latency. */
+export function parseAaConfigs(rows: AaConfig[], dataset: Measure["dataset"], endpoints: AaEndpoint[] = [], measures: Measure[] = MEASURES): SourceObservation[] {
 	const wanted = measures.filter((measure) => measure.dataset === dataset);
 	return rows.flatMap((row) => {
 		if (typeof row?.id !== "string" || typeof row.name !== "string") return [];
 		const { label, effort } = aaLabel(row);
+		const creator = creatorEndpoint(row, endpoints);
 		return wanted.flatMap((measure) => {
-			const raw = measure.read(row);
+			const raw = measure.read(row, creator);
 			const reading = typeof raw === "number" ? { value: raw } : raw;
 			if (!reading || !Number.isFinite(reading.value)) return [];
 			const factor = measure.scale === "share" ? 100 : 1;
@@ -206,21 +242,14 @@ export function parseAaConfigs(rows: AaConfig[], dataset: Measure["dataset"], me
 	});
 }
 
-/**
- * Error rate of the endpoint the config's headline speed was measured on: the lab's own API. The providers board lists
- * every host per release, so the endpoint is the one on that release whose speed and latency are the headline figures.
- */
+/** Error rate of the lab's own endpoint behind the config's headline figures, as percentage points (AA publishes a share). */
 export function parseAaErrorRates(configs: AaConfig[], endpoints: AaEndpoint[]): SourceObservation[] {
 	return configs.flatMap((row) => {
-		const source = row.performanceDataSource;
-		const speed = num(row.headline?.outputSpeed);
-		const latency = num(row.headline?.timeToFirstToken);
-		if (source?.type !== "firstParty" || speed === undefined || latency === undefined || !row.release?.slug) return [];
-		const matches = endpoints.filter((endpoint) => endpoint.model?.release?.slug === row.release!.slug && endpoint.performance?.outputSpeed === speed && endpoint.performance?.timeToFirstToken === latency);
-		const rate = matches.length === 1 ? num(matches[0].performance?.endpointErrorRate) : undefined;
-		if (rate === undefined) return [];
+		const creator = creatorEndpoint(row, endpoints);
+		const rate = num(creator?.performance?.endpointErrorRate);
+		if (!creator || rate === undefined) return [];
 		const { label, effort } = aaLabel(row);
-		return [{ benchmarkId: ERROR_RATE.id, label, effort, value: rate * 100, note: `measured on ${matches[0].host?.name ?? source.providerName}'s API`, url: ERROR_RATE.url }];
+		return [{ benchmarkId: ERROR_RATE.id, label, effort, value: rate * 100, note: `measured on ${creator.host?.name}'s API`, url: ERROR_RATE.url }];
 	});
 }
 
@@ -250,7 +279,7 @@ export const artificialAnalysis: BenchmarkSource = {
 		const modelRows = configsOf(models, PAGES.models);
 		return [
 			...parseAaConfigs(configsOf(evals, PAGES.evals), "evals"),
-			...parseAaConfigs(modelRows, "models"),
+			...parseAaConfigs(modelRows, "models", endpoints as AaEndpoint[]),
 			...parseAaErrorRates(modelRows, endpoints as AaEndpoint[]),
 		];
 	},

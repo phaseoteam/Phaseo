@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import { gzipSync } from "node:zlib";
 import { decryptPublicData, publicDataManifest } from "../../artificial-analysis/public-page";
 import type { SourceContext } from "../types";
-import { aaLabel, artificialAnalysis, parseAaConfigs, parseAaErrorRates, type AaConfig } from "./artificial-analysis";
+import { aaLabel, artificialAnalysis, hostedByCreator, parseAaConfigs, parseAaErrorRates, type AaConfig, type AaEndpoint } from "./artificial-analysis";
 import { designArena, parseDesignArena, DESIGN_ARENA_BOARDS } from "./design-arena";
 import { ARENA_BOARDS, arenaLabel, lmarena, parseArenaRows } from "./lmarena";
 
@@ -45,13 +45,14 @@ describe("Artificial Analysis", () => {
 
 	it("takes speed and price only from the lab's own API and personality from the models dataset", () => {
 		const firstParty: AaConfig = {
-			id: "m1", name: "GPT-6.2 Astra (Max)", effort: { slug: "max" },
+			id: "m1", name: "GPT-6.2 Astra (Max)", effort: { slug: "max" }, release: { slug: "gpt-6-2-astra" },
 			performanceDataSource: { type: "firstParty", providerName: "OpenAI" }, priceDataSource: { type: "firstParty", providerName: "OpenAI" },
 			headline: { outputSpeed: 120, timeToFirstToken: 3.5 }, price1mBlended0To3To1: 4.5,
 			intelligenceIndexCostPerTask: { cost: { total: 0.78 } }, personalityBench: { indexScores: { slop: 21.7, warmth: 85.6 } },
 		};
 		const median: AaConfig = { id: "m2", name: "Open Model", performanceDataSource: { type: "median" }, priceDataSource: { type: "median" }, headline: { outputSpeed: 300, timeToFirstToken: 0.4 }, price1mBlended0To3To1: 0.2 };
-		const rows = parseAaConfigs([firstParty, median], "models");
+		const openai: AaEndpoint = { host: { name: "OpenAI" }, model: { release: { slug: "gpt-6-2-astra" } }, performance: { outputSpeed: 120, timeToFirstToken: 3.5 } };
+		const rows = parseAaConfigs([firstParty, median], "models", [openai]);
 		assert.deepEqual(byId(rows, "aa-output-speed").map((row) => [row.label, row.value, row.note]), [["GPT-6.2 Astra (Max)", 120, "measured on OpenAI's API"]]);
 		assert.equal(byId(rows, "aa-blended-price").length, 1);
 		assert.equal(byId(rows, "aa-intelligence-index-cost-per-task-v5")[0].value, 0.78);
@@ -69,6 +70,30 @@ describe("Artificial Analysis", () => {
 		assert.deepEqual(parseAaErrorRates([config], endpoints).map(({ benchmarkId, value, note, effort }) => ({ benchmarkId, value, note, effort })), [{ benchmarkId: "aa-endpoint-error-rate", value: 2.5, note: "measured on Anthropic's API", effort: "max" }]);
 		// No unique endpoint with the headline figures: no row rather than a guess.
 		assert.equal(parseAaErrorRates([config], [...endpoints, endpoints[0]]).length, 0);
+	});
+
+	it("stores sub-1% error rates as percentage points", () => {
+		const config: AaConfig = { id: "x1", name: "MiMo V3", release: { slug: "mimo-v3" }, performanceDataSource: { type: "firstParty", providerName: "Xiaomi" }, headline: { outputSpeed: 80, timeToFirstToken: 1.2 } };
+		const [row] = parseAaErrorRates([config], [{ host: { name: "Xiaomi" }, model: { release: { slug: "mimo-v3" } }, performance: { outputSpeed: 80, timeToFirstToken: 1.2, endpointErrorRate: 0.00763 } }]);
+		assert.ok(Math.abs(row.value - 0.763) < 1e-9);
+	});
+
+	it("drops creator-only speed, latency and error rate when the matched endpoint is another host", () => {
+		// Live regression: AA tags Granite 4.2 8B's headline figures firstParty/IBM, but they are DeepInfra's endpoint.
+		const granite: AaConfig = { id: "g1", name: "Granite 4.2 8B", release: { slug: "granite-4-2-8b" }, performanceDataSource: { type: "firstParty", providerName: "IBM" }, headline: { outputSpeed: 97.9786, timeToFirstToken: 1.9542 } };
+		const deepInfra: AaEndpoint = { host: { name: "DeepInfra" }, model: { release: { slug: "granite-4-2-8b" } }, performance: { outputSpeed: 97.9786, timeToFirstToken: 1.9542, endpointErrorRate: 0.020833 } };
+		assert.equal(parseAaErrorRates([granite], [deepInfra]).length, 0);
+		const rows = parseAaConfigs([granite], "models", [deepInfra]);
+		assert.equal(byId(rows, "aa-output-speed").length + byId(rows, "aa-ttft").length, 0);
+		// The creator's own platform under a product name still counts.
+		const nova: AaConfig = { ...granite, id: "n1", name: "Nova 3 Pro", release: { slug: "nova-3-pro" }, performanceDataSource: { type: "firstParty", providerName: "Amazon" } };
+		const bedrock: AaEndpoint = { ...deepInfra, host: { name: "Amazon Bedrock" }, model: { release: { slug: "nova-3-pro" } } };
+		assert.deepEqual(byId(parseAaConfigs([nova], "models", [bedrock]), "aa-ttft").map((row) => row.note), ["measured on Amazon Bedrock's API"]);
+	});
+
+	it("matches a creator to its own platform names only", () => {
+		for (const [creator, host] of [["Amazon", "Amazon Bedrock"], ["Alibaba", "Alibaba Cloud"], ["Microsoft", "Microsoft Azure"], ["Z AI", "Zai"], ["Anthropic", "Anthropic"]]) assert.ok(hostedByCreator(creator, host), `${creator} → ${host}`);
+		for (const [creator, host] of [["IBM", "DeepInfra"], ["Meta", "Metal Cloud"], ["Mistral", undefined], [undefined, "OpenAI"]]) assert.ok(!hostedByCreator(creator, host), `${creator} → ${host}`);
 	});
 
 	it("finds the data file owned by a given component and decrypts it", () => {
@@ -114,6 +139,22 @@ describe("Arena", () => {
 		assert.ok(Math.abs(row.value - 27.42) < 1e-9);
 		assert.equal(row.outputTokens, 127812);
 		assert.equal(row.costUsd, 9.16);
+		// Medians can be fractional (GPT-6.2 Astra (Max): 33674.5); output_tokens is numeric, so keep them as published.
+		assert.equal(parseArenaRows(agent, [{ model_name: "GPT-6.2 Astra (Max)", category: "overall", score: 0.2, output_tokens_per_task_p50: 33674.5 }])[0].outputTokens, 33674.5);
+	});
+
+	it("reads the Text and Search factuality boards as their own benchmarks", () => {
+		const textFactuality = ARENA_BOARDS.find((board) => board.config === "text_factuality")!;
+		const searchFactuality = ARENA_BOARDS.find((board) => board.config === "search_factuality")!;
+		const rows = parseArenaRows(textFactuality, [
+			{ model_name: "Gemini 4 Carbon (High)", category: "overall", rating: 1521.9, rating_lower: 1513.5, rating_upper: 1530.3 },
+			{ model_name: "Gemini 4 Carbon (High)", category: "coding", rating: 1530 },
+		]);
+		assert.deepEqual(rows.map((row) => row.benchmarkId), ["lmarena-text-factuality", "lmarena-text-factuality-coding"]);
+		assert.deepEqual(parseArenaRows(searchFactuality, [
+			{ model_name: "GPT-5.5 (Search)", category: "overall", rating: 1246.6 },
+			{ model_name: "Amazon-Web-Search-Agent", category: "overall", rating: 1246.7 },
+		]).map(({ benchmarkId, label, harness }) => ({ benchmarkId, label, harness })), [{ benchmarkId: "lmarena-search-factuality", label: "GPT-5.5", harness: "search" }]);
 	});
 
 	it("splits search tools into the harness, reads bracketed dates and skips agents", () => {
@@ -128,7 +169,7 @@ describe("Arena", () => {
 	it("keeps the existing overall ids and unique slice ids", () => {
 		const ids = lmarena.benchmarks.map((benchmark) => benchmark.id);
 		assert.equal(new Set(ids).size, ids.length);
-		for (const id of ["lmarena-text", "lmarena-webdev", "agentarena-net-improvement", "lmarena-text-hard-prompts-english", "lmarena-vision-ocr", "lmarena-webdev-html", "lmarena-image-to-webdev", "agentarena-steerability"]) assert.ok(ids.includes(id), id);
+		for (const id of ["lmarena-text", "lmarena-webdev", "agentarena-net-improvement", "lmarena-text-hard-prompts-english", "lmarena-vision-ocr", "lmarena-webdev-html", "lmarena-image-to-webdev", "agentarena-steerability", "lmarena-text-factuality", "lmarena-search-factuality"]) assert.ok(ids.includes(id), id);
 		assert.ok(ids.every((id) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(id)));
 	});
 });
