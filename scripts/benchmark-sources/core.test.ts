@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { buildRows, refusalReason, stableUuid } from "./core";
+import { buildRows, protectedBenchmarks, refusalReason, stableUuid } from "./core";
 import { ModelMatcher, splitEffort } from "./match";
-import { jsonAfter, nextFlight, parseCsv, parseNumber } from "./parse";
+import { htmlText, jsonAfter, nextFlight, parseCsv, parseNumber } from "./parse";
 import { parseArcVersion } from "./sources/arc-prize";
-import { parseWeirdmlV2, parseWeirdmlV3 } from "./sources/weirdml";
+import { parseWeirdmlV2, parseWeirdmlV3, weirdmlEffort } from "./sources/weirdml";
 import type { BenchmarkSource } from "./types";
 
 const models = [
@@ -160,5 +160,71 @@ describe("parsers", () => {
 			{ datasetId: "v2_Public_Eval", modelId: "g", modelDisplayName: "GPT-6.2 Astra (High)", modelType: "CoT", score: 0.7 },
 		] });
 		assert.deepEqual(rows, [{ benchmarkId: "arc-agi-2", label: "GPT-6.2 Astra (High)", value: 50, costUsd: 2.1, observedOn: "2026-11-20" }]);
+	});
+});
+
+describe("result details", () => {
+	it("keeps fractional published token means", () => {
+		const { rows } = buildRows(source, [{ benchmarkId: "demo-score", label: "Claude Fable 5.2", value: 50, outputTokens: 31644.2 }], matcher, "2026-11-21T00:00:00.000Z");
+		assert.equal(rows[0].output_tokens, 31644.2);
+		const v2 = parseWeirdmlV2("internal_model_name,display_name,model_slug,avg_acc,mean_total_output_tokens\nm,m,m,0.5,33674.5\n");
+		assert.equal(v2[0].outputTokens, 33674.5);
+		const v3 = parseWeirdmlV3({ schema_version: 1, models: [{ id: "a", name: "A", score: 0.5, mean_output_tokens: 31644.2 }] });
+		assert.equal(v3[0].outputTokens, 31644.2);
+	});
+
+	it("keeps distinct configurations apart and labels them", () => {
+		const { rows } = buildRows(source, [
+			{ benchmarkId: "demo-score", label: "GPT-6.2 Astra (high)", value: 60 },
+			{ benchmarkId: "demo-score", label: "GPT-6.2 Astra (high)", value: 65, config: "with fallback" },
+			{ benchmarkId: "demo-score", label: "GPT-6.2 Astra (high)", value: 55, config: "  " },
+		], matcher, "2026-11-21T00:00:00.000Z");
+		assert.equal(rows.length, 2);
+		const plain = rows.find((row) => row.config === null)!;
+		const fallback = rows.find((row) => row.config === "with fallback")!;
+		assert.equal(plain.score_numeric, 60);
+		assert.equal(plain.variant, "High");
+		// A row without config keeps the key it had before config existed.
+		assert.equal(plain.result_key, "demo:demo-score:openai/gpt-6.2-astra:high:");
+		assert.equal(fallback.variant, "High, with fallback");
+		assert.equal(fallback.result_key, "demo:demo-score:openai/gpt-6.2-astra:high::with fallback");
+		assert.notEqual(fallback.result_id, plain.result_id);
+		assert.match(fallback.other_info!, /configuration: with fallback/);
+	});
+});
+
+describe("protectedBenchmarks", () => {
+	const rowsFor = (benchmark_id: string, count: number) => Array.from({ length: count }, () => ({ benchmark_id }));
+	it("keeps an empty board next to healthy ones and lets the healthy ones sync", () => {
+		const stored = [...rowsFor("arc-agi-1", 80), ...rowsFor("arc-agi-2", 70), ...rowsFor("arc-agi-3", 30)];
+		const incoming = [...rowsFor("arc-agi-1", 82), ...rowsFor("arc-agi-2", 69)];
+		assert.equal(refusalReason({ ...source, minRows: 100 }, 151, incoming.length, stored.length), null, "source-wide totals look healthy");
+		assert.deepEqual(protectedBenchmarks(incoming, stored), [{ benchmarkId: "arc-agi-3", stored: 30, incoming: 0, reason: "returned no results; kept 30 stored" }]);
+	});
+	it("keeps a board that shrank below half, even a small one", () => {
+		assert.deepEqual(protectedBenchmarks(rowsFor("a", 4), rowsFor("a", 10)).map((item) => item.benchmarkId), ["a"]);
+		assert.deepEqual(protectedBenchmarks(rowsFor("a", 0), rowsFor("a", 1)).map((item) => item.incoming), [0]);
+		assert.deepEqual(protectedBenchmarks(rowsFor("a", 5), rowsFor("a", 10)), []);
+		assert.deepEqual(protectedBenchmarks(rowsFor("new", 3), []), []);
+	});
+});
+
+describe("WeirdML effort", () => {
+	it("reads effort from the display label, never a provider suffix", () => {
+		assert.equal(weirdmlEffort("gpt-oss-120b (medium)", "gpt-oss-120b:fireworks"), "medium");
+		assert.equal(weirdmlEffort("gpt-oss-120b", "gpt-oss-120b:fireworks"), null);
+		assert.equal(weirdmlEffort("qwen4 (local)", "qwen4:ollama"), null);
+		assert.equal(weirdmlEffort("deepseek-v4", "deepseek-v4:novita"), null);
+		assert.equal(weirdmlEffort("gpt-6-astra", "gpt-6-astra:xhigh"), "xhigh");
+		assert.equal(weirdmlEffort("Qwen4 Max", "qwen4-max"), null);
+		const rows = parseWeirdmlV2("internal_model_name,display_name,model_slug,avg_acc\ngpt-oss-120b:fireworks,gpt-oss-120b (medium),gpt-oss-120b,0.5\n");
+		assert.equal(rows[0].effort, "medium");
+	});
+});
+
+describe("htmlText", () => {
+	it("decodes each entity once", () => {
+		assert.equal(htmlText("<td>&amp;lt;b&amp;gt; &lt;i&gt; A&amp;B &#65;&#x42; &nbsp;x</td>"), "&lt;b&gt; <i> A&B AB x");
+		assert.equal(htmlText("&bogus; &#9999999999;"), "&bogus; &#9999999999;");
 	});
 });

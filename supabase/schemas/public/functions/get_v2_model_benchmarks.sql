@@ -20,7 +20,8 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_benchmarks (
     ascending_order  boolean,
     benchmark_type   text,
     created_at       timestamp with time zone,
-    updated_at       timestamp with time zone
+    updated_at       timestamp with time zone,
+    source_id        text
   )
   LANGUAGE sql
   STABLE
@@ -29,7 +30,7 @@ CREATE OR REPLACE FUNCTION public.get_v2_model_benchmarks (
   select result.result_id, result.benchmark_id, result.score, result.score_numeric, result.is_self_reported,
     result.other_info, result.source_link, result.rank, result.occur_idx, result.variant, result.result_key,
     benchmark.name, benchmark.category, benchmark.link, benchmark.total_models, benchmark.ascending_order,
-    benchmark.benchmark_type, result.created_at, result.updated_at
+    benchmark.benchmark_type, result.created_at, result.updated_at, result.source_id
   from public.v2_benchmark_results result
   join public.v2_benchmarks benchmark on benchmark.benchmark_id = result.benchmark_id
   where result.model_slug = lower(trim(p_model_slug)) and (result.effective_to is null or result.effective_to>now())

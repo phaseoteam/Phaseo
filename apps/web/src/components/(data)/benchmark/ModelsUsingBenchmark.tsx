@@ -64,6 +64,7 @@ export default function ModelsUsingBenchmark({
 			rank: r.rank ?? null,
 			variant: r.variant ?? null,
 			result_key: r.result_key ?? null,
+			source_id: r.source_id ?? null,
 		});
 	}
 
@@ -89,7 +90,8 @@ export default function ModelsUsingBenchmark({
 			...r,
 			parsed_score: normalizeBenchmarkScoreValue(
 				parseBenchmarkScore(r.score),
-				isPercentage
+				isPercentage,
+				r.source_id
 			),
 		}));
 		const sortedScores = scores.slice().sort((a: any, b: any) => {

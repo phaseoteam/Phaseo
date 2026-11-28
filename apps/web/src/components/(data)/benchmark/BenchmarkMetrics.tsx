@@ -49,7 +49,8 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 		.map((result) =>
 			normalizeBenchmarkScoreValue(
 				parseBenchmarkScore(result?.score),
-				hasPercentage
+				hasPercentage,
+				result?.source_id
 			)
 		)
 		.filter((score): score is number => score != null)
@@ -86,7 +87,8 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 					if (!modelId) return acc;
 					const numericScore = normalizeBenchmarkScoreValue(
 						parseBenchmarkScore(result.score),
-						hasPercentage
+						hasPercentage,
+						result.source_id
 					);
 					if (numericScore == null) return acc;
 
@@ -150,7 +152,8 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 
 		const numericScore = normalizeBenchmarkScoreValue(
 			parseBenchmarkScore(result.score as any),
-			hasPercentage
+			hasPercentage,
+			result.source_id
 		);
 		if (numericScore != null) {
 			const shouldReplace =
@@ -184,6 +187,7 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 			value: formatBenchmarkScore({
 				value: averageScore,
 				isPercentage: hasPercentage,
+				normalized: true,
 			}),
 			helper:
 				scores.length > 0
@@ -200,9 +204,11 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 					? `${formatBenchmarkScore({
 							value: minScore,
 							isPercentage: hasPercentage,
+							normalized: true,
 					  })} - ${formatBenchmarkScore({
 							value: maxScore,
 							isPercentage: hasPercentage,
+							normalized: true,
 					  })}`
 					: "-",
 			helper: t("scoreRangeDescription"),
@@ -218,11 +224,13 @@ export default function BenchmarkMetrics({ benchmark }: BenchmarkMetricsProps) {
 				? `${formatBenchmarkScore({
 						value: topModel.numericScore,
 						isPercentage: hasPercentage,
+						normalized: true,
 				  })} - ${topModel.modelName}`
 				: bestScore
 				? `${formatBenchmarkScore({
 						value: bestScore.value,
 						isPercentage: hasPercentage,
+						normalized: true,
 				  })} - ${bestScore.modelName}`
 				: "-",
 			helper: t("bestPerformingModel"),

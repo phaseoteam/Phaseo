@@ -23,6 +23,8 @@ export interface DerivedBenchmarkRankingRow {
 	organisationId: string;
 	organisationName: string | null;
 	organisationColour: string | null;
+	/** Set on results synced from a public leaderboard; their percentages are stored as 0-100 points. */
+	sourceId: string | null;
 }
 
 interface RawDerivedBenchmarkRankingRow {
@@ -48,6 +50,7 @@ interface RawDerivedBenchmarkRankingRow {
 	organisation_id: string | null;
 	organisation_name: string | null;
 	organisation_colour: string | null;
+	source_id?: string | null;
 }
 
 function finiteNumber(value: string | number | null): number | null {
@@ -88,6 +91,7 @@ export function mapDerivedBenchmarkRankingRow(
 		organisationId: row.organisation_id ?? "",
 		organisationName: row.organisation_name ?? null,
 		organisationColour: row.organisation_colour ?? null,
+		sourceId: row.source_id ?? null,
 	};
 }
 

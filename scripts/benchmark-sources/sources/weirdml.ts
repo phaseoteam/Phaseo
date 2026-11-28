@@ -1,3 +1,4 @@
+import { splitEffort } from "../match";
 import { parseCsv, parseNumber } from "../parse";
 import type { BenchmarkSource, SourceObservation } from "../types";
 
@@ -21,6 +22,21 @@ type V3Model = {
 };
 type V3File = { schema_version: number; mode?: string; generated?: string; models: V3Model[] };
 
+/** A recognised reasoning effort ("high", "x-high", "no thinking", "16K") in canonical form, or null for anything else. */
+function knownEffort(value: string | undefined): string | null {
+	const text = value?.trim();
+	return text ? splitEffort(`model (${text})`).effort : null;
+}
+
+/**
+ * The effort WeirdML prints in brackets at the end of the display name, e.g. "gpt-oss-120b (medium)". The internal
+ * name's ":suffix" is only a fallback and only when it is an effort: it is often a provider ("fireworks", "ollama").
+ */
+export function weirdmlEffort(displayName: string | undefined, internalName: string | undefined): string | null {
+	const bracket = displayName?.match(/\(([^)]*)\)\s*$/)?.[1];
+	return knownEffort(bracket) ?? knownEffort(internalName?.split(":")[1]);
+}
+
 export function parseWeirdmlV3(file: V3File): SourceObservation[] {
 	if (file?.schema_version !== 1 || !Array.isArray(file.models)) throw new Error("WeirdML v3 format changed: expected schema_version 1 with models[].");
 	if (file.mode && file.mode !== "real") throw new Error(`WeirdML v3 data is in "${file.mode}" mode.`);
@@ -31,13 +47,13 @@ export function parseWeirdmlV3(file: V3File): SourceObservation[] {
 			benchmarkId: "weirdml-v3",
 			// The slug names the model without the effort suffix the display name carries.
 			label: model.slug ?? model.name,
-			effort: model.reasoning_effort || undefined,
+			effort: model.reasoning_effort || weirdmlEffort(model.name, undefined) || undefined,
 			harness: model.agent?.replace(/_/g, " "),
 			value: model.score * 100,
 			ciLow: model.interval ? model.interval[0] * 100 : undefined,
 			ciHigh: model.interval ? model.interval[1] * 100 : undefined,
 			costUsd: model.mean_api_cost_usd,
-			outputTokens: model.mean_output_tokens ? Math.round(model.mean_output_tokens) : undefined,
+			outputTokens: typeof model.mean_output_tokens === "number" && Number.isFinite(model.mean_output_tokens) ? model.mean_output_tokens : undefined,
 			observedOn,
 		}));
 }
@@ -47,8 +63,7 @@ export function parseWeirdmlV2(csv: string): SourceObservation[] {
 		const accuracy = parseNumber(row.avg_acc);
 		if (accuracy === null) return [];
 		const error = parseNumber(row.avg_acc_standard_error);
-		// internal_model_name is "model:effort"; the display name repeats the effort in brackets.
-		const [, effort] = (row.internal_model_name ?? "").split(":");
+		const effort = weirdmlEffort(row.display_name, row.internal_model_name);
 		return [{
 			benchmarkId: "weirdml",
 			label: row.model_slug || row.display_name,

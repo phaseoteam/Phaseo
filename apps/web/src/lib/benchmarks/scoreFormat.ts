@@ -47,15 +47,22 @@ export function parseBenchmarkScore(
 	return null;
 }
 
+/**
+ * A percentage score on the 0-100 scale. Results from a synced public leaderboard (non-null `sourceId`) are stored in
+ * points already, so 0.21 there means 0.21%. Hand-entered results may be fractions, so a value in (0, 1] is scaled.
+ */
 export function normalizeBenchmarkScoreValue(
 	value: number | null | undefined,
-	isPercentage: boolean
+	isPercentage: boolean,
+	sourceId?: string | null
 ): number | null {
 	if (value == null || !Number.isFinite(value)) return null;
 	if (!isPercentage) return value;
+	// Synced leaderboard rows are always stored in points.
+	if (sourceId) return value;
 
-	// Some benchmark sources report percentages as fractions (0-1) while
-	// others report 0-100. Normalize to 0-100 for consistent display/ranking.
+	// Hand-entered results report percentages either as fractions (0-1) or
+	// as 0-100. Normalize to 0-100 for consistent display/ranking.
 	const abs = Math.abs(value);
 	if (abs > 0 && abs <= 1) {
 		return value * 100;
@@ -83,9 +90,15 @@ export function formatBenchmarkScore(args: {
 	isPercentage: boolean;
 	fallback?: string | number | null;
 	locale?: string;
+	/** The result's source_id; synced leaderboard rows are already in points. */
+	sourceId?: string | null;
+	/** `value` already went through normalizeBenchmarkScoreValue (e.g. an average), so don't scale it again. */
+	normalized?: boolean;
 }): string {
-	const { value, isPercentage, fallback = null, locale } = args;
-	const normalizedValue = normalizeBenchmarkScoreValue(value, isPercentage);
+	const { value, isPercentage, fallback = null, locale, sourceId, normalized = false } = args;
+	const normalizedValue = normalized
+		? value != null && Number.isFinite(value) ? value : null
+		: normalizeBenchmarkScoreValue(value, isPercentage, sourceId);
 
 	if (normalizedValue == null || !Number.isFinite(normalizedValue)) {
 		if (fallback == null) return "-";

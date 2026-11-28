@@ -143,7 +143,8 @@ function buildScatterData(
 	for (const result of results) {
 		const numericScore = normalizeBenchmarkScoreValue(
 			parseBenchmarkScore(result?.score),
-			hasPercentage
+			hasPercentage,
+			result?.source_id
 		);
 		if (numericScore == null) continue;
 

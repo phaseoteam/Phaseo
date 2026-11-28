@@ -19,6 +19,7 @@ export type ResultRow = {
 	source_model_label: string;
 	effort: string | null;
 	harness: string | null;
+	config: string | null;
 	ci_low: number | null;
 	ci_high: number | null;
 	cost_usd: number | null;
@@ -38,6 +39,9 @@ export type BuildReport = {
 	unmatched: Array<{ label: string; rows: number; candidates: string[] }>;
 	unknownBenchmarks: string[];
 };
+
+/** A benchmark whose stored rows a run keeps because the board returned too few for it. */
+export type ProtectedBenchmark = { benchmarkId: string; stored: number; incoming: number; reason: string };
 
 export function stableUuid(value: string) {
 	const hash = createHash("sha256").update(value).digest("hex").slice(0, 32).split("");
@@ -62,8 +66,13 @@ function finite(value: number | undefined): number | null {
 	return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
+/** The label a result shows next to the model: effort, then the publisher's configuration. */
+export function variantLabel(effort: string | null, config: string | null): string | null {
+	return [effortLabel(effort), config].filter(Boolean).join(", ") || null;
+}
+
 /**
- * Observations → result rows. One row per benchmark × model × effort × harness; when a board lists the same one twice,
+ * Observations → result rows. One row per benchmark × model × effort × harness × config; when a board lists the same one twice,
  * the better score wins. Ranks are competition ranks (ties share a rank) within each benchmark.
  */
 export function buildRows(source: BenchmarkSource, observations: SourceObservation[], matcher: ModelMatcher, updatedAt: string): { rows: ResultRow[]; report: BuildReport } {
@@ -73,6 +82,7 @@ export function buildRows(source: BenchmarkSource, observations: SourceObservati
 	const matchedLabels = new Set<string>();
 	const ignoredLabels = new Set<string>();
 	const best = new Map<string, { observation: SourceObservation; modelSlug: string; effort: string | null }>();
+	const configOf = (observation: SourceObservation) => observation.config?.trim() || null;
 
 	for (const observation of observations) {
 		const definition = definitions.get(observation.benchmarkId);
@@ -88,7 +98,7 @@ export function buildRows(source: BenchmarkSource, observations: SourceObservati
 		}
 		matchedLabels.add(observation.label);
 		const harness = observation.harness?.trim() || null;
-		const key = [observation.benchmarkId, match.modelSlug, match.effort ?? "", harness ?? ""].join("\u0000");
+		const key = [observation.benchmarkId, match.modelSlug, match.effort ?? "", harness ?? "", configOf(observation) ?? ""].join("\u0000");
 		const current = best.get(key);
 		const better = !current || (definition.higherIsBetter ? observation.value > current.observation.value : observation.value < current.observation.value);
 		if (better) best.set(key, { observation, modelSlug: match.modelSlug, effort: match.effort });
@@ -104,8 +114,10 @@ export function buildRows(source: BenchmarkSource, observations: SourceObservati
 			if (previous === null || observation.value !== previous) rank = index + 1;
 			previous = observation.value;
 			const harness = observation.harness?.trim() || null;
-			const resultKey = `${source.id}:${definition.id}:${modelSlug}:${effort ?? ""}:${harness ?? ""}`;
-			const details = [`${source.publisher} lists this as "${observation.label}"`, harness ? `harness: ${harness}` : null, observation.note ?? null].filter(Boolean).join("; ");
+			const config = configOf(observation);
+			// Rows without a config keep the key (and so the result id) they had before config existed.
+			const resultKey = `${source.id}:${definition.id}:${modelSlug}:${effort ?? ""}:${harness ?? ""}${config ? `:${config}` : ""}`;
+			const details = [`${source.publisher} lists this as "${observation.label}"`, harness ? `harness: ${harness}` : null, config ? `configuration: ${config}` : null, observation.note ?? null].filter(Boolean).join("; ");
 			rows.push({
 				result_id: stableUuid(`benchmark-source:${resultKey}`),
 				model_slug: modelSlug,
@@ -117,12 +129,13 @@ export function buildRows(source: BenchmarkSource, observations: SourceObservati
 				source_link: observation.url ?? definition.url,
 				rank,
 				occur_idx: index,
-				variant: effortLabel(effort),
+				variant: variantLabel(effort, config),
 				result_key: resultKey,
 				source_id: source.id,
 				source_model_label: observation.label,
 				effort,
 				harness,
+				config,
 				ci_low: finite(observation.ciLow),
 				ci_high: finite(observation.ciHigh),
 				cost_usd: finite(observation.costUsd),
@@ -157,4 +170,20 @@ export function refusalReason(source: BenchmarkSource, observations: number, new
 	if (observations < source.minRows) return `returned ${observations} rows, fewer than the ${source.minRows} a healthy run has`;
 	if (storedRows >= 20 && newRows < storedRows * 0.5) return `would replace ${storedRows} stored results with ${newRows}`;
 	return null;
+}
+
+/**
+ * Benchmarks whose stored rows a run must keep. Source-wide totals can look healthy while one board comes back empty
+ * (one ARC version changes format while the others are fine), so each benchmark is checked on its own: one that has
+ * stored results and now gets none, or fewer than half as many, keeps its stored rows and is reported instead.
+ */
+export function protectedBenchmarks(rows: Array<{ benchmark_id: string }>, stored: Array<{ benchmark_id: string }>): ProtectedBenchmark[] {
+	const count = (list: Array<{ benchmark_id: string }>) => list.reduce((counts, row) => counts.set(row.benchmark_id, (counts.get(row.benchmark_id) ?? 0) + 1), new Map<string, number>());
+	const incoming = count(rows);
+	return [...count(stored)].flatMap(([benchmarkId, storedCount]) => {
+		const incomingCount = incoming.get(benchmarkId) ?? 0;
+		if (incomingCount === 0) return [{ benchmarkId, stored: storedCount, incoming: 0, reason: `returned no results; kept ${storedCount} stored` }];
+		if (incomingCount < storedCount * 0.5) return [{ benchmarkId, stored: storedCount, incoming: incomingCount, reason: `returned ${incomingCount} results, under half of ${storedCount} stored; kept them` }];
+		return [];
+	}).sort((a, b) => a.benchmarkId.localeCompare(b.benchmarkId));
 }

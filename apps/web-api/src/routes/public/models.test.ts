@@ -1050,6 +1050,23 @@ describe("public model routes", () => {
 		expect(performance.headers.get("cache-tag")).toContain("web-api-model-telemetry-openai2Fgpt-test");
 	});
 
+	it("never scales synced leaderboard percentages, which are stored in points", async () => {
+		const row = (benchmark_id: string, score: number, source_id: string | null) => ({ result_id: `result-${benchmark_id}`, benchmark_id, score: String(score), score_numeric: score, is_self_reported: false, other_info: null, source_link: null, result_rank: 1, benchmark_name: benchmark_id, total_models: 10, ascending_order: true, benchmark_type: "percentage", source_id });
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input).includes("/rpc/get_v2_model_benchmarks")) {
+				return new Response(JSON.stringify([row("arc-a", 0.21, "arc-prize"), row("arc-b", 0.76, "arc-prize"), row("arc-c", 1, "arc-prize"), row("arc-d", 57, "arc-prize"), row("legacy", 0.76, null)]), { status: 200 });
+			}
+			return new Response(JSON.stringify([]), { status: 200 });
+		}));
+
+		const response = await app.request("https://phaseo.app/api/_web/models/openai%2Fgpt-test/benchmarks", {}, env);
+		const body = await response.json() as { results: Array<{ source_id: string | null }>; highlights: Array<{ benchmarkId: string; score: number; scoreDisplay: string }> };
+		expect(body.results[0].source_id).toBe("arc-prize");
+		expect(Object.fromEntries(body.highlights.map((item) => [item.benchmarkId, [item.score, item.scoreDisplay]]))).toEqual({
+			"arc-a": [0.21, "0.21%"], "arc-b": [0.76, "0.76%"], "arc-c": [1, "1%"], "arc-d": [57, "57%"], legacy: [76, "76%"],
+		});
+	});
+
 	it("keeps the model page healthy when the optional performance rollup fails", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);

@@ -175,7 +175,8 @@ export default function BenchmarkOverview({
 
 		const numericScore = normalizeBenchmarkScoreValue(
 			parseBenchmarkScore(result.score as any),
-			isPercentage
+			isPercentage,
+			(result as { source_id?: string | null }).source_id
 		);
 		if (numericScore != null) {
 			const shouldReplace =

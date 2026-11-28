@@ -221,13 +221,13 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 				// One MVCC snapshot for all four measures. Nested rows avoid a combined
 				// PostgREST row cap truncating a later metric in the comparison.
 				const { data, error } = await client.from("v2_benchmarks")
-					.select("benchmark_id,results:v2_benchmark_results(result_id,model_slug,score,is_self_reported,other_info,source_link,created_at,updated_at,rank,variant,result_key)")
+					.select("benchmark_id,results:v2_benchmark_results(result_id,model_slug,score,is_self_reported,other_info,source_link,created_at,updated_at,rank,variant,result_key,source_id)")
 					.in("benchmark_id", comparisonMetrics.map((metric) => metric.id))
 					.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`, { referencedTable: "results" });
 				return { error, data: (data ?? []).flatMap((row) => row.results.map((result) => ({ ...result, benchmark_id: row.benchmark_id }))) };
 			}
 			return client.from("v2_benchmark_results")
-				.select("benchmark_id,result_id,model_slug,score,is_self_reported,other_info,source_link,created_at,updated_at,rank,variant,result_key")
+				.select("benchmark_id,result_id,model_slug,score,is_self_reported,other_info,source_link,created_at,updated_at,rank,variant,result_key,source_id")
 				.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
 				.eq("benchmark_id", resolvedId)
 				.order("rank", { ascending: true, nullsFirst: false });
@@ -269,6 +269,7 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 				created_at: result.created_at ?? null,
 				updated_at: result.updated_at ?? null,
 				rank: result.rank ?? null,
+				source_id: result.source_id ?? null,
 				model: {
 					model_id: model.model_slug,
 					name: model.name ?? null,

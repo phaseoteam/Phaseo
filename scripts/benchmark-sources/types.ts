@@ -22,10 +22,16 @@ export type SourceObservation = {
 	/** Reasoning effort when the board states it separately from the label. */
 	effort?: string;
 	harness?: string;
+	/**
+	 * The publisher's configuration when it is neither effort nor harness, e.g. "with fallback", "PGN", "w/ refuse", "CoT".
+	 * Rows that differ only here are kept apart and the configuration is shown in the variant label.
+	 */
+	config?: string;
 	ciLow?: number;
 	ciHigh?: number;
 	costUsd?: number;
 	durationSeconds?: number;
+	/** Mean output tokens as published; fractional means are kept. */
 	outputTokens?: number;
 	observedOn?: string;
 	note?: string;

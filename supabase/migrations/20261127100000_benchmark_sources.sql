@@ -56,11 +56,14 @@ alter table public.v2_benchmark_results
   add column source_model_label text,
   add column effort text,
   add column harness text,
+  -- The publisher's configuration beyond effort and harness, e.g. "with fallback", "CoT".
+  add column config text,
   add column ci_low numeric,
   add column ci_high numeric,
   add column cost_usd numeric,
   add column duration_seconds numeric,
-  add column output_tokens bigint,
+  -- Boards publish mean token counts (e.g. 31644.2), so this keeps the published value.
+  add column output_tokens numeric,
   add column observed_on date;
 create index v2_benchmark_results_source_idx on public.v2_benchmark_results(source_id, benchmark_id) where source_id is not null;
 

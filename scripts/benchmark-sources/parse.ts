@@ -93,16 +93,19 @@ export function htmlTable(html: string, tableIndex = 0): string[][] {
 		.filter((cells) => cells.length);
 }
 
+const NAMED_ENTITIES: Record<string, string> = { nbsp: " ", amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+
+/** Decodes each entity once, in a single pass, so "&amp;lt;" becomes "&lt;" and not "<". */
+export function decodeEntities(text: string): string {
+	return text.replace(/&(?:#(\d+)|#x([0-9a-f]+)|([a-z]+));/gi, (entity, decimal: string | undefined, hex: string | undefined, name: string | undefined) => {
+		const code = decimal ? Number(decimal) : hex ? Number.parseInt(hex, 16) : null;
+		if (code !== null) return code <= 0x10ffff ? String.fromCodePoint(code) : entity;
+		return NAMED_ENTITIES[name!.toLowerCase()] ?? entity;
+	});
+}
+
 export function htmlText(html: string): string {
-	return html
-		.replace(/<[^>]+>/g, " ")
-		.replace(/&nbsp;/g, " ")
-		.replace(/&amp;/g, "&")
-		.replace(/&lt;/g, "<")
-		.replace(/&gt;/g, ">")
-		.replace(/&quot;/g, '"')
-		.replace(/&#39;|&apos;/g, "'")
-		.replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+	return decodeEntities(html.replace(/<[^>]+>/g, " "))
 		.replace(/\s+/g, " ")
 		.trim();
 }
