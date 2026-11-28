@@ -37,10 +37,14 @@ CREATE OR REPLACE FUNCTION public.get_model_benchmark_profile (
   STABLE
   SET search_path TO ''
   AS $function$
-  -- Every active result for one model, with the model's rank on each benchmark among public models.
+  -- Every active result for one public model, with its rank on each benchmark among public models.
+  -- A model that isn't public (hidden, unreleased, a draft-like status or served through a stealth
+  -- route) returns nothing, the same rule as catalog_model_is_public: the API reads this with the
+  -- service role, so row security doesn't apply.
   -- A model's standing on a benchmark is its best independent result, or its best self-reported
-  -- result when no independent one exists. Scraped results (source_id set) are already in points;
-  -- only hand-entered percentage rows may be stored as fractions.
+  -- result when no independent one exists. The score is score_numeric, else the number in the score
+  -- text ('76%' is 76). Scraped results (source_id set) are already in points; only hand-entered
+  -- percentage rows written without a percent sign may be stored as fractions (0.76 is 76).
   with visible_models as (
     select m.model_slug
     from public.v2_models m
@@ -52,27 +56,42 @@ CREATE OR REPLACE FUNCTION public.get_model_benchmark_profile (
   model_results as (
     select result.*
     from public.v2_benchmark_results result
+    join visible_models visible on visible.model_slug = result.model_slug
     where result.model_slug = lower(btrim(p_model_slug))
       and (result.effective_to is null or result.effective_to > now())
   ),
-  scored as (
+  parsed as (
     select
+      result.result_id,
       result.benchmark_id,
       result.model_slug,
       not result.is_self_reported as independent,
       benchmark.ascending_order is false as lower_is_better,
-      case
-        when result.source_id is null and benchmark.benchmark_type = 'percentage'
-          and abs(result.score_numeric) > 0 and abs(result.score_numeric) <= 1
-          then result.score_numeric * 100
-        else result.score_numeric
-      end as comparable_score
+      result.source_id is null and benchmark.benchmark_type = 'percentage'
+        and position('%' in coalesce(result.score, '')) = 0 as may_be_fraction,
+      coalesce(
+        result.score_numeric,
+        substring(replace(result.score, ',', '') from '[-+]?[0-9]*[.]?[0-9]+(?:[eE][-+]?[0-9]+)?')::numeric
+      ) as value
     from public.v2_benchmark_results result
     join public.v2_benchmarks benchmark on benchmark.benchmark_id = result.benchmark_id
+    join visible_models visible on visible.model_slug = result.model_slug
     where result.benchmark_id in (select distinct benchmark_id from model_results)
       and (result.effective_to is null or result.effective_to > now())
-      and (result.model_slug = lower(btrim(p_model_slug)) or result.model_slug in (select model_slug from visible_models))
-      and result.score_numeric is not null
+  ),
+  scored as (
+    select
+      parsed.result_id,
+      parsed.benchmark_id,
+      parsed.model_slug,
+      parsed.independent,
+      parsed.lower_is_better,
+      case
+        when parsed.may_be_fraction and abs(parsed.value) > 0 and abs(parsed.value) <= 1 then parsed.value * 100
+        else parsed.value
+      end as comparable_score
+    from parsed
+    where parsed.value is not null
   ),
   standings as (
     select
@@ -109,12 +128,7 @@ CREATE OR REPLACE FUNCTION public.get_model_benchmark_profile (
     result.result_id,
     result.benchmark_id,
     result.score,
-    case
-      when result.source_id is null and benchmark.benchmark_type = 'percentage'
-        and abs(result.score_numeric) > 0 and abs(result.score_numeric) <= 1
-        then result.score_numeric * 100
-      else result.score_numeric
-    end as comparable_score,
+    scored.comparable_score,
     result.is_self_reported,
     result.source_id,
     result.effort,
@@ -143,12 +157,13 @@ CREATE OR REPLACE FUNCTION public.get_model_benchmark_profile (
     ranked.ranked_models
   from model_results result
   join public.v2_benchmarks benchmark on benchmark.benchmark_id = result.benchmark_id
+  left join scored on scored.result_id = result.result_id
   left join public.v2_benchmark_sources source on source.source_id = coalesce(result.source_id, benchmark.source_id)
   left join ranked on ranked.benchmark_id = result.benchmark_id and ranked.model_slug = result.model_slug
   order by benchmark.name, result.benchmark_id, result.result_id;
 $function$;
 
-COMMENT ON FUNCTION "public"."get_model_benchmark_profile"(text) IS 'Every active benchmark result for one model, with benchmark and source metadata and the model''s rank among public models on each benchmark.';
+COMMENT ON FUNCTION "public"."get_model_benchmark_profile"(text) IS 'Every active benchmark result for one public model (nothing for a model that is not public), with benchmark and source metadata and the model''s rank among public models on each benchmark.';
 
 REVOKE ALL ON FUNCTION "public"."get_model_benchmark_profile"(text) FROM PUBLIC;
 

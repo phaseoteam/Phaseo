@@ -35,12 +35,16 @@ async function seed() {
 		insert into public.v2_models (model_slug) values ('lab/a'), ('lab/b'), ('lab/c');
 		insert into public.v2_models (model_slug, hidden) values ('lab/hidden', true);
 		insert into public.v2_models (model_slug, status) values ('lab/draft', 'draft');
+		insert into public.v2_models (model_slug, released_at) values ('lab/future', now() + interval '1 day');
+		insert into public.v2_models (model_slug) values ('lab/stealth');
+		insert into public.v2_model_provider_routes values ('lab/stealth', true);
 		insert into public.v2_benchmark_sources values ('board', 'Board', 'Publisher', 'https://example.com', 'Data from Publisher', '2026-11-26T05:17:00Z');
 		insert into public.v2_benchmarks values
 			('elo', 'Elo board', 'general', true, 'numerical', 'board', 'Elo'),
 			('cost', 'Cost board', 'cost', false, 'numerical', 'board', 'USD'),
 			('pct', 'Percentage board', 'reasoning', true, 'percentage', null, '%'),
-			('empty', 'No results', 'reasoning', true, 'percentage', null, '%');
+			('empty', 'No results', 'reasoning', true, 'percentage', null, '%'),
+			('txt', 'Curated text scores', 'reasoning', true, 'percentage', null, '%');
 		insert into public.v2_benchmark_results (model_slug, benchmark_id, score_numeric, source_id, effort, observed_on) values
 			('lab/a', 'elo', 1500, 'board', 'high', '2026-11-20'),
 			('lab/a', 'elo', 1450, 'board', 'low', '2026-11-20'),
@@ -56,6 +60,15 @@ async function seed() {
 			('lab/a', 'pct', 90, null, true, null),
 			('lab/b', 'pct', 0.5, null, false, null),
 			('lab/c', 'pct', 99, null, false, '2020-01-01');
+		-- Non-public models each have a result the profile must never return.
+		insert into public.v2_benchmark_results (model_slug, benchmark_id, score_numeric, source_id) values
+			('lab/future', 'elo', 1800, 'board'),
+			('lab/stealth', 'elo', 1900, 'board');
+		-- txt: curated rows saved as text with no score_numeric. 76% is 76 points, a bare 0.8 is a legacy fraction (80).
+		insert into public.v2_benchmark_results (model_slug, benchmark_id, score, score_numeric) values
+			('lab/a', 'txt', '76%', null),
+			('lab/b', 'txt', '70', 70),
+			('lab/c', 'txt', '0.8', null);
 	`);
 	await db.exec(migration.replace(/^SET local check_function_bodies = off;$/m, ""));
 	return db;
@@ -65,7 +78,7 @@ test("directory counts public models only, with freshness and source", async () 
 	const db = await seed();
 	const rows = (await db.query("select * from public.get_benchmark_directory()")).rows;
 	const byId = Object.fromEntries(rows.map((row) => [row.benchmark_id, row]));
-	assert.deepEqual(Object.keys(byId).sort(), ["cost", "elo", "pct"]);
+	assert.deepEqual(Object.keys(byId).sort(), ["cost", "elo", "pct", "txt"]);
 	assert.equal(Number(byId.elo.model_count), 2);
 	assert.equal(Number(byId.elo.result_count), 3);
 	assert.equal(byId.elo.source_name, "Board");
@@ -91,5 +104,24 @@ test("profile ranks among public models, honours direction and prefers independe
 	const scores = rows.filter((row) => row.benchmark_id === "pct").map((row) => Number(row.comparable_score)).sort((a, b) => a - b);
 	assert.deepEqual(scores, [0.76, 90]);
 	assert.equal(rows.find((row) => row.benchmark_id === "elo").source_attribution, "Data from Publisher");
+	await db.close();
+});
+
+test("profile returns nothing for a model that is not public", async () => {
+	const db = await seed();
+	for (const slug of ["lab/hidden", "lab/draft", "lab/future", "lab/stealth", "lab/missing"]) {
+		const rows = (await db.query("select * from public.get_model_benchmark_profile($1)", [slug])).rows;
+		assert.deepEqual(rows, [], slug);
+	}
+	await db.close();
+});
+
+test("profile ranks curated text scores the way the leaderboard parses them", async () => {
+	const db = await seed();
+	const rows = (await db.query("select * from public.get_model_benchmark_profile('lab/a')")).rows.filter((row) => row.benchmark_id === "txt");
+	assert.equal(rows.length, 1);
+	assert.equal(Number(rows[0].comparable_score), 76);
+	// lab/c 0.8 (80 points) leads, then lab/a 76%, then lab/b 70.
+	assert.deepEqual([Number(rows[0].model_rank), Number(rows[0].ranked_models)], [2, 3]);
 	await db.close();
 });

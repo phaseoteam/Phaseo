@@ -11,6 +11,23 @@ import { mapDirectoryRows } from "@/benchmarks/reader";
 /** Result columns the benchmark page reads; scraped results carry effort, harness, interval, cost and timing. */
 const BENCHMARK_RESULT_COLUMNS = "result_id,model_slug,score,score_numeric,is_self_reported,other_info,source_link,created_at,updated_at,rank,variant,result_key,source_id,source_model_label,effort,harness,config,ci_low,ci_high,cost_usd,duration_seconds,output_tokens,observed_on";
 
+/** Statuses that keep a model off public pages; mirrors catalog_model_is_public in the database. */
+const NON_PUBLIC_MODEL_STATUSES = new Set(["disabled", "not_ready", "coming_soon", "testing", "draft", "pending"]);
+
+/**
+ * Whether a model may appear on public pages: not hidden, not in a pre-release status, released, and not
+ * served through a stealth route. The service-role client bypasses row security, so readers apply it here.
+ */
+function isPublicCatalogueModel(model: { hidden?: boolean | null; status?: string | null; released_at?: string | null }, stealth: boolean, now = Date.now()): boolean {
+	if (model.hidden !== false || stealth) return false;
+	if (model.status && NON_PUBLIC_MODEL_STATUSES.has(model.status)) return false;
+	if (model.released_at) {
+		const released = new Date(model.released_at).getTime();
+		if (Number.isFinite(released) && released > now) return false;
+	}
+	return true;
+}
+
 function finiteOrNull(value: unknown): number | null {
 	if (value == null || value === "") return null;
 	const parsed = typeof value === "number" ? value : Number(value);
@@ -268,18 +285,23 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 		if (!data) return notFound(c, "benchmark");
 		const modelSlugs = [...new Set((resultsResult.data ?? []).map((row) => row.model_slug).filter(Boolean))];
 		const sourceIds = [...new Set([data.source_id, ...(resultsResult.data ?? []).map((row) => row.source_id)].filter((id): id is string => typeof id === "string" && id.length > 0))];
-		const [modelsResult, sourcesResult] = await Promise.all([
+		const [modelsResult, stealthResult, sourcesResult] = await Promise.all([
 			modelSlugs.length > 0
 				? client.from("v2_models")
-					.select("model_slug,name,released_at,announced_at,lab_slug,hidden,lab:v2_labs!v2_models_lab_slug_fkey(lab_slug,name,metadata)")
+					.select("model_slug,name,released_at,announced_at,lab_slug,hidden,status,lab:v2_labs!v2_models_lab_slug_fkey(lab_slug,name,metadata)")
 					.in("model_slug", modelSlugs)
+				: Promise.resolve({ data: [], error: null }),
+			modelSlugs.length > 0
+				? client.from("v2_model_provider_routes").select("model_slug").eq("is_stealth", true).in("model_slug", modelSlugs)
 				: Promise.resolve({ data: [], error: null }),
 			sourceIds.length > 0
 				? client.from("v2_benchmark_sources").select("source_id,name,publisher,url,attribution,last_success_at").in("source_id", sourceIds)
 				: Promise.resolve({ data: [], error: null }),
 		]);
 		if (modelsResult.error) throw modelsResult.error;
+		if (stealthResult.error) throw stealthResult.error;
 		if (sourcesResult.error) throw sourcesResult.error;
+		const stealthSlugs = new Set(((stealthResult.data ?? []) as Array<{ model_slug: string }>).map((route) => route.model_slug));
 		const sources = ((sourcesResult.data ?? []) as Array<Record<string, unknown>>).map((source) => ({
 			id: String(source.source_id),
 			name: String(source.name ?? source.source_id),
@@ -291,7 +313,7 @@ publicReferenceDataRouter.get("/benchmarks/:benchmarkId", async (c) => {
 		const modelsBySlug = new Map((modelsResult.data ?? []).map((model) => [model.model_slug, model]));
 		const results = (resultsResult.data ?? []).flatMap((result) => {
 			const model = modelsBySlug.get(result.model_slug);
-			if (!model || model.hidden) return [];
+			if (!model || !isPublicCatalogueModel(model, stealthSlugs.has(model.model_slug))) return [];
 			const labRow = Array.isArray(model.lab) ? model.lab[0] : model.lab;
 			const organisation = labRow ? labOrganisation(labRow) : null;
 			return [{
