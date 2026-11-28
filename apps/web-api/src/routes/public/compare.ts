@@ -159,7 +159,7 @@ async function loadCompareSources(env: Env, modelIds: string[]): Promise<Compari
 		const benchmark = Array.isArray(row.benchmark) ? row.benchmark[0] : row.benchmark;
 		benchmarksByModel.set(row.model_slug, [...(benchmarksByModel.get(row.model_slug) ?? []), {
 			id: row.result_id, benchmark_id: row.benchmark_id, score: row.score, is_self_reported: row.is_self_reported,
-			other_info: row.other_info, source_link: row.source_link, rank: row.rank,
+			other_info: row.other_info, source_link: row.source_link, rank: row.rank, source_id: row.source_id ?? null,
 			benchmark: benchmark ? { id: benchmark.benchmark_id, name: benchmark.name, category: benchmark.category, link: benchmark.link, ascending_order: benchmark.ascending_order, type: benchmark.benchmark_type } : null,
 		}]);
 	}

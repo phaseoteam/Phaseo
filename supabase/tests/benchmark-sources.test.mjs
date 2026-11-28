@@ -106,3 +106,24 @@ test("synced percentages are stored in points: ranking and model results never s
 	assert.deepEqual((await db.query("select source_id from public.get_v2_model_benchmarks('lab/a')")).rows, [{ source_id: "arc-prize" }]);
 	await db.close();
 });
+
+test("refresh_benchmark_total_models counts distinct models with active results across sources", async () => {
+	const db = new PGlite();
+	await db.exec(`
+		create role anon; create role authenticated; create role service_role;
+		create table public.v2_benchmarks (benchmark_id text primary key, total_models integer);
+		create table public.v2_benchmark_results (model_slug text, benchmark_id text, source_id text, effective_to timestamptz);
+		insert into public.v2_benchmarks values ('shared', null), ('gone', 4), ('other', 9);
+		insert into public.v2_benchmark_results values
+			('lab/a', 'shared', null, null), ('lab/a', 'shared', 'board', null), ('lab/b', 'shared', 'other-board', null),
+			('lab/c', 'shared', null, '2000-01-01'), ('lab/a', 'gone', 'board', '2000-01-01'), ('lab/a', 'other', null, null);
+	`);
+	await db.exec(readFileSync(new URL("../schemas/public/functions/refresh_benchmark_total_models.sql", import.meta.url), "utf8"));
+	await db.query("select public.refresh_benchmark_total_models(array['shared', 'gone'])");
+	assert.deepEqual((await db.query("select benchmark_id, total_models from public.v2_benchmarks order by benchmark_id")).rows, [
+		{ benchmark_id: "gone", total_models: 0 },
+		{ benchmark_id: "other", total_models: 9 },
+		{ benchmark_id: "shared", total_models: 2 },
+	]);
+	await db.close();
+});

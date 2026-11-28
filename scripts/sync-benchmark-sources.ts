@@ -144,6 +144,8 @@ async function syncSource(db: Db, matcher: ModelMatcher, source: BenchmarkSource
 	const kept = new Set(warnings.map((warning) => warning.benchmarkId));
 	const refusal = refusalReason(source, observations.length, rows.filter((row) => !kept.has(row.benchmark_id)).length, stored.filter((row) => !kept.has(row.benchmark_id)).length);
 	if (refusal) return { sourceId: source.id, status: "refused", error: refusal, build: report, observations };
+	// Nothing left to replace: a run whose every stored board is protected is refused, so its archive can't replace a good one.
+	if (kept.size && !rows.some((row) => !kept.has(row.benchmark_id))) return { sourceId: source.id, status: "refused", error: "every benchmark returned too few results; kept all stored results", build: report, warnings, observations };
 	if (!write) return { sourceId: source.id, status: "ok", build: report, warnings, observations };
 
 	// A protected benchmark keeps its stored rows untouched: no replacement, no removal, no new count.
