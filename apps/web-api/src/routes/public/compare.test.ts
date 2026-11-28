@@ -134,6 +134,9 @@ describe("public compare routes", () => {
 				output_modalities: ["text"],
 				lab: { lab_slug: "openai", name: "OpenAI" },
 			}]), { status: 200 });
+			// Answer with only the requested top-level columns, so a select that drops source_id fails below.
+			const selected = (url.searchParams.get("select") ?? "").split(",").map((column) => column.split(":").pop()!.split("(")[0]);
+			const only = (row: Record<string, unknown>) => Object.fromEntries(Object.entries(row).filter(([key]) => key === "benchmark" || selected.includes(key)));
 			if (url.pathname.endsWith("/v2_benchmark_results")) return new Response(JSON.stringify([{
 				result_id: 1, model_slug: "openai/gpt-test", benchmark_id: "mmlu", score: 90, is_self_reported: true, other_info: "With Thinking",
 				benchmark: { benchmark_id: "mmlu", name: "MMLU", category: "knowledge", ascending_order: true, benchmark_type: "percentage" },
@@ -141,7 +144,7 @@ describe("public compare routes", () => {
 				// A synced leaderboard stores 0.21% as 0.21 points; it must not be read as a fraction.
 				result_id: 2, model_slug: "openai/gpt-test", benchmark_id: "arc-agi-3", score: "0.21", is_self_reported: false, source_id: "arc-prize",
 				benchmark: { benchmark_id: "arc-agi-3", name: "ARC-AGI-3", category: "reasoning", ascending_order: true, benchmark_type: "percentage" },
-			}]), { status: 200 });
+			}].map(only)), { status: 200 });
 			return new Response("[]", { status: 200 });
 		});
 		vi.stubGlobal("fetch", fetchMock);
