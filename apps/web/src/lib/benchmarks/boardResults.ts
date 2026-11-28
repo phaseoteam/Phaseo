@@ -353,6 +353,8 @@ export function buildProfile(rows: ProfileRow[], effort: string | null = null): 
 		const bestSelf = bestProfileRow(selfReported, higherIsBetter);
 		const primary = bestIndependent ?? bestSelf;
 		if (!primary) continue;
+		// Stored ranks are the model's best configuration, so they only describe the row when it is that configuration.
+		const bestOverall = bestProfileRow(benchmarkRows.filter((row) => !row.selfReported), higherIsBetter) ?? bestProfileRow(claims, higherIsBetter);
 		const others = (bestIndependent ? independent : selfReported).filter((row) => row !== primary)
 			.sort((a, b) => (a.score == null ? 1 : b.score == null ? -1 : higherIsBetter ? b.score - a.score : a.score - b.score));
 		benchmarks.push({
@@ -363,7 +365,7 @@ export function buildProfile(rows: ProfileRow[], effort: string | null = null): 
 			primary,
 			selfReported: bestIndependent ? bestSelf : undefined,
 			others,
-			rank: primary.rank,
+			rank: primary === bestOverall ? primary.rank : undefined,
 			rankedModels: primary.rankedModels,
 		});
 	}

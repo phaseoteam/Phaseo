@@ -74,6 +74,17 @@ export function ModelBenchmarkIndexes({ benchmarks }: { benchmarks: ProfileBench
 	);
 }
 
+/** Evaluation notes from hand-entered results (harness, shots, qualifications). Clamped; click to read in full. */
+function ResultNote({ note }: { note?: string }) {
+	const [open, setOpen] = useState(false);
+	if (!note) return null;
+	return (
+		<button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)} className={cn("mt-1 block w-full text-left text-xs text-muted-foreground hover:text-foreground", !open && "line-clamp-2")}>
+			{note}
+		</button>
+	);
+}
+
 function ProfileResultRow({ item }: { item: ProfileBenchmark }) {
 	const t = useTranslations("Catalogue.benchmarks.profile");
 	const boardT = useTranslations("Catalogue.benchmarks.board");
@@ -96,6 +107,7 @@ function ProfileResultRow({ item }: { item: ProfileBenchmark }) {
 						{primaryConfig && source ? ", " : ""}
 						{source ? (sourceHref ? <a href={sourceHref} target="_blank" rel="noopener noreferrer" className="hover:text-foreground hover:underline">{source}</a> : source) : null}
 					</p>
+					<ResultNote note={item.primary.note} />
 				</div>
 				<div className="text-right">
 					<span className="text-sm font-semibold tabular-nums">{item.primary.score == null ? item.primary.scoreText ?? "—" : formatBenchmarkValue(item.primary.score, item.scale, locale)}</span>
@@ -109,6 +121,7 @@ function ProfileResultRow({ item }: { item: ProfileBenchmark }) {
 					{item.selfReported.link ? <a href={item.selfReported.link} target="_blank" rel="noopener noreferrer" className="hover:text-foreground hover:underline">{t("claimSource")}</a> : null}
 				</p>
 			) : null}
+			{item.selfReported?.score != null ? <ResultNote note={item.selfReported.note} /> : null}
 			{item.others.length ? (
 				<>
 					<button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)} className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">

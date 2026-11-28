@@ -131,6 +131,13 @@ describe("buildProfile", () => {
 		expect(profileEfforts(rows)).toEqual(["low", "high"]);
 	});
 
+	it("drops the best-configuration rank when an effort filter shows another configuration", () => {
+		const gpqaRows = rows.filter((row) => row.benchmarkId === "gpqa").map((row) => (row.id === "gpqa-low" ? { ...row, rank: 4, rankedModels: 120 } : row));
+		expect(buildProfile(gpqaRows)[0]).toMatchObject({ rank: 4, rankedModels: 120 });
+		expect(buildProfile(gpqaRows, "high")[0].rank).toBe(4);
+		expect(buildProfile(gpqaRows, "low")[0]).toMatchObject({ rank: undefined, rankedModels: 120 });
+	});
+
 	it("groups by normalised category, largest first", () => {
 		const groups = groupByCategory(buildProfile(rows));
 		expect(groups.map((group) => group.category).sort()).toEqual(["code", "general", "science"]);
