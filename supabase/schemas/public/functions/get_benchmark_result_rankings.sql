@@ -26,7 +26,8 @@ CREATE OR REPLACE FUNCTION public.get_benchmark_result_rankings (
     announcement_date   timestamp with time zone,
     organisation_id     text,
     organisation_name   text,
-    organisation_colour text
+    organisation_colour text,
+    source_id           text
   )
   LANGUAGE sql
   STABLE
@@ -60,8 +61,10 @@ CREATE OR REPLACE FUNCTION public.get_benchmark_result_rankings (
       organisation.name as organisation_name,
       organisation.colour as organisation_colour,
       target.ascending_order,
+      -- Synced leaderboard results (source_id set) are stored in points; only hand-entered fractions are scaled.
       case
         when target.type = 'percentage'
+          and result.source_id is null
           and abs(result.score_numeric) > 0
           and abs(result.score_numeric) <= 1
           then result.score_numeric * 100
@@ -151,7 +154,8 @@ CREATE OR REPLACE FUNCTION public.get_benchmark_result_rankings (
     scoped.announcement_date,
     scoped.organisation_id,
     scoped.organisation_name,
-    scoped.organisation_colour
+    scoped.organisation_colour,
+    scoped.source_id
   from scoped_results scoped
   join selected_models ranked
     on ranked.benchmark_id = scoped.benchmark_id

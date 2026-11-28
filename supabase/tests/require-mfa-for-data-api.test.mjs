@@ -92,7 +92,7 @@ const policyFor = (table) => `CREATE POLICY "${policyName}" ON "public"."${table
 
 // Public catalogue and content tables: anon reads them anyway, and signed-in users can't write them.
 const publicTables = new Set([
-  'public_model_task_daily', 'updates', 'v2_benchmark_results', 'v2_benchmarks', 'v2_lab_links', 'v2_labs',
+  'public_model_task_daily', 'updates', 'v2_benchmark_results', 'v2_benchmark_sources', 'v2_benchmarks', 'v2_lab_links', 'v2_labs',
   'v2_meter_definitions', 'v2_model_aliases', 'v2_model_details', 'v2_model_families', 'v2_model_links',
   'v2_model_page_notices', 'v2_model_provider_routes', 'v2_models', 'v2_pricing_sku_meters', 'v2_pricing_skus',
   'v2_provider_regions', 'v2_providers', 'v2_public_effective_pricing_daily', 'v2_public_provider_health_daily',

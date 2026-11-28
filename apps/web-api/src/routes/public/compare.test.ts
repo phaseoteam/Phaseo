@@ -137,6 +137,10 @@ describe("public compare routes", () => {
 			if (url.pathname.endsWith("/v2_benchmark_results")) return new Response(JSON.stringify([{
 				result_id: 1, model_slug: "openai/gpt-test", benchmark_id: "mmlu", score: 90, is_self_reported: true, other_info: "With Thinking",
 				benchmark: { benchmark_id: "mmlu", name: "MMLU", category: "knowledge", ascending_order: true, benchmark_type: "percentage" },
+			}, {
+				// A synced leaderboard stores 0.21% as 0.21 points; it must not be read as a fraction.
+				result_id: 2, model_slug: "openai/gpt-test", benchmark_id: "arc-agi-3", score: "0.21", is_self_reported: false, source_id: "arc-prize",
+				benchmark: { benchmark_id: "arc-agi-3", name: "ARC-AGI-3", category: "reasoning", ascending_order: true, benchmark_type: "percentage" },
 			}]), { status: 200 });
 			return new Response("[]", { status: 200 });
 		});
@@ -146,10 +150,10 @@ describe("public compare routes", () => {
 
 		expect(response.status).toBe(200);
 		expect(response.headers.get("cache-tag")).toContain("web-api-model-pricing");
-		await expect(response.json()).resolves.toMatchObject({
-			models: [{ id: "openai/gpt-test", lab: { id: "openai", name: "OpenAI" }, pricing: null, providers: [], otherListings: [] }],
-			benchmarks: [{ id: "mmlu", source: "lab", higherIsBetter: true, results: { "openai/gpt-test": [{ score: 90, variant: "With Thinking" }] } }],
-		});
+		const body = await response.json() as { models: unknown[]; benchmarks: Array<{ id: string }> };
+		expect(body).toMatchObject({ models: [{ id: "openai/gpt-test", lab: { id: "openai", name: "OpenAI" }, pricing: null, providers: [], otherListings: [] }] });
+		expect(body.benchmarks.find((benchmark) => benchmark.id === "mmlu")).toMatchObject({ source: "lab", higherIsBetter: true, results: { "openai/gpt-test": [{ score: 90, variant: "With Thinking" }] } });
+		expect(body.benchmarks.find((benchmark) => benchmark.id === "arc-agi-3")).toMatchObject({ results: { "openai/gpt-test": [{ score: 0.21 }] } });
 		const invalid = await app.request("https://phaseo.app/api/_web/compare/view?ids=a,b,c,d,e", {}, env);
 		expect(invalid.status).toBe(400);
 	});

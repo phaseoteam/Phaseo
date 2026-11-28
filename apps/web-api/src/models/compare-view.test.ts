@@ -243,6 +243,23 @@ describe("composeCompareView benchmarks", () => {
 		expect(cost.results["anthropic/claude-opus-5.5"][0].variant).toBe("Low");
 	});
 
+	it("puts hand-entered fractions and synced percentage points on one scale", () => {
+		const benchmark = { id: "arc-agi-2", name: "ARC-AGI-2", type: "percentage", ascending_order: true };
+		const mixed = composeCompareView(["lab/curated", "lab/synced"], {
+			models: [
+				{ model_id: "lab/curated", name: "Curated", organisation_id: "lab", benchmark_results: [{ benchmark_id: "arc-agi-2", score: "0.76", benchmark }] },
+				{ model_id: "lab/synced", name: "Synced", organisation_id: "lab", benchmark_results: [{ benchmark_id: "arc-agi-2", score: 1, source_id: "arc-prize", benchmark }] },
+			],
+			providerRows: [],
+			pricingRows: [],
+			modelPlans: [],
+			plans: [],
+		}, NOW);
+		const arc = mixed.benchmarks.find((item) => item.id === "arc-agi-2")!;
+		expect(arc.results["lab/curated"][0].score).toBe(76);
+		expect(arc.results["lab/synced"][0].score).toBe(1);
+	});
+
 	it("parses variant text from each source", () => {
 		expect(parseVariant("Claude 4.5 Sonnet (Reasoning); Artificial Analysis ID 9", "artificial-analysis")).toBe("Reasoning");
 		expect(parseVariant("With Thinking, Pass @ 1", "lab")).toBe("With Thinking, Pass @ 1");

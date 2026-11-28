@@ -19,7 +19,8 @@ const count = async table => Number((await db.query(`select count(*) as count fr
 const rejects = async (promise, pattern) => assert.match((await promise.then(() => { throw Error('Expected rejection'); }, error => error)).message, pattern);
 try {
   await db.exec('create role anon; create role authenticated; create role service_role bypassrls; grant usage on schema public to anon, authenticated, service_role; create table public.v2_models(model_slug text primary key, hidden boolean not null default false);');
-  for (const name of ['v2_benchmarks', 'v2_benchmark_results']) {
+  // v2_benchmarks and v2_benchmark_results reference v2_benchmark_sources, so it is created first.
+  for (const name of ['v2_benchmark_sources', 'v2_benchmarks', 'v2_benchmark_results']) {
     const sql = await read(`../schemas/public/tables/${name}.sql`);
     await db.exec(sql.slice(0, sql.indexOf('\n);') + 3));
     await db.exec(`grant select, insert, update on public.${name} to service_role;`);

@@ -85,6 +85,8 @@ export interface BenchmarkResult {
 	created_at?: string | null;
 	updated_at?: string | null;
 	rank?: number | null;
+	/** Set on results synced from a public leaderboard; their percentages are stored as 0-100 points. */
+	source_id?: string | null;
 }
 
 export interface BenchmarkPage {

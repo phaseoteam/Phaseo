@@ -141,7 +141,7 @@ async function loadCompareSources(env: Env, modelIds: string[]): Promise<Compari
 		// Links and arbitrary legacy detail rows do not have V2 tables yet.
 		client.from("v2_model_links").select("model_id:model_slug,url,platform:link_kind,kind:link_kind").in("model_slug", modelIds).order("sort_order"),
 		client.from("v2_model_details").select("model_id:model_slug,detail_name,detail_value").in("model_slug", modelIds),
-		client.from("v2_benchmark_results").select("result_id,model_slug,benchmark_id,score,is_self_reported,other_info,source_link,rank,benchmark:v2_benchmarks!v2_benchmark_results_benchmark_id_fkey(benchmark_id,name,category,link,ascending_order,benchmark_type)").or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`).in("model_slug", modelIds),
+		client.from("v2_benchmark_results").select("result_id,model_slug,benchmark_id,score,is_self_reported,other_info,source_link,rank,source_id,benchmark:v2_benchmarks!v2_benchmark_results_benchmark_id_fkey(benchmark_id,name,category,link,ascending_order,benchmark_type)").or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`).in("model_slug", modelIds),
 		fetchSubscriptionPlansForModels(client, modelIds).then((data) => ({ data, error: null })),
 		fetchModelPricingSources(env, modelIds),
 	]);
@@ -159,7 +159,7 @@ async function loadCompareSources(env: Env, modelIds: string[]): Promise<Compari
 		const benchmark = Array.isArray(row.benchmark) ? row.benchmark[0] : row.benchmark;
 		benchmarksByModel.set(row.model_slug, [...(benchmarksByModel.get(row.model_slug) ?? []), {
 			id: row.result_id, benchmark_id: row.benchmark_id, score: row.score, is_self_reported: row.is_self_reported,
-			other_info: row.other_info, source_link: row.source_link, rank: row.rank,
+			other_info: row.other_info, source_link: row.source_link, rank: row.rank, source_id: row.source_id ?? null,
 			benchmark: benchmark ? { id: benchmark.benchmark_id, name: benchmark.name, category: benchmark.category, link: benchmark.link, ascending_order: benchmark.ascending_order, type: benchmark.benchmark_type } : null,
 		}]);
 	}

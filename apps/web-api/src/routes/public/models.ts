@@ -367,13 +367,14 @@ async function modelAliases(env: Env, modelId: string): Promise<string[]> {
 }
 
 function benchmarkType(value: unknown): "percentage" | "numerical" | null { const normalized = String(value ?? "").trim().toLowerCase(); return ["percentage", "percent", "pct", "%"].includes(normalized) ? "percentage" : ["numerical", "numeric", "number"].includes(normalized) ? "numerical" : null; }
-function benchmarkScore(value: unknown, percentage: boolean): number | null { const match = typeof value === "number" ? value : typeof value === "string" ? Number.parseFloat(value.match(/[-+]?[0-9]*\.?[0-9]+/)?.[0] ?? "") : Number.NaN; if (!Number.isFinite(match)) return null; return percentage && Math.abs(match) > 0 && Math.abs(match) <= 1 ? match * 100 : match; }
+/** Percentages on the 0-100 scale. Synced leaderboard results (source_id set) are stored in points already; hand-entered ones may be fractions. */
+function benchmarkScore(value: unknown, percentage: boolean, sourceId?: unknown): number | null { const match = typeof value === "number" ? value : typeof value === "string" ? Number.parseFloat(value.match(/[-+]?[0-9]*\.?[0-9]+/)?.[0] ?? "") : Number.NaN; if (!Number.isFinite(match)) return null; if (sourceId) return match; return percentage && Math.abs(match) > 0 && Math.abs(match) <= 1 ? match * 100 : match; }
 function scoreDisplay(value: number | null, percentage: boolean, fallback: unknown): string { if (value == null) return fallback == null ? "-" : String(fallback); const formatted = value % 1 === 0 || Math.abs(value) >= 100 ? value.toFixed(0) : value.toFixed(2); return percentage ? `${formatted}%` : formatted; }
 function benchmarkHighlights(results: Array<Record<string, unknown>>) {
 	const selected = new Map<string, Record<string, unknown>>();
 	for (const result of results) {
 		const benchmark = (Array.isArray(result.benchmark) ? result.benchmark[0] : result.benchmark) as Record<string, unknown> | null; const id = String(result.benchmark_id ?? benchmark?.id ?? ""); if (!id) continue;
-		const type = benchmarkType(benchmark?.type); const percentage = type ? type === "percentage" : typeof result.score === "string" && result.score.includes("%"); const score = benchmarkScore(result.score, percentage); const candidate = { ...result, _benchmark: benchmark ?? {}, _score: score, _percentage: percentage };
+		const type = benchmarkType(benchmark?.type); const percentage = type ? type === "percentage" : typeof result.score === "string" && result.score.includes("%"); const score = benchmarkScore(result.score, percentage, result.source_id); const candidate = { ...result, _benchmark: benchmark ?? {}, _score: score, _percentage: percentage };
 		const previous = selected.get(id); if (!previous) { selected.set(id, candidate); continue; }
 		const rank = typeof result.rank === "number" ? result.rank : null; const previousRank = typeof previous.rank === "number" ? previous.rank : null;
 		if (rank != null && (previousRank == null || rank < previousRank)) { selected.set(id, candidate); continue; } if (rank != null && previousRank != null && rank > previousRank) continue;
@@ -1643,7 +1644,7 @@ publicModelsRouter.get("/:modelId/benchmarks", async (c) => {
 				id: row.result_id, benchmark_id: row.benchmark_id, score: row.score, score_numeric: row.score_numeric,
 				is_self_reported: row.is_self_reported, other_info: row.other_info, source_link: row.source_link,
 				created_at: row.created_at, updated_at: row.updated_at, rank: row.result_rank, occur_idx: row.occur_idx,
-				variant: row.variant, result_key: row.result_key,
+				variant: row.variant, result_key: row.result_key, source_id: row.source_id ?? null,
 				benchmark: { id: row.benchmark_id, name: row.benchmark_name, category: row.category, link: row.link, total_models: row.total_models, ascending_order: row.ascending_order, type: row.benchmark_type },
 			}));
 			return withPublicCache(c.json({ modelId, results, highlights: benchmarkHighlights(results), source: "v2" }), sectionPolicy("benchmarks", modelId));

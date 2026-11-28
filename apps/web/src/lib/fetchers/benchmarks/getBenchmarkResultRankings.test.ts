@@ -36,7 +36,9 @@ describe("mapDerivedBenchmarkRankingRow", () => {
 			rank: 2,
 			totalRankedModels: 17,
 			isPrimaryResult: true,
+			sourceId: null,
 		});
+		expect(mapDerivedBenchmarkRankingRow({ ...BASE_ROW, source_id: "arc-prize" }).sourceId).toBe("arc-prize");
 	});
 
 	it("treats invalid and non-positive ranking values as unavailable", () => {

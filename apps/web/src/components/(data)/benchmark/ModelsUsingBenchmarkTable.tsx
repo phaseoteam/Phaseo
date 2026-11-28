@@ -84,7 +84,8 @@ export default function ModelsUsingBenchmarkClient({
 		});
 		const parsed = normalizeBenchmarkScoreValue(
 			parseBenchmarkScore(rawScore),
-			isPercentage
+			isPercentage,
+			r?.source_id
 		);
 		if (parsed !== null) {
 			if (isArtificialAnalysisBenchmark(benchmarkId)) return formatArtificialAnalysisScore(benchmarkId, parsed, locale);
@@ -93,6 +94,7 @@ export default function ModelsUsingBenchmarkClient({
 				isPercentage,
 				fallback: rawScore,
 				locale,
+				normalized: true,
 			});
 		}
 		if (rawScore !== tx("Product.latency.nA" as never) && typeof rawScore === "string") return rawScore;
@@ -115,11 +117,13 @@ export default function ModelsUsingBenchmarkClient({
 			});
 			const pb = normalizeBenchmarkScoreValue(
 				parseBenchmarkScore(b.score ?? ""),
-				isBPercentage
+				isBPercentage,
+				b.source_id
 			);
 			const pa = normalizeBenchmarkScoreValue(
 				parseBenchmarkScore(a.score ?? ""),
-				isAPercentage
+				isAPercentage,
+				a.source_id
 			);
 			if (pa != null && pb != null) {
 				return isLowerBetter ? pa - pb : pb - pa;

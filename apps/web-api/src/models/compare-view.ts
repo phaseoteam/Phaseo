@@ -558,6 +558,11 @@ function benchmarkType(value: unknown): CompareViewBenchmark["type"] {
 
 const SOURCE_ORDER: Record<CompareViewBenchmark["source"], number> = { epoch: 0, "artificial-analysis": 1, independent: 2, lab: 3 };
 
+/** Percentages on the 0-100 scale. Synced leaderboard results (source_id set) are stored in points already; hand-entered ones may be fractions. */
+function comparableScore(score: number, type: CompareViewBenchmark["type"], sourceId: unknown): number {
+	return type === "percentage" && !sourceId && score !== 0 && Math.abs(score) <= 1 ? score * 100 : score;
+}
+
 function composeBenchmarks(models: Row[]): CompareViewBenchmark[] {
 	const benchmarks = new Map<string, CompareViewBenchmark>();
 	const raw = new Map<string, Array<{ modelId: string; result: Row }>>();
@@ -588,7 +593,7 @@ function composeBenchmarks(models: Row[]): CompareViewBenchmark[] {
 		for (const { modelId, result } of entries) {
 			const variant = parseVariant(result.other_info, benchmark.source);
 			const list = benchmark.results[modelId] ??= [];
-			const score = number(result.score)!;
+			const score = comparableScore(number(result.score)!, benchmark.type, result.source_id);
 			// Identical rows from repeated imports add nothing.
 			if (list.some((item) => item.score === score && item.variant === variant)) continue;
 			list.push({

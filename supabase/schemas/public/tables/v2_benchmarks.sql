@@ -8,11 +8,18 @@ CREATE TABLE "public"."v2_benchmarks" (
   "benchmark_type"  text,
   "created_at"      timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at"      timestamp with time zone NOT NULL DEFAULT now(),
-  CONSTRAINT "v2_benchmarks_pkey" PRIMARY KEY (benchmark_id)
+  "source_id"       text,
+  "description"     text,
+  "unit"            text,
+  CONSTRAINT "v2_benchmarks_pkey" PRIMARY KEY (benchmark_id),
+  CONSTRAINT "v2_benchmarks_source_id_fkey" FOREIGN KEY (source_id) REFERENCES public.v2_benchmark_sources(source_id)
 );
 
 ALTER TABLE "public"."v2_benchmarks"
   ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX v2_benchmarks_source_idx ON public.v2_benchmarks USING btree (source_id)
+  WHERE (source_id IS NOT NULL);
 
 CREATE TRIGGER catalogue_no_removal
   BEFORE DELETE OR TRUNCATE ON public.v2_benchmarks
