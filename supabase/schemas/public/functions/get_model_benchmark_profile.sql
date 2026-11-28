@@ -69,10 +69,11 @@ CREATE OR REPLACE FUNCTION public.get_model_benchmark_profile (
       benchmark.ascending_order is false as lower_is_better,
       result.source_id is null and benchmark.benchmark_type = 'percentage'
         and position('%' in coalesce(result.score, '')) = 0 as may_be_fraction,
-      coalesce(
+      -- A bound such as '<1%' is not an exact score, so it is shown as written but not ranked.
+      case when btrim(coalesce(result.score, '')) ~ '^(<|>|≤|≥)' then null else coalesce(
         result.score_numeric,
         substring(replace(result.score, ',', '') from '[-+]?[0-9]*[.]?[0-9]+(?:[eE][-+]?[0-9]+)?')::numeric
-      ) as value
+      ) end as value
     from public.v2_benchmark_results result
     join public.v2_benchmarks benchmark on benchmark.benchmark_id = result.benchmark_id
     join visible_models visible on visible.model_slug = result.model_slug

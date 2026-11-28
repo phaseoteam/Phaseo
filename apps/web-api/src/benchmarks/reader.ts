@@ -114,7 +114,8 @@ export function mapProfileRows(rows: Row[]): ModelBenchmarkProfileRow[] {
 			benchmarkName: text(row.benchmark_name) ?? benchmarkId,
 			category: text(row.category),
 			unit: text(row.unit),
-			type: text(row.benchmark_type),
+			// A curated "76%" on a benchmark without type metadata is still a percentage.
+			type: text(row.benchmark_type) ?? (text(row.score)?.includes("%") ? "percentage" : undefined),
 			higherIsBetter: row.higher_is_better !== false,
 			score: number(row.comparable_score),
 			scoreText: text(row.score),
@@ -128,7 +129,8 @@ export function mapProfileRows(rows: Row[]): ModelBenchmarkProfileRow[] {
 			harness: text(row.harness),
 			config: text(row.config),
 			variant: text(row.variant),
-			note: text(row.other_info),
+			// Scraped rows carry their configuration and attribution in other_info, already shown as columns.
+			note: row.source_id ? undefined : text(row.other_info),
 			link: text(row.source_link),
 			ciLow: number(row.ci_low),
 			ciHigh: number(row.ci_high),

@@ -192,7 +192,8 @@ export function toBoardRows(benchmark: Pick<BenchmarkPage, "results" | "type">):
 			outputTokens: result.output_tokens ?? null,
 			observedOn: result.observed_on ?? null,
 			link: result.source_link ?? null,
-			note: typeof result.other_info === "string" ? result.other_info : null,
+			// Scraped rows carry their configuration and attribution in other_info, already shown as columns.
+			note: !result.source_id && typeof result.other_info === "string" ? result.other_info : null,
 		};
 	});
 }

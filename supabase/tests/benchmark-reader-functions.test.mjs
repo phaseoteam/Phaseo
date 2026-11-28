@@ -32,7 +32,7 @@ async function seed() {
 			source_id text, effort text, harness text, config text, ci_low numeric, ci_high numeric, cost_usd numeric,
 			duration_seconds numeric, output_tokens numeric, observed_on date
 		);
-		insert into public.v2_models (model_slug) values ('lab/a'), ('lab/b'), ('lab/c');
+		insert into public.v2_models (model_slug) values ('lab/a'), ('lab/b'), ('lab/c'), ('lab/bound');
 		insert into public.v2_models (model_slug, hidden) values ('lab/hidden', true);
 		insert into public.v2_models (model_slug, status) values ('lab/draft', 'draft');
 		insert into public.v2_models (model_slug, released_at) values ('lab/future', now() + interval '1 day');
@@ -68,7 +68,9 @@ async function seed() {
 		insert into public.v2_benchmark_results (model_slug, benchmark_id, score, score_numeric) values
 			('lab/a', 'txt', '76%', null),
 			('lab/b', 'txt', '70', 70),
-			('lab/c', 'txt', '0.8', null);
+			('lab/c', 'txt', '0.8', null),
+			-- A bound is shown as written but never ranked as an exact score.
+			('lab/bound', 'txt', '<1%', 1);
 	`);
 	await db.exec(migration.replace(/^SET local check_function_bodies = off;$/m, ""));
 	return db;
@@ -123,5 +125,7 @@ test("profile ranks curated text scores the way the leaderboard parses them", as
 	assert.equal(Number(rows[0].comparable_score), 76);
 	// lab/c 0.8 (80 points) leads, then lab/a 76%, then lab/b 70.
 	assert.deepEqual([Number(rows[0].model_rank), Number(rows[0].ranked_models)], [2, 3]);
+	const bound = (await db.query("select * from public.get_model_benchmark_profile('lab/bound')")).rows.filter((row) => row.benchmark_id === "txt");
+	assert.deepEqual(bound.map((row) => [row.score, row.comparable_score, row.model_rank]), [["<1%", null, null]]);
 	await db.close();
 });
