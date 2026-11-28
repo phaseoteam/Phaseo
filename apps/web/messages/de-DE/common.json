@@ -2664,6 +2664,28 @@
 		"numberInput": {
 			"decrease": "Verringern",
 			"increase": "Erhöhen"
+		},
+		"wordsMarkdown": {
+			"downloadFile": "Datei herunterladen",
+			"copied": "Kopiert",
+			"copyCode": "Code kopieren",
+			"copyTable": "Tabelle kopieren",
+			"downloadCsv": "Tabelle als CSV herunterladen",
+			"details": "Details"
+		},
+		"markdownLab": {
+			"title": "Markdown-Renderer-Labor",
+			"description": "Chat-Antworten, dargestellt mit Streamdown (aktuell) und Words. Den Chat selbst stellst du mit dem URL-Parameter md um:",
+			"fixture": "Beispiel",
+			"show": "Anzeigen",
+			"both": "Beide",
+			"wordsPlain": "Words, ohne Chips",
+			"chunk": "Blockgröße",
+			"streamWith": "Mit {engine} streamen",
+			"paneStreamdown": "Streamdown (aktuell)",
+			"paneWords": "Words (@pierre/words)",
+			"streamdown": "Streamdown",
+			"words": "Words"
 		}
 	},
 	"deprecationNotice": {

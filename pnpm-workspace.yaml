@@ -52,6 +52,8 @@ minimumReleaseAge: 10080
 minimumReleaseAgeExclude:
   # Isolated OpenUI experiment evaluates the newly released renderer.
   - "@openuidev/*"
+  # Spike: evaluating @pierre/words (released 2026-11-18) behind a flag; not for merge as is.
+  - "@pierre/words"
   # Security patches for static-path middleware bypasses must not wait a week.
   - "hono"
   - "@hono/node-server"

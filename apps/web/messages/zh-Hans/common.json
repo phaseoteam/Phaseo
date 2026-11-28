@@ -2664,6 +2664,28 @@
 		"numberInput": {
 			"decrease": "减少",
 			"increase": "增加"
+		},
+		"wordsMarkdown": {
+			"downloadFile": "下载文件",
+			"copied": "已复制",
+			"copyCode": "复制代码",
+			"copyTable": "复制表格",
+			"downloadCsv": "将表格下载为 CSV",
+			"details": "详情"
+		},
+		"markdownLab": {
+			"title": "Markdown 渲染器实验室",
+			"description": "由 Streamdown（当前）和 Words 渲染的聊天回答。使用 URL 参数 md 切换聊天本身:",
+			"fixture": "示例",
+			"show": "显示",
+			"both": "两者",
+			"wordsPlain": "Words（无标签）",
+			"chunk": "分块大小",
+			"streamWith": "用 {engine} 流式输出",
+			"paneStreamdown": "Streamdown（当前）",
+			"paneWords": "Words (@pierre/words)",
+			"streamdown": "Streamdown",
+			"words": "Words"
 		}
 	},
 	"deprecationNotice": {

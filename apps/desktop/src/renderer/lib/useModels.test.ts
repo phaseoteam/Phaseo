@@ -24,4 +24,10 @@ describe("model cache policy", () => {
 		vi.advanceTimersByTime(BACKGROUND_REFRESH_MS - 1); expect(revalidate).not.toHaveBeenCalled();
 		vi.advanceTimersByTime(1); expect(revalidate).toHaveBeenCalledTimes(1);
 	});
+	it("returns the same empty list across renders while loading or unavailable", () => {
+		vi.stubGlobal("window", { phaseoDesktop: { workspace: { models: vi.fn() } } });
+		vi.mocked(useSWR).mockReturnValue({ data: undefined, error: undefined } as ReturnType<typeof useSWR>);
+		expect(useModels("phaseo", "first").models).toBe(useModels("phaseo", "first").models);
+		expect(useModels("phaseo").models).toBe(useModels("phaseo").models);
+	});
 });

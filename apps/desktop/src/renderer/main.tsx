@@ -40,7 +40,9 @@ try {
 
 // The performance suite times startup from this mark (scripts/perf).
 performance.mark("phaseo:render-start");
-createRoot(root).render(
+// Development only: `?markdown-lab` compares the Markdown renderers instead of starting the app.
+if (import.meta.env.DEV && new URLSearchParams(location.search).has("markdown-lab")) void import("./dev/MarkdownLab").then(({ MarkdownLab }) => { document.getElementById("phaseo-splash")?.remove(); createRoot(root).render(<StrictMode><MarkdownLab /></StrictMode>); });
+else createRoot(root).render(
 	<StrictMode>
 		<DesktopFlags><App /></DesktopFlags>
 	</StrictMode>,

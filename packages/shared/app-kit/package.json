@@ -18,6 +18,8 @@
 		"./message-chips": "./src/messageChips.ts",
 		"./message-chips-remark": "./src/messageChipsRemark.ts",
 		"./message-chips-markdown": "./src/messageChipsMarkdown.ts",
+		"./markdown-prefix-cache": "./src/markdownPrefixCache.ts",
+		"./markdown-details": "./src/markdownDetails.ts",
 		"./ui-recipes": "./src/ui-recipes/index.ts",
 		"./format": "./src/format/index.ts"
 	},

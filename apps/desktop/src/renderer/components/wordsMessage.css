@@ -1,0 +1,87 @@
+/*
+ * Words output in desktop messages. Words' own stylesheet sits in the `base` layer, under the app's `components` layer,
+ * so .message-markdown (index.css) styles the prose exactly as it does for react-markdown. The rules below cover markup
+ * only Words writes, and make its code blocks look like CodeBlock (.message-code-block / .message-code-actions).
+ */
+@import "@pierre/words/styles.css" layer(base);
+
+.words-message > [data-markdown="root"] { line-height: inherit; overflow-wrap: anywhere; }
+/* Parts (split around <details>) follow one another like blocks of one document: only the outer edges lose margins. */
+.words-message > :first-child > :first-child { margin-top: 0; }
+.words-message > :last-child > :last-child { margin-bottom: 0; }
+.words-message [data-markdown="root"] :is(h1, h2, h3, h4, h5, h6) { letter-spacing: normal; }
+.words-message .message-table-scroll { overflow-x: auto; max-width: 100%; }
+.words-message [data-portal] { display: contents; }
+.words-message .words-portal-host { display: contents; }
+/* As wide as its content, like react-markdown's tables; a wider one scrolls. */
+.words-message .message-table-scroll table { width: max-content; }
+.words-message a:not([href]) { color: inherit; text-decoration: none; }
+
+/* Code blocks, as .message-code-block. */
+.words-message [data-markdown="code-block"] {
+	margin-block: 0 0.85em;
+	overflow: hidden;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: var(--card);
+}
+.words-message [data-markdown="code-header"] {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 4px 6px 4px 12px;
+	border-bottom: 1px solid var(--border);
+	color: var(--muted-foreground);
+	font: 11.5px/1.4 var(--font-sans, inherit);
+}
+.words-message [data-markdown="code-header"] > span:last-child { display: flex; align-items: center; gap: 2px; }
+.words-message .words-code-actions button {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 26px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	padding: 0 8px;
+	color: inherit;
+	font-size: 11.5px;
+	font-weight: 500;
+	cursor: pointer;
+}
+.words-message .words-code-actions button:hover { background: var(--muted); color: var(--foreground); }
+.words-message .words-code-actions .message-code-icon { justify-content: center; width: 26px; padding: 0; }
+.words-message .words-code-actions .message-code-icon[aria-pressed="true"] { background: var(--muted); color: var(--foreground); }
+.words-message .words-code-actions svg { width: 13px; height: 13px; }
+.words-message .words-code-status { margin-inline-end: 6px; }
+.words-message [data-markdown="code-block"] pre {
+	margin: 0;
+	padding: 14px 16px;
+	max-height: none;
+	border: 0;
+	border-radius: 0;
+	background: color-mix(in oklch, var(--muted) 35%, var(--card));
+	font: 12.5px/1.65 var(--font-mono);
+}
+/* Wrap, from the header's toggle. */
+.words-message [data-markdown="code-block"]:has(.words-code-actions[data-wrap]) pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* @pierre/highlights writes each token's dark colour as --hls-dark; the app switches theme with .dark. */
+.dark .words-message [data-markdown="code-block"] span[style*="--hls-dark"] { color: var(--hls-dark) !important; }
+
+/* Diagrams, as .message-diagram-frame, in the app's colours (Pele reads these variables). */
+.words-message [data-markdown="mermaid"] { padding: 16px; background: color-mix(in oklch, var(--muted) 35%, var(--card)); overflow: auto; }
+.words-message [data-markdown="mermaid"] > svg { display: block; margin: auto; }
+.words-message [data-markdown="code-block"]:has(.words-code-actions[data-show-code]) [data-markdown="mermaid"] { display: none; }
+.words-message pre.words-diagram-source { white-space: pre-wrap; }
+.words-message svg.pele {
+	--pele-bg: color-mix(in oklch, var(--muted) 35%, var(--card));
+	--pele-fg: var(--foreground);
+	--pele-muted: var(--muted-foreground);
+	--pele-line: var(--muted-foreground);
+	--pele-surface: var(--card);
+	--pele-surface-alt: var(--muted);
+	--pele-border: color-mix(in oklch, var(--foreground) 25%, transparent);
+	--pele-accent: var(--primary);
+	--pele-radius: 6px;
+}
