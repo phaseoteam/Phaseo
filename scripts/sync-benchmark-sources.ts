@@ -119,11 +119,10 @@ async function syncBenchmarks(db: Db, source: BenchmarkSource, benchmarks: Bench
 	if (upsertError) throw upsertError;
 }
 
-/** total_models counts every model with an active result on the benchmark: hand-entered and from every source. */
-async function refreshModelCount(db: Db, benchmarkId: string, now: string) {
-	const rows = await pages<{ model_slug: string }>((from, to) => db.from("v2_benchmark_results").select("model_slug")
-		.eq("benchmark_id", benchmarkId).or(`effective_to.is.null,effective_to.gt.${now}`).order("result_id").range(from, to));
-	const { error } = await db.from("v2_benchmarks").update({ total_models: new Set(rows.map((row) => row.model_slug)).size }).eq("benchmark_id", benchmarkId);
+/** total_models counts every model with an active result on the benchmark: hand-entered and from every source. Counted in Postgres. */
+async function refreshModelCounts(db: Db, benchmarkIds: string[]) {
+	if (!benchmarkIds.length) return;
+	const { error } = await db.rpc("refresh_benchmark_total_models", { p_benchmark_ids: benchmarkIds });
 	if (error) throw error;
 }
 
@@ -140,13 +139,14 @@ async function syncSource(db: Db, matcher: ModelMatcher, source: BenchmarkSource
 	const stored = write
 		? await pages<{ result_id: string; benchmark_id: string }>((from, to) => db.from("v2_benchmark_results").select("result_id,benchmark_id").eq("source_id", source.id).order("result_id").range(from, to))
 		: [];
-	const refusal = refusalReason(source, observations.length, rows.length, stored.length);
-	if (refusal) return { sourceId: source.id, status: "refused", error: refusal, build: report, observations };
+	// Protected benchmarks keep their stored rows, so they don't count toward the source-wide replacement check.
 	const warnings = protectedBenchmarks(rows, stored);
+	const kept = new Set(warnings.map((warning) => warning.benchmarkId));
+	const refusal = refusalReason(source, observations.length, rows.filter((row) => !kept.has(row.benchmark_id)).length, stored.filter((row) => !kept.has(row.benchmark_id)).length);
+	if (refusal) return { sourceId: source.id, status: "refused", error: refusal, build: report, observations };
 	if (!write) return { sourceId: source.id, status: "ok", build: report, warnings, observations };
 
 	// A protected benchmark keeps its stored rows untouched: no replacement, no removal, no new count.
-	const kept = new Set(warnings.map((warning) => warning.benchmarkId));
 	const benchmarks = source.benchmarks.filter((benchmark) => !kept.has(benchmark.id));
 	const replacing = rows.filter((row) => !kept.has(row.benchmark_id));
 	await syncBenchmarks(db, source, benchmarks, now);
@@ -161,7 +161,7 @@ async function syncSource(db: Db, matcher: ModelMatcher, source: BenchmarkSource
 		const { error } = await db.from("v2_benchmark_results").delete().eq("source_id", source.id).in("result_id", stale.slice(index, index + 200));
 		if (error) throw error;
 	}
-	for (const benchmark of benchmarks) await refreshModelCount(db, benchmark.id, now);
+	await refreshModelCounts(db, benchmarks.map((benchmark) => benchmark.id));
 	return { sourceId: source.id, status: "ok", build: report, written: replacing.length, removed: stale.length, warnings, observations };
 }
 
