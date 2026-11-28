@@ -22,7 +22,6 @@ export function mercorLabel(row: Row): string {
 }
 
 const BOARDS: Array<BenchmarkDefinition & { mercorId: string; defaultPass: string }> = [
-	{ mercorId: "ace", defaultPass: "pass-1", id: "mercor-ace", name: "ACE (AI Consumer Index)", url: "https://www.mercor.com/apex/ace-leaderboard/", category: "agents", type: "percentage", unit: "%", higherIsBetter: true, description: "The model performs everyday consumer tasks in shopping, food, gaming and DIY. Pass@1 with a 95% interval." },
 	{ mercorId: "apex-accounting", defaultPass: "mean-score", id: "mercor-apex-accounting", name: "APEX-Accounting", url: "https://www.mercor.com/apex/apex-accounting-leaderboard/", category: "agents", type: "percentage", unit: "%", higherIsBetter: true, description: "An agent completes long professional accounting tasks across accounting software, spreadsheets and PDFs. Mean rubric score with a 95% interval." },
 	{ mercorId: "apex-agents", defaultPass: "pass-1", id: "apex-agents", name: "APEX-Agents", url: "https://www.mercor.com/apex/apex-agents-leaderboard/", category: "agents", type: "percentage", unit: "%", higherIsBetter: true, description: "An agent completes multi-hour professional tasks in investment banking, corporate law and management consulting with real tools in Google Workspace. Pass@1 with a 95% interval." },
 	{ mercorId: "apex-swe", defaultPass: "pass-1", id: "mercor-apex-swe", name: "APEX-SWE", url: "https://www.mercor.com/apex/apex-swe-leaderboard/", category: "code", type: "percentage", unit: "%", higherIsBetter: true, description: "An agent completes real-world software engineering tasks, from bug fixes to feature builds, in each listed harness. Pass@1 with a 95% interval." },
@@ -36,7 +35,8 @@ export function parseMercorApex(page: Page): SourceObservation[] {
 	if (!BOARDS.some((definition) => boards.some((candidate) => candidate.benchmarkId === definition.mercorId))) throw new Error("Mercor APEX format changed: none of the known boards is listed.");
 	const observations: SourceObservation[] = [];
 	for (const definition of BOARDS) {
-		// A board Mercor stops listing (ACE in November 2026) yields no rows; the sync keeps its stored results and warns.
+		// A board Mercor stops listing yields no rows; if it has stored results, the sync keeps them and warns. ACE was
+		// withdrawn in November 2026 with no stored results, so it is no longer defined rather than left as an empty board.
 		const board = boards.find((candidate) => candidate.benchmarkId === definition.mercorId);
 		if (!board) continue;
 		const pass = board.availablePasses?.[0]?.value ?? definition.defaultPass;

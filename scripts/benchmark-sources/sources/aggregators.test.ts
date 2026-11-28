@@ -176,6 +176,14 @@ describe("SWE-rebench", () => {
 		];
 		assert.equal(headlineWindow(swapped), window("2026-06-15", "2026-07-01"));
 	});
+	it("ignores an agent that only appears in the newest window", () => {
+		// Every model is in both windows; an agent evaluated only on the newest issues must not stop the widening.
+		const agentNarrow = [
+			{ modelName: "GLM-5.2 [high]", meta: { instance_type: "model" }, rangeStats: { all: { [window("2026-06-15", "2026-07-01")]: { resolvedRate: 42 }, [window("2026-05-15", "2026-07-01")]: { resolvedRate: 40 } } } },
+			{ modelName: "Claude Code", meta: { instance_type: "agent" }, rangeStats: { all: { [window("2026-06-15", "2026-07-01")]: { resolvedRate: 60 } } } },
+		];
+		assert.equal(headlineWindow(agentNarrow), window("2026-05-15", "2026-07-01"));
+	});
 	it("reads plain models in that window", () => {
 		const rows = parseSweRebench(items);
 		assert.deepEqual(rows.map((row) => [row.label, row.value]), [["GLM-5.2 [high]", 40], ["Fable 5 [high]", 50]]);
@@ -236,18 +244,18 @@ describe("Mercor APEX", () => {
 	it("reads each board's headline pass, per harness, with the Claude family restored", () => {
 		const rows = parseMercorApex(page as unknown as Parameters<typeof parseMercorApex>[0]);
 		assert.deepEqual(rows.map((entry) => [entry.benchmarkId, entry.label, entry.effort, entry.harness, entry.value]), [
-			["mercor-ace", "GPT-5", "high", undefined, 56.1],
 			["apex-agents", "Claude Fable 5.1", "max", "Loop", 68.6],
 			["mercor-apex-swe", "Claude Fable 5", undefined, "inspect", 54.83],
 			["mercor-apex-swe", "Claude Fable 5", undefined, "terminus-2", 58.9],
 			["owe-bench", "Claude Opus 5.5", "max", undefined, 41.6],
 		]);
-		assert.ok(Math.abs((rows[0].ciLow ?? 0) - 52.8) < 1e-9);
+		// ACE is still in the fixture but no longer defined, so it yields nothing.
+		assert.ok(Math.abs((rows[0].ciLow ?? 0) - 63.7) < 1e-9);
 	});
 	it("skips a board Mercor stops listing, but fails when none is left", () => {
-		const withoutAce = { props: { pageProps: { benchmarks: page.props.pageProps.benchmarks.filter((entry) => entry.benchmarkId !== "ace") } } };
-		const rows = parseMercorApex(withoutAce as unknown as Parameters<typeof parseMercorApex>[0]);
-		assert.ok(rows.length === 4 && rows.every((entry) => entry.benchmarkId !== "mercor-ace"));
+		const withoutSwe = { props: { pageProps: { benchmarks: page.props.pageProps.benchmarks.filter((entry) => entry.benchmarkId !== "apex-swe") } } };
+		const rows = parseMercorApex(withoutSwe as unknown as Parameters<typeof parseMercorApex>[0]);
+		assert.deepEqual(rows.map((entry) => entry.benchmarkId), ["apex-agents", "owe-bench"]);
 		assert.throws(() => parseMercorApex({ props: { pageProps: { benchmarks: [] } } }), /format changed/);
 	});
 });
