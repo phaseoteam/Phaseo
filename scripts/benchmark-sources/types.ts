@@ -55,4 +55,6 @@ export type BenchmarkSource = {
 export type SourceContext = {
 	fetchText(url: string, init?: RequestInit): Promise<string>;
 	fetchJson<T = unknown>(url: string, init?: RequestInit): Promise<T>;
+	/** Raw response body, for boards that publish binary data files. Optional so existing contexts still type-check. */
+	fetchBytes?(url: string, init?: RequestInit): Promise<Uint8Array>;
 };
