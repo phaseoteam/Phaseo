@@ -139,7 +139,11 @@ describe("buildLeaderboard", () => {
 	});
 
 	it("labels the outbound link with the site it opens", () => {
-		expect(boardSourceLink("https://bench.example/paper", { url: "https://evals.example", publisher: "Evals" })).toEqual({ href: "https://evals.example", sourceName: "Evals" });
+		// Two boards from one source keep their own pages: WeirdML v2 must not open v3.
+		const weirdml = { url: "https://htihle.github.io/weirdml.html", publisher: "Håvard Tveit Ihle" };
+		expect(boardSourceLink("https://htihle.github.io/weirdml_v2.html", weirdml)).toEqual({ href: "https://htihle.github.io/weirdml_v2.html", sourceName: "Håvard Tveit Ihle" });
+		expect(boardSourceLink("https://bench.example/paper", { url: "https://evals.example", publisher: "Evals" })).toEqual({ href: "https://bench.example/paper", sourceName: null });
+		expect(boardSourceLink(null, { url: "https://evals.example", publisher: "Evals" })).toEqual({ href: "https://evals.example", sourceName: "Evals" });
 		expect(boardSourceLink("https://bench.example/paper", { url: null, publisher: "Evals" })).toEqual({ href: "https://bench.example/paper", sourceName: null });
 		expect(boardSourceLink(null, undefined)).toBeNull();
 	});

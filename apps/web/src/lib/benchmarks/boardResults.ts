@@ -296,9 +296,20 @@ export function showEffortFilter(efforts: string[], hasUntagged: boolean, active
  * link doesn't go to.
  */
 export function boardSourceLink(benchmarkLink: string | null | undefined, source: { url?: string | null; publisher?: string | null; name?: string | null } | null | undefined): { href: string; sourceName: string | null } | null {
-	if (source?.url) return { href: source.url, sourceName: source.publisher ?? source.name ?? null };
-	if (benchmarkLink) return { href: benchmarkLink, sourceName: null };
+	const sourceName = source?.publisher ?? source?.name ?? null;
+	// A source can publish several boards (WeirdML v2 and v3), so the benchmark's own page wins. The publisher's
+	// name labels it only when it is on the publisher's site; otherwise the generic label is used.
+	if (benchmarkLink) return { href: benchmarkLink, sourceName: source?.url && sameHost(benchmarkLink, source.url) ? sourceName : null };
+	if (source?.url) return { href: source.url, sourceName };
 	return null;
+}
+
+function sameHost(a: string, b: string): boolean {
+	try {
+		return new URL(a).host === new URL(b).host;
+	} catch {
+		return false;
+	}
 }
 
 // ---------------------------------------------------------------------------------------------
