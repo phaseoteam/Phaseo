@@ -811,12 +811,19 @@ export function hasAtlascloudLlmCategory(row: Record<string, unknown>): boolean 
 			.some((value) => value === "llm");
 	}
 
-	// AtlasCloud's /models stopped sending categories (seen 2026-10-17) and now
-	// describes models by modality, so a text-output model is the LLM signal.
-	if (row.categories === undefined || row.categories === null) {
-		return asArray(row.output_modalities).some(
-			(value) => typeof value === "string" && value.trim().toLowerCase() === "text",
-		);
+	// AtlasCloud's /models stopped sending categories (seen 2026-10-17) and described models by modality,
+	// so a text-output model is the LLM signal. Since 2026-11-24 every entry failed that check, so the
+	// OpenRouter-style `architecture` block counts too, and an entry with no category or modality at all
+	// is kept: the keyed /v1/models endpoint lists only chat models (145, matching the public catalogue's
+	// LLM count), and dropping them all reported a healthy provider as failing for days.
+	if (row.categories === undefined || row.categories === null || (Array.isArray(row.categories) && row.categories.length === 0)) {
+		const architecture = asRecord(row.architecture);
+		const outputs = [...asArray(row.output_modalities), ...asArray(architecture?.output_modalities)]
+			.filter((value): value is string => typeof value === "string")
+			.map((value) => value.trim().toLowerCase());
+		const modality = typeof architecture?.modality === "string" ? architecture.modality.trim().toLowerCase() : "";
+		if (outputs.length === 0 && !modality) return true;
+		return outputs.includes("text") || modality.split("->").at(-1)?.split("+").includes("text") === true;
 	}
 
 	return false;

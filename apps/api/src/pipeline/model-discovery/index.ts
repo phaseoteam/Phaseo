@@ -40,6 +40,7 @@ import {
 import {
 	computePrivateModelDiscoveryFingerprint,
 	sendPrivateModelDiscoveryNotification,
+	buildFullPrivateAlertText,
 } from "./private-model-discovery-notifications";
 import {
 	fetchPricingTableSnapshots,
@@ -260,6 +261,8 @@ type DiscoveryRunSummary = {
 	publicModelAnnouncements: PublicModelAnnouncementSummary;
 	providerHealth: ProviderHealthSummary;
 	notificationFingerprint: string | null;
+	/** Full text of the change alert this run delivered, if any. */
+	alertText: string | null;
 };
 
 type SupabaseSeenModelRow = {
@@ -301,6 +304,10 @@ const MAX_PRICING_ROWS = 5_000;
 const PRICING_PAGE_SIZE = 500;
 const SEEN_MODELS_PAGE_SIZE = 1_000;
 const RUNS_RETENTION_DAYS = 5;
+/** Runs that sent an alert keep its text this long, so false positives can be counted over weeks. */
+export const ALERT_RUNS_RETENTION_DAYS = 60;
+/** Stored alert text is capped; Discord carries the same alert in full. */
+export const MAX_STORED_ALERT_CHARS = 20_000;
 const PRICING_KEY_PATTERN = /(price|pricing|cost|billing|currency|rate|meter|unit|token)/i;
 const PRICING_EXTRACTION_MAX_DEPTH = 4;
 const MAX_SAMPLE_TEXT_LENGTH = 180;
@@ -438,7 +445,26 @@ export async function closeAbandonedRuns(now: Date, currentRunId: string): Promi
 	}
 }
 
+function capAlertText(text: string | null | undefined): string | undefined {
+	const trimmed = text?.trim();
+	if (!trimmed) return undefined;
+	return trimmed.length <= MAX_STORED_ALERT_CHARS ? trimmed : `${trimmed.slice(0, MAX_STORED_ALERT_CHARS - 1)}…`;
+}
+
+/**
+ * The alerts this run delivered, as operators saw them. Present only when something was sent; its
+ * presence is what keeps the run past the normal retention (see pruneOldRuns). The T3 watcher thread
+ * may add its verdict under `alert.review`.
+ */
+export function buildStoredAlert(summary: Pick<DiscoveryRunSummary, "alertText" | "providerHealth">): Record<string, string> | undefined {
+	const changes = capAlertText(summary.alertText);
+	const providerHealth = capAlertText(summary.providerHealth.alertText);
+	if (!changes && !providerHealth) return undefined;
+	return { ...(changes ? { changes } : {}), ...(providerHealth ? { providerHealth } : {}) };
+}
+
 function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError?: string | null; error?: string | null } = {}): Record<string, unknown> {
+	const { alertText: _healthAlertText, ...providerHealth } = summary.providerHealth;
 	// Persist only state that later runs read back (fingerprints, cursors,
 	// coverage baselines) plus counters for triage. Per-provider result arrays
 	// are intentionally not stored.
@@ -492,7 +518,8 @@ function compactSummary(summary: DiscoveryRunSummary, extra: { notificationError
 		},
 		reviewQueue: summary.reviewQueue,
 		publicModelAnnouncements: summary.publicModelAnnouncements,
-		providerHealth: summary.providerHealth,
+		providerHealth,
+		alert: buildStoredAlert(summary),
 		notificationError: extra.notificationError ?? undefined,
 		error: extra.error ?? undefined,
 	};
@@ -1086,13 +1113,20 @@ async function pruneOldRows(cutoffIso: string): Promise<number> {
 	return Array.isArray(data) ? data.length : 0;
 }
 
-async function pruneOldRuns(cutoffIso: string): Promise<void> {
+async function pruneOldRuns(cutoffIso: string, alertCutoffIso: string): Promise<void> {
 	const supabase = getSupabaseAdmin();
-	const { error } = await supabase
+	// Runs without an alert go after the normal window; runs that sent one keep its text for longer.
+	const quiet = await supabase
 		.from("model_discovery_runs")
 		.delete()
-		.lt("started_at", cutoffIso);
-	if (error) throw new Error(error.message || "Failed to prune old model discovery runs");
+		.lt("started_at", cutoffIso)
+		.is("summary->alert", null);
+	if (quiet.error) throw new Error(quiet.error.message || "Failed to prune old model discovery runs");
+	const alerted = await supabase
+		.from("model_discovery_runs")
+		.delete()
+		.lt("started_at", alertCutoffIso);
+	if (alerted.error) throw new Error(alerted.error.message || "Failed to prune old alerted model discovery runs");
 }
 
 // Official pricing pages change a few times a month, and the catalogue sync that acts on them runs
@@ -1120,6 +1154,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 	const retentionDays = toInt(readBindingEnv(["MODEL_DISCOVERY_RETENTION_DAYS"]) ?? String(DEFAULT_RETENTION_DAYS), DEFAULT_RETENTION_DAYS);
 	const staleCutoff = new Date(startedAt.getTime() - retentionDays * 24 * 60 * 60 * 1000).toISOString();
 	const runsCutoff = new Date(startedAt.getTime() - RUNS_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+	const alertRunsCutoff = new Date(startedAt.getTime() - ALERT_RUNS_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
 	const shouldPrune = args.prune ?? true;
 	const shouldNotify = args.notify ?? true;
 	const providers = selectProvidersForShard(args);
@@ -1145,6 +1180,8 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 	await insertRunStart(runId, args, startedAt.toISOString());
 	await closeAbandonedRuns(startedAt, runId);
 	let deliveredNotificationFingerprint: string | null = null;
+	// Hoisted with the fingerprint so a run that fails after delivering still records what it sent.
+	let alertText: string | null = null;
 
 	try {
 		const results: ProviderResult[] = [];
@@ -1463,9 +1500,13 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 					notificationSummary = { delivered: true, skipped: true, reason: "duplicate notification fingerprint" };
 					console.log("[model-discovery] Discord notification skipped: duplicate notification fingerprint");
 				} else {
-					notificationSummary = await sendPrivateModelDiscoveryNotification(notificationInput);
+					notificationSummary = await sendPrivateModelDiscoveryNotification(notificationInput, {
+						runId,
+						source: args.source,
+					});
 					notificationError = notificationSummary.error ?? null;
 					if (!notificationSummary.delivered) notificationFingerprint = null;
+					else if (!notificationSummary.skipped) alertText = buildFullPrivateAlertText(notificationInput);
 				}
 				if (notificationSummary.delivered && notificationFingerprint) {
 					deliveredNotificationFingerprint = notificationFingerprint;
@@ -1498,7 +1539,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			if (shouldPrune) {
 				staleModelsDeleted = await pruneOldRows(staleCutoff);
 				if (shouldPruneRunsDaily(args, startedAt)) {
-					await pruneOldRuns(runsCutoff);
+					await pruneOldRuns(runsCutoff, alertRunsCutoff);
 				}
 			}
 		}
@@ -1551,6 +1592,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			publicModelAnnouncements,
 			providerHealth,
 			notificationFingerprint,
+			alertText,
 		};
 
 		const status: RunStatus =
@@ -1644,6 +1686,7 @@ export async function runModelDiscoveryJob(args: RunArgs): Promise<DiscoveryRunS
 			},
 			providerHealth: { checked: 0, failing: 0, alertsSent: 0 },
 			notificationFingerprint: deliveredNotificationFingerprint,
+			alertText,
 		};
 		try {
 			await updateRunFinish(failedSummary, "failed", { error: reason });

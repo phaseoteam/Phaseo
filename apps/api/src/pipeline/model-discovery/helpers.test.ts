@@ -505,6 +505,29 @@ describe("extractDiscoveredModels", () => {
 
 		expect(models.map((model) => model.id)).toEqual(["llm-model"]);
 	});
+
+	it("reads AtlasCloud modalities from an OpenRouter-style architecture block", () => {
+		const models = extractDiscoveredModels("atlascloud", {
+			data: [
+				{ id: "text-model", architecture: { output_modalities: ["text"] } },
+				{ id: "vision-model", architecture: { modality: "text+image->text" } },
+				{ id: "image-model", architecture: { modality: "text->image" } },
+			],
+		});
+
+		expect(models.map((model) => model.id)).toEqual(["text-model", "vision-model"]);
+	});
+
+	it("keeps AtlasCloud entries that carry no category or modality, as its keyed list is chat-only", () => {
+		const models = extractDiscoveredModels("atlascloud", {
+			data: [
+				{ id: "deepseek-ai/deepseek-v4.1-flash", pricing: { prompt: "0.0000003", completion: "0.0000012" } },
+				{ id: "qwen/qwen4-max", categories: [], context_length: 262144 },
+			],
+		});
+
+		expect(models.map((model) => model.id)).toEqual(["deepseek-ai/deepseek-v4.1-flash", "qwen/qwen4-max"]);
+	});
 });
 
 describe("confirmModelRemovals", () => {

@@ -241,7 +241,13 @@ describe("runProviderHealthCheck", () => {
 		expect(deliverMock).toHaveBeenCalledTimes(1);
 		expect(deliverMock.mock.calls[0]?.[0]).toContain("StepFun (stepfun): 4 failed checks over 1h 10m");
 		expect(db.upserts[0]?.[0]).toMatchObject({ alerted_at: NOW.toISOString(), consecutive_failures: 4 });
-		expect(summary).toEqual({ checked: 1, failing: 1, alertsSent: 1, error: null });
+		expect(summary).toEqual({
+			checked: 1,
+			failing: 1,
+			alertsSent: 1,
+			alertText: expect.stringContaining("StepFun (stepfun): 4 failed checks over 1h 10m"),
+			error: null,
+		});
 	});
 
 	it("keeps alert state when delivery fails so the next sweep retries", async () => {

@@ -384,6 +384,7 @@ export type GatewayBindings = {
     DISCORD_PRIVATE_MODEL_DISCOVERY_ROLE_ID?: string;
     DISCORD_USER_ID?: string;
     MODEL_DISCOVERY_SLACK_WEBHOOK_URL?: string;
+    MODEL_DISCOVERY_T3_WEBHOOK_URL?: string;
     MODEL_DISCOVERY_REVIEW_URL?: string;
     ENV?: string;
 	ACCOUNT_DELETION_PURGE_ENABLED?: string;

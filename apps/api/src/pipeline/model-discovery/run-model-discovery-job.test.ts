@@ -48,7 +48,27 @@ vi.mock("@/runtime/env", () => {
 	};
 });
 
-import { runModelDiscoveryJob } from "./index";
+import { MAX_STORED_ALERT_CHARS, buildStoredAlert, runModelDiscoveryJob } from "./index";
+
+describe("buildStoredAlert", () => {
+	const health = (alertText?: string | null) => ({ checked: 1, failing: 0, alertsSent: alertText ? 1 : 0, alertText });
+
+	it("is absent when no alert was sent", () => {
+		expect(buildStoredAlert({ alertText: null, providerHealth: health() })).toBeUndefined();
+		expect(buildStoredAlert({ alertText: "  ", providerHealth: health("") })).toBeUndefined();
+	});
+
+	it("keeps change and provider-health alerts apart", () => {
+		expect(buildStoredAlert({ alertText: "z-ai: added glm-5.4", providerHealth: health("stepfun failing") }))
+			.toEqual({ changes: "z-ai: added glm-5.4", providerHealth: "stepfun failing" });
+	});
+
+	it("caps very long text", () => {
+		const stored = buildStoredAlert({ alertText: "x".repeat(MAX_STORED_ALERT_CHARS + 500), providerHealth: health() });
+		expect(stored?.changes).toHaveLength(MAX_STORED_ALERT_CHARS);
+		expect(stored?.changes?.endsWith("…")).toBe(true);
+	});
+});
 
 const writes = (table: string, op: string): Call[] => supabase.calls.filter((call) => call.table === table && call.op === op);
 const upsertedSeenRows = () => writes("model_discovery_seen_models", "upsert")
@@ -520,5 +540,59 @@ describe("runModelDiscoveryJob", () => {
 			expect(cohereRow()).toMatchObject({ fingerprint: second.fingerprint, recent_fingerprints: [first.fingerprint] });
 			expect(second.fingerprint).not.toBe(first.fingerprint);
 		});
+
+		it("stores the delivered alert's text on the run row", async () => {
+			await sweep(versionA);
+			supabase.bindings = { DISCORD_WEBHOOK_URL: discordWebhook };
+			await sweep(versionB, true);
+
+			const finished = writes("model_discovery_runs", "update")
+				.map((call) => call.args[0] as { status?: string; summary?: { alert?: { changes?: string } } })
+				.find((row) => row.status && row.summary);
+			expect(finished?.summary?.alert?.changes).toContain("$5.75");
+		});
+
+		it("stores no alert when nothing was sent", async () => {
+			await sweep(versionA);
+			const finished = writes("model_discovery_runs", "update")
+				.map((call) => call.args[0] as { status?: string; summary?: Record<string, unknown> })
+				.find((row) => row.status && row.summary);
+			expect(finished?.summary).toBeDefined();
+			expect(finished?.summary?.alert).toBeUndefined();
+		});
+	});
+
+	it("prunes quiet runs after the normal window and alerted runs after the longer one", async () => {
+		const calls: Array<{ method: string; args: unknown[] }> = [];
+		const { getSupabaseAdmin } = await import("@/runtime/env");
+		const client = getSupabaseAdmin() as unknown as { from: (table: string) => unknown };
+		const originalFrom = client.from;
+		client.from = (table: string) => {
+			const builder = originalFrom(table) as Record<string, (...args: unknown[]) => unknown>;
+			if (table !== "model_discovery_runs") return builder;
+			const recorded: Record<string, unknown> = new Proxy({}, {
+				get(_target, prop: string) {
+					const value = builder[prop];
+					if (prop === "then" || typeof value !== "function") return value;
+					return (...args: unknown[]) => {
+						calls.push({ method: prop, args });
+						value(...args);
+						return recorded;
+					};
+				},
+			});
+			return recorded;
+		};
+		try {
+			await runModelDiscoveryJob({ trigger: "scheduled", source: "test", scheduledAtIso: "2026-11-17T00:00:00.000Z", notify: false, prune: true });
+		} finally {
+			client.from = originalFrom;
+		}
+
+		const ltCutoffs = calls.filter((call) => call.method === "lt").map((call) => call.args[1] as string);
+		expect(calls.some((call) => call.method === "is" && call.args[0] === "summary->alert" && call.args[1] === null)).toBe(true);
+		expect(ltCutoffs.length).toBeGreaterThanOrEqual(2);
+		const days = ltCutoffs.map((iso) => Math.round((Date.now() - Date.parse(iso)) / 86_400_000)).sort((a, b) => a - b);
+		expect(days.slice(-2)).toEqual([5, 60]);
 	});
 });
