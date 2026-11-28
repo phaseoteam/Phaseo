@@ -22,7 +22,8 @@ import type { APIProviderModelListItem } from "@/lib/fetchers/api-providers/prov
 import type { ProviderAppTokenTimeseries, ProviderTokenTimeseries } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { AppStats, ModelStats, APIProviderUpdates } from "@/lib/fetchers/api-providers/providerDataTypes";
 import type { ProviderMetrics } from "@/lib/fetchers/api-providers/providerDataTypes";
-import type { ArtificialAnalysisPublicData, BenchmarkCard, BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
+import type { ArtificialAnalysisPublicData, BenchmarkCard, BenchmarkDirectoryEntry, BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
+import type { ProfileRow } from "@/lib/benchmarks/boardResults";
 import type { CountryListSummary, CountrySummary } from "@/lib/fetchers/countries/types";
 import type { ComparePeerBoard, CompareView } from "@/components/(data)/compare/view/types";
 import type { FamilyCard, FamilyInfo } from "@/lib/fetchers/families/types";
@@ -546,6 +547,18 @@ export async function fetchFrontendModelBenchmarkResults(
 	if (includeHidden) return fetchAdminModelBenchmarks(modelId);
 	const payload = await fetchOptionalPublicWebApi<{ results: ModelBenchmarkResult[] }>(`/api/_web/models/${encodeURIComponent(modelId)}/benchmarks`);
 	return payload?.results ?? [];
+}
+
+/** Every benchmark result for the model with its rank on each benchmark, ranked server-side. */
+export async function fetchFrontendModelBenchmarkProfile(modelId: string): Promise<ProfileRow[]> {
+	const payload = await fetchOptionalPublicWebApi<{ results: ProfileRow[] }>(`/api/_web/models/${encodeURIComponent(modelId)}/benchmark-profile`);
+	return payload?.results ?? [];
+}
+
+/** Benchmarks with public results, with counts and freshness aggregated server-side. */
+export async function fetchFrontendBenchmarkDirectory(): Promise<BenchmarkDirectoryEntry[]> {
+	const payload = await fetchOptionalPublicWebApi<{ benchmarks: BenchmarkDirectoryEntry[] }>("/api/_web/benchmark-directory");
+	return payload?.benchmarks ?? [];
 }
 
 export async function fetchFrontendAPIProviders(): Promise<APIProviderCard[]> {

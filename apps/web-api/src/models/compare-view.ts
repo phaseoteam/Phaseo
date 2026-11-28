@@ -589,9 +589,12 @@ function composeBenchmarks(models: Row[]): CompareViewBenchmark[] {
 	}
 	for (const [benchmarkId, entries] of raw) {
 		const benchmark = benchmarks.get(benchmarkId)!;
-		if (benchmark.source === "independent" && entries.some(({ result }) => Boolean(result.is_self_reported))) benchmark.source = "lab";
+		// Only a board made entirely of developer claims is a lab board; one claim among independent results is not.
+		if (benchmark.source === "independent" && entries.every(({ result }) => Boolean(result.is_self_reported))) benchmark.source = "lab";
 		for (const { modelId, result } of entries) {
-			const variant = parseVariant(result.other_info, benchmark.source);
+			// Scraped results carry effort, harness and configuration in their own columns.
+			const columns = [text(result.effort), text(result.harness), text(result.config)].filter(Boolean).join(", ");
+			const variant = columns || parseVariant(result.other_info, benchmark.source);
 			const list = benchmark.results[modelId] ??= [];
 			const score = comparableScore(number(result.score)!, benchmark.type, result.source_id);
 			// Identical rows from repeated imports add nothing.
@@ -599,7 +602,7 @@ function composeBenchmarks(models: Row[]): CompareViewBenchmark[] {
 			list.push({
 				score,
 				variant,
-				effort: parseEffort(variant),
+				effort: parseEffort(nullableText(result.effort)) ?? parseEffort(variant),
 				ci: parseConfidenceInterval(result.other_info),
 				selfReported: Boolean(result.is_self_reported),
 				sourceLink: nullableText(result.source_link),

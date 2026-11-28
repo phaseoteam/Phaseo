@@ -66,6 +66,8 @@ export default function BenchmarkDetailShell({
 	const artificialAnalysis = isArtificialAnalysisBenchmark(benchmark.id);
 	const epochCapabilitiesIndex = isEpochCapabilitiesIndex(benchmark.id);
 	const displayName = artificialAnalysis ? "Artificial Analysis" : epochCapabilitiesIndex ? "Epoch AI" : benchmark.name ?? benchmark.id;
+	const primarySource = benchmark.sources?.find((source) => source.id === benchmark.source_id) ?? benchmark.sources?.[0];
+	const publisher = primarySource ? primarySource.publisher ?? primarySource.name : null;
 
 	if (artificialAnalysis) return <div className="flex min-w-0 flex-col"><div className="flex h-14 items-center justify-between gap-4 px-4 lg:px-6"><div className="flex items-center gap-2.5"><ArtificialAnalysisLogo size={22} /><h1 className="text-sm font-semibold tracking-tight">Artificial Analysis</h1></div><BenchmarkEditButton benchmarkId={benchmark.id} compactMobile /></div>{children}</div>;
 	if (epochCapabilitiesIndex) return <div className="flex min-w-0 flex-col"><div className="flex h-14 items-center justify-between gap-4 px-4 lg:px-6"><h1 className="flex items-center gap-3 text-sm font-semibold"><Image src="/benchmarks/epoch-ai.svg" alt="Epoch AI" width={116} height={22} className="h-[22px] w-auto dark:hidden" /><Image src="/benchmarks/epoch-ai_dark.svg" alt="Epoch AI" width={116} height={22} className="hidden h-[22px] w-auto dark:block" /></h1><BenchmarkEditButton benchmarkId={benchmark.id} compactMobile /></div>{children}</div>;
@@ -83,7 +85,7 @@ export default function BenchmarkDetailShell({
 							<h1 className={`${artificialAnalysis ? "text-xl sm:text-2xl" : "text-2xl"} font-semibold tracking-tight md:text-3xl`}>
 								{displayName}
 							</h1>
-							<p className="mt-1.5 text-sm text-muted-foreground">{artificialAnalysis ? tChart("independentEvaluations") : epochCapabilitiesIndex ? t("independentEvaluations", { metric: "Capabilities Index" }) : t("detailSubtitle")}</p>
+							<p className="mt-1.5 text-sm text-muted-foreground">{artificialAnalysis ? tChart("independentEvaluations") : epochCapabilitiesIndex ? t("independentEvaluations", { metric: "Capabilities Index" }) : publisher ? t("board.byPublisher", { publisher }) : t("detailSubtitle")}</p>
 						</div>
 					</div>
 					<BenchmarkEditButton benchmarkId={benchmark.id} compactMobile={artificialAnalysis} />

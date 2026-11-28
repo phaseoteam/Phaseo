@@ -6,6 +6,7 @@ import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import {
 	fetchFrontendModelApps,
 	fetchFrontendModelBenchmarkHighlights,
+	fetchFrontendModelBenchmarkProfile,
 	fetchFrontendModelBenchmarkResults,
 	fetchFrontendModelPerformanceColos,
 	fetchFrontendModelUsageDailyBreakdown,
@@ -122,6 +123,16 @@ export const modelBenchmarkResultsSectionQuery = (modelId: string, includeHidden
 				[],
 				"benchmark results",
 			),
+	});
+
+/** Every benchmark result for the model, ranked server-side. Hidden-model previews keep the older view. */
+export const modelBenchmarkProfileSectionQuery = (modelId: string, includeHidden: boolean) =>
+	queryOptions({
+		queryKey: [...sectionRoot, "benchmark-profile", modelId, includeHidden] as const,
+		queryFn: () =>
+			includeHidden
+				? Promise.resolve([])
+				: withOptionalSectionTimeout(fetchFrontendModelBenchmarkProfile(modelId).catch(() => []), [], "benchmark profile"),
 	});
 
 /** This model's place on the leaderboards (~10 KB), not every leaderboard (~1 MB). */

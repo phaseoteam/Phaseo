@@ -12,6 +12,7 @@ import { publicProviderDisplayName, publicProviderPayload, STEALTH_PROVIDER_DISP
 import { buildFreeRouterCatalogueRow, fetchFreeRouterOverview } from "@/models/free-router";
 import { normalizeModelLicense } from "@/models/license";
 import { withPublicCache, type PublicCachePolicy } from "@/http/cache";
+import { mapProfileRows } from "@/benchmarks/reader";
 import {
 	attemptHealthByHour,
 	attemptHealthOverHours,
@@ -1653,6 +1654,20 @@ publicModelsRouter.get("/:modelId/benchmarks", async (c) => {
 	} catch (error) {
 		console.error("[web-api/models] benchmarks failed", { modelId, error });
 		return c.json({ error: "benchmarks_unavailable" }, 503);
+	}
+});
+
+/** Every benchmark result for the model, ranked in the database, for the model page's benchmark section. */
+publicModelsRouter.get("/:modelId/benchmark-profile", async (c) => {
+	const modelId = c.req.param("modelId");
+	try {
+		const { data, error } = await getDataClient(c.env).rpc("get_model_benchmark_profile", { p_model_slug: modelId });
+		if (error) throw error;
+		const results = mapProfileRows((Array.isArray(data) ? data : []) as Array<Record<string, unknown>>);
+		return withPublicCache(c.json({ modelId, results }), sectionPolicy("benchmarks", modelId));
+	} catch (error) {
+		console.error("[web-api/models] benchmark profile failed", { modelId, error });
+		return c.json({ error: "benchmark_profile_unavailable" }, 503);
 	}
 });
 

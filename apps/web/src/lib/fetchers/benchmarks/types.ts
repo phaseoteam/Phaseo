@@ -85,8 +85,44 @@ export interface BenchmarkResult {
 	created_at?: string | null;
 	updated_at?: string | null;
 	rank?: number | null;
-	/** Set on results synced from a public leaderboard; their percentages are stored as 0-100 points. */
+	/** Set on results read from a public leaderboard; such scores are already in the benchmark's scale. */
 	source_id?: string | null;
+	score_numeric?: number | null;
+	source_model_label?: string | null;
+	effort?: string | null;
+	harness?: string | null;
+	config?: string | null;
+	ci_low?: number | null;
+	ci_high?: number | null;
+	cost_usd?: number | null;
+	duration_seconds?: number | null;
+	output_tokens?: number | null;
+	observed_on?: string | null;
+}
+
+export interface BenchmarkSourceInfo {
+	id: string;
+	name: string;
+	publisher: string | null;
+	url: string | null;
+	attribution: string | null;
+	last_success_at: string | null;
+}
+
+export interface BenchmarkDirectoryEntry {
+	id: string;
+	name: string;
+	category?: string;
+	unit?: string;
+	type?: string;
+	higherIsBetter: boolean;
+	sourceId?: string;
+	sourceName?: string;
+	publisher?: string;
+	models: number;
+	results: number;
+	independent: number;
+	updatedAt?: string;
 }
 
 export interface BenchmarkPage {
@@ -100,4 +136,8 @@ export interface BenchmarkPage {
 	link: string | null;
 	results: BenchmarkResult[];
 	type?: string | null;
+	source_id?: string | null;
+	description?: string | null;
+	unit?: string | null;
+	sources?: BenchmarkSourceInfo[];
 }

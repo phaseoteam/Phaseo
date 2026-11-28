@@ -24,5 +24,10 @@
     "benchmarkCategory": {
       "math": "Math"
     }
+  },
+  "benchmarks": {
+    "categories": {
+      "math": "Math"
+    }
   }
 }

@@ -1,7 +1,7 @@
 import Image from "@/components/image";
 import Link from "@/components/link";
 import { useEffect, useState } from "react";
-import { List, PanelsTopLeft, Sparkles } from "lucide-react";
+import { List, PanelsTopLeft, Sparkles, Trophy } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import AppLogo from "@/components/(data)/apps/AppLogo";
@@ -42,7 +42,7 @@ export default function EntityStickyHeader({ kind, id, name, observeId, baseHref
 				<div className="pointer-events-auto border-b border-border/80 bg-background/95 shadow-sm backdrop-blur">
 					<div className="container mx-auto flex items-center justify-between gap-3 px-4 py-2.5 md:px-6 xl:px-8">
 						<Link href={baseHref} className="flex min-w-0 items-center gap-3">
-							{brandLogo ? <><Image src={brandLogo.light} alt={name} width={brandLogo.width} height={brandLogo.height} className="h-6 w-auto dark:hidden" /><Image src={brandLogo.dark} alt="" aria-hidden="true" width={brandLogo.width} height={brandLogo.height} className="hidden h-6 w-auto dark:block" /></> : kind === "app" ? <AppLogo src={imageUrl} alt="" fallback={name.slice(0, 1).toUpperCase()} className="size-8 shrink-0" fallbackClassName="text-xs" /> : <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-background">{kind === "country" ? <Image src={`/flags/${id.toLowerCase()}.svg`} alt="" fill className="object-cover" /> : kind === "benchmark" || kind === "family" ? <Sparkles className="size-4 text-muted-foreground" /> : <span className="relative size-6"><Logo id={id} alt="" fill className="object-contain" /></span>}</span>}
+							{brandLogo ? <><Image src={brandLogo.light} alt={name} width={brandLogo.width} height={brandLogo.height} className="h-6 w-auto dark:hidden" /><Image src={brandLogo.dark} alt="" aria-hidden="true" width={brandLogo.width} height={brandLogo.height} className="hidden h-6 w-auto dark:block" /></> : kind === "app" ? <AppLogo src={imageUrl} alt="" fallback={name.slice(0, 1).toUpperCase()} className="size-8 shrink-0" fallbackClassName="text-xs" /> : <span className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-background">{kind === "country" ? <Image src={`/flags/${id.toLowerCase()}.svg`} alt="" fill className="object-cover" /> : kind === "benchmark" ? <Trophy className="size-4 text-muted-foreground" /> : kind === "family" ? <Sparkles className="size-4 text-muted-foreground" /> : <span className="relative size-6"><Logo id={id} alt="" fill className="object-contain" /></span>}</span>}
 							{brandLogo ? null : <span className="truncate text-sm font-semibold">{name}</span>}
 						</Link>
 						<div className="flex shrink-0 items-center gap-2">
